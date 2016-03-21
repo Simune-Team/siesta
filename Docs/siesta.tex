@@ -2960,29 +2960,36 @@ energy:
 \itemsep 10pt
 \parsep 0pt
 
-\item[{\bf SpinPolarized}] ({\it logical}):
-\index{SpinPolarized@{\bf SpinPolarized}}
-Logical variable to choose between spin unpolarized ({\tt .false.})
-or spin polarized ({\tt .true.}) calculation.
+\item[{\bf Magnetization}] ({\it string}):
+\index{Magnetization@{\bf Magnetization}}\index{spin}
+Choose magnetization options. You may choose between:
+\begin{description}
+\itemsep 2pt
+\parsep 0pt
+\small
+\item[non-polarized] Spin unpolarized
 
-{\it Default value:} {\tt .false.}
+\item[polarized] Spin polarized
 
+\item[non-collinear] Non collinear spin
 
-\item[{\bf NonCollinearSpin}] ({\it logical}):
-  \index{NonCollinearSpin@{\bf NonCollinearSpin}}\index{spin}
-  \index{spin!non-collinear}\index{LSD} If {\tt .true.}, non-collinear
-  spin (i.e. with variable orientation) is described using spinor 
-  wavefunctions and $(2 \times 2)$ spin
-  density matrices at every grid point.  Refs: T. Oda et al, PRL, {\bf
+Refs: T. Oda et al, PRL, {\bf
     80}, 3622 (1998); 
 V. M. Garc\'{\i}a-Su\'arez et al, Eur. Phys. Jour. B {\bf 40}, 371 (2004);
 V. M. Garc\'{\i}a-Su\'arez et al, Journal of
-  Phys: Cond. Matt {\bf 16}, 5453 (2004). 
-magnitude, and not the gradient of its orientation, are considered
-to calculate the local xc energy density.
-Not compatible with the {\tt  Diag.ParallelOverK} option 
-{\it Default value:} {\tt .false.}
+Phys: Cond. Matt {\bf 16}, 5453 (2004).
 
+\item[spin-orbit] Spin-orbit coupling
+\end{description}
+
+This flag has precedence from \textbf{SpinOrbit}, \textbf{NonCollinearSpin} and
+\textbf{SpinPolarized} while they may still be used.
+
+Certain options may not be used together with specific parallelization routines.
+For instance only a spin-polarized calculation may use the \textbf{Diag.ParallelOverK}
+option. 
+
+{\it Default value:} {\tt non-polarized}
 
 \item[{\bf FixSpin}] ({\it logical}):
 \index{FixSpin@{\bf FixSpin}}\index{spin}

@@ -19,7 +19,6 @@
       use parallel,        only : Node, Nodes, BlockSize
       use parallelsubs,    only : LocalToGlobalOrb,GlobalToLocalOrb
       use m_fermid,        only : fermid, stepf
-      use m_spin,          only : MColl
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -115,12 +114,50 @@ C of referencing has been changed in several places to reflect this.
 !     B E G I N
 !***********************************************************************
 !     define the arrays
-      allocate(Haux(MColl,nuotot,MColl,nuo))
-      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2g')
-      allocate(Saux(MColl,nuotot,MColl,nuo))
-      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2g')
-      allocate(caux(MColl,nuotot))
-      call memory('A','Z',MColl*nuotot,'diag2g')
+      allocate(Haux(2,nuotot,2,nuo))
+      call memory('A','Z',2*nuotot*2*nuo,'diag2g')
+      allocate(Saux(2,nuotot,2,nuo))
+      call memory('A','Z',2*nuotot*2*nuo,'diag2g')
+      allocate(caux(2,nuotot))
+      call memory('A','Z',2*nuotot,'diag2g')
+
+!***********************************************************************
+! BUILD HAMILTONIAN
+!***********************************************************************
+! The different subroutines build H_{j,i}^{js,is} = <js,j|H|is,i>
+! The spin notation is as follows:
+!
+!            | H_{j,i}^{u,u}  H_{j,i}^{u,d} |
+!  H_(j,i} = |                              |
+!            | H_{j,i}^{d,u}  H_{j,i}^{d,d} |
+!
+!            | H(ind,1) + i H(ind,5)   H(ind,3) - i H(ind,4) |
+!          = |                                               |
+!            | H(ind,7) + i H(ind,8)   H(ind,2) + i H(ind,6) |
+!
+! 1. Hermiticity imposes H_{i,j}^{is,js}=H_{j,i}^{js,is}^*
+! 2. Since wave functions are real, if there are no single P or L
+! operators:
+!      (a) H_{i,j}^{is,js}=H_{j,i}^{is,js}
+!      (b) These imply spin-box hermiticity:
+!      H_{i,j}^{is,js}=H_{i,j}^{js,is}^*
+!
+!      (c) Hence
+!
+!                               | H(ind,1)                H(ind,3) - i
+!                               H(ind,4) |
+!           H_{j,i} = H_{i,j} = |
+!           |
+!                               | H(ind,3) + i H(ind,4)   H(ind,2)
+!                               |
+!
+!
+! The spin-orbit interaction and the orbital part of the Zeeman
+! interaction
+! break the  "spin-box hermiticity" of H. Hence the full format of H is
+! needed
+! in those cases. 
+!
       
       Saux = dcmplx(0.0_dp, 0.0_dp)
       Haux = dcmplx(0.0_dp, 0.0_dp)
@@ -139,7 +176,7 @@ C of referencing has been changed in several places to reflect this.
       
 !     Solve the eigenvalue problem
       call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
-     .                       MColl*neigwanted,iscf,ierror)
+     .                       2*neigwanted,iscf,ierror)
       
 !     Check error flag and take appropriate action
       if (ierror.gt.0) then
@@ -161,32 +198,55 @@ C of referencing has been changed in several places to reflect this.
           enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
-     .                         MColl*neigwanted,iscf,ierror)
+     .                         2*neigwanted,iscf,ierror)
       endif
       
 !     Check if we are done
       if (.not.getD) goto 1001
       
 !     Find new Fermi energy and occupation weights 
-      call fermid(1, 1, 1, (/0.5_dp/), MColl*maxo, MColl*neigwanted, 
+      call fermid(1, 1, 1, (/0.5_dp/), 2*maxo, 2*neigwanted, 
      .                     eo, temp, qtot, qo, ef, Entropy)
       
 !     Find weights for local density of states ............................
       if (e1 .lt. e2) then
         t = max( temp, 1.d-6 )
-        do io = 1, nuotot*MColl
+        do io = 1, nuotot*2
           qo(io) = ( stepf((eo(io)-e2)/t) - stepf((eo(io)-e1)/t))
         enddo
       endif
       
-!     New density and energy-density matrices of unit-cell orbitals .......
+!***********************************************************************
+! BUILD NEW DENSITY MATRIX
+!***********************************************************************
+!
+!                 | ------- 1,1 -------     ------- 1,2 ------- |
+!                 | c_{i,up} c_{j,up}^*     c_{i,up} c_{j,down)^* |
+!     D_{i,j} =   |                                             |
+!                 | ------- 2,1 -------     ------- 2,2 ------- |
+!                 | c_{i,down} c_{j,up}^*     c_{i,dn} c_{j,dn)^* |
+!
+!             =   | D_{i,j}(1)              D_{i,j}(3)-i D_{i,j}(4) |
+!                 | D_{i,j}(7)+i D_{i,j}(8) D_{i,j}(2)              |
+
+! The Energy is computed as E = Tr [ D_{i,j} H_{j,i} ]
+!
+! The Density Matrix is not "spin box hermitian" even if H does not
+! contain P or
+! L operators. 
+!
+! Spin-box symmetrization of D inside this present subroutine:
+! D_{i,j}(1,2) = 0.5 ( D_{i,j}(1,2) + D_{i,j}(2,1)^* )
+! does not affect the results in any case, since H is spin-box
+! hermitian.
+
       Dnew(:,:) = 0.0_dp
       Enew(:,:) = 0.0_dp
       
       BNode = 0
       iie   = 0
       
-      do ie = 1,MColl*nuotot
+      do ie = 1,2*nuotot
         qe = qo(ie)
         if (Node.eq.BNode) then
           iie = iie + 1
@@ -201,7 +261,7 @@ C of referencing has been changed in several places to reflect this.
             enddo
           endif
 #ifdef MPI
-          call MPI_Bcast(caux(1,1),MColl*nuotot,MPI_double_complex,
+          call MPI_Bcast(caux(1,1),2*nuotot,MPI_double_complex,
      .         BNode,MPI_Comm_World,MPIerror)
 #endif
           ee = qo(ie) * eo(ie)
@@ -226,7 +286,7 @@ C of referencing has been changed in several places to reflect this.
 !------- 1,2 -----------------------------------------------------------
               D21  = dconjg(caux(2,iio)) * caux(1,jo)
       
-!------------ Density matrix has to be hermitian ----------------------
+!------------ Density matrix has to be spin-box hermitian ----------------------
               D11 = 0.5_dp * (D11 + dconjg(D11))
               D22 = 0.5_dp * (D22 + dconjg(D22))
               D12 = 0.5_dp * (D12 + dconjg(D21))
@@ -244,18 +304,18 @@ C of referencing has been changed in several places to reflect this.
               Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
               Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe
               Dnew(ind,3) = Dnew(ind,3) + dreal(D12) * qe
-              Dnew(ind,4) = Dnew(ind,4) + dimag(D12) * qe
+              Dnew(ind,4) = Dnew(ind,4) + dimag(D21) * qe
       
               Enew(ind,1) = Enew(ind,1) + dreal(D11) * ee
               Enew(ind,2) = Enew(ind,2) + dreal(D22) * ee
               Enew(ind,3) = Enew(ind,3) + dreal(D12) * ee
-              Enew(ind,4) = Enew(ind,4) + dimag(D12) * ee
+              Enew(ind,4) = Enew(ind,4) + dimag(D21) * ee
       
             enddo
           enddo
         endif
-        BTest = ie/(MColl*BlockSize)
-        if (BTest*MColl*BlockSize.eq.ie) then
+        BTest = ie/(2*BlockSize)
+        if (BTest*2*BlockSize.eq.ie) then
           BNode = BNode + 1
           if (BNode .gt. Nodes-1) BNode = 0
         endif
@@ -264,11 +324,11 @@ C of referencing has been changed in several places to reflect this.
  1001 continue
       
 !     deallocate the arrays
-      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2g')
+      call memory('D','Z',2*nuotot*2*nuo,'diag2g')
       deallocate(Haux)
-      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2g')
+      call memory('D','Z',2*nuotot*2*nuo,'diag2g')
       deallocate(Saux)
-      call memory('D','Z',MColl*nuotot,'diag2g')
+      call memory('D','Z',2*nuotot,'diag2g')
       deallocate(caux)
 !***********************************************************************
       return

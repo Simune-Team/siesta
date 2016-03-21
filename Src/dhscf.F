@@ -32,7 +32,7 @@
 !     Some others are scratch, such as nmpl, ntpl, etc
 
       use precision,      only : dp, grid_p
-
+      use m_dfscf,        only : dfscf
       implicit none
 
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
@@ -41,7 +41,7 @@
       character(len=10)       :: shape
       integer                 :: nml(3), ntml(3), npcc,
      &                           nmpl, ntpl
-      real(dp)                :: qspiral(3), bcell(3,3), cell(3,3),
+      real(dp)                :: bcell(3,3), cell(3,3),
      &                           dvol, field(3), rmax, scell(3,3)
       real(dp)                :: G2mesh =  0.0_dp
 
@@ -155,8 +155,7 @@ C       Set mesh sub-division variables & perform one off allocation
         nsp = nsm*nsm*nsm
         call re_alloc( xdsp, 1, 3, 1, nsp, 'xdsp', 'dhscf_init' )
 
-C       Read spin-spiral wavevector (if defined)
-        call readsp( qspiral, spiral )
+C       Check spin-spiral wavevector (if defined)
         if (spiral .and. nspin.lt.4)
      &    call die('dhscf: ERROR: spiral defined but nspin < 4')
       endif   ! First time
@@ -418,7 +417,7 @@ C ----------------------------------------------------------------------
 !------------------------------------------------------------------------- END
       end subroutine dhscf_init
 
-      subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
+      subroutine dhscf( nspin, norb, iaorb, iphorb, nuo, 
      &                  nuotot, nua, na, isa, xa, indxua,
      &                  ntm, ifa, istr, iHmat,
      &                  filesOut, maxnd, numd,
@@ -462,11 +461,11 @@ C                             elements for each matrix row
 C integer listdptr(nuo)     : Pointer to start of rows of density-matrix
 C integer listd(maxnd)      : Nonzero-density-matrix-element column
 C                             indexes for each matrix row
-C real*8  Dscf(maxnd,nspin): SCF density-matrix elements
+C real*8  Dscf(maxnd,h_spin_dim): SCF density-matrix elements
 C real*8  datm(norb)        : Harris density-matrix diagonal elements
 C                             (atomic occupation charges of orbitals)
 C integer maxnh             : First dimension of listh and Hmat
-C real*8  Hmat(maxnh,nspin) : Hamiltonian matrix in sparse form,
+C real*8  Hmat(maxnh,h_spin_dim) : Hamiltonian matrix in sparse form,
 C                             to which are added the matrix elements
 C                                 <ORB_I | DeltaV | ORB_J>, where
 C                             DeltaV = Vna + Vxc(SCF) + 
@@ -553,6 +552,7 @@ C     Modules
                                         ! points over parallel processors
 #endif /* BSC_CELLXC */
       use m_vmat,  only  : vmat
+      use m_rhoofd, only: rhoofd
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -570,6 +570,8 @@ C     Modules
 
       use m_rhofft,       only: rhofft, FORWARD, BACKWARD
       use m_rhog,         only: rhog_in, rhog
+      use m_spin,         only: NonCol, SpOrb
+      use m_spin,         only: h_spin_dim, Spiral, qSpiral
 
 #ifdef TRANSIESTA
       use m_ts_options, only: UseVFix, TSmode, isVolt
@@ -578,20 +580,20 @@ C     Modules
       use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
       implicit none
+
       integer
-     &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
+     &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot, 
      &  iaorb(norb), ifa, iHmat,
      &  indxua(na), iphorb(norb), isa(na), 
      &  istr, listd(*), listdptr(nuo), ntm(3), numd(nuo)
 
       real(dp)
-     &  datm(norb), dipol(3), Dscf(maxnd,nspin),
+     &  datm(norb), dipol(3), Dscf(:,:),
      &  DUext, DUscf, Dxc, Enaatm, Enascf, Exc,
-     &  Hmat(maxnh,nspin), Uatm, Uscf, xa(3,na),
+     &  Hmat(:,:), Uatm, Uscf, xa(3,na),
      &  stress(3,3), Fal(3,nua), stressl(3,3)
 
-      type(filesOut_t)
-     &  filesOut
+      type(filesOut_t) filesOut
 
       logical, intent(in), optional :: use_rhog_in
       logical, intent(in), optional :: charge_density_only
@@ -684,9 +686,9 @@ C     Local variables
 
       external
      &  cross,
-     &  dfscf,  dipole, 
+     &  dipole, 
      &  poison, 
-     &  reord, rhooda, rhoofd, rhoofdsp, 
+     &  reord, rhooda, rhoofdsp, 
      &  timer, vmatsp, 
      &  readsp
 #ifdef BSC_CELLXC
@@ -711,6 +713,11 @@ C     Work arrays
 #ifdef DEBUG
       call write_debug( '    PRE DHSCF' )
 #endif
+
+      if ( h_spin_dim /= size(Dscf,dim=2) ) then
+         call die('Spin components is not equal to options.')
+      end if
+      
 !-------------------------------------------------------------------- BEGIN
 C ----------------------------------------------------------------------
 C Start of SCF iteration part
@@ -791,14 +798,14 @@ C             rhoatm and Drho are in sequential mode
         endif
         call re_alloc( DRho_par, 1, ntpl, 1, nspin,
      &                 'DRho_par','dhscf' )       
-        if (spiral) then
+        if (Spiral) then
           call rhoofdsp( norb, nmpl, maxnd, numd, listdptr, listd,
      &                   nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
      &                   iphorb, isa, qspiral )
         else
           call rhoofd( norb, nmpl, maxnd, numd, listdptr, listd,
-     &                 nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
-     &                 iphorb, isa )
+     &                 nspin, Dscf, DRho_par, 
+     &                 nuo, nuotot, iaorb, iphorb, isa )
         endif
         ! DRHO_par is here in QUADRATIC, clustered form
 
@@ -1265,7 +1272,7 @@ C ----------------------------------------------------------------------
      &                        QUADRATIC, fdst, TO_CLUSTER )
          enddo
 
-         if (spiral) then
+         if (Spiral) then
             call vmatsp( norb, nmpl, dvol, nspin, Vscf_par, maxnd,
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa, qspiral )
@@ -1409,7 +1416,7 @@ C       Vaux is (minus) the potential which multiplies rhoatm
      &                     QUADRATIC, Vaux_par, TO_CLUSTER )
 
         call dfscf( ifa, istr, na, norb, nuo, nuotot, nmpl, nspin,
-     &              indxua, isa, iaorb, iphorb,
+     &              indxua, isa, iaorb, iphorb, 
      &              maxnd, numd, listdptr, listd, Dscf, datm,
      &              Vscf_par, Vaux_par, dvol, volume, Fal, stressl )
 

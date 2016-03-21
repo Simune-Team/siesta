@@ -20,7 +20,6 @@
       use parallel,      only : Node, Nodes, BlockSize
       use parallelsubs,  only : LocalToGlobalOrb
       use m_fermid,      only : fermid, stepf
-      use m_spin,        only : MColl
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -107,7 +106,7 @@ C *********************************************************************
       
       real(dp) Dnew(maxnd,4), Enew(maxnd,4), H(maxnh,4), S(maxnh)
       real(dp) kpoint(3,nk), wk(nk), xij(3,maxnh)
-      real(dp) e1, e2, ef, eo(maxo*4,nk), qo(maxo*4,nk)
+      real(dp) e1, e2, ef, eo(maxo*2,nk), qo(maxo*2,nk)
       real(dp) occtol, qtot, temp, Entropy
       
       logical               getD
@@ -140,18 +139,58 @@ C *********************************************************************
 !     B E G I N
 !***********************************************************************
 !     define the arrays
-      allocate(Haux(MColl,nuotot,MColl,nuo))
-      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      allocate(Saux(MColl,nuotot,MColl,nuo))
-      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      allocate(Dkc(MColl,nuotot,MColl,nuo))
-      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      allocate(Ekc(MColl,nuotot,MColl,nuo))
-      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      allocate(caux(MColl,MColl*nuotot))
-      call memory('A','Z',MColl*MColl*nuotot,'diag2k')
+
+      allocate(Haux(2,nuotot,2,nuo))
+      call memory('A','Z',2*nuotot*2*nuo,'diag2k')
+      allocate(Saux(2,nuotot,2,nuo))
+      call memory('A','Z',2*nuotot*2*nuo,'diag2k')
+      allocate(Dkc(2,nuotot,2,nuo))
+      call memory('A','Z',2*nuotot*2*nuo,'diag2k')
+      allocate(Ekc(2,nuotot,2,nuo))
+      call memory('A','Z',2*nuotot*2*nuo,'diag2k')
+      allocate(caux(2,nuotot))  ! CC RC Chnaged for osSO
+      call memory('A','Z',2*nuotot,'diag2k')
       
       eo = 0.0_dp
+
+!****************************************************************************
+! Build Hamiltonian      
+!****************************************************************************
+! (Notes by Jaime Ferrer)
+! Indices iuo and juo are for orbital components in the unit cell
+! while jo is for orbital components in the supercell:
+! d_{jo} = R + d_{juo}, x_{ij} = d_{jo} - d_{iuo}
+! Since <jo|H|iuo> is computed, the Bloch phase factor is e^(-i k x_{ij}
+! )
+!
+! The different subroutines build
+! H_{jo,iuo)^{js,is} = H_{juo,iuo}^{js,is}(R) = <js,jo|H|is,iuo>
+!
+! The spin notation is as follows:
+!
+!               | H_{jo,iuo}^{u,u}  H_{jo,iuo}^{u,d} |
+!  H_{jo,iuo} = |                                    |
+!               | H_{jo,iuo}^{d,u}  H_{jo,iuo}^{d,d} |
+!
+!            | H(ind,1) + i H(ind,5)   H(ind,3) - i H(ind,4) |
+!          = |                                               |
+!            | H(ind,7) + i H(ind,8)   H(ind,2) + i H(ind,6) |
+!
+! 1. Hermiticity imposes H_{i,j}^{is,js}=H_{j,i}^{js,is}^*
+! 2. Since wave functions are real, if there are no single P or L
+! operators:
+!      (a) H_{i,j}^{is,js}=H_{j,i}^{is,js}
+!      (b) These imply spin-box hermiticity:
+!      H_{i,j}^{is,js}=H_{i,j}^{js,is}^*
+!
+!      (c) Hence
+!
+!                               | H(ind,1)                H(ind,3) - i H(ind,4) |
+!           H_{j,i} = H_{i,j} = |                                               |
+!                               | H(ind,3) + i H(ind,4)   H(ind,2)              |
+!
+!
+
       
 !     Find eigenvalues at every k point
       do ik = 1,nk
@@ -174,7 +213,8 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+! JFR: sign change in phase because of orbital ordering j,i & convention for xij = d_j - d_i
+            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -188,9 +228,10 @@ C *********************************************************************
         enddo
       
 !       Find eigenvalues
+!       Note duplication since the spins are mixed
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo(1,ik),psi,
      .             0,iscf,ierror)
-      
+
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
         endif
@@ -203,7 +244,7 @@ C *********************************************************************
 !-----------------------------------------------------------------------
       
 !     Find new Fermi energy and occupation weights
-      call fermid(2,4,nk,wk,maxo,nuotot,eo,temp,qtot,qo,ef,Entropy)
+      call fermid(2,2,nk,wk,maxo,nuotot,eo,temp,qtot,qo,ef,Entropy)
       
 !     Find weights for local density of states
       if (e1 .lt. e2) then
@@ -217,7 +258,7 @@ C *********************************************************************
           enddo
         enddo
       endif
-      
+
 !     New density and energy-density matrices of unit-cell orbitals
       Dnew(:,:) = 0.0_dp
       Enew(:,:) = 0.0_dp
@@ -225,7 +266,7 @@ C *********************************************************************
 !     Find maximum eigenvector that is required for this k point 
       do ik = 1,nk
         neigneeded = 0
-        ie = nuotot
+        ie = 2*nuotot
         do while (ie.gt.0.and.neigneeded.eq.0)
           qe = qo(ie,ik)
           if (abs(qe).gt.occtol) neigneeded = ie
@@ -237,13 +278,14 @@ C *********************************************************************
         Haux = dcmplx(0.0_dp,0.0_dp)
         do iuo = 1,nuo
           do j = 1,numh(iuo)
+
             ind = listhptr(iuo) + j
             jo = listh(ind)
             juo = indxuo(jo)
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -253,9 +295,10 @@ C *********************************************************************
      .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
             Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
      .                        + dcmplx(H(ind,3), + H(ind,4)) * kphs
+
           enddo
         enddo
-      
+
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
      .             neigneeded,iscf,ierror)
       
@@ -274,7 +317,7 @@ C *********************************************************************
               kxij = kpoint(1,ik) * xij(1,ind) +
      .               kpoint(2,ik) * xij(2,ind) +
      .               kpoint(3,ik) * xij(3,ind)
-              kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+              kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
       
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -294,6 +337,39 @@ C *********************************************************************
 !     Store the products of eigenvectors in matrices Dk and Ek
 !     WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
 !-----------------------------------------------------------------------	     
+!***********************************************************************
+! BUILD NEW DENSITY MATRIX
+!***********************************************************************
+!
+!                 | ------- 1,1 -------     ------- 1,2 ------- |
+!                 | c_{i,up} c_{j,up}^*     c_{i,up} c_{j,down)^* |
+!     D_{i,j} =   |                                             |
+!                 | ------- 2,1 -------     ------- 2,2 ------- |
+!                 | c_{i,down} c_{j,up}^*     c_{i,dn} c_{j,dn)^* |
+!
+!             =   | D_{i,j}(1)              D_{i,j}(3)-i D_{i,j}(4) |
+!                 | D_{i,j}(7)+i D_{i,j}(8) D_{i,j}(2)              |
+
+! The Energy is computed as E = Tr [ D_{i,j} H_{j,i} ]
+!
+! The Density Matrix is not "spin box hermitian" even if H does not
+! contain P or
+! L operators.
+!
+! Spin-box symmetrization of D inside this present subroutine:
+! D_{i,j}(1,2) = 0.5 ( D_{i,j}(1,2) + D_{i,j}(2,1)^* )
+! does not affect the results in any case, since H is spin-box
+! hermitian.
+!
+! The wave function coefficients c_{i,sigma}(ie,k) only satisfy
+! "TR"-related 
+! symmetry relations if the state is collinear (nspin = 2). In this case
+! c_{i,sigma}(ie,k) = c_{i,sigma}(ie, -k)^*
+!
+! For a non-collinear state, the above relation does not hold
+! generically. Hence the
+! full BZ must be used to compute the DM.
+
       
         Dkc  = dcmplx(0.0_dp,0.0_dp)
         Ekc  = dcmplx(0.0_dp,0.0_dp)
@@ -301,7 +377,7 @@ C *********************************************************************
       
         BNode = 0
         iie = 0
-        do ie = 1,MColl*nuotot
+        do ie = 1,2*nuotot
           qe = qo(ie,ik)
           if (Node.eq.BNode) then
             iie = iie + 1
@@ -323,45 +399,32 @@ C *********************************************************************
             do iuo = 1,nuo
               call LocalToGlobalOrb(iuo,Node,Nodes,iio)
               do juo = 1,nuotot
-      
-!     Relation:      c_{i,up} = caux(1,i)
-!                    c_{i,dn} = caux(2,i)
-!
-!                 | ----- 1,1 -------     ----- 2,1 ------- |
-!                 | c_{j,u} c_{i,u}^*     c_{j,u} c_{i,d)^* |
-!     D_{j,i} =   |                                         |
-!                 | ----- 1,2 -------     ----- 2,2 ------- |
-!                 | c_{j,d} c_{i,u}^*     c_{j,d} c_{i,d)^* |
-!
-!
-!                 | ----- 1,1 -------          ----- 2,1 -------       |
-!                 | D_{j,i}(1)                 D_{j,i}(3)+i D_{j,i}(4) |
-!             =   |                                                    |
-!                 | ----- 1,2 -------          ----- 2,2 -------       |
-!                 | D_{i,j}(3)-i D_{i,j}(4)    D_{j,i}(2)              |
-!
+CC RC
+C    In the JF 3.1.1 version the following matrix elements are
+C    calculated by means of dconj(caux(1,juo)) instead of caux(1,juo)
+C    I will leave it as it is. maybe it needs further revision...
       
 !------- 1,1 -----------------------------------------------------------
-               cicj = dconjg(caux(1,iio)) * caux(1,juo)
+               cicj = caux(1,iio) * dconjg(caux(1,juo))
                Dkc(1,juo,1,iuo) = Dkc(1,juo,1,iuo) + qe * cicj
                Ekc(1,juo,1,iuo) = Ekc(1,juo,1,iuo) + ee * cicj
 !------- 2,2 -----------------------------------------------------------
-               cicj = dconjg(caux(2,iio)) * caux(2,juo)
+               cicj = caux(2,iio) * dconjg(caux(2,juo))
                Dkc(2,juo,2,iuo) = Dkc(2,juo,2,iuo) + qe * cicj
                Ekc(2,juo,2,iuo) = Ekc(2,juo,2,iuo) + ee * cicj
 !------- 2,1 -----------------------------------------------------------
-               cicj = dconjg(caux(1,iio)) * caux(2,juo)
+               cicj = caux(1,iio) * dconjg(caux(2,juo))
                Dkc(1,juo,2,iuo) = Dkc(1,juo,2,iuo) + qe * cicj
                Ekc(1,juo,2,iuo) = Ekc(1,juo,2,iuo) + ee * cicj
 !------- 1,2 -----------------------------------------------------------
-               cicj = dconjg(caux(2,iio)) * caux(1,juo)
+               cicj = caux(2,iio) * dconjg(caux(1,juo))
                Dkc(2,juo,1,iuo) = Dkc(2,juo,1,iuo) + qe * cicj
                Ekc(2,juo,1,iuo) = Ekc(2,juo,1,iuo) + ee * cicj
               enddo
             enddo
           endif
-          BTest = ie/(MColl*BlockSize)
-          if (BTest*MColl*BlockSize.eq.ie) then
+          BTest = ie/(2*BlockSize)
+          if (BTest*2*BlockSize.eq.ie) then
             BNode = BNode + 1
             if (BNode .gt. Nodes-1) BNode = 0
           endif
@@ -381,50 +444,73 @@ C *********************************************************************
           kxij = kpoint(1,ik) * xij(1,ind) +
      .           kpoint(2,ik) * xij(2,ind) +
      .           kpoint(3,ik) * xij(3,ind)
+! JFR: the sign in the phase of H_ji is reflected in the DM
           kphs = cdexp(dcmplx(0.0_dp,-1.0_dp)*kxij)
-      
+     
+CC RC  
+C      In the JF's version D11, D22, etc are not time-reversal averaged
+C      I will leave as it is here but maybe it will need major revision
+ 
 !         Average k and -k solutions because time-reversal symetry
-          D11 = 0.5_dp * (Dkc(1,juo,1,iuo) * kphs
-     .        +    dconjg(Dkc(1,juo,1,iuo) * kphs))
+!          D11 = 0.5_dp * (Dkc(1,juo,1,iuo) * kphs
+!     .        +    dconjg(Dkc(1,juo,1,iuo) * kphs))
+!      
+!          D22 = 0.5_dp * (Dkc(2,juo,2,iuo) * kphs
+!     .        +    dconjg(Dkc(2,juo,2,iuo) * kphs))
+!          
+!          D12 = 0.5_dp * (Dkc(1,juo,2,iuo) * kphs
+!     .        +    dconjg(Dkc(2,juo,1,iuo) * kphs))
+!      
+!          D21 = 0.5_dp * (Dkc(2,juo,1,iuo) * kphs
+!     .        +    dconjg(Dkc(1,juo,2,iuo) * kphs))
+
+          D11 = Dkc(1,juo,1,iuo) * kphs
+          D22 = Dkc(2,juo,2,iuo) * kphs
+          D12 = Dkc(1,juo,2,iuo) * kphs
+          D21 = Dkc(2,juo,1,iuo) * kphs
+
       
-          D22 = 0.5_dp * (Dkc(2,juo,2,iuo) * kphs
-     .        +    dconjg(Dkc(2,juo,2,iuo) * kphs))
-          
-          D12 = 0.5_dp * (Dkc(1,juo,2,iuo) * kphs
-     .        +    dconjg(Dkc(2,juo,1,iuo) * kphs))
-      
-          D21 = 0.5_dp * (Dkc(2,juo,1,iuo) * kphs
-     .        +    dconjg(Dkc(1,juo,2,iuo) * kphs))
-      
+! Make DM Spin-box hermitian 
           D12 = 0.5_dp * (D12 + dconjg(D21))
           D21 = dconjg(D12)
-      
+
           Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
           Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
           Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
-          Dnew(ind,4) = Dnew(ind,4) + dimag(D12)
-      
+          Dnew(ind,4) = Dnew(ind,4) + dimag(D21)
+
+CC RC  
+C      In the JF's version D11, D22, etc are not time-reversal averaged
+C      I will leave as it is here but maybe it will need major revision
+
 !         Average k and -k solutions because time-reversal symetry
-          D11 = 0.5_dp * (Ekc(1,juo,1,iuo) * kphs
-     .        +    dconjg(Ekc(1,juo,1,iuo) * kphs))
-      
-          D22 = 0.5_dp * (Ekc(2,juo,2,iuo) * kphs
-     .        +    dconjg(Ekc(2,juo,2,iuo) * kphs))
-          
-          D12 = 0.5_dp * (Ekc(1,juo,2,iuo) * kphs
-     .        +    dconjg(Ekc(2,juo,1,iuo) * kphs))
-      
-          D21 = 0.5_dp * (Ekc(2,juo,1,iuo) * kphs
-     .        +    dconjg(Ekc(1,juo,2,iuo) * kphs))
-      
+!          D11 = 0.5_dp * (Ekc(1,juo,1,iuo) * kphs
+!     .        +    dconjg(Ekc(1,juo,1,iuo) * kphs))
+!      
+!          D22 = 0.5_dp * (Ekc(2,juo,2,iuo) * kphs
+!     .        +    dconjg(Ekc(2,juo,2,iuo) * kphs))
+!          
+!          D12 = 0.5_dp * (Ekc(1,juo,2,iuo) * kphs
+!     .        +    dconjg(Ekc(2,juo,1,iuo) * kphs))
+!      
+!          D21 = 0.5_dp * (Ekc(2,juo,1,iuo) * kphs
+!     .        +    dconjg(Ekc(1,juo,2,iuo) * kphs))
+
+          D11 = Ekc(1,juo,1,iuo) * kphs
+          D22 = Ekc(2,juo,2,iuo) * kphs
+          D12 = Ekc(1,juo,2,iuo) * kphs
+          D21 = Ekc(2,juo,1,iuo) * kphs
+
+     
+! Make DM Spin-box hermitian  
           D12 = 0.5_dp * (D12 + dconjg(D21))
           D21 = dconjg(D12)
-      
+
           Enew(ind,1) = Enew(ind,1) + dreal(D11)
           Enew(ind,2) = Enew(ind,2) + dreal(D22)
           Enew(ind,3) = Enew(ind,3) + dreal(D12) 
-          Enew(ind,4) = Enew(ind,4) + dimag(D12) 
-      
+          Enew(ind,4) = Enew(ind,4) + dimag(D21) 
+
         enddo
         enddo
       enddo
@@ -432,15 +518,15 @@ C *********************************************************************
  1001 continue
       
 !     deallocate the arrays
-      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      call memory('D','Z',2*nuotot*2*nuo,'diag2k')
       deallocate(Haux)
-      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      call memory('D','Z',2*nuotot*2*nuo,'diag2k')
       deallocate(Saux)
-      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      call memory('D','Z',2*nuotot*2*nuo,'diag2k')
       deallocate(Dkc)
-      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      call memory('D','Z',2*nuotot*2*nuo,'diag2k')
       deallocate(Ekc)
-      call memory('D','Z',MColl*MColl*nuotot,'diag2k')
+      call memory('D','Z',2*2*nuotot,'diag2k')
       deallocate(caux)
       
 !        write(160+node,*)'ITERATION'

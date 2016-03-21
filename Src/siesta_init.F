@@ -252,7 +252,7 @@
       call re_alloc( fa, 1, 3, 1, na_u, 'fa', 'siesta_init' )
       call re_alloc( cfa, 1, 3, 1, na_u, 'cfa', 'siesta_init' )
 
-      call init_spin( )
+      call init_spin( ucell )
 
 !     Read simulation data
       call read_options( na_u, ns, nspin )
@@ -278,20 +278,17 @@
 
 ! Calculate spin populations for fixed spin case...
       if (fixspin) then
-        if (nspin .ne. 2)
+        if (.not.SPpol)
      &    call die( 'siesta: ERROR: ' //
      &              'You can only fix the spin of the system' //
      &              ' for collinear spin polarized calculations.' )
-        do i = 1,2
-          qs(i) = (qtot + (3-2*i)*ts) / 2.0_dp
-        enddo
+        qs(1) = (qtot + ts) / 2.0_dp
+        qs(2) = (qtot - ts) / 2.0_dp
       else
-        qs(1:nspin) = 0.0_dp
-        if (nspin .le. 2) then
-          do ispin = 1,nspin
-            qs(ispin) = qtot/nspin
-          enddo
-        endif
+        qs(1:spinor_dim) = 0.0_dp
+        do ispin = 1,spinor_dim
+           qs(ispin) = qtot/spinor_dim
+        end do
       endif
 
 !     Find maximum interaction range
@@ -326,9 +323,9 @@
 !     Check number of eigenstates - cannot be larger than number of
 !     basis functions or smaller than number of occupied states + 1
 !     so that the Fermi level can be estimated
-      do is = 1,nspin
-        neigmin = nint(qs(is)/real(3 - min(nspin,2), kind=dp)) + 1
-        neigwanted = max(neigwanted,neigmin)
+      do is = 1 , spinor_dim
+         neigmin = nint(qs(is)/real(3 - spinor_dim, dp)) + 1
+         neigwanted = max(neigwanted,neigmin)
       enddo
       neigwanted = min(neigwanted,no_u)
 
@@ -351,8 +348,10 @@
 #endif
 
       nullify(eo,qo)
-      call re_alloc(eo, 1, no_u, 1, nspin, 1, maxk, 'eo', 'siesta_init')
-      call re_alloc(qo, 1, no_u, 1, nspin, 1, maxk, 'qo', 'siesta_init')
+      call re_alloc(eo, 1, no_u, 1, spinor_dim, 1, maxk, 'eo', 
+     &              'siesta_init')
+      call re_alloc(qo, 1, no_u, 1, spinor_dim, 1, maxk, 'qo', 
+     &              'siesta_init')
 
       call setup_bands( )
       gamma = gamma .and. gamma_bands

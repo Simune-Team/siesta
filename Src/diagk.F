@@ -5,7 +5,7 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
-      subroutine diagk( nspin, nuo, no, maxspn, maxnh, maxnd, 
+      subroutine diagk( h_spin_dim, nuo, no, maxspn, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, listdptr, 
      .                  listd, H, S, getD, getPSI, fixspin, qtot, qs, 
      .                  temp, e1, e2, xij, indxuo, nk, kpoint, wk,
@@ -19,7 +19,7 @@ C eigenvector, for given Hamiltonian and Overlap matrices (including
 C spin polarization). K-sampling version.
 C Writen by J.Soler, August 1998.
 C **************************** INPUT **********************************
-C integer nspin               : Number of spin components (1 or 2)
+C integer maxspn=spinor_dim   : # of spin components of eo and qo, qs, efs
 C integer nuo                 : Number of basis orbitals in unit cell
 C                               local to this processor
 C integer no                  : Number of basis orbitals in supercell
@@ -39,7 +39,7 @@ C integer listdptr(nuo)       : Pointer to each row (-1) of the
 C                               density matrix
 C integer listd(maxnd)        : Nonzero density-matrix element column 
 C                               indexes for each matrix row
-C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
+C real*8  H(maxnh,h_spin_dim) : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C logical getD                : Find occupations and density matrices?
 C logical getPSI              : Find and print wave functions?
@@ -61,14 +61,16 @@ C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
 C real*8  occtol              : Occupancy threshold for DM build
 C *************************** OUTPUT **********************************
-C real*8 eo(maxo,maxspn,nk)   : Eigenvalues
+C real*8 eo(maxo,spinor_dim,nk)   : Eigenvalues
 C ******************** OUTPUT (only if getD=.true.) *******************
-C real*8 qo(maxo,maxspn,nk)   : Occupations of eigenstates
-C real*8 Dnew(maxnd,nspin)    : Output Density Matrix
-C real*8 Enew(maxnd,nspin)    : Output Energy-Density Matrix
-C real*8 ef                   : Fermi energy
-C real*8 Entropy              : Electronic entropy
+C real*8 qo(maxo,spinor_dim,nk)    : Occupations of eigenstates
+C real*8 Dnew(maxnd,h_spin_dim): Output Density Matrix
+C real*8 Enew(maxnd,e_spin_dim): Output Energy-Density Matrix
+C real*8 ef                    : Fermi energy
+C real*8 Entropy               : Electronic entropy
 C *************************** AUXILIARY *******************************
+C integer h_spin_dim          : Number of spin components of H and D
+C integer e_spin_dim          : Number of spin components of E_dm  
 C real*8 Haux(2,nuotot,nuo) : Auxiliary space for the hamiltonian matrix
 C real*8 Saux(2,nuotot,nuo) : Auxiliary space for the overlap matrix
 C real*8 psi(2,nuotot,nuo)  : Auxiliary space for the eigenvectors
@@ -97,6 +99,7 @@ C
       use parallelsubs,  only : LocalToGlobalOrb
       use writewave,     only : writew
       use m_fermid,      only : fermid, fermispin, stepf
+      use m_spin,        only : spinor_dim, e_spin_dim
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -104,22 +107,25 @@ C
 
       implicit          none
 
+
 #ifdef MPI
       integer 
      .  MPIerror
 #endif
 
       integer           maxnd, maxnh, maxspn, maxo, nk, no,
-     .                  nspin, nuo, nuotot, iscf
+     .                  nuo, nuotot, iscf
+      integer           h_spin_dim ! CC RC Added
       integer           indxuo(no), listh(maxnh), numh(nuo),
      .                  listd(maxnd), numd(nuo), listhptr(nuo),
      .                  listdptr(nuo)
-      real(dp)          Dnew(maxnd,nspin), 
-     .                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
-     .                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
-     .                  kpoint(3,nk), qo(maxo,maxspn,nk), qtot, 
+      real(dp)          Dnew(maxnd,h_spin_dim), 
+     .                  e1, e2, ef, efs(spinor_dim),
+     .                  Enew(maxnd,e_spin_dim), Entropy, 
+     .                  eo(maxo,spinor_dim,nk), H(maxnh,h_spin_dim), 
+     .                  kpoint(3,nk), qo(maxo,spinor_dim,nk), qtot, 
      .                  S(maxnh), temp, wk(nk), occtol,
-     .                  xij(3,maxnh), qs(nspin)
+     .                  xij(3,maxnh), qs(spinor_dim)
       real(dp)          Dk(2,nuotot,nuo), Ek(2,nuotot,nuo),
      .                  Haux(2,nuotot,nuo), Saux(2,nuotot,nuo),
      .                  psi(2,nuotot,nuo), aux(2,nuotot*5)
@@ -137,6 +143,11 @@ C  Internal variables .............................................
       logical, allocatable :: done_juo(:)
 C  ....................
 
+      if (h_spin_dim /= spinor_dim) then
+         call die("Spin size mismatch in diagk")
+      endif
+
+
       allocate(done_juo(nuotot))
 
 C Skip eigenvalues if DM is not required and WF's are required ....
@@ -144,7 +155,7 @@ C Skip eigenvalues if DM is not required and WF's are required ....
 
 C Find eigenvalues ................................................
       do ik = 1,nk
-        do ispin = 1,nspin
+        do ispin = 1,spinor_dim
           call timer( 'c-eigval', 1 )
           call timer( 'c-buildHS', 1 )
           Saux = 0.0_dp
@@ -181,10 +192,10 @@ C Check if we are done ................................................
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
-        call fermispin( nspin, nspin, nk, wk, maxo, nuotot, eo,
-     .               temp, qs, qo, efs, Entropy )
+        call fermispin( spinor_dim, spinor_dim, nk, wk, maxo, nuotot, 
+     .                  eo, temp, qs, qo, efs, Entropy )
       else
-        call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, 
+        call fermid( spinor_dim, spinor_dim, nk, wk, maxo, nuotot, eo, 
      .             temp, qtot, qo, ef, Entropy )
       endif
 
@@ -195,11 +206,11 @@ C Find weights for local density of states ............................
 *       e2 = e2 - ef
         t = max( temp, 1.e-6_dp )
         do ik = 1,nk
-          do ispin = 1,nspin
+          do ispin = 1,spinor_dim
             do io = 1,nuotot
               qo(io,ispin,ik) = wk(ik) * 
      .             ( stepf((eo(io,ispin,ik)-e2)/t) -
-     .               stepf((eo(io,ispin,ik)-e1)/t)) * 2.0_dp/nspin
+     .               stepf((eo(io,ispin,ik)-e1)/t)) * 2.0_dp/spinor_dim
             enddo
           enddo
         enddo
@@ -208,8 +219,8 @@ C Find weights for local density of states ............................
 C New density and energy-density matrices of unit-cell orbitals .......
       if (nuo.gt.0) then
         nd = listdptr(nuo) + numd(nuo)
-        Dnew(1:nd,1:nspin) = 0.0_dp
-        Enew(1:nd,1:nspin) = 0.0_dp
+        Dnew(1:nd,1:h_spin_dim) = 0.0_dp
+        Enew(1:nd,1:e_spin_dim) = 0.0_dp
       endif
 
   10  continue
@@ -217,7 +228,7 @@ C New density and energy-density matrices of unit-cell orbitals .......
 C Loop over k points
       do ik = 1,nk
 
-        do ispin = 1,nspin
+        do ispin = 1,h_spin_dim
 C Find maximum eigenvector that is required for this k point and spin
 C Compute all eigenvectors if getPSI = .true.
 
@@ -402,4 +413,4 @@ C Global operation to form new density matrix
       end subroutine kludge_copy
 
 
-      end
+      end subroutine diagk

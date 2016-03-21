@@ -1,0 +1,1855 @@
+Siesta Version: siesta-trunk-479--so-ramon
+Architecture  : ifort_O-1018-2_serial
+Compiler flags: ifort    -w -O2 -mp
+PP flags      : -DGFORTRAN -DFC_HAVE_FLUSH -DFC_HAVE_ABORT           
+SERIAL version
+
+* Running in serial mode
+>> Start of run:   7-MAR-2016  15:45:53
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+SystemName              pt2
+SystemLabel             pt2
+NumberOfAtoms           2
+NumberOfSpecies         1
+%block Chemical_Species_label
+        1       78      Pt
+%endblock Chemical_Species_label
+PAO.EnergyShift  100 meV
+PAO.SplitNorm      0.15
+%Block PAO.Basis
+Pt  2
+n=6   0   2   P
+     0.0  0.0
+n=5   2   2
+     0.0  0.0
+%EndBlock PAO.Basis
+AtomicCoordinatesFormat NotScaledCartesianAng
+%block LatticeVectors
+     1.00      .00      .00
+      .00     1.00      .00
+      .00      .00     1.00
+%endblock LatticeVectors
+LatticeConstant  20.0 Ang
+%block AtomicCoordinatesAndAtomicSpecies
+   0.00000   0.00000    -1.19940   1
+   0.00000   0.00000     1.19940   1
+%endblock AtomicCoordinatesAndAtomicSpecies
+SpinPolarized           T
+NonCollinearSpin        T
+SpinOrbit               T
+#WriteOrbMom             F
+%block DM.InitSpin
+ 1  +1.   0.  0.
+ 2  +1.   0.  0.
+%endblock DM.InitSpin
+xc.functional           GGA
+xc.authors              PBE
+MeshCutoff              300. Ry
+SolutionMethod          diagon
+ElectronicTemperature   50 meV
+DM.Tolerance            1.0E-5
+MaxSCFIterations        1000
+DM.MixingWeight         0.003
+DM.NumberPulay          3
+DM.UseSaveDM            T
+DM.NumberKick           50
+#Diag.DivideAndConquer   F
+WriteMullikenPop       1
+WriteEigenvalues       T
+WriteForces            T
+WriteCoorStep          T
+#WriteCoorXmol          F
+#WriteMDXmol            F
+#%block ProjectedDensityOfStates
+#-20.00 10.00 0.200 500 eV
+#%endblock ProjectedDensityOfStates
+#MD.TypeOfRun    CG
+#MD.NumCGsteps   100
+#MD.MaxCGDispl   0.10 Ang
+#MD.MaxForceTol  0.01 eV/Ang
+#MD.UseSaveCG   .true.
+#MD.UseSaveXV   .true.
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: pt2
+reinit: -----------------------------------------------------------------------
+reinit: System Label: pt2                                                         
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+ Species number:            1  Label: Pt Atomic number:          78
+Ground state valence configuration:   6s01  5d09
+Reading pseudopotential information in formatted form from Pt.psf
+
+Pseudopotential generated from a relativistic atomic calculation
+There are spin-orbit pseudopotentials available
+Spin-orbit interaction is not included in this calculation
+
+Valence configuration for pseudopotential generation:
+6s( 1.00) rc: 2.24
+6p( 0.00) rc: 2.73
+5d( 9.00) rc: 1.24
+5f( 0.00) rc: 2.98
+For Pt, standard SIESTA heuristics set lmxkb to 3
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+ Warning: Empty PAO shell. l =           1
+ Will have a KB projector anyway...
+
+<basis_specs>
+===============================================================================
+Pt                   Z=  78    Mass=  195.08        Charge= 0.17977+309
+Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=6
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:   1.00000     1.00000    
+L=1  Nsemic=0  Cnfigmx=6
+L=2  Nsemic=0  Cnfigmx=5
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:   1.00000     1.00000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for Pt                    (Z =  78)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM 3.2.2 Troullier-Martins                       
+Total valence charge:   10.00000
+
+read_vps: Pseudopotential includes a core correction:
+read_vps: Pseudo-core for xc-correction
+
+xc_check: Exchange-correlation functional:
+xc_check: GGA Perdew, Burke & Ernzerhof 1996
+V l=0 = -2*Zval/r beyond r=  3.0596
+V l=1 = -2*Zval/r beyond r=  3.0596
+V l=2 = -2*Zval/r beyond r=  3.0596
+V l=3 = -2*Zval/r beyond r=  3.0981
+All V_l potentials equal beyond r=  2.9104
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  3.0981
+
+VLOCAL1: 99.0% of the norm of Vloc inside      5.125 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     11.679 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    3.51058
+atom: Maximum radius for r*vlocal+2*Zval:    3.09807
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+GHOST: No ghost state for L =  3
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  3.297886   el= -0.413885   Ekb=  4.454381   kbcos=  0.246717
+   l= 1   rc=  3.381373   el= -0.063071   Ekb=  1.998299   kbcos=  0.230762
+   l= 2   rc=  3.137044   el= -0.454162   Ekb= -5.116612   kbcos= -0.676172
+   l= 3   rc=  3.599455   el=  0.003169   Ekb= -0.935521   kbcos= -0.024370
+
+KBgen: Total number of  Kleinman-Bylander projectors:   16
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 6s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.007350 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    7.158402
+                 energy =   -0.407576
+                kinetic =    0.352573
+    potential(screened) =   -0.760148
+       potential(ionic) =   -7.385835
+
+   izeta = 2
+                 rmatch =    6.009165
+              splitnorm =    0.150000
+                 energy =   -0.341372
+                kinetic =    0.579404
+    potential(screened) =   -0.920777
+       potential(ionic) =   -8.017759
+
+SPLIT: Orbitals with angular momentum L= 2
+
+SPLIT: Basis orbitals for state 5d
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.007350 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    5.044431
+                 energy =   -0.446663
+                kinetic =    4.610144
+    potential(screened) =   -5.056807
+       potential(ionic) =  -13.997492
+
+   izeta = 2
+                 rmatch =    3.021582
+              splitnorm =    0.150000
+                 energy =   -0.194009
+                kinetic =    6.450170
+    potential(screened) =   -6.644179
+       potential(ionic) =  -16.245470
+
+POLgen: Perturbative polarization orbital with L=  1
+
+POLgen: Polarization orbital for state 6s
+
+   izeta = 1
+                     rc =    7.158402
+                 energy =   -0.090110
+                kinetic =    0.622430
+    potential(screened) =   -0.712540
+       potential(ionic) =   -6.949247
+atom: Total number of Sankey-type orbitals: 15
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 6s( 1.00)                                                            
+ 6p( 0.00)                                                            
+ 5d( 9.00)                                                            
+Vna: chval, zval:   10.00000  10.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   7.158402
+comcore: Pseudo-core radius Rcore=  4.130025
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1   78 Pt                      # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+Pt                    2                    # Species label, number of l-shells
+ n=6   0   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   7.158      6.009   
+   1.000      1.000   
+ n=5   2   2                         # n, l, Nzeta 
+   5.044      3.022   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                          (in Angstroms)
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000  -2.26654  1        1
+siesta:      0.00000   0.00000   2.26654  1        2
+
+siesta: System type = molecule  
+
+initatomlists: Number of atoms, orbitals, and projectors:      2    30    32
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+m_spin: SpOrb =  T
+redata: Non-magnetic run                =     F
+redata: SpinPolarized run                =     F
+redata: Non-Collinear-spin run           =     F
+redata: Spin-Orbit run                   =     T
+redata: Time-Reversal Symmetry           =     F
+redata: Number of spin components        =     4
+redata: Long output                      =     F
+redata: Number of Atomic Species         =        1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.              =     Atomic and Orbital charges
+redata: Mesh Cutoff                      =   300.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Min. number of SCF Iter          =        0
+redata: Max. number of SCF Iter          =     1000
+redata: Mix DM or H after convergence    =     F
+redata: Recompute H after scf cycle      =     F
+redata: Performing Pulay mixing using    =     3 iterations
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk?        =     F
+redata: Discard 1st Pulay DM after  kick =     F
+redata: New DM Mixing Weight             =     0.0030
+redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Kick with linear mixing every    =    50 iterations
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.000010
+redata: Require (free) Energy convergence in SCF =     F
+redata: DM (free)Energy tolerance for SCF =     0.000010 eV
+redata: Require Harris convergence for SCF =     F
+redata: DM Harris energy tolerance for SCF =     0.000010 eV
+redata: Using Saved Data (generic)   =     F
+redata: Use continuation files for DM    =     T
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            =     Diagonalization
+redata: Divide and Conquer               =     T
+redata: Electronic Temperature           =     0.0037  Ry
+redata: Fix the spin of the system       =     F
+redata: Dynamics option                  =     Single-point calculation
+redata: ***********************************************************************
+Total number of electrons:    20.000000
+Total ionic charge:    20.000000
+ Kpoints in:            1 . Kpoints trimmed:            1
+
+siesta: k-grid: Number of k-points =     1
+siesta: k-grid: Cutoff (effective) =    10.000 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
+siesta: k-grid:    0   0   1      0.000
+
+                     ====================================
+                        Single-point calculation
+                     ====================================
+
+outcoor: Atomic coordinates (Ang):                          
+    0.00000000    0.00000000   -1.19940000   1       1  Pt
+    0.00000000    0.00000000    1.19940000   1       2  Pt
+
+outcell: Unit cell vectors (Ang):
+       20.000000    0.000000    0.000000
+        0.000000   20.000000    0.000000
+        0.000000    0.000000   20.000000
+
+outcell: Cell vector modules (Ang)   :   20.000000   20.000000   20.000000
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :   8000.0000
+New_DM. Step:     1
+Initializing Density Matrix...
+New grid distribution:   1
+           1       1:  108    1:  108    1:  108
+
+InitMesh: MESH =   216 x   216 x   216 =    10077696
+InitMesh: (bp) =   108 x   108 x   108 =     1259712
+InitMesh: Mesh cutoff (required, used) =   300.000   322.366 Ry
+ExtMesh (bp) on 0 =   192 x   192 x   192 =     7077888
+PhiOnMesh: Number of (b)points on node 0 =              1259712
+PhiOnMesh: nlist on node 0 =               514193
+
+stepf: Fermi-Dirac step function
+           (SO)Ebs =  -7.08385308
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.44477409
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =       -96.381488
+siesta: Eions   =      1671.574203
+siesta: Ena     =        29.270177
+siesta: Ekin    =      1138.640958
+siesta: Enl     =      -579.234733
+siesta: Eso     =         0.000000
+siesta: DEna    =         0.000001
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Exc     =     -1717.521677
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2806.470985
+siesta: Etot    =     -2800.419478
+siesta: FreeEng =     -2800.478882
+
+siesta: iscf      Eharris(eV)         E_KS(eV)      FreeEng(eV)      dDmax      Ef(eV)
+   scf:    1     -2806.470985     -2800.419478     -2800.478882   0.648991   -3.069875
+timer: Routine,Calls,Time,% =    IterSCF     1      10.866  55.88
+           (SO)Ebs = -13.17923526
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.73396811
+   scf:    2     -2811.276287     -2801.290064     -2801.351406   0.880680   -6.929410
+           (SO)Ebs =  -9.57772085
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.20324198
+   scf:    3     -2804.843434     -2802.078164     -2802.132054   0.466681   -4.992359
+           (SO)Ebs =  -9.56077628
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.20291317
+   scf:    4     -2804.834829     -2802.074033     -2802.127755   0.464511   -4.979568
+           (SO)Ebs =  -9.65047510
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.20323620
+   scf:    5     -2804.888447     -2802.123256     -2802.177713   0.472882   -5.047723
+           (SO)Ebs =  -8.21063534
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.01261984
+   scf:    6     -2804.836007     -2804.664304     -2804.684194   0.060524   -3.988548
+           (SO)Ebs =  -8.25387162
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00512716
+   scf:    7     -2804.849053     -2804.779294     -2804.798755   0.070585   -4.020396
+           (SO)Ebs =  -8.22575084
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00009224
+   scf:    8     -2804.852334     -2804.851079     -2804.870334   0.069767   -3.999667
+           (SO)Ebs =  -8.22516089
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00165396
+   scf:    9     -2804.853200     -2804.875703     -2804.894860   0.069894   -3.998822
+           (SO)Ebs =  -8.26573028
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00782060
+   scf:   10     -2804.854668     -2804.961073     -2804.979734   0.071542   -4.024949
+           (SO)Ebs =  -8.27908060
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00759983
+   scf:   11     -2804.853157     -2804.956559     -2804.975179   0.071301   -4.033841
+           (SO)Ebs =  -8.36390690
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00112891
+   scf:   12     -2804.836939     -2804.821580     -2804.840576   0.066606   -4.091537
+           (SO)Ebs =  -8.36970352
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00263567
+   scf:   13     -2804.834200     -2804.798340     -2804.817440   0.065463   -4.095360
+           (SO)Ebs =  -8.35142827
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00701056
+   scf:   14     -2804.825289     -2804.729905     -2804.749342   0.060170   -4.081650
+           (SO)Ebs =  -8.33918268
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00645268
+   scf:   15     -2804.825225     -2804.737431     -2804.756830   0.059477   -4.072795
+           (SO)Ebs =  -8.30945875
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00169592
+   scf:   16     -2804.829531     -2804.806457     -2804.825525   0.059940   -4.051257
+           (SO)Ebs =  -8.30735877
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00047173
+   scf:   17     -2804.831306     -2804.837725     -2804.856648   0.060546   -4.049417
+           (SO)Ebs =  -8.33008116
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00361217
+   scf:   18     -2804.832915     -2804.882062     -2804.900760   0.061820   -4.064452
+           (SO)Ebs =  -8.34900621
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00303488
+   scf:   19     -2804.831162     -2804.872454     -2804.891187   0.061474   -4.077332
+           (SO)Ebs =  -8.39053852
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00143093
+   scf:   20     -2804.823781     -2804.804312     -2804.823393   0.058823   -4.105792
+           (SO)Ebs =  -8.39778813
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00373302
+   scf:   21     -2804.820155     -2804.769364     -2804.788644   0.057059   -4.110661
+           (SO)Ebs =  -8.38630441
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00591931
+   scf:   22     -2804.816265     -2804.735728     -2804.755205   0.054381   -4.102348
+           (SO)Ebs =  -8.37085459
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00507724
+   scf:   23     -2804.816630     -2804.747550     -2804.766958   0.053857   -4.091301
+           (SO)Ebs =  -8.34936913
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00162601
+   scf:   24     -2804.819742     -2804.797619     -2804.816749   0.054463   -4.075768
+           (SO)Ebs =  -8.34734684
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00106439
+   scf:   25     -2804.822013     -2804.836495     -2804.855422   0.055425   -4.073901
+           (SO)Ebs =  -8.36288230
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00292268
+   scf:   26     -2804.822901     -2804.862667     -2804.881459   0.056168   -4.084194
+           (SO)Ebs =  -8.38840322
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00196161
+   scf:   27     -2804.820650     -2804.847339     -2804.866225   0.055551   -4.101614
+           (SO)Ebs =  -8.41521932
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00102535
+   scf:   28     -2804.816086     -2804.802135     -2804.821302   0.053629   -4.120029
+           (SO)Ebs =  -8.42310926
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00395304
+   scf:   29     -2804.811888     -2804.758104     -2804.777551   0.051326   -4.125400
+           (SO)Ebs =  -8.41474849
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00519429
+   scf:   30     -2804.809777     -2804.739105     -2804.758676   0.049674   -4.119439
+           (SO)Ebs =  -8.39267520
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00391686
+   scf:   31     -2804.810530     -2804.757238     -2804.776695   0.049191   -4.103752
+           (SO)Ebs =  -8.37959039
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00169136
+   scf:   32     -2804.812448     -2804.789436     -2804.808697   0.049687   -4.094272
+           (SO)Ebs =  -8.37763815
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00173950
+   scf:   33     -2804.815240     -2804.838908     -2804.857890   0.050957   -4.092275
+           (SO)Ebs =  -8.38972413
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00288878
+   scf:   34     -2804.815653     -2804.854957     -2804.873855   0.051405   -4.100291
+           (SO)Ebs =  -8.41870508
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00168769
+   scf:   35     -2804.813167     -2804.836129     -2804.855167   0.050538   -4.120068
+           (SO)Ebs =  -8.44133680
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00099256
+   scf:   36     -2804.809403     -2804.795899     -2804.815217   0.048682   -4.135636
+           (SO)Ebs =  -8.44740587
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00359392
+   scf:   37     -2804.805960     -2804.757062     -2804.776653   0.046559   -4.139816
+           (SO)Ebs =  -8.43784187
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00464949
+   scf:   38     -2804.804301     -2804.741041     -2804.760747   0.045101   -4.133103
+           (SO)Ebs =  -8.41837816
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00345730
+   scf:   39     -2804.805082     -2804.758043     -2804.777634   0.044868   -4.119328
+           (SO)Ebs =  -8.40481950
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00109323
+   scf:   40     -2804.807087     -2804.792213     -2804.811580   0.045540   -4.109522
+           (SO)Ebs =  -8.40395689
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00156460
+   scf:   41     -2804.809137     -2804.830425     -2804.849560   0.046548   -4.108389
+           (SO)Ebs =  -8.41781113
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00265657
+   scf:   42     -2804.809460     -2804.845605     -2804.864665   0.046965   -4.117570
+           (SO)Ebs =  -8.44265723
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00148650
+   scf:   43     -2804.807377     -2804.827602     -2804.846805   0.046053   -4.134556
+           (SO)Ebs =  -8.46151927
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00075747
+   scf:   44     -2804.804386     -2804.794081     -2804.813545   0.044368   -4.147498
+           (SO)Ebs =  -8.46758856
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00407563
+   scf:   45     -2804.800372     -2804.744920     -2804.764758   0.041594   -4.151765
+           (SO)Ebs =  -8.46342348
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00445098
+   scf:   46     -2804.799685     -2804.739125     -2804.759013   0.040906   -4.148813
+           (SO)Ebs =  -8.42486214
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00164948
+   scf:   47     -2804.801126     -2804.778684     -2804.798305   0.040251   -4.121349
+           (SO)Ebs =  -8.42127056
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00072677
+   scf:   48     -2804.801712     -2804.791824     -2804.811362   0.040427   -4.118622
+           (SO)Ebs =  -8.42433132
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00459960
+   scf:   49     -2804.805083     -2804.867664     -2804.886739   0.042306   -4.119316
+           (SO)Ebs =  -8.42915995
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00479413
+   scf:   50     -2804.804897     -2804.870125     -2804.889196   0.042233   -4.122472
+Applying kick at iscf:   50
+Re-setting Pulay history
+           (SO)Ebs =  -8.54628391
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00305033
+   scf:   51     -2804.783777     -2804.825279     -2804.847892   0.026870   -4.187358
+           (SO)Ebs =  -8.54663950
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00304285
+   scf:   52     -2804.783755     -2804.825155     -2804.847763   0.026701   -4.187609
+           (SO)Ebs =  -8.60104372
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00160967
+   scf:   53     -2804.783118     -2804.805019     -2804.826878   0.010286   -4.226073
+           (SO)Ebs =  -8.60092716
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00158468
+   scf:   54     -2804.783121     -2804.804681     -2804.826540   0.010166   -4.225987
+           (SO)Ebs =  -8.58201907
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00008284
+   scf:   55     -2804.783061     -2804.781934     -2804.803887   0.001416   -4.212473
+           (SO)Ebs =  -8.58201899
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00009688
+   scf:   56     -2804.783063     -2804.781744     -2804.803697   0.001414   -4.212459
+           (SO)Ebs =  -8.58472875
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00013834
+   scf:   57     -2804.783069     -2804.781187     -2804.803123   0.001302   -4.214099
+           (SO)Ebs =  -8.58498620
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00013441
+   scf:   58     -2804.783068     -2804.781240     -2804.803174   0.001287   -4.214255
+           (SO)Ebs =  -8.58703842
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003199
+   scf:   59     -2804.783043     -2804.782608     -2804.804539   0.001151   -4.215487
+           (SO)Ebs =  -8.58706257
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00002449
+   scf:   60     -2804.783040     -2804.782707     -2804.804639   0.001177   -4.215494
+           (SO)Ebs =  -8.58575683
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00000249
+   scf:   61     -2804.783017     -2804.782983     -2804.804931   0.001144   -4.214595
+           (SO)Ebs =  -8.58563564
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00000633
+   scf:   62     -2804.783017     -2804.782930     -2804.804879   0.001115   -4.214511
+           (SO)Ebs =  -8.58479617
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00009478
+   scf:   63     -2804.783023     -2804.781733     -2804.803685   0.001107   -4.213909
+           (SO)Ebs =  -8.58488137
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00010121
+   scf:   64     -2804.783023     -2804.781646     -2804.803597   0.001103   -4.213955
+           (SO)Ebs =  -8.58672059
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00011687
+   scf:   65     -2804.783027     -2804.781437     -2804.803378   0.001021   -4.215068
+           (SO)Ebs =  -8.58692619
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00011245
+   scf:   66     -2804.783026     -2804.781496     -2804.803437   0.001008   -4.215192
+           (SO)Ebs =  -8.58811794
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003880
+   scf:   67     -2804.783010     -2804.782482     -2804.804424   0.000949   -4.215892
+           (SO)Ebs =  -8.58810753
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003424
+   scf:   68     -2804.783008     -2804.782542     -2804.804485   0.000962   -4.215878
+           (SO)Ebs =  -8.58698419
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00002575
+   scf:   69     -2804.782989     -2804.782639     -2804.804597   0.000882   -4.215083
+           (SO)Ebs =  -8.58683458
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003093
+   scf:   70     -2804.782988     -2804.782567     -2804.804527   0.000877   -4.214979
+           (SO)Ebs =  -8.58646013
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00007525
+   scf:   71     -2804.782991     -2804.781967     -2804.803929   0.000901   -4.214714
+           (SO)Ebs =  -8.58654714
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00008065
+   scf:   72     -2804.782991     -2804.781894     -2804.803856   0.000899   -4.214763
+           (SO)Ebs =  -8.58748643
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00008226
+   scf:   73     -2804.782992     -2804.781873     -2804.803832   0.000860   -4.215334
+           (SO)Ebs =  -8.58791810
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00007066
+   scf:   74     -2804.782990     -2804.782029     -2804.803987   0.000836   -4.215597
+           (SO)Ebs =  -8.58808224
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00005693
+   scf:   75     -2804.782987     -2804.782213     -2804.804172   0.000818   -4.215691
+           (SO)Ebs =  -8.58794944
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003892
+   scf:   76     -2804.782980     -2804.782451     -2804.804414   0.000808   -4.215586
+           (SO)Ebs =  -8.58788325
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003921
+   scf:   77     -2804.782979     -2804.782445     -2804.804410   0.000800   -4.215535
+           (SO)Ebs =  -8.58719064
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00007437
+   scf:   78     -2804.782968     -2804.781956     -2804.803934   0.000796   -4.214997
+           (SO)Ebs =  -8.58721373
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00007928
+   scf:   79     -2804.782968     -2804.781889     -2804.803867   0.000793   -4.215001
+           (SO)Ebs =  -8.58777566
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00009968
+   scf:   80     -2804.782968     -2804.781612     -2804.803590   0.000842   -4.215320
+           (SO)Ebs =  -8.58775003
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00009900
+   scf:   81     -2804.782967     -2804.781620     -2804.803599   0.000835   -4.215297
+           (SO)Ebs =  -8.58790361
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00011081
+   scf:   82     -2804.782954     -2804.781446     -2804.803432   0.000728   -4.215209
+           (SO)Ebs =  -8.58923310
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00016846
+   scf:   83     -2804.782966     -2804.780674     -2804.802639   0.000564   -4.215779
+           (SO)Ebs =  -8.58959285
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00018127
+   scf:   84     -2804.782968     -2804.780502     -2804.802464   0.000557   -4.215949
+           (SO)Ebs =  -8.58944530
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00017928
+   scf:   85     -2804.782967     -2804.780528     -2804.802490   0.000524   -4.215835
+           (SO)Ebs =  -8.58927505
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00017599
+   scf:   86     -2804.782966     -2804.780571     -2804.802535   0.000549   -4.215701
+           (SO)Ebs =  -8.59106587
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00005281
+   scf:   87     -2804.783009     -2804.782291     -2804.804205   0.000455   -4.216674
+           (SO)Ebs =  -8.59130449
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003682
+   scf:   88     -2804.783015     -2804.782514     -2804.804423   0.000429   -4.216803
+           (SO)Ebs =  -8.59151816
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00002663
+   scf:   89     -2804.783021     -2804.782659     -2804.804561   0.000214   -4.216926
+           (SO)Ebs =  -8.59150600
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00002849
+   scf:   90     -2804.783021     -2804.782634     -2804.804536   0.000223   -4.216922
+           (SO)Ebs =  -8.59147342
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003052
+   scf:   91     -2804.783021     -2804.782605     -2804.804508   0.000225   -4.216904
+           (SO)Ebs =  -8.59137898
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003580
+   scf:   92     -2804.783019     -2804.782532     -2804.804436   0.000225   -4.216849
+           (SO)Ebs =  -8.59135333
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003667
+   scf:   93     -2804.783019     -2804.782520     -2804.804424   0.000222   -4.216832
+           (SO)Ebs =  -8.59135604
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003555
+   scf:   94     -2804.783019     -2804.782536     -2804.804440   0.000216   -4.216830
+           (SO)Ebs =  -8.59142588
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003031
+   scf:   95     -2804.783021     -2804.782609     -2804.804511   0.000208   -4.216866
+           (SO)Ebs =  -8.59146400
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00002758
+   scf:   96     -2804.783022     -2804.782647     -2804.804548   0.000205   -4.216885
+           (SO)Ebs =  -8.59150688
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00002484
+   scf:   97     -2804.783024     -2804.782686     -2804.804585   0.000206   -4.216908
+           (SO)Ebs =  -8.59150077
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00002514
+   scf:   98     -2804.783024     -2804.782682     -2804.804581   0.000206   -4.216904
+           (SO)Ebs =  -8.59133034
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003482
+   scf:   99     -2804.783022     -2804.782549     -2804.804450   0.000214   -4.216807
+           (SO)Ebs =  -8.59131102
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00003582
+   scf:  100     -2804.783022     -2804.782535     -2804.804436   0.000215   -4.216796
+Applying kick at iscf:  100
+Re-setting Pulay history
+           (SO)Ebs =  -8.59128941
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001955
+   scf:  101     -2804.783045     -2804.782779     -2804.804659   0.000697   -4.216684
+           (SO)Ebs =  -8.59128790
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001948
+   scf:  102     -2804.783045     -2804.782779     -2804.804660   0.000651   -4.216683
+           (SO)Ebs =  -8.59126669
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001862
+   scf:  103     -2804.783044     -2804.782791     -2804.804671   0.000159   -4.216667
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128790
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001948
+   scf:  104     -2804.783045     -2804.782779     -2804.804660   0.000651   -4.216683
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128640
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001941
+   scf:  105     -2804.783044     -2804.782780     -2804.804661   0.000609   -4.216682
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126535
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001856
+   scf:  106     -2804.783044     -2804.782791     -2804.804671   0.000158   -4.216665
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128640
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001941
+   scf:  107     -2804.783044     -2804.782780     -2804.804661   0.000609   -4.216682
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128491
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001935
+   scf:  108     -2804.783044     -2804.782781     -2804.804661   0.000569   -4.216681
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126402
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001851
+   scf:  109     -2804.783044     -2804.782792     -2804.804672   0.000158   -4.216664
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128491
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001935
+   scf:  110     -2804.783044     -2804.782781     -2804.804661   0.000569   -4.216681
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128343
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001929
+   scf:  111     -2804.783044     -2804.782782     -2804.804662   0.000533   -4.216680
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126270
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001846
+   scf:  112     -2804.783044     -2804.782793     -2804.804673   0.000157   -4.216663
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128343
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001929
+   scf:  113     -2804.783044     -2804.782782     -2804.804662   0.000533   -4.216680
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128196
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001923
+   scf:  114     -2804.783044     -2804.782783     -2804.804663   0.000499   -4.216679
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126138
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001841
+   scf:  115     -2804.783044     -2804.782794     -2804.804673   0.000157   -4.216662
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128196
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001923
+   scf:  116     -2804.783044     -2804.782783     -2804.804663   0.000499   -4.216679
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128051
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001916
+   scf:  117     -2804.783044     -2804.782783     -2804.804664   0.000467   -4.216678
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126008
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001835
+   scf:  118     -2804.783044     -2804.782794     -2804.804674   0.000156   -4.216661
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59128051
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001916
+   scf:  119     -2804.783044     -2804.782783     -2804.804664   0.000467   -4.216678
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127907
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001910
+   scf:  120     -2804.783044     -2804.782784     -2804.804664   0.000438   -4.216676
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59125879
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001830
+   scf:  121     -2804.783044     -2804.782795     -2804.804675   0.000156   -4.216660
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127907
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001910
+   scf:  122     -2804.783044     -2804.782784     -2804.804664   0.000438   -4.216676
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127763
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001905
+   scf:  123     -2804.783044     -2804.782785     -2804.804665   0.000411   -4.216675
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59125750
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001825
+   scf:  124     -2804.783044     -2804.782796     -2804.804676   0.000155   -4.216659
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127763
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001905
+   scf:  125     -2804.783044     -2804.782785     -2804.804665   0.000411   -4.216675
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127621
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001899
+   scf:  126     -2804.783044     -2804.782786     -2804.804666   0.000385   -4.216674
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59125623
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001819
+   scf:  127     -2804.783044     -2804.782797     -2804.804676   0.000155   -4.216658
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127621
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001899
+   scf:  128     -2804.783044     -2804.782786     -2804.804666   0.000385   -4.216674
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127480
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001893
+   scf:  129     -2804.783044     -2804.782787     -2804.804667   0.000362   -4.216673
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59125496
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001814
+   scf:  130     -2804.783044     -2804.782797     -2804.804677   0.000154   -4.216657
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127480
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001893
+   scf:  131     -2804.783044     -2804.782787     -2804.804667   0.000362   -4.216673
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127340
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001887
+   scf:  132     -2804.783044     -2804.782787     -2804.804667   0.000340   -4.216672
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59125371
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001809
+   scf:  133     -2804.783044     -2804.782798     -2804.804678   0.000154   -4.216656
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127340
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001887
+   scf:  134     -2804.783044     -2804.782787     -2804.804667   0.000340   -4.216672
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127201
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001882
+   scf:  135     -2804.783044     -2804.782788     -2804.804668   0.000320   -4.216671
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59125246
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001804
+   scf:  136     -2804.783044     -2804.782799     -2804.804678   0.000153   -4.216655
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127201
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001882
+   scf:  137     -2804.783044     -2804.782788     -2804.804668   0.000320   -4.216671
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127063
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001876
+   scf:  138     -2804.783044     -2804.782789     -2804.804669   0.000301   -4.216670
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59125122
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001799
+   scf:  139     -2804.783044     -2804.782800     -2804.804679   0.000153   -4.216654
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59127063
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001876
+   scf:  140     -2804.783044     -2804.782789     -2804.804669   0.000301   -4.216670
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126926
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001871
+   scf:  141     -2804.783044     -2804.782790     -2804.804670   0.000283   -4.216668
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59124999
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001793
+   scf:  142     -2804.783044     -2804.782800     -2804.804680   0.000152   -4.216653
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126926
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001871
+   scf:  143     -2804.783044     -2804.782790     -2804.804670   0.000283   -4.216668
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126789
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001865
+   scf:  144     -2804.783044     -2804.782790     -2804.804670   0.000267   -4.216667
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59124877
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001788
+   scf:  145     -2804.783044     -2804.782801     -2804.804681   0.000152   -4.216652
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126789
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001865
+   scf:  146     -2804.783044     -2804.782790     -2804.804670   0.000267   -4.216667
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126654
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001860
+   scf:  147     -2804.783044     -2804.782791     -2804.804671   0.000252   -4.216666
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59124755
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001783
+   scf:  148     -2804.783044     -2804.782802     -2804.804681   0.000151   -4.216651
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126654
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001860
+   scf:  149     -2804.783044     -2804.782791     -2804.804671   0.000252   -4.216666
+Warning: unstable inversion in Pulayx - fallback to linear mixing
+           (SO)Ebs =  -8.59126520
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001854
+   scf:  150     -2804.783044     -2804.782792     -2804.804672   0.000238   -4.216665
+Applying kick at iscf:  150
+Re-setting Pulay history
+           (SO)Ebs =  -8.59104407
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001032
+   scf:  151     -2804.783058     -2804.782918     -2804.804794   0.002022   -4.216470
+           (SO)Ebs =  -8.59104422
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00001019
+   scf:  152     -2804.783057     -2804.782918     -2804.804794   0.001881   -4.216471
+           (SO)Ebs =  -8.59104709
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00000921
+   scf:  153     -2804.783049     -2804.782923     -2804.804799   0.000081   -4.216480
+           (SO)Ebs =  -8.59104670
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00000926
+   scf:  154     -2804.783049     -2804.782923     -2804.804798   0.000082   -4.216480
+           (SO)Ebs =  -8.59106695
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00000655
+   scf:  155     -2804.783051     -2804.782962     -2804.804835   0.000061   -4.216486
+           (SO)Ebs =  -8.59110769
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =  -0.00000094
+   scf:  156     -2804.783055     -2804.783042     -2804.804911   0.000038   -4.216496
+           (SO)Ebs =  -8.59111854
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000069
+   scf:  157     -2804.783056     -2804.783065     -2804.804934   0.000042   -4.216499
+           (SO)Ebs =  -8.59113102
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000123
+   scf:  158     -2804.783057     -2804.783073     -2804.804941   0.000047   -4.216506
+           (SO)Ebs =  -8.59112067
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000032
+   scf:  159     -2804.783056     -2804.783060     -2804.804929   0.000043   -4.216502
+           (SO)Ebs =  -8.59111893
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000020
+   scf:  160     -2804.783056     -2804.783058     -2804.804927   0.000042   -4.216501
+           (SO)Ebs =  -8.59111487
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000011
+   scf:  161     -2804.783056     -2804.783057     -2804.804926   0.000041   -4.216498
+           (SO)Ebs =  -8.59111461
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000022
+   scf:  162     -2804.783056     -2804.783059     -2804.804927   0.000042   -4.216498
+           (SO)Ebs =  -8.59111502
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000080
+   scf:  163     -2804.783056     -2804.783067     -2804.804935   0.000043   -4.216497
+           (SO)Ebs =  -8.59111463
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000091
+   scf:  164     -2804.783056     -2804.783069     -2804.804937   0.000043   -4.216496
+           (SO)Ebs =  -8.59111180
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000097
+   scf:  165     -2804.783056     -2804.783069     -2804.804937   0.000042   -4.216494
+           (SO)Ebs =  -8.59110967
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000083
+   scf:  166     -2804.783056     -2804.783067     -2804.804935   0.000041   -4.216493
+           (SO)Ebs =  -8.59110528
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000043
+   scf:  167     -2804.783056     -2804.783062     -2804.804930   0.000039   -4.216491
+           (SO)Ebs =  -8.59110349
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000028
+   scf:  168     -2804.783056     -2804.783059     -2804.804928   0.000038   -4.216490
+           (SO)Ebs =  -8.59110241
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000026
+   scf:  169     -2804.783056     -2804.783059     -2804.804928   0.000038   -4.216490
+           (SO)Ebs =  -8.59110268
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000044
+   scf:  170     -2804.783056     -2804.783062     -2804.804930   0.000039   -4.216489
+           (SO)Ebs =  -8.59110307
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000071
+   scf:  171     -2804.783056     -2804.783066     -2804.804934   0.000039   -4.216489
+           (SO)Ebs =  -8.59110262
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000090
+   scf:  172     -2804.783056     -2804.783068     -2804.804936   0.000039   -4.216488
+           (SO)Ebs =  -8.59110113
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000091
+   scf:  173     -2804.783056     -2804.783068     -2804.804937   0.000039   -4.216487
+           (SO)Ebs =  -8.59109722
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000065
+   scf:  174     -2804.783056     -2804.783065     -2804.804933   0.000037   -4.216485
+           (SO)Ebs =  -8.59109471
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000046
+   scf:  175     -2804.783056     -2804.783062     -2804.804930   0.000036   -4.216484
+           (SO)Ebs =  -8.59109163
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000022
+   scf:  176     -2804.783055     -2804.783058     -2804.804927   0.000035   -4.216482
+           (SO)Ebs =  -8.59109115
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000022
+   scf:  177     -2804.783055     -2804.783058     -2804.804927   0.000035   -4.216482
+           (SO)Ebs =  -8.59109191
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000056
+   scf:  178     -2804.783056     -2804.783063     -2804.804932   0.000036   -4.216482
+           (SO)Ebs =  -8.59109195
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000068
+   scf:  179     -2804.783056     -2804.783065     -2804.804934   0.000036   -4.216481
+           (SO)Ebs =  -8.59109062
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000097
+   scf:  180     -2804.783056     -2804.783069     -2804.804937   0.000036   -4.216480
+           (SO)Ebs =  -8.59108951
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000097
+   scf:  181     -2804.783056     -2804.783069     -2804.804937   0.000036   -4.216479
+           (SO)Ebs =  -8.59108264
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000057
+   scf:  182     -2804.783055     -2804.783063     -2804.804932   0.000033   -4.216475
+           (SO)Ebs =  -8.59108084
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000045
+   scf:  183     -2804.783055     -2804.783062     -2804.804930   0.000032   -4.216474
+           (SO)Ebs =  -8.59107655
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000018
+   scf:  184     -2804.783055     -2804.783058     -2804.804927   0.000031   -4.216472
+           (SO)Ebs =  -8.59107638
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000019
+   scf:  185     -2804.783055     -2804.783058     -2804.804927   0.000030   -4.216472
+           (SO)Ebs =  -8.59107802
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000060
+   scf:  186     -2804.783055     -2804.783064     -2804.804932   0.000032   -4.216472
+           (SO)Ebs =  -8.59107809
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000068
+   scf:  187     -2804.783055     -2804.783065     -2804.804933   0.000032   -4.216472
+           (SO)Ebs =  -8.59107664
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000093
+   scf:  188     -2804.783056     -2804.783068     -2804.804937   0.000031   -4.216470
+           (SO)Ebs =  -8.59107566
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000091
+   scf:  189     -2804.783056     -2804.783068     -2804.804937   0.000031   -4.216470
+           (SO)Ebs =  -8.59106950
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000055
+   scf:  190     -2804.783055     -2804.783063     -2804.804932   0.000028   -4.216466
+           (SO)Ebs =  -8.59106807
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000046
+   scf:  191     -2804.783055     -2804.783061     -2804.804931   0.000028   -4.216466
+           (SO)Ebs =  -8.59106573
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000029
+   scf:  192     -2804.783055     -2804.783059     -2804.804928   0.000027   -4.216465
+           (SO)Ebs =  -8.59106585
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000032
+   scf:  193     -2804.783055     -2804.783059     -2804.804929   0.000027   -4.216465
+           (SO)Ebs =  -8.59106788
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000058
+   scf:  194     -2804.783055     -2804.783063     -2804.804932   0.000028   -4.216465
+           (SO)Ebs =  -8.59106820
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000066
+   scf:  195     -2804.783055     -2804.783064     -2804.804933   0.000028   -4.216465
+           (SO)Ebs =  -8.59106763
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000079
+   scf:  196     -2804.783055     -2804.783066     -2804.804935   0.000028   -4.216464
+           (SO)Ebs =  -8.59106639
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000075
+   scf:  197     -2804.783055     -2804.783066     -2804.804934   0.000027   -4.216464
+           (SO)Ebs =  -8.59106261
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000054
+   scf:  198     -2804.783055     -2804.783062     -2804.804932   0.000026   -4.216462
+           (SO)Ebs =  -8.59106095
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000043
+   scf:  199     -2804.783055     -2804.783061     -2804.804930   0.000025   -4.216461
+           (SO)Ebs =  -8.59106005
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000035
+   scf:  200     -2804.783055     -2804.783060     -2804.804929   0.000025   -4.216460
+Applying kick at iscf:  200
+Re-setting Pulay history
+           (SO)Ebs =  -8.59101566
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000024
+   scf:  201     -2804.783054     -2804.783057     -2804.804928   0.000032   -4.216430
+           (SO)Ebs =  -8.59101586
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000024
+   scf:  202     -2804.783054     -2804.783057     -2804.804928   0.000030   -4.216430
+           (SO)Ebs =  -8.59101875
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F         900
+      Size Dscf/H =       7200      7200
+        (SO)DEharr =   0.00000023
+   scf:  203     -2804.783054     -2804.783057     -2804.804927   0.000009   -4.216432
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00000911
+SCF cycle converged after  203 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =            -2804.7831
+
+siesta: E_KS - E_eggbox =     -2804.7831
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.000000   -0.000000   -0.549449
+     2    0.000000    0.000000    0.549449
+----------------------------------------
+   Tot   -0.000000   -0.000000    0.000000
+----------------------------------------
+   Max    0.549449
+   Res    0.317225    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.549449    constrained
+
+Stress-tensor-Voigt (kbar):        0.00        0.00       -0.26       -0.00        0.00        0.00
+(Free)E + p*V (eV/cell)    -2804.3736
+Target enthalpy (eV/cell)    -2804.8049
+ 
+moments: Atomic and Orbital Populations and Magnetic Moments:
+
+Species: Pt                  
+
+Atom    Orb           Charge    sqrt(<S>^2)        <(Sx,Sy,Sz)>     sqrt(<L>^2)      <(Lx,Ly,Lz)>
+----------------------------------------------------------------------------------------------------
+   1    1  6s         1.0573                  -0.000 -0.000 -0.004               0.000  0.000  0.000
+   1    2  6s         0.1399                  -0.000  0.000  0.011               0.000  0.000  0.000
+   1    3  5dxy       1.7556                  -0.000 -0.000  0.109               0.000 -0.000  0.284
+   1    4  5dyz       1.7267                  -0.000 -0.000  0.112               0.000 -0.000  0.131
+   1    5  5dz2       1.7714                   0.000  0.000  0.003               0.000  0.000  0.000
+   1    6  5dxz       1.7267                   0.000  0.000  0.112               0.000  0.000  0.131
+   1    7  5dx2-y2    1.7557                  -0.000  0.000  0.109              -0.000  0.000  0.284
+   1    8  5dxy      -0.0108                  -0.000 -0.000  0.002               0.000  0.000 -0.000
+   1    9  5dyz       0.0031                  -0.000 -0.000  0.002               0.000  0.000 -0.000
+   1   10  5dz2       0.0213                  -0.000 -0.000  0.003               0.000  0.000  0.000
+   1   11  5dxz       0.0031                  -0.000 -0.000  0.002               0.000  0.000 -0.000
+   1   12  5dx2-y2   -0.0108                  -0.000 -0.000  0.002               0.000 -0.000 -0.000
+   1   13  6Ppy       0.0339                  -0.000 -0.000  0.003              -0.000  0.000  0.002
+   1   14  6Ppz      -0.0068                  -0.000 -0.000 -0.001              -0.000 -0.000  0.000
+   1   15  6Ppx       0.0339                   0.000  0.000  0.003               0.000 -0.000  0.002
+----------------------------------------------------------------------------------------------------
+   1      Total      10.0000         0.466    -0.000 -0.000  0.466       1.669   0.000 -0.000  1.669
+
+   2   16  6s         1.0573                  -0.000 -0.000 -0.004               0.000  0.000  0.000
+   2   17  6s         0.1399                   0.000  0.000  0.011               0.000  0.000  0.000
+   2   18  5dxy       1.7556                  -0.000 -0.000  0.109               0.000 -0.000  0.284
+   2   19  5dyz       1.7267                  -0.000 -0.000  0.112              -0.000 -0.000  0.131
+   2   20  5dz2       1.7714                   0.000  0.000  0.003               0.000  0.000  0.000
+   2   21  5dxz       1.7267                   0.000  0.000  0.112               0.000  0.000  0.131
+   2   22  5dx2-y2    1.7557                  -0.000  0.000  0.109              -0.000  0.000  0.284
+   2   23  5dxy      -0.0108                  -0.000  0.000  0.002               0.000 -0.000 -0.000
+   2   24  5dyz       0.0031                  -0.000 -0.000  0.002               0.000 -0.000 -0.000
+   2   25  5dz2       0.0213                  -0.000 -0.000  0.003               0.000  0.000  0.000
+   2   26  5dxz       0.0031                  -0.000 -0.000  0.002               0.000  0.000 -0.000
+   2   27  5dx2-y2   -0.0108                  -0.000 -0.000  0.002               0.000  0.000 -0.000
+   2   28  6Ppy       0.0339                  -0.000 -0.000  0.003               0.000  0.000  0.002
+   2   29  6Ppz      -0.0068                  -0.000 -0.000 -0.001               0.000 -0.000  0.000
+   2   30  6Ppx       0.0339                   0.000  0.000  0.003               0.000 -0.000  0.002
+----------------------------------------------------------------------------------------------------
+   2      Total      10.0000         0.466    -0.000 -0.000  0.466       1.669  -0.000 -0.000  1.669
+
+----------------------------------------------------------------------------------------------------
+Total      Total      20.0000         0.932    -0.000 -0.000  0.932       3.337   0.000 -0.000  3.337
+
+
+siesta: Eigenvalues (eV):
+ik =     1
+  -8.57  -8.36  -7.53  -7.03  -7.01  -6.69  -6.37  -5.85  -5.85  -5.65
+  -5.43  -5.16  -5.05  -4.98  -4.72  -4.66  -4.59  -4.53  -4.50  -4.37
+  -4.07  -3.94  -3.67  -3.34  -0.26   0.02   0.54   0.69   0.86   1.15
+   3.17   3.42   4.47   4.80   8.67   8.85   9.66   9.80  13.02  13.27
+  20.64  20.95  20.99  21.30  21.32  21.37  21.60  21.69  23.35  23.65
+  23.93  24.27  26.57  26.62  27.43  27.59  27.63  27.95  35.59  35.83
+siesta: Fermi energy =      -4.216432 eV
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =      -116.887683
+siesta: Eions   =      1671.574203
+siesta: Ena     =        29.270177
+siesta: Ekin    =      1096.657197
+siesta: Enl     =      -554.177094
+siesta: Eso     =        -1.534581
+siesta: DEna    =         5.680778
+siesta: DUscf   =         0.838706
+siesta: DUext   =         0.000000
+siesta: Exc     =     -1709.944034
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2804.783054
+siesta: Etot    =     -2804.783054
+siesta: FreeEng =     -2804.804924
+
+siesta: Final energy (eV):
+siesta:  Band Struct. =    -116.887683
+siesta:       Kinetic =    1096.657197
+siesta:       Hartree =    1575.314048
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =   -1709.944034
+siesta:  Ion-electron =   -3960.816839
+siesta:       Ion-ion =     195.541154
+siesta:       Ekinion =       0.000000
+siesta:         Total =   -2804.783054
+
+siesta: Atomic forces (eV/Ang):
+siesta:      1   -0.000000   -0.000000   -0.549449
+siesta:      2    0.000000    0.000000    0.549449
+siesta: ----------------------------------------
+siesta:    Tot   -0.000000   -0.000000    0.000000
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:     0.000000   -0.000000   -0.000000
+siesta:    -0.000000    0.000000    0.000000
+siesta:     0.000000    0.000000   -0.000162
+
+siesta: Cell volume =       8000.000000 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:           0.00000059         -0.00000001  Ry/Bohr**3
+siesta:           0.00005391         -0.00000101  eV/Ang**3
+siesta:           0.08637315         -0.00161529  kBar
+(Free)E+ p_basis*V_orbitals  =       -2803.090114
+(Free)Eharris+ p_basis*V_orbitals  =       -2803.090114
+ Calling spnvec: nspin, qspin =     4    10.93166     9.06834    -0.00000    -0.00000
+ Leaving spnvec: qaux,stot,svec=      20.0000      1.8633     -0.0000      0.0000      1.8633
+
+siesta: Total spin polarization (Qup-Qdown) =    1.863329
+siesta: Spin vector =   -0.000000    0.000000    1.863329
+
+siesta: Electric dipole (a.u.)  =    0.000000   -0.000000    0.000011
+siesta: Electric dipole (Debye) =    0.000000   -0.000000    0.000029
+
+timer: Elapsed wall time (sec) =    2166.934
+timer: CPU execution times (sec):
+
+Routine            Calls   Time/call    Tot.time        %
+siesta                 1    2165.582    2165.582   100.00
+Setup                  1       0.187       0.187     0.01
+bands                  1       0.000       0.000     0.00
+writewave              1       0.000       0.000     0.00
+KSV_init               1       0.000       0.000     0.00
+IterGeom               1    2165.393    2165.393    99.99
+state_init             1       0.589       0.589     0.03
+hsparse                1       0.000       0.000     0.00
+overlap                1       0.587       0.587     0.03
+Setup_H0               1       7.804       7.804     0.36
+naefs                  2       0.000       0.000     0.00
+MolMec                 2       0.000       0.000     0.00
+kinefsm                2       0.282       0.564     0.03
+nlefsm                 2       0.540       1.081     0.05
+spinorb                2       0.078       0.157     0.01
+DHSCF_Init             1       6.087       6.087     0.28
+DHSCF1                 1       0.416       0.416     0.02
+INITMESH               1       0.000       0.000     0.00
+DHSCF2                 1       5.670       5.670     0.26
+REMESH                 1       0.081       0.081     0.00
+REORD               1652       0.090     148.415     6.85
+PHION                  1       1.177       1.177     0.05
+COMM_BSC            1638       0.090     147.635     6.82
+POISON               205       3.430     703.151    32.47
+fft                  410       1.282     525.814    24.28
+IterSCF              203      10.559    2143.442    98.98
+setup_H              203      10.552    2142.138    98.92
+DHSCF                204      10.560    2154.290    99.48
+DHSCF3               204      10.542    2150.649    99.31
+rhoofd               204       0.516     105.202     4.86
+cellXC               204       3.103     632.950    29.23
+vmat                 204       0.500     102.078     4.71
+compute_dm           203       0.004       0.779     0.04
+diagon               203       0.004       0.732     0.03
+cdiag                203       0.003       0.549     0.03
+cdiag1               203       0.000       0.028     0.00
+cdiag2               203       0.000       0.084     0.00
+cdiag3               203       0.002       0.387     0.02
+cdiag4               203       0.000       0.044     0.00
+MIXER                202       0.001       0.105     0.00
+WriteDM              203       0.002       0.392     0.02
+PostSCF                1      13.553      13.553     0.63
+DHSCF4                 1       3.641       3.641     0.17
+dfscf                  1       2.087       2.087     0.10
+overfsm                1       0.001       0.001     0.00
+state_analysis         1       0.002       0.002     0.00
+siesta_move            1       0.000       0.000     0.00
+optical                1       0.000       0.000     0.00
+  
+>> End of run:   7-MAR-2016  16:22:00

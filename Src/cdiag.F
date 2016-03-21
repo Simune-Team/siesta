@@ -50,7 +50,12 @@ C
 !
       use parallel,   only : BlockSize_orbs => BlockSize
       use m_spin,     only : Mcoll              ! Mixed spins?
-!
+
+      use m_diagon_opt,only : saveeigenvectors, maxclustersize, serial,
+     &                       i2d_ctxt, noexpert, divideconquer, use2d,
+     &                       prerotate, ictxt, allinone, doread,
+     &                       firstcall
+
       use diagmemory, only : MemoryFactor
 #ifdef MPI
       use mpi_siesta, only : mpi_bcast, mpi_logical, mpi_comm_world
@@ -82,10 +87,8 @@ C Local variables
       integer                 :: iacol
       integer                 :: iarow
       integer                 :: iceil
-      integer,           save :: ictxt
       integer                 :: indxg2p
       integer                 :: lwork2
-      integer,           save :: maxclustersize = 12
       integer                 :: mq0
       integer                 :: mycol
       integer                 :: myrow
@@ -111,7 +114,6 @@ C Local variables
 C Additional variables for a 2D proc grid
       integer                 :: np2d_row, np2d_col
       integer                 :: my2d_row, my2d_col
-      integer,           save :: i2d_ctxt
       integer, dimension(9)   :: desc_h2d
       
 C Matrices for 2D
@@ -130,15 +132,6 @@ C Matrices for 2D
       integer                 :: neigok
       integer,  pointer, save :: ifail(:)
       integer,  pointer, save :: iwork(:)
-      logical,           save :: AllInOne = .false.
-      logical,           save :: DivideConquer = .true.
-      logical,           save :: DoRead = .true.
-      logical,           save :: FirstCall = .true.
-      logical,           save :: NoExpert = .false.
-      logical,           save :: PreRotate = .false.
-      logical,           save :: SaveEigenvectors = .false.
-      logical,           save :: Use2D = .true.
-      logical,           save :: Serial = .true.
       logical                 :: ChangeAlgorithm
       real(dp)                :: abstol
       real(dp)                :: orfac

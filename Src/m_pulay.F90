@@ -7,6 +7,7 @@
 ! ---
 module m_pulay
   use precision, only: dp
+  use m_spin,    only: h_spin_dim, SpOrb
   !
   implicit none
   !
@@ -45,7 +46,8 @@ CONTAINS
     if (maxsav .le. 0) then
        ! No need for auxiliary arrays
     else
-       nauxpul = sum(numh(1:no_l)) * nspin * maxsav
+! CC RC changed nspin by h_spin_dim
+       nauxpul = sum(numh(1:no_l)) * h_spin_dim * maxsav
        !
        call re_alloc(auxpul,1,nauxpul,1,2,name="auxpul",        &
             routine="pulay")
@@ -348,14 +350,31 @@ CONTAINS
        ! B(i,i) = dot_product(Res(i)*Res(i))
        b(i,i) = 0.0_dp
        ssum=0.0_dp
-       do is=1,nspin
-          do ii=1,no_l
-             do jj=1,numd(ii)
-                ind = listdptr(ii) + jj
-                ssum=ssum+dmnew(ind,is)*dmnew(ind,is)
-             enddo
+! CC RC Added for on-site SO
+       if ( .not. SpOrb ) then
+        do is=1,nspin
+         do ii=1,no_l
+          do jj=1,numd(ii)
+           ind = listdptr(ii) + jj
+           ssum=ssum+dmnew(ind,is)*dmnew(ind,is)
           enddo
-       enddo
+         enddo
+        enddo
+       elseif ( SpOrb ) then
+        do ii=1,no_l
+         do jj=1,numd(ii)
+          ind = listdptr(ii) + jj
+          ssum=ssum+dmnew(ind,1)*dmnew(ind,1)
+          ssum=ssum+dmnew(ind,2)*dmnew(ind,2)
+          ssum=ssum+  &
+          0.5*(dmnew(ind,3)*dmnew(ind,3)+dmnew(ind,7)*dmnew(ind,7))
+          ssum=ssum+  &
+          0.5*(dmnew(ind,4)*dmnew(ind,4)+dmnew(ind,8)*dmnew(ind,8))
+         enddo
+        enddo
+       endif
+! CC RC
+
        b(i,i)=ssum
        !
        do j=1,i-1
@@ -375,14 +394,30 @@ CONTAINS
 
           b(i,j)=0.0_dp
           ssum=0.0_dp
-          do is=1,nspin
-             do ii=1,no_l
-                do jj=1,numd(ii)
-                   ind = listdptr(ii) + jj
-                   ssum=ssum+dmold(ind,is)*dmnew(ind,is)
-                enddo
+! CC RC Added for on-site SO
+          if ( .not. SpOrb ) then
+           do is=1,nspin
+            do ii=1,no_l
+             do jj=1,numd(ii)
+              ind = listdptr(ii) + jj
+              ssum=ssum+dmold(ind,is)*dmnew(ind,is)
              enddo
-          enddo
+            enddo
+           enddo
+          elseif ( SpOrb ) then
+           do ii=1,no_l
+            do jj=1,numd(ii)
+             ind = listdptr(ii) + jj
+             ssum=ssum+dmold(ind,1)*dmnew(ind,1)
+             ssum=ssum+dmold(ind,2)*dmnew(ind,2)
+             ssum=ssum+  &
+             0.5*(dmnew(ind,3)*dmold(ind,3)+dmold(ind,7)*dmnew(ind,7))
+             ssum=ssum+  &
+             0.5*(dmnew(ind,4)*dmold(ind,4)+dmold(ind,8)*dmnew(ind,8))
+            enddo
+           enddo
+          endif
+! CC RC
           b(i,j)=ssum
           b(j,i)=ssum
        enddo
