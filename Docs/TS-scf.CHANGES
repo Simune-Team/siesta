@@ -1,4 +1,11 @@
 ----------------------------------------------------
+March 23, 2016 -- Nick Papior          trunk-492---ts-scf-659
+Removed possibility of performing calculations with kT < 10 K
+
+modified:
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 March 15, 2016 -- Nick Papior          trunk-492---ts-scf-658
 Added energy denotion of the scattering projection
 

@@ -274,7 +274,11 @@ contains
     if ( onlyS .or. .not. TSmode ) return
 
     ts_kT = fdf_get('TS.ElectronicTemperature',kT,'Ry')
-
+    if ( ts_kT / Kelvin < 10._dp ) then
+       call die('transiesta electronic temperature *must* &
+            &be larger than 10 kT')
+    end if
+    
     ! The sign can not be chosen from this (several mu, where to define it)
     Volt   = fdf_get('TS.Voltage',0._dp,'Ry') 
     ! Voltage situation is above 0.01 mV
@@ -293,6 +297,14 @@ contains
           call die('Could not find chemical potential: ' &
                //trim(name(mus(i))))
        end if
+       
+       ! We do not allow the electronic temperature
+       ! to be below 10 kT
+       if ( mus(i)%kT / Kelvin < 10._dp ) then
+          call die('transiesta electronic temperature *must* &
+               &be larger than 10 kT')
+       end if
+       
     end do
 
     ! We consider 10 Kelvin to be the minimum allowed
