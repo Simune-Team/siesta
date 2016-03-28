@@ -1,4 +1,14 @@
 ----------------------------------------------------
+March 28, 2016 -- Nick Papior          trunk-492---ts-scf-660
+bug: fixed buffer for allgather in m_os
+
+* The AllGather had a bug which may yield errors
+  in certain MPI implementations (MPICH).
+
+modified:
+  Src/m_os.F90
+
+----------------------------------------------------
 March 23, 2016 -- Nick Papior          trunk-492---ts-scf-659
 Removed possibility of performing calculations with kT < 10 K
 

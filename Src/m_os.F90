@@ -53,8 +53,7 @@ contains
         call MPI_Comm_Rank( Com, Node , MPIerror )
         Node = Node + 1
         allocate( nexist(Nodes) )
-        nexist(Node) = exist
-        call MPI_AllGather(nexist(Node), 1, MPI_Logical, &
+        call MPI_AllGather(exist, 1, MPI_Logical, &
              nexist(1), 1, MPI_Logical, Com, MPIerror )
         ! I do not know whether my compiler is buggy,
         ! but just this line will now compile,
@@ -140,8 +139,7 @@ contains
         call MPI_Comm_Rank( Com, Node , MPIerror )
         Node = Node + 1
         allocate( nexist(Nodes) )
-        nexist(Node) = exist
-        call MPI_AllGather(nexist(Node), 1, MPI_Logical, &
+        call MPI_AllGather(exist, 1, MPI_Logical, &
              nexist(1), 1, MPI_Logical, Com, MPIerror )
         ! I do not know whether my compiler is buggy,
         ! but just this line will now compile,
