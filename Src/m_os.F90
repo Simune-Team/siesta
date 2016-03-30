@@ -5,7 +5,7 @@ module m_os
 
 #ifdef MPI
   use mpi_siesta, only : MPI_Bcast, MPI_Comm_World, MPI_Logical
-  use mpi_siesta, only : MPI_AllGather, MPI_Comm_Rank, MPI_Comm_Size
+  use mpi_siesta, only : MPI_AllReduce, MPI_LAnd
 #endif
   
   implicit none
@@ -26,8 +26,8 @@ contains
     logical :: exist
     
 #ifdef MPI
-    logical, allocatable :: nexist(:)
-    integer :: MPIerror, Com, Node, Nodes
+    logical :: all_exist
+    integer :: MPIerror, Com
 #endif
 
     ! Now we have all required information
@@ -49,21 +49,10 @@ contains
 
      if ( all ) then
 
-        call MPI_Comm_Size( Com, Nodes, MPIerror )
-        call MPI_Comm_Rank( Com, Node , MPIerror )
-        Node = Node + 1
-        allocate( nexist(Nodes) )
-        call MPI_AllGather(exist, 1, MPI_Logical, &
-             nexist(1), 1, MPI_Logical, Com, MPIerror )
-        ! I do not know whether my compiler is buggy,
-        ! but just this line will now compile,
-        ! which it really should:
-        !    exist = all( nexist(:) )
-        exist = nexist(1)
-        do Node = 2 , Nodes
-           exist = exist .and. nexist(Node)
-        end do
-        deallocate(nexist)
+        call MPI_AllReduce(exist, all_exist, 1, MPI_Logical, &
+             MPI_LAnd, Com, MPIerror )
+        
+        exist = all_exist
         
      end if
 
@@ -83,8 +72,8 @@ contains
     
     integer :: ldir
 #ifdef MPI
-    logical, allocatable :: nexist(:)
-    integer :: MPIerror, Com, Node, Nodes
+    logical :: all_exist
+    integer :: MPIerror, Com
 #endif
 
     ! A directory of length 0 is the "top" directory,
@@ -135,22 +124,11 @@ contains
 
      if ( all ) then
 
-        call MPI_Comm_Size( Com, Nodes, MPIerror )
-        call MPI_Comm_Rank( Com, Node , MPIerror )
-        Node = Node + 1
-        allocate( nexist(Nodes) )
-        call MPI_AllGather(exist, 1, MPI_Logical, &
-             nexist(1), 1, MPI_Logical, Com, MPIerror )
-        ! I do not know whether my compiler is buggy,
-        ! but just this line will now compile,
-        ! which it really should:
-        !    exist = all( nexist(:) )
-        exist = nexist(1)
-        do Node = 2 , Nodes
-           exist = exist .and. nexist(Node)
-        end do
-        deallocate(nexist)
+        call MPI_AllReduce(exist, all_exist, 1, MPI_Logical, &
+             MPI_LAnd, Com, MPIerror )
         
+        exist = all_exist
+
      end if
 
     end if

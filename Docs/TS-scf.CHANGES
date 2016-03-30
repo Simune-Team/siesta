@@ -1,4 +1,11 @@
 ----------------------------------------------------
+March 30, 2016 -- Nick Papior          trunk-492---ts-scf-662
+enh: changed AllGather to AllReduce (MPI_LAnd)
+
+modified:
+  Src/m_os.F90
+
+----------------------------------------------------
 March 30, 2016 -- Nick Papior          trunk-492---ts-scf-661
 bug: fixed DOS for phtrans bulk electrodes
 
