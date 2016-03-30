@@ -1518,11 +1518,11 @@ contains
           ! Get bulk-transmission
           call ncdf_get_var(grp,'T',r2)
           if ( nkpt > 1 ) then
-             call name_save(ispin,nspin,ascii_file,end='TRANS',El1=Elecs(iEl))
+             call name_save(ispin,nspin,ascii_file,end='BTRANS',El1=Elecs(iEl))
              call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'T',&
                   '# Bulk transmission, k-resolved')
           end if
-          call name_save(ispin,nspin,ascii_file,end='AVTRANS',El1=Elecs(iEl))
+          call name_save(ispin,nspin,ascii_file,end='AVBTRANS',El1=Elecs(iEl))
           call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'T', &
                '# Bulk transmission, k-averaged')
 
@@ -1538,11 +1538,11 @@ contains
 !$OMP end parallel workshare
           
           if ( nkpt > 1 ) then
-             call name_save(ispin,nspin,ascii_file,end='DOS',El1=Elecs(iEl))
+             call name_save(ispin,nspin,ascii_file,end='BDOS',El1=Elecs(iEl))
              call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,no_e,r3,'DOS',&
                   '# Bulk DOS, k-resolved')
           end if
-          call name_save(ispin,nspin,ascii_file,end='AVDOS',El1=Elecs(iEl))
+          call name_save(ispin,nspin,ascii_file,end='AVBDOS',El1=Elecs(iEl))
           call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,no_e,r3,'DOS', &
                '# Bulk DOS, k-averaged')
 
@@ -2103,7 +2103,7 @@ contains
 
        do iEl = 1 , N_Elec
 
-          call name_save(ispin,nspin,ascii_file,end='DOS',El1=Elecs(iEl))
+          call name_save(ispin,nspin,ascii_file,end='BDOS',El1=Elecs(iEl))
 
           call io_assign(iu)
           open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
@@ -2115,7 +2115,7 @@ contains
           
           cu = cu + 1
 
-          call name_save(ispin,nspin,ascii_file,end='TRANS',El1=Elecs(iEl))
+          call name_save(ispin,nspin,ascii_file,end='BTRANS',El1=Elecs(iEl))
 
           call io_assign(iu)
           open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 

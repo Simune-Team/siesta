@@ -621,6 +621,9 @@ contains
           if ( present(DOS) ) then
              call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &
                   nzwork, zwork, DOS(:,i) , T(i) )
+#ifdef TBT_PHONON
+             DOS(:,i) = DOS(:,i) * real(cE%e,dp)
+#endif
           else
              call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &
                   nzwork, zwork)

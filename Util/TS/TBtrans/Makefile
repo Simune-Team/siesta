@@ -261,7 +261,7 @@ phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) 
 .PHONY: clean-tbt
 clean-tbt:
 	@echo "==> Cleaning tb/ph-trans only object, and executable files"
-	-rm -f m_ts_chem_pot.o m_ts_elec_se.o m_ts_gf.o
+	-rm -f m_ts_chem_pot.o m_ts_elec_se.o m_ts_electype.o m_ts_gf.o
 	-rm -f tbtrans phtrans $(TBTOBJS)
 	-rm -f .phtrans .tbtrans
 

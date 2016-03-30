@@ -1,4 +1,27 @@
 ----------------------------------------------------
+March 30, 2016 -- Nick Papior          trunk-492---ts-scf-661
+bug: fixed DOS for phtrans bulk electrodes
+
+* Fixed DOS calculation of phtrans bulk electrodes
+
+* Bulk DOS are now saved in the BDOS files for
+  easier distinguishing.
+  Consistently the bulk transmission is saved in
+  BTRANS.
+
+* tbt_data.py distinguishes between TBT and PHT
+  files by looking at the source tag in the NetCDF
+  file.
+
+* Fixed clean-tbt target in TBtrans directory
+
+modified:
+  Src/m_ts_gf.F90
+  Util/TS/TB/tbt_data.py
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 March 28, 2016 -- Nick Papior          trunk-492---ts-scf-660
 bug: fixed buffer for allgather in m_os
 

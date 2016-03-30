@@ -63,6 +63,10 @@ class TBTFile(object):
         """ Returns the creation date of the NetCDF file """
         return self.nc.date
 
+    def source(self):
+        """ Returns source of the NetCDF file """
+        return self.nc.source
+
     @property
     def cell(self):
         """ Returns the unit cell """
@@ -507,6 +511,12 @@ def main():
         Tf = TBTFile(args.netcdf)
         process = process_tbt
 
+    # Set the separation variable
+    if Tf.source() == 'PHtrans':
+        args.sh = 'PHT'
+    else:
+        args.sh = 'TBT'
+
     # Generate file-object
     print('Datafile '+args.netcdf+' created on: '+Tf.date())
 
@@ -629,7 +639,7 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
             except: 
                 ADOS = None
 
-            fname = args.prefix+'.TBT.DOS.'+LHS
+            fname = '.'.join([args.prefix,args.sh,'DOS',LHS])
             save_txt(fname,E,ADOS=ADOS, fmt = args.fmt, kpt=args.kpt)
 
             for RHS, T in Tf.iter_T(mol,proj,El,k_avg=k_idx):
@@ -637,7 +647,7 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
                 RHS = RHS[:-2]
                 # As this will produce a lot of file names
                 # we help the user by printing out the filename:
-                fname = args.prefix+'.TBT.'+LHS+'_'+RHS+'.'+args.suffix
+                fname = '.'.join([args.prefix,args.sh,LHS+'_'+RHS,args.suffix])
                 print('Saving transmission data in: '+fname)
                 save_txt(fname,E,T=T,ADOS=ADOS,fmt = args.fmt, kpt=args.kpt)
 
@@ -646,7 +656,7 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
                 RHS = RHS[:-6]
                 # As this will produce a lot of file names
                 # we help the user by printing out the filename:
-                fname = args.prefix+'.TBT.'+LHS+'_'+RHS+'.'+args.suffix.replace('TRANS','TEIG')
+                fname = '.'.join([args.prefix,args.sh,LHS+'_'+RHS,args.suffix.replace('TRANS','TEIG')])
                 print('Saving transmission eigenvalues data in: '+fname)
                 save_txt(fname,E,Teig=Teig,fmt = args.fmt, kpt=args.kpt)
 
@@ -666,7 +676,7 @@ def process_tbt(args,Tf,k_idx,orbs):
         DOS = None
 
     # Save the DOS
-    fname = args.prefix+'.TBT.DOS'
+    fname = '.'.join([args.prefix,args.sh,'DOS'])
     save_txt(fname,E,DOS=DOS, fmt = args.fmt, kpt=args.kpt)
 
     for el1 in elecs:
@@ -677,7 +687,7 @@ def process_tbt(args,Tf,k_idx,orbs):
             EDOS = np.mean(Tf.DOS(el1,k_avg=k_idx)[:,:],axis=-1) / Tf.Ry
         except: 
             EDOS = None
-        fname = args.prefix+'.TBT.DOS_'+el1
+        fname = '.'.join([args.prefix,args.sh,'BDOS_'+el1])
         save_txt(fname,E,DOS=EDOS, fmt = args.fmt, kpt=args.kpt)
 
         try:
@@ -686,7 +696,7 @@ def process_tbt(args,Tf,k_idx,orbs):
         except: 
             ADOS = None
 
-        fname = args.prefix+'.TBT.ADOS_'+el1
+        fname = '.'.join([args.prefix,args.sh,'ADOS_'+el1])
         save_txt(fname,E,ADOS=ADOS, fmt = args.fmt, kpt=args.kpt)
 
         for el2 in elecs:
@@ -699,14 +709,14 @@ def process_tbt(args,Tf,k_idx,orbs):
             except: continue
 
             # Save k-averaged data
-            fname = args.prefix+'.TBT.'+end
+            fname = '.'.join([args.prefix,args.sh,end])
             save_txt(fname,E,T,DOS,ADOS, fmt = args.fmt, kpt=args.kpt)
 
             try:
                 T = Tf.Teig(el1,el2,k_avg=k_idx)
             except: continue
             # Save k-averaged data
-            fname = args.prefix+'.TBT.'+end.replace('TRANS','TEIG')
+            fname = '.'.join([args.prefix,args.sh,end.replace('TRANS','TEIG')])
             save_txt(fname,E,Teig=T, fmt = args.fmt, kpt=args.kpt)
 
 
@@ -742,5 +752,3 @@ def save_txt(file,E,T=None,DOS=None,ADOS=None,Teig=None,fmt='13.5e',kpt=None):
 
 if __name__ == '__main__':
     main()
-
-
