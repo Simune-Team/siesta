@@ -228,7 +228,7 @@ C New density and energy-density matrices of unit-cell orbitals .......
 C Loop over k points
       do ik = 1,nk
 
-        do ispin = 1,h_spin_dim
+        do ispin = 1, spinor_dim
 C Find maximum eigenvector that is required for this k point and spin
 C Compute all eigenvectors if getPSI = .true.
 

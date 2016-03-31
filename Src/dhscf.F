@@ -781,7 +781,8 @@ C ----------------------------------------------------------------------
          read_charge_cdf = .false.
       else if (read_deformation_charge_cdf) then
          call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"DeltaRho")
-         do ispin = 1,nspin
+         ! Add to diagonal components only
+         do ispin = 1,nsd
             do ip= 1, ntpl
 C             rhoatm and Drho are in sequential mode
               DRho(ip,ispin) = DRho(ip,ispin) + rhoatm(ip)/nsd
@@ -916,6 +917,7 @@ C       Save total (ionic+electronic) charge
           do ip= 1, ntpl
             Totchar(ip) = 0.0_grid_p
           enddo
+          ! Diagonal components only...
           do ispin = 1,nsd
             do ip= 1, ntpl
               Totchar(ip) = Totchar(ip) +  Chlocal(ip)/nsd +
@@ -968,7 +970,9 @@ C ----------------------------------------------------------------------
          endif
       endif
 
-C Transform spin density into sum and difference
+C     Transform spin density into sum and difference
+      ! Can this work with non-collinear spin? Or should we diagonalize
+      ! locally at every point first?
       if (nsd .eq. 2) then
         do ip = 1,ntpl
           rhotot     = DRho(ip,1) + DRho(ip,2)
@@ -1115,7 +1119,8 @@ C ----------------------------------------------------------------------
      &                          Vscf, "ElectrostaticPotential")
       endif
 
-C Get back spin density from sum and difference
+C     Get back spin density from sum and difference
+      ! Recall note above about non-collinear spin...
       if (nsd .eq. 2) then
         do ip = 1, ntpl
           rhotot     = DRho(ip,1)
@@ -1144,6 +1149,7 @@ C ----------------------------------------------------------------------
         Vaux(ip) = Vscf(ip,1)
       enddo
 
+      ! Add atomic contribution only to diagonal elements
       do ispin = 1,nsd
         do ip= 1, ntpl
           DRho(ip,ispin) = DRho(ip,ispin) +
@@ -1173,7 +1179,8 @@ C ----------------------------------------------------------------------
       call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, 'Vscf_gga', 'dhscf' )
       call re_alloc( DRho_gga, 1, ntpl, 1, nspin, 'DRho_gga', 'dhscf' )
 
-      do ispin = 1, nsd
+      ! This was wrong before: only the diagonal was re-distributed (1, nsd)
+      do ispin = 1, nspin
         fsrc => DRho(:,ispin)
         fdst => DRho_gga(:,ispin)
         call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
@@ -1194,7 +1201,10 @@ C ----------------------------------------------------------------------
          call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
       endif
 
-      do ispin = 1,nsd
+      ! This was in principle wrong (1,nsd)
+      ! ... but are the off-diagonal elements of Vscf really set in
+      ! the xc routine?
+      do ispin = 1,nspin
         fsrc => Vscf_gga(:,ispin)
         fdst => Vscf(:,ispin)
         call distMeshData( LINEAR, fsrc, UNIFORM, fdst, KEEP )
@@ -1214,13 +1224,22 @@ C ----------------------------------------------------------------------
 !     Vscf contains only Vxc, and is UNIFORM and sequential
 !     Now we add up the other contributions to it, at 
 !     the same time that we get DRho back to true DeltaRho form
+
+      ! OK to use only the diagonal elements here
       do ispin = 1,nsd
         do ip = 1,ntpl
           DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip) / nsd
           if (npcc .eq. 1) then
             DRho(ip,ispin) = DRho(ip,ispin) - rhopcc(ip)/nsd
           endif
-          Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
+          ! This should be updated on all spin components... (???)
+          !  Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
+          !  Now done below, just in case
+        enddo
+      enddo
+      do ispin = 1,nspin
+        do ip = 1,ntpl
+           Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
         enddo
       enddo
 #ifndef BSC_CELLXC
@@ -1344,7 +1363,9 @@ C       Find contribution of partial-core-correction
         if (npcc .eq. 1) then
           call reord( rhopcc, rhopcc, nml, nsm, TO_CLUSTER )
           call reord( Vaux, Vaux, nml, nsm, TO_CLUSTER )
-          do ispin = 1,nsd
+          ! Re-distribution of all nspin components??
+          !do ispin = 1,nsd
+          do ispin = 1,nspin
             call reord( Vscf(:,ispin), Vscf(:,ispin),
      &                  nml, nsm, TO_CLUSTER )
           enddo
@@ -1355,7 +1376,8 @@ C       Find contribution of partial-core-correction
    
           call reord( rhopcc, rhopcc, nml, nsm, TO_SEQUENTIAL )
           call reord( Vaux, Vaux, nml, nsm, TO_SEQUENTIAL )
-          do ispin = 1,nsd
+!          do ispin = 1,nsd
+          do ispin = 1,nspin
             call reord( Vscf(:,ispin), Vscf(:,ispin),
      &                  nml, nsm, TO_SEQUENTIAL )
           enddo
@@ -1373,7 +1395,9 @@ C       Find contribution of partial-core-correction
 !         Upon return, everything is UNIFORM, sequential form
         endif
 
-C       Transform spin density into sum and difference
+C     Transform spin density into sum and difference
+        ! What should be done for non-collinear spin??
+        ! Local diagonalization??
         if (nsd .eq. 2) then
           do ip = 1,ntpl
             rhotot     = DRho(ip,1) + DRho(ip,2)
