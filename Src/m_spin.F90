@@ -102,8 +102,21 @@ contains
          leqi(opt, 'SOC') .or. leqi(opt, 'SO') ) then
        SpOrb = .true.
     end if
-       
-
+!
+    !   Note that, in what follows,
+    !   spinor_dim = min(h_spin_dim,2)
+    !   e_spin_dim = min(h_spin_dim,4)
+    !   nspin      = min(h_spin_dim,4)  ! Relevant for dhscf, local DM
+    !      should probably be called nspin_grid
+    !   mcoll      = 2 for h_spin_dim >=4, 1 otherwise
+    !
+    !   so everything can be determined if h_spin_dim is known.
+    !   It is tempting to go back to the old 'nspin' overloading,
+    !   making 'nspin' mean again 'h_spin_dim'
+    !   But this has to be done carefully, as some routines expect
+    !   an argument 'nspin' which really means 'spinor_dim' (like diagon),
+    !   and others (such as dhscf) expect 'nspin' to mean 'nspin_grid'.
+!
     if ( SpOrb ) then
        opt        = 'spin-orbit'
        NoMagn     = .false.
@@ -172,8 +185,8 @@ contains
     end if
 
     nullify(efs,qs)
-    call re_alloc(efs,1,nspin,name="efs",routine="init_spin")
-    call re_alloc(qs,1,nspin,name="qs",routine="init_spin")
+    call re_alloc(efs,1,spinor_dim,name="efs",routine="init_spin")
+    call re_alloc(qs,1,spinor_dim,name="qs",routine="init_spin")
 
   contains
 
