@@ -1232,14 +1232,7 @@ C ----------------------------------------------------------------------
           if (npcc .eq. 1) then
             DRho(ip,ispin) = DRho(ip,ispin) - rhopcc(ip)/nsd
           endif
-          ! This should be updated on all spin components... (???)
-          !  Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
-          !  Now done below, just in case
-        enddo
-      enddo
-      do ispin = 1,nspin
-        do ip = 1,ntpl
-           Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
+          Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
         enddo
       enddo
 #ifndef BSC_CELLXC
