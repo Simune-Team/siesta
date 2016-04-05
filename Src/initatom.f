@@ -52,6 +52,8 @@
     
       use chemical
 
+      use m_spin, only: SpOrb
+
       implicit none
       integer,         intent(out) :: ns   ! Number of species
 !     Internal variables ...................................................
@@ -77,8 +79,8 @@
         call elec_corr_setup()
       else if (user_basis) then
 
-       if ( fdf_get('SpinOrbit',.false.) ) then  
-          write(6,'(a)') ' initatom: Magnetization = spin-orbit'
+       if ( SpOrb ) then  
+          write(6,'(a)') ' initatom: Spin configuration = spin-orbit'
           call read_chemical_types()
           nsp = number_of_species()
           

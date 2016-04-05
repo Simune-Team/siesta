@@ -16,6 +16,8 @@ module m_spin
   logical, save, public :: SPpol   = .false.
   logical, save, public :: NonCol  = .false.
   logical, save, public :: SpOrb   = .false.
+  ! Currently this variable is un-used (thus private)
+  logical, save, private :: TrSym  = .true.
 
   ! Number of spin components
   integer, save, public :: nspin
@@ -36,22 +38,18 @@ module m_spin
   real(dp), save, public :: qSpiral(3) = 0._dp
 
   public :: init_spin
+  public :: print_spin
+  public :: init_spiral
 
 contains
   
-  subroutine init_spin( ucell )
+  subroutine init_spin()
     
     use sys, only: die
     use fdf, only : fdf_get, leqi
     use alloc, only: re_alloc
-    use parallel, only: IOnode, Nodes
-
-    ! Unit cell lattice vectors
-    real(dp), intent(in) :: ucell(3,3)
 
     character(len=32) :: opt
-
-    logical :: TRSym
 
     ! All default to false
     NoMagn = .false.
@@ -60,7 +58,7 @@ contains
     SpOrb  = .false.
 
     ! Time reversal symmetry
-    TRSym  = fdf_get('TimeReversalSymmetry',.false.)
+    TRSym  = fdf_get('TimeReversalSymmetry',.true.)
 
     ! Read in old flags:
     SPpol  = fdf_get('SpinPolarized',.false.)
@@ -80,18 +78,15 @@ contains
 
     
     ! In order to enable text input (and obsolete the
-    ! 4! different options we use a single value now)
-    opt = fdf_get('Magnetization', opt)
+    ! 4 different options we use a single value now)
+    opt = fdf_get('Spin', opt)
 
-    if ( leqi(opt, 'non-magnetic') .or. &
-         leqi(opt, 'non-polarized') .or. &
+    if ( leqi(opt, 'non-polarized') .or. &
          leqi(opt, 'non-polarised') .or. &
-         leqi(opt, 'NP') .or. leqi(opt,'N-P') .or. &
-         leqi(opt, 'NM') .or. leqi(opt, 'N-M') ) then
+         leqi(opt, 'NP') .or. leqi(opt,'N-P') ) then
        NoMagn = .true.
-    else if ( leqi(opt, 'magnetic') .or. &
-         leqi(opt, 'M') .or. leqi(opt, 'polarized') .or. &
-         leqi(opt, 'P') .or. leqi(opt, 'polarised') ) then
+    else if ( leqi(opt, 'polarized') .or. &
+         leqi(opt, 'polarised') .or. leqi(opt, 'P') ) then
        SPpol = .true.
     else if ( leqi(opt, 'non-collinear') .or. &
          leqi(opt, 'NC') .or. leqi(opt, 'N-C') ) then
@@ -99,23 +94,25 @@ contains
     else if ( leqi(opt, 'spin-orbit') .or. leqi(opt, 'S-O') .or. &
          leqi(opt, 'SOC') .or. leqi(opt, 'SO') ) then
        SpOrb = .true.
+    else
+       write(*,*) 'Unknown spin flag: ', trim(opt)
+       call die('Spin: unknown flag, please assert the correct input.')
     end if
-!
-    !   Note that, in what follows,
+
+    ! Note that, in what follows,
     !   spinor_dim = min(h_spin_dim,2)
     !   e_spin_dim = min(h_spin_dim,4)
     !   nspin      = min(h_spin_dim,4)  ! Relevant for dhscf, local DM
     !      should probably be called nspin_grid
     !
-    !   so everything can be determined if h_spin_dim is known.
-    !   It is tempting to go back to the old 'nspin' overloading,
-    !   making 'nspin' mean again 'h_spin_dim'
-    !   But this has to be done carefully, as some routines expect
-    !   an argument 'nspin' which really means 'spinor_dim' (like diagon),
-    !   and others (such as dhscf) expect 'nspin' to mean 'nspin_grid'.
-!
+    ! so everything can be determined if h_spin_dim is known.
+    ! It is tempting to go back to the old 'nspin' overloading,
+    ! making 'nspin' mean again 'h_spin_dim'.
+    ! But this has to be done carefully, as some routines expect
+    ! an argument 'nspin' which really means 'spinor_dim' (like diagon),
+    ! and others (such as dhscf) expect 'nspin' to mean 'nspin_grid'.
+
     if ( SpOrb ) then
-       opt        = 'spin-orbit'
        NoMagn     = .false.
        SPpol      = .false.
        NonCol     = .false.
@@ -127,7 +124,6 @@ contains
        spinor_dim = 2
        
     else if ( NonCol ) then
-       opt        = 'non-collinear'
        NoMagn     = .false.
        SPpol      = .false.
        NonCol     = .true.
@@ -139,7 +135,6 @@ contains
        spinor_dim = 2
        
     else if ( SPpol ) then
-       opt        = 'polarized'
        NoMagn     = .false.
        SPpol      = .true.
        NonCol     = .false.
@@ -151,7 +146,6 @@ contains
        spinor_dim = 2
 
     else 
-       opt        = 'non-polarized'
        NoMagn     = .true.
        SPpol      = .false.
        NonCol     = .false.
@@ -164,69 +158,100 @@ contains
 
     end if
 
-    ! Read spin-spiral settings
-    call init_spiral()
-
-    if ( IONode ) then
-     write(*,'(2a)')  'redata: Magnetization                    = ',trim(opt)
-     write(*,'(a,i0)')'redata: Number of spin components        = ',nspin
-     write(*,'(a,l1)')'redata: Time-Reversal Symmetry           = ',TRSym
-     write(*,'(a,l1)')'redata: Spin-spiral                      = ',Spiral
-     if ( Spiral .and. .not. NonCol ) then
-        write(*,'(a)') 'redata: WARNING: spin-spiral requires non-collinear spin'
-     end if
-    end if
-
     nullify(efs,qs)
     call re_alloc(efs,1,spinor_dim,name="efs",routine="init_spin")
     call re_alloc(qs,1,spinor_dim,name="qs",routine="init_spin")
 
-  contains
-
-    subroutine init_spiral
-      use fdf, only: block_fdf, parsed_line
-      use fdf, only: fdf_block, fdf_bline
-      use fdf, only: fdf_bnames, fdf_bvalues
-      use units, only: Pi
-      type(block_fdf)            :: bfdf
-      type(parsed_line), pointer :: pline
-      
-      ! Reciprocal cell vectors
-      real(dp) :: rcell(3,3), alat
-      character(len=30) :: lattice
-
-      ! read in lattice constant
-      alat = fdf_get('LatticeConstant',0.0_dp,'Bohr')
-
-      call reclat( ucell, rcell, 1 )
-
-      Spiral = fdf_block('SpinSpiral', bfdf)
-
-      if ( .not. Spiral ) return
-
-      if (.not. fdf_bline(bfdf,pline)) &
-           call die('init_spiral: ERROR in SpinSpiral block')
-
-      ! Read lattice
-      lattice = fdf_bnames(pline,1)
-      ! Read pitch wave-vector
-      qSpiral(1) = fdf_bvalues(pline,1)
-      qSpiral(2) = fdf_bvalues(pline,2)
-      qSpiral(3) = fdf_bvalues(pline,3)
-      
-      if ( leqi(lattice,'Cubic') ) then
-         qSpiral(1) = Pi * qs(1) / alat
-         qSpiral(2) = Pi * qs(2) / alat
-         qSpiral(3) = Pi * qs(3) / alat
-      else if ( leqi(lattice,'ReciprocalLatticeVectors') ) then
-         qSpiral = matmul(rcell,qSpiral)
-      else
-         call die('init_spiral: ERROR: ReciprocalCoordinates must be' // &
-              ' ''Cubic'' or ''ReciprocalLatticeVectors''')
-      end if
-
-    end subroutine init_spiral
-    
   end subroutine init_spin
+
+  ! Print out spin-configuration options
+  subroutine print_spin( )
+    use parallel, only: IONode
+
+    character(len=32) :: opt
+
+    if ( .not. IONode ) return
+
+    if ( SpOrb ) then
+       opt        = 'spin-orbit'
+    else if ( NonCol ) then
+       opt        = 'non-collinear'
+    else if ( SPpol ) then
+       opt        = 'polarized'
+    else 
+       opt        = 'non-polarized'
+    end if
+
+    write(*,'(2a)')  'redata: Spin configuration               = ',trim(opt)
+    write(*,'(a,i0)')'redata: Number of spin components        = ',h_spin_dim
+    write(*,'(a,l1)')'redata: Time-Reversal Symmetry           = ',TRSym
+    write(*,'(a,l1)')'redata: Spin-spiral                      = ',Spiral
+    if ( Spiral .and. .not. NonCol ) then
+       write(*,'(a)') 'redata: WARNING: spin-spiral requires non-collinear spin'
+    end if
+
+    if ( SpOrb ) then
+       write(*,'(a)') repeat('#',60)
+       write(*,'(a,t16,a,t60,a)') '#','Spin-orbit coupling is in beta','#'
+       write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
+       write(*,'(a)') repeat('#',60)
+    else if ( NonCol ) then
+       write(*,'(a)') repeat('#',60)
+       write(*,'(a,t17,a,t60,a)') '#','Non-collinear spin is in beta','#'
+       write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
+       write(*,'(a)') repeat('#',60)
+    end if
+
+  end subroutine print_spin
+  
+
+  subroutine init_spiral( ucell )
+    use fdf, only : fdf_get, leqi
+    use fdf, only: block_fdf, parsed_line
+    use fdf, only: fdf_block, fdf_bline
+    use fdf, only: fdf_bnames, fdf_bvalues
+    use units, only: Pi
+
+    ! Unit cell lattice vectors
+    real(dp), intent(in) :: ucell(3,3)
+    
+    type(block_fdf)            :: bfdf
+    type(parsed_line), pointer :: pline
+
+    ! Reciprocal cell vectors
+    real(dp) :: rcell(3,3), alat
+    character(len=30) :: lattice
+
+    ! read in lattice constant
+    alat = fdf_get('LatticeConstant',0.0_dp,'Bohr')
+
+    call reclat( ucell, rcell, 1 )
+
+    Spiral = fdf_block('SpinSpiral', bfdf)
+
+    if ( .not. Spiral ) return
+
+    if (.not. fdf_bline(bfdf,pline)) &
+         call die('init_spiral: ERROR in SpinSpiral block')
+
+    ! Read lattice
+    lattice = fdf_bnames(pline,1)
+    ! Read pitch wave-vector
+    qSpiral(1) = fdf_bvalues(pline,1)
+    qSpiral(2) = fdf_bvalues(pline,2)
+    qSpiral(3) = fdf_bvalues(pline,3)
+
+    if ( leqi(lattice,'Cubic') ) then
+       qSpiral(1) = Pi * qs(1) / alat
+       qSpiral(2) = Pi * qs(2) / alat
+       qSpiral(3) = Pi * qs(3) / alat
+    else if ( leqi(lattice,'ReciprocalLatticeVectors') ) then
+       qSpiral = matmul(rcell,qSpiral)
+    else
+       call die('init_spiral: ERROR: ReciprocalCoordinates must be' // &
+            ' ''Cubic'' or ''ReciprocalLatticeVectors''')
+    end if
+
+  end subroutine init_spiral
   
 end module m_spin

@@ -28,6 +28,7 @@ subroutine read_options( na, ns, nspin )
   use diagmemory,   only: memoryfactor
   use siesta_cml
   use m_target_stress, only: set_target_stress
+  use m_spin, only: print_spin
 
   implicit none
   !----------------------------------------------------------- Input Variables
@@ -209,6 +210,9 @@ subroutine read_options( na, ns, nspin )
      call cmlAddParameter(xf=mainXML, name='SystemLabel',            &
           value=trim(slabel), dictref='siesta:slabel')
   endif
+
+  ! Start by printing out spin-configuration
+  call print_spin()
 
   ! H setup only
   h_setup_only = fdf_get('HSetupOnly', .false.)

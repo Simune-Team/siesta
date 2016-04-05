@@ -183,13 +183,18 @@
       call alloc_report( level=level, file=trim(slabel)//'.alloc',
      .                   threshold=threshold,
      &                   printNow=.false. )
-
+      
       if ( IONode ) then
          ! Add citations
          call init_citation(trim(slabel))
          call add_citation("10.1088/0953-8984/14/11/302")
       end if
-      
+
+      ! be sure to initialize spin-configuration
+      ! as the first thing.
+      ! Subsequent routines require this to be filled
+      call init_spin( )
+
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
       call read_xc_info()
@@ -215,6 +220,9 @@
 !     Read geometry
       call struct_init( )      ! Sets na_u, isa, ucell
 
+      ! Initialize the spin-spiral settings
+      call init_spiral( ucell )
+      
 !     Initialize atom lists
       call initatomlists( )    ! Sets iza
 
@@ -251,8 +259,6 @@
       nullify(fa,cfa)
       call re_alloc( fa, 1, 3, 1, na_u, 'fa', 'siesta_init' )
       call re_alloc( cfa, 1, 3, 1, na_u, 'cfa', 'siesta_init' )
-
-      call init_spin( ucell )
 
 !     Read simulation data
       call read_options( na_u, ns, nspin )
