@@ -29,6 +29,7 @@ C integer nuo             : Number of orbitals in unit cell (local)
 C integer nuotot          : Number of orbitals in unit cell (global)
 C integer np              : Number of mesh points (total is nsp*np)
 C integer nspin           : Number of different spin polarisations
+! This should be renamed to 'grid_nspin'...      
 C                           nspin=1 => Unpolarized, nspin=2 => polarized
 C                           nspin=4 => Noncollinear spin/SOC
 C integer indxua(na)      : Index of equivalent atom in unit cell
@@ -166,6 +167,12 @@ C Redistribute Dscf to DscfL form
 
       endif
 
+!     Note: Since this routine is only called to get forces AND stresses,
+!     ifa = 1 and istr = 1 always. We could get rid of ix1 and ix2 and
+!     unroll the relevant loops below for more efficiency.
+!     Also, it might be worth unrolling some of the nsp loops below
+!     if nsp is always 8.
+      
 C  Find range of a single array to hold force and stress derivatives
 C  Range 1-3 for forces
       if (ifa.eq.1) then
@@ -339,7 +346,12 @@ C  If stress required. Generate stress derivatives
           endif
         enddo
 
-C  Copy potential to a double precision array
+C     Copy potential to a double precision array
+        ! NOTE: nspin here is 4 at the maximum, even for SO...
+        ! so components 5:6 are set to zero (above)
+        ! In general, in the spin-orbit case, why do we need V
+        ! dimensioned to 8, when everything else on the grid is
+        ! done with nspin=4 (grid_nspin)?
         V(1:nsp,1:nspin) = Vscf(1:nsp,ip,1:nspin)
 
 C     Factor two for nondiagonal elements for non-collinear spin
