@@ -814,8 +814,7 @@ C       Set the UNIFORM distribution again and copy DRho to it
         if (nodes.gt.1) then
            call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
         endif
-        !AG** NOTE: Clarify nsd vs. nspin 
-        !           What happens for non-collinear spin calculations?
+
         do ispin = 1, nspin
           fsrc => DRho_par(:,ispin)
           fdst => DRho(:,ispin)
@@ -857,7 +856,8 @@ C       Set the UNIFORM distribution again and copy DRho to it
         call re_alloc( DRho_quad, 1, ntpl, 1, nspin,
      &                 'DRho_quad','dhscf' )       
         call re_alloc( rhoatm_quad, 1, ntpl,
-     &                 'rhoatm_quad','dhscf' )       
+     &                 'rhoatm_quad','dhscf' )
+        ! Redistribute grid-density
         do ispin = 1, nspin
           fsrc => DRho(:,ispin)
           fdst => DRho_quad(:,ispin)
@@ -915,13 +915,12 @@ C       Save total (ionic+electronic) charge
            call re_alloc( Totchar, 1, ntpl, 'Totchar', 'dhscf' )
         
           do ip= 1, ntpl
-            Totchar(ip) = 0.0_grid_p
+            Totchar(ip) = Chlocal(ip)
           enddo
           ! Diagonal components only...
           do ispin = 1,nsd
             do ip= 1, ntpl
-              Totchar(ip) = Totchar(ip) +  Chlocal(ip)/nsd +
-     &                      DRho(ip,ispin)
+              Totchar(ip) = Totchar(ip) + DRho(ip,ispin)
             enddo
           enddo
 
@@ -971,8 +970,9 @@ C ----------------------------------------------------------------------
       endif
 
 C     Transform spin density into sum and difference
-      ! Can this work with non-collinear spin? Or should we diagonalize
-      ! locally at every point first?
+
+      ! TODO Check for NC/SO:
+      ! Should we diagonalize locally at every point first?
       if (nsd .eq. 2) then
         do ip = 1,ntpl
           rhotot     = DRho(ip,1) + DRho(ip,2)
@@ -1120,7 +1120,8 @@ C ----------------------------------------------------------------------
       endif
 
 C     Get back spin density from sum and difference
-      ! Recall note above about non-collinear spin...
+      ! TODO Check for NC/SO:
+      ! Should we diagonalize locally at every point first?
       if (nsd .eq. 2) then
         do ip = 1, ntpl
           rhotot     = DRho(ip,1)
@@ -1179,7 +1180,7 @@ C ----------------------------------------------------------------------
       call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, 'Vscf_gga', 'dhscf' )
       call re_alloc( DRho_gga, 1, ntpl, 1, nspin, 'DRho_gga', 'dhscf' )
 
-      ! This was wrong before: only the diagonal was re-distributed (1, nsd)
+      ! Redistribute all spin densities
       do ispin = 1, nspin
         fsrc => DRho(:,ispin)
         fdst => DRho_gga(:,ispin)
@@ -1201,9 +1202,7 @@ C ----------------------------------------------------------------------
          call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
       endif
 
-      ! This was in principle wrong (1,nsd)
-      ! ... but are the off-diagonal elements of Vscf really set in
-      ! the xc routine?
+      ! Redistribute to the Vxc array
       do ispin = 1,nspin
         fsrc => Vscf_gga(:,ispin)
         fdst => Vscf(:,ispin)
@@ -1225,16 +1224,28 @@ C ----------------------------------------------------------------------
 !     Now we add up the other contributions to it, at 
 !     the same time that we get DRho back to true DeltaRho form
 
-      ! OK to use only the diagonal elements here
+      if ( npcc == 1 ) then
+        do ispin = 1,nsd
+          do ip = 1,ntpl
+            DRho(ip,ispin) = DRho(ip,ispin) 
+     &            - (rhoatm(ip) + rhopcc(ip))/nsd
+          end do
+        end do
+      else
+        do ispin = 1,nsd
+          do ip = 1,ntpl
+            DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip)/nsd
+          end do
+        end do
+      end if
+
+      ! Hartree potential only has diagonal components
       do ispin = 1,nsd
         do ip = 1,ntpl
-          DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip) / nsd
-          if (npcc .eq. 1) then
-            DRho(ip,ispin) = DRho(ip,ispin) - rhopcc(ip)/nsd
-          endif
           Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
-        enddo
-      enddo
+        end do
+      end do
+      
 #ifndef BSC_CELLXC
       stress = stress + stressXC
 #endif /* ! BSC_CELLXC */
@@ -1356,9 +1367,10 @@ C       Find contribution of partial-core-correction
         if (npcc .eq. 1) then
           call reord( rhopcc, rhopcc, nml, nsm, TO_CLUSTER )
           call reord( Vaux, Vaux, nml, nsm, TO_CLUSTER )
-          ! Re-distribution of all nspin components??
-          !do ispin = 1,nsd
-          do ispin = 1,nspin
+          ! The partial core calculation only acts on
+          ! the diagonal spin-components (no need to
+          ! redistribute un-used elements)
+          do ispin = 1, nsd
             call reord( Vscf(:,ispin), Vscf(:,ispin),
      &                  nml, nsm, TO_CLUSTER )
           enddo
@@ -1369,8 +1381,8 @@ C       Find contribution of partial-core-correction
    
           call reord( rhopcc, rhopcc, nml, nsm, TO_SEQUENTIAL )
           call reord( Vaux, Vaux, nml, nsm, TO_SEQUENTIAL )
-!          do ispin = 1,nsd
-          do ispin = 1,nspin
+          ! ** see above
+          do ispin = 1, nsd
             call reord( Vscf(:,ispin), Vscf(:,ispin),
      &                  nml, nsm, TO_SEQUENTIAL )
           enddo
@@ -1389,8 +1401,8 @@ C       Find contribution of partial-core-correction
         endif
 
 C     Transform spin density into sum and difference
-        ! What should be done for non-collinear spin??
-        ! Local diagonalization??
+        ! TODO NC/SO
+        ! Should we perform local diagonalization?
         if (nsd .eq. 2) then
           do ip = 1,ntpl
             rhotot     = DRho(ip,1) + DRho(ip,2)
@@ -1407,11 +1419,6 @@ C       Find contribution of neutral-atom potential
      &                          ifa.ne.0, istr.ne.0 )
         call reord( DRho, DRho, nml, nsm, TO_SEQUENTIAL )
         call reord( Vna, Vna, nml, nsm, TO_SEQUENTIAL )
-
-C       Vaux is (minus) the potential which multiplies rhoatm
-*         if (nsd .eq. 2) then
-*           Vaux(1:ntpl) = 0.5_grid_p * Vaux(1:ntpl)
-*         endif
 
         if (nodes.gt.1) then
            call setMeshDistr( QUADRATIC, nsm, nsp,
