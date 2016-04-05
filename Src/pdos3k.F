@@ -55,7 +55,7 @@ C REAL*8  DPR(NHIST,NUO,4): Proyected density of states
 C **********************************************************************
 
       use precision
-      use parallel,     only : Node, Nodes
+      use parallel,     only : Node, Nodes, BlockSize
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use units,        only : pi
       use alloc,        only : re_alloc, de_alloc
@@ -139,9 +139,9 @@ C Initialize some variables
           enddo
         enddo
 
-C Diagonalize for each k point
+C Diagonalize for each k point. Note duplication of problem size
         call cdiag( Haux, Saux, 2*nuotot, 2*nuo, 2*nuotot,
-     .              eo(:,ik), psi, 2*nuotot, 1, ierror )
+     .              eo(:,ik), psi, 2*nuotot, 1, ierror, 2*BlockSize )
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.lt.0) then
@@ -172,7 +172,7 @@ C Diagonalize for each k point
           enddo
 
           call cdiag( Haux, Saux, 2*nuotot, 2*nuo, 2*nuotot,
-     .                eo(:,ik), psi, 2*nuotot, 1, ierror )
+     .                eo(:,ik), psi, 2*nuotot, 1, ierror, 2*BlockSize )
         endif
 
 C Recalculate again the overlap matrix in k-space

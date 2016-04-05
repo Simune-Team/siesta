@@ -51,7 +51,7 @@ C real*8  dpr(nhist,nuo,4): Proyected density of states
 C **********************************************************************
 
       use precision
-      use parallel,     only : Node, Nodes
+      use parallel,     only : Node, Nodes, BlockSize
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use units,        only : pi
       use alloc,        only : re_alloc, de_alloc
@@ -113,7 +113,7 @@ C Initialize auxiliary variables
 
 C Diagonalize at the Gamma point
       call cdiag( Haux, Saux, 2*nuotot, 2*nuo, 2*nuotot,
-     .            eo, psi, 2*nuotot, 1, ierror )
+     .            eo, psi, 2*nuotot, 1, ierror, 2*BlockSize )
       if (ierror.gt.0) then
         call die('Terminating due to failed diagonalisation')
       elseif (ierror .lt. 0) then
@@ -133,7 +133,7 @@ C Repeat diagonalisation with increased memory to handle clustering
           enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
-     .                         2*nuotot,1,ierror)
+     .                         2*nuotot,1,ierror,2*BlockSize)
       endif
 
 C Rebuild the full overlap matrix

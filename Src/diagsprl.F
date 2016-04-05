@@ -216,7 +216,7 @@ C Hermiticity
 C Find eigenvalues
 C Possible memory optimization: equivalence Haux and psi
         call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
-     .             0,iscf,ierror)
+     .             0,iscf,ierror,2*BlockSize)
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
         endif
@@ -319,7 +319,7 @@ C Hermiticity
         enddo
 
         call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
-     .             neigneeded,iscf,ierror)
+     .             neigneeded,iscf,ierror,2*BlockSize)
 
 C Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -386,7 +386,7 @@ C Repeat diagonalisation with increased memory to handle clustering
           enddo
 
           call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
-     .               neigneeded,iscf,ierror)
+     .               neigneeded,iscf,ierror,2*BlockSize)
         endif
 
 C Store the products of eigenvectors in matrices Dk and Ek

@@ -456,7 +456,7 @@ C
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use atomlist,     only : iaorb, iphorb
       use siesta_geom,  only : isa
-      use m_spin,       only : NoMagn, SPpol, NonCol, SpOrb, MColl
+      use m_spin,       only : NoMagn, SPpol, NonCol, SpOrb
 
 
 #ifdef MPI
@@ -534,8 +534,12 @@ C Check spin
       endif
 
 C Allocate local arrays - only aux is relevant here
-CC RC  Changed for on-site SO
-      nhs = 2 * (MColl*nuotot) * (MColl*nuo)
+C     C RC  Changed for on-site SO
+      if (h_spin_dim >= 4) then
+         nhs = 2 * (2*nuotot) * (2*nuo)
+      else
+         nhs = 2 * nuotot * nuo
+      endif
       call re_alloc(Haux,1,nhs,name='Haux',routine='writewave')
       call re_alloc(Saux,1,nhs,name='Saux',routine='writewave')
       call re_alloc(psi,1,nhs,name='psi',routine='writewave')

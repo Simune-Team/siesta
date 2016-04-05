@@ -230,7 +230,7 @@ C *********************************************************************
 !       Find eigenvalues
 !       Note duplication since the spins are mixed
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo(1,ik),psi,
-     .             0,iscf,ierror)
+     .             0,iscf,ierror, 2*BlockSize)
 
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
@@ -300,7 +300,7 @@ C *********************************************************************
         enddo
 
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
-     .             neigneeded,iscf,ierror)
+     .             neigneeded,iscf,ierror, 2*BlockSize)
       
 !       Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -330,7 +330,7 @@ C *********************************************************************
             enddo
           enddo
           call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
-     .               neigneeded,iscf,ierror)
+     .               neigneeded,iscf,ierror,2*BlockSize)
         endif
       
 !-----------------------------------------------------------------------	     

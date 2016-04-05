@@ -179,7 +179,7 @@ C Note : sign of complex part changed to match change in order of iuo/juo
           enddo
           call timer( 'c-buildHS', 2 )
           call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin,ik),
-     &                psi, 0, iscf, ierror )
+     &                psi, 0, iscf, ierror, BlockSize )
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif
@@ -271,7 +271,7 @@ C determined on the first call.
 
 C Find eigenvectors
           call cdiag(Haux,Saux,nuotot,nuo,nuotot,aux,psi,
-     .      neigneeded,iscf,ierror)
+     .      neigneeded,iscf,ierror,BlockSize)
 
 C Check error flag and take appropriate action
           if (ierror.gt.0) then
@@ -297,7 +297,7 @@ C Repeat diagonalisation with increased memory to handle clustering
               enddo
             enddo
             call cdiag(Haux,Saux,nuotot,nuo,nuotot,aux,psi,
-     .        neigneeded,iscf,ierror)
+     .        neigneeded,iscf,ierror,BlockSize)
           endif
 
           call timer( 'c-eigvec', 2 )

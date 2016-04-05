@@ -407,7 +407,7 @@ C
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use writewave,    only : wfs_filename
 
-      use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb, MColl
+      use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
 
 
       implicit          none
@@ -469,8 +469,12 @@ C Check parameter maxk
         goto 999
       endif
 
-C Allocate local arrays - only aux is relevant here
-      nhs  = 2 * (MColl*no_u) * (MColl*nuo) ! nhs = 2*no_u*no_l
+C     Allocate local arrays - only aux is relevant here
+      if (nspin >=4 ) then
+         nhs  = 2 * (2*no_u) * (2*nuo) 
+      else
+         nhs = 2*no_u*no_l
+      endif
       naux  = 2*no_u*5
       call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
       call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )

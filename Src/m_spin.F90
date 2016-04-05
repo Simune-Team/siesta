@@ -25,8 +25,6 @@ module m_spin
                                         ! efs and qfs
   integer, save, public :: h_spin_dim   ! Number of spin components in H and D
   integer, save, public :: e_spin_dim   ! Number of spin components in E_dm
-  integer, save, public :: MColl        ! Spin size of Hamiltonian matrix that
-                                        ! is to be diagonalized by cdiag
 
   ! Different Fermi-levels for different fixed spin-components
   real(dp), pointer, save, public  :: efs(:)
@@ -108,7 +106,6 @@ contains
     !   e_spin_dim = min(h_spin_dim,4)
     !   nspin      = min(h_spin_dim,4)  ! Relevant for dhscf, local DM
     !      should probably be called nspin_grid
-    !   mcoll      = 2 for h_spin_dim >=4, 1 otherwise
     !
     !   so everything can be determined if h_spin_dim is known.
     !   It is tempting to go back to the old 'nspin' overloading,
@@ -128,7 +125,6 @@ contains
        h_spin_dim = 8
        e_spin_dim = 4
        spinor_dim = 2
-       MColl      = 2
        
     else if ( NonCol ) then
        opt        = 'non-collinear'
@@ -141,7 +137,6 @@ contains
        h_spin_dim = 4
        e_spin_dim = 4
        spinor_dim = 2
-       MColl      = 2
        
     else if ( SPpol ) then
        opt        = 'polarized'
@@ -154,7 +149,6 @@ contains
        h_spin_dim = 2
        e_spin_dim = 2
        spinor_dim = 2
-       MColl      = 1
 
     else 
        opt        = 'non-polarized'
@@ -167,7 +161,6 @@ contains
        h_spin_dim = 1
        e_spin_dim = 1
        spinor_dim = 1
-       MColl      = 1
 
     end if
 

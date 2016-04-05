@@ -176,7 +176,7 @@ C of referencing has been changed in several places to reflect this.
       
 !     Solve the eigenvalue problem
       call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
-     .                       2*neigwanted,iscf,ierror)
+     .                       2*neigwanted,iscf,ierror, 2*BlockSize)
       
 !     Check error flag and take appropriate action
       if (ierror.gt.0) then
@@ -198,7 +198,7 @@ C of referencing has been changed in several places to reflect this.
           enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
-     .                         2*neigwanted,iscf,ierror)
+     .                         2*neigwanted,iscf,ierror, 2*BlockSize)
       endif
       
 !     Check if we are done
