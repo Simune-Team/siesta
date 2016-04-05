@@ -16,7 +16,7 @@ C     D_mu(E) = Sum(n,k,nu) C(mu,n,k) C(nu,n,k) S(mu,nu,k) Delta(E-E(n,k))
 C where n run over all the bands between two given energies
 C Written by J. Junquera and E. Artacho. Nov' 99
 C Gamma point version adapted from PDOSK by Julian Gale. Feb' 03
-C Noncollinear spin version undigged and fixed by J. Ferrer, October 2007
+C Spin-orbit coupling version by J. Ferrer, October 2007
 C ****  INPUT  *********************************************************
 C integer nuo               : Number of atomic orbitals in the unit cell
 C integer no                : Number of atomic orbitals in the supercell

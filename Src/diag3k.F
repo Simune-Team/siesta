@@ -26,7 +26,7 @@ C *********************************************************************
 C Calculates the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
 C eigenvector, for given Hamiltonian and Overlap matrices.
-C This version is for non-colinear spin with k-sampling and time 
+C This version is for spin-orbit coupling with k-sampling and time 
 C reversal symmetry.
 C Written by J.Soler, August 1998.
 C Modified by V.M.Garcia, June 2002.
