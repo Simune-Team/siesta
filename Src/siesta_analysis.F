@@ -376,10 +376,12 @@
      .         value=qspin(1)-qspin(2), dictref='siesta:qspin',
      .         units='siestaUnits:spin')
         elseif (nspin .eq. 4) then
-          write(6,'(a,i5,4f12.5)') ' Calling spnvec: nspin, qspin = ',  
+          if (IONode)
+     $      write(6,'(a,i5,4f12.5)') ' Calling spnvec: nspin, qspin = ',  
      .           nspin, qspin
           call spnvec( nspin, qspin, qaux, stot, svec )
-          write(6,'(a,5f12.4)') ' Leaving spnvec: qaux,stot,svec= ',
+          if (IONode)
+     $      write(6,'(a,5f12.4)') ' Leaving spnvec: qaux,stot,svec= ',
      .           qaux, stot, svec(1:3)
           if (IOnode) then
             write(6,'(/,a,f12.6)')
