@@ -1210,6 +1210,10 @@ C ----------------------------------------------------------------------
       enddo
 #endif /* BSC_CELLXC */
 
+      if (fdf_get("debug-maxval-vscf",.false.)) then
+         print *, " --- maxval Vscf:", maxval(Vscf)
+      endif
+      
 #ifndef BSC_CELLXC
 !     Vscf is still sequential after the call to JMS's cellxc
 #else /* BSC_CELLXC */
