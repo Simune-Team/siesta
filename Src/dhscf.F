@@ -46,7 +46,7 @@
       real(dp)                :: G2mesh =  0.0_dp
       logical :: debug_dhscf = .false.
       character(len=*), parameter :: debug_fmt =
-     &     '('' -- Node '',i3,tr1,a,4(tr1,e20.7))'
+     &     '('' -- dhscf : Node '',i3,tr1,a,4(tr1,e20.7))'
 
       public :: dhscf_init, dhscf
 
@@ -732,6 +732,13 @@ C     Work arrays
 
       if ( h_spin_dim /= size(Dscf,dim=2) ) then
          call die('Spin components is not equal to options.')
+      end if
+
+      if ( debug_dhscf ) then
+         write(*,debug_fmt) Node,'DM',
+     &        (sqrt(sum(Dscf(:,ispin)**2)),ispin=1,h_spin_dim)
+         write(*,debug_fmt) Node,'H',
+     &        (sqrt(sum(Hmat(:,ispin)**2)),ispin=1,h_spin_dim)
       end if
       
 !-------------------------------------------------------------------- BEGIN
