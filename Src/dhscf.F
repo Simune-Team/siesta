@@ -44,6 +44,9 @@
       real(dp)                :: bcell(3,3), cell(3,3),
      &                           dvol, field(3), rmax, scell(3,3)
       real(dp)                :: G2mesh =  0.0_dp
+      logical :: debug_dhscf = .false.
+      character(len=*), parameter :: debug_fmt =
+     &     '('' -- Node '',i3,tr1,a,4(tr1,e20.7))'
 
       public :: dhscf_init, dhscf
 
@@ -146,6 +149,8 @@ C     Start time counter
       nullify(Vscf,rhoatm_par)
 
       if (frstme) then
+        debug_dhscf = fdf_get('Debug.DHSCF', .false.)
+         
         nullify( xdsp, rhopcc, Vna, rhoatm )
 C       nsm lives in module m_dhscf now    !! AG**
         nsm = fdf_integer( 'MeshSubDivisions', 2 )
@@ -270,6 +275,9 @@ C     Vscf and Vaux are not used here
      &    nsd, dvol, volume, dummy_Vscf, dummy_Vaux, Fal, stressl,
      &    .false., .false. )
         call reord( rhopcc, rhopcc, nml, nsm, TO_SEQUENTIAL )
+        if ( debug_dhscf ) then
+           write(*,debug_fmt) Node,'rhopcc',sqrt(sum(rhopcc**2))
+        end if
       endif
 
 C     Find neutral-atom potential
@@ -279,6 +287,9 @@ C     Drho is not used here
      &                        volume, dummy_DRho, Fal, stressl, 
      &                        .false., .false. )
       call reord( Vna, Vna, nml, nsm, TO_SEQUENTIAL )
+      if ( debug_dhscf ) then
+         write(*,debug_fmt) Node,'Vna',sqrt(sum(Vna**2))
+      end if
 
       if (nodes.gt.1) then
         if (node .eq. 0) then
@@ -342,7 +353,12 @@ C     Routine Poison should use the uniform data distribution
 C     Create Rhoatm using UNIFORM distr, in sequential form
       call re_alloc( rhoatm, 1, ntpl, 'rhoatm', 'dhscf_init' )
       call distMeshData( QUADRATIC, rhoatm_par,
-     &                   UNIFORM, rhoatm, TO_SEQUENTIAL )
+     &     UNIFORM, rhoatm, TO_SEQUENTIAL )
+
+      if ( debug_dhscf ) then
+         write(*,debug_fmt) Node,'rhoatm', sqrt(sum(rhoatm**2))
+      end if
+
 !
 !  AG: The initialization of doping structs could be done here now,
 !      in the uniform distribution, and with a simple loop over
@@ -824,7 +840,12 @@ C       Set the UNIFORM distribution again and copy DRho to it
      &                       UNIFORM, fdst, TO_SEQUENTIAL )
         enddo
         call de_alloc( DRho_par, 'DRho_par','dhscf' )
-!
+
+        if ( debug_dhscf ) then
+           write(*,debug_fmt) Node,'DRho',
+     &          (sqrt(sum(DRho(:,ispin)**2)),ispin=1,nspin)
+        end if
+
         if (save_initial_charge_density) then 
            call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
      $              nspin, DRho)
@@ -901,7 +922,11 @@ C       Find diffuse ionic charge on mesh
         call LocalChargeOnMesh( na, isa, ntpl, Chlocal, indxua )
         ! Chlocal comes out in clustered form, so we convert it
         call reord( Chlocal, Chlocal, nml, nsm, TO_SEQUENTIAL )
-      
+
+        if ( debug_dhscf ) then
+           write(*,debug_fmt) Node,'Chlocal',sqrt(sum(Chlocal**2))
+        end if
+
 C       Save diffuse ionic charge 
         if (filesOut%psch .ne. ' ') then
           call write_rho( filesOut%psch, cell, ntm, nsm, ntpl, 1, 
@@ -1026,6 +1051,10 @@ C ----------------------------------------------------------------------
 
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho,
      &             DUscf, Vscf, DStres, nsm )
+
+      if ( debug_dhscf ) then
+         write(*,debug_fmt) Node,'Poisson',sqrt(sum(Vscf(:,1)**2))
+      end if
 
       ! Vscf is in the UNIFORM, sequential form, and only using
       ! the first spin index
@@ -1210,9 +1239,11 @@ C ----------------------------------------------------------------------
       enddo
 #endif /* BSC_CELLXC */
 
-      if (fdf_get("debug-maxval-vscf",.false.)) then
-         print *, " --- maxval Vscf:", maxval(Vscf)
-      endif
+      if ( debug_dhscf ) then
+         write(*,debug_fmt) Node,'XC',
+     &        (sqrt(sum(Vscf(:,ispin)**2)),ispin=1,nspin)
+      end if
+      
       
 #ifndef BSC_CELLXC
 !     Vscf is still sequential after the call to JMS's cellxc
@@ -1390,6 +1421,11 @@ C       Find contribution of partial-core-correction
             call reord( Vscf(:,ispin), Vscf(:,ispin),
      &                  nml, nsm, TO_SEQUENTIAL )
           enddo
+
+          if ( debug_dhscf ) then
+             write(*,debug_fmt) Node,'PartialCore',
+     &            (sqrt(sum(Vscf(:,ispin)**2)),ispin=1,nsd)
+          end if
         endif
 
         if ( harrisfun) then
