@@ -16,8 +16,7 @@ module m_spin
   logical, save, public :: SPpol   = .false.
   logical, save, public :: NonCol  = .false.
   logical, save, public :: SpOrb   = .false.
-  ! Currently this variable is un-used (thus private)
-  logical, save, private :: TrSym  = .true.
+  logical, save, public :: TrSym  = .true.
 
   ! Number of spin components
   integer, save, public :: nspin

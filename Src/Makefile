@@ -524,8 +524,8 @@ hsparse.o: parallel.o parallelsubs.o precision.o siesta_options.o sorting.o
 hsparse.o: sparse_matrices.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
-initatom.o: basis_types.o chemical.o electrostatic.o old_atmfuncs.o precision.o
-initatom.o: pseudopotential.o
+initatom.o: basis_types.o chemical.o electrostatic.o m_spin.o old_atmfuncs.o
+initatom.o: precision.o pseudopotential.o
 initparallel.o: alloc.o domain_decom.o m_fdf_global.o parallel.o parallelsubs.o
 initparallel.o: precision.o siesta_options.o spatial.o sys.o
 io.o: sys.o
@@ -551,10 +551,10 @@ kgridinit.o: minvec.o parallel.o precision.o sys.o units.o
 kinefsm.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
 kinefsm.o: precision.o
 kpoint_convert.o: precision.o sys.o units.o
-kpoint_grid.o: find_kgrid.o minvec.o parallel.o precision.o siesta_cml.o
-kpoint_grid.o: siesta_options.o sys.o units.o
-kpoint_pdos.o: find_kgrid.o minvec.o parallel.o precision.o siesta_options.o
-kpoint_pdos.o: sys.o units.o
+kpoint_grid.o: find_kgrid.o m_spin.o minvec.o parallel.o precision.o
+kpoint_grid.o: siesta_cml.o siesta_options.o sys.o units.o
+kpoint_pdos.o: find_kgrid.o m_spin.o minvec.o parallel.o precision.o
+kpoint_pdos.o: siesta_options.o sys.o units.o
 ksv.o: alloc.o atmfuncs.o densematrix.o ksvinit.o parallel.o precision.o sys.o
 ksvinit.o: alloc.o parallel.o precision.o sys.o
 listsc.o: alloc.o
@@ -741,8 +741,8 @@ pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 radial.o: alloc.o interpolation.o precision.o xml.o
 rdiag.o: alloc.o m_diagon_opt.o memoryinfo.o parallel.o precision.o sys.o
-read_options.o: files.o m_target_stress.o memoryinfo.o parallel.o precision.o
-read_options.o: siesta_cml.o siesta_options.o sys.o units.o
+read_options.o: files.o m_spin.o m_target_stress.o memoryinfo.o parallel.o
+read_options.o: precision.o siesta_cml.o siesta_options.o sys.o units.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
