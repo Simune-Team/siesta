@@ -117,7 +117,8 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
      .              dGDDdD(3,2,4), dGDDdGD(2,4),
      .              dGDTOTdD(3,4), dGDPOLdD(3,4),
      .              dGDTOTdGD(4), dGDPOLdGD(4),
-     .              DPOL, DTOT, GDD(3,2), GDTOT(3), GDPOL(3)
+     .              DPOL, DTOT, GDD(3,2), GDTOT(3), GDPOL(3),
+     .              VPOL ! CC RC
 
       ! Handle non-collinear spin case
       if (nSpin==4) then
@@ -281,25 +282,52 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         ! dE/dD(i) = dE/dDup * dDup/dD(i) + dE/dDdn * dDdn/dD(i)
         !          + dE/dGDup * dGDup/dD(i) + dE/dGDdn * dGDdn/dD(i)
         ! dE/dGradD(i) = dE/dGDup * dGDup/dGD(i) + dE/dGDdn * dGDdn/dGD(i)
-        do is = 1,4
-          dEXdD(is) = sum( dEXdDD(:) * dDDdD(:,is) )
-     .              + sum( dEXdGDD(:,:) * dGDDdD(:,:,is) )
-          dECdD(is) = sum( dECdDD(:) * dDDdD(:,is) )
-     .              + sum( dECdGDD(:,:) * dGDDdD(:,:,is) )
+! CC RC ***************************
+!        do is = 1,4
+!          dEXdD(is) = sum( dEXdDD(:) * dDDdD(:,is) )
+!     .              + sum( dEXdGDD(:,:) * dGDDdD(:,:,is) )
+!          dECdD(is) = sum( dECdDD(:) * dDDdD(:,is) )
+!     .              + sum( dECdGDD(:,:) * dGDDdD(:,:,is) )
+!          do ix = 1,3
+!            dEXdGD(ix,is) = sum( dEXdGDD(ix,:) * dGDDdGD(:,is) )
+!            dECdGD(ix,is) = sum( dECdGDD(ix,:) * dGDDdGD(:,is) )
+!          end do
+!        end do
+!        ! Divide by two the non-diagonal derivatives. This is necessary
+!        ! because DEDD(3:4) intend to be Re(dE/dD12)=Re(dE/dD21) and 
+!        ! Im(dE/dD12)=-Im(dE/dD21), respectively. However, both D12 and D21
+!        ! depend on D(3) and D(4), and we have derived directly dE/dD(3) and
+!        ! dE/dD(4). Although less trivially, the same applies to dE/dGD(3:4).
+!        dEXdD(3:4) = dEXdD(3:4) / 2
+!        dECdD(3:4) = dECdD(3:4) / 2
+!        dEXdGD(:,3:4) = dEXdGD(:,3:4) / 2
+!        dECdGD(:,3:4) = dECdGD(:,3:4) / 2
+! CC RC ***************************
+
+         VPOL  = (dEXdDD(1)-dEXdDD(2)) * (D(1)-D(2)) / DPOL
+         dEXdD(1) = 0.5D0 * ( dEXdDD(1) + dEXdDD(2) + VPOL )
+         dEXdD(2) = 0.5D0 * ( dEXdDD(1) + dEXdDD(2) - VPOL )
+         dEXdD(3) = (dEXdDD(1) - dEXdDD(2))*D(3) / DPOL
+         dEXdD(4) = (dEXdDD(1) - dEXdDD(2))*D(4) / DPOL
+
+         VPOL  = (dECdDD(1)-dECdDD(2)) * (D(1)-D(2)) / DPOL
+         dECdD(1) = 0.5D0 * ( dECdDD(1) + dECdDD(2) + VPOL )
+         dECdD(2) = 0.5D0 * ( dECdDD(1) + dECdDD(2) - VPOL )
+         dECdD(3) = (dECdDD(1) - dECdDD(2))*D(3) / DPOL
+         dECdD(4) = (dECdDD(1) - dECdDD(2))*D(4) / DPOL
+
           do ix = 1,3
-            dEXdGD(ix,is) = sum( dEXdGDD(ix,:) * dGDDdGD(:,is) )
-            dECdGD(ix,is) = sum( dECdGDD(ix,:) * dGDDdGD(:,is) )
+            dEXdGD(ix,1) = sum( dEXdGDD(ix,:) * dGDDdGD(:,1) )
+            dECdGD(ix,1) = sum( dECdGDD(ix,:) * dGDDdGD(:,1) )
+            dEXdGD(ix,2) = sum( dEXdGDD(ix,:) * dGDDdGD(:,2) )
+            dECdGD(ix,2) = sum( dECdGDD(ix,:) * dGDDdGD(:,2) )
+            dEXdGD(ix,3) = sum( dEXdGDD(ix,:) * dGDDdGD(:,3) )
+            dECdGD(ix,3) = sum( dECdGDD(ix,:) * dGDDdGD(:,3) )
+            dEXdGD(ix,4) = sum( dEXdGDD(ix,:) * dGDDdGD(:,4) )
+            dECdGD(ix,4) = sum( dECdGDD(ix,:) * dGDDdGD(:,4) )
           end do
-        end do
-        ! Divide by two the non-diagonal derivatives. This is necessary
-        ! because DEDD(3:4) intend to be Re(dE/dD12)=Re(dE/dD21) and 
-        ! Im(dE/dD12)=-Im(dE/dD21), respectively. However, both D12 and D21
-        ! depend on D(3) and D(4), and we have derived directly dE/dD(3) and
-        ! dE/dD(4). Although less trivially, the same applies to dE/dGD(3:4).
-        dEXdD(3:4) = dEXdD(3:4) / 2
-        dECdD(3:4) = dECdD(3:4) / 2
-        dEXdGD(:,3:4) = dEXdGD(:,3:4) / 2
-        dECdGD(:,3:4) = dECdGD(:,3:4) / 2
+
+! CC RC ***************************
       else   ! Collinear spin => just copy derivatives to output arrays
         dEXdD(1:nSpin) = dEXdDD(1:nSpin)
         dECdD(1:nSpin) = dECdDD(1:nSpin)

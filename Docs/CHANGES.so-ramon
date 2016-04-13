@@ -1,4 +1,18 @@
 -----------------------------------------------------------------------------------------------
+2016-4-13   11:20   Ramon Cuadrado  <ramon.cuadrado@icn2.cat>  trunk-so-ggaxc
+
+* Alternative way to obtain in SiestaXC/ggaxc.f the derivatives of 
+E_XC with respect to rho: dEXCdD(1:4)
+
+* This fixes previous issue related with noncollinearity (only)  in slabs 
+where the first call in the SC loop did give huge values of Vxc, E_f, for example. 
+
+modified:
+  Docs/CHANGES.so-ramon
+  Src/SiestaXC/ggaxc.f
+  version.info
+
+-----------------------------------------------------------------------------------------------
 2016-3-11   10:15   Ramon Cuadrado  <ramon.cuadrado@icn2.cat>  siesta-trunk-479--so-ramon
 On-site implementation of the SO coupling in siesta-trunk-479 version
 
