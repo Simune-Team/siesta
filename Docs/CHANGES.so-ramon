@@ -1,3 +1,36 @@
+2016-4-14   15:21   Ramon Cuadrado  <ramon.cuadrado@icn2.cat>  trunk-so-ggaxc
+
+* The first SC step won't be huge as was previously tested for older versions. 
+See explanation bellow:
+
+- At some mesh points, the diagonal spin density matrix components are 
+exactly the same: D(1) = D(2). In principle, this does not happen at any mesh 
+point when we have bulk, but it is possible to have it when we have vaccum 
+(slab/clusters). These two components are used to calculate DPOL in the subroutine 
+SiestaXC/ggaxc.f and its value will be zero. This variable is used afterwards 
+as divider in other parts throughout the subroutine and the tiny fortran function 
+(to avoid divisions by zero) s to be added to DPOL leading to a DPOL value of 10^-308.
+After use it in a division we will have a huge positive number, of order of 10^200 
+or so, it depends. Some of these values will be multiplied by "true" zero giving zero, 
+however, others won't be exactly zero, for example, 10^-20. If one multiply 
+10^-20 * 10^200 ~ 10^180 and the values calculated, to be used afterwars 
+along the code, will be eneormous! One way to fix the issue is to define 
+inside ggaxc.f a specific tiny parameter, say TINY=10^-12 that, in principle 
+it should work for the kind of multiplication written before: 10^-20 * 10^12 ~ 
+zero. In doing so the calculated variables inside ggaxc.f won't have huge output 
+values of dExcdGD(:,1:4), for example. 
+
+- Alternatively to the tiny(DPOL) line in ggaxc.f it has been added as a parameter: 
+TINY=10.0d-12.  
+
+Note: Probably the use of "bad" initial DM will lead in a well converged DM 
+after the SC but maybe starting with good initial DM the convergency will be 
+achieved before. 
+
+modified:
+  Docs/CHANGES.so-ramon 
+  Src/SiestaXC/ggaxc.f
+
 -----------------------------------------------------------------------------------------------
 2016-4-13   11:20   Ramon Cuadrado  <ramon.cuadrado@icn2.cat>  trunk-so-ggaxc
 
@@ -180,3 +213,5 @@ modified:
   Src/write_subs.F
   Src/writewave.F
   version.info
+
+

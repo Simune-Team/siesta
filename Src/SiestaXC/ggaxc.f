@@ -118,7 +118,10 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
      .              dGDTOTdD(3,4), dGDPOLdD(3,4),
      .              dGDTOTdGD(4), dGDPOLdGD(4),
      .              DPOL, DTOT, GDD(3,2), GDTOT(3), GDPOL(3),
-     .              VPOL ! CC RC
+     .              VPOL, TINY  ! CC RC
+
+      PARAMETER ( TINY = 1.D-12 ) ! CC RC
+
 
       ! Handle non-collinear spin case
       if (nSpin==4) then
@@ -130,7 +133,7 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         DTOT = D(1) + D(2)                           ! DensTot (DensUp+DensDn)
         DPOL = SQRT( (D(1)-D(2))**2                  ! DensPol (DensUp-DensDn)
      .              + 4*(D(3)**2+D(4)**2) )
-        DPOL = DPOL + tiny(DPOL)                     ! Avoid division by zero
+! CC RC     DPOL = DPOL + tiny(DPOL)                     ! Avoid division by zero
         DD(1) = ( DTOT + DPOL ) / 2                  ! DensUp
         DD(2) = ( DTOT - DPOL ) / 2                  ! DensDn
 
@@ -138,30 +141,30 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         GDTOT(:) = GD(:,1) + GD(:,2)                 ! Grad(DensTot)
         GDPOL(:) = ( (D(1)-D(2))*(GD(:,1)-GD(:,2))   ! Grad(DensPol)
      .             + 4*(D(3)*GD(:,3)+D(4)*GD(:,4)) )
-     .             / DPOL
+     .             / (DPOL+ TINY)
         GDD(:,1) = ( GDTOT(:) + GDPOL(:) ) / 2       ! Grad(DensUp)
         GDD(:,2) = ( GDTOT(:) - GDPOL(:) ) / 2       ! Grad(DensDn)
 
         ! Derivatives of Dup and Ddn with respect to input density matrix
         dDTOTdD(1:2) = 1                             ! dDensTot/dD(i)
         dDTOTdD(3:4) = 0
-        dDPOLdD(1) = +( D(1) - D(2) ) / DPOL         ! dDensPol/dD(i)
-        dDPOLdD(2) = -( D(1) - D(2) ) / DPOL
-        dDPOLdD(3) = 4 * D(3) / DPOL
-        dDPOLdD(4) = 4 * D(4) / DPOL
+        dDPOLdD(1) = +( D(1) - D(2) ) / (DPOL+TINY)         ! dDensPol/dD(i)
+        dDPOLdD(2) = -( D(1) - D(2) ) / (DPOL+TINY)
+        dDPOLdD(3) = 4 * D(3) / (DPOL+TINY)
+        dDPOLdD(4) = 4 * D(4) / (DPOL+TINY)
         dDDdD(1,:) = ( dDTOTdD(:) + dDPOLdD(:) ) / 2 ! dDensUp/dD(i)
         dDDdD(2,:) = ( dDTOTdD(:) - dDPOLdD(:) ) / 2 ! dDensDn/dD(i)
 
         ! Derivatives of grad(Dup) and grad(Ddn) with respect to D(i)
         dGDTOTdD(1:3,1:4) = 0                        ! dGradDensTot/dD(i)
-        dGDPOLdD(:,1) = + (GD(:,1)-GD(:,2))/DPOL     ! dGradDensPol/dD(i)
-     .                  - GDPOL(:) * dDPOLdD(1)/DPOL
-        dGDPOLdD(:,2) = - (GD(:,1)-GD(:,2))/DPOL
-     .                  - GDPOL(:) * dDPOLdD(2)/DPOL
-        dGDPOLdD(:,3) = 4*GD(:,3)/DPOL
-     .                  - GDPOL(:) * dDPOLdD(3)/DPOL
-        dGDPOLdD(:,4) = 4*GD(:,4)/DPOL
-     .                  - GDPOL(:) * dDPOLdD(4)/DPOL
+        dGDPOLdD(:,1) = + (GD(:,1)-GD(:,2))/(DPOL+TINY)     ! dGradDensPol/dD(i)
+     .                  - GDPOL(:) * dDPOLdD(1)/(DPOL+TINY)
+        dGDPOLdD(:,2) = - (GD(:,1)-GD(:,2))/(DPOL+TINY)
+     .                  - GDPOL(:) * dDPOLdD(2)/(DPOL+TINY)
+        dGDPOLdD(:,3) = 4*GD(:,3)/(DPOL+TINY)
+     .                  - GDPOL(:) * dDPOLdD(3)/(DPOL+TINY)
+        dGDPOLdD(:,4) = 4*GD(:,4)/(DPOL+TINY)
+     .                  - GDPOL(:) * dDPOLdD(4)/(DPOL+TINY)
         dGDDdD(:,1,:) = ( dGDTOTdD(:,:)              ! dGradDensUp/dD(i)
      .                  + dGDPOLdD(:,:) ) / 2
         dGDDdD(:,2,:) = ( dGDTOTdD(:,:)              ! dGradDensDn/dD(i)
@@ -170,10 +173,10 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         ! Derivatives of grad(Dup) and grad(Ddn) with respect to grad(D(i))
         dGDTOTdGD(1:2) = 1                           ! dGradDensTot/dGradD(i)
         dGDTOTdGD(3:4) = 0
-        dGDPOLdGD(1) = +(D(1)-D(2))/DPOL             ! dGradDensPol/dGradD(i)
-        dGDPOLdGD(2) = -(D(1)-D(2))/DPOL
-        dGDPOLdGD(3) = 4*D(3)/DPOL
-        dGDPOLdGD(4) = 4*D(4)/DPOL
+        dGDPOLdGD(1) = +(D(1)-D(2))/(DPOL+TINY)             ! dGradDensPol/dGradD(i)
+        dGDPOLdGD(2) = -(D(1)-D(2))/(DPOL+TINY)
+        dGDPOLdGD(3) = 4*D(3)/(DPOL+TINY)
+        dGDPOLdGD(4) = 4*D(4)/(DPOL+TINY)
         dGDDdGD(1,:) = ( dGDTOTdGD(:)                ! dGradDensUp/dGradD(i)
      .                 + dGDPOLdGD(:) ) / 2
         dGDDdGD(2,:) = ( dGDTOTdGD(:)                ! dGradDensDn/dGradD(i)
@@ -282,52 +285,25 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         ! dE/dD(i) = dE/dDup * dDup/dD(i) + dE/dDdn * dDdn/dD(i)
         !          + dE/dGDup * dGDup/dD(i) + dE/dGDdn * dGDdn/dD(i)
         ! dE/dGradD(i) = dE/dGDup * dGDup/dGD(i) + dE/dGDdn * dGDdn/dGD(i)
-! CC RC ***************************
-!        do is = 1,4
-!          dEXdD(is) = sum( dEXdDD(:) * dDDdD(:,is) )
-!     .              + sum( dEXdGDD(:,:) * dGDDdD(:,:,is) )
-!          dECdD(is) = sum( dECdDD(:) * dDDdD(:,is) )
-!     .              + sum( dECdGDD(:,:) * dGDDdD(:,:,is) )
-!          do ix = 1,3
-!            dEXdGD(ix,is) = sum( dEXdGDD(ix,:) * dGDDdGD(:,is) )
-!            dECdGD(ix,is) = sum( dECdGDD(ix,:) * dGDDdGD(:,is) )
-!          end do
-!        end do
+        do is = 1,4
+          dEXdD(is) = sum( dEXdDD(:) * dDDdD(:,is) )
+     .              + sum( dEXdGDD(:,:) * dGDDdD(:,:,is) )
+          dECdD(is) = sum( dECdDD(:) * dDDdD(:,is) )
+     .              + sum( dECdGDD(:,:) * dGDDdD(:,:,is) )
+          do ix = 1,3
+            dEXdGD(ix,is) = sum( dEXdGDD(ix,:) * dGDDdGD(:,is) )
+            dECdGD(ix,is) = sum( dECdGDD(ix,:) * dGDDdGD(:,is) )
+          end do
+        end do
 !        ! Divide by two the non-diagonal derivatives. This is necessary
 !        ! because DEDD(3:4) intend to be Re(dE/dD12)=Re(dE/dD21) and 
 !        ! Im(dE/dD12)=-Im(dE/dD21), respectively. However, both D12 and D21
 !        ! depend on D(3) and D(4), and we have derived directly dE/dD(3) and
 !        ! dE/dD(4). Although less trivially, the same applies to dE/dGD(3:4).
-!        dEXdD(3:4) = dEXdD(3:4) / 2
-!        dECdD(3:4) = dECdD(3:4) / 2
-!        dEXdGD(:,3:4) = dEXdGD(:,3:4) / 2
-!        dECdGD(:,3:4) = dECdGD(:,3:4) / 2
-! CC RC ***************************
-
-         VPOL  = (dEXdDD(1)-dEXdDD(2)) * (D(1)-D(2)) / DPOL
-         dEXdD(1) = 0.5D0 * ( dEXdDD(1) + dEXdDD(2) + VPOL )
-         dEXdD(2) = 0.5D0 * ( dEXdDD(1) + dEXdDD(2) - VPOL )
-         dEXdD(3) = (dEXdDD(1) - dEXdDD(2))*D(3) / DPOL
-         dEXdD(4) = (dEXdDD(1) - dEXdDD(2))*D(4) / DPOL
-
-         VPOL  = (dECdDD(1)-dECdDD(2)) * (D(1)-D(2)) / DPOL
-         dECdD(1) = 0.5D0 * ( dECdDD(1) + dECdDD(2) + VPOL )
-         dECdD(2) = 0.5D0 * ( dECdDD(1) + dECdDD(2) - VPOL )
-         dECdD(3) = (dECdDD(1) - dECdDD(2))*D(3) / DPOL
-         dECdD(4) = (dECdDD(1) - dECdDD(2))*D(4) / DPOL
-
-          do ix = 1,3
-            dEXdGD(ix,1) = sum( dEXdGDD(ix,:) * dGDDdGD(:,1) )
-            dECdGD(ix,1) = sum( dECdGDD(ix,:) * dGDDdGD(:,1) )
-            dEXdGD(ix,2) = sum( dEXdGDD(ix,:) * dGDDdGD(:,2) )
-            dECdGD(ix,2) = sum( dECdGDD(ix,:) * dGDDdGD(:,2) )
-            dEXdGD(ix,3) = sum( dEXdGDD(ix,:) * dGDDdGD(:,3) )
-            dECdGD(ix,3) = sum( dECdGDD(ix,:) * dGDDdGD(:,3) )
-            dEXdGD(ix,4) = sum( dEXdGDD(ix,:) * dGDDdGD(:,4) )
-            dECdGD(ix,4) = sum( dECdGDD(ix,:) * dGDDdGD(:,4) )
-          end do
-
-! CC RC ***************************
+        dEXdD(3:4) = dEXdD(3:4) / 2
+        dECdD(3:4) = dECdD(3:4) / 2
+        dEXdGD(:,3:4) = dEXdGD(:,3:4) / 2
+        dECdGD(:,3:4) = dECdGD(:,3:4) / 2
       else   ! Collinear spin => just copy derivatives to output arrays
         dEXdD(1:nSpin) = dEXdDD(1:nSpin)
         dECdD(1:nSpin) = dECdDD(1:nSpin)
