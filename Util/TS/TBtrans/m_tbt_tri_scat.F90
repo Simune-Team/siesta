@@ -983,7 +983,7 @@ contains
     case ( 3 )
 
        if ( .not. has_all ) then
-          call die('GF_T_solve: Can not separate transmissions.')
+          call die('GF_T_solve: Can not separate transmissions (need all bulk).')
        end if
        
     case default
@@ -1140,11 +1140,6 @@ contains
           
           ! Currently the bond-currents are calculated
           ! regardless of the non-orthogonality! YES WE KNOW !
-          ! However, we should not shift the Hamiltonian with respect 
-          ! to the overlap matrix.
-          ! This can easily be seen using the Loewdin basis.
-          
-          ! Jij = Im( A_ij Hji - A_ji Hji^* )
           J(iind) = aimag( A(ind) * Hi - A(jo) * dconjg( Hi ) )
           
        end do

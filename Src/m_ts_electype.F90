@@ -107,8 +107,8 @@ module m_ts_electype
      ! k-point changes...
      real(dp) :: bkpt_cur(3)
      ! Used xa and lasto
-     real(dp), pointer :: xa_used(:,:) => null()
-     integer,  pointer :: lasto_used(:) => null()
+     real(dp), pointer, contiguous :: xa_used(:,:) => null()
+     integer,  pointer, contiguous :: lasto_used(:) => null()
 
      ! Advanced stuff...
      logical :: kcell_check = .true.
@@ -122,14 +122,14 @@ module m_ts_electype
      ! The inter-layer distance between succeeding layers along
      ! the semi-infinite direction
      real(dp) :: dINF_layer
-     real(dp), pointer :: xa(:,:) => null()
-     integer,  pointer :: lasto(:) => null()
+     real(dp), pointer, contiguous :: xa(:,:) => null()
+     integer,  pointer, contiguous :: lasto(:) => null()
      type(Sparsity)  :: sp
      type(dSpData2D) :: H
      type(dSpData1D) :: S
      ! Supercell offsets
      integer :: nsc(3)
-     integer, pointer :: isc_off(:,:) => null()
+     integer, pointer, contiguous :: isc_off(:,:) => null()
      ! --- --- completed the content of the TSHS file
      ! Below we create the content for the self-energy creation
      ! Notice that we can save some elements simply by extracting the 0-1 connections
@@ -139,13 +139,13 @@ module m_ts_electype
      type(dSpData1D) :: S00, S01
 
      ! These arrays are used to construct the full Hamiltonian and overlap and Green function
-     complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:)
+     complex(dp), pointer, contiguous :: HA(:,:,:), SA(:,:,:), GA(:)
 
      ! Arrays needed to partition the scattering matrix and self-energies
 
      ! Gamma stored is actually this: (Sigma - Sigma^\dagger) ^ T
      ! and NOT: i (Sigma - Sigma^\dagger)
-     complex(dp), pointer :: Gamma(:), Sigma(:)
+     complex(dp), pointer, contiguous :: Gamma(:), Sigma(:)
 
      ! The imaginary part in the electrode
      real(dp) :: Eta = 7.3498067e-6_dp ! corresponds to 0.0001 eV

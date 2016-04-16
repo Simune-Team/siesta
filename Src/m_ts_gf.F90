@@ -622,7 +622,8 @@ contains
              call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &
                   nzwork, zwork, DOS(:,i) , T(i) )
 #ifdef TBT_PHONON
-             DOS(:,i) = DOS(:,i) * real(cE%e,dp)
+             ! For phonons, we also require a factor of 2
+             DOS(:,i) = 2._dp * real(cE%e,dp) * DOS(:,i)
 #endif
           else
              call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &

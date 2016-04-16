@@ -978,9 +978,7 @@ contains
              if ( .not. cE%fake ) then
                 call GF_DOS(r_oDev,Gf_tri,spS,DOS(:,1),nzwork,zwork)
 #ifdef TBT_PHONON
-                DOS(:,1) = omega * DOS(:,1)
-#else
-                if ( TSHS%nspin == 1 ) DOS(:,1) = 2._dp * DOS(:,1)
+                DOS(:,1) = 2._dp * omega * DOS(:,1)
 #endif
              end if
           end if
@@ -1064,9 +1062,7 @@ contains
                 ! Calculate the DOS from the spectral function
                 call A_DOS(r_oDev,zwork_tri,spS,DOS(:,1+iEl))
 #ifdef TBT_PHONON
-                DOS(:,1+iEl) = omega * DOS(:,1+iEl)
-#else
-                if ( TSHS%nspin == 1 ) DOS(:,1+iEl) = 2._dp * DOS(:,1+iEl)
+                DOS(:,1+iEl) = 2._dp * omega * DOS(:,1+iEl)
 #endif
                 
 #ifdef NCDF_4
@@ -1179,9 +1175,7 @@ contains
             !   if ( .not. cE%fake ) then
             !      call GF_DOS(r_oDev,Gf_tri,spS,DOS(:,1),nzwork,zwork)
 #ifdef TBT_PHONON
-            !       DOS(:,1) = omega * DOS(:,1)
-#else
-            !      if ( TSHS%nspin == 1 ) DOS(:,1) = 2._dp * DOS(:,1)
+            !       DOS(:,1) = 2._dp * omega * DOS(:,1)
 #endif
             !   end if
             !end if
@@ -1259,9 +1253,7 @@ contains
                ! Calculate the DOS from the spectral function
                call A_DOS(r_oDev,zwork_tri,spS,pDOS(:,2,ipt))
 #ifdef TBT_PHONON
-               pDOS(:,2,ipt) = omega * pDOS(:,2,ipt)
-#else
-               if ( TSHS%nspin == 1 ) pDOS(:,2,ipt) = 2._dp * pDOS(:,2,ipt)
+               pDOS(:,2,ipt) = 2._dp * omega * pDOS(:,2,ipt)
 #endif
                
 #ifdef NCDF_4

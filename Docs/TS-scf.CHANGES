@@ -1,4 +1,23 @@
 ----------------------------------------------------
+April 16, 2016 -- Nick Papior          trunk-492---ts-scf-663
+Added contiguous, fixed DOS integration
+
+- arrays for the electrodes are now contiguous
+  This affects performance on a variety of systems as
+  temporary arrays are superseeded.
+
+- DOS integration in tbt/pht are now integrating to 1,
+  regardless of number of spin-channels.
+  This has been fixed also for electrode bulk DOS.
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 March 30, 2016 -- Nick Papior          trunk-492---ts-scf-662
 enh: changed AllGather to AllReduce (MPI_LAnd)
 

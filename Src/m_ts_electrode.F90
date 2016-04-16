@@ -53,6 +53,7 @@ contains
 ! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in T-direction)
 ! ***************** OUTPUT *********************************************
 ! complex(dp) GS      : Surface Green function of the electrode
+! real(dp) DOS        : DOS of bulk electrode (additive)
 ! **********************************************************************
     use m_pivot_array, only : ipiv
     use m_mat_invert
@@ -93,8 +94,8 @@ contains
     real(dp) :: ro
     complex(dp) :: zij, zji
 
-    complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,gb
-    complex(dp), dimension(:), pointer :: gsL,gsR
+    complex(dp), dimension(:), pointer, contiguous :: rh,rh1,w,alpha,beta,gb
+    complex(dp), dimension(:), pointer, contiguous :: gsL,gsR
     
     complex(dp), external :: zdotu, zdotc
 
@@ -352,9 +353,11 @@ contains
           ! we return a non-inverted matrix
           ! hence prohibit the inversion of the matrix
           ! by moving data to another work-array
-!$OMP parallel workshare default(shared)
-          rh1(1:nosq) = gsR(:)
-!$OMP end parallel workshare
+!$OMP parallel do default(shared) private(i)
+          do i = 1 , nosq
+             rh1(i) = gsR(i)
+          end do
+!$OMP end parallel do
           gsR => rh1(1:nosq)
 
        end if
@@ -552,7 +555,7 @@ contains
 
     real(dp) :: ro
 
-    complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,GB
+    complex(dp), dimension(:), pointer, contiguous :: rh,rh1,w,alpha,beta,GB
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE SSR_sGreen_NoDOS' )
@@ -911,20 +914,20 @@ contains
     integer :: nuo_E, nS, nuou_E, nuS, no_X, n_X
 
     ! Electrode transfer and hamiltonian matrix
-    complex(dp), pointer :: H00(:) => null()
-    complex(dp), pointer :: S00(:) => null()
-    complex(dp), pointer :: H01(:) => null()
-    complex(dp), pointer :: S01(:) => null()
-    complex(dp), pointer :: zwork(:) => null()
-    complex(dp), pointer :: zHS(:) => null()
+    complex(dp), pointer, contiguous :: H00(:) => null()
+    complex(dp), pointer, contiguous :: S00(:) => null()
+    complex(dp), pointer, contiguous :: H01(:) => null()
+    complex(dp), pointer, contiguous :: S01(:) => null()
+    complex(dp), pointer, contiguous :: zwork(:) => null()
+    complex(dp), pointer, contiguous :: zHS(:) => null()
     real(dp), allocatable :: sc_off(:,:)
 
     ! Expanded arrays
-    complex(dp), pointer :: X(:) => null()
+    complex(dp), pointer, contiguous :: X(:) => null()
 
     ! Green function variables
-    complex(dp), pointer :: GS(:)
-    complex(dp), pointer :: Hq(:), Sq(:), Gq(:)
+    complex(dp), pointer, contiguous :: GS(:)
+    complex(dp), pointer, contiguous :: Hq(:), Sq(:), Gq(:)
     complex(dp) :: ZEnergy
 
     ! In order to print information about the recursize algorithm
@@ -1612,9 +1615,9 @@ contains
     real(dp) :: Ef
     complex(dp) :: ph(0:n_s-1)
     integer :: i, j, io, jo, ind, is
-    integer, pointer :: ncol00(:), l_ptr00(:), l_col00(:)
-    integer, pointer :: ncol01(:), l_ptr01(:), l_col01(:)
-    real(dp), pointer :: H00(:,:) , S00(:), H01(:,:), S01(:)
+    integer, pointer, contiguous :: ncol00(:), l_ptr00(:), l_col00(:)
+    integer, pointer, contiguous :: ncol01(:), l_ptr01(:), l_col01(:)
+    real(dp), pointer, contiguous :: H00(:,:) , S00(:), H01(:,:), S01(:)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE elec_HS_Transfer' )
@@ -1752,13 +1755,13 @@ contains
     integer :: nuo_E, nS, nuou_E, nuS, nuouT_E
 
     ! Electrode transfer and hamiltonian matrix
-    complex(dp), pointer :: H00(:), H01(:), S00(:), S01(:)
-    complex(dp), pointer :: zwork(:)
-    complex(dp), pointer :: zHS(:) => null()
+    complex(dp), pointer, contiguous :: H00(:), H01(:), S00(:), S01(:)
+    complex(dp), pointer, contiguous :: zwork(:)
+    complex(dp), pointer, contiguous :: zHS(:) => null()
     real(dp), allocatable :: sc_off(:,:)
 
     ! Green function variables
-    complex(dp), pointer :: GS(:)
+    complex(dp), pointer, contiguous :: GS(:)
 
     ! size requirement
     integer :: size_req(2)
@@ -1959,10 +1962,12 @@ contains
 
     end do q_loop
 
-    ! We do not normalize DOS as this is the DOS for the entire
-    ! replicated device. Hence it can directly be compared against the 
-    ! \sum_(equivalent atoms) DOS
-
+    ! We normalize DOS as this will be comparable to a bulk
+    ! calculation.
+    if ( calc_DOS .and. nq > 1 ) then
+       DOS(1:nuo_E) = DOS(1:nuo_E) / nq
+    end if
+       
     if ( zHS_allocated ) then
        call de_alloc(zHS, routine='next_GS')
     end if
