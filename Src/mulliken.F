@@ -424,7 +424,7 @@ C Global sum of total charge
             atm_label=labelfis(ispec)
             if (ionode) then
               write(6,'(/2a)')'Species: ', atm_label
-              write(6,'(/,a4,a9,4x,2a10,3x,a8,/,a)')
+              write(6,'(/,a4,1x,a8,4x,2a10,3x,a8,/,a)')
      .             'Atom', 'Orb', 'Charge', 'Spin', 'Svec',
      .             repeat('-', 64)
             endif
@@ -448,13 +448,13 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
                         call spnvec( nspin, qos(1:nspin,itot), qtot,
      $                               stot,svec)
                         if (ionode) then
-                          write(6,'(i4,i5,i1,a7,2f10.5,3x,3f8.3)')
-     .                         ia, io,config(1),sym_label(1), 
+                          write(6,'(i5,i3,tr1,i1,a7,2f10.5,3x,3f8.3)')
+     .                         ia,io-lasto(ia-1),config(1),sym_label(1), 
      .                         qtot, stot, svec
 #ifdef MPI
                         else
-                          write(mpibuff,'(i4,i5,i1,a7,2f10.5,3x,3f8.3)')
-     .                         ia, io,config(1),sym_label(1), 
+                      write(mpibuff,'(i5,i3,tr1,i1,a7,2f10.5,3x,3f8.3)')
+     .                         ia,io-lasto(ia-1),config(1),sym_label(1), 
      .                         qtot, stot, svec
                           call mpi_send(mpibuff, 200, MPI_Character, 
      .                         0, io, MPI_Comm_world, mpierror)
@@ -484,7 +484,7 @@ C Global reduction of terms
                 stot = temp2(5)
 #endif
                 if (ionode) then
-                  write(6,'(i4,4x,a6,3x,2f10.5,3x,3f8.3,/)')
+                  write(6,'(i5,5x,a5,2x,2f10.5,3x,3f8.3,/)')
      .                 ia, 'Total', qtot, stot, svec 
                 endif
               endif
@@ -503,8 +503,8 @@ C Global reduction of terms
           stot = temp2(5)
 #endif
           if (ionode) then
-            write(6,'(a,/,2a8,1x,2f10.5,3x,3f8.3,/)')
-     .        repeat('-',64), 'Total', 'Total', qtot, stot, svec
+            write(6,'(a,/,a5,12x,2f10.5,3x,3f8.3,/)')
+     .        repeat('-',64), 'Total', qtot, stot, svec
           endif
         endif
       endif

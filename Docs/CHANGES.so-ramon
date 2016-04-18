@@ -1,3 +1,13 @@
+2016-4-18   11:33   Nick Papior  <nickpapior@gmail.com>  trunk-so
+Beautification of the mulliken output
+
+- Small change to the printing routine of
+  mulliken for NC spin.
+  
+modified:
+  Src/mulliken.F
+
+
 2016-4-18   11:07   Nick Papior  <nickpapior@gmail.com>  trunk-so
 Changed DM-minimum from polarization (+eps) to max(eps)
 
