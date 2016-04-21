@@ -1,3 +1,13 @@
+2016-4-21   22:50   Nick Papior  <nickpapior@gmail.com>  trunk-so
+Dies when trying Harris functional for NC/SO
+
+- Harris functional is not defined for
+  NC spin configuration.
+  An error message has been inserted.
+  
+modified:
+  Src/read_options.F90
+
 2016-4-21   19:02   Nick Papior  <nickpapior@gmail.com>  trunk-so
 Fixed parallel mulliken for NC
 
