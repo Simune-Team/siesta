@@ -6,18 +6,18 @@
 
 
 !#ifdef MPI
-!            use m_mpi_utils, only: globalize_sum
+      use m_mpi_utils, only: globalize_sum, globalize_max
 !#endif
 
       implicit none
+
+      private
 
       public :: hubbard_term
       logical, save, public :: conv_ldaupop  ! Are the populations of the LDA+U 
                                              !   projectors converged?
     
-      private  
-      integer, save   :: iter_ldaupop
-      data iter_ldaupop / 0 /
+      integer, save :: iter_ldaupop = 0
 
       CONTAINS
 
@@ -206,9 +206,8 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
                                                   !   SCF iterations
       logical ::   within
       logical, dimension(:), pointer ::  listed, listedall
-      logical, save :: firstime                   !  First time that this 
+      logical, save :: firstime = .true.          !  First time that this 
                                                   !   subroutine is called?
-      data firstime /.true./
 
       type(species_info),  pointer :: spp
       type(basis_def_t),   pointer :: basp
@@ -246,12 +245,14 @@ C ......................
 
 !       Allocate local array to store the occupations of the 
 !       LDA+U projectors
+        nullify( occu, occu_old )
         allocate( occu(maxldau,maxldau,nua,nspin) )
         call memory( 'A', 'D', size(occu), 'hubbard_term' )
         allocate( occu_old(maxldau,maxldau,nua,nspin) )
         call memory( 'A', 'D', size(occu_old), 'hubbard_term' )
         occu_old = 0.0_dp
 #ifdef  MPI
+        nullify( buffer1 )
 	allocate(buffer1(maxldau,maxldau,nua,nspin))
         call memory('A','D',size(buffer1),'hubbard_term')
 #endif
@@ -286,10 +287,12 @@ C ......................
 !     Here we determine whether the occupations are computed on the first
 !     SCF step or not.
       if( first .and. (.not. ldau_init) ) then
-         write(6,'(a)')
-     &     'hubbard_term: not computing the occupations '
-         write(6,'(a)')
-     &     '              in the first SCF step'
+         if ( Node == 0 ) then
+            write(6,'(a)')
+     &           'hubbard_term: not computing the occupations '
+            write(6,'(a)')
+     &           '              in the first SCF step'
+         end if
          call timer( 'hubbard_term', 2 )
          return
       endif
@@ -414,7 +417,7 @@ C ......................
 !       Counter for the SCF loops to converge the population of the 
 !       LDA+U projectors
         iter_ldaupop = iter_ldaupop + 1
-        if( Node .eq. 0 ) write(6,'(a,i4)') 
+        if( Node == 0 ) write(6,'(a,i4)')
      &   'hubbard_term: recalculating local occupations ', iter_ldaupop
 
 !       Initialize occupations
@@ -653,7 +656,7 @@ C ......................
           if( nldauproj .ne. 0) then
             oc=0.0_dp
 
-            if( ldau_shift .and. Node.eq.0 ) then
+            if( ldau_shift .and. Node == 0 ) then
               write(6,*) 'hubbard_term: projector occupations'
               write(6,*) 'hubbard_term: atom, species: ',ka, is
             endif
@@ -662,7 +665,7 @@ C ......................
 !                 write(6,'(2i4,2f12.5)') ko, ikb,
 !    &          (occu_old(ko,ikb,ka,ispin),ispin=1,nspin)
 !
-                if( ldau_shift .and. Node.eq.0 ) then
+                if( ldau_shift .and. Node == 0 ) then
                    write(6,'(2i4,2f12.5)')  ko, ikb,
      &             (occu(ko,ikb,ka,ispin),ispin=1,nspin)
                 endif
@@ -677,7 +680,7 @@ C ......................
                 oc(2) = oc(2) + occu(ko,ko,ka,2)
               endif
             enddo 
-            if(ldau_shift.and.Node.eq.0) then
+            if(ldau_shift.and.Node == 0) then
               write(6,'(a,/,a,3f12.6)') 
      &           'hubbard_term: Total projector shell',
      &           'Occupations: ', oc(1), oc(2),oc(1)+oc(2)
@@ -686,9 +689,15 @@ C ......................
         enddo 
 !!       For debugging
 !        write(6,'(a,2f12.6)')'hubbard_term: occup ', oc(1), oc(2)
-        write(6,'(a,f12.6)')
-     &    'hubbard_term: maximum change in local occup.',dnmax
 !!       End debugging
+#ifdef MPI
+        call globalize_max(dnmax,buffer1(1,1,1,1))
+        dnmax = buffer1(1,1,1,1)
+#endif
+        if ( Node == 0 ) then
+           write(6,'(a,f12.6)')
+     &    'hubbard_term: maximum change in local occup.',dnmax
+        endif
 
         conv_ldaupop = .false.
         if( dnmax .lt. dtol_ldaupop ) conv_ldaupop = .true. 
@@ -964,17 +973,17 @@ C ......................
 !     &    'hubbard_term: Eldau(eV)=',Eldau*13.6057_dp
 !        write(6,'(a,f12.6)') 
 !     &    'hubbard_term: DEldau(eV)=',DEldau*13.6057_dp      
-        if( .not. matrix_elements_only) then 
-          do io = 1, nua
-            write(6,'(a,i7,3f12.5)')'ia, fa = ',
-     &        io, fa(:,io)
-          enddo
-          do io = 1, 3
-            write(6,'(a,3f12.5)')'stress = ',
-     &        stress(io,:)
-          enddo
-        endif
-!       End debugging
+!        if( .not. matrix_elements_only) then 
+!          do io = 1, nua
+!            write(6,'(a,i7,3f12.5)')'ia, fa = ',
+!     &        io, fa(:,io)
+!          enddo
+!          do io = 1, 3
+!            write(6,'(a,3f12.5)')'stress = ',
+!     &        stress(io,:)
+!          enddo
+!        endif
+!!       End debugging
       endif add_hamilt
 
 !      Deallocate local memory

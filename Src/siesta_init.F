@@ -141,6 +141,9 @@
       Emm     = 0.0_dp
       Entropy = 0.0_dp
       FreeE   = 0.0_dp
+      Eldau   = 0.0_dp
+      DEldau  = 0.0_dp
+
 
 #ifdef DEBUG_XC
 ! Set output file unit for debug info

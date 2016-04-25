@@ -133,18 +133,21 @@
 
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
-        call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
-     .                    maxnh, maxnh, lasto, iphorb,
-     .                    numh, listhptr, listh, numh, listhptr, listh,
-     .                    min(nspin,2), Dscf, Eldau, DEldau,
-     .                    fal, stressl, H, iscf,
-     .                    matrix_elements_only=.false.)
+         call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
+     .        maxnh, maxnh, lasto, iphorb,
+     .        numh, listhptr, listh, numh, listhptr, listh,
+     .        min(nspin,2), Dscf, Eldau, DEldau,
+     .        fal, stressl, H, iscf,
+     .        matrix_elements_only=.false.)
 #ifdef MPI
-!   Global reduction of energy terms
-        call globalize_sum(Eldau,buffer1)
-        Eldau = buffer1
+         ! Global reduction of energy terms
+         call globalize_sum(Eldau,buffer1)
+         Eldau = buffer1
+         call globalize_sum(DEldau,buffer1)
+         DEldau = buffer1
+
 #endif
-        Eldau = Eldau + DEldau
+         Eldau = Eldau + DEldau
       endif
 ! ..................
 

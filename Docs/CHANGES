@@ -5,6 +5,17 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-25                                                    trunk-48r87
+First patches by Nick Andersen
+
+* The files that have been added or modified are:
+
+- final_H_f_stress.F:    Globalization of the sum of DEldau added
+- ldau.F:                Writing on some of the output only on Node 0,
+                         globalization of dnmax
+- siesta_init.F:         Initialization of Eldau and DEldau
+
+-----------------------------------------------------------------------
 2016-04-25                                                    trunk-487
 Corrected version in the CHANGES file
 
