@@ -23,6 +23,12 @@
       use m_naefs,      only: naefs
       use m_dnaefs,     only: dnaefs
       use m_grdsam,     only: grdsam
+      use ldau_specs,   only: switch_ldau     ! This variable determines whether
+                                              !   the subroutine to compute the
+                                              !   Hubbard terms should be called
+                                              !   or not
+      use m_ldau,       only: hubbard_term    ! Subroutine that compute the
+                                              !   Hubbard terms
       use m_stress
       use m_energies
       use m_steps, only: istp
@@ -124,6 +130,24 @@
 
 !     Non-SCF part of total energy
       E0 = -Eions + Ena + Ekin + Enl
+
+! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
+      if( switch_ldau ) then
+        call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
+     .                    maxnh, maxnh, lasto, iphorb,
+     .                    numh, listhptr, listh, numh, listhptr, listh,
+     .                    min(nspin,2), Dscf, Eldau, DEldau,
+     .                    fal, stressl, H, iscf,
+     .                    matrix_elements_only=.false.)
+#ifdef MPI
+!   Global reduction of energy terms
+        call globalize_sum(Eldau,buffer1)
+        Eldau = buffer1
+#endif
+        Eldau = Eldau + DEldau
+      endif
+! ..................
+
 
 !     Non-local-pseudop: energy, forces, stress and matrix elements
 !     Add SCF contribution to energy and matrix elements 

@@ -66,6 +66,26 @@ C
       use alloc,           only : re_alloc, de_alloc
       use atomlist,        only : no_l
       use sparse_matrices, only : listhptr, numh, listh, xijo
+      use basis_types, only : basis_def_t       ! Derived type where all the
+                                                !   information relative to the
+                                                !   definition of the basis set
+                                                !   is defined
+      use basis_types, only : ldaushell_t       ! Derived type where all the
+                                                !   information relative to the
+                                                !   atomic orbitals where the U
+                                                !   correction will be applied
+                                                !   is defined
+      use basis_types, only : basis_parameters  ! Derived type where all the
+                                                !   information about the
+                                                !   - basis set
+                                                !   - Kleinman-Bylander proj.
+                                                !   - LDA+U proj.
+                                                !   ...
+                                                !   for all the species
+      use ldau_specs, only  : switch_ldau       ! Switch that determines whether
+                                                !   and LDA+U simulation is 
+                                                !   required or not
+
       implicit none
 
       integer,           intent(in) :: na
@@ -87,6 +107,7 @@ C
 
       real(dp), allocatable     :: rkbmax(:) ! maximum KB radius of each species
       real(dp), allocatable     :: rorbmax(:) ! maximum ORB radius of each species
+      real(dp), allocatable     :: rldaumax(:)! maximum LDA+U radius of each species
       integer      :: maxnkb  = 500          ! max no. of atoms with
                                              ! KB projectors which 
                                              ! overlap another
@@ -100,7 +121,7 @@ C
 
       real(dp)
      &  rci, rcj, rck, rij, rik, rjk,
-     &  rmax, rmaxkb, rmaxo
+     &  rmax, rmaxkb, rmaxo, rmaxldau
 
       logical, save :: warn1 = .false.
 
@@ -111,6 +132,8 @@ C
       integer, dimension(:),  pointer :: listhtmp
 
       logical :: connected
+      type(basis_def_t),   pointer :: basp
+      type(ldaushell_t),   pointer :: ldaushell
 
 C -------------------------------------
 #ifdef DEBUG
@@ -133,7 +156,7 @@ C     Allocate local arrays
       call re_alloc( conect, 1, no, 'conect', 'hsparse' )
       call re_alloc( listhtmp, 1, no, 'listhtmp', 'hsparse' )
 
-C     Find maximum range of basis orbitals and KB projectors
+C     Find maximum range of basis orbitals, KB and LDA+U projectors
       rmaxo = 0.0d0
       do ia = 1,na
         is = isa(ia)
@@ -147,14 +170,27 @@ C     Find maximum range of basis orbitals and KB projectors
         rmax = 2.0d0 * rmaxo
       else
         rmaxkb = 0.0d0
+        rmaxldau = 0.0d0
         do ia = 1,na
           is = isa(ia)
+          basp => basis_parameters(is)
           do ikb = lastkb(ia-1)+1,lastkb(ia)
             ioa = iphkb(ikb)
             rmaxkb = max( rmaxkb, rcut(is,ioa) )
           enddo
+          if( switch_ldau ) then
+            do io = 1, basp%nldaushells_tmp
+              ldaushell => basp%tmp_ldaushell(io)
+              rmaxldau = max( rmaxldau, ldaushell%rc )
+            enddo
+          endif
         enddo
-        rmax = 2.0d0 * (rmaxo+rmaxkb)
+        rmax = 2.0d0 * (rmaxo+max(rmaxkb,rmaxldau))
+!!       For debugging
+!        write(6,'(a,4f12.5)')
+!     &    'hsparse: rmaxo, rmaxkb, rmaxldau, rmax = ',
+!     &     rmaxo, rmaxkb, rmaxldau, rmax
+!!       End debugging
       endif
 
 C     Allocate local arrays that depend on parameters
@@ -163,12 +199,12 @@ C     Allocate local arrays that depend on parameters
       call re_alloc( rckb, 1, maxnkb, 'rckb', 'hsparse' )
       call re_alloc( index, 1, maxna, 'index', 'hsparse' )
 !
-!     Find maximum radius of the KB projectors of each species
+!     Find maximum radius of the KB and LDA+U projectors of each species
 !     Also for orbitals (for possible future extra optimizations)
 !     
-      allocate(rkbmax(nspecies), rorbmax(nspecies))
+      allocate(rkbmax(nspecies), rorbmax(nspecies),rldaumax(nspecies))
       do is = 1, nspecies
-         rkbmax(is) = 0.0_dp
+         rkbmax(is)   = 0.0_dp
          do ikb = 1, nkbfis(is)
             rkbmax(is) = max(rkbmax(is),rcut(is,-ikb))
          enddo
@@ -176,8 +212,18 @@ C     Allocate local arrays that depend on parameters
          do io = 1, nofis(is)
             rorbmax(is) = max(rorbmax(is),rcut(is,io))
          enddo
+         rldaumax(is) = 0.0_dp
+         basp => basis_parameters(is)
+         do io = 1, basp%nldaushells_tmp
+           ldaushell => basp%tmp_ldaushell(io)
+           rldaumax(is) = max(rldaumax(is),ldaushell%rc)
+         enddo
+!!        For debugging
+!         write(6,'(a,i5,3f12.5)')
+!     &     'hsparse: is, rorbmax, rkbmax, rldaumax = ',
+!     &      is, rorbmax(is), rkbmax(is), rldaumax(is)
+!!        End debugging
       enddo
-
 
       isel = 0
 C     Initialize internal data structures in neighb
@@ -220,33 +266,48 @@ C       Loop on orbitals of atom ia
             ioa = iphorb(io)
             rci = rcut(is,ioa)
 
-C           Find overlaping KB projectors
+C           Find overlaping KB and LDA+U projectors
             if (.not.negl) then
               nnkb = 0
               do kna = 1,nna
-                   ka = jna(kna)
-                   rik = sqrt( r2ij(kna) )
-                   ks = isa(ka)
-                                ! It is only necessary to check with
-                                ! the *largest* KB projector
-                   rck = rkbmax(ks)
-                   if ((rci + rck) .gt. rik) then
+                ka = jna(kna)
+                rik = sqrt( r2ij(kna) )
+                ks = isa(ka)
+                             ! It is only necessary to check with
+                             ! the *largest* KB projector
+                rck = rkbmax(ks)
+                if ((rci + rck) .gt. rik) then
+                  if (nnkb.eq.maxnkb) then
+                       maxnkb = maxnkb + 10
+                    call re_alloc( knakb, 1, maxnkb, 'knakb',
+     &                             'hsparse', .true. )
+                    call re_alloc( rckb, 1, maxnkb, 'rckb',
+     &                             'hsparse', .true. )
+                  endif
+                  nnkb        = nnkb + 1
+                  knakb(nnkb) = kna
+                  rckb(nnkb)  = rck
+                endif
+                if( switch_ldau ) then
+                  rck = rldaumax(ks)
+                  if ((rci + rck) .gt. rik) then
                     if (nnkb.eq.maxnkb) then
-                         maxnkb = maxnkb + 10
-                       call re_alloc( knakb, 1, maxnkb, 'knakb',
-     &                                'hsparse', .true. )
-                       call re_alloc( rckb, 1, maxnkb, 'rckb',
-     &                                'hsparse', .true. )
+                      maxnkb = maxnkb + 10
+                      call re_alloc( knakb, 1, maxnkb, 'knakb',
+     &                               'hsparse', .true. )
+                      call re_alloc( rckb, 1, maxnkb, 'rckb',
+     &                               'hsparse', .true. )
                     endif
                     nnkb        = nnkb + 1
                     knakb(nnkb) = kna
                     rckb(nnkb)  = rck
-                   endif
-                enddo
-             endif
+                  endif
+                endif
+              enddo
+            endif
 
 C           Find orbitals connected by direct overlap or
-C           through a KB projector
+C           through a KB or LDA+U projector
             do jnat = 1,nna
               ja = jna(jnat)
               js = isa(ja)
@@ -349,7 +410,7 @@ C       Loop on orbitals of atom ia
             ioa = iphorb(io)
             rci = rcut(is,ioa)
 
-C           Find overlaping KB projectors
+C           Find overlaping KB and LDA+U projectors
             if (.not.negl) then
                  nnkb = 0
                  do kna = 1,nna
@@ -364,11 +425,19 @@ C           Find overlaping KB projectors
                        knakb(nnkb) = kna
                        rckb(nnkb) = rck
                     endif
+                    if( switch_ldau ) then
+                      rck = rldaumax(ks)
+                      if ((rci + rck) .gt. rik) then
+                        nnkb        = nnkb + 1
+                        knakb(nnkb) = kna
+                        rckb(nnkb)  = rck
+                      endif
+                    endif
                  enddo
             endif
         
 C           Find orbitals connected by direct overlap or
-C           through a KB projector
+C           through a KB or LDA+U projector
             do jnat = 1,nna
               ja = jna(jnat)
               js = isa(ja)
@@ -459,6 +528,8 @@ C           Restore conect array for next orbital io
 C     Initialize listsc
       call LISTSC_INIT( nsc, nuotot )
 
+
+
 C     Deallocate local arrays
       call reset_neighbour_arrays( )
 
@@ -472,6 +543,15 @@ C     Deallocate local arrays
 #ifdef DEBUG
       call write_debug( '    POS hsparse' )
 #endif
+!!       For debugging
+!        do io = 1, nuo
+!          write(6,'(a,2i5)')'io, numh(io) = ', io, numh(io)
+!          do j = 1,numh(io)
+!            jo = listh(listhptr(io)+j)
+!            write(6,'(a,2i5)')'  j, neigh = ', j, jo
+!          enddo
+!        enddo
+!!      End debugging
       end subroutine hsparse
       
       subroutine check_cohp(io,jo)

@@ -17,6 +17,12 @@
      .                    rmaxo, no_l
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
+      use ldau_specs,   only: switch_ldau     ! This variable determines whether
+                                              !   the subroutine to compute the
+                                              !   Hubbard terms should be called
+                                              !   or not
+      use m_ldau,       only: hubbard_term    ! Subroutine that compute the
+                                              !   Hubbard terms
       use m_dhscf,      only: dhscf
       use m_stress
       use m_energies
@@ -102,6 +108,29 @@
       Enl = buffer1
 #endif
       E0 = Ekin + Enl - Eions + Ena
+
+! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
+      if( switch_ldau ) then
+        nullify(fal)
+        call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'setup_hamiltonian' )
+
+        call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
+     .                    maxnh, maxnh, lasto, iphorb,
+     .                    numh, listhptr, listh, numh, listhptr, listh,
+     .                    min(nspin,2), Dscf, Eldau, DEldau, 
+     .                    fal, stressl, H, iscf,
+     .                    matrix_elements_only=.true.)
+
+#ifdef MPI
+!   Global reduction of energy terms
+        call globalize_sum(Eldau,buffer1)
+        Eldau = buffer1
+#endif
+        Eldau = Eldau + DEldau
+
+        call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
+      endif
+! ..................
 
 
 ! Add SCF contribution to energy and matrix elements ..................

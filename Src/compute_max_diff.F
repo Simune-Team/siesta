@@ -1,9 +1,11 @@
       module m_compute_max_diff
-      public :: compute_max_diff
+      use precision,         only: dp
+      real(dp) :: dDmax_current
+      public   :: compute_max_diff
+      public   :: dDmax_current
       CONTAINS
       subroutine compute_max_diff(Xin,Xout,MaxDiff)
 
-      use precision,         only: dp
       use sparse_matrices,   only: numh, listhptr
       use m_spin,            only: nspin
       use atomlist,          only: no_l
@@ -34,5 +36,8 @@
       call globalize_max(MaxDiff,buffer1)
       MaxDiff = buffer1
 #endif
+
+      dDmax_current = MaxDiff
+
       end subroutine compute_max_diff
       end module m_compute_max_diff

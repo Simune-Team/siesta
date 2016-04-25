@@ -111,7 +111,7 @@
      &                    qwid(0:lmaxd,1:nsemx,is),
      &                    split_norm(0:lmaxd,1:nsemx,is), 
      &                    filtercut(0:lmaxd,1:nsemx,is), basp)
-
+!         Generate the projectors for the LDA+U simulations (if requested)
           call ldau_proj_gen(is)
         enddo 
 

@@ -105,7 +105,7 @@
                                              ! num of "nl" projs
                                              ! not counting the "m copies"
          integer                         ::  lmax_ldau_projs 
-                                             ! l cutoff for LDAU proj
+                                             ! l cutoff for LDA+U proj
          integer, dimension(maxn_pjnl)   ::  pjldaunl_l ! l of each nl proj
          integer, dimension(maxn_pjnl)   ::  pjldaunl_n ! n of each nl proj
                                              ! Here, n is not the principal

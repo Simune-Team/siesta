@@ -15,6 +15,8 @@
       use units, only: eV
       use m_convergence, only: converger_t, tolerance
       use m_convergence, only: add_value, is_converged
+      use ldau_specs,    only: switch_ldau
+      use m_ldau,        only: conv_ldaupop
 
       implicit none
 
@@ -55,6 +57,31 @@
       converged = .false.
 
       if (require_energy_convergence) then
+         if( switch_ldau ) then
+           if (   dDmax.lt.dDtol
+     $            .and. is_converged(conv_freeE)
+     $            .and. conv_ldaupop) then
+             converged = .true.
+             if (IOnode) then
+               write(6,"(/,a)") "SCF Convergence by FreeE+dmax criteria"
+               if (mixH) then
+                  write(6,"(a,f14.8)") "max |H_out - H_in| (Ry): ",
+     $                                  dDmax/eV
+               else if (mix_charge) then
+                  write(6,"(a,f14.8)") "max |DM_i - DM_(i-1)|: ", dDmax
+               else
+                  write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
+               endif
+               write(6,"(a,f14.8)") "|FreeE_i-FreeE_(i-1)| (eV) < ",
+     $                              tolerance(conv_freeE)/eV
+               call pxfflush(6)
+               write(6,"(/,a)") 
+     $           "Population in the LDA+U projector convergence "
+               write(6,"(a)") 
+     $           "by dtol_ldaupop criterion"
+             endif
+           endif 
+         endif
          if (   dDmax.lt.dDtol
      &        .and. is_converged(conv_freeE)) then
             converged = .true.
@@ -84,9 +111,10 @@
             endif
          endif
       else
-        if (dDmax.lt.dDtol) then
-           converged = .true.
-           if (IOnode) then
+        if ( switch_ldau ) then 
+          if (dDmax.lt.dDtol.and.conv_ldaupop) then
+            converged = .true.
+            if (IOnode) then
               write(6,"(/,a)") "SCF Convergence by dMax criterion"
               if (mixH) then
                  write(6,"(a,f14.8)") "max |H_out - H_in| (eV): ",
@@ -96,8 +124,29 @@
               else
                  write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
               endif
+              write(6,"(/,a)") 
+     $          "Population in the LDA+U projector convergence "
+              write(6,"(a)") 
+     $          "by dtol_ldaupop criterion"
               call pxfflush(6)
-           endif
+            endif
+          endif 
+        else 
+          if (dDmax.lt.dDtol) then
+            converged = .true.
+            if (IOnode) then
+               write(6,"(/,a)") "SCF Convergence by dMax criterion"
+               if (mixH) then
+                  write(6,"(a,f14.8)") "max |H_out - H_in| (eV): ",
+     $                                  dDmax/eV
+               else if (mix_charge) then
+                  write(6,"(a,f14.8)") "max |DM_i - DM_(i-1)|: ", dDmax
+               else
+                  write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
+               endif
+               call pxfflush(6)
+            endif
+          endif 
         endif
       endif
       if (converged) then

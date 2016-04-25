@@ -5,6 +5,42 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-25                                                    trunk-485
+Calculation of the Hubbard-like matrix elements, and their contribution
+to forces and stresses
+
+* The files that have been added or modified are: 
+
+- atmfuncs.f:       New function ldau_gindex added
+- basis_io.F:       The information of the LDA+U projectors is dumped into 
+                    the corresponding files
+- compute_energies.F90:  The Hubbard energy is added to the total energy
+- compute_max_diff.F:    The maximum difference between the input and the 
+                         output density matrices is saved in the public
+                         variable dDmax_current, that is required within
+                         the hubbard_term subroutine in order to know
+                         whether the population of the LDA+U projector is 
+                         updated or not.
+- final_H_f_stress.F:    Last call to hubbard_term in order to compute the
+                         forces and stresses once the self-consistency is 
+                         achieved
+- hsparse.F:        The eventual overlap with the LDA+U projectors is 
+                    considered, as it was done with the KB projectors
+- initatom.f:       Call to the subroutine ldau_proj_gen to generate the
+                    LDA+U projectors
+- m_energies.F90:   The Hubbard energies are included in the variables
+- scfconvergence_test.F: The criterion on the convergence of the population of
+                         the LDA+U is added to the requirements to determine
+                         whether the SCF is achieved
+- setup_hamiltonian.F:   Call to hubbard_term to add the contribution of the
+                         Hubbard-like terms to the Hamiltonian
+- write_subs.F:     The information of the Hubbard like energies is dumped
+- ldau.F:           New subroutine that computes the Hubbard-like 
+                    contribution to matrix elements, forces, and stresses
+- Makefile:         Customaty changes to include the new files and dependencies
+- Docs/siesta.tex:  A new section on the LDA+U calculations has been written
+
+-----------------------------------------------------------------------
 2016-02-22                                                    trunk-485
 Generation of the LDA+U projections compatible with new matel
 
