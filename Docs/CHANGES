@@ -5,7 +5,11 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
-2016-04-25                                                    trunk-485
+2016-04-25                                                    trunk-487
+Corrected version in the CHANGES file
+
+-----------------------------------------------------------------------
+2016-04-25                                                    trunk-486
 Calculation of the Hubbard-like matrix elements, and their contribution
 to forces and stresses
 
