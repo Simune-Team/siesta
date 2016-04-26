@@ -43,9 +43,9 @@ module m_tbt_kpoint
 
 contains
 
-  subroutine read_kgrid(bName,TRS,cell,kpt,wkpt, &
+  subroutine read_kgrid(bName, TRS, cell, kpt, wkpt, &
        is_b, &
-       kcell,kdispl)
+       kcell, kdispl)
 
     use parallel, only : IONode
     use fdf
@@ -650,10 +650,92 @@ contains
     end subroutine method_MP
     
   end subroutine read_kgrid
+
+  subroutine read_kdiag(fName, TRS, cell, kpt, wkpt, &
+       is_b, &
+       kcell, kdispl)
+
+    use parallel, only : IONode
+    use fdf
+    use intrinsic_missing, only : EYE
+    use units, only : Pi
+    use m_find_kgrid, only : find_kgrid
+
+    use m_ts_tdir, only: ts_tidx
+
+    ! INPUT
+    character(len=*), intent(in) :: fName
+    ! Whether time-reversal symmetry applies
+    logical, intent(in) :: TRS
+    real(dp), intent(in) :: cell(3,3)
+    ! OUTPUT
+    real(dp), pointer :: kpt(:,:), wkpt(:)
+    logical, intent(in), optional :: is_b
+    ! Optional OUTPUT
+    integer, intent(out), optional :: kcell(3,3)
+    real(dp), intent(out), optional :: kdispl(3)
+
+    ! Local variables
+    ! Read diagonal elements
+    integer :: kdiag(3)
+    integer :: i, nkpt
+    integer :: kscell(3,3)
+    real(dp) :: rcell(3,3), p(3), rtmp
+    real(dp) :: displ(3)
+
+    ! Initialize constants
+    ! This is the used method
+    K_METHOD = K_METHOD_MONKHORST_PACK
+    kscell = 0
+    displ = 0._dp
+
+
+    ! Initialize to 1 along all diagonal elements
+    kdiag = 1
+    ! Read in the diagonal kpoints
+    call fdf_list(fName, 3, kdiag)
+
+    ! Ensure a positive (>0) number
+    do i = 1 , 3
+       kscell(i,i) = max( kdiag(i) , 1 )
+    end do
+    ! Forcefully set the cell to 1 along the transport direction
+    if ( ts_tidx > 0 ) then
+       i = ts_tidx
+       kscell(:,i) = 0
+       kscell(i,:) = 0
+       kscell(i,i) = 1
+    end if
+
+    ! Copy over read options (if requested)
+    if ( present(kcell) ) kcell = kscell
+    if ( present(kdispl) ) kdispl = displ
+
+    ! Create the k-points
+    if ( IONode ) write(*,*) ! new-line
+    
+    call EYE(3, rcell, 2._dp * Pi)
+    call find_kgrid(rcell, kscell, displ, .true., &
+         TRS , &
+         nkpt, kpt, wkpt, rtmp)
+
+    if ( present(is_b) ) then
+       if ( is_b ) return
+    end if
+
+    ! Transform the reciprocal units into length
+    call reclat(cell, rcell, 1)
+    do i = 1 , nkpt
+       p(:) = kpt(:,i)
+       call kpoint_convert(rcell, p(:), kpt(:,i), -2)
+    end do
+
+  end subroutine read_kdiag
   
   subroutine setup_kpoint_grid( cell )
     
-    use fdf, only       : fdf_get, leqi, block_fdf, fdf_block
+    use fdf, only : fdf_get, fdf_block, fdf_islist
+    use fdf, only : leqi, block_fdf
     use parallel, only  : IONode
 
     ! Local Variables
@@ -696,16 +778,20 @@ contains
 
        if ( fdf_block('TBT.k',bfdf) ) then
           call read_kgrid('TBT.k', &
-               TRS,cell,kpoint,kweight, &
-               kcell=kscell,kdispl=kdispl)
+               TRS, cell, kpoint, kweight, &
+               kcell=kscell, kdispl=kdispl)
        else if ( fdf_block('TBT.kgrid_Monkhorst_Pack',bfdf) ) then
           call read_kgrid('TBT.kgrid_Monkhorst_Pack', &
-               TRS,cell,kpoint,kweight, &
-               kcell=kscell,kdispl=kdispl)
+               TRS, cell, kpoint, kweight, &
+               kcell=kscell, kdispl=kdispl)
+       else if ( fdf_islist('TBT.k') ) then
+          call read_kdiag('TBT.k', &
+               TRS, cell, kpoint, kweight, &
+               kcell=kscell, kdispl=kdispl)
        else
           call read_kgrid('kgrid_Monkhorst_Pack', &
-               TRS,cell,kpoint,kweight, &
-               kcell=kscell,kdispl=kdispl)
+               TRS, cell, kpoint, kweight, &
+               kcell=kscell, kdispl=kdispl)
        end if
        nkpnt = size(kweight)
        
@@ -726,40 +812,46 @@ contains
 
     if ( .not. IONode ) return
 
+    write(*,'(a,i0)')  'tbt: Number of transport k-points = ', nkpnt
+
     select case ( K_METHOD )
     case ( K_METHOD_MONKHORST_PACK )
-       write(*,'(a)') 'tbtrans: Monkhorst-Pack grid.'
+       write(*,'(a)') 'tbt: Method = Monkhorst-Pack grid.'
     case ( K_METHOD_SIMP_MIX )
-       write(*,'(a)') 'tbtrans: Simpson grid.'
+       write(*,'(a)') 'tbt: Method = Simpson grid.'
     case ( K_METHOD_BOOLE_MIX )
-       write(*,'(a)') 'tbtrans: Booles grid.'
+       write(*,'(a)') 'tbt: Method = Booles grid.'
     case ( K_METHOD_GAUSS_LEGENDRE )
-       write(*,'(a)') 'tbtrans: Gauss-Legendre grid.'
+       write(*,'(a)') 'tbt: Method = Gauss-Legendre grid.'
     case ( K_METHOD_TANH_SINH )
-       write(*,'(a)') 'tbtrans: Tanh-Sinh grid.'
+       write(*,'(a)') 'tbt: Method = Tanh-Sinh grid.'
     case ( K_METHOD_PATH )
-       write(*,'(a)') 'tbtrans: User path in Brillouin zone.'
+       write(*,'(a)') 'tbt: Method = User path in Brillouin zone.'
     case ( K_METHOD_LIST )
-       write(*,'(a)') 'tbtrans: User specified k-points as a list.'
+       write(*,'(a)') 'tbt: Method = User specified k-points as list.'
     case default
-       write(*,'(a)') 'tbtrans: Unknown k-points.'
+       write(*,'(a)') 'tbt: Unknown k-point method.'
        call die('Unsupported, programming error.')
     end select
 
     if ( verbosity > 5 ) then
-       write(*,'(/,a)') 'tbtrans: k-point coordinates (Bohr**-1) and weights:'
+       write(*,'(/,a)') 'tbt: k-point coordinates (Bohr**-1) and weights:'
        write(*,'(a,i4,3f12.6,3x,f12.6)') &
-            ('tbtrans: ', ik, (kpoint(ix,ik),ix=1,3), kweight(ik), &
+            ('tbt: ', ik, (kpoint(ix,ik),ix=1,3), kweight(ik), &
             ik=1,nkpnt)
+       write(*,*) ! new line
     end if
 
     ! Always write the TranSIESTA k-points
     call tbt_iokp( nkpnt, kpoint, kweight )
 
-    write(*,'(/,a,i0)')  'tbtrans: k-grid: Number of transport k-points = ', nkpnt
-    write(*,'(a)') 'tbtrans: k-grid: Supercell and displacements'
+    ! Only print out the k-points if the grid is used
+    if ( K_METHOD == K_METHOD_PATH ) return
+    if ( K_METHOD == K_METHOD_LIST ) return
+
+    write(*,'(a)') 'tbt: k-grid: Supercell and displacements'
     do ix = 1 , 3
-       write(*,'(a,3i4,3x,f8.3)') 'tbtrans: k-grid: ',        &
+       write(*,'(a,3i4,3x,f8.3)') 'tbt:         ', &
             (kscell(i,ix),i=1,3), kdispl(ix)
     end do
 

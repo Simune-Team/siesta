@@ -1,4 +1,25 @@
 ----------------------------------------------------
+April 26, 2016 -- Nick Papior          trunk-492---ts-scf-664
+Enabled shorted k-grid specification
+
+- By enabling reading the diagonal k-grid points
+  from the list functionality we enable calling
+  a different k-grid from the command line.
+  This may be useful for convergence tests
+
+  The abstraction is simple in that if:
+      TBT.k
+  is a block it will be the ordinary method.
+  If
+      TBT.k
+  is a list, it will be the diagonal components.
+  In this case the displacements will ALWAYS
+  be 0.
+
+modified:
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+
+----------------------------------------------------
 April 16, 2016 -- Nick Papior          trunk-492---ts-scf-663
 Added contiguous, fixed DOS integration
 
