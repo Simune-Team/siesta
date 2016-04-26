@@ -173,12 +173,12 @@ C     Find maximum range of basis orbitals, KB and LDA+U projectors
         rmaxldau = 0.0d0
         do ia = 1,na
           is = isa(ia)
-          basp => basis_parameters(is)
           do ikb = lastkb(ia-1)+1,lastkb(ia)
             ioa = iphkb(ikb)
             rmaxkb = max( rmaxkb, rcut(is,ioa) )
           enddo
           if( switch_ldau ) then
+            basp => basis_parameters(is)
             do io = 1, basp%nldaushells_tmp
               ldaushell => basp%tmp_ldaushell(io)
               rmaxldau = max( rmaxldau, ldaushell%rc )
@@ -202,7 +202,7 @@ C     Allocate local arrays that depend on parameters
 !     Find maximum radius of the KB and LDA+U projectors of each species
 !     Also for orbitals (for possible future extra optimizations)
 !     
-      allocate(rkbmax(nspecies), rorbmax(nspecies),rldaumax(nspecies))
+      allocate(rkbmax(nspecies),rorbmax(nspecies),rldaumax(nspecies))
       do is = 1, nspecies
          rkbmax(is)   = 0.0_dp
          do ikb = 1, nkbfis(is)
@@ -213,11 +213,13 @@ C     Allocate local arrays that depend on parameters
             rorbmax(is) = max(rorbmax(is),rcut(is,io))
          enddo
          rldaumax(is) = 0.0_dp
-         basp => basis_parameters(is)
-         do io = 1, basp%nldaushells_tmp
-           ldaushell => basp%tmp_ldaushell(io)
-           rldaumax(is) = max(rldaumax(is),ldaushell%rc)
-         enddo
+         if ( switch_ldau ) then
+           basp => basis_parameters(is)
+           do io = 1, basp%nldaushells_tmp
+             ldaushell => basp%tmp_ldaushell(io)
+             rldaumax(is) = max(rldaumax(is),ldaushell%rc)
+           enddo
+         endif
 !!        For debugging
 !         write(6,'(a,i5,3f12.5)')
 !     &     'hsparse: is, rorbmax, rkbmax, rldaumax = ',
