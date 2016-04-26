@@ -5,7 +5,19 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
-2016-04-25                                                    trunk-48r87
+2016-04-25                                                    trunk-490
+Second patches by Nick Andersen
+
+* The files that have been added or modified are:
+
+- hsparse.F:             Call to basis_parameters only if switch_ldau
+- matel_registry.F90:    Cosmetic changes on show_pool
+- register_rfs.F90:      Writing of part of the output only done if
+                         the directive DEBUG_PAO is switched
+- siesta_init.F:         Remove the call to test_register 
+
+-----------------------------------------------------------------------
+2016-04-25                                                    trunk-488
 First patches by Nick Andersen
 
 * The files that have been added or modified are:
