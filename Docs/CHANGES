@@ -5,6 +5,32 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-27                                                    trunk-491
+Fixes for pointers and possible seg-fault
+
+- Pointers in ldau.F where only nullified in
+  the first run. However, they should be
+  in each SCF.
+  Fixed.
+
+- Print-out of LDAU parameters in the basis-specification
+  This makes easy identification of the used LDA+U
+  basis.
+
+- A possible seg-fault for accessing array elements beyond
+  dimension was found in the ldau_specs.f.
+
+  A possible fix has been added.
+
+  TODO: Check validity for other systems.
+  For Javier's initial test MnO the results are identical.
+
+modified:
+  Src/basis_types.f
+  Src/ldau.F
+  Src/ldau_specs.f
+
+
 2016-04-25                                                    trunk-490
 Second patches by Nick Andersen
 

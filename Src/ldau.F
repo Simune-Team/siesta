@@ -217,6 +217,10 @@ C ......................
 !     Start time counter
       call timer( 'hubbard_term', 1 )
 
+      ! Nullify pointers
+      nullify( grSki, Ski, xno, iono, iano )
+      nullify( listedall, listed, Vi, Di )
+      
       Eldau = 0.0_dp
 
 !     Determine whether this is the first SCF step for a 
@@ -353,22 +357,18 @@ C ......................
         call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 
 !       Allocate local memory
-        nullify( Di )
         call re_alloc( Di, 1, no, 1, nspin, 
      &                 name='Di', routine='hubbard_term' )
         Di = 0.0_dp
 
-        nullify( Vi )
         call re_alloc( Vi, 1, no, 1, nspin, 
      &                 name='Vi', routine='hubbard_term' )
         Vi = 0.0_dp
 
-        nullify( listed )
         call re_alloc( listed, 1, no, 
      &                 name='listed', routine='hubbard_term')
         listed(1:no) = .false.
 
-        nullify( listedall )
         call re_alloc( listedall, 1, no, 
      &                 name='listedall', routine='hubbard_term' )
         listedall(1:no) = .false.
@@ -398,19 +398,14 @@ C ......................
 !!       End debugging
 
 !       Allocate local arrays that depend on saved parameters
-        nullify( iano )
         call re_alloc( iano, 1, maxno, 
      &                 name='iano', routine='hubbard_term' )
-        nullify( iono )
         call re_alloc( iono, 1, maxno, 
      &                 name='iono', routine='hubbard_term' )
-        nullify( xno )
         call re_alloc( xno, 1, 3, 1, maxno, 
      &                 name='xno', routine='hubbard_term' )
-        nullify( Ski )
         call re_alloc( Ski, 1, maxldau, 1, maxno, 
      &                 name='Ski', routine='hubbard_term' )
-        nullify( grSki )
         call re_alloc( grSki, 1, 3, 1, maxldau, 1, maxno, 
      &                 name='grSki', routine='hubbard_term' )
       
