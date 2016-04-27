@@ -187,6 +187,9 @@ contains
          ! read in the contour
          call ts_read_contour_block('TBT',suffix,tmp(i),tbt_io(i), max_kT, Volt)
 
+         ! transport type contour
+         tbt_c(i)%c_io%type = 'tran'
+
       end do
       deallocate(tmp)
 

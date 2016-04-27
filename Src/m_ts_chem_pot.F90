@@ -19,7 +19,7 @@ module m_ts_chem_pot
   
   implicit none
 
-  integer,  public, parameter :: NAME_MU_LEN = 20
+  integer,  public, parameter :: NAME_MU_LEN = 32
 
   real(dp), public, parameter :: mu_same = 1.e-8_dp
   integer, private, parameter :: def_poles = 8
@@ -33,10 +33,10 @@ module m_ts_chem_pot
      integer  :: N_poles = 0
      ! the chemical potential
      real(dp) :: mu = 0._dp
-     character(len=20) :: cmu
+     character(len=NAME_MU_LEN) :: cmu
      ! the temperature associated with this chemical potential
      real(dp) :: kT = 0._dp
-     character(len=20) :: ckT
+     character(len=NAME_MU_LEN) :: ckT
      ! number of electrodes having this chemical potential
      integer  :: N_El = 0
      ! array of electrode indices (conforming with the Elecs-array)
@@ -205,7 +205,7 @@ contains
     type(parsed_line), pointer :: pline => null()
     logical :: info(2), bool_pole(2)
     real(dp) :: E_pole
-    character(len=200) :: ln
+    character(len=256) :: ln
 
     found = fdf_block(trim(prefix)//'.ChemPot.'//trim(Name(this)),bfdf)
     if ( .not. found ) return
@@ -348,7 +348,7 @@ contains
       integer, intent(in), optional :: fakes
       integer :: i, empty
 
-      character(len=200) :: ln
+      character(len=256) :: ln
 
       if ( allocated(con) ) deallocate(con)
 
@@ -501,7 +501,7 @@ contains
     type(ts_mu), intent(in) :: this
     real(dp) :: E_pole
     integer :: i, def_pole
-    character(len=50) :: ln
+    character(len=64) :: ln
 
     if ( .not. IONode ) return
 

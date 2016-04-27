@@ -58,9 +58,8 @@ module m_ts_electype
 
   public :: copy_DM
 
-  ! 300 chars for a full path should be fine
-  integer, parameter, public :: FILE_LEN = 300
-  integer, parameter, public :: NAME_LEN = 50
+  integer, parameter, public :: FILE_LEN = 256
+  integer, parameter, public :: NAME_LEN = 32
 
   integer, parameter, public :: INF_NEGATIVE = 0 ! old 'left'
   integer, parameter, public :: INF_POSITIVE = 1 ! old 'right'
@@ -240,7 +239,7 @@ contains
     integer :: cidx_a 
     real(dp) :: rcell(3,3), fmin, fmax, rc
 
-    character(len=200) :: bName, name, ln, tmp
+    character(len=FILE_LEN) :: bName, name, ln, tmp
 
     info(:) = .false.
 
@@ -1377,7 +1376,7 @@ contains
     logical, intent(in), optional :: IO ! Write to STD-out
     integer, intent(in), optional :: ispin ! select one spin-channel
 
-    character(len=200) :: fN
+    character(len=FILE_LEN) :: fN
     integer :: fL, kscell(3,3), istep, ia1
     logical :: onlyS, Gamma_file, TSGamma, lio
     real(dp) :: Temp, kdispl(3), Qtot, Ef

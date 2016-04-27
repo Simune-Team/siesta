@@ -17,13 +17,13 @@ module m_ts_io_contour
 
   implicit none
 
-  character(len=200), parameter :: OPT_N   = '(''ts: '',a)'
-  character(len=200), parameter :: OPT_C   = '(''ts: '',a,t53,''=    '',a)'
-  character(len=200), parameter :: OPT_CC  = '(''ts: '',a,t53,''=    '',a,tr2,a)'
-  character(len=200), parameter :: OPT_F   = '(''ts: '',a,t53,''='',f10.4)'
-  character(len=200), parameter :: OPT_INT = '(''ts: '',a,t53,''='',i5)'
-  character(len=200), parameter :: OPT_F_U = '(''ts: '',a,t53,''='',f10.4,tr1,a)'
-  character(len=200), parameter :: OPT_G_U = '(''ts: '',a,t53,''='',g11.4,tr1,a)'
+  character(len=*), parameter :: OPT_N   = '(''ts: '',a)'
+  character(len=*), parameter :: OPT_C   = '(''ts: '',a,t53,''=    '',a)'
+  character(len=*), parameter :: OPT_CC  = '(''ts: '',a,t53,''=    '',a,tr2,a)'
+  character(len=*), parameter :: OPT_F   = '(''ts: '',a,t53,''='',f10.4)'
+  character(len=*), parameter :: OPT_INT = '(''ts: '',a,t53,''='',i5)'
+  character(len=*), parameter :: OPT_F_U = '(''ts: '',a,t53,''='',f10.4,tr1,a)'
+  character(len=*), parameter :: OPT_G_U = '(''ts: '',a,t53,''='',g11.4,tr1,a)'
 
 contains
 

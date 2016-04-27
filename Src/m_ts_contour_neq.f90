@@ -346,7 +346,10 @@ contains
          nEq_c(i)%c_io => nEq_io(i)
          ! read in the contour
          call ts_read_contour_block('TS',suffix,tmp(i),nEq_io(i), kT, Volt)
-       
+
+         ! Assign non-equilibrium contour
+         nEq_c(i)%c_io%type = 'neq'
+         
       end do
       deallocate(tmp)
 

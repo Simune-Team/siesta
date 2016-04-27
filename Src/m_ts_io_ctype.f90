@@ -19,7 +19,7 @@ module m_ts_io_ctype
 
   integer, parameter :: C_N_NAME_LEN = 20
 
-  integer, parameter :: c_N = 200
+  integer, parameter :: c_N = 128
   type :: ts_c_io
      ! the name of the integration segment
      character(len=C_N_NAME_LEN) :: name = ' '
@@ -37,9 +37,9 @@ module m_ts_io_ctype
      character(len=c_N) :: cN = ' '
      ! the integration method (g-legendre etc.)
      character(len=c_N) :: method = ' '
-     ! the type of integration (eq|neq|t)
+     ! the type of integration (eq|neq|tran)
      character(len=4) :: type = ' '
-     ! the integration part (circle|line|tail|pole)
+     ! the integration part (circle|square|line|tail)
      character(len=c_N) :: part = ' '
      ! the options attached to the integration method
      ! (this will take the form of a linked list)
@@ -227,7 +227,7 @@ contains
     logical :: exist
 
     type(block_fdf) :: bfdf_tmp
-    character(len=200) :: g
+    character(len=c_N) :: g
 
     ! if the block does not exist, return
     if ( len_trim(suffix) > 0 ) then
@@ -286,7 +286,8 @@ contains
     !       opt ...
     !       opt <opt-N>
 
-    ! { "part <part>" circle|line|tail|pole
+    ! { "part <part>" circle|square|line|tail
+    ! This defaults to line
     if ( .not. move2names() ) then
        call die('Block: '//trim(bName)//'. &
             &Could not find part segment in contour.')
@@ -296,14 +297,13 @@ contains
     iS = search_fun('part',pline)
     if ( iS < 0 ) iS = search_fun('p',pline)
     if ( iS < 0 ) then
-       call die('Block: '//trim(bName)//' is not build correctly. &
-            &part <part> line cannot find "part".')
-    end if
-    if ( fdf_bnnames(pline) < 2 ) then
+       c%part = 'line'
+    else if ( fdf_bnnames(pline) < 2 ) then
        call die('Block: '//trim(bName)//' has not described the part properly. &
             &Must have part <part>')
+    else
+       c%part = fdf_bnames(pline,2)
     end if
-    c%part = fdf_bnames(pline,2)
     if ( leqi(c%part,'circle') ) then
        c%part = 'circle' ! ensures capitalization!!!! DON'T EDIT
     else if ( leqi(c%part,'square') ) then
@@ -320,9 +320,11 @@ contains
     ! } "part
 
     ! { "from <a> to <b>"
-    if ( .not. move2names() ) then
-       call die('Block: '//trim(bName)//'. &
-            &Could not find from <a> to <b> segment in contour')
+    if ( iS > 0 ) then
+       if ( .not. move2names() ) then
+          call die('Block: '//trim(bName)//'. &
+               &Could not find from <a> to <b> segment in contour')
+       end if
     end if
 
     ! get the 'from'
@@ -512,7 +514,7 @@ contains
 
     ! Local parameters
     real(dp) :: tmp
-    character(len=200) :: g
+    character(len=c_N) :: g
     logical :: add, get_val, has_V, has_kT, absolute
     integer :: i, j, offset
 
@@ -791,7 +793,11 @@ contains
     ! Start by writing out the block beginning
     write(*,'(a,a)') '%block ',trim(name)
 
-    write(*,'(2a)') '  part ',trim(c%part)
+    ! For transport contours we are ALWAYS
+    ! using the LINE contour
+    if ( trim(c%type) /= 'tran' ) then
+       write(*,'(2a)') '  part ',trim(c%part)
+    end if
 
     ! move to third column...
     write(*,'(t3)',advance='no')
