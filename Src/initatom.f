@@ -58,6 +58,7 @@
 !     Internal variables ...................................................
       integer                      :: is
       logical                      :: user_basis, user_basis_netcdf
+      logical :: req_init_setup
       type(basis_def_t),   pointer :: basp
       
       external atm_transfer
@@ -73,6 +74,19 @@
       user_basis = fdf_boolean('user-basis',.false.)
       user_basis_netcdf = fdf_boolean('user-basis-netcdf',.false.)
 
+      ! Create list of options NOT compatible with psf/vps file
+      ! reads.
+      req_init_setup = fdf_defined('LDAU.proj')
+      ! Add any other dependencies here...
+
+      ! Check that the user can perform a legal action
+      req_init_setup = req_init_setup .and.
+     & ( user_basis_netcdf .or. user_basis )
+      if ( req_init_setup ) then
+         call die('Reading PAOs and KBs from NetCDF/ascii files '//
+     &'is not possible with LDAU.Proj')
+      end if
+      
       if (user_basis_netcdf) then
         write(6,'(/a)') 'Reading PAOs and KBs from NetCDF files...'
         call read_basis_netcdf(ns)

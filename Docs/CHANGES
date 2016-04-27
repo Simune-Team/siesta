@@ -5,6 +5,19 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-27                                                    trunk-492
+Added die when user reads basis + LDAU
+
+- Reading the basis from NetCDF or ascii files
+  is not allowed when using LDA+U.
+
+  This feature is simply not implemented yet.
+  (but could be)
+
+modified:
+  Src/initatom.f
+
+-----------------------------------------------------------------------
 2016-04-27                                                    trunk-491
 Fixes for pointers and possible seg-fault
 
@@ -30,7 +43,7 @@ modified:
   Src/ldau.F
   Src/ldau_specs.f
 
-
+-----------------------------------------------------------------------
 2016-04-25                                                    trunk-490
 Second patches by Nick Andersen
 
