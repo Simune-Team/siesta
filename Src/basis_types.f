@@ -118,7 +118,8 @@
           integer                   ::  lmxldaupj  ! Max l for LDA+U projs
           type(lshell_t), pointer   ::  lshell(:)  ! One shell per l 
           type(kbshell_t), pointer  ::  kbshell(:) ! One KB shell per l
-          type(ldaushell_t), pointer  ::  ldaushell(:) ! One LDA+U shell per l
+          ! Currently this is not used:
+          !type(ldaushell_t), pointer  ::  ldaushell(:) ! One LDA+U shell per l
           real(dp)                  ::  ionic_charge
           real(dp)                  ::  mass   
           !
@@ -302,7 +303,7 @@
       nullify(p%tmp_ldaushell)
       nullify(p%lshell)
       nullify(p%kbshell)
-      nullify(p%ldaushell)
+      !nullify(p%ldaushell)
       end subroutine init_basis_def
 
 !-----------------------------------------------------------------------
@@ -349,7 +350,7 @@
       type(basis_def_t)          :: p
 
       call destroy_ldaushell(p%tmp_ldaushell)
-      call destroy_ldaushell(p%ldaushell)
+      !call destroy_ldaushell(p%ldaushell)
       call destroy_lshell(p%lshell)
       call destroy_shell(p%tmp_shell)
 
@@ -465,12 +466,12 @@
       else
          write(6,*) 'No KB SHELLS, lmxkb=', p%lmxkb
       end if
-      if ( associated(p%ldaushell) ) then
-         do i=0, p%lmxldaupj
-            call print_ldaushell(p%ldaushell(i))
+      if ( associated(p%tmp_ldaushell) ) then
+         do i=1, p%nldaushells_tmp
+            call print_ldaushell(p%tmp_ldaushell(i))
          end do
       else
-         write(6,*) 'No LDA+U PROJECTORS, lmxldaupj=', p%lmxldaupj
+         write(6,*) 'No LDA+U PROJECTORS, lmxldaupj=', p%nldaushells_tmp
       end if
 
       write(6,*) '------------SPECIES'

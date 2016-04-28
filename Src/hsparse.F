@@ -57,7 +57,7 @@ C
       use parallel,        only : Node, Nodes
       use parallelsubs,    only : GetNodeOrbs, GlobalToLocalOrb
       use atmfuncs,        only : rcut, nofis, nkbfis
-      use atm_types,       only : nspecies
+      use atm_types,       only : nspecies, species_info, species
       use listsc_module,   only : listsc_init
       use sorting
       use neighbour,       only : jna=>jan, xij, r2ij, maxna=>maxnna
@@ -66,22 +66,7 @@ C
       use alloc,           only : re_alloc, de_alloc
       use atomlist,        only : no_l
       use sparse_matrices, only : listhptr, numh, listh, xijo
-      use basis_types, only : basis_def_t       ! Derived type where all the
-                                                !   information relative to the
-                                                !   definition of the basis set
-                                                !   is defined
-      use basis_types, only : ldaushell_t       ! Derived type where all the
-                                                !   information relative to the
-                                                !   atomic orbitals where the U
-                                                !   correction will be applied
-                                                !   is defined
-      use basis_types, only : basis_parameters  ! Derived type where all the
-                                                !   information about the
-                                                !   - basis set
-                                                !   - Kleinman-Bylander proj.
-                                                !   - LDA+U proj.
-                                                !   ...
-                                                !   for all the species
+      use radial,          only : rad_func
       use ldau_specs, only  : switch_ldau       ! Switch that determines whether
                                                 !   and LDA+U simulation is 
                                                 !   required or not
@@ -132,8 +117,8 @@ C
       integer, dimension(:),  pointer :: listhtmp
 
       logical :: connected
-      type(basis_def_t),   pointer :: basp
-      type(ldaushell_t),   pointer :: ldaushell
+      type(species_info), pointer :: spp
+      type(rad_func),     pointer :: pp
 
 C -------------------------------------
 #ifdef DEBUG
@@ -178,10 +163,10 @@ C     Find maximum range of basis orbitals, KB and LDA+U projectors
             rmaxkb = max( rmaxkb, rcut(is,ioa) )
           enddo
           if( switch_ldau ) then
-            basp => basis_parameters(is)
-            do io = 1, basp%nldaushells_tmp
-              ldaushell => basp%tmp_ldaushell(io)
-              rmaxldau = max( rmaxldau, ldaushell%rc )
+            spp => species(is)
+            do io = 1, spp%n_pjldaunl
+              pp => spp%pjldau(io)
+              rmaxldau = max( rmaxldau, pp%cutoff )
             enddo
           endif
         enddo
@@ -214,10 +199,10 @@ C     Allocate local arrays that depend on parameters
          enddo
          rldaumax(is) = 0.0_dp
          if ( switch_ldau ) then
-           basp => basis_parameters(is)
-           do io = 1, basp%nldaushells_tmp
-             ldaushell => basp%tmp_ldaushell(io)
-             rldaumax(is) = max(rldaumax(is),ldaushell%rc)
+           spp => species(is)
+           do io = 1, spp%n_pjldaunl
+             pp => spp%pjldau(io)
+             rldaumax(is) = max( rldaumax(is), pp%cutoff )
            enddo
          endif
 !!        For debugging

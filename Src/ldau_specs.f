@@ -285,21 +285,17 @@
                                       !   wave function times r, below which
                                       !   the long wave function is no longer
                                       !   considered
-      logical,  save, public ::  switch_ldau = .false.
+      logical,  save ::  switch_ldau = .false.
                                       ! Switch that determines whether  
                                       ! and LDA+U simulation is required or not
 
-
-      type(basis_def_t), pointer :: basp
-      type(ldaushell_t), pointer :: ldau
-      type(ldaushell_t), pointer :: lsldau
-
-      type(block_fdf)            :: bfdf
-      type(parsed_line), pointer :: pline
-
+      ! Routines
       public :: read_ldau_specs
       public :: ldau_proj_gen
       public :: populate_species_info_ldau
+
+      ! Variables
+      public :: switch_ldau
       public :: ldau_shift
       public :: ldau_init
       public :: dtol_ldaupop
@@ -332,6 +328,13 @@
 
 !---
       subroutine read_ldau_specs()
+
+      type(basis_def_t), pointer :: basp
+      type(ldaushell_t), pointer :: ldau
+      type(ldaushell_t), pointer :: lsldau
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       integer :: isp                ! Dummy parameter to account for the 
                                     !   species label
@@ -697,9 +700,6 @@
                               !   starts off
       real(dp) :: vcte        ! Prefactor of the soft-confinement potent.
       real(dp) :: ionic_charge! Ionic charge to generate the basis set.
-      logical  :: switch      ! Logical variable that determines whether the 
-                              !    the calculation of LDA+U projectors is 
-                              !    required for this species
 !     Variables used only in the call to atomxc
       real(dp) :: ex          ! Total exchange energy 
       real(dp) :: ec          ! Total correlation energy
@@ -858,16 +858,12 @@
 
 !     Determine whether the calculation of LDA+U projectors is required or not
 !     for this atomic species
-      switch=.false.
-      if( nldaupj .gt. 0 ) then 
-        switch      = .true.
-!       This switch will be used afterwards in setup_hamiltonian
-!       to determine whether the call to the Hubbard subroutine 
-!       is required or not
-        switch_ldau = .true.
-      endif
- 
-      if( .not. switch ) return 
+      if( .not. nldaupj > 0 ) return 
+
+!     This switch will be used afterwards in setup_hamiltonian
+!     to determine whether the call to the Hubbard subroutine 
+!     is required or not
+      switch_ldau = .true.
 
 !     Associate the pointer so it points to the variable where all the
 !     parameters defining the basis sets of the given species are stored
@@ -1723,6 +1719,9 @@
 
           spp%pjldaunl_n(iproj) = 1
           spp%pjldaunl_l(iproj) = ldaushell%l
+          spp%pjldaunl_U(iproj) = ldaushell%U
+          spp%pjldaunl_J(iproj) = ldaushell%J
+
           l = spp%pjldaunl_l(iproj)
 
           do im = -l, l

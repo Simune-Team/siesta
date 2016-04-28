@@ -5,6 +5,52 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-28                                                    trunk-494
+Almost fixed parallel version
+
+- Implemented Alberto's fixes for the basis specifications
+  in parallel with some minor corrections.
+  
+  This is because the basis_specs are only on Node == 0.
+  However, the specifications should be broadcasted
+  to the other nodes.
+
+  This is now performed by dublicating the LDAU radial
+  functions to the other nodes and retaining the
+  data on all nodes.
+
+  I have added the remaining Bcast which where required.
+
+- Added bcast of the LDAU variables in broadcast_basis.
+  Several variables are required Bcasted.
+
+- Reduced memory requirements slightly
+
+- Reverted globalization of DEldau as entered by
+  Nick in r488.
+  This is not needed as the DEldau is calculated
+  from globalized occupations.
+
+- Removed un-needed ldaushell in the basis_species.
+  Only the *_tmp is used so we do not need the second.
+
+- Fix for "SpinPolarized false" regarding occupations
+
+- TODO move Hldau to sparse_matrices such that it may
+  be calculated "one time" and stored in a generic place.
+
+modified:
+  Src/Makefile
+  Src/atm_types.f
+  Src/basis_types.f
+  Src/broadcast_basis.F
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/ldau.F
+  Src/ldau_specs.f
+  Src/setup_hamiltonian.F
+
+-----------------------------------------------------------------------
 2016-04-28                                                    trunk-493
 Fixed r491 with rofi array size
 

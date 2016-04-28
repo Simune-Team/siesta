@@ -114,6 +114,8 @@
                                              ! number of projectors for that l.
                                              ! In the case of LDA+U projectors,
                                              ! It is always equal to 1.
+         real(dp), dimension(maxn_pjnl)  ::  pjldaunl_U ! U of each nl projector
+         real(dp), dimension(maxn_pjnl)  ::  pjldaunl_J ! J of each nl projector
 
          integer                         ::  nprojsldau
                                              ! Total number of LDA+U proj.

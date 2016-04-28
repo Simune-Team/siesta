@@ -122,9 +122,11 @@
      .                    matrix_elements_only=.true.)
 
 #ifdef MPI
-!   Global reduction of energy terms
+        ! Global reduction of energy terms
         call globalize_sum(Eldau,buffer1)
         Eldau = buffer1
+        ! DEldau should not be globalized
+        ! as it is based on globalized occupations
 #endif
         Eldau = Eldau + DEldau
 
