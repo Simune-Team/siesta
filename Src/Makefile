@@ -745,7 +745,8 @@ read_options.o: siesta_cml.o siesta_options.o sys.o units.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
-register_rfs.o: atm_types.o atmfuncs.o matel_registry.o precision.o radial.o
+register_rfs.o: atm_types.o atmfuncs.o matel_registry.o parallel.o precision.o
+register_rfs.o: radial.o
 reinit.o: files.o parallel.o siesta_master.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o

@@ -443,16 +443,16 @@
 
 !       Read on how many orbitals of a given atomic species
 !       we are going to apply the U correction
-        basp%nldaushells_tmp = fdf_bintegers(pline,1)
+        basp%nldaushells = fdf_bintegers(pline,1)
 
 !       Allocate space in the derived type basis_parameters
 !       to host the information on the atomic orbitals where 
 !       the U will be applied
-        allocate(basp%tmp_ldaushell(basp%nldaushells_tmp))
+        allocate(basp%ldaushell(basp%nldaushells))
 
 !       Loop on all the different orbitals where the U will be applied
-        shells: do ish = 1, basp%nldaushells_tmp
-          ldau => basp%tmp_ldaushell(ish)
+        shells: do ish = 1, basp%nldaushells
+          ldau => basp%ldaushell(ish)
           call initialize(ldau)
 
           if (.not. fdf_bline(bfdf, pline)) 
@@ -499,8 +499,8 @@
 !         Check for consistency in the sequence of principal and
 !         angular quantum numbers
           do jsh = 1, ish-1
-             if( ldau%l .eq. basp%tmp_ldaushell(jsh)%l .and. 
-     .           ldau%n .eq. basp%tmp_ldaushell(jsh)%n ) 
+             if( ldau%l .eq. basp%ldaushell(jsh)%l .and. 
+     .           ldau%n .eq. basp%ldaushell(jsh)%n ) 
      .       call die(
      .        'LDAU projs. with the same l need different values of n')        
           enddo
@@ -574,7 +574,7 @@
 
 !         Optional: read the value for the contraction factor (lambda)
           if ( .not. fdf_bline(bfdf,pline) ) then
-             if (ish.ne.basp%nldaushells_tmp)
+             if (ish.ne.basp%nldaushells)
      .         call die('Not enough shells')
 !            Dafault values for the scale factors
           else
@@ -596,8 +596,8 @@
 
 !       Count the total number of projectors
         nprojsldau(isp) = 0
-        do ish = 1, basp%nldaushells_tmp
-          ldau => basp%tmp_ldaushell(ish)
+        do ish = 1, basp%nldaushells
+          ldau => basp%ldaushell(ish)
           l      = ldau%l
           nprojsldau(isp) = nprojsldau(isp) + (2*l + 1)
         enddo
@@ -613,46 +613,12 @@
 
       enddo  ! end loop over species
 
-!!     Is this needed??
-!!     tmp_ldaushell contains all the required information for the 
-!!     LDA+U projectors.
-!!     It does not matter if some of them do have the same value of l.
-!!     They can be easily distinguished by the principal quantum number.
-!!     I think this is not necessary at all.
-!!     Even more, I do not think that this will be used ...
-!!     I can not see a problem where a U will be required at the same time
-!!     for the 3d and 4d. One of them will be completely full...
-!!
-!!     OK, now classify the states by l-shells
-!!
-!      do isp = 1, nsp
-!        basp => basis_parameters(isp)
-!        if ( basp%lmxldaupj .eq. -1 ) cycle !! Species not in block
-!
-!        allocate (basp%ldaushell(0:basp%lmxldaupj))
-!
-!        loop_l: do l = 0, basp%lmxldaupj
-!          lsldau => basp%ldaushell(l)
-!          call initialize(lsldau)
-!          lsldau%l = l
-!
-!!         Search for tmp_shells with given l
-!          nn = 0
-!          do ish = 1, basp%nldaushells_tmp
-!            ldau=>basp%tmp_ldaushell(ish)
-!            if (ldau%l .eq. l) nn = nn + 1
-!          enddo
-!
-!        enddo loop_l ! End loop on angular momentum
-!
-!      enddo  ! End loop on number of species
-
 !     Allocate and initialize the array where the radial part of the 
 !     projectors in the logarithmic grid will be stored 
       maxnumberproj = 0
       do isp = 1, nsp
         basp => basis_parameters(isp)
-        maxnumberproj = max( maxnumberproj, basp%nldaushells_tmp ) 
+        maxnumberproj = max( maxnumberproj, basp%nldaushells ) 
       enddo
       nullify( projector )
       call re_alloc( projector, 
@@ -875,7 +841,7 @@
 
 !     Compute how many LDA+U projector we are going to compute
 !     for this species
-      nldaupj = basp%nldaushells_tmp
+      nldaupj = basp%nldaushells
 
 !     Determine whether the calculation of LDA+U projectors is required or not
 !     for this atomic species
@@ -1149,7 +1115,7 @@
 
 !     Loop over all the projectors that will be generated
       loop_projectors: do iproj = 1, nldaupj
-         shell => basp%tmp_ldaushell(iproj)
+         shell => basp%ldaushell(iproj)
          n      = shell%n
          l      = shell%l
          U      = shell%u
@@ -1725,7 +1691,7 @@
 
 !       Number of LDA+U projectors 
 !       not counting the "m copies"
-        spp%n_pjldaunl = basp%nldaushells_tmp
+        spp%n_pjldaunl = basp%nldaushells
 
 !       Store the maximum angular momentum of the LDA+U projectors
 !       for each atomic specie
@@ -1736,7 +1702,7 @@
 !       without considering the (2l + 1) possible angular dependencies
         imcount = 0
         loop_projectors: do iproj = 1, spp%n_pjldaunl
-          ldaushell => basp%tmp_ldaushell(iproj)
+          ldaushell => basp%ldaushell(iproj)
 
           spp%pjldaunl_n(iproj) = 1
           spp%pjldaunl_l(iproj) = ldaushell%l
@@ -1762,7 +1728,7 @@
         allocate ( spp%pjldau(spp%n_pjldaunl) )
 
         do iproj = 1, spp%n_pjldaunl
-          ldaushell => basp%tmp_ldaushell(iproj)
+          ldaushell => basp%ldaushell(iproj)
           pp => spp%pjldau(iproj)
           call rad_alloc(pp,NTBMAX)
           rc        = ldaushell%rc
@@ -1841,7 +1807,7 @@
 !        write(6,'(a)')
 !     .    '#populate_species_info_ldau: iproj, pjldau_n, l , m, index'
 !        do iproj = 1, spp%nprojsldau
-!          ldaushell => basp%tmp_ldaushell(spp%pjldau_index(iproj))
+!          ldaushell => basp%ldaushell(spp%pjldau_index(iproj))
 !          write(6,'(5i5,f12.5)')
 !     .     iproj, spp%pjldau_n(iproj), spp%pjldau_l(iproj), 
 !     .     spp%pjldau_m(iproj), spp%pjldau_index(iproj),ldaushell%rc

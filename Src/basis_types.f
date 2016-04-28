@@ -118,8 +118,6 @@
           integer                   ::  lmxldaupj  ! Max l for LDA+U projs
           type(lshell_t), pointer   ::  lshell(:)  ! One shell per l 
           type(kbshell_t), pointer  ::  kbshell(:) ! One KB shell per l
-          ! Currently this is not used:
-          !type(ldaushell_t), pointer  ::  ldaushell(:) ! One LDA+U shell per l
           real(dp)                  ::  ionic_charge
           real(dp)                  ::  mass   
           !
@@ -132,7 +130,6 @@
           character(len=20)         ::  basis_size
           logical                   ::  semic      ! 
           integer                   ::  nshells_tmp
-          integer                   ::  nldaushells_tmp
           integer                   ::  nkbshells
           integer                   ::  nldaushells      ! For a given atomic
                                                          !  species, on how many
@@ -145,7 +142,7 @@
           integer                   ::  lmxkb_requested
           integer                   ::  lmxldaupj_requested
           type(shell_t), pointer    ::  tmp_shell(:)
-          type(ldaushell_t), pointer::  tmp_ldaushell(:)
+          type(ldaushell_t), pointer::  ldaushell(:)
       end type basis_def_t
 
       integer, save, public              :: nsp  ! Number of species
@@ -295,15 +292,13 @@
       p%nkbshells = -1
       p%nldaushells = -1
       p%nshells_tmp = -1
-      p%nldaushells_tmp = -1
       p%label = 'Unknown'
       p%semic = .false.
       p%ionic_charge = huge(1.0_dp)  ! To signal it was not set
-      nullify(p%tmp_shell)
-      nullify(p%tmp_ldaushell)
       nullify(p%lshell)
       nullify(p%kbshell)
-      !nullify(p%ldaushell)
+      nullify(p%tmp_shell)
+      nullify(p%ldaushell)
       end subroutine init_basis_def
 
 !-----------------------------------------------------------------------
@@ -349,8 +344,7 @@
       subroutine destroy_basis_def(p)
       type(basis_def_t)          :: p
 
-      call destroy_ldaushell(p%tmp_ldaushell)
-      !call destroy_ldaushell(p%ldaushell)
+      call destroy_ldaushell(p%ldaushell)
       call destroy_lshell(p%lshell)
       call destroy_shell(p%tmp_shell)
 
@@ -466,12 +460,12 @@
       else
          write(6,*) 'No KB SHELLS, lmxkb=', p%lmxkb
       end if
-      if ( associated(p%tmp_ldaushell) ) then
-         do i=1, p%nldaushells_tmp
-            call print_ldaushell(p%tmp_ldaushell(i))
+      if ( associated(p%ldaushell) ) then
+         do i=1, p%nldaushells
+            call print_ldaushell(p%ldaushell(i))
          end do
       else
-         write(6,*) 'No LDA+U PROJECTORS, lmxldaupj=', p%nldaushells_tmp
+         write(6,*) 'No LDA+U PROJECTORS, lmxldaupj=', p%nldaushells
       end if
 
       write(6,*) '------------SPECIES'
@@ -757,10 +751,10 @@
      $           'erefs:  ', (erefkb(i,l,is),i=1,nkbl(l,is))
          end do
       end if
-      if ( associated(basp%tmp_ldaushell) ) then
+      if ( associated(basp%ldaushell) ) then
          write(lun,'(79("-"))')
-         do l = 1 , basp%nldaushells_tmp
-            ldau => basp%tmp_ldaushell(l)
+         do l = 1 , basp%nldaushells
+            ldau => basp%ldaushell(l)
             write(lun,'(a2,i1,2x,a2,i1)')
      $           'L=', ldau%l, 'n=', ldau%n
             write(lun,'(10x,a10,2x,g12.5)') 

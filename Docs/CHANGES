@@ -5,6 +5,21 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-28                                                    trunk-498
+Removed _tmp/tmp_ in ldau shells, removed double references
+
+- Removed all double references in the code of ldaushells
+  from the derived type.
+
+- Changed tmp names to standard conforming names.
+  This is more intuitive to grasp.
+
+modified:
+  Src/Makefile
+  Src/basis_types.f
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
 2016-04-28                                                    trunk-497
 Die if requesting non-existing PAO LDAU projectors
 
