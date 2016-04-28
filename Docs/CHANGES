@@ -5,6 +5,18 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-28                                                    trunk-495
+Fix possible double counting of Hldau
+
+- If recompute_H_after_scf it is required that
+  we use H_tmp in final_H_f_stress.
+
+  This is now fixed.
+
+modified:
+  Src/final_H_f_stress.F
+
+-----------------------------------------------------------------------
 2016-04-28                                                    trunk-494
 Almost fixed parallel version
 

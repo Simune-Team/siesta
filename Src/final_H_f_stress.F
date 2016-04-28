@@ -137,7 +137,7 @@
      .        maxnh, maxnh, lasto, iphorb,
      .        numh, listhptr, listh, numh, listhptr, listh,
      .        min(nspin,2), Dscf, Eldau, DEldau,
-     .        fal, stressl, H, iscf,
+     .        fal, stressl, H_tmp, iscf,
      .        matrix_elements_only=.false.)
 #ifdef MPI
          ! Global reduction of energy terms
