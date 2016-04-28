@@ -63,7 +63,10 @@
 
       call timer('setup_H',1)
 
-! Save present H matrix
+      ! Nullify pointers
+      nullify(fal)
+
+      ! Save present H matrix
       if(mixH) then
          Hold(1:maxnh,1:nspin) = H(1:maxnh,1:nspin)
       end if
@@ -111,11 +114,10 @@
 
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
-        nullify(fal)
         call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'setup_hamiltonian' )
 
         call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
-     .                    maxnh, maxnh, lasto, iphorb,
+     .                    maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .                    numh, listhptr, listh, numh, listhptr, listh,
      .                    min(nspin,2), Dscf, Eldau, DEldau, 
      .                    fal, stressl, H, iscf,
@@ -138,7 +140,6 @@
 ! Add SCF contribution to energy and matrix elements ..................
       g2max = g2cut
 
-      nullify(fal)
       call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'setup_hamiltonian' )
 
       ifa  = 0

@@ -27,8 +27,8 @@
           call register_in_rf_pool(func,l,m,"orb",(/is,io/),gindex)
           spp%orb_gindex(io) = gindex
 #ifdef DEBUG_PAO
-          write(6,*)'Atomic orbitals'
-          write(6,*)'is, io, gindex = ', is, io, gindex 
+          write(6,'(a20,a,3(tr1,i3))')'Atomic orbitals ', &
+               'is, io, gindex = ', is, io, gindex 
 #endif
        enddo
     enddo
@@ -44,8 +44,8 @@
           call register_in_rf_pool(func,l,m,"kbproj",(/is,io/),gindex)
           spp%pj_gindex(ko) = gindex
 #ifdef DEBUG_PAO
-          write(6,*)'KB projectors'
-          write(6,*)'is, ko, gindex = ', is, ko, gindex 
+          write(6,'(a20,a,3(tr1,i3))')'KB projectors ', &
+               'is, ko, gindex = ', is, ko, gindex 
 #endif
        enddo
     enddo
@@ -61,8 +61,8 @@
           call register_in_rf_pool(func,l,m,"ldauproj",(/is,io/),gindex)
           spp%pjldau_gindex(ldauo) = gindex
 #ifdef DEBUG_PAO
-          write(6,*)'LDA+U projectors'
-          write(6,*)'is, ldauo, gindex = ', is, ldauo, gindex 
+          write(6,'(a20,a,3(tr1,i3))')'LDAU projectors ', &
+               'is, ldauo, gindex = ', is, ldauo, gindex 
 #endif
        enddo
     enddo
@@ -76,8 +76,8 @@
        call register_in_rf_pool(func,l,m,"vna",(/is/),gindex)
        spp%vna_gindex = gindex
 #ifdef DEBUG_PAO
-       write(6,*)'VNA'
-       write(6,*)'is, gindex = ', is, gindex
+       write(6,'(a20,a,2(tr1,i3))')'VNA ', &
+               'is, gindex = ', is, gindex 
 #endif
     enddo
 
@@ -94,11 +94,13 @@
 #ifdef DEBUG_PAO
   subroutine test_register()
 
+    use parallel, only: IONode
     use precision, only: dp
     use m_matel_registry, only: cutoff=>rcut, evaluate
     use atm_types, only: species_info, species, nspecies
     use atmfuncs, only: rcut, phiatm
     use atmfuncs, only: orb_gindex, kbproj_gindex, vna_gindex
+    use atmfuncs, only: ldau_gindex
 
     implicit none 
     !
@@ -107,49 +109,64 @@
     integer :: run, is, io, ko, gindex
     real(dp) :: r(3) = (/0.5_dp, 0.5_dp, 0.5_dp/)
     real(dp) :: grad(3), phi
-    logical, external :: io_node
 
     do run = 0, 1
        if (run==1) r(:) = 0.0_dp
-       if (io_node()) print *, "Evaluation for r:",r(:)
+       if ( IONode ) print *, "Evaluation for r:",r(:)
        do is = 1, nspecies
-          if (io_node()) print *, "---IS: ", is
+          if ( IONode ) print *, "---IS: ", is
           spp => species(is)
           do io=1,spp%norbs
              call phiatm(is,io,r,phi,grad)
-             if (io_node()) print "(a,i3,f12.6,g20.10)", "io, rcut, phiatm_h:",   &
+             if ( IONode ) print "(a,i3,f12.6,g20.10)", "io, rcut, phiatm_h:",   &
                   io, rcut(is,io), phi
              gindex = orb_gindex(is,io)
              call evaluate(gindex,r,phi,grad)
-             if (io_node()) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
+             if ( IONode ) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
                   gindex, cutoff(gindex), phi
           enddo
        enddo
 
+       ! KB
        do is = 1, nspecies
-          if (io_node()) print *, "---IS projs: ", is
+          if ( IONode ) print *, "---IS projs: ", is
           spp => species(is)
           do io=1,spp%nprojs
              call phiatm(is,-io,r,phi,grad)
-             if (io_node()) print "(a,i3,f12.6,g20.10)", "io, rcut, phiatm_h:",   &
+             if ( IONode ) print "(a,i3,f12.6,g20.10)", "io, rcut, phiatm_h:",   &
                   io, rcut(is,-io), phi
              gindex = kbproj_gindex(is,-io)
              call evaluate(gindex,r,phi,grad)
-             if (io_node()) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
+             if ( IONode ) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
                   gindex, cutoff(gindex), phi
           enddo
        enddo
 
+       ! LDAU
+!!$       do is = 1, nspecies
+!!$          if ( IONode ) print *, "---IS ldau: ", is
+!!$          spp => species(is)
+!!$          do io=1,spp%nprojsldau
+!!$             call phiatm(is,-io,r,phi,grad)
+!!$             if ( IONode ) print "(a,i3,f12.6,g20.10)", "io, rcut, phiatm_h:",   &
+!!$                  io, rcut(is,-io), phi
+!!$             gindex = ldau_gindex(is,-io)
+!!$             call evaluate(gindex,r,phi,grad)
+!!$             if ( IONode ) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
+!!$                  gindex, cutoff(gindex), phi
+!!$          enddo
+!!$       enddo
+
        ! Vna
        do is = 1, nspecies
-          if (io_node()) print *, "---IS vna: ", is
+          if ( IONode ) print *, "---IS vna: ", is
           spp => species(is)
           call phiatm(is,0,r,phi,grad)
-          if (io_node()) print "(a,f12.6,g20.10)", "rcut, phiatm_h:",   &
+          if ( IONode ) print "(a,f12.6,g20.10)", "rcut, phiatm_h:",   &
                rcut(is,0), phi
           gindex = vna_gindex(is)
           call evaluate(gindex,r,phi,grad)
-          if (io_node()) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
+          if ( IONode ) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
                gindex, cutoff(gindex), phi
        enddo
     enddo

@@ -5,6 +5,24 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-28                                                    trunk-496
+Cosmetic update of ldau code
+
+- Easier logistic in the loops in ldau
+
+- Cosmetic changes for the interface of hubbard_term which
+  now passes the local number of orbitals.
+
+- Beautification of the DEBUG_PAO print-out.
+
+modified:
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/ldau.F
+  Src/register_rfs.F90
+  Src/setup_hamiltonian.F
+
+-----------------------------------------------------------------------
 2016-04-28                                                    trunk-495
 Fix possible double counting of Hldau
 

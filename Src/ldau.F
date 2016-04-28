@@ -22,7 +22,7 @@
       CONTAINS
 
       subroutine hubbard_term( scell, nua, na, isa, xa, indxua,
-     .                         maxnh, maxnd, lasto, iphorb, 
+     .                         maxnh, maxnd, lasto, iphorb, no_u, no_l,
      .                         numd, listdptr, listd, numh, 
      .                         listhptr, listh, nspin, Dscf, 
      .                         Eldau, DEldau,
@@ -49,6 +49,8 @@ C                            density matrix
 C integer lasto(0:na)      : Position of last orbital of each atom
 C integer iphorb(no)       : Orbital index of each orbital in its atom,
 C                            where no=lasto(na)
+C integer no_u             : Number of orbitals in unit cell
+C integer no_l             : Number of orbitals (local)
 C integer numd(nuo)        : Number of nonzero elements of each row of the
 C                            density matrix
 C integer listdptr(nuo)    : Pointer to the start of each row (-1) of the
@@ -118,12 +120,12 @@ C
       use m_compute_max_diff, only: dDmax_current
 
       integer, intent(in) ::
-     .   maxnh, na, maxnd, nspin, nua, iscf
-
+     .   maxnh, na, maxnd, nspin, nua, iscf, no_u, no_l
+      
       integer, intent(in)  ::
      .  indxua(na), iphorb(*), isa(na),  
      .  lasto(0:na), listd(maxnd), listh(maxnh),
-     .  numd(*), numh(*), listdptr(*), listhptr(*)
+     .  numd(no_l), numh(no_l), listdptr(no_l), listhptr(no_l)
 
       real(dp), intent(in) :: scell(3,3), Dscf(maxnd,nspin),
      .                        xa(3,na)
@@ -147,7 +149,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
      .  ia, ishldau, ina, ind, ino,
      .  io, iio, ioa, is, ispin, ix, ikb, 
      .  j, jno, jo, jx, ka, ko, ks, kua, ldauidx, 
-     .  nldauproj, nna, nno, no, nuo, nuotot, ja,
+     .  nldauproj, nna, nno, no, nuotot, ja,
      .  lko, lkb, nprin_ko, nprin_kb, kg, ig 
 
       integer, save :: istp_last = -1 ! Last MD step when the Hldau 
@@ -190,7 +192,6 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       logical, dimension(:), pointer ::  listed, listedall
       logical, save :: firstime = .true.          !  First time that this 
                                                   !   subroutine is called?
-
       type(species_info),  pointer :: spp
       type(rad_func),      pointer :: pp
 C ......................
@@ -330,7 +331,6 @@ C ......................
 !       Initialize arrays Di and Vi only once
         no = lasto(na)
         nuotot = lasto(nua)
-        call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 
 !       Allocate local memory
         call re_alloc( Di, 1, no, 1, nspin, 
@@ -350,7 +350,7 @@ C ......................
         listedall(1:no) = .false.
 
 !       Make list of all orbitals needed for this node
-        do io = 1, nuo
+        do io = 1, no_l
           call LocalToGlobalOrb(io,Node,Nodes,iio)
           listedall(iio) = .true.
           do j = 1, numh(io)
@@ -360,7 +360,7 @@ C ......................
         enddo
 
 !!       For debugging
-!        do io = 1, nuo
+!        do io = 1, no_l
 !          write(6,'(a,2i5)')'io, numh(io) = ', io, numh(io)
 !          do j = 1,numh(io)
 !            jo = listh(listhptr(io)+j)
@@ -430,6 +430,7 @@ C ......................
 !             Only calculate if needed locally
               if (listedall(io)) then
                 ioa = iphorb(io)
+                ig  = orb_gindex(is,ioa)
 
 !               Find if orbital is within range
                 within = .false.
@@ -489,9 +490,7 @@ C ......................
 !                 Here we compute the overlap between a LDA+U projector
 !                 and a neighbour atomic orbital
                   do ko = 1, nldauproj
-                    ioa = iphorb(io)
                     kg  = ldau_gindex(ks,ko)
-                    ig  = orb_gindex(is,ioa)
                     call new_matel( 'S', kg, ig, xki(1:3,ina),
      &                  Ski(ko,nno), grSki(1:3,ko,nno) )
 !!                   For debugging
@@ -513,62 +512,60 @@ C ......................
           do ino = 1,nno
             io = iono(ino)
             ia = iano(ino)
+            
+            ! Only atoms in the unit cell
+            if ( ia > nua ) cycle
 
+            ! Only local orbitals
             call GlobalToLocalOrb(io,Node,Nodes,iio)
-            if (iio.gt.0) then
-!             Valid orbital
-              if(ia .le. nua) then
+            if ( iio < 1 ) cycle
+            
+!           Scatter filter and density matrix row of orbital io
+            do j = 1, numd(iio)
+              ind = listdptr(iio) + j
+              jo = listd(ind)
+              listed(jo) = .true.
+              do ispin = 1, nspin
+                Di(jo,ispin) = Di(jo,ispin) + Dscf(ind,ispin)
+              enddo
+            enddo
 
-!               Scatter filter and density matrix row of orbital io
-                do j = 1, numd(iio)
-                  ind = listdptr(iio) + j
-                  jo = listd(ind)
-                  listed(jo) = .true.
-                  do ispin = 1, nspin
-                    Di(jo,ispin) = Di(jo,ispin) + Dscf(ind,ispin)
+!           Find matrix elements with other neighbour orbitals
+            do jno = 1,nno
+              jo = iono(jno)
+              ja = iano(jno)
+              if ( listed(jo) ) then
+
+!               Loop on LDA+U projectors
+                do ko = 1, nldauproj
+                  Sik = Ski(ko,ino)
+                  do ikb = 1, nldauproj
+                    Sjk = Ski(ikb,jno)
+                    do ispin = 1, nspin
+                      Dij = Di(jo,ispin) 
+                      occu(ko,ikb,kua,ispin) = 
+     &                     occu(ko,ikb,kua,ispin) + 
+     &                     Dij * Sik * Sjk/(3.0_dp-dble(nspin))
+!!                     For debugging
+!                      write(6,'(a,4i5,4f12.5)')
+!     &                 'ko, ikb, kua, ispin, occu = ',
+!     &                  ko, ikb, kua, ispin, occu(ko,ikb,kua,ispin),
+!     &                  Dij, Sik, Sjk
+!!                     End debugging
+                    enddo 
                   enddo
                 enddo
+              endif
+            enddo
 
-!               Find matrix elements with other neighbour orbitals
-                do jno = 1,nno
-                  jo = iono(jno)
-                  ja = iano(jno)
-                  if (listed(jo)) then
-
-!                   Loop on LDA+U projectors
-                    do ko = 1, nldauproj
-                      do ikb = 1, nldauproj
-                        Sik = Ski(ko,ino)
-                        Sjk = Ski(ikb,jno)
-                        do ispin = 1, nspin
-                          Dij = Di(jo,ispin) 
-                          occu(ko,ikb,kua,ispin) = 
-     &                         occu(ko,ikb,kua,ispin) + 
-     &                         Dij * Sik * Sjk/(3.0_dp-dble(nspin))
-!!                         For debugging
-!                          write(6,'(a,4i5,4f12.5)')
-!     &                     'ko, ikb, kua, ispin, occu = ',
-!     &                      ko, ikb, kua, ispin, occu(ko,ikb,kua,ispin),
-!     &                      Dij, Sik, Sjk
-!!                         End debugging
-                        enddo 
-                      enddo
-                    enddo
-                  endif
-                enddo
-
-!               Restore Di and listed
-                do j = 1, numh(iio)
-                  jo = listh(listhptr(iio)+j)
-                  listed(jo) = .false.
-                  do ispin=1,nspin
-                     Di(jo,ispin) = 0.0_dp
-                  enddo
-                enddo
-
-              endif        ! Endif the neighbout atom is within the unit cell
-
-            endif          ! Endif (iio .gt. 0)
+!           Restore Di and listed
+            do j = 1, numh(iio)
+              jo = listh(listhptr(iio)+j)
+              listed(jo) = .false.
+              do ispin=1,nspin
+                 Di(jo,ispin) = 0.0_dp
+              enddo
+            enddo
 
           enddo            ! End loop on neighbour orbitals (ino)
 
@@ -607,8 +604,7 @@ C ......................
      &            buffer1(1:nldauproj,1:nldauproj)
           end do
         enddo 
-        call de_alloc(buffer1,
-     &       name='buffer1', routine = 'hubbard_term')
+        call de_alloc(buffer1, name='buffer1', routine = 'hubbard_term')
 #endif
 
         dnmax = 0._dp
@@ -617,6 +613,7 @@ C ......................
           spp => species(is)
           nldauproj = spp%nprojsldau
           if ( nldauproj == 0 ) cycle
+          
           oc = 0.0_dp
           
           if( ldau_shift .and. Node == 0 ) then
@@ -659,8 +656,7 @@ C ......................
      &          'hubbard_term: maximum change in local occup.',dnmax
         endif
         
-        conv_ldaupop = .false.
-        if( dnmax .lt. dtol_ldaupop ) conv_ldaupop = .true. 
+        conv_ldaupop = ( dnmax .lt. dtol_ldaupop )
         if( .not. conv_ldaupop ) occu_old = occu
 
         recalc_hamilt: if( .not. conv_ldaupop .or. first .or. 
@@ -700,6 +696,7 @@ C ......................
 !               Only calculate if needed locally
                 if (listedall(io)) then
                   ioa = iphorb(io)
+                  ig  = orb_gindex(is,ioa)
 
 !                 Find if orbital is within range
                   within = .false.
@@ -734,9 +731,7 @@ C ......................
                       xno(ix,nno) = xki(ix,ina)
                     enddo
                     do ko = 1, nldauproj
-                      ioa = iphorb(io)
-                      kg  = ldau_gindex(ks,ko)
-                      ig  = orb_gindex(is,ioa)
+                      kg = ldau_gindex(ks,ko)
                       call new_matel( 'S', kg, ig, xki(1:3,ina),
      &                    Ski(ko,nno), grSki(1:3,ko,nno) )
 !!                     For debugging
@@ -760,114 +755,108 @@ C ......................
               io = iono(ino)
               ia = iano(ino)
 
+              ! Only atoms in the unit cell
+              if ( ia > nua) cycle
+
+              ! Only local orbitals
               call GlobalToLocalOrb(io,Node,Nodes,iio)
-              if (iio.gt.0) then
-!             Valid orbital
+              if ( iio < 1 ) cycle
 
-                if (ia .le. nua) then
+!             Scatter filter/density matrix row of orbital io
+              do j = 1,numd(iio)
+                ind = listdptr(iio)+j
+                jo = listd(ind)
+                listed(jo) = .true.
+                do ispin = 1,nspin
+                   Di(jo,ispin) = Di(jo,ispin) + Dscf(ind,ispin)
+                enddo
+              enddo
 
-!                 Scatter density matrix row of orbital io
-                  do j = 1,numd(iio)
-                    ind = listdptr(iio)+j
-                    jo = listd(ind)
-                    do ispin = 1,nspin
-                      Di(jo,ispin) = Di(jo,ispin) + Dscf(ind,ispin)
-                    enddo
-                  enddo
+!             Find matrix elements with other neighbour orbitals
+              do jno = 1,nno
+                jo = iono(jno)
+                ja = iano(jno)
 
-!                 Scatter filter of desired matrix elements
-                  do j = 1,numh(iio)
-                    jo = listh(listhptr(iio)+j)
-                    listed(jo) = .true.
-                  enddo
+                if ( listed(jo) ) then
+!                 Loop on LDA+U projectors
+                  do ko = 1, nldauproj
+                    lko      = spp%pjldau_l(ko)
+                    nprin_ko = spp%pjldau_n(ko)
+                    ldauidx  = spp%pjldau_index(ko)
+                    Ueff     = spp%pjldaunl_U(ldauidx) -
+     &                         spp%pjldaunl_J(ldauidx)
+                    if( ldau_shift ) Ueff = 2.0_dp * Ueff
+                    Sik = Ski(ko,ino)
+                    Sjk = Ski(ko,jno)
+!!                   For debugging
+!                    write(6,'(a,7i5,3f12.5)')
+!     &              'ka, ko, lko, nprin_ko, ino, jno, jo, U_eff = ',     
+!     &               ka, ko, lko, nprin_ko, ino, jno, jo, Ueff, 
+!     &               Sik, Sjk
+!!                   End debugging
+                    do ispin=1, nspin
+                      Vi(jo,ispin) = Vi(jo,ispin) +
+     &                               0.5_dp * Sik * Sjk * Ueff
+                      Dij  = Di(jo,ispin)
+                      Cijk = Ueff * Dij * Sjk 
+                      if(.not. matrix_elements_only) then 
+                        do ix=1,3
+                          fik = Cijk * grSki(ix,ko,ino)
+                          fa(ix,ia)  = fa(ix,ia)  - fik
+                          fa(ix,kua) = fa(ix,kua) + fik
+                          do jx = 1, 3
+                            stress(jx,ix) = stress(jx,ix) +
+     &                                      xno(jx,ino)*fik/volume       
+                          enddo 
+                        enddo 
+                      endif
 
-!                 Find matrix elements with other neighbour orbitals
-                  do jno = 1,nno
-                    jo = iono(jno)
-                    ja = iano(jno)
-
-                    if ( listed(jo) ) then
-!                     Loop on LDA+U projectors
-                      do ko = 1, nldauproj
-                        lko      = spp%pjldau_l(ko)
-                        nprin_ko = spp%pjldau_n(ko)
-                        ldauidx  = spp%pjldau_index(ko)
-                        Ueff     = spp%pjldaunl_U(ldauidx) -
-     &                             spp%pjldaunl_J(ldauidx)
-                        if( ldau_shift ) Ueff = 2.0_dp * Ueff
-                        Sik = Ski(ko,ino)
-                        Sjk = Ski(ko,jno)
-!!                       For debugging
-!                        write(6,'(a,7i5,3f12.5)')
-!     &                  'ka, ko, lko, nprin_ko, ino, jno, jo, U_eff = ',     
-!     &                   ka, ko, lko, nprin_ko, ino, jno, jo, Ueff, 
-!     &                   Sik, Sjk
-!!                       End debugging
-                        do ispin=1, nspin
-                          Vi(jo,ispin) = Vi(jo,ispin) +
-     &                                   0.5_dp * Sik * Sjk * Ueff
-                          Dij  = Di(jo,ispin)
-                          Cijk = Ueff * Dij * Sjk 
-                          if(.not. matrix_elements_only) then 
-                            do ix=1,3
-                              fik = Cijk * grSki(ix,ko,ino)
-                              fa(ix,ia)  = fa(ix,ia)  - fik
-                              fa(ix,kua) = fa(ix,kua) + fik
-                              do jx = 1, 3
-                                stress(jx,ix) = stress(jx,ix) +
-     &                                          xno(jx,ino)*fik/volume       
+                      if( .not. ldau_shift ) then 
+                        do ikb = 1, nldauproj
+                          lkb      = spp%pjldau_l(ikb)
+                          nprin_kb = spp%pjldau_n(ikb)
+                          if( lko      .eq. lkb        .and.
+     &                        nprin_ko .eq. nprin_kb ) then 
+!                            For the time being we will use the formulation
+!                            of Dudarev and collaborators
+                             Cijk = occu(ko,ikb,kua,ispin) *
+     &                              Ueff * Ski(ikb,jno)
+                             Vi(jo,ispin) = Vi(jo,ispin) -
+     &                                      Sik * Cijk
+                             if(.not. matrix_elements_only) then 
+                              do ix=1,3
+                                fik = -2.0_dp * Dij * Cijk * 
+     &                                grSki(ix,ko,ino) 
+                                fa(ix,ia)  = fa(ix,ia)  - fik
+                                fa(ix,kua) = fa(ix,kua) + fik
+                                do jx = 1, 3
+                                  stress(jx,ix)= stress(jx,ix) +
+     &                                    xno(jx,ino) * fik / volume
+                                enddo
                               enddo 
-                            enddo 
-                          endif
+                            endif
+                          endif 
+                        enddo 
+                      endif
 
-                          if( .not. ldau_shift ) then 
-                            do ikb = 1, nldauproj
-                              lkb      = spp%pjldau_l(ikb)
-                              nprin_kb = spp%pjldau_n(ikb)
-                              if( lko      .eq. lkb        .and.
-     &                            nprin_ko .eq. nprin_kb ) then 
-!                                For the time being we will use the formulation
-!                                of Dudarev and collaborators
-                                 Cijk = occu(ko,ikb,kua,ispin) *
-     &                                  Ueff * Ski(ikb,jno)
-                                 Vi(jo,ispin) = Vi(jo,ispin) -
-     &                                          Sik * Cijk
-                                if(.not. matrix_elements_only) then 
-                                  do ix=1,3
-                                    fik = -2.0_dp * Dij * Cijk * 
-     &                                    grSki(ix,ko,ino) 
-                                    fa(ix,ia)  = fa(ix,ia)  - fik
-                                    fa(ix,kua) = fa(ix,kua) + fik
-                                    do jx = 1, 3
-                                      stress(jx,ix)= stress(jx,ix) +
-     &                                        xno(jx,ino) * fik / volume
-                                    enddo
-                                  enddo 
-                                endif
-                              endif 
-                            enddo 
-                          endif
+                    enddo        ! Enddo ispin
+                  enddo     ! Enddo ko, on LDA+U projectors
+                endif       ! Endif if the orbital jo is listed
+              enddo         ! Enddo on neighbour orbitals jno
 
-                        enddo   ! Enddo ispin
-                      enddo     ! Enddo ko, on LDA+U projectors
-                    endif       ! Endif if the orbital jo is listed
-                  enddo         ! Enddo on neighbour orbitals jno
+!             Add to Hldau and restore Di, Vi and listed
+              do j = 1,numh(iio)
+                ind = listhptr(iio)+j
+                jo = listh(ind)
+                do ispin = 1,nspin
+                  Hldau(ind,ispin) = Hldau(ind,ispin) + 
+     &                               Vi(jo,ispin)
+                  Vi(jo,ispin) = 0.0_dp
+                  Di(jo,ispin) = 0.0_dp
+                enddo 
+                listed(jo) = .false.
+              enddo
 
-!                 Add to Hldau and restore Di, Vi and listed
-                  do j = 1,numh(iio)
-                    ind = listhptr(iio)+j
-                    jo = listh(ind)
-                    do ispin = 1,nspin
-                      Hldau(ind,ispin) = Hldau(ind,ispin)+
-     &                                   Vi(jo,ispin)
-                      Vi(jo,ispin) = 0.0_dp
-                      Di(jo,ispin) = 0.0_dp
-                    enddo 
-                    listed(jo) = .false.
-                  enddo
-
-                endif    ! endif (ia .le. nua) 
-              endif      ! endif (iio.gt.0) 
             enddo        ! enddo ino = 1,nno
           enddo          ! enddo loop on orbitals with LDA+U projectors(ka=1,na)
 
@@ -878,24 +867,23 @@ C ......................
       add_hamilt: if(iter_ldaupop.gt.0) then 
         if(Node.eq.0) 
      &    write(6,'(a)') 'hubbard_term: Adding Hamiltonian contribution'
-
+        
+        ! Add the Hamiltonian elements and calculate energy
+        do iio = 1 , no_l
+           do j = 1, numh(iio)
+              ind = listhptr(iio) + j
+              do ispin = 1, nspin
+                 Eldau = Eldau +
+     &                0.5_dp * Hldau(ind,ispin) * Dscf(ind,ispin)       
+                 H(ind,ispin) = H(ind,ispin) + Hldau(ind,ispin)
+              end do
+           end do
+        end do
+        
         do ia = 1,nua
           is = isa(ia)
           spp => species(is)
           nldauproj = spp%nprojsldau
-          do io = lasto(ia-1)+1,lasto(ia)
-            call GlobalToLocalOrb(io,Node,Nodes,iio)
-            if ( iio .gt. 0 ) then
-              do j = 1, numh(iio)
-                ind = listhptr(iio) + j
-                do ispin = 1, nspin
-                   Eldau = Eldau +
-     &                     0.5_dp * Hldau(ind,ispin) * Dscf(ind,ispin)       
-                   H(ind,ispin) = H(ind,ispin) + Hldau(ind,ispin)
-                enddo
-              enddo
-            endif
-          enddo
           if( nldauproj .gt. 0 ) then
             do ispin = 1, nspin
               do ko = 1, nldauproj
@@ -912,7 +900,7 @@ C ......................
         enddo
 
 !!       For debugging
-!        do io = 1, nuo
+!        do io = 1, no_l
 !          do j = 1, numh(io)
 !              ind = listhptr(io) + j
 !              write(6,'(a,4i7,2f12.5)')'io, j, ind, listh, Hldau = ',

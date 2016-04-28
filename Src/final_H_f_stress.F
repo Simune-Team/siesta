@@ -134,7 +134,7 @@
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
          call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
-     .        maxnh, maxnh, lasto, iphorb,
+     .        maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .        numh, listhptr, listh, numh, listhptr, listh,
      .        min(nspin,2), Dscf, Eldau, DEldau,
      .        fal, stressl, H_tmp, iscf,

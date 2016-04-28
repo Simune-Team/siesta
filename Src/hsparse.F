@@ -310,7 +310,7 @@ C                 Find if there is direct overlap
                   if (rci+rcj .gt. rij) then
                     conect(jo) = .true.
                   elseif (.not.negl) then
-C                   Find if jo overlaps with a KB projector
+C                   Find if jo overlaps with a KB/LDAU projector
                     do inkb = 1,nnkb
                       rck = rckb(inkb)
                       kna = knakb(inkb)
@@ -405,7 +405,7 @@ C           Find overlaping KB and LDA+U projectors
                     rik = sqrt( r2ij(kna) )
                     ks = isa(ka)
                                 ! It is only necessary to check with
-                                ! the *largest* KB projector
+                                ! the *largest* KB/LDAU projector
                     rck = rkbmax(ks)
                     if ((rci + rck) .gt. rik) then
                        nnkb = nnkb + 1
