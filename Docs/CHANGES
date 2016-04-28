@@ -5,6 +5,16 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-28                                                    trunk-493
+Fixed r491 with rofi array size
+
+- Correspondance with Javier brought this
+  fix.
+
+modified:
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
 2016-04-27                                                    trunk-492
 Added die when user reads basis + LDAU
 

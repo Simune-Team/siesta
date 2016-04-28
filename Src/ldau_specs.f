@@ -906,12 +906,7 @@
       endif
 
 !     Read the radial logarithmic mesh
-      if ( nrval > vps%nrval ) then
-         rofi(1:vps%nrval) = vps%r(1:vps%nrval)
-         rofi(vps%nrval+1:nrval) = rofi(vps%nrval)
-      else
-         rofi(1:nrval) = vps%r(1:nrval)
-      end if
+      rofi(1:nrval) = vps%r(1:nrval)
 
 !     Calculate drdi and s
 !     drdi is the derivative of the radial distance respect to the mesh index
@@ -1702,13 +1697,9 @@
 !       Read the parameters for the logarithmic grid
         a = vps%a
         b = vps%b
+        nr = vps%nr
 !       Read the radial logarithmic mesh
-        if ( nrval > vps%nrval ) then
-           rofi(1:vps%nrval) = vps%r(1:vps%nrval)
-           rofi(vps%nrval+1:nrval) = rofi(vps%nrval)
-        else
-           rofi(1:nrval) = vps%r(1:nrval)
-        end if
+        rofi(1:nr) = vps%r(1:nr)
 
 !       Store the total number of LDA+U projectors 
 !       counting the "m copies"
