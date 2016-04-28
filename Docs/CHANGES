@@ -5,6 +5,16 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-28                                                    trunk-497
+Die if requesting non-existing PAO LDAU projectors
+
+- If the requested quantum number LDAU is not found
+  in the list of PAO objects then siesta will die.
+
+modified:
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
 2016-04-28                                                    trunk-496
 Cosmetic update of ldau code
 

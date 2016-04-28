@@ -153,6 +153,7 @@
                                                 !   information relative to the
                                                 !   definition of the basis set
                                                 !   is defined
+      use basis_types, only : shell_t           ! Derived type of PAO shells
       use basis_types, only : ldaushell_t       ! Derived type where all the
                                                 !   information relative to the
                                                 !   atomic orbitals where the U
@@ -332,13 +333,15 @@
       type(basis_def_t), pointer :: basp
       type(ldaushell_t), pointer :: ldau
       type(ldaushell_t), pointer :: lsldau
+      type(shell_t), pointer :: shell
+
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
 
       integer :: isp                ! Dummy parameter to account for the 
                                     !   species label
-      integer :: ish, jsh           ! Dummy parameters to account for the 
+      integer :: ish, jsh, i        ! Dummy parameters to account for the 
                                     !   loop on shells
       integer :: indexp             ! Dummy parameters to account for the 
                                     !   reading of lines in LDAU.proj block
@@ -346,6 +349,8 @@
       integer :: maxnumberproj      ! Maximum number of projectors 
                                     !   considered in a given species
 
+      logical :: bool
+      
 !     Default generation method for the LDA+U projectors
       integer, parameter          :: method_gen_default= 2
 
@@ -499,7 +504,23 @@
      .       call die(
      .        'LDAU projs. with the same l need different values of n')        
           enddo
-
+          
+          ! Check that the principal and angular quantum numbers
+          ! are already an PAO
+          bool = .false.
+          do i = 0 , basp%lmxo
+           do jsh = 1 , basp%lshell(i)%nn
+              shell => basp%lshell(i)%shell(jsh)
+              if ( shell%nzeta == 0 ) cycle
+              bool = bool .or.
+     &          (shell%n == ldau%n .and. shell%l == ldau%l)
+           end do
+          end do
+          if ( .not. bool ) then
+             call die(
+     &'LDAU projs require quantum numbers to exist. Check n and L')
+          end if
+          
 !         Check whether soft-confinement will be used
           if (fdf_bsearch(pline,'E',indexp)) then
             if (fdf_bmatch(pline,'vv',after=indexp)) then
