@@ -4,6 +4,282 @@
 
 
 ** CHANGES ALONG trunk
+-----------------------------------------------------------------------
+2016-04-29                                                    trunk-499
+Cleaned up the ldau modules by moving variables
+
+- The ldau_specs module had several variables defined
+  as module variables while they where only needed
+  in one subroutine.
+  They have been moved there.
+
+  Now also the projector arrays are deallocated after
+  having created the actual projectors used.
+
+  Thus saving additional memory.
+
+modified:
+  Src/ldau.F
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-28                                                    trunk-498
+Removed _tmp/tmp_ in ldau shells, removed double references
+
+- Removed all double references in the code of ldaushells
+  from the derived type.
+
+- Changed tmp names to standard conforming names.
+  This is more intuitive to grasp.
+
+modified:
+  Src/Makefile
+  Src/basis_types.f
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-28                                                    trunk-497
+Die if requesting non-existing PAO LDAU projectors
+
+- If the requested quantum number LDAU is not found
+  in the list of PAO objects then siesta will die.
+
+modified:
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-28                                                    trunk-496
+Cosmetic update of ldau code
+
+- Easier logistic in the loops in ldau
+
+- Cosmetic changes for the interface of hubbard_term which
+  now passes the local number of orbitals.
+
+- Beautification of the DEBUG_PAO print-out.
+
+modified:
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/ldau.F
+  Src/register_rfs.F90
+  Src/setup_hamiltonian.F
+
+-----------------------------------------------------------------------
+2016-04-28                                                    trunk-495
+Fix possible double counting of Hldau
+
+- If recompute_H_after_scf it is required that
+  we use H_tmp in final_H_f_stress.
+
+  This is now fixed.
+
+modified:
+  Src/final_H_f_stress.F
+
+-----------------------------------------------------------------------
+2016-04-28                                                    trunk-494
+Almost fixed parallel version
+
+- Implemented Alberto's fixes for the basis specifications
+  in parallel with some minor corrections.
+  
+  This is because the basis_specs are only on Node == 0.
+  However, the specifications should be broadcasted
+  to the other nodes.
+
+  This is now performed by dublicating the LDAU radial
+  functions to the other nodes and retaining the
+  data on all nodes.
+
+  I have added the remaining Bcast which where required.
+
+- Added bcast of the LDAU variables in broadcast_basis.
+  Several variables are required Bcasted.
+
+- Reduced memory requirements slightly
+
+- Reverted globalization of DEldau as entered by
+  Nick in r488.
+  This is not needed as the DEldau is calculated
+  from globalized occupations.
+
+- Removed un-needed ldaushell in the basis_species.
+  Only the *_tmp is used so we do not need the second.
+
+- Fix for "SpinPolarized false" regarding occupations
+
+- TODO move Hldau to sparse_matrices such that it may
+  be calculated "one time" and stored in a generic place.
+
+modified:
+  Src/Makefile
+  Src/atm_types.f
+  Src/basis_types.f
+  Src/broadcast_basis.F
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/ldau.F
+  Src/ldau_specs.f
+  Src/setup_hamiltonian.F
+
+-----------------------------------------------------------------------
+2016-04-28                                                    trunk-493
+Fixed r491 with rofi array size
+
+- Correspondance with Javier brought this
+  fix.
+
+modified:
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-27                                                    trunk-492
+Added die when user reads basis + LDAU
+
+- Reading the basis from NetCDF or ascii files
+  is not allowed when using LDA+U.
+
+  This feature is simply not implemented yet.
+  (but could be)
+
+modified:
+  Src/initatom.f
+
+-----------------------------------------------------------------------
+2016-04-27                                                    trunk-491
+Fixes for pointers and possible seg-fault
+
+- Pointers in ldau.F where only nullified in
+  the first run. However, they should be
+  in each SCF.
+  Fixed.
+
+- Print-out of LDAU parameters in the basis-specification
+  This makes easy identification of the used LDA+U
+  basis.
+
+- A possible seg-fault for accessing array elements beyond
+  dimension was found in the ldau_specs.f.
+
+  A possible fix has been added.
+
+  TODO: Check validity for other systems.
+  For Javier's initial test MnO the results are identical.
+
+modified:
+  Src/basis_types.f
+  Src/ldau.F
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-25                                                    trunk-490
+Second patches by Nick Andersen
+
+* The files that have been added or modified are:
+
+- hsparse.F:             Call to basis_parameters only if switch_ldau
+- matel_registry.F90:    Cosmetic changes on show_pool
+- register_rfs.F90:      Writing of part of the output only done if
+                         the directive DEBUG_PAO is switched
+- siesta_init.F:         Remove the call to test_register 
+
+-----------------------------------------------------------------------
+2016-04-25                                                    trunk-488
+First patches by Nick Andersen
+
+* The files that have been added or modified are:
+
+- final_H_f_stress.F:    Globalization of the sum of DEldau added
+- ldau.F:                Writing on some of the output only on Node 0,
+                         globalization of dnmax
+- siesta_init.F:         Initialization of Eldau and DEldau
+
+-----------------------------------------------------------------------
+2016-04-25                                                    trunk-487
+Corrected version in the CHANGES file
+
+-----------------------------------------------------------------------
+2016-04-25                                                    trunk-486
+Calculation of the Hubbard-like matrix elements, and their contribution
+to forces and stresses
+
+* The files that have been added or modified are: 
+
+- atmfuncs.f:       New function ldau_gindex added
+- basis_io.F:       The information of the LDA+U projectors is dumped into 
+                    the corresponding files
+- compute_energies.F90:  The Hubbard energy is added to the total energy
+- compute_max_diff.F:    The maximum difference between the input and the 
+                         output density matrices is saved in the public
+                         variable dDmax_current, that is required within
+                         the hubbard_term subroutine in order to know
+                         whether the population of the LDA+U projector is 
+                         updated or not.
+- final_H_f_stress.F:    Last call to hubbard_term in order to compute the
+                         forces and stresses once the self-consistency is 
+                         achieved
+- hsparse.F:        The eventual overlap with the LDA+U projectors is 
+                    considered, as it was done with the KB projectors
+- initatom.f:       Call to the subroutine ldau_proj_gen to generate the
+                    LDA+U projectors
+- m_energies.F90:   The Hubbard energies are included in the variables
+- scfconvergence_test.F: The criterion on the convergence of the population of
+                         the LDA+U is added to the requirements to determine
+                         whether the SCF is achieved
+- setup_hamiltonian.F:   Call to hubbard_term to add the contribution of the
+                         Hubbard-like terms to the Hamiltonian
+- write_subs.F:     The information of the Hubbard like energies is dumped
+- ldau.F:           New subroutine that computes the Hubbard-like 
+                    contribution to matrix elements, forces, and stresses
+- Makefile:         Customaty changes to include the new files and dependencies
+- Docs/siesta.tex:  A new section on the LDA+U calculations has been written
+
+-----------------------------------------------------------------------
+2016-02-22                                                    trunk-485
+Generation of the LDA+U projections compatible with new matel
+
+* The files that have been added or modified are: 
+- ldau_specs.f:     Module ldau_specs to read the input file,
+                    generate the projectors and populate the derived types.
+- atm_transfer.f:   Call to populate_species_info_ldau to populate the 
+                    variables in the species derived type related with the 
+                    LDA+U projectors.
+- atm_types.f:      New variables related with the LDA+U projectors 
+                    defined in the derived type species. 
+                    Essentially, they are a copy of the corresponding variables
+                    for the KB projector
+- atom.F:           The following subroutines declared public: 
+                    schro_eq, rc_vs_e, build_vsoft
+- basis_specs.f:    The subroutine label2species is declared public.
+                    It will be used afterwards in read_ldau_specs.
+- basis_types.f:    New derived type ldaushell_t defined, and the 
+                    corresponding subroutines for initialization, print, etc 
+                    are introduced.
+- broadcast_basis.F:The broadcast of the species derived type has been 
+                    generalized to include also the corresponding variables 
+                    related with the LDA+U projectors
+- initatom.f:       Here we read the info related with the LDA+U projs 
+                    in the fdf file (calling the subroutine read_ldau_specs) 
+                    and we call the subroutine in charge of generating them
+                    (ldau_proj_gen)
+- register_rfs.F90: Subroutine modified to include the LDA+U projectors 
+                    in the pool
+- Makefile:         Customaty changes to include the new files and dependencies
+
+
+added:
+  Src/ldau_specs.f
+modified:
+  Src/Makefile
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/broadcast_basis.F
+  Src/initatom.f
+  Src/register_rfs.F90
 
 -----------------------------------------------------------------------
 2016-03-07                                                    trunk-492

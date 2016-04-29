@@ -162,6 +162,7 @@
       real(dp), save, public    :: rmax_radial_grid
       
       public :: read_basis_specs
+      public :: label2species
 
       private
 

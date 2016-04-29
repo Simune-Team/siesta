@@ -33,6 +33,7 @@
       use old_atmfuncs, only: lmxkbfis, nkbfis
 
 !----------------------------------------------------------------
+      use ldau_specs,     only: populate_species_info_ldau
 
       use periodic_table, only: symbol
       use sys,            only: die
@@ -283,6 +284,8 @@
          spp%core%d2(1:)        = coretab(2:,2,is)
 
       enddo
+
+      call populate_species_info_ldau
 
       end subroutine atm_transfer
 

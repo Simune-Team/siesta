@@ -14,9 +14,14 @@
       use atm_types
       use radial
       use parallel,   only : Node, Nodes
-
+      ! Broadcast LDA+U variables
+      use ldau_specs, only: switch_ldau, dtol_ldaupop
+      use ldau_specs, only: dDmax_threshold, ldau_shift
+      use ldau_specs, only: ldau_init
+      
 #ifdef MPI
       use mpi_siesta
+      use m_mpi_utils, only: broadcast
 #endif
 
       implicit none
@@ -113,9 +118,38 @@
         call MPI_Bcast(spp%pj_m,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
 
+        ! LDA+U
+        call MPI_Bcast(spp%n_pjldaunl,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%lmax_ldau_projs,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldaunl_l,maxn_pjnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldaunl_n,maxn_pjnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldaunl_U,maxn_pjnl,MPI_double_precision,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldaunl_J,maxn_pjnl,MPI_double_precision,
+     $                 0,MPI_Comm_World,MPIerror)
+
+        call MPI_Bcast(spp%nprojsldau,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        
+        call MPI_Bcast(spp%pjldau_index,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldau_n,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldau_l,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldau_m,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldau_gindex,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+
         if (Node.ne.0) then
            allocate(spp%orbnl(spp%n_orbnl))
            allocate(spp%pjnl(spp%n_pjnl))
+           allocate(spp%pjldau(spp%n_pjldaunl))
         endif
         
         do i=1,spp%n_orbnl
@@ -125,6 +159,11 @@
 
         do i=1,spp%n_pjnl
            func=>spp%pjnl(i)
+           call broadcast_radial(func,Node)
+        enddo
+
+        do i=1,spp%n_pjldaunl
+           func=>spp%pjldau(i)
            call broadcast_radial(func,Node)
         enddo
 
@@ -160,6 +199,13 @@
          call broadcast_radial(func,Node)
       enddo
 
+      ! Broadcast LDA+U
+      call broadcast( switch_ldau )
+      call broadcast( ldau_shift )
+      call broadcast( ldau_init )
+      call broadcast( dTol_ldaupop )
+      call broadcast( dDmax_threshold )
+      
 #ifdef DEBUG
       call write_debug( '  POS broadcast_basis' )
 #endif
