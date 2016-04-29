@@ -5,6 +5,24 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-29                                                    trunk-499
+Cleaned up the ldau modules by moving variables
+
+- The ldau_specs module had several variables defined
+  as module variables while they where only needed
+  in one subroutine.
+  They have been moved there.
+
+  Now also the projector arrays are deallocated after
+  having created the actual projectors used.
+
+  Thus saving additional memory.
+
+modified:
+  Src/ldau.F
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
 2016-04-28                                                    trunk-498
 Removed _tmp/tmp_ in ldau shells, removed double references
 

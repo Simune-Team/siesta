@@ -1,3 +1,10 @@
+! 
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996- .
+! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
@@ -140,7 +147,6 @@
 ! =======================================================================
 !
       use precision
-      use fdf
 
       use sys,         only : die               ! Termination routine
       use basis_specs, only : label2species     ! Function that reads the
@@ -212,9 +218,7 @@
                                                 !   stored
       use atm_types,   only : nspecies          ! Total number of different  
                                                 !   atomic species
-      use units,       only : pi                ! Value of pi
-      use units,       only : eV                ! Conversion factor from 
-                                                !   eV to Ry
+      use units,       only : pi, eV            ! Conversions
       use alloc,       only : re_alloc          ! Allocation routines
       use radial                                ! Derived type for the radial
                                                 !   functions
@@ -268,17 +272,6 @@
                                       !   dependencies): i.e. a radial projector
                                       !   with d-character counts as 5 different
                                       !   LDA+U projectors
-      integer      :: nrval           ! Actual number of points in the
-                                      !   logarithmic grid
-      integer      :: nrwf            ! Actual number of points in the
-                                      !   logarithmic grid to solve the
-                                      !   Schrodinger equation of the isolated 
-                                      !   atom when no cutoff radius is 
-                                      !   specified
-                                      !   In these cases, an arbitrary long
-                                      !   localization radius of 60.0 Bohrs
-                                      !   is assumed
-      integer      :: nrwf_new        ! 
       real(dp), parameter :: rmax = 60.0_dp            
                                       ! Arbitrary long localization radius
       real(dp), parameter :: min_func_val = 1.e-6_dp
@@ -329,6 +322,8 @@
 
 !---
       subroutine read_ldau_specs()
+
+      use fdf
 
       type(basis_def_t), pointer :: basp
       type(ldaushell_t), pointer :: ldau
@@ -721,10 +716,21 @@
                                              !   logarithmic grid
                                              !   (directly read from the
                                              !   pseudopotential file)
+      integer      :: nrval                  ! Actual number of points in the
+                                             !   logarithmic grid
       integer      :: nrc                    ! Number of points required to 
                                              !   store the pseudowave functions
                                              !   in the logarithmic grid
                                              !   after being strictly confined.
+      integer      :: nrwf                   ! Actual number of points in the
+                                             !   logarithmic grid to solve the
+                                             !   Schrodinger equation of the isolated 
+                                             !   atom when no cutoff radius is 
+                                             !   specified
+                                             !   In these cases, an arbitrary long
+                                             !   localization radius of 60.0 Bohrs
+                                             !   is assumed
+      integer      :: nrwf_new               ! 
       real(dp)     :: a                      ! Step parameter of log. grid
                                              !   (directly read from the
                                              !   pseudopotential file)
@@ -1631,6 +1637,7 @@
 !     derived type related with the LDA+U projectors.
 !     It is called from atm_transfer. 
 !
+      use alloc, only : de_alloc
       type(species_info),      pointer :: spp
       type(basis_def_t),       pointer :: basp
       type(ldaushell_t),       pointer :: ldaushell
@@ -1816,6 +1823,8 @@
 !      call die('End testing populate_species_info_ldau')
 !!     End debugging
 
+      call de_alloc( projector, 'projector', 'ldau_proj_gen')
+      call de_alloc( nprojsldau, 'nprojsldau', 'read_ldau_specs')
 
       end subroutine populate_species_info_ldau
 
