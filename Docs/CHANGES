@@ -5,6 +5,20 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-04-29                                                    trunk-495
+Fixed rmaxh for correct range of Hamiltonian elements
+
+- The rmaxh was too short in case of LDAU projectors
+  bigger than the KB projectors.
+
+  This fixes the calculation of the correct rmaxh
+  when the LDAU projectors are used.
+
+modified:
+  Src/atomlist.f
+  Src/siesta_init.F
+
+-----------------------------------------------------------------------
 2016-04-29                                                    trunk-494
 Cleaned LDA+U
 
