@@ -213,7 +213,10 @@
       Entropy = 0.0_dp
       FreeE   = 0.0_dp
       Ef      = 0.0_dp
+      Eldau   = 0.0_dp
+      DEldau  = 0.0_dp
 
+      
 #ifdef DEBUG_XC
 ! Set output file unit for debug info
       call setDebugOutputUnit()
@@ -281,7 +284,6 @@
       call broadcast_basis( )
 
       call register_rfs()
-!     call test_register()
 
       atmonly = fdf_get( 'Atom-Setup-Only', .false. )
       if (atmonly) call bye( 'End of atom setup' )

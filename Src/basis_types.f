@@ -70,6 +70,38 @@
           real(dp), pointer         ::  erefkb(:)  ! Reference energies
           !!! type(rad_func), pointer  ::  proj(:) ! Actual projectors
       end type kbshell_t
+
+      type, public :: ldaushell_t
+          integer                   ::  n          ! principal quantum number
+                                                   !   of the atomic orbital
+                                                   !   where the U correction
+                                                   !   will be applied
+          integer                   ::  l          ! angular quantum number 
+                                                   !   of the atomic orbital
+                                                   !   where the U correction
+                                                   !   will be applied
+          real(dp)                  ::  rinn       ! Soft confinement 
+                                                   !   inner radius
+          real(dp)                  ::  vcte       ! Soft confinement potential
+                                                   !  prefactor of the potential
+          real(dp)                  ::  rc         ! rc's for LDA+U projectors
+          integer                   ::  nrc        ! Point in the log grid where
+                                                   !  the LDA+U proj. vanishes
+          real(dp)                  ::  lambda     ! Contraction factors
+          real(dp)                  ::  dnrm_rc    ! Parameter used to determine
+                                                   !   the cutoff radius of the
+                                                   !   Fermi distrib. used 
+                                                   !   to cut the LDA+U proj.
+          real(dp)                  ::  width      ! Width of the Fermi distrib.
+                                                   !   to cut the LDA+U proj.
+          real(dp)                  ::  u          ! Value of the U parameter
+          real(dp)                  ::  j          ! Value of the J parameter
+          !!! type(rad_func), pointer  ::  ldau_proj(:) ! Actual projectors
+                                                   !   all these radial function
+                                                   !   are now defined in the 
+                                                   !   derived type "species"
+                                                   !   in module atm_types
+      end type ldaushell_t
 !
 !     Main data structure
 !
@@ -80,6 +112,7 @@
           type(pseudopotential_t)   ::  pseudopotential
           integer                   ::  lmxo       ! Max l for basis
           integer                   ::  lmxkb      ! Max l for KB projs
+          integer                   ::  lmxldaupj  ! Max l for LDA+U projs
           type(lshell_t), pointer   ::  lshell(:)  ! One shell per l 
           type(kbshell_t), pointer  ::  kbshell(:) ! One KB shell per l
           real(dp)                  ::  ionic_charge
@@ -95,8 +128,18 @@
           logical                   ::  semic      ! 
           integer                   ::  nshells_tmp
           integer                   ::  nkbshells
+          integer                   ::  nldaushells      ! For a given atomic
+                                                         !  species, on how many
+                                                         !  orbitals we are 
+                                                         !  going to apply the
+                                                         !  U correction
+          integer                   ::  nldauprojs_lm    ! How many projectors
+                                                         !  including angular 
+                                                         !  dependencies.
           integer                   ::  lmxkb_requested
+          integer                   ::  lmxldaupj_requested
           type(shell_t), pointer    ::  tmp_shell(:)
+          type(ldaushell_t), pointer::  ldaushell(:)
       end type basis_def_t
 
       integer, save, public              :: nsp  ! Number of species
@@ -133,11 +176,11 @@
 !-----------------------------------------------------------------------
 
       interface destroy
-        module procedure destroy_shell,
+        module procedure destroy_shell, 
      $                   destroy_lshell, destroy_basis_def
       end interface
       interface initialize
-        module procedure init_shell, init_kbshell,
+        module procedure init_shell, init_kbshell, init_ldaushell,
      $                   init_lshell, init_basis_def
       end interface
 
@@ -145,6 +188,7 @@
       public  :: destroy, copy_shell, initialize
       public  :: write_basis_specs, basis_specs_transfer
       public  :: deallocate_spec_arrays
+      public  :: print_ldaushell
 !---------------------------------------------------------
 
       PRIVATE
@@ -209,6 +253,22 @@
       end subroutine init_kbshell
 
 !-----------------------------------------------------------------------
+      subroutine init_ldaushell(p)
+      type(ldaushell_t)          :: p
+      p%n       = -1
+      p%l       = -1
+      p%rinn    = 0.0_dp
+      p%vcte    = 0.0_dp
+      p%u       = 0.0_dp
+      p%j       = 0.0_dp
+      p%rc      = 0.0_dp
+      p%nrc     = 0
+      p%lambda  = 1.0_dp
+      p%dnrm_rc = 0.9_dp
+      p%width   = 0.5_dp
+      end subroutine init_ldaushell
+
+!-----------------------------------------------------------------------
       subroutine init_lshell(p)
       type(lshell_t)          :: p
 
@@ -223,15 +283,19 @@
 
       p%lmxo = -1
       p%lmxkb = -1
+      p%lmxldaupj = -1
       p%lmxkb_requested = -1
+      p%lmxldaupj_requested = -1
       p%nkbshells = -1
+      p%nldaushells = -1
       p%nshells_tmp = -1
       p%label = 'Unknown'
       p%semic = .false.
       p%ionic_charge = huge(1.0_dp)  ! To signal it was not set
-      nullify(p%tmp_shell)
       nullify(p%lshell)
       nullify(p%kbshell)
+      nullify(p%tmp_shell)
+      nullify(p%ldaushell)
       end subroutine init_basis_def
 
 !-----------------------------------------------------------------------
@@ -265,12 +329,22 @@
       deallocate(p)
       end subroutine destroy_lshell
 
+      
+      subroutine destroy_ldaushell(p)
+      type(ldaushell_t), pointer   :: p(:)
+
+      if (.not. associated(p)) return
+      deallocate(p)
+      end subroutine destroy_ldaushell
+
 !-----------------------------------------------------------------------
       subroutine destroy_basis_def(p)
       type(basis_def_t)          :: p
 
+      call destroy_ldaushell(p%ldaushell)
       call destroy_lshell(p%lshell)
       call destroy_shell(p%tmp_shell)
+
       end subroutine destroy_basis_def
 
 !-----------------------------------------------------------------------
@@ -318,6 +392,26 @@
       end subroutine print_kbshell
 
 !-----------------------------------------------------------------------
+      subroutine print_ldaushell(p)
+      type(ldaushell_t)            :: p
+
+      write(6,*) 'LDAUSHELL-------'
+      write(6,'(5x,a25,i20)')   'Principal quantum number',  p%n
+      write(6,'(5x,a25,i20)')   'Angular momentum',          p%l
+      write(6,'(5x,a25,g20.5)') 'U parameter:', p%u
+      write(6,'(5x,a25,g20.5)') 'J parameter:', p%j
+      write(6,'(5x,a25,g20.5)') 'rinn:',        p%rinn
+      write(6,'(5x,a25,g20.5)') 'vcte:',        p%vcte
+      write(6,'(5x,a25,g20.5)') 'lambda:',      p%lambda
+      write(6,'(5x,a25,g20.5)') 'width:',       p%width
+      write(6,'(5x,a25,g20.5)') 'dnrm_rc:',     p%dnrm_rc
+      write(6,'(5x,a25,g20.5)') 'rc:',          p%rc
+      write(6,'(5x,a25,i10)')   'nrc:',         p%nrc
+      write(6,*) '---------------------LDAUSHELL'
+
+      end subroutine print_ldaushell
+
+!-----------------------------------------------------------------------
       subroutine print_lshell(p)
       type(lshell_t)            :: p
 
@@ -337,32 +431,39 @@
       subroutine print_basis_def(p)
       type(basis_def_t)            :: p
 
-      integer i
+      integer :: i
 
-      write(6,*) ' '
+      write(6,*)
       write(6,*) 'SPECIES---'
 
-      write(6,'(5x,a20,a20)') 'label',     p%label
-      write(6,'(5x,a20,i20)') 'atomic number',     p%z
-      write(6,'(5x,a20,a20)') 'basis type',     p%basis_type
-      write(6,'(5x,a20,a20)') 'basis size',     p%basis_size
-      write(6,'(5x,a20,g20.10)') 'ionic charge'  , p%ionic_charge
-      write(6,'(5x,a20,i20)') 'lmax basis',     p%lmxo
+      write(6,'(5x,a20,a20)') 'label',           p%label
+      write(6,'(5x,a20,i20)') 'atomic number',   p%z
+      write(6,'(5x,a20,a20)') 'basis type',      p%basis_type
+      write(6,'(5x,a20,a20)') 'basis size',      p%basis_size
+      write(6,'(5x,a20,g20.10)') 'ionic charge', p%ionic_charge
+      write(6,'(5x,a20,i20)') 'lmax basis',      p%lmxo
 
-      if (.not. associated(p%lshell)) then
+      if ( associated(p%lshell) ) then
+         do i = 0 , p%lmxo
+            call print_lshell(p%lshell(i))
+         end do
+      else
          write(6,*) 'No L SHELLS, lmxo=', p%lmxo
-         return
-      endif
-      do i=0, p%lmxo
-         call print_lshell(p%lshell(i))
-      enddo
-      if (.not. associated(p%kbshell)) then
+      end if
+      if ( associated(p%kbshell) ) then
+         do i = 0 , p%lmxkb
+            call print_kbshell(p%kbshell(i))
+         end do
+      else
          write(6,*) 'No KB SHELLS, lmxkb=', p%lmxkb
-         return
-      endif
-      do i=0, p%lmxkb
-         call print_kbshell(p%kbshell(i))
-      enddo
+      end if
+      if ( associated(p%ldaushell) ) then
+         do i=1, p%nldaushells
+            call print_ldaushell(p%ldaushell(i))
+         end do
+      else
+         write(6,*) 'No LDA+U PROJECTORS, lmxldaupj=', p%nldaushells
+      end if
 
       write(6,*) '------------SPECIES'
       write(6,*) 
@@ -589,58 +690,90 @@
 
 !-----------------------------------------------------------------------
       subroutine write_basis_specs(lun,is)
-      integer, intent(in)  :: lun
-      integer, intent(in)  :: is
+      integer, intent(in) :: lun
+      integer, intent(in) :: is
 
-      integer l,  n, i
+      ! Pointer to basis specification
+      type(basis_def_t), pointer :: basp
+      type(ldaushell_t), pointer :: ldau
+
+      integer :: l, n, i
+
+      basp => basis_parameters(is)
 
       write(lun,'(/a/79("="))') '<basis_specs>'
-         write(lun,'(a20,1x,a2,i4,4x,a5,g12.5,4x,a7,g12.5)')
-     $        atm_label(is), 'Z=',iz(is),
-     $        'Mass=', smass(is), 'Charge=', charge(is)
-! Allow a 2-char width for lmxkb (=-1 for floating and bessel orbs)
-         write(lun,'(a5,i1,1x,a6,i2,4x,a10,a10,1x,a6,l1)')
-     $        'Lmxo=', lmxo(is), 'Lmxkb=', lmxkb(is),
-     $        'BasisType=', basistype(is), 'Semic=', semic(is)
-         do l=0,lmxo(is)
-            write(lun,'(a2,i1,2x,a7,i1,2x,a8,i1)')
-     $           'L=', l, 'Nsemic=', nsemic(l,is),
-     $           'Cnfigmx=', cnfigmx(l,is)
-            do n=1,nsemic(l,is)+1
-               if (nzeta(l,n,is) == 0) exit
-               write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1)')
-     $                         'n=', n, 'nzeta=',nzeta(l,n,is),
-     $                         'polorb=', polorb(l,n,is)
-               if (basistype(is).eq.'filteret') then
-                 write(lun,'(10x,a10,2x,g12.5)') 
-     $                         'fcutoff:', filtercut(l,n,is)
-               else
-                 write(lun,'(10x,a10,2x,g12.5)') 
-     $                         'splnorm:', split_norm(l,n,is)
-               endif
+      write(lun,'(a20,1x,a2,i4,4x,a5,g12.5,4x,a7,g12.5)')
+     $     atm_label(is), 'Z=',iz(is),
+     $     'Mass=', smass(is), 'Charge=', charge(is)
+      ! Allow a 2-char width for lmxkb (=-1 for floating and bessel orbs)
+      write(lun,'(a5,i1,1x,a6,i2,4x,a10,a10,1x,a6,l1)')
+     $     'Lmxo=', lmxo(is), 'Lmxkb=', lmxkb(is),
+     $     'BasisType=', basistype(is), 'Semic=', semic(is)
+      do l=0,lmxo(is)
+         write(lun,'(a2,i1,2x,a7,i1,2x,a8,i1)')
+     $        'L=', l, 'Nsemic=', nsemic(l,is),
+     $        'Cnfigmx=', cnfigmx(l,is)
+         do n=1,nsemic(l,is)+1
+            if (nzeta(l,n,is) == 0) exit
+            write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1)')
+     $           'n=', n, 'nzeta=',nzeta(l,n,is),
+     $           'polorb=', polorb(l,n,is)
+            if (basistype(is).eq.'filteret') then
                write(lun,'(10x,a10,2x,g12.5)') 
-     $               'vcte:', vcte(l,n,is)
+     $              'fcutoff:', filtercut(l,n,is)
+            else
                write(lun,'(10x,a10,2x,g12.5)') 
-     $               'rinn:', rinn(l,n,is)
-               write(lun,'(10x,a10,2x,g12.5)') 
-     $                         'qcoe:', qcoe(l,n,is)
-               write(lun,'(10x,a10,2x,g12.5)') 
-     $                         'qyuk:', qyuk(l,n,is)
-               write(lun,'(10x,a10,2x,g12.5)') 
-     $                         'qwid:', qwid(l,n,is)
-               write(lun,'(10x,a10,2x,4g12.5)') 'rcs:',
-     $               (rco(i,l,n,is),i=1,min(4,nzeta(l,n,is)))
-               write(lun,'(10x,a10,2x,4g12.5)') 'lambdas:',
-     $               (lambda(i,l,n,is),i=1,min(4,nzeta(l,n,is)))
-            enddo
-         enddo
+     $              'splnorm:', split_norm(l,n,is)
+            end if
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'vcte:', vcte(l,n,is)
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'rinn:', rinn(l,n,is)
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'qcoe:', qcoe(l,n,is)
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'qyuk:', qyuk(l,n,is)
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'qwid:', qwid(l,n,is)
+            write(lun,'(10x,a10,2x,4g12.5)') 'rcs:',
+     $           (rco(i,l,n,is),i=1,min(4,nzeta(l,n,is)))
+            write(lun,'(10x,a10,2x,4g12.5)') 'lambdas:',
+     $           (lambda(i,l,n,is),i=1,min(4,nzeta(l,n,is)))
+         end do
+      end do
+      if ( lmxkb(is) > 0 ) then
          write(lun,'(79("-"))')
          do l=0,lmxkb(is)
             write(lun,'(a2,i1,2x,a5,i1,2x,a6,4g12.5)')
      $           'L=', l, 'Nkbl=', nkbl(l,is),
      $           'erefs:  ', (erefkb(i,l,is),i=1,nkbl(l,is))
-         enddo
-         write(lun,'(79("="))')
+         end do
+      end if
+      if ( associated(basp%ldaushell) ) then
+         write(lun,'(79("-"))')
+         do l = 1 , basp%nldaushells
+            ldau => basp%ldaushell(l)
+            write(lun,'(a2,i1,2x,a2,i1)')
+     $           'L=', ldau%l, 'n=', ldau%n
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'U:', ldau%U
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'J:', ldau%J
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'rinn:', ldau%rinn
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'vcte:', ldau%vcte
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'lambda:', ldau%lambda
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'width:', ldau%width
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'rc:', ldau%rc
+            write(lun,'(10x,a10,2x,g12.5)') 
+     $           'dnrm_rc:', ldau%dnrm_rc
+         end do
+      end if
+      write(lun,'(79("="))')
       write(lun,'(a/)') '</basis_specs>'
 
       end subroutine write_basis_specs

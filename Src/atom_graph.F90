@@ -68,10 +68,12 @@ contains
     
     use intrinsic_missing, only : VNORM
     use atmfuncs, only : rcut, nofis, nkbfis
-    use atm_types, only : nspecies
+    use atm_types, only : nspecies, species, species_info
+    use radial, only: rad_func
     use sorting
     use neighbour, only: jna=>jan, xij, r2ij, maxna => maxnna
     use neighbour, only: mneighb
+    use ldau_specs, only: switch_ldau
 
     use sys, only : die
     use alloc, only : re_alloc, de_alloc
@@ -89,8 +91,9 @@ contains
     ! tolerance for comparing vector-coordinates
     real(dp), parameter        :: tol = 1.0d-8
     
-    real(dp), allocatable :: rkbmax(:)  ! maximum KB radius of each species
-    real(dp), allocatable :: rorbmax(:) ! maximum ORB radius of each species
+    real(dp), allocatable :: rorbmax(:)  ! maximum ORB radius of each species
+    real(dp), allocatable :: rkbmax(:)   ! maximum KB radius of each species
+    real(dp), allocatable :: rldaumax(:) ! maximum LDAU radius of each species
     integer :: maxnkb  = 500 ! max no. of atoms with
                              ! KB projectors which 
                              ! overlap another
@@ -104,8 +107,11 @@ contains
     integer :: ja, jnat, js, io
     integer :: ka, kna, ks, nna, nnkb, n_nzs
 
+    type(species_info), pointer :: spp
+    type(rad_func),     pointer :: pp
+
     real(dp) :: rci, rcj, rck, rij, rik, rjk
-    real(dp) :: rmax, rmaxkb, rmaxo
+    real(dp) :: rmax, rmaxo, rmaxkb, rmaxldau
 
     ! Local distribution used to
     type(OrbitalDistribution), pointer :: ldit
@@ -152,26 +158,37 @@ contains
     
     ! Find maximum radius of orbs and KB projectors of each specie
     allocate(rkbmax(nspecies), rorbmax(nspecies))
+    allocate(rldaumax(nspecies))
     do is = 1 , nspecies
-       rkbmax(is) = 0.0_dp
-       do ikb = 1 , nkbfis(is)
-          rkbmax(is) = max(rkbmax(is),rcut(is,-ikb))
-       end do
        rorbmax(is) = 0.0_dp
        do io = 1 , nofis(is)
           rorbmax(is) = max(rorbmax(is),rcut(is,io))
        end do
+       rkbmax(is) = 0.0_dp
+       do ikb = 1 , nkbfis(is)
+          rkbmax(is) = max(rkbmax(is),rcut(is,-ikb))
+       end do
+       rldaumax(is) = 0.0_dp
+       if( switch_ldau ) then
+          spp => species(is)
+          do io = 1, spp%n_pjldaunl
+             pp => spp%pjldau(io)
+             rldaumax(is) = max( rldaumax(is), pp%cutoff )
+          enddo
+       endif
     end do
       
     ! Find maximum range of basis orbitals and KB projectors
-    rmaxo  = maxval(rorbmax(1:nspecies))
-    rmaxkb = maxval(rkbmax (1:nspecies))
+    rmaxo    = maxval(rorbmax (1:nspecies))
+    rmaxkb   = maxval(rkbmax  (1:nspecies))
+    rmaxldau = maxval(rldaumax(1:nspecies))
+
 
     ! If we neglect the KB projectors in the interaction scheme
     if ( negl ) then
        rmax = 2._dp * rmaxo
     else
-       rmax = 2._dp * (rmaxo+rmaxkb)
+       rmax = 2._dp * (rmaxo+max(rmaxkb,rmaxldau))
     end if
 
     ! Allocate local arrays that depend on parameters
@@ -220,15 +237,30 @@ contains
              if ( (rci + rck) > rik ) then
                 if ( nnkb == maxnkb ) then
                    maxnkb = maxnkb + 10
-                   call re_alloc(knakb,1,maxnkb, &
-                        name="knakb",copy=.true.,routine="atom_graph")
-                   call re_alloc(rckb,1,maxnkb, &
-                        name="rckb",copy=.true.,routine="atom_graph")
+                   call re_alloc(knakb,1,maxnkb, name="knakb", &
+                        copy=.true., routine="atom_graph")
+                   call re_alloc(rckb,1,maxnkb, name="rckb", &
+                        copy=.true., routine="atom_graph")
                 end if
                 nnkb        = nnkb + 1
                 knakb(nnkb) = kna
                 rckb(nnkb)  = rck
              end if
+             if( switch_ldau ) then
+                rck = rldaumax(ks)
+                if ((rci + rck) > rik) then
+                   if ( nnkb == maxnkb ) then
+                      maxnkb = maxnkb + 10
+                      call re_alloc(knakb,1,maxnkb, name='knakb', &
+                           copy=.true., routine='atom_graph')
+                      call re_alloc(rckb,1,maxnkb, name='rckb', &
+                           copy=.true., routine='atom_graph')
+                   end if
+                   nnkb        = nnkb + 1
+                   knakb(nnkb) = kna
+                   rckb(nnkb)  = rck
+                endif
+             endif
           end do
        end if
 
@@ -330,15 +362,30 @@ contains
              if ( (rci + rck) > rik ) then
                 if ( nnkb == maxnkb ) then
                    maxnkb = maxnkb + 10
-                   call re_alloc(knakb,1,maxnkb, &
-                        name="knakb",copy=.true.,routine="atom_graph")
-                   call re_alloc(rckb,1,maxnkb, &
-                        name="rckb",copy=.true.,routine="atom_graph")
+                   call re_alloc(knakb,1,maxnkb, name="knakb", &
+                        copy=.true.,routine="atom_graph")
+                   call re_alloc(rckb,1,maxnkb, name="rckb", &
+                        copy=.true.,routine="atom_graph")
                 end if
                 nnkb        = nnkb + 1
                 knakb(nnkb) = kna
                 rckb(nnkb)  = rck
              end if
+             if( switch_ldau ) then
+                rck = rldaumax(ks)
+                if ((rci + rck) > rik) then
+                   if ( nnkb == maxnkb ) then
+                      maxnkb = maxnkb + 10
+                      call re_alloc(knakb,1,maxnkb, name='knakb', &
+                           copy=.true., routine='atom_graph')
+                      call re_alloc(rckb,1,maxnkb, name='rckb', &
+                           copy=.true., routine='atom_graph')
+                   end if
+                   nnkb        = nnkb + 1
+                   knakb(nnkb) = kna
+                   rckb(nnkb)  = rck
+                endif
+             endif
           end do
        end if
 

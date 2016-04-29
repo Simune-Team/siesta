@@ -21,11 +21,13 @@
       use units, only: Ang
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Hold
-      use sparse_matrices, only: xijo, H, S_1D, S, H_kin_1D
+      use sparse_matrices, only: xijo, H, S_1D, S
+      use sparse_matrices, only: H_kin_1D, H_vkb_1D, H_ldau_2D
+
       use sparse_matrices, only: H_2D, xij_2D
       use sparse_matrices, only: sparse_pattern
       use sparse_matrices, only: block_dist, single_dist
-      use sparse_matrices, only: H_vkb_1D, DM_2D, EDM_2D, DM_history
+      use sparse_matrices, only: DM_2D, EDM_2D, DM_history
 
 
       use m_sparsity_handling, only: SpOrb_to_SpAtom
@@ -62,6 +64,7 @@
       use m_mpi_utils,       only: globalize_or
       use m_mpi_utils,       only: globalize_max
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
+      use ldau_specs,        only: switch_ldau, ldau_init
 
       use m_sparse, only : xij_offset
 
@@ -385,17 +388,13 @@
       ! Copy over xijo array (we can first do it here... :( )
       call newdData2D(tmp_2D,xijo,'xijo')
       deallocate(xijo)
-      write(oname,"(a,i0)") "xijo in state_init at geom step ", istep
+      write(oname,"(a,i0)") "xijo at geom step ", istep
       call newdSpData2D(sparse_pattern,tmp_2D,block_dist,xij_2D, 
      &     name=oname)
       call delete(tmp_2D) ! decrement container...
       xijo => val(xij_2D)
 
-      write(oname,"(a,i0)") "H_vkb in state_init at geom step ", istep
-      call newdSpData1D(sparse_pattern,block_dist,H_vkb_1D,name=oname)
-      !if (ionode) call print_type(H_vkb_1D)
-
-      write(oname,"(a,i0)") "EDM in state_init at geom step ", istep
+      write(oname,"(a,i0)") "EDM at geom step ", istep
       call newdSpData2D(sparse_pattern,nspin,block_dist,EDM_2D,
      &     name=oname)
       !if (ionode) call print_type(EDM_2D)
@@ -409,16 +408,38 @@
       end if
 
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
-      write(oname,"(a,i0)") "H in state_init at geom step ", istep
+      write(oname,"(a,i0)") "H at geom step ", istep
       call newdSpData2D(sparse_pattern,nspin,block_dist,H_2D,name=oname)
       !if (ionode) call print_type(H_2D)
       H => val(H_2D)
 
-      write(oname,"(a,i0)") "H_kin in state_init at geom step ", istep
+      write(oname,"(a,i0)") "H_vkb at geom step ", istep
+      call newdSpData1D(sparse_pattern,block_dist,H_vkb_1D,name=oname)
+      !if (ionode) call print_type(H_vkb_1D)
+
+      write(oname,"(a,i0)") "H_kin at geom step ", istep
       call newdSpData1D(sparse_pattern,block_dist,H_kin_1D,name=oname)
       !if (ionode) call print_type(H_kin_1D)
 
-      write(oname,"(a,i0)") "S in state_init at geom step ", istep
+      if ( switch_ldau ) then
+         write(oname,"(a,i0)") "H_ldau at geom step ", istep
+         call newdSpData2D(sparse_pattern,min(2,nspin),
+     &        block_dist,H_ldau_2D,name=oname)
+         ! Initialize to 0, LDA+U may re-calculate
+         !   this matrix sporadically doing the SCF.
+         ! Hence initialization MUST be performed upon
+         ! re-allocation.
+         call init_val(H_ldau_2D)
+         if ( inicoor /= istep ) then
+            ! Force initialization of the LDA+U
+            ! when changing geometry
+            ! For the first geometry this is controlled
+            ! by the user via an fdf-key
+            ldau_init = .true.
+         end if
+      end if
+
+      write(oname,"(a,i0)") "S at geom step ", istep
       call newdSpData1D(sparse_pattern,block_dist,S_1D,name=oname)
       if (ionode) call print_type(S_1D)
       S => val(S_1D)

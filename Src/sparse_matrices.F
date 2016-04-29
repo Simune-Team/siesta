@@ -32,6 +32,7 @@
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this
       type(dSpData1D), public, save :: H_vkb_1D, H_kin_1D
+      type(dSpData2D), public, save :: H_ldau_2D
 
       !  New interface data
       type(Sparsity), public, save :: sparse_pattern
@@ -46,6 +47,10 @@
 
       public :: resetSparseMatrices
 
+      ! LDA+U Hamiltonian
+      real(dp), pointer :: H_ldau(:,:) => null()
+
+
       CONTAINS
 
       subroutine resetSparseMatrices( )
@@ -54,10 +59,12 @@
       implicit none
 
       call delete( block_dist )
-      call delete( sparse_pattern ) ; nullify(numh,listhptr,listh)
+      call delete( sparse_pattern )
+      nullify(numh,listhptr,listh)
 
       call delete( H_kin_1D )
       call delete( H_vkb_1D )
+      call delete( H_ldau_2D )
 
       call delete( DM_2D ) ; nullify(Dscf)
       call delete( EDM_2D ) ; nullify(Escf)

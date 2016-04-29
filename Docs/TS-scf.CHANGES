@@ -1,4 +1,43 @@
 ----------------------------------------------------
+April 29, 2016 -- Nick Papior          trunk-494---ts-scf-668
+Merged LDA+U code
+
+- Added LDA+U projectors to the atom_graph
+  code such that the correct graph may be calculated.
+
+added:
+  Src/ldau.F
+  Src/ldau_specs.f
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Src/Makefile
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atmfuncs.f
+  Src/atom.F
+  Src/atom_graph.F90
+  Src/basis_io.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/broadcast_basis.F
+  Src/compute_energies.F90
+  Src/compute_max_diff.F
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/initatom.f
+  Src/m_energies.F90
+  Src/matel_registry.F90
+  Src/register_rfs.F90
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+  Src/write_subs.F
+  version.info
+
+----------------------------------------------------
 April 29, 2016 -- Nick Papior          trunk-492---ts-scf-667
 Added contiguous for various arrays
 

@@ -22,6 +22,8 @@
       use units, only: eV
       use m_convergence, only: converger_t, tolerance
       use m_convergence, only: add_value, is_converged
+      use ldau_specs,    only: switch_ldau, dTol_ldaupop
+      use m_ldau,        only: LDAU_dPop
 
       implicit none
 
@@ -38,6 +40,7 @@
       logical :: default_NoEnergy_convergence
       logical :: is_Harris_conv, is_FreeEnergy_conv
       logical :: is_H_conv, is_DM_conv, is_Delta_conv
+      logical :: is_LDAU_conv
 
 !------------------------------------------------------------------- BEGIN
 
@@ -70,6 +73,8 @@
       is_H_conv =  (dHmax.lt.dHtol)
       is_Harris_conv = is_converged(conv_harris)
       is_FreeEnergy_conv = is_converged(conv_freeE)
+      is_LDAU_conv = switch_ldau .and.
+     &     LDAU_dPop < dTol_ldaupop
 
       default_DM_convergence =
      $      (.not. require_hamiltonian_convergence)
@@ -123,7 +128,15 @@
                write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
             endif
          endif
-      
+
+	 if ( is_LDAU_conv ) then
+	    ! Inform of LDA+U population convergence
+            write(6,"(/,a)") 
+     $           "LDA+U population converged by dTol_pop criteria:"
+            write(6,"(a,f14.8)") 
+     $           "max |pop(LDA+U)_i - pop(LDA+U)_j|: ", LDAU_dPop
+         end if
+         
          write(6,"(a,i0,a)") "SCF cycle converged after ",
      $           iscf," iterations"
 

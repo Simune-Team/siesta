@@ -83,7 +83,8 @@ CONTAINS
       ! consistency of the total energy.
 
       DEna = Enascf - Enaatm
-      Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad + Emm + Emeta
+      Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad + Emm + Emeta + &
+ &           Eldau
 
 
 ! Harris energy
