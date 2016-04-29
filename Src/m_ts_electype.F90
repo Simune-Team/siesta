@@ -1428,13 +1428,13 @@ contains
 
     logical :: lio
 
-    real(dp), pointer :: H(:,:), H00(:,:), H01(:,:)
-    real(dp), pointer :: S(:), S00(:), S01(:)
+    real(dp), pointer, contiguous :: H(:,:), H00(:,:), H01(:,:)
+    real(dp), pointer, contiguous :: S(:), S00(:), S01(:)
     type(OrbitalDistribution), pointer :: fdist
 
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, pointer :: ncol00(:), ptr00(:), col00(:)
-    integer, pointer :: ncol01(:), ptr01(:), col01(:)
+    integer, pointer, contiguous :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer, contiguous :: ncol00(:), ptr00(:), col00(:)
+    integer, pointer, contiguous :: ncol01(:), ptr01(:), col01(:)
 
     integer :: no_l, i, iio, j, ind, ind00, ind01, ia
     integer :: tm(3)
@@ -1585,17 +1585,17 @@ contains
 
     type(Elec), intent(inout) :: this
 
-    real(dp), pointer :: H(:,:)
-    real(dp), pointer :: S(:)
+    real(dp), pointer, contiguous :: H(:,:)
+    real(dp), pointer, contiguous :: S(:)
     type(OrbitalDistribution), pointer :: fdist
     type(Sparsity) :: sp02
 
-    integer, pointer :: l_ncol(:) => null()
-    integer, pointer :: l_ptr(:)  => null()
-    integer, pointer :: l_col(:)  => null()
-    integer, pointer :: ncol02(:) => null()
-    integer, pointer :: ptr02(:)  => null()
-    integer, pointer :: col02(:)  => null()
+    integer, pointer, contiguous :: l_ncol(:) => null()
+    integer, pointer, contiguous :: l_ptr(:)  => null()
+    integer, pointer, contiguous :: l_col(:)  => null()
+    integer, pointer, contiguous :: ncol02(:) => null()
+    integer, pointer, contiguous :: ptr02(:)  => null()
+    integer, pointer, contiguous :: col02(:)  => null()
 
     integer :: no_l, no_u, i, io, j, ind, ind02, ia
     integer :: tm(3)
@@ -1780,7 +1780,7 @@ contains
     type(OrbitalDistribution) :: fake_dit
     type(Sparsity), pointer :: sp
     type(dSpData2D) :: f_DM_2D, f_EDM_2D
-    real(dp), pointer :: DM(:,:), EDM(:,:)
+    real(dp), pointer, contiguous :: DM(:,:), EDM(:,:)
     real(dp) :: tmp, Ef
     integer :: i
     logical :: found, alloc(3), is_TSDE

@@ -312,7 +312,7 @@ contains
     integer :: no_u_TS, i, iEl, no
 
     integer :: n, n_nzs
-    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer, pointer, contiguous :: ncol(:), l_ptr(:), l_col(:)
 
     character(len=40), parameter :: fmt = '(/,''TS.BTD.Pivot '',a,''+'',a)'
     character(len=50) :: fmethod

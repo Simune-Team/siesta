@@ -140,7 +140,7 @@ contains
 
 ! ******************* Computational arrays *******************
     integer :: nzwork, nGfwork, nmaxwork
-    complex(dp), pointer :: zwork(:), Gfwork(:), maxwork(:)
+    complex(dp), pointer, contiguous :: zwork(:), Gfwork(:), maxwork(:)
     type(zTriMat) :: zwork_tri, GF_tri
     ! A local orbital distribution class (this is "fake")
     type(OrbitalDistribution) :: fdist
@@ -148,7 +148,7 @@ contains
     ! Just as in transiesta, these matrices are transposed.
     type(zSpData1D) :: spH, spS
     type(Sparsity), pointer :: sp
-    real(dp), pointer :: H(:,:), S(:)
+    real(dp), pointer, contiguous :: H(:,:), S(:)
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
     logical :: calc_GF_DOS
@@ -159,7 +159,7 @@ contains
 
 ! ********************** Result arrays ***********************
     real(dp), allocatable, target :: allDOS(:,:)
-    real(dp), pointer :: DOS(:,:), DOS_El(:,:)
+    real(dp), pointer, contiguous :: DOS(:,:), DOS_El(:,:)
 #ifdef NOT_WORKING
     type tLife
        real(dp), allocatable :: life(:)
@@ -190,9 +190,9 @@ contains
 
 ! ****************** Electrode variables *********************
     integer :: nGFGGF ! For the triple-product
-    complex(dp), pointer :: GFGGF_work(:) => null()
+    complex(dp), pointer, contiguous :: GFGGF_work(:) => null()
     integer :: ntt_work
-    complex(dp), pointer :: tt_work(:), eig(:)
+    complex(dp), pointer, contiguous :: tt_work(:), eig(:)
 ! ************************************************************
 
 ! ******************* Computational variables ****************
@@ -1709,7 +1709,7 @@ contains
     complex(dp), intent(inout), target :: work(nwork)
 
     ! All our work-arrays...
-    complex(dp), pointer :: A(:), B(:), C(:), Y(:)
+    complex(dp), pointer, contiguous :: A(:), B(:), C(:), Y(:)
 
     integer :: no, off, i, ii, j, ierr
     integer :: ip, itmp
@@ -1761,9 +1761,12 @@ contains
        call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A)
 
        if ( ip > 2 ) then
-!$OMP parallel workshare default(shared)
-         A(:) = A(:) - Y(:)
-!$OMP end parallel workshare
+          ii = p(ip-1) ** 2
+!$OMP parallel do default(shared) private(i)
+          do i = 1 , ii
+             A(i) = A(i) - Y(i)
+          end do
+!$OMP end parallel do
        end if
 
        ! Ensures that Y is not overwritten
@@ -1859,7 +1862,7 @@ contains
     complex(dp), intent(inout), target :: work(nwork)
 
     ! All our work-arrays...
-    complex(dp), pointer :: A(:), B(:), C(:), Y(:)
+    complex(dp), pointer, contiguous :: A(:), B(:), C(:), Y(:)
 
     integer :: no, off, i, ii, j, jj, ierr, o_life
     integer :: ip, itmp
@@ -2077,8 +2080,8 @@ contains
 
     ! Local variables
     type(Sparsity), pointer :: sp
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    complex(dp), pointer :: H(:), S(:)
+    integer, pointer, contiguous :: l_ncol(:), l_ptr(:), l_col(:)
+    complex(dp), pointer, contiguous :: H(:), S(:)
     integer :: io, iu, ind, ju
 
     sp => spar(spH)

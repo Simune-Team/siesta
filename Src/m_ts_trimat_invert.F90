@@ -57,7 +57,7 @@ contains
     integer, intent(in), optional :: part_cols(:,:)
     logical, intent(in), optional :: all_nn
 
-    complex(dp), pointer :: Mpinv(:)
+    complex(dp), pointer, contiguous :: Mpinv(:)
 
     integer :: n, np, sNm1, sNp1
     integer :: sCol, eCol, i
@@ -219,9 +219,9 @@ contains
     type(Elec), intent(in) :: El
     logical, intent(in) :: calc_parts(:)
 
-    complex(dp), pointer :: Mpinv(:), Mp(:)
-    complex(dp), pointer :: Xn(:), Yn(:)
-    complex(dp), pointer :: z(:)
+    complex(dp), pointer, contiguous :: Mpinv(:), Mp(:)
+    complex(dp), pointer, contiguous :: Xn(:), Yn(:)
+    complex(dp), pointer, contiguous :: z(:)
 
     integer :: nr, np, no
     integer :: idx_o
@@ -476,9 +476,9 @@ contains
     ! Whether we should only calculate the diagonal Green function
     logical, intent(in), optional :: only_diag
 
-    complex(dp), pointer :: Mpinv(:), Mp(:)
-    complex(dp), pointer :: XY(:)
-    complex(dp), pointer :: z(:)
+    complex(dp), pointer, contiguous :: Mpinv(:), Mp(:)
+    complex(dp), pointer, contiguous :: XY(:)
+    complex(dp), pointer, contiguous :: z(:)
 
     ! Used for BLAS calls (local variables)
     complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -489,7 +489,7 @@ contains
     integer :: i, i_Elec, idx_Elec
     integer :: sIdxF, eIdxF, sIdxT, eIdxT
     integer :: sN, n, in, s, sNo, nb
-    integer, pointer :: crows(:)
+    integer, pointer, contiguous :: crows(:)
 
     ! In this routine M should have been processed through invert_PrepTriMat
     ! So M contains all *needed* inv(Mnn) and all Xn/Cn+1 and Yn/Bn-1.
@@ -747,7 +747,7 @@ contains
     ! p is the part that we wish to point to
     integer, intent(in) :: no, p
     integer, intent(out) :: sIdx, eIdx
-    integer, pointer :: crows(:)
+    integer, pointer, contiguous :: crows(:)
 
     integer :: cum
 
@@ -768,8 +768,8 @@ contains
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n, sCol, eCol
     ! Local variables
-    complex(dp), pointer :: Mp(:), Mpinv(:)
-    complex(dp), pointer :: Xn(:), Yn(:), Cn(:), Bn(:)
+    complex(dp), pointer, contiguous :: Mp(:), Mpinv(:)
+    complex(dp), pointer, contiguous :: Xn(:), Yn(:), Cn(:), Bn(:)
     integer :: sNm1, sN, sNp1, ierr, i
 
     if ( 1 < n )        sNm1 = nrows_g(M,n-1)

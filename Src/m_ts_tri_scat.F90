@@ -63,7 +63,7 @@ contains
 
 
     ! local variables
-    complex(dp), pointer :: fGf(:), Gf(:), GGG(:)
+    complex(dp), pointer, contiguous :: fGf(:), Gf(:), GGG(:)
     integer :: nr, np
     integer :: sIdx, eIdx
     integer :: cp, n
@@ -221,14 +221,14 @@ contains
 
     
     ! local variables
-    complex(dp), pointer :: fGf(:), fA(:), Gf(:), A(:)
+    complex(dp), pointer, contiguous :: fGf(:), fA(:), Gf(:), A(:)
 
-    complex(dp), pointer :: ztmp(:)
+    complex(dp), pointer, contiguous :: ztmp(:)
     logical :: tmp_allocated
     integer :: nrtmp
-    complex(dp), pointer :: zwork(:) => null()
+    complex(dp), pointer, contiguous :: zwork(:) => null()
     logical :: work_allocated 
-    integer, pointer :: crows(:)
+    integer, pointer, contiguous :: crows(:)
 
     integer :: i_Elec, idx_Elec, no, nb
     integer :: np

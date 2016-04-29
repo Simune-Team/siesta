@@ -1,4 +1,27 @@
 ----------------------------------------------------
+April 29, 2016 -- Nick Papior          trunk-492---ts-scf-667
+Added contiguous for various arrays
+
+- There seems to be a performance gain, even
+  for small systems.
+
+  We need to consider how to implement a generic
+  contiguous specification for future.
+
+  Perhaps we should force the use of
+  compilers supporting contiguous.
+
+modified:
+  Src/m_region.F90
+  Src/m_trimat_invert.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trimat_invert.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 April 29, 2016 -- Nick Papior          trunk-492---ts-scf-666
 Clarified value calculations of tbtrans currents
 

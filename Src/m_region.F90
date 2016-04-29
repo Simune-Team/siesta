@@ -27,7 +27,7 @@ module m_region
      character(len=R_NAME_LEN) :: name = ' '
      ! The quantities in the region
      integer :: n = 0
-     integer, pointer :: r(:) => null()
+     integer, pointer, contiguous :: r(:) => null()
      logical :: sorted = .false.
   end type tRgn
 
@@ -374,7 +374,7 @@ contains
     type(tRgn) :: tmp, tmp2
     integer :: i, j, io, jo, ind, no_l, no_u, it, rt
     integer, allocatable :: ct(:), rr(:)
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer, contiguous :: l_ncol(:), l_ptr(:), l_col(:)
 
     call attach(sp,nrows=no_l,nrows_g=no_u, &
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
@@ -567,7 +567,7 @@ contains
 
     ! ** local variables
     integer :: n, nzs
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer, contiguous :: l_ncol(:), l_ptr(:), l_col(:)
 
     if ( r%n == 0 ) return
 
