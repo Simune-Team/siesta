@@ -1,4 +1,22 @@
 ----------------------------------------------------
+April 29, 2016 -- Nick Papior          trunk-492---ts-scf-666
+Clarified value calculations of tbtrans currents
+
+- Redid the calculation of the current formulas
+  by conversion.
+
+  The comments now clearly state the transition
+  from the intrinsic units to standard units.
+
+- Fixed two de-alloc statements which resulted
+  in error messages (no influence on results)
+
+modified:
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 April 27, 2016 -- Nick Papior          trunk-492---ts-scf-665
 Default contour parts as line
 

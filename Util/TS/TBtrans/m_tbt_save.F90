@@ -1419,10 +1419,19 @@ contains
     real(dp), allocatable :: rkpt(:,:), rwkpt(:)
     real(dp), allocatable :: rE(:)
     real(dp), allocatable :: r2(:,:), r3(:,:,:)
+
+    real(dp), parameter :: Coulomb = 1.6021766208e-19_dp
+    real(dp), parameter :: eV2J = Coulomb
+    real(dp), parameter :: h_eVs = 4.135667662e-15_dp
+    real(dp), parameter :: h_eVfs = 4.135667662_dp
+    real(dp), parameter :: hbar_eVs = 0.6582119514e-15_dp
+    real(dp), parameter :: hbar_eVfs = 0.6582119514_dp
+    real(dp) :: Current, eRy
+    
 #ifdef TBT_PHONON
-    real(dp) :: Flow, dT
+    real(dp) :: dT, kappa
 #else
-    real(dp) :: Current, Power, V, dd
+    real(dp) :: Power, V, dd
 #endif
     integer, allocatable :: pvt(:)
 
@@ -1656,30 +1665,61 @@ contains
 
           ! The array r2 now contains the k-averaged transmission.
 #ifdef TBT_PHONON
-          ! Now we calculate the heat-flow
+          ! Now we calculate the thermal current
           ! nb function is: nb(E-E1) - nb(E-E2) IMPORTANT
-          Flow = 0._dp
-!$OMP parallel do default(shared), private(i), &
-!$OMP&reduction(+:Flow)
+          !   \int d\omega 1/(2\pi) \hbar \omega [nb_1-nb_2] T(\omega)
+          ! ==\int d\omega h \omega [nb_1-nb_2] T(\omega)
+          Current = 0._dp
+          ! Thermal conductance:
+          !   \kappa = hbar ^2 / (2\pi kB T ^2)
+          !            \int d \omega  \omega^2 e^{kB T \omega / \hbar}
+          !              / ( e^{kB T \omega / \hbar} - 1 )^2
+          kappa = 0._dp
+!$OMP parallel do default(shared), private(i,eRy), &
+!$OMP&reduction(+:Current,kappa)
           do i = 1 , NE
              ! We have rE in eV, hence the conversion
-             Flow = Flow + r2(i,1) * rW(i) * rE(i) * nb2(rE(i)*eV, &
+             eRy = rE(i) * eV
+             Current = Current + r2(i,1) * rW(i) * rE(i) * nb2(eRy, &
                   Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
                   Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
+             kappa = kappa + r2(i,1) * rW(i) * rE(i) ** 2 * &
+                  dnb(eRy, Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT)
           end do
 !$OMP end parallel do
 
-          ! rE is already in eV, r2 and nb are unit-less
+          ! 'Current' is now in [Ry] [eV]
+          
+          ! rE is already in eV, r2 and nb are unit-less.
           ! rW is in Ry => / eV
-          !     eV to 1 / s => / hbar[eV s]
-          !     1 / s to 1 / fs => / 1e15
-          Flow = Flow / eV / 0.658211928_dp
+          Current = Current / eV
+          ! Change from \omega -> \hbar\omega yields:
+          !   \hbar d\omega -> d (\hbar\omega) = d E
+          ! Hence we need to divide by:
+          !  \hbar == 2pi h in [eV fs]
+          Current = Current / h_eVfs
+
+          ! 'kappa' is now in [Ry] [eV]**2
+          ! (also the conversion from \omega->\hbar\omega introduces division by hbar
+          !   hbar = 2\pi h
+          kappa = kappa / eV / h_eVfs
+          ! 'kappa' in [eV] ** 2 / [fs]
+          kappa = kappa / (Elecs(iEl)%mu%kT/eV * Elecs(iEl)%mu%kT/Kelvin)
           dT = ( Elecs(iEl)%mu%kT - Elecs(jEl)%mu%kT ) / Kelvin
 
           if ( Node == 0 ) then
              write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
-                  ' -> ',trim(Elecs(jEl)%name),', dT [K] / E-flow [eV/fs]: ', &
-                  dT, ' K / ',Flow,' eV/fs'
+                  ' -> ',trim(Elecs(jEl)%name),', dT [K] / J [eV/fs]: ', &
+                  dT, ' K / ',Current,' eV/fs'
+             if ( abs(dT) < 10._dp ) then
+                ! Only calculate kappa for small dT < 10 Kelvin
+                ! Possibly we should calculate kappa(T)
+                ! and save to a file.
+                ! We advocate this to be calculated off-site.
+                write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
+                     ' -> ',trim(Elecs(jEl)%name),', T+dT [K] / kappa [eV/(fs K)]: ', &
+                     Elecs(iEl)%mu%kT / Kelvin, ' K / ',kappa,' eV/(fs K)'
+             end if
           end if
 #else
           ! Now we calculate the current
@@ -1689,11 +1729,12 @@ contains
           if ( iEl == jEl ) then
              ! Do nothing
           else
-!$OMP parallel do default(shared), private(i,dd), &
+!$OMP parallel do default(shared), private(i,dd,eRy), &
 !$OMP&reduction(+:Current,Power)
              do i = 1 , NE
+                eRy = rE(i) * eV
                 ! We have rE in eV, hence the conversion
-                dd = r2(i,1) * rW(i) * nf2(rE(i)*eV, &
+                dd = r2(i,1) * rW(i) * nf2(eRy, &
                      Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
                      Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
                 Current = Current + dd
@@ -1703,17 +1744,25 @@ contains
 !$OMP end parallel do
           end if
 
-          ! This quantity is e / h * [J] / [eV]: [q] / [J] / [s] * [J] / [eV] = [q] / [eV] / [s]
-          ! NOTE: [q] = [J] / [eV] in numeric quantity
-          dd = 3.87405e-05_dp
+          ! 'Current' is now in [Ry]
 
-          ! 1. rW is in [Ry], hence we need to convert to [eV] Ry => / eV
-          ! 2. Current is in [eV], so dividing by [q] / [eV] / [s] yields [A]
-          Current = Current / eV * dd
-          ! 1. rW is in [Ry], hence we need to convert to [eV] Ry => / eV
-          ! 2. Power is in [eV] ** 2, so dividing by [J] / [eV] / [eV] / [s] yields [W]
-          Power = Power / eV * dd
+          ! rW is in Ry => / eV
+          Current = Current / eV
+          ! G0 = e^2 / h        ! no spin degeneracy
+          !   e = 1 C = 1.602...e-19
+          !   h = [eV s]
+          Current = Current * Coulomb ** 2 / (h_eVs * eV2J)
 
+          ! 'Power' is now in [Ry] [eV]
+
+          ! rW is in Ry => / eV
+          !  and apply 1 / h [eV s]
+          Power = Power / eV / h_eVs
+          ! Power is now in [eV] / [s]
+          !   [eV] => [J] 
+          Power = Power * eV2J
+
+          ! Calculate applied bias
           V = ( Elecs(iEl)%mu%mu - Elecs(jEl)%mu%mu ) / eV
 
           if ( Node == 0 .and. iEl /= jEl ) then
@@ -1853,6 +1902,12 @@ contains
       real(dp) :: nb
       nb = 1._dp/(exp((E-Ef)/kT)-1._dp)
     end function nb
+    elemental function dnb(E,Ef,kT)
+      real(dp), intent(in) :: E,Ef,kT
+      real(dp) :: dnb
+      dnb = exp((E-Ef)/kT)
+      dnb = dnb / ( dnb - 1 ) ** 2
+    end function dnb
 #else
     elemental function nf2(E,E1,kT1,E2,kT2)
       real(dp), intent(in) :: E,E1,kT1,E2,kT2

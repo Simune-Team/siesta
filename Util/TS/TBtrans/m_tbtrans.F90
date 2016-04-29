@@ -335,10 +335,10 @@ contains
     !***********************
     do iEl = 1 , N_Elec
        if ( associated(Elecs(iEl)%HA) ) then
-          call de_alloc(Elecs(iEl)%HA,routine='transiesta')
-          call de_alloc(Elecs(iEl)%SA,routine='transiesta')
+          call de_alloc(Elecs(iEl)%HA,routine='tbtrans')
+          call de_alloc(Elecs(iEl)%SA,routine='tbtrans')
        end if
-       call de_alloc(Elecs(iEl)%Gamma,routine='transiesta')
+       call de_alloc(Elecs(iEl)%Gamma,routine='tbtrans')
     end do
 
     deallocate(uGF,nq)

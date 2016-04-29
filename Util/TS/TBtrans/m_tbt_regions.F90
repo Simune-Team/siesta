@@ -280,8 +280,6 @@ contains
             i, &
             sp, r = r_tmp2)
 
-       sp%data%name = 'TBT-sparsity'
-
        ! Check that the device region does not overlap
        if ( rgn_overlaps(r_aEl_alone(iEl),r_aDev) ) then
           write(*,*)'Overlapping electrode: '//trim(Elecs(iEl)%name)
