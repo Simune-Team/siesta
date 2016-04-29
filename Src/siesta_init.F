@@ -25,7 +25,7 @@
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
      &                              iza, rmaxo, zvaltot, superc,
-     &                              initatomlists, no_l
+     &                              initatomlists, no_l, rmaxldau
       use fdf
       use sys,                only: die, bye
 #ifdef BSC_CELLXC
@@ -381,7 +381,7 @@
       if (negl) then
         rmaxh = 2.0_dp*rmaxo
       else
-        rmaxh = 2.0_dp*rmaxo + 2.0_dp*rmaxkb
+        rmaxh = 2.0_dp*(rmaxo + max(rmaxkb,rmaxldau))
       endif
 
 !     Madelung correction for charged systems
