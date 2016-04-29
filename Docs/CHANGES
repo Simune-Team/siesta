@@ -5,7 +5,51 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
-2016-04-29                                                    trunk-499
+2016-04-29                                                    trunk-494
+Cleaned LDA+U
+
+- Moved H_ldau to sparse_matrices.
+  This makes the global memory of "standard" matrix
+  elements common in the common module.
+  This requires that it is passed on every call to
+  Hubbard_term.
+  
+- Moved several saved variables in the hubbard_term
+  to the module level.
+  This makes it easier to distinguish global variables.
+
+- Removed all commented out debugging statements.
+
+- Improved the logic of the options in the LDA+U implementation
+
+  REMARK: The logic is exactly the same but clearer from the
+          input options point of view.
+
+  1. ldau_init is now forced to .true. if ldau_shift is true.
+  2. There is no need to store the current geometry setup
+     Now the H_ldau is reset when state_init is called.
+
+- Removed a print-out of:
+
+  "Adding Hamiltonian contribution."
+
+  This is implicit in each SCF cycle (from after the
+  initial occupations have been calculated).
+
+  I have tested this on an MD run as well.
+
+modified:
+  Src/Makefile
+  Src/final_H_f_stress.F
+  Src/ldau.F
+  Src/ldau_specs.f
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2016-04-29                                                    ldau-499
 Cleaned up the ldau modules by moving variables
 
 - The ldau_specs module had several variables defined
@@ -23,7 +67,7 @@ modified:
   Src/ldau_specs.f
 
 -----------------------------------------------------------------------
-2016-04-28                                                    trunk-498
+2016-04-28                                                    ldau-498
 Removed _tmp/tmp_ in ldau shells, removed double references
 
 - Removed all double references in the code of ldaushells
@@ -38,7 +82,7 @@ modified:
   Src/ldau_specs.f
 
 -----------------------------------------------------------------------
-2016-04-28                                                    trunk-497
+2016-04-28                                                    ldau-497
 Die if requesting non-existing PAO LDAU projectors
 
 - If the requested quantum number LDAU is not found
@@ -48,7 +92,7 @@ modified:
   Src/ldau_specs.f
 
 -----------------------------------------------------------------------
-2016-04-28                                                    trunk-496
+2016-04-28                                                    ldau-496
 Cosmetic update of ldau code
 
 - Easier logistic in the loops in ldau
@@ -66,7 +110,7 @@ modified:
   Src/setup_hamiltonian.F
 
 -----------------------------------------------------------------------
-2016-04-28                                                    trunk-495
+2016-04-28                                                    ldau-495
 Fix possible double counting of Hldau
 
 - If recompute_H_after_scf it is required that
@@ -78,7 +122,7 @@ modified:
   Src/final_H_f_stress.F
 
 -----------------------------------------------------------------------
-2016-04-28                                                    trunk-494
+2016-04-28                                                    ldau-494
 Almost fixed parallel version
 
 - Implemented Alberto's fixes for the basis specifications
@@ -124,7 +168,7 @@ modified:
   Src/setup_hamiltonian.F
 
 -----------------------------------------------------------------------
-2016-04-28                                                    trunk-493
+2016-04-28                                                    ldau-493
 Fixed r491 with rofi array size
 
 - Correspondance with Javier brought this
@@ -134,7 +178,7 @@ modified:
   Src/ldau_specs.f
 
 -----------------------------------------------------------------------
-2016-04-27                                                    trunk-492
+2016-04-27                                                    ldau-492
 Added die when user reads basis + LDAU
 
 - Reading the basis from NetCDF or ascii files
@@ -147,7 +191,7 @@ modified:
   Src/initatom.f
 
 -----------------------------------------------------------------------
-2016-04-27                                                    trunk-491
+2016-04-27                                                    ldau-491
 Fixes for pointers and possible seg-fault
 
 - Pointers in ldau.F where only nullified in
@@ -173,7 +217,7 @@ modified:
   Src/ldau_specs.f
 
 -----------------------------------------------------------------------
-2016-04-25                                                    trunk-490
+2016-04-25                                                    ldau-490
 Second patches by Nick Andersen
 
 * The files that have been added or modified are:
@@ -185,7 +229,7 @@ Second patches by Nick Andersen
 - siesta_init.F:         Remove the call to test_register 
 
 -----------------------------------------------------------------------
-2016-04-25                                                    trunk-488
+2016-04-25                                                    ldau-488
 First patches by Nick Andersen
 
 * The files that have been added or modified are:
@@ -196,11 +240,11 @@ First patches by Nick Andersen
 - siesta_init.F:         Initialization of Eldau and DEldau
 
 -----------------------------------------------------------------------
-2016-04-25                                                    trunk-487
+2016-04-25                                                    ldau-487
 Corrected version in the CHANGES file
 
 -----------------------------------------------------------------------
-2016-04-25                                                    trunk-486
+2016-04-25                                                    ldau-486
 Calculation of the Hubbard-like matrix elements, and their contribution
 to forces and stresses
 
@@ -236,7 +280,7 @@ to forces and stresses
 - Docs/siesta.tex:  A new section on the LDA+U calculations has been written
 
 -----------------------------------------------------------------------
-2016-02-22                                                    trunk-485
+2016-02-22                                                    ldau-485
 Generation of the LDA+U projections compatible with new matel
 
 * The files that have been added or modified are: 

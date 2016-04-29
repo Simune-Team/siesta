@@ -10,15 +10,28 @@
 !
       module m_ldau
 
+      use precision, only: dp
+
       implicit none
 
       private
 
       public :: hubbard_term
-      logical, save, public :: conv_ldaupop  ! Are the populations of the LDA+U 
-                                             !   projectors converged?
-    
-      integer, save :: iter_ldaupop = 0
+      logical, save, public :: LDAU_pop_conv  ! Are the populations of the LDA+U 
+                                              !   projectors converged?
+
+      ! These are private variables that is used below
+      integer, save :: LDAU_pop_iter = 0
+
+      ! Maximum number of LDA+U projectors
+      integer, save :: maxldau = 0
+      real(dp), dimension(:,:,:,:), pointer, save :: occu      ! Array used to 
+                                                               ! store the 
+                                                               ! occupations of
+                                                               ! the LDA+U proj.
+      real(dp), dimension(:,:,:,:), pointer, save :: occu_old  ! Same as occu
+                                                               ! but in the 
+                                                               ! previous step
 
       CONTAINS
 
@@ -26,7 +39,7 @@
      .                         maxnh, maxnd, lasto, iphorb, no_u, no_l,
      .                         numd, listdptr, listd, numh, 
      .                         listhptr, listh, nspin, Dscf, 
-     .                         Eldau, DEldau,
+     .                         Eldau, DEldau, Hldau, 
      .                         fa, stress, H, iscf,
      .                         matrix_elements_only )      
 C *********************************************************************
@@ -67,7 +80,7 @@ C                            indexes for each matrix row
 C integer nspin            : Number of spin components
 C integer iscf             : Counter of the cycles of SCF iterations
 C real*8  Dscf(maxnd,nspin): Density matrix
-C logical matrix_elements_only: Determine whether the only the matrix elements
+C logical matrix_elements_only: Determine whether only the matrix elements
 C                            of the Hamiltonian are computed, or also the
 C                            forces and stresses
 C ******************* INPUT and OUTPUT *********************************
@@ -77,7 +90,8 @@ C real*8 H(maxnh,nspin)    : NL Hamiltonian (added to input H)
 C **************************** OUTPUT *********************************
 C real*8 Eldau             : U-Hubbard energy 1 
 C real*8 DEldau            : U-hubbard energy 2 
-C *********************************************************************
+C real*8 Hldau(maxnh,nspin): Hamiltonian elements from LDA+U
+C*********************************************************************
 C
 C  Modules
 C
@@ -85,7 +99,6 @@ C
       use m_mpi_utils, only: globalize_sum
 #endif
 
-      use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs,  only : GlobalToLocalOrb
@@ -93,7 +106,6 @@ C
       use neighbour    , only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour    , only : mneighb
       use alloc,         only : re_alloc, de_alloc
-      use m_steps, only: istp
       use m_new_matel,   only : new_matel
       use radial,        only : rad_func
       use atm_types,     only : species_info    ! Derived type with all the info
@@ -131,6 +143,7 @@ C
      .  indxua(na), iphorb(*), isa(na),  
      .  lasto(0:na), listd(maxnd), listh(maxnh),
      .  numd(no_l), numh(no_l), listdptr(no_l), listhptr(no_l)
+      real(dp), intent(inout) :: Hldau(maxnh,nspin)
 
       real(dp), intent(in) :: scell(3,3), Dscf(maxnd,nspin),
      .                        xa(3,na)
@@ -139,16 +152,12 @@ C
       real(dp), intent(out)   :: Eldau, DEldau
       logical, intent(in)     :: matrix_elements_only
 
-      real(dp) ::   volcel
-      external ::   timer, volcel
+      real(dp) :: volcel
+      external :: timer, volcel
 
 C Internal variables ................................................
 C maxno  = maximum number of basis orbitals overlapping a KB projector
-
-      integer, save ::  maxno = 2000
-      integer, save ::  maxldau       ! Maximum number of LDA+U projectors 
-                                      ! on a given atom 
-                                      ! (used to allocate some matrices)
+      integer, save :: maxno = 1000
 
       integer
      .  ia, ishldau, ina, ind, ino,
@@ -157,8 +166,6 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
      .  nldauproj, nna, nno, no, nuotot, ja,
      .  lko, lkb, nprin_ko, nprin_kb, kg, ig 
 
-      integer, save :: istp_last = -1 ! Last MD step when the Hldau 
-                                      !   was reallocated
       integer, dimension(:), pointer :: iano, iono
 
       real(dp)
@@ -168,19 +175,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
 
       real(dp), dimension(:,:), pointer :: Vi, Di
       real(dp), dimension(:,:), pointer :: Ski, xno
-      real(dp), dimension(:,:), pointer, save :: Hldau(:,:)    ! Hubbard term
-                                                               ! to be included
-                                                               ! in the 
-                                                               ! Hamiltonian
-                                                               ! TODO move to sparse_matrices
 
-      real(dp), dimension(:,:,:,:), pointer, save :: occu      ! Array used to 
-                                                               ! store the 
-                                                               ! occupations of
-                                                               ! the LDA+U proj.
-      real(dp), dimension(:,:,:,:), pointer, save :: occu_old  ! Same as occu
-                                                               ! but in the 
-                                                               ! previous step
       real(dp), dimension(:,:,:), pointer :: grSki
 
 #ifdef MPI
@@ -215,12 +210,9 @@ C ......................
 !     Determine whether this is the first SCF step for a 
 !     given atomic configuration
       first = (iscf == 1)
-
-!!     For debugging
-!      write(6,'(a,i5)')'hubbard_term: iscf  = ', iscf
-!      write(6,'(a,l5)')'hubbard_term: first = ', first
-!!     End debugging
-
+      ! Reset population iteration
+      if ( first ) LDAU_pop_iter = 0
+         
 !     Initialization and allocation of matrices
       if( firstime ) then 
 !       Find maximum number of LDA+U projectors on a given atom 
@@ -230,11 +222,6 @@ C ......................
           spp => species(is)
           maxldau = max(maxldau,spp%nprojsldau)
         enddo
-!!       For debugging
-!        write(6,'(a,i5)')'hubbard_term: maxldau = ', maxldau
-!        write(6,'(a,i5)')'hubbard_term: nua     = ', nua
-!        write(6,'(a,i5)')'hubbard_term: nspin   = ', nspin
-!!       End debugging
 
 !       Allocate local array to store the occupations of the 
 !       LDA+U projectors
@@ -245,55 +232,23 @@ C ......................
         call memory( 'A', 'D', size(occu_old), 'hubbard_term' )
         occu_old = 0.0_dp
 
-        nullify( Hldau )
-        call re_alloc( Hldau, 1, maxnh, 1, nspin, name='Hldau',
-     &                 routine = 'hubbard_term', shrink=.false., 
-     &                 copy=.false. )
-        Hldau=0.0_dp 
-
-        if( ldau_shift ) ldau_init = .true.
-        istp_last = istp
         firstime  = .false.
       endif
-!!     For debugging
-!      write(6,'(a,l1)')'hubbard_term: ldau_shift = ', ldau_shift
-!      write(6,'(a,l1)')'hubbard_term: ldau_init  = ', ldau_init
-!      write(6,'(a,i5)')'hubbard_term: istp_last  = ', istp_last
-!      write(6,'(a,l1)')'hubbard_term: firstime   = ', firstime
-!!     End debugging
-!     End initialization
 
-!     If the system has moved, reallocate Hldau and set ldau_init to true
-      if( istp_last .ne. istp ) then 
-        call re_alloc( Hldau, 1, maxnh, 1, nspin, name='Hldau',
-     &                 routine='hubbard_term',  
-     &                 copy=.false. )
-        ldau_init = .true.
-        istp_last = istp
-      endif
+!     End initialization
 
 !     Here we determine whether the occupations are computed on the first
 !     SCF step or not.
       if( first .and. (.not. ldau_init) ) then
         if ( Node == 0 ) then
-          write(6,'(a)') 'hubbard_term: not computing the occupations '
-          write(6,'(a)') '              in the first SCF step'
+           write(6,'(2a)') 'hubbard_term: ',
+     &          'not computing occupations in the first SCF step'
         end if
         call timer( 'hubbard_term', 2 )
         return
       endif
+
       
-!!     For debugging
-!      write(6,'(a,l1)')'hubbard_term: first = ', first
-!      write(6,'(a,f12.5)')
-!     &  'hubbard_term: dDmax_current   = ', dDmax_current
-!      write(6,'(a,f12.5)')
-!     &  'hubbard_term: dDmax_threshold = ', dDmax_threshold
-!      write(6,'(a,l1)')'hubbard_term: compar = ', 
-!     &  (dDmax_current .lt. dDmax_threshold)
-!      write(6,'(a,l1)')'hubbard_term: ldau_shift = ', 
-!     &  ldau_shift
-!!     End debugging
       occupations: if( first .or.
      &                 (dDmax_current .lt. dDmax_threshold) .or.
      &                 ldau_shift ) then 
@@ -309,18 +264,10 @@ C ......................
         do ia = 1, nua
           is = isa(ia)
           spp => species(is)
-!!         For debugging
-!          write(6,'(a,2i5)')' is, specie%n_pjldaunl = ', 
-!     &                        is, spp%n_pjldaunl
-!!         End debugging
 !         Loop on all the LDA+U projectors for a given species
           do ishldau = 1, spp%n_pjldaunl
             pp => spp%pjldau(ishldau)
             rmaxldau = max( rmaxldau, pp%cutoff )
-!!           For debugging
-!            write(6,'(a,2i5,f12.5)')' is, ishldau, ldau%cutoff = ', 
-!     &                                is, ishldau, pp%cutoff
-!!           End debugging
           enddo
           do io = lasto(ia-1)+1,lasto(ia)
             ioa = iphorb(io)
@@ -328,10 +275,6 @@ C ......................
           enddo
         enddo
         rmax = rmaxo + rmaxldau
-!!       For debugging
-!        write(6,'(a,3f12.5)')'hubbard_term: rmax, rmaxo, rmaxldau = ',
-!     &                               rmax, rmaxo, rmaxldau
-!!       End debugging
 
 !       Initialize arrays Di and Vi only once
         no = lasto(na)
@@ -364,20 +307,6 @@ C ......................
           enddo
         enddo
 
-!!       For debugging
-!        do io = 1, no_l
-!          write(6,'(a,2i5)')'io, numh(io) = ', io, numh(io)
-!          do j = 1,numh(io)
-!            jo = listh(listhptr(io)+j)
-!            write(6,'(a,2i5)')'  j, neigh = ', j, jo
-!          enddo
-!        enddo
-!
-!        do io = 1, no
-!          write(6,'(a,i5,l3)')'io, listedall(io) = ', io, listedall(io)
-!        enddo
-!!       End debugging
-
 !       Allocate local arrays that depend on saved parameters
         call re_alloc( iano, 1, maxno, 
      &                 name='iano', routine='hubbard_term' )
@@ -392,9 +321,9 @@ C ......................
       
 !       Counter for the SCF loops to converge the population of the 
 !       LDA+U projectors
-        iter_ldaupop = iter_ldaupop + 1
+        LDAU_pop_iter = LDAU_pop_iter + 1
         if( Node == 0 ) write(6,'(a,i4)')
-     &   'hubbard_term: recalculating local occupations ', iter_ldaupop
+     &   'hubbard_term: recalculating local occupations ', LDAU_pop_iter
 
 !       Initialize occupations
         occu = 0.0_dp
@@ -412,17 +341,6 @@ C ......................
 
 !         Find neighbour atoms 
           call mneighb( scell, rmax, na, xa, ka, 0, nna )
-!!         For debugging
-!          do io = 1, 3
-!            write(6,'(a,3f12.5)')' scell = ', scell(io,:)
-!          enddo
-!          write(6,'(a,f12.5)')' rmax = ', rmax
-!          write(6,'(a,i5)')' na   = ', na
-!          do io = 1, na
-!            write(6,'(a,3f12.5)')' xa = ', xa(:,io)
-!          enddo
-!          write(6,'(a,i5)')' nna   = ', nna
-!!         End debugging
 
 !         Find neighbour orbitals
           nno = 0
@@ -442,22 +360,12 @@ C ......................
                 do ko = 1, nldauproj
                   ldauidx = spp%pjldau_index(ko)
                   pp => spp%pjldau(ldauidx)
-!!                 For debugging
-!                  write(6,'(a,3i5,f12.5,2i5,f12.5)')
-!     .                      'ka, ks, ko, ldau%cutoff = ', 
-!     .                       ka, ks, ko, pp%cutoff, ina, io, 
-!     .                       rcut(is,ioa)
-!!                 End debugging
                   if (rki .lt. rcut(is,ioa)+pp%cutoff) 
      .               within = .true.
                 enddo
 
 !               Find overlap between neighbour orbitals and LDA+U projectors
                 if (within) then
-!! For debugging
-!                  write(6,'(a,3i5,f12.5)')'hubbard_term: ka, ina, io, rki = ',
-!     .              ka, ina, io, rki
-!! End debugging
 !                 Check maxno - if too small then increase array sizes
                   if (nno.eq.maxno) then
                     maxno = maxno + 100
@@ -498,11 +406,6 @@ C ......................
                     kg  = ldau_gindex(ks,ko)
                     call new_matel( 'S', kg, ig, xki(1:3,ina),
      &                  Ski(ko,nno), grSki(1:3,ko,nno) )
-!!                   For debugging
-!                    write(6,'(4i5,9f10.5)')
-!     &                ka, ko, io, ioa, xki(1:3,ina), 
-!     &                Ski(ko,nno), grSki(1:3,ko,nno)  
-!!                   End debugging
                   enddo
 
                 endif   ! If on orbitals within range
@@ -551,12 +454,6 @@ C ......................
                       occu(ko,ikb,kua,ispin) = 
      &                     occu(ko,ikb,kua,ispin) + 
      &                     Dij * Sik * Sjk/(3.0_dp-dble(nspin))
-!!                     For debugging
-!                      write(6,'(a,4i5,4f12.5)')
-!     &                 'ko, ikb, kua, ispin, occu = ',
-!     &                  ko, ikb, kua, ispin, occu(ko,ikb,kua,ispin),
-!     &                  Dij, Sik, Sjk
-!!                     End debugging
                     enddo 
                   enddo
                 enddo
@@ -575,23 +472,6 @@ C ......................
           enddo            ! End loop on neighbour orbitals (ino)
 
         enddo              ! End of the loop on atoms with LDA+U projectors
-!! For debugging        
-!        do kua = 1, nua
-!          ks = isa(kua)
-!          spp => species(ks)
-!          nldauproj = spp%nprojsldau
-!          do ko = 1, nldauproj
-!            do ikb = 1, nldauproj
-!              do ispin = 1, nspin
-!                write(6,'(a,4i5,f12.5)')
-!     &            'ko, ikb, kua, ispin, occu = ',
-!     &             ko, ikb, kua, ispin, occu(ko,ikb,kua,ispin)
-!              enddo
-!            enddo
-!          enddo
-!        enddo
-!        stop
-!! End debugging        
      
 #ifdef MPI
 !       Global reduction of occupation
@@ -601,7 +481,7 @@ C ......................
           is=isa(ka)
           spp => species(is)
           nldauproj = spp%nprojsldau
-          if( nldauproj == 0) cycle
+          if( nldauproj == 0 ) cycle
           do ispin=1,nspin
              call globalize_sum(occu(1:nldauproj,1:nldauproj,ka,ispin),
      &            buffer1(1:nldauproj,1:nldauproj))
@@ -661,10 +541,10 @@ C ......................
      &          'hubbard_term: maximum change in local occup.',dnmax
         endif
         
-        conv_ldaupop = ( dnmax .lt. dtol_ldaupop )
-        if( .not. conv_ldaupop ) occu_old = occu
+        LDAU_pop_conv = ( dnmax < dtol_ldaupop )
+        if( .not. LDAU_pop_conv ) occu_old = occu
 
-        recalc_hamilt: if( .not. conv_ldaupop .or. first .or. 
+        recalc_hamilt: if( .not. LDAU_pop_conv .or. first .or. 
      &                     .not. matrix_elements_only ) then
           if ( Node == 0 ) then 
             if ( matrix_elements_only ) then
@@ -739,11 +619,6 @@ C ......................
                       kg = ldau_gindex(ks,ko)
                       call new_matel( 'S', kg, ig, xki(1:3,ina),
      &                    Ski(ko,nno), grSki(1:3,ko,nno) )
-!!                     For debugging
-!                      write(6,'(4i5,7f10.5)')
-!     &                  ka, ko, io, ioa, xki(1:3,ina), 
-!     &                  Ski(ko,nno), grSki(1:3,ko,nno)  
-!!                     End debugging
                     enddo
 
                   endif   ! If on orbitals within range
@@ -793,12 +668,6 @@ C ......................
                     if( ldau_shift ) Ueff = 2.0_dp * Ueff
                     Sik = Ski(ko,ino)
                     Sjk = Ski(ko,jno)
-!!                   For debugging
-!                    write(6,'(a,7i5,3f12.5)')
-!     &              'ka, ko, lko, nprin_ko, ino, jno, jo, U_eff = ',     
-!     &               ka, ko, lko, nprin_ko, ino, jno, jo, Ueff, 
-!     &               Sik, Sjk
-!!                   End debugging
                     do ispin=1, nspin
                       Vi(jo,ispin) = Vi(jo,ispin) +
      &                               0.5_dp * Sik * Sjk * Ueff
@@ -869,9 +738,7 @@ C ......................
 
       endif occupations
 
-      add_hamilt: if(iter_ldaupop.gt.0) then 
-        if(Node.eq.0) 
-     &    write(6,'(a)') 'hubbard_term: Adding Hamiltonian contribution'
+      add_hamilt: if ( LDAU_pop_iter > 0 ) then 
         
         ! Add the Hamiltonian elements and calculate energy
         do iio = 1 , no_l
@@ -904,29 +771,6 @@ C ......................
           endif
         enddo
 
-!!       For debugging
-!        do io = 1, no_l
-!          do j = 1, numh(io)
-!              ind = listhptr(io) + j
-!              write(6,'(a,4i7,2f12.5)')'io, j, ind, listh, Hldau = ',
-!     &              io, j, ind, listh(ind), Hldau(ind,:)
-!          enddo 
-!        enddo 
-!        write(6,'(a,f12.6)') 
-!     &    'hubbard_term: Eldau(eV)=',Eldau*13.6057_dp
-!        write(6,'(a,f12.6)') 
-!     &    'hubbard_term: DEldau(eV)=',DEldau*13.6057_dp      
-!        if( .not. matrix_elements_only) then 
-!          do io = 1, nua
-!            write(6,'(a,i7,3f12.5)')'ia, fa = ',
-!     &        io, fa(:,io)
-!          enddo
-!          do io = 1, 3
-!            write(6,'(a,3f12.5)')'stress = ',
-!     &        stress(io,:)
-!          enddo
-!        endif
-!!       End debugging
       endif add_hamilt
 
 !      Deallocate local memory
@@ -941,11 +785,6 @@ C ......................
       call de_alloc( listed, name='listed' )
       call de_alloc( Vi, name='Vi' )
       call de_alloc( Di, name='Di' )
-
-!      call de_alloc( occu,     name = 'occu'     )
-!      call memory( 'D', 'D', size(occu), 'hubbard_term' )
-!      call de_alloc( occu_old, name = 'occu_old' )
-!      call memory( 'D', 'D', size(occu_old), 'hubbard_term' )
 
 !     Stop time counter
       call timer( 'hubbard_term', 2 )

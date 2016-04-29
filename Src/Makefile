@@ -442,7 +442,7 @@ compute_rhog.o: m_gamma.o m_ntm.o m_spin.o m_stress.o siesta_geom.o
 compute_rhog.o: siesta_options.o sparse_matrices.o
 conjgr.o: precision.o
 conjgr_old.o: precision.o
-coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o zmatrix.o
+coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o units.o zmatrix.o
 coxmol.o: files.o periodic_table.o precision.o
 debugmpi.o: parallel.o
 delk.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o
@@ -557,7 +557,7 @@ kpoint_pdos.o: sys.o units.o
 ksv.o: alloc.o atmfuncs.o densematrix.o ksvinit.o parallel.o precision.o sys.o
 ksvinit.o: alloc.o parallel.o precision.o sys.o
 ldau.o: alloc.o atm_types.o atmfuncs.o compute_max_diff.o ldau_specs.o
-ldau.o: m_mpi_utils.o m_steps.o mneighb.o new_matel.o parallel.o parallelsubs.o
+ldau.o: m_mpi_utils.o mneighb.o new_matel.o parallel.o parallelsubs.o
 ldau.o: precision.o radial.o
 ldau_specs.o: alloc.o atm_types.o atmparams.o atom.o atom_options.o
 ldau_specs.o: basis_specs.o basis_types.o interpolation.o precision.o
@@ -832,12 +832,12 @@ state_analysis.o: remove_intramol_pressure.o siesta_cml.o siesta_geom.o
 state_analysis.o: siesta_options.o sparse_matrices.o units.o write_subs.o
 state_analysis.o: zmatrix.o
 state_init.o: alloc.o atomlist.o domain_decom.o files.o hsparse.o iodm_netcdf.o
-state_init.o: iodmhs_netcdf.o ioxv.o kpoint_grid.o m_check_supercell.o
-state_init.o: m_energies.o m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o
-state_init.o: m_spin.o m_steps.o m_ts_io.o m_ts_options.o new_dm.o overlap.o
-state_init.o: parallel.o proximity_check.o siesta_cml.o siesta_geom.o
-state_init.o: siesta_options.o sparse_matrices.o sys.o units.o write_subs.o
-state_init.o: zmatrix.o
+state_init.o: iodmhs_netcdf.o ioxv.o kpoint_grid.o ldau_specs.o
+state_init.o: m_check_supercell.o m_energies.o m_eo.o m_gamma.o m_mpi_utils.o
+state_init.o: m_pulay.o m_rmaxh.o m_spin.o m_steps.o m_ts_io.o m_ts_options.o
+state_init.o: new_dm.o overlap.o parallel.o proximity_check.o siesta_cml.o
+state_init.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
+state_init.o: write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_iostruct.o
 struct_init.o: m_mpi_utils.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_master.o siesta_options.o units.o zmatrix.o

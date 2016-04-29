@@ -13,7 +13,7 @@
       subroutine setup_hamiltonian( iscf )
 
       USE siesta_options
-      use sparse_matrices, only: H_kin, H_vkb
+      use sparse_matrices, only: H_kin, H_vkb, H_ldau
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H, S, Hold
       use sparse_matrices, only: Dscf, Escf, xijo
@@ -126,7 +126,7 @@
         call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
      .                    maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .                    numh, listhptr, listh, numh, listhptr, listh,
-     .                    min(nspin,2), Dscf, Eldau, DEldau, 
+     .                    min(nspin,2), Dscf, Eldau, DEldau, H_ldau, 
      .                    fal, stressl, H, iscf,
      .                    matrix_elements_only=.true.)
 

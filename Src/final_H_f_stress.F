@@ -16,7 +16,7 @@
       USE siesta_options, only: recompute_H_after_scf
       use sparse_matrices, only: numh, listh, listhptr
       use sparse_matrices, only: S, Dscf, Escf, maxnh, xijo
-      use sparse_matrices, only: H  
+      use sparse_matrices, only: H, H_ldau
 
       use siesta_geom
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -143,7 +143,7 @@
          call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
      .        maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .        numh, listhptr, listh, numh, listhptr, listh,
-     .        min(nspin,2), Dscf, Eldau, DEldau,
+     .        min(nspin,2), Dscf, Eldau, DEldau, H_ldau, 
      .        fal, stressl, H_tmp, iscf,
      .        matrix_elements_only=.false.)
 #ifdef MPI

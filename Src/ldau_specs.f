@@ -376,20 +376,20 @@
 !------------------------------------------------------------------------
 !     Read the generation method for the LDA+U projectors
       method_gen_ldau_proj = 
-     .  fdf_integer('LDAU.ProjectorGenerationMethod',method_gen_default)
+     .  fdf_get('LDAU.ProjectorGenerationMethod',method_gen_default)
 
 !     Read the energy-shift to define the cut-off radius of the LDA+U projectors
       energy_shift_ldau = 
-     .  fdf_physical('LDAU.EnergyShift',energy_shift_ldau_default,'Ry')
+     &     fdf_get('LDAU.EnergyShift',energy_shift_ldau_default,'Ry')
 
 !     Read the parameter used to define the cutoff radius used in the Fermi
 !     distribution 
-      dnrm_rc = fdf_double('LDAU.CutoffNorm',dnrm_rc_default)
+      dnrm_rc = fdf_get('LDAU.CutoffNorm',dnrm_rc_default)
 
 !     Read information about defaults for soft confinement
-      lsoft  = fdf_boolean('PAO.SoftDefault',     .false. )
-      softRc = fdf_double( 'PAO.SoftInnerRadius', 0.9d0   )
-      softPt = fdf_double( 'PAO.SoftPotential',   40.0d0  )
+      lsoft  = fdf_get('PAO.SoftDefault',     .false. )
+      softRc = fdf_get( 'PAO.SoftInnerRadius', 0.9d0   )
+      softPt = fdf_get( 'PAO.SoftPotential',   40.0d0  )
 !     Sanity checks on values
       softRc = max(softRc,0.00d0)
       softRc = min(softRc,0.99d0)
@@ -398,20 +398,27 @@
 !     Read the parameter that defines the criterium required to start or update
 !     the calculation of the populations of
 !     the LDA+U projections
-      dDmax_threshold = fdf_double('LDAU.ThresholdTol', 
-     &                             dDmax_threshold_default)
+      dDmax_threshold =
+     &     fdf_get('LDAU.ThresholdTol', dDmax_threshold_default)
 
 !     Read the parameter that defines the convergence criterium for the
 !     LDA+U local population
-      dtol_ldaupop = fdf_double('LDAU.PopTol',dtol_ldaupop_default)
-
-!     Read the flag that determines whether the local populations are
-!     calculated on the first iteration
-      ldau_init  = fdf_boolean('LDAU.FirstIteration',     .false. )
+      dtol_ldaupop =
+     &     fdf_get('LDAU.PopTol',dtol_ldaupop_default)
 
 !     Read the flag that determines whether the U parameter is interpreted
 !     as a local potential shift
-      ldau_shift = fdf_boolean('LDAU.PotentialShift',     .false. )
+      ldau_shift =
+     &     fdf_get('LDAU.PotentialShift', .false. )
+
+      ! Read the flag that determines whether the local populations are
+      ! calculated on the first iteration
+      ldau_init =
+     &     fdf_get('LDAU.FirstIteration', ldau_shift )
+      ! When the local potential shift is applied
+      ! the initial iteration is forced to calculate
+      ! the LDA+U terms
+      if ( ldau_shift ) ldau_init = .true.
 
 !     Allocate and initialize the array with the number of projectors per 
 !     atomic specie

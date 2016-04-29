@@ -20,7 +20,7 @@
       use units, only: Ang
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Eold, Hold
-      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
+      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb, H_ldau
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
@@ -46,6 +46,7 @@
       use m_mpi_utils,       only: globalize_or
       use m_mpi_utils,       only: globalize_max
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
+      use ldau_specs,        only: switch_ldau, ldau_init
 
 #ifdef TRANSIESTA
       use m_ts_options, only : onlyS
@@ -303,7 +304,24 @@
       call re_alloc(H_kin,1,maxnh,name='H_kin',routine='sparseMat',
      &              shrink=.true., copy=.false. )
       call re_alloc(H_vkb,1,maxnh,name='H_vkb',routine='sparseMat',
-     &              shrink=.true., copy=.false. )
+     &     shrink=.true., copy=.false. )
+      if ( switch_ldau ) then
+         call re_alloc( H_ldau, 1, maxnh, 1, min(2,nspin), 'H_ldau',
+     &        routine='sparseMat', copy=.false.,shrink=.true.)
+         ! Initialize to 0, LDA+U may re-calculate
+         !   this matrix sporadically doing the SCF.
+         ! Hence initialization MUST be performed upon
+         ! re-allocation.
+         H_ldau = 0._dp
+         if ( inicoor /= istep ) then
+            ! Force initialization of the LDA+U
+            ! when changing geometry
+            ! For the first geometry this is controlled
+            ! by the user via an fdf-key
+            ldau_init = .true.
+         end if
+      end if
+         
       call re_alloc(S,1,maxnh,name='S',routine='sparseMat',
      .              copy=.false.,shrink=.true.)
 

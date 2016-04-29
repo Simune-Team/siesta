@@ -23,7 +23,7 @@
       use m_convergence, only: converger_t, tolerance
       use m_convergence, only: add_value, is_converged
       use ldau_specs,    only: switch_ldau
-      use m_ldau,        only: conv_ldaupop
+      use m_ldau,        only: LDAU_pop_conv
 
       implicit none
 
@@ -67,7 +67,7 @@
          if( switch_ldau ) then
            if (   dDmax.lt.dDtol
      $            .and. is_converged(conv_freeE)
-     $            .and. conv_ldaupop) then
+     $            .and. LDAU_pop_conv) then
              converged = .true.
              if (IOnode) then
                write(6,"(/,a)") "SCF Convergence by FreeE+dmax criteria"
@@ -119,7 +119,7 @@
          endif
       else
         if ( switch_ldau ) then 
-          if (dDmax.lt.dDtol.and.conv_ldaupop) then
+          if (dDmax.lt.dDtol.and.LDAU_pop_conv) then
             converged = .true.
             if (IOnode) then
               write(6,"(/,a)") "SCF Convergence by dMax criterion"
