@@ -378,7 +378,8 @@ atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: interpolation.o m_filter.o old_atmfuncs.o periodic_table.o precision.o
 atom.o: pseudopotential.o sys.o
 atom_options.o: sys.o
-atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
+atomlist.o: alloc.o atm_types.o atmfuncs.o ldau_specs.o parallel.o precision.o
+atomlist.o: radial.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 automatic_cell.o: atm_types.o atmfuncs.o parallel.o precision.o units.o
 bands.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o m_gamma.o
