@@ -537,7 +537,8 @@ atom_graph.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
 atom_graph.o: class_Sparsity.o intrinsic_missing.o ldau_specs.o mneighb.o
 atom_graph.o: precision.o radial.o sorting.o sys.o
 atom_options.o: sys.o
-atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
+atomlist.o: alloc.o atm_types.o atmfuncs.o ldau_specs.o parallel.o precision.o
+atomlist.o: radial.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 automatic_cell.o: atm_types.o atmfuncs.o parallel.o precision.o units.o
 bands.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o m_gamma.o
