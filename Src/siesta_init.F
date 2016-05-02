@@ -297,8 +297,8 @@
       endif
 
 !     Find maximum interaction range
-      if (negl) then
-        rmaxh = 2.0_dp*rmaxo
+      if ( negl ) then
+        rmaxh = 2.0_dp*(rmaxo + rmaxldau)
       else
         rmaxh = 2.0_dp*(rmaxo + max(rmaxkb,rmaxldau))
       endif

@@ -73,7 +73,9 @@ C
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs,  only : GlobalToLocalOrb
+      use atm_types,     only : nspecies
       use atmfuncs,      only : rcut, epskb, orb_gindex, kbproj_gindex
+      use atmfuncs,      only : nofis, nkbfis
       use neighbour,     only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour,     only : mneighb, reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
@@ -100,7 +102,7 @@ C
 C Internal variables ................................................
 C maxno  = maximum number of basis orbitals overlapping a KB projector
 
-      integer, save ::  maxno = 2000
+      integer, save ::  maxno = 500
   
       integer
      .  ia, ikb, ina, ind, ino,
@@ -128,20 +130,26 @@ C Start time counter
 C Find unit cell volume
       volume = volcel( scell ) * nua / na
 
-C Find maximum range
-      rmaxo = 0.0d0
-      rmaxkb = 0.0d0
-      do ia = 1,na
-        is = isa(ia)
-        do ikb = lastkb(ia-1)+1,lastkb(ia)
-          ioa = iphKB(ikb)
-          rmaxkb = max( rmaxkb, rcut(is,ioa) )
-        enddo
-        do io = lasto(ia-1)+1,lasto(ia)
-          ioa = iphorb(io)
-          rmaxo = max( rmaxo, rcut(is,ioa) )
-        enddo
+C Find maximum range and maximum number of KB projectors
+      rmaxo  = 0.0_dp
+      rmaxkb = 0.0_dp
+      maxkba = 0
+      do is = 1, nspecies
+         
+         ! Species orbital range
+         do io = 1, nofis(is)
+            rmaxo = max(rmaxo, rcut(is,io))
+         enddo
+         
+         ! Species KB range
+         io = nkbfis(is)
+         do ikb = 1, io
+            rmaxkb = max(rmaxkb, rcut(is,-ikb))
+         enddo
+         maxkba = max(maxkba,io)
+
       enddo
+      ! Calculate max extend
       rmax = rmaxo + rmaxkb
 
 C Initialize arrays Di and Vi only once
@@ -177,13 +185,6 @@ C Make list of all orbitals needed for this node
           jo = listh(listhptr(io)+j)
           listedall(jo) = .true.
         enddo
-      enddo
-
-C Find maximum number of KB projectors of one atom = maxkba
-      maxkba = 0
-      do ka = 1,na
-        nkb = lastkb(ka) - lastkb(ka-1)
-        maxkba = max(maxkba,nkb)
       enddo
 
 C Allocate local arrays that depend on saved parameters
@@ -235,7 +236,7 @@ C             Find overlap between neighbour orbitals and KB projectors
               if (within) then
 C               Check maxno - if too small then increase array sizes
                 if (nno.eq.maxno) then
-                  maxno = maxno + 100
+                  maxno = maxno + 10
                   call re_alloc( iano, 1, maxno, 'iano', 'nlefsm',
      &                           .true. )
                   call re_alloc( iono, 1, maxno, 'iono', 'nlefsm',

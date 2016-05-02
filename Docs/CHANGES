@@ -5,6 +5,30 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-05-02                                                    trunk-499
+Allowed neglecting KB projectors with LDA+U
+
+- The LDA+U projectors are now not dependent
+  on the NeglNonOverlapInt option which only
+  deals with KB projectors.
+
+- Streamlined calculation of rmaxo/rmaxkb in
+  hsparse, ldau, nlefsm,
+
+  Basically they looped over the entire structure
+  to find only the species orbital/projector
+  ranges.
+  Thus it is more efficient in those routines.
+
+modified:
+  Src/Makefile
+  Src/hsparse.F
+  Src/ldau.F
+  Src/nlefsm.f
+  Src/siesta_init.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2016-05-02                                                    trunk-498
 Fixed imports
 
