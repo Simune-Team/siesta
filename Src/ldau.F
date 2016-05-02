@@ -104,11 +104,13 @@ C
       use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut, orb_gindex, ldau_gindex
+      use atmfuncs,      only : nofis
       use neighbour    , only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour    , only : mneighb
       use alloc,         only : re_alloc, de_alloc
       use m_new_matel,   only : new_matel
       use radial,        only : rad_func
+      use atm_types,     only : nspecies
       use atm_types,     only : species_info    ! Derived type with all the info
                                                 !   about the radial functions
                                                 !   (PAOs, KB projectors,
@@ -158,7 +160,7 @@ C
 
 C Internal variables ................................................
 C maxno  = maximum number of basis orbitals overlapping a KB projector
-      integer, save :: maxno = 1000
+      integer, save :: maxno = 500
 
       integer
      .  ia, ishldau, ina, ind, ino,
@@ -171,8 +173,8 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
 
       real(dp)
      .  Cijk, fik, rki, rmax, rmaxldau, rmaxo, 
-     .  Sik, Sjk, volume,  oc(nspin), Ueff, dn,
-     .  Dij
+     .  Sik, Sjk, volume,  oc(nspin), Ueff, dn, 
+     .  Dij, rci
 
       real(dp), dimension(:,:), pointer :: Vi, Di
       real(dp), dimension(:,:), pointer :: Ski, xno
@@ -262,19 +264,22 @@ C ......................
 !       and of the LDA+U projectors (rmaxldau)
         rmaxo    = 0.0_dp
         rmaxldau = 0.0_dp
-        do ia = 1, nua
-          is = isa(ia)
-          spp => species(is)
-!         Loop on all the LDA+U projectors for a given species
-          do ishldau = 1, spp%n_pjldaunl
-            pp => spp%pjldau(ishldau)
-            rmaxldau = max( rmaxldau, pp%cutoff )
-          enddo
-          do io = lasto(ia-1)+1,lasto(ia)
-            ioa = iphorb(io)
-            rmaxo = max( rmaxo, rcut(is,ioa) )
-          enddo
+        do is = 1, nspecies
+           
+           ! Species orbital range
+           do io = 1, nofis(is)
+              rmaxo = max(rmaxo, rcut(is,io))
+           enddo
+           
+           ! Species LDAU range
+           spp => species(is)
+           do io = 1, spp%n_pjldaunl
+              pp => spp%pjldau(io)
+              rmaxldau = max(rmaxldau, pp%cutoff)
+           end do
         enddo
+        
+        ! Total range of the projector is Oo
         rmax = rmaxo + rmaxldau
 
 !       Initialize arrays Di and Vi only once
@@ -355,21 +360,22 @@ C ......................
               if (listedall(io)) then
                 ioa = iphorb(io)
                 ig  = orb_gindex(is,ioa)
+                rci = rcut(is,ioa)
 
 !               Find if orbital is within range
                 within = .false.
                 do ko = 1, nldauproj
                   ldauidx = spp%pjldau_index(ko)
                   pp => spp%pjldau(ldauidx)
-                  if (rki .lt. rcut(is,ioa)+pp%cutoff) 
-     .               within = .true.
-                enddo
+                  if ( rci + pp%cutoff > rki )
+     &                 within = .true.
+                end do
 
 !               Find overlap between neighbour orbitals and LDA+U projectors
                 if (within) then
 !                 Check maxno - if too small then increase array sizes
                   if (nno.eq.maxno) then
-                    maxno = maxno + 100
+                    maxno = maxno + 10
                     call re_alloc( iano, 1, maxno, name='iano',
      &                       copy=.true., routine='hubbard_term' )
                     call re_alloc( iono, 1, maxno, name='iono',
@@ -583,21 +589,22 @@ C ......................
                 if (listedall(io)) then
                   ioa = iphorb(io)
                   ig  = orb_gindex(is,ioa)
+                  rci = rcut(is,ioa)
 
 !                 Find if orbital is within range
                   within = .false.
                   do ko = 1, nldauproj
                     ldauidx = spp%pjldau_index(ko)
                     pp => spp%pjldau(ldauidx)
-                    if (rki .lt. rcut(is,ioa)+pp%cutoff) 
-     .                within = .true.
-                  enddo
+                    if ( rci + pp%cutoff > rki )
+     &                   within = .true.
+                  end do
 
 !                 Find overlap between neighbour orbitals and LDA+U projectors
                   if (within) then
 !                   Check maxno - if too small then increase array sizes
                     if (nno.eq.maxno) then
-                      maxno = maxno + 100
+                      maxno = maxno + 10
                       call re_alloc( iano, 1, maxno, name='iano',
      &                         copy=.true., routine='hubbard_term' )
                       call re_alloc( iono, 1, maxno, name='iono',

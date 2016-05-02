@@ -186,11 +186,14 @@ contains
 
     ! If we neglect the KB projectors in the interaction scheme
     if ( negl ) then
-       rmax = 2._dp * rmaxo
+       rmax = 2._dp * (rmaxo+rmaxldau)
     else
        rmax = 2._dp * (rmaxo+max(rmaxkb,rmaxldau))
     end if
 
+    ! Reset the nnkb value to 0
+    nnkb = 0
+    
     ! Allocate local arrays that depend on parameters
     call re_alloc(knakb,1,maxnkb, name="knakb",routine="atom_graph")
     call re_alloc(rckb,1,maxnkb, name="rckb",routine="atom_graph")
@@ -224,8 +227,21 @@ contains
        is  = isa(ia)
        rci = rorbmax(is)
 
-       ! Find overlaping KB projectors
-       if ( .not. negl ) then
+       if ( negl .and. switch_ldau ) then
+          ! We ONLY add the LDAU projectors
+          nnkb = 0
+          do kna = 1,nna
+             ka = jna(kna)
+             rik = sqrt( r2ij(kna) )
+             ks = isa(ka)
+             rck = rldaumax(ks)
+             if ( rci + rck > rik ) then
+                call extend_projector(nnkb, kna, rck)
+             end if
+          end do
+          
+       else if ( .not. negl ) then
+          ! Find overlaping KB and LDA+U projectors
           nnkb = 0
           do kna = 1 , nna
              ka = jna(kna)
@@ -234,31 +250,13 @@ contains
              ! It is only necessary to check with
              ! the *largest* KB projector
              rck = rkbmax(ks)
-             if ( (rci + rck) > rik ) then
-                if ( nnkb == maxnkb ) then
-                   maxnkb = maxnkb + 10
-                   call re_alloc(knakb,1,maxnkb, name="knakb", &
-                        copy=.true., routine="atom_graph")
-                   call re_alloc(rckb,1,maxnkb, name="rckb", &
-                        copy=.true., routine="atom_graph")
-                end if
-                nnkb        = nnkb + 1
-                knakb(nnkb) = kna
-                rckb(nnkb)  = rck
+             if ( rci + rck > rik ) then
+                call extend_projector(nnkb, kna, rck)
              end if
              if( switch_ldau ) then
                 rck = rldaumax(ks)
-                if ((rci + rck) > rik) then
-                   if ( nnkb == maxnkb ) then
-                      maxnkb = maxnkb + 10
-                      call re_alloc(knakb,1,maxnkb, name='knakb', &
-                           copy=.true., routine='atom_graph')
-                      call re_alloc(rckb,1,maxnkb, name='rckb', &
-                           copy=.true., routine='atom_graph')
-                   end if
-                   nnkb        = nnkb + 1
-                   knakb(nnkb) = kna
-                   rckb(nnkb)  = rck
+                if ( rci + rck > rik ) then
+                   call extend_projector(nnkb, kna, rck)
                 endif
              endif
           end do
@@ -273,15 +271,15 @@ contains
           rij = sqrt( r2ij(jnat) )
           rcj = rorbmax(js)
           !  Find if there is direct overlap
-          if ( (rci+rcj) > rij) then
+          if ( rci + rcj > rij ) then
              connected_h = .true.
-          else if ( .not. negl ) then
+          else
              ! Find if ja overlaps with a KB projector in ia's list
              do inkb = 1 , nnkb
                 rck = rckb(inkb)
                 kna = knakb(inkb)
                 rjk = VNORM( xij(:,kna) - xij(:,jnat) )
-                if ( (rcj+rck) > rjk ) then
+                if ( rcj + rck > rjk ) then
                    connected_h = .true.
                    exit  ! loop over inkb
                 end if
@@ -349,43 +347,38 @@ contains
        is  = isa(ia)
        rci = rorbmax(is)
 
-       ! Find overlaping KB projectors
-       if ( .not. negl ) then
+       
+       if ( negl .and. switch_ldau ) then
+          ! We ONLY add the LDAU projectors
           nnkb = 0
-          do kna = 1 , nna
+          do kna = 1,nna
+             ka = jna(kna)
+             rik = sqrt( r2ij(kna) )
+             ks = isa(ka)
+             rck = rldaumax(ks)
+             if ( rci + rck > rik ) then
+                call extend_projector(nnkb, kna, rck)
+             end if
+          end do
+       else if ( .not. negl ) then
+          ! Find overlaping KB and LDA+U projectors
+          nnkb = 0
+          do kna = 1,nna
              ka = jna(kna)
              rik = sqrt( r2ij(kna) )
              ks = isa(ka)
              ! It is only necessary to check with
              ! the *largest* KB projector
              rck = rkbmax(ks)
-             if ( (rci + rck) > rik ) then
-                if ( nnkb == maxnkb ) then
-                   maxnkb = maxnkb + 10
-                   call re_alloc(knakb,1,maxnkb, name="knakb", &
-                        copy=.true.,routine="atom_graph")
-                   call re_alloc(rckb,1,maxnkb, name="rckb", &
-                        copy=.true.,routine="atom_graph")
-                end if
-                nnkb        = nnkb + 1
-                knakb(nnkb) = kna
-                rckb(nnkb)  = rck
-             end if
+             if ( rci + rck > rik ) then
+                call extend_projector(nnkb, kna, rck)
+             endif
              if( switch_ldau ) then
                 rck = rldaumax(ks)
-                if ((rci + rck) > rik) then
-                   if ( nnkb == maxnkb ) then
-                      maxnkb = maxnkb + 10
-                      call re_alloc(knakb,1,maxnkb, name='knakb', &
-                           copy=.true., routine='atom_graph')
-                      call re_alloc(rckb,1,maxnkb, name='rckb', &
-                           copy=.true., routine='atom_graph')
-                   end if
-                   nnkb        = nnkb + 1
-                   knakb(nnkb) = kna
-                   rckb(nnkb)  = rck
-                endif
-             endif
+                if ( rci + rck > rik ) then
+                   call extend_projector(nnkb, kna, rck)
+                end if
+             end if
           end do
        end if
 
@@ -399,16 +392,16 @@ contains
           rij = sqrt( r2ij(jnat) )
           rcj = rorbmax(js)
           ! Find if there is direct overlap
-          if ( (rci+rcj) > rij ) then
+          if ( rci + rcj > rij ) then
              connected_s = .true.
              connected_h = .true.
-          else if ( .not. negl ) then
-             ! Find if ja overlaps with a KB projector in ia's list
+          else 
+             ! Find if ja overlaps with a KB/LDAU projector in ia's list
              do inkb = 1 , nnkb
                 rck = rckb(inkb)
                 kna = knakb(inkb)
                 rjk = VNORM( xij(:,kna) - xij(:,jnat) )
-                if ( (rcj+rck) > rjk ) then
+                if ( rcj + rck  > rjk ) then
                    connected_h = .true.
                    exit  ! loop over inkb
                 end if
@@ -441,6 +434,29 @@ contains
     end if
 
   contains
+    
+    ! Possibly increase the arrays used for creating
+    ! the data arrays
+    ! ALSO add data to the arrays
+    subroutine extend_projector(nnkb, kna, rck)
+      integer, intent(inout) :: nnkb
+      integer, intent(in)    :: kna
+      real(dp), intent(in)   :: rck
+      
+      if ( nnkb == maxnkb ) then
+         maxnkb = maxnkb + 10
+         call re_alloc( knakb, 1, maxnkb, 'knakb', &
+              'atom_graph', .true. )
+         call re_alloc( rckb, 1, maxnkb, 'rckb', &
+              'atom_graph', .true. )
+      end if
+      
+      nnkb        = nnkb + 1
+      knakb(nnkb) = kna
+      rckb(nnkb)  = rck
+      
+    end subroutine extend_projector
+
 
     function reduce(xi,xij,xj,rcell) result(sc)
       real(dp), intent(in) :: xi(3), xj(3), xij(3)

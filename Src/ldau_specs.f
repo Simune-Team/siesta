@@ -324,6 +324,8 @@
       subroutine read_ldau_specs()
 
       use fdf
+      use m_cite, only: add_citation
+      use parallel, only: IONode
 
       type(basis_def_t), pointer :: basp
       type(ldaushell_t), pointer :: ldau
@@ -430,6 +432,11 @@
 !     Read the LDAU.proj block
       if (.not. fdf_block('LDAU.proj',bfdf)) RETURN
 
+      ! Add citation
+      if ( IONode ) then
+         call add_citation("10.1103/PhysRevB.57.1505")
+      end if
+      
       do while(fdf_bline(bfdf, pline))     !! over species
         if (.not. fdf_bmatch(pline,'ni'))
      .      call die('Wrong format in LDAU.proj')

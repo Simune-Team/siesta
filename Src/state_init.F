@@ -36,9 +36,9 @@
 
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, indxua,
-     &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
-     &                             lasto, superc, rmaxv, indxuo,
-     &                             no_l, iza
+     &                             rmaxo, rmaxkb, rmaxv, rmaxldau,
+     &                             lastkb, lasto, superc, indxuo,
+     &                             no_u, no_s, no_l, iza
       use alloc,             only: re_alloc, de_alloc, alloc_report
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
@@ -287,12 +287,12 @@
 
 !     Use largest possible range in program, except hsparse...
 !     2 * rmaxv: Vna overlap
-!     2 * rmaxo: orbital overlap
 !     rmaxo + rmaxkb: Non-local KB action
+!     2 * (rmaxo + rmaxldau): Interaction through LDAU projector
 !     2.0_dp * (rmaxo+rmaxkb) : Orbital interaction through KB projectors
-      rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb)
+      rmax = max( 2._dp*rmaxv, 2._dp*(rmaxo+rmaxldau), rmaxo+rmaxkb)
 
-      if (.not. negl) then
+      if ( .not. negl ) then
         rmax = max(rmax, 2.0_dp * (rmaxo+rmaxkb) )
       endif
 

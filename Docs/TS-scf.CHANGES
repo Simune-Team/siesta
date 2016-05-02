@@ -1,4 +1,34 @@
 ----------------------------------------------------
+May 2, 2016 -- Nick Papior             trunk-499---ts-scf-669
+Merged trunk 499
+
+- Also implemented the trunk-r499
+  change in atom_graph
+
+modified:
+  Docs/CHANGES
+  Src/Makefile
+  Src/atom_graph.F90
+  Src/hsparse.F
+  Src/ldau.F
+  Src/ldau_specs.f
+  Src/m_cite.F90
+  Src/nlefsm.f
+  Src/siesta_init.F
+  Src/state_init.F
+  Util/COOP/Makefile
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/SpPivot/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 April 29, 2016 -- Nick Papior          trunk-494---ts-scf-668
 Merged LDA+U code
 

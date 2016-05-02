@@ -74,7 +74,7 @@ module m_cite
   ! Increment this after having added a new
   ! citation!
   ! OTHERWISE YOU WILL EXPERIENCE A SEG-FAULT.
-  integer, parameter :: N_citations = 4
+  integer, parameter :: N_citations = 5
 
   private
 
@@ -200,6 +200,17 @@ contains
        cit%cite_key = "Bengtsson1999"
        ID = 3
 
+    case ( "10.1103/PhysRevB.57.1505" )
+       ! implementation specific LDA+U
+       cit%comment = "LDA+U implementation"
+       cit%doi = "10.1103/PhysRevB.57.1505"
+       cit%journal = "Physical Review B"
+       cit%year = 1998
+       cit%volume = "57"
+       cit%issue = "3"
+       cit%cite_key = "Dudarev1998"
+       ID = 4
+
     case ( "10.1039/C5CP04613K" )
        ! charge/hartree gate
        cit%comment = "Charge/Hartree gate model"
@@ -209,7 +220,7 @@ contains
        cit%volume = "18"
        cit%issue = "2"
        cit%cite_key = "Papior2016A"
-       ID = 4
+       ID = 5
 
     end select
 
