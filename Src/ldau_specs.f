@@ -325,6 +325,7 @@
 
       use fdf
       use m_cite, only: add_citation
+      use parallel, only: IONode
 
       type(basis_def_t), pointer :: basp
       type(ldaushell_t), pointer :: ldau

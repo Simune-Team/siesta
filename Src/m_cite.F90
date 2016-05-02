@@ -203,7 +203,7 @@ contains
     case ( "10.1103/PhysRevB.57.1505" )
        ! implementation specific LDA+U
        cit%comment = "LDA+U implementation"
-       cit%doi = "10.1103/PhysRevB.57.1505" )
+       cit%doi = "10.1103/PhysRevB.57.1505"
        cit%journal = "Physical Review B"
        cit%year = 1998
        cit%volume = "57"

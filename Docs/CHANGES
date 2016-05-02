@@ -5,6 +5,14 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-05-02                                                    trunk-498
+Fixed imports
+
+modified:
+  Src/ldau_specs.f
+  Src/m_cite.F90
+
+-----------------------------------------------------------------------
 2016-05-01                                                    trunk-497
 Added LDA+U citation of the implementation paper
 
