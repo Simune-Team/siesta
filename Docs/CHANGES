@@ -5,6 +5,57 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-05-03                                                    trunk-500
+Fix for handling of geometry info in bands/wfns calculation
+
+The computation of bands and/or wavefunctions in 'siesta_analysis'
+requires an initial setup of the k-point sets involved.  These are
+input in ad-hoc fdf blocks with two possible options for the scaling:
+'pi/a' and 'ReciprocalLatticeVectors'.
+
+The 'pi/a' option needs a lattice constant, which is determined by
+issuing an 'fdf_get' call, whereas the reciprocal lattice vector
+option triggers a call to 'redcel' to determine the unit cell.
+
+An immediate problem is the absence of lattice constant or unit-cell
+information in the fdf file. This may happen, for example, when the
+'use-struct-file' or 'use-save-xv' options are in effect. The program
+would either stop when not finding the lattice constant, or, worse,
+would implicitly compute a zero unit cell and crash later with
+linear-algebra related errors such as faulty Cholesky
+decompositions. (The zero-unit-cell case is an unfortunate consequence
+of the implicit convention that an absent unit cell means that the
+user wants an automatic one.)
+
+A second problem is that, even if the required geometry information is
+given in the fdf file, the band/wfn calculation might be happening at
+the end of a cell relaxation or MD run, so the actual unit cell is not
+that in the fdf file. This should be considered bad practice, but it
+might happen.
+
+The minimal solution adopted (encoded in routine get_kpoints_scale)
+consists of attempting to read the lattice constant for the 'pi/a'
+case, as before, but to use the unit-cell information in the
+'siesta_geom' module for the reciprocal-lattice-vectors case.  This
+information is not enough for the 'pi/a' option, since no record is
+kept of any centering options for cubic systems, so 'a' cannot be
+directly determined from the volume of the unit cell.  Note that the
+setup information is handled at the beginning of the run (during the
+initialization in 'siesta_init'.
+
+A message is printed to warn the user about possible inconsistencies
+if the unit-cell changes by the end of the run. In any case, the
+practice of computing bands or wavefunctions at the end of a
+geometry-changing run should be discouraged.
+
+added:
+  Src/get_kpoints_scale.f90
+modified:
+  Src/Makefile
+  Src/bands.F
+  Src/writewave.F
+	
+-----------------------------------------------------------------------
 2016-05-02                                                    trunk-499
 Allowed neglecting KB projectors with LDA+U
 
