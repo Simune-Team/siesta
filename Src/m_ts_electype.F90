@@ -74,8 +74,8 @@ module m_ts_electype
      integer :: na_used = 0
      ! orbitals used
      integer :: no_used = 0
-     ! repetitions
-     integer :: Rep(3) = 1
+     ! Bloch expansions (repetitions)
+     integer :: Bloch(3) = 1
      ! Pre-expand before saving Gf (we default to all)
      ! In this way will the user 
      integer :: pre_expand = 2
@@ -216,6 +216,8 @@ contains
   end function fdf_nElec
 
   function fdf_Elec(prefix,slabel,this,N_mu,mus,idx_a,name_prefix) result(found)
+    use parallel, only : IONode
+
     use fdf
     use intrinsic_missing, only: VNORM
     use m_os, only : file_exist
@@ -229,7 +231,7 @@ contains
     integer, intent(in), optional :: idx_a
     character(len=*), intent(in), optional :: name_prefix
 
-    logical :: found
+    logical :: found, mix_bloch, bloch_rep
 
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
@@ -252,18 +254,26 @@ contains
        this%HSfile = trim(fdf_get(name,''))
        info(1) = .true.
     end if
-    name = trim(bName)//'.Rep.A1'
-    if ( fdf_defined(trim(name)) ) this%Rep(1) = fdf_get(name,1)
-    name = trim(bName)//'.Rep.A2'
-    if ( fdf_defined(trim(name)) ) this%Rep(2) = fdf_get(name,1)
-    name = trim(bName)//'.Rep.A3'
-    if ( fdf_defined(trim(name)) ) this%Rep(3) = fdf_get(name,1)
+
+    do i = 1 , 3
+       write(name,'(2a,i0)') trim(bName),'.Bloch.A',i
+       if ( fdf_defined(trim(name)) ) then
+          this%Bloch(i) = fdf_get(name,i)
+       else
+          write(name,'(2a,i0)') trim(bName),'.Rep.A',i
+          if ( fdf_defined(trim(name)) ) this%Bloch(i) = fdf_get(name,i)
+       end if
+    end do
     name = trim(bName)//'.GF'
     if ( fdf_defined(trim(name)) ) this%GFfile = trim(fdf_get(name,''))
 
     if ( .not. found ) return
 
     cidx_a = 0
+    ! Denote that no bloch expansion coefficients has
+    ! been set.
+    mix_bloch = .false.
+    bloch_rep = .true.
 
     if ( present(idx_a) ) then
        if ( idx_a /= 0 ) then
@@ -452,30 +462,76 @@ contains
                call die('Number of atoms used not supplied')
           this%na_used = fdf_bintegers(pline,1)
 
+       else if ( leqi(ln,'bloch') ) then
+          if ( fdf_bnintegers(pline) < 3 ) &
+               call die('Bloch expansion for all directions are not supplied <A1> <A2> <A3>')
+          this%Bloch(1) = fdf_bintegers(pline,1)
+          this%Bloch(2) = fdf_bintegers(pline,2)
+          this%Bloch(3) = fdf_bintegers(pline,3)
+          mix_bloch = .true.
+          
+       else if ( leqi(ln,'bloch-a') .or. leqi(ln,'bloch-a1') ) then
+          if ( fdf_bnintegers(pline) < 1 ) &
+               call die('Bloch expansion of A1 is not supplied')
+          this%Bloch(1) = fdf_bintegers(pline,1)
+          mix_bloch = .true.
+          
+       else if ( leqi(ln,'bloch-b') .or. leqi(ln,'bloch-a2') ) then
+          if ( fdf_bnintegers(pline) < 1 ) &
+               call die('Bloch expansion of A2 is not supplied')
+          this%Bloch(2) = fdf_bintegers(pline,1)
+          mix_bloch = .true.
+          
+       else if ( leqi(ln,'bloch-c') .or. leqi(ln,'bloch-a3') ) then
+          if ( fdf_bnintegers(pline) < 1 ) &
+               call die('Bloch expansion of A3 is not supplied')
+          this%Bloch(3) = fdf_bintegers(pline,1)
+          mix_bloch = .true.
+
        else if ( leqi(ln,'replicate-a') .or. leqi(ln,'rep-a') .or. &
             leqi(ln,'replicate-a1') .or. leqi(ln,'rep-a1') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
-               call die('Repetition A1 is not supplied')
-          this%Rep(1) = fdf_bintegers(pline,1)
+               call die('Bloch expansion of A1 is not supplied')
+          this%Bloch(1) = fdf_bintegers(pline,1)
+          if ( mix_bloch ) then
+             call die('A "Bloch" keyword was found previously. &
+                  &No mixing of rep/Bloch may be performed.')
+          end if
+          bloch_rep = .true.
 
        else if ( leqi(ln,'replicate-b') .or. leqi(ln,'rep-b') .or. &
             leqi(ln,'replicate-a2') .or. leqi(ln,'rep-a2') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
-               call die('Repetition A2 is not supplied')
-          this%Rep(2) = fdf_bintegers(pline,1)
+               call die('Bloch expansion of A2 is not supplied')
+          this%Bloch(2) = fdf_bintegers(pline,1)
+          if ( mix_bloch ) then
+             call die('A "Bloch" keyword was found previously. &
+                  &No mixing of rep/Bloch may be performed.')
+          end if
+          bloch_rep = .true.
 
        else if ( leqi(ln,'replicate-c') .or. leqi(ln,'rep-c') .or. &
             leqi(ln,'replicate-a3') .or. leqi(ln,'rep-a3') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
-               call die('Repetition A3 is not supplied')
-          this%Rep(3) = fdf_bintegers(pline,1)
-
+               call die('Bloch expansion of A3 is not supplied')
+          this%Bloch(3) = fdf_bintegers(pline,1)
+          if ( mix_bloch ) then
+             call die('A "Bloch" keyword was found previously. &
+                  &No mixing of rep/Bloch may be performed.')
+          end if
+          bloch_rep = .true.
+          
        else if ( leqi(ln,'replicate') .or. leqi(ln,'rep') ) then
           if ( fdf_bnintegers(pline) < 3 ) &
-               call die('Repetition for all directions are not supplied <A1> <A2> <A3>')
-          this%Rep(1) = fdf_bintegers(pline,1)
-          this%Rep(2) = fdf_bintegers(pline,2)
-          this%Rep(3) = fdf_bintegers(pline,3)
+               call die('Bloch expansion for all directions are not supplied <A1> <A2> <A3>')
+          this%Bloch(1) = fdf_bintegers(pline,1)
+          this%Bloch(2) = fdf_bintegers(pline,2)
+          this%Bloch(3) = fdf_bintegers(pline,3)
+          if ( mix_bloch ) then
+             call die('A "Bloch" keyword was found previously. &
+                  &No mixing of rep/Bloch may be performed.')
+          end if
+          bloch_rep = .true.
 
 #ifdef TBTRANS
        else if ( leqi(ln,'tbt.out-of-core') .or. &
@@ -544,8 +600,9 @@ contains
 
     end do
     
-    if ( any(this%Rep(:) < 1) ) &
-         call die("Repetition in "//trim(name)//" electrode must be >= 1.")
+    if ( any(this%Bloch(:) < 1) ) then
+       call die("Bloch expansion in "//trim(name)//" electrode must be >= 1.")
+    end if
 
     if ( .not. all(info(1:4)) ) then
        write(*,*)'You need to supply at least:'
@@ -641,9 +698,9 @@ contains
     ! We deallocate xa and lasto as they are not needed
     deallocate(this%xa,this%lasto)
 
-    ! Check that the repetition is not in the transport-direction
-    if ( this%Rep(this%t_dir) /= 1 ) then
-       call die('Repetition in the transport direction &
+    ! Check that the Bloch expansion is not in the transport-direction
+    if ( this%Bloch(this%t_dir) /= 1 ) then
+       call die('Bloch expansion in the transport direction &
             &is not allowed.')
     end if
 
@@ -681,6 +738,15 @@ contains
 #else
        this%DEfile = this%HSfile(1:i-4)//'TSDE'
 #endif
+    end if
+
+    ! Print out the error if using the repetition keyword
+    if ( IONode .and. bloch_rep ) then
+       write(*,'(/a)')'DEPRECATION WARNING:'
+       write(*,'(5(a,/))')'Electrode Bloch expansion keyword in electrode '&
+            //trim(this%name)//':', &
+            '  replicate','has been superseeded by:', &
+            '  bloch', 'The replicate keyword may be ignored in future versions.'
     end if
 
   end function fdf_Elec
@@ -883,11 +949,11 @@ contains
     iaa = this%idx_a
     do ia = 1 , this%na_used
        
-       do k = 1 , this%Rep(3)
+       do k = 1 , this%Bloch(3)
        idir(3) = k - 1
-       do j = 1 , this%Rep(2)
+       do j = 1 , this%Bloch(2)
        idir(2) = j - 1
-       do i = 1 , this%Rep(1)
+       do i = 1 , this%Bloch(1)
           idir(1) = i - 1
 
           ! Calculate repetition vector
@@ -943,9 +1009,9 @@ contains
        
        write(*,'(t3,3a20)') 'X (Ang)','Y (Ang)','Z (Ang)'
        do ia = 1 , this%na_used
-          do k = 0 , this%Rep(3)-1
-          do j = 0 , this%Rep(2)-1
-          do i = 0 , this%Rep(1)-1
+          do k = 0 , this%Bloch(3)-1
+          do j = 0 , this%Bloch(2)-1
+          do i = 0 , this%Bloch(1)-1
              write(*,'(t2,3(tr1,f20.10))') &
                   (this_xa(1,ia)+xa_o(1)+sum(cell(1,:)*(/i,j,k/)))/Ang, &
                   (this_xa(2,ia)+xa_o(2)+sum(cell(2,:)*(/i,j,k/)))/Ang, &
@@ -960,9 +1026,9 @@ contains
     iaa = this%idx_a
     er = .false.
     do ia = 1 , this%na_used
-       do k = 1 , this%Rep(3)
-       do j = 1 , this%Rep(2)
-       do i = 1 , this%Rep(1)
+       do k = 1 , this%Bloch(3)
+       do j = 1 , this%Bloch(2)
+       do i = 1 , this%Bloch(1)
 
           ! Check number of orbitals for this electrode
           ! atom
@@ -985,9 +1051,9 @@ contains
        write(*,'(t3,3a20)') "ia system","n_orb_el","n_orb_sys"
        iaa = this%idx_a
        do ia = 1 , this%na_used
-          do k = 1 , this%Rep(3)
-          do j = 1 , this%Rep(2)
-          do i = 1 , this%Rep(1)
+          do k = 1 , this%Bloch(3)
+          do j = 1 , this%Bloch(2)
+          do i = 1 , this%Bloch(1)
                 
              ! Check number of orbitals for this electrode
              ! atom
@@ -1028,10 +1094,10 @@ contains
        end if
 
        ! If the system is not a Gamma calculation, then the file must
-       ! not be either (the repetition will only increase the number of
+       ! not be either (the Bloch expansion will only increase the number of
        ! k-points, hence the above)
        do j = 1 , 3
-          k = this%Rep(j)
+          k = this%Bloch(j)
           ! The displacements are not allowed non-equivalent.
           er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
           if ( j == this%t_dir ) cycle
@@ -1058,7 +1124,7 @@ contains
           end do
           write(*,'(a)') 'Electrode file k-grid should be:'
           do j = 1 , 3
-             this_kcell(:,j) = kcell(:,pvt(j)) * this%Rep(j)
+             this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch(j)
              write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(pvt(j))
           end do
           
@@ -1121,7 +1187,7 @@ contains
   elemental function TotUsedAtoms(this) result(val)
     type(Elec), intent(in) :: this
     integer :: val
-    val = this%na_used * product(this%Rep)
+    val = this%na_used * product(this%Bloch)
   end function TotUsedAtoms
 
   pure function q_exp_all(this,i,j,k) result(q)
@@ -1129,15 +1195,17 @@ contains
     integer, intent(in) :: i,j,k
     real(dp) :: q(3)
     
-    ! TODO, the current implementation assumes k-symmetry!
-    ! Hence, using repetition with non-symmetry will produce
+    ! TODO, the current implementation assumes k-symmetry
+    ! of the electrode electronic structure.
+    ! Using Bloch expansion with non-symmetry will, likely, produce
     ! wrong results.
     ! Luckily this is not a problem currently.
     ! Perhaps one should consider this in tbtrans
 
-    q(1) = 1._dp*(i-1) / real(this%Rep(1),dp)
-    q(2) = 1._dp*(j-1) / real(this%Rep(2),dp)
-    q(3) = 1._dp*(k-1) / real(this%Rep(3),dp)
+    q(1) = 1._dp*(i-1) / real(this%Bloch(1),dp)
+    q(2) = 1._dp*(j-1) / real(this%Bloch(2),dp)
+    q(3) = 1._dp*(k-1) / real(this%Bloch(3),dp)
+    
   end function q_exp_all
 
   pure function q_exp(this,idx) result(q)
@@ -1145,9 +1213,9 @@ contains
     integer, intent(in) :: idx
     real(dp) :: q(3)
     integer :: i,j,k,ii
-    i =     this%Rep(1)
-    j = i * this%Rep(2)
-    k = j * this%Rep(3)
+    i =     this%Bloch(1)
+    j = i * this%Bloch(2)
+    k = j * this%Bloch(3)
     if ( idx <= i ) then
        q = q_exp_all(this,idx,1,1)
     else if ( idx <= j ) then
@@ -1196,10 +1264,10 @@ contains
        
        ! Convert system-unit-cell kpoint to reciprocal units
        call kpoint_convert(cell,k1,k2,1)
-       ! Scale with repetition
-       tmp(1) = k2(this%pvt(1)) / this%Rep(1)
-       tmp(2) = k2(this%pvt(2)) / this%Rep(2)
-       tmp(3) = k2(this%pvt(3)) / this%Rep(3)
+       ! Scale with Bloch expansion
+       tmp(1) = k2(this%pvt(1)) / this%Bloch(1)
+       tmp(2) = k2(this%pvt(2)) / this%Bloch(2)
+       tmp(3) = k2(this%pvt(3)) / this%Bloch(3)
        ! Remove semi-infinite direction
        tmp(this%t_dir) = 0._dp
 
@@ -1215,10 +1283,10 @@ contains
        ! Convert from electrode to device
        ! Convert system-unit-cell kpoint to reciprocal units
        call kpoint_convert(this%cell,k1,k2,1)
-       ! Scale with repetition
-       tmp(this%pvt(1)) = k2(1) * this%Rep(1)
-       tmp(this%pvt(2)) = k2(2) * this%Rep(2)
-       tmp(this%pvt(3)) = k2(3) * this%Rep(3)
+       ! Scale with Bloch expansion
+       tmp(this%pvt(1)) = k2(1) * this%Bloch(1)
+       tmp(this%pvt(2)) = k2(2) * this%Bloch(2)
+       tmp(this%pvt(3)) = k2(3) * this%Bloch(3)
 
        if ( iop == -1 ) then
           ! Convert back to 1 / Bohr
@@ -1234,7 +1302,7 @@ contains
   elemental function TotUsedOrbs(this) result(val)
     type(Elec), intent(in) :: this
     integer :: val
-    val = this%no_used * product(this%Rep)
+    val = this%no_used * product(this%Bloch)
   end function TotUsedOrbs
 
   elemental function OrbInElec(this,io) result(in)
@@ -1721,9 +1789,9 @@ contains
     
     iaa = this%idx_a
     do ia = 1 , this%na_used
-       do k = 0 , this%Rep(3) - 1
-       do j = 0 , this%Rep(2) - 1
-       do i = 0 , this%Rep(1) - 1
+       do k = 0 , this%Bloch(3) - 1
+       do j = 0 , this%Bloch(2) - 1
+       do i = 0 , this%Bloch(1) - 1
           tmp(1) = this_xa(1,ia)-this_xa_o(1)+sum(ucell(1,:)*(/i,j,k/))
           tmp(2) = this_xa(2,ia)-this_xa_o(2)+sum(ucell(2,:)*(/i,j,k/))
           tmp(3) = this_xa(3,ia)-this_xa_o(3)+sum(ucell(3,:)*(/i,j,k/))
@@ -1746,9 +1814,9 @@ contains
 
     iaa = this%idx_a
     do ia = 1 , this%na_used
-       do k = 0 , this%Rep(3) - 1
-       do j = 0 , this%Rep(2) - 1
-       do i = 0 , this%Rep(1) - 1
+       do k = 0 , this%Bloch(3) - 1
+       do j = 0 , this%Bloch(2) - 1
+       do i = 0 , this%Bloch(1) - 1
           tmp(1) = this_xa(1,ia)-this_xa_o(1)+sum(ucell(1,:)*(/i,j,k/))
           tmp(2) = this_xa(2,ia)-this_xa_o(2)+sum(ucell(2,:)*(/i,j,k/))
           tmp(3) = this_xa(3,ia)-this_xa_o(3)+sum(ucell(3,:)*(/i,j,k/))
@@ -1782,6 +1850,7 @@ contains
     type(dSpData2D) :: f_DM_2D, f_EDM_2D
     real(dp), pointer, contiguous :: DM(:,:), EDM(:,:)
     real(dp) :: tmp, Ef
+    integer, parameter :: One3(3) = (/1,1,1/)
     integer :: i
     logical :: found, alloc(3), is_TSDE
 
@@ -1836,7 +1905,7 @@ contains
 
     call expand_spd2spd_2D(i,this%na_used, &
          this%na_u,this%lasto,this%xa,f_DM_2D,&
-         this%cell, (/1,1,1/), this%Rep, &
+         this%cell, One3, this%Bloch, &
          product(this%nsc), this%isc_off, &
          na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, &
          print = .true., allowed_a = allowed)
@@ -1844,7 +1913,7 @@ contains
     if ( is_TSDE ) then
        call expand_spd2spd_2D(i,this%na_used, &
             this%na_u,this%lasto,this%xa,f_EDM_2D, &
-            this%cell, (/1,1,1/), this%Rep, &
+            this%cell, One3, this%Bloch, &
             product(this%nsc), this%isc_off, &
             na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, &
             allowed_a = allowed)
@@ -1899,7 +1968,7 @@ contains
     end if
     write(*,f10) '  Electrode TSHS file', trim(this%HSfile)
     write(*,f5)  '  # atoms used in electrode', this%na_used
-    write(*,f15) '  Electrode repetition [E1 x E2 x E3]', this%Rep(:)
+    write(*,f15) '  Electrode Bloch expansion [E1 x E2 x E3]', this%Bloch(:)
     write(*,f20) '  Position in geometry', this%idx_a, &
          this%idx_a + TotUsedAtoms(this) - 1
     if ( this%t_dir == 1 ) then
@@ -1918,7 +1987,7 @@ contains
     write(*,f7)  '  Chemical shift', this%mu%mu/eV,'eV'
     write(*,f7)  '  Electronic temperature', this%mu%kT/Kelvin,'K'
     write(*,f1)  '  Bulk values in electrode', this%Bulk
-    if ( product(this%Rep) > 1 .and. this%out_of_core ) then
+    if ( product(this%Bloch) > 1 .and. this%out_of_core ) then
        if ( this%pre_expand == 0 ) then
           chars = 'none'
        else if ( this%pre_expand == 1 ) then

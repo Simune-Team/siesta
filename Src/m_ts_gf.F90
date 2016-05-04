@@ -369,18 +369,18 @@ contains
        iNodeStep = -1
     end if
 
-    ! Initial size of minimal size with q-points
-    read_Size_HS = El%no_used ** 2 * product(El%Rep) ! no_GS * no_GS * nq
+    ! Initial size of minimal size with expansion
+    read_Size_HS = El%no_used ** 2 * product(El%Bloch) ! no_GS * no_GS * nq
     select case ( El%pre_expand )
     case ( 0 )
        ! Nothing is pre-expanded
        read_Size = read_Size_HS
     case ( 1 )
        ! Only the Green function is pre-expanded
-       read_Size = read_Size_HS * product(El%Rep)
+       read_Size = read_Size_HS * product(El%Bloch)
     case ( 2 )
        ! Everything is pre-expanded
-       read_Size = read_Size_HS * product(El%Rep)
+       read_Size = read_Size_HS * product(El%Bloch)
        read_Size_HS = read_Size
     end select
 
@@ -588,10 +588,10 @@ contains
     ! that!
     do i = 1 , N_Elec
 
-       ! Transfer the k-point to the "expanded" supercell
-       kpt(1) = bkpt(Elecs(i)%pvt(1)) / Elecs(i)%Rep(1)
-       kpt(2) = bkpt(Elecs(i)%pvt(2)) / Elecs(i)%Rep(2)
-       kpt(3) = bkpt(Elecs(i)%pvt(3)) / Elecs(i)%Rep(3)
+       ! Transfer the k-point to the expanded supercell
+       kpt(1) = bkpt(Elecs(i)%pvt(1)) / Elecs(i)%Bloch(1)
+       kpt(2) = bkpt(Elecs(i)%pvt(2)) / Elecs(i)%Bloch(2)
+       kpt(3) = bkpt(Elecs(i)%pvt(3)) / Elecs(i)%Bloch(3)
 
        ! Ensure zero in the semi-infinite direction
        kpt(Elecs(i)%t_dir) = 0._dp
@@ -734,10 +734,10 @@ contains
           errorGF = .true.
        end if
 
-       ! Check # of q-points
-       if ( any(El%Rep /= fReps) ) then
+       ! Check # of Bloch k-points
+       if ( any(El%Bloch /= fReps) ) then
           write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-          write(*,*) 'read_Green: ERROR: unexpected no. q-points'
+          write(*,*) 'read_Green: ERROR: unexpected no. Bloch expansion k-points'
           errorGF = .true.
        end if
 
@@ -770,10 +770,10 @@ contains
           errorGF = .true.
        end if
 
-       if ( product(El%Rep) > 1 ) then
+       if ( product(El%Bloch) > 1 ) then
           if ( pre_expand /= El%pre_expand ) then
              write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-             write(*,*) 'read_Green: ERROR: pre-expansion not consistent'
+             write(*,*) 'read_Green: ERROR: Bloch pre-expansion not consistent'
              errorGF = .true.
           end if
        end if
@@ -952,15 +952,15 @@ contains
     end if
     deallocate(lasto)
 
-    if ( any(El%Rep(:)/=fReps(:)) ) then
+    if ( any(El%Bloch(:)/=fReps(:)) ) then
        write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Number of repetitions is wrong!"
-       write(*,'(2(a,i3))') "Found RepA1: ",fReps(1),", expected: ",El%Rep(1)
-       write(*,'(2(a,i3))') "Found RepA2: ",fReps(2),", expected: ",El%Rep(2)
-       write(*,'(2(a,i3))') "Found RepA3: ",fReps(3),", expected: ",El%Rep(3)
+       write(*,*)"Number of Bloch expansions is wrong!"
+       write(*,'(2(a,i3))') "Found Bloch-A1: ",fReps(1),", expected: ",El%Bloch(1)
+       write(*,'(2(a,i3))') "Found Bloch-A2: ",fReps(2),", expected: ",El%Bloch(2)
+       write(*,'(2(a,i3))') "Found Bloch-A3: ",fReps(3),", expected: ",El%Bloch(3)
        localErrorGf = .true.
     end if
-    if ( product(El%Rep) > 1 ) then
+    if ( product(El%Bloch) > 1 ) then
        if ( pre_expand /= El%pre_expand ) then
           write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*)"Expecting a pre-expanded self-energy!"

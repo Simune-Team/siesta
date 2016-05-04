@@ -1,4 +1,38 @@
 ----------------------------------------------------
+May 4, 2016 -- Nick Papior             trunk-499---ts-scf-670
+Changed Rep keyword to Bloch
+
+- The repetition has changed keywords to
+  Bloch.
+  This reflects better the physics as we are using
+  Bloch's expansion rules for faster calculating the
+  self-energy etc.
+
+- Also the internal variable has changed name from Rep
+  to Bloch
+
+- tselecs.sh reflects the above change.
+
+  Also an additional flag: -T/--tbtrans
+  may be used to generate input for tbtrans.
+  This omits the contour segments and is thus
+  more appropriate.
+
+- ts2ts reflects the above change, it only returns
+  keywords using the "bloch" keyword.
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+  Util/TS/ts2ts/ts2ts.f90
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 May 2, 2016 -- Nick Papior             trunk-499---ts-scf-669
 Merged trunk 499
 

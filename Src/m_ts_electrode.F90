@@ -789,7 +789,7 @@ contains
 
     if ( .not. IONode ) return
 
-    nq = product(El%Rep)
+    nq = product(El%Bloch)
     pre_expand = El%pre_expand > 0 .and. nq > 1
 
     write(*,'(/,2a)') 'Calculating all surface Green functions for: ',trim(name(El))
@@ -804,19 +804,20 @@ contains
 
     write(*,'(1x,a,i0)') 'Total self-energy calculations: ',nq*NE*nkpt
 
-    ! We show them in units of Bohr**-1
+    ! We show them in units of reciprocal lattice vectors
     do i = 1 , 3
-       if ( El%Rep(i) > 1 ) then
-          write(*,'(3(a,i0),a)') ' q_',i,'-points for expanding electrode [b_',i,'] (w=1/',nq,'):'
-          if ( El%Rep(i) <= 3 ) then
+       if ( El%Bloch(i) > 1 ) then
+          write(*,'(3(a,i0),a)') ' Bloch expansion k-points in A_',i, &
+               ' direction [b_',i,'] (w=1/',nq,'):'
+          if ( El%Bloch(i) <= 3 ) then
              write(*,'(5x)',advance='no')
-             do j = 1 , El%Rep(i) - 1
-                write(*,'(2(i0,a))',advance='no') j-1,'/',El%Rep(i),', '
+             do j = 1 , El%Bloch(i) - 1
+                write(*,'(2(i0,a))',advance='no') j-1,'/',El%Bloch(i),', '
              end do
-             write(*,'(i0,a,i0)') El%Rep(i)-1,'/',El%Rep(i)
+             write(*,'(i0,a,i0)') El%Bloch(i)-1,'/',El%Bloch(i)
           else
-             write(*,'(5x,6(i0,a))') 0,'/',El%Rep(i),', ',1,'/',El%Rep(i),', ... , ', &
-                  El%Rep(i)-1,'/',El%Rep(i)
+             write(*,'(5x,6(i0,a))') 0,'/',El%Bloch(i),', ',1,'/',El%Bloch(i),', ... , ', &
+                  El%Bloch(i)-1,'/',El%Bloch(i)
           end if
        end if
     end do
@@ -978,8 +979,8 @@ contains
     nS     = nuo_E ** 2
     nuou_E = El%no_used
     nuS    = nuou_E ** 2
-    ! create expansion q-points (weight of q-points)
-    nq     = product(El%Rep)
+    ! create expansion k-points (weight of q-points)
+    nq     = product(El%Bloch)
     wq     = 1._dp / real(nq,dp)
     ! We also need to invert to get the contribution in the
     reduce_size = nuo_E /= nuou_E
@@ -1424,7 +1425,7 @@ contains
       write(uGF) El%na_u, El%no_u
       write(uGF) El%na_used, El%no_used
       write(uGF) El%xa_used, El%lasto_used
-      write(uGF) El%Rep(:), El%pre_expand
+      write(uGF) El%Bloch(:), El%pre_expand
       write(uGF) El%mu%mu
       
       ! Write out explicit information about this content
@@ -1787,8 +1788,8 @@ contains
     nuS    = nuou_E ** 2
     ! Whether we can store directly in the GS array
     same_GS = nS == nuS
-    ! create expansion q-points (weight of q-points)
-    nq     = product(El%Rep)
+    ! create expansion k-points
+    nq     = product(El%Bloch)
     ! We also need to invert to get the contribution in the
     reduce_size = nuo_E /= nuou_E
     nuouT_E = TotUsedOrbs(El)

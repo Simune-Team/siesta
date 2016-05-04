@@ -47,7 +47,7 @@ contains
 
     nou = El%no_used
     no  = TotUsedOrbs(El)
-    nq  = product(El%Rep)
+    nq  = product(El%Bloch)
     if ( El%pre_expand > 0 .and. nq > 1 ) then
        nou = no
        nq = 1
@@ -414,9 +414,9 @@ contains
 #endif
 
        ! In case the pre-expansion is not done on H, S
-       if ( El%pre_expand == 1 .and. product(El%Rep) > 1 ) then
+       if ( El%pre_expand == 1 .and. product(El%Bloch) > 1 ) then
 
-          iq = product(El%Rep)
+          iq = product(El%Bloch)
 
           ! Note that this is because the interface for H and S
           iow = El%no_used
@@ -467,20 +467,20 @@ contains
 !$OMP single
        iow = 0
        do iau = 1 , na_u
-        do ia3 = 1 , El%Rep(3)
-        do ia2 = 1 , El%Rep(2)
-        do ia1 = 1 , El%Rep(1)
+        do ia3 = 1 , El%Bloch(3)
+        do ia2 = 1 , El%Bloch(2)
+        do ia1 = 1 , El%Bloch(1)
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
 !$OMP task firstprivate(iow,iuo,ia1,ia2,ia3)
            p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
            jow = 0
            do jau = 1 , na_u
-            do ja3 = 1 , El%Rep(3)
+            do ja3 = 1 , El%Bloch(3)
             p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
-            do ja2 = 1 , El%Rep(2)
+            do ja2 = 1 , El%Bloch(2)
             p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
-            do ja1 = 1 , El%Rep(1)
+            do ja1 = 1 , El%Bloch(1)
               ! This takes one additional phase per iteration
               p(1) = p(1)*qPi
               pZ = p(1) * ZEnergy
@@ -514,20 +514,20 @@ contains
 
         iow = 0
         do iau = 1 , na_u
-         do ia3 = 1 , El%Rep(3)
-         do ia2 = 1 , El%Rep(2)
-         do ia1 = 1 , El%Rep(1)
+         do ia3 = 1 , El%Bloch(3)
+         do ia2 = 1 , El%Bloch(2)
+         do ia1 = 1 , El%Bloch(1)
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
 !$OMP task firstprivate(iow,iuo,ia1,ia2,ia3)
             p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
             jow = 0
             do jau = 1 , na_u
-             do ja3 = 1 , El%Rep(3)
+             do ja3 = 1 , El%Bloch(3)
              p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
-             do ja2 = 1 , El%Rep(2)
+             do ja2 = 1 , El%Bloch(2)
              p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
-             do ja1 = 1 , El%Rep(1)
+             do ja1 = 1 , El%Bloch(1)
                p(1) = p(1)*qPi
                pZ = p(1) * ZEnergy
                do juo = 1 + lasto(jau-1) , lasto(jau)
@@ -609,20 +609,20 @@ contains
 !$OMP single
        iow = 0
        do iau = 1 , na_u
-        do ia3 = 1 , El%Rep(3)
-        do ia2 = 1 , El%Rep(2)
-        do ia1 = 1 , El%Rep(1)
+        do ia3 = 1 , El%Bloch(3)
+        do ia2 = 1 , El%Bloch(2)
+        do ia1 = 1 , El%Bloch(1)
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
 !$OMP task firstprivate(iuo,iow,ia1,ia2,ia3)
            p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
            jow = 0
            do jau = 1 , na_u
-            do ja3 = 1 , El%Rep(3)
+            do ja3 = 1 , El%Bloch(3)
             p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
-            do ja2 = 1 , El%Rep(2)
+            do ja2 = 1 , El%Bloch(2)
             p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
-            do ja1 = 1 , El%Rep(1)
+            do ja1 = 1 , El%Bloch(1)
              p(1) = p(1)*qPi
              do juo = 1 + lasto(jau-1) , lasto(jau)
                jow = jow + 1
@@ -652,20 +652,20 @@ contains
 
         iow = 0
         do iau = 1 , na_u
-         do ia3 = 1 , El%Rep(3)
-         do ia2 = 1 , El%Rep(2)
-         do ia1 = 1 , El%Rep(1)
+         do ia3 = 1 , El%Bloch(3)
+         do ia2 = 1 , El%Bloch(2)
+         do ia1 = 1 , El%Bloch(1)
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
 !$OMP task firstprivate(iuo,iow,ia1,ia2,ia3)
             p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
             jow = 0
             do jau = 1 , na_u
-             do ja3 = 1 , El%Rep(3)
+             do ja3 = 1 , El%Bloch(3)
              p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
-             do ja2 = 1 , El%Rep(2)
+             do ja2 = 1 , El%Bloch(2)
              p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
-             do ja1 = 1 , El%Rep(1)
+             do ja1 = 1 , El%Bloch(1)
               p(1) = p(1)*qPi
               do juo = 1 + lasto(jau-1) , lasto(jau)
                 jow = jow + 1

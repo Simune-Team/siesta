@@ -318,7 +318,7 @@ contains
              io = io + no
           end if
           pad_LHS = max(pad_LHS,io)
-       else if ( sum(Elecs(iEl)%Rep) > 3 ) then
+       else if ( sum(Elecs(iEl)%Bloch) > 3 ) then
           ! ensure enough space for the expansion of the
           ! self-energies, etc.
           ! TODO when bulk vs. non-bulk the below can

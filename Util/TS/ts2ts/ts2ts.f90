@@ -428,10 +428,10 @@ contains
     end if
     ! Only print out repetitions if larger than one
     if ( RepA1 > 1 ) then
-       write(*,'(tr2,a,i0)') 'rep-a1 ', RepA1
+       write(*,'(tr2,a,i0)') 'Bloch-a1 ', RepA1
     end if
     if ( RepA2 > 1 ) then
-       write(*,'(tr2,a,i0)') 'rep-a2 ', RepA2
+       write(*,'(tr2,a,i0)') 'Bloch-a2 ', RepA2
     end if
     call eblock('TS.Elec.'//trim(name))
   end subroutine welec

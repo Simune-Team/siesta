@@ -5,10 +5,21 @@
 
 _this=$(basename $0)
 
+function error {
+    echo "ERROR: something went wrong... Please see the following output:"
+    while [ $# -gt 0 ]; do
+	echo "$1"
+	shift
+    done
+    exit 1
+}
+
+
 # We must require to be able to use the hash-able arrays
 # This allows us to reuse the same input twice more easily
 help=0
 def=0
+tbt=0
 # Options about what to print
 print_mu=0
 print_el=0
@@ -25,21 +36,35 @@ while [ $# -gt 0 ]; do
     case $opt in
 	-def|-orig|-original)
 	    # Will produce output for standard TS
-	    def=2 ; shift ;;
+	    def=2 ; shift
+	    ;;
 	-V|-bias)
-	    volt=$1 ; shift ; shift ;;
+	    volt=$1 ; shift ; shift
+	    ;;
 	-2|-3|-4|-5|-6|-7|-8|-9)
 	    # Will produce output for standard TS
-	    def=${opt:1} ; shift ;;
+	    def=${opt:1} ; shift
+	    ;;
 	-only-el|-only-elec|-only-electrode)
-	    print_el=1 ; shift ;;
+	    print_el=1 ; shift
+	    ;;
 	-only-mu|-only-chem|-only-chemical)
-	    print_mu=1 ; shift ;;
+	    print_mu=1 ; shift
+	    ;;
 	-only-c|-only-contour)
-	    print_c=1 ; shift ;;
+	    print_c=1 ; shift
+	    ;;
+	-T|-tbtrans)
+	    # Prefix with TBT instead of TS
+	    tbt=1 ; shift
+	    ;;
 	-help|-h)
 	    # We need to print help
-	    help=1 ; shift ;;
+	    help=1 ; shift
+	    ;;
+	-*)
+	    error "Unknown option: $opt"
+	    ;;
 	*)
 	    break
     esac
@@ -65,6 +90,9 @@ if [ $help -eq 1 ]; then
     echo "    $_this -only-el > ELECS.fdf"
     echo "    $_this -only-mu > CHEMPOTS.fdf"
     echo "    $_this -only-c  > CONTOURS.fdf"
+    echo ""
+    echo "Only print out tbtrans related options:"
+    echo "    $_this -T|--tbtrans"
     echo ""
     echo "For specifying the contour energy levels you can use these options:"
     printf "$fmt" "-Emin <val>" "band bottom energy in eV (-30. eV)"
@@ -92,11 +120,9 @@ if [ $help -eq 1 ]; then
     printf "$fmt" "pos <val>" "the first atom of the electrode in the structure"
     printf "$fmt" "end-pos <val>" "the last atom of the electrode in the structure"
     printf "$fmt" "used-atoms|ua <val>" "number of atoms used in the electrode (all)"
-    printf "$fmt" "rep-a[1-3] <val>" "the repetition in the equivalent direction (1)"
+    printf "$fmt" "bloch-a[1-3] <val>" "the Bloch expansion in the equivalent direction (1)"
     printf "$fmt" "bulk <T|F>" "whether the electrode is a bulk electrode (true)"
     printf "$fmt" "gf <file>" "name of the Greens function file (TSGF[el<idx>-name])"
-    printf "$fmt" "gf-title <name>" "title of the Greens function"
-    printf "$fmt" "cross-terms|ct none|cross-terms|all" "whether to update, no electrode regions, the cross-terms, or everything"
     echo ""
     echo "A shorthand notation for supplying the options is:"
     echo "    -el<idx> Y=<val>,Z=<val> where Y,Z is one of X above"
@@ -105,6 +131,14 @@ if [ $help -eq 1 ]; then
     echo "To generate 3 electrodes and 2 chemical potentials you can do this:"
     echo "    $_this -2 -el3 name=Top,mu=Left,inf-dir=+a2,end-pos=-1"
     exit 1
+fi
+
+prefix=TS
+# If we are doing tbtrans output
+# we should not print the contour information
+if [ $tbt -eq 1 ]; then
+    prefix=TBT
+    print_c=0
 fi
 
 # Add an option to the option array, enables easy creations
@@ -282,15 +316,6 @@ expand_key mu
 expand_key el
 reduce
 
-function error {
-    echo "ERROR: something went wrong... Please see the following output:"
-    while [ $# -gt 0 ]; do
-	echo "$1"
-	shift
-    done
-    exit 1
-}
-
 
 function count {
     local nm=$1 ; shift
@@ -378,12 +403,12 @@ function mu_e_correct {
 if [ $print_mu -eq 1 ]; then
 
 # Print out chemical potential block:
-echo "TS.Voltage $volt eV"
-echo "%block TS.ChemPots"
+echo "$prefix.Voltage $volt eV"
+echo "%block $prefix.ChemPots"
 for mu in ${_mu_names[@]} ; do
     echo "  $mu"
 done
-echo "%endblock TS.ChemPots"
+echo "%endblock $prefix.ChemPots"
 echo ""
 
 
@@ -398,14 +423,16 @@ function create_mu {
 	error "Chemical potential: $mu" "Has not received a chemical potential value (-mu$mu-mu)"
     fi
     chem=$(mu_e_correct $chem)
-    echo "%block TS.ChemPot.$name"
+    echo "%block $prefix.ChemPot.$name"
     echo "  mu $chem"
-    echo "  contour.eq"
-    echo "    begin"
-    echo "      C-$name"
-    echo "      T-$name"
-    echo "    end"
-    echo "%endblock TS.ChemPot.$name"
+    if [ $tbt -eq 0 ]; then
+	echo "  contour.eq"
+	echo "    begin"
+	echo "      C-$name"
+	echo "      T-$name"
+	echo "    end"
+    fi
+    echo "%endblock $prefix.ChemPot.$name"
 }
 for i in `seq 1 $_mus` ; do
     create_mu $i
@@ -443,10 +470,9 @@ for i in `seq 1 $_mus` ; do
 done
 
 echo ""
-if [ $print_c -eq 1 ]; then
-    echo "MSG: You may need to correct the TS.Contours.nEq for signs of bias" >&2
-    echo "MSG: The energies must be in increasing order (you may use |V|/2 to designate absolute values)" >&2
-fi
+echo "MSG: You may need to correct the TS.Contours.nEq for signs of bias" >&2
+echo "MSG: The energies must be in increasing order (you may use |V|/2 to designate absolute values)" >&2
+
 # Create the non-equilbrium contour
 echo "%block TS.Contours.nEq"
 for i in `seq 1 $_mus` ; do
@@ -468,7 +494,7 @@ done
 
 
 # Create the contours
-if [ $print_c -eq 1 ] && [ $_mus -gt 2 ]; then
+if [ $_mus -gt 2 ]; then
     echo "MSG: You can do with a single contour line in the bias window" >&2
     echo "MSG: Use the lowest bias to the highest bias." >&2
     echo "MSG: Here we supply as many different parts as there are chemical potentials" >&2
@@ -537,11 +563,11 @@ if [ $print_el -eq 1 ]; then
 
 # Print out electrodes block:
 echo ""
-echo "%block TS.Elecs"
+echo "%block $prefix.Elecs"
 for i in `seq 1 $_els` ; do
     echo "  $(get_opt -el$i-name 1)"
 done
-echo "%endblock TS.Elecs"
+echo "%endblock $prefix.Elecs"
 echo ""
 
 # Get whether or not we should print everything    
@@ -566,7 +592,7 @@ function create_el {
 	fi
     done
     [ $found -ne 1 ] && error "Electrode: $el could not be associated with a matching chemical potential: $chem"
-    echo "%block TS.Elec.$name"
+    echo "%block $prefix.Elec.$name"
     local tshs=$(get_opt -el$el-tshs 1)
     
     if [ ${#tshs} -ne 0 ]; then
@@ -595,14 +621,12 @@ function create_el {
 	done
     }
     print_if used-atoms:ua "used-atoms"
-    print_if rep-a:rep-a1 "rep-a1"
-    print_if rep-b:rep-a2 "rep-a2"
-    print_if rep-c:rep-a3 "rep-a3"
+    print_if bloch-a:bloch-a1 "bloch-a1"
+    print_if bloch-b:bloch-a2 "bloch-a2"
+    print_if bloch-c:bloch-a3 "bloch-a3"
     print_if bulk "bulk"
     print_if gf "GF"
-    print_if gf-title "GF-title"
-    print_if cross-terms:ct "DM-update"
-    echo "%endblock TS.Elec.$name"
+    echo "%endblock $prefix.Elec.$name"
 }
 for i in `seq 1 $_els` ; do
     create_el $i
@@ -614,5 +638,4 @@ fi
 # Recreate the options
 opts=( "${old_opts[@]}" )
 _N=${#opts[@]}
-
 
