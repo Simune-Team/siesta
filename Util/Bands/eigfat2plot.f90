@@ -51,6 +51,7 @@
      case ('?',':')
         write(0,*) "Invalid option: ", opt_arg(1:1)
         write(0,*) "Usage: eigfat2plot [ -b -B ] <EIGFAT file>"
+        write(0,*) "       -b and -B relative to eigfat file! "
         STOP
      end select
   enddo
@@ -59,6 +60,7 @@
   nlabels = nargs - n_opts + 1
   if (nlabels /= 1)  then
      write(0,*) "Usage: eigfat2plot [ -b -B ] <EIGFAT file>"
+     write(0,*) "       -b and -B relative to eigfat file! "
      STOP
   endif
 
@@ -117,10 +119,13 @@
 
       
       do is = 1, nspin
-        do ib = min_band, max_band
-           write(6,"(3f14.6)") ( k(ik), eig(ib,is,ik), fat(ib,is,ik), ik = 1, nk)
-           write(6,"(/)")
-        enddo
+         do ib = min_band, max_band
+            do ik = 1 , nk
+               ! write spin variable to differentiate
+               write(6,"(3f14.6,i3)") k(ik), eig(ib,is,ik), fat(ib,is,ik), is
+            enddo
+            write(6,"(/)")
+         enddo
       enddo
 
       deallocate(eig,fat,pk,k)

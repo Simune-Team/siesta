@@ -6,6 +6,23 @@
 ** CHANGES ALONG rel-4.0 branch
 
 -----------------------------------------------------------------------
+2016-05-05                                                     4.0b-493
+Fix in 'fat' utility. Write spin info in 'eigfat2plot'
+
+The 'fat' program in Util/COOP computes the projections of specific
+band states onto sets of orbitals. Due to an error, the program did
+not function correctly when a subset of upper bands was selected with
+the '-b' and '-B' flags.
+
+The 'eigfat2plot' utility in Util/Bands now prints an extra field giving
+the spin of the state.
+
+modified:
+  Util/Bands/eigfat2plot.f90
+  Util/COOP/fat.f90
+  Util/COOP/main_vars.f90
+
+-----------------------------------------------------------------------
 2016-05-03                                                     4.0b-492
 Fix for handling of geometry info in bands/wfns calculation
 
