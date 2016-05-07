@@ -46,7 +46,7 @@ module main_vars
   character :: sflnm*50, taux*100, wrd(nlwmx)*20, cx*20
   integer :: mpr_u=50, wk_u=51
   integer :: out_u=70, wfs_u=72, hs_u=73
-  integer :: stt_u=60, tab_u=61
+  integer :: stt_u=60, tab_u=61, fat_u=66
   logical   :: wk_x, wfs_x, hs_x, tab_x
 
   ! OUT file
