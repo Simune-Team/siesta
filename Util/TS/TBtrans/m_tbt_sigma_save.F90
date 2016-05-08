@@ -53,23 +53,23 @@ contains
 
 #ifdef NCDF_4
 
-    sigma_save   = fdf_get('TBT.CDF.Sigma.Save',.false.)
+    sigma_save   = fdf_get('TBT.CDF.SelfEnergy.Save',.false.)
     if ( sigma_save ) then
-       sigma_mean_save = fdf_get('TBT.CDF.Sigma.Save.Mean',.false.)
+       sigma_mean_save = fdf_get('TBT.CDF.SelfEnergy.Save.Mean',.false.)
     end if
     cmp_lvl = fdf_get('CDF.Compress',0)
     cmp_lvl = fdf_get('TBT.CDF.Compress',cmp_lvl)
-    cmp_lvl = fdf_get('TBT.CDF.Sigma.Compress',cmp_lvl)
+    cmp_lvl = fdf_get('TBT.CDF.SelfEnergy.Compress',cmp_lvl)
     if ( cmp_lvl < 0 ) cmp_lvl = 0
     if ( cmp_lvl > 9 ) cmp_lvl = 9
 #ifdef NCDF_PARALLEL
-    sigma_parallel = fdf_get('TBT.CDF.Sigma.MPI',.false.)
+    sigma_parallel = fdf_get('TBT.CDF.SelfEnergy.MPI',.false.)
     if ( sigma_parallel ) then
        cmp_lvl = 0
     end if
 #endif
 
-    if ( fdf_get('TBT.Sigma.Only',.false.) ) then
+    if ( fdf_get('TBT.SelfEnergy.Only',.false.) ) then
        save_DATA = save_DATA // ('Sigma-only'.kv.1)
     end if
     
@@ -97,9 +97,9 @@ contains
     write(*,f1)'Only calc down-folded self-energies', &
          ('Sigma-only'.in.save_DATA)
     if ( cmp_lvl > 0 ) then
-       write(*,f12)'Compression level of TBT.Sigma.nc files',cmp_lvl
+       write(*,f12)'Compression level of TBT.SE.nc files',cmp_lvl
     else
-       write(*,f11)'No compression level of TBT.Sigma.nc files'
+       write(*,f11)'No compression level of TBT.SE.nc files'
     end if
     write(*,f1)'k-average down-folded self-energies',sigma_mean_save
 #else
@@ -163,7 +163,7 @@ contains
 
     exist = file_exist(fname, Bcast = .true. )
 
-    call tbt_cdf_precision('Sigma','single',prec_Sigma)
+    call tbt_cdf_precision('SelfEnergy','single',prec_Sigma)
 
     ! in case it already exists...
     if ( exist ) then
@@ -186,7 +186,7 @@ contains
             MPI_Comm_World,MPIerror)
 #endif
        if ( .not. same ) then
-          call die('Dimensions in the TBT.nc file does not conform &
+          call die('Dimensions in the TBT.SE.nc file does not conform &
                &to the current simulation.')
        end if
 
@@ -197,7 +197,7 @@ contains
           if ( .not. exist ) then
              write(*,*) 'Assertion of dimensions in file: '//trim(fname)//' failed.'
 
-             call die('We could not assert the dimensions TBT.Sigma.nc file.')
+             call die('We could not assert the dimensions TBT.SE.nc file.')
           end if
        end do
        call delete(dic)
@@ -237,18 +237,18 @@ contains
           deallocate(r2)
        end if
 
-       call die('Currently the TBT.Sigma.nc file exists, &
+       call die('Currently the TBT.SE.nc file exists, &
             &we do not currently implement a continuation scheme.')
 
        ! We currently overwrite the Sigma-file
        if ( Node == 0 ) then
-          write(*,'(2a)')'tbtrans: Overwriting Sigma file: ',trim(fname)
+          write(*,'(2a)')'tbtrans: Overwriting self-energy file: ',trim(fname)
        end if
 
     else
        
        if ( Node == 0 ) then
-          write(*,'(2a)')'tbtrans: Initializing Sigma file: ',trim(fname)
+          write(*,'(2a)')'tbtrans: Initializing self-energy file: ',trim(fname)
        end if
 
     end if
@@ -279,7 +279,11 @@ contains
        call ncdf_def_dim(ncdf,'na_b',a_Buf%n) ! number of buffer-atoms
     end if
 
+#ifdef TBT_PHONON
+    dic = ('source'.kv.'PHtrans')
+#else
     dic = ('source'.kv.'TBtrans')
+#endif
 
     char = datestring()
     dic = dic//('date'.kv.char(1:10))
@@ -338,7 +342,11 @@ contains
 
     end if
 
-    dic = dic//('info'.kv.'Energy points')//('unit'.kv.'Ry')
+#ifdef TBT_PHONON
+    dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
+#else
+    dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
+#endif
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
          atts = dic)
     call delete(dic)
@@ -385,7 +393,7 @@ contains
        dic = dic//('unit'.kv.'Ry')
        ! Chunking greatly reduces IO cost
        i = Elecs(iEl)%o_inD%n
-       call ncdf_def_var(grp,'Sigma',prec_Sigma, &
+       call ncdf_def_var(grp,'SelfEnergy',prec_Sigma, &
             (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
             atts = dic , chunks = (/i,i,1,1/) )
        call delete(dic)
@@ -424,7 +432,7 @@ contains
     type(hNCDF) :: ncdf, grp
     integer :: iEl, i, iN
 #ifdef MPI
-    complex(dp), pointer :: Sigma(:)
+    complex(dp), pointer, contiguous :: Sigma(:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
@@ -473,7 +481,7 @@ contains
 
        i = Elecs(iEl)%o_inD%n
        if ( nE%iE(Node) > 0 ) then
-          call ncdf_put_var(grp,'Sigma', &
+          call ncdf_put_var(grp,'SelfEnergy', &
                reshape(Elecs(iEl)%Sigma(1:i*i),(/i,i/)), &
                start = (/1,1,nE%iE(Node),ikpt/) )
        end if
@@ -485,7 +493,7 @@ contains
                 if ( nE%iE(iN) <= 0 ) cycle
                 call MPI_Recv(Sigma,i*i,MPI_Double_Complex,iN,iN, &
                      Mpi_comm_world,status,MPIerror)
-                call ncdf_put_var(grp,'Sigma',reshape(Sigma(1:i*i),(/i,i/)), &
+                call ncdf_put_var(grp,'SelfEnergy',reshape(Sigma(1:i*i),(/i,i/)), &
                      start = (/1,1,nE%iE(iN),ikpt/) )
              end do
           else if ( nE%iE(Node) > 0 ) then
@@ -527,7 +535,7 @@ contains
     integer :: NE, nkpt, no_e
     real(dp), allocatable :: rwkpt(:)
     complex(dp), allocatable :: c2(:,:)
-    complex(dp), pointer :: Sigma(:,:)
+    complex(dp), pointer, contiguous :: Sigma(:,:)
 
 #ifdef MPI
     integer :: MPIerror
@@ -592,7 +600,7 @@ contains
           do ikpt = 1 , nkpt
 
              ! Loop over k-points to average
-             call ncdf_get_var(grp,'Sigma',Sigma, &
+             call ncdf_get_var(grp,'SelfEnergy',Sigma, &
                   start=(/1,1,iE,ikpt/) )
              
              if ( ikpt == 1 ) then
@@ -607,7 +615,7 @@ contains
              
           end do
 
-          call ncdf_put_var(grp,'SigmaMean',c2, start=(/1,1,iE/) )
+          call ncdf_put_var(grp,'SelfEnergyMean',c2, start=(/1,1,iE/) )
 
        end do
 
@@ -628,7 +636,7 @@ contains
   subroutine pass2pnt(no,Sigma,new_pnt)
     integer :: no
     complex(dp), target :: Sigma(no,no)
-    complex(dp), pointer :: new_pnt(:,:)
+    complex(dp), pointer, contiguous :: new_pnt(:,:)
     new_pnt => Sigma(:,:)
   end subroutine pass2pnt
 

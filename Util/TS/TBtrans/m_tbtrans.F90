@@ -289,7 +289,7 @@ contains
                nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf, sp_dev, save_DATA )
        end if
        
-       call name_save( ispin, TSHS%nspin,cdf_fname_sigma, end = 'Sigma.nc')
+       call name_save( ispin, TSHS%nspin,cdf_fname_sigma, end = 'SE.nc')
        call init_Sigma_save(cdf_fname_sigma,TSHS,r_oDev,ispin,N_Elec, Elecs, &
             nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf )
 
