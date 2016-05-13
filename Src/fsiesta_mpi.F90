@@ -450,9 +450,9 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 
 ! BEGIN DEBUG: Print coords
   if (myNode==0) then
-    write(6,'(/,2a)'),         'siesta_forces: label = ', trim(label)
-    write(6,'(3a,/,(3f12.6))'),'siesta_forces: cell (',trim(xunit),') =',myCell
-    write(6,'(3a,/,(3f12.6))'),'siesta_forces: xa (',trim(xunit),') =', xa
+    write(6,'(/,2a)')          'siesta_forces: label = ', trim(label)
+    write(6,'(3a,/,(3f12.6))') 'siesta_forces: cell (',trim(xunit),') =',myCell
+    write(6,'(3a,/,(3f12.6))') 'siesta_forces: xa (',trim(xunit),') =', xa
     write(6,*) ' '
   end if
 ! END DEBUG
@@ -473,9 +473,9 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 
 ! BEGIN DEBUG: Print forces
   if (myNode==0) then
-    write(6,'(/,3a,f12.6)'),    'siesta_forces: energy (',trim(eunit),') =', e
-    write(6,'(3a,/,(3f12.6))'), 'siesta_forces: stress (',trim(sunit),') =', s
-    write(6,'(3a,/,(3f12.6))'), 'siesta_forces: forces (',trim(funit),') =', f
+    write(6,'(/,3a,f12.6)')    'siesta_forces: energy (',trim(eunit),') =', e
+    write(6,'(3a,/,(3f12.6))') 'siesta_forces: stress (',trim(sunit),') =', s
+    write(6,'(3a,/,(3f12.6))') 'siesta_forces: forces (',trim(funit),') =', f
     write(6,*) ' '
   end if
 ! END DEBUG
