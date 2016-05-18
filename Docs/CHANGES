@@ -6,6 +6,13 @@
 ** CHANGES ALONG rel-4.0 branch
 
 -----------------------------------------------------------------------
+2016-05-18                                                     4.0b-495
+Fixed lp:1582978
+
+The Makefile was missing a space between the CFLAGS
+and the -c
+
+-----------------------------------------------------------------------
 2016-05-10                                                     4.0b-494
 Revise mentions to now-standalone ATOM program. Revert Tests/test.mk.
 
