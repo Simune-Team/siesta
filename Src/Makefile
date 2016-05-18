@@ -250,7 +250,7 @@ ldau_specs.o: $(FDF)
 # Define CC (and maybe CFLAGS) in arch.make for full control
 #
 sockets.o:  sockets.c   # Will be picked-up in the VPATH
-	$(CC) $(CFLAGS)-c $<
+	$(CC) -c $(CFLAGS) $<
 #
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 #

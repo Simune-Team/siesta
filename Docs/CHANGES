@@ -5,6 +5,10 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-05-18                                                    trunk-503
+Merged fix lp:1582978 (from rel-4.0)
+
+-----------------------------------------------------------------------
 2016-05-10                                                    trunk-502
 Revise mentions to now-standalone ATOM program. Revert Tests/test.mk.
 
