@@ -1,3 +1,18 @@
+2016-5-23   Nick Papior  <nickpapior@gmail.com>  trunk-so
+Re-added SOC tests and updated running tests
+
+- The SpinOrbit tests are now in a proper location
+  although they are linked together.
+
+- Fixed Makefile for tests to enable direct directory
+  calling:
+	make h2o
+  will run the test in h2o directory.
+
+  This makes it easier to run the tests.
+
+- Currently the References hasn't been made.
+
 2016-4-21   22:50   Nick Papior  <nickpapior@gmail.com>  trunk-so
 Dies when trying Harris functional for NC/SO
 
