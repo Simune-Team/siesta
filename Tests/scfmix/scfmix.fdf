@@ -40,7 +40,7 @@
 
 
 SystemName          Linear Fe3 cluster.
-SystemLabel         fe_clust_NC_mix
+SystemLabel         scfmix
 NumberOfAtoms       3
 NumberOfSpecies     1
 
