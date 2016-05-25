@@ -41,6 +41,11 @@ module m_mixing
   integer, parameter :: MIX_BROYDEN = 3
   integer, parameter :: MIX_FIRE = 4
 
+  ! Action tokens
+  integer, parameter :: ACTION_MIX = 1
+  integer, parameter :: ACTION_RESTART = 2
+  integer, parameter :: ACTION_NEXT = 3
+
   type tMixer
 
      ! Name of mixer
@@ -67,15 +72,18 @@ module m_mixing
      !  == 0 :
      !     only use this mixer until convergence
      !   > 0 :
-     !     after having runned n_itt, goto
-     !     index given by number
+     !     after having runned n_itt step to "next"
      integer :: n_itt = 0
      ! The currently reached iteration
      integer :: cur_itt = 0
      ! When mod(cur_itt,restart_itt) == 0 the history will
      ! be "killed"
-     integer :: restart = 1000000000
+     integer :: restart = huge(1)
      integer :: restart_save = 0
+
+     ! This is an action token specifying the current
+     ! action
+     integer :: action = ACTION_MIX
 
      ! The next mixing method following this method
      type(tMixer), pointer :: next => null()
@@ -97,7 +105,17 @@ module m_mixing
 #endif
 
   end type tMixer
-  
+
+  ! Indices for special constanst
+  integer, parameter :: I_PREVIOUS_RES = 0
+  integer, parameter :: I_P_RESTART = -1
+  integer, parameter :: I_P_NEXT = -2
+  ! This index should always be the lowest index
+  ! This is used to allocate the correct bounds for the
+  ! additional array of information
+  integer, parameter :: I_SVD_COND = -3
+
+
   ! Debug mixing runs
   logical :: debug_mix = .false.
   ! In case of parallel mixing this also contains the node number
@@ -469,10 +487,11 @@ contains
       is_block = fdf_block(opt,bfdf)
 
       ! First read method and variant
-      ! Read the options for this mixer
       if ( is_block ) then
 
-         method = ' '
+         ! Default to the pulay method...
+         ! This enables NOT writing this in the block
+         method = 'pulay'
          variant = ' '
          
          ! read options
@@ -485,50 +504,32 @@ contains
                
                ! setting the method
                method = fdf_bnames(pline,2)
-               m%m = get_method(method)
-               if ( len_trim(variant) > 0 ) then
-                  m%v = get_variant(m%m,variant)
-               end if
 
             else if ( leqi(opt,'variant') ) then
                
                variant = fdf_bnames(pline,2)
-               m%v = get_variant(m%m,variant)
-
-            else if ( leqi(opt,'mixing.weight') .or. &
-                 leqi(opt,'alpha') .or. leqi(opt,'w') ) then
-               
-               m%w = fdf_breals(pline,1)
 
             end if
 
          end do
+
+         ! Retrieve the method and the variant
+         m%m = get_method(method)
+         m%v = get_variant(m%m,variant)
 
       end if
 
       ! Initialize generic options for this
       ! mixing scheme
       select case ( m%m )
-
       case ( MIX_PULAY )
 
          m%n_hist = n_pulay
          m%w = w_pulay_damp
 
-         allocate(m%rv(-1:2))
-         m%rv(1) = w_pulay
-         
-         ! This is the restart parameter
-         ! I.e. if f_k < rp * f
-         ! only works for positive rp
-         m%rv(-1) = huge(1._dp)
-         m%rv(0) = -1._dp
-         m%rv(2) = svd_pulay_cond
-
       case ( MIX_BROYDEN )
 
          m%n_hist = n_broy
-
          m%w = w_broy
 
       end select
@@ -580,20 +581,12 @@ contains
 
             else if ( leqi(opt,'restart') ) then
 
-               ! if the restart is an integer
-               ! we read it
-               if ( fdf_bnintegers(pline,1) == 1 ) then
-                  m%restart = fdf_bintegers(pline,1)
-               end if
+               m%restart = fdf_bintegers(pline,1)
 
             else if ( leqi(opt,'restart.save') ) then
 
                m%restart_save = fdf_bintegers(pline,1)
                m%restart_save = max(0,m%restart_save)
-
-            else if ( leqi(opt,'svd.cond') ) then
-
-               m%rv(2) = fdf_bvalues(pline,1)
             
             end if
 
@@ -611,7 +604,11 @@ contains
 
       ! Initialize generic options for this
       select case ( m%m )
+      case ( MIX_PULAY )
 
+         allocate(m%rv(I_SVD_COND:1))
+         m%rv(1) = w_pulay
+         
       case ( MIX_BROYDEN )
 
          ! step history as there is 1 extra 0
@@ -620,20 +617,25 @@ contains
 
          ! allocate temporary array
          n = 1 + m%n_hist * (m%n_hist + 1)
-         allocate(m%rv(-1:n))
-
-         ! restart parameter
-         m%rv(-1) = huge(1._dp)
-         m%rv(0) = -1._dp
+         allocate(m%rv(I_SVD_COND:n))
          m%rv(1) = w_broy_p
 
       end select
 
-      if ( 0 < m%restart .and. m%restart < m%n_hist ) then
-         ! change history to one above the restart
-         ! ensures that we can keep the data.
-         m%n_hist = m%restart + 1
-      end if
+      select case ( m%m )
+      case ( MIX_LINEAR )
+         ! do nothing
+      case default
+
+         ! This is the restart parameter
+         ! I.e. if f_k < rp * f
+         ! only works for positive rp
+         m%rv(I_PREVIOUS_RES) = huge(1._dp)
+         m%rv(I_P_RESTART) = -1._dp
+         m%rv(I_P_NEXT) = -1._dp
+         m%rv(I_SVD_COND) = svd_pulay_cond
+
+      end select
 
       if ( m%m == MIX_PULAY .and. any(m%v == (/1,3/)) ) then
          ! Ensure the restart is an even number
@@ -642,6 +644,14 @@ contains
          m%restart = m%restart + mod(m%restart,2)
       end if
 
+      if ( 0 < m%restart .and. m%restart < m%n_hist ) then
+         ! change history to one above the restart
+         ! ensures that we can keep the data.
+         m%n_hist = m%restart + 1
+      end if
+
+      ! Ensure that the saved restarts is maximally
+      ! one less than the number of stored histories
       m%restart_save = min(m%n_hist - 1,m%restart_save)
 
       if ( is_block ) then
@@ -651,12 +661,32 @@ contains
          
          ! read options
          do while ( fdf_bline(bfdf,pline) )
+            ! skip lines without associated content
             if ( fdf_bnnames(pline) == 0 ) cycle
 
             opt = fdf_bnames(pline,1)
 
+            ! Generic options
             if ( leqi(opt,'mixing.weight') .or. &
                  leqi(opt,'alpha') .or. leqi(opt,'w') ) then
+
+               m%w = fdf_breals(pline,1)
+               
+            else if ( leqi(opt,'next.p') ) then
+
+               m%rv(I_P_NEXT) = fdf_bvalues(pline,1)
+
+            else if ( leqi(opt,'restart.p') ) then
+               
+               m%rv(I_P_RESTART) = fdf_bvalues(pline,1)
+               
+            else if ( leqi(opt,'svd.cond') ) then
+
+               m%rv(I_SVD_COND) = fdf_bvalues(pline,1)
+
+               ! These following options adhere to the
+               ! Pulay mixing schemes
+            else if ( leqi(opt,'damping') ) then
 
                m%w = fdf_breals(pline,1)
 
@@ -665,22 +695,6 @@ contains
 
                m%rv(1) = fdf_breals(pline,1)
 
-            else if ( leqi(opt,'damping') ) then
-
-               m%w = fdf_breals(pline,1)
-
-            else if ( leqi(opt,'restart') ) then
-
-               ! if the restart is an integer
-               ! we read it
-               if ( fdf_bnreals(pline,1) == 1 ) then
-                  m%rv(0) = fdf_breals(pline,1)
-               end if
-
-            else if ( leqi(opt,'restart.p') ) then
-               
-               m%rv(0) = fdf_bvalues(pline,1)
-               
             end if
 
          end do
@@ -711,13 +725,23 @@ contains
     real(dp), intent(inout) :: x2(n)
 
     integer :: info
+    integer :: rsave
 
+    ! Initialize action for mixer
+    mix%action = ACTION_MIX
+    
     ! Step iterator (so first mixing has cur_itt == 1)
     mix%cur_itt = mix%cur_itt + 1
 
+    ! If we are going to skip to next, we signal it
+    ! before entering
+    if ( mix%n_itt <= mix%cur_itt ) then
+       mix%action = ACTION_NEXT
+    end if
+
+    
     ! Select mixer
     select case ( mix%m )
-
     case ( MIX_LINEAR )
 
        if ( debug_mix ) &
@@ -756,10 +780,39 @@ contains
        ! do nothing, we continue, indefinetely
     else if ( mix%n_itt < 0 ) then
        ! this is checked outside
-    else if ( mix%n_itt <= mix%cur_itt ) then
+    else if ( mix%action == ACTION_NEXT ) then
 
        call mixing_step( mix )
+       
+    else if ( mix%action == ACTION_RESTART ) then
 
+       ! The user has requested to restart the
+       ! mixing scheme now
+       rsave = mix%restart_save
+       
+       select case ( mix%m )
+       case ( MIX_PULAY )
+
+          if ( rsave == 0 ) then
+             call reset(mix%stack(1))
+             call reset(mix%stack(2))
+             call reset(mix%stack(3))
+          else
+             call reset(mix%stack(1),-rsave)
+             call reset(mix%stack(2),-rsave+1)
+          end if
+          
+       case ( MIX_BROYDEN )
+          
+          call reset(mix%stack(1),-rsave)
+          call reset(mix%stack(2),-rsave)
+          
+       end select
+
+       if ( debug_mix ) &
+            write(*,'(a,a,i0)') trim(debug_msg), &
+            ' saved hist = ',n_items(mix%stack(1))
+       
     end if
 
   end subroutine mixing_1d
@@ -788,8 +841,8 @@ contains
 
     real(dp), pointer :: d1(:)
 
-    ! Local arrays
     type(dData1D), pointer :: dD1
+    
     if ( present(hidx) ) then
        dD1 => get_pointer(mix%stack(sidx),hidx)
     else
@@ -863,7 +916,7 @@ contains
              ! Get maximum size of the current stack,
              n = n_items(mix%stack(is))
 
-             ! Note that this will automatically tke care of
+             ! Note that this will automatically take care of
              ! wrap-arounds and delete the unneccesry elements
              do i = 1 , n
                 d1D => get_pointer(mix%stack(is),i)
@@ -1004,6 +1057,8 @@ contains
     real(dp), allocatable :: alpha(:), b(:,:), bi(:,:)
     real(dp) :: G, ssum
 
+    logical :: p_next, p_restart
+
 #ifdef MPI
     real(dp) :: dtmp
     integer :: MPIerror
@@ -1011,8 +1066,12 @@ contains
 
     real(dp), external :: ddot
 
-    ! Check whether a parameter restart is required
-    if ( mix%rv(0) > 0._dp ) then
+    p_restart = mix%rv(I_P_RESTART) > 0._dp
+    p_next = mix%rv(I_P_NEXT) > 0._dp
+
+    ! Check whether a parameter restart/next is required
+    if ( p_restart .or. p_next ) then
+       
        ! Calculate dot: ||f_k-1||
        ssum = ddot(n,F1,1,F1,1)
 #ifdef MPI
@@ -1021,18 +1080,43 @@ contains
             MPI_double_precision, MPI_Sum, &
             mix%Comm,MPIerror)
 #endif
-       if ( mix%rv(-1) < mix%rv(0) * ssum ) then
-          ! Signal restart
-          mix%restart = mix%cur_itt
-       end if
 
-       if ( debug_mix .and. mix%cur_itt > 1 ) &
-            write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-            ' ||f_k-1|| < rp * ||f_k||  :  ', &
-            mix%rv(-1), ' < ',mix%rv(0)*ssum
+       ! We first check for next, that has precedence
+       if ( p_next ) then
+
+          G = mix%rv(I_P_NEXT) * ssum
+
+          if ( mix%rv(I_PREVIOUS_RES) < G ) then
+             ! Signal stepping mixer
+             mix%action = ACTION_NEXT
+             p_restart = .false.
+          end if
+          
+          if ( debug_mix .and. mix%cur_itt > 1 ) &
+               write(*,'(a,2(a,e8.3))') trim(debug_msg), &
+               ' ||f_k-1|| < np * ||f_k||  :  ', &
+               mix%rv(I_PREVIOUS_RES), ' < ', G
+
+       end if
+       
+       if ( p_restart ) then
+
+          G = mix%rv(I_P_RESTART) * ssum
+
+          if ( mix%rv(I_PREVIOUS_RES) < G ) then
+             ! Signal restart
+             mix%action = ACTION_RESTART
+          end if
+
+          if ( debug_mix .and. mix%cur_itt > 1 ) &
+               write(*,'(a,2(a,e8.3))') trim(debug_msg), &
+               ' ||f_k-1|| < rp * ||f_k||  :  ', &
+               mix%rv(I_PREVIOUS_RES), ' < ', G
+
+       end if
        
        ! Store the new residual dot product
-       mix%rv(-1) = ssum
+       mix%rv(I_PREVIOUS_RES) = ssum
        
     end if
 
@@ -1202,34 +1286,18 @@ contains
        
     end select
 
-    if ( mix%restart > 0 ) then
-    if ( mod(mix%cur_itt,mix%restart) == 0 ) then
+    ! If the action is next, we do not
+    ! allow restart
+    if ( mix%action == ACTION_NEXT ) return
 
-       if ( IONode ) then
-          write(*,'(a)')'mix: Pulay -- resetting history'
-       end if
-       ! The user has requested to restart the
-       ! mixing scheme now
-       j = mix%restart_save
-       if ( j == 0 ) then
-          call reset(mix%stack(1))
-          call reset(mix%stack(2))
-          call reset(mix%stack(3))
-       else
-          call reset(mix%stack(1),-j)
-          call reset(mix%stack(2),-j+1)
-       end if
+    if ( mix%restart > 0 .and. &
+         mod(mix%cur_itt,mix%restart) == 0 ) then
+          
+       if ( IONode ) &
+            write(*,'(a)')'mix: Pulay -- resetting history'
 
-       if ( mix%rv(0) > 0._dp ) then
-          ! reset restart as it is parametrised
-          mix%restart = 0
-       end if
+       mix%action = ACTION_RESTART
 
-       if ( debug_mix ) &
-            write(*,'(a,a,i0)') trim(debug_msg), &
-            ' saved hist = ',n_items(mix%stack(1))
-       
-    end if
     end if
 
   contains
@@ -1272,25 +1340,30 @@ contains
       ! Get inverse of matrix
       select case ( mix%v )
       case ( 0 , 1 )
+         
          call inverse(nh, b, bi, info)
+
+         if ( info /= 0 ) then
+            
+            ! only inform if we should not use SVD per default
+            if ( IONode ) &
+                 write(*,'(2a)') trim(debug_msg), &
+                 ' Pulay -- inversion failed, > SVD'
+            
+            ! We will first try the SVD routine
+            call svd(nh, b, bi, mix%rv(I_SVD_COND), info)
+            
+         end if
+         
       case ( 2 , 3 )
-         ! forcefully start the svd routine
-         info = 1
+
+         ! We forcefully use the SVD routine
+         call svd(nh, b, bi, mix%rv(I_SVD_COND), info)
+
       end select
          
-      if ( info /= 0 ) then
-
-         ! only inform if we should not use SVD per default
-         if ( IONode .and. any(mix%v==(/0,1/)) ) &
-              write(*,'(2a)') trim(debug_msg), &
-              ' Pulay -- inversion failed, > SVD'
-
-         ! We will first try the SVD routine
-         call svd(nh, b, bi, mix%rv(2), info)
-         
-      end if
-
       if ( info == 0 ) then
+         
          do i = 1 , nh
             
             ! Calculate the coefficients on all processors
@@ -1393,7 +1466,7 @@ contains
     info = 0
 
     ! Check whether a parameter restart is required
-    if ( mix%rv(0) > 0._dp ) then
+    if ( mix%rv(I_P_RESTART) > 0._dp ) then
        ! Calculate dot: ||f_k-1||
        norm = ddot(n,F1,1,F1,1)
 #ifdef MPI
@@ -1402,7 +1475,7 @@ contains
             MPI_double_precision, MPI_Sum, &
             mix%Comm,MPIerror)
 #endif
-       if ( mix%rv(-1) < mix%rv(0) * norm ) then
+       if ( mix%rv(I_PREVIOUS_RES) < mix%rv(I_P_RESTART) * norm ) then
           ! Signal restart
           mix%restart = mix%cur_itt
        end if
@@ -1410,10 +1483,10 @@ contains
        if ( debug_mix .and. mix%cur_itt > 1 ) &
             write(*,'(a,2(a,e8.3))') trim(debug_msg), &
             ' ||f_k-1|| < rp * ||f_k||  :  ', &
-            mix%rv(-1), ' < ',mix%rv(0)*norm
+            mix%rv(I_PREVIOUS_RES), ' < ',mix%rv(I_P_RESTART)*norm
        
        ! Store the new residual dot product
-       mix%rv(-1) = norm
+       mix%rv(I_PREVIOUS_RES) = norm
        
     end if
 
@@ -1694,29 +1767,19 @@ contains
     call push(mix%stack(2), b1D)
     call delete(b1D)
 
-    if ( mix%restart > 0 ) then
-    if ( mod(mix%cur_itt,mix%restart) == 0 ) then
+    ! If the action is next, we do not
+    ! allow restart
+    if ( mix%action == ACTION_NEXT ) return
 
+    if ( mix%restart > 0 .and. &
+         mod(mix%cur_itt,mix%restart) == 0 ) then
+          
        if ( IONode ) then
           write(*,'(a)')'mix: Broyden -- resetting history'
        end if
 
-       ! The user has requested to restart the
-       ! mixing scheme now
-       j = mix%restart_save
-       call reset(mix%stack(1),-j)
-       call reset(mix%stack(2),-j)
+       mix%action = ACTION_RESTART
 
-       if ( mix%rv(0) > 0._dp ) then
-          ! reset restart as it is parametrised
-          mix%restart = 0
-       end if
-
-       if ( debug_mix ) &
-            write(*,'(a,a,i0)') trim(debug_msg), &
-            ' saved hist = ',n_items(mix%stack(1))
-
-    end if
     end if
 
   end subroutine mixing_broyden
@@ -1758,7 +1821,6 @@ contains
        m => mixers(im)
 
        select case ( m%m ) 
-
        case ( MIX_PULAY )
 
           allocate(m%stack(3))
@@ -1842,7 +1904,6 @@ contains
        m => mixers(i)
 
        select case ( m%m )
-          
        case ( MIX_LINEAR )
           
           write(*,'(2a,t50,''= '',a)') trim(fmt), &
@@ -1855,19 +1916,20 @@ contains
           write(*,'(2a,t50,''= '',a)') trim(fmt), &
                ' Pulay mixing',trim(m%name)
 
-          if ( m%v == 0 ) then
+          select case ( m%v )
+          case ( 0 )
              write(*,'(2a,t50,''= '',a)') trim(fmt), &
                   '    Variant','stable'
-          else if ( m%v == 1 ) then
+          case ( 1 ) 
              write(*,'(2a,t50,''= '',a)') trim(fmt), &
                   '    Variant','GR'
-          else if ( m%v == 2 ) then
+          case ( 2 )
              write(*,'(2a,t50,''= '',a)') trim(fmt), &
                   '    Variant','stable-SVD'
-          else if ( m%v == 3 ) then
+          case ( 3 )
              write(*,'(2a,t50,''= '',a)') trim(fmt), &
                   '    Variant','GR-SVD'
-          end if
+          end select
 
           write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                '    History steps',m%n_hist
@@ -1876,10 +1938,14 @@ contains
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Damping',m%w
           write(*,'(2a,t50,''= '',e10.4)') trim(fmt), &
-               '    SVD condition',m%rv(2)
-          if ( m%rv(0) > 0._dp ) then
+               '    SVD condition',m%rv(I_SVD_COND)
+          if ( m%rv(I_P_NEXT) > 0._dp ) then
              write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
-                  '    Restart parameter',m%rv(0)
+                  '    Step mixer parameter',m%rv(I_P_NEXT)
+          end if
+          if ( m%rv(I_P_RESTART) > 0._dp ) then
+             write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
+                  '    Restart parameter',m%rv(I_P_RESTART)
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                   '    Restart save steps',m%restart_save
           else if ( m%restart > 0 ) then
@@ -1903,9 +1969,13 @@ contains
                '    Jacobian weight',m%w
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Weight prime',m%rv(1)
-          if ( m%rv(0) > 0._dp ) then
+          if ( m%rv(I_P_NEXT) > 0._dp ) then
              write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
-                  '    Restart parameter',m%rv(0)
+                  '    Step mixer parameter',m%rv(I_P_NEXT)
+          end if
+          if ( m%rv(I_P_RESTART) > 0._dp ) then
+             write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
+                  '    Restart parameter',m%rv(I_P_RESTART)
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                   '    Restart save steps',m%restart_save
           else if ( m%restart > 0 ) then
@@ -1928,10 +1998,11 @@ contains
        else if ( m%n_itt > 0 ) then
           write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                '    Number of mixing iterations',m%n_itt
-          if ( associated(m%next) ) then
+       end if
+
+       if ( associated(m%next) ) then
           write(*,'(2a,t50,''= '',a)') trim(fmt), &
                '    Following mixing method',trim(m%next%name)
-          end if
        end if
           
     end do

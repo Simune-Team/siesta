@@ -6,7 +6,6 @@
 #SCF.Mix.Debug T
 %block SCF.Mix
   init
-  pulay
 %endblock
   
 %block SCF.Mix.init
@@ -19,22 +18,14 @@
   w 0.01
   # Number of previous steps saved
   history 4
+  
   # Restart history after every 16 steps
   restart 16
+  # Restart history if:
+  #  || f_k-1 || < 0.25 * || f_k ||
+  restart.p 0.25
   # Store the latest 2 residuals in the
   # history (reduces kick)
-  restart.save 2
-  # Once this has converged,
-  # or the maximum number of iterations has
-  # exceeded, continue with SCF.Mix.<name>
-  # as the mixing parameter set
-  next pulay
-%endblock
-%block SCF.Mix.pulay
-  method pulay
-  w 0.05
-  history 4
-  restart 8
   restart.save 2
 %endblock
 
