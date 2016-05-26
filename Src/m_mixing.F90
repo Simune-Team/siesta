@@ -654,6 +654,11 @@ contains
       ! one less than the number of stored histories
       m%restart_save = min(m%n_hist - 1,m%restart_save)
 
+      ! If the 'next' isn't associated, we MUST continue indefinitely
+      if ( .not. associated(m%next) ) then
+         m%n_itt = 0
+      end if
+      
       if ( is_block ) then
 
          ! Read the options for this mixer
@@ -674,7 +679,11 @@ contains
                
             else if ( leqi(opt,'next.p') ) then
 
-               m%rv(I_P_NEXT) = fdf_bvalues(pline,1)
+               ! Only allow stepping to the next when
+               ! having a next associated
+               if ( associated(m%next) ) then
+                  m%rv(I_P_NEXT) = fdf_bvalues(pline,1)
+               end if
 
             else if ( leqi(opt,'restart.p') ) then
                
@@ -1066,10 +1075,10 @@ contains
 
     real(dp), external :: ddot
 
-    p_restart = mix%rv(I_P_RESTART) > 0._dp
     p_next = mix%rv(I_P_NEXT) > 0._dp
+    p_restart = mix%rv(I_P_RESTART) > 0._dp
 
-    ! Check whether a parameter restart/next is required
+    ! Check whether a parameter next/restart is required
     if ( p_restart .or. p_next ) then
        
        ! Calculate dot: ||f_k-1||
@@ -1081,12 +1090,13 @@ contains
             mix%Comm,MPIerror)
 #endif
 
+       ! Calculate the relative difference
+       G = abs(mix%rv(I_PREVIOUS_RES) / ssum - 1._dp)
+
        ! We first check for next, that has precedence
        if ( p_next ) then
 
-          G = mix%rv(I_P_NEXT) * ssum
-
-          if ( mix%rv(I_PREVIOUS_RES) < G ) then
+          if ( G < mix%rv(I_P_NEXT) ) then
              ! Signal stepping mixer
              mix%action = ACTION_NEXT
              p_restart = .false.
@@ -1094,24 +1104,22 @@ contains
           
           if ( debug_mix .and. mix%cur_itt > 1 ) &
                write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-               ' ||f_k-1|| < np * ||f_k||  :  ', &
-               mix%rv(I_PREVIOUS_RES), ' < ', G
-
+               ' | ||f_k-1|| - ||f_k|| |/||f_k|| < np  :  ', &
+               G, ' < ', mix%rv(I_P_NEXT)
+          
        end if
        
        if ( p_restart ) then
 
-          G = mix%rv(I_P_RESTART) * ssum
-
-          if ( mix%rv(I_PREVIOUS_RES) < G ) then
+          if ( G < mix%rv(I_P_RESTART) ) then
              ! Signal restart
              mix%action = ACTION_RESTART
           end if
 
           if ( debug_mix .and. mix%cur_itt > 1 ) &
                write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-               ' ||f_k-1|| < rp * ||f_k||  :  ', &
-               mix%rv(I_PREVIOUS_RES), ' < ', G
+               ' | ||f_k-1|| - ||f_k|| |/||f_k|| < rp  :  ', &
+               G, ' < ', mix%rv(I_P_RESTART)
 
        end if
        
@@ -1458,6 +1466,8 @@ contains
     real(dp) :: jinv0, norm, Fnorm, dMax, rtmp
     type(dData1D) :: a1D, b1D
 
+    logical :: p_next, p_restart
+
     real(dp), external :: ddot
 #ifdef MPI
     integer :: MPIerror
@@ -1465,8 +1475,12 @@ contains
 
     info = 0
 
-    ! Check whether a parameter restart is required
-    if ( mix%rv(I_P_RESTART) > 0._dp ) then
+    p_next = mix%rv(I_P_NEXT) > 0._dp
+    p_restart = mix%rv(I_P_RESTART) > 0._dp
+
+    ! Check whether a parameter restart/next is required
+    if ( p_restart .or. p_next ) then
+       
        ! Calculate dot: ||f_k-1||
        norm = ddot(n,F1,1,F1,1)
 #ifdef MPI
@@ -1475,15 +1489,39 @@ contains
             MPI_double_precision, MPI_Sum, &
             mix%Comm,MPIerror)
 #endif
-       if ( mix%rv(I_PREVIOUS_RES) < mix%rv(I_P_RESTART) * norm ) then
-          ! Signal restart
-          mix%restart = mix%cur_itt
+
+       ! Calculate the relative difference
+       rtmp = abs(mix%rv(I_PREVIOUS_RES) / norm - 1._dp)
+
+       ! We first check for next, that has precedence
+       if ( p_next ) then
+          
+          if ( rtmp < mix%rv(I_P_NEXT) ) then
+             ! Signal stepping mixer
+             mix%action = ACTION_NEXT
+             p_restart = .false.
+          end if
+          
+          if ( debug_mix .and. mix%cur_itt > 1 ) &
+               write(*,'(a,2(a,e8.3))') trim(debug_msg), &
+               ' | ||f_k-1|| - ||f_k|| |/||f_k|| < np  :  ', &
+               rtmp, ' < ', mix%rv(I_P_NEXT)
+
        end if
 
-       if ( debug_mix .and. mix%cur_itt > 1 ) &
-            write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-            ' ||f_k-1|| < rp * ||f_k||  :  ', &
-            mix%rv(I_PREVIOUS_RES), ' < ',mix%rv(I_P_RESTART)*norm
+       if ( p_restart ) then
+
+          if ( rtmp < mix%rv(I_P_RESTART) ) then
+             ! Signal restart
+             mix%action = ACTION_RESTART
+          end if
+
+          if ( debug_mix .and. mix%cur_itt > 1 ) &
+               write(*,'(a,2(a,e8.3))') trim(debug_msg), &
+               ' | ||f_k-1|| - ||f_k|| |/||f_k|| < rp  :  ', &
+               rtmp, ' < ', mix%rv(I_P_RESTART)
+          
+       end if
        
        ! Store the new residual dot product
        mix%rv(I_PREVIOUS_RES) = norm
