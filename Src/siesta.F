@@ -29,7 +29,6 @@ C     Begin of coordinate relaxation iteration
         endif
 
       ENDDO
-
 C     End of coordinate-relaxation loop 
       call siesta_analysis( relaxd )
 

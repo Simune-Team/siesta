@@ -1,3 +1,36 @@
+2015-06-26  16:00 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-5
+
+Parallelized (for gamma point) uisng MatrixSwitch.
+
+
+removed:
+  Src/changebasis.F
+  Src/evolg.F
+  Src/evolk.F
+  Src/m_evolve.F
+  Src/m_initwf.F
+  Src/wavefunctions.F
+added:
+  Src/changebasis.F90
+  Src/evolg.F90
+  Src/evolk.F90
+  Src/m_initwf.F90
+  Src/m_matdiag.F90
+  Src/m_matswinvers.F90
+  Src/wavefunctions.F90
+modified:
+  Src/Makefile
+  Src/MatrixSwitch/src/MatrixSwitch.F90
+  Src/densematrix.f
+  Src/dhscf.F
+  Src/elec_dyn_options.F
+  Src/files.f
+  Src/paste.f
+  Src/siesta.F
+  Src/siesta_forces.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+
 2015-04-15  17:00 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-4
 
 Fixed a small bug.

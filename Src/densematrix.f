@@ -19,7 +19,6 @@ C
       real(dp), pointer :: Haux(:)
       real(dp), pointer :: Saux(:)
       real(dp), pointer :: psi(:)
-
       CONTAINS
 
       subroutine resetDenseMatrix( )

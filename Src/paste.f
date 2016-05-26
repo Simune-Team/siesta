@@ -22,6 +22,15 @@ C Written by J. Soler
    10 CONTINUE
    20 PASTE = STR1(1:L)//STR2
       END
+c Concatenates the integer nitter and STR2 - Rafi Ullah, July 2014
+      CHARACTER*(*) FUNCTION NPASTE( nitter, STR2 )
+      CHARACTER*(*)  STR2
+      character(len=8) :: fmt, xx11
+      integer :: l, nitter
+      fmt = '(I4.4)'
+      write (xx11,fmt) nitter
+      NPASTE=trim(xx11)//STR2
+      END
 
 
       CHARACTER*(*) FUNCTION PASTEB( STR1, STR2 )

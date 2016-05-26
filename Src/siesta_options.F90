@@ -96,7 +96,9 @@ MODULE siesta_options
   logical :: td_elec_dyn    ! To do TDDFT calculation on second run
   logical :: etot_time     ! Write Etot vs time during TDDFT
   logical :: eigen_time    ! Write instataneous energy of the electronic states in TDDFT
-  logical :: dip_time      ! Write dipol moment againstan time in TDDFT 
+  logical :: dip_time      ! Write dipol moment againstan time in TDDFT
+  logical :: tdsaverho      ! To save TD-Rho after a given number of time steps
+  integer :: ntdsaverho     ! Each number of steps TD-Rho is saved.
   integer :: itded          ! a TDDFT counterpart of iscf
   integer :: ntded          ! Number of TDED steps in each MD iteration. 
                             ! Or total number of TDED steps in an only electron calcuation
@@ -176,6 +178,7 @@ MODULE siesta_options
   integer,  parameter :: nscf_default = 50
   integer,  parameter :: ncgmax_default = 1000
   integer,  parameter :: ntded_default  = 3 ! Sticking to Daneil's original convention 
+  integer,  parameter :: ntdsaverho_default = 50
   integer,  parameter :: tdednwrite_default = 100
   real(dp), parameter :: wmix_default = 0.25_dp
   real(dp), parameter :: wmixkick_default = 0.5_dp
@@ -1064,6 +1067,8 @@ MODULE siesta_options
                               = ',writetdwf
              endif
            endif
+           tdsaverho  = fdf_get('TDED.Saverho', .false.)
+           ntdsaverho = fdf_get('TDED.Nsaverho', ntdsaverho_default)
            etot_time  =  fdf_get('WriteEtotvsTime',.true.)
            eigen_time =  fdf_get('WriteEigenvsTime',.false.)        
            dip_time   =  fdf_get('WriteDipolevsTime',.false.)

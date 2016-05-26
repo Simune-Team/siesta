@@ -701,7 +701,7 @@ subroutine m_dtrace(A,alpha,label)
 
   !**** EXTERNAL ********************************!
 
-#if defined(MPI) && defined(SLAP)
+#if defined(SLAP)
   real(dp), external :: pdlatra
 #endif
 
@@ -782,7 +782,7 @@ subroutine m_ztrace(A,alpha,label)
 
   !**** EXTERNAL ********************************!
 
-#if defined(MPI) && defined(SLAP)
+#if defined(SLAP)
   complex(dp), external :: pzlatra
 #endif
 

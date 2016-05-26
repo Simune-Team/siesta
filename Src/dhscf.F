@@ -880,6 +880,15 @@ C ----------------------------------------------------------------------
      &                  DRho )
         call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "Rho")
       endif
+C-----------------------------------------------------------------------
+C Save TD-electron density after every given number of steps- Rafi, Jan 2016
+C-----------------------------------------------------------------------
+      if (filesOut%tdrho .ne. ' ') then
+        !  DRho is already using a uniform, sequential form
+        call write_rho( filesOut%tdrho, cell, ntm, nsm, ntpl, nspin,
+     &                  DRho )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "TDRho")
+      endif
 C ----------------------------------------------------------------------
 C Save the diffuse ionic charge and/or the total (ionic+electronic) charge
 C ----------------------------------------------------------------------

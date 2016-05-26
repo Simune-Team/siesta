@@ -53,7 +53,6 @@ c maz. limit wall time
 
        logical electrondynamics
        logical onlyelectrons
-       logical calculateEnew
        logical calculateforces
        logical movedions
        logical moveions
@@ -71,10 +70,6 @@ c maz. limit wall time
        character*70 etotfile
        integer ntddftwrite, ntddftwrite_default
        integer nelecsubsteps, nelecsubsteps_default
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
       
        CONTAINS
 

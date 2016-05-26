@@ -1,0 +1,454 @@
+      subroutine evolg( nspin, nuo, no, maxo, maxnh, maxnd,           &
+                       numh, listhptr, listh, numd,                   &
+                       listdptr, listd, H, S, eo,                     &
+                       Dnew, Enew, nuotot,                            &
+                       delt,Haux,Saux,psi,psi2, ist,itd)
+! ********************************************************************
+! Subroutine to calculate the eigenvalues and eigenvectors, density
+! and energy-density matrices, and occupation weights of each 
+! eigenvector, for given Hamiltonian and Overlap matrices (including
+! spin polarization). Gamma-point version.
+! Written by A. Tsolakidis, May 2000 after a subroutine
+! by J. M. Soler.
+! Rewritten by D. Sanchez-Portal, November 2002-March 2003
+! Rewritten by Rafi Ullah and Adiran Garaizar June-October 2015
+! Making it parallel using Matrix Switch.
+! **************************** INPUT **********************************
+! integer nspin               : Number of spin components (1 or 2)
+! integer nuo                 : Number of basis orbitals local to node
+! integer no                  : Number of basis orbitals
+! integer maxo                : Maximum number of orbitals in the unit cell
+! integer maxnh               : Maximum number of orbitals interacting  
+! integer maxnd               : Maximum number of nonzero elements of 
+!                               each row of density matrix
+! integer numh(nuo)           : Number of nonzero elements of each row 
+!                               of hamiltonian matrix
+! integer listhptr(nuo)       : Pointer to each row (-1) of the
+!                               hamiltonian matrix
+! integer listh(maxnh)        : Nonzero hamiltonian-matrix element  
+!                               column indexes for each matrix row
+! integer numd(nuo)           : Number of nonzero elements of each row 
+!                               ofdensity matrix
+! integer listdptr(nuo)       : Pointer to each row (-1) of the
+!                               density matrix
+! integer listd(maxnd)        : Nonzero density-matrix element column 
+!                               indexes for each matrix row
+! real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
+! real*8  S(maxnh)            : Overlap in sparse form
+! integer nuotot              : total number of orbitals per unit cell
+!                               over all processors
+! real*8  delt                : length of the time step
+! ******************** OUTPUT **************************************
+! real*8 Dnew(maxnd,nspin)    : Output New Density Matrix
+! real*8 Enew(maxnd,nspin)    : Output New Energy-Density Matrix
+! real*8 eo(maxo,nspin,1)       : Output instantaneous eigenvalues
+!                              (only calculated if explicitly required
+!                               by user and in the last MD step)
+! New wavefunctions are calculated and stored for the next step.
+! *************************** AUXILIARY *******************************
+! real*8 Haux(nuotot,nuo)     : Auxiliary space for the hamiltonian matrix
+! real*8 Saux(nuotot,nuo)     : Auxiliary space for the overlap matrix
+! real*8 aux(2*nuotot)        : Extra auxiliary space
+! *************************** UNITS ***********************************
+! Enew returned in the units of H.
+! *************************** PARALLEL ********************************
+! The auxiliary arrays are now no longer symmetry and so the order
+! of referencing has been changed in several places to reflect this.
+! *********************************************************************
+!
+!  Modules
+!
+      use precision
+      use sys
+      use m_diagon, only : ictxt
+      use parallel    
+      use parallelsubs,          only: LocalToGlobalOrb
+      use alloc
+      use wavefunctions
+      use MatrixSwitch
+      use siesta_options,        only: eigen_time, ntded
+      use m_steps,               only: fincoor
+#ifdef MPI
+      use mpi_siesta
+#endif
+      !use elec_dyn_options     
+      !
+      implicit none
+#ifdef MPI
+      INTEGER :: MPIerror
+#endif
+      !
+      integer              :: itd, ist, listd(maxnd), numd(nuo), listdptr(nuo)
+      integer              :: maxnd, maxnh, nuo, no, nspin, nuotot, ncounter, maxo, asn,desch(9)
+      integer              :: listh(maxnh), numh(nuo), listhptr(nuo)
+      double precision     :: Dnew(maxnd,nspin), Enew(maxnd,nspin), H(maxnh,nspin)
+      double precision     :: S(maxnh), delt, eo(maxo,nspin,1)
+      !
+      type(matrix)         :: Hauxms,Sauxms, bix2,aux,aux2,bix
+      character(3)         :: m_operation
+      character(5)         :: m_storage
+      complex(dp)          :: varaux, varaux2,varaux3,Haux(nuotot,nuo),Saux(nuotot,nuo)
+      complex(dp)          :: psi2(nuotot,nuo),pipj, pipj2, varaux4,psi(nuotot,nuo)    
+      !Internal variables 
+      integer              :: ie, io, iio,iee, ispin, j, jo, BNode, iie, ind, BTest
+      integer              :: mm, maxnuo, ierror, nd, nocc, nstp,i,npsi
+      double precision     :: ee, qe, t, eigv, dnrm,el1,el2,el3,el4,Ddense(nuotot,nuotot)
+      logical              :: calculateEnew ! Not sure if it is really needed?
+      !
+#ifdef MPI
+      m_storage='pzdbc'
+      m_operation='lap'
+#else
+      m_storage='szden'
+      m_operation='lap'
+#endif
+      npsi=2*nuotot*nuotot
+      calculateEnew = .true.        ! Why? 
+      !
+      call timer( 'Evolg', 1 )
+      !
+      call m_allocate( Hauxms,nuotot,nuotot,m_storage)
+      call m_allocate( Sauxms,nuotot,nuotot,m_storage)
+      !
+#ifdef MPI
+      call descinit(desch,nuotot,nuotot,BlockSize,BlockSize,0,0,ictxt,nuotot,ierror)
+#endif
+      !
+      nstp=1 ! No of substepts between a single electronic step.
+      !
+      nd = listdptr(nuo) + numd(nuo)
+      Dnew(1:nd,1:nspin) = 0.0_dp
+      !if(calculateEnew) Enew(1:nd,1:nspin) = 0.d0
+      ! Evolve wavefunctions.............................................
+      do ispin = 1,nspin
+        Ddense(:,:)=0.0_dp
+        ncounter=0
+        if(ispin.eq.2) ncounter=wavef_ms(1,1)%dim2
+        call m_set (Hauxms,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+        call m_set (Sauxms,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+        psi(1:nuotot,1:nuo)=0.0_dp
+        ! One can use the dense overlap matrix constructed in changebais? 
+        call timer( 'HSSparseToDense', 1 )
+        do io = 1,nuo
+          do jo = 1,nuotot
+            Saux(jo,io) = (0.0d0,0.0d0)
+            Haux(jo,io) = (0.0d0,0.0d0)
+          enddo
+        enddo
+        do io = 1,nuo
+          do j = 1,numh(io)
+            ind = listhptr(io) + j
+            jo = listh(ind)
+            Saux(jo,io) = Saux(jo,io) + cmplx(S(ind),0.0d0)
+            Haux(jo,io) = Haux(jo,io) + cmplx(H(ind,ispin),0.0d0)
+          enddo
+        enddo
+        !
+        call timer( 'HSSparseToDense', 2 )
+        call timer( 'HSDenseToMS', 1 )
+        !
+
+  IF(Node.eq.0) write(6,*) 'blocksize, nuotot, nuo =', BlockSize,  & 
+  nuotot,nuo,desch
+  IF(Node.eq.31) write(6,*) 'blocksize, nuotot, nuo =', BlockSize, &
+  nuotot,nuo,desch
+        do io=1,nuotot
+          do j=1,nuotot
+#ifdef MPI
+            call pzelget('a',' ',varaux,Haux,j,io,desch)
+            call pzelget('a',' ',varaux2,Saux,j,io,desch)
+#else
+            varaux=Haux(j,io)
+            varaux2=Saux(j,io)
+#endif
+            call m_set_element( Hauxms,j,io,varaux,m_operation)
+            call m_set_element( Sauxms,j,io,varaux2,m_operation)
+          enddo
+        enddo
+        !
+        IF(Node.eq.0) write(6,*) 'evolg:****** afterDense2MS *****'
+        call timer( 'HSDenseToMS', 2 )
+        call timer( 'CntoCn1', 1 )
+        !
+        call evol1new(Hauxms, Sauxms, nuotot, nuo, nspin,ispin, ncounter,              &
+             delt,nstp)
+        nocc=wavef_ms(1,ispin)%dim2
+        !
+        call timer( 'CntoCn1', 2 )
+        !
+        IF(Node.eq.0) write(6,*) 'evolg:****** afterEvolve1New *****'
+        call m_allocate(bix,nocc,nuotot,m_storage)
+        call m_allocate(bix2,nuotot,nuotot,m_storage)
+        !
+        call timer( 'DMinMS', 1 )
+        ! Calculating denisty matrix with Matrix Switch.
+        call mm_multiply(wavef_ms(1,ispin),'n',wavef_ms(1,ispin),'c',bix2,            &
+            cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+        !
+        call timer( 'DMinMS', 2 )
+        ! Passing MS-type dense DM to siesta-type dense DM.
+        call timer( 'DMinMStoSiesta', 1 )
+        DO io=1,nuotot
+          DO jo=1,nuotot
+            call m_get_element(bix2,io,jo,varaux,m_operation)
+#ifdef MPI
+            call pzelset(Saux,io,jo,desch,varaux)
+#else
+            Saux(io,jo) = varaux
+#endif
+          END DO
+        END DO
+        !
+        call timer( 'DMinMStoSiesta', 2 )
+        !
+        call m_deallocate(bix)
+        call m_deallocate(bix2)
+        call timer( 'DMSparsetoDense', 1 )
+        ! Passing dense DM to sparse DM
+        DO io=1,nuo
+          DO j=1,numd(io)
+            ind=listdptr(io) + j
+            jo = listd(ind)
+            Dnew(ind,ispin) = Dnew(ind,ispin) + Saux(jo,io)
+          END DO
+        END DO
+        call timer( 'DMSparsetoDense', 2 )
+        ! This needs to be fixes as it is not being properly done.
+        call timer( 'Eigenvalue', 1 )
+        if (eigen_time) then 
+          nocc=wavef_ms(1,ispin)%dim2
+          do ie = 1,nocc
+            eigv=0.0d0
+            do io = 1,nuotot
+              do jo = 1,nuotot
+                call m_get_element(wavef_ms(1,ispin),io,ie,varaux,m_operation)
+                call m_get_element(wavef_ms(1,ispin),jo,ie,varaux2,m_operation)
+                pipj = real(varaux)*real(varaux2) + aimag(varaux)*aimag(varaux2)
+                call m_get_element(Hauxms,jo,io,varaux3,m_operation)
+                eigv=eigv+real(varaux3)*pipj
+              enddo
+            enddo
+            eo(ie,ispin,1)=eigv
+          enddo
+        endif
+        !
+        call timer( 'Eigenvalue', 2 )
+      enddo ! ispin
+      IF(Node.eq.0) write(6,*) 'evolg:****** END OF EvolveG *****'
+      !
+      call timer( 'Evolg', 2 )
+    END SUBROUTINE evolg
+!---------------------------------------------------------------------------------!
+    subroutine Uphi(H, S, phi, no, nocc, deltat)
+!*************************************************************************
+!Subroutine that calculates the new wavefunction, given the old 
+!wavefunction by using the formula for the time evolution. Gamma-point 
+!version. Written by A. Tsolakidis, May 2000 
+!Modified by D. Sanchez-Portal, July 2002
+!Modified by D. Sanchez-Portal,  2008. 
+!This version is limited to first order expansion
+!and avoids the inversion of the overlap.
+!Modified by Rafi Ullah, October, 2015.
+!Parallelized by using Matrix Swtich.
+!*************************** INPUT ***************************************
+!integer no                  : Number of basis orbitals
+!integer nol                 : Local number of basis orbitals
+!integer noccok              : Number of occupied wavefunctions per spin
+!real*8 H(no,nol)             : Hamiltonian matrix
+!real*8 S(no,nol)             : Overlap matrix
+!complex*16  Phi(no,nocc) : Old wavefunctions
+!*************************** OUTPUT *************************************
+!complex*16  Phi(no,nocc) : New wavefunctions
+!*************************** AUXILIARY ********************************** 
+!complex*16 Q_1(no_max,no_max)           : Auxiliary Matrix
+!complex*16 Q_2(no_max,no_max)           : Auxiliary Matrix
+!complex*16 Q_3(no_max,no_max)           : Auxiliary Matrix
+!real*8 deltat                           : Duration of the time step 
+!*************************************************************************
+! Modules
+!
+      use precision
+      use MatrixSwitch 
+      use matswinversion,   only: getinverse
+#ifdef MPI
+      use mpi_siesta
+#endif
+      use parallel
+!*************************************************************************   
+  
+ implicit none 
+ !     
+ integer               :: no, ispin, nocc,nuo
+ complex(kind=dp)      :: pi, pj
+ real(kind=dp)         :: deltat
+ type(matrix)          :: H,S,phi,aux4
+ integer   ,  dimension(:), allocatable, save   :: ipiv
+ ! Internal variables 
+ integer               :: i, j , k, info, no2, l
+ type(matrix), save    :: aux1,aux2,aux3
+ complex(kind=dp)      :: alpha, ss, hh,varaux,varaux2
+ character             :: m_storage*5, m_operation*3
+ logical, save         :: onlyelectrons 
+ logical, save         :: frsttime = .true. 
+ !
+#ifdef MPI
+ m_storage='pzdbc'
+ m_operation='lap'
+#else
+ m_storage='szden'
+ m_operation='lap'
+#endif
+ no2=no*no
+ if (frsttime) then
+   call m_allocate(aux1,no,no,m_storage)
+   call m_allocate(aux2,no,no,m_storage)
+   call m_allocate(aux3,no,no,m_storage)
+   call memory('A','I',no,'Uphi')
+   frsttime=.false.
+ endif
+ call m_allocate(aux4,phi%dim1,phi%dim2,m_storage)
+ ! First order expansion for the evolution operator
+ alpha=-0.5_dp*cmplx(0.0_dp,1.0_dp,dp)*deltat
+ call m_add(S,'n',aux1,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+ call m_add(S,'n',aux2,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+ call m_add(phi,'n',aux4,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+ call m_add(H,'n',aux1,alpha,cmplx(1.0_dp,0.0_dp,dp),m_operation)
+ call m_add(H,'n',aux2,-1.0_dp*alpha,cmplx(1.0_dp,0.0_dp,dp),m_operation)
+ call getinverse(aux2)
+ !
+ call mm_multiply(aux2,'n',aux1,'n',aux3,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+ !      
+ call mm_multiply(aux3,'n',aux4,'n',phi,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+ !
+ call m_deallocate(aux4)
+ !
+ END SUBROUTINE Uphi
+ !------------------------------------------------------------------------------------!
+ SUBROUTINE evol1new(Hauxms, Sauxms, no, nol, nspin, ispin,         & 
+            ncounter, delt, nstp)
+!*************************************************************************
+!Subroutine that calculates the new wavefunction, given the old 
+!wavefunction by using the formula for the time evolution. Gamma-point 
+!version. Written by A. Tsolakidis, May 2000 
+!Modified by D. Sanchez-Portal, July 2002
+!This version is limited to first order expansion
+!and avoids the inversion of the overlap
+!Re-written by Rafi Ullah and Adiran Garaizar June-October 2015.
+!Making it parallel using Matrix Swtich.
+!*************************************************************************
+! Modules
+!
+      use precision
+      use fdf
+      use wavefunctions, only: wavef_ms
+      use parallel
+      use MatrixSwitch
+#ifdef MPI
+      use mpi_siesta
+#endif
+!*************************************************************************   
+  implicit none 
+  !
+  integer                 :: no,  ispin, ncounter, nol, nstp, nspin,nuo
+  complex(kind=dp)        :: pi, pj
+  double precision        :: deltat, delt, varaux
+  !logical                 :: ElecDynPC
+  !
+  type(matrix),intent(in)         :: Hauxms, Sauxms 
+  type(matrix),allocatable,save   :: Hsve(:)
+  character(5)                    :: m_storage
+  character(3)                    :: m_operation
+  ! Internal variables ...
+  integer                :: i, j , k, info, no2, nocc, l
+  complex*16             ::  alpha,hh, sum
+  logical, save          :: fsttim(2) = (/.true. , .true./)
+  logical, save          :: frsttime = .true.
+  logical, save          :: onlyelectrons  = .false.
+  logical, parameter     :: extrapol=.true.
+  save                   ::  deltat
+  !
+#ifdef MPI
+  m_storage='pzdbc'
+  m_operation='lap'
+#else
+  m_storage='szden'
+  m_operation='lap'
+#endif
+  no2=no*no
+  if (frsttime) then
+    !nstp is the number of "substeps" in the electronic evolution
+    !the evolution operator is applied in each substep although
+    !an extrapolated Hamiltonian is used "rather" than 
+    !a SCF Hamiltonian
+    deltat=delt/0.04837d0/dble(nstp)
+    if (Node.eq.0) then
+      write(6,*) 'evol1: time step (Ry**-1) ',deltat
+    end if
+    onlyelectrons=fdf_boolean('MD.OnlyElectrons',.false.)
+    allocate(Hsve(nspin))
+    do i=1, nspin
+      call m_allocate(Hsve(i),no,no,m_storage)
+    end do 
+    frsttime=.false.
+  endif     ! frsttime
+  nocc=wavef_ms(1,ispin)%dim2
+  call timer('evol1.xtpl',1)
+  !
+  do l=1,nstp
+    if(fsttim(ispin).or..not.extrapol) then
+      call Uphi(Hauxms, Sauxms, wavef_ms(1,ispin), no, nocc, deltat)
+    else
+      varaux=(l-0.5_dp)/dble(nstp)
+      call m_add(Hauxms,'n',Hsve(ispin),cmplx(1.0,0.0,dp),cmplx(-1.0,0.0,dp),m_operation)
+      call m_add(Hauxms,'n',Hsve(ispin),cmplx(1.0,0.0,dp),cmplx(varaux,0.0,dp),m_operation) 
+      call Uphi(Hsve(ispin), Sauxms, wavef_ms(1,ispin),no, nocc, deltat)
+    endif
+  enddo 
+  fsttim(ispin)=.false.
+  !
+  !Storing Hamitonian for extrapolation and later correction    
+  !
+  call m_add(Hauxms,'n',Hsve(ispin),cmplx(1.0,0.0_dp,dp),cmplx(0.0,0.0,dp),m_operation)
+  call timer('evol1.xtpl',2)
+  END SUBROUTINE evol1new
+!---------------------------------------------------------------------------------------!
+      subroutine applyinverSH(S,H,no,nol,psi,psi2)
+!**********************************************************************************!
+! Re-written by Rafi Ullah and Adiran Garaizar June-October 2015                   !
+! to make it parallel using Matrix Switch.                                         !
+!**********************************************************************************!
+      use parallel
+      use precision
+      use MatrixSwitch
+      use matswinversion,   only: getinverse
+      !
+      implicit none
+      !
+      integer                :: i, j , k, info, no2,no, nol
+      logical, save          :: frstime = .true.
+      character              :: m_storage*5, m_operation*3
+      !
+      type(matrix)           :: S, H,psi,psi2
+      type(matrix),save      ::  aux1, S_1
+      !
+#ifdef MPI
+      m_storage='pzdbc'
+      m_operation='lap'
+#else
+      m_storage='szden'
+      m_operation='lap'
+#endif
+      no2=no*no
+      if (frstime) then
+        call m_allocate(aux1,no,no,m_storage)
+        call m_allocate(S_1,no,no,m_storage)
+        frstime=.false.
+      endif
+      ! Invert the overlap matrix.
+      call m_add (S,'n',S_1,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+      call getinverse(S_1,m_operation)
+      call mm_multiply(H,'n',S_1,'n',aux1,cmplx(1.0_dp,0.0_dp,dp),                         &
+           cmplx(0.0_dp,0.0_dp,dp),m_operation)
+      call mm_multiply(aux1,'n',psi,'t',psi2,cmplx(1.0_dp,0.0_dp,dp),                      &
+           cmplx(0.0_dp,0.0_dp,dp),m_operation)
+      end subroutine applyinverSH
