@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 module m_energies
   use precision, only: dp
 	implicit none
@@ -33,6 +40,8 @@ module m_energies
   real(dp):: Uatm       ! Harris hartree electron energy,  calculated in dhscf
   real(dp):: Uscf       ! SCF hartree electron energy,  calculated in dhscf
   real(dp):: Ebs        ! Band-structure energy, Tr(DM*H), calculated in compute_dm
+  real(dp):: Eldau      
+  real(dp):: DEldau      
 
 end module m_energies
 

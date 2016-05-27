@@ -1,19 +1,16 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module atm_types
 
       use precision, only: dp
       use radial, only: rad_func
 !
-!     Derived types for orbitals and KB projectors
+!     Derived types for orbitals,  KB projectors, and LDA+U projectors
 !
       implicit none
 !
@@ -63,7 +60,7 @@
                                                         ! (total of 2l+1
                                                         ! components)
 !
-!        Projectors
+!        KB Projectors
 !             For each l, there can be several projectors. Formally, we 
 !             can can use the "nl" terminology for them. n will run from
 !             1 to the total number of projectors at that l.
@@ -75,7 +72,7 @@
          integer, dimension(maxn_pjnl)   ::  pjnl_n     ! n of each nl proj
          real(dp), dimension(maxn_pjnl)
      $                                   ::  pjnl_ekb   ! energy of
-                                                         ! each nl proj
+
 !
 !        Aggregate numbers of orbitals and projectors (including 2l+1
 !        copies for each "nl"), and index arrays keeping track of
@@ -98,8 +95,38 @@
          integer, dimension(maxnprojs)   ::  pj_m
          integer, dimension(maxnprojs)   ::  pj_gindex
 !
+!        LDA+U Projectors
+!        Here we follow the scheme used for the KB projectors
+!        
+         integer                         ::  n_pjldaunl 
+                                             ! num of "nl" projs
+                                             ! not counting the "m copies"
+         integer                         ::  lmax_ldau_projs 
+                                             ! l cutoff for LDA+U proj
+         integer, dimension(maxn_pjnl)   ::  pjldaunl_l ! l of each nl proj
+         integer, dimension(maxn_pjnl)   ::  pjldaunl_n ! n of each nl proj
+                                             ! Here, n is not the principal
+                                             ! quantum number, but a sequential
+                                             ! index from 1 to the total 
+                                             ! number of projectors for that l.
+                                             ! In the case of LDA+U projectors,
+                                             ! It is always equal to 1.
+         real(dp), dimension(maxn_pjnl)  ::  pjldaunl_U ! U of each nl projector
+         real(dp), dimension(maxn_pjnl)  ::  pjldaunl_J ! J of each nl projector
+
+         integer                         ::  nprojsldau
+                                             ! Total number of LDA+U proj.
+                                             ! counting the "m copies"
+                                             ! (including the (2l + 1) factor))
+         integer, dimension(maxnprojs)   ::  pjldau_index
+         integer, dimension(maxnprojs)   ::  pjldau_n
+         integer, dimension(maxnprojs)   ::  pjldau_l
+         integer, dimension(maxnprojs)   ::  pjldau_m
+         integer, dimension(maxnprojs)   ::  pjldau_gindex
+!
          type(rad_func), dimension(:), pointer       ::  orbnl
          type(rad_func), dimension(:), pointer       ::  pjnl
+         type(rad_func), dimension(:), pointer       ::  pjldau
          type(rad_func)                              ::  vna
          integer                                     ::  vna_gindex
          type(rad_func)                              ::  chlocal

@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 module m_matel_registry
   !
   ! This module provides a general interface to the
@@ -145,20 +152,20 @@ CONTAINS
   end subroutine register_in_tf_pool
 
 !--------------------------------------------------------------
-subroutine show_pool()
-  use trialorbitalclass, only: print_trialorb
+  subroutine show_pool()
+    use trialorbitalclass, only: print_trialorb
 
-  integer :: gindex
+    integer :: gindex
 
-  do gindex = 1, nfuncs
-     if (associated(matel_pool(gindex)%rf)) then
-        call print_rf(matel_pool(gindex)%rf)
-     else if (associated(matel_pool(gindex)%tf)) then
-        call print_trialorb(matel_pool(gindex)%tf)
-     endif
-  enddo
-end subroutine show_pool
-        
+    do gindex = 1, nfuncs
+       if (associated(matel_pool(gindex)%rf)) then
+          call print_rf(matel_pool(gindex)%rf)
+       else if (associated(matel_pool(gindex)%tf)) then
+          call print_trialorb(matel_pool(gindex)%tf)
+       endif
+    enddo
+  end subroutine show_pool
+
 !--------------------------------------------------------------
 
   function rcut(gindex) result(cutoff)

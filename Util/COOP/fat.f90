@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !==================================================================
 !
 program fatband
@@ -43,7 +50,7 @@ program fatband
   real(dp) :: minimum_spec_eigval = -huge(1.0_dp)
   real(dp) :: maximum_spec_eigval = huge(1.0_dp)
 
-  integer  :: fat_u, ib, nbands
+  integer  :: ib, nbands
 
   !
   !     Process options
@@ -480,7 +487,7 @@ program fatband
                              ! Common factor computed here
                              factor =  (qcos*cos(alfa)-qsin*sin(alfa))
 
-                             fat(iw,is) = fat(iw,is) + Sover(ind)*factor
+                             fat(ib,is) = fat(ib,is) + Sover(ind)*factor
 
                         enddo   ! i2
                     enddo  ! i1

@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module m_siesta_analysis
       use write_subs
 
@@ -18,7 +25,6 @@
       use units, only: Debye, eV
       use sparse_matrices, only: maxnh, listh, listhptr, numh
       use sparse_matrices, only: H, S, Dscf, Dold, Eold, xijo
-      use sparse_matrices, only: Work=>H_kin  ! For scratch only!
       use siesta_geom
       use m_dhscf, only: dhscf
       use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
@@ -415,22 +421,19 @@
 
 !     Calculation of the bulk polarization using the Berry phase
 !     formulas by King-Smith and Vanderbilt
-!     Attention Work is used as an auxiliary array
       if (nkpol.gt.0 .and. .not.bornz) then
         call KSV_pol(na_u, na_s, xa_last, rmaxo, scell_last, ucell_last,
      &               no_u, no_l, no_s, nspin, qspin, 
      &               maxnh, nkpol, numh, listhptr, listh, 
-     &               H, S, Work, xijo, indxuo, isa, iphorb, 
+     &               H, S, xijo, indxuo, isa, iphorb, 
      &               iaorb, lasto, shape,
      &               nkpol,kpol,wgthpol, polR, polxyz ) 
       endif
 
 !     Calculation of the optical conductivity
-!     Attention Work, Eold, Dold are used as auxiliary arrays
       call optical(na_u, na_s, xa_last, scell_last, ucell_last,
      &             no_u, no_l, no_s, nspin, qspin,
-     &             maxnh, numh, listhptr, listh, H, S, Work,
-     &             Eold(1:maxnh,1), Dold(1:maxnh,1), xijo,
+     &             maxnh, numh, listhptr, listh, H, S, xijo,
      $             indxuo, ebk, ef, temp,
      &             isa, iphorb, iphKB, lasto, lastkb, shape )
 

@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !
 !     Some of the functionality of the former write_subs module 
 !     has been split into  three sub-modules to work around a compiler bug.
@@ -298,6 +305,7 @@
      .     'siesta: Ena     =', Ena/eV,
      .     'siesta: Ekin    =', Ekin/eV,
      .     'siesta: Enl     =', Enl/eV,
+     .     'siesta: EldaU   =', Eldau/eV,
      .     'siesta: DEna    =', DEna/eV,
      .     'siesta: DUscf   =', DUscf/eV,
      .     'siesta: DUext   =', DUext/eV,
@@ -328,6 +336,9 @@
           call cmlAddProperty(xf=mainXML, value=Enl/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Enl', fmt='r6')
+          call cmlAddProperty(xf=mainXML, value=Eldau/eV,
+     .         units='siestaUnits:eV',
+     .         dictref='siesta:Eldau', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=DEna/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DEna', fmt='r6')
@@ -524,6 +535,7 @@
      .    'siesta: ', 'Band Struct. =', Ebs/eV,
      .    'siesta: ',      'Kinetic =', Ekin/eV,
      .    'siesta: ',      'Hartree =', Uscf/eV,
+     .    'siesta: ',      'Eldau   =', Eldau/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
      .    'siesta: ',  'Exch.-corr. =', Exc/eV,
      .    'siesta: ', 'Ion-electron =', (Enascf+Enl+DUscf-Uscf-Uatm)/eV,
@@ -541,6 +553,9 @@
           call cmlAddProperty(xf=mainXML, value=Uscf/eV,  
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Uscf', fmt='r7')
+          call cmlAddProperty(xf=mainXML, value=Eldau/eV,  
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Eldau', fmt='r7')
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r7')

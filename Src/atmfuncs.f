@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module atmfuncs
 
@@ -48,7 +45,7 @@ C     different chemical species in the calculation:
       public  :: phiatm, all_phi
       public  :: pol   ! Added JMS Dec.2009
 
-      public  :: orb_gindex, kbproj_gindex, vna_gindex
+      public  :: orb_gindex, kbproj_gindex, vna_gindex, ldau_gindex
       private
                           !
       contains
@@ -216,6 +213,20 @@ C Returns the global index of a KB projector
 
       kbproj_gindex = species(is)%pj_gindex(ko)
       end function kbproj_gindex
+
+      FUNCTION ldau_gindex (IS,IO)
+      integer ldau_gindex
+      integer, intent(in) :: is    ! Species index
+      integer, intent(in) :: io    ! Orbital index (within atom)
+
+C Returns the global index of a LDA+U projector
+
+      call chk('ldau_gindex',is)
+      if ( (io .gt. species(is)%nprojsldau) .or.
+     $     (io .lt. 1))   call die("ldau_gindex: Wrong io")
+
+      ldau_gindex = species(is)%pjldau_gindex(io)
+      end function ldau_gindex
 
       FUNCTION vna_gindex (IS)
       integer vna_gindex

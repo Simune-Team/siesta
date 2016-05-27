@@ -1,7 +1,10 @@
 Tools to deal with band-structures:
 
--- gnubands, new.gnubands: Convert a .bands file produced by Siesta to a form
-   	     		   suitable for plotting with gnuplot.
+-- new.gnubands: Convert a .bands file produced by Siesta to a form
+   	     	 suitable for plotting with gnuplot.
+
+-- gnubands: Convert a .bands file produced by Siesta to a form
+   	     suitable for plotting with gnuplot (older version)
 
 -- eigfat2plot: Convert an .EIGFAT file produced by the "fat" program
    		in Util/COOP to a form suitable for plotting

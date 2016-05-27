@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 
 subroutine writemmn( ispin )
 !
@@ -611,7 +618,7 @@ kpoints:                 &
   
 !   Open the output file
     if( IOnode ) then
-      write(unkfilename,"('UNK',i5.5,'.',i1)"), ik, ispin
+      write(unkfilename,"('UNK',i5.5,'.',i1)") ik, ispin
       call io_assign(unkfileunit)
       if( .not. unk_format ) then
         open( unit=unkfileunit, err=1992, file=unkfilename,          &

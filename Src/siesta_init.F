@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       MODULE m_siesta_init
       private
       public :: siesta_init
@@ -17,7 +24,7 @@
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
      &                              iza, rmaxo, zvaltot, superc,
-     &                              initatomlists, no_l
+     &                              initatomlists, no_l, rmaxldau
       use fdf
       use sys,                only: die, bye
 #ifdef BSC_CELLXC
@@ -56,6 +63,7 @@
 #ifdef MPI
       use mpi_siesta
 #endif
+      use m_cite, only: add_citation, init_citation
 
 #ifdef TRANSIESTA
       use m_ts_init, only : ts_init
@@ -141,6 +149,9 @@
       Emm     = 0.0_dp
       Entropy = 0.0_dp
       FreeE   = 0.0_dp
+      Eldau   = 0.0_dp
+      DEldau  = 0.0_dp
+
 
 #ifdef DEBUG_XC
 ! Set output file unit for debug info
@@ -176,6 +187,12 @@
      .                   threshold=threshold,
      &                   printNow=.false. )
 
+      if ( IONode ) then
+         ! Add citations
+         call init_citation(trim(slabel))
+         call add_citation("10.1088/0953-8984/14/11/302")
+      end if
+      
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
       call read_xc_info()
@@ -193,7 +210,6 @@
       call broadcast_basis( )
 
       call register_rfs()
-!     call test_register()
 
       atmonly = fdf_get( 'Atom-Setup-Only', .false. )
       if (atmonly) call bye( 'End of atom setup' )
@@ -281,10 +297,10 @@
       endif
 
 !     Find maximum interaction range
-      if (negl) then
-        rmaxh = 2.0_dp*rmaxo
+      if ( negl ) then
+        rmaxh = 2.0_dp*(rmaxo + rmaxldau)
       else
-        rmaxh = 2.0_dp*rmaxo + 2.0_dp*rmaxkb
+        rmaxh = 2.0_dp*(rmaxo + max(rmaxkb,rmaxldau))
       endif
 
 !     Madelung correction for charged systems

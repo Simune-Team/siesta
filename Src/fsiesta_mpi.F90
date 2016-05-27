@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !-----------------------------------------------------------------------------
 !
 ! module fsiesta
@@ -453,9 +450,9 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 
 ! BEGIN DEBUG: Print coords
   if (myNode==0) then
-    write(6,'(/,2a)'),         'siesta_forces: label = ', trim(label)
-    write(6,'(3a,/,(3f12.6))'),'siesta_forces: cell (',trim(xunit),') =',myCell
-    write(6,'(3a,/,(3f12.6))'),'siesta_forces: xa (',trim(xunit),') =', xa
+    write(6,'(/,2a)')          'siesta_forces: label = ', trim(label)
+    write(6,'(3a,/,(3f12.6))') 'siesta_forces: cell (',trim(xunit),') =',myCell
+    write(6,'(3a,/,(3f12.6))') 'siesta_forces: xa (',trim(xunit),') =', xa
     write(6,*) ' '
   end if
 ! END DEBUG
@@ -476,9 +473,9 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 
 ! BEGIN DEBUG: Print forces
   if (myNode==0) then
-    write(6,'(/,3a,f12.6)'),    'siesta_forces: energy (',trim(eunit),') =', e
-    write(6,'(3a,/,(3f12.6))'), 'siesta_forces: stress (',trim(sunit),') =', s
-    write(6,'(3a,/,(3f12.6))'), 'siesta_forces: forces (',trim(funit),') =', f
+    write(6,'(/,3a,f12.6)')    'siesta_forces: energy (',trim(eunit),') =', e
+    write(6,'(3a,/,(3f12.6))') 'siesta_forces: stress (',trim(sunit),') =', s
+    write(6,'(3a,/,(3f12.6))') 'siesta_forces: forces (',trim(funit),') =', f
     write(6,*) ' '
   end if
 ! END DEBUG

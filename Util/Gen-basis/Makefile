@@ -1,3 +1,10 @@
+# ---
+# Copyright (C) 1996-2016	The SIESTA group
+#  This file is distributed under the terms of the
+#  GNU General Public License: see COPYING in the top directory
+#  or http://www.gnu.org/copyleft/gpl.txt .
+# See Docs/Contributors.txt for a list of contributors.
+# ---
 #
 # Makefile for stand-alone Gen-basis and ioncat
 #
@@ -88,9 +95,17 @@ $(FDF):
                           "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-gen-basis: $(FDF) $(XC) $(OBJS_GEN-BASIS)
+# Simple hack to link to any compiled lapack/blas code
+# If COMP_LIBS is empty, we do a no-op, else link the library file here.
+#
+link_linalg:
+	for llibs in $(COMP_LIBS); do \
+   [ -f ../../$(OBJDIR)/$$llibs ] && ln -sf ../../$(OBJDIR)/$$llibs . ; \
+	done
+#
+gen-basis: $(FDF) $(XC) $(OBJS_GEN-BASIS) link_linalg
 	$(FC) -o gen-basis \
-	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) $(NETCDF_LIBS) $(LIBS)
+	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) $(NETCDF_LIBS) $(COMP_LIBS) $(LIBS)
 #
 ioncat:  $(FDF) $(IONCAT_OBJS)
 	$(FC) -o ioncat \
@@ -100,10 +115,8 @@ clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f gen-basis ioncat *.o  *.a
 	rm -f *.mod
-	(mkdir -p fdf; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	rmdir fdf
-	(mkdir -p SiestaXC; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	rmdir SiestaXC
+	rm -rf fdf
+	rm -rf SiestaXC
 	rm -f _tmp_deps deps.list  protomake*
 #
 ALL_OBJS=$(IONCAT_OBJS) $(OBJS_GEN-BASIS)
