@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine recoor(overflow, cell, alat, xa, isa, xmass, na) 
 
@@ -117,11 +114,11 @@ c read atomic coordinates and species
      .    then
           do ia = 1,na
             if (.not. fdf_bline(bfdf,pline)) then
-               call die('vibrator: Not enough lines in ' //
+               call die('vibra: Not enough lines in ' //
      .              'AtomicCoordinatesAndAtomicSpecies block')
             endif
             if (.not. fdf_bmatch(pline,'vvviv')) then
-               call die("vibrator: not enough values in Coords line")
+               call die("vibra: not enough values in Coords line")
             endif
 
             xa(1,ia) = fdf_bvalues(pline,1)

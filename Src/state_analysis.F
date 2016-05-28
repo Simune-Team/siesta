@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       MODULE m_state_analysis
       use write_subs
 
@@ -11,17 +18,15 @@
       use m_born_charge, only : born_charge
       use parallel,      only : IOnode
       use m_wallclock,   only : wallclock
-      use zmatrix,       only : lUseZmatrix, iofaZmat, write_Zmatrix,
-     &                          CartesianForce_to_ZmatForce,
-     &                          write_canonical_ucell_and_Zmatrix
-      use m_iostruct,    only : write_struct
-      use atomlist,      only : iaorb, iphorb, iza, amass, no_u, lasto,
-     &                          superx
+      use zmatrix,       only : lUseZmatrix, iofaZmat,
+     &                          CartesianForce_to_ZmatForce
+      use atomlist,      only : iaorb, iphorb, iza, amass, no_u, lasto
       use m_spin,        only : nspin
       use m_fixed,       only : fixed
       use sparse_matrices
       use siesta_geom
       USE siesta_options
+      use units, only: amu, eV
       use m_stress
       use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
       use m_ntm
@@ -39,21 +44,10 @@
       real(dp), external :: volcel
 
 !------------------------------------------------------------------------- BEGIN
-      call timer( 'STanaly', 1 )
-#ifdef DEBUG
-      call write_debug( '  PRE state_analysis' )
-#endif
-!     Save structural information in crystallographic format,
-!     and canonical Zmatrix (if applicable) before moving the atoms
+      call timer( 'state_analysis', 1 )
+
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='SCF Finalization')   
-      endif
-
-      if (IOnode) then
-        call write_struct( ucell, na_u, isa, iza, xa )
-        if (lUseZmatrix .and. (idyn.eq.0)) then
-          call write_canonical_ucell_and_Zmatrix()
-        endif
       endif
 
 !     Write final Kohn-Sham Energy 
@@ -67,7 +61,7 @@
      .       fmt='r6')
       endif
 
-!     Substract egg box effect form energy
+!     Substract egg box effect from energy
       if (eggbox_block) then
         call eggbox( 'energy', ucell, na_u, isa, ntm, xa, fa, Etot,
      &               eggbox_block )
@@ -125,7 +119,7 @@
 
 !     Force output 
       if (IOnode) then
-        call siesta_write_forces()
+        call siesta_write_forces(istep)
         call siesta_write_stress_pressure()
         call wallclock('--- end of geometry step')
       endif
@@ -145,10 +139,8 @@
       if (cml_p) then
          call cmlEndModule(mainXML)         
       endif 
-      call timer( 'STanaly', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS state_analysis' )
-#endif
+      call timer( 'state_analysis', 2 )
+
 !--------------------------------------------------------------------------- END
       END subroutine state_analysis
 

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module band
       use precision, only: dp
@@ -133,6 +130,8 @@ C
       use precision
       use parallel,     only : Node
       use fdf
+      use m_get_kpoints_scale, only: get_kpoints_scale
+      
       implicit          none
 
       integer, intent(in) :: maxk
@@ -143,20 +142,14 @@ C
       external          paste, redcel
 C *********************************************************************
 
-      character 
-     .  scale*30
-
       logical BandLinesPresent, BandPointsPresent
       logical :: Nlines_overflow
 
       integer
-     .  ik, il, ix, 
-     .  mscell(3,3),
+     .  ik, il, ix, ierr,
      .  ni, nkl, nn, nr, nv
 
-      real(dp)
-     .  alat, caux(3,3), pi,
-     .  rcell(3,3), ucell(3,3)
+      real(dp) caux(3,3), rcell(3,3)
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -173,34 +166,12 @@ C Find if there are band-lines data
 
         if ( BandLinesPresent .or. BandPointsPresent ) then
 
-C Find lattice constant
-          alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
-          if (alat .eq. 0.d0) then
-            if (Node .eq.0 ) then
-              write(6,'(a)') 'bands: ERROR: Lattice constant required'
-            endif
-            goto 999
-          endif
+           call get_kpoints_scale('BandLinesScale',rcell,ierr)
 
-C Find scale used in k point data
-          scale = fdf_string( 'BandLinesScale', 'pi/a' )
-          if (scale .eq. 'pi/a') then
-            pi = 4.d0 * atan(1.d0)
-          elseif (scale .eq. 'ReciprocalLatticeVectors') then
-            call redcel( alat, caux, ucell, mscell )
-            call reclat( ucell, rcell, 1 )
-          elseif (Node .eq. 0) then
-            write(6,'(a,/,2a,/,a)')
-     .        'bands: WARNING: Invalid value for BandLinesScale',
-     .        'bands: Allowed values are pi/a and',
-     .              ' ReciprocalLatticeVectors',
-     .        'bands: No band calculation performed'
-          endif
-CEA
-        else
-C No k-point data available => go to exit point
-           nk = 0
-          goto 999
+           if (ierr /= 0) then
+              nk = 0
+              goto 999
+           endif
         endif
 !
         if ( BandLinesPresent .and. BandPointsPresent ) then
@@ -238,17 +209,11 @@ C Add to total number of k points
             if (nk .le. maxk) then
 
 C Find last point in line
-              if (scale .eq. 'pi/a') then
-                kpoint(1,nk) = fdf_bvalues(pline,2) * pi / alat
-                kpoint(2,nk) = fdf_bvalues(pline,3) * pi / alat
-                kpoint(3,nk) = fdf_bvalues(pline,4) * pi / alat
-              elseif (scale .eq. 'ReciprocalLatticeVectors') then
-                do ix = 1,3
+               do ix = 1,3
                   kpoint(ix,nk) = rcell(ix,1) * fdf_bvalues(pline,2) +
      .                            rcell(ix,2) * fdf_bvalues(pline,3) +
      .                            rcell(ix,3) * fdf_bvalues(pline,4)
-                enddo
-              endif
+               enddo
 
 C Find points along the line
               do ik = 1,nkl-1
@@ -306,17 +271,11 @@ C Add to total number of k points
             if (nk .le. maxk) then
 
 C Accumulate new point
-              if (scale .eq. 'pi/a') then
-                kpoint(1,nk) = fdf_bvalues(pline,1) * pi / alat
-                kpoint(2,nk) = fdf_bvalues(pline,2) * pi / alat
-                kpoint(3,nk) = fdf_bvalues(pline,3) * pi / alat
-              elseif (scale .eq. 'ReciprocalLatticeVectors') then
                 do ix = 1,3
                   kpoint(ix,nk) = rcell(ix,1) * fdf_bvalues(pline,1) +
      .                            rcell(ix,2) * fdf_bvalues(pline,2) +
      .                            rcell(ix,3) * fdf_bvalues(pline,3)
                 enddo
-              endif
             endif
 
             il = il + 1

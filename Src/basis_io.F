@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module basis_io
 !
@@ -798,6 +795,30 @@ c
            endif ! (write_ion_plot_files)
 
 
+         enddo
+
+         write(lun,'(a)') "# LDA+U projectors:_____________"
+         do i=1,spp%n_pjldaunl
+           zeta = 1
+           l = spp%pjldaunl_l(i)
+           write(lun,'(2i3,2x,a)')
+     $          spp%pjldaunl_l(i), spp%pjldaunl_n(i),
+     $          " #LDA+U projector l, n (sequence number)"
+            call radial_dump_ascii(spp%pjldau(i),lun)
+
+           if (write_ion_plot_files) then
+            write(fileid,'(a,i1,a,i1,a,a)') "LDA+U.L", l , ".",
+     $            zeta, ".", trim(spp%label)
+            call io_assign(lun2)
+            open(unit=lun2,file=fileid,status='replace',
+     $                     form='formatted')
+            write(lun2,'(2a,2i3)') "# ",trim(spp%label), 
+     $           spp%pjldaunl_l(i), spp%pjldaunl_n(i)
+            write(lun2,'(a)')
+     $           "#LDA+U projector l, n (sequence number)"
+            call radial_dump_ascii(spp%pjldau(i),lun2,header=.false.)
+            call io_close(lun2)
+           endif ! (write_ion_plot_files)
          enddo
 
          write(lun,'(a)') "# Vna:__________________________"

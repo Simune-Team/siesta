@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       MODULE sparse_matrices
       use precision
       implicit none
@@ -20,10 +27,15 @@
       real(dp), pointer :: H_kin(:) => null()
       real(dp), pointer :: H_vkb(:) => null()
 
+      ! LDA+U Hamiltonian
+      real(dp), pointer :: H_ldau(:,:) => null()
+
+
       CONTAINS
 
       subroutine resetSparseMatrices( )
       use alloc,           only : de_alloc
+!      use siesta_options, only  : MixH
       implicit none
 
       call de_alloc( listh,       'listh',       'sparseMat' )
@@ -36,8 +48,10 @@
       call de_alloc( Eold,        'Eold',        'sparseMat' )
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
+      call de_alloc( Hold,        'Hold',        'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
       call de_alloc( H_vkb,       'H_vkb',       'sparseMat' )
+      call de_alloc( H_ldau,      'H_ldau',      'sparseMat' )
       call de_alloc( xijo,        'xijo',        'sparseMat' )
       call de_alloc( S,           'S',           'sparseMat' )
 

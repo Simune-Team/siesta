@@ -1,12 +1,9 @@
 !
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-!
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 ! This code segment has been fully created by:
 ! Nick Papior Andersen, 2012, nickpapior@gmail.com
@@ -38,6 +35,8 @@ contains
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
     use m_ts_options ! Just everything (easier)
 
+    use m_cite, only: add_citation
+    
     implicit none
 ! *********************
 ! * INPUT variables   *
@@ -60,6 +59,11 @@ contains
 
     ! If we actually have a transiesta run we need to process accordingly!
     if ( TSmode ) then
+
+       ! add citation
+       if ( IONode ) then
+          call add_citation("10.1103/PhysRevB.65.165401")
+       end if
 
        ! Show every region of the Transiesta run
        call ts_show_regions(ucell,na_u,xa, &

@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !
 !     Some of the functionality of the former write_subs module 
 !     has been split into  three sub-modules to work around a compiler bug.
@@ -12,7 +19,7 @@
       public :: siesta_write_positions
       CONTAINS
       
-      subroutine siesta_write_positions()
+      subroutine siesta_write_positions(moved)
       use siesta_geom
       use atomlist, only: elem, iza
       use siesta_cml
@@ -23,24 +30,35 @@
 
       implicit none
 
+!     Whether the structure has already changed in response to forces and stresses
+      logical, intent(in) :: moved
+
 !
 !      Write out structural information in "crystallography" format,
 !      and in "canonical" (see Zmatrix module) zmatrix format.
-!      By now the structure might have changed in response to forces
-!      and stresses.
 
-        call write_struct( ucell, na_u, isa, iza, xa, moved=.true.)
+
+        call write_struct( ucell, na_u, isa, iza, xa, moved)
         if (lUseZmatrix .and. (idyn .eq. 0)) then
-           call write_canonical_ucell_and_Zmatrix
+           if (moved) then
+              call write_canonical_ucell_and_Zmatrix
      $                         (filename="NEXT_ITER.UCELL.ZMATRIX")
+           else
+              call write_canonical_ucell_and_Zmatrix
+     $                         (filename="OUT.UCELL.ZMATRIX")
+           endif
         endif
 
-        if (cml_p) then
+        ! Note that this information should be written only at the
+        ! time of processing the current geometry (in state_init)
+
+        if ((.not. moved) .and. cml_p) then
           call cmlAddMolecule(xf=mainXML, natoms=na_u, elements=elem,
      .           atomRefs=cisa, coords=xa/Ang)
           call cmlAddLattice(xf=mainXML, cell=ucell/Ang, 
      .           units='siestaUnits:Ang', dictref='siesta:ucell')
         endif
+
       end subroutine siesta_write_positions
 
       END MODULE write_subs_positions
@@ -65,7 +83,6 @@
       use units
       use m_energies, only: FreeE
       use m_stress, only: stress, kin_stress, mstress, cstress, tstress
-      use m_forces,   only: fa, cfa   ! This does not really belong here  
 
       implicit none
 
@@ -187,12 +204,6 @@
 
           endif                  !varcel
 
-        ! Write Force Constant matrix if FC calculation ...
-        case(6)
-          call ofc(cfa,dx,na_u)
-        case(7)
-!          call phonon_write_forces(fa,na_u,ucell,istep)
-           if (IOnode) write(*,*) 'phonon suport deactivated'
         end select !idyn
 
       else !final
@@ -294,6 +305,7 @@
      .     'siesta: Ena     =', Ena/eV,
      .     'siesta: Ekin    =', Ekin/eV,
      .     'siesta: Enl     =', Enl/eV,
+     .     'siesta: EldaU   =', Eldau/eV,
      .     'siesta: DEna    =', DEna/eV,
      .     'siesta: DUscf   =', DUscf/eV,
      .     'siesta: DUext   =', DUext/eV,
@@ -324,6 +336,9 @@
           call cmlAddProperty(xf=mainXML, value=Enl/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Enl', fmt='r6')
+          call cmlAddProperty(xf=mainXML, value=Eldau/eV,
+     .         units='siestaUnits:eV',
+     .         dictref='siesta:Eldau', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=DEna/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DEna', fmt='r6')
@@ -520,6 +535,7 @@
      .    'siesta: ', 'Band Struct. =', Ebs/eV,
      .    'siesta: ',      'Kinetic =', Ekin/eV,
      .    'siesta: ',      'Hartree =', Uscf/eV,
+     .    'siesta: ',      'Eldau   =', Eldau/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
      .    'siesta: ',  'Exch.-corr. =', Exc/eV,
      .    'siesta: ', 'Ion-electron =', (Enascf+Enl+DUscf-Uscf-Uatm)/eV,
@@ -537,6 +553,9 @@
           call cmlAddProperty(xf=mainXML, value=Uscf/eV,  
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Uscf', fmt='r7')
+          call cmlAddProperty(xf=mainXML, value=Eldau/eV,  
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Eldau', fmt='r7')
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r7')
@@ -579,14 +598,16 @@
      &          siesta_write_energies, siesta_write_positions
       CONTAINS
       
-      subroutine siesta_write_forces()
+      subroutine siesta_write_forces(istep)
+      use parallel, only: IOnode
       USE siesta_options
       use siesta_geom
       use siesta_cml
-      use units,      only : Ang
+      use units,      only : Ang, eV
       use m_forces
       use alloc,      only : re_alloc, de_alloc
       implicit none
+      integer, intent(in) :: istep
       integer :: ia, ix
       real(dp) :: cfmax, fmax, fres
       real(dp) :: ftot(3), cftot(3)
@@ -626,8 +647,15 @@
         if (writef) then
           write(6,'(i6,3f12.6)')(ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
         endif
+
         ! Always write forces to .FA file
-        call iofa( na_u, cfa )
+        call iofa( na_u, fa , .false.)
+        if ( any(fa/=cfa) ) then
+           ! if any one constraint is not the same
+           ! as the real forces, the FAC file 
+           ! will also be created
+           call iofa( na_u, cfa , .true. )
+        end if
 
         write(6,'(40("-"),/,a6,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
         write(6,'(40("-"),/,a6, f12.6)') 'Max',fmax*Ang/eV
@@ -635,6 +663,21 @@
      .       '    sqrt( Sum f_i^2 / 3N )'
         write(6,'(40("-"),/,a6, f12.6,a)') 'Max',cfmax*Ang/eV, 
      .       '    constrained'
+
+        ! Write Force Constant matrix if FC calculation ...
+        select case (idyn)
+        case(6)
+           ! If the istep is the first step, then it
+           ! must be the first 
+           call ofc(fa,dx,na_u,.false.,istep==inicoor)
+           if ( any(fa/=cfa) ) then
+              call ofc(cfa,dx,na_u,.true.,istep==inicoor)
+           end if
+        case(7)
+!          call phonon_write_forces(fa,na_u,ucell,istep)
+           if (IOnode) write(*,*) 'phonon support deactivated'
+        end select
+
       else !not final
 ! In finalization, only print forces if sufficiently large.
         if (fmax .gt. ftol) then

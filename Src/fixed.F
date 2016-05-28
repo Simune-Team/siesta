@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       MODULE m_fixed
       use precision
@@ -366,6 +363,43 @@ c **********************************************************************
       cstress(1,3) = cstress(1,3) - xs(5)*cstress(1,3)
       cstress(1,2) = cstress(1,2) - xs(6)*cstress(1,2)
       cstress(2,1) = cstress(2,1) - xs(6)*cstress(2,1)
+
+!
+!     We could treat here extra "constraints" affecting
+!     the stress which are implicitly applied by all
+!     "relaxation" routines:
+!
+!     1. A possible "target stress" (this can be thought of
+!        as an external generalized pressure).
+!     2. Symmetrization
+!
+!     3. (maybe) The "constant-volume" constraint.
+!
+!     If carried out, this would mean that 'cstress' on exit
+!     from this routine is the "stress_dif" of the relaxation routines.
+!
+!     It should be up to the user to make sure that the options are consistent.
+!
+!     - what happens with a user-defined routine? (precedence?)
+!     - should we do this only for the "relaxation" MD routines?
+!
+!       In pr and npr, there is currently only a "target pressure", but its effect
+!       on the 'aux' variable could be generalized to a "target stress", and the
+!       'potential energy of the PR variables' generalized from pt*vol to sigma_target*epsilon (?)
+!       The problem here is that the equations of motion for the cell variables might
+!       get confused.
+!
+!       In anneal there is an explicit "target stress"
+!     
+!     To avoid changing the current defaults (which, for example, do not allow a "target_stress"
+!     in pr and npr), it might be better to apply the (current) "target stress" option conditions in 
+!     each block of "siesta_move". For idyn=0, this is straightforward, and it has the added benefit
+!     that a lot of repeated code can be removed from the routines. 
+!
+!     It can be also added as a new feature to 'pr' if iquench>0. (and set 'tp=0')
+!
+
+
 
 #ifdef DEBUG
       call write_debug( '    POS fixed' )

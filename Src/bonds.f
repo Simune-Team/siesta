@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       SUBROUTINE BONDS( CELL, NA, ISA, XA, RMAX, filename )
 
@@ -78,7 +75,7 @@ C Find neighbours of atom IA
            call order(  r2ij, 1, nna, index )
            call order(  xij, 3, nna, index )
 
-           write(iu,fmt="(a,i3,1x,a,3f8.4)")
+           write(iu,fmt="(a,i5,1x,a,3f8.4)")
      $       "Neighbors of: ",
      $          ia, trim(labelfis(isa(ia))) // " at: ", xa(:,ia)
 
@@ -87,7 +84,7 @@ C Find neighbours of atom IA
             JS = ISA(JA)
             RIJ = SQRT(R2IJ(IN))
             if (rij > 0.0001_dp) then
-               write(iu,fmt="(i3,1x,a,f8.4,2x,a,3f8.4)")
+               write(iu,fmt="(i5,1x,a,f8.4,2x,a,3f8.4)")
      $           ja, labelfis(js), rij/Ang, "Ang. Really at: ",
      $           xa(:,ia)+xij(:,in)
             endif

@@ -22,7 +22,7 @@
 #define __USING__MPI
 #undef MPI
 #endif
-        USE MPI
+        USE MPI__INCLUDE
 
 !       ... generic overloads for <choice> argument routines ...
 !       ... and for two different-rank <choice> arguments ...

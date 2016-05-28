@@ -29,7 +29,7 @@ integer, intent(in) :: code
 end subroutine alloc_error_report
 !
 ! Timer interface: called at specific events
-! It will include MPI calls if gridxc_init incluyed
+! It will include MPI calls if gridxc_init included
 ! the relevant option
 
          subroutine gridxc_timer_start(str)

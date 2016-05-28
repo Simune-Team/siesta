@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module m_final_H_f_stress
       private
       public :: final_H_f_stress
@@ -5,10 +12,13 @@
 
       subroutine final_H_f_stress( iscf )
 
-      USE siesta_options
-      use sparse_matrices
+      USE siesta_options, only: g2cut, savehs, temp
+      USE siesta_options, only: recompute_H_after_scf
+      use sparse_matrices, only: numh, listh, listhptr
+      use sparse_matrices, only: S, Dscf, Escf, maxnh, xijo
+      use sparse_matrices, only: H, H_ldau
+
       use siesta_geom
-      use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
      &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
      &                    rmaxo, no_l
@@ -20,6 +30,12 @@
       use m_naefs,      only: naefs
       use m_dnaefs,     only: dnaefs
       use m_grdsam,     only: grdsam
+      use ldau_specs,   only: switch_ldau     ! This variable determines whether
+                                              !   the subroutine to compute the
+                                              !   Hubbard terms should be called
+                                              !   or not
+      use m_ldau,       only: hubbard_term    ! Subroutine that compute the
+                                              !   Hubbard terms
       use m_stress
       use m_energies
       use m_steps, only: istp
@@ -38,6 +54,7 @@
 #ifdef TRANSIESTA
 ! TSS Begin
       use files,        only : slabel, label_length
+      use siesta_options, only : idyn, ia1
       use m_ts_global_vars, only : ts_istep
       use m_ts_options, only : savetshs
       use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
@@ -53,6 +70,8 @@
       integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
+      ! To avoid overwriting the current Hamiltonian
+      real(dp), pointer     :: H_tmp(:,:) => null()  
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
@@ -70,7 +89,9 @@
 !--------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
-      H = 0.0_dp
+      call re_alloc(H_tmp, 1,maxnh, 1,nspin,
+     $                       'H_tmp','final_H_f_stress')
+      H_tmp = 0.0_dp
 
 !     Initialize forces and stress ...................
       nullify(fal)
@@ -92,7 +113,7 @@
       call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              min(nspin,2), Dscf, Ekin, fal, stressl, H,
+     &              min(nspin,2), Dscf, Ekin, fal, stressl, H_tmp,
      &              matrix_elements_only=.false. ) 
 #ifdef MPI
 ! Global reduction of energy terms
@@ -105,7 +126,7 @@
       call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
-     &             min(nspin,2), Dscf, Enl, fal, stressl, H,
+     &             min(nspin,2), Dscf, Enl, fal, stressl, H_tmp,
      &             matrix_elements_only=.false. ) 
 
 #ifdef MPI
@@ -116,6 +137,26 @@
 
 !     Non-SCF part of total energy
       E0 = -Eions + Ena + Ekin + Enl
+
+! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
+      if( switch_ldau ) then
+         call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
+     .        maxnh, maxnh, lasto, iphorb, no_u, no_l, 
+     .        numh, listhptr, listh, numh, listhptr, listh,
+     .        min(nspin,2), Dscf, Eldau, DEldau, H_ldau, 
+     .        fal, stressl, H_tmp, iscf,
+     .        matrix_elements_only=.false.)
+#ifdef MPI
+         ! Global reduction of energy terms
+         call globalize_sum(Eldau,buffer1)
+         Eldau = buffer1
+         ! DEldau should not be globalized as it 
+         ! is based on globalized occupations
+#endif
+         Eldau = Eldau + DEldau
+      endif
+! ..................
+
 
 !     Non-local-pseudop: energy, forces, stress and matrix elements
 !     Add SCF contribution to energy and matrix elements 
@@ -130,12 +171,13 @@
       call grdsam( nspin, no_s, iaorb, iphorb, 
      &             no_l, no_u, na_u, na_s, isa, xa, indxua,
      &             ucell, ntm, ifa, istr, maxnh,
-     &             maxnh, numh, listhptr, listh, Dscf, Datm, H,
+     &             maxnh, numh, listhptr, listh, Dscf, Datm, H_tmp,
      &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
 !     Orthonormalization forces ...........................................
-!     **Note that this will re-calculate S also
+!     **Note that this will re-calculate S also, but should get 
+!     the same result
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -163,10 +205,28 @@
       stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
 #endif
+
+      ! If backward compatibility is requested, recover
+      ! the old behavior with respect to H
+
+      if (recompute_H_after_scf) then
+         if (ionode) then
+            write(6,"(a)") ":!: Updating H after scf cycle" //
+     $                     " as requested by compat. option"
+         endif
+         H = H_tmp
+      endif
+
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
+      call de_alloc( H_tmp, 'H_tmp', 'final_H_f_stress' )
 
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
+!
+! Note that we save the Hamiltonian coming out of the scf cycle,
+! not the one computed (from DM_out) in this routine.
+! This call could be moved to a more appropriate place
+!
       if (savehs) then
          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, qtot,
@@ -189,7 +249,7 @@
             fname  = paste( slabel, '.TSHS' )
             iotask ='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H, S,
+     &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
      &                    qtot, temp, xijo, label_length+5, fname, na_u,
      &                    lasto, isa, ef, ucell,ts_kscell, ts_kdispl,
      &                    ts_gamma_scf, xa, 0, 0 )

@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       MODULE m_new_dm
 
 !     Prepares a starting density matrix for a new geometry iteration
@@ -175,7 +182,7 @@
          ! to the bounds appropriate to the new sparsity
          nnz=sum(numh)
          call re_alloc(Dscf,1,nnz,1,nspin,name="Dscf",
-     $                 routine="new_dm",copy=.false.,shrink=.true.)
+     $                 routine="sparseMat",copy=.false.,shrink=.true.)
 
          ! Reset DMsaved to null
          call de_alloc(DMsaved,name="DMsaved",routine="new_dm")

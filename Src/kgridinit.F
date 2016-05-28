@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine kgridinit( cell, kscell, displ, cutoff, nk )
 
@@ -115,7 +112,11 @@ C Look for kscell or cutoff in input fdf file
             kscell(1,i) = fdf_bintegers(pline,1)
             kscell(2,i) = fdf_bintegers(pline,2)
             kscell(3,i) = fdf_bintegers(pline,3)
-            displ(i)    = fdf_breals(pline,1)
+            if ( fdf_bnvalues(pline) > 3 ) then
+               displ(i) = fdf_bvalues(pline,4)
+            else
+               displ(i) = 0._dp
+            end if
           enddo
           nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
      .                 kscell(2,1) * kscell(3,2) * kscell(1,3) +

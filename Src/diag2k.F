@@ -1,12 +1,9 @@
       
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine diag2k( nuo, no, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr, 
@@ -202,7 +199,7 @@ C *********************************************************************
 !-----------------------------------------------------------------------
 !     Check if we are done
 !-----------------------------------------------------------------------
-      if (.not.getD) return
+      if (.not.getD) goto 1001
 !-----------------------------------------------------------------------
       
 !     Find new Fermi energy and occupation weights
@@ -431,6 +428,8 @@ C *********************************************************************
         enddo
         enddo
       enddo
+
+ 1001 continue
       
 !     deallocate the arrays
       call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')

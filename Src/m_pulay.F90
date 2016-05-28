@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 module m_pulay
   use precision, only: dp
   !
@@ -168,7 +175,7 @@ CONTAINS
     real(dp) :: buffer1
 #endif
     !
-    real(dp) ::   ssum
+    real(dp) :: ssum
     real(dp), dimension(:,:), pointer ::  b, bi
     real(dp), dimension(:), pointer   ::  buffer
     real(dp), dimension(:), pointer   ::  coeff, sigma, rhs, beta
@@ -514,6 +521,9 @@ CONTAINS
     call de_alloc( b, name='b', routine="pulayx" )
     call de_alloc( bi, name="bi", routine="pulayx" )
     call de_alloc( coeff, name="coeff", routine="pulayx" )
+    call de_alloc( rhs, name="rhs", routine="pulayx" )
+    call de_alloc( beta, name="beta", routine="pulayx" )
+    call de_alloc( sigma, name="sigma", routine="pulayx" )
     call de_alloc( buffer, name="buffer", routine="pulayx" )
     !
   CONTAINS

@@ -4,6 +4,1290 @@
 
 
 ** CHANGES ALONG trunk
+-----------------------------------------------------------------------
+2016-05-18                                                    trunk-503
+Merged fix lp:1582978 (from rel-4.0)
+
+-----------------------------------------------------------------------
+2016-05-10                                                    trunk-502
+Revise mentions to now-standalone ATOM program. Revert Tests/test.mk.
+
+* The ATOM program is not bundled with Siesta due to licensing
+  differences.  Mentions to it throughout the documentation and
+  example files have been updated accordingly.
+
+* The file Tests/test.mk has been reverted to the revno 488 version.
+  Note that the proper way to run the tests for a given version is
+  to descend into the 'Tests' directory directly below the compilation
+  directory ('Obj' or other) rather than going to the top-level 'Tests'.
+
+* Syntax changes for compiler complaints reported by Mariella Ippolito
+  from CINECA.
+
+* Completion of changes to licensing headers.
+
+modified:
+  Docs/siesta.tex
+  Examples/README
+  Examples/Vps/README
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/fsiesta_mpi.F90
+  Src/write_inp_wannier.F90
+  Src/ldau.F
+  Src/ldau_specs.f
+  Tests/test.mk
+  + Header changes in a number of files
+  
+-----------------------------------------------------------------------
+2016-05-05                                                    trunk-501
+Fix in 'fat' utility. Write spin info in 'eigfat2plot'
+
+The 'fat' program in Util/COOP computes the projections of specific
+band states onto sets of orbitals. Due to an error, the program did
+not function correctly when a subset of upper bands was selected with
+the '-b' and '-B' flags.
+
+The 'eigfat2plot' utility in Util/Bands now prints an extra field giving
+the spin of the state.
+
+modified:
+  Util/Bands/eigfat2plot.f90
+  Util/COOP/fat.f90
+  Util/COOP/main_vars.f90
+
+-----------------------------------------------------------------------
+2016-05-03                                                    trunk-500
+Fix for handling of geometry info in bands/wfns calculation
+
+The computation of bands and/or wavefunctions in 'siesta_analysis'
+requires an initial setup of the k-point sets involved.  These are
+input in ad-hoc fdf blocks with two possible options for the scaling:
+'pi/a' and 'ReciprocalLatticeVectors'.
+
+The 'pi/a' option needs a lattice constant, which is determined by
+issuing an 'fdf_get' call, whereas the reciprocal lattice vector
+option triggers a call to 'redcel' to determine the unit cell.
+
+An immediate problem is the absence of lattice constant or unit-cell
+information in the fdf file. This may happen, for example, when the
+'use-struct-file' or 'use-save-xv' options are in effect. The program
+would either stop when not finding the lattice constant, or, worse,
+would implicitly compute a zero unit cell and crash later with
+linear-algebra related errors such as faulty Cholesky
+decompositions. (The zero-unit-cell case is an unfortunate consequence
+of the implicit convention that an absent unit cell means that the
+user wants an automatic one.)
+
+A second problem is that, even if the required geometry information is
+given in the fdf file, the band/wfn calculation might be happening at
+the end of a cell relaxation or MD run, so the actual unit cell is not
+that in the fdf file. This should be considered bad practice, but it
+might happen.
+
+The minimal solution adopted (encoded in routine get_kpoints_scale)
+consists of attempting to read the lattice constant for the 'pi/a'
+case, as before, but to use the unit-cell information in the
+'siesta_geom' module for the reciprocal-lattice-vectors case.  This
+information is not enough for the 'pi/a' option, since no record is
+kept of any centering options for cubic systems, so 'a' cannot be
+directly determined from the volume of the unit cell.  Note that the
+setup information is handled at the beginning of the run (during the
+initialization in 'siesta_init'.
+
+A message is printed to warn the user about possible inconsistencies
+if the unit-cell changes by the end of the run. In any case, the
+practice of computing bands or wavefunctions at the end of a
+geometry-changing run should be discouraged.
+
+added:
+  Src/get_kpoints_scale.f90
+modified:
+  Src/Makefile
+  Src/bands.F
+  Src/writewave.F
+	
+-----------------------------------------------------------------------
+2016-05-02                                                    trunk-499
+Allowed neglecting KB projectors with LDA+U
+
+- The LDA+U projectors are now not dependent
+  on the NeglNonOverlapInt option which only
+  deals with KB projectors.
+
+- Streamlined calculation of rmaxo/rmaxkb in
+  hsparse, ldau, nlefsm,
+
+  Basically they looped over the entire structure
+  to find only the species orbital/projector
+  ranges.
+  Thus it is more efficient in those routines.
+
+modified:
+  Src/Makefile
+  Src/hsparse.F
+  Src/ldau.F
+  Src/nlefsm.f
+  Src/siesta_init.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2016-05-02                                                    trunk-498
+Fixed imports
+
+modified:
+  Src/ldau_specs.f
+  Src/m_cite.F90
+
+-----------------------------------------------------------------------
+2016-05-01                                                    trunk-497
+Added LDA+U citation of the implementation paper
+
+modified:
+  Src/ldau_specs.f
+  Src/m_cite.F90
+
+-----------------------------------------------------------------------
+2016-04-29                                                    trunk-495
+Fixed rmaxh for correct range of Hamiltonian elements
+
+- The rmaxh was too short in case of LDAU projectors
+  bigger than the KB projectors.
+
+  This fixes the calculation of the correct rmaxh
+  when the LDAU projectors are used.
+
+modified:
+  Src/atomlist.f
+  Src/siesta_init.F
+
+-----------------------------------------------------------------------
+2016-04-29                                                    trunk-494
+Cleaned LDA+U
+
+- Moved H_ldau to sparse_matrices.
+  This makes the global memory of "standard" matrix
+  elements common in the common module.
+  This requires that it is passed on every call to
+  Hubbard_term.
+  
+- Moved several saved variables in the hubbard_term
+  to the module level.
+  This makes it easier to distinguish global variables.
+
+- Removed all commented out debugging statements.
+
+- Improved the logic of the options in the LDA+U implementation
+
+  REMARK: The logic is exactly the same but clearer from the
+          input options point of view.
+
+  1. ldau_init is now forced to .true. if ldau_shift is true.
+  2. There is no need to store the current geometry setup
+     Now the H_ldau is reset when state_init is called.
+
+- Removed a print-out of:
+
+  "Adding Hamiltonian contribution."
+
+  This is implicit in each SCF cycle (from after the
+  initial occupations have been calculated).
+
+  I have tested this on an MD run as well.
+
+modified:
+  Src/Makefile
+  Src/final_H_f_stress.F
+  Src/ldau.F
+  Src/ldau_specs.f
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2016-04-29                                                    ldau-499
+Cleaned up the ldau modules by moving variables
+
+- The ldau_specs module had several variables defined
+  as module variables while they where only needed
+  in one subroutine.
+  They have been moved there.
+
+  Now also the projector arrays are deallocated after
+  having created the actual projectors used.
+
+  Thus saving additional memory.
+
+modified:
+  Src/ldau.F
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-498
+Removed _tmp/tmp_ in ldau shells, removed double references
+
+- Removed all double references in the code of ldaushells
+  from the derived type.
+
+- Changed tmp names to standard conforming names.
+  This is more intuitive to grasp.
+
+modified:
+  Src/Makefile
+  Src/basis_types.f
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-497
+Die if requesting non-existing PAO LDAU projectors
+
+- If the requested quantum number LDAU is not found
+  in the list of PAO objects then siesta will die.
+
+modified:
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-496
+Cosmetic update of ldau code
+
+- Easier logistic in the loops in ldau
+
+- Cosmetic changes for the interface of hubbard_term which
+  now passes the local number of orbitals.
+
+- Beautification of the DEBUG_PAO print-out.
+
+modified:
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/ldau.F
+  Src/register_rfs.F90
+  Src/setup_hamiltonian.F
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-495
+Fix possible double counting of Hldau
+
+- If recompute_H_after_scf it is required that
+  we use H_tmp in final_H_f_stress.
+
+  This is now fixed.
+
+modified:
+  Src/final_H_f_stress.F
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-494
+Almost fixed parallel version
+
+- Implemented Alberto's fixes for the basis specifications
+  in parallel with some minor corrections.
+  
+  This is because the basis_specs are only on Node == 0.
+  However, the specifications should be broadcasted
+  to the other nodes.
+
+  This is now performed by dublicating the LDAU radial
+  functions to the other nodes and retaining the
+  data on all nodes.
+
+  I have added the remaining Bcast which where required.
+
+- Added bcast of the LDAU variables in broadcast_basis.
+  Several variables are required Bcasted.
+
+- Reduced memory requirements slightly
+
+- Reverted globalization of DEldau as entered by
+  Nick in r488.
+  This is not needed as the DEldau is calculated
+  from globalized occupations.
+
+- Removed un-needed ldaushell in the basis_species.
+  Only the *_tmp is used so we do not need the second.
+
+- Fix for "SpinPolarized false" regarding occupations
+
+- TODO move Hldau to sparse_matrices such that it may
+  be calculated "one time" and stored in a generic place.
+
+modified:
+  Src/Makefile
+  Src/atm_types.f
+  Src/basis_types.f
+  Src/broadcast_basis.F
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/ldau.F
+  Src/ldau_specs.f
+  Src/setup_hamiltonian.F
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-493
+Fixed r491 with rofi array size
+
+- Correspondance with Javier brought this
+  fix.
+
+modified:
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-27                                                    ldau-492
+Added die when user reads basis + LDAU
+
+- Reading the basis from NetCDF or ascii files
+  is not allowed when using LDA+U.
+
+  This feature is simply not implemented yet.
+  (but could be)
+
+modified:
+  Src/initatom.f
+
+-----------------------------------------------------------------------
+2016-04-27                                                    ldau-491
+Fixes for pointers and possible seg-fault
+
+- Pointers in ldau.F where only nullified in
+  the first run. However, they should be
+  in each SCF.
+  Fixed.
+
+- Print-out of LDAU parameters in the basis-specification
+  This makes easy identification of the used LDA+U
+  basis.
+
+- A possible seg-fault for accessing array elements beyond
+  dimension was found in the ldau_specs.f.
+
+  A possible fix has been added.
+
+  TODO: Check validity for other systems.
+  For Javier's initial test MnO the results are identical.
+
+modified:
+  Src/basis_types.f
+  Src/ldau.F
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-25                                                    ldau-490
+Second patches by Nick Andersen
+
+* The files that have been added or modified are:
+
+- hsparse.F:             Call to basis_parameters only if switch_ldau
+- matel_registry.F90:    Cosmetic changes on show_pool
+- register_rfs.F90:      Writing of part of the output only done if
+                         the directive DEBUG_PAO is switched
+- siesta_init.F:         Remove the call to test_register 
+
+-----------------------------------------------------------------------
+2016-04-25                                                    ldau-488
+First patches by Nick Andersen
+
+* The files that have been added or modified are:
+
+- final_H_f_stress.F:    Globalization of the sum of DEldau added
+- ldau.F:                Writing on some of the output only on Node 0,
+                         globalization of dnmax
+- siesta_init.F:         Initialization of Eldau and DEldau
+
+-----------------------------------------------------------------------
+2016-04-25                                                    ldau-487
+Corrected version in the CHANGES file
+
+-----------------------------------------------------------------------
+2016-04-25                                                    ldau-486
+Calculation of the Hubbard-like matrix elements, and their contribution
+to forces and stresses
+
+* The files that have been added or modified are: 
+
+- atmfuncs.f:       New function ldau_gindex added
+- basis_io.F:       The information of the LDA+U projectors is dumped into 
+                    the corresponding files
+- compute_energies.F90:  The Hubbard energy is added to the total energy
+- compute_max_diff.F:    The maximum difference between the input and the 
+                         output density matrices is saved in the public
+                         variable dDmax_current, that is required within
+                         the hubbard_term subroutine in order to know
+                         whether the population of the LDA+U projector is 
+                         updated or not.
+- final_H_f_stress.F:    Last call to hubbard_term in order to compute the
+                         forces and stresses once the self-consistency is 
+                         achieved
+- hsparse.F:        The eventual overlap with the LDA+U projectors is 
+                    considered, as it was done with the KB projectors
+- initatom.f:       Call to the subroutine ldau_proj_gen to generate the
+                    LDA+U projectors
+- m_energies.F90:   The Hubbard energies are included in the variables
+- scfconvergence_test.F: The criterion on the convergence of the population of
+                         the LDA+U is added to the requirements to determine
+                         whether the SCF is achieved
+- setup_hamiltonian.F:   Call to hubbard_term to add the contribution of the
+                         Hubbard-like terms to the Hamiltonian
+- write_subs.F:     The information of the Hubbard like energies is dumped
+- ldau.F:           New subroutine that computes the Hubbard-like 
+                    contribution to matrix elements, forces, and stresses
+- Makefile:         Customaty changes to include the new files and dependencies
+- Docs/siesta.tex:  A new section on the LDA+U calculations has been written
+
+-----------------------------------------------------------------------
+2016-02-22                                                    ldau-485
+Generation of the LDA+U projections compatible with new matel
+
+* The files that have been added or modified are: 
+- ldau_specs.f:     Module ldau_specs to read the input file,
+                    generate the projectors and populate the derived types.
+- atm_transfer.f:   Call to populate_species_info_ldau to populate the 
+                    variables in the species derived type related with the 
+                    LDA+U projectors.
+- atm_types.f:      New variables related with the LDA+U projectors 
+                    defined in the derived type species. 
+                    Essentially, they are a copy of the corresponding variables
+                    for the KB projector
+- atom.F:           The following subroutines declared public: 
+                    schro_eq, rc_vs_e, build_vsoft
+- basis_specs.f:    The subroutine label2species is declared public.
+                    It will be used afterwards in read_ldau_specs.
+- basis_types.f:    New derived type ldaushell_t defined, and the 
+                    corresponding subroutines for initialization, print, etc 
+                    are introduced.
+- broadcast_basis.F:The broadcast of the species derived type has been 
+                    generalized to include also the corresponding variables 
+                    related with the LDA+U projectors
+- initatom.f:       Here we read the info related with the LDA+U projs 
+                    in the fdf file (calling the subroutine read_ldau_specs) 
+                    and we call the subroutine in charge of generating them
+                    (ldau_proj_gen)
+- register_rfs.F90: Subroutine modified to include the LDA+U projectors 
+                    in the pool
+- Makefile:         Customaty changes to include the new files and dependencies
+
+
+added:
+  Src/ldau_specs.f
+modified:
+  Src/Makefile
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/broadcast_basis.F
+  Src/initatom.f
+  Src/register_rfs.F90
+
+-----------------------------------------------------------------------
+2016-03-07                                                    trunk-492
+Initial k-displacements are now 0
+
+modified:
+  Src/kgridinit.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_ts_kpoints.F90
+  Src/setup_kscell.F
+
+-----------------------------------------------------------------------
+2016-03-07                                                    trunk-491
+Fixed k-grid displacement reading
+
+- There was no need for not reading 0 as a displacement
+  in the kgrid_monkhorst_pack block.
+
+  Previously siesta would error when:
+   %block kgrid_monkhorst_pack
+    1 0 0 0
+    0 1 0 0
+    0 0 1 0
+   %endblock
+  while now this will works
+
+modified:
+  Src/kgridinit.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_ts_kpoints.F90
+  Src/setup_kscell.F
+
+-----------------------------------------------------------------------
+2016-03-05                                                    trunk-490
+Automatic reading of #atoms, and species without denoting count
+
+- The NumberOfSpecies flag is now not needed any more.
+
+  This reflects an easier usage as it first reads the lines
+  in the ChemicalSpeciesLabel block and counts the number
+  of species from this block.
+
+  A small bug has also been fixed in that the first
+  number is now correctly inserted in the slot
+  that it intents.
+
+  The NumberOfSpecies flag still has precedence in case
+  you want a reduced number of elements.
+
+  +manual
+
+- The NumberOfAtoms is now not needed any more.
+
+  Similar to the NumberOfSpecies flag we now count the
+  number of atoms from the block by default.
+
+  The NumberOfAtoms flag still has precedence in case
+  you want a reduced number of atoms.
+
+  +manual
+
+- Output of chemical species is now more concise and aligned.
+  This is just a visual change.
+
+modified:
+  Docs/siesta.tex
+  Src/chemical.f
+  Src/coor.F
+
+-----------------------------------------------------------------------
+2016-03-03                                                    trunk-489
+[merge] Tests fix, REFERENCE_DIR and SIESTA
+
+- After having build siesta in the Obj directory
+  a natural procedure would be to go to Tests
+  and run the tests:
+      make
+  However, the default SIESTA is not pointing to
+  the Obj.
+  Further the REFERENCE_DIR is not pointing to the
+  correct reference directory when in the top Tests
+  directory.
+
+  Hence the procedure is:
+  1. cd Obj
+  2. ../Src/obj_setup.sh
+  3. <create arch.make>
+  4. make
+  5. cd ../Tests/
+  6. make
+
+modified:
+  Tests/test.mk
+
+2016-02-26                                                    trunk-488
+Add generic citation helper
+
+- It was previously difficult to figure
+  out which papers where of significance when
+  using SIESTA.
+  This addition adds the capability of on-the-fly
+  creation of .bib files for users to easier find
+  the papers that are being used in their corresponding
+  run.
+
+added:
+  Src/m_cite.F90
+modified:
+  Src/Makefile
+  Src/m_efield.F
+  Src/siesta_init.F
+  Src/ts_init.F90
+
+-----------------------------------------------------------------------
+2016-02-17                                                    trunk-486
+Fixed auxiliary array usage for ksv and optical
+
+- ksv:
+  This routine used Hkin as a work-array for calculating
+  certain quantities for polarization calculations.
+
+  This may lead to inadvertently destroying reliance
+  across calculations which are not intended.
+
+  This bug has been fixed by introducing the allocation
+  of the work-array in the ksv routine, directly.
+
+  Furthermore, we have explicitly added the => null()
+  when initializing several of the pointers.
+
+- optical:
+  This routine used Eold, Dold and Hkin as
+  work-arrays for calculating optical properties.
+
+  We have fixed these issues and moved allocation into
+  the routine.
+
+  Furthermore there were several "saved" variables
+  which were not needed to be saved.
+
+  All variables were re-calculated on each entry-point.
+  This has also been fixed.
+
+  Streamlined the algorithm for calculating transition-rates.
+
+- phirphi_opt:
+  Reduced memory by ENDLESS.
+  It allocated an enourmous amount of memory of which only 1 element
+  was used at a time.
+  If the full matrix is going to be needed, then re-instantiate the
+  comments !N.
+  The si-optical test yields the same result and I see no problem
+  in the current algorithm.
+
+modified:
+  Src/born_charge.F
+  Src/ksv.f
+  Src/optical.F
+  Src/phirphi_opt.f
+  Src/siesta_analysis.F
+
+-----------------------------------------------------------------------
+2016-02-17                                                    trunk-485
+Add GPL notices and headers
+
+* Include proper headers
+* Add Docs/Contributors.txt and NOTICE.txt files.
+* Update READMEs and LICENSE files in several directories.
+* Remove Pseudo/atom, Util/test-xml
+* Remove DOM files from Src/xmlparser
+* Replace old copyright notice in Src/Confs
+
+This revision touches a large number of files due to the
+change in licensing and copyright.
+
+The other major change is the removal of the Pseudo/atom subtree,
+which is now distributed independently.
+
+-----------------------------------------------------------------------
+2016-02-05                                                    trunk-484
+Merge fixes from rel-4.0 branch
+
+* Fix Tests/test.mk and Genbasis makefile
+
+The reference directory's path was incorrect in Tests/test.mk
+
+In Util/Gen-basis/Makefile, the treatment of COMP_LIBS can be improved
+with a form suggested by Pedro Brandimarte, which will work even if
+there are multiple files in COMP_LIBS.
+
+* Fix peak alloc report in MPI
+
+When alloc-report-level is 1 or 3, a report should be printed at every
+peak. This hanged in MPI runs. Now only the root node peaks are
+printed.
+
+(Thanks to Nick R. Papior)
+  
+* Some older .CHANGES files have been moved to the 'branch-changes'
+  directory, and older release notes moved to the
+  'older-release-notes' directory.
+
+modified:
+  Tests/test.mk
+  Util/Gen-basis/Makefile
+  Src/alloc.F90
+  Docs/siesta.tex
+added:
+  Docs/branch-changes/
+  Docs/older-release-notes/
+
+-----------------------------------------------------------------------
+2015-12-18   10:25:00 GMT                                     trunk-483
+Add lapack and blas code in Libs to support OMM and SVD
+
+* To enable quick compilation with no external libraries, some
+  lapack/blas routines have been added to the Src/Libs directory.
+
+  A minimal example of arch.make: Src/Sys/nolibs.make
+
+  Note that some optional features do depend on the availability of
+  external libraries, such as netCDF and fftw.
+  
+added:
+  Src/Libs/svd_omm_lapack.f
+modified:
+  Src/Libs/blas.f
+  Src/Libs/makefile
+  Src/Sys/nolibs.make
+  Util/Gen-basis/Makefile  
+
+-----------------------------------------------------------------------
+2015-12-17   16:25:00 GMT                                     trunk-482
+New versions of grid2cube and gnubands. Laplacian of grid functions
+
+* Updated new.gnubands in Util/Bands to enhance spin processing
+  and optional production of labels in tick marks.
+
+  (Nick R. Papior)
+  
+* A new experimental program g2c_ng in Util/Grid offers extended
+  and cleaner functionality over the classic grid2cube.
+
+* A new program cdf_laplacian in Util/Grid computes the laplacian
+  of a grid function in netCDF format.
+
+  (A. Garcia)
+  
+added:
+  Util/Grid/cdf_laplacian.F90
+  Util/Grid/g2c_ng.f
+  Util/Grid/m_gridfunc.F90
+  Util/Grid/m_struct.f90
+modified:
+  Util/Bands/Makefile
+  Util/Bands/README
+  Util/Bands/new.gnubands.f90
+  Util/Grid/README
+  Util/Grid/makefile
+  Util/build_all.sh
+		    
+
+-----------------------------------------------------------------------
+2015-11-26   15:10:00 GMT                                     trunk-481
+Increase the number of allowed iterations in minvec
+
+The default value of 100 was inadequate for the needs of
+k-point supercells for large multipliers.
+
+modified:
+  Src/minvec.f
+      
+-----------------------------------------------------------------------
+2015-11-26   13:50:00 GMT                                     trunk-480
+Fix bug in heapsort routine
+
+(Thanks to Nick Papior)
+
+* The recent re-implementation of the heapsort algorithm in routine
+  'ordix' in 'sorting.f' (trunk revno 468)  was buggy.
+
+  This affected:
+
+  - The siesta.BONDS file, which did not have optimal ordering of the
+    bond-lengths.
+
+  - Some calculations using k-points, as routine 'minvec', used in the
+    definition of the effective k-point supercell, calls 'ordix'.
+    (The reference outputs for the 'var_cell' and 'si2x1h' tests have
+    been modified.)
+
+  - (probably) The re-use of density-matrix information, as the ordering
+    of interactions in 'hsparse' also depended on 'ordix' through calls to
+    'ordvec'.
+
+  - (maybe) The operation of the "rho-mixing" routines, which use 'ordix'
+    for the sorting of stars.
+
+modified:
+  Src/sorting.f
+  Tests/Reference/si2x1h.out
+  Tests/Reference/var_cell.out
+
+-----------------------------------------------------------------------
+2015-10-04   00:40:00 GMT                                     trunk-479
+Assorted fixes and cleanup. Update reference outputs
+
+- Replace pointers by allocatables in {zm,cell}_broyden_optim.
+- Split-off read_options from siesta_options to reduce
+  dependencies and clarify hidden symbol associations.
+- Remove dependency in sparse_matrices
+- Fix dependencies in makefiles in Util
+- Remove Reference-xml
+- Update Reference-out files
+- Provide a simple-minded mechanism to flag differences in the
+  test outputs ('make check').
+
+removed:
+  Tests/Reference-xml/
+  Tests/Reference/partial.out
+added:
+  Src/read_options.F90
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/au_100.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/au_100.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.TEIG
+  Tests/TranSiesta-TBTrans/copy_to_reference.sh
+  Tests/TranSiesta-TBTrans/run_tests.sh
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/cell_broyden_optim.F
+  Src/diagon.F
+  Src/final_H_f_stress.F
+  Src/obj_setup.sh
+  Src/projected_DOS.F
+  Src/proximity_check.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/struct_init.F
+  Src/write_md_record.F
+  Src/write_subs.F
+  Src/zm_broyden_optim.F
+  Tests/Makefile
+  Tests/README
+  Tests/Reference/*
+  Tests/cmp_digest.sh
+  Tests/partial/README
+  Tests/test.mk
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/SiestaSubroutine/README
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/VCA/Makefile
+  Util/build_all.sh
+      
+
+
+	  
+
+
+-----------------------------------------------------------------------
+2015-09-29   10:25:00 GMT                                     trunk-478
+Fixes: OCCS file, pdoskp, processorY
+
+* The OCCS file, containing the occupation at each k-point,
+  is now created only during the scf cycle, in 'diagon'. This
+  fixes problems that appeared when 'diagk' was called from
+  other routines.
+  
+* Some arrays in pdoskp were not dimensioned correctly on
+  input in pdoskp.
+
+* Added a sanity check for the user-entered ProcessorY.
+
+(Thanks to Nick P. Andersen)
+
+modified:
+  Src/diagk.F
+  Src/diagk_file.F
+  Src/diagon.F
+  Src/initparallel.F
+  Src/pdoskp.F
+
+-----------------------------------------------------------------------
+2015-09-17   13:25:00 GMT                                     trunk-477
+Fixes: pi/a mode in bands; low-n interpolation; others
+
+* Fix handling of n<3 cases in interpolation.f90 
+* Made global variable 'saved' in matel_registry
+  (J. Soler, with thanks to Nick P. Andersen)
+
+* Fix uninitialized variable in interpolation.f90.
+* Proper check on number of atoms in zmatrix.F.
+* Avoid underflow in sorting.f.
+
+  (Thanks to P. Brandimarte)
+
+* In bands.F, only check for LatticeConstant input
+  in the "pi/a" case.
+
+modified:
+  Src/bands.F
+  Src/interpolation.f90
+  Src/matel_registry.F90
+  Src/sorting.f
+  Src/zmatrix.F
+
+-----------------------------------------------------------------------
+2015-07-16   15:05:00 GMT                                     trunk-476
+Fix the geometry and DM and H logic for consistency in analysis
+
+-*-*-*-*-* 
+IMPORTANT NOTE: This patch will slightly change the output
+of most calculations and the detailed results of any
+post-processing. Keep this in mind if you need to maintain coherency
+within a project. See the rest of the text for ways to restore
+backward compatibility.  The reference output files in Tests/Reference
+have *not* been updated yet.
+-*-*-*-*-*
+  
+This is the initial patch in a long-overdue clarification work related
+to the "outer geometry loop" in Siesta and its interaction with the
+analysis of the electronic structure.
+
+The most important changes, following the actual refactoring logic, are:
+
+* Superfluous calls to 'superx' to propagate the new coordinates to
+  the auxiliary supercell in 'siesta_move' have been removed, as they
+  are already done by 'state_init'.
+
+* The above change has the side effect of leaving inconsistent sets of
+  unit cell and supercell coordinates in 'siesta_analysis' if the unit
+  cell coordinates used in the latter are those 'moved' by the
+  geometry-update routines. To avoid this, and to do the analysis
+  using the actual coordinates used in the computation of the
+  electronic structure, the coordinates are reset to those values
+  (using the *_last arrays) in 'siesta_analysis'.  The old behavior
+  can be recovered by using by setting the backward compatibility
+  switch 'compat-pre-v4-dynamics' to 'true'.
+
+
+* To guarantee that the DM and H used in the analysis correspond to
+  the latest electronic structure computed, there should be no mixing
+  at the end of the scf loop. This behavior, which was optional until
+  now (controlled by the value of scf-mix-after-convergence) is now
+  the default. The use of DM_out instead of DM_mixed provides also a
+  truly variational total-energy and more consistent forces. If the
+  scf cycle is carried out mixing H, H(DM_in) is recovered by
+  re-setting H to Hold in siesta_forces at the end of the cycle.
+
+  Also, to preserve the right H for analysis it is necessary to
+  avoid overwriting it in post_scf_work. This is now done by default,
+  except if the option 'scf-recompute-h-after-scf' is 'true'.
+
+  There is another switch for pre-v4.0 compatibility in this context:
+  If 'compat-pre-v4-dm-h' is 'true', the 'scf-mix-after-convergence'
+  and 'scf-recompute-h-after-scf' options are activated too.
+
+  Some comments have been added to siesta_forces to document possible
+  further clarifications.
+
+* For clarity, each MD or geometry-optimization flavor has now its own
+  self-contained logic block in 'siesta_move'. This has uncovered a
+  few issues that have been corrected:
+
+  - The quenched forms of the Verlet and Parrinello-Rahman (PR)
+    schemes, which are actually relaxations, did not check for
+    convergence before moving the atoms (PR did not check at any
+    point).  Now the 'constrained' forces and stress are checked
+    before invoking the routines. In the case of PR, a 'target stress'
+    can optionally be subtracted from the constrained stress (a
+    further form of constraint that was previously only available
+    (internally) in the standard relaxation routines). A future update
+    might put all these constraint conditions in 'fixed', but care
+    should be taken to study their interaction with the MD
+    variable-cell routines. A future revision might look into the
+    effectiveness of the variable-cell routines.
+    There is a new example in Tests for quenched MD relaxation.
+
+  - The geometry output in 'siesta_move' is now exclusively done for
+    checkpointing purposes, and typically involves the 'moved'
+    geometries.  The current geometry output is done in 'state_init',
+    and any final output in 'siesta_analysis'.
+
+  - Some output calls have been removed where they did not make much
+    sense (as in the FC or server blocks).
+
+  - The deprecated 'phonon' support has been removed.
+
+* Siesta_analysis outputs the 'current' final geometry, and not the
+  'moved' one. The old behavior can be recovered by using the
+  'compat-pre-v4-dynamics' switch.
+
+* The default 'dynamics' option has been changed from 'verlet' to 'CG'.
+  There should really be a new 'single-point' default which completely
+  avoids 'siesta_move'. The old behavior can be recovered by using the
+  'compat-pre-v4-dynamics' switch.
+
+* Single-point calculations do not write .STRUCT_NEXT_ITER files, and
+  the coordinates in the XV file are the current ones, unmoved.
+  Extra output in siesta_options is avoided for this case.
+
+* The headings for the beginning of the dynamics blocks are now
+  more concrete.
+
+Other minor changes:
+
+* Fix the IO field widths in the bonds routine to support more atoms.
+
+* Add a few more deallocations in several routines, and change the
+  'routine' field in some deallocations to match the allocations
+  (notably for arrays in the 'sparse_matrices' module)
+
+* Cosmetic changes in the output format for dynamics headings
+
+* Atomic displacements for force-constant runs are output in Ang.
+
+removed:
+  Src/phonon.F
+added:
+  Src/m_target_stress.F
+  Tests/si2x1h-quench/
+  Tests/si2x1h-quench/makefile
+  Tests/si2x1h-quench/si2x1h-quench.fdf
+  Tests/si2x1h-quench/si2x1h-quench.pseudos
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/atomlist.f
+  Src/bonds.f
+  Src/dhscf.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/final_H_f_stress.F
+  Src/fixed.F
+  Src/ioxv.F
+  Src/m_check_supercell.f
+  Src/m_pulay.F90
+  Src/new_dm.F
+  Src/post_scf_work.F
+  Src/save_density_matrix.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/write_subs.F
+
+-----------------------------------------------------------------------
+2015-07-08   11:00:00 GMT                                     trunk-475
+Minor fixes and cosmetic changes after Wannier merge
+
+* Associate auxiliary array auxloc in slave nodes even if
+  not used in mpi_reduce call (Nick P. Andersen).
+
+* Add missing files in Test/wannier.
+
+* Streamline the wannier interface output.
+
+added:
+  Tests/wannier/makefile
+  Tests/wannier/wannier.pseudos
+modified:
+  Src/compute_pw_matrix.F90
+  Src/m_digest_nnkp.F90
+  Src/write_inp_wannier.F90
+
+-----------------------------------------------------------------------
+2015-07-07   08:30:00 GMT                                     trunk-474
+Merge code for interoperation with Wannier90
+
+(Javier Junquera, after work by Richard Korytar, and Alberto Garcia)
+
+Siesta can now read the .nnkp file produced by Wannier90 and output
+the *.amn, *.mmn, *.eig (see below), and UNK* files needed by
+post-processing with that program, which generates maximally-localized
+Wannier functions.
+
+The most relevant changes in the code needed to support this
+functionality are detailed below. For practical guidance, see the
+manual, the simple test in Tests/wannier, and the suite of Wannier90
+examples adapted for Siesta in
+
+   http://personales.unican.es/junqueraj/Wannier-examples.tar.gz
+
+
+* To implement support for "projection functions", which might not be
+  pure radial functions, but hybrids with mixed angular momentum and
+  varying spatial orientation, as well as to provide support of
+  arbitrary kinds of radial functions for future developments, the
+  'matel' framework has been extended:
+
+  Matel (actually renamed to 'new_matel') now accepts two generalized
+  indexes instead of the two pairs of indexes previously used. The
+  generalized indexes can represent either a normal "radial function",
+  as in previous Siesta usage, or a "projection function". The indexes
+  are obtained via a "check-in" into a registry of functions, which
+  keeps track of the nature of the functions and provides the needed
+  evaluators and accessors for 'new_matel'.
+
+  The relevant code is in 'matel_registry', 'new_matel', and
+  'register_rfs'. The latter shows how to "register" the usual radial
+  functions for PAOs, KB projectors, etc. 
+
+* Bloch states are computed and saved, instead of being recomputed as
+  needed, to avoid problems with irreproducible random phases and
+  linear combinations within degenerate subspaces.
+
+* At this point the parallelization of the new code is only "over
+  orbitals". It is not yet possible to parallelize the operations over
+  the k-points on the grid. The production of the UNK* files can be
+  slow if there are many k-points and bands.
+
+* There is not yet support for "spinor wavefunctions". In the case of
+  spin-polarized calculations, separate spin-up and spin-down
+  processings are needed.
+
+* There is not yet support for interaction with Wannier90 in "library
+  mode", due to licensing issues.
+
+* The "eigenvalue file" for Wannier90 has extension .eigW to avoid
+  clashes with the standard Siesta eigenvalue file in case-insensitive
+  filesystems.
+
+removed:
+  Src/matel.f
+added:
+  Src/amn.F90
+  Src/broadcast_projections.F
+  Src/compute_pw_matrix.F90
+  Src/delk.F
+  Src/diagonalizeHk.F90
+  Src/m_digest_nnkp.F90
+  Src/m_noccbands.f
+  Src/m_orderbands.F
+  Src/m_overkkneig.F90
+  Src/m_planewavematrix.F90
+  Src/m_planewavematrixvar.F90
+  Src/m_trialorbitalclass.f90
+  Src/m_writedelk.F
+  Src/matel_registry.F90
+  Src/mmn.F90
+  Src/new_matel.f
+  Src/register_rfs.F90
+  Src/reordpsi.F
+  Src/siesta2wannier90.F90
+  Src/write_inp_wannier.F90
+  Tests/wannier/		-- New test
+  Tests/wannier/wannier.fdf
+  Tests/wannier/wannier.nnkp
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/alloc.F90		-- New z3 and z4 generics
+  Src/m_mpi_utils.F
+  Src/atm_types.f       -- Fields for global index storage
+  Src/atmfuncs.f        -- Global index management
+  Src/dhscf.F           -- New routine to compute PW matrix elements
+  Src/mneighb.f         -- Added 'x0' module variable
+  Src/parallelsubs.F	-- Catch special blocksize case
+  Src/mesh.F		-- Extra bookeeping
+  Src/meshdscf.F
+  Src/meshsubs.F
+  Src/kinefsm.f		-- New matel
+  Src/naefs.f
+  Src/nlefsm.f
+  Src/overfsm.f
+  Src/overlap.f
+  Src/phirphi.f
+  Src/phirphi_opt.f
+  Src/siesta_analysis.F		-- Actual w90 processing
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/spher_harm.f		-- Two implementations of YLMEXP.
+
+    
+-----------------------------------------------------------------------
+2015-06-29   15:20:00 GMT                                     trunk-473
+Merge code for 'server' operation via sockets and i-PI interface
+
+(Michele Ceriotti, Jose Soler)
+
+* A new infrastructure for socket handling in f90 has been
+implemented by Michele Ceriotti (EPFL), who is also the author
+of the i-PI framework. From its web-page:
+
+  i-PI is a Path Integral Molecular Dynamics (PIMD) wrapper code
+  designed to be used together with ab initio evaluation of the
+  interactions between the atoms. i-PI should be run as a separate
+  program, and communicates with one or more instances of an
+  electronic structure code using internet (or UNIX) sockets. The
+  communication is regulated by a simple protocol, and requires
+  patching the client code to handle the exchange of data with i-PI.
+
+This revision implements the interface to the i-PI protocol. In
+Siesta, the new socket functionality can also be used as a new form of
+'server' operation.
+
+See Util/Sockets for examples of the f90 socket interface,
+Util/SiestaSubroutine for examples of the server operation (including
+via sockets) and Tests/i-pi-test for a simple test of interoperability
+with i-PI.
+
+added:
+  Src/fsiesta_sockets.F90
+  Src/fsockets.f90
+  Src/iosockets.F90
+  Src/sockets.c
+  Tests/ipi-test/
+  Util/SiestaSubroutine/SimpleTest/README
+  Util/SiestaSubroutine/SimpleTest/socket.fdf
+  Util/SiestaSubroutine/SimpleTest/sockets.sh
+  Util/Sockets/
+renamed:
+  Util/SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel.f90 => 
+    Util/SiestaSubroutine/SimpleTest/Src/simple_parallel.f90
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/fsiesta_mpi.F90
+  Src/fsiesta_pipes.F90
+  Src/siesta_master.f90
+  Src/siesta_options.F90
+  Src/struct_init.F
+  Util/README
+  Util/SiestaSubroutine/FmixMD/Src/para.f90
+  Util/SiestaSubroutine/README
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/h2o.fdf
+  Util/SiestaSubroutine/SimpleTest/test.sh
+  Util/SiestaSubroutine/SimpleTest/Src/simple_parallel.f90
+
+-----------------------------------------------------------------------
+2015-06-22   9:35:00 GMT                                     trunk-472
+Revert previous change affecting FA and FC files. FAC/FCC files.
+
+* At revno 464, a change was introduced to output the constrained
+  forces to the FA and FC files.  This had unintended consequences for
+  some analysis tools.
+
+  The change has been reverted, and the FC/FA files are now created as
+  before. In addition, if constraints are used, new FCC/FAC files
+  will be created with the constrained forces.
+
+  The vibra utility will default to use the FCC files if the
+  GeometryConstraints block exists, and in any case the
+  force-constants file to use can be specified with the Vibra.FC fdf
+  option.
+
+  To support these changes, the write_forces subroutine has now 
+  the geometry step as an additional argument.
+
+  The writing of forces has been moved to its appropriate place in the
+  write_subs modules.
+
+* Some more cosmetic changes in the Vibra package.
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/iofa.f
+  Src/ofc.f
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/state_analysis.F
+  Src/write_subs.F
+  Util/Vibra/Docs/CHANGES
+  Util/Vibra/Docs/vibra.tex
+  Util/Vibra/Examples/README
+  Util/Vibra/Examples/si54.bands
+  Util/Vibra/Examples/si54.fdf
+  Util/Vibra/Src/Makefile
+  Util/Vibra/Src/fcbuild.f
+  Util/Vibra/Src/recoor.f
+  Util/Vibra/Src/vibra.f
+
+-----------------------------------------------------------------------
+2015-06-17   8:50:00 GMT                                     trunk-471
+Fix SiestaXC makefile. Clarifiy docs for WriteDenchar
+
+* Fix a typo in SiestaXC/makefile that was preventing
+  the correct processing of the "dist" target.
+  (J. Soler)
+
+* Update the WriteDenchar documentation in the Siesta manual.
+  (G. Huhs)
+
+modified:
+  Docs/siesta.tex
+  Src/SiestaXC/makefile
 
 -----------------------------------------------------------------------
 2015-06-10  12:30:00 GMT                                     trunk-470

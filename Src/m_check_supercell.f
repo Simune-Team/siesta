@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module m_check_supercell
 
 !     Fixes the supercell factors in those cases in which the
@@ -58,12 +65,14 @@
 !
 !     Warn user 
 !
-      if (vol > original_vol)
+      if (IOnode) then
+         if (vol > original_vol)
      $     write(6,"(a)")
      $     "Auxiliary supercell needs to be larger than naive one..."
-      if (vol > 2*original_vol)
+         if (vol > 2*original_vol)
      $     write(6,"(a)")
      $     "*** Auxiliary supercell is more than twice as big! "
+      endif
 
       end subroutine check_sc_factors
 

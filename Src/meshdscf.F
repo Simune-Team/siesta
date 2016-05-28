@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module meshdscf
 C
@@ -36,7 +33,7 @@ C ----------------------------------------------------------------------
       real(dp), pointer, public  :: DscfL(:,:)
       logical           :: first_time = .true.
 
-      public ::  matrixOtoM, matrixMtoO
+      public ::  matrixOtoM, matrixMtoO, matrixMtoOC
       public ::  resetDscfPointers
       public ::  CreateLocalDscfPointers
 
@@ -559,6 +556,154 @@ C stored in the orbital oriented array
       enddo
 #endif
       end subroutine matrixMtoO
+
+      subroutine matrixMtoOC( maxnvl, maxnv, numVs, listVsptr, nuo, 
+     &                        VsL, Vs )
+C ********************************************************************
+C Transforms a matrix which is distributed by mesh points to a matrix
+C that is distributed by a block cyclic distribution over the orbitals
+C and adds it to an existing array of this form.
+C Created by J.D.Gale, February 2000
+C
+C Update: All-to-all communications has been substituted by
+C point-to-point communications. These have been precomputed in 
+C dscfComm.
+C Written by Rogeli Grima (BSC) Dec.2007
+C Generalized by Javier Junquera in May. 2012 to the case where the 
+C potential is a complex variable.
+C
+C *********************** INPUT **************************************
+C integer maxnvl          : First dimension of VsL and maximum number
+C                           of nonzero elements in VsL
+C integer maxnv           : First dimension of Vs and maximum number
+C                           of nonzero elements in Vs
+C integer numVs(nuo)      : Number of non-zero elements in row of Vs
+C integer listVsptr(nuo)  : Pointer to start of rows in Vs
+C integer nuo             : Local no. of orbitals in unit cell
+C real*8  VsL(maxnvl,2)   : Mesh contribution to be added to Vs
+C ******************** INPUT AND OUTPUT *******************************
+C complex*8  Vs(maxnv)    : Value of nonzero elements in each row of Vs
+C                           to which the matrix elements are
+C                           summed up
+C *********************************************************************
+
+C  Modules
+      use precision
+      use alloc, only: re_alloc, de_alloc
+#ifdef MPI
+      use mpi_siesta
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb,
+     &                         LocalToGlobalOrb
+      use m_dscfComm
+#endif
+
+      implicit none
+
+C Argument types and dimensions
+      integer
+     &   maxnv, maxnvl, nuo, numVs(nuo), 
+     &   listVsptr(nuo)
+      real(dp)
+     &   VsL(maxnvl,2)
+      complex(dp)
+     &   Vs(maxnv)
+
+C Internal variables and arrays
+      integer
+     &  i, iu, irelim
+
+#ifdef MPI
+      integer           :: ii, MPIerror, Status(MPI_Status_Size), nn,
+     &                     mm, io, iio
+      real(dp), pointer :: buffer(:)
+#endif
+
+C***********************
+C  Parallel execution  *
+C***********************
+#ifdef MPI
+C     Allocate a buffer to Send/Receive data
+      nullify(buffer)
+      call re_alloc( buffer, 1, DCmaxnd*2, 'buffer', 'meshdscf' )
+
+C     Copy the data that is in the current process from VsL to Vs
+      do ii= 1, DCself
+        io = DCinvp(ii)
+        call GlobalToLocalOrb(io,Node,Nodes,iio)
+        iu = NeedDscfL(io)
+        Vs(listVsptr(iio)+1:listVsptr(iio)+numVs(iio)) = 
+     &    Vs(listVsptr(iio)+1:listVsptr(iio)+numVs(iio)) + 
+     &    cmplx(VsL(listdlptr(iu)+1:listdlptr(iu)+numdl(iu),1),
+     &          VsL(listdlptr(iu)+1:listdlptr(iu)+numdl(iu),2), kind=dp)
+      enddo
+      nn = DCself
+
+C     Send or receive the data from/to other processes
+      do i= 1, DCsize
+C       The communication is from dst to src
+        if (DCsrc(i).eq.Node) then
+          mm = 0
+          do ii= 1, DCsic(i)
+            io = DCinvp(nn+ii)
+            call GlobalToLocalOrb(io,Node,Nodes,iio)
+            mm = mm + numVs(iio)
+          enddo
+          mm = mm*2
+
+          call mpi_recv( buffer, mm, MPI_double_precision, DCdst(i), 1,
+     &                   MPI_Comm_world, Status, MPIerror )
+          mm = 0
+          do irelim = 1, 2
+            do ii= 1, DCsic(i)
+              io = DCinvp(nn+ii)
+              call GlobalToLocalOrb(io,Node,Nodes,iio)
+              if( irelim .eq. 1) then
+                Vs(listVsptr(iio)+1:listVsptr(iio)+numVs(iio)) = 
+     &          Vs(listVsptr(iio)+1:listVsptr(iio)+numVs(iio)) + 
+     &          buffer(mm+1:mm+numVs(iio)) * cmplx(1.0,0.0,kind=dp)
+              elseif( irelim .eq. 2) then
+                Vs(listVsptr(iio)+1:listVsptr(iio)+numVs(iio)) = 
+     &          Vs(listVsptr(iio)+1:listVsptr(iio)+numVs(iio)) + 
+     &          buffer(mm+1:mm+numVs(iio)) * cmplx(0.0,1.0,kind=dp)
+              endif
+              mm = mm + numVs(iio)
+            enddo
+          enddo
+        else
+          mm = 0
+          do irelim = 1, 2
+            do ii= 1, DCsic(i)
+              io = DCinvp(nn+ii)
+              iio = NeedDscfL(io)
+              buffer(mm+1:mm+numdl(iio)) =
+     &        VsL(listdlptr(iio)+1:listdlptr(iio)+numdl(iio),irelim)
+              mm = mm + numdl(iio)
+            enddo
+          enddo
+          call MPI_Send( buffer, mm, MPI_double_precision, DCsrc(i), 1,
+     &                   MPI_Comm_World, MPIerror )
+        endif
+        nn = nn + DCsic(i)
+      enddo
+      call de_alloc( buffer, 'buffer', 'meshdscf' )
+#else
+C*********************
+C  Serial execution  *
+C*********************
+C Add those elements that are needed locally to the values already
+C stored in the orbital oriented array
+      do i = 1,nuo
+        iu = NeedDscfL(i)
+        if (iu.gt.0) then
+          Vs(listVsptr(i)+1:listVsptr(i)+numVs(i)) = 
+     &      Vs(listVsptr(i)+1:listVsptr(i)+numVs(i)) + 
+     &      cmplx(VsL(listdlptr(iu)+1:listdlptr(iu)+numVs(i),1),
+     &            VsL(listdlptr(iu)+1:listdlptr(iu)+numVs(i),2),kind=dp)
+        endif
+      enddo
+#endif
+      end subroutine matrixMtoOC
 
       end module meshdscf
 

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_mpi_utils
 
@@ -42,6 +39,7 @@
         module procedure broadcast_sp, broadcast_char
         module procedure broadcast_v_dp, broadcast_v_int
         module procedure broadcast_vv_dp, broadcast_vv_int
+        module procedure broadcast_vvv_dp, broadcast_vvv_int
 
       end interface
 
@@ -74,6 +72,16 @@
      $            MPI_Comm_World,MPIerror)
 #endif
        end subroutine broadcast_vv_dp
+
+      subroutine broadcast_vvv_dp(a)
+      real(dp), dimension(:,:,:), intent(inout) :: a
+  !! Only for contiguous array sections !!
+
+#ifdef MPI
+           call MPI_Bcast(a(1,1,1),size(a),MPI_double_precision,0,
+     $            MPI_Comm_World,MPIerror)
+#endif
+       end subroutine broadcast_vvv_dp
 
       subroutine broadcast_sp(scalar)
       real(sp), intent(inout) :: scalar
@@ -111,6 +119,16 @@
      $            MPI_Comm_World,MPIerror)
 #endif
        end subroutine broadcast_vv_int
+
+      subroutine broadcast_vvv_int(a)
+      integer, dimension(:,:,:), intent(inout) :: a
+
+
+#ifdef MPI
+           call MPI_Bcast(a(1,1,1),size(a),MPI_integer,0,
+     $            MPI_Comm_World,MPIerror)
+#endif
+       end subroutine broadcast_vvv_int
 
       subroutine broadcast_char(str)
       character(len=*), intent(inout) :: str

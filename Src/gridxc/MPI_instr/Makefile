@@ -1,10 +1,4 @@
 # 
-# This file is part of the SIESTA package.
-#
-# Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-# E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-# and J.M.Soler, 1996-2006.
-# 
 # Use of this software constitutes agreement with the full conditions
 # given in BSD_LICENSE
 #
@@ -36,6 +30,7 @@ kind_explorer: kind_explorer.o
 	$(FC) -o kind_explorer $(LDFLAGS) kind_explorer.o
 #
 mpi_interfaces.o: Interfaces.o V_S.uses VS.uses int_logical_char.uses
+mpi_interfaces.o: mpi__include.o
 mpi_instr.o: timer_mpi_handler.inc
 Interfaces.o: timer_mpi_handler.inc
 
@@ -46,7 +41,7 @@ Interfaces.o: timer_mpi_handler.inc
 module_built: libmpi_f90.a
 	@touch module_built
 #
-libmpi_f90.a: mpi_interfaces.o Interfaces.o mpi_instr.o
+libmpi_f90.a: mpi_interfaces.o Interfaces.o mpi_instr.o mpi__include.o
 	@ar $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi_interfaces.o \
                                  Interfaces.o mpi_instr.o
 	-$(RANLIB) libmpi_f90.a

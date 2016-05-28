@@ -1,4 +1,11 @@
 -----------------------------------------------------------------------
+2016-05-29   Alberto Garcia     siesta-trunk-503--gridxc-11
+Sync with trunk-503
+
+Note that the libGridXC code is kept in the Siesta tree for now.
+Also, Src/SiestaXC is kept to facilitate updates.
+
+-----------------------------------------------------------------------
 2015-06-12   Alberto Garcia     siesta-trunk-470--memory-accounting-10
 Revamped timer interface in gridxc. Build fixes
 

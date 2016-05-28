@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine phirphi_opt( nua, na, nuo, no, scell, xa, maxnh, lasto,
      &                        lastkb, iphorb, iphKB, isa, numh,
@@ -76,12 +73,14 @@ C *********************************************************************
       use parallel,     only : Node, Nodes
       use atmparams,    only : lmx2, nzetmx, nsemx
       use atmfuncs,     only : epskb, lofio, mofio, rcut, rphiatm
+      use atmfuncs,     only : orb_gindex, kbproj_gindex
       use atm_types,    only : nspecies
       use parallelsubs, only : GlobalToLocalOrb, LocalToGlobalOrb
       use alloc,        only : re_alloc, de_alloc
       use sys,          only : die
       use neighbour,    only : jna=>jan, xij, r2ij
       use neighbour,    only : mneighb, reset_neighbour_arrays
+      use m_new_matel,  only : new_matel
 
       implicit none
 
@@ -104,7 +103,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
      &  grSij(3), rij, Sij, xinv(3), sum
 
       integer
-     &  ikb, ina, ino, jno, ko, koa, ks,
+     &  ikb, ina, ino, jno, ko, koa, ks, ig, jg, kg,
      &  nkb, nna, nno, ilm1, ilm2, npoints, 
      &  ir
 
@@ -120,19 +119,17 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       integer,  pointer, save :: iono(:)
       integer,           save :: maxkba = 25
       integer,           save :: maxno = 1000
-      logical,  pointer, save :: calculated(:,:,:)
+!N      logical,  pointer, save :: calculated(:,:,:)
       logical,  pointer, save :: listed(:)
       logical,  pointer, save :: needed(:)
       logical                 :: within
       real(dp),          save :: dx = 0.01d0
-      real(dp), pointer, save :: Pij(:,:,:)
+!N      real(dp), pointer, save :: Pij(:,:,:)
       real(dp), pointer, save :: Si(:)
       real(dp), pointer, save :: Ski(:,:,:)
       real(dp),          save :: tiny = 1.0d-9
       real(dp), pointer, save :: Vi(:)
 
-      external  MATEL
-      
 C Start timer
       call timer('phirphiopt',1)
 
@@ -141,8 +138,8 @@ C Check input matrix
      &   call die('phirphi_opt: matrix only can take values R or P')
  
 C Nullify pointers
-      nullify( listed, needed, Si, Vi, iano,
-     &         iono, Ski, Pij, calculated )
+      nullify( listed, needed, Si, Vi, iano, iono, Ski )
+!N      nullify( Pij, calculated )
 
 C Allocate arrays
       norb = lmx2*nzetmx*nsemx
@@ -154,22 +151,22 @@ C Allocate arrays
       call re_alloc( iono, 1, maxno, 'iono', 'phirphi_opt' )
       call re_alloc( Ski, 1, 2, 1, maxkba, 1, maxno,
      &               'Ski', 'phirphi_opt' )
-      call re_alloc( Pij, 1, norb, 1, norb, 1, nspecies,
-     &               'Pij', 'phirphi_opt' )
-      call re_alloc( calculated, 1, norb, 1, norb, 1, nspecies,
-     &               'calculated', 'phirphi_opt' )
+!N      call re_alloc( Pij, 1, norb, 1, norb, 1, nspecies,
+!N     &               'Pij', 'phirphi_opt' )
+!N      call re_alloc( calculated, 1, norb, 1, norb, 1, nspecies,
+!N     &               'calculated', 'phirphi_opt' )
 
 C Initialise quantities
       do io = 1,maxnh
         Sp(io) = 0.0d0
       enddo 
-      do ka = 1,nspecies
-        do io = 1,norb
-          do jo = 1,norb
-            calculated(jo,io,ka) = .false.
-          enddo 
-        enddo 
-      enddo
+!N      do ka = 1,nspecies
+!N        do io = 1,norb
+!N          do jo = 1,norb
+!N            calculated(jo,io,ka) = .false.
+!N          enddo 
+!N        enddo 
+!N      enddo
 
 C Find maximum range
       rmaxo = 0.0d0
@@ -235,6 +232,7 @@ C Find neighbour orbitals
               if (needed(io)) then
                 call GlobalToLocalOrb(io,Node,Nodes,iio)
                 ioa = iphorb(io)
+                ig = orb_gindex(is,ioa)
 
 C Find if orbital is within range
                 within = .false.
@@ -263,25 +261,26 @@ C Find overlap between neighbour orbitals and KB projectors
                   do ko = lastkb(ka-1)+1,lastkb(ka)
                     ikb = ikb + 1
                     koa = iphKB(ko)
+                    kg = kbproj_gindex(ks,koa)
                     do ix = 1,3
                      xinv(ix) = - xij(ix,ina)
                     enddo 
-                    call MATEL('S', is, ks, ioa, koa, xinv,
+                    call new_MATEL('S', ig, kg, xinv,
      &                         Ski(1,ikb,nno), grSki)
               
                     sum = 0.0d0
                     if (abs(dk(1)).gt.tiny) then
-                      call MATEL('X', is, ks, ioa, koa, xinv,
+                      call new_MATEL('X', ig, kg, xinv,
      &                           Sik, grSki)
                       sum = sum + Sik*dk(1) 
                     endif
                     if (abs(dk(2)).gt.tiny) then
-                      call MATEL('Y', is, ks, ioa, koa, xinv,
+                      call new_MATEL('Y', ig, kg, xinv,
      &                           Sik, grSki)
                       sum = sum + Sik*dk(2)
                     endif
                     if (abs(dk(3)).gt.tiny) then
-                      call MATEL('Z', is, ks, ioa, koa, xinv,
+                      call new_MATEL('Z', ig, kg, xinv,
      &                           Sik, grSki)
                       sum = sum + Sik*dk(3)
                     endif
@@ -361,6 +360,7 @@ C Initialize neighb subroutine
           call GlobalToLocalOrb(io,Node,Nodes,iio)
           if (iio .gt. 0) then
             ioa = iphorb(io)
+            ig = orb_gindex(is,ioa)
             do jn = 1,nnia 
               do ix = 1,3
                 xinv(ix) = - xij(ix,jn)
@@ -370,24 +370,25 @@ C Initialize neighb subroutine
               do jo = lasto(ja-1)+1,lasto(ja)
                 joa = iphorb(jo)
                 js = isa(ja)  
+                jg = orb_gindex(js,joa)
  
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then  
 
                   if (matrix.eq.'R') then 
  
-                    call MATEL('X', js, is, joa, ioa, xinv,
+                    call new_MATEL('X', jg, ig, xinv,
      &                         Sij, grSij )
                     Si(jo) = Sij*dk(1)  
                      
-                    call MATEL('Y', js, is, joa, ioa, xinv,
+                    call new_MATEL('Y', jg, ig, xinv,
      &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*dk(2)  
  
-                    call MATEL('Z', js, is, joa, ioa, xinv,
+                    call new_MATEL('Z', jg, ig, xinv,
      &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*dk(3) 
            
-                    call MATEL('S', is, js, ioa, joa, xij(1:3,jn),
+                    call new_MATEL('S', ig, jg, xij(1:3,jn),
      &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*(
      &                   xa(1,ia)*dk(1)
@@ -399,48 +400,48 @@ C Initialize neighb subroutine
                     if (rij.lt.tiny) then 
 C Perform the direct computation of the matrix element of the momentum 
 C within the same atom
-                      if (.not.calculated(joa,ioa,is)) then 
-                        ilm1 = lofio(is,ioa)**2 + lofio(is,ioa) + 
-     &                    mofio(is,ioa) + 1
-                        ilm2 = lofio(is,joa)**2 + lofio(is,joa) + 
-     &                    mofio(is,joa) + 1
-                        call intgry(ilm1,ilm2,dintg2)
-                        call intyyr(ilm1,ilm2,dintg1)
-                        dintgmod1 = dintg1(1)**2 + dintg1(2)**2 + 
-     &                    dintg1(3)**2
-                        dintgmod2 = dintg2(1)**2 + dintg2(2)**2 + 
-     &                    dintg2(3)**2
-                        Sir0 = 0.0d0
-                        if ((dintgmod2.gt.tiny).or.(dintgmod1.gt.tiny)) 
+!N                     if ( .not.calculated(joa,ioa,is) ) then
+                       ilm1 = lofio(is,ioa)**2 + lofio(is,ioa) + 
+     &                      mofio(is,ioa) + 1
+                       ilm2 = lofio(is,joa)**2 + lofio(is,joa) + 
+     &                      mofio(is,joa) + 1
+                       call intgry(ilm1,ilm2,dintg2)
+                       call intyyr(ilm1,ilm2,dintg1)
+                       dintgmod1 = dintg1(1)**2 + dintg1(2)**2 + 
+     &                      dintg1(3)**2
+                       dintgmod2 = dintg2(1)**2 + dintg2(2)**2 + 
+     &                      dintg2(3)**2
+                       Sir0 = 0.0d0
+                       if ((dintgmod2.gt.tiny).or.(dintgmod1.gt.tiny)) 
      &                      then 
                           dint1 = 0.0d0
                           dint2 = 0.0d0
                           npoints = int(max(rcut(is,ioa),rcut(is,joa))
-     &                      /dx) + 2
+     &                         /dx) + 2
                           do ir = 1,npoints
-                            r = dx*(ir-1)
-                            call rphiatm(is,ioa,r,phi1,dphi1dr)
-                            call rphiatm(is,joa,r,phi2,dphi2dr)
-                            dint1 = dint1 + dx*phi1*dphi2dr*r**2
-                            dint2 = dint2 + dx*phi1*phi2*r
+                             r = dx*(ir-1)
+                             call rphiatm(is,ioa,r,phi1,dphi1dr)
+                             call rphiatm(is,joa,r,phi2,dphi2dr)
+                             dint1 = dint1 + dx*phi1*dphi2dr*r**2
+                             dint2 = dint2 + dx*phi1*phi2*r
                           enddo 
-C The factor of two because we use Ry for the Hamiltonian
+C     The factor of two because we use Ry for the Hamiltonian
                           Sir0 =
-     &                 -2.0d0*(dk(1)*(dint1*dintg1(1)+dint2*dintg2(1))+
-     &                         dk(2)*(dint1*dintg1(2)+dint2*dintg2(2))+
-     &                         dk(3)*(dint1*dintg1(3)+dint2*dintg2(3))) 
-                        endif 
-                        Pij(ioa,joa,is) = - Sir0
-                        Pij(joa,ioa,is) =   Sir0
-                        calculated(ioa,joa,is) = .true.
-                        calculated(joa,ioa,is) = .true.
-                      endif 
-                      Si(jo) = Pij(joa,ioa,is)
+     &                  -2.0d0*(dk(1)*(dint1*dintg1(1)+dint2*dintg2(1))+
+     &                      dk(2)*(dint1*dintg1(2)+dint2*dintg2(2))+
+     &                      dk(3)*(dint1*dintg1(3)+dint2*dintg2(3))) 
+                       endif 
+!N     Pij(ioa,joa,is) = - Sir0
+!N     Pij(joa,ioa,is) =   Sir0
+                       Si(jo) = Sir0
+!N                       calculated(ioa,joa,is) = .true.
+!N                       calculated(joa,ioa,is) = .true.
+!N                    endif 
 
                     else
 C Matrix elements between different atoms are taken from the 
 C gradient of the overlap 
-                      call MATEL('S', is, js, ioa, joa, xij(1:3,jn),
+                      call new_MATEL('S', ig, jg, xij(1:3,jn),
      &                           Sij, grSij )
 C The factor of two because we use Ry for the Hamiltonian
                       Si(jo) =
@@ -465,10 +466,10 @@ C The factor of two because we use Ry for the Hamiltonian
       enddo
 
 C     Free local memory
-!      call MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
+!      call new_MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
-      call de_alloc( calculated, 'calculated', 'phirphi_opt' )
-      call de_alloc( Pij,        'Pij',        'phirphi_opt' )
+!N      call de_alloc( calculated, 'calculated', 'phirphi_opt' )
+!N      call de_alloc( Pij,        'Pij',        'phirphi_opt' )
       call de_alloc( Ski,        'Ski',        'phirphi_opt' )
       call de_alloc( iono,       'iono',       'phirphi_opt' )
       call de_alloc( iano,       'iano',       'phirphi_opt' )

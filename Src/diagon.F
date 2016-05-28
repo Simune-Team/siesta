@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine diagon(no, nspin, maxspn, maxuo, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, 
@@ -291,6 +288,7 @@ C Call apropriate routine
      .              Haux, Saux, psi, Haux, Saux, aux, 
      .              nuotot, occtol, iscf )
            endif
+           call output_kpoint_occupation()
 #ifdef MPI
         endif
 #endif
@@ -326,4 +324,43 @@ C Stop time counter
 #ifdef DEBUG
       call write_debug( '    POS diagon' )
 #endif
-      end
+      CONTAINS
+      
+      subroutine output_kpoint_occupation()
+      !  Creates the OCCS file. This was formerly
+      !  done in diagk and diagk_file
+
+      ! Variables seen by host-association
+      
+      integer :: noccs, iu, ie, ik, ispin
+      real(dp) :: qe
+      external :: io_assign, io_close
+
+      if (Node .eq. 0) then
+         call io_assign(iu)
+         open(iu,file="OCCS",form="formatted",status="unknown",
+     $        action="write",position="rewind")
+      endif
+
+      do ik = 1, nk
+         do ispin = 1, nspin
+            noccs = 0
+            ie = nuotot
+            do while (ie.gt.0.and.noccs.eq.0)
+               qe = qo(ie,ispin,ik)
+               if (abs(qe).gt.occtol) noccs = ie
+               ie = ie - 1
+            enddo
+            if (Node .eq. 0) then
+               write(iu,"(i6,i3,f12.8,i8)")
+     $              ik, ispin, wk(ik), noccs
+            endif
+         enddo
+      enddo
+      if (Node .eq. 0) then
+         call io_close(iu)
+      endif
+      end subroutine output_kpoint_occupation
+      end subroutine diagon
+
+

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 module fsiesta
 
@@ -14,12 +11,14 @@ module fsiesta
 ! The routines that handle the other side of the communication are
 ! in module iopipes of siesta program.
 ! Usage:
-!   call siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
+!   call siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
 !     character(len=*),intent(in) :: label  : Name of siesta process
 !                                             (prefix of its .fdf file)
 !     integer,optional,intent(in) :: nnodes : Number of MPI nodes
 !     integer,optional,intent(in) :: mpi_comm : not used in this version
-!     character(len=*),intent(in),optional:: mpi_launcher : e.g. 'mpirun -np 8'
+!     character(len=*),intent(in),optional:: launcher : full launch command
+!     logical,optional,intent(in) :: localhost : will siesta run at localhost?
+!                                                (not used in this version)
 !
 !   call siesta_units( length, energy )
 !     character(len=*),intent(in) :: length : Physical unit of length
@@ -105,15 +104,16 @@ CONTAINS
 
 !---------------------------------------------------
 
-subroutine siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
+subroutine siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
   implicit none
-  character(len=*),  intent(in) :: label
-  integer, optional, intent(in) :: nnodes
-  integer, optional, intent(in) :: mpi_comm
-  character(len=*),  intent(in), optional :: mpi_launcher
+  character(len=*),         intent(in) :: label
+  integer,         optional,intent(in) :: nnodes
+  integer,         optional,intent(in) :: mpi_comm
+  character(len=*),optional,intent(in) :: launcher
+  logical,         optional,intent(in) :: localhost ! Not used in this version
 
   character(len=32) :: cpipe, fpipe
-  character(len=80) :: task, mpi_command
+  character(len=80) :: task
   integer           :: ip, iu
 
 !  print*, 'siesta_launch: launching process ', trim(label)
@@ -139,18 +139,15 @@ subroutine siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
   call pxfflush(iu)
 
 ! Start siesta process
-  if (present(nnodes) .and. nnodes>1) then
-     if (present(mpi_launcher)) then
-        mpi_command = mpi_launcher
-     else
-        mpi_command =  'mpirun -np '
-     endif
-    write(task,*) trim(mpi_command),  nnodes, ' siesta < ', &
-        trim(label)//'.fdf > ', trim(label)//'.out &'
+  if (present(launcher)) then
+    task = launcher
+  elseif (present(nnodes) .and. nnodes>1) then
+    write(task,*) ' mpirun -np ', nnodes, &
+                  ' siesta < ', trim(label)//'.fdf > ', trim(label)//'.out &'
   else
-    write(task,*) 'sleep 2; siesta < ', &
-        trim(label)//'.fdf > ', trim(label)//'.out &'
-  end if
+    write(task,*) ' siesta < ', trim(label)//'.fdf > ', trim(label)//'.out &'
+  endif
+  print*,'siesta_launch: task = ',trim(task)
   call system(task)
 
 end subroutine siesta_launch

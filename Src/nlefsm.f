@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_nlefsm
 
@@ -76,10 +73,13 @@ C
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs,  only : GlobalToLocalOrb
-      use atmfuncs,      only : rcut, epskb
+      use atm_types,     only : nspecies
+      use atmfuncs,      only : rcut, epskb, orb_gindex, kbproj_gindex
+      use atmfuncs,      only : nofis, nkbfis
       use neighbour,     only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour,     only : mneighb, reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
+      use m_new_matel,   only : new_matel
 
       integer, intent(in) ::
      .   maxnh, na, maxnd, nspin, nua
@@ -102,11 +102,11 @@ C
 C Internal variables ................................................
 C maxno  = maximum number of basis orbitals overlapping a KB projector
 
-      integer, save ::  maxno = 2000
+      integer, save ::  maxno = 500
   
       integer
      .  ia, ikb, ina, ind, ino,
-     .  io, iio, ioa, is, ispin, ix, 
+     .  io, iio, ioa, is, ispin, ix, ig, kg,
      .  j, jno, jo, jx, ka, ko, koa, ks, kua,
      .  nkb, nna, nno, no, nuo, nuotot, maxkba
 
@@ -130,20 +130,26 @@ C Start time counter
 C Find unit cell volume
       volume = volcel( scell ) * nua / na
 
-C Find maximum range
-      rmaxo = 0.0d0
-      rmaxkb = 0.0d0
-      do ia = 1,na
-        is = isa(ia)
-        do ikb = lastkb(ia-1)+1,lastkb(ia)
-          ioa = iphKB(ikb)
-          rmaxkb = max( rmaxkb, rcut(is,ioa) )
-        enddo
-        do io = lasto(ia-1)+1,lasto(ia)
-          ioa = iphorb(io)
-          rmaxo = max( rmaxo, rcut(is,ioa) )
-        enddo
+C Find maximum range and maximum number of KB projectors
+      rmaxo  = 0.0_dp
+      rmaxkb = 0.0_dp
+      maxkba = 0
+      do is = 1, nspecies
+         
+         ! Species orbital range
+         do io = 1, nofis(is)
+            rmaxo = max(rmaxo, rcut(is,io))
+         enddo
+         
+         ! Species KB range
+         io = nkbfis(is)
+         do ikb = 1, io
+            rmaxkb = max(rmaxkb, rcut(is,-ikb))
+         enddo
+         maxkba = max(maxkba,io)
+
       enddo
+      ! Calculate max extend
       rmax = rmaxo + rmaxkb
 
 C Initialize arrays Di and Vi only once
@@ -179,13 +185,6 @@ C Make list of all orbitals needed for this node
           jo = listh(listhptr(io)+j)
           listedall(jo) = .true.
         enddo
-      enddo
-
-C Find maximum number of KB projectors of one atom = maxkba
-      maxkba = 0
-      do ka = 1,na
-        nkb = lastkb(ka) - lastkb(ka-1)
-        maxkba = max(maxkba,nkb)
       enddo
 
 C Allocate local arrays that depend on saved parameters
@@ -237,7 +236,7 @@ C             Find overlap between neighbour orbitals and KB projectors
               if (within) then
 C               Check maxno - if too small then increase array sizes
                 if (nno.eq.maxno) then
-                  maxno = maxno + 100
+                  maxno = maxno + 10
                   call re_alloc( iano, 1, maxno, 'iano', 'nlefsm',
      &                           .true. )
                   call re_alloc( iono, 1, maxno, 'iono', 'nlefsm',
@@ -260,7 +259,9 @@ C               Check maxno - if too small then increase array sizes
                   ikb = ikb + 1
                   ioa = iphorb(io)
                   koa = iphKB(ko)
-                  call MATEL( 'S', ks, is, koa, ioa, xki(1:3,ina),
+                  kg = kbproj_gindex(ks,koa)
+                  ig = orb_gindex(is,ioa)
+                  call new_MATEL( 'S', kg, ig, xki(1:3,ina),
      &                  Ski(ikb,nno), grSki(1:3,ikb,nno) )
                 enddo
 
@@ -357,7 +358,7 @@ C             Pick up contributions to H and restore Di and Vi
       enddo
 
 C     Deallocate local memory
-!      call MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
+!      call new_MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
       call reset_neighbour_arrays( )
       call de_alloc( grSki, 'grSki', 'nlefsm' )
       call de_alloc( Ski, 'Ski', 'nlefsm' )

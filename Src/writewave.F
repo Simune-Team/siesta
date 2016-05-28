@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module writewave
 
@@ -166,34 +163,33 @@ C
       use fdf
       use sys,          only : die
       use alloc,        only : re_alloc
+      use m_get_kpoints_scale, only: get_kpoints_scale
+      
       implicit          none
 
       integer           :: norb, nk
       real(dp), pointer :: kpoint(:,:)
       character         :: paste*30
-      external          :: paste, redcel, memory
+      external          :: paste, memory
 C *********************************************************************
 
       character
      .  name1*10, name2*10, name3*10,
-     .  scale*30, msg*120
+     .  msg*120
 
       logical       :: outlng
       logical       :: WaveFuncPresent
 
       integer
-     .  i, ix, iw, iw1, iw2, iw3,
-     .  mscell(3,3), ni, nn, nr, nv
+     .  i, ix, iw, iw1, iw2, iw3, ierr,
+     .  ni, nn, nr, nv
 
       real(dp)
-     .  alat, caux(3,3), pi,
-     .  rcell(3,3), ucell(3,3)
+     .  caux(3,3), 
+     .  rcell(3,3)
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
-
-C Start time counter
-      call timer( 'writewave', 1 )
 
       wfs_energy_window = .true.
 C Find if there are k-points data
@@ -204,26 +200,12 @@ C Find if there are k-points data
       WaveFuncPresent = fdf_block('WaveFuncKPoints',bfdf)
       if ( WaveFuncPresent ) then
 
-C Find lattice constant
-        alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
-        if (alat .eq. 0.d0) then
-          call die('writewave: ERROR: Lattice constant required')
-        endif
+         call get_kpoints_scale('WaveFuncKPointsScale',rcell,ierr)
 
-C Find scale used in k point data
-        scale = fdf_string( 'WaveFuncKPointsScale', 'pi/a' )
-        if (scale .eq. 'pi/a') then
-          pi = 4.d0 * atan(1.d0)
-        elseif (scale .eq. 'ReciprocalLatticeVectors') then
-          call redcel( alat, caux, ucell, mscell )
-          call reclat( ucell, rcell, 1 )
-        elseif (Node.eq.0) then
-          write(6,'(a,/,2a,/,a)')
-     .    'writewave: WARNING: Invalid value for WaveFuncKPointsScale',
-     .    'writewave: Allowed values are pi/a and',
-     .              ' ReciprocalLatticeVectors',
-     .    'writewave: No band calculation performed'
-        endif
+         if (ierr /= 0) then
+            nk = 0
+            RETURN
+         endif
 
 C Find max number of k points and max number of bands per k-point
 C Loop on data lines
@@ -335,17 +317,12 @@ C Add this point to total number of k points
           nk = nk + 1
 
 C Find coordinates of k point
-          if (scale .eq. 'pi/a') then
-            kpoint(1,nk) = fdf_bvalues(pline,1) * pi / alat
-            kpoint(2,nk) = fdf_bvalues(pline,2) * pi / alat
-            kpoint(3,nk) = fdf_bvalues(pline,3) * pi / alat
-          elseif (scale .eq. 'ReciprocalLatticeVectors') then
+
             do ix = 1,3
               kpoint(ix,nk) = rcell(ix,1) * fdf_bvalues(pline,1) +
      .                        rcell(ix,2) * fdf_bvalues(pline,2) +
      .                        rcell(ix,3) * fdf_bvalues(pline,3)
             enddo
-          endif
 
 C Find which eigenvectors should be printed
 C Store indexes of wave functions to printout
@@ -399,8 +376,6 @@ C #X.XXX #Y.YYY #Z.ZZZ
         enddo
 
       endif
-
-      call timer( 'writewave', 2 )
 
       end subroutine initwave
 

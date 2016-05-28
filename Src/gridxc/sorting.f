@@ -99,16 +99,20 @@ C **********************************************************************
       real(dp),parameter  :: tol = 1.e-12_dp  ! tolerance for value comparisons
 
       real(dp),intent(in) :: x(m,n)   ! Array with the values to be ordered
+                                      ! will order against the first element (m)
       integer, intent(in) :: m, n     ! Dimensions of array x
       integer, intent(out):: indx(n)  ! Increasing order of x(1,:)
 
       integer:: child, child2, k, nFamily, parent
-      real(dp):: age(n), ageTol
+      real(dp):: ageTol
 
       ! Construct the heap (family tree)
       indx = (/(k,k=1,n)/)            ! initial array order, to be modified
-      age = x(1,:)                    ! this is the array to be ordered
-      ageTol = tol*(maxval(age)-minval(age))  ! tolerance for age comparisons
+
+      ageTol = tol*maxval(x(1,:)) - tol*minval(x(1,:))  ! tolerance for age comparisons
+
+      ! Swap to create the actual parent tree
+
       nFamily = n                     ! number of persons in the family tree
       do parent = n/2,1,-1            ! sift 'parents' down the tree
         call siftDown(parent)         ! siftDown inherits age and indx arrays
@@ -125,29 +129,36 @@ C **********************************************************************
       subroutine siftDown( person )   ! place person in family tree
 
       implicit none
-      integer,intent(in):: person
+      integer, intent(in) :: person
 
       ! Inherited from ordix: age(:), ageTol, indx(:), nFamily
-      integer:: child, child2, parent
+      integer:: child, sw, parent
 
-      parent = person                 ! assume person is a parent
-      do                              ! iterate the sift-down process
-        child = 2*parent              ! first child of parent
-        child2 = child+1              ! second child
-        if (child>nFamily) then       ! parent has no children in family
-          exit                        ! => it is already in its right place
-        elseif (child2<=nFamily) then ! choose oldest child
-          if (age(indx(child)) < age(indx(child2))-ageTol) child = child2
-        endif
-        ! If person (assumed parent) is younger than its child, exchange them
-        if (age(indx(parent)) < age(indx(child))-ageTol) then
-          call swap( indx(parent), indx(child) )
-          parent = child
-        else                          ! person is already in its right place
-          exit
-        endif
-      enddo
-
+      ! initialize
+      parent = person                    ! assume person is a parent
+      child = 2 * parent                 ! first child of parent
+      sw = parent                        ! sorted swap child
+      do while ( child <= nFamily )      ! iterate the sift-down process
+         ! check current child
+         if ( x(1,indx(sw)) < x(1,indx(child)) - ageTol ) then
+            sw = child
+         end if
+         ! Check neighbouring child
+         if ( child < nFamily ) then
+            if ( x(1,indx(sw)) < x(1,indx(child+1)) - ageTol ) then
+               sw = child + 1
+            end if
+         end if
+         if ( sw == parent ) then
+            exit ! break
+         else
+            call swap( indx(parent) , indx(sw) )
+            ! update for next sift
+            parent = sw
+            child = sw * 2
+         end if
+      end do
+      
       end subroutine siftDown
 
       subroutine swap(i,j)            ! exchange integers i and j
