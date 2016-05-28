@@ -5,6 +5,15 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-05-29                                                    trunk-504
+Update makefile in Util/Gen-basis after ldau inclusion
+
+Some extra modules are needed in Gen-basis
+
+modified:
+  Util/Gen-basis/Makefile
+
+-----------------------------------------------------------------------
 2016-05-18                                                    trunk-503
 Merged fix lp:1582978 (from rel-4.0)
 
