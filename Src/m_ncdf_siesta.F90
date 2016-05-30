@@ -51,6 +51,7 @@ contains
     use siesta_options, only: sname, isolve
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN
     use siesta_options, only: SOLVE_MINIM, SOLVE_TRANSI
+    use siesta_options, only: savehs
     use siesta_options, only: saverho, savedrho, savevh, savevna
     use siesta_options, only: savevt, savepsch, savetoch, saverhoxc
     use siesta_options, only: savebader
@@ -59,6 +60,7 @@ contains
 #ifdef TRANSIESTA
     use m_ts_electype, elec_name => name
     use m_ts_options, only : Volt, N_Elec, Elecs
+    use m_ts_options, only : TS_HS_Save
 #endif
 
     character(len=*), intent(in) :: fname
@@ -167,10 +169,16 @@ contains
     dic = dic//('unit'.kv.'Ry')
     call ncdf_def_var(grp,'EDM',NF90_DOUBLE,(/'nnzs','spin'/), &
          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    
-    dic = dic//('info'.kv.'Hamiltonian')
-    call ncdf_def_var(grp,'H',NF90_DOUBLE,(/'nnzs','spin'/), &
-         compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+
+#ifdef TRANSIESTA
+    if ( savehs .or. TS_HS_save ) then
+#else
+    if ( savehs ) then
+#endif
+       dic = dic//('info'.kv.'Hamiltonian')
+       call ncdf_def_var(grp,'H',NF90_DOUBLE,(/'nnzs','spin'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
 
     ! Even though I think we could do without, I add the
     ! xij array to the file
