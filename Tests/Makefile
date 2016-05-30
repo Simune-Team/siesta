@@ -65,15 +65,21 @@ all:
 
 # Ensure that tests may be called individually
 # (and that they are run, PHONY is required)
+# This ensures one can call:
+#   make h2o
+# and the h2o test will be runned.
+.NOTPARALLEL: $(tests)
 .PHONY: $(tests)
 $(tests):
 	$(MAKE) -C $@ completed
 
+.PHONY: check
 check:
 	@for dir in $(tests); do\
 	 $(MAKE) -C $$dir check; \
 	done
 
+.PHONY: show
 show:
 	@echo $(tests)
 
