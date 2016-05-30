@@ -562,7 +562,7 @@ contains
        if ( proj_T(it)%L%idx < 0 ) then
           El_L => Elecs(-proj_T(it)%L%idx)
           if ( first_P ) then
-             write(*,'(a)') '* Origin non-projected Gamma projections:'
+             write(*,'(a)') '* Non-projected incoming scattering state projections:'
              first_P = .false.
           end if
           
