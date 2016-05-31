@@ -1,3 +1,18 @@
+2015-06-31  16:30 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-6
+
+added:
+
+  Src/m_evolve.F90
+  Src/m_iotddft.F90
+
+modified:
+
+  Src/MatrixSwitch/README.md
+  Src/MatrixSwitch/examples/Makefile
+  Src/MatrixSwitch/examples/example3.F90
+  Src/MatrixSwitch/examples/example4.F90
+  Src/MatrixSwitch/src/MatrixSwitch.F90
+
 2015-06-26  16:00 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-5
 
 Parallelized (for gamma point) uisng MatrixSwitch.

@@ -9,7 +9,7 @@ Version
 Date
 ----
 
-02.06.2015
+25.07.2014
 
 Author
 ------
@@ -17,7 +17,7 @@ Author
 Fabiano Corsetti, CIC nanoGUNE, Donostia-San Sebastián, Spain
 
 *   Email: f.corsetti {at} nanogune.eu
-*   Homepage: <http://www.nanogune.eu/fabiano-corsetti/>
+*   Homepage: <http://www.nanogune.eu/en/research/theory/people/fabiano-corsetti/>
 
 Description
 -----------
@@ -54,7 +54,7 @@ Usage
 Documentation
 -------------
 
-A complete documentation is maintained at: <http://esl.cecam.org/mediawiki/index.php/MatrixSwitch>. Also see the examples in the `examples` directory.
+A complete documentation is maintained at: <http://cecampc8.epfl.ch/mediawiki/index.php/MatrixSwitch>. Also see the examples in the `examples` directory.
 
 License
 -------

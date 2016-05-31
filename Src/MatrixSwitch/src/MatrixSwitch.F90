@@ -701,7 +701,7 @@ subroutine m_dtrace(A,alpha,label)
 
   !**** EXTERNAL ********************************!
 
-#if defined(SLAP)
+#if defined(MPI) && defined(SLAP)
   real(dp), external :: pdlatra
 #endif
 
@@ -782,8 +782,8 @@ subroutine m_ztrace(A,alpha,label)
 
   !**** EXTERNAL ********************************!
 
-#if defined(SLAP)
-  complex(dp), external :: pzlatra
+#if defined(MPI) && defined(SLAP)
+  real(dp), external :: pzlatra
 #endif
 
   !**********************************************!
@@ -2376,23 +2376,10 @@ subroutine die(message)
 
   character(*), intent(in), optional :: message
 
-  !**** INTERNAL ********************************!
-
-  logical, save :: log_start=.false.
-
-  integer :: log_unit
-
   !**********************************************!
 
-  if (log_start) then
-    open(newunit=log_unit,file='MatrixSwitch.log',position='append')
-  else
-    open(newunit=log_unit,file='MatrixSwitch.log',status='replace')
-    log_start=.true.
-  end if
-  write(log_unit,'(a)'), 'FATAL ERROR in matrix_switch!'
-  write(log_unit,'(a)'), message
-  close(log_unit)
+  print('(a)'), 'FATAL ERROR in matrix_switch!'
+  print('(a)'), message
   stop
 
 end subroutine die
