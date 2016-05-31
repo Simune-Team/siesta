@@ -24,11 +24,6 @@
       use m_mixing_scf, only: scf_mix
       use m_mixing, only: mixing
       
-#ifdef OLD_MIXING
-      use m_broyden_mixing, only: broyden_mixing
-      use m_fire_mixing,    only: fire_mixing
-#endif
-
       use m_spin,           only: nspin
       use parallel,         only: IONode
 
@@ -59,34 +54,6 @@
          Xout => Dscf
       end if
 
-#ifdef OLD_MIXING
-      ! Convoluted legacy logic for the Pulay mixer
-      ! iiscf is the "effective SCF step"
-      ! To be cleaned up
-      
-      mmix  = mix_first_scf_step
-      iiscf = iscf
-      if (maxsav .le. 0) then
-         iiscf = 1
-         if (iscf .ne. 1) mmix = .true.
-      end if
-      
-      if (fire_mix) then
-         call fire_mixing( iscf, mix_first_scf_step, no_l, maxnh,
-     &        numh(1:no_l), listhptr(1:no_l), nspin,
-     $        wmix, nkick, wmixkick, Xout, Xin,dummy_dmax)
-      else if (broyden_maxit == 0) then
-         call pulayx( iiscf, mmix, no_l, maxnh,
-     &        numh, listhptr, nspin, maxsav, wmix, nkick, 
-     &        wmixkick, XOut, XIn, dummy_dmax)
-      else
-         call broyden_mixing( iscf, mix_first_scf_step, no_l, maxnh,
-     &        numh(1:no_l), listhptr(1:no_l),
-     &        nspin, wmix, nkick, wmixkick,
-     $        XOut, XIn, dummy_dmax)
-      endif
-
-#endif
 
       ! Create residual function to minimize
       allocate(F(maxnh,nspin))

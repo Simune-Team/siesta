@@ -68,9 +68,6 @@
       call resetMeshPhi( )
       call resetDscfPointers( )
       call resetRhog()
-#ifdef OLD_MIXING
-      call resetPulayArrays()
-#endif
       ! NP, new mixing
       call reset_mixing_scf( )
 

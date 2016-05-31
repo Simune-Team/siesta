@@ -385,26 +385,6 @@ subroutine read_options( na, ns, nspin )
   broyden_maxit = fdf_get('DM.NumberBroyden',0)
   ! FIRE SCF mixing, no parameters
   fire_mix = fdf_get('DM.FIRE.Mixing',.false.)
-#ifdef OLD_MIXING
-  if (ionode) then
-     if (fire_mix) then
-        write(6,2) 'redata: Fire mixing'
-     else if (broyden_maxit .gt. 0) then
-        write(6,5) 'redata: Broyden mixing with', &
-             broyden_maxit, &
-             ' saved histories.'
-        if (maxsav > 1) then
-           write(6,2) 'redata: Broyden supersedes Pulay!'
-           maxsav = maxsav_default
-        endif
-     else if (maxsav .gt. 1) then
-        write(6,5) 'redata: Performing Pulay mixing using',maxsav, &
-             ' iterations'
-     else
-        write(6,2)'redata: Mixing is linear'
-     endif
-  endif
-#endif
 
   if (cml_p) then
      call cmlAddParameter( xf=mainXML, name='DM.NumberPulay',     &
