@@ -628,7 +628,7 @@ contains
       case default
 
          ! This is the restart parameter
-         ! I.e. if f_k < rp * f
+         ! I.e. if |f_k / f - 1| < rp
          ! only works for positive rp
          m%rv(I_PREVIOUS_RES) = huge(1._dp)
          m%rv(I_P_RESTART) = -1._dp
@@ -726,12 +726,19 @@ contains
   end subroutine mixing_init
 
 
-  subroutine mixing_1d( mix, iscf, n, x1, F1, x2 )
+  subroutine mixing_1d( mix, iscf, n, x1, F1, x2, ncoeff)
     ! The current mixing method 
     type(tMixer), pointer :: mix
+    ! The current step in the SCF and size of arrays
     integer, intent(in) :: iscf, n
+    ! x1 == Input function,
+    ! F1 == Residual from x1
     real(dp), intent(in) :: x1(n), F1(n)
+    ! x2 == Next input function
     real(dp), intent(inout) :: x2(n)
+    ! Number of elements used for calculating the mixing
+    ! coefficients
+    integer, intent(in), optional :: ncoeff
 
     integer :: info
     integer :: rsave
@@ -744,7 +751,8 @@ contains
 
     ! If we are going to skip to next, we signal it
     ! before entering
-    if ( mix%n_itt <= mix%cur_itt ) then
+    if ( mix%n_itt > 0 .and. &
+         mix%n_itt <= mix%cur_itt ) then
        mix%action = ACTION_NEXT
     end if
 
@@ -773,23 +781,19 @@ contains
           end select
        end if
 
-       call mixing_pulay(mix, iscf, n, x1, F1, x2, info)
+       call mixing_pulay(mix, iscf, n, x1, F1, x2, info, ncoeff = ncoeff)
 
     case ( MIX_BROYDEN )
 
        if ( debug_mix ) &
             write(*,'(2a)') trim(debug_msg),' Broyden'
 
-       call mixing_broyden(mix, iscf, n, x1, F1, x2, info)
+       call mixing_broyden(mix, iscf, n, x1, F1, x2, info, ncoeff = ncoeff)
        
     end select
 
     ! check whether we should change the mixer
-    if ( mix%n_itt == 0 ) then
-       ! do nothing, we continue, indefinetely
-    else if ( mix%n_itt < 0 ) then
-       ! this is checked outside
-    else if ( mix%action == ACTION_NEXT ) then
+    if ( mix%action == ACTION_NEXT ) then
 
        call mixing_step( mix )
        
@@ -802,6 +806,10 @@ contains
        select case ( mix%m )
        case ( MIX_PULAY )
 
+          if ( IONode ) then
+             write(*,'(a)')'mix: Pulay -- resetting history'
+          end if
+
           if ( rsave == 0 ) then
              call reset(mix%stack(1))
              call reset(mix%stack(2))
@@ -812,7 +820,11 @@ contains
           end if
           
        case ( MIX_BROYDEN )
-          
+
+          if ( IONode ) then
+             write(*,'(a)')'mix: Broyden -- resetting history'
+          end if
+
           call reset(mix%stack(1),-rsave)
           call reset(mix%stack(2),-rsave)
           
@@ -821,21 +833,27 @@ contains
        if ( debug_mix ) &
             write(*,'(a,a,i0)') trim(debug_msg), &
             ' saved hist = ',n_items(mix%stack(1))
-       
+
     end if
 
   end subroutine mixing_1d
   
 
-  subroutine mixing_2d( mix, iscf, n1, n2, x1, F1, x2 )
+  subroutine mixing_2d( mix, iscf, n1, n2, x1, F1, x2, ncoeff)
     
     type(tMixer), pointer :: mix
     integer, intent(in) :: iscf, n1, n2
     real(dp), intent(in) :: x1(n1,n2), F1(n1,n2)
     real(dp), intent(inout) :: x2(n1,n2)
+    integer, intent(in), optional :: ncoeff
 
     ! Simple wrapper for 1D
-    call mixing_1d( mix, iscf, n1*n2 , x1(1,1), F1(1,1), x2(1,1) )
+    if ( present(ncoeff) ) then
+       call mixing_1d( mix, iscf, n1*n2 , x1(1,1), F1(1,1), x2(1,1) ,&
+            ncoeff = n1 * ncoeff)
+    else
+       call mixing_1d( mix, iscf, n1*n2 , x1(1,1), F1(1,1), x2(1,1))
+    end if
     
   end subroutine mixing_2d
 
@@ -1044,7 +1062,7 @@ contains
   ! Pulay mixing
   ! This has a variant in case the first (fast)
   ! gets unstable in the inversion algorithm
-  subroutine mixing_pulay( mix, iscf, n, x1, F1, x2, info)
+  subroutine mixing_pulay( mix, iscf, n, x1, F1, x2, info, ncoeff)
     ! The current mixing method 
     type(tMixer), intent(inout) :: mix
     integer, intent(in) :: iscf
@@ -1055,12 +1073,14 @@ contains
     real(dp), intent(inout) :: x2(n)
     ! run-time information
     integer, intent(out) :: info
+    ! Number of elements used for calculating the coefficients
+    integer, intent(in), optional :: ncoeff
 
     ! Temporary arrays for local data structures
     real(dp), dimension(:), pointer :: res, rres, oF
     real(dp), dimension(:), pointer :: rres1, rres2
 
-    integer :: nh, ns
+    integer :: nh, ns, ncoef
     integer :: i, j
     ! Used arrays
     real(dp), allocatable :: alpha(:), b(:,:), bi(:,:)
@@ -1075,6 +1095,9 @@ contains
 
     real(dp), external :: ddot
 
+    ncoef = n
+    if ( present(ncoeff) ) ncoef = ncoeff
+
     p_next = mix%rv(I_P_NEXT) > 0._dp
     p_restart = mix%rv(I_P_RESTART) > 0._dp
 
@@ -1082,7 +1105,7 @@ contains
     if ( p_restart .or. p_next ) then
        
        ! Calculate dot: ||f_k-1||
-       ssum = ddot(n,F1,1,F1,1)
+       ssum = ddot(ncoef,F1,1,F1,1)
 #ifdef MPI
        dtmp = ssum
        call MPI_AllReduce(dtmp,ssum,1, &
@@ -1300,9 +1323,6 @@ contains
 
     if ( mix%restart > 0 .and. &
          mod(mix%cur_itt,mix%restart) == 0 ) then
-          
-       if ( IONode ) &
-            write(*,'(a)')'mix: Pulay -- resetting history'
 
        mix%action = ACTION_RESTART
 
@@ -1326,7 +1346,7 @@ contains
             rres2 => getstackval(mix,2,j)
 
             ! B(i,j) = B(j,i) = dot_product(RRes[i],RRes[j])
-            b(i,j) = ddot(n,rres1,1,rres2,1)
+            b(i,j) = ddot(ncoef,rres1,1,rres2,1)
             b(j,i) = b(i,j)
 
          end do
@@ -1382,7 +1402,7 @@ contains
                ! Get j'th residual array
                rres => getstackval(mix,2,j)
                
-               ssum = ddot(n,rres,1,res,1)
+               ssum = ddot(ncoef,rres,1,res,1)
                
                alpha(i) = alpha(i) - bi(i,j) * ssum
                
@@ -1441,7 +1461,7 @@ contains
 
 
   ! Broyden mixing
-  subroutine mixing_broyden( mix, iscf, n, x1, F1, x2, info)
+  subroutine mixing_broyden( mix, iscf, n, x1, F1, x2, info, ncoeff)
     ! The current mixing method 
     type(tMixer), intent(inout) :: mix
     integer, intent(in) :: iscf
@@ -1452,12 +1472,14 @@ contains
     real(dp), intent(inout) :: x2(n)
     ! information about algorithm
     integer, intent(out) :: info
+    ! Number of elements used for coeffecients
+    integer, intent(in), optional :: ncoeff
 
     ! Temporary arrays for local data structures
     real(dp), dimension(:), pointer :: rres, rres1
     real(dp), dimension(:), pointer :: tmp1, tmp2, Jres
 
-    integer :: is, ns, nm
+    integer :: is, ns, nm, ncoef
     integer :: i, j, k, l, in
     ! Used arrays
     real(dp), allocatable, dimension(:,:) :: dFdF, a, ao, b, bb
@@ -1473,6 +1495,8 @@ contains
     integer :: MPIerror
 #endif
 
+    ncoef = n
+    if ( present(ncoeff) ) ncoef = ncoeff
     info = 0
 
     p_next = mix%rv(I_P_NEXT) > 0._dp
@@ -1482,7 +1506,7 @@ contains
     if ( p_restart .or. p_next ) then
        
        ! Calculate dot: ||f_k-1||
-       norm = ddot(n,F1,1,F1,1)
+       norm = ddot(ncoef,F1,1,F1,1)
 #ifdef MPI
        rtmp = norm
        call MPI_AllReduce(rtmp,norm,1, &
@@ -1580,21 +1604,29 @@ contains
     ! Allocate all work arrays
     allocate(dFdF(nm,nm),dFF(ns))
     allocate(a(ns,ns),ao(ns,ns),b(ns,ns),bb(ns,ns))
-    
-    ! Calculate Res[i+1] - Res[i]
+
     dMax = 0._dp
     norm = 0._dp
     Fnorm = 0._dp
-!$OMP parallel do default(shared), private(in), &
-!$OMP&reduction(max:dMax), reduction(+:norm,Fnorm)
+
+!$OMP parallel default(shared), private(in)
+
+    ! Calculate Res[i+1] - Res[i]
+!$OMP do
     do in = 1 , n
-       dMax = max(dMax,abs(F1(in)))
-       Fnorm = Fnorm + F1(in) * F1(in)
        ! Create the RRes[i]
        rres(in) = F1(in) - rres(in)
+    end do
+!$OMP end do 
+!$OMP do reduction(max:dMax), reduction(+:norm,Fnorm)
+    do in = 1 , ncoef
+       dMax = max(dMax,abs(F1(in)))
+       Fnorm = Fnorm + F1(in) * F1(in)
        norm = norm + rres(in) * rres(in)
     end do
-!$OMP end parallel do
+!$OMP end do nowait
+    
+!$OMP end parallel
 
 #ifdef MPI
     call MPI_AllReduce(dMax,rtmp,1, &
@@ -1636,13 +1668,13 @@ contains
     ! and between <RRes[is]|Res[ns]>
     do is = 1 , ns - 1
        rres1 => getstackval(mix,1,is)
-       dFdF(is,ns) = ddot(n,rres1(1),1,rres(1),1)
-       dFF(is) = ddot(n,rres1(1),1,F1(1),1)
+       dFdF(is,ns) = ddot(ncoef,rres1(1),1,rres(1),1)
+       dFF(is) = ddot(ncoef,rres1(1),1,F1(1),1)
     end do
     ! NOTE that for is == ns we get 1., <RRes[ns]|RRes[ns]> / norm ** 2
     dFdF(ns,ns) = 1._dp
     ! create last scalar producet <RRes[i]|Res[ns]>
-    dFF(ns) = ddot(n,rres(1),1,F1(1),1)
+    dFF(ns) = ddot(ncoef,rres(1),1,F1(1),1)
 
 #ifdef MPI
     if ( ns > 1 ) then
@@ -1812,10 +1844,6 @@ contains
     if ( mix%restart > 0 .and. &
          mod(mix%cur_itt,mix%restart) == 0 ) then
           
-       if ( IONode ) then
-          write(*,'(a)')'mix: Broyden -- resetting history'
-       end if
-
        mix%action = ACTION_RESTART
 
     end if
@@ -1930,6 +1958,7 @@ contains
     type(tMixer), pointer :: m
     character(len=50) :: fmt
 
+    logical :: bool
     integer :: i
 
     if ( .not. IONode ) return
@@ -1981,14 +2010,18 @@ contains
              write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
                   '    Step mixer parameter',m%rv(I_P_NEXT)
           end if
+          bool = .false.
           if ( m%rv(I_P_RESTART) > 0._dp ) then
              write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
                   '    Restart parameter',m%rv(I_P_RESTART)
-             write(*,'(2a,t50,''= '',i0)') trim(fmt), &
-                  '    Restart save steps',m%restart_save
-          else if ( m%restart > 0 ) then
+             bool = .true.
+          end if
+          if ( m%restart > 0 ) then
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                   '    Restart steps',m%restart
+             bool = .true.
+          end if
+          if ( bool ) then
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                   '    Restart save steps',m%restart_save
           end if
@@ -2011,14 +2044,18 @@ contains
              write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
                   '    Step mixer parameter',m%rv(I_P_NEXT)
           end if
+          bool = .false.
           if ( m%rv(I_P_RESTART) > 0._dp ) then
              write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
                   '    Restart parameter',m%rv(I_P_RESTART)
-             write(*,'(2a,t50,''= '',i0)') trim(fmt), &
-                  '    Restart save steps',m%restart_save
-          else if ( m%restart > 0 ) then
+             bool = .true.
+          end if
+          if ( m%restart > 0 ) then
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                   '    Restart steps',m%restart
+             bool = .true.
+          end if
+          if ( bool ) then
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                   '    Restart save steps',m%restart_save
           end if

@@ -14,7 +14,7 @@
       subroutine mixer( iscf )
 
       use precision,        only: dp
-      use siesta_options,   only: mixH, mix_scf_first
+      use siesta_options,   only: mixH, mix_scf_first, mix_spinor
       use siesta_options,   only: mullipop, muldeb
       use sparse_matrices,  only: Dold, Dscf, Hold, H, S
       use sparse_matrices,  only: maxnh, numh, listhptr, listh
@@ -98,8 +98,13 @@
       ! Xin contains the input element, F contains
       !  F = Xout - Xin
       ! Upon exit Xout contains the mixed quantity
-      call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout )
-
+      if ( mix_spinor ) then
+         call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout,
+     &        ncoeff=min(2,nspin))
+      else
+         call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout)
+      end if
+      
       ! Correctly handle mixed quantity
       ! move over mixed quantity to "input"
       if ( mix_scf_first ) then

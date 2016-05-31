@@ -1424,6 +1424,13 @@ subroutine read_options( na, ns, nspin )
   ! Read in mixing parameters (SCF)
   call mixing_init( 'SCF', scf_mixs )
   call mixing_print( 'SCF', scf_mixs )
+  ! When performing spin-calculations this decides whether
+  ! only the spinor-components should be mixed.
+  mix_spinor = fdf_get('SCF.Mix.SpinorOnly', .false.)
+  if ( IONode .and. nspin > 2 ) then
+     write(6,1) 'redata: Only mix diagonal spin-components',mix_spinor
+  end if
+
   
   ! We read in relevant data for ChargeGeometries block
   call read_charge_add( nspin , charnet )
