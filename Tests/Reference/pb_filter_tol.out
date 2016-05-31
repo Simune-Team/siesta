@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-trunk-506
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:42:04
+* Running on    2 nodes in parallel
+>> Start of run:  31-MAY-2016   8:59:52
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -65,7 +65,8 @@ reinit: System Label: pb_filter_tol
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: Pb Atomic number:          82
+Species number:   1 Atomic number:   82 Label: Pb
+
 Ground state valence configuration:   6s02  6p02
 Reading pseudopotential information in formatted form from Pb.psf
 
@@ -93,7 +94,7 @@ L=0  Nsemic=0  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.4151      4.8994    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=6
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
@@ -103,7 +104,7 @@ L=1  Nsemic=0  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    6.1261      5.6233    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=2  Nsemic=0  Cnfigmx=6
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -113,7 +114,7 @@ L=2  Nsemic=0  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.1407    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -335,10 +336,10 @@ redata: ***********************************************************************
 Total number of electrons:     4.000000
 Total ionic charge:     4.000000
 
-* ProcessorY, Blocksize:    2   3
+* ProcessorY, Blocksize:    1   7
 
 
-* Orbital distribution balance (max,min):     4     3
+* Orbital distribution balance (max,min):     7     6
 
 k-point displ. along   1 input, could be:     0.50    0.00
 k-point displ. along   2 input, could be:     0.50    0.00
@@ -374,29 +375,23 @@ outcell: Cell volume (Ang**3)        :     29.2325
 New_DM. Step:     1
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   15    1:    8    1:    8
-           2       1:   15    1:    8    9:   15
-           3       1:   15    9:   15    1:    8
-           4       1:   15    9:   15    9:   15
+           1       1:   15    1:   15    1:    8
+           2       1:   15    1:   15    9:   15
 
 InitMesh: MESH =    30 x    30 x    30 =       27000
 InitMesh: (bp) =    15 x    15 x    15 =        3375
 InitMesh: Mesh cutoff (required, used) =   200.000   312.067 Ry
-ExtMesh (bp) on 0 =    87 x    80 x    80 =      556800
+ExtMesh (bp) on 0 =    87 x    87 x    80 =      605520
 New grid distribution:   2
-           1       1:   15    1:    8    1:    8
-           2       1:   15    1:    8    9:   15
-           3       1:   15    9:   15    1:    8
-           4       1:   15    9:   15    9:   15
+           1       1:   15    1:   15    1:    8
+           2       1:   15    1:   15    9:   15
 New grid distribution:   3
-           1       1:   15    1:    8    1:    8
-           2       1:   15    1:    8    9:   15
-           3       1:   15    9:   15    1:    8
-           4       1:   15    9:   15    9:   15
+           1       1:   15    1:   15    1:    8
+           2       1:   15    1:   15    9:   15
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    87 x    80 x    80 =      556800
-PhiOnMesh: Number of (b)points on node 0 =                  960
-PhiOnMesh: nlist on node 0 =                49381
+ExtMesh (bp) on 0 =    87 x    87 x    80 =      605520
+PhiOnMesh: Number of (b)points on node 0 =                 1800
+PhiOnMesh: nlist on node 0 =                92772
 
 stepf: Fermi-Dirac step function
 
@@ -406,10 +401,11 @@ siesta: Eions   =       122.930792
 siesta: Ena     =        18.410043
 siesta: Ekin    =        36.117328
 siesta: Enl     =        15.260943
+siesta: EldaU   =         0.000000
 siesta: DEna    =         0.000001
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
-siesta: Exc     =      -291.905933
+siesta: Exc     =      -291.905934
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
@@ -421,7 +417,7 @@ siesta: FreeEng =      -345.049687
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -349.0541     -345.0484     -345.0497  0.38965 -2.0066
-timer: Routine,Calls,Time,% =    IterSCF     1       0.880  29.28
+timer: Routine,Calls,Time,% =    IterSCF     1       0.528  31.06
    scf:    2     -348.9997     -348.9951     -348.9965  0.06300 -2.1548
    scf:    3     -348.9994     -348.9010     -348.9024  0.06756 -2.1506
    scf:    4     -348.9993     -349.0012     -349.0026  0.00019 -2.1437
@@ -432,7 +428,7 @@ timer: Routine,Calls,Time,% =    IterSCF     1       0.880  29.28
    scf:    9     -348.9993     -348.9989     -349.0002  0.00009 -2.1435
 
 SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00008578
+max |DM_out - DM_in|:     0.00008577
 SCF cycle converged after    9 iterations
 
 Using DM_out to compute the final energy and forces
@@ -443,7 +439,7 @@ siesta: E_KS - E_eggbox =      -348.9993
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot    0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.000000
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
@@ -460,6 +456,7 @@ siesta: Eions   =       122.930792
 siesta: Ena     =        18.410043
 siesta: Ekin    =        30.736303
 siesta: Enl     =        12.744024
+siesta: EldaU   =         0.000000
 siesta: DEna    =         2.140324
 siesta: DUscf   =         0.095235
 siesta: DUext   =         0.000000
@@ -477,9 +474,10 @@ siesta: Final energy (eV):
 siesta:  Band Struct. =     -30.125590
 siesta:       Kinetic =      30.736303
 siesta:       Hartree =       1.179413
+siesta:       Eldau   =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =    -290.194461
-siesta:  Ion-electron =     -15.818213
+siesta:  Ion-electron =     -15.818212
 siesta:       Ion-ion =     -74.902366
 siesta:       Ekinion =       0.000000
 siesta:         Total =    -348.999323
@@ -494,8 +492,8 @@ siesta: Cell volume =         29.232542 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00021445         -0.00021445  Ry/Bohr**3
-siesta:          -0.01968988         -0.01968988  eV/Ang**3
-siesta:         -31.54700094        -31.54700094  kBar
+siesta:          -0.01968986         -0.01968986  eV/Ang**3
+siesta:         -31.54698019        -31.54698019  kBar
 (Free)E+ p_basis*V_orbitals  =        -348.350761
 (Free)Eharris+ p_basis*V_orbitals  =        -348.350761
->> End of run:  29-SEP-2015  15:42:14
+>> End of run:  31-MAY-2016   8:59:59

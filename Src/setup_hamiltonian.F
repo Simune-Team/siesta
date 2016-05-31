@@ -13,7 +13,8 @@
       subroutine setup_hamiltonian( iscf )
 
       USE siesta_options
-      use sparse_matrices, only: H_kin, H_vkb, H_so
+      use sparse_matrices, only: H_kin, H_vkb
+      use sparse_matrices, only: H_ldau, H_so
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H, S, Hold
       use sparse_matrices, only: Dscf, Escf, xijo
@@ -24,6 +25,12 @@
      .                    rmaxo, no_l
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
+      use ldau_specs,   only: switch_ldau     ! This variable determines whether
+                                              !   the subroutine to compute the
+                                              !   Hubbard terms should be called
+                                              !   or not
+      use m_ldau,       only: hubbard_term    ! Subroutine that compute the
+                                              !   Hubbard terms
       use m_dhscf,      only: dhscf
       use m_stress
       use m_energies
@@ -65,7 +72,10 @@
 
       call timer('setup_H',1)
 
-!     Save present H matrix
+      ! Nullify pointers
+      nullify(fal)
+
+      ! Save present H matrix
       if ( mixH ) then
          Hold(1:maxnh,1:h_spin_dim) = H(1:maxnh,1:h_spin_dim)
       end if
@@ -126,11 +136,34 @@
 !     Non-SCF part of total energy
       E0 = Ena + Ekin + Enl + Eso - Eions
 
+! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
+      if( switch_ldau ) then
+        call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'setup_hamiltonian' )
+
+        call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
+     .                    maxnh, maxnh, lasto, iphorb, no_u, no_l, 
+     .                    numh, listhptr, listh, numh, listhptr, listh,
+     .                    min(nspin,2), Dscf, Eldau, DEldau, H_ldau, 
+     .                    fal, stressl, H, iscf,
+     .                    matrix_elements_only=.true.)
+
+#ifdef MPI
+        ! Global reduction of energy terms
+        call globalize_sum(Eldau,buffer1)
+        Eldau = buffer1
+        ! DEldau should not be globalized
+        ! as it is based on globalized occupations
+#endif
+        Eldau = Eldau + DEldau
+
+        call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
+      endif
+! ..................
+
 
 ! Add SCF contribution to energy and matrix elements ..................
       g2max = g2cut
 
-      nullify(fal)
       call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'setup_hamiltonian' )
 
       ifa  = 0

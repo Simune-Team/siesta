@@ -471,7 +471,6 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
                  ! Reduce total charge per-atom
                  do is = 1 , nspin
                     qas(is) = qas(is) + qos(is,io)
-                    qts(is) = qts(is) + qos(is,io)
                  enddo
                  
                  call spnvec( nspin, qos(1:nspin,io), 
