@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-trunk-506
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:37:46
+* Running on    2 nodes in parallel
+>> Start of run:  31-MAY-2016   8:49:55
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -39,7 +39,8 @@ reinit: System Label: force_2
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: Si Atomic number:          14
+Species number:   1 Atomic number:   14 Label: Si
+
 Ground state valence configuration:   3s02  3p02
 Reading pseudopotential information in formatted form from Si.psf
 
@@ -65,7 +66,7 @@ L=0  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -75,7 +76,7 @@ L=1  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -236,10 +237,10 @@ redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    2   2
+* ProcessorY, Blocksize:    1   5
 
 
-* Orbital distribution balance (max,min):     2     2
+* Orbital distribution balance (max,min):     5     3
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -268,29 +269,23 @@ New_DM. Step:     1
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11951
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24886
 
 stepf: Fermi-Dirac step function
 
@@ -300,6 +295,7 @@ siesta: Eions   =       380.802124
 siesta: Ena     =       115.502327
 siesta: Ekin    =        82.397263
 siesta: Enl     =        39.713031
+siesta: EldaU   =         0.000000
 siesta: DEna    =        -8.221426
 siesta: DUscf   =         0.353217
 siesta: DUext   =         0.000000
@@ -318,7 +314,7 @@ siesta: Eharris(eV) =    -194.939313
 
 siesta: Eharris(eV) =    -194.939313
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.042   6.52
+timer: Routine,Calls,Time,% =    IterSCF     1       0.028  10.61
 :!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
@@ -327,7 +323,7 @@ siesta: E_KS - E_eggbox =      -194.6964
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot    0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.000000
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
@@ -357,29 +353,23 @@ New_DM. Step:     2
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11963
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24883
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -422,29 +412,23 @@ New_DM. Step:     3
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11937
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24871
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -487,29 +471,23 @@ New_DM. Step:     4
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11939
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24883
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -552,29 +530,23 @@ New_DM. Step:     5
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11967
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24871
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -617,29 +589,23 @@ New_DM. Step:     6
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11939
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24845
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -682,29 +648,23 @@ New_DM. Step:     7
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11967
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24908
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -747,29 +707,23 @@ New_DM. Step:     8
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11944
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24862
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -812,29 +766,23 @@ New_DM. Step:     9
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11968
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24899
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -877,29 +825,23 @@ New_DM. Step:    10
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11954
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24862
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -942,29 +884,23 @@ New_DM. Step:    11
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11958
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24899
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -1007,29 +943,23 @@ New_DM. Step:    12
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11954
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24883
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -1072,29 +1002,23 @@ New_DM. Step:    13
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11958
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24877
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -1124,6 +1048,7 @@ siesta: Eions   =       380.802124
 siesta: Ena     =       115.501483
 siesta: Ekin    =       115.577902
 siesta: Enl     =        29.935837
+siesta: EldaU   =         0.000000
 siesta: DEna    =        -8.120548
 siesta: DUscf   =         1.765896
 siesta: DUext   =         0.000000
@@ -1141,6 +1066,7 @@ siesta: Final energy (eV):
 siesta:  Band Struct. =     -51.806757
 siesta:       Kinetic =     115.577902
 siesta:       Hartree =      23.678155
+siesta:       Eldau   =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =     -68.547879
 siesta:  Ion-electron =    -120.258615
@@ -1164,8 +1090,8 @@ siesta: Cell volume =         40.025752 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00326128          0.00335847  Ry/Bohr**3
-siesta:           0.29943950          0.30836374  eV/Ang**3
-siesta:         479.76015890        494.05852160  kBar
+siesta:           0.29943949          0.30836373  eV/Ang**3
+siesta:         479.76014453        494.05850669  kBar
 (Free)E+ p_basis*V_orbitals  =        -194.112732
 (Free)Eharris+ p_basis*V_orbitals  =        -194.356294
->> End of run:  29-SEP-2015  15:37:51
+>> End of run:  31-MAY-2016   8:49:59
