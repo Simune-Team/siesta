@@ -5,6 +5,49 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-05-29                                                    trunk-504
+Update makefile in Util/Gen-basis after ldau inclusion
+
+Some extra modules are needed in Gen-basis
+
+modified:
+  Util/Gen-basis/Makefile
+
+-----------------------------------------------------------------------
+2016-05-18                                                    trunk-503
+Merged fix lp:1582978 (from rel-4.0)
+
+-----------------------------------------------------------------------
+2016-05-10                                                    trunk-502
+Revise mentions to now-standalone ATOM program. Revert Tests/test.mk.
+
+* The ATOM program is not bundled with Siesta due to licensing
+  differences.  Mentions to it throughout the documentation and
+  example files have been updated accordingly.
+
+* The file Tests/test.mk has been reverted to the revno 488 version.
+  Note that the proper way to run the tests for a given version is
+  to descend into the 'Tests' directory directly below the compilation
+  directory ('Obj' or other) rather than going to the top-level 'Tests'.
+
+* Syntax changes for compiler complaints reported by Mariella Ippolito
+  from CINECA.
+
+* Completion of changes to licensing headers.
+
+modified:
+  Docs/siesta.tex
+  Examples/README
+  Examples/Vps/README
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/fsiesta_mpi.F90
+  Src/write_inp_wannier.F90
+  Src/ldau.F
+  Src/ldau_specs.f
+  Tests/test.mk
+  + Header changes in a number of files
+  
+-----------------------------------------------------------------------
 2016-05-05                                                    trunk-501
 Fix in 'fat' utility. Write spin info in 'eigfat2plot'
 

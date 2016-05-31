@@ -90,7 +90,7 @@ C Allocate local memory
       call re_alloc( Aux2, 1, nuotot, 1, nuo, name='Aux2',
      &               routine='detover' )
       nullify( Auxint )
-      call re_alloc( Auxint, 1, nocc, name='Aux', routine='detover' )
+      call re_alloc( Auxint, 1, nocc, name='Auxint', routine='detover' )
 
       do iuo = 1,nuo
         do j = 1,numh(iuo)

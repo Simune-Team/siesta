@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-trunk-506
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:28:58
+* Running on    2 nodes in parallel
+>> Start of run:  31-MAY-2016   8:51:11
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -122,9 +122,10 @@ reinit: System Label: batio3
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: Ba Atomic number:          56
- Species number:            2  Label: Ti Atomic number:          22
- Species number:            3  Label: O Atomic number:           8
+Species number:   1 Atomic number:   56 Label: Ba
+Species number:   2 Atomic number:   22 Label: Ti
+Species number:   3 Atomic number:    8 Label: O
+
 Ground state valence configuration:   6s02
 Reading pseudopotential information in formatted form from Ba.psf
 
@@ -178,7 +179,7 @@ L=0  Nsemic=1  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    6.3990    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
           n=2  nzeta=2  polorb=0
             splnorm:   0.15000    
                vcte:    97.950    
@@ -187,7 +188,7 @@ L=0  Nsemic=1  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    6.9996      5.9995    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=1  Cnfigmx=6
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -197,7 +198,7 @@ L=1  Nsemic=1  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    6.5992    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
           n=2  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:    94.960    
@@ -206,7 +207,7 @@ L=1  Nsemic=1  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    7.1000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 L=2  Nsemic=0  Cnfigmx=5
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -216,7 +217,7 @@ L=2  Nsemic=0  Cnfigmx=5
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    7.1000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=2  erefs: 0.17977+309 0.17977+309
 L=1  Nkbl=2  erefs: 0.17977+309 0.17977+309
@@ -360,7 +361,7 @@ L=0  Nsemic=1  Cnfigmx=4
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.6995    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
           n=2  nzeta=2  polorb=0
             splnorm:   0.15000    
                vcte:    96.470    
@@ -369,7 +370,7 @@ L=0  Nsemic=1  Cnfigmx=4
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    6.1000      5.0994    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=1  Cnfigmx=4
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -379,7 +380,7 @@ L=1  Nsemic=1  Cnfigmx=4
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.6994    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
           n=2  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:   0.50000    
@@ -388,7 +389,7 @@ L=1  Nsemic=1  Cnfigmx=4
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    3.0537    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 L=2  Nsemic=0  Cnfigmx=3
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
@@ -398,7 +399,7 @@ L=2  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.9433      4.7001    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=2  erefs: 0.17977+309 0.17977+309
 L=1  Nkbl=2  erefs: 0.17977+309 0.17977+309
@@ -551,7 +552,7 @@ L=0  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    4.9527      3.6033    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
@@ -561,7 +562,7 @@ L=1  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    4.9999      3.8975    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=2  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -571,7 +572,7 @@ L=2  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    2.7328    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -802,10 +803,10 @@ redata: ***********************************************************************
 Total number of electrons:    40.000000
 Total ionic charge:    40.000000
 
-* ProcessorY, Blocksize:    2  19
+* ProcessorY, Blocksize:    1  24
 
 
-* Orbital distribution balance (max,min):    19    15
+* Orbital distribution balance (max,min):    48    24
 
  Kpoints in:          256 . Kpoints trimmed:          256
 
@@ -845,55 +846,50 @@ outcell: Cell volume (Ang**3)        :     64.2822
 New_DM. Step:     1
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 
 InitMesh: MESH =    36 x    36 x    36 =       46656
 InitMesh: (bp) =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
 New grid distribution:   2
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 New grid distribution:   3
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
-PhiOnMesh: Number of (b)points on node 0 =                 1458
-PhiOnMesh: nlist on node 0 =               152899
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
+PhiOnMesh: Number of (b)points on node 0 =                 2916
+PhiOnMesh: nlist on node 0 =               307469
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -919.531033
+siesta: Ebs     =      -919.531014
 siesta: Eions   =      5133.559120
 siesta: Ena     =       829.873358
 siesta: Ekin    =      1668.379157
 siesta: Enl     =      -401.365750
+siesta: EldaU   =         0.000000
 siesta: DEna    =         0.000057
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
-siesta: Exc     =      -563.482723
+siesta: Exc     =      -563.482718
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -3617.963457
-siesta: Etot    =     -3600.155021
-siesta: FreeEng =     -3600.155021
+siesta: Eharris =     -3617.963448
+siesta: Etot    =     -3600.155017
+siesta: FreeEng =     -3600.155017
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-   scf:    1    -3617.9635    -3600.1550    -3600.1550  1.96137 -5.3223
-timer: Routine,Calls,Time,% =    IterSCF     1       6.007  24.06
-   scf:    2    -3767.0806    -3562.6921    -3562.6936 17.49946 -4.0278
+   scf:    1    -3617.9634    -3600.1550    -3600.1550  1.96137 -5.3223
+timer: Routine,Calls,Time,% =    IterSCF     1       9.964  40.02
+   scf:    2    -3767.0806    -3562.6921    -3562.6936 17.49941 -4.0278
 :!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
@@ -902,179 +898,137 @@ grdsam: Grid-cell sampling, point   0
 grdsam: Generating displacements for grid-cell sampling
 grdsam: Grid-cell sampling, point   1
 New grid distribution:   1
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 
 InitMesh: MESH =    36 x    36 x    36 =       46656
 InitMesh: (bp) =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
 New grid distribution:   2
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 New grid distribution:   3
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
-PhiOnMesh: Number of (b)points on node 0 =                 1458
-PhiOnMesh: nlist on node 0 =               152638
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
+PhiOnMesh: Number of (b)points on node 0 =                 2916
+PhiOnMesh: nlist on node 0 =               307019
 grdsam: Grid-cell sampling, point   2
 New grid distribution:   1
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 
 InitMesh: MESH =    36 x    36 x    36 =       46656
 InitMesh: (bp) =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
 New grid distribution:   2
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 New grid distribution:   3
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
-PhiOnMesh: Number of (b)points on node 0 =                 1458
-PhiOnMesh: nlist on node 0 =               151846
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
+PhiOnMesh: Number of (b)points on node 0 =                 2916
+PhiOnMesh: nlist on node 0 =               307019
 grdsam: Grid-cell sampling, point   3
 New grid distribution:   1
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 
 InitMesh: MESH =    36 x    36 x    36 =       46656
 InitMesh: (bp) =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
 New grid distribution:   2
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 New grid distribution:   3
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
-PhiOnMesh: Number of (b)points on node 0 =                 1458
-PhiOnMesh: nlist on node 0 =               151846
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
+PhiOnMesh: Number of (b)points on node 0 =                 2916
+PhiOnMesh: nlist on node 0 =               305442
 grdsam: Grid-cell sampling, point   4
 New grid distribution:   1
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 
 InitMesh: MESH =    36 x    36 x    36 =       46656
 InitMesh: (bp) =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
 New grid distribution:   2
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 New grid distribution:   3
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
-PhiOnMesh: Number of (b)points on node 0 =                 1458
-PhiOnMesh: nlist on node 0 =               151124
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
+PhiOnMesh: Number of (b)points on node 0 =                 2916
+PhiOnMesh: nlist on node 0 =               305603
 grdsam: Grid-cell sampling, point   5
 New grid distribution:   1
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 
 InitMesh: MESH =    36 x    36 x    36 =       46656
 InitMesh: (bp) =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
 New grid distribution:   2
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 New grid distribution:   3
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
-PhiOnMesh: Number of (b)points on node 0 =                 1458
-PhiOnMesh: nlist on node 0 =               151681
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
+PhiOnMesh: Number of (b)points on node 0 =                 2916
+PhiOnMesh: nlist on node 0 =               305603
 grdsam: Grid-cell sampling, point   6
 New grid distribution:   1
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 
 InitMesh: MESH =    36 x    36 x    36 =       46656
 InitMesh: (bp) =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
 New grid distribution:   2
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 New grid distribution:   3
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
-PhiOnMesh: Number of (b)points on node 0 =                 1458
-PhiOnMesh: nlist on node 0 =               151681
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
+PhiOnMesh: Number of (b)points on node 0 =                 2916
+PhiOnMesh: nlist on node 0 =               306807
 grdsam: Grid-cell sampling, point   7
 New grid distribution:   1
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 
 InitMesh: MESH =    36 x    36 x    36 =       46656
 InitMesh: (bp) =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
 New grid distribution:   2
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 New grid distribution:   3
-           1       1:   18    1:    9    1:    9
-           2       1:   18    1:    9   10:   18
-           3       1:   18   10:   18    1:    9
-           4       1:   18   10:   18   10:   18
+           1       1:   18    1:   18    1:    9
+           2       1:   18    1:   18   10:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
-PhiOnMesh: Number of (b)points on node 0 =                 1458
-PhiOnMesh: nlist on node 0 =               151041
+ExtMesh (bp) on 0 =    90 x    90 x    81 =      656100
+PhiOnMesh: Number of (b)points on node 0 =                 2916
+PhiOnMesh: nlist on node 0 =               305345
 
 siesta: E_KS(eV) =            -3600.7734
 
@@ -1082,64 +1036,66 @@ siesta: E_KS - E_eggbox =     -3600.7734
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000    0.000000   -0.000000
-     2    0.000000   -0.000000   -0.000000
+     2    0.000000    0.000000   -0.000000
      3   -0.000000   -0.000000    0.000000
-     4   -0.000000   -0.000000    0.000000
+     4    0.000000   -0.000000    0.000000
      5   -0.000000    0.000000    0.000000
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.000000
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):     1191.47     1191.47     1191.48       -0.00       -0.00       -0.00
-(Free)E + p*V (eV/cell)    -3648.5783
+Stress-tensor-Voigt (kbar):     1191.47     1191.47     1191.47       -0.00        0.00        0.00
+(Free)E + p*V (eV/cell)    -3648.5781
 Target enthalpy (eV/cell)    -3600.7748
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -991.157790
+siesta: Ebs     =      -991.157784
 siesta: Eions   =      5133.559120
 siesta: Ena     =       829.873358
-siesta: Ekin    =      1677.971314
-siesta: Enl     =      -401.934825
-siesta: DEna    =        -8.297794
-siesta: DUscf   =         0.126351
+siesta: Ekin    =      1677.971423
+siesta: Enl     =      -401.934832
+siesta: EldaU   =         0.000000
+siesta: DEna    =        -8.297887
+siesta: DUscf   =         0.126354
 siesta: DUext   =         0.000000
-siesta: Exc     =      -564.952635
+siesta: Exc     =      -564.952649
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -3767.080609
-siesta: Etot    =     -3600.773351
-siesta: FreeEng =     -3600.774841
+siesta: Eharris =     -3767.080587
+siesta: Etot    =     -3600.773354
+siesta: FreeEng =     -3600.774844
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -991.157790
-siesta:       Kinetic =    1677.971314
-siesta:       Hartree =     786.915106
+siesta:  Band Struct. =    -991.157784
+siesta:       Kinetic =    1677.971423
+siesta:       Hartree =     786.915121
+siesta:       Eldau   =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -564.952635
-siesta:  Ion-electron =   -3412.872829
-siesta:       Ion-ion =   -2087.834307
+siesta:   Exch.-corr. =    -564.952649
+siesta:  Ion-electron =   -3412.872930
+siesta:       Ion-ion =   -2087.834319
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -3600.773351
+siesta:         Total =   -3600.773354
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:     0.743649   -0.000000   -0.000000
-siesta:    -0.000000    0.743649   -0.000000
-siesta:    -0.000000   -0.000000    0.743653
+siesta:     0.743648   -0.000000    0.000000
+siesta:    -0.000000    0.743648    0.000000
+siesta:     0.000000    0.000000    0.743648
 
 siesta: Cell volume =         64.282168 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:          -0.00809930         -0.00809930  Ry/Bohr**3
-siesta:          -0.74365019         -0.74365019  eV/Ang**3
-siesta:       -1191.47183206      -1191.47183205  kBar
-(Free)E+ p_basis*V_orbitals  =       -3597.571807
-(Free)Eharris+ p_basis*V_orbitals  =       -3763.879065
->> End of run:  29-SEP-2015  15:29:45
+siesta:          -0.00809928         -0.00809928  Ry/Bohr**3
+siesta:          -0.74364790         -0.74364790  eV/Ang**3
+siesta:       -1191.46816100      -1191.46816099  kBar
+(Free)E+ p_basis*V_orbitals  =       -3597.571810
+(Free)Eharris+ p_basis*V_orbitals  =       -3763.879042
+>> End of run:  31-MAY-2016   8:52:10

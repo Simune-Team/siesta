@@ -26,11 +26,11 @@
 # You must set these symbols properly, either here or 
 # (better) in your top arch.make
 # 
-FFTW_ROOT=/usr/local/Cellar/fftw/3.3.4
-FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
-FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3f -lfftw3
+FFTW_ROOT ?=/usr/local/Cellar/fftw/3.3.4
+FFTW_INCFLAGS ?= -I$(FFTW_ROOT)/include
+FFTW_LIBS ?= -L$(FFTW_ROOT)/lib -lfftw3f -lfftw3
 #-----------------------------------------
-#
+
 OBJDIR=Obj
 
 .SUFFIXES:
@@ -52,8 +52,13 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 
-DEFS:=$(DEFS) $(DEFS_PREFIX) -UMPI $(DEFS_PREFIX) -UCDF
-FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX) -UMPI $(DEFS_PREFIX) -UCDF
+STM_UNDEF  = $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX) -UCDF
+STM_UNDEF += $(DEFS_PREFIX)-UCDF
+STM_UNDEF += $(DEFS_PREFIX)-USIESTA__METIS
+STM_UNDEF += $(DEFS_PREFIX)-UON_DOMAIN_DECOMP
+
+DEFS := $(DEFS) $(STM_UNDEF)
+FPPFLAGS := $(FPPFLAGS) $(STM_UNDEF)
 
 #
 # Uncomment the following line for debugging support
@@ -83,7 +88,7 @@ OBJS_STM = atompla.o  \
         io.o iodm.o itochar.o length.o \
         mainstm.o matvect.o memory.o \
 	neighb.o paste.o pxf.o \
-	 radfft.o ranger.o \
+	radfft.o ranger.o \
         readstm.o readwaves.o \
         redata.o  reinitstm.o stm.o \
 	vacpot.o volcel.o wrout.o handlers.o
@@ -106,8 +111,8 @@ $(FDF):
 # Note : precision must be the first module
 
 MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
-         atmparams.o atom_options.o atmfuncs.o   atm_types.o \
-         radial.o spher_harm.o  basis_io.o basis_types.o \
+         atmparams.o atom_options.o atmfuncs.o atm_types.o \
+         radial.o spher_harm.o basis_io.o basis_types.o \
          domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
          sparse_matrices.o interpolation.o m_fft_gpfa.o \
          files.o pseudopotential.o chemical.o xml.o \

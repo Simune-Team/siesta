@@ -20,9 +20,9 @@
 #  If your main Siesta build used an mpi compiler, you might need to
 #  define an FC_SERIAL symbol in your top arch.make, to avoid linking
 #  in the mpi libraries even if we explicitly undefine MPI below.
-#  
+
 OBJDIR=Obj
-#
+
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 
@@ -46,21 +46,22 @@ SYSOBJ=$(SYS).o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS_GEN-BASIS=m_io.o io.o old_atmfuncs.o alloc.o basis_types.o precision.o  parallel.o \
-	  paste.o bessph.o radfft.o m_fft_gpfa.o sorting.o m_filter.o \
-          atmparams.o radial.o interpolation.o basis_io.o atm_transfer.o atm_types.o \
-          basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o \
-          pseudopotential.o pxf.o dot.o chemical.o atom_options.o arw.o \
-          sys.o xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
-          xc.o bsc_xcmod.o local_die.o
+OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
+          parsing.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
+          atmparams.o old_atmfuncs.o radial.o interpolation.o \
+	  paste.o   bessph.o radfft.o  sorting.o m_filter.o \
+          basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
+          pseudopotential.o pxf.o dot.o  atom_options.o arw.o  \
+          sys.o timer.o  xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
+          xc.o bsc_xcmod.o local_die.o ldau_specs.o m_cite.o
 
-IONCAT_OBJS=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
+OBJS_IONCAT=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
           parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o atm_transfer.o atm_types.o \
           atmparams.o radial.o  memory.o chkdim.o \
-	  paste.o pseudopotential.o chemical.o \
-          basis_specs.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
-           atmfuncs.o spher_harm.o interpolation.o old_atmfuncs.o \
-          sys.o  xml.o m_walltime.o ioncat.o  local_die.o $(SYSOBJ)
+	  paste.o pseudopotential.o chemical.o m_filter.o \
+          basis_specs.o atom.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
+          atmfuncs.o spher_harm.o interpolation.o old_atmfuncs.o arw.o \
+          sys.o xc.o bsc_xcmod.o xml.o m_walltime.o ioncat.o ldau_specs.o m_cite.o local_die.o $(SYSOBJ)
 
 
 #
@@ -78,6 +79,7 @@ $(XC):
                           "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
                           "FFLAGS=$(FFLAGS)"  module )
+
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -91,6 +93,7 @@ $(FDF):
                           "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
+
 #
 # Simple hack to link to any compiled lapack/blas code
 # If COMP_LIBS is empty, we do a no-op, else link the library file here.
@@ -99,15 +102,15 @@ link_linalg:
 	for llibs in $(COMP_LIBS); do \
    [ -f ../../$(OBJDIR)/$$llibs ] && ln -sf ../../$(OBJDIR)/$$llibs . ; \
 	done
-#
+
 gen-basis: $(FDF) $(XC) $(OBJS_GEN-BASIS) link_linalg
 	$(FC) -o gen-basis \
 	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) $(NETCDF_LIBS) $(COMP_LIBS) $(LIBS)
-#
-ioncat:  $(FDF) $(IONCAT_OBJS)
+
+ioncat:  $(FDF) $(XC) $(OBJS_IONCAT)
 	$(FC) -o ioncat \
-	       $(LDFLAGS) $(IONCAT_OBJS) $(FDF) $(NETCDF_LIBS)
-#
+	       $(LDFLAGS) $(OBJS_IONCAT) $(FDF) $(XC) $(NETCDF_LIBS) $(COMP_LIBS) $(LIBS)
+
 clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f gen-basis ioncat *.o  *.a
@@ -116,7 +119,7 @@ clean:
 	rm -rf SiestaXC
 	rm -f _tmp_deps deps.list  protomake*
 
-ALL_OBJS=$(IONCAT_OBJS) $(OBJS_GEN-BASIS)
+ALL_OBJS=$(OBJS_IONCAT) $(OBJS_GEN-BASIS)
 
 dep:
 	-sfmakedepend --depend=obj --modext=o \

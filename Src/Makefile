@@ -377,6 +377,8 @@ ldau_specs.o: $(FDF)
 sockets.o: sockets.c   # Will be picked-up in the VPATH
 	$(CC) -c $(CFLAGS) $<
 
+
+# Create all objects
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 
 # All objects require the XC library (in theory)
