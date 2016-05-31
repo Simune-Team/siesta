@@ -125,7 +125,7 @@ $(TBTOBJS): $(FDF)
 #
 # -- specially prepared dependency list -- do not remove this line!
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
-cdiag.o: alloc.o m_spin.o memoryinfo.o parallel.o precision.o sys.o
+cdiag.o: alloc.o m_diagon_opt.o memoryinfo.o parallel.o precision.o sys.o
 cellsubs.o: precision.o
 debugmpi.o: parallel.o
 die.o: parallel.o
@@ -139,7 +139,7 @@ m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_hs_matrix.o: alloc.o precision.o sys.o
 m_io.o: sys.o
 m_mpi_utils.o: precision.o sys.o
-m_spin.o: alloc.o parallel.o precision.o
+m_spin.o: alloc.o parallel.o precision.o sys.o units.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
 m_ts_aux_rout.o: precision.o sys.o
 m_ts_cctype.o: precision.o
