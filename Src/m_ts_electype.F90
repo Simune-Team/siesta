@@ -273,7 +273,7 @@ contains
     ! Denote that no bloch expansion coefficients has
     ! been set.
     mix_bloch = .false.
-    bloch_rep = .true.
+    bloch_rep = .false.
 
     if ( present(idx_a) ) then
        if ( idx_a /= 0 ) then

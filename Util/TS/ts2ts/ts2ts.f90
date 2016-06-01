@@ -44,6 +44,19 @@ program ts2ts
   integer :: iarg, narg
   logical :: exists, def_nEq
 
+  ! Default all characters to ' ' (ensures no whitespace)
+  c_CCEmin = ' '
+  c_GFEta = ' '
+  c_Volt = ' '
+  c_dVolt = ' '
+  c_Epole = ' '
+  c_TBTmin = ' '
+  c_TBTmax = ' '
+  c_TBTdE = ' '
+  L_TSHS = ' '
+  R_TSHS = ' '
+  filein = ' '
+  arg = ' '
 
   ! Set default values (then options can overwrite them)
   Nline = -1

@@ -276,8 +276,10 @@ contains
                 ik = 2
              else if ( leqi(ctmp,'A3') .or. leqi(ctmp,'c') ) then
                 ik = 3
+             else
+                call die('TBtrans: could not figure out the diagonal direction specified')
              end if
-             
+
              ! Set the diagonal
              kscell(ik,ik) = max(1,fdf_bnintegers(pline,1))
              
@@ -304,13 +306,13 @@ contains
              displ(1) = fdf_bvalues(pline,1)
              displ(2) = fdf_bvalues(pline,2)
              displ(3) = fdf_bvalues(pline,3)
-             call check_zero(displ,ts_tidx)
              
           else if ( leqi(ctmp,'size') ) then
 
              ksize(1) = fdf_bvalues(pline,1)
              ksize(2) = fdf_bvalues(pline,2)
              ksize(3) = fdf_bvalues(pline,3)
+
              if ( any(ksize > 1._dp) .or. any(ksize <= 0._dp) ) then
                 call die('The size of the Brillouin zone MUST be &
                      &less than or equal to 1.')
@@ -333,12 +335,12 @@ contains
              if ( fdf_bnvalues(pline) > 3 ) then
                 displ(ik) = fdf_bvalues(pline,4)
              end if
+
              ! To not error out of only 3 lines grids
              if ( ik == 3 ) cycle
              if ( .not. fdf_bnext(bfdf,pline) ) &
                   call die('Could not read kgrid from block: '//trim(bName))
           end do
-          call check_zero(displ,ts_tidx)
 
        end if
 
@@ -398,6 +400,7 @@ contains
           kscell(i,:) = 0
           kscell(i,i) = 1
           displ(i)    = 0._dp
+          ksize(i) = 1._dp
        end if
 
        if ( present(kcell) ) kcell = kscell
