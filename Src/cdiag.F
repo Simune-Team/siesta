@@ -5,7 +5,8 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
-      subroutine cdiag( H, S, n, nm, nml, w, Z, neigvec, iscf, ierror )
+      subroutine cdiag( H, S, n, nm, nml, w, Z, neigvec, iscf, ierror,
+     $                  BlockSize)
 C ***************************************************************************
 C Subroutine  to solve all eigenvalues and eigenvectors of the
 C real general eigenvalue problem  H z = w S z,  with H and S
@@ -21,6 +22,7 @@ C integer nml                      : Left hand dimension of H and S matrices
 C                                    which is greater than or equal to nm
 C integer neigvec                  : No. of eigenvectors to calculate
 C integer iscf                     : SCF cycle
+C integer BlockSize                : Effective parallel block size
 C ************************** OUTPUT *****************************************
 C real*8 w(nml)                    : Eigenvalues
 C complex*16 Z(nml,nm)             : Eigenvectors
@@ -32,7 +34,8 @@ C ************************* PARALLEL ****************************************
 C When running in parallel this routine now uses Scalapack to perform a
 C parallel matrix diagonalisation. This requires Scalapack and Blacs to
 C be installed first. Although globally a 1-D block cyclic data distribution
-C is employed, locally 1 or 2-D distributions are allowed for. 
+C is employed, locally 1 or 2-D distributions are allowed for.
+C The blocksize is now explicitly passed to the routine (A. Garcia, 2016)      
 C The routine allows access to all the phases of diagonalisation for fuller
 C control, and allows for parallel divide and conquer with reduced memory.
 C The presence of eigenvalue clusters is checked for and the memory adjusted
@@ -48,9 +51,11 @@ C
       use parallel,   only : Node, Nodes, ProcessorY
       use parallel,   only : ParallelOverK, ResetFirstCall
 !
-      use parallel,   only : BlockSize_orbs => BlockSize
-      use m_spin,     only : Mcoll              ! Mixed spins?
-!
+      use m_diagon_opt,only : saveeigenvectors, maxclustersize, serial,
+     &                       i2d_ctxt, noexpert, divideconquer, use2d,
+     &                       prerotate, ictxt, allinone, doread,
+     &                       firstcall
+
       use diagmemory, only : MemoryFactor
 #ifdef MPI
       use mpi_siesta, only : mpi_bcast, mpi_logical, mpi_comm_world
@@ -67,6 +72,7 @@ C Passed variables
       integer                 :: neigvec
       integer                 :: nm
       integer                 :: nml
+      integer                 :: BlockSize
       real(dp)                :: w(nml)
       real(dp)                :: H(2,nml,nm)
       real(dp)                :: S(2,nml,nm)
@@ -75,17 +81,14 @@ C Passed variables
 C Local variables
       type(allocDefaults) oldDefaults
 #ifdef MPI
-      integer                 :: BlockSize
       integer                 :: anb
       integer                 :: clustersize
       integer                 :: desch(9)
       integer                 :: iacol
       integer                 :: iarow
       integer                 :: iceil
-      integer,           save :: ictxt
       integer                 :: indxg2p
       integer                 :: lwork2
-      integer,           save :: maxclustersize = 12
       integer                 :: mq0
       integer                 :: mycol
       integer                 :: myrow
@@ -111,7 +114,6 @@ C Local variables
 C Additional variables for a 2D proc grid
       integer                 :: np2d_row, np2d_col
       integer                 :: my2d_row, my2d_col
-      integer,           save :: i2d_ctxt
       integer, dimension(9)   :: desc_h2d
       
 C Matrices for 2D
@@ -130,15 +132,6 @@ C Matrices for 2D
       integer                 :: neigok
       integer,  pointer, save :: ifail(:)
       integer,  pointer, save :: iwork(:)
-      logical,           save :: AllInOne = .false.
-      logical,           save :: DivideConquer = .true.
-      logical,           save :: DoRead = .true.
-      logical,           save :: FirstCall = .true.
-      logical,           save :: NoExpert = .false.
-      logical,           save :: PreRotate = .false.
-      logical,           save :: SaveEigenvectors = .false.
-      logical,           save :: Use2D = .true.
-      logical,           save :: Serial = .true.
       logical                 :: ChangeAlgorithm
       real(dp)                :: abstol
       real(dp)                :: orfac
@@ -153,13 +146,6 @@ C Matrices for 2D
      .           , one_z  = (1.0_dp, 0.0_dp)
 C Start time count
       call timer('cdiag',1)
-
-#ifdef MPI
-!
-! Adjust blocksize if we are dealing with mixed spins
-!
-      BlockSize = BlockSize_orbs * Mcoll
-#endif
 
 C Check whether first call needs to be reset due to a change of algorithm
       if (ResetFirstCall) then

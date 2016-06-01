@@ -44,6 +44,7 @@ MODULE Kpoint_grid
   USE parallel, only  : Node
   USE fdf, only       : fdf_defined, fdf_get
   USE m_find_kgrid, only : find_kgrid
+  use m_spin, only: TrSym
 
     implicit none
     real(dp) :: ucell(3,3)
@@ -56,7 +57,7 @@ MODULE Kpoint_grid
           ! By default, it is on, except for "spin-spiral" calculations
        time_reversal_symmetry = fdf_get(             &
             "TimeReversalSymmetryForKpoints",   &
-            (.not. spiral))
+            (.not. spiral) .and. TrSym)
        call setup_scf_kscell(ucell, firm_displ)
 
        scf_kgrid_first_time = .false.

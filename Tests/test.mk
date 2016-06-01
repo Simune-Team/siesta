@@ -14,9 +14,10 @@ REFERENCE_DIR?=../../../Tests/Reference
 REFERENCE_CHECKER?=../cmp_digest.sh
 #
 label=work
-#
+
+.PHONY: completed
 completed: completed_$(label)
-#
+
 completed_$(label):
 	@echo ">>>> Running $(name) test..."
 	@if [ -d $(label) ] ; then rm -rf $(label) ; fi; mkdir $(label)

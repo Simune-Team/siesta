@@ -56,7 +56,7 @@ C REAL*8  dpr(nhist,nuo,2): Proyected density of states
 C **********************************************************************
 
       use precision
-      use parallel,     only : Node, Nodes
+      use parallel,     only : Node, Nodes, BlockSize
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use units,        only : pi
       use alloc,        only : re_alloc, de_alloc
@@ -137,7 +137,8 @@ C H(k) = Sum(R) exp(i*k*R) * H(R)
 
 C Diagonalize for each k point
           call cdiag( Haux, Saux, nuotot, nuo, nuotot,
-     .                eo(1,ispin,IK), psi, nuotot, 1, ierror )
+     .                eo(1,ispin,IK), psi, nuotot, 1, ierror,
+     $                BlockSize)
 
 C Check error flag and take appropriate action
           if (ierror.gt.0) then
@@ -169,7 +170,8 @@ C Repeat diagonalisation with increased memory to handle clustering
               enddo
             enddo
             call cdiag( Haux, Saux, nuotot, nuo, nuotot,
-     .                  eo(1,ispin,IK), psi, nuotot, 1, ierror )
+     .                  eo(1,ispin,IK), psi, nuotot, 1, ierror,
+     $                  BlockSize )
           endif
 
 C Recalculate again the overlap matrix in k-space

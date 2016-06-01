@@ -559,7 +559,8 @@ contains
        call memory('A','Z',nuo_E*nuo_E,'create_green')
        allocate(eig(nuo_E))
        call memory('A','D',nuo_E,'create_green')
-       call cdiag(H00,S00,nuo_E,nuo_E,nuo_E,eig,H01,nuo_E,10,ierror)
+       call cdiag(H00,S00,nuo_E,nuo_E,nuo_E,eig,H01,nuo_E,10,ierror, &
+                  -1)  ! Orb distribution does not apply here --> dummy BlockSize
        if ( IONode ) then
           if ( ierror == 0 ) then
              write(*,'(a,f10.4,a)')' Valence Band Bottom: ',eig(1)/eV,' eV'

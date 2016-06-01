@@ -240,7 +240,7 @@ C H(k) = Sum(R) exp(i*k*R) * H(R)
 
 C Diagonalize for each k point
           call cdiag( Haux, Saux, nuotot, nuog, nuotot,
-     .                eo(1,is,ik), psi, nuotot, 1, ierror )
+     .                eo(1,is,ik), psi, nuotot, 1, ierror, -1 ) !dummy blocksize
 
 C Check error flag and take appropriate action
           if (ierror.gt.0) then
@@ -273,7 +273,7 @@ C Repeat diagonalisation with increased memory to handle clustering
               enddo
             enddo
             call cdiag( Haux, Saux, nuotot, nuog, nuotot,
-     .                  eo(1,is,ik), psi, nuotot, 1, ierror )
+     .                  eo(1,is,ik), psi, nuotot, 1, ierror, -1 ) !dummy blocksize
           endif
 
 C Recalculate again the overlap matrix in k-space

@@ -28,12 +28,14 @@ subroutine read_options( na, ns, nspin )
   use diagmemory,   only: memoryfactor
   use siesta_cml
   use m_target_stress, only: set_target_stress
+  use m_spin, only: print_spin
 
   implicit none
   !----------------------------------------------------------- Input Variables
   ! integer na               : Number of atoms
   ! integer ns               : Number of species
-  ! integer nspin            : Spin polarization
+  ! integer nspin            : Number of spin-components
+  !                            1=non-polarized, 2=polarized, 4=non-collinear
 
   integer, intent(in)  :: na, ns, nspin
 
@@ -209,6 +211,9 @@ subroutine read_options( na, ns, nspin )
      call cmlAddParameter(xf=mainXML, name='SystemLabel',            &
           value=trim(slabel), dictref='siesta:slabel')
   endif
+
+  ! Start by printing out spin-configuration
+  call print_spin()
 
   ! H setup only
   h_setup_only = fdf_get('HSetupOnly', .false.)
@@ -1394,6 +1399,10 @@ subroutine read_options( na, ns, nspin )
      ! phase from the rest of the scf cycle.          
      mix       = .false.
      SCFMustConverge = .false.
+     if ( nspin > 2 ) then
+        call die("Harris functional does not work for &
+             &non-collinear spin polarization.")
+     end if
   endif
 
   if (ionode) then
