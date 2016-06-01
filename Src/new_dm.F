@@ -765,7 +765,7 @@ C Print bad-syntax error and stop
 
           if (noncol .and. h_spin_dim.lt.4) then
             if (Node.eq.0) then
-            write(6,'(/,2a)') 'initdm: WARNING: noncolinear spins ',
+            write(6,'(/,2a)') 'initdm: WARNING: noncollinear spins ',
      .                 'in DM.InitSpin not used because h_spin_dim < 4'
             endif
             noncol = .false.

@@ -16,7 +16,7 @@ module m_spin
   logical, save, public :: SPpol   = .false.
   logical, save, public :: NonCol  = .false.
   logical, save, public :: SpOrb   = .false.
-  logical, save, public :: TrSym  = .true.
+  logical, save, public :: TrSym   = .true.
 
   ! Number of spin components
   integer, save, public :: nspin
@@ -50,14 +50,13 @@ contains
 
     character(len=32) :: opt
 
+    ! Time reversal symmetry
+    TrSym  = .true.
     ! All default to false
     NoMagn = .false.
     SPpol  = .false.
     NonCol = .false.
     SpOrb  = .false.
-
-    ! Time reversal symmetry
-    TRSym  = fdf_get('TimeReversalSymmetry',.true.)
 
     ! Read in old flags:
     SPpol  = fdf_get('SpinPolarized',.false.)
@@ -75,7 +74,6 @@ contains
        opt = 'non-polarized'
     end if
 
-    
     ! In order to enable text input (and obsolete the
     ! 4 different options we use a single value now)
     opt = fdf_get('Spin', opt)
@@ -157,6 +155,9 @@ contains
 
     end if
 
+    ! Get true time reversal symmetry
+    TRSym  = fdf_get('TimeReversalSymmetry',TrSym)
+
     nullify(efs,qs)
     call re_alloc(efs,1,spinor_dim,name="efs",routine="init_spin")
     call re_alloc(qs,1,spinor_dim,name="qs",routine="init_spin")
@@ -172,13 +173,13 @@ contains
     if ( .not. IONode ) return
 
     if ( SpOrb ) then
-       opt        = 'spin-orbit'
+       opt = 'spin-orbit'
     else if ( NonCol ) then
-       opt        = 'non-collinear'
+       opt = 'non-collinear'
     else if ( SPpol ) then
-       opt        = 'polarized'
+       opt = 'polarized'
     else 
-       opt        = 'non-polarized'
+       opt = 'non-polarized'
     end if
 
     write(*,'(2a)')  'redata: Spin configuration               = ',trim(opt)
@@ -192,11 +193,6 @@ contains
     if ( SpOrb ) then
        write(*,'(a)') repeat('#',60)
        write(*,'(a,t16,a,t60,a)') '#','Spin-orbit coupling is in beta','#'
-       write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
-       write(*,'(a)') repeat('#',60)
-    else if ( NonCol ) then
-       write(*,'(a)') repeat('#',60)
-       write(*,'(a,t17,a,t60,a)') '#','Non-collinear spin is in beta','#'
        write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
        write(*,'(a)') repeat('#',60)
     end if

@@ -28,7 +28,7 @@ C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
 C eigenvector, for given Hamiltonian and Overlap matrices.
-C This version is for non-colinear spin at gamma point.
+C This version is for non-collinear spin at gamma point.
 C Writen by J.Soler, May and August 1998.
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals on local node
