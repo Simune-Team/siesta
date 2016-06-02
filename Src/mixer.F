@@ -14,8 +14,13 @@
       subroutine mixer( iscf )
 
       use precision,        only: dp
-      use siesta_options,   only: mixH, mix_scf_first, mix_spinor
+      use siesta_options,   only: mixH, mix_scf_first
       use siesta_options,   only: mullipop, muldeb
+      ! Spin mixing options
+      use siesta_options, only: MIX_SPIN_ALL, MIX_SPIN_SPINOR
+      use siesta_options, only: MIX_SPIN_SUM, MIX_SPIN_SUM_DIFF
+      use siesta_options, only: mix_spin
+
       use sparse_matrices,  only: Dold, Dscf, Hold, H, S
       use sparse_matrices,  only: maxnh, numh, listhptr, listh
       use siesta_geom,      only: na_u, isa
@@ -29,14 +34,13 @@
 
       implicit none
 
-      real(dp), pointer :: Xin(:,:), Xout(:,:)
+      real(dp), pointer, contiguous :: Xin(:,:), Xout(:,:)
       real(dp), allocatable :: F(:,:)
 
       integer,  intent(in)  :: iscf
 
-      real(dp)              :: dummy_dmax   ! Now local variable
-      integer               :: iiscf
-      logical               :: mmix    ! Same as mix. Used in pulayx
+      real(dp)              :: dtmp
+      integer               :: iiscf, i, is
 
       external :: mulliken
 
@@ -57,27 +61,102 @@
 
       ! Create residual function to minimize
       allocate(F(maxnh,nspin))
-!$OMP parallel workshare default(shared)
+
+!$OMP parallel default(shared), private(dtmp,i)
+
+      ! prepare input...
+      select case ( mix_spin )
+      case ( MIX_SPIN_ALL , MIX_SPIN_SPINOR )
+         ! Xin and Xout are unchanged...
+      case ( MIX_SPIN_SUM , MIX_SPIN_SUM_DIFF )
+
+         ! transfer spin density to
+         ! spin-sum and spin-difference
+!$OMP do
+         do i = 1 , size(Xin,1)
+            dtmp = (Xin(i,1) + Xin(i,2)) * 0.5_dp
+            Xin(i,2) = (Xin(i,1) - Xin(i,2)) * 0.5_dp
+            Xin(i,1) = dtmp
+         end do
+!$OMP end do nowait
+
+!$OMP do
+         do i = 1 , size(Xout,1)
+            dtmp = (Xout(i,1) + Xout(i,2)) * 0.5_dp
+            Xout(i,2) = (Xout(i,1) - Xout(i,2)) * 0.5_dp
+            Xout(i,1) = dtmp
+         end do
+!$OMP end do
+
+      end select
+
+      ! Calculate the residual
+!$OMP workshare default(shared)
       F = Xout - Xin
-!$OMP end parallel workshare
+!$OMP end workshare
+
+!$OMP end parallel
 
       ! Call mixing routine
       ! Xin contains the input element, F contains
       !  F = Xout - Xin
       ! Upon exit Xout contains the mixed quantity
-      if ( mix_spinor ) then
-         call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout,
-     &        ncoeff=min(2,nspin))
-      else
+      select case ( mix_spin )
+      case ( MIX_SPIN_ALL )
          call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout)
-      end if
+      case ( MIX_SPIN_SPINOR )
+         call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout,
+     &        ncoeff=2)
+      case ( MIX_SPIN_SUM )
+         call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout,
+     &        ncoeff=1)
+      case ( MIX_SPIN_SUM_DIFF )
+         call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout,
+     &        ncoeff=2)
+      end select
+
+!$OMP parallel default(shared), private(dtmp,i,is)
+
+      ! correct output...
+      select case ( mix_spin )
+      case ( MIX_SPIN_ALL , MIX_SPIN_SPINOR )
+         ! Xin and Xout are unchanged...
+      case ( MIX_SPIN_SUM , MIX_SPIN_SUM_DIFF )
+
+         ! transfer spin-sum and difference to
+         ! spin-up and spin-down
+
+!$OMP do
+         do i = 1 , size(Xin,1)
+            dtmp = Xin(i,1) + Xin(i,2)
+            Xin(i,2) = Xin(i,1) - Xin(i,2)
+            Xin(i,1) = dtmp
+         end do
+!$OMP end do nowait
+
+!$OMP do
+         do i = 1 , size(Xout,1)
+            dtmp = Xout(i,1) + Xout(i,2)
+            Xout(i,2) = Xout(i,1) - Xout(i,2)
+            Xout(i,1) = dtmp
+         end do
+!$OMP end do
+
+      end select
+
       
       ! Correctly handle mixed quantity
       ! move over mixed quantity to "input"
       if ( mix_scf_first ) then
          
          ! always allow mixing
-         Xin = Xout
+!$OMP do
+         do is = 1 , size(Xin, 2)
+            do i = 1 , size(Xin, 1)
+               Xin(i,is) = Xout(i,is)
+            end do
+         end do
+!$OMP end do nowait
          
       else if ( iscf == 1 ) then
          
@@ -86,15 +165,21 @@
          ! quantity and F is the current residual
          ! hence:
          !   Xout = Xin + F
-!$OMP parallel workshare default(shared)
-         Xin = Xin + F
-         ! we require that Xin == Xout, so this is
-         ! required:
-         Xout = Xin
-!$OMP end parallel workshare
+!$OMP do
+         do is = 1 , size(Xin, 2)
+            do i = 1 , size(Xin, 1)
+               Xin(i,is) = Xin(i,is) + F(i,is)
+               ! we require that Xin == Xout, so this is
+               ! required:
+               Xout(i,is) = Xin(i,is)
+            end do
+         end do
+!$OMP end do nowait
 
       end if
 
+!$OMP end parallel
+      
       deallocate(F)
 
       ! Print populations at each SCF step, if requested

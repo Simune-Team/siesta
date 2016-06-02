@@ -348,7 +348,21 @@ subroutine read_options( na, ns, nspin )
   mixH = fdf_get('MixHamiltonian',mixH)
   mix_charge = fdf_get('MixCharge',.false.)
 
-  if (mix_charge) then
+  if ( mix_charge ) then
+     ctmp = 'charge'
+  else if ( mixH ) then
+     ctmp = 'Hamiltonian'
+  else
+     ctmp = 'density'
+  end if
+  ctmp = fdf_get('Mix', trim(ctmp))
+  if ( leqi(ctmp, 'charge') ) then
+     mix_charge = .true.
+  else if ( leqi(ctmp, 'Hamiltonian') ) then
+     mixH = .true.
+  end if
+
+  if ( mix_charge ) then
      if (ionode) then
         write(6,1) 'redata: Mix charge density rho_g', mix_charge
      endif
@@ -1404,16 +1418,45 @@ subroutine read_options( na, ns, nspin )
   ! Read in mixing parameters (SCF)
   call mixing_init( 'SCF', scf_mixs )
   call mixing_print( 'SCF', scf_mixs )
+
   ! When performing spin-calculations this decides whether
   ! only the spinor-components should be mixed.
-  mix_spinor = fdf_get('SCF.Mix.SpinorOnly', .false.)
-  if ( IONode .and. nspin > 2 ) then
-     write(6,1) 'redata: Only mix diagonal spin-components',mix_spinor
+  ctmp = fdf_get('SCF.Mix.Spin','all')
+  if      ( leqi(ctmp, 'all') ) then
+     mix_spin = MIX_SPIN_ALL
+  else if ( leqi(ctmp, 'spinor') ) then
+     mix_spin = MIX_SPIN_SPINOR
+  else if ( leqi(ctmp, 'sum') ) then
+     mix_spin = MIX_SPIN_SUM
+  else if ( leqi(ctmp, 'sum+diff') ) then
+     mix_spin = MIX_SPIN_SUM_DIFF
+  else
+     call die("Unknown option given for SCF.Mix.Spin &
+          &all|spinor|sum|sum+diff")
   end if
-
+  ! Default to not have any options for non-spin polarized
+  ! calculations
+  if ( nspin == 1 ) mix_spin = MIX_SPIN_ALL
+  
+  if ( IONode .and. nspin > 1 ) then
+     select case ( mix_spin )
+     case ( MIX_SPIN_ALL )
+        write(6,3) 'redata: Spin-component mixing','all'
+     case ( MIX_SPIN_SPINOR )
+        write(6,3) 'redata: Spin-component mixing','spinor'
+        if ( nspin <= 2 ) then
+           call die("SCF.Mix.Spin spinor option only valid for &
+                &non-collinear and SOC calculations")
+        end if
+     case ( MIX_SPIN_SUM ) 
+        write(6,3) 'redata: Spin-component mixing','sum'
+     case ( MIX_SPIN_SUM_DIFF ) 
+        write(6,3) 'redata: Spin-component mixing','sum and diff'
+     end select
+  end if
   
   ! We read in relevant data for ChargeGeometries block
-  call read_charge_add( nspin , charnet )
+  call read_charge_add( min(2, nspin) , charnet )
   
   ! We read in the relevant data for HartreeGeometries block
   call read_hartree_add( )
