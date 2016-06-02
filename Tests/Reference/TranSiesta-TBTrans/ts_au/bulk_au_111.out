@@ -1,4 +1,4 @@
-Siesta Version: trunk-507---ts-scf-680
+Siesta Version: trunk-507---ts-scf-685
 Architecture  : x86_64-linux-gcc
 Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
 PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG -DTRANSIESTA
@@ -11,7 +11,7 @@ NetCDF-4 MPI-IO support
 METIS ordering support
 
 * Running on 2 nodes in parallel
->> Start of run:   2-JUN-2016   9:23:01
+>> Start of run:   2-JUN-2016  17:44:59
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -466,6 +466,7 @@ transiesta: k-grid:    0   8   0      0.000
 transiesta: k-grid:    0   0   1      0.000
 
 ts: **************************************************************
+ts: Voltage                                         =    0.0000 Volts
 ts: Save H and S matrices                           =    T
 ts: Electronic temperature                          =   99.999269 K
 ts: Transport along unit-cell vector                =    A3
@@ -473,13 +474,12 @@ ts: Transport along Cartesian vector                =    Z
 ts: Fixing Hartree potential at electrode-plane     =    Right
 ts: Fix Hartree potential fraction                  =    1.0000
 ts: Solution method                                 =    BTD
-ts: BTD pivoting method method                      =    atom+Left
+ts: BTD pivoting method                             =    atom+Left
 ts: BTD creation algorithm                          =    speed
 ts: SCF.TS DM tolerance                             = 0.100E-03
 ts: SCF.TS Hamiltonian tolerance                    = 0.100E-03
 ts: Initialize DM by                                =    diagon
 ts: Initial DM for electrodes                       =    this
-ts: Voltage                                         =    0.0000 Volts
 ts: Will not correct charge fluctuations
 ts: TS.SCF mixing options same as SCF
 ts:           >> Electrodes << 
@@ -708,7 +708,7 @@ siesta: FreeEng =     -8143.517425
 
         iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)dHmx(Ry)
    scf:    1    -8145.8934    -8143.5162    -8143.5174  0.2202 -2.4745 -1.0000
-timer: Routine,Calls,Time,% =    IterSCF     1      38.540  83.10
+timer: Routine,Calls,Time,% =    IterSCF     1      44.692  83.64
 ts-Vha:  0.26560E-01 eV
    scf:    2    -8145.5700    -8143.5826    -8143.5838  0.2167 -2.5459 -1.0000
 ts-Vha:  0.71179E+00 eV
@@ -795,7 +795,7 @@ siesta: FreeEng =     -8142.094215
 
         iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)dHmx(Ry)
 ts-scf:    1    -8142.0737    -8142.0942    -8142.0942  0.0005 -4.0312 -1.0000
-timer: Routine,Calls,Time,% =         TS     1       1.364   0.25
+timer: Routine,Calls,Time,% =         TS     1       1.396   0.24
 ts-Vha:  0.61399E+00 eV
 ts-q:         D        E1        C1        E2        C2        dQ
 ts-q:    32.697    32.695     0.305    32.695     0.305  1.934E-3
@@ -905,4 +905,4 @@ siesta:         -35.29628454        -35.36229344  kBar
 (Free)E+ p_basis*V_orbitals  =       -8135.856162
 (Free)Eharris+ p_basis*V_orbitals  =       -8135.856049
 ts-Vha:  0.61506E+00 eV
->> End of run:   2-JUN-2016   9:32:22
+>> End of run:   2-JUN-2016  17:54:51

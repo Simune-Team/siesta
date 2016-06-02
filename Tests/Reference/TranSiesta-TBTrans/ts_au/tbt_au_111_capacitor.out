@@ -10,7 +10,7 @@ NetCDF-4 MPI-IO support
 METIS ordering support
 
 * Running on 2 nodes in parallel
->> Start of run:   2-JUN-2016  17:54:52
+>> Start of run:   2-JUN-2016  18:07:45
 
                            ************************ 
                            *  WELCOME TO TBtrans  * 
@@ -18,8 +18,8 @@ METIS ordering support
 
 reinit: Reading from standard input
 ************************** Dump of input data file ****************************
-SystemName  bulk_au_111
-SystemLabel bulk_au_111
+SystemName  au_111_capacitor
+SystemLabel au_111_capacitor
 ==================================================
 ==================================================
 # SPECIES AND BASIS
@@ -36,31 +36,32 @@ PAO.EnergyShift  0.005 Ry
 %block kgrid_Monkhorst_Pack
 8   0   0   0.0
 0   8   0   0.0
-0   0   60  0.5
+0   0   30  0.5
 %endblock kgrid_Monkhorst_Pack
 ==================================================
 ==================================================
-# UNIT CELL AND ATOMIC POSITIONS
 # UNIT CELL
 LatticeConstant       2.92311 Ang
 %block LatticeVectors
 1.000000000   0.00000000000   0.0000000000
 0.500000000   0.86602540378   0.0000000000
-0.000000000   0.00000000000   2.4494897428
+0.000000000   0.00000000000  10.6144555530
 %endblock LatticeVectors
 # Atomic coordinates
-NumberOfAtoms 3
+NumberOfAtoms 10
 AtomicCoordinatesFormat ScaledCartesian
 %block AtomicCoordinatesAndAtomicSpecies
-       0.000000000       0.000000000       0.000000000    1
-       0.500000000       0.288675135       0.816496581    1
-       0.500000000      -0.288675135       1.632993162    1
+       0.000000000       0.000000000       0.000000000    1  # A
+       0.500000000       0.288675135       0.816496581    1  # B
+       0.500000000      -0.288675135       1.632993162    1  # C
+       0.000000000       0.000000000       2.449489743    1  # A
+       0.500000000       0.288675135       3.265986324    1  # B
+       0.500000000       0.288675135       6.531972648    1  # B
+       0.500000000      -0.288675135       7.348469229    1  # C
+       0.000000000       0.000000000       8.164965810    1  # A
+       0.500000000       0.288675135       8.981462391    1  # B
+       0.500000000      -0.288675135       9.797958972    1  # C
 %endblock AtomicCoordinatesAndAtomicSpecies
-%block SuperCell
-1 0 0
-0 1 0
-0 0 3
-%endblock SuperCell
 ==================================================
 ==================================================
 # General variables
@@ -79,8 +80,8 @@ DM.MixingWeight       0.03          # New DM amount for next SCF cycle
 DM.Tolerance          1.d-4         # Tolerance in maximum difference
 DM.UseSaveDM          true          # to use continuation files
 DM.NumberPulay         5
-Diag.DivideAndConquer  no
-Diag.ParallelOverK     yes
+Diag.DivideAndConquer     no
+MixHamiltonian yes
 ==================================================
 ==================================================
 # MD variables
@@ -104,7 +105,12 @@ WriteMDhistory                  .false.
 WriteEigenvalues                yes
 ==================================================
 ==================================================
-TS.Voltage    0.00000 eV
+# Parallel variables
+Diag.ParallelOverK      yes
+==================================================
+==================================================
+# Transiesta information
+TS.Voltage    1.00000 eV
 %block TS.ChemPots
   Left
   Right
@@ -176,7 +182,7 @@ TS.Elecs.Eta    0.0001000000 eV
 %block TS.Contour.nEq.neq
   part line
    from -|V|/2 - 5 kT to |V|/2 + 5 kT
-    delta 0.01 eV
+    delta    0.01 eV
      method mid-rule
 %endblock TS.Contour.nEq.neq
 # TBtrans options
@@ -190,12 +196,13 @@ TBT.Elecs.Eta    0.0001 eV
     delta    0.01000 eV
      method mid-rule
 %endblock TBT.Contour.neq
+TBT.T.Eig 3
 ************************** End of input data file *****************************
 
 reinit: -----------------------------------------------------------------------
-reinit: System Name: bulk_au_111
+reinit: System Name: au_111_capacitor
 reinit: -----------------------------------------------------------------------
-reinit: System Label: bulk_au_111
+reinit: System Label: au_111_capacitor
 reinit: -----------------------------------------------------------------------
 redata: Non-Collinear-spin run                   =   F
 redata: SpinPolarized (Up/Down) run              =   F
@@ -213,14 +220,14 @@ tbt:            0   0   1      0.000
 
 tbt: **************************************************************
 tbt: Electronic temperature (reference)             =   99.9993 K
-tbt: No applied bias
+tbt: Voltage                                        =    1.0000 Volts
 tbt: Calculate transmission only using diag(Gf)     =    F
 tbt: Saving bulk transmission for electrodes        =    F
 tbt: Saving DOS from bulk electrodes                =    F
 tbt: Saving DOS from Green function                 =    F
 tbt: Saving DOS from spectral functions             =    F
 tbt: Saving bond currents (orb-orb)                 =    F
-tbt: Calc. # transmission eigenvalues               =  0
+tbt: Calc. # transmission eigenvalues               =  3
 tbt: Calc. T between all electrodes                 =    F
 tbt: Calc. total T out of electrodes                =    F
 tbt: Single spin Hamiltonian
@@ -242,9 +249,10 @@ tbt:   # atoms used in electrode                    =    3
 tbt:   Electrode Bloch expansion [E1 x E2 x E3]     = 1 x 1 x 1
 tbt:   Position in geometry                         = 1 -- 3
 tbt:   Semi-infinite direction for electrode        = negative wrt. E3
-tbt:   Chemical shift                               =    0.000000 eV
+tbt:   Chemical shift                               =    0.499999 eV
 tbt:   Electronic temperature                       =   99.999269 K
 tbt:   Bulk values in electrode                     =    T
+tbt:   Hamiltonian E-C Ef fractional shift          =    0.0000
 tbt:   Electrode self-energy imaginary Eta          =  0.1000E-03  eV
 tbt:   Electrode inter-layer distance (semi-inf)    =    2.3867  Ang
 tbt: >> Right
@@ -253,11 +261,12 @@ tbt:   In-core GF
 tbt:   Electrode TSHS file                          = ./elec_au_111_abc.TSHS
 tbt:   # atoms used in electrode                    =    3
 tbt:   Electrode Bloch expansion [E1 x E2 x E3]     = 1 x 1 x 1
-tbt:   Position in geometry                         = 7 -- 9
+tbt:   Position in geometry                         = 8 -- 10
 tbt:   Semi-infinite direction for electrode        = positive wrt. E3
-tbt:   Chemical shift                               =    0.000000 eV
+tbt:   Chemical shift                               =   -0.499999 eV
 tbt:   Electronic temperature                       =   99.999269 K
 tbt:   Bulk values in electrode                     =    T
+tbt:   Hamiltonian E-C Ef fractional shift          =    0.0000
 tbt:   Electrode self-energy imaginary Eta          =  0.1000E-03  eV
 tbt:   Electrode inter-layer distance (semi-inf)    =    2.3867  Ang
 ts:              >> TBtrans contour << 
@@ -288,8 +297,8 @@ tbt: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ************************ End: TBT CHECKS AND WARNINGS **************************
 
 Device information (full):
-  <sparsity:bulk_au_111.TSHS
-    nrows_g=81 nrows=81 sparsity=14.7586 nnzs=96831, refcount: 3>
+  <sparsity:au_111_capacitor.TSHS
+    nrows_g=90 nrows=90 sparsity=11.5346 nnzs=93430, refcount: 3>
 
 Electrode information:
 
@@ -320,72 +329,75 @@ Electrode information:
 
 tbtrans: Analyzing electrode sparsity pattern to create optimal tri-diagonal blocks...
 tbtrans: Analyzing device sparsity pattern to create optimal tri-diagonal blocks...
+
+WARNING: Random atom 6 has been added due to non-completeness of the connectivity graph.
+WARNING: Expect sub-optimal BTD format.
 tbtrans: BTD pivoting scheme in device: atom+Left
 tbtrans: Done analyzing sparsity pattern...
 
 tbtrans: Reducing sparsity pattern...
 
-tbtrans: # of device region orbitals: 27
-Region (3): [A]-device
-  [ 4 -- 6 ]
+tbtrans: # of device region orbitals: 36
+Region (4): [A]-device
+  [ 4 -- 7 ]
 
-tbtrans: # of Left scattering orbitals: 27
-tbtrans: # of Left down-folding orbitals: 54
+tbtrans: # of Left scattering orbitals: 18
+tbtrans: # of Left down-folding orbitals: 45
 Region (3): [A]-Left folding region
   [ 1 -- 3 ]
-Region (3): [A]-Left folding in D
-  [ 4 -- 6 ]
+Region (2): [A]-Left folding in D
+  [ 4 -- 5 ]
 
-tbtrans: # of Right scattering orbitals: 27
-tbtrans: # of Right down-folding orbitals: 54
+tbtrans: # of Right scattering orbitals: 18
+tbtrans: # of Right down-folding orbitals: 45
 Region (3): [A]-Right folding region
-  [ 7 -- 9 ]
-Region (3): [A]-Right folding in D
-  [ 4 -- 6 ]
+  [ 8 -- 10 ]
+Region (2): [A]-Right folding in D
+  [ 6 -- 7 ]
 
 tbtrans: Creating electrode tri-diagonal matrix blocks
 tbtrans: Creating device tri-diagonal matrix blocks
 Region (2): [TRI] device region
-  [ 13, 14 ]
-tbtrans: Matrix elements in BTD: 729
+  [ 18, 18 ]
+tbtrans: Matrix elements in BTD: 1296
 
 tbtrans: Electrodes tri-diagonal matrices
 Region (2): [TRI] Left
-  [ 27, 27 ]
+  [ 27, 18 ]
 Region (2): [TRI] Right
-  [ 27, 27 ]
+  [ 27, 18 ]
 
 tbtrans: Electrode memory:    0.791 MB
-tbtrans: Sparse Hamiltonian and overlap memory:    0.706 MB
-tbtrans: Sum of electrode and sparse memory:    1.497 MB
+tbtrans: Sparse Hamiltonian and overlap memory:    0.670 MB
+tbtrans: Sum of electrode and sparse memory:    1.461 MB
 
-tbtrans: Initializing data file: bulk_au_111.TBT.nc
+tbtrans: Initializing data file: au_111_capacitor.TBT.nc
 tbtrans: LHS Green function size / memory: 8748 /     0.13 MB
-tbtrans: RHS Green function size / memory: 1458 /     0.02 MB
-tbt: Initial ETA in               13.592 s
-tbt: Calculated   5.000 %, ETA in               13.680 s
-tbt: Calculated  10.000 %, ETA in               11.988 s
-tbt: Calculated  15.000 %, ETA in               10.517 s
-tbt: Calculated  20.000 %, ETA in               10.112 s
-tbt: Calculated  25.000 %, ETA in                9.732 s
-tbt: Calculated  30.000 %, ETA in                9.231 s
-tbt: Calculated  35.000 %, ETA in                8.758 s
-tbt: Calculated  40.000 %, ETA in                7.812 s
-tbt: Calculated  45.000 %, ETA in                7.045 s
-tbt: Calculated  50.000 %, ETA in                6.488 s
-tbt: Calculated  55.000 %, ETA in                5.897 s
-tbt: Calculated  60.000 %, ETA in                5.251 s
-tbt: Calculated  65.000 %, ETA in                4.467 s
-tbt: Calculated  70.000 %, ETA in                3.737 s
-tbt: Calculated  75.000 %, ETA in                3.147 s
-tbt: Calculated  80.000 %, ETA in                2.542 s
-tbt: Calculated  85.000 %, ETA in                1.911 s
-tbt: Calculated  90.000 %, ETA in                1.269 s
-tbt: Calculated  95.000 %, ETA in                0.635 s
-tbt: Completed in               12.740 s
+tbtrans: RHS Green function size / memory: 1620 /     0.02 MB
+tbt: Initial ETA in               20.388 s
+tbt: Calculated   5.000 %, ETA in               13.148 s
+tbt: Calculated  10.000 %, ETA in               12.024 s
+tbt: Calculated  15.000 %, ETA in               10.291 s
+tbt: Calculated  20.000 %, ETA in                9.760 s
+tbt: Calculated  25.000 %, ETA in                9.396 s
+tbt: Calculated  30.000 %, ETA in                8.932 s
+tbt: Calculated  35.000 %, ETA in                8.387 s
+tbt: Calculated  40.000 %, ETA in                7.458 s
+tbt: Calculated  45.000 %, ETA in                6.693 s
+tbt: Calculated  50.000 %, ETA in                6.184 s
+tbt: Calculated  55.000 %, ETA in                5.626 s
+tbt: Calculated  60.000 %, ETA in                5.024 s
+tbt: Calculated  65.000 %, ETA in                4.258 s
+tbt: Calculated  70.000 %, ETA in                3.552 s
+tbt: Calculated  75.000 %, ETA in                2.997 s
+tbt: Calculated  80.000 %, ETA in                2.423 s
+tbt: Calculated  85.000 %, ETA in                1.816 s
+tbt: Calculated  90.000 %, ETA in                1.202 s
+tbt: Calculated  95.000 %, ETA in                0.598 s
+tbt: Completed in               11.964 s
 
 Currents (ensure entire Fermi function window):
-Left -> Right, V [V] / I [A]:  0.00000     V /  0.00000     A
-Left -> Right, V [V] / P [W]:  0.00000     V /  0.00000     W
+Left -> Right, V [V] / I [A]: 0.999999     V /  0.00000     A
+Left -> Right, V [V] / P [W]: 0.999999     V /  0.00000     W
 
->> End of run:   2-JUN-2016  17:55:05
+>> End of run:   2-JUN-2016  18:07:57

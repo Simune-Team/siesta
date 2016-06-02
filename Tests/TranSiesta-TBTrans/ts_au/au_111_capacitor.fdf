@@ -111,8 +111,6 @@ Diag.ParallelOverK      yes
 # Transiesta information
 
 TS.Voltage    1.00000 eV
-# There is a gap...
-TS.BTD.Pivot none
 
 %block TS.ChemPots
   Left

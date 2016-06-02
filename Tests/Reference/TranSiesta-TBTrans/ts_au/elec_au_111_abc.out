@@ -1,4 +1,4 @@
-Siesta Version: trunk-507---ts-scf-680
+Siesta Version: trunk-507---ts-scf-685
 Architecture  : x86_64-linux-gcc
 Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
 PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG -DTRANSIESTA
@@ -11,7 +11,7 @@ NetCDF-4 MPI-IO support
 METIS ordering support
 
 * Running on 2 nodes in parallel
->> Start of run:   2-JUN-2016  10:56:02
+>> Start of run:   2-JUN-2016  17:42:39
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -430,8 +430,8 @@ Setting up quadratic distribution...
 ExtMesh (bp) on 0 =   107 x   107 x   123 =     1408227
 PhiOnMesh: Number of (b)points on node 0 =                 5175
 PhiOnMesh: nlist on node 0 =               422485
-cdiag-debug: Node=0, lwork=      1148>= lworkq=      5535, lrwork=       243>= lrworkq=       243, liwork=       162>= liworkq=       162
 cdiag-debug: Node=1, lwork=      1134>= lworkq=      5535, lrwork=       243>= lrworkq=       243, liwork=       162>= liworkq=       162
+cdiag-debug: Node=0, lwork=      1148>= lworkq=      5535, lrwork=       243>= lrworkq=       243, liwork=       162>= liworkq=       162
 
 stepf: Fermi-Dirac step function
 
@@ -457,7 +457,7 @@ siesta: FreeEng =     -2714.505804
 
         iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)dHmx(Ry)
    scf:    1    -2715.2977    -2714.5054    -2714.5058  0.2202 -2.4747 -1.0000
-timer: Routine,Calls,Time,% =    IterSCF     1      13.876  82.77
+timer: Routine,Calls,Time,% =    IterSCF     1      14.036  82.97
    scf:    2    -2715.1899    -2714.5275    -2714.5279  0.2166 -2.5188 -1.0000
    scf:    3    -2714.0654    -2713.9626    -2713.9628  0.1093 -3.5476 -1.0000
    scf:    4    -2714.0551    -2713.9777    -2713.9780  0.0977 -3.5266 -1.0000
@@ -6437,4 +6437,4 @@ siesta:          -0.02201655         -0.02201655  eV/Ang**3
 siesta:         -35.27477532        -35.27477646  kBar
 (Free)E+ p_basis*V_orbitals  =       -2711.952916
 (Free)Eharris+ p_basis*V_orbitals  =       -2711.952916
->> End of run:   2-JUN-2016  10:58:07
+>> End of run:   2-JUN-2016  17:44:59

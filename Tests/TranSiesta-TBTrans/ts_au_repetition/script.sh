@@ -103,7 +103,7 @@ do
    echo "The scattering region calculation did not go well ..."
    exit
  fi
- cp tbt_${SCAT}.out $SCAT.TBT.AVTRANS_Left-Right ../..
+ cp tbt_${SCAT}.out $SCAT.TBT.TRANS_Left-Right ../..
  #
  # Go back to base directory
  #

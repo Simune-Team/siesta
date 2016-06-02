@@ -200,8 +200,8 @@ TS.Elecs.GF.ReUse false
   semi-inf-dir -a3
   elec-pos begin 1
   used-atoms 3
-  rep-a1 2
-  rep-a2 1
+  bloch-a1 2
+  bloch-a2 1
 %endblock TS.Elec.Left
 
 %block TS.Elec.Right
@@ -210,8 +210,8 @@ TS.Elecs.GF.ReUse false
   semi-inf-dir +a3
   elec-pos end -1
   used-atoms 3
-  rep-a1 2
-  rep-a2 1
+  bloch-a1 2
+  bloch-a2 1
 %endblock TS.Elec.Right
 
 TS.Contours.Eq.Pole.N 3
