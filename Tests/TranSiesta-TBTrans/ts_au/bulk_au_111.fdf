@@ -104,50 +104,7 @@ WriteEigenvalues                yes
 ==================================================
 ==================================================
 
-# Transiesta information
-
-# GF OPTIONS
-TS.ComplexContour.Emin    -30.0 eV 
-TS.ComplexContour.NPoles       03
-TS.ComplexContour.NCircle      30
-TS.ComplexContour.NLine        10 
-# BIAS OPTIONS
-TS.biasContour.NumPoints       00
-
-
-# TS OPTIONS
-TS.Voltage 0.000000 eV
-
-# TBT OPTIONS
-TS.TBT.Emin -0.5 eV
-TS.TBT.Emax +0.5 eV
-TS.TBT.NPoints 100
-TS.TBT.NEigen 3
-TS.TBT.Eta        0.000001 Ry
-
-# Write hamiltonian
-TS.SaveHS   .true.
-
-
-
-# LEFT ELECTRODE
-TS.HSFileLeft  ./elec_au_111_abc.TSHS 
-TS.ReplicateA1Left    1
-TS.ReplicateA2Left    1
-TS.NumUsedAtomsLeft   03
-TS.BufferAtomsLeft    0
-
-# RIGHT ELECTRODE
-TS.HSFileRight  ./elec_au_111_abc.TSHS 
-TS.ReplicateA1Right   1
-TS.ReplicateA2Right   1
-TS.NumUsedAtomsRight  03
-TS.BufferAtomsRight   0
-
-==================================================
-==================================================
-
-TS.Voltage      0.000000000     Ry                           
+TS.Voltage    0.00000 eV
 
 %block TS.ChemPots
   Left
@@ -172,8 +129,8 @@ TS.Voltage      0.000000000     Ry
 %endblock TS.ChemPot.Right
 
 TS.Elecs.Bulk true
-TS.Elecs.DM.Update none
-TS.Elecs.GF.ReUse false
+TS.Elecs.DM.Update cross-terms
+TS.Elecs.GF.ReUse true
 %block TS.Elecs
   Left
   Right
@@ -184,7 +141,6 @@ TS.Elecs.GF.ReUse false
   chem-pot Left
   semi-inf-dir -a3
   elec-pos begin 1
-  used-atoms 3
 %endblock TS.Elec.Left
 
 %block TS.Elec.Right
@@ -192,10 +148,9 @@ TS.Elecs.GF.ReUse false
   chem-pot Right
   semi-inf-dir +a3
   elec-pos end -1
-  used-atoms 3
 %endblock TS.Elec.Right
 
-TS.Contours.Eq.Pole.N 3
+TS.Contours.Eq.Pole    2.50000 eV
 %block TS.Contour.c-Left
   part circle
    from  -30.00000 eV + V/2 to -10. kT + V/2
@@ -221,23 +176,29 @@ TS.Contours.Eq.Pole.N 3
      method g-fermi
 %endblock TS.Contour.t-Right
 
-TS.Contours.nEq.Eta    0.0000010000 Ry                                
-%block TS.Contours.Bias.Window
+TS.Elecs.Eta    0.0001000000 eV
+%block TS.Contours.nEq
   neq
-%endblock TS.Contours.Bias.Window
-%block TS.Contour.Bias.Window.neq
+%endblock TS.Contours.nEq
+%block TS.Contour.nEq.neq
   part line
-   from -|V|/2 to |V|/2
+   from -|V|/2 - 5 kT to |V|/2 + 5 kT
     delta 0.01 eV
-     method simpson-mix
-%endblock TS.Contour.Bias.Window.neq
+     method mid-rule
+%endblock TS.Contour.nEq.neq
 
-%block TS.Contours.Bias.Tail
-  neq-tail
-%endblock TS.Contours.Bias.tail
-%block TS.Contour.Bias.Tail.neq-tail
-  part tail
-   from 0. kT to 12. kT
-    delta 0.01 eV
-     method simpson-mix
-%endblock TS.Contour.Bias.Tail.neq-tail
+
+
+# TBtrans options
+
+TBT.Elecs.Eta    0.0001 eV
+%block TBT.Contours
+  neq
+%endblock TBT.Contours
+
+%block TBT.Contour.neq
+  part line
+   from   -0.50000 eV to    0.50000 eV
+    delta    0.01000 eV
+     method mid-rule
+%endblock TBT.Contour.neq
