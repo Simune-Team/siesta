@@ -408,7 +408,8 @@ contains
       
       if ( leqi(str,'linear') ) then
          m = MIX_LINEAR
-      else if ( leqi(str,'pulay') ) then
+      else if ( leqi(str,'pulay') .or. &
+           leqi(str, 'anderson') ) then
          m = MIX_PULAY
       else if ( leqi(str,'broyden') ) then
          m = MIX_BROYDEN
@@ -883,7 +884,7 @@ contains
 
 
   ! Returns true if the following 
-  ! "advanced" mixer is 'm'
+  ! "advanced" mixer is 'method'
   function is_next(mix,method,next) result(bool)
     type(tMixer), intent(in), target :: mix
     integer, intent(in) :: method
@@ -929,6 +930,7 @@ contains
 
     type(dData1D), pointer :: d1D
     integer :: i, is, n, init_itt
+    logical :: reset_stack
 
     ! First try and
     next => mix%next
@@ -959,22 +961,33 @@ contains
        
     end if
 
-    select case ( mix%m )
-    case ( MIX_PULAY )
+    reset_stack = .true.
+    if ( associated(next) ) then
+       if ( associated(next%next, mix) .and. &
+            next%n_itt > 0 ) then
+          ! if this is a circular mixing routine
+          ! we should not reset the history...
+          reset_stack = .false.
+       end if
+    end if
 
-       call reset(mix%stack(1))
-       call reset(mix%stack(2))
-       call reset(mix%stack(3))
-       
-    case ( MIX_BROYDEN )
-       
-       ! delete all BROYDEN history
-       call reset(mix%stack(1))
-       call reset(mix%stack(2))
-       
-    end select
-
-    if ( associated(mix%next) ) then
+    if ( reset_stack ) then
+       select case ( mix%m )
+       case ( MIX_PULAY )
+          
+          call reset(mix%stack(1))
+          call reset(mix%stack(2))
+          call reset(mix%stack(3))
+          
+       case ( MIX_BROYDEN )
+          
+          call reset(mix%stack(1))
+          call reset(mix%stack(2))
+          
+       end select
+    end if
+    
+    if ( associated(next) ) then
        init_itt = 0
        mix => mix%next
        if ( mix%m == MIX_PULAY ) then
@@ -1006,6 +1019,7 @@ contains
     type(tMixer), pointer :: next
     real(dp), pointer :: tmp1(:), tmp2(:)
     real(dp) :: alpha
+    integer :: nh, ns
 
     info = 0
 
@@ -1014,18 +1028,55 @@ contains
        ! If the following uses history, add that information
        ! to the history.
        if ( any(next%v == (/0,2/)) ) then
-          call update_F(next%stack(1),n,F1)
+
+          call push_F(next%stack(1), n, F1)
+          
+          ! ensure that we also calculate the RRes
+          ns = n_items(next%stack(1))
+          
+          if ( ns >= 2 ) then
+             
+             call push_diff(next%stack(2), next%stack(1))
+
+             ! Update the residual to reflect the input residual
+             tmp1 => getstackval(next,1,ns-1)
+             tmp2 => getstackval(next,3)
+             
 !$OMP parallel workshare default(shared)
-          x2 = x1 + F1
+             tmp1 = tmp1 - tmp2 + x1
+             tmp2 = x1 + F1
 !$OMP end parallel workshare
-          call update_F(next%stack(3),n,x2)
+
+          else
+             
+             ! Store the output (without weight)
+!$OMP parallel workshare default(shared)
+             x2 = x1 + F1
+!$OMP end parallel workshare
+             call update_F(next%stack(3), n, x2)
+             
+          end if
+
+          nh = max_size(next%stack(1))
+
+          if ( debug_mix ) &
+               write(*,'(a,2(a,i0))') trim(debug_msg), &
+               ' next%n_hist = ',ns, ' / ',nh
+
        end if
        
     else if ( is_next(mix,MIX_BROYDEN,next) ) then
        
        ! If the following uses history, add that information
        ! to the history.
-       call update_F(next%stack(1),n,F1)
+       call update_F(next%stack(1), n, F1)
+       
+       ns = n_items(next%stack(1))
+       nh = max_size(next%stack(1))
+
+       if ( debug_mix ) &
+            write(*,'(a,2(a,i0))') trim(debug_msg), &
+            ' next%n_hist = ',ns, ' / ',nh
 
        tmp1 => getstackval(next,1)
        if ( n_items(next%stack(2)) > 0 ) then
@@ -1040,7 +1091,7 @@ contains
 !$OMP parallel workshare default(shared)
           tmp2 = tmp1 * next%w
 !$OMP end parallel workshare
-          call push_F(next%stack(2),n,tmp2)
+          call push_F(next%stack(2), n, tmp2)
           deallocate(tmp2)
 
        end if
@@ -1204,7 +1255,7 @@ contains
        end if
 
        ! Update the residual to reflect the input residual
-       res => getstackval(mix,1,ns-1)       
+       res => getstackval(mix,1,ns-1)
        oF => getstackval(mix,3)
 
 !$OMP parallel workshare default(shared)
@@ -1391,25 +1442,25 @@ contains
       end select
          
       if ( info == 0 ) then
-         
+
+         ! Initialize alpha
          do i = 1 , nh
-            
-            ! Calculate the coefficients on all processors
             alpha(i) = 0._dp
+         end do
+
+         ! Calculate the coefficients on all processors
+         do j = 1 , nh
             
-            do j = 1 , nh
-               
-               ! Get j'th residual array
-               rres => getstackval(mix,2,j)
-               
-               ssum = ddot(ncoef,rres,1,res,1)
-               
+            ! Get j'th residual array
+            rres => getstackval(mix,2,j)
+            ssum = ddot(ncoef,rres,1,res,1)
+            
+            do i = 1 , nh
                alpha(i) = alpha(i) - bi(i,j) * ssum
-               
             end do
             
          end do
-         
+            
 #ifdef MPI
          ! Reduce the alpha
          call MPI_AllReduce(alpha(1),b(1,1),nh, &
