@@ -854,6 +854,7 @@ contains
        return
     end if
 
+    write(*,f6) 'Voltage', Volt/eV,'Volts'
     write(*,f1) 'Save H and S matrices', TS_HS_save
     if ( TS_Analyze ) then
        write(*,f11)'Will analyze bandwidth of LCAO sparse matrix and quit'
@@ -942,7 +943,6 @@ contains
     case ( 1 )
        write(*,f10) 'Initial DM for electrodes','bulk DM'
     end select
-    write(*,f6) 'Voltage', Volt/eV,'Volts'
     if ( IsVolt ) then
        if ( len_trim(Hartree_fname) > 0 ) then
           write(*,f10) 'User supplied Hartree potential', &
