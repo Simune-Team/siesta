@@ -888,7 +888,7 @@ contains
     else if ( ts_method == TS_BTD ) then
        write(*,f10)'Solution method', 'BTD'
        chars = fdf_get('TS.BTD.Pivot','atom+'//trim(Elecs(1)%name))
-       write(*,f10)'BTD pivoting method method', trim(chars)
+       write(*,f10)'BTD pivoting method', trim(chars)
        if ( BTD_method == 0 ) then
           chars = 'speed'
        else if  ( BTD_method == 1 ) then

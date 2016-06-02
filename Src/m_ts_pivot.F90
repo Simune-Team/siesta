@@ -574,10 +574,10 @@ contains
                 ! if it already exists, skip it
                 if ( in_rgn(r_pvt,c_pvt%r(i)) ) cycle
                 if ( pvt_orb ) then
-                   call rgn_init(r_tmp,1,val=i)
+                   call rgn_init(r_tmp,1,val=c_pvt%r(i))
                    exit
                 else
-                   call rgn_init(r_tmp,1,val=i)
+                   call rgn_init(r_tmp,1,val=c_pvt%r(i))
                    exit
                 end if
              end do
@@ -846,7 +846,7 @@ contains
           call rgn_print(c_pvt)
           call rgn_print(priority)
        end if
-       call die('Error in size estimation, the sparse pattern &
+       call die('ts_pivot: Error in size estimation, the sparse pattern &
             &removal is erroneous')
     end if
 
