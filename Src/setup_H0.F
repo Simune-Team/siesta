@@ -16,7 +16,10 @@ C     Computes non-self-consistent part of the Hamiltonian
 C     and initializes data structures on the grid.
       
       USE siesta_options,  only: g2cut
-      use sparse_matrices, only: H_kin, H_vkb, H_so, Dscf
+      use sparse_matrices, only: H_kin_1D, H_vkb_1D
+      use sparse_matrices, only: H_so_2D
+      use sparse_matrices, only: Dscf
+
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use siesta_geom
       use atmfuncs, only: uion
@@ -35,6 +38,8 @@ C     and initializes data structures on the grid.
       use m_spin,       only: nspin, SpOrb
       use spinorbit,    only: spinorb
       use alloc, only: re_alloc, de_alloc
+      use class_dSpData1D, only: val
+      use class_dSpData2D, only: val
 
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
@@ -45,6 +50,12 @@ C     and initializes data structures on the grid.
       real(dp) :: dummy_E
       integer  :: ia, is
       real(dp) :: g2max
+
+      real(dp), pointer :: H_val(:), H_so(:,:)
+
+#ifdef DEBUG
+      call write_debug( '    PRE setup_H0' )
+#endif
 
 !----------------------------------------------------------------------BEGIN
       call timer('Setup_H0',1)
@@ -84,23 +95,29 @@ C     Add on force field contribution to energy
 !     parts of H
 
 !     Kinetic: matrix elements only
-      H_kin = 0.0_dp
+      H_val => val(H_kin_1D)
+!$OMP parallel workshare default(shared)
+      H_val(:) = 0.0_dp
+!$OMP end parallel workshare
       call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, maxnh, lasto, iphorb, isa, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
      &             1,
      &             dummy_dm, dummy_E, dummy_fa, dummy_stress,
-     &             H_kin,
+     &             H_val,
      &             matrix_elements_only=.true.) 
 
-C     Non-local-pseudop:  matrix elements only
-      H_vkb = 0.0_dp
+!     Non-local-pseudop:  matrix elements only
+      H_val => val(H_vkb_1D)
+!$OMP parallel workshare default(shared)
+      H_val(:) = 0.0_dp
+!$OMP end parallel workshare
       call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
      &            maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &            numh, listhptr, listh, numh, listhptr, listh, 
      &            1,
      &            dummy_dm, dummy_E, dummy_fa, dummy_stress,
-     &            H_vkb,
+     &            H_val,
      &            matrix_elements_only=.true.) 
 
 
@@ -112,9 +129,12 @@ C     Non-local-pseudop:  matrix elements only
 ! should be enough
 !
       if ( SpOrb ) then
+         H_so(1:,3:) => val(H_so_2D)
+!$OMP parallel workshare default(shared)
          H_so = 0._dp
+!$OMP end parallel workshare
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
-     .        maxnh,numh,listhptr,listh,Dscf,H_so,Eso)
+     &        maxnh,numh,listhptr,listh,Dscf,H_so,Eso)
 #ifdef MPI
 !     Global reduction of energy terms
          call globalize_sum(Eso,dummy_E)
@@ -136,6 +156,10 @@ C     mesh structures for geometry changes
      &                 dummy_fa, dummy_stress)
   
       call timer('Setup_H0',2)
+
+#ifdef DEBUG
+      call write_debug( '    POS setup_H0' )
+#endif
 
 !---------------------------------------------------------------------- END
       END subroutine setup_H0

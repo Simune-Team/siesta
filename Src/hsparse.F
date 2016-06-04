@@ -79,7 +79,7 @@ C
       logical,           intent(in) :: negl
       integer,        intent(out)   :: nlhmax
       logical, intent(in)           :: gamma
-      logical, intent(in)     :: set_xijo
+      logical, intent(in)           :: set_xijo
       logical, intent(out)    :: folding
 
       external               timer
@@ -330,6 +330,13 @@ C     Find optimum value for nlhmax
       endif     
 
       nlhmax = nlh
+      ! I suspect that having nlhmax == 1 will result in errors
+      ! It would be much better to not allow this "oversubscription".
+      if ( nlhmax < 1 ) then
+         call die('Sparse pattern is oversubscribed with nodes, 
+     &please reduce number of nodes.')
+      end if
+
       call re_alloc( listh, 1, max(1,nlhmax), 'listh',
      &     'sparseMat', SHRINK=.true. )
       if (set_xijo) then

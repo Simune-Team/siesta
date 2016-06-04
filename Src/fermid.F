@@ -80,6 +80,10 @@ C Local variables
       real(dp), save :: tol = 1.0d-10
       real(dp)       :: sumq, emin, emax, t, drange, wkebuf, w, eik
 
+#ifdef DEBUG
+      call write_debug( '    PRE fermid' )
+#endif
+
 C Reading whether to do an excited state
       if ( .not. blread) then
         excitd = fdf_boolean('SingleExcitation', .false.)
@@ -118,7 +122,10 @@ C Determine Fermi level
      .            'Fermid: Bands full, no excitation possible'
           endif
           call die()
-        else
+          else
+#ifdef DEBUG
+          call write_debug( '    POS fermid' )
+#endif
           return
         endif
       endif
@@ -183,6 +190,9 @@ C Obtain the electronic entropy
             enddo
           enddo
 
+#ifdef DEBUG
+          call write_debug( '    POS fermid' )
+#endif
           return
 
         endif

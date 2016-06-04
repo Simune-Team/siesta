@@ -22,7 +22,7 @@ if [ -z "$OBJDIR" ] ; then
 fi
 echo ${OBJDIR}
 
-for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile ); do
+for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile ) ; do
       relpath=${i%/*}
       echo "====> Processing $relpath ..." ; echo
       cd $relpath

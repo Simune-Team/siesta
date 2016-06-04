@@ -25,16 +25,19 @@ C
       use fdf
       use files,       only : slabel
       use siesta_master, only: input_file  ! fdf data file
+      use sys, only : bye
 
       implicit none
 
       character(len=*), intent(out) :: sname
 
 C  Internal variables .................................................
-      character(len=20) filein, fileout
+      character(len=50) filein, fileout
 
-      integer  ::  count, length, lun, lun_tmp, iostat
-      character :: slabel_default*59, sname_default*20, line*256
+      integer  ::  count, in, length, lun, lun_tmp, iostat
+      character :: slabel_default*59, sname_default*20
+      character(len=256) :: line, val
+
 
       logical debug_input, file_exists
 
@@ -49,11 +52,22 @@ C Print Welcome and Presentation .......................................
      .   '                           *  WELCOME TO SIESTA  *       '
         write(6,'(a)')
      .   '                           ***********************       '
-C ..................
+
+! ..................
 !
 !       Set name of file to read from. Done only
 !       in the master node.
 !
+#ifndef NO_F2003
+      count = command_argument_count()
+      if ( count > 0 ) then
+         filein = ' '
+         call get_command_argument(count,filein,length)
+         inquire(file=filein,exist=debug_input)
+         if ( .not. debug_input ) count = 0
+      end if
+#endif
+
 c
 c     Choose proper file for fdf processing
 c     (INPUT_DEBUG if it exists or "standard input",
@@ -65,6 +79,25 @@ c
      $          'Siesta is reading its input from file INPUT_DEBUG'
            filein = 'INPUT_DEBUG'
 
+#ifndef NO_F2003
+        else if ( count > 0 ) then
+
+           ! Get file-name from input line
+           filein = ' '
+           call get_command_argument(count,filein,length)
+           if ( length > len(filein) ) then
+              call die ('The argument is too long to be retrieved, &
+     &please limit your-self to 50 characters for the input file') 
+           end if
+           inquire(file=filein,exist=debug_input)
+           if ( .not. debug_input ) then
+              call die('Input file '//trim(filein)//' does not exist? &
+     &Have you specified the wrong file-name?') 
+           end if
+           
+           write(*,'(/,2a)') 'reinit: Reading from ',trim(filein)
+
+#endif
         else
 
            if (input_file/=' ') then   ! Read data from given file
@@ -125,6 +158,77 @@ C Set up fdf ...
 
       call fdf_init(filein,trim(fileout))
 
+#ifndef NO_F2003
+! Read special variables from the command line
+      count = command_argument_count()
+      if ( count > 0 ) then
+         in = 0
+         do while ( in <= count - 1 )
+            
+            in = in + 1
+            call get_command_argument(in,line,length)
+            
+            ! If it is not an option, skip it
+            if ( line(1:1) /= '-' ) cycle
+
+            do while ( line(1:1) == '-' )
+               line = line(2:)
+            end do
+
+            ! We allow these line
+            if ( line(1:3) == 'fdf' ) then
+               if ( in >= count - 1 ) 
+     &              call die('Missing argument on command line')
+               in = in + 1
+               call get_command_argument(in,line,length)
+               
+               ! We allow these variations:
+               !  FDFLabel=0.1:eV
+               !  FDFLabel:0.1:eV
+               !  FDFLabel=0.1=eV
+               line = cmd_tokenize(line)
+               call fdf_overwrite(line)
+#ifdef TRANSIESTA
+            else if ( line(1:1) == 'V' ) then
+               if ( in >= count - 1 )
+     &              call die('Missing argument on command line')
+               in = in + 1
+               call get_command_argument(in,line,length)
+               line = cmd_tokenize(line)
+               line = 'TS.Voltage '//trim(line)
+               call fdf_overwrite(line)
+#endif
+               
+            else if ( line(1:1) == 'L' ) then
+               if ( in >= count - 1 ) 
+     &              call die('Missing argument on command line')
+               in = in + 1
+               call get_command_argument(in,line,length)
+               line = cmd_tokenize(line)
+               line = 'SystemLabel '//trim(line)
+               call fdf_overwrite(line)
+               
+            else if ( line(1:4) == 'help' .or. line(1:1) == 'h' ) then
+      write(*,'(a)')'Help for calling the tight-binding transport code'
+      write(*,'(a)')'  -fdf <label>=<value>[:<unit>]'
+      write(*,'(a)')'      Set the label to the corresponding value.'
+#ifdef TRANSIESTA
+      write(*,'(a)')'  -V <value>:<unit>'
+      write(*,'(a)')'      Short-hand for setting TS.Voltage.'
+#endif
+      write(*,'(a)')'  -L <name>'
+      write(*,'(a)')'      Short-hand for setting SystemLabel.'
+      write(*,'(a)')'  <fdf-file>'
+      write(*,'(a)')
+     &     '      Use file as fdf-input, you need not to pipe it in.' 
+      call bye('Help-menu requested, stopping')
+            end if
+            
+         end do
+      end if
+#endif
+
+
 C Define Name of the system ...
       sname_default = ' '
       sname = fdf_string('SystemName',sname_default)
@@ -144,4 +248,20 @@ C Define System Label (short name to label files) ...
       endif
 C ...
 
+      contains
+      
+      function cmd_tokenize(line) result(tline)
+      character(len=*), intent(in) :: line
+      character(len=len(line)) :: tline
+      
+      integer :: i, n
+      n = len(tline)
+      tline = line
+      do i = 1 , n
+         if ( tline(i:i) == ':' .or. 
+     &        tline(i:i) == '=' ) then
+            tline(i:i) = ' '
+         end if
+      end do
+      end function cmd_tokenize
       end

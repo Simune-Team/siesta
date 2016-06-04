@@ -237,7 +237,6 @@ C Initialization to 1 for numerical reasons, later substracted
 
         endif     ! varcel
 
-
         frstme = .false.
       endif                 ! First time
 
@@ -378,7 +377,12 @@ C Set number of degrees of freedom & variables
 
       endif
 
-      if (relaxd) RETURN   ! Will leave work arrays allocated
+      if (relaxd) then
+         
+         call local_dealloc()
+         
+         return
+      end if
 
       if (.not. broyden_is_setup(br)) then
          call broyden_reset(br,ndeg,maxit,cycle_on_maxit,
@@ -392,7 +396,7 @@ C Set number of degrees of freedom & variables
 
 
       ! Transform back
-      if ( varcel) then
+      if ( varcel ) then
 
         ! New cell
         indi = ndeg-6
@@ -464,9 +468,21 @@ C Return coordinates to correct arrays
 !      print *, "zm_broyden: cell out : ", cell
 !      print *, "zm_broyden: strain out : ", strain
 
-C Deallocate local memory
-      deallocate(rnew,dxmaxn,ftoln,gxa,gfa)
+      call local_dealloc()
+
+      contains
+
+      subroutine local_dealloc()
+
+C     Deallocate local memory
+      if ( allocated(dxmaxn) ) deallocate(dxmaxn)
+      if ( allocated(ftoln) ) deallocate(ftoln)
+      if ( allocated(gxa) ) deallocate(gxa)
+      if ( allocated(gfa) ) deallocate(gfa)
+      if ( allocated(rnew) ) deallocate(rnew)
+
+      end subroutine local_dealloc
 
       end subroutine zm_broyden_optimizer
-
+      
       end module m_zm_broyden_optim

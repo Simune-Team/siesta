@@ -18,7 +18,9 @@ Javier Junquera (Univ. de Oviedo and later UAM), and sometime later by
 Julian Gale (then at Imperial College, London). In 2007 Jose M. Cela
 (Barcelona Supercomputing Center, BSC) became a core developer.
 
-The TranSiesta module within SIESTA was originally developed by
+The current TranSIESTA module within SIESTA is developed by 
+Nick R. Papior (then at Technical University of Denmark) and Mads Brandbyge. 
+The original TranSIESTA module was developed by
 Pablo Ordejon and Jose L. Mozos (then at ICMAB-CSIC), and Mads Brandbyge,
 Kurt Stokbro, and Jeremy Taylor (Technical Univ. of Denmark).
 

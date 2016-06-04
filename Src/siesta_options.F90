@@ -6,8 +6,13 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
 MODULE siesta_options
-  
+
+#ifdef SIESTA__FLOOK
+  use flook, only : luaState
+#endif
+
   implicit none
+  
   integer, parameter, private :: dp = selected_real_kind(10,100)
   
   PUBLIC
@@ -21,6 +26,19 @@ MODULE siesta_options
   ! -- pre 4.0 coordinate output logic -- to be implemented
   logical :: compat_pre_v4_dynamics      ! General switch
 
+  integer, parameter :: MIX_SPIN_ALL = 1
+  ! Only use spinor components for mixing
+  integer, parameter :: MIX_SPIN_SPINOR = 2
+  ! Only use spin-sum for mixing (implicit on spinor)
+  integer, parameter :: MIX_SPIN_SUM = 3
+  ! Use both spin-sum and spin-difference density for mixing (implicit on spinor)
+  integer, parameter :: MIX_SPIN_SUM_DIFF = 4
+  ! It makes little sense to only mix difference as for spin-polarised
+  ! calculations with no difference it will converge immediately
+  
+  integer :: mix_spin      ! How the spin mixing algorthim is chosen
+  
+  logical :: mix_scf_first ! Mix first SCF step?
   logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM
   logical :: h_setup_only  ! H Setup only
@@ -36,7 +54,6 @@ MODULE siesta_options
   logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
   logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
   logical :: naiveauxcell  ! Use naive recipe for auxiliary supercell?
-  logical :: mix           ! Mix first SCF step? Used in broyden_mixing
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
@@ -68,6 +85,9 @@ MODULE siesta_options
   logical :: writb         ! Write band eigenvalues?
   logical :: writec        ! Write atomic coordinates at every geometry step?
   logical :: write_coop    ! Write information for COOP/COHP analysis ?
+
+  ! Create graphviz information to visualize connectivity graph
+  integer :: write_GRAPHVIZ
 !----------------------------------------------------
 ! Wannier90 interface
 !
@@ -76,14 +96,35 @@ MODULE siesta_options
   logical :: w90_write_amn    ! Write the Amn matrix for the interface with Wannier
   logical :: w90_write_eig    ! Write the eigenvalues or the interface with Wannier
   logical :: w90_write_unk    ! Write the unks for the interface with Wannier
+  logical :: hasnobup         ! Is the number of bands with spin up for 
+                              !   wannierization defined?
+  logical :: hasnobdown       ! Is the number of bands with spin down for 
+                              !   wannierization defined?
+  logical :: hasnob           ! Is the number of bands for wannierization defined?
+                              !   (for non spin-polarized calculations).
+  integer :: nobup            ! Number of bands with spin up for wannierization
+  integer :: nobdown          ! Number of bands with spin down for wannierization
+  integer :: nob              ! Number of bands for wannierization
+                              !   (for non spin-polarized calculations).
+
 !----------------------------------------------------
   logical :: writef        ! Write atomic forces at every geometry step?
   logical :: writek        ! Write the k vectors of the BZ integration mesh?
   logical :: writic        ! Write the initial atomic ccordinates?
   logical :: varcel        ! Change unit cell during relaxation or dynamics?
   logical :: do_pdos       ! Compute the projected density of states?
+#ifdef TRANSIESTA
+  logical :: write_tshs_history ! Write the MD track of Hamiltonian and overlap matrices in transiesta format
+#endif
+  logical :: write_hs_history ! Write the MD track of Hamiltonian and overlap matrices
   logical :: writedm       ! Write file with density matrix?
   logical :: writedm_cdf   ! Write file with density matrix in netCDF form?
+#ifdef NCDF_4
+  logical :: write_cdf     ! Write file with all information attached
+  integer :: cdf_comp_lvl  ! The compression level of the Netcdf-4 file
+  logical :: cdf_w_parallel  ! Allows writing NetCDF files in parallel
+  logical :: cdf_r_parallel  ! Allows reading NetCDF files in parallel, parallel read does not impose the same requirements as w_parallel
+#endif
   logical :: writedm_cdf_history   ! Write file with SCF history of DM in netCDF form?
   logical :: writedmhs_cdf ! Write file with DM_in, H, DM_out, and S in netCDF form?
   logical :: writedmhs_cdf_history   ! Write file with SCF history in netCDF form?
@@ -97,6 +138,7 @@ MODULE siesta_options
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
   logical :: require_energy_convergence ! free Energy conv. to finish SCF iteration?
   logical :: require_harris_convergence ! to finish SCF iteration?
+  logical :: require_hamiltonian_convergence ! to finish SCF iteration?
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
   logical :: fire_optim    ! Use FIRE method to optimize geometry?
   logical :: struct_only   ! Output initial structure only?
@@ -109,8 +151,8 @@ MODULE siesta_options
   logical :: voropop         ! Perform Voronoi population analysis?
   logical :: partial_charges_at_every_geometry
   logical :: partial_charges_at_every_scf_step
-
   logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
+
   logical :: minim_calc_eigenvalues ! Use diagonalization at the end of each MD step to find eigenvalues for OMM
 
   integer :: ia1           ! Atom index
@@ -122,6 +164,7 @@ MODULE siesta_options
   integer :: iquench       ! Quenching option, read in redata, used in dynamics routines
   integer :: isolve        ! Option to find density matrix: 0=>diag, 1=>order-N
   integer :: istart        ! First geommetry iteration step for certain types of dynamics
+  integer :: DM_history_depth   ! Number of previous density matrices used in extrapolation and reuse
   integer :: maxsav        ! Number of previous density matrices used in Pulay mixing
   integer :: broyden_maxit ! Max. iterations in Broyden geometry relaxation
   integer :: mullipop      ! Option for Mulliken population level of detail
@@ -132,19 +175,9 @@ MODULE siesta_options
   integer :: min_nscf      ! Minimum number of SCF iteration steps
   integer :: pmax          
   integer :: neigwanted    ! Wanted number of eigenstates (per k point)
-  integer :: level          ! Option for allocation report level of detail
+  integer :: level         ! Option for allocation report level of detail
   integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
   integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
-  logical :: hasnobup       ! Is the number of bands with spin up for 
-                            !   wannierization defined?
-  logical :: hasnobdown     ! Is the number of bands with spin down for 
-                            !   wannierization defined?
-  logical :: hasnob         ! Is the number of bands for wannierization defined?
-                            !   (for non spin-polarized calculations).
-  integer :: nobup          ! Number of bands with spin up for wannierization
-  integer :: nobdown        ! Number of bands with spin down for wannierization
-  integer :: nob            ! Number of bands for wannierization
-                            !   (for non spin-polarized calculations).
 
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
@@ -155,6 +188,7 @@ MODULE siesta_options
   real(dp) :: dm_normalization_tol    ! Threshold for DM normalization mismatch error
   logical  :: normalize_dm_during_scf ! Whether we normalize the DM 
   real(dp) :: dDtol         ! Tolerance in change of DM elements to finish SCF iteration
+  real(dp) :: dHtol         ! Tolerance in change of H elements to finish SCF iteration
   real(dp) :: dt            ! Time step in dynamics
   real(dp) :: dx            ! Atomic displacement used to calculate Hessian matrix
   real(dp) :: dxmax         ! Max. atomic displacement allowed during geom. relaxation
@@ -186,4 +220,9 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_TRANSI = 2
   integer,  parameter :: SOLVE_MINIM  = 3
 
+#ifdef SIESTA__FLOOK
+  ! LUA-handle
+  type(luaState) :: LUA
+#endif
+  
 END MODULE siesta_options

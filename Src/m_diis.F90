@@ -9,9 +9,9 @@ module m_diis
 
   use precision, only: dp
   use parallel,  only: Node
-  use class_Vector
-  use class_Pair_Vectors
-  use class_Fstack_Pair_Vectors
+  use class_dData1D
+  use class_Pair_dData1D
+  use class_Fstack_Pair_dData1D
   !
   implicit none
   !
@@ -37,7 +37,7 @@ CONTAINS
     use fdf, only: fdf_get
     use m_svd,      only : solve_with_svd
     !
-    type(Fstack_Pair_Vectors), intent(in) :: stack
+    type(Fstack_Pair_dData1D), intent(in) :: stack
     !
     ! The scalar product function is abstracted and
     ! passed as an argument. This function is really
@@ -56,8 +56,8 @@ CONTAINS
 
     logical :: debug_diis 
 
-    type(Pair_Vectors), pointer     :: pairp
-    type(Vector), pointer           :: vp
+    type(Pair_dData1D), pointer     :: pairp
+    type(dData1D), pointer           :: vp
     real(dp), dimension(:), pointer :: diff_i, diff_j
 
     integer :: nmix, i, j, info

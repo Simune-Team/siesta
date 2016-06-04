@@ -92,7 +92,6 @@ C
      .                  wgthpol(maxkpol), 
      .                  scell(3,3), rmaxo,  xa(3,na)
 C *********************************************************************
-
 C Internal variables 
       real(dp)  ntote_real   !!** Needed to deal with synthetics
       integer
@@ -127,6 +126,10 @@ C Internal variables
 
 C Start time counter 
       call timer( 'KSV_pol', 1 )
+
+!! jjunquer
+!      write(6,*)' Node, Nodes = ', Node, Nodes
+!! end jjunquer
 
 C Reading unit cell and calculate the reciprocal cell
       call reclat( ucell, rcell, 1 )

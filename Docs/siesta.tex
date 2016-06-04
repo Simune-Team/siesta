@@ -138,6 +138,8 @@ D.S\'anchez-Portal and J.M.Soler, 1996-2016
   the project's web page} \url{http://www.uam.es/siesta}.
 
 
+{\bf NOTE: See the description of changes in the logic of the SCF loop}
+
 {\sc Siesta}\index{Siesta@{\sc Siesta}} (Spanish Initiative for
 Electronic Simulations with
 Thousands of Atoms) is both a method and its computer program implementation,
@@ -1304,6 +1306,13 @@ specified in that block are zero for the first zeta.
 {\it Use:} It has to be positive.
 
 {\it Default value:} {\tt 0.02 Ry}
+
+\item[{\bf Write.Graphviz}] ({\it string}): %
+May be \emph{atom}, \emph{orbital} or \emph{atom+orbital} to write 
+out a Graphviz file which contains the sparsity pattern in the requested
+layout.
+
+{\it Default value:} {\tt none}
 
 \end{description}
 
@@ -3030,6 +3039,71 @@ It is done for the first spin component (up) and first k vector.
 \vspace{5pt}
 \subsection{The self-consistent-field loop}
 
+{\bf IMPORTANT NOTE: Convergence of the Kohn-Sham energy and forces}
+
+In previous versions of the program, the Kohn-Sham energy was computed
+using the ``in'' DM. The typical DM used as input for the calculation
+of H was not directly computed from a set of wave-functions (it was
+either the product of mixing or of the initialization from atomic
+values). In this case, the ``kinetic energy'' term in the total energy
+computed in the way stated in the Siesta paper had an error which
+decreased with the approach to self-consistency, but was non-zero. The
+net result was that the Kohn-Sham energy converged more slowly than
+the ``Harris'' energy (which is correctly computed).
+
+When mixing H (see below under ``Mixing Options''), the KS energy is
+in effect computed from DM(out), so this error vanishes.
+
+As a related issue, the forces and stress computed after SCF
+convergence were calculated using the DM coming out of the cycle,
+which by default was the product of a final mixing. This also
+introduced errors which grew with the degree of non-selfconsistency.
+
+The current version introduces several changes:
+
+\begin{itemize}
+\item When mixing the DM, the Kohn-Sham energy may be corrected to make it
+  variational. This involves an extra call to {\tt dhscf} (although
+  with neiter forces nor matrix elements being calculated, i.e. only
+  calls to {\tt rhoofd}, {\tt poison}, and {\tt cellxc}), and is
+  turned on by the option {\bf SCF.Want.Variational.EKS}.
+
+
+\item The program now prints a new column labeled ``dHmax'' for the
+  self-consistent cycle. The value represents the maximum absolute
+  value of the changes in the entries of H, but its actual meaning
+  depends on whether DM or H mixing is in effect: if mixing the DM,
+  dHmax refers to the change in H(in) with respect to the previous
+  step; if mixing H, dHmax refers to H(out)-H(in) in the previous(?)
+  step.
+
+\item When achieving convergence, the loop might be exited without a further
+  mixing of the DM, thus preserving DM(out) for further processing
+  (including the calculation of forces and the analysis of the
+  electronic structure) (see the {\bf MixAfterConvergence} option).
+
+\index{Variational character of E\_KS}
+
+\item It remains to be seen whether the forces, being computed
+  ``right'' on the basis of DM(out), exhibit somehow better convergence
+  as a function of the scf step. In order to gain some more data and
+  heuristics on this we have implemented a force-monitoring option,
+  activated by setting to {\tt .true.} the variable {\bf
+    MonitorForcesInSCF}. The program will then print the maximum
+  absolute value of the change in forces from one step to the
+  next. Other statistics could be implemented.
+
+\item While the (mixed) DM is saved at every SCF step, as was standard
+  practice, the final DM(out) overwrites the .DM file at the end of
+  the SCF cycle. Thus it is still possible to use a ``mixed'' DM for
+  restarting an interrupted loop, but a ``good'' DM will be used for
+  any other post-processing.
+
+\end{itemize}
+
+
+\subsubsection{Harris functional and basic options}
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -3043,7 +3117,8 @@ Logical variable to choose between self-consistent Kohn-Sham functional or
 \item {\tt .true.} : Non self consistent Harris functional. Cheap but
 pretty crude for some systems. The forces are computed within the
 Harris functional in the first SCF step. Only implemented for LDA in
-the Perdew-Zunger parametrization.
+the Perdew-Zunger parametrization. It really only applies to starting
+densities which are superpositions of atomic charge densities.
 
 When this option is choosen, the values of DM.UseSaveDM,
 MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set
@@ -3149,9 +3224,36 @@ turn this option on, or use the compatibility switch {\bf
   convergence and recomputation of H after the scf cycle will be
   turned on.
 
+\item[{\bf SCF.Mix}] ({\it string}):
+\index{SCF.Mix@{\bf SCF.Mix}}
+\index{SCF.Mix@{\bf SCF.Mix}|see{SCF.Mix!Variant}}
 
-\item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}
-\index{DM.MixingWeight@{\bf DM.MixingWeight}}\index{SCF!mixing!linear}
+Select the mixing method in the SCF cycle.
+
+The currently available mixing algorithms are:
+
+\begin{description}
+  \item[linear] Linear mixing
+
+  \item[Pulay] Pulay mixing
+
+  Comes in variants \fdf{original} or \fdf{stable}
+  \item[Broyden] Broyden mixing
+
+  Comes in variants \fdf{original} or \fdf{restart}
+
+\end{description}
+
+
+{\it Default value:} {\tt Pulay}
+
+
+\item[{\bf DM.MixingWeight}] ({\it real}):
+\index{DM.MixingWeight@{\bf DM.MixingWeight}}
+\index{SCF!mixing!linear}
+\index{DM.MixingWeight@{\bf DM.MixingWeight}|see{SCF.Mix.Weight}}
+\index{SCF.Mix.Weight@{\bf SCF.Mix.Weight}}
+
 Proportion $\alpha$ of
 output Density Matrix to be used for the input Density Matrix of
 next SCF cycle (linear mixing):
@@ -3160,9 +3262,21 @@ $\rho^{n+1}_{in} = \alpha \rho^{n}_{out}
 
 {\it Default value:} {\tt 0.25}
 
+Note that this parameter is also used in more sophisticated mixing 
+approaches (i.e. Pulay).
 
 Pulay mixing (also known as DIIS extrapolation) is the method of
 choice for accelerating the convergence of the scf cycle.
+
+\item[{\bf SCF.Mix.Weight}] ({\it real}):
+\index{SCF!mixing!linear}
+\index{DM.MixingWeight@{\bf DM.MixingWeight}|see{SCF.Mix.Weight}}
+\index{SCF.Mix.Weight@{\bf SCF.Mix.Weight}}
+
+The default mixing weight for all mixing methods.
+
+{\it Default value:} {\tt 0.25}
+
 
 \item[{\bf DM.NumberPulay}] ({\it integer}):\index{Pulay mixing}
 \index{DM.NumberPulay@{\bf DM.NumberPulay}}\index{SCF!mixing!Pulay}
@@ -3202,6 +3316,8 @@ performed.
 
 \item[{\bf SCF.Pulay.Damping}] ({\it real}):\index{SCF!mixing}
 \index{SCF.Pulay.Damping@{\bf SCF.Pulay.Damping}}\index{SCF!mixing!Pulay!damping}
+\index{SCF.Pulay.Damping@{\bf SCF.Pulay.Damping}|see{SCF.Mix.Pulay.Damping}}
+
 Proportion $\alpha_P$ of the predicted
 output Density Matrix to be used for the input Density Matrix of
 next SCF cycle in Pulay mixing (see above). Typically, this can be
@@ -3259,23 +3375,44 @@ This mixing is done every {\bf DM.NumberKick} cycles.
 
 {\it Default value:} {\tt 0.50}
 
-\item[{\bf DM.Pulay.Avoid.First.After.Kick}] ({\it
-  logical}):\index{SCF!mixing}
-  \index{DM.Pulay.Avoid.First.After.Kick@{\bf
-      DM.Pulay.Avoid.First.After.Kick}}\index{SCF!mixing} Controls
-  whether the first density-matrix residual of the SCF cycle and the
-  first residual after a kick are included in the Pulay history. It
-  can be argued that in these cases the ``output'' DM might be
-  significantly different from the ``input'' DM. To preserve backwards
-  compatibility, these residuals are kept in the Pulay history unless
-  this variable is activated.
+\item[{\bf DM.Pulay.Avoid.First.After.Kick}] ({\it logical}):
+\index{DM.Pulay.Avoid.First.After.Kick@{\bf DM.Pulay.Avoid.First.After.Kick}}
+\index{SCF!mixing} 
+
+Controls whether the first density-matrix residual of the SCF cycle and the first residual
+after a kick are included in the Pulay history. It can be argued that in these cases the
+``output'' DM might be significantly different from the ``input'' DM. To preserve
+backwards compatibility, these residuals are kept in the Pulay history unless this
+variable is activated.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf SCF.Pulay.LinearMixing.Before}] ({\it integer}):
+\index{SCF.Pulay.LinearMixing.Before@{\bf SCF.Pulay.LinearMixing.Before}}
+\index{SCF!mixing!Pulay} 
 
-\item[{\bf SCF.LinearMixingAfterPulay}] ({\it logical}):
-  \index{SCF.LinearMixingAfterPulay@{\bf
-      SCF.LinearMixingAfterPulay}}\index{SCF!mixing!Pulay} 
+Instead of instantly starting the Pulay mixing one can initiate several
+linear mix steps. This prohibits the initial steps in the Pulay history.
+
+This can be particularly useful when \emph{on-the-fly} switches between different solution
+methods.
+
+{\it Default value:} {\tt 0}
+
+\item[{\bf SCF.Pulay.MixingWeight.Before}] ({\it real}):
+\index{SCF.Pulay.MixingWeight.Before@{\bf SCF.Pulay.MixingWeight.Before}}
+\index{SCF!mixing!Pulay}
+
+Proportion $\alpha$ of output $X_{out}$ to be used for the input $X_{in}$ of next SCF
+cycle, for linear mixing steps after a Pulay mixing step if the option {\bf
+    SCF.LinearMixingAfterPulay} is activated.
+
+{\it Default value:} {\tt 0.01}
+
+\item[{\bf SCF.Pulay.LinearMixing.After}] ({\it logical}):
+\index{SCF.Pulay.LinearMixing.After@{\bf SCF.Pulay.LinearMixing.After}}
+\index{SCF.LinearMixingAfterPulay|see{SCF.Pulay.LinearMixing.After}}
+\index{SCF!mixing!Pulay} 
 
 The damping of the DIIS-predicted $X_{in}$ is done to avoid introducing
 linear dependencies into the Pulay history stack. Alternatively (or
@@ -3286,14 +3423,15 @@ the history information.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf SCF.MixingWeightAfterPulay}] ({\it real}):\index{SCF!mixing!Pulay}
-\index{SCF.MixingWeightAfterPulay@{\bf SCF.MixingWeightAfterPulay}}
+\item[{\bf SCF.Pulay.MixingWeight.After}] ({\it real}):
+\index{SCF.Pulay.MixingWeight.After@{\bf SCF.Pulay.MixingWeight.After}}
+\index{SCF.MixingWeightAfterPulay|see{SCF.Pulay.MixingWeight.After}}
 \index{SCF!mixing!Pulay}
 
 Proportion $\alpha$ of output Density Matrix to be used for the input
 Density Matrix of next SCF cycle, for linear mixing
 steps after a Pulay mixing step if the option {\bf
-  SCF.LinearMixingAfterPulay} is activated.
+  SCF.Pulay.LinearMixing.After} is activated.
 
 {\it Default value:} {\tt 0.50}
 
@@ -3307,8 +3445,8 @@ be used to perform the DIIS extrapolation.
 {\it Default value:} {\tt .false.}
 
 \item[{\bf SCF.Pulay.DebugSVD}] ({\it logical}):
-  \index{SCF.Pulay.DebugSVD@{\bf
-      SCF.Pulay.DebugSVD}}\index{SCF!mixing!Pulay!SVD} 
+\index{SCF.Pulay.DebugSVD@{\bf SCF.Pulay.DebugSVD}}
+\index{SCF!mixing!Pulay!SVD} 
 
 Print more information (effective rank, singular values) if the SVD algorithm
 isused to perform the DIIS extrapolation.
@@ -3546,28 +3684,42 @@ Default: {\tt .false.}
 
 \subsubsection{Initialization of the density-matrix}
 
+NOTE: The conditions and options for density-matrix re-use are quite
+varied and not completely orthogonal at this point. For further
+information, see routine {\tt Src/m\_new\_dm.F}. What follows is a
+summary.
+
 The Density matrix can be:
 
 \begin{verbatim}
     1. Synthesized directly from atomic occupations.
        (See the options below for spin considerations)
     2. Read from a .DM file (if the appropriate options are set)
-    3. Extrapolated from (two) previous geometry steps
-    3.a The DM of the previous geometry iteration
+    3. Extrapolated from previous geometry steps
+       (this includes as a special case the re-use of the DM 
+        of the previous geometry iteration)
 
-    In cases 2 and 3, a check is done to guarantee that the structure
-    of the read or extrapolated DM conforms to the current sparsity.
-    If it does not, the information is re-arranged.
+    In cases 2 and 3, the structure of the read or extrapolated DM
+    is automatically adjusted to the current sparsity pattern.
+
+    In what follows, "Initialization" of the DM means that the DM is
+    either read from file (if available) or synthesized from atomic
+    data. This is confusing, and better terminology should be used.
+
 
     Special cases:
+
            Harris functional: The matrix is always initialized
+
            Force calculation: The DM should be written to disk
                               at the time of the "no displacement"
                               calculation and read from file at
                               every subsequent step.
+
            Variable-cell calculation:
+   
              If the auxiliary cell changes, the DM is forced to be
-             initialized (conceivably one could rescue some important
+             synthesized (conceivably one could rescue some important
              information from an old DM, but it is too much trouble
              for now). NOTE that this is a change in policy with respect
              to previous versions of the program, in which a (blind?)
@@ -3578,9 +3730,6 @@ The Density matrix can be:
              In all other cases (including "server operation"), the
              default is to allow DM re-use (with possible extrapolation)
              from previous geometry steps.
-
-             There is no re-use of the DM for "Forces", and "Phonon"
-             dynamics types (i.e., the DM is re-initialized)
 
              For "CG" calculations, the default is not to extrapolate the
              DM (unless requested by setting 'DM.AllowExtrapolation' to
@@ -3701,15 +3850,26 @@ iterations is re-used to start the new geometry's SCF cycle.
 
 {\it Default value:} {\tt .true.}
 
+
 \item[{\bf DM.AllowExtrapolation}] ({\it logical}):
-\index{DM.AllowExtrapolation@{\bf DM.AllowExtrapolation}}
-Controls whether density matrix information from two previous geometry
-iterations is (linearly) extrapolated to start the new geometry's SCF cycle.
+  \index{DM.AllowExtrapolation@{\bf DM.AllowExtrapolation}} Controls
+  whether the density matrix information from several previous
+  geometry iterations is extrapolated to start the new geometry's SCF
+  cycle.  This feature is useful for molecular dynamics simulations
+  and possibly also for geometry relaxations.  The number of geometry
+  steps saved is controlled by the variable {\bf DM.History.Depth}
 
-{\it Default value:} {\tt .true.}
+{\it Default values:} {\tt .true.} for molecular-dynamics simulations,
+but {\tt .false.} for now for geometry-relaxations (pending further
+tests which users are kindly requested to perform).
 
-Further information regarding the density-matrix re-use can be found
-in the header of routine {\tt Src/new\_dm.F}.
+
+\item[{\bf DM.History.Depth}] ({\it integer}):
+\index{DM.History.Depth@{\bf DM.Hitory.Depth}}
+Sets the number of geometry steps for which density-matrix information
+is saved for extrapolation.
+
+{\it Default value:} 4
 
 \end{description}
 
@@ -3761,7 +3921,10 @@ at every scf step can have a severe impact on performance.
 \begin{description}
 \item[{\bf WriteDM}] ({\it logical}): \index{WriteDM@{\bf WriteDM}}
 \index{output!density matrix} It determines whether the density matrix
-is output as a binary {\it Systemlabel}.DM file or not.
+is output as a binary {\it Systemlabel}.DM file or not. During the
+self-consistent-field cycle, the DM file is written after mixing the
+input and output density matrices. After the cycle finishes, the file
+is overwritten with the last output DM computed. 
 
 
 {\it Default value:} {\tt .true.}
@@ -3812,7 +3975,19 @@ cycle.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf Write.TSHS.History}] ({\it logical}): 
+ \index{Write.TSHS.History@{\bf Write.TSHS.History}}%
+ \index{output!Hamiltonian history}%
+ \index{output!overlap matrix history}%
+If true, a series of TSHS files with names of the form {\tt
+SystemLabel.N.TSHS} is created to hold the complete history of the Hamiltonian and overlap
+matrix. Each file corresponds to a geometry step. The overlap matrix is stored only once
+per SCF cycle. This option only works with {\sc transiesta}.
+
+{\it Default value:} {\tt .false.}
+
 \end{description}
+
 \subsubsection{Convergence criteria}
 \index{SCF convergence criteria}
 
@@ -3881,6 +4056,29 @@ This is useful if only energies are needed, as the Harris energy tends
 to converge faster than the Kohn-Sham energy.
 
 {\it Default value:} {${\tt 10^{-4}}$ eV}
+
+\item[{\bf SCF.Require.Hamiltonian.Convergence}] ({\it logical}):
+  \index{SCF!mixing!Hamiltonian convergence}
+  \index{DM.Require.Hamiltonian.Convergence@{\bf
+      DM.Require.Hamiltonian.Convergence}} Logical variable to use the
+  Hamiltonian matrix elements as monitor of self-consistency: this is
+  considered achieved when the maximum absolute change (dHmax) in the
+  H matrix elements is below {\bf SCF.H.Tolerance}.  The actual
+  meaning of dHmax depends on whether DM or H mixing is in effect: if
+  mixing the DM, dHmax refers to the change in H(in) with respect to
+  the previous step; if mixing H, dHmax refers to H(out)-H(in) in the
+  previous(?) step. No density matrix change criterion is used.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf SCF.H.Tolerance}] ({\it real energy}):
+  \index{SCF.H.Tolerance@{\bf SCF.H.Tolerance}} If {\bf
+    SCF.Require.Hamiltonian.Convergence} is {\tt .true.}, then
+  self-consistency is achieved when the maximum absolute change in the
+  H matrix elements is below this value.
+
+{\it Default value:} {\tt 0.1 mRy}
 
 \end{description}
 
@@ -4908,13 +5106,13 @@ to the SystemLabel.bands file (see below for the format).
 
 \item[{\bf BandLinesScale}] ({\it string}):
 \index{BandLinesScale@{\bf BandLinesScale}}
-Specifies the scale of the k vectors given in {\bf BandLines}
+Specifies the scale of the $k$ vectors given in {\bf BandLines}
 and {\bf BandPoints} below.
 The options are:
 \begin{itemize}
 \item {\tt pi/a} (k-vector coordinates are given in Cartesian
 coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
-\item {\tt ReciprocalLatticeVectors} (k vectors are given in
+\item {\tt ReciprocalLatticeVectors} ($k$ vectors are given in
 reciprocal-lattice-vector coordinates)
 \end{itemize}
 
@@ -4941,7 +5139,7 @@ An example for an FCC lattice is:
      %endblock BandLines
 \end{verbatim}
 
-where the last column is an optional LaTeX label for use in the band plot.
+where the last column is an optional \LaTeX\ label for use in the band plot.
 If only given points (not lines) are required, simply specify 1 in the
 first column of each line. The first column of the first line must be
 always 1.
@@ -5101,13 +5299,13 @@ iteration of the SCF loop will be written to a NetCDF file
 
 \item[{\bf WaveFuncKPointsScale}] ({\it string}):
 \index{WaveFuncKPointsScale@{\bf WaveFuncKPointsScale}}
-Specifies the scale of the k vectors given in
+Specifies the scale of the $k$ vectors given in
 {\bf WaveFuncKPoints} below.
 The options are:
 \begin{itemize}
 \item {\tt pi/a} (k-vector coordinates are given in Cartesian
 coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
-\item {\tt ReciprocalLatticeVectors} (k vectors are given in
+\item {\tt ReciprocalLatticeVectors} ($k$ vectors are given in
 reciprocal-lattice-vector coordinates)
 \end{itemize}
 
@@ -5137,7 +5335,7 @@ energy (with units) as extra argument -- see
 section~\ref{sec:coop}). Care should be taken to make sure that the
 actual values of the options make sense.
 
-The output of the wavefunctions in described in Section \ref{subsec:wf}
+The output of the wavefunctions in described in Section \ref{sec:wf-output-user}
 
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
 These k points are unrelated and compatible with any k-grid used
@@ -6064,8 +6262,7 @@ NOTE: If the program is fed a starting density matrix from an
 uncorrected calculation (i.e., with an exagerated dipole), the first
 iteration might use a compensating field that is too big, with the
 risk of taking the system out of the convergence basin. In that case,
-it is advisable to use the {\tt DM.MixSCF1}\index{DM.MixSCF1@{\bf
-    DM.MixSCF1}}\index{Slab dipole correction} option to request a mix of the
+it is advisable to use the {\tt DM.MixSCF1}\index{DM.MixSCF1@{\bf DM.MixSCF1}}\index{Slab dipole correction} option to request a mix of the
 input and output density matrices after that first iteration.
 
 (See {\tt Tests/sic-slab})
@@ -7778,6 +7975,24 @@ accomplished:
 
 The above implementations were done by Nick P. Andersen.
 
+\textsc{TranSiesta} has been in the Fall of 2013 been restructured to 
+a new solution method. A heavily reduced memory scheme has been introduced 
+which only requires the memory of the updated density matrix regions. This
+generally means a reduced memory footprint on the order of 50\% or less compared
+to the original implementation (per processor). Roughly the same speed should 
+be expected.
+All arrays are now distinguished between $\Gamma$-point calculations or $k$-point
+calculations, meaning that more arrays are now existing in both a real and 
+complex version.
+
+This has lead to a complete restructure of \textsc{TranSiesta} which also makes
+it somewhat obfuscated for newcomers to the code. However, the same sequence
+of operations is retained. To get to know the code please read the original
+and this version side-by-side for faster recognition.
+
+The above memory reduced \textsc{TranSiesta} version has been fully implemented
+by Nick P. Andersen.
+
 
 \subsection{Source code structure}
 
@@ -8035,11 +8250,11 @@ are needed:
   This, however, requires an equal replication of the k-grid in the 
   electrode in the A1 direction. A small example.
 
-  Consider a full {\sc TranSiesta} structure with metallic stacking:
+  Consider a full {\sc TranSiesta} structure with stacking:
   \begin{center}
-    ABABAB-D-BABAB
+    ABABAB-D-BABAB,
   \end{center}
-  , where D is the device region. Each layer is 3x3 atoms. The unit
+  where D is the device region. Each layer is 3x3 atoms. The unit
   cell is $9. \times 9.$ Angstroms in the layers perpendicular to the
   transport direction (for the sake of simplicity). Only the
   $\Gamma$-point is used. 
@@ -8103,14 +8318,32 @@ calculations, only the usual {\sc Siesta} options are relevant.
 \subsubsection{General options}
 
 \begin{description}
-    \itemsep 10pt
-    \parsep 0pt
+  \itemsep 10pt
+  \parsep 0pt
+  
+  \item[{\bf SolutionMethod}] ({\it string}):
+  \index{SolutionMethod@{\bf SolutionMethod}} Must be set to {\tt
+      transiesta} in order to perform a {\sc TranSiesta} calculation
+  
+  {\it Default value:} {\tt diagon}
 
-    \item[{\bf SolutionMethod}] ({\it string}):
-      \index{SolutionMethod@{\bf SolutionMethod}} Must be set to {\tt
-        transiesta} in order to perform a {\sc TranSiesta} calculation
+  \item[{\bf TS.SolutionMethod}] ({\it string}):
+  \index{TS.SolutionMethod@{\bf TS.SolutionMethod}} Can be set to \texttt{sparse}
+  in order to utilize the memory reduced \textsc{TranSiesta} calculation.
+  The \texttt{sparse} method is strictly the same, however, many optimizations and
+  changes have been added. The main benefit is that it requires, roughly, half the
+  memory as the original method. Hence, small numerical deviations are to be expected.
+  Furthermore, this has required a full re-write of \textsc{TranSiesta} so it should
+  be considered highly experimental and needs thorough testing.
+  
+  {\it Default value:} {\tt tri}
 
-        {\it Default value:} {\tt diagon}
+  \item[\textbf{TS.TransportDirection}] (\emph{integer}):
+  \index{TS.TransportDirection@{\textbf{TS.TransportDirection}}}
+      Can be either $1$, $2$ or $3$ to choose the transport direction.
+      These are regarded as the cell-vectors that make up the unitcell.
+      
+      \emph{Default value:} \texttt{1}
 
 \item[{\bf TS.SaveHS}] ({\it logical}): \index{TS.SaveHS@{\bf
     TS.SaveHS}} Save the Hamiltonian in the file with extension .TSHS.
@@ -8153,13 +8386,13 @@ calculations, only the usual {\sc Siesta} options are relevant.
 The generated surface Green's functions of the electrodes depend on the atomic structure,
 but also on the energy points of the contour (that will depend on the voltage). 
 It is possible to use previously generated .GF files, but care must be taken.
-Per default it will try to re-use the GF files present. A check against the parameters
+Per default it will not try to re-use the GF files present. A check against the parameters
 ensures that they are equivalent (however, the atomic coordinates of the electrodes will
 not be checked). By setting to {\tt false} the Green's function files
 will be re-created no matter the existence of GF files.
-This will save computing time. 
+This will save computing time if set to {\tt true}. 
 
-{\it Default value:} {\tt true}
+{\it Default value:} {\tt false}
 
 \item[{\bf TS.TriDiag}] ({\it logical}): \index{TS.TriDiag@{\bf
     TS.TriDiag}} If represented in terms of the left electrode, the
@@ -8252,8 +8485,8 @@ Number of atoms starting from the last atom to neglect in the
 
 {\it Default value:} {\tt 0} 
 
-\item [{\bf TS.CalcElectrodeValenceBandBottom}]({\it logical}): 
-\index{TS.CalcElectrodeValenceBandBottom@{\bf TS.CalcElectrodeValenceBandBottom}}
+\item [{\bf TS.Elec.Calc.BandBottom}]({\it logical}): 
+\index{TS.Elec.Calc.BandBottom@{\bf TS.Elec.Calc.BandBottom}}
 If true will calculate the valence band bottom of the electrode.
 This can be used to check for the contour points.
 
@@ -8280,15 +8513,15 @@ Available methods:
 
 {\it Default value:} {\tt 'none'}
 
-\item [{\bf TS.ChargeCorrectionFactor}] ({\it value}):
-\index{TS.ChargeCorrectionFactor@{\bf TS.ChargeCorrectionFactor}}
+\item [{\bf TS.ChargeCorrection.Factor}] ({\it value}):
+\index{TS.ChargeCorrection.Factor@{\bf TS.ChargeCorrection.Factor}}
 The factor for correcting the missing charges. Must be in the range
 $[0.0;1.0]$. This option only has meaning if {\bf TS.ChargeCorrection}
 is not 'none'.
 
 \paragraph{Example:} After an SCF cycle, {\sc TranSiesta} is missing
 $0.4$ electrons. The correction performed will add $0.4 \times \bf
-TS.ChargeCorrectionFactor$ to the system for compensation. 
+TS.ChargeCorrection.Factor$ to the system for compensation. 
 This factor can be used to control the fluctuations.
 
 {\it Default value:} $0.75$
@@ -8369,7 +8602,7 @@ This factor can be used to control the fluctuations.
 \subsection{  Matching   {\sc TranSiesta} coordinates: basic rules}
 Having discussed the possible input options of {\sc TranSiesta} here
 we just list a set of rules to construct the appropriate coordinates
-of the scattering region. The unitcell most only have one component for 
+of the scattering region. The unitcell must only have one component for 
 the transport direction vector ($z$-direction). The order of atoms be 
 such that:
 \begin{itemize}
@@ -8393,7 +8626,7 @@ course, be zero.
 The order shown here must also correspond to increasing values of the
 {\tt z} coordinates of the atoms, in the sense that the left buffer
 atoms must all have smaller {\tt z} components than the left electrode
-atoms, and so on. But, within each {\it ``block''}(buffer atoms, or
+atoms, and so on. But, within each {\it ``block''} (buffer atoms, or
 electrode atoms, etc \ldots), the coordinates do not have to be
 ordered in any special way (except when using for the electrodes a
 number smaller than what was used in the electrode's unit cell).
@@ -9128,6 +9361,14 @@ the bottleneck and the place where efficiency is most readily
 lost. This is basically just the nature of diagonalisation, but it is
 always worth tuning the BlockSize parameter.
 
+If using a legacy MPI version and compilation crashes a possible work 
+around is to add:
+\begin{verbatim}
+DEFS_MPI += -DMPI_OLD
+\end{verbatim}
+which uses some more common MPI routines. However, updating your MPI
+version would be a good investment.
+
 \newpage
 \section{APPENDIX: File Formats}
 
@@ -9395,7 +9636,8 @@ precision selection
 \index{Reference counting}
 \index{Data Structures}
 
-To implement some of the new features (e.g. charge mixing), {\sc
+To implement some of the new features (e.g. charge mixing
+and DM extrapolation), {\sc
   SIESTA} uses new flexible data structures. These are defined and
 handled through a combination and extension of ideas already in the
 Fortran community:

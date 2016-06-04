@@ -10,18 +10,21 @@
       public :: final_H_f_stress
       CONTAINS
 
-      subroutine final_H_f_stress( iscf )
-
-      USE siesta_options, only: g2cut, savehs, temp
-      USE siesta_options, only: recompute_H_after_scf
+      subroutine final_H_f_stress( istep, iscf , SCFconverged )
+#ifdef NCDF_4
+      use siesta_options, only: write_cdf
+#endif
+      use siesta_options, only: g2cut, savehs, temp
+      use siesta_options, only: recompute_H_after_scf
       use sparse_matrices, only: numh, listh, listhptr
-      use sparse_matrices, only: S, Dscf, Escf, maxnh, xijo
-      use sparse_matrices, only: H, H_ldau
+      use sparse_matrices, only: H, S, Dscf, Escf, maxnh, xijo
+      use sparse_matrices, only: H_ldau_2D
+      use class_dSpData2D, only: val
 
       use siesta_geom
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
      &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
-     &                    rmaxo, no_l
+     &                    rmaxo, no_l, iza
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
       use m_nlefsm,     only: nlefsm
@@ -53,56 +56,68 @@
       use m_mpi_utils, only: globalize_sum
 #endif
       use parallel, only: IOnode
+#ifdef CDF
+#ifdef NCDF_4
+      use dictionary
+      use m_ncdf_siesta
+#endif
+#endif
 #ifdef TRANSIESTA
-! TSS Begin
+      use siesta_options, only : idyn, ia1, write_tshs_history
+      use sparse_matrices, only: H_2D, S_1D
       use files,        only : slabel, label_length
-      use siesta_options, only : idyn, ia1
-      use m_ts_global_vars, only : ts_istep
-      use m_ts_options, only : savetshs
-      use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
-      use m_ts_io,      only : ts_iohs
-! TSS End
+      use m_ts_global_vars, only : TSrun
+      use m_ts_options, only : TS_HS_save
+      use m_ts_kpoints, only : ts_Gamma, ts_kscell, ts_kdispl
+      use m_ts_io,      only : ts_write_TSHS,fname_TSHS, FC_index
 #endif /* TRANSIESTA */
       implicit none
 
-      integer,   intent(in) :: iscf
+      ! MD-step, SCF-step
+      integer,   intent(in) :: istep, iscf
+      logical,   intent(in) :: SCFconverged
       real(dp)              :: stressl(3,3)
       real(dp), pointer     :: fal(:,:)   ! Local-node part of atomic F
-      integer               :: io, is
       integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
       ! To avoid overwriting the current Hamiltonian
-      real(dp), pointer     :: H_tmp(:,:) => null()  
+      real(dp), pointer     :: H_tmp(:,:) => null()
+      real(dp), pointer     :: H_ldau(:,:)
+
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
       real(dp)              :: buffer1
 #endif
 #ifdef TRANSIESTA
-!     TSS Begin
       character(len=label_length+13) :: fname
-      character(8)                   :: numstring
-      character(8)                   :: iotask
-!     SIESTA External
-      character(len=label_length+5)  :: PASTE
-!     TSS End
-#endif /* TRANSIESTA */
-!--------------------------------------------------------------------- BEGIN
+      integer :: io_istep, io_ia1
+#endif
+#ifdef CDF
+#ifdef NCDF_4
+      type(dict) :: dic_save
+#endif
+#endif
+!------------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
       call re_alloc(H_tmp, 1,maxnh, 1, h_spin_dim,
-     $                       'H_tmp','final_H_f_stress')
+     $             'H_tmp','final_H_f_stress')
+!$OMP parallel workshare default(shared)
       H_tmp = 0.0_dp
+!$OMP end parallel workshare
 
 !     Initialize forces and stress ...................
       nullify(fal)
       call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'final_H_f_stress' )
 
+!$OMP parallel workshare default(shared)
       fa(1:3,1:na_u)   = 0.0_dp
       fal(1:3,1:na_u)  = 0.0_dp
       stress(1:3,1:3)  = 0.0_dp
       stressl(1:3,1:3) = 0.0_dp  ! fal already initialized
+!$OMP end parallel workshare
 
 ! Neutral-atom: energy, forces and stress ............................
       call naefs( na_u, na_s, scell, xa, indxua, rmaxv,
@@ -159,6 +174,7 @@
 
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
+         H_ldau => val(H_ldau_2D)
          call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
      .        maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .        numh, listhptr, listh, numh, listhptr, listh,
@@ -217,12 +233,16 @@
       call re_alloc( fatmp, 1, 3, 1, na_u, 'fatmp', 'final_H_f_stress' )
       call globalize_sum(stressl(1:3,1:3),stresstmp(1:3,1:3))
       call globalize_sum( fal(1:3,1:na_u), fatmp(1:3,1:na_u) )
+!$OMP parallel workshare default(shared)
       stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
+!$OMP end parallel workshare
       call de_alloc( fatmp, 'fatmp', 'final_H_f_stress' )
 #else
+!$OMP parallel workshare default(shared)
       stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
+!$OMP end parallel workshare
 #endif
 
       ! If backward compatibility is requested, recover
@@ -239,6 +259,10 @@
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
       call de_alloc( H_tmp, 'H_tmp', 'final_H_f_stress' )
 
+      ! Determine whether anything should be saved
+      ! If not, return immediately
+      if ( .not. SCFconverged ) return
+
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
 !
@@ -247,34 +271,63 @@
 ! This call could be moved to a more appropriate place
 !
       if (savehs) then
-         call write_hsx( gamma, no_u, no_s, h_spin_dim, indxuo,
-     &        maxnh, numh, listhptr, listh, H, S, qtot,
-     &        temp, xijo)
+         call write_hsx( gamma, no_u, no_s, nspin, indxuo,
+     &        maxnh, numh, listhptr, listh, H, S, Qtot,
+     &        Temp, xijo)
       endif
+#ifdef CDF
+#ifdef NCDF_4
+      if ( write_cdf ) then
+         dic_save = ('fa'.kv.1)//('stress'.kv.1)
+         if ( savehs ) dic_save = dic_save //('H'.kv.1)
 #ifdef TRANSIESTA
-! TSS Begin
-      if (savetshs) then
-         if (idyn.eq.6) then ! Force constants run
-            write(numstring,'(2i4)') ia1, ts_istep
-            fname = paste( slabel, numstring )
-            fname = paste( fname, '.TSHS' )
-            iotask='write'
-            call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
-     &                    qtot, temp, xijo, label_length+5, fname, na_u,
-     &                    lasto, isa, ef, ucell, ts_kscell, ts_kdispl,
-     &                    ts_gamma_scf, xa, ts_istep, ia1)
+         if ( TS_HS_save ) dic_save = dic_save //('H'.kv.1)
+#endif
+         call cdf_save_state('SIESTA.nc',dic_save)
+         call delete(dic_save)
+      end if
+#endif
+#endif
+#ifdef TRANSIESTA
+      if ( write_tshs_history ) then
+         ! This is "pure" MD and we only write consecutive numbers
+         ! Together with this you cannot also save FC
+         fname = fname_TSHS(slabel, istep = istep )
+         call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
+     &        ucell, nsc, isc_off, na_u, no_s, nspin, 
+     &        ts_kscell, ts_kdispl, 
+     &        xa, lasto, 
+     &        H_2D, S_1D, indxuo,
+     &        Ef, Qtot, Temp, istep, 0)
+      else if ( TS_HS_save ) then
+         if ( idyn == 6 ) then
+            ! Correct the FC indices such that 
+            ! the TSHS format contains, atom displaced, index of 
+            ! displacement:
+            !  1 = -x
+            !  2 = +x
+            !  3 = -y
+            !  4 = +y
+            !  5 = -z
+            !  6 = +z
+            call FC_index(istep,ia1,io_istep,io_ia1)
+            fname = fname_TSHS(slabel,istep = io_istep, ia1 = io_ia1)
+            call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
+     &           ucell, nsc, isc_off, na_u, no_s, nspin, 
+     &           ts_kscell, ts_kdispl, 
+     &           xa, lasto, 
+     &           H_2D, S_1D, indxuo,
+     &           Ef, Qtot, Temp, io_istep, io_ia1)
          else
-            fname  = paste( slabel, '.TSHS' )
-            iotask ='write'
-            call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
-     &                    qtot, temp, xijo, label_length+5, fname, na_u,
-     &                    lasto, isa, ef, ucell,ts_kscell, ts_kdispl,
-     &                    ts_gamma_scf, xa, 0, 0 )
-         endif
+            fname = fname_TSHS(slabel)
+            call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
+     &           ucell, nsc, isc_off, na_u, no_s, nspin,
+     &           ts_kscell, ts_kdispl, 
+     &           xa, lasto,
+     &           H_2D, S_1D, indxuo,
+     &           Ef, Qtot, Temp, 0, 0)
+         end if
       endif
-! TSS End
 #endif /* TRANSIESTA */
 !----------------------------------------------------------------------- END
       END subroutine final_H_f_stress
