@@ -41,10 +41,10 @@ module m_mixing
   integer, parameter :: MIX_BROYDEN = 3
   integer, parameter :: MIX_FIRE = 4
 
-  ! Action tokens
-  integer, parameter :: ACTION_MIX = 1
-  integer, parameter :: ACTION_RESTART = 2
-  integer, parameter :: ACTION_NEXT = 3
+  ! Action tokens (binary, 0,1,2,4,8,...!)
+  integer, parameter :: ACTION_MIX = 0
+  integer, parameter :: ACTION_RESTART = 1
+  integer, parameter :: ACTION_NEXT = 2
 
   type tMixer
 
@@ -376,13 +376,15 @@ contains
           m%n_itt = 1
           m%m = MIX_LINEAR
           m%w = w_kick
+          m%next => mixers(im2)
           
           call read_block(m, .false.)
-          m%next => mixers(im2)
           
           ! set the default mixer to kick
           mixers(im2)%n_itt = n_kick
           mixers(im2)%next => m
+          mixers(im2)%restart = n_kick
+          mixers(im2)%restart_save = 0
           
        end if
 
@@ -754,7 +756,7 @@ contains
     ! before entering
     if ( mix%n_itt > 0 .and. &
          mix%n_itt <= mix%cur_itt ) then
-       mix%action = ACTION_NEXT
+       mix%action = IOR(mix%action, ACTION_NEXT)
     end if
 
     
@@ -793,13 +795,9 @@ contains
        
     end select
 
-    ! check whether we should change the mixer
-    if ( mix%action == ACTION_NEXT ) then
-
-       call mixing_step( mix )
+    ! First check whether we should restart history
+    if ( IAND(mix%action, ACTION_RESTART) == ACTION_RESTART ) then
        
-    else if ( mix%action == ACTION_RESTART ) then
-
        ! The user has requested to restart the
        ! mixing scheme now
        rsave = mix%restart_save
@@ -835,6 +833,13 @@ contains
             write(*,'(a,a,i0)') trim(debug_msg), &
             ' saved hist = ',n_items(mix%stack(1))
 
+    end if
+    
+    ! check whether we should change the mixer
+    if ( IAND(mix%action, ACTION_NEXT) == ACTION_NEXT ) then
+
+       call mixing_step( mix )
+       
     end if
 
   end subroutine mixing_1d
@@ -996,7 +1001,8 @@ contains
        if ( mix%m == MIX_BROYDEN ) init_itt = 1
        mix%cur_itt = init_itt
        if ( IONode ) then
-          write(*,'(2a)') trim(debug_msg),' switching mixer...'
+          write(*,'(3a)') trim(debug_msg),' switching mixer --> ', &
+               trim(mix%name)
        end if
     end if
 
@@ -1172,8 +1178,7 @@ contains
 
           if ( G < mix%rv(I_P_NEXT) ) then
              ! Signal stepping mixer
-             mix%action = ACTION_NEXT
-             p_restart = .false.
+             mix%action = IOR(mix%action, ACTION_NEXT)
           end if
           
           if ( debug_mix .and. mix%cur_itt > 1 ) &
@@ -1187,7 +1192,7 @@ contains
 
           if ( G < mix%rv(I_P_RESTART) ) then
              ! Signal restart
-             mix%action = ACTION_RESTART
+             mix%action = IOR(mix%action, ACTION_RESTART)
           end if
 
           if ( debug_mix .and. mix%cur_itt > 1 ) &
@@ -1368,14 +1373,10 @@ contains
        
     end select
 
-    ! If the action is next, we do not
-    ! allow restart
-    if ( mix%action == ACTION_NEXT ) return
-
     if ( mix%restart > 0 .and. &
          mod(mix%cur_itt,mix%restart) == 0 ) then
 
-       mix%action = ACTION_RESTART
+       mix%action = IOR(mix%action, ACTION_RESTART)
 
     end if
 
@@ -1573,8 +1574,7 @@ contains
           
           if ( rtmp < mix%rv(I_P_NEXT) ) then
              ! Signal stepping mixer
-             mix%action = ACTION_NEXT
-             p_restart = .false.
+             mix%action = IOR(mix%action, ACTION_NEXT)
           end if
           
           if ( debug_mix .and. mix%cur_itt > 1 ) &
@@ -1588,7 +1588,7 @@ contains
 
           if ( rtmp < mix%rv(I_P_RESTART) ) then
              ! Signal restart
-             mix%action = ACTION_RESTART
+             mix%action = IOR(mix%action, ACTION_RESTART)
           end if
 
           if ( debug_mix .and. mix%cur_itt > 1 ) &
@@ -1888,14 +1888,10 @@ contains
     call push(mix%stack(2), b1D)
     call delete(b1D)
 
-    ! If the action is next, we do not
-    ! allow restart
-    if ( mix%action == ACTION_NEXT ) return
-
     if ( mix%restart > 0 .and. &
          mod(mix%cur_itt,mix%restart) == 0 ) then
           
-       mix%action = ACTION_RESTART
+       mix%action = IOR(mix%action, ACTION_RESTART)
 
     end if
 

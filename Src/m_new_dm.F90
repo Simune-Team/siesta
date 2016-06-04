@@ -68,7 +68,7 @@
       use sparse_matrices,  only: sparse_pattern, block_dist
       use atomlist,         only: datm, iaorb, lasto, no_u, no_l
       use m_steps,          only: istp
-      use m_spin,   only: nspin
+      use m_spin,   only: nspin, h_spin_dim, e_spin_dim
       use m_handle_sparse, only : bulk_expand
 
       use class_dSpData2D
@@ -80,7 +80,7 @@
       use units, only : eV
       use m_ts_global_vars,only: TSrun
       use m_ts_electype, only : copy_DM
-      use m_ts_options, only : Ts_analyze
+      use m_ts_options, only : TS_analyze
       use m_ts_options, only : N_Elec, Elecs, DM_bulk
       use m_ts_method
       use m_energies, only: Ef
@@ -177,7 +177,7 @@
 
          call initdm(Datm, DMnew, EDMnew, sparse_pattern, block_dist, &
                      lasto, no_u, &
-                     no_l, nspin, na_u, &
+                     no_l, h_spin_dim, na_u, &
                      iaorb, inspn, &
                      try_to_read_from_file, init_method)
 
@@ -326,9 +326,9 @@
 !====================================================================
 
       subroutine initdm(Datm, DMnew, EDMnew, sparse_pattern, block_dist, &
-                        lasto, no_u,                              &
-                        no_l, nspin, na_u,     &
-                        iaorb, inspn,                              &
+                        lasto, no_u, &
+                        no_l, h_spin_dim, na_u, &
+                        iaorb, inspn, &
                         try_dm_from_file, init_method)
 
 ! Density matrix initialization
@@ -346,7 +346,7 @@
 ! integer na_u           : Number of atoms in the unit cell
 ! integer no_l           : Number of orbitals in the unit cell (local)
 ! integer no_u           : Number of orbitals in the unit cell (global)
-! integer nspin         : Number of spin components
+! integer h_spin_dim     : Number of spin components
 ! integer lasto(0:na_u) : List with last orbital of each atom
 ! integer iaorb(no_u)   : List saying to what atom an orbital belongs
 ! double Datm(no_u)       : Occupations of basis orbitals in free atom
@@ -379,7 +379,7 @@
       implicit          none
 
       logical           DM_found, inspn, try_dm_from_file
-      integer           no_l, na_u, no_u, nspin
+      integer           no_l, na_u, no_u, h_spin_dim
       integer           lasto(0:na_u), iaorb(no_u)
       real(dp)          Datm(no_u)
 
@@ -394,7 +394,7 @@
 
       ! Enables the user to re-use a specific old DM every time
       character(len=250) :: old_DM
-      integer :: nspin_read, i
+      integer :: h_spin_dim_read, i
       real(dp), pointer              :: Dscf(:,:)
       integer, pointer, dimension(:) :: numh, listhptr, listh
       type(dSpData2D)                :: DMread
@@ -422,7 +422,7 @@
          call timer('IO-R-TS-DE',1)
          do i = 1 , 100
 #endif
-         call read_ts_dm(trim(old_DM),nspin,block_dist,no_u, &
+         call read_ts_dm(trim(old_DM),h_spin_dim,block_dist,no_u, &
               DMread, EDMread, Ef, TSDE_found )
 #ifdef TIMING_IO
          end do
@@ -459,7 +459,7 @@
             old_DM = trim(slabel)//'.DM'
          end if
 
-         call read_dm(trim(old_DM),nspin,block_dist,no_u, &
+         call read_dm(trim(old_DM),h_spin_dim,block_dist,no_u, &
               DMread, DM_found )
 #ifdef TIMING_IO
          end do
@@ -483,11 +483,11 @@
       if ( DM_found ) then
         ! Various degrees of sanity checks
 
-        nspin_read = size(val(DMread),dim=2)
-        if (nspin_read /= Nspin) then
+        h_spin_dim_read = size(val(DMread),dim=2)
+        if ( h_spin_dim_read /= h_spin_dim) then
            if (IOnode) then
               write(6,"(a,i0,/,a)")                   &
-              "WARNING: Wrong nspin in DM file: ",  nspin_read,  &
+              "WARNING: Wrong nspin in DM file: ", h_spin_dim_read,  &
               "WARNING: Falling back to atomic initialization of DM."
            endif
            DM_found = .false.
@@ -520,7 +520,7 @@
          
       else
          
-         call newdData2D(DM_a2D,nnzs(sparse_pattern),nspin,"(DMatomic)")
+         call newdData2D(DM_a2D,nnzs(sparse_pattern),h_spin_dim,"(DMatomic)")
          Dscf     => val(DM_a2d)
          numh     => n_col(sparse_pattern)
          listhptr => list_ptr(sparse_pattern)
@@ -528,7 +528,7 @@
 
          call fill_dscf_from_atom_info(Datm, Dscf, &
               numh, listhptr, listh, lasto, &
-              no_u, na_u, no_l, nspin, &
+              no_u, na_u, no_l, h_spin_dim, &
               iaorb, inspn)
 
          call newdSpData2D(sparse_pattern,dm_a2d,block_dist,DMnew,  &
@@ -602,7 +602,7 @@
 !======================================================================
     subroutine fill_dscf_from_atom_info(Datm, Dscf,              &
          numh, listhptr, listh, lasto,        &
-         no_u,  na_u, no_l, nspin,     &
+         no_u,  na_u, no_l, h_spin_dim,     &
          iaorb, inspn)
 
 
@@ -631,7 +631,7 @@
 !                         false: Ferro ordering  (fdf DM.InitSpinAF)
 ! integer na_u           : Number of atoms in the unit cell
 ! integer no_l           : Number of orbitals in the unit cell
-! integer nspin         : Number of spin components
+! integer h_spin_dim    : Number of spin components
 ! integer no_u          : Max. number of orbitals (globally)
 ! integer lasto(0:maxa) : List with last orbital of each atom
 ! integer iaorb(no_u)   : List saying to what atom an orbital belongs
@@ -659,7 +659,7 @@
       implicit          none
 
       logical, intent(in)       :: inspn
-      integer, intent(in)       :: no_l, na_u, nspin, no_u
+      integer, intent(in)       :: no_l, na_u, h_spin_dim, no_u
       integer, intent(in)       :: lasto(0:na_u), iaorb(no_u)
       real(dp), intent(in)      :: Datm(no_u)
       integer, intent(in), dimension(:) :: numh, listhptr, listh
@@ -709,11 +709,11 @@
         noncol = .false.
         peratm = fdf_block('DM.InitSpin',bfdf)
         if (Node.eq.0) then
-          if (peratm .and. nspin.lt.2) write(6,'(/,a)')             &
+          if (peratm .and. h_spin_dim.lt.2) write(6,'(/,a)')             &
           'initdm: WARNING: DM.InitSpin not used because nspin < 2'
         endif
 
-        if (peratm .and. nspin.ge.2) then
+        if (peratm .and. h_spin_dim >= 2 ) then
 
 ! Allocate local memory
           nullify(atom,phi,spin,theta)
@@ -810,7 +810,7 @@
             call die(msg)
           endif
 
-          if (noncol .and. nspin.lt.4) then
+          if (noncol .and. h_spin_dim < 4 ) then
             if (Node.eq.0) then
             write(6,'(/,2a)') 'initdm: WARNING: noncolinear spins ',  &
                      'in DM.InitSpin not used because nspin < 4'
@@ -823,7 +823,7 @@
 ! Initialize to 0
 
 !$OMP workshare
-          Dscf(:,1:nspin) = 0.0_dp
+          Dscf = 0.0_dp
 !$OMP end workshare
 
 ! Initialize all paramagnetic
@@ -896,6 +896,12 @@
                       Dscf(ind,2) = (qio - spio * costh) / 2
                       Dscf(ind,3) =   spio * sinth * cosph / 2
                       Dscf(ind,4) = - spio * sinth * sinph / 2
+                      if ( h_spin_dim == 8 ) then ! spin-orbit coupling
+                         Dscf(ind,5) = 0._dp
+                         Dscf(ind,6) = 0._dp
+                         Dscf(ind,7) = Dscf(ind,3)
+                         Dscf(ind,8) = Dscf(ind,4)
+                      end if
                     else
                       Dscf(ind,1) = (qio + spio) / 2
                       Dscf(ind,2) = (qio - spio) / 2
@@ -925,7 +931,7 @@
 
 ! Initialize to 0
 !$OMP workshare
-          Dscf(:,1:nspin) = 0.0d0
+          Dscf = 0.0d0
 !$OMP end workshare
 
 ! Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
@@ -937,15 +943,14 @@
               ind = listhptr(io)+in
               jo = listh(ind)
               if (iio .eq. jo) then
-                if (nspin .eq. 1) then
+                if ( h_spin_dim == 1 ) then
 
 ! No spin polarization
-
                   Dscf(ind,1) = Datm(iio)
+
                 else
 
 ! Spin polarization
-
                   i1 = 1
                   i2 = 2
 
@@ -979,41 +984,36 @@
       use m_mpi_utils, only: Globalize_sum
       use sparse_matrices, only: S
 
-      real(dp) :: qspin(nspin)
+      real(dp) :: qspin(2)
       integer  :: io, j, ispin, ind
 #ifdef MPI
-      real(dp) :: qtmp(nspin)
+      real(dp) :: qtmp(2)
 #endif
 
-      if ( nspin == 1 ) return
+      if ( h_spin_dim == 1 ) return
 
 ! Print spin polarization
-      do ispin = 1,nspin
+      do ispin = 1, min(2, h_spin_dim)
          qspin(ispin) = 0.0_dp
          do io = 1,no_l
             do j = 1,numh(io)
                ind = listhptr(io)+j
                qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
       
 #ifdef MPI
       ! Global reduction of spin components
-      call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
-      qspin(1:nspin) = qtmp(1:nspin)
+      call globalize_sum(qspin,qtmp)
+      qspin = qtmp
 #endif
       if ( .not. IONode ) return
-      if (nspin .eq. 2) then
-         write(6,'(/,a,f12.6)')   &
-              'initdm: Initial spin polarization (Qup-Qdown) =',  &
-              qspin(1) - qspin(2)
-      else if ( nspin > 2 ) then
-         do j = 1 , nspin
-            write(6,'(/,a,i0,a,f12.6)')   &
-                 'initdm: Initial spin polarization ',j,' =', qspin(j)
-         end do
-      endif
+      
+      write(6,'(/,a,f12.6)')   &
+           'initdm: Initial spin polarization (Qup-Qdown) =',  &
+           qspin(1) - qspin(2)
+
       end subroutine print_initial_spin
     
       end subroutine fill_dscf_from_atom_info

@@ -13,6 +13,7 @@
       subroutine scfconvergence_test( first, iscf, dDmax, dHmax,
      $                                conv_harris, conv_freeE,
      $                                converged)
+      use precision, only: dp
       USE siesta_options
       use siesta_cml
       use m_wallclock, only : wallclock

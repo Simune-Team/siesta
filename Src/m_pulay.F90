@@ -8,7 +8,7 @@
 module m_pulay
 
   use precision, only: dp
-
+  use m_spin,    only: h_spin_dim, SpOrb
   implicit none
 
   private
@@ -48,8 +48,8 @@ CONTAINS
     if (maxsav .le. 0) then
        ! No need for auxiliary arrays
     else
-       nauxpul = sum(numh(1:no_l)) * nspin * maxsav
-
+       nauxpul = sum(numh(1:no_l)) * h_spin_dim * maxsav
+       !
        call re_alloc(auxpul,1,nauxpul,1,2,name="auxpul",        &
             routine="pulay")
     endif
@@ -357,26 +357,88 @@ CONTAINS
 
        ! Get i'th residual array
        i0 = (i-1) * numel
-       res1 => saveres(i0+1:i0+numel)
+       do is = 1,nspin
+          do ii = 1,no_l
+             do jj = 1,numd(ii)
+                ind = listdptr(ii) + jj
+                i0 = i0 + 1
+                dmnew(ind,is) = saveres(i0)
+             enddo
+          enddo
+       enddo
+       !
+       ! B(i,i) = dot_product(Res(i)*Res(i))
+       b(i,i) = 0.0_dp
+       ssum=0.0_dp
+! CC RC Added for on-site SO
+       if ( .not. SpOrb ) then
+        do is=1,nspin
+         do ii=1,no_l
+          do jj=1,numd(ii)
+           ind = listdptr(ii) + jj
+           ssum=ssum+dmnew(ind,is)*dmnew(ind,is)
+          enddo
+         enddo
+        enddo
+       elseif ( SpOrb ) then
+        do ii=1,no_l
+         do jj=1,numd(ii)
+          ind = listdptr(ii) + jj
+          ssum=ssum+dmnew(ind,1)*dmnew(ind,1)
+          ssum=ssum+dmnew(ind,2)*dmnew(ind,2)
+          ssum=ssum+  &
+          0.5*(dmnew(ind,3)*dmnew(ind,3)+dmnew(ind,7)*dmnew(ind,7))
+          ssum=ssum+  &
+          0.5*(dmnew(ind,4)*dmnew(ind,4)+dmnew(ind,8)*dmnew(ind,8))
+         enddo
+        enddo
+       endif
+! CC RC
 
-       do j = 1 , i
+       b(i,i)=ssum
+       !
+       do j=1,i-1
 
-          ! Get j'th residual array
           i0 = (j-1) * numel
-          res2 => saveres(i0+1:i0+numel)
-          
-          ! B(i,j) = B(j,i) = dot_product(Res(i)*Res(j))
-          ssum = 0.0_dp
-!$OMP parallel do default(shared), &
-!$OMP&private(ind), reduction(+:ssum)
-          do ind = 1 , numel
-             ssum = ssum + res1(ind) * res2(ind)
-          end do
-!$OMP end parallel do
-          b(i,j) = ssum
-          b(j,i) = ssum
+          do is = 1,nspin
+             do ii = 1,no_l
+                do jj = 1,numd(ii)
+                   ind = listdptr(ii) + jj
+                   i0 = i0 + 1
+                   dmold(ind,is) = saveres(i0)
+                enddo
+             enddo
+          enddo
 
-       end do
+          !          ! B(i,j) = B(j,i) = dot_product(Res(i)*Res(j))
+
+          b(i,j)=0.0_dp
+          ssum=0.0_dp
+          if ( .not. SpOrb ) then
+           do is=1,nspin
+            do ii=1,no_l
+             do jj=1,numd(ii)
+              ind = listdptr(ii) + jj
+              ssum=ssum+dmold(ind,is)*dmnew(ind,is)
+             enddo
+            enddo
+           enddo
+          elseif ( SpOrb ) then
+           do ii=1,no_l
+            do jj=1,numd(ii)
+             ind = listdptr(ii) + jj
+             ssum=ssum+dmold(ind,1)*dmnew(ind,1)
+             ssum=ssum+dmold(ind,2)*dmnew(ind,2)
+             ssum=ssum+  &
+             0.5*(dmnew(ind,3)*dmold(ind,3)+dmold(ind,7)*dmnew(ind,7))
+             ssum=ssum+  &
+             0.5*(dmnew(ind,4)*dmold(ind,4)+dmold(ind,8)*dmnew(ind,8))
+            enddo
+           enddo
+          endif
+          b(i,j)=ssum
+          b(j,i)=ssum
+       enddo
 
        ! Now extend the matrix with ones in an extra colum
        ! and row ...

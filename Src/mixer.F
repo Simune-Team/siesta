@@ -25,11 +25,12 @@
       use sparse_matrices,  only: maxnh, numh, listhptr, listh
       use siesta_geom,      only: na_u, isa
       use atomlist,         only: iaorb, iphorb, lasto, no_u, no_l
+      use atomlist,         only: indxuo
 
       use m_mixing_scf, only: scf_mix
       use m_mixing, only: mixing
       
-      use m_spin,           only: nspin
+      use m_spin,           only: h_spin_dim, SpOrb
       use parallel,         only: IONode
 
       implicit none
@@ -60,7 +61,7 @@
 
 
       ! Create residual function to minimize
-      allocate(F(maxnh,nspin))
+      allocate(F(maxnh,h_spin_dim))
 
 !$OMP parallel default(shared), private(dtmp,i)
 
@@ -103,15 +104,15 @@
       ! Upon exit Xout contains the mixed quantity
       select case ( mix_spin )
       case ( MIX_SPIN_ALL )
-         call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout)
+         call mixing( scf_mix, iscf, maxnh, h_spin_dim, Xin, F, Xout)
       case ( MIX_SPIN_SPINOR )
-         call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout,
+         call mixing( scf_mix, iscf, maxnh, h_spin_dim, Xin, F, Xout,
      &        ncoeff=2)
       case ( MIX_SPIN_SUM )
-         call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout,
+         call mixing( scf_mix, iscf, maxnh, h_spin_dim, Xin, F, Xout,
      &        ncoeff=1)
       case ( MIX_SPIN_SUM_DIFF )
-         call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout,
+         call mixing( scf_mix, iscf, maxnh, h_spin_dim, Xin, F, Xout,
      &        ncoeff=2)
       end select
 
@@ -169,8 +170,7 @@
          do is = 1 , size(Xin, 2)
             do i = 1 , size(Xin, 1)
                Xin(i,is) = Xin(i,is) + F(i,is)
-               ! we require that Xin == Xout, so this is
-               ! required:
+               ! we require that Xin == Xout:
                Xout(i,is) = Xin(i,is)
             end do
          end do
@@ -191,9 +191,15 @@
          if (IONode)
      &        write (6,"(/a)")
      &        'siesta: Mulliken populations after mixing'
-        call mulliken( mullipop, nspin, na_u, no_u, maxnh,
-     &                 numh, listhptr, listh, S, Dscf, isa,
-     &                 lasto, iaorb, iphorb )
+         if ( SpOrb ) then
+            call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
+     .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
+     .           indxuo )
+         else
+            call mulliken( mullipop, h_spin_dim, na_u, no_u, maxnh,
+     &           numh, listhptr, listh, S, Dscf, isa,
+     &           lasto, iaorb, iphorb )
+         endif
       endif
 
       call timer( 'MIXER', 2 )

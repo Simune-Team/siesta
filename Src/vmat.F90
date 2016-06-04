@@ -51,12 +51,13 @@ contains
     use atmfuncs,      only: rcut, all_phi
     use atm_types,     only: nsmax=>nspecies
     use atomlist,      only: indxuo
+    use m_spin,        only: SpOrb
     use listsc_module, only: LISTSC
     use mesh,          only: dxa, nsp, xdop, xdsp, meshLim
     use meshdscf,      only: matrixMtoO
     use meshdscf,      only: needdscfl, listdl, numdl, nrowsdscfl, listdlptr
     use meshphi,       only: directphi, endpht, lstpht, listp2, phi
-    use parallel,      only: Nodes, node
+    use parallel,      only: Nodes, Node
     use alloc,         only: re_alloc, de_alloc
     use parallelsubs,  only: GlobalToLocalOrb
 #ifdef MPI
@@ -72,7 +73,7 @@ contains
     integer                  :: listVsptr(nuo), listVs(nvmax)
     real(grid_p), intent(in) :: V(nsp,np,nspin)
     real(dp)                 :: dvol
-    real(dp),         target :: Vs(nvmax,nspin)
+    real(dp),         target :: Vs(:,:)
 ! Internal variables and arrays
     integer, parameter :: minloc = 1000 ! Min buffer size
     integer, parameter :: maxoa  = 100  ! Max # of orb/atom
@@ -81,6 +82,9 @@ contains
     integer :: j, jc, jl, last, lasta, lastop
     integer :: maxloc, maxloc2, nc, nlocal, nphiloc
     integer :: nvmaxl, triang, lenx, leny, lenz,lenxy
+
+    ! Size of Hamiltonian
+    integer :: h_spin_dim
     logical :: ParallelLocal
     real(dp) :: Vij, r2sp, dxsp(3), VClocal(nsp)
 
@@ -104,6 +108,10 @@ contains
 
 !   Start time counter
     call timer('vmat',1)
+
+    ! grab number of spin-components in the
+    ! Hamiltonian.
+    h_spin_dim = size(Vs, 2)
 
 !   Find atomic cutoff radii
     nullify(r2cut)
@@ -173,27 +181,27 @@ contains
 !$OMP single
     if ( ParallelLocal ) then
        nullify( t_DscfL )
-       call re_alloc( t_DscfL, 1, nvmaxl, 1, nspin, 1, NTH, &
+       call re_alloc( t_DscfL, 1, nvmaxl, 1, h_spin_dim, 1, NTH, &
             'DscfL',  'vmat' )
     else
        if ( NTH > 1 ) then
           nullify( t_Vss )
-          call re_alloc( t_Vss, 1, nvmax, 1, nspin, 2, NTH, &
+          call re_alloc( t_Vss, 1, nvmax, 1, h_spin_dim, 2, NTH, &
                'Vss',  'vmat' )
        end if
     end if
 !$OMP end single ! implicit barrier
     
     if ( ParallelLocal ) then
-       DscfL => t_DscfL(1:nvmaxl,1:nspin,TID)
-       DscfL(1:nvmaxl,1:nspin) = 0._dp
+       DscfL => t_DscfL(1:nvmaxl,:,TID)
+       DscfL(1:nvmaxl,:) = 0._dp
     else
        if ( NTH > 1 ) then
           if ( TID == 1 ) then
              Vss => Vs
           else
-             Vss => t_Vss(1:nvmax,1:nspin,TID)
-             Vss(1:nvmax,1:nspin) = 0._dp
+             Vss => t_Vss(1:nvmax,:,TID)
+             Vss(1:nvmax,:) = 0._dp
           end if
        else
           Vss => Vs
@@ -203,7 +211,7 @@ contains
 !   Full initializations done only once
     ilocal(1:no)             = 0
     iorb(1:maxloc)           = 0
-    Vlocal(1:triang,1:nspin) = 0._dp
+    Vlocal(1:triang,:) = 0._dp
     last = 0
 
 !   Loop over grid points
@@ -234,6 +242,10 @@ contains
                       do ispin = 1,nspin
                          DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
+                      if ( SpOrb ) then
+                         DscfL(ind,7:8) = DscfL(ind,7:8) + &
+                              Vlocal(ijl,3:4) * dVol
+                      end if
                    end do
                 else
                    do ii = 1, numdl(iul)
@@ -243,6 +255,10 @@ contains
                       do ispin = 1,nspin
                          DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
+                      if ( SpOrb ) then
+                         DscfL(ind,7:8) = DscfL(ind,7:8) + &
+                              Vlocal(ijl,3:4) * dVol
+                      end if
                    end do
                 end if
              end do
@@ -259,6 +275,9 @@ contains
                       do ispin = 1,nspin
                          Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
+                      if ( SpOrb ) then
+                         Vss(ind,7:8) = Vss(ind,7:8) + Vlocal(ijl,3:4) * dVol
+                      end if
                    end do
                 else
                    do ii = 1, numVs(iul)
@@ -268,6 +287,9 @@ contains
                       do ispin = 1,nspin
                          Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
+                      if ( SpOrb ) then
+                         Vss(ind,7:8) = Vss(ind,7:8) + Vlocal(ijl,3:4) * dVol
+                      end if
                    end do
                 end if
              end do
@@ -429,6 +451,9 @@ contains
                 do ispin = 1,nspin
                    DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
+                if ( SpOrb ) then
+                   DscfL(ind,7:8) = DscfL(ind,7:8) + Vlocal(ijl,3:4) * dVol
+                end if
              end do
           else
              do ii = 1, numdl(iul)
@@ -438,6 +463,9 @@ contains
                 do ispin = 1,nspin
                    DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
+                if ( SpOrb ) then
+                   DscfL(ind,7:8) = DscfL(ind,7:8) + Vlocal(ijl,3:4) * dVol
+                end if
              end do
           end if
        end do
@@ -453,6 +481,9 @@ contains
                 do ispin = 1,nspin
                    Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
+                if ( SpOrb ) then
+                   Vss(ind,7:8) = Vss(ind,7:8) + Vlocal(ijl,3:4) * dVol
+                end if
              end do
           else
              do ii = 1, numVs(iu)
@@ -462,6 +493,9 @@ contains
                 do ispin = 1,nspin
                    Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
+                if ( SpOrb ) then
+                   Vss(ind,7:8) = Vss(ind,7:8) + Vlocal(ijl,3:4) * dVol
+                end if
              end do
           end if
        end do
@@ -471,7 +505,7 @@ contains
 
     if ( ParallelLocal .and. NTH > 1 ) then
 !$OMP do collapse(2)
-       do ispin = 1,nspin
+       do ispin = 1 , h_spin_dim
           do ind = 1, nvmaxl
              do ii = 2, NTH
                 t_DscfL(ind,ispin,1) = t_DscfL(ind,ispin,1) + &
@@ -482,7 +516,7 @@ contains
 !$OMP end do
     else if ( NTH > 1 ) then
 !$OMP do collapse(2)
-       do ispin = 1,nspin
+       do ispin = 1 , h_spin_dim
           do ind = 1, nvmax
              do ii = 2, NTH
                 Vs(ind,ispin) = Vs(ind,ispin) + t_Vss(ind,ispin,ii)
@@ -499,9 +533,9 @@ contains
 !$OMP master
     if ( ParallelLocal ) then
 !      Redistribute Hamiltonian from mesh to orbital based distribution
-       DscfL => t_DscfL(1:nvmaxl,1:nspin,1)
+       DscfL => t_DscfL(1:nvmaxl,1:h_spin_dim,1)
        call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, &
-            nspin, DscfL, Vs )
+            h_spin_dim, DscfL, Vs )
        call de_alloc( t_DscfL, 'DscfL', 'vmat' )
     else if ( NTH > 1 ) then
        call de_alloc( t_Vss, 'Vss', 'vmat' )

@@ -27,6 +27,9 @@
       use m_energies,   only: Ebs, Ecorrec, Ef, Entropy
       use m_rmaxh
       use m_eo
+      use m_spin,   only: NonCol, SpOrb, qs, efs
+      use m_spin,   only: nspin, h_spin_dim, spinor_dim
+      use m_diagon, only: diagon
       use m_gamma
       use parallel, only: IONode
 #ifdef CDF
@@ -36,7 +39,6 @@
       use m_zminim,        only : zminim
       use m_ordern,        only : ordern
       use m_steps,         only : istp
-      use m_spin,          only : nspin, qs, efs
       use m_normalize_dm,  only : normalize_dm
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : TSmode, TSinit, TSrun
@@ -78,7 +80,8 @@
       endif
 
       if ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
-        call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
+        call diagon(no_s, spinor_dim, 
+     &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
@@ -88,6 +91,8 @@
         PreviousCallDiagon=.true.
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
+        if (NonCol .or. SpOrb)
+     .      call die("Cannot do O(N) with non-coll spins or Spin-orbit")
         call ordern(usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
      &               isa, qa, rcoor, rmaxh, ucell, xa, iscf,
      &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
@@ -95,8 +100,9 @@
      &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
         Entropy = 0.0_dp
       elseif (isolve .eq. SOLVE_MINIM) then
-        if (nspin==4) call die('ERROR: Non-collinear spin calculations
-     &                          not yet implemented with the OMM!')
+        if (NonCol .or. SpOrb) 
+     &      call die('ERROR: Non-collinear spin calculations
+     &                       not yet implemented with OMM!')
         H_kin => val(H_kin_1D)
         if (gamma) then
           call dminim(.false., PreviousCallDiagon, iscf, istp, no_l,
@@ -113,7 +119,8 @@
         PreviousCallDiagon=.false.
 #ifdef TRANSIESTA
       elseif (TSmode .and. TSinit) then
-        call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
+        call diagon(no_s, spinor_dim, 
+     &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh,
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
@@ -137,9 +144,9 @@
 
 #ifdef CDF
       if ( writedmhs_cdf_history) then
-        call write_dmh_netcdf( no_l, maxnh, nspin, Dold, H, Dscf )
+        call write_dmh_netcdf( no_l, maxnh, h_spin_dim, Dold, H, Dscf )
       else if (writedmhs_cdf) then
-        call write_dmh_netcdf( no_l, maxnh, nspin, Dold, H, Dscf,
+        call write_dmh_netcdf( no_l, maxnh, h_spin_dim, Dold, H, Dscf,
      &                         overwrite=.true. )
       endif
 #endif
@@ -148,9 +155,15 @@
       if (muldeb) then
         if (ionode) write (6,"(/a)")
      &    'siesta: Mulliken populations (DM_out)'
-        call mulliken( mullipop, nspin, na_u, no_u, maxnh,
+            if (SpOrb) then
+              call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
+     .                      listh, S, Dscf, isa, lasto, iaorb, iphorb,
+     .                      indxuo )
+            else
+             call mulliken( mullipop, nspin, na_u, no_u, maxnh,
      &                 numh, listhptr, listh, S, Dscf, isa,
      &                 lasto, iaorb, iphorb )
+            endif
       endif
 
 ! Write orbital indexes. JMS Dec.2009

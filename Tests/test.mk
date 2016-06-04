@@ -15,6 +15,7 @@ REFERENCE_CHECKER?=../cmp_digest.sh
 
 label=work
 
+.PHONY: completed
 completed: completed_$(label)
 
 completed_$(label):

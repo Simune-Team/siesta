@@ -5,6 +5,16 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
+module m_rhoofd
+
+  implicit none
+
+  private
+  public :: rhoofd
+
+contains
+
+
 subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
      Dscf, rhoscf, nuo, nuotot, iaorb, iphorb, isa )
 ! ********************************************************************
@@ -40,6 +50,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
   use atmfuncs,      only: rcut, all_phi
   use atm_types,     only: nsmax=>nspecies
   use atomlist,      only: indxuo
+  use m_spin,        only: SpOrb
   use listsc_module, only: LISTSC
   use mesh,          only: nsp, dxa, xdop, xdsp, meshLim
   use meshdscf,      only: matrixOtoM
@@ -59,7 +70,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
   integer, intent(in) :: no, np, maxnd, numd(nuo), nspin, &
        nuo, nuotot, iaorb(*), iphorb(*), &
        isa(*), listdptr(nuo), listd(maxnd)
-  real(dp), intent(in) :: Dscf(maxnd,nspin)
+  real(dp), intent(in) :: Dscf(:,:)
   real(grid_p), intent(out) :: rhoscf(nsp,np,nspin)
   external                  :: memory, timer
 !     Internal variables and arrays
@@ -71,6 +82,10 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
   integer :: isp, iu, iul, j, jc, last, lasta
   integer :: lastop, maxloc, maxloc2, triang, nc
   integer :: maxndl, nphiloc, lenx, leny, lenxy, lenz
+
+  ! Total hamiltonian size
+  integer :: h_spin_dim
+  
   real(dp) :: r2sp, dxsp(3)
   integer, pointer :: ilc(:), ilocal(:), iorb(:)
   real(dp), pointer :: r2cut(:), Clocal(:,:), Dlocal(:,:), phia(:,:)
@@ -88,6 +103,9 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 !     Start time counter
   call timer('rhoofd',1)
 
+  ! Get spin-size
+  h_spin_dim = size(Dscf, 2)
+
 !     Set algorithm logical
   ParallelLocal = (Nodes > 1)
 
@@ -98,10 +116,10 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
         maxndl = 1
      end if
      nullify(DscfL)
-     call re_alloc( DscfL, 1, maxndl, 1, nspin, 'DscfL', 'rhoofd' )
+     call re_alloc( DscfL, 1, maxndl, 1, h_spin_dim, 'DscfL', 'rhoofd' )
 !       Redistribute Dscf to DscfL form
      call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, &
-          nspin, Dscf, DscfL )
+          h_spin_dim, Dscf, DscfL )
   end if
 
 !     Find atomic cutoff radii
@@ -195,14 +213,28 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdlptr(iul) + ii
                     j   = listdl(ind)
                     ijl = idx_ijl(il,ilocal(j))
-                    Dlocal(ijl,:) = DscfL(ind,:)
+                    if ( SpOrb ) then
+                       Dlocal(ijl,1) = DscfL(ind,1)
+                       Dlocal(ijl,2) = DscfL(ind,2)
+                       Dlocal(ijl,3) = 0.5*(DscfL(ind,3)+DscfL(ind,7))
+                       Dlocal(ijl,4) = 0.5*(DscfL(ind,4)+DscfL(ind,8))
+                    else
+                       Dlocal(ijl,:) = DscfL(ind,:)
+                    end if
                  end do
               else
                  do ii = 1, numdl(iul)
                     ind = listdlptr(iul)+ii
                     j   = LISTSC( i, iu, listdl(ind) )
                     ijl = idx_ijl(il,ilocal(j))
-                    Dlocal(ijl,:) = DscfL(ind,:)
+                    if ( SpOrb ) then
+                       Dlocal(ijl,1) = DscfL(ind,1)
+                       Dlocal(ijl,2) = DscfL(ind,2)
+                       Dlocal(ijl,3) = 0.5*(DscfL(ind,3)+DscfL(ind,7))
+                       Dlocal(ijl,4) = 0.5*(DscfL(ind,4)+DscfL(ind,8))
+                    else
+                       Dlocal(ijl,:) = DscfL(ind,:)
+                    end if
                  end do
               end if
            else
@@ -212,14 +244,28 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdptr(iul)+ii
                     j   = listd(ind)
                     ijl = idx_ijl(il,ilocal(j))
-                    Dlocal(ijl,:) = Dscf(ind,:)
+                    if ( SpOrb ) then
+                       Dlocal(ijl,1) = Dscf(ind,1)
+                       Dlocal(ijl,2) = Dscf(ind,2)
+                       Dlocal(ijl,3) = 0.5*(Dscf(ind,3)+Dscf(ind,7))
+                       Dlocal(ijl,4) = 0.5*(Dscf(ind,4)+Dscf(ind,8))
+                    else
+                       Dlocal(ijl,:) = Dscf(ind,:)
+                    end if
                  end do
               else
                  do ii = 1, numd(iul)
                     ind = listdptr(iul)+ii
                     j   = LISTSC( i, iu, listd(ind) )
                     ijl = idx_ijl(il,ilocal(j))
-                    Dlocal(ijl,:) = Dscf(ind,:)
+                    if ( SpOrb ) then
+                       Dlocal(ijl,1) = Dscf(ind,1)
+                       Dlocal(ijl,2) = Dscf(ind,2)
+                       Dlocal(ijl,3) = 0.5*(Dscf(ind,3)+Dscf(ind,7))
+                       Dlocal(ijl,4) = 0.5*(Dscf(ind,4)+Dscf(ind,8))
+                    else
+                       Dlocal(ijl,:) = Dscf(ind,:)
+                    end if
                  end do
               end if
            end if
@@ -377,3 +423,5 @@ contains
   end function idx_ijl
   
 end subroutine rhoofd
+
+end module m_rhoofd

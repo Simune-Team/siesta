@@ -7,10 +7,12 @@
 ! ---
 module m_energies
   use precision, only: dp
-	implicit none
+  implicit none
 
+  private :: dp
   public
-
+  save
+  
   real(dp):: DEharr     ! Tr[H * (DM_out - DM_in)], for Harris energy
   real(dp):: DEna       ! Neutral-atom energy term, calculated  in dnaefs
   real(dp):: DUext      ! Interaction energy with external  electric field,
@@ -40,6 +42,7 @@ module m_energies
   real(dp):: Uatm       ! Harris hartree electron energy,  calculated in dhscf
   real(dp):: Uscf       ! SCF hartree electron energy,  calculated in dhscf
   real(dp):: Ebs        ! Band-structure energy, Tr(DM*H), calculated in compute_dm
+  real(dp):: Eso        ! Spin-orbit energy
   real(dp):: Eldau      
   real(dp):: DEldau      
 

@@ -59,7 +59,8 @@ C *******************************************************************
       use parallel,    only : Node, Nodes
       use fdf
       use sys,         only : die
-
+      use m_spin, only: NonCol, SpOrb
+      
       implicit          none
 
 C Passed variables 
@@ -90,6 +91,15 @@ C Initialise outputs to defaults
 
 C Read flag for optical calculation
       DoOptical = fdf_boolean('OpticalCalculation',.false.)
+      if ( NonCol .or. SpOrb ) then
+         if ( DoOptical ) then
+            if (Node.eq.0) then
+               write(6,'(/2a)') 'reoptical: Not possible ',
+     + 'with non-collinear spin configuration.'
+            end if
+         end if
+         DoOptical = .false.
+      end if
 
       if (DoOptical) then
 C Read energy range
