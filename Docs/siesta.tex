@@ -3185,7 +3185,7 @@ the first cycle, to avoid non-idempotency in density matrix
 from Harris or previous steps. It can be useful, though,
 for restarts of selfconsistency runs.
 
-{\it Default value:} {\tt .false.}
+{\it Default value:} {\tt .true.}
 
 \item[{\bf SCF.MixAfterConvergence}] ({\it
   logical}):\index{SCF!mixing} \index{SCF.MixAfterConvergence@{\bf
@@ -3222,7 +3222,7 @@ turn this option on, or use the compatibility switch {\bf
     compat-pre4-dm-h}} If this logical
   variable is turned on, the above two options regarding mixing after
   convergence and recomputation of H after the scf cycle will be
-  turned on.
+  turned on. Also \fdf{DM.MixSCF1} will default to \fdf{.false.}.
 
 \item[{\bf SCF.Mix}] ({\it string}):
 \index{SCF.Mix@{\bf SCF.Mix}}
