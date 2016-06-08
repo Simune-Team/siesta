@@ -381,9 +381,9 @@ contains
           call read_block(m, .false.)
           
           ! set the default mixer to kick
-          mixers(im2)%n_itt = n_kick
+          mixers(im2)%n_itt = n_kick - 1
           mixers(im2)%next => m
-          mixers(im2)%restart = n_kick
+          mixers(im2)%restart = n_kick - 1
           mixers(im2)%restart_save = 0
           
        end if
@@ -872,7 +872,7 @@ contains
     integer, intent(in) :: sidx
     integer, intent(in), optional :: hidx
 
-    real(dp), pointer :: d1(:)
+    real(dp), pointer, contiguous :: d1(:)
 
     type(dData1D), pointer :: dD1
     
@@ -1023,9 +1023,10 @@ contains
     integer, intent(out) :: info
 
     type(tMixer), pointer :: next
-    real(dp), pointer :: tmp1(:), tmp2(:)
+    real(dp), pointer, contiguous :: tmp1(:), tmp2(:)
     real(dp) :: alpha
     integer :: nh, ns
+    integer :: i
 
     info = 0
 
@@ -1048,17 +1049,21 @@ contains
              tmp1 => getstackval(next,1,ns-1)
              tmp2 => getstackval(next,3)
              
-!$OMP parallel workshare default(shared)
-             tmp1 = tmp1 - tmp2 + x1
-             tmp2 = x1 + F1
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+             do i = 1 , n
+                tmp1(i) = tmp1(i) - tmp2(i) + x1(i)
+                tmp2(i) = x1(i) + F1(i)
+             end do
+!$OMP end parallel do
 
           else
              
              ! Store the output (without weight)
-!$OMP parallel workshare default(shared)
-             x2 = x1 + F1
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+             do i = 1 , n
+                x2(i) = x1(i) + F1(i)
+             end do
+!$OMP end parallel do
              call update_F(next%stack(3), n, x2)
              
           end if
@@ -1087,18 +1092,14 @@ contains
        tmp1 => getstackval(next,1)
        if ( n_items(next%stack(2)) > 0 ) then
           tmp2 => getstackval(next,2)
-!$OMP parallel workshare default(shared)
-          tmp2 = tmp1 * next%w
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+          do i = 1 , n
+             tmp2(i) = tmp1(i) * next%w
+          end do
+!$OMP end parallel do
        else
 
-          nullify(tmp2)
-          allocate(tmp2(n))
-!$OMP parallel workshare default(shared)
-          tmp2 = tmp1 * next%w
-!$OMP end parallel workshare
-          call push_F(next%stack(2), n, tmp2)
-          deallocate(tmp2)
+          call push_F(next%stack(2), n, tmp1, next%w)
 
        end if
 
@@ -1109,9 +1110,11 @@ contains
     if ( debug_mix ) write(*,'(2a,e10.4)') &
          trim(debug_msg),' alpha = ',alpha
 
-!$OMP parallel workshare default(shared)
-    x2 = x1 + alpha * F1
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+    do i = 1 , n
+       x2(i) = x1(i) + alpha * F1(i)
+    end do
+!$OMP end parallel do
 
   end subroutine mixing_linear
 
@@ -1134,8 +1137,8 @@ contains
     integer, intent(in), optional :: ncoeff
 
     ! Temporary arrays for local data structures
-    real(dp), dimension(:), pointer :: res, rres, oF
-    real(dp), dimension(:), pointer :: rres1, rres2
+    real(dp), pointer, contiguous :: res(:), rres(:), oF(:)
+    real(dp), pointer, contiguous :: rres1(:), rres2(:)
 
     integer :: nh, ns, ncoef
     integer :: i, j
@@ -1145,12 +1148,12 @@ contains
 
     logical :: p_next, p_restart
 
+    real(dp), external :: ddot
+
 #ifdef MPI
     real(dp) :: dtmp
     integer :: MPIerror
 #endif
-
-    real(dp), external :: ddot
 
     ncoef = n
     if ( present(ncoeff) ) ncoef = ncoeff
@@ -1160,9 +1163,9 @@ contains
 
     ! Check whether a parameter next/restart is required
     if ( p_restart .or. p_next ) then
-       
+
        ! Calculate dot: ||f_k-1||
-       ssum = ddot(ncoef,F1,1,F1,1)
+       ssum = ddot(ncoef, F1, 1, F1, 1)
 #ifdef MPI
        dtmp = ssum
        call MPI_AllReduce(dtmp,ssum,1, &
@@ -1243,17 +1246,21 @@ contains
        else 
 
           ! Store linear x of residual F
-!$OMP parallel workshare default(shared)
-          x2 = x1 + F1
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+          do i = 1 , n
+             x2(i) = x1(i) + F1(i)
+          end do
+!$OMP end parallel do
           
           ! Store output x
           call push_F(mix%stack(3), n, x2)
 
           ! The first Pulay step will do linear mixing
-!$OMP parallel workshare default(shared)
-          x2 = x1 + F1 * mix%rv(1)
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+          do i = 1 , n
+             x2(i) = x1(i) + F1(i) * mix%rv(1)
+          end do
+!$OMP end parallel do
 
           return
 
@@ -1263,10 +1270,12 @@ contains
        res => getstackval(mix,1,ns-1)
        oF => getstackval(mix,3)
 
-!$OMP parallel workshare default(shared)
-       res = res - oF + x1
-       oF = x1 + F1
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+       do i = 1 , n
+          res(i) = res(i) - oF(i) + x1(i)
+          oF(i) = x1(i) + F1(i)
+       end do
+!$OMP end parallel do
        
     case ( 1 , 3 ) ! Guaranteed reduction Pulay
 
@@ -1291,7 +1300,7 @@ contains
              ! -Res[i-2]
              res => getstackval(mix,1)
              rres => getstackval(mix,2)
-             call daxpy(n,1._dp,res,1,rres,1)
+             call daxpy(n,1._dp, res, 1, rres, 1)
              
           end if
 
@@ -1299,9 +1308,11 @@ contains
 
              ! do linear mixing
              res => getstackval(mix,1)
-!$OMP parallel workshare default(shared)
-             x2 = x1 + res
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+             do i = 1 , n
+                x2(i) = x1(i) + res(i)
+             end do
+!$OMP end parallel do
           end if
           
           return
@@ -1353,7 +1364,7 @@ contains
 
        ! Resubtract Res[i] to get -Res[i-1]
        ! the RRes[i-1] will be updated in the next loop
-       call daxpy(n,-1._dp,res,1,rres,1)
+       call daxpy(n,-1._dp, res, 1, rres, 1)
 
        ! delete latest residual
        call pop(mix%stack(1))
@@ -1363,9 +1374,11 @@ contains
 
        ! Note that this is Res[i-1] * w = (F^i-1_out - F^i-1_in) * w
        res => getstackval(mix,1)
-!$OMP parallel workshare default(shared)
-       res = res - x1 + x2
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+       do i = 1 , n
+          res(i) = res(i) - x1(i) + x2(i)
+       end do
+!$OMP end parallel do
 
        !  oldF = F^i-1_in + Res[i-1] * w
        ! which turns
@@ -1398,7 +1411,7 @@ contains
             rres2 => getstackval(mix,2,j)
 
             ! B(i,j) = B(j,i) = dot_product(RRes[i],RRes[j])
-            b(i,j) = ddot(ncoef,rres1,1,rres2,1)
+            b(i,j) = ddot(ncoef, rres1, 1, rres2, 1)
             b(j,i) = b(i,j)
 
          end do
@@ -1454,7 +1467,7 @@ contains
             
             ! Get j'th residual array
             rres => getstackval(mix,2,j)
-            ssum = ddot(ncoef,rres,1,res,1)
+            ssum = ddot(ncoef, rres, 1, res, 1)
             
             do i = 1 , nh
                alpha(i) = alpha(i) - bi(i,j) * ssum
@@ -1491,19 +1504,23 @@ contains
       end if
       
       ! Copy over input dm, and add the linear mixing
-!$OMP parallel workshare default(shared)
-      x2 = x1 + G * res
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+      do i = 1 , n
+         x2(i) = x1(i) + G * res(i)
+      end do
+!$OMP end parallel do
       
-      do i = 1 , nh
+      do j = 1 , nh
          
-         ! Get Res[i] and RRes[i]
-         res => getstackval(mix,1,i)
-         rres => getstackval(mix,2,i)
+         ! Get Res[j] and RRes[j]
+         res => getstackval(mix,1,j)
+         rres => getstackval(mix,2,j)
          
-!$OMP parallel workshare default(shared)
-         x2 = x2 + alpha(i) * ( res + G * rres )
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+         do i = 1 , n
+            x2(i) = x2(i) + alpha(j) * ( res(i) + G * rres(i) )
+         end do
+!$OMP end parallel do
          
       end do
       
@@ -1528,8 +1545,8 @@ contains
     integer, intent(in), optional :: ncoeff
 
     ! Temporary arrays for local data structures
-    real(dp), dimension(:), pointer :: rres, rres1
-    real(dp), dimension(:), pointer :: tmp1, tmp2, Jres
+    real(dp), pointer, contiguous :: rres(:), rres1(:)
+    real(dp), pointer, contiguous :: tmp1(:), tmp2(:), Jres(:)
 
     integer :: is, ns, nm, ncoef
     integer :: i, j, k, l, in
@@ -1543,6 +1560,7 @@ contains
     logical :: p_next, p_restart
 
     real(dp), external :: ddot
+
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -1558,7 +1576,7 @@ contains
     if ( p_restart .or. p_next ) then
        
        ! Calculate dot: ||f_k-1||
-       norm = ddot(ncoef,F1,1,F1,1)
+       norm = ddot(ncoef, F1, 1, F1, 1)
 #ifdef MPI
        rtmp = norm
        call MPI_AllReduce(rtmp,norm,1, &
@@ -1625,15 +1643,17 @@ contains
        info = 0
 
        ! Add to the history of the residual
-       call push_F(mix%stack(1),n,F1)
-       call push_F(mix%stack(2),n,F1,jinv0)
+       call push_F(mix%stack(1), n, F1)
+       call push_F(mix%stack(2), n, F1, jinv0)
 
        Jres => getstackval(mix,2)
 
        ! Do linear interpolation
-!$OMP parallel workshare default(shared)
-       x2 = x1 + Jres
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+       do i = 1 , n
+          x2(i) = x1(i) + Jres(i)
+       end do
+!$OMP end parallel do
 
        return
        
@@ -1707,25 +1727,33 @@ contains
 
     ! normalize RRes[i] and the Jacobian
     rtmp = 1._dp / norm
-!$OMP parallel workshare default(shared)
-    rres = rres * rtmp
-    Jres = jinv0 * rres + Jres * rtmp
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+    do i = 1 , n
+       rres(i) = rres(i) * rtmp
+       Jres(i) = jinv0 * rres(i) + Jres(i) * rtmp
+    end do
+!$OMP end parallel do
 
     ! Copy over previous data
-    dFdF = reshape(l_dFdF,(/nm,nm/))
+    is = 0
+    do j = 1 , nm
+       do i = 1 , nm
+          is = is + 1
+          dFdF(i,j) = l_dFdF(is)
+       end do
+    end do
 
     ! Calculate scalar product between <RRes[is]|RRes[ns]>
     ! and between <RRes[is]|Res[ns]>
     do is = 1 , ns - 1
        rres1 => getstackval(mix,1,is)
-       dFdF(is,ns) = ddot(ncoef,rres1(1),1,rres(1),1)
-       dFF(is) = ddot(ncoef,rres1(1),1,F1(1),1)
+       dFdF(is,ns) = ddot(ncoef, rres1, 1, rres, 1)
+       dFF(is) = ddot(ncoef, rres1, 1, F1, 1)
     end do
     ! NOTE that for is == ns we get 1., <RRes[ns]|RRes[ns]> / norm ** 2
     dFdF(ns,ns) = 1._dp
     ! create last scalar producet <RRes[i]|Res[ns]>
-    dFF(ns) = ddot(ncoef,rres(1),1,F1(1),1)
+    dFF(ns) = ddot(ncoef, rres, 1, F1, 1)
 
 #ifdef MPI
     if ( ns > 1 ) then
@@ -1831,11 +1859,13 @@ contains
        b(is,1) = sum( a(:,is) * dFF )
 
        if ( is == 1 ) then
-!$OMP parallel workshare default(shared)
-          x2 = x1 + F1*jinv0 - Jres * b(is,1)
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+          do i = 1 , n
+             x2(i) = x1(i) + F1(i)*jinv0 - Jres(i) * b(is,1)
+          end do
+!$OMP end parallel do
        else
-          call daxpy(n,-b(is,1),Jres,1,x2,1)
+          call daxpy(n,-b(is,1), Jres, 1, x2, 1)
        end if
        
     end do
@@ -1852,7 +1882,13 @@ contains
     end if
        
     ! Copy back result for following iteration
-    l_dFdF = reshape(dFdF,(/nm*nm/))
+    is = 0
+    do j = 1 , nm
+       do i = 1 , nm
+          is = is + 1
+          l_dFdF(is) = dFdF(i,j)
+       end do
+    end do
 
     deallocate(dFdF,a,ao,b,bb,dFF)
 
@@ -1860,8 +1896,8 @@ contains
     if ( ns == nm ) then
 
        ! get the data
-       call get(mix%stack(1),1,a1D)
-       call get(mix%stack(2),1,b1D)
+       call get(mix%stack(1), 1, a1D)
+       call get(mix%stack(2), 1, b1D)
 
     else
 
@@ -1877,10 +1913,12 @@ contains
     tmp1 => val(a1D)
     tmp2 => val(b1D)
 
-!$OMP parallel workshare default(shared)
-    tmp1 = F1
-    tmp2 = x2 - x1
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+    do i = 1 , n
+       tmp1(i) = F1(i)
+       tmp2(i) = x2(i) - x1(i)
+    end do
+!$OMP end parallel do
 
     ! push to stack
     call push(mix%stack(1), a1D)
@@ -2318,10 +2356,10 @@ contains
     real(dp), intent(in) :: F(n)
     real(dp), intent(in), optional :: fact
 
-
     type(dData1D) :: dD1
-    real(dp), pointer :: sF(:)
+    real(dp), pointer, contiguous :: sF(:)
     integer :: in, ns
+    integer :: i
 
     if ( .not. stack_check(s_F,n) ) then
        call die('mixing: history has changed size...')
@@ -2344,11 +2382,13 @@ contains
     sF => val(dD1)
 
     if ( present(fact) ) then
-!$OMP parallel workshare default(shared)
-       sF = F * fact
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+       do i = 1 , n
+          sF(i) = F(i) * fact
+       end do
+!$OMP end parallel do
     else
-       call dcopy(n,F,1,sF,1)
+       call dcopy(n, F, 1, sF, 1)
     end if
 
     ! Push the data to the stack
@@ -2365,7 +2405,7 @@ contains
     real(dp), intent(in) :: F(n)
 
     type(dData1D), pointer :: dD1
-    real(dp), pointer :: FF(:)
+    real(dp), pointer, contiguous :: FF(:)
     integer :: in
 
     if ( .not. stack_check(s_F,n) ) then
@@ -2386,7 +2426,7 @@ contains
 
        FF => val(dD1)
 
-       call dcopy(n,F,1,FF,1)
+       call dcopy(n, F, 1, FF, 1)
 
     end if
 
@@ -2399,8 +2439,8 @@ contains
 
     type(dData1D) :: dD1
     type(dData1D), pointer :: pD1
-    real(dp), pointer :: res1(:), res2(:), rres(:)
-    integer :: in, ns
+    real(dp), pointer, contiguous :: res1(:), res2(:), rres(:)
+    integer :: in, ns, i, n
 
     if ( n_items(s_res) < 2 ) then
        call die('mixing: Residual residuals cannot be calculated, &
@@ -2432,15 +2472,20 @@ contains
 
     ! Get the residual of the residual
     rres => val(dD1)
+    n = size(rres)
 
     if ( present(alpha) ) then
-!$OMP parallel workshare default(shared)
-       rres = (res2 - res1) * alpha
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+       do i = 1 , n
+          rres(i) = (res2(i) - res1(i)) * alpha
+       end do
+!$OMP end parallel do
     else
-!$OMP parallel workshare default(shared)
-       rres = res2 - res1
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(i)
+       do i = 1 , n
+          rres(i) = res2(i) - res1(i)
+       end do
+!$OMP end parallel do
     end if
     
     ! Push the data to the stack
@@ -2450,6 +2495,23 @@ contains
     call delete(dD1)
 
   end subroutine push_diff
+
+  function f_norm(n, a, b) result(norm)
+    integer, intent(in) :: n
+    real(dp), intent(in) :: a(n), b(n)
+    
+    integer :: i
+    
+    real(dp) :: norm
+
+    norm = 0._dp
+!$OMP do private(i), reduction(+:norm)
+    do i = 1 , n
+       norm = norm + a(i) * b(i)
+    end do
+!$OMP end do
+
+  end function f_norm
 
 end module m_mixing
   
