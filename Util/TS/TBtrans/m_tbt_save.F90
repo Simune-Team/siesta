@@ -608,7 +608,7 @@ contains
        deallocate(r2)
     end if
 
-    if ( initialized(sp_dev) ) then
+    if ( 'orb-current' .in. save_DATA ) then
        
        ! In case we need to save the device sparsity pattern
        ! Create dimensions

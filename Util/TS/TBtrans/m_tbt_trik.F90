@@ -634,11 +634,13 @@ contains
 #ifdef NCDF_4
     if ( ('orb-current'.in.save_DATA) .or. &
          ('proj-orb-current'.in.save_DATA) ) then
+       
        call newdSpData1D(sp_dev,fdist,orb_J,name='TBT orb_J')
        ! Initialize to 0, it will be overwritten for all
        ! values, so there is no need to initialize it
        ! in the orb_current routine (neither here actually)
        call init_val(orb_J)
+       
     end if
 #endif
 
@@ -671,8 +673,10 @@ contains
     ! *.TBT.nc file
     call open_cdf_save(cdf_fname, TBTcdf)
     if ( N_proj_ME > 0 ) then
+
        ! *.TBT.Proj.nc file
        call open_cdf_save(cdf_fname_proj, PROJcdf)
+       
     end if
 
 #else
@@ -696,7 +700,7 @@ contains
     call timer_start('E-loop')
     call timer_stop('E-loop')
     call timer_get('E-loop',totTime=init_time)
-    
+
     do while ( .not. itt_step(Kp) )
 
        if ( n_k == 0 ) then
@@ -911,7 +915,7 @@ contains
 
              ! Save the energies
              call cdf_save_E(PROJcdf,nE)
-             
+
              ! Save the projected values
              call proj_cdf_save_bGammak(PROJcdf,N_proj_ME,proj_ME, &
                   ikpt,nE)
@@ -1080,12 +1084,12 @@ contains
 
 #ifdef NCDF_4
              if ( 'orb-current' .in. save_DATA ) then
-                
+
                 ! We need to save it immediately, we
                 ! do not want to have several arrays in memory
                 call state_cdf_save_J(TBTcdf, ikpt, nE, Elecs(iEl), &
                      orb_J, save_DATA)
-                
+
              end if
 #endif
              
@@ -1160,8 +1164,9 @@ contains
                 ! this aint pretty, however it relieves a lot of
                 ! superfluous checks in the following block
                 if ( ('proj-orb-current' .in. save_DATA) .and. p_E%idx > 0 ) then
-                   call proj_cdf_save_J(PROJcdf, ikpt, nE, proj_T(ipt)%L, &
-                        orb_J, save_DATA)
+
+                   call proj_cdf_save_J(PROJcdf, ikpt, nE, p_E, orb_J)
+
                 end if
 #endif
                 cycle
@@ -1225,7 +1230,6 @@ contains
                      r_oDev, Elecs(iEl)%o_inD)
 
                 if ( 'proj-T-sum-out' .in. save_DATA ) then
-                   ! This should work, but I currently do not allow it :(
                    call Gf_Gamma(zwork_tri,Elecs(iEl), &
                         bTk(1+size(proj_T(ipt)%R),ipt))
                 end if
@@ -1268,8 +1272,7 @@ contains
                   ! We need to save it immediately, we
                   ! do not want to have several arrays in the
                   ! memory
-                  call proj_cdf_save_J(PROJcdf, ikpt, nE, proj_T(ipt)%L, &
-                       orb_J, save_DATA)
+                  call proj_cdf_save_J(PROJcdf, ikpt, nE, p_E, orb_J)
 
                end if
 #endif

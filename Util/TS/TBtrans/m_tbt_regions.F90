@@ -648,7 +648,8 @@ contains
     ! sparsity pattern
     call delete(sp_dev)
 #ifdef NCDF_4
-    if ( 'orb-current' .in. save_DATA ) then
+    if ( ('orb-current' .in. save_DATA) .or. &
+         ('proj-orb-current' .in. save_DATA) ) then
 
        call attach(sp_uc,nrows_g=no_u)
 #ifdef MPI

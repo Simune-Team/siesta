@@ -1662,8 +1662,8 @@ contains
 
     end if
 
-    if ( initialized(sp_dev) .and. &
-         ('proj-orb-current'.in. save_DATA) ) then
+    if ( 'proj-orb-current' .in. save_DATA ) then
+
        ! In case we need to save the device sparsity pattern
        ! Create dimensions
        nnzs_dev = nnzs(sp_dev)
@@ -1678,7 +1678,7 @@ contains
        dic = dic//('info'.kv. &
             'Supercell column indices in the sparse format ')
        call ncdf_def_var(ncdf,'list_col',NF90_INT,(/'nnzs'/), &
-            compress_lvl=cmp_lvl,atts=dic , chunks = (/nnzs_dev/) )
+            compress_lvl=cmp_lvl,atts=dic )
 
 #ifdef MPI
        call newDistribution(TSHS%no_u,MPI_Comm_Self,fdit,name='TBT-fake dist')
@@ -1733,11 +1733,11 @@ contains
        dic = ('info'.kv.'|i> = S^(1/2)|v_i> for unique projections')
        if ( isGamma ) then
           call ncdf_def_var(grp,'state',NF90_DOUBLE,(/'no  ','nlvl'/),atts=dic , &
-               compress_lvl = cmp_lvl , chunks = (/no,mols(im)%lvls%n/) )
+               compress_lvl = cmp_lvl , chunks = (/no,1/) )
        else
           call ncdf_def_var(grp,'state',NF90_DOUBLE_COMPLEX, &
                (/'no  ','nlvl','nkpt'/),atts=dic, &
-               compress_lvl = cmp_lvl , chunks = (/no,mols(im)%lvls%n,1/) ) 
+               compress_lvl = cmp_lvl , chunks = (/no,1,1/) ) 
        end if
 
        ! Define variables to contain the molecule
@@ -1751,11 +1751,11 @@ contains
           dic = dic//('info'.kv.'State |i> = |v_i> for all i')
           if ( isGamma ) then
              call ncdf_def_var(grp,'states',NF90_DOUBLE,(/'no','no'/),atts=dic, &
-                  compress_lvl = cmp_lvl , chunks = (/no,no/) )
+                  compress_lvl = cmp_lvl , chunks = (/no,1/) )
           else
              call ncdf_def_var(grp,'states',NF90_DOUBLE_COMPLEX, &
                   (/'no  ','no  ','nkpt'/),atts=dic, &
-                  compress_lvl = cmp_lvl , chunks = (/no,no,1/) )
+                  compress_lvl = cmp_lvl , chunks = (/no,1,1/) )
 
           end if
        end if
@@ -1766,7 +1766,7 @@ contains
 #endif
        if ( isGamma ) then
           call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no'/),atts=dic, &
-               compress_lvl = cmp_lvl , chunks = (/no/) )
+               compress_lvl = cmp_lvl )
        else
           call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no  ','nkpt'/),atts=dic, &
                compress_lvl = cmp_lvl , chunks = (/no,1/) )
@@ -1853,9 +1853,9 @@ contains
 
                    if ( 'proj-orb-current' .in. save_DATA ) then
                       dic = ('info'.kv.'Orbital current')
-                      call ncdf_def_var(grp3,'J',prec_J,(/'nnzs'/), &
+                      call ncdf_def_var(grp3,'J',prec_J,(/'nnzs', 'ne  ', 'nkpt'/), &
                            atts = dic, compress_lvl = cmp_lvl , &
-                           chunks = (/nnzs_dev/) )
+                           chunks = (/nnzs_dev,1,1/) )
 
                    end if
 
@@ -1870,7 +1870,7 @@ contains
                          if ( i == -iE ) then
                             dic = dic//('info'.kv.'Gf transmission')
                             call ncdf_def_var(grp3,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
-                                 atts = dic)
+                                 atts = dic, chunks =(/NE, 1/) )
                             dic = dic//('info'.kv.'Out transmission correction')
                             tmp = trim(tmp)//'.C'
                          else
@@ -1881,7 +1881,7 @@ contains
                          if ( proj_T(it)%R(ipt)%ME%El == Elecs(iE) ) then
                             dic = dic//('info'.kv.'Gf transmission')
                             call ncdf_def_var(grp3,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
-                                 atts = dic)
+                                 atts = dic, chunks =(/NE, 1/) )
                             dic = dic//('info'.kv.'Out transmission correction')
                             tmp = trim(tmp)//'.C'
                          else
@@ -1890,13 +1890,13 @@ contains
                       end if
 
                       call ncdf_def_var(grp3,tmp,prec_T, (/'ne  ','nkpt'/), &
-                           atts = dic)
+                           atts = dic, chunks = (/NE, 1/) )
 
                       if ( N_eigen > 0 ) then
                          dic = dic//('info'.kv.'Transmission eigenvalues')
                          call ncdf_def_var(grp3,trim(tmp)//'.Eig',prec_Teig, &
                               (/'neig','ne  ','nkpt'/), &
-                              atts = dic )
+                              atts = dic, chunks =(/N_eigen, NE, 1/) )
                       end if
 
                    end do
@@ -2457,8 +2457,8 @@ contains
 
   end subroutine proj_cdf_save
 
-  subroutine proj_cdf_save_J(ncdf, ikpt, nE, LME, orb_J, &
-       save_DATA)
+  subroutine proj_cdf_save_J(ncdf, ikpt, nE, &
+       LME, orb_J)
 
     use parallel, only : Node, Nodes
     use class_dSpData1D
@@ -2478,27 +2478,25 @@ contains
     type(tNodeE), intent(in) :: nE
     type(tLvlMolEl), intent(inout) :: LME
     type(dSpData1D), intent(inout) :: orb_J
-    type(dict), intent(in) :: save_DATA
 
-    type(hNCDF) :: gmol, gEl
+    type(hNCDF) :: gmol, gproj, gEl
     integer :: nnzs_dev, idx(3), cnt(3)
-    real(dp), pointer :: J(:)
+    real(dp), pointer, contiguous :: J(:)
 #ifdef MPI
     integer :: iN
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
-    ! in case this is a pure projection
-    ! Then the user MUST use the rigid form
-    if ( LME%idx < 0 ) return
-
     J => val(orb_J)
     nnzs_dev = size(J)
     
     ! We save the orbital current
-
+    !  1. open molecule
     call ncdf_open_grp(ncdf,trim(LME%ME%mol%name),gmol)
-    call ncdf_open_grp(gmol,trim(LME%ME%El%name),gEl)
+    !  2. open projection
+    call ncdf_open_grp(gmol,trim(LME%ME%mol%proj(LME%idx)%name),gproj)
+    !  3. open electrode (spectral function)
+    call ncdf_open_grp(gproj,trim(LME%ME%El%name),gEl)
 
     if ( save_parallel ) then
 
@@ -2557,32 +2555,20 @@ contains
 
     ! Local variables
     type(hNCDF) :: grp
-    logical :: exist
     integer :: no, im
     real(dp), allocatable :: rp(:,:)
 #ifdef MPI
     integer :: MPIerror
 #endif
 
-    ! Quick escape if possible...
-    ! If we are trying to read in the projections
-    ! for all k-points subsequent to the first
-    ! one AND all the projection states are Gamma
-    ! projections. Then the states are all
-    ! already read in and we do not need
-    ! to do anything here...
-    if ( ikpt > 1 ) then
-       exist = all(mols(:)%Gamma)
-       if ( exist ) return
-    end if
-
     do im = 1 , N_mol
 
        ! We quickly skip this molecule if it is 
        ! a Gamma-projection and the k-point
-       ! is higher than 0
+       ! is higher than 0, in that case the
+       ! molecule already has the correct projectors
        if ( mols(im)%Gamma .and. ikpt > 1 ) cycle
-
+       
        ! Open the corresponding projection group
        call ncdf_open_grp(ncdf,mols(im)%name,grp)
 
