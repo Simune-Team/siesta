@@ -79,11 +79,17 @@ contains
 
        if ( IONode .and. len_trim(Hartree_fname) == 0 ) then
           write(*,'(a)')'ts_voltage: Lifted locally on each electrode'
+          
        else if ( IONode .and. len_trim(Hartree_fname) > 0 ) then
           write(*,'(3a)')'ts_voltage: ', &
                'User supplied Poisson solution in file ', &
                trim(Hartree_fname)
+#ifdef NCDF_4
           call ts_ncdf_voltage_assert(Hartree_fname,cell,meshG)
+#else
+          call die('NetCDF4 has not been compiled in, this functionality &
+               &is not supported.')
+#endif
        end if
 
        ! Find the lowest and highest chemical potential
