@@ -214,7 +214,8 @@ CONTAINS
 
       ! Clarify: Ecorrec (from O(N))
       !          
-      Etot = Ekin + Enl - Eions + Ena + Escf_out + Ecorrec + Emad + Emm + Emeta
+      Etot = Ekin + Enl - Eions + Ena + Escf_out + Ecorrec + Emad + Emm + &
+ &           Emeta + Eldau
     end subroutine compute_correct_EKS
 
   end subroutine compute_energies
