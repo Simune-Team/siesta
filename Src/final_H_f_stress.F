@@ -159,7 +159,7 @@
 !
       if ( SpOrb ) then
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
-     .        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
+     &        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
 #ifdef MPI
 !     Global reduction of energy terms
          call globalize_sum(Eso,buffer1)
