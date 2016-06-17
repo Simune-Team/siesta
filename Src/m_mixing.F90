@@ -2496,22 +2496,5 @@ contains
 
   end subroutine push_diff
 
-  function f_norm(n, a, b) result(norm)
-    integer, intent(in) :: n
-    real(dp), intent(in) :: a(n), b(n)
-    
-    integer :: i
-    
-    real(dp) :: norm
-
-    norm = 0._dp
-!$OMP do private(i), reduction(+:norm)
-    do i = 1 , n
-       norm = norm + a(i) * b(i)
-    end do
-!$OMP end do
-
-  end function f_norm
-
 end module m_mixing
   
