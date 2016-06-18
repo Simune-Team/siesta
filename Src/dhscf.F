@@ -1071,8 +1071,13 @@ C ----------------------------------------------------------------------
      $              'Electric field for dipole correction =',
      $              field, ' Ry/Bohr/e'
             end if
+            ! The dipole correction (internal electric field)
+            ! energy is half the 
+            ! external energy (thus this separation)
+            DUext = -0.5_dp * ddot(3,field,1,dipol,1)
          else
             field = 0._dp
+            DUext = 0._dp
          end if
          ! Add the external electric field
          field = field + user_specified_field
@@ -1080,8 +1085,8 @@ C ----------------------------------------------------------------------
          ! but it is distribution-blind
          call add_potential_from_field( field, cell, nua, isa, xa,
      &        ntm, nsm, Vscf )
-         ! Calcuate energy of external electric field
-         DUext = - ddot(3,field,1,dipol,1)
+         ! Add energy of external electric field
+         DUext = DUext - ddot(3,user_specified_field,1,dipol,1)
       endif
 
 #ifdef TRANSIESTA
