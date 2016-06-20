@@ -288,7 +288,7 @@ C Sanity checks on values
           call ground_state(abs(int(basp%z)),basp%ground_state)
           call pseudo_read(basp%label,basp%pseudopotential)
         endif
-        if (reparametrize_pseudos)
+        if (reparametrize_pseudos.and. .not. basp%bessel)
      .    call pseudo_reparametrize(p=basp%pseudopotential,
      .                             a=new_a, b=new_b,label=basp%label)
       enddo

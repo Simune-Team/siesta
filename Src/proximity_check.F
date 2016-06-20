@@ -26,18 +26,21 @@
       integer :: ii, jj, jamin, idxneighJ, nneigbI, isel, nna
       real(dp):: rmin, r2min 
 
-
 !     Check if any two atoms are unreasonably close
       isel = 0   ! Get back all neighbors, regardless of whether ja>ia
 
 !     Initialize neighb
       call mneighb( scell, rmax, na_s, xa, 0, isel, nna )
       do ii = 1,na_s
+        ! Check whether the atom is a floating orbital
+        ! If that is the case, simply skip checking...
+        if ( isa(ii) <= 0 ) cycle
         r2min = huge(1._dp)
         jamin = 0
         call mneighb( scell, rmax, na_s, xa, ii, isel, nneigbI )
         do jj = 1,nneigbI
           idxneighJ = jna(jj)
+          if ( isa(idxneighJ) <= 0 ) cycle
           if ( r2ij(jj).lt.r2min .and. idxneighJ.ge.ii ) then
 !           Check that it is not the same atom
             if ( idxneighJ.ne.ii .or. r2ij(jj).gt.1.d-12 ) then
