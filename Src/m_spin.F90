@@ -5,27 +5,75 @@
 !  or http://www.gnu.org/copyleft/gpl.txt .
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
+module t_spin
+
+  implicit none
+
+  !> Type containing a simulations spin configuration
+  !!
+  !! Thus this type contains _all_ relevant information
+  !! regarding the spin-configuration.
+  type tSpin
+
+     !> Dimensionality of the Hamiltonian
+     integer :: H = 1
+     !> Dimensionality of the density matrix
+     integer :: DM = 1
+     !> Dimensionality of the energy density matrix
+     integer :: EDM = 1
+     !> Dimensionality of the grid operations
+     integer :: Grid = 1
+     !> Dimensionality of the diagonal spin-components
+     integer :: spinor = 1
+
+     ! Storing the type of calculation
+     
+     !> Whether the simulation has no spin
+     logical :: none = .true.
+     !> Collinear spin
+     logical :: Col = .false.
+     !> Non-collinear spin
+     logical :: NCol = .false.
+     !> Spin-orbit coupling
+     logical :: SO = .false.
+
+     ! Perhaps one could argue that one may
+     ! associate a symmetry to the spin which
+     ! then denotes whether the spin-configuration
+     ! is assumed time-reversal symmetric...
+     ! Hmm... 
+
+  end type tSpin
+
+end module t_spin
+
 module m_spin
   use precision, only: dp
+
+  use t_spin, only: tSpin
 
   implicit none
   
   private
 
-  logical, save, public :: NoMagn  = .false.
-  logical, save, public :: SPpol   = .false.
-  logical, save, public :: NonCol  = .false.
-  logical, save, public :: SpOrb   = .false.
+  !> Spin configuration for SIESTA
+  type(tSpin), public :: spin
+
+  ! Create short-hands for the spin-configuration
+  integer, save, public, pointer :: nspin ! (Grid)
+  integer, save, public, pointer :: spinor_dim ! (spinor)
+  integer, save, public, pointer :: h_spin_dim ! (H and DM)
+  integer, save, public, pointer :: e_spin_dim ! (EDM)
+  
+
+  logical, save, public, pointer :: NoMagn ! (noSP)
+  logical, save, public, pointer :: SPpol ! (Col)
+  logical, save, public, pointer :: NonCol ! (NCol)
+  logical, save, public, pointer :: SpOrb ! (SO)
+
+  ! Actually this is unrelated to the spin-configuration...
+  ! Consider moving this to some other place...
   logical, save, public :: TrSym   = .true.
-
-  ! Number of spin components
-  integer, save, public :: nspin
-
-  integer, save, public :: spinor_dim   ! Spin dimension of electronic states
-                                        ! Used for sizing eo and qo,
-                                        ! efs and qfs
-  integer, save, public :: h_spin_dim   ! Number of spin components in H and D
-  integer, save, public :: e_spin_dim   ! Number of spin components in E_dm
 
   ! Different Fermi-levels for different fixed spin-components
   real(dp), pointer, save, public  :: efs(:)
@@ -48,52 +96,81 @@ contains
   subroutine init_spin()
     
     use sys, only: die
-    use fdf, only : fdf_get, leqi
+    use fdf, only : fdf_get, leqi, fdf_deprecated
     use alloc, only: re_alloc
 
     character(len=32) :: opt
 
+    ! Create pointer assignments...
+    call int_pointer(spinor_dim, spin%spinor)
+    call int_pointer(nspin     , spin%grid)
+    call int_pointer(h_spin_dim, spin%H)
+    call int_pointer(e_spin_dim, spin%EDM)
+
+    ! Create pointer assignments...
+    call log_pointer(NoMagn, spin%none)
+    call log_pointer(SPpol , spin%Col)
+    call log_pointer(NonCol, spin%NCol)
+    call log_pointer(SpOrb , spin%SO)
+
     ! Time reversal symmetry
     TrSym  = .true.
-    ! All default to false
-    NoMagn = .false.
-    SPpol  = .false.
-    NonCol = .false.
-    SpOrb  = .false.
 
-    ! Read in old flags:
-    SPpol  = fdf_get('SpinPolarized',.false.)
-    NonCol = fdf_get('NonCollinearSpin',.false.)
-    SpOrb  = fdf_get('SpinOrbit',.false.)
+    ! All components of the 'spin' variable
+    ! is initially correct...
+    spin%none = .false.
+    spin%Col = .false.
+    spin%NCol = .false.
+    spin%SO = .false.
+    
+    ! Read in old flags (discouraged)
+    spin%Col  = fdf_get('SpinPolarized',.false.)
+    spin%NCol = fdf_get('NonCollinearSpin',.false.)
+    spin%SO   = fdf_get('SpinOrbit',.false.)
+
+    ! Announce the deprecated flags (if used)...
+    call fdf_deprecated('SpinPolarized','Spin')
+    call fdf_deprecated('NonCollinearSpin','Spin')
+    call fdf_deprecated('SpinOrbit','Spin')
 
     ! Set default option from "old" options
-    if ( SpOrb ) then
+    if ( spin%SO ) then
        opt = 'spin-orbit'
-    else if ( NonCol ) then
+    else if ( spin%NCol ) then
        opt = 'non-collinear'
-    else if ( SPpol ) then
-       opt = 'polarized'
+    else if ( spin%Col ) then
+       opt = 'collinear'
     else
-       opt = 'non-polarized'
+       opt = 'none'
     end if
 
     ! In order to enable text input (and obsolete the
     ! 4 different options we use a single value now)
     opt = fdf_get('Spin', opt)
 
-    if ( leqi(opt, 'non-polarized') .or. &
+    if ( leqi(opt, 'none') .or. &
+         leqi(opt, 'non-polarized') .or. &
          leqi(opt, 'non-polarised') .or. &
          leqi(opt, 'NP') .or. leqi(opt,'N-P') ) then
-       NoMagn = .true.
+
+       spin%none = .true.
+       
     else if ( leqi(opt, 'polarized') .or. &
+         leqi(opt, 'collinear') .or. &
          leqi(opt, 'polarised') .or. leqi(opt, 'P') ) then
-       SPpol = .true.
+       
+       spin%Col = .true.
+       
     else if ( leqi(opt, 'non-collinear') .or. &
          leqi(opt, 'NC') .or. leqi(opt, 'N-C') ) then
-       NonCol = .true.
+       
+       spin%NCol = .true.
+       
     else if ( leqi(opt, 'spin-orbit') .or. leqi(opt, 'S-O') .or. &
          leqi(opt, 'SOC') .or. leqi(opt, 'SO') ) then
-       SpOrb = .true.
+       
+       spin%SO = .true.
+       
     else
        write(*,*) 'Unknown spin flag: ', trim(opt)
        call die('Spin: unknown flag, please assert the correct input.')
@@ -112,49 +189,81 @@ contains
     ! an argument 'nspin' which really means 'spinor_dim' (like diagon),
     ! and others (such as dhscf) expect 'nspin' to mean 'nspin_grid'.
 
-    if ( SpOrb ) then
-       NoMagn     = .false.
-       SPpol      = .false.
-       NonCol     = .false.
-       SpOrb      = .true.
-       TRSym      = .false.
-       nspin      = 4
-       h_spin_dim = 8
-       e_spin_dim = 4
-       spinor_dim = 2
-       
-    else if ( NonCol ) then
-       NoMagn     = .false.
-       SPpol      = .false.
-       NonCol     = .true.
-       SpOrb      = .false.
-       TRSym      = .false.
-       nspin      = 4
-       h_spin_dim = 4
-       e_spin_dim = 4
-       spinor_dim = 2
-       
-    else if ( SPpol ) then
-       NoMagn     = .false.
-       SPpol      = .true.
-       NonCol     = .false.
-       SpOrb      = .false.
-       TRSym      = .true.
-       nspin      = 2
-       h_spin_dim = 2
-       e_spin_dim = 2
-       spinor_dim = 2
+    if ( spin%SO ) then
+       ! Spin-orbit case
 
-    else 
-       NoMagn     = .true.
-       SPpol      = .false.
-       NonCol     = .false.
-       SpOrb      = .false.
+       ! Dimensions
+       spin%H      = 8
+       spin%DM     = 8
+       spin%EDM    = 4
+       spin%Grid   = 4
+       spin%spinor = 2
+
+       ! Flags
+       spin%none = .false.
+       spin%Col  = .false.
+       spin%NCol = .false.
+       spin%SO   = .true.
+
+       ! should be moved...
+       TRSym      = .false.
+
+    else if ( spin%NCol ) then
+       ! Non-collinear case
+
+       ! Dimensions
+       spin%H      = 4
+       spin%DM     = 4
+       spin%EDM    = 4
+       spin%Grid   = 4
+       spin%spinor = 2
+
+       ! Flags
+       spin%none = .false.
+       spin%Col  = .false.
+       spin%NCol = .true.
+       spin%SO   = .false.
+
+       ! should be moved...
+       TRSym      = .false.
+
+    else if ( spin%Col ) then
+       ! Collinear case
+
+       ! Dimensions
+       spin%H      = 2
+       spin%DM     = 2
+       spin%EDM    = 2
+       spin%Grid   = 2
+       spin%spinor = 2
+
+       ! Flags
+       spin%none = .false.
+       spin%Col  = .true.
+       spin%NCol = .false.
+       spin%SO   = .false.
+
+       ! should be moved...
        TRSym      = .true.
-       nspin      = 1
-       h_spin_dim = 1
-       e_spin_dim = 1
-       spinor_dim = 1
+
+    else if ( spin%none ) then
+       ! No spin configuration...
+
+       ! Dimensions
+       spin%H      = 1
+       spin%DM     = 1
+       spin%EDM    = 1
+       spin%Grid   = 1
+       spin%spinor = 1
+
+       ! Flags
+       spin%none = .true.
+       spin%Col  = .false.
+       spin%NCol = .false.
+       spin%SO   = .false.
+
+       ! should be moved...
+       TRSym      = .true.
 
     end if
 
@@ -162,9 +271,29 @@ contains
     TRSym  = fdf_get('TimeReversalSymmetry',TrSym)
 
     nullify(efs,qs)
-    call re_alloc(efs,1,spinor_dim,name="efs",routine="init_spin")
-    call re_alloc(qs,1,spinor_dim,name="qs",routine="init_spin")
+    call re_alloc(efs, 1, spin%spinor, &
+         name="efs",routine="init_spin")
+    call re_alloc(qs, 1, spin%spinor, &
+         name="qs",routine="init_spin")
 
+  contains
+
+    subroutine int_pointer(from, to)
+      integer, pointer :: from
+      integer, intent(in), target :: to
+
+      from => to
+
+    end subroutine int_pointer
+
+    subroutine log_pointer(from, to)
+      logical, pointer :: from
+      logical, intent(in), target :: to
+
+      from => to
+
+    end subroutine log_pointer
+    
   end subroutine init_spin
 
 
@@ -176,25 +305,25 @@ contains
 
     if ( .not. IONode ) return
 
-    if ( SpOrb ) then
+    if ( spin%SO ) then
        opt = 'spin-orbit'
-    else if ( NonCol ) then
+    else if ( spin%NCol ) then
        opt = 'non-collinear'
-    else if ( SPpol ) then
-       opt = 'polarized'
+    else if ( spin%Col ) then
+       opt = 'collinear'
     else 
-       opt = 'non-polarized'
+       opt = 'none'
     end if
 
     write(*,'(a,t53,''= '',a)') 'redata: Spin configuration',trim(opt)
-    write(*,'(a,t53,''= '',i0)')'redata: Number of spin components',h_spin_dim
+    write(*,'(a,t53,''= '',i0)')'redata: Number of spin components',spin%H
     write(*,'(a,t53,''= '',l1)')'redata: Time-Reversal Symmetry',TRSym
     write(*,'(a,t53,''= '',l1)')'redata: Spin-spiral',Spiral
-    if ( Spiral .and. .not. NonCol ) then
+    if ( Spiral .and. .not. spin%NCol ) then
        write(*,'(a)') 'redata: WARNING: spin-spiral requires non-collinear spin'
     end if
 
-    if ( SpOrb ) then
+    if ( spin%SO ) then
        write(*,'(a)') repeat('#',60)
        write(*,'(a,t16,a,t60,a)') '#','Spin-orbit coupling is in beta','#'
        write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
