@@ -466,6 +466,7 @@
       use m_ts_options,          only: ts_scf_mixs
       use m_ts_options,          only: ts_Dtol, ts_Htol
       use m_ts_options,          only: ts_hist_keep
+      use m_ts_options,          only: ts_siesta_stop
       use m_ts_electype
 
       integer :: iEl, na_a
@@ -477,11 +478,26 @@
       if ( .not. TSmode ) return
       if ( .not. TSinit ) return
 
+      ! whether we are in siesta initialization step
+      TSinit = .false.
+      ! whether transiesta is running
+      TSrun  = .true.
+
+      ! If transiesta should stop immediately
+      if ( ts_siesta_stop ) then
+         
+         if ( IONode ) then
+          write(*,'(a)') 'ts: Stopping transiesta (user option)!'
+         end if
+         
+         return
+         
+      end if
+
+      ! Signal to continue...
       last_step = .false.
-      TSinit = .false.    ! whether we are in siesta initialization step
-      TSrun  = .true.     ! whether transiesta is running
       iscf   = 0
-      
+
       ! DANGER (when/if going back to the DIAGON run, we should
       ! re-instantiate the original mixing value)
       call val_swap(dDtol,ts_Dtol)

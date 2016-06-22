@@ -64,37 +64,33 @@ contains
   subroutine read_ts_hartree_options( )
 
     use fdf, only: fdf_get, leqi
-    use m_ts_global_vars, only: TSmode
 
     character(len=50) :: c
 
-    if ( TSmode ) then
-       if ( ts_tidx > 0 ) then
-          c = fdf_get('Hartree.Fix','plane')
-       else
-          c = fdf_get('Hartree.Fix','elec-plane')
-       end if
+    if ( ts_tidx > 0 ) then
+       
+       c = fdf_get('TS.Hartree.Fix','plane')
+
     else
-       c = fdf_get('Hartree.Fix','none')
+       
+       c = fdf_get('TS.Hartree.Fix','elec-plane')
+
     end if
-    c = fdf_get('TS.Hartree.Fix',c)
-    if ( leqi(c,'none') ) then
-       TS_HA = TS_HA_NONE
-    else if ( leqi(c,'plane') ) then
+
+    if ( leqi(c,'plane') .and. ts_tidx > 0 ) then
        TS_HA = TS_HA_PLANE
     else if ( leqi(c,'elec-plane') .or. leqi(c,'elec') ) then
        TS_HA = TS_HA_ELEC
     else if ( leqi(c,'elec-box') ) then
        TS_HA = TS_HA_ELEC_BOX
     else
-       ! default to none
-       TS_HA = TS_HA_NONE
+       call die('TS.Hartree.Fix: invalid option with respect &
+            &to simulation cell. "plane" not allowed for N/=2 or&
+            & non-aligned electrodes.')
     end if
-    Vha_frac = fdf_get('Hartree.Fix.Frac',1._dp)
-    if ( TSmode .and. TS_HA == TS_HA_NONE ) then
-       ! If transiesta, we *MUST* default to the plane
-       TS_HA = TS_HA_PLANE
-    end if
+
+    ! Determine the fractional correction of the Hartree fix
+    Vha_frac = fdf_get('TS.Hartree.Fix.Frac',1._dp)
     
   end subroutine read_ts_hartree_options
 

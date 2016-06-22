@@ -79,6 +79,7 @@ contains
 
        if ( IONode .and. len_trim(Hartree_fname) == 0 ) then
           write(*,'(a)')'ts_voltage: Lifted locally on each electrode'
+          write(*,'(a)')'ts_voltage: WARNING please prefer to use a custom Poison solution!'
           
        else if ( IONode .and. len_trim(Hartree_fname) > 0 ) then
           write(*,'(3a)')'ts_voltage: ', &
