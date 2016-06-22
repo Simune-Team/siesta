@@ -692,13 +692,13 @@ contains
 ! *********************
     ! Create loop-variables for doing stuff
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
-    integer :: no_l, no_u, lio, io, ind, jo, i, idx
+    integer :: no_l, no_u, lio, io, ind, j, i, idx
     
     ! Create all the local sparsity super-cell
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l,nrows_g=no_u)
 
-!$OMP parallel default(shared), private(i,io,lio,ind,jo,idx)
+!$OMP parallel default(shared), private(i,io,lio,ind,j,idx)
 
 !$OMP workshare
     A_UT(:) = 0._dp
@@ -726,21 +726,21 @@ contains
           idx = UCORB(l_col(ind),no_u)
 
           ! If the orbital is not in the region, we skip it
-          jo = rgn_pivot(r,idx)
-          if ( jo <= 0 ) cycle
+          j = rgn_pivot(r,idx)
+          if ( j <= 0 ) cycle
 
           ! Calculate position
           ! For Gamma, we do not need the complex conjugate...
-          if ( i > jo ) then
-             idx = jo + (i -1)*i /2
+          if ( i > j ) then
+             idx = j + (i -1)*i /2
 !$OMP atomic
              A_UT(idx) = A_UT(idx) + 0.5_dp * A(ind)
-          else if ( i < jo ) then
-             idx =  i + (jo-1)*jo/2
+          else if ( i < j ) then
+             idx =  i + (j-1)*j/2
 !$OMP atomic
              A_UT(idx) = A_UT(idx) + 0.5_dp * A(ind)
           else
-             idx =  i + (jo-1)*jo/2
+             idx =  i + (j-1)*j/2
 !$OMP atomic
              A_UT(idx) = A_UT(idx) +          A(ind)
           end if
@@ -884,7 +884,7 @@ contains
 ! *********************
     ! Create loop-variables for doing stuff
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
-    integer :: no_l, no_u, lio, io, ind, jo, i, idx, is
+    integer :: no_l, no_u, lio, io, ind, j, i, idx, is
     complex(dp) :: ph
     real(dp) :: w
     
@@ -893,7 +893,7 @@ contains
          nrows=no_l,nrows_g=no_u)
 
 !$OMP parallel default(shared), &
-!$OMP&private(i,io,lio,ind,jo,is,ph,idx,w)
+!$OMP&private(i,io,lio,ind,j,is,ph,idx,w)
 
 !$OMP workshare
     A_UT(:) = dcmplx(0._dp,0._dp)
@@ -922,31 +922,31 @@ contains
           is = UCORB(l_col(ind),no_u)
 
           ! If the orbital is not in the region, we skip it
-          jo = rgn_pivot(r,is)
-          if ( jo <= 0  ) cycle
+          j = rgn_pivot(r,is)
+          if ( j <= 0  ) cycle
 
           is = (l_col(ind)-1)/no_u
 
           ! Calculate position
-          if ( i > jo ) then
+          if ( i > j ) then
              ph = cdexp(dcmplx(w, - &
                   k(1) * sc_off(1,is) - &
                   k(2) * sc_off(2,is) - &
                   k(3) * sc_off(3,is)))
-             idx = jo + (i - 1)* i/2
-          else if ( i < jo ) then
+             idx = j + (i - 1)* i/2
+          else if ( i < j ) then
              ph = cdexp(dcmplx(w, &
                   k(1) * sc_off(1,is) + &
                   k(2) * sc_off(2,is) + &
                   k(3) * sc_off(3,is)))
-             idx = i  + (jo-1)*jo/2
+             idx = i  + (j-1)*j/2
           else
              ! diagonal elements are not "double" counted
              ph = cdexp(dcmplx(0._dp, &
                   k(1) * sc_off(1,is) + &
                   k(2) * sc_off(2,is) + &
                   k(3) * sc_off(3,is)))
-             idx = i  + (jo-1)*jo/2
+             idx = i  + (j-1)*j/2
           end if
 
 !$OMP atomic

@@ -2898,9 +2898,16 @@ contains
              cnt = 0
           end if
 
+          ! In the code bGk is _without_ factor "i".
+          ! Hence, we here add factor i
+          proj_ME(iE)%bGk = proj_ME(iE)%bGk * dcmplx(0._dp, 1._dp)
+
           ! ALL nodes _have_ to participate
           call ncdf_put_var(gmol,ctmp,proj_ME(iE)%bGk, &
                start = idx, count=cnt )
+
+          ! and back
+          proj_ME(iE)%bGk = proj_ME(iE)%bGk * dcmplx(0._dp, -1._dp)
 
        end do
 
@@ -2935,8 +2942,12 @@ contains
           ! Now we can save the data
           
           if ( nE%iE(Node) > 0 ) then
+             ! In the code bGk is _without_ factor "i".
+             ! Hence, we here add factor i
+             proj_ME(iE)%bGk = proj_ME(iE)%bGk * dcmplx(0._dp, 1._dp)
              call ncdf_put_var(gmol,ctmp,proj_ME(iE)%bGk, &
                   start = (/1,1,nE%iE(Node),ikpt/) )
+             proj_ME(iE)%bGk = proj_ME(iE)%bGk * dcmplx(0._dp, -1._dp)
           end if
 #ifdef MPI
           if ( Node == 0 ) then
@@ -2944,6 +2955,7 @@ contains
                 if ( nE%iE(iN) <= 0 ) cycle
                 call MPI_Recv(tmp,nl*nl,Mpi_double_complex, &
                      iN, iN, Mpi_comm_world,status,MPIerror)
+                tmp = tmp * dcmplx(0._dp, 1._dp)
                 call ncdf_put_var(gmol,ctmp,reshape(tmp,(/nl,nl/)), &
                      start = (/1,1,nE%iE(iN),ikpt/) )
              end do
@@ -2959,6 +2971,7 @@ contains
        if ( Node /= 0 ) then
           call MPI_WaitAll(N_proj_ME,reqs(1),MPI_STATUSES_IGNORE,MPIerror)
        end if
+       deallocate(tmp)
 #endif
        
     end if

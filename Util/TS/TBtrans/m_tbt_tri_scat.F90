@@ -470,7 +470,7 @@ contains
   subroutine A_Gamma(A_tri,El,T)
 
     type(zTriMat), intent(inout) :: A_tri ! Spectral function
-    type(Elec), intent(in) :: El
+    type(Elec), intent(in) :: El ! contains Gamma == (Sigma - Sigma^\dagger)^T
     real(dp), intent(out) :: T
 
     ! Here we need a double loop
