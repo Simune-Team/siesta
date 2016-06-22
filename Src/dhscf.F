@@ -1237,7 +1237,7 @@ C ----------------------------------------------------------------------
      &             DUscf, Vaux, DStres, nsm )
 
       if ( debug_dhscf ) then
-         write(*,debug_fmt) Node,'Poisson',sqrt(sum(Vscf(:,1)**2))
+         write(*,debug_fmt) Node,'Poisson',sqrt(sum(Vaux(:)**2))
       end if
 
       ! Vscf is in the UNIFORM, sequential form, and only using
