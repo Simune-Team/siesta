@@ -1061,8 +1061,8 @@ C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
 
-      if (acting_efield) then
-         if (dipole_correction) then
+      if ( acting_efield ) then
+         if ( dipole_correction ) then
             field = get_field_from_dipole(dipol,cell)
             if (Node == 0) then
 	       write(6,'(a,3f12.4,a)')
@@ -1070,15 +1070,23 @@ C ----------------------------------------------------------------------
 	       write(6,'(a,3f12.6,a)')
      $              'Electric field for dipole correction =',
      $              field, ' Ry/Bohr/e'
-            endif
+            end if
+            ! The dipole correction (internal electric field)
+            ! energy is half the 
+            ! external energy (thus this separation)
+            DUext = -0.5_dp * ddot(3,field,1,dipol,1)
          else
-            field = user_specified_field
-         endif
+            field = 0._dp
+            DUext = 0._dp
+         end if
+         ! Add the external electric field
+         field = field + user_specified_field
          ! This routine expects a sequential array,
          ! but it is distribution-blind
          call add_potential_from_field( field, cell, nua, isa, xa,
-     &                                  ntm, nsm, Vscf )
-         DUext = - ddot(3,field,1,dipol,1)
+     &        ntm, nsm, Vscf )
+         ! Add energy of external electric field
+         DUext = DUext - ddot(3,user_specified_field,1,dipol,1)
       endif
 
 #ifdef TRANSIESTA
