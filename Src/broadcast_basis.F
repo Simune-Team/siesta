@@ -15,10 +15,11 @@
       use radial
       use parallel,   only : Node, Nodes
       ! Broadcast LDA+U variables
-      use ldau_specs, only: switch_ldau, dtol_ldaupop
-      use ldau_specs, only: dDmax_threshold, ldau_shift
-      use ldau_specs, only: ldau_init
-      
+      use ldau_specs, only: dTol_ldaupop
+      use ldau_specs, only: dDmax_threshold
+      use ldau_specs, only: ldau_shift, ldau_init
+      use ldau_specs, only: switch_ldau
+
 #ifdef MPI
       use mpi_siesta
       use m_mpi_utils, only: broadcast
@@ -200,11 +201,11 @@
       enddo
 
       ! Broadcast LDA+U
-      call broadcast( switch_ldau )
-      call broadcast( ldau_shift )
-      call broadcast( ldau_init )
       call broadcast( dTol_ldaupop )
       call broadcast( dDmax_threshold )
+      call broadcast( ldau_init )
+      call broadcast( ldau_shift )
+      call broadcast( switch_ldau )
       
 #ifdef DEBUG
       call write_debug( '  POS broadcast_basis' )
