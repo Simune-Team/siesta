@@ -14,6 +14,8 @@
       use atm_types
       use radial
       use parallel,   only : Node, Nodes
+      ! We also need to broadcast the chemical list
+      use chemical, only : chemical_list
 
 #ifdef MPI
       use mpi_siesta
@@ -42,9 +44,24 @@
       call MPI_Bcast(nspecies,1,MPI_integer,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(npairs,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 
-      if (Node.ne.0) allocate (species(nspecies))
+      if (Node.ne.0) then
+         allocate(species(nspecies))
+         ! Allocate the chemical_list type in chemical.f
+         ! This exposes the generic routines used for
+         ! determining the type of basis orbital.
+         chemical_list%no_of_species = nspecies
+         nullify(chemical_list%spec_label,chemical_list%z)
+         allocate(chemical_list%spec_label(nspecies))
+         allocate(chemical_list%z(nspecies))
+      end if
 
       do is=1,nspecies
+        call MPI_Bcast(chemical_list%spec_label(is),20,MPI_character,
+     $        0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(chemical_list%z(is),1,MPI_Integer,
+     $        0,MPI_Comm_World,MPIerror)
+
+         
         spp => species(is)
         call MPI_Bcast(spp%symbol,2,MPI_character,
      $                 0,MPI_Comm_World,MPIerror)
