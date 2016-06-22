@@ -27,11 +27,6 @@
 !    by the dipole moment of the system, thus allowing to deal with
 !    asymmetric slabs (and compute properties such as the work funcion
 !    of each of the surfaces).
-!       One can also specify the vacuum region by hand.
-!       Simply use this block
-!       %block SlabDipoleCorrection.Vacuum
-!           0.000  0.000  3.000 Ang
-!       %endblock SlabDipoleCorrection.Vacuum
 
       use precision, only: dp
       use sys,       only: die
@@ -40,9 +35,6 @@
       logical, public  :: acting_efield = .false.
       logical, public  :: dipole_correction = .false.
       real(dp), public :: user_specified_field(3) =
-     &     (/ 0.0_dp, 0.0_dp, 0.0_dp /)
-      logical, public  :: user_dipole_correction_vacuum = .false.
-      real(dp), public :: user_specified_vacuum(3) = 
      &     (/ 0.0_dp, 0.0_dp, 0.0_dp /)
 
       public :: initialize_efield
@@ -194,23 +186,6 @@
      $ (ddot(3,user_specified_field,1,user_specified_field,1) /= 0.0_dp)
 
       dipole_correction = fdf_boolean("SlabDipoleCorrection",.false.)
-      if ( fdf_block('SlabDipoleCorrection.Vacuum',bfdf) ) then
-         if (.not. fdf_bline(bfdf,pline)) 
-     & call die('No line in SlabDipoleCorrection.Vacuum block')
-         if (.not. fdf_bmatch(pline,"vvvn"))
-     & call die("Wrong format in SlabDipoleCorrection.Vacuum block")
-         
-         ! Notify about user supplied vacuum middle
-         user_dipole_correction_vacuum = .true.
-
-         ! Read the coordinate
-         eunits = fdf_bnames(pline,1)
-         cfactor = fdf_convfac(eunits,'Bohr')
-         do ix = 1 , 3
-            user_specified_vacuum(ix) = fdf_bvalues(pline,ix) * cfactor
-         end do
-
-      end if
 
       if (dipole_correction) then
          if ( IONode ) then
@@ -220,11 +195,6 @@
      .        'efield: SlabDipoleCorrection = .true. in input file',
      .        'efield: A dipole layer will be introduced in the vacuum',
      .        'efield: region to compensate the system dipole'
-         if (ionode.and.user_dipole_correction_vacuum ) then
-            write(*,'(a)')'efield: SlabDipoleCorrection vacuum point'
-            write(*,'(tr4,3(tr2,f10.3),a)')
-     &           user_specified_vacuum/Ang,' Ang'
-         end if
          acting_efield = .true.
       endif
 
@@ -330,42 +300,11 @@ C     Find the geometric center of the system
          enddo
       enddo
 
-      if ( user_dipole_correction_vacuum ) then
-C        Define the vacuum center
-         do ix = 1,3
-            xfrac = ddot(3,user_specified_vacuum,1,rcell(1,ix),1)
-            i0(ix) = nint( xfrac * meshG(ix) )
-            if ( abs(efield(ix)) > 1.e-9_dp ) then
-               ! Only check against fields above certain margin
-            if ( xmin(ix) < xmax(ix) ) then
-               ! stringent ordering
-               if ( nint(xmin(ix) * meshG(ix)) <= i0(ix) .and. 
-     &              i0(ix) <= nint(xmax(ix) * meshG(ix)) ) then
-                  ! the vacuum specified by the user lies
-                  ! in between atomic ranges
-      call die('User specified vacuum lies within atomic orbital range. 
-     &This is not allowed.')
-               end if
-            else
-               ! wrapping ordering
-               if ( i0(ix) <= nint(xmin(ix) * meshG(ix)) .and. 
-     &              nint(xmax(ix) * meshG(ix)) <= i0(ix) ) then
-                  ! the vacuum specified by the user lies
-                  ! in between atomic ranges
-      call die('User specified vacuum lies within atomic orbital range. 
-     &This is not allowed.')
-               end if
-            end if
-            end if
-         end do
-      else 
-C        Find the mesh index of the origin of the shifted cell
-         do ix = 1,3
-            xmean = (xmin(ix) + xmax(ix)) / 2
-            i0(ix) = nint( (xmean-0.5_dp) * meshG(ix) )
-         end do
-      end if
-
+C     Find the mesh index of the origin of the shifted cell
+      do ix = 1,3
+         xmean = (xmin(ix) + xmax(ix)) / 2
+         i0(ix) = nint( (xmean-0.5_dp) * meshG(ix) )
+      end do
 
 C     Ensure that all indices become positive in the below loop
       do ix = 1 , 3
