@@ -24,20 +24,36 @@ The original TranSIESTA module was developed by
 Pablo Ordejon and Jose L. Mozos (then at ICMAB-CSIC), and Mads Brandbyge,
 Kurt Stokbro, and Jeremy Taylor (Technical Univ. of Denmark).
 
-Other contributors:
+Other contributors (we apologize for any omissions):
 
 Eduardo Anglada
+Thomas Archer
+Luis C. Balbas
 Xavier Blase
+Michele Ceriotti
+Raul de la Cruz
+Gabriel Fabricius
 Marivi Fernandez-Serra
 Jaime Ferrer
 Chu-Chun Fu
 Sandra Garcia
+Victor M. Garcia-Suarez
+Rogeli Grima
+Rainer Hoft
 Jorge Kohanoff
+Richard Korytar
 In-Ho Lee
 Nicolas Lorente
 Miquel Llunell
 Eduardo Machado
+Maider Machado
+Jose Luis Martins
+Volodymyr Maslyuk
+Juana Moreno
+Frederico Dutilh Novaes
+Micael Oliveira
 Nick Rubner Papior
+Magnus Paulsson
 Oscar Paz
 Andrei Postnikov
 Tristana Sondon
@@ -45,7 +61,7 @@ Andrew Walker
 Andrew Walkingshaw
 Toby White
 Francois Willaime
-...
+
 
 O.F. Sankey, D.J. Niklewski and D.A. Drabold made the FIREBALL code
 available to P. Ordejon.  Although we no longer use the routines in

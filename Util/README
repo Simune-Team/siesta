@@ -24,13 +24,7 @@ Projections: Compute projections of electronic structure of a system
 
 MPI_test:    Tests to help diagonose the interface to MPI.
 
-pseudo-xml:  Converts pseudopotential files in XML format to .psf form.
-	     (by J. Junquera and A. Garcia)
-
 test-xml:    Experimental tool to compare two CML files.
-
-pseudo-xml: Conversion of pseudo files in XML format to formatted
-	    form.	    
 
 Plrho/plrho: Plots in 3D the electron density and other functions
              calculated by siesta (by Jose M. Soler)

@@ -5,6 +5,20 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-06-23                                                    trunk-525
+Merged 4.0-500
+
+* Update list of contributors.
+* Electric-field/slab-dipole-correction fix.
+* Fix to avoid ps reparametrization in bessel case
+* Remove Util/pseudo-xml
+* Other minor changes in README files
+
+
+-----------------------------------------------------------------------
+...
+...
+-----------------------------------------------------------------------
 2016-05-29                                                    trunk-504
 Update makefile in Util/Gen-basis after ldau inclusion
 

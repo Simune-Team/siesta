@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large February 17, 2016 }
+{\Large June 23, 2016 }
 
 \vspace{1.5cm}
 
@@ -6244,6 +6244,12 @@ vector in Cartesian coordinates, in the specified units. Example:
      %endblock ExternalElectricField
 \end{verbatim}
 
+Starting with version 4.0, applying an electric field perpendicular to
+a slab will by default enable the slab dipole
+correction\index{SlabDipoleCorrection@{\bf SlabDipoleCorrection}}
+option. To reproduce older calculations, set this correction option
+explicitly to {\tt .false.} in the input file.
+
 {\it Default value:} zero field
 
 \item[{\bf SlabDipoleCorrection}] ({\it boolean}):
@@ -6266,6 +6272,9 @@ it is advisable to use the {\tt DM.MixSCF1}\index{DM.MixSCF1@{\bf DM.MixSCF1}}\i
 input and output density matrices after that first iteration.
 
 (See {\tt Tests/sic-slab})
+
+This will default to \texttt{true} if an external field is applied to a slab 
+calculation, otherwise it will default to \texttt{false}.
 
 {\it Default value:} {\tt false}
 
