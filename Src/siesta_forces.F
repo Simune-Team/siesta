@@ -119,15 +119,14 @@
 
 
 !      call read_dynoptions ()
-      nhs=no_l*no_u*2
-      call re_alloc(psi,1,nhs,name='psi',routine='chgbasis')
-      call re_alloc(Saux,1,nhs,name='Haux',routine='chgbasis') 
+!      nhs=no_l*no_u*2
+!      call re_alloc(psi,1,nhs,name='psi',routine='chgbasis')
+!      call re_alloc(Saux,1,nhs,name='Haux',routine='chgbasis') 
       call chgbasis(no_s, nspin, nspin, no_l, maxnh, maxnh,
-     &                no_u, numh, listhptr, listh,
-     &                numh, listhptr, listh, S,
-     &                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     &                Dscf, no_u,istep,psi,Saux)
-      !call de_alloc(psi,'psi','chgbasis')       
+     &              no_u, gamma, indxuo, nkpnt, kpoint, kweight,
+     &              Dscf, no_u,istep)
+!     call de_alloc(psi, 'psi', 'siesta_forces') 
+!      call de_alloc(Saux,'Saux', 'siesta_forces')
       else 
 
       DO 
@@ -242,10 +241,9 @@
              ! run.
       if(writetdwf) then
               istpp = 0
-      call initwf(no_s, nspin, nspin, no_l, maxnh, no_u,
-     &            numh, listhptr, listh, H, S, qtot,
-     &            gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     &            eo, qo, no_u, EF7, istpp,totime)
+      call initwf(no_s, nspin, nspin, no_l, maxnh, no_u, qtot,
+     &            gamma, indxuo, nkpnt, kpoint, kweight,
+     &            no_u, EF7, istpp,totime)
       end if
 
 
@@ -309,10 +307,8 @@
      &                   etot, eo, no_u,nspin,nkpnt) 
 !      end if
            call evolve(no_s,nspin,nspin,no_l,maxnh,maxnh,no_u,
-     &            numh,listhptr,listh,numh,listhptr,listh,
-     &            H,S,eo,
-     &            gamma, xijo, indxuo,nkpnt,kpoint,kweight,
-     &            Dscf, Escf, no_u, dt_tded,istep,itded)
+     &                 gamma, indxuo,nkpnt,kpoint,kweight,
+     &                 Dscf, Escf, no_u, dt_tded,istep,itded)
 !if (IONode)print*,eo
 ! The total simulation time mainly for plotting
        totime = (istep*dt - dt) + (itded*dt_tded-dt_tded) 

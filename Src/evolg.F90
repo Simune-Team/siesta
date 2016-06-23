@@ -1,8 +1,5 @@
       subroutine evolg( nspin, nuo, no, maxo, maxnh, maxnd,           &
-                       numh, listhptr, listh, numd,                   &
-                       listdptr, listd, H, S, eo,                     &
-                       Dnew, Enew, nuotot,                            &
-                       delt,Haux,Saux,psi,psi2, ist,itd)
+                        Dnew, Enew, nuotot, delt, ist,itd)
 ! ********************************************************************
 ! Subroutine to calculate the eigenvalues and eigenvectors, density
 ! and energy-density matrices, and occupation weights of each 
@@ -67,6 +64,8 @@
       use wavefunctions
       use MatrixSwitch
       use siesta_options,        only: eigen_time, ntded
+      use sparse_matrices,       only: H, S, numh, listh, listhptr 
+      use m_eo,                  only: eo
       use m_steps,               only: fincoor
 #ifdef MPI
       use mpi_siesta
@@ -78,21 +77,20 @@
       INTEGER :: MPIerror
 #endif
       !
-      integer              :: itd, ist, listd(maxnd), numd(nuo), listdptr(nuo)
+      integer              :: itd, ist
       integer              :: maxnd, maxnh, nuo, no, nspin, nuotot, ncounter, maxo, asn,desch(9)
-      integer              :: listh(maxnh), numh(nuo), listhptr(nuo)
-      double precision     :: Dnew(maxnd,nspin), Enew(maxnd,nspin), H(maxnh,nspin)
-      double precision     :: S(maxnh), delt, eo(maxo,nspin,1)
+      double precision     :: Dnew(maxnd,nspin), Enew(maxnd,nspin)
+      double precision     :: delt
       !
       type(matrix)         :: Hauxms,Sauxms, bix2,aux,aux2,bix
       character(3)         :: m_operation
       character(5)         :: m_storage
-      complex(dp)          :: varaux, varaux2,varaux3,Haux(nuotot,nuo),Saux(nuotot,nuo)
-      complex(dp)          :: psi2(nuotot,nuo),pipj, pipj2, varaux4,psi(nuotot,nuo)    
-      !Internal variables 
+      complex(dp)          :: varaux, varaux2,varaux3, pipj, pipj2, varaux4  
+      complex(dp), allocatable :: Hx(:,:),Sx(:,:)
+       
       integer              :: ie, io, iio,iee, ispin, j, jo, BNode, iie, ind, BTest
       integer              :: mm, maxnuo, ierror, nd, nocc, nstp,i,npsi
-      double precision     :: ee, qe, t, eigv, dnrm,el1,el2,el3,el4,Ddense(nuotot,nuotot)
+      double precision     :: ee, qe, t, eigv, dnrm,el1,el2,el3,el4
       logical              :: calculateEnew ! Not sure if it is really needed?
       !
 #ifdef MPI
@@ -107,6 +105,11 @@
       !
       call timer( 'Evolg', 1 )
       !
+      allocate(Hx(nuotot,nuo))
+      allocate(Sx(nuotot, nuo))
+!      allocate(psix(nuotot, nuo))
+!      if(calculateEnew) allocate(psix2(nuotot, nuo))
+
       call m_allocate( Hauxms,nuotot,nuotot,m_storage)
       call m_allocate( Sauxms,nuotot,nuotot,m_storage)
       !
@@ -116,31 +119,30 @@
       !
       nstp=1 ! No of substepts between a single electronic step.
       !
-      nd = listdptr(nuo) + numd(nuo)
+      nd = listhptr(nuo) + numh(nuo)
       Dnew(1:nd,1:nspin) = 0.0_dp
       !if(calculateEnew) Enew(1:nd,1:nspin) = 0.d0
       ! Evolve wavefunctions.............................................
       do ispin = 1,nspin
-        Ddense(:,:)=0.0_dp
         ncounter=0
         if(ispin.eq.2) ncounter=wavef_ms(1,1)%dim2
         call m_set (Hauxms,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
         call m_set (Sauxms,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
-        psi(1:nuotot,1:nuo)=0.0_dp
+!        psi(1:nuotot,1:nuo)=0.0_dp
         ! One can use the dense overlap matrix constructed in changebais? 
         call timer( 'HSSparseToDense', 1 )
         do io = 1,nuo
           do jo = 1,nuotot
-            Saux(jo,io) = (0.0d0,0.0d0)
-            Haux(jo,io) = (0.0d0,0.0d0)
+            Sx(jo,io) = (0.0d0,0.0d0)
+            Hx(jo,io) = (0.0d0,0.0d0)
           enddo
         enddo
         do io = 1,nuo
           do j = 1,numh(io)
             ind = listhptr(io) + j
             jo = listh(ind)
-            Saux(jo,io) = Saux(jo,io) + cmplx(S(ind),0.0d0)
-            Haux(jo,io) = Haux(jo,io) + cmplx(H(ind,ispin),0.0d0)
+            Sx(jo,io) = Sx(jo,io) + cmplx(S(ind),0.0d0)
+            Hx(jo,io) = Hx(jo,io) + cmplx(H(ind,ispin),0.0d0)
           enddo
         enddo
         !
@@ -152,17 +154,21 @@
   nuotot,nuo,desch
   IF(Node.eq.31) write(6,*) 'blocksize, nuotot, nuo =', BlockSize, &
   nuotot,nuo,desch
-        do io=1,nuotot
+        do io=1,nuo
           do j=1,nuotot
 #ifdef MPI
-            call pzelget('a',' ',varaux,Haux,j,io,desch)
-            call pzelget('a',' ',varaux2,Saux,j,io,desch)
+!            call pzelget('a',' ',varaux,Hx,j,io,desch)
+!            call pzelget('a',' ',varaux2,Sx,j,io,desch)
+            call LocalToGlobalOrb(io,Node,Nodes,jo)
+            varaux  = Hx(j,io)
+            varaux2 = Sx(j,io)
 #else
-            varaux=Haux(j,io)
-            varaux2=Saux(j,io)
+            jo = io
+            varaux=Hx(j,io)
+            varaux2=Sx(j,io)
 #endif
-            call m_set_element( Hauxms,j,io,varaux,m_operation)
-            call m_set_element( Sauxms,j,io,varaux2,m_operation)
+            call m_set_element( Hauxms,j,jo,varaux,m_operation)
+            call m_set_element( Sauxms,j,jo,varaux2,m_operation)
           enddo
         enddo
         !
@@ -192,9 +198,9 @@
           DO jo=1,nuotot
             call m_get_element(bix2,io,jo,varaux,m_operation)
 #ifdef MPI
-            call pzelset(Saux,io,jo,desch,varaux)
+            call pzelset(Sx,io,jo,desch,varaux)
 #else
-            Saux(io,jo) = varaux
+            Sx(io,jo) = varaux
 #endif
           END DO
         END DO
@@ -206,10 +212,10 @@
         call timer( 'DMSparsetoDense', 1 )
         ! Passing dense DM to sparse DM
         DO io=1,nuo
-          DO j=1,numd(io)
-            ind=listdptr(io) + j
-            jo = listd(ind)
-            Dnew(ind,ispin) = Dnew(ind,ispin) + Saux(jo,io)
+          DO j=1,numh(io)
+            ind=listhptr(io) + j
+            jo = listh(ind)
+            Dnew(ind,ispin) = Dnew(ind,ispin) + Sx(jo,io)
           END DO
         END DO
         call timer( 'DMSparsetoDense', 2 )
@@ -235,6 +241,10 @@
         call timer( 'Eigenvalue', 2 )
       enddo ! ispin
       IF(Node.eq.0) write(6,*) 'evolg:****** END OF EvolveG *****'
+      deallocate(Hx)
+      deallocate(Sx)
+!      deallocate(psix)
+!      if(calculateEnew) deallocate(psix2)
       !
       call timer( 'Evolg', 2 )
     END SUBROUTINE evolg

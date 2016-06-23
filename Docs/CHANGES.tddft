@@ -1,4 +1,15 @@
-2015-06-31  16:30 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-6
+2016-06-23  12:15 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-7
+
+Fixed bugs due to static arrays and deallocating pointers
+
+modified:
+  Src/changebasis.F90
+  Src/evolg.F90
+  Src/m_evolve.F90
+  Src/m_initwf.F90
+  Src/siesta_forces.F
+
+2016-05-31  16:30 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-6
 
 added:
 
@@ -13,7 +24,7 @@ modified:
   Src/MatrixSwitch/examples/example4.F90
   Src/MatrixSwitch/src/MatrixSwitch.F90
 
-2015-06-26  16:00 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-5
+2016-05-26  16:00 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-5
 
 Parallelized (for gamma point) uisng MatrixSwitch.
 

@@ -1,8 +1,6 @@
-      subroutine chgbasis(no, nspin, maxspn, maxuo, maxnh, maxnd,&
-                          maxo, numh, listhptr, listh, numd,&
-                          listdptr, listd, S,&
-                          gamma, xij, indxuo, nk, kpoint, wk,&
-                          Dnew, nuotot,istpmove,psi,Saux)
+      subroutine chgbasis(no, nspin, maxspn, maxuo, maxnh, maxnd,            &
+                          maxo, gamma, indxuo, nk, kpoint, wk, Dnew,         &
+                          nuotot,istpmove)
 
 !******************************************************************************
 !Modified  by D. Sanchez-Portal, Feb 2009
@@ -70,43 +68,51 @@
 
 
   use precision
-  use parallel,     only : Node, Nodes,BlockSize
-  use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
+  use parallel,            only : Node, Nodes,BlockSize
+  use parallelsubs,        only : GlobalToLocalOrb, GetNodeOrbs,               &
+                                  LocalToGlobalOrb
   use fdf
+  use alloc
   use sys, only: die
 #ifdef MPI
-  use mpi_siesta,   only : mpi_bcast, mpi_comm_world, mpi_logical
+  use mpi_siesta,          only : mpi_bcast, mpi_comm_world, mpi_logical
 #endif
   use wavefunctions
-  use m_diagon, only : ictxt
+  use sparse_matrices,     only : numh, listhptr, listh, S, xijo
+!  use densematrix,         only : Saux, psi
+  use m_diagon,            only : ictxt
   use MatrixSwitch
-  use matdiagon,    only: geteigen 
+  use matdiagon,           only: geteigen 
   !
   implicit none
   !
-  integer                 :: maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin, nuotot,istpmove,ierror
-  integer                 :: indxuo(no), listh(maxnh), numh(*), listd(maxnd), numd(*)
-  integer                 :: listhptr(*), listdptr(*)
-  double precision        :: Dnew(maxnd,nspin),kpoint(3,nk),S(maxnh), wk(nk),xij(3,maxnh)
-  logical                 :: gamma
-  external                :: io_assign, io_close
-
+  integer, intent(in)     :: no, nspin, maxspn, maxuo, maxnh, maxnd, maxo
+  integer, intent(in)     :: indxuo(no), nk, nuotot, istpmove
+  logical, intent(in)     :: gamma
+  !
+  real(dp), intent(in)       :: kpoint(3,nk), wk(nk)
+  real(dp), intent(out)      :: Dnew(maxnd,nspin) 
+!  real(dp), intent(inout)    :: Saux(nuotot,maxuo), psi(nuotot, maxuo)
+  !
 #ifdef MPI
   integer                 :: MPIerror,desch(9)
   logical, save           :: ParallelOverK
   external                :: diagkp
 #endif
-
+  !
+  external                :: io_assign, io_close
+  !
   logical, save           :: frstme = .true.
-  integer                 :: io, iuo, iu, naux, nhs,  nuo, juo, jo, ind, ispin, nocc, nwf, ik, j, nd
-  real(dp)                :: skxij,ckxij, kxij, qe,Ddense(nuotot,nuotot)
-  complex(dp)             :: pipj
+  integer                 :: io, iuo, iu, naux, nhs,  nuo, juo, jo, ind, &
+                             ispin, nocc, nwf, ik, j,jio, nd, ierror, npsi
+  real(dp)                :: skxij,ckxij, kxij, qe
+  complex(dp)             :: pipj, varaux,varaux2,varaux3
+  complex(dp), allocatable :: Sx(:,:), psix(:,:)
   !
   type(matrix)                     :: Maux,invsqS,phi, Sauxms
   type(matrix),allocatable,save    :: sqrtS(:)
   character(3)                     :: m_operation
-  character(5)                          :: m_storage
-  complex(dp)                      :: varaux,varaux2,varaux3, Saux(nuotot,maxuo), psi (nuotot,maxuo)
+  character(5)                     :: m_storage
   !
 #ifdef MPI
   call GetNodeOrbs(nuotot,Node,Nodes,nuo)
@@ -126,7 +132,6 @@
   Nodes = 1
   nuo = nuotot
 #endif
-  nhs=nuotot*nuotot*2
   call timer( 'chgbasis', 1 )
 #ifdef MPI
   if (ParallelOverK) then
@@ -141,7 +146,22 @@
   m_storage='szden'
   m_operation='lap'
 #endif
-  ! 
+  !
+  if(nspin .le. 2 .and. gamma) then
+    nhs  = nuotot * nuo 
+    npsi = nuotot * maxuo * nspin
+  else if (nspin .le. 2 .and. .not. gamma) then
+    nhs  = 2 * nuotot * nuotot
+    npsi = 2 * nuotot * nuotot
+  else if (nspin .eq. 4) then
+    call die ('chgbasis: ERROR: EID not yet prepared for non-collinear spin')
+  else 
+    call die ('chgbasis: ERROR: incorrect value of nspin')
+  end if 
+! Allocate local arrays
+  allocate (Sx(nuotot, nuo))
+  allocate (psix(nuotot, nuo))
+
   call m_allocate(Sauxms,nuotot,nuotot,m_storage)
   call m_allocate(Maux,nuotot,nuotot,m_storage)
   call m_allocate(invsqS,nuotot,nuotot,m_storage)
@@ -153,7 +173,7 @@
     frstme=.false.
   endif
   if(istpmove.gt.0) then
-    nd = listdptr(nuo) + numd(nuo)
+    nd = listhptr(nuo) + numh(nuo)
     Dnew(1:nd,1:nspin) = 0.d0
   endif
 #ifdef MPI
@@ -161,7 +181,7 @@
 #endif
   ! 
   do ik = 1,nk
-    Saux=0.0_dp
+    Sx(1:nuotot,1:nuo)=0.0_dp
     call m_set(Sauxms,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
     call timer( 'SsparseTodense', 1 )
     do iuo = 1,nuo
@@ -170,9 +190,9 @@
         jo = listh(ind)
         juo = indxuo(jo)
         if(.not.gamma) then 
-          kxij = kpoint(1,ik) * xij(1,ind) +&
-          kpoint(2,ik) * xij(2,ind) +&
-          kpoint(3,ik) * xij(3,ind)
+          kxij = kpoint(1,ik) * xijo(1,ind) +&
+          kpoint(2,ik) * xijo(2,ind) +&
+          kpoint(3,ik) * xijo(3,ind)
           ckxij = cos(kxij)
           skxij = -sin(kxij)
         else 
@@ -180,7 +200,7 @@
           skxij=0.0_dp
         endif
         ! Saux=S*e^-ikx, and passing sparse to dense
-        Saux(juo,iuo)=Saux(juo,iuo) + cmplx(S(ind)*ckxij,S(ind)*skxij,dp)
+        Sx(juo,iuo)=Sx(juo,iuo) + cmplx(S(ind)*ckxij,S(ind)*skxij,dp)
       enddo
     enddo
     !
@@ -188,14 +208,17 @@
     !
     call timer( 'SdenseToMS', 1 )
     !
-    do io=1,nuotot
+    do io=1,nuo
       do j=1,nuotot
 #ifdef MPI
-        call pzelget('a',' ',varaux2,Saux,j,io,desch)
+        call LocalToGlobalOrb(io,Node, Nodes, jo)
+        varaux2 = Sx(j,io)
+        !call pzelget('a',' ',varaux2,Sx,j,io,desch)
 #else
-        varaux2=Saux(j,io)
+        jo = io
+        varaux2=Sx(j,io)
 #endif
-        call m_set_element( Sauxms,j,io,varaux2,m_operation)
+        call m_set_element( Sauxms,j,jo,varaux2,m_operation)
       enddo
     enddo
     !
@@ -228,41 +251,47 @@
         call m_deallocate(phi)
         ! Constructing  the new DM
         call timer('DMinMS-CB',1)
-        call mm_multiply(wavef_ms(1,ispin),'n',wavef_ms(1,ispin),'c',Maux,cmplx(1.0_dp,0.0_dp,dp),&
-             cmplx(0.0_dp,0.0_dp,dp),m_operation)
+        call mm_multiply(wavef_ms(1,ispin),'n',wavef_ms(1,ispin),'c',          &
+                         Maux,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp), &
+                         m_operation)
         call timer('DMinMS-CB', 2)
         call timer( 'dmMStodense', 1)
         !  
         do io=1,nuotot
+!#ifdef MPI
+!            call LocalToGlobalOrb(io, Node, Nodes, j)
+!#endif
           do jo = 1,nuotot
-            call m_get_element(Maux,io,jo,varaux,m_operation)
 #ifdef MPI
-            call  pzelset(psi,io,jo,desch,varaux)
+            call m_get_element(Maux,jo,io,varaux,m_operation)
+            call  pzelset(psix,jo,io,desch,varaux)
 #else
-            psi(io,jo)=varaux
+            call m_get_element(Maux,jo,io,varaux,m_operation)
+            psix(jo,io)=varaux
 #endif
-          end do
+         end do
         end do
         !
         call timer( 'dmMStodense', 2)
         call timer( 'dmDensetoSparse',1)
         do iuo = 1,nuo
-          do j = 1,numd(iuo)
-            ind = listdptr(iuo) + j
-            jo = listd(ind)
+          call LocalToGlobalOrb(iuo, Node, Nodes, jio)
+          do j = 1,numh(iuo)
+            ind = listhptr(iuo) + j
+            jo = listh(ind)
             juo = indxuo(jo)
             if(.not.gamma) then 
-              kxij = kpoint(1,ik) * xij(1,ind) +&
-              kpoint(2,ik) * xij(2,ind) +&
-              kpoint(3,ik) * xij(3,ind)
+              kxij = kpoint(1,ik) * xijo(1,ind) +&
+              kpoint(2,ik) * xijo(2,ind) +&
+              kpoint(3,ik) * xijo(3,ind)
               ckxij = cos(kxij)
               skxij = -sin(kxij)
             else
               ckxij=1.0d0
               skxij=0.0d0
             endif
-            varaux=real(psi(juo,iuo))*ckxij+ aimag(psi(juo,iuo))*skxij
-            Dnew(ind,ispin)=Dnew(ind,ispin)+varaux
+            varaux2=real(psix(juo,iuo))*ckxij+ aimag(psix(juo,iuo))*skxij
+            Dnew(ind,ispin)=Dnew(ind,ispin)+varaux2
           enddo
         enddo
         !        
@@ -271,6 +300,8 @@
     endif   !istpmove 
   enddo          ! ik 
   !
+  deallocate(Sx)
+  deallocate(psix)
   call timer('chgbasis',2)
   end subroutine chgbasis
 
@@ -286,8 +317,9 @@
  character(3), intent(in)                      :: m_operation
  type(matrix), intent(inout)                   :: S,invsqS,sqrtS
  complex(kind=dp),dimension(S%dim1,S%dim1)     :: A,B
- type(matrix)                                  :: StimesD
- complex(dp)                                   :: eig, varaux
+ type(matrix)                                  :: SD01, SD02
+ complex(dp)                                   :: varaux
+ real(dp)                                      :: eig01, eig02
  real(dp), allocatable                         :: eigen(:)
  integer                                       :: no, info, i, j
  real(dp)  tiny
@@ -295,32 +327,31 @@
  ! 
  no=S%dim1 
  allocate(eigen(no))
- call m_allocate(StimesD,no,no,m_storage)
- call geteigen(S,eigen,m_operation)
- call m_set(StimesD,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+ call m_allocate(SD01,no,no,m_storage)
+ call m_allocate(SD02,no,no,m_storage)
+ call m_set(SD01,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+ call m_set(SD02,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
  ! 
+ ! Takes overlap matrix S in dense form and returns its eigenvalues
+ ! in eigen(*) and eigenvectors in S.
+ call geteigen(S,eigen,m_operation)
+ !
  do j=1,no
-   eig=dsqrt(dabs(eigen(j)))
+   eig01=dsqrt(dabs(eigen(j)))
+   eig02=1.0d0/(eig01+tiny)
    do i=1,no
      call m_get_element(S,i,j,varaux,m_operation)
-     call m_set_element(StimesD,i,j,eig*varaux,m_operation)
+     call m_set_element(SD01,i,j,eig01*varaux,m_operation)
+     call m_set_element(SD02,i,j,eig02*varaux,m_operation)
    enddo
  enddo 
  !
- call mm_multiply(StimesD,'n',S,'c',sqrtS,cmplx(1.0_dp,0.0_dp,dp),&
-      cmplx(0.0_dp,0.0_dp,dp),m_operation)
- do j=1,no
-   eig=dsqrt(dabs(eigen(j)))
-   eig=1.0d0/(eig+tiny)
-   do i=1,no
-     call m_get_element(S,i,j,varaux,m_operation)
-     call m_set_element(StimesD,i,j,eig*varaux,m_operation)
-   enddo
- enddo
- !
- call mm_multiply(StimesD,'n',S,'c',invsqS,cmplx(1.0_dp,0.0_dp,dp),&
-      cmplx(0.0_dp,0.0_dp,dp),m_operation)
- call m_deallocate(StimesD)
+ call mm_multiply(SD01,'n',S,'c',sqrtS,cmplx(1.0_dp,0.0_dp,dp),&
+                  cmplx(0.0_dp,0.0_dp,dp),m_operation)
+ call mm_multiply(SD02,'n',S,'c',invsqS,cmplx(1.0_dp,0.0_dp,dp),&
+                  cmplx(0.0_dp,0.0_dp,dp),m_operation)
+ call m_deallocate(SD01)
+ call m_deallocate(SD02)
  deallocate(eigen)
  !
  end subroutine calculatesqrtS

@@ -2,6 +2,8 @@ module m_initwf
   use precision
   use wavefunctions, only:iowavef, wavef_ms
   use MatrixSwitch
+  use sparse_matrices, only: numh, listhptr, listh, H, S, xijo
+  use m_eo,            only: eo, qo
   !
   implicit none
   !
@@ -13,9 +15,8 @@ module m_initwf
 CONTAINS
   !
   subroutine initwf(no,nspin,maxspn,maxuo,maxnh,         &
-                    maxo,numh,listhptr,listh,            &
-                    H,S,qtot,gamma,xij,indxuo,           &
-                    nk,kpoint,wk,eo,qo,nuotot,ef,        &
+                    maxo, qtot,gamma,indxuo,             &
+                    nk,kpoint,wk,nuotot,ef,        &
                     istpp,totime)
 ! *********************************************************************
 ! Subroutine to calculate the eigenvalues and eigenvectors,
@@ -94,25 +95,29 @@ CONTAINS
       !
       implicit none
       !
-      complex(dp)        :: varaux,varaux2,varaux3,varaux4
       !
-      integer            :: maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin, nuotot
-      integer            :: sumqo,ikmax,iomax,ioi,iof,ispinmax, istpp
-      integer            :: indxuo(no), listh(maxnh), numh(*),listhptr(*), i, j
-      integer            :: io, iuo, iu, nhs, npsi, nuo, nocc(2), ispin,ik
+      integer, intent (in) :: no, nspin, maxspn, maxuo, maxnh, maxo, nk,       &
+                              nuotot, indxuo(no)
+      integer, intent (inout) :: istpp
       !
-      real(dp)           :: eo(maxo,maxspn,nk), H(maxnh,nspin), kpoint(3,nk)
-      real(dp)           :: qo(maxo,maxspn,nk), S(maxnh), wk(nk), xij(3,maxnh)
-      real(dp)           :: qspiral(3), qtot, ef, temp,nelect, entrp,qomax,qtol,totime
+      real(dp), intent (in)    :: kpoint(3,nk), wk(nk), qtot
+      real(dp), intent (inout) :: totime
+      logical, intent (in)     :: gamma
       ! 
+      external           :: io_assign, io_close, readsp, paste
+      !
       character          :: sname*30, fname*33, paste*33, m_storage*5
       !
-      logical            :: fixspin, gamma, ioifound, degen
+      logical            :: fixspin, ioifound, degen
       logical, save      :: spiral
       logical, save      :: frstme = .true.
       !
-      external           :: io_assign, io_close, readsp, paste
       !
+      integer            :: io, iuo, iu, nhs, npsi, nuo, nocc(2), ispin,ik,     &
+                            i, j, sumqo,ikmax,iomax,ioi,iof,ispinmax
+
+      real(dp)           :: qspiral(3), ef, temp,nelect, entrp,qomax,qtol
+      complex(dp)        :: varaux,varaux2,varaux3,varaux4
 #ifdef MPI
       integer            :: MPIerror
       logical, save      :: ParallelOverK
@@ -316,7 +321,7 @@ CONTAINS
       call ms_scalapack_setup(Nodes,1,'c',BlockSize)
       m_storage='pddbc'
 #else
-      m_storage='szden'
+      m_storage='sdden'
 #endif
       allocate(wavef_ms(1:nk,1:nspin)) ! allocate (nk*npsin) matrices inside wavef_ms
       do i=1,nk !for every value of nk and nspin, allocate a matrix of size (nuotot x nocck(i,j))
@@ -328,21 +333,19 @@ CONTAINS
       IF(Node.eq.0) write(6,*) 'Debug02: MatrixSwitch allocations!!!!!!!!!!!!!!'
 !     Call apropriate routine .............................................
       if (nspin.le.2 .and. gamma) then
-        call diaggiwf( nspin, nuo, maxuo, maxnh, maxo,             &
-                    numh, listhptr, listh, H, S, eo,               &
-                    Haux, Saux, psi,                               &
-                    nuotot, occup)
+        call diaggiwf( nspin, nuo, maxuo, maxnh, maxo,                     &
+                    Haux, Saux, psi, nuotot, occup)
       else if (nspin.le.2 .and. .not.gamma) then
-          call diagkiwf( nspin, nuo, no, maxspn, maxuo, maxnh,    &
-                    maxo, numh, listhptr, listh,                  &
-                    H, S, xij, indxuo, nk, kpoint,                &
-                    eo, Haux, Saux, psi,                          &
-                    nuotot, occup)
+          call diagkiwf( nspin, nuo, no, maxspn, maxuo, maxnh,                 &
+                         maxo, indxuo, nk, kpoint, Haux, Saux,                 &
+                         psi, nuotot, occup)
       else 
-         stop                                                     &
+         stop                                                                  &
          'initwf: ERROR: non-collinear spin options for TDDFT not yet implemented'
       end if
       IF(Node.eq.0) write(6,*) 'Debug03: Gamma-diagonalization !!!!!!!!!!!!!!'
+!     Write/save wavefunction in .TDWF file to use for TDDFT calculation.
+      call  iowavef('write',wavef_ms,nuotot,nk,nspin,istpp,totime)
 !     Free local arrays
       call memory('D','I',size(muo),'initwf',stat=mem_stat)
       deallocate(muo,stat=mem_stat)
@@ -350,17 +353,18 @@ CONTAINS
       deallocate(nocck,stat=mem_stat)
       call memory('D','L',size(occup),'initwf',stat=mem_stat)
       deallocate(occup,stat=mem_stat)
-!     Write/save wavefunction in .TDWF file to use for TDDFT calculation.
-      call  iowavef('write',wavef_ms,nuotot,nk,nspin,istpp,totime)
+
+      call de_alloc( Haux, 'Haux', 'initwf')
+      call de_alloc( Saux, 'Saux', 'initwf')
+      call de_alloc( psi,  'phi',  'initwf')
+
 !     Stop time counter ...................................................
       call timer( 'initwf', 2 )
       !
       IF(Node.eq.0) write(6,*) 'Debug04: Free-local arrays !!!!!!!!!!!!!!'
   end subroutine initwf
   ! Gamma point: solve KS by diagonalisation and store the occupied wavefunctions in wavef
-  subroutine diaggiwf(nspin,nuo,maxuo,maxnh,                     &
-                      maxo,numh,listhptr,listh,                  & 
-                      H,S,eo,Haux,Saux,psi,                      &
+  subroutine diaggiwf(nspin,nuo,maxuo,maxnh, maxo,Haux,Saux,psi,           &
                       nuotot,occup)
 #ifdef MPI
       use parallel, only : BlockSize,Node
@@ -370,9 +374,7 @@ CONTAINS
       implicit none
       !
       integer, intent(in)         :: maxnh, maxuo, maxo, nuo, nspin, nuotot
-      integer, intent(inout)      :: listh(maxnh), numh(nuo), listhptr(nuo)
-      real(dp), intent(inout)     :: eo(maxo,nspin), H(maxnh,nspin), S(maxnh)
-      real(dp), intent(inout)     :: Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin)
+      real(dp), intent(inout)  :: Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin)
       logical, intent(inout)      :: occup(nuotot,nspin,1)
       ! Internal variables
       integer                     :: ie, io, ispin, j, jo, ind, ierror, ioc, indwf
@@ -401,7 +403,15 @@ CONTAINS
             end do
           end do
           IF(Node.eq.0) write(6,*) 'Gamam-diag: sparse2dense !!!!!!!!!!!!!!'
-          call rdiag(Haux,Saux,nuotot,nuo,nuotot,eo(maxo,ispin),psi(1,1,ispin),nuotot,1,ierror)
+          IF(Node.eq.0) print*, shape(Haux)
+          IF(Node.eq.0) print*, shape(Saux)
+          IF(Node.eq.0) print*, nuotot
+          IF(Node.eq.0) print*, nuo
+          IF(Node.eq.0) print*, shape(eo)
+          IF(Node.eq.0) print*, maxo, ispin
+          IF(Node.eq.0) print*, shape(psi)
+          IF(Node.eq.0) print*, ispin
+          call rdiag(Haux,Saux,nuotot,nuo,nuotot,eo,psi(1,1,ispin),nuotot,1,ierror)
           IF(Node.eq.0) write(6,*) 'Gamam-diag: after-diag !!!!!!!!!!!!!!'
           if (ierror .eq. 0) then
             exit
@@ -430,10 +440,8 @@ CONTAINS
           IF(Node.eq.0) write(6,*) 'Gamam-diag: wavef2M_S !!!!!!!!!!!!!!'
   end subroutine diaggiwf
   ! k points: solve KS by diagonalisation and store the occupied wavefunctions in wavef
-  subroutine diagkiwf(nspin,nuo,no,maxspn,maxuo,maxnh,            &
-                     maxo,numh,listhptr,listh,H,S,                &
-                     xij,indxuo,nk,kpoint,eo,                     &
-                     Haux,Saux,psi,nuotot,occup)
+  subroutine diagkiwf(nspin,nuo,no,maxspn,maxuo,maxnh, maxo, indxuo,nk,        &
+                      kpoint, Haux,Saux,psi,nuotot,occup)
 #ifdef MPI
       use parallel, only : BlockSize
       use m_diagon, only : ictxt
@@ -441,11 +449,10 @@ CONTAINS
       !
       implicit none
       !
-      integer, intent(in)      :: maxnh, maxuo, maxo, no, nspin, nuo, nuotot, nk, maxspn
-      integer, intent(inout)   :: indxuo(no), listh(maxnh), numh(nuo), listhptr(nuo)
-      real(dp), intent(inout)  :: eo(maxo,maxspn,nk), H(maxnh,nspin), kpoint(3,nk), S(maxnh)
+      integer, intent(in)      :: maxnh, maxuo, maxo, no, nspin, nuo,          &
+                                  nuotot, nk, maxspn, indxuo(no)
+      real(dp), intent(in)     :: kpoint(3,nk)
       real(dp), intent(inout)  :: Haux(2,nuotot,nuo), Saux(2,nuotot,nuo), psi(2,nuotot,nuo)
-      real(dp), intent(inout)  :: xij(3,maxnh)
       logical, intent(inout)   :: occup(nuotot,nspin,nk)
       ! Internal variables
       integer                  :: ispin, ie, ierror, ik, ind, iuo, j, jo, juo, indwf, ioc
@@ -469,9 +476,9 @@ CONTAINS
               ind=listhptr(iuo)+j
               jo=listh(ind)
               juo=indxuo(jo)
-              kxij=kpoint(1,ik)*xij(1,ind)+                      &
-              kpoint(2,ik)*xij(2,ind)+                           &
-              kpoint(3,ik)*xij(3,ind)
+              kxij=kpoint(1,ik)*xijo(1,ind)+                      &
+              kpoint(2,ik)*xijo(2,ind)+                           &
+              kpoint(3,ik)*xijo(3,ind)
               ckxij=cos(kxij)
               skxij=sin(kxij)
 !              Note: sign of complex part changed to match change in order of iuo/juo

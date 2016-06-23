@@ -2,9 +2,7 @@
       
       CONTAINS
       subroutine evolve(no, nspin, maxspn, maxuo, maxnh, maxnd,        &
-                       maxo, numh, listhptr, listh, numd,              &
-                       listdptr, listd, H, S, eo,                      &
-                       gamma, xij, indxuo, nk, kpoint, wk,             &
+                       maxo, gamma, indxuo, nk, kpoint, wk,            &
                        Dnew, Enew, nuotot, delt, istep, itded)         
 
 ! *********************************************************************
@@ -79,26 +77,26 @@
 !  Modules
   
       use precision
-      use parallel,      only : Node, Nodes, BlockSize
-      use parallelsubs,  only : GlobalToLocalOrb, GetNodeOrbs
+      use parallel,          only : Node, Nodes, BlockSize
+      use parallelsubs,      only : GlobalToLocalOrb, GetNodeOrbs
       use fdf
       use alloc
       use m_memory
-      use densematrix,  only : Haux, Saux,psi
-      use sys,           only: die
+!      use densematrix,      only : Haux, Saux,psi
+!      use sparse_matrices,  only : S, H, numh, listh, listhptr, xijo 
+!      use m_eo,             only : eo
+      use sys,              only : die
       use MatrixSwitch
 #ifdef MPI
-      use mpi_siesta,    only : MPI_Bcast, MPI_Comm_World,MPI_logical
+      use mpi_siesta,       only : MPI_Bcast, MPI_Comm_World,MPI_logical
 #endif
       !
       implicit none
       !
-      integer                  ::  maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin 
-      integer                  ::  nuotot, istep, itded,  indxuo(no), listh(maxnh)
-      integer                  ::  numh(*), listd(maxnd), numd(*), listhptr(*), listdptr(*)
-      double precision         ::  Dnew(maxnd,nspin), Enew(maxnd,nspin), H(maxnh,nspin) 
-      double precision         ::  kpoint(3,nk), S(maxnh), wk(nk), xij(3,maxnh), delt
-      double precision         ::  eo(maxo,maxspn,nk)
+      integer, intent(in)      ::  maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin 
+      integer                  ::  nuotot, istep, itded,  indxuo(no) 
+      double precision         ::  Dnew(maxnd,nspin), Enew(maxnd,nspin) 
+      double precision         ::  kpoint(3,nk), wk(nk), delt
       logical                  ::  gamma
       external                 ::  io_assign, io_close
       !
@@ -111,7 +109,6 @@
       integer                  ::  io, iuo, iu, naux, nhs,  nuo,npsi
       real(dp), pointer, save  :: Dk(:)
       real(dp), pointer, save  :: Ek(:)
-      real(dp), pointer        :: psi2(:)
       real(dp), dimension(:), allocatable, save :: aux,aux2
 #ifdef MPI
       logical, save            :: ParallelOverK
@@ -143,10 +140,10 @@
       endif
 #endif
       !
-      call re_alloc(psi,1,npsi,name='psi',routine='evolve')
-      call re_alloc(psi2,1,npsi,name='psi2',routine='evolve')
-      call re_alloc(Haux,1,nhs,name='Haux',routine='evolve')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='evolve')
+!      call re_alloc(psi,1,npsi,name='psi',routine='evolve')
+!      call re_alloc(psi2,1,npsi,name='psi2',routine='evolve')
+!      call re_alloc(Haux,1,nhs,name='Haux',routine='evolve')
+!      call re_alloc(Saux,1,nhs,name='Saux',routine='evolve')
       !
       if(frstme) then 
         if(.not.gamma) then 
@@ -164,15 +161,12 @@
       ! Call apropriate routine .............................................
       if (nspin.le.2 .and. gamma) then
         call evolg( nspin, nuo, no, maxo, maxnh, maxnd,                   &
-              numh, listhptr, listh, numd,                                &
-              listdptr, listd, H, S, eo,                                  &
-              Dnew, Enew, nuotot, delt,Haux,Saux,psi,psi2,istep,itded)
+                    Dnew, Enew, nuotot, delt,istep,itded)
       elseif (nspin.le.2 .and. .not.gamma) then
-        call evolk( nspin, maxspn, nuo, no, maxo, maxnh, maxnd,           &
-                   numh, listhptr, listh, numd, listdptr,                 &
-                   listd, H, S, eo,                                       &
-                   xij, indxuo, nk, kpoint, wk,                           &
-                   Dnew, Enew, Dk, Ek,nuotot, delt,Haux,Saux,psi)
+      stop 'evolve: Error: kpoint for TDED is not implimented yet'
+ !       call evolk( nspin, maxspn, nuo, no, maxo, maxnh, maxnd,           &
+ !                   indxuo, nk, kpoint, wk, Dnew, Enew, Dk, Ek,           &
+ !                   nuotot, delt,Haux,Saux,psi)
 
       elseif (nspin.eq.4 .and. gamma) then 
         stop 'evolve: ERROR: non-collinear spin not yet implemented'
