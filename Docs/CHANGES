@@ -6,11 +6,49 @@
 ** CHANGES ALONG rel-4.0 branch
 
 -----------------------------------------------------------------------
+2016-06-23                                                     4.0--500
+Release of siesta-4.0
+
+* Update Docs/release_notes.4.0
+
+* Update list of contributors.
+
+* Add some more documentation and comments, and clarify notes in
+  output for the recet electric-field/slab-dipole-correction fix.
+
+* Remove Util/pseudo-xml
+
+* Other minor changes in README files
+
+-----------------------------------------------------------------------
+2016-06-22                                                     4.0b-499
+Fix version.info
+
+-----------------------------------------------------------------------
+2016-06-22                                                     4.0b-498
+Added bessel check for reparametrization
+
+  - Do not attempt pseudopotential reparametrization in the
+    case of Bessel floating orbitals
+    
+  - Thanks to E. Artacho for bug-report.
+-----------------------------------------------------------------------
+2016-06-22                                                     4.0b-497
+Fixes electric field and dipole correction
+
+  - Now the dipole correction defaults when using
+    an electric field and a slab calculation.
+
+  - Thanks to R. Robles for bug-report.
+-----------------------------------------------------------------------
+2016-05-29                                                     4.0b-496
+Comments added explaining contents of hsx_t derived type
+
+-----------------------------------------------------------------------
 2016-05-18                                                     4.0b-495
 Fixed lp:1582978
 
-The Makefile was missing a space between the CFLAGS
-and the -c
+The Makefile was missing a space between the CFLAGS and the -c
 
 -----------------------------------------------------------------------
 2016-05-10                                                     4.0b-494

@@ -37,7 +37,7 @@
 
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
       real(dp)                :: Uharrs     ! Harris energy
-      logical                 :: IsDiag, IsEfld, spiral
+      logical                 :: IsDiag, spiral
       character(len=10)       :: shape
       integer                 :: nml(3), ntml(3), npcc,
      &                           nmpl, ntpl
@@ -635,7 +635,6 @@ C integer io            : Orbital index
 C integer ip            : Point index
 C integer is            : Species index
 C logical IsDiag        : Is supercell diagonal?
-C logical IsEfld        : Is there an external electric field?
 C integer ispin         : Spin index
 C integer j             : General-purpose index
 #ifndef BSC_CELLXC
@@ -1071,9 +1070,10 @@ C ----------------------------------------------------------------------
      $              'Electric field for dipole correction =',
      $              field, ' Ry/Bohr/e'
             end if
-            ! The dipole correction (internal electric field)
-            ! energy is half the 
-            ! external energy (thus this separation)
+            ! The dipole correction energy has an extra factor
+            ! of one half because the field involved is internal.
+            ! See the paper by Bengtsson DOI:10.1103/PhysRevB.59.12301
+            ! Hence we compute this part separately
             DUext = -0.5_dp * ddot(3,field,1,dipol,1)
          else
             field = 0._dp

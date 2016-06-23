@@ -27,6 +27,7 @@
 !    by the dipole moment of the system, thus allowing to deal with
 !    asymmetric slabs (and compute properties such as the work funcion
 !    of each of the surfaces).
+!    See L. Bengtsson, PRB 59, 12301 (1999), DOI: 10.1103/PhysRevB.59.12301
 
       use precision, only: dp
       use sys,       only: die
@@ -187,15 +188,24 @@
 
       ! Only allow slab dipole corrections for slabs
       if ( nbcell == 2 ) then
+         ! Note that we enable the correction if there is an
+         ! external field
          dipole_correction = fdf_boolean("SlabDipoleCorrection",
-     &        acting_efield)
+     &        .false.)
+         if (acting_efield .and. (.not. dipole_correction)) then
+            if (ionode) write(6,'(/,(a))')
+     .        'efield: SlabDipoleCorrection turned on automatically',
+     .        'efield: when an external electric field is applied.',
+     .        'efield: For backward compatibility, set if to .false.'
+            dipole_correction = .true.
+         endif
       else
          dipole_correction = .false.
       end if
 
       if ( dipole_correction ) then
          if (ionode) write(6,'(/,(a))')
-     .        'efield: SlabDipoleCorrection = .true. in input file',
+     .        'efield: SlabDipoleCorrection enabled.',
      .        'efield: A dipole layer will be introduced in the vacuum',
      .        'efield: region to compensate the system dipole'
          acting_efield = .true.

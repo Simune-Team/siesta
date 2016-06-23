@@ -62,13 +62,14 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, \input{../version.info}}}
+%{\Huge {\bf S I E S T A \, \, \input{../version.info}}}
+{\Huge {\bf S I E S T A \, \, 4.0}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{0.5cm}
 
-{\Large January 28, 2016 }
+{\Large June 23, 2016 }
 
 \vspace{1.5cm}
 
@@ -6033,8 +6034,11 @@ vector in Cartesian coordinates, in the specified units. Example:
      %endblock ExternalElectricField
 \end{verbatim}
 
-Applying an electric field perpendicular to a slab will by default enable the
-slab dipole correction\index{SlabDipoleCorrection@{\bf SlabDipoleCorrection}}.
+Starting with version 4.0, applying an electric field perpendicular to
+a slab will by default enable the slab dipole
+correction\index{SlabDipoleCorrection@{\bf SlabDipoleCorrection}}
+option. To reproduce older calculations, set this correction option
+explicitly to {\tt .false.} in the input file.
 
 {\it Default value:} zero field
 

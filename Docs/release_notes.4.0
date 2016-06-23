@@ -1,30 +1,120 @@
-Changes with respect to the development snapshot 'siesta-trunk-462':
+Release Notes for Siesta-4.0  (June 2016)
 
-Summary
+This version includes the van der Waals functionals, the new
+load-balancing code for real-space grid operations, a Wannier90
+interface, a new Orbital-Minimization-Method solver, and other
+improvements and bug fixes that have been part of the development
+version for some time. Its feature set has been frozen for several
+months and it has undergone enough testing to be considered a
+near-production version.
 
-* Changes in the analysis of the electronic structure
-* Merge code for interoperation with Wannier90
-* Merge code for 'server' operation via sockets and i-PI interface
-* Replacement of license-encumbered routines by new ones
-* Fix shortcomings in reading of empirical potential block
-* Added restart file for smooth continuation of annealing runs
-* Updated gnubands and grid2cube programs.
+Please see the BACKWARD COMPATIBILITY ISSUES and the TECHNICAL NOTES
+sections below for some important issues regarding backwards
+compatibility with 3.X versions and previous development snapshots.
+
+See the file REPORTING_BUGS for instructions to report bugs and
+suggestions.
+
+
+-*- NEW FEATURES
+
+Please see the relevant section of the manual for more information.
+
+* New SiestaXC library for exchange and correlation, implementing several
+  van der Waals functionals and some newer GGA ones.
+
+* New code to improve the load-balancing of the operations in the
+  real-space grid when running in parallel.
+
+* A new interface to the Wannier90 code for the generation of
+  maximally localized wannier functions.
+
+* New electronic-structure solver implementing the the Orbital-Minimization-Method
+
+* New mixing options, including hamiltonian and charge-density mixing
+
+* Charge-confinement and "filteret" basis-set generation options.
+
+* Improved MPI version of the Siesta-as-subroutine code for executing
+  independent calculations.
+
+* New JobList utility to organize and run multiple jobs.
+
+* Timer with call-tree awareness.
+
+* Performance and usability enhancements in TranSiesta.
+
+* Enhancements to the restart capabilities in molecular-dynamics runs.
+
+* New options for wave-function output. New WFSX format.
+
+* 'Fatbands' analysis.
+
+* Enhancements to the COOP/COHP analyzer
+
+* Hirshfeld and Voronoi charges. Bader analysis output
+
+* Force-convergence diagnostics.
+
+* New HSX file format for Hamiltonian/Overlap files
+
+* Calculation of the vacuum level for non-bulk systems.
+
+* Updates to other analysis tools in Util/
+
+* Replacement of license-encumbered routines by new ones.
+
+* Enhancements to the manual and build system.
+
+In addition, a number of bugs have been fixed, and there have been
+numerous cosmetic changes to the output and the code itself.
+
 
 -------------------------
+-*- BACKWARD COMPATIBILITY ISSUES
+
+Please take into account the following changes in behavior (more
+details in the TECHNICAL NOTES section below):
+
+*** The grid functions (charge densities, potentials, etc) were in
+single precision by default in the 3.X versions, but are in double
+precision by default for post-3.X versions. The 'phi' array that holds
+the values of the basis orbitals on the real-space grid is kept in
+single precision. Please take this into account if you compare the
+results with those of siesta-3.X runs. See the manual in both versions
+for more information.
+
+*** Changes in the geometry used for the analysis of the electronic
+structure, as well as in the handling of the density matrix (DM) and
+hamiltonian (H). This will _slightly_ change the output of most
+calculations and the detailed results of any post-processing. Keep
+this in mind if you need to maintain coherency within a project.
+
+*** Electric field and dipole correction for slab calculations
+
+Older versions applied an incorrect dipole correction when also using
+an electric field (old behavior may be recovered by forcing
+SlabDipoleCorrection to .false.)
+
+Older versions over-estimated the energy contribution from the dipole
+correction by a factor of 2 (old behavior cannot be recovered).
+
+-------------------------
+-*- TECHNICAL NOTES
 
 *** Changes in the geometry used for the analysis of the electronic
 structure, as well as in the handling of the density matrix (DM) and
 hamiltonian (H).
 
 -*-*-*-*-* 
-NOTE: This patch will _slightly_ change the output
+NOTE: This change will _slightly_ change the output
 of most calculations and the detailed results of any
 post-processing. Keep this in mind if you need to maintain coherency
 within a project. See the rest of the text for ways to restore
 backward compatibility.
 -*-*-*-*-*
   
-This is the initial patch in a long-overdue clarification work related
+This change is part of a long-overdue clarification work related
 to the "outer geometry loop" in Siesta and its interaction with the
 analysis of the electronic structure.
 
@@ -188,8 +278,6 @@ Util/SiestaSubroutine for examples of the server operation (including
 via sockets) and Tests/i-pi-test for a simple test of interoperability
 with i-PI.
 
-*** Replacement of license-encumbered routines by new ones
-
 *** Fix shortcomings in reading of empirical potential block
   
   * The number of potential lines is now arbitrary.
@@ -211,3 +299,6 @@ with i-PI.
     in the Util section.
 
   (Nick R. Papior and Alberto Garcia)
+
+
+
