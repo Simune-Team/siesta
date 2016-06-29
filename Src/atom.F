@@ -2836,6 +2836,7 @@ C
               
            if (l .gt. lmax_ps) then
               Vpot => vlocal
+              write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
            else
               Vpot => vps(:,l)
            endif
@@ -3313,6 +3314,7 @@ C
 
            if (l .gt. lmax_ps) then
               Vpot => vlocal
+              write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
            else
               Vpot => vps(:,l)
            endif
@@ -3886,6 +3888,7 @@ C
 
            if (l .gt. lmax_ps) then
               Vpot => vlocal
+              write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
            else
               Vpot => vps(:,l)
            endif
@@ -4126,6 +4129,7 @@ C
 
            if (l .gt. lmax_ps) then
               Vpot => vlocal
+              write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
            else
               Vpot => vps(:,l)
            endif
@@ -4454,6 +4458,7 @@ C
 
            if (l .gt. lmax_ps) then
               Vpot => vlocal
+              write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
            else
               Vpot => vps(:,l)
            endif
@@ -4782,15 +4787,15 @@ C
 C
 C Internal variables
 C
-        real(dp)  qatm(0:3)
+        real(dp)  qatm(0:4)
           
         integer noPAO, l, izeta, m, norb, noPol, lpop,
      .     nsm, nvalence, config(0:lmaxd), i
         character*70  line
 
-        qatm(0:3) = basp%ground_state%occupation(0:3)
+        qatm(0:4) = basp%ground_state%occupation(0:4)
         config(:) = 0
-        config(0:3) = basp%ground_state%n(0:3)
+        config(0:4) = basp%ground_state%n(0:4)
 
         qPAO(0:lmaxd,1:nsemx) = 0.d0  ! AG
 !
@@ -5266,6 +5271,8 @@ C Calculate the soft-confinement potential for the polarization orbitals
                  
                   if (lpol .gt. lmax_ps) then
                      Vpot => vlocal
+                     write(6,'(/A,i2)')
+     $                    '** Using vlocal for PAOs with L=',lpol
                   else
                      Vpot => vps(:,lpol)
                   endif
@@ -5864,6 +5871,8 @@ C
               endif
               if (lpol .gt. lmax_ps) then
                  Vpot => vlocal
+                 write(6,'(/A,i2)')
+     $                '** Using vlocal for PAOs with L=',lpol
               else
                  Vpot => vps(:,lpol)
               endif

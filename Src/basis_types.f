@@ -32,8 +32,8 @@
 
       type, public ::  ground_state_t
           integer                   ::  lmax_valence
-          integer                   ::  n(0:3)
-          real(dp)                  ::  occupation(0:3)
+          integer                   ::  n(0:4)
+          real(dp)                  ::  occupation(0:4)
           logical                   ::  occupied(0:4)   ! note 0..4
           real(dp)                  ::  z_valence
       end type ground_state_t

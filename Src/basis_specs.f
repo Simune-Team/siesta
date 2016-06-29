@@ -341,7 +341,7 @@ C Sanity checks on values
               exit
             endif
           enddo
-          gs%occupied(0:3) = (gs%occupation .gt. 0.0_dp)
+          gs%occupied(0:4) = (gs%occupation .gt. 0.0_dp)
           gs%occupied(4) = .false.
           gs%z_valence = sum(gs%occupation(0:noccs-1))
           write(6,'(a,i2)',advance='no')
@@ -405,7 +405,7 @@ C Sanity checks on values
       integer l, latm
 
       gs%z_valence = 0.d0
-      do l=0,3
+      do l=0,4
         gs%occupation(l)=0.0d0
       enddo
 
@@ -414,7 +414,7 @@ C Sanity checks on values
       do l=0,gs%lmax_valence
         gs%z_valence = gs%z_valence + gs%occupation(l)
       enddo
-      call cnfig(z,gs%n(0:3))
+      call cnfig(z,gs%n(0:4))
 
       write(6,'(a,i2)',advance='no')
      .     'Ground state valence configuration: '
