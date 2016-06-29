@@ -28,6 +28,7 @@ C integer na  : Number of atoms in unit cell
       use fdf
       use alloc
       use parallel,  only : Node
+      use units, only: Ang
       use zmatrix
       use siesta_geom, only : xa, isa, cisa
       implicit none
@@ -48,14 +49,13 @@ C Internal variables and arrays
       external          digcel, redcel, volcel
 
       logical               :: lOrigin
-      data origin /3*0.0_dp/
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
 
 
 C Read unit cell and supercell
-        call redcel( alat, unit_cell, super_cell, coor_mscell )
+      call redcel( alat, unit_cell, super_cell, coor_mscell )
 
 C Format of atomic coordinates
       acf_default = 'NotScaledCartesianBohr'
@@ -135,7 +135,20 @@ C Format of atomic coordinates
 
 C Read atomic coordinates and species
       na = fdf_integer('NumberOfAtoms',0)
-      if (na.eq.0) call die("Must specify number of atoms!")
+      if ( na == 0 ) then
+       ! estimate the number of atoms by reading the block
+       ! Currently we do not try to estimate from a Z-matrix
+       if (fdf_block('AtomicCoordinatesAndAtomicSpecies',bfdf)) then
+        na = 0
+        do while ( fdf_bline(bfdf,pline) )
+           ! each line should contain one atom
+           na = na + 1
+        end do
+       end if
+      end if
+      if ( na == 0 ) then
+         call die("Must specify number of atoms AND coordinates!")
+      end if
 !
 !     Check if we need more space to accommodate supercell
 !     (still a "real" supercell, specified for convenience!)
@@ -152,11 +165,13 @@ C Read atomic coordinates and species
 C Find origin with which to translate all coordinates
       lOrigin = fdf_block('AtomicCoordinatesOrigin',bfdf)
       if (lOrigin) then 
-        if (.not. fdf_bline(bfdf,pline))
-     .    call die('coor: ERROR in AtomicCoordinatesOrigin block')
-        origin(1) = fdf_bvalues(pline,1)
-        origin(2) = fdf_bvalues(pline,2)
-        origin(3) = fdf_bvalues(pline,3)
+         if (.not. fdf_bline(bfdf,pline))
+     .        call die('coor: ERROR in AtomicCoordinatesOrigin block')
+         origin(1) = fdf_bvalues(pline,1)
+         origin(2) = fdf_bvalues(pline,2)
+         origin(3) = fdf_bvalues(pline,3)
+      else
+         origin = 0._dp
       endif
 
 C Set array dimensions
@@ -206,7 +221,7 @@ C   Coord. option = 2 => Multiply by lattice constant
 C   Coord. option = 3 => Multiply by lattice vectors
 
         if (iscale .eq. 1) then
-          xa = xa / 0.529177_dp 
+          xa = xa * Ang
         elseif (iscale .eq. 2) then
           xa = xa * alat
         elseif (iscale .eq. 3) then

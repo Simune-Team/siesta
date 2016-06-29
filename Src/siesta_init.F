@@ -63,6 +63,7 @@
 #ifdef MPI
       use mpi_siesta
 #endif
+      use m_cite, only: add_citation, init_citation
 
 #ifdef TRANSIESTA
       use m_ts_init, only : ts_init
@@ -183,6 +184,12 @@
      .                   threshold=threshold,
      &                   printNow=.false. )
 
+      if ( IONode ) then
+         ! Add citations
+         call init_citation(trim(slabel))
+         call add_citation("10.1088/0953-8984/14/11/302")
+      end if
+      
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
       call read_xc_info()

@@ -6,6 +6,168 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2016-03-07                                                    trunk-492
+Initial k-displacements are now 0
+
+modified:
+  Src/kgridinit.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_ts_kpoints.F90
+  Src/setup_kscell.F
+
+-----------------------------------------------------------------------
+2016-03-07                                                    trunk-491
+Fixed k-grid displacement reading
+
+- There was no need for not reading 0 as a displacement
+  in the kgrid_monkhorst_pack block.
+
+  Previously siesta would error when:
+   %block kgrid_monkhorst_pack
+    1 0 0 0
+    0 1 0 0
+    0 0 1 0
+   %endblock
+  while now this will works
+
+modified:
+  Src/kgridinit.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_ts_kpoints.F90
+  Src/setup_kscell.F
+
+-----------------------------------------------------------------------
+2016-03-05                                                    trunk-490
+Automatic reading of #atoms, and species without denoting count
+
+- The NumberOfSpecies flag is now not needed any more.
+
+  This reflects an easier usage as it first reads the lines
+  in the ChemicalSpeciesLabel block and counts the number
+  of species from this block.
+
+  A small bug has also been fixed in that the first
+  number is now correctly inserted in the slot
+  that it intents.
+
+  The NumberOfSpecies flag still has precedence in case
+  you want a reduced number of elements.
+
+  +manual
+
+- The NumberOfAtoms is now not needed any more.
+
+  Similar to the NumberOfSpecies flag we now count the
+  number of atoms from the block by default.
+
+  The NumberOfAtoms flag still has precedence in case
+  you want a reduced number of atoms.
+
+  +manual
+
+- Output of chemical species is now more concise and aligned.
+  This is just a visual change.
+
+modified:
+  Docs/siesta.tex
+  Src/chemical.f
+  Src/coor.F
+
+-----------------------------------------------------------------------
+2016-03-03                                                    trunk-489
+[merge] Tests fix, REFERENCE_DIR and SIESTA
+
+- After having build siesta in the Obj directory
+  a natural procedure would be to go to Tests
+  and run the tests:
+      make
+  However, the default SIESTA is not pointing to
+  the Obj.
+  Further the REFERENCE_DIR is not pointing to the
+  correct reference directory when in the top Tests
+  directory.
+
+  Hence the procedure is:
+  1. cd Obj
+  2. ../Src/obj_setup.sh
+  3. <create arch.make>
+  4. make
+  5. cd ../Tests/
+  6. make
+
+modified:
+  Tests/test.mk
+
+2016-02-26                                                    trunk-488
+Add generic citation helper
+
+- It was previously difficult to figure
+  out which papers where of significance when
+  using SIESTA.
+  This addition adds the capability of on-the-fly
+  creation of .bib files for users to easier find
+  the papers that are being used in their corresponding
+  run.
+
+added:
+  Src/m_cite.F90
+modified:
+  Src/Makefile
+  Src/m_efield.F
+  Src/siesta_init.F
+  Src/ts_init.F90
+
+-----------------------------------------------------------------------
+2016-02-17                                                    trunk-486
+Fixed auxiliary array usage for ksv and optical
+
+- ksv:
+  This routine used Hkin as a work-array for calculating
+  certain quantities for polarization calculations.
+
+  This may lead to inadvertently destroying reliance
+  across calculations which are not intended.
+
+  This bug has been fixed by introducing the allocation
+  of the work-array in the ksv routine, directly.
+
+  Furthermore, we have explicitly added the => null()
+  when initializing several of the pointers.
+
+- optical:
+  This routine used Eold, Dold and Hkin as
+  work-arrays for calculating optical properties.
+
+  We have fixed these issues and moved allocation into
+  the routine.
+
+  Furthermore there were several "saved" variables
+  which were not needed to be saved.
+
+  All variables were re-calculated on each entry-point.
+  This has also been fixed.
+
+  Streamlined the algorithm for calculating transition-rates.
+
+- phirphi_opt:
+  Reduced memory by ENDLESS.
+  It allocated an enourmous amount of memory of which only 1 element
+  was used at a time.
+  If the full matrix is going to be needed, then re-instantiate the
+  comments !N.
+  The si-optical test yields the same result and I see no problem
+  in the current algorithm.
+
+modified:
+  Src/born_charge.F
+  Src/ksv.f
+  Src/optical.F
+  Src/phirphi_opt.f
+  Src/siesta_analysis.F
+
+-----------------------------------------------------------------------
 2016-02-17                                                    trunk-485
 Add GPL notices and headers
 
