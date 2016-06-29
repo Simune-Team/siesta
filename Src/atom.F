@@ -90,7 +90,14 @@
         real(dp)             :: filter_cutoff_orbitals = 0.0_dp
         real(dp)             :: filter_tol    = EkinTolDefault
 !---------------------------------------------------------------------
-       
+
+        !! vlocal needs to be passed around to act as radial
+        !! potential for high l's
+        
+        real(dp), target  :: vlocal(nrmax)
+        real(dp), pointer :: Vpot(:) => null()
+        integer           :: lmax_ps ! maximum l in semi-local pseudo
+
       contains
 
         subroutine atom_main(izin,lmxkb_in,nkbl,erefkb,lmxo, nzeta, 
@@ -241,11 +248,13 @@
 
            
 ! Internal variables
- 
+
+        real(dp), target :: vps(nrmax,0:lmaxd)
+        
         real(dp)
      .    rofi(nrmax), drdi(nrmax), s(nrmax),
-     .    vps(nrmax,0:lmaxd), rphi(nrmax,0:lmaxd,nsemx),
-     .    vlocal(nrmax), vxc(nrmax), ve(nrmax),
+     .    rphi(nrmax,0:lmaxd,nsemx),
+     .    vxc(nrmax), ve(nrmax),
      .    rho(nrmax), chcore(nrmax), rho_PAO(nrmax), auxrho(nrmax),
      .    vePAO(nrmax), qPAO(0:lmaxd,nsemx), chlocal(nrmax),
      .    red_vlocal(nrmax), vlocal_tmp(nrmax), local_charge(nrmax)
@@ -272,6 +281,7 @@
         real(dp) :: rmax_ps_check
         real(dp) :: kb_rmax
         character(len=40) :: vlocal_type
+
 
         call setup_filtering()
 
@@ -677,7 +687,10 @@ c    .          'atom: The above configuration will be used ',
             call com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
      .                      zval,flting)
 ! 
-          endif  
+         endif
+
+!-------------------------------------END OF KB GENERATION
+         
 !
 ! Construction of the basis orbitals
 !
@@ -991,7 +1004,7 @@ c               write(6,*) ir, abs(r2-r(ir)),r2,r(ir)
 c         endif
           ab = dexpa*ab
         enddo            
- 
+
         do ir = 2,nrval
           hi = vps(ir) + ve(ir) + dble(l*(l+1))/r(ir)**2 - el
           hi = hi*(drdi(ir)**2)
@@ -2319,6 +2332,7 @@ C
 
         linput=max(lmxo,lmxkb)
         lmax=min(npotd-1,linput)
+        lmax_ps = npotd-1
 
         if (lmax.lt.linput) then
           write(6,'(a)') 
@@ -2405,7 +2419,7 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
 
 !       Ionic pseudopotentials   (Only 'down' used)
 
-        do 20 ndown=1,lmax+1
+        do 20 ndown=1,lmax_ps+1
           l = vp%ldown(ndown) 
           if (l.ne.ndown-1) then
             write(6,'(a)')
@@ -2434,7 +2448,7 @@ C potential
 
         if ((nicore.eq.'pche').or.(nicore.eq.'fche')) then
           call vhrtre(chcore,ve,rofi,drdi,s,nrval,a)
-          do l=0,lmax
+          do l=0,lmax_ps
             do ir=2,nrval
               vps(ir,l)=vps(ir,l)+ve(ir)
             enddo
@@ -2758,8 +2772,9 @@ C
 
         type(basis_def_t), pointer   :: basp
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax), 
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx,0:lmaxd,nsemx), Zval,vePAO(nrmax),
@@ -2819,6 +2834,13 @@ C
 !
         do l = 0,lmxo 
               
+           if (l .gt. lmax_ps) then
+              Vpot => vlocal
+              write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
+           else
+              Vpot => vps(:,l)
+           endif
+           
           do nsm = 1,nsemic(l)+1 
             if (nzeta(l,nsm).gt.0) then
               write(6,'(/A,I2)')
@@ -2844,7 +2866,7 @@ C Atomic eigenvalues
 C
                 nnodes = nsm
                 nprin = l + nsm
-                call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,ve,s,drdi,
      .                        nrval,l,a,b,nnodes,nprin,
      .                        eigen(l),rphi(1,l,nsm))
 C
@@ -2860,7 +2882,7 @@ C
                 endif 
                 if (abs(eshift).gt.1.0d-5) then
                   el = eigen(l) + eshift
-                  call rc_vs_e(a,b,rofi,vps(1,l),
+                  call rc_vs_e(a,b,rofi,Vpot,
      .                         ve,nrval,l,el,nnodes,rco(1,l,nsm))
                 else
                   rco(1,l,nsm) = rofi(nrval-2)
@@ -2921,7 +2943,7 @@ C  potential.
 C
               nnodes = nsm
               nprin = l + nsm
-              call schro_eq(Zval,rofi,vps(1,l),vePAOsoft,s,drdi,
+              call schro_eq(Zval,rofi,Vpot,vePAOsoft,s,drdi,
      .                      nrc,l,a,b,nnodes,nprin,
      .                      eorb,rphi(1,l,nsm))
               dnrm = 0.0_dp
@@ -3148,9 +3170,9 @@ C
                   call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
                   rh = rh/sqrt(lambda(nzeta(l,nsm)+1,l,nsm)**(2*l+3))
                   epot = epot +
-     .              drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .              drdi(ir)*(ve(ir)+Vpot(ir))*(rh*r**(l+1))**2
                   epot2 = epot2 +
-     .              drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .              drdi(ir)*Vpot(ir)*(rh*r**(l+1))**2
                 enddo
                 eorb = ekin + epot
 C
@@ -3222,8 +3244,9 @@ C
 
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax), 
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx,0:lmaxd,nsemx), Zval,vePAO(nrmax),
@@ -3287,7 +3310,15 @@ C
 !
 ! LOOP over angular momenta
 !
-        do l=0,lmxo 
+        do l=0,lmxo
+
+           if (l .gt. lmax_ps) then
+              Vpot => vlocal
+              write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
+           else
+              Vpot => vps(:,l)
+           endif
+
               
           do nsm=1,nsemic(l)+1 
             if (nzeta(l,nsm).gt.0) then
@@ -3314,7 +3345,7 @@ C Atomic eigenvalues
 C
                 nnodes=nsm
                 nprin=l+nsm
-                call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,ve,s,drdi,
      .                        nrval,l,a,b,nnodes,nprin,
      .                        eigen(l),rphi(1,l,nsm))
 C
@@ -3330,7 +3361,7 @@ C
                 endif 
                 if (abs(eshift).gt.1.0d-5) then
                   el=eigen(l)+eshift
-                  call rc_vs_e(a,b,rofi,vps(1,l),ve,nrval,l,el,
+                  call rc_vs_e(a,b,rofi,Vpot,ve,nrval,l,el,
      .                         nnodes,rco(1,l,nsm))
                 else
                   rco(1,l,nsm)=rofi(nrval-2)
@@ -3411,7 +3442,7 @@ C Generate PAO orbitals for the first shell of the basis set
 C 
                   nnodes=nsm
                   nprin=l+nsm
-                  call schro_eq(Zval,rofi,vps(1,l),vePAOsoft,s,drdi,
+                  call schro_eq(Zval,rofi,Vpot,vePAOsoft,s,drdi,
      .                          nrc,l,a,b,nnodes,nprin,
      .                          eorb,rphi(1,l,nsm)) 
                   dnrm=0.0d0
@@ -3677,9 +3708,9 @@ C
                   call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
                   rh=rh/sqrt(lambda(izeta,l,nsm)**(2*l+3))
                   epot=epot+
-     .          drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .          drdi(ir)*(ve(ir)+Vpot(ir))*(rh*r**(l+1))**2
                   epot2=epot2+
-     .          drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .          drdi(ir)*Vpot(ir)*(rh*r**(l+1))**2
                 enddo
                 eorb=ekin+epot
 
@@ -3813,8 +3844,9 @@ C
 
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax), 
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), 
      .    rco(nzetmx,0:lmaxd,nsemx),
@@ -3854,7 +3886,14 @@ C
         indx=0
         do l=0,lmxo
 
-          do nsm=1,nsemic(l)+1
+           if (l .gt. lmax_ps) then
+              Vpot => vlocal
+              write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
+           else
+              Vpot => vps(:,l)
+           endif
+
+           do nsm=1,nsemic(l)+1
             if (nzeta(l,nsm).gt.0) then
               write(6,'(/A,I2)')
      .               'NODES: Orbitals with angular momentum L=',l
@@ -3878,7 +3917,7 @@ CAtomic eigenvalues
 C
                 nnodes=nsm
                 nprin=l+nsm
-                call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,ve,s,drdi,
      .                        nrval,l,a,b,nnodes,nprin,
      .                        eigen(l),rphi(1,l,nsm))
 C
@@ -3895,7 +3934,7 @@ C
  
                 if (abs(eshift).gt.1.0d-5) then
                   el=eigen(l)+eshift
-                  call rc_vs_e(a,b,rofi,vps(1,l),
+                  call rc_vs_e(a,b,rofi,Vpot,
      .                         ve,nrval,l,el,nnodes,rco(1,l,nsm))
                 else
                   rco(1,l,nsm)=rofi(nrval-2)
@@ -3933,7 +3972,7 @@ C
                 nnodes=izeta+nsm
                 nprin=l+izeta+nsm
                 eorb=0.0d0 
-                call schro_eq(Zval,rofi,vps(1,l),vePAO,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,vePAO,s,drdi,
      .                        nrc,l,a,b,nnodes,nprin,eorb,g)  
 
                 dnrm=0.0d0
@@ -3994,9 +4033,9 @@ C
                   call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
                   rh=rh/sqrt(lambda(izeta,l,nsm)**(2*l+3))
                   epot=epot+
-     .            drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .            drdi(ir)*(ve(ir)+Vpot(ir))*(rh*r**(l+1))**2
                   epot2=epot2+
-     .            drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .            drdi(ir)*Vpot(ir)*(rh*r**(l+1))**2
                 enddo
                 eorb=ekin+epot
 
@@ -4049,8 +4088,9 @@ C
 
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax), 
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), 
      .    rco(nzetmx,0:lmaxd,nsemx),
@@ -4087,7 +4127,14 @@ C
         indx=0
         do l=0,lmxo
 
-          do nsm=1,nsemic(l)+1
+           if (l .gt. lmax_ps) then
+              Vpot => vlocal
+              write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
+           else
+              Vpot => vps(:,l)
+           endif
+
+           do nsm=1,nsemic(l)+1
             if (nzeta(l,nsm).gt.0) then
               write(6,'(/A,I2)')
      .          'NONODES: Orbitals with angular momentum L=',l
@@ -4112,7 +4159,7 @@ CAtomic eigenvalues
 C
                 nnodes=nsm
                 nprin=l+nsm
-                call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,ve,s,drdi,
      .                        nrval,l,a,b,nnodes,nprin,
      .                        eigen(l),rphi(1,l,nsm))
 C
@@ -4129,7 +4176,7 @@ C
  
                 if (abs(eshift).gt.1.0d-5) then
                   el=eigen(l)+eshift
-                  call rc_vs_e(a,b,rofi,vps(1,l),
+                  call rc_vs_e(a,b,rofi,Vpot,
      .                       ve,nrval,l,el,nnodes,rco(1,l,nsm))
                 else
                   rco(1,l,nsm)=rofi(nrval-2)
@@ -4176,7 +4223,7 @@ C for the different shells
 C 
                 nnodes=nsm
                 nprin=l+nsm
-                call schro_eq(Zval,rofi,vps(1,l),vePAO,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,vePAO,s,drdi,
      .                        nrc,l,a,b,nnodes,nprin,
      .                        eorb,g)  
 
@@ -4239,9 +4286,9 @@ C
                   call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
                   rh=rh/sqrt(lambda(izeta,l,nsm)**(2*l+3))
                   epot=epot+
-     .              drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .              drdi(ir)*(ve(ir)+Vpot(ir))*(rh*r**(l+1))**2
                   epot2=epot2+
-     .              drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .              drdi(ir)*Vpot(ir)*(rh*r**(l+1))**2
                 enddo
                 eorb=ekin+epot
 
@@ -4369,8 +4416,9 @@ C Written by D. Sanchez-Portal, Aug. 1998
 C
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax), 
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx, 0:lmaxd,nsemx), Zval,vePAO(nrmax),
@@ -4408,6 +4456,13 @@ C
         indx=0
         do l=0,lmxo
 
+           if (l .gt. lmax_ps) then
+              Vpot => vlocal
+              write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
+           else
+              Vpot => vps(:,l)
+           endif
+
           do nsm=1,nsemic(l)+1
             if (nzeta(l,nsm).gt.0) then
               write(6,'(/A,I2)')
@@ -4435,7 +4490,7 @@ C Atomic eigenvalues
 C
                 nnodes=nsm
                 nprin=l+nsm
-                call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,ve,s,drdi,
      .                        nrval,l,a,b,nnodes,nprin,
      .                        eigen(l),rphi(1,l,nsm))
 C
@@ -4452,7 +4507,7 @@ C
  
                 if (abs(eshift).gt.1.0d-5) then
                   el=eigen(l)+eshift
-                  call rc_vs_e(a,b,rofi,vps(1,l),
+                  call rc_vs_e(a,b,rofi,Vpot,
      .                         ve,nrval,l,el,nnodes,rco(1,l,nsm))
                 else
                   rco(1,l,nsm)=rofi(nrval-2)
@@ -4506,7 +4561,7 @@ C Generate a PAO orbital for the first shell of basis functions
 C 
                   nnodes=nsm
                   nprin=l+nsm
-                  call schro_eq(Zval,rofi,vps(1,l),vePAO,s,drdi,
+                  call schro_eq(Zval,rofi,Vpot,vePAO,s,drdi,
      .                          nrc,l,a,b,nnodes,nprin,
      .                          eorb,rphi(1,l,nsm)) 
                   dnrm=0.0d0
@@ -4587,9 +4642,9 @@ C
                     call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
                     rh=rh/sqrt(lambda(izeta,l,nsm)**(2*l+3))
                     epot=epot+
-     .                drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .                drdi(ir)*(ve(ir)+Vpot(ir))*(rh*r**(l+1))**2
                     epot2=epot2+
-     .                drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .                drdi(ir)*Vpot(ir)*(rh*r**(l+1))**2
                   enddo
                   eorb=ekin+epot
         
@@ -4602,9 +4657,9 @@ C
                     r=rofi(ir)
                     phi=g(ir)*r**l
                     epot=epot+
-     .              drdi(ir)*(ve(ir)+vps(ir,l))*(phi*r)**2
+     .              drdi(ir)*(ve(ir)+Vpot(ir))*(phi*r)**2
                     epot2=epot2+
-     .              drdi(ir)*vps(ir,l)*(phi*r)**2
+     .              drdi(ir)*Vpot(ir)*(phi*r)**2
                     dlapl=
      .             -((l*(l+1)-2*gexp*(2*l+3)*r**2+4*(gexp*r**2)**2)*phi)
                     dlapl=(dlapl+l*(l+1)*phi)
@@ -4732,15 +4787,15 @@ C
 C
 C Internal variables
 C
-        real(dp)  qatm(0:3)
+        real(dp)  qatm(0:4)
           
         integer noPAO, l, izeta, m, norb, noPol, lpop,
      .     nsm, nvalence, config(0:lmaxd), i
         character*70  line
 
-        qatm(0:3) = basp%ground_state%occupation(0:3)
+        qatm(0:4) = basp%ground_state%occupation(0:4)
         config(:) = 0
-        config(0:3) = basp%ground_state%n(0:3)
+        config(0:4) = basp%ground_state%n(0:4)
 
         qPAO(0:lmaxd,1:nsemx) = 0.d0  ! AG
 !
@@ -5118,8 +5173,9 @@ C Modify by DSP, July 1999
 C
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax),
      .    ve(nrmax), drdi(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), 
      .    rco(nzetmx,0:lmaxd,nsemx),
@@ -5212,7 +5268,16 @@ C Calculate the soft-confinement potential for the polarization orbitals
                   else
                     lpol = l + 1
                   endif
-                  call polarization(a,rofi,rphi(1,l,nsm),vps(1,lpol),
+                 
+                  if (lpol .gt. lmax_ps) then
+                     Vpot => vlocal
+                     write(6,'(/A,i2)')
+     $                    '** Using vlocal for PAOs with L=',lpol
+                  else
+                     Vpot => vps(:,lpol)
+                  endif
+
+                  call polarization(a,rofi,rphi(1,l,nsm),Vpot,
      .                 vePAOsoft,drdi,nrc,l,ePAO(l,nsm),g,nrc)
 
                   dnrm = 0.0_dp
@@ -5291,7 +5356,7 @@ C Parabolic split
                   g(1) = g(2)
                   g(nrc) = 0.0_dp
             
-                endif
+                endif  
 C
 C Normalization of basis functions
 C
@@ -5327,11 +5392,13 @@ C
      .              dr*g(ir)*r**(l+2)*(-d2fdr2) +
      .              dr*(l+1)*(l+2)*(g(ir)*r**(l+1))**2  
 
+                  ! AG: This was another manifestation of the
+                  ! l+1 bug:  vps(ir,l) --> vps(ir,lpol) (now Vpot)
                   epot = epot +  
-     .              drdi(ir)*(vePAOsoft(ir)+vps(ir,l))*
+     .              drdi(ir)*(vePAOsoft(ir)+Vpot(ir))*
      .              (g(ir)*r**(l+2))**2 
                   epot2 = epot2 +
-     .              drdi(ir)*vps(ir,l)*(g(ir)*r**(l+2))**2
+     .              drdi(ir)*Vpot(ir)*(g(ir)*r**(l+2))**2
                 enddo
                 eorb = ekin + epot
        
@@ -5639,7 +5706,7 @@ C
                   ekin = ekin +
      .              dr*g(ir)*r**(l+2)*(-d2fdr2) +
      .              dr*(l+1)*(l+2)*(g(ir)*r**(l+1))**2  
-
+                  ! AG*** Change l to lpol=l+1, and to Vpot
                   epot = epot +  
      .              drdi(ir)*(vps(ir,l))*
      .              (g(ir)*r**(l+2))**2 
@@ -5708,8 +5775,9 @@ C Modified by J.D. Gale, Sept. 2009
 C
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax),
      .    ve(nrmax), drdi(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), 
      .    rco(nzetmx,0:lmaxd,nsemx),
@@ -5801,7 +5869,15 @@ C
               else
                 lpol = l + 1
               endif
-              call polarization(a,rofi,rphi(1,l,nsm),vps(1,lpol),
+              if (lpol .gt. lmax_ps) then
+                 Vpot => vlocal
+                 write(6,'(/A,i2)')
+     $                '** Using vlocal for PAOs with L=',lpol
+              else
+                 Vpot => vps(:,lpol)
+              endif
+
+              call polarization(a,rofi,rphi(1,l,nsm),Vpot,
      .                 vePAOsoft,drdi,nrc,l,ePAO(l,nsm),g,nrc)
 
               dnrm = 0.0_dp
@@ -6024,10 +6100,10 @@ C
      .              dr*(l+1)*(l+2)*(g(ir)*r**(l+1))**2  
 
                   epot = epot +  
-     .              drdi(ir)*(vps(ir,l))*
+     .              drdi(ir)*(Vpot(ir))*
      .              (g(ir)*r**(l+2))**2 
                   epot2 = epot2 +
-     .              drdi(ir)*vps(ir,l)*(g(ir)*r**(l+2))**2
+     .              drdi(ir)*Vpot(ir)*(g(ir)*r**(l+2))**2
                 enddo
                 eorb = ekin + epot
 C

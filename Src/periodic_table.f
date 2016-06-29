@@ -28,7 +28,7 @@ C Originally written by A.R.Williams. Modified by J.M.Soler
       integer,  intent(in)  :: Z        ! Atomic number
       real(dp), intent(out) :: QVAL(0:) ! Valence charge for each L
 
-      integer, parameter :: LMAX=3, ZMAX=98, NCHNG=15
+      integer, parameter :: LMAX=4, ZMAX=98, NCHNG=15
       integer :: I, ICHNG, L, LMXATM, LMXCHM, LCHNG(NCHNG),
      .           N(0:LMAX), NVAL(0:5), Q(0:LMAX,0:ZMAX), ZCHNG(NCHNG)
 
@@ -67,6 +67,8 @@ C Originally written by A.R.Williams. Modified by J.M.Soler
 
       DATA (Q(3,I),I= 0,71) /58*0, 2,3,4,5,6,7,7,9,10,11,12,13,14,14/
       DATA (Q(3,I),I=72,98) /18*0, 0,2,3,5,6,7,7,7,9/
+      
+      DATA (Q(4,I),I=0,98)  /99*0/
  
       IF (Z.GT.ZMAX) call die('QVLOFZ: ERROR: Z out of range')
 
@@ -137,7 +139,7 @@ C Originally written by A.R.Williams. Modified by J.M.Soler
       integer,intent(in) :: Z        ! Atomic number
       integer,intent(out):: NVAL(0:) ! Valence electrons for each L
 
-      integer, parameter :: LMAX=3, NCHNG=15
+      integer, parameter :: LMAX=4, NCHNG=15
       integer :: ICHNG, L, LCHNG(NCHNG), ZCHNG(NCHNG)
 
       ! Originally: s valence orbital switched for p occupation = 4

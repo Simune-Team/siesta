@@ -1,4 +1,26 @@
 ------------------------------------------------------------
+June 29, 2016  Alberto Garcia       trunk-506--psml-77
+First stage towards use of g-orbitals in PAO generation
+
+Two sets of changes are needed:
+
+1. When a given l is beyond the maximum l in the semi-local
+   set in the pseudopotential, the local pseudopotential is
+   used in PAO generation.
+
+2. Some data structures and routines had to be changed to support l's
+   in the range 0:4.
+
+   Note that forces and stresses are still wrong, which means that
+   more changes are necessary in other places.
+
+modified:
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/periodic_table.f
+	
+------------------------------------------------------------
 June 29, 2016  Alberto Garcia       trunk-506--psml-76
 Merge trunk-506 (after LDAU merge)
 
