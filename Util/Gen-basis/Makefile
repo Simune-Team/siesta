@@ -1,3 +1,10 @@
+# ---
+# Copyright (C) 1996-2016	The SIESTA group
+#  This file is distributed under the terms of the
+#  GNU General Public License: see COPYING in the top directory
+#  or http://www.gnu.org/copyleft/gpl.txt .
+# See Docs/Contributors.txt for a list of contributors.
+# ---
 #
 # Makefile for stand-alone Gen-basis and ioncat
 #
@@ -35,7 +42,9 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 DEFS:= $(DEFS) $(DEFS_PREFIX)-UMPI
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 #
-PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
+include $(MAIN_OBJDIR)/Mk/psml.mk
+include $(MAIN_OBJDIR)/Mk/xmlf90.mk
+#
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 INCFLAGS:=$(NETCDF_INCFLAGS) \
@@ -84,7 +93,6 @@ $(XC):
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
-PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -100,14 +108,24 @@ $(FDF):
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
 gen-basis: $(FDF) $(XC) $(NCPS) $(OBJS_GEN-BASIS)
+#
+# Simple hack to link to any compiled lapack/blas code
+# If COMP_LIBS is empty, we do a no-op, else link the library file here.
+#
+link_linalg:
+	for llibs in $(COMP_LIBS); do \
+   [ -f ../../$(OBJDIR)/$$llibs ] && ln -sf ../../$(OBJDIR)/$$llibs . ; \
+	done
+#
+gen-basis: $(FDF) $(XC) $(OBJS_GEN-BASIS) link_linalg
 	$(FC) -o gen-basis \
-              $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) \
-              $(NCPS) $(PSOP) $(PSML) $(NETCDF_LIBS) $(LIBS)
+	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) \
+              $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) $(NETCDF_LIBS) $(COMP_LIBS) $(LIBS)
 #
 ioncat:  $(FDF) $(NCPS) $(IONCAT_OBJS)
 	$(FC) -o ioncat \
 	       $(LDFLAGS) $(IONCAT_OBJS) $(FDF) \
-              $(NCPS) $(PSOP) $(PSML) $(NETCDF_LIBS) $(LIBS)
+              $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) $(NETCDF_LIBS) $(LIBS)
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"

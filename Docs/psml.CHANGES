@@ -1,4 +1,19 @@
 ------------------------------------------------------------
+June 29, 2016  Alberto Garcia       trunk-485--psml-76
+Merge trunk-485 (up to GPL conversion)
+
+  Merge trunk up to GPL conversion + fix makefiles
+
+  Some GPL notices and headers remain to be inserted.
+
+  Fixed makefiles to properly support external PSML and XMLF90 libraries.
+
+  (Had to re-insert Util/pseudo-xml, which had been removed in the
+  psml branch)
+
+  (Util/pseudo-xml and Util/SiestaSubroutine building still broken)
+  
+------------------------------------------------------------
 March 9, 2016  Alberto Garcia       trunk-481--psml-76
 Cosmetic changes in .mk files and vnl-operator Makefile
 

@@ -1,3 +1,10 @@
+# ---
+# Copyright (C) 1996-2016	The SIESTA group
+#  This file is distributed under the terms of the
+#  GNU General Public License: see COPYING in the top directory
+#  or http://www.gnu.org/copyleft/gpl.txt .
+# See Docs/Contributors.txt for a list of contributors.
+# ---
 #
 # Makefile for stand-alone Denchar
 #
@@ -36,9 +43,12 @@ FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
+#
+include $(MAIN_OBJDIR)/Mk/psml.mk
+include $(MAIN_OBJDIR)/Mk/xmlf90.mk
+
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
-PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
 INCFLAGS:=$(NCPS_INCFLAGS) $(PSML_INCFLAGS) $(INCFLAGS)
 
 #
@@ -99,11 +109,11 @@ COM_OBJS_DENCHAR=$(OBJS_DENCHAR) $(SYSOBJ)
 ALL_OBJS_DENCHAR=$(MOD_OBJS) $(COM_OBJS_DENCHAR)
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
-PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
 #
-denchar: $(FDF)  $(ALL_OBJS_DENCHAR) $(PSML) $(NCPS) 
+denchar: $(FDF)  $(ALL_OBJS_DENCHAR) $(NCPS) 
 	$(FC) -o denchar \
-	       $(LDFLAGS) $(ALL_OBJS_DENCHAR) $(FDF) $(NCPS) $(PSML) $(METIS_LIB)
+	       $(LDFLAGS) $(ALL_OBJS_DENCHAR) $(FDF) $(NCPS) $(PSML_LIBS) \
+               $(XMLF90_LIBS) $(METIS_LIB)
 #
 #
 dep:

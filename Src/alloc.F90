@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !!@LICENSE
 !
 ! ==================================================================
@@ -1914,7 +1921,7 @@ end if
 
 if (newPeak .and. (REPORT_LEVEL==1 .or. REPORT_LEVEL==3) .and. &
     node == 0) then
-  call print_report
+  call print_report(.false.)
 end if
 
 if (REPORT_LEVEL == 4 .and. node == 0) then
@@ -2051,25 +2058,40 @@ END SUBROUTINE tree_print
 
 ! ==================================================================
 
-SUBROUTINE print_report
+SUBROUTINE print_report(all)
 
 implicit none
+
+! Whether MPI reductions should be performed
+! If, not then ensure that no MPI calls are performed
+logical, intent(in), optional :: all 
 
 character(len=80)   :: string = 'Name'
 character           :: date*8, time*10, zone*5
 integer             :: iNode, peakNode
 real(dp)            :: maxPeak
 real(dp),allocatable:: nodeMem(:), nodePeak(:)
+logical             :: lall
 
 #ifdef MPI
 integer           :: MPIerror
 #endif
 
+! Enables parallel call of print-report
+lall = .true.
+if ( present(all) ) lall = all
+
+! Only if MPI should all be used
+if ( lall ) then
 ! Make sure that variables node and Nodes are initialized
 call parallel_init()
+end if
 
 ! Allocate and initialize two small arrays
 allocate( nodeMem(0:Nodes-1), nodePeak(0:Nodes-1) )
+! initialize (in case all == .false.)
+nodeMem = 0._dp
+nodePeak = 0._dp
 
 ! Initializations for Nodes=1 (serial case)
 nodeMem(node) = TOT_MEM
@@ -2078,7 +2100,7 @@ peakNode = node
 
 ! In parallel, find the memory values of all nodes
 #ifdef MPI
-if (Nodes > 1) then
+if (Nodes > 1 .and. lall ) then
   ! Gather the present and peak memories of all nodes
   call MPI_AllGather( TOT_MEM, 1, MPI_double_precision, &
                       nodeMem, 1, MPI_double_precision, &
@@ -2156,7 +2178,7 @@ end if ! (node == peakNode)
 ! Change again the writing node for the rest of the report
 #ifdef MPI
 if (node==peakNode .and. peakNode/=0) close( unit=REPORT_UNIT )
-call MPI_Barrier( MPI_COMM_WORLD, MPIerror )
+if (lall) call MPI_Barrier( MPI_COMM_WORLD, MPIerror )
 if (node==0 .and. peakNode/=0) &
   open( unit=REPORT_UNIT, file=REPORT_FILE, &
         status='unknown', position='append' )

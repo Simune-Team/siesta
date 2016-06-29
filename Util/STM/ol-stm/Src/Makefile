@@ -1,3 +1,10 @@
+# ---
+# Copyright (C) 1996-2016	The SIESTA group
+#  This file is distributed under the terms of the
+#  GNU General Public License: see COPYING in the top directory
+#  or http://www.gnu.org/copyleft/gpl.txt .
+# See Docs/Contributors.txt for a list of contributors.
+# ---
 #
 # Makefile for Ordejon-Lorente STM program
 #
@@ -42,6 +49,10 @@ FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
+#
+include $(MAIN_OBJDIR)/Mk/psml.mk
+include $(MAIN_OBJDIR)/Mk/xmlf90.mk
+#
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 #
 # Uncomment the following line for debugging support
@@ -77,7 +88,6 @@ OBJS_STM = atompla.o  \
 	vacpot.o volcel.o wrout.o handlers.o
 #
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
-PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
 #PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 INCFLAGS:=$(NETCDF_INCFLAGS) \
           $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) \
@@ -86,7 +96,6 @@ INCFLAGS:=$(NETCDF_INCFLAGS) \
 INCFLAGS:= $(FFTW_INCFLAGS) $(INCFLAGS)
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
-PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -114,9 +123,10 @@ MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
 COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
 ALL_OBJS_STM=$(MOD_OBJS) $(COM_OBJS_STM)
 #
-stm: $(FDF)  $(NCPS) $(PSML) $(ALL_OBJS_STM)
+stm: $(FDF)  $(NCPS) $(ALL_OBJS_STM)
 	$(FC) -o stm \
-	       $(LDFLAGS) $(ALL_OBJS_STM) $(FDF) $(NCPS) $(PSML) $(FFTW_LIBS) 
+	       $(LDFLAGS) $(ALL_OBJS_STM) $(FDF) $(NCPS) \
+               $(PSML_LIBS) $(XMLF90_LIBS) $(FFTW_LIBS) 
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"

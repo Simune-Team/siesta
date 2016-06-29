@@ -1,3 +1,10 @@
+# ---
+# Copyright (C) 1996-2016	The SIESTA group
+#  This file is distributed under the terms of the
+#  GNU General Public License: see COPYING in the top directory
+#  or http://www.gnu.org/copyleft/gpl.txt .
+# See Docs/Contributors.txt for a list of contributors.
+# ---
 #
 # Makefile for stand-alone mixps and fractional
 #
@@ -34,9 +41,13 @@ FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI
+#
+include $(MAIN_OBJDIR)/Mk/psml.mk
+include $(MAIN_OBJDIR)/Mk/xmlf90.mk
+#
 FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
-PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
+
 INCFLAGS:=$(NETCDF_INCFLAGS)\
           $(NCPS_INCFLAGS) \
           $(PSML_INCFLAGS) \
@@ -77,20 +88,19 @@ MIXPS_OBJS= f2kcli.o interpolation.o atom_options.o \
             memory.o memoryinfo.o mixps.o psml_die.o die.o
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
-PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
 #
-$(NCPS): $(PSML)
-mixps:  $(FDF) $(MIXPS_OBJS) $(NCPS) $(PSML)
+mixps:  $(FDF) $(MIXPS_OBJS) $(NCPS) 
 	$(FC) -o mixps \
-	       $(LDFLAGS) $(MIXPS_OBJS) $(NCPS) $(PSML) $(FDF) $(PSML_LIBS)
+	       $(LDFLAGS) $(MIXPS_OBJS) $(NCPS) $(FDF) $(PSML_LIBS) $(XMLF90_LIBS)
 #----------------------------------------------------------------------------
 FRACTIONAL_OBJS= f2kcli.o m_io.o alloc.o interpolation.o fractional.o \
                  atom_options.o  memory.o memoryinfo.o  sys.o \
                  io.o pxf.o parallel.o periodic_table.o psml_die.o die.o
 
-fractional: $(FDF) $(FRACTIONAL_OBJS) $(NCPS) $(PSML)
+fractional: $(FDF) $(FRACTIONAL_OBJS) $(NCPS) 
 	$(FC) -o fractional \
-	       $(LDFLAGS) $(FRACTIONAL_OBJS)  $(NCPS) $(PSML) $(FDF) $(PSML_LIBS)
+	       $(LDFLAGS) $(FRACTIONAL_OBJS) $(NCPS) $(PSML) $(FDF)\
+               $(PSML_LIBS) $(XMLF90_LIBS)
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"
