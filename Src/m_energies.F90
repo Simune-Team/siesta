@@ -40,6 +40,8 @@ module m_energies
   real(dp):: Uatm       ! Harris hartree electron energy,  calculated in dhscf
   real(dp):: Uscf       ! SCF hartree electron energy,  calculated in dhscf
   real(dp):: Ebs        ! Band-structure energy, Tr(DM*H), calculated in compute_dm
+  real(dp):: Eldau      
+  real(dp):: DEldau      
 
 end module m_energies
 

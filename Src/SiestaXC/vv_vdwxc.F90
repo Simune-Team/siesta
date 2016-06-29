@@ -975,7 +975,7 @@ subroutine vv_vdw_theta( nspin, rhos, grhos, theta, dtdrho, dtdgrho )
     end do
   else if (kernelPrefactor=='sqr_rho') then
     ! This is the right code if vv_vdw_phi_val returns sqrt(rho1*rho2)*phi
-    rho = max(rho,1.e-12)  ! to avoid division by zero
+    rho = max(rho,1.e-12_dp)  ! to avoid division by zero
     theta(1:nkfg) = p(1:nkfg) * sqrt(rho)
     do is = 1,ns
       dtdrho(1:nkfg,is) = ( dpdkf(1:nkfg)*dkfdrho &

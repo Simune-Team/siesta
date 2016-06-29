@@ -66,7 +66,7 @@ OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
           pxf.o dot.o  atom_options.o arw.o  \
           sys.o timer.o  xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
-          xc.o bsc_xcmod.o local_die.o
+          xc.o bsc_xcmod.o local_die.o ldau_specs.o m_cite.o
 #
 IONCAT_OBJS=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
           parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o  atm_types.o\
@@ -178,8 +178,8 @@ basis_types.o: alloc.o atmparams.o precision.o sys.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
 basis_io.o: precision.o radial.o sys.o xml.o
 chemical.o: parallel.o precision.o sys.o
-atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
-atm_transfer.o: radial.o sys.o
+atm_transfer.o: atm_types.o atmparams.o ldau_specs.o old_atmfuncs.o
+atm_transfer.o: periodic_table.o radial.o sys.o
 atm_types.o: precision.o radial.o
 old_atmfuncs.o: alloc.o atmparams.o precision.o sys.o
 radial.o: alloc.o interpolation.o precision.o xml.o
@@ -203,3 +203,6 @@ gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
 gen-basis.o: old_atmfuncs.o parallel.o precision.o sys.o
 xc.o: alloc.o bsc_xcmod.o precision.o sys.o
 bsc_xcmod.o: parallel.o precision.o sys.o
+ldau_specs.o: alloc.o atm_types.o atmparams.o atom.o atom_options.o
+ldau_specs.o: basis_specs.o basis_types.o interpolation.o m_cite.o parallel.o
+ldau_specs.o: precision.o radial.o sys.o units.o

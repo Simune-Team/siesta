@@ -618,7 +618,7 @@ kpoints:                 &
   
 !   Open the output file
     if( IOnode ) then
-      write(unkfilename,"('UNK',i5.5,'.',i1)"), ik, ispin
+      write(unkfilename,"('UNK',i5.5,'.',i1)") ik, ispin
       call io_assign(unkfileunit)
       if( .not. unk_format ) then
         open( unit=unkfileunit, err=1992, file=unkfilename,          &

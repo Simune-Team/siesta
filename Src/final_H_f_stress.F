@@ -16,7 +16,7 @@
       USE siesta_options, only: recompute_H_after_scf
       use sparse_matrices, only: numh, listh, listhptr
       use sparse_matrices, only: S, Dscf, Escf, maxnh, xijo
-      use sparse_matrices, only: H  
+      use sparse_matrices, only: H, H_ldau
 
       use siesta_geom
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -30,6 +30,12 @@
       use m_naefs,      only: naefs
       use m_dnaefs,     only: dnaefs
       use m_grdsam,     only: grdsam
+      use ldau_specs,   only: switch_ldau     ! This variable determines whether
+                                              !   the subroutine to compute the
+                                              !   Hubbard terms should be called
+                                              !   or not
+      use m_ldau,       only: hubbard_term    ! Subroutine that compute the
+                                              !   Hubbard terms
       use m_stress
       use m_energies
       use m_steps, only: istp
@@ -131,6 +137,26 @@
 
 !     Non-SCF part of total energy
       E0 = -Eions + Ena + Ekin + Enl
+
+! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
+      if( switch_ldau ) then
+         call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
+     .        maxnh, maxnh, lasto, iphorb, no_u, no_l, 
+     .        numh, listhptr, listh, numh, listhptr, listh,
+     .        min(nspin,2), Dscf, Eldau, DEldau, H_ldau, 
+     .        fal, stressl, H_tmp, iscf,
+     .        matrix_elements_only=.false.)
+#ifdef MPI
+         ! Global reduction of energy terms
+         call globalize_sum(Eldau,buffer1)
+         Eldau = buffer1
+         ! DEldau should not be globalized as it 
+         ! is based on globalized occupations
+#endif
+         Eldau = Eldau + DEldau
+      endif
+! ..................
+
 
 !     Non-local-pseudop: energy, forces, stress and matrix elements
 !     Add SCF contribution to energy and matrix elements 

@@ -56,7 +56,7 @@
 
       private
 
-      public :: atom_main, prinput
+      public :: atom_main, prinput, schro_eq, rc_vs_e, build_vsoft
 
 !---------------------------------------------------------------------
 ! Some internal parameters
