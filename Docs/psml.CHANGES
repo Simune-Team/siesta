@@ -1,4 +1,17 @@
 ------------------------------------------------------------
+June 30, 2016  Alberto Garcia       trunk-506--psml-78
+Add documentation for the use of ONCVPSP
+
+Added the Pseudo/ThirdParty-Tools/ONCVPSP directory, with
+information and a patch file.
+
+added:
+  Pseudo/ThirdParty-Tools/
+  Pseudo/ThirdParty-Tools/ONCVPSP/
+  Pseudo/ThirdParty-Tools/ONCVPSP/README
+  Pseudo/ThirdParty-Tools/ONCVPSP/oncvpsp-3.2.2--psml-42.patch
+
+------------------------------------------------------------
 June 29, 2016  Alberto Garcia       trunk-506--psml-77
 First stage towards use of g-orbitals in PAO generation
 
