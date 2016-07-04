@@ -1,0 +1,112 @@
+%
+% This TeX file includes the default environments for creating fdf blocks
+% in the documentation of SIESTA.
+%
+% These utility functions have been implemented by:
+%  Nick R. Papior, 2016 (nickpapior <at> gmail.com)
+%
+
+% Create a new output file for the short-manual.
+% This file will contain all the short descriptions of
+% the fdf-keys.
+
+% create the correct fdf mode (for the fdf-environment)
+\let\fdf@mode\leavevmode
+
+% Create font for fdf-flags
+% If this command is changed it changes all 
+% |#1| and \fdf{#1} commands.
+\NewDocumentCommand\fontfdf{ m }
+{%
+    \textbf{#1}%
+}
+
+% Shorthand command for printing the fdf-key
+% correctly, AND adding it to the index.
+% Note that | | is equivalent to this.
+\NewDocumentCommand\fdf{ s m }
+{%
+    \fontfdf{#2}%
+    \IfBooleanF{#1}{%
+        % Create index
+        \sindex[sfdf]{#2}%
+    }%
+}
+
+% Define the skip of a new fdf key
+\newcommand\fdfentrybody{\parskip2pt}
+
+\NewDocumentCommand\fdfabstract{ m }{\textlangle#1\textrangle}
+
+\def\fdfentryline@None{None}
+% Create the entry for the fdf-key
+%
+% #1: the name of the fdf-key
+% #2: (optional) the type of the input value (string, true/false, physical quantity)
+% #3: <> the default value of the fdf-key
+\NewDocumentCommand\fdfentryline{ m o D<>{None}}
+{ %
+    \itemsep=0pt%
+    \parskip=0pt%
+    \bgroup%
+    \raggedright\item%
+    % Create fdf-label (with indexing)
+    \strut{\fdf{#1}%
+        \space%
+        \bgroup%
+        \def\tmp@None{#3}%
+        \ifx\tmp@None\fdfentryline@None%
+          \let\tmp@None\fdfabstract%
+        \else%
+          \let\tmp@None\relax%
+        \fi%
+        \strut{\color{red!50!black}\tmp@None{\fdf*{#3}}}%
+        \egroup %
+    }
+    \IfValueT{#2}%
+    {%
+        \hfill\strut{\textit{(#2)}}%
+    } %
+    \par%
+    \egroup%
+    \topsep=0pt%
+    % Create fdf label
+    \fdfentrybody%
+}
+
+
+% Create new fdf input
+% This finalizes the call with \fdfenttryline
+% which does the actual parsing of the arguments.
+% This environment only sets up the enviroment
+% to typeset things in.
+\NewDocumentEnvironment{fdfentry}{ }
+{   %
+    % Create correct box-setups
+    \list{%
+    }{ %
+        % Define list
+        \leftmargin=2em\itemindent-\leftmargin %
+        \def\makelabel##1{\hss##1} %
+    }%
+    % Create entry line of the argument
+    \fdfentryline %
+}
+{%
+    \endlist%
+}
+
+
+% Simple environment which extends 
+%   \begin{verbatim}
+% 
+%   \end{verbatim}
+% It is simply intended as placeholder to easily change
+% the future behaviour of the environment.
+\DefineVerbatimEnvironment{fdfexample}{Verbatim}{xleftmargin=2em}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../siesta"
+%%% End:

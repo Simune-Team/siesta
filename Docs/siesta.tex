@@ -2,50 +2,26 @@
 %
 % To generate the printed version:
 %
-% latex siesta
+% pdflatex siesta
+% splitidx siesta.idx (optional if you want a split index)
 % makeindex siesta    (Optional if you have a current siesta.ind)
-% latex siesta
-% [ dvips siesta ]
+% pdflatex siesta
 %
 %
 \documentclass[11pt]{article}
-\usepackage{makeidx}
-\usepackage{url}
-\usepackage{hyperref}
-% Hyperref setup
-\hypersetup{
-    hyperindex=true,
-    bookmarksopen=true,
-    bookmarksopenlevel=2,
-}
 
 \tolerance 10000
-\textheight 22cm
-\textwidth 16cm
 \oddsidemargin 1mm
 \topmargin -15mm
 
-\makeindex
+\usepackage[textwidth=15cm, textheight=22cm]{geometry}
 
 \parindent=0cm
 \baselineskip=14pt
 \parskip 5pt
 
-% A command for specifying FDF commands...
-\newcommand\fdf[1]{%
-    \textbf{#1}%
-}
-
-% A command for specifying files...
-\newcommand\file[1]{%
-    \texttt{#1}\index{#1@\textbf{#1}}%
-}
-
-% A command for specifying files...
-\newcommand\systemfile[1]{%
-    \texttt{<SystemLabel>#1}\index{#1@\textbf{#1}}%
-}
-    
+% Include settings appropriate for siesta
+\input{tex/init.tex}
 
 \begin{document}
 
@@ -490,7 +466,7 @@ to your {\tt h2o} working directory.
 \noindent
 Now you are ready to run the program:
 
-{\tt ./siesta < h2o.fdf | tee h2o.out}
+{\tt ./siesta < h2o.fdf \pipe\ tee h2o.out}
 
 \noindent
 (If you are running the parallel version you should use some other
@@ -3226,7 +3202,6 @@ turn this option on, or use the compatibility switch {\bf
 
 \item[{\bf SCF.Mix}] ({\it string}):
 \index{SCF.Mix@{\bf SCF.Mix}}
-\index{SCF.Mix@{\bf SCF.Mix}|see{SCF.Mix!Variant}}
 
 Select the mixing method in the SCF cycle.
 
@@ -3250,8 +3225,8 @@ The currently available mixing algorithms are:
 
 \item[{\bf DM.MixingWeight}] ({\it real}):
 \index{DM.MixingWeight@{\bf DM.MixingWeight}}
+%\index{DM.MixingWeight@{\bf DM.MixingWeight}|see SCF.Mix!Weight}
 \index{SCF!mixing!linear}
-\index{DM.MixingWeight@{\bf DM.MixingWeight}|see{SCF.Mix.Weight}}
 \index{SCF.Mix.Weight@{\bf SCF.Mix.Weight}}
 
 Proportion $\alpha$ of
@@ -3270,7 +3245,6 @@ choice for accelerating the convergence of the scf cycle.
 
 \item[{\bf SCF.Mix.Weight}] ({\it real}):
 \index{SCF!mixing!linear}
-\index{DM.MixingWeight@{\bf DM.MixingWeight}|see{SCF.Mix.Weight}}
 \index{SCF.Mix.Weight@{\bf SCF.Mix.Weight}}
 
 The default mixing weight for all mixing methods.
@@ -3316,7 +3290,6 @@ performed.
 
 \item[{\bf SCF.Pulay.Damping}] ({\it real}):\index{SCF!mixing}
 \index{SCF.Pulay.Damping@{\bf SCF.Pulay.Damping}}\index{SCF!mixing!Pulay!damping}
-\index{SCF.Pulay.Damping@{\bf SCF.Pulay.Damping}|see{SCF.Mix.Pulay.Damping}}
 
 Proportion $\alpha_P$ of the predicted
 output Density Matrix to be used for the input Density Matrix of
@@ -3411,7 +3384,6 @@ cycle, for linear mixing steps after a Pulay mixing step if the option {\bf
 
 \item[{\bf SCF.Pulay.LinearMixing.After}] ({\it logical}):
 \index{SCF.Pulay.LinearMixing.After@{\bf SCF.Pulay.LinearMixing.After}}
-\index{SCF.LinearMixingAfterPulay|see{SCF.Pulay.LinearMixing.After}}
 \index{SCF!mixing!Pulay} 
 
 The damping of the DIIS-predicted $X_{in}$ is done to avoid introducing
@@ -3425,7 +3397,6 @@ the history information.
 
 \item[{\bf SCF.Pulay.MixingWeight.After}] ({\it real}):
 \index{SCF.Pulay.MixingWeight.After@{\bf SCF.Pulay.MixingWeight.After}}
-\index{SCF.MixingWeightAfterPulay|see{SCF.Pulay.MixingWeight.After}}
 \index{SCF!mixing!Pulay}
 
 Proportion $\alpha$ of output Density Matrix to be used for the input
@@ -8391,7 +8362,6 @@ calculations, only the usual {\sc Siesta} options are relevant.
 {\it Default value:} {\tt true}
 
 \item[\fdf{TS.ReUseGF}] \index{TS.ReUseGF@\textbf{TS.ReUseGF}} ({\it logical}): 
-\index{TS.CalcGF@\textbf{TS.CalcGF}|see{\textbf{TS.ReUseGF}}}
 The generated surface Green's functions of the electrodes depend on the atomic structure,
 but also on the energy points of the contour (that will depend on the voltage). 
 It is possible to use previously generated .GF files, but care must be taken.
@@ -8653,23 +8623,23 @@ the other output files, we refer the user to the {\sc Siesta} manual.
     \itemsep 10pt
     \parsep 0pt
     
-    \item[\systemfile{.DM}]: The {\sc Siesta} density matrix. {\sc Siesta} initially
+    \item[\sysfile{DM}]: The {\sc Siesta} density matrix. {\sc Siesta} initially
     performs a calculation at zero bias assuming periodic boundary conditions in all
     directions, and no voltage, which is used as a starting point for the transiesta
     calculation.
     
-    \item[\systemfile{.TSDE}]: The {\sc TranSiesta} density matrix and energy density
+    \item[\sysfile{TSDE}]: The {\sc TranSiesta} density matrix and energy density
     matrix. During a transiesta run, the .DM values are used for the density matrix in
     the buffer (if used) and electrode regions. The coupling terms may o may no be
     updated in a {\sc TranSiesta} run (see {\bf TS.UpdateDMCROnly}).
     
-    \item[\systemfile{.TSHS}]: The Hamiltonian corresponding to .TSDE, and other
+    \item[\sysfile{TSHS}]: The Hamiltonian corresponding to .TSDE, and other
     information needed by {\sc TranSiesta} and {\tt tbtrans}.
 
-    \item[\systemfile{.TSKP}]: The $k$-points used in the {\sc TranSiesta} calculation. See
+    \item[\sysfile{TSKP}]: The $k$-points used in the {\sc TranSiesta} calculation. See
     {\sc Siesta} \file{.KP} file for formatting information.
 
-    \item[\systemfile{.TSCC}]: The complex contour integration path used for calculating
+    \item[\sysfile{TSCC}]: The complex contour integration path used for calculating
     the non-equilibrium density matrix.
 
 \end{description} 
@@ -8765,9 +8735,9 @@ If true will calculate the valence band bottom of the electrode.
 \item [{\bf TS.TBT.COOP}]({\it logical}): Calculate the COOP on the PDOS region. 
 Creates the files:
 \begin{itemize}
-  \item \systemfile{.COOP}
-  \item \systemfile{.COOPL}
-  \item \systemfile{.COOPR}
+  \item \sysfile{COOP}
+  \item \sysfile{COOPL}
+  \item \sysfile{COOPR}
 \end{itemize}
 
 \textbf{Notice}: Can only be used with the NPA version.
@@ -8777,8 +8747,8 @@ Creates the files:
 \item [{\bf TS.TBT.AtomPDOS}]({\it logical}): Calculate the \emph{onsite} projected
 density of states in the PDOS region. Creates the files:
 \begin{itemize}
-  \item \systemfile{.TOTDOS}
-  \item \systemfile{.ORBDOS}
+  \item \sysfile{TOTDOS}
+  \item \sysfile{ORBDOS}
 \end{itemize}
 
 Notice, that this will not sum up to PDOS in \file{.TRANS}, as this is onsite density of
@@ -8798,7 +8768,7 @@ or equal to the applied bias).
 The k-point sampling is defined by the {\bf TBT\_kgrid\_Monkhorst\_Pack}
 block, and if that is non-existing it will use the
 {\bf kgrid\_Monkhorst\_Pack} block. The averaged (over $k$-points)
-transmission function is printed in the file \systemfile{.AVTRANS}.
+transmission function is printed in the file \sysfile{AVTRANS}.
 
 An additional options is:
 \begin{description}
@@ -8852,18 +8822,18 @@ depends on the type of the output.
     \itemsep 10pt
     \parsep 0pt
     
-    \item[\systemfile{.TRANS}]: The transmission for each $k$ point,
+    \item[\sysfile{TRANS}]: The transmission for each $k$ point,
     as well as the total density of states in the scattering region and the projected
     density of states for all orbitals in the region specified by \fdf{TS.TBT.PDOSFrom}
     and \fdf{TS.TBT.PDOSTo}.
 
-    \item[\systemfile{.AVTRANS}]: The $k$ point averaged
+    \item[\sysfile{AVTRANS}]: The $k$ point averaged
     transmission and density of states according to \file{.TRANS}.
 
-    \item[\systemfile{.LDOS}]: The $k$ point averaged and energy weighted density of states of
+    \item[\sysfile{LDOS}]: The $k$ point averaged and energy weighted density of states of
     the left electrode.
 
-    \item[\systemfile{.RDOS}]: The $k$ point averaged and energy weighted density of states of
+    \item[\sysfile{RDOS}]: The $k$ point averaged and energy weighted density of states of
     the right electrode.
 
 \end{description} 
@@ -9666,6 +9636,9 @@ module. A number of future enhancements depend on this paradigm.
 
 \addcontentsline{toc}{section}{Index}
 \printindex
+
+\printindex[sfiles]
+\printindex[sfdf]
 
 \end{document}
 

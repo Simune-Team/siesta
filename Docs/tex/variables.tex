@@ -1,0 +1,122 @@
+%
+% This TeX file includes the default commands used in the SIESTA manual. 
+%
+%  Nick R. Papior, 2016 (nickpapior <at> gmail.com)
+%
+
+\NewDocumentCommand\program{m}{\textsc{#1}}
+
+\NewDocumentCommand\siesta{}{\program{SIESTA}}
+\NewDocumentCommand\tsiesta{}{\program{TranSIESTA}}
+\NewDocumentCommand\tbtrans{}{\program{TBtrans}}
+\NewDocumentCommand\fdfprogram{}{\program{fdf}}
+
+% Ensure that we may use texttt to print underscore and braces
+\let\origtexttt=\texttt
+\def\texttt#1{%
+    \bgroup %
+    \def\textunderscore{\char`\_} %
+    \def\textbraceleft{\char`\{} %
+    \def\textbraceright{\char`\}} %
+    \def\textless{\textlangle} %
+    \def\textgreater{\textrangle} %
+    \origtexttt{#1} %
+    \egroup %
+}
+
+% Ensure that we may use texttt to print underscore and braces
+\let\origindex=\index
+\def\index#1{%
+    \bgroup %
+    \let|\siesta@bar%
+    \let\siesta@active@tab\relax%
+    \origindex{#1}%
+    \egroup %
+}
+
+
+
+% Translate |#1| to \verb|#1| which in turn uses texttt
+\begingroup
+  \catcode`\|=12
+  \gdef\siesta@bar{|}
+  \catcode`\|=13
+  \gdef\siesta@active@bar{|}
+  \catcode`\_=12
+  \gdef\siesta@underscore{_}%
+  \catcode`\ =13
+  \gdef\siesta@active@space{ }%
+  \catcode`\^^I=13
+  \gdef\siesta@active@tab{^^I}%
+  \catcode`\<=13
+  \gdef\siesta@active@less{<}%
+  \catcode`\>=13
+  \gdef\siesta@active@greater{>}%
+\endgroup
+
+% Enable a non-active | char in the output
+\NewDocumentCommand\pipe{}{\siesta@bar}
+
+% Specific routine for collecting input from the | | segment
+\def\siesta@verb{%
+    \ifmmode%
+      \expandafter
+      \siesta@bar
+    \else
+      \begingroup
+      \siesta@verb@preparecatcodes@
+      \toksdef\t@siesta@verb=0
+      \t@siesta@verb={}%
+      \expandafter\siesta@verb@collect
+    \fi
+}
+
+% Start the collecting routine
+\def\siesta@verb@collect#1{%
+    \def\siesta@temp{#1}%
+    \ifx\siesta@temp\siesta@bar
+      % ok, finish:
+      \edef\siesta@verb@collect@next{%
+          % this command will also handle control sequences.
+          \noexpand\endgroup
+          \noexpand\fdf{\the\t@siesta@verb}%
+      }%
+    \else
+      \ifx\siesta@temp\siesta@active@bar
+        \edef\siesta@verb@collect@next{%
+            \noexpand\endgroup
+            \noexpand\fdf{\the\t@siesta@verb}%
+        }%
+      \else
+        \t@siesta@verb=\expandafter{\the\t@siesta@verb #1}%
+        \let\siesta@verb@collect@next=\siesta@verb@collect
+      \fi
+    \fi
+    \siesta@verb@collect@next
+}%
+
+\def\siesta@verb@preparecatcodes@{%
+    \let\do\@makeother%
+    \dospecials%
+    \catcode`\%=12 % THATS IMPORTANT! Do *not* handle comments!
+    % these catcodes are expected by the pretty printer...
+    % \catcode`\^^M=13
+    \catcode`\ =13
+    \catcode`\^^I=13
+    \expandafter\def\siesta@active@space{\space}%
+    \expandafter\def\siesta@active@tab{\space\space\space\space}%
+}%
+
+
+% Create shorthand for | | as fdf keys
+\AtBeginDocument{%
+    \catcode`\|=13
+    \expandafter\let\siesta@active@bar=\siesta@verb
+}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../siesta"
+%%% End:

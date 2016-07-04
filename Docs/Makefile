@@ -3,6 +3,7 @@ rerun = "(There were undefined references|Rerun to get (cross-references|the bar
 doc   = siesta
 latex = pdflatex -shell-escape
 grep = @-grep -i -s
+splitidx = splitindex
 docidx = $(doc).idx
 bibtex = echo "BIBTEX"
 makeidx = makeindex
@@ -20,11 +21,13 @@ compress:
 
 extra:
 	$(bibtex) $(doc)
+	$(splitidx) $(docidx)
 	$(makeidx) $(doc)
 
 final: clean $(doc).tex
 	$(latex) $(doc).tex
 	$(bibtex) $(doc)
+	$(splitidx) $(docidx)
 	$(makeidx) $(doc)
 	$(latex) $(doc).tex
 	$(latex) $(doc).tex
