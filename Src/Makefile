@@ -557,7 +557,8 @@ bessph.o: precision.o sys.o
 bonds.o: alloc.o atmfuncs.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
 born_charge.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
-broadcast_basis.o: atm_types.o ldau_specs.o m_mpi_utils.o parallel.o radial.o
+broadcast_basis.o: atm_types.o chemical.o ldau_specs.o m_mpi_utils.o parallel.o
+broadcast_basis.o: radial.o
 broadcast_projections.o: m_trialorbitalclass.o parallel.o siesta2wannier90.o
 broyden_optim.o: m_broyddj_nocomm.o m_memory.o parallel.o precision.o
 broyden_optim.o: siesta_options.o sys.o units.o
@@ -832,7 +833,7 @@ m_matio.o: alloc.o parallel.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mesh_node.o: intrinsic_missing.o parallel.o precision.o
 m_mixing.o: alloc.o class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
-m_mixing_scf.o: class_Fstack_Data1D.o m_mixing.o parallel.o
+m_mixing_scf.o: class_Fstack_Data1D.o m_mixing.o parallel.o precision.o
 m_monitor.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_monitor.o: parallel.o precision.o
 m_mpi_utils.o: precision.o sys.o
@@ -1126,16 +1127,15 @@ projected_DOS.o: alloc.o atomlist.o kpoint_grid.o kpoint_pdos.o m_eo.o
 projected_DOS.o: m_gamma.o m_spin.o parallel.o precision.o siesta_geom.o
 projected_DOS.o: siesta_options.o sparse_matrices.o sys.o units.o
 propor.o: precision.o sys.o
-proximity_check.o: m_ts_global_vars.o mneighb.o parallel.o precision.o
-proximity_check.o: siesta_geom.o siesta_options.o units.o
+proximity_check.o: chemical.o m_ts_global_vars.o mneighb.o parallel.o
+proximity_check.o: precision.o siesta_geom.o siesta_options.o units.o
 pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 radial.o: alloc.o interpolation.o precision.o xml.o
 rdiag.o: alloc.o m_diagon_opt.o memoryinfo.o parallel.o precision.o sys.o
-read_options.o: files.o m_charge_add.o m_hartree_add.o m_mixing.o
-read_options.o: m_mixing_scf.o m_spin.o m_target_stress.o memoryinfo.o
-read_options.o: parallel.o precision.o siesta_cml.o siesta_options.o sys.o
-read_options.o: units.o
+read_options.o: files.o m_charge_add.o m_hartree_add.o m_mixing_scf.o m_spin.o
+read_options.o: m_target_stress.o memoryinfo.o parallel.o precision.o
+read_options.o: siesta_cml.o siesta_options.o sys.o units.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o

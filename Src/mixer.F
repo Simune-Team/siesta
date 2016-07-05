@@ -17,9 +17,9 @@
       use siesta_options,   only: mixH, mix_scf_first
       use siesta_options,   only: mullipop, muldeb
       ! Spin mixing options
-      use siesta_options, only: MIX_SPIN_ALL, MIX_SPIN_SPINOR
-      use siesta_options, only: MIX_SPIN_SUM, MIX_SPIN_SUM_DIFF
-      use siesta_options, only: mix_spin
+      use m_mixing_scf, only: MIX_SPIN_ALL, MIX_SPIN_SPINOR
+      use m_mixing_scf, only: MIX_SPIN_SUM, MIX_SPIN_SUM_DIFF
+      use m_mixing_scf, only: mix_spin
 
       use sparse_matrices,  only: Dold, Dscf, Hold, H, S
       use sparse_matrices,  only: maxnh, numh, listhptr, listh

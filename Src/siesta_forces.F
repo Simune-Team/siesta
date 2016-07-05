@@ -28,8 +28,7 @@
       use m_compute_max_diff
       use m_scfconvergence_test
       use m_post_scf_work
-      use m_mixer
-      ! NP new mixing
+      use m_mixer, only: mixer
       use m_mixing_scf, only: mixing_scf_converged
       use m_mixing_scf, only: mixing_scf_history_clear
 
@@ -253,6 +252,10 @@
            end if
         end if
 
+        ! Check whether we should step to the next
+        ! mixer
+        call mixing_scf_converged( SCFconverged )
+        
 #ifdef TRANSIESTA
         ! In case the user has requested a Fermi-level correction
         ! Then we start by correcting the fermi-level

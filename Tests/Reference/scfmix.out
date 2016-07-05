@@ -1,8 +1,8 @@
-Siesta Version: trunk-509
+Siesta Version: trunk-527-doc-4
 Architecture  : x86_64-linux-gcc
-Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
 PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
-Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
 PARALLEL version
 NetCDF support
 NetCDF-4 support
@@ -10,7 +10,7 @@ NetCDF-4 MPI-IO support
 METIS ordering support
 
 * Running on 2 nodes in parallel
->> Start of run:   5-JUN-2016  12:19:38
+>> Start of run:   5-JUL-2016  13:34:51
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -21,29 +21,47 @@ reinit: Reading from standard input
 # Old mixing parameters
 #DM.MixingWeight         0.01
 #DM.NumberPulay          4
-# New:
-#SCF.Mix.Debug T
+# Default stuff...
+Mix.Debug.MPI
+SCF.Mix.Weight 0.01
+SCF.Mix.History 4
+SCF.Mix.Restart 2
+SCF.Mix.Restart.Save 3
+# Define all the mixing methods used
 %block SCF.Mix
-  init
+  linear-before
+  pulay
+  broyden
+  linear-after
+  kick
 %endblock
-%block SCF.Mix.init
-  # Specify mixing method
+%block SCF.Mix.linear-before
+  method linear
+  iterations 2
+  history 2
+  next pulay
+%endblock
+%block SCF.Mix.pulay
   method pulay
-  # Run for at least this number of
-  # iterations (negative == infinite)
-  iterations 150
-  # Mixing weight
-  w 0.01
-  # Number of previous steps saved
-  history 4
-  # Restart history after every 16 steps
-  restart 16
-  # Restart history if:
-  #  || f_k-1 || < 0.25 * || f_k ||
-  restart.p 0.25
-  # Store the latest 2 residuals in the
-  # history (reduces kick)
-  restart.save 2
+  iterations 10
+  next kick
+  next.conv linear-after
+%endblock
+%block SCF.Mix.linear-after
+  method linear
+  w 0.025
+%endblock
+%block SCF.Mix.kick
+  method linear
+  w 0.1
+  iterations 1
+  next broyden
+%endblock
+%block SCF.Mix.broyden
+  method broyden
+  iterations 10
+  next kick
+  next.conv linear-after
 %endblock
 SystemName          Linear Fe3 cluster.
 SystemLabel         scfmix
@@ -335,18 +353,128 @@ redata: Divide and Conquer                          =   T
 redata: Electronic Temperature                      =  1160.4438 K
 redata: Fix the spin of the system                  =   F
 redata: Dynamics option                             = Single-point calculation
-mix.SCF: Pulay mixing                            = init
+mix.SCF: Linear mixing                           = linear-before
+mix.SCF:    Mixing weight                        =     0.010000
+mix.SCF:    Subsequent history steps             = 3
+mix.SCF:    Number of mixing iterations          = 2
+mix.SCF:    Following mixer                      = pulay
+mix.SCF: Pulay mixing                            = pulay
 mix.SCF:    Variant                              = stable
 mix.SCF:    History steps                        = 4
-mix.SCF:    Linear mixing weight                 =     0.250000
-mix.SCF:    Damping                              =     0.010000
+mix.SCF:    Linear mixing weight                 =     0.010000
+mix.SCF:    Mixing weight                        =     0.010000
 mix.SCF:    SVD condition                        = 0.1000E-07
-mix.SCF:    Restart parameter                    = 0.2500
-mix.SCF:    Restart steps                        = 16
-mix.SCF:    Restart save steps                   = 2
-redata: Spin-component mixing                       = all
+mix.SCF:    Restart steps                        = 2
+mix.SCF:    Restart save steps                   = 3
+mix.SCF:    Number of mixing iterations          = 10
+mix.SCF:    Following mixer                      = kick
+mix.SCF:    Following mixer upon convergence     = linear-after
+mix.SCF: Broyden mixing                          = broyden
+mix.SCF:    History steps                        = 4
+mix.SCF:    Jacobian weight                      =     0.010000
+mix.SCF:    Weight prime                         =     0.010000
+mix.SCF:    Restart steps                        = 2
+mix.SCF:    Restart save steps                   = 3
+mix.SCF:    Number of mixing iterations          = 10
+mix.SCF:    Following mixer                      = kick
+mix.SCF:    Following mixer upon convergence     = linear-after
+mix.SCF: Linear mixing                           = linear-after
+mix.SCF:    Mixing weight                        =     0.025000
+mix.SCF: Linear mixing                           = kick
+mix.SCF:    Mixing weight                        =     0.100000
+mix.SCF:    Subsequent history steps             = 4
+mix.SCF:    Number of mixing iterations          = 1
+mix.SCF:    Following mixer                      = broyden
+mix.SCF: Spin-component mixingall
 redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+
+%block SCF.Mix
+  linear-before           
+  pulay                   
+  broyden                 
+  linear-after            
+  kick                    
+%endblock SCF.Mix
+
+%block SCF.Mix.linear-before
+  # Mixing method
+  method linear
+
+  # Mixing options
+  weight 0.0100
+  history 3
+  restart 2
+  restart.save 2
+
+  # Continuation options
+  iterations 2
+  next pulay
+%endblock SCF.Mix.linear-before
+
+%block SCF.Mix.pulay
+  # Mixing method
+  method pulay
+  variant stable
+
+  # Mixing options
+  weight 0.0100
+  weight.linear 0.0100
+  history 4
+  restart 2
+  restart.save 3
+
+  # Continuation options
+  iterations 10
+  next kick
+  next.conv linear-after
+%endblock SCF.Mix.pulay
+
+%block SCF.Mix.broyden
+  # Mixing method
+  method broyden
+
+  # Mixing options
+  weight 0.0100
+  weight.linear 0.0100
+  history 5
+  restart 2
+  restart.save 3
+
+  # Continuation options
+  iterations 10
+  next kick
+  next.conv linear-after
+%endblock SCF.Mix.broyden
+
+%block SCF.Mix.linear-after
+  # Mixing method
+  method linear
+
+  # Mixing options
+  weight 0.0250
+  history 4
+  restart 2
+  restart.save 3
+
+  # Continuation options
+%endblock SCF.Mix.linear-after
+
+%block SCF.Mix.kick
+  # Mixing method
+  method linear
+
+  # Mixing options
+  weight 0.1000
+  history 4
+  restart 2
+  restart.save 3
+
+  # Continuation options
+  iterations 1
+  next broyden
+%endblock SCF.Mix.kick
+
 DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
 Size of DM history Fstack: 1
 Total number of electrons:    24.000000
@@ -421,8 +549,10 @@ cdiag-debug: Node=1, lwork=     12420>= lworkq=      8462, lrwork=     12781>= l
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
+mix (1): linear
 siesta: Ebs     =      -252.848281
 siesta: Eions   =      2141.484345
+mix (1): next%n_hist = 1 / 4
 siesta: Ena     =        95.468898
 siesta: Ekin    =      2216.239670
 siesta: Enl     =     -1358.876616
@@ -430,6 +560,7 @@ siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
 siesta: DEna    =         0.116554
 siesta: DUscf   =         0.000091
+mix (1): alpha = 0.1000E-01
 siesta: DUext   =         0.000000
 siesta: Exc     =     -1125.170258
 siesta: eta*DQ  =         0.000000
@@ -443,343 +574,1876 @@ siesta: FreeEng =     -2314.260044
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV)  dHmx(Ry)
    scf:    1    -2338.038961    -2313.706006    -2314.260044  0.982602 -7.995772 -1.000000
-timer: Routine,Calls,Time,% =    IterSCF     1       0.248  13.25
-   scf:    2    -2350.072543    -2316.112772    -2316.112783  0.645044 -3.290896 -1.000000
-mix: Pulay -- resetting history
-   scf:    3    -2332.182061    -2315.793594    -2315.935343  0.826217 -5.866611 -1.000000
-mix: Pulay -- resetting history
-   scf:    4    -2332.956847    -2315.684474    -2315.843091  0.833467 -5.905664 -1.000000
-mix: Pulay -- resetting history
-   scf:    5    -2328.939169    -2317.335838    -2317.496988  0.395503 -3.036919 -1.000000
-mix: Pulay -- resetting history
-   scf:    6    -2327.146023    -2317.298253    -2317.501283  0.442894 -3.852014 -1.000000
-   scf:    7    -2327.111781    -2317.178317    -2317.434690  0.494680 -4.397106 -1.000000
-mix: Pulay -- resetting history
-   scf:    8    -2327.114359    -2317.228277    -2317.494848  0.496227 -4.432976 -1.000000
-mix: Pulay -- resetting history
-   scf:    9    -2327.405572    -2321.808265    -2321.990162  0.293580 -2.337938 -1.000000
-   scf:   10    -2327.413236    -2324.643303    -2324.766993  0.191464 -2.492986 -1.000000
-   scf:   11    -2327.215282    -2325.217374    -2325.330557  0.116708 -3.416878 -1.000000
-   scf:   12    -2327.136879    -2326.193911    -2326.379959  0.073261 -3.874940 -1.000000
-   scf:   13    -2327.126857    -2326.440496    -2326.625540  0.055925 -3.791097 -1.000000
-mix: Pulay -- resetting history
-   scf:   14    -2327.122761    -2326.445650    -2326.630160  0.055017 -3.789335 -1.000000
-mix: Pulay -- resetting history
-   scf:   15    -2327.031180    -2326.879465    -2327.049575  0.042260 -3.625149 -1.000000
-   scf:   16    -2327.028117    -2326.923457    -2327.095193  0.041571 -3.606439 -1.000000
-mix: Pulay -- resetting history
-   scf:   17    -2327.025924    -2326.853161    -2327.027184  0.041143 -3.619370 -1.000000
-mix: Pulay -- resetting history
-   scf:   18    -2327.025798    -2326.802154    -2326.976654  0.040718 -3.627792 -1.000000
-mix: Pulay -- resetting history
-   scf:   19    -2327.028528    -2326.733284    -2326.905365  0.039421 -3.633121 -1.000000
-mix: Pulay -- resetting history
-   scf:   20    -2327.029080    -2326.727478    -2326.898805  0.038452 -3.626775 -1.000000
-mix: Pulay -- resetting history
-   scf:   21    -2327.031938    -2326.819288    -2326.988764  0.025728 -3.510163 -1.000000
-   scf:   22    -2327.032041    -2326.833189    -2327.004020  0.021888 -3.481017 -1.000000
-mix: Pulay -- resetting history
-   scf:   23    -2327.029032    -2326.725109    -2326.899074  0.018211 -3.463325 -1.000000
-   scf:   24    -2327.028653    -2326.719614    -2326.893706  0.018536 -3.464629 -1.000000
-mix: Pulay -- resetting history
-   scf:   25    -2327.025974    -2327.011399    -2327.185664  0.004737 -3.465365 -1.000000
-   scf:   26    -2327.026314    -2327.011089    -2327.184995  0.004480 -3.466360 -1.000000
-mix: Pulay -- resetting history
-   scf:   27    -2327.026951    -2327.004791    -2327.178004  0.003756 -3.469407 -1.000000
-   scf:   28    -2327.026758    -2326.989034    -2327.162323  0.002970 -3.473303 -1.000000
-mix: Pulay -- resetting history
-   scf:   29    -2327.026327    -2326.994023    -2327.167678  0.002628 -3.483503 -1.000000
-   scf:   30    -2327.026320    -2326.994597    -2327.168256  0.002694 -3.484216 -1.000000
-mix: Pulay -- resetting history
-   scf:   31    -2327.026568    -2327.003870    -2327.177264  0.002018 -3.487598 -1.000000
-   scf:   32    -2327.026503    -2327.008157    -2327.181619  0.001477 -3.488163 -1.000000
-mix: Pulay -- resetting history
-   scf:   33    -2327.026228    -2327.012591    -2327.186339  0.001418 -3.489246 -1.000000
-mix: Pulay -- resetting history
-   scf:   34    -2327.026218    -2327.012661    -2327.186420  0.001416 -3.489314 -1.000000
-mix: Pulay -- resetting history
-   scf:   35    -2327.026118    -2327.012851    -2327.186729  0.001374 -3.490891 -1.000000
-mix: Pulay -- resetting history
-   scf:   36    -2327.026149    -2327.012849    -2327.186705  0.001456 -3.491459 -1.000000
-mix: Pulay -- resetting history
-   scf:   37    -2327.026242    -2327.012887    -2327.186657  0.001568 -3.491997 -1.000000
-mix: Pulay -- resetting history
-   scf:   38    -2327.026259    -2327.013053    -2327.186807  0.001555 -3.492077 -1.000000
-mix: Pulay -- resetting history
-   scf:   39    -2327.026269    -2327.014055    -2327.187805  0.001446 -3.492439 -1.000000
-mix: Pulay -- resetting history
-   scf:   40    -2327.026224    -2327.014654    -2327.188453  0.001383 -3.492652 -1.000000
-mix: Pulay -- resetting history
-   scf:   41    -2327.026196    -2327.014865    -2327.188694  0.001369 -3.492752 -1.000000
-mix: Pulay -- resetting history
-   scf:   42    -2327.026156    -2327.015046    -2327.188920  0.001404 -3.492969 -1.000000
-mix: Pulay -- resetting history
-   scf:   43    -2327.026157    -2327.015264    -2327.189144  0.001458 -3.493262 -1.000000
-mix: Pulay -- resetting history
-   scf:   44    -2327.026254    -2327.015595    -2327.189387  0.001531 -3.493675 -1.000000
-mix: Pulay -- resetting history
-   scf:   45    -2327.026272    -2327.015748    -2327.189525  0.001524 -3.493757 -1.000000
-mix: Pulay -- resetting history
-   scf:   46    -2327.026353    -2327.018405    -2327.192133  0.001265 -3.494716 -1.000000
-mix: Pulay -- resetting history
-   scf:   47    -2327.026326    -2327.020254    -2327.194032  0.001223 -3.495375 -1.000000
-mix: Pulay -- resetting history
-   scf:   48    -2327.026174    -2327.022405    -2327.196364  0.001159 -3.496105 -1.000000
-mix: Pulay -- resetting history
-   scf:   49    -2327.026160    -2327.022537    -2327.196513  0.001152 -3.496121 -1.000000
-mix: Pulay -- resetting history
-   scf:   50    -2327.026131    -2327.022992    -2327.197018  0.001103 -3.495725 -1.000000
-   scf:   51    -2327.026178    -2327.023155    -2327.197141  0.001093 -3.495613 -1.000000
-mix: Pulay -- resetting history
-   scf:   52    -2327.026252    -2327.030648    -2327.204654  0.000886 -3.497515 -1.000000
-   scf:   53    -2327.026250    -2327.030614    -2327.204623  0.000884 -3.497468 -1.000000
-mix: Pulay -- resetting history
-   scf:   54    -2327.026217    -2327.029410    -2327.203469  0.000823 -3.495852 -1.000000
-mix: Pulay -- resetting history
-   scf:   55    -2327.026246    -2327.028971    -2327.203007  0.000805 -3.495321 -1.000000
-mix: Pulay -- resetting history
-   scf:   56    -2327.026263    -2327.028814    -2327.202836  0.000800 -3.495174 -1.000000
-mix: Pulay -- resetting history
-   scf:   57    -2327.026299    -2327.028825    -2327.202811  0.000803 -3.495603 -1.000000
-mix: Pulay -- resetting history
-   scf:   58    -2327.026307    -2327.028740    -2327.202720  0.000798 -3.495861 -1.000000
-mix: Pulay -- resetting history
-   scf:   59    -2327.026253    -2327.027869    -2327.201917  0.000742 -3.496605 -1.000000
-mix: Pulay -- resetting history
-   scf:   60    -2327.026250    -2327.027673    -2327.201727  0.000731 -3.496541 -1.000000
-mix: Pulay -- resetting history
-   scf:   61    -2327.026258    -2327.024474    -2327.198564  0.000551 -3.494334 -1.000000
-   scf:   62    -2327.026279    -2327.023994    -2327.198069  0.000524 -3.494001 -1.000000
-mix: Pulay -- resetting history
-   scf:   63    -2327.026324    -2327.023172    -2327.197213  0.000468 -3.494221 -1.000000
-mix: Pulay -- resetting history
-   scf:   64    -2327.026321    -2327.023025    -2327.197071  0.000453 -3.494271 -1.000000
-mix: Pulay -- resetting history
-   scf:   65    -2327.026289    -2327.022763    -2327.196847  0.000412 -3.494438 -1.000000
-mix: Pulay -- resetting history
-   scf:   66    -2327.026276    -2327.023000    -2327.197097  0.000412 -3.494502 -1.000000
-mix: Pulay -- resetting history
-   scf:   67    -2327.026264    -2327.023991    -2327.198096  0.000432 -3.494694 -1.000000
-mix: Pulay -- resetting history
-   scf:   68    -2327.026286    -2327.024548    -2327.198628  0.000453 -3.494784 -1.000000
-mix: Pulay -- resetting history
-   scf:   69    -2327.026290    -2327.024587    -2327.198663  0.000454 -3.494808 -1.000000
-mix: Pulay -- resetting history
-   scf:   70    -2327.026305    -2327.024456    -2327.198518  0.000443 -3.494961 -1.000000
-mix: Pulay -- resetting history
-   scf:   71    -2327.026305    -2327.024456    -2327.198520  0.000438 -3.495040 -1.000000
-mix: Pulay -- resetting history
-   scf:   72    -2327.026291    -2327.024614    -2327.198693  0.000422 -3.495338 -1.000000
-mix: Pulay -- resetting history
-   scf:   73    -2327.026288    -2327.024729    -2327.198813  0.000421 -3.495403 -1.000000
-mix: Pulay -- resetting history
-   scf:   74    -2327.026284    -2327.025297    -2327.199383  0.000422 -3.495574 -1.000000
-mix: Pulay -- resetting history
-   scf:   75    -2327.026290    -2327.025412    -2327.199493  0.000425 -3.495570 -1.000000
-mix: Pulay -- resetting history
-   scf:   76    -2327.026297    -2327.025398    -2327.199472  0.000427 -3.495511 -1.000000
-mix: Pulay -- resetting history
-   scf:   77    -2327.026300    -2327.025292    -2327.199362  0.000427 -3.495427 -1.000000
-mix: Pulay -- resetting history
-   scf:   78    -2327.026299    -2327.025155    -2327.199227  0.000426 -3.495331 -1.000000
-mix: Pulay -- resetting history
-   scf:   79    -2327.026294    -2327.025109    -2327.199186  0.000423 -3.495318 -1.000000
-mix: Pulay -- resetting history
-   scf:   80    -2327.026288    -2327.025150    -2327.199233  0.000417 -3.495396 -1.000000
-mix: Pulay -- resetting history
-   scf:   81    -2327.026283    -2327.025510    -2327.199601  0.000395 -3.495823 -1.000000
-mix: Pulay -- resetting history
-   scf:   82    -2327.026288    -2327.025681    -2327.199768  0.000387 -3.496007 -1.000000
-mix: Pulay -- resetting history
-   scf:   83    -2327.026303    -2327.025772    -2327.199846  0.000385 -3.496051 -1.000000
-mix: Pulay -- resetting history
-   scf:   84    -2327.026308    -2327.025792    -2327.199861  0.000386 -3.496001 -1.000000
-mix: Pulay -- resetting history
-   scf:   85    -2327.026310    -2327.025790    -2327.199856  0.000392 -3.495645 -1.000000
-mix: Pulay -- resetting history
-   scf:   86    -2327.026307    -2327.025807    -2327.199877  0.000392 -3.495611 -1.000000
-mix: Pulay -- resetting history
-   scf:   87    -2327.026292    -2327.025919    -2327.200004  0.000383 -3.495684 -1.000000
-mix: Pulay -- resetting history
-   scf:   88    -2327.026288    -2327.026023    -2327.200113  0.000374 -3.495812 -1.000000
-mix: Pulay -- resetting history
-   scf:   89    -2327.026292    -2327.026410    -2327.200501  0.000341 -3.496365 -1.000000
-mix: Pulay -- resetting history
-   scf:   90    -2327.026296    -2327.026455    -2327.200542  0.000336 -3.496429 -1.000000
-mix: Pulay -- resetting history
-   scf:   91    -2327.026312    -2327.026428    -2327.200499  0.000335 -3.496374 -1.000000
-mix: Pulay -- resetting history
-   scf:   92    -2327.026320    -2327.026322    -2327.200386  0.000335 -3.496191 -1.000000
-mix: Pulay -- resetting history
-   scf:   93    -2327.026316    -2327.026076    -2327.200143  0.000337 -3.495772 -1.000000
-mix: Pulay -- resetting history
-   scf:   94    -2327.026312    -2327.026054    -2327.200126  0.000336 -3.495734 -1.000000
-mix: Pulay -- resetting history
-   scf:   95    -2327.026302    -2327.026087    -2327.200169  0.000332 -3.495789 -1.000000
-mix: Pulay -- resetting history
-   scf:   96    -2327.026300    -2327.026128    -2327.200212  0.000329 -3.495858 -1.000000
-mix: Pulay -- resetting history
-   scf:   97    -2327.026302    -2327.026264    -2327.200346  0.000321 -3.496086 -1.000000
-mix: Pulay -- resetting history
-   scf:   98    -2327.026305    -2327.026279    -2327.200360  0.000320 -3.496108 -1.000000
-mix: Pulay -- resetting history
-   scf:   99    -2327.026315    -2327.026280    -2327.200350  0.000317 -3.496066 -1.000000
-mix: Pulay -- resetting history
-   scf:  100    -2327.026322    -2327.026233    -2327.200297  0.000311 -3.495896 -1.000000
-mix: Pulay -- resetting history
-   scf:  101    -2327.026318    -2327.026163    -2327.200232  0.000303 -3.495671 -1.000000
-mix: Pulay -- resetting history
-   scf:  102    -2327.026312    -2327.026153    -2327.200228  0.000301 -3.495644 -1.000000
-mix: Pulay -- resetting history
-   scf:  103    -2327.026307    -2327.026160    -2327.200241  0.000299 -3.495679 -1.000000
-mix: Pulay -- resetting history
-   scf:  104    -2327.026304    -2327.026182    -2327.200266  0.000299 -3.495765 -1.000000
-mix: Pulay -- resetting history
-   scf:  105    -2327.026306    -2327.026207    -2327.200289  0.000299 -3.495858 -1.000000
-mix: Pulay -- resetting history
-   scf:  106    -2327.026309    -2327.026214    -2327.200292  0.000299 -3.495877 -1.000000
-mix: Pulay -- resetting history
-   scf:  107    -2327.026314    -2327.026214    -2327.200288  0.000297 -3.495853 -1.000000
-mix: Pulay -- resetting history
-   scf:  108    -2327.026319    -2327.026204    -2327.200273  0.000288 -3.495727 -1.000000
-mix: Pulay -- resetting history
-   scf:  109    -2327.026316    -2327.026195    -2327.200268  0.000280 -3.495627 -1.000000
-mix: Pulay -- resetting history
-   scf:  110    -2327.026310    -2327.026193    -2327.200273  0.000276 -3.495609 -1.000000
-mix: Pulay -- resetting history
-   scf:  111    -2327.026305    -2327.026196    -2327.200281  0.000275 -3.495644 -1.000000
-mix: Pulay -- resetting history
-   scf:  112    -2327.026300    -2327.026211    -2327.200302  0.000273 -3.495826 -1.000000
-mix: Pulay -- resetting history
-   scf:  113    -2327.026302    -2327.026220    -2327.200308  0.000273 -3.495919 -1.000000
-mix: Pulay -- resetting history
-   scf:  114    -2327.026309    -2327.026224    -2327.200305  0.000273 -3.495945 -1.000000
-mix: Pulay -- resetting history
-   scf:  115    -2327.026311    -2327.026225    -2327.200304  0.000273 -3.495933 -1.000000
-mix: Pulay -- resetting history
-   scf:  116    -2327.026315    -2327.026230    -2327.200306  0.000267 -3.495808 -1.000000
-mix: Pulay -- resetting history
-   scf:  117    -2327.026314    -2327.026233    -2327.200311  0.000264 -3.495768 -1.000000
-mix: Pulay -- resetting history
-   scf:  118    -2327.026306    -2327.026239    -2327.200325  0.000258 -3.495754 -1.000000
-mix: Pulay -- resetting history
-   scf:  119    -2327.026301    -2327.026246    -2327.200337  0.000254 -3.495802 -1.000000
-mix: Pulay -- resetting history
-   scf:  120    -2327.026295    -2327.026274    -2327.200373  0.000238 -3.496101 -1.000000
-mix: Pulay -- resetting history
-   scf:  121    -2327.026299    -2327.026284    -2327.200379  0.000233 -3.496209 -1.000000
-mix: Pulay -- resetting history
-   scf:  122    -2327.026308    -2327.026286    -2327.200372  0.000233 -3.496235 -1.000000
-mix: Pulay -- resetting history
-   scf:  123    -2327.026310    -2327.026285    -2327.200369  0.000233 -3.496221 -1.000000
-mix: Pulay -- resetting history
-   scf:  124    -2327.026314    -2327.026275    -2327.200355  0.000232 -3.496044 -1.000000
-mix: Pulay -- resetting history
-   scf:  125    -2327.026313    -2327.026274    -2327.200355  0.000231 -3.496014 -1.000000
-mix: Pulay -- resetting history
-   scf:  126    -2327.026304    -2327.026276    -2327.200366  0.000227 -3.496002 -1.000000
-mix: Pulay -- resetting history
-   scf:  127    -2327.026301    -2327.026281    -2327.200375  0.000222 -3.496043 -1.000000
-mix: Pulay -- resetting history
-   scf:  128    -2327.026296    -2327.026312    -2327.200412  0.000198 -3.496328 -1.000000
-mix: Pulay -- resetting history
-   scf:  129    -2327.026300    -2327.026320    -2327.200418  0.000191 -3.496405 -1.000000
-mix: Pulay -- resetting history
-   scf:  130    -2327.026309    -2327.026322    -2327.200411  0.000189 -3.496420 -1.000000
-mix: Pulay -- resetting history
-   scf:  131    -2327.026312    -2327.026320    -2327.200406  0.000190 -3.496388 -1.000000
-mix: Pulay -- resetting history
-   scf:  132    -2327.026315    -2327.026306    -2327.200389  0.000193 -3.496194 -1.000000
-mix: Pulay -- resetting history
-   scf:  133    -2327.026313    -2327.026304    -2327.200388  0.000193 -3.496156 -1.000000
-mix: Pulay -- resetting history
-   scf:  134    -2327.026306    -2327.026304    -2327.200395  0.000191 -3.496152 -1.000000
-mix: Pulay -- resetting history
-   scf:  135    -2327.026304    -2327.026306    -2327.200399  0.000189 -3.496175 -1.000000
-mix: Pulay -- resetting history
-   scf:  136    -2327.026302    -2327.026320    -2327.200416  0.000177 -3.496335 -1.000000
-mix: Pulay -- resetting history
-   scf:  137    -2327.026304    -2327.026323    -2327.200417  0.000175 -3.496370 -1.000000
-mix: Pulay -- resetting history
-   scf:  138    -2327.026310    -2327.026324    -2327.200412  0.000173 -3.496376 -1.000000
-mix: Pulay -- resetting history
-   scf:  139    -2327.026314    -2327.026321    -2327.200406  0.000172 -3.496329 -1.000000
-mix: Pulay -- resetting history
-   scf:  140    -2327.026316    -2327.026311    -2327.200394  0.000171 -3.496164 -1.000000
-mix: Pulay -- resetting history
-   scf:  141    -2327.026313    -2327.026309    -2327.200394  0.000170 -3.496120 -1.000000
-mix: Pulay -- resetting history
-   scf:  142    -2327.026309    -2327.026308    -2327.200398  0.000169 -3.496119 -1.000000
-mix: Pulay -- resetting history
-   scf:  143    -2327.026308    -2327.026309    -2327.200401  0.000168 -3.496137 -1.000000
-mix: Pulay -- resetting history
-   scf:  144    -2327.026307    -2327.026313    -2327.200405  0.000167 -3.496200 -1.000000
-mix: Pulay -- resetting history
-   scf:  145    -2327.026308    -2327.026314    -2327.200404  0.000166 -3.496218 -1.000000
-mix: Pulay -- resetting history
-   scf:  146    -2327.026312    -2327.026314    -2327.200401  0.000165 -3.496221 -1.000000
-mix: Pulay -- resetting history
-   scf:  147    -2327.026316    -2327.026312    -2327.200396  0.000162 -3.496176 -1.000000
-mix: Pulay -- resetting history
-   scf:  148    -2327.026317    -2327.026307    -2327.200391  0.000155 -3.496069 -1.000000
-mix: Pulay -- resetting history
-   scf:  149    -2327.026313    -2327.026305    -2327.200393  0.000152 -3.496027 -1.000000
-mix: Pulay -- resetting history
-   scf:  150    -2327.026310    -2327.026305    -2327.200395  0.000151 -3.496028 -1.000000
-mix: Pulay -- resetting history
-   scf:  151    -2327.026307    -2327.026306    -2327.200399  0.000151 -3.496067 -1.000000
-mix: Pulay -- resetting history
-   scf:  152    -2327.026307    -2327.026308    -2327.200401  0.000151 -3.496119 -1.000000
-mix: Pulay -- resetting history
-   scf:  153    -2327.026309    -2327.026308    -2327.200399  0.000152 -3.496151 -1.000000
-mix: Pulay -- resetting history
-   scf:  154    -2327.026310    -2327.026308    -2327.200398  0.000152 -3.496152 -1.000000
-mix: Pulay -- resetting history
-   scf:  155    -2327.026314    -2327.026307    -2327.200393  0.000148 -3.496109 -1.000000
-mix: Pulay -- resetting history
-   scf:  156    -2327.026315    -2327.026306    -2327.200392  0.000143 -3.496053 -1.000000
-mix: Pulay -- resetting history
-   scf:  157    -2327.026311    -2327.026305    -2327.200395  0.000138 -3.496014 -1.000000
-mix: Pulay -- resetting history
-   scf:  158    -2327.026309    -2327.026305    -2327.200397  0.000137 -3.496017 -1.000000
-mix: Pulay -- resetting history
-   scf:  159    -2327.026303    -2327.026306    -2327.200404  0.000134 -3.496099 -1.000000
-mix: Pulay -- resetting history
-   scf:  160    -2327.026302    -2327.026307    -2327.200406  0.000133 -3.496185 -1.000000
-mix: Pulay -- resetting history
-   scf:  161    -2327.026307    -2327.026307    -2327.200401  0.000133 -3.496242 -1.000000
-mix: Pulay -- resetting history
-   scf:  162    -2327.026308    -2327.026307    -2327.200401  0.000132 -3.496242 -1.000000
-mix: Pulay -- resetting history
-   scf:  163    -2327.026312    -2327.026307    -2327.200396  0.000131 -3.496188 -1.000000
-mix: Pulay -- resetting history
-   scf:  164    -2327.026312    -2327.026307    -2327.200396  0.000129 -3.496157 -1.000000
-mix: Pulay -- resetting history
-   scf:  165    -2327.026308    -2327.026307    -2327.200400  0.000125 -3.496116 -1.000000
-mix: Pulay -- resetting history
-   scf:  166    -2327.026307    -2327.026307    -2327.200402  0.000124 -3.496119 -1.000000
-mix: Pulay -- resetting history
-   scf:  167    -2327.026300    -2327.026308    -2327.200410  0.000115 -3.496228 -1.000000
-mix: Pulay -- resetting history
-   scf:  168    -2327.026300    -2327.026309    -2327.200411  0.000108 -3.496327 -1.000000
-mix: Pulay -- resetting history
-   scf:  169    -2327.026305    -2327.026309    -2327.200407  0.000105 -3.496386 -1.000000
-mix: Pulay -- resetting history
-   scf:  170    -2327.026306    -2327.026309    -2327.200406  0.000105 -3.496384 -1.000000
-mix: Pulay -- resetting history
-   scf:  171    -2327.026310    -2327.026308    -2327.200401  0.000106 -3.496322 -1.000000
-mix: Pulay -- resetting history
-   scf:  172    -2327.026310    -2327.026307    -2327.200400  0.000106 -3.496291 -1.000000
-mix: Pulay -- resetting history
-   scf:  173    -2327.026306    -2327.026307    -2327.200403  0.000105 -3.496257 -1.000000
-mix: Pulay -- resetting history
-   scf:  174    -2327.026306    -2327.026307    -2327.200404  0.000105 -3.496259 -1.000000
-mix: Pulay -- resetting history
-   scf:  175    -2327.026301    -2327.026308    -2327.200410  0.000097 -3.496336 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 1 / 4
+mix (0): alpha = 0.1000E-01
+timer: Routine,Calls,Time,% =    IterSCF     1       0.240  14.71
+mix (1): linear
+mix (1): next%n_hist = 2 / 4
+   scf:    2    -2336.906201    -2313.943446    -2314.492230  0.969953 -7.845823 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 2 / 4
+mix (0): alpha = 0.1000E-01
+mix (0): switching mixer --> pulay
+mix (1): alpha = 0.1000E-01
+mix (1): Pulay
+mix (1): n_hist = 3 / 4
+   scf:    3    -2335.926009    -2314.167952    -2314.708201  0.956608 -7.697320 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 3 / 4
+mix (0): G =   0.010000, sum(alpha) =   3.029861, alpha =  -.2320E+02 0.2623E+02
+mix (1): G =   0.010000, sum(alpha) =   3.029861, alpha =  -.2320E+02 0.2623E+02
+mix (1): saved hist = 3
+mix: Pulay -- resetting history
+mix (0): saved hist = 3
+mix (1): Pulay
+mix (1): n_hist = 4 / 4
+   scf:    4    -2334.117381    -2314.970269    -2315.431356  0.904023 -7.166706 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 4 / 4
+mix (1): G =   0.010000, sum(alpha) =   2.221140, alpha =  0.9346E+01 -.1104E+02 0.3915E+01
+mix (0): G =   0.010000, sum(alpha) =   2.221140, alpha =  0.9346E+01 -.1104E+02 0.3915E+01
+mix (1): Pulay
+mix (1): n_hist = 4 / 4
+   scf:    5    -2328.568490    -2317.415131    -2317.855301  0.737209 -5.212157 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 4 / 4
+mix (0): G =   0.010000, sum(alpha) =  -2.836633, alpha =  -.4660E+01 -.1966E+00 0.2020E+01
+mix (1): G =   0.010000, sum(alpha) =  -2.836633, alpha =  -.4660E+01 -.1966E+00 0.2020E+01
+mix (1): saved hist = 3
+mix: Pulay -- resetting history
+mix (0): saved hist = 3
+mix (1): Pulay
+mix (1): n_hist = 4 / 4
+   scf:    6    -2327.948591    -2319.936564    -2320.010224  0.440516 -2.541417 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 4 / 4
+mix (1): G =   0.010000, sum(alpha) =  -0.598053, alpha =  -.8574E+00 0.7759E+00 -.5165E+00
+mix (0): G =   0.010000, sum(alpha) =  -0.598053, alpha =  -.8574E+00 0.7759E+00 -.5165E+00
+mix (1): Pulay
+mix (1): n_hist = 4 / 4
+   scf:    7    -2327.237927    -2319.603576    -2319.764719  0.406342 -2.926482 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 4 / 4
+mix (1): G =   0.010000, sum(alpha) =  -1.202252, alpha =  0.6552E+00 -.5987E+00 -.1259E+01
+mix (0): G =   0.010000, sum(alpha) =  -1.202252, alpha =  0.6552E+00 -.5987E+00 -.1259E+01
+mix (1): saved hist = 3
+mix: Pulay -- resetting history
+mix (0): saved hist = 3
+mix (1): Pulay
+mix (1): n_hist = 4 / 4
+   scf:    8    -2327.330031    -2319.646453    -2319.791779  0.413375 -2.838000 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 4 / 4
+mix (1): G =   0.010000, sum(alpha) = -65.642839, alpha =  -.2696E+00 -.1091E+02 -.5446E+02
+mix (0): G =   0.010000, sum(alpha) = -65.642839, alpha =  -.2696E+00 -.1091E+02 -.5446E+02
+mix (1): Pulay
+mix (1): n_hist = 4 / 4
+   scf:    9    -2328.303986    -2320.661502    -2320.694676  0.405398 -3.901186 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 4 / 4
+mix (0): G =   0.010000, sum(alpha) = -47.094209, alpha =  -.6894E+01 -.4008E+02 -.1160E+00
+mix (1): G =   0.010000, sum(alpha) = -47.094209, alpha =  -.6894E+01 -.4008E+02 -.1160E+00
+mix (1): saved hist = 3
+mix: Pulay -- resetting history
+mix (0): saved hist = 3
+   scf:   10    -2328.302176    -2321.176077    -2321.315479  0.425093 -4.261562 -1.000000
+mix (0): Pulay
+mix (1): Pulay
+mix (1): n_hist = 4 / 4
+mix (0): n_hist = 4 / 4
+mix (1): G =   0.010000, sum(alpha) =   8.761484, alpha =  0.6055E+01 -.1302E+01 0.4008E+01
+mix (0): G =   0.010000, sum(alpha) =   8.761484, alpha =  0.6055E+01 -.1302E+01 0.4008E+01
+mix (1): Pulay
+mix (1): n_hist = 4 / 4
+   scf:   11    -2327.284618    -2322.553556    -2322.939952  0.380330 -4.507478 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 4 / 4
+mix (1): G =   0.010000, sum(alpha) =  -1.274432, alpha =  0.2029E+01 -.4768E+01 0.1465E+01
+mix (0): G =   0.010000, sum(alpha) =  -1.274432, alpha =  0.2029E+01 -.4768E+01 0.1465E+01
+mix (1): saved hist = 3
+mix: Pulay -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 1 / 5
+mix (1): alpha = 0.1000E+00
+   scf:   12    -2327.553216    -2323.949654    -2324.164118  0.322419 -4.261448 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 1 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 2 / 5
+   scf:   13    -2329.285965    -2324.206819    -2324.376070  0.495160 -4.055953 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 2 / 5
+mix (1): weight = 0.4214E+01 , norm = 0.1795E+01
+mix (0): weight = 0.4214E+01 , norm = 0.1795E+01
+mix (1): gamma =  0.1538E+01
+mix (0): gamma =  0.1538E+01
+mix (1): saved hist = 2
+mix: Broyden -- resetting history
+mix (0): saved hist = 2
+mix (1): Broyden
+mix (1): n_hist = 3 / 5
+   scf:   14    -2328.856034    -2324.218065    -2324.418292  0.438362 -4.065968 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 3 / 5
+mix (0): weight = 0.4790E+01 , norm = 0.1660E+01
+mix (1): weight = 0.4790E+01 , norm = 0.1660E+01
+mix (0): gamma =  0.1491E+01 0.1327E+00
+mix (1): gamma =  0.1491E+01 0.1327E+00
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   15    -2328.755250    -2324.222253    -2324.429338  0.423599 -4.067221 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.4971E+01 , norm = 0.1625E+01
+mix (0): weight = 0.4971E+01 , norm = 0.1625E+01
+mix (1): gamma =  0.1229E+01 0.3044E+01 -.3100E+01
+mix (0): gamma =  0.1229E+01 0.3044E+01 -.3100E+01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   16    -2328.452693    -2324.327603    -2324.553453  0.370798 -4.048061 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.5766E+01 , norm = 0.1490E+01
+mix (0): weight = 0.5766E+01 , norm = 0.1490E+01
+mix (1): gamma =  -.6571E-01 -.8024E-01 -.9705E+00
+mix (0): gamma =  -.6571E-01 -.8024E-01 -.9705E+00
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   17    -2327.249338    -2324.951170    -2325.205380  0.213043 -3.817098 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1126E+02 , norm = 0.9372E+00
+mix (1): weight = 0.1126E+02 , norm = 0.9372E+00
+mix (1): gamma =  -.2530E-01 -.2271E-01 0.2647E+00 -.7165E+00
+mix (0): gamma =  -.2530E-01 -.2271E-01 0.2647E+00 -.7165E+00
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   18    -2327.033185    -2325.403655    -2325.615429  0.208406 -3.650644 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1157E+02 , norm = 0.7133E+00
+mix (0): weight = 0.1157E+02 , norm = 0.7133E+00
+mix (0): gamma =  0.1541E-01 0.2337E-01 -.4185E-01
+mix (1): gamma =  0.1541E-01 0.2337E-01 -.4185E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   19    -2327.027933    -2325.422570    -2325.635733  0.206552 -3.644887 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1170E+02 , norm = 0.7062E+00
+mix (1): weight = 0.1170E+02 , norm = 0.7062E+00
+mix (0): gamma =  -.7419E-02 0.1723E-01 -.7575E+00 -.9151E+00
+mix (1): gamma =  -.7419E-02 0.1723E-01 -.7575E+00 -.9151E+00
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   20    -2327.029026    -2327.042063    -2327.232665  0.086618 -3.147139 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.3275E+02 , norm = 0.3934E+00
+mix (0): weight = 0.3275E+02 , norm = 0.3934E+00
+mix (0): gamma =  -.7243E-01 -.2180E+00 0.9557E-01
+mix (1): gamma =  -.7243E-01 -.2180E+00 0.9557E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   21    -2327.028541    -2327.080068    -2327.279225  0.077584 -3.139737 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.3669E+02 , norm = 0.3648E+00
+mix (0): weight = 0.3669E+02 , norm = 0.3648E+00
+mix (1): gamma =  -.4918E+00 0.8282E-01 0.2102E+00 -.6328E+00
+mix (0): gamma =  -.4918E+00 0.8282E-01 0.2102E+00 -.6328E+00
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:   22    -2327.035900    -2327.084566    -2327.272799  0.059931 -3.186484 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   23    -2327.026143    -2327.078813    -2327.262136  0.057728 -3.249503 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.4843E+02 , norm = 0.2683E+00
+mix (0): weight = 0.4843E+02 , norm = 0.2683E+00
+mix (1): gamma =  -.7078E+00 -.8469E+00 -.4423E+00
+mix (0): gamma =  -.7078E+00 -.8469E+00 -.4423E+00
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   24    -2327.820008    -2329.125023    -2329.336689  0.335942 -2.655608 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.6462E+01 , norm = 0.1042E+01
+mix (0): weight = 0.6462E+01 , norm = 0.1042E+01
+mix (0): gamma =  0.4027E+01 0.3015E+01 -.1334E+01
+mix (1): gamma =  0.4027E+01 0.3015E+01 -.1334E+01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   25    -2329.892331    -2330.150076    -2330.164684  0.571893 -2.337389 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.3653E+01 , norm = 0.2004E+01
+mix (0): weight = 0.3653E+01 , norm = 0.2004E+01
+mix (1): gamma =  0.3353E+00 0.4407E-01 0.9212E+00 0.2325E+01
+mix (0): gamma =  0.3353E+00 0.4407E-01 0.9212E+00 0.2325E+01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+   scf:   26    -2327.040150    -2327.057811    -2327.260638  0.044186 -3.313058 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.6005E+02 , norm = 0.2223E+00
+mix (0): weight = 0.6005E+02 , norm = 0.2223E+00
+mix (1): gamma =  0.2906E-01 -.5552E-01 0.1103E-01
+mix (0): gamma =  0.2906E-01 -.5552E-01 0.1103E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   27    -2327.023642    -2327.039992    -2327.227368  0.034583 -3.308185 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.7101E+02 , norm = 0.1962E+00
+mix (0): weight = 0.7101E+02 , norm = 0.1962E+00
+mix (1): gamma =  0.1935E-02 0.9182E-02 -.3219E-01 0.1474E-01
+mix (0): gamma =  0.1935E-02 0.9182E-02 -.3219E-01 0.1474E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   28    -2327.020922    -2326.984098    -2327.173816  0.030724 -3.336376 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.7626E+02 , norm = 0.1817E+00
+mix (0): weight = 0.7626E+02 , norm = 0.1817E+00
+mix (0): gamma =  0.2598E+00 0.9845E-03 -.2965E+00
+mix (1): gamma =  0.2598E+00 0.9845E-03 -.2965E+00
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   29    -2327.041476    -2326.937314    -2327.104541  0.057436 -3.404726 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.4864E+02 , norm = 0.1908E+00
+mix (1): weight = 0.4864E+02 , norm = 0.1908E+00
+mix (0): gamma =  0.3873E+00 0.2706E+00 -.3042E+00 -.7607E-01
+mix (1): gamma =  0.3873E+00 0.2706E+00 -.3042E+00 -.7607E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   30    -2327.083931    -2327.084045    -2327.231168  0.090550 -3.441806 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.3124E+02 , norm = 0.2594E+00
+mix (0): weight = 0.3124E+02 , norm = 0.2594E+00
+mix (0): gamma =  0.2171E+02 0.2970E+02 -.1593E+02
+mix (1): gamma =  0.2171E+02 0.2970E+02 -.1593E+02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   31    -2711.395845    -2257.215030    -2257.424614 39.652589  9.161167 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1025E+01 , norm = 0.9495E+02
+mix (1): weight = 0.1025E+01 , norm = 0.9495E+02
+mix (1): gamma =  0.2805E-02 0.1507E+00 0.6729E-01 0.9494E+02
+mix (0): gamma =  0.2805E-02 0.1507E+00 0.6729E-01 0.9494E+02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+   scf:   32    -2327.037182    -2327.044082    -2327.221583  0.041075 -3.365620 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): alpha = 0.1000E+00
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   33    -2327.048949    -2327.042843    -2327.205786  0.063240 -3.397073 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.4465E+02 , norm = 0.1923E+00
+mix (0): weight = 0.4465E+02 , norm = 0.1923E+00
+mix (1): gamma =  0.7667E+00 0.6922E+00 -.2383E+00
+mix (0): gamma =  0.7667E+00 0.6922E+00 -.2383E+00
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   34    -2326.969149    -2325.936173    -2326.184993  0.208471 -3.438429 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1157E+02 , norm = 0.7014E+00
+mix (0): weight = 0.1157E+02 , norm = 0.7014E+00
+mix (1): gamma =  -.9692E+00 -.1035E+01 0.4189E-01
+mix (0): gamma =  -.9692E+00 -.1035E+01 0.4189E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   35    -2327.041130    -2326.604714    -2326.869588  0.178145 -3.217317 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1408E+02 , norm = 0.7009E+00
+mix (1): weight = 0.1408E+02 , norm = 0.7009E+00
+mix (0): gamma =  -.1450E+00 -.2445E+00 0.5176E+00 0.1159E+00
+mix (1): gamma =  -.1450E+00 -.2445E+00 0.5176E+00 0.1159E+00
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   36    -2327.016464    -2327.180871    -2327.400543  0.070499 -3.225613 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.4032E+02 , norm = 0.2942E+00
+mix (0): weight = 0.4032E+02 , norm = 0.2942E+00
+mix (1): gamma =  -.1962E+00 0.1007E-01 -.3867E+00
+mix (0): gamma =  -.1962E+00 0.1007E-01 -.3867E+00
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   37    -2327.041464    -2327.358492    -2327.538891  0.056437 -3.274892 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.4938E+02 , norm = 0.1928E+00
+mix (0): weight = 0.4938E+02 , norm = 0.1928E+00
+mix (0): gamma =  -.8441E-01 0.1808E-01 -.5781E-01 0.3980E-01
+mix (1): gamma =  -.8441E-01 0.1808E-01 -.5781E-01 0.3980E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   38    -2327.028564    -2327.245950    -2327.428682  0.041337 -3.294813 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.6303E+02 , norm = 0.1729E+00
+mix (0): weight = 0.6303E+02 , norm = 0.1729E+00
+mix (1): gamma =  0.3385E-02 0.1355E-01 -.2697E-01
+mix (0): gamma =  0.3385E-02 0.1355E-01 -.2697E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   39    -2327.019385    -2327.176845    -2327.362559  0.035515 -3.305396 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.6983E+02 , norm = 0.1674E+00
+mix (1): weight = 0.6983E+02 , norm = 0.1674E+00
+mix (0): gamma =  0.1364E-01 0.1990E-01 0.3814E-01 -.1577E-01
+mix (1): gamma =  0.1364E-01 0.1990E-01 0.3814E-01 -.1577E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   40    -2327.017063    -2327.194470    -2327.382963  0.034673 -3.295259 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.7090E+02 , norm = 0.1696E+00
+mix (0): weight = 0.7090E+02 , norm = 0.1696E+00
+mix (1): gamma =  -.4536E-01 -.5152E-01 0.4596E-01
+mix (0): gamma =  -.4536E-01 -.5152E-01 0.4596E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   41    -2327.005196    -2326.960395    -2327.148330  0.043503 -3.355989 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.6075E+02 , norm = 0.1840E+00
+mix (0): weight = 0.6075E+02 , norm = 0.1840E+00
+mix (1): gamma =  -.3024E-02 -.7744E-02 0.3124E-01 0.9226E-01
+mix (0): gamma =  -.3024E-02 -.7744E-02 0.3124E-01 0.9226E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:   42    -2327.018031    -2327.129717    -2327.313922  0.037219 -3.323549 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   43    -2327.012635    -2327.118320    -2327.304008  0.031152 -3.356234 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.7565E+02 , norm = 0.1288E+00
+mix (0): weight = 0.7565E+02 , norm = 0.1288E+00
+mix (1): gamma =  0.1339E-01 -.9951E-03 -.1213E+00
+mix (0): gamma =  0.1339E-01 -.9951E-03 -.1213E+00
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   44    -2327.014932    -2327.097405    -2327.279944  0.033891 -3.376222 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.7192E+02 , norm = 0.1220E+00
+mix (0): weight = 0.7192E+02 , norm = 0.1220E+00
+mix (0): gamma =  -.7174E+01 -.7320E+01 0.3806E+01
+mix (1): gamma =  -.7174E+01 -.7320E+01 0.3806E+01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   45    -2336.565460    -2310.803860    -2311.201672  1.826148 -5.256405 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1638E+01 , norm = 0.6483E+01
+mix (1): weight = 0.1638E+01 , norm = 0.6483E+01
+mix (0): gamma =  0.1966E+00 0.4252E-01 -.1087E+00 0.6306E+01
+mix (1): gamma =  0.1966E+00 0.4252E-01 -.1087E+00 0.6306E+01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   46    -2327.019185    -2327.145565    -2327.325504  0.033119 -3.384421 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.7294E+02 , norm = 0.1126E+00
+mix (0): weight = 0.7294E+02 , norm = 0.1126E+00
+mix (1): gamma =  0.1512E-03 0.1439E-01 0.2193E-01
+mix (0): gamma =  0.1512E-03 0.1439E-01 0.2193E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   47    -2327.016705    -2327.128163    -2327.309614  0.030759 -3.387882 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.7621E+02 , norm = 0.1059E+00
+mix (0): weight = 0.7621E+02 , norm = 0.1059E+00
+mix (0): gamma =  0.2248E-03 0.7421E-01 0.1752E-01 -.9143E-01
+mix (1): gamma =  0.2248E-03 0.7421E-01 0.1752E-01 -.9143E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   48    -2327.010358    -2327.116432    -2327.303418  0.017556 -3.402970 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.9914E+02 , norm = 0.7783E-01
+mix (0): weight = 0.9914E+02 , norm = 0.7783E-01
+mix (1): gamma =  -.8483E-02 -.1305E-01 -.2339E-01
+mix (0): gamma =  -.8483E-02 -.1305E-01 -.2339E-01
+   scf:   49    -2327.009101    -2327.108613    -2327.296396  0.015475 -3.414392 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1036E+03 , norm = 0.6770E-01
+mix (0): weight = 0.1036E+03 , norm = 0.6770E-01
+mix (1): gamma =  0.5986E-02 -.7816E-02 0.6878E-01 -.1015E+00
+mix (0): gamma =  0.5986E-02 -.7816E-02 0.6878E-01 -.1015E+00
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   50    -2327.009420    -2327.041729    -2327.227942  0.011893 -3.480377 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1121E+03 , norm = 0.3367E-01
+mix (0): weight = 0.1121E+03 , norm = 0.3367E-01
+mix (1): gamma =  0.7342E-02 0.1088E-01 -.1037E-01
+mix (0): gamma =  0.7342E-02 0.1088E-01 -.1037E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   51    -2327.010966    -2327.037974    -2327.222612  0.015301 -3.480401 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1040E+03 , norm = 0.3699E-01
+mix (0): weight = 0.1040E+03 , norm = 0.3699E-01
+mix (1): gamma =  0.2825E-03 0.6476E-03 -.6301E-03 0.1651E-01
+mix (0): gamma =  0.2825E-03 0.6476E-03 -.6301E-03 0.1651E-01
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:   52    -2327.009661    -2327.042615    -2327.228611  0.012152 -3.480459 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   53    -2327.014989    -2327.039326    -2327.220650  0.019954 -3.480258 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.9429E+02 , norm = 0.4704E-01
+mix (0): weight = 0.9429E+02 , norm = 0.4704E-01
+mix (0): gamma =  -.2341E-02 -.2827E-02 0.3570E-01
+mix (1): gamma =  -.2341E-02 -.2827E-02 0.3570E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   54    -2327.015684    -2327.035806    -2327.216638  0.020803 -3.482885 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.9266E+02 , norm = 0.4948E-01
+mix (0): weight = 0.9266E+02 , norm = 0.4948E-01
+mix (1): gamma =  -.9471E-02 -.1005E-01 0.4770E-01
+mix (0): gamma =  -.9471E-02 -.1005E-01 0.4770E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   55    -2327.010842    -2327.074670    -2327.259709  0.013785 -3.451688 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1075E+03 , norm = 0.4171E-01
+mix (0): weight = 0.1075E+03 , norm = 0.4171E-01
+mix (1): gamma =  0.2805E-03 -.4175E-03 0.1407E+00 0.1486E+00
+mix (0): gamma =  0.2805E-03 -.4175E-03 0.1407E+00 0.1486E+00
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   56    -2327.010450    -2327.049825    -2327.235263  0.011741 -3.478405 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1125E+03 , norm = 0.3287E-01
+mix (0): weight = 0.1125E+03 , norm = 0.3287E-01
+mix (1): gamma =  0.2605E-02 -.3175E-02 -.3951E-02
+mix (0): gamma =  0.2605E-02 -.3175E-02 -.3951E-02
+   scf:   57    -2327.010492    -2327.050930    -2327.236347  0.011673 -3.478492 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (1): weight = 0.1126E+03 , norm = 0.3294E-01
+mix (0): weight = 0.1126E+03 , norm = 0.3294E-01
+mix (1): gamma =  0.3195E-02 -.4131E-02 -.6113E-02 0.5802E-02
+mix (0): gamma =  0.3195E-02 -.4131E-02 -.6113E-02 0.5802E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   58    -2327.010033    -2327.041872    -2327.227628  0.011784 -3.479002 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1124E+03 , norm = 0.3255E-01
+mix (0): weight = 0.1124E+03 , norm = 0.3255E-01
+mix (1): gamma =  0.1901E-02 0.3462E-02 0.2893E-02
+mix (0): gamma =  0.1901E-02 0.3462E-02 0.2893E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   59    -2327.010564    -2327.043373    -2327.228546  0.012997 -3.476237 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1094E+03 , norm = 0.3345E-01
+mix (0): weight = 0.1094E+03 , norm = 0.3345E-01
+mix (0): gamma =  0.4499E-04 -.1172E-02 -.1539E-02 0.8095E-02
+mix (1): gamma =  0.4499E-04 -.1172E-02 -.1539E-02 0.8095E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   60    -2327.010236    -2327.039616    -2327.225208  0.012038 -3.481016 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1117E+03 , norm = 0.3278E-01
+mix (0): weight = 0.1117E+03 , norm = 0.3278E-01
+mix (1): gamma =  -.2996E-02 -.2973E-02 -.4209E-02
+mix (0): gamma =  -.2996E-02 -.2973E-02 -.4209E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   61    -2327.010397    -2327.031576    -2327.217013  0.012628 -3.483304 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1103E+03 , norm = 0.3333E-01
+mix (0): weight = 0.1103E+03 , norm = 0.3333E-01
+mix (1): gamma =  -.1240E-02 0.1609E-02 0.3321E-04 0.7079E-02
+mix (0): gamma =  -.1240E-02 0.1609E-02 0.3321E-04 0.7079E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:   62    -2327.010403    -2327.042886    -2327.228318  0.012213 -3.480181 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   63    -2327.014464    -2327.039649    -2327.221531  0.017695 -3.479942 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.9885E+02 , norm = 0.4185E-01
+mix (0): weight = 0.9885E+02 , norm = 0.4185E-01
+mix (0): gamma =  0.1010E-02 0.4086E-03 0.2655E-01
+mix (1): gamma =  0.1010E-02 0.4086E-03 0.2655E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+   scf:   64    -2327.014735    -2327.041229    -2327.222851  0.018275 -3.478885 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.9765E+02 , norm = 0.4323E-01
+mix (0): weight = 0.9765E+02 , norm = 0.4323E-01
+mix (0): gamma =  -.5363E-02 -.1384E-01 0.4192E-01
+mix (1): gamma =  -.5363E-02 -.1384E-01 0.4192E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   65    -2327.010637    -2326.998692    -2327.185198  0.007232 -3.502410 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1247E+03 , norm = 0.3549E-01
+mix (1): weight = 0.1247E+03 , norm = 0.3549E-01
+mix (0): gamma =  -.1199E-02 -.3738E-02 0.8496E-01 0.9487E-01
+mix (1): gamma =  -.1199E-02 -.3738E-02 0.8496E-01 0.9487E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   66    -2327.011227    -2327.028630    -2327.213990  0.009673 -3.492125 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1178E+03 , norm = 0.3199E-01
+mix (1): weight = 0.1178E+03 , norm = 0.3199E-01
+mix (1): gamma =  -.1382E-02 0.1451E-02 0.1537E-02
+mix (0): gamma =  -.1382E-02 0.1451E-02 0.1537E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   67    -2327.011709    -2327.027839    -2327.212707  0.010577 -3.491411 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1155E+03 , norm = 0.3194E-01
+mix (0): weight = 0.1155E+03 , norm = 0.3194E-01
+mix (1): gamma =  -.3242E-02 0.3617E-02 0.3791E-02 0.5622E-02
+mix (0): gamma =  -.3242E-02 0.3617E-02 0.3791E-02 0.5622E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   68    -2327.011664    -2327.027326    -2327.212212  0.010694 -3.491275 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1151E+03 , norm = 0.3199E-01
+mix (1): weight = 0.1151E+03 , norm = 0.3199E-01
+mix (0): gamma =  0.8022E-02 0.8414E-02 0.3101E-04
+mix (1): gamma =  0.8022E-02 0.8414E-02 0.3101E-04
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   69    -2327.010883    -2327.012849    -2327.198814  0.008554 -3.498267 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1209E+03 , norm = 0.3361E-01
+mix (0): weight = 0.1209E+03 , norm = 0.3361E-01
+mix (1): gamma =  -.2534E-03 -.1655E-02 0.4840E-02 0.9688E-02
+mix (0): gamma =  -.2534E-03 -.1655E-02 0.4840E-02 0.9688E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   70    -2327.012514    -2327.031878    -2327.216189  0.010146 -3.491984 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1166E+03 , norm = 0.3162E-01
+mix (0): weight = 0.1166E+03 , norm = 0.3162E-01
+mix (1): gamma =  0.4338E-03 -.1197E-03 0.2991E-03
+mix (0): gamma =  0.4338E-03 -.1197E-03 0.2991E-03
+   scf:   71    -2327.012664    -2327.031479    -2327.215684  0.010101 -3.492046 -1.000000
+mix (0): Broyden
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1167E+03 , norm = 0.3144E-01
+mix (0): weight = 0.1167E+03 , norm = 0.3144E-01
+mix (1): gamma =  -.9311E-03 -.2105E-02 0.4425E-02 -.1493E-01
+mix (0): gamma =  -.9311E-03 -.2105E-02 0.4425E-02 -.1493E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:   72    -2327.016291    -2327.007531    -2327.189424  0.006950 -3.497228 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   73    -2327.014922    -2327.008407    -2327.191826  0.003422 -3.493267 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1364E+03 , norm = 0.2395E-01
+mix (0): weight = 0.1364E+03 , norm = 0.2395E-01
+mix (1): gamma =  0.2876E-01 0.2793E-01 0.2745E-01
+mix (0): gamma =  0.2876E-01 0.2793E-01 0.2745E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   74    -2327.003842    -2326.986450    -2327.179050  0.014597 -3.505033 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1056E+03 , norm = 0.5520E-01
+mix (0): weight = 0.1056E+03 , norm = 0.5520E-01
+mix (1): gamma =  -.1203E-01 -.9148E-02 0.4403E-01
+mix (0): gamma =  -.1203E-01 -.9148E-02 0.4403E-01
+   scf:   75    -2327.019751    -2327.000671    -2327.180069  0.004550 -3.493798 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1328E+03 , norm = 0.2415E-01
+mix (1): weight = 0.1328E+03 , norm = 0.2415E-01
+mix (0): gamma =  -.3619E-02 -.3264E-02 0.5862E-01 0.6654E-01
+mix (1): gamma =  -.3619E-02 -.3264E-02 0.5862E-01 0.6654E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+   scf:   76    -2327.018369    -2327.012951    -2327.193410  0.003925 -3.490635 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1348E+03 , norm = 0.2215E-01
+mix (1): gamma =  -.1148E-02 0.8239E-03 -.3387E-02
+mix (0): weight = 0.1348E+03 , norm = 0.2215E-01
+mix (0): gamma =  -.1148E-02 0.8239E-03 -.3387E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   77    -2327.017446    -2327.018686    -2327.199801  0.003541 -3.489329 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1360E+03 , norm = 0.2172E-01
+mix (0): weight = 0.1360E+03 , norm = 0.2172E-01
+mix (1): gamma =  -.8024E-03 0.7604E-03 -.1836E-02 0.1902E-02
+mix (0): gamma =  -.8024E-03 0.7604E-03 -.1836E-02 0.1902E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   78    -2327.017382    -2327.018815    -2327.199957  0.003834 -3.489318 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1351E+03 , norm = 0.2174E-01
+mix (1): weight = 0.1351E+03 , norm = 0.2174E-01
+mix (1): gamma =  0.3438E-02 0.4545E-02 -.2483E-02
+mix (0): gamma =  0.3438E-02 0.4545E-02 -.2483E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   79    -2327.018970    -2327.005937    -2327.185889  0.004168 -3.492326 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1340E+03 , norm = 0.2270E-01
+mix (1): weight = 0.1340E+03 , norm = 0.2270E-01
+mix (0): gamma =  0.3101E-03 0.5136E-03 0.7199E-03 0.7445E-02
+mix (1): gamma =  0.3101E-03 0.5136E-03 0.7199E-03 0.7445E-02
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   80    -2327.017690    -2327.018829    -2327.199712  0.003884 -3.489203 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1349E+03 , norm = 0.2183E-01
+mix (0): weight = 0.1349E+03 , norm = 0.2183E-01
+mix (0): gamma =  -.7009E-03 -.2732E-02 -.2661E-02
+mix (1): gamma =  -.7009E-03 -.2732E-02 -.2661E-02
+   scf:   81    -2327.017847    -2327.019278    -2327.199991  0.004339 -3.488947 -1.000000
+mix (0): Broyden
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1335E+03 , norm = 0.2192E-01
+mix (1): weight = 0.1335E+03 , norm = 0.2192E-01
+mix (0): gamma =  -.4326E-03 -.7395E-03 -.7297E-03 0.2610E-02
+mix (1): gamma =  -.4326E-03 -.7395E-03 -.7297E-03 0.2610E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:   82    -2327.017746    -2327.018620    -2327.199448  0.003994 -3.489268 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   83    -2327.019159    -2327.018538    -2327.198083  0.005749 -3.488105 -1.000000
+mix (1): weight = 0.1291E+03 , norm = 0.2304E-01
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1291E+03 , norm = 0.2304E-01
+mix (1): gamma =  -.2082E-02 -.2765E-02 0.9308E-02
+mix (1): saved hist = 3
+mix (0): gamma =  -.2082E-02 -.2765E-02 0.9308E-02
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   84    -2327.019050    -2327.023772    -2327.203298  0.006936 -3.486596 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1255E+03 , norm = 0.2412E-01
+mix (0): weight = 0.1255E+03 , norm = 0.2412E-01
+mix (0): gamma =  -.4222E-02 -.3597E-02 0.1478E-01
+mix (1): gamma =  -.4222E-02 -.3597E-02 0.1478E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   85    -2327.019684    -2327.002972    -2327.182396  0.004290 -3.491995 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1336E+03 , norm = 0.2228E-01
+mix (0): weight = 0.1336E+03 , norm = 0.2228E-01
+mix (1): gamma =  -.6606E-02 -.5379E-02 -.4280E-01 -.4762E-01
+mix (0): gamma =  -.6606E-02 -.5379E-02 -.4280E-01 -.4762E-01
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   86    -2327.020847    -2326.995086    -2327.173624  0.004387 -3.491283 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1333E+03 , norm = 0.2140E-01
+mix (0): weight = 0.1333E+03 , norm = 0.2140E-01
+mix (1): gamma =  -.3880E-02 0.3832E-02 -.3333E-02
+mix (0): gamma =  -.3880E-02 0.3832E-02 -.3333E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   87    -2327.020969    -2327.002509    -2327.180839  0.003857 -3.487528 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1350E+03 , norm = 0.1929E-01
+mix (0): weight = 0.1350E+03 , norm = 0.1929E-01
+mix (1): gamma =  0.3492E+01 -.3570E+01 0.3196E+01 -.6241E+01
+mix (0): gamma =  0.3492E+01 -.3570E+01 0.3196E+01 -.6241E+01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   88    -2327.829430    -2328.349709    -2328.595127  0.222000 -3.015652 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1069E+02 , norm = 0.1055E+01
+mix (0): weight = 0.1069E+02 , norm = 0.1055E+01
+mix (1): gamma =  0.1305E-02 0.2960E-02 0.1054E+01
+mix (0): gamma =  0.1305E-02 0.2960E-02 0.1054E+01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   89    -2327.019128    -2327.019073    -2327.199132  0.002625 -3.482164 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1391E+03 , norm = 0.1509E-01
+mix (1): weight = 0.1391E+03 , norm = 0.1509E-01
+mix (0): gamma =  0.7907E-04 0.1521E-02 0.9988E+00 0.1013E+01
+mix (1): gamma =  0.7907E-04 0.1521E-02 0.9988E+00 0.1013E+01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   90    -2327.018297    -2327.035961    -2327.216998  0.004711 -3.474504 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1323E+03 , norm = 0.1952E-01
+mix (0): weight = 0.1323E+03 , norm = 0.1952E-01
+mix (1): gamma =  -.8548E-02 0.8620E-02 0.2865E-01
+mix (0): gamma =  -.8548E-02 0.8620E-02 0.2865E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   91    -2327.018604    -2327.020655    -2327.201206  0.002592 -3.482631 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1392E+03 , norm = 0.1586E-01
+mix (1): weight = 0.1392E+03 , norm = 0.1586E-01
+mix (0): gamma =  -.3859E-01 0.3813E-01 0.1419E+00 0.7057E-01
+mix (1): gamma =  -.3859E-01 0.3813E-01 0.1419E+00 0.7057E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:   92    -2327.017110    -2327.021899    -2327.204356  0.007161 -3.480009 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   93    -2327.037613    -2327.021235    -2327.187441  0.029759 -3.484953 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.7766E+02 , norm = 0.9366E-01
+mix (1): weight = 0.7766E+02 , norm = 0.9366E-01
+mix (0): gamma =  0.4286E-03 -.6496E-04 0.9276E-01
+mix (1): gamma =  0.4286E-03 -.6496E-04 0.9276E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   94    -2327.036037    -2327.020617    -2327.187761  0.027847 -3.484983 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.8055E+02 , norm = 0.8747E-01
+mix (0): weight = 0.8055E+02 , norm = 0.8747E-01
+mix (1): gamma =  -.8199E-03 -.6993E-02 -.9292E-01
+mix (0): gamma =  -.8199E-03 -.6993E-02 -.9292E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   95    -2327.019394    -2327.010475    -2327.190396  0.003195 -3.486897 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1372E+03 , norm = 0.1649E-01
+mix (0): weight = 0.1372E+03 , norm = 0.1649E-01
+mix (1): gamma =  -.5488E-03 -.7283E-02 0.1475E+00 -.1501E+00
+mix (0): gamma =  -.5488E-03 -.7283E-02 0.1475E+00 -.1501E+00
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+   scf:   96    -2327.019500    -2327.007734    -2327.187575  0.003416 -3.488378 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1365E+03 , norm = 0.1740E-01
+mix (0): weight = 0.1365E+03 , norm = 0.1740E-01
+mix (1): gamma =  0.3162E-01 0.3150E-01 0.6001E-02
+mix (0): gamma =  0.3162E-01 0.3150E-01 0.6001E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   97    -2327.025315    -2327.022526    -2327.196966  0.013482 -3.482059 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1082E+03 , norm = 0.3971E-01
+mix (1): weight = 0.1082E+03 , norm = 0.3971E-01
+mix (0): gamma =  -.5066E-04 -.1859E-03 0.7637E-02 0.3760E-01
+mix (1): gamma =  -.5066E-04 -.1859E-03 0.7637E-02 0.3760E-01
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:   98    -2327.019988    -2327.019595    -2327.198806  0.003160 -3.482284 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1373E+03 , norm = 0.1472E-01
+mix (0): weight = 0.1373E+03 , norm = 0.1472E-01
+mix (1): gamma =  0.3988E-04 -.1812E-03 -.2788E-02
+mix (0): gamma =  0.3988E-04 -.1812E-03 -.2788E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:   99    -2327.020016    -2327.019475    -2327.198664  0.003134 -3.482410 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1374E+03 , norm = 0.1467E-01
+mix (1): weight = 0.1374E+03 , norm = 0.1467E-01
+mix (1): gamma =  0.1560E-02 -.7872E-02 -.9182E-02 -.8868E-02
+mix (0): gamma =  0.1560E-02 -.7872E-02 -.9182E-02 -.8868E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  100    -2327.022025    -2327.014483    -2327.192156  0.002353 -3.489876 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1400E+03 , norm = 0.1184E-01
+mix (0): weight = 0.1400E+03 , norm = 0.1184E-01
+mix (1): gamma =  -.2465E-02 -.1619E-02 -.6307E-03
+mix (0): gamma =  -.2465E-02 -.1619E-02 -.6307E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  101    -2327.022480    -2327.012285    -2327.189628  0.002347 -3.492377 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1401E+03 , norm = 0.1184E-01
+mix (0): weight = 0.1401E+03 , norm = 0.1184E-01
+mix (1): gamma =  -.2156E-02 0.3239E-02 -.1940E-01 0.1761E-01
+mix (0): gamma =  -.2156E-02 0.3239E-02 -.1940E-01 0.1761E-01
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:  102    -2327.024066    -2327.015902    -2327.191861  0.001654 -3.494632 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  103    -2327.023528    -2327.016719    -2327.193240  0.001522 -3.493722 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1429E+03 , norm = 0.8586E-02
+mix (0): weight = 0.1429E+03 , norm = 0.8586E-02
+mix (1): gamma =  0.3185E-01 0.3527E-01 -.1477E-01
+mix (0): gamma =  0.3185E-01 0.3527E-01 -.1477E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  104    -2327.004372    -2327.082492    -2327.270017  0.022539 -3.422742 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.8944E+02 , norm = 0.6716E-01
+mix (0): weight = 0.8944E+02 , norm = 0.6716E-01
+mix (1): gamma =  -.1297E-02 -.6986E-03 0.6511E-01
+mix (0): gamma =  -.1297E-02 -.6986E-03 0.6511E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  105    -2327.023387    -2327.018026    -2327.194608  0.001590 -3.491797 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1427E+03 , norm = 0.8298E-02
+mix (1): weight = 0.1427E+03 , norm = 0.8298E-02
+mix (0): gamma =  0.6492E-03 -.5535E-03 -.2642E-01 -.2798E-01
+mix (1): gamma =  0.6492E-03 -.5535E-03 -.2642E-01 -.2798E-01
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  106    -2327.023853    -2327.017191    -2327.193357  0.001574 -3.493084 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1427E+03 , norm = 0.8239E-02
+mix (0): gamma =  0.4616E-03 -.4025E-03 0.7338E-03
+mix (1): weight = 0.1427E+03 , norm = 0.8239E-02
+mix (1): gamma =  0.4616E-03 -.4025E-03 0.7338E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  107    -2327.023861    -2327.017061    -2327.193227  0.001568 -3.493257 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1428E+03 , norm = 0.8206E-02
+mix (0): weight = 0.1428E+03 , norm = 0.8206E-02
+mix (0): gamma =  0.1489E-02 -.1441E-02 0.1953E-02 0.2024E-02
+mix (1): gamma =  0.1489E-02 -.1441E-02 0.1953E-02 0.2024E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  108    -2327.023824    -2327.016908    -2327.193109  0.001579 -3.493390 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1427E+03 , norm = 0.8287E-02
+mix (1): weight = 0.1427E+03 , norm = 0.8287E-02
+mix (0): gamma =  0.7904E-02 0.9343E-02 -.3727E-02
+mix (1): gamma =  0.7904E-02 0.9343E-02 -.3727E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  109    -2327.020332    -2327.023261    -2327.202174  0.003664 -3.483617 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1356E+03 , norm = 0.1398E-01
+mix (0): weight = 0.1356E+03 , norm = 0.1398E-01
+mix (0): gamma =  0.1347E-02 -.2194E-02 0.7021E-02 0.1387E-01
+mix (1): gamma =  0.1347E-02 -.2194E-02 0.7021E-02 0.1387E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  110    -2327.025816    -2327.019792    -2327.194216  0.000979 -3.493000 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1448E+03 , norm = 0.5663E-02
+mix (1): weight = 0.1448E+03 , norm = 0.5663E-02
+mix (1): gamma =  0.7011E-03 0.1895E-03 -.2397E-03
+mix (0): gamma =  0.7011E-03 0.1895E-03 -.2397E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  111    -2327.026003    -2327.020238    -2327.194492  0.000896 -3.492948 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1451E+03 , norm = 0.5486E-02
+mix (1): weight = 0.1451E+03 , norm = 0.5486E-02
+mix (1): gamma =  -.4098E-03 0.4962E-03 0.2686E-02 -.3007E-02
+mix (0): gamma =  -.4098E-03 0.4962E-03 0.2686E-02 -.3007E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:  112    -2327.025973    -2327.022241    -2327.196538  0.000802 -3.491520 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  113    -2327.026083    -2327.022614    -2327.196805  0.000801 -3.492208 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1455E+03 , norm = 0.4475E-02
+mix (0): weight = 0.1455E+03 , norm = 0.4475E-02
+mix (0): gamma =  0.3425E-01 0.3618E-01 0.1882E-01
+mix (1): gamma =  0.3425E-01 0.3618E-01 0.1882E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  114    -2326.985285    -2327.048090    -2327.243827  0.022901 -3.465301 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.8879E+02 , norm = 0.6932E-01
+mix (0): weight = 0.8879E+02 , norm = 0.6932E-01
+mix (1): gamma =  0.6855E-02 0.1717E-02 0.7495E-01
+mix (0): gamma =  0.6855E-02 0.1717E-02 0.7495E-01
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  115    -2327.026115    -2327.019780    -2327.193932  0.000828 -3.494847 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1454E+03 , norm = 0.5203E-02
+mix (0): weight = 0.1454E+03 , norm = 0.5203E-02
+mix (1): gamma =  0.4195E-02 0.1776E-04 0.1121E+00 0.1076E+00
+mix (0): gamma =  0.4195E-02 0.1776E-04 0.1121E+00 0.1076E+00
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  116    -2327.026204    -2327.022698    -2327.196778  0.000758 -3.492588 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1456E+03 , norm = 0.4342E-02
+mix (0): weight = 0.1456E+03 , norm = 0.4342E-02
+mix (1): gamma =  -.7067E-04 0.3007E-04 -.3799E-03
+mix (0): gamma =  -.7067E-04 0.3007E-04 -.3799E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  117    -2327.026171    -2327.023132    -2327.197246  0.000759 -3.492270 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1456E+03 , norm = 0.4269E-02
+mix (1): weight = 0.1456E+03 , norm = 0.4269E-02
+mix (0): gamma =  0.7619E-03 -.7180E-03 0.7772E-02 -.7872E-02
+mix (1): gamma =  0.7619E-03 -.7180E-03 0.7772E-02 -.7872E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  118    -2327.025784    -2327.023967    -2327.198465  0.000757 -3.492992 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1456E+03 , norm = 0.3351E-02
+mix (1): weight = 0.1456E+03 , norm = 0.3351E-02
+mix (0): gamma =  -.2768E-03 -.1716E-03 -.9353E-03
+mix (1): gamma =  -.2768E-03 -.1716E-03 -.9353E-03
+   scf:  119    -2327.025696    -2327.024919    -2327.199507  0.000765 -3.493021 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): weight = 0.1456E+03 , norm = 0.2906E-02
+mix (1): weight = 0.1456E+03 , norm = 0.2906E-02
+mix (0): gamma =  -.2419E-02 -.2397E-02 -.8132E-03 0.1613E-02
+mix (1): gamma =  -.2419E-02 -.2397E-02 -.8132E-03 0.1613E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  120    -2327.025752    -2327.029226    -2327.203787  0.001069 -3.489232 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1445E+03 , norm = 0.5162E-02
+mix (0): weight = 0.1445E+03 , norm = 0.5162E-02
+mix (1): gamma =  -.7115E-02 -.8062E-02 0.6609E-02
+mix (0): gamma =  -.7115E-02 -.8062E-02 0.6609E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  121    -2327.023659    -2327.033456    -2327.209996  0.002561 -3.498596 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1393E+03 , norm = 0.1207E-01
+mix (1): weight = 0.1393E+03 , norm = 0.1207E-01
+mix (0): gamma =  0.1163E-03 -.2559E-03 0.4073E-02 0.1256E-01
+mix (1): gamma =  0.1163E-03 -.2559E-03 0.4073E-02 0.1256E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:  122    -2327.025612    -2327.025237    -2327.199904  0.000782 -3.493849 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  123    -2327.026002    -2327.025275    -2327.199558  0.000846 -3.494032 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1453E+03 , norm = 0.3539E-02
+mix (0): weight = 0.1453E+03 , norm = 0.3539E-02
+mix (0): gamma =  0.2914E-05 0.1927E-04 0.2436E-02
+mix (1): gamma =  0.2914E-05 0.1927E-04 0.2436E-02
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  124    -2327.025997    -2327.025267    -2327.199556  0.000830 -3.494020 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1454E+03 , norm = 0.3495E-02
+mix (0): weight = 0.1454E+03 , norm = 0.3495E-02
+mix (0): gamma =  -.5681E-04 0.5178E-03 -.1883E-02
+mix (1): gamma =  -.5681E-04 0.5178E-03 -.1883E-02
+   scf:  125    -2327.025838    -2327.025048    -2327.199496  0.000773 -3.493747 -1.000000
+mix (0): Broyden
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1456E+03 , norm = 0.2619E-02
+mix (1): weight = 0.1456E+03 , norm = 0.2619E-02
+mix (0): gamma =  0.1586E-03 -.3287E-03 0.4649E-01 -.4734E-01
+mix (1): gamma =  0.1586E-03 -.3287E-03 0.4649E-01 -.4734E-01
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+   scf:  126    -2327.025703    -2327.025233    -2327.199825  0.000730 -3.494592 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1457E+03 , norm = 0.2337E-02
+mix (1): weight = 0.1457E+03 , norm = 0.2337E-02
+mix (0): gamma =  -.1969E-03 -.1994E-03 0.2443E-03
+mix (1): gamma =  -.1969E-03 -.1994E-03 0.2443E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  127    -2327.025742    -2327.025151    -2327.199704  0.000735 -3.494368 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1457E+03 , norm = 0.2339E-02
+mix (0): weight = 0.1457E+03 , norm = 0.2339E-02
+mix (0): gamma =  -.1652E-03 -.1671E-03 0.2475E-03 0.3259E-03
+mix (1): gamma =  -.1652E-03 -.1671E-03 0.2475E-03 0.3259E-03
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  128    -2327.025739    -2327.025172    -2327.199727  0.000735 -3.494410 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1457E+03 , norm = 0.2336E-02
+mix (1): weight = 0.1457E+03 , norm = 0.2336E-02
+mix (0): gamma =  -.1396E-02 -.1565E-02 -.7799E-03
+mix (1): gamma =  -.1396E-02 -.1565E-02 -.7799E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  129    -2327.025788    -2327.025195    -2327.199708  0.000717 -3.494686 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1458E+03 , norm = 0.2254E-02
+mix (1): weight = 0.1458E+03 , norm = 0.2254E-02
+mix (1): gamma =  -.9043E-04 0.1699E-03 0.1379E-02 -.1639E-02
+mix (0): gamma =  -.9043E-04 0.1699E-03 0.1379E-02 -.1639E-02
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  130    -2327.026153    -2327.025023    -2327.199210  0.000569 -3.495949 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1463E+03 , norm = 0.1926E-02
+mix (1): weight = 0.1463E+03 , norm = 0.1926E-02
+mix (1): gamma =  -.2688E-02 -.3304E-02 0.1620E-02
+mix (0): gamma =  -.2688E-02 -.3304E-02 0.1620E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  131    -2327.026067    -2327.026591    -2327.200897  0.000968 -3.499948 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1449E+03 , norm = 0.4985E-02
+mix (1): weight = 0.1449E+03 , norm = 0.4985E-02
+mix (1): gamma =  -.5079E-07 -.3377E-06 -.2462E-04 0.4599E-02
+mix (0): gamma =  -.5079E-07 -.3377E-06 -.2462E-04 0.4599E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:  132    -2327.026151    -2327.025049    -2327.199238  0.000563 -3.496004 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  133    -2327.026108    -2327.025159    -2327.199395  0.000549 -3.495845 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1464E+03 , norm = 0.1871E-02
+mix (1): weight = 0.1464E+03 , norm = 0.1871E-02
+mix (0): gamma =  0.2457E-02 0.2692E-02 0.1680E-02
+mix (1): gamma =  0.2457E-02 0.2692E-02 0.1680E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  134    -2327.025408    -2327.024698    -2327.199520  0.000914 -3.490927 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1451E+03 , norm = 0.4182E-02
+mix (0): weight = 0.1451E+03 , norm = 0.4182E-02
+mix (1): gamma =  -.1668E-02 -.1209E-02 0.3001E-02
+mix (0): gamma =  -.1668E-02 -.1209E-02 0.3001E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  135    -2327.026026    -2327.025652    -2327.199967  0.000583 -3.496479 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1463E+03 , norm = 0.2155E-02
+mix (0): weight = 0.1463E+03 , norm = 0.2155E-02
+mix (1): gamma =  -.2423E-03 -.4802E-03 0.2519E-02 0.3115E-02
+mix (0): gamma =  -.2423E-03 -.4802E-03 0.2519E-02 0.3115E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  136    -2327.026106    -2327.025405    -2327.199644  0.000554 -3.496233 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1464E+03 , norm = 0.1847E-02
+mix (1): weight = 0.1464E+03 , norm = 0.1847E-02
+mix (0): gamma =  -.9517E-04 -.1260E-03 -.5023E-03
+mix (1): gamma =  -.9517E-04 -.1260E-03 -.5023E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  137    -2327.026161    -2327.025264    -2327.199450  0.000535 -3.496078 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1464E+03 , norm = 0.1777E-02
+mix (0): weight = 0.1464E+03 , norm = 0.1777E-02
+mix (0): gamma =  0.1644E-03 0.1084E-04 0.2677E-01 -.2685E-01
+mix (1): gamma =  0.1644E-03 0.1084E-04 0.2677E-01 -.2685E-01
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  138    -2327.026463    -2327.025872    -2327.199783  0.000394 -3.496093 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1470E+03 , norm = 0.1298E-02
+mix (0): weight = 0.1470E+03 , norm = 0.1298E-02
+mix (1): gamma =  0.2038E-02 0.2054E-02 -.9385E-03
+mix (0): gamma =  0.2038E-02 0.2054E-02 -.9385E-03
+   scf:  139    -2327.026164    -2327.027728    -2327.201944  0.001024 -3.497406 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1447E+03 , norm = 0.3471E-02
+mix (0): weight = 0.1447E+03 , norm = 0.3471E-02
+mix (0): gamma =  0.5081E-04 0.5319E-04 -.2731E-03 0.3325E-02
+mix (1): gamma =  0.5081E-04 0.5319E-04 -.2731E-03 0.3325E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+   scf:  140    -2327.026480    -2327.026183    -2327.200082  0.000355 -3.496190 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+mix (1): weight = 0.1471E+03 , norm = 0.1183E-02
+mix (0): weight = 0.1471E+03 , norm = 0.1183E-02
+mix (0): gamma =  0.3147E-04 0.1759E-03 0.2597E-03
+mix (1): gamma =  0.3147E-04 0.1759E-03 0.2597E-03
+   scf:  141    -2327.026438    -2327.026191    -2327.200132  0.000360 -3.496211 -1.000000
+mix (0): Broyden
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1471E+03 , norm = 0.1169E-02
+mix (0): weight = 0.1471E+03 , norm = 0.1169E-02
+mix (1): gamma =  0.2920E-04 0.3017E-03 0.3716E-03 0.5032E-05
+mix (0): gamma =  0.2920E-04 0.3017E-03 0.3716E-03 0.5032E-05
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:  142    -2327.026407    -2327.026185    -2327.200156  0.000366 -3.496225 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  143    -2327.026324    -2327.026208    -2327.200263  0.000351 -3.496170 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1471E+03 , norm = 0.1311E-02
+mix (0): weight = 0.1471E+03 , norm = 0.1311E-02
+mix (0): gamma =  -.1073E-03 -.1128E-03 0.7189E-03
+mix (1): gamma =  -.1073E-03 -.1128E-03 0.7189E-03
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  144    -2327.026307    -2327.026165    -2327.200236  0.000353 -3.496147 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1471E+03 , norm = 0.1383E-02
+mix (1): weight = 0.1471E+03 , norm = 0.1383E-02
+mix (0): gamma =  0.7164E-05 -.7996E-04 0.8555E-03
+mix (1): gamma =  0.7164E-05 -.7996E-04 0.8555E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  145    -2327.026410    -2327.026438    -2327.200411  0.000339 -3.496287 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1472E+03 , norm = 0.1135E-02
+mix (0): weight = 0.1472E+03 , norm = 0.1135E-02
+mix (1): gamma =  -.3253E-04 -.1253E-03 -.6194E-02 -.6311E-02
+mix (0): gamma =  -.3253E-04 -.1253E-03 -.6194E-02 -.6311E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  146    -2327.026412    -2327.026591    -2327.200564  0.000318 -3.496315 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1472E+03 , norm = 0.1127E-02
+mix (0): weight = 0.1472E+03 , norm = 0.1127E-02
+mix (0): gamma =  -.5518E-04 0.5208E-04 -.1842E-04
+mix (1): gamma =  -.5518E-04 0.5208E-04 -.1842E-04
+   scf:  147    -2327.026396    -2327.026571    -2327.200560  0.000317 -3.496297 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1472E+03 , norm = 0.1122E-02
+mix (0): weight = 0.1472E+03 , norm = 0.1122E-02
+mix (1): gamma =  -.1409E-03 0.1386E-03 -.5476E-04 0.2611E-03
+mix (0): gamma =  -.1409E-03 0.1386E-03 -.5476E-04 0.2611E-03
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  148    -2327.026395    -2327.026573    -2327.200563  0.000317 -3.496297 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1472E+03 , norm = 0.1124E-02
+mix (0): weight = 0.1472E+03 , norm = 0.1124E-02
+mix (1): gamma =  0.4400E-03 0.5055E-03 -.1400E-03
+mix (0): gamma =  0.4400E-03 0.5055E-03 -.1400E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  149    -2327.026423    -2327.026289    -2327.200243  0.000376 -3.496305 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1470E+03 , norm = 0.1232E-02
+mix (1): weight = 0.1470E+03 , norm = 0.1232E-02
+mix (1): gamma =  0.3329E-03 -.3010E-03 0.9455E-03 0.1169E-02
+mix (0): gamma =  0.3329E-03 -.3010E-03 0.9455E-03 0.1169E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  150    -2327.026360    -2327.026569    -2327.200604  0.000228 -3.496078 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1476E+03 , norm = 0.8249E-03
+mix (0): weight = 0.1476E+03 , norm = 0.8249E-03
+mix (1): gamma =  0.3223E-03 0.2901E-03 0.4860E-04
+mix (0): gamma =  0.3223E-03 0.2901E-03 0.4860E-04
+   scf:  151    -2327.026354    -2327.026694    -2327.200739  0.000189 -3.496055 -1.000000
+mix (0): Broyden
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1477E+03 , norm = 0.8277E-03
+mix (0): weight = 0.1477E+03 , norm = 0.8277E-03
+mix (1): gamma =  0.2113E-03 0.1696E-05 -.7037E-03 0.8141E-03
+mix (0): gamma =  0.2113E-03 0.1696E-05 -.7037E-03 0.8141E-03
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:  152    -2327.026325    -2327.026468    -2327.200540  0.000190 -3.495906 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  153    -2327.026306    -2327.026454    -2327.200545  0.000266 -3.495968 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1474E+03 , norm = 0.8284E-03
+mix (1): weight = 0.1474E+03 , norm = 0.8284E-03
+mix (0): gamma =  -.2698E-03 -.2423E-03 0.3665E-03
+mix (1): gamma =  -.2698E-03 -.2423E-03 0.3665E-03
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  154    -2327.026273    -2327.026723    -2327.200854  0.000231 -3.495862 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1476E+03 , norm = 0.8726E-03
+mix (0): weight = 0.1476E+03 , norm = 0.8726E-03
+mix (1): gamma =  -.1552E-02 -.5515E-03 0.1618E-02
+mix (0): gamma =  -.1552E-02 -.5515E-03 0.1618E-02
+   scf:  155    -2327.026322    -2327.026801    -2327.200881  0.000137 -3.496038 -1.000000
+mix (0): Broyden
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1479E+03 , norm = 0.8429E-03
+mix (0): weight = 0.1479E+03 , norm = 0.8429E-03
+mix (1): gamma =  -.8544E-03 -.4240E-03 0.9426E-03 -.9599E-04
+mix (0): gamma =  -.8544E-03 -.4240E-03 0.9426E-03 -.9599E-04
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  156    -2327.026352    -2327.026836    -2327.200885  0.000159 -3.496189 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1478E+03 , norm = 0.8780E-03
+mix (0): weight = 0.1478E+03 , norm = 0.8780E-03
+mix (0): gamma =  -.1088E-02 -.2410E-02 0.2025E-02
+mix (1): gamma =  -.1088E-02 -.2410E-02 0.2025E-02
+   scf:  157    -2327.026312    -2327.027758    -2327.201848  0.000567 -3.496041 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1463E+03 , norm = 0.1956E-02
+mix (1): weight = 0.1463E+03 , norm = 0.1956E-02
+mix (0): gamma =  -.2173E-04 0.8146E-04 0.2703E-03 0.1862E-02
+mix (1): gamma =  -.2173E-04 0.8146E-04 0.2703E-03 0.1862E-02
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  158    -2327.026319    -2327.026575    -2327.200655  0.000176 -3.496042 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1478E+03 , norm = 0.7113E-03
+mix (1): weight = 0.1478E+03 , norm = 0.7113E-03
+mix (0): gamma =  0.3540E-04 -.6784E-04 -.1174E-03
+mix (1): gamma =  0.3540E-04 -.6784E-04 -.1174E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (1): weight = 0.1478E+03 , norm = 0.6869E-03
+   scf:  159    -2327.026316    -2327.026534    -2327.200617  0.000177 -3.496022 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1478E+03 , norm = 0.6869E-03
+mix (1): gamma =  0.1699E-04 -.1405E-03 -.7115E-04 -.2349E-03
+mix (1): saved hist = 3
+mix (0): gamma =  0.1699E-04 -.1405E-03 -.7115E-04 -.2349E-03
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  160    -2327.026304    -2327.026427    -2327.200522  0.000167 -3.495936 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1478E+03 , norm = 0.6340E-03
+mix (0): weight = 0.1478E+03 , norm = 0.6340E-03
+mix (1): gamma =  -.5754E-04 -.6058E-04 -.3343E-04
+mix (0): gamma =  -.5754E-04 -.6058E-04 -.3343E-04
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  161    -2327.026304    -2327.026337    -2327.200432  0.000175 -3.495910 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1478E+03 , norm = 0.6228E-03
+mix (1): weight = 0.1478E+03 , norm = 0.6228E-03
+mix (0): gamma =  -.6433E-04 -.8047E-04 -.6132E-05 0.7722E-04
+mix (1): gamma =  -.6433E-04 -.8047E-04 -.6132E-05 0.7722E-04
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:  162    -2327.026304    -2327.026321    -2327.200415  0.000179 -3.495912 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  163    -2327.026333    -2327.026320    -2327.200385  0.000180 -3.495980 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1477E+03 , norm = 0.6408E-03
+mix (0): weight = 0.1477E+03 , norm = 0.6408E-03
+mix (1): gamma =  0.4730E-03 0.4358E-03 0.5626E-03
+mix (0): gamma =  0.4730E-03 0.4358E-03 0.5626E-03
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  164    -2327.026367    -2327.027007    -2327.201040  0.000220 -3.496309 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1476E+03 , norm = 0.1119E-02
+mix (0): weight = 0.1476E+03 , norm = 0.1119E-02
+mix (1): gamma =  -.1317E-02 -.6174E-03 -.2138E-04
+mix (0): gamma =  -.1317E-02 -.6174E-03 -.2138E-04
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  165    -2327.026329    -2327.025768    -2327.199828  0.000279 -3.495950 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1474E+03 , norm = 0.9150E-03
+mix (0): weight = 0.1474E+03 , norm = 0.9150E-03
+mix (0): gamma =  -.9418E-03 -.3322E-03 0.8543E-03 0.2112E-02
+mix (1): gamma =  -.9418E-03 -.3322E-03 0.8543E-03 0.2112E-02
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  166    -2327.026318    -2327.025944    -2327.200022  0.000207 -3.495856 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1476E+03 , norm = 0.6763E-03
+mix (1): weight = 0.1476E+03 , norm = 0.6763E-03
+mix (0): gamma =  -.1138E-03 0.8299E-04 -.1544E-03
+mix (1): gamma =  -.1138E-03 0.8299E-04 -.1544E-03
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  167    -2327.026312    -2327.026189    -2327.200277  0.000170 -3.495895 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1478E+03 , norm = 0.5803E-03
+mix (1): weight = 0.1478E+03 , norm = 0.5803E-03
+mix (0): gamma =  0.1983E-03 -.2606E-03 0.2422E-03 -.6736E-03
+mix (1): gamma =  0.1983E-03 -.2606E-03 0.2422E-03 -.6736E-03
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  168    -2327.026291    -2327.026284    -2327.200393  0.000145 -3.495903 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1479E+03 , norm = 0.5475E-03
+mix (0): weight = 0.1479E+03 , norm = 0.5475E-03
+mix (1): gamma =  -.7451E-04 -.8293E-04 0.4455E-04
+mix (0): gamma =  -.7451E-04 -.8293E-04 0.4455E-04
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  169    -2327.026290    -2327.026371    -2327.200482  0.000127 -3.495902 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1479E+03 , norm = 0.5602E-03
+mix (0): weight = 0.1479E+03 , norm = 0.5602E-03
+mix (1): gamma =  -.1039E-04 -.1145E-04 -.1022E-04 0.1403E-03
+mix (0): gamma =  -.1039E-04 -.1145E-04 -.1022E-04 0.1403E-03
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  170    -2327.026291    -2327.026297    -2327.200407  0.000142 -3.495910 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1479E+03 , norm = 0.5419E-03
+mix (0): weight = 0.1479E+03 , norm = 0.5419E-03
+mix (1): gamma =  0.2580E-04 0.4915E-04 0.1679E-04
+mix (0): gamma =  0.2580E-04 0.4915E-04 0.1679E-04
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  171    -2327.026294    -2327.026261    -2327.200367  0.000150 -3.495914 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1479E+03 , norm = 0.5405E-03
+mix (0): weight = 0.1479E+03 , norm = 0.5405E-03
+mix (1): gamma =  0.2604E-04 0.4527E-04 0.7747E-05 0.5446E-04
+mix (0): gamma =  0.2604E-04 0.4527E-04 0.7747E-05 0.5446E-04
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): next%n_hist = 3 / 5
+mix (1): alpha = 0.1000E+00
+   scf:  172    -2327.026294    -2327.026263    -2327.200369  0.000150 -3.495914 -1.000000
+mix (0): linear
+mix (0): next%n_hist = 3 / 5
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  173    -2327.026296    -2327.026266    -2327.200370  0.000148 -3.495978 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1479E+03 , norm = 0.5040E-03
+mix (1): weight = 0.1479E+03 , norm = 0.5040E-03
+mix (0): gamma =  0.5713E-03 0.7087E-03 -.4351E-03
+mix (1): gamma =  0.5713E-03 0.7087E-03 -.4351E-03
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  174    -2327.026221    -2327.027225    -2327.201407  0.000242 -3.495902 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (1): weight = 0.1475E+03 , norm = 0.1249E-02
+mix (0): weight = 0.1475E+03 , norm = 0.1249E-02
+mix (1): gamma =  0.1696E-03 0.2723E-05 0.1309E-02
+mix (0): gamma =  0.1696E-03 0.2723E-05 0.1309E-02
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  175    -2327.026291    -2327.026292    -2327.200402  0.000141 -3.495975 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1479E+03 , norm = 0.4991E-03
+mix (1): weight = 0.1479E+03 , norm = 0.4991E-03
+mix (0): gamma =  0.1851E-03 0.7385E-05 0.7599E-03 0.5789E-03
+mix (1): gamma =  0.1851E-03 0.7385E-05 0.7599E-03 0.5789E-03
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  176    -2327.026290    -2327.026291    -2327.200402  0.000141 -3.495974 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1479E+03 , norm = 0.4990E-03
+mix (1): weight = 0.1479E+03 , norm = 0.4990E-03
+mix (0): gamma =  -.2516E-05 -.4556E-06 -.3264E-05
+mix (1): gamma =  -.2516E-05 -.4556E-06 -.3264E-05
+   scf:  177    -2327.026290    -2327.026292    -2327.200403  0.000140 -3.495979 -1.000000
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (0): weight = 0.1479E+03 , norm = 0.4957E-03
+mix (1): weight = 0.1479E+03 , norm = 0.4957E-03
+mix (0): gamma =  0.1168E-04 -.6705E-05 -.1085E-03 -.3080E-03
+mix (1): gamma =  0.1168E-04 -.6705E-05 -.1085E-03 -.3080E-03
+mix (1): saved hist = 3
+mix: Broyden -- resetting history
+mix (0): saved hist = 3
+mix (1): Broyden
+mix (1): n_hist = 4 / 5
+   scf:  178    -2327.026289    -2327.026325    -2327.200438  0.000115 -3.496225 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 4 / 5
+mix (0): weight = 0.1480E+03 , norm = 0.3773E-03
+mix (1): weight = 0.1480E+03 , norm = 0.3773E-03
+mix (1): gamma =  -.4940E-04 -.3703E-04 -.4091E-04
+mix (0): gamma =  -.4940E-04 -.3703E-04 -.4091E-04
+mix (1): Broyden
+mix (1): n_hist = 5 / 5
+   scf:  179    -2327.026282    -2327.026332    -2327.200451  0.000107 -3.496288 -1.000000
+mix (0): Broyden
+mix (0): n_hist = 5 / 5
+mix (1): weight = 0.1480E+03 , norm = 0.3552E-03
+mix (0): weight = 0.1480E+03 , norm = 0.3552E-03
+mix (0): gamma =  0.1624E-04 -.1489E-04 0.1313E-03 -.1769E-03
+mix (1): gamma =  0.1624E-04 -.1489E-04 0.1313E-03 -.1769E-03
+mix: Broyden -- resetting history
+mix (1): saved hist = 3
+mix (0): saved hist = 3
+mix (1): linear
+mix (1): alpha = 0.2500E-01
+   scf:  180    -2327.026272    -2327.026335    -2327.200465  0.000098 -3.496335 -1.000000
 
 SCF Convergence by dDmax criteria
-max |DM_out - DM_in|:     0.00009668
-SCF cycle converged after 175 iterations
+max |DM_out - DM_in|:     0.00009839
+SCF cycle converged after 180 iterations
+
+:!: SCF cycle continuation mixer: linear-after
+mix (0): linear
+mix (0): alpha = 0.2500E-01
+   scf:  181    -2327.026276    -2327.026333    -2327.200460  0.000098 -3.496331 -1.000000
+
+SCF Convergence by dDmax criteria
+max |DM_out - DM_in|:     0.00009842
+SCF cycle converged after 181 iterations
 
 Using DM_out to compute the final energy and forces
 
@@ -789,15 +2453,15 @@ siesta: E_KS - E_eggbox =     -2327.0263
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot    0.000000    0.000000   -0.000000
 ----------------------------------------
-   Max    0.070904
-   Res    0.033425    sqrt( Sum f_i^2 / 3N )
+   Max    0.070600
+   Res    0.033281    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.070904    constrained
+   Max    0.070600    constrained
 
-Stress-tensor-Voigt (kbar):        6.67        6.67       -1.34       -0.00        0.00       -0.00
-(Free)E + p*V (eV/cell)    -2328.2656
+Stress-tensor-Voigt (kbar):        6.67        6.67       -1.35       -0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)    -2328.2652
 Target enthalpy (eV/cell)    -2327.2004
 
 mulliken: Atomic and Orbital Populations:
@@ -807,118 +2471,118 @@ Species: fe_nc
 Atom      Orb        Charge      Spin       Svec
 ----------------------------------------------------------------
     1  1 4s         1.34050   0.02225     -0.014  -0.000  -0.017
-    1  2 4s         0.10725   0.06309      0.004  -0.000   0.063
-    1  3 3dxy       1.22803   0.65158      0.059  -0.000   0.649
-    1  4 3dyz       1.24673   0.48494     -0.000  -0.000   0.485
-    1  5 3dz2       1.27209   0.47684      0.011  -0.000   0.477
-    1  6 3dxz       1.24673   0.48494     -0.000  -0.000   0.485
+    1  2 4s         0.10724   0.06309      0.004  -0.000   0.063
+    1  3 3dxy       1.22803   0.65159      0.059  -0.000   0.649
+    1  4 3dyz       1.24672   0.48494     -0.000  -0.000   0.485
+    1  5 3dz2       1.27208   0.47685      0.011  -0.000   0.477
+    1  6 3dxz       1.24672   0.48494     -0.000  -0.000   0.485
     1  7 3dx2-y2    1.22663   0.65304      0.059  -0.000   0.650
     1  8 3dxy       0.04753   0.06832      0.010  -0.000   0.068
-    1  9 3dyz       0.03199   0.06030      0.004  -0.000   0.060
+    1  9 3dyz       0.03199   0.06029      0.004  -0.000   0.060
     1 10 3dz2       0.07188   0.04631      0.003  -0.000   0.046
-    1 11 3dxz       0.03199   0.06030      0.004  -0.000   0.060
+    1 11 3dxz       0.03199   0.06029      0.004  -0.000   0.060
     1 12 3dx2-y2    0.04750   0.06829      0.009  -0.000   0.068
     1 13 4Ppy       0.02837   0.00570      0.001  -0.000  -0.006
     1 14 4Ppz       0.00542   0.00461      0.004  -0.000   0.001
     1 15 4Ppx       0.02837   0.00570      0.001  -0.000  -0.006
-    1     Total     7.96100   3.08744      0.154  -0.000   3.084
+    1     Total     7.96098   3.08746      0.154  -0.000   3.084
 
-    2  1 4s         0.86617   0.01538     -0.015  -0.000   0.000
-    2  2 4s         0.19135   0.03199      0.032  -0.000  -0.000
-    2  3 3dxy       1.43218   0.46913      0.469  -0.000   0.000
-    2  4 3dyz       1.29852   0.11936      0.119  -0.000  -0.000
-    2  5 3dz2       1.17961   0.13297      0.133  -0.000  -0.000
-    2  6 3dxz       1.29852   0.11936      0.119  -0.000  -0.000
-    2  7 3dx2-y2    1.43185   0.46953      0.470  -0.000   0.000
-    2  8 3dxy       0.00177   0.03725      0.037  -0.000   0.000
-    2  9 3dyz      -0.01650   0.01897      0.019  -0.000   0.000
-    2 10 3dz2       0.07318   0.00950      0.009  -0.000   0.000
-    2 11 3dxz      -0.01650   0.01897      0.019  -0.000   0.000
-    2 12 3dx2-y2    0.00171   0.03720      0.037  -0.000  -0.000
-    2 13 4Ppy       0.11940   0.01148      0.011  -0.000   0.000
-    2 14 4Ppz       0.09735   0.00410      0.004  -0.000  -0.000
-    2 15 4Ppx       0.11940   0.01148      0.011  -0.000   0.000
-    2     Total     8.07800   1.47591      1.476  -0.000   0.000
+    2  1 4s         0.86617   0.01539     -0.015  -0.000   0.000
+    2  2 4s         0.19135   0.03201      0.032  -0.000   0.000
+    2  3 3dxy       1.43215   0.46917      0.469  -0.000   0.000
+    2  4 3dyz       1.29853   0.11941      0.119  -0.000   0.000
+    2  5 3dz2       1.17963   0.13302      0.133  -0.000   0.000
+    2  6 3dxz       1.29853   0.11941      0.119  -0.000   0.000
+    2  7 3dx2-y2    1.43183   0.46956      0.470  -0.000   0.000
+    2  8 3dxy       0.00179   0.03726      0.037  -0.000   0.000
+    2  9 3dyz      -0.01649   0.01898      0.019  -0.000   0.000
+    2 10 3dz2       0.07318   0.00950      0.010  -0.000  -0.000
+    2 11 3dxz      -0.01649   0.01898      0.019  -0.000   0.000
+    2 12 3dx2-y2    0.00173   0.03722      0.037  -0.000   0.000
+    2 13 4Ppy       0.11940   0.01149      0.011  -0.000  -0.000
+    2 14 4Ppz       0.09734   0.00410      0.004  -0.000   0.000
+    2 15 4Ppx       0.11940   0.01149      0.011  -0.000  -0.000
+    2     Total     8.07804   1.47621      1.476  -0.000   0.000
 
     3  1 4s         1.34050   0.02225     -0.014  -0.000   0.017
-    3  2 4s         0.10725   0.06309      0.004  -0.000  -0.063
-    3  3 3dxy       1.22803   0.65158      0.059  -0.000  -0.649
-    3  4 3dyz       1.24673   0.48494     -0.000  -0.000  -0.485
-    3  5 3dz2       1.27209   0.47684      0.011  -0.000  -0.477
-    3  6 3dxz       1.24673   0.48494     -0.000  -0.000  -0.485
+    3  2 4s         0.10724   0.06309      0.004  -0.000  -0.063
+    3  3 3dxy       1.22803   0.65159      0.059  -0.000  -0.649
+    3  4 3dyz       1.24672   0.48494     -0.000  -0.000  -0.485
+    3  5 3dz2       1.27208   0.47685      0.011  -0.000  -0.477
+    3  6 3dxz       1.24672   0.48494     -0.000  -0.000  -0.485
     3  7 3dx2-y2    1.22663   0.65304      0.059  -0.000  -0.650
     3  8 3dxy       0.04753   0.06832      0.010  -0.000  -0.068
-    3  9 3dyz       0.03199   0.06030      0.004  -0.000  -0.060
+    3  9 3dyz       0.03199   0.06029      0.004  -0.000  -0.060
     3 10 3dz2       0.07188   0.04631      0.003  -0.000  -0.046
-    3 11 3dxz       0.03199   0.06030      0.004  -0.000  -0.060
+    3 11 3dxz       0.03199   0.06029      0.004  -0.000  -0.060
     3 12 3dx2-y2    0.04750   0.06829      0.009  -0.000  -0.068
     3 13 4Ppy       0.02837   0.00570      0.001  -0.000   0.006
     3 14 4Ppz       0.00542   0.00461      0.004  -0.000  -0.001
     3 15 4Ppx       0.02837   0.00570      0.001  -0.000   0.006
-    3     Total     7.96100   3.08744      0.154  -0.000  -3.084
+    3     Total     7.96098   3.08746      0.154  -0.000  -3.084
 
 ----------------------------------------------------------------
-Total              24.00000   1.78461      1.785  -0.000   0.000
+Total              24.00000   1.78492      1.785  -0.000  -0.000
 
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -138.222362
+siesta: Ebs     =      -138.222913
 siesta: Eions   =      2141.484345
 siesta: Ena     =        95.468898
-siesta: Ekin    =      2356.540861
-siesta: Enl     =     -1464.255754
+siesta: Ekin    =      2356.546675
+siesta: Enl     =     -1464.260022
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =       -28.366224
-siesta: DUscf   =         2.906456
+siesta: DEna    =       -28.366972
+siesta: DUscf   =         2.906586
 siesta: DUext   =         0.000000
-siesta: Exc     =     -1147.836192
+siesta: Exc     =     -1147.837095
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -2327.026301
-siesta: Etot    =     -2327.026301
+siesta: Eharris =     -2327.026276
+siesta: Etot    =     -2327.026276
 siesta: FreeEng =     -2327.200403
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -138.222362
-siesta:       Kinetic =    2356.540861
-siesta:       Hartree =    1407.494205
+siesta:  Band Struct. =    -138.222913
+siesta:       Kinetic =    2356.546675
+siesta:       Hartree =    1407.496973
 siesta:       Eldau   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =   -1147.836192
-siesta:  Ion-electron =   -4749.526977
+siesta:   Exch.-corr. =   -1147.837095
+siesta:  Ion-electron =   -4749.534631
 siesta:       Ion-ion =    -193.698198
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -2327.026301
+siesta:         Total =   -2327.026276
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1   -0.000000   -0.000000   -0.070904
-siesta:      2    0.000000   -0.000000    0.000000
-siesta:      3    0.000000    0.000000    0.070904
+siesta:      1   -0.000000   -0.000000   -0.070599
+siesta:      2    0.000000    0.000000   -0.000000
+siesta:      3    0.000000   -0.000000    0.070600
 siesta: ----------------------------------------
-siesta:    Tot    0.000000    0.000000    0.000000
+siesta:    Tot    0.000000    0.000000   -0.000000
 
 siesta: Stress tensor (static) (eV/Ang**3):
 siesta:     0.004163    0.000000    0.000000
 siesta:    -0.000000    0.004163    0.000000
-siesta:    -0.000000    0.000000   -0.000838
+siesta:    -0.000000   -0.000000   -0.000840
 
 siesta: Cell volume =        426.771459 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:          -0.00002718         -0.00002486  Ry/Bohr**3
-siesta:          -0.00249593         -0.00228234  eV/Ang**3
-siesta:          -3.99895832         -3.65675749  kBar
+siesta:          -0.00002717         -0.00002486  Ry/Bohr**3
+siesta:          -0.00249498         -0.00228232  eV/Ang**3
+siesta:          -3.99744736         -3.65671834  kBar
 (Free)E+ p_basis*V_orbitals  =       -2324.930474
 (Free)Eharris+ p_basis*V_orbitals  =       -2324.930474
- Calling spnvec: nspin, qspin =     4    12.00000    12.00000     0.89230     0.00000
- Leaving spnvec: qaux,stot,svec=      24.0000      1.7846      1.7846     -0.0000      0.0000
+ Calling spnvec: nspin, qspin =     4    12.00000    12.00000     0.89246     0.00000
+ Leaving spnvec: qaux,stot,svec=      24.0000      1.7849      1.7849     -0.0000     -0.0000
 
-siesta: Total spin polarization (Qup-Qdown) =    1.784607
-siesta: Spin vector =    1.784607   -0.000000    0.000000
->> End of run:   5-JUN-2016  12:20:27
+siesta: Total spin polarization (Qup-Qdown) =    1.784923
+siesta: Spin vector =    1.784923   -0.000000   -0.000000
+>> End of run:   5-JUL-2016  13:35:37

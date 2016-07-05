@@ -41,7 +41,7 @@ module m_mixing
   integer, parameter :: MIX_BROYDEN = 3
   integer, parameter :: MIX_FIRE = 4
 
-  ! Action tokens (binary, 0,1,2,4,8,...!)
+  ! Action tokens (binary: 0, 1, 2, 4, 8, ...!)
   integer, parameter :: ACTION_MIX = 0
   integer, parameter :: ACTION_RESTART = 1
   integer, parameter :: ACTION_NEXT = 2
@@ -67,8 +67,6 @@ module m_mixing
      
      ! Number of iterations using this mixer
      ! There are a couple of signals here
-     !   < 0 :
-     !     switch mixer after convergence
      !  == 0 :
      !     only use this mixer until convergence
      !   > 0 :
@@ -87,6 +85,11 @@ module m_mixing
 
      ! The next mixing method following this method
      type(tMixer), pointer :: next => null()
+
+     ! The next mixing method following this method
+     ! Only used if mixing method achieved convergence
+     ! using this method
+     type(tMixer), pointer :: next_conv => null()
 
      ! The mixing parameter used for this mixer
      real(dp) :: w = 0._dp
@@ -124,7 +127,11 @@ module m_mixing
   public :: tMixer
   public :: mixing_init, mixing_history_clear
   public :: mixing, mixing_reset
-  public :: mixing_print
+  public :: mixing_print, mixing_print_block
+  public :: mixing_init_mix
+
+  ! Retrieve information from strings
+  public :: mix_method, mix_method_variant
 
   public :: MIX_LINEAR, MIX_FIRE, MIX_PULAY, MIX_BROYDEN
 
@@ -152,244 +159,82 @@ contains
     type(parsed_line), pointer :: pline
 
     ! number of history steps saved
-    integer :: n_hist, n_kick, n_restart, n_save
-    integer :: n_lin_before, n_lin_after
-    real(dp) :: w, w_kick
-    real(dp) :: w_lin_before, w_lin_after
-    integer :: n_broy, n_broy_orig
-    real(dp) :: w_broy, w_broy_p
-    integer :: n_pulay, n_pulay_orig
-    real(dp) :: w_pulay, w_pulay_damp, svd_pulay_cond
+    integer :: n_hist, n_restart, n_save
+    real(dp) :: w
 
-    type(tMixer), pointer :: m
     integer :: nm, im, im2
-    logical :: bool
     character(len=10) :: lp
-    character(len=70) :: method, variant, opt, opt2
+    character(len=70) :: method, variant
 
-    lp = trim(prefix)//'.'
-
-    ! ensure nullification
-    call mixing_reset(mixers)
-
-    ! Check for existance
-    if ( present(force) ) then
-       bool = fdf_defined(trim(lp)//'Mix')
-       bool = bool .or. fdf_block(trim(lp)//'Mix',bfdf)
-       bool = (.not. bool) .and. (.not. force)
-       if ( bool ) return
-    end if
-
-    ! Standard options
-    w = 0.25_dp
-    w_kick = 0.5_dp
-    n_kick = 0
-    n_pulay_orig = fdf_get('DM.NumberPulay',2)
-    n_broy_orig  = fdf_get('DM.NumberBroyden',0)
-    svd_pulay_cond = 1.e-8_dp
-    
-    ! Set standard mixing algorithm
-    if ( n_broy_orig > 0 ) then
-       method = 'broyden'
-       n_hist = n_broy_orig
-    else
-       method = 'pulay'
-       n_hist = n_pulay_orig
-    end if
-
-    ! Only in the case of SCF mixing do we set
-    ! the standard mixing weight and kick-parameters
-    if ( leqi(prefix,'SCF') ) then
-       w      = fdf_get('DM.MixingWeight',w)
-       n_kick = fdf_get('DM.NumberKick',n_kick)
-       w_kick = fdf_get('DM.KickMixingWeight',w_kick)
-       w_pulay = w
-       w_pulay_damp = w
-       svd_pulay_cond = fdf_get('SCF.Pulay.RcondSVD',1.e-8_dp)
-    end if
-    
-
-    ! Retrieve default method for mixing and its variant
-    method  = fdf_get(trim(lp)//'Mix',method)
-    variant = fdf_get(trim(lp)//'Mix.Variant','original')
-    ! Correct the weighting stuff for the special
-    ! variants
-
-    ! update mixing weight and kick mixing weight
-    w      = fdf_get(trim(lp)//'Mix.Weight',w)
-    n_kick = fdf_get(trim(lp)//'Mix.Kick',n_kick)
-    w_kick = fdf_get(trim(lp)//'Mix.Kick.Weight',w_kick)
-
-    ! Get history length
-    n_hist = fdf_get(trim(lp)//'Mix.History',n_hist)
-
-    ! Restart after this number of iterations
-    n_restart = fdf_get(trim(lp)//'Mix.Restart',0)
-    n_save    = fdf_get(trim(lp)//'Mix.Restart.Save',1)
-    ! negative savings are not allowed
-    n_save = max(0,n_save)
-
-    n_lin_before = fdf_get(trim(lp)//'Mix.Linear.Before',0)
-    w_lin_before = fdf_get(trim(lp)//'Mix.Linear.Before.Weight',w)
-    
-    n_lin_after = fdf_get(trim(lp)//'Mix.Linear.After',0)
-    w_lin_after = fdf_get(trim(lp)//'Mix.Linear.After.Weight',w)
-
-    ! Update default Pulay options
-    n_pulay    = fdf_get(trim(lp)//'Mix.Pulay.History',n_hist)
-    ! Linear mixing weight for pulay 
-    if ( is_variant(method,MIX_PULAY,variant,1) ) then
-       w_pulay = fdf_get(trim(lp)//'Mix.Pulay.Weight',1._dp)
-    else
-       w_pulay = fdf_get(trim(lp)//'Mix.Pulay.Weight',w)
-    end if
-    ! mixing weight of residual in pulay mixing
-    if ( is_variant(method,MIX_PULAY,variant,1) ) then
-       w_pulay_damp = fdf_get(trim(lp)//'Mix.Pulay.Damping',0._dp)
-    else
-       w_pulay_damp = fdf_get(trim(lp)//'Mix.Pulay.Damping',w_pulay)
-    end if
-    ! Condition number for SVD
-    svd_pulay_cond = fdf_get(trim(lp)//'Mix.Pulay.SVD.Cond',svd_pulay_cond)
-
-    
-    ! Update default Broyden options
-    n_broy   = fdf_get(trim(lp)//'Mix.Broyden.History',n_hist)
-    w_broy   = fdf_get(trim(lp)//'Mix.Broyden.Weight',w)
-    ! Weight for prime
-    w_broy_p = fdf_get(trim(lp)//'Mix.Broyden.WeightP',0.01_dp)
-
-    ! Debug options
-    if ( fdf_get(trim(lp)//'Mix.Debug',.false.) ) then
+    ! Default mixing options...
+    if ( fdf_get('Mix.Debug',.false.) ) then
        debug_mix = IONode
        debug_msg = 'mix:'
     end if
-    if ( fdf_get(trim(lp)//'Mix.Debug.MPI',.false.) ) then
+    if ( fdf_get('Mix.Debug.MPI',.false.) ) then
        debug_mix = .true.
        write(debug_msg,'(a,i0,a)') 'mix (',Node,'):'
     end if
 
-    ! Read in blocks of different mixers
-    if ( fdf_block(trim(lp)//'Mix',bfdf) ) then
+    lp = trim(prefix)//'.Mix'
 
-       ! We have a block of mixers
-       ! This list _only_ lists all mixing blocks that are to be defined
+    ! ensure nullification
+    call mixing_reset(mixers)
 
-       nm = 0
-       do while ( fdf_bline(bfdf,pline) ) 
-          if ( fdf_bnnames(pline) == 0 ) cycle
-          nm = nm + 1
-       end do
-       if ( nm == 0 ) then
-          call die('mixing: No mixing schemes selected. &
-               &Please at least add one mixer.')
-       end if
+    ! Return immediately if the user hasn't defined
+    ! an fdf-block for the mixing options...
+    if ( .not. fdf_block(trim(lp), bfdf) ) return
 
-       ! Allocate different mixers (we always add a linear
-       ! mixer in case the user "forgot"
-       call alloc_init(nm)
+    ! update mixing weight and kick mixing weight
+    w      = fdf_get(trim(lp)//'.Weight',w)
+    ! Get history length
+    n_hist = fdf_get(trim(lp)//'.History',n_hist)
+    ! Restart after this number of iterations
+    n_restart = fdf_get(trim(lp)//'.Restart',0)
+    n_save    = fdf_get(trim(lp)//'.Restart.Save',1)
+    ! negative savings are not allowed
+    n_save = max(0,n_save)
 
-       ! Rewind to grab names.
-       call fdf_brewind(bfdf)
-       nm = 0
-       do while ( fdf_bline(bfdf,pline) ) 
 
-          if ( fdf_bnnames(pline) == 0 ) cycle
 
-          nm = nm + 1
-          mixers(nm)%name = fdf_bnames(pline,1)
-
-       end do
-
-       ! Now read all mixers for this segment and their options
-       do im = 1 , nm
-
-          m => mixers(im)
-
-          call read_block(m, .true.)
-          
-       end do
-
-    else
-
-       nm = 1 ! the default mixer
-       if ( n_lin_before > 0 ) nm = nm + 1
-       if ( n_lin_after > 0 ) nm = nm + 1
-       if ( n_kick > 0 ) nm = nm + 1
-       
-       call alloc_init(nm)
-
-       ! Current processing index
-       im = 0
-
-       if ( n_lin_before > 0 ) then
-          im = im + 1
-          m => mixers(im)
-          m%name = 'Linear-Before'
-          m%m = MIX_LINEAR
-          m%n_itt = n_lin_before
-          m%w = w_lin_before
-          m%next => mixers(im+1)
-          call read_block(m, .false.)
-       end if
-
-       ! Setup the actual mixer
-       im = im + 1
-       im2 = im ! this index
-       m => mixers(im)
-       m%m = get_method(method)
-       select case ( m%m )
-       case ( MIX_LINEAR )
-          m%name = 'Linear'
-       case ( MIX_PULAY )
-          m%name = 'Pulay'
-       case ( MIX_BROYDEN )
-          m%name = 'Broyden'
-       case default
-          call die('mix: Unknown mixing option, error.')
-       end select
-       m%v = get_variant(m%m,variant)
-       call read_block(m, .false. )
-
-       if ( n_lin_after > 0 ) then
-          im = im + 1
-          m => mixers(im)
-          ! Signal to switch to this index after
-          ! convergence
-          mixers(im2)%n_itt = - im
-          m%name = 'Linear-After'
-          m%m = MIX_LINEAR
-          m%w = w_lin_after
-          m%n_itt = n_lin_after
-          ! jump back to previous after having run a
-          ! few iterations
-          m%next => mixers(im2)
-          call read_block(m, .false.)
-       end if
-
-       ! In case we have a kick, apply the kick here
-       ! This overrides the "linear.after" option
-       if ( n_kick > 0 ) then
-          im = im + 1
-          m => mixers(im)
-          m%name = 'Linear-Kick'
-          m%n_itt = 1
-          m%m = MIX_LINEAR
-          m%w = w_kick
-          m%next => mixers(im2)
-          
-          call read_block(m, .false.)
-          
-          ! set the default mixer to kick
-          mixers(im2)%n_itt = n_kick - 1
-          mixers(im2)%next => m
-          mixers(im2)%restart = n_kick - 1
-          mixers(im2)%restart_save = 0
-          
-       end if
-
+    ! Read in the options regarding the mixing options
+    nm = 0
+    do while ( fdf_bline(bfdf,pline) ) 
+       if ( fdf_bnnames(pline) == 0 ) cycle
+       nm = nm + 1
+    end do
+    if ( nm == 0 ) then
+       call die('mixing: No mixing schemes selected. &
+            &Please at least add one mixer.')
     end if
 
+    
+    ! Allocate all denoted mixers...
+    allocate(mixers(nm))
+    mixers(:)%w = w
+    mixers(:)%n_hist = n_hist
+    mixers(:)%restart = n_restart
+    mixers(:)%restart_save = n_save
+
+    
+    ! Rewind to grab names.
+    call fdf_brewind(bfdf)
+    nm = 0
+    do while ( fdf_bline(bfdf,pline) ) 
+       if ( fdf_bnnames(pline) == 0 ) cycle
+       
+       nm = nm + 1
+       mixers(nm)%name = fdf_bnames(pline,1)
+       
+    end do
+    
+    ! Now read all mixers for this segment and their options
+    do im = 1 , nm
+       
+       call read_block( mixers(im) )
+       
+    end do
+    
     ! Create history stack and associate correct 
     ! stack pointers
     call mixing_history_clear(mixers)
@@ -403,330 +248,330 @@ contains
 #endif
     
   contains
-    
-    function get_method(str) result(m)
-      character(len=*), intent(in) :: str
-      integer :: m
-      
-      if ( leqi(str,'linear') ) then
-         m = MIX_LINEAR
-      else if ( leqi(str,'pulay') .or. &
-           leqi(str, 'anderson') ) then
-         m = MIX_PULAY
-      else if ( leqi(str,'broyden') ) then
-         m = MIX_BROYDEN
-      else if ( leqi(str,'fire') ) then
-         m = MIX_FIRE
-         call die('mixing: FIRE currently not supported.')
-      else
-         call die('mixing: Unknown mixing variant.')
-      end if
 
-    end function get_method
+    subroutine read_block( m )
+      type(tMixer), intent(inout), target :: m
 
-    function get_variant(m,str) result(v)
-      integer, intent(in) :: m
-      character(len=*), intent(in) :: str
-      integer :: v
-
-      v = 0
-      select case ( m )
-      case ( MIX_LINEAR )
-         ! no variants
-      case ( MIX_PULAY ) 
-         v = 0
-         ! We do not implement tho non-stable version
-         ! There is no need to have an inferior Pulay mixer...
-         if ( leqi(str,'original') .or. &
-              leqi(str,'kresse') .or. leqi(str,'stable') ) then
-            ! stable version, will nearly always succeed on inversion
-            v = 0
-         else if ( leqi(str,'original+svd') .or. &
-              leqi(str,'kresse+svd') .or. leqi(str,'stable+svd') ) then
-            ! stable version, will nearly always succeed on inversion
-            v = 2
-         else if ( leqi(str,'gr') .or. &
-              leqi(str,'guarenteed-reduction') .or. &
-              leqi(str,'bowler-gillan') ) then
-            ! Guarenteed reduction version
-            v = 1
-         else if ( leqi(str,'gr+svd') .or. &
-              leqi(str,'guarenteed-reduction+svd') .or. &
-              leqi(str,'bowler-gillan+svd') ) then
-            ! Guarenteed reduction version
-            v = 3
-         end if
-      case ( MIX_BROYDEN )
-         v = 0
-      case ( MIX_FIRE ) 
-         ! no variants
-      end select
-
-    end function get_variant
-
-    function is_variant(ms,mm,vs,vm) result(bool)
-      character(len=*), intent(in) :: ms, vs
-      integer, intent(in) :: mm, vm
-      logical :: bool
-      integer :: im
-      bool = .false.
-      im = get_method(ms)
-      if ( im == mm ) then
-         bool = get_variant(im,vs) == vm
-      end if
-    end function is_variant
-
-    subroutine read_block(m, force)
-      type(tMixer), pointer :: m
-      ! Force the block to exist
-      logical, intent(in) :: force
-
-      logical :: is_block
-      integer :: n
+      character(len=64) :: opt
       
       ! create block string
-      opt = trim(lp)//'Mix.'//trim(m%name)
+      opt = trim(lp)//'.'//trim(m%name)
 
-      is_block = fdf_block(opt,bfdf)
-
-      ! First read method and variant
-      if ( is_block ) then
-
-         ! Default to the pulay method...
-         ! This enables NOT writing this in the block
-         method = 'pulay'
-         variant = ' '
-         
-         ! read options
-         do while ( fdf_bline(bfdf,pline) )
-            if ( fdf_bnnames(pline) == 0 ) cycle
-            
-            opt = fdf_bnames(pline,1)
-            
-            if ( leqi(opt,'method') ) then
-               
-               ! setting the method
-               method = fdf_bnames(pline,2)
-
-            else if ( leqi(opt,'variant') ) then
-               
-               variant = fdf_bnames(pline,2)
-
-            end if
-
-         end do
-
-         ! Retrieve the method and the variant
-         m%m = get_method(method)
-         m%v = get_variant(m%m,variant)
-
+      if ( .not. fdf_block(opt,bfdf) ) then
+         call die('Block: '//trim(opt)//' does not exist!')
       end if
 
-      ! Initialize generic options for this
-      ! mixing scheme
-      select case ( m%m )
-      case ( MIX_PULAY )
+      ! Default to the pulay method...
+      ! This enables NOT writing this in the block
+      method = 'pulay'
+      variant = ' '
+         
+      ! read options
+      do while ( fdf_bline(bfdf,pline) )
+         if ( fdf_bnnames(pline) == 0 ) cycle
+         
+         opt = fdf_bnames(pline,1)
+         
+         if ( leqi(opt,'method') ) then
+            
+            method = fdf_bnames(pline,2)
+            
+         else if ( leqi(opt,'variant') ) then
+            
+            variant = fdf_bnames(pline,2)
 
-         m%n_hist = n_pulay
-         m%w = w_pulay_damp
+         else if ( leqi(opt,'iterations') &
+              .or. leqi(opt,'itt') ) then
 
-      case ( MIX_BROYDEN )
+            m%n_itt = fdf_bintegers(pline,1)
+            
+         else if ( leqi(opt,'history') ) then
+            
+            m%n_hist = fdf_bintegers(pline,1)
 
-         m%n_hist = n_broy
-         m%w = w_broy
+         else if ( leqi(opt,'weight') .or. leqi(opt, 'w') ) then
+            
+            m%w = fdf_breals(pline,1)
+            
+         else if ( leqi(opt,'restart') ) then
+            
+            m%restart = fdf_bintegers(pline,1)
 
-      end select
+         else if ( leqi(opt,'restart.save') ) then
+            
+            m%restart_save = fdf_bintegers(pline,1)
+            m%restart_save = max(0,m%restart_save)
 
+         end if
+         
+      end do
 
+      
+      ! Retrieve the method and the variant
+      m%m = mix_method(method)
+      m%v = mix_method_variant(m%m, variant)
+
+      call mixing_init_mix( m )
+
+      
       ! Read the options for this mixer
-      if ( is_block ) then
-
-         ! Read the options for this mixer
-         call fdf_brewind(bfdf)
+      call fdf_brewind(bfdf)
+      
+      ! read options
+      do while ( fdf_bline(bfdf,pline) )
+         if ( fdf_bnnames(pline) == 0 ) cycle
          
-         ! read options
-         do while ( fdf_bline(bfdf,pline) )
-            if ( fdf_bnnames(pline) == 0 ) cycle
+         opt = fdf_bnames(pline,1)
+         
+         if ( leqi(opt,'next') ) then
             
-            opt = fdf_bnames(pline,1)
+            nullify(m%next)
             
-            if ( leqi(opt,'next') ) then
-
-               nullify(m%next)
-
-               opt2 = fdf_bnames(pline,2)
-               do im2 = 1 , nm
-                  if ( im2 == im ) continue
-                  if ( leqi(opt2,mixers(im2)%name) ) then
-                     m%next => mixers(im2)
-                     exit
-                  end if
-               end do
-
-               if ( .not. associated(m%next) ) then
-                  call die('mixing: Could not find next mixer. &
-                       &Ensure all mixers exist and their names.')
+            opt = fdf_bnames(pline,2)
+            do im2 = 1 , nm
+               if ( leqi(opt,mixers(im2)%name) ) then
+                  m%next => mixers(im2)
+                  exit
                end if
-
-               if ( associated(m%next,target=m) ) then
-                  call die('mixing: Next *must* not be it-self. &
-                       &Please change accordingly.')
-               end if
-
-            else if ( leqi(opt,'iterations') .or. &
-                 leqi(opt,'nitt') ) then
-
-               m%n_itt = fdf_bintegers(pline,1)
-
-            else if ( leqi(opt,'history') ) then
-
-               m%n_hist = fdf_bintegers(pline,1)
-
-            else if ( leqi(opt,'restart') ) then
-
-               m%restart = fdf_bintegers(pline,1)
-
-            else if ( leqi(opt,'restart.save') ) then
-
-               m%restart_save = fdf_bintegers(pline,1)
-               m%restart_save = max(0,m%restart_save)
+            end do
             
+            if ( .not. associated(m%next) ) then
+               call die('mixing: Could not find next mixer. &
+                    &Ensure all mixers exist and their names.')
             end if
 
-         end do
-         
-      else if ( force ) then
+            if ( associated(m%next, target=m) ) then
+               call die('mixing: Next *must* not be it-self. &
+                    &Please change accordingly.')
+            end if
+            
+         else if ( leqi(opt,'next.conv') ) then
+            
+            nullify(m%next_conv)
+            
+            opt = fdf_bnames(pline,2)
+            do im2 = 1 , nm
+               if ( leqi(opt,mixers(im2)%name) ) then
+                  m%next_conv => mixers(im2)
+                  exit
+               end if
+            end do
+            
+            if ( .not. associated(m%next_conv) ) then
+               call die('mixing: Could not find next convergence mixer. &
+                    &Ensure all mixers exist and their names.')
+            end if
 
-         write(*,*) 'Could not find block:'
-         write(*,*) trim(opt)
-         
-         call die('mixing: Could not find block &
-              &for mixing parameters')
+            if ( associated(m%next_conv,target=m) ) then
+               call die('mixing: next.conv *must* not be it-self. &
+                    &Please change accordingly.')
+            end if
 
-      end if
+         end if
 
-      ! Initialize generic options for this
-      select case ( m%m )
-      case ( MIX_PULAY )
+      end do
 
-         allocate(m%rv(I_SVD_COND:1))
-         m%rv(1) = w_pulay
-         
-      case ( MIX_BROYDEN )
-
-         ! step history as there is 1 extra 0
-         ! index
-         m%n_hist = m%n_hist + 1
-
-         ! allocate temporary array
-         n = 1 + m%n_hist * (m%n_hist + 1)
-         allocate(m%rv(I_SVD_COND:n))
-         m%rv(1) = w_broy_p
-
-      end select
-
-      select case ( m%m )
-      case ( MIX_LINEAR )
-         ! do nothing
-      case default
-
-         ! This is the restart parameter
-         ! I.e. if |f_k / f - 1| < rp
-         ! only works for positive rp
-         m%rv(I_PREVIOUS_RES) = huge(1._dp)
-         m%rv(I_P_RESTART) = -1._dp
-         m%rv(I_P_NEXT) = -1._dp
-         m%rv(I_SVD_COND) = svd_pulay_cond
-
-      end select
-
-      if ( m%m == MIX_PULAY .and. any(m%v == (/1,3/)) ) then
-         ! Ensure the restart is an even number
-         ! for the Guarenteed reduction.
-         ! This ensures correct handling of the F calculations
-         m%restart = m%restart + mod(m%restart,2)
-      end if
-
-      if ( 0 < m%restart .and. m%restart < m%n_hist ) then
-         ! change history to one above the restart
-         ! ensures that we can keep the data.
-         m%n_hist = m%restart + 1
-      end if
-
-      ! Ensure that the saved restarts is maximally
-      ! one less than the number of stored histories
-      m%restart_save = min(m%n_hist - 1,m%restart_save)
-
-      ! If the 'next' isn't associated, we MUST continue indefinitely
+      ! Ensure that if a next have not been specified
+      ! it will continue indefinitely.
       if ( .not. associated(m%next) ) then
          m%n_itt = 0
       end if
+
       
-      if ( is_block ) then
-
-         ! Read the options for this mixer
-         call fdf_brewind(bfdf)
+      ! Read the options for this mixer
+      call fdf_brewind(bfdf)
+      
+      ! read options
+      do while ( fdf_bline(bfdf,pline) )
+         ! skip lines without associated content
+         if ( fdf_bnnames(pline) == 0 ) cycle
          
-         ! read options
-         do while ( fdf_bline(bfdf,pline) )
-            ! skip lines without associated content
-            if ( fdf_bnnames(pline) == 0 ) cycle
+         opt = fdf_bnames(pline,1)
 
-            opt = fdf_bnames(pline,1)
+         ! Do options so that a pulay option may refer to
+         ! the actual names of the constants
+         if ( m%m == MIX_PULAY ) then
 
-            ! Generic options
-            if ( leqi(opt,'mixing.weight') .or. &
-                 leqi(opt,'alpha') .or. leqi(opt,'w') ) then
-
-               m%w = fdf_breals(pline,1)
+            ! The linear mixing weight
+            if ( leqi(opt,'weight.linear') &
+                 .or. leqi(opt,'w.linear') ) then
                
-            else if ( leqi(opt,'next.p') ) then
-
-               ! Only allow stepping to the next when
-               ! having a next associated
-               if ( associated(m%next) ) then
-                  m%rv(I_P_NEXT) = fdf_bvalues(pline,1)
-               end if
-
-            else if ( leqi(opt,'restart.p') ) then
-               
-               m%rv(I_P_RESTART) = fdf_bvalues(pline,1)
-               
-            else if ( leqi(opt,'svd.cond') ) then
-
-               m%rv(I_SVD_COND) = fdf_bvalues(pline,1)
-
-               ! These following options adhere to the
-               ! Pulay mixing schemes
-            else if ( leqi(opt,'damping') ) then
-
-               m%w = fdf_breals(pline,1)
-
-            else if ( leqi(opt,'weightP') .or. &
-                 leqi(opt,'w.prime') .or. leqi(opt,'alpha.init') ) then
-
                m%rv(1) = fdf_breals(pline,1)
 
+            else if ( leqi(opt,'svd.cond') ) then
+
+               ! This is only applicable to the Pulay
+               ! mixing scheme...
+               
+               m%rv(I_SVD_COND) = fdf_bvalues(pline,1)
+               
             end if
 
-         end do
+         end if
 
-      end if
+         
+         ! Generic options for all advanced methods...
+         if ( leqi(opt,'next.p') ) then
+
+            ! Only allow stepping to the next when
+            ! having a next associated
+            if ( associated(m%next) ) then
+               m%rv(I_P_NEXT) = fdf_bvalues(pline,1)
+            end if
+
+         else if ( leqi(opt,'restart.p') ) then
+
+            m%rv(I_P_RESTART) = fdf_bvalues(pline,1)
+
+         end if
+
+      end do
 
     end subroutine read_block
 
-    subroutine alloc_init(n)
-      integer :: n
-
-      allocate(mixers(n))
-      mixers(:)%w = w
-      mixers(:)%n_hist = n_hist
-      mixers(:)%restart = n_restart
-      mixers(:)%restart_save = n_save
-      
-    end subroutine alloc_init
-
   end subroutine mixing_init
+
+
+  !> Return the integer specification of the mixing type
+  !!
+  !! @param[in] str the character representation of the mixing type
+  !! @return the integer corresponding to the mixing type
+  function mix_method(str) result(m)
+    use fdf, only: leqi
+    character(len=*), intent(in) :: str
+    integer :: m
+
+    if ( leqi(str,'linear') ) then
+       m = MIX_LINEAR
+    else if ( leqi(str,'pulay') .or. &
+         leqi(str, 'anderson') ) then
+       m = MIX_PULAY
+    else if ( leqi(str,'broyden') ) then
+       m = MIX_BROYDEN
+    else if ( leqi(str,'fire') ) then
+       m = MIX_FIRE
+       call die('mixing: FIRE currently not supported.')
+    else
+       call die('mixing: Unknown mixing variant.')
+    end if
+
+  end function mix_method
+
+
+  !> Return the variant of the mixing method
+  !!
+  !! @param[in] m the integer type of the mixing method
+  !! @param[in] str the character specification of the mixing method variant
+  !! @return the variant of the mixing method
+  function mix_method_variant(m, str) result(v)
+    use fdf, only: leqi
+    integer, intent(in) :: m
+    character(len=*), intent(in) :: str
+    integer :: v
+
+    v = 0
+    select case ( m )
+    case ( MIX_LINEAR )
+       ! no variants
+    case ( MIX_PULAY ) 
+       v = 0
+       ! We do not implement tho non-stable version
+       ! There is no need to have an inferior Pulay mixer...
+       if ( leqi(str,'original') .or. &
+            leqi(str,'kresse') .or. leqi(str,'stable') ) then
+          ! stable version, will nearly always succeed on inversion
+          v = 0
+       else if ( leqi(str,'original+svd') .or. &
+            leqi(str,'kresse+svd') .or. leqi(str,'stable+svd') ) then
+          ! stable version, will nearly always succeed on inversion
+          v = 2
+       else if ( leqi(str,'gr') .or. &
+            leqi(str,'guarenteed-reduction') .or. &
+            leqi(str,'bowler-gillan') ) then
+          ! Guarenteed reduction version
+          v = 1
+       else if ( leqi(str,'gr+svd') .or. &
+            leqi(str,'guarenteed-reduction+svd') .or. &
+            leqi(str,'bowler-gillan+svd') ) then
+          ! Guarenteed reduction version
+          v = 3
+       end if
+    case ( MIX_BROYDEN )
+       ! Currently only one variant
+       v = 0
+    case ( MIX_FIRE ) 
+       ! no variants
+    end select
+
+  end function mix_method_variant
+
+  !> Initialize the mixer depending on the preset
+  !! options. Useful for external correct setup.
+  !!
+  !! @param[inout] mix mixer to be initialized
+  subroutine mixing_init_mix( mix )
+    type(tMixer), intent(inout) :: mix
+    integer :: n
+    
+    select case ( mix%m )
+    case ( MIX_PULAY )
+       
+       allocate(mix%rv(I_SVD_COND:1))
+       mix%rv(1) = mix%w
+       if ( mix%v == 1 .or. mix%v == 3 ) then
+          
+          ! The GR method requires an even number
+          ! of restart steps
+          ! And then we ensure the history to be aligned
+          ! with a restart (restart has precedence)
+          mix%restart = mix%restart + mod(mix%restart, 2)
+
+       end if
+       
+    case ( MIX_BROYDEN )
+       
+       ! step history as there is 1 extra 0
+       ! index
+       mix%n_hist = mix%n_hist + 1
+       
+       ! allocate temporary array
+       n = 1 + mix%n_hist * (mix%n_hist + 1)
+       allocate(mix%rv(I_SVD_COND:n))
+       mix%rv(1) = mix%w
+       
+    end select
+
+    if ( mix%restart < 0 ) then
+       call die('mixing: restart count must be positive')
+    end if
+
+    ! Correct amount of history in the mixing.
+    if ( mix%restart < huge(1) .and. &
+         mix%n_hist <= mix%restart ) then
+       mix%n_hist = mix%restart + 1
+    end if
+
+    mix%restart_save = min(mix%n_hist - 1, mix%restart_save)
+    mix%restart_save = max(0, mix%restart_save)
+
+    select case ( mix%m )
+    case ( MIX_LINEAR )
+       
+       ! do nothing
+       
+    case default
+
+       ! This is the restart parameter
+       ! I.e. if |f_k / f - 1| < rp
+       ! only works for positive rp
+       mix%rv(I_PREVIOUS_RES) = huge(1._dp)
+       mix%rv(I_P_RESTART) = -1._dp
+       mix%rv(I_P_NEXT) = -1._dp
+       mix%rv(I_SVD_COND) = 1.e-8_dp
+
+    end select
+    
+  end subroutine mixing_init_mix
 
 
   subroutine mixing_1d( mix, iscf, n, x1, F1, x2, ncoeff)
@@ -1210,8 +1055,12 @@ contains
        
     end if
 
-    
+
+    ! We follow the notation in
+    !  G.Kresse and J.Furthmuller, Comp. Mat. Sci. 6, 15, 1996
+
     ! The Pulay mixing variable is called G
+    !
     G = mix%w
     
     ! The Pulay stacks has this data layout:
@@ -1256,6 +1105,7 @@ contains
           call push_F(mix%stack(3), n, x2)
 
           ! The first Pulay step will do linear mixing
+          ! mix%rv(1) == linear mixing weight...
 !$OMP parallel do default(shared), private(i)
           do i = 1 , n
              x2(i) = x1(i) + F1(i) * mix%rv(1)
@@ -1280,6 +1130,7 @@ contains
     case ( 1 , 3 ) ! Guaranteed reduction Pulay
 
        ! Add the residual to the stack
+       ! Note this is the linear mixing weight...
        call push_F(mix%stack(1), n, F1, mix%rv(1))
 
        ! The history in this scheme is a little obscure... :)
@@ -1304,16 +1155,13 @@ contains
              
           end if
 
-          if ( mix%rv(1) < 1._dp ) then
-
-             ! do linear mixing
-             res => getstackval(mix,1)
+          ! do linear mixing
+          res => getstackval(mix,1)
 !$OMP parallel do default(shared), private(i)
-             do i = 1 , n
-                x2(i) = x1(i) + res(i)
-             end do
+          do i = 1 , n
+             x2(i) = x1(i) + res(i)
+          end do
 !$OMP end parallel do
-          end if
           
           return
 
@@ -2063,6 +1911,13 @@ contains
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Mixing weight',m%w
 
+          if ( m%n_hist > 0 .and. (&
+               associated(m%next) &
+               .or. associated(m%next_conv)) ) then
+             write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+                  '    Subsequent history steps',m%n_hist
+          end if
+
        case ( MIX_PULAY )
           
           write(*,'(2a,t50,''= '',a)') trim(fmt), &
@@ -2088,7 +1943,7 @@ contains
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Linear mixing weight',m%rv(1)
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
-               '    Damping',m%w
+               '    Mixing weight',m%w
           write(*,'(2a,t50,''= '',e10.4)') trim(fmt), &
                '    SVD condition',m%rv(I_SVD_COND)
           if ( m%rv(I_P_NEXT) > 0._dp ) then
@@ -2152,23 +2007,158 @@ contains
 
        end select
 
-       if ( m%n_itt < 0 ) then
-          write(*,'(2a,t50,''= '',a)') trim(fmt), &
-               '    After convergence mixer',trim(m%next%name)
-       else if ( m%n_itt > 0 ) then
+       if ( m%n_itt > 0 ) then
           write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                '    Number of mixing iterations',m%n_itt
+          if ( associated(m%next) ) then
+             write(*,'(2a,t50,''= '',a)') trim(fmt), &
+                  '    Following mixer',trim(m%next%name)
+          else
+             call die('Something went wrong, if the mixer does not go &
+                  &indefinitely it should have a following method.')
+          end if
        end if
-
-       if ( associated(m%next) ) then
+       
+       if ( associated(m%next_conv) ) then
           write(*,'(2a,t50,''= '',a)') trim(fmt), &
-               '    Following mixing method',trim(m%next%name)
+               '    Following mixer upon convergence',trim(m%next_conv%name)
        end if
           
     end do
 
   end subroutine mixing_print
 
+
+  subroutine mixing_print_block( prefix, mixers )
+    
+    character(len=*), intent(in) :: prefix
+    type(tMixer), intent(in), target :: mixers(:)
+
+    type(tMixer), pointer :: m
+
+    logical :: bool
+    integer :: i
+
+    if ( .not. IONode ) return
+
+    ! Write block of input
+    write(*,'(/3a)')'%block ',trim(prefix), '.Mix'
+    do i = 1 , size(mixers)
+       m => mixers(i)
+       write(*,'(t3,a)') m%name
+    end do
+    write(*,'(3a)')'%endblock ',trim(prefix), '.Mix'
+
+
+    ! Print out options for all mixers
+    do i = 1 , size(mixers)
+       
+
+       m => mixers(i)
+
+       ! Write out this block
+       write(*,'(/4a)')'%block ',trim(prefix),'.Mix.',trim(m%name)
+
+       write(*,'(t3,a)') '# Mixing method'
+
+       ! Write out method
+       select case ( m%m )
+       case ( MIX_LINEAR )
+          
+          write(*,'(t2,2(tr1,a))') 'method','linear'
+
+       case ( MIX_PULAY )
+
+          write(*,'(t2,2(tr1,a))') 'method','pulay'
+          select case ( m%v )
+          case ( 0 )
+             write(*,'(t2,2(tr1,a))') 'variant','stable'
+          case ( 1 )
+             write(*,'(t2,2(tr1,a))') 'variant','GR'
+          case ( 2 )
+             write(*,'(t2,2(tr1,a))') 'variant','stable+SVD'
+          case ( 3 )
+             write(*,'(t2,2(tr1,a))') 'variant','GR+SVD'
+          end select
+
+       case ( MIX_BROYDEN )
+
+          write(*,'(t2,2(tr1,a))') 'method','broyden'
+
+          ! currently no variants exists
+          
+       end select
+
+
+       
+       ! remark
+       write(*,'(/,t3,a)') '# Mixing options'
+
+       ! Weight
+       ! For Broyden this is the inverse Jacobian
+       write(*,'(t3,a,f6.4)') 'weight ', m%w
+       select case ( m%m )
+       case ( MIX_PULAY, MIX_BROYDEN )
+          write(*,'(t3,a,f6.4)') 'weight.linear ', m%rv(1)
+       end select
+          
+       if ( m%n_hist > 0 ) then
+          write(*,'(t3,a,i0)') 'history ', m%n_hist
+       end if
+
+       bool = .false.
+       if ( m%restart < huge(1) ) then
+          write(*,'(t3,a,i0)') 'restart ', m%restart
+          bool = .true.
+       end if
+       select case ( m%m )
+       case ( MIX_PULAY, MIX_BROYDEN )
+          if ( m%rv(I_P_RESTART) > 0._dp ) then
+             write(*,'(t3,a,e10.5)')'restart.p ', m%rv(I_P_RESTART)
+             bool = .true.
+          end if
+       end select
+       if ( bool ) then
+          write(*,'(t3,a,i0)')'restart.save ', m%restart_save
+       end if
+
+
+
+       ! remark
+       write(*,'(/,t3,a)') '# Continuation options'
+
+       bool = .false.
+       if ( m%n_itt > 0 ) then
+          write(*,'(t3,a,i0)')'iterations ', m%n_itt
+          bool = .true.
+       end if
+       select case ( m%m )
+       case ( MIX_PULAY , MIX_BROYDEN )
+          if ( m%rv(I_P_NEXT) > 0._dp ) then
+             write(*,'(t3,a,f6.4)')'next.p ', m%rv(I_P_NEXT)
+             bool = .true.
+          end if
+       end select
+       if ( bool .and. associated(m%next) ) then
+          write(*,'(t2,2(tr1,a))') 'next', trim(m%next%name)
+       else if ( bool ) then
+          call die('Something went wrong, if the mixer does not go &
+               &indefinitely it should have a following method.')
+       end if
+       
+       if ( associated(m%next_conv) ) then
+          write(*,'(t2,2(tr1,a))') 'next.conv', trim(m%next_conv%name)
+       end if
+
+
+       write(*,'(4a)')'%endblock ',trim(prefix),'.Mix.',trim(m%name)
+       
+    end do
+
+    write(*,*) ! new-line
+    
+  end subroutine mixing_print_block
+  
 
   ! Calculate the inverse of a matrix
   subroutine inverse(n, A, B, info )
@@ -2325,8 +2315,8 @@ contains
     
   end subroutine svd
 
+  
   ! Stack handling routines
-
   function stack_check(stack,n) result(check)
     type(Fstack_dData1D), intent(inout) :: stack
     integer, intent(in) :: n
