@@ -167,23 +167,23 @@ contains
     character(len=70) :: method, variant
 
     ! Default mixing options...
-    if ( fdf_get('Mix.Debug',.false.) ) then
+    if ( fdf_get('Mixer.Debug',.false.) ) then
        debug_mix = IONode
        debug_msg = 'mix:'
     end if
-    if ( fdf_get('Mix.Debug.MPI',.false.) ) then
+    if ( fdf_get('Mixer.Debug.MPI',.false.) ) then
        debug_mix = .true.
        write(debug_msg,'(a,i0,a)') 'mix (',Node,'):'
     end if
 
-    lp = trim(prefix)//'.Mix'
+    lp = trim(prefix)//'.Mixer'
 
     ! ensure nullification
     call mixing_reset(mixers)
 
     ! Return immediately if the user hasn't defined
     ! an fdf-block for the mixing options...
-    if ( .not. fdf_block(trim(lp), bfdf) ) return
+    if ( .not. fdf_block(trim(lp)//'s', bfdf) ) return
 
     ! update mixing weight and kick mixing weight
     w      = fdf_get(trim(lp)//'.Weight',w)
@@ -2042,12 +2042,12 @@ contains
     if ( .not. IONode ) return
 
     ! Write block of input
-    write(*,'(/3a)')'%block ',trim(prefix), '.Mix'
+    write(*,'(/3a)')'%block ',trim(prefix), '.Mixers'
     do i = 1 , size(mixers)
        m => mixers(i)
        write(*,'(t3,a)') m%name
     end do
-    write(*,'(3a)')'%endblock ',trim(prefix), '.Mix'
+    write(*,'(3a)')'%endblock ',trim(prefix), '.Mixers'
 
 
     ! Print out options for all mixers
@@ -2057,7 +2057,7 @@ contains
        m => mixers(i)
 
        ! Write out this block
-       write(*,'(/4a)')'%block ',trim(prefix),'.Mix.',trim(m%name)
+       write(*,'(/4a)')'%block ',trim(prefix),'.Mixer.',trim(m%name)
 
        write(*,'(t3,a)') '# Mixing method'
 
@@ -2151,7 +2151,7 @@ contains
        end if
 
 
-       write(*,'(4a)')'%endblock ',trim(prefix),'.Mix.',trim(m%name)
+       write(*,'(4a)')'%endblock ',trim(prefix),'.Mixer.',trim(m%name)
        
     end do
 

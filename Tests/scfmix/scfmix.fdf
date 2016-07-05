@@ -3,14 +3,14 @@
 #DM.NumberPulay          4
 
 # Default stuff...
-Mix.Debug.MPI
-SCF.Mix.Weight 0.01
-SCF.Mix.History 4
-SCF.Mix.Restart 2
-SCF.Mix.Restart.Save 3
+Mixer.Debug.MPI
+SCF.Mixer.Weight 0.01
+SCF.Mixer.History 4
+SCF.Mixer.Restart 2
+SCF.Mixer.Restart.Save 3
 
 # Define all the mixing methods used
-%block SCF.Mix
+%block SCF.Mixers
   linear-before
   pulay
   broyden
@@ -18,33 +18,33 @@ SCF.Mix.Restart.Save 3
   kick
 %endblock
 
-%block SCF.Mix.linear-before
+%block SCF.Mixer.linear-before
   method linear
   iterations 2
   history 2
   next pulay
 %endblock
 
-%block SCF.Mix.pulay
+%block SCF.Mixer.pulay
   method pulay
   iterations 10
   next kick
   next.conv linear-after
 %endblock
 
-%block SCF.Mix.linear-after
+%block SCF.Mixer.linear-after
   method linear
   w 0.025
 %endblock
 
-%block SCF.Mix.kick
+%block SCF.Mixer.kick
   method linear
   w 0.1
   iterations 1
   next broyden
 %endblock
 
-%block SCF.Mix.broyden
+%block SCF.Mixer.broyden
   method broyden
   iterations 10
   next kick

@@ -12,6 +12,8 @@ module m_mixing_scf
   type(tMixer), pointer :: scf_mixs(:) => null()
   type(tMixer), pointer :: scf_mix => null()
 
+
+  ! Default mixing, no discrepancy between spin-components
   integer, parameter :: MIX_SPIN_ALL = 1
   ! Only use spinor components for mixing
   integer, parameter :: MIX_SPIN_SPINOR = 2
@@ -27,8 +29,8 @@ module m_mixing_scf
 
   public :: scf_mixs, scf_mix
 
-  public :: MIX_SPIN_ALL, MIX_SPIN_SPINOR, MIX_SPIN_SUM, MIX_SPIN_SUM_DIFF
   public :: mix_spin
+  public :: MIX_SPIN_ALL, MIX_SPIN_SPINOR, MIX_SPIN_SUM, MIX_SPIN_SUM_DIFF
 
   public :: mixing_scf_init
   public :: mixing_scf_print, mixing_scf_print_block
@@ -93,7 +95,7 @@ contains
 
 
     ! Check for existance of the SCF.Mix block
-    if ( fdf_block('SCF.Mix', bfdf) ) then
+    if ( fdf_block('SCF.Mixers', bfdf) ) then
        
        call mixing_init('SCF', scf_mixs, Comm = Comm )
 
@@ -142,16 +144,16 @@ contains
     ! Read options in new format
 
     ! Get history length
-    n_hist = fdf_get('SCF.Mix.History', n_hist)
+    n_hist = fdf_get('SCF.Mixer.History', n_hist)
 
     ! update mixing weight and kick mixing weight
-    w      = fdf_get('SCF.Mix.Weight',w)
-    n_kick = fdf_get('SCF.Mix.Kick',n_kick)
-    w_kick = fdf_get('SCF.Mix.Kick.Weight',w_kick)
+    w      = fdf_get('SCF.Mixer.Weight',w)
+    n_kick = fdf_get('SCF.Mixer.Kick',n_kick)
+    w_kick = fdf_get('SCF.Mixer.Kick.Weight',w_kick)
 
     ! Restart after this number of iterations
-    n_restart = fdf_get('SCF.Mix.Restart', 0)
-    n_save    = fdf_get('SCF.Mix.Restart.Save', 0)
+    n_restart = fdf_get('SCF.Mixer.Restart', 0)
+    n_save    = fdf_get('SCF.Mixer.Restart.Save', 0)
     ! negative savings are not allowed
     n_save = max(0, n_save)
 
@@ -163,16 +165,17 @@ contains
     else
        method = 'Linear'
     end if
-    variant = fdf_get('SCF.Mix.Variant', 'original')
+    method = fdf_get('SCF.Mixer.Method', trim(method))
+    variant = fdf_get('SCF.Mixer.Variant', 'original')
 
     
     ! Determine whether linear mixing should be
     ! performed, before or after the "advanced" mixing
-    n_lin_before = fdf_get('SCF.Mix.Linear.Before', 0)
-    w_lin_before = fdf_get('SCF.Mix.Linear.Before.Weight', w)
+    n_lin_before = fdf_get('SCF.Mixer.Linear.Before', 0)
+    w_lin_before = fdf_get('SCF.Mixer.Linear.Before.Weight', w)
 
-    n_lin_after = fdf_get('SCF.Mix.Linear.After', 0)
-    w_lin_after = fdf_get('SCF.Mix.Linear.After.Weight', w_lin_after)
+    n_lin_after = fdf_get('SCF.Mixer.Linear.After', 0)
+    w_lin_after = fdf_get('SCF.Mixer.Linear.After.Weight', w_lin_after)
     
     ! Determine total number of mixers
     nm = 1
@@ -280,7 +283,7 @@ contains
        case ( MIX_SPIN_SPINOR )
           write(*, '(2a,t50,a)') 'mix.SCF: Spin-component mixing','spinor'
           if ( nspin <= 2 ) then
-             call die("SCF.Mix.Spin spinor option only valid for &
+             call die("SCF.Mixer.Spin spinor option only valid for &
                   &non-collinear and spin-orbit calculations")
           end if
        case ( MIX_SPIN_SUM )

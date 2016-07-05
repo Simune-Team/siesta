@@ -348,7 +348,10 @@ subroutine read_options( na, ns, nspin )
           units="cmlUnits:countable")
   endif
 
-  call fdf_deprecated('TS.MixH','MixHamiltonian') ! Prepare for obsoletion
+  call fdf_deprecated('TS.MixH','SCF.Mix')
+  call fdf_deprecated('MixHamiltonian','SCF.Mix')
+  call fdf_deprecated('MixCharge','SCF.Mix')
+
   mixH = fdf_get('TS.MixH',mixH_def) ! Catch old-style keyword (prefer new key)
   mixH = fdf_get('MixHamiltonian',mixH)
   mix_charge = fdf_get('MixCharge',.false.)
@@ -360,29 +363,30 @@ subroutine read_options( na, ns, nspin )
   else
      ctmp = 'density'
   end if
-  ctmp = fdf_get('Mix', trim(ctmp))
-  if ( leqi(ctmp, 'charge') ) then
+  
+  ctmp = fdf_get('SCF.Mix', trim(ctmp))
+  if ( leqi(ctmp, 'charge') .or. &
+       leqi(ctmp,'rho') ) then
      mix_charge = .true.
-  else if ( leqi(ctmp, 'Hamiltonian') ) then
+     mixH = .false.
+  else if ( leqi(ctmp, 'Hamiltonian') &
+       .or. leqi(ctmp, 'H') ) then
      mixH = .true.
+  else if ( leqi(ctmp, 'density') &
+       .or. leqi(ctmp, 'density-matrix') &
+       .or. leqi(ctmp, 'DM') ) then
+     mixH = .false.
   end if
-
+  
+  if ( IONode ) then
   if ( mix_charge ) then
-     if (ionode) then
-        write(6,1) 'redata: Mix charge density rho_g', mix_charge
-     endif
-     if (mixH) then
-        mixH = .false.
-        if (ionode) then
-           write(6,2) 'redata: ***MixCharge takes precedence over MixH'
-        endif
-     endif
-  endif
-  if (mixH) then
-     if (ionode) then
-        write(6,1) 'redata: Mix Hamiltonian instead of DM', mixH
-     endif
-  endif
+     write(6,3) 'redata: SCF mix quantity', 'charge'
+  else if ( mixH ) then
+     write(6,3) 'redata: SCF mix quantity', 'Hamiltonian'
+  else
+     write(6,3) 'redata: SCF mix quantity', 'density-matrix'
+  end if
+  end if
 
   ! Options for pre-4.0 compatibility
   compat_pre_v4_DM_H  = fdf_get('Compat-pre-v4-DM-H',.false.)
@@ -417,7 +421,7 @@ subroutine read_options( na, ns, nspin )
   ! Mix density matrix on first SCF step (mix)
   mix_scf_first = fdf_get('DM.MixSCF1', &
        .not. compat_pre_v4_DM_H)
-  mix_scf_first = fdf_get('SCF.Mix.First', mix_scf_first)
+  mix_scf_first = fdf_get('SCF.Mixer.First', mix_scf_first)
   if (ionode) then
      write(6,1) 'redata: Mix DM in first SCF step',mix_scf_first
   endif
