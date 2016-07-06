@@ -464,7 +464,7 @@ to your \texttt{h2o} working directory.
 \noindent
 Now you are ready to run the program:
 
-\texttt{./siesta < h2o.fdf \pipe\ tee h2o.out}
+\texttt{./siesta < h2o.fdf | tee h2o.out}
 
 \noindent
 (If you are running the parallel version you should use some other
@@ -3114,6 +3114,433 @@ the calculation will stop on the first SCF convergence failure.
 \subsubsection{Mixing options}
 \index{SCF!mixing}
 
+Reaching self-consistency is heavily relying on the used mixing
+parameters.
+Any user, will be adviced to test mixing options for their
+calculations as choosing optimal parameters can mean a difference of
+several orders of consistency cycles. 
+
+
+\begin{fdfentry}{SCF.Mix}[string]<density|Hamiltonian|charge>
+  \index{SCF!mixing}
+  Control what physical quantity to mix in the self-consistent cycle.
+
+  The default is mixing the density matrix, while mixing the
+  Hamiltonian might be better than density-matrix mixing in most
+  cases. It is seldom worse.
+
+  \begin{fdfoptions}
+    \option[density]%
+    Mix the density matrix.
+
+    \option[Hamiltonian]%
+    Mix the Hamiltonian matrix.
+
+    \option[charge]%
+    Mix the real-space charge density.
+    
+  \end{fdfoptions}
+  
+  \note Real-space charge density does not follow the regular options
+  that adhere to density-matrix or Hamiltonian mixing.
+
+\end{fdfentry}
+
+\begin{fdfentry}{SCF.Mix!Spin}[string]<all|spinor|sum|sum+diff>
+
+  Controls how the mixing is performed using spin-polarized
+  calculations. 
+  
+  \begin{fdfoptions}
+    \option[all] %
+    Use all spin-components in the mixing
+
+    \option[spinor] %
+    Estimate mixing coefficients using the spinor components
+
+    \option[sum] %
+    Estimate mixing coefficients using the sum of the spinor
+    components 
+
+    \option[sum+diff] %
+    Estimate mixing coefficients using the sum \emph{and} the
+    difference between the spinor components 
+  \end{fdfoptions}
+
+  \note this option only influences density-matrix ($\DM$) or
+  Hamiltonian ($\Ham$) mixing when using anything but the
+  \fdf*{linear} mixing scheme. And it does not influence not charge
+  ($\rho$) mixing.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{SCF.Mix!First}[logical]<true|false> 
+  
+  Whether the first SCF should be mixed or it uses the output as input
+  in the next SCF step. It is generally advised to set this to true,
+  at least when restarting calculations.
+  
+\end{fdfentry}
+
+
+\subsubsection{Mixing density-matrix or Hamiltonian}
+
+In the following the density matrix ($\DM$) will be used in the
+equations, while it for Hamiltonian mixing it should be replaced by
+the Hamiltonian matrix.
+%
+Also we define $\Res[i] = \DM^i_{\mathrm{out}} - \DM^i_{\mathrm{in}}$ and 
+$\RRes[i] = \Res[i] - \Res[i-1]$.
+
+\begin{fdfentry}{SCF.Mixer!Method}[string]<Pulay|Broyden|Linear>
+
+  Choose the mixing algorithm between different methods. Each method
+  may have different variants, see \fdf{SCF.Mixer!Variant}.
+  
+  \begin{fdfoptions}
+
+    \option[Linear] %
+    \index{SCF!mixing!Linear}
+    A simple linear extrapolation of the input matrix as
+    \begin{equation}
+      \DM^{n+1}_{\mathrm{in}} = \DM^n_{\mathrm{in}} + w \Res[n].
+    \end{equation}
+
+    \option[Pulay] %
+    \index{SCF!mixing!Pulay}
+    Using the Pulay mixing method corresponds using the
+    \cite{Kresse1996} variant. It relies on the previous $N$ steps and
+    uses those for estimating an optimal input
+    $\DM^{n+1}_{\mathrm{in}}$ for the following iteration. The
+    equation can be written as
+    \begin{equation}
+      \DM^{n+1}_{\mathrm{in}} = \DM^n_{\mathrm{in}} + G \Res[n]
+      + \sum_{i=n-N+1}^{N-1} \alpha_i (G \Res[i] + G \RRes[i]),
+    \end{equation}
+    where $G$ is the damping factor of the Pulay mixing (also known as
+    the mixing weight).
+    The values $\alpha_i$ are calculated using this formula
+    \begin{equation}
+      \alpha_i = - \sum_{j=1}^{N-1}\mathbf A_{ji}^{-1} 
+         \langle \RRes[j] | \Res[N] \rangle,
+    \end{equation}    
+    with $\mathbf A_{ji} = \langle \RRes[j] | \RRes[i] \rangle$.
+
+    In \siesta\ $G$ is a constant, and not a matrix.
+
+    \note Pulay mixing is a special case of Broyden mixing, see the
+    Broyden method.
+
+    \option[Broyden] %
+    \index{SCF!mixing!Broyden}
+    The Broyden mixing is mixing method relying on the previous $N$
+    steps in the history for calculating an optimum input
+    $\DM^{n+1}_{\mathrm{in}}$ for the following iteration.  The
+    equation can be written as
+    \begin{equation}
+      ....
+    \end{equation}
+
+  \end{fdfoptions}
+  
+\end{fdfentry}
+
+\begin{fdfentry}{SCF.Mixer!Variant}[string]<original>
+
+  Choose the variant of the mixing method.
+
+  \begin{fdfoptions}
+
+    \option[Pulay] %
+    This is implemented in two variants:
+    \begin{fdfoptions}
+
+      \option[original$\vert$kresse]%
+      The original\footnote{As such the ``original'' version is a
+          variant it-self. But this is more stable in the far majority
+          of cases.} Pulay mixing scheme, as implemented in
+      \cite{Kresse1996}.
+      
+      \option[GR] %
+      The ``guaranteed-reduction'' variant of Pulay,
+      \cite{Bowler2000}. This variant has a special convergence
+      path. It interchanges between linear and Pulay mixing thus using
+      the exact gradient at each $\DM^n_{\mathrm{in}}$.
+      For relatively simple systems this may be advantageous to
+      use. However, for complex systems it may be worse until it
+      reaches a convergence basin.
+
+    \end{fdfoptions}
+
+  \end{fdfoptions}
+
+\end{fdfentry}
+
+\begin{fdfentry}{SCF.Mixer!Weight}[real]<0.25>%
+  \fdfindex{DM.MixingWeight}%
+  \fdfindex{DM.MixingWeight}[|see SCF.Mixer.Weight]
+
+  The mixing weight used to mix the quantity.
+  In the linear mixing case this refers to
+  \begin{equation}
+    \DM^{n+1}_{\mathrm{in}} = \DM^n_{\mathrm{in}} + w \Res[n].
+  \end{equation}
+  For details regarding the other methods please see \fdf{SCF.Mixer!Method}.
+
+\end{fdfentry}
+
+
+\begin{fdfentry}{SCF.Mixer!History}[integer]<2>%
+  \fdfindex{DM.NumberPulay}[|see SCF.Mixer.History]%
+  \fdfindex{DM.NumberBroyden}[|see SCF.Mixer.History]
+
+  Number of previous SCF steps used in estimating the following input.
+  Increasing this number, typically, increases stability and a number
+  of around 6 or above may be advised.
+  
+\end{fdfentry}
+
+
+\begin{fdfentry}{SCF.Mixer!Kick}[integer]<0>%
+  \fdfindex{DM.NumberKick}[|see SCF.Mixer.Kick]
+
+  After every $N$ SCF steps a linear mix is inserted to \emph{kick}
+  the SCF cycle out of a possible local minimum. 
+
+  The mixing weight for this linear kick is determined by \fdf{SCF.Mixer!Kick.Weight}.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{SCF.Mixer!Kick.Weight}[real]<\fdfabstract{SCF.Mixer.Weight}>%
+  \fdfindex{DM.KickMixingWeight}[|see SCF.Mixer.Kick.Weight]
+
+  The mixing weight for the linear kick (if used).
+  
+\end{fdfentry}
+
+
+
+\begin{fdfentry}{SCF.Mixer!Restart}[integer]<0>
+
+  When using advanced mixers (Pulay/Broyden) the mixing scheme may
+  periodically restart the history. This may greatly improve the
+  convergence path as local constraints in the minimization process
+  are periodically removed. This method has similarity to the method
+  proposed in \cite{Banerjee2016} and is a special case of the
+  \fdf{SCF.Mixer!Kick} method.
+
+  Please see \fdf{SCF.Mixer!Restart.Save} which is advised to be set
+  simultaneously. 
+  
+\end{fdfentry}
+
+\begin{fdfentry}{SCF.Mixer!Restart.Save}[integer]<1>
+
+  When restarting the history of saved SCF steps one may choose to
+  save a subset of the latest history steps.
+  %
+  When using \fdf{SCF.Mixer!Restart} it is encouraged to also save a
+  couple of previous history steps.
+  
+\end{fdfentry}
+
+
+\begin{fdfentry}{SCF.Mixer!Linear.After}[integer]<-1>
+
+  After reaching convergence one may run additional SCF cycles using a
+  linear mixing scheme. If this has a value $\ge 0$ \siesta\ will
+  perform linear mixing after it has converged using the regular
+  mixing method (\fdf{SCF.Mixer!Method}).
+
+  The mixing weight for this linear mixing is controlled by \fdf{SCF.Mixer!Linear.After.Weight}.
+
+\end{fdfentry}
+
+
+
+\begin{fdfentry}{SCF.Mixer!Linear.After.Weight}[real]<\fdfabstract{SCF.Mixer.Weight}>
+
+  After reaching convergence one may run additional SCF cycles using a
+  linear mixing scheme. If this has a value $\ge 0$ \siesta\ will
+  perform linear mixing after it has converged using the regular
+  mixing method (\fdf{SCF.Mixer!Method}).
+
+  The mixing weight for this linear mixing is controlled by \fdf{SCF.Mixer!Linear.After.Weight}.
+
+\end{fdfentry}
+
+In conjunction with the above simple settings controlling the SCF
+cycle \siesta\ employs a very configurable mixing scheme. In essence
+one may switch mixing methods, arbitrarily, during the SCF cycle via
+control commands. This can greatly speed up convergence. 
+
+\begin{fdfentry}{SCF.Mixers}[block]
+  
+  Each line in this block defines a separate mixer that is defined in
+  a subsequent \fdf*{SCF.Mixer.<>} block.
+
+  The first line is the initial mixer used.
+
+  See the following options for controlling individual mixing
+  methods. 
+  
+  \note If this block is defined you \emph{must} define all mixing
+  parameters individually.
+
+\end{fdfentry}
+
+
+\begin{fdfentry}{SCF.Mixer.<>}[block]
+
+  This block controls the mixer named \fdf*{<>}. 
+
+  \begin{fdfoptions}
+
+    \option[method]%
+    \fdfindex{SCF.Mixer.<>!method}%
+    Define the method for the mixer, see \fdf{SCF.Mixer!Method} for
+    possible values.
+
+    \option[variant]%
+    \fdfindex{SCF.Mixer.<>!variant}%
+    Define the variant of the method, see \fdf{SCF.Mixer!Variant} for
+    possible values.
+
+    \option[weight|w]%
+    \fdfindex{SCF.Mixer.<>!weight}%
+    Define the mixing weight for the mixing scheme, see
+    \fdf{SCF.Mixer!Weight}.
+
+    \option[history]%
+    \fdfindex{SCF.Mixer.<>!history}%
+    Define number of previous history steps used in the minimization process, see
+    \fdf{SCF.Mixer!History}.
+
+    \option[restart]%
+    \fdfindex{SCF.Mixer.<>!restart}%
+    Define the periodic restart of the saved history, see
+    \fdf{SCF.Mixer!Restart}.
+
+    \option[restart.save]%
+    \fdfindex{SCF.Mixer.<>!restart.save}%
+    Define number of latest history steps retained when restarting the
+    history, see \fdf{SCF.Mixer!Restart.Save}.
+
+    \option[iterations]%
+    \fdfindex{SCF.Mixer.<>!iterations}%
+    Define the maximum number of iterations this mixer should run
+    before changing to another mixing method.
+
+    \note this \emph{must} be used in conjunction with the \fdf*{next} setting.
+
+    \option[next \fdf*{<>}]%
+    \fdfindex{SCF.Mixer.<>!next}%
+    Specify the name of the next mixing scheme after having conducted
+    \fdf*{iterations} SCF cycles using this mixing method.
+
+    \option[next.conv \fdf*{<>}]%
+    \fdfindex{SCF.Mixer.<>!next.conv}%
+    If SCF convergence is reached using this mixer, switch to the
+    mixing scheme via \fdf*{<>}. Then proceed with the SCF cycle.
+
+    \option[next.p]%
+    \fdfindex{SCF.Mixer.<>!next.p}%
+    If the relative difference between the latest two residuals is
+    below this quantity, the mixer will switch to the method given in
+    \fdf*{next}.
+    Thus if
+    \begin{equation}
+      \frac{\langle \Res[i]|\Res[i]\rangle - \langle
+          \Res[i-1]|\Res[i-1]\rangle}%
+      {\langle \Res[i-1]|\Res[i-1]\rangle} <
+      \fdf*{next.p}
+    \end{equation}
+    is fulfilled it will skip to the next mixer.
+
+    \option[restart.p]%
+    \fdfindex{SCF.Mixer.<>!restart.p}%
+    If the relative difference between the latest two residuals is
+    below this quantity, the mixer will restart the history.
+    Thus if
+    \begin{equation}
+      \frac{\langle \Res[i]|\Res[i]\rangle - \langle
+          \Res[i-1]|\Res[i-1]\rangle}%
+      {\langle \Res[i-1]|\Res[i-1]\rangle} <
+      \fdf*{restart.p}
+    \end{equation}
+    is fulfilled it will reset the history.
+    
+  \end{fdfoptions}
+    
+\end{fdfentry}
+
+
+The options covered now may be exemplified in these examples. If the
+input file contains:
+\begin{fdfexample}
+  SCF.Mixer.Method pulay
+  SCF.Mixer.Weight 0.05
+  SCF.Mixer.History 10
+  SCF.Mixer.Restart 25
+  SCF.Mixer.Restart.Save 4
+  SCF.Mixer.Linear.After 0
+  SCF.Mixer.Linear.After.Weight 0.1
+\end{fdfexample}
+
+This may be equivalently setup using the more advanced input blocks:
+\begin{fdfexample}
+  %block SCF.Mixers
+    init
+    final
+  %endblock
+
+  %block SCF.Mixer.init
+     method pulay
+     weight 0.05
+     history 10
+     restart 25
+     restart.save 4
+     next.conv final
+  %endblock
+
+  %block SCF.Mixer.final
+     method linear
+     weight 0.1
+  %endblock
+\end{fdfexample}
+
+This advanced setup may be used to change mixers during the SCF to
+change certain parameters of the mixing method, or fully change the
+method for mixing. For instance it may be advantageous to increase the
+mixing weight once a certain degree of self-consistency has been
+reached. In the following example we change the mixing method to a
+different scheme by increasing the weight and decreasing the history steps:
+\begin{fdfexample}
+  %block SCF.Mixers
+    init
+    final
+  %endblock
+
+  %block SCF.Mixer.init
+     method pulay
+     weight 0.05
+     history 10
+     next final
+     # Switch when the relative residual goes below 5%
+     next.p 0.05
+  %endblock
+
+  %block SCF.Mixer.final
+     method pulay
+     weight 0.1
+     history 6
+  %endblock
+\end{fdfexample}
+
+In essence, very complicated schemes of convergence may be created
+using the block's input.
+
+\subsubsection{Deprecated mixing options}
 
 \begin{description}
 
@@ -3173,34 +3600,12 @@ turn this option on, or use the compatibility switch \textbf{compat-pre-v4-dm-h}
 \index{SCF!compat-pre4-dm-h} \index{compat-pre4-dm-h@\textbf{compat-pre4-dm-h}} If this logical
   variable is turned on, the above two options regarding mixing after
   convergence and recomputation of H after the scf cycle will be
-  turned on. Also \fdf{DM.MixSCF1} will default to \fdf{.false.}.
-
-\item[\textbf{SCF.Mix}] (\textit{string}):
-\index{SCF.Mix@\textbf{SCF.Mix}}
-
-Select the mixing method in the SCF cycle.
-
-The currently available mixing algorithms are:
-
-\begin{description}
-  \item[linear] Linear mixing
-
-  \item[Pulay] Pulay mixing
-
-  Comes in variants \fdf*{original} or \fdf*{stable}
-  \item[Broyden] Broyden mixing
-
-  Comes in variants \fdf*{original} or \fdf*{restart}
-
-\end{description}
-
-\textit{Default value:} \texttt{Pulay}
-
+  turned on. Also \fdf{DM.MixSCF1} will default to \fdf*{.false.}.
 
 
 \item[\textbf{DM.MixingWeight}] (\textit{real}):
 \index{DM.MixingWeight@\textbf{DM.MixingWeight}}
-%\index{DM.MixingWeight@\textbf{DM.MixingWeight}|see SCF.Mix!Weight}
+\index{DM.MixingWeight@\textbf{DM.MixingWeight}|see SCF.Mix.Weight}
 \index{SCF!mixing!linear}
 \index{SCF.Mix.Weight@\textbf{SCF.Mix.Weight}}
 
@@ -3217,15 +3622,6 @@ approaches (i.e. Pulay).
 
 Pulay mixing (also known as DIIS extrapolation) is the method of
 choice for accelerating the convergence of the scf cycle.
-
-\item[\textbf{SCF.Mix.Weight}] (\textit{real}):
-\index{SCF!mixing!linear}
-\index{SCF.Mix.Weight@\textbf{SCF.Mix.Weight}}
-
-The default mixing weight for all mixing methods.
-
-\textit{Default value:} \texttt{0.25}
-
 
 \item[\textbf{DM.NumberPulay}] (\textit{integer}):\index{Pulay mixing}
 \index{DM.NumberPulay@\textbf{DM.NumberPulay}}\index{SCF!mixing!Pulay}
@@ -3492,18 +3888,18 @@ codes. (See for example Kresse and Furthm\"uller, Comp. Mat. Sci. 6,
 The charge mixing is implemented roughly as follows:
 
 \begin{itemize}
-\item The charge density computed in dhscf is fourier-transformed and stored
-in a new module. This is done both for ``$\rho$(\textbf{G})(in)'' and
-``$\rho$(\textbf{G})(out)''  (the ``out'' charge is
-computed during the extra call to dhscf for correction of the
-variational character of the Kohn-Sham energy)
-\item The ``in'' and ``out'' charges are mixed (see below), and the
-  resulting ``in'' fourier components are used by dhscf in successive
-  iterations to reconstruct the charge density.
-\item The new arrays needed and the processing of most new options is
-  done in the new module m\_rhog.F90. The fourier-transforms are
-  carried out by code in rhofft.F.
-\item Following standard practice, two options for mixing are offered:
+  \item The charge density computed in dhscf is fourier-transformed
+  and stored in a new module. This is done both for
+  ``$\rho(\mathbf{G})(\mathrm{in})$'' and
+  ``$\rho(\mathbf{G})(\mathrm{out})$'' (the ``out'' charge is computed
+  during the extra call to dhscf for correction of the variational
+  character of the Kohn-Sham energy) \item The ``in'' and ``out''
+  charges are mixed (see below), and the resulting ``in'' fourier
+  components are used by dhscf in successive iterations to reconstruct
+  the charge density.  \item The new arrays needed and the processing
+  of most new options is done in the new module m\_rhog.F90. The
+  fourier-transforms are carried out by code in rhofft.F.  \item
+  Following standard practice, two options for mixing are offered:
   \begin{itemize}
   \item A simple Kerker mixing, with an optional Thomas-Fermi wavevector to 
   damp the contributions for small G's. The overall mixing weight is
@@ -3525,7 +3921,7 @@ variational character of the Kohn-Sham energy)
 The default convergence criteria remains based on the differences in
 the density matrix, but in this case the differences are from step to
 step, not the more fundamental \texttt{DM\_out-DM\_in}. Perhaps some
-other criterion should be made the default (max |Delta rho(G)|,
+other criterion should be made the default (max $|\Delta rho(G)|$,
 convergence of the free-energy...)
 
 Note that with charge mixing the Harris energy as it is currently
@@ -5930,9 +6326,9 @@ obtained form Tom Archer (archert@tcd.ie).
 
 \end{description}
 
-\vspace{5pt}
-\subsection{Maximally Localized Wannier Functions. \\
-            Interface with the \textsc{wannier90} code}
+\subsection[Maximally Localized Wannier Functions]%
+{Maximally Localized Wannier Functions. \\
+    Interface with the \textsc{wannier90} code}
 
 \textsc{wannier90} (http://www.wannier.org) is a code to generate
 maximally localized wannier functions according to the original
@@ -7808,7 +8204,7 @@ this value.
 \textit{Default value:} \texttt{1.0$^{-3}$}
 
 \item[\textbf{LDAU.PotentialShift}] (\textit{logical}):
-If set to .true. the value given to the U parameter in the
+If set to .true. the value given to the $U$ parameter in the
 input file
 is interpreted as a local potential shift. Recording
 the change of the local populations as a function of
@@ -7839,7 +8235,7 @@ The \tsiesta\ method is a procedure to solve the electronic
 structure of an open system formed by a finite structure sandwiched
 between two semi-infinite metallic leads. A finite bias can be applied
 between both leads, to drive a finite current. The method is described
-in detail in Phys. Rev. B \textbf{65}, 165401 (2002). In practical terms,
+in detail in \cite{Brandbyge2002}. In practical terms,
 calculations using \tsiesta\ involve the solution of the
 electronic density from the DFT Hamiltonian using Green's functions
 techniques, instead of the usual diagonalization procedure. Therefore,
@@ -7856,63 +8252,29 @@ between \siesta\ and the (tight-binding) transport codes developed
 by M. Brandbyge and K. Stokbro. Initially everything was written in
 Fortran-77. As \siesta\ started to be translated to Fortran-90, so
 were the \tsiesta\ parts of the code. This was accomplished by
-Jos\'e-Luis Mozos, who also worked on the parallelization of \tsiesta. 
-The present distribution has been adapted to the new
-\siesta\ code structure. With respect to the previous
-implementations, it has the additional feature of allowing for the use
-of a $k$-point sampling other than the gamma point (for the 2D
-Brillouin zone perpendicular to the transport direction).  These
-modifications, among others, were done by Frederico D. Novaes.
+Jos\'e-Luis Mozos, who also worked on the parallelization of
+\tsiesta. 
+%
+Subsequently Frederico D. Novaes extended \tsiesta\ to allow $k$-point
+sampling for transverse directions. And additional extensions was
+added by Nick R. Papior during 2012.
 
-\tsiesta\ has been recently (Fall 2012) restructured to be
-more readable from a programmer's point of view. This will result in 
-less maintenance of the code. Several improvements have also been 
-accomplished:
-\begin{itemize}
-  \item full parallelization of the Green's function files (GF-files) 
-  generation,
-  \item full Green's function calculation at initialization,
-  \item re-implementation of repetition of the electrodes,
-  \item more SCF information about charge redistribution,
-  \item separate k-point file (TSKP instead of overwriting KP),
-  \item changed the \texttt{CONTOUR} file to \texttt{TSCC},
-  \item changed the GF files to be named according to the 
-  \textit{SystemLabel},
-  \item general optimizations in many routines.
-\end{itemize}
-
-The above implementations were done by Nick P. Andersen.
-
-\tsiesta\ has been in the Fall of 2013 been restructured to 
-a new solution method. A heavily reduced memory scheme has been introduced 
-which only requires the memory of the updated density matrix regions. This
-generally means a reduced memory footprint on the order of 50\% or less compared
-to the original implementation (per processor). Roughly the same speed should 
-be expected.
-All arrays are now distinguished between $\Gamma$-point calculations or $k$-point
-calculations, meaning that more arrays are now existing in both a real and 
-complex version.
-
-This has lead to a complete restructure of \tsiesta\ which also makes
-it somewhat obfuscated for newcomers to the code. However, the same sequence
-of operations is retained. To get to know the code please read the original
-and this version side-by-side for faster recognition.
-
-The above memory reduced \tsiesta\ version has been fully implemented
-by Nick P. Andersen.
-
+The current \tsiesta\ module has been completely rewritten by Nick
+R. Papior and encompass a highly advanced inversion algorithm as well
+as allowing $N$ electrode setups among just a few additional
+features. Furthermore, the utility \tbtrans\ has also been fully
+re-coded (Nick R. Papior) to be a generic tight-binding code capable
+of analyzing physics from the Green's function perspective in $N\ge1$
+setups.
 
 \subsection{Source code structure}
 
-In this implementation, the original \tsiesta\ routines have been
-grouped in a set of modules whose file names begin with \texttt{m\_ts}
-(such as in e.g. \texttt{m\_ts\_electrode.F90} ).  Several new
-subroutines have been added.  These modules are located in the
-\texttt{Src} directory.  The inclusion of \tsiesta\ has also required
-the modification of some of the \siesta\ routines. Presently, these
-modifications are controlled by pre-processor compilation directives
-(such as in \texttt{\#ifdef TRANSIESTA} ). See the next section for
-compilation instructions.
+In this implementation, the \tsiesta\ routines have been grouped in a
+set of modules whose file names begin with \texttt{m\_ts}. The
+inclusion of \tsiesta\ has also required the modification of some of
+the \siesta\ routines. Presently, these modifications are controlled
+by pre-processor compilation directives (such as in \texttt{\#ifdef
+    TRANSIESTA} ). See the next section for compilation instructions.
 
 \subsection{Compilation}
 
@@ -7992,17 +8354,16 @@ Other automated TranSiesta-TBTrans examples can be found in
 \subsection{Brief explanation}
 
 \begin{itemize}
-  \item Transport calculations involve Electrodes (EL) calculations,
-  and then the Scattering Region (SR) calculation.  The Electrodes
-  calculations are usual \siesta\ calculations, but where a file
-  \sysfile{TSHS} is generated.  These files contain the information
-  necessary for the SR calculation.  If both electrodes are identical
-  structures (see below) the same \texttt{.TSHS} file can be used to
-  describe both.  In general, however, both Electrodes can be
-  different and therefore two different \texttt{.TSHS} files must be
-  generated.  The location of these Electrode files must be specified
-  in the file FDF input file of the SR calculation (they are usually
-  copied to the same directory where the SR calculation is performed).
+  \item Transport calculations involve \emph{electrode} (EL)
+  calculations, and then the Scattering Region (SR) calculation.  The
+  \emph{electrode} calculations are usual \siesta\ calculations, but
+  where a file \sysfile{TSHS} is generated.  These files contain the
+  information necessary for the SR calculation. If the electrodes
+  are identical structures (see below) the same \sysfile{TSHS} file
+  can be used to describe both.  In general, however, electrodes
+  can be different and therefore two different \sysfile{TSHS} files
+  must be generated.  The location of these electrode files must be
+  specified in the FDF input file of the SR calculation.
 
   \item For the SR, \tsiesta\ starts with the usual \siesta\
   procedure, converging a Density Matrix (DM) with the usual Kohn-Sham
@@ -8010,39 +8371,42 @@ Other automated TranSiesta-TBTrans examples can be found in
   input for the Green's functions self consistent cycle. As it is
   known, \siesta\ stores the DM in a file with extension
   \sysfile{DM}. In the case of \tsiesta, this is done in a file named
-  \sysfile{TSDE}.  In a rerun of the same system (meaning the same
+  \sysfile{TSDE}. In a rerun of the same system (meaning the same
   \texttt{<SystemLabel>}), if the code finds a \sysfile{TSDE} file in the
   directory, it will take this DM as the initial input and this is
   then considered a continuation run. In this case it does not perform
   an initial \siesta\ run. It must be clear that when starting a
   calculation from scratch, in the end one will find both files, \sysfile{DM}
-  and \sysfile{TSDE}.  The first
-  one stores the \siesta\ density matrix (periodic boundary conditions
-  in all directions and no voltage), and the latter the
-  \textsc{TranSiesta} solution. It is a good practice to, when
-  increasing the bias, use as an initial DM a \sysfile{TSDE} that had
-  been obtained for a lower voltage. It is also usefull to point out
-  here that the \sysfile{TSDE} file has the same format as
-  the \sysfile{DM} file (with extra information appendend in
-  the end). Being so, one can for example use DENCHAR to analyse the
-  non equilibrium charge density.
+  and \sysfile{TSDE}.
+  %
+  The first one stores the \siesta\ density matrix (periodic boundary
+  conditions in all directions and no voltage), and the latter the
+  \tsiesta\ solution. It is a good practice to, when increasing the
+  bias, use as an initial DM a \sysfile{TSDE} that had been obtained
+  for a lower voltage. It is also useful to point out here that the
+  \sysfile{TSDE} file has the same format as the \sysfile{DM} file
+  (with extra information appendend in the end). Being so, one can for
+  example use \program{denchar} to analyse the non equilibrium charge
+  density.
 
-\item
-As in the case of \siesta\ calculations, what \textsc{TranSiesta}
-does is to obtain a converged DM, but for open boundary conditions and
-possibly a finite bias applied between the Electrodes. The
-corresponding Hamiltonian matrix (once self consistency is achieved)
-of the SR is also stored in a \texttt{<SystemLabel>.TSHS} file. The
-transport properties are obtained in a post-processing procedure using
-the \texttt{tbtrans} code (located in the \texttt{Util/TBTrans}
-directory). What \texttt{tbtrans} does is, using the \sysfile{TSHS} file of
-the SR obtained with \tsiesta, \textbf{and} the Electrode's \sysfile{TSHS} files, to calculate the transmission spectrum and the
-electronic current. The \texttt{tbtrans} input file is typically the same
-as the one that was used for \tsiesta, with the additional
-\texttt{tbtrans} options. It is to be noted that the \sysfile{TSHS} files
-contain all the needed structural information (atomic positions,
-matrix elements, \ldots), and so this kind of parameters will not be
-changed by input (fdf) flags once they are read a \sysfile{TSHS} file.
+  \item As in the case of \siesta\ calculations, what
+  \textsc{TranSiesta} does is to obtain a converged DM, but for open
+  boundary conditions and possibly a finite bias applied between the
+  Electrodes. The corresponding Hamiltonian matrix (once self
+  consistency is achieved) of the SR is also stored in a
+  \texttt{<SystemLabel>.TSHS} file. The transport properties are
+  obtained in a post-processing procedure using the \texttt{tbtrans}
+  code (located in the \texttt{Util/TBTrans} directory). What
+  \texttt{tbtrans} does is, using the \sysfile{TSHS} file of the SR
+  obtained with \tsiesta, \textbf{and} the Electrode's \sysfile{TSHS}
+  files, to calculate the transmission spectrum and the electronic
+  current. The \texttt{tbtrans} input file is typically the same as
+  the one that was used for \tsiesta, with the additional
+  \texttt{tbtrans} options. It is to be noted that the \sysfile{TSHS}
+  files contain all the needed structural information (atomic
+  positions, matrix elements, \ldots), and so this kind of parameters
+  will not be changed by input (fdf) flags once they are read a
+  \sysfile{TSHS} file.
 
 \item
 \tsiesta\ defines the Left Electrode to be the first atoms
@@ -9541,12 +9905,19 @@ objects. For example, a circular stack is used in the charge-mixing
 module. A number of future enhancements depend on this paradigm.
 
 
+\clearpage
+\addcontentsline{toc}{section}{Bibliography}
+\bibliographystyle{plainnat}
+\bibliography{siesta}
+
 % Indices
+\clearpage
 \addcontentsline{toc}{section}{Index}
 \printindex
 
 \printindex[sfiles]
 \printindex[sfdf]
+
 
 \end{document}
 
@@ -9555,6 +9926,7 @@ module. A number of future enhancements depend on this paradigm.
 
 %%% Local Variables:
 %%% mode: latex
+%%% ispell-local-dictionary: "american"
 %%% fill-column: 70
 %%% TeX-master: t
 %%% End:

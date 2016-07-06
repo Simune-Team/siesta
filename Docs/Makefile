@@ -5,7 +5,7 @@ latex = pdflatex -shell-escape
 grep = @-grep -i -s
 splitidx = splitindex
 docidx = $(doc).idx
-bibtex = echo "BIBTEX"
+bibtex = bibtex
 makeidx = makeindex
 
 pdf: $(doc)
@@ -25,6 +25,7 @@ extra:
 	$(makeidx) $(doc)
 
 final: clean $(doc).tex
+	$(latex) $(doc).tex
 	$(latex) $(doc).tex
 	$(bibtex) $(doc)
 	$(splitidx) $(docidx)

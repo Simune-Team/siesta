@@ -1,3 +1,4 @@
+
 %
 % This TeX file includes the default environments for creating fdf blocks
 % in the documentation of SIESTA.
@@ -13,25 +14,25 @@
 % create the correct fdf mode (for the fdf-environment)
 \let\fdf@mode\leavevmode
 
-% Create font for fdf-flags
-% If this command is changed it changes all 
-% |#1| and \fdf{#1} commands.
-\NewDocumentCommand\fontfdf{ m }
-{%
-    \textbf{#1}%
-}
+% Declare fdf-colors
+\definecolor{fdf-list}  {cmyk}{0.10,0.95,0.65,0.45}
+\definecolor{fdf-option}{cmyk}{0.00,0.95,0.90,0.25}
+
+% Declare new font
+\DeclareTextFontCommand{\fontfdf}{\bfseries\hyphenchar\font=45\relax}
+
 
 % Shorthand command for printing the fdf-key
 % correctly, AND adding it to the index.
-% Note that | | is equivalent to this.
 \NewDocumentCommand\fdf{ s m }
 {%
-    \fontfdf{#2}%
+    \fontfdf{\StrSubstitute[0]{#2}{!}{.}}%
     \IfBooleanF{#1}{%
         % Create index
         \sindex[sfdf]{#2}%
     }%
 }
+
 
 % Define the skip of a new fdf key
 \newcommand\fdfentrybody{\parskip2pt}
@@ -51,16 +52,19 @@
     \bgroup%
     \raggedright\item%
     % Create fdf-label (with indexing)
-    \strut{\fdf{#1}%
-        \space%
+    \strut{\bgroup\color{fdf-list}\fdf{#1}\egroup%
+        % Separate the keyword from the options
+        \hskip 1em plus 1ex minus 1ex
+        %\space\space\space%
         \bgroup%
+        \expandafter\let\siesta@active@bar\siesta@bar
         \def\tmp@None{#3}%
         \ifx\tmp@None\fdfentryline@None%
           \let\tmp@None\fdfabstract%
         \else%
           \let\tmp@None\relax%
         \fi%
-        \strut{\color{red!50!black}\tmp@None{\fdf*{#3}}}%
+        \strut{\color{fdf-option}\tmp@None{\fdf*{#3}}}%
         \egroup %
     }
     \IfValueT{#2}%
@@ -69,7 +73,6 @@
     } %
     \par%
     \egroup%
-    \topsep=0pt%
     % Create fdf label
     \fdfentrybody%
 }
@@ -83,17 +86,47 @@
 \NewDocumentEnvironment{fdfentry}{ }
 {   %
     % Create correct box-setups
+    \bgroup
     \list{%
     }{ %
         % Define list
+        \topsep=4pt
+        \partopsep=0pt
         \leftmargin=2em\itemindent-\leftmargin %
-        \def\makelabel##1{\hss##1} %
+        \listparindent=0pt
+        %\def\makelabel##1{\hss##1} %
     }%
     % Create entry line of the argument
     \fdfentryline %
 }
 {%
     \endlist%
+    \egroup
+}
+
+
+% Create new fdf input
+% This finalizes the call with \fdfenttryline
+% which does the actual parsing of the arguments.
+% This environment only sets up the enviroment
+% to typeset things in.
+\NewDocumentEnvironment{fdfoptions}{ }
+{   %
+    \begingroup
+    \def\option[##1]{%
+        \item[\strut{\color{fdf-list}\fontfdf{##1}}] %
+    }
+    \list{}
+    {%
+        \labelwidth=1em
+        \leftmargin=1em
+        \parsep=2pt
+        \listparindent=0pt
+    }%
+}
+{%
+    \endlist%
+    \endgroup
 }
 
 

@@ -421,7 +421,7 @@ subroutine read_options( na, ns, nspin )
   ! Mix density matrix on first SCF step (mix)
   mix_scf_first = fdf_get('DM.MixSCF1', &
        .not. compat_pre_v4_DM_H)
-  mix_scf_first = fdf_get('SCF.Mixer.First', mix_scf_first)
+  mix_scf_first = fdf_get('SCF.Mix.First', mix_scf_first)
   if (ionode) then
      write(6,1) 'redata: Mix DM in first SCF step',mix_scf_first
   endif

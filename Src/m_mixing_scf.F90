@@ -64,8 +64,8 @@ contains
     ! Get number of history steps
     integer :: n_hist, n_kick, n_restart, n_save
     real(dp) :: w, w_kick
-    integer :: n_lin_before, n_lin_after
-    real(dp) :: w_lin_before, w_lin_after
+    integer :: n_lin_after
+    real(dp) :: w_lin_after
     logical :: lin_after
 
     ! number of history steps saved
@@ -153,7 +153,7 @@ contains
 
     ! Restart after this number of iterations
     n_restart = fdf_get('SCF.Mixer.Restart', 0)
-    n_save    = fdf_get('SCF.Mixer.Restart.Save', 0)
+    n_save    = fdf_get('SCF.Mixer.Restart.Save', 1)
     ! negative savings are not allowed
     n_save = max(0, n_save)
 
@@ -170,17 +170,13 @@ contains
 
     
     ! Determine whether linear mixing should be
-    ! performed, before or after the "advanced" mixing
-    n_lin_before = fdf_get('SCF.Mixer.Linear.Before', 0)
-    w_lin_before = fdf_get('SCF.Mixer.Linear.Before.Weight', w)
-
-    n_lin_after = fdf_get('SCF.Mixer.Linear.After', 0)
+    ! performed after the "advanced" mixing
+    n_lin_after = fdf_get('SCF.Mixer.Linear.After', -1)
     w_lin_after = fdf_get('SCF.Mixer.Linear.After.Weight', w_lin_after)
     
     ! Determine total number of mixers
     nm = 1
-    if ( n_lin_before > 0 ) nm = nm + 1
-    if ( n_lin_after > 0 .or. lin_after ) nm = nm + 1
+    if ( n_lin_after >= 0 .or. lin_after ) nm = nm + 1
     if ( n_kick > 0 ) nm = nm + 1
 
     ! Initiailaze all mixers
@@ -190,22 +186,8 @@ contains
     scf_mixs(:)%restart = n_restart
     scf_mixs(:)%restart_save = n_save
     
-    ! Current mixing index
-    im = 0
-
-    ! 1. Set the linear mixers before the actual mixing
-    if ( n_lin_before > 0 ) then
-       im = im + 1
-       m => scf_mixs(im)
-       m%name = 'Linear-Before'
-       m%m = mix_method('linear')
-       m%n_itt = n_lin_before
-       m%w = w_lin_before
-       m%next => scf_mixs(im+1)
-    end if
-
-    ! 2. Setup the advanced mixer
-    im = im + 1
+    ! 1. Current mixing index
+    im = 1
     ! Store the advanced mixer index (for references to
     ! later mixers)
     im2 = im
@@ -214,7 +196,7 @@ contains
     m%m = mix_method(method)
     m%v = mix_method_variant(m%m, variant)
 
-    ! 3. Setup the linear mixing after the actual mixing
+    ! 2. Setup the linear mixing after the actual mixing
     if ( n_lin_after > 0 .or. lin_after ) then
        im = im + 1
        m => scf_mixs(im)

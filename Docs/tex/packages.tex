@@ -1,5 +1,16 @@
-\usepackage{url}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
 
+% Create the bibliography
+\usepackage[numbers,square,sort&compress]{natbib}
+
+\usepackage{xcolor}
+% Ensure that we use CMYK.
+% This will enable colors to be printed on
+% a vast part of printers (they typically default to CMYK color model)
+\selectcolormodel{cmyk}
+
+% Allow url parsings and hyperrefs within the document
 \usepackage{hyperref}
 
 % Hyperref setup
@@ -8,3 +19,11 @@
     bookmarksopen=true,
     bookmarksopenlevel=2,
 }
+
+% Allow amsmath, and fix certain things from amsmath...
+\usepackage{mathtools}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../siesta"
+%%% End:

@@ -20,3 +20,22 @@
 % This index lists all fdf-key words
 \newindex[List of \fdfprogram\ flags]{sfdf}
 
+
+% Create shorthand commands for fdf-indices
+\NewDocumentCommand\fdfindex{ m o }
+{%
+    \IfNoValueTF{#2}{%
+        %\index{#1@\fdf*{#1}}%
+        \sindex[sfdf]{#1}%
+    }{%
+        %\index{#1@\fdf*{#1}#2}%
+        \sindex[sfdf]{#1#2}%
+    }%
+}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../siesta"
+%%% End:

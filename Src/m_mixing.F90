@@ -193,7 +193,7 @@ contains
     n_restart = fdf_get(trim(lp)//'.Restart',0)
     n_save    = fdf_get(trim(lp)//'.Restart.Save',1)
     ! negative savings are not allowed
-    n_save = max(0,n_save)
+    n_save = max(0, n_save)
 
 
 
@@ -1009,7 +1009,7 @@ contains
     ! Check whether a parameter next/restart is required
     if ( p_restart .or. p_next ) then
 
-       ! Calculate dot: ||f_k-1||
+       ! Calculate dot: ||f_k||
        ssum = ddot(ncoef, F1, 1, F1, 1)
 #ifdef MPI
        dtmp = ssum
@@ -1019,7 +1019,7 @@ contains
 #endif
 
        ! Calculate the relative difference
-       G = abs(mix%rv(I_PREVIOUS_RES) / ssum - 1._dp)
+       G = abs(ssum / mix%rv(I_PREVIOUS_RES) - 1._dp)
 
        ! We first check for next, that has precedence
        if ( p_next ) then
@@ -1031,7 +1031,7 @@ contains
           
           if ( debug_mix .and. mix%cur_itt > 1 ) &
                write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-               ' | ||f_k-1|| - ||f_k|| |/||f_k|| < np  :  ', &
+               ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < np  :  ', &
                G, ' < ', mix%rv(I_P_NEXT)
           
        end if
@@ -1045,7 +1045,7 @@ contains
 
           if ( debug_mix .and. mix%cur_itt > 1 ) &
                write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-               ' | ||f_k-1|| - ||f_k|| |/||f_k|| < rp  :  ', &
+               ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < rp  :  ', &
                G, ' < ', mix%rv(I_P_RESTART)
 
        end if
@@ -1423,7 +1423,7 @@ contains
     ! Check whether a parameter restart/next is required
     if ( p_restart .or. p_next ) then
        
-       ! Calculate dot: ||f_k-1||
+       ! Calculate dot: ||f_k||
        norm = ddot(ncoef, F1, 1, F1, 1)
 #ifdef MPI
        rtmp = norm
@@ -1433,7 +1433,7 @@ contains
 #endif
 
        ! Calculate the relative difference
-       rtmp = abs(mix%rv(I_PREVIOUS_RES) / norm - 1._dp)
+       rtmp = abs(norm / mix%rv(I_PREVIOUS_RES) - 1._dp)
 
        ! We first check for next, that has precedence
        if ( p_next ) then
@@ -1445,7 +1445,7 @@ contains
           
           if ( debug_mix .and. mix%cur_itt > 1 ) &
                write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-               ' | ||f_k-1|| - ||f_k|| |/||f_k|| < np  :  ', &
+               ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < np  :  ', &
                rtmp, ' < ', mix%rv(I_P_NEXT)
 
        end if
@@ -1459,7 +1459,7 @@ contains
 
           if ( debug_mix .and. mix%cur_itt > 1 ) &
                write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-               ' | ||f_k-1|| - ||f_k|| |/||f_k|| < rp  :  ', &
+               ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < rp  :  ', &
                rtmp, ' < ', mix%rv(I_P_RESTART)
           
        end if
