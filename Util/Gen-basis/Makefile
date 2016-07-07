@@ -38,6 +38,8 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
+GRIDXC_SERIAL_ROOT ?= $(GRIDXC_ROOT)
+#
 DEFS:= $(DEFS) $(DEFS_PREFIX)-UMPI
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
@@ -51,13 +53,13 @@ SYSOBJ=$(SYS).o
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
-          parsing.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
+          parsing.o basis_io.o chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o interpolation.o \
 	  paste.o   bessph.o radfft.o  sorting.o m_filter.o \
-          basis_specs.o atom.o memory.o memory_log.o periodic_table.o\
+          basis_specs.o ldau_specs.o atom.o memory.o memory_log.o periodic_table.o\
           pseudopotential.o pxf.o dot.o  atom_options.o arw.o  \
           sys.o xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
-          xc.o bsc_xcmod.o handlers.o
+          xc.o bsc_xcmod.o handlers.o m_fft_gpfa.o m_cite.o
 #
 IONCAT_OBJS=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
           parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o  atm_types.o\
@@ -67,21 +69,9 @@ IONCAT_OBJS=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
            atmfuncs.o spher_harm.o interpolation.o\
           sys.o  xml.o m_walltime.o ioncat.o handlers.o $(SYSOBJ)
 #
-# Compile XC in a private directory, without MPI
-#
-XC=gridxc/libGridXC.a
-XC_MAKEFILE=$(TOP_LEVEL)/gridxc/makefile
-XC_INCFLAGS:=
-$(XC): 
-	(mkdir -p gridxc ; cd gridxc ; $(MAKE) -f $(XC_MAKEFILE) \
-                          "FC=$(FC)" "VPATH=$(TOP_LEVEL)/gridxc" \
-                          "ARCH_MAKE=../$(ARCH_MAKE)" \
-                          "INCFLAGS=$(XC_INCFLAGS)" \
-                          "DEFS=$(DEFS)" \
-                          "FPPFLAGS=$(FPPFLAGS)" \
-                          "MPI_INTERFACE= " \
-                          "FFLAGS=$(FFLAGS)"  module )
-INCFLAGS:= $(INCFLAGS) -I./gridxc
+include $(GRIDXC_SERIAL_ROOT)/gridxc.mk
+XC = $(GRIDXC_LIBS)
+INCFLAGS:= $(INCFLAGS) $(GRIDXC_INCFLAGS)
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -117,7 +107,6 @@ clean:
 	rm -f gen-basis ioncat *.o  *.a
 	rm -f *.mod
 	rm -rf fdf
-	rm -rf gridxc
 	rm -f _tmp_deps deps.list  protomake*
 #
 ALL_OBJS=$(IONCAT_OBJS) $(OBJS_GEN-BASIS)
@@ -173,6 +162,9 @@ radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 m_filter.o: bessph.o precision.o radfft.o sorting.o sys.o
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
 basis_specs.o: pseudopotential.o sys.o
+ldau_specs.o: alloc.o atm_types.o atmparams.o atom.o atom_options.o
+ldau_specs.o: basis_specs.o basis_types.o interpolation.o m_cite.o parallel.o
+ldau_specs.o: precision.o pseudopotential.o radial.o sys.o units.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: interpolation.o m_filter.o old_atmfuncs.o periodic_table.o precision.o
 atom.o: pseudopotential.o sys.o

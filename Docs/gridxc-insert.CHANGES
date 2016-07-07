@@ -1,4 +1,16 @@
 -----------------------------------------------------------------------
+2016-07-07   Alberto Garcia     siesta-trunk-503--gridxc-12
+Use external gridxc library
+
+The arch.make must now define the GRIDXC_ROOT variable
+(See Src/Sys/GRIDXC.make for the whole story, including
+parallel makes for Siesta and serial for Utils).
+
+See Src/Makefile and Util/Gen-basis/Makefile for new idioms.
+
+Src/SiestaXC is kept to facilitate updates.
+
+-----------------------------------------------------------------------
 2016-05-29   Alberto Garcia     siesta-trunk-503--gridxc-11
 Sync with trunk-503
 

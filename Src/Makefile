@@ -221,13 +221,9 @@ $(XMLPARSER):
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 #--------------------------------------------------------------
-XC=gridxc/libGridXC.a
-$(XC): 
-	(cd gridxc ; $(MAKE) \
-                    "ARCH_MAKE=../arch.make"  \
-                    "VPATH=$(VPATH)/gridxc"  \
-		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
-INCFLAGS:=  $(INCFLAGS) -I./gridxc
+include $(GRIDXC_ROOT)/gridxc.mk
+XC=$(GRIDXC_LIBS)
+INCFLAGS:=  $(INCFLAGS) $(GRIDXC_INCFLAGS)
 #--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
@@ -364,10 +360,6 @@ clean:
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
-	(cd gridxc; $(MAKE) \
-                    "ARCH_MAKE=../arch.make"  \
-                    "VPATH=$(VPATH)/gridxc"  \
-		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" clean )
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc_error_report.o: parallel.o
