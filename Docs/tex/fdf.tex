@@ -20,6 +20,7 @@
 
 % Declare new font
 \DeclareTextFontCommand{\fontfdf}{\bfseries\hyphenchar\font=45\relax}
+\let\fdffont\fontfdf
 
 
 % Shorthand command for printing the fdf-key
@@ -136,7 +137,7 @@
 %   \end{verbatim}
 % It is simply intended as placeholder to easily change
 % the future behaviour of the environment.
-\DefineVerbatimEnvironment{fdfexample}{Verbatim}{xleftmargin=2em}
+\DefineVerbatimEnvironment{fdfexample}{Verbatim}{xleftmargin=2em,fontsize=\small}
 
 
 %%% Local Variables:

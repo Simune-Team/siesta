@@ -1504,7 +1504,7 @@ contains
          ! Get RRes[i] array
          rres1 => getstackval(mix, 2, i)
          
-         do j = 1 , i
+         do j = 1 , i - 1
             
             ! Get RRes[j] array
             rres2 => getstackval(mix, 2, j)
@@ -1514,7 +1514,10 @@ contains
             A(j,i) = A(i,j)
             
          end do
-         
+
+         ! Diagonal
+         A(i,i) = norm(n, rres1, rres1)
+
       end do
 
 #ifdef MPI
@@ -1700,7 +1703,7 @@ contains
          ! Get RRes[i] array
          rres1 => getstackval(mix, 2, i)
          
-         do j = 1 , i
+         do j = 1 , i -1 
 
             ! Get RRes[j] array
             rres2 => getstackval(mix, 2, j)
@@ -1711,13 +1714,10 @@ contains
 
          end do
 
-         ! Add the diagonal term
-         ! This should also prevent it from being
-         ! singular (unless mix%w == 0)
-         A(i,i) = mix%rv(1) ** 2 + A(i,i)
+         ! Do the diagonal term
+         A(i,i) = w(i) * w(i) * norm(n, rres1, rres1)
          
       end do
-
 
 #ifdef MPI
       call MPI_AllReduce(A(1,1),Ainv(1,1),nh*nh, &
@@ -1725,6 +1725,13 @@ contains
            mix%Comm, i)
       A = Ainv
 #endif
+
+      ! Add the diagonal term
+      ! This should also prevent it from being
+      ! singular (unless mix%w == 0)
+      do i = 1 , nh
+         A(i,i) = mix%rv(1) ** 2 + A(i,i)
+      end do
 
       ! Calculate the inverse
       call inverse(nh, A, Ainv, info)

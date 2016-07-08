@@ -3215,7 +3215,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
     equation can be written as
     \begin{equation}
       \DM^{n+1}_{\mathrm{in}} = \DM^n_{\mathrm{in}} + G \Res[n]
-      + \sum_{i=n-N+1}^{N-1} \alpha_i (G \Res[i] + G \RRes[i]),
+      + \sum_{i=n-N+1}^{N-1} \alpha_i (\Res[i] + G \RRes[i]),
     \end{equation}
     where $G$ is the damping factor of the Pulay mixing (also known as
     the mixing weight).
@@ -3238,8 +3238,25 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
     $\DM^{n+1}_{\mathrm{in}}$ for the following iteration.  The
     equation can be written as
     \begin{equation}
-      ....
+      \DM^{n+1}_{\mathrm{in}} = \DM^n_{\mathrm{in}} + G \Res[n]
+      - \sum_{i=n-N+1}^{N-1}\sum_{j=n-N+1}^{N-1} w_iw_j c_j \beta_{ij} (\Res[i] + G \RRes[i]),
     \end{equation}
+    where $G$ is the damping factor (also known as
+    the mixing weight).
+    The values weights may be expressed by
+    \begin{align}
+      w_i &= 1 \quad\text{, for }i>0
+      \\
+      c_i &= \langle \RRes[i] | \Res[n] \rangle,
+      \\
+      \beta_{ij} &= \Big[\big(w_0^2\mathbf I + \mathbf
+      A\big)^{-1}\Big]_{ij}
+      \\
+      A_{ij} &= w_iw_j \langle \RRes[i] | \RRes[j] \rangle.
+    \end{align}
+    It should be noted that $w_i$ for $i>0$ may be chosen arbitrarily.
+    Comparing with the Pulay mixing scheme it is obvious that Broyden
+    and Pulay are equivalent for $w_0=0$ and $w_i=1/\sqrt{N-1}$.
 
   \end{fdfoptions}
   
@@ -3539,6 +3556,19 @@ different scheme by increasing the weight and decreasing the history steps:
 
 In essence, very complicated schemes of convergence may be created
 using the block's input.
+
+The following options refer to the global treatment of how/when mixing
+should be performed.
+
+\begin{fdfentry}{SCF.Mix!First}[logical]<.true.>
+\index{DM.MixSCF1@\fdf*{DM.MixSCF1}|see SCF.Mix.First}
+
+  Control whether mixing is performed on the first SCF cycle or
+  not. In case the density matrix is not idempotent this variable
+  should be switched to \fdf*{.false.}.
+  
+\end{fdfentry}
+
 
 \subsubsection{Deprecated mixing options}
 
@@ -7894,121 +7924,234 @@ create custom-made MD scripts.
 an alternative constraint formulation which can be useful for system
 involving molecules.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdfentry}{Geometry!Constraints}[block]<\fdfabstract{None}>
+  \index{constraints in relaxations}
 
-\item[\textbf{GeometryConstraints}] (\textit{data block})
-\index{GeometryConstraints@\textbf{GeometryConstraints}}
-\index{constraints in relaxations}
-Fixes constraints to the change of atomic coordinates during
-geometry relaxation or molecular dynamics. Allowed constraints are:
-\begin{itemize}
-\item \texttt{cellside}: fixes the unit-cell side lengths to
-their initial values (not implemented yet).
-\item \texttt{cellangle}: fixes the unit-cell angles to
-their initial values (not implemented yet).
-\item \texttt{stress}: fixes the specified stresses to
-their initial values.
-\item \texttt{position}: fixes the positions of the specified atoms to
-their initial values.
-\item \texttt{center}: fixes the center (mean position, not center of
-mass) of a group of atoms to its initial value (not implemented yet).
-\item \texttt{rigid}: fixes the relative positions of a group of atoms,
-without restricting their displacement or rotation as a rigid unit
-(not implemented yet).
-\item \texttt{routine}: Additionally, the user may write a
-problem-specific routine called \textbf{constr} (with the same
-interface as in the example below), which inputs the atomic
-forces and stress tensor and outputs them orthogonalized to the
-constraints. For example, to maintain the relative height of
-atoms 1 and 2:
 
-\begin{verbatim}
-      subroutine constr( cell, na, isa, amass, xa, stress, fa )
-c real*8  cell(3,3)    : input lattice vectors (Bohr)
-c integer na           : input number of atoms
-c integer isa(na)      : input species indexes
-c real*8  amass(na)    : input atomic masses
-c real*8  xa(3,na)     : input atomic Cartesian coordinates (Bohr)
-c real*8  stress( 3,3) : input/output stress tensor (Ry/Bohr**3)
-c real*8  fa(3,na)     : input/output atomic forces (Ry/Bohr)
-c integer ntcon        : output total number of position constraints
-c                        imposed in this routine
-      integer na, isa(na), ntcon
-      double precision amass(na), cell(3,3), fa(3,na),
-     .                 stress(3,3), xa(3,na), fz
-      fz = fa(3,1) + fa(3,2)
-      fa(3,1) = fz * amass(1)/(amass(1)+amass(2))
-      fa(3,2) = fz * amass(2)/(amass(1)+amass(2))
-      ntcon=1
-      end
-\end{verbatim}
+  Constrains certain atomic coordinates or cell parameters in a
+  consistent method.
 
-NOTE that the input of the routine \textbf{constr} has changed
-with respect to \siesta\ versions prior to 1.3. Now, it includes the
-argument \textit{ntcon}, where the routine should
-store the number of position constraints imposed in it,
-as an output.  The user should update older \textbf{constr} routines
-accordingly. In the example above, the number of constraints is one,
-since only the relative z position of two atoms is constrained
-to be constant.
+  There are a high number of configurable parameters that may be used
+  to control the relaxation of the coordinates.
 
-\end{itemize}
+  \note \siesta\ prints out a small notice of how the constraints are
+  recognized. 
 
-Example: consider a diatomic molecule (atoms 1 and 2) above a surface,
-represented by a slab of 5 atomic layers, with 10 atoms per layer.
-To fix the cell height, the slab's bottom layer (last 10 atoms),
-the molecule's interatomic distance, its height above the surface and
-the relative height of the two atoms
-(but not its azimuthal orientation and lateral position):
+  \begin{fdfoptions}
+    \option[atom|position]%
+    Fix certain atomic coordinates. 
 
-\begin{verbatim}
-     %block GeometryConstraints
-        cellside   c
-        cellangle  alpha  beta  gamma
-        position  from -1 to -10
-        rigid  1  2
-        center 1  2   0.0  0.0  1.0
-        stress 4 5 6
-        routine constr
-     %endblock GeometryConstraints
-\end{verbatim}
+    This option takes a variable number of integers which each
+    correspond to the atomic index (or input sequence) in
+    \fdf{AtomicCoordinatesAndAtomicSpecies}.
 
-The first line fixes the height of the unit cell, leaving the width
-and depth free to change (with the appropriate type of dynamics).  The
-second line fixes all three unit-cell angles.  The third line fixes
-all three coordinates of atoms 1 to 10, counted backwards from the
-last one (you may also specify a given direction, like in center).
-The fourth line specifies that atoms 1 and 2 form a rigid unit.  The
-fifth line fixes the center of the molecule (atoms 1 and 2), in the z
-direction (0.,0.,1.). This vector is given in Cartesian coordinates
-and, without it, all three coordinates will be fixed (to fix a center,
-or a position, in the $x$ and $y$ directions, but not in the $z$
-direction, two lines are required, one for each direction).  The sixth
-line specifies that the stresses 4, 5 and 6 should be fixed.  The
-convention used for numbering stresses is that 1=xx,2=yy,3=zz,
-4=yz,5=xz,6=xy.  The list of atoms for a given constraint may contain
-several atoms (as in lines 4 and 5) \textit{or} a range (as in the third
-line), but not both. But you may specify many constraints of the same
-type, and a total of up to 10000 lines in the block.  Lines may be up
-to 130 characters long. Ranges of atoms in a line may contain up to
-1000 atoms. All names must be in lower case.
+    \fdf*{atom} is now the preferred input option while
+    \fdf*{position} still works for backwards compatibility.
 
-Notice that, if you only fix the position of one atom, the rest of the
-system will move to reach the same relative position. In order to
-fix the \textit{relative} atomic position, you may fix the center of
-the whole system by including a line specifying 'center'
-without any list or range of atoms (though possibly with a direction).
+    One may also specify ranges of atoms according to:
 
-Constraints are imposed by suppressing the forces in those directions,
-before applying them to move the atoms. For nonlinear constraints
-(like 'rigid'), this does not impose the exact conservation of the
-constrained magnitude, unless the displacement steps are very small.
+    \begin{fdfoptions}
+      \option[{atom \emph{A} [\emph{B} [\emph{C} [\dots]]]}]%
+      A sequence of atomic indices which are constrained. 
 
-\textit{Default value:} No constraints
+      % Generic input (compatible with the <= 4.0)
+      \option[{atom from \emph{A} to \emph{B} [step \emph{s}]}]%
+      Here atoms \emph{A} up to and including \emph{B} are
+      constrained.
+      If \fdffont{step \emph{s}} is given, the range \emph{A}-\emph{B}
+      will be taken in steps of \emph{s}.
 
-\end{description}
+      \begin{fdfexample}
+        atom from 3 to 10 step 2
+      \end{fdfexample}
+      will constrain atoms 3, 5, 7 and 9.
+
+      % Generic input (compatible with the <= 4.0)
+      \option[atom {\{\emph{A}, \emph{B} -\mbox{}- \emph{C} [step \emph{s}], \emph{D}\}}]%
+      Equivalent to \fdf*{from \dots to} specification, however in a
+      shorter variant. Note that the list may contain arbitrary number
+      of ranges and/or individual indices.
+
+      \begin{fdfexample}
+        atom {2, 3 -- 10 step 2, 6}
+      \end{fdfexample}
+      will constrain atoms 2, 3, 5, 7, 9 and 6.
+
+      \option[atom all]%
+      Constrain all atoms. 
+      
+    \end{fdfoptions}
+
+    \note these specifications are apt for \emph{directional}
+    constraints. 
+
+    \option[Z]%
+    Equivalent to \fdf*{atom} with all indices of the atoms that
+    have atomic number equal to the specified number.
+
+    \note this specification is apt for \emph{directional}
+    constraints. 
+
+    \option[species-i]%
+    Equivalent to \fdf*{atom} with all indices of the atoms that
+    have species according to the \fdf{ChemicalSpeciesLabel} and
+    \fdf{AtomicCoordinatesAndAtomicSpecies}.
+
+    \note this specification is apt for \emph{directional}
+    constraints. 
+
+
+    \option[center]%
+    In CG optimizations one may retain the coordinate center of a
+    range of atoms (say molecules or other types of groups).
+
+    Atomic indices may be specified according to \fdf*{atom}.
+
+
+    \option[rigid|molecule]%
+    Move a selection of atoms together as though they where one atom.
+
+    The forces are summed and averaged to get a net-force on the
+    entire molecule.
+
+    Atomic indices may be specified according to \fdf*{atom}.
+
+    \note this specification is apt for \emph{directional}
+    constraints. 
+
+
+    \option[rigid-max|molecule-max]%
+    Move a selection of atoms together as though they where one atom.
+
+    The maximum force acting on one of the atoms in the selection will
+    be expanded to act on all atoms specified.
+
+    Atomic indices may be specified according to \fdf*{atom}.
+
+
+
+    \option[cell-angle]%
+    Control whether the cell angles ($\alpha$, $\beta$, $\gamma$) may
+    be altered.
+
+    This takes either \fdf*{alpha}/\fdf*{beta}/\fdf*{gamma} as
+    argument.
+
+    \fdf*{alpha} is the angle between the 2nd and 3rd cell vector.
+
+    \fdf*{beta} is the angle between the 1st and 3rd cell vector. 
+
+    \fdf*{gamma} is the angle between the 1st and 2nd cell vector. 
+
+    \option[cell-vector]%
+    Control whether the cell vectors ($A$, $B$, $C$) may be altered.
+
+    This takes either \fdf*{A}/\fdf*{B}/\fdf*{C} as
+    argument.
+
+    \option[stress]%
+    Control which of the 6 stress components are constrained.
+
+    This takes a number of integers $1\le i\le6$ where $1$ corresponds
+    to the \emph{aa} stress-component, $2$ is \emph{bb}, $3$ is
+    \emph{cc}, $4$ is \emph{bc}/\emph{cb}, $5$ is \emph{ac}/\emph{ca}
+    and $6$ is \emph{ab}/\emph{ba}.
+
+    \option[routine]%
+    This calls the \program{constr} routine specified in the file:
+    \file{constr.f}. Without having changed the corresponding source
+    file, this does nothing.
+    See details and comments in the source-file.
+
+
+    \option[clear]%
+    Remove constraints on selected atoms from all previously specified
+    constraints.
+
+    This may be handy when specifying constraints via \fdf*{Z} or \fdf*{species-i}.
+
+    Atomic indices may be specified according to \fdf*{atom}.
+
+    \option[clear-prev]
+    Remove constraints on selected atoms from the \emph{previous} specified
+    constraint.
+
+    This may be handy when specifying constraints via \fdf*{Z} or \fdf*{species-i}.
+
+    Atomic indices may be specified according to \fdf*{atom}.
+
+    \note two consecutive \fdf*{clear-prev} may be used in conjunction
+    as though the atoms where specified on the same line.
+
+  \end{fdfoptions}
+
+  It is instructive to give an example of the input options presented.
+
+  Consider a benzene molecule ($\mathrm{C}_6\mathrm{H}_6$) and we wish
+  to relax all Hydrogen atoms. This may be accomplished in this fashion
+  \begin{fdfexample}
+    %block Geometry.Constraints
+      Z 6
+    %endblock
+  \end{fdfexample}
+  Or as in this example
+  \begin{fdfexample}
+    %block AtomicCoordinatesAndAtomicSpecies
+      ... ... ... 1   # C 1
+      ... ... ... 2   # H 2
+      ... ... ... 1   # C 3
+      ... ... ... 2   # H 4
+      ... ... ... 1   # C 5
+      ... ... ... 2   # H 6
+      ... ... ... 1   # C 7
+      ... ... ... 2   # H 8
+      ... ... ... 1   # C 9
+      ... ... ... 2   # H 10
+      ... ... ... 1   # C 11
+      ... ... ... 2   # H 12
+    %endblock
+    %block Geometry.Constraints
+      atom from 1 to 12 step 2
+    %endblock
+    %block Geometry.Constraints
+      atom {1 -- 12 step 2}
+    %endblock
+    %block Geometry.Constraints
+      atom all
+      clear-prev {2 -- 12 step 2}
+    %endblock
+  \end{fdfexample}
+  where the 3 last blocks all create the same result.
+
+  Finally, the \emph{directional} constraint is an important and often
+  useful feature. 
+  %
+  When relaxing complex structures it may often be advantageous to
+  first relax along a given direction (where you expect the stress to
+  be largest) and subsequently let it fully relax. Another example
+  would be to relax the binding distance between a molecule and a
+  surface, before relaxing the entire system.
+  %
+  To use directional constraint one may provide an additional 3
+  \emph{reals} after the \fdf*{atom}/\fdf*{rigid}.
+  For instance in the previous example (benzene) one may first relax
+  all Hydrogen atoms along the $y$ and $z$ Cartesian vector by
+  constraining the $x$ Cartesian vector
+  \begin{fdfexample}
+    %block Geometry.Constraints
+      Z 6 1. 0. 0.
+    %endblock
+  \end{fdfexample}
+  Note that you \emph{must} append a ``.'' to denote it a real. The
+  vector specified need not be normalized. Also, if you want it to
+  be constrained along the $x$-$y$ vector you may do
+  \begin{fdfexample}
+    %block Geometry.Constraints
+      Z 6 1. 1. 0.
+    %endblock
+  \end{fdfexample}
+  
+\end{fdfentry}
 
 \subsection{Phonon calculations}
 

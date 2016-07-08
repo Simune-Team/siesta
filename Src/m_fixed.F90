@@ -82,7 +82,7 @@ contains
   ! Written by J.M.Soler. Feb., 1998
   ! Modified by P. Ordejon to output the total number of constraints
   !    imposed.  June, 2003
-  ! Rewritten by Nick Papior Andersen for additional constraint types and
+  ! Rewritten by Nick Papior for additional constraint types and
   !    printing of explicit constraints.
   !    January, 2015
   ! *********** INPUT ****************************************************

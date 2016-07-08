@@ -6,12 +6,8 @@
 %  Nick R. Papior, 2016 (nickpapior <at> gmail.com)
 %
 
-% Define the font used to print file
-\NewDocumentCommand\fontfile{ m }
-{%
-    % Print the file in the correct font
-    \texttt{#1}%
-}
+% Declare new font
+\DeclareTextFontCommand{\fontfile}{\ttfamily}
 
 
 % Create new SIESTA file
@@ -31,7 +27,7 @@
         % Add file to own index
         \sindex[sfiles]{#1@\fontfile{#1}#2}%
     }%
-    { % no optional indexing options
+    {% no optional indexing options
         % Add file to generic file index
         \sindex[idx]{File!#1@\fontfile{#1}}%
         % Add file to own index
@@ -47,7 +43,7 @@
 %  #2: opt, optional additional markings in the index command
 % 
 \NewDocumentCommand\newsysfile{ m }
-{ %
+{%
     \newfile{SystemLabel.#1}%
 }
 
