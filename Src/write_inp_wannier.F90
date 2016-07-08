@@ -202,6 +202,7 @@ subroutine writeamn( ispin )
 !
 ! Local variables
 !
+  integer, intent(in) :: ispin  
 
   character(len=len_trim(seedname)+4) :: amnfilename ! Name of the file where
                                                      !   the overlap Amn

@@ -1,0 +1,44 @@
+
+To compile this version of Siesta you need the xmlf90 and libPSML libraries, which can
+be downloaded from Launchpad:
+
+http://launchpad.net/libpsml
+http://launchpad.net/xmlf90
+
+Direct links to current tarballs:
+
+wget https://launchpad.net/libpsml/trunk/0.9-build/+download/libpsml-0.9.3.tgz
+wget https://launchpad.net/xmlf90/trunk/1.4/+download/xmlf90-1.4.1.tgz
+
+** Steps in detail
+
+- Dowload and unpack the library tarballs
+
+- Compile the xmlf90 and libpsml libraries (follow the instructions in the appropriate
+  packages).
+
+  * For xmlf90, create a building directory and copy there the appropriate fortran.mk
+    (you can re-use the essential subset of your Siesta arch.make)
+
+    Then, type
+
+        make
+
+    (Optionally, make PREFIX=/path/to/installation install)
+	
+  * For libpsml, the  fortran.mk previously prepared for xmlf90 can be reused.
+
+    Simply make sure that the src/fortran.mk file contains the right path
+    for the location of the compiled xmlf90 library.
+
+- Go back to the Siesta building directory, review the settings of the
+  xmlf90 and libpsml import lines in the arch.make file, and type
+
+    (sh ../Src/obj_setup.sh if you have not yet done so)
+    make
+    
+    
+
+    
+  
+

@@ -49,8 +49,8 @@ include $(ARCH_MAKE)
 #
 #
 include Mk/FoX.mk
-include Mk/psml.mk
-include Mk/xmlf90.mk
+include $(PSML_ROOT)/psml.mk
+include $(XMLF90_ROOT)/xmlf90.mk
 
 NCPS_INCFLAGS=-I $(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I $(MAIN_OBJDIR)/psoplib/src
@@ -299,7 +299,11 @@ siesta: check-siesta what version \
                $(XC) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) \
                $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
-	       $(LIBS) 
+	       $(LIBS)
+	@echo "--- reference section "
+	@echo "PSML-related libs: $(PSML_LIBS)"
+	@echo "XMLf90 libs: $(XMLF90_LIBS)"
+	@echo "--- end of reference section "
 #
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
 	ar $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)

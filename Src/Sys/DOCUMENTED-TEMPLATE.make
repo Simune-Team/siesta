@@ -96,8 +96,12 @@ FPPFLAGS_free_F90=
 #
 BLAS_LIBS=-lessl
 LAPACK_LIBS=/apps/lapack/3.1.1/XL/lib/liblapack_ppc64.a -lessl
-BLACS_LIBS=/apps/scalapack/64/lib/blacsCinit_MPI-ppc64-0.a /apps/scalapack/64/lib/blacsF77init_MPI-ppc64-0.a /apps/scalapack/64/lib/blacs_MPI-ppc64-0.a
-SCALAPACK_LIBS=/apps/scalapack/64/lib/blacsCinit_MPI-ppc64-0.a /apps/scalapack/64/lib/blacs_MPI-ppc64-0.a -L/apps/scalapack/64/lib -lscalapack
+BLACS_LIBS=/apps/scalapack/64/lib/blacsCinit_MPI-ppc64-0.a \
+           /apps/scalapack/64/lib/blacsF77init_MPI-ppc64-0.a \
+           /apps/scalapack/64/lib/blacs_MPI-ppc64-0.a
+SCALAPACK_LIBS=/apps/scalapack/64/lib/blacsCinit_MPI-ppc64-0.a \
+               /apps/scalapack/64/lib/blacs_MPI-ppc64-0.a \
+                 -L/apps/scalapack/64/lib -lscalapack
 #
 # If you are using a "wrapper compiler" such as mpif90, MPI_LIBS can
 # be left empty. If not, you might need something like -L somepath/ -l mpi ....
@@ -123,9 +127,33 @@ NETCDF_ROOT=/apps/netcdf/64
 NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
 NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 
+# Support for the (now needed) xmlf90 and libpsml libraries
+# These need to be pre-compiled and installed somewhere. In
+# this file it is only necessary to provide the path to the
+# top of the installation directory.
+# 
+XMLF90_ROOT=$(HOME)/lib/gfortran/xmlf90
+PSML_ROOT=$(HOME)/lib/gfortran/libpsml
 #
-# This (as well as the -DMPI definition) is essential for MPI support
+# If FOX_ROOT is defined, Siesta will not compile its internal
+# copy of the FoX library, linking to an externally compiled
+# one instead
+# FOX_ROOT=$(HOME)/lib/FoX/gfortran
+#
+#--------------------------------------------------------------------
+#
+# This (as well as the -DMPI definition) is essential for MPI support,
+# since Siesta uses a custom MPI interface, including optional timing
+# as well as argument checking.
+#
 MPI_INTERFACE=libmpi_f90.a
+#
+# The MPI include directory is set to "." simply as a no-op, since in this
+# case the fortran compiler (mpfort) is actually a wrapper that already
+# takes care of setting up the MPI environment correctly.
+# If you need to change this, do not use any -I prefix, just the
+# appropriate path
+#
 MPI_INCLUDE=.
 
 # Preprocessor definitions or flags.

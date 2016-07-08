@@ -1,4 +1,26 @@
 ------------------------------------------------------------
+July  8, 2016  Alberto Garcia       trunk-506--psml-79
+Update and document building scheme with external libpsml and xmlf90
+
+Created file 000_INSTALL in the top directory (no manual update yet).
+
+Fixed a few issues in makefiles, and declared some variables.
+
+removed:
+  Src/Mk/psml.mk
+  Src/Mk/xmlf90.mk
+added:
+  000_INSTALL
+modified:
+  Pseudo/vnl-operator/Makefile
+  Src/Makefile
+  Src/Sys/DOCUMENTED-TEMPLATE.make
+  Src/get_kpoints_scale.f90
+  Src/m_target_stress.F
+  Src/ncps/src/libxc-compat/makefile
+  Src/write_inp_wannier.F90
+
+------------------------------------------------------------
 June 30, 2016  Alberto Garcia       trunk-506--psml-78
 Add documentation for the use of ONCVPSP
 

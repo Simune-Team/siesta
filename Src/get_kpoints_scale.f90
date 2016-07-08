@@ -19,7 +19,8 @@ CONTAINS
     integer,  intent(out)        :: ierr          ! Error code: 0: success
 
     character(len=30)  :: scale
-    real(dp)           :: pi
+    real(dp)           :: pi, alat
+    integer            :: i
 
     ierr = 0
     
