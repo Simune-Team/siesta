@@ -18,8 +18,6 @@
 module m_mixing
   
   use precision, only: dp
-  use parallel, only: IONode, Node
-  use alloc, only: re_alloc, de_alloc
 
 #ifdef MPI
   ! MPI stuff
@@ -57,10 +55,14 @@ module m_mixing
      
      ! The method of the mixer
      integer :: m = MIX_PULAY
+     
      ! In case the mixing method has a variant
      ! this denote the variant
      ! This value is thus specific for each method
      integer :: v = 0
+
+     ! The currently reached iteration
+     integer :: cur_itt = 0
 
      ! Different mixers may have different histories
      integer :: n_hist = 2
@@ -72,10 +74,9 @@ module m_mixing
      !   > 0 :
      !     after having runned n_itt step to "next"
      integer :: n_itt = 0
-     ! The currently reached iteration
-     integer :: cur_itt = 0
+
      ! When mod(cur_itt,restart_itt) == 0 the history will
-     ! be "killed"
+     ! be _reset_
      integer :: restart = huge(1)
      integer :: restart_save = 0
 
@@ -90,6 +91,8 @@ module m_mixing
      ! Only used if mixing method achieved convergence
      ! using this method
      type(tMixer), pointer :: next_conv => null()
+
+     ! ** Parameters specific for the method:
 
      ! The mixing parameter used for this mixer
      real(dp) :: w = 0._dp
@@ -125,13 +128,23 @@ module m_mixing
   character(len=20) :: debug_msg = 'mix:'
   
   public :: tMixer
-  public :: mixing_init, mixing_history_clear
-  public :: mixing, mixing_reset
-  public :: mixing_print, mixing_print_block
-  public :: mixing_init_mix
 
-  ! Retrieve information from strings
+  ! Routines are divided in three sections
+
+  ! 1. Routines used to construct the mixers
+  !    Routines used to print information regarding
+  !    the mixers
+  public :: mixers_init, mixer_init
+  public :: mixers_print, mixers_print_block
+  public :: mixers_history_init
+  public :: mixers_reset
+
+  ! 2. Public functions for retrieving actual information
+  !    from external routines
   public :: mix_method, mix_method_variant
+
+  ! 3. Actual mixing methods
+  public :: mixing
 
   public :: MIX_LINEAR, MIX_FIRE, MIX_PULAY, MIX_BROYDEN
 
@@ -141,18 +154,21 @@ module m_mixing
 
 contains
 
-  subroutine mixing_init( prefix, mixers, Comm , force)
+  !> Initialize a set of mixers by reading in fdf information.
+  !! @param[in] prefix the fdf-label prefixes
+  !! @param[pointer] mixers the mixers that are to be initialized
+  !! @param[in] Comm @opt optional MPI-communicator
+  subroutine mixers_init( prefix, mixers, Comm )
 
+    use parallel, only: IONode, Node
     use fdf
+    
 
+    ! FDF-prefix for searching keywords
     character(len=*), intent(in) :: prefix
     ! The array of mixers (has to be nullified upon entry)
     type(tMixer), pointer :: mixers(:)
     integer, intent(in), optional :: Comm
-    ! If force is true, it will initialize as an ordinary
-    ! setup. If force is false, then it will return
-    ! immediately if the options have not been provided.
-    logical, intent(in), optional :: force
 
     ! Block constructs
     type(block_fdf) :: bfdf
@@ -179,7 +195,7 @@ contains
     lp = trim(prefix)//'.Mixer'
 
     ! ensure nullification
-    call mixing_reset(mixers)
+    call mixers_reset(mixers)
 
     ! Return immediately if the user hasn't defined
     ! an fdf-block for the mixing options...
@@ -237,7 +253,7 @@ contains
     
     ! Create history stack and associate correct 
     ! stack pointers
-    call mixing_history_clear(mixers)
+    call mixers_history_init(mixers)
 
 #ifdef MPI
     if ( present(Comm) ) then
@@ -311,7 +327,7 @@ contains
       m%m = mix_method(method)
       m%v = mix_method_variant(m%m, variant)
 
-      call mixing_init_mix( m )
+      call mixer_init( m )
 
       
       ! Read the options for this mixer
@@ -429,91 +445,22 @@ contains
 
     end subroutine read_block
 
-  end subroutine mixing_init
+  end subroutine mixers_init
 
 
-  !> Return the integer specification of the mixing type
-  !!
-  !! @param[in] str the character representation of the mixing type
-  !! @return the integer corresponding to the mixing type
-  function mix_method(str) result(m)
-    use fdf, only: leqi
-    character(len=*), intent(in) :: str
-    integer :: m
-
-    if ( leqi(str,'linear') ) then
-       m = MIX_LINEAR
-    else if ( leqi(str,'pulay') .or. &
-         leqi(str, 'anderson') ) then
-       m = MIX_PULAY
-    else if ( leqi(str,'broyden') ) then
-       m = MIX_BROYDEN
-    else if ( leqi(str,'fire') ) then
-       m = MIX_FIRE
-       call die('mixing: FIRE currently not supported.')
-    else
-       call die('mixing: Unknown mixing variant.')
-    end if
-
-  end function mix_method
-
-
-  !> Return the variant of the mixing method
-  !!
-  !! @param[in] m the integer type of the mixing method
-  !! @param[in] str the character specification of the mixing method variant
-  !! @return the variant of the mixing method
-  function mix_method_variant(m, str) result(v)
-    use fdf, only: leqi
-    integer, intent(in) :: m
-    character(len=*), intent(in) :: str
-    integer :: v
-
-    v = 0
-    select case ( m )
-    case ( MIX_LINEAR )
-       ! no variants
-    case ( MIX_PULAY ) 
-       v = 0
-       ! We do not implement tho non-stable version
-       ! There is no need to have an inferior Pulay mixer...
-       if ( leqi(str,'original') .or. &
-            leqi(str,'kresse') .or. leqi(str,'stable') ) then
-          ! stable version, will nearly always succeed on inversion
-          v = 0
-       else if ( leqi(str,'original+svd') .or. &
-            leqi(str,'kresse+svd') .or. leqi(str,'stable+svd') ) then
-          ! stable version, will nearly always succeed on inversion
-          v = 2
-       else if ( leqi(str,'gr') .or. &
-            leqi(str,'guarenteed-reduction') .or. &
-            leqi(str,'bowler-gillan') ) then
-          ! Guarenteed reduction version
-          v = 1
-       else if ( leqi(str,'gr+svd') .or. &
-            leqi(str,'guarenteed-reduction+svd') .or. &
-            leqi(str,'bowler-gillan+svd') ) then
-          ! Guarenteed reduction version
-          v = 3
-       end if
-    case ( MIX_BROYDEN )
-       ! Currently only one variant
-       v = 0
-    case ( MIX_FIRE ) 
-       ! no variants
-    end select
-
-  end function mix_method_variant
-
-  !> Initialize the mixer depending on the preset
+  !> Initialize a single mixer depending on the preset
   !! options. Useful for external correct setup.
   !!
   !! @param[inout] mix mixer to be initialized
-  subroutine mixing_init_mix( mix )
+  subroutine mixer_init( mix )
     type(tMixer), intent(inout) :: mix
     integer :: n
     
     select case ( mix%m )
+    case ( MIX_LINEAR )
+       
+       allocate(mix%rv(I_SVD_COND:0))
+              
     case ( MIX_PULAY )
        
        allocate(mix%rv(I_SVD_COND:1))
@@ -530,15 +477,11 @@ contains
        
     case ( MIX_BROYDEN )
        
-       ! step history as there is 1 extra 0
-       ! index
-       mix%n_hist = mix%n_hist + 1
-       
        ! allocate temporary array
-       n = 1 + mix%n_hist * (mix%n_hist + 1)
+       n = 1 + mix%n_hist
        allocate(mix%rv(I_SVD_COND:n))
-       mix%rv(1) = mix%w
-       
+       mix%rv(1:n) = mix%w
+
     end select
 
     if ( mix%restart < 0 ) then
@@ -554,1239 +497,24 @@ contains
     mix%restart_save = min(mix%n_hist - 1, mix%restart_save)
     mix%restart_save = max(0, mix%restart_save)
 
-    select case ( mix%m )
-    case ( MIX_LINEAR )
-       
-       ! do nothing
-       
-    case default
-
-       ! This is the restart parameter
-       ! I.e. if |f_k / f - 1| < rp
-       ! only works for positive rp
-       mix%rv(I_PREVIOUS_RES) = huge(1._dp)
-       mix%rv(I_P_RESTART) = -1._dp
-       mix%rv(I_P_NEXT) = -1._dp
-       mix%rv(I_SVD_COND) = 1.e-8_dp
-
-    end select
+    ! This is the restart parameter
+    ! I.e. if |f_k / f - 1| < rp
+    ! only works for positive rp
+    mix%rv(I_PREVIOUS_RES) = huge(1._dp)
+    mix%rv(I_P_RESTART) = -1._dp
+    mix%rv(I_P_NEXT) = -1._dp
+    mix%rv(I_SVD_COND) = 1.e-8_dp
     
-  end subroutine mixing_init_mix
-
-
-  subroutine mixing_1d( mix, iscf, n, x1, F1, x2, ncoeff)
-    ! The current mixing method 
-    type(tMixer), pointer :: mix
-    ! The current step in the SCF and size of arrays
-    integer, intent(in) :: iscf, n
-    ! x1 == Input function,
-    ! F1 == Residual from x1
-    real(dp), intent(in) :: x1(n), F1(n)
-    ! x2 == Next input function
-    real(dp), intent(inout) :: x2(n)
-    ! Number of elements used for calculating the mixing
-    ! coefficients
-    integer, intent(in), optional :: ncoeff
-
-    integer :: info
-    integer :: rsave
-
-    ! Initialize action for mixer
-    mix%action = ACTION_MIX
-    
-    ! Step iterator (so first mixing has cur_itt == 1)
-    mix%cur_itt = mix%cur_itt + 1
-
-    ! If we are going to skip to next, we signal it
-    ! before entering
-    if ( mix%n_itt > 0 .and. &
-         mix%n_itt <= mix%cur_itt ) then
-       mix%action = IOR(mix%action, ACTION_NEXT)
-    end if
-
-    
-    ! Select mixer
-    select case ( mix%m )
-    case ( MIX_LINEAR )
-
-       if ( debug_mix ) &
-            write(*,'(2a)') trim(debug_msg),' linear'
-
-       call mixing_linear(mix, iscf, n, x1, F1, x2, info)
-
-    case ( MIX_PULAY )
-       
-       if ( debug_mix ) then
-          select case ( mix%v )
-          case ( 0 )
-             write(*,'(2a)') trim(debug_msg),' Pulay'
-          case ( 1 )
-             write(*,'(2a)') trim(debug_msg),' Pulay, GR'
-          case ( 2 )
-             write(*,'(2a)') trim(debug_msg),' Pulay-SVD'
-          case ( 3 )
-             write(*,'(2a)') trim(debug_msg),' Pulay-SVD, GR'
-          end select
-       end if
-
-       call mixing_pulay(mix, iscf, n, x1, F1, x2, info, ncoeff = ncoeff)
-
-    case ( MIX_BROYDEN )
-
-       if ( debug_mix ) &
-            write(*,'(2a)') trim(debug_msg),' Broyden'
-
-       call mixing_broyden(mix, iscf, n, x1, F1, x2, info, ncoeff = ncoeff)
-       
-    end select
-
-    ! First check whether we should restart history
-    if ( IAND(mix%action, ACTION_RESTART) == ACTION_RESTART ) then
-       
-       ! The user has requested to restart the
-       ! mixing scheme now
-       rsave = mix%restart_save
-       
-       select case ( mix%m )
-       case ( MIX_PULAY )
-
-          if ( IONode ) then
-             write(*,'(a)')'mix: Pulay -- resetting history'
-          end if
-
-          if ( rsave == 0 ) then
-             call reset(mix%stack(1))
-             call reset(mix%stack(2))
-             call reset(mix%stack(3))
-          else
-             call reset(mix%stack(1),-rsave)
-             call reset(mix%stack(2),-rsave+1)
-          end if
-          
-       case ( MIX_BROYDEN )
-
-          if ( IONode ) then
-             write(*,'(a)')'mix: Broyden -- resetting history'
-          end if
-
-          call reset(mix%stack(1),-rsave)
-          call reset(mix%stack(2),-rsave)
-          
-       end select
-
-       if ( debug_mix ) &
-            write(*,'(a,a,i0)') trim(debug_msg), &
-            ' saved hist = ',n_items(mix%stack(1))
-
-    end if
-    
-    ! check whether we should change the mixer
-    if ( IAND(mix%action, ACTION_NEXT) == ACTION_NEXT ) then
-
-       call mixing_step( mix )
-       
-    end if
-
-  end subroutine mixing_1d
-  
-
-  subroutine mixing_2d( mix, iscf, n1, n2, x1, F1, x2, ncoeff)
-    
-    type(tMixer), pointer :: mix
-    integer, intent(in) :: iscf, n1, n2
-    real(dp), intent(in) :: x1(n1,n2), F1(n1,n2)
-    real(dp), intent(inout) :: x2(n1,n2)
-    integer, intent(in), optional :: ncoeff
-
-    ! Simple wrapper for 1D
-    if ( present(ncoeff) ) then
-       call mixing_1d( mix, iscf, n1*n2 , x1(1,1), F1(1,1), x2(1,1) ,&
-            ncoeff = n1 * ncoeff)
-    else
-       call mixing_1d( mix, iscf, n1*n2 , x1(1,1), F1(1,1), x2(1,1))
-    end if
-    
-  end subroutine mixing_2d
-
-
-  ! Returns the value array from the stack(:)
-  ! Returns this array:
-  !    mix%stack(sidx)(hidx) ! defaults to the last item
-  function getstackval(mix,sidx,hidx) result(d1)
-    type(tMixer), intent(in) :: mix
-    integer, intent(in) :: sidx
-    integer, intent(in), optional :: hidx
-
-    real(dp), pointer, contiguous :: d1(:)
-
-    type(dData1D), pointer :: dD1
-    
-    if ( present(hidx) ) then
-       dD1 => get_pointer(mix%stack(sidx),hidx)
-    else
-       dD1 => get_pointer(mix%stack(sidx), &
-            n_items(mix%stack(sidx)))
-    end if
-    
-    d1 => val(dD1)
-    
-  end function getstackval
-
-
-  ! Returns true if the following 
-  ! "advanced" mixer is 'method'
-  function is_next(mix,method,next) result(bool)
-    type(tMixer), intent(in), target :: mix
-    integer, intent(in) :: method
-    type(tMixer), pointer, optional :: next
-
-    logical :: bool
-
-    type(tMixer), pointer :: m
-
-    bool = .false.
-    m => mix%next
-    do while ( associated(m) )
-
-       if ( m%m == MIX_LINEAR ) then
-          m => m%next
-       else if ( m%m == method ) then
-          bool = .true.
-          exit
-       else
-          ! Quit if it does not do anything
-          exit
-       end if
-
-       ! this will prevent cyclic combinations
-       if ( associated(m,mix) ) exit
-
-    end do
-
-    if ( present(next) ) then
-       next => m
-    end if
-
-  end function is_next
-
-
-  ! Step the mixing object and ensure that
-  ! the old history is either copied over or freed
-  subroutine mixing_step( mix )
-
-    type(tMixer), pointer :: mix
-
-    type(tMixer), pointer :: next => null()
-
-    type(dData1D), pointer :: d1D
-    integer :: i, is, n, init_itt
-    logical :: reset_stack
-
-    ! First try and
-    next => mix%next
-    if ( associated(next) ) then
-
-       ! If the two methods are similar
-       if ( mix%m == next%m .and. allocated(mix%stack) ) then
-          
-          ! They are similar, copy over the history stack
-          do is = 1 , size(mix%stack)
-
-             ! Get maximum size of the current stack,
-             n = n_items(mix%stack(is))
-
-             ! Note that this will automatically take care of
-             ! wrap-arounds and delete the unneccesry elements
-             do i = 1 , n
-                d1D => get_pointer(mix%stack(is),i)
-                call push(next%stack(is),d1D)
-             end do
-
-             ! nullify
-             nullify(d1D)
-             
-          end do
-          
-       end if
-       
-    end if
-
-    reset_stack = .true.
-    if ( associated(next) ) then
-       if ( associated(next%next, mix) .and. &
-            next%n_itt > 0 ) then
-          ! if this is a circular mixing routine
-          ! we should not reset the history...
-          reset_stack = .false.
-       end if
-    end if
-
-    if ( reset_stack ) then
-       select case ( mix%m )
-       case ( MIX_PULAY )
-          
-          call reset(mix%stack(1))
-          call reset(mix%stack(2))
-          call reset(mix%stack(3))
-          
-       case ( MIX_BROYDEN )
-          
-          call reset(mix%stack(1))
-          call reset(mix%stack(2))
-          
-       end select
-    end if
-    
-    if ( associated(next) ) then
-       init_itt = 0
-       mix => mix%next
-       if ( mix%m == MIX_PULAY ) then
-          if ( any(mix%v == (/0,2/)) ) init_itt = 1
-       end if
-       if ( mix%m == MIX_BROYDEN ) init_itt = 1
-       mix%cur_itt = init_itt
-       if ( IONode ) then
-          write(*,'(3a)') trim(debug_msg),' switching mixer --> ', &
-               trim(mix%name)
-       end if
-    end if
-
-  end subroutine mixing_step
-    
-
-  ! Here the actual mixing methods will be employed
-  subroutine mixing_linear( mix, iscf, n, x1, F1, x2, info )
-
-    ! The current mixing method 
-    type(tMixer), intent(inout) :: mix
-    integer, intent(in) :: iscf
-
-    integer, intent(in) :: n
-    real(dp), intent(in) :: x1(n), F1(n)
-    real(dp), intent(inout) :: x2(n)
-
-    integer, intent(out) :: info
-
-    type(tMixer), pointer :: next
-    real(dp), pointer, contiguous :: tmp1(:), tmp2(:)
-    real(dp) :: alpha
-    integer :: nh, ns
-    integer :: i
-
-    info = 0
-
-    if ( is_next(mix,MIX_PULAY,next=next) ) then
-
-       ! If the following uses history, add that information
-       ! to the history.
-       if ( any(next%v == (/0,2/)) ) then
-
-          call push_F(next%stack(1), n, F1)
-          
-          ! ensure that we also calculate the RRes
-          ns = n_items(next%stack(1))
-          
-          if ( ns >= 2 ) then
-             
-             call push_diff(next%stack(2), next%stack(1))
-
-             ! Update the residual to reflect the input residual
-             tmp1 => getstackval(next,1,ns-1)
-             tmp2 => getstackval(next,3)
-             
-!$OMP parallel do default(shared), private(i)
-             do i = 1 , n
-                tmp1(i) = tmp1(i) - tmp2(i) + x1(i)
-                tmp2(i) = x1(i) + F1(i)
-             end do
-!$OMP end parallel do
-
-          else
-             
-             ! Store the output (without weight)
-!$OMP parallel do default(shared), private(i)
-             do i = 1 , n
-                x2(i) = x1(i) + F1(i)
-             end do
-!$OMP end parallel do
-             call update_F(next%stack(3), n, x2)
-             
-          end if
-
-          nh = max_size(next%stack(1))
-
-          if ( debug_mix ) &
-               write(*,'(a,2(a,i0))') trim(debug_msg), &
-               ' next%n_hist = ',ns, ' / ',nh
-
-       end if
-       
-    else if ( is_next(mix,MIX_BROYDEN,next) ) then
-       
-       ! If the following uses history, add that information
-       ! to the history.
-       call update_F(next%stack(1), n, F1)
-       
-       ns = n_items(next%stack(1))
-       nh = max_size(next%stack(1))
-
-       if ( debug_mix ) &
-            write(*,'(a,2(a,i0))') trim(debug_msg), &
-            ' next%n_hist = ',ns, ' / ',nh
-
-       tmp1 => getstackval(next,1)
-       if ( n_items(next%stack(2)) > 0 ) then
-          tmp2 => getstackval(next,2)
-!$OMP parallel do default(shared), private(i)
-          do i = 1 , n
-             tmp2(i) = tmp1(i) * next%w
-          end do
-!$OMP end parallel do
-       else
-
-          call push_F(next%stack(2), n, tmp1, next%w)
-
-       end if
-
-    end if
-
-    alpha = mix%w
-
-    if ( debug_mix ) write(*,'(2a,e10.4)') &
-         trim(debug_msg),' alpha = ',alpha
-
-!$OMP parallel do default(shared), private(i)
-    do i = 1 , n
-       x2(i) = x1(i) + alpha * F1(i)
-    end do
-!$OMP end parallel do
-
-  end subroutine mixing_linear
-
-
-  ! Pulay mixing
-  ! This has a variant in case the first (fast)
-  ! gets unstable in the inversion algorithm
-  subroutine mixing_pulay( mix, iscf, n, x1, F1, x2, info, ncoeff)
-    ! The current mixing method 
-    type(tMixer), intent(inout) :: mix
-    integer, intent(in) :: iscf
-
-    ! Input/output arrays
-    integer, intent(in) :: n
-    real(dp), intent(in) :: x1(n), F1(n)
-    real(dp), intent(inout) :: x2(n)
-    ! run-time information
-    integer, intent(out) :: info
-    ! Number of elements used for calculating the coefficients
-    integer, intent(in), optional :: ncoeff
-
-    ! Temporary arrays for local data structures
-    real(dp), pointer, contiguous :: res(:), rres(:), oF(:)
-    real(dp), pointer, contiguous :: rres1(:), rres2(:)
-
-    integer :: nh, ns, ncoef
-    integer :: i, j
-    ! Used arrays
-    real(dp), allocatable :: alpha(:), b(:,:), bi(:,:)
-    real(dp) :: G, ssum
-
-    logical :: p_next, p_restart
-
-    real(dp), external :: ddot
-
-#ifdef MPI
-    real(dp) :: dtmp
-    integer :: MPIerror
-#endif
-
-    ncoef = n
-    if ( present(ncoeff) ) ncoef = ncoeff
-
-    p_next = mix%rv(I_P_NEXT) > 0._dp
-    p_restart = mix%rv(I_P_RESTART) > 0._dp
-
-    ! Check whether a parameter next/restart is required
-    if ( p_restart .or. p_next ) then
-
-       ! Calculate dot: ||f_k||
-       ssum = ddot(ncoef, F1, 1, F1, 1)
-#ifdef MPI
-       dtmp = ssum
-       call MPI_AllReduce(dtmp,ssum,1, &
-            MPI_double_precision, MPI_Sum, &
-            mix%Comm,MPIerror)
-#endif
-
-       ! Calculate the relative difference
-       G = abs(ssum / mix%rv(I_PREVIOUS_RES) - 1._dp)
-
-       ! We first check for next, that has precedence
-       if ( p_next ) then
-
-          if ( G < mix%rv(I_P_NEXT) ) then
-             ! Signal stepping mixer
-             mix%action = IOR(mix%action, ACTION_NEXT)
-          end if
-          
-          if ( debug_mix .and. mix%cur_itt > 1 ) &
-               write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-               ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < np  :  ', &
-               G, ' < ', mix%rv(I_P_NEXT)
-          
-       end if
-       
-       if ( p_restart ) then
-
-          if ( G < mix%rv(I_P_RESTART) ) then
-             ! Signal restart
-             mix%action = IOR(mix%action, ACTION_RESTART)
-          end if
-
-          if ( debug_mix .and. mix%cur_itt > 1 ) &
-               write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-               ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < rp  :  ', &
-               G, ' < ', mix%rv(I_P_RESTART)
-
-       end if
-       
-       ! Store the new residual dot product
-       mix%rv(I_PREVIOUS_RES) = ssum
-       
-    end if
-
-
-    ! We follow the notation in
-    !  G.Kresse and J.Furthmuller, Comp. Mat. Sci. 6, 15, 1996
-
-    ! The Pulay mixing variable is called G
-    !
-    G = mix%w
-    
-    ! The Pulay stacks has this data layout:
-
-    ! - stack(1)
-    !   The residuals for each iteration (n_hist)
-    ! - stack(2)
-    !   The residuals of the residuals for each iteration (n_hist - 1)
-
-    nh = max_size(mix%stack(1))
-    ns = n_items(mix%stack(1))
-
-
-    select case ( mix%v ) 
-    case ( 0 , 2 ) ! stable pulay mixing
-
-       ! Add the residual to the stack
-       call push_F(mix%stack(1), n, F1)
-
-       if ( debug_mix ) &
-            write(*,'(a,2(a,i0))') trim(debug_msg), &
-            ' n_hist = ',min(nh,ns+1), ' / ',nh
-
-       ns = n_items(mix%stack(1))
-       
-       ! Add the residuals of the residuals if applicable
-       if ( ns >= 2 ) then
-
-          ! Create F[i] - F[i-1]
-          call push_diff(mix%stack(2),mix%stack(1))
-
-       else 
-
-          ! Store linear x of residual F
-!$OMP parallel do default(shared), private(i)
-          do i = 1 , n
-             x2(i) = x1(i) + F1(i)
-          end do
-!$OMP end parallel do
-          
-          ! Store output x
-          call push_F(mix%stack(3), n, x2)
-
-          ! The first Pulay step will do linear mixing
-          ! mix%rv(1) == linear mixing weight...
-!$OMP parallel do default(shared), private(i)
-          do i = 1 , n
-             x2(i) = x1(i) + F1(i) * mix%rv(1)
-          end do
-!$OMP end parallel do
-
-          return
-
-       end if
-
-       ! Update the residual to reflect the input residual
-       res => getstackval(mix,1,ns-1)
-       oF => getstackval(mix,3)
-
-!$OMP parallel do default(shared), private(i)
-       do i = 1 , n
-          res(i) = res(i) - oF(i) + x1(i)
-          oF(i) = x1(i) + F1(i)
-       end do
-!$OMP end parallel do
-       
-    case ( 1 , 3 ) ! Guaranteed reduction Pulay
-
-       ! Add the residual to the stack
-       ! Note this is the linear mixing weight...
-       call push_F(mix%stack(1), n, F1, mix%rv(1))
-
-       ! The history in this scheme is a little obscure... :)
-       if ( mod(mix%cur_itt,2) == 1 ) then
-          
-          if ( debug_mix ) &
-               write(*,'(2a)') trim(debug_msg), &
-               ' Direct mixing'
-          
-          ! this will happen on the:
-          !   1, 3, 5, ... iterations
-
-          if ( n_items(mix%stack(2)) > 0 ) then
-
-             ! Update RRes[i-2] to its value that should be used
-             ! subsequently.
-             ! From the previous iteration this array is now
-             ! -Res[i-2]
-             res => getstackval(mix,1)
-             rres => getstackval(mix,2)
-             call daxpy(n,1._dp, res, 1, rres, 1)
-             
-          end if
-
-          ! do linear mixing
-          res => getstackval(mix,1)
-!$OMP parallel do default(shared), private(i)
-          do i = 1 , n
-             x2(i) = x1(i) + res(i)
-          end do
-!$OMP end parallel do
-          
-          return
-
-       else
-          
-          if ( debug_mix ) &
-               write(*,'(a,2(a,i0))') trim(debug_msg), &
-               ' n_hist = ',min(nh,ns+1), ' / ',nh
-
-          ! now we can calculate RRes[i]
-          call push_diff(mix%stack(2),mix%stack(1))
-
-       end if
-
-    case default
-       
-       call die('mixing: Unknown Pulay variant.')
-
-    end select
-
-    ! Number of saved residuals, so far
-    ns = n_items(mix%stack(1))
-
-    ! Number of history steps for the double residual
-    nh = n_items(mix%stack(2))
-
-    ! Allocate arrays
-    allocate(b(nh,nh),bi(nh,nh),alpha(nh))
-
-    ! Solve the Pulay mixing problem
-    call pulay_stable()
-
-    ! Deallocate local arrays
-    deallocate(alpha,b,bi)
-
-    ! For the Guaranteed Reduction method we need to 
-    ! update the history...
-    select case ( mix%v )
-    case ( 1 , 3 )
-
-       ! In the subsequent iteration we
-       ! do not need Res[i], as we have to update the Res with the
-       ! minimum Res path.
-
-       ! Get the current RRes[i-1] and Res[i]
-       rres => getstackval(mix,2)
-       res => getstackval(mix,1)
-
-       ! Resubtract Res[i] to get -Res[i-1]
-       ! the RRes[i-1] will be updated in the next loop
-       call daxpy(n,-1._dp, res, 1, rres, 1)
-
-       ! delete latest residual
-       call pop(mix%stack(1))
-
-       ! Update the current residual to reflect the
-       ! used residual in the algorithm
-
-       ! Note that this is Res[i-1] * w = (F^i-1_out - F^i-1_in) * w
-       res => getstackval(mix,1)
-!$OMP parallel do default(shared), private(i)
-       do i = 1 , n
-          res(i) = res(i) - x1(i) + x2(i)
-       end do
-!$OMP end parallel do
-
-       !  oldF = F^i-1_in + Res[i-1] * w
-       ! which turns
-       !  Res[i] = F^i+1_in - F^i-1_in
-       
-    end select
-
-    if ( mix%restart > 0 .and. &
-         mod(mix%cur_itt,mix%restart) == 0 ) then
-
-       mix%action = IOR(mix%action, ACTION_RESTART)
-
-    end if
-
-  contains
-
-    subroutine pulay_stable()
-
-      info = 0
-      
-      ! Create A_ij coefficients for inversion
-      do i = 1 , nh
-         
-         ! Get RRes[i] array
-         rres1 => getstackval(mix,2,i)
-         
-         do j = 1 , i
-
-            ! Get RRes[j] array
-            rres2 => getstackval(mix,2,j)
-
-            ! B(i,j) = B(j,i) = dot_product(RRes[i],RRes[j])
-            b(i,j) = ddot(ncoef, rres1, 1, rres2, 1)
-            b(j,i) = b(i,j)
-
-         end do
-         
-      end do
-      
-#ifdef MPI
-      ! Global operations, but only for the non-extended entries
-      call MPI_AllReduce(b(1,1),bi(1,1),nh*nh, &
-           MPI_double_precision, MPI_Sum, &
-           mix%Comm,MPIerror)
-      ! copy over reduced arrays
-      b = bi
-#endif
-
-      ! Get current residual
-      res => getstackval(mix,1)
-
-      ! Get inverse of matrix
-      select case ( mix%v )
-      case ( 0 , 1 )
-         
-         call inverse(nh, b, bi, info)
-
-         if ( info /= 0 ) then
-            
-            ! only inform if we should not use SVD per default
-            if ( IONode ) &
-                 write(*,'(2a)') trim(debug_msg), &
-                 ' Pulay -- inversion failed, > SVD'
-            
-            ! We will first try the SVD routine
-            call svd(nh, b, bi, mix%rv(I_SVD_COND), info)
-            
-         end if
-         
-      case ( 2 , 3 )
-
-         ! We forcefully use the SVD routine
-         call svd(nh, b, bi, mix%rv(I_SVD_COND), info)
-
-      end select
-         
-      if ( info == 0 ) then
-
-         ! Initialize alpha
-         do i = 1 , nh
-            alpha(i) = 0._dp
-         end do
-
-         ! Calculate the coefficients on all processors
-         do j = 1 , nh
-            
-            ! Get j'th residual array
-            rres => getstackval(mix,2,j)
-            ssum = ddot(ncoef, rres, 1, res, 1)
-            
-            do i = 1 , nh
-               alpha(i) = alpha(i) - bi(i,j) * ssum
-            end do
-            
-         end do
-            
-#ifdef MPI
-         ! Reduce the alpha
-         call MPI_AllReduce(alpha(1),b(1,1),nh, &
-              MPI_double_precision, MPI_Sum, &
-              mix%Comm,MPIerror)
-         alpha(:) = b(:,1)
-#endif
-      else
-
-         info = 0
-         
-         ! reset to linear mixing
-         write(*,'(2a)') trim(debug_msg), &
-              ' Pulay -- inversion failed, SVD failed, > linear'
-         
-         alpha = 0._dp
-         alpha(nh) = 1._dp
-         
-      end if
-   
-      ! if debugging print out the different variables
-      if ( debug_mix ) then
-         write(*,'(2a,2(f10.6,a),100(tr1,e10.4))') &
-              trim(debug_msg),&
-              ' G = ',G,', sum(alpha) = ',sum(alpha), &
-              ', alpha = ',alpha
-      end if
-      
-      ! Copy over input dm, and add the linear mixing
-!$OMP parallel do default(shared), private(i)
-      do i = 1 , n
-         x2(i) = x1(i) + G * res(i)
-      end do
-!$OMP end parallel do
-      
-      do j = 1 , nh
-         
-         ! Get Res[j] and RRes[j]
-         res => getstackval(mix,1,j)
-         rres => getstackval(mix,2,j)
-         
-!$OMP parallel do default(shared), private(i)
-         do i = 1 , n
-            x2(i) = x2(i) + alpha(j) * ( res(i) + G * rres(i) )
-         end do
-!$OMP end parallel do
-         
-      end do
-      
-    end subroutine pulay_stable
-
-  end subroutine mixing_pulay
-
-
-  ! Broyden mixing
-  subroutine mixing_broyden( mix, iscf, n, x1, F1, x2, info, ncoeff)
-    ! The current mixing method 
-    type(tMixer), intent(inout) :: mix
-    integer, intent(in) :: iscf
-
-    ! Input/output arrays
-    integer, intent(in) :: n
-    real(dp), intent(in) :: x1(n), F1(n)
-    real(dp), intent(inout) :: x2(n)
-    ! information about algorithm
-    integer, intent(out) :: info
-    ! Number of elements used for coeffecients
-    integer, intent(in), optional :: ncoeff
-
-    ! Temporary arrays for local data structures
-    real(dp), pointer, contiguous :: rres(:), rres1(:)
-    real(dp), pointer, contiguous :: tmp1(:), tmp2(:), Jres(:)
-
-    integer :: is, ns, nm, ncoef
-    integer :: i, j, k, l, in
-    ! Used arrays
-    real(dp), allocatable, dimension(:,:) :: dFdF, a, ao, b, bb
-    real(dp), allocatable, dimension(:) :: dFF
-    real(dp), pointer :: l_w(:), l_dFdF(:), l_wp
-    real(dp) :: jinv0, norm, Fnorm, dMax, rtmp
-    type(dData1D) :: a1D, b1D
-
-    logical :: p_next, p_restart
-
-    real(dp), external :: ddot
-
-#ifdef MPI
-    integer :: MPIerror
-#endif
-
-    ncoef = n
-    if ( present(ncoeff) ) ncoef = ncoeff
-    info = 0
-
-    p_next = mix%rv(I_P_NEXT) > 0._dp
-    p_restart = mix%rv(I_P_RESTART) > 0._dp
-
-    ! Check whether a parameter restart/next is required
-    if ( p_restart .or. p_next ) then
-       
-       ! Calculate dot: ||f_k||
-       norm = ddot(ncoef, F1, 1, F1, 1)
-#ifdef MPI
-       rtmp = norm
-       call MPI_AllReduce(rtmp,norm,1, &
-            MPI_double_precision, MPI_Sum, &
-            mix%Comm,MPIerror)
-#endif
-
-       ! Calculate the relative difference
-       rtmp = abs(norm / mix%rv(I_PREVIOUS_RES) - 1._dp)
-
-       ! We first check for next, that has precedence
-       if ( p_next ) then
-          
-          if ( rtmp < mix%rv(I_P_NEXT) ) then
-             ! Signal stepping mixer
-             mix%action = IOR(mix%action, ACTION_NEXT)
-          end if
-          
-          if ( debug_mix .and. mix%cur_itt > 1 ) &
-               write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-               ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < np  :  ', &
-               rtmp, ' < ', mix%rv(I_P_NEXT)
-
-       end if
-
-       if ( p_restart ) then
-
-          if ( rtmp < mix%rv(I_P_RESTART) ) then
-             ! Signal restart
-             mix%action = IOR(mix%action, ACTION_RESTART)
-          end if
-
-          if ( debug_mix .and. mix%cur_itt > 1 ) &
-               write(*,'(a,2(a,e8.3))') trim(debug_msg), &
-               ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < rp  :  ', &
-               rtmp, ' < ', mix%rv(I_P_RESTART)
-          
-       end if
-       
-       ! Store the new residual dot product
-       mix%rv(I_PREVIOUS_RES) = norm
-       
-    end if
-
-
-    ! Get the initial Jacobian
-    jinv0 = mix%w
-    
-    ! Arrays in the stack
-    !  s(1) == F[i]
-    !  s(2) == J_i * F[i]) / norm(F[i+1]-F[i]) ...
-    !  rv   == w' // dFdF // w //
-
-    ! Number of saved histories, so far
-    ns = n_items(mix%stack(1))
-    nm = max_size(mix%stack(1))
-
-    if ( debug_mix ) &
-         write(*,'(a,2(a,i0))') trim(debug_msg), &
-         ' n_hist = ',min(nm,ns+1), ' / ',nm
-
-    if ( ns == 0 ) then
-
-       info = 0
-
-       ! Add to the history of the residual
-       call push_F(mix%stack(1), n, F1)
-       call push_F(mix%stack(2), n, F1, jinv0)
-
-       Jres => getstackval(mix,2)
-
-       ! Do linear interpolation
-!$OMP parallel do default(shared), private(i)
-       do i = 1 , n
-          x2(i) = x1(i) + Jres(i)
-       end do
-!$OMP end parallel do
-
-       return
-       
-    end if
-
-    ! Broyden implementation
-
-    ! Retrieve all data segments
-    l_wp => mix%rv(1) ! w'
-    i = 1
-    l_dFdF => mix%rv(i+1:i+nm**2) ! dFdF matrix
-    i = i + nm ** 2
-    l_w => mix%rv(i+1:i+nm) ! previous weights
-
-    ! Get the two temporary arrays of the latest iteration
-    rres => getstackval(mix,1)
-    Jres => getstackval(mix,2)
-
-    ! Allocate all work arrays
-    allocate(dFdF(nm,nm),dFF(ns))
-    allocate(a(ns,ns),ao(ns,ns),b(ns,ns),bb(ns,ns))
-
-    dMax = 0._dp
-    norm = 0._dp
-    Fnorm = 0._dp
-
-!$OMP parallel default(shared), private(in)
-
-    ! Calculate Res[i+1] - Res[i]
-!$OMP do
-    do in = 1 , n
-       ! Create the RRes[i]
-       rres(in) = F1(in) - rres(in)
-    end do
-!$OMP end do 
-!$OMP do reduction(max:dMax), reduction(+:norm,Fnorm)
-    do in = 1 , ncoef
-       dMax = max(dMax,abs(F1(in)))
-       Fnorm = Fnorm + F1(in) * F1(in)
-       norm = norm + rres(in) * rres(in)
-    end do
-!$OMP end do nowait
-    
-!$OMP end parallel
-
-#ifdef MPI
-    call MPI_AllReduce(dMax,rtmp,1, &
-         MPI_double_precision, MPI_Max, &
-         mix%Comm,MPIerror)
-    dMax = rtmp
-    call MPI_AllReduce(norm,rtmp,1, &
-         MPI_double_precision, MPI_Sum, &
-         mix%Comm,MPIerror)
-    norm = sqrt(rtmp)
-    call MPI_AllReduce(Fnorm,rtmp,1, &
-         MPI_double_precision, MPI_Sum, &
-         mix%Comm,MPIerror)
-    Fnorm = sqrt(rtmp)
-#else
-    norm = sqrt(norm)
-    Fnorm = sqrt(Fnorm)
-#endif
-
-    ! Store weight of this iteration
-    ! This is variable weight
-    l_w(ns) = exp( 1._dp / (dMax + 0.2_dp) )
-    if ( debug_mix ) &
-         write(*,'(2(a,e10.4))') &
-         trim(debug_msg)//' weight = ',l_w(ns), &
-         ' , norm = ',Fnorm
-
-    ! normalize RRes[i] and the Jacobian
-    rtmp = 1._dp / norm
-!$OMP parallel do default(shared), private(i)
-    do i = 1 , n
-       rres(i) = rres(i) * rtmp
-       Jres(i) = jinv0 * rres(i) + Jres(i) * rtmp
-    end do
-!$OMP end parallel do
-
-    ! Copy over previous data
-    is = 0
-    do j = 1 , nm
-       do i = 1 , nm
-          is = is + 1
-          dFdF(i,j) = l_dFdF(is)
-       end do
-    end do
-
-    ! Calculate scalar product between <RRes[is]|RRes[ns]>
-    ! and between <RRes[is]|Res[ns]>
-    do is = 1 , ns - 1
-       rres1 => getstackval(mix,1,is)
-       dFdF(is,ns) = ddot(ncoef, rres1, 1, rres, 1)
-       dFF(is) = ddot(ncoef, rres1, 1, F1, 1)
-    end do
-    ! NOTE that for is == ns we get 1., <RRes[ns]|RRes[ns]> / norm ** 2
-    dFdF(ns,ns) = 1._dp
-    ! create last scalar producet <RRes[i]|Res[ns]>
-    dFF(ns) = ddot(ncoef, rres, 1, F1, 1)
-
-#ifdef MPI
-    if ( ns > 1 ) then
-       call MPI_AllReduce(dFdF(1,ns),a(1,1),ns-1, &
-            MPI_double_precision, MPI_Sum, &
-            mix%Comm,MPIerror)
-       dFdF(1:ns-1,ns) = a(1:ns-1,1)
-    end if
-    call MPI_AllReduce(dFF(1),a(1,1),ns, &
-         MPI_double_precision, MPI_Sum, &
-         mix%Comm,MPIerror)
-    dFF(:) = a(:,1)
-#endif
-
-    ! Create symmetry scalar product
-    do is = 1 , ns - 1
-       dFdF(ns,is) = dFdF(is,ns)
-    end do
-!    if ( debug_mix ) &
-!         write(*,'(2a,100(tr1,e10.4))') trim(debug_msg), &
-!         ' dFdF(:,1) = ',dFdF(1:ns,1)
-
-    ! Calculate the weights by first calculating
-    ! the inverse matrix
-
-    ! Prepare to invert matrix
-    do j = 1 , ns
-       do i = 1 , ns
-          a(i,j) = l_w(i) * l_w(j) * dFdF(i,j)
-       end do
-       a(j,j) = a(j,j) + l_wp ** 2
-    end do
-
-    ! Invert the matrix
-    call inverse(ns, a, b, info)
-    if ( info /= 0 ) then
-       
-       deallocate(dFF,dFdF,a,ao,b,bb)
-       
-       return
-       
-    end if
-    
-    ! Calculate beta bar
-    do j = 1 , ns
-
-       do i = 1 , ns
-
-          bb(i,j) = 0._dp
-          
-          do is = 1 , ns
-             bb(i,j) = bb(i,j) - l_w(i) * l_w(is) * &
-                  b(i,is) * dFdF(j,is)
-          end do
-          
-       end do
-       
-       bb(j,j) = bb(j,j) + 1._dp
-       
-    end do
-
-    ! Compute all coefficients of the Zk | ui
-    ! This is done recursively
-    ! NOTE: We are done using b, so reuse it
-    do l = 1 , ns
-
-       ! Re-calculate alpha matrix
-       do k = 1 , l ! ell
-          do i = 1 , l ! ell
-             a(k,i) = b(k,i) * l_w(k) * l_w(i)
-          end do
-
-          if ( l > 1 ) then
-
-          ! Add matrix
-          do j = 1 , l - 1 ! ell - 1
-             do i = 1 , l - 1
-                a(k,j) = a(k,j) + bb(k,i) * ao(i,j)
-             end do
-          end do
-
-          end if
-       
-       end do
-
-       ! prep for next loop
-       ao(1:l,1:l) = a(1:l,1:l)
-
-    end do
-
-!    if ( debug_mix ) then
-!       do is = 1 , ns
-!          write(*,'(2a,i0,a,100(tr1,e10.4))') &
-!               trim(debug_msg),' alpha(:,',is,') = ',a(:,is)
-!       end do
-!    end if
-
-    ! Update the output F
-    do is = 1 , ns
-       
-       Jres => getstackval(mix,2,is)
-       
-       b(is,1) = sum( a(:,is) * dFF )
-
-       if ( is == 1 ) then
-!$OMP parallel do default(shared), private(i)
-          do i = 1 , n
-             x2(i) = x1(i) + F1(i)*jinv0 - Jres(i) * b(is,1)
-          end do
-!$OMP end parallel do
-       else
-          call daxpy(n,-b(is,1), Jres, 1, x2, 1)
-       end if
-       
-    end do
-    if ( debug_mix ) then
-       write(*,'(2a,100(tr1,e10.4))') &
-            trim(debug_msg),' gamma = ', b(:,1)
-    end if
-
-    ! Step Broyden
-    if ( ns == nm ) then
-       ! ensure that we reuse old data
-       dFdF(1:nm-1,1:nm-1) = dFdF(2:nm,2:nm)
-       l_w(1:nm-1) = l_w(2:nm)
-    end if
-       
-    ! Copy back result for following iteration
-    is = 0
-    do j = 1 , nm
-       do i = 1 , nm
-          is = is + 1
-          l_dFdF(is) = dFdF(i,j)
-       end do
-    end do
-
-    deallocate(dFdF,a,ao,b,bb,dFF)
-
-    ! Now add history segment to Broyden
-    if ( ns == nm ) then
-
-       ! get the data
-       call get(mix%stack(1), 1, a1D)
-       call get(mix%stack(2), 1, b1D)
-
-    else
-
-       ! Create new history
-       call newdData1D(a1D, n, '(res)')
-       call newdData1D(b1D, n, '(Jacobian-res)')
-
-       ns = ns + 1
-
-    end if
-
-    ! Get residual and Jacobian residual
-    tmp1 => val(a1D)
-    tmp2 => val(b1D)
-
-!$OMP parallel do default(shared), private(i)
-    do i = 1 , n
-       tmp1(i) = F1(i)
-       tmp2(i) = x2(i) - x1(i)
-    end do
-!$OMP end parallel do
-
-    ! push to stack
-    call push(mix%stack(1), a1D)
-    call delete(a1D)
-    call push(mix%stack(2), b1D)
-    call delete(b1D)
-
-    if ( mix%restart > 0 .and. &
-         mod(mix%cur_itt,mix%restart) == 0 ) then
-          
-       mix%action = IOR(mix%action, ACTION_RESTART)
-
-    end if
-
-  end subroutine mixing_broyden
-
-
-  ! Deletes all history, 
-  ! Possibly reassign number of new histories saved
-  subroutine mixing_history_clear( mixers )
+  end subroutine mixer_init
+
+
+  !> Initialize all history for the mixers
+  !!
+  !! Routine for clearing all history and setting up the
+  !! arrays so that they may be used subsequently.
+  !!
+  !! @param[inout] mixers the mixers to be initialized
+  subroutine mixers_history_init( mixers )
     type(tMixer), intent(inout), target :: mixers(:)
 
     type(tMixer), pointer :: m
@@ -1803,63 +531,71 @@ contains
 
        ! do not try and de-allocate something not
        ! allocated
-       if ( .not. allocated(m%stack) ) cycle
+       if ( allocated(m%stack) ) then
 
-       ns = size(m%stack)
-       do is = 1 , ns
-          call delete(m%stack(is))
-       end do
+          ns = size(m%stack)
+          do is = 1 , ns
+             call delete(m%stack(is))
+          end do
+          
+          ! clean-up
+          deallocate(m%stack)
+          
+       end if
+       
+       ! Re-populate 
+       select case ( m%m )
+       case ( MIX_LINEAR )
 
-       ! clean-up
-       deallocate(m%stack)
+          ! do nothing
 
-    end do
-
-    ! First we allocate the "advanced" mixing methods
-    do im = 1 , size(mixers)
-       m => mixers(im)
-
-       select case ( m%m ) 
        case ( MIX_PULAY )
 
           allocate(m%stack(3))
 
-          ! allocate Res'[i], Pulay
+          ! allocate x[i+1] - x[i]
           call new(m%stack(1), m%n_hist)
-          ! allocate Res[i+1] - Res[i], Pulay
+          ! allocate F[i+1] - F[i]
           call new(m%stack(2), m%n_hist-1)
-          if ( any(m%v == (/0,2/)) ) then
-             ! The out of the latest iteration
-             call new(m%stack(3), 1)
-          end if
+          
+          ! The out of the latest iteration
+          call new(m%stack(3), 1)
 
        case ( MIX_BROYDEN )
 
-          allocate(m%stack(2))
+          allocate(m%stack(3))
 
-          ! allocate Res[i], Broyden
+          ! allocate x[i+1] - x[i]
           call new(m%stack(1), m%n_hist)
-          ! allocate 'u', Broyden
-          call new(m%stack(2), m%n_hist)
+          ! allocate F[i+1] - F[i]
+          call new(m%stack(2), m%n_hist-1)
+
+          call new(m%stack(3), 1)
 
        end select
 
     end do
 
-  end subroutine mixing_history_clear
+  end subroutine mixers_history_init
 
 
-  subroutine mixing_reset( mixs )
-    type(tMixer), pointer :: mixs(:)
+  !> Reset the mixers, i.e. clean _everything_
+  !!
+  !! Also deallocates (and nullifies) the input array!
+  !!
+  !! @param[inout] mixers array of mixers to be cleaned
+  subroutine mixers_reset( mixers )
+    type(tMixer), pointer :: mixers(:)
     
     type(tMixer), pointer :: m
 
     integer :: im, is, ns
 
-    if ( .not. associated(mixs) ) return
+    if ( .not. associated(mixers) ) return
 
-    do im = 1 , size(mixs)
-       m => mixs(im)
+    do im = 1 , size(mixers)
+       m => mixers(im)
+       
        if ( allocated(m%stack) ) then
           ns = size(m%stack)
           do is = 1 , ns
@@ -1867,23 +603,32 @@ contains
           end do
           deallocate(m%stack)
        end if
+       
        if ( associated(m%rv) ) then
           deallocate(m%rv)
           nullify(m%rv)
        end if
+       
        if ( associated(m%iv) ) then
           deallocate(m%iv)
           nullify(m%iv)
        end if
+       
     end do
 
-    deallocate(mixs)
-    nullify(mixs)
+    deallocate(mixers)
+    nullify(mixers)
 
-  end subroutine mixing_reset
+  end subroutine mixers_reset
+  
 
+  !> Print (to std-out) information regarding the mixers
+  !!
+  !! @param[in] prefix the prefix (fdf) for the mixers
+  !! @param[in] mixers array of mixers allocated
+  subroutine mixers_print( prefix, mixers )
 
-  subroutine mixing_print( prefix, mixers )
+    use parallel, only: IONode
     
     character(len=*), intent(in) :: prefix
     type(tMixer), intent(in), target :: mixers(:)
@@ -2026,10 +771,16 @@ contains
           
     end do
 
-  end subroutine mixing_print
+  end subroutine mixers_print
 
 
-  subroutine mixing_print_block( prefix, mixers )
+  !> Print (to std-out) the fdf-blocks that recreate the mixer settings
+  !!
+  !! @param[in] prefix the fdf-prefix for reading the blocks
+  !! @param[in] mixers array of mixers that should be printed
+  !!    their fdf-blocks
+  subroutine mixers_print_block( prefix, mixers )
+    use parallel, only: IONode
     
     character(len=*), intent(in) :: prefix
     type(tMixer), intent(in), target :: mixers(:)
@@ -2157,8 +908,1422 @@ contains
 
     write(*,*) ! new-line
     
-  end subroutine mixing_print_block
+  end subroutine mixers_print_block
+
+
+  !> Return the integer specification of the mixing type
+  !!
+  !! @param[in] str the character representation of the mixing type
+  !! @return the integer corresponding to the mixing type
+  function mix_method(str) result(m)
+    use fdf, only: leqi
+    character(len=*), intent(in) :: str
+    integer :: m
+
+    if ( leqi(str,'linear') ) then
+       m = MIX_LINEAR
+    else if ( leqi(str,'pulay') .or. &
+         leqi(str, 'anderson') ) then
+       m = MIX_PULAY
+    else if ( leqi(str,'broyden') ) then
+       m = MIX_BROYDEN
+    else if ( leqi(str,'fire') ) then
+       m = MIX_FIRE
+       call die('mixing: FIRE currently not supported.')
+    else
+       call die('mixing: Unknown mixing variant.')
+    end if
+
+  end function mix_method
+
+
+  !> Return the variant of the mixing method
+  !!
+  !! @param[in] m the integer type of the mixing method
+  !! @param[in] str the character specification of the mixing method variant
+  !! @return the variant of the mixing method
+  function mix_method_variant(m, str) result(v)
+    use fdf, only: leqi
+    integer, intent(in) :: m
+    character(len=*), intent(in) :: str
+    integer :: v
+
+    v = 0
+    select case ( m )
+    case ( MIX_LINEAR )
+       ! no variants
+    case ( MIX_PULAY ) 
+       v = 0
+       ! We do not implement tho non-stable version
+       ! There is no need to have an inferior Pulay mixer...
+       if ( leqi(str,'original') .or. &
+            leqi(str,'kresse') .or. leqi(str,'stable') ) then
+          ! stable version, will nearly always succeed on inversion
+          v = 0
+       else if ( leqi(str,'original+svd') .or. &
+            leqi(str,'kresse+svd') .or. leqi(str,'stable+svd') ) then
+          ! stable version, will nearly always succeed on inversion
+          v = 2
+       else if ( leqi(str,'gr') .or. &
+            leqi(str,'guarenteed-reduction') .or. &
+            leqi(str,'bowler-gillan') ) then
+          ! Guarenteed reduction version
+          v = 1
+       else if ( leqi(str,'gr+svd') .or. &
+            leqi(str,'guarenteed-reduction+svd') .or. &
+            leqi(str,'bowler-gillan+svd') ) then
+          ! Guarenteed reduction version
+          v = 3
+       end if
+    case ( MIX_BROYDEN )
+       ! Currently only one variant
+       v = 0
+    case ( MIX_FIRE ) 
+       ! no variants
+    end select
+
+  end function mix_method_variant
+
+
+
+
+  ! The basic mixing procedure is this:
+  ! 1. Initialize the mixing algorithm
+  !    This will typically mean that one needs to
+  !    push input and output matrices
+  ! 2. Calculate the mixing coefficients
+  ! 3. Use coefficients to calculate the
+  !    next (optimized) guess
+  ! 4. Finalize the mixing method
+  !
+  ! Having the routines split up in this manner
+  ! allows one to skip step 2 and use coefficients
+  ! from another set of input/output to retrieve the
+  ! mixing coefficients.
+  ! Say we may retrieve mixing coefficients from
+  ! the Hamiltonian, but use them for the density-matrix
+
+  !> Initialize the mixing algorithm
+  !!
+  !! @param[pointer] mix the mixing method
+  !! @param[in] n size of the arrays to be used in the algorithm
+  !! @param[in] xin array of the input variables
+  !! @param[in] xout array of the output variables
+  subroutine mixing_init( mix, n, xin, F)
+    
+    ! The current mixing method 
+    type(tMixer), pointer :: mix
+    integer, intent(in) :: n
+    ! In/out of the function
+    real(dp), intent(in) :: xin(n), F(n)
+
+    real(dp), allocatable :: tmp(:)
+    real(dp), pointer :: res(:), rres(:)
+
+    integer :: i, ns
+    integer :: rsave
+    real(dp) :: dnorm, dtmp
+    logical :: p_next, p_restart
+
+    ! Initialize action for mixer
+    mix%action = ACTION_MIX
+    
+    ! Step iterator (so first mixing has cur_itt == 1)
+    mix%cur_itt = mix%cur_itt + 1
+
+    ! If we are going to skip to next, we signal it
+    ! before entering
+    if ( mix%n_itt > 0 .and. &
+         mix%n_itt <= mix%cur_itt ) then
+       mix%action = IOR(mix%action, ACTION_NEXT)
+    end if
+
+
+    ! Check whether the residual norm is below a certain
+    ! criteria
+    p_next = mix%rv(I_P_NEXT) > 0._dp
+    p_restart = mix%rv(I_P_RESTART) > 0._dp
+
+    ! Check whether a parameter next/restart is required
+    if ( p_restart .or. p_next ) then
+
+       ! Calculate norm: ||f_k||
+       dnorm = norm(n, F, F)
+#ifdef MPI
+       dtmp = dnorm
+       call MPI_AllReduce(dtmp,dnorm,1, &
+            MPI_double_precision, MPI_Sum, &
+            mix%Comm, i)
+#endif
+
+       ! Calculate the relative difference
+       dtmp = abs(dnorm / mix%rv(I_PREVIOUS_RES) - 1._dp)
+
+       ! We first check for next, that has precedence
+       if ( p_next ) then
+
+          if ( dtmp < mix%rv(I_P_NEXT) ) then
+             ! Signal stepping mixer
+             mix%action = IOR(mix%action, ACTION_NEXT)
+          end if
+          
+          if ( debug_mix .and. mix%cur_itt > 1 ) &
+               write(*,'(a,2(a,e8.3))') trim(debug_msg), &
+               ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < np  :  ', &
+               dtmp, ' < ', mix%rv(I_P_NEXT)
+          
+       end if
+       
+       if ( p_restart ) then
+
+          if ( dtmp < mix%rv(I_P_RESTART) ) then
+             ! Signal restart
+             mix%action = IOR(mix%action, ACTION_RESTART)
+          end if
+
+          if ( debug_mix .and. mix%cur_itt > 1 ) &
+               write(*,'(a,2(a,e8.3))') trim(debug_msg), &
+               ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < rp  :  ', &
+               dtmp, ' < ', mix%rv(I_P_RESTART)
+
+       end if
+       
+       ! Store the new residual norm
+       mix%rv(I_PREVIOUS_RES) = dnorm
+       
+    end if
+
+
+    ! Push information to the stack
+    select case ( mix%m )
+    case ( MIX_LINEAR )
+       if ( debug_mix ) &
+            write(*,'(2a)') trim(debug_msg),' linear'
+       call init_linear()
+    case ( MIX_PULAY )
+       if ( debug_mix ) then
+          select case ( mix%v )
+          case ( 0 )
+            write(*,'(2a)') trim(debug_msg),' Pulay'
+          case ( 1 )
+            write(*,'(2a)') trim(debug_msg),' Pulay, GR'
+          case ( 2 )
+            write(*,'(2a)') trim(debug_msg),' Pulay-SVD'
+          case ( 3 )
+            write(*,'(2a)') trim(debug_msg),' Pulay-SVD, GR'
+          end select
+       end if
+       call init_pulay()
+    case ( MIX_BROYDEN )
+      if ( debug_mix ) &
+           write(*,'(2a)') trim(debug_msg),' Broyden'
+       call init_broyden()
+    end select
+
+  contains
+
+    subroutine init_linear()
+      
+      ! information for this depends on the
+      ! following method
+      call fake_history_from_linear(mix%next)
+      call fake_history_from_linear(mix%next_conv)
+
+    end subroutine init_linear
+
+    subroutine init_pulay()
+      logical :: GR_linear
+
+      select case ( mix%v )
+      case ( 0 , 2 ) ! Stable Pulay
+
+         ! Add the residual to the stack
+         call push_F(mix%stack(1), n, F)
+         
+         ns = n_items(mix%stack(1))
+         
+         ! Add the residuals of the residuals if applicable
+         if ( ns >= 2 ) then
+            
+            ! Create F[i+1] - F[i]
+            call push_diff(mix%stack(2), mix%stack(1))
+
+            ! Update the residual to reflect the input residual
+            res => getstackval(mix, 1, ns-1)
+            rres => getstackval(mix, 3)
+         
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , n
+               res(i) = res(i) - rres(i) + xin(i)
+            end do
+!$OMP end parallel do
+            
+         else
+            
+            ! Store F[x_in] (used to create the input residual)
+            allocate(tmp(n))
+
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , n
+               tmp(i) = xin(i) + F(i)
+            end do
+!$OMP end parallel do 
+
+            call push_F(mix%stack(3), n, tmp)
+
+            deallocate(tmp)
+
+         end if
+
+      case ( 1 , 3 )
+
+         ! Whether this is the linear cycle...
+         GR_linear = mod(mix%cur_itt, 2) == 1
+
+         ! Add the residual to the stack
+         call push_F(mix%stack(1), n, F)
+         
+         ns = n_items(mix%stack(1))
+
+         ! Add the residuals of the residuals if applicable
+         if ( ns >= 2 ) then
+
+            ! Create F[i+1] - F[i]
+            call push_diff(mix%stack(2), mix%stack(1))
+
+            if ( GR_linear ) then
+               ! Update the residual to reflect the input residual
+               res => getstackval(mix, 1, ns-1)
+               rres => getstackval(mix, 3)
+               
+!$OMP parallel do default(shared), private(i)
+               do i = 1 , n
+                  res(i) = res(i) - rres(i) + xin(i)
+               end do
+!$OMP end parallel do
+
+            end if
+
+         end if
+
+         if ( GR_linear ) then
+
+            ! Store F[x_in]
+            !   (used to create the input residual)
+            allocate(tmp(n))
+            
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , n
+               tmp(i) = xin(i) + F(i)
+            end do
+!$OMP end parallel do 
+            
+            call push_F(mix%stack(3), n, tmp)
+            
+            deallocate(tmp)
+            
+         end if
+         
+      end select
+      
+    end subroutine init_pulay
+
+    subroutine init_broyden()
+
+      ! Add the residual to the stack
+      call push_F(mix%stack(1), n, F)
+
+      ns = n_items(mix%stack(1))
+
+      ! Add the residuals of the residuals if applicable
+      if ( ns >= 2 ) then
+
+         ! Create F[i+1] - F[i]
+         call push_diff(mix%stack(2), mix%stack(1))
+
+         ! Update the residual to reflect the input residual
+         res => getstackval(mix, 1, ns-1)
+         rres => getstackval(mix, 3)
+
+!$OMP parallel do default(shared), private(i)
+         do i = 1 , n
+            res(i) = res(i) - rres(i) + xin(i)
+         end do
+!$OMP end parallel do
+
+      else
+
+         ! Store F[x_in] (used to create the input residual)
+         allocate(tmp(n))
+
+!$OMP parallel do default(shared), private(i)
+         do i = 1 , n
+            tmp(i) = xin(i) + F(i)
+         end do
+!$OMP end parallel do 
+
+         call push_F(mix%stack(3), n, tmp)
+
+         deallocate(tmp)
+
+      end if
+
+    end subroutine init_broyden
+    
+    subroutine fake_history_from_linear(next)
+      type(tMixer), pointer :: next
+      real(dp), pointer :: t1(:), t2(:)
+      integer :: ns, nh, i, nhl
+
+      if ( .not. associated(next) ) return
+
+      ! Reduce to # history of linear
+      nhl = mix%n_hist
+
+      ! Check for the type of following method
+      select case ( next%m )
+      case ( MIX_PULAY )
+
+         ! Here it depends on the variant
+         select case ( next%v ) 
+         case ( 0 , 2 ) ! stable pulay mixing
+            
+            ! Add the residual to the stack
+            call push_F(next%stack(1), n, F)
+            
+            ns = n_items(next%stack(1))
+
+            ! Add the residuals of the residuals if applicable
+            if ( ns >= 2 ) then
+
+               ! Create F[i+1] - F[i]
+               call push_diff(next%stack(2), next%stack(1))
+
+               ! Update the residual to reflect the input residual
+               t1 => getstackval(next, 1, ns-1)
+               t2 => getstackval(next, 3)
+
+!$OMP parallel do default(shared), private(i)
+               do i = 1 , n
+                  t1(i) = t1(i) - t2(i) + xin(i)
+                  t2(i) = xin(i) + F(i)
+               end do
+!$OMP end parallel do
+
+            else
+
+               allocate(tmp(n))
+!$OMP parallel do default(shared), private(i)
+               do i = 1 , n
+                  tmp(i) = xin(i) + F(i)
+               end do
+!$OMP end parallel do
+               
+               ! Store F[x_in] (used to create the input residual)
+               call push_F(next%stack(3), n, tmp)
+
+               deallocate(tmp)
+
+            end if
+
+            nh = max_size(next%stack(1))
+
+            if ( debug_mix ) &
+                 write(*,'(a,2(a,i0))') trim(debug_msg), &
+                 ' next%n_hist = ',ns, ' / ',nh
+            
+         end select
+         
+      case ( MIX_BROYDEN )
+
+         ! Add the residual to the stack
+         call push_F(next%stack(1), n, F)
+
+         ns = n_items(next%stack(1))
+
+         ! Add the residuals of the residuals if applicable
+         if ( ns >= 2 ) then
+
+            ! Create F[i+1] - F[i]
+            call push_diff(next%stack(2), next%stack(1))
+
+            ! Update the residual to reflect the input residual
+            t1 => getstackval(next, 1, ns-1)
+            t2 => getstackval(next, 3)
+
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , n
+               t1(i) = t1(i) - t2(i) + xin(i)
+               t2(i) = xin(i) + F(i)
+            end do
+!$OMP end parallel do
+
+         else
+
+            allocate(tmp(n))
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , n
+               tmp(i) = xin(i) + F(i)
+            end do
+!$OMP end parallel do
+
+            ! Store F[x_in] (used to create the input residual)
+            call push_F(next%stack(3), n, tmp)
+            
+            deallocate(tmp)
+
+         end if
+
+         nh = max_size(next%stack(1))
+
+         if ( debug_mix ) &
+              write(*,'(a,2(a,i0))') trim(debug_msg), &
+              ' next%n_hist = ',ns, ' / ',nh
+         
+      end select
+
+    end subroutine fake_history_from_linear
+    
+  end subroutine mixing_init
+
   
+  !> Function to retrieve the number of coefficients
+  !! calculated in this iteration.
+  !! This is so external routines can query the size
+  !! of the arrays used.
+  !!
+  !! @param[in] mix the used mixer
+  function mixing_ncoeff( mix ) result(n)
+    type(tMixer), intent(in) :: mix
+    integer :: n
+
+    n = 0
+
+    select case ( mix%m )
+    case ( MIX_PULAY )
+       n = n_items(mix%stack(2))
+    case ( MIX_BROYDEN )
+       n = n_items(mix%stack(2))
+    end select
+
+  end function mixing_ncoeff
+
+
+  !> Calculate the mixing coefficients for the
+  !! current mixer
+  !!
+  !! @param[in] mix the current mixer
+  !! @param[in] n the number of elements used to calculate
+  !!           the coefficients
+  !! @param[in] xin the input value
+  !! @param[in] F xout - xin, (residual)
+  !! @param[out] coeff the coefficients
+  subroutine mixing_coeff( mix, n, xin, F, coeff)
+
+    use parallel, only: IONode
+
+    type(tMixer), intent(inout) :: mix
+    integer, intent(in) :: n
+    real(dp), intent(in) :: xin(n), F(n)
+    real(dp), intent(out) :: coeff(:)
+    integer :: ncoeff
+
+    ncoeff = size(coeff)
+
+    if ( ncoeff < mixing_ncoeff(mix) ) then
+       write(*,'(a)') 'mix: Error in calculating coefficients'
+       ! Do not allow this...
+       return
+    end if
+
+    select case ( mix%m )
+    case ( MIX_LINEAR )
+       call linear_coeff()
+    case ( MIX_PULAY )
+       call pulay_coeff()
+    case ( MIX_BROYDEN )
+       call broyden_coeff()
+    end select
+
+  contains
+
+    subroutine linear_coeff()
+      integer :: i
+      do i = 1 , ncoeff
+         coeff(i) = 0._dp
+      end do
+    end subroutine linear_coeff
+
+    subroutine pulay_coeff()
+      integer :: ns, nh, nmax
+      integer :: i, j, info
+      logical :: lreturn
+
+      ! Calculation quantities
+      real(dp) :: dnorm, G
+      real(dp), pointer :: res(:), rres(:), rres1(:), rres2(:)
+      real(dp), allocatable :: A(:,:), Ainv(:,:)
+
+      ns = n_items(mix%stack(1))
+      nmax = max_size(mix%stack(1))
+      nh = n_items(mix%stack(2))
+
+      lreturn = .false.
+
+      ! Easy check for initial step...
+      select case ( mix%v )
+      case ( 0 , 2 ) ! Stable Pulay
+         
+         lreturn = ns == 1
+         
+      case ( 1 , 3 ) ! Guaranteed Pulay
+         
+         lreturn = mod(mix%cur_itt, 2) == 1
+         
+      end select
+
+      ! In case we return we are actually doing
+      ! linear mixing
+      if ( lreturn ) return
+
+      
+      ! Print out number of currently used history steps
+      if ( debug_mix ) &
+           write(*,'(a,2(a,i0))') trim(debug_msg), &
+           ' n_hist = ',ns, ' / ',nmax
+
+      
+      ! Allocate arrays for calculating the
+      ! coefficients
+      allocate(A(nh,nh), Ainv(nh,nh))
+
+      
+      ! Calculate A_ij coefficients for inversion
+      do i = 1 , nh
+         
+         ! Get RRes[i] array
+         rres1 => getstackval(mix, 2, i)
+         
+         do j = 1 , i
+            
+            ! Get RRes[j] array
+            rres2 => getstackval(mix, 2, j)
+            
+            ! A(i,j) = A(j,i) = norm(RRes[i],RRes[j])
+            A(i,j) = norm(n, rres1, rres2)
+            A(j,i) = A(i,j)
+            
+         end do
+         
+      end do
+
+#ifdef MPI
+      ! Global operations, but only for the non-extended entries
+      call MPI_AllReduce(A(1,1),Ainv(1,1),nh*nh, &
+           MPI_double_precision, MPI_Sum, &
+           mix%Comm, i)
+      ! copy over reduced arrays
+      A = Ainv
+#endif
+
+      ! Get inverse of matrix
+      select case ( mix%v )
+      case ( 0 , 1 )
+         
+         call inverse(nh, A, Ainv, info)
+
+         if ( info /= 0 ) then
+            
+            ! only inform if we should not use SVD per default
+            if ( IONode ) &
+                 write(*,'(2a)') trim(debug_msg), &
+                 ' Pulay -- inversion failed, > SVD'
+            
+            ! We will first try the SVD routine
+            call svd(nh, A, Ainv, mix%rv(I_SVD_COND), info)
+            
+         end if
+         
+      case ( 2 , 3 )
+
+         ! We forcefully use the SVD routine
+         call svd(nh, A, Ainv, mix%rv(I_SVD_COND), info)
+
+      end select
+
+      
+      ! NOTE, although mix%stack(1) contains
+      ! the x[i] - x[i-1], the tip of the stack
+      ! contains F[i]!
+      ! res == F[i]
+      res => getstackval(mix, 1)
+
+      ! Initialize the coefficients
+      do i = 1 , nh
+         coeff(i) = 0._dp
+      end do
+
+      if ( info == 0 ) then
+
+         ! Calculate the coefficients on all processors
+         do j = 1 , nh
+
+            ! res  == F[i]
+            ! rres == F[j+1] - F[j]
+            rres => getstackval(mix, 2, j)
+            dnorm = norm(n, rres, res)
+            
+            do i = 1 , nh
+               coeff(i) = coeff(i) - Ainv(i,j) * dnorm
+            end do
+            
+         end do
+            
+#ifdef MPI
+         ! Reduce the coefficients
+         call MPI_AllReduce(coeff(1),A(1,1),nh, &
+              MPI_double_precision, MPI_Sum, &
+              mix%Comm, i)
+         do i = 1 , nh
+            coeff(i) = A(i,1)
+         end do
+#endif
+         
+      else
+
+         info = 0
+         
+         ! reset to linear mixing
+         write(*,'(2a)') trim(debug_msg), &
+              ' Pulay -- inversion failed, SVD failed, > linear'
+         
+      end if
+      
+      ! Clean up memory
+      deallocate(A, Ainv)
+            
+    end subroutine pulay_coeff
+
+    subroutine broyden_coeff()
+      integer :: ns, nh, nmax
+      integer :: i, j, k, info
+
+      ! Calculation quantities
+      real(dp) :: dnorm, dtmp
+      real(dp), pointer :: w(:), res(:), rres(:), rres1(:), rres2(:)
+      real(dp), allocatable :: c(:), A(:,:), Ainv(:,:)
+
+      ns = n_items(mix%stack(1))
+      nmax = max_size(mix%stack(1))
+      nh = n_items(mix%stack(2))
+
+      ! Easy check for initial step...
+      if ( ns == 1 ) then
+
+         ! reset
+         coeff = 0._dp
+
+         return
+         
+      end if
+
+      
+      ! Print out number of currently used history steps
+      if ( debug_mix ) &
+           write(*,'(a,2(a,i0))') trim(debug_msg), &
+           ' n_hist = ',ns, ' / ',nmax
+
+
+      ! This is the modified Broyden algorithm...
+
+      ! Retrieve the previous weights
+      w => mix%rv(2:1+nh)
+      select case ( mix%v )
+      case ( 2 ) ! Unity Broyden
+         
+         w(nh) = 1._dp
+         
+      case ( 1 ) ! RMS Broyden
+         
+         dnorm = norm(n, F, F)
+         w(:) = 1._dp / sqrt(dnorm)
+         if ( debug_mix ) &
+              write(*,'(2(a,e10.4))') &
+              trim(debug_msg)//' weight = ',w(1), &
+              ' , norm = ',dnorm
+
+      case ( 0 ) ! Varying weight
+         
+         dnorm = 0._dp
+!$OMP parallel do default(shared), private(i), &
+!$OMP& reduction(max:dnorm)
+         do i = 1 , n
+            dnorm = max( dnorm, abs(F(i)) )
+         end do
+!$OMP end parallel do
+#ifdef MPI
+         call MPI_AllReduce(dnorm, dtmp, 1, &
+              MPI_Double_Precision, MPI_Max, &
+              mix%Comm, i)
+         dnorm = dtmp
+#endif
+         ! Problay 0.2 should be changed to user-defined
+         w(nh) = exp( 1._dp / (dnorm + 0.2_dp) )
+         if ( debug_mix ) &
+              write(*,'(2a,1000(tr1,e10.4))') &
+              trim(debug_msg),' weights = ',w(1:nh)
+
+      end select
+
+      ! Allocate arrays used
+      allocate(c(nh))
+      allocate(A(nh,nh), Ainv(nh,nh))
+
+      
+      !  < RRes[i] | Res[n] >
+      do i = 1 , nh
+         rres => getstackval(mix, 2, i)
+         c(i) = norm(n, rres, F)
+      end do
+#ifdef MPI
+      call MPI_AllReduce(c(1), A(1,1), nh, &
+           MPI_Double_Precision, MPI_Sum, &
+           mix%Comm, i)
+      do i = 1 , nh
+         c(i) = A(i,1)
+      end do
+#endif
+
+      ! Create A_ij coefficients for inversion
+      do i = 1 , nh
+         
+         ! Get RRes[i] array
+         rres1 => getstackval(mix, 2, i)
+         
+         do j = 1 , i
+
+            ! Get RRes[j] array
+            rres2 => getstackval(mix, 2, j)
+
+            ! A(i,j) = A(j,i) = dot_product(RRes[i],RRes[j])
+            A(i,j) = w(i) * w(j) * norm(n, rres1, rres2)
+            A(j,i) = A(i,j)
+
+         end do
+
+         ! Add the diagonal term
+         ! This should also prevent it from being
+         ! singular (unless mix%w == 0)
+         A(i,i) = mix%rv(1) ** 2 + A(i,i)
+         
+      end do
+
+
+#ifdef MPI
+      call MPI_AllReduce(A(1,1),Ainv(1,1),nh*nh, &
+           MPI_double_precision, MPI_Sum, &
+           mix%Comm, i)
+      A = Ainv
+#endif
+
+      ! Calculate the inverse
+      call inverse(nh, A, Ainv, info)
+
+      if ( info /= 0 ) then
+         
+         ! only inform if we should not use SVD per default
+         if ( IONode ) &
+              write(*,'(2a)') trim(debug_msg), &
+              ' Broyden -- inversion failed, > SVD'
+         
+         ! We will first try the SVD routine
+         call svd(nh, A, Ainv, mix%rv(I_SVD_COND), info)
+         
+      end if
+
+      do i = 1 , nh
+         coeff(i) = 0._dp
+      end do
+
+      if ( info == 0 ) then
+
+         ! Calculate the coefficients...
+         do i = 1 , nh
+
+            do j = 1 , nh
+               ! Ainv should be symmetric (A is)
+               coeff(i) = coeff(i) + w(j) * c(j) * Ainv(j,i)
+            end do
+
+            ! Calculate correct weight...
+            coeff(i) = - w(i) * coeff(i)
+            
+         end do
+
+      else
+
+         ! reset to linear mixing
+         write(*,'(2a)') trim(debug_msg), &
+              ' Broyden -- inversion failed, SVD failed, > linear'
+
+      end if
+
+      deallocate(A, Ainv)
+      
+    end subroutine broyden_coeff
+
+  end subroutine mixing_coeff
+
+
+
+  !> Calculate the guess for the next iteration
+  !!
+  !! Note this gets passed the coefficients. Hence,
+  !! they may be calculated from another set of history
+  !! steps.
+  !! This may be useful in certain situations.
+  !!
+  !! @param[in] mix the current mixer
+  !! @param[in] n the number of elements used to calculate
+  !!           the coefficients
+  !! @param[in] xin the input value
+  !! @param[in] F the xin residual
+  !! @param[out] xnext the input for the following iteration
+  !! @param[in] coeff the coefficients
+  subroutine mixing_calc_next( mix, n, xin, F, xnext, coeff )
+    ! The current mixing method 
+    type(tMixer), pointer :: mix
+    integer, intent(in) :: n
+    real(dp), intent(in) :: xin(n)
+    real(dp), intent(in) :: F(n)
+    real(dp), intent(out) :: xnext(n)
+    real(dp), intent(in) :: coeff(:)
+
+    select case ( mix%m )
+    case ( MIX_LINEAR )
+       call mix_linear()
+    case ( MIX_PULAY )
+       call mix_pulay()
+    case ( MIX_BROYDEN )
+       call mix_broyden()
+    end select
+
+  contains
+
+    subroutine mix_linear()
+      integer :: i
+      real(dp) :: w
+      w = mix%w
+
+      if ( debug_mix ) write(*,'(2a,e10.4)') &
+           trim(debug_msg),' alpha = ', w
+      
+!$OMP parallel do default(shared), private(i)
+      do i = 1 , n
+         xnext(i) = xin(i) + w * F(i)
+      end do
+!$OMP end parallel do
+      
+    end subroutine mix_linear
+
+    subroutine mix_pulay()
+      integer :: ns, nh
+      integer :: i, j
+      logical :: lreturn
+      real(dp) :: G
+      real(dp), pointer :: res(:), rres(:)
+
+      ns = n_items(mix%stack(1))
+      nh = size(coeff)
+      if ( nh /= n_items(mix%stack(2)) ) then
+         write(*,'(a)') 'mix: Error in mixing of Pulay'
+         xnext = 0._dp
+         return
+      end if
+
+      ! Easy check for initial step...
+      select case ( mix%v )
+      case ( 0 , 2 ) ! Stable Pulay
+         
+         lreturn = ns == 1
+         
+         if ( lreturn .and. debug_mix ) &
+              write(*,'(2a,e10.4)') trim(debug_msg), &
+              ' Pulay (initial), alpha = ', mix%rv(1)
+         
+      case ( 1 , 3 ) ! Guaranteed Pulay
+         
+         lreturn = mod(mix%cur_itt, 2) == 1
+
+         if ( lreturn .and. debug_mix ) &
+              write(*,'(2a,e10.4)') trim(debug_msg), &
+              ' Direct mixing, alpha = ', mix%rv(1)
+
+      end select
+
+      ! In case we return we are actually doing
+      ! linear mixing
+      if ( lreturn ) then
+
+         ! We are doing a linear mixing
+!$OMP parallel do default(shared), private(i)
+         do i = 1 , n
+            xnext(i) = xin(i) + F(i) * mix%rv(1)
+         end do
+!$OMP end parallel do
+
+         return
+
+      end if
+
+      ! Get the linear mixing term...
+      G = mix%w
+
+      ! if debugging print out the different variables
+      if ( debug_mix ) then
+         write(*,'(2a,f10.6,a,e10.4,a,100(tr1,e10.4))') &
+              trim(debug_msg),&
+              ' G = ',G,', sum(alpha) = ',sum(coeff), &
+              ', alpha = ',coeff
+      end if
+
+
+!$OMP parallel default(shared), private(i, j, res, rres)
+
+      !  x^opt[i+1] = x[i] + G F[i]
+!$OMP do
+      do i = 1 , n
+         xnext(i) = xin(i) + G * F(i)
+      end do
+!$OMP end do
+      
+      do j = 1 , nh
+      
+         !  res == x[j] - x[j-1]
+         ! rres == F[j+1] - F[j]
+         res => getstackval(mix, 1, j)
+         rres => getstackval(mix, 2, j)
+
+         !  x^opt[i+1] = x^opt[i+1] +
+         !       alpha_j ( x[j] - x[j-1] + G (F[j+1] - F[j]) )
+!$OMP do
+         do i = 1 , n
+            xnext(i) = xnext(i) + coeff(j) * ( res(i) + G * rres(i) )
+         end do
+!$OMP end do
+
+      end do
+
+!$OMP end parallel
+
+    end subroutine mix_pulay
+
+    subroutine mix_broyden()
+      integer :: ns, nh
+      integer :: i, j
+      real(dp) :: G
+      real(dp), pointer :: res(:), rres(:)
+
+      ns = n_items(mix%stack(1))
+      nh = size(coeff)
+      if ( nh /= n_items(mix%stack(2)) ) then
+         write(*,'(a)') 'mix: Error in mixing of Broyden'
+         xnext = 0._dp
+         return
+      end if
+
+      if ( ns == 1 ) then
+         if ( debug_mix ) &
+              write(*,'(2a,e10.4)') trim(debug_msg), &
+              ' Broyden (initial), alpha = ', mix%rv(1)
+
+         ! We are doing a linear mixing
+!$OMP parallel do default(shared), private(i)
+         do i = 1 , n
+            xnext(i) = xin(i) + F(i) * mix%rv(1)
+         end do
+!$OMP end parallel do
+
+         return
+         
+      end if
+
+      ! Get the linear mixing term...
+      G = mix%w
+
+      ! if debugging print out the different variables
+      if ( debug_mix ) then
+         write(*,'(2a,f10.6,a,e10.4,a,100(tr1,e10.4))') &
+              trim(debug_msg), ' G = ', G, &
+              ', sum(coeff) = ',sum(coeff), &
+              ', coeff = ',coeff
+      end if
+
+
+!$OMP parallel default(shared), private(i, j, res, rres)
+
+      !  x^opt[i+1] = x[i] + G F[i]
+!$OMP do
+      do i = 1 , n
+         xnext(i) = xin(i) + G * F(i)
+      end do
+!$OMP end do
+      
+      do j = 1 , nh
+      
+         !  res == x[j] - x[j-1]
+         ! rres == F[j+1] - F[j]
+         res => getstackval(mix, 1, j)
+         rres => getstackval(mix, 2, j)
+
+         !  x^opt[i+1] = x^opt[i+1] +
+         !       alpha_j ( x[j] - x[j-1] + G (F[j+1] - F[j]) )
+!$OMP do
+         do i = 1 , n
+            xnext(i) = xnext(i) + coeff(j) * ( res(i) + G * rres(i) )
+         end do
+!$OMP end do
+
+      end do
+
+!$OMP end parallel
+
+    end subroutine mix_broyden
+
+  end subroutine mixing_calc_next
+
+
+  !> Finalize the mixing algorithm
+  !!
+  !! @param[inout] mix mixer to be finalized
+  !! @param[in] n size of the input arrays
+  !! @param[in] xin the input for this iteration
+  !! @param[in] F the residual for this iteration
+  !! @param[in] xnext the optimized input for the next iteration
+  subroutine mixing_finalize(mix, n, xin, F, xnext)
+    use parallel, only: IONode
+    
+    type(tMixer), pointer :: mix
+    integer, intent(in) :: n
+    real(dp), intent(in) :: xin(n), F(n), xnext(n)
+    integer :: rsave
+
+    select case ( mix%m )
+    case ( MIX_LINEAR )
+       call fin_linear()
+    case ( MIX_PULAY )
+       call fin_pulay()
+    case ( MIX_BROYDEN )
+       call fin_broyden()
+    end select
+
+
+    ! Fix the action to finalize it..
+    if ( mix%restart > 0 .and. &
+         mod(mix%cur_itt,mix%restart) == 0 ) then
+       
+       mix%action = IOR(mix%action, ACTION_RESTART)
+
+    end if
+
+    
+    ! Check the actual finalization...
+    ! First check whether we should restart history
+    if ( IAND(mix%action, ACTION_RESTART) == ACTION_RESTART ) then
+
+       ! The user has requested to restart the
+       ! mixing scheme now
+       rsave = mix%restart_save
+
+       select case ( mix%m )
+       case ( MIX_PULAY )
+
+          if ( IONode ) then
+             write(*,'(a)')'mix: Pulay -- resetting history'
+          end if
+          
+          if ( rsave == 0 ) then
+             call reset(mix%stack(1))
+             call reset(mix%stack(2))
+             call reset(mix%stack(3))
+          else
+             call reset(mix%stack(1),-rsave)
+             call reset(mix%stack(2),-rsave+1)
+          end if
+          
+       case ( MIX_BROYDEN )
+
+          if ( IONode ) then
+             write(*,'(a)')'mix: Broyden -- resetting history'
+          end if
+
+          if ( rsave == 0 ) then
+             call reset(mix%stack(1))
+             call reset(mix%stack(2))
+             call reset(mix%stack(3))
+          else
+             call reset(mix%stack(1),-rsave)
+             call reset(mix%stack(2),-rsave+1)
+          end if
+          
+       end select
+
+       if ( debug_mix ) &
+            write(*,'(a,a,i0)') trim(debug_msg), &
+            ' saved hist = ',n_items(mix%stack(1))
+
+    end if
+
+    
+    ! check whether we should change the mixer
+    if ( IAND(mix%action, ACTION_NEXT) == ACTION_NEXT ) then
+       
+       call mixing_step( mix )
+       
+    end if
+    
+  contains
+
+    subroutine fin_linear()
+
+      ! do nothing...
+
+    end subroutine fin_linear
+
+    subroutine fin_pulay()
+
+      integer :: ns
+      integer :: i
+      logical :: GR_linear
+      real(dp), pointer :: res(:), rres(:)
+
+      GR_linear = mod(mix%cur_itt, 2) == 1
+
+      ns = n_items(mix%stack(1))
+      
+      ! Update the residual to reflect the input residual
+      res => getstackval(mix, 3)
+      
+!$OMP parallel do default(shared), private(i)
+      do i = 1 , n
+         ! Input:
+         !  res == x[i-1] + F[i-1]
+         res(i) = xin(i) + F(i)
+         ! Output:
+         !  res == x[i] + F[i]
+      end do
+!$OMP end parallel do
+
+      select case ( mix%v )
+      case ( 1 , 3 ) ! GR Pulay
+
+         ! Pop the data if appropriate
+         if ( .not. GR_linear ) then
+
+            call pop(mix%stack(1))
+            call pop(mix%stack(2))
+
+         end if
+       
+      end select
+      
+    end subroutine fin_pulay
+
+    subroutine fin_broyden()
+
+      integer :: ns, nh
+      integer :: i
+      real(dp), pointer :: res(:), rres(:)
+
+      ns = n_items(mix%stack(1))
+      nh = n_items(mix%stack(2))
+
+      if ( ns >= 2 ) then
+         
+         ! Update the residual to reflect the input residual
+         res => getstackval(mix, 3)
+         
+!$OMP parallel do default(shared), private(i)
+         do i = 1 , n
+            ! Input:
+            !  res == x[i-1] + F[i-1]
+            res(i) = xin(i) + F(i)
+            ! Output:
+            !  res == x[i] + F[i]
+         end do
+!$OMP end parallel do
+
+      end if
+
+      ! Update weights (if necessary)
+      if ( nh == max_size(mix%stack(2)) ) then
+         do i = 1 , nh - 1
+            mix%rv(1+i) = mix%rv(1+i+1)
+         end do
+      end if
+      
+    end subroutine fin_broyden
+
+  end subroutine mixing_finalize
+  
+
+  ! Perform the actual mixing...
+  subroutine mixing_1d( mix, n, xin, F, xnext, nsub)
+    ! The current mixing method 
+    type(tMixer), pointer :: mix
+    ! The current step in the SCF and size of arrays
+    integer, intent(in) :: n
+    ! x1 == Input function,
+    ! F1 == Residual from x1
+    real(dp), intent(in) :: xin(n), F(n)
+    ! x2 == Next input function
+    real(dp), intent(inout) :: xnext(n)
+    ! Number of elements used for calculating the mixing
+    ! coefficients
+    integer, intent(in), optional :: nsub
+
+    ! Coefficients
+    integer :: ncoeff
+    real(dp), allocatable :: coeff(:)
+
+    call mixing_init( mix, n, xin, F )
+
+    ncoeff = mixing_ncoeff( mix )
+    allocate(coeff(ncoeff))
+
+    ! Calculate coefficients
+    if ( present(nsub) ) then
+       call mixing_coeff( mix, nsub, xin, F, coeff)
+    else
+       call mixing_coeff( mix, n, xin, F, coeff)
+    end if
+
+    ! Calculate the following output
+    call mixing_calc_next( mix, n, xin, F, xnext, coeff)
+
+    ! Coefficients are not needed anymore...
+    deallocate(coeff)
+
+    ! Finalize the mixer
+    call mixing_finalize( mix, n, xin, F, xnext)
+
+  end subroutine mixing_1d
+  
+
+  subroutine mixing_2d( mix, n1, n2, xin, F, xnext, nsub)
+    
+    type(tMixer), pointer :: mix
+    integer, intent(in) :: n1, n2
+    real(dp), intent(in) :: xin(n1,n2), F(n1,n2)
+    real(dp), intent(inout) :: xnext(n1,n2)
+    integer, intent(in), optional :: nsub
+
+    ! Simple wrapper for 1D
+    if ( present(nsub) ) then
+       call mixing_1d( mix, n1*n2 , xin(1,1), F(1,1), xnext(1,1) ,&
+            nsub = n1 * nsub)
+    else
+       call mixing_1d( mix, n1*n2 , xin(1,1), F(1,1), xnext(1,1))
+    end if
+    
+  end subroutine mixing_2d
+
+
+
+
+  ! Step the mixing object and ensure that
+  ! the old history is either copied over or freed
+  subroutine mixing_step( mix )
+
+    use parallel, only: IONode 
+
+    type(tMixer), pointer :: mix
+
+    type(tMixer), pointer :: next => null()
+
+    type(dData1D), pointer :: d1D
+    integer :: i, is, n, init_itt
+    logical :: reset_stack, copy_stack
+
+    ! First try and
+    next => mix%next
+    if ( associated(next) ) then
+
+       ! Whether or not the two methods are allowed
+       ! to share history
+       copy_stack = mix%m == next%m
+       select case ( mix%m )
+       case ( MIX_PULAY , MIX_BROYDEN )
+          select case ( next%m )
+          case ( MIX_PULAY , MIX_BROYDEN )
+             copy_stack = .true.
+          end select
+       end select
+       copy_stack = copy_stack .and. allocated(mix%stack)
+
+       ! If the two methods are similar
+       if ( copy_stack ) then
+          
+          ! They are similar, copy over the history stack
+          do is = 1 , size(mix%stack)
+
+             ! Get maximum size of the current stack,
+             n = n_items(mix%stack(is))
+
+             ! Note that this will automatically take care of
+             ! wrap-arounds and delete the unneccesry elements
+             do i = 1 , n
+                d1D => get_pointer(mix%stack(is),i)
+                call push(next%stack(is),d1D)
+             end do
+
+             ! nullify
+             nullify(d1D)
+             
+          end do
+          
+       end if
+       
+    end if
+
+    reset_stack = .true.
+    if ( associated(next) ) then
+       if ( associated(next%next, mix) .and. &
+            next%n_itt > 0 ) then
+          ! if this is a circular mixing routine
+          ! we should not reset the history...
+          reset_stack = .false.
+       end if
+    end if
+
+    if ( reset_stack ) then
+       select case ( mix%m )
+       case ( MIX_PULAY , MIX_BROYDEN )
+          
+          call reset(mix%stack(1))
+          call reset(mix%stack(2))
+          call reset(mix%stack(3))
+          
+       end select
+    end if
+    
+    if ( associated(next) ) then
+       init_itt = 0
+       mix => mix%next
+       if ( mix%m == MIX_PULAY ) then
+          if ( any(mix%v == (/0,2/)) ) init_itt = 1
+       end if
+       if ( mix%m == MIX_BROYDEN ) init_itt = 1
+       mix%cur_itt = init_itt
+       if ( IONode ) then
+          write(*,'(3a)') trim(debug_msg),' switching mixer --> ', &
+               trim(mix%name)
+       end if
+    end if
+
+  end subroutine mixing_step
+    
+
 
   ! Calculate the inverse of a matrix
   subroutine inverse(n, A, B, info )
@@ -2314,6 +2479,72 @@ contains
     end if
     
   end subroutine svd
+
+
+  ! *************************************************
+  ! *                Helper routines                *
+  ! *                    LOCAL                      *
+  ! *************************************************
+  
+  ! Returns the value array from the stack(:)
+  ! Returns this array:
+  !    mix%stack(sidx)(hidx) ! defaults to the last item
+  function getstackval(mix,sidx,hidx) result(d1)
+    type(tMixer), intent(in) :: mix
+    integer, intent(in) :: sidx
+    integer, intent(in), optional :: hidx
+
+    real(dp), pointer, contiguous :: d1(:)
+
+    type(dData1D), pointer :: dD1
+    
+    if ( present(hidx) ) then
+       dD1 => get_pointer(mix%stack(sidx),hidx)
+    else
+       dD1 => get_pointer(mix%stack(sidx), &
+            n_items(mix%stack(sidx)))
+    end if
+    
+    d1 => val(dD1)
+    
+  end function getstackval
+
+
+  ! Returns true if the following 
+  ! "advanced" mixer is 'method'
+  function is_next(mix,method,next) result(bool)
+    type(tMixer), intent(in), target :: mix
+    integer, intent(in) :: method
+    type(tMixer), pointer, optional :: next
+
+    logical :: bool
+
+    type(tMixer), pointer :: m
+
+    bool = .false.
+    m => mix%next
+    do while ( associated(m) )
+
+       if ( m%m == MIX_LINEAR ) then
+          m => m%next
+       else if ( m%m == method ) then
+          bool = .true.
+          exit
+       else
+          ! Quit if it does not do anything
+          exit
+       end if
+
+       ! this will prevent cyclic combinations
+       if ( associated(m,mix) ) exit
+
+    end do
+
+    if ( present(next) ) then
+       next => m
+    end if
+
+  end function is_next
 
   
   ! Stack handling routines
@@ -2485,6 +2716,22 @@ contains
     call delete(dD1)
 
   end subroutine push_diff
+
+
+  !> Calculate the norm of two arrays
+  function norm(n, x1, x2)
+    integer, intent(in) :: n
+    real(dp), intent(in) :: x1(n), x2(n)
+    real(dp) :: norm
+
+    ! Currently we use an external routine
+    real(dp), external :: ddot
+
+    ! Calculate dot product
+    norm = ddot(n, x1(1), 1, x2(1), 1)
+
+  end function norm
+
 
 end module m_mixing
   

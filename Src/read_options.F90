@@ -33,8 +33,8 @@ subroutine read_options( na, ns, nspin )
   use m_charge_add, only : read_charge_add
   use m_hartree_add, only : read_hartree_add
   
-  use m_mixing_scf, only: mixing_scf_init
-  use m_mixing_scf, only: mixing_scf_print, mixing_scf_print_block
+  use m_mixing_scf, only: mixers_scf_init
+  use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
   implicit none
   !----------------------------------------------------------- Input Variables
@@ -1426,8 +1426,8 @@ subroutine read_options( na, ns, nspin )
 #endif
 
   ! Read in mixing parameters (SCF)
-  call mixing_scf_init( nspin )
-  call mixing_scf_print( nspin )
+  call mixers_scf_init( nspin )
+  call mixers_scf_print( nspin )
 
   ! We read in relevant data for ChargeGeometries block
   call read_charge_add( min(2, nspin) , charnet )
@@ -1635,7 +1635,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Print blocks
-  call mixing_scf_print_block( )
+  call mixers_scf_print_block( )
 
   RETURN
   !-------------------------------------------------------------------- END

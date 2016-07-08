@@ -123,7 +123,7 @@ contains
     use m_ts_mumps_init, only : read_ts_mumps
 #endif
 
-    use m_mixing, only: mixing_init
+    use m_mixing, only: mixers_init
     use m_mixing_scf, only: scf_mixs
 
     ! Input variables
@@ -150,7 +150,7 @@ contains
     if ( onlyS .or. .not. TSmode ) return
 
     ! Read in the transiesta SCF mixing options
-    call mixing_init('TS.SCF', ts_scf_mixs , force = .false.)
+    call mixers_init('TS.SCF', ts_scf_mixs )
     if ( .not. associated(ts_scf_mixs) ) then
        ts_scf_mixs => scf_mixs
     end if
@@ -762,7 +762,7 @@ contains
 
     use units, only: eV, Kelvin
 
-    use m_mixing, only: mixing_print
+    use m_mixing, only: mixers_print
     use m_mixing_scf, only: scf_mixs
 
     use m_ts_electype, only: print_settings
@@ -1000,7 +1000,7 @@ contains
     if ( associated(ts_scf_mixs, target=scf_mixs) ) then
        write(*,f11)'TS.SCF mixing options same as SCF'
     else
-       call mixing_print('TS.SCF', ts_scf_mixs)
+       call mixers_print('TS.SCF', ts_scf_mixs)
     end if
 
     write(*,f11)'          >> Electrodes << '

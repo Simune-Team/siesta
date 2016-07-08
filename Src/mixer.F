@@ -104,16 +104,16 @@
       ! Upon exit Xout contains the mixed quantity
       select case ( mix_spin )
       case ( MIX_SPIN_ALL )
-         call mixing( scf_mix, iscf, maxnh, h_spin_dim, Xin, F, Xout)
+         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout)
       case ( MIX_SPIN_SPINOR )
-         call mixing( scf_mix, iscf, maxnh, h_spin_dim, Xin, F, Xout,
-     &        ncoeff=2)
+         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+     &        nsub=2)
       case ( MIX_SPIN_SUM )
-         call mixing( scf_mix, iscf, maxnh, h_spin_dim, Xin, F, Xout,
-     &        ncoeff=1)
+         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+     &        nsub=1)
       case ( MIX_SPIN_SUM_DIFF )
-         call mixing( scf_mix, iscf, maxnh, h_spin_dim, Xin, F, Xout,
-     &        ncoeff=2)
+         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+     &        nsub=2)
       end select
 
 !$OMP parallel default(shared), private(dtmp,i,is)

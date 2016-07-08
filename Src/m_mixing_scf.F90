@@ -32,25 +32,26 @@ module m_mixing_scf
   public :: mix_spin
   public :: MIX_SPIN_ALL, MIX_SPIN_SPINOR, MIX_SPIN_SUM, MIX_SPIN_SUM_DIFF
 
-  public :: mixing_scf_init
-  public :: mixing_scf_print, mixing_scf_print_block
+  public :: mixers_scf_init
+  public :: mixers_scf_print, mixers_scf_print_block
+  public :: mixers_scf_history_init
+  public :: mixers_scf_reset
+  
   public :: mixing_scf_converged
-  public :: mixing_scf_history_clear
-  public :: reset_mixing_scf
-
+  
 contains
 
-  subroutine mixing_scf_init( nspin, Comm )
+  subroutine mixers_scf_init( nspin, Comm )
 
     use fdf
     use precision, only: dp
 #ifdef MPI
     use mpi_siesta, only: MPI_Comm_World
 #endif
-    use m_mixing, only: mixing_reset, mixing_init
+    use m_mixing, only: mixers_reset, mixers_init
     use m_mixing, only: mix_method, mix_method_variant
-    use m_mixing, only: mixing_init_mix
-    use m_mixing, only: mixing_history_clear
+    use m_mixing, only: mixer_init
+    use m_mixing, only: mixers_history_init
 
     ! The number of spin-components
     integer, intent(in) :: nspin
@@ -97,7 +98,7 @@ contains
     ! Check for existance of the SCF.Mix block
     if ( fdf_block('SCF.Mixers', bfdf) ) then
        
-       call mixing_init('SCF', scf_mixs, Comm = Comm )
+       call mixers_init('SCF', scf_mixs, Comm = Comm )
 
        if ( .not. associated(scf_mixs) ) then
           ! do nothing... fall through
@@ -113,7 +114,7 @@ contains
     end if
 
     ! ensure nullification
-    call mixing_reset(scf_mixs)
+    call mixers_reset(scf_mixs)
 
 
     ! >>>*** FIRST ***<<<
@@ -234,11 +235,11 @@ contains
 
     ! Correct the input
     do im = 1 , nm
-       call mixing_init_mix( scf_mixs(im) )
+       call mixer_init( scf_mixs(im) )
     end do
 
     ! Initialize the allocation of each mixer
-    call mixing_history_clear( scf_mixs )
+    call mixers_history_init( scf_mixs )
     
 #ifdef MPI
     if ( present(Comm) ) then
@@ -248,42 +249,42 @@ contains
     end if
 #endif
     
-  end subroutine mixing_scf_init
+  end subroutine mixers_scf_init
 
-  subroutine mixing_scf_print( nspin )
+  subroutine mixers_scf_print( nspin )
     use parallel, only: IONode
-    use m_mixing, only: mixing_print
+    use m_mixing, only: mixers_print
     integer, intent(in) :: nspin
 
     ! Print mixing options
-    call mixing_print( 'SCF' , scf_mixs )
+    call mixers_print( 'SCF' , scf_mixs )
     
     if ( IONode .and. nspin > 1 ) then
        select case ( mix_spin )
        case ( MIX_SPIN_ALL )
-          write(*, '(2a,t50,a)') 'mix.SCF: Spin-component mixing','all'
+          write(*, '(a,t50,a)') 'mix.SCF: Spin-component mixing','all'
        case ( MIX_SPIN_SPINOR )
-          write(*, '(2a,t50,a)') 'mix.SCF: Spin-component mixing','spinor'
+          write(*, '(a,t50,a)') 'mix.SCF: Spin-component mixing','spinor'
           if ( nspin <= 2 ) then
              call die("SCF.Mixer.Spin spinor option only valid for &
                   &non-collinear and spin-orbit calculations")
           end if
        case ( MIX_SPIN_SUM )
-          write(*, '(2a,t50,a)') 'mix.SCF: Spin-component mixing','sum'
+          write(*, '(a,t50,a)') 'mix.SCF: Spin-component mixing','sum'
        case ( MIX_SPIN_SUM_DIFF ) 
-          write(*, '(2a,t50,a)') 'mix.SCF: Spin-component mixing','sum and diff'
+          write(*, '(a,t50,a)') 'mix.SCF: Spin-component mixing','sum and diff'
        end select
     end if
     
-  end subroutine mixing_scf_print
+  end subroutine mixers_scf_print
 
-  subroutine mixing_scf_print_block( )
-    use m_mixing, only: mixing_print_block
+  subroutine mixers_scf_print_block( )
+    use m_mixing, only: mixers_print_block
 
     ! Print mixing options
-    call mixing_print_block( 'SCF' , scf_mixs )
+    call mixers_print_block( 'SCF' , scf_mixs )
     
-  end subroutine mixing_scf_print_block
+  end subroutine mixers_scf_print_block
 
   subroutine mixing_scf_converged( SCFconverged )
 
@@ -324,21 +325,21 @@ contains
   end subroutine mixing_scf_converged
 
 
-  subroutine reset_mixing_scf()
-    use m_mixing, only: mixing_reset
+  subroutine mixers_scf_reset()
+    use m_mixing, only: mixers_reset
 
     nullify(scf_mix)
-    call mixing_reset( scf_mixs )
+    call mixers_reset( scf_mixs )
 
-  end subroutine reset_mixing_scf
+  end subroutine mixers_scf_reset
 
 
-  subroutine mixing_scf_history_clear( )
-    use m_mixing, only: mixing_history_clear
+  subroutine mixers_scf_history_init( )
+    use m_mixing, only: mixers_history_init
     
-    call mixing_history_clear( scf_mixs )
+    call mixers_history_init( scf_mixs )
     scf_mix => scf_mixs(1)
     
-  end subroutine mixing_scf_history_clear
+  end subroutine mixers_scf_history_init
 
 end module m_mixing_scf
