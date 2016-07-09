@@ -27,15 +27,16 @@
 !
 ! Interfaces of public procedures:
 !
-!   subroutine siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
+!   subroutine siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
 !     character(len=*),intent(in) :: label    : Name of siesta process
 !                                               (prefix of its .fdf file)
 !     integer,optional,intent(in) :: nnodes   : Number of MPI processes
 !                                               reserved for each siesta process
 !     integer,optional,intent(in) :: mpi_comm : MPI communicator defined by the
 !                                               calling program for siesta use
-!     character(len=*),optional,intent(in):: mpi_launcher (not used: MPI must be
-!                                                        started by master prog)
+!     character(len=*),optional,intent(in):: launcher (not used in this version)
+!     logical,optional,intent(in) :: localhost : will siesta run at localhost?
+!                                                (not used in this version)
 !   end subroutine siesta_launch
 !
 !   subroutine siesta_units( length, energy )
@@ -240,12 +241,13 @@ CONTAINS
 
 !---------------------------------------------------
 
-subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
+subroutine siesta_launch( label, nNodes, mpi_comm, launcher, localhost )
   implicit none
   character(len=*),  intent(in) :: label    ! Name of the siesta process
   integer, optional, intent(in) :: nNodes   ! Number of MPI processes to be used
   integer, optional, intent(in) :: mpi_comm ! MPI communicator to be used
-  character(len=*),optional,intent(in):: mpi_launcher ! Not used in this version
+  character(len=*),optional,intent(in):: launcher  ! Not used in this version
+  logical,         optional,intent(in):: localhost ! Not used in this version
 
 #ifdef MPI
   logical:: initialized, labelFound, mainOutFileOpened

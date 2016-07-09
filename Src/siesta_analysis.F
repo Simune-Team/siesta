@@ -47,6 +47,9 @@
       use basis_enthalpy,    only: write_basis_enthalpy
       use m_partial_charges, only: want_partial_charges
       use m_iodm,            only: read_spmatrix
+      use m_siesta2wannier90, only: siesta2wannier90
+      use siesta_options,     only: w90_processing
+
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -385,6 +388,10 @@
                     ! as no forces are calculated
                     ! todo: make all these optional
       endif
+C    
+C     Call the wannier90 interface here, as local_DOS destroys the DM...
+C
+      if( w90_processing) call siesta2wannier90()
 
 C     Find local density of states
       call local_DOS()

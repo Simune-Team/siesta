@@ -21,7 +21,7 @@ ROOT="../../../.."
 PSEUDOS=${ROOT}/Tests/Pseudos
 #
 if [ -z "$SIESTA" ] ; then
-      SIESTA=${ROOT}/Obj-gfortran-parallel/siesta
+      SIESTA=${ROOT}/Obj/siesta
 fi
 echo "Using Siesta executable: $SIESTA"
 #
@@ -35,19 +35,35 @@ fi
 #
 mkdir work
 cd work
-cp -p ../h2o.fdf .
+cp -p ../*.fdf .
 cp ${PSEUDOS}/H.psf  .
 cp ${PSEUDOS}/O.psf  .
 ln -sf ${SIESTA} ./siesta
 #
 
+echo ""; echo "simple_pipes_serial"
 ../Src/simple_pipes_serial    | tee simple_pipes_serial.out
 mv h2o.out siesta_pipes_serial.out
 
+echo ""; echo "simple_pipes_parallel"
 ../Src/simple_pipes_parallel  | tee simple_pipes_parallel.out
 mv h2o.out siesta_pipes_parallel.out
 
+echo ""; echo "simple_mpi_serial"
 ../Src/simple_mpi_serial      | tee simple_mpi_serial.out
+mv h2o.out siesta_mpi_serial.out
 
+echo ""; echo "simple_mpi_parallel"
 mpirun -np 2 -output-filename simple_mpi_parallel.out ../Src/simple_mpi_parallel
+mv h2o.out siesta_mpi_parallel.out
+
+cat socket.fdf >> h2o.fdf
+
+echo ""; echo "simple_sockets_serial"
+../Src/simple_sockets_serial    | tee simple_sockets_serial.out
+mv h2o.out siesta_sockets_serial.out
+
+echo ""; echo "simple_sockets_parallel"
+../Src/simple_sockets_parallel  | tee simple_sockets_parallel.out
+mv h2o.out siesta_sockets_parallel.out
 

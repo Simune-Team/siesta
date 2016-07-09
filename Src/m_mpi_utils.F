@@ -38,6 +38,7 @@
         module procedure broadcast_sp, broadcast_char
         module procedure broadcast_v_dp, broadcast_v_int
         module procedure broadcast_vv_dp, broadcast_vv_int
+        module procedure broadcast_vvv_dp, broadcast_vvv_int
 
       end interface
 
@@ -89,7 +90,18 @@
 #endif
       end subroutine broadcast_vv_dp
 
+      subroutine broadcast_vvv_dp(a)
+      real(dp), dimension(:,:,:), intent(inout) :: a
+  !! Only for contiguous array sections !!
+
+#ifdef MPI
+           call MPI_Bcast(a(1,1,1),size(a),MPI_double_precision,0,
+     $            MPI_Comm_World,MPIerror)
+#endif
+       end subroutine broadcast_vvv_dp
+
       subroutine broadcast_sp(scalar,comm)
+
       real(sp), intent(inout) :: scalar
       integer, intent(in), optional :: comm
 
@@ -148,6 +160,16 @@
      $            MPI_Comm,MPIerror)
 #endif
       end subroutine broadcast_vv_int
+
+      subroutine broadcast_vvv_int(a)
+      integer, dimension(:,:,:), intent(inout) :: a
+
+
+#ifdef MPI
+           call MPI_Bcast(a(1,1,1),size(a),MPI_integer,0,
+     $            MPI_Comm_World,MPIerror)
+#endif
+       end subroutine broadcast_vvv_int
 
       subroutine broadcast_char(str,comm)
       character(len=*), intent(inout) :: str

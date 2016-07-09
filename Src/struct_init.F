@@ -140,7 +140,8 @@
 ! Find if siesta is a server of forces, unless we already know it .....
       if (.not.siesta_server) then
         dummy_str = fdf_get('MD.TypeOfRun',"none")
-        siesta_server = (leqi(dummy_str,'forces'))
+        siesta_server = (leqi(dummy_str,'forces') .or.
+     .                    leqi(dummy_str,'master'))
       end if
 ! .....................
 

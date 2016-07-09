@@ -53,6 +53,15 @@ MODULE siesta_options
   logical :: writb         ! Write band eigenvalues?
   logical :: writec        ! Write atomic coordinates at every geometry step?
   logical :: write_coop    ! Write information for COOP/COHP analysis ?
+!----------------------------------------------------
+! Wannier90 interface
+!
+  logical :: w90_processing   ! Will we call the interface with Wannier90
+  logical :: w90_write_mmn    ! Write the Mmn matrix for the interface with Wannier
+  logical :: w90_write_amn    ! Write the Amn matrix for the interface with Wannier
+  logical :: w90_write_eig    ! Write the eigenvalues or the interface with Wannier
+  logical :: w90_write_unk    ! Write the unks for the interface with Wannier
+!----------------------------------------------------
   logical :: writef        ! Write atomic forces at every geometry step?
   logical :: writek        ! Write the k vectors of the BZ integration mesh?
   logical :: writic        ! Write the initial atomic ccordinates?
@@ -114,6 +123,16 @@ MODULE siesta_options
   integer :: level          ! Option for allocation report level of detail
   integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
   integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
+  logical :: hasnobup       ! Is the number of bands with spin up for 
+                            !   wannierization defined?
+  logical :: hasnobdown     ! Is the number of bands with spin down for 
+                            !   wannierization defined?
+  logical :: hasnob         ! Is the number of bands for wannierization defined?
+                            !   (for non spin-polarized calculations).
+  integer :: nobup          ! Number of bands with spin up for wannierization
+  integer :: nobdown        ! Number of bands with spin down for wannierization
+  integer :: nob            ! Number of bands for wannierization
+                            !   (for non spin-polarized calculations).
 
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
@@ -1091,7 +1110,7 @@ MODULE siesta_options
       idyn = 6
     else if (leqi(dyntyp,'phonon')) then
       idyn = 7
-    else if (leqi(dyntyp,'forces')) then
+    else if (leqi(dyntyp,'forces').or.leqi(dyntyp,'master')) then
       idyn = 8
     else
       call die('Invalid Option selected - value of MD.TypeOfRun not recognised')
@@ -1615,6 +1634,25 @@ MODULE siesta_options
     savepsch = fdf_get( 'SaveIonicCharge', .false. )
     savebader= fdf_get( 'SaveBaderCharge',  .false.)
     savetoch = fdf_get( 'SaveTotalCharge', savebader )
+
+!
+!   Siesta2Wannier90 -related flags
+!
+    w90_write_mmn = fdf_get( 'Siesta2Wannier90.WriteMmn',   .false. )
+    w90_write_unk = fdf_get( 'Siesta2Wannier90.WriteUnk',   .false. )
+    w90_write_amn = fdf_get( 'Siesta2Wannier90.WriteAmn',   .false. )
+    w90_write_eig = fdf_get( 'Siesta2Wannier90.WriteEig',   .false. )
+
+    w90_processing = ( w90_write_mmn .or. w90_write_unk .or. &
+                       w90_write_amn .or. w90_write_eig )
+
+    hasnobup   = fdf_defined( 'Siesta2Wannier90.NumberOfBandsUp'   )
+    hasnobdown = fdf_defined( 'Siesta2Wannier90.NumberOfBandsDown' )
+    hasnob     = fdf_defined( 'Siesta2Wannier90.NumberOfBands'     )
+
+    nobup      = fdf_get( 'Siesta2Wannier90.NumberOfBandsUp',   0)
+    nobdown    = fdf_get( 'Siesta2Wannier90.NumberOfBandsDown', 0)
+    nob        = fdf_get( 'Siesta2Wannier90.NumberOfBands',     0)
 
     RETURN
     !-------------------------------------------------------------------- END
