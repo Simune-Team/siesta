@@ -1,4 +1,8 @@
 ------------------------------------------------------------
+July 10, 2016       A. Garcia   trunk-472--pexsi-v0.8-spin-7
+Sync to trunk-472
+
+------------------------------------------------------------
 November 10, 2015  A. Garcia   trunk-464--pexsi-v0.8-spin-7
 Fix communicator bug in LDOS routine
 

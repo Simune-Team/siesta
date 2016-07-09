@@ -729,7 +729,7 @@ PRIVATE ! Nothing is declared public beyond this point
   integer,save:: nTaskID = 0  ! Number of assigned mesh communication task IDs
 
 #ifdef MPI
-  integer:: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPItag
+  integer:: MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
 
 CONTAINS
@@ -2698,7 +2698,7 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
       if (present(prjData)) trsfSize = trsfSize + 3*maxMesh*nParts
       if (trsfSize>0) &
         call MPI_Recv( trsfBuff(1:trsfSize), trsfSize, MPI_grid_real, &
-                       srcNode, MPItag, MPI_COMM_WORLD, MPIstatus, MPIerror )
+                       srcNode, 0, MPI_COMM_WORLD, MPIstatus, MPIerror )
 
 #ifdef DEBUG_XC
 !      write(udebug,'(a,2i4,3(2x,2i4),2x,3(2x,2i4),i8)') &

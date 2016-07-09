@@ -16,7 +16,7 @@
       use m_matio,              only:  write_mat
       use m_spin,               only:  nspin
       use atomlist,             only:  no_l
-      use siesta_options,       only:  writedm, writedm_cdf
+      use siesta_options,       only:  idyn, writedm, writedm_cdf
       use siesta_options,       only:  writedm_cdf_history
       use m_steps,              only:  istp
       use sparse_matrices,      only:  Dscf
@@ -25,13 +25,14 @@
       use iodm_netcdf,          only:  write_dm_netcdf
 #endif
 #ifdef TRANSIESTA
-      use siesta_options,       only:  idyn, writedm
       use sparse_matrices,      only:  Escf
       use m_steps,              only:  istp
       use m_ts_iodm,            only:  write_ts_dm
       use m_ts_global_vars,     only:  TSrun
       use m_energies,           only:  ef
 #endif
+
+      implicit none
 
       logical, intent(in), optional  :: when
       character(len=*), intent(in), optional   :: file

@@ -18,10 +18,10 @@ module:  libSiestaXC.a
 	cp *.mod *.a ..
 #
 SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  debugmpi.F \
-             chkgmx.f fft1d.F  flib_spline.f90  \
+             chkgmx.f fft1d.F interpolation.f90  \
              minvec.f m_io.f moreParallelSubs.F90 \
-             m_recipes.f m_timer.F90 timer_tree.F90 m_walltime.f90 parallel.F \
-	     precision.F pxf.F90 radfft.f sorting.f sys.F timer.f90 die.F
+             m_timer.F90 timer_tree.F90 m_walltime.f90 parallel.F \
+	     precision.F pxf.F90 radfft.f m_fft_gpfa.F sorting.f sys.F timer.f90 die.F
 SIESTA_OBJS:= $(SIESTA_SRCS:.f=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.f90=.o)
@@ -70,6 +70,7 @@ clean:
 #
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
+am05.o: precision.o sys.o
 atomxc.o: alloc.o ggaxc.o ldaxc.o mesh1d.o precision.o radfft.o
 atomxc.o: sys.o vdwxc.o xcmod.o
 bessph.o: precision.o sys.o
@@ -83,26 +84,24 @@ debugmpi.o: parallel.o
 fft1d.o: parallel.o precision.o sys.o
 fft3d.o: alloc.o debugxc.o fft1d.o m_timer.o mesh3d.o precision.o sys.o
 fftr.o: alloc.o fft3d.o mesh3d.o precision.o sys.o
-flib_spline.o: precision.o
 ggaxc.o: ldaxc.o precision.o sys.o am05.o
+interpolation.o: precision.o
 ldaxc.o: precision.o sys.o
-am05.o: precision.o sys.o
 m_io.o: sys.o
-m_recipes.o: sys.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
-mesh1d.o: m_recipes.o precision.o
+mesh1d.o: precision.o
 mesh3d.o: alloc.o debugxc.o parallel.o precision.o sorting.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
-radfft.o: alloc.o bessph.o m_recipes.o precision.o
+radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 sys.o: parallel.o
 siesta_options.o: parallel.o precision.o units.o
 timer.o: sys.o m_timer.o timer_tree.o extrae_module.o extrae_eventllist.o
 timer_tree.o: m_walltime.o
-vdwxc.o: alloc.o debugxc.o flib_spline.o ggaxc.o ldaxc.o m_recipes.o mesh1d.o
+vdwxc.o: alloc.o debugxc.o interpolation.o ggaxc.o ldaxc.o mesh1d.o
 vdwxc.o: precision.o radfft.o vv_vdwxc.o sys.o
-vv_vdwxc.o: alloc.o debugxc.o flib_spline.o m_recipes.o mesh1d.o
+vv_vdwxc.o: alloc.o debugxc.o interpolation.o mesh1d.o
 vv_vdwxc.o: precision.o radfft.o sys.o
 xcmod.o: precision.o sys.o vdwxc.o
 

@@ -65,7 +65,6 @@
       use units
       use m_energies, only: FreeE
       use m_stress, only: stress, kin_stress, mstress, cstress, tstress
-      use m_forces,   only: fa, cfa   ! This does not really belong here  
 
       implicit none
 
@@ -187,12 +186,6 @@
 
           endif                  !varcel
 
-        ! Write Force Constant matrix if FC calculation ...
-        case(6)
-          call ofc(cfa,dx,na_u)
-        case(7)
-!          call phonon_write_forces(fa,na_u,ucell,istep)
-           if (IOnode) write(*,*) 'phonon suport deactivated'
         end select !idyn
 
       else !final
@@ -579,7 +572,8 @@
      &          siesta_write_energies, siesta_write_positions
       CONTAINS
       
-      subroutine siesta_write_forces()
+      subroutine siesta_write_forces(istep)
+      use parallel, only: IOnode
       USE siesta_options
       use siesta_geom
       use siesta_cml
@@ -587,6 +581,7 @@
       use m_forces
       use alloc,      only : re_alloc, de_alloc
       implicit none
+      integer, intent(in) :: istep
       integer :: ia, ix
       real(dp) :: cfmax, fmax, fres
       real(dp) :: ftot(3), cftot(3)
@@ -626,8 +621,15 @@
         if (writef) then
           write(6,'(i6,3f12.6)')(ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
         endif
+
         ! Always write forces to .FA file
-        call iofa( na_u, cfa )
+        call iofa( na_u, fa , .false.)
+        if ( any(fa/=cfa) ) then
+           ! if any one constraint is not the same
+           ! as the real forces, the FAC file 
+           ! will also be created
+           call iofa( na_u, cfa , .true. )
+        end if
 
         write(6,'(40("-"),/,a6,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
         write(6,'(40("-"),/,a6, f12.6)') 'Max',fmax*Ang/eV
@@ -635,6 +637,21 @@
      .       '    sqrt( Sum f_i^2 / 3N )'
         write(6,'(40("-"),/,a6, f12.6,a)') 'Max',cfmax*Ang/eV, 
      .       '    constrained'
+
+        ! Write Force Constant matrix if FC calculation ...
+        select case (idyn)
+        case(6)
+           ! If the istep is the first step, then it
+           ! must be the first 
+           call ofc(fa,dx,na_u,.false.,istep==inicoor)
+           if ( any(fa/=cfa) ) then
+              call ofc(cfa,dx,na_u,.true.,istep==inicoor)
+           end if
+        case(7)
+!          call phonon_write_forces(fa,na_u,ucell,istep)
+           if (IOnode) write(*,*) 'phonon support deactivated'
+        end select
+
       else !not final
 ! In finalization, only print forces if sufficiently large.
         if (fmax .gt. ftol) then
