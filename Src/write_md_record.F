@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       subroutine write_md_record( istep )
         Use siesta_options
         use siesta_geom
@@ -8,6 +15,7 @@
         use m_steps
         use m_kinetic
         use m_stress, only: tstress
+        use units, only: Ang, kbar
 #ifdef CDF
         use md_out,     only: md_netcdf
 #endif

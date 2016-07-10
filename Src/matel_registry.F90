@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 module m_matel_registry
   !
   ! This module provides a general interface to the
@@ -68,7 +75,7 @@ module m_matel_registry
   ! of the pool dynamic.
   !
   integer, parameter :: nmax_funcs = 300
-  type(registered_function_t), dimension(nmax_funcs)  :: matel_pool
+  type(registered_function_t), dimension(nmax_funcs), save :: matel_pool
 
   integer, private    :: nfuncs = 0
 

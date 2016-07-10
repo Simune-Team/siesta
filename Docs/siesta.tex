@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large July 16, 2015 }
+{\Large February 17, 2016 }
 
 \vspace{1.5cm}
 
@@ -113,9 +113,9 @@
 {\Large \url{http://www.uam.es/siesta}}
 
 \vspace{0.5cm}
-Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
-E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2013
+Copyright \copyright\  The Siesta Group,
+E.Artacho, J.M. Cela, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
+D.S\'anchez-Portal and J.M.Soler, 1996-2016
 
 \end{center}
 
@@ -133,14 +133,10 @@ D.S\'anchez-Portal and J.M.Soler, 1996-2013
 
 {\it This Reference Manual contains descriptions of all the input,
   output and execution features of {\sc Siesta}, but is not really a
-  tutorial introduction to the program. The development team is
-  planning a documentation overhaul that will address this
-  shortcoming. In the meantime, interested users can find tutorial
-  material prepared for {\sc Siesta} schools and workshops at the
-  project's web page} \url{http://www.uam.es/siesta}.
+  tutorial introduction to the program. Interested users can find
+  tutorial material prepared for {\sc Siesta} schools and workshops at
+  the project's web page} \url{http://www.uam.es/siesta}.
 
-
-{\bf NOTE: Almost none of the BSC features are documented yet...}
 
 {\sc Siesta}\index{Siesta@{\sc Siesta}} (Spanish Initiative for
 Electronic Simulations with
@@ -406,7 +402,7 @@ directory. A collection of reference output files can be found in {\tt
   Tests/Reference}. Please note that small numerical and
 formatting differences are to be expected, depending on the compiler.
 (For non-standard execution environments, including queuing systems,
-so can have a look at the Scripts in Tests/Scripts, and see also Sect.~\ref{sec:parallel}.)
+have a look at the Scripts in Tests/Scripts, and see also Sect.~\ref{sec:parallel}.)
 
 Other examples are provided in the {\tt Examples} directory. This
 directory contains basically {\tt .fdf} files and the appropriate
@@ -758,13 +754,15 @@ Number of different atomic species in the simulation.
 Atoms of the same species, but with a different
 pseudopotential or basis set are counted as different species.
 
-{\it Default value:} There is no default. You must supply this variable.
+{\it Default value:} Number of inputs in the \textbf{ChemicalSpeciesLabel}
+block. Is not required to be set.
 
 \item[{\bf NumberOfAtoms}] ({\it integer}):
 \index{NumberOfAtoms@{\bf NumberOfAtoms}}
 Number of atoms in the simulation.
 
-{\it Default value:} There is no default. You must supply this variable.
+{\it Default value:} Number of inputs in the \textbf{AtomicCoordinatesAndAtomicSpecies}
+block. Is not required to be set.
 
 \item[{\bf ChemicalSpeciesLabel}] ({\it data block}):
 \index{ChemicalSpeciesLabel@{\bf ChemicalSpeciesLabel}}
@@ -876,11 +874,13 @@ The name of the files should be:
 where {\it Chemical\_label} corresponds to the label defined in the
 {\bf ChemicalSpeciesLabel} block.
 
-Siesta can also handle pseudopotential files in the XML format
-designed by Junquera, Garcia, and Verstraete (to be published), which
-enables interoperability with the ABINIT code. The directory
-{\tt Util/pseudo-xml} contains a program to translate the pseudo
-XML files to the {\tt .psf} form.
+This version of Siesta can handle pseudopotential files in a
+\textit{deprecated} XML format designed by Junquera, Garcia, and
+Verstraete to enable interoperability with some versions of the
+ABINIT code. The directory {\tt Util/pseudo-xml} contains a program to
+translate the pseudo XML files to the {\tt .psf} form. This XML format
+will be soon superseded by the new PSML specification, which will be
+supported by forthcoming versions of Siesta and ABINIT.
 
 
 \vspace{5pt}
@@ -3745,12 +3745,14 @@ implemented, care must be taken to make sure that the FFT grids in the
 \end{description}
 
 
-
 \subsubsection{Output of density matrix and Hamiltonian}
 \index{output!density matrix}
 
+{\bf Performance Note}: For large-scale calculations, writing the DM
+at every scf step can have a severe impact on performance. 
 The sparse-matrix I/O is undergoing a re-design, to facilitate the
 analysis of data and to increase the efficiency. 
+
 
 \begin{itemize}  
 \item Save Hamiltonian and/or DM with proper filenames, depending on
@@ -5872,7 +5874,7 @@ See the {\bf WriteEigenvalues} descriptor.
 There are two options to obtain the partial density of states
 \begin{itemize}
 \item Using the options below
-\item Using the {\tt Util/COOP/mprop} program the off-line analysis of
+\item Using the {\tt Util/COOP/mprop} program for the off-line analysis of
   the electronic structure in PDOS mode. This method allows the
   flexibility of specifying energy ranges, orbitals, and resolutions
   at will, without re-running {\sc Siesta}. See Sec.~\ref{sec:coop}.
@@ -7216,6 +7218,7 @@ The allowed values are:
   level 4 : print every individual (re)allocation or deallocation
 \end{itemize}
 
+NOTE: In MPI runs, only node-0 peak reports are produced.
 
 \item[{\bf AllocReportThreshold}] ({\it real}): 
 \index{AllocReportThreshold@{\bf AllocReportThreshold}}
@@ -9276,8 +9279,8 @@ is based on routine velect, written by {\bf S.\ Froyen}.
 
 \item
 Some standard linear-algebra routines from the {\bf EISPACK}, {\bf
-  BLAS}, and {\bf LAPACK}  packages are in files eispack.F, and in
-several files in Libs.
+  BLAS}, and {\bf LAPACK} packages are in several files in Libs and
+Util/Vibra.
 
 \item
 The serial version of the multivariate fast fourier transform used to
@@ -9763,7 +9766,7 @@ Util/Contrib/APostnikov:       rho2xsf, etc.
 \index{XML}
 \index{CML}
 
->From version 2.0, {\sc Siesta} includes an option to write its output to an
+From version 2.0, {\sc Siesta} includes an option to write its output to an
 XML file. The XML it produces is in accordance with the CMLComp subset of
 version 2.2 of the Chemical Markup Language. Further information
 and resources can be found at \url{http://cmlcomp.org/} and tools for working

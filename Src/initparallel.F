@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine initparallel( no_u, na_u, lasto, xa,
      &                         ucell, rmaxh )
@@ -125,7 +122,18 @@ C Set ProcessorY
 #ifdef MPI
       call set_processorYdefault(Nodes,procYdefault)
       procYval = fdf_integer('processorY',procYdefault)
-      call set_processorY(procYval)
+      ! Sanity check
+      if (procYval > Nodes) then
+         if (Node.eq.0) then
+            write(6,'(a)')
+     .       '* Warning: ProcessorY > Nodes in fdf file. '//
+     $       'Reset to estimated optimal value.'
+         endif
+         call set_processorY(procYdefault)
+      else
+         call set_processorY(procYval)
+      endif
+         
 #else
       call set_processorY(1)
 #endif
@@ -209,7 +217,7 @@ C Output indication of parallel parameters
      .        '* Spatial decomposition: Cutoff = ',rcmax
         else
            write(6,'(/,a,2i4,/)')
-     .        '* ProcessorY, Blocksize: ', procYval, Blocksize
+     .        '* ProcessorY, Blocksize: ', processorY, Blocksize
         endif
         n1 = numroc(no_u,Blocksize,0,0,Nodes)
         nn = numroc(no_u,Blocksize,Nodes-1,0,Nodes)

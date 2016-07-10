@@ -6,6 +6,427 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2016-03-07                                                    trunk-492
+Initial k-displacements are now 0
+
+modified:
+  Src/kgridinit.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_ts_kpoints.F90
+  Src/setup_kscell.F
+
+-----------------------------------------------------------------------
+2016-03-07                                                    trunk-491
+Fixed k-grid displacement reading
+
+- There was no need for not reading 0 as a displacement
+  in the kgrid_monkhorst_pack block.
+
+  Previously siesta would error when:
+   %block kgrid_monkhorst_pack
+    1 0 0 0
+    0 1 0 0
+    0 0 1 0
+   %endblock
+  while now this will works
+
+modified:
+  Src/kgridinit.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_ts_kpoints.F90
+  Src/setup_kscell.F
+
+-----------------------------------------------------------------------
+2016-03-05                                                    trunk-490
+Automatic reading of #atoms, and species without denoting count
+
+- The NumberOfSpecies flag is now not needed any more.
+
+  This reflects an easier usage as it first reads the lines
+  in the ChemicalSpeciesLabel block and counts the number
+  of species from this block.
+
+  A small bug has also been fixed in that the first
+  number is now correctly inserted in the slot
+  that it intents.
+
+  The NumberOfSpecies flag still has precedence in case
+  you want a reduced number of elements.
+
+  +manual
+
+- The NumberOfAtoms is now not needed any more.
+
+  Similar to the NumberOfSpecies flag we now count the
+  number of atoms from the block by default.
+
+  The NumberOfAtoms flag still has precedence in case
+  you want a reduced number of atoms.
+
+  +manual
+
+- Output of chemical species is now more concise and aligned.
+  This is just a visual change.
+
+modified:
+  Docs/siesta.tex
+  Src/chemical.f
+  Src/coor.F
+
+-----------------------------------------------------------------------
+2016-03-03                                                    trunk-489
+[merge] Tests fix, REFERENCE_DIR and SIESTA
+
+- After having build siesta in the Obj directory
+  a natural procedure would be to go to Tests
+  and run the tests:
+      make
+  However, the default SIESTA is not pointing to
+  the Obj.
+  Further the REFERENCE_DIR is not pointing to the
+  correct reference directory when in the top Tests
+  directory.
+
+  Hence the procedure is:
+  1. cd Obj
+  2. ../Src/obj_setup.sh
+  3. <create arch.make>
+  4. make
+  5. cd ../Tests/
+  6. make
+
+modified:
+  Tests/test.mk
+
+2016-02-26                                                    trunk-488
+Add generic citation helper
+
+- It was previously difficult to figure
+  out which papers where of significance when
+  using SIESTA.
+  This addition adds the capability of on-the-fly
+  creation of .bib files for users to easier find
+  the papers that are being used in their corresponding
+  run.
+
+added:
+  Src/m_cite.F90
+modified:
+  Src/Makefile
+  Src/m_efield.F
+  Src/siesta_init.F
+  Src/ts_init.F90
+
+-----------------------------------------------------------------------
+2016-02-17                                                    trunk-486
+Fixed auxiliary array usage for ksv and optical
+
+- ksv:
+  This routine used Hkin as a work-array for calculating
+  certain quantities for polarization calculations.
+
+  This may lead to inadvertently destroying reliance
+  across calculations which are not intended.
+
+  This bug has been fixed by introducing the allocation
+  of the work-array in the ksv routine, directly.
+
+  Furthermore, we have explicitly added the => null()
+  when initializing several of the pointers.
+
+- optical:
+  This routine used Eold, Dold and Hkin as
+  work-arrays for calculating optical properties.
+
+  We have fixed these issues and moved allocation into
+  the routine.
+
+  Furthermore there were several "saved" variables
+  which were not needed to be saved.
+
+  All variables were re-calculated on each entry-point.
+  This has also been fixed.
+
+  Streamlined the algorithm for calculating transition-rates.
+
+- phirphi_opt:
+  Reduced memory by ENDLESS.
+  It allocated an enourmous amount of memory of which only 1 element
+  was used at a time.
+  If the full matrix is going to be needed, then re-instantiate the
+  comments !N.
+  The si-optical test yields the same result and I see no problem
+  in the current algorithm.
+
+modified:
+  Src/born_charge.F
+  Src/ksv.f
+  Src/optical.F
+  Src/phirphi_opt.f
+  Src/siesta_analysis.F
+
+-----------------------------------------------------------------------
+2016-02-17                                                    trunk-485
+Add GPL notices and headers
+
+* Include proper headers
+* Add Docs/Contributors.txt and NOTICE.txt files.
+* Update READMEs and LICENSE files in several directories.
+* Remove Pseudo/atom, Util/test-xml
+* Remove DOM files from Src/xmlparser
+* Replace old copyright notice in Src/Confs
+
+This revision touches a large number of files due to the
+change in licensing and copyright.
+
+The other major change is the removal of the Pseudo/atom subtree,
+which is now distributed independently.
+
+-----------------------------------------------------------------------
+2016-02-05                                                    trunk-484
+Merge fixes from rel-4.0 branch
+
+* Fix Tests/test.mk and Genbasis makefile
+
+The reference directory's path was incorrect in Tests/test.mk
+
+In Util/Gen-basis/Makefile, the treatment of COMP_LIBS can be improved
+with a form suggested by Pedro Brandimarte, which will work even if
+there are multiple files in COMP_LIBS.
+
+* Fix peak alloc report in MPI
+
+When alloc-report-level is 1 or 3, a report should be printed at every
+peak. This hanged in MPI runs. Now only the root node peaks are
+printed.
+
+(Thanks to Nick R. Papior)
+  
+* Some older .CHANGES files have been moved to the 'branch-changes'
+  directory, and older release notes moved to the
+  'older-release-notes' directory.
+
+modified:
+  Tests/test.mk
+  Util/Gen-basis/Makefile
+  Src/alloc.F90
+  Docs/siesta.tex
+added:
+  Docs/branch-changes/
+  Docs/older-release-notes/
+
+-----------------------------------------------------------------------
+2015-12-18   10:25:00 GMT                                     trunk-483
+Add lapack and blas code in Libs to support OMM and SVD
+
+* To enable quick compilation with no external libraries, some
+  lapack/blas routines have been added to the Src/Libs directory.
+
+  A minimal example of arch.make: Src/Sys/nolibs.make
+
+  Note that some optional features do depend on the availability of
+  external libraries, such as netCDF and fftw.
+  
+added:
+  Src/Libs/svd_omm_lapack.f
+modified:
+  Src/Libs/blas.f
+  Src/Libs/makefile
+  Src/Sys/nolibs.make
+  Util/Gen-basis/Makefile  
+
+-----------------------------------------------------------------------
+2015-12-17   16:25:00 GMT                                     trunk-482
+New versions of grid2cube and gnubands. Laplacian of grid functions
+
+* Updated new.gnubands in Util/Bands to enhance spin processing
+  and optional production of labels in tick marks.
+
+  (Nick R. Papior)
+  
+* A new experimental program g2c_ng in Util/Grid offers extended
+  and cleaner functionality over the classic grid2cube.
+
+* A new program cdf_laplacian in Util/Grid computes the laplacian
+  of a grid function in netCDF format.
+
+  (A. Garcia)
+  
+added:
+  Util/Grid/cdf_laplacian.F90
+  Util/Grid/g2c_ng.f
+  Util/Grid/m_gridfunc.F90
+  Util/Grid/m_struct.f90
+modified:
+  Util/Bands/Makefile
+  Util/Bands/README
+  Util/Bands/new.gnubands.f90
+  Util/Grid/README
+  Util/Grid/makefile
+  Util/build_all.sh
+		    
+
+-----------------------------------------------------------------------
+2015-11-26   15:10:00 GMT                                     trunk-481
+Increase the number of allowed iterations in minvec
+
+The default value of 100 was inadequate for the needs of
+k-point supercells for large multipliers.
+
+modified:
+  Src/minvec.f
+      
+-----------------------------------------------------------------------
+2015-11-26   13:50:00 GMT                                     trunk-480
+Fix bug in heapsort routine
+
+(Thanks to Nick Papior)
+
+* The recent re-implementation of the heapsort algorithm in routine
+  'ordix' in 'sorting.f' (trunk revno 468)  was buggy.
+
+  This affected:
+
+  - The siesta.BONDS file, which did not have optimal ordering of the
+    bond-lengths.
+
+  - Some calculations using k-points, as routine 'minvec', used in the
+    definition of the effective k-point supercell, calls 'ordix'.
+    (The reference outputs for the 'var_cell' and 'si2x1h' tests have
+    been modified.)
+
+  - (probably) The re-use of density-matrix information, as the ordering
+    of interactions in 'hsparse' also depended on 'ordix' through calls to
+    'ordvec'.
+
+  - (maybe) The operation of the "rho-mixing" routines, which use 'ordix'
+    for the sorting of stars.
+
+modified:
+  Src/sorting.f
+  Tests/Reference/si2x1h.out
+  Tests/Reference/var_cell.out
+
+-----------------------------------------------------------------------
+2015-10-04   00:40:00 GMT                                     trunk-479
+Assorted fixes and cleanup. Update reference outputs
+
+- Replace pointers by allocatables in {zm,cell}_broyden_optim.
+- Split-off read_options from siesta_options to reduce
+  dependencies and clarify hidden symbol associations.
+- Remove dependency in sparse_matrices
+- Fix dependencies in makefiles in Util
+- Remove Reference-xml
+- Update Reference-out files
+- Provide a simple-minded mechanism to flag differences in the
+  test outputs ('make check').
+
+removed:
+  Tests/Reference-xml/
+  Tests/Reference/partial.out
+added:
+  Src/read_options.F90
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/au_100.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/au_100.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.TEIG
+  Tests/TranSiesta-TBTrans/copy_to_reference.sh
+  Tests/TranSiesta-TBTrans/run_tests.sh
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/cell_broyden_optim.F
+  Src/diagon.F
+  Src/final_H_f_stress.F
+  Src/obj_setup.sh
+  Src/projected_DOS.F
+  Src/proximity_check.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/struct_init.F
+  Src/write_md_record.F
+  Src/write_subs.F
+  Src/zm_broyden_optim.F
+  Tests/Makefile
+  Tests/README
+  Tests/Reference/*
+  Tests/cmp_digest.sh
+  Tests/partial/README
+  Tests/test.mk
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/SiestaSubroutine/README
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/VCA/Makefile
+  Util/build_all.sh
+      
+
+
+	  
+
+
+-----------------------------------------------------------------------
+2015-09-29   10:25:00 GMT                                     trunk-478
+Fixes: OCCS file, pdoskp, processorY
+
+* The OCCS file, containing the occupation at each k-point,
+  is now created only during the scf cycle, in 'diagon'. This
+  fixes problems that appeared when 'diagk' was called from
+  other routines.
+  
+* Some arrays in pdoskp were not dimensioned correctly on
+  input in pdoskp.
+
+* Added a sanity check for the user-entered ProcessorY.
+
+(Thanks to Nick P. Andersen)
+
+modified:
+  Src/diagk.F
+  Src/diagk_file.F
+  Src/diagon.F
+  Src/initparallel.F
+  Src/pdoskp.F
+
+-----------------------------------------------------------------------
+2015-09-17   13:25:00 GMT                                     trunk-477
+Fixes: pi/a mode in bands; low-n interpolation; others
+
+* Fix handling of n<3 cases in interpolation.f90 
+* Made global variable 'saved' in matel_registry
+  (J. Soler, with thanks to Nick P. Andersen)
+
+* Fix uninitialized variable in interpolation.f90.
+* Proper check on number of atoms in zmatrix.F.
+* Avoid underflow in sorting.f.
+
+  (Thanks to P. Brandimarte)
+
+* In bands.F, only check for LatticeConstant input
+  in the "pi/a" case.
+
+modified:
+  Src/bands.F
+  Src/interpolation.f90
+  Src/matel_registry.F90
+  Src/sorting.f
+  Src/zmatrix.F
+
+-----------------------------------------------------------------------
 2015-07-16   15:05:00 GMT                                     trunk-476
 Fix the geometry and DM and H logic for consistency in analysis
 

@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module m_struct_init
       private
       public :: struct_init
@@ -6,6 +13,7 @@
 
       subroutine struct_init()
       USE siesta_options
+      use units, only: Ang
       use m_ioxv
       USE alloc,          only: re_alloc, de_alloc
 
@@ -123,7 +131,10 @@
               endif
               call broadcast(found_restart)
               if (.not. found_restart) then
-                 dt = fdf_get('MD.LengthTimeStep',dt_default,'fs')
+                 ! dt_default = 1.0 (fs)
+                 ! The user should not rely on the default here...
+                 ! The parameter dt_default is private to read_options 
+                 dt = fdf_get('MD.LengthTimeStep',1.0_dp,'fs')
                  xa=xa-dt*va
                  if (IOnode) then
                     write(6,'(5a)') 'WARNING: ', trim(restart_file),

@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       MODULE m_state_analysis
       use write_subs
 
@@ -19,6 +26,7 @@
       use sparse_matrices
       use siesta_geom
       USE siesta_options
+      use units, only: amu, eV
       use m_stress
       use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
       use m_ntm

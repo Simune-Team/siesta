@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine pdoskp(nspin, nuo, no, maxspn, maxnh, 
      .                  maxo, numh, listhptr, listh, H, S,
@@ -84,7 +81,8 @@ C **********************************************************************
       real(dp)
      .  H(maxnh,nspin), S(maxnh), E1, E2, sigma, 
      .  xij(3,maxnh), kpoint(3,nk), eo(maxo,maxspn,nk),
-     .  Haux(2,nuotot,nuo), Saux(2,nuotot,nuo), psi(2,nuotot,nuo),
+     .  Haux(2,nuotot,nuotot), Saux(2,nuotot,nuotot),
+     .  psi(2,nuotot,nuotot),
      .  dtot(nhist,2), dpr(nhist,nuotot,2), wk(nk)
 
 C Internal variables ---------------------------------------------------

@@ -1,6 +1,7 @@
 #!/bin/sh
 #
 # cmp_digest -- Generates and compares the digests of two Siesta output files
+#               It uses a simple-minded scheme
 #
 # If only one file is given, the reference is sought in a standard directory which
 # must exist (it is linked to by newer versions of Siesta). It can be re-defined
@@ -22,8 +23,11 @@ pwd -P
 if [ -z "${REFERENCE_DIR}" ] ; then
     REFERENCE_DIR=$srcdir/Reference
 fi
+if [ -z "${SCRIPTS_DIR}" ] ; then
+    SCRIPTS_DIR=$srcdir
+fi
 #
-DIGEST_CREATOR=$srcdir/out_digest.awk
+DIGEST_CREATOR=${SCRIPTS_DIR}/out_digest.awk
 #
 if [ $# = 2 ]
 then
@@ -44,9 +48,17 @@ if [ ! -r $f2 ] ; then echo "No reference file: $f2"; exit ; fi
 #
 rm -f .tmp_dig1 .tmp_dig2
 #
-awk -f $DIGEST_CREATOR $f1 > .tmp_dig1
-awk -f $DIGEST_CREATOR $f2 > .tmp_dig2
+# Extract info and compress whitespace
+awk -f $DIGEST_CREATOR $f1 | tr -s ' ' > .tmp_dig1
+awk -f $DIGEST_CREATOR $f2 | tr -s ' ' > .tmp_dig2
 #
-diff .tmp_dig1 .tmp_dig2 > OUT.diffs
+# Get the diffs side-by-side, ignoring whitespace
+#
+diff -y -w --suppress-common-lines .tmp_dig1 .tmp_dig2 > OUT.diffs
 # Erase the diff file if it is empty
-if [ ! -s OUT.diffs ] ; then rm -f OUT.diffs ; fi
+if [ ! -s OUT.diffs ]
+then
+    rm -f OUT.diffs .tmp_dig1 .tmp_dig2
+else
+    echo "$f1: ** DIFFERENCES FOUND **"
+fi

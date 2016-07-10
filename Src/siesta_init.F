@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       MODULE m_siesta_init
       private
       public :: siesta_init
@@ -58,6 +65,7 @@
 #ifdef MPI
       use mpi_siesta
 #endif
+      use m_cite, only: add_citation, init_citation
 
 #ifdef TRANSIESTA
       use m_ts_init, only : ts_init
@@ -76,11 +84,16 @@
 
       integer :: World_Group
       integer :: npSIESTA
+      external :: read_options
+      
 
       character(len=256) :: output_file
       logical            :: use_explicit_output_file
 
 !---------------------------------------------------------------------- BEGIN
+! Initialise MPI unless siesta is running as a subroutine 
+! of a driver program that may have initialized MPI already
+
 #ifdef MPI
 C     Initialise MPI and set processor number
 
@@ -227,6 +240,12 @@ C     Initialise MPI and set processor number
      .                   threshold=threshold,
      &                   printNow=.false. )
 
+      if ( IONode ) then
+         ! Add citations
+         call init_citation(trim(slabel))
+         call add_citation("10.1088/0953-8984/14/11/302")
+      end if
+      
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
       call read_xc_info()

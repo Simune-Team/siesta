@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module band
       use precision, only: dp
@@ -173,19 +170,19 @@ C Find if there are band-lines data
 
         if ( BandLinesPresent .or. BandPointsPresent ) then
 
-C Find lattice constant
-          alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
-          if (alat .eq. 0.d0) then
-            if (Node .eq.0 ) then
-              write(6,'(a)') 'bands: ERROR: Lattice constant required'
-            endif
-            goto 999
-          endif
 
 C Find scale used in k point data
           scale = fdf_string( 'BandLinesScale', 'pi/a' )
           if (scale .eq. 'pi/a') then
             pi = 4.d0 * atan(1.d0)
+C Find lattice constant
+            alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
+            if (alat .eq. 0.d0) then
+             if (Node .eq.0 ) then
+              write(6,'(a)') 'bands: ERROR: Lattice constant required'
+             endif
+             goto 999
+            endif
           elseif (scale .eq. 'ReciprocalLatticeVectors') then
             call redcel( alat, caux, ucell, mscell )
             call reclat( ucell, rcell, 1 )

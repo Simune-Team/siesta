@@ -1,3 +1,10 @@
+The files in this directory come from the NETLIB repository.
+
+According to the NETLIB website, the BLAS code is freely
+available. Please see the individual files for authorship information.
+
+For the LAPACK code, the conditions in the file LICENSE apply.
+
 Use the code in this directory if you do not have compiled (presumably
 optimized) blas and lapack libraries in your system.
 

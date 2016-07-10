@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       MODULE m_state_init
 
       private
@@ -10,6 +17,7 @@
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
+      use units, only: Ang
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Eold, Hold
       use sparse_matrices, only: xijo, H, S, H_kin, H_vkb, Hprev

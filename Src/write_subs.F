@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !
 !     Some of the functionality of the former write_subs module 
 !     has been split into  three sub-modules to work around a compiler bug.
@@ -588,7 +595,7 @@
       USE siesta_options
       use siesta_geom
       use siesta_cml
-      use units,      only : Ang
+      use units,      only : Ang, eV
       use m_forces
       use alloc,      only : re_alloc, de_alloc
       implicit none

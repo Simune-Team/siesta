@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 C $Id: cdiag.f,v 1.2 2002/12/04 12:32:20 mbr Exp $
 
       SUBROUTINE CDIAG (H,NH,S,NS,N,E,Z,NZ,AUX)
