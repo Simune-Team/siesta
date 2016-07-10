@@ -12,7 +12,7 @@
       public :: siesta_write_positions
       CONTAINS
       
-      subroutine siesta_write_positions()
+      subroutine siesta_write_positions(moved)
       use siesta_geom
       use atomlist, only: elem, iza
       use siesta_cml
@@ -23,24 +23,35 @@
 
       implicit none
 
+!     Whether the structure has already changed in response to forces and stresses
+      logical, intent(in) :: moved
+
 !
 !      Write out structural information in "crystallography" format,
 !      and in "canonical" (see Zmatrix module) zmatrix format.
-!      By now the structure might have changed in response to forces
-!      and stresses.
 
-        call write_struct( ucell, na_u, isa, iza, xa, moved=.true.)
+
+        call write_struct( ucell, na_u, isa, iza, xa, moved)
         if (lUseZmatrix .and. (idyn .eq. 0)) then
-           call write_canonical_ucell_and_Zmatrix
+           if (moved) then
+              call write_canonical_ucell_and_Zmatrix
      $                         (filename="NEXT_ITER.UCELL.ZMATRIX")
+           else
+              call write_canonical_ucell_and_Zmatrix
+     $                         (filename="OUT.UCELL.ZMATRIX")
+           endif
         endif
 
-        if (cml_p) then
+        ! Note that this information should be written only at the
+        ! time of processing the current geometry (in state_init)
+
+        if ((.not. moved) .and. cml_p) then
           call cmlAddMolecule(xf=mainXML, natoms=na_u, elements=elem,
      .           atomRefs=cisa, coords=xa/Ang)
           call cmlAddLattice(xf=mainXML, cell=ucell/Ang, 
      .           units='siestaUnits:Ang', dictref='siesta:ucell')
         endif
+
       end subroutine siesta_write_positions
 
       END MODULE write_subs_positions

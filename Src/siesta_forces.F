@@ -95,10 +95,15 @@
 
 !     Start of SCF loop
       iscf  = 0
+      
+      ! This call computes the non-scf part of H and initializes the
+      ! real-space grid structures.  It might be better to split the two,
+      ! putting the grid initialization into state_init and moving the
+      ! calculation of H_0 to the body of the loop, done if first=.true.  This
+      ! would suit "analysis" runs in which nscf = 0
+      !
       if (SIESTA_worker) call setup_H0()
-!      if (pexsi) then
-!         call pexsi_initialize_scfloop()
-!      endif
+
       if (ionode) call memory_snapshot("after setup_H0")
 
       DO 
@@ -171,6 +176,8 @@
 
         if (monitor_forces_in_scf)  call compute_forces()
 
+        ! Mix_after_convergence preserves the old behavior of
+        ! the program.
         if ((.not. SCFconverged) .OR. mix_after_convergence) then
            ! Mix for next step
            if (mix_charge) then
@@ -179,7 +186,6 @@
               call mixer( iscf )
            endif
            ! Save for possible restarts
-           ! Could save H in the future
            if (MixH) then
               call write_spmatrix(H,file="H_MIXED",when=writeH)
               call save_density_matrix(file="DM_OUT",when=writedm)
@@ -193,6 +199,7 @@
         call maybe_print_timings()
         if (cml_p) call cmlEndStep(mainXML)
 
+        ! This should be the last step if we have converged...
         last_step = SCFConverged
 #ifdef TRANSIESTA
         ! ... except that we might continue for TranSiesta
@@ -228,8 +235,15 @@
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses
 
+!     Note that this call will no longer overwrite H while computing the
+!     final energies, forces and stresses...
+
       call post_scf_work( iscf )
       if (ionode) call memory_snapshot("after post_scf_work")
+
+!     ... so H at this point is the latest generator of the DM, except
+!     if mixing H beyond self-consistency or terminating the scf loop
+!     without convergence while mixing H
 
       call state_analysis( istep )
       if (ionode) call memory_snapshot("after state_analysis")
@@ -307,7 +321,10 @@
       !
       ! Depending on various conditions, save the DMin
       ! or the DMout, and possibly keep a copy of H
-      !
+
+      ! NOTE: Only if the scf cycle converged before exit it
+      ! is guaranteed that the DM is "pure out" and that
+      ! we can recover the right H if mixing H.
       !
       subroutine end_of_cycle_save_operations()
 

@@ -58,12 +58,14 @@
 !
 !     Warn user 
 !
-      if (vol > original_vol)
+      if (IOnode) then
+         if (vol > original_vol)
      $     write(6,"(a)")
      $     "Auxiliary supercell needs to be larger than naive one..."
-      if (vol > 2*original_vol)
+         if (vol > 2*original_vol)
      $     write(6,"(a)")
      $     "*** Auxiliary supercell is more than twice as big! "
+      endif
 
       end subroutine check_sc_factors
 

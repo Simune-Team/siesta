@@ -5,11 +5,13 @@
 
       subroutine final_H_f_stress( iscf )
 
-      USE siesta_options
-      use sparse_matrices, only: H, numh, listh, listhptr
-      use sparse_matrices, only: maxnh, Dscf, Escf, xijo
+      USE siesta_options, only: g2cut, savehs, temp
+      USE siesta_options, only: recompute_H_after_scf
+      use sparse_matrices, only: numh, listh, listhptr
+      use sparse_matrices, only: S, Dscf, Escf, maxnh, xijo
+      use sparse_matrices, only: H  
+
       use siesta_geom
-      use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
      &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
      &                    rmaxo, no_l
@@ -55,6 +57,9 @@
       integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
+      ! To avoid overwriting the current Hamiltonian and S
+      real(dp), pointer     :: H_tmp(:,:) => null()  
+      real(dp), pointer     :: S_tmp(:) => null()  
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
@@ -70,12 +75,14 @@
 !     TSS End
 #endif /* TRANSIESTA */
 
-      real(dp), allocatable :: H_dummy(:,:), S_dummy(:)
 !--------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
-      allocate(H_dummy(size(H,dim=1),size(H,dim=2)), S_dummy(size(H)))
-      H_dummy = 0.0_dp
+      call re_alloc(H_tmp, 1,maxnh, 1,nspin,
+     $                       'H_tmp','final_H_f_stress')
+      call re_alloc(S_tmp, 1,maxnh,
+     $                       'S_tmp','final_H_f_stress')
+      H_tmp = 0.0_dp
 
 !     Initialize forces and stress ...................
       nullify(fal)
@@ -97,7 +104,7 @@
       call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              min(nspin,2), Dscf, Ekin, fal, stressl, H_dummy,
+     &              min(nspin,2), Dscf, Ekin, fal, stressl, H_tmp,
      &              matrix_elements_only=.false. ) 
 #ifdef MPI
 ! Global reduction of energy terms
@@ -110,7 +117,7 @@
       call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
-     &             min(nspin,2), Dscf, Enl, fal, stressl, H_dummy,
+     &             min(nspin,2), Dscf, Enl, fal, stressl, H_tmp,
      &             matrix_elements_only=.false. ) 
 
 #ifdef MPI
@@ -135,16 +142,17 @@
       call grdsam( nspin, no_s, iaorb, iphorb, 
      &             no_l, no_u, na_u, na_s, isa, xa, indxua,
      &             ucell, ntm, ifa, istr, maxnh,
-     &             maxnh, numh, listhptr, listh, Dscf, Datm, H_dummy,
+     &             maxnh, numh, listhptr, listh, Dscf, Datm, H_tmp,
      &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
 !     Orthonormalization forces ...........................................
-!     **Note that this will re-calculate S also
+!     **Note that this will re-calculate S also, but should get 
+!     the same result
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              min(nspin,2), Escf, fal, stressl, S_dummy ) 
+     &              min(nspin,2), Escf, fal, stressl, S_tmp ) 
 
 !     Metadynamics forces
       if (lMetaForce) then
@@ -168,13 +176,32 @@
       stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
 #endif
+
+      ! If backward compatibility is requested, recover
+      ! the old behavior with respect to H
+
+      if (recompute_H_after_scf) then
+         if (ionode) then
+            write(6,"(a)") ":!: Updating H after scf cycle" //
+     $                     " as requested by compat. option"
+         endif
+         H = H_tmp
+      endif
+
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
+      call de_alloc( H_tmp, 'H_tmp', 'final_H_f_stress' )
+      call de_alloc( S_tmp, 'S_tmp', 'final_H_f_stress' )
 
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
+!
+! Note that we save the Hamiltonian coming out of the scf cycle,
+! not the one computed (from DM_out) in this routine.
+! This call could be moved to a more appropriate place
+!
       if (savehs) then
          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
-     &        maxnh, numh, listhptr, listh, H_dummy, S_dummy, qtot,
+     &        maxnh, numh, listhptr, listh, H, S, qtot,
      &        temp, xijo)
       endif
 #ifdef TRANSIESTA
@@ -186,8 +213,7 @@
             fname = paste( fname, '.TSHS' )
             iotask='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H_dummy,
-     $                    S_dummy, 
+     &                    indxuo, maxnh, numh, listhptr, listh, H, S,
      &                    qtot, temp, xijo, label_length+5, fname, na_u,
      &                    lasto, isa, ef, ucell, ts_kscell, ts_kdispl,
      &                    ts_gamma_scf, xa, ts_istep, ia1)
@@ -195,8 +221,7 @@
             fname  = paste( slabel, '.TSHS' )
             iotask ='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H_dummy,
-     $                    S_dummy,
+     &                    indxuo, maxnh, numh, listhptr, listh, H, S,
      &                    qtot, temp, xijo, label_length+5, fname, na_u,
      &                    lasto, isa, ef, ucell,ts_kscell, ts_kdispl,
      &                    ts_gamma_scf, xa, 0, 0 )
@@ -205,10 +230,6 @@
 ! TSS End
 #endif /* TRANSIESTA */
 
-      if (fdf_get("UpdateHamiltonianAfterSCF",.false.)) then
-         H(:,:) = H_dummy(:,:)
-      endif
-      deallocate(H_dummy,S_dummy)
 !----------------------------------------------------------------------- END
       END subroutine final_H_f_stress
       END module m_final_H_f_stress
