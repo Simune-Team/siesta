@@ -47,17 +47,21 @@
       use electrostatic, only: elec_corr_setup
       use atmparams, only: lmaxd, nkbmx, nsemx, nzetmx
       use atom_options, only: get_atom_options
+      use ldau_specs, only: read_ldau_specs
+      use ldau_specs, only: ldau_proj_gen
 
       implicit none
       integer,         intent(out) :: ns   ! Number of species
 !     Internal variables ...................................................
       integer                      :: is
       logical                      :: user_basis, user_basis_netcdf
+      logical :: req_init_setup
       type(basis_def_t),   pointer :: basp
       
       external atm_transfer
 
       call get_atom_options()
+
 
 !     Reading input for the pseudopotentials and atomic orbitals
       write(6,'(/2a)') 
@@ -67,6 +71,19 @@
       user_basis = fdf_boolean('user-basis',.false.)
       user_basis_netcdf = fdf_boolean('user-basis-netcdf',.false.)
 
+      ! Create list of options NOT compatible with psf/vps file
+      ! reads.
+      req_init_setup = fdf_defined('LDAU.proj')
+      ! Add any other dependencies here...
+
+      ! Check that the user can perform a legal action
+      req_init_setup = req_init_setup .and.
+     & ( user_basis_netcdf .or. user_basis )
+      if ( req_init_setup ) then
+         call die('Reading PAOs and KBs from NetCDF/ascii files '//
+     &'is not possible with LDAU.Proj')
+      end if
+      
       if (user_basis_netcdf) then
         write(6,'(/a)') 'Reading PAOs and KBs from NetCDF files...'
         call read_basis_netcdf(ns)
@@ -79,6 +96,9 @@
 !       New routines in basis_specs and basis_types.
         call read_basis_specs()
         call basis_specs_transfer()
+
+!       Get the parameters for the generation of the LDA+U projectors
+        call read_ldau_specs()
 
         nsmax = nsp             !! For old_atmfuncs
         call allocate_old_arrays()
@@ -102,7 +122,8 @@
      &                    qwid(0:lmaxd,1:nsemx,is),
      &                    split_norm(0:lmaxd,1:nsemx,is), 
      &                    filtercut(0:lmaxd,1:nsemx,is), basp)
-
+!         Generate the projectors for the LDA+U simulations (if requested)
+          call ldau_proj_gen(is)
         enddo 
 
         call prinput(nsp)

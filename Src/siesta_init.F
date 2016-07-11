@@ -24,7 +24,7 @@
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
      &                              iza, rmaxo, zvaltot, superc,
-     &                              initatomlists, no_l
+     &                              initatomlists, no_l, rmaxldau
       use fdf
       use sys,                only: die, bye
 #ifdef BSC_CELLXC
@@ -210,6 +210,9 @@ C     Initialise MPI and set processor number
       Emm     = 0.0_dp
       Entropy = 0.0_dp
       FreeE   = 0.0_dp
+      Eldau   = 0.0_dp
+      DEldau  = 0.0_dp
+
 
 
 !     Initialize CML (relies on reinit)
@@ -263,7 +266,6 @@ C     Initialise MPI and set processor number
       call broadcast_basis( )
 
       call register_rfs()
-!     call test_register()
 
       atmonly = fdf_get( 'Atom-Setup-Only', .false. )
       if (atmonly) call bye( 'End of atom setup' )
@@ -351,10 +353,10 @@ C     Initialise MPI and set processor number
       endif
 
 !     Find maximum interaction range
-      if (negl) then
-        rmaxh = 2.0_dp*rmaxo
+      if ( negl ) then
+        rmaxh = 2.0_dp*(rmaxo + rmaxldau)
       else
-        rmaxh = 2.0_dp*rmaxo + 2.0_dp*rmaxkb
+        rmaxh = 2.0_dp*(rmaxo + max(rmaxkb,rmaxldau))
       endif
 
 !     Madelung correction for charged systems

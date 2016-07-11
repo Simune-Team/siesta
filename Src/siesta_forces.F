@@ -63,7 +63,6 @@
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
 !---------------------------------------------------------------------- BEGIN
-      if (SIESTA_worker) call timer("IterMD",1)
 
 #ifdef TRANSIESTA
 ! Used in force constant runs
@@ -259,8 +258,6 @@
       ! If siesta is running as a subroutine, send forces to master program
       if (siesta_server) 
      &  call forcesToMaster( na_u, Etot, cfa, cstress )
-
-      call timer("IterMD",2)
 
 !------------------------------------------------------------------------ END
 

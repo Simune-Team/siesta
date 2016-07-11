@@ -50,7 +50,7 @@ program fatband
   real(dp) :: minimum_spec_eigval = -huge(1.0_dp)
   real(dp) :: maximum_spec_eigval = huge(1.0_dp)
 
-  integer  :: fat_u, ib, nbands
+  integer  :: ib, nbands
 
   !
   !     Process options
@@ -487,7 +487,7 @@ program fatband
                              ! Common factor computed here
                              factor =  (qcos*cos(alfa)-qsin*sin(alfa))
 
-                             fat(iw,is) = fat(iw,is) + Sover(ind)*factor
+                             fat(ib,is) = fat(ib,is) + Sover(ind)*factor
 
                         enddo   ! i2
                     enddo  ! i1

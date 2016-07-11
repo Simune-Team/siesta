@@ -3,14 +3,14 @@
 #
 # You can edit the SIESTA macro here, or pass it on the command line
 #
-SIESTA=../../../Obj/siesta
+SIESTA=../../../siesta
 #
 # Example for BSC runs
 #
 #SIESTA= mpirun -np 4 ../../../siesta
 #
 #----------------------------------------------------------------------------
-REFERENCE_DIR?=../../Tests/Reference
+REFERENCE_DIR?=../../../Tests/Reference
 REFERENCE_CHECKER?=../cmp_digest.sh
 #
 label=work

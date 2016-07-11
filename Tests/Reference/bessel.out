@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-trunk-506
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:30:05
+* Running on    2 nodes in parallel
+>> Start of run:  31-MAY-2016   8:49:27
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -46,9 +46,10 @@ reinit: System Label: bessel
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: O Atomic number:           8
- Species number:            2  Label: H Atomic number:           1
- Species number:            3  Label: Bessel (floating Bessel functions)
+Species number:   1 Atomic number:    8 Label: O
+Species number:   2 Atomic number:    1 Label: H
+Species number:   3 Label: Bessel (floating Bessel functions)
+
 Ground state valence configuration:   2s02  2p04
 Reading pseudopotential information in formatted form from O.psf
 
@@ -85,7 +86,7 @@ L=0  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=1
             splnorm:   0.15000    
@@ -95,7 +96,7 @@ L=1  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -221,7 +222,7 @@ L=0  Nsemic=0  Cnfigmx=1
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -319,8 +320,7 @@ L=0  Nsemic=0  Cnfigmx=1
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    2.0000    
-            lambdas:   1.00000    
--------------------------------------------------------------------------------
+            lambdas:    1.0000    
 ===============================================================================
 </basis_specs>
 
@@ -432,10 +432,10 @@ redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    2   7
+* ProcessorY, Blocksize:    1  13
 
 
-* Orbital distribution balance (max,min):     7     4
+* Orbital distribution balance (max,min):    13    12
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -464,29 +464,23 @@ siesta: WARNING: Atoms     3     5 too close: rij =    0.478656 Ang
 New_DM. Step:     1
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:    9    1:    9
-           2       1:   24    1:    9   10:   18
-           3       1:   24   10:   18    1:    9
-           4       1:   24   10:   18   10:   18
+           1       1:   24    1:   18    1:    9
+           2       1:   24    1:   18   10:   18
 
 InitMesh: MESH =    48 x    36 x    36 =       62208
 InitMesh: (bp) =    24 x    18 x    18 =        7776
 InitMesh: Mesh cutoff (required, used) =   100.000   108.450 Ry
-ExtMesh (bp) on 0 =    60 x    45 x    45 =      121500
+ExtMesh (bp) on 0 =    60 x    54 x    45 =      145800
 New grid distribution:   2
-           1       7:   24    1:   18    1:    6
-           2       7:   24    1:   18    7:   18
-           3       1:    6    1:   18    1:    6
-           4       1:    6    1:   18    7:   18
+           1       7:   24    1:   18    1:   18
+           2       1:    6    1:   18    1:   18
 New grid distribution:   3
-           1      11:   24    1:   18    1:    8
-           2      11:   24    1:   18    9:   18
-           3       1:   10    1:   18    1:    8
-           4       1:   10    1:   18    9:   18
+           1      11:   24    1:   18    1:   18
+           2       1:   10    1:   18    1:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    54 x    54 x    42 =      122472
-PhiOnMesh: Number of (b)points on node 0 =                 1944
-PhiOnMesh: nlist on node 0 =                10363
+ExtMesh (bp) on 0 =    54 x    54 x    54 =      157464
+PhiOnMesh: Number of (b)points on node 0 =                 5832
+PhiOnMesh: nlist on node 0 =                21590
 
 stepf: Fermi-Dirac step function
 
@@ -496,6 +490,7 @@ siesta: Eions   =       815.854478
 siesta: Ena     =       175.154321
 siesta: Ekin    =       341.667405
 siesta: Enl     =       -52.736757
+siesta: EldaU   =         0.000000
 siesta: DEna    =        -0.000002
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
@@ -505,13 +500,13 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -466.554405
+siesta: Eharris =      -466.554404
 siesta: Etot    =      -461.666691
 siesta: FreeEng =      -461.666691
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -466.5544     -461.6667     -461.6667  1.44006 -7.5506
-timer: Routine,Calls,Time,% =    IterSCF     1       0.025   1.10
+timer: Routine,Calls,Time,% =    IterSCF     1       0.020   1.60
    scf:    2     -467.2832     -465.0226     -465.0226  0.21387 -2.9211
    scf:    3     -465.9505     -465.3256     -465.3256  0.05943 -4.6211
    scf:    4     -465.8475     -465.4619     -465.4619  0.02496 -5.0852
@@ -552,17 +547,18 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.691999    constrained
 
-Stress-tensor-Voigt (kbar):       -6.55       -2.92       -1.01        0.00        0.00       -0.00
+Stress-tensor-Voigt (kbar):       -6.55       -2.92       -1.01       -0.00        0.00        0.00
 (Free)E + p*V (eV/cell)     -465.3243
 Target enthalpy (eV/cell)     -465.8373
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -104.363629
+siesta: Ebs     =      -104.363631
 siesta: Eions   =       815.854478
 siesta: Ena     =       175.154321
-siesta: Ekin    =       353.865317
-siesta: Enl     =       -63.181133
-siesta: DEna    =        -3.376789
+siesta: Ekin    =       353.865314
+siesta: Enl     =       -63.181132
+siesta: EldaU   =         0.000000
+siesta: DEna    =        -3.376788
 siesta: DUscf   =         0.753223
 siesta: DUext   =         0.000000
 siesta: Exc     =      -113.197753
@@ -576,12 +572,13 @@ siesta: Etot    =      -465.837292
 siesta: FreeEng =      -465.837292
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -104.363629
-siesta:       Kinetic =     353.865317
-siesta:       Hartree =     385.115879
+siesta:  Band Struct. =    -104.363631
+siesta:       Kinetic =     353.865314
+siesta:       Hartree =     385.115877
+siesta:       Eldau   =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =    -113.197753
-siesta:  Ion-electron =   -1080.143029
+siesta:  Ion-electron =   -1080.143023
 siesta:       Ion-ion =     -11.477707
 siesta:       Ekinion =       0.000000
 siesta:         Total =    -465.837292
@@ -596,20 +593,20 @@ siesta: ----------------------------------------
 siesta:    Tot    0.000000   -0.051165   -0.000000
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.004091    0.000000    0.000000
-siesta:     0.000000   -0.001819   -0.000000
-siesta:    -0.000000    0.000000   -0.000628
+siesta:    -0.004091   -0.000000   -0.000000
+siesta:    -0.000000   -0.001819   -0.000000
+siesta:     0.000000    0.000000   -0.000628
 
 siesta: Cell volume =        235.378012 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00002374          0.00000251  Ry/Bohr**3
-siesta:           0.00217937          0.00023016  eV/Ang**3
-siesta:           3.49177241          0.36875303  kBar
+siesta:           0.00217937          0.00023015  eV/Ang**3
+siesta:           3.49177141          0.36875114  kBar
 (Free)E+ p_basis*V_orbitals  =        -465.239517
 (Free)Eharris+ p_basis*V_orbitals  =        -465.239517
 
 siesta: Electric dipole (a.u.)  =    0.000000    0.560111    0.000000
 siesta: Electric dipole (Debye) =    0.000000    1.423662    0.000000
->> End of run:  29-SEP-2015  15:30:08
+>> End of run:  31-MAY-2016   8:49:29

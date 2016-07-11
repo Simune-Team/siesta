@@ -29,6 +29,10 @@
       real(dp), pointer :: H_kin(:) => null()
       real(dp), pointer :: H_vkb(:) => null()
 
+      ! LDA+U Hamiltonian
+      real(dp), pointer :: H_ldau(:,:) => null()
+
+
       CONTAINS
 
       subroutine resetSparseMatrices( )
@@ -47,12 +51,10 @@
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
       call de_alloc( Hprev,       'Hprev',       'sparseMat' )
-      ! Remove pernicious dependency on siesta_options via MixH
-      if (associated(Hold)) then
-         call de_alloc( Hold,        'Hold',        'sparseMat' )
-      endif
+      call de_alloc( Hold,        'Hold',        'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
       call de_alloc( H_vkb,       'H_vkb',       'sparseMat' )
+      call de_alloc( H_ldau,      'H_ldau',      'sparseMat' )
       call de_alloc( xijo,        'xijo',        'sparseMat' )
       call de_alloc( S,           'S',           'sparseMat' )
 
