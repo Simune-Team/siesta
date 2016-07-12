@@ -247,7 +247,7 @@
       rmax_ps_check = 0.0_dp
 
       do
-         call getopts('hdglpKRC3fc:',opt_name,opt_arg,n_opts,iostat)
+         call getopts('hdglpKR:C:3fc',opt_name,opt_arg,n_opts,iostat)
          if (iostat /= 0) exit
          select case(opt_name)
            case ('d')

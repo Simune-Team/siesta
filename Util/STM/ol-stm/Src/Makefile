@@ -50,8 +50,8 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 #
-include $(MAIN_OBJDIR)/Mk/psml.mk
-include $(MAIN_OBJDIR)/Mk/xmlf90.mk
+include $(PSML_ROOT)/psml.mk
+include $(XMLF90_ROOT)/xmlf90.mk
 #
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 #

@@ -9,6 +9,10 @@ file with the information. If the source is a .psml file, the script
 which the VNL section is added, possibly replacing an existing
 <pseudopotential-operator> element.
 
+Note that psop can produce Vlocal and KB information starting from the
+output of any program that produces semilocal potentials in .psml
+format. It is not restricted to files produced by ATOM.
+
 To build the program, type
 
  make OBJDIR=Obj_directory 
@@ -20,6 +24,49 @@ can just type 'make'.
 'psop' accepts command-line options. To see the complete list, type
  
   psop -h
+
+OPERATIONAL NOTES
+
+The construction of Vlocal and the KB projectors follows the defaults
+in modern versions of Siesta.
+
+* Vlocal and Chlocal
+
+For small-core systems, a ``gaussian charge'' is generated and a
+Vlocal generated from it. The cutoff for chlocal in this case is
+obtained by a ``charge criterion'', checking for smallness of
+the charge associated to chlocal: 4*pi*r^2*chlocal(rcut) < eps_charge.
+
+real(dp), parameter  :: eps_vlocal=1.0d-5  ! this is eps
+real(dp), parameter  :: eps_charge=1.0d-4  ! for charge criterion
+
+For large-core systems, Vlocal is obtained first, from a fit to the
+all-electron potential. The fit is by default done conserving up to
+the second derivative at the fitting point, unless the -3 option is
+used to force conservation of the third derivative.
+Chlocal is then computed from Vlocal using Poisson's equation.
+In this case, the cutoff for chlocal is by default computed by
+checking for smallness of  (2*Z - r*Vlocal), unless the -c option is
+specified to force the use of the ``charge'' criterion.
+
+The chlocal cutoffs are needed also to compute ``qtot'', the total
+charge associated to chlocal, which is used to rescale the function.
+
+* KB projectors
+
+The construction follows the defaults in modern versions of Siesta
+(after the changes introduced by Javier Junquera to redefine the range
+of integration for the orbitals used in the construction). This can
+be changed by using the -K option, possibly joined by the '-R rmax'
+option to specify an alternate rmax.
+
+* Other options
+
+Some programs (notably oncvpsp) produce semi-local potentials with
+``raw tails'' with numerical noise at large radii. In this case it
+might be difficult to check properly for the place at which they adopt
+the coulomb form.  The '-C Rmax_ps_check' option forces the use of
+a (smaller, typically 10 Bohr) radius to start the inward check.
 
 Known limitations:
 

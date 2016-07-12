@@ -1,25 +1,33 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <psml version="0.9" energy_unit="hartree" length_unit="bohr"
- uuid="290f4fe0-ca72-11e5-660b-50be5fff7aa3">
+ uuid="53d0b740-4836-11e6-4efb-bb17f7ddec87">
 <provenance creator="psop 0.9" date="2016-01-01">
-<annotation source-uuid="0a4b55e0-ca72-11e5-7032-74f4f7f42061"
- command-line="/Users/ag/S/trunk-psml/Pseudo/vnl-operator/psop Si.tests.psml"
+<annotation source-uuid="22cbbc30-4836-11e6-5138-aa6e7ffe5918"
+ command-line="/Users/ag/L/Siesta/trunk-psml/Pseudo/vnl-operator/psop Si.tm2.nrl.psml"
  local-potential="inserted" nonlocal-projectors="inserted" />
 </provenance>
-<provenance creator="ATM3.4.0" date=" 3-FEB-16">
+<provenance creator="ATM4.0.2" date="12-JUL-16">
 <input-file name="INP">
-<![CDATA[   pg                 -- file generated from Si ps file
-        tm2
-   Si   ca
-     0.000     0.000     0.000     0.000     0.000     0.000
-    3    4
-    3    0     2.000     0.000    #3s
-    3    1     2.000     0.000    #3p
-    3    2     0.000     0.000    #3d
-    4    3     0.000     0.000    #4f
-   1.89000   1.89000   1.89000   1.89000   0.00000   0.00000
+<![CDATA[#
+#  Pseudopotential generation for Silicon
+#  pg: simple generation
+#
+   pg      Silicon
+        tm2      3.0             # PS flavor, logder R
+ n=Si c=ca                       # Symbol, XC flavor,{ |r|s}
+       0.0       0.0       0.0       0.0       0.0       0.0
+    3    4                       # norbs_core, norbs_valence
+    3    0      2.00      0.00   # 3s2
+    3    1      2.00      0.00   # 3p2
+    3    2      0.00      0.00   # 3d0
+    4    3      0.00      0.00   # 4f0
+      1.90      1.90      1.90      1.90      0.00      0.00
+#
+# Last line (above):
+#    rc(s)     rc(p)     rc(d)     rc(f)   rcore_flag  rcore
+#
+#23456789012345678901234567890123456789012345678901234567890
 
-#23456789012345678901234567890123456789012345678901234567890      Ruler
 ]]>
 </input-file>
 </provenance>

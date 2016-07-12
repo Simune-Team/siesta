@@ -27,29 +27,28 @@
 #
 default: pdosxml
 OBJDIR=Obj
-VPATH=../../Src
+VPATH:=$(shell pwd)/../../Src
 #
-include ../../$(OBJDIR)/arch.make
+MAIN_OBJDIR:=$(shell cd -P -- ../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
+include $(ARCH_MAKE)
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)/xmlparser # To pick up mod files
+include $(XMLF90_ROOT)/xmlf90.mk
+INCFLAGS:=$(INCFLAGS) $(XMLF90_INCFLAGS)
 #
-LIBS= ../../$(OBJDIR)/libxmlparser.a
+LIBS= $(XMLF90_LIBS)
 #
 OBJS=  m_orbital_chooser.o m_pdos.o f2kcli.o pdosxml.o
 #     
-pdosxml: xmlparser $(OBJS)
+pdosxml:$(OBJS)
 	$(FC) $(LDFLAGS) -o $@ $(OBJS)  $(LIBS)
 #
 clean: 
 	rm -f *.o pdosxml *.o *.*d
-#
-xmlparser:
-	@echo "Making sure that the xmlparser library is compiled..."
-	(cd ../../$(OBJDIR)/xmlparser ; make "VPATH=$(VPATH)/xmlparser")
 #
 
 

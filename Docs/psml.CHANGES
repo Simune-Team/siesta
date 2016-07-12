@@ -1,4 +1,23 @@
 ------------------------------------------------------------
+July 12, 2016  Alberto Garcia       trunk-506--psml-80
+Fix bug in psop and add docs. New psml tests
+
+* The program psop in Pseudo/vnl-operator did not process all options
+  correctly.
+  Added some notes to file README in the above directory.
+
+* Added new PSML files to Tests/Pseudos and created new tests.
+
+  Added a PSML file for Si with only semilocal potentials, and another
+  one with the full operator. The tests si64-psml-sl and si64-psml-full
+  use them. Comparison with the results of si64 (using a standard psf
+  file) reveal minor differences in the treatment of chlocal.
+
+* Removed Src/psml and Util/pseudo-xml
+
+* Updated some building macros in Util
+
+------------------------------------------------------------
 July  8, 2016  Alberto Garcia       trunk-506--psml-79
 Update and document building scheme with external libpsml and xmlf90
 

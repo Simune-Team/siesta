@@ -5,21 +5,17 @@
 # -----------------------------------------------------------------------------
 
 #
-# Use the Vlocal and KB projectors from Si.psml file
-#
-use-psml-vlocal T
-use-psml-kb-projectors T
+# Use the Semilocal potentials from PSML file
 #
 #
-#
-SystemName          64-atom silicon with psml pseudo
-SystemLabel         si64-psml
+SystemName   64-atom silicon with full PS (Vlocal, KBs) in PSML file
+SystemLabel         si64-psml-full
 
 NumberOfAtoms       64
 NumberOfSpecies     1
 
 %block ChemicalSpeciesLabel
- 1  14  Si
+ 1  14  Si.tm2.nrl.vnl
 %endblock ChemicalSpeciesLabel
 
 PAO.BasisSize       SZ

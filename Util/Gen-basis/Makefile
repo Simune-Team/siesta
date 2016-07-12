@@ -42,8 +42,8 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 DEFS:= $(DEFS) $(DEFS_PREFIX)-UMPI
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 #
-include $(MAIN_OBJDIR)/Mk/psml.mk
-include $(MAIN_OBJDIR)/Mk/xmlf90.mk
+include $(PSML_ROOT)/psml.mk
+include $(XMLF90_ROOT)/xmlf90.mk
 #
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src

@@ -109,6 +109,8 @@
         use m_psop, only: compute_vlocal_chlocal
         use m_psop, only: chlocal_from_vlocal
         use m_psop, only: kbgen
+        use m_psml, only: ps_HasLocalPotential
+        use m_psml, only: ps_HasProjectors
         use basis_specs, only: restricted_grid
         use aux_proj, only: is, a, b
 
@@ -277,6 +279,7 @@
    
         logical  :: fit_3derivs, use_charge_cutoff, force_chlocal_method
         logical  :: use_psml_vlocal, use_psml_kb_projectors
+        logical  :: vlocal_on_file, kb_projs_on_file
         logical  :: ignore_ghosts, quadratic, got_chlocal
         real(dp) :: rmax_ps_check
         real(dp) :: kb_rmax
@@ -499,27 +502,35 @@ c    .          'atom: The above configuration will be used ',
              ! Note that a PSML file might not really have them,
              ! so we need something like basp%has_psml_operator here
              !
+             
+             vlocal_on_file = .false.
+             kb_projs_on_file = .false.
+             if (basp%has_psml_ps) then
+                vlocal_on_file = ps_HasLocalPotential(basp%psml_handle)
+                kb_projs_on_file = ps_HasProjectors(basp%psml_handle)
+             endif
+             
              use_psml_kb_projectors =
-     $           fdf_boolean("Use.PSML.KB.Projectors",basp%has_psml_ps)
+     $           fdf_boolean("Use.PSML.KB.Projectors",kb_projs_on_file)
 
              use_psml_vlocal = fdf_boolean('Use.PSML.Vlocal',
-     $                                     use_psml_kb_projectors)
+     $                                     vlocal_on_file)
 
              ! Sanity checks
              if (use_psml_kb_projectors) then
                if (.not. use_psml_vlocal) then
                   call die("Must use PSML vlocal with PSML projectors")
                endif
-               if (.not. basp%has_psml_ps) then
+               if (.not. kb_projs_on_file) then
                   write(6,"(a)") ":!:" // trim(atm_label)//
-     $              " does not have psml data. Will not read KB projs"
+     $              " does not have KB projs info on file"
                   use_psml_kb_projectors = .false.
                endif
              endif
 
-             if (use_psml_vlocal .AND. (.not. basp%has_psml_ps)) then
+             if (use_psml_vlocal .AND. (.not. vlocal_on_file)) then
                write(6,"(a)") ":!:" // trim(atm_label)//
-     $              " does not have psml data. Will not read Vlocal"
+     $              " does not have Vlocal info on file"
                use_psml_vlocal = .false.
              endif
 
