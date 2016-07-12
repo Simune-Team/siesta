@@ -1,3 +1,15 @@
+2016-07-12  17:05 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-8
+
+Removed bottle-necks and a memory leak in MatrixSwitch
+
+modified:
+
+  Src/MatrixSwitch/src/MatrixSwitch.F90
+  Src/changebasis.F90
+  Src/evolg.F90
+  Src/m_evolve.F90
+  Src/m_initwf.F90
+
 2016-06-23  12:15 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-7
 
 Fixed bugs due to static arrays and deallocating pointers

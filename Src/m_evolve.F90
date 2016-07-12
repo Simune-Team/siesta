@@ -145,19 +145,19 @@
 !      call re_alloc(Haux,1,nhs,name='Haux',routine='evolve')
 !      call re_alloc(Saux,1,nhs,name='Saux',routine='evolve')
       !
-      if(frstme) then 
-        if(.not.gamma) then 
-          allocate(Dk(nhs),stat=mem_stat)
-          call memory('A','D',nhs,'evolve',stat=mem_stat)
-          allocate(Ek(nhs),stat=mem_stat)
-          call memory('A','D',nhs,'evolve',stat=mem_stat)
-        endif
-        allocate(aux(naux),stat=mem_stat)
-        call memory('A','D',naux,'evolve',stat=mem_stat)
-        allocate(aux2(naux),stat=mem_stat)
-        call memory('A','D',naux,'evolve',stat=mem_stat)
-        frstme=.false.
-      endif
+!      if(frstme) then 
+!        if(.not.gamma) then 
+!          allocate(Dk(nhs),stat=mem_stat)
+!          call memory('A','D',nhs,'evolve',stat=mem_stat)
+!          allocate(Ek(nhs),stat=mem_stat)
+!          call memory('A','D',nhs,'evolve',stat=mem_stat)
+!        endif
+!        allocate(aux(naux),stat=mem_stat)
+!        call memory('A','D',naux,'evolve',stat=mem_stat)
+!        allocate(aux2(naux),stat=mem_stat)
+!        call memory('A','D',naux,'evolve',stat=mem_stat)
+!        frstme=.false.
+!      endif
       ! Call apropriate routine .............................................
       if (nspin.le.2 .and. gamma) then
         call evolg( nspin, nuo, no, maxo, maxnh, maxnd,                   &

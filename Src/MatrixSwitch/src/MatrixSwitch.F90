@@ -230,10 +230,10 @@ subroutine m_deallocate(m_name)
 
   !**********************************************!
 
-  if (associated(m_name%iaux1)) nullify(m_name%iaux1)
-  if (associated(m_name%iaux2)) nullify(m_name%iaux2)
-  if (associated(m_name%dval)) nullify(m_name%dval)
-  if (associated(m_name%zval)) nullify(m_name%zval)
+  if (associated(m_name%iaux1)) deallocate(m_name%iaux1)
+  if (associated(m_name%iaux2)) deallocate(m_name%iaux2)
+  if (associated(m_name%dval)) deallocate(m_name%dval)
+  if (associated(m_name%zval)) deallocate(m_name%zval)
 
   m_name%is_initialized=.false.
 

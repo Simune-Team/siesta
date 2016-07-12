@@ -319,9 +319,9 @@ CONTAINS
       !..............
 #ifdef MPI
       call ms_scalapack_setup(Nodes,1,'c',BlockSize)
-      m_storage='pddbc'
+      m_storage='pzdbc'
 #else
-      m_storage='sdden'
+      m_storage='szden'
 #endif
       allocate(wavef_ms(1:nk,1:nspin)) ! allocate (nk*npsin) matrices inside wavef_ms
       do i=1,nk !for every value of nk and nspin, allocate a matrix of size (nuotot x nocck(i,j))

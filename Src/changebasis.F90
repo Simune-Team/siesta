@@ -107,9 +107,10 @@
                              ispin, nocc, nwf, ik, j,jio, nd, ierror, npsi
   real(dp)                :: skxij,ckxij, kxij, qe
   complex(dp)             :: pipj, varaux,varaux2,varaux3
-  complex(dp), allocatable :: Sx(:,:), psix(:,:)
+  !complex(dp), allocatable :: Sx(:,:), psix(:,:)
   !
-  type(matrix)                     :: Maux,invsqS,phi, Sauxms
+  type(matrix)             :: Maux,invsqS,phi
+  type(matrix)             :: Sauxms
   type(matrix),allocatable,save    :: sqrtS(:)
   character(3)                     :: m_operation
   character(5)                     :: m_storage
@@ -159,8 +160,8 @@
     call die ('chgbasis: ERROR: incorrect value of nspin')
   end if 
 ! Allocate local arrays
-  allocate (Sx(nuotot, nuo))
-  allocate (psix(nuotot, nuo))
+!  allocate (Sx(nuotot, nuo))
+!  allocate (psix(nuotot, nuo))
 
   call m_allocate(Sauxms,nuotot,nuotot,m_storage)
   call m_allocate(Maux,nuotot,nuotot,m_storage)
@@ -181,10 +182,11 @@
 #endif
   ! 
   do ik = 1,nk
-    Sx(1:nuotot,1:nuo)=0.0_dp
-    call m_set(Sauxms,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
-    call timer( 'SsparseTodense', 1 )
+!    Sx(1:nuotot,1:nuo)=0.0_dp
+!    call m_set(Sauxms,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+    call timer( 'S2MSdense', 1 )
     do iuo = 1,nuo
+      call LocalToGlobalOrb(iuo, Node, Nodes, io)
       do j = 1,numh(iuo)
         ind = listhptr(iuo) + j
         jo = listh(ind)
@@ -200,37 +202,39 @@
           skxij=0.0_dp
         endif
         ! Saux=S*e^-ikx, and passing sparse to dense
-        Sx(juo,iuo)=Sx(juo,iuo) + cmplx(S(ind)*ckxij,S(ind)*skxij,dp)
+        !Sx(juo,iuo)=Sx(juo,iuo) + cmplx(S(ind)*ckxij,S(ind)*skxij,dp)
+        varaux2 = cmplx(S(ind)*ckxij,S(ind)*skxij)
+        call m_set_element(Sauxms, jo, io, varaux2, m_operation)
       enddo
     enddo
     !
-    call timer( 'SsparseTodense', 2 )
+    call timer( 'S2MSdense', 2 )
     !
-    call timer( 'SdenseToMS', 1 )
+!    call timer( 'SdenseToMS', 1 )
     !
-    do io=1,nuo
-      do j=1,nuotot
+  !  do io=1,nuo
+  !    do j=1,nuotot
 #ifdef MPI
-        call LocalToGlobalOrb(io,Node, Nodes, jo)
-        varaux2 = Sx(j,io)
+   !     call LocalToGlobalOrb(io,Node, Nodes, jo)
+   !     varaux2 = Sx(j,io)
         !call pzelget('a',' ',varaux2,Sx,j,io,desch)
 #else
-        jo = io
-        varaux2=Sx(j,io)
+   !     jo = io
+   !     varaux2=Sx(j,io)
 #endif
-        call m_set_element( Sauxms,j,jo,varaux2,m_operation)
-      enddo
-    enddo
+    !    call m_set_element( Sauxms,j,jo,varaux2,m_operation)
+    !  enddo
+    !enddo
     !
-    call timer( 'SdenseToMS', 2 )
+ !   call timer( 'SdenseToMS', 2 )
     !
     if(istpmove.eq.1) then   ! istpmove 
       ! If first step calculate S0^1/2 and save for next step. 
-      call calculatesqrtS(Sauxms,invsqS,sqrtS(ik),m_storage,m_operation)
+      call calculatesqrtS(Sauxms,invsqS,sqrtS(ik),nuo,m_storage,m_operation)
     elseif(istpmove.gt.1) then 
       ! Calculate both Sn^1/2 and Sn^-1/2 where Sn^1/2 is used in n+1 step. 
       call timer( 'S2halfs', 1 )
-      call calculatesqrtS(Sauxms,invsqS,Maux,m_storage,m_operation)
+      call calculatesqrtS(Sauxms,invsqS,Maux,nuo,m_storage,m_operation)
       !Saux= Sn-1^1/2*Sn^-1/2
       call mm_multiply(invsqS,'n',sqrtS(ik),'n',&
       Sauxms,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
@@ -255,27 +259,26 @@
                          Maux,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp), &
                          m_operation)
         call timer('DMinMS-CB', 2)
-        call timer( 'dmMStodense', 1)
+!        call timer( 'dmMStodense', 1)
         !  
-        do io=1,nuotot
+!        do io=1,nuotot
 !#ifdef MPI
 !            call LocalToGlobalOrb(io, Node, Nodes, j)
 !#endif
-          do jo = 1,nuotot
+!          do jo = 1,nuotot
 #ifdef MPI
-            call m_get_element(Maux,jo,io,varaux,m_operation)
-            call  pzelset(psix,jo,io,desch,varaux)
+!            call m_get_element(Maux,jo,io,varaux,m_operation)
+!            call  pzelset(psix,jo,io,desch,varaux)
 #else
-            call m_get_element(Maux,jo,io,varaux,m_operation)
-            psix(jo,io)=varaux
+!            call m_get_element(Maux,jo,io,varaux,m_operation)
+!            psix(jo,io)=varaux
 #endif
-         end do
-        end do
+!         end do
+!        end do
         !
-        call timer( 'dmMStodense', 2)
+!        call timer( 'dmMStodense', 2)
         call timer( 'dmDensetoSparse',1)
         do iuo = 1,nuo
-          call LocalToGlobalOrb(iuo, Node, Nodes, jio)
           do j = 1,numh(iuo)
             ind = listhptr(iuo) + j
             jo = listh(ind)
@@ -290,7 +293,7 @@
               ckxij=1.0d0
               skxij=0.0d0
             endif
-            varaux2=real(psix(juo,iuo))*ckxij+ aimag(psix(juo,iuo))*skxij
+            varaux2=real(Maux%zval(jo,iuo))*ckxij+ aimag(Maux%zval(jo,iuo))*skxij
             Dnew(ind,ispin)=Dnew(ind,ispin)+varaux2
           enddo
         enddo
@@ -300,28 +303,33 @@
     endif   !istpmove 
   enddo          ! ik 
   !
-  deallocate(Sx)
-  deallocate(psix)
+ ! deallocate(Sx)
+ ! deallocate(psix)
+  call m_deallocate(Sauxms)
+  call m_deallocate(Maux)
+  call m_deallocate(invsqS)
+
   call timer('chgbasis',2)
   end subroutine chgbasis
 
- subroutine calculatesqrtS(S,invsqS,sqrtS,m_storage,m_operation)
+ subroutine calculatesqrtS(S,invsqS,sqrtS,nu,m_storage,m_operation)
  
  use precision 
  use matdiagon
  use MatrixSwitch
+ use parallelsubs,          only: LocalToGlobalOrb
+ use parallel,              only: Node, Nodes
  ! 
  implicit none
  ! 
  character(5), intent(in)                      :: m_storage
  character(3), intent(in)                      :: m_operation
  type(matrix), intent(inout)                   :: S,invsqS,sqrtS
- complex(kind=dp),dimension(S%dim1,S%dim1)     :: A,B
  type(matrix)                                  :: SD01, SD02
  complex(dp)                                   :: varaux
  real(dp)                                      :: eig01, eig02
  real(dp), allocatable                         :: eigen(:)
- integer                                       :: no, info, i, j
+ integer                                       :: no,nu, info, i, j,jo
  real(dp)  tiny
  data tiny  /1.0d-10/
  ! 
@@ -329,29 +337,32 @@
  allocate(eigen(no))
  call m_allocate(SD01,no,no,m_storage)
  call m_allocate(SD02,no,no,m_storage)
- call m_set(SD01,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
- call m_set(SD02,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+ !call m_set(SD01,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+ !call m_set(SD02,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
  ! 
  ! Takes overlap matrix S in dense form and returns its eigenvalues
  ! in eigen(*) and eigenvectors in S.
  call geteigen(S,eigen,m_operation)
  !
- do j=1,no
-   eig01=dsqrt(dabs(eigen(j)))
+ do j=1,nu
+   call LocalToGlobalOrb(j,Node,Nodes,jo)
+   eig01=dsqrt(dabs(eigen(jo)))
    eig02=1.0d0/(eig01+tiny)
    do i=1,no
-     call m_get_element(S,i,j,varaux,m_operation)
-     call m_set_element(SD01,i,j,eig01*varaux,m_operation)
-     call m_set_element(SD02,i,j,eig02*varaux,m_operation)
+     varaux = S%zval(i,j)
+     !call m_get_element(S,i,j,varaux,m_operation)
+     call m_set_element(SD01,i,jo,eig01*varaux,m_operation)
+     call m_set_element(SD02,i,jo,eig02*varaux,m_operation)
    enddo
  enddo 
  !
+ deallocate(eigen)
+ 
  call mm_multiply(SD01,'n',S,'c',sqrtS,cmplx(1.0_dp,0.0_dp,dp),&
                   cmplx(0.0_dp,0.0_dp,dp),m_operation)
  call mm_multiply(SD02,'n',S,'c',invsqS,cmplx(1.0_dp,0.0_dp,dp),&
                   cmplx(0.0_dp,0.0_dp,dp),m_operation)
  call m_deallocate(SD01)
  call m_deallocate(SD02)
- deallocate(eigen)
  !
  end subroutine calculatesqrtS
