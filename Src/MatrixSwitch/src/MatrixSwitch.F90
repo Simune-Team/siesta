@@ -35,6 +35,10 @@ type matrix
   logical :: is_serial ! is the matrix serial or parallel distributed?
   logical :: is_real ! is the matrix real or complex (both kind dp)?
   logical :: is_square ! is the matrix square?
+  logical :: iaux1_master
+  logical :: iaux2_master
+  logical :: dval_master
+  logical :: zval_master
 
   integer :: dim1 ! (global) row dimension size of the matrix
   integer :: dim2 ! (global) column dimension size of the matrix
@@ -201,9 +205,11 @@ subroutine m_allocate(m_name,i,j,label)
     case (1)
       if (m_name%is_real) then
         allocate(m_name%dval(m_name%dim1,m_name%dim2))
+        m_name%dval_master=.true.
         m_name%dval=0.0_dp
       else
         allocate(m_name%zval(m_name%dim1,m_name%dim2))
+        m_name%zval_master=.true.
         m_name%zval=cmplx_0
       end if
     case (2)
@@ -230,10 +236,34 @@ subroutine m_deallocate(m_name)
 
   !**********************************************!
 
-  if (associated(m_name%iaux1)) deallocate(m_name%iaux1)
-  if (associated(m_name%iaux2)) deallocate(m_name%iaux2)
-  if (associated(m_name%dval)) deallocate(m_name%dval)
-  if (associated(m_name%zval)) deallocate(m_name%zval)
+  if (associated(m_name%iaux1)) then
+    if (m_name%iaux1_master) then
+      deallocate(m_name%iaux1)
+    else
+      nullify(m_name%iaux1)
+    end if
+  end if
+  if (associated(m_name%iaux2)) then
+    if (m_name%iaux2_master) then
+      deallocate(m_name%iaux2)
+    else
+      nullify(m_name%iaux2)
+    end if
+  end if
+  if (associated(m_name%dval)) then
+    if (m_name%dval_master) then
+      deallocate(m_name%dval)
+    else
+      nullify(m_name%dval)
+    end if
+  end if
+  if (associated(m_name%zval)) then
+    if (m_name%zval_master) then
+      deallocate(m_name%zval)
+    else
+      nullify(m_name%zval)
+    end if
+  end if
 
   m_name%is_initialized=.false.
 
@@ -1694,6 +1724,7 @@ subroutine m_register_sdden(m_name,A)
   m_name%is_real=.true.
 
   m_name%dval => A
+  m_name%dval_master=.false.
 
   m_name%is_initialized=.true.
 
@@ -1729,6 +1760,7 @@ subroutine m_register_szden(m_name,A)
   m_name%is_real=.false.
 
   m_name%zval => A
+  m_name%zval_master=.false.
 
   m_name%is_initialized=.true.
 
@@ -1758,9 +1790,11 @@ subroutine m_register_pddbc(m_name,A,desc)
   !**********************************************!
 
   m_name%iaux1 => desc
+  m_name%iaux1_master=.false.
   m_name%dim1=desc(3)
   m_name%dim2=desc(4)
   allocate(m_name%iaux2(2))
+  m_name%iaux2_master=.true.
   dim=shape(A)
   m_name%iaux2(1)=dim(1)
   m_name%iaux2(2)=dim(2)
@@ -1774,6 +1808,7 @@ subroutine m_register_pddbc(m_name,A,desc)
   m_name%is_real=.true.
 
   m_name%dval => A
+  m_name%dval_master=.false.
 
   m_name%is_initialized=.true.
 
@@ -1801,10 +1836,12 @@ subroutine m_register_pzdbc(m_name,A,desc)
   !**********************************************!
 
   allocate(m_name%iaux1(9))
+  m_name%iaux1_master=.true.
   m_name%iaux1=desc
   m_name%dim1=desc(3)
   m_name%dim2=desc(4)
   allocate(m_name%iaux2(2))
+  m_name%iaux2_master=.true.
   dim=shape(A)
   m_name%iaux2(1)=dim(1)
   m_name%iaux2(2)=dim(2)
@@ -1818,6 +1855,7 @@ subroutine m_register_pzdbc(m_name,A,desc)
   m_name%is_real=.false.
 
   m_name%zval => A
+  m_name%zval_master=.false.
 
   m_name%is_initialized=.true.
 
@@ -2338,7 +2376,9 @@ subroutine ms_scalapack_allocate(A)
   !**********************************************!
 
   allocate(A%iaux1(9))
+  A%iaux1_master=.true.
   allocate(A%iaux2(2))
+  A%iaux2_master=.true.
   call blacs_gridinfo(ms_lap_icontxt,i,j,k,l)
   bs1=ms_lap_bs_def
   bs2=ms_lap_bs_def
@@ -2360,9 +2400,11 @@ subroutine ms_scalapack_allocate(A)
   if (info/=0) call die('ms_scalapack_allocate: error in descinit')
   if (A%is_real) then
     allocate(A%dval(A%iaux2(1),A%iaux2(2)))
+    A%dval_master=.true.
     A%dval=0.0_dp
   else
     allocate(A%zval(A%iaux2(1),A%iaux2(2)))
+    A%zval_master=.true.
     A%zval=cmplx_0
   end if
 

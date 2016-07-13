@@ -1,3 +1,13 @@
+2016-07-13  19:05 CET Rafi Ullah <rraffiu@gmail.com>  trunk-467-tddft-9
+
+Rationalised calls to dhscf within TDED loop and deallocation in MatrixSwitch
+
+modified:
+
+  Src/MatrixSwitch/src/MatrixSwitch.F90
+  Src/evolg.F90
+  Src/siesta_forces.F
+
 2016-07-12  17:05 CET Rafi Ullah <rafijee@gmail.com>  trunk-467-tddft-8
 
 Removed bottle-necks and a memory leak in MatrixSwitch

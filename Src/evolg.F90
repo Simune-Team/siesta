@@ -86,7 +86,6 @@
       character(3)         :: m_operation
       character(5)         :: m_storage
       complex(dp)          :: varaux, varaux2,varaux3, pipj, pipj2, varaux4  
-      !complex(dp), allocatable :: Hx(:,:),Sx(:,:)
        
       integer              :: ie, io, iio,iee, ispin, j, jo, BNode, iie, ind, BTest
       integer              :: mm, maxnuo, ierror, nd, nocc, nstp,i,npsi
@@ -105,11 +104,6 @@
       !
       call timer( 'Evolg', 1 )
       !
-      !allocate(Hx(nuotot,nuo))
-      !allocate(Sx(nuotot, nuo))
-!      allocate(psix(nuotot, nuo))
-!      if(calculateEnew) allocate(psix2(nuotot, nuo))
-
       call m_allocate( Hauxms,nuotot,nuotot,m_storage)
       call m_allocate( Sauxms,nuotot,nuotot,m_storage)
       !
@@ -126,57 +120,21 @@
       do ispin = 1,nspin
         ncounter=0
         if(ispin.eq.2) ncounter=wavef_ms(1,1)%dim2
-      !  call m_set (Hauxms,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
-       ! call m_set (Sauxms,'a',cmplx(0.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
-!        psi(1:nuotot,1:nuo)=0.0_dp
         ! One can use the dense overlap matrix constructed in changebais? 
         call timer( 'HSSparseToDense', 1 )
-     !   do io = 1,nuo
-     !     do jo = 1,nuotot
-     !       Sx(jo,io) = (0.0d0,0.0d0)
-     !       Hx(jo,io) = (0.0d0,0.0d0)
-     !     enddo
-     !   enddo
+        !
         do io = 1,nuo
           call LocalToGlobalOrb (io,Node, Nodes, i)
           do j = 1,numh(io)
             ind = listhptr(io) + j
             jo = listh(ind)
-      !      Sx(jo,io) = Sx(jo,io) + cmplx(S(ind),0.0d0)
-      !      Hx(jo,io) = Hx(jo,io) + cmplx(H(ind,ispin),0.0d0)
              call m_set_element(Hauxms, jo, i, H(ind,ispin), m_operation)
              call m_set_element(Sauxms, jo, i, S(ind), m_operation)
           enddo
         enddo
         !
         call timer( 'HSSparseToDense', 2 )
-        !call timer( 'HSDenseToMS', 1 )
         !
-
-  IF(Node.eq.0) write(6,*) 'blocksize, nuotot, nuo =', BlockSize,  & 
-  nuotot,nuo,desch
-  IF(Node.eq.31) write(6,*) 'blocksize, nuotot, nuo =', BlockSize, &
-  nuotot,nuo,desch
-  !      do io=1,nuo
-  !        do j=1,nuotot
-#ifdef MPI
-!            call pzelget('a',' ',varaux,Hx,j,io,desch)
-!            call pzelget('a',' ',varaux2,Sx,j,io,desch)
-!            call LocalToGlobalOrb(io,Node,Nodes,jo)
-!            varaux  = Hx(j,io)
-!            varaux2 = Sx(j,io)
-#else
- !           jo = io
- !           varaux=Hx(j,io)
- !           varaux2=Sx(j,io)
-#endif
-  !          call m_set_element( Hauxms,j,jo,varaux,m_operation)
-  !          call m_set_element( Sauxms,j,jo,varaux2,m_operation)
-  !        enddo
-  !      enddo
-        !
-        IF(Node.eq.0) write(6,*) 'evolg:****** afterDense2MS *****'
-      !  call timer( 'HSDenseToMS', 2 )
         call timer( 'CntoCn1', 1 )
         !
         call evol1new(Hauxms, Sauxms, nuotot, nuo, nspin,ispin, ncounter,              &
@@ -185,7 +143,6 @@
         !
         call timer( 'CntoCn1', 2 )
         !
-        IF(Node.eq.0) write(6,*) 'evolg:****** afterEvolve1New *****'
         call m_allocate(bix2,nuotot,nuotot,m_storage)
         !
         call timer( 'DMinMS', 1 )
@@ -194,20 +151,6 @@
             cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
         !
         call timer( 'DMinMS', 2 )
-        ! Passing MS-type dense DM to siesta-type dense DM.
-!        call timer( 'DMinMStoSiesta', 1 )
-!        DO io=1,nuotot
-!          DO jo=1,nuotot
-!            call m_get_element(bix2,io,jo,varaux,m_operation)
-#ifdef MPI
-!            call pzelset(Sx,io,jo,desch,varaux)
-#else
- !           Sx(io,jo) = varaux
-#endif
- !         END DO
- !       END DO
-        !
- !       call timer( 'DMinMStoSiesta', 2 )
         !
         call timer( 'DM2Sparse', 1 )
         ! Passing dense DM to sparse DM
@@ -239,16 +182,11 @@
           enddo
         endif
         !
-      call m_deallocate(bix2)
+        call m_deallocate(bix2)
         call timer( 'Eigenvalue', 2 )
       enddo ! ispin
-      IF(Node.eq.0) write(6,*) 'evolg:****** END OF EvolveG *****'
-!      deallocate(Hx)
-!      deallocate(Sx)
       call m_deallocate(Hauxms)
       call m_deallocate(Sauxms)
-!      deallocate(psix)
-!      if(calculateEnew) deallocate(psix2)
       !
       call timer( 'Evolg', 2 )
     END SUBROUTINE evolg
@@ -313,13 +251,10 @@
  m_operation='lap'
 #endif
  no2=no*no
-! if (frsttime) then
-   call m_allocate(aux1,no,no,m_storage)
-   call m_allocate(aux2,no,no,m_storage)
-   call m_allocate(aux3,no,no,m_storage)
-   call memory('A','I',no,'Uphi')
-!   frsttime=.false.
-! endif
+ !  
+ call m_allocate(aux1,no,no,m_storage)
+ call m_allocate(aux2,no,no,m_storage)
+ call m_allocate(aux3,no,no,m_storage)
  call m_allocate(aux4,phi%dim1,phi%dim2,m_storage)
  ! First order expansion for the evolution operator
  alpha=-0.5_dp*cmplx(0.0_dp,1.0_dp,dp)*deltat

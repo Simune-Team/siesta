@@ -115,19 +115,10 @@
 
 
       
-      if (td_elec_dyn) then     !tddft
+      if (.not. td_elec_dyn) then     !tddft
 
 
-!      call read_dynoptions ()
-!      nhs=no_l*no_u*2
-!      call re_alloc(psi,1,nhs,name='psi',routine='chgbasis')
-!      call re_alloc(Saux,1,nhs,name='Haux',routine='chgbasis') 
-      call chgbasis(no_s, nspin, nspin, no_l, maxnh, maxnh,
-     &              no_u, gamma, indxuo, nkpnt, kpoint, kweight,
-     &              Dscf, no_u,istep)
-!     call de_alloc(psi, 'psi', 'siesta_forces') 
-!      call de_alloc(Saux,'Saux', 'siesta_forces')
-      else 
+      
 
       DO 
         ! Conditions of exit:
@@ -257,92 +248,65 @@
       ! If siesta is running as a subroutine, send forces to master program
       if (siesta_server) 
      &  call forcesToMaster( na_u, Etot, cfa, cstress )
-  
-      end if !tddft
+    
+      else    ! tddft
+!     The first call to change basis only calculates S^+1/2 
+      call chgbasis(no_s, nspin, nspin, no_l, maxnh, maxnh,
+     &              no_u, gamma, indxuo, nkpnt, kpoint, kweight,
+     &              Dscf, no_u,istep)
 
-      if (td_elec_dyn) then
-      ! Read the initial wavefunctions. 
-      
+!     Read the initial wavefunctions. 
       IF (istep==1) THEN
-       allocate(wavef_ms(nkpnt,nspin))
-       call iowavef('read',wavef_ms,no_u,nkpnt,nspin, istpp,rstart_time)
+        allocate(wavef_ms(nkpnt,nspin))
+        call iowavef('read',wavef_ms,no_u,nkpnt,nspin, istpp,
+     &               rstart_time)
 
         istep=istpp+1
-      ! istep=istpp
       END IF 
+!     To save the TD-wavefunctions and Density matrix to restart
+      mod_md   = mod(istep, tdednwrite)
 
-! To save the TD-wavefunctions and Density matrix to restart
-        mod_md   = mod(istep, tdednwrite)
-
-        if(mod_md .eq. 0 .or. istep .eq. fincoor) then
-           call iowavef('write',wavef_ms,no_u,nkpnt,nspin, istep,totime)
-           call save_density_matrix("dmout")
-        end if
-
+      if(mod_md .eq. 0 .or. istep .eq. fincoor) then
+        call iowavef('write',wavef_ms,no_u,nkpnt,nspin, istep,totime)
+        call save_density_matrix("dmout")
+      end if
 
       DO itded = 1,ntded  !TDED loop
 
-      dt_tded= dt/ntded
-         if(IONode) then
-           write(6,'(/a)')
+        dt_tded= dt/ntded
+        if(IONode) then
+          write(6,'(/a)')
      & '                     ************************       '
-           write(6,*)'                 TDED Step    =', itded
-           write(6,'(/a)')
+          write(6,*)'                 TDED Step    =', itded
+          write(6,'(/a)')
      & '                     ************************       '
         end if
- 
-! To save the TD-wavefunctions and Density matrix to restart
+!    To save the TD-wavefunctions and Density matrix to restart
         mod_tded = mod(itded, tdednwrite)
 
         if(mod_tded .eq. 0) then
           call iowavef('write',wavef_ms,no_u,nkpnt,nspin, istep, totime)
           call save_density_matrix("dmout")
         end if
-
-      call setup_hamiltonian( itded )
-      
-!      if (istpp == 0) then
-      call compute_energies (itded)
-      call write_tddft (totime, istep, itded, ntded, rstart_time,      
-     &                   etot, eo, no_u,nspin,nkpnt) 
-!      end if
-           call evolve(no_s,nspin,nspin,no_l,maxnh,maxnh,no_u,
+        call setup_hamiltonian( itded )
+        !   
+        call evolve(no_s,nspin,nspin,no_l,maxnh,maxnh,no_u,
      &                 gamma, indxuo,nkpnt,kpoint,kweight,
      &                 Dscf, Escf, no_u, dt_tded,istep,itded)
-!if (IONode)print*,eo
-! The total simulation time mainly for plotting
-       totime = (istep*dt - dt) + (itded*dt_tded-dt_tded) 
+!       The total simulation time mainly for plotting
+        totime = (istep*dt - dt) + (itded*dt_tded-dt_tded) 
 
-!      call compute_energies (itded)
-      call final_H_f_stress (itded)
-      call post_scf_work( itded )
+        call compute_energies (itded)
+        call write_tddft (totime, istep, itded, ntded, rstart_time,     
+     &                   etot, eo, no_u,nspin,nkpnt) 
+
+      END DO !  TDED loop
+
+      call final_H_f_stress (istep)
       call state_analysis( istep )
-      
-!      call write_tddft (totime, istep, itded, ntded, rstart_time,      
-!     &                   etot, eo, no_u,nspin,nkpnt) 
-      
-!    if (etot_time) then
-!           call ioetot(totime, Etot, istep, itded, ntded,rstart_time)
-!           endif
-!           if (dip_time) then
-!           call write_td_dipol(totime, istep, itded, ntded,rstart_time) 
-!           endif
-!           if (eigen_time) then
-!           call ioeigenvalues (eo,no_u,nspin,nspin,nkpnt, 
-!     &                       totime,rstart_time, istp, itded,ntded)
-!           endif
-
-!
-        END DO !  TDED loop
 
 
-
-      end if !    td_elec_dyn
-
-
-
-
-
+      end if !    tddft
 !------------------------------------------------------------------------ END
 
       CONTAINS
