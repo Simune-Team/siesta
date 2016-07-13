@@ -4,11 +4,19 @@
 % Create the bibliography
 \usepackage[numbers,square,sort&compress]{natbib}
 
+\usepackage{expl3}
+\usepackage{xparse}
+\usepackage{textcomp}
 \usepackage{xcolor}
 % Ensure that we use CMYK.
 % This will enable colors to be printed on
 % a vast part of printers (they typically default to CMYK color model)
 \selectcolormodel{cmyk}
+\usepackage{xstring}
+
+% Declare new verbatim environments
+\usepackage{fancyvrb}
+
 
 % Allow url parsings and hyperrefs within the document
 \usepackage{hyperref}
@@ -16,12 +24,17 @@
 % Hyperref setup
 \hypersetup{
     hyperindex=true,
+    colorlinks=false,
+    linkbordercolor=1 1 1,
     bookmarksopen=true,
     bookmarksopenlevel=2,
 }
 
 % Allow amsmath, and fix certain things from amsmath...
 \usepackage{mathtools}
+
+% For splitting an index
+\usepackage{splitidx}
 
 %%% Local Variables:
 %%% mode: latex
