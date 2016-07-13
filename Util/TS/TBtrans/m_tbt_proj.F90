@@ -2481,7 +2481,7 @@ contains
 
     type(hNCDF) :: gmol, gproj, gEl
     integer :: nnzs_dev, idx(3), cnt(3)
-    real(dp), pointer, contiguous :: J(:)
+    real(dp), pointer :: J(:)
 #ifdef MPI
     integer :: iN
     integer :: MPIerror, status(MPI_STATUS_SIZE)

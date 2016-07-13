@@ -94,8 +94,8 @@ contains
     real(dp) :: ro
     complex(dp) :: zij, zji
 
-    complex(dp), dimension(:), pointer, contiguous :: rh,rh1,w,alpha,beta,gb
-    complex(dp), dimension(:), pointer, contiguous :: gsL,gsR
+    complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,gb
+    complex(dp), dimension(:), pointer :: gsL,gsR
     
     complex(dp), external :: zdotu, zdotc
 
@@ -555,7 +555,7 @@ contains
 
     real(dp) :: ro
 
-    complex(dp), dimension(:), pointer, contiguous :: rh,rh1,w,alpha,beta,GB
+    complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,GB
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE SSR_sGreen_NoDOS' )
@@ -915,20 +915,20 @@ contains
     integer :: nuo_E, nS, nuou_E, nuS, no_X, n_X
 
     ! Electrode transfer and hamiltonian matrix
-    complex(dp), pointer, contiguous :: H00(:) => null()
-    complex(dp), pointer, contiguous :: S00(:) => null()
-    complex(dp), pointer, contiguous :: H01(:) => null()
-    complex(dp), pointer, contiguous :: S01(:) => null()
-    complex(dp), pointer, contiguous :: zwork(:) => null()
-    complex(dp), pointer, contiguous :: zHS(:) => null()
+    complex(dp), pointer :: H00(:) => null()
+    complex(dp), pointer :: S00(:) => null()
+    complex(dp), pointer :: H01(:) => null()
+    complex(dp), pointer :: S01(:) => null()
+    complex(dp), pointer :: zwork(:) => null()
+    complex(dp), pointer :: zHS(:) => null()
     real(dp), allocatable :: sc_off(:,:)
 
     ! Expanded arrays
-    complex(dp), pointer, contiguous :: X(:) => null()
+    complex(dp), pointer :: X(:) => null()
 
     ! Green function variables
-    complex(dp), pointer, contiguous :: GS(:)
-    complex(dp), pointer, contiguous :: Hq(:), Sq(:), Gq(:)
+    complex(dp), pointer :: GS(:)
+    complex(dp), pointer :: Hq(:), Sq(:), Gq(:)
     complex(dp) :: ZEnergy
 
     ! In order to print information about the recursize algorithm
@@ -1617,9 +1617,9 @@ contains
     real(dp) :: Ef
     complex(dp) :: ph(0:n_s-1)
     integer :: i, j, io, jo, ind, is
-    integer, pointer, contiguous :: ncol00(:), l_ptr00(:), l_col00(:)
-    integer, pointer, contiguous :: ncol01(:), l_ptr01(:), l_col01(:)
-    real(dp), pointer, contiguous :: H00(:,:) , S00(:), H01(:,:), S01(:)
+    integer, pointer :: ncol00(:), l_ptr00(:), l_col00(:)
+    integer, pointer :: ncol01(:), l_ptr01(:), l_col01(:)
+    real(dp), pointer :: H00(:,:) , S00(:), H01(:,:), S01(:)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE elec_HS_Transfer' )
@@ -1757,13 +1757,13 @@ contains
     integer :: nuo_E, nS, nuou_E, nuS, nuouT_E
 
     ! Electrode transfer and hamiltonian matrix
-    complex(dp), pointer, contiguous :: H00(:), H01(:), S00(:), S01(:)
-    complex(dp), pointer, contiguous :: zwork(:)
-    complex(dp), pointer, contiguous :: zHS(:) => null()
+    complex(dp), pointer :: H00(:), H01(:), S00(:), S01(:)
+    complex(dp), pointer :: zwork(:)
+    complex(dp), pointer :: zHS(:) => null()
     real(dp), allocatable :: sc_off(:,:)
 
     ! Green function variables
-    complex(dp), pointer, contiguous :: GS(:)
+    complex(dp), pointer :: GS(:)
 
     ! size requirement
     integer :: size_req(2)

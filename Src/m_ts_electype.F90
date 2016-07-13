@@ -106,8 +106,8 @@ module m_ts_electype
      ! k-point changes...
      real(dp) :: bkpt_cur(3)
      ! Used xa and lasto
-     real(dp), pointer, contiguous :: xa_used(:,:) => null()
-     integer,  pointer, contiguous :: lasto_used(:) => null()
+     real(dp), pointer :: xa_used(:,:) => null()
+     integer,  pointer :: lasto_used(:) => null()
 
      ! Advanced stuff...
      logical :: kcell_check = .true.
@@ -121,14 +121,14 @@ module m_ts_electype
      ! The inter-layer distance between succeeding layers along
      ! the semi-infinite direction
      real(dp) :: dINF_layer
-     real(dp), pointer, contiguous :: xa(:,:) => null()
-     integer,  pointer, contiguous :: lasto(:) => null()
+     real(dp), pointer :: xa(:,:) => null()
+     integer,  pointer :: lasto(:) => null()
      type(Sparsity)  :: sp
      type(dSpData2D) :: H
      type(dSpData1D) :: S
      ! Supercell offsets
      integer :: nsc(3)
-     integer, pointer, contiguous :: isc_off(:,:) => null()
+     integer, pointer :: isc_off(:,:) => null()
      ! --- --- completed the content of the TSHS file
      ! Below we create the content for the self-energy creation
      ! Notice that we can save some elements simply by extracting the 0-1 connections
@@ -138,13 +138,13 @@ module m_ts_electype
      type(dSpData1D) :: S00, S01
 
      ! These arrays are used to construct the full Hamiltonian and overlap and Green function
-     complex(dp), pointer, contiguous :: HA(:,:,:), SA(:,:,:), GA(:)
+     complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:)
 
      ! Arrays needed to partition the scattering matrix and self-energies
 
      ! Gamma stored is actually this: (Sigma - Sigma^\dagger) ^ T
      ! and NOT: i (Sigma - Sigma^\dagger)
-     complex(dp), pointer, contiguous :: Gamma(:), Sigma(:)
+     complex(dp), pointer :: Gamma(:), Sigma(:)
 
      ! The imaginary part in the electrode
      real(dp) :: Eta = 7.3498067e-6_dp ! corresponds to 0.0001 eV
@@ -1496,13 +1496,13 @@ contains
 
     logical :: lio
 
-    real(dp), pointer, contiguous :: H(:,:), H00(:,:), H01(:,:)
-    real(dp), pointer, contiguous :: S(:), S00(:), S01(:)
+    real(dp), pointer :: H(:,:), H00(:,:), H01(:,:)
+    real(dp), pointer :: S(:), S00(:), S01(:)
     type(OrbitalDistribution), pointer :: fdist
 
-    integer, pointer, contiguous :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, pointer, contiguous :: ncol00(:), ptr00(:), col00(:)
-    integer, pointer, contiguous :: ncol01(:), ptr01(:), col01(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: ncol00(:), ptr00(:), col00(:)
+    integer, pointer :: ncol01(:), ptr01(:), col01(:)
 
     integer :: no_l, i, iio, j, ind, ind00, ind01, ia
     integer :: tm(3)
@@ -1653,17 +1653,17 @@ contains
 
     type(Elec), intent(inout) :: this
 
-    real(dp), pointer, contiguous :: H(:,:)
-    real(dp), pointer, contiguous :: S(:)
+    real(dp), pointer :: H(:,:)
+    real(dp), pointer :: S(:)
     type(OrbitalDistribution), pointer :: fdist
     type(Sparsity) :: sp02
 
-    integer, pointer, contiguous :: l_ncol(:) => null()
-    integer, pointer, contiguous :: l_ptr(:)  => null()
-    integer, pointer, contiguous :: l_col(:)  => null()
-    integer, pointer, contiguous :: ncol02(:) => null()
-    integer, pointer, contiguous :: ptr02(:)  => null()
-    integer, pointer, contiguous :: col02(:)  => null()
+    integer, pointer :: l_ncol(:) => null()
+    integer, pointer :: l_ptr(:)  => null()
+    integer, pointer :: l_col(:)  => null()
+    integer, pointer :: ncol02(:) => null()
+    integer, pointer :: ptr02(:)  => null()
+    integer, pointer :: col02(:)  => null()
 
     integer :: no_l, no_u, i, io, j, ind, ind02, ia
     integer :: tm(3)
@@ -1848,7 +1848,7 @@ contains
     type(OrbitalDistribution) :: fake_dit
     type(Sparsity), pointer :: sp
     type(dSpData2D) :: f_DM_2D, f_EDM_2D
-    real(dp), pointer, contiguous :: DM(:,:), EDM(:,:)
+    real(dp), pointer :: DM(:,:), EDM(:,:)
     real(dp) :: tmp, Ef
     integer, parameter :: One3(3) = (/1,1,1/)
     integer :: i

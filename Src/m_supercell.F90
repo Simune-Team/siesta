@@ -183,6 +183,8 @@ contains
   ! thus the calculated super-cell size will be exact
   subroutine exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
 
+    use class_iSpData2D
+    
     use atom_graph
 
 #ifdef MPI
