@@ -369,7 +369,7 @@ use.
 A fast way to test your installation of \siesta\ and get a feeling for
 the workings of the program is implemented in directory
 \texttt{Tests}\index{Tests}. In it you can find several subdirectories
-with pre-packaged FDF files and pseudopotential references. Everything
+with pre-packaged \fdflib\ files and pseudopotential references. Everything
 is automated: after compiling \siesta\ you can just go into any
 subdirectory and type \texttt{make}. The program does its work in
 subdirectory \texttt{work}, and there you can find all the resulting
@@ -499,7 +499,7 @@ files in your directory including the following:
 
 The prefix h2o of all these files is the 
 \texttt{SystemLabel}\index{Systemlabel}
-specified in the input h2o.fdf file (see FDF section below).
+specified in the input h2o.fdf file (see \fdflib\ section below).
 The standard output of the program, that you
 have already seen passing on the screen, was copied to
 file h2o.out by the tee command. Have a look at it
@@ -525,11 +525,11 @@ Here we offer a glimpse of it through the following rules:
 
 \begin{itemize}
 
-\item[$\bullet$] The FDF syntax is a 'data label' followed by its value.
+\item[$\bullet$] The \fdflib\ syntax is a 'data label' followed by its value.
 Values that are not specified in the datafile are assigned
 a default value.
 
-\item[$\bullet$] FDF labels are case insensitive, and characters - \_ .
+\item[$\bullet$] \fdflib\ labels are case insensitive, and characters - \_ .
 in a data label are ignored. Thus, LatticeConstant and
 lattice\_constant represent the same label.
 
@@ -551,7 +551,7 @@ on the same input line.
 placed between `\%block label'\index{block@\%block} and a `\%endblock label'
 (without the quotes).
 
-\item[$\bullet$] You may `include' other FDF files and redirect the search
+\item[$\bullet$] You may `include' other \fdflib\ files and redirect the search
 for a particular data label to another file.
 If a data label appears more than once, its first appearance
 is used.
@@ -607,13 +607,13 @@ A brief description follows. See the example cases in the
 siesta/Tests directory for illustration.
 
 The program starts writing the version of the code which is
-used. Then, the input FDF file is dumped into the output file as is
+used. Then, the input \fdflib\ file is dumped into the output file as is
 (except for empty lines). The program does part of the reading and
 digesting of the data at the beginning within the \texttt{redata}
 subroutine. It prints some of the information it digests. It is
 important to note that it is only part of it, some other information
 being accessed by the different subroutines when they need it during
-the run (in the spirit of FDF input).  A complete list of the input
+the run (in the spirit of \fdflib\ input).  A complete list of the input
 used by the code can be found at the end in the file \texttt{fdf.log},
 including defaults used by the code in the run.
 
@@ -864,7 +864,7 @@ supported by forthcoming versions of Siesta and ABINIT.
 \vspace{5pt}
 \subsection{Basis set and KB projectors}
 
-\subsubsection{Overview of atomic-orbital bases implemented in \siesta}
+\subsubsection{Overview of atomic-orbital bases implemented in \texorpdfstring{\siesta}{SIESTA}}
 
 The main advantage of atomic orbitals is their efficiency (fewer orbitals
 needed per electron for similar precision)
@@ -1177,7 +1177,7 @@ book).
 \noindent
 All the remaining options
 give the same minimal basis\index{minimal basis}.
-The different options and their FDF descriptors are the following:
+The different options and their \fdflib\ descriptors are the following:
 
 \begin{itemize}
 
@@ -2499,7 +2499,7 @@ of \textsc{XMol} called \textsc{JMol}.
 If \texttt{.true.} it originates the writing of an extra file
 named \textit{SystemLabel}\texttt{.xtl} containing the final atomic
 coordinates in a format directly readable by
-\textsc{Cerius}.\footnote{\program{Cerius} is under \copyright\
+\method{Cerius}.\footnote{\method{Cerius} is under \copyright\
     copyright of Molecular Simulations Inc.} 
 Coordinates come out in
 \texttt{Fractional} format (the same as \texttt{ScaledByLatticeVectors})
@@ -2655,7 +2655,7 @@ unit cell.
 
 \end{description}
 
-\subsection{$k$-point sampling}
+\subsection{\texorpdfstring{$k$}{k}-point sampling}
 
 These are options for the k-point grid used in the SCF cycle. For
 other specialized grids, see the Macroscopic Polarization and Density
@@ -6833,90 +6833,91 @@ is produced.
 
 \vspace{5pt}
 \subsection{Auxiliary Force field}
+\fdfindex{MM}
 
 It is possible to supplement the DFT interactions with a limited
 set of force-field options, typically useful to simulate dispersion
 interactions. It is not yet possible to turn off DFT and base the
-dynamics only on the force field. The \texttt{GULP} program should be
+dynamics only on the force field. The \program{GULP} program should be
 used for that.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdfentry}{MM!Potentials}[block]
 
-\item[\textbf{MM.Potentials}] (\textit{data block}):
-\index{MM.Potentials@\textbf{MM.Potentials}} This block allows the input
-of molecular mechanics potentials between species. The following
-potentials are currently implemented:
-\begin{itemize}
-\item C6, C8, C10 powers of the Tang-Toennes damped dispersion
-  potential.
-\item A harmonic interaction.
-\item A dispersion potential of the Grimme type (similar to the C6
-  type but with a different damping function). (See S. Grimme,
-  J. Comput. Chem. Vol 27, 1787-1799 (2006)). See also \fdf{MM.Grimme.D} and \fdf{MM.Grimme.S6} below.
-\end{itemize}
+  This block allows the input
+  of molecular mechanics potentials between species. The following
+  potentials are currently implemented:
+  \begin{itemize}
+    \item C6, C8, C10 powers of the Tang-Toennes damped dispersion
+    potential.
+    \item A harmonic interaction.
+    \item A dispersion potential of the Grimme type (similar to the C6
+    type but with a different damping function). (See S. Grimme,
+    J. Comput. Chem. Vol 27, 1787-1799 (2006)). See also
+    \fdf{MM!Grimme.D} and \fdf{MM!Grimme.S6} below. 
+  \end{itemize}
 
-The format of the input is the two species numbers that are to
-interact, the potential name (C6, C8, C10, harm, or Grimme), followed
-by the potential parameters. For the damped dispersion potentials the
-first number is the coefficient and the second is the exponent of the
-damping term (i.e., a reciprocal length). A value of zero for the
-latter term implies no damping. For the harmonic potential the force
-constant is given first, followed by r0. For the Grimme potential C6
-is given first, followed by the (corrected) sum of the van der Waals
-radii for the interacting species (a real length). Positive values of
-the C6, C8, and C10 coefficients imply attractive potentials.
+  The format of the input is the two species numbers that are to
+  interact, the potential name (C6, C8, C10, harm, or Grimme), followed
+  by the potential parameters. For the damped dispersion potentials the
+  first number is the coefficient and the second is the exponent of the
+  damping term (i.e., a reciprocal length). A value of zero for the
+  latter term implies no damping. For the harmonic potential the force
+  constant is given first, followed by r0. For the Grimme potential C6
+  is given first, followed by the (corrected) sum of the van der Waals
+  radii for the interacting species (a real length). Positive values of
+  the C6, C8, and C10 coefficients imply attractive potentials.
 
-\textit{Use:} Gives the input for the molecular mechanics potentials.
-
-\begin{verbatim}
-
+  \begin{fdfexample}
     %block MM.Potentials
-       1 1 C6 32.0 2.0
-       1 2 harm 3.0 1.4
-       2 3 Grimme 6.0 3.2
+      1 1 C6 32.0 2.0
+      1 2 harm 3.0 1.4
+      2 3 Grimme 6.0 3.2
     %endblock MM.Potentials
+  \end{fdfexample}
 
-\end{verbatim}
+  To automatically create input for Grimme's method, please see the
+  utility: \program{Util/Grimme} which can read an fdf file and create
+  the correct input for Grimme's method.
 
-\textit{Default value:}  None.
+\end{fdfentry}
 
-\item[\textbf{MM.Cutoff}] (\textit{physical}): \index{MM.Cutoff@\textbf{MM.Cutoff}} Specifies the distance out to which molecular mechanics
-potential will act before being treated as going to zero.
+\begin{fdfentry}{MM!Cutoff}[length]<$30\,\mathrm{Bohr}$>
 
-\textit{Use:} Limits the real space range of the molecular mechanics
-potentials.
+  Specifies the distance out to which molecular mechanics
+  potential will act before being treated as going to zero.
+  
+\end{fdfentry}
 
-\textit{Default value:}  \texttt{30.0 Bohr}
+\begin{fdfentry}{MM!UnitsEnergy}[unit]<eV>
 
-\item[\textbf{MM.UnitsEnergy}] (\textit{units}): \index{MM.UnitsEnergy@\textbf{MM.UnitsEnergy}} Specifies the units to be used for energy in the
-molecular mechanics potentials.
+  Specifies the units to be used for energy in the
+  molecular mechanics potentials.
+  
+\end{fdfentry}
 
-\textit{Use:} Controls the units for energy in the molecular mechanics input.
+\begin{fdfentry}{MM!UnitsDistance}[unit]<Ang>
+  
+  Specifies the units to be used for distance in the
+  molecular mechanics potentials.
 
-\textit{Default value:}  \texttt{eV}
+\end{fdfentry}
 
-\item[\textbf{MM.UnitsDistance}] (\textit{units}): \index{MM.UnitsDistance@\textbf{MM.UnitsDistance}} Specifies the units to be used for distance in the
-molecular mechanics potentials.
+\begin{fdfentry}{MM!Grimme.D}[real]<$20.0$>
 
-\textit{Use:} Controls the units for distance in the molecular mechanics input.
+  Specifies the scale factor $d$ for the scaling function
+  in the Grimme dispersion potential (see above).
 
-\textit{Default value:}  \texttt{Ang}
+\end{fdfentry}
 
-\item[\textbf{MM.Grimme.D}] : \index{MM.Grimme.D@\textbf{MM.Grimme.D}} Specifies the scale factor $d$ for the scaling function
-in the Grimme dispersion potential (see above).
+\begin{fdfentry}{MM!Grimme.S6}[real]<$1.66$>
 
-\textit{Default value:}  { 20.0 }
+  Specifies the overall fitting factor $s_6$ for the
+  Grimme dispersion potential (see above). This number depends on the
+  quality of the basis set, the exchange-correlation functional, and the
+  fitting set.
+  
+\end{fdfentry}
 
-\item[\textbf{MM.Grimme.S6}] : \index{MM.Grimme.S6@\textbf{MM.Grimme.S6}} Specifies the overall fitting factor $s_6$ for the
-Grimme dispersion potential (see above). This number depends on the
-quality of the basis set, the exchange-correlation functional, and the
-fitting set.
-
-\textit{Default value:}  { 1.66 } (for DZP basis sets).
-
-\end{description}
 
 \vspace{5pt}
 \subsection{Parallel options}
@@ -7891,7 +7892,7 @@ respectively. Edit the file to change the settings if desired.
 Every time the atoms move, either during coordinate relaxation or
 molecular dynamics, their \textbf{positions predicted for next step} and
 \textbf{current velocities} are stored in file SystemLabel.XV, where
-SystemLabel is the value of that FDF descriptor (or 'siesta' by
+SystemLabel is the value of that \fdflib\ descriptor (or 'siesta' by
 default).  The shape of the unit cell and its associated 'velocity'
 (in Parrinello-Rahman dynamics) are also stored in this file. For MD
 runs of type Verlet, Parrinello-Rahman, Nose, 
@@ -8041,8 +8042,8 @@ involving molecules.
     Control whether the cell angles ($\alpha$, $\beta$, $\gamma$) may
     be altered.
 
-    This takes either \fdf*{alpha}/\fdf*{beta}/\fdf*{gamma} as
-    argument.
+    This takes either one or more of
+    \fdf*{alpha}/\fdf*{beta}/\fdf*{gamma} as argument.
 
     \fdf*{alpha} is the angle between the 2nd and 3rd cell vector.
 
@@ -8053,16 +8054,16 @@ involving molecules.
     \option[cell-vector]%
     Control whether the cell vectors ($A$, $B$, $C$) may be altered.
 
-    This takes either \fdf*{A}/\fdf*{B}/\fdf*{C} as
+    This takes either one or more of \fdf*{A}/\fdf*{B}/\fdf*{C} as
     argument.
 
     \option[stress]%
     Control which of the 6 stress components are constrained.
 
     This takes a number of integers $1\le i\le6$ where $1$ corresponds
-    to the \emph{aa} stress-component, $2$ is \emph{bb}, $3$ is
-    \emph{cc}, $4$ is \emph{bc}/\emph{cb}, $5$ is \emph{ac}/\emph{ca}
-    and $6$ is \emph{ab}/\emph{ba}.
+    to the \emph{AA} stress-component, $2$ is \emph{BB}, $3$ is
+    \emph{CC}, $4$ is \emph{BC}/\emph{CB}, $5$ is \emph{AC}/\emph{CA}
+    and $6$ is \emph{AB}/\emph{BA}.
 
     \option[routine]%
     This calls the \program{constr} routine specified in the file:
@@ -8075,7 +8076,8 @@ involving molecules.
     Remove constraints on selected atoms from all previously specified
     constraints.
 
-    This may be handy when specifying constraints via \fdf*{Z} or \fdf*{species-i}.
+    This may be handy when specifying constraints via \fdf*{Z} or
+    \fdf*{species-i}.
 
     Atomic indices may be specified according to \fdf*{atom}.
 
@@ -8083,7 +8085,8 @@ involving molecules.
     Remove constraints on selected atoms from the \emph{previous} specified
     constraint.
 
-    This may be handy when specifying constraints via \fdf*{Z} or \fdf*{species-i}.
+    This may be handy when specifying constraints via \fdf*{Z} or
+    \fdf*{species-i}.
 
     Atomic indices may be specified according to \fdf*{atom}.
 
@@ -8375,7 +8378,7 @@ The present \siesta\ release includes the possibility of
 performing calculations of electronic transport properties using the
 \tsiesta\ method. This Section describes how to compile the
 code to be able to use these capabilities, and a reference guide to
-the relevant FDF options. We describe here only the additional options
+the relevant \fdflib\ options. We describe here only the additional options
 available for \tsiesta\ calculations, while the rest of the Siesta
 functionalities and variables are described in the previous sections
 of this User's Guide.
@@ -8515,7 +8518,7 @@ Other automated TranSiesta-TBTrans examples can be found in
   \sysfile{TSHS} file can be used to describe those. In general,
   however, electrodes can be different and therefore two different
   \sysfile{TSHS} files must be generated. The location of these
-  electrode files must be specified in the FDF input file of the SR
+  electrode files must be specified in the \fdflib\ input file of the SR
   calculation.
 
   \item %
@@ -8630,7 +8633,7 @@ following will be shown in the output file.
 It is imperative that you have a \emph{perfect} electrode as otherwise
 nonphysical results will occur.
 
-\subsection{\tsiesta\ Options}
+\subsection{\texorpdfstring{\tsiesta}{TranSIESTA} Options}
 
 The fdf options shown here are only to be used at the input file for
 the scattering region. When using \tsiesta\ for electrode
@@ -8641,30 +8644,36 @@ input options are heavily changed.
 
 \subsubsection{Quick and dirty}
 
-Since 4.1 \tsiesta\ has been fully re-implemented and all input
-options have changed. And so have \emph{every} input fdf-flag. To
-accommodate an easy transition between previous input files and the
-new version format a small utility called \program{ts2ts}. It may be
-compiled in \program{Util/TS/ts2ts}.
+Since 4.1, \tsiesta\ has been fully re-implemented. And so have
+\emph{every} input fdf-flag. To accommodate an easy transition between
+previous input files and the new version format a small utility called
+\program{ts2ts}. It may be compiled in \program{Util/TS/ts2ts}. It is
+recommended that you use this tool if you are familiar with previous
+\tsiesta\ versions.
+
 %
-You may input options as in the old \tsiesta\ version and then run
+One may input options as in the old \tsiesta\ version and then run
 \begin{fdfexample}
   ts2ts OLD.fdf > NEW.fdf
 \end{fdfexample}
 which translates all keys to the new, equivalent, input format. If you
 are familiar with the old-style flags this is highly recommendable to
-become comfortable with the new input format.
+become comfortable with the new input format. Please note that some
+defaults have changed to more conservative values in the newer
+release. 
 
 If one does not know the old flags and wish to get a basic example of
-an input file a program \program{Util/TS/tselecs.sh} exists that can
+an input file, a program \program{Util/TS/tselecs.sh} exists that can
 create the basic input for $N$ electrodes. One may call it like:
 \begin{fdfexample}
   tselecs.sh -2 > TWO_ELECTRODE.fdf
   tselecs.sh -3 > THREE_ELECTRODE.fdf
+  tselecs.sh -4 > FOUR_ELECTRODE.fdf
+  ...
 \end{fdfexample}
-where the first call creates an input fdf for 2 electrode setups, and
-the latter for a 3 electrode setup. See the help for the program for
-additional options.
+where the first call creates an input fdf for 2 electrode setups, the
+second for a 3 electrode setup, and so on. See the help (\program{-h})
+for the program for additional options.
 
 \subsubsection{General options}
 
@@ -8942,11 +8951,17 @@ additional options.
   sparsity pattern for optimal choice of the BTD partitioning
   algorithm. 
 
-  This yields information regarding the \fdf{TS.BTD.Pivot} flag.
+  This yields information regarding the \fdf{TS!BTD!Pivot} flag.
 
 \end{fdflogicalF}
 
-\begin{fdfentry}{TS!BTD.Pivot}[string]<\fdfabstract{first electrode}>
+\subsubsection{Algorithm specific options}
+
+These options adhere to the specific solution methods available for
+\tsiesta. For instance the \fdf*{TS.BTD.*} options adhere when using
+\fdf*{TS.SolutionMethod btd}, and similarly for \fdf*{MUMPS}.
+
+\begin{fdfentry}{TS!BTD!Pivot}[string]<\fdfabstract{first electrode}>
 
   Decide on the partitioning for the BTD matrix. One may denote either
   \fdf*{atom+} or \fdf*{orb+} as a prefix which does the analysis on
@@ -8996,7 +9011,60 @@ additional options.
   
 \end{fdfentry}
 
+\begin{fdfentry}{TS!BTD!Optimize}[string]<speed|memory>
 
+  When selecting the smallest blocks for the BTD matrix there are
+  certain criteria that may change the size of each block. For very
+  memory consuming jobs one may choose the \fdf*{memory}. 
+
+  \note often both methods provide \emph{exactly} the same BTD matrix
+  due to constraints on the matrix.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS!BTD!Spectral}[string]<propagation|column>
+
+  How to compute the spectral function ($G\Gamma G^\dagger$). 
+
+  For $N<4$ this defaults to \fdf*{propagation} which should be the
+  fastest.
+
+  For $N\ge4$ this defaults to \fdf*{column}.
+
+  Check which has the best performance for your system if you endeavor
+  on huge amounts of calculations.
+
+\end{fdfentry}
+
+
+\begin{fdfentry}{TS!MUMPS!Ordering}[string]<\fdfabstract{read MUMPS
+      manual}>
+
+  One may select from a number of different matrix orderings which are
+  all described in the MUMPS manual. 
+
+  The following list of orderings are available (without detailing
+  their differences):
+  \fdf*{auto}, \fdf*{AMD}, \fdf*{AMF}, \fdf*{SCOTCH}, \fdf*{PORD}, \fdf*{METIS}, \fdf*{QAMD}.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS!MUMPS!Memory}[integer]<20>
+
+  Specify a factor for the memory consumption in MUMPS. See the
+  \fdf*{INFOG(9)} entry in the MUMPS manual. Generally if \tsiesta\
+  dies and \fdf*{INFOG(9)=-9} one should increase this number.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS!MUMPS!BlockingFactor}[integer]<112>
+
+  Specify the number of internal block sizes. Larger numbers increases
+  performance at the cost of memory.
+  
+  \note this option may heavily influence performance.
+
+\end{fdfentry}
 
 \subsubsection{Electrode description options}
 
@@ -9235,6 +9303,16 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
     equilibrium contour for this equilibrium chemical potential. One
     may supply as many different contours to create whatever shape of
     the contour
+    
+    Its format is
+    \begin{fdfexample}
+      contour.eq
+       begin
+        <contour-name-1>
+        <contour-name-2>
+        ...
+       end
+    \end{fdfexample}
 
     \note If you do \emph{not} specify \fdf*{contour.eq} in the block
     one will automatically use the continued fraction method and you
@@ -9281,6 +9359,136 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
 \end{fdfentry}
 
 \subsubsection{Complex contour integration options}
+
+Specifying the contour for $N$ electrode systems is a bit extensive
+due to the possibility of more than 2 chemical potentials. 
+
+Generically the contours are split in two segments. One, being the
+equilibrium contour of each of the different chemical potentials. The
+second for the non-equilibrium contour. The equilibrium contours are
+shifted according to their chemical potentials with respect to a
+reference energy. Note that for \tsiesta\ the reference energy is
+named the Fermi-level, which is rather unfortunate (for
+non-equilibrium but not equilibrium). Fortunately the non-equilibrium
+contours are defined from different chemical potentials Fermi
+functions, and as such this contour is defined in the window of the
+minimum and maximum chemical potentials.
+
+\begin{fdfentry}{TS!Contours!Eq.Pole}[energy]<$2.5\,\mathrm{eV}$>
+
+  The imaginary part of the Fermi function tail when crossing the
+  Fermi level. Note that the actual number of poles may differ between
+  different calculations where the electronic temperatures are
+  different.
+
+  \note if the energy specified is negative,
+  \fdf{TS!Contours!Eq.Pole.N} takes effect.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS!Contours!Eq.Pole.N}[integer]<8>
+
+  Manually select the \# of poles for the equilibrium contour. 
+
+  \note this flag will only take effect if \fdf{TS!Contours!Eq.Pole}
+  is a negative energy.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS!Contour.<>}[block]
+
+  Specify a contour named \fdf*{<>} with options within the block.
+
+  The names \fdf*{<>} are taken from the
+  \fdf{TS!ChemPot.<>!contour.eq} block in the chemical potentials.
+
+  The format of this block is made up of at least $4$ lines, in the
+  following order of appearance.
+
+  \begin{fdfoptions}
+
+    \option[part]%
+    \fdfindex{TS!Contour.<>!part}%
+
+    Specify which part of the equilibrium contour this is:
+    \begin{fdfoptions}
+
+      \option[circle]%
+      The initial circular part of the contour
+
+      \option[square]%
+      The initial square part of the contour
+
+      \option[line]% 
+      The straight line of the contour
+
+      \option[tail]%
+      The final part of the contour \emph{must} be a tail which
+      denotes the Fermi-tail.
+
+    \end{fdfoptions}
+
+    \option[from \emph{a} to \emph{b}]%
+    \fdfindex{TS!Contour.<>!from}%
+
+    Define the integration range on the energy axis.
+    Thus \emph{a} and \emph{b} are energies.
+
+    \note that \emph{b} may be supplied as \fdf*{inf} for \fdf*{tail}
+    parts. 
+
+    \option[points/delta]%
+    \fdfindex{TS!Contour.<>!points}%
+    \fdfindex{TS!Contour.<>!delta}%
+
+    Define the number of integration points/energy separation.
+    If specifying the number of points an integer should be supplied.
+
+    If specifying the separation between consecutive points an energy
+    should be supplied.
+
+    \option[method]%
+    \fdfindex{TS!Contour.<>!method}%
+
+    Specify the numerical method used to conduct the integration. Here
+    a number of different numerical integration schemes are accessible
+
+    \begin{fdfoptions}
+      \option[mid|mid-rule]%
+      Use the mid-rule for integration.
+
+      \option[simpson|simpson-mix]%
+      Use the composite Simpson $3/8$ rule (three point Newton-Cotes).
+
+      \option[boole|boole-mix]%
+      Use the composite Booles rule (five point Newton-Cotes).
+ 
+      \option[G-legendre]%
+      Gauss-Legendre quadrature.
+
+      \note has \fdf*{opt right}
+
+      \option[tanh-sinh]%
+      Tanh-Sinh quadrature.
+
+      \note has \fdf*{opt precision <>}.
+
+      \note has \fdf*{opt right}.
+
+      \option[G-Fermi]%
+      Gauss-Fermi quadrature (only on tails).
+
+    \end{fdfoptions}
+
+    \option[opt]%
+    \fdfindex{TS!Contour.<>!opt}%
+
+    Specify additional options for the \fdf*{method}. Only a selected
+    subset of the methods have additional options.
+
+  \end{fdfoptions}
+  
+\end{fdfentry}
 
 
 \begin{description}
@@ -9346,7 +9554,7 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
         
 \end{description}    
 
-\subsection{  Matching   \tsiesta\ coordinates: basic rules}
+\subsection{Matching \texorpdfstring{\tsiesta}{TranSIESTA} coordinates: basic rules}
 Having discussed the possible input options of \tsiesta\ here
 we just list a set of rules to construct the appropriate coordinates
 of the scattering region. The unitcell must only have one component for 
@@ -9412,7 +9620,7 @@ the other output files, we refer the user to the \siesta\ manual.
 
 \end{description} 
 
-\subsection{Utilities for analysis: \texttt{tbtrans}.}
+\subsection{Utilities for analysis: \texorpdfstring{\tbtrans}{TBtrans}}
 \index{tbtrans@\textbf{tbtrans}}
 
 The \texttt{tbtrans} code can be found in the directory \program{Util/TBTrans}. 
@@ -9601,7 +9809,7 @@ FDF command, and .\emph{ext} depends on the type of the output.
 
 \end{description} 
 
-\subsubsection{Compiling TBTtrans}
+\subsubsection{Compiling \texorpdfstring{\tbtrans}{TBtrans}}
 
 In the \texttt{Util/TBTrans} or \texttt{Util/TBTrans\_rep} (for the NPA version)
  directory, 
@@ -9637,7 +9845,7 @@ Note that the interfaces in this framework are still evolving and are
 subject to change.
 
 Suggestions for improvements can be sent to Alberto Garcia
-(albertog@icmab.es)
+(\href{mailto:albertog@icmab.es}{albertog@icmab.es})
 
 \section{PROBLEM HANDLING}
 
@@ -9934,7 +10142,7 @@ information instead of a density-matrix,  new analysis tools, etc.
 
 
 \newpage
-\section{APPENDIX: Parallel \siesta}
+\section{APPENDIX: Parallel \texorpdfstring{\siesta}{SIESTA}}
 \index{Parallel \siesta}
 \label{sec:parallel}
 

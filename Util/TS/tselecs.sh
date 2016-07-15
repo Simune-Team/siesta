@@ -95,7 +95,7 @@ if [ $help -eq 1 ]; then
     echo "    $_this -T|--tbtrans"
     echo ""
     echo "For specifying the contour energy levels you can use these options:"
-    printf "$fmt" "-Emin <val>" "band bottom energy in eV (-30. eV)"
+    printf "$fmt" "-Emin <val>" "band bottom energy in eV (-40. eV)"
     printf "$fmt" "-dE <val>" "real-axis distance between integration points (0.01 eV)"
     echo ""
     echo "There are preset creations of 2,3 and 4 electrodes, call:"

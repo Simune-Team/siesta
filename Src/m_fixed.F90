@@ -201,6 +201,7 @@ contains
     do if = 1 , 3
        if ( cell_vector(if) ) then
           cstress(:,if) = 0._dp
+          cstress(if,:) = 0._dp
        end if
     end do
     if ( cell_angle(1) ) then
@@ -562,18 +563,18 @@ contains
     end if
 
     if ( cell_angle(1) ) &
-         write(*,'(a)') 'siesta: Constrain alpha (23)'
+         write(*,'(a)') 'siesta: Constrain angle alpha (B-C/2-3)'
     if ( cell_angle(2) ) &
-         write(*,'(a)') 'siesta: Constrain beta (13)'
+         write(*,'(a)') 'siesta: Constrain angle beta (A-C/1-3)'
     if ( cell_angle(3) ) &
-         write(*,'(a)') 'siesta: Constrain gamma (12)'
+         write(*,'(a)') 'siesta: Constrain angle gamma (A-B/1-2)'
 
     if ( cell_vector(1) ) &
-         write(*,'(a)') 'siesta: Constraint (vector): A'
+         write(*,'(a)') 'siesta: Constraint (vector): A/1'
     if ( cell_vector(2) ) &
-         write(*,'(a)') 'siesta: Constraint (vector): B'
+         write(*,'(a)') 'siesta: Constraint (vector): B/2'
     if ( cell_vector(3) ) &
-         write(*,'(a)') 'siesta: Constraint (vector): C'
+         write(*,'(a)') 'siesta: Constraint (vector): C/3'
 
     if ( N_fix == 0 ) return
 

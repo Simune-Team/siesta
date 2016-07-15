@@ -4,12 +4,15 @@
 %  Nick R. Papior, 2016 (nickpapior <at> gmail.com)
 %
 
-\NewDocumentCommand\program{m}{\textsc{#1}}
+\NewDocumentCommand\program{m}{\texttt{#1}}
 
-\NewDocumentCommand\siesta{}{\program{SIESTA}}
-\NewDocumentCommand\tsiesta{}{\program{TranSIESTA}}
-\NewDocumentCommand\tbtrans{}{\program{TBtrans}}
-\NewDocumentCommand\fdfprogram{}{\program{fdf}}
+\NewDocumentCommand\method{m}{\textsc{#1}}
+
+
+\NewDocumentCommand\siesta{}{\method{SIESTA}}
+\NewDocumentCommand\tsiesta{}{\method{TranSIESTA}}
+\NewDocumentCommand\tbtrans{}{\method{TBtrans}}
+\NewDocumentCommand\fdflib{}{\method{fdf}}
 
 
 \NewDocumentCommand\note{}{\textbf{NOTE:} }
@@ -46,7 +49,7 @@
     \def\textbraceright{\char`\}}%
     \def\textless{\textlangle}%
     \def\textgreater{\textrangle}%
-    \origtexttt{#1} %
+    \origtexttt{#1}%
     \endgroup%
 }
 
