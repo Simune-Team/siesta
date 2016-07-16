@@ -1,4 +1,21 @@
 ------------------------------------------------------------
+July 16, 2016  Alberto Garcia       trunk-506--psml-81
+Add new tests with a no-kinks vlocal
+
+* Use %define SMOOTH_TAIL_CUTOFF in ATOM to
+  remove the kink in vlocal coming from the old cutoff.
+
+* Fit Vlocal keeping the third derivative to remove
+  an extra kink. (In psop, or in Siesta itself, depending
+  on the test below)
+
+added:
+  Tests/Pseudos/Si.soft-siesta-vnl.psml
+  Tests/Pseudos/Si.soft.psml
+  Tests/si64-soft/
+  Tests/si64-soft-psml-full/
+	
+------------------------------------------------------------
 July 12, 2016  Alberto Garcia       trunk-506--psml-80
 Fix bug in psop and add docs. New psml tests
 
