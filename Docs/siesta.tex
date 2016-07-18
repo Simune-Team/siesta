@@ -3175,7 +3175,8 @@ several orders of consistency cycles.
 \end{fdfentry}
 
 \begin{fdfentry}{SCF.Mix!First}[logical]<true|false> 
-  
+  \index{DM.MixSCF1@\fdf*{DM.MixSCF1}|see SCF.Mix.First}
+
   Whether the first SCF should be mixed or it uses the output as input
   in the next SCF step. It is generally advised to set this to true,
   at least when restarting calculations.
@@ -3183,10 +3184,8 @@ several orders of consistency cycles.
 \end{fdfentry}
 
 
-\subsubsection{Mixing density-matrix or Hamiltonian}
-
 In the following the density matrix ($\DM$) will be used in the
-equations, while it for Hamiltonian mixing it should be replaced by
+equations, while for Hamiltonian mixing, $\DM$, should be replaced by
 the Hamiltonian matrix.
 %
 Also we define $\Res[i] = \DM^i_{\mathrm{out}} - \DM^i_{\mathrm{in}}$ and 
@@ -3256,7 +3255,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
     \end{align}
     It should be noted that $w_i$ for $i>0$ may be chosen arbitrarily.
     Comparing with the Pulay mixing scheme it is obvious that Broyden
-    and Pulay are equivalent for $w_0=0$ and $w_i=1/\sqrt{N-1}$.
+    and Pulay are equivalent for a suitable set of parameters.
 
   \end{fdfoptions}
   
@@ -3559,16 +3558,6 @@ using the block's input.
 
 The following options refer to the global treatment of how/when mixing
 should be performed.
-
-\begin{fdfentry}{SCF.Mix!First}[logical]<.true.>
-\index{DM.MixSCF1@\fdf*{DM.MixSCF1}|see SCF.Mix.First}
-
-  Control whether mixing is performed on the first SCF cycle or
-  not. In case the density matrix is not idempotent this variable
-  should be switched to \fdf*{.false.}.
-  
-\end{fdfentry}
-
 
 \subsubsection{Deprecated mixing options}
 
@@ -8410,7 +8399,7 @@ Jos\'e-Luis Mozos, who also worked on the parallelization of
 \tsiesta. 
 %
 Subsequently Frederico D. Novaes extended \tsiesta\ to allow $k$-point
-sampling for transverse directions. And additional extensions was
+sampling for transverse directions. Additional extensions was
 added by Nick R. Papior during 2012.
 
 The current \tsiesta\ module has been completely rewritten by Nick
@@ -8692,7 +8681,19 @@ for the program for additional options.
   
 \end{fdfentry}
 
+\begin{fdfentry}{TS!Voltage}[energy]<$0\,\mathrm{eV}$>
+
+  Define the reference applied bias. For $N=2$ electrode calculations
+  this refers to the actual potential drop between the electrodes,
+  while for $N\neq2$ this is a reference bias. In the latter case it
+  \emph{must} be equivalent to the maximum difference between the
+  chemical potential of any two electrodes.
+  
+\end{fdfentry}
+
 \begin{fdfentry}{TS!Atoms.Buffer}[block]
+  \fdfindex{TS.BufferAtomsLeft|see TS!Atoms.Buffer}%
+  \fdfindex{TS.BufferAtomsRight|see TS!Atoms.Buffer}%
 
   Specify atoms that will be removed in the \tsiesta\ SCF. They are
   not considered in the calculation and may be used to improve the
@@ -9270,6 +9271,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
 \end{fdfentry}
 
 \subsubsection{Chemical potentials}
+\label{sec:ts:chem-pot}
 
 For $N$ electrodes there will also be $N_\mu$ chemical
 potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
@@ -9358,21 +9360,60 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
 
 \end{fdfentry}
 
+These options complicate the input sequence for regular $2$ electrode
+which is unfortunate. 
+
+Using \program{tselecs.sh -only-mu} yields this output:
+\begin{fdfexample}
+  %block TS.ChemPots
+    Left
+    Right
+  %endblock
+  %block TS.ChemPot.Left
+    mu V/2
+    contour.eq
+      begin
+        C-Left
+        T-Left
+      end
+  %endblock
+  %block TS.ChemPot.Right
+    mu -V/2
+    contour.eq
+      begin
+        C-Right
+        T-Right
+      end
+  %endblock
+\end{fdfexample}
+
+Note that the default is a $2$ electrode setup with chemical
+potentials associated directly with the electrode names
+``Left''/``Right''. Each chemical potential has two parts of the
+equilibrium contour named according to their name.
+
+
+
 \subsubsection{Complex contour integration options}
 
 Specifying the contour for $N$ electrode systems is a bit extensive
-due to the possibility of more than 2 chemical potentials. 
+due to the possibility of more than 2 chemical potentials. Please use
+the \program{Util/TS/tselecs.sh} as a means to create default input
+blocks.
 
-Generically the contours are split in two segments. One, being the
-equilibrium contour of each of the different chemical potentials. The
-second for the non-equilibrium contour. The equilibrium contours are
-shifted according to their chemical potentials with respect to a
-reference energy. Note that for \tsiesta\ the reference energy is
-named the Fermi-level, which is rather unfortunate (for
-non-equilibrium but not equilibrium). Fortunately the non-equilibrium
-contours are defined from different chemical potentials Fermi
-functions, and as such this contour is defined in the window of the
-minimum and maximum chemical potentials.
+The contours are split in two segments. One, being the equilibrium
+contour of each of the different chemical potentials. The second for
+the non-equilibrium contour. The equilibrium contours are shifted
+according to their chemical potentials with respect to a reference
+energy. Note that for \tsiesta\ the reference energy is named the
+Fermi-level, which is rather unfortunate (for non-equilibrium but not
+equilibrium). Fortunately the non-equilibrium contours are defined
+from different chemical potentials Fermi functions, and as such this
+contour is defined in the window of the minimum and maximum chemical
+potentials.
+
+In this section the equilibrium contours are defined, and in the next
+section the non-equilibrium contours are defined.
 
 \begin{fdfentry}{TS!Contours!Eq.Pole}[energy]<$2.5\,\mathrm{eV}$>
 
@@ -9490,133 +9531,185 @@ minimum and maximum chemical potentials.
   
 \end{fdfentry}
 
+These options complicate the input sequence for regular $2$ electrode
+which is unfortunate. However, it allows highly customizable contours,
+etc.
 
-\begin{description}
-    \itemsep 10pt
-    \parsep 0pt
+Using \program{tselecs.sh -only-c} yields this output:
+\begin{fdfexample}
+  TS.Contours.Eq.Pole 2.5 eV
+  %block TS.Contour.C-Left
+    part circle
+     from -40. eV + V/2 to -10 kT + V/2
+       points 25
+        method g-legendre
+  %endblock
+  %block TS.Contour.T-Left
+    part tail
+     from prev to inf
+       points 10
+        method g-fermi
+  %endblock
+  %block TS.Contour.C-Right
+    part circle
+     from -40. eV -V/2 to -10 kT -V/2
+       points 25
+        method g-legendre
+  %endblock
+  %block TS.Contour.T-Right
+    part tail
+     from prev to inf
+       points 10
+        method g-fermi
+  %endblock
+\end{fdfexample}
+These contour options refer to input options for the chemical
+potentials as shown in Sec.~\ref{sec:ts:chem-pot}
+(p.~\pageref{sec:ts:chem-pot}). Importantly one should note the shift
+of the contours of corresponding to the chemical potential (the shift
+corresponds to difference from the reference energy used in \tsiesta).
 
-    \item[\textbf{TS.ComplexContour.Emin}] (\textit{physical}):
-      \index{TS.ComplexContour.Emin@\textbf{TS.ComplexContour.Emin}} The
-      starting point of the complex energy contour. In a \tsiesta\
-      run this value should be below the lowest energy
-      in the energy spectrum otherwise some charge will be missing in
-      the integration.
-
-        \textit{Default value:} \texttt{-3.0 Ry}
-
-    \item[\textbf{TS.ComplexContour.NumCircle}] (\textit{integer}): 
-        \index{TS.ComplexContour.NumCircle@\textbf{TS.ComplexContour.NumCircle}}
-        Number of points along the arc part of the contour (starting at 
-        \textbf{TS.ComplexContour.Emin} and ending at E$_F$ = 0).
-
-        \textit{Default value:} \texttt{24}
-        
-    \item[\textbf{TS.ComplexContour.NumLine}] (\textit{integer}): 
-        \index{TS.ComplexContour.NumLine@\textbf{TS.ComplexContour.NumLine}}
-        Number of points on the line part of the contour.
-
-        \textit{Default value:} \texttt{6}
- 
-\end{description}
 
 \subsubsection{Bias contour integration options}
 
-\begin{description}
-    \itemsep 10pt
-    \parsep 0pt
-    
-    \item[\textbf{TS.BiasContour.Eta}] (\textit{physical}): 
-        \index{TS.BiasContour.Eta@\textbf{TS.BiasContour.Eta}}
-        Small finite complex part of the real energy contour.
+The bias contour is similarly defined as the equilibrium
+contours. Please use the \program{Util/TS/tselecs.sh} as a means to
+create default input blocks.
 
-        \textit{Default value:} \texttt{10$^{-6}$ Ry}
-        
-    \item[\textbf{TS.BiasContour.Method}] (\textit{string}):
-      \index{TS.BiasContour.Method@\textbf{TS.BiasContour.Method}} This
-      describes how the points on the real axis contour are chosen.
-      Options are: \begin{itemize}
-                       \item \texttt{Sommerfeld}: equally spaced points
-                         with Sommerfeld expansion for including the
-                         electron temperature.
-                       \item \texttt{GaussFermi}: Gaussian quadrature
-                         weighted with the Fermi distribution
-                         function.
-                    \end{itemize}
-                    
-        \textit{Default value:} \texttt{GaussFermi}
-        
-    \item[\textbf{TS.BiasContour.NumPoints}] (\textit{integer}):
-      \index{TS.BiasContour.NumPoints@\textbf{TS.BiasContour.NumPoints}}
-      Number of contour points on the close-to-real axis part of the
-      contour in the voltage bias window.
+\begin{fdfentry}{TS!Contours.nEq!Eta}[energy]<$0\,\mathrm{eV}$>
 
-        \textit{Default value:} \texttt{5}
-        
-\end{description}    
+  The imaginary part ($\eta$) of the device states. Generally this is
+  not necessary to define as the imaginary part arises from the
+  self-energies (where $\eta>0$). 
+  
+\end{fdfentry}
 
-\subsection{Matching \texorpdfstring{\tsiesta}{TranSIESTA} coordinates: basic rules}
+\begin{fdfentry}{TS!Contours.nEq!Fermi.Cutoff}[energy]<$5\,k_BT$>
+
+  The bias contour is limited by the Fermi function tails. Numerically
+  it does not make sense to integrate to infinity.
+  % 
+  This energy defines where the bias integration window is turned into
+  zero. Thus above $-|V|/2-E$ or below $|V|/2+E$ the DOS is defined as
+  exactly zero.
+
+\end{fdfentry}
+
+\begin{fdfentry}{TS!Contours.nEq}[block]
+
+  Each line defines a new contour on the non-equilibrium bias
+  window. The contours defined \emph{must} be defined in
+  \fdf{TS!Contour.nEq!<>}. 
+
+  These contours must all be \fdf*{part line} or \fdf*{part tail}. 
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS!Contour.nEq.<>}[block]
+
+  This block is \emph{exactly} equivalently defined as the
+  \fdf{TS!Contour.<>}. See page \pageref{TS!Contour.<>}.
+  
+\end{fdfentry}
+
+The default options related to the non-equilibrium bias contour are
+defined as this:
+\begin{fdfexample}
+  %block TS.Contours.nEq
+    neq-1
+  %endblock TS.Contours.nEq
+  %block TS.Contour.nEq.neq-1
+    part line
+     from -|V|/2 - 5 kT to |V|/2 + 5 kT
+       delta 0.01 eV
+        method mid-rule
+  %endblock TS.Contour.nEq.neq-1
+\end{fdfexample}
+If one chooses a different reference energy than $0$, then the limits
+should change accordingly. Note that here \fdf*{kT} refers to
+\fdf{TS!ElectronicTemperature}.
+
+
+
+\subsection{Matching \texorpdfstring{\tsiesta}{TranSIESTA}
+    coordinates: basic rules}
+
 Having discussed the possible input options of \tsiesta\ here
 we just list a set of rules to construct the appropriate coordinates
-of the scattering region. The unitcell must only have one component for 
-the transport direction vector ($z$-direction). The order of atoms be 
-such that:
-\begin{itemize}
-\item
-The first \textbf{TS.BufferAtomsLeft} atoms will be considered buffer
-atoms that will not be used in the \tsiesta\ calculation, but
-which are used in the \siesta\ calculation. This number can, of
-course, be zero.
-\item The next \textbf{TS.NumUsedAtomsLeft $\times$ TS.ReplicateA1Left
-    $\times$ TS.ReplicateA2Left} correspond to the left electrode atoms.
-
-\item  The next atoms correspond to the scattering region.
-\item  The next \textbf{TS.NumUsedAtomsRight $\times$ TS.ReplicateA1Right
-    $\times$ TS.ReplicateA2Right} are the right electrode atoms.
-\item The next \textbf{TS.BufferAtomsRight} correspond to atoms that are
-  neglected in the transiesta part of the calculation, only take part
-  in the first \siesta\ run (only occurs if it is not a
-  continuation run)
-\end{itemize}
-
-The order shown here must also correspond to increasing values of the
-\texttt{z} coordinates of the atoms, in the sense that the left buffer
-atoms must all have smaller \texttt{z} components than the left electrode
-atoms, and so on. But, within each \textit{``block''} (buffer atoms, or
-electrode atoms, etc \ldots), the coordinates do not have to be
-ordered in any special way (except when using for the electrodes a
-number smaller than what was used in the electrode's unit cell).
+of the scattering region. Contrary to versions pre 4.1, the order of
+atoms is largely irrelevant. One may define all electrodes, then
+subsequently the device, or vice versa. Similarly are buffer atoms not
+restricted to be the first/last atoms.
+%
+However, each electrode atoms \emph{must} be defined
+consecutively. I.e. if an electrode input option is given by:
+\begin{fdfexample}
+  %block TS.Elec.<>
+    TSHS ../elec-<>/siesta.TSHS
+    bloch 1 3 1
+    used-atoms 4
+    electrode-position 10
+  %endblock
+\end{fdfexample}
+then the atoms from $10$ to $21$ must coincide with the atoms of the
+calculation performed in the \program{../elec-<>/}
+subdirectory. The Bloch expansion requires a particular sequence of
+the atoms which may be outlined as in the following loop:
+\begin{fdfexample}
+  iaD = 10 ! as per the above input option
+  do iaE = 1 , na_u
+    do iC = 0 , nC - 1
+    do iB = 0 , nB - 1
+    do iA = 0 , nA - 1
+      xyz_device(:, iaD) = xyz_elec(:, iaE) + &
+          cell_elec(:, 1) * iA + &
+          cell_elec(:, 2) * iB + &
+          cell_elec(:, 3) * iC
+      iaD = iaD + 1
+    end do
+    end do
+    end do
+  end do
+\end{fdfexample}
+As a help, \tsiesta\ prints out the expected coordinates as though the
+first device atom coincides with the first electrode atom. Another
+means to create this is using the \sisl\ program and this command
+line:
+\begin{fdfexample}
+  sgeom -rx 1 -ry 3 -rz 1 ELEC.fdf DEVICE_ELEC.fdf
+\end{fdfexample}
+and then shift the coordinates according to the placement in the
+device region.
 
 \subsection{Output}
 
-\tsiesta\ generates several output files.  The output files are
-named \texttt{<SystemLabel>.ext}, defined using the SystemLabel FDF
-command, and .ext depends on the type of the output.  Below we list
-the .ext files which are specific to \tsiesta.  For a description of
-the other output files, we refer the user to the \siesta\ manual.
-
-
+\tsiesta\ generates several output files.  
 \begin{description}
-    \itemsep 10pt
-    \parsep 0pt
-    
-    \item[\sysfile{DM}]: The \siesta\ density matrix. \siesta\ initially
-    performs a calculation at zero bias assuming periodic boundary conditions in all
-    directions, and no voltage, which is used as a starting point for the transiesta
-    calculation.
-    
-    \item[\sysfile{TSDE}]: The \tsiesta\ density matrix and energy density
-    matrix. During a transiesta run, the .DM values are used for the density matrix in
-    the buffer (if used) and electrode regions. The coupling terms may o may no be
-    updated in a \tsiesta\ run (see \textbf{TS.UpdateDMCROnly}).
-    
-    \item[\sysfile{TSHS}]: The Hamiltonian corresponding to .TSDE, and other
-    information needed by \tsiesta\ and \texttt{tbtrans}.
+  \itemsep 10pt
+  \parsep 0pt
+  
+  \item[\sysfile{DM}]: The \siesta\ density matrix. \siesta\ initially
+  performs a calculation at zero bias assuming periodic boundary conditions in all
+  directions, and no voltage, which is used as a starting point for the \tsiesta\
+  calculation.
+  
+  \item[\sysfile{TSDE}]: The \tsiesta\ density matrix and energy
+  density matrix. During a transiesta run, the \sysfile{DM} values are
+  used for the density matrix in the buffer (if used) and electrode
+  regions. The coupling terms may or may not be updated in a \tsiesta\
+  run, see \fdf{TS!Elec.<>!DM-update}.
+  
+  \item[\sysfile{TSHS}]: The Hamiltonian corresponding to
+  \sysfile{TSDE}. This file also contains geometry information
+  etc. needed by \tsiesta\ and \tbtrans.
 
-    \item[\sysfile{TSKP}]: The $k$-points used in the \tsiesta\ calculation. See
-    \siesta\ \file{.KP} file for formatting information.
+  \item[\sysfile{TSKP}]: The $k$-points used in the \tsiesta\ calculation. See
+  \siesta\ \file{.KP} file for formatting information.
 
-    \item[\sysfile{TSCC}]: The complex contour integration path used for calculating
-    the non-equilibrium density matrix.
+  \item[\sysfile{TSCCEQ*}]: The equilibrium complex contour integration paths.
+
+  \item[\sysfile{TSCCNEQ*}]: The non-equilibrium complex contour
+  integration paths.
 
 \end{description} 
 

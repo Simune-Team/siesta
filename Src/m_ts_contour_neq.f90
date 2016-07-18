@@ -128,9 +128,9 @@ contains
 
     ! Temperature cut-off for the tail integrals
     cutoff_kT = fdf_get('TS.Contours.nEq.Fermi.Cutoff',5._dp)
-    if ( cutoff_kT < 5._dp ) then
+    if ( cutoff_kT < 2.5_dp ) then
        call die('The cutoff must be larger than or equal to 5 as the &
-            &Fermi-function still has a weight at Ef + 5 kT.')
+            &Fermi-function still has a weight at Ef + 2.5 kT.')
     end if
 
     ! We only allow the user to either use the old input format, or the new

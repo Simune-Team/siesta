@@ -18,7 +18,7 @@ function error {
 # We must require to be able to use the hash-able arrays
 # This allows us to reuse the same input twice more easily
 help=0
-def=0
+def=2
 tbt=0
 # Options about what to print
 print_mu=0

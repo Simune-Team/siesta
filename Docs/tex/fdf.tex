@@ -17,8 +17,8 @@
 % Declare fdf-colors
 %\definecolor{fdf-list}  {cmyk}{0.10,0.95,0.65,0.45}
 %\definecolor{fdf-option}{cmyk}{0.00,0.95,0.90,0.25}
-\definecolor{fdf-list}  {cmyk}{0.05,0.05,0.05,0.90}
-\definecolor{fdf-option}{cmyk}{0.05,0.05,0.05,1.00}
+\definecolor{fdf-list}  {cmyk}{0.05,0.05,0.05,1.00}
+\definecolor{fdf-option}{cmyk}{0.05,0.05,0.05,0.90}
 
 % Declare new font
 \DeclareTextFontCommand{\fontfdf}{\bfseries\hyphenchar\font=45\relax}
@@ -85,6 +85,8 @@
         \StrSubstitute[0]{#1}{!}{.}[\@tmp]%
         \expandafter\cleanedhypertarget\expandafter{\@tmp}{\expandafter\fontfdf\expandafter{\@tmp}}%
         \sindex[sfdf]{#1}%
+        % Create label for the entry (allows pageref)
+        \label{#1}%
         \egroup%
         % Separate the keyword from the options
         \hskip 1em plus 1ex minus 1ex
@@ -142,7 +144,7 @@
 % Create new fdf input of type logical
 \NewDocumentEnvironment{fdflogicalT}{ m }
 {%
-    \begin{fdfentry}{#1}[logical]<.true.|.false.>%
+    \begin{fdfentry}{#1}[logical]<true|false>%
 }
 {%
   \end{fdfentry}
@@ -150,7 +152,7 @@
 % Create new fdf input of type logical
 \NewDocumentEnvironment{fdflogicalF}{ m }
 {%
-    \begin{fdfentry}{#1}[logical]<.false.|.true.>%
+    \begin{fdfentry}{#1}[logical]<false|true>%
 }
 {%
   \end{fdfentry}
