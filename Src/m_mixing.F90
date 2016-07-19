@@ -62,7 +62,7 @@ module m_mixing
      integer :: v = 0
 
      ! The currently reached iteration
-     integer :: cur_itt = 0
+     integer :: cur_itt = 0, start_itt = 0
 
      ! Different mixers may have different histories
      integer :: n_hist = 2
@@ -590,32 +590,10 @@ contains
 
        case ( MIX_BROYDEN )
 
+          ! Same as original Pulay
           allocate(m%stack(3))
-
-          ! These arrays contains these informations
-          ! s1 = m%stack(1)
-          ! s2 = m%stack(2)
-          ! s3 = m%stack(3)
-          ! Here <> is input function and
-          ! <>' is the corresponding output.
-          ! First iteration:
-          !   s1 = { 1' - 1 }
-          !   s3 = { 1' }
-          ! Second iteration
-          !   s2 = { 2' - 2 - (1' - 1) }
-          !   s1 = { 2 - 1 , 2' - 2 }
-          !   s3 = { 2' }
-          ! Third iteration
-          !   s2 = { 2' - 2 - (1' - 1) , 3' - 3 - (2' - 2) }
-          !   s1 = { 2 - 1 , 3 - 2, 3' - 3 }
-          !   s3 = { 3' }
-          ! and so on
-
-          ! allocate x[i+1] - x[i]
           call new(m%stack(1), m%n_hist)
-          ! allocate F[i+1] - F[i]
           call new(m%stack(2), m%n_hist-1)
-
           call new(m%stack(3), 1)
 
        end select
@@ -849,7 +827,6 @@ contains
 
     ! Print out options for all mixers
     do i = 1 , size(mixers)
-       
 
        m => mixers(i)
 
@@ -1080,7 +1057,7 @@ contains
     ! If we are going to skip to next, we signal it
     ! before entering
     if ( mix%n_itt > 0 .and. &
-         mix%n_itt <= mix%cur_itt ) then
+         mix%n_itt <= current_itt(mix) ) then
        mix%action = IOR(mix%action, ACTION_NEXT)
     end if
 
@@ -1113,7 +1090,7 @@ contains
              mix%action = IOR(mix%action, ACTION_NEXT)
           end if
           
-          if ( debug_mix .and. mix%cur_itt > 1 ) &
+          if ( debug_mix .and. current_itt(mix) > 1 ) &
                write(*,'(a,2(a,e8.3))') trim(debug_msg), &
                ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < np  :  ', &
                dtmp, ' < ', mix%rv(I_P_NEXT)
@@ -1127,7 +1104,7 @@ contains
              mix%action = IOR(mix%action, ACTION_RESTART)
           end if
 
-          if ( debug_mix .and. mix%cur_itt > 1 ) &
+          if ( debug_mix .and. current_itt(mix) > 1 ) &
                write(*,'(a,2(a,e8.3))') trim(debug_msg), &
                ' | ||f_k|| - ||f_k-1|| |/||f_k-1|| < rp  :  ', &
                dtmp, ' < ', mix%rv(I_P_RESTART)
@@ -1189,7 +1166,7 @@ contains
          ns = n_items(mix%stack(1))
          
          ! Add the residuals of the residuals if applicable
-         if ( ns >= 2 ) then
+         if ( current_itt(mix) >= 2 .and. ns > 1 ) then
             
             ! Create F[i+1] - F[i]
             call push_diff(mix%stack(2), mix%stack(1))
@@ -1209,14 +1186,15 @@ contains
       case ( 1 , 3 )
 
          ! Whether this is the linear cycle...
-         GR_linear = mod(mix%cur_itt, 2) == 1
+         GR_linear = mod(current_itt(mix), 2) == 1
 
          ! Add the residual to the stack
          call push_F(mix%stack(1), n, F, mix%rv(1))
 
-         ns = n_items(mix%stack(2))
+         ns = n_items(mix%stack(1))
 
-         if ( GR_linear .and. ns > 0 ) then
+         if ( GR_linear .and. current_itt(mix) > 1 .and. &
+              ns > 1 ) then
             
             res => getstackval(mix, 1)
             rres => getstackval(mix, 2)
@@ -1226,7 +1204,7 @@ contains
             end do
 !$OMP end parallel do
 
-         else if ( .not. GR_linear ) then
+         else if ( ns > 1 .and. .not. GR_linear ) then
 
             ! now we can calculate RRes[i]
             call push_diff(mix%stack(2),mix%stack(1))
@@ -1245,7 +1223,7 @@ contains
       ns = n_items(mix%stack(1))
 
       ! Add the residuals of the residuals if applicable
-      if ( ns >= 2 ) then
+      if ( current_itt(mix) >= 2 .and. ns > 1 ) then
 
          ! Create F[i+1] - F[i]
          call push_diff(mix%stack(2), mix%stack(1))
@@ -1301,6 +1279,11 @@ contains
             call push_F(next%stack(1), n, F)
             
             ns = n_items(next%stack(1))
+            if ( ns >= nhl ) then
+               call reset(next%stack(1), 1)
+               call reset(next%stack(2), 1)
+               ns = ns - 1
+            end if
 
             ! Add the residuals of the residuals if applicable
             if ( ns >= 2 ) then
@@ -1349,6 +1332,12 @@ contains
          call push_F(next%stack(1), n, F)
 
          ns = n_items(next%stack(1))
+
+         if ( ns >= nhl ) then
+            call reset(next%stack(1), 1)
+            call reset(next%stack(2), 1)
+            ns = ns - 1
+         end if
 
          ! Add the residuals of the residuals if applicable
          if ( ns >= 2 ) then
@@ -1487,7 +1476,7 @@ contains
          
       case ( 1 , 3 ) ! Guaranteed Pulay
          
-         lreturn = mod(mix%cur_itt, 2) == 1
+         lreturn = mod(current_itt(mix), 2) == 1
          
       end select
 
@@ -1869,7 +1858,7 @@ contains
          
       case ( 1 , 3 ) ! Guaranteed Pulay
          
-         lreturn = mod(mix%cur_itt, 2) == 1
+         lreturn = mod(current_itt(mix), 2) == 1
 
          if ( lreturn .and. debug_mix ) &
               write(*,'(2a,e10.4)') trim(debug_msg), &
@@ -2036,7 +2025,7 @@ contains
 
     ! Fix the action to finalize it..
     if ( mix%restart > 0 .and. &
-         mod(mix%cur_itt,mix%restart) == 0 ) then
+         mod(current_itt(mix),mix%restart) == 0 ) then
        
        mix%action = IOR(mix%action, ACTION_RESTART)
 
@@ -2084,10 +2073,12 @@ contains
           
        end select
 
-       if ( debug_mix ) &
-            write(*,'(a,a,i0)') trim(debug_msg), &
-            ' saved hist = ',n_items(mix%stack(1))
-
+       if ( allocated(mix%stack) ) then
+          if ( debug_mix ) &
+               write(*,'(a,a,i0)') trim(debug_msg), &
+               ' saved hist = ',n_items(mix%stack(1))
+       end if
+       
     end if
 
     
@@ -2136,9 +2127,10 @@ contains
 
       case ( 1 , 3 ) ! GR Pulay
          
-         GR_linear = mod(mix%cur_itt, 2) == 1
+         GR_linear = mod(current_itt(mix), 2) == 1
          
-         if ( .not. GR_linear ) then
+         if ( n_items(mix%stack(2)) > 0 .and. &
+              .not. GR_linear ) then
             
             res => getstackval(mix, 1)
             rres => getstackval(mix, 2)
@@ -2175,10 +2167,10 @@ contains
       integer :: i
       real(dp), pointer :: res(:), rres(:)
 
-      ns = n_items(mix%stack(1))
+      ns = current_itt(mix)
       nh = n_items(mix%stack(2))
 
-      if ( ns >= 2 ) then
+      if ( ns >= 2 .and. n_items(mix%stack(3)) > 0 ) then
          
          ! Update the residual to reflect the input residual
          res => getstackval(mix, 3)
@@ -2196,7 +2188,7 @@ contains
       end if
 
       ! Update weights (if necessary)
-      if ( nh == max_size(mix%stack(2)) ) then
+      if ( ns >= max_size(mix%stack(2)) ) then
          do i = 1 , nh - 1
             mix%rv(1+i) = mix%rv(1+i+1)
          end do
@@ -2339,10 +2331,11 @@ contains
     if ( reset_stack ) then
        select case ( mix%m )
        case ( MIX_PULAY , MIX_BROYDEN )
-          
-          call reset(mix%stack(1))
-          call reset(mix%stack(2))
-          call reset(mix%stack(3))
+
+          n = size(mix%stack)
+          do is = 1 , n
+             call reset(mix%stack(is))
+          end do
           
        end select
     end if
@@ -2350,11 +2343,15 @@ contains
     if ( associated(next) ) then
        init_itt = 0
        mix => mix%next
-       if ( mix%m == MIX_PULAY ) then
-          if ( any(mix%v == (/0,2/)) ) init_itt = 1
-       end if
-       if ( mix%m == MIX_BROYDEN ) init_itt = 1
+       select case ( mix%m )
+       case ( MIX_PULAY , MIX_BROYDEN )
+          init_itt = n_items(mix%stack(1))
+       end select
+       mix%start_itt = init_itt
        mix%cur_itt = init_itt
+       if ( init_itt > 0 ) then
+          mix%cur_itt = mix%cur_itt + 1
+       end if
        if ( IONode ) then
           write(*,'(3a)') trim(debug_msg),' switching mixer --> ', &
                trim(mix%name)
@@ -2585,6 +2582,19 @@ contains
     end if
 
   end function is_next
+
+
+  !> Get current iteration count
+  !!
+  !! This is abstracted because the initial iteration
+  !! and the current iteration may be uniquely defined.
+  function current_itt(mix) result(itt)
+    type(tMixer), intent(in) :: mix
+    integer :: itt
+
+    itt = mix%cur_itt - mix%start_itt
+
+  end function current_itt
 
   
   ! Stack handling routines
