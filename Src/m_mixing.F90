@@ -519,6 +519,7 @@ contains
 
     type(tMixer), pointer :: m
     integer :: im, is, ns
+    logical :: is_GR
 
     ! Clean up all arrays and reference counted
     ! objects
@@ -551,19 +552,64 @@ contains
 
        case ( MIX_PULAY )
 
-          allocate(m%stack(3))
+          is_GR = m%v == 1 .or. m%v == 3
+
+          if ( .not. is_GR ) then
+             allocate(m%stack(3))
+          else
+             allocate(m%stack(2))
+          end if
+
+          ! These arrays contains these informations
+          !   s1 = m%stack(1)
+          !   s2 = m%stack(2)
+          !   s3 = m%stack(3)
+          ! Here <> is input function, x[in], and
+          ! <>' is the corresponding output, x[out].
+          ! First iteration:
+          !   s1 = { 1' - 1 }
+          !   s3 = { 1' }
+          ! Second iteration
+          !   s2 = { 2' - 2 - (1' - 1) }
+          !   s1 = { 2 - 1 , 2' - 2 }
+          !   s3 = { 2' }
+          ! Third iteration
+          !   s2 = { 2' - 2 - (1' - 1) , 3' - 3 - (2' - 2) }
+          !   s1 = { 2 - 1 , 3 - 2, 3' - 3 }
+          !   s3 = { 3' }
+          ! and so on
 
           ! allocate x[i+1] - x[i]
           call new(m%stack(1), m%n_hist)
           ! allocate F[i+1] - F[i]
           call new(m%stack(2), m%n_hist-1)
           
-          ! The out of the latest iteration
-          call new(m%stack(3), 1)
+          if ( .not. is_GR ) then
+             call new(m%stack(3), 1)
+          end if
 
        case ( MIX_BROYDEN )
 
           allocate(m%stack(3))
+
+          ! These arrays contains these informations
+          ! s1 = m%stack(1)
+          ! s2 = m%stack(2)
+          ! s3 = m%stack(3)
+          ! Here <> is input function and
+          ! <>' is the corresponding output.
+          ! First iteration:
+          !   s1 = { 1' - 1 }
+          !   s3 = { 1' }
+          ! Second iteration
+          !   s2 = { 2' - 2 - (1' - 1) }
+          !   s1 = { 2 - 1 , 2' - 2 }
+          !   s3 = { 2' }
+          ! Third iteration
+          !   s2 = { 2' - 2 - (1' - 1) , 3' - 3 - (2' - 2) }
+          !   s1 = { 2 - 1 , 3 - 2, 3' - 3 }
+          !   s3 = { 3' }
+          ! and so on
 
           ! allocate x[i+1] - x[i]
           call new(m%stack(1), m%n_hist)
@@ -1158,21 +1204,6 @@ contains
             end do
 !$OMP end parallel do
             
-         else
-            
-            ! Store F[x_in] (used to create the input residual)
-            allocate(tmp(n))
-
-!$OMP parallel do default(shared), private(i)
-            do i = 1 , n
-               tmp(i) = xin(i) + F(i)
-            end do
-!$OMP end parallel do 
-
-            call push_F(mix%stack(3), n, tmp)
-
-            deallocate(tmp)
-
          end if
 
       case ( 1 , 3 )
@@ -1181,49 +1212,27 @@ contains
          GR_linear = mod(mix%cur_itt, 2) == 1
 
          ! Add the residual to the stack
-         call push_F(mix%stack(1), n, F)
-         
-         ns = n_items(mix%stack(1))
+         call push_F(mix%stack(1), n, F, mix%rv(1))
 
-         ! Add the residuals of the residuals if applicable
-         if ( ns >= 2 ) then
+         ns = n_items(mix%stack(2))
 
-            ! Create F[i+1] - F[i]
-            call push_diff(mix%stack(2), mix%stack(1))
-
-            if ( GR_linear ) then
-               ! Update the residual to reflect the input residual
-               res => getstackval(mix, 1, ns-1)
-               rres => getstackval(mix, 3)
-               
-!$OMP parallel do default(shared), private(i)
-               do i = 1 , n
-                  res(i) = res(i) - rres(i) + xin(i)
-               end do
-!$OMP end parallel do
-
-            end if
-
-         end if
-
-         if ( GR_linear ) then
-
-            ! Store F[x_in]
-            !   (used to create the input residual)
-            allocate(tmp(n))
+         if ( GR_linear .and. ns > 0 ) then
             
+            res => getstackval(mix, 1)
+            rres => getstackval(mix, 2)
 !$OMP parallel do default(shared), private(i)
             do i = 1 , n
-               tmp(i) = xin(i) + F(i)
+               rres(i) = rres(i) + res(i)
             end do
-!$OMP end parallel do 
-            
-            call push_F(mix%stack(3), n, tmp)
-            
-            deallocate(tmp)
-            
+!$OMP end parallel do
+
+         else if ( .not. GR_linear ) then
+
+            ! now we can calculate RRes[i]
+            call push_diff(mix%stack(2),mix%stack(1))
+
          end if
-         
+
       end select
       
     end subroutine init_pulay
@@ -2104,34 +2113,58 @@ contains
       logical :: GR_linear
       real(dp), pointer :: res(:), rres(:)
 
-      GR_linear = mod(mix%cur_itt, 2) == 1
-
       ns = n_items(mix%stack(1))
       
-      ! Update the residual to reflect the input residual
-      res => getstackval(mix, 3)
-      
+      select case ( mix%v )
+      case ( 0 , 2 ) ! stable Pulay
+
+         if ( n_items(mix%stack(3)) == 0 ) then
+            call push_stack_data(mix%stack(3), n)
+         end if
+
+         res => getstackval(mix, 3)
+
 !$OMP parallel do default(shared), private(i)
-      do i = 1 , n
-         ! Input:
-         !  res == x[i-1] + F[i-1]
-         res(i) = xin(i) + F(i)
-         ! Output:
-         !  res == x[i] + F[i]
-      end do
+         do i = 1 , n
+            ! Input:
+            !  res == x[i-1] + F[i-1]
+            res(i) = xin(i) + F(i)
+            ! Output:
+            !  res == x[i] + F[i]
+         end do
 !$OMP end parallel do
 
-      select case ( mix%v )
       case ( 1 , 3 ) ! GR Pulay
-
-         ! Pop the data if appropriate
+         
+         GR_linear = mod(mix%cur_itt, 2) == 1
+         
          if ( .not. GR_linear ) then
+            
+            res => getstackval(mix, 1)
+            rres => getstackval(mix, 2)
+            
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , n
+               ! Input:
+               !  rres == F[i] - F[i-1]
+               rres(i) = rres(i) - res(i)
+               ! Output:
+               !  rres == - F[i-1]
+            end do
+!$OMP end parallel do
 
             call pop(mix%stack(1))
-            call pop(mix%stack(2))
+            
+            ! Note that this is Res[i-1] = (F^i-1_out - F^i-1_in)
+            res => getstackval(mix,1)
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , n
+               res(i) = res(i) - xin(i) + xnext(i)
+            end do
+!$OMP end parallel do
 
          end if
-       
+         
       end select
       
     end subroutine fin_pulay
@@ -2576,7 +2609,27 @@ contains
     end if
 
   end function stack_check
+
+  subroutine push_stack_data(s_F,n)
+    type(Fstack_dData1D), intent(inout) :: s_F
+    integer, intent(in) :: n
+
+    type(dData1D) :: dD1
+    integer :: in
+
+    if ( .not. stack_check(s_F,n) ) then
+       call die('mixing: history has changed size...')
+    end if
+
+    call newdData1D(dD1, n, '(F)')
     
+    ! Push the data to the stack
+    call push(s_F,dD1)
+    
+    ! Delete double reference
+    call delete(dD1)
+       
+  end subroutine push_stack_data
 
   subroutine push_F(s_F,n,F,fact)
     type(Fstack_dData1D), intent(inout) :: s_F
@@ -2732,11 +2785,18 @@ contains
     real(dp) :: norm
 
     ! Currently we use an external routine
-    real(dp), external :: ddot
+    integer :: i
 
     ! Calculate dot product
-    norm = ddot(n, x1(1), 1, x2(1), 1)
-
+    
+    norm = 0._dp
+!$OMP parallel do default(shared), private(i) &
+!$OMP& reduction(+,norm)
+    do i = 1 , n
+       norm = norm + x1(i) * x2(i)
+    end do
+!$OMP end parallel do
+    
   end function norm
 
 

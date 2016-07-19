@@ -3286,6 +3286,9 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
       use. However, for complex systems it may be worse until it
       reaches a convergence basin.
 
+      To obtain the original guaranteed-reduction variant one should
+      set \fdf{SCF.Mixer.<>!weight.linear} to $1$.
+
     \end{fdfoptions}
 
   \end{fdfoptions}
@@ -3431,6 +3434,15 @@ control commands. This can greatly speed up convergence.
     \fdfindex{SCF.Mixer.<>!history}%
     Define number of previous history steps used in the minimization process, see
     \fdf{SCF.Mixer!History}.
+
+    \option[weight.linear|w.linear]%
+    \fdfindex{SCF.Mixer.<>!weight.linear}%
+    Define the linear mixing weight for the mixing scheme. This only
+    has meaning for Pulay or Broyden mixing. It defines the initial
+    linear mixing weight. 
+
+    To obtain the original Pulay Guarenteed-Reduction variant one
+    should set this to $1$.
 
     \option[restart]%
     \fdfindex{SCF.Mixer.<>!restart}%
