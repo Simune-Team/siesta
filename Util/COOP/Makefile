@@ -360,7 +360,7 @@ m_mat_invert.o: intrinsic_missing.o m_pivot_array.o precision.o
 m_matio.o: alloc.o parallel.o
 m_memory.o: memoryinfo.o parallel.o sys_local.o
 m_mesh_node.o: intrinsic_missing.o parallel.o precision.o
-m_mixing.o: alloc.o class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
+m_mixing.o: class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
 m_mixing_scf.o: class_Fstack_Data1D.o m_mixing.o parallel.o precision.o
 m_monitor.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_monitor.o: parallel.o precision.o

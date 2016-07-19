@@ -475,10 +475,6 @@ contains
     integer  :: i
     real(dp) :: r1, r2
 
-    ! Initialize
-    iElL = 1
-    iElR = 2
-
     call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmin = r1)
     call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx, fmin = r2)
 

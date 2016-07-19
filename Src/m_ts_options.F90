@@ -165,7 +165,7 @@ contains
 
     ! Read in information about the voltage placement.
     ! This is only used if TS.Poisson == ramp
-    chars = fdf_get('TS.Poisson.Position','central')
+    chars = fdf_get('TS.Poisson.Position','cell')
     VoltageInC = .true.
     if ( leqi(trim(chars),'cell') ) then
        VoltageInC = .false.

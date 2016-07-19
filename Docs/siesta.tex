@@ -205,10 +205,10 @@ calculations, together with the currently implemented input options.
 
 \item
 ``Unconstrained minimization approach for electronic computations
-that scales linearly with system size"
+that scales linearly with system size''
 P. Ordej\'on, D. A. Drabold, M. P. Grumbach and R. M. Martin,
 Phys. Rev. B \textbf{48}, 14646 (1993);
-``Linear system-size methods for electronic-structure calculations"
+``Linear system-size methods for electronic-structure calculations''
 Phys. Rev. B \textbf{51} 1456 (1995), and references therein.
 
 Description of the order-\textit{N} eigensolvers
@@ -216,21 +216,21 @@ implemented in this code.
 
 \item
 ``Self-consistent order-$N$ density-functional
-calculations for very large systems"
+calculations for very large systems''
 P. Ordej\'on, E. Artacho and J. M. Soler,
 Phys. Rev. B \textbf{53}, 10441, (1996).
 
 Description of a previous version of this methodology.
 
 \item
-``Density functional method for very large systems with LCAO basis sets"
+``Density functional method for very large systems with LCAO basis sets''
 D. S\'anchez-Portal, P. Ordej\'on, E. Artacho and J. M. Soler,
 Int. J. Quantum Chem., \textbf{65}, 453 (1997).
 
 Description of the present method and code.
 
 \item
-``Linear-scaling ab-initio calculations for large and complex systems"
+``Linear-scaling ab-initio calculations for large and complex systems''
 E. Artacho, D. S\'anchez-Portal, P. Ordej\'on, A. Garc\'{\i}a and
 J. M. Soler, Phys. Stat. Sol. (b) \textbf{215}, 809 (1999).
 
@@ -238,14 +238,14 @@ Description of the numerical atomic orbitals (NAOs) most commonly
 used in the code, and brief review of applications as of March 1999.
 
 \item
-``Numerical atomic orbitals for linear-scaling calculations"
+``Numerical atomic orbitals for linear-scaling calculations''
 J. Junquera, O. Paz, D. S\'anchez-Portal, and E. Artacho, Phys. Rev. B
  \textbf{64}, 235111, (2001).
 
 Improved, soft-confined NAOs.
 
 \item
-``The \siesta\ method for ab initio order-$N$ materials simulation"
+``The \siesta\ method for ab initio order-$N$ materials simulation''
 J. M. Soler, E. Artacho, J.D. Gale, A. Garc\'{\i}a, J. Junquera, P. Ordej\'on,
 and D. S\'anchez-Portal, J. Phys.: Condens. Matter \textbf{14}, 2745-2779 (2002)
 
@@ -253,7 +253,7 @@ Extensive description of the \siesta\ method.
 
 \item
 ``Computing the properties of materials from first principles
-with  \siesta", D. S\'anchez-Portal, P. Ordej\'on,
+with  \siesta'', D. S\'anchez-Portal, P. Ordej\'on,
 and E. Canadell, Structure and Bonding \textbf{113},
 103-170 (2004).
 
@@ -391,16 +391,20 @@ each job, so that everything is clean and neat, and out of the \siesta\ director
 the whole \siesta\ tree. Go to your favorite working directory
 and:
 
-\texttt{\$ mkdir h2o}
-
-\texttt{\$ cd h2o}
-
-\texttt{\$ cp path-to-package/Examples/H2O/h2o.fdf .}
+\begin{fdfexample}
+  $ mkdir h2o
+  $ cd h2o
+  $ cp path-to-package/Examples/H2O/h2o.fdf
+\end{fdfexample}
+%$
 
 You need to make the siesta executable visible in your path. 
 You can do it in many ways, but a simple one is
 
-\texttt{ln -s  path-to-package/Obj/siesta .}
+\begin{fdfexample}
+  $ ln -s  path-to-package/Obj/siesta
+\end{fdfexample}
+%$
 
 \noindent
 We need to generate the required pseudopotentials.
@@ -8375,14 +8379,14 @@ proposed by Cococcioni and Gironcoli in Phys. Rev. B \textbf{71},
 
 \section{TRANSIESTA}
 
-The present \siesta\ release includes the possibility of
-performing calculations of electronic transport properties using the
-\tsiesta\ method. This Section describes how to compile the
-code to be able to use these capabilities, and a reference guide to
-the relevant \fdflib\ options. We describe here only the additional options
-available for \tsiesta\ calculations, while the rest of the Siesta
-functionalities and variables are described in the previous sections
-of this User's Guide.
+\siesta\ includes the possibility of performing calculations of
+electronic transport properties using the \tsiesta\ method. This
+Section describes how to compile the code to be able to use these
+capabilities, and a reference guide to the relevant \fdflib\
+options. We describe here only the additional options available for
+\tsiesta\ calculations, while the rest of the Siesta functionalities
+and variables are described in the previous sections of this User's
+Guide.
 
 \subsection{Brief description}
 
@@ -8586,7 +8590,9 @@ Other automated TranSiesta-TBTrans examples can be found in
 
   \item%
   Importantly the $k$-point sampling need typically be much higher in
-  a \tbtrans\ calculation to achieve a converged transmission function.
+  a \tbtrans\ calculation to achieve a converged transmission
+  function.
+
 \end{itemize}
 
 \subsection{Electrodes}
@@ -8611,8 +8617,10 @@ for several setups. At runtime, the transiesta coordinates are checked
 against the electrode coordinates and the program stops if there is a
 mismatch to a certain precision ($10^{-4}\,\mathrm{Bohr}$).
 
+
 \paragraph{Principal layer interactions} %
 \index{transiesta!electrode!principal layer}%
+
 It is \emph{extremely} important that the electrodes only interact
 with one neighboring supercell due to the self-energy
 calculation. \tsiesta\ will print out a block as this
@@ -8675,6 +8683,7 @@ create the basic input for $N$ electrodes. One may call it like:
 where the first call creates an input fdf for 2 electrode setups, the
 second for a 3 electrode setup, and so on. See the help (\program{-h})
 for the program for additional options.
+
 
 \subsubsection{General options}
 
@@ -8856,14 +8865,13 @@ for the program for additional options.
   Control whether the forces are calculated. If \emph{not} \tsiesta\
   will use slightly less memory and the performance slightly
   increased.
-  %
 
 \end{fdflogicalT}
 
 \begin{fdfentry}{TS!ChargeCorrection}[string]<none|buffer|fermi>
 
-  Any excess/deficiency of charge can be re-adjusted after each \tsiesta\ cycle to reduce
-  charge fluctuations in the cell. 
+  Any excess/deficiency of charge can be re-adjusted after each
+  \tsiesta\ cycle to reduce charge fluctuations in the cell.
   
   \begin{fdfoptions}
 
@@ -8876,16 +8884,19 @@ for the program for additional options.
 
     \option[fermi] %
     Correct the filling by calculating a new Fermi-level (reference energy). \\
-    We approximate the contribution to be constant around the Fermi level and find
+    We approximate the contribution to be constant around the Fermi
+    level and find
     \begin{equation}
       \label{eq:fermi-shift}
       \mathrm{d}E_F = \frac{Q'-Q}{Q|_{E_F}},
     \end{equation}
-    where $Q'$ is the charge from a converged \tsiesta\ calculation and $Q|_{E_F}$ is the
-    equilibrium charge at the current Fermi level, $Q$ is the supposed charge to reside in
-    the calculation. Fermi correction utilises \ref{eq:fermi-shift} for the first correction
-    and all subsequent corrections are based on a cubic spline interpolation to much faster
-    converge to the ``correct'' Fermi level.
+    where $Q'$ is the charge from a converged \tsiesta\ calculation
+    and $Q|_{E_F}$ is the equilibrium charge at the current Fermi
+    level, $Q$ is the supposed charge to reside in the
+    calculation. Fermi correction utilizes Eq. \eqref{eq:fermi-shift} for
+    the first correction and all subsequent corrections are based on a
+    cubic spline interpolation to much faster converge to the
+    ``correct'' Fermi level.
     
     This method will create a file called \file{TS\_FERMI} and only works with the BTD
     solver.
@@ -9057,8 +9068,9 @@ These options adhere to the specific solution methods available for
   all described in the MUMPS manual. 
 
   The following list of orderings are available (without detailing
-  their differences):
-  \fdf*{auto}, \fdf*{AMD}, \fdf*{AMF}, \fdf*{SCOTCH}, \fdf*{PORD}, \fdf*{METIS}, \fdf*{QAMD}.
+  their differences): %
+  \fdf*{auto}, \fdf*{AMD}, \fdf*{AMF}, \fdf*{SCOTCH}, \fdf*{PORD},
+  \fdf*{METIS}, \fdf*{QAMD}.
   
 \end{fdfentry}
 
@@ -9078,6 +9090,44 @@ These options adhere to the specific solution methods available for
   \note this option may heavily influence performance.
 
 \end{fdfentry}
+
+\subsubsection{Poisson solution for fixed boundary conditions}
+
+\tsiesta\ requires fixed boundary conditions and forcing this is an
+intricate and important detail. 
+
+\begin{fdfentry}{TS!Poisson.Position}[string]<cell|central>
+
+  \note this only have meaning for a two electrode calculation with
+  both electrodes having the same semi-infinite direction.
+
+  Define how the correction of the Poisson equation is
+  superimposed. The default is to only apply the linear correction
+  within the boundaries of the electrodes. 
+
+\end{fdfentry}
+
+\begin{fdfentry}{TS!Hartree.Fix}[string]<plane|elec-plane|elec-box>
+
+  As the fixed boundary conditions requires a fixed reference
+  potential. For two electrode calculations this defaults to taking
+  the plane at one of the electrodes basal-planes (\fdf*{plane}). 
+
+  For anything but two electrodes this defaults to \fdf*{elec-plane}
+  because the plane should be at a fixed position in the cell. 
+
+  \note generally this shouldn't need to be changed.
+
+\end{fdfentry}
+
+\begin{fdfentry}{TS!Hartree.Fix!Frac}[real]<$1.$>
+
+  Fraction of the correction that is applied.
+
+  \note this is an experimental feature and shouldn't be used.
+
+\end{fdfentry}
+
 
 \subsubsection{Electrode description options}
 
@@ -9281,6 +9331,34 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   See \fdf{TS!Elec.<>!DM-Update}.
   
 \end{fdfentry}
+
+\begin{fdfentry}{TS!Elecs!DM.Init}[string]<diagon|bulk>
+
+  The density matrix elements in the electrodes may be forcefully set
+  to the bulk values by reading in the DM of the corresponding
+  electrode. This may be set to \fdf*{bulk} to forcefully set the bulk
+  values.
+
+  \note this should only be set to \fdf*{bulk} for equilibrium
+  calculations. 
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS!Elecs!Coord.EPS}[length]<$10^{-4}\,\mathrm{Bohr}$>
+
+  When using Bloch expansion of the self-energies one may experience
+  difficulties in obtaining perfectly aligned electrode coordinates.
+
+  This parameter controls how strict the criteria for equivalent
+  atomic coordinates is. If \tsiesta\ crashes due to mismatch between
+  the electrode atomic coordinates and the scattering region
+  calculation, one may increase this criteria. This should only be
+  done if one is sure that the atomic coordinates are almost similar
+  and that the difference in electronic structures of the two may be
+  negligible.
+  
+\end{fdfentry}
+
 
 \subsubsection{Chemical potentials}
 \label{sec:ts:chem-pot}
@@ -9725,202 +9803,11 @@ device region.
 
 \end{description} 
 
-\subsection{Utilities for analysis: \texorpdfstring{\tbtrans}{TBtrans}}
+\subsection{Utilities for analysis:
+    \texorpdfstring{\tbtrans}{TBtrans}} 
 \index{tbtrans@\textbf{tbtrans}}
 
-The \texttt{tbtrans} code can be found in the directory \program{Util/TBTrans}. 
-
-A much optimized version of \texttt{tbtrans} is found in the directory
-\texttt{Util/TBTtrans\_rep} which is recommended to be used. Only in this version can the
-repetition be used. It has been completely rewritten to be as fast as possible as well as
-keeping the maintenance to a minimum. This version has been completely rewritten by Nick
-Papior Andersen (referred to by NPA in the following).
-
-It is used in order to obtain, in a post-processing
-way, the transport properties after a \tsiesta\ run. It was
-developed by M. Brandbyge. It has been made to conform
-with the modifications introduced in \tsiesta\ in late October 2012. 
-
-In order to run it, it requires the electrode's \sysfile{TSHS} files
-(may be just one file if the left and right electrodes are equal), 
-and the
-scattering region's \sysfile{TSHS} file.  These are generated as explained
-above.  The location of these files are specified by the (already
-discussed) \textbf{TS.HSFileLeft}, \textbf{TS.HSFileRight} input options,
-and by:
-\begin{description}
-    \itemsep 10pt
-    \parsep 0pt
-
-\item [\textbf{TS.TBT.HSFile}](\textit{string}): Scattering region \sysfile{TSHS} file.
-\index{TS.HSFileLeft@\textbf{TS.HSFileLeft}}
-
-\textit{Default value:} \texttt{\textit{SystemLabel}.TSHS}
-\end{description}
-respectively for the left and right electrodes and the scattering
-region \sysfile{TSHS} file.
-
-The energy scale in \texttt{tbtrans} is shifted so that the Fermi level
-of the system, if no voltage were applied, is zero. When computing the
-transmission function of a zero bias calculation, the transmission at
-the Fermi level is then given by $T(E=0)$. When there is a finite bias,
-the Fermi energy of the left electrode is placed at $V/2$, and that of
-the right electrode at $-V/2$.
-
-The voltage is specified by \textbf{TS.Voltage}. The energy window and
-number of points for the computation of the transmission function is
-specified by
-\begin{description}
-    \itemsep 10pt
-    \parsep 0pt
-
-\item [\textbf{TBT\_kgrid\_Monkhorst\_Pack}] \index{TBT\_kgrid\_Monkhorst\_Pack@\textbf{TBT\_kgrid\_Monkhorst\_Pack}}
-\index{kgrid\_Monkhorst\_Pack@\textbf{kgrid\_Monkhorst\_Pack}}
-(\textit{block}): Block equivalent
-to \textbf{kgrid\_Monkhorst\_Pack}, however, this is used to have a separate
-k-sampling in the tbtrans utility. If it does not exist it will use 
-\textbf{kgrid\_Monkhorst\_Pack}.
-
-\textbf{Notice}: \textbf{TBT\_kgrid\_Monkhorst\_Pack} can only be used with the version 
-created by NPA.
-
-\textit{Default value:} \textbf{kgrid\_Monkhorst\_Pack}
-
-\item [\textbf{TS.TBT.Emin}](\textit{physical}): Lowest energy value of the
-  computed transmission function.  \index{TS.TBT.Emin@\textbf{TS.TBT.Emin}}
-
-\textit{Default value:} \texttt{-2.0 eV}
-
-\item [\textbf{TS.TBT.Emax}](\textit{physical}): Highest energy value of the
-  computed transmission function.  \index{TS.TBT.Emax@\textbf{TS.TBT.Emax}}
-
-\textit{Default value:} \texttt{2.0 eV}
-
-\item [\textbf{TS.TBT.NPoints}](\textit{integer}): Number of energy points
-  of the transmission function between \textbf{TS.TBT.Emin} and \textbf{TS.TBT.Emax}.  \index{TS.TBT.NPoints@\textbf{TS.TBT.NPoints}}
-
-\textit{Default value:} \texttt{100}
-
-\item [\textbf{TS.TBT.CalcElectrodeValenceBandBottom}](\textit{logical}): 
-If true will calculate the valence band bottom of the electrode.
-
-\textbf{Notice}: Can only be used with the NPA version.
-
-\textit{Default value:} \texttt{true}
-
-\item [\textbf{TS.TBT.COOP}](\textit{logical}): Calculate the COOP on the PDOS region. 
-Creates the files:
-\begin{itemize}
-  \item \sysfile{COOP}
-  \item \sysfile{COOPL}
-  \item \sysfile{COOPR}
-\end{itemize}
-
-\textbf{Notice}: Can only be used with the NPA version.
-
-\textit{Default value:} \texttt{false}
-
-\item [\textbf{TS.TBT.AtomPDOS}](\textit{logical}): Calculate the \emph{onsite} projected
-density of states in the PDOS region. Creates the files:
-\begin{itemize}
-  \item \sysfile{TOTDOS}
-  \item \sysfile{ORBDOS}
-\end{itemize}
-
-Notice, that this will not sum up to PDOS in \file{.TRANS}, as this is onsite density of
-states.
-
-\textbf{Notice}: Can only be used with the NPA version.
-
-\textit{Default value:} \texttt{false}
-\end{description}
-Note that it is important to specify the voltage, since this
-information is not stored in the \file{.TSHS} files. The current will be
-computed using the resulting transmission function, so be sure to make
-it suited for the integration in the bias window (the energy window
-defined by \textbf{TS.TBT.Emin} and \textbf{TS.TBT.Emax} being bigger than
-or equal to the applied bias).
-
-The k-point sampling is defined by the \textbf{TBT\_kgrid\_Monkhorst\_Pack}
-block, and if that is non-existing it will use the
-\textbf{kgrid\_Monkhorst\_Pack} block. The averaged (over $k$-points)
-transmission function is printed in the file \sysfile{AVTRANS}.
-
-An additional options is:
-\begin{description}
-  \item [\textbf{TS.TBT.NEigen}](\textit{integer}): Number of eigenvalues of the transmission
-  matrix to be computed. If larger than 0 \file{.TEIG} and \file{.AVTEIG} will be created
-  which holds the $k$-point eigenchannels and the averaged eigenchannels,
-  respectively. \index{TS.TBT.NEigen@\textbf{TS.TBT.NEigen}}
-
-\textit{Default value:} \texttt{0}
-\end{description}
-
-
-To summarize, here we give a list of the parameters read by \tbtrans\
- from the input file (the fdf flags, NPA indicates the version
-created by Nick Papior Andersen):
-\begin{itemize}
- \item \textbf{ElectronicTemperature}
- \item \textbf{TS.Voltage}
- \item \textbf{TS.TBT.ReUseGF} (NPA)
- \item \textbf{TS.UseBulkInElectrodes} (NPA)
- \item \textbf{TBT\_kgrid\_Monkhorst\_Pack} (block) has precedence of 
- \textbf{kgrid\_Monkhorst\_Pack} (NPA)
- \item \textbf{kgrid\_Monkhorst\_Pack} (block)
- \item \textbf{TS.HSFileLeft}
- \item \textbf{TS.HSFileRight}
- \item \textbf{TS.TBT.HSFile}
- \item \textbf{TS.TBT.Emin} 
- \item \textbf{TS.TBT.Emax} 
- \item \textbf{TS.TBT.NPoints}
- \item \textbf{TS.TBT.NEigen}
- \item \textbf{TS.TBT.CalcIEig}
- \item \textbf{TS.TBT.PDOSFrom}
- \item \textbf{TS.TBT.PDOSTo}
- \item \textbf{TS.TBT.COOP} (NPA)
- \item \textbf{TS.TBT.AtomPDOS} (NPA)
- \item \textbf{TS.TBT.CalcElectrodeValenceBandBottom} (NPA)
- \item \textbf{TS.BufferAtomsLeft}, \textbf{TS.BufferAtomsRight}
- \item \textbf{TS.NumUsedAtomsLeft}, \textbf{TS.NumUsedAtomsRight}
- \item \textbf{TS.ReplicateA1Left}, \textbf{TS.ReplicateA2Left} (NPA)
- \item \textbf{TS.ReplicateA1Right}, \textbf{TS.ReplicateA2Right} (NPA)
- \item \textbf{SpinPolarized}
-\end{itemize}
-
-\subsubsection{Output}
-
-\texttt{tbtrans} generates several output files.  The output files are
-named \texttt{<SystemLabel>.\emph{ext}}, defined using the SystemLabel
-FDF command, and .\emph{ext} depends on the type of the output.
-
-\begin{description}
-    \itemsep 10pt
-    \parsep 0pt
-    
-    \item[\sysfile{TRANS}]: The transmission for each $k$ point,
-    as well as the total density of states in the scattering region and the projected
-    density of states for all orbitals in the region specified by \fdf{TS.TBT.PDOSFrom}
-    and \fdf{TS.TBT.PDOSTo}.
-
-    \item[\sysfile{AVTRANS}]: The $k$ point averaged
-    transmission and density of states according to \file{.TRANS}.
-
-    \item[\sysfile{LDOS}]: The $k$ point averaged and energy weighted density of states of
-    the left electrode.
-
-    \item[\sysfile{RDOS}]: The $k$ point averaged and energy weighted density of states of
-    the right electrode.
-
-\end{description} 
-
-\subsubsection{Compiling \texorpdfstring{\tbtrans}{TBtrans}}
-
-In the \texttt{Util/TBTrans} or \texttt{Util/TBTrans\_rep} (for the NPA version)
- directory, 
-simply type \texttt{make} if your main \siesta\ compilation 
-directory is the top \texttt{Obj} directory. If you have used another
- object directory \texttt{MyObjDir}, type \texttt{make OBJDIR=MyObjDir}.
+Please see the separate \tbtrans\ manual.
 
 \section{ANALYSIS TOOLS}
 
@@ -9932,8 +9819,8 @@ this manual. Their documentation is the appropriate sub-directory of
 \section{SCRIPTING}
 
 In the \texttt{Util/Scripting} directory we provide an experimental
-python scripting framework built on top of the 'Atomic Simulation
-Environment' (see \texttt{https://wiki.fysik.dtu.dk/ase2}) by the Campos
+python scripting framework built on top of the ``Atomic Simulation
+Environment'' (see \texttt{https://wiki.fysik.dtu.dk/ase2}) by the Campos
 group at DTU, Denmark.
 
 (NOTE: ``ASE version 2'', not the new version 3, is needed)
@@ -10013,10 +9900,19 @@ diagonalisation.
 
 \end{itemize}
 
+
 \section{REPORTING BUGS}
-\index{bug reports} Your assistance is essential to help improve the
-program. If you find any problem, or would like to offer a suggestion
-for improvement, please follow the instructions in the file \texttt{Docs/REPORTING\_BUGS}
+\index{bug reports} 
+
+Your assistance is essential to help improve the program. If you find
+any problem, or would like to offer a suggestion for improvement,
+please follow the instructions in the file
+\texttt{Docs/REPORTING\_BUGS}. 
+
+Since \siesta\ has moved to Launchpad you may also follow the
+instructions presented at:
+\url{https://answers.launchpad.net/siesta/+faq/2779}. 
+
 
 
 \section{ACKNOWLEDGMENTS}
@@ -10163,7 +10059,8 @@ torque   & mRy/rad    & 0.237466E-3 \\
 \newpage
 \section{APPENDIX: NetCDF}
 \index{NetCDF format}
->From the NetCDF User's Guide:
+
+From the NetCDF User's Guide:
 
 \begin{quotation}
    The purpose of the Network Common Data Form (netCDF) interface is to
@@ -10243,7 +10140,7 @@ own, so that directory has dissappeared.
 While it might seem a hassle to install the library, the added
 functionality is significant: speedup in diagonalization with k-points
 by storing the eigenvectors, optional restarts with charge density
-information instead of a density-matrix,  new analysis tools, etc.
+information instead of a density-matrix, new analysis tools, etc.
 
 
 \newpage
