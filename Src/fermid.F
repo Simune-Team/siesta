@@ -1,19 +1,16 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_fermid
 
       use precision,  only : dp
       use parallel,   only : IOnode
       use fdf,        only : fdf_boolean, fdf_integer, fdf_string, leqi
-      use m_recipes,  only:  derfc
+      use m_errorf,   only:  derfc
       use sys,        only:  die
 
       implicit none
@@ -83,6 +80,10 @@ C Local variables
       real(dp), save :: tol = 1.0d-10
       real(dp)       :: sumq, emin, emax, t, drange, wkebuf, w, eik
 
+#ifdef DEBUG
+      call write_debug( '    PRE fermid' )
+#endif
+
 C Reading whether to do an excited state
       if ( .not. blread) then
         excitd = fdf_boolean('SingleExcitation', .false.)
@@ -121,7 +122,10 @@ C Determine Fermi level
      .            'Fermid: Bands full, no excitation possible'
           endif
           call die()
-        else
+          else
+#ifdef DEBUG
+          call write_debug( '    POS fermid' )
+#endif
           return
         endif
       endif
@@ -186,6 +190,9 @@ C Obtain the electronic entropy
             enddo
           enddo
 
+#ifdef DEBUG
+          call write_debug( '    POS fermid' )
+#endif
           return
 
         endif

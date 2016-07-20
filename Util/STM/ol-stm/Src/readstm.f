@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 
       SUBROUTINE READSTM(VOLUME, 
      .      IUNITCD, NPX, NPY, NPZ, ZREF, ZREF2, ZMIN, ZMAX, EMAX, EMIN,
@@ -50,13 +57,6 @@ C Internal variables ---------------------------------------------------
 
       INTEGER
      .  IUNIT, NPX_DEFECT, NPY_DEFECT, NPZ_DEFECT
-
-      LOGICAL 
-     .  LEQI
-
-      EXTERNAL 
-     .  LEQI
-
 
 C READ UNITS OF CHARGE DENSITY TO USE
 

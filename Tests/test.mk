@@ -10,13 +10,14 @@ SIESTA=../../../siesta
 #SIESTA= mpirun -np 4 ../../../siesta
 #
 #----------------------------------------------------------------------------
-XML-TESTER=../../Util/test-xml/test-xml
-XML-REFERENCE=../../Tests/Reference-xml
-#
+REFERENCE_DIR?=../../../Tests/Reference
+REFERENCE_CHECKER?=../cmp_digest.sh
+
 label=work
-#
+
+.PHONY: completed
 completed: completed_$(label)
-#
+
 completed_$(label):
 	@echo ">>>> Running $(name) test..."
 	@if [ -d $(label) ] ; then rm -rf $(label) ; fi; mkdir $(label)
@@ -33,14 +34,13 @@ completed_$(label):
          else \
            echo " **** Test $(name) did not complete successfully";\
          fi
-#
-xmlcheck: completed
-	@echo "    ==> Running xmlcheck for system $(name)"
-	@ln -sf ../tolerances.dat ./tolerances.dat
-	$(XML-TESTER) $(XML-REFERENCE)/$(name).xml $(label)/$(name).xml | tee $(label).diff-xml
-        # The following line erases the file if it is empty
-	@if [ ! -s $(label).diff-xml ] ; then rm -f $(label).diff-xml ; fi
-#
+
+check: completed check-only
+
+check-only:
+	@echo "    ==> Running check for system $(name)"
+	@REFERENCE_DIR=$(REFERENCE_DIR) sh $(REFERENCE_CHECKER) $(name).out
+
 clean:
 	@echo ">>>> Cleaning $(name) test..."
-	rm -rf $(label) completed* $(name).out $(name).xml *.dat *diff-xml
+	rm -rf $(label) completed_$(label) $(name).out $(name).xml

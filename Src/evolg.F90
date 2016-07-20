@@ -57,7 +57,6 @@
 !
       use precision
       use sys
-      use m_diagon, only : ictxt
       use parallel    
       use parallelsubs,          only: LocalToGlobalOrb
       use alloc
@@ -70,7 +69,6 @@
 #ifdef MPI
       use mpi_siesta
 #endif
-      !use elec_dyn_options     
       !
       implicit none
 #ifdef MPI
@@ -107,11 +105,8 @@
       call m_allocate( Hauxms,nuotot,nuotot,m_storage)
       call m_allocate( Sauxms,nuotot,nuotot,m_storage)
       !
-#ifdef MPI
-      call descinit(desch,nuotot,nuotot,BlockSize,BlockSize,0,0,ictxt,nuotot,ierror)
-#endif
-      !
-      nstp=1 ! No of substepts between a single electronic step.
+      nstp=1 ! I guess this determines the Hamiltonia extrapolation.
+             ! Needs to be checked and should be made user defined.
       !
       nd = listhptr(nuo) + numh(nuo)
       Dnew(1:nd,1:nspin) = 0.0_dp
@@ -158,7 +153,6 @@
           DO j=1,numh(io)
             ind=listhptr(io) + j
             jo = listh(ind)
-            !Dnew(ind,ispin) = Dnew(ind,ispin) + Sx(jo,io)
             Dnew(ind,ispin)  = Dnew(ind, ispin) + bix2%zval(jo,io)
           END DO
         END DO
@@ -309,7 +303,6 @@
   integer                 :: no,  ispin, ncounter, nol, nstp, nspin,nuo
   complex(kind=dp)        :: pi, pj
   double precision        :: deltat, delt, varaux
-  !logical                 :: ElecDynPC
   !
   type(matrix),intent(in)         :: Hauxms, Sauxms 
   type(matrix),allocatable,save   :: Hsve(:)
@@ -396,11 +389,8 @@
       m_operation='lap'
 #endif
       no2=no*no
-!      if (frstime) then
         call m_allocate(aux1,no,no,m_storage)
         call m_allocate(S_1,no,no,m_storage)
-!        frstime=.false.
-!      endif
       ! Invert the overlap matrix.
       call m_add (S,'n',S_1,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
       call getinverse(S_1,m_operation)

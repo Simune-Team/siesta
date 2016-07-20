@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module writewave
 
@@ -35,7 +32,7 @@
       real(dp),   save :: wfs_energy_max =  huge(1.0_dp)
       logical,    save :: wfs_energy_window  = .true.
 
-      public :: setup_wfs_list, setup_wf_kpoints, wwave, writew
+      public :: setup_wfs_list, setup_wf_kpoints, wwave, writew 
 
       CONTAINS
 
@@ -166,34 +163,33 @@ C
       use fdf
       use sys,          only : die
       use alloc,        only : re_alloc
+      use m_get_kpoints_scale, only: get_kpoints_scale
+      
       implicit          none
 
       integer           :: norb, nk
       real(dp), pointer :: kpoint(:,:)
       character         :: paste*30
-      external          :: paste, redcel, memory
+      external          :: paste, memory
 C *********************************************************************
 
       character
      .  name1*10, name2*10, name3*10,
-     .  scale*30, msg*120
+     .  msg*120
 
       logical       :: outlng
       logical       :: WaveFuncPresent
 
       integer
-     .  i, ix, iw, iw1, iw2, iw3,
-     .  mscell(3,3), ni, nn, nr, nv
+     .  i, ix, iw, iw1, iw2, iw3, ierr,
+     .  ni, nn, nr, nv
 
       real(dp)
-     .  alat, caux(3,3), pi,
-     .  rcell(3,3), ucell(3,3)
+     .  caux(3,3), 
+     .  rcell(3,3)
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
-
-C Start time counter
-      call timer( 'writewave', 1 )
 
       wfs_energy_window = .true.
 C Find if there are k-points data
@@ -204,26 +200,12 @@ C Find if there are k-points data
       WaveFuncPresent = fdf_block('WaveFuncKPoints',bfdf)
       if ( WaveFuncPresent ) then
 
-C Find lattice constant
-        alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
-        if (alat .eq. 0.d0) then
-          call die('writewave: ERROR: Lattice constant required')
-        endif
+         call get_kpoints_scale('WaveFuncKPointsScale',rcell,ierr)
 
-C Find scale used in k point data
-        scale = fdf_string( 'WaveFuncKPointsScale', 'pi/a' )
-        if (scale .eq. 'pi/a') then
-          pi = 4.d0 * atan(1.d0)
-        elseif (scale .eq. 'ReciprocalLatticeVectors') then
-          call redcel( alat, caux, ucell, mscell )
-          call reclat( ucell, rcell, 1 )
-        elseif (Node.eq.0) then
-          write(6,'(a,/,2a,/,a)')
-     .    'writewave: WARNING: Invalid value for WaveFuncKPointsScale',
-     .    'writewave: Allowed values are pi/a and',
-     .              ' ReciprocalLatticeVectors',
-     .    'writewave: No band calculation performed'
-        endif
+         if (ierr /= 0) then
+            nk = 0
+            RETURN
+         endif
 
 C Find max number of k points and max number of bands per k-point
 C Loop on data lines
@@ -335,17 +317,12 @@ C Add this point to total number of k points
           nk = nk + 1
 
 C Find coordinates of k point
-          if (scale .eq. 'pi/a') then
-            kpoint(1,nk) = fdf_bvalues(pline,1) * pi / alat
-            kpoint(2,nk) = fdf_bvalues(pline,2) * pi / alat
-            kpoint(3,nk) = fdf_bvalues(pline,3) * pi / alat
-          elseif (scale .eq. 'ReciprocalLatticeVectors') then
+
             do ix = 1,3
               kpoint(ix,nk) = rcell(ix,1) * fdf_bvalues(pline,1) +
      .                        rcell(ix,2) * fdf_bvalues(pline,2) +
      .                        rcell(ix,3) * fdf_bvalues(pline,3)
             enddo
-          endif
 
 C Find which eigenvectors should be printed
 C Store indexes of wave functions to printout
@@ -400,11 +377,10 @@ C #X.XXX #Y.YYY #Z.ZZZ
 
       endif
 
-      call timer( 'writewave', 2 )
-
       end subroutine initwave
 
-      subroutine wwave( no, nspin, maxspn, maxo, maxuo, maxnh, maxk,
+      subroutine wwave( no, nspin, maxspn, maxo, maxuo, maxnh, 
+     .                  maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
      .                  nk, kpoint, nuotot, gamma, occtol)
 C *********************************************************************
@@ -413,8 +389,8 @@ C Written by P. Ordejon, June 2003
 C from routine 'bands' written by J.M.Soler
 C **************************** INPUT **********************************
 C integer no                  : Number of basis orbitals
-C integer nspin               : Number of spin components
-C integer maxspn              : Second dimension of ek
+C integer nspin  = h_spin_dim : Number of spin components of H, D
+C integer maxspn = spinor_dim : Second dimension of ek
 C integer maxo                : First dimension of ek
 C integer maxuo               : Second dimension of H and S
 C integer maxnh               : Maximum number of orbitals interacting  
@@ -458,6 +434,8 @@ C
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use atomlist,     only : iaorb, iphorb
       use siesta_geom,  only : isa
+      use m_spin,       only : NoMagn, SPpol, NonCol, SpOrb
+
 
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
@@ -465,11 +443,12 @@ C
 
       implicit          none
 
-      integer           maxk, maxnh, maxspn, maxo, maxuo, nk, no, nspin,
+      integer           maxk, maxnh, maxo, maxuo, nk, no, 
+     .                  h_spin_dim, spinor_dim, nspin, maxspn,
      .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
      .                  listhptr(*)
       logical           gamma
-      real(dp)          ef, H(maxnh,nspin), kpoint(3,maxk), 
+      real(dp)          ef, H(:,:), kpoint(3,maxk), 
      .                  S(maxnh), xij(3,maxnh), occtol
 
       external          io_assign, io_close, memory
@@ -479,7 +458,7 @@ C *********************************************************************
      .  fixspin
 
       integer
-     .  io, iu, iuo, naux, nuo, j
+     .  io, iu, iuo, naux, nuo, j, nhs
 
       real(dp)
      .  Dnew, qs(2), e1, e2, efs(2), Enew, eV, qk, qtot, 
@@ -497,6 +476,9 @@ C Dynamic arrays
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
       logical  SaveParallelOverK
+
+      h_spin_dim=size(H,dim=2)
+
 
 C Get local number of orbitals
 #ifdef MPI
@@ -519,7 +501,7 @@ C Check parameter maxk
       endif
 
 C Check spin
-      if (nspin .gt. 2) then
+      if (h_spin_dim .gt. 2) then
         if (Node.eq.0) then
           write(6,'(/,a,/,a)')
      .       'writewave: WARNING: wavefunctions printed is only '
@@ -530,11 +512,23 @@ C Check spin
       endif
 
 C Allocate local arrays - only aux is relevant here
-      call re_alloc(Haux,1,2*nuotot*nuo,name='Haux',routine='writewave')
-      call re_alloc(Saux,1,2*nuotot*nuo,name='Saux',routine='writewave')
-      call re_alloc(psi,1,2*nuotot*nuo,name='psi',routine='writewave')
-      allocate(ek(nuotot,nspin,nk))
-      call memory('A','D',nspin*nk*nuotot,'writewave')
+C     C RC  Changed for on-site SO
+      if (h_spin_dim >= 4) then
+         nhs = 2 * (2*nuotot) * (2*nuo)
+      else
+         nhs = 2 * nuotot * nuo
+      endif
+      call re_alloc(Haux,1,nhs,name='Haux',routine='writewave')
+      call re_alloc(Saux,1,nhs,name='Saux',routine='writewave')
+      call re_alloc(psi,1,nhs,name='psi',routine='writewave')
+C      call re_alloc(Haux,1,2*nuotot*nuo,name='Haux',routine='writewave')
+C      call re_alloc(Saux,1,2*nuotot*nuo,name='Saux',routine='writewave')
+C      call re_alloc(psi,1,2*nuotot*nuo,name='psi',routine='writewave')
+
+CC RC  ek has different arguments here than in 3.1.1 version that it is:
+C      allocate(ek(maxspn,nuo,nuotot)) and the next call to memory
+      allocate(ek(nuotot,maxspn,nk))
+      call memory('A','D',maxspn*nk*nuotot,'writewave')
       naux = 2*nuotot*5
       allocate(aux(naux))
       call memory('A','D',naux,'writewave')
@@ -585,12 +579,12 @@ C Open file
           write(6,'(a)') 'writewave: Wave Functions Coefficients'
           write(6,*)
           write(6,'(a26,2x,i6)') 'Number of k-points = ', nk
-          write(6,'(a26,2x,i6)') 'Number of Spins = ', nspin
+          write(6,'(a26,2x,i6)') 'Number of Spins = ', maxspn
           write(6,'(a26,2x,i6)') 'Number of basis orbs = ',nuotot
           write(6,*)
         endif
         write(iu) nk, gamma
-        write(iu) nspin
+        write(iu) maxspn
         write(iu) nuotot
         write(iu) (iaorb(j),labelfis(isa(iaorb(j))),
      .            iphorb(j), cnfigfio(isa(iaorb(j)),iphorb(j)),
@@ -608,14 +602,16 @@ c fixspin and qs are not used in diagk, since getD=.false. ...
 
 C Call appropriate diagonalization routine
 
-      if (gamma) then
-         call diagg( nspin, nuo, maxuo, maxnh, maxnh, 
+CC RC Added for on-site SO
+      if (NoMagn .or. SPpol) then
+       if (gamma) then
+         call diagg( h_spin_dim, nuo, maxuo, maxnh, maxnh, 
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
      .               fixspin, qtot, qs, temp,
      .               e1, e2, ek, qk, Dnew, Enew, ef, efs, Entropy,
      .               Haux, Saux, psi, nuotot, occtol, 1, nuotot )
-      else
+       else
 C Handle parallel over K points option which is not allowed for here
          SaveParallelOverK = ParallelOverK
          if ((Node .eq. 0) .and. ParallelOverK) then
@@ -625,9 +621,8 @@ C Handle parallel over K points option which is not allowed for here
          endif
          ParallelOverK = .false.
          ResetFirstCall = .true.
-
             
-         call diagk( nspin, nuo, no, maxspn, maxnh, maxnh, 
+         call diagk( h_spin_dim, nuo, no, maxspn, maxnh, maxnh,
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
      .               fixspin, qtot, qs, temp,
@@ -637,8 +632,40 @@ C Handle parallel over K points option which is not allowed for here
      .               occtol, 1 )
          ParallelOverK = SaveParallelOverK
          ResetFirstCall = .false.
-
+       endif
+CC RC Added for on-site SO
+      elseif (NonCol) then
+        if (gamma) then
+          call diag2g( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
+     .                 listhptr, listh, numh, listhptr, listh,
+     .                 H, S, getD, getPSI, qtot, temp, e1, e2, ek, qk,
+     .                 Dnew, Enew, ef, Entropy, psi,
+     .                 nuotot, occtol, 1, nuotot )
+        elseif (.not.gamma) then
+          call diag2k( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
+     .                 listhptr, listh, numh, listhptr, listh,
+     .                 H, S, getD, getPSI, qtot, temp, e1, e2, xij,
+     .                 indxuo, nk, kpoint, wk, ek, qk, Dnew,
+     .                 Enew, ef, Entropy, psi,
+     .                 nuotot, occtol, 1 )
+        endif
+      elseif (SpOrb) then
+        if (gamma) then
+          call diag3g( nuo, no, maxnh, maxnh, maxo, numh,
+     .                 listhptr, listh, numh, listhptr, listh,
+     .                 H, S, getD, qtot, temp, e1, e2, ek, qk,
+     .                 Dnew, Enew, ef, Entropy, psi,
+     .                 nuotot, occtol, 1, nuotot )
+        elseif (.not.gamma) then
+          call diag3k( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
+     .                 listhptr, listh, numh, listhptr, listh,
+     .                 H, S, getD, qtot, temp, e1, e2, xij,
+     .                 indxuo, nk, kpoint, wk, ek, qk, Dnew,
+     .                 Enew, ef, Entropy, psi,
+     .                 nuotot, occtol, 1 )
+        endif
       endif
+
 
 C Free local arrays 
       call memory('D','I',size(muo),'writewave')

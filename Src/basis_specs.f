@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module basis_specs
 ! 
@@ -85,7 +82,7 @@
 ! 
 !   The Soft-Confinement parameters 'rinn' and 'vcte' are set to 0.0
 !   The Charge-Confinement parameters 'qcoe', 'qyuk' and 'qwid' 
-!   are set to 0.0, 0.0 and 1.0
+!   are set to 0.0, 0.0 and 0.01
 ! 
 !   rc(1:nzeta) is set to 0.0
 !   lambda(1:nzeta) is set to 1.0  (this is a change from old practice)
@@ -165,6 +162,7 @@
       real(dp), save, public    :: rmax_radial_grid
       
       public :: read_basis_specs
+      public :: label2species
 
       private
 
@@ -291,7 +289,7 @@ C Sanity checks on values
           call ground_state(abs(int(basp%z)),basp%ground_state)
           call pseudo_read(basp%label,basp%pseudopotential)
         endif
-        if (reparametrize_pseudos)
+        if (reparametrize_pseudos.and. .not. basp%bessel)
      .    call pseudo_reparametrize(p=basp%pseudopotential,
      .                             a=new_a, b=new_b,label=basp%label)
       enddo
@@ -1144,6 +1142,7 @@ c (according to atmass subroutine).
             ls%nn = 1
             allocate(ls%shell(1:1))
             s => ls%shell(1)
+            call initialize(s)
             s%l = l
             s%n = basp%ground_state%n(l)
             if (basp%ground_state%occupied(l)) then

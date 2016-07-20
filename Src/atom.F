@@ -1,19 +1,17 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module atom
 
       use precision, only: dp
       use sys,       only: die
       use atmparams
-      use m_recipes, only: spline, polint
+      use interpolation, only: spline  ! set spline interpolation
+      use interpolation, only: polint  ! polynomial interpolation
       use basis_types, only: basis_parameters
       use basis_types, only: ground_state_t
       use atom_options, only: write_ion_plot_files, debug_kb_generation
@@ -50,7 +48,7 @@
 
       private
 
-      public :: atom_main, prinput
+      public :: atom_main, prinput, schro_eq, rc_vs_e, build_vsoft
 
 !---------------------------------------------------------------------
 ! Some internal parameters

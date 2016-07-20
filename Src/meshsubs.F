@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 !-------------------------------------------------------------
 !     
@@ -207,8 +204,11 @@ C     Find reciprocal mesh-cell vectors (not multiplied by 2*pi)
       ne(:) = ne(:) + 1
 
 C     Find sub-points
-      isp = 0
+!$OMP parallel default(shared), private(i1,i2,i3,i,isp)
+
+!$OMP do
       do i3 = 0, nsm-1
+        isp = i3 * nsm ** 2
         do i2 = 0, nsm-1
           do i1 = 0, nsm-1
             isp = isp + 1
@@ -220,9 +220,13 @@ C     Find sub-points
           enddo
         enddo
       enddo
+!$OMP end do
 
 ! Find number of points within rmax (orbital points)
+!$OMP single ! Only used for OpenMP
       mop = 0
+!$OMP end single 
+!$OMP do private(dxp,within,dx,r), reduction(+:mop)
       do i3 = -ne(3), ne(3)    ! Loop over neighbor (super) points
         do i2 = -ne(2), ne(2)
           do i1 = -ne(1), ne(1)
@@ -245,6 +249,9 @@ C     Find sub-points
           enddo ! i1
         enddo ! i2
       enddo ! i3
+!$OMP end do nowait
+
+!$OMP end parallel
 
 C     Create extended mesh arrays for the first data distribution
       call setupExtMesh( UNIFORM, rmax )
@@ -469,6 +476,9 @@ C     If cell has changed then it is necessary to reinitialise coordinates
       use mesh, only: ne       ! Points in rmax along each lat. vector
       use mesh, only: nmsc     ! Mesh points in each supercell vector
       use mesh, only: rcmesh   ! Reciprocal mesh cell vectors
+      use mesh, only: iatfold  ! Supercell vector that keeps track of the
+                               ! of the folding of the atomic coordinates
+                               ! in the mesh
       use alloc,only: re_alloc ! (Re)allocation routine
       use moreMeshSubs, only : allocIpaDistr
       implicit none
@@ -481,6 +491,7 @@ C     If cell has changed then it is necessary to reinitialise coordinates
       integer,             save :: lastna = 0  ! Number of atoms on last call
       integer                   :: ia, ixa(3), jsc(3), jxa(3), nem(3),
      &                             j1, j2, j3, myBox(2,3), myExtBox(2,3)
+      integer                   :: ixabeffold(3)
       real(dp)                  :: cxa(3)
 
 #ifdef DEBUG
@@ -490,6 +501,7 @@ C     If cell has changed then it is necessary to reinitialise coordinates
       call allocIpaDistr( distr, na )
       if (na.ne.lastna) then
         call re_alloc( dxa, 1,3, 1,na, myName//'dxa' )
+        call re_alloc( iatfold, 1,3, 1,na, myName//'iatfold' )
       endif
       lastna = na
 
@@ -509,12 +521,14 @@ C     If cell has changed then it is necessary to reinitialise coordinates
 
 !       Find atomic coordinates in mesh basis vectors
         cxa(:) = matmul( xa(:,ia), rcmesh(:,:) )
+        ixabeffold(:) = floor(cxa(:))
         ! fix: Make sure we consider equivalent positions
         !      inside the cell, even if some atoms are outside.
         cxa(:) = modulo( cxa(:), real(nmsc(:),dp) )
 
 !       Find indexes of mesh cell in which atom is
         ixa(:) = floor(cxa(:))
+        iatfold(:,ia) = ( ixa(:) - ixabeffold(:) ) / nmsc(:)
 
 !       Find atom position within mesh cell
         cxa(:) = cxa(:) - ixa(:)                  ! Mesh coordinates
@@ -539,6 +553,10 @@ C     If cell has changed then it is necessary to reinitialise coordinates
                 jxa(:) = jxa(:) - myExtBox(1,:)
                 ipa(ia) = 1 + jxa(1) + nem(1)*jxa(2)
      &                      + nem(1)*nem(2)*jxa(3)
+
+                iatfold(1,ia) = iatfold(1,ia) + j1
+                iatfold(2,ia) = iatfold(2,ia) + j2
+                iatfold(3,ia) = iatfold(3,ia) + j3
                 
                 exit sc
               end if
@@ -1129,6 +1147,7 @@ C     Find indexes and values of atomic orbitals at mesh points
       use parallel,  only : IONode
       use mesh,      only : meshLim  ! My processor's box of mesh points
       use mesh,      only : ne       ! Points in rmax along each lat. vector
+      use mesh,      only : nem      ! Extended-mesh divisions in each direction
       use mesh,      only : nmsc     ! Mesh points in each supercell vector
       use mesh,      only : mop      ! Accumulated num. of orbital points
       use mesh,      only : nsp      ! Number of sub-points of each mesh point
@@ -1149,7 +1168,7 @@ C     Input parameters
 C     Local parameters
       integer              :: i1, i2, i3, j1, j2, j3, k1, k2, k3,
      &                        i, j, k, nep, boxWidth(3), extWidth(3),
-     &                        isp, myBox(2,3), nem(3), myExtBox(2,3)
+     &                        isp, myBox(2,3), myExtBox(2,3)
       real(dp)             :: r, dxp(3), dx(3)
       logical              :: within
 C     Functions

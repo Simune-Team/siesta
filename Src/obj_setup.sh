@@ -21,7 +21,7 @@ destdir=$(pwd)
 # Replicate the hierarchy of makefiles
 #
 (cd $srcdir;
-  for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile); do
+  for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile) ; do
     relpath=${i%/*}
     mkdir -p ${destdir}/$relpath
     cp $relpath/*akefile ${destdir}/$relpath
@@ -52,10 +52,6 @@ sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
               -path *work -prune      -o  \
               -path *.arch-ids  -prune -o -print \
               | tar -cf - --no-recursion -T- )   | ( cd ${destdir} ; tar xf -)
-#
-# Make a symbolic link for the reference output directory
-#
-(cd ${destdir}/Tests ; ln -sf ${testdir}/Reference ./Reference)
 #
 echo " *** Compilation setup done. "
 echo " *** Remember to copy an arch.make file or run configure as:"

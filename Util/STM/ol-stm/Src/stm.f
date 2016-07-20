@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 
       SUBROUTINE STM( NA, NO, NUO, MAXNA, NSPIN, 
      .                ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
@@ -349,7 +356,7 @@ C Localize non-zero orbitals at each point in real space ---------------
 
 C Loop over Non-zero orbitals ------------------------------------------ 
             DO 110 IAT1 = 1, NNA
-              IF( R2IJ(IAT1) .GT. RMAX2 ) GOTO 110
+              IF( R2IJ(IAT1) .GT. RMAX2 ) CYCLE
 
               IAVEC1   = JNA(IAT1)
               IS1      = ISA(IAVEC1)
@@ -432,7 +439,7 @@ C Localize non-zero orbitals at each point in real space ---------------
 
 C Loop over Non-zero orbitals ------------------------------------------ 
             DO 410 IAT1 = 1, NNA
-              IF( R2IJ(IAT1) .GT. RMAX2 ) GOTO 110
+              IF( R2IJ(IAT1) .GT. RMAX2 ) CYCLE
 
               IAVEC1   = JNA(IAT1)
               IS1      = ISA(IAVEC1)

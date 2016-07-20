@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 
       PROGRAM MACROAVE
@@ -32,6 +29,8 @@ C **********************************************************************
 C Modules --------------------------------------------------------------
       USE DEFS_BASIS
       USE DEFS_COMMON
+      use interpolation, only: spline, splint
+      use m_fft_gpfa,only : fft_gpfa_ez
 
       IMPLICIT NONE
 
@@ -109,7 +108,7 @@ C ABINIT variables
 C end ABINIT variables
 
       EXTERNAL
-     .   IO_ASSIGN, IO_CLOSE, PASTE, FOUR1, THETAFT, VOLCEL 
+     .   IO_ASSIGN, IO_CLOSE, PASTE, THETAFT, VOLCEL 
 
 C *********************************************************************
 C CHARACTER CODE       : First principles-code used to generate the
@@ -446,14 +445,14 @@ C ...
 
 C Calculate fourier transform of the electrostatic potential or 
 C the electronic density -----------------------------------------------
-      CALL FOUR1(DATA,N,1)       
+      CALL fft_gpfa_ez(DATA,N,1)       
 C ...
 
 C Calculate macroscopic average of the electrostatic potential or the
 C electronic charge density taking the convolution with two step functions.
 C In Fourier space, it is a product of the Fourier transform components -
 C The decompositions in the sum over II is due to the spetial way in which
-C the data are stored in subroutine four1( see Fig. 12.2.2, in 
+C the data are stored in the fft subroutine ( see Fig. 12.2.2, in 
 C 'Numerical Recipes, The Art of Scientific Computing' 
 C by W.H. Press, S.A. Teukolsky, W.T. Veterling and B.P. Flannery, 
 C Cambridge U.P. 1987 and 1992.
@@ -524,7 +523,7 @@ C ...
 
 C Transform average electronic density and potential to real space -----
 C The decompositions in the sum over J is due to the spetial way in which
-C the data are stored in subroutine four1( see Fig. 12.2.2, in 
+C the data are stored in the fft subroutine ( see Fig. 12.2.2, in 
 C 'Numerical Recipes, The Art of Scientific Computing' 
 C by W.H. Press, S.A. Teukolsky, W.T. Veterling and B.P. Flannery, 
 C Cambridge U.P. 1987 and 1992.

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 C**************************************************************************
 C  This module contains subroutines required for Z-matrix based geometry  *
@@ -684,6 +681,19 @@ C Loop over molecules
         do m = 1,nZmol
           nStart = nZmolStartAtom(m)
           nAtoms = nZmolAtoms(m)
+
+C PB BEGIN
+C         Check whether any atom info has been read.
+          if (nAtoms .eq. 0) then
+             if (Node .eq. 0) then
+                write (6,'(A)') 'read_Zmatrix: Ill defined Zmatrix:'
+                write (6,'(A,i3)')
+     .               'read_Zmatrix: no atoms defined at molecule', m
+             endif
+             call die()
+          endif
+C PB END
+
 C Second atom
           if (nAtoms.gt.1) then
             if (iZmat(3*nStart+1).ne.nStart) then

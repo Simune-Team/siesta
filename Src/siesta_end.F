@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       MODULE m_siesta_end
       private
       public :: siesta_end
@@ -18,7 +25,6 @@
 #ifdef MPI
       use mpi_siesta,      only : MPI_Finalize
 #endif
-      use m_pulay,         only : resetPulayArrays
       use moreMeshSubs,    only : resetMeshDistr
       use densematrix,     only : resetDenseMatrix
       use sparse_matrices, only : resetSparseMatrices
@@ -28,6 +34,14 @@
       use meshdscf,        only : resetDscfPointers
       use m_dscfcomm,      only : resetdscfComm
       use m_rhog,          only : resetRhog
+      ! NP, new mixing
+      use m_mixing_scf,    only : reset_mixing_scf
+
+#ifdef SIESTA__FLOOK
+      use flook_siesta,    only : slua_close
+      use siesta_options,  only : LUA
+#endif
+
 
       implicit none
 
@@ -38,9 +52,14 @@
 #ifdef DEBUG
       call write_debug( 'PRE SIESTA_END' )
 #endif
+
+#ifdef SIESTA__FLOOK
+      ! Clean up the lua environment
+      call slua_close(LUA)
+#endif
+
 !     Free allocated memory
       call resetSparseMatrices( )
-      call resetPulayArrays( )
       call resetMeshDistr( )
       call resetdscfComm( )
       call resetDenseMatrix( )
@@ -49,6 +68,8 @@
       call resetMeshPhi( )
       call resetDscfPointers( )
       call resetRhog()
+      ! NP, new mixing
+      call reset_mixing_scf( )
 
 !     Output memory use up to the end of the program
 !!      call printmemory( 6, 1 )

@@ -1,9 +1,18 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module m_compute_max_diff
-      public :: compute_max_diff
+      use precision,         only: dp
+      real(dp) :: dDmax_current
+      public   :: compute_max_diff
+      public   :: dDmax_current
       CONTAINS
       subroutine compute_max_diff(Xin,Xout,MaxDiff)
 
-      use precision,         only: dp
       use sparse_matrices,   only: numh, listhptr
       use m_spin,            only: nspin
       use atomlist,          only: no_l
@@ -34,5 +43,8 @@
       call globalize_max(MaxDiff,buffer1)
       MaxDiff = buffer1
 #endif
+
+      dDmax_current = MaxDiff
+
       end subroutine compute_max_diff
       end module m_compute_max_diff

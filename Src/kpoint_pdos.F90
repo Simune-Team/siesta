@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 MODULE Kpoint_pdos
 !
 ! Contains data structures and routines to deal with the kpoint-grid
@@ -36,6 +43,7 @@ MODULE Kpoint_pdos
   USE parallel, only  : Node
   USE fdf, only       : fdf_defined, fdf_get
   USE m_find_kgrid, only : find_kgrid
+  use m_spin, only: TrSym
 
   implicit none
   real(dp), intent(in)  :: ucell(3,3)
@@ -49,7 +57,7 @@ MODULE Kpoint_pdos
       ! By default, it is on, except for "spin-spiral" calculations
       time_reversal_symmetry = fdf_get(             &
            "TimeReversalSymmetryForKpoints",   &
-           (.not. spiral))
+           (.not. spiral) .and. TrSym)
 
     call setup_pdos_kscell(ucell, firm_displ)
 
@@ -145,7 +153,11 @@ MODULE Kpoint_pdos
             kscell(1,i) = fdf_bintegers(pline,1)
             kscell(2,i) = fdf_bintegers(pline,2)
             kscell(3,i) = fdf_bintegers(pline,3)
-            kdispl(i)   = fdf_breals(pline,1)
+            if ( fdf_bnvalues(pline) > 3 ) then
+               kdispl(i) = fdf_bvalues(pline,4)
+            else
+               kdispl(i) = 0._dp
+            end if
          enddo
          firm_displ = .true.
 

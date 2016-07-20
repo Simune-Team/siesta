@@ -1,22 +1,20 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_overfsm
 
       use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
-      use atmfuncs,      only : rcut
+      use atmfuncs,      only : rcut, orb_gindex
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
      &                          reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
+      use m_new_matel,   only : new_matel
 
       implicit none
 
@@ -28,7 +26,7 @@
       subroutine overfsm(nua, na, no, scell, xa, indxua, rmaxo,
      .                   maxnh, maxnd, lasto, iphorb, isa, 
      .                   numd, listdptr, listd, numh, listhptr, listh, 
-     .                   nspin, Emat, fa, stress, S)
+     .                   nspin, Escf, fa, stress, S)
 C *********************************************************************
 C Overlap matrix and orthonormalization contribution to forces and stress.
 C Energies in Ry. Lengths in Bohr.
@@ -47,18 +45,18 @@ C integer lasto(0:na)      : Last orbital index of each atom
 C integer iphorb(no)       : Orbital index of each orbital in its atom
 C integer isa(na)          : Species index of each atom
 C integer numd(nuotot)     : Number of nonzero elements of each row
-C                            of Emat
-C integer listdptr(nuotot) : Pointer to start of rows (-1) of Emat
+C                            of Escf
+C integer listdptr(nuotot) : Pointer to start of rows (-1) of Escf
 C integer listd(maxnh)     : Column indexes of the nonzero elements  
-C                            of each row of Emat
+C                            of each row of Escf
 C integer numh(nuotot)     : Number of nonzero elements of each row
 C                            of the overlap matrix
 C integer listhptr(nuotot) : Pointer to start of rows (-1) of overlap
 C                            matrix
 C integer listh(maxnh)     : Column indexes of the nonzero elements  
 C                            of each row of the overlap matrix
-C integer nspin            : Number of spin components of Emat
-C integer Emat(maxnd,nspin): Energy-Density matrix
+C integer nspin            : Number of spin components of Escf
+C integer Escf(maxnd,nspin): Energy-Density matrix
 C **************************** OUTPUT *********************************
 C real*8  S(maxnh)         : Sparse overlap matrix
 C ********************** INPUT and OUTPUT *****************************
@@ -75,14 +73,14 @@ C *********************************************************************
      . listhptr(*)
 
       real(dp) , intent(inout)  :: fa(3,nua), stress(3,3)
-      real(dp) , intent(in)     :: scell(3,3), Emat(maxnd,nspin), 
+      real(dp) , intent(in)     :: scell(3,3), Escf(maxnd,nspin), 
      .                 rmaxo, xa(3,na)
       real(dp), intent(out)     :: S(maxnh)
 
 C Internal variables ......................................................
   
       integer
-     .  ia, ind, io, ioa, is, ispin, ix, iio, 
+     .  ia, ind, io, ioa, is, ispin, ix, iio, ig, jg,
      .  j, ja, jn, jo, joa, js, jua, jx, nnia
 
       real(dp)
@@ -111,6 +109,7 @@ C Allocate local memory
       Di(1:no) = 0.0d0
 
       do ia = 1,nua
+        is = isa(ia)
         call mneighb( scell, 2.d0*rmaxo, na, xa, ia, 0, nnia )
         do io = lasto(ia-1)+1,lasto(ia)
 
@@ -119,11 +118,13 @@ C Is this orbital on this Node?
           if (iio.gt.0) then
 
 C Valid orbital 
+            ioa = iphorb(io)
+            ig = orb_gindex(is,ioa)
             do j = 1,numd(iio)
               ind = listdptr(iio)+j
               jo = listd(ind)
               do ispin = 1,nspin  
-                Di(jo) = Di(jo) + Emat(ind,ispin)
+                Di(jo) = Di(jo) + Escf(ind,ispin)
               enddo
             enddo
             do jn = 1,nnia
@@ -131,12 +132,11 @@ C Valid orbital
               jua = indxua(ja)
               rij = sqrt( r2ij(jn) )
               do jo = lasto(ja-1)+1,lasto(ja)
-                ioa = iphorb(io)
                 joa = iphorb(jo)
-                is = isa(ia)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call MATEL( 'S', is, js, ioa, joa, xij(1:3,jn),
+                   jg = orb_gindex(js,joa)
+                   call new_MATEL( 'S', ig, jg, xij(1:3,jn),
      .                      Sij, grSij )
                   Si(jo) = Si(jo) + Sij
                   do ix = 1,3
@@ -166,7 +166,7 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-!      call MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
+!      call new_MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
       call de_alloc( Si, 'Si', 'overfsm' )
       call de_alloc( Di, 'Di', 'overfsm' )

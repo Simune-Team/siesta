@@ -4,15 +4,26 @@
 # Usage:
 #
 #          make                      --- Run all tests
-#          make tests=fe_broyden     --- Run a single test
-#          make batch                --- Dispatch to batch system
+#          make  check               --- Run all tests and check with reference file
+#          make  check-only          --- Run all checks with reference file (run make before)
+#          make  list                --- Show the list of tests
+#
+#          make tests=fe_broyden { check | }     --- Run a single test
+#          (Not implemented) make batch                --- Dispatch to batch system
 #                                        (site-dependent)
 #                                        (needs extra configuration)
 #
-#          By default, the version of SIESTA used is the one in Src.
-#          To use another one:
+#          By default, the version of SIESTA used is the one in the
+#          parent directory (Obj or custom OBJDIR), and is executed
+#          in serial mode.
+#
+#          To use another one, or a parallel version
 #
 #          make SIESTA=/some/path/to/siesta-program ....
+#
+#           or
+#
+#          make SIESTA="mpiexec -np 4 /path/to/parallel-siesta-program" ....
 #
 #          It is also possible to have separate working directories,
 #          by using the a "label". For example:
@@ -23,36 +34,61 @@
 #
 # See also test.mk for details, and the scripts in Scripts for 
 # examples of other options for batch processing.
-#
-#
-REFERENCE=../../ref-version/Tests
-#
+
 label=work
-#
-ALL=  h2o h2o_reparam h2o_basis h2o_dos h2o-pop		\
-       floating benzene bessel mgc-force mgco3 si2x1h force_2 born born_spin	\
-       var_cell constant_volume batio3 fe fe_broyden sih si64		\
-       h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr		\
-       md_anneal md_verlet md_nose si_bandpoints sih_fire		\
-       graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid ag ch4	\
-       si_coop born pb_filter_cutoff pb_filter_tol fire_benzene		\
-       fe_clust_noncollinear h_chain n_chain si64_coop si_pdos_kgrid    \
-       si2x1h-dipole ar2_vdw graphite_vdw_df sic-slab si-optical OMM_si \
-       OMM_h2o TDDFT_h2o
-#
-#
-#  Need to add the new tests and generate the reference outputs and xml files.
-#
-#
+
+tests = h2o h2o_reparam h2o_basis h2o_dos h2o-pop \
+	floating benzene bessel mgc-force mgco3 si2x1h force_2 born born_spin \
+	var_cell constant_volume batio3 fe fe_broyden sih si64 \
+	h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr \
+	md_anneal md_verlet md_nose si_bandpoints sih_fire \
+	graphite_c6 oxyn h2o_findp_bug h2o_radialgrid ag ch4 \
+	si_coop pb_filter_cutoff pb_filter_tol fire_benzene \
+	fe_clust_noncollinear fe_clust_noncollinear-gga \
+	h_chain n_chain si64_coop si_pdos_kgrid \
+	si2x1h-dipole ar2_vdw graphite_vdw_df sic-slab si-optical OMM_si \
+	OMM_h2o scfmix h2o_dipole h2o_dipole2  h2_bessel\
+	SOC_Pt2_xx SOC_Pt2_xz SOC_Pt2_zy SOC_Pt2_zz \
+	wannier TDDFT_h2o
+
+# These tests are extremely time consuming and
+# should only be runned sometimes
+# Currently they may be runned individually.
+#	SOC_FePt_xx SOC_FePt_xz SOC_FePt_zy SOC_FePt_zz
+
+default: all
+
 all:
-	for dir in $(ALL); do\
+	@for dir in $(tests) ; do\
 	 $(MAKE) -C $$dir completed; \
 	done
 
+# Ensure that tests may be called individually
+# (and that they are run, PHONY is required)
+# This ensures one can call:
+#   make h2o
+# and the h2o test will be runned.
+.NOTPARALLEL: $(tests)
+.PHONY: $(tests)
+$(tests):
+	$(MAKE) -C $@ completed
+
+.PHONY: check
+check:
+	@for dir in $(tests) ; do\
+	 $(MAKE) -C $$dir check; \
+	done
+
+check-only:
+	@for dir in $(tests) ; do\
+	 $(MAKE) -C $$dir check-only ; \
+	done
+
+.PHONY: show
+show:
+	@echo $(tests)
+
 clean:
-	@for i in $(ALL) ; do \
+	@for i in $(tests) ; do \
 		(cd $$i ; make clean) ; \
 	done
-#
-
-

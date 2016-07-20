@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module parallelsubs
 C
@@ -18,7 +15,7 @@ C
      &                         nOrbPerNode
       use domain_decom, only : use_dd, use_dd_perm, dd_nuo, dd_perm,
      &                         ulimit, llimit, dd_invp, dd_nnode
-      use sys,          only : die
+      use sys,          only : die, message
       implicit none
 
       contains
@@ -64,6 +61,8 @@ C Saved variables
      .  NOrbLast / 0 /
      .  NOrbNodeLast / 0 /
 
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of GetNodeOrbs")
       if (NOrb .eq. NOrbLast) then
 C Values are the same as last call - no need to recalculate
         NOrbNode = NOrbNodeLast
@@ -114,6 +113,7 @@ C Save value for next call
       end subroutine GetNodeOrbs
 
       subroutine GlobalToLocalOrb( GOrb, Node, Nodes, LOrb)
+      use parallel, only: thisNode => Node
 C
 C  Converts an orbital index in the global frame to the local frame
 C  if the orbital is local to this node. Otherwise the pointer is
@@ -144,6 +144,8 @@ C
 C  Local variables
       integer OrbCheck, GBlock, LEle, LBlock
 
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of GlobalToLocalOrb")
       if (lspatial) then 
 C-------------------------
 C  Spatial distribution  -
@@ -219,6 +221,8 @@ C
 C  Local variables
       integer LEle, LBlock
 
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of LocalToGlobalOrb")
       if (lspatial) then 
 C-------------------------
 C  Spatial distribution  - 
@@ -763,6 +767,8 @@ C Compare number of orbitals against sensible number
 
       if (nuotot.gt.24*Nodes) then
         bs = 24
+      else if (nuotot.lt.Nodes) then
+        bs = 1
       else
 
          bs = nuotot/Nodes + 1

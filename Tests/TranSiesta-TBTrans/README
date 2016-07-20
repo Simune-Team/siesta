@@ -1,14 +1,3 @@
-! 
-! The files in this directory are part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
-!
-!-------------------------------------------------------------------
 
 Automated tests for TranSiesta-TBTrans
 
@@ -44,12 +33,12 @@ and libraries for mpirun are set):
 
 make TS="mpirun -np 2 ../../../../transiesta"
 
-The source for TBTrans resides in Util/TBTrans (or
-Util/TBTrans_rep). To guarantee that the TBTrans executable is
-compatible with the TranSiesta executable in OBJDIR, TBTrans is
+The source for TBTrans resides in Util/TS/TBtrans. 
+To guarantee that the TBtrans executable is
+compatible with the TranSiesta executable in OBJDIR, TBtrans is
 re-compiled with the appropriate settings in OBJDIR/arch.make.
 
-To override the default TBTrans executable in Util/TBTrans(_rep), TBT can be
+To override the default TBtrans executable in Util/TS/TBtrans, TBT can be
 specified in the command line:
 
 make TBT=/full/path/to/tbtrans

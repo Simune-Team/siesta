@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine pdosk( nspin, nuo, no, maxspn, maxnh, 
      .                  maxo, numh, listhptr, listh, H, S,
@@ -59,7 +56,7 @@ C REAL*8  dpr(nhist,nuo,2): Proyected density of states
 C **********************************************************************
 
       use precision
-      use parallel,     only : Node, Nodes
+      use parallel,     only : Node, Nodes, BlockSize
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use units,        only : pi
       use alloc,        only : re_alloc, de_alloc
@@ -99,6 +96,10 @@ C Internal variables ---------------------------------------------------
 #endif
 
       external  cdiag
+
+#ifdef DEBUG
+      call write_debug( '    PRE pdosk' )
+#endif
 
 C Initialize some variables
       delta = (E2 - E1)/nhist
@@ -140,7 +141,8 @@ C H(k) = Sum(R) exp(i*k*R) * H(R)
 
 C Diagonalize for each k point
           call cdiag( Haux, Saux, nuotot, nuo, nuotot,
-     .                eo(1,ispin,IK), psi, nuotot, 1, ierror )
+     .                eo(1,ispin,IK), psi, nuotot, 1, ierror,
+     $                BlockSize)
 
 C Check error flag and take appropriate action
           if (ierror.gt.0) then
@@ -172,7 +174,8 @@ C Repeat diagonalisation with increased memory to handle clustering
               enddo
             enddo
             call cdiag( Haux, Saux, nuotot, nuo, nuotot,
-     .                  eo(1,ispin,IK), psi, nuotot, 1, ierror )
+     .                  eo(1,ispin,IK), psi, nuotot, 1, ierror,
+     $                  BlockSize )
           endif
 
 C Recalculate again the overlap matrix in k-space
@@ -334,6 +337,10 @@ C Free workspace array for global reduction
           enddo
         enddo
       enddo
+
+#ifdef DEBUG
+      call write_debug( '    POS pdosk' )
+#endif
 
       return
       end

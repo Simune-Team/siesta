@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 MODULE MPI_SIESTA
 !
 ! This is an interface to supplant some MPI routines called by siesta,
@@ -31,10 +38,16 @@ MODULE MPI_SIESTA
         public :: mpi_2double_precision
         public :: mpi_integer, mpi_character, mpi_logical
         public :: mpi_integer8
+        public :: mpi_packed
         public :: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
         public :: mpi_status_size
+        public :: mpi_comm_self
         public :: mpi_grid_real
         public :: mpi_finalize
+
+!        public :: mpi_thread_single
+        public :: mpi_thread_funneled
+
 
   PUBLIC :: MPI_BARRIER
   INTERFACE MPI_BARRIER

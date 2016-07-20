@@ -1,0 +1,1631 @@
+Siesta Version: trunk-509
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
+PARALLEL version
+NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
+
+* Running on 2 nodes in parallel
+>> Start of run:   5-JUN-2016  14:38:24
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+SystemName              Pt2 Z-alignment y
+SystemLabel             Pt2zy
+Spin   SOC
+%block DM.InitSpin
+ 1  +1.  90. 90.
+ 2  +1.  90. 90.
+%endblock DM.InitSpin
+NumberOfAtoms           2
+NumberOfSpecies         1
+%block Chemical_Species_label
+        1       78      Pt_SOC
+%endblock Chemical_Species_label
+PAO.EnergyShift  100 meV
+PAO.SplitNorm      0.15
+%Block PAO.Basis
+Pt_SOC  2
+n=6   0   2   P
+     0.0  0.0
+n=5   2   2
+     0.0  0.0
+%EndBlock PAO.Basis
+AtomicCoordinatesFormat NotScaledCartesianAng
+LatticeConstant  20.0 Ang
+%block LatticeVectors
+     1.00      .00      .00
+      .00     1.00      .00
+      .00      .00     1.00
+%endblock LatticeVectors
+%block AtomicCoordinatesAndAtomicSpecies
+      0.00000   0.00000   -1.19940   1
+      0.00000   0.00000    1.19940   1
+%endblock AtomicCoordinatesAndAtomicSpecies
+XC.functional           GGA
+XC.authors              PBE
+MeshCutoff              300. Ry
+SolutionMethod          diagon
+ElectronicTemperature   50 meV
+DM.Tolerance            1.0E-5
+MaxSCFIterations        1000
+DM.MixingWeight         0.01
+DM.NumberPulay          5
+DM.NumberKick           50
+WriteMullikenPop       1
+WriteEigenvalues       T
+WriteForces            T
+WriteCoorStep          T
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: Pt2 Z-alignment y
+reinit: -----------------------------------------------------------------------
+reinit: System Label: Pt2zy                                                       
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+Species number:   1 Atomic number:   78 Label: Pt_SOC
+
+Ground state valence configuration:   6s01  5d09
+Reading pseudopotential information in formatted form from Pt_SOC.psf
+
+Pseudopotential generated from a relativistic atomic calculation
+There are spin-orbit pseudopotentials available
+Spin-orbit interaction is not included in this calculation
+
+Valence configuration for pseudopotential generation:
+6s( 1.00) rc: 2.24
+6p( 0.00) rc: 2.73
+5d( 9.00) rc: 1.24
+5f( 0.00) rc: 2.98
+For Pt_SOC, standard SIESTA heuristics set lmxkb to 3
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+ Warning: Empty PAO shell. l =           1
+ Will have a KB projector anyway...
+
+<basis_specs>
+===============================================================================
+Pt_SOC               Z=  78    Mass=  195.08        Charge= 0.17977+309
+Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=6
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+L=1  Nsemic=0  Cnfigmx=6
+L=2  Nsemic=0  Cnfigmx=5
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for Pt_SOC                (Z =  78)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM 3.2.2 Troullier-Martins                       
+Total valence charge:   10.00000
+
+read_vps: Pseudopotential includes a core correction:
+read_vps: Pseudo-core for xc-correction
+
+xc_check: Exchange-correlation functional:
+xc_check: GGA Perdew, Burke & Ernzerhof 1996
+V l=0 = -2*Zval/r beyond r=  3.0596
+V l=1 = -2*Zval/r beyond r=  3.0596
+V l=2 = -2*Zval/r beyond r=  3.0596
+V l=3 = -2*Zval/r beyond r=  3.0981
+All V_l potentials equal beyond r=  2.9104
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  3.0981
+
+VLOCAL1: 99.0% of the norm of Vloc inside      5.125 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     11.679 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    3.51058
+atom: Maximum radius for r*vlocal+2*Zval:    3.09807
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+GHOST: No ghost state for L =  3
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  3.297886   el= -0.413885   Ekb=  4.454381   kbcos=  0.246717
+   l= 1   rc=  3.381373   el= -0.063071   Ekb=  1.998299   kbcos=  0.230762
+   l= 2   rc=  3.137044   el= -0.454162   Ekb= -5.116612   kbcos= -0.676172
+   l= 3   rc=  3.599455   el=  0.003169   Ekb= -0.935521   kbcos= -0.024370
+
+KBgen: Total number of  Kleinman-Bylander projectors:   16
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 6s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.007350 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    7.158402
+                 energy =   -0.407576
+                kinetic =    0.352573
+    potential(screened) =   -0.760148
+       potential(ionic) =   -7.385835
+
+   izeta = 2
+                 rmatch =    6.009165
+              splitnorm =    0.150000
+                 energy =   -0.341372
+                kinetic =    0.579404
+    potential(screened) =   -0.920777
+       potential(ionic) =   -8.017759
+
+SPLIT: Orbitals with angular momentum L= 2
+
+SPLIT: Basis orbitals for state 5d
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.007350 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    5.044431
+                 energy =   -0.446663
+                kinetic =    4.610144
+    potential(screened) =   -5.056807
+       potential(ionic) =  -13.997492
+
+   izeta = 2
+                 rmatch =    3.021582
+              splitnorm =    0.150000
+                 energy =   -0.194009
+                kinetic =    6.450170
+    potential(screened) =   -6.644179
+       potential(ionic) =  -16.245470
+
+POLgen: Perturbative polarization orbital with L=  1
+
+POLgen: Polarization orbital for state 6s
+
+   izeta = 1
+                     rc =    7.158402
+                 energy =   -0.090110
+                kinetic =    0.622430
+    potential(screened) =   -0.712540
+       potential(ionic) =   -6.949247
+atom: Total number of Sankey-type orbitals: 15
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 6s( 1.00)                                                            
+ 6p( 0.00)                                                            
+ 5d( 9.00)                                                            
+Vna: chval, zval:   10.00000  10.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   7.158402
+comcore: Pseudo-core radius Rcore=  4.130025
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1   78 Pt_SOC                  # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+Pt_SOC                2                    # Species label, number of l-shells
+ n=6   0   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   7.158      6.009   
+   1.000      1.000   
+ n=5   2   2                         # n, l, Nzeta 
+   5.044      3.022   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+Dumping basis to NetCDF file Pt_SOC.ion.nc
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                          (in Angstroms)
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000  -2.26654  1        1
+siesta:      0.00000   0.00000   2.26654  1        2
+
+siesta: System type = molecule  
+
+initatomlists: Number of atoms, orbitals, and projectors:      2    30    32
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+redata: Spin configuration                          = spin-orbit
+redata: Number of spin components                   = 8
+redata: Time-Reversal Symmetry                      = F
+redata: Spin-spiral                                 = F
+############################################################
+#              Spin-orbit coupling is in beta              #
+#           Several options may not be compatible          #
+############################################################
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.                         = Atomic and Orbital charges
+redata: Mesh Cutoff                                 =   300.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =     1000
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.0100
+redata: New DM Occupancy tolerance                  = 0.000000000001
+redata: Kick with linear mixing every               =       50 iterations
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: DM Tolerance for SCF                        =     0.000010
+redata: Require H convergence for SCF               =   F
+redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
+redata: Require (free) Energy convergence in SCF    =   F
+redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
+redata: Require Harris convergence for SCF          =   F
+redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   F
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =   580.2219 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Single-point calculation
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 5
+mix.SCF:    Linear mixing weight                 =     0.010000
+mix.SCF:    Damping                              =     0.010000
+mix.SCF:    SVD condition                        = 0.1000E-07
+mix.SCF:    Restart steps                        = 50
+mix.SCF:    Restart save steps                   = 0
+mix.SCF:    Number of mixing iterations          = 50
+mix.SCF:    Following mixing method              = Linear-Kick
+mix.SCF: Linear mixing                           = Linear-Kick
+mix.SCF:    Mixing weight                        =     0.500000
+mix.SCF:    Number of mixing iterations          = 1
+mix.SCF:    Following mixing method              = Pulay
+redata: Spin-component mixing                       = all
+redata: Save data in SIESTA.nc                      =   F
+redata: ***********************************************************************
+DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
+Size of DM history Fstack: 1
+Total number of electrons:    20.000000
+Total ionic charge:    20.000000
+
+* ProcessorY, Blocksize:    1  16
+
+
+* Orbital distribution balance (max,min):    16    14
+
+
+Time-reversal symmetry not used.
+
+siesta: k-grid: Number of k-points =     1
+siesta: k-grid: Cutoff (effective) =    10.000 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
+siesta: k-grid:    0   0   1      0.000
+
+
+                     ====================================
+                        Single-point calculation
+                     ====================================
+
+outcoor: Atomic coordinates (Ang):                          
+    0.00000000    0.00000000   -1.19940000   1       1  Pt_SOC
+    0.00000000    0.00000000    1.19940000   1       2  Pt_SOC
+
+outcell: Unit cell vectors (Ang):
+       20.000000    0.000000    0.000000
+        0.000000   20.000000    0.000000
+        0.000000    0.000000   20.000000
+
+outcell: Cell vector modules (Ang)   :   20.000000   20.000000   20.000000
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :   8000.0000
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=30 nrows=16 sparsity=.5333 nnzs=480, refcount: 8>
+  <dData1D:(new from dSpData1D) n=480, refcount: 1>
+refcount: 1>
+New_DM. Step:     1
+Initializing Density Matrix...
+
+initdm: Initial spin polarization (Qup-Qdown) =    0.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 0
+    nrows_g=30 nrows=16 sparsity=.5333 nnzs=480, refcount: 9>
+  <dData2D:(DMatomic) n=480 m=8, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:  108    1:  108    1:   54
+           2       1:  108    1:  108   55:  108
+
+InitMesh: MESH =   216 x   216 x   216 =    10077696
+InitMesh: (bp) =   108 x   108 x   108 =     1259712
+InitMesh: Mesh cutoff (required, used) =   300.000   322.366 Ry
+ExtMesh (bp) on 0 =   192 x   192 x   138 =     5087232
+New grid distribution:   2
+           1       1:  108    1:  108    1:   47
+           2       1:  108    1:  108   48:  108
+New grid distribution:   3
+           1       1:  108    1:  108    1:   44
+           2       1:  108    1:  108   45:  108
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =   192 x   192 x   131 =     4829184
+PhiOnMesh: Number of (b)points on node 0 =               548208
+PhiOnMesh: nlist on node 0 =               261543
+cdiag-debug: Node=0, lwork=      5888>= lworkq=      4028, lrwork=      6361>= lrworkq=      6301, liwork=       438>= liworkq=       438
+cdiag-debug: Node=1, lwork=      5760>= lworkq=      4028, lrwork=      5641>= lrworkq=      5581, liwork=       438>= liworkq=       438
+
+stepf: Fermi-Dirac step function
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =       -96.561505
+siesta: Eions   =      1671.574203
+siesta: Ena     =        29.270177
+siesta: Ekin    =      1138.640958
+siesta: Enl     =      -579.234733
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =         0.000001
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Exc     =     -1717.521677
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2806.651002
+siesta: Etot    =     -2800.419478
+siesta: FreeEng =     -2800.422027
+
+        iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV)  dHmx(Ry)
+   scf:    1    -2806.651002    -2800.419478    -2800.422027  0.528119 -3.047246 -1.000000
+timer: Routine,Calls,Time,% =    IterSCF     1       7.500  57.48
+   scf:    2    -2806.546298    -2800.481265    -2800.484050  0.521059 -3.092729 -1.000000
+   scf:    3    -2804.542633    -2802.020031    -2802.136234  0.254091 -4.626777 -1.000000
+   scf:    4    -2804.689174    -2801.798612    -2801.860227  0.264512 -4.225429 -1.000000
+   scf:    5    -2804.649588    -2801.774395    -2801.843183  0.246053 -4.320631 -1.000000
+   scf:    6    -2804.648640    -2804.247901    -2804.386150  0.170762 -3.832897 -1.000000
+   scf:    7    -2804.740571    -2803.988393    -2804.102214  0.187890 -4.171762 -1.000000
+   scf:    8    -2804.520798    -2803.297624    -2803.439697  0.145611 -4.210404 -1.000000
+   scf:    9    -2804.546251    -2803.749860    -2803.891000  0.122435 -4.061670 -1.000000
+   scf:   10    -2804.526143    -2804.211444    -2804.342812  0.060942 -3.995044 -1.000000
+   scf:   11    -2804.514256    -2804.329366    -2804.462700  0.046881 -4.157895 -1.000000
+   scf:   12    -2804.520110    -2804.552953    -2804.682789  0.037977 -4.160515 -1.000000
+   scf:   13    -2804.524747    -2804.405855    -2804.531953  0.026232 -4.188757 -1.000000
+   scf:   14    -2804.523094    -2804.509011    -2804.638155  0.013800 -4.170080 -1.000000
+   scf:   15    -2804.522008    -2804.514838    -2804.645022  0.015266 -4.173462 -1.000000
+   scf:   16    -2804.522000    -2804.514597    -2804.644780  0.015199 -4.175877 -1.000000
+   scf:   17    -2804.522531    -2804.532692    -2804.662600  0.014665 -4.189815 -1.000000
+   scf:   18    -2804.522541    -2804.538592    -2804.668475  0.014663 -4.189512 -1.000000
+   scf:   19    -2804.522636    -2804.537106    -2804.666983  0.014912 -4.189872 -1.000000
+   scf:   20    -2804.522457    -2804.532817    -2804.662560  0.014095 -4.189439 -1.000000
+   scf:   21    -2804.521988    -2804.524780    -2804.655343  0.015404 -4.195895 -1.000000
+   scf:   22    -2804.521960    -2804.535332    -2804.665998  0.016428 -4.166992 -1.000000
+   scf:   23    -2804.522482    -2804.550805    -2804.680958  0.015171 -4.186556 -1.000000
+   scf:   24    -2804.522483    -2804.545152    -2804.675305  0.015275 -4.186878 -1.000000
+   scf:   25    -2804.522728    -2804.542679    -2804.672712  0.015363 -4.188175 -1.000000
+   scf:   26    -2804.522962    -2804.541879    -2804.671823  0.015522 -4.189299 -1.000000
+   scf:   27    -2804.522925    -2804.548126    -2804.678016  0.015334 -4.185514 -1.000000
+   scf:   28    -2804.522989    -2804.543786    -2804.673621  0.015026 -4.194343 -1.000000
+   scf:   29    -2804.522757    -2804.534127    -2804.664135  0.015524 -4.187658 -1.000000
+   scf:   30    -2804.522774    -2804.544652    -2804.674643  0.015323 -4.187333 -1.000000
+   scf:   31    -2804.522813    -2804.543972    -2804.673933  0.015309 -4.187461 -1.000000
+   scf:   32    -2804.522868    -2804.543269    -2804.673195  0.015305 -4.187643 -1.000000
+   scf:   33    -2804.522732    -2804.544601    -2804.674515  0.015027 -4.185438 -1.000000
+   scf:   34    -2804.522825    -2804.544627    -2804.674497  0.014969 -4.189097 -1.000000
+   scf:   35    -2804.522707    -2804.539743    -2804.669709  0.015224 -4.185610 -1.000000
+   scf:   36    -2804.522717    -2804.541916    -2804.671873  0.015168 -4.185559 -1.000000
+   scf:   37    -2804.521846    -2804.572791    -2804.703655  0.015384 -4.178664 -1.000000
+   scf:   38    -2804.522132    -2804.566022    -2804.696613  0.015476 -4.181277 -1.000000
+   scf:   39    -2804.521997    -2804.567296    -2804.697876  0.015101 -4.178969 -1.000000
+   scf:   40    -2804.522271    -2804.563348    -2804.693854  0.015771 -4.191895 -1.000000
+   scf:   41    -2804.522277    -2804.541097    -2804.671626  0.014965 -4.167839 -1.000000
+   scf:   42    -2804.522242    -2804.545592    -2804.676147  0.014858 -4.167773 -1.000000
+   scf:   43    -2804.522270    -2804.541620    -2804.672208  0.012803 -4.180978 -1.000000
+   scf:   44    -2804.522238    -2804.547419    -2804.678023  0.012631 -4.179330 -1.000000
+   scf:   45    -2804.523558    -2804.525459    -2804.655203  0.011938 -4.197902 -1.000000
+   scf:   46    -2804.523237    -2804.530316    -2804.660226  0.011729 -4.193425 -1.000000
+   scf:   47    -2804.523223    -2804.539201    -2804.669134  0.011884 -4.196728 -1.000000
+   scf:   48    -2804.523220    -2804.533792    -2804.663722  0.012011 -4.192069 -1.000000
+   scf:   49    -2804.523261    -2804.527538    -2804.657431  0.011786 -4.196020 -1.000000
+   scf:   50    -2804.523258    -2804.527801    -2804.657706  0.011822 -4.196151 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:   51    -2804.523280    -2804.525966    -2804.655728  0.011378 -4.194308 -1.000000
+mix: switching mixer --> Pulay
+   scf:   52    -2804.523376    -2804.524768    -2804.655102  0.014750 -4.196911 -1.000000
+   scf:   53    -2804.523278    -2804.525929    -2804.655710  0.011470 -4.194380 -1.000000
+   scf:   54    -2804.523357    -2804.525760    -2804.655559  0.011848 -4.194754 -1.000000
+   scf:   55    -2804.521685    -2804.526306    -2804.657257  0.011811 -4.192815 -1.000000
+   scf:   56    -2804.521674    -2804.526479    -2804.657440  0.012127 -4.193173 -1.000000
+   scf:   57    -2804.522634    -2804.522577    -2804.653052  0.005816 -4.186596 -1.000000
+   scf:   58    -2804.522650    -2804.522600    -2804.653057  0.005887 -4.186486 -1.000000
+   scf:   59    -2804.522463    -2804.521643    -2804.652539  0.003939 -4.194748 -1.000000
+   scf:   60    -2804.522430    -2804.521691    -2804.652622  0.003814 -4.196000 -1.000000
+   scf:   61    -2804.522408    -2804.521720    -2804.652672  0.003674 -4.197355 -1.000000
+   scf:   62    -2804.522463    -2804.521504    -2804.652448  0.003568 -4.197662 -1.000000
+   scf:   63    -2804.522507    -2804.521426    -2804.652367  0.003395 -4.198234 -1.000000
+   scf:   64    -2804.522512    -2804.521346    -2804.652321  0.003429 -4.199035 -1.000000
+   scf:   65    -2804.522378    -2804.521179    -2804.652460  0.004195 -4.203374 -1.000000
+   scf:   66    -2804.522281    -2804.521173    -2804.652553  0.003862 -4.204159 -1.000000
+   scf:   67    -2804.522281    -2804.521156    -2804.652536  0.003837 -4.204117 -1.000000
+   scf:   68    -2804.522262    -2804.521114    -2804.652510  0.003553 -4.204072 -1.000000
+   scf:   69    -2804.522251    -2804.521141    -2804.652538  0.003584 -4.203905 -1.000000
+   scf:   70    -2804.522242    -2804.521227    -2804.652599  0.003690 -4.203099 -1.000000
+   scf:   71    -2804.522245    -2804.521243    -2804.652610  0.003747 -4.203006 -1.000000
+   scf:   72    -2804.522255    -2804.521233    -2804.652588  0.003716 -4.202928 -1.000000
+   scf:   73    -2804.522264    -2804.521282    -2804.652619  0.003927 -4.202893 -1.000000
+   scf:   74    -2804.522283    -2804.521234    -2804.652554  0.003733 -4.202617 -1.000000
+   scf:   75    -2804.522287    -2804.521218    -2804.652538  0.003693 -4.202716 -1.000000
+   scf:   76    -2804.522287    -2804.521181    -2804.652517  0.003632 -4.203253 -1.000000
+   scf:   77    -2804.522314    -2804.521149    -2804.652495  0.003667 -4.203925 -1.000000
+   scf:   78    -2804.522302    -2804.521149    -2804.652504  0.003636 -4.203871 -1.000000
+   scf:   79    -2804.522353    -2804.521164    -2804.652456  0.003756 -4.203535 -1.000000
+   scf:   80    -2804.522321    -2804.521192    -2804.652524  0.003854 -4.204066 -1.000000
+   scf:   81    -2804.522345    -2804.521195    -2804.652488  0.003818 -4.203301 -1.000000
+   scf:   82    -2804.522343    -2804.521180    -2804.652480  0.003805 -4.203503 -1.000000
+   scf:   83    -2804.522346    -2804.521174    -2804.652475  0.003790 -4.203575 -1.000000
+   scf:   84    -2804.522345    -2804.521176    -2804.652476  0.003794 -4.203553 -1.000000
+   scf:   85    -2804.522354    -2804.521177    -2804.652467  0.003811 -4.203499 -1.000000
+   scf:   86    -2804.522353    -2804.521187    -2804.652479  0.003864 -4.203557 -1.000000
+   scf:   87    -2804.522356    -2804.521183    -2804.652471  0.003849 -4.203493 -1.000000
+   scf:   88    -2804.522360    -2804.521186    -2804.652466  0.003862 -4.203323 -1.000000
+   scf:   89    -2804.522362    -2804.521182    -2804.652463  0.003854 -4.203367 -1.000000
+   scf:   90    -2804.522361    -2804.521184    -2804.652464  0.003857 -4.203346 -1.000000
+   scf:   91    -2804.522368    -2804.521186    -2804.652457  0.003876 -4.203314 -1.000000
+   scf:   92    -2804.522360    -2804.521207    -2804.652490  0.003990 -4.203517 -1.000000
+   scf:   93    -2804.522365    -2804.521204    -2804.652480  0.003977 -4.203424 -1.000000
+   scf:   94    -2804.522358    -2804.521199    -2804.652488  0.003954 -4.203660 -1.000000
+   scf:   95    -2804.522350    -2804.521218    -2804.652504  0.003992 -4.203437 -1.000000
+   scf:   96    -2804.522353    -2804.521208    -2804.652497  0.003973 -4.203582 -1.000000
+   scf:   97    -2804.522363    -2804.521205    -2804.652482  0.003991 -4.203541 -1.000000
+   scf:   98    -2804.522355    -2804.521224    -2804.652514  0.004120 -4.203794 -1.000000
+   scf:   99    -2804.522362    -2804.521219    -2804.652500  0.004098 -4.203652 -1.000000
+   scf:  100    -2804.522361    -2804.521218    -2804.652500  0.004095 -4.203679 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  101    -2804.522364    -2804.521214    -2804.652494  0.004092 -4.203705 -1.000000
+mix: switching mixer --> Pulay
+   scf:  102    -2804.522014    -2804.521819    -2804.653658  0.006480 -4.207688 -1.000000
+   scf:  103    -2804.522376    -2804.521199    -2804.652465  0.004031 -4.203601 -1.000000
+   scf:  104    -2804.522377    -2804.521193    -2804.652455  0.004007 -4.203559 -1.000000
+   scf:  105    -2804.522269    -2804.521254    -2804.652623  0.004281 -4.203982 -1.000000
+   scf:  106    -2804.521991    -2804.521186    -2804.652712  0.004042 -4.203270 -1.000000
+   scf:  107    -2804.521992    -2804.521178    -2804.652700  0.004014 -4.203213 -1.000000
+   scf:  108    -2804.522182    -2804.521528    -2804.652909  0.003810 -4.203557 -1.000000
+   scf:  109    -2804.522206    -2804.521540    -2804.652903  0.003695 -4.203562 -1.000000
+   scf:  110    -2804.522211    -2804.521624    -2804.653020  0.003751 -4.204235 -1.000000
+   scf:  111    -2804.522243    -2804.521650    -2804.653030  0.003496 -4.204397 -1.000000
+   scf:  112    -2804.522248    -2804.521663    -2804.653041  0.003376 -4.204441 -1.000000
+   scf:  113    -2804.522194    -2804.521729    -2804.653262  0.003838 -4.205038 -1.000000
+   scf:  114    -2804.522196    -2804.521769    -2804.653236  0.003208 -4.205251 -1.000000
+   scf:  115    -2804.522172    -2804.521910    -2804.653446  0.003287 -4.206234 -1.000000
+   scf:  116    -2804.522133    -2804.522023    -2804.653634  0.003422 -4.207026 -1.000000
+   scf:  117    -2804.522104    -2804.522014    -2804.653657  0.003322 -4.207207 -1.000000
+   scf:  118    -2804.522066    -2804.521929    -2804.653602  0.003039 -4.207139 -1.000000
+   scf:  119    -2804.522066    -2804.521934    -2804.653609  0.003052 -4.207183 -1.000000
+   scf:  120    -2804.521822    -2804.521851    -2804.653872  0.003391 -4.210077 -1.000000
+   scf:  121    -2804.521817    -2804.522029    -2804.654072  0.003230 -4.210509 -1.000000
+   scf:  122    -2804.521767    -2804.522269    -2804.654407  0.003282 -4.211715 -1.000000
+   scf:  123    -2804.521830    -2804.522067    -2804.654121  0.003653 -4.210968 -1.000000
+   scf:  124    -2804.521809    -2804.522011    -2804.654079  0.003521 -4.210827 -1.000000
+   scf:  125    -2804.521889    -2804.521997    -2804.653947  0.003375 -4.209801 -1.000000
+   scf:  126    -2804.521869    -2804.521838    -2804.653798  0.003393 -4.209613 -1.000000
+   scf:  127    -2804.521915    -2804.521956    -2804.653853  0.003278 -4.209187 -1.000000
+   scf:  128    -2804.521877    -2804.522100    -2804.654078  0.003264 -4.210203 -1.000000
+   scf:  129    -2804.521900    -2804.522017    -2804.653963  0.003411 -4.209888 -1.000000
+   scf:  130    -2804.521895    -2804.522038    -2804.653994  0.003422 -4.210051 -1.000000
+   scf:  131    -2804.521877    -2804.522057    -2804.654046  0.003450 -4.210422 -1.000000
+   scf:  132    -2804.521824    -2804.522018    -2804.654088  0.003549 -4.211230 -1.000000
+   scf:  133    -2804.521843    -2804.522019    -2804.654048  0.003453 -4.210664 -1.000000
+   scf:  134    -2804.521856    -2804.522004    -2804.654018  0.003516 -4.210606 -1.000000
+   scf:  135    -2804.521851    -2804.522141    -2804.654180  0.003465 -4.211084 -1.000000
+   scf:  136    -2804.521860    -2804.522058    -2804.654066  0.003413 -4.210563 -1.000000
+   scf:  137    -2804.521857    -2804.522060    -2804.654070  0.003384 -4.210551 -1.000000
+   scf:  138    -2804.521889    -2804.522024    -2804.654010  0.003657 -4.210503 -1.000000
+   scf:  139    -2804.521854    -2804.522129    -2804.654163  0.003487 -4.211035 -1.000000
+   scf:  140    -2804.521873    -2804.522073    -2804.654082  0.003630 -4.210764 -1.000000
+   scf:  141    -2804.521842    -2804.522134    -2804.654181  0.003451 -4.211104 -1.000000
+   scf:  142    -2804.521854    -2804.522157    -2804.654191  0.003446 -4.211054 -1.000000
+   scf:  143    -2804.521843    -2804.522245    -2804.654306  0.003445 -4.211474 -1.000000
+   scf:  144    -2804.521862    -2804.522149    -2804.654170  0.003686 -4.210885 -1.000000
+   scf:  145    -2804.521780    -2804.522167    -2804.654317  0.004190 -4.212140 -1.000000
+   scf:  146    -2804.521807    -2804.522241    -2804.654350  0.003729 -4.211844 -1.000000
+   scf:  147    -2804.521809    -2804.522222    -2804.654329  0.003703 -4.211822 -1.000000
+   scf:  148    -2804.521779    -2804.522437    -2804.654619  0.003901 -4.213039 -1.000000
+   scf:  149    -2804.521803    -2804.522043    -2804.654144  0.003935 -4.211472 -1.000000
+   scf:  150    -2804.521911    -2804.522077    -2804.654017  0.003544 -4.209936 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  151    -2804.521910    -2804.522046    -2804.653993  0.004121 -4.209995 -1.000000
+mix: switching mixer --> Pulay
+   scf:  152    -2804.521797    -2804.521986    -2804.654114  0.004202 -4.211876 -1.000000
+   scf:  153    -2804.521915    -2804.522057    -2804.653984  0.003602 -4.209735 -1.000000
+   scf:  154    -2804.521929    -2804.522068    -2804.653972  0.003529 -4.209481 -1.000000
+   scf:  155    -2804.521945    -2804.522094    -2804.653962  0.003354 -4.209029 -1.000000
+   scf:  156    -2804.521921    -2804.522094    -2804.653990  0.003508 -4.209193 -1.000000
+   scf:  157    -2804.521960    -2804.522105    -2804.653950  0.003303 -4.208802 -1.000000
+   scf:  158    -2804.521839    -2804.522094    -2804.654079  0.003575 -4.209650 -1.000000
+   scf:  159    -2804.521818    -2804.522091    -2804.654100  0.003682 -4.209805 -1.000000
+   scf:  160    -2804.521832    -2804.522051    -2804.654077  0.003654 -4.210358 -1.000000
+   scf:  161    -2804.521896    -2804.522097    -2804.654022  0.003544 -4.209347 -1.000000
+   scf:  162    -2804.521847    -2804.522091    -2804.654069  0.003650 -4.209612 -1.000000
+   scf:  163    -2804.521857    -2804.522079    -2804.654055  0.003594 -4.209775 -1.000000
+   scf:  164    -2804.521833    -2804.522092    -2804.654085  0.003561 -4.209713 -1.000000
+   scf:  165    -2804.521844    -2804.522097    -2804.654076  0.003499 -4.209600 -1.000000
+   scf:  166    -2804.521852    -2804.522098    -2804.654069  0.003439 -4.209554 -1.000000
+   scf:  167    -2804.521815    -2804.522079    -2804.654104  0.003566 -4.210020 -1.000000
+   scf:  168    -2804.521860    -2804.522100    -2804.654060  0.003669 -4.209455 -1.000000
+   scf:  169    -2804.521862    -2804.522083    -2804.654053  0.003733 -4.209697 -1.000000
+   scf:  170    -2804.521875    -2804.522122    -2804.654055  0.003457 -4.209128 -1.000000
+   scf:  171    -2804.521777    -2804.522069    -2804.654134  0.003916 -4.210314 -1.000000
+   scf:  172    -2804.521763    -2804.522081    -2804.654158  0.003961 -4.210245 -1.000000
+   scf:  173    -2804.521792    -2804.522081    -2804.654123  0.004009 -4.210073 -1.000000
+   scf:  174    -2804.521767    -2804.522064    -2804.654145  0.003919 -4.210439 -1.000000
+   scf:  175    -2804.521804    -2804.522064    -2804.654100  0.003747 -4.210248 -1.000000
+   scf:  176    -2804.521780    -2804.522007    -2804.654099  0.003293 -4.211236 -1.000000
+   scf:  177    -2804.521694    -2804.521924    -2804.654160  0.003131 -4.213208 -1.000000
+   scf:  178    -2804.521700    -2804.521931    -2804.654156  0.003473 -4.213014 -1.000000
+   scf:  179    -2804.521712    -2804.521947    -2804.654146  0.003300 -4.212645 -1.000000
+   scf:  180    -2804.521723    -2804.521942    -2804.654129  0.003136 -4.212620 -1.000000
+   scf:  181    -2804.521729    -2804.521923    -2804.654108  0.003076 -4.212829 -1.000000
+   scf:  182    -2804.521715    -2804.521935    -2804.654135  0.003061 -4.212813 -1.000000
+   scf:  183    -2804.521725    -2804.521927    -2804.654117  0.003223 -4.212820 -1.000000
+   scf:  184    -2804.521717    -2804.521910    -2804.654112  0.002910 -4.213111 -1.000000
+   scf:  185    -2804.521722    -2804.521910    -2804.654106  0.003139 -4.213050 -1.000000
+   scf:  186    -2804.521731    -2804.521934    -2804.654110  0.003106 -4.212570 -1.000000
+   scf:  187    -2804.521675    -2804.521918    -2804.654172  0.003078 -4.213375 -1.000000
+   scf:  188    -2804.521733    -2804.521912    -2804.654095  0.002856 -4.212936 -1.000000
+   scf:  189    -2804.521689    -2804.521913    -2804.654150  0.003132 -4.213382 -1.000000
+   scf:  190    -2804.521732    -2804.521915    -2804.654097  0.002830 -4.212851 -1.000000
+   scf:  191    -2804.521757    -2804.521916    -2804.654076  0.002843 -4.212550 -1.000000
+   scf:  192    -2804.521768    -2804.521927    -2804.654068  0.002874 -4.212326 -1.000000
+   scf:  193    -2804.521763    -2804.521928    -2804.654077  0.002703 -4.212376 -1.000000
+   scf:  194    -2804.521743    -2804.521923    -2804.654096  0.002918 -4.212542 -1.000000
+   scf:  195    -2804.521754    -2804.521922    -2804.654080  0.002780 -4.212564 -1.000000
+   scf:  196    -2804.521745    -2804.521917    -2804.654087  0.002999 -4.212723 -1.000000
+   scf:  197    -2804.521761    -2804.521931    -2804.654077  0.002904 -4.212367 -1.000000
+   scf:  198    -2804.521766    -2804.521916    -2804.654064  0.002772 -4.212497 -1.000000
+   scf:  199    -2804.521753    -2804.521905    -2804.654066  0.002944 -4.212720 -1.000000
+   scf:  200    -2804.521753    -2804.521924    -2804.654087  0.002660 -4.212530 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  201    -2804.521741    -2804.521919    -2804.654094  0.002968 -4.212415 -1.000000
+mix: switching mixer --> Pulay
+   scf:  202    -2804.521729    -2804.521838    -2804.654092  0.002692 -4.213535 -1.000000
+   scf:  203    -2804.521739    -2804.521906    -2804.654089  0.002753 -4.212569 -1.000000
+   scf:  204    -2804.521737    -2804.521907    -2804.654091  0.002828 -4.212569 -1.000000
+   scf:  205    -2804.521747    -2804.521919    -2804.654088  0.002721 -4.212386 -1.000000
+   scf:  206    -2804.521753    -2804.521929    -2804.654086  0.002727 -4.212248 -1.000000
+   scf:  207    -2804.521753    -2804.521926    -2804.654086  0.002666 -4.212285 -1.000000
+   scf:  208    -2804.521748    -2804.521919    -2804.654087  0.002734 -4.212385 -1.000000
+   scf:  209    -2804.521753    -2804.521927    -2804.654086  0.002675 -4.212286 -1.000000
+   scf:  210    -2804.521746    -2804.521921    -2804.654089  0.002778 -4.212366 -1.000000
+   scf:  211    -2804.521751    -2804.521922    -2804.654085  0.002631 -4.212341 -1.000000
+   scf:  212    -2804.521740    -2804.521911    -2804.654090  0.002852 -4.212508 -1.000000
+   scf:  213    -2804.521741    -2804.521909    -2804.654089  0.002826 -4.212528 -1.000000
+   scf:  214    -2804.521735    -2804.521901    -2804.654090  0.002778 -4.212647 -1.000000
+   scf:  215    -2804.521746    -2804.521920    -2804.654088  0.002900 -4.212370 -1.000000
+   scf:  216    -2804.521746    -2804.521921    -2804.654090  0.002900 -4.212380 -1.000000
+   scf:  217    -2804.521737    -2804.521901    -2804.654089  0.002706 -4.212627 -1.000000
+   scf:  218    -2804.521726    -2804.521885    -2804.654091  0.002861 -4.212786 -1.000000
+   scf:  219    -2804.521719    -2804.521874    -2804.654093  0.002847 -4.212915 -1.000000
+   scf:  220    -2804.521717    -2804.521872    -2804.654094  0.002759 -4.213001 -1.000000
+   scf:  221    -2804.521723    -2804.521880    -2804.654092  0.002892 -4.212794 -1.000000
+   scf:  222    -2804.521743    -2804.521912    -2804.654089  0.002875 -4.212358 -1.000000
+   scf:  223    -2804.521742    -2804.521907    -2804.654088  0.002896 -4.212370 -1.000000
+   scf:  224    -2804.521755    -2804.521928    -2804.654086  0.002883 -4.212164 -1.000000
+   scf:  225    -2804.521745    -2804.521919    -2804.654091  0.002804 -4.212335 -1.000000
+   scf:  226    -2804.521709    -2804.521885    -2804.654108  0.002598 -4.212937 -1.000000
+   scf:  227    -2804.521699    -2804.521884    -2804.654118  0.002549 -4.213028 -1.000000
+   scf:  228    -2804.521673    -2804.521870    -2804.654142  0.002441 -4.213414 -1.000000
+   scf:  229    -2804.521687    -2804.521869    -2804.654127  0.002376 -4.213374 -1.000000
+   scf:  230    -2804.521699    -2804.521867    -2804.654117  0.002404 -4.213374 -1.000000
+   scf:  231    -2804.521696    -2804.521869    -2804.654121  0.002440 -4.213334 -1.000000
+   scf:  232    -2804.521697    -2804.521865    -2804.654118  0.002404 -4.213405 -1.000000
+   scf:  233    -2804.521692    -2804.521875    -2804.654127  0.002369 -4.213295 -1.000000
+   scf:  234    -2804.521695    -2804.521873    -2804.654124  0.002401 -4.213339 -1.000000
+   scf:  235    -2804.521695    -2804.521872    -2804.654123  0.002407 -4.213362 -1.000000
+   scf:  236    -2804.521686    -2804.521865    -2804.654129  0.002398 -4.213508 -1.000000
+   scf:  237    -2804.521675    -2804.521858    -2804.654137  0.002370 -4.213636 -1.000000
+   scf:  238    -2804.521678    -2804.521859    -2804.654135  0.002396 -4.213638 -1.000000
+   scf:  239    -2804.521668    -2804.521849    -2804.654140  0.002374 -4.213821 -1.000000
+   scf:  240    -2804.521655    -2804.521839    -2804.654146  0.002367 -4.214022 -1.000000
+   scf:  241    -2804.521659    -2804.521841    -2804.654144  0.002364 -4.213984 -1.000000
+   scf:  242    -2804.521649    -2804.521826    -2804.654149  0.002349 -4.214319 -1.000000
+   scf:  243    -2804.521637    -2804.521814    -2804.654159  0.002332 -4.214600 -1.000000
+   scf:  244    -2804.521633    -2804.521809    -2804.654161  0.002328 -4.214687 -1.000000
+   scf:  245    -2804.521620    -2804.521798    -2804.654168  0.002323 -4.214912 -1.000000
+   scf:  246    -2804.521627    -2804.521813    -2804.654169  0.002335 -4.214688 -1.000000
+   scf:  247    -2804.521629    -2804.521815    -2804.654167  0.002341 -4.214644 -1.000000
+   scf:  248    -2804.521629    -2804.521815    -2804.654166  0.002344 -4.214639 -1.000000
+   scf:  249    -2804.521649    -2804.521821    -2804.654148  0.002353 -4.214367 -1.000000
+   scf:  250    -2804.521602    -2804.521786    -2804.654179  0.002345 -4.215196 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  251    -2804.521640    -2804.521827    -2804.654161  0.002348 -4.214454 -1.000000
+mix: switching mixer --> Pulay
+   scf:  252    -2804.521614    -2804.521738    -2804.654133  0.002377 -4.215442 -1.000000
+   scf:  253    -2804.521634    -2804.521812    -2804.654157  0.002348 -4.214616 -1.000000
+   scf:  254    -2804.521634    -2804.521810    -2804.654156  0.002349 -4.214635 -1.000000
+   scf:  255    -2804.521634    -2804.521811    -2804.654156  0.002348 -4.214624 -1.000000
+   scf:  256    -2804.521643    -2804.521825    -2804.654157  0.002348 -4.214448 -1.000000
+   scf:  257    -2804.521652    -2804.521824    -2804.654143  0.002331 -4.214375 -1.000000
+   scf:  258    -2804.521661    -2804.521812    -2804.654126  0.002325 -4.214424 -1.000000
+   scf:  259    -2804.521661    -2804.521814    -2804.654126  0.002327 -4.214409 -1.000000
+   scf:  260    -2804.521657    -2804.521809    -2804.654127  0.002317 -4.214476 -1.000000
+   scf:  261    -2804.521612    -2804.521791    -2804.654164  0.002252 -4.214885 -1.000000
+   scf:  262    -2804.521621    -2804.521796    -2804.654157  0.002254 -4.214790 -1.000000
+   scf:  263    -2804.521609    -2804.521788    -2804.654164  0.002277 -4.214937 -1.000000
+   scf:  264    -2804.521603    -2804.521778    -2804.654164  0.002263 -4.215058 -1.000000
+   scf:  265    -2804.521613    -2804.521794    -2804.654163  0.002280 -4.214864 -1.000000
+   scf:  266    -2804.521612    -2804.521793    -2804.654164  0.002295 -4.214878 -1.000000
+   scf:  267    -2804.521604    -2804.521792    -2804.654172  0.002271 -4.214941 -1.000000
+   scf:  268    -2804.521616    -2804.521801    -2804.654165  0.002270 -4.214784 -1.000000
+   scf:  269    -2804.521603    -2804.521786    -2804.654168  0.002268 -4.214983 -1.000000
+   scf:  270    -2804.521604    -2804.521786    -2804.654167  0.002263 -4.214985 -1.000000
+   scf:  271    -2804.521607    -2804.521792    -2804.654168  0.002279 -4.214919 -1.000000
+   scf:  272    -2804.521595    -2804.521778    -2804.654173  0.002246 -4.215097 -1.000000
+   scf:  273    -2804.521602    -2804.521784    -2804.654169  0.002233 -4.214998 -1.000000
+   scf:  274    -2804.521579    -2804.521759    -2804.654179  0.002250 -4.215374 -1.000000
+   scf:  275    -2804.521582    -2804.521766    -2804.654183  0.002264 -4.215289 -1.000000
+   scf:  276    -2804.521576    -2804.521761    -2804.654187  0.002373 -4.215366 -1.000000
+   scf:  277    -2804.521584    -2804.521768    -2804.654177  0.002254 -4.215258 -1.000000
+   scf:  278    -2804.521587    -2804.521769    -2804.654174  0.002271 -4.215240 -1.000000
+   scf:  279    -2804.521568    -2804.521751    -2804.654192  0.002458 -4.215521 -1.000000
+   scf:  280    -2804.521590    -2804.521777    -2804.654177  0.002257 -4.215144 -1.000000
+   scf:  281    -2804.521576    -2804.521761    -2804.654182  0.002237 -4.215373 -1.000000
+   scf:  282    -2804.521588    -2804.521774    -2804.654181  0.002270 -4.215176 -1.000000
+   scf:  283    -2804.521581    -2804.521767    -2804.654179  0.002266 -4.215294 -1.000000
+   scf:  284    -2804.521581    -2804.521768    -2804.654179  0.002264 -4.215282 -1.000000
+   scf:  285    -2804.521566    -2804.521763    -2804.654194  0.002257 -4.215401 -1.000000
+   scf:  286    -2804.521577    -2804.521758    -2804.654177  0.002261 -4.215402 -1.000000
+   scf:  287    -2804.521585    -2804.521763    -2804.654175  0.002251 -4.215300 -1.000000
+   scf:  288    -2804.521586    -2804.521767    -2804.654178  0.002243 -4.215264 -1.000000
+   scf:  289    -2804.521596    -2804.521767    -2804.654163  0.002297 -4.215213 -1.000000
+   scf:  290    -2804.521569    -2804.521733    -2804.654171  0.002259 -4.215703 -1.000000
+   scf:  291    -2804.521583    -2804.521760    -2804.654172  0.002277 -4.215345 -1.000000
+   scf:  292    -2804.521591    -2804.521761    -2804.654164  0.002291 -4.215291 -1.000000
+   scf:  293    -2804.521590    -2804.521762    -2804.654165  0.002292 -4.215289 -1.000000
+   scf:  294    -2804.521589    -2804.521761    -2804.654165  0.002293 -4.215312 -1.000000
+   scf:  295    -2804.521588    -2804.521768    -2804.654172  0.002279 -4.215253 -1.000000
+   scf:  296    -2804.521599    -2804.521788    -2804.654173  0.002282 -4.215005 -1.000000
+   scf:  297    -2804.521576    -2804.521763    -2804.654181  0.002262 -4.215362 -1.000000
+   scf:  298    -2804.521579    -2804.521763    -2804.654178  0.002250 -4.215346 -1.000000
+   scf:  299    -2804.521578    -2804.521763    -2804.654179  0.002241 -4.215354 -1.000000
+   scf:  300    -2804.521589    -2804.521768    -2804.654170  0.002262 -4.215241 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  301    -2804.521591    -2804.521754    -2804.654158  0.002227 -4.215378 -1.000000
+mix: switching mixer --> Pulay
+   scf:  302    -2804.521556    -2804.521678    -2804.654152  0.002235 -4.216325 -1.000000
+   scf:  303    -2804.521583    -2804.521739    -2804.654155  0.002241 -4.215560 -1.000000
+   scf:  304    -2804.521591    -2804.521755    -2804.654158  0.002221 -4.215369 -1.000000
+   scf:  305    -2804.521580    -2804.521733    -2804.654155  0.002248 -4.215624 -1.000000
+   scf:  306    -2804.521588    -2804.521753    -2804.654159  0.002159 -4.215373 -1.000000
+   scf:  307    -2804.521582    -2804.521741    -2804.654157  0.002165 -4.215511 -1.000000
+   scf:  308    -2804.521551    -2804.521694    -2804.654157  0.002079 -4.216115 -1.000000
+   scf:  309    -2804.521531    -2804.521665    -2804.654157  0.001884 -4.216515 -1.000000
+   scf:  310    -2804.521500    -2804.521631    -2804.654166  0.001817 -4.217041 -1.000000
+   scf:  311    -2804.521481    -2804.521609    -2804.654170  0.001631 -4.217392 -1.000000
+   scf:  312    -2804.521409    -2804.521546    -2804.654202  0.001649 -4.218618 -1.000000
+   scf:  313    -2804.521392    -2804.521532    -2804.654212  0.001681 -4.218924 -1.000000
+   scf:  314    -2804.521407    -2804.521542    -2804.654202  0.001601 -4.218676 -1.000000
+   scf:  315    -2804.521398    -2804.521537    -2804.654210  0.001810 -4.218802 -1.000000
+   scf:  316    -2804.521372    -2804.521520    -2804.654225  0.001633 -4.219253 -1.000000
+   scf:  317    -2804.521360    -2804.521511    -2804.654230  0.001510 -4.219501 -1.000000
+   scf:  318    -2804.521367    -2804.521516    -2804.654226  0.001531 -4.219369 -1.000000
+   scf:  319    -2804.521369    -2804.521517    -2804.654225  0.001581 -4.219314 -1.000000
+   scf:  320    -2804.521347    -2804.521503    -2804.654239  0.001532 -4.219730 -1.000000
+   scf:  321    -2804.521363    -2804.521513    -2804.654227  0.001510 -4.219414 -1.000000
+   scf:  322    -2804.521357    -2804.521506    -2804.654227  0.001503 -4.219415 -1.000000
+   scf:  323    -2804.521365    -2804.521511    -2804.654223  0.001500 -4.219289 -1.000000
+   scf:  324    -2804.521352    -2804.521503    -2804.654230  0.001514 -4.219493 -1.000000
+   scf:  325    -2804.521360    -2804.521508    -2804.654225  0.001516 -4.219370 -1.000000
+   scf:  326    -2804.521352    -2804.521501    -2804.654229  0.001511 -4.219515 -1.000000
+   scf:  327    -2804.521353    -2804.521501    -2804.654227  0.001484 -4.219479 -1.000000
+   scf:  328    -2804.521352    -2804.521500    -2804.654227  0.001480 -4.219495 -1.000000
+   scf:  329    -2804.521346    -2804.521486    -2804.654223  0.001563 -4.219646 -1.000000
+   scf:  330    -2804.521354    -2804.521498    -2804.654224  0.001549 -4.219506 -1.000000
+   scf:  331    -2804.521347    -2804.521493    -2804.654228  0.001513 -4.219622 -1.000000
+   scf:  332    -2804.521351    -2804.521495    -2804.654225  0.001561 -4.219528 -1.000000
+   scf:  333    -2804.521357    -2804.521512    -2804.654232  0.001507 -4.219404 -1.000000
+   scf:  334    -2804.521351    -2804.521505    -2804.654234  0.001487 -4.219554 -1.000000
+   scf:  335    -2804.521350    -2804.521501    -2804.654232  0.001485 -4.219572 -1.000000
+   scf:  336    -2804.521349    -2804.521506    -2804.654237  0.001506 -4.219565 -1.000000
+   scf:  337    -2804.521355    -2804.521509    -2804.654232  0.001505 -4.219470 -1.000000
+   scf:  338    -2804.521354    -2804.521508    -2804.654232  0.001514 -4.219478 -1.000000
+   scf:  339    -2804.521339    -2804.521491    -2804.654236  0.001523 -4.219763 -1.000000
+   scf:  340    -2804.521331    -2804.521485    -2804.654240  0.001501 -4.219905 -1.000000
+   scf:  341    -2804.521331    -2804.521482    -2804.654237  0.001512 -4.219917 -1.000000
+   scf:  342    -2804.521340    -2804.521493    -2804.654237  0.001532 -4.219812 -1.000000
+   scf:  343    -2804.521335    -2804.521488    -2804.654238  0.001533 -4.219823 -1.000000
+   scf:  344    -2804.521334    -2804.521486    -2804.654237  0.001541 -4.219830 -1.000000
+   scf:  345    -2804.521324    -2804.521475    -2804.654238  0.001553 -4.219993 -1.000000
+   scf:  346    -2804.521343    -2804.521492    -2804.654231  0.001569 -4.219632 -1.000000
+   scf:  347    -2804.521345    -2804.521492    -2804.654230  0.001547 -4.219625 -1.000000
+   scf:  348    -2804.521354    -2804.521498    -2804.654224  0.001624 -4.219524 -1.000000
+   scf:  349    -2804.521339    -2804.521482    -2804.654229  0.001549 -4.219819 -1.000000
+   scf:  350    -2804.521333    -2804.521475    -2804.654230  0.001578 -4.219942 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  351    -2804.521331    -2804.521474    -2804.654231  0.001559 -4.219967 -1.000000
+mix: switching mixer --> Pulay
+   scf:  352    -2804.521300    -2804.521404    -2804.654208  0.001580 -4.220581 -1.000000
+   scf:  353    -2804.521330    -2804.521472    -2804.654230  0.001553 -4.219987 -1.000000
+   scf:  354    -2804.521330    -2804.521472    -2804.654230  0.001553 -4.219988 -1.000000
+   scf:  355    -2804.521345    -2804.521500    -2804.654237  0.001462 -4.219732 -1.000000
+   scf:  356    -2804.521345    -2804.521499    -2804.654237  0.001466 -4.219736 -1.000000
+   scf:  357    -2804.521344    -2804.521496    -2804.654235  0.001426 -4.219764 -1.000000
+   scf:  358    -2804.521343    -2804.521497    -2804.654237  0.001473 -4.219761 -1.000000
+   scf:  359    -2804.521351    -2804.521516    -2804.654245  0.001471 -4.219601 -1.000000
+   scf:  360    -2804.521347    -2804.521515    -2804.654248  0.001484 -4.219621 -1.000000
+   scf:  361    -2804.521341    -2804.521512    -2804.654252  0.001463 -4.219653 -1.000000
+   scf:  362    -2804.521321    -2804.521493    -2804.654255  0.001345 -4.219808 -1.000000
+   scf:  363    -2804.521296    -2804.521455    -2804.654244  0.001176 -4.220095 -1.000000
+   scf:  364    -2804.521293    -2804.521431    -2804.654227  0.001129 -4.220239 -1.000000
+   scf:  365    -2804.521291    -2804.521431    -2804.654228  0.001136 -4.220244 -1.000000
+   scf:  366    -2804.521288    -2804.521427    -2804.654228  0.001151 -4.220270 -1.000000
+   scf:  367    -2804.521286    -2804.521427    -2804.654230  0.001139 -4.220277 -1.000000
+   scf:  368    -2804.521284    -2804.521425    -2804.654230  0.001114 -4.220293 -1.000000
+   scf:  369    -2804.521284    -2804.521425    -2804.654230  0.001107 -4.220294 -1.000000
+   scf:  370    -2804.521284    -2804.521418    -2804.654223  0.001125 -4.220332 -1.000000
+   scf:  371    -2804.521284    -2804.521412    -2804.654217  0.001093 -4.220358 -1.000000
+   scf:  372    -2804.521285    -2804.521411    -2804.654215  0.001065 -4.220362 -1.000000
+   scf:  373    -2804.521282    -2804.521409    -2804.654216  0.001084 -4.220384 -1.000000
+   scf:  374    -2804.521288    -2804.521410    -2804.654211  0.001102 -4.220357 -1.000000
+   scf:  375    -2804.521290    -2804.521409    -2804.654208  0.001076 -4.220362 -1.000000
+   scf:  376    -2804.521288    -2804.521409    -2804.654210  0.001078 -4.220364 -1.000000
+   scf:  377    -2804.521285    -2804.521395    -2804.654200  0.001038 -4.220467 -1.000000
+   scf:  378    -2804.521287    -2804.521394    -2804.654198  0.001029 -4.220471 -1.000000
+   scf:  379    -2804.521286    -2804.521393    -2804.654198  0.001029 -4.220482 -1.000000
+   scf:  380    -2804.521282    -2804.521388    -2804.654197  0.001032 -4.220525 -1.000000
+   scf:  381    -2804.521288    -2804.521397    -2804.654200  0.001022 -4.220437 -1.000000
+   scf:  382    -2804.521290    -2804.521405    -2804.654205  0.001034 -4.220376 -1.000000
+   scf:  383    -2804.521290    -2804.521403    -2804.654203  0.001030 -4.220389 -1.000000
+   scf:  384    -2804.521290    -2804.521404    -2804.654204  0.001029 -4.220380 -1.000000
+   scf:  385    -2804.521295    -2804.521410    -2804.654203  0.000982 -4.220302 -1.000000
+   scf:  386    -2804.521291    -2804.521404    -2804.654202  0.000991 -4.220361 -1.000000
+   scf:  387    -2804.521300    -2804.521422    -2804.654208  0.000997 -4.220207 -1.000000
+   scf:  388    -2804.521298    -2804.521422    -2804.654210  0.001003 -4.220211 -1.000000
+   scf:  389    -2804.521299    -2804.521422    -2804.654209  0.000997 -4.220211 -1.000000
+   scf:  390    -2804.521299    -2804.521415    -2804.654204  0.000982 -4.220255 -1.000000
+   scf:  391    -2804.521302    -2804.521421    -2804.654205  0.000960 -4.220204 -1.000000
+   scf:  392    -2804.521300    -2804.521414    -2804.654202  0.000985 -4.220263 -1.000000
+   scf:  393    -2804.521303    -2804.521423    -2804.654206  0.000938 -4.220177 -1.000000
+   scf:  394    -2804.521303    -2804.521424    -2804.654207  0.000941 -4.220169 -1.000000
+   scf:  395    -2804.521301    -2804.521422    -2804.654207  0.000948 -4.220186 -1.000000
+   scf:  396    -2804.521297    -2804.521419    -2804.654208  0.000940 -4.220216 -1.000000
+   scf:  397    -2804.521295    -2804.521416    -2804.654208  0.000933 -4.220237 -1.000000
+   scf:  398    -2804.521291    -2804.521407    -2804.654203  0.000932 -4.220309 -1.000000
+   scf:  399    -2804.521288    -2804.521399    -2804.654200  0.000943 -4.220372 -1.000000
+   scf:  400    -2804.521287    -2804.521396    -2804.654198  0.000945 -4.220397 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  401    -2804.521287    -2804.521395    -2804.654198  0.000938 -4.220404 -1.000000
+mix: switching mixer --> Pulay
+   scf:  402    -2804.521254    -2804.521341    -2804.654186  0.000838 -4.220945 -1.000000
+   scf:  403    -2804.521271    -2804.521370    -2804.654192  0.000915 -4.220643 -1.000000
+   scf:  404    -2804.521273    -2804.521373    -2804.654193  0.000918 -4.220617 -1.000000
+   scf:  405    -2804.521273    -2804.521373    -2804.654193  0.000917 -4.220621 -1.000000
+   scf:  406    -2804.521268    -2804.521371    -2804.654195  0.000887 -4.220653 -1.000000
+   scf:  407    -2804.521270    -2804.521370    -2804.654193  0.000905 -4.220653 -1.000000
+   scf:  408    -2804.521270    -2804.521368    -2804.654192  0.000907 -4.220672 -1.000000
+   scf:  409    -2804.521269    -2804.521365    -2804.654190  0.000911 -4.220701 -1.000000
+   scf:  410    -2804.521268    -2804.521366    -2804.654191  0.000906 -4.220694 -1.000000
+   scf:  411    -2804.521264    -2804.521360    -2804.654190  0.000896 -4.220747 -1.000000
+   scf:  412    -2804.521263    -2804.521352    -2804.654186  0.000894 -4.220826 -1.000000
+   scf:  413    -2804.521262    -2804.521354    -2804.654187  0.000892 -4.220814 -1.000000
+   scf:  414    -2804.521271    -2804.521359    -2804.654185  0.000931 -4.220752 -1.000000
+   scf:  415    -2804.521271    -2804.521360    -2804.654186  0.000931 -4.220742 -1.000000
+   scf:  416    -2804.521269    -2804.521357    -2804.654186  0.000921 -4.220775 -1.000000
+   scf:  417    -2804.521263    -2804.521353    -2804.654187  0.000901 -4.220819 -1.000000
+   scf:  418    -2804.521258    -2804.521350    -2804.654187  0.000882 -4.220849 -1.000000
+   scf:  419    -2804.521258    -2804.521351    -2804.654188  0.000884 -4.220840 -1.000000
+   scf:  420    -2804.521258    -2804.521349    -2804.654187  0.000884 -4.220861 -1.000000
+   scf:  421    -2804.521264    -2804.521345    -2804.654182  0.000909 -4.220890 -1.000000
+   scf:  422    -2804.521259    -2804.521351    -2804.654188  0.000883 -4.220843 -1.000000
+   scf:  423    -2804.521255    -2804.521343    -2804.654188  0.000851 -4.220932 -1.000000
+   scf:  424    -2804.521254    -2804.521342    -2804.654187  0.000859 -4.220938 -1.000000
+   scf:  425    -2804.521254    -2804.521342    -2804.654185  0.000862 -4.220940 -1.000000
+   scf:  426    -2804.521259    -2804.521349    -2804.654186  0.000858 -4.220875 -1.000000
+   scf:  427    -2804.521262    -2804.521355    -2804.654188  0.000862 -4.220816 -1.000000
+   scf:  428    -2804.521262    -2804.521351    -2804.654185  0.000851 -4.220855 -1.000000
+   scf:  429    -2804.521262    -2804.521350    -2804.654184  0.000848 -4.220865 -1.000000
+   scf:  430    -2804.521257    -2804.521343    -2804.654183  0.000837 -4.220938 -1.000000
+   scf:  431    -2804.521259    -2804.521347    -2804.654184  0.000851 -4.220897 -1.000000
+   scf:  432    -2804.521263    -2804.521347    -2804.654180  0.000847 -4.220887 -1.000000
+   scf:  433    -2804.521258    -2804.521340    -2804.654179  0.000837 -4.220952 -1.000000
+   scf:  434    -2804.521265    -2804.521351    -2804.654182  0.000853 -4.220844 -1.000000
+   scf:  435    -2804.521273    -2804.521361    -2804.654182  0.000875 -4.220740 -1.000000
+   scf:  436    -2804.521277    -2804.521363    -2804.654180  0.000888 -4.220713 -1.000000
+   scf:  437    -2804.521274    -2804.521359    -2804.654179  0.000881 -4.220764 -1.000000
+   scf:  438    -2804.521269    -2804.521352    -2804.654178  0.000872 -4.220839 -1.000000
+   scf:  439    -2804.521270    -2804.521353    -2804.654178  0.000872 -4.220830 -1.000000
+   scf:  440    -2804.521263    -2804.521352    -2804.654184  0.000883 -4.220836 -1.000000
+   scf:  441    -2804.521261    -2804.521350    -2804.654184  0.000879 -4.220859 -1.000000
+   scf:  442    -2804.521224    -2804.521311    -2804.654187  0.000815 -4.221281 -1.000000
+   scf:  443    -2804.521199    -2804.521285    -2804.654190  0.000797 -4.221579 -1.000000
+   scf:  444    -2804.521199    -2804.521285    -2804.654190  0.000797 -4.221582 -1.000000
+   scf:  445    -2804.521195    -2804.521280    -2804.654190  0.000817 -4.221641 -1.000000
+   scf:  446    -2804.521196    -2804.521280    -2804.654189  0.000818 -4.221633 -1.000000
+   scf:  447    -2804.521203    -2804.521288    -2804.654189  0.000819 -4.221544 -1.000000
+   scf:  448    -2804.521202    -2804.521287    -2804.654188  0.000818 -4.221558 -1.000000
+   scf:  449    -2804.521175    -2804.521246    -2804.654180  0.000742 -4.222013 -1.000000
+   scf:  450    -2804.521171    -2804.521243    -2804.654181  0.000751 -4.222057 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  451    -2804.521171    -2804.521245    -2804.654183  0.000753 -4.222034 -1.000000
+mix: switching mixer --> Pulay
+   scf:  452    -2804.521163    -2804.521207    -2804.654167  0.000968 -4.222433 -1.000000
+   scf:  453    -2804.521172    -2804.521238    -2804.654176  0.000765 -4.222093 -1.000000
+   scf:  454    -2804.521172    -2804.521241    -2804.654178  0.000749 -4.222072 -1.000000
+   scf:  455    -2804.521172    -2804.521240    -2804.654178  0.000748 -4.222078 -1.000000
+   scf:  456    -2804.521173    -2804.521243    -2804.654179  0.000749 -4.222051 -1.000000
+   scf:  457    -2804.521174    -2804.521243    -2804.654177  0.000759 -4.222048 -1.000000
+   scf:  458    -2804.521183    -2804.521254    -2804.654179  0.000763 -4.221916 -1.000000
+   scf:  459    -2804.521186    -2804.521258    -2804.654178  0.000759 -4.221875 -1.000000
+   scf:  460    -2804.521187    -2804.521257    -2804.654177  0.000754 -4.221881 -1.000000
+   scf:  461    -2804.521186    -2804.521254    -2804.654175  0.000760 -4.221915 -1.000000
+   scf:  462    -2804.521177    -2804.521247    -2804.654177  0.000739 -4.222005 -1.000000
+   scf:  463    -2804.521167    -2804.521236    -2804.654178  0.000707 -4.222138 -1.000000
+   scf:  464    -2804.521173    -2804.521244    -2804.654178  0.000699 -4.222047 -1.000000
+   scf:  465    -2804.521176    -2804.521246    -2804.654178  0.000694 -4.222023 -1.000000
+   scf:  466    -2804.521176    -2804.521245    -2804.654177  0.000708 -4.222031 -1.000000
+   scf:  467    -2804.521170    -2804.521236    -2804.654175  0.000689 -4.222130 -1.000000
+   scf:  468    -2804.521158    -2804.521220    -2804.654173  0.000650 -4.222302 -1.000000
+   scf:  469    -2804.521159    -2804.521220    -2804.654172  0.000651 -4.222306 -1.000000
+   scf:  470    -2804.521156    -2804.521214    -2804.654171  0.000638 -4.222369 -1.000000
+   scf:  471    -2804.521154    -2804.521211    -2804.654170  0.000632 -4.222406 -1.000000
+   scf:  472    -2804.521154    -2804.521214    -2804.654172  0.000628 -4.222370 -1.000000
+   scf:  473    -2804.521158    -2804.521219    -2804.654172  0.000651 -4.222311 -1.000000
+   scf:  474    -2804.521155    -2804.521215    -2804.654172  0.000639 -4.222355 -1.000000
+   scf:  475    -2804.521157    -2804.521219    -2804.654173  0.000649 -4.222320 -1.000000
+   scf:  476    -2804.521156    -2804.521218    -2804.654173  0.000651 -4.222324 -1.000000
+   scf:  477    -2804.521139    -2804.521197    -2804.654173  0.000764 -4.222577 -1.000000
+   scf:  478    -2804.521138    -2804.521196    -2804.654173  0.000810 -4.222586 -1.000000
+   scf:  479    -2804.521142    -2804.521199    -2804.654171  0.000627 -4.222540 -1.000000
+   scf:  480    -2804.521145    -2804.521203    -2804.654171  0.000636 -4.222497 -1.000000
+   scf:  481    -2804.521144    -2804.521202    -2804.654170  0.000640 -4.222513 -1.000000
+   scf:  482    -2804.521147    -2804.521206    -2804.654171  0.000642 -4.222465 -1.000000
+   scf:  483    -2804.521149    -2804.521207    -2804.654171  0.000649 -4.222448 -1.000000
+   scf:  484    -2804.521147    -2804.521205    -2804.654171  0.000641 -4.222469 -1.000000
+   scf:  485    -2804.521137    -2804.521193    -2804.654171  0.000690 -4.222612 -1.000000
+   scf:  486    -2804.521129    -2804.521181    -2804.654172  0.000729 -4.222754 -1.000000
+   scf:  487    -2804.521140    -2804.521197    -2804.654171  0.000611 -4.222570 -1.000000
+   scf:  488    -2804.521142    -2804.521199    -2804.654170  0.000624 -4.222544 -1.000000
+   scf:  489    -2804.521136    -2804.521193    -2804.654172  0.000738 -4.222620 -1.000000
+   scf:  490    -2804.521142    -2804.521199    -2804.654170  0.000624 -4.222545 -1.000000
+   scf:  491    -2804.521142    -2804.521199    -2804.654170  0.000625 -4.222547 -1.000000
+   scf:  492    -2804.521144    -2804.521201    -2804.654170  0.000628 -4.222516 -1.000000
+   scf:  493    -2804.521139    -2804.521194    -2804.654169  0.000620 -4.222598 -1.000000
+   scf:  494    -2804.521131    -2804.521189    -2804.654174  0.000910 -4.222677 -1.000000
+   scf:  495    -2804.521144    -2804.521201    -2804.654170  0.000629 -4.222520 -1.000000
+   scf:  496    -2804.521143    -2804.521199    -2804.654170  0.000627 -4.222537 -1.000000
+   scf:  497    -2804.521141    -2804.521197    -2804.654169  0.000620 -4.222562 -1.000000
+   scf:  498    -2804.521143    -2804.521199    -2804.654169  0.000626 -4.222545 -1.000000
+   scf:  499    -2804.521144    -2804.521199    -2804.654168  0.000619 -4.222547 -1.000000
+   scf:  500    -2804.521147    -2804.521205    -2804.654170  0.000636 -4.222477 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  501    -2804.521141    -2804.521198    -2804.654171  0.000626 -4.222558 -1.000000
+mix: switching mixer --> Pulay
+   scf:  502    -2804.521111    -2804.521169    -2804.654182  0.000963 -4.222929 -1.000000
+   scf:  503    -2804.521144    -2804.521202    -2804.654171  0.000621 -4.222507 -1.000000
+   scf:  504    -2804.521143    -2804.521200    -2804.654171  0.000619 -4.222528 -1.000000
+   scf:  505    -2804.521143    -2804.521201    -2804.654171  0.000619 -4.222525 -1.000000
+   scf:  506    -2804.521144    -2804.521202    -2804.654171  0.000623 -4.222508 -1.000000
+   scf:  507    -2804.521150    -2804.521210    -2804.654172  0.000627 -4.222417 -1.000000
+   scf:  508    -2804.521140    -2804.521200    -2804.654174  0.000619 -4.222542 -1.000000
+   scf:  509    -2804.521151    -2804.521211    -2804.654172  0.000625 -4.222407 -1.000000
+   scf:  510    -2804.521143    -2804.521203    -2804.654173  0.000625 -4.222505 -1.000000
+   scf:  511    -2804.521144    -2804.521204    -2804.654173  0.000626 -4.222495 -1.000000
+   scf:  512    -2804.521155    -2804.521216    -2804.654173  0.000627 -4.222353 -1.000000
+   scf:  513    -2804.521154    -2804.521216    -2804.654173  0.000626 -4.222360 -1.000000
+   scf:  514    -2804.521150    -2804.521209    -2804.654172  0.000618 -4.222429 -1.000000
+   scf:  515    -2804.521143    -2804.521199    -2804.654169  0.000597 -4.222542 -1.000000
+   scf:  516    -2804.521139    -2804.521192    -2804.654168  0.000584 -4.222618 -1.000000
+   scf:  517    -2804.521116    -2804.521165    -2804.654166  0.000538 -4.222940 -1.000000
+   scf:  518    -2804.521100    -2804.521147    -2804.654167  0.000508 -4.223163 -1.000000
+   scf:  519    -2804.521096    -2804.521143    -2804.654166  0.000498 -4.223226 -1.000000
+   scf:  520    -2804.521093    -2804.521139    -2804.654166  0.000490 -4.223272 -1.000000
+   scf:  521    -2804.521091    -2804.521135    -2804.654165  0.000483 -4.223318 -1.000000
+   scf:  522    -2804.521078    -2804.521119    -2804.654164  0.000461 -4.223525 -1.000000
+   scf:  523    -2804.521085    -2804.521127    -2804.654163  0.000476 -4.223416 -1.000000
+   scf:  524    -2804.521083    -2804.521125    -2804.654164  0.000469 -4.223447 -1.000000
+   scf:  525    -2804.521085    -2804.521128    -2804.654164  0.000471 -4.223412 -1.000000
+   scf:  526    -2804.521086    -2804.521128    -2804.654163  0.000476 -4.223408 -1.000000
+   scf:  527    -2804.521084    -2804.521126    -2804.654163  0.000470 -4.223439 -1.000000
+   scf:  528    -2804.521091    -2804.521134    -2804.654163  0.000483 -4.223335 -1.000000
+   scf:  529    -2804.521088    -2804.521131    -2804.654163  0.000479 -4.223375 -1.000000
+   scf:  530    -2804.521089    -2804.521131    -2804.654163  0.000478 -4.223371 -1.000000
+   scf:  531    -2804.521087    -2804.521131    -2804.654164  0.000473 -4.223383 -1.000000
+   scf:  532    -2804.521089    -2804.521133    -2804.654164  0.000478 -4.223357 -1.000000
+   scf:  533    -2804.521082    -2804.521122    -2804.654162  0.000466 -4.223515 -1.000000
+   scf:  534    -2804.521099    -2804.521142    -2804.654163  0.000493 -4.223248 -1.000000
+   scf:  535    -2804.521092    -2804.521134    -2804.654163  0.000482 -4.223341 -1.000000
+   scf:  536    -2804.521090    -2804.521132    -2804.654162  0.000480 -4.223374 -1.000000
+   scf:  537    -2804.521086    -2804.521127    -2804.654162  0.000480 -4.223440 -1.000000
+   scf:  538    -2804.521082    -2804.521123    -2804.654162  0.000474 -4.223493 -1.000000
+   scf:  539    -2804.521058    -2804.521100    -2804.654166  0.000430 -4.223805 -1.000000
+   scf:  540    -2804.521051    -2804.521095    -2804.654168  0.000420 -4.223869 -1.000000
+   scf:  541    -2804.521051    -2804.521092    -2804.654165  0.000422 -4.223927 -1.000000
+   scf:  542    -2804.521053    -2804.521093    -2804.654165  0.000419 -4.223912 -1.000000
+   scf:  543    -2804.521062    -2804.521101    -2804.654163  0.000433 -4.223805 -1.000000
+   scf:  544    -2804.521061    -2804.521101    -2804.654164  0.000432 -4.223814 -1.000000
+   scf:  545    -2804.521060    -2804.521099    -2804.654163  0.000430 -4.223831 -1.000000
+   scf:  546    -2804.521059    -2804.521098    -2804.654163  0.000427 -4.223853 -1.000000
+   scf:  547    -2804.521059    -2804.521098    -2804.654163  0.000429 -4.223839 -1.000000
+   scf:  548    -2804.521059    -2804.521099    -2804.654164  0.000431 -4.223827 -1.000000
+   scf:  549    -2804.521058    -2804.521098    -2804.654164  0.000430 -4.223832 -1.000000
+   scf:  550    -2804.521063    -2804.521103    -2804.654164  0.000438 -4.223774 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  551    -2804.521063    -2804.521104    -2804.654164  0.000439 -4.223769 -1.000000
+mix: switching mixer --> Pulay
+   scf:  552    -2804.521033    -2804.521083    -2804.654179  0.000531 -4.223982 -1.000000
+   scf:  553    -2804.521061    -2804.521102    -2804.654165  0.000437 -4.223781 -1.000000
+   scf:  554    -2804.521060    -2804.521102    -2804.654165  0.000436 -4.223788 -1.000000
+   scf:  555    -2804.521064    -2804.521106    -2804.654165  0.000448 -4.223752 -1.000000
+   scf:  556    -2804.521064    -2804.521106    -2804.654165  0.000448 -4.223752 -1.000000
+   scf:  557    -2804.521063    -2804.521110    -2804.654170  0.000469 -4.223712 -1.000000
+   scf:  558    -2804.521061    -2804.521110    -2804.654172  0.000472 -4.223707 -1.000000
+   scf:  559    -2804.521061    -2804.521111    -2804.654172  0.000468 -4.223691 -1.000000
+   scf:  560    -2804.521061    -2804.521111    -2804.654172  0.000468 -4.223690 -1.000000
+   scf:  561    -2804.521048    -2804.521086    -2804.654163  0.000514 -4.223890 -1.000000
+   scf:  562    -2804.521061    -2804.521103    -2804.654165  0.000440 -4.223741 -1.000000
+   scf:  563    -2804.521058    -2804.521094    -2804.654160  0.000418 -4.223814 -1.000000
+   scf:  564    -2804.521058    -2804.521095    -2804.654160  0.000417 -4.223811 -1.000000
+   scf:  565    -2804.521051    -2804.521083    -2804.654156  0.000396 -4.223939 -1.000000
+   scf:  566    -2804.521053    -2804.521085    -2804.654156  0.000401 -4.223918 -1.000000
+   scf:  567    -2804.521052    -2804.521085    -2804.654157  0.000400 -4.223918 -1.000000
+   scf:  568    -2804.521045    -2804.521078    -2804.654157  0.000396 -4.223994 -1.000000
+   scf:  569    -2804.521050    -2804.521083    -2804.654157  0.000400 -4.223942 -1.000000
+   scf:  570    -2804.521051    -2804.521085    -2804.654158  0.000403 -4.223925 -1.000000
+   scf:  571    -2804.521049    -2804.521083    -2804.654158  0.000402 -4.223940 -1.000000
+   scf:  572    -2804.521050    -2804.521085    -2804.654159  0.000405 -4.223926 -1.000000
+   scf:  573    -2804.521049    -2804.521084    -2804.654159  0.000407 -4.223933 -1.000000
+   scf:  574    -2804.521049    -2804.521084    -2804.654159  0.000404 -4.223935 -1.000000
+   scf:  575    -2804.521049    -2804.521084    -2804.654159  0.000404 -4.223934 -1.000000
+   scf:  576    -2804.521045    -2804.521081    -2804.654160  0.000401 -4.223968 -1.000000
+   scf:  577    -2804.521040    -2804.521076    -2804.654160  0.000401 -4.224030 -1.000000
+   scf:  578    -2804.521046    -2804.521083    -2804.654160  0.000401 -4.223948 -1.000000
+   scf:  579    -2804.521044    -2804.521081    -2804.654161  0.000403 -4.223970 -1.000000
+   scf:  580    -2804.521044    -2804.521082    -2804.654162  0.000406 -4.223963 -1.000000
+   scf:  581    -2804.521046    -2804.521082    -2804.654160  0.000399 -4.223958 -1.000000
+   scf:  582    -2804.521047    -2804.521083    -2804.654160  0.000403 -4.223944 -1.000000
+   scf:  583    -2804.521046    -2804.521083    -2804.654161  0.000404 -4.223947 -1.000000
+   scf:  584    -2804.521048    -2804.521084    -2804.654160  0.000403 -4.223933 -1.000000
+   scf:  585    -2804.521048    -2804.521084    -2804.654159  0.000400 -4.223936 -1.000000
+   scf:  586    -2804.521048    -2804.521083    -2804.654160  0.000399 -4.223942 -1.000000
+   scf:  587    -2804.521048    -2804.521083    -2804.654159  0.000399 -4.223952 -1.000000
+   scf:  588    -2804.521050    -2804.521084    -2804.654158  0.000400 -4.223929 -1.000000
+   scf:  589    -2804.521050    -2804.521084    -2804.654158  0.000399 -4.223930 -1.000000
+   scf:  590    -2804.521049    -2804.521084    -2804.654158  0.000400 -4.223935 -1.000000
+   scf:  591    -2804.521048    -2804.521082    -2804.654158  0.000398 -4.223954 -1.000000
+   scf:  592    -2804.521049    -2804.521083    -2804.654158  0.000399 -4.223947 -1.000000
+   scf:  593    -2804.521045    -2804.521078    -2804.654157  0.000394 -4.224002 -1.000000
+   scf:  594    -2804.521045    -2804.521077    -2804.654156  0.000395 -4.224004 -1.000000
+   scf:  595    -2804.521036    -2804.521064    -2804.654153  0.000383 -4.224150 -1.000000
+   scf:  596    -2804.521033    -2804.521061    -2804.654153  0.000377 -4.224190 -1.000000
+   scf:  597    -2804.521031    -2804.521059    -2804.654154  0.000375 -4.224207 -1.000000
+   scf:  598    -2804.521031    -2804.521059    -2804.654154  0.000374 -4.224212 -1.000000
+   scf:  599    -2804.521030    -2804.521059    -2804.654155  0.000371 -4.224217 -1.000000
+   scf:  600    -2804.521031    -2804.521061    -2804.654155  0.000374 -4.224190 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  601    -2804.521030    -2804.521059    -2804.654154  0.000371 -4.224217 -1.000000
+mix: switching mixer --> Pulay
+   scf:  602    -2804.521014    -2804.521044    -2804.654159  0.000347 -4.224367 -1.000000
+   scf:  603    -2804.521031    -2804.521060    -2804.654154  0.000375 -4.224206 -1.000000
+   scf:  604    -2804.521031    -2804.521060    -2804.654154  0.000375 -4.224206 -1.000000
+   scf:  605    -2804.521033    -2804.521061    -2804.654153  0.000379 -4.224193 -1.000000
+   scf:  606    -2804.521035    -2804.521063    -2804.654153  0.000381 -4.224173 -1.000000
+   scf:  607    -2804.521034    -2804.521065    -2804.654156  0.000380 -4.224151 -1.000000
+   scf:  608    -2804.521035    -2804.521066    -2804.654156  0.000381 -4.224148 -1.000000
+   scf:  609    -2804.521034    -2804.521066    -2804.654156  0.000380 -4.224145 -1.000000
+   scf:  610    -2804.521034    -2804.521066    -2804.654156  0.000380 -4.224146 -1.000000
+   scf:  611    -2804.521029    -2804.521062    -2804.654158  0.000368 -4.224182 -1.000000
+   scf:  612    -2804.521028    -2804.521062    -2804.654159  0.000365 -4.224184 -1.000000
+   scf:  613    -2804.521028    -2804.521061    -2804.654158  0.000367 -4.224192 -1.000000
+   scf:  614    -2804.521029    -2804.521061    -2804.654158  0.000365 -4.224194 -1.000000
+   scf:  615    -2804.521029    -2804.521063    -2804.654159  0.000367 -4.224172 -1.000000
+   scf:  616    -2804.521030    -2804.521064    -2804.654158  0.000371 -4.224165 -1.000000
+   scf:  617    -2804.521029    -2804.521063    -2804.654159  0.000368 -4.224176 -1.000000
+   scf:  618    -2804.521030    -2804.521063    -2804.654159  0.000370 -4.224167 -1.000000
+   scf:  619    -2804.521031    -2804.521064    -2804.654157  0.000372 -4.224160 -1.000000
+   scf:  620    -2804.521031    -2804.521064    -2804.654157  0.000372 -4.224164 -1.000000
+   scf:  621    -2804.521031    -2804.521063    -2804.654157  0.000372 -4.224167 -1.000000
+   scf:  622    -2804.521031    -2804.521062    -2804.654156  0.000370 -4.224173 -1.000000
+   scf:  623    -2804.521029    -2804.521056    -2804.654153  0.000361 -4.224229 -1.000000
+   scf:  624    -2804.521026    -2804.521055    -2804.654155  0.000365 -4.224241 -1.000000
+   scf:  625    -2804.521026    -2804.521054    -2804.654154  0.000362 -4.224254 -1.000000
+   scf:  626    -2804.521023    -2804.521051    -2804.654154  0.000359 -4.224283 -1.000000
+   scf:  627    -2804.521023    -2804.521049    -2804.654152  0.000354 -4.224309 -1.000000
+   scf:  628    -2804.521022    -2804.521050    -2804.654154  0.000356 -4.224299 -1.000000
+   scf:  629    -2804.521022    -2804.521050    -2804.654154  0.000358 -4.224298 -1.000000
+   scf:  630    -2804.521022    -2804.521051    -2804.654155  0.000362 -4.224292 -1.000000
+   scf:  631    -2804.521021    -2804.521049    -2804.654154  0.000358 -4.224312 -1.000000
+   scf:  632    -2804.521021    -2804.521049    -2804.654154  0.000357 -4.224313 -1.000000
+   scf:  633    -2804.521021    -2804.521049    -2804.654154  0.000358 -4.224312 -1.000000
+   scf:  634    -2804.521021    -2804.521049    -2804.654154  0.000356 -4.224313 -1.000000
+   scf:  635    -2804.521026    -2804.521052    -2804.654152  0.000360 -4.224269 -1.000000
+   scf:  636    -2804.521027    -2804.521053    -2804.654151  0.000359 -4.224263 -1.000000
+   scf:  637    -2804.521027    -2804.521052    -2804.654150  0.000355 -4.224273 -1.000000
+   scf:  638    -2804.521029    -2804.521053    -2804.654149  0.000358 -4.224257 -1.000000
+   scf:  639    -2804.521028    -2804.521053    -2804.654151  0.000361 -4.224253 -1.000000
+   scf:  640    -2804.521027    -2804.521053    -2804.654152  0.000360 -4.224264 -1.000000
+   scf:  641    -2804.521029    -2804.521055    -2804.654152  0.000363 -4.224242 -1.000000
+   scf:  642    -2804.521029    -2804.521054    -2804.654151  0.000362 -4.224244 -1.000000
+   scf:  643    -2804.521026    -2804.521052    -2804.654152  0.000359 -4.224276 -1.000000
+   scf:  644    -2804.521027    -2804.521053    -2804.654151  0.000360 -4.224262 -1.000000
+   scf:  645    -2804.521028    -2804.521053    -2804.654151  0.000360 -4.224259 -1.000000
+   scf:  646    -2804.521026    -2804.521053    -2804.654152  0.000361 -4.224266 -1.000000
+   scf:  647    -2804.521027    -2804.521053    -2804.654152  0.000361 -4.224263 -1.000000
+   scf:  648    -2804.521026    -2804.521053    -2804.654152  0.000361 -4.224264 -1.000000
+   scf:  649    -2804.521027    -2804.521052    -2804.654151  0.000359 -4.224266 -1.000000
+   scf:  650    -2804.521027    -2804.521052    -2804.654150  0.000358 -4.224271 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  651    -2804.521027    -2804.521051    -2804.654150  0.000356 -4.224275 -1.000000
+mix: switching mixer --> Pulay
+   scf:  652    -2804.521013    -2804.521039    -2804.654156  0.000446 -4.224434 -1.000000
+   scf:  653    -2804.521030    -2804.521052    -2804.654148  0.000362 -4.224259 -1.000000
+   scf:  654    -2804.521030    -2804.521052    -2804.654148  0.000361 -4.224261 -1.000000
+   scf:  655    -2804.521030    -2804.521052    -2804.654148  0.000361 -4.224261 -1.000000
+   scf:  656    -2804.521033    -2804.521056    -2804.654148  0.000370 -4.224223 -1.000000
+   scf:  657    -2804.521034    -2804.521056    -2804.654148  0.000372 -4.224217 -1.000000
+   scf:  658    -2804.521030    -2804.521052    -2804.654149  0.000361 -4.224259 -1.000000
+   scf:  659    -2804.521030    -2804.521052    -2804.654148  0.000361 -4.224258 -1.000000
+   scf:  660    -2804.521031    -2804.521054    -2804.654148  0.000364 -4.224243 -1.000000
+   scf:  661    -2804.521029    -2804.521054    -2804.654150  0.000361 -4.224243 -1.000000
+   scf:  662    -2804.521031    -2804.521055    -2804.654150  0.000365 -4.224232 -1.000000
+   scf:  663    -2804.521031    -2804.521055    -2804.654150  0.000366 -4.224227 -1.000000
+   scf:  664    -2804.521032    -2804.521056    -2804.654150  0.000367 -4.224222 -1.000000
+   scf:  665    -2804.521031    -2804.521055    -2804.654150  0.000366 -4.224224 -1.000000
+   scf:  666    -2804.521031    -2804.521055    -2804.654150  0.000366 -4.224227 -1.000000
+   scf:  667    -2804.521032    -2804.521056    -2804.654150  0.000367 -4.224220 -1.000000
+   scf:  668    -2804.521030    -2804.521055    -2804.654151  0.000365 -4.224236 -1.000000
+   scf:  669    -2804.521026    -2804.521052    -2804.654153  0.000363 -4.224270 -1.000000
+   scf:  670    -2804.521026    -2804.521052    -2804.654153  0.000358 -4.224263 -1.000000
+   scf:  671    -2804.521113    -2804.521052    -2804.654170  0.001994 -4.224320 -1.000000
+   scf:  672    -2804.521415    -2804.521051    -2804.654076  0.004219 -4.224086 -1.000000
+   scf:  673    -2804.521028    -2804.521054    -2804.654152  0.000362 -4.224247 -1.000000
+   scf:  674    -2804.521027    -2804.521053    -2804.654152  0.000358 -4.224259 -1.000000
+   scf:  675    -2804.521029    -2804.521055    -2804.654152  0.000364 -4.224233 -1.000000
+   scf:  676    -2804.521029    -2804.521055    -2804.654152  0.000365 -4.224228 -1.000000
+   scf:  677    -2804.521029    -2804.521055    -2804.654152  0.000365 -4.224227 -1.000000
+   scf:  678    -2804.521030    -2804.521052    -2804.654154  0.000575 -4.224264 -1.000000
+   scf:  679    -2804.521027    -2804.521054    -2804.654153  0.000361 -4.224238 -1.000000
+   scf:  680    -2804.521027    -2804.521054    -2804.654152  0.000359 -4.224250 -1.000000
+   scf:  681    -2804.521029    -2804.521055    -2804.654152  0.000365 -4.224222 -1.000000
+   scf:  682    -2804.521027    -2804.521054    -2804.654152  0.000362 -4.224245 -1.000000
+   scf:  683    -2804.521118    -2804.521052    -2804.654168  0.002112 -4.224312 -1.000000
+   scf:  684    -2804.522154    -2804.521052    -2804.654259  0.008790 -4.224614 -1.000000
+   scf:  685    -2804.521027    -2804.521052    -2804.654154  0.000437 -4.224263 -1.000000
+   scf:  686    -2804.521034    -2804.521052    -2804.654156  0.000721 -4.224271 -1.000000
+   scf:  687    -2804.521026    -2804.521053    -2804.654153  0.000359 -4.224253 -1.000000
+   scf:  688    -2804.521027    -2804.521052    -2804.654154  0.000483 -4.224266 -1.000000
+   scf:  689    -2804.521035    -2804.521052    -2804.654158  0.000923 -4.224277 -1.000000
+   scf:  690    -2804.521027    -2804.521053    -2804.654154  0.000364 -4.224256 -1.000000
+   scf:  691    -2804.521026    -2804.521053    -2804.654153  0.000362 -4.224253 -1.000000
+   scf:  692    -2804.521027    -2804.521054    -2804.654155  0.000451 -4.224248 -1.000000
+   scf:  693    -2804.521029    -2804.521053    -2804.654155  0.000652 -4.224261 -1.000000
+   scf:  694    -2804.521030    -2804.521054    -2804.654156  0.000692 -4.224255 -1.000000
+   scf:  695    -2804.521029    -2804.521054    -2804.654156  0.000686 -4.224254 -1.000000
+   scf:  696    -2804.521032    -2804.521053    -2804.654157  0.000584 -4.224259 -1.000000
+   scf:  697    -2804.521028    -2804.521055    -2804.654157  0.000574 -4.224236 -1.000000
+   scf:  698    -2804.521028    -2804.521056    -2804.654158  0.000603 -4.224230 -1.000000
+   scf:  699    -2804.521028    -2804.521060    -2804.654158  0.000378 -4.224193 -1.000000
+   scf:  700    -2804.521029    -2804.521060    -2804.654159  0.000482 -4.224190 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  701    -2804.521029    -2804.521063    -2804.654161  0.000374 -4.224172 -1.000000
+mix: switching mixer --> Pulay
+   scf:  702    -2804.521012    -2804.521043    -2804.654159  0.000371 -4.224368 -1.000000
+   scf:  703    -2804.521015    -2804.521052    -2804.654165  0.000393 -4.224283 -1.000000
+   scf:  704    -2804.521015    -2804.521053    -2804.654165  0.000390 -4.224278 -1.000000
+   scf:  705    -2804.521015    -2804.521052    -2804.654165  0.000392 -4.224280 -1.000000
+   scf:  706    -2804.521016    -2804.521053    -2804.654165  0.000387 -4.224269 -1.000000
+   scf:  707    -2804.521018    -2804.521055    -2804.654162  0.000390 -4.224250 -1.000000
+   scf:  708    -2804.521020    -2804.521055    -2804.654161  0.000398 -4.224251 -1.000000
+   scf:  709    -2804.521021    -2804.521057    -2804.654162  0.000400 -4.224224 -1.000000
+   scf:  710    -2804.521015    -2804.521050    -2804.654161  0.000377 -4.224300 -1.000000
+   scf:  711    -2804.521016    -2804.521051    -2804.654161  0.000385 -4.224287 -1.000000
+   scf:  712    -2804.521016    -2804.521051    -2804.654161  0.000385 -4.224289 -1.000000
+   scf:  713    -2804.521017    -2804.521052    -2804.654161  0.000390 -4.224281 -1.000000
+   scf:  714    -2804.521017    -2804.521052    -2804.654161  0.000389 -4.224281 -1.000000
+   scf:  715    -2804.521016    -2804.521050    -2804.654160  0.000386 -4.224298 -1.000000
+   scf:  716    -2804.521012    -2804.521045    -2804.654159  0.000376 -4.224350 -1.000000
+   scf:  717    -2804.521012    -2804.521045    -2804.654159  0.000375 -4.224353 -1.000000
+   scf:  718    -2804.521012    -2804.521044    -2804.654159  0.000373 -4.224358 -1.000000
+   scf:  719    -2804.521012    -2804.521044    -2804.654159  0.000373 -4.224363 -1.000000
+   scf:  720    -2804.521013    -2804.521043    -2804.654157  0.000370 -4.224372 -1.000000
+   scf:  721    -2804.521013    -2804.521042    -2804.654156  0.000369 -4.224376 -1.000000
+   scf:  722    -2804.521013    -2804.521042    -2804.654156  0.000365 -4.224383 -1.000000
+   scf:  723    -2804.521014    -2804.521042    -2804.654156  0.000367 -4.224375 -1.000000
+   scf:  724    -2804.521012    -2804.521041    -2804.654156  0.000365 -4.224393 -1.000000
+   scf:  725    -2804.521011    -2804.521039    -2804.654156  0.000361 -4.224411 -1.000000
+   scf:  726    -2804.521011    -2804.521040    -2804.654155  0.000363 -4.224406 -1.000000
+   scf:  727    -2804.521011    -2804.521039    -2804.654155  0.000362 -4.224413 -1.000000
+   scf:  728    -2804.521011    -2804.521039    -2804.654155  0.000361 -4.224415 -1.000000
+   scf:  729    -2804.521012    -2804.521040    -2804.654155  0.000364 -4.224401 -1.000000
+   scf:  730    -2804.521010    -2804.521037    -2804.654154  0.000357 -4.224432 -1.000000
+   scf:  731    -2804.521009    -2804.521036    -2804.654154  0.000353 -4.224446 -1.000000
+   scf:  732    -2804.521009    -2804.521036    -2804.654154  0.000355 -4.224441 -1.000000
+   scf:  733    -2804.521009    -2804.521036    -2804.654154  0.000354 -4.224443 -1.000000
+   scf:  734    -2804.521009    -2804.521036    -2804.654154  0.000354 -4.224441 -1.000000
+   scf:  735    -2804.521009    -2804.521036    -2804.654154  0.000354 -4.224443 -1.000000
+   scf:  736    -2804.521010    -2804.521036    -2804.654154  0.000356 -4.224445 -1.000000
+   scf:  737    -2804.521007    -2804.521033    -2804.654153  0.000349 -4.224479 -1.000000
+   scf:  738    -2804.521010    -2804.521038    -2804.654155  0.000360 -4.224424 -1.000000
+   scf:  739    -2804.521010    -2804.521038    -2804.654155  0.000360 -4.224424 -1.000000
+   scf:  740    -2804.521011    -2804.521038    -2804.654154  0.000361 -4.224419 -1.000000
+   scf:  741    -2804.521011    -2804.521038    -2804.654154  0.000361 -4.224419 -1.000000
+   scf:  742    -2804.521011    -2804.521038    -2804.654154  0.000361 -4.224416 -1.000000
+   scf:  743    -2804.521011    -2804.521038    -2804.654155  0.000363 -4.224420 -1.000000
+   scf:  744    -2804.521010    -2804.521039    -2804.654155  0.000365 -4.224418 -1.000000
+   scf:  745    -2804.521010    -2804.521038    -2804.654155  0.000362 -4.224423 -1.000000
+   scf:  746    -2804.521011    -2804.521039    -2804.654155  0.000368 -4.224414 -1.000000
+   scf:  747    -2804.521011    -2804.521039    -2804.654155  0.000368 -4.224410 -1.000000
+   scf:  748    -2804.521010    -2804.521039    -2804.654155  0.000365 -4.224415 -1.000000
+   scf:  749    -2804.521012    -2804.521040    -2804.654155  0.000369 -4.224402 -1.000000
+   scf:  750    -2804.521011    -2804.521040    -2804.654155  0.000372 -4.224406 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  751    -2804.521011    -2804.521039    -2804.654155  0.000368 -4.224408 -1.000000
+mix: switching mixer --> Pulay
+   scf:  752    -2804.521002    -2804.521026    -2804.654154  0.000464 -4.224574 -1.000000
+   scf:  753    -2804.521011    -2804.521038    -2804.654155  0.000365 -4.224421 -1.000000
+   scf:  754    -2804.521011    -2804.521039    -2804.654155  0.000368 -4.224410 -1.000000
+   scf:  755    -2804.521011    -2804.521039    -2804.654155  0.000366 -4.224417 -1.000000
+   scf:  756    -2804.521011    -2804.521038    -2804.654155  0.000366 -4.224420 -1.000000
+   scf:  757    -2804.521010    -2804.521038    -2804.654155  0.000364 -4.224428 -1.000000
+   scf:  758    -2804.521013    -2804.521042    -2804.654156  0.000363 -4.224375 -1.000000
+   scf:  759    -2804.521010    -2804.521039    -2804.654155  0.000366 -4.224418 -1.000000
+   scf:  760    -2804.521010    -2804.521039    -2804.654155  0.000367 -4.224414 -1.000000
+   scf:  761    -2804.521010    -2804.521038    -2804.654155  0.000367 -4.224423 -1.000000
+   scf:  762    -2804.521010    -2804.521040    -2804.654156  0.000366 -4.224409 -1.000000
+   scf:  763    -2804.521010    -2804.521040    -2804.654156  0.000365 -4.224404 -1.000000
+   scf:  764    -2804.521010    -2804.521040    -2804.654156  0.000366 -4.224406 -1.000000
+   scf:  765    -2804.521009    -2804.521040    -2804.654157  0.000366 -4.224409 -1.000000
+   scf:  766    -2804.521009    -2804.521039    -2804.654156  0.000367 -4.224412 -1.000000
+   scf:  767    -2804.521010    -2804.521039    -2804.654156  0.000369 -4.224413 -1.000000
+   scf:  768    -2804.521009    -2804.521040    -2804.654157  0.000369 -4.224410 -1.000000
+   scf:  769    -2804.521009    -2804.521040    -2804.654157  0.000366 -4.224407 -1.000000
+   scf:  770    -2804.521009    -2804.521040    -2804.654157  0.000367 -4.224407 -1.000000
+   scf:  771    -2804.521009    -2804.521040    -2804.654157  0.000368 -4.224406 -1.000000
+   scf:  772    -2804.521010    -2804.521040    -2804.654156  0.000377 -4.224409 -1.000000
+   scf:  773    -2804.521017    -2804.521039    -2804.654151  0.000406 -4.224406 -1.000000
+   scf:  774    -2804.521010    -2804.521040    -2804.654156  0.000370 -4.224408 -1.000000
+   scf:  775    -2804.521010    -2804.521040    -2804.654156  0.000372 -4.224409 -1.000000
+   scf:  776    -2804.521010    -2804.521040    -2804.654158  0.000357 -4.224404 -1.000000
+   scf:  777    -2804.521008    -2804.521040    -2804.654167  0.000643 -4.224423 -1.000000
+   scf:  778    -2804.521010    -2804.521040    -2804.654156  0.000372 -4.224408 -1.000000
+   scf:  779    -2804.521011    -2804.521039    -2804.654155  0.000389 -4.224409 -1.000000
+   scf:  780    -2804.521012    -2804.521039    -2804.654154  0.000393 -4.224409 -1.000000
+   scf:  781    -2804.521013    -2804.521039    -2804.654176  0.001056 -4.224452 -1.000000
+   scf:  782    -2804.521009    -2804.521039    -2804.654158  0.000355 -4.224418 -1.000000
+   scf:  783    -2804.521009    -2804.521038    -2804.654158  0.000333 -4.224428 -1.000000
+   scf:  784    -2804.521008    -2804.521037    -2804.654157  0.000336 -4.224436 -1.000000
+   scf:  785    -2804.521009    -2804.521039    -2804.654157  0.000334 -4.224421 -1.000000
+   scf:  786    -2804.521011    -2804.521039    -2804.654155  0.000336 -4.224415 -1.000000
+   scf:  787    -2804.521010    -2804.521040    -2804.654159  0.000384 -4.224410 -1.000000
+   scf:  788    -2804.521009    -2804.521040    -2804.654159  0.000381 -4.224413 -1.000000
+   scf:  789    -2804.521006    -2804.521034    -2804.654156  0.000335 -4.224465 -1.000000
+   scf:  790    -2804.521003    -2804.521031    -2804.654155  0.000335 -4.224503 -1.000000
+   scf:  791    -2804.521003    -2804.521029    -2804.654154  0.000337 -4.224523 -1.000000
+   scf:  792    -2804.521000    -2804.521031    -2804.654158  0.000384 -4.224506 -1.000000
+   scf:  793    -2804.521008    -2804.521036    -2804.654155  0.000334 -4.224448 -1.000000
+   scf:  794    -2804.521001    -2804.521031    -2804.654158  0.000333 -4.224514 -1.000000
+   scf:  795    -2804.520999    -2804.521029    -2804.654158  0.000329 -4.224534 -1.000000
+   scf:  796    -2804.521002    -2804.521032    -2804.654157  0.000331 -4.224502 -1.000000
+   scf:  797    -2804.521004    -2804.521032    -2804.654156  0.000334 -4.224491 -1.000000
+   scf:  798    -2804.520999    -2804.521028    -2804.654156  0.000337 -4.224545 -1.000000
+   scf:  799    -2804.520999    -2804.521028    -2804.654156  0.000338 -4.224549 -1.000000
+   scf:  800    -2804.520999    -2804.521025    -2804.654153  0.000360 -4.224581 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  801    -2804.520999    -2804.521024    -2804.654153  0.000363 -4.224584 -1.000000
+mix: switching mixer --> Pulay
+   scf:  802    -2804.520998    -2804.521011    -2804.654148  0.000519 -4.224722 -1.000000
+   scf:  803    -2804.521000    -2804.521024    -2804.654152  0.000377 -4.224589 -1.000000
+   scf:  804    -2804.520999    -2804.521024    -2804.654153  0.000368 -4.224585 -1.000000
+   scf:  805    -2804.520998    -2804.521024    -2804.654155  0.000359 -4.224597 -1.000000
+   scf:  806    -2804.520999    -2804.521025    -2804.654154  0.000363 -4.224584 -1.000000
+   scf:  807    -2804.520998    -2804.521024    -2804.654153  0.000363 -4.224594 -1.000000
+   scf:  808    -2804.521000    -2804.521027    -2804.654155  0.000346 -4.224553 -1.000000
+   scf:  809    -2804.521001    -2804.521028    -2804.654155  0.000336 -4.224543 -1.000000
+   scf:  810    -2804.521002    -2804.521024    -2804.654152  0.000377 -4.224585 -1.000000
+   scf:  811    -2804.521001    -2804.521028    -2804.654155  0.000337 -4.224546 -1.000000
+   scf:  812    -2804.520998    -2804.521026    -2804.654156  0.000348 -4.224568 -1.000000
+   scf:  813    -2804.520998    -2804.521026    -2804.654156  0.000342 -4.224568 -1.000000
+   scf:  814    -2804.520998    -2804.521026    -2804.654156  0.000380 -4.224574 -1.000000
+   scf:  815    -2804.520996    -2804.521026    -2804.654157  0.000350 -4.224580 -1.000000
+   scf:  816    -2804.520999    -2804.521027    -2804.654155  0.000338 -4.224557 -1.000000
+   scf:  817    -2804.520997    -2804.521025    -2804.654156  0.000350 -4.224584 -1.000000
+   scf:  818    -2804.520995    -2804.521025    -2804.654158  0.000341 -4.224582 -1.000000
+   scf:  819    -2804.520998    -2804.521026    -2804.654155  0.000338 -4.224568 -1.000000
+   scf:  820    -2804.520997    -2804.521026    -2804.654157  0.000331 -4.224578 -1.000000
+   scf:  821    -2804.520996    -2804.521025    -2804.654156  0.000324 -4.224591 -1.000000
+   scf:  822    -2804.520998    -2804.521026    -2804.654156  0.000327 -4.224571 -1.000000
+   scf:  823    -2804.520995    -2804.521024    -2804.654157  0.000341 -4.224603 -1.000000
+   scf:  824    -2804.520995    -2804.521024    -2804.654156  0.000338 -4.224597 -1.000000
+   scf:  825    -2804.520996    -2804.521025    -2804.654157  0.000341 -4.224588 -1.000000
+   scf:  826    -2804.520995    -2804.521024    -2804.654157  0.000339 -4.224594 -1.000000
+   scf:  827    -2804.520995    -2804.521024    -2804.654157  0.000329 -4.224598 -1.000000
+   scf:  828    -2804.520994    -2804.521024    -2804.654158  0.000330 -4.224604 -1.000000
+   scf:  829    -2804.520994    -2804.521024    -2804.654157  0.000327 -4.224601 -1.000000
+   scf:  830    -2804.520996    -2804.521025    -2804.654157  0.000327 -4.224588 -1.000000
+   scf:  831    -2804.520997    -2804.521026    -2804.654156  0.000333 -4.224580 -1.000000
+   scf:  832    -2804.520997    -2804.521025    -2804.654155  0.000324 -4.224591 -1.000000
+   scf:  833    -2804.520996    -2804.521025    -2804.654157  0.000336 -4.224584 -1.000000
+   scf:  834    -2804.520997    -2804.521026    -2804.654157  0.000336 -4.224570 -1.000000
+   scf:  835    -2804.520998    -2804.521027    -2804.654157  0.000344 -4.224561 -1.000000
+   scf:  836    -2804.520999    -2804.521027    -2804.654156  0.000347 -4.224555 -1.000000
+   scf:  837    -2804.520997    -2804.521027    -2804.654157  0.000342 -4.224566 -1.000000
+   scf:  838    -2804.521000    -2804.521027    -2804.654155  0.000373 -4.224553 -1.000000
+   scf:  839    -2804.521000    -2804.521027    -2804.654155  0.000372 -4.224551 -1.000000
+   scf:  840    -2804.520996    -2804.521026    -2804.654158  0.000339 -4.224576 -1.000000
+   scf:  841    -2804.520995    -2804.521025    -2804.654158  0.000333 -4.224588 -1.000000
+   scf:  842    -2804.520996    -2804.521026    -2804.654157  0.000358 -4.224574 -1.000000
+   scf:  843    -2804.520995    -2804.521025    -2804.654158  0.000349 -4.224585 -1.000000
+   scf:  844    -2804.520998    -2804.521028    -2804.654157  0.000343 -4.224550 -1.000000
+   scf:  845    -2804.520997    -2804.521025    -2804.654156  0.000363 -4.224579 -1.000000
+   scf:  846    -2804.520995    -2804.521025    -2804.654157  0.000353 -4.224591 -1.000000
+   scf:  847    -2804.520994    -2804.521022    -2804.654156  0.000341 -4.224617 -1.000000
+   scf:  848    -2804.520995    -2804.521020    -2804.654153  0.000352 -4.224633 -1.000000
+   scf:  849    -2804.520997    -2804.521021    -2804.654152  0.000359 -4.224626 -1.000000
+   scf:  850    -2804.520998    -2804.521023    -2804.654153  0.000355 -4.224596 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  851    -2804.520996    -2804.521023    -2804.654154  0.000345 -4.224600 -1.000000
+mix: switching mixer --> Pulay
+   scf:  852    -2804.520983    -2804.521010    -2804.654158  0.000567 -4.224774 -1.000000
+   scf:  853    -2804.520995    -2804.521022    -2804.654155  0.000342 -4.224616 -1.000000
+   scf:  854    -2804.520998    -2804.521025    -2804.654154  0.000348 -4.224585 -1.000000
+   scf:  855    -2804.520998    -2804.521025    -2804.654154  0.000348 -4.224584 -1.000000
+   scf:  856    -2804.520998    -2804.521024    -2804.654154  0.000346 -4.224586 -1.000000
+   scf:  857    -2804.520998    -2804.521024    -2804.654154  0.000348 -4.224588 -1.000000
+   scf:  858    -2804.520998    -2804.521024    -2804.654154  0.000351 -4.224588 -1.000000
+   scf:  859    -2804.520996    -2804.521023    -2804.654154  0.000357 -4.224606 -1.000000
+   scf:  860    -2804.520997    -2804.521024    -2804.654154  0.000361 -4.224589 -1.000000
+   scf:  861    -2804.520997    -2804.521023    -2804.654154  0.000361 -4.224599 -1.000000
+   scf:  862    -2804.520998    -2804.521024    -2804.654154  0.000362 -4.224586 -1.000000
+   scf:  863    -2804.520997    -2804.521024    -2804.654154  0.000356 -4.224589 -1.000000
+   scf:  864    -2804.520996    -2804.521024    -2804.654155  0.000362 -4.224588 -1.000000
+   scf:  865    -2804.520997    -2804.521025    -2804.654155  0.000357 -4.224585 -1.000000
+   scf:  866    -2804.520997    -2804.521023    -2804.654154  0.000354 -4.224600 -1.000000
+   scf:  867    -2804.520997    -2804.521024    -2804.654154  0.000352 -4.224595 -1.000000
+   scf:  868    -2804.520997    -2804.521023    -2804.654153  0.000351 -4.224601 -1.000000
+   scf:  869    -2804.520997    -2804.521023    -2804.654153  0.000352 -4.224606 -1.000000
+   scf:  870    -2804.520997    -2804.521022    -2804.654153  0.000351 -4.224608 -1.000000
+   scf:  871    -2804.520997    -2804.521022    -2804.654153  0.000351 -4.224610 -1.000000
+   scf:  872    -2804.520998    -2804.521022    -2804.654153  0.000352 -4.224608 -1.000000
+   scf:  873    -2804.520997    -2804.521022    -2804.654153  0.000353 -4.224608 -1.000000
+   scf:  874    -2804.520999    -2804.521024    -2804.654152  0.000349 -4.224590 -1.000000
+   scf:  875    -2804.521000    -2804.521025    -2804.654152  0.000350 -4.224581 -1.000000
+   scf:  876    -2804.520999    -2804.521024    -2804.654152  0.000349 -4.224586 -1.000000
+   scf:  877    -2804.520999    -2804.521024    -2804.654152  0.000350 -4.224591 -1.000000
+   scf:  878    -2804.521000    -2804.521025    -2804.654153  0.000347 -4.224573 -1.000000
+   scf:  879    -2804.521000    -2804.521025    -2804.654153  0.000349 -4.224573 -1.000000
+   scf:  880    -2804.521000    -2804.521026    -2804.654153  0.000347 -4.224568 -1.000000
+   scf:  881    -2804.521001    -2804.521026    -2804.654153  0.000347 -4.224566 -1.000000
+   scf:  882    -2804.521000    -2804.521025    -2804.654152  0.000345 -4.224575 -1.000000
+   scf:  883    -2804.521001    -2804.521025    -2804.654152  0.000345 -4.224571 -1.000000
+   scf:  884    -2804.521000    -2804.521025    -2804.654152  0.000346 -4.224575 -1.000000
+   scf:  885    -2804.521001    -2804.521026    -2804.654152  0.000347 -4.224570 -1.000000
+   scf:  886    -2804.521001    -2804.521025    -2804.654152  0.000347 -4.224573 -1.000000
+   scf:  887    -2804.521000    -2804.521025    -2804.654152  0.000347 -4.224575 -1.000000
+   scf:  888    -2804.521000    -2804.521025    -2804.654152  0.000347 -4.224580 -1.000000
+   scf:  889    -2804.521000    -2804.521024    -2804.654152  0.000347 -4.224585 -1.000000
+   scf:  890    -2804.521000    -2804.521025    -2804.654152  0.000349 -4.224580 -1.000000
+   scf:  891    -2804.521001    -2804.521025    -2804.654152  0.000350 -4.224573 -1.000000
+   scf:  892    -2804.521000    -2804.521024    -2804.654152  0.000349 -4.224581 -1.000000
+   scf:  893    -2804.521000    -2804.521025    -2804.654152  0.000349 -4.224579 -1.000000
+   scf:  894    -2804.521000    -2804.521025    -2804.654152  0.000352 -4.224580 -1.000000
+   scf:  895    -2804.521000    -2804.521024    -2804.654152  0.000348 -4.224585 -1.000000
+   scf:  896    -2804.521000    -2804.521024    -2804.654152  0.000349 -4.224584 -1.000000
+   scf:  897    -2804.521001    -2804.521024    -2804.654151  0.000351 -4.224581 -1.000000
+   scf:  898    -2804.521000    -2804.521024    -2804.654152  0.000349 -4.224583 -1.000000
+   scf:  899    -2804.521000    -2804.521024    -2804.654152  0.000350 -4.224590 -1.000000
+   scf:  900    -2804.521000    -2804.521025    -2804.654152  0.000350 -4.224579 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  901    -2804.521000    -2804.521025    -2804.654152  0.000348 -4.224581 -1.000000
+mix: switching mixer --> Pulay
+   scf:  902    -2804.520987    -2804.521012    -2804.654158  0.000593 -4.224744 -1.000000
+   scf:  903    -2804.521002    -2804.521024    -2804.654150  0.000363 -4.224588 -1.000000
+   scf:  904    -2804.521001    -2804.521024    -2804.654151  0.000357 -4.224587 -1.000000
+   scf:  905    -2804.521001    -2804.521024    -2804.654151  0.000357 -4.224587 -1.000000
+   scf:  906    -2804.521005    -2804.521024    -2804.654149  0.000374 -4.224573 -1.000000
+   scf:  907    -2804.521005    -2804.521025    -2804.654149  0.000375 -4.224570 -1.000000
+   scf:  908    -2804.520998    -2804.521024    -2804.654154  0.000332 -4.224592 -1.000000
+   scf:  909    -2804.520998    -2804.521024    -2804.654153  0.000333 -4.224598 -1.000000
+   scf:  910    -2804.521000    -2804.521025    -2804.654153  0.000335 -4.224576 -1.000000
+   scf:  911    -2804.520999    -2804.521024    -2804.654153  0.000334 -4.224592 -1.000000
+   scf:  912    -2804.521002    -2804.521024    -2804.654150  0.000363 -4.224581 -1.000000
+   scf:  913    -2804.521004    -2804.521025    -2804.654150  0.000370 -4.224569 -1.000000
+   scf:  914    -2804.521000    -2804.521024    -2804.654152  0.000352 -4.224587 -1.000000
+   scf:  915    -2804.521000    -2804.521024    -2804.654152  0.000349 -4.224591 -1.000000
+   scf:  916    -2804.520999    -2804.521024    -2804.654153  0.000337 -4.224591 -1.000000
+   scf:  917    -2804.521000    -2804.521024    -2804.654152  0.000350 -4.224584 -1.000000
+   scf:  918    -2804.521000    -2804.521024    -2804.654152  0.000349 -4.224587 -1.000000
+   scf:  919    -2804.521001    -2804.521026    -2804.654152  0.000353 -4.224564 -1.000000
+   scf:  920    -2804.521000    -2804.521026    -2804.654153  0.000349 -4.224565 -1.000000
+   scf:  921    -2804.521001    -2804.521026    -2804.654152  0.000351 -4.224558 -1.000000
+   scf:  922    -2804.521000    -2804.521025    -2804.654153  0.000352 -4.224574 -1.000000
+   scf:  923    -2804.521002    -2804.521025    -2804.654151  0.000367 -4.224576 -1.000000
+   scf:  924    -2804.521005    -2804.521027    -2804.654150  0.000362 -4.224551 -1.000000
+   scf:  925    -2804.521004    -2804.521024    -2804.654149  0.000382 -4.224573 -1.000000
+   scf:  926    -2804.521005    -2804.521025    -2804.654149  0.000372 -4.224567 -1.000000
+   scf:  927    -2804.521006    -2804.521028    -2804.654150  0.000361 -4.224535 -1.000000
+   scf:  928    -2804.521006    -2804.521028    -2804.654150  0.000359 -4.224536 -1.000000
+   scf:  929    -2804.521007    -2804.521028    -2804.654150  0.000362 -4.224529 -1.000000
+   scf:  930    -2804.521010    -2804.521030    -2804.654149  0.000352 -4.224504 -1.000000
+   scf:  931    -2804.521003    -2804.521027    -2804.654151  0.000360 -4.224550 -1.000000
+   scf:  932    -2804.520996    -2804.521024    -2804.654155  0.000342 -4.224596 -1.000000
+   scf:  933    -2804.520995    -2804.521024    -2804.654156  0.000337 -4.224600 -1.000000
+   scf:  934    -2804.521004    -2804.521025    -2804.654150  0.000384 -4.224568 -1.000000
+   scf:  935    -2804.521002    -2804.521027    -2804.654152  0.000355 -4.224555 -1.000000
+   scf:  936    -2804.521003    -2804.521027    -2804.654151  0.000359 -4.224551 -1.000000
+   scf:  937    -2804.521004    -2804.521027    -2804.654151  0.000360 -4.224548 -1.000000
+   scf:  938    -2804.521003    -2804.521027    -2804.654151  0.000357 -4.224551 -1.000000
+   scf:  939    -2804.521003    -2804.521026    -2804.654151  0.000359 -4.224563 -1.000000
+   scf:  940    -2804.520998    -2804.521025    -2804.654155  0.000346 -4.224582 -1.000000
+   scf:  941    -2804.520997    -2804.521025    -2804.654155  0.000338 -4.224586 -1.000000
+   scf:  942    -2804.521004    -2804.521026    -2804.654150  0.000366 -4.224557 -1.000000
+   scf:  943    -2804.521005    -2804.521027    -2804.654150  0.000363 -4.224550 -1.000000
+   scf:  944    -2804.521003    -2804.521024    -2804.654150  0.000375 -4.224576 -1.000000
+   scf:  945    -2804.521003    -2804.521027    -2804.654151  0.000360 -4.224552 -1.000000
+   scf:  946    -2804.521004    -2804.521026    -2804.654151  0.000359 -4.224552 -1.000000
+   scf:  947    -2804.521004    -2804.521027    -2804.654151  0.000363 -4.224543 -1.000000
+   scf:  948    -2804.520999    -2804.521024    -2804.654153  0.000348 -4.224591 -1.000000
+   scf:  949    -2804.520995    -2804.521024    -2804.654157  0.000386 -4.224604 -1.000000
+   scf:  950    -2804.520995    -2804.521023    -2804.654156  0.000332 -4.224606 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+   scf:  951    -2804.521005    -2804.521026    -2804.654150  0.000366 -4.224559 -1.000000
+mix: switching mixer --> Pulay
+   scf:  952    -2804.520985    -2804.521015    -2804.654161  0.000379 -4.224720 -1.000000
+   scf:  953    -2804.521000    -2804.521024    -2804.654153  0.000357 -4.224592 -1.000000
+   scf:  954    -2804.521000    -2804.521024    -2804.654153  0.000357 -4.224593 -1.000000
+   scf:  955    -2804.521000    -2804.521024    -2804.654153  0.000356 -4.224593 -1.000000
+   scf:  956    -2804.520999    -2804.521023    -2804.654152  0.000356 -4.224599 -1.000000
+   scf:  957    -2804.520997    -2804.521023    -2804.654155  0.000361 -4.224610 -1.000000
+   scf:  958    -2804.520997    -2804.521025    -2804.654156  0.000363 -4.224588 -1.000000
+   scf:  959    -2804.520999    -2804.521026    -2804.654154  0.000364 -4.224576 -1.000000
+   scf:  960    -2804.521001    -2804.521027    -2804.654153  0.000368 -4.224561 -1.000000
+   scf:  961    -2804.521001    -2804.521026    -2804.654153  0.000368 -4.224564 -1.000000
+   scf:  962    -2804.521001    -2804.521026    -2804.654153  0.000367 -4.224564 -1.000000
+   scf:  963    -2804.520997    -2804.521021    -2804.654152  0.000356 -4.224622 -1.000000
+   scf:  964    -2804.520996    -2804.521021    -2804.654153  0.000355 -4.224624 -1.000000
+   scf:  965    -2804.520998    -2804.521022    -2804.654152  0.000357 -4.224616 -1.000000
+   scf:  966    -2804.520998    -2804.521022    -2804.654152  0.000355 -4.224614 -1.000000
+   scf:  967    -2804.520998    -2804.521024    -2804.654154  0.000354 -4.224593 -1.000000
+   scf:  968    -2804.520998    -2804.521024    -2804.654154  0.000354 -4.224592 -1.000000
+   scf:  969    -2804.520998    -2804.521023    -2804.654153  0.000352 -4.224601 -1.000000
+   scf:  970    -2804.520999    -2804.521026    -2804.654154  0.000356 -4.224575 -1.000000
+   scf:  971    -2804.520999    -2804.521026    -2804.654154  0.000359 -4.224568 -1.000000
+   scf:  972    -2804.520999    -2804.521027    -2804.654155  0.000359 -4.224562 -1.000000
+   scf:  973    -2804.521000    -2804.521027    -2804.654155  0.000358 -4.224560 -1.000000
+   scf:  974    -2804.521000    -2804.521027    -2804.654155  0.000359 -4.224564 -1.000000
+   scf:  975    -2804.520998    -2804.521025    -2804.654155  0.000357 -4.224578 -1.000000
+   scf:  976    -2804.520999    -2804.521026    -2804.654155  0.000360 -4.224567 -1.000000
+   scf:  977    -2804.520999    -2804.521026    -2804.654155  0.000359 -4.224568 -1.000000
+   scf:  978    -2804.520999    -2804.521027    -2804.654155  0.000359 -4.224563 -1.000000
+   scf:  979    -2804.520999    -2804.521026    -2804.654155  0.000360 -4.224574 -1.000000
+   scf:  980    -2804.521000    -2804.521027    -2804.654155  0.000358 -4.224557 -1.000000
+   scf:  981    -2804.520998    -2804.521026    -2804.654155  0.000358 -4.224574 -1.000000
+   scf:  982    -2804.521000    -2804.521028    -2804.654155  0.000362 -4.224550 -1.000000
+   scf:  983    -2804.520999    -2804.521026    -2804.654155  0.000355 -4.224569 -1.000000
+   scf:  984    -2804.520998    -2804.521023    -2804.654154  0.000355 -4.224599 -1.000000
+   scf:  985    -2804.520999    -2804.521026    -2804.654155  0.000355 -4.224567 -1.000000
+   scf:  986    -2804.520998    -2804.521025    -2804.654155  0.000355 -4.224579 -1.000000
+   scf:  987    -2804.520999    -2804.521026    -2804.654155  0.000354 -4.224565 -1.000000
+   scf:  988    -2804.521000    -2804.521027    -2804.654155  0.000356 -4.224559 -1.000000
+   scf:  989    -2804.521000    -2804.521027    -2804.654155  0.000358 -4.224554 -1.000000
+   scf:  990    -2804.521000    -2804.521028    -2804.654155  0.000357 -4.224547 -1.000000
+   scf:  991    -2804.521000    -2804.521027    -2804.654155  0.000358 -4.224557 -1.000000
+   scf:  992    -2804.520999    -2804.521026    -2804.654155  0.000358 -4.224567 -1.000000
+   scf:  993    -2804.520999    -2804.521027    -2804.654155  0.000357 -4.224565 -1.000000
+   scf:  994    -2804.520999    -2804.521027    -2804.654155  0.000358 -4.224562 -1.000000
+   scf:  995    -2804.521000    -2804.521028    -2804.654156  0.000361 -4.224546 -1.000000
+   scf:  996    -2804.521000    -2804.521028    -2804.654156  0.000358 -4.224547 -1.000000
+   scf:  997    -2804.521000    -2804.521028    -2804.654156  0.000359 -4.224552 -1.000000
+   scf:  998    -2804.521000    -2804.521028    -2804.654156  0.000359 -4.224544 -1.000000
+   scf:  999    -2804.521000    -2804.521028    -2804.654156  0.000361 -4.224547 -1.000000
+   scf: 1000    -2804.521001    -2804.521029    -2804.654156  0.000362 -4.224540 -1.000000
+mix: Pulay -- resetting history
+mix: switching mixer --> Linear-Kick
+:!: SCF did not converge in maximum number of steps.
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =            -2804.5210
+
+siesta: E_KS - E_eggbox =     -2804.5210
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.000052    0.000045   -0.550789
+     2    0.000218    0.000070    0.551388
+----------------------------------------
+   Tot    0.000167    0.000115    0.000599
+----------------------------------------
+   Max    0.551388
+   Res    0.318171    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.551388    constrained
+
+Stress-tensor-Voigt (kbar):        0.02        0.02       -0.23       -0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)    -2804.3418
+Target enthalpy (eV/cell)    -2804.6542
+
+moments: Atomic and Orbital Populations and Magnetic Moments:
+
+Species: Pt_SOC              
+
+Atom    Orb           Charge    sqrt(<S>^2)        <(Sx,Sy,Sz)>     sqrt(<L>^2)      <(Lx,Ly,Lz)>
+----------------------------------------------------------------------------------------------------
+   1    1  6s         1.0424                  -0.000  0.008  0.000               0.000  0.000  0.000
+   1    2  6s         0.1379                   0.000 -0.004 -0.000               0.000  0.000  0.000
+   1    3  5dxy       1.8152                  -0.000 -0.016  0.000              -0.000 -0.019  0.000
+   1    4  5dyz       1.6715                  -0.000 -0.065 -0.000              -0.000 -0.019 -0.000
+   1    5  5dz2       1.8014                  -0.000 -0.006 -0.000               0.000 -0.030  0.000
+   1    6  5dxz       1.6732                   0.000 -0.065 -0.000              -0.000 -0.051 -0.000
+   1    7  5dx2-y2    1.8145                  -0.000 -0.016  0.000              -0.000 -0.020  0.000
+   1    8  5dxy      -0.0194                   0.000 -0.002 -0.000              -0.000  0.000  0.000
+   1    9  5dyz       0.0036                  -0.000 -0.002 -0.000               0.000  0.000  0.000
+   1   10  5dz2       0.0191                   0.000 -0.001 -0.000               0.000  0.000  0.000
+   1   11  5dxz       0.0036                   0.000 -0.002  0.000              -0.000  0.000  0.000
+   1   12  5dx2-y2   -0.0193                   0.000 -0.002 -0.000               0.000  0.000  0.000
+   1   13  6Ppy       0.0318                  -0.000 -0.002 -0.000               0.000  0.000 -0.000
+   1   14  6Ppz      -0.0073                  -0.000  0.001  0.000               0.000  0.000  0.000
+   1   15  6Ppx       0.0318                   0.000 -0.002 -0.000               0.000  0.000 -0.000
+----------------------------------------------------------------------------------------------------
+   1      Total      10.0000         0.176    -0.000 -0.176  0.000       0.277  -0.001 -0.277  0.000
+
+   2   16  6s         1.0424                   0.000  0.008 -0.000               0.000  0.000  0.000
+   2   17  6s         0.1379                   0.000 -0.004 -0.000               0.000  0.000  0.000
+   2   18  5dxy       1.8151                   0.000 -0.016  0.000               0.000 -0.020  0.000
+   2   19  5dyz       1.6715                  -0.000 -0.065 -0.000               0.000 -0.020 -0.000
+   2   20  5dz2       1.8014                  -0.000 -0.006 -0.000              -0.000 -0.030  0.000
+   2   21  5dxz       1.6732                   0.000 -0.065 -0.000               0.000 -0.051 -0.000
+   2   22  5dx2-y2    1.8145                   0.000 -0.016  0.000               0.000 -0.021  0.000
+   2   23  5dxy      -0.0194                  -0.000 -0.002  0.000               0.000  0.000 -0.000
+   2   24  5dyz       0.0036                  -0.000 -0.002  0.000               0.000  0.000 -0.000
+   2   25  5dz2       0.0191                  -0.000 -0.001  0.000               0.000  0.000  0.000
+   2   26  5dxz       0.0036                  -0.000 -0.002  0.000               0.000  0.000 -0.000
+   2   27  5dx2-y2   -0.0193                  -0.000 -0.002 -0.000               0.000  0.000 -0.000
+   2   28  6Ppy       0.0318                   0.000 -0.002 -0.000              -0.000  0.000 -0.000
+   2   29  6Ppz      -0.0073                   0.000  0.001 -0.000              -0.000  0.000  0.000
+   2   30  6Ppx       0.0318                  -0.000 -0.002 -0.000               0.000  0.000 -0.000
+----------------------------------------------------------------------------------------------------
+   2      Total      10.0000         0.177     0.000 -0.177 -0.000       0.280   0.001 -0.280 -0.000
+
+----------------------------------------------------------------------------------------------------
+ Sum                 20.0000         0.353     0.000 -0.353 -0.000       0.557   0.000 -0.557 -0.000
+
+
+siesta: Eigenvalues (eV):
+ik =     1
+  -8.57  -8.43  -7.30  -7.28  -6.78  -6.78  -6.02  -6.02  -5.71  -5.62
+  -5.19  -5.19  -4.80  -4.79  -4.77  -4.77  -4.56  -4.45  -4.26  -4.26
+  -4.19  -4.19  -3.62  -3.44  -0.09  -0.08   0.55   0.66   1.03   1.04
+   3.31   3.34   4.67   4.68   8.73   8.80   9.72   9.77  13.09  13.21
+  20.85  20.85  21.13  21.14  21.49  21.49  21.59  21.59  23.55  23.55
+  24.16  24.17  26.60  26.65  27.50  27.52  27.80  27.81  35.65  35.76
+siesta: Fermi energy =      -4.224540 eV
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =      -115.479403
+siesta: Eions   =      1671.574203
+siesta: Ena     =        29.270177
+siesta: Ekin    =      1097.744366
+siesta: Enl     =      -554.934137
+siesta: Eso     =        -1.529670
+siesta: Eldau   =         0.000000
+siesta: DEna    =         5.523981
+siesta: DUscf   =         0.921810
+siesta: DUext   =         0.000000
+siesta: Exc     =     -1709.943353
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2804.521001
+siesta: Etot    =     -2804.521029
+siesta: FreeEng =     -2804.654156
+
+siesta: Final energy (eV):
+siesta:  Band Struct. =    -115.479403
+siesta:       Kinetic =    1097.744366
+siesta:       Hartree =    1576.349009
+siesta:       Eldau   =       0.000000
+siesta:       Eso     =      -1.529670
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =   -1709.943353
+siesta:  Ion-electron =   -3962.682535
+siesta:       Ion-ion =     195.541155
+siesta:       Ekinion =       0.000000
+siesta:         Total =   -2804.521029
+
+siesta: Atomic forces (eV/Ang):
+siesta:      1   -0.000052    0.000045   -0.550789
+siesta:      2    0.000218    0.000070    0.551388
+siesta: ----------------------------------------
+siesta:    Tot    0.000167    0.000115    0.000599
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:     0.000012   -0.000000   -0.000000
+siesta:    -0.000000    0.000012   -0.000000
+siesta:    -0.000000   -0.000000   -0.000141
+
+siesta: Cell volume =       8000.000000 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:           0.00000043         -0.00000017  Ry/Bohr**3
+siesta:           0.00003904         -0.00001604  eV/Ang**3
+siesta:           0.06255284         -0.02569805  kBar
+(Free)E+ p_basis*V_orbitals  =       -2802.939345
+(Free)Eharris+ p_basis*V_orbitals  =       -2802.939317
+ Calling spnvec: nspin, qspin =     4     9.99990    10.00010     0.00004    -0.35307
+ Leaving spnvec: qaux,stot,svec=      20.0000      0.7061      0.0001      0.7061     -0.0002
+
+siesta: Total spin polarization (Qup-Qdown) =    0.706147
+siesta: Spin vector =    0.000073    0.706147   -0.000200
+
+siesta: Electric dipole (a.u.)  =   -0.000028   -0.000003   -0.000007
+siesta: Electric dipole (Debye) =   -0.000071   -0.000009   -0.000017
+>> End of run:   5-JUN-2016  16:48:15

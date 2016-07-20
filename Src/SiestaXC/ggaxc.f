@@ -117,7 +117,9 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
      .              dGDDdD(3,2,4), dGDDdGD(2,4),
      .              dGDTOTdD(3,4), dGDPOLdD(3,4),
      .              dGDTOTdGD(4), dGDPOLdGD(4),
-     .              DPOL, DTOT, GDD(3,2), GDTOT(3), GDPOL(3)
+     .              DPOL, DTOT, GDD(3,2), GDTOT(3), GDPOL(3),
+     .              VPOL
+      real(dp), parameter :: DENMIN = 1.e-12_dp
 
       ! Handle non-collinear spin case
       if (nSpin==4) then
@@ -129,9 +131,9 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         DTOT = D(1) + D(2)                           ! DensTot (DensUp+DensDn)
         DPOL = SQRT( (D(1)-D(2))**2                  ! DensPol (DensUp-DensDn)
      .              + 4*(D(3)**2+D(4)**2) )
-        DPOL = DPOL + tiny(DPOL)                     ! Avoid division by zero
         DD(1) = ( DTOT + DPOL ) / 2                  ! DensUp
         DD(2) = ( DTOT - DPOL ) / 2                  ! DensDn
+        DPOL = max( DPOL , DENMIN )                  ! Avoid division by zero
 
         ! Find gradients of up and down densities
         GDTOT(:) = GD(:,1) + GD(:,2)                 ! Grad(DensTot)
@@ -169,10 +171,10 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         ! Derivatives of grad(Dup) and grad(Ddn) with respect to grad(D(i))
         dGDTOTdGD(1:2) = 1                           ! dGradDensTot/dGradD(i)
         dGDTOTdGD(3:4) = 0
-        dGDPOLdGD(1) = +(D(1)-D(2))/DPOL             ! dGradDensPol/dGradD(i)
-        dGDPOLdGD(2) = -(D(1)-D(2))/DPOL
-        dGDPOLdGD(3) = 4*D(3)/DPOL
-        dGDPOLdGD(4) = 4*D(4)/DPOL
+        dGDPOLdGD(1) = +( D(1) - D(2) ) / DPOL       ! dGradDensPol/dGradD(i)
+        dGDPOLdGD(2) = -( D(1) - D(2) ) / DPOL
+        dGDPOLdGD(3) = 4 * D(3) / DPOL
+        dGDPOLdGD(4) = 4 * D(4) / DPOL
         dGDDdGD(1,:) = ( dGDTOTdGD(:)                ! dGradDensUp/dGradD(i)
      .                 + dGDPOLdGD(:) ) / 2
         dGDDdGD(2,:) = ( dGDTOTdGD(:)                ! dGradDensDn/dGradD(i)

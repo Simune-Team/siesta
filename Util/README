@@ -11,6 +11,11 @@ Bands:     Tools for plotting band structures (including "fatbands")
 COOP: Generation of COOP/COHP/PDOS curves for chemical analysis.
       Computation of data to generate "fatbands" plots.
 
+Grimme: Enable easy creation of the atomic potential block by reading
+	the ChemicalSpecies block and printing out the relevant information.
+	This makes it _very_ easy to create the correct units and quantities.
+	(by Nick Papior)
+
 Optimizer: General-purpose optimizer. Useful for basis-set and
 	   pseudopotential optimization (by A. Garcia)
 
@@ -19,13 +24,7 @@ Projections: Compute projections of electronic structure of a system
 
 MPI_test:    Tests to help diagonose the interface to MPI.
 
-pseudo-xml:  Converts pseudopotential files in XML format to .psf form.
-	     (by J. Junquera and A. Garcia)
-
 test-xml:    Experimental tool to compare two CML files.
-
-pseudo-xml: Conversion of pseudo files in XML format to formatted
-	    form.	    
 
 Plrho/plrho: Plots in 3D the electron density and other functions
              calculated by siesta (by Jose M. Soler)
@@ -84,6 +83,8 @@ JobList:   A suite of programs to generate and dispatch multiple
            SIESTA jobs with varying options (by J. Soler)
 
 Scripting: Experimental scripting modules in Python (by A. Garcia)
+
+Sockets: Examples of the use of the f90 sockets interface (by M. Ceriotti)
 
 VCA: Utilities to help in Virtual-Crystal calculations (by A. Garcia)
 

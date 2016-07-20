@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !!@LICENSE
 !
 !===============================================================================
@@ -253,7 +260,9 @@ CONTAINS
 !===============================================================================
 
 subroutine print_report( prog )   ! Write a report of counted times 
-
+#ifdef _OPENMP
+  use omp_lib
+#endif
 ! Arguments
   implicit none
   character(len=*),intent(in):: prog   ! Name of program or code section
@@ -264,13 +273,15 @@ subroutine print_report( prog )   ! Write a report of counted times
   character(len=maxLength):: progsWriterNode(maxProgs)=' ' ! Prog. names in
                                                            ! writer node
   character(len=maxLength):: progName
+#ifndef _OPENMP
   real    :: treal                 ! Single precision to call cpu_time
-  real(dp):: dtime, myCalTime, progCalTime, progComTime, progTotTime
+#endif
+  real(dp):: myCalTime, progCalTime, progComTime, progTotTime
   real(dp):: timeNow, totalCalTime, totalComTime, totalTime
-  real(dp):: wallTime, wallTime1
+  real(dp):: wallTime
   integer :: busyNode, totalComCalls, iProg, iu, jProg
-  integer :: node, nodes, nProgsWriterNode, progCalls, rootNode, writerNode
-  logical :: found, opened, withinMPI
+  integer :: node, nProgsWriterNode, progCalls, writerNode
+  logical :: found, opened
 #ifdef MPI
   integer:: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPItag
 #endif
@@ -280,8 +291,12 @@ subroutine print_report( prog )   ! Write a report of counted times
   writingTimes = .true.
 
 ! Find present CPU time and convert it to double precision
+#ifdef _OPENMP
+  timeNow = omp_get_wtime( )
+#else
   call cpu_time( treal )
   timeNow = treal
+#endif
   totalTime = timeNow - time0
   call wall_time( wallTime )
   wallTime = wallTime - wallTime0
@@ -642,13 +657,20 @@ end subroutine timer_get
 !===============================================================================
 
 subroutine timer_init()   ! Initialize timing
-
+#ifdef _OPENMP
+  use omp_lib
+#else
 ! Internal variables
   real    :: treal
+#endif
 
   call wall_time( wallTime0 )
+#ifdef _OPENMP
+  time0 = omp_get_wtime( )
+#else
   call cpu_time( treal )       ! Notice single precision
   time0 = treal
+#endif
   nProgs = 0
 
 ! (Re)initialize data array
@@ -698,21 +720,30 @@ END SUBROUTINE timer_report
 ! ==================================================================
 
 subroutine timer_start( prog )   ! Start counting time for a program
+#ifdef _OPENMP
+  use omp_lib
+#endif
 
   implicit none
   character(len=*),intent(in):: prog  ! Name of program of code section
 
 ! Internal variables
   integer :: iProg
+#ifndef _OPENMP
   real    :: treal
+#endif
   real(dp):: timeNow
 
 ! Do not change data if writing a report
   if (writingTimes) return
 
 ! Find present CPU time and convert it to double precision
-  call cpu_time( treal )         ! Standard Fortran95
+#ifdef _OPENMP
+  timeNow = omp_get_wtime( )
+#else
+  call cpu_time( treal )       ! Notice single precision
   timeNow = treal
+#endif
 
 ! Find program index
   iProg = prog_index( prog )
@@ -732,13 +763,18 @@ end subroutine timer_start
 !===============================================================================
 
 subroutine timer_stop( prog )   ! Stop counting time for a program
+#ifdef _OPENMP
+  use omp_lib
+#endif
 
   implicit none
   character(len=*),intent(in):: prog     ! Name of program of code section
 
 ! Internal variables
   integer :: iProg, jProg
+#ifndef _OPENMP
   real    :: treal
+#endif
   real(dp):: deltaTime, timeNow
   logical :: found
 
@@ -751,8 +787,12 @@ subroutine timer_stop( prog )   ! Stop counting time for a program
   if (writingTimes) return
 
 ! Find present CPU time and convert it to double precision
-  call cpu_time( treal )         ! Standard Fortran95
+#ifdef _OPENMP
+  timeNow = omp_get_wtime( )
+#else
+  call cpu_time( treal )       ! Notice single precision
   timeNow = treal
+#endif
 
 ! Find program index
   iProg = prog_index( prog, found )

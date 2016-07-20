@@ -1,22 +1,20 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_overlap
 
       use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
-      use atmfuncs,      only : rcut
+      use atmfuncs,      only : rcut, orb_gindex
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
      &                          reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
+      use m_new_matel,   only : new_matel
 
       implicit none
 
@@ -62,7 +60,7 @@ C real*8  S(maxnh)         : Sparse overlap matrix
       real(dp), intent(out) :: S(maxnh)
 C Internal variables ......................................................
       integer               :: ia, ind, io, ioa, is,  iio, j, ja, jn,
-     &                         jo, joa, js, jua, nnia
+     &                         jo, joa, js, jua, nnia, ig, jg
       real(dp)              :: grSij(3) , rij, Sij, volcel, volume
       real(dp),     pointer :: Si(:)
       external  timer
@@ -80,6 +78,7 @@ C     Allocate local memory
       call re_alloc( Si, 1, no, 'Si', 'overlap' )
 
       do ia = 1,nua
+        is = isa(ia)
         call mneighb( scell, 2.d0*rmaxo, na, xa, ia, 0, nnia )
         do io = lasto(ia-1)+1,lasto(ia)
 
@@ -88,17 +87,21 @@ C         Is this orbital on this Node?
           if (iio.gt.0) then
 
 C           Valid orbital
+            ioa = iphorb(io)
+            ig = orb_gindex(is,ioa)
             do jn = 1,nnia
               ja = jna(jn)
               jua = indxua(ja)
               rij = sqrt( r2ij(jn) )
               do jo = lasto(ja-1)+1,lasto(ja)
-                ioa = iphorb(io)
                 joa = iphorb(jo)
-                is = isa(ia)
                 js = isa(ja)
+                !
+                ! Use global indexes for new version of matel
+                !
+                jg = orb_gindex(js,joa)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call MATEL( 'S', is, js, ioa, joa, xij(1:3,jn),
+                  call new_MATEL( 'S', ig, jg, xij(1:3,jn),
      &                        Sij, grSij )
                   Si(jo) = Si(jo) + Sij
                 endif
@@ -115,7 +118,7 @@ C           Valid orbital
       enddo
 
 C     Deallocate local memory
-!      call MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
+!      call new_MATEL( 'S', 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
       call de_alloc( Si, 'Si', 'overlap' )
 

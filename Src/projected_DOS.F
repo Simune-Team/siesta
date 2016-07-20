@@ -1,6 +1,15 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module m_projected_DOS
 
       use precision
+      
+      implicit none
 
       private
 
@@ -15,36 +24,52 @@
       USE siesta_options
       use fdf,         only: fdf_block, block_fdf
       use Kpoint_pdos
-      use parallel,    only: IOnode
+      use parallel,    only: IOnode, Nodes
       use siesta_geom, only: ucell
+      use m_spin,      only: h_spin_dim
 
-      implicit none
-
-      type(block_fdf)            :: bfdf
-
-!------------------------------------------------------------------------- BEGIN
-! Compute the projected density of states
-        do_pdos = fdf_block('ProjectedDensityOfStates',bfdf)
-        if (isolve.ne.SOLVE_DIAGON.and.do_pdos) then
-          if (.not.((isolve.eq.SOLVE_MINIM).and.
-     .              minim_calc_eigenvalues)) then
-             if (IONode) then
-                write(6,*)
-     .           'siesta: ERROR: PDOS implemented only with diagon'
-             endif
-             do_pdos = .false.
-          endif
-        endif
-
-      if (do_pdos) then
-
-! Determine whether the projected density of states is to be computed
-! on a different grid to the SCF calculation
-        call setup_Kpoint_pdos( ucell, different_pdos_grid )
-
+      type(block_fdf) :: bfdf
+      
+!-------------------------------------------------------------------------BEGIN
+!     Compute the projected density of states
+      do_pdos = fdf_block('ProjectedDensityOfStates', bfdf)
+      if ( .not. do_pdos ) return
+         
+      if (isolve.ne.SOLVE_DIAGON) then
+         if (.not.((isolve.eq.SOLVE_MINIM).and.
+     .        minim_calc_eigenvalues)) then
+            if (IONode) then
+               write(6,*)
+     .              'siesta: ERROR: PDOS implemented only with diagon'
+            endif
+            do_pdos = .false.
+         endif
       endif
-!--------------------------------------------------------------------------- END
 
+      if ( .not. do_pdos ) return
+
+C     PDOS not computed if non-collinear calculation is run in parallel
+      
+      if ( (h_spin_dim .gt. 2) .and. (Nodes .gt. 1) ) then
+         
+         if (IOnode) then
+            write(6,'(/2a,/)')
+     .           'siesta: ERROR: Cannot calculate projected DOS using ',
+     .           'non-collinear or spin-orbit calculations in parallel'
+         endif
+         
+         do_pdos = .false.
+            
+      endif
+
+      if ( .not. do_pdos ) return
+
+!     Determine whether the projected density of states is to be computed
+!     on a different grid to the SCF calculation
+      call setup_Kpoint_pdos( ucell, different_pdos_grid )
+      
+!---------------------------------------------------------------------------END
+      
       end subroutine init_projected_DOS
 
       subroutine projected_DOS()
@@ -59,8 +84,10 @@
       use Kpoint_pdos
       use parallel,    only: IOnode
       use m_eo
-      use m_spin,      only: nspin
+      use m_spin,      only: h_spin_dim, spinor_dim
       use m_gamma
+      use units,       only: eV
+      
       implicit none
 
       type(block_fdf)            :: bfdf
@@ -76,7 +103,6 @@
 !------------------------------------------------------------------------- BEGIN
 ! Compute the projected density of states
      
-
       if (do_pdos) then
         ! Call fdf_block to get iu - presence has already been tested in init_projected_PDOS
         dummy = fdf_block('ProjectedDensityOfStates',bfdf)
@@ -104,18 +130,20 @@
 
 ! If the number of k points has increased then reallocate eo and qo
           if (maxk_pdos.gt.maxk) then
-            call re_alloc(eo,1,no_u,1,nspin,1,maxk_pdos,name="eo",
+            call re_alloc(eo,1,no_u,1,spinor_dim,1,maxk_pdos,name="eo",
      .                    routine="projected_dos")
           endif
 
-          call pdos( no_s, nspin, nspin, no_l, maxnh,
+          call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
+     .               maxnh,
      .               no_u, numh, listhptr, listh, H, S,
      .               e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
      .               nkpnt_pdos, kpoints_pdos, kweight_pdos, eo,
      .               no_u)
         else
 ! otherwise use the SCF grid 
-          call pdos( no_s, nspin, nspin, no_l, maxnh,
+          call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
+     .               maxnh,
      .               no_u, numh, listhptr, listh, H, S,
      .               e1, e2, sigma, nhist,
      .               gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,

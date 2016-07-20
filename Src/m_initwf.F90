@@ -315,7 +315,6 @@ CONTAINS
         STOP "initwf: System has degenracy. Change spin polarization or Fermi &
         temperature to avoid it"
       end if
-      IF(Node.eq.0) write(6,*) 'Debug01: Occupations complete!!!!!!!!!!!!!!'
       !..............
 #ifdef MPI
       call ms_scalapack_setup(Nodes,1,'c',BlockSize)
@@ -329,8 +328,6 @@ CONTAINS
           call m_allocate(wavef_ms(i,j),nuotot,nocck(i,j),m_storage)
         end do
       end do
-
-      IF(Node.eq.0) write(6,*) 'Debug02: MatrixSwitch allocations!!!!!!!!!!!!!!'
 !     Call apropriate routine .............................................
       if (nspin.le.2 .and. gamma) then
         call diaggiwf( nspin, nuo, maxuo, maxnh, maxo,                     &
@@ -343,7 +340,6 @@ CONTAINS
          stop                                                                  &
          'initwf: ERROR: non-collinear spin options for TDDFT not yet implemented'
       end if
-      IF(Node.eq.0) write(6,*) 'Debug03: Gamma-diagonalization !!!!!!!!!!!!!!'
 !     Write/save wavefunction in .TDWF file to use for TDDFT calculation.
       call  iowavef('write',wavef_ms,nuotot,nk,nspin,istpp,totime)
 !     Free local arrays
@@ -361,14 +357,13 @@ CONTAINS
 !     Stop time counter ...................................................
       call timer( 'initwf', 2 )
       !
-      IF(Node.eq.0) write(6,*) 'Debug04: Free-local arrays !!!!!!!!!!!!!!'
   end subroutine initwf
   ! Gamma point: solve KS by diagonalisation and store the occupied wavefunctions in wavef
   subroutine diaggiwf(nspin,nuo,maxuo,maxnh, maxo,Haux,Saux,psi,           &
                       nuotot,occup)
 #ifdef MPI
       use parallel, only : BlockSize,Node
-      use m_diagon, only : ictxt
+      use m_diagon_opt, only : ictxt
 #endif
       !
       implicit none
@@ -402,17 +397,7 @@ CONTAINS
               Haux(jo,io)=Haux(jo,io)+H(ind,ispin)
             end do
           end do
-          IF(Node.eq.0) write(6,*) 'Gamam-diag: sparse2dense !!!!!!!!!!!!!!'
-          IF(Node.eq.0) print*, shape(Haux)
-          IF(Node.eq.0) print*, shape(Saux)
-          IF(Node.eq.0) print*, nuotot
-          IF(Node.eq.0) print*, nuo
-          IF(Node.eq.0) print*, shape(eo)
-          IF(Node.eq.0) print*, maxo, ispin
-          IF(Node.eq.0) print*, shape(psi)
-          IF(Node.eq.0) print*, ispin
           call rdiag(Haux,Saux,nuotot,nuo,nuotot,eo,psi(1,1,ispin),nuotot,1,ierror)
-          IF(Node.eq.0) write(6,*) 'Gamam-diag: after-diag !!!!!!!!!!!!!!'
           if (ierror .eq. 0) then
             exit
           else if ((ierror .ne. -1) .or. (ie .eq. 10)) then
@@ -437,14 +422,13 @@ CONTAINS
         end do              ! ie=1,nuotot
       end do                ! ispin
       !
-          IF(Node.eq.0) write(6,*) 'Gamam-diag: wavef2M_S !!!!!!!!!!!!!!'
   end subroutine diaggiwf
   ! k points: solve KS by diagonalisation and store the occupied wavefunctions in wavef
   subroutine diagkiwf(nspin,nuo,no,maxspn,maxuo,maxnh, maxo, indxuo,nk,        &
                       kpoint, Haux,Saux,psi,nuotot,occup)
 #ifdef MPI
       use parallel, only : BlockSize
-      use m_diagon, only : ictxt
+      use m_diagon_opt, only : ictxt
 #endif
       !
       implicit none

@@ -1,12 +1,7 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2008.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! ---
+!  This file is distributed under the terms of the
+!  Modified BSD License: see the BSD_LICENSE file
+! ---
 !
 ! *******************************************************************
 ! module mesh1D
@@ -15,18 +10,18 @@
 ! in a mesh, and to solve some differential equations by Numerov's method
 !-----------------------------------------------------------------
 ! Used module procedures:
-!   m_recipes, only: polint  ! Finds polynomial (Lagrange) interpolation
-!   m_recipes, only: spline  ! Sets spline interpolation
-!   m_recipes, only: splint  ! Finds spline interpolation
+!   interpolation, only: polint  ! Polynomial (Lagrange) interpolation
+!   interpolation, only: spline  ! Sets spline interpolation
+!   interpolation, only: splint  ! Finds spline interpolation
 ! Used module types and variables:
-!   precision, only: dp      ! Real double precision type
+!   precision, only: dp        ! Real double precision type
 !-----------------------------------------------------------------
 ! Public module procedures:
 !   derivative,        &! Returns function derivatives the same mesh points
 !   get_mesh,          &! Returns a previously-set 1D mesh
 !   get_n,             &! Returns the number of mesh points
 !   integral,          &! Returns the integral of a function defined in a mesh
-!   interpolation,     &! Returns interpolated values at arbitrary points
+!   interpolation_local,     &! Returns interpolated values at arbitrary points
 !   locate,            &! Given x0, it returns real value i0 such that x(i0)=x0
 !   numerov,           &! Solves d2y/dx2 = f(x,y) = f0(x) + f1(x)*y
 !   set_interpolation, &! Sets interpolation method (lagrange|spline)
@@ -350,9 +345,9 @@
 module mesh1D
 
 ! Used module procedures
-use m_recipes, only: polint  ! Finds polynomial (Lagrange) interpolation
-use m_recipes, only: spline  ! Sets spline interpolation
-use m_recipes, only: splint  ! Finds spline interpolation
+use interpolation, only: polint  ! Polynomial (Lagrange) interpolation
+use interpolation, only: spline  ! Sets spline interpolation
+use interpolation, only: splint  ! Finds spline interpolation
 
 ! Used module types and variables
 use precision, only: dp      ! Real double precision type
@@ -365,7 +360,7 @@ PUBLIC :: &
   get_mesh,          &! Returns a previously-set 1D mesh
   get_n,             &! Returns the number of mesh points
   integral,          &! Returns the integral of a function defined in a mesh
-  interpolation,     &! Returns interpolated values at arbitrary points
+  interpolation_local,     &! Returns interpolated values at arbitrary points
   locate,            &! Given x0, it returns real value i0 such that x(i0)=x0
   numerov,           &! Solves d2y/dx2 = f(x,y) = f0(x) + f1(x)*y
   set_interpolation, &! Sets interpolation method (lagrange|spline)
@@ -747,7 +742,8 @@ end function locate
 
 !----------------------------------------------------------------
 
-function interpolation( nnew, xnew, n, y, x, dx )
+function interpolation_local( nnew, xnew, n, y, x, dx ) &
+           result(interpolation)
 
   implicit none
   integer,            intent(in) :: nnew
@@ -814,7 +810,7 @@ function interpolation( nnew, xnew, n, y, x, dx )
     stop 'interpolation: ERROR: bad interpolation_method parameter'
   end if ! (interpolation_method)
 
-end function interpolation
+end function interpolation_local
 
 !----------------------------------------------------------------
 

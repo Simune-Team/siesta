@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine cspa(ioptlwf,iopt,natoms,no_u,no_l,lasto,isa,
      .                qa,rcoor,rh,cell,xa,nhmax,numh,listh,listhptr,
@@ -123,16 +120,16 @@ C  Internal variables .......................................................
 
       real(dp) ::
      .  cg,fact(2),qtot,r,rmax,rr(3),rrmod,
-     .  snor,tiny,ran3,cgval
+     .  snor,tiny,randomg,cgval
 
-      external :: ran3
+      external :: randomg
 
       logical, save :: firstcall = .true., secondodd = .false.
 
       if (firstcall) then
 
 C Initialise random number generator
-        cgval = ran3(-iseed)
+        cgval = randomg(-iseed)
 
         firstcall = .false.
 
@@ -362,7 +359,7 @@ C loop over the neighbors of ia within rcoor
 
               ! Get random number here for reproducibility over numbers of processors
               get_random: do
-                 cgval = (ran3(iseed) - 0.5d0) * 2.0d0
+                 cgval = (randomg(iseed) - 0.5d0) * 2.0d0
                  if (abs(cgval) .ge. 1d-5) exit get_random
               enddo get_random
 

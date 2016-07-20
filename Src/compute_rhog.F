@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module m_compute_rhog
       private
       public :: compute_rhog
@@ -18,7 +25,7 @@
       use m_stress
       use m_energies
       use m_ntm
-      use m_spin,         only: nspin
+      use m_spin,         only: nspin, h_spin_dim
       use m_dipol
       use alloc, only: re_alloc, de_alloc
       use m_gamma
@@ -26,7 +33,7 @@
 
       implicit none
 
-      real(dp), intent(in):: DM(maxnh,nspin)
+      real(dp), intent(in):: DM(maxnh,h_spin_dim)
 
       real(dp)            :: stressl(3,3)
       real(dp), pointer   :: fal(:,:)   ! Local-node part of atomic F

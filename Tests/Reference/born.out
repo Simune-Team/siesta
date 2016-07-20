@@ -1,11 +1,16 @@
-Siesta Version:                                        siesta-trunk-300
-Architecture  : nano-intel-mpi
-Compiler flags: /opt/intel/impi/3.1/bin64/mpiifort -w  -O3 -mp
+Siesta Version: trunk-509
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
 PARALLEL version
 NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2009  17:10:57
+* Running on 2 nodes in parallel
+>> Start of run:   5-JUN-2016  11:57:47
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -45,7 +50,8 @@ reinit: System Label: born
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: Si Atomic number:          14
+Species number:   1 Atomic number:   14 Label: Si
+
 Ground state valence configuration:   3s02  3p02
 Reading pseudopotential information in formatted form from Si.psf
 
@@ -61,12 +67,15 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 <basis_specs>
 ===============================================================================
 Si                   Z=  14    Mass=  28.090        Charge= 0.17977+309
-Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
+Lmxo=1 Lmxkb= 2    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    0.0000    
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=3
@@ -74,6 +83,9 @@ L=1  Nsemic=0  Cnfigmx=3
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    0.0000    
             lambdas:    1.0000    
 -------------------------------------------------------------------------------
@@ -195,44 +207,62 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     F
-redata: Number of spin components        =     1
-redata: Long output                      =     T
-redata: Number of Atomic Species         =        1
+redata: Spin configuration                          = non-polarized
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   T
+redata: Number of Atomic Species                    =        1
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     Atomic and Orbital charges
-redata: Mesh Cutoff                      =   130.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Max. number of SCF Iter          =       50
-redata: Mixing is linear
-redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?        =     F
-redata: New DM Mixing Weight             =     0.2500
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = Atomic and Orbital charges
+redata: Mesh Cutoff                                 =   130.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =       50
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.2500
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.000100
-redata: Require Energy convergence for SCF =     F
-redata: DM Energy tolerance for SCF      =     0.000100 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000100 eV
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     F
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Diagonalization
-redata: Divide and Conquer               =     T
-redata: Electronic Temperature           =     0.0019  Ry
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     Force Constants Matrix Calculation
-redata: Atomic displ for force constants  =     0.0400  Bohr
-redata: First atom to move               =        1
-redata: Last atom to move                =        2
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: DM Tolerance for SCF                        =     0.000100
+redata: Require H convergence for SCF               =   F
+redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
+redata: Require (free) Energy convergence in SCF    =   F
+redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
+redata: Require Harris convergence for SCF          =   F
+redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   F
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =   299.9869 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Force Constants Matrix Calculation
+redata: Atomic displ for force constants            =     0.0212  Ang
+redata: First atom to move                          =        1
+redata: Last atom to move                           =        2
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 2
+mix.SCF:    Linear mixing weight                 =     0.250000
+mix.SCF:    Damping                              =     0.250000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+DM_history_depth set to zero for 'Harris' run
+Size of DM history Fstack: 0
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    2   2
+* ProcessorY, Blocksize:    1   5
+
+
+* Orbital distribution balance (max,min):     5     3
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -245,24 +275,22 @@ siesta: k-grid: Supercell and displacements
 siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
-Naive supercell factors:     5    5    5
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
-* Maximum dynamic memory allocated =     1 MB
 
-siesta:                 ==============================
-                            Begin FC step =      0
-                            Undisplaced coordinates
-                        ==============================
+                     ====================================
+                        Begin FC step =      0
+                        Undisplaced coordinates
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.25000000    0.25000000    0.25000000   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -272,21 +300,50 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     1
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 0
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-
-* Maximum dynamic memory allocated =     5 MB
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24886
+cdiag-debug: Node=0, lwork=       130>= lworkq=        98, lrwork=       201>= lrworkq=       193, liwork=        74>= liworkq=        74
+cdiag-debug: Node=1, lwork=       120>= lworkq=        98, lrwork=       153>= lrworkq=       145, liwork=        74>= liworkq=        74
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
+siesta: Ebs     =       -56.415127
 siesta: Eions   =       380.802124
 siesta: Ena     =       115.502327
 siesta: Ekin    =        78.997046
 siesta: Enl     =        35.834927
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =         0.000000
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
@@ -296,35 +353,36 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -195.484966
+siesta: Eharris =      -195.484967
 siesta: Etot    =      -215.016428
 siesta: FreeEng =      -215.016428
 
-siesta: Eharris(eV) =    -195.484966
+siesta: Eharris(eV) =    -195.484967
 
 
-siesta: Eharris(eV) =    -195.484966
+siesta: Eharris(eV) =    -195.484967
 
-timer: Routine,Calls,Time,% = IterSCF        1       1.320  72.57
-elaps: Routine,Calls,Wall,% = IterSCF        1       0.330  72.30
+timer: Routine,Calls,Time,% =    IterSCF     1       0.032  12.12
+
+Using DM_out to compute the final energy and forces
 
 siesta: E_KS - E_eggbox =      -194.6964
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000   -0.000001
-     2    0.000000    0.000000    0.000000
+     1    0.000000    0.000000   -0.000000
+     2   -0.000000   -0.000000   -0.000000
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000001
+   Tot    0.000000    0.000000   -0.000000
 ----------------------------------------
-   Max    0.000001
+   Max    0.000000
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.000001    constrained
+   Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):     -353.28     -353.28     -353.28        0.00        0.00        0.00
+Stress-tensor-Voigt (kbar):     -353.28     -353.28     -353.28       -0.00       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -185.8709
 Target enthalpy (eV/cell)     -194.6964
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -338,31 +396,28 @@ mulliken: Qtot =        8.000
 siesta: Calculating polarization. 
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      7.255776    7.255776    7.255776
-siesta: Along cartesian directions    10.261217   10.261217   10.261217
+siesta: Along the lattice vectors      7.255776    7.255776   21.767328
+siesta: Along cartesian directions    20.522434   20.522434   10.261217
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     18.442356   18.442356   18.442356
-siesta: Along cartesian directions    26.081430   26.081430   26.081430
+siesta: Along the lattice vectors     18.442356   18.442356   55.327068
+siesta: Along cartesian directions    52.162860   52.162860   26.081430
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    7.255776    7.255776    7.255776
+obc:    7.255776    7.255776   21.767328
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      1
-                            displace atom        1
-                            in direction         1
-                            by        -0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      1
+                         displace atom 1
+                         in direction 1 by -0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00389817   -0.00389817   -0.00389817   1       1  Si
     0.25000000    0.25000000    0.25000000   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -372,30 +427,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 1
+  <sparsity:sparsity for geom step 1
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     2
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 1
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24883
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1    0.754383    0.000000    0.000000
-     2   -0.764524    0.000000    0.000000
+     1    0.754383    0.000000   -0.000000
+     2   -0.764526   -0.000000   -0.000000
 ----------------------------------------
-   Tot   -0.010141    0.000000    0.000000
+   Tot   -0.010143    0.000000   -0.000000
 ----------------------------------------
-   Max    0.764524
-   Res    0.438480    sqrt( Sum f_i^2 / 3N )
+   Max    0.764526
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764524    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00       20.61        0.00
+Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45       -0.00       20.61       -0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -406,21 +492,18 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      2
-                            displace atom        1
-                            in direction         1
-                            by         0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      2
+                         displace atom 1
+                         in direction 1 by  0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
    -0.00389817    0.00389817    0.00389817   1       1  Si
     0.25000000    0.25000000    0.25000000   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -430,30 +513,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 2
+  <sparsity:sparsity for geom step 2
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     3
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 2
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24871
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.754383    0.000000    0.000000
-     2    0.764524    0.000000   -0.000001
+     1   -0.754383   -0.000000    0.000000
+     2    0.764526   -0.000000   -0.000000
 ----------------------------------------
-   Tot    0.010141    0.000000   -0.000001
+   Tot    0.010143   -0.000000   -0.000000
 ----------------------------------------
-   Max    0.764524
-   Res    0.438480    sqrt( Sum f_i^2 / 3N )
+   Max    0.764526
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764524    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00      -20.61        0.00
+Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45       -0.00      -20.61       -0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -467,31 +581,28 @@ mulliken: Qtot =        8.000
 siesta: Calculating polarization. 
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      7.255815   21.767283   21.767283
-siesta: Along cartesian directions    30.783587   20.522429   20.522429
+siesta: Along the lattice vectors      7.255906   21.767235   21.767235
+siesta: Along cartesian directions    30.783519   20.522459   20.522459
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     18.442454   55.326952   55.326952
-siesta: Along cartesian directions    78.244126   52.162847   52.162847
+siesta: Along the lattice vectors     18.442685   55.326830   55.326830
+siesta: Along cartesian directions    78.243954   52.162925   52.162925
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    7.255815   21.767283   21.767283
+obc:    7.255906   21.767235   21.767235
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      3
-                            displace atom        1
-                            in direction         2
-                            by        -0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      3
+                         displace atom 1
+                         in direction 2 by -0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
    -0.00389817    0.00389817   -0.00389817   1       1  Si
     0.25000000    0.25000000    0.25000000   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -501,30 +612,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 3
+  <sparsity:sparsity for geom step 3
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     4
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 3
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24883
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.754383    0.000000
-     2    0.000000   -0.764523    0.000000
+     1    0.000000    0.754383   -0.000000
+     2   -0.000000   -0.764526   -0.000000
 ----------------------------------------
-   Tot    0.000000   -0.010140    0.000000
+   Tot    0.000000   -0.010143   -0.000000
 ----------------------------------------
-   Max    0.764523
-   Res    0.438480    sqrt( Sum f_i^2 / 3N )
+   Max    0.764526
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764523    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00       20.61
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45       -0.00       -0.00       20.61
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -535,21 +677,18 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      4
-                            displace atom        1
-                            in direction         2
-                            by         0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      4
+                         displace atom 1
+                         in direction 2 by  0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00389817   -0.00389817    0.00389817   1       1  Si
     0.25000000    0.25000000    0.25000000   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -559,30 +698,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 4
+  <sparsity:sparsity for geom step 4
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     5
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 4
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24871
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000   -0.754384   -0.000001
-     2    0.000000    0.764524   -0.000001
+     1    0.000000   -0.754383    0.000000
+     2    0.000000    0.764526   -0.000000
 ----------------------------------------
-   Tot    0.000000    0.010140   -0.000001
+   Tot    0.000000    0.010143    0.000000
 ----------------------------------------
-   Max    0.764524
+   Max    0.764526
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764524    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00      -20.61
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45       -0.00       -0.00      -20.61
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -596,31 +766,28 @@ mulliken: Qtot =        8.000
 siesta: Calculating polarization. 
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     21.767283    7.255815   21.767283
-siesta: Along cartesian directions    20.522429   30.783586   20.522429
+siesta: Along the lattice vectors     21.767235    7.255906   21.767235
+siesta: Along cartesian directions    20.522459   30.783519   20.522459
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     55.326952   18.442454   55.326952
-siesta: Along cartesian directions    52.162847   78.244126   52.162847
+siesta: Along the lattice vectors     55.326830   18.442685   55.326830
+siesta: Along cartesian directions    52.162925   78.243954   52.162925
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   21.767283    7.255815   21.767283
+obc:   21.767235    7.255906   21.767235
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      5
-                            displace atom        1
-                            in direction         3
-                            by        -0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      5
+                         displace atom 1
+                         in direction 3 by -0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
    -0.00389817   -0.00389817    0.00389817   1       1  Si
     0.25000000    0.25000000    0.25000000   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -630,30 +797,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 5
+  <sparsity:sparsity for geom step 5
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     6
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 5
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24845
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000    0.000000    0.754383
-     2    0.000000    0.000001   -0.764523
+     2    0.000000   -0.000000   -0.764526
 ----------------------------------------
-   Tot    0.000000    0.000001   -0.010140
+   Tot    0.000000   -0.000000   -0.010143
 ----------------------------------------
-   Max    0.764523
-   Res    0.438480    sqrt( Sum f_i^2 / 3N )
+   Max    0.764526
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764523    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37       20.61        0.00        0.00
+Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37       20.61       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -664,21 +862,18 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      6
-                            displace atom        1
-                            in direction         3
-                            by         0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      6
+                         displace atom 1
+                         in direction 3 by  0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00389817    0.00389817   -0.00389817   1       1  Si
     0.25000000    0.25000000    0.25000000   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -688,30 +883,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 6
+  <sparsity:sparsity for geom step 6
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     7
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 6
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24908
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000   -0.000001   -0.754383
-     2    0.000000   -0.000001    0.764524
+     1   -0.000000    0.000000   -0.754383
+     2   -0.000000   -0.000000    0.764526
 ----------------------------------------
-   Tot    0.000000   -0.000001    0.010141
+   Tot   -0.000000    0.000000    0.010143
 ----------------------------------------
-   Max    0.764524
+   Max    0.764526
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764524    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37      -20.61        0.00        0.00
+Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37      -20.61       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -725,31 +951,28 @@ mulliken: Qtot =        8.000
 siesta: Calculating polarization. 
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     21.767283   21.767283    7.255815
-siesta: Along cartesian directions    20.522429   20.522429   30.783586
+siesta: Along the lattice vectors     21.767235   21.767235    7.255906
+siesta: Along cartesian directions    20.522459   20.522459   30.783519
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     55.326952   55.326952   18.442454
-siesta: Along cartesian directions    52.162847   52.162847   78.244126
+siesta: Along the lattice vectors     55.326830   55.326830   18.442685
+siesta: Along cartesian directions    52.162925   52.162925   78.243954
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   21.767283   21.767283    7.255815
+obc:   21.767235   21.767235    7.255906
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      7
-                            displace atom        2
-                            in direction         1
-                            by        -0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      7
+                         displace atom 2
+                         in direction 1 by -0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.25389817    0.24610183    0.24610183   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -759,30 +982,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 7
+  <sparsity:sparsity for geom step 7
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     8
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 7
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24862
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.764525    0.000000    0.000000
-     2    0.754384    0.000001    0.000000
+     1   -0.764526    0.000000   -0.000000
+     2    0.754383   -0.000000   -0.000000
 ----------------------------------------
-   Tot   -0.010141    0.000001    0.000000
+   Tot   -0.010143    0.000000   -0.000000
 ----------------------------------------
-   Max    0.764525
+   Max    0.764526
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764525    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00      -20.61        0.00
+Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45       -0.00      -20.61       -0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -793,21 +1047,18 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      8
-                            displace atom        2
-                            in direction         1
-                            by         0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      8
+                         displace atom 2
+                         in direction 1 by  0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.24610183    0.25389817    0.25389817   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -817,30 +1068,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 8
+  <sparsity:sparsity for geom step 8
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     9
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 8
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24899
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1    0.764524    0.000000    0.000000
-     2   -0.754384    0.000000    0.000000
+     1    0.764526    0.000000    0.000000
+     2   -0.754383   -0.000000   -0.000000
 ----------------------------------------
-   Tot    0.010140    0.000000    0.000000
+   Tot    0.010143    0.000000    0.000000
 ----------------------------------------
-   Max    0.764524
+   Max    0.764526
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764524    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00       20.61        0.00
+Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45       -0.00       20.61       -0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -854,31 +1136,28 @@ mulliken: Qtot =        8.000
 siesta: Calculating polarization. 
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      7.255822   21.767290   21.767290
-siesta: Along cartesian directions    30.783596   20.522439   20.522439
+siesta: Along the lattice vectors      7.255870   21.767199   21.767199
+siesta: Along cartesian directions    30.783468   20.522408   20.522408
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     18.442472   55.326970   55.326970
-siesta: Along cartesian directions    78.244151   52.162872   52.162872
+siesta: Along the lattice vectors     18.442594   55.326739   55.326739
+siesta: Along cartesian directions    78.243824   52.162795   52.162795
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    7.255822   21.767290   21.767290
+obc:    7.255870   21.767199   21.767199
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      9
-                            displace atom        2
-                            in direction         2
-                            by        -0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      9
+                         displace atom 2
+                         in direction 2 by -0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.24610183    0.25389817    0.24610183   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -888,30 +1167,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 9
+  <sparsity:sparsity for geom step 9
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:    10
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 9
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24862
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000   -0.764524    0.000001
-     2    0.000001    0.754384    0.000000
+     1    0.000000   -0.764526    0.000000
+     2   -0.000000    0.754383   -0.000000
 ----------------------------------------
-   Tot    0.000001   -0.010139    0.000000
+   Tot    0.000000   -0.010143   -0.000000
 ----------------------------------------
-   Max    0.764524
+   Max    0.764526
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764524    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00      -20.61
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45       -0.00       -0.00      -20.61
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -922,21 +1232,18 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =     10
-                            displace atom        2
-                            in direction         2
-                            by         0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =     10
+                         displace atom 2
+                         in direction 2 by  0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.25389817    0.24610183    0.25389817   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -946,30 +1253,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 10
+  <sparsity:sparsity for geom step 10
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:    11
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 10
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24899
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.764524    0.000000
-     2    0.000000   -0.754384    0.000000
+     1    0.000000    0.764526   -0.000000
+     2   -0.000000   -0.754383    0.000000
 ----------------------------------------
-   Tot    0.000000    0.010140    0.000000
+   Tot   -0.000000    0.010143   -0.000000
 ----------------------------------------
-   Max    0.764524
+   Max    0.764526
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764524    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00       20.61
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45       -0.00       -0.00       20.61
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -983,31 +1321,28 @@ mulliken: Qtot =        8.000
 siesta: Calculating polarization. 
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     21.767290    7.255822   21.767290
-siesta: Along cartesian directions    20.522439   30.783596   20.522439
+siesta: Along the lattice vectors     21.767199    7.255870   21.767199
+siesta: Along cartesian directions    20.522408   30.783468   20.522408
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     55.326970   18.442472   55.326970
-siesta: Along cartesian directions    52.162872   78.244151   52.162872
+siesta: Along the lattice vectors     55.326739   18.442594   55.326739
+siesta: Along cartesian directions    52.162795   78.243824   52.162795
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   21.767290    7.255822   21.767290
+obc:   21.767199    7.255870   21.767199
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =     11
-                            displace atom        2
-                            in direction         3
-                            by        -0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =     11
+                         displace atom 2
+                         in direction 3 by -0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.24610183    0.24610183    0.25389817   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -1017,30 +1352,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 11
+  <sparsity:sparsity for geom step 11
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:    12
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 11
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24883
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000   -0.764524
-     2    0.000000    0.000000    0.754384
+     1    0.000000    0.000000   -0.764526
+     2    0.000000    0.000000    0.754383
 ----------------------------------------
-   Tot    0.000001    0.000001   -0.010140
+   Tot    0.000000    0.000000   -0.010143
 ----------------------------------------
-   Max    0.764524
+   Max    0.764526
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764524    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37      -20.61        0.00        0.00
+Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37      -20.61       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -1051,21 +1417,18 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =     12
-                            displace atom        2
-                            in direction         3
-                            by         0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =     12
+                         displace atom 2
+                         in direction 3 by  0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.25389817    0.25389817    0.24610183   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -1075,30 +1438,61 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 12
+  <sparsity:sparsity for geom step 12
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:    13
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 12
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+New grid distribution:   2
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+New grid distribution:   3
+           1       1:   12    1:   12    1:    6
+           2       1:   12    1:   12    7:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+PhiOnMesh: Number of (b)points on node 0 =                  864
+PhiOnMesh: nlist on node 0 =                24877
 
 siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Eharris(eV) =    -195.478391
 
+
+Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000    0.764524
-     2    0.000000    0.000001   -0.754384
+     1    0.000000    0.000000    0.764526
+     2   -0.000000   -0.000000   -0.754383
 ----------------------------------------
-   Tot    0.000000    0.000001    0.010140
+   Tot    0.000000   -0.000000    0.010143
 ----------------------------------------
-   Max    0.764524
+   Max    0.764526
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764524    constrained
+   Max    0.764526    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37       20.61        0.00        0.00
+Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37       20.61       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Si                  
@@ -1112,17 +1506,15 @@ mulliken: Qtot =        8.000
 siesta: Calculating polarization. 
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     21.767290   21.767290    7.255822
-siesta: Along cartesian directions    20.522439   20.522439   30.783596
+siesta: Along the lattice vectors     21.767199   21.767199    7.255870
+siesta: Along cartesian directions    20.522408   20.522408   30.783468
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     55.326970   55.326970   18.442472
-siesta: Along cartesian directions    52.162872   52.162872   78.244151
+siesta: Along the lattice vectors     55.326739   55.326739   18.442594
+siesta: Along cartesian directions    52.162795   52.162795   78.243824
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   21.767290   21.767290    7.255822
-
-* Maximum dynamic memory allocated =     5 MB
+obc:   21.767199   21.767199    7.255870
 
 siesta: Eigenvalues (eV):
   ik is    eps
@@ -1130,10 +1522,13 @@ siesta: Eigenvalues (eV):
 siesta: Fermi energy =      -2.698930 eV
 
 siesta: Program's energy decomposition (eV):
+siesta: Ebs     =       -56.412789
 siesta: Eions   =       380.802124
 siesta: Ena     =       115.501483
 siesta: Ekin    =       115.577902
 siesta: Enl     =        29.935837
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =        -8.120548
 siesta: DUscf   =         1.765897
 siesta: DUext   =         0.000000
@@ -1148,120 +1543,36 @@ siesta: Etot    =      -194.689432
 siesta: FreeEng =      -194.689432
 
 siesta: Final energy (eV):
+siesta:  Band Struct. =     -56.412789
 siesta:       Kinetic =     115.577902
-siesta:       Hartree =      23.678154
+siesta:       Hartree =      23.678156
+siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =     -68.547879
-siesta:  Ion-electron =    -120.258612
-siesta:       Ion-ion =    -145.138998
+siesta:  Ion-electron =    -120.258615
+siesta:       Ion-ion =    -145.138996
 siesta:       Ekinion =       0.000000
 siesta:         Total =    -194.689432
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.000000    0.000000    0.764524
-siesta:      2    0.000000    0.000001   -0.754384
+siesta:      1    0.000000    0.000000    0.764526
+siesta:      2   -0.000000   -0.000000   -0.754383
 siesta: ----------------------------------------
-siesta:    Tot    0.000000    0.000001    0.010140
+siesta:    Tot    0.000000   -0.000000    0.010143
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.222476    0.012861    0.000000
-siesta:     0.012861   -0.222476    0.000000
-siesta:     0.000000    0.000000   -0.222428
+siesta:    -0.222476    0.012861   -0.000000
+siesta:     0.012861   -0.222476   -0.000000
+siesta:    -0.000000   -0.000000   -0.222428
 
 siesta: Cell volume =         40.025752 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00242288          0.00251784  Ry/Bohr**3
-siesta:           0.22246016          0.23117983  eV/Ang**3
-siesta:         356.42433035        370.39493080  kBar
+siesta:           0.22246016          0.23117984  eV/Ang**3
+siesta:         356.42432740        370.39494280  kBar
 (Free)E+ p_basis*V_orbitals  =        -194.112732
-(Free)Eharris+ p_basis*V_orbitals  =        -174.575517
-
-* Maximum dynamic memory allocated : Node    0 =     5 MB
-* Maximum dynamic memory allocated : Node    1 =     5 MB
-* Maximum dynamic memory allocated : Node    2 =     5 MB
-* Maximum dynamic memory allocated : Node    3 =     5 MB
-
-* Maximum memory occured during ranger                        
-
-timer: CPU execution times:
-timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      22.270      22.270   100.00
-timer:  Setup             1       0.416       0.416     1.87
-timer:  bands             1       0.000       0.000     0.00
-timer:  writewave         1       0.004       0.004     0.02
-timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD           13       1.680      21.839    98.06
-timer:  hsparse          13       0.003       0.042     0.19
-timer:  overlap          13       0.005       0.060     0.27
-timer:  IterSCF          13       0.735       9.557    42.91
-timer:  kinefsm          26       0.002       0.062     0.28
-timer:  nlefsm           26       0.224       5.824    26.15
-timer:  DHSCF            26       0.389      10.104    45.37
-timer:  DHSCF1            1       0.345       0.345     1.55
-timer:  DHSCF2           13       0.353       4.589    20.61
-timer:  REORD           234       0.000       0.014     0.06
-timer:  POISON           39       0.004       0.171     0.77
-timer:  DHSCF3           26       0.100       2.605    11.70
-timer:  rhoofd           26       0.043       1.128     5.06
-timer:  cellXC           39       0.005       0.211     0.95
-timer:  vmat             26       0.040       1.032     4.63
-timer:  MolMec           26       0.000       0.002     0.01
-timer:  diagon           13       0.011       0.137     0.62
-timer:  c-eigval         13       0.006       0.084     0.38
-timer:  c-buildHS        13       0.000       0.000     0.00
-timer:  cdiag           908       0.004       3.774    16.95
-timer:  cdiag1          908       0.000       0.328     1.47
-timer:  cdiag2          908       0.001       0.601     2.70
-timer:  cdiag3          908       0.003       2.393    10.74
-timer:  cdiag4          908       0.000       0.218     0.98
-timer:  c-eigvec         13       0.004       0.052     0.23
-timer:  c-buildD         13       0.000       0.001     0.00
-timer:  DHSCF4           13       0.197       2.561    11.50
-timer:  dfscf            13       0.127       1.656     7.43
-timer:  overfsm          13       0.001       0.018     0.08
-timer:  KSV_pol           7       0.670       4.688    21.05
-timer:  optical           1       0.008       0.008     0.04
-  
-
-elaps: ELAPSED times:
-elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1       5.574       5.574    99.99
-elaps:  Setup             1       0.105       0.105     1.88
-elaps:  bands             1       0.000       0.000     0.00
-elaps:  writewave         1       0.001       0.001     0.01
-elaps:  KSV_init          1       0.001       0.001     0.01
-elaps:  IterMD           13       0.420       5.465    98.04
-elaps:  hsparse          13       0.001       0.010     0.18
-elaps:  overlap          13       0.001       0.013     0.23
-elaps:  IterSCF          13       0.184       2.387    42.81
-elaps:  kinefsm          26       0.000       0.013     0.22
-elaps:  nlefsm           26       0.056       1.452    26.04
-elaps:  DHSCF            26       0.096       2.492    44.70
-elaps:  DHSCF1            1       0.088       0.088     1.57
-elaps:  DHSCF2           13       0.088       1.146    20.56
-elaps:  REORD           234       0.000       0.003     0.04
-elaps:  POISON           39       0.001       0.044     0.78
-elaps:  DHSCF3           26       0.025       0.650    11.66
-elaps:  rhoofd           26       0.009       0.244     4.38
-elaps:  cellXC           39       0.001       0.056     1.00
-elaps:  vmat             26       0.010       0.258     4.63
-elaps:  MolMec           26       0.000       0.000     0.01
-elaps:  diagon           13       0.003       0.036     0.64
-elaps:  c-eigval         13       0.002       0.020     0.36
-elaps:  c-buildHS        13       0.000       0.000     0.01
-elaps:  cdiag           908       0.001       0.970    17.40
-elaps:  cdiag1          908       0.000       0.075     1.35
-elaps:  cdiag2          908       0.000       0.135     2.43
-elaps:  cdiag3          908       0.001       0.615    11.04
-elaps:  cdiag4          908       0.000       0.046     0.83
-elaps:  c-eigvec         13       0.001       0.013     0.24
-elaps:  c-buildD         13       0.000       0.000     0.01
-elaps:  DHSCF4           13       0.047       0.606    10.87
-elaps:  dfscf            13       0.030       0.385     6.91
-elaps:  overfsm          13       0.000       0.005     0.08
-elaps:  KSV_pol           7       0.167       1.168    20.95
-elaps:  optical           1       0.000       0.000     0.00
-  
->> End of run:  29-SEP-2009  17:11:03
+(Free)Eharris+ p_basis*V_orbitals  =        -194.901691
+>> End of run:   5-JUN-2016  11:57:51

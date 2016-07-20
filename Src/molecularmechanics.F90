@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module molecularmechanics
 !
 !     Add additional interactions through pair-potentials
@@ -255,7 +262,7 @@
           call re_alloc(MMpotpar , 1 , 6 , 1 , nMMpot, &
                'nMMpotpar','twobody')
           ! initialize them to zero
-          nMMpotptr = 0 ! ensures that we don't accidentally assign wrong potential to a species
+          nMMpotptr = 0 ! ensures that we don't accidentally assign wrong potential to a specie
           nMMpottype = 0
           MMpotpar = 0._dp
 

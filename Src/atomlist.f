@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module atomlist
 
@@ -20,7 +17,8 @@
       implicit none
 
       private
-      public :: initatomlists, superc, superx
+      public :: initatomlists, superc
+      public :: superx   ! for backwards compatibility
 
 !
 !     Instead of "generic" na, no, and nokb, we use:
@@ -51,9 +49,11 @@ C real*8 qa(na)             : Neutral atom charge of each atom
       real(dp), pointer, save, public :: amass(:), qa(:)
       integer, pointer, save, public  :: indxua(:)
 !     Index of equivalent atom in "u" cell
-      real(dp), save, public          :: rmaxv  ! Max cutoff for Vna
-      real(dp), save, public          :: rmaxo  ! Max cuoff for at. orb.
-      real(dp), save, public          :: rmaxkb ! Max cuoff for KB proj.
+      real(dp), save, public          :: rmaxv    ! Max cutoff for Vna
+      real(dp), save, public          :: rmaxo    ! Max cuoff for at. orb.
+      real(dp), save, public          :: rmaxkb   ! Max cuoff for KB proj.
+      real(dp), save, public          :: rmaxldau ! Max cuoff for LDAU proj.
+
       real(dp), save, public          :: qtot   ! Total number of elect.
       real(dp), save, public          :: zvaltot
                                          ! Total number of pseudoprotons
@@ -86,9 +86,15 @@ C real*8 qa(na)             : Neutral atom charge of each atom
 !=======================================================
       subroutine initatomlists()
 
+      use atm_types, only: species_info
+      use radial, only: rad_func
+      use ldau_specs, only: switch_ldau
+      
 C Routine to initialize the atomic lists.
 C
       integer  ia, io, is, nkba, noa, nol, nokbl, ioa, ikb
+      type(species_info), pointer :: spp
+      type(rad_func), pointer :: pp
 
       nullify(indxua,lastkb,lasto,qa,amass,xa_last)
       call re_alloc( indxua, 1, na_u, 'indxua', 'atomlist' )
@@ -134,6 +140,7 @@ c Initialize atomic lists
       rmaxv  = 0._dp
       rmaxo  = 0._dp
       rmaxkb = 0._dp
+      rmaxldau = 0._dp
       lasto(0) = 0
       lastkb(0) = 0
       zvaltot = 0.0_dp
@@ -165,6 +172,13 @@ c Initialize atomic lists
           iaKB(nokbl) = ia
           iphKB(nokbl) = -io
         enddo
+        if( switch_ldau ) then
+           spp => species(is)
+           do io = 1, spp%n_pjldaunl
+              pp => spp%pjldau(io)
+              rmaxldau = max( rmaxldau, pp%cutoff )
+           enddo
+        endif
       enddo
 
 ! Find rco and rckb .............................

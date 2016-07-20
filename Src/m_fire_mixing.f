@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_fire_mixing
 
@@ -37,7 +34,7 @@ C integer maxnd              : First dimension of D.M., and
 C                              maximum number of nonzero elements of D.M.
 C integer numd(:)            : Control vector of D.M.
 C                              (number of nonzero elements of each row)
-C integer nspin              : Spin polarization (1=unpolarized, 2=polarized)
+C integer nspin              : Spin polarization (1=unpolarized, 2=polarized, 4=non-collinear)
 C real*8 alpha               : Mixing parameter (for linear mixing)
 C integer nkick              : A kick is given every nkick iterations
 C real*8 alpha_kick          : Mixing parameter for kicks

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_grdsam
       public :: grdsam
@@ -55,9 +52,9 @@ c real*8  xa(3,na)      : atomic positions
 c real*8  cell(3,3)     : unit cell vectors
 c integer ifa           : scf contrib to forces calculated or not
 c integer istr          : scf contrib to stress calculated or not
-c integer maxnd         : first dimension of dscf
+c integer maxnd         : first dimension of Dscf
 c integer maxnh         : first dimension of listh, hmat
-c real*8  dscf(maxnd,nspin): scf DM elements
+c real*8  Dscf(maxnd,h_spin_dim): scf DM elements
 c real*8  datm(norb)    : Harris DM diagonal elements
 c **** DHSCF INPUT OR OUTPUT (DEPENDING ON WHETHER MESH IS CALCULATED)*******
 c integer ntm(3)        : number of mesh divisions of each cell vector
@@ -65,7 +62,7 @@ c **** DHSCF INPUT OR OUTPUT (DEPENDING ON ARGUMENT ILH) ********************
 c integer numh(nuo)     : number of nonzero H elements for each row
 c integer listhptr(nuo) : pointer to each row (-1) of H
 c integer listh(maxnh)  : nonzero-H-element column indexes for each row
-c real*8  Hmat(maxnh,nspin): Hamiltonian matrix in sparse form
+c real*8  Hmat(maxnh,h_spin_dim): Hamiltonian matrix in sparse form
 c ************************* DHSCF OUTPUT ******i*****************************
 c real*8  enaatm : integral of vna * rhoatm
 c real*8  enascf : integral of vna * rhoscf
@@ -98,18 +95,20 @@ C
       use siesta_options, only: hirshpop, voropop
       use siesta_options, only: partial_charges_at_every_geometry
       use m_partial_charges, only: want_partial_charges
+      
+      use m_spin, only: h_spin_dim
 
       implicit          none
 
-      integer           maxnh, maxnd, na, norb, nspin, nuo, nuotot, 
-     &                  nua, iaorb(norb), ifa, indxua(na), 
+      integer           maxnh, maxnd, na, norb, nspin,
+     &                  nuo, nuotot, nua, iaorb(norb), ifa, indxua(na), 
      &                  iphorb(norb), isa(na), istr, listh(maxnh),
      &                  listhptr(nuo), numh(nuo), ntm(3)
 
       real(dp)          cell(3,3), datm(norb), dipol(3), 
-     &                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
+     &                  Dscf(:,:), DUscf, DUext, Dxc, 
      &                  enaatm, enascf, exc, fa(3,nua),
-     &                  Hmat(maxnh,nspin), stress(3,3),
+     &                  Hmat(:,:), stress(3,3),
      &                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
 
 C Internal variables and arrays
@@ -147,6 +146,13 @@ c ----------------------------------------------------------------------------
 #ifdef DEBUG
       call write_debug( '    PRE grdsam' )
 #endif
+
+      if ( size(Dscf,2) /= h_spin_dim ) then
+         call die('Spin components is not equal to options.')
+      end if
+      if ( size(Hmat,2) /= h_spin_dim ) then
+         call die('Spin components is not equal to options.')
+      end if
 
 C Allocate local memory
       call re_alloc( pt, 1, 3, 1, maxpt+1, 'pt', 'grdsam' )

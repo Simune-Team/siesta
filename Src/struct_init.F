@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module m_struct_init
       private
       public :: struct_init
@@ -6,6 +13,7 @@
 
       subroutine struct_init()
       USE siesta_options
+      use units, only: Ang
       use m_ioxv
       USE alloc,          only: re_alloc, de_alloc
 
@@ -20,6 +28,12 @@
       use files,          only : slabel
       use zmatrix,        only : lUseZmatrix
       use parallel,       only : IOnode
+#ifdef NCDF_4
+      use m_steps, only : inicoor, fincoor
+      use m_exp_coord, only : read_exp_coord_options
+      use m_exp_coord, only : exp_coord_init
+      use m_exp_coord, only : exp_coord_next
+#endif
       use siesta_master,  only: coordsFromMaster  ! Get coords from master prog
       use siesta_master,  only: setPropertyForMaster  ! Set a property to be
                                                       ! sent to master program
@@ -86,6 +100,17 @@
       endif
 
 ! Read cell shape and atomic positions from a former run ..............
+#ifdef NCDF_4
+      dummy_str = fdf_get('MD.TypeOfRun','none')
+      if ( leqi(dummy_str,'explicit') ) then
+         ! Read in file name
+         call read_exp_coord_options( )
+         call exp_coord_init(slabel,na_u,inicoor,fincoor)
+         if ( inicoor > 0 ) then
+            call exp_coord_next(inicoor,na_u,xa)
+         end if
+      end if
+#endif
       foundxv = .false.
       if (usesavexv) then
         call ioxv('read', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
@@ -123,7 +148,10 @@
               endif
               call broadcast(found_restart)
               if (.not. found_restart) then
-                 dt = fdf_get('MD.LengthTimeStep',dt_default,'fs')
+                 ! dt_default = 1.0 (fs)
+                 ! The user should not rely on the default here...
+                 ! The parameter dt_default is private to read_options 
+                 dt = fdf_get('MD.LengthTimeStep',1.0_dp,'fs')
                  xa=xa-dt*va
                  if (IOnode) then
                     write(6,'(5a)') 'WARNING: ', trim(restart_file),
@@ -140,7 +168,8 @@
 ! Find if siesta is a server of forces, unless we already know it .....
       if (.not.siesta_server) then
         dummy_str = fdf_get('MD.TypeOfRun',"none")
-        siesta_server = (leqi(dummy_str,'forces'))
+        siesta_server = (leqi(dummy_str,'forces') .or.
+     .                    leqi(dummy_str,'master'))
       end if
 ! .....................
 

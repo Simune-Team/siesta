@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine rdiag(H,S,n,nm,nml,w,Z,neigvec,iscf,ierror)
 C ***************************************************************************
@@ -53,8 +50,8 @@ C
       use alloc,      only : re_alloc, de_alloc, allocdefaults,
      &                       alloc_default
       use sys,        only : die
-      use m_diagon,   only : saveeigenvectors, maxclustersize, i2d_ctxt,
-     &                       serial, noexpert, divideconquer, use2d,
+      use m_diagon_opt,only : saveeigenvectors, maxclustersize, serial,
+     &                       i2d_ctxt, noexpert, divideconquer, use2d,
      &                       prerotate, ictxt, allinone, doread,
      &                       firstcall
 #ifdef MPI
@@ -127,6 +124,12 @@ C Matrices for 2D
       logical              :: ChangeAlgorithm
       real(dp)             :: vl
       real(dp)             :: vu
+#ifdef MPI
+#ifdef SCALAPACK_DEBUG
+      integer              :: d_lwork, d_lrwork, d_liwork
+      logical,        save :: debugged = .false.
+#endif
+#endif
 
       real(dp),  parameter :: abstol = 1.0e-8_dp
       real(dp),  parameter :: orfac = 1.0e-3_dp
@@ -362,6 +365,39 @@ C For 2D case, copy arrays to new distribution
         call pdgemr2d(n, n, H, 1, 1, desch, h2d, 1, 1, desc_h2d, ictxt)
         call pdgemr2d(n, n, S, 1, 1, desch, s2d, 1, 1, desc_h2d, ictxt)
       endif
+#ifdef SCALAPACK_DEBUG
+      if ( .not. (Serial .or. debugged) ) then
+      debugged = .true.
+      d_lwork = -1
+      d_liwork = -1
+      if (DivideConquer) then
+         if (Use2D) then
+            call pdsyevd(jobz,'U',n,h2d,1,1,desc_h2d,w,z2d,1,1,
+     &           desc_h2d,work,d_lwork,iwork,d_liwork,info)
+         else
+            call pdsyevd(jobz,'U',n,H,1,1,desch,w,Z,1,1,desch,work,
+     &           d_lwork,iwork,d_liwork,info)
+         endif
+      else
+         if (Use2D) then
+            call pdsyevx(jobz,range,'U',n,h2d,1,1,desc_h2d,vl,vu,1,
+     &           neigvec,abstol,neigok,nz,w,orfac,z2d,1,1,
+     &           desc_h2d,work,d_lwork,iwork,d_liwork,ifail,
+     &           iclustr,gap,info)
+         else
+            call pdsyevx(jobz,range,'U',n,H,1,1,desch,vl,vu,1,neigvec,
+     &           abstol,neigok,nz,w,orfac,Z,1,1,desch,work,
+     &           d_lwork,iwork,d_liwork,ifail,iclustr,gap,info)
+         endif
+      endif
+      d_lwork  = nint(work(1))
+      d_liwork = iwork(1)
+      write(*,'(a,i0,4(a,i10))')'rdiag-debug: Node=',Node,
+     &     ', lwork=', lwork,'>= lworkq=',d_lwork,
+     &     ', liwork=',liwork,'>= liworkq=',d_liwork
+      endif
+#endif
+
 #endif
 
       if (AllInOne) then

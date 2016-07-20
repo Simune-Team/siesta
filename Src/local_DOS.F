@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 
       MODULE m_local_DOS
       private
@@ -26,6 +33,8 @@
       use m_forces,       only: fa
       use m_eo
       use m_spin,         only: nspin, qs, efs
+      use m_spin,         only: spinor_dim 
+      use m_diagon,       only: diagon
       use m_gamma
       use m_dhscf,        only: dhscf
       implicit none
@@ -68,7 +77,7 @@
         if ((isolve .eq. SOLVE_DIAGON) .or.
      .      ((isolve .eq. SOLVE_MINIM) .and.
      .       minim_calc_eigenvalues)) then
-          call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
+          call diagon(no_s, spinor_dim, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qs, temp, e1, e2,
      .                gamma, xijo, indxuo, nkpnt, kpoint, kweight,

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_doping_uniform
 
@@ -101,7 +98,7 @@ C     Threshold charge for points where background is added
       end subroutine compute_doping_structs_uniform
 !-------------------------------------------------------------------
 
-      subroutine doping_uniform(cell,ntpl,task,rho,rhoatm)
+      subroutine doping_uniform(cell,ntpl,task,rho,rhoatm,add_q)
 
 ! Adds a background charge density to simulate doping.  This routine
 ! adds a compensating background charge that makes the system
@@ -114,8 +111,9 @@ C     Threshold charge for points where background is added
 ! 'task=1' 
 !
 ! Written by P. Ordejon, July 2009
+! Edited by Nick P. Andersen, January 2015
 !
-! Charges in electrons/borh**3
+! Charges in electrons/bohr**3
 ! Energies in Rydbergs
 
       use precision,    only : dp, grid_p
@@ -141,22 +139,28 @@ C     Threshold charge for points where background is added
       real(grid_p), intent(inout)  ::  rho(ntpl)
 !     Atomic charge density, which determines where to put the charge
       real(grid_p), intent(in)     ::  rhoatm(ntpl)
+!     Any additional charge added to the simulation
+      real(dp), intent(in), optional :: add_q
 
-      real(dp)          fact
+      real(dp)          fact, q
       real(dp), external  ::          volcel
 
       integer             :: ntp   !  total number of fine points in the unit cell
 
       ntp = product(ntm(1:3))
+      q = qtot
+      if ( present(add_q) ) q = q + add_q
       if (task .eq. 0) then
-        fact = qtot*(ntp)/(ntp_nonzero*volcel(cell))
+        fact = q*(ntp)/(ntp_nonzero*volcel(cell))
       else if (task .eq. 1) then
-        fact = -qtot*(ntp)/(ntp_nonzero*volcel(cell))
+        fact = -q*(ntp)/(ntp_nonzero*volcel(cell))
       else 
-        call die('ERROR: wrong task in doping.F')
+        call die('ERROR: wrong task in doping_uniform.F')
       endif
 
+!$OMP parallel workshare default(shared)
       where (rhoatm >  threshold_charge_per_spin) rho = rho + fact
+!$OMP end parallel workshare
 
       end subroutine doping_uniform
 

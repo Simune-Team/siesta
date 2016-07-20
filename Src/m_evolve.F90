@@ -82,13 +82,10 @@
       use fdf
       use alloc
       use m_memory
-!      use densematrix,      only : Haux, Saux,psi
-!      use sparse_matrices,  only : S, H, numh, listh, listhptr, xijo 
-!      use m_eo,             only : eo
-      use sys,              only : die
+      use sys,               only : die
       use MatrixSwitch
 #ifdef MPI
-      use mpi_siesta,       only : MPI_Bcast, MPI_Comm_World,MPI_logical
+      use mpi_siesta,        only : MPI_Bcast, MPI_Comm_World,MPI_logical
 #endif
       !
       implicit none
@@ -140,24 +137,6 @@
       endif
 #endif
       !
-!      call re_alloc(psi,1,npsi,name='psi',routine='evolve')
-!      call re_alloc(psi2,1,npsi,name='psi2',routine='evolve')
-!      call re_alloc(Haux,1,nhs,name='Haux',routine='evolve')
-!      call re_alloc(Saux,1,nhs,name='Saux',routine='evolve')
-      !
-!      if(frstme) then 
-!        if(.not.gamma) then 
-!          allocate(Dk(nhs),stat=mem_stat)
-!          call memory('A','D',nhs,'evolve',stat=mem_stat)
-!          allocate(Ek(nhs),stat=mem_stat)
-!          call memory('A','D',nhs,'evolve',stat=mem_stat)
-!        endif
-!        allocate(aux(naux),stat=mem_stat)
-!        call memory('A','D',naux,'evolve',stat=mem_stat)
-!        allocate(aux2(naux),stat=mem_stat)
-!        call memory('A','D',naux,'evolve',stat=mem_stat)
-!        frstme=.false.
-!      endif
       ! Call apropriate routine .............................................
       if (nspin.le.2 .and. gamma) then
         call evolg( nspin, nuo, no, maxo, maxnh, maxnd,                   &

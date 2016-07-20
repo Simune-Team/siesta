@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 MODULE siesta_geom
   use precision
   implicit none
@@ -21,6 +28,8 @@ MODULE siesta_geom
 
   ! Diagonal elements of supercell (it is a diagonal matrix)
   integer :: nsc(3) = 1
+  ! The super-cell offsets
+  integer, pointer :: isc_off(:,:) => null()
    
   ! Previous diagonal elements of supercell
   integer :: nscold(3) = 0

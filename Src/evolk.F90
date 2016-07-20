@@ -76,7 +76,7 @@
       use MatrixSwitch
       use siesta_options,    only: eigen_time
       use elec_dyn_options
-      use m_diagon, only : ictxt
+      use m_diagon_opt, only : ictxt
 #ifdef MPI
       use mpi_siesta
 #endif

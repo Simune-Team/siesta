@@ -1,3 +1,10 @@
+# ---
+# Copyright (C) 1996-2016	The SIESTA group
+#  This file is distributed under the terms of the
+#  GNU General Public License: see COPYING in the top directory
+#  or http://www.gnu.org/copyleft/gpl.txt .
+# See Docs/Contributors.txt for a list of contributors.
+# ---
 .SUFFIXES:
 .SUFFIXES: .f .f90 .F .F90 .o
 #
@@ -43,6 +50,5 @@ amoeba.o: precision.o vars_module.o
 minimizer.o: vars_module.o
 simplex.o: amoeba.o minimizer.o precision.o vars_module.o
 swarm.o: minimizer.o precision.o vars_module.o
-v_test.o: vars_module.o
 vars_module.o: parse.o precision.o sys.o
 m_amoeba.o: amoeba.o

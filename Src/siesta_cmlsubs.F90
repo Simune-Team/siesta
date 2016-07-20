@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 Module siesta_cmlsubs
 
@@ -36,7 +33,7 @@ Module siesta_cmlsubs
       fname = ' '
 
       If (IOnode) Then
-         cml_p = fdf_boolean( 'XML.Write', .True. )
+         cml_p = fdf_boolean( 'XML.Write', .false. )
          call FoX_set_fatal_errors(fdf_boolean('XML.AbortOnErrors', .false.))
          call FoX_set_fatal_warnings(fdf_boolean('XML.AbortOnWarnings', .false.))
       Else
@@ -54,6 +51,7 @@ Module siesta_cmlsubs
          Call cmlAddMetadata(mainXML, name='siesta:Version', content=version_str)
          Call cmlAddMetadata(mainXML, name='siesta:Arch',    content=siesta_arch)
          Call cmlAddMetadata(mainXML, name='siesta:Flags',   content=fflags)
+         Call cmlAddMetadata(mainXML, name='siesta:PPFlags',   content=fppflags)
          Call cmlAddMetadata(mainXML, name='siesta:StartTime',content=datestring()) 
          If (nodes>1) Then
            Call cmlAddMetadata(mainXML, name='siesta:Mode', content='Parallel')
