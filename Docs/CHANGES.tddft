@@ -1,3 +1,12 @@
+2016-07-20  19:05 CET Rafi Ullah <rraffiu@gmail.com>  trunk-530-tddft-11
+
+Updated TDDFT related tests.
+
+modified:
+
+  Tests/Reference/TDDFT_h2o1.out
+  Tests/Reference/TDDFT_h2o2.out
+
 2016-07-20  15:05 CET Rafi Ullah <rraffiu@gmail.com>  trunk-530-tddft-10
 
 Synced to trunk-530.
