@@ -138,7 +138,11 @@ C  Internal variables .............................................
      .  rho12R, rho12I, rho21R, rho21I,
      .  ene11R, ene11I, ene22R, ene22I,
      .  ene12R, ene12I, ene21R, ene21I
-C  ....................
+C     ....................
+
+#ifdef DEBUG
+      call write_debug( '    PRE diagsprl' )
+#endif
 
 C Find eigenvalues at every k point ...............................
       do ik = 1,nk
@@ -223,7 +227,12 @@ C Possible memory optimization: equivalence Haux and psi
       enddo
 
 C Check if we are done ................................................
-      if (.not.getD) return
+      if (.not.getD) then
+#ifdef DEBUG
+         call write_debug( '    POS diagsprl' )
+#endif
+         return
+      end if
 
 C Find new Fermi energy and occupation weights ........................
       call fermid( 2, 4, nk, wk, maxo, nuotot, eo, 
@@ -522,5 +531,9 @@ C Add contribution to density matrices of unit-cell orbitals
         enddo
 
       enddo
+
+#ifdef DEBUG
+      call write_debug( '    POS diagsprl' )
+#endif
 
       end

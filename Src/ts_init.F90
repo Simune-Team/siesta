@@ -9,11 +9,14 @@
 ! Nick Papior Andersen, 2012, nickpapior@gmail.com
 !
 module m_ts_init
+
   implicit none
   private
   public :: ts_init
+
 contains
-  subroutine ts_init(nspin, ucell, na_u, xa)
+
+  subroutine ts_init(nspin, ucell, na_u, xa, lasto, no_u, inicoor, fincoor )
   ! Routine for initializing everything related to the Transiesta package.
   ! This is to comply with the SIESTA way of initializing at the beginning
   ! and make the code more managable.
@@ -26,14 +29,25 @@ contains
   
 ! Used modules
     use parallel, only : IONode
-    use files, only : slabel
 
-    use m_ts_gf,      only : do_Green
-    use m_ts_contour, only : setup_contour, print_contour, io_contour
-    use m_ts_contour, only : NEn, contour
+    use m_os, only : file_exist
+
+    use m_ts_gf,        only : do_Green, do_Green_Fermi
+    use m_ts_electrode, only : init_Electrode_HS
+    
     use m_ts_kpoints, only : setup_ts_kpoint_grid
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
+    use m_ts_kpoints, only : ts_kscell, ts_kdispl
+    use m_ts_cctype
+    use m_ts_electype
     use m_ts_options ! Just everything (easier)
+    use m_ts_method
+    use m_ts_charge
+
+    use m_ts_global_vars, only : TSmode, TSinit, onlyS
+    use siesta_options, only : isolve, SOLVE_TRANSI, Nmove
+
+    use m_fixed, only : is_fixed, is_constr
 
     use m_cite, only: add_citation
     
@@ -45,86 +59,171 @@ contains
     real(dp), intent(in) :: ucell(3,3)
     integer, intent(in)  :: na_u
     real(dp), intent(in) :: xa(3,na_u)
-
+    integer, intent(in)  :: lasto(0:na_u)
+    integer, intent(in)  :: no_u
+    integer, intent(in)  :: inicoor, fincoor
+    
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    complex(dp), dimension(:,:), allocatable :: dos
+    integer :: i, ia
+    integer :: nC, nTS
+    real(dp) :: mean_kT
 
-    ! Read in options for transiesta
-    call read_ts_options( ucell )
+    if ( isolve .eq. SOLVE_TRANSI ) then
+       TSmode = .true.
+       ! If in TSmode default to initalization
+       ! In case of 'DM.UseSaveDM TRUE' TSinit will be set accordingly
+       TSinit = .true.
+    end if
 
-    ! Setup the k-points
+    ! initialize regions of the electrodes and device
+    ! the number of LCAO orbitals on each atom will not change
+    call ts_init_regions('TS', na_u, lasto)
+
+    ! Read generic transiesta options
+    call read_ts_generic( ucell )
+
+    ! read the chemical potentials
+    call read_ts_chem_pot( )
+
+    ! read in the electrodes
+    call read_ts_elec( ucell, na_u, xa, lasto )
+
+    ! Read in the k-points
     call setup_ts_kpoint_grid( ucell )
 
+    ! Read after electrode stuff
+    call read_ts_after_Elec( ucell, nspin, na_u, xa, lasto, &
+         ts_kscell, ts_kdispl)
+
+    ! Print the options
+    call print_ts_options( )
+
+    ! Print all warnings
+    call print_ts_warnings( ucell, na_u, xa, Nmove )
+
     ! If we actually have a transiesta run we need to process accordingly!
-    if ( TSmode ) then
+    if ( .not. TSmode ) return
 
-       ! add citation
-       if ( IONode ) then
-          call add_citation("10.1103/PhysRevB.65.165401")
+    ! If onlyS we do not need to do anything about the electrodes
+    if ( onlyS ) return
+
+    ! add citation
+    if ( IONode ) then
+       call add_citation("10.1103/PhysRevB.65.165401")
+    end if
+
+    ! Print out the contour blocks etc. for transiesta
+    call print_ts_blocks( na_u, xa )
+
+
+    ! Check the electrodes (calculate mean temperature)
+    mean_kT = 0._dp
+    do i = 1 , N_Elec
+       mean_kT = mean_kT + Elecs(i)%mu%kT / N_Elec
+    end do
+
+    ! Check that an eventual CGrun will fix all electrodes and 
+    ! buffer atoms
+    if ( fincoor - inicoor > 0 ) then
+       ! check fix
+       do ia = 1 , na_u
+          if ( .not. a_isBuffer(ia) ) cycle
+          if ( .not. is_fixed(ia) ) then
+             call die('All buffer atoms *MUST* be &
+                  &fixed while doing transiesta geometry optimizations. &
+                  &Please correct constraints on buffer atoms.')
+          end if
+       end do
+       do i = 1 , N_Elec
+          do ia = Elecs(i)%idx_a , Elecs(i)%idx_a + TotUsedAtoms(Elecs(i)) - 1
+             if ( .not. ( is_constr(ia,'rigid') .or. is_constr(ia,'rigid-dir') &
+                  .or. is_constr(ia,'rigid-max') .or. is_constr(ia,'rigid-max-dir') &
+                  .or. is_fixed(ia) ) ) then
+                call die('All electrode atoms *MUST* be &
+                     &fixed while doing transiesta geometry optimizations. &
+                     &Please correct electrodes.')
+             end if
+          end do
+       end do
+    end if
+
+    ! here we will check for all the size requirements of Transiesta
+    ! I.e. whether some of the optimizations can be erroneous or not
+
+    ! Do a crude check of the sizes
+    ! if the transiesta region is equal of size to or smaller 
+    ! than the size of the combined electrodes, then the system
+    ! is VERY WRONG...
+    ! First calculate L/C/R sizes (we remember to subtract the buffer
+    ! orbitals)
+    nTS = no_u - no_Buf
+    nC  = nTS  - sum(TotUsedOrbs(Elecs))
+    if ( nC < 1 ) &
+         call die("The contact region size is &
+         &smaller than the electrode size. &
+         &What have you done? Please correct this insanity...")
+    
+    if ( minval(TotUsedOrbs(Elecs)) < 2 ) &
+         call die('We cannot perform sparse pattern on the electrode &
+         &system.')
+    
+    ! Show every region of the Transiesta run
+    call ts_show_regions(ucell,na_u,xa,N_Elec,Elecs)
+
+    if ( .not. TS_Analyze ) then
+
+       if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI &
+            .and. IONode ) then
+          ! Delete the TS_FERMI file (enables
+          ! reading it in and improve on the convergence)
+          if ( file_exist('TS_FERMI') ) then
+             i = 23455
+             open(unit=i,file='TS_FERMI')
+             close(i,status='delete')
+          end if
+
        end if
-
-       ! Show every region of the Transiesta run
-       call ts_show_regions(ucell,na_u,xa, &
-            NBufAtL,NUsedAtomsL,NUsedAtomsR,NBufAtR, &
-            NRepA1L,NRepA2L,NRepA1R,NRepA2R)
        
-       ! Create the contour lines
-       call setup_contour(IsVolt,Cmethod,VoltL,0.0d0,VoltR, &
-            NCircle,Nline,Npol,NVolt, &
-            0.d0, 0.d0, Ntransport, & ! Transport emin and emax
-            CCEmin, GFEta, kt)
-
-       ! Print out the contour path
-       call print_contour()
-     
-       ! Save the contour path to <slabel>.CONTOUR
-       call io_contour(slabel)
-
-
        ! GF generation:
-       allocate(dos(NEn,nspin))
-       call memory('A','Z',NEn*nspin,'transiesta')
-     
-       ! Create the Left GF file
-       call do_Green('L',HSFileL, GFFileL, GFTitle, &
-            ElecValenceBandBot, ReUseGF, &
-            ts_nkpnt,ts_kpoint,ts_kweight, &
-            NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, .false., & !For now TranSIESTA will only perform with inner-cell distances
-            ucell,xa,na_u,NEn,contour,VoltL,dos,nspin)
-       
-       ! Create the Right GF file
-       call do_Green('R',HSFileR,GFFileR, GFTitle, &
-            ElecValenceBandBot, ReUseGF, &
-            ts_nkpnt,ts_kpoint,ts_kweight, &
-            NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, .false., &
-            ucell,xa,na_u,NEn,contour,VoltR,dos,nspin)
-       
-       call memory('D','Z',NEn*nspin,'transiesta')
-       deallocate(dos)
+       do i = 1 , N_Elec
 
-       ! Print out information in Green's function files
-       ! Show the number of used atoms and orbitals
-       if ( IONode ) then
-          write(*,'(/,a,i6,'' / '',i6)') &
-               'Left : GF atoms    / Expanded atoms    : ',NUsedAtomsL, &
-               NUsedAtomsL*NRepA1L*NRepA2L
-          write(*,'(a,i6,'' / '',i6)') &
-               'Left : GF orbitals / Expanded orbitals : ',NUsedOrbsL, &
-               NUsedOrbsL*NRepA1L*NRepA2L
-          write(*,'(a,i6,'' / '',i6)') &
-               'Right: GF atoms    / Expanded atoms    : ',NUsedAtomsR, &
-               NUsedAtomsR*NRepA1R*NRepA2R
-          write(*,'(a,i6,'' / '',i6)') &
-               'Right: GF orbitals / Expanded orbitals : ',NUsedOrbsR, &
-               NUsedOrbsR*NRepA1R*NRepA2R
+          ! initialize the electrode for Green function calculation
+          call init_Electrode_HS(Elecs(i))
 
-          write(*,*) ! New line
-       end if
+          call do_Green(Elecs(i), &
+               ucell,ts_nkpnt,ts_kpoint,ts_kweight, &
+               Elecs_xa_Eps, .false. )
+
+          if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
+             
+             call do_Green_Fermi(mean_kT, Elecs(i), &
+                  ucell,ts_nkpnt,ts_kpoint,ts_kweight, &
+                  Elecs_xa_Eps, .false. )
+
+          end if
+          
+          ! clean-up
+          call delete(Elecs(i))
+          
+       end do
+    else
+
+       do i = 1 , N_Elec
+          call delete(Elecs(i)) ! ensure clean electrode
+          call read_Elec(Elecs(i),Bcast=.true.)
+          
+          ! print out the precision of the electrode (whether it extends
+          ! beyond first principal layer)
+          call check_Connectivity(Elecs(i))
+
+          call delete(Elecs(i))
+       end do
        
     end if
-    
+
   end subroutine ts_init
+
 end module m_ts_init
 

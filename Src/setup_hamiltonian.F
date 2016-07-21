@@ -13,11 +13,14 @@
       subroutine setup_hamiltonian( iscf )
 
       USE siesta_options
-      use sparse_matrices, only: H_kin, H_vkb
-      use sparse_matrices, only: H_ldau, H_so
+      use sparse_matrices, only: H_kin_1D, H_vkb_1D
+      use sparse_matrices, only: H_ldau_2D, H_so_2D
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H, S, Hold
       use sparse_matrices, only: Dscf, Escf, xijo
+      use class_dSpData1D,  only: val
+      use class_dSpData2D,  only: val
+
       use siesta_geom
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -50,9 +53,7 @@
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
-#ifdef TRANSIESTA
-      use m_ts_global_vars, only: TSrun
-#endif /* TRANSIESTA */
+
       implicit none
       integer, intent(in) :: iscf
       real(dp)            :: stressl(3,3)
@@ -68,6 +69,8 @@
       type(filesOut_t)    :: filesOut  ! blank output file names
       logical             :: use_rhog_in
 
+      real(dp), pointer   :: H_vkb(:), H_kin(:), H_ldau(:,:), H_so(:,:)
+
 !------------------------------------------------------------------------- BEGIN
 
       call timer('setup_H',1)
@@ -75,23 +78,60 @@
       ! Nullify pointers
       nullify(fal)
 
-      ! Save present H matrix
-      if ( mixH ) then
-         Hold(1:maxnh,1:h_spin_dim) = H(1:maxnh,1:h_spin_dim)
+!$OMP parallel default(shared), private(ispin,io)
+
+      if ( MixH .or. require_hamiltonian_convergence ) then
+!        Save present H matrix
+!$OMP do collapse(2)
+         do ispin = 1,h_spin_dim
+            do io = 1,maxnh
+               Hold(io,ispin) = H(io,ispin)
+            enddo
+         enddo
+!$OMP end do
       end if
 
-      
-      ! Initialize Hamiltonian with the non-SCF part...................
-      do is = 1 , spinor_dim
-         H(:,is) = H_kin(:) + H_vkb(:)
-      end do 
+!$OMP single
+      H_kin => val(H_kin_1D)
+      H_vkb => val(H_vkb_1D)
       if ( SpOrb ) then
-         H(:,3:) = H_so(:,:)
-      else if ( NonCol ) then
-         H(:,3) = 0._dp
-         H(:,4) = 0._dp
+         H_so(1:,3:) => val(H_so_2D)
       end if
+!$OMP end single ! keep wait
 
+      do ispin = 1, spinor_dim
+        if (ispin .le. 2) then
+!$OMP do
+          do io = 1,maxnh
+            H(io,ispin) = H_kin(io) + H_vkb(io)
+          end do
+!$OMP end do nowait
+        else
+!$OMP do
+          do io = 1,maxnh
+            H(io,ispin) = 0.0_dp
+          end do
+!$OMP end do nowait
+        end if
+      end do
+
+      if ( SpOrb ) then
+!$OMP do collapse(2)
+         do ispin = 3 , h_spin_dim
+            do io = 1,maxnh
+               H(io,ispin) = H_so(io,ispin)
+            end do
+         end do
+!$OMP end do nowait
+      else if ( NonCol ) then
+!$OMP do
+         do io = 1,maxnh
+            H(io,3) = 0._dp
+            H(io,4) = 0._dp
+         end do
+!$OMP end do nowait
+      end if
+         
 ! ..................
 
 ! Non-SCF part of total energy .......................................
@@ -102,37 +142,49 @@
 ! charge, this introduces an inconsistency. In this case the energies
 ! coming out of this routine need to be corrected.
 ! 
+!$OMP single
       Ekin = 0.0_dp
-      Enl  = 0.0_dp
+      Enl = 0.0_dp
+!$OMP end single ! keep wait
+      
+!$OMP do collapse(2), reduction(+:Ekin,Enl)
       do ispin = 1, spinor_dim
-        do io = 1, maxnh
+        do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
           Enl  = Enl  + H_vkb(io) * Dscf(io,ispin)
         enddo
       enddo
+!$OMP end do nowait
 
-#ifdef MPI
-! Global reduction of Ekin, Enl and Eso 
-      call globalize_sum(Ekin,buffer1)
-      Ekin = buffer1
-      call globalize_sum(Enl,buffer1)
-      Enl = buffer1
-#endif
-
+!$OMP single
       Eso = 0._dp
+!$OMP end single
       if ( SpOrb ) then
+         H_so(1:,3:) => val(H_so_2D)
+!$OMP do reduction(+:Eso)
          do io = 1,maxnh
             Eso = Eso + H_so(io,3)*Dscf(io,7) + H_so(io,4)*Dscf(io,8)
      .           + H_so(io,7)*Dscf(io,3) + H_so(io,8)*Dscf(io,4)
      .           - H_so(io,5)*Dscf(io,5) - H_so(io,6)*Dscf(io,6)
-         enddo
+         end do
+!$OMP end do nowait
+      end if
+
+!$OMP end parallel
+      
 #ifdef MPI
-!     Global reduction of Ekin, Enl and Eso 
+      ! Global reduction of Ekin, Enl
+      call globalize_sum(Ekin,buffer1)
+      Ekin = buffer1
+      call globalize_sum(Enl,buffer1)
+      Enl = buffer1
+      if ( SpOrb ) then
+         ! Global reduction of Eso 
          call globalize_sum(Eso,buffer1)
          Eso = buffer1
+      end if
 #endif
-      endif
-      
+
 !     Non-SCF part of total energy
       E0 = Ena + Ekin + Enl + Eso - Eions
 
@@ -140,10 +192,11 @@
       if( switch_ldau ) then
         call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'setup_hamiltonian' )
 
+        H_ldau => val(H_ldau_2D)
         call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
      .                    maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .                    numh, listhptr, listh, numh, listhptr, listh,
-     .                    min(nspin,2), Dscf, Eldau, DEldau, H_ldau, 
+     .                    spinor_dim, Dscf, Eldau, DEldau, H_ldau, 
      .                    fal, stressl, H, iscf,
      .                    matrix_elements_only=.true.)
 
@@ -190,25 +243,25 @@
 
       want_partial_charges = .false.
       call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
-
 !  It is wasteful to write over and over H and S, as there are
 !  no different files.
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
 
-        if (savehs .or. write_coop) then
-          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
-     &                    maxnh, numh, listhptr, listh, H, S, qtot,
-     &                    temp, xijo)
-        endif
+      if (savehs .or. write_coop) then
+         call write_hsx( gamma, no_u, no_s, h_spin_dim, indxuo,
+     &        maxnh, numh, listhptr, listh, H, S, qtot,
+     &        temp, xijo)
+      endif
 
       call timer('setup_H',2)
       if (node==0) call memory_snapshot("after setup_H")
 
-      if (h_setup_only) then
+      if ( h_setup_only ) then
          call timer( 'all', 2 )  ! New call to close the tree
          call timer( 'all', 3 )
          call bye("H-Setup-Only requested")
+         STOP
       endif
 
 !------------------------------------------------------------------------- END

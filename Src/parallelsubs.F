@@ -15,7 +15,7 @@ C
      &                         nOrbPerNode
       use domain_decom, only : use_dd, use_dd_perm, dd_nuo, dd_perm,
      &                         ulimit, llimit, dd_invp, dd_nnode
-      use sys,          only : die
+      use sys,          only : die, message
       implicit none
 
       logical, public, save :: pexsi_dist 
@@ -63,6 +63,9 @@ C Saved variables
       data
      .  NOrbLast / 0 /
      .  NOrbNodeLast / 0 /
+
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of GetNodeOrbs")
 
       if (pexsi_dist) then
          remainder = Norb - pexsi_bs*Nodes
@@ -125,6 +128,7 @@ C Save value for next call
       end subroutine GetNodeOrbs
 
       subroutine GlobalToLocalOrb( GOrb, Node, Nodes, LOrb)
+      use parallel, only: thisNode => Node
 C
 C  Converts an orbital index in the global frame to the local frame
 C  if the orbital is local to this node. Otherwise the pointer is
@@ -154,6 +158,9 @@ C
 
 C  Local variables
       integer OrbCheck, GBlock, LEle, LBlock
+
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of GlobalToLocalOrb")
 
       if (pexsi_dist) then
          call WhichNodeOrb(Gorb,Nodes,OrbCheck)
@@ -237,6 +244,9 @@ C
 
 C  Local variables
       integer LEle, LBlock
+
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of LocalToGlobalOrb")
 
       if (pexsi_dist) then
          gorb = pexsi_bs*Node + lorb

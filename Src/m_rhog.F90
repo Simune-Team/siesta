@@ -30,9 +30,9 @@ module m_rhog
   !
 
   use precision
-  use class_Vector
-  use class_Pair_Vectors
-  use class_Fstack_Pair_Vectors
+  use class_dData1D
+  use class_Pair_dData1D
+  use class_Fstack_Pair_dData1D
 
   use m_spin, only: nspin
 
@@ -69,7 +69,7 @@ module m_rhog
   real(dp)               :: q0sq    !  Thomas-Fermi K2 for damping
   real(dp)               :: q1sq    !  For scalar product
 
-  type(Fstack_Pair_Vectors) :: rhog_stack
+  type(Fstack_Pair_dData1D) :: rhog_stack
 
   integer :: jg0   ! Index of G=0 vector
 
@@ -152,8 +152,8 @@ CONTAINS
     ! Store rho_in(G) and rho_diff(G) as single vectors
     ! in a circular stack of the appropriate size
 
-    type(Vector)       :: vin, vdiff
-    type(Pair_Vectors) :: pair
+    type(dData1D)      :: vin, vdiff
+    type(Pair_dData1D) :: pair
     integer :: ip, i, j, ispin
     character(len=20) :: msg
 
@@ -171,8 +171,8 @@ CONTAINS
     enddo
 
     write(msg,"(a,i3)") "scf step: ",iscf
-    call newVector(vin,rg_in,"(rhog_in -- " // trim(msg) //")")
-    call newVector(vdiff,rg_diff,"(rhog_diff -- " // trim(msg) //")")
+    call newdData1D(vin,rg_in,name="(rhog_in -- " // trim(msg) //")")
+    call newdData1D(vdiff,rg_diff,name="(rhog_diff -- " // trim(msg) //")")
     call new(pair,vin,vdiff,"(pair in-diff -- " // trim(msg) //")")
 
     call push(rhog_stack,pair)    ! Store in stack
@@ -188,9 +188,9 @@ CONTAINS
     ! Synthesize the DIIS-optimal rho_in(G) and rho_out(G)
     ! from the DIIS coefficients.
 
-    real(dp), dimension(:), pointer   :: vin, vdiff
-    type(Pair_Vectors), pointer       :: pairp
-    type(Vector),  pointer            :: vp
+    real(dp), dimension(:), pointer :: vin, vdiff
+    type(Pair_dData1D), pointer     :: pairp
+    type(dData1D),  pointer         :: vp
     integer :: ip, i, j, ispin, k
 
     ! zero-out the components treated with DIIS

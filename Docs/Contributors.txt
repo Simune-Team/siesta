@@ -18,26 +18,44 @@ Javier Junquera (Univ. de Oviedo and later UAM), and sometime later by
 Julian Gale (then at Imperial College, London). In 2007 Jose M. Cela
 (Barcelona Supercomputing Center, BSC) became a core developer.
 
-The TranSiesta module within SIESTA was originally developed by
+The current TranSIESTA module within SIESTA is developed by 
+Nick R. Papior (then at Technical University of Denmark) and Mads Brandbyge. 
+The original TranSIESTA module was developed by
 Pablo Ordejon and Jose L. Mozos (then at ICMAB-CSIC), and Mads Brandbyge,
 Kurt Stokbro, and Jeremy Taylor (Technical Univ. of Denmark).
 
-Other contributors:
+Other contributors (we apologize for any omissions):
 
 Eduardo Anglada
+Thomas Archer
+Luis C. Balbas
 Xavier Blase
+Michele Ceriotti
+Raul de la Cruz
+Gabriel Fabricius
 Marivi Fernandez-Serra
 Jaime Ferrer
 Chu-Chun Fu
 Sandra Garcia
+Victor M. Garcia-Suarez
 Georg Huhs
+Rogeli Grima
+Rainer Hoft
 Jorge Kohanoff
+Richard Korytar
 In-Ho Lee
 Lin Lin
 Nicolas Lorente
 Miquel Llunell
 Eduardo Machado
+Maider Machado
+Jose Luis Martins
+Volodymyr Maslyuk
+Juana Moreno
+Frederico Dutilh Novaes
+Micael Oliveira
 Nick Rubner Papior
+Magnus Paulsson
 Oscar Paz
 Andrei Postnikov
 Tristana Sondon
@@ -46,7 +64,6 @@ Andrew Walkingshaw
 Toby White
 Francois Willaime
 Chao Yang
-...
 
 O.F. Sankey, D.J. Niklewski and D.A. Drabold made the FIREBALL code
 available to P. Ordejon.  Although we no longer use the routines in

@@ -1,4 +1,17 @@
 ------------------------------------------------------------
+July 21, 2016       A. Garcia   trunk-525--pexsi-v0.8-spin-7
+Sync to trunk-525 (after TS merge + few revs)
+
+NOTES: Work in progress.
+Tests run. Some differences still to be explored
+
+write_dm interface: For now, files of the form SystemLabel.DM_MIXED
+and SystemLabel.DM_OUT are produced by Nick's new routine.
+
+Files such as DM_OUT and DM_MIXED (as well as H_DMGEN and H_MIXED) are
+produced by AG's write_spmatrix.
+
+------------------------------------------------------------
 July 21, 2016       A. Garcia   trunk-508--pexsi-v0.8-spin-7
 Sync to trunk-508 (after spin-orbit)
 

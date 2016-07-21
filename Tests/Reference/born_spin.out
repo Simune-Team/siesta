@@ -1,12 +1,16 @@
-Siesta Version: siesta-trunk-506
+Siesta Version: trunk-509
 Architecture  : x86_64-linux-gcc
 Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
 PARALLEL version
 NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
 
-* Running on    2 nodes in parallel
->> Start of run:  31-MAY-2016   8:50:03
+* Running on 2 nodes in parallel
+>> Start of run:   5-JUN-2016  11:57:51
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -204,45 +208,57 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     T
-redata: Number of spin components        =     2
-redata: Long output                      =     T
-redata: Number of Atomic Species         =        1
+redata: Spin configuration                          = polarized
+redata: Number of spin components                   = 2
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   T
+redata: Number of Atomic Species                    =        1
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     Atomic and Orbital charges
-redata: Mesh Cutoff                      =   130.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Min. number of SCF Iter          =        0
-redata: Max. number of SCF Iter          =       50
-redata: Mix DM or H after convergence    =     F
-redata: Recompute H after scf cycle      =     F
-redata: Mixing is linear
-redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?        =     F
-redata: Discard 1st Pulay DM after  kick =     F
-redata: New DM Mixing Weight             =     0.2500
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = Atomic and Orbital charges
+redata: Mesh Cutoff                                 =   130.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =       50
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.2500
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.000100
-redata: Require (free) Energy convergence in SCF =     F
-redata: DM (free)Energy tolerance for SCF =     0.000010 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000010 eV
-redata: Antiferro initial spin density   =     F
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     F
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Diagonalization
-redata: Divide and Conquer               =     T
-redata: Electronic Temperature           =     0.0019  Ry
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     Force Constants Matrix Calculation
-redata: Atomic displ for force constants  =     0.0400  Bohr
-redata: First atom to move               =        1
-redata: Last atom to move                =        2
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: DM Tolerance for SCF                        =     0.000100
+redata: Require H convergence for SCF               =   F
+redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
+redata: Require (free) Energy convergence in SCF    =   F
+redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
+redata: Require Harris convergence for SCF          =   F
+redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Antiferro initial spin density              =   F
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   F
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =   299.9869 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Force Constants Matrix Calculation
+redata: Atomic displ for force constants            =     0.0212  Ang
+redata: First atom to move                          =        1
+redata: Last atom to move                           =        2
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 2
+mix.SCF:    Linear mixing weight                 =     0.250000
+mix.SCF:    Damping                              =     0.250000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: Spin-component mixing                       = all
+redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+DM_history_depth set to zero for 'Harris' run
+Size of DM history Fstack: 0
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
@@ -262,10 +278,10 @@ siesta: k-grid: Supercell and displacements
 siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
-Naive supercell factors:     5    5    5
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:    250   1000   2250
+
 
                      ====================================
                         Begin FC step =      0
@@ -287,10 +303,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     1
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 0
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -309,6 +336,8 @@ Setting up quadratic distribution...
 ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
 PhiOnMesh: Number of (b)points on node 0 =                  864
 PhiOnMesh: nlist on node 0 =                24886
+cdiag-debug: Node=1, lwork=       120>= lworkq=        98, lrwork=       153>= lrworkq=       145, liwork=        74>= liworkq=        74
+cdiag-debug: Node=0, lwork=       130>= lworkq=        98, lrwork=       201>= lrworkq=       193, liwork=        74>= liworkq=        74
 
 stepf: Fermi-Dirac step function
 
@@ -318,7 +347,8 @@ siesta: Eions   =       380.802124
 siesta: Ena     =       115.502327
 siesta: Ekin    =        78.997046
 siesta: Enl     =        35.834927
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =         0.000000
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
@@ -337,8 +367,7 @@ siesta: Eharris(eV) =    -193.422393
 
 siesta: Eharris(eV) =    -193.422393
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.052  17.33
-:!: SCF did not converge in maximum number of steps.
+timer: Routine,Calls,Time,% =    IterSCF     1       0.048  17.14
 
 Using DM_out to compute the final energy and forces
 
@@ -386,38 +415,38 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883664   10.883664   10.883664
-siesta: Along cartesian directions    15.391825   15.391825   15.391825
+siesta: Along the lattice vectors      3.627888    3.627888   10.883664
+siesta: Along cartesian directions    10.261217   10.261217    5.130608
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663534   27.663534   27.663534
-siesta: Along cartesian directions    39.122145   39.122145   39.122145
+siesta: Along the lattice vectors      9.221178    9.221178   27.663534
+siesta: Along cartesian directions    26.081430   26.081430   13.040715
 
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627888   10.883664    3.627888
-siesta: Along cartesian directions    10.261217    5.130608   10.261217
+siesta: Along the lattice vectors      3.627888    3.627888   10.883664
+siesta: Along cartesian directions    10.261217   10.261217    5.130608
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors      9.221178   27.663534    9.221178
-siesta: Along cartesian directions    26.081430   13.040715   26.081430
+siesta: Along the lattice vectors      9.221178    9.221178   27.663534
+siesta: Along cartesian directions    26.081430   26.081430   13.040715
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    25.653042   20.522434   25.653042
+siesta:    20.522434   20.522434   10.261217
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    65.203575   52.162860   65.203575
+siesta:    52.162860   52.162860   26.081430
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883664   10.883664   10.883664
+obc:    3.627888    3.627888   10.883664
 
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627888   10.883664    3.627888
+obc:    3.627888    3.627888   10.883664
 
                      ====================================
                         Begin FC step =      1
@@ -440,10 +469,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 1
+  <sparsity:sparsity for geom step 1
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     2
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 1
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -468,7 +508,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -530,10 +569,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 2
+  <sparsity:sparsity for geom step 2
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     3
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 2
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -558,7 +608,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -658,10 +707,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 3
+  <sparsity:sparsity for geom step 3
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     4
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 3
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -686,7 +746,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -748,10 +807,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 4
+  <sparsity:sparsity for geom step 4
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     5
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 4
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -776,7 +846,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -876,10 +945,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 5
+  <sparsity:sparsity for geom step 5
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     6
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 5
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -904,7 +984,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -966,10 +1045,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 6
+  <sparsity:sparsity for geom step 6
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     7
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 6
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -994,13 +1084,12 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000    0.000000   -0.831804
-     2    0.000000   -0.000000    0.841812
+     2   -0.000000   -0.000000    0.841812
 ----------------------------------------
    Tot    0.000000    0.000000    0.010008
 ----------------------------------------
@@ -1094,10 +1183,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 7
+  <sparsity:sparsity for geom step 7
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     8
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 7
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -1122,7 +1222,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1184,10 +1283,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 8
+  <sparsity:sparsity for geom step 8
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     9
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 8
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -1212,7 +1322,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1258,7 +1367,7 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627935   10.883599   10.883599
+siesta: Along the lattice vectors      3.627936   10.883599   10.883599
 siesta: Along cartesian directions    15.391733   10.261204   10.261204
 
 siesta: Macroscopic polarization per unit cell (Debye):
@@ -1284,7 +1393,7 @@ siesta:    78.243824   52.162796   52.162796
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627935   10.883599   10.883599
+obc:    3.627936   10.883599   10.883599
 
 obc: Macroscopic polarization for spin Down:
 
@@ -1312,10 +1421,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 9
+  <sparsity:sparsity for geom step 9
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:    10
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 9
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -1340,7 +1460,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1402,10 +1521,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 10
+  <sparsity:sparsity for geom step 10
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:    11
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 10
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -1430,7 +1560,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1497,7 +1626,7 @@ siesta: Sum along cartesian directions (a.u.):
 siesta:    20.522409   30.783468   20.522409
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162796   78.243824   52.162795
+siesta:    52.162796   78.243824   52.162796
 
 obc: Macroscopic polarization for spin Up:
 
@@ -1530,10 +1659,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 11
+  <sparsity:sparsity for geom step 11
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:    12
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 11
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -1558,7 +1698,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1566,7 +1705,7 @@ siesta: Atomic forces (eV/Ang):
      1   -0.000000    0.000000   -0.841812
      2    0.000000   -0.000000    0.831804
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.010008
+   Tot    0.000000   -0.000000   -0.010008
 ----------------------------------------
    Max    0.841812
    Res    0.483140    sqrt( Sum f_i^2 / 3N )
@@ -1620,10 +1759,21 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 12
+  <sparsity:sparsity for geom step 12
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:    13
 Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 12
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=2, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
            2       1:   12    1:   12    7:   12
@@ -1648,7 +1798,6 @@ siesta: Eharris(eV) =    -193.415803
 
 siesta: Eharris(eV) =    -193.415803
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1715,7 +1864,7 @@ siesta: Sum along cartesian directions (a.u.):
 siesta:    20.522409   20.522409   30.783468
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162796   52.162795   78.243824
+siesta:    52.162796   52.162796   78.243824
 
 obc: Macroscopic polarization for spin Up:
 
@@ -1739,7 +1888,8 @@ siesta: Eions   =       380.802124
 siesta: Ena     =       115.501483
 siesta: Ekin    =       115.577905
 siesta: Enl     =        29.935836
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =        -8.120538
 siesta: DUscf   =         1.765891
 siesta: DUext   =         0.000000
@@ -1758,6 +1908,7 @@ siesta:  Band Struct. =     -55.191831
 siesta:       Kinetic =     115.577905
 siesta:       Hartree =      23.678140
 siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =     -68.547872
 siesta:  Ion-electron =    -120.258595
@@ -1787,4 +1938,4 @@ siesta:         425.74671083        441.14029066  kBar
 (Free)Eharris+ p_basis*V_orbitals  =        -192.839106
 
 siesta: Total spin polarization (Qup-Qdown) =    0.000011
->> End of run:  31-MAY-2016   8:50:09
+>> End of run:   5-JUN-2016  11:57:56

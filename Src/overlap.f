@@ -15,8 +15,8 @@
      &                          reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
       use m_new_matel,   only : new_matel
-      use m_iodm,        only: write_dm
-      use m_matio,       only: write_mat
+      use m_iodm_old,    only : write_dm
+      use m_matio,       only : write_mat
       use atomlist, only: no_l
       use fdf
 

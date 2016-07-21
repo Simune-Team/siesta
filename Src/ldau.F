@@ -15,9 +15,10 @@
       private
 
       public :: hubbard_term
-      logical, save, public :: LDAU_pop_conv  ! Are the populations of the LDA+U 
-                                              !   projectors converged?
 
+      ! Last change in population of LDA+U occupations
+      real(dp), save, public :: LDAU_dPop = huge(1._dp)
+      
       ! These are private variables that is used below
       integer, save :: LDAU_pop_iter = 0
 
@@ -170,7 +171,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
 
       real(dp)
      .  Cijk, fik, rki, rmax, rmaxldau, rmaxo, 
-     .  Sik, Sjk, volume,  oc(nspin), Ueff, dn, dnmax,
+     .  Sik, Sjk, volume,  oc(nspin), Ueff, dn, 
      .  Dij, rci
 
       real(dp), dimension(:,:), pointer :: Vi, Di
@@ -188,7 +189,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
                                                   !   determine whether this 
                                                   !   is the first step in the
                                                   !   SCF iterations
-      logical ::   within
+      logical :: within, pop_conv
       logical, dimension(:), pointer ::  listed, listedall
       logical, save :: firstime = .true.          !  First time that this 
                                                   !   subroutine is called?
@@ -496,7 +497,7 @@ C ......................
         call de_alloc(buffer1, name='buffer1', routine = 'hubbard_term')
 #endif
 
-        dnmax = 0._dp
+        LDAU_dPop = 0._dp
         do ka=1,nua
           is=isa(ka)
           spp => species(is)
@@ -518,7 +519,7 @@ C ......................
 
               do ispin = 1, nspin
                  dn = occu(ko,ikb,ka,ispin)-occu_old(ko,ikb,ka,ispin)
-                 dnmax = max(dnmax,dabs(dn))
+                 LDAU_dPop = max(LDAU_dPop,dabs(dn))
               enddo 
             enddo 
             if ( ldau_shift ) then
@@ -537,18 +538,18 @@ C ......................
 
         
 #ifdef MPI
-        ! dnmax need not be globalized.
+        ! LDAU_dPop need not be globalized.
         ! The occupations are already globalized
 #endif
         if ( Node == 0 ) then
            write(6,'(a,f12.6)')
-     &          'hubbard_term: maximum change in local occup.',dnmax
+     &          'hubbard_term: maximum change in local occup.',LDAU_dPop
         endif
         
-        LDAU_pop_conv = ( dnmax < dtol_ldaupop )
-        if( .not. LDAU_pop_conv ) occu_old = occu
+        pop_conv = ( LDAU_dPop < dtol_ldaupop )
+        if( .not. pop_conv ) occu_old = occu
 
-        recalc_hamilt: if( .not. LDAU_pop_conv .or. first .or. 
+        recalc_hamilt: if( .not. pop_conv .or. first .or. 
      &                     .not. matrix_elements_only ) then
           if ( Node == 0 ) then 
             if ( matrix_elements_only ) then

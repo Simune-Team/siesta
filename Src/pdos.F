@@ -50,8 +50,6 @@ C REAL*8  WK(NK)              : k point weights (must sum one)
 C REAL*8  EO(NO_L,maxspn,NK) : Eigenvalues
 C INTEGER NO_U              : Total number of orbitals in unit cell
 C **********************************************************************
-C integer e_spin_dim          : Number of spin components of E_dm and of the DOS
-C **********************************************************************
 
       use precision,    only : dp
       use parallel,     only : Node, Nodes, IOnode
@@ -116,6 +114,10 @@ C Internal variables ---------------------------------------------------
 
       type(xmlf_t) :: xf            ! For new XML output
 
+#ifdef DEBUG
+      call write_debug( '    PRE pdos' )
+#endif
+
       call timer( 'pdos', 1)
 
 C Find the intervals between the subdivisions in the energy scale ------
@@ -159,7 +161,7 @@ C Allocate local arrays ------------------------------------------------
       call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
       nullify( dtot, dpr )
       call re_alloc( dtot, 1, nhist, 1, e_spin_dim, 'dtot', 'pdos' )
-      call re_alloc( dpr, 1, nhist, 1, no_u, 1, e_spin_dim, 
+      call re_alloc( dpr, 1, nhist, 1, no_u, 1, e_spin_dim,
      &               'dpr', 'pdos' )
 
 C Initialize the projected density of states ---------------------------
@@ -227,8 +229,13 @@ C Open file for write on I/O node
      .       status='unknown') 
 
 C     Output histogram
-        select case ( nspin )
-        case ( 1 , 2 )
+        select case ( e_spin_dim )
+        case ( 1 )
+         do ihist = 1,nhist
+          ENER = E1 + (ihist-1) * delta
+          write(iunit1,'(2f20.5)') ener/ev,dtot(ihist,1)*ev
+         enddo
+        case ( 2 )
          do ihist = 1,nhist
           ENER = E1 + (ihist-1) * delta
           write(iunit1,'(3f20.5)') ener/ev,dtot(ihist,1)*ev,
@@ -254,13 +261,13 @@ C New writing
         call io_assign(iunit2)
         open(iunit2,file=fnamepro,form='formatted',status='unknown')
         call xml_NewElement(xf,"pdos")
-        call xml_NewElement(xf,"e_spin_dim")
+        call xml_NewElement(xf,"nspin")
         call xml_AddCharacters(xf,e_spin_dim)
-        call xml_EndElement(xf,"e_spin_dim")
+        call xml_EndElement(xf,"nspin")
 
         write(iunit2,'(a)') '<pdos>'
         write(iunit2,'(a,i1,a)') 
-     .               '<e_spin_dim>', e_spin_dim,'</e_spin_dim>'
+     .               '<nspin>', e_spin_dim,'</nspin>'
         write(iunit2,'(a,i4,a)') '<norbitals>', no_u, '</norbitals>'
         call xml_NewElement(xf,"energy_values")
         call xml_AddAttribute(xf,"units","eV")
@@ -307,37 +314,43 @@ C New writing
 
 !------------------------------------------------------------
           call xml_NewElement(xf,"data")
-          if (e_spin_dim.eq.1) then
+          select case ( e_spin_dim ) 
+          case ( 1 )
              call xml_AddCharacters(xf,dpr(1:nhist,i,1)*eV)
-          elseif (e_spin_dim .eq. 2) then
+          case ( 2 )
              tmp(1:2*nhist-1:2) = dpr(1:nhist,i,1)*eV
              tmp(2:2*nhist:2) = dpr(1:nhist,i,2)*eV
              call xml_AddCharacters(xf,tmp(1:2*nhist),fmt="r6")
-          elseif (e_spin_dim .eq. 4) then
+          case ( 4 )
              tmp(1:4*nhist-3:4) = dpr(1:nhist,i,1)*eV
              tmp(2:4*nhist-2:4) = dpr(1:nhist,i,2)*eV
              tmp(3:4*nhist-1:4) = dpr(1:nhist,i,3)*eV
-             tmp(4:4*nhist:4) = dpr(1:nhist,i,2)*eV
+             tmp(4:4*nhist:4)   = dpr(1:nhist,i,2)*eV
              call xml_AddCharacters(xf,tmp(1:4*nhist),fmt="r6")
-          endif
+          end select
           call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"orbital")
 !------------------------------------------------------------
 
           write(iunit2,'(a)') '<data>'
-          do ihist = 1,nhist
-            if (e_spin_dim.eq.1) then
-              write(iunit2,'(f10.5)') dpr(ihist,i,1)*eV
-            elseif (e_spin_dim .eq. 2) then
-              write(iunit2,'(2f10.5)') dpr(ihist,i,1)*eV,
-     .                                 dpr(ihist,i,2)*eV
-            elseif (e_spin_dim .eq. 4) then
-              write(iunit2,'(4f10.5)') dpr(ihist,i,1)*eV,
-     .                                 dpr(ihist,i,2)*eV,
-     .                                 dpr(ihist,i,3)*eV,
-     .                                 dpr(ihist,i,4)*eV
-            endif
-          enddo
+          select case ( e_spin_dim )
+          case ( 1 )
+             do ihist = 1,nhist
+                write(iunit2,'(f10.5)') dpr(ihist,i,1)*eV
+             end do
+          case ( 2 )
+             do ihist = 1,nhist
+                write(iunit2,'(2f10.5)') dpr(ihist,i,1)*eV,
+     &                                   dpr(ihist,i,2)*eV
+             end do
+          case ( 4 )
+             do ihist = 1,nhist
+                write(iunit2,'(2f10.5)') dpr(ihist,i,1)*eV,
+     &                                   dpr(ihist,i,2)*eV,
+     &                                   dpr(ihist,i,3)*eV,
+     &                                   dpr(ihist,i,4)*eV
+             end do
+          end select
           write(iunit2,'(a)') '</data>'
           write(iunit2,'(a)') '</orbital>'
         enddo
@@ -358,5 +371,9 @@ C Free local arrays ----------------------------------------------------
       call de_alloc( dtot, 'dtot', 'pdos' )
 
       call timer( 'pdos', 2)
+
+#ifdef DEBUG
+      call write_debug( '    POS pdos' )
+#endif
 
       end 

@@ -17,6 +17,7 @@
       use precision
       use units, only: eV
       USE siesta_options
+      use class_dSpData1D, only : val
       use sparse_matrices
       use siesta_geom
       use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
@@ -46,9 +47,8 @@ c$$$      use m_matrixwrite
       use m_steps,         only : istp
       use m_normalize_dm,  only : normalize_dm
 #ifdef TRANSIESTA
-      use m_ts_global_vars, only : TSiscf, TSinit, TSrun
-      use m_ts_options,     only : TSmode
-      use m_ts_in_siesta,   only : transiesta
+      use m_ts_global_vars, only : TSmode, TSinit, TSrun
+      use m_transiesta,     only : transiesta
 #endif /* TRANSIESTA */
       implicit none
 !     Input variables
@@ -56,6 +56,8 @@ c$$$      use m_matrixwrite
 
       real(dp)            :: delta_Ebs, delta_Ef
       logical             :: CallDiagon
+      integer             :: nnz
+      real(dp), pointer :: H_kin(:)
 
       ! e1>e2 to signal that we do not want DOS weights
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
@@ -76,8 +78,10 @@ c$$$      use m_matrixwrite
 
       if (SIESTA_worker) then
          ! Save present density matrix 
+!$OMP parallel workshare default(shared)
+!!         Eold(:,:) = Escf(:,:)
          Dold(:,:) = Dscf(:,:)
-         Eold(:,:) = Escf(:,:)
+!$OMP end parallel workshare
       endif
 
       ! Compute shift in Tr(H*DM) for fermi-level bracketting
@@ -167,27 +171,26 @@ c$$$     &           S, 'S.matrix')
      &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
      &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
      &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
-        Ecorrec = 0.0_dp
         Entropy = 0.0_dp
       elseif (isolve .eq. SOLVE_MINIM) then
         if (NonCol .or. SpOrb) 
      &      call die('ERROR: Non-collinear spin calculations
      &                       not yet implemented with OMM!')
+        H_kin => val(H_kin_1D)
         if (gamma) then
           call dminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 nspin, no_u, maxnh, numh, listhptr, listh, Dscf,
-     &                 eta, qs, h, s, h_kin)
+     &                 eta, qs, H, S, H_kin)
         else
           call zminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 nspin, no_u, maxnh, numh, listhptr, listh, Dscf,
      &                 eta, qs, no_s, xijo, indxuo, nkpnt, kpoint,
-     &                 kweight, h, s, h_kin)
+     &                 kweight, H, S, H_kin)
         end if
         Ecorrec = 0.0_dp
         Entropy = 0.0_dp
         PreviousCallDiagon=.false.
 #ifdef TRANSIESTA
-! TSS Begin
       elseif (TSmode .and. TSinit) then
         call diagon(no_s, spinor_dim, 
      &              no_l, maxnh, maxnh, no_u,
@@ -200,17 +203,13 @@ c$$$     &           S, 'S.matrix')
         Ecorrec = 0._dp
 
       else if (TSrun) then
-        call timer('TS',1)
-        TSiscf=TSiscf+1
 
-        call transiesta(ucell,gamma,lasto,iaorb,
-     &       no_l, no_s, no_u, nspin, xa, na_u, maxnh, numh, listhptr,
-     &       listh, xijo, indxuo, H, S, Dscf, Escf, Ef,
-     &       TSiscf,qtot)
-        call timer('TS',2)
+         call transiesta(iscf,nspin, block_dist, sparse_pattern,
+     &        Gamma, ucell, nsc, isc_off, no_u, na_u, lasto, xa, maxnh,
+     &        H, S, Dscf, Escf, Ef, Qtot, .false. )
 
-        Ecorrec = 0._dp
-! TSS End
+         Ecorrec = 0._dp
+         Entropy = 0.0_dp
 #endif /* TRANSIESTA */
       else
         !call die('siesta: ERROR: wrong solution method')
@@ -242,20 +241,26 @@ c$$$     &           S, 'S.matrix')
 
 ! Write orbital indexes. JMS Dec.2009
 
-          if (IOnode .and. iscf==1) then
-            call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
-     .                           iaorb, iphorb, indxuo, nsc, ucell )
-          endif
+#ifdef TRANSIESTA
+      if (IOnode .and. iscf==1.and..not. TSrun) then
+         call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
+     .        iaorb, iphorb, indxuo, nsc, ucell )
+      endif
+#else
+      if (IOnode .and. iscf==1) then
+         call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
+     .        iaorb, iphorb, indxuo, nsc, ucell )
+      endif
+#endif
 
 !     Normalize density matrix to exact charge
 !     Placed here for now to avoid disturbing EHarris
-
 #ifdef TRANSIESTA      
-         if (.not.TSrun ) call normalize_dm( first= .false. )
+      if ( .not. TSrun ) call normalize_dm( first= .false. )
 #else
-         call normalize_dm(first=.false.)
-#endif  /* TRANSIESTA */
-
+      call normalize_dm(first=.false.)
+#endif
+      
 ! Save Hamiltonian used to generate the DM in this iteration
       Hprev = H
 

@@ -1,12 +1,16 @@
-Siesta Version: siesta-trunk-506
+Siesta Version: trunk-509
 Architecture  : x86_64-linux-gcc
 Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
 PARALLEL version
 NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
 
-* Running on    2 nodes in parallel
->> Start of run:  31-MAY-2016   8:56:57
+* Running on 2 nodes in parallel
+>> Start of run:   5-JUN-2016  12:05:29
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -460,48 +464,57 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     F
-redata: Number of spin components        =     1
-redata: Long output                      =     F
-redata: Number of Atomic Species         =        3
+redata: Spin configuration                          = non-polarized
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        3
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     NO
-redata: Mesh Cutoff                      =    50.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Min. number of SCF Iter          =        0
-redata: Max. number of SCF Iter          =       20
-redata: Mix DM or H after convergence    =     F
-redata: Recompute H after scf cycle      =     F
-redata: Broyden mixing with     4 saved histories.
-redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?        =     F
-redata: Discard 1st Pulay DM after  kick =     F
-redata: New DM Mixing Weight             =     0.1000
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = NO
+redata: Mesh Cutoff                                 =    50.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =       20
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.1000
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.001000
-redata: Require (free) Energy convergence in SCF =     F
-redata: DM (free)Energy tolerance for SCF =     0.000010 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000010 eV
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     T
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Diagonalization
-redata: Divide and Conquer               =     F
-redata: Electronic Temperature           =     0.0019  Ry
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     Parrinello-Rahman MD run
-redata: Initial MD time step             =        1
-redata:   Final MD time step             =       50
-redata: Length of MD time step           =     0.3000  fs
-redata: Initial Temperature of MD run    =     0.0000  K
-redata: Perform a MD quench              =     F
-redata: Parrinello-Rahman mass           =   100.0000  Ry/fs**2
-redata: Target Pressure                  =     0.0007  Ry/Bohr**3
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: DM Tolerance for SCF                        =     0.001000
+redata: Require H convergence for SCF               =   F
+redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
+redata: Require (free) Energy convergence in SCF    =   F
+redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
+redata: Require Harris convergence for SCF          =   F
+redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   T
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   F
+redata: Electronic Temperature                      =   299.9869 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Parrinello-Rahman MD run
+redata: Initial MD time step                        =        1
+redata:   Final MD time step                        =       50
+redata: Length of MD time step                      =     0.3000 fs
+redata: Initial Temperature of MD run               =     0.0000 K
+redata: Perform a MD quench                         =   F
+redata: Parrinello-Rahman mass                      =  1360.5800 eV/fs**2
+redata: Target Pressure                             =     0.0624 eV/Ang**3
+mix.SCF: Broyden mixing                          = Broyden
+mix.SCF:    History steps                        = 4
+mix.SCF:    Jacobian weight                      =     0.100000
+mix.SCF:    Weight prime                         =     0.010000
+redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+DM_history_depth set to zero for 'Harris' run
+Size of DM history Fstack: 0
 Total number of electrons:    48.000000
 Total ionic charge:    48.000000
 
@@ -518,6 +531,7 @@ siesta: k-grid: Supercell and displacements
 siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
+
 
                      ====================================
                         Begin MD step =      1
@@ -544,8 +558,19 @@ outcell: Cell vector modules (Ang)   :    5.677830    5.677830    5.677830
 outcell: Cell angles (23,13,12) (deg):     48.1790     48.1790     48.1790
 outcell: Cell volume (Ang**3)        :     93.1663
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 1
+  <sparsity:sparsity for geom step 1
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     1
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 1
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.58964258
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -565,6 +590,8 @@ Setting up quadratic distribution...
 ExtMesh (bp) on 0 =    56 x    56 x    50 =      156800
 PhiOnMesh: Number of (b)points on node 0 =                  864
 PhiOnMesh: nlist on node 0 =                19357
+rdiag-debug: Node=0, lwork=      6154>= lworkq=      6154, liwork=       204>= liworkq=       204
+rdiag-debug: Node=1, lwork=      6154>= lworkq=      6154, liwork=       204>= liworkq=       204
 
 stepf: Fermi-Dirac step function
 
@@ -574,7 +601,8 @@ siesta: Eions   =      5228.674091
 siesta: Ena     =      1092.429444
 siesta: Ekin    =      2069.792750
 siesta: Enl     =      -254.036133
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =        15.961140
 siesta: DUscf   =         0.158223
 siesta: DUext   =         0.000000
@@ -593,13 +621,7 @@ siesta: Eharris(eV) =   -2966.596232
 
 siesta: Eharris(eV) =   -2966.596232
 
- Broyden: No of relevant DM elements:         1156
- maxit for broyden:            4
- cycle on maxit:  T
- variable weight:  T
- initial alpha:   0.10000000000000001     
-timer: Routine,Calls,Time,% =    IterSCF     1       0.016   2.84
-:!: SCF did not converge in maximum number of steps.
+timer: Routine,Calls,Time,% =    IterSCF     1       0.016   2.80
 
 Using DM_out to compute the final energy and forces
 
@@ -633,14 +655,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.089162    0.290438    0.026096
          0.058367    0.026096    0.267657
 
-siesta: Pressure (static):       -538.38542028  kBar
+siesta: Pressure (static):       -538.38542014  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.449996    0.089162    0.058367
          0.089162    0.290438    0.026096
          0.058367    0.026096    0.267657
 
-siesta: Pressure (total):       -538.38542028  kBar
+siesta: Pressure (total):       -538.38542014  kBar
 
 siesta: E_kin PR =       5.259 K
 
@@ -671,8 +693,19 @@ outcell: Cell vector modules (Ang)   :    5.677709    5.677709    5.677709
 outcell: Cell angles (23,13,12) (deg):     48.1775     48.1775     48.1775
 outcell: Cell volume (Ang**3)        :     93.1558
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 2
+  <sparsity:sparsity for geom step 2
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     2
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 2
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.58990828
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -698,7 +731,6 @@ siesta: Eharris(eV) =   -2966.604740
 
 siesta: Eharris(eV) =   -2966.604740
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -730,14 +762,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.089117    0.290428    0.026083
          0.058337    0.026083    0.267658
 
-siesta: Pressure (static):       -538.33220058  kBar
+siesta: Pressure (static):       -538.33219978  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.449905    0.089117    0.058337
          0.089117    0.290428    0.026083
          0.058337    0.026083    0.267658
 
-siesta: Pressure (total):       -538.33220058  kBar
+siesta: Pressure (total):       -538.33219978  kBar
 
 siesta: E_kin PR =      47.320 K
 
@@ -768,8 +800,19 @@ outcell: Cell vector modules (Ang)   :    5.677467    5.677467    5.677467
 outcell: Cell angles (23,13,12) (deg):     48.1745     48.1745     48.1745
 outcell: Cell volume (Ang**3)        :     93.1346
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 3
+  <sparsity:sparsity for geom step 3
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     3
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 3
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59043989
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -795,7 +838,6 @@ siesta: Eharris(eV) =   -2966.630710
 
 siesta: Eharris(eV) =   -2966.630710
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -811,7 +853,7 @@ siesta: Atomic forces (eV/Ang):
      9   -0.000000   -4.004417    6.117212
     10    2.984218   -2.670168   -6.117212
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    6.674585
    Res    3.269729    sqrt( Sum f_i^2 / 3N )
@@ -827,14 +869,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.088811    0.291203    0.025993
          0.058137    0.025993    0.268511
 
-siesta: Pressure (static):       -539.32251735  kBar
+siesta: Pressure (static):       -539.32251854  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.450111    0.088843    0.058158
          0.088843    0.291124    0.026003
          0.058158    0.026003    0.268424
 
-siesta: Pressure (total):       -539.22328518  kBar
+siesta: Pressure (total):       -539.22328637  kBar
 
 siesta: E_kin PR =     131.501 K
 
@@ -865,8 +907,19 @@ outcell: Cell vector modules (Ang)   :    5.677103    5.677103    5.677103
 outcell: Cell angles (23,13,12) (deg):     48.1701     48.1701     48.1701
 outcell: Cell volume (Ang**3)        :     93.1028
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 4
+  <sparsity:sparsity for geom step 4
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     4
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 4
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59123844
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -892,7 +945,6 @@ siesta: Eharris(eV) =   -2966.673907
 
 siesta: Eharris(eV) =   -2966.673907
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -924,14 +976,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.088238    0.292843    0.025825
          0.057762    0.025825    0.270297
 
-siesta: Pressure (static):       -541.48173135  kBar
+siesta: Pressure (static):       -541.48173054  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.450665    0.088367    0.057846
          0.088367    0.292530    0.025863
          0.057846    0.025863    0.269951
 
-siesta: Pressure (total):       -541.08562405  kBar
+siesta: Pressure (total):       -541.08562324  kBar
 
 siesta: E_kin PR =     258.163 K
 
@@ -962,8 +1014,19 @@ outcell: Cell vector modules (Ang)   :    5.676619    5.676619    5.676619
 outcell: Cell angles (23,13,12) (deg):     48.1641     48.1641     48.1641
 outcell: Cell volume (Ang**3)        :     93.0604
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 5
+  <sparsity:sparsity for geom step 5
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     5
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 5
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59230592
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -989,7 +1052,6 @@ siesta: Eharris(eV) =   -2966.734047
 
 siesta: Eharris(eV) =   -2966.734047
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1008,7 +1070,7 @@ siesta: Atomic forces (eV/Ang):
    Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    6.571388
-   Res    3.219176    sqrt( Sum f_i^2 / 3N )
+   Res    3.219175    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    6.571388    constrained
 
@@ -1021,14 +1083,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.087450    0.295202    0.025595
          0.057246    0.025595    0.272858
 
-siesta: Pressure (static):       -544.61606767  kBar
+siesta: Pressure (static):       -544.61606704  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.451511    0.087739    0.057435
          0.087739    0.294500    0.025679
          0.057435    0.025679    0.272082
 
-siesta: Pressure (total):       -543.72809458  kBar
+siesta: Pressure (total):       -543.72809395  kBar
 
 siesta: E_kin PR =     427.980 K
 
@@ -1059,8 +1121,19 @@ outcell: Cell vector modules (Ang)   :    5.676012    5.676012    5.676012
 outcell: Cell angles (23,13,12) (deg):     48.1567     48.1567     48.1567
 outcell: Cell volume (Ang**3)        :     93.0074
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 6
+  <sparsity:sparsity for geom step 6
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     6
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 6
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59364513
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1086,7 +1159,6 @@ siesta: Eharris(eV) =   -2966.810258
 
 siesta: Eharris(eV) =   -2966.810258
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1095,19 +1167,19 @@ siesta: Atomic forces (eV/Ang):
      2   -0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
      4   -0.000000   -0.000000   -0.000000
-     5    2.893815   -6.472385    0.000000
+     5    2.893815   -6.472386    0.000000
      6   -0.000000    3.883107   -5.931898
      7   -2.893815    2.589278    5.931898
-     8   -2.893815    6.472385    0.000000
+     8   -2.893815    6.472386    0.000000
      9   -0.000000   -3.883107    5.931898
     10    2.893815   -2.589278   -5.931898
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
-   Max    6.472385
+   Max    6.472386
    Res    3.170676    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    6.472385    constrained
+   Max    6.472386    constrained
 
 Stress-tensor-Voigt (kbar):      724.22      477.41      442.17      137.92       40.37       90.28
 (Free)E + p*V (eV/cell)    -2977.5689
@@ -1118,14 +1190,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.085570    0.299213    0.025045
          0.056015    0.025045    0.277349
 
-siesta: Pressure (static):       -549.50118717  kBar
+siesta: Pressure (static):       -549.50118608  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.452016    0.086081    0.056350
          0.086081    0.297971    0.025194
          0.056350    0.025194    0.275977
 
-siesta: Pressure (total):       -547.93083898  kBar
+siesta: Pressure (total):       -547.93083790  kBar
 
 siesta: E_kin PR =     642.244 K
 
@@ -1156,8 +1228,19 @@ outcell: Cell vector modules (Ang)   :    5.675283    5.675283    5.675283
 outcell: Cell angles (23,13,12) (deg):     48.1477     48.1477     48.1477
 outcell: Cell volume (Ang**3)        :     92.9435
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 7
+  <sparsity:sparsity for geom step 7
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     7
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 7
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59526075
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1183,7 +1266,6 @@ siesta: Eharris(eV) =   -2966.901939
 
 siesta: Eharris(eV) =   -2966.901939
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1215,14 +1297,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.083583    0.305273    0.024463
          0.054715    0.024463    0.283917
 
-siesta: Pressure (static):       -557.58267805  kBar
+siesta: Pressure (static):       -557.58267745  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.454340    0.084376    0.055234
          0.084376    0.303347    0.024695
          0.055234    0.024695    0.281788
 
-siesta: Pressure (total):       -555.14728708  kBar
+siesta: Pressure (total):       -555.14728648  kBar
 
 siesta: E_kin PR =     903.330 K
 
@@ -1253,8 +1335,19 @@ outcell: Cell vector modules (Ang)   :    5.674430    5.674430    5.674430
 outcell: Cell angles (23,13,12) (deg):     48.1371     48.1371     48.1371
 outcell: Cell volume (Ang**3)        :     92.8687
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 8
+  <sparsity:sparsity for geom step 8
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     8
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 8
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59715941
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1280,7 +1373,6 @@ siesta: Eharris(eV) =   -2967.007750
 
 siesta: Eharris(eV) =   -2967.007750
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1312,14 +1404,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.078779    0.318034    0.023057
          0.051570    0.023057    0.297905
 
-siesta: Pressure (static):       -574.09233300  kBar
+siesta: Pressure (static):       -574.09233225  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.458288    0.079909    0.052310
          0.079909    0.315288    0.023388
          0.052310    0.023388    0.294870
 
-siesta: Pressure (total):       -570.61954522  kBar
+siesta: Pressure (total):       -570.61954446  kBar
 
 siesta: E_kin PR =    1216.983 K
 
@@ -1350,8 +1442,19 @@ outcell: Cell vector modules (Ang)   :    5.673450    5.673450    5.673450
 outcell: Cell angles (23,13,12) (deg):     48.1249     48.1249     48.1249
 outcell: Cell volume (Ang**3)        :     92.7826
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 9
+  <sparsity:sparsity for geom step 9
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     9
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 9
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59935459
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1377,7 +1480,6 @@ siesta: Eharris(eV) =   -2967.125475
 
 siesta: Eharris(eV) =   -2967.125475
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1409,14 +1511,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.077014    0.323268    0.022540
          0.050414    0.022540    0.303590
 
-siesta: Pressure (static):       -581.03263640  kBar
+siesta: Pressure (static):       -581.03263937  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.460117    0.078531    0.051408
          0.078531    0.319583    0.022984
          0.051408    0.022984    0.299518
 
-siesta: Pressure (total):       -576.37198677  kBar
+siesta: Pressure (total):       -576.37198974  kBar
 
 siesta: E_kin PR =    1585.999 K
 
@@ -1447,8 +1549,19 @@ outcell: Cell vector modules (Ang)   :    5.672343    5.672343    5.672343
 outcell: Cell angles (23,13,12) (deg):     48.1109     48.1109     48.1109
 outcell: Cell volume (Ang**3)        :     92.6850
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 10
+  <sparsity:sparsity for geom step 10
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    10
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 10
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.60185267
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1474,7 +1587,6 @@ siesta: Eharris(eV) =   -2967.255031
 
 siesta: Eharris(eV) =   -2967.255031
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1506,14 +1618,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.074782    0.329205    0.021887
          0.048954    0.021887    0.310097
 
-siesta: Pressure (static):       -588.71692114  kBar
+siesta: Pressure (static):       -588.71692164  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.461786    0.076731    0.050229
          0.076731    0.324474    0.022457
          0.050229    0.022457    0.304869
 
-siesta: Pressure (total):       -582.73350143  kBar
+siesta: Pressure (total):       -582.73350192  kBar
 
 siesta: E_kin PR =    2009.181 K
 
@@ -1544,8 +1656,19 @@ outcell: Cell vector modules (Ang)   :    5.671108    5.671108    5.671108
 outcell: Cell angles (23,13,12) (deg):     48.0953     48.0953     48.0953
 outcell: Cell volume (Ang**3)        :     92.5758
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 11
+  <sparsity:sparsity for geom step 11
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    11
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 11
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.60466106
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1571,7 +1694,6 @@ siesta: Eharris(eV) =   -2967.394667
 
 siesta: Eharris(eV) =   -2967.394667
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1587,7 +1709,7 @@ siesta: Atomic forces (eV/Ang):
      9   -0.000000   -3.383083    5.168052
     10    2.521180   -2.255859   -5.168052
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    5.638941
    Res    2.762390    sqrt( Sum f_i^2 / 3N )
@@ -1603,14 +1725,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.072617    0.335684    0.021253
          0.047536    0.021253    0.317129
 
-siesta: Pressure (static):       -597.32297797  kBar
+siesta: Pressure (static):       -597.32297806  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.464087    0.075038    0.049121
          0.075038    0.329804    0.021962
          0.049121    0.021962    0.310631
 
-siesta: Pressure (total):       -589.88642102  kBar
+siesta: Pressure (total):       -589.88642113  kBar
 
 siesta: E_kin PR =    2489.020 K
 
@@ -1641,8 +1763,19 @@ outcell: Cell vector modules (Ang)   :    5.669742    5.669742    5.669742
 outcell: Cell angles (23,13,12) (deg):     48.0779     48.0779     48.0779
 outcell: Cell volume (Ang**3)        :     92.4548
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 12
+  <sparsity:sparsity for geom step 12
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    12
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 12
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.60778792
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1668,7 +1801,6 @@ siesta: Eharris(eV) =   -2967.541044
 
 siesta: Eharris(eV) =   -2967.541044
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1700,14 +1832,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.064968    0.357295    0.019015
          0.042529    0.019015    0.340695
 
-siesta: Pressure (static):       -625.68088835  kBar
+siesta: Pressure (static):       -625.68088854  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.471684    0.067899    0.044448
          0.067899    0.350177    0.019873
          0.044448    0.019873    0.332828
 
-siesta: Pressure (total):       -616.67885865  kBar
+siesta: Pressure (total):       -616.67885886  kBar
 
 siesta: E_kin PR =    3039.483 K
 
@@ -1738,8 +1870,19 @@ outcell: Cell vector modules (Ang)   :    5.668243    5.668243    5.668243
 outcell: Cell angles (23,13,12) (deg):     48.0585     48.0585     48.0585
 outcell: Cell volume (Ang**3)        :     92.3215
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 13
+  <sparsity:sparsity for geom step 13
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    13
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 13
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.61125667
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1765,7 +1908,6 @@ siesta: Eharris(eV) =   -2967.692957
 
 siesta: Eharris(eV) =   -2967.692957
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1797,7 +1939,7 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.062391    0.365216    0.018261
          0.040842    0.018261    0.349274
 
-siesta: Pressure (static):       -636.26126186  kBar
+siesta: Pressure (static):       -636.26126184  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.474655    0.065854    0.043109
@@ -1835,8 +1977,19 @@ outcell: Cell vector modules (Ang)   :    5.666607    5.666607    5.666607
 outcell: Cell angles (23,13,12) (deg):     48.0372     48.0372     48.0372
 outcell: Cell volume (Ang**3)        :     92.1755
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 14
+  <sparsity:sparsity for geom step 14
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    14
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 14
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.61507784
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1862,7 +2015,6 @@ siesta: Eharris(eV) =   -2967.849049
 
 siesta: Eharris(eV) =   -2967.849049
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1894,14 +2046,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.059560    0.373655    0.017432
          0.038989    0.017432    0.358437
 
-siesta: Pressure (static):       -647.46352817  kBar
+siesta: Pressure (static):       -647.46352810  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.477680    0.063567    0.041612
          0.063567    0.363926    0.018605
          0.041612    0.018605    0.347684
 
-siesta: Pressure (total):       -635.15759865  kBar
+siesta: Pressure (total):       -635.15759860  kBar
 
 siesta: E_kin PR =    4365.943 K
 
@@ -1932,8 +2084,19 @@ outcell: Cell vector modules (Ang)   :    5.664833    5.664833    5.664833
 outcell: Cell angles (23,13,12) (deg):     48.0139     48.0139     48.0139
 outcell: Cell volume (Ang**3)        :     92.0168
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 15
+  <sparsity:sparsity for geom step 15
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    15
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 15
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.61926305
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1959,7 +2122,6 @@ siesta: Eharris(eV) =   -2968.007264
 
 siesta: Eharris(eV) =   -2968.007264
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1972,7 +2134,7 @@ siesta: Atomic forces (eV/Ang):
      6   -0.000000    2.683225   -4.098937
      7   -1.999624    1.789189    4.098937
      8   -1.999624    4.472414    0.000000
-     9   -0.000000   -2.683225    4.098937
+     9    0.000000   -2.683225    4.098937
     10    1.999624   -1.789189   -4.098937
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
@@ -1991,14 +2153,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.057273    0.380376    0.016763
          0.037492    0.016763    0.365742
 
-siesta: Pressure (static):       -656.35826041  kBar
+siesta: Pressure (static):       -656.35826005  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.479953    0.061837    0.040479
          0.061837    0.369295    0.018098
          0.040479    0.018098    0.353495
 
-siesta: Pressure (total):       -642.34226985  kBar
+siesta: Pressure (total):       -642.34226952  kBar
 
 siesta: E_kin PR =    5137.364 K
 
@@ -2029,8 +2191,19 @@ outcell: Cell vector modules (Ang)   :    5.662921    5.662921    5.662921
 outcell: Cell angles (23,13,12) (deg):     47.9885     47.9885     47.9885
 outcell: Cell volume (Ang**3)        :     91.8451
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 16
+  <sparsity:sparsity for geom step 16
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    16
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 16
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.62382277
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -2056,7 +2229,6 @@ siesta: Eharris(eV) =   -2968.165848
 
 siesta: Eharris(eV) =   -2968.165848
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2069,7 +2241,7 @@ siesta: Atomic forces (eV/Ang):
      6   -0.000000    2.504406   -3.825771
      7   -1.866363    1.669952    3.825771
      8   -1.866363    4.174358    0.000000
-     9   -0.000000   -2.504406    3.825771
+     9    0.000000   -2.504406    3.825771
     10    1.866363   -1.669952   -3.825771
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
@@ -2088,14 +2260,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.055139    0.387199    0.016138
          0.036095    0.016138    0.373111
 
-siesta: Pressure (static):       -665.54241723  kBar
+siesta: Pressure (static):       -665.54241715  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.482599    0.060266    0.039451
          0.060266    0.374751    0.017639
          0.039451    0.017639    0.359353
 
-siesta: Pressure (total):       -649.79815091  kBar
+siesta: Pressure (total):       -649.79815085  kBar
 
 siesta: E_kin PR =    5982.393 K
 
@@ -2126,8 +2298,19 @@ outcell: Cell vector modules (Ang)   :    5.660869    5.660869    5.660869
 outcell: Cell angles (23,13,12) (deg):     47.9610     47.9610     47.9610
 outcell: Cell volume (Ang**3)        :     91.6604
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 17
+  <sparsity:sparsity for geom step 17
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    17
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 17
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.62876809
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -2153,7 +2336,6 @@ siesta: Eharris(eV) =   -2968.322741
 
 siesta: Eharris(eV) =   -2968.322741
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2166,7 +2348,7 @@ siesta: Atomic forces (eV/Ang):
      6   -0.000000    2.317575   -3.540365
      7   -1.727130    1.545372    3.540365
      8   -1.727130    3.862947    0.000000
-     9   -0.000000   -2.317575    3.540365
+     9    0.000000   -2.317575    3.540365
     10    1.727130   -1.545372   -3.540365
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
@@ -2185,14 +2367,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.052910    0.394611    0.015486
          0.034636    0.015486    0.381092
 
-siesta: Pressure (static):       -675.59062213  kBar
+siesta: Pressure (static):       -675.59062098  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.485662    0.058598    0.038359
          0.058598    0.380799    0.017151
          0.038359    0.017151    0.365826
 
-siesta: Pressure (total):       -658.12104297  kBar
+siesta: Pressure (total):       -658.12104184  kBar
 
 siesta: E_kin PR =    6904.115 K
 
@@ -2223,8 +2405,19 @@ outcell: Cell vector modules (Ang)   :    5.658676    5.658676    5.658676
 outcell: Cell angles (23,13,12) (deg):     47.9313     47.9313     47.9313
 outcell: Cell volume (Ang**3)        :     91.4625
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 18
+  <sparsity:sparsity for geom step 18
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    18
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 18
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.63411128
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -2250,7 +2443,6 @@ siesta: Eharris(eV) =   -2968.475869
 
 siesta: Eharris(eV) =   -2968.475869
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2263,7 +2455,7 @@ siesta: Atomic forces (eV/Ang):
      6   -0.000000    2.100012   -3.208012
      7   -1.564995    1.400300    3.208012
      8   -1.564995    3.500312    0.000000
-     9   -0.000000   -2.100012    3.208012
+     9    0.000000   -2.100012    3.208012
     10    1.564995   -1.400300   -3.208012
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
@@ -2282,14 +2474,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.049611    0.405356    0.014520
          0.032476    0.014520    0.392680
 
-siesta: Pressure (static):       -690.10380579  kBar
+siesta: Pressure (static):       -690.10380683  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.490150    0.055852    0.036561
          0.055852    0.390201    0.016347
          0.036561    0.016347    0.375931
 
-siesta: Pressure (total):       -670.93560468  kBar
+siesta: Pressure (total):       -670.93560574  kBar
 
 siesta: E_kin PR =    7909.944 K
 
@@ -2320,8 +2512,19 @@ outcell: Cell vector modules (Ang)   :    5.656339    5.656339    5.656339
 outcell: Cell angles (23,13,12) (deg):     47.8995     47.8995     47.8995
 outcell: Cell volume (Ang**3)        :     91.2511
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 19
+  <sparsity:sparsity for geom step 19
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    19
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 19
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.63986865
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -2347,7 +2550,6 @@ siesta: Eharris(eV) =   -2968.623561
 
 siesta: Eharris(eV) =   -2968.623561
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2357,10 +2559,10 @@ siesta: Atomic forces (eV/Ang):
      3   -0.000000   -0.000000   -0.000000
      4   -0.000000   -0.000000   -0.000000
      5    1.407123   -3.147211    0.000000
-     6    0.000000    1.888169   -2.884398
+     6   -0.000000    1.888169   -2.884398
      7   -1.407123    1.259042    2.884398
      8   -1.407123    3.147211    0.000000
-     9   -0.000000   -1.888169    2.884398
+     9    0.000000   -1.888169    2.884398
     10    1.407123   -1.259042   -2.884398
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
@@ -2379,14 +2581,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.046306    0.416825    0.013553
          0.030313    0.013553    0.404993
 
-siesta: Pressure (static):       -705.77122588  kBar
+siesta: Pressure (static):       -705.77122639  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.495363    0.053082    0.034749
          0.053082    0.400371    0.015536
          0.034749    0.015536    0.386808
 
-siesta: Pressure (total):       -684.96063857  kBar
+siesta: Pressure (total):       -684.96063911  kBar
 
 siesta: E_kin PR =    9008.840 K
 
@@ -2417,8 +2619,19 @@ outcell: Cell vector modules (Ang)   :    5.653858    5.653858    5.653858
 outcell: Cell angles (23,13,12) (deg):     47.8654     47.8654     47.8654
 outcell: Cell volume (Ang**3)        :     91.0261
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 20
+  <sparsity:sparsity for geom step 20
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    20
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 20
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.64605798
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -2444,7 +2657,6 @@ siesta: Eharris(eV) =   -2968.763427
 
 siesta: Eharris(eV) =   -2968.763427
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2454,10 +2666,10 @@ siesta: Atomic forces (eV/Ang):
      3   -0.000000   -0.000000   -0.000000
      4   -0.000000   -0.000000   -0.000000
      5    1.210650   -2.707774    0.000000
-     6    0.000000    1.624529   -2.481657
+     6   -0.000000    1.624529   -2.481657
      7   -1.210650    1.083245    2.481657
      8   -1.210650    2.707774    0.000000
-     9   -0.000000   -1.624529    2.481657
+     9    0.000000   -1.624529    2.481657
     10    1.210650   -1.083245   -2.481657
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
@@ -2476,14 +2688,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.041415    0.430943    0.012121
          0.027111    0.012121    0.420361
 
-siesta: Pressure (static):       -724.38390076  kBar
+siesta: Pressure (static):       -724.38390062  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.500404    0.048699    0.031879
          0.048699    0.413255    0.014253
          0.031879    0.014253    0.400812
 
-siesta: Pressure (total):       -702.01265839  kBar
+siesta: Pressure (total):       -702.01265829  kBar
 
 siesta: E_kin PR =   10210.456 K
 
@@ -2514,8 +2726,19 @@ outcell: Cell vector modules (Ang)   :    5.651228    5.651228    5.651228
 outcell: Cell angles (23,13,12) (deg):     47.8289     47.8289     47.8289
 outcell: Cell volume (Ang**3)        :     90.7870
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 21
+  <sparsity:sparsity for geom step 21
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    21
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 21
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.65270095
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -2541,7 +2764,6 @@ siesta: Eharris(eV) =   -2968.893522
 
 siesta: Eharris(eV) =   -2968.893522
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2551,10 +2773,10 @@ siesta: Atomic forces (eV/Ang):
      3   -0.000000   -0.000000   -0.000000
      4   -0.000000   -0.000000   -0.000000
      5    1.037056   -2.319508    0.000000
-     6    0.000000    1.391589   -2.125814
+     6   -0.000000    1.391589   -2.125814
      7   -1.037056    0.927919    2.125814
      8   -1.037056    2.319508    0.000000
-     9   -0.000000   -1.391589    2.125814
+     9    0.000000   -1.391589    2.125814
     10    1.037056   -0.927919   -2.125814
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
@@ -2573,14 +2795,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.038104    0.442061    0.011152
          0.024943    0.011152    0.432325
 
-siesta: Pressure (static):       -739.48432443  kBar
+siesta: Pressure (static):       -739.48432423  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.505296    0.045859    0.030020
          0.045859    0.423231    0.013422
          0.030020    0.013422    0.411513
 
-siesta: Pressure (total):       -715.66780652  kBar
+siesta: Pressure (total):       -715.66780634  kBar
 
 siesta: E_kin PR =   11520.177 K
 
@@ -2611,8 +2833,19 @@ outcell: Cell vector modules (Ang)   :    5.648447    5.648447    5.648447
 outcell: Cell angles (23,13,12) (deg):     47.7899     47.7899     47.7899
 outcell: Cell volume (Ang**3)        :     90.5335
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 22
+  <sparsity:sparsity for geom step 22
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    22
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 22
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.65981711
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -2638,20 +2871,19 @@ siesta: Eharris(eV) =   -2969.013599
 
 siesta: Eharris(eV) =   -2969.013599
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
-     2    0.000000    0.000000    0.000000
+     2   -0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
      4   -0.000000   -0.000000   -0.000000
      5    0.872567   -1.951608    0.000000
-     6    0.000000    1.170867   -1.788636
+     6   -0.000000    1.170867   -1.788636
      7   -0.872567    0.780741    1.788636
      8   -0.872567    1.951608    0.000000
-     9   -0.000000   -1.170867    1.788636
+     9    0.000000   -1.170867    1.788636
     10    0.872567   -0.780741   -1.788636
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
@@ -2670,14 +2902,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.035492    0.450924    0.010388
          0.023234    0.010388    0.441855
 
-siesta: Pressure (static):       -751.54442328  kBar
+siesta: Pressure (static):       -751.54442341  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.509213    0.043672    0.028588
          0.043672    0.431061    0.012782
          0.028588    0.012782    0.419902
 
-siesta: Pressure (total):       -726.42233767  kBar
+siesta: Pressure (total):       -726.42233783  kBar
 
 siesta: E_kin PR =   12935.473 K
 
@@ -2708,8 +2940,19 @@ outcell: Cell vector modules (Ang)   :    5.645515    5.645515    5.645515
 outcell: Cell angles (23,13,12) (deg):     47.7484     47.7484     47.7484
 outcell: Cell volume (Ang**3)        :     90.2656
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 23
+  <sparsity:sparsity for geom step 23
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    23
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 23
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.66742475
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -2735,20 +2978,19 @@ siesta: Eharris(eV) =   -2969.124156
 
 siesta: Eharris(eV) =   -2969.124156
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
-     2    0.000000    0.000000    0.000000
+     2   -0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
      4   -0.000000   -0.000000   -0.000000
      5    0.715692   -1.600736    0.000000
-     6    0.000000    0.960362   -1.467064
+     6   -0.000000    0.960362   -1.467064
      7   -0.715692    0.640375    1.467064
      8   -0.715692    1.600736    0.000000
-     9   -0.000000   -0.960362    1.467064
+     9    0.000000   -0.960362    1.467064
     10    0.715692   -0.640375   -1.467064
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
@@ -2767,14 +3009,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.031962    0.462387    0.009355
          0.020923    0.009355    0.454221
 
-siesta: Pressure (static):       -767.01926358  kBar
+siesta: Pressure (static):       -767.01926442  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.514117    0.040522    0.026526
          0.040522    0.441601    0.011860
          0.026526    0.011860    0.431247
 
-siesta: Pressure (total):       -740.72868774  kBar
+siesta: Pressure (total):       -740.72868861  kBar
 
 siesta: E_kin PR =   14461.622 K
 
@@ -2805,8 +3047,19 @@ outcell: Cell vector modules (Ang)   :    5.642429    5.642429    5.642429
 outcell: Cell angles (23,13,12) (deg):     47.7044     47.7044     47.7044
 outcell: Cell volume (Ang**3)        :     89.9829
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 24
+  <sparsity:sparsity for geom step 24
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    24
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 24
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.67554600
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -2832,20 +3085,19 @@ siesta: Eharris(eV) =   -2969.224857
 
 siesta: Eharris(eV) =   -2969.224857
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
-     2    0.000000    0.000000    0.000000
+     2   -0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
      4   -0.000000   -0.000000   -0.000000
      5    0.544764   -1.218434    0.000000
-     6    0.000000    0.731000   -1.116687
+     6   -0.000000    0.731000   -1.116687
      7   -0.544764    0.487435    1.116687
      8   -0.544764    1.218434    0.000000
-     9   -0.000000   -0.731000    1.116687
+     9    0.000000   -0.731000    1.116687
     10    0.544764   -0.487435   -1.116687
 ----------------------------------------
    Tot   -0.000000   -0.000000   -0.000000
@@ -2864,14 +3116,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.027921    0.475465    0.008172
          0.018278    0.008172    0.468331
 
-siesta: Pressure (static):       -784.66184032  kBar
+siesta: Pressure (static):       -784.66184047  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.519749    0.036816    0.024101
          0.036816    0.453865    0.010775
          0.024101    0.010775    0.444458
 
-siesta: Pressure (total):       -757.34241262  kBar
+siesta: Pressure (total):       -757.34241279  kBar
 
 siesta: E_kin PR =   16111.046 K
 
@@ -2902,8 +3154,19 @@ outcell: Cell vector modules (Ang)   :    5.639186    5.639186    5.639186
 outcell: Cell angles (23,13,12) (deg):     47.6576     47.6576     47.6576
 outcell: Cell volume (Ang**3)        :     89.6852
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 25
+  <sparsity:sparsity for geom step 25
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    25
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 25
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.68420591
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -2929,17 +3192,16 @@ siesta: Eharris(eV) =   -2969.315981
 
 siesta: Eharris(eV) =   -2969.315981
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
-     2    0.000000    0.000000    0.000000
+     2   -0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
      4   -0.000000   -0.000000   -0.000000
      5    0.408490   -0.913641    0.000000
-     6    0.000000    0.548139   -0.837346
+     6   -0.000000    0.548139   -0.837346
      7   -0.408490    0.365502    0.837346
      8   -0.408490    0.913641    0.000000
      9   -0.000000   -0.548139    0.837346
@@ -2961,14 +3223,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.024613    0.485936    0.007204
          0.016112    0.007204    0.479647
 
-siesta: Pressure (static):       -798.72877873  kBar
+siesta: Pressure (static):       -798.72877718  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.524119    0.033794    0.022122
          0.033794    0.463644    0.009891
          0.022122    0.009891    0.455009
 
-siesta: Pressure (total):       -770.53363577  kBar
+siesta: Pressure (total):       -770.53363425  kBar
 
 siesta: E_kin PR =   17888.175 K
 
@@ -2999,8 +3261,19 @@ outcell: Cell vector modules (Ang)   :    5.635785    5.635785    5.635785
 outcell: Cell angles (23,13,12) (deg):     47.6081     47.6081     47.6081
 outcell: Cell volume (Ang**3)        :     89.3722
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 26
+  <sparsity:sparsity for geom step 26
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    26
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 26
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.69342822
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3026,17 +3299,16 @@ siesta: Eharris(eV) =   -2969.398631
 
 siesta: Eharris(eV) =   -2969.398631
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
-     2    0.000000    0.000000    0.000000
+     2   -0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
      4   -0.000000   -0.000000   -0.000000
      5    0.262386   -0.586860    0.000000
-     6    0.000000    0.352087   -0.537853
+     6   -0.000000    0.352087   -0.537853
      7   -0.262386    0.234773    0.537853
      8   -0.262386    0.586860    0.000000
      9   -0.000000   -0.352087    0.537853
@@ -3058,14 +3330,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.019963    0.500459    0.005843
          0.013068    0.005843    0.495358
 
-siesta: Pressure (static):       -818.18632832  kBar
+siesta: Pressure (static):       -818.18632795  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.530168    0.029379    0.019232
          0.029379    0.477593    0.008599
          0.019232    0.008599    0.470086
 
-siesta: Pressure (total):       -789.26530986  kBar
+siesta: Pressure (total):       -789.26530952  kBar
 
 siesta: E_kin PR =   19802.001 K
 
@@ -3096,8 +3368,19 @@ outcell: Cell vector modules (Ang)   :    5.632222    5.632222    5.632222
 outcell: Cell angles (23,13,12) (deg):     47.5557     47.5557     47.5557
 outcell: Cell volume (Ang**3)        :     89.0437
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 27
+  <sparsity:sparsity for geom step 27
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    27
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 27
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.70324236
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3123,17 +3406,16 @@ siesta: Eharris(eV) =   -2969.473973
 
 siesta: Eharris(eV) =   -2969.473973
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
-     2    0.000000    0.000000    0.000000
+     2   -0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
      4   -0.000000   -0.000000   -0.000000
      5    0.153372   -0.343036    0.000000
-     6    0.000000    0.205804   -0.314390
+     6   -0.000000    0.205804   -0.314390
      7   -0.153372    0.137231    0.314390
      8   -0.153372    0.343036    0.000000
      9   -0.000000   -0.205804    0.314390
@@ -3162,7 +3444,7 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.027150    0.486145    0.007946
          0.017773    0.007946    0.479208
 
-siesta: Pressure (total):       -801.14232886  kBar
+siesta: Pressure (total):       -801.14232888  kBar
 
 siesta: E_kin PR =   21856.048 K
 
@@ -3193,8 +3475,19 @@ outcell: Cell vector modules (Ang)   :    5.628497    5.628497    5.628497
 outcell: Cell angles (23,13,12) (deg):     47.5004     47.5004     47.5004
 outcell: Cell volume (Ang**3)        :     88.6994
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 28
+  <sparsity:sparsity for geom step 28
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    28
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 28
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.71367330
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3220,7 +3513,6 @@ siesta: Eharris(eV) =   -2969.544047
 
 siesta: Eharris(eV) =   -2969.544047
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3252,14 +3544,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.014449    0.520197    0.004229
          0.009458    0.004229    0.516505
 
-siesta: Pressure (static):       -845.29355284  kBar
+siesta: Pressure (static):       -845.29355278  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.539823    0.024203    0.015844
          0.024203    0.496511    0.007084
          0.015844    0.007084    0.490327
 
-siesta: Pressure (total):       -815.33610842  kBar
+siesta: Pressure (total):       -815.33610838  kBar
 
 siesta: E_kin PR =   24048.229 K
 
@@ -3290,8 +3582,19 @@ outcell: Cell vector modules (Ang)   :    5.624607    5.624607    5.624607
 outcell: Cell angles (23,13,12) (deg):     47.4421     47.4421     47.4421
 outcell: Cell volume (Ang**3)        :     88.3392
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 29
+  <sparsity:sparsity for geom step 29
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    29
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 29
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.72474934
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3317,7 +3620,6 @@ siesta: Eharris(eV) =   -2969.609964
 
 siesta: Eharris(eV) =   -2969.609964
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3349,14 +3651,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.012007    0.529997    0.003514
          0.007860    0.003514    0.526929
 
-siesta: Pressure (static):       -858.99491413  kBar
+siesta: Pressure (static):       -858.99491484  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.545182    0.021875    0.014319
          0.021875    0.506037    0.006402
          0.014319    0.006402    0.500447
 
-siesta: Pressure (total):       -828.68990332  kBar
+siesta: Pressure (total):       -828.68990405  kBar
 
 siesta: E_kin PR =   26385.366 K
 
@@ -3387,8 +3689,19 @@ outcell: Cell vector modules (Ang)   :    5.620550    5.620550    5.620550
 outcell: Cell angles (23,13,12) (deg):     47.3808     47.3808     47.3808
 outcell: Cell volume (Ang**3)        :     87.9629
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 30
+  <sparsity:sparsity for geom step 30
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    30
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 30
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.73649927
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3414,7 +3727,6 @@ siesta: Eharris(eV) =   -2969.674009
 
 siesta: Eharris(eV) =   -2969.674009
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3446,14 +3758,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.009069    0.540631    0.002654
          0.005937    0.002654    0.538314
 
-siesta: Pressure (static):       -873.62586065  kBar
+siesta: Pressure (static):       -873.62585941  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.550504    0.019020    0.012451
          0.019020    0.516468    0.005567
          0.012451    0.005567    0.511608
 
-siesta: Pressure (total):       -843.06360427  kBar
+siesta: Pressure (total):       -843.06360305  kBar
 
 siesta: E_kin PR =   28872.546 K
 
@@ -3484,8 +3796,19 @@ outcell: Cell vector modules (Ang)   :    5.616326    5.616326    5.616326
 outcell: Cell angles (23,13,12) (deg):     47.3162     47.3162     47.3162
 outcell: Cell volume (Ang**3)        :     87.5703
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 31
+  <sparsity:sparsity for geom step 31
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    31
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 31
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.74895443
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3511,7 +3834,6 @@ siesta: Eharris(eV) =   -2969.738085
 
 siesta: Eharris(eV) =   -2969.738085
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3519,7 +3841,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
-     4   -0.000000    0.000000   -0.000000
+     4   -0.000000   -0.000000   -0.000000
      5   -0.138557    0.309901    0.000000
      6   -0.000000   -0.185925    0.284022
      7    0.138557   -0.123976   -0.284022
@@ -3530,7 +3852,7 @@ siesta: Atomic forces (eV/Ang):
    Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.309901
-   Res    0.151814    sqrt( Sum f_i^2 / 3N )
+   Res    0.151813    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.309901    constrained
 
@@ -3543,14 +3865,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.006185    0.551630    0.001810
          0.004049    0.001810    0.550050
 
-siesta: Pressure (static):       -888.88571706  kBar
+siesta: Pressure (static):       -888.88571623  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.556305    0.016196    0.010602
          0.016196    0.527322    0.004740
          0.010602    0.004740    0.523184
 
-siesta: Pressure (total):       -858.14028489  kBar
+siesta: Pressure (total):       -858.14028408  kBar
 
 siesta: E_kin PR =   31518.056 K
 
@@ -3581,8 +3903,19 @@ outcell: Cell vector modules (Ang)   :    5.611931    5.611931    5.611931
 outcell: Cell angles (23,13,12) (deg):     47.2485     47.2485     47.2485
 outcell: Cell volume (Ang**3)        :     87.1614
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 32
+  <sparsity:sparsity for geom step 32
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    32
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 32
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.76214823
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3608,7 +3941,6 @@ siesta: Eharris(eV) =   -2969.803142
 
 siesta: Eharris(eV) =   -2969.803142
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3616,7 +3948,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
-     4   -0.000000    0.000000   -0.000000
+     4   -0.000000   -0.000000   -0.000000
      5   -0.170742    0.381886    0.000000
      6   -0.000000   -0.229112    0.349996
      7    0.170742   -0.152773   -0.349996
@@ -3640,14 +3972,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.003327    0.563087    0.000974
          0.002178    0.000974    0.562237
 
-siesta: Pressure (static):       -904.90023351  kBar
+siesta: Pressure (static):       -904.90023371  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.562621    0.013380    0.008758
          0.013380    0.538678    0.003916
          0.008758    0.003916    0.535259
 
-siesta: Pressure (total):       -874.02801161  kBar
+siesta: Pressure (total):       -874.02801182  kBar
 
 siesta: E_kin PR =   34329.488 K
 
@@ -3678,8 +4010,19 @@ outcell: Cell vector modules (Ang)   :    5.607365    5.607365    5.607365
 outcell: Cell angles (23,13,12) (deg):     47.1774     47.1774     47.1774
 outcell: Cell volume (Ang**3)        :     86.7358
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 33
+  <sparsity:sparsity for geom step 33
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    33
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 33
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.77611636
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3705,7 +4048,6 @@ siesta: Eharris(eV) =   -2969.871479
 
 siesta: Eharris(eV) =   -2969.871479
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3713,7 +4055,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
-     4   -0.000000    0.000000   -0.000000
+     4   -0.000000   -0.000000   -0.000000
      5   -0.221493    0.495398    0.000000
      6   -0.000000   -0.297214    0.454029
      7    0.221493   -0.198184   -0.454029
@@ -3737,14 +4079,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001167    0.579065   -0.000341
         -0.000764   -0.000341    0.579363
 
-siesta: Pressure (static):       -926.81822794  kBar
+siesta: Pressure (static):       -926.81822784  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.570538    0.008915    0.005836
          0.008915    0.554585    0.002609
          0.005836    0.002609    0.552307
 
-siesta: Pressure (total):       -895.85555480  kBar
+siesta: Pressure (total):       -895.85555471  kBar
 
 siesta: E_kin PR =   37326.035 K
 
@@ -3775,8 +4117,19 @@ outcell: Cell vector modules (Ang)   :    5.602623    5.602623    5.602623
 outcell: Cell angles (23,13,12) (deg):     47.1029     47.1029     47.1029
 outcell: Cell volume (Ang**3)        :     86.2933
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 34
+  <sparsity:sparsity for geom step 34
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    34
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 34
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.79090171
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3802,7 +4155,6 @@ siesta: Eharris(eV) =   -2969.944549
 
 siesta: Eharris(eV) =   -2969.944549
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3810,15 +4162,15 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
-     4   -0.000000    0.000000   -0.000000
-     5   -0.234366    0.524189   -0.000000
+     4   -0.000000   -0.000000   -0.000000
+     5   -0.234366    0.524189    0.000000
      6   -0.000000   -0.314487    0.480416
      7    0.234366   -0.209702   -0.480416
      8    0.234366   -0.524189   -0.000000
      9   -0.000000    0.314487   -0.480416
     10   -0.234366    0.209702    0.480416
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.524189
    Res    0.256788    sqrt( Sum f_i^2 / 3N )
@@ -3834,14 +4186,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.004251    0.591775   -0.001244
         -0.002783   -0.001244    0.592861
 
-siesta: Pressure (static):       -944.65572976  kBar
+siesta: Pressure (static):       -944.65572968  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.577718    0.005848    0.003828
          0.005848    0.567253    0.001712
          0.003828    0.001712    0.565759
 
-siesta: Pressure (total):       -913.64005737  kBar
+siesta: Pressure (total):       -913.64005730  kBar
 
 siesta: E_kin PR =   40518.605 K
 
@@ -3872,8 +4224,19 @@ outcell: Cell vector modules (Ang)   :    5.597705    5.597705    5.597705
 outcell: Cell angles (23,13,12) (deg):     47.0249     47.0249     47.0249
 outcell: Cell volume (Ang**3)        :     85.8338
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 35
+  <sparsity:sparsity for geom step 35
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    35
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 35
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.80654555
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3899,7 +4262,6 @@ siesta: Eharris(eV) =   -2970.021453
 
 siesta: Eharris(eV) =   -2970.021453
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3907,7 +4269,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
-     4   -0.000000    0.000000   -0.000000
+     4   -0.000000   -0.000000   -0.000000
      5   -0.256128    0.572863   -0.000000
      6   -0.000000   -0.343689    0.525025
      7    0.256128   -0.229174   -0.525025
@@ -3931,14 +4293,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.005692    0.600545   -0.001666
         -0.003726   -0.001666    0.602000
 
-siesta: Pressure (static):       -957.52641977  kBar
+siesta: Pressure (static):       -957.52641892  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.583903    0.004415    0.002890
          0.004415    0.576002    0.001292
          0.002890    0.001292    0.574873
 
-siesta: Pressure (total):       -926.48355799  kBar
+siesta: Pressure (total):       -926.48355714  kBar
 
 siesta: E_kin PR =   43893.767 K
 
@@ -3969,8 +4331,19 @@ outcell: Cell vector modules (Ang)   :    5.592609    5.592609    5.592609
 outcell: Cell angles (23,13,12) (deg):     46.9433     46.9433     46.9433
 outcell: Cell volume (Ang**3)        :     85.3570
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 36
+  <sparsity:sparsity for geom step 36
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    36
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 36
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.82308667
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -3996,7 +4369,6 @@ siesta: Eharris(eV) =   -2970.101652
 
 siesta: Eharris(eV) =   -2970.101652
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4004,7 +4376,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
-     4   -0.000000    0.000000   -0.000000
+     4   -0.000000   -0.000000   -0.000000
      5   -0.267947    0.599298   -0.000000
      6   -0.000000   -0.359549    0.549253
      7    0.267947   -0.239749   -0.549253
@@ -4012,7 +4384,7 @@ siesta: Atomic forces (eV/Ang):
      9   -0.000000    0.359549   -0.549253
     10   -0.267947    0.239749    0.549253
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.599298
    Res    0.293583    sqrt( Sum f_i^2 / 3N )
@@ -4028,14 +4400,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.006706    0.609999   -0.001963
         -0.004390   -0.001963    0.611713
 
-siesta: Pressure (static):       -971.84313606  kBar
+siesta: Pressure (static):       -971.84313565  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.591539    0.003408    0.002231
          0.003408    0.585440    0.000997
          0.002231    0.000997    0.584570
 
-siesta: Pressure (total):       -940.78126196  kBar
+siesta: Pressure (total):       -940.78126155  kBar
 
 siesta: E_kin PR =   47446.456 K
 
@@ -4066,8 +4438,19 @@ outcell: Cell vector modules (Ang)   :    5.587333    5.587333    5.587333
 outcell: Cell angles (23,13,12) (deg):     46.8580     46.8580     46.8580
 outcell: Cell volume (Ang**3)        :     84.8631
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 37
+  <sparsity:sparsity for geom step 37
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    37
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 37
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.84056646
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -4093,7 +4476,6 @@ siesta: Eharris(eV) =   -2970.186321
 
 siesta: Eharris(eV) =   -2970.186321
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4101,7 +4483,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
      3   -0.000000   -0.000000   -0.000000
-     4    0.000000    0.000000   -0.000000
+     4   -0.000000   -0.000000   -0.000000
      5   -0.282595    0.632060   -0.000000
      6   -0.000000   -0.379205    0.579279
      7    0.282595   -0.252856   -0.579279
@@ -4125,14 +4507,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.008731    0.620807   -0.002555
         -0.005716   -0.002555    0.623038
 
-siesta: Pressure (static):       -987.50038752  kBar
+siesta: Pressure (static):       -987.50038852  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.598720    0.001386    0.000908
          0.001386    0.596239    0.000406
          0.000908    0.000406    0.595885
 
-siesta: Pressure (total):       -956.42693452  kBar
+siesta: Pressure (total):       -956.42693551  kBar
 
 siesta: E_kin PR =   51187.061 K
 
@@ -4163,8 +4545,19 @@ outcell: Cell vector modules (Ang)   :    5.581876    5.581876    5.581876
 outcell: Cell angles (23,13,12) (deg):     46.7690     46.7690     46.7690
 outcell: Cell volume (Ang**3)        :     84.3520
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 38
+  <sparsity:sparsity for geom step 38
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    38
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 38
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.85903053
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -4190,7 +4583,6 @@ siesta: Eharris(eV) =   -2970.272687
 
 siesta: Eharris(eV) =   -2970.272687
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4222,14 +4614,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.008328    0.624594   -0.002437
         -0.005451   -0.002437    0.626722
 
-siesta: Pressure (static):       -993.89883916  kBar
+siesta: Pressure (static):       -993.89883897  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.603228    0.001793    0.001174
          0.001793    0.600020    0.000525
          0.001174    0.000525    0.599562
 
-siesta: Pressure (total):       -962.81680121  kBar
+siesta: Pressure (total):       -962.81680101  kBar
 
 siesta: E_kin PR =   55102.303 K
 
@@ -4260,8 +4652,19 @@ outcell: Cell vector modules (Ang)   :    5.576239    5.576239    5.576239
 outcell: Cell angles (23,13,12) (deg):     46.6762     46.6762     46.6762
 outcell: Cell volume (Ang**3)        :     83.8237
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 39
+  <sparsity:sparsity for geom step 39
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    39
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 39
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.87851805
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -4287,14 +4690,13 @@ siesta: Eharris(eV) =   -2970.359177
 
 siesta: Eharris(eV) =   -2970.359177
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
-     3   -0.000000   -0.000000   -0.000000
+     3   -0.000000    0.000000   -0.000000
      4    0.000000    0.000000   -0.000000
      5   -0.344531    0.770587   -0.000000
      6   -0.000000   -0.462314    0.706238
@@ -4319,14 +4721,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.010033    0.633319   -0.002936
         -0.006568   -0.002936    0.635882
 
-siesta: Pressure (static):      -1006.47965294  kBar
+siesta: Pressure (static):      -1006.47965148  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.608901    0.000086    0.000057
          0.000086    0.608747    0.000025
          0.000057    0.000025    0.608725
 
-siesta: Pressure (total):       -975.40093275  kBar
+siesta: Pressure (total):       -975.40093128  kBar
 
 siesta: E_kin PR =   59188.192 K
 
@@ -4357,8 +4759,19 @@ outcell: Cell vector modules (Ang)   :    5.570420    5.570420    5.570420
 outcell: Cell angles (23,13,12) (deg):     46.5796     46.5796     46.5796
 outcell: Cell volume (Ang**3)        :     83.2783
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 40
+  <sparsity:sparsity for geom step 40
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    40
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 40
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.89907685
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -4384,14 +4797,13 @@ siesta: Eharris(eV) =   -2970.445862
 
 siesta: Eharris(eV) =   -2970.445862
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
-     3   -0.000000   -0.000000   -0.000000
+     3    0.000000    0.000000   -0.000000
      4    0.000000    0.000000   -0.000000
      5   -0.387952    0.867705   -0.000000
      6   -0.000000   -0.520580    0.795246
@@ -4416,14 +4828,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.010056    0.638196   -0.002943
         -0.006583   -0.002943    0.640766
 
-siesta: Pressure (static):      -1014.27596136  kBar
+siesta: Pressure (static):      -1014.27595934  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.613744    0.000054    0.000036
          0.000054    0.613647    0.000016
          0.000036    0.000016    0.613633
 
-siesta: Pressure (total):       -983.22542739  kBar
+siesta: Pressure (total):       -983.22542536  kBar
 
 siesta: E_kin PR =   63450.672 K
 
@@ -4454,8 +4866,19 @@ outcell: Cell vector modules (Ang)   :    5.564420    5.564420    5.564420
 outcell: Cell angles (23,13,12) (deg):     46.4792     46.4792     46.4792
 outcell: Cell volume (Ang**3)        :     82.7159
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 41
+  <sparsity:sparsity for geom step 41
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    41
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 41
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.92075217
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -4481,14 +4904,13 @@ siesta: Eharris(eV) =   -2970.533301
 
 siesta: Eharris(eV) =   -2970.533301
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
-     3    0.000000   -0.000000   -0.000000
+     3    0.000000    0.000000   -0.000000
      4    0.000000    0.000000   -0.000000
      5   -0.420637    0.940809   -0.000000
      6   -0.000000   -0.564439    0.862245
@@ -4513,14 +4935,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.012495    0.649861   -0.003657
         -0.008179   -0.003657    0.653053
 
-siesta: Pressure (static):      -1030.96602314  kBar
+siesta: Pressure (static):      -1030.96602320  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.621057   -0.002406   -0.001575
         -0.002406    0.625361   -0.000704
         -0.001575   -0.000704    0.625976
 
-siesta: Pressure (total):       -999.97929883  kBar
+siesta: Pressure (total):       -999.97929890  kBar
 
 siesta: E_kin PR =   67902.360 K
 
@@ -4551,8 +4973,19 @@ outcell: Cell vector modules (Ang)   :    5.558238    5.558238    5.558238
 outcell: Cell angles (23,13,12) (deg):     46.3747     46.3747     46.3747
 outcell: Cell volume (Ang**3)        :     82.1365
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 42
+  <sparsity:sparsity for geom step 42
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    42
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 42
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.94360035
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -4578,7 +5011,6 @@ siesta: Eharris(eV) =   -2970.622780
 
 siesta: Eharris(eV) =   -2970.622780
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4610,14 +5042,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.014442    0.659396   -0.004227
         -0.009454   -0.004227    0.663086
 
-siesta: Pressure (static):      -1044.64833297  kBar
+siesta: Pressure (static):      -1044.64833261  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.627129   -0.004384   -0.002870
         -0.004384    0.634974   -0.001283
         -0.002870   -0.001283    0.636094
 
-siesta: Pressure (total):      -1013.75954657  kBar
+siesta: Pressure (total):      -1013.75954620  kBar
 
 siesta: E_kin PR =   72563.971 K
 
@@ -4648,8 +5080,19 @@ outcell: Cell vector modules (Ang)   :    5.551871    5.551871    5.551871
 outcell: Cell angles (23,13,12) (deg):     46.2663     46.2663     46.2663
 outcell: Cell volume (Ang**3)        :     81.5401
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 43
+  <sparsity:sparsity for geom step 43
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    43
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 43
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.96767783
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -4675,7 +5118,6 @@ siesta: Eharris(eV) =   -2970.708152
 
 siesta: Eharris(eV) =   -2970.708152
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4683,7 +5125,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
      3    0.000000    0.000000   -0.000000
-     4    0.000000    0.000000   -0.000000
+     4    0.000000    0.000000    0.000000
      5   -0.556469    1.244613   -0.000000
      6   -0.000000   -0.746705    1.140679
      7    0.556469   -0.497907   -1.140679
@@ -4707,14 +5149,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.014084    0.663197   -0.004122
         -0.009220   -0.004122    0.666796
 
-siesta: Pressure (static):      -1051.03155026  kBar
+siesta: Pressure (static):      -1051.03155009  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.631598   -0.004072   -0.002666
         -0.004072    0.638884   -0.001192
         -0.002666   -0.001192    0.639925
 
-siesta: Pressure (total):      -1020.28068413  kBar
+siesta: Pressure (total):      -1020.28068396  kBar
 
 siesta: E_kin PR =   77410.619 K
 
@@ -4745,8 +5187,19 @@ outcell: Cell vector modules (Ang)   :    5.545322    5.545322    5.545322
 outcell: Cell angles (23,13,12) (deg):     46.1538     46.1538     46.1538
 outcell: Cell volume (Ang**3)        :     80.9268
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 44
+  <sparsity:sparsity for geom step 44
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    44
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 44
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.99303621
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -4772,7 +5225,6 @@ siesta: Eharris(eV) =   -2970.789167
 
 siesta: Eharris(eV) =   -2970.789167
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4780,7 +5232,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
      3    0.000000    0.000000   -0.000000
-     4    0.000000    0.000000   -0.000000
+     4    0.000000    0.000000    0.000000
      5   -0.619094    1.384682   -0.000000
      6   -0.000000   -0.830740    1.269052
      7    0.619094   -0.553942   -1.269052
@@ -4804,14 +5256,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.015413    0.672338   -0.004511
         -0.010089   -0.004511    0.676276
 
-siesta: Pressure (static):      -1064.58877916  kBar
+siesta: Pressure (static):      -1064.58877885  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.638405   -0.005468   -0.003580
         -0.005468    0.648191   -0.001600
         -0.003580   -0.001600    0.649588
 
-siesta: Pressure (total):      -1034.04761941  kBar
+siesta: Pressure (total):      -1034.04761910  kBar
 
 siesta: E_kin PR =   82442.569 K
 
@@ -4842,8 +5294,19 @@ outcell: Cell vector modules (Ang)   :    5.538590    5.538590    5.538590
 outcell: Cell angles (23,13,12) (deg):     46.0371     46.0371     46.0371
 outcell: Cell volume (Ang**3)        :     80.2968
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 45
+  <sparsity:sparsity for geom step 45
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    45
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 45
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         49.01973671
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -4869,7 +5332,6 @@ siesta: Eharris(eV) =   -2970.867119
 
 siesta: Eharris(eV) =   -2970.867119
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4877,7 +5339,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000    0.000000
      2    0.000000    0.000000    0.000000
      3    0.000000    0.000000   -0.000000
-     4    0.000000    0.000000   -0.000000
+     4    0.000000    0.000000    0.000000
      5   -0.671184    1.501189   -0.000000
      6   -0.000000   -0.900638    1.375829
      7    0.671184   -0.600551   -1.375829
@@ -4901,14 +5363,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.014829    0.676431   -0.004340
         -0.009707   -0.004340    0.680220
 
-siesta: Pressure (static):      -1071.62483661  kBar
+siesta: Pressure (static):      -1071.62483649  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.643602   -0.004979   -0.003259
         -0.004979    0.652512   -0.001457
         -0.003259   -0.001457    0.653784
 
-siesta: Pressure (total):      -1041.37178482  kBar
+siesta: Pressure (total):      -1041.37178469  kBar
 
 siesta: E_kin PR =   87662.769 K
 
@@ -4939,8 +5401,19 @@ outcell: Cell vector modules (Ang)   :    5.531674    5.531674    5.531674
 outcell: Cell angles (23,13,12) (deg):     45.9163     45.9163     45.9163
 outcell: Cell volume (Ang**3)        :     79.6503
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 46
+  <sparsity:sparsity for geom step 46
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    46
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 46
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         49.04783669
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -4966,7 +5439,6 @@ siesta: Eharris(eV) =   -2970.941360
 
 siesta: Eharris(eV) =   -2970.941360
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4974,7 +5446,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000   -0.000000
      2    0.000000    0.000000    0.000000
      3    0.000000    0.000000   -0.000000
-     4    0.000000    0.000000   -0.000000
+     4    0.000000    0.000000    0.000000
      5   -0.722108    1.615086   -0.000000
      6   -0.000000   -0.968971    1.480215
      7    0.722108   -0.646115   -1.480215
@@ -4998,14 +5470,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.015016    0.682732   -0.004395
         -0.009830   -0.004395    0.686568
 
-siesta: Pressure (static):      -1081.56653629  kBar
+siesta: Pressure (static):      -1081.56653623  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.649641   -0.005278   -0.003455
         -0.005278    0.659087   -0.001545
         -0.003455   -0.001545    0.660436
 
-siesta: Pressure (total):      -1051.66074353  kBar
+siesta: Pressure (total):      -1051.66074347  kBar
 
 siesta: E_kin PR =   93061.212 K
 
@@ -5036,8 +5508,19 @@ outcell: Cell vector modules (Ang)   :    5.524576    5.524576    5.524576
 outcell: Cell angles (23,13,12) (deg):     45.7913     45.7913     45.7913
 outcell: Cell volume (Ang**3)        :     78.9874
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 47
+  <sparsity:sparsity for geom step 47
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    47
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 47
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         49.07739911
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -5063,7 +5546,6 @@ siesta: Eharris(eV) =   -2971.011535
 
 siesta: Eharris(eV) =   -2971.011535
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5071,7 +5553,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000   -0.000000   -0.000000
      2    0.000000    0.000000    0.000000
      3    0.000000    0.000000   -0.000000
-     4    0.000000    0.000000   -0.000000
+     4    0.000000    0.000000    0.000000
      5   -0.788851    1.764366   -0.000000
      6   -0.000000   -1.058532    1.617030
      7    0.788851   -0.705835   -1.617030
@@ -5095,14 +5577,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.016033    0.688403   -0.004693
         -0.010495   -0.004693    0.692500
 
-siesta: Pressure (static):      -1089.82005888  kBar
+siesta: Pressure (static):      -1089.82005881  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.653575   -0.006425   -0.004206
         -0.006425    0.665074   -0.001881
         -0.004206   -0.001881    0.666716
 
-siesta: Pressure (total):      -1060.31348003  kBar
+siesta: Pressure (total):      -1060.31347996  kBar
 
 siesta: E_kin PR =   98646.328 K
 
@@ -5133,8 +5615,19 @@ outcell: Cell vector modules (Ang)   :    5.517296    5.517296    5.517296
 outcell: Cell angles (23,13,12) (deg):     45.6620     45.6620     45.6620
 outcell: Cell volume (Ang**3)        :     78.3084
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 48
+  <sparsity:sparsity for geom step 48
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    48
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 48
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         49.10849019
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -5160,15 +5653,14 @@ siesta: Eharris(eV) =   -2971.072742
 
 siesta: Eharris(eV) =   -2971.072742
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000   -0.000000
+     1    0.000000   -0.000000   -0.000000
      2    0.000000    0.000000    0.000000
      3    0.000000    0.000000   -0.000000
-     4    0.000000    0.000000   -0.000000
+     4    0.000000    0.000000    0.000000
      5   -0.892698    1.996632   -0.000000
      6   -0.000000   -1.197879    1.829900
      7    0.892698   -0.798753   -1.829900
@@ -5192,14 +5684,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.013630    0.687735   -0.003989
         -0.008922   -0.003989    0.691217
 
-siesta: Pressure (static):      -1090.71815060  kBar
+siesta: Pressure (static):      -1090.71815052  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.657304   -0.004172   -0.002731
         -0.004172    0.664770   -0.001221
         -0.002731   -0.001221    0.665836
 
-siesta: Pressure (total):      -1061.67175775  kBar
+siesta: Pressure (total):      -1061.67175766  kBar
 
 siesta: E_kin PR =  104389.379 K
 
@@ -5230,8 +5722,19 @@ outcell: Cell vector modules (Ang)   :    5.509835    5.509835    5.509835
 outcell: Cell angles (23,13,12) (deg):     45.5284     45.5284     45.5284
 outcell: Cell volume (Ang**3)        :     77.6136
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 49
+  <sparsity:sparsity for geom step 49
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    49
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 49
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         49.14116907
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -5257,7 +5760,6 @@ siesta: Eharris(eV) =   -2971.126261
 
 siesta: Eharris(eV) =   -2971.126261
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5265,7 +5767,7 @@ siesta: Atomic forces (eV/Ang):
      1    0.000000    0.000000   -0.000000
      2    0.000000    0.000000    0.000000
      3    0.000000    0.000000   -0.000000
-     4    0.000000    0.000000   -0.000000
+     4    0.000000    0.000000    0.000000
      5   -0.959684    2.146457   -0.000000
      6   -0.000000   -1.287767    1.967213
      7    0.959684   -0.858690   -1.967213
@@ -5289,14 +5791,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.015719    0.695039   -0.004601
         -0.010290   -0.004601    0.699056
 
-siesta: Pressure (static):      -1100.70920043  kBar
+siesta: Pressure (static):      -1100.70920034  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.660984   -0.006442   -0.004217
         -0.006442    0.672512   -0.001885
         -0.004217   -0.001885    0.674158
 
-siesta: Pressure (total):      -1072.21626004  kBar
+siesta: Pressure (total):      -1072.21625994  kBar
 
 siesta: E_kin PR =  110297.104 K
 
@@ -5327,8 +5829,19 @@ outcell: Cell vector modules (Ang)   :    5.502194    5.502194    5.502194
 outcell: Cell angles (23,13,12) (deg):     45.3904     45.3904     45.3904
 outcell: Cell volume (Ang**3)        :     76.9031
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 50
+  <sparsity:sparsity for geom step 50
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    50
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 50
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         49.17551009
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -5354,7 +5867,6 @@ siesta: Eharris(eV) =   -2971.183253
 
 siesta: Eharris(eV) =   -2971.183253
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5386,14 +5898,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.023378    0.720304   -0.006842
         -0.015303   -0.006842    0.726277
 
-siesta: Pressure (static):      -1134.91455823  kBar
+siesta: Pressure (static):      -1134.91456033  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.672678   -0.014311   -0.009368
         -0.014311    0.698287   -0.004188
         -0.009368   -0.004188    0.701944
 
-siesta: Pressure (total):      -1107.06757184  kBar
+siesta: Pressure (total):      -1107.06757393  kBar
 
 siesta: E_kin PR =  116487.371 K
 
@@ -5414,7 +5926,8 @@ siesta: Eions   =      5228.674091
 siesta: Ena     =      1092.841594
 siesta: Ekin    =      2411.129938
 siesta: Enl     =      -399.387042
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =      -121.413048
 siesta: DUscf   =        36.081406
 siesta: DUext   =         0.000000
@@ -5433,6 +5946,7 @@ siesta:  Band Struct. =    -736.099978
 siesta:       Kinetic =    2411.129938
 siesta:       Hartree =     894.739006
 siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =    -727.238789
 siesta:  Ion-electron =   -3750.353251
@@ -5464,8 +5978,8 @@ siesta: Cell volume =         76.903104 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00771484         -0.00668407  Ry/Bohr**3
-siesta:          -0.70835029         -0.61370843  eV/Ang**3
-siesta:       -1134.91455823       -983.27993888  kBar
+siesta:          -0.70835030         -0.61370843  eV/Ang**3
+siesta:       -1134.91456033       -983.27994151  kBar
 (Free)E+ p_basis*V_orbitals  =       -2935.465735
 (Free)Eharris+ p_basis*V_orbitals  =       -2969.988956
->> End of run:  31-MAY-2016   8:57:09
+>> End of run:   5-JUN-2016  12:05:38

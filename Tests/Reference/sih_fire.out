@@ -1,12 +1,16 @@
-Siesta Version: siesta-trunk-506
+Siesta Version: trunk-509
 Architecture  : x86_64-linux-gcc
 Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
 PARALLEL version
 NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
 
-* Running on    2 nodes in parallel
->> Start of run:  31-MAY-2016   8:58:11
+* Running on 2 nodes in parallel
+>> Start of run:   5-JUN-2016  12:06:25
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -455,46 +459,57 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     F
-redata: Number of spin components        =     1
-redata: Long output                      =     F
-redata: Number of Atomic Species         =        2
+redata: Spin configuration                          = non-polarized
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        2
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     NO
-redata: Mesh Cutoff                      =    40.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Min. number of SCF Iter          =        0
-redata: Max. number of SCF Iter          =       50
-redata: Mix DM or H after convergence    =     F
-redata: Recompute H after scf cycle      =     F
-redata: Performing Pulay mixing using    =     3 iterations
-redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?        =     F
-redata: Discard 1st Pulay DM after  kick =     F
-redata: New DM Mixing Weight             =     0.3000
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = NO
+redata: Mesh Cutoff                                 =    40.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =       50
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.3000
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.001000
-redata: Require (free) Energy convergence in SCF =     F
-redata: DM (free)Energy tolerance for SCF =     0.000010 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000010 eV
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     T
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Diagonalization
-redata: Divide and Conquer               =     T
-redata: Electronic Temperature           =     0.0018  Ry
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     Verlet MD run
-redata: Initial MD time step             =        1
-redata:   Final MD time step             =     1000
-redata: Length of MD time step           =     5.0000  fs
-redata: Initial Temperature of MD run    =     0.0000  K
-redata: Perform a MD Fire quench         =     T
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: DM Tolerance for SCF                        =     0.001000
+redata: Require H convergence for SCF               =   F
+redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
+redata: Require (free) Energy convergence in SCF    =   F
+redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
+redata: Require Harris convergence for SCF          =   F
+redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   T
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =   290.1109 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Verlet MD run
+redata: Initial MD time step                        =        1
+redata:   Final MD time step                        =     1000
+redata: Length of MD time step                      =     5.0000 fs
+redata: Initial Temperature of MD run               =     0.0000 K
+redata: Perform a MD Fire quench                    =   T
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 3
+mix.SCF:    Linear mixing weight                 =     0.300000
+mix.SCF:    Damping                              =     0.300000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+DM_history_depth set to zero for 'Harris' run
+Size of DM history Fstack: 0
 Total number of electrons:   257.000000
 Total ionic charge:   257.000000
 
@@ -512,6 +527,7 @@ siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
 
+
                      ====================================
                         Begin MD quenched step =      1
                      ====================================
@@ -524,8 +540,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 1
+  <sparsity:sparsity for geom step 1
+    nrows_g=257 nrows=137 sparsity=.2420 nnzs=15985, refcount: 7>
+  <dData1D:(new from dSpData1D) n=15985, refcount: 1>
+refcount: 1>
 New_DM. Step:     1
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 1
+    nrows_g=257 nrows=137 sparsity=.2420 nnzs=15985, refcount: 8>
+  <dData2D:(DMatomic) n=15985 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -544,6 +571,8 @@ Setting up quadratic distribution...
 ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 PhiOnMesh: Number of (b)points on node 0 =                 6912
 PhiOnMesh: nlist on node 0 =               130620
+rdiag-debug: Node=1, lwork=     63737>= lworkq=     63737, liwork=      1817>= liworkq=      1817
+rdiag-debug: Node=0, lwork=     72475>= lworkq=     72475, liwork=      1817>= liworkq=      1817
 
 stepf: Fermi-Dirac step function
 
@@ -553,7 +582,8 @@ siesta: Eions   =     12205.375272
 siesta: Ena     =      3582.441728
 siesta: Ekin    =      2865.981919
 siesta: Enl     =      1148.863992
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =        -0.000036
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
@@ -572,8 +602,7 @@ siesta: Eharris(eV) =   -6826.425189
 
 siesta: Eharris(eV) =   -6826.425189
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.208  24.53
-:!: SCF did not converge in maximum number of steps.
+timer: Routine,Calls,Time,% =    IterSCF     1       0.136  22.52
 
 Using DM_out to compute the final energy and forces
 
@@ -622,8 +651,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 2
+  <sparsity:sparsity for geom step 2
+    nrows_g=257 nrows=137 sparsity=.2420 nnzs=15985, refcount: 7>
+  <dData1D:(new from dSpData1D) n=15985, refcount: 1>
+refcount: 1>
 New_DM. Step:     2
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 2
+    nrows_g=257 nrows=137 sparsity=.2420 nnzs=15985, refcount: 8>
+  <dData2D:(DMatomic) n=15985 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -648,13 +688,12 @@ siesta: Eharris(eV) =   -6828.956471
 
 siesta: Eharris(eV) =   -6828.956471
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot    0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    6.004315
    Res    1.054359    sqrt( Sum f_i^2 / 3N )
@@ -695,8 +734,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 3
+  <sparsity:sparsity for geom step 3
+    nrows_g=257 nrows=137 sparsity=.2420 nnzs=15985, refcount: 7>
+  <dData1D:(new from dSpData1D) n=15985, refcount: 1>
+refcount: 1>
 New_DM. Step:     3
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 3
+    nrows_g=257 nrows=137 sparsity=.2420 nnzs=15985, refcount: 8>
+  <dData2D:(DMatomic) n=15985 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -721,7 +771,6 @@ siesta: Eharris(eV) =   -6829.957756
 
 siesta: Eharris(eV) =   -6829.957756
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -768,8 +817,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 4
+  <sparsity:sparsity for geom step 4
+    nrows_g=257 nrows=137 sparsity=.2435 nnzs=16081, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16081, refcount: 1>
+refcount: 1>
 New_DM. Step:     4
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 4
+    nrows_g=257 nrows=137 sparsity=.2435 nnzs=16081, refcount: 8>
+  <dData2D:(DMatomic) n=16081 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -794,7 +854,6 @@ siesta: Eharris(eV) =   -6830.950066
 
 siesta: Eharris(eV) =   -6830.950066
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -841,8 +900,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 5
+  <sparsity:sparsity for geom step 5
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:     5
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 5
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -867,7 +937,6 @@ siesta: Eharris(eV) =   -6831.617900
 
 siesta: Eharris(eV) =   -6831.617900
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -914,8 +983,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 6
+  <sparsity:sparsity for geom step 6
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:     6
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 6
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -940,7 +1020,6 @@ siesta: Eharris(eV) =   -6831.908662
 
 siesta: Eharris(eV) =   -6831.908662
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -987,8 +1066,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 7
+  <sparsity:sparsity for geom step 7
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:     7
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 7
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1013,7 +1103,6 @@ siesta: Eharris(eV) =   -6831.933219
 
 siesta: Eharris(eV) =   -6831.933219
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1060,8 +1149,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 8
+  <sparsity:sparsity for geom step 8
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:     8
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 8
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1086,7 +1186,6 @@ siesta: Eharris(eV) =   -6831.942130
 
 siesta: Eharris(eV) =   -6831.942130
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1133,8 +1232,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 9
+  <sparsity:sparsity for geom step 9
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:     9
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 9
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1159,13 +1269,12 @@ siesta: Eharris(eV) =   -6831.948527
 
 siesta: Eharris(eV) =   -6831.948527
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.478950
    Res    0.167371    sqrt( Sum f_i^2 / 3N )
@@ -1206,8 +1315,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 10
+  <sparsity:sparsity for geom step 10
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    10
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 10
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1232,7 +1352,6 @@ siesta: Eharris(eV) =   -6831.958756
 
 siesta: Eharris(eV) =   -6831.958756
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1279,8 +1398,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 11
+  <sparsity:sparsity for geom step 11
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    11
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 11
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1305,7 +1435,6 @@ siesta: Eharris(eV) =   -6831.972083
 
 siesta: Eharris(eV) =   -6831.972083
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1352,8 +1481,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 12
+  <sparsity:sparsity for geom step 12
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    12
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 12
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1378,7 +1518,6 @@ siesta: Eharris(eV) =   -6831.987540
 
 siesta: Eharris(eV) =   -6831.987540
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1407,7 +1546,7 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.000763   -0.030574   -0.000763
         -0.000763   -0.000763   -0.030574
 
-siesta: Pressure (total):         48.98511757  kBar
+siesta: Pressure (total):         48.98511756  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     12    1.2500   5    0.1000      0.0127
 
@@ -1425,8 +1564,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 13
+  <sparsity:sparsity for geom step 13
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    13
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 13
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1451,7 +1601,6 @@ siesta: Eharris(eV) =   -6832.004384
 
 siesta: Eharris(eV) =   -6832.004384
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1498,8 +1647,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 14
+  <sparsity:sparsity for geom step 14
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    14
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 14
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1524,7 +1684,6 @@ siesta: Eharris(eV) =   -6832.021926
 
 siesta: Eharris(eV) =   -6832.021926
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1571,8 +1730,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 15
+  <sparsity:sparsity for geom step 15
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    15
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 15
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1597,13 +1767,12 @@ siesta: Eharris(eV) =   -6832.040807
 
 siesta: Eharris(eV) =   -6832.040807
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000    0.000000
 ----------------------------------------
    Max    0.278344
    Res    0.097670    sqrt( Sum f_i^2 / 3N )
@@ -1644,8 +1813,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 16
+  <sparsity:sparsity for geom step 16
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    16
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 16
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1670,7 +1850,6 @@ siesta: Eharris(eV) =   -6832.059578
 
 siesta: Eharris(eV) =   -6832.059578
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1717,8 +1896,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 17
+  <sparsity:sparsity for geom step 17
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    17
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 17
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1743,7 +1933,6 @@ siesta: Eharris(eV) =   -6832.077055
 
 siesta: Eharris(eV) =   -6832.077055
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1790,8 +1979,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 18
+  <sparsity:sparsity for geom step 18
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    18
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 18
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1816,7 +2016,6 @@ siesta: Eharris(eV) =   -6832.090752
 
 siesta: Eharris(eV) =   -6832.090752
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1863,8 +2062,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 19
+  <sparsity:sparsity for geom step 19
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    19
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 19
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1889,13 +2099,12 @@ siesta: Eharris(eV) =   -6832.098568
 
 siesta: Eharris(eV) =   -6832.098568
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.103064
    Res    0.043035    sqrt( Sum f_i^2 / 3N )
@@ -1936,8 +2145,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 20
+  <sparsity:sparsity for geom step 20
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    20
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 20
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -1962,13 +2182,12 @@ siesta: Eharris(eV) =   -6832.100677
 
 siesta: Eharris(eV) =   -6832.100677
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.141451
    Res    0.049462    sqrt( Sum f_i^2 / 3N )
@@ -2009,8 +2228,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 21
+  <sparsity:sparsity for geom step 21
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    21
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 21
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2035,7 +2265,6 @@ siesta: Eharris(eV) =   -6832.101225
 
 siesta: Eharris(eV) =   -6832.101225
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2082,8 +2311,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 22
+  <sparsity:sparsity for geom step 22
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    22
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 22
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2108,7 +2348,6 @@ siesta: Eharris(eV) =   -6832.101592
 
 siesta: Eharris(eV) =   -6832.101592
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2155,8 +2394,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 23
+  <sparsity:sparsity for geom step 23
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    23
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 23
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2181,7 +2431,6 @@ siesta: Eharris(eV) =   -6832.102181
 
 siesta: Eharris(eV) =   -6832.102181
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2228,8 +2477,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 24
+  <sparsity:sparsity for geom step 24
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    24
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 24
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2254,7 +2514,6 @@ siesta: Eharris(eV) =   -6832.102968
 
 siesta: Eharris(eV) =   -6832.102968
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2301,8 +2560,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 25
+  <sparsity:sparsity for geom step 25
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    25
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 25
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2327,7 +2597,6 @@ siesta: Eharris(eV) =   -6832.103920
 
 siesta: Eharris(eV) =   -6832.103920
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2374,8 +2643,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 26
+  <sparsity:sparsity for geom step 26
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    26
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 26
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2400,7 +2680,6 @@ siesta: Eharris(eV) =   -6832.104998
 
 siesta: Eharris(eV) =   -6832.104998
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2447,8 +2726,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 27
+  <sparsity:sparsity for geom step 27
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    27
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 27
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2473,13 +2763,12 @@ siesta: Eharris(eV) =   -6832.106139
 
 siesta: Eharris(eV) =   -6832.106139
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.103697
    Res    0.034904    sqrt( Sum f_i^2 / 3N )
@@ -2520,8 +2809,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 28
+  <sparsity:sparsity for geom step 28
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    28
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 28
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2546,7 +2846,6 @@ siesta: Eharris(eV) =   -6832.107435
 
 siesta: Eharris(eV) =   -6832.107435
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2593,8 +2892,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 29
+  <sparsity:sparsity for geom step 29
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    29
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 29
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2619,13 +2929,12 @@ siesta: Eharris(eV) =   -6832.108841
 
 siesta: Eharris(eV) =   -6832.108841
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000   -0.000000    0.000000
 ----------------------------------------
    Max    0.083104
    Res    0.027150    sqrt( Sum f_i^2 / 3N )
@@ -2666,8 +2975,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 30
+  <sparsity:sparsity for geom step 30
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    30
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 30
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2692,7 +3012,6 @@ siesta: Eharris(eV) =   -6832.110218
 
 siesta: Eharris(eV) =   -6832.110218
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2721,7 +3040,7 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.002041   -0.030720   -0.002041
         -0.002041   -0.002041   -0.030720
 
-siesta: Pressure (total):         49.21901038  kBar
+siesta: Pressure (total):         49.21901037  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     30    1.6211  10    0.0961      0.0056
 
@@ -2739,8 +3058,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 31
+  <sparsity:sparsity for geom step 31
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    31
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 31
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2765,7 +3095,6 @@ siesta: Eharris(eV) =   -6832.111538
 
 siesta: Eharris(eV) =   -6832.111538
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2812,8 +3141,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 32
+  <sparsity:sparsity for geom step 32
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    32
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 32
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2838,7 +3178,6 @@ siesta: Eharris(eV) =   -6832.112764
 
 siesta: Eharris(eV) =   -6832.112764
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2885,8 +3224,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 33
+  <sparsity:sparsity for geom step 33
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    33
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 33
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2911,7 +3261,6 @@ siesta: Eharris(eV) =   -6832.113888
 
 siesta: Eharris(eV) =   -6832.113888
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2958,8 +3307,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 34
+  <sparsity:sparsity for geom step 34
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    34
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 34
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -2984,7 +3344,6 @@ siesta: Eharris(eV) =   -6832.114924
 
 siesta: Eharris(eV) =   -6832.114924
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3031,8 +3390,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 35
+  <sparsity:sparsity for geom step 35
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    35
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 35
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3057,13 +3427,12 @@ siesta: Eharris(eV) =   -6832.115767
 
 siesta: Eharris(eV) =   -6832.115767
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.055807
    Res    0.020904    sqrt( Sum f_i^2 / 3N )
@@ -3104,8 +3473,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 36
+  <sparsity:sparsity for geom step 36
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    36
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 36
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3130,7 +3510,6 @@ siesta: Eharris(eV) =   -6832.116634
 
 siesta: Eharris(eV) =   -6832.116634
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3177,8 +3556,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 37
+  <sparsity:sparsity for geom step 37
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    37
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 37
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3203,13 +3593,12 @@ siesta: Eharris(eV) =   -6832.117820
 
 siesta: Eharris(eV) =   -6832.117820
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.059306
    Res    0.021118    sqrt( Sum f_i^2 / 3N )
@@ -3250,8 +3639,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 38
+  <sparsity:sparsity for geom step 38
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    38
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 38
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3276,7 +3676,6 @@ siesta: Eharris(eV) =   -6832.119320
 
 siesta: Eharris(eV) =   -6832.119320
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3323,8 +3722,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 39
+  <sparsity:sparsity for geom step 39
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    39
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 39
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3349,7 +3759,6 @@ siesta: Eharris(eV) =   -6832.120717
 
 siesta: Eharris(eV) =   -6832.120717
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3396,8 +3805,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 40
+  <sparsity:sparsity for geom step 40
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    40
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 40
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3422,13 +3842,12 @@ siesta: Eharris(eV) =   -6832.121054
 
 siesta: Eharris(eV) =   -6832.121054
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.037697
    Res    0.015130    sqrt( Sum f_i^2 / 3N )
@@ -3469,8 +3888,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 41
+  <sparsity:sparsity for geom step 41
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    41
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 41
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3495,7 +3925,6 @@ siesta: Eharris(eV) =   -6832.121205
 
 siesta: Eharris(eV) =   -6832.121205
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3542,8 +3971,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 42
+  <sparsity:sparsity for geom step 42
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    42
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 42
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3568,13 +4008,12 @@ siesta: Eharris(eV) =   -6832.121308
 
 siesta: Eharris(eV) =   -6832.121308
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.033467
    Res    0.013609    sqrt( Sum f_i^2 / 3N )
@@ -3615,8 +4054,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 43
+  <sparsity:sparsity for geom step 43
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    43
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 43
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3641,7 +4091,6 @@ siesta: Eharris(eV) =   -6832.121466
 
 siesta: Eharris(eV) =   -6832.121466
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3688,8 +4137,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 44
+  <sparsity:sparsity for geom step 44
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    44
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 44
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3714,7 +4174,6 @@ siesta: Eharris(eV) =   -6832.121662
 
 siesta: Eharris(eV) =   -6832.121662
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3761,8 +4220,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 45
+  <sparsity:sparsity for geom step 45
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    45
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 45
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3787,7 +4257,6 @@ siesta: Eharris(eV) =   -6832.121877
 
 siesta: Eharris(eV) =   -6832.121877
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3834,8 +4303,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 46
+  <sparsity:sparsity for geom step 46
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    46
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 46
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3860,7 +4340,6 @@ siesta: Eharris(eV) =   -6832.121973
 
 siesta: Eharris(eV) =   -6832.121973
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3907,8 +4386,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 47
+  <sparsity:sparsity for geom step 47
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    47
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 47
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -3933,7 +4423,6 @@ siesta: Eharris(eV) =   -6832.122048
 
 siesta: Eharris(eV) =   -6832.122048
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3980,8 +4469,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 48
+  <sparsity:sparsity for geom step 48
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    48
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 48
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4006,7 +4506,6 @@ siesta: Eharris(eV) =   -6832.122141
 
 siesta: Eharris(eV) =   -6832.122141
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4053,8 +4552,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 49
+  <sparsity:sparsity for geom step 49
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    49
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 49
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4079,7 +4589,6 @@ siesta: Eharris(eV) =   -6832.122260
 
 siesta: Eharris(eV) =   -6832.122260
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4126,8 +4635,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 50
+  <sparsity:sparsity for geom step 50
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    50
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 50
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4152,7 +4672,6 @@ siesta: Eharris(eV) =   -6832.122395
 
 siesta: Eharris(eV) =   -6832.122395
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4199,8 +4718,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 51
+  <sparsity:sparsity for geom step 51
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    51
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 51
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4225,7 +4755,6 @@ siesta: Eharris(eV) =   -6832.122540
 
 siesta: Eharris(eV) =   -6832.122540
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4272,8 +4801,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 52
+  <sparsity:sparsity for geom step 52
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    52
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 52
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4298,7 +4838,6 @@ siesta: Eharris(eV) =   -6832.122714
 
 siesta: Eharris(eV) =   -6832.122714
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4345,8 +4884,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 53
+  <sparsity:sparsity for geom step 53
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    53
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 53
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4371,7 +4921,6 @@ siesta: Eharris(eV) =   -6832.122899
 
 siesta: Eharris(eV) =   -6832.122899
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4393,7 +4942,7 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001975   -0.030598   -0.001975
         -0.001975   -0.001975   -0.030598
 
-siesta: Pressure (static):         49.02349979  kBar
+siesta: Pressure (static):         49.02349978  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030598   -0.001975   -0.001975
@@ -4418,8 +4967,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 54
+  <sparsity:sparsity for geom step 54
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    54
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 54
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4444,13 +5004,12 @@ siesta: Eharris(eV) =   -6832.122915
 
 siesta: Eharris(eV) =   -6832.122915
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.029426
    Res    0.012417    sqrt( Sum f_i^2 / 3N )
@@ -4491,8 +5050,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 55
+  <sparsity:sparsity for geom step 55
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    55
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 55
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4517,13 +5087,12 @@ siesta: Eharris(eV) =   -6832.123113
 
 siesta: Eharris(eV) =   -6832.123113
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.026824
    Res    0.011675    sqrt( Sum f_i^2 / 3N )
@@ -4564,8 +5133,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 56
+  <sparsity:sparsity for geom step 56
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    56
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 56
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4590,13 +5170,12 @@ siesta: Eharris(eV) =   -6832.123498
 
 siesta: Eharris(eV) =   -6832.123498
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.017112
    Res    0.008158    sqrt( Sum f_i^2 / 3N )
@@ -4637,8 +5216,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 57
+  <sparsity:sparsity for geom step 57
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    57
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 57
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4663,13 +5253,12 @@ siesta: Eharris(eV) =   -6832.123690
 
 siesta: Eharris(eV) =   -6832.123690
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.031394
    Res    0.011772    sqrt( Sum f_i^2 / 3N )
@@ -4710,8 +5299,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 58
+  <sparsity:sparsity for geom step 58
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    58
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 58
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4736,7 +5336,6 @@ siesta: Eharris(eV) =   -6832.123920
 
 siesta: Eharris(eV) =   -6832.123920
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4783,8 +5382,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 59
+  <sparsity:sparsity for geom step 59
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    59
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 59
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4809,7 +5419,6 @@ siesta: Eharris(eV) =   -6832.124303
 
 siesta: Eharris(eV) =   -6832.124303
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4856,8 +5465,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 60
+  <sparsity:sparsity for geom step 60
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    60
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 60
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4882,13 +5502,12 @@ siesta: Eharris(eV) =   -6832.124490
 
 siesta: Eharris(eV) =   -6832.124490
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.014834
    Res    0.006528    sqrt( Sum f_i^2 / 3N )
@@ -4929,8 +5548,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 61
+  <sparsity:sparsity for geom step 61
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    61
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 61
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -4955,7 +5585,6 @@ siesta: Eharris(eV) =   -6832.124450
 
 siesta: Eharris(eV) =   -6832.124450
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5002,8 +5631,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 62
+  <sparsity:sparsity for geom step 62
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    62
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 62
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -5028,7 +5668,6 @@ siesta: Eharris(eV) =   -6832.124645
 
 siesta: Eharris(eV) =   -6832.124645
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5075,8 +5714,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   10.860000   10.860000   10.860000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1280.8241
+<dSpData1D:S at geom step 63
+  <sparsity:sparsity for geom step 63
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16145, refcount: 1>
+refcount: 1>
 New_DM. Step:    63
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 63
+    nrows_g=257 nrows=137 sparsity=.2444 nnzs=16145, refcount: 8>
+  <dData2D:(DMatomic) n=16145 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   24    1:   24    1:   12
            2       1:   24    1:   24   13:   24
@@ -5101,7 +5751,6 @@ siesta: Eharris(eV) =   -6832.124735
 
 siesta: Eharris(eV) =   -6832.124735
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5205,7 +5854,8 @@ siesta: Eions   =     12205.375272
 siesta: Ena     =      3580.587855
 siesta: Ekin    =      2732.770470
 siesta: Enl     =       958.324401
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =       197.450969
 siesta: DUscf   =         5.558051
 siesta: DUext   =         0.000000
@@ -5224,6 +5874,7 @@ siesta:  Band Struct. =   -1985.324035
 siesta:       Kinetic =    2732.770470
 siesta:       Hartree =     493.162455
 siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =   -2100.153128
 siesta:  Ion-electron =   -3000.435872
@@ -5245,4 +5896,4 @@ siesta:           0.03101848          0.03110228  eV/Ang**3
 siesta:          49.69761349         49.83188715  kBar
 (Free)E+ p_basis*V_orbitals  =       -6818.317331
 (Free)Eharris+ p_basis*V_orbitals  =       -6819.605412
->> End of run:  31-MAY-2016   8:59:03
+>> End of run:   5-JUN-2016  12:07:13

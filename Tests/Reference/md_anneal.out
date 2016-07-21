@@ -1,12 +1,16 @@
-Siesta Version: siesta-trunk-506
+Siesta Version: trunk-509
 Architecture  : x86_64-linux-gcc
 Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
 PARALLEL version
 NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
 
-* Running on    2 nodes in parallel
->> Start of run:  31-MAY-2016   8:57:13
+* Running on 2 nodes in parallel
+>> Start of run:   5-JUN-2016  12:05:40
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -212,50 +216,61 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     F
-redata: Number of spin components        =     1
-redata: Long output                      =     F
-redata: Number of Atomic Species         =        1
+redata: Spin configuration                          = non-polarized
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        1
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     NO
-redata: Mesh Cutoff                      =   100.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Min. number of SCF Iter          =        0
-redata: Max. number of SCF Iter          =       50
-redata: Mix DM or H after convergence    =     F
-redata: Recompute H after scf cycle      =     F
-redata: Mixing is linear
-redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?        =     F
-redata: Discard 1st Pulay DM after  kick =     F
-redata: New DM Mixing Weight             =     0.2500
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = NO
+redata: Mesh Cutoff                                 =   100.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =       50
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.2500
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.000100
-redata: Require (free) Energy convergence in SCF =     F
-redata: DM (free)Energy tolerance for SCF =     0.000010 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000010 eV
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     F
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Diagonalization
-redata: Divide and Conquer               =     T
-redata: Electronic Temperature           =     0.0006  Ry
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     Annealing MD run
-redata: Initial MD time step             =        1
-redata:   Final MD time step             =      100
-redata: Length of MD time step           =     1.0000  fs
-redata: Initial Temperature of MD run    =   100.0000  K
-redata: Annealing Option                 = Temperature and Pressure
-redata: Target Temperature               =   600.0000  Kelvin
-redata: Target Pressure                  =     0.0027  Ry/Bohr**3
-redata: Annealing Relaxation Time        =    25.0000  fs
-redata: Approx. Bulk Modulus             =     0.0068  Ry/Bohr**3
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: DM Tolerance for SCF                        =     0.000100
+redata: Require H convergence for SCF               =   F
+redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
+redata: Require (free) Energy convergence in SCF    =   F
+redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
+redata: Require Harris convergence for SCF          =   F
+redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   F
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =    99.9993 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Annealing MD run
+redata: Initial MD time step                        =        1
+redata:   Final MD time step                        =      100
+redata: Length of MD time step                      =     1.0000 fs
+redata: Initial Temperature of MD run               =   100.0000 K
+redata: Annealing Option                            = Temperature and Pressure
+redata: Target Temperature                          =   600.0000 Kelvin
+redata: Target Pressure                             =     0.2497 eV/Ang**3
+redata: Annealing Relaxation Time                   =    25.0000 fs
+redata: Approx. Bulk Modulus                        =     0.6241 eV/Ang**3
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 2
+mix.SCF:    Linear mixing weight                 =     0.250000
+mix.SCF:    Damping                              =     0.250000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+DM_history_depth set to zero for 'Harris' run
+Size of DM history Fstack: 0
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
@@ -272,10 +287,10 @@ siesta: k-grid: Supercell and displacements
 siesta: k-grid:    2   0   0      0.500
 siesta: k-grid:    0   2   0      0.500
 siesta: k-grid:    0   0   2      0.500
-Naive supercell factors:     5    5    5
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:    250   1000   2250
+
 
                      ====================================
                         Begin MD step =      1
@@ -292,8 +307,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 1
+  <sparsity:sparsity for geom step 1
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     1
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 1
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:   10    1:    5
            2       1:   10    1:   10    6:   10
@@ -312,6 +338,8 @@ Setting up quadratic distribution...
 ExtMesh (bp) on 0 =    54 x    54 x    49 =      142884
 PhiOnMesh: Number of (b)points on node 0 =                  500
 PhiOnMesh: nlist on node 0 =                14659
+cdiag-debug: Node=1, lwork=       120>= lworkq=        98, lrwork=       153>= lrworkq=       145, liwork=        74>= liworkq=        74
+cdiag-debug: Node=0, lwork=       130>= lworkq=        98, lrwork=       201>= lrworkq=       193, liwork=        74>= liworkq=        74
 
 stepf: Fermi-Dirac step function
 
@@ -321,7 +349,8 @@ siesta: Eions   =       380.802124
 siesta: Ena     =       115.502327
 siesta: Ekin    =        78.997046
 siesta: Enl     =        35.834927
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =         0.000000
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
@@ -340,8 +369,7 @@ siesta: Eharris(eV) =    -213.847468
 
 siesta: Eharris(eV) =    -213.847468
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.044  14.29
-:!: SCF did not converge in maximum number of steps.
+timer: Routine,Calls,Time,% =    IterSCF     1       0.024   9.84
 
 Using DM_out to compute the final energy and forces
 
@@ -394,8 +422,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.806964    3.807036    3.806991
 outcell: Cell angles (23,13,12) (deg):     60.0026     60.0012     60.0017
 outcell: Cell volume (Ang**3)        :     39.0167
+<dSpData1D:S at geom step 2
+  <sparsity:sparsity for geom step 2
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     2
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 2
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:   10    1:    5
            2       1:   10    1:   10    6:   10
@@ -420,7 +459,6 @@ siesta: Eharris(eV) =    -213.708561
 
 siesta: Eharris(eV) =    -213.708561
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -450,9 +488,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.054997    0.051872   -0.052104
 
 siesta: Pressure (total):         83.71650906  kBar
- Anneal: Kinetic Energy=    1.2993723437759788E-003
- Anneal: Velocity scale factor =    1.0655839706070702     
- Anneal: Cell scale factor =   0.98725907960704973     
+ Anneal: Kinetic Energy=    1.2993723437759214E-003
+ Anneal: Velocity scale factor =    1.0655839706070738     
+ Anneal: Cell scale factor =   0.98725907960704984     
 
 siesta: Temp_ion =     155.305 K
 
@@ -471,8 +509,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.776454    3.776721    3.776250
 outcell: Cell angles (23,13,12) (deg):     60.0046     60.0075     60.0077
 outcell: Cell volume (Ang**3)        :     38.0899
+<dSpData1D:S at geom step 3
+  <sparsity:sparsity for geom step 3
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     3
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 3
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:   10    1:    5
            2       1:   10    1:   10    6:   10
@@ -497,13 +546,12 @@ siesta: Eharris(eV) =    -213.562732
 
 siesta: Eharris(eV) =    -213.562732
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot    0.000000   -0.000000    0.000000
 ----------------------------------------
    Max    0.343741
    Res    0.213715    sqrt( Sum f_i^2 / 3N )
@@ -527,9 +575,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.060316    0.053610   -0.076615
 
 siesta: Pressure (total):        122.64075730  kBar
- Anneal: Kinetic Energy=    1.5707393213879582E-003
- Anneal: Velocity scale factor =    1.0512632703420053     
- Anneal: Cell scale factor =   0.98884904260003359     
+ Anneal: Kinetic Energy=    1.5707393213880607E-003
+ Anneal: Velocity scale factor =    1.0512632703420008     
+ Anneal: Cell scale factor =   0.98884904260003315     
 
 siesta: Temp_ion =     182.727 K
 
@@ -548,8 +596,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.748949    3.749484    3.748186
 outcell: Cell angles (23,13,12) (deg):     60.0035     60.0183     60.0157
 outcell: Cell volume (Ang**3)        :     37.2658
+<dSpData1D:S at geom step 4
+  <sparsity:sparsity for geom step 4
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1228, refcount: 1>
+refcount: 1>
 New_DM. Step:     4
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 4
+    nrows_g=8 nrows=5 sparsity=19.1875 nnzs=1228, refcount: 8>
+  <dData2D:(DMatomic) n=1228 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:   10    1:    5
            2       1:   10    1:   10    6:   10
@@ -574,7 +633,6 @@ siesta: Eharris(eV) =    -213.409669
 
 siesta: Eharris(eV) =    -213.409669
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -604,9 +662,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.066487    0.053721   -0.097533
 
 siesta: Pressure (total):        156.19272812  kBar
- Anneal: Kinetic Energy=    1.7609740582602573E-003
- Anneal: Velocity scale factor =    1.0437785675675446     
- Anneal: Cell scale factor =   0.99020387003762311     
+ Anneal: Kinetic Energy=    1.7609740582603651E-003
+ Anneal: Velocity scale factor =    1.0437785675675411     
+ Anneal: Cell scale factor =   0.99020387003762333     
 
 siesta: Temp_ion =     201.951 K
 
@@ -625,8 +683,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.724210    3.724968    3.722126
 outcell: Cell angles (23,13,12) (deg):     59.9957     60.0352     60.0251
 outcell: Cell volume (Ang**3)        :     36.5272
+<dSpData1D:S at geom step 5
+  <sparsity:sparsity for geom step 5
+    nrows_g=8 nrows=5 sparsity=19.3750 nnzs=1240, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1240, refcount: 1>
+refcount: 1>
 New_DM. Step:     5
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 5
+    nrows_g=8 nrows=5 sparsity=19.3750 nnzs=1240, refcount: 8>
+  <dData2D:(DMatomic) n=1240 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:   10    1:    5
            2       1:   10    1:   10    6:   10
@@ -651,13 +720,12 @@ siesta: Eharris(eV) =    -213.254492
 
 siesta: Eharris(eV) =    -213.254492
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot    0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.485874
    Res    0.291381    sqrt( Sum f_i^2 / 3N )
@@ -681,9 +749,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.070585    0.054085   -0.112806
 
 siesta: Pressure (total):        180.91168098  kBar
- Anneal: Kinetic Energy=    1.8839495758087620E-003
- Anneal: Velocity scale factor =    1.0397222002747231     
- Anneal: Cell scale factor =   0.99119187690251065     
+ Anneal: Kinetic Energy=    1.8839495758090174E-003
+ Anneal: Velocity scale factor =    1.0397222002747153     
+ Anneal: Cell scale factor =   0.99119187690251076     
 
 siesta: Temp_ion =     214.378 K
 
@@ -702,8 +770,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.701155    3.702465    3.697569
 outcell: Cell angles (23,13,12) (deg):     59.9841     60.0532     60.0362
 outcell: Cell volume (Ang**3)        :     35.8484
+<dSpData1D:S at geom step 6
+  <sparsity:sparsity for geom step 6
+    nrows_g=8 nrows=5 sparsity=22.7500 nnzs=1456, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1456, refcount: 1>
+refcount: 1>
 New_DM. Step:     6
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 6
+    nrows_g=8 nrows=5 sparsity=22.7500 nnzs=1456, refcount: 8>
+  <dData2D:(DMatomic) n=1456 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:   10    1:    5
            2       1:   10    1:   10    6:   10
@@ -728,13 +807,12 @@ siesta: Eharris(eV) =    -213.099405
 
 siesta: Eharris(eV) =    -213.099405
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.570171
    Res    0.352907    sqrt( Sum f_i^2 / 3N )
@@ -758,8 +836,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.075741    0.052694   -0.127028
 
 siesta: Pressure (total):        203.21636782  kBar
- Anneal: Kinetic Energy=    1.9469557498720202E-003
- Anneal: Velocity scale factor =    1.0378370809775805     
+ Anneal: Kinetic Energy=    1.9469557498721366E-003
+ Anneal: Velocity scale factor =    1.0378370809775772     
  Anneal: Cell scale factor =   0.99211100344285097     
 
 siesta: Temp_ion =     220.745 K
@@ -779,8 +857,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.679766    3.681881    3.674204
 outcell: Cell angles (23,13,12) (deg):     59.9641     60.0752     60.0498
 outcell: Cell volume (Ang**3)        :     35.2233
+<dSpData1D:S at geom step 7
+  <sparsity:sparsity for geom step 7
+    nrows_g=8 nrows=5 sparsity=31.4531 nnzs=2013, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2013, refcount: 1>
+refcount: 1>
 New_DM. Step:     7
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 7
+    nrows_g=8 nrows=5 sparsity=31.4531 nnzs=2013, refcount: 8>
+  <dData2D:(DMatomic) n=2013 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:   10    1:    5
            2       1:   10    1:   10    6:   10
@@ -805,7 +894,6 @@ siesta: Eharris(eV) =    -212.942842
 
 siesta: Eharris(eV) =    -212.942842
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -835,9 +923,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.081860    0.052405   -0.146743
 
 siesta: Pressure (total):        234.04079705  kBar
- Anneal: Kinetic Energy=    1.9370390078214395E-003
- Anneal: Velocity scale factor =    1.0381258758515446     
- Anneal: Cell scale factor =   0.99338371232341294     
+ Anneal: Kinetic Energy=    1.9370390078216025E-003
+ Anneal: Velocity scale factor =    1.0381258758515399     
+ Anneal: Cell scale factor =   0.99338371232341272     
 
 siesta: Temp_ion =     219.743 K
 
@@ -856,8 +944,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.660574    3.663630    3.652490
 outcell: Cell angles (23,13,12) (deg):     59.9347     60.1017     60.0635
 outcell: Cell volume (Ang**3)        :     34.6626
+<dSpData1D:S at geom step 8
+  <sparsity:sparsity for geom step 8
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:     8
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 8
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:    9    1:    5
            2       1:   10    1:    9    6:    9
@@ -882,7 +981,6 @@ siesta: Eharris(eV) =    -212.784908
 
 siesta: Eharris(eV) =    -212.784908
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -912,9 +1010,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.088664    0.051850   -0.167346
 
 siesta: Pressure (total):        266.78010432  kBar
- Anneal: Kinetic Energy=    1.8755769892085401E-003
- Anneal: Velocity scale factor =    1.0399819699348001     
- Anneal: Cell scale factor =   0.99471210799477716     
+ Anneal: Kinetic Energy=    1.8755769892088523E-003
+ Anneal: Velocity scale factor =    1.0399819699347903     
+ Anneal: Cell scale factor =   0.99471210799477772     
 
 siesta: Temp_ion =     213.532 K
 
@@ -933,8 +1031,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.643658    3.647853    3.632399
 outcell: Cell angles (23,13,12) (deg):     59.8950     60.1326     60.0768
 outcell: Cell volume (Ang**3)        :     34.1658
+<dSpData1D:S at geom step 9
+  <sparsity:sparsity for geom step 9
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:     9
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 9
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -959,7 +1068,6 @@ siesta: Eharris(eV) =    -212.633477
 
 siesta: Eharris(eV) =    -212.633477
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -989,9 +1097,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.094497    0.050240   -0.183847
 
 siesta: Pressure (total):        293.73648165  kBar
- Anneal: Kinetic Energy=    1.7894299136727268E-003
- Anneal: Velocity scale factor =    1.0427918213614866     
- Anneal: Cell scale factor =   0.99577493436038256     
+ Anneal: Kinetic Energy=    1.7894299136731206E-003
+ Anneal: Velocity scale factor =    1.0427918213614733     
+ Anneal: Cell scale factor =   0.99577493436038245     
 
 siesta: Temp_ion =     204.827 K
 
@@ -1010,8 +1118,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.628478    3.634216    3.613560
 outcell: Cell angles (23,13,12) (deg):     59.8458     60.1648     60.0930
 outcell: Cell volume (Ang**3)        :     33.7200
+<dSpData1D:S at geom step 10
+  <sparsity:sparsity for geom step 10
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    10
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 10
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1036,7 +1155,6 @@ siesta: Eharris(eV) =    -212.487136
 
 siesta: Eharris(eV) =    -212.487136
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1066,9 +1184,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.097376    0.049231   -0.199142
 
 siesta: Pressure (total):        318.33046752  kBar
- Anneal: Kinetic Energy=    1.6739910605554631E-003
- Anneal: Velocity scale factor =    1.0469963413549281     
- Anneal: Cell scale factor =   0.99675911906992531     
+ Anneal: Kinetic Energy=    1.6739910605555375E-003
+ Anneal: Velocity scale factor =    1.0469963413549253     
+ Anneal: Cell scale factor =   0.99675911906992454     
 
 siesta: Temp_ion =     193.161 K
 
@@ -1087,8 +1205,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.614783    3.622432    3.596187
 outcell: Cell angles (23,13,12) (deg):     59.7907     60.1953     60.1119
 outcell: Cell volume (Ang**3)        :     33.3210
+<dSpData1D:S at geom step 11
+  <sparsity:sparsity for geom step 11
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    11
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 11
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1113,7 +1242,6 @@ siesta: Eharris(eV) =    -212.347050
 
 siesta: Eharris(eV) =    -212.347050
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1143,8 +1271,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.101843    0.048883   -0.213505
 
 siesta: Pressure (total):        342.12068438  kBar
- Anneal: Kinetic Energy=    1.5356322657807116E-003
- Anneal: Velocity scale factor =    1.0528404110348837     
+ Anneal: Kinetic Energy=    1.5356322657806589E-003
+ Anneal: Velocity scale factor =    1.0528404110348861     
  Anneal: Cell scale factor =   0.99768251824594179     
 
 siesta: Temp_ion =     179.180 K
@@ -1164,8 +1292,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.602738    3.612472    3.579981
 outcell: Cell angles (23,13,12) (deg):     59.7303     60.2293     60.1282
 outcell: Cell volume (Ang**3)        :     32.9665
+<dSpData1D:S at geom step 12
+  <sparsity:sparsity for geom step 12
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    12
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 12
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1190,7 +1329,6 @@ siesta: Eharris(eV) =    -212.214421
 
 siesta: Eharris(eV) =    -212.214421
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1220,9 +1358,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.105422    0.047281   -0.228988
 
 siesta: Pressure (total):        367.58493832  kBar
- Anneal: Kinetic Energy=    1.3986581806892267E-003
- Anneal: Velocity scale factor =    1.0597231976656554     
- Anneal: Cell scale factor =   0.99867720009982142     
+ Anneal: Kinetic Energy=    1.3986581806891684E-003
+ Anneal: Velocity scale factor =    1.0597231976656585     
+ Anneal: Cell scale factor =   0.99867720009982186     
 
 siesta: Temp_ion =     165.338 K
 
@@ -1241,8 +1379,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.592704    3.604407    3.565182
 outcell: Cell angles (23,13,12) (deg):     59.6629     60.2653     60.1461
 outcell: Cell volume (Ang**3)        :     32.6617
+<dSpData1D:S at geom step 13
+  <sparsity:sparsity for geom step 13
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    13
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 13
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1267,7 +1416,6 @@ siesta: Eharris(eV) =    -212.093660
 
 siesta: Eharris(eV) =    -212.093660
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1297,9 +1445,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.110136    0.045516   -0.241865
 
 siesta: Pressure (total):        389.41475844  kBar
- Anneal: Kinetic Energy=    1.2819156028114811E-003
- Anneal: Velocity scale factor =    1.0667045913288038     
- Anneal: Cell scale factor =   0.99950420992074585     
+ Anneal: Kinetic Energy=    1.2819156028112152E-003
+ Anneal: Velocity scale factor =    1.0667045913288211     
+ Anneal: Cell scale factor =   0.99950420992074496     
 
 siesta: Temp_ion =     153.541 K
 
@@ -1318,8 +1466,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.584207    3.598066    3.551384
 outcell: Cell angles (23,13,12) (deg):     59.5884     60.3032     60.1669
 outcell: Cell volume (Ang**3)        :     32.3966
+<dSpData1D:S at geom step 14
+  <sparsity:sparsity for geom step 14
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    14
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 14
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1344,7 +1503,6 @@ siesta: Eharris(eV) =    -211.983936
 
 siesta: Eharris(eV) =    -211.983936
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1374,9 +1532,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.113642    0.044556   -0.252548
 
 siesta: Pressure (total):        407.19010126  kBar
- Anneal: Kinetic Energy=    1.1957236996928181E-003
- Anneal: Velocity scale factor =    1.0726972335302898     
- Anneal: Cell scale factor =    1.0001902650041052     
+ Anneal: Kinetic Energy=    1.1957236996925614E-003
+ Anneal: Velocity scale factor =    1.0726972335303089     
+ Anneal: Cell scale factor =    1.0001902650041050     
 
 siesta: Temp_ion =     144.831 K
 
@@ -1395,8 +1553,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.576847    3.593253    3.538506
 outcell: Cell angles (23,13,12) (deg):     59.5110     60.3458     60.1857
 outcell: Cell volume (Ang**3)        :     32.1648
+<dSpData1D:S at geom step 15
+  <sparsity:sparsity for geom step 15
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    15
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 15
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1421,7 +1590,6 @@ siesta: Eharris(eV) =    -211.884715
 
 siesta: Eharris(eV) =    -211.884715
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1451,9 +1619,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.117222    0.042940   -0.263096
 
 siesta: Pressure (total):        426.66451947  kBar
- Anneal: Kinetic Energy=    1.1421434012545647E-003
- Anneal: Velocity scale factor =    1.0768586332178136     
- Anneal: Cell scale factor =    1.0008675028629097     
+ Anneal: Kinetic Energy=    1.1421434012543856E-003
+ Anneal: Velocity scale factor =    1.0768586332178280     
+ Anneal: Cell scale factor =    1.0008675028629099     
 
 siesta: Temp_ion =     139.417 K
 
@@ -1472,8 +1640,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.571053    3.590010    3.526550
 outcell: Cell angles (23,13,12) (deg):     59.4300     60.3896     60.2074
 outcell: Cell volume (Ang**3)        :     31.9703
+<dSpData1D:S at geom step 16
+  <sparsity:sparsity for geom step 16
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    16
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 16
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1498,7 +1677,6 @@ siesta: Eharris(eV) =    -211.799195
 
 siesta: Eharris(eV) =    -211.799195
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1528,9 +1706,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.118111    0.041508   -0.270817
 
 siesta: Pressure (total):        441.59892294  kBar
- Anneal: Kinetic Energy=    1.1220139083601413E-003
- Anneal: Velocity scale factor =    1.0785202269711072     
- Anneal: Cell scale factor =    1.0013635241540697     
+ Anneal: Kinetic Energy=    1.1220139083598980E-003
+ Anneal: Velocity scale factor =    1.0785202269711278     
+ Anneal: Cell scale factor =    1.0013635241540695     
 
 siesta: Temp_ion =     137.383 K
 
@@ -1549,8 +1727,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.566424    3.588041    3.515533
 outcell: Cell angles (23,13,12) (deg):     59.3494     60.4321     60.2324
 outcell: Cell volume (Ang**3)        :     31.8072
+<dSpData1D:S at geom step 17
+  <sparsity:sparsity for geom step 17
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    17
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 17
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1575,7 +1764,6 @@ siesta: Eharris(eV) =    -211.726500
 
 siesta: Eharris(eV) =    -211.726500
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1605,9 +1793,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.118231    0.040752   -0.277261
 
 siesta: Pressure (total):        454.27822156  kBar
- Anneal: Kinetic Energy=    1.1416173023083328E-003
- Anneal: Velocity scale factor =    1.0769013465509383     
- Anneal: Cell scale factor =    1.0017774930497092     
+ Anneal: Kinetic Energy=    1.1416173023081930E-003
+ Anneal: Velocity scale factor =    1.0769013465509496     
+ Anneal: Cell scale factor =    1.0017774930497088     
 
 siesta: Temp_ion =     139.364 K
 
@@ -1626,8 +1814,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.562866    3.587167    3.505410
 outcell: Cell angles (23,13,12) (deg):     59.2716     60.4746     60.2585
 outcell: Cell volume (Ang**3)        :     31.6725
+<dSpData1D:S at geom step 18
+  <sparsity:sparsity for geom step 18
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    18
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 18
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1652,7 +1851,6 @@ siesta: Eharris(eV) =    -211.666656
 
 siesta: Eharris(eV) =    -211.666656
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1682,9 +1880,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.117435    0.039190   -0.282490
 
 siesta: Pressure (total):        466.18829540  kBar
- Anneal: Kinetic Energy=    1.2011470963331457E-003
- Anneal: Velocity scale factor =    1.0722958560998079     
- Anneal: Cell scale factor =    1.0021129896851630     
+ Anneal: Kinetic Energy=    1.2011470963330482E-003
+ Anneal: Velocity scale factor =    1.0722958560998153     
+ Anneal: Cell scale factor =    1.0021129896851626     
 
 siesta: Temp_ion =     145.379 K
 
@@ -1703,8 +1901,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.560459    3.587514    3.496156
 outcell: Cell angles (23,13,12) (deg):     59.1984     60.5168     60.2851
 outcell: Cell volume (Ang**3)        :     31.5679
+<dSpData1D:S at geom step 19
+  <sparsity:sparsity for geom step 19
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    19
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 19
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1729,7 +1938,6 @@ siesta: Eharris(eV) =    -211.621381
 
 siesta: Eharris(eV) =    -211.621381
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1759,9 +1967,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.115781    0.038435   -0.284387
 
 siesta: Pressure (total):        472.92974390  kBar
- Anneal: Kinetic Energy=    1.2984587309627896E-003
- Anneal: Velocity scale factor =    1.0656419008625038     
- Anneal: Cell scale factor =    1.0022341091190661     
+ Anneal: Kinetic Energy=    1.2984587309626625E-003
+ Anneal: Velocity scale factor =    1.0656419008625118     
+ Anneal: Cell scale factor =    1.0022341091190672     
 
 siesta: Temp_ion =     155.213 K
 
@@ -1780,8 +1988,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.558889    3.588618    3.487486
 outcell: Cell angles (23,13,12) (deg):     59.1318     60.5573     60.3123
 outcell: Cell volume (Ang**3)        :     31.4841
+<dSpData1D:S at geom step 20
+  <sparsity:sparsity for geom step 20
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    20
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 20
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1806,7 +2025,6 @@ siesta: Eharris(eV) =    -211.587276
 
 siesta: Eharris(eV) =    -211.587276
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1836,9 +2054,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.113067    0.037694   -0.285000
 
 siesta: Pressure (total):        477.26468892  kBar
- Anneal: Kinetic Energy=    1.4269236507606282E-003
- Anneal: Velocity scale factor =    1.0581985535333966     
- Anneal: Cell scale factor =    1.0022717275854403     
+ Anneal: Kinetic Energy=    1.4269236507606236E-003
+ Anneal: Velocity scale factor =    1.0581985535333969     
+ Anneal: Cell scale factor =    1.0022717275854409     
 
 siesta: Temp_ion =     168.195 K
 
@@ -1857,8 +2075,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.558208    3.590297    3.479358
 outcell: Cell angles (23,13,12) (deg):     59.0727     60.5973     60.3383
 outcell: Cell volume (Ang**3)        :     31.4194
+<dSpData1D:S at geom step 21
+  <sparsity:sparsity for geom step 21
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    21
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 21
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1883,7 +2112,6 @@ siesta: Eharris(eV) =    -211.563567
 
 siesta: Eharris(eV) =    -211.563567
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1913,8 +2141,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.109748    0.038128   -0.285250
 
 siesta: Pressure (total):        481.63314253  kBar
- Anneal: Kinetic Energy=    1.5728483763972564E-003
- Anneal: Velocity scale factor =    1.0511706920677977     
+ Anneal: Kinetic Energy=    1.5728483763976552E-003
+ Anneal: Velocity scale factor =    1.0511706920677801     
  Anneal: Cell scale factor =    1.0022845976188042     
 
 siesta: Temp_ion =     182.941 K
@@ -1934,8 +2162,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.558399    3.592474    3.471783
 outcell: Cell angles (23,13,12) (deg):     59.0240     60.6356     60.3615
 outcell: Cell volume (Ang**3)        :     31.3733
+<dSpData1D:S at geom step 22
+  <sparsity:sparsity for geom step 22
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    22
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 22
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -1960,7 +2199,6 @@ siesta: Eharris(eV) =    -211.549874
 
 siesta: Eharris(eV) =    -211.549874
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1990,9 +2228,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.105136    0.038348   -0.285043
 
 siesta: Pressure (total):        485.13778213  kBar
- Anneal: Kinetic Energy=    1.7209069969989297E-003
- Anneal: Velocity scale factor =    1.0452215902897595     
- Anneal: Cell scale factor =    1.0022673785250256     
+ Anneal: Kinetic Energy=    1.7209069969992515E-003
+ Anneal: Velocity scale factor =    1.0452215902897477     
+ Anneal: Cell scale factor =    1.0022673785250251     
 
 siesta: Temp_ion =     197.902 K
 
@@ -2011,8 +2249,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.559451    3.595095    3.464829
 outcell: Cell angles (23,13,12) (deg):     58.9866     60.6708     60.3822
 outcell: Cell volume (Ang**3)        :     31.3457
+<dSpData1D:S at geom step 23
+  <sparsity:sparsity for geom step 23
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    23
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 23
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2037,7 +2286,6 @@ siesta: Eharris(eV) =    -211.545896
 
 siesta: Eharris(eV) =    -211.545896
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2067,9 +2315,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.099497    0.039420   -0.283802
 
 siesta: Pressure (total):        486.25361458  kBar
- Anneal: Kinetic Energy=    1.8586548843902706E-003
- Anneal: Velocity scale factor =    1.0405139414422151     
- Anneal: Cell scale factor =    1.0021837595868639     
+ Anneal: Kinetic Energy=    1.8586548843905972E-003
+ Anneal: Velocity scale factor =    1.0405139414422047     
+ Anneal: Cell scale factor =    1.0021837595868637     
 
 siesta: Temp_ion =     211.822 K
 
@@ -2088,8 +2336,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.561155    3.597829    3.458464
 outcell: Cell angles (23,13,12) (deg):     58.9613     60.7014     60.4009
 outcell: Cell volume (Ang**3)        :     31.3315
+<dSpData1D:S at geom step 24
+  <sparsity:sparsity for geom step 24
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    24
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 24
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2114,7 +2373,6 @@ siesta: Eharris(eV) =    -211.548881
 
 siesta: Eharris(eV) =    -211.548881
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2144,8 +2402,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.093258    0.041030   -0.281838
 
 siesta: Pressure (total):        487.60735308  kBar
- Anneal: Kinetic Energy=    1.9728707424559390E-003
- Anneal: Velocity scale factor =    1.0370957249048911     
+ Anneal: Kinetic Energy=    1.9728707424562036E-003
+ Anneal: Velocity scale factor =    1.0370957249048836     
  Anneal: Cell scale factor =    1.0020542469892071     
 
 siesta: Temp_ion =     223.364 K
@@ -2165,8 +2423,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.563595    3.600698    3.452643
 outcell: Cell angles (23,13,12) (deg):     58.9506     60.7256     60.4164
 outcell: Cell volume (Ang**3)        :     31.3314
+<dSpData1D:S at geom step 25
+  <sparsity:sparsity for geom step 25
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    25
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 25
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2191,7 +2460,6 @@ siesta: Eharris(eV) =    -211.558957
 
 siesta: Eharris(eV) =    -211.558957
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2221,8 +2489,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.086526    0.043404   -0.278670
 
 siesta: Pressure (total):        486.66021626  kBar
- Anneal: Kinetic Energy=    2.0522987665428593E-003
- Anneal: Velocity scale factor =    1.0349371236893754     
+ Anneal: Kinetic Energy=    2.0522987665435263E-003
+ Anneal: Velocity scale factor =    1.0349371236893581     
  Anneal: Cell scale factor =    1.0018482803113515     
 
 siesta: Temp_ion =     231.390 K
@@ -2242,8 +2510,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.566780    3.603352    3.447249
 outcell: Cell angles (23,13,12) (deg):     58.9545     60.7430     60.4285
 outcell: Cell volume (Ang**3)        :     31.3412
+<dSpData1D:S at geom step 26
+  <sparsity:sparsity for geom step 26
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    26
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 26
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2268,7 +2547,6 @@ siesta: Eharris(eV) =    -211.573859
 
 siesta: Eharris(eV) =    -211.573859
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2298,9 +2576,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.079691    0.045563   -0.276094
 
 siesta: Pressure (total):        485.17545268  kBar
- Anneal: Kinetic Energy=    2.0975466561702371E-003
- Anneal: Velocity scale factor =    1.0337786670148907     
- Anneal: Cell scale factor =    1.0016811462250694     
+ Anneal: Kinetic Energy=    2.0975466561708412E-003
+ Anneal: Velocity scale factor =    1.0337786670148756     
+ Anneal: Cell scale factor =    1.0016811462250692     
 
 siesta: Temp_ion =     235.963 K
 
@@ -2319,8 +2597,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.570412    3.605779    3.442338
 outcell: Cell angles (23,13,12) (deg):     58.9717     60.7537     60.4379
 outcell: Cell volume (Ang**3)        :     31.3585
+<dSpData1D:S at geom step 27
+  <sparsity:sparsity for geom step 27
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    27
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 27
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2345,7 +2634,6 @@ siesta: Eharris(eV) =    -211.592254
 
 siesta: Eharris(eV) =    -211.592254
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2375,9 +2663,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.071133    0.047878   -0.274471
 
 siesta: Pressure (total):        484.85089906  kBar
- Anneal: Kinetic Energy=    2.1160594554929819E-003
- Anneal: Velocity scale factor =    1.0333186157886689     
- Anneal: Cell scale factor =    1.0015764078195863     
+ Anneal: Kinetic Energy=    2.1160594554935279E-003
+ Anneal: Velocity scale factor =    1.0333186157886556     
+ Anneal: Cell scale factor =    1.0015764078195859     
 
 siesta: Temp_ion =     237.834 K
 
@@ -2396,8 +2684,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.574452    3.608039    3.438178
 outcell: Cell angles (23,13,12) (deg):     59.0036     60.7553     60.4454
 outcell: Cell volume (Ang**3)        :     31.3859
+<dSpData1D:S at geom step 28
+  <sparsity:sparsity for geom step 28
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    28
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 28
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2422,7 +2721,6 @@ siesta: Eharris(eV) =    -211.615300
 
 siesta: Eharris(eV) =    -211.615300
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2452,9 +2750,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.064661    0.050455   -0.272474
 
 siesta: Pressure (total):        482.85307358  kBar
- Anneal: Kinetic Energy=    2.1168406494776913E-003
- Anneal: Velocity scale factor =    1.0332993752528186     
- Anneal: Cell scale factor =    1.0014487424532554     
+ Anneal: Kinetic Energy=    2.1168406494779485E-003
+ Anneal: Velocity scale factor =    1.0332993752528121     
+ Anneal: Cell scale factor =    1.0014487424532565     
 
 siesta: Temp_ion =     237.912 K
 
@@ -2473,8 +2771,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.578828    3.609913    3.434495
 outcell: Cell angles (23,13,12) (deg):     59.0466     60.7511     60.4505
 outcell: Cell volume (Ang**3)        :     31.4183
+<dSpData1D:S at geom step 29
+  <sparsity:sparsity for geom step 29
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    29
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 29
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2499,7 +2808,6 @@ siesta: Eharris(eV) =    -211.640639
 
 siesta: Eharris(eV) =    -211.640639
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2529,8 +2837,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.058131    0.053804   -0.270890
 
 siesta: Pressure (total):        481.07501179  kBar
- Anneal: Kinetic Energy=    2.1108257440014809E-003
- Anneal: Velocity scale factor =    1.0334478783118204     
+ Anneal: Kinetic Energy=    2.1108257440015312E-003
+ Anneal: Velocity scale factor =    1.0334478783118193     
  Anneal: Cell scale factor =    1.0013485713070234     
 
 siesta: Temp_ion =     237.305 K
@@ -2550,8 +2858,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.583384    3.611318    3.431327
 outcell: Cell angles (23,13,12) (deg):     59.1011     60.7399     60.4540
 outcell: Cell volume (Ang**3)        :     31.4537
+<dSpData1D:S at geom step 30
+  <sparsity:sparsity for geom step 30
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    30
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 30
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2576,7 +2895,6 @@ siesta: Eharris(eV) =    -211.667572
 
 siesta: Eharris(eV) =    -211.667572
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2606,9 +2924,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.051307    0.057739   -0.270142
 
 siesta: Pressure (total):        479.95439465  kBar
- Anneal: Kinetic Energy=    2.1099053136161899E-003
- Anneal: Velocity scale factor =    1.0334706757867216     
- Anneal: Cell scale factor =    1.0013029126249633     
+ Anneal: Kinetic Energy=    2.1099053136162333E-003
+ Anneal: Velocity scale factor =    1.0334706757867205     
+ Anneal: Cell scale factor =    1.0013029126249628     
 
 siesta: Temp_ion =     237.212 K
 
@@ -2627,8 +2945,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.588107    3.612227    3.428793
 outcell: Cell angles (23,13,12) (deg):     59.1673     60.7220     60.4555
 outcell: Cell volume (Ang**3)        :     31.4931
+<dSpData1D:S at geom step 31
+  <sparsity:sparsity for geom step 31
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    31
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 31
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2653,7 +2982,6 @@ siesta: Eharris(eV) =    -211.696580
 
 siesta: Eharris(eV) =    -211.696580
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2683,9 +3011,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.045451    0.061373   -0.268776
 
 siesta: Pressure (total):        476.51541581  kBar
- Anneal: Kinetic Energy=    2.1264385438896226E-003
- Anneal: Velocity scale factor =    1.0330641073082325     
- Anneal: Cell scale factor =    1.0012186721630965     
+ Anneal: Kinetic Energy=    2.1264385438892301E-003
+ Anneal: Velocity scale factor =    1.0330641073082421     
+ Anneal: Cell scale factor =    1.0012186721630973     
 
 siesta: Temp_ion =     238.882 K
 
@@ -2704,8 +3032,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.592755    3.612514    3.426711
 outcell: Cell angles (23,13,12) (deg):     59.2429     60.7003     60.4535
 outcell: Cell volume (Ang**3)        :     31.5311
+<dSpData1D:S at geom step 32
+  <sparsity:sparsity for geom step 32
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    32
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 32
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2730,7 +3069,6 @@ siesta: Eharris(eV) =    -211.725165
 
 siesta: Eharris(eV) =    -211.725165
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2760,8 +3098,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.039857    0.065956   -0.269033
 
 siesta: Pressure (total):        473.68078434  kBar
- Anneal: Kinetic Energy=    2.1666425385785115E-003
- Anneal: Velocity scale factor =    1.0321007022978896     
+ Anneal: Kinetic Energy=    2.1666425385779686E-003
+ Anneal: Velocity scale factor =    1.0321007022979023     
  Anneal: Cell scale factor =    1.0012390226723695     
 
 siesta: Temp_ion =     242.945 K
@@ -2781,8 +3119,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.597284    3.611982    3.425245
 outcell: Cell angles (23,13,12) (deg):     59.3260     60.6758     60.4489
 outcell: Cell volume (Ang**3)        :     31.5672
+<dSpData1D:S at geom step 33
+  <sparsity:sparsity for geom step 33
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    33
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 33
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2807,7 +3156,6 @@ siesta: Eharris(eV) =    -211.753262
 
 siesta: Eharris(eV) =    -211.753262
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2837,9 +3185,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.034826    0.070498   -0.268984
 
 siesta: Pressure (total):        470.52292544  kBar
- Anneal: Kinetic Energy=    2.2372394600776780E-003
- Anneal: Velocity scale factor =    1.0304907710869495     
- Anneal: Cell scale factor =    1.0012404719615984     
+ Anneal: Kinetic Energy=    2.2372394600770899E-003
+ Anneal: Velocity scale factor =    1.0304907710869626     
+ Anneal: Cell scale factor =    1.0012404719615990     
 
 siesta: Temp_ion =     250.079 K
 
@@ -2858,8 +3206,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.601424    3.610723    3.424294
 outcell: Cell angles (23,13,12) (deg):     59.4169     60.6485     60.4415
 outcell: Cell volume (Ang**3)        :     31.5988
+<dSpData1D:S at geom step 34
+  <sparsity:sparsity for geom step 34
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    34
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 34
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2884,7 +3243,6 @@ siesta: Eharris(eV) =    -211.779923
 
 siesta: Eharris(eV) =    -211.779923
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2914,9 +3272,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.030541    0.075227   -0.268496
 
 siesta: Pressure (total):        466.01927481  kBar
- Anneal: Kinetic Energy=    2.3435568045394504E-003
- Anneal: Velocity scale factor =    1.0282450798274525     
- Anneal: Cell scale factor =    1.0012140813527246     
+ Anneal: Kinetic Energy=    2.3435568045386333E-003
+ Anneal: Velocity scale factor =    1.0282450798274692     
+ Anneal: Cell scale factor =    1.0012140813527250     
 
 siesta: Temp_ion =     260.823 K
 
@@ -2935,8 +3293,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.605082    3.608532    3.423727
 outcell: Cell angles (23,13,12) (deg):     59.5137     60.6190     60.4322
 outcell: Cell volume (Ang**3)        :     31.6218
+<dSpData1D:S at geom step 35
+  <sparsity:sparsity for geom step 35
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    35
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 35
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -2961,7 +3330,6 @@ siesta: Eharris(eV) =    -211.803499
 
 siesta: Eharris(eV) =    -211.803499
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -2991,9 +3359,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.027554    0.079898   -0.269582
 
 siesta: Pressure (total):        463.16426681  kBar
- Anneal: Kinetic Energy=    2.4873727423546216E-003
- Anneal: Velocity scale factor =    1.0255061725381562     
- Anneal: Cell scale factor =    1.0012882749488308     
+ Anneal: Kinetic Energy=    2.4873727423536658E-003
+ Anneal: Velocity scale factor =    1.0255061725381733     
+ Anneal: Cell scale factor =    1.0012882749488303     
 
 siesta: Temp_ion =     275.356 K
 
@@ -3012,8 +3380,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.608329    3.605528    3.423606
 outcell: Cell angles (23,13,12) (deg):     59.6144     60.5899     60.4210
 outcell: Cell volume (Ang**3)        :     31.6386
+<dSpData1D:S at geom step 36
+  <sparsity:sparsity for geom step 36
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    36
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 36
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3038,7 +3417,6 @@ siesta: Eharris(eV) =    -211.825361
 
 siesta: Eharris(eV) =    -211.825361
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3068,9 +3446,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.025406    0.084593   -0.271024
 
 siesta: Pressure (total):        461.13666741  kBar
- Anneal: Kinetic Energy=    2.6691635938730705E-003
- Anneal: Velocity scale factor =    1.0224577991666990     
- Anneal: Cell scale factor =    1.0013847018268094     
+ Anneal: Kinetic Energy=    2.6691635938718879E-003
+ Anneal: Velocity scale factor =    1.0224577991667174     
+ Anneal: Cell scale factor =    1.0013847018268092     
 
 siesta: Temp_ion =     293.726 K
 
@@ -3089,8 +3467,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.611137    3.601835    3.423890
 outcell: Cell angles (23,13,12) (deg):     59.7191     60.5619     60.4078
 outcell: Cell volume (Ang**3)        :     31.6498
+<dSpData1D:S at geom step 37
+  <sparsity:sparsity for geom step 37
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    37
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 37
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3115,7 +3504,6 @@ siesta: Eharris(eV) =    -211.845994
 
 siesta: Eharris(eV) =    -211.845994
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3145,8 +3533,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.024249    0.088256   -0.273073
 
 siesta: Pressure (total):        458.64607399  kBar
- Anneal: Kinetic Energy=    2.8848314326016299E-003
- Anneal: Velocity scale factor =    1.0193301817701079     
+ Anneal: Kinetic Energy=    2.8848314326006593E-003
+ Anneal: Velocity scale factor =    1.0193301817701210     
  Anneal: Cell scale factor =    1.0015188858383672     
 
 siesta: Temp_ion =     315.520 K
@@ -3166,8 +3554,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.613430    3.597438    3.424557
 outcell: Cell angles (23,13,12) (deg):     59.8237     60.5370     60.3943
 outcell: Cell volume (Ang**3)        :     31.6543
+<dSpData1D:S at geom step 38
+  <sparsity:sparsity for geom step 38
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    38
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 38
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3192,7 +3591,6 @@ siesta: Eharris(eV) =    -211.864820
 
 siesta: Eharris(eV) =    -211.864820
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3222,9 +3620,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.023858    0.092246   -0.274676
 
 siesta: Pressure (total):        455.50581242  kBar
- Anneal: Kinetic Energy=    3.1282071945084389E-003
- Anneal: Velocity scale factor =    1.0163095696535764     
- Anneal: Cell scale factor =    1.0016232864733705     
+ Anneal: Kinetic Energy=    3.1282071945074935E-003
+ Anneal: Velocity scale factor =    1.0163095696535871     
+ Anneal: Cell scale factor =    1.0016232864733716     
 
 siesta: Temp_ion =     340.114 K
 
@@ -3243,8 +3641,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.615147    3.592271    3.425474
 outcell: Cell angles (23,13,12) (deg):     59.9282     60.5163     60.3797
 outcell: Cell volume (Ang**3)        :     31.6496
+<dSpData1D:S at geom step 39
+  <sparsity:sparsity for geom step 39
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    39
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 39
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3269,7 +3678,6 @@ siesta: Eharris(eV) =    -211.880893
 
 siesta: Eharris(eV) =    -211.880893
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3299,9 +3707,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.024495    0.096260   -0.276472
 
 siesta: Pressure (total):        452.83056345  kBar
- Anneal: Kinetic Energy=    3.3885088485637103E-003
- Anneal: Velocity scale factor =    1.0135512725812010     
- Anneal: Cell scale factor =    1.0017384286570838     
+ Anneal: Kinetic Energy=    3.3885088485629249E-003
+ Anneal: Velocity scale factor =    1.0135512725812088     
+ Anneal: Cell scale factor =    1.0017384286570847     
 
 siesta: Temp_ion =     366.418 K
 
@@ -3320,8 +3728,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.616236    3.586445    3.426565
 outcell: Cell angles (23,13,12) (deg):     60.0325     60.5010     60.3633
 outcell: Cell volume (Ang**3)        :     31.6357
+<dSpData1D:S at geom step 40
+  <sparsity:sparsity for geom step 40
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    40
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 40
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3346,7 +3765,6 @@ siesta: Eharris(eV) =    -211.894186
 
 siesta: Eharris(eV) =    -211.894186
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3376,9 +3794,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.026480    0.098077   -0.279183
 
 siesta: Pressure (total):        452.19234852  kBar
- Anneal: Kinetic Energy=    3.6548532507555938E-003
- Anneal: Velocity scale factor =    1.0111294464018388     
- Anneal: Cell scale factor =    1.0019105439807974     
+ Anneal: Kinetic Energy=    3.6548532507547525E-003
+ Anneal: Velocity scale factor =    1.0111294464018459     
+ Anneal: Cell scale factor =    1.0019105439807972     
 
 siesta: Temp_ion =     393.333 K
 
@@ -3397,8 +3815,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.616796    3.580436    3.427819
 outcell: Cell angles (23,13,12) (deg):     60.1342     60.4927     60.3466
 outcell: Cell volume (Ang**3)        :     31.6178
+<dSpData1D:S at geom step 41
+  <sparsity:sparsity for geom step 41
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    41
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 41
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3423,7 +3852,6 @@ siesta: Eharris(eV) =    -211.906766
 
 siesta: Eharris(eV) =    -211.906766
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3453,9 +3881,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.029174    0.098987   -0.281736
 
 siesta: Pressure (total):        452.47549601  kBar
- Anneal: Kinetic Energy=    3.9214401432933945E-003
- Anneal: Velocity scale factor =    1.0090301580962266     
- Anneal: Cell scale factor =    1.0020714264907982     
+ Anneal: Kinetic Energy=    3.9214401432930163E-003
+ Anneal: Velocity scale factor =    1.0090301580962295     
+ Anneal: Cell scale factor =    1.0020714264907991     
 
 siesta: Temp_ion =     420.272 K
 
@@ -3474,8 +3902,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.616892    3.574377    3.429153
 outcell: Cell angles (23,13,12) (deg):     60.2325     60.4894     60.3339
 outcell: Cell volume (Ang**3)        :     31.5971
+<dSpData1D:S at geom step 42
+  <sparsity:sparsity for geom step 42
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    42
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 42
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3500,7 +3939,6 @@ siesta: Eharris(eV) =    -211.919201
 
 siesta: Eharris(eV) =    -211.919201
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3530,7 +3968,7 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.031715    0.099330   -0.284640
 
 siesta: Pressure (total):        453.04943067  kBar
- Anneal: Kinetic Energy=    4.1816256316288443E-003
+ Anneal: Kinetic Energy=    4.1816256316288269E-003
  Anneal: Velocity scale factor =    1.0072359244461211     
  Anneal: Cell scale factor =    1.0022538983438114     
 
@@ -3551,8 +3989,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.616567    3.568362    3.430631
 outcell: Cell angles (23,13,12) (deg):     60.3267     60.4921     60.3246
 outcell: Cell volume (Ang**3)        :     31.5755
+<dSpData1D:S at geom step 43
+  <sparsity:sparsity for geom step 43
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    43
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 43
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3577,7 +4026,6 @@ siesta: Eharris(eV) =    -211.932027
 
 siesta: Eharris(eV) =    -211.932027
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3607,9 +4055,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.034723    0.098981   -0.286968
 
 siesta: Pressure (total):        453.39258161  kBar
- Anneal: Kinetic Energy=    4.4255601263597372E-003
- Anneal: Velocity scale factor =    1.0057429405633664     
- Anneal: Cell scale factor =    1.0023989845402212     
+ Anneal: Kinetic Energy=    4.4255601263596617E-003
+ Anneal: Velocity scale factor =    1.0057429405633669     
+ Anneal: Cell scale factor =    1.0023989845402217     
 
 siesta: Temp_ion =     471.215 K
 
@@ -3628,8 +4076,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.615748    3.562499    3.432145
 outcell: Cell angles (23,13,12) (deg):     60.4169     60.5004     60.3194
 outcell: Cell volume (Ang**3)        :     31.5523
+<dSpData1D:S at geom step 44
+  <sparsity:sparsity for geom step 44
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    44
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 44
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3654,7 +4113,6 @@ siesta: Eharris(eV) =    -211.944770
 
 siesta: Eharris(eV) =    -211.944770
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3684,9 +4142,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.038087    0.098090   -0.288792
 
 siesta: Pressure (total):        453.80571936  kBar
- Anneal: Kinetic Energy=    4.6431350937077998E-003
- Anneal: Velocity scale factor =    1.0045420422239428     
- Anneal: Cell scale factor =    1.0025115796962989     
+ Anneal: Kinetic Energy=    4.6431350937080921E-003
+ Anneal: Velocity scale factor =    1.0045420422239413     
+ Anneal: Cell scale factor =    1.0025115796962987     
 
 siesta: Temp_ion =     493.201 K
 
@@ -3705,8 +4163,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.614602    3.556769    3.433606
 outcell: Cell angles (23,13,12) (deg):     60.5019     60.5132     60.3206
 outcell: Cell volume (Ang**3)        :     31.5281
+<dSpData1D:S at geom step 45
+  <sparsity:sparsity for geom step 45
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    45
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 45
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3731,7 +4200,6 @@ siesta: Eharris(eV) =    -211.957363
 
 siesta: Eharris(eV) =    -211.957363
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3761,9 +4229,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.041838    0.096043   -0.289282
 
 siesta: Pressure (total):        453.24920226  kBar
- Anneal: Kinetic Energy=    4.8178847448197568E-003
- Anneal: Velocity scale factor =    1.0036551379470577     
- Anneal: Cell scale factor =    1.0025387845322382     
+ Anneal: Kinetic Energy=    4.8178847448203457E-003
+ Anneal: Velocity scale factor =    1.0036551379470549     
+ Anneal: Cell scale factor =    1.0025387845322389     
 
 siesta: Temp_ion =     510.860 K
 
@@ -3782,8 +4250,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.612975    3.551312    3.434817
 outcell: Cell angles (23,13,12) (deg):     60.5816     60.5297     60.3288
 outcell: Cell volume (Ang**3)        :     31.5010
+<dSpData1D:S at geom step 46
+  <sparsity:sparsity for geom step 46
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    46
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 46
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3808,7 +4287,6 @@ siesta: Eharris(eV) =    -211.968348
 
 siesta: Eharris(eV) =    -211.968348
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3838,9 +4316,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.046402    0.093802   -0.289013
 
 siesta: Pressure (total):        452.36566616  kBar
- Anneal: Kinetic Energy=    4.9355806675741238E-003
- Anneal: Velocity scale factor =    1.0030927856855330     
- Anneal: Cell scale factor =    1.0025176194857546     
+ Anneal: Kinetic Energy=    4.9355806675753988E-003
+ Anneal: Velocity scale factor =    1.0030927856855270     
+ Anneal: Cell scale factor =    1.0025176194857555     
 
 siesta: Temp_ion =     522.754 K
 
@@ -3859,8 +4337,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.610913    3.546090    3.435614
 outcell: Cell angles (23,13,12) (deg):     60.6554     60.5494     60.3452
 outcell: Cell volume (Ang**3)        :     31.4696
+<dSpData1D:S at geom step 47
+  <sparsity:sparsity for geom step 47
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    47
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 47
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3885,7 +4374,6 @@ siesta: Eharris(eV) =    -211.976933
 
 siesta: Eharris(eV) =    -211.976933
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3915,9 +4403,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.050626    0.091126   -0.288787
 
 siesta: Pressure (total):        452.06514656  kBar
- Anneal: Kinetic Energy=    4.9869641354438566E-003
- Anneal: Velocity scale factor =    1.0028555042890661     
- Anneal: Cell scale factor =    1.0024995453126020     
+ Anneal: Kinetic Energy=    4.9869641354454881E-003
+ Anneal: Velocity scale factor =    1.0028555042890588     
+ Anneal: Cell scale factor =    1.0024995453126033     
 
 siesta: Temp_ion =     527.946 K
 
@@ -3936,8 +4424,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.608456    3.541214    3.436043
 outcell: Cell angles (23,13,12) (deg):     60.7237     60.5714     60.3706
 outcell: Cell volume (Ang**3)        :     31.4357
+<dSpData1D:S at geom step 48
+  <sparsity:sparsity for geom step 48
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    48
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 48
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -3962,7 +4461,6 @@ siesta: Eharris(eV) =    -211.983728
 
 siesta: Eharris(eV) =    -211.983728
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -3992,9 +4490,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.055103    0.087547   -0.288722
 
 siesta: Pressure (total):        452.78499401  kBar
- Anneal: Kinetic Energy=    4.9627840767435122E-003
- Anneal: Velocity scale factor =    1.0029665592164998     
- Anneal: Cell scale factor =    1.0024921180099760     
+ Anneal: Kinetic Energy=    4.9627840767457335E-003
+ Anneal: Velocity scale factor =    1.0029665592164896     
+ Anneal: Cell scale factor =    1.0024921180099766     
 
 siesta: Temp_ion =     525.503 K
 
@@ -4013,8 +4511,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.605709    3.536828    3.436111
 outcell: Cell angles (23,13,12) (deg):     60.7857     60.5947     60.4080
 outcell: Cell volume (Ang**3)        :     31.4019
+<dSpData1D:S at geom step 49
+  <sparsity:sparsity for geom step 49
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    49
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 49
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4039,7 +4548,6 @@ siesta: Eharris(eV) =    -211.989727
 
 siesta: Eharris(eV) =    -211.989727
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4069,9 +4577,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.059304    0.082723   -0.288804
 
 siesta: Pressure (total):        454.56607368  kBar
- Anneal: Kinetic Energy=    4.8555633487343281E-003
- Anneal: Velocity scale factor =    1.0034721770160901     
- Anneal: Cell scale factor =    1.0024946928836138     
+ Anneal: Kinetic Energy=    4.8555633487367975E-003
+ Anneal: Velocity scale factor =    1.0034721770160782     
+ Anneal: Cell scale factor =    1.0024946928836151     
 
 siesta: Temp_ion =     514.668 K
 
@@ -4090,8 +4598,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.602733    3.533220    3.435872
 outcell: Cell angles (23,13,12) (deg):     60.8418     60.6188     60.4579
 outcell: Cell volume (Ang**3)        :     31.3719
+<dSpData1D:S at geom step 50
+  <sparsity:sparsity for geom step 50
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    50
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 50
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4116,7 +4635,6 @@ siesta: Eharris(eV) =    -211.996511
 
 siesta: Eharris(eV) =    -211.996511
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4146,9 +4664,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.062039    0.077492   -0.288467
 
 siesta: Pressure (total):        455.80923666  kBar
- Anneal: Kinetic Energy=    4.6650728654519151E-003
- Anneal: Velocity scale factor =    1.0044270988324060     
- Anneal: Cell scale factor =    1.0024710322054169     
+ Anneal: Kinetic Energy=    4.6650728654541781E-003
+ Anneal: Velocity scale factor =    1.0044270988323942     
+ Anneal: Cell scale factor =    1.0024710322054184     
 
 siesta: Temp_ion =     495.418 K
 
@@ -4167,8 +4685,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.599423    3.530453    3.435411
 outcell: Cell angles (23,13,12) (deg):     60.8933     60.6422     60.5194
 outcell: Cell volume (Ang**3)        :     31.3459
+<dSpData1D:S at geom step 51
+  <sparsity:sparsity for geom step 51
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    51
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 51
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4193,7 +4722,6 @@ siesta: Eharris(eV) =    -212.004152
 
 siesta: Eharris(eV) =    -212.004152
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4223,9 +4751,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.064489    0.073199   -0.286910
 
 siesta: Pressure (total):        456.13941625  kBar
- Anneal: Kinetic Energy=    4.4017490557410966E-003
- Anneal: Velocity scale factor =    1.0058814798699667     
- Anneal: Cell scale factor =    1.0023701397789622     
+ Anneal: Kinetic Energy=    4.4017490557433656E-003
+ Anneal: Velocity scale factor =    1.0058814798699534     
+ Anneal: Cell scale factor =    1.0023701397789633     
 
 siesta: Temp_ion =     468.809 K
 
@@ -4244,8 +4772,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.595907    3.528346    3.434599
 outcell: Cell angles (23,13,12) (deg):     60.9418     60.6640     60.5914
 outcell: Cell volume (Ang**3)        :     31.3221
+<dSpData1D:S at geom step 52
+  <sparsity:sparsity for geom step 52
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    52
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 52
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4270,7 +4809,6 @@ siesta: Eharris(eV) =    -212.011842
 
 siesta: Eharris(eV) =    -212.011842
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4300,9 +4838,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.065926    0.068120   -0.285851
 
 siesta: Pressure (total):        457.24942892  kBar
- Anneal: Kinetic Energy=    4.0769228400835836E-003
- Anneal: Velocity scale factor =    1.0079307953842391     
- Anneal: Cell scale factor =    1.0023017391572357     
+ Anneal: Kinetic Energy=    4.0769228400858448E-003
+ Anneal: Velocity scale factor =    1.0079307953842238     
+ Anneal: Cell scale factor =    1.0023017391572369     
 
 siesta: Temp_ion =     435.984 K
 
@@ -4321,8 +4859,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.592220    3.527098    3.433593
 outcell: Cell angles (23,13,12) (deg):     60.9880     60.6839     60.6731
 outcell: Cell volume (Ang**3)        :     31.3038
+<dSpData1D:S at geom step 53
+  <sparsity:sparsity for geom step 53
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    53
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 53
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4347,7 +4896,6 @@ siesta: Eharris(eV) =    -212.021383
 
 siesta: Eharris(eV) =    -212.021383
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4377,9 +4925,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.067009    0.063259   -0.283833
 
 siesta: Pressure (total):        456.18204763  kBar
- Anneal: Kinetic Energy=    3.7093413805196216E-003
- Anneal: Velocity scale factor =    1.0106762042860646     
- Anneal: Cell scale factor =    1.0021727595705860     
+ Anneal: Kinetic Energy=    3.7093413805218078E-003
+ Anneal: Velocity scale factor =    1.0106762042860467     
+ Anneal: Cell scale factor =    1.0021727595705867     
 
 siesta: Temp_ion =     398.839 K
 
@@ -4398,8 +4946,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.588281    3.526424    3.432298
 outcell: Cell angles (23,13,12) (deg):     61.0307     60.7022     60.7633
 outcell: Cell volume (Ang**3)        :     31.2864
+<dSpData1D:S at geom step 54
+  <sparsity:sparsity for geom step 54
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    54
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 54
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4424,7 +4983,6 @@ siesta: Eharris(eV) =    -212.030627
 
 siesta: Eharris(eV) =    -212.030627
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4454,9 +5012,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.068569    0.058198   -0.282901
 
 siesta: Pressure (total):        456.68675699  kBar
- Anneal: Kinetic Energy=    3.3236304584957220E-003
- Anneal: Velocity scale factor =    1.0141990096484723     
- Anneal: Cell scale factor =    1.0021138838309316     
+ Anneal: Kinetic Energy=    3.3236304584976797E-003
+ Anneal: Velocity scale factor =    1.0141990096484523     
+ Anneal: Cell scale factor =    1.0021138838309311     
 
 siesta: Temp_ion =     359.862 K
 
@@ -4475,8 +5033,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.584145    3.526503    3.430818
 outcell: Cell angles (23,13,12) (deg):     61.0699     60.7198     60.8625
 outcell: Cell volume (Ang**3)        :     31.2733
+<dSpData1D:S at geom step 55
+  <sparsity:sparsity for geom step 55
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    55
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 55
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4501,7 +5070,6 @@ siesta: Eharris(eV) =    -212.041667
 
 siesta: Eharris(eV) =    -212.041667
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4531,9 +5099,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.067623    0.053763   -0.280133
 
 siesta: Pressure (total):        455.42258392  kBar
- Anneal: Kinetic Energy=    2.9419232665446118E-003
- Anneal: Velocity scale factor =    1.0185775679277604     
- Anneal: Cell scale factor =    1.0019381104607399     
+ Anneal: Kinetic Energy=    2.9419232665463010E-003
+ Anneal: Velocity scale factor =    1.0185775679277385     
+ Anneal: Cell scale factor =    1.0019381104607403     
 
 siesta: Temp_ion =     321.289 K
 
@@ -4552,8 +5120,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.579763    3.527243    3.429121
 outcell: Cell angles (23,13,12) (deg):     61.1095     60.7335     60.9670
 outcell: Cell volume (Ang**3)        :     31.2622
+<dSpData1D:S at geom step 56
+  <sparsity:sparsity for geom step 56
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    56
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 56
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4578,7 +5157,6 @@ siesta: Eharris(eV) =    -212.053327
 
 siesta: Eharris(eV) =    -212.053327
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4608,9 +5186,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.067019    0.049414   -0.278124
 
 siesta: Pressure (total):        454.76365035  kBar
- Anneal: Kinetic Energy=    2.5852902272871570E-003
- Anneal: Velocity scale factor =    1.0238120876215506     
- Anneal: Cell scale factor =    1.0018114013729431     
+ Anneal: Kinetic Energy=    2.5852902272887630E-003
+ Anneal: Velocity scale factor =    1.0238120876215238     
+ Anneal: Cell scale factor =    1.0018114013729442     
 
 siesta: Temp_ion =     285.251 K
 
@@ -4629,8 +5207,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.575310    3.528603    3.427275
 outcell: Cell angles (23,13,12) (deg):     61.1483     60.7450     61.0764
 outcell: Cell volume (Ang**3)        :     31.2548
+<dSpData1D:S at geom step 57
+  <sparsity:sparsity for geom step 57
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    57
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 57
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4655,7 +5244,6 @@ siesta: Eharris(eV) =    -212.066633
 
 siesta: Eharris(eV) =    -212.066633
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4685,9 +5273,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.065481    0.045996   -0.275259
 
 siesta: Pressure (total):        453.16036901  kBar
- Anneal: Kinetic Energy=    2.2726394823169016E-003
- Anneal: Velocity scale factor =    1.0297202521421451     
- Anneal: Cell scale factor =    1.0016301925707765     
+ Anneal: Kinetic Energy=    2.2726394823180196E-003
+ Anneal: Velocity scale factor =    1.0297202521421212     
+ Anneal: Cell scale factor =    1.0016301925707769     
 
 siesta: Temp_ion =     253.656 K
 
@@ -4706,8 +5294,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.570730    3.530493    3.425237
 outcell: Cell angles (23,13,12) (deg):     61.1887     60.7532     61.1877
 outcell: Cell volume (Ang**3)        :     31.2490
+<dSpData1D:S at geom step 58
+  <sparsity:sparsity for geom step 58
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    58
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 58
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4732,7 +5331,6 @@ siesta: Eharris(eV) =    -212.080740
 
 siesta: Eharris(eV) =    -212.080740
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4762,9 +5360,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.064679    0.042353   -0.273314
 
 siesta: Pressure (total):        452.17194588  kBar
- Anneal: Kinetic Energy=    2.0204830763630903E-003
- Anneal: Velocity scale factor =    1.0357819333630915     
- Anneal: Cell scale factor =    1.0015082182381483     
+ Anneal: Kinetic Energy=    2.0204830763641047E-003
+ Anneal: Velocity scale factor =    1.0357819333630640     
+ Anneal: Cell scale factor =    1.0015082182381490     
 
 siesta: Temp_ion =     228.175 K
 
@@ -4783,8 +5381,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.566285    3.532861    3.423064
 outcell: Cell angles (23,13,12) (deg):     61.2284     60.7610     61.3000
 outcell: Cell volume (Ang**3)        :     31.2471
+<dSpData1D:S at geom step 59
+  <sparsity:sparsity for geom step 59
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    59
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 59
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4809,7 +5418,6 @@ siesta: Eharris(eV) =    -212.096636
 
 siesta: Eharris(eV) =    -212.096636
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4839,9 +5447,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.062843    0.039013   -0.270321
 
 siesta: Pressure (total):        450.24211728  kBar
- Anneal: Kinetic Energy=    1.8415087631346587E-003
- Anneal: Velocity scale factor =    1.0410626420747067     
- Anneal: Cell scale factor =    1.0013197679927872     
+ Anneal: Kinetic Energy=    1.8415087631355564E-003
+ Anneal: Velocity scale factor =    1.0410626420746776     
+ Anneal: Cell scale factor =    1.0013197679927877     
 
 siesta: Temp_ion =     210.089 K
 
@@ -4860,8 +5468,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.562001    3.535559    3.420695
 outcell: Cell angles (23,13,12) (deg):     61.2683     60.7657     61.4134
 outcell: Cell volume (Ang**3)        :     31.2471
+<dSpData1D:S at geom step 60
+  <sparsity:sparsity for geom step 60
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    60
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 60
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4886,7 +5505,6 @@ siesta: Eharris(eV) =    -212.113428
 
 siesta: Eharris(eV) =    -212.113428
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4916,9 +5534,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.060753    0.036286   -0.268097
 
 siesta: Pressure (total):        448.16176035  kBar
- Anneal: Kinetic Energy=    1.7461825078789188E-003
- Anneal: Velocity scale factor =    1.0443038078047213     
- Anneal: Cell scale factor =    1.0011811240361739     
+ Anneal: Kinetic Energy=    1.7461825078796324E-003
+ Anneal: Velocity scale factor =    1.0443038078046958     
+ Anneal: Cell scale factor =    1.0011811240361752     
 
 siesta: Temp_ion =     200.456 K
 
@@ -4937,8 +5555,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.557818    3.538470    3.418251
 outcell: Cell angles (23,13,12) (deg):     61.3081     60.7686     61.5263
 outcell: Cell volume (Ang**3)        :     31.2483
+<dSpData1D:S at geom step 61
+  <sparsity:sparsity for geom step 61
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    61
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 61
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -4963,7 +5592,6 @@ siesta: Eharris(eV) =    -212.130918
 
 siesta: Eharris(eV) =    -212.130918
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -4993,9 +5621,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.058092    0.032649   -0.266627
 
 siesta: Pressure (total):        447.79508762  kBar
- Anneal: Kinetic Energy=    1.7432157833391535E-003
- Anneal: Velocity scale factor =    1.0444101956403720     
- Anneal: Cell scale factor =    1.0010916769269969     
+ Anneal: Kinetic Energy=    1.7432157833396919E-003
+ Anneal: Velocity scale factor =    1.0444101956403526     
+ Anneal: Cell scale factor =    1.0010916769269975     
 
 siesta: Temp_ion =     200.157 K
 
@@ -5014,8 +5642,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.553964    3.541863    3.415876
 outcell: Cell angles (23,13,12) (deg):     61.3481     60.7699     61.6383
 outcell: Cell volume (Ang**3)        :     31.2565
+<dSpData1D:S at geom step 62
+  <sparsity:sparsity for geom step 62
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    62
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 62
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -5040,7 +5679,6 @@ siesta: Eharris(eV) =    -212.151840
 
 siesta: Eharris(eV) =    -212.151840
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5070,9 +5708,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.055142    0.028769   -0.264952
 
 siesta: Pressure (total):        446.23950386  kBar
- Anneal: Kinetic Energy=    1.8348965019108433E-003
- Anneal: Velocity scale factor =    1.0412769052830368     
- Anneal: Cell scale factor =    1.0009897234665577     
+ Anneal: Kinetic Energy=    1.8348965019111499E-003
+ Anneal: Velocity scale factor =    1.0412769052830269     
+ Anneal: Cell scale factor =    1.0009897234665590     
 
 siesta: Temp_ion =     209.421 K
 
@@ -5091,8 +5729,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.550453    3.545558    3.413560
 outcell: Cell angles (23,13,12) (deg):     61.3864     60.7702     61.7478
 outcell: Cell volume (Ang**3)        :     31.2696
+<dSpData1D:S at geom step 63
+  <sparsity:sparsity for geom step 63
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    63
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 63
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -5117,7 +5766,6 @@ siesta: Eharris(eV) =    -212.174801
 
 siesta: Eharris(eV) =    -212.174801
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5147,9 +5795,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.050638    0.025751   -0.262963
 
 siesta: Pressure (total):        442.64573602  kBar
- Anneal: Kinetic Energy=    2.0186532411514595E-003
- Anneal: Velocity scale factor =    1.0358313099279062     
- Anneal: Cell scale factor =    1.0008677650752715     
+ Anneal: Kinetic Energy=    2.0186532411517492E-003
+ Anneal: Velocity scale factor =    1.0358313099278984     
+ Anneal: Cell scale factor =    1.0008677650752729     
 
 siesta: Temp_ion =     227.990 K
 
@@ -5168,8 +5816,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.547100    3.549242    3.411377
 outcell: Cell angles (23,13,12) (deg):     61.4234     60.7692     61.8511
 outcell: Cell volume (Ang**3)        :     31.2830
+<dSpData1D:S at geom step 64
+  <sparsity:sparsity for geom step 64
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    64
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 64
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -5194,7 +5853,6 @@ siesta: Eharris(eV) =    -212.197259
 
 siesta: Eharris(eV) =    -212.197259
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5224,9 +5882,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.046933    0.022252   -0.261596
 
 siesta: Pressure (total):        440.55105236  kBar
- Anneal: Kinetic Energy=    2.2845641809224608E-003
- Anneal: Velocity scale factor =    1.0294659486100637     
- Anneal: Cell scale factor =    1.0007848042343530     
+ Anneal: Kinetic Energy=    2.2845641809231608E-003
+ Anneal: Velocity scale factor =    1.0294659486100488     
+ Anneal: Cell scale factor =    1.0007848042343537     
 
 siesta: Temp_ion =     254.861 K
 
@@ -5245,8 +5903,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.544102    3.553050    3.409338
 outcell: Cell angles (23,13,12) (deg):     61.4582     60.7675     61.9500
 outcell: Cell volume (Ang**3)        :     31.3000
+<dSpData1D:S at geom step 65
+  <sparsity:sparsity for geom step 65
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    65
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 65
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -5271,7 +5940,6 @@ siesta: Eharris(eV) =    -212.220889
 
 siesta: Eharris(eV) =    -212.220889
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5301,9 +5969,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.043601    0.019292   -0.259843
 
 siesta: Pressure (total):        438.03911422  kBar
- Anneal: Kinetic Energy=    2.6147633849996229E-003
- Anneal: Velocity scale factor =    1.0233264948243916     
- Anneal: Cell scale factor =    1.0006755746552567     
+ Anneal: Kinetic Energy=    2.6147633850006303E-003
+ Anneal: Velocity scale factor =    1.0233264948243752     
+ Anneal: Cell scale factor =    1.0006755746552578     
 
 siesta: Temp_ion =     288.229 K
 
@@ -5322,8 +5990,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.541493    3.556883    3.407346
 outcell: Cell angles (23,13,12) (deg):     61.4908     60.7655     62.0429
 outcell: Cell volume (Ang**3)        :     31.3192
+<dSpData1D:S at geom step 66
+  <sparsity:sparsity for geom step 66
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    66
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 66
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -5348,7 +6027,6 @@ siesta: Eharris(eV) =    -212.244619
 
 siesta: Eharris(eV) =    -212.244619
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5378,9 +6056,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.039350    0.015826   -0.259328
 
 siesta: Pressure (total):        437.01829742  kBar
- Anneal: Kinetic Energy=    2.9819720439282775E-003
- Anneal: Velocity scale factor =    1.0180665057667480     
- Anneal: Cell scale factor =    1.0006436531080323     
+ Anneal: Kinetic Energy=    2.9819720439292438E-003
+ Anneal: Velocity scale factor =    1.0180665057667357     
+ Anneal: Cell scale factor =    1.0006436531080325     
 
 siesta: Temp_ion =     325.336 K
 
@@ -5399,8 +6077,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.539469    3.560839    3.405638
 outcell: Cell angles (23,13,12) (deg):     61.5209     60.7630     62.1307
 outcell: Cell volume (Ang**3)        :     31.3453
+<dSpData1D:S at geom step 67
+  <sparsity:sparsity for geom step 67
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2596, refcount: 1>
+refcount: 1>
 New_DM. Step:    67
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 67
+    nrows_g=8 nrows=5 sparsity=40.5625 nnzs=2596, refcount: 8>
+  <dData2D:(DMatomic) n=2596 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -5425,7 +6114,6 @@ siesta: Eharris(eV) =    -212.270145
 
 siesta: Eharris(eV) =    -212.270145
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5455,9 +6143,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.035797    0.012787   -0.258817
 
 siesta: Pressure (total):        435.05921820  kBar
- Anneal: Kinetic Energy=    3.3547507484770274E-003
- Anneal: Velocity scale factor =    1.0138852340501527     
- Anneal: Cell scale factor =    1.0006099456678879     
+ Anneal: Kinetic Energy=    3.3547507484780045E-003
+ Anneal: Velocity scale factor =    1.0138852340501430     
+ Anneal: Cell scale factor =    1.0006099456678881     
 
 siesta: Temp_ion =     363.007 K
 
@@ -5476,8 +6164,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.537923    3.564746    3.404147
 outcell: Cell angles (23,13,12) (deg):     61.5475     60.7615     62.2119
 outcell: Cell volume (Ang**3)        :     31.3751
+<dSpData1D:S at geom step 68
+  <sparsity:sparsity for geom step 68
+    nrows_g=8 nrows=5 sparsity=39.4375 nnzs=2524, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2524, refcount: 1>
+refcount: 1>
 New_DM. Step:    68
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 68
+    nrows_g=8 nrows=5 sparsity=39.4375 nnzs=2524, refcount: 8>
+  <dData2D:(DMatomic) n=2524 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -5502,7 +6201,6 @@ siesta: Eharris(eV) =    -212.295639
 
 siesta: Eharris(eV) =    -212.295639
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5532,9 +6230,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.031286    0.010755   -0.257237
 
 siesta: Pressure (total):        432.04025155  kBar
- Anneal: Kinetic Energy=    3.7019171188733060E-003
- Anneal: Velocity scale factor =    1.0107371873366806     
- Anneal: Cell scale factor =    1.0005059985065234     
+ Anneal: Kinetic Energy=    3.7019171188747303E-003
+ Anneal: Velocity scale factor =    1.0107371873366688     
+ Anneal: Cell scale factor =    1.0005059985065228     
 
 siesta: Temp_ion =     398.089 K
 
@@ -5553,8 +6251,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.536819    3.568454    3.402794
 outcell: Cell angles (23,13,12) (deg):     61.5726     60.7592     62.2842
 outcell: Cell volume (Ang**3)        :     31.4058
+<dSpData1D:S at geom step 69
+  <sparsity:sparsity for geom step 69
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    69
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 69
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -5579,7 +6288,6 @@ siesta: Eharris(eV) =    -212.319343
 
 siesta: Eharris(eV) =    -212.319343
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5609,9 +6317,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.027256    0.007712   -0.256097
 
 siesta: Pressure (total):        429.95094906  kBar
- Anneal: Kinetic Energy=    3.9920941838931263E-003
- Anneal: Velocity scale factor =    1.0085201221579196     
- Anneal: Cell scale factor =    1.0004289678222082     
+ Anneal: Kinetic Energy=    3.9920941838951255E-003
+ Anneal: Velocity scale factor =    1.0085201221579057     
+ Anneal: Cell scale factor =    1.0004289678222069     
 
 siesta: Temp_ion =     427.412 K
 
@@ -5630,8 +6338,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.536298    3.572083    3.401593
 outcell: Cell angles (23,13,12) (deg):     61.5948     60.7563     62.3493
 outcell: Cell volume (Ang**3)        :     31.4400
+<dSpData1D:S at geom step 70
+  <sparsity:sparsity for geom step 70
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    70
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 70
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -5656,7 +6375,6 @@ siesta: Eharris(eV) =    -212.342333
 
 siesta: Eharris(eV) =    -212.342333
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5686,9 +6404,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.022345    0.003643   -0.257614
 
 siesta: Pressure (total):        429.63595418  kBar
- Anneal: Kinetic Energy=    4.2034885483970847E-003
- Anneal: Velocity scale factor =    1.0070951393296443     
- Anneal: Cell scale factor =    1.0005212817799556     
+ Anneal: Kinetic Energy=    4.2034885483996590E-003
+ Anneal: Velocity scale factor =    1.0070951393296279     
+ Anneal: Cell scale factor =    1.0005212817799554     
 
 siesta: Temp_ion =     448.774 K
 
@@ -5707,8 +6425,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.536411    3.575869    3.400982
 outcell: Cell angles (23,13,12) (deg):     61.6128     60.7565     62.4044
 outcell: Cell volume (Ang**3)        :     31.4843
+<dSpData1D:S at geom step 71
+  <sparsity:sparsity for geom step 71
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    71
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 71
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -5733,7 +6462,6 @@ siesta: Eharris(eV) =    -212.367045
 
 siesta: Eharris(eV) =    -212.367045
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5763,9 +6491,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.018382    0.001327   -0.256864
 
 siesta: Pressure (total):        427.28071626  kBar
- Anneal: Kinetic Energy=    4.3202132433700106E-003
- Anneal: Velocity scale factor =    1.0063672947116280     
- Anneal: Cell scale factor =    1.0004678790864834     
+ Anneal: Kinetic Energy=    4.3202132433729648E-003
+ Anneal: Velocity scale factor =    1.0063672947116102     
+ Anneal: Cell scale factor =    1.0004678790864832     
 
 siesta: Temp_ion =     460.569 K
 
@@ -5784,8 +6512,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.537065    3.579405    3.400566
 outcell: Cell angles (23,13,12) (deg):     61.6275     60.7566     62.4516
 outcell: Cell volume (Ang**3)        :     31.5307
+<dSpData1D:S at geom step 72
+  <sparsity:sparsity for geom step 72
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    72
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 72
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -5810,7 +6549,6 @@ siesta: Eharris(eV) =    -212.389903
 
 siesta: Eharris(eV) =    -212.389903
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5840,9 +6578,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.013860    0.000494   -0.255355
 
 siesta: Pressure (total):        423.39233844  kBar
- Anneal: Kinetic Energy=    4.3298876861466674E-003
- Anneal: Velocity scale factor =    1.0063087072357537     
- Anneal: Cell scale factor =    1.0003658032118068     
+ Anneal: Kinetic Energy=    4.3298876861508854E-003
+ Anneal: Velocity scale factor =    1.0063087072357282     
+ Anneal: Cell scale factor =    1.0003658032118059     
 
 siesta: Temp_ion =     461.547 K
 
@@ -5861,8 +6599,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.538099    3.582423    3.400280
 outcell: Cell angles (23,13,12) (deg):     61.6404     60.7559     62.4886
 outcell: Cell volume (Ang**3)        :     31.5744
+<dSpData1D:S at geom step 73
+  <sparsity:sparsity for geom step 73
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    73
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 73
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -5887,7 +6636,6 @@ siesta: Eharris(eV) =    -212.408857
 
 siesta: Eharris(eV) =    -212.408857
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5917,9 +6665,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.009661   -0.000491   -0.254105
 
 siesta: Pressure (total):        420.09321377  kBar
- Anneal: Kinetic Energy=    4.2342041984286026E-003
- Anneal: Velocity scale factor =    1.0068997709898586     
- Anneal: Cell scale factor =    1.0002808292958865     
+ Anneal: Kinetic Energy=    4.2342041984335032E-003
+ Anneal: Velocity scale factor =    1.0068997709898277     
+ Anneal: Cell scale factor =    1.0002808292958871     
 
 siesta: Temp_ion =     451.878 K
 
@@ -5938,8 +6686,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.539568    3.584931    3.400134
 outcell: Cell angles (23,13,12) (deg):     61.6510     60.7539     62.5177
 outcell: Cell volume (Ang**3)        :     31.6162
+<dSpData1D:S at geom step 74
+  <sparsity:sparsity for geom step 74
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    74
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 74
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -5964,7 +6723,6 @@ siesta: Eharris(eV) =    -212.424692
 
 siesta: Eharris(eV) =    -212.424692
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -5994,8 +6752,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.006524   -0.001040   -0.252411
 
 siesta: Pressure (total):        416.65796016  kBar
- Anneal: Kinetic Energy=    4.0461335126122161E-003
- Anneal: Velocity scale factor =    1.0081418796338439     
+ Anneal: Kinetic Energy=    4.0461335126183457E-003
+ Anneal: Velocity scale factor =    1.0081418796338015     
  Anneal: Cell scale factor =    1.0001680464523937     
 
 siesta: Temp_ion =     432.873 K
@@ -6015,8 +6773,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.541390    3.586951    3.399986
 outcell: Cell angles (23,13,12) (deg):     61.6599     60.7510     62.5389
 outcell: Cell volume (Ang**3)        :     31.6547
+<dSpData1D:S at geom step 75
+  <sparsity:sparsity for geom step 75
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    75
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 75
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6041,7 +6810,6 @@ siesta: Eharris(eV) =    -212.437181
 
 siesta: Eharris(eV) =    -212.437181
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6071,9 +6839,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.003067   -0.002544   -0.251371
 
 siesta: Pressure (total):        414.98454497  kBar
- Anneal: Kinetic Energy=    3.7849592672790115E-003
- Anneal: Velocity scale factor =    1.0100685038015778     
- Anneal: Cell scale factor =    1.0000980625309008     
+ Anneal: Kinetic Energy=    3.7849592672856026E-003
+ Anneal: Velocity scale factor =    1.0100685038015258     
+ Anneal: Cell scale factor =    1.0000980625309015     
 
 siesta: Temp_ion =     406.480 K
 
@@ -6092,8 +6860,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.543764    3.588715    3.399952
 outcell: Cell angles (23,13,12) (deg):     61.6668     60.7462     62.5548
 outcell: Cell volume (Ang**3)        :     31.6949
+<dSpData1D:S at geom step 76
+  <sparsity:sparsity for geom step 76
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    76
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 76
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6118,7 +6897,6 @@ siesta: Eharris(eV) =    -212.448927
 
 siesta: Eharris(eV) =    -212.448927
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6148,9 +6926,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.000107   -0.002766   -0.249620
 
 siesta: Pressure (total):        411.75405803  kBar
- Anneal: Kinetic Energy=    3.4767797086820945E-003
- Anneal: Velocity scale factor =    1.0127081882550519     
- Anneal: Cell scale factor =   0.99998356699754842     
+ Anneal: Kinetic Energy=    3.4767797086893946E-003
+ Anneal: Velocity scale factor =    1.0127081882549840     
+ Anneal: Cell scale factor =   0.99998356699754820     
 
 siesta: Temp_ion =     375.338 K
 
@@ -6169,8 +6947,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.546485    3.589941    3.399897
 outcell: Cell angles (23,13,12) (deg):     61.6721     60.7395     62.5650
 outcell: Cell volume (Ang**3)        :     31.7312
+<dSpData1D:S at geom step 77
+  <sparsity:sparsity for geom step 77
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    77
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 77
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6195,7 +6984,6 @@ siesta: Eharris(eV) =    -212.458053
 
 siesta: Eharris(eV) =    -212.458053
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6225,9 +7013,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.002863   -0.002974   -0.248899
 
 siesta: Pressure (total):        410.13722668  kBar
- Anneal: Kinetic Energy=    3.1510331172560132E-003
- Anneal: Velocity scale factor =    1.0160497847708716     
- Anneal: Cell scale factor =   0.99993617468233198     
+ Anneal: Kinetic Energy=    3.1510331172635428E-003
+ Anneal: Velocity scale factor =    1.0160497847707866     
+ Anneal: Cell scale factor =   0.99993617468233464     
 
 siesta: Temp_ion =     342.420 K
 
@@ -6246,8 +7034,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.549575    3.590832    3.399969
 outcell: Cell angles (23,13,12) (deg):     61.6768     60.7310     62.5707
 outcell: Cell volume (Ang**3)        :     31.7676
+<dSpData1D:S at geom step 78
+  <sparsity:sparsity for geom step 78
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    78
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 78
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6272,7 +7071,6 @@ siesta: Eharris(eV) =    -212.466698
 
 siesta: Eharris(eV) =    -212.466698
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6302,9 +7100,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.005570   -0.002384   -0.247287
 
 siesta: Pressure (total):        406.81441516  kBar
- Anneal: Kinetic Energy=    2.8348909231656174E-003
- Anneal: Velocity scale factor =    1.0200128982571801     
- Anneal: Cell scale factor =   0.99983247347524262     
+ Anneal: Kinetic Energy=    2.8348909231738460E-003
+ Anneal: Velocity scale factor =    1.0200128982570655     
+ Anneal: Cell scale factor =   0.99983247347524373     
 
 siesta: Temp_ion =     310.473 K
 
@@ -6323,8 +7121,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.552938    3.591052    3.400024
 outcell: Cell angles (23,13,12) (deg):     61.6800     60.7202     62.5722
 outcell: Cell volume (Ang**3)        :     31.7986
+<dSpData1D:S at geom step 79
+  <sparsity:sparsity for geom step 79
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    79
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 79
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6349,7 +7158,6 @@ siesta: Eharris(eV) =    -212.473040
 
 siesta: Eharris(eV) =    -212.473040
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6379,9 +7187,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.007108   -0.002105   -0.246549
 
 siesta: Pressure (total):        405.15692382  kBar
- Anneal: Kinetic Energy=    2.5548920998095083E-003
- Anneal: Velocity scale factor =    1.0243244067589192     
- Anneal: Cell scale factor =   0.99978549105910997     
+ Anneal: Kinetic Energy=    2.5548920998187783E-003
+ Anneal: Velocity scale factor =    1.0243244067587611     
+ Anneal: Cell scale factor =   0.99978549105911052     
 
 siesta: Temp_ion =     282.179 K
 
@@ -6400,8 +7208,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.556664    3.590835    3.400098
 outcell: Cell angles (23,13,12) (deg):     61.6816     60.7086     62.5708
 outcell: Cell volume (Ang**3)        :     31.8280
+<dSpData1D:S at geom step 80
+  <sparsity:sparsity for geom step 80
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    80
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 80
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6426,7 +7245,6 @@ siesta: Eharris(eV) =    -212.479285
 
 siesta: Eharris(eV) =    -212.479285
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6456,9 +7274,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.008757   -0.001275   -0.246234
 
 siesta: Pressure (total):        404.12430690  kBar
- Anneal: Kinetic Energy=    2.3370776274619439E-003
- Anneal: Velocity scale factor =    1.0283762247278097     
- Anneal: Cell scale factor =   0.99976630192007365     
+ Anneal: Kinetic Energy=    2.3370776274720070E-003
+ Anneal: Velocity scale factor =    1.0283762247276054     
+ Anneal: Cell scale factor =   0.99976630192007476     
 
 siesta: Temp_ion =     260.168 K
 
@@ -6477,8 +7295,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.560749    3.590221    3.400261
 outcell: Cell angles (23,13,12) (deg):     61.6829     60.6964     62.5666
 outcell: Cell volume (Ang**3)        :     31.8570
+<dSpData1D:S at geom step 81
+  <sparsity:sparsity for geom step 81
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    81
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 81
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6503,7 +7332,6 @@ siesta: Eharris(eV) =    -212.486314
 
 siesta: Eharris(eV) =    -212.486314
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6533,9 +7361,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.009835    0.000110   -0.245776
 
 siesta: Pressure (total):        403.10025883  kBar
- Anneal: Kinetic Energy=    2.2011927376444289E-003
- Anneal: Velocity scale factor =    1.0313002119319166     
- Anneal: Cell scale factor =   0.99973846335889238     
+ Anneal: Kinetic Energy=    2.2011927376555233E-003
+ Anneal: Velocity scale factor =    1.0313002119316634     
+ Anneal: Cell scale factor =   0.99973846335889349     
 
 siesta: Temp_ion =     246.436 K
 
@@ -6554,8 +7382,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.565079    3.589191    3.400451
 outcell: Cell angles (23,13,12) (deg):     61.6844     60.6830     62.5612
 outcell: Cell volume (Ang**3)        :     31.8843
+<dSpData1D:S at geom step 82
+  <sparsity:sparsity for geom step 82
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    82
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 82
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6580,7 +7419,6 @@ siesta: Eharris(eV) =    -212.493926
 
 siesta: Eharris(eV) =    -212.493926
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6610,8 +7448,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.010461    0.001753   -0.245825
 
 siesta: Pressure (total):        402.12604076  kBar
- Anneal: Kinetic Energy=    2.1635778140423967E-003
- Anneal: Velocity scale factor =    1.0321729125580681     
+ Anneal: Kinetic Energy=    2.1635778140546174E-003
+ Anneal: Velocity scale factor =    1.0321729125577797     
  Anneal: Cell scale factor =   0.99974363550128231     
 
 siesta: Temp_ion =     242.635 K
@@ -6631,8 +7469,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.569518    3.587748    3.400705
 outcell: Cell angles (23,13,12) (deg):     61.6860     60.6696     62.5543
 outcell: Cell volume (Ang**3)        :     31.9092
+<dSpData1D:S at geom step 83
+  <sparsity:sparsity for geom step 83
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    83
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 83
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6657,7 +7506,6 @@ siesta: Eharris(eV) =    -212.502105
 
 siesta: Eharris(eV) =    -212.502105
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6687,9 +7535,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.010855    0.003168   -0.245179
 
 siesta: Pressure (total):        400.25657371  kBar
- Anneal: Kinetic Energy=    2.2346703245777182E-003
- Anneal: Velocity scale factor =    1.0305476183431146     
- Anneal: Cell scale factor =   0.99970487801108143     
+ Anneal: Kinetic Energy=    2.2346703245909477E-003
+ Anneal: Velocity scale factor =    1.0305476183428215     
+ Anneal: Cell scale factor =   0.99970487801108021     
 
 siesta: Temp_ion =     249.819 K
 
@@ -6708,8 +7556,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.574013    3.585805    3.400912
 outcell: Cell angles (23,13,12) (deg):     61.6869     60.6557     62.5466
 outcell: Cell volume (Ang**3)        :     31.9292
+<dSpData1D:S at geom step 84
+  <sparsity:sparsity for geom step 84
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    84
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 84
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6734,7 +7593,6 @@ siesta: Eharris(eV) =    -212.509918
 
 siesta: Eharris(eV) =    -212.509918
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6764,9 +7622,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.009989    0.005671   -0.244411
 
 siesta: Pressure (total):        398.35308264  kBar
- Anneal: Kinetic Energy=    2.4144927990484579E-003
- Anneal: Velocity scale factor =    1.0268542725602792     
- Anneal: Cell scale factor =   0.99965923251898270     
+ Anneal: Kinetic Energy=    2.4144927990627043E-003
+ Anneal: Velocity scale factor =    1.0268542725600078     
+ Anneal: Cell scale factor =   0.99965923251898203     
 
 siesta: Temp_ion =     267.991 K
 
@@ -6785,8 +7643,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.578389    3.583402    3.400957
 outcell: Cell angles (23,13,12) (deg):     61.6886     60.6429     62.5366
 outcell: Cell volume (Ang**3)        :     31.9424
+<dSpData1D:S at geom step 85
+  <sparsity:sparsity for geom step 85
+    nrows_g=8 nrows=5 sparsity=39.3438 nnzs=2518, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2518, refcount: 1>
+refcount: 1>
 New_DM. Step:    85
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 85
+    nrows_g=8 nrows=5 sparsity=39.3438 nnzs=2518, refcount: 8>
+  <dData2D:(DMatomic) n=2518 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6811,7 +7680,6 @@ siesta: Eharris(eV) =    -212.516686
 
 siesta: Eharris(eV) =    -212.516686
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6841,9 +7709,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.008462    0.007937   -0.243188
 
 siesta: Pressure (total):        395.74325856  kBar
- Anneal: Kinetic Energy=    2.6937524521599083E-003
- Anneal: Velocity scale factor =    1.0220764299685554     
- Anneal: Cell scale factor =   0.99958514969250856     
+ Anneal: Kinetic Energy=    2.6937524521748538E-003
+ Anneal: Velocity scale factor =    1.0220764299683256     
+ Anneal: Cell scale factor =   0.99958514969250667     
 
 siesta: Temp_ion =     296.211 K
 
@@ -6862,8 +7730,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.582519    3.580455    3.400728
 outcell: Cell angles (23,13,12) (deg):     61.6898     60.6308     62.5265
 outcell: Cell volume (Ang**3)        :     31.9460
+<dSpData1D:S at geom step 86
+  <sparsity:sparsity for geom step 86
+    nrows_g=8 nrows=5 sparsity=39.3438 nnzs=2518, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2518, refcount: 1>
+refcount: 1>
 New_DM. Step:    86
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 86
+    nrows_g=8 nrows=5 sparsity=39.3438 nnzs=2518, refcount: 8>
+  <dData2D:(DMatomic) n=2518 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6888,7 +7767,6 @@ siesta: Eharris(eV) =    -212.521071
 
 siesta: Eharris(eV) =    -212.521071
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6918,9 +7796,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.007458    0.011262   -0.244263
 
 siesta: Pressure (total):        395.35608035  kBar
- Anneal: Kinetic Energy=    3.0568064843765810E-003
- Anneal: Velocity scale factor =    1.0171467879866265     
- Anneal: Cell scale factor =   0.99965886529271986     
+ Anneal: Kinetic Energy=    3.0568064843923561E-003
+ Anneal: Velocity scale factor =    1.0171467879864373     
+ Anneal: Cell scale factor =   0.99965886529271797     
 
 siesta: Temp_ion =     332.899 K
 
@@ -6939,8 +7817,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.586514    3.577000    3.400585
 outcell: Cell angles (23,13,12) (deg):     61.6916     60.6204     62.5171
 outcell: Cell volume (Ang**3)        :     31.9453
+<dSpData1D:S at geom step 87
+  <sparsity:sparsity for geom step 87
+    nrows_g=8 nrows=5 sparsity=39.3438 nnzs=2518, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2518, refcount: 1>
+refcount: 1>
 New_DM. Step:    87
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 87
+    nrows_g=8 nrows=5 sparsity=39.3438 nnzs=2518, refcount: 8>
+  <dData2D:(DMatomic) n=2518 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -6965,7 +7854,6 @@ siesta: Eharris(eV) =    -212.525196
 
 siesta: Eharris(eV) =    -212.525196
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -6995,8 +7883,8 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.005770    0.014527   -0.245684
 
 siesta: Pressure (total):        395.24839400  kBar
- Anneal: Kinetic Energy=    3.4792846725450392E-003
- Anneal: Velocity scale factor =    1.0126848773294066     
+ Anneal: Kinetic Energy=    3.4792846725618600E-003
+ Anneal: Velocity scale factor =    1.0126848773292503     
  Anneal: Cell scale factor =   0.99975468280363589     
 
 siesta: Temp_ion =     375.591 K
@@ -7016,8 +7904,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.590133    3.573202    3.400522
 outcell: Cell angles (23,13,12) (deg):     61.6945     60.6131     62.5083
 outcell: Cell volume (Ang**3)        :     31.9400
+<dSpData1D:S at geom step 88
+  <sparsity:sparsity for geom step 88
+    nrows_g=8 nrows=5 sparsity=39.3438 nnzs=2518, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2518, refcount: 1>
+refcount: 1>
 New_DM. Step:    88
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 88
+    nrows_g=8 nrows=5 sparsity=39.3438 nnzs=2518, refcount: 8>
+  <dData2D:(DMatomic) n=2518 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -7042,7 +7941,6 @@ siesta: Eharris(eV) =    -212.528461
 
 siesta: Eharris(eV) =    -212.528461
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7072,9 +7970,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.002857    0.017900   -0.246408
 
 siesta: Pressure (total):        395.26480947  kBar
- Anneal: Kinetic Energy=    3.9309248204621415E-003
- Anneal: Velocity scale factor =    1.0089606400505571     
- Anneal: Cell scale factor =   0.99980519043861715     
+ Anneal: Kinetic Energy=    3.9309248204798157E-003
+ Anneal: Velocity scale factor =    1.0089606400504281     
+ Anneal: Cell scale factor =   0.99980519043861615     
 
 siesta: Temp_ion =     421.231 K
 
@@ -7093,8 +7991,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.593475    3.569107    3.400342
 outcell: Cell angles (23,13,12) (deg):     61.6987     60.6091     62.5004
 outcell: Cell volume (Ang**3)        :     31.9297
+<dSpData1D:S at geom step 89
+  <sparsity:sparsity for geom step 89
+    nrows_g=8 nrows=5 sparsity=39.3438 nnzs=2518, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2518, refcount: 1>
+refcount: 1>
 New_DM. Step:    89
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 89
+    nrows_g=8 nrows=5 sparsity=39.3438 nnzs=2518, refcount: 8>
+  <dData2D:(DMatomic) n=2518 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -7119,7 +8028,6 @@ siesta: Eharris(eV) =    -212.530446
 
 siesta: Eharris(eV) =    -212.530446
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7149,9 +8057,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
         -0.001106    0.022449   -0.248206
 
 siesta: Pressure (total):        395.51820504  kBar
- Anneal: Kinetic Energy=    4.3804087513750738E-003
- Anneal: Velocity scale factor =    1.0060069069519848     
- Anneal: Cell scale factor =   0.99992346023545919     
+ Anneal: Kinetic Energy=    4.3804087513941757E-003
+ Anneal: Velocity scale factor =    1.0060069069518720     
+ Anneal: Cell scale factor =   0.99992346023545731     
 
 siesta: Temp_ion =     466.652 K
 
@@ -7170,8 +8078,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.596393    3.564574    3.400280
 outcell: Cell angles (23,13,12) (deg):     61.7055     60.6079     62.4938
 outcell: Cell volume (Ang**3)        :     31.9143
+<dSpData1D:S at geom step 90
+  <sparsity:sparsity for geom step 90
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    90
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 90
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:   10    1:    5
            2       1:    9    1:   10    6:    9
@@ -7196,7 +8115,6 @@ siesta: Eharris(eV) =    -212.530732
 
 siesta: Eharris(eV) =    -212.530732
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7226,9 +8144,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.000940    0.025784   -0.250305
 
 siesta: Pressure (total):        396.07126088  kBar
- Anneal: Kinetic Energy=    4.7990974805958240E-003
- Anneal: Velocity scale factor =    1.0037474264501300     
- Anneal: Cell scale factor =    1.0000598097497690     
+ Anneal: Kinetic Energy=    4.7990974806168046E-003
+ Anneal: Velocity scale factor =    1.0037474264500268     
+ Anneal: Cell scale factor =    1.0000598097497666     
 
 siesta: Temp_ion =     508.962 K
 
@@ -7247,8 +8165,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.598832    3.559749    3.400353
 outcell: Cell angles (23,13,12) (deg):     61.7132     60.6098     62.4897
 outcell: Cell volume (Ang**3)        :     31.8947
+<dSpData1D:S at geom step 91
+  <sparsity:sparsity for geom step 91
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    91
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 91
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:    9    1:    9    1:    5
            2       1:    9    1:    9    6:    9
@@ -7273,7 +8202,6 @@ siesta: Eharris(eV) =    -212.528271
 
 siesta: Eharris(eV) =    -212.528271
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7303,9 +8231,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.003094    0.028395   -0.252407
 
 siesta: Pressure (total):        397.62311344  kBar
- Anneal: Kinetic Energy=    5.1665458464390471E-003
- Anneal: Velocity scale factor =    1.0020628872872057     
- Anneal: Cell scale factor =    1.0001951848536244     
+ Anneal: Kinetic Energy=    5.1665458464620409E-003
+ Anneal: Velocity scale factor =    1.0020628872871078     
+ Anneal: Cell scale factor =    1.0001951848536217     
 
 siesta: Temp_ion =     546.093 K
 
@@ -7324,8 +8252,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.600800    3.554998    3.400548
 outcell: Cell angles (23,13,12) (deg):     61.7237     60.6154     62.4865
 outcell: Cell volume (Ang**3)        :     31.8745
+<dSpData1D:S at geom step 92
+  <sparsity:sparsity for geom step 92
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    92
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 92
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:    9    1:    5
            2       1:   10    1:    9    6:    9
@@ -7350,7 +8289,6 @@ siesta: Eharris(eV) =    -212.526838
 
 siesta: Eharris(eV) =    -212.526838
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7380,9 +8318,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.007943    0.033824   -0.255298
 
 siesta: Pressure (total):        400.55360746  kBar
- Anneal: Kinetic Energy=    5.4630870189061988E-003
- Anneal: Velocity scale factor =    1.0008669308148084     
- Anneal: Cell scale factor =    1.0003799659972761     
+ Anneal: Kinetic Energy=    5.4630870189311138E-003
+ Anneal: Velocity scale factor =    1.0008669308147131     
+ Anneal: Cell scale factor =    1.0003799659972747     
 
 siesta: Temp_ion =     576.060 K
 
@@ -7401,8 +8339,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.602619    3.550029    3.400764
 outcell: Cell angles (23,13,12) (deg):     61.7374     60.6277     62.4857
 outcell: Cell volume (Ang**3)        :     31.8539
+<dSpData1D:S at geom step 93
+  <sparsity:sparsity for geom step 93
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    93
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 93
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:    9    1:    5
            2       1:   10    1:    9    6:    9
@@ -7427,7 +8376,6 @@ siesta: Eharris(eV) =    -212.524638
 
 siesta: Eharris(eV) =    -212.524638
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7457,9 +8405,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.011065    0.035909   -0.256958
 
 siesta: Pressure (total):        400.61986846  kBar
- Anneal: Kinetic Energy=    5.6772930835308627E-003
- Anneal: Velocity scale factor =    1.0000799733199961     
- Anneal: Cell scale factor =    1.0004848790914191     
+ Anneal: Kinetic Energy=    5.6772930835576087E-003
+ Anneal: Velocity scale factor =    1.0000799733199015     
+ Anneal: Cell scale factor =    1.0004848790914171     
 
 siesta: Temp_ion =     597.706 K
 
@@ -7478,8 +8426,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.603826    3.544880    3.400961
 outcell: Cell angles (23,13,12) (deg):     61.7503     60.6438     62.4884
 outcell: Cell volume (Ang**3)        :     31.8277
+<dSpData1D:S at geom step 94
+  <sparsity:sparsity for geom step 94
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    94
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 94
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:    9    1:    5
            2       1:   10    1:    9    6:    9
@@ -7504,7 +8463,6 @@ siesta: Eharris(eV) =    -212.519415
 
 siesta: Eharris(eV) =    -212.519415
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7534,9 +8492,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.013949    0.038114   -0.258349
 
 siesta: Pressure (total):        401.30785916  kBar
- Anneal: Kinetic Energy=    5.8088616774922709E-003
- Anneal: Velocity scale factor =   0.99962510211438793     
- Anneal: Cell scale factor =    1.0005718192313140     
+ Anneal: Kinetic Energy=    5.8088616775208816E-003
+ Anneal: Velocity scale factor =   0.99962510211429123     
+ Anneal: Cell scale factor =    1.0005718192313122     
 
 siesta: Temp_ion =     611.001 K
 
@@ -7555,8 +8513,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.604478    3.539663    3.401123
 outcell: Cell angles (23,13,12) (deg):     61.7639     60.6624     62.4955
 outcell: Cell volume (Ang**3)        :     31.7972
+<dSpData1D:S at geom step 95
+  <sparsity:sparsity for geom step 95
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    95
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 95
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:    9    1:    5
            2       1:   10    1:    9    6:    9
@@ -7581,7 +8550,6 @@ siesta: Eharris(eV) =    -212.511794
 
 siesta: Eharris(eV) =    -212.511794
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7611,9 +8579,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.017212    0.039796   -0.258971
 
 siesta: Pressure (total):        401.07986759  kBar
- Anneal: Kinetic Energy=    5.8603915559750988E-003
- Anneal: Velocity scale factor =   0.99945246017116263     
- Anneal: Cell scale factor =    1.0006090375378545     
+ Anneal: Kinetic Energy=    5.8603915560050488E-003
+ Anneal: Velocity scale factor =   0.99945246017106315     
+ Anneal: Cell scale factor =    1.0006090375378529     
 
 siesta: Temp_ion =     616.208 K
 
@@ -7632,8 +8600,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.604574    3.534318    3.401112
 outcell: Cell angles (23,13,12) (deg):     61.7770     60.6833     62.5070
 outcell: Cell volume (Ang**3)        :     31.7604
+<dSpData1D:S at geom step 96
+  <sparsity:sparsity for geom step 96
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    96
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 96
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:    9    1:    5
            2       1:   10    1:    9    6:    9
@@ -7658,7 +8637,6 @@ siesta: Eharris(eV) =    -212.500728
 
 siesta: Eharris(eV) =    -212.500728
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7688,9 +8666,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.019808    0.042153   -0.260630
 
 siesta: Pressure (total):        402.46117343  kBar
- Anneal: Kinetic Energy=    5.8306426477600978E-003
- Anneal: Velocity scale factor =   0.99955176006242585     
- Anneal: Cell scale factor =    1.0007121384405298     
+ Anneal: Kinetic Energy=    5.8306426477923003E-003
+ Anneal: Velocity scale factor =   0.99955176006231794     
+ Anneal: Cell scale factor =    1.0007121384405280     
 
 siesta: Temp_ion =     613.202 K
 
@@ -7709,8 +8687,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.604126    3.529008    3.401127
 outcell: Cell angles (23,13,12) (deg):     61.7922     60.7061     62.5233
 outcell: Cell volume (Ang**3)        :     31.7213
+<dSpData1D:S at geom step 97
+  <sparsity:sparsity for geom step 97
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    97
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 97
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:    9    1:    5
            2       1:   10    1:    9    6:    9
@@ -7735,7 +8724,6 @@ siesta: Eharris(eV) =    -212.487850
 
 siesta: Eharris(eV) =    -212.487850
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7765,9 +8753,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.022990    0.043172   -0.262023
 
 siesta: Pressure (total):        404.41427666  kBar
- Anneal: Kinetic Energy=    5.7227012598451430E-003
- Anneal: Velocity scale factor =   0.99992064387200752     
- Anneal: Cell scale factor =    1.0007977453975123     
+ Anneal: Kinetic Energy=    5.7227012598800274E-003
+ Anneal: Velocity scale factor =   0.99992064387188617     
+ Anneal: Cell scale factor =    1.0007977453975097     
 
 siesta: Temp_ion =     602.294 K
 
@@ -7786,8 +8774,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.603250    3.523962    3.401088
 outcell: Cell angles (23,13,12) (deg):     61.8085     60.7312     62.5450
 outcell: Cell volume (Ang**3)        :     31.6821
+<dSpData1D:S at geom step 98
+  <sparsity:sparsity for geom step 98
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    98
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 98
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:    9    1:    5
            2       1:   10    1:    9    6:    9
@@ -7812,7 +8811,6 @@ siesta: Eharris(eV) =    -212.474136
 
 siesta: Eharris(eV) =    -212.474136
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7842,9 +8840,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.025763    0.044104   -0.263068
 
 siesta: Pressure (total):        406.41330411  kBar
- Anneal: Kinetic Energy=    5.5477775425846945E-003
- Anneal: Velocity scale factor =    1.0005486027663948     
- Anneal: Cell scale factor =    1.0008612015805773     
+ Anneal: Kinetic Energy=    5.5477775426219823E-003
+ Anneal: Velocity scale factor =    1.0005486027662567     
+ Anneal: Cell scale factor =    1.0008612015805736     
 
 siesta: Temp_ion =     584.618 K
 
@@ -7863,8 +8861,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.601969    3.519232    3.400981
 outcell: Cell angles (23,13,12) (deg):     61.8269     60.7574     62.5721
 outcell: Cell volume (Ang**3)        :     31.6435
+<dSpData1D:S at geom step 99
+  <sparsity:sparsity for geom step 99
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:    99
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 99
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:    9    1:    5
            2       1:   10    1:    9    6:    9
@@ -7889,7 +8898,6 @@ siesta: Eharris(eV) =    -212.459846
 
 siesta: Eharris(eV) =    -212.459846
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7919,9 +8927,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.027902    0.044273   -0.264904
 
 siesta: Pressure (total):        409.26496175  kBar
- Anneal: Kinetic Energy=    5.3183938133636024E-003
- Anneal: Velocity scale factor =    1.0014339982259117     
- Anneal: Cell scale factor =    1.0009754843895056     
+ Anneal: Kinetic Energy=    5.3183938134036780E-003
+ Anneal: Velocity scale factor =    1.0014339982257505     
+ Anneal: Cell scale factor =    1.0009754843895018     
 
 siesta: Temp_ion =     561.438 K
 
@@ -7940,8 +8948,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.600218    3.515063    3.400971
 outcell: Cell angles (23,13,12) (deg):     61.8479     60.7854     62.6039
 outcell: Cell volume (Ang**3)        :     31.6087
+<dSpData1D:S at geom step 100
+  <sparsity:sparsity for geom step 100
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 7>
+  <dData1D:(new from dSpData1D) n=2446, refcount: 1>
+refcount: 1>
 New_DM. Step:   100
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 100
+    nrows_g=8 nrows=5 sparsity=38.2188 nnzs=2446, refcount: 8>
+  <dData2D:(DMatomic) n=2446 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   10    1:    9    1:    5
            2       1:   10    1:    9    6:    9
@@ -7966,7 +8985,6 @@ siesta: Eharris(eV) =    -212.446343
 
 siesta: Eharris(eV) =    -212.446343
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -7996,9 +9014,9 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.029203    0.044204   -0.266915
 
 siesta: Pressure (total):        412.65595408  kBar
- Anneal: Kinetic Energy=    5.0433885638613242E-003
- Anneal: Velocity scale factor =    1.0026004516176352     
- Anneal: Cell scale factor =    1.0011011445950067     
+ Anneal: Kinetic Energy=    5.0433885639034727E-003
+ Anneal: Velocity scale factor =    1.0026004516174469     
+ Anneal: Cell scale factor =    1.0011011445950002     
 
 siesta: Temp_ion =     533.648 K
 
@@ -8008,7 +9026,8 @@ siesta: Eions   =       380.802124
 siesta: Ena     =       111.787675
 siesta: Ekin    =        86.942089
 siesta: Enl     =        32.643095
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =         4.321197
 siesta: DUscf   =         0.096087
 siesta: DUext   =         0.000000
@@ -8027,6 +9046,7 @@ siesta:  Band Struct. =     -81.512607
 siesta:       Kinetic =      86.942089
 siesta:       Hartree =       8.956103
 siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =     -67.411933
 siesta:  Ion-electron =     -98.887181
@@ -8054,4 +9074,4 @@ siesta:           0.25603868          0.27426049  eV/Ang**3
 siesta:         410.22362986        439.41850599  kBar
 (Free)E+ p_basis*V_orbitals  =        -211.847214
 (Free)Eharris+ p_basis*V_orbitals  =        -211.869643
->> End of run:  31-MAY-2016   8:57:58
+>> End of run:   5-JUN-2016  12:06:17

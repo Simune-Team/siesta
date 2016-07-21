@@ -38,7 +38,7 @@ module m_hs_matrix
 ! The use of this module is a straight forward call:
 ! 
 !   call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-!       xij,numh,listhptr,listh,indxuo,H,S, &
+!       xij,numh,listhptr,listh,H,S, &
 !       k,Hk,Sk, &
 !       xa,iaorb, &
 !       RemZConnection,RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
@@ -54,7 +54,7 @@ module m_hs_matrix
 !
 ! Gamma denotes whether it is a Gamma calculation (if true, it will not
 ! add k-phases, no matter if k /= \Gamma-point.
-! na_u,no_u,no_s,maxnh,xij,numh,listhptr,listh,indxuo,H,S are all variables
+! na_u,no_u,no_s,maxnh,xij,numh,listhptr,listh,H,S are all variables
 ! needed in the definition of the entire H and S matrices in the sparse format.
 !
 ! k is the k-point that will be created for the Hamiltonian.
@@ -83,7 +83,7 @@ module m_hs_matrix
 ! However, here it has this interface:
 !
 !   call set_HS_transfermatrix(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-!       xij,numh,listhptr,listh,indxuo,H,S, &
+!       xij,numh,listhptr,listh,H,S, &
 !       k,transfer_cell,HkT,SkT,xa,iaorb, &
 !       RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
 ! 
@@ -101,7 +101,7 @@ module m_hs_matrix
 !
 ! In this conjunction the routine
 !   call set_HS_available_transfers(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-!       xij,numh,listhptr,listh,indxuo,xa,iaorb,transfer_cell)
+!       xij,numh,listhptr,listh,xa,iaorb,transfer_cell)
 ! is invaluable. It returns in transfer_cell the allowed transfer cell units for
 ! the system. Notice that transfer_cell is a 2x3 matrix with the formatting like this:
 !
@@ -131,6 +131,8 @@ module m_hs_matrix
 ! 
 ! NOTICE that a call to matrix_symmetrize is almost always needed!
 ! EVEN in the case of the transfer matrix.
+  
+  use precision, only : dp
  
   implicit none
 
@@ -171,14 +173,15 @@ contains
 ! It requires that the Node has the full sparse matrix available
 !*****************
   subroutine set_HS_matrix_1d(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,indxuo,H,S, &
+       xij,numh,listhptr,listh,H,S, &
        k,Hk,Sk, &
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        xa,iaorb,lasto, &
        RemZConnection,RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
-    use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
+    use geom_helper, only : ucorb
+    use cellSubs, only : reclat
 
 ! ***********************
 ! * INPUT variables     *
@@ -191,7 +194,7 @@ contains
     integer, intent(in)           :: maxnh ! Hamiltonian size
     real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)           :: numh(no_u),listhptr(no_u)
-    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    integer, intent(in)           :: listh(maxnh)
     real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
     real(dp), intent(in)          :: S(maxnh) ! Overlap
     real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
@@ -339,7 +342,7 @@ contains
           iind = listhptr(iu)
           do j = 1,numh(iu)
              ind = iind + j
-             juo = indxuo(listh(ind)) - l_RemNFirstOrbitals
+             juo = ucorb(listh(ind),no_u) - l_RemNFirstOrbitals
 
              ! Cycle if we are not in the middle region
              if ( juo < 1 .or. no_tot < juo ) cycle
@@ -355,6 +358,21 @@ contains
 
              ! We also wish to remove the connection in
              ! in the inner cell
+             ! I suspect we have a problem here
+             ! We may need a check for being in the unitcell
+             ! i.e.:
+             ! if ( l_RemUCellDistances ) then
+             !    if ( listh(ind) > no_u ) then ! As we check in the unit cell!
+             !       xo(1) = xa(1,liaorb(juo)) &
+             !            -  xa(1,liaorb(iuo))
+             !       xo(2) = xa(2,liaorb(juo)) &
+             !            -  xa(2,liaorb(iuo))
+             !       xo(3) = xa(3,liaorb(juo)) &
+             !            -  xa(3,liaorb(iuo))
+             !    else
+             !       xo = 0.0_dp
+             !    end if
+             ! end if                
              if ( l_RemUCellDistances ) then
                 xo(1) = xa(1,liaorb(juo)) &
                      -  xa(1,liaorb(iuo))
@@ -368,7 +386,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,1d0)*kxij)
+             cphase = exp(dcmplx(0d0,kxij))
              i = iuo+(juo-1)*no_tot
              Hk(i) = Hk(i)+H(ind)*cphase
              Sk(i) = Sk(i)+S(ind)*cphase
@@ -422,14 +440,15 @@ contains
 ! It requires that the Node has the full sparse matrix available
 !*****************
   subroutine set_HS_matrix_2d(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,indxuo,H,S, &
+       xij,numh,listhptr,listh,H,S, &
        k,Hk,Sk, &
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        xa,iaorb,lasto, &
        RemZConnection,RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
-    use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
+    use geom_helper, only : ucorb
+    use cellSubs, only : reclat
 
 ! ***********************
 ! * INPUT variables     *
@@ -442,7 +461,7 @@ contains
     integer, intent(in)           :: maxnh ! Hamiltonian size
     real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)           :: numh(no_u),listhptr(no_u)
-    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    integer, intent(in)           :: listh(maxnh)
     real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
     real(dp), intent(in)          :: S(maxnh) ! Overlap
     real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
@@ -592,7 +611,7 @@ contains
           iind = listhptr(iu)
           do j = 1,numh(iu)
              ind = iind + j
-             juo = indxuo(listh(ind)) - l_RemNFirstOrbitals
+             juo = ucorb(listh(ind),no_u) - l_RemNFirstOrbitals
 
              ! Cycle if we are not in the middle region
              if ( juo < 1 .or. no_tot < juo ) cycle
@@ -608,6 +627,21 @@ contains
 
              ! We also wish to remove the connection in
              ! in the inner cell
+             ! I suspect we have a problem here
+             ! We may need a check for being in the unitcell
+             ! i.e.:
+             ! if ( l_RemUCellDistances ) then
+             !    if ( listh(ind) > no_u ) then ! As we check in the unit cell!
+             !       xo(1) = xa(1,liaorb(juo)) &
+             !            -  xa(1,liaorb(iuo))
+             !       xo(2) = xa(2,liaorb(juo)) &
+             !            -  xa(2,liaorb(iuo))
+             !       xo(3) = xa(3,liaorb(juo)) &
+             !            -  xa(3,liaorb(iuo))
+             !    else
+             !       xo = 0.0_dp
+             !    end if
+             ! end if      
              if ( l_RemUCellDistances ) then
                 xo(1) = xa(1,liaorb(juo)) &
                      -  xa(1,liaorb(iuo))
@@ -621,7 +655,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,1d0)*kxij)
+             cphase = exp(dcmplx(0d0,kxij))
              Hk(iuo,juo) = Hk(iuo,juo)+H(ind)*cphase
              Sk(iuo,juo) = Sk(iuo,juo)+S(ind)*cphase
           end do
@@ -673,13 +707,14 @@ contains
 ! It requires that the Node has the full sparse matrix available
 !*****************
   subroutine set_HS_transfermatrix_1d(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,indxuo,H,S, &
+       xij,numh,listhptr,listh,H,S, &
        k,transfer_cell,HkT,SkT,xa,iaorb, &
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
-    use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
+    use geom_helper, only : ucorb
+    use cellSubs, only : reclat
 
 ! ***********************
 ! * INPUT variables     *
@@ -692,7 +727,7 @@ contains
     integer, intent(in)           :: maxnh ! Hamiltonian size
     real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)           :: numh(no_u),listhptr(no_u)
-    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    integer, intent(in)           :: listh(maxnh)
     real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
     real(dp), intent(in)          :: S(maxnh) ! Overlap
     real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
@@ -768,7 +803,7 @@ contains
           iind = listhptr(iu)
           do j = 1,numh(iu)
              ind = iind + j
-             juo = indxuo(listh(ind)) - l_RemNFirstOrbitals
+             juo = ucorb(listh(ind),no_u) - l_RemNFirstOrbitals
 
              ! Cycle if we are not in the middle region
              if ( juo < 1 .or. no_tot < juo ) cycle
@@ -786,6 +821,21 @@ contains
 
              ! We also wish to remove the connection in
              ! in the inner cell
+             ! I suspect we have a problem here
+             ! We may need a check for being in the unitcell
+             ! i.e.:
+             ! if ( l_RemUCellDistances ) then
+             !    if ( listh(ind) > no_u ) then ! As we check in the unit cell!
+             !       xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(1,iaorb(iu))
+             !       xo(2) = xa(2,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(2,iaorb(iu))
+             !       xo(3) = xa(3,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(3,iaorb(iu))
+             !    else
+             !       xo = 0.0_dp
+             !    end if
+             ! end if      
              if ( l_RemUCellDistances ) then
                 xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
                      -  xa(1,iaorb(iu))
@@ -799,7 +849,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,1d0)*kxij)
+             cphase = exp(dcmplx(0d0,kxij))
              i = iuo+(juo-1)*no_tot
              HkT(i) = HkT(i)+H(ind)*cphase
              SkT(i) = SkT(i)+S(ind)*cphase
@@ -842,13 +892,14 @@ contains
 
 
   subroutine set_HS_transfermatrix_2d(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,indxuo,H,S, &
+       xij,numh,listhptr,listh,H,S, &
        k,transfer_cell,HkT,SkT,xa,iaorb,&
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
-    use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
+    use geom_helper, only : ucorb
+    use cellSubs, only : reclat
 
 ! ***********************
 ! * INPUT variables     *
@@ -861,7 +912,7 @@ contains
     integer, intent(in)           :: maxnh ! Hamiltonian size
     real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)           :: numh(no_u),listhptr(no_u)
-    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    integer, intent(in)           :: listh(maxnh)
     real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
     real(dp), intent(in)          :: S(maxnh) ! Overlap
     real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
@@ -888,7 +939,7 @@ contains
     integer :: no_tot
     real(dp) :: kxij
     complex(dp) :: cphase
-    integer :: i,j,iuo,iu,juo,iind,ind
+    integer :: j,iuo,iu,juo,iind,ind
     logical :: l_RemUCellDistances
     integer :: l_RemNFirstOrbitals, l_RemNLastOrbitals 
 
@@ -921,9 +972,7 @@ contains
     ! Prepare the cell to calculate the index of the atom
     call reclat(ucell,recell,0) ! Without 2*Pi
     
-!
-! Setup H,S for this k-point:
-!
+    ! Setup H,S for this k-point:
     do juo = 1,no_tot
        do iuo = 1,no_tot
           HkT(iuo,juo) = dcmplx(0.d0,0.d0)
@@ -940,7 +989,7 @@ contains
           iind = listhptr(iu)
           do j = 1,numh(iu)
              ind = iind + j
-             juo = indxuo(listh(ind)) - l_RemNFirstOrbitals
+             juo = ucorb(listh(ind),no_u) - l_RemNFirstOrbitals
 
              ! Cycle if we are not in the middle region
              if ( juo < 1 .or. no_tot < juo ) cycle
@@ -958,6 +1007,21 @@ contains
 
              ! We also wish to remove the connection in
              ! in the inner cell
+             ! I suspect we have a problem here
+             ! We may need a check for being in the unitcell
+             ! i.e.:
+             ! if ( l_RemUCellDistances ) then
+             !    if ( listh(ind) > no_u ) then ! As we check in the unit cell!
+             !       xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(1,iaorb(iu))
+             !       xo(2) = xa(2,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(2,iaorb(iu))
+             !       xo(3) = xa(3,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(3,iaorb(iu))
+             !    else
+             !       xo = 0.0_dp
+             !    end if
+             ! end if      
              if ( l_RemUCellDistances ) then
                 xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
                      -  xa(1,iaorb(iu))
@@ -971,7 +1035,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,1d0)*kxij)
+             cphase = exp(dcmplx(0d0,kxij))
              HkT(iuo,juo) = HkT(iuo,juo)+H(ind)*cphase
              SkT(iuo,juo) = SkT(iuo,juo)+S(ind)*cphase
           end do
@@ -1009,23 +1073,23 @@ contains
     
   end subroutine set_HS_transfermatrix_2d
 
-  subroutine set_HS_available_transfers(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,indxuo,xa,iaorb,transfer_cell)
-    use precision, only : dp
+  subroutine set_HS_available_transfers(ucell,na_u,xa,lasto,no_u,maxnh, &
+       xij,numh,listhptr,listh,transfer_cell)
+    use geom_helper, only : ucorb, iaorb
+    use cellSubs, only : reclat
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    logical, intent(in)  :: Gamma ! Is it a Gamma calculation?
     real(dp), intent(in) :: ucell(3,3) ! The unit cell of system
     integer, intent(in)  :: na_u ! Unit cell atoms
+    real(dp), intent(in) :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
+    integer, intent(in)  :: lasto(0:na_u) ! last orbital number of equivalent atom
     integer, intent(in)  :: no_u ! Unit cell orbitals
-    integer, intent(in)  :: no_s ! Total orbitals
     integer, intent(in)  :: maxnh ! Hamiltonian size
     real(dp), intent(in) :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)  :: numh(no_u),listhptr(no_u)
-    integer, intent(in)  :: listh(maxnh),indxuo(no_s)
-    real(dp), intent(in) :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
-    integer, intent(in)  :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
+    integer, intent(in)  :: listh(maxnh)
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -1036,21 +1100,22 @@ contains
 ! ***********************
     real(dp) :: recell(3,3)
     real(dp) :: xijo(3), xc
-    integer :: i,j,iuo,iu,juo,iind,ind
+    integer :: ia, ja
+    integer :: i,j,iuo,juo,ind
 
     ! Initialize the transfer cell to:
-    transfer_cell(:,:) = 1
-
-    if ( Gamma ) return
+    transfer_cell(:,:) = 0
 
     ! Prepare the cell to calculate the index of the atom
     call reclat(ucell,recell,0) ! Without 2*Pi
     
     do iuo = 1 , no_u
+       ia = iaorb(iuo,lasto)
        do j = 1 , numh(iuo)
           ind = listhptr(iuo) + j
-          juo = indxuo(listh(ind))
-          xijo(:) = xij(:,ind)-(xa(:,iaorb(juo))-xa(:,iaorb(iuo)))
+          juo = ucorb(listh(ind),no_u)
+          ja = iaorb(juo,lasto)
+          xijo(:) = xij(:,ind) - ( xa(:,ja)-xa(:,ia) )
           ! Loop over directions
           do i = 1 , 3 
              ! recell is already without 2*Pi
@@ -1066,43 +1131,7 @@ contains
   ! Routine for removing left right overlaps of certain regions.
   ! Is used to fully remove the connection between left and right
   ! states in the Hamiltonian
-  subroutine matrix_rem_left_right_1d(no_tot,Hk,Sk,no_L,no_R)
-    use precision, only : dp
-
-! **************************
-! * INPUT variables        *
-! **************************
-    integer, intent(in)        :: no_tot, no_L, no_R
-
-! **************************
-! * OUTPUT variables       *
-! **************************
-    complex(dp), intent(inout) :: Hk(no_tot*no_tot), Sk(no_tot*no_tot)
-
-! **************************
-! * LOCAL variables        *
-! **************************
-    integer :: i,j
-
-    ! If nothing is to be removed return immidiately...
-    if ( no_L == 0 .or. no_R == 0 ) return
-
-    do j = no_tot - no_R + 1 , no_tot
-       do i = 1 , no_L
-          Hk(i+(j-1)*no_tot) = dcmplx(0.d0,0.d0)
-          Sk(i+(j-1)*no_tot) = dcmplx(0.d0,0.d0)
-          Hk(j+(i-1)*no_tot) = dcmplx(0.d0,0.d0)
-          Sk(j+(i-1)*no_tot) = dcmplx(0.d0,0.d0)
-       end do
-    end do
-
-  end subroutine matrix_rem_left_right_1d
-
-  ! Routine for removing left right overlaps of certain regions.
-  ! Is used to fully remove the connection between left and right
-  ! states in the Hamiltonian
   subroutine matrix_rem_left_right_2d(no_tot,Hk,Sk,no_L,no_R)
-    use precision, only : dp
 
 ! **************************
 ! * INPUT variables        *
@@ -1133,54 +1162,15 @@ contains
 
   end subroutine matrix_rem_left_right_2d
 
-
-
-  subroutine matrix_symmetrize_1d(no_tot,Hk,Sk,Ef)
-    use precision, only : dp
-
-! **************************
-! * INPUT variables        *
-! **************************
-    integer, intent(in)        :: no_tot
-    real(dp), intent(in)       :: Ef
-
-! **************************
-! * OUTPUT variables       *
-! **************************
+  subroutine matrix_rem_left_right_1d(no_tot,Hk,Sk,no_L,no_R)
+    integer, intent(in)        :: no_tot, no_L, no_R
     complex(dp), intent(inout) :: Hk(no_tot*no_tot), Sk(no_tot*no_tot)
-    
-! **************************
-! * LOCAL variables        *
-! **************************
-    integer :: i,j,iuo,juo
-
-    do i = 1,no_tot
-       do j = 1,i-1
-          iuo = i + no_tot*(j-1)
-          juo = j + no_tot*(i-1)
-
-          Sk(juo) = 0.5d0*( Sk(juo) + dconjg(Sk(iuo)) )
-          Sk(iuo) =  dconjg(Sk(juo))
-          
-          Hk(juo) = 0.5d0*( Hk(juo) + dconjg(Hk(iuo)) ) &
-               - Ef*Sk(juo)
-          Hk(iuo) =  dconjg(Hk(juo))
-          
-       end do
-       iuo = i + no_tot*(i-1)
-       Sk(iuo)=Sk(iuo) - dcmplx(0d0,1d0)*dimag(Sk(iuo))
-       
-       Hk(iuo)=Hk(iuo) - dcmplx(0d0,1d0)*dimag(Hk(iuo)) &
-            - Ef*Sk(iuo) 
-    end do
-
-  end subroutine matrix_symmetrize_1d
-
+    call matrix_rem_left_right_2d(no_tot,Hk,Sk,no_L,no_R)
+  end subroutine matrix_rem_left_right_1d
 
 
   ! Routine for symmetrizing and shifting the matrix Ef
   subroutine matrix_symmetrize_2d(no_tot,Hk,Sk,Ef)
-    use precision, only : dp
 
 ! **************************
 ! * INPUT variables        *
@@ -1210,13 +1200,20 @@ contains
           
        end do
        
-       Sk(iuo,iuo)=Sk(iuo,iuo) - dcmplx(0d0,1d0)*dimag(Sk(iuo,iuo))
+       Sk(iuo,iuo)=Sk(iuo,iuo) - dcmplx(0d0,dimag(Sk(iuo,iuo)) )
        
-       Hk(iuo,iuo)=Hk(iuo,iuo) - dcmplx(0d0,1d0)*dimag(Hk(iuo,iuo)) &
+       Hk(iuo,iuo)=Hk(iuo,iuo) - dcmplx(0d0,dimag(Hk(iuo,iuo)) ) &
             - Ef*Sk(iuo,iuo) 
     end do
 
   end subroutine matrix_symmetrize_2d
+
+  subroutine matrix_symmetrize_1d(no_tot,Hk,Sk,Ef)
+    integer, intent(in)        :: no_tot
+    real(dp), intent(in)       :: Ef
+    complex(dp), intent(inout) :: Hk(no_tot*no_tot), Sk(no_tot*no_tot)
+    call matrix_symmetrize_2d(no_tot,Hk(1),Sk(1),Ef)
+  end subroutine matrix_symmetrize_1d
 
 end module m_hs_matrix
   

@@ -82,12 +82,11 @@ do
 # the default location in Util
 #
  if [ -z "$TBT" ] ; then
-  TBT=${ROOT_DIR}/Util/TBTrans/tbtrans
+  TBT=${ROOT_DIR}/Util/TS/TBtrans/tbtrans
   echo "==> (Compiling $TBT...)"
   # Clean in case the compiled version there is not compatible
-  (cd "${ROOT_DIR}/Util/TBTrans" ; make OBJDIR="$OBJDIR" clean ;
-       make OBJDIR="$OBJDIR" )
-  TBT="${TS_EXEC_PREFIX} ${ROOT_DIR}/Util/TBTrans/tbtrans"
+  (cd "${ROOT_DIR}/Util/TS/TBtrans" ; make OBJDIR="$OBJDIR" )
+  TBT="${TS_EXEC_PREFIX} ${ROOT_DIR}/Util/TS/TBtrans/tbtrans"
  fi
 #
  echo "==> Running $SCAT with tbtrans=$TBT"
@@ -104,7 +103,7 @@ do
    echo "The scattering region calculation did not go well ..."
    exit
  fi
- cp tbt_${SCAT}.out ../..
+ cp tbt_${SCAT}.out $SCAT.TBT.TRANS_Left-Right ../..
  #
  # Go back to base directory
  #

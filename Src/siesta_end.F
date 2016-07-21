@@ -25,7 +25,6 @@
 #ifdef MPI
       use mpi_siesta
 #endif
-      use m_pulay,         only : resetPulayArrays
       use moreMeshSubs,    only : resetMeshDistr
       use densematrix,     only : resetDenseMatrix
       use sparse_matrices, only : resetSparseMatrices
@@ -35,6 +34,14 @@
       use meshdscf,        only : resetDscfPointers
       use m_dscfcomm,      only : resetdscfComm
       use m_rhog,          only : resetRhog
+      ! NP, new mixing
+      use m_mixing_scf,    only : reset_mixing_scf
+
+#ifdef SIESTA__FLOOK
+      use flook_siesta,    only : slua_close
+      use siesta_options,  only : LUA
+#endif
+
 
 #ifdef TRACING
       use extrae_eventllist, only : writeList, deleteList, eventlist
@@ -48,9 +55,14 @@
 !------------------------------------------------------------------------- BEGIN
 
       if (SIESTA_worker) then
+
+#ifdef SIESTA__FLOOK
+      ! Clean up the lua environment
+      call slua_close(LUA)
+#endif
+
 !     Free allocated memory
       call resetSparseMatrices( )
-      call resetPulayArrays( )
       call resetMeshDistr( )
       call resetdscfComm( )
       call resetDenseMatrix( )
@@ -59,6 +71,8 @@
       call resetMeshPhi( )
       call resetDscfPointers( )
       call resetRhog()
+      ! NP, new mixing
+      call reset_mixing_scf( )
 
 !     Output memory use up to the end of the program
 !!      call printmemory( 6, 1 )

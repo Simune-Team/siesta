@@ -28,7 +28,7 @@ module timer_options
  logical, public :: use_parallel_timer = .false.
 end module timer_options
 
-subroutine timer( prog, iOpt )
+recursive subroutine timer( prog, iOpt )
 
 ! Module procedures used
   use sys,     only: die           ! Termination routine

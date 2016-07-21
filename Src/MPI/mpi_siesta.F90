@@ -41,9 +41,15 @@ MODULE MPI_SIESTA
         public :: mpi_2double_precision
         public :: mpi_integer, mpi_character, mpi_logical
         public :: mpi_integer8
+        public :: mpi_packed
         public :: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
         public :: mpi_status_size
+        public :: mpi_comm_self
         public :: mpi_grid_real
         public :: mpi_group_null, mpi_comm_null, mpi_proc_null
+
+!        public :: mpi_thread_single
+        public :: mpi_thread_funneled
+
 
 END MODULE MPI_SIESTA

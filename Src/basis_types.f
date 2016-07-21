@@ -597,7 +597,7 @@
 !
 !     Transfer
 !
-
+!$OMP parallel workshare default(shared)
       nkbl(:,:) = 0
       nzeta(:,:,:) = 0
       split_norm(:,:,:) = 0._dp
@@ -614,6 +614,7 @@
       semic(:) = .false.
       nsemic(:,:) = 0
       cnfigmx(:,:) = 0
+!$OMP end parallel workshare
       
       do isp=1,nsp
 

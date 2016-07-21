@@ -26,7 +26,7 @@
       USE siesta_options
       use units, only: Debye, eV
       use sparse_matrices, only: maxnh, listh, listhptr, numh
-      use sparse_matrices, only: H, S, Dscf, Dold, Eold, xijo
+      use sparse_matrices, only: H, S, Dscf, xijo
       use siesta_geom
       use m_dhscf, only: dhscf
       use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
@@ -54,12 +54,14 @@
       use alloc,             only: re_alloc, de_alloc
       use basis_enthalpy,    only: write_basis_enthalpy
       use m_partial_charges, only: want_partial_charges
-      use m_iodm,            only: read_spmatrix
+      use m_iodm_old,        only: read_spmatrix
       use m_siesta2wannier90, only: siesta2wannier90
-      use siesta_options,     only: w90_processing
 
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
+#endif
+#ifdef SIESTA__FLOOK
+      use flook_siesta, only : slua_call, LUA_ANALYSIS
 #endif
 
       implicit none
@@ -102,9 +104,11 @@
 !     in the last computation of the electronic structure.
 !     See the comments below for explanation
 
+!$OMP parallel workshare default(shared)
          xa(1:3,1:na_s) = xa_last(1:3,1:na_s)
          ucell(1:3,1:3) = ucell_last(1:3,1:3)
          scell(1:3,1:3) = scell_last(1:3,1:3)
+!$OMP end parallel workshare
 
       endif
 
@@ -132,6 +136,13 @@
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='Finalization')
       endif
+
+#ifdef SIESTA__FLOOK
+      ! Call lua right before doing the analysis,
+      ! possibly changing some of the variables
+      call slua_call(LUA,LUA_ANALYSIS)
+#endif
+
 !
 !     NOTE that the geometry output by the following sections
 !     used to be that "predicted" for the next MD or relaxation step.
@@ -147,7 +158,7 @@
         quenched_MD =  ( (iquench > 0) .and.
      $                   ((idyn .eq. 1) .or. (idyn .eq. 3)) )
 
-        if ((nmove .ne. 0) .or. quenched_MD) then
+        if ((nmove .ne. 0) .or. quenched_MD ) then
 
           if (relaxd) then  ! xa = xa_last
              ! The "relaxation" routines do not update
@@ -362,7 +373,7 @@
 
 !     Print program's energy decomposition and final forces
       if (IOnode) then
-        call siesta_write_energies( first=.false., iscf=0, dDmax=0.0_dp)
+        call siesta_write_energies( iscf=0, dDmax=0._dp, dHmax=0._dp)
         ! final == .true. which makes the step counter irrelevant
         call siesta_write_forces(-1)
         call siesta_write_stress_pressure()

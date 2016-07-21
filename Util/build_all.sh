@@ -47,7 +47,7 @@ if [ ! -z "$failed" ]; then
     echo "" #empty line
     echo "" #empty line
     echo " *** All failed directories:"
-    echo " *** (Some programs have to be compiled after compiling Siesta) "
+    echo " *** (Some programs have to be compiled after compiling Siesta)"
     for p in $failed ; do
 	echo "   $p"
     done

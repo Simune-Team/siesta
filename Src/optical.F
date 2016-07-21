@@ -493,7 +493,7 @@ C         Find Wavefunctions
             call die('Optical: ERROR: incorrect value of nspin')
           endif
 
-C         Copy eigenvalues to an auxiliar array
+C         Copy eigenvalues to an auxiliary array
           efermiloc = efermi
           do iuo = 1,nuotot
             ekloc(iuo)=ek(iuo)

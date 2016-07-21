@@ -33,7 +33,7 @@ Module siesta_cmlsubs
       fname = ' '
 
       If (IOnode) Then
-         cml_p = fdf_boolean( 'XML.Write', .True. )
+         cml_p = fdf_boolean( 'XML.Write', .false. )
          call FoX_set_fatal_errors(fdf_boolean('XML.AbortOnErrors', .false.))
          call FoX_set_fatal_warnings(fdf_boolean('XML.AbortOnWarnings', .false.))
       Else
@@ -51,6 +51,7 @@ Module siesta_cmlsubs
          Call cmlAddMetadata(mainXML, name='siesta:Version', content=version_str)
          Call cmlAddMetadata(mainXML, name='siesta:Arch',    content=siesta_arch)
          Call cmlAddMetadata(mainXML, name='siesta:Flags',   content=fflags)
+         Call cmlAddMetadata(mainXML, name='siesta:PPFlags',   content=fppflags)
          Call cmlAddMetadata(mainXML, name='siesta:StartTime',content=datestring()) 
          If (nodes>1) Then
            Call cmlAddMetadata(mainXML, name='siesta:Mode', content='Parallel')

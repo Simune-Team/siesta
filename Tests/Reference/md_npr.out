@@ -1,12 +1,16 @@
-Siesta Version: siesta-trunk-506
+Siesta Version: trunk-509
 Architecture  : x86_64-linux-gcc
 Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
 PARALLEL version
 NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
 
-* Running on    2 nodes in parallel
->> Start of run:  31-MAY-2016   8:57:10
+* Running on 2 nodes in parallel
+>> Start of run:   5-JUN-2016  12:05:38
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -461,50 +465,59 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     F
-redata: Number of spin components        =     1
-redata: Long output                      =     F
-redata: Number of Atomic Species         =        3
+redata: Spin configuration                          = non-polarized
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        3
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     NO
-redata: Mesh Cutoff                      =    50.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Min. number of SCF Iter          =        0
-redata: Max. number of SCF Iter          =       20
-redata: Mix DM or H after convergence    =     F
-redata: Recompute H after scf cycle      =     F
-redata: Broyden mixing with     4 saved histories.
-redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?        =     F
-redata: Discard 1st Pulay DM after  kick =     F
-redata: New DM Mixing Weight             =     0.1000
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = NO
+redata: Mesh Cutoff                                 =    50.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =       20
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.1000
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.001000
-redata: Require (free) Energy convergence in SCF =     F
-redata: DM (free)Energy tolerance for SCF =     0.000010 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000010 eV
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     T
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Diagonalization
-redata: Divide and Conquer               =     F
-redata: Electronic Temperature           =     0.0019  Ry
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     Nose-Parrinello-Rahman MD run
-redata: Initial MD time step             =        1
-redata:   Final MD time step             =       10
-redata: Length of MD time step           =     0.3000  fs
-redata: Initial Temperature of MD run    =   300.0000  K
-redata: Perform a MD quench              =     F
-redata: Nose mass                        =   100.0000  Ry/fs**2
-redata: Parrinello-Rahman mass           =   100.0000  Ry/fs**2
-redata: Target Temperature               =   500.0000  Kelvin
-redata: Target Pressure                  =     0.0007  Ry/Bohr**3
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: DM Tolerance for SCF                        =     0.001000
+redata: Require H convergence for SCF               =   F
+redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
+redata: Require (free) Energy convergence in SCF    =   F
+redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
+redata: Require Harris convergence for SCF          =   F
+redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   T
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   F
+redata: Electronic Temperature                      =   299.9869 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Nose-Parrinello-Rahman MD run
+redata: Initial MD time step                        =        1
+redata:   Final MD time step                        =       10
+redata: Length of MD time step                      =     0.3000 fs
+redata: Initial Temperature of MD run               =   300.0000 K
+redata: Perform a MD quench                         =   F
+redata: Nose mass                                   =  1360.5800 eV/fs**2
+redata: Parrinello-Rahman mass                      =  1360.5800 eV/fs**2
+redata: Target Temperature                          =   500.0000 Kelvin
+redata: Target Pressure                             =     0.0624 eV/Ang**3
+mix.SCF: Broyden mixing                          = Broyden
+mix.SCF:    History steps                        = 4
+mix.SCF:    Jacobian weight                      =     0.100000
+mix.SCF:    Weight prime                         =     0.010000
+redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+DM_history_depth set to zero for 'Harris' run
+Size of DM history Fstack: 0
 Total number of electrons:    48.000000
 Total ionic charge:    48.000000
 
@@ -521,6 +534,7 @@ siesta: k-grid: Supercell and displacements
 siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
+
 
                      ====================================
                         Begin MD step =      1
@@ -547,8 +561,19 @@ outcell: Cell vector modules (Ang)   :    5.677830    5.677830    5.677830
 outcell: Cell angles (23,13,12) (deg):     48.1790     48.1790     48.1790
 outcell: Cell volume (Ang**3)        :     93.1663
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 1
+  <sparsity:sparsity for geom step 1
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     1
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 1
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.58964258
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -568,6 +593,8 @@ Setting up quadratic distribution...
 ExtMesh (bp) on 0 =    56 x    56 x    50 =      156800
 PhiOnMesh: Number of (b)points on node 0 =                  864
 PhiOnMesh: nlist on node 0 =                19357
+rdiag-debug: Node=0, lwork=      6154>= lworkq=      6154, liwork=       204>= liworkq=       204
+rdiag-debug: Node=1, lwork=      6154>= lworkq=      6154, liwork=       204>= liworkq=       204
 
 stepf: Fermi-Dirac step function
 
@@ -577,7 +604,8 @@ siesta: Eions   =      5228.674091
 siesta: Ena     =      1092.429444
 siesta: Ekin    =      2069.792750
 siesta: Enl     =      -254.036133
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =        15.961140
 siesta: DUscf   =         0.158223
 siesta: DUext   =         0.000000
@@ -596,13 +624,7 @@ siesta: Eharris(eV) =   -2966.596232
 
 siesta: Eharris(eV) =   -2966.596232
 
- Broyden: No of relevant DM elements:         1156
- maxit for broyden:            4
- cycle on maxit:  T
- variable weight:  T
- initial alpha:   0.10000000000000001     
-timer: Routine,Calls,Time,% =    IterSCF     1       0.024   2.94
-:!: SCF did not converge in maximum number of steps.
+timer: Routine,Calls,Time,% =    IterSCF     1       0.016   2.80
 
 Using DM_out to compute the final energy and forces
 
@@ -636,14 +658,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.089162    0.290438    0.026096
          0.058367    0.026096    0.267657
 
-siesta: Pressure (static):       -538.38542028  kBar
+siesta: Pressure (static):       -538.38542014  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.448710    0.089938    0.058672
          0.089938    0.287963    0.024988
          0.058672    0.024988    0.263979
 
-siesta: Pressure (total):       -534.41320654  kBar
+siesta: Pressure (total):       -534.41320640  kBar
 
 siesta: Temp_ion =     300.018 K
 
@@ -672,8 +694,19 @@ outcell: Cell vector modules (Ang)   :    5.677710    5.677709    5.677710
 outcell: Cell angles (23,13,12) (deg):     48.1775     48.1775     48.1775
 outcell: Cell volume (Ang**3)        :     93.1559
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 2
+  <sparsity:sparsity for geom step 2
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     2
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 2
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.58990566
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -699,7 +732,6 @@ siesta: Eharris(eV) =   -2966.568680
 
 siesta: Eharris(eV) =   -2966.568680
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -767,8 +799,19 @@ outcell: Cell vector modules (Ang)   :    5.677469    5.677470    5.677471
 outcell: Cell angles (23,13,12) (deg):     48.1746     48.1746     48.1746
 outcell: Cell volume (Ang**3)        :     93.1350
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 3
+  <sparsity:sparsity for geom step 3
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     3
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 3
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59042789
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -794,7 +837,6 @@ siesta: Eharris(eV) =   -2966.557242
 
 siesta: Eharris(eV) =   -2966.557242
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -862,8 +904,19 @@ outcell: Cell vector modules (Ang)   :    5.677110    5.677112    5.677113
 outcell: Cell angles (23,13,12) (deg):     48.1703     48.1703     48.1703
 outcell: Cell volume (Ang**3)        :     93.1039
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 4
+  <sparsity:sparsity for geom step 4
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     4
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 4
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59120935
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -889,7 +942,6 @@ siesta: Eharris(eV) =   -2966.562254
 
 siesta: Eharris(eV) =   -2966.562254
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -957,8 +1009,19 @@ outcell: Cell vector modules (Ang)   :    5.676630    5.676636    5.676635
 outcell: Cell angles (23,13,12) (deg):     48.1646     48.1644     48.1646
 outcell: Cell volume (Ang**3)        :     93.0624
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 5
+  <sparsity:sparsity for geom step 5
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     5
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 5
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59225094
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -984,7 +1047,6 @@ siesta: Eharris(eV) =   -2966.583757
 
 siesta: Eharris(eV) =   -2966.583757
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1016,14 +1078,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.089955    0.281453    0.034248
          0.054879    0.034247    0.268275
 
-siesta: Pressure (static):       -534.11608548  kBar
+siesta: Pressure (static):       -534.11608561  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.448775    0.091175    0.055016
          0.091174    0.278698    0.032994
          0.055022    0.032993    0.265809
 
-siesta: Pressure (total):       -530.47675873  kBar
+siesta: Pressure (total):       -530.47675886  kBar
 
 siesta: Temp_ion =     294.400 K
 
@@ -1052,8 +1114,19 @@ outcell: Cell vector modules (Ang)   :    5.676029    5.676043    5.676038
 outcell: Cell angles (23,13,12) (deg):     48.1575     48.1571     48.1575
 outcell: Cell volume (Ang**3)        :     93.0107
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 6
+  <sparsity:sparsity for geom step 6
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     6
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 6
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59355474
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1079,7 +1152,6 @@ siesta: Eharris(eV) =   -2966.621779
 
 siesta: Eharris(eV) =   -2966.621779
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1111,14 +1183,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.088603    0.282532    0.036550
          0.052903    0.036548    0.271900
 
-siesta: Pressure (static):       -537.55360826  kBar
+siesta: Pressure (static):       -537.55360825  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.450330    0.090093    0.053052
          0.090092    0.279373    0.035313
          0.053059    0.035312    0.269522
 
-siesta: Pressure (total):       -533.65071660  kBar
+siesta: Pressure (total):       -533.65071659  kBar
 
 siesta: Temp_ion =     328.219 K
 
@@ -1147,8 +1219,19 @@ outcell: Cell vector modules (Ang)   :    5.675308    5.675333    5.675319
 outcell: Cell angles (23,13,12) (deg):     48.1489     48.1482     48.1490
 outcell: Cell volume (Ang**3)        :     92.9485
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 7
+  <sparsity:sparsity for geom step 7
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     7
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 7
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59512401
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1174,7 +1257,6 @@ siesta: Eharris(eV) =   -2966.676010
 
 siesta: Eharris(eV) =   -2966.676010
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1206,14 +1288,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.087565    0.283640    0.038029
          0.051183    0.038027    0.275975
 
-siesta: Pressure (static):       -540.92686864  kBar
+siesta: Pressure (static):       -540.92686863  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.451250    0.089382    0.051377
          0.089381    0.279921    0.036848
          0.051385    0.036846    0.273526
 
-siesta: Pressure (total):       -536.57313997  kBar
+siesta: Pressure (total):       -536.57313995  kBar
 
 siesta: Temp_ion =     375.850 K
 
@@ -1242,8 +1324,19 @@ outcell: Cell vector modules (Ang)   :    5.674464    5.674507    5.674479
 outcell: Cell angles (23,13,12) (deg):     48.1389     48.1377     48.1391
 outcell: Cell volume (Ang**3)        :     92.8759
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 8
+  <sparsity:sparsity for geom step 8
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     8
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 8
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59696216
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1269,7 +1362,6 @@ siesta: Eharris(eV) =   -2966.746069
 
 siesta: Eharris(eV) =   -2966.746069
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1301,14 +1393,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.086342    0.286754    0.038366
          0.049136    0.038364    0.282657
 
-siesta: Pressure (static):       -547.07695461  kBar
+siesta: Pressure (static):       -547.07695459  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.452721    0.088545    0.049407
          0.088544    0.282324    0.037278
          0.049417    0.037276    0.279978
 
-siesta: Pressure (total):       -542.08800103  kBar
+siesta: Pressure (total):       -542.08800100  kBar
 
 siesta: Temp_ion =     436.821 K
 
@@ -1337,8 +1429,19 @@ outcell: Cell vector modules (Ang)   :    5.673498    5.673563    5.673516
 outcell: Cell angles (23,13,12) (deg):     48.1275     48.1256     48.1277
 outcell: Cell volume (Ang**3)        :     92.7927
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 9
+  <sparsity:sparsity for geom step 9
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     9
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 9
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.59907474
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1364,7 +1467,6 @@ siesta: Eharris(eV) =   -2966.831053
 
 siesta: Eharris(eV) =   -2966.831053
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1373,7 +1475,7 @@ siesta: Atomic forces (eV/Ang):
      2    0.017989   -0.025652    0.008804
      3   -0.660180    0.545546    1.504266
      4    0.481424   -0.546571   -0.945306
-     5    3.004218   -6.925419    0.490191
+     5    3.004218   -6.925418    0.490191
      6    0.311155    3.858415   -6.768413
      7   -2.392719    1.759392    5.206095
      8   -2.970296    6.687874    0.420740
@@ -1382,10 +1484,10 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Tot    0.084418   -0.543003    0.873842
 ----------------------------------------
-   Max    6.925419
+   Max    6.925418
    Res    3.187121    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    6.925419    constrained
+   Max    6.925418    constrained
 
 Stress-tensor-Voigt (kbar):      728.94      460.10      458.12      137.98       61.83       75.92
 (Free)E + p*V (eV/cell)    -2977.4946
@@ -1396,14 +1498,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.083480    0.292457    0.039550
          0.046995    0.039548    0.289000
 
-siesta: Pressure (static):       -554.85646961  kBar
+siesta: Pressure (static):       -554.85647007  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.454961    0.086122    0.047374
          0.086121    0.287170    0.038594
          0.047384    0.038592    0.285935
 
-siesta: Pressure (total):       -549.05359132  kBar
+siesta: Pressure (total):       -549.05359178  kBar
 
 siesta: Temp_ion =     510.296 K
 
@@ -1432,8 +1534,19 @@ outcell: Cell vector modules (Ang)   :    5.672408    5.672502    5.672429
 outcell: Cell angles (23,13,12) (deg):     48.1147     48.1118     48.1149
 outcell: Cell volume (Ang**3)        :     92.6988
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 10
+  <sparsity:sparsity for geom step 10
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:    10
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 10
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.60146875
 New grid distribution:   1
            1       1:   12    1:   12    1:    6
@@ -1459,7 +1572,6 @@ siesta: Eharris(eV) =   -2966.930110
 
 siesta: Eharris(eV) =   -2966.930110
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1491,14 +1603,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.080496    0.298199    0.040852
          0.044461    0.040849    0.295851
 
-siesta: Pressure (static):       -563.12703952  kBar
+siesta: Pressure (static):       -563.12703946  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.457544    0.083625    0.044978
          0.083624    0.291917    0.040067
          0.044990    0.040064    0.292251
 
-siesta: Pressure (total):       -556.34194120  kBar
+siesta: Pressure (total):       -556.34194114  kBar
 
 siesta: Temp_ion =     595.420 K
 
@@ -1517,7 +1629,8 @@ siesta: Eions   =      5228.674091
 siesta: Ena     =      1092.639312
 siesta: Ekin    =      2397.886227
 siesta: Enl     =      -404.393777
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =      -103.574508
 siesta: DUscf   =        24.442243
 siesta: DUext   =         0.000000
@@ -1536,6 +1649,7 @@ siesta:  Band Struct. =    -718.033083
 siesta:       Kinetic =    2397.886227
 siesta:       Hartree =    1097.134421
 siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =    -724.049462
 siesta:  Ion-electron =   -4178.366662
@@ -1568,7 +1682,7 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00382798         -0.00590682  Ry/Bohr**3
 siesta:          -0.35147245         -0.54234450  eV/Ang**3
-siesta:        -563.12703952       -868.94107282  kBar
+siesta:        -563.12703946       -868.94107281  kBar
 (Free)E+ p_basis*V_orbitals  =       -2944.529759
 (Free)Eharris+ p_basis*V_orbitals  =       -2965.735813
->> End of run:  31-MAY-2016   8:57:13
+>> End of run:   5-JUN-2016  12:05:40
