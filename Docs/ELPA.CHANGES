@@ -1,4 +1,12 @@
 -------------------------------------------------
+2016-07-21  Alberto Garcia   trunk-525--elpa-3
+Updated manual
+
+Note that ELPA code is embedded in the Siesta distribution for now.
+Eventually, Siesta should link to an external pre-compiled ELPA library.
+
+
+-------------------------------------------------
 2016-07-21  Alberto Garcia   trunk-525--elpa-2
 Sync to trunk-525
 
