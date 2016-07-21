@@ -33,7 +33,7 @@
 
       use m_dynamics,      only: nose, verlet2, npr, anneal, pr
 
-      use m_energies,      only: Ekinion, Etot
+      use m_energies,      only: Ekinion
       use write_subs
       use m_steps
       use m_kinetic
@@ -54,13 +54,20 @@
       use siesta_master,   only: coordsFromMaster ! Get coords from master prog
       use m_target_stress, only: subtract_target_stress
 
+#ifdef NCDF_4
+      use m_exp_coord, only : exp_coord_next
+#endif
+#ifdef SIESTA__FLOOK
+      use flook_siesta, only : slua_call, LUA_MOVE
+#endif
+
       implicit none
 
       integer, intent(in)   :: istep
       logical, intent(out)  :: relaxd
 
 
-      integer               :: i, ia, ix, iadispl, ixdispl
+      integer               :: ix, iadispl, ixdispl
       integer, parameter    :: iunit = 2   ! Physical-units option for MD:
                                        ! 1=>(eV,Ang), 2=>(Ry,Bohr)
       real(dp)              :: Pint    ! Instantaneous pressure 
@@ -72,6 +79,9 @@
 
       real(dp), external :: volcel
 
+#ifdef DEBUG
+      call write_debug( '    PRE siesta_move' )
+#endif
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -80,9 +90,11 @@
       ! Save the last geometry for which the density matrix 
       ! (electronic structure) has been calculated
 
-        xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
-        ucell_last(1:3,1:3) = ucell(1:3,1:3)
-        scell_last(1:3,1:3) = scell(1:3,1:3)
+!$OMP parallel workshare default(shared)
+      xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
+      ucell_last(1:3,1:3) = ucell(1:3,1:3)
+      scell_last(1:3,1:3) = scell(1:3,1:3)
+!$OMP end parallel workshare
 
 ! Move atoms ..........................................................
 !
@@ -317,21 +329,24 @@
      &        xa, va, foundxv)
 
         ! Undo the last atom displacement
-        if (istep .gt. inicoor) then
+        if ( istep > inicoor ) then ! inicoor == 0
           iadispl = (istep-mod(istep-1,6))/6+ia1
           ix = mod(istep-1,6)+1
           ixdispl = (ix - mod(ix-1,2) +1)/2
           xa(ixdispl,iadispl) = xa(ixdispl,iadispl) - dx
-        endif
+        end if
 
         ! Displace atom by dx
-        if (istep .lt. fincoor) then
+        ! NOTE: MOVE is before istep increment, hence
+        ! fincoor == istep will be the last step and 
+        ! the initial geometry should be retained.
+        if ( istep < fincoor ) then ! fincoor = (ia2-ia1+1)*6
           iadispl = ((istep+1)-mod(istep,6))/6+ia1
           ix = mod(istep,6)+1
           ixdispl = (ix - mod(ix-1,2) +1)/2
-          dx=-dx
+          dx = -dx
           xa(ixdispl,iadispl) = xa(ixdispl,iadispl) + dx
-        endif
+        end if
 
       case (7)  ! PHONON interface --- removed
 
@@ -355,7 +370,35 @@
             call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
           endif
 
-      end select
+#ifdef NCDF_4
+       case (9)                 ! explicit coordinate mode
+
+          relaxd = .false.
+
+          ! Save the md-record
+          call write_md_record( istep )
+          if ( istep < fincoor ) then
+             call exp_coord_next( istep + 1 , na_u, xa)
+          else
+             relaxd = .true.
+          end if
+#endif
+          
+#ifdef SIESTA__FLOOK
+       case (10) ! LUA hook coordinates
+
+          relaxd = .false.
+
+          ! Communicate with lua
+          call slua_call(LUA, LUA_MOVE)
+          
+          call siesta_write_positions(moved=.true.)
+          call write_md_record( istep )
+          call superx_if_compat( ucell, nsc, na_u, na_s, xa, scell )
+
+#endif
+
+       end select
 
 ! Output memory use at the end of this geometry step
       if (cml_p) then
@@ -368,6 +411,10 @@
       if (ionode) call pxfflush(6)
 
 !--------------------------------------------------------------------------- END
+
+#ifdef DEBUG
+      call write_debug( '    POS siesta_move' )
+#endif
 
       CONTAINS
 

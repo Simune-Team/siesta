@@ -147,6 +147,9 @@ MODULE fdf
 ! Test if label is defined
   public :: fdf_defined
 
+! Allow to overwrite things in the FDF
+  public :: fdf_overwrite, fdf_removelabel, fdf_addline
+
 ! Test if a label is used in obsolete or a deprecated state
   public :: fdf_deprecated, fdf_obsolete
 
@@ -154,6 +157,7 @@ MODULE fdf
   public :: fdf_block, fdf_bline, fdf_bbackspace, fdf_brewind
   public :: fdf_bnintegers, fdf_bnreals, fdf_bnvalues, fdf_bnnames, fdf_bntokens
   public :: fdf_bintegers, fdf_breals, fdf_bvalues, fdf_bnames, fdf_btokens
+  public :: fdf_bboolean
   public :: fdf_bnlists, fdf_blists
 
 ! Match, search over blocks, and destroy block structure
@@ -1415,6 +1419,105 @@ MODULE fdf
     END SUBROUTINE fdf_initdata
 
 !
+!   Add a line individually to the dynamic list of parsed lines
+!   This can not include block's and is restricted to key values
+!
+    SUBROUTINE fdf_addline(line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=MAX_LENGTH)  :: line
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)                :: ntok
+      type(parsed_line), pointer :: pline
+      
+!------------------------------------------------------------------------- BEGIN
+
+!     Check if valid data (tokens, non-blank)
+      pline => digest(line)
+        
+      call setmorphol(1, 'l', pline)
+      call fdf_addtoken(line, pline)
+
+      if (fdf_debug2) then
+         write(fdf_log,*) '***FDF_ADDLINE********************************'
+         write(fdf_log,*) 'Line:', TRIM(line)
+         write(fdf_log,*) '**********************************************'
+      endif
+
+    END SUBROUTINE fdf_addline
+
+!
+!   Remove a line from the dynamic list of parsed lines
+!   This can not include block's and is restricted to key values
+!
+    SUBROUTINE fdf_removelabel(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=MAX_LENGTH)  :: label
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer  :: mark
+      
+!------------------------------------------------------------------------- BEGIN
+
+      do while ( fdf_locate(label,mark) ) 
+
+         if (fdf_debug2) then
+            write(fdf_log,*) '***FDF_REMOVELABEL*******************************'
+            write(fdf_log,*) 'Line:', TRIM(mark%str)
+            write(fdf_log,*) 'Label:', trim(label)
+            write(fdf_log,*) '**********************************************'
+         endif
+
+         ! To circumvent the first/last line in the fdf-file
+         ! we have to check for the existance of the 
+         ! first/last mark being the one removed.
+         ! That special case *must* correct the first/last
+         ! tokens.
+         if ( associated(mark,target=file_in%first) ) then
+            file_in%first => mark%next
+         end if
+         if ( associated(mark,target=file_in%last) ) then
+            file_in%last => mark%prev
+         end if
+
+         ! Remove the label from the dynamic list
+         call destroy(mark%pline)
+         if ( associated(mark%prev) ) then
+            mark%prev%next => mark%next
+         end if
+         if ( associated(mark%next) ) then
+            mark%next%prev => mark%prev
+         end if
+         DEALLOCATE(mark)
+
+         NULLIFY(mark)
+      end do
+      
+    END SUBROUTINE fdf_removelabel
+
+!   
+!   Overwrite label line in dynamic list of parsed lines
+!
+    SUBROUTINE fdf_overwrite(line)
+!--------------------------------------------------------------- Input Variables
+      character(len=MAX_LENGTH)   :: line
+
+!--------------------------------------------------------------- Local Variables
+      type(parsed_line), pointer  :: pline
+      character(len=MAX_LENGTH)   :: label
+
+      pline => digest(line)
+      label = tokens(pline,1)
+      call destroy(pline)
+
+      call fdf_removelabel(label)
+      call fdf_addline(line)
+      
+    END SUBROUTINE fdf_overwrite
+
+!
 !   Add a token to the dynamic list of parsed lines
 !
     SUBROUTINE fdf_addtoken(line, pline)
@@ -2011,6 +2114,84 @@ MODULE fdf
 
 !--------------------------------------------------------------------------- END
     END FUNCTION fdf_boolean
+
+!
+!   Returns true if label 'label' appears by itself or in the form
+!   label {yes,true,.true.,t,y} (case insensitive).
+!
+!   Returns false if label 'label' appears in the form
+!   label {no,false,.false.,f,n} (case insensitive).
+!
+!   If label is not found in the fdf file, fdf_boolean returns the 
+!   LOGICAL variable default.
+!
+!   Optionally can return a pointer to the line found.
+!
+    FUNCTION fdf_bboolean(pline,ind,after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in)           :: ind
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      logical                             :: fdf_bboolean
+
+!--------------------------------------------------------------- Local Variables
+      character(80)                       :: msg, valstr
+      type(line_dlist), pointer           :: mark
+
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_bboolean', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (ind <= nnames(pline,after=after)) then
+
+        valstr = names(pline,ind,after=after)
+
+        if (is_true(valstr)) then
+           fdf_bboolean = .TRUE.
+           if (fdf_output) write(fdf_out,'(a,5x,l10)') valstr, fdf_bboolean
+           
+        elseif (is_false(valstr)) then
+           fdf_bboolean = .FALSE.
+           if (fdf_output) write(fdf_out,'(a,5x,l10)') valstr, fdf_bboolean
+           
+        else
+           write(msg,*) 'unexpected logical value ', valstr
+           call die('FDF module: fdf_bboolean', msg,                    &
+                THIS_FILE, __LINE__, fdf_err)
+        endif
+      else
+         fdf_bboolean = .TRUE.
+         if (fdf_output) write(fdf_out,'(l10,5x,a)') fdf_bboolean, &
+                                       '# block designation by itself'
+      endif
+
+      RETURN
+
+    CONTAINS
+
+      logical function is_true(valstr)  result(a)
+      character(len=*), intent(in) :: valstr
+      a = leqi(valstr, 'yes')    .or. leqi(valstr, 'true') .or. &
+          leqi(valstr, '.true.') .or. leqi(valstr, 't')    .or. &
+          leqi(valstr, 'y')
+      end function is_true
+
+      logical function is_false(valstr)  result(a)
+      character(len=*), intent(in) :: valstr
+      a = leqi(valstr, 'no')      .or. leqi(valstr, 'false') .or. &
+          leqi(valstr, '.false.') .or. leqi(valstr, 'f')     .or. &
+          leqi(valstr, 'n')
+      end function is_false
+
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_bboolean
 
 !
 !   Returns a single precision value associated with label 'label', 

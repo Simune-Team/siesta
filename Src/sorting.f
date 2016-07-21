@@ -110,7 +110,7 @@ C **********************************************************************
       integer, intent(in) :: m, n     ! Dimensions of array x
       integer, intent(out):: indx(n)  ! Increasing order of x(1,:)
 
-      integer:: child, child2, k, nFamily, parent
+      integer:: k, nFamily, parent
       real(dp):: ageTol
 
       ! Construct the heap (family tree)

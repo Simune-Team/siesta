@@ -90,7 +90,7 @@ C Allocate local memory
       call re_alloc( Aux2, 1, nuotot, 1, nuo, name='Aux2',
      &               routine='detover' )
       nullify( Auxint )
-      call re_alloc( Auxint, 1, nocc, name='Aux', routine='detover' )
+      call re_alloc( Auxint, 1, nocc, name='Auxint', routine='detover' )
 
       do iuo = 1,nuo
         do j = 1,numh(iuo)
@@ -104,7 +104,7 @@ C Allocate local memory
           skxij = dsin(kxij)
           Aux2(juo,iuo)=Aux2(juo,iuo)+
      .      cmplx(  S(ind)*ckxij + Sr(ind)*skxij, 
-     .      S(ind)*skxij - Sr(ind)*ckxij  )  
+     .      S(ind)*skxij - Sr(ind)*ckxij , dp )  
  
         enddo 
       enddo 
@@ -143,7 +143,7 @@ C Broadcast copy of psi on node n to all other nodes
      .                  psiprev(2,iuo,ie) * psitmp(2,juo,je)
                 pipj2 = psiprev(1,iuo,ie) * psitmp(2,juo,je) -
      .                  psiprev(2,iuo,ie) * psitmp(1,juo,je)
-                pipj=cmplx(pipj1,pipj2)
+                pipj=cmplx(pipj1,pipj2, dp)
   
                 Aux(jeg,ie) = Aux(jeg,ie) + pipj*Aux2(juo,iuo)
 
@@ -167,7 +167,7 @@ C Broadcast copy of psi on node n to all other nodes
      .                psiprev(2,iuo,ie) * psi(2,juo,je)
               pipj2 = psiprev(1,iuo,ie) * psi(2,juo,je) -
      .                psiprev(2,iuo,ie) * psi(1,juo,je) 
-              pipj=cmplx(pipj1,pipj2)
+              pipj=cmplx(pipj1,pipj2, dp)
 
               Aux(je,ie) = Aux(je,ie) + pipj*Aux2(juo,iuo)
 

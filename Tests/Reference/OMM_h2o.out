@@ -1,12 +1,16 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: trunk-509
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
 PARALLEL version
 NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:40:54
+* Running on 2 nodes in parallel
+>> Start of run:   5-JUN-2016  12:18:52
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -156,8 +160,9 @@ reinit: System Label: OMM_h2o
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: O Atomic number:           8
- Species number:            2  Label: H Atomic number:           1
+Species number:   1 Atomic number:    8 Label: O
+Species number:   2 Atomic number:    1 Label: H
+
 Ground state valence configuration:   2s02  2p04
 Reading pseudopotential information in formatted form from O.psf
 
@@ -195,7 +200,7 @@ L=0  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    4.5077      2.6407    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
@@ -205,7 +210,7 @@ L=1  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    6.1500      2.5936    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=2  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -215,7 +220,7 @@ L=2  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    3.5440    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -341,7 +346,7 @@ L=0  Nsemic=0  Cnfigmx=1
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    4.2036      1.8446    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -351,7 +356,7 @@ L=1  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    3.5282    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -562,51 +567,61 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     F
-redata: Number of spin components        =     1
-redata: Long output                      =     F
-redata: Number of Atomic Species         =        2
+redata: Spin configuration                          = non-polarized
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        2
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     NO
-redata: Mesh Cutoff                      =   150.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Min. number of SCF Iter          =        0
-redata: Max. number of SCF Iter          =       50
-redata: Mix DM or H after convergence    =     F
-redata: Recompute H after scf cycle      =     F
-redata: Performing Pulay mixing using    =     3 iterations
-redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?        =     F
-redata: Discard 1st Pulay DM after  kick =     F
-redata: New DM Mixing Weight             =     0.3000
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = NO
+redata: Mesh Cutoff                                 =   150.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =       50
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.3000
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.000100
-redata: Require (free) Energy convergence in SCF =     F
-redata: DM (free)Energy tolerance for SCF =     0.000010 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000010 eV
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     F
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Orbital Minimization Method
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     Verlet MD run
-redata: Initial MD time step             =        1
-redata:   Final MD time step             =        2
-redata: Length of MD time step           =     0.5000  fs
-redata: Initial Temperature of MD run    =     0.0000  K
-redata: Perform a MD quench              =     F
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: DM Tolerance for SCF                        =     0.000100
+redata: Require H convergence for SCF               =   F
+redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
+redata: Require (free) Energy convergence in SCF    =   F
+redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
+redata: Require Harris convergence for SCF          =   F
+redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   F
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Orbital Minimization Method
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Verlet MD run
+redata: Initial MD time step                        =        1
+redata:   Final MD time step                        =        2
+redata: Length of MD time step                      =     0.5000 fs
+redata: Initial Temperature of MD run               =     0.0000 K
+redata: Perform a MD quench                         =   F
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 3
+mix.SCF:    Linear mixing weight                 =     0.300000
+mix.SCF:    Damping                              =     0.300000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+Size of DM history Fstack: 0
 Total number of electrons:   200.000000
 Total ionic charge:   200.000000
 
-* ProcessorY, Blocksize:    2  24
+* ProcessorY, Blocksize:    1  24
 
 
-* Orbital distribution balance (max,min):   144   143
+* Orbital distribution balance (max,min):   288   287
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -616,6 +631,7 @@ siesta: k-grid: Supercell and displacements
 siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
+
 
                      ====================================
                         Begin MD step =      1
@@ -630,32 +646,39 @@ outcell: Cell vector modules (Ang)   :    9.405075    9.405075    9.405075
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :    831.9300
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 1
+  <sparsity:sparsity for geom step 1
+    nrows_g=575 nrows=288 sparsity=.1985 nnzs=65618, refcount: 7>
+  <dData1D:(new from dSpData1D) n=65618, refcount: 1>
+refcount: 1>
 New_DM. Step:     1
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 1
+    nrows_g=575 nrows=288 sparsity=.1985 nnzs=65618, refcount: 8>
+  <dData2D:(DMatomic) n=65618 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
-           1       1:   36    1:   18    1:   18
-           2       1:   36    1:   18   19:   36
-           3       1:   36   19:   36    1:   18
-           4       1:   36   19:   36   19:   36
+           1       1:   36    1:   36    1:   18
+           2       1:   36    1:   36   19:   36
 
 InitMesh: MESH =    72 x    72 x    72 =      373248
 InitMesh: (bp) =    36 x    36 x    36 =       46656
 InitMesh: Mesh cutoff (required, used) =   150.000   161.973 Ry
-ExtMesh (bp) on 0 =    88 x    70 x    70 =      431200
+ExtMesh (bp) on 0 =    88 x    88 x    70 =      542080
 New grid distribution:   2
-           1       1:   36    1:   16    1:   19
-           2       1:   36    1:   15   20:   36
-           3       1:   36   17:   36    1:   19
-           4       1:   36   16:   36   20:   36
+           1       1:   36    1:   36    1:   19
+           2       1:   36    1:   36   20:   36
 New grid distribution:   3
-           1       1:   36    1:   18    1:   18
-           2       1:   36    1:   18   19:   36
-           3       1:   36   19:   36    1:   18
-           4       1:   36   19:   36   19:   36
+           1       1:   36    1:   36    1:   18
+           2       1:   36    1:   36   19:   36
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    88 x    68 x    71 =      424864
-PhiOnMesh: Number of (b)points on node 0 =                10944
-PhiOnMesh: nlist on node 0 =               375250
+ExtMesh (bp) on 0 =    88 x    88 x    71 =      549824
+PhiOnMesh: Number of (b)points on node 0 =                24624
+PhiOnMesh: nlist on node 0 =               779944
+rdiag-debug: Node=0, lwork=    335801>= lworkq=    335801, liwork=      4043>= liworkq=      4043
+rdiag-debug: Node=1, lwork=    334651>= lworkq=    334651, liwork=      4043>= liworkq=      4043
 
 stepf: Fermi-Dirac step function
 
@@ -665,6 +688,8 @@ siesta: Eions   =     20396.361970
 siesta: Ena     =      4788.911936
 siesta: Ekin    =      7974.107446
 siesta: Enl     =     -1221.362236
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =         0.000004
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
@@ -675,229 +700,168 @@ siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
 siesta: Eharris =    -11848.520016
-siesta: Etot    =    -11587.659089
-siesta: FreeEng =    -11587.659089
+siesta: Etot    =    -11587.659090
+siesta: FreeEng =    -11587.659090
 
 siesta: iscf =    1
 Eharris(eV) =     -11848.5200  E_KS(eV) =     -11587.6591  dDmax =  0.9522
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.985  20.01
+timer: Routine,Calls,Time,% =    IterSCF     1       1.464  33.09
 
 siesta: iscf =    2
-Eharris(eV) =     -11991.7930  E_KS(eV) =     -11596.8913  dDmax =  2.2194
+Eharris(eV) =     -11752.2016  E_KS(eV) =     -11643.0791  dDmax =  0.5759
 
 +---------------------------------------------+
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1408562E+002  4.7968908E-002 |
-|     1     2 -1.1497530E+002  7.7680667E-003 |
-|     1     3 -1.1510134E+002  1.0955969E-003 |
-|     1     4 -1.1516661E+002  5.6692367E-004 |
-|     1     5 -1.1518349E+002  1.4656978E-004 |
-|     1     6 -1.1518694E+002  2.9986350E-005 |
-|     1     7 -1.1518844E+002  1.3010676E-005 |
-|     1     8 -1.1518899E+002  4.7318820E-006 |
-|     1     9 -1.1518912E+002  1.1710403E-006 |
-|     1    10 -1.1518916E+002  3.4742700E-007 |
-|     1    11 -1.1518918E+002  1.5137129E-007 |
-|     1    12 -1.1518919E+002  5.7782164E-008 |
-|     1    13 -1.1518919E+002  1.6445671E-008 |
-|     1    14 -1.1518919E+002  5.6769044E-009 |
-|     1    15 -1.1518919E+002  2.0250936E-009 |
-|     1    16 -1.1518919E+002  7.0243693E-010 |
+|     1     1 -1.1238007E+002  8.9510620E-004 |
+|     1     2 -1.1239750E+002  1.5507128E-004 |
+|     1     3 -1.1240308E+002  4.9689880E-005 |
+|     1     4 -1.1240453E+002  1.2892065E-005 |
+|     1     5 -1.1240479E+002  2.3252327E-006 |
+|     1     6 -1.1240488E+002  7.8060035E-007 |
+|     1     7 -1.1240492E+002  3.2402176E-007 |
+|     1     8 -1.1240493E+002  8.1713527E-008 |
+|     1     9 -1.1240493E+002  2.5476345E-008 |
+|     1    10 -1.1240493E+002  7.5140979E-009 |
+|     1    11 -1.1240493E+002  3.4648664E-009 |
+|     1    12 -1.1240493E+002  1.1109580E-009 |
+|     1    13 -1.1240493E+002  3.1744709E-010 |
 +---------------------------------------------+
-| minim: icg             =    16              |
+| minim: icg             =    13              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =    3
-Eharris(eV) =     -11746.7822  E_KS(eV) =     -11648.6508  dDmax =  0.4652
+Eharris(eV) =     -11745.6167  E_KS(eV) =     -11681.0266  dDmax =  0.4371
 
 +---------------------------------------------+
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1076060E+002  4.0450241E-004 |
-|     1     2 -1.1076878E+002  7.3851763E-005 |
-|     1     3 -1.1077101E+002  2.0202376E-005 |
-|     1     4 -1.1077168E+002  6.0539646E-006 |
-|     1     5 -1.1077181E+002  1.1364201E-006 |
-|     1     6 -1.1077186E+002  3.9955235E-007 |
-|     1     7 -1.1077187E+002  1.6841861E-007 |
-|     1     8 -1.1077188E+002  4.9045900E-008 |
-|     1     9 -1.1077188E+002  1.5023023E-008 |
-|     1    10 -1.1077188E+002  4.7469711E-009 |
-|     1    11 -1.1077188E+002  2.2746254E-009 |
-|     1    12 -1.1077188E+002  7.6937841E-010 |
+|     1     1 -1.1366807E+002  5.7704474E-005 |
+|     1     2 -1.1366924E+002  1.0260995E-005 |
+|     1     3 -1.1366960E+002  3.1749388E-006 |
+|     1     4 -1.1366972E+002  1.0168562E-006 |
+|     1     5 -1.1366975E+002  2.6686685E-007 |
+|     1     6 -1.1366975E+002  5.6784829E-008 |
+|     1     7 -1.1366976E+002  1.7593872E-008 |
+|     1     8 -1.1366976E+002  7.6168065E-009 |
+|     1     9 -1.1366976E+002  1.8112725E-009 |
+|     1    10 -1.1366976E+002  5.6117006E-010 |
 +---------------------------------------------+
-| minim: icg             =    12              |
+| minim: icg             =    10              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =    4
-Eharris(eV) =     -11745.7489  E_KS(eV) =     -11700.1359  dDmax =  0.2526
+Eharris(eV) =     -11745.6217  E_KS(eV) =     -11742.1418  dDmax =  0.0755
 
 +---------------------------------------------+
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1192715E+002  4.2807430E-005 |
-|     1     2 -1.1192821E+002  9.4835618E-006 |
-|     1     3 -1.1192852E+002  2.8231718E-006 |
-|     1     4 -1.1192862E+002  8.3873412E-007 |
-|     1     5 -1.1192864E+002  1.7420887E-007 |
-|     1     6 -1.1192864E+002  4.5040453E-008 |
-|     1     7 -1.1192864E+002  1.6858703E-008 |
-|     1     8 -1.1192864E+002  6.7098894E-009 |
-|     1     9 -1.1192864E+002  1.3970486E-009 |
-|     1    10 -1.1192864E+002  4.7199857E-010 |
+|     1     1 -1.1222075E+002  3.6905039E-005 |
+|     1     2 -1.1222143E+002  6.0427375E-006 |
+|     1     3 -1.1222167E+002  2.1345368E-006 |
+|     1     4 -1.1222174E+002  5.7401726E-007 |
+|     1     5 -1.1222175E+002  1.0505530E-007 |
+|     1     6 -1.1222175E+002  3.8134871E-008 |
+|     1     7 -1.1222175E+002  1.4695001E-008 |
+|     1     8 -1.1222175E+002  4.4287942E-009 |
+|     1     9 -1.1222175E+002  1.1788399E-009 |
+|     1    10 -1.1222175E+002  4.3788263E-010 |
 +---------------------------------------------+
 | minim: icg             =    10              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =    5
-Eharris(eV) =     -11745.4257  E_KS(eV) =     -11750.2347  dDmax =  0.0303
+Eharris(eV) =     -11745.4042  E_KS(eV) =     -11745.9531  dDmax =  0.0267
 
 +---------------------------------------------+
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1220620E+002  2.5410425E-006 |
-|     1     2 -1.1220626E+002  5.4069096E-007 |
-|     1     3 -1.1220627E+002  9.3134677E-008 |
-|     1     4 -1.1220628E+002  3.8660686E-008 |
-|     1     5 -1.1220628E+002  8.1570951E-009 |
-|     1     6 -1.1220628E+002  2.8541463E-009 |
-|     1     7 -1.1220628E+002  1.0987726E-009 |
-|     1     8 -1.1220628E+002  4.4206178E-010 |
+|     1     1 -1.1217800E+002  1.9269992E-007 |
+|     1     2 -1.1217800E+002  2.2111063E-008 |
+|     1     3 -1.1217800E+002  3.5575514E-009 |
+|     1     4 -1.1217800E+002  1.4707729E-009 |
+|     1     5 -1.1217800E+002  5.0737798E-010 |
 +---------------------------------------------+
-| minim: icg             =     8              |
+| minim: icg             =     5              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =    6
-Eharris(eV) =     -11745.3970  E_KS(eV) =     -11746.8889  dDmax =  0.0237
+Eharris(eV) =     -11745.3968  E_KS(eV) =     -11745.8404  dDmax =  0.0179
 
 +---------------------------------------------+
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1219671E+002  2.6353553E-007 |
-|     1     2 -1.1219672E+002  3.6173708E-008 |
-|     1     3 -1.1219672E+002  5.7211707E-009 |
-|     1     4 -1.1219672E+002  2.6126647E-009 |
-|     1     5 -1.1219672E+002  9.6068542E-010 |
+|     1     1 -1.1213413E+002  4.5057776E-007 |
+|     1     2 -1.1213414E+002  5.3284865E-008 |
+|     1     3 -1.1213414E+002  8.3049634E-009 |
+|     1     4 -1.1213414E+002  3.3945154E-009 |
+|     1     5 -1.1213414E+002  1.2525931E-009 |
+|     1     6 -1.1213414E+002  3.0450331E-010 |
 +---------------------------------------------+
-| minim: icg             =     5              |
+| minim: icg             =     6              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =    7
-Eharris(eV) =     -11745.3937  E_KS(eV) =     -11745.9382  dDmax =  0.0135
+Eharris(eV) =     -11745.3936  E_KS(eV) =     -11745.4414  dDmax =  0.0026
 
 +---------------------------------------------+
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1211882E+002  1.0457279E-007 |
-|     1     2 -1.1211882E+002  1.7010778E-008 |
-|     1     3 -1.1211882E+002  4.9704484E-009 |
-|     1     4 -1.1211882E+002  1.7615338E-009 |
-|     1     5 -1.1211882E+002  4.5984169E-010 |
+|     1     1 -1.1213741E+002  9.8972204E-009 |
+|     1     2 -1.1213741E+002  1.4463395E-009 |
+|     1     3 -1.1213741E+002  3.9612450E-010 |
 +---------------------------------------------+
-| minim: icg             =     5              |
+| minim: icg             =     3              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =    8
-Eharris(eV) =     -11745.3936  E_KS(eV) =     -11745.7036  dDmax =  0.0037
+Eharris(eV) =     -11745.3934  E_KS(eV) =     -11745.3021  dDmax =  0.0013
 
 +---------------------------------------------+
 | OMM (sparse algebra)                        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1212185E+002  6.9355146E-009 |
-|     1     2 -1.1212185E+002  6.2779850E-010 |
+|     1     1 -1.1213489E+002  9.6525437E-010 |
 +---------------------------------------------+
-| minim: icg             =     2              |
+| minim: icg             =     1              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =    9
-Eharris(eV) =     -11745.3934  E_KS(eV) =     -11745.6871  dDmax =  0.0016
+Eharris(eV) =     -11745.3933  E_KS(eV) =     -11745.3221  dDmax =  0.0009
 
 +---------------------------------------------+
 | OMM (sparse algebra)                        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1213289E+002  5.1567989E-009 |
-|     1     2 -1.1213289E+002  7.6721870E-010 |
+|     1     1 -1.1213044E+002  1.9198326E-009 |
+|     1     2 -1.1213044E+002  2.1265984E-009 |
+|     1     3 -1.1213044E+002  3.8336055E-010 |
 +---------------------------------------------+
-| minim: icg             =     2              |
+| minim: icg             =     3              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =   10
-Eharris(eV) =     -11745.3933  E_KS(eV) =     -11745.6077  dDmax =  0.0007
-
-+---------------------------------------------+
-| OMM (sparse algebra)                        |
-+---------------------------------------------+
-|             E_OMM            E_diff         |
-|     1     1 -1.1214010E+002  6.9401387E-010 |
-+---------------------------------------------+
-| minim: icg             =     1              |
-| minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
-+---------------------------------------------+
-
-siesta: iscf =   11
-Eharris(eV) =     -11745.3933  E_KS(eV) =     -11745.5140  dDmax =  0.0004
-
-+---------------------------------------------+
-| OMM (sparse algebra)                        |
-+---------------------------------------------+
-|             E_OMM            E_diff         |
-|     1     1 -1.1214327E+002  5.5217088E-010 |
-+---------------------------------------------+
-| minim: icg             =     1              |
-| minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
-+---------------------------------------------+
-
-siesta: iscf =   12
-Eharris(eV) =     -11745.3933  E_KS(eV) =     -11745.4145  dDmax =  0.0003
-
-+---------------------------------------------+
-| OMM (sparse algebra)                        |
-+---------------------------------------------+
-|             E_OMM            E_diff         |
-|     1     1 -1.1214271E+002  4.0253877E-010 |
-+---------------------------------------------+
-| minim: icg             =     1              |
-| minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
-+---------------------------------------------+
-
-siesta: iscf =   13
-Eharris(eV) =     -11745.3933  E_KS(eV) =     -11745.3999  dDmax =  0.0002
-
-+---------------------------------------------+
-| OMM (sparse algebra)                        |
-+---------------------------------------------+
-|             E_OMM            E_diff         |
-|     1     1 -1.1214020E+002  2.4299365E-010 |
-+---------------------------------------------+
-| minim: icg             =     1              |
-| minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
-+---------------------------------------------+
-
-siesta: iscf =   14
-Eharris(eV) =     -11745.3933  E_KS(eV) =     -11745.3990  dDmax =  0.0001
+Eharris(eV) =     -11745.3933  E_KS(eV) =     -11745.3896  dDmax =  0.0001
 
 
-SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00006674
-SCF cycle converged after   14 iterations
+SCF Convergence by dDmax criteria
+max |DM_out - DM_in|:     0.00006648
+SCF cycle converged after 10 iterations
 
 Using DM_out to compute the final energy and forces
 
@@ -907,30 +871,30 @@ siesta: E_KS - E_eggbox =    -11745.3933
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.170619    0.178760   -0.069933
+   Tot    0.170646    0.178787   -0.069926
 ----------------------------------------
-   Max    1.214445
-   Res    0.407343    sqrt( Sum f_i^2 / 3N )
+   Max    1.215528
+   Res    0.407525    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.214445    constrained
+   Max    1.215528    constrained
 
-Stress-tensor-Voigt (kbar):        5.68        9.82       15.38        1.41        6.64        1.23
-(Free)E + p*V (eV/cell)   -11750.7377
+Stress-tensor-Voigt (kbar):        5.71        9.84       15.41        1.40        6.64        1.23
+(Free)E + p*V (eV/cell)   -11750.7525
 Target enthalpy (eV/cell)   -11745.3933
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.003544    0.000878    0.000768
-         0.000878    0.006127    0.004145
-         0.000768    0.004145    0.009601
+         0.003562    0.000876    0.000770
+         0.000876    0.006143    0.004147
+         0.000770    0.004147    0.009620
 
-siesta: Pressure (static):        -10.29253445  kBar
+siesta: Pressure (static):        -10.32110016  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.003544    0.000878    0.000768
-         0.000878    0.006127    0.004145
-         0.000768    0.004145    0.009601
+         0.003562    0.000876    0.000770
+         0.000876    0.006143    0.004147
+         0.000770    0.004147    0.009620
 
-siesta: Pressure (total):        -10.29253445  kBar
+siesta: Pressure (total):        -10.32110016  kBar
 
 siesta: Temp_ion =       0.000 K
 
@@ -947,97 +911,353 @@ outcell: Cell vector modules (Ang)   :    9.405075    9.405075    9.405075
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :    831.9300
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 2
+  <sparsity:sparsity for geom step 2
+    nrows_g=575 nrows=288 sparsity=.1986 nnzs=65675, refcount: 7>
+  <dData1D:(new from dSpData1D) n=65675, refcount: 1>
+refcount: 1>
 New_DM. Step:     2
-Re-using DM from previous geometry...
-Re-using DM without extrapolation for lack of history
-Density Matrix sparsity pattern changed.
+Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 2
+    nrows_g=575 nrows=288 sparsity=.1986 nnzs=65675, refcount: 8>
+  <dData2D:(DMatomic) n=65675 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
-           1       1:   36    1:   18    1:   18
-           2       1:   36    1:   18   19:   36
-           3       1:   36   19:   36    1:   18
-           4       1:   36   19:   36   19:   36
+           1       1:   36    1:   36    1:   18
+           2       1:   36    1:   36   19:   36
 
 InitMesh: MESH =    72 x    72 x    72 =      373248
 InitMesh: (bp) =    36 x    36 x    36 =       46656
 InitMesh: Mesh cutoff (required, used) =   150.000   161.973 Ry
-ExtMesh (bp) on 0 =    88 x    70 x    70 =      431200
+ExtMesh (bp) on 0 =    88 x    88 x    70 =      542080
 New grid distribution:   2
-           1       1:   36    1:   16    1:   19
-           2       1:   36    1:   15   20:   36
-           3       1:   36   17:   36    1:   19
-           4       1:   36   16:   36   20:   36
+           1       1:   36    1:   36    1:   19
+           2       1:   36    1:   36   20:   36
 New grid distribution:   3
-           1       1:   36    1:   18    1:   18
-           2       1:   36    1:   18   19:   36
-           3       1:   36   19:   36    1:   18
-           4       1:   36   19:   36   19:   36
+           1       1:   36    1:   36    1:   18
+           2       1:   36    1:   36   19:   36
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    88 x    68 x    71 =      424864
-PhiOnMesh: Number of (b)points on node 0 =                10944
-PhiOnMesh: nlist on node 0 =               375260
+ExtMesh (bp) on 0 =    88 x    88 x    71 =      549824
+PhiOnMesh: Number of (b)points on node 0 =                24624
+PhiOnMesh: nlist on node 0 =               779949
 
 siesta: iscf =    1
-Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4232  dDmax =  0.0067
+Eharris(eV) =     -11848.5276  E_KS(eV) =     -11587.6951  dDmax =  0.9522
 
 +---------------------------------------------+
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1212780E+002  1.2654206E-008 |
-|     1     2 -1.1212780E+002  2.3665368E-009 |
-|     1     3 -1.1212780E+002  7.1999078E-010 |
+|     1     1 -1.1884876E+002  8.0140897E-003 |
+|     1     2 -1.1902920E+002  1.5170923E-003 |
+|     1     3 -1.1909370E+002  5.4171986E-004 |
+|     1     4 -1.1910836E+002  1.2304714E-004 |
+|     1     5 -1.1911090E+002  2.1335385E-005 |
+|     1     6 -1.1911164E+002  6.2012203E-006 |
+|     1     7 -1.1911190E+002  2.1615152E-006 |
+|     1     8 -1.1911199E+002  7.7737731E-007 |
+|     1     9 -1.1911201E+002  1.8650758E-007 |
+|     1    10 -1.1911202E+002  4.4402224E-008 |
+|     1    11 -1.1911202E+002  2.0523279E-008 |
+|     1    12 -1.1911202E+002  5.1210625E-009 |
+|     1    13 -1.1911202E+002  1.5287435E-009 |
+|     1    14 -1.1911202E+002  5.0322085E-010 |
 +---------------------------------------------+
-| minim: icg             =     3              |
+| minim: icg             =    14              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =    2
-Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4069  dDmax =  0.0013
+Eharris(eV) =     -11752.2164  E_KS(eV) =     -11643.1092  dDmax =  0.5758
 
 +---------------------------------------------+
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1213855E+002  3.3251792E-009 |
-|     1     2 -1.1213855E+002  5.4224895E-010 |
+|     1     1 -1.1238407E+002  8.9543301E-004 |
+|     1     2 -1.1240151E+002  1.5510938E-004 |
+|     1     3 -1.1240709E+002  4.9692082E-005 |
+|     1     4 -1.1240854E+002  1.2890530E-005 |
+|     1     5 -1.1240880E+002  2.3254619E-006 |
+|     1     6 -1.1240889E+002  7.8076599E-007 |
+|     1     7 -1.1240893E+002  3.2386861E-007 |
+|     1     8 -1.1240893E+002  8.2004958E-008 |
+|     1     9 -1.1240894E+002  2.5674800E-008 |
+|     1    10 -1.1240894E+002  7.5028871E-009 |
+|     1    11 -1.1240894E+002  3.4846895E-009 |
+|     1    12 -1.1240894E+002  1.1170854E-009 |
+|     1    13 -1.1240894E+002  3.1798330E-010 |
 +---------------------------------------------+
-| minim: icg             =     2              |
+| minim: icg             =    13              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =    3
-Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4101  dDmax =  0.0013
+Eharris(eV) =     -11745.6298  E_KS(eV) =     -11681.0537  dDmax =  0.4370
 
 +---------------------------------------------+
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1214089E+002  4.2810691E-010 |
+|     1     1 -1.1367159E+002  5.7670014E-005 |
+|     1     2 -1.1367275E+002  1.0253350E-005 |
+|     1     3 -1.1367312E+002  3.1720162E-006 |
+|     1     4 -1.1367323E+002  1.0155022E-006 |
+|     1     5 -1.1367326E+002  2.6640667E-007 |
+|     1     6 -1.1367327E+002  5.6665892E-008 |
+|     1     7 -1.1367327E+002  1.7547696E-008 |
+|     1     8 -1.1367327E+002  7.5921026E-009 |
+|     1     9 -1.1367327E+002  1.8039430E-009 |
+|     1    10 -1.1367327E+002  5.5914710E-010 |
 +---------------------------------------------+
-| minim: icg             =     1              |
+| minim: icg             =    10              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
 siesta: iscf =    4
-Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4073  dDmax =  0.0002
+Eharris(eV) =     -11745.6352  E_KS(eV) =     -11742.1508  dDmax =  0.0755
 
 +---------------------------------------------+
 | OMM (sparse algebra)                        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1214132E+002  1.4635158E-010 |
+|     1     1 -1.1222317E+002  2.5865294E-005 |
+|     1     2 -1.1222354E+002  3.2985894E-006 |
+|     1     3 -1.1222388E+002  3.1055077E-006 |
+|     1     4 -1.1222415E+002  2.3725680E-006 |
+|     1     5 -1.1222431E+002  1.4139372E-006 |
+|     1     6 -1.1222445E+002  1.2922586E-006 |
+|     1     7 -1.1222459E+002  1.2322466E-006 |
+|     1     8 -1.1222473E+002  1.2187360E-006 |
+|     1     9 -1.1222484E+002  1.0020217E-006 |
+|     1    10 -1.1222490E+002  5.0040021E-007 |
+|     1    11 -1.1222498E+002  7.6659462E-007 |
+|     1    12 -1.1222505E+002  5.7607538E-007 |
+|     1    13 -1.1222509E+002  3.6072939E-007 |
+|     1    14 -1.1222512E+002  3.2254460E-007 |
+|     1    15 -1.1222518E+002  4.6053092E-007 |
+|     1    16 -1.1222522E+002  4.0022873E-007 |
+|     1    17 -1.1222527E+002  3.9398280E-007 |
+|     1    18 -1.1222530E+002  2.7373220E-007 |
+|     1    19 -1.1222532E+002  1.7091155E-007 |
+|     1    20 -1.1222533E+002  1.3370303E-007 |
+|     1    21 -1.1222534E+002  1.1876264E-007 |
+|     1    22 -1.1222535E+002  8.5823007E-008 |
+|     1    23 -1.1222536E+002  5.4235462E-008 |
+|     1    24 -1.1222536E+002  3.8812064E-008 |
+|     1    25 -1.1222537E+002  4.2223592E-008 |
+|     1    26 -1.1222537E+002  3.3617441E-008 |
+|     1    27 -1.1222538E+002  2.3048197E-008 |
+|     1    28 -1.1222538E+002  1.3842030E-008 |
+|     1    29 -1.1222538E+002  1.0735358E-008 |
+|     1    30 -1.1222538E+002  9.4213060E-009 |
+|     1    31 -1.1222538E+002  8.8017709E-009 |
+|     1    32 -1.1222538E+002  1.0248742E-008 |
+|     1    33 -1.1222538E+002  1.2385005E-008 |
+|     1    34 -1.1222538E+002  1.2925356E-008 |
+|     1    35 -1.1222539E+002  1.5128041E-008 |
+|     1    36 -1.1222539E+002  1.5748562E-008 |
+|     1    37 -1.1222539E+002  1.0766669E-008 |
+|     1    38 -1.1222539E+002  8.6853125E-009 |
+|     1    39 -1.1222539E+002  7.1710611E-009 |
+|     1    40 -1.1222539E+002  4.5998021E-009 |
+|     1    41 -1.1222539E+002  3.3628738E-009 |
+|     1    42 -1.1222539E+002  4.4450758E-009 |
+|     1    43 -1.1222539E+002  6.4842820E-009 |
+|     1    44 -1.1222539E+002  5.4176374E-009 |
+|     1    45 -1.1222539E+002  3.8376505E-009 |
+|     1    46 -1.1222539E+002  4.0870077E-009 |
+|     1    47 -1.1222539E+002  3.7820039E-009 |
+|     1    48 -1.1222539E+002  3.0256350E-009 |
+|     1    49 -1.1222539E+002  2.4211224E-009 |
+|     1    50 -1.1222540E+002  2.2950936E-009 |
+|     1    51 -1.1222540E+002  2.2672617E-009 |
+|     1    52 -1.1222540E+002  3.5873223E-009 |
+|     1    53 -1.1222540E+002  3.7370296E-009 |
+|     1    54 -1.1222540E+002  4.1491744E-009 |
+|     1    55 -1.1222540E+002  3.9790874E-009 |
+|     1    56 -1.1222540E+002  4.2277415E-009 |
+|     1    57 -1.1222540E+002  2.5354459E-009 |
+|     1    58 -1.1222540E+002  2.2704874E-009 |
+|     1    59 -1.1222540E+002  2.1152706E-009 |
+|     1    60 -1.1222540E+002  1.8759694E-009 |
+|     1    61 -1.1222540E+002  1.4684723E-009 |
+|     1    62 -1.1222540E+002  1.9483545E-009 |
+|     1    63 -1.1222540E+002  2.1064764E-009 |
+|     1    64 -1.1222540E+002  1.7741016E-009 |
+|     1    65 -1.1222540E+002  1.4917120E-009 |
+|     1    66 -1.1222540E+002  1.4625425E-009 |
+|     1    67 -1.1222540E+002  1.1903306E-009 |
+|     1    68 -1.1222540E+002  1.0104496E-009 |
+|     1    69 -1.1222540E+002  8.6446262E-010 |
++---------------------------------------------+
+| minim: icg             =    69              |
+| minim: 2*Tr[(2*I-S)*S] =   199.9999999      |
++---------------------------------------------+
+
+siesta: iscf =    5
+Eharris(eV) =     -11745.4177  E_KS(eV) =     -11745.9664  dDmax =  0.0277
+
++---------------------------------------------+
+| OMM (sparse algebra)                        |
++---------------------------------------------+
+|             E_OMM            E_diff         |
+|     1     1 -1.1217725E+002  1.7490886E-007 |
+|     1     2 -1.1217725E+002  9.1785227E-009 |
+|     1     3 -1.1217725E+002  8.2231669E-009 |
+|     1     4 -1.1217725E+002  7.9825965E-009 |
+|     1     5 -1.1217725E+002  3.1893567E-009 |
+|     1     6 -1.1217725E+002  2.6227895E-009 |
+|     1     7 -1.1217725E+002  3.0544436E-009 |
+|     1     8 -1.1217726E+002  2.6291773E-009 |
+|     1     9 -1.1217726E+002  1.6855055E-009 |
+|     1    10 -1.1217726E+002  1.2604927E-009 |
+|     1    11 -1.1217726E+002  1.6391326E-009 |
+|     1    12 -1.1217726E+002  1.1296082E-009 |
+|     1    13 -1.1217726E+002  8.7091146E-010 |
++---------------------------------------------+
+| minim: icg             =    13              |
+| minim: 2*Tr[(2*I-S)*S] =   199.9999999      |
++---------------------------------------------+
+
+siesta: iscf =    6
+Eharris(eV) =     -11745.4103  E_KS(eV) =     -11745.8643  dDmax =  0.0186
+
++---------------------------------------------+
+| OMM (sparse algebra)                        |
++---------------------------------------------+
+|             E_OMM            E_diff         |
+|     1     1 -1.1212353E+002  4.9333250E-007 |
+|     1     2 -1.1212353E+002  1.7841221E-008 |
+|     1     3 -1.1212353E+002  1.8730912E-008 |
+|     1     4 -1.1212354E+002  1.8215778E-008 |
+|     1     5 -1.1212354E+002  5.9196996E-009 |
+|     1     6 -1.1212354E+002  3.9467366E-009 |
+|     1     7 -1.1212354E+002  6.0402916E-009 |
+|     1     8 -1.1212354E+002  6.3938137E-009 |
+|     1     9 -1.1212354E+002  5.3183959E-009 |
+|     1    10 -1.1212354E+002  3.5777608E-009 |
+|     1    11 -1.1212354E+002  4.9263067E-009 |
+|     1    12 -1.1212354E+002  4.2475629E-009 |
+|     1    13 -1.1212354E+002  2.8980659E-009 |
+|     1    14 -1.1212354E+002  2.8839445E-009 |
+|     1    15 -1.1212354E+002  3.8098448E-009 |
+|     1    16 -1.1212354E+002  4.2122031E-009 |
+|     1    17 -1.1212354E+002  2.4541065E-009 |
+|     1    18 -1.1212354E+002  2.9342554E-009 |
+|     1    19 -1.1212354E+002  2.9096469E-009 |
+|     1    20 -1.1212354E+002  2.2448531E-009 |
+|     1    21 -1.1212354E+002  1.3869447E-009 |
+|     1    22 -1.1212354E+002  1.3620385E-009 |
+|     1    23 -1.1212354E+002  1.4893727E-009 |
+|     1    24 -1.1212354E+002  1.2500944E-009 |
+|     1    25 -1.1212354E+002  1.0990723E-009 |
+|     1    26 -1.1212354E+002  1.1746083E-009 |
+|     1    27 -1.1212354E+002  1.3517879E-009 |
+|     1    28 -1.1212354E+002  1.5122434E-009 |
+|     1    29 -1.1212354E+002  8.7454210E-010 |
++---------------------------------------------+
+| minim: icg             =    29              |
+| minim: 2*Tr[(2*I-S)*S] =   199.9999999      |
++---------------------------------------------+
+
+siesta: iscf =    7
+Eharris(eV) =     -11745.4073  E_KS(eV) =     -11745.4938  dDmax =  0.0050
+
++---------------------------------------------+
+| OMM (sparse algebra)                        |
++---------------------------------------------+
+|             E_OMM            E_diff         |
+|     1     1 -1.1212448E+002  3.9826762E-009 |
+|     1     2 -1.1212448E+002  2.4946085E-009 |
+|     1     3 -1.1212448E+002  6.1236906E-010 |
++---------------------------------------------+
+| minim: icg             =     3              |
+| minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
++---------------------------------------------+
+
+siesta: iscf =    8
+Eharris(eV) =     -11745.4070  E_KS(eV) =     -11745.5191  dDmax =  0.0038
+
++---------------------------------------------+
+| OMM (sparse algebra)                        |
++---------------------------------------------+
+|             E_OMM            E_diff         |
+|     1     1 -1.1213363E+002  2.9472970E-008 |
+|     1     2 -1.1213363E+002  3.2816542E-009 |
+|     1     3 -1.1213363E+002  2.3199002E-009 |
+|     1     4 -1.1213363E+002  3.7407247E-009 |
+|     1     5 -1.1213363E+002  1.4712934E-009 |
+|     1     6 -1.1213363E+002  8.7913106E-010 |
++---------------------------------------------+
+| minim: icg             =     6              |
+| minim: 2*Tr[(2*I-S)*S] =   199.9999999      |
++---------------------------------------------+
+
+siesta: iscf =    9
+Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.5322  dDmax =  0.0009
+
++---------------------------------------------+
+| OMM (sparse algebra)                        |
++---------------------------------------------+
+|             E_OMM            E_diff         |
+|     1     1 -1.1213950E+002  3.4840915E-009 |
+|     1     2 -1.1213950E+002  3.4734277E-009 |
+|     1     3 -1.1213950E+002  1.3161343E-009 |
+|     1     4 -1.1213950E+002  7.6022177E-010 |
++---------------------------------------------+
+| minim: icg             =     4              |
+| minim: 2*Tr[(2*I-S)*S] =   199.9999999      |
++---------------------------------------------+
+
+siesta: iscf =   10
+Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4708  dDmax =  0.0006
+
++---------------------------------------------+
+| OMM (sparse algebra)                        |
++---------------------------------------------+
+|             E_OMM            E_diff         |
+|     1     1 -1.1214006E+002  3.1389359E-010 |
 +---------------------------------------------+
 | minim: icg             =     1              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
 +---------------------------------------------+
 
-siesta: iscf =    5
-Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4069  dDmax =  0.0001
+siesta: iscf =   11
+Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4342  dDmax =  0.0005
+
++---------------------------------------------+
+| OMM (sparse algebra)                        |
++---------------------------------------------+
+|             E_OMM            E_diff         |
+|     1     1 -1.1214039E+002  2.0543928E-010 |
++---------------------------------------------+
+| minim: icg             =     1              |
+| minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
++---------------------------------------------+
+
+siesta: iscf =   12
+Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4076  dDmax =  0.0001
+
++---------------------------------------------+
+| OMM (sparse algebra)                        |
++---------------------------------------------+
+|             E_OMM            E_diff         |
+|     1     1 -1.1214038E+002  1.8130019E-010 |
++---------------------------------------------+
+| minim: icg             =     1              |
+| minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
++---------------------------------------------+
+
+siesta: iscf =   13
+Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4068  dDmax =  0.0000
 
 
-SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00006337
-SCF cycle converged after    5 iterations
+SCF Convergence by dDmax criteria
+max |DM_out - DM_in|:     0.00004235
+SCF cycle converged after 13 iterations
 
 Using DM_out to compute the final energy and forces
 
@@ -1045,154 +1265,158 @@ siesta: E_KS(eV) =           -11745.4069
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.170734    0.179471   -0.069364
+   Tot    0.170667    0.179497   -0.069330
 ----------------------------------------
-   Max    1.196328
-   Res    0.399691    sqrt( Sum f_i^2 / 3N )
+   Max    1.196558
+   Res    0.399726    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.196328    constrained
+   Max    1.196558    constrained
 
-Stress-tensor-Voigt (kbar):        5.69        9.76       15.20        1.37        6.53        1.23
-(Free)E + p*V (eV/cell)   -11750.7123
+Stress-tensor-Voigt (kbar):        5.70        9.76       15.21        1.37        6.53        1.23
+(Free)E + p*V (eV/cell)   -11750.7141
 Target enthalpy (eV/cell)   -11745.4069
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.003552    0.000853    0.000767
-         0.000853    0.006090    0.004076
-         0.000767    0.004076    0.009490
+         0.003555    0.000853    0.000768
+         0.000853    0.006092    0.004076
+         0.000767    0.004076    0.009492
 
-siesta: Pressure (static):        -10.21761144  kBar
+siesta: Pressure (static):        -10.22111980  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.003552    0.000853    0.000767
-         0.000853    0.006090    0.004076
-         0.000767    0.004076    0.009490
+         0.003555    0.000853    0.000768
+         0.000853    0.006092    0.004076
+         0.000767    0.004076    0.009492
 
-siesta: Pressure (total):        -10.21761144  kBar
+siesta: Pressure (total):        -10.22111980  kBar
 
-siesta: Temp_ion =       1.405 K
+siesta: Temp_ion =       1.406 K
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -2851.544897
+siesta: Ebs     =     -2851.519265
 siesta: Eions   =     20396.361970
-siesta: Ena     =      4788.911092
-siesta: Ekin    =      8836.949327
-siesta: Enl     =     -1599.520885
-siesta: DEna    =      -547.596831
-siesta: DUscf   =        58.707648
+siesta: Ena     =      4788.911133
+siesta: Ekin    =      8836.903074
+siesta: Enl     =     -1599.482880
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =      -547.589384
+siesta: DUscf   =        58.711648
 siesta: DUext   =         0.000000
-siesta: Exc     =     -2886.495285
+siesta: Exc     =     -2886.498486
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
-siesta: Ekinion =         0.013437
-siesta: Eharris =    -11745.393466
-siesta: Etot    =    -11745.393466
-siesta: FreeEng =    -11745.393466
+siesta: Ekinion =         0.013444
+siesta: Eharris =    -11745.393423
+siesta: Etot    =    -11745.393423
+siesta: FreeEng =    -11745.393423
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =   -2851.544897
-siesta:       Kinetic =    8836.949327
-siesta:       Hartree =    5977.977337
+siesta:  Band Struct. =   -2851.519265
+siesta:       Kinetic =    8836.903074
+siesta:       Hartree =    5978.002135
+siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =   -2886.495285
-siesta:  Ion-electron =  -19899.664546
-siesta:       Ion-ion =   -3774.173737
-siesta:       Ekinion =       0.013437
-siesta:         Total =  -11745.393466
+siesta:   Exch.-corr. =   -2886.498486
+siesta:  Ion-electron =  -19899.642527
+siesta:       Ion-ion =   -3774.171062
+siesta:       Ekinion =       0.013444
+siesta:         Total =  -11745.393423
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.396714   -0.124608    0.412209
-siesta:      2   -0.100760   -0.012415    0.518678
-siesta:      3   -0.467869   -0.158790   -0.818306
-siesta:      4   -0.440065    0.097755    0.364887
-siesta:      5    0.237594    0.476613   -0.066788
-siesta:      6    0.160289   -0.665598   -0.536406
-siesta:      7    0.064505    0.057599   -0.225419
-siesta:      8   -0.216943   -0.092481   -0.173440
-siesta:      9    0.004759   -0.034982    0.247653
-siesta:     10   -0.085977   -0.335320    0.238338
-siesta:     11    0.329573    0.715825   -0.603606
-siesta:     12   -0.085272    0.095310    0.121028
-siesta:     13    0.417917    0.106518   -0.301162
-siesta:     14    0.133563   -0.081831   -0.712392
-siesta:     15   -0.684360   -0.176133    0.975142
-siesta:     16    0.058958    0.598395    0.453066
-siesta:     17   -0.073296   -0.576205   -0.700197
-siesta:     18    0.003096    0.059744    0.285982
-siesta:     19    0.731193   -0.614187    0.350977
-siesta:     20   -0.495127    0.106794   -0.299828
-siesta:     21   -0.297883    0.011187   -0.006216
-siesta:     22    0.651202    0.546288   -0.152479
-siesta:     23   -0.141658   -0.277278    0.180474
-siesta:     24   -0.155040   -0.247773    0.032235
-siesta:     25   -0.211899    0.398834    0.377402
-siesta:     26    0.046209   -0.846905    0.104654
-siesta:     27    0.250382    0.543023   -0.402741
-siesta:     28   -0.002162   -0.217168    1.177053
-siesta:     29    0.140076    0.216005   -0.276287
-siesta:     30    0.295923   -0.118007   -0.788466
-siesta:     31    0.150847   -0.397242   -0.150350
-siesta:     32    0.168875    0.307734   -0.032417
-siesta:     33    0.073212    0.122498   -0.125161
-siesta:     34   -0.154080    0.443830    0.216584
-siesta:     35   -0.032900   -0.101058   -0.395112
-siesta:     36   -0.151311   -0.075097    0.122667
-siesta:     37    0.430449    0.343225    0.318812
-siesta:     38   -0.334805   -0.265447   -0.096694
-siesta:     39    0.065047   -0.179282    0.101311
-siesta:     40   -0.611880   -0.116190    0.622880
-siesta:     41    0.767368   -0.299340   -0.316300
-siesta:     42   -0.280433    0.356345   -0.364535
-siesta:     43   -0.389829   -0.386895   -0.623033
-siesta:     44   -0.274337   -0.004312   -0.247395
-siesta:     45    0.649381    0.812609    1.146482
-siesta:     46   -0.336295    0.021020   -0.100669
-siesta:     47    0.226022   -0.034443   -0.160798
-siesta:     48    0.011815   -0.054289    0.017425
-siesta:     49   -0.663749   -0.315410   -0.221759
-siesta:     50    0.725832    0.333340    0.422268
-siesta:     51   -0.316788   -0.097219   -0.477701
-siesta:     52   -0.168696    0.546922    0.260071
-siesta:     53    0.211644   -0.095143   -0.341609
-siesta:     54   -0.259514   -0.014984   -0.179485
-siesta:     55   -0.328346    0.423776   -0.948878
-siesta:     56    0.528382   -0.107362    0.616776
-siesta:     57   -0.199464   -0.201221    0.141100
-siesta:     58    0.709572   -0.249672   -0.147969
-siesta:     59   -0.360446    0.071304    0.105443
-siesta:     60   -0.543601   -0.056904    0.140159
-siesta:     61    1.196328    0.027788   -0.722271
-siesta:     62   -0.642721   -0.084619    0.533854
-siesta:     63   -0.579199   -0.141775    0.540207
-siesta:     64   -0.047243   -0.108855    0.466464
-siesta:     65    0.135666    0.069372    0.336657
-siesta:     66    0.190653    0.142150   -0.260853
-siesta:     67    0.205376   -1.033063   -1.019716
-siesta:     68    0.017999    0.250165    0.126931
-siesta:     69    0.161062    0.586234    0.919375
-siesta:     70    0.197206    0.281068   -0.280776
-siesta:     71    0.180073   -0.120759    0.326321
-siesta:     72   -0.518139    0.042505   -0.129621
-siesta:     73   -0.054397    0.870169   -0.302277
-siesta:     74   -0.071848   -0.635341   -0.088918
-siesta:     75    0.024304   -0.146870    0.407106
+siesta:      1    0.397013   -0.125194    0.412368
+siesta:      2   -0.100804   -0.012122    0.518615
+siesta:      3   -0.468018   -0.158499   -0.818463
+siesta:      4   -0.440715    0.098094    0.364904
+siesta:      5    0.238098    0.476681   -0.066555
+siesta:      6    0.160422   -0.665981   -0.536660
+siesta:      7    0.064298    0.057295   -0.225328
+siesta:      8   -0.216759   -0.092479   -0.173393
+siesta:      9    0.004689   -0.034847    0.247376
+siesta:     10   -0.085470   -0.335079    0.238222
+siesta:     11    0.329402    0.715792   -0.603412
+siesta:     12   -0.085632    0.095191    0.121051
+siesta:     13    0.417429    0.105669   -0.301337
+siesta:     14    0.133803   -0.081427   -0.712246
+siesta:     15   -0.684147   -0.175796    0.975103
+siesta:     16    0.059407    0.598376    0.452844
+siesta:     17   -0.073442   -0.576216   -0.700257
+siesta:     18    0.002753    0.059798    0.286198
+siesta:     19    0.731406   -0.614119    0.350734
+siesta:     20   -0.495048    0.106823   -0.299603
+siesta:     21   -0.298172    0.010989   -0.006155
+siesta:     22    0.651314    0.546172   -0.152614
+siesta:     23   -0.141886   -0.277278    0.180597
+siesta:     24   -0.154875   -0.247666    0.032180
+siesta:     25   -0.211981    0.399208    0.377563
+siesta:     26    0.046206   -0.846709    0.104441
+siesta:     27    0.250283    0.542474   -0.402552
+siesta:     28   -0.002427   -0.217500    1.177374
+siesta:     29    0.140103    0.216189   -0.276379
+siesta:     30    0.296063   -0.117856   -0.788678
+siesta:     31    0.150944   -0.397055   -0.150436
+siesta:     32    0.168860    0.307755   -0.032472
+siesta:     33    0.073213    0.122484   -0.125034
+siesta:     34   -0.153950    0.443924    0.216709
+siesta:     35   -0.032990   -0.101040   -0.395338
+siesta:     36   -0.151307   -0.075188    0.122782
+siesta:     37    0.430276    0.343283    0.318715
+siesta:     38   -0.334746   -0.265702   -0.096604
+siesta:     39    0.065163   -0.179048    0.101289
+siesta:     40   -0.611936   -0.115745    0.622882
+siesta:     41    0.767554   -0.299527   -0.316212
+siesta:     42   -0.280557    0.356214   -0.364586
+siesta:     43   -0.389807   -0.387630   -0.623376
+siesta:     44   -0.274431   -0.004045   -0.247277
+siesta:     45    0.649407    0.813095    1.146713
+siesta:     46   -0.335917    0.021475   -0.100419
+siesta:     47    0.225747   -0.034742   -0.160848
+siesta:     48    0.011761   -0.054532    0.017423
+siesta:     49   -0.663632   -0.315343   -0.221769
+siesta:     50    0.725884    0.333378    0.422287
+siesta:     51   -0.316963   -0.097261   -0.477785
+siesta:     52   -0.168906    0.547279    0.260037
+siesta:     53    0.211606   -0.095499   -0.341604
+siesta:     54   -0.259268   -0.015044   -0.179507
+siesta:     55   -0.328580    0.423585   -0.948799
+siesta:     56    0.528659   -0.107312    0.616846
+siesta:     57   -0.199491   -0.200981    0.141010
+siesta:     58    0.709932   -0.249910   -0.147319
+siesta:     59   -0.360573    0.071398    0.105253
+siesta:     60   -0.543692   -0.056934    0.139828
+siesta:     61    1.196558    0.027851   -0.722817
+siesta:     62   -0.642772   -0.084736    0.534293
+siesta:     63   -0.579282   -0.141802    0.540200
+siesta:     64   -0.047236   -0.109197    0.466278
+siesta:     65    0.135695    0.069560    0.336543
+siesta:     66    0.190581    0.142229   -0.260521
+siesta:     67    0.204794   -1.033173   -1.019871
+siesta:     68    0.018194    0.250172    0.126964
+siesta:     69    0.161356    0.586359    0.919432
+siesta:     70    0.197391    0.281019   -0.280846
+siesta:     71    0.179808   -0.120674    0.326355
+siesta:     72   -0.518052    0.042476   -0.129523
+siesta:     73   -0.054345    0.869982   -0.302364
+siesta:     74   -0.071938   -0.635000   -0.088954
+siesta:     75    0.024336   -0.146878    0.407174
 siesta: ----------------------------------------
-siesta:    Tot    0.170734    0.179471   -0.069364
+siesta:    Tot    0.170667    0.179497   -0.069330
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:     0.003552    0.000853    0.000767
-siesta:     0.000853    0.006090    0.004076
-siesta:     0.000767    0.004076    0.009490
+siesta:     0.003555    0.000853    0.000768
+siesta:     0.000853    0.006092    0.004076
+siesta:     0.000767    0.004076    0.009492
 
 siesta: Cell volume =        831.929999 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:          -0.00006946         -0.00006325  Ry/Bohr**3
-siesta:          -0.00637726         -0.00580719  eV/Ang**3
-siesta:         -10.21761144         -9.30424428  kBar
-(Free)E+ p_basis*V_orbitals  =      -11732.383777
-(Free)Eharris+ p_basis*V_orbitals  =      -11732.383777
->> End of run:  29-SEP-2015  15:41:21
+siesta:          -0.00006948         -0.00006323  Ry/Bohr**3
+siesta:          -0.00637945         -0.00580598  eV/Ang**3
+siesta:         -10.22111980         -9.30229959  kBar
+(Free)E+ p_basis*V_orbitals  =      -11732.383740
+(Free)Eharris+ p_basis*V_orbitals  =      -11732.383740
+>> End of run:   5-JUN-2016  12:19:38

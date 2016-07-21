@@ -1,0 +1,96 @@
+# Old mixing parameters
+#DM.MixingWeight         0.01
+#DM.NumberPulay          4
+
+# New:
+#SCF.Mix.Debug T
+%block SCF.Mix
+  init
+%endblock
+  
+%block SCF.Mix.init
+  # Specify mixing method
+  method pulay
+  # Run for at least this number of 
+  # iterations (negative == infinite)
+  iterations 150
+  # Mixing weight
+  w 0.01
+  # Number of previous steps saved
+  history 4
+  
+  # Restart history after every 16 steps
+  restart 16
+  # Restart history if:
+  #  || f_k-1 || < 0.25 * || f_k ||
+  restart.p 0.25
+  # Store the latest 2 residuals in the
+  # history (reduces kick)
+  restart.save 2
+%endblock
+
+
+SystemName          Linear Fe3 cluster.
+SystemLabel         scfmix
+NumberOfAtoms       3
+NumberOfSpecies     1
+
+%block ChemicalSpeciesLabel
+ 1  26  fe_nc      # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+LatticeConstant    1.0 Bohr
+%block LatticeVectors
+ 12.000   0.000   0.000
+  0.000  12.000   0.000
+  0.000   0.000  20.000
+%endblock LatticeVectors
+
+AtomicCoordinatesFormat  NotScaledCartesianBohr
+%block AtomicCoordinatesAndAtomicSpecies
+  0.000   0.000   3.644  1
+  0.000   0.000   0.000  1
+  0.000   0.000  -3.644  1
+%endblock AtomicCoordinatesAndAtomicSpecies
+%block AtomicCoordinatesOrigin
+  0.000   0.000   0.000
+%endblock AtomicCoordinatesOrigin
+
+PAO.BasisType    split
+PAO.SplitNorm    0.15
+%block PAO.BasisAndPSlmax
+  1   26   2   3
+    0    2
+      5.30   0.00
+      1.00   1.00
+    1    1
+      5.30   0.00
+      1.00   1.00
+    2    2
+      4.50   0.00
+      1.00   1.00
+%endblock PAO.BasisAndPSlmax
+
+MeshCutoff        150. Ry
+
+ElectronicTemperature   0.1 eV
+
+MaxSCFiterations      200
+
+MD.TypeOfRun      CG
+MD.NumCGsteps     0
+
+WriteMullikenPop  1
+
+SpinPolarized     yes
+NonCollinearSpin  yes 
+
+DM.UseSaveDM      yes
+
+%block DM.InitSpin
+ 1  +3.00     0.   0.   # atom,spin,theta,phi (deg)
+ 2  +1.50    90.   0.
+ 3  +3.00   180.   0.
+%endblock DM.InitSpin
+
+

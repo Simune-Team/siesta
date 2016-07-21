@@ -12,11 +12,12 @@ SIESTA=../../../siesta
 #----------------------------------------------------------------------------
 REFERENCE_DIR?=../../../Tests/Reference
 REFERENCE_CHECKER?=../cmp_digest.sh
-#
+
 label=work
-#
+
+.PHONY: completed
 completed: completed_$(label)
-#
+
 completed_$(label):
 	@echo ">>>> Running $(name) test..."
 	@if [ -d $(label) ] ; then rm -rf $(label) ; fi; mkdir $(label)
@@ -33,11 +34,13 @@ completed_$(label):
          else \
            echo " **** Test $(name) did not complete successfully";\
          fi
-#
-check: completed
+
+check: completed check-only
+
+check-only:
 	@echo "    ==> Running check for system $(name)"
 	@REFERENCE_DIR=$(REFERENCE_DIR) sh $(REFERENCE_CHECKER) $(name).out
-#
+
 clean:
 	@echo ">>>> Cleaning $(name) test..."
 	rm -rf $(label) completed_$(label) $(name).out $(name).xml

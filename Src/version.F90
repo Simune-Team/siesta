@@ -35,10 +35,12 @@ character(len=*), parameter :: fflags= &
 "FFLAGS"
 character(len=*), parameter :: fppflags= &
 "FPPFLAGS"
+character(len=*), parameter :: libs= &
+"LIBS"
 
 private
 public :: num_version, version_str
-public :: siesta_arch, fflags, fppflags
+public :: siesta_arch, fflags, fppflags, libs
 
 end module version_info
 !================================================================
@@ -54,9 +56,10 @@ use version_info
 implicit none
 
 write(6,'(2a)') "Siesta Version: ", trim(version_str)
-write(6,'(2a)') 'Architecture  : ', siesta_arch
-write(6,'(2a)') 'Compiler flags: ', fflags
-write(6,'(2a)') 'PP flags      : ', fppflags
+write(6,'(2a)') 'Architecture  : ', trim(siesta_arch)
+write(6,'(2a)') 'Compiler flags: ', trim(fflags)
+write(6,'(2a)') 'PP flags      : ', trim(fppflags)
+write(6,'(2a)') 'Libraries     : ', trim(libs)
 
 #ifdef MPI
 write(6,'(a)') 'PARALLEL version'
@@ -64,11 +67,32 @@ write(6,'(a)') 'PARALLEL version'
 write(6,'(a)') 'SERIAL version'
 #endif
 
+!$OMP parallel
+!$OMP master
+!$write(*,'(a)') 'THREADED version'
+#ifdef _OPENMP
+!$write(*,'(a,i0)') '* OpenMP version ', _OPENMP
+#endif
+!$OMP end master
+!$OMP end parallel
+
 #ifdef TRANSIESTA
 write(6,'(a)') 'TRANSIESTA support'
 #endif
+#ifdef USE_GEMM3M
+write(6,'(a)') 'GEMM3M support'
+#endif
 #ifdef CDF
 write(6,'(a)') 'NetCDF support'
+#endif
+#ifdef NCDF_4
+write(6,'(a)') 'NetCDF-4 support'
+#ifdef NCDF_PARALLEL
+write(6,'(a)') 'NetCDF-4 MPI-IO support'
+#endif
+#endif
+#if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
+write(6,'(a)') 'METIS ordering support'
 #endif
 
 end subroutine prversion

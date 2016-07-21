@@ -18,22 +18,30 @@ subroutine read_options( na, ns, nspin )
   !
 
   use siesta_options
-  use precision, only : dp
+  use precision, only : dp, grid_p
   use parallel,  only : IOnode, Nodes, ParallelOverK
   use fdf
   use files,     only : slabel
   use files,     only : filesOut_t   ! derived type for output file names
   use sys
-  use units,     only : eV
+  use units,     only : eV, Ang, Kelvin
   use diagmemory,   only: memoryfactor
   use siesta_cml
   use m_target_stress, only: set_target_stress
+  use m_spin, only: print_spin
+
+  use m_charge_add, only : read_charge_add
+  use m_hartree_add, only : read_hartree_add
+  
+  use m_mixing_scf, only: scf_mixs
+  use m_mixing, only: mixing_init, mixing_print
 
   implicit none
   !----------------------------------------------------------- Input Variables
   ! integer na               : Number of atoms
   ! integer ns               : Number of species
-  ! integer nspin            : Spin polarization
+  ! integer nspin            : Number of spin-components
+  !                            1=non-polarized, 2=polarized, 4=non-collinear
 
   integer, intent(in)  :: na, ns, nspin
 
@@ -180,9 +188,12 @@ subroutine read_options( na, ns, nspin )
   !----------------------------------------------------------- Local Variables
   real(dp) :: tcp
 
-  character annop*22,  dyntyp*22,  method*6,  lwfopt*13
+  character(len=22) :: annop, dyntyp
+  character(len=13) :: lwfopt
+  character(len=30) :: ctmp
+  character(len=6) :: method
 
-  logical  ::  DaC, qnch, qnch2, usesaveddata
+  logical :: DaC, qnch, qnch2, usesaveddata
 
   !--------------------------------------------------------------------- BEGIN
   ! New template, using fdf
@@ -210,16 +221,19 @@ subroutine read_options( na, ns, nspin )
           value=trim(slabel), dictref='siesta:slabel')
   endif
 
+  ! Start by printing out spin-configuration
+  call print_spin()
+
   ! H setup only
   h_setup_only = fdf_get('HSetupOnly', .false.)
   if (ionode .and. h_setup_only) then
-     write(6,1) 'redata: H Setup Only                     = ', h_setup_only
+     write(6,1) 'redata: H Setup Only', h_setup_only
   endif
 
   ! Type of output
   outlng = fdf_get('LongOutput', .false.)
   if (ionode) then
-     write(6,1) 'redata: Long output                      = ', outlng
+     write(6,1) 'redata: Long output', outlng
   endif
 
   if (cml_p) then
@@ -229,7 +243,7 @@ subroutine read_options( na, ns, nspin )
 
   ! Write about Number of species, as before
   if (ionode) then
-     write(6,4) 'redata: Number of Atomic Species         = ', ns
+     write(6,4) 'redata: Number of Atomic Species', ns
   endif
 
   if (ns .le. 0) then
@@ -261,19 +275,16 @@ subroutine read_options( na, ns, nspin )
   if (ionode) then
      select case (mullipop)
      case(0)
-        write(6,2) 'redata: Write Mulliken Pop.              =     NO'
+        write(6,3) 'redata: Write Mulliken Pop.','NO'
      case(1)
-        write(6,2) 'redata: Write Mulliken Pop.              =     '//&
-             'Atomic and Orbital charges'
+        write(6,3) 'redata: Write Mulliken Pop.','Atomic and Orbital charges'
      case(2)
-        write(6,'(a,a/45x,a)') 'redata: Write Mulliken Pop.              =     ',&
-             'Atomic and Orbital charges', 'plus Atomic Overlap Populations'
-
+        write(6,3)'redata: Write Mulliken Pop.','Atomic and Orbital charges'
+        write(6,10) 'plus Atomic Overlap Populations'
      case(3)
-        write(6,'(a,a/45x,a/45x,a)') 'redata: Write Mulliken Pop.              =     ',&
-             'Atomic and Orbital charges','plus Atomic Overlap Populations',        &
-             'plus Orbital Overlap Populations'
-
+        write(6,3)'redata: Write Mulliken Pop.','Atomic and Orbital charges'
+        write(6,10) 'plus Atomic Overlap Populations'
+        write(6,10) 'plus Orbital Overlap Populations'
      case default
         call die( 'redata: Invalid value for WriteMullikenPop' )
      end select
@@ -296,7 +307,7 @@ subroutine read_options( na, ns, nspin )
   ! Planewave cutoff of the real space mesh ...
   g2cut = fdf_get('MeshCutoff',g2cut_default,'Ry')
   if (ionode) then
-     write(6,6) 'redata: Mesh Cutoff                      = ', g2cut,'  Ry'
+     write(6,6) 'redata: Mesh Cutoff', g2cut,' Ry'
   endif
 
   if (cml_p) then
@@ -307,7 +318,7 @@ subroutine read_options( na, ns, nspin )
   ! Net charge in the cell ...
   charnet = fdf_get('NetCharge',0.0_dp)
   if (ionode) then
-     write(6,6) 'redata: Net charge of the system         = ',charnet,' |e|'
+     write(6,6) 'redata: Net charge of the system',charnet,' |e|'
   endif
 
   if (cml_p) then
@@ -321,10 +332,10 @@ subroutine read_options( na, ns, nspin )
   nscf     = fdf_get('MaxSCFIterations',nscf_default)
   SCFMustConverge = fdf_get('SCFMustConverge', .false.)
   if (ionode) then
-     write(6,4) 'redata: Min. number of SCF Iter          = ',min_nscf
-     write(6,4) 'redata: Max. number of SCF Iter          = ',nscf
+     write(6,4) 'redata: Min. number of SCF Iter',min_nscf
+     write(6,4) 'redata: Max. number of SCF Iter',nscf
      if (SCFMustConverge) then
-        write(6,4) 'redata: SCF convergence failure will abort job'
+        write(6,2) 'redata: SCF convergence failure will abort job'
      endif
   endif
 
@@ -337,24 +348,39 @@ subroutine read_options( na, ns, nspin )
           units="cmlUnits:countable")
   endif
 
-  mixH = fdf_get('MixHamiltonian',mixH_def)
-  mixH = fdf_get('TS.MixH',mixH)   ! Catch old-style keyword
+  call fdf_deprecated('TS.MixH','MixHamiltonian') ! Prepare for obsoletion
+  mixH = fdf_get('TS.MixH',mixH_def) ! Catch old-style keyword (prefer new key)
+  mixH = fdf_get('MixHamiltonian',mixH)
   mix_charge = fdf_get('MixCharge',.false.)
 
-  if (mix_charge) then
+  if ( mix_charge ) then
+     ctmp = 'charge'
+  else if ( mixH ) then
+     ctmp = 'Hamiltonian'
+  else
+     ctmp = 'density'
+  end if
+  ctmp = fdf_get('Mix', trim(ctmp))
+  if ( leqi(ctmp, 'charge') ) then
+     mix_charge = .true.
+  else if ( leqi(ctmp, 'Hamiltonian') ) then
+     mixH = .true.
+  end if
+
+  if ( mix_charge ) then
      if (ionode) then
-        write(6,1) 'redata: Mix charge density rho_g         = ', mix_charge
+        write(6,1) 'redata: Mix charge density rho_g', mix_charge
      endif
      if (mixH) then
         mixH = .false.
         if (ionode) then
-           write(6,"(a)") 'redata: ***MixCharge takes precedence over MixH'
+           write(6,2) 'redata: ***MixCharge takes precedence over MixH'
         endif
      endif
   endif
   if (mixH) then
      if (ionode) then
-        write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
+        write(6,1) 'redata: Mix Hamiltonian instead of DM', mixH
      endif
   endif
 
@@ -365,12 +391,10 @@ subroutine read_options( na, ns, nspin )
 
   if (ionode) then
      if (compat_pre_v4_DM_H) then
-        write(6,"(a)") ':!:Next two options activated by pre-4.0 compat. switch'
+        write(6,2) ':!:Next two options activated by pre-4.0 compat. switch'
      endif
-     write(6,1) 'redata: Mix DM or H after convergence    = ',  &
-          mix_after_convergence
-     write(6,1) 'redata: Recompute H after scf cycle      = ',  &
-          recompute_H_after_scf
+     write(6,1) 'redata: Mix DM or H after convergence',mix_after_convergence
+     write(6,1) 'redata: Recompute H after scf cycle', recompute_H_after_scf
   endif
 
   ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)
@@ -380,24 +404,6 @@ subroutine read_options( na, ns, nspin )
   broyden_maxit = fdf_get('DM.NumberBroyden',0)
   ! FIRE SCF mixing, no parameters
   fire_mix = fdf_get('DM.FIRE.Mixing',.false.)
-  if (ionode) then
-     if (fire_mix) then
-        write(6,*) "Fire Mixing"
-     else if (broyden_maxit .gt. 0) then
-        write(6,5) 'redata: Broyden mixing with ', &
-             broyden_maxit, &
-             ' saved histories.'
-        if (maxsav > 1) then
-           write(6,2) 'redata: Broyden supersedes Pulay!'
-           maxsav = maxsav_default
-        endif
-     else if (maxsav .gt. 1) then
-        write(6,5) 'redata: Performing Pulay mixing using    = ',maxsav, &
-             ' iterations'
-     else
-        write(6,2)'redata: Mixing is linear'
-     endif
-  endif
 
   if (cml_p) then
      call cmlAddParameter( xf=mainXML, name='DM.NumberPulay',     &
@@ -408,17 +414,16 @@ subroutine read_options( na, ns, nspin )
           units="cmlUnits:countable" )
   endif
 
-  ! Mix density matrix on first SCF step
-  ! (mix)
-  mix = fdf_get('DM.MixSCF1',.false.)
-  !
+  ! Mix density matrix on first SCF step (mix)
+  mix_scf_first = fdf_get('DM.MixSCF1', &
+       .not. compat_pre_v4_DM_H)
   if (ionode) then
-     write(6,1) 'redata: Mix DM in first SCF step ?       = ',mix
+     write(6,1) 'redata: Mix DM in first SCF step',mix_scf_first
   endif
 
   if (cml_p) then
      call cmlAddParameter( xf=mainXML, name='DM.MixSCF1',   &
-          value=mix, dictRef='siesta:mix' )
+          value=mix_scf_first, dictRef='siesta:mix' )
   endif
 
   ! Use disk or memory to store intermediate Pulay mixing vectors
@@ -429,7 +434,7 @@ subroutine read_options( na, ns, nspin )
         call die( 'redata: Cannot use DM.PulayOnFile=.true.'//&
              'in this version' )
      endif
-     write(6,1) 'redata: Write Pulay info on disk?        = ',pulfile
+     write(6,1) 'redata: Write Pulay info on disk',pulfile
   endif
   if (cml_p) then
      call cmlAddParameter(xf=mainXML, name='DM.PulayOnFile',      &
@@ -440,7 +445,7 @@ subroutine read_options( na, ns, nspin )
   avoid_first_after_kick = fdf_get (    &
        'DM.Pulay.Avoid.First.After.Kick',.false.)
   if (ionode) then
-     write(6,1) 'redata: Discard 1st Pulay DM after  kick = ', &
+     write(6,1) 'redata: Discard 1st Pulay DM after kick', &
           avoid_first_after_kick
   endif
   if (cml_p) then
@@ -453,7 +458,7 @@ subroutine read_options( na, ns, nspin )
   ! Density Matrix Mixing  (proportion of output DM in new input DM)
   wmix = fdf_get('DM.MixingWeight',wmix_default)
   if (ionode) then
-     write(6,6) 'redata: New DM Mixing Weight             = ',wmix
+     write(6,6) 'redata: New DM Mixing Weight',wmix
   endif
 
   if (cml_p) then
@@ -465,7 +470,7 @@ subroutine read_options( na, ns, nspin )
   ! Density Matrix occupancy tolerance
   occtol = fdf_get('DM.OccupancyTolerance',occtol_default)
   if (ionode) then
-     write(6,8) 'redata: New DM Occupancy tolerance       = ',occtol
+     write(6,8) 'redata: New DM Occupancy tolerance',occtol
   endif
 
   if (cml_p) then
@@ -479,7 +484,7 @@ subroutine read_options( na, ns, nspin )
   nkick = fdf_get('DM.NumberKick',0)
   if (ionode) then
      if (nkick .ge. 1) then
-        write(6,5) 'redata: Kick with linear mixing every    = ',nkick,&
+        write(6,5) 'redata: Kick with linear mixing every',nkick,&
              ' iterations'
      else
         write(6,2)'redata: No kicks to SCF'
@@ -495,7 +500,7 @@ subroutine read_options( na, ns, nspin )
   ! Density Matrix Mixing each nkick SCF iterations
   wmixkick = fdf_get('DM.KickMixingWeight',wmixkick_default)
   if (ionode) then
-     write(6,6) 'redata: DM Mixing Weight for Kicks       = ',wmixkick
+     write(6,6) 'redata: DM Mixing Weight for Kicks',wmixkick
   endif
 
   if (cml_p) then
@@ -506,8 +511,9 @@ subroutine read_options( na, ns, nspin )
 
   ! Density Matrix Tolerance for achieving Self-Consistency
   dDtol = fdf_get('DM.Tolerance',dDtol_default)
+  dDtol = fdf_get('SCF.DM.Tolerance',dDtol)
   if (ionode) then
-     write(6,7) 'redata: DM Tolerance for SCF             = ',dDtol
+     write(6,7) 'redata: DM Tolerance for SCF',dDtol
   endif
 
   if (cml_p) then
@@ -517,11 +523,39 @@ subroutine read_options( na, ns, nspin )
   endif
   !--------------------------------------
 
+  ! Require Hamiltonian convergence for achieving Self-Consistency?
+  require_hamiltonian_convergence = fdf_get('SCF.RequireHConvergence', &
+       .false.)
+  if (ionode) then
+     write(6,1) 'redata: Require H convergence for SCF', &
+          require_hamiltonian_convergence
+  endif
+  
+  if (cml_p) then
+     call cmlAddParameter( xf=mainXML, name='SCF.RequireHConvergence', &
+          value=require_hamiltonian_convergence,               &
+          dictRef='siesta:ReqHConv' )
+  endif
+  
+  ! Hamiltonian tolerance for achieving Self-Consistency
+  dHtol = fdf_get('SCF.H.Tolerance',1.e-4_dp, 'Ry')
+  if (ionode) then
+     write(6,7) 'redata: Hamiltonian Tolerance in SCF', dHtol, ' Ry'
+  endif
+  
+  if (cml_p) then
+     call cmlAddParameter( xf=mainXML, name='SCF.H.Tolerance',     &
+          value=dHtol, dictRef='siesta:dHtol', &
+          units='siestaUnits:Ry' )
+  endif
+!--------------------------------------
+
+
   ! Require Energy convergence for achieving Self-Consistency?
   require_energy_convergence = fdf_get('DM.RequireEnergyConvergence', &
        .false.)
   if (ionode) then
-     write(6,1) 'redata: Require (free) Energy convergence in SCF = ', &
+     write(6,1) 'redata: Require (free) Energy convergence in SCF', &
           require_energy_convergence
   endif
 
@@ -535,7 +569,7 @@ subroutine read_options( na, ns, nspin )
   Energy_tolerance = fdf_get('DM.EnergyTolerance',    &
        Energy_tolerance_default, 'Ry' )
   if (ionode) then
-     write(6,7) 'redata: DM (free)Energy tolerance for SCF = ', Energy_tolerance/eV, ' eV'
+     write(6,7) 'redata: DM (free)Energy tolerance for SCF', Energy_tolerance/eV, ' eV'
   endif
 
   if (cml_p) then
@@ -548,7 +582,7 @@ subroutine read_options( na, ns, nspin )
   ! Require Harris Energy convergence for achieving Self-Consistency?
   require_harris_convergence = fdf_get('DM.RequireHarrisConvergence', .false.)
   if (ionode) then
-     write(6,1) 'redata: Require Harris convergence for SCF = ', &
+     write(6,1) 'redata: Require Harris convergence for SCF', &
           require_harris_convergence
   endif
 
@@ -562,7 +596,7 @@ subroutine read_options( na, ns, nspin )
   Harris_tolerance = fdf_get('DM.HarrisTolerance',    &
        Harris_tolerance_default, 'Ry' )
   if (ionode) then
-     write(6,7) 'redata: DM Harris energy tolerance for SCF = ', Harris_tolerance/eV, ' eV'
+     write(6,7) 'redata: DM Harris energy tolerance for SCF', Harris_tolerance/eV, ' eV'
   endif
 
   if (cml_p) then
@@ -578,7 +612,7 @@ subroutine read_options( na, ns, nspin )
   if (nspin.eq.2) then
      inspn = fdf_get('DM.InitSpinAF',.false.)
      if (ionode) then
-        write(6,1) 'redata: Antiferro initial spin density   = ',inspn
+        write(6,1) 'redata: Antiferro initial spin density',inspn
      endif
      if (cml_p) then
         call cmlAddParameter( xf=mainXML, name='DM.InitSpinAF',   &
@@ -589,13 +623,13 @@ subroutine read_options( na, ns, nspin )
   ! Use Saved Data
   usesaveddata = fdf_get('UseSaveData',.false.)
   if (ionode) then
-     write(6,1) 'redata: Using Saved Data (generic)   = ', usesaveddata
+     write(6,1) 'redata: Using Saved Data (generic)', usesaveddata
   endif
 
   ! Use continuation DM files
   usesavedm = fdf_get('DM.UseSaveDM',usesaveddata)
   if (ionode) then
-     write(6,1) 'redata: Use continuation files for DM    = ',  usesavedm
+     write(6,1) 'redata: Use continuation files for DM',  usesavedm
   endif
 
   if (cml_p) then
@@ -606,7 +640,7 @@ subroutine read_options( na, ns, nspin )
   ! Neglect Interactions between non-overlapping orbitals ...
   negl = fdf_get('NeglNonOverlapInt',.false.)
   if (ionode) then
-     write(6,1) 'redata: Neglect nonoverlap interactions  = ',negl
+     write(6,1) 'redata: Neglect nonoverlap interactions',negl
   endif
 
   if (cml_p) then
@@ -626,23 +660,22 @@ subroutine read_options( na, ns, nspin )
      ! DivideAndConquer is now the default
      DaC = fdf_get('Diag.DivideAndConquer',.true.)
      if (ionode)  then
-        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ',&
-             'Diagonalization'
-        write(6,1) 'redata: Divide and Conquer               = ', DaC
+        write(6,3) 'redata: Method of Calculation', 'Diagonalization'
+        write(6,1) 'redata: Divide and Conquer', DaC
      endif
 
   else if (leqi(method,'ordern')) then
      isolve = SOLVE_ORDERN
      DaC    = .false.
      if (ionode) then
-        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
-             'Order-N'
+        write(6,3) 'redata: Method of Calculation','Order-N'
      endif
      if (nspin .gt. 2) then
         call die( 'redata: You chose the Order-N solution option '// &
              'together with nspin>2.  This is not allowed in '//&
              'this version of siesta' )
      endif
+     
   else if (leqi(method,'omm')) then
      isolve = SOLVE_MINIM
      DaC    = .false.
@@ -650,17 +683,14 @@ subroutine read_options( na, ns, nspin )
      call_diagon_first_step=fdf_integer('OMM.DiagonFirstStep',call_diagon_default)
      minim_calc_eigenvalues=fdf_boolean('OMM.Eigenvalues',.false.)
      if (ionode) then
-        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
-             'Orbital Minimization Method'
+        write(6,3) 'redata: Method of Calculation', 'Orbital Minimization Method'
      endif
+     
 #ifdef TRANSIESTA
-     ! TSS Begin
-  else if (leqi(method,'transi')) then
+  else if (leqi(method,'transi') .or. leqi(method,'transiesta') ) then
      isolve = SOLVE_TRANSI
      if (ionode) then
-        write(*,'(a,4x,a)')                                &
-             'redata: Method of Calculation            = ',  &
-             '    Transiesta'
+        write(*,3) 'redata: Method of Calculation','Transiesta'
      endif
 #endif /* TRANSIESTA */
   else
@@ -668,7 +698,7 @@ subroutine read_options( na, ns, nspin )
 #ifdef TRANSIESTA
           'Transiesta, '//&
 #endif
-          'OrderN, or Diagon' )
+          'OrderN, OMM or Diagon' )
   endif
 
 #ifdef DEBUG
@@ -693,7 +723,7 @@ subroutine read_options( na, ns, nspin )
   ! Electronic temperature for Fermi Smearing ...
   temp = fdf_get('ElectronicTemperature',temp_default,'Ry')
   if (ionode .and. isolve.eq.SOLVE_DIAGON) then
-     write(6,6) 'redata: Electronic Temperature           = ',temp,'  Ry'
+     write(6,6) 'redata: Electronic Temperature',temp/Kelvin,' K'
   endif
 
   if (cml_p) then
@@ -706,7 +736,7 @@ subroutine read_options( na, ns, nspin )
   ! value of the Spin of the system (only used if fixspin = TRUE)
   fixspin = fdf_get('FixSpin',.false.)
   if (ionode) then
-     write(6,1) 'redata: Fix the spin of the system       = ',fixspin 
+     write(6,1) 'redata: Fix the spin of the system',fixspin 
   endif
 
   if (fixspin) then
@@ -716,7 +746,7 @@ subroutine read_options( na, ns, nspin )
      endif
      ts = fdf_get('TotalSpin',0.0_dp)
      if (ionode) then
-        write(6,9) 'redata: Value of the Spin of the System  = ',ts
+        write(6,9) 'redata: Value of the Spin of the System',ts
      endif
   else
      ts = 0.0_dp
@@ -804,25 +834,25 @@ subroutine read_options( na, ns, nspin )
 
   if (isolve==SOLVE_ORDERN) then
      if (ionode) then
-        write(6,4) 'redata: Maximum number of iterations     = ',ncgmax
-        write(6,'(a,d12.2)') 'redata: Relative tolerance               = ',etol
+        write(6,4) 'redata: Maximum number of iterations',ncgmax
+        write(6,6) 'redata: Relative tolerance',etol
         if (nspin.eq.2) then
-           write(6,6) 'redata: Eta (Fermi level) Alpha spin     = ',eta(1),'  Ry'
-           write(6,6) 'redata: Eta (Fermi level) Beta spin      = ',eta(2),'  Ry'
+           write(6,6) 'redata: Eta (Fermi level) Alpha spin',eta(1)/eV,' eV'
+           write(6,6) 'redata: Eta (Fermi level) Beta spin',eta(2)/eV,' eV'
         else
-           write(6,6) 'redata: Eta (Fermi level parameter)      = ',eta(1),'  Ry'
+           write(6,6) 'redata: Eta (Fermi level parameter)',eta(1)/eV,' eV'
         endif
-        write(6,6) 'redata: Radius of LWFs                   = ',rcoor,'  Bohr'
-        write(6,1) 'redata: Use continuation files for LWF   = ',usesavelwf
-        write(6,'(a,a)') 'redata: Method to build LWFs             =     ',lwfopt
+        write(6,6) 'redata: Radius of LWFs',rcoor/Ang,' Ang'
+        write(6,1) 'redata: Use continuation files for LWF',usesavelwf
+        write(6,3) 'redata: Method to build LWFs',lwfopt
         if (chebef) then
-           write(6,1) 'redata: Compute Chemical Potential       = ',chebef
+           write(6,1) 'redata: Compute Chemical Potential',chebef
            write(6,2) 'redata: Use the calculated Chemical ..'
-           write(6,1) 'redata: ..Potential instead of eta       = ',noeta
-           write(6,6) 'redata: Radius to compute the Chem. Pot. = ',rcoorcp,'  Bohr'
+           write(6,1) 'redata: ..Potential instead of eta',noeta
+           write(6,6) 'redata: Radius to compute the Chem. Pot.',rcoorcp/Ang,' Ang'
            write(6,2) 'redata: Temp. for Fermi distribution ..'
-           write(6,6) 'redata: .. to compute the Chem. Pot.     = ',tcp,'    Ry'
-           write(6,4) 'redata: Order of the Chebishev expansion = ',pmax
+           write(6,6) 'redata: .. to compute the Chem. Pot.',tcp/eV,' eV'
+           write(6,4) 'redata: Order of the Chebishev expansion',pmax
         endif
      endif
      if (cml_p) then
@@ -920,11 +950,7 @@ subroutine read_options( na, ns, nspin )
      usesavecg = fdf_get('MD.UseSaveCG', usesaveddata)
      ! Support the old Broyden switch  for now
      broyden_optim = fdf_get('Optim.Broyden',.false.)
-
-     if (broyden_optim) then
-        write(6,2) '**Note: FDF symbol Optim.Broyden is '//&
-             'deprecated. (Accepted for now.) See manual.'
-     endif
+     call deprecated('Optim.Broyden')
 
   else if (leqi(dyntyp,'broyden')) then
      idyn = 0
@@ -948,6 +974,14 @@ subroutine read_options( na, ns, nspin )
      call die('Dynamics type "PHONON" is no longer supported')
   else if (leqi(dyntyp,'forces').or.leqi(dyntyp,'master')) then
      idyn = 8
+#ifdef NCDF_4
+    else if (leqi(dyntyp,'explicit')) then
+      idyn = 9
+#endif
+#ifdef SIESTA__FLOOK
+   else if (leqi(dyntyp,'lua')) then
+      idyn = 10
+#endif
   else
      call die('Invalid Option selected - value of MD.TypeOfRun not recognised')
   endif
@@ -970,27 +1004,22 @@ subroutine read_options( na, ns, nspin )
      case(0)
         if (nmove > 0) then
            if (broyden_optim) then
-              write(6,2) 'redata: Dynamics option                  =     '//&
-                   'Broyden coord. optimization'
+              write(6,3) 'redata: Dynamics option','Broyden coord. optimization'
            elseif (fire_optim) then
-              write(6,2) 'redata: Dynamics option                  =     '//&
-                   'FIRE coord. optimization'
+              write(6,3) 'redata: Dynamics option', 'FIRE coord. optimization'
            else
-              write(6,2) 'redata: Dynamics option                  =     '//&
-                   'CG coord. optimization'
+              write(6,3) 'redata: Dynamics option','CG coord. optimization'
            endif
-           write(6,1) 'redata: Variable cell                    = ', varcel
+           write(6,1) 'redata: Variable cell', varcel
            if (.not. broyden_optim) then
-              write(6,1) 'redata: Use continuation files for CG    = ', usesavecg
-              write(6,6) 'redata: Max atomic displ per move        = ', dxmax,&
-                   '  Bohr'
+              write(6,1) 'redata: Use continuation files for CG', usesavecg
+              write(6,6) 'redata: Max atomic displ per move', dxmax/Ang, ' Ang'
            endif
-           write(6,4) 'redata: Maximum number of CG moves       = ', nmove
-           write(6,6) 'redata: Force tolerance                  = ', ftol,&
-                '  Ry/Bohr'
+           write(6,4) 'redata: Maximum number of CG moves', nmove
+           write(6,6) 'redata: Force tolerance', ftol/eV*Ang, ' eV/Ang'
            if (varcel) then
-              write(6,6) 'redata: Stress tolerance                 = ', &
-                   strtol/6.79773e-5_dp, '  GPa'
+              write(6,6) 'redata: Stress tolerance', &
+                   strtol/6.79773e-5_dp, ' GPa'
            endif
            if (cml_p) then
               if (broyden_optim) then
@@ -1033,8 +1062,7 @@ subroutine read_options( na, ns, nspin )
               endif
            endif
         else
-           write(6,2) 'redata: Dynamics option                  =     '//&
-                'Single-point calculation'
+           write(6,3) 'redata: Dynamics option','Single-point calculation'
            if (cml_p) then
               call cmlAddParameter( xf   = mainXML,        &
                    name = 'MD.TypeOfRun', &
@@ -1042,8 +1070,7 @@ subroutine read_options( na, ns, nspin )
            endif
         endif
      case(1)
-        write(6,2) 'redata: Dynamics option                  =     '//&
-             'Verlet MD run'
+        write(6,3) 'redata: Dynamics option', 'Verlet MD run'
         if (cml_p) then
            call cmlAddParameter( xf    = mainXML,        &
                 name  = 'MD.TypeOfRun', &
@@ -1051,15 +1078,13 @@ subroutine read_options( na, ns, nspin )
         endif
 
      case(2)
-        write(6,2) 'redata: Dynamics option                  =     '//&
-             'Nose thermostat MD run'
+        write(6,3) 'redata: Dynamics option', 'Nose thermostat MD run'
         if (cml_p) then
            call cmlAddParameter( xf=mainXML, name='MD.TypeOfRun', value='Nose')
         endif
 
      case(3)
-        write(6,2) 'redata: Dynamics option                  =     '//&
-             'Parrinello-Rahman MD run'
+        write(6,3) 'redata: Dynamics option', 'Parrinello-Rahman MD run'
         if (cml_p) then
            call cmlAddParameter( xf= mainXML,              &
                 name= 'MD.TypeOfRun',     &
@@ -1067,8 +1092,7 @@ subroutine read_options( na, ns, nspin )
         endif
 
      case(4)
-        write(6,2) 'redata: Dynamics option                  =     '//&
-             'Nose-Parrinello-Rahman MD run'
+        write(6,3) 'redata: Dynamics option', 'Nose-Parrinello-Rahman MD run'
         if (cml_p) then
            call cmlAddParameter( xf    = mainXML,                &
                 name  = 'MD.TypeOfRun',         &
@@ -1076,8 +1100,7 @@ subroutine read_options( na, ns, nspin )
         endif
 
      case(5)
-        write(6,2) 'redata: Dynamics option                  =     '//&
-             'Annealing MD run'
+        write(6,3) 'redata: Dynamics option', 'Annealing MD run'
         if (cml_p) then
            call cmlAddParameter( xf    = mainXML,        &
                 name  = 'MD.TypeOfRun', &
@@ -1085,8 +1108,7 @@ subroutine read_options( na, ns, nspin )
         endif
 
      case(6)
-        write(6,2) 'redata: Dynamics option                  =     '//&
-             'Force Constants Matrix Calculation'
+        write(6,3) 'redata: Dynamics option', 'Force Constants Matrix Calculation'
         if (cml_p) then
            call cmlAddParameter( xf    = mainXML,          &
                 name  = 'MD.TypeOfRun',   &
@@ -1097,12 +1119,30 @@ subroutine read_options( na, ns, nspin )
         ! deprecated
 
      case(8)
-        write(6,2) 'redata: Dynamics option                  =     Force evaluation'
+        write(6,3) 'redata: Dynamics option','Force evaluation'
         if (cml_p) then
            call cmlAddParameter( xf    = mainXML,            &
                 name  = 'MD.TypeOfRun',     &
                 value = 'Force Evaluation' )
         endif
+#ifdef NCDF_4
+      case(9)
+        write(6,3) 'redata: Dynamics option','Explicit'
+        if (cml_p) then
+          call cmlAddParameter( xf    = mainXML,            &
+                                name  = 'MD.TypeOfRun',     &
+                                value = 'Explicit' )
+        endif
+#endif
+#ifdef SIESTA__FLOOK
+     case(10)
+        write(6,3) 'redata: Dynamics option','LUA'
+        if (cml_p) then
+           call cmlAddParameter( xf    = mainXML,        &
+                name  = 'MD.TypeOfRun', &
+                value = 'LUA' )
+        endif
+#endif
      end select
   endif
 
@@ -1136,15 +1176,15 @@ subroutine read_options( na, ns, nspin )
 
   if (idyn .ge. 1 .and. idyn .le. 5) then
      if (ionode) then
-        write(6,4) 'redata: Initial MD time step             = ',istart
-        write(6,4) 'redata:   Final MD time step             = ',ifinal
-        write(6,6) 'redata: Length of MD time step           = ',dt,'  fs'
-        write(6,6) 'redata: Initial Temperature of MD run    = ',tempinit,'  K'
+        write(6,4) 'redata: Initial MD time step',istart
+        write(6,4) 'redata:   Final MD time step',ifinal
+        write(6,6) 'redata: Length of MD time step',dt,' fs'
+        write(6,6) 'redata: Initial Temperature of MD run',tempinit,' K'
         if (idyn .ne. 5) then 
            if (qnch2) then
-              write(6,1) 'redata: Perform a MD Fire quench         = ',qnch2
+              write(6,1) 'redata: Perform a MD Fire quench',qnch2
            else
-              write(6,1) 'redata: Perform a MD quench              = ',qnch
+              write(6,1) 'redata: Perform a MD quench',qnch
            endif
         endif
      endif
@@ -1199,7 +1239,7 @@ subroutine read_options( na, ns, nspin )
 
   if (idyn==2 .or. idyn==4) then
      if (ionode) then
-        write(6,6) 'redata: Nose mass                        = ',mn,'  Ry/fs**2'
+        write(6,6) 'redata: Nose mass',mn/eV,' eV/fs**2'
      endif
      if (cml_p) then
         call cmlAddParameter( xf    = mainXML,              &
@@ -1211,7 +1251,7 @@ subroutine read_options( na, ns, nspin )
 
   if (idyn==3 .or. idyn==4) then
      if (ionode) then
-        write(6,6) 'redata: Parrinello-Rahman mass           = ',mpr,'  Ry/fs**2'
+        write(6,6) 'redata: Parrinello-Rahman mass',mpr/eV,' eV/fs**2'
      endif
      if (cml_p) then
         call cmlAddParameter( xf    = mainXML,                   &
@@ -1240,7 +1280,7 @@ subroutine read_options( na, ns, nspin )
      if (ionode) then
         select case (ianneal)
         case(1)
-           write(6,2) 'redata: Annealing Option                 = Temperature'
+           write(6,3) 'redata: Annealing Option', 'Temperature'
            if (cml_p) then
               call cmlAddParameter( xf    = mainXML,           &
                    name  = 'MD.AnnealOption', &
@@ -1248,7 +1288,7 @@ subroutine read_options( na, ns, nspin )
            endif
 
         case(2)
-           write(6,2) 'redata: Annealing Option                 = Pressure'
+           write(6,3) 'redata: Annealing Option', 'Pressure'
            if (cml_p) then
               call cmlAddParameter( xf    = mainXML,           &
                    name  = 'MD.AnnealOption', &
@@ -1256,8 +1296,7 @@ subroutine read_options( na, ns, nspin )
            endif
 
         case(3)
-           write(6,2) 'redata: Annealing Option                 = '//&
-                'Temperature and Pressure'
+           write(6,3) 'redata: Annealing Option', 'Temperature and Pressure'
            if (cml_p) then
               call cmlAddParameter( xf    = mainXML,                &
                    name  = 'MD.AnnealOption',      &
@@ -1270,7 +1309,7 @@ subroutine read_options( na, ns, nspin )
 
   if (idyn==2 .or. idyn==4 .or. (idyn==5 .and. (ianneal ==1 .or. ianneal==3))) then
      if (ionode) then
-        write(6,6) 'redata: Target Temperature               = ',tt,'  Kelvin'
+        write(6,6) 'redata: Target Temperature',tt,' Kelvin'
      endif
 
      if (cml_p) then
@@ -1283,7 +1322,7 @@ subroutine read_options( na, ns, nspin )
 
   if (idyn==3 .or. idyn==4 .or. (idyn==5 .and. (ianneal==2 .or. ianneal==3))) then
      if (ionode) then
-        write(6,6) 'redata: Target Pressure                  = ', tp, '  Ry/Bohr**3'
+        write(6,6) 'redata: Target Pressure', tp/eV*Ang**3, ' eV/Ang**3'
      endif
 
      if (cml_p) then
@@ -1298,7 +1337,7 @@ subroutine read_options( na, ns, nspin )
   taurelax = fdf_get( 'MD.TauRelax',taurelax_default,'fs' )
   if (idyn==5) then
      if (ionode) then
-        write(6,6) 'redata: Annealing Relaxation Time        = ', taurelax,'  fs'
+        write(6,6) 'redata: Annealing Relaxation Time', taurelax,' fs'
      endif
      if (cml_p) then
         call cmlAddParameter( xf    = mainXML,          &
@@ -1312,8 +1351,7 @@ subroutine read_options( na, ns, nspin )
   bulkm = fdf_get( 'MD.BulkModulus',bulkm_default,'Ry/Bohr**3' )
   if (ionode) then
      if (idyn==5 .and. (ianneal==2 .or. ianneal==3)) then
-        write(6,6) 'redata: Approx. Bulk Modulus             = ', bulkm,&
-             '  Ry/Bohr**3'
+        write(6,6) 'redata: Approx. Bulk Modulus ', bulkm/eV*Ang**3, ' eV/Ang**3'
      endif
   endif
 
@@ -1339,9 +1377,9 @@ subroutine read_options( na, ns, nspin )
 
   if (idyn==6) then
      if (ionode) then
-        write(6,6) 'redata: Atomic displ for force constants  = ',dx,'  Bohr'
-        write(6,4) 'redata: First atom to move               = ',ia1
-        write(6,4) 'redata: Last atom to move                = ',ia2
+        write(6,6) 'redata: Atomic displ for force constants',dx/Ang,'  Ang'
+        write(6,4) 'redata: First atom to move',ia1
+        write(6,4) 'redata: Last atom to move',ia2
      endif
      if (cml_p) then
         call cmlAddParameter( xf    = mainXML,           &
@@ -1367,17 +1405,66 @@ subroutine read_options( na, ns, nspin )
        .or. (idyn==5 .and. ianneal==1)           &
        .and. (idyn/=1) .and. (idyn/=2)           &
        .and. (idyn/=6) .and. (idyn/=7)           &
+       .and. (idyn/=9) &
        .and. (.not. (idyn==5 .and. ianneal/=1) )
 
   want_spatial_decomposition = fdf_get('UseSpatialDecomposition', .false.)
   want_domain_decomposition = fdf_get('UseDomainDecomposition', .false.)
-#ifndef ON_DOMAIN_DECOMP
+#if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
+#else
 #ifdef MPI
   if (want_domain_decomposition) then
+     write(*,*)'Need to compile SIESTA__METIS or ON_DOMAIN_DECOMP'
      call die("Need to compile with ON_DOMAIN_DECOMP support")
   endif
 #endif
 #endif
+
+  ! Read in mixing parameters (SCF)
+  call mixing_init( 'SCF', scf_mixs )
+  call mixing_print( 'SCF', scf_mixs )
+
+  ! When performing spin-calculations this decides whether
+  ! only the spinor-components should be mixed.
+  ctmp = fdf_get('SCF.Mix.Spin','all')
+  if      ( leqi(ctmp, 'all') ) then
+     mix_spin = MIX_SPIN_ALL
+  else if ( leqi(ctmp, 'spinor') ) then
+     mix_spin = MIX_SPIN_SPINOR
+  else if ( leqi(ctmp, 'sum') ) then
+     mix_spin = MIX_SPIN_SUM
+  else if ( leqi(ctmp, 'sum+diff') ) then
+     mix_spin = MIX_SPIN_SUM_DIFF
+  else
+     call die("Unknown option given for SCF.Mix.Spin &
+          &all|spinor|sum|sum+diff")
+  end if
+  ! Default to not have any options for non-spin polarized
+  ! calculations
+  if ( nspin == 1 ) mix_spin = MIX_SPIN_ALL
+  
+  if ( IONode .and. nspin > 1 ) then
+     select case ( mix_spin )
+     case ( MIX_SPIN_ALL )
+        write(6,3) 'redata: Spin-component mixing','all'
+     case ( MIX_SPIN_SPINOR )
+        write(6,3) 'redata: Spin-component mixing','spinor'
+        if ( nspin <= 2 ) then
+           call die("SCF.Mix.Spin spinor option only valid for &
+                &non-collinear and SOC calculations")
+        end if
+     case ( MIX_SPIN_SUM ) 
+        write(6,3) 'redata: Spin-component mixing','sum'
+     case ( MIX_SPIN_SUM_DIFF ) 
+        write(6,3) 'redata: Spin-component mixing','sum and diff'
+     end select
+  end if
+  
+  ! We read in relevant data for ChargeGeometries block
+  call read_charge_add( min(2, nspin) , charnet )
+  
+  ! We read in the relevant data for HartreeGeometries block
+  call read_hartree_add( )
 
   ! Harris Forces?. Then DM.UseSaveDM should be false (use always
   ! Harris density in the first SCF step of each MD step), and
@@ -1392,16 +1479,12 @@ subroutine read_options( na, ns, nspin )
      nscf      = 1  ! Note change from tradition, since siesta_forces        
      ! now explicitly separates the "compute_forces"        
      ! phase from the rest of the scf cycle.          
-     mix       = .false.
+     mix_scf_first = .false.
      SCFMustConverge = .false.
-  endif
-
-  if (ionode) then
-     write(6,'(2a)') 'redata: ', repeat('*', 71)
-  endif
-
-  if (cml_p) then
-     call cmlEndParameterList(mainXML)
+     if ( nspin > 2 ) then
+        call die("Harris functional does not work for &
+             &non-collinear spin polarization.")
+     end if
   endif
 
   ! Warn the user about deprecated symbols...
@@ -1417,6 +1500,47 @@ subroutine read_options( na, ns, nspin )
   writef                = fdf_get( 'WriteForces', outlng )
   writedm               = fdf_get( 'WriteDM', .true. )
   writedm_cdf           = fdf_get('WriteDM.NetCDF', .false. )
+#ifdef NCDF_4
+  write_cdf             = fdf_get('CDF.Save', .false. )
+  ! No compression is by far the fastest
+  cdf_comp_lvl          = fdf_get('CDF.Compress', 0 )
+  if ( Nodes > 1 ) then
+     cdf_w_parallel     = fdf_get('CDF.MPI', .false. )
+  else
+     cdf_w_parallel     = .false.
+  end if
+#ifndef NCDF_PARALLEL
+  ! If not compiled with NCDF_PARALLEL, we do not
+  ! allow parallel writes.....!!!!
+  cdf_w_parallel = .false.
+#endif
+  if ( cdf_w_parallel ) then
+     ! Doing parallel writes does not allow
+     ! compression (the offsets cannot be calculated)
+     cdf_comp_lvl = 0
+  end if
+  cdf_r_parallel = fdf_get('CDF.Read.Parallel', cdf_w_parallel )
+
+  if ( IONode ) then
+     ! Write out
+     write(*,1) 'redata: Save data in SIESTA.nc',write_cdf
+     if ( write_cdf ) then
+        if ( grid_p == dp ) then
+           ctmp = fdf_get('CDF.Grid.Precision','double')
+           if ( leqi(ctmp,'single') .or. leqi(ctmp,'float') ) then
+              write(*,2) 'redata: Grids in SIESTA.nc reduced to single precision'
+           end if
+        end if
+        write(*,4) 'redata: SIESTA.nc compression level',cdf_comp_lvl
+        if ( cdf_r_parallel ) then
+           write(*,2) 'redata: Reads SIESTA.nc in parallel'
+        end if
+        if ( cdf_w_parallel ) then
+           write(*,2) 'redata: Writes SIESTA.nc in parallel (possibly not working)'
+        end if
+     end if
+  end if
+#endif
   writedm_cdf_history   = fdf_get('WriteDM.History.NetCDF', .false. )
   writedmhs_cdf         = fdf_get('WriteDMHS.NetCDF', .false. )
   writedmhs_cdf_history = fdf_get('WriteDMHS.History.NetCDF', .false.)
@@ -1424,8 +1548,16 @@ subroutine read_options( na, ns, nspin )
   read_deformation_charge_cdf = &
        fdf_get('SCF.Read.Deformation.Charge.NetCDF', .false. )
 
+  ! Write the history
+#ifdef TRANSIESTA
+  write_tshs_history = fdf_get('Write.TSHS.History', .false.)
+  if ( IONode.and.write_tshs_history ) &
+       write(*,2) 'redata: Saves TSHS files in MD simulation'
+#endif
+  !write_hs_history = fdf_get('Write.HS.History', .false.)
+
   if (read_charge_cdf .or. read_deformation_charge_cdf) then
-     mix = .false.
+     mix_scf_first = .false.
   endif
 
   save_initial_charge_density = fdf_get(    &
@@ -1438,6 +1570,38 @@ subroutine read_options( na, ns, nspin )
   writec                 = fdf_get( 'WriteCoorStep', outlng )
   writmd                 = fdf_get( 'WriteMDhistory', .false. )
   writpx                 = fdf_get( 'WriteMDXmol', .not. writec )
+  ! Do options of graphviz
+  ctmp = fdf_get( 'Write.Graphviz', 'none' )
+  write_GRAPHVIZ = 0
+  if ( leqi(ctmp, 'orb') .or. &
+       leqi(ctmp, 'orbital') ) then
+     write_GRAPHVIZ = 1
+  else if ( leqi(ctmp, 'atom') .or. &
+       leqi(ctmp, 'atomic') ) then
+     write_GRAPHVIZ = 2
+  else if ( leqi(ctmp, 'atom+orb') .or. &
+       leqi(ctmp, 'atom+orbital') .or. &
+       leqi(ctmp, 'orbital+atom') .or. &
+       leqi(ctmp, 'orb+atom') .or. leqi(ctmp, 'both') ) then
+     write_GRAPHVIZ = 3
+  else if ( leqi(ctmp,'none') ) then
+     ! do nothing, correct
+  else if ( IONode ) then
+     write(*,2) 'Write.Graphviz input could not be understood. &
+          &Use [orbital|atom|atom+orbital] in the option.'
+  end if
+  if ( IONode ) then
+     select case ( write_GRAPHVIZ )
+     case ( 1 ) 
+        write(*,2) 'redata: Save orbital connectivity graph in GRAPHVIZ format'
+     case ( 2 )
+        write(*,2) 'redata: Save atomic connectivity graph in GRAPHVIZ format'
+     case ( 3 )
+        write(*,2) 'redata: Save atom+orbital connectivity graphs in GRAPHVIZ format'
+     end select
+  end if
+
+  writec                 = fdf_get( 'WriteCoorStep', outlng )
   default                = fdf_get( 'UseSaveData', .false. )
   savehs                 = fdf_get( 'SaveHS', .false. )
   fixauxcell             = fdf_get( 'FixAuxiliaryCell', .false. )
@@ -1493,16 +1657,26 @@ subroutine read_options( na, ns, nspin )
   nobdown    = fdf_get( 'Siesta2Wannier90.NumberOfBandsDown', 0)
   nob        = fdf_get( 'Siesta2Wannier90.NumberOfBands',     0)
 
+  if (ionode) then
+     write(6,'(2a)') 'redata: ', repeat('*', 71)
+  endif
+  
+  if (cml_p) then
+     call cmlEndParameterList(mainXML)
+  endif
+
   RETURN
   !-------------------------------------------------------------------- END
-1 format(a,4x,l1)
-2 format(a)
-4 format(a,i8)
-5 format(a,i5,a)
-6 format(a,f10.4,a)
-7 format(a,f12.6,a)
-8 format(a,f14.12)
-9 format(a,f10.4)
+1  format(a,t53,'= ',2x,l1)
+2  format(a)
+3  format(a,t53,'= ',a)
+4  format(a,t53,'= ',i8)
+5  format(a,t53,'= ',i8,a)
+6  format(a,t53,'= ',f10.4,a)
+7  format(a,t53,'= ',f12.6,a)
+8  format(a,t53,'= ',f14.12)
+9  format(a,t53,'= ',f10.4)
+10 format(t55,a)
 
 CONTAINS
   subroutine deprecated( str )

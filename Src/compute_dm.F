@@ -17,6 +17,7 @@
       use precision
       use units, only: eV
       USE siesta_options
+      use class_dSpData1D, only : val
       use sparse_matrices
       use siesta_geom
       use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
@@ -26,6 +27,9 @@
       use m_energies,   only: Ebs, Ecorrec, Ef, Entropy
       use m_rmaxh
       use m_eo
+      use m_spin,   only: NonCol, SpOrb, qs, efs
+      use m_spin,   only: nspin, h_spin_dim, spinor_dim
+      use m_diagon, only: diagon
       use m_gamma
       use parallel, only: IONode
 #ifdef CDF
@@ -35,12 +39,10 @@
       use m_zminim,        only : zminim
       use m_ordern,        only : ordern
       use m_steps,         only : istp
-      use m_spin,          only : nspin, qs, efs
       use m_normalize_dm,  only : normalize_dm
 #ifdef TRANSIESTA
-      use m_ts_global_vars, only : TSiscf, TSinit, TSrun
-      use m_ts_options,     only : TSmode
-      use m_ts_in_siesta,   only : transiesta
+      use m_ts_global_vars, only : TSmode, TSinit, TSrun
+      use m_transiesta,     only : transiesta
 #endif /* TRANSIESTA */
       implicit none
 !     Input variables
@@ -48,6 +50,7 @@
 !     Local variables
       logical             :: CallDiagon
       integer             :: nnz
+      real(dp), pointer :: H_kin(:)
 
       ! e1>e2 to signal that we do not want DOS weights
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
@@ -55,10 +58,11 @@
 !-------------------------------------------------------------- BEGIN
       call timer( 'compute_dm', 1 )
 
-! Save present density matrix ........................................
+! Save present DM here, instead of in setup_hamiltonian...
 
-      Dold(1:maxnh,1:nspin) = Dscf(1:maxnh,1:nspin)
-      Eold(1:maxnh,1:nspin) = Escf(1:maxnh,1:nspin)
+!$OMP parallel workshare default(shared)
+      Dold(:,:) = Dscf(:,:)
+!$OMP end parallel workshare
 
 !     Solve eigenvalue problem 
 
@@ -76,7 +80,8 @@
       endif
 
       if ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
-        call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
+        call diagon(no_s, spinor_dim, 
+     &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
@@ -86,33 +91,36 @@
         PreviousCallDiagon=.true.
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
+        if (NonCol .or. SpOrb)
+     .      call die("Cannot do O(N) with non-coll spins or Spin-orbit")
         call ordern(usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
      &               isa, qa, rcoor, rmaxh, ucell, xa, iscf,
      &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
      &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
      &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
-        Ecorrec = 0.0_dp
         Entropy = 0.0_dp
       elseif (isolve .eq. SOLVE_MINIM) then
-        if (nspin==4) call die('ERROR: Non-collinear spin calculations
-     &                          not yet implemented with the OMM!')
+        if (NonCol .or. SpOrb) 
+     &      call die('ERROR: Non-collinear spin calculations
+     &                       not yet implemented with OMM!')
+        H_kin => val(H_kin_1D)
         if (gamma) then
           call dminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 nspin, no_u, maxnh, numh, listhptr, listh, Dscf,
-     &                 eta, qs, h, s, h_kin)
+     &                 eta, qs, H, S, H_kin)
         else
           call zminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 nspin, no_u, maxnh, numh, listhptr, listh, Dscf,
      &                 eta, qs, no_s, xijo, indxuo, nkpnt, kpoint,
-     &                 kweight, h, s, h_kin)
+     &                 kweight, H, S, H_kin)
         end if
         Ecorrec = 0.0_dp
         Entropy = 0.0_dp
         PreviousCallDiagon=.false.
 #ifdef TRANSIESTA
-! TSS Begin
       elseif (TSmode .and. TSinit) then
-        call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
+        call diagon(no_s, spinor_dim, 
+     &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh,
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
@@ -122,17 +130,13 @@
         Ecorrec = 0._dp
 
       else if (TSrun) then
-        call timer('TS',1)
-        TSiscf=TSiscf+1
 
-        call transiesta(ucell,gamma,lasto,iaorb,
-     &       no_l, no_s, no_u, nspin, xa, na_u, maxnh, numh, listhptr,
-     &       listh, xijo, indxuo, H, S, Dscf, Escf, Ef,
-     &       TSiscf,qtot)
-        call timer('TS',2)
+         call transiesta(iscf,nspin, block_dist, sparse_pattern,
+     &        Gamma, ucell, nsc, isc_off, no_u, na_u, lasto, xa, maxnh,
+     &        H, S, Dscf, Escf, Ef, Qtot, .false. )
 
-        Ecorrec = 0._dp
-! TSS End
+         Ecorrec = 0._dp
+         Entropy = 0.0_dp
 #endif /* TRANSIESTA */
       else
         call die('siesta: ERROR: wrong solution method')
@@ -140,9 +144,9 @@
 
 #ifdef CDF
       if ( writedmhs_cdf_history) then
-        call write_dmh_netcdf( no_l, maxnh, nspin, Dold, H, Dscf )
+        call write_dmh_netcdf( no_l, maxnh, h_spin_dim, Dold, H, Dscf )
       else if (writedmhs_cdf) then
-        call write_dmh_netcdf( no_l, maxnh, nspin, Dold, H, Dscf,
+        call write_dmh_netcdf( no_l, maxnh, h_spin_dim, Dold, H, Dscf,
      &                         overwrite=.true. )
       endif
 #endif
@@ -151,27 +155,39 @@
       if (muldeb) then
         if (ionode) write (6,"(/a)")
      &    'siesta: Mulliken populations (DM_out)'
-        call mulliken( mullipop, nspin, na_u, no_u, maxnh,
+            if (SpOrb) then
+              call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
+     .                      listh, S, Dscf, isa, lasto, iaorb, iphorb,
+     .                      indxuo )
+            else
+             call mulliken( mullipop, nspin, na_u, no_u, maxnh,
      &                 numh, listhptr, listh, S, Dscf, isa,
      &                 lasto, iaorb, iphorb )
+            endif
       endif
 
 ! Write orbital indexes. JMS Dec.2009
 
-          if (IOnode .and. iscf==1) then
-            call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
-     .                           iaorb, iphorb, indxuo, nsc, ucell )
-          endif
+#ifdef TRANSIESTA
+      if (IOnode .and. iscf==1.and..not. TSrun) then
+         call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
+     .        iaorb, iphorb, indxuo, nsc, ucell )
+      endif
+#else
+      if (IOnode .and. iscf==1) then
+         call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
+     .        iaorb, iphorb, indxuo, nsc, ucell )
+      endif
+#endif
 
 !     Normalize density matrix to exact charge
 !     Placed here for now to avoid disturbing EHarris
-
 #ifdef TRANSIESTA      
-         if (.not.TSrun ) call normalize_dm( first= .false. )
+      if ( .not. TSrun ) call normalize_dm( first= .false. )
 #else
-         call normalize_dm(first=.false.)
-#endif  /* TRANSIESTA */
-
+      call normalize_dm(first=.false.)
+#endif
+      
       call timer( 'compute_dm', 2 )
 
 !----------------------------------------------------------------- END

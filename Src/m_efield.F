@@ -27,6 +27,7 @@
 !    by the dipole moment of the system, thus allowing to deal with
 !    asymmetric slabs (and compute properties such as the work funcion
 !    of each of the surfaces).
+!    See L. Bengtsson, PRB 59, 12301 (1999), DOI: 10.1103/PhysRevB.59.12301
 
       use precision, only: dp
       use sys,       only: die
@@ -35,10 +36,10 @@
       logical, public  :: acting_efield = .false.
       logical, public  :: dipole_correction = .false.
       real(dp), public :: user_specified_field(3) =
-     $                                (/ 0.0_dp, 0.0_dp, 0.0_dp /)
+     &     (/ 0.0_dp, 0.0_dp, 0.0_dp /)
 
-      public   :: initialize_efield
-      public   :: get_field_from_dipole, add_potential_from_field
+      public :: initialize_efield
+      public :: get_field_from_dipole, add_potential_from_field
 
       private
 
@@ -78,7 +79,8 @@
       end subroutine get_user_specified_field
 !----------------------------------------------------------------
        
-      subroutine orthogonalize_efield(input_field,orthog_field,orthog)
+      subroutine orthogonalize_efield(input_field,orthog_field,orthog,
+     &     nbcell)
 
 !     Orthogonalizes the field to the bulk directions
 
@@ -86,13 +88,15 @@
 
       real(dp), intent(in)  :: input_field(3)
       real(dp), intent(out) :: orthog_field(3)
-      logical,  intent(out) :: orthog           ! originally orthogonal?
+      logical,  intent(out) :: orthog ! originally orthogonal?
+      integer,  intent(out) :: nbcell ! shape of cell
+
 
 !     tolerance for bulk components of the electric field
       real(dp), parameter    :: tol = 1.0d-12
 
       real(dp)  :: eb1, eb2, eb3, b1xb2(3), bcell(3,3)
-      integer   :: nbcell, ix
+      integer   :: ix
       character(len=8) :: shape
 
       real(dp), external :: ddot
@@ -140,32 +144,44 @@
 
       use parallel,     only: ionode
       use siesta_cml,   only: cml_p, cmlAddProperty, mainXML
-      use fdf,          only: fdf_boolean
+      use fdf,          only: fdf_boolean, fdf_bnames, fdf_block
+      use fdf,          only: block_fdf, parsed_line, fdf_bline
+      use fdf,          only: fdf_bmatch, fdf_convfac, fdf_bvalues
+      use units,        only: Ang, eV
       use m_cite, only: add_citation
 
-      real(dp) :: input_field(3), orthog_field(3)
+      real(dp) :: input_field(3), orthog_field(3), cfactor
       logical  :: orthog
+      integer :: ix
+      integer :: nbcell
+      character(len=20) :: eunits
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline => null()
 
       real(dp), external :: ddot
 
       call get_user_specified_field(input_field)
       acting_efield = (ddot(3,input_field,1,input_field,1) /= 0.0_dp)
+
+      ! always orthogonalize retrieve the shape of the cell
+      call orthogonalize_efield(input_field,orthog_field,orthog,
+     &     nbcell)
+      
       if (acting_efield) then
-         call orthogonalize_efield(input_field,orthog_field,orthog)
 
          if (orthog) then
             if (ionode) then
                write(6,'(/,a,3f12.6,a)')
      $              'efield: External electric field =',
-     $              input_field, ' Ry/Bohr/e'
+     $              input_field/eV*Ang, ' eV/Ang/e'
             endif
             user_specified_field(1:3) = input_field(1:3)
          else
             if (ionode) then
                write(6,'(a,(/,a,3f12.6))')
-     .              'efield: WARNING: Non zero bulk electric field.',
-     .              'efield: Input field (Ry/Bohr/e) =', input_field,
-     .              'efield: Orthogonalized field    =', orthog_field
+     .         'efield: WARNING: Non zero bulk electric field.',
+     .         'efield: Input field (eV/Ang/e) =', input_field/eV*Ang,
+     .         'efield: Orthogonalized field   =', orthog_field/eV*Ang
             endif
             user_specified_field(1:3) = orthog_field(1:3)
          endif
@@ -174,22 +190,37 @@
      .           dictref='siesta:elfield', 
      .           units='siestaUnits:Ry_Bohr_e')
       endif
-!
+
       acting_efield =
      $ (ddot(3,user_specified_field,1,user_specified_field,1) /= 0.0_dp)
 
-      dipole_correction = fdf_boolean("SlabDipoleCorrection",.false.)
+      ! Only allow slab dipole corrections for slabs
+      if ( nbcell == 2 ) then
+         ! Note that we enable the correction if there is an
+         ! external field
+         dipole_correction = fdf_boolean("SlabDipoleCorrection",
+     &        .false.)
+         if (acting_efield .and. (.not. dipole_correction)) then
+            if (ionode) write(6,'(/,(a))')
+     .        'efield: SlabDipoleCorrection turned on automatically',
+     .        'efield: when an external electric field is applied.',
+     .        'efield: For backward compatibility, set if to .false.'
+            dipole_correction = .true.
+         endif
+      else
+         dipole_correction = .false.
+      end if
 
-      if (dipole_correction) then
+      if ( dipole_correction ) then
          if ( IONode ) then
             call add_citation("10.1103/PhysRevB.59.12301")
          end if
          if (ionode) write(6,'(/,(a))')
-     .        'efield: SlabDipoleCorrection = .true. in input file',
+     .        'efield: SlabDipoleCorrection enabled.',
      .        'efield: A dipole layer will be introduced in the vacuum',
      .        'efield: region to compensate the system dipole'
          acting_efield = .true.
-      endif
+      end if
 
       end subroutine initialize_efield
 !----------------------------------------------------------------
@@ -256,7 +287,7 @@ c     vacuum region.
       real(grid_p), intent(inout)  ::  v(*)
 
       integer           i0(3), i1, i2, i3, ia, imesh,
-     $     is, iu, ix,
+     $     is, ix,
      .     j1, j2, j3, meshl(3),
      .     Xoffset, Yoffset, Zoffset, i30, i20, i10
 
@@ -297,7 +328,12 @@ C     Find the mesh index of the origin of the shifted cell
       do ix = 1,3
          xmean = (xmin(ix) + xmax(ix)) / 2
          i0(ix) = nint( (xmean-0.5_dp) * meshG(ix) )
-      enddo
+      end do
+
+C     Ensure that all indices become positive in the below loop
+      do ix = 1 , 3
+         i0(ix) = i0(ix) - 10 * meshG(ix)
+      end do      
 
 C     Find the electric field in mesh coordinates, so that
 C     v = efield*x = f*index
@@ -308,7 +344,7 @@ C     v = efield*x = f*index
 C     Find the potential at the origin of the shifted cell, so that
 C     the potential is zero at the center of the cell
 
-      v0 = (- 0.5_dp)*(f(1)*meshG(1) + f(2)*meshG(2) + f(3)*meshG(3))
+      v0 = - 0.5_dp*(f(1)*meshG(1) + f(2)*meshG(2) + f(3)*meshG(3))
 
       meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
       meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
@@ -325,18 +361,18 @@ C     Add the electric field potential to the input potential
 
       imesh = 0
       i30 = Zoffset - 1
-      do i3 = 0,meshl(3)-1
+      do i3 = 1,meshl(3)
          i30 = i30 + 1
+         j3 = mod( i30-i0(3), meshG(3) )
          i20 = Yoffset - 1
-         do i2 = 0,meshl(2)-1
+         do i2 = 1,meshl(2)
             i20 = i20 + 1
+            j2 = mod( i20-i0(2), meshG(2) )
             i10 = Xoffset - 1
-            do i1 = 0,meshl(1)-1
+            do i1 = 1,meshl(1)
                i10 = i10 + 1
+               j1 = mod( i10-i0(1), meshG(1) )
                imesh = imesh + 1
-               j1 = mod( i10-i0(1)+10*meshG(1), meshG(1) )
-               j2 = mod( i20-i0(2)+10*meshG(2), meshG(2) )
-               j3 = mod( i30-i0(3)+10*meshG(3), meshG(3) )
                v(imesh) = v(imesh) +
      &              v0 + f(1)*j1 + f(2)*j2 + f(3)*j3
             enddo

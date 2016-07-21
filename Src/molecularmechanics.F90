@@ -262,7 +262,7 @@
           call re_alloc(MMpotpar , 1 , 6 , 1 , nMMpot, &
                'nMMpotpar','twobody')
           ! initialize them to zero
-          nMMpotptr = 0 ! ensures that we don't accidentally assign wrong potential to a species
+          nMMpotptr = 0 ! ensures that we don't accidentally assign wrong potential to a specie
           nMMpottype = 0
           MMpotpar = 0._dp
 
