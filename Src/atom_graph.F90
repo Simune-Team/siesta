@@ -9,6 +9,8 @@ module atom_graph
 
   implicit none
 
+  private
+
   ! Derived type to hold connectivity information on an atom basis
 
   ! Each atom has a maximum "footprint", both in orbital size and KB

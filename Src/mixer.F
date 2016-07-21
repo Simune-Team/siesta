@@ -35,7 +35,7 @@
 
       implicit none
 
-      real(dp), pointer, contiguous :: Xin(:,:), Xout(:,:)
+      real(dp), pointer :: Xin(:,:), Xout(:,:)
       real(dp), allocatable :: F(:,:)
 
       integer,  intent(in)  :: iscf
