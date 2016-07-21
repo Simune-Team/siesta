@@ -21,7 +21,8 @@
       use zmatrix,       only : lUseZmatrix, iofaZmat,
      &                          CartesianForce_to_ZmatForce
       use atomlist,      only : iaorb, iphorb, iza, amass, no_u, lasto
-      use m_spin,        only : nspin
+      use atomlist,      only : indxuo 
+      use m_spin,        only : nspin, SpOrb
       use m_fixed,       only : fixed
       use sparse_matrices
       use siesta_geom
@@ -40,7 +41,7 @@
       real(dp) :: volume
       logical  :: eggbox_block=.true. ! Read eggbox info from data file?
 
-      external :: eggbox, mulliken
+      external :: eggbox, mulliken, moments
       real(dp), external :: volcel
 
 !------------------------------------------------------------------------- BEGIN
@@ -125,9 +126,15 @@
       endif
 
 !     Mulliken population analysis 
-      call mulliken( mullipop, nspin, na_u, no_u, maxnh,
-     &               numh, listhptr, listh, S, Dscf, isa, 
-     &               lasto, iaorb, iphorb )
+      if ( SpOrb ) then
+          call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
+     .                  listh, S, Dscf, isa, lasto, iaorb, iphorb,
+     .                  indxuo )
+      else
+       call mulliken( mullipop, nspin, na_u, no_u, maxnh,
+     &                numh, listhptr, listh, S, Dscf, isa, 
+     &                lasto, iaorb, iphorb )
+      endif
 !
 !     Call the born effective charge routine only in those steps (even) 
 !     in which the dx  is positive.

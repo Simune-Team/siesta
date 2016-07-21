@@ -21,7 +21,7 @@
       use sparse_matrices,      only:  listh, listhptr
       use m_iodm,               only:  write_dm
       use m_matio,              only:  write_mat
-      use m_spin,               only:  nspin
+      use m_spin,               only:  nspin, h_spin_dim
       use atomlist,             only:  no_l
       use siesta_options,       only:  idyn, writedm, writedm_cdf
       use siesta_options,       only:  writedm_cdf_history
@@ -60,10 +60,10 @@
 !     Save density matrix on disk, after mixing, to
 !     be used for re-starting the SCF cycle.
       if (writedm_cdf_history) then
-         call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
+         call write_dm_netcdf( no_l, maxnh, h_spin_dim, Dscf,
      &                         overwrite=.false. )
       else if (writedm_cdf) then
-         call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
+         call write_dm_netcdf( no_l, maxnh, h_spin_dim, Dscf,
      &                         overwrite=.true. )
       endif
 #endif
@@ -75,11 +75,11 @@
             ! do not write
         else
           if (fdf_get("Use.Blocked.WriteMat",.true.)) then
-             call write_mat (maxnh, no_l, nspin,
+             call write_mat (maxnh, no_l, h_spin_dim,
      &               numh, listhptr, listh, Dscf,
      $               userfile=file,compatible=.false.)
           else
-             call write_dm (maxnh, no_l, nspin,
+          call write_dm (maxnh, no_l, h_spin_dim,
      &               numh, listhptr, listh, Dscf,
      $               userfile=file)
           endif
@@ -92,11 +92,11 @@
         if (.not.TSrun) then   !TSS save Dscf
           if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
             if (istp.eq.1)
-     &        call write_dm( maxnh, no_l, nspin, numh,
+     &        call write_dm( maxnh, no_l, h_spin_dim, numh,
      &                       listhptr, listh, Dscf,
      $                       userfile=file)
           else
-            call write_dm( maxnh, no_l, nspin, numh,
+            call write_dm( maxnh, no_l, h_spin_dim, numh,
      &                     listhptr, listh, Dscf,
      $                     userfile=file)
           endif
@@ -104,10 +104,10 @@
 !         TSS write DscfE
              if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
                if (istp .eq.1)
-     .           call write_ts_dm (maxnh, no_l, nspin,
+     .           call write_ts_dm (maxnh, no_l, h_spin_dim,
      .                   numh, listhptr, listh, Dscf, Escf,ef)
              else
-                call write_ts_dm (maxnh, no_l, nspin,
+                call write_ts_dm (maxnh, no_l, h_spin_dim,
      .                   numh, listhptr, listh, Dscf, Escf,ef)
              endif            ! idyn.eq.6
         endif ! TSrun

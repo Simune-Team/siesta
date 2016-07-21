@@ -20,7 +20,8 @@
       use units, only: Ang
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Eold, Hold
-      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb, Hprev, H_ldau
+      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb, Hprev
+      use sparse_matrices, only: H_ldau, H_so
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             rmaxo, rmaxkb, rmaxv, rmaxldau,
@@ -38,7 +39,9 @@
       use m_ioxv,            only: ioxv
       use m_steps
       use parallel,          only: IOnode, node, nodes
-      use m_spin,            only: nspin
+      use m_spin,            only: SpOrb
+      use m_spin,            only: nspin, spinor_dim
+      use m_spin,            only: h_spin_dim, e_spin_dim
       use m_rmaxh
       use m_pulay,           only: init_pulay_arrays
       use m_eo
@@ -186,9 +189,9 @@
 !       Will print k-points also
         call setup_Kpoint_grid( ucell )
 
-        call re_alloc( eo, 1, no_u, 1, nspin, 1, maxk, 'eo',
+        call re_alloc( eo, 1, no_u, 1, spinor_dim, 1, maxk, 'eo',
      &                 'state_init')
-        call re_alloc( qo, 1, no_u, 1, nspin, 1, maxk, 'qo',
+        call re_alloc( qo, 1, no_u, 1, spinor_dim, 1, maxk, 'qo',
      &                 'state_init' )
 
 !       Find required supercell
@@ -286,31 +289,32 @@
       endif
 
       ! Note that the resizing of Dscf is done inside new_dm below
-      call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
+      call re_alloc( Dold, 1, maxnh, 1, h_spin_dim,name='Dold',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
-      call re_alloc( Eold, 1, maxnh, 1, nspin, 'Eold',
+      call re_alloc( Eold, 1, maxnh, 1, e_spin_dim, 'Eold',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
-      call re_alloc( Escf, 1, maxnh, 1, nspin, 'Escf',
+      call re_alloc( Escf, 1, maxnh, 1, e_spin_dim, 'Escf',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
 
-      if(mixH) then
-         call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
+      if ( mixH ) then
+         call re_alloc(Hold,1,maxnh,1,h_spin_dim,name='Hold',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
       end if
 
       
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
-      call re_alloc( H, 1, maxnh, 1, nspin, 'H',
-     .              routine='sparseMat',shrink=.true.,copy=.false.)
+      call re_alloc( H, 1, maxnh, 1, h_spin_dim, 'H',
+     &              routine='sparseMat', shrink=.true., copy=.false.)
       call re_alloc( Hprev, 1, maxnh, 1, nspin, 'Hprev',
      .              routine='sparseMat',shrink=.true.,copy=.false.)
-      call re_alloc(H_kin,1,maxnh,name='H_kin',routine='sparseMat',
-     &              shrink=.true., copy=.false. )
-      call re_alloc(H_vkb,1,maxnh,name='H_vkb',routine='sparseMat',
-     &     shrink=.true., copy=.false. )
+
+      call re_alloc(H_kin, 1, maxnh, 'H_kin',
+     &              routine='sparseMat', shrink=.true., copy=.false.)
+      call re_alloc(H_vkb, 1, maxnh, 'H_vkb',
+     &              routine='sparseMat', shrink=.true., copy=.false.)
       if ( switch_ldau ) then
          call re_alloc( H_ldau, 1, maxnh, 1, min(2,nspin), 'H_ldau',
-     &        routine='sparseMat', copy=.false.,shrink=.true.)
+     &              routine='sparseMat', shrink=.true., copy=.false.)
          ! Initialize to 0, LDA+U may re-calculate
          !   this matrix sporadically doing the SCF.
          ! Hence initialization MUST be performed upon
@@ -324,7 +328,11 @@
             ldau_init = .true.
          end if
       end if
-         
+      if ( SpOrb ) then
+         call re_alloc(H_so, 1, maxnh, 3, h_spin_dim, 'H_so',
+     &              routine='sparseMat', shrink=.true., copy=.false.)
+      end if
+
       call re_alloc(S,1,maxnh,name='S',routine='sparseMat',
      .              copy=.false.,shrink=.true.)
 
@@ -364,24 +372,24 @@
 
 #ifdef CDF
       if (writedm_cdf) then
-         call setup_dm_netcdf_file( maxnh, no_l, nspin,
+         call setup_dm_netcdf_file( maxnh, no_l, h_spin_dim,
      &                              no_s, indxuo,
      &                              numh, listhptr, listh)
       endif
       if (writedm_cdf_history) then
-         call setup_dm_netcdf_file( maxnh, no_l, nspin,
+         call setup_dm_netcdf_file( maxnh, no_l, h_spin_dim,
      &                              no_s, indxuo,
      &                              numh, listhptr, listh,
      &                              istep)
       endif
       if (writedmhs_cdf) then
-         call setup_dmhs_netcdf_file( maxnh, no_l, nspin,
+         call setup_dmhs_netcdf_file( maxnh, no_l, h_spin_dim,
      &                              no_s, indxuo,
      &                              numh, listhptr, listh,
      &                              s)
       endif
       if(writedmhs_cdf_history) then
-         call setup_dmhs_netcdf_file( maxnh, no_l, nspin,
+         call setup_dmhs_netcdf_file( maxnh, no_l, h_spin_dim,
      &                              no_s, indxuo,
      &                              numh, listhptr, listh,
      &                              s,

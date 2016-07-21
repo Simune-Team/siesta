@@ -253,13 +253,14 @@ use precision, only : dp
 
 integer, intent(in)   ::    nbasis ! Number of basis orbitals (in this node)
 integer, intent(in)   ::    maxnd  ! First dimension of listd and dm
-integer, intent(in)   ::    nspin  ! Number of spins (1 or 2)
+integer, intent(in)   ::    nspin  ! Number of spins (1, 2 or 4)
 logical, intent(in), optional  :: overwrite    ! Overwrite info along scf_step dimension
 
 real(dp), intent(in)  :: dm(maxnd, nspin)
 
 integer               :: norbs, nnzs
 integer               :: step_no, step_location
+
 
 #ifdef MPI
       integer, dimension(:), pointer  :: norbs_node => null()

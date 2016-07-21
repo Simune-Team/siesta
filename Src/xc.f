@@ -404,7 +404,9 @@ C Modified by V.M.Garcia-Suarez to include non-collinear spin. June 2002
      .                  DD(2), DTOT, DPOL,
      .                  GDD(3,2), TINY, DECDN(2), DEXDN(2),
      .                  VPOL, DECDGN(3,2), DEXDGN(3,2),
-     .                  C2, S2, ST, CP, SP
+     .                  C2, S2, ST, CT, CP, SP, dpolz, dpolxy
+
+CC RC  Added: CT, dpolz, dpolxy
 
       PARAMETER ( TINY = 1.D-12 )
 
@@ -414,16 +416,30 @@ C along the spin direction)
 C Note: D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
         NS = 2
         DTOT = D(1) + D(2)
-        DPOL = SQRT( (D(1)-D(2))**2 + 4.D0*(D(3)**2+D(4)**2) )
-        DD(1) = 0.5D0 * ( DTOT + DPOL ) 
-        DD(2) = 0.5D0 * ( DTOT - DPOL )
-        THETA = ACOS((D(1)-D(2))/(DPOL+TINY))
+
+!    Explicit calculation of the rotation-matrix elements from
+!    the entries of D
+
+        dpolz= D(1)-D(2)
+        dpolxy= 2.0d0*sqrt(D(3)**2+D(4)**2)
+        DPOL  = sqrt( dpolz**2 + dpolxy**2 )
+        if ( DPOL.gt.1.0d-12 ) then
+         THETA = atan2(dpolxy,dpolz)
+        else
+         THETA = 0.0_dp
+        endif
+CC RC----------------
         C2 = COS(THETA/2)
         S2 = SIN(THETA/2)
         ST = SIN(THETA)
-        PHI = ATAN(-D(4)/(D(3)+TINY))
+        CT = COS(THETA)          ! CC RC Added
+        PHI = ATAN2(-D(4),D(3)) ! CC RC Modified       
         CP = COS(PHI)
         SP = SIN(PHI)
+
+        DD(1) = 0.5D0 * ( DTOT + DPOL )
+        DD(2) = 0.5D0 * ( DTOT - DPOL )
+
 C Find diagonal elements of the gradient
         DO IX = 1,3
           GDD(IX,1) = GD(IX,1)*C2**2 + GD(IX,2)*S2**2 +
@@ -478,26 +494,31 @@ cjdg
       IF (nspin .EQ. 4) THEN
 C Find dE/dD(ispin) = dE/dDup * dDup/dD(ispin) +
 C                     dE/dDdown * dDown/dD(ispin)
-        VPOL  = (DEXDN(1)-DEXDN(2)) * (D(1)-D(2)) / (DPOL+TINY)
+CC RC  Note convention: 
+C       DEDD(1)=dE/dD11, DEDD(2)=dE/dD22,
+C       DEDD(3)=Re(dE/dD12)=Re(dE/dD21), 
+C       DEDD(4)=Im(dE/dD12)=-Im(dE/D21)
+CC RC
+        VPOL  = (DEXDN(1)-DEXDN(2)) * CT                  ! RC Modified
         DEXDD(1) = 0.5D0 * ( DEXDN(1) + DEXDN(2) + VPOL )
         DEXDD(2) = 0.5D0 * ( DEXDN(1) + DEXDN(2) - VPOL )
-        DEXDD(3) = (DEXDN(1)-DEXDN(2)) * D(3) / (DPOL+TINY)
-        DEXDD(4) = (DEXDN(1)-DEXDN(2)) * D(4) / (DPOL+TINY)
-        VPOL  = (DECDN(1)-DECDN(2)) * (D(1)-D(2)) / (DPOL+TINY)
+        DEXDD(3) = 0.5d0 * (DEXDN(1)-DEXDN(2)) * ST * CP  ! RC Modified
+        DEXDD(4) =-0.5d0 * (DEXDN(1)-DEXDN(2)) * ST * SP  ! RC Modified
+        VPOL  = (DECDN(1)-DECDN(2)) * CT                  ! RC Modified
         DECDD(1) = 0.5D0 * ( DECDN(1) + DECDN(2) + VPOL )
         DECDD(2) = 0.5D0 * ( DECDN(1) + DECDN(2) - VPOL )
-        DECDD(3) = (DECDN(1)-DECDN(2)) * D(3) / (DPOL+TINY)
-        DECDD(4) = (DECDN(1)-DECDN(2)) * D(4) / (DPOL+TINY)
+        DECDD(3) = 0.5d0 * (DECDN(1)-DECDN(2)) * ST * CP  ! RC Modified
+        DECDD(4) =-0.5d0 * (DECDN(1)-DECDN(2)) * ST * SP  ! RC Modified
 C Gradient terms
         DO 40 IX = 1,3
           DEXDGD(IX,1) = DEXDGN(IX,1)*C2**2 + DEXDGN(IX,2)*S2**2
           DEXDGD(IX,2) = DEXDGN(IX,1)*S2**2 + DEXDGN(IX,2)*C2**2
           DEXDGD(IX,3) = 0.5D0*(DEXDGN(IX,1) - DEXDGN(IX,2))*ST*CP
-          DEXDGD(IX,4) = 0.5D0*(DEXDGN(IX,2) - DEXDGN(IX,1))*ST*SP
+          DEXDGD(IX,4) =-0.5D0*(DEXDGN(IX,1) - DEXDGN(IX,2))*ST*SP
           DECDGD(IX,1) = DECDGN(IX,1)*C2**2 + DECDGN(IX,2)*S2**2
           DECDGD(IX,2) = DECDGN(IX,1)*S2**2 + DECDGN(IX,2)*C2**2
           DECDGD(IX,3) = 0.5D0*(DECDGN(IX,1) - DECDGN(IX,2))*ST*CP
-          DECDGD(IX,4) = 0.5D0*(DECDGN(IX,2) - DECDGN(IX,1))*ST*SP
+          DECDGD(IX,4) =-0.5D0*(DECDGN(IX,1) - DECDGN(IX,2))*ST*SP
    40   CONTINUE
       ELSE
         DO 60 IS = 1,nspin

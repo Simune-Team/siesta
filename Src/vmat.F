@@ -36,9 +36,12 @@ C integer iaorb(*)        : Pointer to atom to which orbital belongs
 C integer iphorb(*)       : Orbital index within each atom
 C integer isa(*)          : Species index of all atoms
 C ******************** INPUT AND OUTPUT *******************************
-C real*8  Vs(nvmax,nspin) : Value of nonzero elements in each row 
-C                           of Vs to which the potential matrix 
-C                           elements are summed up
+C real*8  Vs(nvmax,h_spin_dim) : Value of nonzero elements in each row 
+C                                of Vs to which the potential matrix 
+C                                elements are summed up
+C *********************************************************************
+C integer h_spin_dim      : Number of spin components of H and D
+C logical SpOrb           : SpOrb flag
 C *********************************************************************
 
 C  Modules
@@ -46,6 +49,7 @@ C  Modules
       use atmfuncs,      only: rcut, all_phi
       use atm_types,     only: nsmax=>nspecies
       use atomlist,      only: indxuo
+      use m_spin,        only: SpOrb
       use listsc_module, only: LISTSC
       use mesh,          only: dxa, nsp, xdop, xdsp, meshLim
       use meshdscf,      only: matrixMtoO
@@ -62,12 +66,14 @@ C  Modules
       implicit none
 
 C Argument types and dimensions
+
       integer                  :: no, np, nvmax, nuo, nuotot, iaorb(*),
-     &                            nspin, iphorb(*), isa(*), numVs(nuo),
+     &                            nspin, iphorb(*), isa(*), 
+     &                            numVs(nuo),
      &                            listVsptr(nuo), listVs(nvmax)
       real(grid_p), intent(in) :: V(nsp,np,nspin)
       real(dp)                 :: dvol
-      real(dp),         target :: Vs(nvmax,nspin)
+      real(dp),         target :: Vs(:,:)
 C Internal variables and arrays
       integer,       parameter :: minloc = 1000,  ! Min buffer size
      &                            maxoa  = 100   ! Max # of orb/atom
@@ -78,6 +84,8 @@ C Internal variables and arrays
      &                            nvmaxl, triang, lenx, leny, lenz,lenxy
       logical                  :: ParallelLocal
       real(dp)                 :: Vij, r2sp, dxsp(3), VClocal(nsp)
+
+      integer :: h_spin_dim
 
       integer,         pointer :: ilc(:),    omp_ilc(:,:),
      &                            ilocal(:), omp_ilocal(:,:),
@@ -105,6 +113,10 @@ C Internal variables and arrays
       call MPI_Barrier( MPI_Comm_World, MPIerror )
       call MPItrace_event( 1000, 4 )
 #endif
+
+      ! grab number of spin-components in the
+      ! Hamiltonian.
+      h_spin_dim = size(Vs, 2)
 
 C       Start time counter
       call timer('vmat',1)
@@ -162,12 +174,13 @@ C     Allocate local memory
 !$OMP SINGLE
       if (ParallelLocal) then
         nullify ( omp_DscfL )
-        call re_alloc( omp_DscfL, 1, nvmaxl, 1, nspin, 1, NTH, 
+        call re_alloc( omp_DscfL, 1, nvmaxl, 1, h_spin_dim,
+     &       1 , NTH, 
      &                 'DscfL',  'vmat' )
       else
         if (NTH.gt.1) then
           nullify ( omp_Vss )
-          call re_alloc( omp_Vss, 1, nvmax, 1, nspin, 1, NTH, 
+          call re_alloc( omp_Vss, 1, nvmax, 1, h_spin_dim, 1, NTH, 
      &                   'Vss',  'vmat' )
         endif
       endif
@@ -186,11 +199,11 @@ C     Allocate local memory
 !$OMP END SINGLE
 
       if (ParallelLocal) then
-        DscfL => omp_DscfL(1:nvmaxl,1:nspin,TID)
-        DscfL(1:nvmaxl,1:nspin) = 0.0_dp
+        DscfL => omp_DscfL(:,:,TID)
+        DscfL(:,:) = 0.0_dp
       else
         if (NTH.gt.1) then
-          Vss => omp_Vss(1:nvmax,1:nspin,TID)
+          Vss => omp_Vss(1:nvmax,1:h_spin_dim,TID)
         else
           Vss => Vs
         endif
@@ -242,6 +255,10 @@ C       If overflooded, add Vlocal to Vs and reinitialize it
                     DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
      &                Vlocal(ijl,ispin) 
                   enddo
+                  if ( SpOrb ) then
+                     DscfL(ind,7:8) = DscfL(ind,7:8) +
+     $                                dVol * Vlocal(ijl,3:4)
+                  endif
                 enddo
               else
                 do ii = 1, numdl(iul)
@@ -257,6 +274,10 @@ C       If overflooded, add Vlocal to Vs and reinitialize it
                     DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
      &                Vlocal(ijl,ispin) 
                   enddo
+                  if ( SpOrb ) then
+                     DscfL(ind,7:8) = DscfL(ind,7:8) +
+     $                                dVol * Vlocal(ijl,3:4)
+                  endif
                 enddo
               endif
             else
@@ -275,6 +296,9 @@ C       If overflooded, add Vlocal to Vs and reinitialize it
                     Vss(ind,ispin) = Vss(ind,ispin) + dVol * 
      &                Vlocal(ijl,ispin) 
                   enddo
+                  if ( SpOrb ) then
+                    Vss(ind,7:8) = Vss(ind,7:8) + dVol * Vlocal(ijl,3:4)
+                  endif
                 enddo
               else
                 do ii = 1, numVs(iul)
@@ -290,6 +314,9 @@ C       If overflooded, add Vlocal to Vs and reinitialize it
                     Vss(ind,ispin) = Vss(ind,ispin) + dVol * 
      &                Vlocal(ijl,ispin) 
                   enddo
+                  if ( SpOrb ) then
+                    Vss(ind,7:8) = Vss(ind,7:8) + dVol * Vlocal(ijl,3:4)
+                  endif
                 enddo
               endif
             endif
@@ -410,6 +437,9 @@ C  Add final Vlocal to Vs
                 DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
      &            Vlocal(ijl,ispin) 
               enddo
+              if ( SpOrb ) then
+                DscfL(ind,7:8) = DscfL(ind,7:8) + dVol * Vlocal(ijl,3:4)
+              endif
             enddo
           else
             do ii = 1, numdl(iul)
@@ -425,6 +455,9 @@ C  Add final Vlocal to Vs
                 DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
      &            Vlocal(ijl,ispin) 
               enddo
+              if ( SpOrb ) then
+                DscfL(ind,7:8) = DscfL(ind,7:8) + dVol * Vlocal(ijl,3:4)
+              endif
             enddo
           endif
         else
@@ -442,6 +475,9 @@ C  Add final Vlocal to Vs
                 Vss(ind,ispin) = Vss(ind,ispin) + dVol * 
      &            Vlocal(ijl,ispin) 
               enddo
+              if ( SpOrb ) then
+                Vss(ind,7:8) = Vss(ind,7:8) + dVol * Vlocal(ijl,3:4)
+              endif
             enddo
           else
             do ii = 1, numVs(iu)
@@ -457,6 +493,9 @@ C  Add final Vlocal to Vs
                 Vss(ind,ispin) = Vss(ind,ispin) + dVol * 
      &            Vlocal(ijl,ispin) 
               enddo
+              if ( SpOrb ) then
+                Vss(ind,7:8) = Vss(ind,7:8) + dVol * Vlocal(ijl,3:4)
+              endif
             enddo
           endif
         endif
@@ -467,7 +506,7 @@ C  Add final Vlocal to Vs
       if (ParallelLocal) then
 !$OMP   DO SCHEDULE(STATIC)
         do ind = 1, nvmaxl
-          do ispin = 1,nspin
+          do ispin = 1,h_spin_dim
             do ii = 2, NTH
               omp_DscfL(ind,ispin,1) = omp_DscfL(ind,ispin,1) +
      &                                 omp_DscfL(ind,ispin,ii)
@@ -478,7 +517,7 @@ C  Add final Vlocal to Vs
       else if (NTH.gt.1) then
 !$OMP   DO SCHEDULE(STATIC)
         do ind = 1, nvmax
-          do ispin = 1,nspin
+          do ispin = 1,h_spin_dim
             do ii = 1, NTH
               Vs(ind,ispin) = Vs(ind,ispin) + omp_Vss(ind,ispin,ii)
             enddo
@@ -499,9 +538,9 @@ C     Free memory
 
       if (ParallelLocal) then
 C       Redistribute Hamiltonian from mesh to orbital based distribution
-        DscfL => omp_DscfL(1:nvmaxl,1:nspin,1)
+        DscfL => omp_DscfL(1:nvmaxl,1:h_spin_dim,1)
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
-     &                   nspin, DscfL, Vs )
+     &                   h_spin_dim, DscfL, Vs )
         call de_alloc( omp_DscfL, 'DscfL', 'vmat' )
       else if (NTH.gt.1) then
         call de_alloc( omp_Vss, 'Vss', 'vmat' )
