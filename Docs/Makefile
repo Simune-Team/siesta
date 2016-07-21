@@ -1,18 +1,26 @@
 SHELL := /bin/bash
 rerun = "(There were undefined references|Rerun to get (cross-references|the bars) right)"
-doc   = siesta
 latex = pdflatex -shell-escape
+doc = siesta
 grep = @-grep -i -s
 splitidx = splitindex
 docidx = $(doc).idx
 bibtex = bibtex
 makeidx = makeindex
 
-pdf: $(doc)
+# Default build both
+pdf: siesta tbtrans
 	@echo "Done"
 
-$(doc): $(doc).tex
+# Generic document compilation
+doc: $(doc).tex
 	$(latex) $(doc).tex
+
+siesta: doc=siesta
+siesta: doc
+
+tbtrans: doc=tbtrans
+tbtrans: doc
 
 compress:
 	gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.5 \
@@ -24,7 +32,8 @@ extra:
 	$(splitidx) $(docidx)
 	$(makeidx) $(doc)
 
-final: clean $(doc).tex
+# Generic creation of the final documentation
+final-doc: $(doc).tex clean
 	$(latex) $(doc).tex
 	$(latex) $(doc).tex
 	$(bibtex) $(doc)
@@ -33,11 +42,19 @@ final: clean $(doc).tex
 	$(latex) $(doc).tex
 	$(latex) $(doc).tex
 
+final-siesta: doc=siesta
+final-siesta: final-doc
+
+final-tbtrans: doc=tbtrans
+final-tbtrans: final-doc
+
+final: clean final-siesta final-tbtrans
+
 clean:
-	rm -f $(doc).{lot,oct,aux,auxlock,makefile,figlist,bbl,log,ilg,lof,ind,out,blg,gls,glo,glg,idx,toc,bcf,run.xml} $(doc)-blx.bib
+	rm -f {siesta,tbtrans}.{lot,oct,aux,auxlock,makefile,figlist,bbl,log,ilg,lof,ind,out,blg,gls,glo,glg,idx,toc,bcf,run.xml} {siesta,tbtrans}-*.*
 
 cleanpdf:
-	rm -f $(doc).pdf
+	rm -f {siesta,tbtrans}.pdf
 
 check: citations references badness undefined underfull overfull warning
 

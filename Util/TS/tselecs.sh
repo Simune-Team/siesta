@@ -596,9 +596,9 @@ function create_el {
     local tshs=$(get_opt -el$el-tshs 1)
     
     if [ ${#tshs} -ne 0 ]; then
-	echo "  TSHS $tshs"
+	echo "  HS $tshs"
     else
-	echo "  TSHS <input file>"
+	echo "  HS <input file>"
     fi
     echo "  chemical-potential $chem"
     echo "  semi-inf-direction $(get_opt -el$el-semi-inf 1)"

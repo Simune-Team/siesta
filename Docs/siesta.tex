@@ -277,10 +277,10 @@ For more information you can visit the web page
 
 Rather than using the top-level Src directory as building directory,
 the user has to use an ad-hoc building directory (by default the
-top-level \texttt{Obj} directory, but it can be any (new) directory in
+top-level \shell{Obj} directory, but it can be any (new) directory in
 the top level).  The building directory will hold the object files,
 module files, and libraries resulting from the compilation of the
-sources in \texttt{Src}.  The \texttt{VPATH} mechanism of modern \texttt{make}
+sources in \shell{Src}.  The \shell{VPATH} mechanism of modern \shell{make}
 programs is used. This scheme has many advantages. Among them:
 
 \begin{itemize}
@@ -289,7 +289,7 @@ programs is used. This scheme has many advantages. Among them:
   compile the program with different compilers or optimization levels.
 \end{itemize}
 
-If you just want to compile the program, go to \texttt{Obj} and issue the
+If you just want to compile the program, go to \shell{Obj} and issue the
 command:
 
 \begin{verbatim}
@@ -297,7 +297,7 @@ command:
 \end{verbatim}
 
 to populate this directory with the minimal scaffolding of makefiles,
-and then make sure that you create or generate an appropriate \texttt{arch.make}
+and then make sure that you create or generate an appropriate \shell{arch.make}
 file (see below, in Sect.~\ref{sec:arch-make}). Then, type
 
 \begin{verbatim}
@@ -306,10 +306,10 @@ file (see below, in Sect.~\ref{sec:arch-make}). Then, type
 
 The executable should work for any job. (This is not exactly true,
 since some of the parameters in the atomic routines are still
-hardwired (see \texttt{Src/atmparams.f}), but those would seldom need to
+hardwired (see \shell{Src/atmparams.f}), but those would seldom need to
 be changed.)
 
-To compile utility programs (those living in \texttt{Util}), you can just
+To compile utility programs (those living in \shell{Util}), you can just
 simply use the provided makefiles, typing ``make'' as appropriate.
 
 \subsubsection{Multiple-target compilation}
@@ -327,8 +327,8 @@ above. To compile utility programs, you need to use the form:
    make OBJDIR=ObjName
 \end{verbatim}
 
-where \texttt{ObjName} is the name of the object directory of your
-choice. Be sure to type \texttt{make clean} before attempting to
+where \shell{ObjName} is the name of the object directory of your
+choice. Be sure to type \shell{make clean} before attempting to
 re-compile a utility program.
 
 (The pristine Src directory should be kept "clean", without objects, or else
@@ -338,29 +338,29 @@ the compilation in the build directories will get confused)
 \subsection{The arch.make file}
 \label{sec:arch-make}
 
-The compilation of the program is done using a \texttt{Makefile} that is
-provided with the code.\index{Makefile} This \texttt{Makefile} will
+The compilation of the program is done using a \shell{Makefile} that is
+provided with the code.\index{Makefile} This \shell{Makefile} will
 generate the executable for any of several architectures, with a
 minimum of tuning required from the user and encapsulated in a
-separate file called \texttt{arch.make}.
+separate file called \shell{arch.make}.
 
 You are strongly encouraged to look at
-\texttt{Src/Sys/DOCUMENTED-TEMPLATE.make} for information about the
-fine points of the \texttt{arch.make} file. You can also get
-inspiration by looking at the actual \texttt{arch.make} examples in
-the \texttt{Src/Sys} subdirectory. If you intend to create a parallel
+\shell{Src/Sys/DOCUMENTED-TEMPLATE.make} for information about the
+fine points of the \shell{arch.make} file. You can also get
+inspiration by looking at the actual \shell{arch.make} examples in
+the \shell{Src/Sys} subdirectory. If you intend to create a parallel
 version of \siesta, make sure you have all the extra support libraries
-(\texttt{MPI}, \texttt{scalapack}, \texttt{blacs}\dots) (see Sec.~\ref{sec:parallel}).
+(\program{MPI}, \program{scalapack}, \program{blacs}\dots) (see Sec.~\ref{sec:parallel}).
   
-Optionally, the command \texttt{../Src/configure} will start an
-automatic scan of your system and try to build an \texttt{arch.make}
+Optionally, the command \shell{../Src/configure} will start an
+automatic scan of your system and try to build an \shell{arch.make}
 for you. Please note that the configure script might need some help in
 order to find your Fortran compiler, and that the created
-\texttt{arch.make} may not be optimal, mostly in regard to compiler
+\shell{arch.make} may not be optimal, mostly in regard to compiler
 switches and preprocessor definitions, but the process should provide
-a reasonable first version. Type \texttt{../Src/configure --help} to
+a reasonable first version. Type \shell{../Src/configure --help} to
 see the flags understood by the script, and take a look at the
-\texttt{Src/Confs} subdirectory for some examples of their explicit
+\shell{Src/Confs} subdirectory for some examples of their explicit
 use. 
 
 
@@ -368,21 +368,21 @@ use.
 
 A fast way to test your installation of \siesta\ and get a feeling for
 the workings of the program is implemented in directory
-\texttt{Tests}\index{Tests}. In it you can find several subdirectories
+\shell{Tests}\index{Tests}. In it you can find several subdirectories
 with pre-packaged \fdflib\ files and pseudopotential references. Everything
 is automated: after compiling \siesta\ you can just go into any
-subdirectory and type \texttt{make}. The program does its work in
-subdirectory \texttt{work}, and there you can find all the resulting
+subdirectory and type \shell{make}. The program does its work in
+subdirectory \shell{work}, and there you can find all the resulting
 files. For convenience, the output file is copied to the parent
 directory. A collection of reference output files can be found in
-\texttt{Tests/Reference}. Please note that small numerical and
+\shell{Tests/Reference}. Please note that small numerical and
 formatting differences are to be expected, depending on the compiler.
 (For non-standard execution environments, including queuing systems,
 have a look at the Scripts in Tests/Scripts, and see also
 Sect.~\ref{sec:parallel}.)
 
-Other examples are provided in the \texttt{Examples} directory. This
-directory contains basically \texttt{.fdf} files and the appropriate
+Other examples are provided in the \shell{Examples} directory. This
+directory contains basically \shell{.fdf} files and the appropriate
 pseudopotential generation input files. Since at some point you will
 have to generate your own pseudopotentials and run your own jobs, we
 describe here the whole process by means of the simple example of the
@@ -417,15 +417,15 @@ the \textsc{ATOM} program manual for details regarding what follows.)
 
 NOTE: The \textsc{ATOM} program is no longer bundled with \siesta,
 but academic users can dowload it from the \siesta\ webpage at
-\texttt{www.icmab.es/siesta}.
+\url{www.icmab.es/siesta}.
 
-\texttt{\$ cd path/to/atom/package/}
+\shell{\$ cd path/to/atom/package/}
 
 (Compile the program following the instructions)
 
-\texttt{\$ cd Tutorial/PS\_Generation/O}
+\shell{\$ cd Tutorial/PS\_Generation/O}
 
-\texttt{\$ cat O.tm2.inp}
+\shell{\$ cat O.tm2.inp}
 
 \noindent
 This is the input file, for the oxygen pseudopotential,
@@ -449,30 +449,30 @@ you will need to understand in the future:
 
 To generate the pseudopotential do the following;
 
-\texttt{\$ sh ../../Utils/pg.sh O.tm2.inp}
+\shell{\$ sh ../../Utils/pg.sh O.tm2.inp}
 
 \noindent
 Now there should be a new subdirectory called O.tm2 (O for oxygen)
-and \texttt{O.tm2.vps} (binary) and \texttt{O.tm2.psf} (ASCII) files.
+and \shell{O.tm2.vps} (binary) and \shell{O.tm2.psf} (ASCII) files.
 
-\texttt{\$ cp O.tm2.psf path-to-working-dir/h2o/O.psf}
+\shell{\$ cp O.tm2.psf path-to-working-dir/h2o/O.psf}
 
 \noindent
 copies the generated pseudopotential file to your working directory.
 (The unformatted and ASCII files are functionally equivalent, but
 the latter is more transportable and easier to look at, if you so
 desire.) The same could be repeated for the pseudopotential for H,
-but you may as well copy \texttt{H.psf} from \texttt{Examples/Vps/}
-to your \texttt{h2o} working directory.
+but you may as well copy \shell{H.psf} from \shell{Examples/Vps/}
+to your \shell{h2o} working directory.
 
 \noindent
 Now you are ready to run the program:
 
-\texttt{./siesta < h2o.fdf | tee h2o.out}
+\shell{./siesta < h2o.fdf | tee h2o.out}
 
 \noindent
 (If you are running the parallel version you should use some other
-invocation, such as \texttt{mpirun -np 2 siesta ...}, but we cannot
+invocation, such as \shell{mpirun -np 2 siesta ...}, but we cannot
 go into that here --- see Sect.~\ref{sec:parallel}).
 
 After a successful run of the program, you should have several
@@ -502,7 +502,7 @@ files in your directory including the following:
 \end{itemize}
 
 The prefix h2o of all these files is the 
-\texttt{SystemLabel}\index{Systemlabel}
+\fdf{SystemLabel}
 specified in the input h2o.fdf file (see \fdflib\ section below).
 The standard output of the program, that you
 have already seen passing on the screen, was copied to
@@ -512,7 +512,7 @@ You may also want to look at the fdf.log\index{fdf.log} file to see all
 the default values that siesta has chosen for you, before
 studying the input-explanation section and start changing them.
 
-Now look at the other data files in \texttt{Examples}
+Now look at the other data files in \shell{Examples}
 (all with an .fdf suffix) choose one and repeat the process for it.
 
 \section{THE FLEXIBLE DATA FORMAT (FDF)}\index{FDF}
@@ -613,12 +613,12 @@ siesta/Tests directory for illustration.
 The program starts writing the version of the code which is
 used. Then, the input \fdflib\ file is dumped into the output file as is
 (except for empty lines). The program does part of the reading and
-digesting of the data at the beginning within the \texttt{redata}
+digesting of the data at the beginning within the \program{redata}
 subroutine. It prints some of the information it digests. It is
 important to note that it is only part of it, some other information
 being accessed by the different subroutines when they need it during
 the run (in the spirit of \fdflib\ input).  A complete list of the input
-used by the code can be found at the end in the file \texttt{fdf.log},
+used by the code can be found at the end in the file \shell{fdf.log},
 including defaults used by the code in the run.
 
 After that, the program reads the pseudopotentials, factorizes them
@@ -707,7 +707,7 @@ values. For historical reasons the names of the tags do not have an
 uniform structure, and can be confusing at times.
 
 Almost all of the tags are optional: \siesta\ will assign a
-default if a given tag is not found when needed (see \texttt{fdf.log}).
+default if a given tag is not found when needed (see \shell{fdf.log}).
 
 
 \vspace{5pt}
@@ -793,7 +793,7 @@ atom.
 
 Pseudopotentials for synthetic atoms can be created using the
 \program{mixps} and \program{fractional} programs \index{mixps
-    program}\index{fractional program} in the \texttt{Util/VCA}
+    program}\index{fractional program} in the \shell{Util/VCA}
 directory.
 
 Atomic numbers below -200 represent \textit{ghost synthetic atoms}.
@@ -9144,13 +9144,13 @@ electrodes in a generic input format.
 \begin{fdfentry}{TS!Elec.<>}[block]
 
   Each line represents a setting for electrode \fdf*{<>}.
-  There are a few lines that \emph{must} be present, \fdf*{TSHS},
+  There are a few lines that \emph{must} be present, \fdf*{HS},
   \fdf*{semi-inf-dir}, \fdf*{electrode-pos}, \fdf*{chem-pot}.
 
   \begin{fdfoptions}
 
-    \option[TSHS]%
-    \fdfindex{TS!Elec.<>!TSHS}%
+    \option[HS]%
+    \fdfindex{TS!Elec.<>!HS}%
     The Hamiltonian information from the initial electrode
     calculation. This file retains the geometrical information as well
     as the Hamiltonian, overlap matrix and the Fermi-level of the
@@ -9229,10 +9229,10 @@ electrodes in a generic input format.
     \option[Eta]%
     \fdfindex{TS!Elec.<>!Eta}%
     Control the imaginary part of the surface Green function for this
-    electrode. See \fdf{TS!Elecs.Eta}.
+    electrode. See \fdf{TS!Elecs!Eta}.
 
-    \option[TSDE]%
-    \fdfindex{TS!Elec.<>!TSDE}%
+    \option[DE]%
+    \fdfindex{TS!Elec.<>!DE}%
     Density and energy density matrix file for the electrode. This may
     be used to initialize the density matrix elements in the electrode
     region by the bulk values. This may be used to increase the
@@ -9294,7 +9294,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{TS!Elecs!Eta}[energy]<$10^{-6}\,\mathrm{eV}$>
+\begin{fdfentry}{TS!Elecs!Eta}[energy]<$10^{-4}\,\mathrm{eV}$>
   
   Globally control the imaginary part used for the surface Green
   function calculation.
@@ -9735,7 +9735,7 @@ However, each electrode atoms \emph{must} be defined
 consecutively. I.e. if an electrode input option is given by:
 \begin{fdfexample}
   %block TS.Elec.<>
-    TSHS ../elec-<>/siesta.TSHS
+    HS ../elec-<>/siesta.TSHS
     bloch 1 3 1
     used-atoms 4
     electrode-position 10

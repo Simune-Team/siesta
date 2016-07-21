@@ -24,6 +24,10 @@
 \DeclareTextFontCommand{\fontfdf}{\bfseries\hyphenchar\font=45\relax}
 \let\fdffont\fontfdf
 
+% Short hand command for \fdf*{true}, \fdf*{false}
+\NewDocumentCommand\fdftrue{ }{\fdf*{true}}
+\NewDocumentCommand\fdffalse{ }{\fdf*{false}}
+
 
 % Shorthand command for printing the fdf-key
 % correctly, AND adding it to the index.
@@ -54,7 +58,7 @@
 \def\preparelink#1{%
   \expandafter\ifx\csname siesta@hlink@#1\endcsname\relax%
     \global\advance\siestatargetcount by1\relax%
-    \expandafter\xdef\csname siesta@hlink@#1\endcsname{siesta-pos-\the\siestatargetcount}%
+    \expandafter\xdef\csname siesta@hlink@#1\endcsname{siesta-pos-\the\siestatargetcount-#1}%
   \fi%
 }
 \def\cleanedhypertarget#1#2{% 
@@ -111,6 +115,7 @@
     % Create fdf label
     \fdfentrybody%
 }
+
 
 
 % Create new fdf input
