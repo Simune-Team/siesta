@@ -7953,8 +7953,9 @@ involving molecules.
       \option[{atom from \emph{A} to \emph{B} [step \emph{s}]}]%
       Here atoms \emph{A} up to and including \emph{B} are
       constrained.
-      If \fdffont{step \emph{s}} is given, the range \emph{A}:\emph{B}
-      will be taken in steps of \emph{s}.
+      %
+      If \fdf*{step <s>} is given, the range
+      \emph{A}:\emph{B} will be taken in steps of \emph{s}.
 
       \begin{fdfexample}
         atom from 3 to 10 step 2
@@ -7964,7 +7965,9 @@ involving molecules.
       \option[{atom from \emph{A} plus/minus \emph{B} [step
           \emph{s}]}]%
       Here atoms \emph{A} up to and including $\emph{A}+\emph{B}-1$
-      are constrained.  If \fdffont{step \emph{s}} is given, the range
+      are constrained.  
+      %
+      If \fdf*{step <s>} is given, the range
       \emph{A}:$\emph{A}+\emph{B}-1$ will be taken in steps of
       \emph{s}.
 
@@ -9796,7 +9799,8 @@ device region.
     \texorpdfstring{\tbtrans}{TBtrans}} 
 \index{tbtrans@\textbf{tbtrans}}
 
-Please see the separate \tbtrans\ manual.
+Please see the separate \tbtrans\ manual
+(\href{run:tbtrans.pdf}{tbtrans.pdf}).
 
 \section{ANALYSIS TOOLS}
 
