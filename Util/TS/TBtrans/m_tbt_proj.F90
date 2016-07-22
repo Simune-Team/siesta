@@ -281,7 +281,7 @@ contains
           else if ( leqi(char,'atom') .or. leqi(char,'position') ) then
 
              ! Add the atom to the list
-             call fdf_brange(pline,r_tmp,1,na_u)
+             call fdf_brange(pline,r_tmp, 1, na_u)
              call rgn_copy(mols(im)%atom,r_tmp2)
              call rgn_union(r_tmp2,r_tmp,mols(im)%atom)
 
@@ -2481,7 +2481,7 @@ contains
 
     type(hNCDF) :: gmol, gproj, gEl
     integer :: nnzs_dev, idx(3), cnt(3)
-    real(dp), pointer, contiguous :: J(:)
+    real(dp), pointer :: J(:)
 #ifdef MPI
     integer :: iN
     integer :: MPIerror, status(MPI_STATUS_SIZE)

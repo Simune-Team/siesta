@@ -82,7 +82,7 @@ contains
   subroutine invert_TriMat(M,Minv,calc_parts)
     type(zTriMat), intent(inout) :: M, Minv
     logical, intent(in), optional :: calc_parts(:)
-    complex(dp), pointer, contiguous :: Mpinv(:)
+    complex(dp), pointer :: Mpinv(:)
     integer :: lsPart, lePart
     integer :: sNm1, sNp1, n
     logical :: piv_initialized
@@ -183,8 +183,8 @@ contains
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
     ! Local variables
-    complex(dp), pointer, contiguous :: Mp(:), Mpinv(:)
-    complex(dp), pointer, contiguous :: Xn(:), Yn(:), Cn(:), Bn(:)
+    complex(dp), pointer :: Mp(:), Mpinv(:)
+    complex(dp), pointer :: Xn(:), Yn(:), Cn(:), Bn(:)
     integer :: sNm1, sN, sNp1, i
 
     if ( 1 < n )        sNm1 = nrows_g(M,n-1)
@@ -264,8 +264,8 @@ contains
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
     ! Local variables
-    complex(dp), pointer, contiguous :: Mp(:), Mpinv(:)
-    complex(dp), pointer, contiguous :: Xn(:)
+    complex(dp), pointer :: Mp(:), Mpinv(:)
+    complex(dp), pointer :: Xn(:)
     integer :: sN, sNp1
 
     if ( n < parts(M) ) then
@@ -298,8 +298,8 @@ contains
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
     ! Local variables
-    complex(dp), pointer, contiguous :: Mp(:), Mpinv(:)
-    complex(dp), pointer, contiguous :: Yn(:)
+    complex(dp), pointer :: Mp(:), Mpinv(:)
+    complex(dp), pointer :: Yn(:)
     integer :: sN, sNm1
 
     if ( 1 < n ) then
@@ -338,7 +338,7 @@ contains
     integer, intent(in) :: n, nz
     complex(dp), intent(inout) :: zwork(nz)
     ! Local variables
-    complex(dp), pointer, contiguous :: ztmp(:), Xn(:), Cnp2(:)
+    complex(dp), pointer :: ztmp(:), Xn(:), Cnp2(:)
     integer :: sN, sNp1, sNp1SQ, sNp2, ierr
     character(len=50) :: cerr
 
@@ -401,7 +401,7 @@ contains
   function Xn_div_Cn_p1(M,n) result(Xn)
     type(zTriMat), intent(in) :: M
     integer, intent(in) :: n
-    complex(dp), pointer, contiguous :: Xn(:)
+    complex(dp), pointer :: Xn(:)
     Xn => val(M,n+1,n)
   end function Xn_div_Cn_p1
 
@@ -414,7 +414,7 @@ contains
     integer, intent(in) :: n, nz
     complex(dp), intent(inout) :: zwork(nz)
     ! Local variables
-    complex(dp), pointer, contiguous :: ztmp(:), Yn(:), Bnm2(:)
+    complex(dp), pointer :: ztmp(:), Yn(:), Bnm2(:)
     integer :: sN, sNm1, sNm1SQ, sNm2, ierr
     character(len=50) :: cerr
 
@@ -477,7 +477,7 @@ contains
   function Yn_div_Bn_m1(M,n) result(Yn)
     type(zTriMat), intent(in) :: M
     integer, intent(in) :: n
-    complex(dp), pointer, contiguous :: Yn(:)
+    complex(dp), pointer :: Yn(:)
     Yn => val(M,n-1,n)
   end function Yn_div_Bn_m1
 

@@ -673,6 +673,7 @@ C     Modules
 #endif
       use m_rhofft,       only: rhofft, FORWARD, BACKWARD
       use m_rhog,         only: rhog_in, rhog
+      use m_spin,         only: spin
       use m_spin,         only: NonCol, SpOrb
       use m_spin,         only: h_spin_dim, Spiral, qSpiral
 
@@ -1600,7 +1601,7 @@ C ----------------------------------------------------------------------
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa, qspiral )
          else
-            call vmat( norb, nmpl, dvol, nspin, Vscf_par, maxnd,
+            call vmat( norb, nmpl, dvol, spin, Vscf_par, maxnd,
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa )
          endif
