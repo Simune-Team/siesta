@@ -3564,6 +3564,48 @@ using the block's input.
 The following options refer to the global treatment of how/when mixing
 should be performed.
 
+
+% Only show if not showing the other options
+\begin{fdflogicalF}{Compat!Pre-v4-DM-H}
+  \index{Backward compatibility}
+  \index{SCF!compat-pre4-dm-h}
+
+  This controls the default values of \fdf{SCF.Mix!AfterConvergence},
+  \fdf{SCF!RecomputeHAfterScf} and \fdf{SCF.Mix!First}.
+  
+  In versions prior to v4 the two former options where defaulted to
+  \fdftrue\ while the latter option was defaulted to \fdffalse.
+  
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{SCF.Mix!AfterConvergence}
+  \index{SCF!mixing}%
+  \index{SCF!mixing!end of cycle}%
+
+  Indicate whether mixing is done in the last SCF cycle (after
+  convergence has been achieved) or not. Not mixing after convergence
+  improves the quality of the final Kohn-Sham energy and of the forces
+  when mixing the DM.
+
+  \note see \fdf{Compat!Pre-v4-DM-H}.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{SCF!RecomputeHAfterSCF}
+  \index{SCF!Recomputing H}%
+  
+  Indicate whether the Hamiltonian is updated after the scf cycle,
+  while computing the final energy, forces, and stresses. Not
+  recomputing H makes further analysis tasks (such as the computation
+  of band structures) more consistent, as they will be able to use the
+  same H used to generate the last density matrix.
+  
+  \note see \fdf{Compat!Pre-v4-DM-H}.
+
+\end{fdflogicalF}
+
+
+\ifdeprecated
 \subsubsection{Deprecated mixing options}
 
 \begin{description}
@@ -3595,37 +3637,6 @@ from Harris or previous steps. It can be useful, though,
 for restarts of selfconsistency runs.
 
 \textit{Default value:} \texttt{.true.}
-
-\item[\textbf{SCF.MixAfterConvergence}] (\textit{logical}):\index{SCF!mixing} \index{SCF.MixAfterConvergence@\textbf{SCF.MixAfterConvergence}}\index{SCF!mixing!end of cycle} Logical
-  variable to indicate whether mixing is done in the last SCF cycle
-  (after convergence has been achieved) or not.  Not mixing after
-  convergence improves the quality of the final Kohn-Sham
-  energy and of the forces when mixing the DM.
-
-\textit{Default value:} \texttt{.false.}
-\textbf{NOTE}: This breaks backwards compatibility with previous
-(pre-4.0rc) versions of \siesta. To recover the old behavior,
-turn this option on, or use the compatibility switch \textbf{compat-pre-v4-dm-h} (see below).
-
-\item[\textbf{SCF.RecomputeHAfterScf}] (\textit{logical}):\index{SCF!Recomputing H} \index{SCF.RecomputeHAfterScf@\textbf{SCF.RecomputeHAfterScf}} Logical
-  variable to indicate whether the Hamiltonian is updated after the
-  scf cycle, while computing the final energy, forces, and stresses.
-  Not recomputing H makes further analysis tasks (such as the
-  computation of band structures) more consistent, as they will be
-  able to use the same H used to generate the last density matrix.
-
-\textit{Default value:} \texttt{.false.}
-\textbf{NOTE}: This breaks backwards compatibility with previous
-(pre-4.0rc) versions of \siesta. To recover the old behavior,
-turn this option on, or use the compatibility switch \textbf{compat-pre-v4-dm-h} (see below).
-
-\item[\textbf{compat-pre-v4-dm-h}] (\textit{logical}):
-\index{Backward compatibility}
-\index{SCF!compat-pre4-dm-h} \index{compat-pre4-dm-h@\textbf{compat-pre4-dm-h}} If this logical
-  variable is turned on, the above two options regarding mixing after
-  convergence and recomputation of H after the scf cycle will be
-  turned on. Also \fdf{DM.MixSCF1} will default to \fdf*{.false.}.
-
 
 \item[\textbf{DM.MixingWeight}] (\textit{real}):
 \index{DM.MixingWeight@\textbf{DM.MixingWeight}}
@@ -3894,6 +3905,8 @@ norm of their residual $\rho^n_{out}-\rho^n_{in}$.
 
 
 \end{description}
+
+\fi
 
 \subsubsection{Mixing of the Charge Density}
 
@@ -6535,28 +6548,29 @@ required by \textsc{wannier90}. (See above for details.)
 \vspace{5pt}
 \subsection{Systems with net charge or dipole, and electric fields}
 
+\begin{fdfentry}{NetCharge}[real]<$0.$>%
+  \index{Charge of the system}
+  \index{Doping}%
+  \index{SCF!Doping}%
+
+  Specify the net charge of the system (in units of $|e|$).  For
+  charged systems, the energy converges very slowly versus cell
+  size. For molecules or atoms, a Madelung correction term is applied
+  to the energy to make it converge much faster with cell size (this
+  is done only if the cell is SC, FCC or BCC). For other cells, or for
+  periodic systems (chains, slabs or bulk), this energy correction
+  term can not be applied, and the user is warned by the program. It
+  is not advised to do charged systems other than atoms and molecules
+  in SC, FCC or BCC cells, unless you know what you are doing.
+
+  \textit{Use:} For example, the F$^-$ ion would have \fdf*{NetCharge
+      -1}, and the Na$^+$ ion would have \fdf*{NetCharge 1}.
+  Fractional charges can also be used.
+  
+\end{fdfentry}
+
+
 \begin{description}
-
-\item[\textbf{NetCharge}] (\textit{real}):
-\index{NetCharge@\textbf{NetCharge}}\index{Charge of the system}
-Specify the net charge of the system (in units of $|e|$).
-For charged systems, the energy converges very slowly
-versus cell size. For molecules or atoms, a Madelung
-correction term is applied to the energy to make it converge
-much faster with cell size (this is done only if
-the cell is SC, FCC or BCC). For other cells, or for
-periodic systems (chains, slabs or bulk), this energy
-correction term can not be applied, and the user is warned
-by the program.   It is not advised to do charged systems
-other than atoms and molecules in SC, FCC or BCC cells,
-unless you know what you are doing.
-
-\textit{Use:}
-For example, the F$^-$ ion would have \textbf{NetCharge} = \texttt{-1},
-and the Na$^+$ ion would have \textbf{NetCharge} = \texttt{1}.
-Fractional charges can also be used.
-
-\textit{Default value:} \texttt{0.0}
 
 \item[\textbf{SimulateDoping}] (\textit{boolean}):
 \index{SimulateDoping@\textbf{SimulateDoping}}\index{Slabs with net charge}
@@ -6627,6 +6641,168 @@ calculation, otherwise it will default to \texttt{false}.
 \textit{Default value:} \texttt{false}
 
 \end{description}
+
+
+\begin{fdfentry}{Geometry!Hartree}[block]%
+  \index{SCF!Potential}%
+  \index{Gate}%
+
+  
+  Allow introduction of regions with changed Hartree
+  potential. Introducing a potential can act as a repulsion
+  (positive value) or attraction (negative value) region.
+
+  The regions are defined as geometrical objects and there are no
+  limits to the number of defined geometries.
+
+  Currently 4 different kinds of geometries are allowed:
+  \begin{fdfoptions}
+    
+
+    \option[Infinite plane]%
+    \index{Gate!infinite plane}%
+
+    Define a geometry by an infinite plane which cuts the unit-cell.
+
+    This geometry is defined by a single point which is in the plane
+    and a vector normal to the plane.
+
+    This geometry has 3 different settings:
+    \begin{fdfoptions}
+      \option[delta] %
+      An infinite plane with $\delta$-height.
+
+      \option[gauss] %
+      An infinite plane with a Gaussian distributed height profile.
+
+      \option[exp] %
+      An infinite plane with an exponentially distributed height
+      profile.
+
+    \end{fdfoptions}
+
+
+    \option[Bounded plane] %
+    \index{Gate!bounded plane}%
+
+    Define a geometric plane which is bounded, i.e. not infinite.
+
+    This geometry is defined by an origo of the bounded plane and two
+    vectors which span the plane, both originating in the respective
+    origo.
+
+    This geometry has 3 different settings:
+    \begin{fdfoptions}
+
+      \option[delta] %
+      A plane with $\delta$-height.
+
+      \option[gauss] %
+      A plane with a Gaussian distributed height profile.
+
+      \option[exp] %
+      A plane with an exponentially distributed height profile.
+
+    \end{fdfoptions}
+
+
+    \option[Box]%
+    \index{Gate!box}%
+
+    This geometry is defined by an origo of the box and three vectors
+    which span the box, all originating from the respective origo.
+
+    This geometry has 1 setting:
+    \begin{fdfoptions}
+      \option[delta] %
+      No decay-region outside the box.
+      
+    \end{fdfoptions}
+
+
+    \option[Spheres]%
+    \index{Gate!spheres}%
+    
+    This geometry is defined by a list of spheres and a common radii.
+    
+    This geometry has 2 settings:
+    \begin{fdfoptions}
+      
+      \option[gauss] %
+      All spheres have an gaussian distribution about their centre.
+      
+      \option[exp] %
+      All spheres have an exponential decay.
+      
+    \end{fdfoptions}
+    
+  \end{fdfoptions}
+
+  Here is a list of all options combined in one block:
+  \begin{fdfexample}
+%block Geometry.Hartree
+ plane   1. eV       # The lifting potential on the geometry
+   delta
+    1.0 1.0 1.0 Ang  # An intersection point, in the plane
+    1.0 0.5 0.2      # The normal vector to the plane
+ plane  -1. eV       # The lifting potential on the geometry
+   gauss 1. 2.  Ang  # the std. and the cut-off length
+    1.0 1.0 1.0 Ang  # An intersection point, in the plane
+    1.0 0.5 0.2      # The normal vector to the plane
+ plane   1. eV       # The lifting potential on the geometry
+   exp 1. 2. Ang     # the half-length and the cut-off length
+    1.0 1.0 1.0 Ang  # An intersection point, in the plane
+    1.0 0.5 0.2      # The normal vector to the plane
+ square  1. eV       # The lifting potential on the geometry
+   delta
+    1.0 1.0 1.0 Ang  # The starting point of the square
+    2.0 0.5 0.2 Ang  # The first spanning vector
+    0.0 2.5 0.2 Ang  # The second spanning vector
+ square  1. eV       # The lifting potential on the geometry
+   gauss 1. 2. Ang   # the std. and the cut-off length
+    1.0 1.0 1.0 Ang  # The starting point of the square
+    2.0 0.5 0.2 Ang  # The first spanning vector
+    0.0 2.5 0.2 Ang  # The second spanning vector
+ square  1. eV       # The lifting potential on the geometry
+   exp 1. 2. Ang     # the half-length and the cut-off length
+    1.0 1.0 1.0 Ang  # The starting point of the square
+    2.0 0.5 0.2 Ang  # The first spanning vector
+    0.0 2.5 0.2 Ang  # The second spanning vector
+ box  1. eV          # The lifting potential on the geometry
+   delta
+    1.0 1.0 1.0 Ang  # Origo of the box
+    2.0 0.5 0.2 Ang  # The first spanning vector
+    0.0 2.5 0.2 Ang  # The second spanning vector
+    0.0 0.5 3.2 Ang  # The third spanning vector
+ coords 1. eV        # The lifting potential on the geometry
+    gauss 2. 4. Ang  # First is std. deviation, second is cut-off radii
+       2 spheres     # How many spheres in the following lines
+       0.0 4. 2. Ang # The centre coordinate of 1. sphere
+       1.3 4. 2. Ang # The centre coordinate of 2. sphere
+ coords 1. eV        # The lifting potential on the geometry
+    exp 2. 4. Ang    # First is half-length, second is cut-off radii
+       2 spheres     # How many spheres in the following lines
+       0.0 4. 2. Ang # The centre coordinate of 1. sphere
+       1.3 4. 2. Ang # The centre coordinate of 2. sphere
+%endblock Geometry.Hartree
+     \end{fdfexample}
+     
+\end{fdfentry}
+
+\begin{fdfentry}{Geometry!Charge}[block]%
+  \index{SCF!Doping}%
+  \index{Doping}%
+  \index{Charge of the system}%
+
+  This is similar to the \fdf{Geometry!Hartree} block. However,
+  instead of specifying a potential, one defines the total charge that
+  is spread on the geometry. 
+
+  To see how the input should be formatted, see
+  \fdf{Geometry!Hartree} and remove the unit-specification. Note that
+  the input value is number of electrons (similar to \fdf{NetDoping}).
+  
+\end{fdfentry}
 
 
 \vspace{5pt}
