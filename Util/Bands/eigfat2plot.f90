@@ -6,17 +6,17 @@
 ! See Docs/Contributors.txt for a list of contributors.
 !
 
-      program eigfat2plot
+program eigfat2plot
 
-        use m_getopts
-        use f2kcli
+  use m_getopts
+  use f2kcli
 
-      implicit none
+  implicit none
 
-      integer           nk, nspin, nband, ik, is, ib
-      real              ::  kl, delta(3)
-      real, allocatable ::  k(:), pk(:,:)
-      real, allocatable ::  fat(:,:,:), eig(:,:,:)
+  integer           nk, nspin, nband, ik, is, ib
+  real              ::  kl, delta(3)
+  real, allocatable ::  k(:), pk(:,:)
+  real, allocatable ::  fat(:,:,:), eig(:,:,:)
 
 
   integer  :: min_band = 1
@@ -47,7 +47,7 @@
         read(opt_arg,*) max_band
         max_band_set = .true.
      case ('h')
-      !        call manual()
+        !        call manual()
      case ('?',':')
         write(0,*) "Invalid option: ", opt_arg(1:1)
         write(0,*) "Usage: eigfat2plot [ -b -B ] <EIGFAT file>"
@@ -69,65 +69,65 @@
      STOP "Cannot get EIGFAT file"
   endif
 
-        open(fat_u,file=trim(fatfile), status='old',action="read",position="rewind")
-        read(fat_u,"(a132)") string_id
-        read(fat_u,*) nband, nspin, nk
+  open(fat_u,file=trim(fatfile), status='old',action="read",position="rewind")
+  read(fat_u,"(a132)") string_id
+  read(fat_u,*) nband, nspin, nk
 
-        print *, "# " // trim(string_id)
-        print *, "# nband, nspin, nk:", nband, nspin, nk
+  print *, "# " // trim(string_id)
+  print *, "# nband, nspin, nk:", nband, nspin, nk
 
-     if (.not. max_band_set) max_band = nband
+  if (.not. max_band_set) max_band = nband
 
-     if (min_band_set .and. (min_band < 1)) then
-        print "(a)", " ** Min_band implicitly reset to 1..."
-        min_band = 1
+  if (min_band_set .and. (min_band < 1)) then
+     print "(a)", " ** Min_band implicitly reset to 1..."
+     min_band = 1
+  endif
+  if (min_band_set .and. (min_band > nband)) then
+     print "(a,2i5)", " ** Min_band is too large for some k-points: (min_band, nband):", min_band, nband
+     STOP
+  endif
+  if (max_band_set .and. (max_band > nband)) then
+     print "(a,2i5)", " ** Max_band is too large for some k-points: (max_band, nband):", max_band, nband
+     print "(a)", " ** Max_band will be effectively reset to its maximum allowed value"
+     max_band = nband
+  endif
+  if (max_band_set .and. (max_band < max(1,min_band))) then
+     print "(a,2i5)", " ** Max_band is less than the effective min_band: (max_band, eff min_band):", max_band, max(1,min_band)
+     STOP
+  endif
+
+
+  print *, "# min_band, max_band: ", min_band, max_band
+
+  allocate(k(nk),pk(3,0:nk))
+  allocate(fat(nband,nspin,nk),eig(nband,nspin,nk))
+
+  kl = 0.0
+  do ik = 1, nk
+     read(fat_u,*) ika, pk(1:3,ika)
+     if (ik == 1) then
+        pk(1:3,0) = pk(1:3,1)
      endif
-     if (min_band_set .and. (min_band > nband)) then
-        print "(a,2i5)", " ** Min_band is too large for some k-points: (min_band, nband):", min_band, nband
-        STOP
-     endif
-     if (max_band_set .and. (max_band > nband)) then
-        print "(a,2i5)", " ** Max_band is too large for some k-points: (max_band, nband):", max_band, nband
-        print "(a)", " ** Max_band will be effectively reset to its maximum allowed value"
-        max_band = nband
-     endif
-     if (max_band_set .and. (max_band < max(1,min_band))) then
-        print "(a,2i5)", " ** Max_band is less than the effective min_band: (max_band, eff min_band):", max_band, max(1,min_band)
-        STOP
-     endif
+     delta(1:3) = pk(1:3,ika) - pk(1:3,ika-1)
+     kl = kl + sqrt(dot_product(delta,delta))
+     k(ik) = kl
+     do is = 1, nspin
+        read(fat_u,*) (eig(ib,is,ik),fat(ib,is,ik), ib = 1, nband)
+     enddo
+  enddo
+  close(fat_u)
 
 
-      print *, "# min_band, max_band: ", min_band, max_band
-
-        allocate(k(nk),pk(3,0:nk))
-        allocate(fat(nband,nspin,nk),eig(nband,nspin,nk))
-
-        kl = 0.0
-        do ik = 1, nk
-           read(fat_u,*) ika, pk(1:3,ika)
-           if (ik == 1) then
-              pk(1:3,0) = pk(1:3,1)
-           endif
-           delta(1:3) = pk(1:3,ika) - pk(1:3,ika-1)
-           kl = kl + sqrt(dot_product(delta,delta))
-           k(ik) = kl
-           do is = 1, nspin
-              read(fat_u,*) (eig(ib,is,ik),fat(ib,is,ik), ib = 1, nband)
-           enddo
+  do is = 1, nspin
+     do ib = min_band, max_band
+        do ik = 1 , nk
+           ! write spin variable to differentiate
+           write(6,"(3f14.6,i3)") k(ik), eig(ib,is,ik), fat(ib,is,ik), is
         enddo
-        close(fat_u)
+        write(6,"(/)")
+     enddo
+  enddo
 
-      
-      do is = 1, nspin
-         do ib = min_band, max_band
-            do ik = 1 , nk
-               ! write spin variable to differentiate
-               write(6,"(3f14.6,i3)") k(ik), eig(ib,is,ik), fat(ib,is,ik), is
-            enddo
-            write(6,"(/)")
-         enddo
-      enddo
+  deallocate(eig,fat,pk,k)
 
-      deallocate(eig,fat,pk,k)
-
-    end program eigfat2plot
+end program eigfat2plot
