@@ -872,7 +872,7 @@ contains
     integer, intent(in) :: sidx
     integer, intent(in), optional :: hidx
 
-    real(dp), pointer, contiguous :: d1(:)
+    real(dp), pointer :: d1(:)
 
     type(dData1D), pointer :: dD1
     
@@ -1023,7 +1023,7 @@ contains
     integer, intent(out) :: info
 
     type(tMixer), pointer :: next
-    real(dp), pointer, contiguous :: tmp1(:), tmp2(:)
+    real(dp), pointer :: tmp1(:), tmp2(:)
     real(dp) :: alpha
     integer :: nh, ns
     integer :: i
@@ -1137,8 +1137,8 @@ contains
     integer, intent(in), optional :: ncoeff
 
     ! Temporary arrays for local data structures
-    real(dp), pointer, contiguous :: res(:), rres(:), oF(:)
-    real(dp), pointer, contiguous :: rres1(:), rres2(:)
+    real(dp), pointer :: res(:), rres(:), oF(:)
+    real(dp), pointer :: rres1(:), rres2(:)
 
     integer :: nh, ns, ncoef
     integer :: i, j
@@ -1545,8 +1545,8 @@ contains
     integer, intent(in), optional :: ncoeff
 
     ! Temporary arrays for local data structures
-    real(dp), pointer, contiguous :: rres(:), rres1(:)
-    real(dp), pointer, contiguous :: tmp1(:), tmp2(:), Jres(:)
+    real(dp), pointer :: rres(:), rres1(:)
+    real(dp), pointer :: tmp1(:), tmp2(:), Jres(:)
 
     integer :: is, ns, nm, ncoef
     integer :: i, j, k, l, in
@@ -2357,7 +2357,7 @@ contains
     real(dp), intent(in), optional :: fact
 
     type(dData1D) :: dD1
-    real(dp), pointer, contiguous :: sF(:)
+    real(dp), pointer :: sF(:)
     integer :: in, ns
     integer :: i
 
@@ -2405,7 +2405,7 @@ contains
     real(dp), intent(in) :: F(n)
 
     type(dData1D), pointer :: dD1
-    real(dp), pointer, contiguous :: FF(:)
+    real(dp), pointer :: FF(:)
     integer :: in
 
     if ( .not. stack_check(s_F,n) ) then
@@ -2439,7 +2439,7 @@ contains
 
     type(dData1D) :: dD1
     type(dData1D), pointer :: pD1
-    real(dp), pointer, contiguous :: res1(:), res2(:), rres(:)
+    real(dp), pointer :: res1(:), res2(:), rres(:)
     integer :: in, ns, i, n
 
     if ( n_items(s_res) < 2 ) then

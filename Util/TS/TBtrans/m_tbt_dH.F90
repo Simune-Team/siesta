@@ -66,6 +66,10 @@ module m_tbt_dH
      ! Designator of the current level of the 
      ! quantities in the dH designator
      integer :: lvl = -1
+
+     !> The spin component that should be read in
+     integer :: ispin = 1
+     
      ! As this is a reciprocal cell, k-point,
      ! we initialize it immediately
      ! This should, for level 2 calculations 
@@ -418,6 +422,7 @@ contains
 #endif
 
     ! Check if level 1 exists
+    exists = .false.
     call ncdf_inq_grp(ndH,'LEVEL-1',exist = exists)
     if ( exists ) then
        
@@ -473,12 +478,12 @@ contains
        return
     end if
     
-    write(*,f10)'User selected dH file: ', trim(fname_dH)
-    write(*,f1) 'Reading in parallel  : ', cdf_r_parallel
+    write(*,f10)'User selected dH file', trim(fname_dH)
+    write(*,f1) 'Reading in parallel', cdf_r_parallel
     if ( insert_algo == 0 ) then
-       write(*,f10)'Inner loop algorithm : ', 'sparse'
+       write(*,f10)'Inner loop algorithm', 'sparse'
     else if ( insert_algo == 1 ) then
-       write(*,f10)'Inner loop algorithm : ', 'region'
+       write(*,f10)'Inner loop algorithm', 'region'
     end if
 
     if ( .not. cdf_r_parallel .and. n_E3+n_k4+n_E4 > 0 ) then
@@ -548,6 +553,8 @@ contains
     has_level(2) = n_k4 > 0
 
     do i = 1 , 4
+       if ( .not. has_level(i) ) cycle
+       
        write(igrp,'(a,i0)') 'LEVEL-',i
 
        call ncdf_open_grp(ndH,igrp,grp)
@@ -732,7 +739,7 @@ contains
       type(OrbitalDistribution) :: fdist
       
       integer :: nnz, oE
-      integer :: start(3)
+      integer :: start(4)
 
 #ifdef MPI
       ! We must figure out which level each node
@@ -783,14 +790,15 @@ contains
       end if
       
       start(:)    =  1
+      start(2)    =  dH%ispin
       if ( lvl == 1 ) then
       else if ( lvl == 2 ) then
-         start(2) = ik
-      else if ( lvl == 3 ) then
-         start(2) = iE
-      else if ( lvl == 4 ) then
-         start(2) = iE
          start(3) = ik
+      else if ( lvl == 3 ) then
+         start(3) = iE
+      else if ( lvl == 4 ) then
+         start(3) = iE
+         start(4) = ik
       end if
          
 #ifdef MPI
@@ -818,7 +826,7 @@ contains
             ! Retrieve the energy point (the k-point IS the same)
             call MPI_Recv(oE,1,MPI_Integer, iN, iN, &
                  MPI_Comm_World, status, MPIerror)
-            start(2) = oE
+            start(3) = oE
             if ( is_real ) then
                call ncdf_get_var(grp,'dH',rH, start = start )
                call MPI_Send(rH,nnz,MPI_Double_Precision, iN, iN, &
@@ -830,7 +838,7 @@ contains
             end if
          end do
          ! Get back the original starting place
-         start(2) = iE
+         start(3) = iE
       else
          call MPI_Send(iE,1,MPI_Integer, 0, Node, &
               MPI_Comm_World, MPIerror)
@@ -914,7 +922,7 @@ contains
     use class_Sparsity
     use m_region
 
-    use intrinsic_missing, only : SFIND
+    use intrinsic_missing, only : SFIND, MODP
 
     type(zSpData1D), intent(inout) :: zdH
     type(zTriMat), intent(inout) :: GFinv_tri
@@ -924,12 +932,13 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: dH(:), GFinv(:)
 
-    integer :: idx, iu, ju, ind, jo
+    integer :: idx, iu, ju, ind, jo, no
 
     sp => spar(zdH)
     dH => val(zdH)
 
-    call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
+    call attach(sp, nrows_g=no, &
+         n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     Gfinv => val(Gfinv_tri)
 
@@ -942,8 +951,10 @@ contains
 
           ! Loop on entries here...
           do ind = l_ptr(jo) + 1 , l_ptr(jo) + l_ncol(jo)
-             iu = rgn_pivot(r,l_col(ind))
-             
+             iu = rgn_pivot(r,modp(l_col(ind),no))
+             ! Check whether this element should be added
+             if ( iu == 0 ) cycle
+
              idx = index(Gfinv_tri,ju,iu)
           
              GFinv(idx) = GFinv(idx) - dH(ind)

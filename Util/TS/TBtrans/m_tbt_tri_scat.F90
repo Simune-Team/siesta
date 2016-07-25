@@ -74,8 +74,8 @@ contains
     complex(dp), intent(inout), target :: work(nwork)
 
     type(Sparsity), pointer :: sp
-    complex(dp), pointer, contiguous :: S(:), Gf(:), Mnn(:), XY(:)
-    integer, pointer, contiguous :: ncol(:), l_ptr(:), l_col(:), lcol(:)
+    complex(dp), pointer :: S(:), Gf(:), Mnn(:), XY(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np
 
@@ -195,8 +195,8 @@ contains
     complex(dp), intent(inout), target :: work(nwork)
 
     type(Sparsity), pointer :: sp
-    complex(dp), pointer, contiguous :: S(:), Gf(:), Mnn(:), XY(:)
-    integer, pointer, contiguous :: ncol(:), l_ptr(:), l_col(:)
+    complex(dp), pointer :: S(:), Gf(:), Mnn(:), XY(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np, iD
 
@@ -384,8 +384,8 @@ contains
     real(dp), intent(out) :: DOS(r%n)
 
     type(Sparsity), pointer :: sp
-    complex(dp), pointer, contiguous :: S(:), A(:)
-    integer, pointer, contiguous :: ncol(:), l_ptr(:), l_col(:), lcol(:)
+    complex(dp), pointer :: S(:), A(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np
 
@@ -478,8 +478,8 @@ contains
     integer :: i_Elec, ii, isN, in, A_i
     integer :: j_Elec, jj, jsN, jn, A_j
     integer :: o
-    integer, pointer, contiguous :: crows(:)
-    complex(dp), pointer, contiguous :: A(:)
+    integer, pointer :: crows(:)
+    complex(dp), pointer :: A(:)
 
     ! External BLAS routine
     complex(dp), external :: zdotu
@@ -583,8 +583,8 @@ contains
     integer :: no
     integer :: i_Elec, ii, isN, in, A_i
     integer :: j_Elec, jj, jsN, jn, A_j
-    integer, pointer, contiguous :: crows(:)
-    complex(dp), pointer, contiguous :: A(:)
+    integer, pointer :: crows(:)
+    complex(dp), pointer :: A(:)
     complex(dp) :: z
     
 #ifdef TBTRANS_TIMING
@@ -745,12 +745,12 @@ contains
     type(Elec), intent(inout) :: El
     real(dp), intent(out) :: T
 
-    complex(dp), pointer, contiguous :: Gf(:)
-    complex(dp), pointer, contiguous :: z(:)
+    complex(dp), pointer :: Gf(:)
+    complex(dp), pointer :: z(:)
 
     integer :: no, np
     integer :: i, ii, i_Elec
-    integer, pointer, contiguous :: crows(:)
+    integer, pointer :: crows(:)
 
     integer :: sN, n, nb
     ! BLAS routines
@@ -843,11 +843,11 @@ contains
     integer, intent(in) :: nzwork
     complex(dp), intent(out) :: zwork(nzwork)
 
-    complex(dp), pointer, contiguous :: z(:)
+    complex(dp), pointer :: z(:)
 
     integer :: no, np
     integer :: i, ii, i_Elec
-    integer, pointer, contiguous :: crows(:)
+    integer, pointer :: crows(:)
     integer :: sN, n
     integer :: nb
     ! BLAS routines
@@ -1056,14 +1056,14 @@ contains
     type(tRgn), intent(in) :: pvt
 
     type(Sparsity), pointer :: i_sp
-    integer, pointer, contiguous :: i_ncol(:), i_ptr(:), i_col(:)
+    integer, pointer :: i_ncol(:), i_ptr(:), i_col(:)
     type(Sparsity), pointer :: sp
-    integer, pointer, contiguous :: l_ncol(:), l_ptr(:), l_col(:), lcol(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), lcol(:)
 
-    complex(dp), pointer, contiguous :: H(:), S(:)
-    complex(dp), pointer, contiguous :: A(:)
+    complex(dp), pointer :: H(:), S(:)
+    complex(dp), pointer :: A(:)
     complex(dp) :: Hi
-    real(dp), pointer, contiguous :: J(:)
+    real(dp), pointer :: J(:)
     real(dp) :: E
     integer :: iu, io, i, ind, iind, ju, jo
 
