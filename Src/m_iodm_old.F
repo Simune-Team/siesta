@@ -730,9 +730,10 @@ C     Write density matrix
       maxnh = size(M,dim=1)
       nspin = size(M,dim=2)
 
-      if (fdf_get("Use.Blocked.WriteMat",.true.)) then
+      if (fdf_get("Use.Blocked.WriteMat",.false.)) then
          call write_mat (maxnh, no_l, nspin,
-     $     numh, listhptr, listh, M, userfile=file,compatible=.false.)
+     $     numh, listhptr, listh, M, userfile=trim(file)//'.blocked',
+     $                               compatible=.false.)
       else
          call write_dm (maxnh, no_l, nspin,
      $     numh, listhptr, listh, M, userfile=file)
@@ -761,9 +762,10 @@ C     Write density matrix
       no_l = size(numh)
       maxnh = size(M,dim=1)
 
-      if (fdf_get("Use.Blocked.WriteMat",.true.)) then
+      if (fdf_get("Use.Blocked.WriteMat",.false.)) then
          call write_mat (maxnh, no_l, nspin,
-     $     numh, listhptr, listh, M, userfile=file,compatible=.false.)
+     $     numh, listhptr, listh, M, userfile=trim(file)//'.blocked',
+     $                               compatible=.false.)
       else
          call write_dm (maxnh, no_l, nspin,
      $     numh, listhptr, listh, M, userfile=file)

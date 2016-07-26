@@ -3925,20 +3925,51 @@ at every scf step can have a severe impact on performance.
 The sparse-matrix I/O is undergoing a re-design, to facilitate the
 analysis of data and to increase the efficiency. 
 
-self-consistent-field cycle, the DM file is written after mixing the
-input and output density matrices. After the cycle finishes, the file
-is overwritten with the last output DM computed. 
-
 \begin{itemize}  
-\item Save Hamiltonian and/or DM with proper filenames, depending on
-  their status at the time of writing:
+
+\item By using blocks of orbitals (according to the underlying default
+block-cyclic distribution), the sparse-matrix I/O can be speeded-up
+significantly, both by saving MPI communication and by reducing the
+number of file accesses. This is essential for large systems, for
+which the I/O could take a significant fraction of the total
+computation time.
+  
+To enable this``blocked format'' (recommended for large-scale
+calculations) use the option {\bf Use.Blocked.WriteMat T}. Note that
+it is off by default.
+  
+The new format is not backwards compatible. A converter program
+({\tt Util/DensityMatrix/dmUnblock.F90}) has been written to post-process
+those files intended for further analysis or re-use in Siesta. This is
+the best option for now, since it allows liberal checkpointing with a
+much smaller time consumption, and only incurs costs when re-using or
+analyzing files.
+  
+Note that TranSiesta will continue to produce .DM files, in the old
+format (See save\_density\_matrix.F)
+
+( To test the new features, the option {\bf S.Only T} can be used. It
+will produce three files: a standard one, another one with optimized
+MPI communications, and a third, blocked one.  )
+
+\item The Hamiltonian and/or the DM are saved with different file
+  names, depending on their status at the time of writing:
 
 \begin{verbatim}  
-  DM_MIXED: Useful for checkpointing
-  DM_OUT:   Latest DM computed
+  If the ``blocked format'' is in effect:
+
+    DM_MIXED.blocked: Useful for checkpointing
+    DM_OUT.blocked:   Latest DM computed
+  
+  otherwise a single SystemLabel.DM file is produced.
   
   H_MIXED:  Useful for checkpointing
-  H_DMGEN:  The H from which the latest electronic structure was computed
+  H_DMGEN:  The H from which the latest electronic structure was
+            computed
+
+  (if using the ``blocked format'' option, the above files have
+   the suffix .blocked)
+
 \end{verbatim}  
   
 The ``mixed'' files are produced only in the appropriate runs (MixDM
@@ -3955,36 +3986,12 @@ by default.
 For later analysis, {\bf WriteDM.end.of.cycle} and
 {\bf WriteH.end.of.cycle} will write DM and/or H at the end of the scf
 cycle. In this case, the objects written depends on the setting of the
-variable {\bf SCF.MixAfterConvergence}, which is {\tt .true.} by
-default for backwards compatibility. The details can be seen in the
+variable {\bf SCF.MixAfterConvergence}, which is {\tt .false.} by
+default. The details can be seen in the
 code (in file {\tt siesta\_forces.F}. By default, they are ``on'' or
 ``off'' depending on the settings of  {\bf WriteDM} and  {\bf WriteH},
 respectively.
 
-\item By using blocks of orbitals (according to the underlying default
-block-cyclic distribution), the sparse-matrix I/O can be speeded-up
-significantly, both by saving MPI communication and by reducing the
-number of file accesses. This is essential for large systems, for
-which the I/O could take a significant fraction of the total
-computation time.
-  
-The newly re-organized DM and H information is now written to file in
-``blocked format'' by default, unless the option {\bf Use.Blocked.WriteMat F}
-is used.
-  
-The new format is not backwards compatible. A converter program
-({\tt Util/DensityMatrix/dmUnblock.F90}) has been written to post-process
-those files intended for further analysis or re-use in Siesta. This is
-the best option for now, since it allows liberal checkpointing with a
-much smaller time consumption, and only incurs costs when re-using or
-analyzing files.
-  
-Note that TranSiesta will continue to produce .DM files, in the old
-format (See save\_density\_matrix.F)
-
-( To test the new features, the option {\bf S.Only T} can be used. It
-will produce three files: a standard one, another one with optimized
-MPI communications, and a third, blocked one.  )
 \end{itemize}
 
 The following options control the creation of netCDF files. The

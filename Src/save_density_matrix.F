@@ -74,10 +74,6 @@
          do_it = writedm
       endif
 
-#ifdef DEBUG
-      call write_debug( '    PRE save_density_matrix' )
-#endif
-
 #ifdef CDF
 !     Save density matrix on disk, after mixing, to
 !     be used for re-starting the SCF cycle.
@@ -111,13 +107,15 @@
      $        .and. (istp .ne. 1)                      ) then
             ! do not write
         else
-          if (fdf_get("Use.Blocked.WriteMat",.true.)) then
+          if (fdf_get("Use.Blocked.WriteMat",.false.)) then
              call write_mat (maxnh, no_l, h_spin_dim,
      &               numh, listhptr, listh, Dscf,
-     $               userfile=file,compatible=.false.)
+     $               userfile=trim(file)//'.blocked',compatible=.false.)
           else
-             call write_dm(trim(slabel)//
-     $                     '.'//trim(file), h_spin_dim, DM_2D)
+             ! The filename falls back to the standard one     
+             !
+             call write_dm(trim(slabel)//'.DM',
+     $                     h_spin_dim, DM_2D)
 	  endif
         end if
 #ifdef TIMING_IO
@@ -172,10 +170,6 @@
       end if ! writedm
 #endif /* TRANSIESTA */
 
-#ifdef DEBUG
-      call write_debug( '    POS save_density_matrix' )
-#endif
-      
       end subroutine save_density_matrix
 
       end module m_save_density_matrix
