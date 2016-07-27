@@ -115,7 +115,7 @@ contains
           g = fdf_bnames(pline,1)
           if ( leqi(g,'atom') .or. leqi(g,'position') ) then
 
-             call fdf_brange(pline,r_tmp,1,na_u)
+             call fdf_brange(pline,r_tmp, 1, na_u)
              if ( r_aBuf%n == 0 ) then
                 call rgn_copy(r_tmp,r_aBuf)
              else if ( r_tmp%n > 0 ) then

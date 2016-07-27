@@ -446,7 +446,7 @@ contains
           il = ic
           
           ! We can read in a range
-          call fdf_brange(pline,r1,1,na_u)
+          call fdf_brange(pline,r1, 1, na_u)
           if ( r1%n == 0 ) &
                call die('Could not read in anything in k-regions')
           call rgn_union(r_k(il)%atm,r1,r_k(il)%atm)
@@ -454,7 +454,7 @@ contains
           
        else
           
-          call fdf_brange(pline,r1,1,na_u)
+          call fdf_brange(pline,r1, 1, na_u)
           if ( r1%n == 0 ) &
                call die('Could not read in anything in k-regions')
           call rgn_union(r_k(ic)%atm,r1,r_k(ic)%atm)
