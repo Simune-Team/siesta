@@ -410,8 +410,10 @@
 !     Note that this call will no longer overwrite H while computing the
 !     final energies, forces and stresses...
 
-      call post_scf_work( istep, iscf , SCFconverged )
-      if (ionode) call memory_snapshot("after post_scf_work")
+      if (fdf_get("compute-forces",.true.)) then
+         call post_scf_work( istep, iscf , SCFconverged )
+         if (ionode) call memory_snapshot("after post_scf_work")
+      endif
 
 !     ... so H at this point is the latest generator of the DM, except
 !     if mixing H beyond self-consistency or terminating the scf loop

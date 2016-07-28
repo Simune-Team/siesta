@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+July 28, 2016       A. Garcia   trunk-531--pexsi-v0.8-spin-9
+Add flag to turn off calculation of forces
+
+With the fdf setting 'compute-forces F' the program will skip the call
+to 'post_scf_work' in 'siesta_forces'. This is for debugging purposes
+only.
+
+modified:
+  Src/siesta_forces.F
+  
+------------------------------------------------------------
 July 26, 2016       A. Garcia   trunk-531--pexsi-v0.8-spin-8
 Clarify the options and filenames to output H and DM
 
