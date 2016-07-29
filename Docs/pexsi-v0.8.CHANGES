@@ -1,4 +1,13 @@
 ------------------------------------------------------------
+July 29, 2016       A. Garcia  trunk-537--pexsi-v0.8-spin-10
+Remove old pexsi code
+
+removed:
+  Src/OldPEXSI/
+  Src/dummy_pexsi/
+  Src/m_pexsi_solver.F90_old
+
+------------------------------------------------------------
 July 29, 2016       A. Garcia   trunk-537--pexsi-v0.8-spin-9
 Sync to trunk-537 (removal of fdf_global_get + fixes)
 
