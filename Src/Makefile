@@ -337,7 +337,7 @@ endif
 
 # This library can be found at:
 #  https://github.com/zerothi/fdict
-FDICT=libvardict.a
+FDICT=libfdict.a
 $(FDICT): 
 	(cd fdict ; $(MAKE) -j 1 "VPATH=$(VPATH)/fdict" \
 	            "FC=$(FC_SERIAL)" \
