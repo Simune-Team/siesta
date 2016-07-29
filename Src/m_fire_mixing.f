@@ -10,8 +10,7 @@
       use precision, only: dp
 
       use m_fire_para
-      use fdf
-      use m_fdf_global, only: fdf_global_get
+      use fdf, only: fdf_get
       use alloc,     only: re_alloc, de_alloc
 
       use parallel, only: ionode
@@ -80,41 +79,37 @@ C                              input and output
 
       real(dp) :: global_dnorm, global_dmax,  dnorm, diff
 
-       numel = nspin * sum(numd(1:nbasis))
-       call Globalize_sum(numel,global_numel)
+      numel = nspin * sum(numd(1:nbasis))
+      call Globalize_sum(numel,global_numel)
 
-       if (.not. initialization_done) then
+      if (.not. initialization_done) then
 
-          fire_dt = alpha   ! Fix this, unless the user disagrees
+         fire_dt = alpha        ! Fix this, unless the user disagrees
 
-             call fdf_global_get(fire_mass,"DM.FIRE.Mass",1.0_dp)
-             call fdf_global_get(fire_dt_inc,"DM.FIRE.TimeInc",
-     $            FIRE_DEF_dt_inc)
-             call fdf_global_get(fire_dt_dec,"DM.FIRE.TimeDec",
-     $            FIRE_DEF_dt_dec)
-             call fdf_global_get(fire_nmin,"DM.FIRE.Nmin",FIRE_DEF_nmin)
-             call fdf_global_get(fire_alphamax,"DM.FIRE.AlphaMax",
-     $            FIRE_DEF_alphamax)
-             call fdf_global_get(fire_alpha_factor,
-     $            "DM.FIRE.AlphaFactor", FIRE_DEF_alpha_factor)
-             call fdf_global_get(fire_dtmax,"DM.FIRE.MaxTimeStep",
-     $            FIRE_DEF_dtmax)
-             call fdf_global_get(fire_debug,"DM.FIRE.Debug",.true.)
+         fire_mass = fdf_get("DM.FIRE.Mass", 1.0_dp)
+         fire_dt_inc = fdf_get("DM.FIRE.TimeInc", FIRE_DEF_dt_inc)
+         fire_dt_dec = fdf_get("DM.FIRE.TimeDec", FIRE_DEF_dt_dec)
+         fire_nmin = fdf_get("DM.FIRE.Nmin", FIRE_DEF_nmin)
+         fire_alphamax = fdf_get("DM.FIRE.AlphaMax", FIRE_DEF_alphamax)
+         fire_alpha_factor = fdf_get("DM.FIRE.AlphaFactor",
+     &        FIRE_DEF_alpha_factor)
+         fire_dtmax = fdf_get("DM.FIRE.MaxTimeStep", FIRE_DEF_dtmax)
+         fire_debug = fdf_get("DM.FIRE.Debug", .true.)
 
-             if (ionode) then
-                print *, "Fire: No of relevant DM elements: ",
-     $               numel, global_numel
-             endif
+         if (ionode) then
+            print *, "Fire: No of relevant DM elements: ",
+     $           numel, global_numel
+         endif
+         
+         call fire_setup(b, n=numel, dt=fire_dt,
+     $        debug=fire_debug,
+     $        dt_inc=fire_dt_inc, dt_dec=fire_dt_dec,
+     $        alphamax=fire_alphamax,
+     $        alpha_factor=fire_alpha_factor,
+     $        nmin=fire_nmin)
 
-             call fire_setup(b, n=numel, dt=fire_dt,
-     $                   debug=fire_debug,
-     $                   dt_inc=fire_dt_inc, dt_dec=fire_dt_dec,
-     $                   alphamax=fire_alphamax,
-     $                   alpha_factor=fire_alpha_factor,
-     $                   nmin=fire_nmin)
-
-             initialization_done = .true.
-
+         initialization_done = .true.
+          
       endif
 
       do_not_mix = (iscf == 1 .and. .not. mix_scf1)
