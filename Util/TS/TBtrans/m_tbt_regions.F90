@@ -174,7 +174,7 @@ contains
 
           ! Actual device atoms...
           if ( leqi(g,'atom') .or. leqi(g,'position') ) then
-             call fdf_brange(pline,r_tmp,1,na_u)
+             call fdf_brange(pline,r_tmp, 1, na_u)
              if ( r_tmp%n == 0 ) &
                   call die('Could not read in any atoms &
                   &in line of TBT.Atoms.Device')
@@ -184,7 +184,7 @@ contains
 
           ! Atoms NOT in the device region...
           if ( leqi(g,'not-atom') .or. leqi(g,'not-position') ) then
-             call fdf_brange(pline,r_tmp,1,na_u)
+             call fdf_brange(pline,r_tmp, 1, na_u)
              if ( r_tmp%n == 0 ) &
                   call die('Could not read in any atoms &
                   &in line of TBT.Atoms.Device')

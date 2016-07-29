@@ -23,9 +23,9 @@ use precision, only: dp
 use precision, only: wp=>broyden_p       ! Precision of work arrays
 
 !use m_mpi_utils, only: Globalize_sum
+use fdf, only: fdf_get
 use parallel, only: ionode
 use alloc, only: re_alloc, de_alloc
-use m_fdf_global, only: fdf_global_get
 
 use sys, only: message, die
 
@@ -355,7 +355,7 @@ logical, intent(in), optional :: debug
    endif
    br%setup = .false.
 
-   call fdf_global_get(do_step_checks, "MD.Broyden.Do.Step.Checks",.false.)
+   do_step_checks = fdf_get("MD.Broyden.Do.Step.Checks", .false.)
 
 end subroutine broyden_init
 

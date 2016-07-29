@@ -971,9 +971,10 @@ contains
       ! Get entire range ( from -na to 2 * na )
       ! we allow both negative and positive wrap-arounds
       ! (limit of one wrap-around)
-      call fdf_brange(pline,r,1,na)
+      call fdf_brange(pline,r, 1, na)
 
-      ! Sort region
+      ! This removes dublicates, then sorts it
+      call rgn_uniq(r)
       call rgn_sort(r)
 
       ! Remove zero
@@ -981,9 +982,6 @@ contains
       if ( i > 0 ) then
          i = rgn_pop(r, idx = i)
       end if
-
-      ! Unique also sorts...
-      call rgn_uniq(r)
 
     end subroutine fix_brange
 

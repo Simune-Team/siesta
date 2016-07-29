@@ -9,8 +9,8 @@ AR         ?= ar
 ARFLAGS    ?= cru
 RANLIB     ?= ranlib
 PP         ?= cpp -E -P -C -nostdinc
-LIBVARDICT_DEFAULT = ../fdict/libvardict.a
-LIBVARDICT ?= $(LIBVARDICT_DEFAULT)
+LIBFDICT_DEFAULT = ../fdict/libfdict.a
+LIBFDICT ?= $(LIBFDICT_DEFAULT)
 
 # The VPATH can be different, however the tree-structure
 # has to be the same in this case.
@@ -36,7 +36,7 @@ LIB = ../src/libncdf.a $(LIB_TST)
 INC += -I../src
 
 # Ensures module are in include path
-ifeq ($(LIBVARDICT),$(LIBVARDICT_DEFAULT))
+ifeq ($(LIBFDICT),$(LIBFDICT_DEFAULT))
 $(OBJS): INC += -I$(VPATH)/../fdict
 all: INC += -I$(VPATH)/../fdict
 endif
@@ -50,23 +50,23 @@ TESTS += tst_ncdf_crt
 all: $(LIB_TST) $(TESTS)
 
 tst_ncdf_3: tst_ncdf_3.o
-	$(FC) -o $@ $(FFLAGS) $^ $(LIB) $(LIBVARDICT) $(LIBS)
+	$(FC) -o $@ $(FFLAGS) $^ $(LIB) $(LIBFDICT) $(LIBS)
 	./$@
 	mpirun -np 2 ./$@
 
 tst_ncdf_4: tst_ncdf_4.o
-	$(FC) -o $@ $(FFLAGS) $^ $(LIB) $(LIBVARDICT) $(LIBS)
+	$(FC) -o $@ $(FFLAGS) $^ $(LIB) $(LIBFDICT) $(LIBS)
 	./$@
 	mpirun -np 2 ./$@
 
 tst_ncdf_att: tst_ncdf_att.o
-	$(FC) -o $@ $(FFLAGS) $^ $(LIB) $(LIBVARDICT) $(LIBS)
+	$(FC) -o $@ $(FFLAGS) $^ $(LIB) $(LIBFDICT) $(LIBS)
 	./$@
 	mpirun -np 2 ./$@
 
 # This should not run in parallel, however, it could be performed.
 tst_ncdf_crt: tst_ncdf_crt.o
-	$(FC) -o $@ $(FFLAGS) $^ $(LIB) $(LIBVARDICT) $(LIBS)
+	$(FC) -o $@ $(FFLAGS) $^ $(LIB) $(LIBFDICT) $(LIBS)
 	./$@
 
 .PHONY: clean

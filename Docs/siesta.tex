@@ -353,6 +353,7 @@ see the flags understood by the script, and take a look at the
 use. 
 
 
+
 \subsection{Parallel}
 
 To achieve a parallel build of \siesta\ one should first determine
@@ -364,6 +365,7 @@ OpenMP.
 
 \subsubsection{MPI}
 \index{External library!MPI}
+\index{compile!MPI}
 
 MPI is a message-passing interface which enables communication between
 equivalently executed binaries. This library will thus duplicate all
@@ -379,6 +381,8 @@ changed accordingly, here is the most basic changes to the
   MPI_INCLUDE = .
   FPPFLAGS += -DMPI
 \end{shellexample}
+\index{compile!pre-processor!-DMPI}
+
 
 Subsequently one may run \siesta\ using the
 \shell{mpirun}/\shell{mpiexec} commands:
@@ -390,6 +394,7 @@ where \shell{<>} is the number of cores used.
 
 \subsubsection{OpenMP}
 \index{External library!OpenMP}
+\index{compile!OpenMP}
 
 OpenMP is shared memory parallelism. It typically does not infer any
 memory overhead and may be used if memory is scarce and the regular
@@ -459,6 +464,7 @@ systems) and MPI$+$OpenMP (large$+$ systems).
 
 \subsection{Library dependencies}
 \label{sec:libs}
+\index{compile!libraries}
 
 \siesta\ makes use of several libraries. Here we list a set of
 libraries and how each of them may be added to the compilation step
@@ -553,9 +559,29 @@ Additionally \siesta\ may be compiled with support for several other
 libraries
 \begin{description}
 
+  \item[fdict] %
+  \index{External library!fdict}%
+  This library is shipped with \siesta\ and its linking may be enabled
+  by 
+  \begin{shellexample}
+    COMP_LIBS += libfdict.a
+  \end{shellexample}
+  This library requires a fully C-compatible pre-processor. The C
+  pre-processor is controlled by the \shell{CPP} variable in
+  \file{arch.make}. 
+  %
+  On MacOS using clang 3.5 one may be required to use the \shell{gcc}
+  compiler for preprocessing:
+  \begin{shellexample}
+    CPP = gcc -E -P -x c
+  \end{shellexample}
+  \index{compile!pre-processor}
+
+
   \item[NetCDF] %
   \index{NetCDF format}%
   \index{External library!NetCDF}%
+  \index{compile!pre-processor!-DCDF}
   It is adviced to compile NetCDF in NetCDF-4 compliant mode (thus
   also linking with HDF5) as this enables more advanced IO. If you
   only link against a NetCDF-3 compliant library you will not get the
@@ -573,22 +599,36 @@ libraries
 
     \item[4]%
     \index{NetCDF format!4}%
-    If the NetCDF-4 compliant library is present one may add this to
-    your \file{arch.make}:
+    If the NetCDF-4 compliant library is present the HDF5 libraries
+    are also required at link time:
 \begin{shellexample}
   LIBS += -L/opt/netcdf/4.4.0/lib -lnetcdff -lnetcdf \
             -lhdf5_fortran -lhdf5 -lz
-  FPPFLAGS += -DCDF -DNCDF -DNCDF_4
-  COMP_LIBS += libvardict.a libncdf.a
 \end{shellexample}
 
+  \end{description}
+
+
+  \item[ncdf] %
+  \index{External library!ncdf}%
+  This library is shipped with \siesta\ and its linking is required to
+  take advantage of the NetCDF-4 library functionalities. To use this
+  library, ensure that you can compile \siesta\ with NetCDF-4
+  support. Then proceed by adding the following to your \file{arch.make}
+  \begin{shellexample}
+    COMP_LIBS += libncdf.a libfdict.a
+    FPPFLAGS += -DNCDF -DNCDF_4
+  \end{shellexample}
+  \index{compile!pre-processor!-DNCDF}
+  \index{compile!pre-processor!-DNCDF\_4}
+
+  
   If the NetCDF-4 library is compiled with parallel support one may
   take advantage of parallel IO by adding this to the \file{arch.make} 
 \begin{shellexample}
   FPPFLAGS += -DNCDF_PARALLEL
 \end{shellexample}
-    
-  \end{description}
+  \index{compile!pre-processor!-DNCDF\_PARALLEL}
 
 
   \item[Metis]%
@@ -601,6 +641,7 @@ libraries
   LIBS += -L/opt/metis/5.1.0/lib -lmetis
   FPPFLAGS += -DSIESTA__METIS
 \end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_METIS}
 
 
   \item[MUMPS]%
@@ -613,6 +654,7 @@ libraries
   LIBS += -L/opt/mumps/5.0.0/lib -lzmumps -lmumps_common <>
   FPPFLAGS += -DSIESTA__MUMPS
 \end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_MUMPS}
   where \shell{<>} are any libraries that MUMPS depend on.
 
   
@@ -5138,7 +5180,6 @@ or Order-N (\texttt{OrderN}) solution of the Kohn-Sham Hamiltonian.
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
-
 \item[\textbf{NumberOfEigenStates}] (\textit{integer}):
 \index{NumberOfEigenStates@\textbf{NumberOfEigenStates}}
 This parameter allows the user to reduce the number of eigenstates
@@ -5154,8 +5195,49 @@ and less than the number of basis functions.
 
 \textit{Default value:} \texttt{all orbitals}
 
-\item[\textbf{Use.New.Diagk}] (\textit{logical}):
-\index{Use.New.Diagk@\textbf{Use.New.Diagk}}
+\item[{\bf Diag.ELPA}] ({\it logical}):
+\index{Diag.ELPA@{\bf Diag.ELPA}}
+
+(For parallel gamma-point calculations without spin orbit only)
+Use the ELPA routines for diagonalization.
+Specifying a number of eigenvectors to store is possible through
+the symbol NumberOfEigenstates (see above).
+
+A description of some algorithms present in ELPA can be found in:
+
+T. Auckenthaler, V. Blum, H.-J. Bungartz, T. Huckle, R. Johanni,
+L. Kr\"amer, B. Lang, H. Lederer, and P. R. Willems,
+``Parallel solution of partial symmetric eigenvalue problems from
+electronic structure calculations'',
+Parallel Computing 37, 783-794 (2011).
+doi:10.1016/j.parco.2011.05.002.
+
+Marek, A.; Blum, V.; Johanni, R.; Havu, V.; Lang, B.; Auckenthaler,
+T.; Heinecke, A.; Bungartz, H.-J.; Lederer, H.
+  ``The ELPA library: scalable parallel eigenvalue solutions for
+electronic
+structure theory and computational science'',
+Journal of Physics Condensed Matter, 26 (2014)
+doi:10.1088/0953-8984/26/21/213201
+
+Note: It is not compatible with the {\tt Diag.Parallel.Over.K} option.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Diag.MRRR}] ({\it logical}):
+\index{Diag.MRRR@{\bf Diag.MRRR}}
+
+(For parallel gamma-point calculations without spin orbit only)
+Use the MRRR method in Scalapack for diagonalization.
+Specifying a number of eigenvectors to store is possible through
+the symbol NumberOfEigenstates (see above).
+
+Note: It is not compatible with the {\tt Diag.Parallel.Over.K} option.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Use.New.Diagk}] ({\it logical}):
+\index{Use.New.Diagk@{\bf Use.New.Diagk}}
 Selects whether a more efficient diagonalization routine (with
 intermediate storage of eigenvectors in netCDF format) is
 used for the case of k-point sampling.
