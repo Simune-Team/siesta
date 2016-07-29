@@ -4543,7 +4543,7 @@ PEXSI method ({\tt PEXSI}).
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
-
+ 
 \item[{\bf NumberOfEigenStates}] ({\it integer}):
 \index{NumberOfEigenStates@{\bf NumberOfEigenStates}}
 This parameter allows the user to reduce the number of eigenstates
@@ -4558,6 +4558,47 @@ The value specified must greater than the number of occupied states
 and less than the number of basis functions.
 
 {\it Default value:} {\tt all orbitals}
+
+\item[{\bf Diag.ELPA}] ({\it logical}):
+\index{Diag.ELPA@{\bf Diag.ELPA}}
+
+(For parallel gamma-point calculations without spin orbit only)
+Use the ELPA routines for diagonalization.
+Specifying a number of eigenvectors to store is possible through
+the symbol NumberOfEigenstates (see above).
+
+A description of some algorithms present in ELPA can be found in:
+
+T. Auckenthaler, V. Blum, H.-J. Bungartz, T. Huckle, R. Johanni,
+L. Kr\"amer, B. Lang, H. Lederer, and P. R. Willems,
+``Parallel solution of partial symmetric eigenvalue problems from
+electronic structure calculations'',
+Parallel Computing 37, 783-794 (2011).
+doi:10.1016/j.parco.2011.05.002.
+
+Marek, A.; Blum, V.; Johanni, R.; Havu, V.; Lang, B.; Auckenthaler,
+T.; Heinecke, A.; Bungartz, H.-J.; Lederer, H.
+  ``The ELPA library: scalable parallel eigenvalue solutions for
+electronic
+structure theory and computational science'',
+Journal of Physics Condensed Matter, 26 (2014)
+doi:10.1088/0953-8984/26/21/213201
+
+Note: It is not compatible with the {\tt Diag.Parallel.Over.K} option.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Diag.MRRR}] ({\it logical}):
+\index{Diag.MRRR@{\bf Diag.MRRR}}
+
+(For parallel gamma-point calculations without spin orbit only)
+Use the MRRR method in Scalapack for diagonalization.
+Specifying a number of eigenvectors to store is possible through
+the symbol NumberOfEigenstates (see above).
+
+Note: It is not compatible with the {\tt Diag.Parallel.Over.K} option.
+
+{\it Default value:} {\tt .false.}
 
 \item[{\bf Use.New.Diagk}] ({\it logical}):
 \index{Use.New.Diagk@{\bf Use.New.Diagk}}
