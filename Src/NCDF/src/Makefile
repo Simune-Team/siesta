@@ -21,8 +21,8 @@ ARFLAGS    ?= cru
 RANLIB     ?= ranlib
 
 
-LIBVARDICT_DEFAULT = ../fdict/libfdict.a
-LIBVARDICT ?= $(LIBVARDICT_DEFAULT)
+LIBFDICT_DEFAULT = ../fdict/libfdict.a
+LIBFDICT ?= $(LIBFDICT_DEFAULT)
 
 .PHONY: default
 default: lib
@@ -33,7 +33,7 @@ OBJS = nf_ncdf.o
 LIB = libncdf.a
 
 # Ensures module are in include path
-ifeq ($(LIBVARDICT),$(LIBVARDICT_DEFAULT))
+ifeq ($(LIBFDICT),$(LIBFDICT_DEFAULT))
 $(OBJS): INC += -I$(VPATH)/../fdict
 endif
 
