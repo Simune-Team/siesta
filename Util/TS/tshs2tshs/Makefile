@@ -71,7 +71,7 @@ OBJS += tshs2tshs.o
 
 # This library can be found at:
 #  https://github.com/zerothi/fdict
-FDICT=libvardict.a
+FDICT=libfdict.a
 FDICT_MAKEFILE=$(VPATH)/fdict/Makefile
 $(FDICT): 
 	-mkdir -p fdict
@@ -92,7 +92,7 @@ $(NCDF): COMP_LIBS += $(FDICT)
 $(NCDF): $(FDICT)
 	-mkdir -p NCDF/src
 	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) \
-		"VPATH=$(VPATH)/NCDF/src" "LIBVARDICT=$(FDICT)" \
+		"VPATH=$(VPATH)/NCDF/src" "LIBFDICT=$(FDICT)" \
 		"DIR_FDICT=$(VPATH)/fdict" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FPPFLAGS=$(FPPFLAGS)" \

@@ -54,9 +54,9 @@ OBJS = $(SIESTA_OBJS) pvtsp.o
 
 pvtsp: FPPFLAGS+=$(DEFS_PREFIX) -UMPI -UNCDF -UNCDF_4 -UNCDF_PARALLEL
 pvtsp: COMP_LIBS := $(filter-out libncdf.a,$(COMP_LIBS))
-pvtsp: COMP_LIBS := $(filter-out libvardict.a,$(COMP_LIBS))
+pvtsp: COMP_LIBS := $(filter-out libfdict.a,$(COMP_LIBS))
 pvtsp: LIBS := $(filter-out libncdf.a,$(LIBS))
-pvtsp: LIBS := $(filter-out libvardict.a,$(LIBS))
+pvtsp: LIBS := $(filter-out libfdict.a,$(LIBS))
 pvtsp: $(OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o pvtsp \
               $(OBJS) $(COMP_LIBS) $(LIBS) || echo "***Please see top of Makefile"

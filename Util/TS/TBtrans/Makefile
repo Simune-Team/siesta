@@ -45,7 +45,7 @@ SYSOBJ=$(SYS).o
 
 SIESTA_OBJS= precision.o sys.o m_io.o alloc.o memoryinfo.o memory.o pxf.o \
              moreParallelSubs.o m_mpi_utils.o \
-             m_fdf_global.o paste.o reclat.o idiag.o minvec.o \
+             paste.o reclat.o idiag.o minvec.o \
              parallel.o io.o files.o cellsubs.o sorting.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o m_spin.o \
              cdiag.o m_diagon_opt.o \
@@ -151,7 +151,7 @@ MPI_MAKEFILE=$(VPATH)/MPI/Makefile
 libmpi_f90.a: 
 	-mkdir -p MPI
 	(cd MPI ; \
-	$(MAKE) -f $(MPI_MAKEFILE) -j 1 "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
+	$(MAKE) -f $(MPI_MAKEFILE) -j 1 "VPATH=$(VPATH)/MPI" \
 	"MAKEFILES=$(MPI_MAKEFILE)" "ARCH_MAKE=../$(ARCH_MAKE)" \
 	"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module_built)
 
@@ -175,7 +175,7 @@ $(FDF): $(MPI_INTERFACE)
 
 # This library can be found at:
 #  https://github.com/zerothi/fdict
-FDICT=libvardict.a
+FDICT=libfdict.a
 FDICT_MAKEFILE=$(VPATH)/fdict/Makefile
 $(FDICT): 
 	-mkdir -p fdict
@@ -195,7 +195,7 @@ NCDF_MAKEFILE=$(VPATH)/NCDF/src/Makefile
 $(NCDF): $(FDICT)
 	-mkdir -p NCDF/src
 	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) -j 1 \
-		"VPATH=$(VPATH)/NCDF/src" "LIBVARDICT=$(FDICT)" \
+		"VPATH=$(VPATH)/NCDF/src" "LIBFDICT=$(FDICT)" \
 		"DIR_FDICT=$(VPATH)/fdict" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FPPFLAGS=$(FPPFLAGS)" \

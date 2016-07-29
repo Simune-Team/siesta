@@ -321,10 +321,10 @@ $(XC): $(FDF)
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 
 # In case the user requests compilation of flook
-# we force the compilation of the libvardict
+# we force the compilation of the libfdict
 ifdef USE_FLOOK
 FPPFLAGS += -DFLOOK
-COMP_LIBS += libvardict.a
+COMP_LIBS += libfdict.a
 endif
 
 #######################
@@ -352,7 +352,7 @@ $(FDICT):
 NCDF=libncdf.a
 $(NCDF): $(FDICT)
 	(cd NCDF ; $(MAKE) -j 1 "VPATH=$(VPATH)/NCDF" \
-		"LIBVARDICT=$(FDICT)" \
+		"LIBFDICT=$(FDICT)" \
 		"DIR_FDICT=$(VPATH)/fdict" \
 		"ARCH_MAKE=$(PWD)/arch.make" \
 		"FPPFLAGS=$(FPPFLAGS)" \
