@@ -1,15 +1,16 @@
 
 ! Tangled code
 module m_pexsi_solver
+
  use precision, only  : dp
 
  implicit none
 
- public :: pexsi_solver
-
  real(dp), save :: prevDmax  ! For communication of max diff in DM in scf loop
                              ! used in the heuristics for N_el tolerance
  public :: prevDmax
+#ifdef PEXSI
+ public :: pexsi_solver
 
 CONTAINS
 
@@ -1229,5 +1230,6 @@ character(len=*), intent(in) :: str
 end subroutine check_info 
 
 end subroutine pexsi_solver
+#endif
 end module m_pexsi_solver
 ! End of tangled code

@@ -15,8 +15,9 @@ factorization information.
 
 ** TODO Maybe integrate the plan handling in the =pexsi_solver= module.
 
-#+BEGIN_SRC f90 :noweb yes :tangle m_pexsi.f90
+#+BEGIN_SRC f90 :noweb yes :tangle m_pexsi.F90
   module m_pexsi
+#ifdef PEXSI
   use precision, only: dp
   use iso_c_binding
 
@@ -32,7 +33,7 @@ factorization information.
     <<initialize-scf-loop>>
     <<finalize-scf-loop>>
     <<get-optimal-row-col>>
-
+#endif
 end module m_pexsi
 
 #+END_SRC
@@ -110,15 +111,16 @@ This is the main structure of the code.
 
 #+begin_src f90 :noweb-ref code-structure
 module m_pexsi_solver
+
  use precision, only  : dp
 
  implicit none
 
- public :: pexsi_solver
-
  real(dp), save :: prevDmax  ! For communication of max diff in DM in scf loop
                              ! used in the heuristics for N_el tolerance
  public :: prevDmax
+#ifdef PEXSI
+ public :: pexsi_solver
 
 CONTAINS
 
@@ -146,6 +148,7 @@ CONTAINS
 <<support-routines>>
 
 end subroutine pexsi_solver
+#endif
 end module m_pexsi_solver
 #+end_src
 

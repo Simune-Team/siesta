@@ -91,9 +91,11 @@ module class_Distribution
     type(Distribution_) :: spdata
     integer :: ierr
 
+#ifdef MPI    
     if (spdata%group /= MPI_GROUP_NULL) then
        call MPI_Group_free(spdata%group,ierr)
     endif
+#endif    
     if (allocated(spdata%ranks_in_ref_comm)) then
        deallocate(spdata%ranks_in_ref_comm)
     endif
@@ -202,8 +204,12 @@ module class_Distribution
        if (Node >= obj%Nodes) then
           nl = 0
        else
+#ifdef MPI          
           nl = numroc(nels,obj%blocksize,Node,  &
                obj%isrcproc,obj%nodes)
+#else
+          nl = nels
+#endif          
        endif
     case (TYPE_PEXSI) 
        remainder = nels - obj%blocksize * obj%nodes
@@ -236,8 +242,12 @@ module class_Distribution
        if (Node >= obj%Nodes) then
           ig = 0
        else
+#ifdef MPI          
           ig = indxl2g(il,obj%blocksize,Node, &
                obj%isrcproc,obj%nodes)
+#else
+          ig = il
+#endif          
        endif
     case (TYPE_PEXSI) 
        if (Node >= obj%Nodes) then
@@ -268,16 +278,24 @@ module class_Distribution
           if (Node >= obj%nodes) then
              il = 0
           else
+#ifdef MPI
              il = indxg2l(ig,obj%blocksize,Node,  &
                   obj%isrcproc,obj%nodes)
+#else
+             il = ig
+#endif             
           endif
        else
           ! Assume that we only want a non-zero value if the orb
           ! is local to this node
           owner = node_handling_element_(this,ig)
           if (owner == obj%node) then
+#ifdef MPI
              il = indxg2l(ig,obj%blocksize,myrank,  &
                   obj%isrcproc,obj%nodes)
+#else
+             il = ig
+#endif             
           else
              il = 0
           endif
@@ -317,9 +335,12 @@ module class_Distribution
 
     select case(obj%dist_type)
     case (TYPE_BLOCK_CYCLIC)
-
+#ifdef MPI
        proc = indxg2p(ig,obj%blocksize,dummy_Node,  &
             obj%isrcproc,obj%nodes)
+#else
+       proc = 0
+#endif       
 
     case (TYPE_PEXSI) 
        ! Assume bs=2, norbs=13, nodes=5

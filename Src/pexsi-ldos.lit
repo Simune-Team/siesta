@@ -10,12 +10,14 @@ Module structure:
 
 #+BEGIN_SRC f90 :noweb-ref  module-structure
   MODULE m_pexsi_local_dos
+#ifdef PEXSI
   private
   public :: pexsi_local_dos
 
   CONTAINS
   <<siesta-side-parent-routine>>
   <<pexsi-ldos-routine>>
+#endif
   end module m_pexsi_local_dos
 #+END_SRC
 
@@ -102,9 +104,6 @@ This is the main structure of the LDOS routine.
 <<routine-header>>
 <<routine-variables>>
 !  --------  for serial compilation
-#ifndef MPI
-    call die("PEXSI LDOS needs MPI")
-#else
 <<define-communicators>>
 <<re-distribute-matrices>>
 <<set-options>>
@@ -114,7 +113,6 @@ This is the main structure of the LDOS routine.
 <<compute-ldos>>
 <<copy-to-siesta-side>>
 <<clean-up>>
-#endif
 
 CONTAINS
     
@@ -144,19 +142,17 @@ end subroutine get_LDOS_SI
 
 *** Used modules
 #+BEGIN_SRC f90 :noweb-ref used-modules
-      use precision, only  : dp
-      use fdf
-      use units,       only: eV, pi
-      use sys,         only: die
-      use m_mpi_utils, only: broadcast
-      use parallel, only   : SIESTA_worker, BlockSize
-      use parallel, only   : SIESTA_Group, SIESTA_Comm
-      use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
-      use class_Distribution
-      use alloc,             only: re_alloc, de_alloc
-#ifdef MPI
+    use precision, only  : dp
+    use fdf
+    use units,       only: eV, pi
+    use sys,         only: die
+    use m_mpi_utils, only: broadcast
+    use parallel, only   : SIESTA_worker, BlockSize
+    use parallel, only   : SIESTA_Group, SIESTA_Comm
+    use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
+    use class_Distribution
+    use alloc,             only: re_alloc, de_alloc
     use mpi_siesta
-#endif
     use iso_c_binding
     use f_ppexsi_interface, only: f_ppexsi_options
     use f_ppexsi_interface, only: f_ppexsi_plan_finalize

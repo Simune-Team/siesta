@@ -1,6 +1,7 @@
 
 ! Tangled code
 module m_pexsi_dos
+#ifdef PEXSI
     use precision, only  : dp
 
   public :: pexsi_dos
@@ -463,5 +464,6 @@ character(len=*), intent(in) :: str
 end subroutine check_info 
 
 end subroutine pexsi_dos
+#endif
 end module m_pexsi_dos
 ! End of tangled code

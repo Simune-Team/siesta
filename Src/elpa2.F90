@@ -6,7 +6,7 @@
 ! distributed along with the original code in the file "COPYING".
 
 module ELPA2
-
+#ifdef MPI
 ! Version 1.1.2, 2011-02-21
 
   USE ELPA1
@@ -3408,5 +3408,5 @@ subroutine divide_band(nblocks_total, n_pes, block_limits)
    endif
 
 end subroutine
-
+#endif
 end module ELPA2

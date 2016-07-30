@@ -17,7 +17,9 @@
 
       use parallel, only: SIESTA_worker ! whether part of Siesta's communicator
       use parallel, only: ionode
+#ifdef MPI      
       use mpi_siesta, only: true_mpi_comm_world
+#endif      
       use m_mpi_utils, only: broadcast
 
 #ifdef TRACING_SOLVEONLY
@@ -58,18 +60,20 @@
 C     Begin of coordinate relaxation iteration
       relaxd = .false.
 
+#ifdef PEXSI      
       ! Broadcast relevant things for program logic
       ! These were set in siesta_options, called only by "SIESTA_workers".
       call broadcast(inicoor,comm=true_MPI_Comm_World)
       call broadcast(fincoor,comm=true_MPI_Comm_World)
-
+#endif
       istep  = inicoor
       DO WHILE ((istep.le.fincoor) .AND. (.not. relaxd))
         call siesta_forces( istep )
 
         if (SIESTA_worker) call siesta_move( istep, relaxd )
+#ifdef PEXSI        
         call broadcast(relaxd,comm=true_MPI_Comm_World)
-
+#endif
         if (.not. relaxd) then
           istep = istep + 1
         endif

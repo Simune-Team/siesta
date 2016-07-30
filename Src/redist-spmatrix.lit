@@ -25,12 +25,14 @@ non-disjoint groups.
 The general structure is
 #+BEGIN_SRC f90 :noweb-ref code-structure
 module m_redist_spmatrix
+#ifdef PEXSI
  implicit none
  <<module-type-declarations>>
  public :: redistribute_spmatrix
 CONTAINS
  <<routine-redist-spmatrix>>
  <<transfers>>
+#endif
 end module m_redist_spmatrix
 #+END_SRC
 

@@ -1,5 +1,6 @@
 
 module m_pexsi
+#ifdef PEXSI
   use precision, only: dp
   use iso_c_binding
 
@@ -67,5 +68,5 @@ module m_pexsi
         ncol = ncol - 1
       enddo
     end subroutine get_row_col
-
+#endif
 end module m_pexsi

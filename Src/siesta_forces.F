@@ -14,7 +14,9 @@
       CONTAINS
 
       subroutine siesta_forces(istep)
+#ifdef MPI      
       use mpi_siesta
+#endif      
       use precision, only: dp
       use siesta_cml
 #ifdef SIESTA__FLOOK
@@ -50,9 +52,7 @@
       use siesta_master, only: siesta_server  ! Is siesta a server?
       use m_save_density_matrix, only: save_density_matrix
       use m_iodm_old,    only: write_spmatrix
-#ifdef MPI
-      use mpi_siesta, only: MPI_Barrier, MPI_Comm_World
-#endif
+!
       use units,         only: eV, Ang
       use sparse_matrices, only: H, Hold, Dold, Dscf
       use m_pexsi_solver,        only: prevDmax
@@ -68,7 +68,9 @@
       use m_compute_energies, only: compute_energies
       use m_mpi_utils, only: broadcast
       use fdf
+#ifdef PEXSI      
       use m_pexsi, only: pexsi_finalize_scfloop
+#endif     
 
 #ifdef TRANSIESTA
       use m_ts_options, only : N_Elec
@@ -113,10 +115,12 @@
       call write_debug( '    PRE siesta_forces' )
 #endif
 
+#ifdef PEXSI      
       ! Broadcast relevant things for program logic
       ! These were set in read_options, called only by "SIESTA_workers".
       call broadcast(nscf,comm=true_MPI_Comm_World)
-
+#endif
+      
       if (SIESTA_worker)  then
       !     Initialization tasks for a given geometry
          call state_init( istep )
@@ -368,17 +372,19 @@
 
        endif ! SIESTA_worker
 
+#ifdef PEXSI       
        call broadcast(last_step,comm=true_MPI_Comm_World)
        call broadcast(iscf,comm=true_MPI_Comm_World)
-
+#endif
        if ( last_step ) exit
 
       end do
 
+#ifdef PEXSI      
       if (isolve == SOLVE_PEXSI) then
          call pexsi_finalize_scfloop()
       endif
-            
+#endif            
 
       if (.not. SIESTA_worker) RETURN
 

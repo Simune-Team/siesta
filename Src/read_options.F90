@@ -695,11 +695,16 @@ subroutine read_options( na, ns, nspin )
         write(6,3) 'redata: Method of Calculation', 'Orbital Minimization Method'
      endif
   else if (leqi(method,"pexsi")) then
-       isolve = SOLVE_PEXSI
+#ifdef PEXSI     
+      isolve = SOLVE_PEXSI
       if (ionode) then
         write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
                             'PEXSI'
       endif
+#else
+      call die("PEXSI solver is not compiled in. Use -DPEXSI")
+#endif
+      
 #ifdef TRANSIESTA
   else if (leqi(method,'transi') .or. leqi(method,'transiesta') ) then
      isolve = SOLVE_TRANSI

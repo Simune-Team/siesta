@@ -1,6 +1,7 @@
 
 ! --- Tangled code
 module m_redist_spmatrix
+#ifdef PEXSI
  implicit none
  type, public :: comm_t
     integer :: src, dst, i1, i2, nitems
@@ -542,5 +543,6 @@ CONTAINS
        deallocate(local_reqR, local_reqS, statuses)
  
      end subroutine do_transfers_dp
+#endif
 end module m_redist_spmatrix
 ! --- End of tangled code

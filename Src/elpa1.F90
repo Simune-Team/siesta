@@ -6,7 +6,7 @@
 ! distributed along with the original code in the file "COPYING".
 
 module ELPA1
-
+#ifdef MPI
 ! Version 1.1.2, 2011-02-21
 
   implicit none
@@ -3804,14 +3804,14 @@ subroutine hh_transform_complex(alpha, xnorm_sq, xf, tau)
 end subroutine
 
 ! --------------------------------------------------------------------------------------------------
-
+#endif
 end module ELPA1
 
 ! --------------------------------------------------------------------------------------------------
 ! Please note that the following routines are outside of the module ELPA1
 ! so that they can be used with real or complex data
 ! --------------------------------------------------------------------------------------------------
-
+#ifdef MPI
 subroutine elpa_transpose_vectors(vmat_s,ld_s,comm_s,vmat_t,ld_t,comm_t,nvs,nvr,nvc,nblk)
 
 !-------------------------------------------------------------------------------
@@ -4014,5 +4014,5 @@ subroutine elpa_reduce_add_vectors(vmat_s,ld_s,comm_s,vmat_t,ld_t,comm_t,nvr,nvc
    deallocate(aux2)
 
 end subroutine
-
+#endif
 !-------------------------------------------------------------------------------

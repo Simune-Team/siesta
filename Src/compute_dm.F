@@ -34,10 +34,13 @@
       use parallel, only: IONode
       use parallel, only: SIESTA_worker
       use m_compute_ebs_shift, only: compute_ebs_shift
+#ifdef PEXSI
       use m_pexsi_solver,  only: pexsi_solver
+#endif
       use m_hsx, only      : write_hs_formatted
-c$$$      use m_matrixwrite
+#ifdef MPI
       use mpi_siesta
+#endif
 #ifdef CDF
       use iodmhs_netcdf, only: write_dmh_netcdf
 #endif
@@ -105,8 +108,8 @@ c$$$      use m_matrixwrite
          endif
       endif
 
+#ifdef PEXSI
       if (isolve .eq. SOLVE_PEXSI) then
-      ! Prototype interface
          call pexsi_solver(iscf, no_u, no_l, nspin,
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
@@ -114,7 +117,7 @@ c$$$      use m_matrixwrite
          if (ionode) write (6,"(/a,f14.6)") 'Entropy/k:', Entropy
       endif
       if (.not. SIESTA_worker) RETURN
-
+#endif
       ! Here we decide if we want to calculate one or more SCF steps by
       ! diagonalization before proceeding with the OMM routine
       CallDiagon=.false.

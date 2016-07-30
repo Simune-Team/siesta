@@ -21,6 +21,7 @@ This is the main structure of the code.
 
 #+begin_src f90 :noweb-ref code-structure
   module m_pexsi_dos
+  #ifdef PEXSI
       use precision, only  : dp
 
     public :: pexsi_dos
@@ -48,6 +49,7 @@ This is the main structure of the code.
   <<support-routines>>
 
   end subroutine pexsi_dos
+  #endif
   end module m_pexsi_dos
 #+end_src
 

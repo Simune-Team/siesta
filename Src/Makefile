@@ -410,17 +410,6 @@ $(ALL_OBJS): $(XC) $(COMP_LIBS)
 
 # Libraries that might need to be compiled
 
-# PEXSI dummy routines
-libdummy_pexsi.a: 
-	@(cd dummy_pexsi ; $(MAKE) \
-                    "VPATH=$(VPATH)/dummy_pexsi" \
-                    "CC=$(CC)" \
-                    "CFLAGS=$(CFLAGS)" libdummy_pexsi.a)
-libdummy_raw_pexsi.a: 
-	@(cd dummy_pexsi ; $(MAKE) \
-                    "VPATH=$(VPATH)/dummy_pexsi" \
-                    "CC=$(CC)" \
-                    "CFLAGS=$(CFLAGS)" libdummy_raw_pexsi.a)
 #
 # Linear algebra routines
 #
