@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+July 30, 2016       A. Garcia  trunk-537--pexsi-v0.8-spin-12
+Put back the MPI interfaces
+
+The custom MPI interfaces in Src/MPI are now compiled
+by default, except if the preprocessor option
+
+ -DNO_MPI_INTERFACES
+
+is specified.
+
++ 2D arrays have to be passed as a(1,1) in the
+  mpi_(all)gather calls in the pexsi modules...
+
++ Update pexsi arch.makes in Src/Sys
+
+------------------------------------------------------------
 July 30, 2016       A. Garcia  trunk-537--pexsi-v0.8-spin-11
 Wrap PEXSI code within preprocessor blocks
 

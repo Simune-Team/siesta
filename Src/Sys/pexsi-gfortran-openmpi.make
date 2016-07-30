@@ -20,13 +20,16 @@ FFLAGS= -g -O2 -fbacktrace #-fcheck=all
 FFLAGS_CHECKS= -O0 -g -fcheck=all
 FFLAGS_DEBUG= -g -O0
 RANLIB=echo
+#
+# Put here libfdict.a and libncdf.a if -DNCDF(_4)
+#
 COMP_LIBS=
 #
 #FOX_ROOT=$(HOME)/lib/FoX/4.1.2/gfortran-4.8.3
 #
 PEXSI_VERSION=0.8.0
 PEXSI_LIB_DIR=$(HOME)/lib/PEXSI/$(PEXSI_VERSION)/openmpi-1.8.1-gfortran-4.8.3
-FPPFLAGS_PEXSI=-DPEXSI_$(PEXSI_VERSION)
+FPPFLAGS_PEXSI=-DPEXSI
 PEXSI_INCFLAGS=-I$(PEXSI_LIB_DIR)/include
 #
 NETCDF_ROOT=/usr/local

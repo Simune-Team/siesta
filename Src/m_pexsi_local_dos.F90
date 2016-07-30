@@ -215,7 +215,7 @@
   ! in the distribution object
   allocate (PEXSI_Pole_ranks_in_World_Spin(npPerPole,nspin))
   call MPI_AllGather(pexsi_pole_ranks_in_world,npPerPole,MPI_integer,&
-       PEXSI_Pole_Ranks_in_World_Spin,npPerPole, &
+       PEXSI_Pole_Ranks_in_World_Spin(1,1),npPerPole, &
        MPI_integer,PEXSI_Spin_Comm,ierr)
   
   ! Create distributions known to all nodes

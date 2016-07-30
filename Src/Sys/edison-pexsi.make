@@ -26,7 +26,7 @@ KINDS="4 8"
 FPPFLAGS_MPI=-DMPI
 #
 PEXSI_INCFLAGS = -I/project/projectdirs/m1027/PEXSI/libpexsi_interfaces/$(PEXSI_VERSION)
-FPPFLAGS_PEXSI=-DPEXSI_$(PEXSI_VERSION)
+FPPFLAGS_PEXSI=-DPEXSI
 #
 # Extended interface
 PEXSI_DIR     = /project/projectdirs/m1027/PEXSI/libpexsi_edison
