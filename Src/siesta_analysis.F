@@ -118,7 +118,7 @@
 
       if (fdf_get("Read-H-from-file",.false.)) then
          if (SIESTA_worker) then
-            call read_spmatrix(maxnh, no_l, nspin, numh,
+            call read_spmatrix(maxnh, no_l, h_spin_dim, numh,
      .           listhptr, listh, H, found, userfile="H_IN")
             if (.not. found) call die("Could not find H_IN")
             current_ef = ef
@@ -128,7 +128,7 @@
 
 #ifdef PEXSI
       if (fdf_get("PEXSI.DOS",.false.)) then
-         call pexsi_dos(no_u, no_l, nspin,
+         call pexsi_dos(no_u, no_l, spinor_dim,
      $        maxnh, numh, listhptr, listh, H, S, qtot, ef)
          
       endif

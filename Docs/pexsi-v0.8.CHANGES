@@ -1,4 +1,38 @@
 ------------------------------------------------------------
+July 31, 2016       A. Garcia  trunk-537--pexsi-v0.8-spin-13
+Fix bug related to init_spin behavior
+
+The PEXSI-only processes do not call 'init_spin', and rely on a
+broadcast from the Siesta_worker nodes to get certain information. As
+nspin, spinor_dim, et al were integer pointers in 'm_init', they were
+undefined on entry to the PEXSI interface routines, causing segfaults.
+They have been converted to plain integers for now, pending a review
+of other possible ways to fix the problem. 
+
+Some pointers in sparse_matrices have been initialized to null().
+
+A test to catch non-collinear or spin-orbit cases has been added
+before the call to the PEXSI solver.
+
+Note that the PEXSI routines still use the 'nspin' variable internally
+to refer to both 'spinor_dim' and 'h_spin_dim'. This will be changed when
+mixed-spin solving is implemented.
+
+Added Tests/sih-pexsi-spin.
+
+modified:
+  Src/compute_dm.F
+  Src/m_spin.F90
+  Src/siesta_analysis.F
+  Src/sparse_matrices.F
+added:
+  Tests/sih-pexsi-spin
+
+
+
+
+
+------------------------------------------------------------
 July 30, 2016       A. Garcia  trunk-537--pexsi-v0.8-spin-12
 Put back the MPI interfaces
 

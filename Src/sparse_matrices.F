@@ -20,11 +20,12 @@
 !     Max. number of nonzero H matrix elements    
       integer, public :: maxnh = 10 
 
-      integer, public, pointer :: listh(:), listhptr(:), numh(:)
+      integer, public, pointer :: listh(:)=>null(), listhptr(:)=>null(),
+     $                            numh(:)=>null()
 
-      real(dp), public, pointer :: Dold(:,:), Dscf(:,:), 
-     &                             Escf(:,:), H(:,:),
-     &                             xijo(:,:), S(:)
+      real(dp), public, pointer :: Dold(:,:)=>null(), Dscf(:,:)=>null(),
+     &                             Escf(:,:)=>null(), H(:,:)=>null(),
+     &                             xijo(:,:)=>null(), S(:)=>null()
 
       ! Used to hold the "input" H when mixing the Hamiltonian
       real(dp), dimension(:,:), public, pointer :: Hold => null()   

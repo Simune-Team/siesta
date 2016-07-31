@@ -110,7 +110,14 @@
 
 #ifdef PEXSI
       if (isolve .eq. SOLVE_PEXSI) then
-         call pexsi_solver(iscf, no_u, no_l, nspin,
+        ! This test done in node 0 since NonCol and SpOrb
+        ! are not set for PEXSI-solver-only processes
+         if (ionode) then
+            if (NonCol .or. SpOrb) call die(
+     $               "The PEXSI solver does not implement "//
+     $               "non-coll spins or Spin-orbit yet")
+         endif
+         call pexsi_solver(iscf, no_u, no_l, spinor_dim,
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
      $              ef, Entropy, temp, delta_Ef)
