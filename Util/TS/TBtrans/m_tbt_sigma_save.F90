@@ -383,6 +383,9 @@ contains
 
        dic = ('info'.kv.'Imaginary part of self-energy')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'Eta',NF90_DOUBLE,(/'one'/), atts = dic)
+       
+       dic = ('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
+       call ncdf_def_var(grp,'Accuracy',NF90_DOUBLE,(/'one'/), atts = dic)
        call delete(dic)
 
        call ncdf_def_dim(grp,'no_e',Elecs(iEl)%o_inD%n)
@@ -399,6 +402,7 @@ contains
        call delete(dic)
 
        call ncdf_put_var(grp,'Eta',Elecs(iEl)%Eta)
+       call ncdf_put_var(grp,'Accuracy',Elecs(iEl)%accu)
        call ncdf_put_var(grp,'pivot',Elecs(iEl)%o_inD%r)
 
     end do
