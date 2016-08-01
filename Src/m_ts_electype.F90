@@ -1650,7 +1650,7 @@ contains
   end subroutine delete_
 
   
-  subroutine check_connectivity(this)
+  function check_connectivity(this) result(good)
 
     use parallel, only : IONode
     use units, only : eV
@@ -1665,6 +1665,7 @@ contains
 #endif
 
     type(Elec), intent(inout) :: this
+    logical :: good
 
     real(dp), pointer :: H(:,:)
     real(dp), pointer :: S(:)
@@ -1753,6 +1754,10 @@ contains
     ! clean-up
     call delete(sp02)
 
+    ! If both number
+    good = ind == 0
+    if ( .not. good ) good = maxi == 0
+
     if ( .not. IONode ) return
 
     if ( ind == 0 ) then
@@ -1771,7 +1776,7 @@ contains
             maxi,',',maxj,')|@R=',tm(this%t_dir),' = ',maxS
     end if
 
-  end subroutine check_connectivity
+  end function check_connectivity
 
   ! Routine for checking the validity of the electrode against the 
   ! system setup in transiesta

@@ -1524,12 +1524,20 @@ contains
 
 
   subroutine init_Electrode_HS(El)
-    use m_ts_electype
+    use fdf, only: fdf_get
+#ifdef MPI
+    use mpi_siesta
+#endif
     use class_Sparsity
     use class_dSpData1D
     use class_dSpData2D
+    use m_ts_electype
 
     type(Elec), intent(inout) :: El
+#ifdef MPI
+    integer :: error
+#endif
+    logical :: neglect_conn
     
     ! Read-in and create the corresponding transfer-matrices
     call delete(El) ! ensure clean electrode
@@ -1542,7 +1550,22 @@ contains
 
     ! print out the precision of the electrode (whether it extends
     ! beyond first principal layer)
-    call check_Connectivity(El)
+    if ( check_connectivity(El) ) then
+       neglect_conn = .true.
+    else
+       neglect_conn = fdf_get('TS.Elecs.Neglect.Principal', .false.)
+#ifdef TBTRANS
+       neglect_conn = fdf_get('TBT.Elecs.Neglect.Principal', neglect_conn)
+#endif
+    end if
+    
+#ifdef MPI
+    call MPI_Barrier(MPI_Comm_World,error)
+#endif
+    if ( .not. neglect_conn ) then
+       call die('Electrode connectivity is not perfect, &
+            &refer to the manual for achieving a perfect electrode.')
+    end if
     
     call create_sp2sp01(El)
     ! Clean-up, we will not need these!
