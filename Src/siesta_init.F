@@ -50,7 +50,8 @@
       use densematrix,        only: Haux, Saux, Psi
       use m_energies
       use m_steps
-      use m_spin
+      use m_spin,             only: init_spin, nspin, spinor_dim, SpPol
+      use m_spin,             only: qs, init_spiral
       use m_rmaxh
       use m_forces 
       use m_eo
@@ -196,6 +197,12 @@ C     Initialise MPI and set processor number
       Nodes = 1
 #endif
       IOnode = SIESTA_worker .and. (Node .eq. 0)
+
+      ! Be sure to initialize the spin-configuration data
+      ! for all processors.
+
+      call init_spin( )
+
       if (.not. SIESTA_worker) RETURN
 
 #ifdef DEBUG
@@ -323,10 +330,6 @@ C     Initialise MPI and set processor number
          call add_citation("10.1088/0953-8984/14/11/302")
       end if
 
-      ! be sure to initialize spin-configuration
-      ! as the first thing.
-      ! Subsequent routines require this to be filled
-      call init_spin( )
 
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC

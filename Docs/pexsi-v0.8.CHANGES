@@ -1,4 +1,21 @@
 ------------------------------------------------------------
+August 3, 2016      A. Garcia  trunk-537--pexsi-v0.8-spin-14
+Cleaner fix for init_spin behavior
+
+The nspin, spinor_dim, et al integer pointers in 'm_init' have now
+been initialized to 'null()', and the 'init_spin' routine is now
+called by all processes in 'siesta_init'.  This is the cleanest way to
+fix the problem described in the previous commit.
+
+Note that the PEXSI routines still use the 'nspin' variable internally
+to refer to both 'spinor_dim' and 'h_spin_dim'. This will be changed when
+mixed-spin solving is implemented.
+
+modified:
+  Src/m_spin.F90
+  Src/siesta_init.F
+
+------------------------------------------------------------
 July 31, 2016       A. Garcia  trunk-537--pexsi-v0.8-spin-13
 Fix bug related to init_spin behavior
 

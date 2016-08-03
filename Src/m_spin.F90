@@ -65,17 +65,13 @@ module m_spin
   
   ! Create short-hands for the spin-configuration
   ! DO NOT USE THIS VARIABLE, USE -> type(tSpin) :: spin%Grid
-  !  integer, save, public, pointer :: nspin => null() ! (Grid)
-    integer, save, public :: nspin  ! (Grid)
+    integer, save, public, pointer :: nspin => null() ! (Grid)
   ! DO NOT USE THIS VARIABLE, USE -> type(tSpin) :: spin%spinor
-  ! integer, save, public, pointer :: spinor_dim => null() ! (spinor)
-    integer, save, public :: spinor_dim  ! (spinor)
+    integer, save, public, pointer :: spinor_dim => null() ! (spinor)
   ! DO NOT USE THIS VARIABLE, USE -> type(tSpin) :: spin%H, spin%DM
-  ! integer, save, public, pointer :: h_spin_dim => null() ! (H and DM)
-    integer, save, public :: h_spin_dim ! (H and DM)
+    integer, save, public, pointer :: h_spin_dim => null() ! (H and DM)
   ! DO NOT USE THIS VARIABLE, USE -> type(tSpin) :: spin%EDM
-  ! integer, save, public, pointer :: e_spin_dim => null() ! (EDM)
-    integer, save, public  :: e_spin_dim  ! (EDM)
+    integer, save, public, pointer :: e_spin_dim => null() ! (EDM)
   
 
   ! DO NOT USE THIS VARIABLE, USE -> type(tSpin) :: spin%none
@@ -118,10 +114,10 @@ contains
     character(len=32) :: opt
 
     ! Create pointer assignments...
-!!$    call int_pointer(spinor_dim, spin%spinor)
-!!$    call int_pointer(nspin     , spin%grid)
-!!$    call int_pointer(h_spin_dim, spin%H)
-!!$    call int_pointer(e_spin_dim, spin%EDM)
+    call int_pointer(spinor_dim, spin%spinor)
+    call int_pointer(nspin     , spin%grid)
+    call int_pointer(h_spin_dim, spin%H)
+    call int_pointer(e_spin_dim, spin%EDM)
 
     ! Create pointer assignments...
     call log_pointer(NoMagn, spin%none)
@@ -292,11 +288,6 @@ contains
     call re_alloc(qs, 1, spin%spinor, &
          name="qs",routine="init_spin")
 
-    nspin = spin%grid
-    h_spin_dim = spin%H
-    spinor_dim = spin%spinor
-    e_spin_dim = spin%EDM
-    
   contains
 
     subroutine int_pointer(from, to)
