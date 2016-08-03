@@ -14,7 +14,6 @@ C  Julian Gale, NRI, Curtin Uni, March 2004
 C
       use precision
       use fdf
-      use m_fdf_global, only: fdf_global_get
       use siesta_options, only: want_domain_decomposition
       use siesta_options, only: want_spatial_decomposition
       use siesta_options, only: isolve, SOLVE_ORDERN

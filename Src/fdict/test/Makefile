@@ -8,7 +8,7 @@ include $(ARCH_MAKE)
 AR      ?= ar
 ARFLAGS ?= cru
 RANLIB  ?= ranlib
-PP      ?= cpp -E -P -C
+CPP      = $(FC) -E -P -x c
 
 TST_UTILS = tst_utils.o
 LIB_TST = libtst.a
@@ -33,7 +33,7 @@ TST_EXE_ += tst_dict_dict
 
 TST_EXE ?= $(TST_EXE_)
 
-LIB  = ../libvardict.a $(LIB_TST)
+LIB  = ../libfdict.a $(LIB_TST)
 FFLAGS += -I../
 
 # Make all executables dependent on the test-library
