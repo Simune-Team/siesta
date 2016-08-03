@@ -75,7 +75,6 @@
       use wavefunctions
       use MatrixSwitch
       use siesta_options,    only: eigen_time
-      use elec_dyn_options
       use m_diagon_opt, only : ictxt
 #ifdef MPI
       use mpi_siesta
@@ -199,7 +198,7 @@ enddo
 
 call m_get_element(wavef_ms(ik,ispin),1,1,varaux,m_operation)
 
-     call evol2new( Hauxms, Sauxms, nuotot, nuo, nspin, nk, ispin, ik, ncounter, delt, nstp, ElecDynPC)
+     call evol2new( Hauxms, Sauxms, nuotot, nuo, nspin, nk, ispin, ik, ncounter, delt, nstp)
  
 !
         ncounter=ncounter+nocc
@@ -334,7 +333,7 @@ call m_deallocate(Hauxms)
 
 
 
-      SUBROUTINE  evol2new(Hauxms, Sauxms, no, nol, nspin, nk, ispin, ik, ncounter, delt,nstp,ElecDynPC)
+      SUBROUTINE  evol2new(Hauxms, Sauxms, no, nol, nspin, nk, ispin, ik, ncounter, delt,nstp)
 
 
 
@@ -373,7 +372,6 @@ call m_deallocate(Hauxms)
       complex(kind=dp)                                  :: sum, pi, pj,varaux3,varaux2
       type(matrix)                                      :: Hauxms, Sauxms
       real(kind=dp)                                     :: delt, varaux
-      logical ElecDynPC
 
 ! Internal variables .........................................
 

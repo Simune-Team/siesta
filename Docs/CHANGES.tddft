@@ -1,3 +1,16 @@
+2016-08-03  15:45 CET Rafi Ullah <rraffiu@gmail.com>  trunk-537-tddft-14
+
+removed:
+
+  Src/elec_dyn_options.F
+
+modified:
+
+  Src/Makefile
+  Src/evolk.F90
+  Src/siesta_forces.F
+  Src/wavefunctions.F90
+
 2016-08-03  11:45 CET Rafi Ullah <rraffiu@gmail.com>  trunk-537-tddft-13
 
 Synced to trunk-537.

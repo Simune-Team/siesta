@@ -25,7 +25,6 @@ CONTAINS
 #ifdef MPI
     use mpi_siesta
 #endif
-    use elec_dyn_options
     !
     implicit none
     !

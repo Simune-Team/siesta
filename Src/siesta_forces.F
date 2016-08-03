@@ -81,7 +81,6 @@
       use sparse_matrices,  only: Escf
       use m_iodm,           only: read_dm
       use m_evolve,         only: evolve
-      use elec_dyn_options
       use m_iotddft,        only: write_tddft
       use m_overfsm,        only: overfsm
       use siesta_geom,      only: na_s, xa, isa, scell

@@ -168,7 +168,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	kpoint_convert.o \
 	m_dminim.o m_zminim.o compute_max_diff.o \
 	die.o m_svd.o m_target_stress.o \
-	elec_dyn_options.o m_initwf.o wavefunctions.o \
+	m_initwf.o wavefunctions.o \
 	m_evolve.o evolk.o evolg.o changebasis.o m_iotddft.o \
 	m_matdiag.o m_matswinvers.o
 
@@ -1236,7 +1236,7 @@ siesta_forces.o: save_density_matrix.o scfconvergence_test.o setup_H0.o
 siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_dicts.o siesta_geom.o
 siesta_forces.o: siesta_master.o siesta_options.o sparse_matrices.o
 siesta_forces.o: state_analysis.o state_init.o sys.o units.o write_subs.o
-siesta_forces.o: m_initwf.o wavefunctions.o m_evolve.o elec_dyn_options.o
+siesta_forces.o: m_initwf.o wavefunctions.o m_evolve.o 
 siesta_forces.o: m_iotddft.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o
@@ -1472,10 +1472,8 @@ version_info.o: version.o
 write_subs_energies.o: write_subs.o
 write_subs_positions.o: write_subs.o
 write_subs_pressure.o: write_subs.o
-elec_dyn_options.o: m_fdf_global.o m_steps.o files.o
-wavefunctions.o: elec_dyn_options.o
 m_initwf.o: wavefunctions.o fermid.o m_diagon.o
-evolk.o: elec_dyn_options.o wavefunctions.o m_matswinvers.o siesta_options.o
+evolk.o: wavefunctions.o m_matswinvers.o siesta_options.o
 evolk.o: m_diagon.o
 evolg.o: wavefunctions.o m_matswinvers.o siesta_options.o
 evolg.o: m_diagon.o m_steps.o
