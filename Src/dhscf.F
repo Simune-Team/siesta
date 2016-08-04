@@ -676,7 +676,7 @@ C     Modules
       use m_spin,         only: spin
       use m_spin,         only: NonCol, SpOrb
       use m_spin,         only: h_spin_dim, Spiral, qSpiral
-
+      use m_iotddft,      only: write_tdrho
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode, TSrun
       use m_ts_options, only: IsVolt
@@ -1047,6 +1047,7 @@ C ----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C Save TD-electron density after every given number of steps- Rafi, Jan 2016
 C-----------------------------------------------------------------------
+      call write_tdrho(filesOut)
       if (filesOut%tdrho .ne. ' ') then
         !  DRho is already using a uniform, sequential form
         call write_rho( filesOut%tdrho, cell, ntm, nsm, ntpl, nspin,

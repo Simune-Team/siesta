@@ -1,3 +1,11 @@
+2016-08-04  15:45 CET Rafi Ullah <rraffiu@gmail.com>  trunk-537-tddft-15
+
+modified:
+
+  Src/Makefile
+  Src/dhscf.F
+  Src/m_iotddft.F90
+
 2016-08-03  15:45 CET Rafi Ullah <rraffiu@gmail.com>  trunk-537-tddft-14
 
 removed:

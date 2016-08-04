@@ -11,7 +11,7 @@
 !
 
       USE m_dipol,          ONLY: dipol
-      USE m_steps,          ONLY: fincoor
+      USE m_steps,          ONLY: fincoor, istp
       USE files,            ONLY: slabel, label_length
       USE siesta_options,   ONLY: eigen_time, dip_time, etot_time, tdsaverho, &
                                   tdsaverho, ntdsaverho
@@ -20,10 +20,12 @@
       USE files,            ONLY: filesOut_t
       
       IMPLICIT NONE
-       
+      PRIVATE
+
+      PUBLIC :: write_tddft
+      PUBLIC :: write_tdrho
       CHARACTER(LEN=label_length+7), EXTERNAL  :: paste, npaste
       CHARACTER(LEN=15)  :: fform
-
 
       CONTAINS
 
@@ -33,7 +35,6 @@
       INTEGER, INTENT(IN)           :: istp, itd, ntd, maxo, nk, nspin
       DOUBLE PRECISION, INTENT(IN)  :: totime, rstart_time, etot
       DOUBLE PRECISION, INTENT(IN)  :: eigen(maxo,nspin,nk) 
-      TYPE (filesOut_t)             :: filesOut 
       LOGICAL, SAVE                 :: laststp = .false.
       
       IF (istp .gt. fincoor .AND. itd .gt. ntd) THEN
@@ -53,6 +54,13 @@
                                  maxo, nspin, nk)
       END IF
 
+
+      END SUBROUTINE write_tddft
+!----------------------------------------------------------------
+      SUBROUTINE write_tdrho (filesOut)
+      
+      TYPE(filesOut_t), INTENT(OUT)      :: filesOut
+  
       IF (tdsaverho) THEN
         IF (mod(istp,ntdsaverho) .eq. 0) THEN
           filesOut%tdrho = npaste (istp, '.TDRho')
@@ -60,10 +68,9 @@
           filesOut%tdrho = ' '
         END IF
       END IF
+      
+      END SUBROUTINE write_tdrho
 
-      END SUBROUTINE write_tddft
-!----------------------------------------------------------------
-       
       SUBROUTINE  iodipole (totime, dipole,lastistp,rstart_time)
        
        

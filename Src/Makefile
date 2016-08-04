@@ -683,7 +683,7 @@ dhscf.o: m_ncdf_siesta.o m_partial_charges.o m_rhog.o m_spin.o
 dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_options.o m_ts_tdir.o
 dhscf.o: m_ts_voltage.o mesh.o meshdscf.o meshsubs.o moremeshsubs.o parallel.o
 dhscf.o: parsing.o precision.o rhofft.o rhoofd.o siesta_options.o sys.o units.o
-dhscf.o: vmat.o
+dhscf.o: vmat.o m_iotddft.o
 diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag3g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
