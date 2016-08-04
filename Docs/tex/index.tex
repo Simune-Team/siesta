@@ -32,6 +32,18 @@
     }%
 }
 
+% Create shorthand commands for file-indices
+\NewDocumentCommand\fileindex{ m o }
+{%
+    \IfNoValueTF{#2}{%
+        %\index{#1@\fdf*{#1}}%
+        \sindex[sfiles]{#1}%
+    }{%
+        %\index{#1@\fdf*{#1}#2}%
+        \sindex[sfiles]{#1#2}%
+    }%
+}
+
 
 
 %%% Local Variables:
