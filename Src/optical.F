@@ -75,9 +75,7 @@ C *********************************************************************
       use files,        only : slabel, label_length
       use units,        only : pi
 #ifdef MPI
-      use mpi_siesta,   only : mpi_reduce, mpi_comm_world,
-     &                         mpi_sum
-      use mpi_siesta,   only : mpi_double_precision
+      use mpi_siesta
 #endif
       implicit          none
 C     Passed variables

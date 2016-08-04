@@ -421,11 +421,9 @@
         if (harrisfun) then 
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
 !         No need for further cml output
-        elseif (isolve==SOLVE_DIAGON.or.isolve==SOLVE_TRANSI) then
+        elseif ((isolve==SOLVE_DIAGON) .or. (isolve==SOLVE_PEXSI)
+     .                              .or. (isolve==SOLVE_TRANSI)) then
           if (cml_p) then
-             call cmlAddProperty(xf=mainXML, value=FreeE/eV, 
-     .            units="siestaUnits:eV", 
-     .            dictRef="siesta:FreeE", fmt="r7")
              call cmlAddProperty(xf=mainXML, value=Etot/eV, 
      .             units="siestaUnits:eV", 
      .             dictRef="siesta:Etot", fmt="r7")

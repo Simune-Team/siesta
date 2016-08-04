@@ -245,7 +245,7 @@ CONTAINS
        p => p%child(loc)
  
        globaltime = p%data%totTime
-       write(*,"(a20,T30,a6,a12,a8)") "Section","Calls","Walltime","% sect."
+       write(6,"(a20,T30,a6,a12,a8)") "Section","Calls","Walltime","% sect."
        call walk_tree(p,0,maxlevel=1)
     endif
 
@@ -266,7 +266,7 @@ CONTAINS
     enddo
     p%data%totTime = globaltime + 1.0e-6_dp
 
-    write(*,"(/,a20,T30,a6,a12,a8)") "Section","Calls","Walltime","%"
+    write(6,"(/,a20,T30,a6,a12,a8)") "Section","Calls","Walltime","%"
     call walk_tree(p,0)
 
   end subroutine timer_report_global
@@ -285,7 +285,7 @@ CONTAINS
     endif
     pd => p%data
     write(fmtstr,"(a,i0,a1,a)") "(", level+1, "x", ",a20,T30,i6,f12.3,f8.2)"
-    write(*,fmtstr) pd%name, pd%nCalls,  &
+    write(6,fmtstr) pd%name, pd%nCalls,  &
                     pd%totTime, 100*pd%totTime/globaltime
     if (p%nchildren /= 0) then
        do i=1,p%nchildren

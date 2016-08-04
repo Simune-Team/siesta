@@ -28,6 +28,13 @@ MPI_INTERFACE= libmpi_f90.a
 pi3: $(MPI_INTERFACE) pi3.o
 	$(FC) -o pi3 $(LDFLAGS) pi3.o $(MPI_INTERFACE)
 
+newcomm:    MPI newcomm.o 
+	$(FC) -o newcomm $(LDFLAGS) newcomm.o $(MPI_INTERFACE_LIB) $(MPI_LIBS) 
+DISTOBJS=class_BlockCyclicDist.o class_PEXSIDist.o class_Dist.o \
+         m_matrix.o m_transfers.o m_redist.o m_uuid.o \
+         dielocal.o object_debug.o pxf.o dist.o
+dist:    MPI $(DISTOBJS)
+	$(FC) -o $@ $(LDFLAGS) $(DISTOBJS) $(MPI_INTERFACE_LIB) $(MPI_LIBS) 
 #
 # Blacs test
 #
@@ -72,7 +79,7 @@ libmpi_f90.a:
 #
 clean:
 	rm -f *.o *.*d  
-	rm -f pi3 blacs_prb pblas_prb
+	rm -f pi3 blacs_prb pblas_prb newcomm
 	rm -rf MPI $(MPI_INTERFACE)
 
 #
