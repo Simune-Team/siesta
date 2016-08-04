@@ -553,6 +553,7 @@ libraries and how each of them may be added to the compilation step
 where \shell{<>} refers to the MPI version used, (\shell{intelmpi},
 \shell{openmpi}, \shell{sgimpt}).
 
+
 \end{description}
 
 Additionally \siesta\ may be compiled with support for several other
@@ -657,7 +658,45 @@ libraries
   \index{compile!pre-processor!-DSIESTA\_\_MUMPS}
   where \shell{<>} are any libraries that MUMPS depend on.
 
-  
+
+  \item[PEXSI]%
+  \index{PEXSI}%
+  \index{External library!PEXSI}%
+  The PEXSI library may be used with \siesta\ for exa-scale
+  calculations. Currently the interface is implemented (tested) as in
+  PEXSI version 0.8.0, 0.9.0 and 0.9.2. If newer versions retain the same
+  interface they may also be used.
+
+  To successfully compile \siesta\ with PEXSI support one requires the
+  PEXSI fortran interface. When installing PEXSI copy the
+  \shell{f\_interface.f90} file to the include directory of
+  PEXSI such that the module may be found\footnote{Optionally the file
+      may be copied to the \shell{Obj} directory where the compilation
+      takes place.} when compiling \siesta.
+
+  Add these flags to your \file{arch.make} file to enable PEXSI
+\begin{shellexample}
+  LIBS += -L/opt/pexsi/0.9.2/lib -lpexsi_linux <>
+  FPPFLAGS += -DSIESTA__PEXSI
+\end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_PEXSI}
+  where \shell{<>} are any libraries that PEXSI depend on. 
+  %
+  If one experiences linker failures, one possible solution may help
+  is
+\begin{shellexample}
+  LIBS += -lmpi_cxx -lstdc++
+\end{shellexample}
+  which is due to PEXSI being a C++ library, and the Fortran compiler
+  is the linker. The exact library name for your MPI vendor may
+  vary. 
+
+  Additionally the PEXSI linker step may have duplicate objects which
+  can be circumvented by prefixing the PEXSI libraries with
+\begin{shellexample}
+  LIBS += -Wl,--allow-multiple-definition -lpexsi_linux <>
+\end{shellexample}
+
 \end{description}
 
 
@@ -6305,14 +6344,6 @@ when dealing with SCF problems, otherwise too verbose.
 
 \textit{Default value:} \texttt{.false.}
 
-\item[\textbf{MullikenInSCF}] (\textit{logical}):
-\index{MullikenInSCF@\textbf{MullikenInSCF}}
-If true, the Mulliken populations will be written for every SCF step
-at the level of detail specified in \textbf{WriteMullikenPop}. Useful
-when dealing with SCF problems, otherwise too verbose.
-
-\textit{Default value:} \texttt{.false.}
-
 \end{description}
 
 \subsubsection{Voronoi and Hirshfeld atomic population analysis}
@@ -8537,15 +8568,20 @@ involving molecules.
       \emph{s}.
 
       % Generic input (compatible with the <= 4.0)
-      \option[atom {\{\emph{A}, \emph{B} -\mbox{}- \emph{C} [step \emph{s}], \emph{D}\}}]%
+      \option[atom {[\emph{A}, \emph{B} -\mbox{}- \emph{C} [step \emph{s}], \emph{D}]}]%
       Equivalent to \fdf*{from \dots to} specification, however in a
       shorter variant. Note that the list may contain arbitrary number
       of ranges and/or individual indices.
 
       \begin{fdfexample}
-        atom {2, 3 -- 10 step 2, 6}
+        atom [2, 3 -- 10 step 2, 6]
       \end{fdfexample}
       will constrain atoms 2, 3, 5, 7, 9 and 6.
+
+      \begin{fdfexample}
+        atom [2, 3 -- 6, 8]
+      \end{fdfexample}
+      will constrain atoms 2, 3, 4, 5, 6 and 8.
 
       \option[atom all]%
       Constrain all atoms. 
@@ -8686,11 +8722,11 @@ involving molecules.
       atom from 1 to 12 step 2
     %endblock
     %block Geometry.Constraints
-      atom {1 -- 12 step 2}
+      atom [1 -- 12 step 2]
     %endblock
     %block Geometry.Constraints
       atom all
-      clear-prev {2 -- 12 step 2}
+      clear-prev [2 -- 12 step 2]
     %endblock
   \end{fdfexample}
   where the 3 last blocks all create the same result.
@@ -9198,6 +9234,10 @@ following will be shown in the output file.
 \end{verbatim}
 It is imperative that you have a \emph{perfect} electrode as otherwise
 nonphysical results will occur.
+
+By default \tsiesta\ will die if there are connections beyond the
+principal cell. One may control whether this is allowed or not by
+using \fdf{TS.Elecs!Neglect.Principal}.
 
 \subsection{\texorpdfstring{\tsiesta}{TranSIESTA} Options}
 
@@ -9788,6 +9828,16 @@ electrodes in a generic input format.
     Control the imaginary part of the surface Green function for this
     electrode. See \fdf{TS!Elecs!Eta}.
 
+    \option[Accuracy]%
+    \fdfindex{TS!Elec.<>!Accuracy}%
+    Control the convergence accuracy required for the self-energy
+    calculation when using the Lopez-Sanchez, Lopez-Sanchez iterative
+    scheme. 
+    %
+    See \fdf{TS.Elecs!Accuracy}.
+
+    \note advanced use \emph{only}.
+    
     \option[DE]%
     \fdfindex{TS!Elec.<>!DE}%
     Density and energy density matrix file for the electrode. This may
@@ -9859,6 +9909,24 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   See \fdf{TS!Elec.<>!Eta}.
   
 \end{fdfentry}
+
+\begin{fdfentry}{TS!Elecs!Accuracy}[energy]<$10^{-13}\,\mathrm{eV}$>
+  
+  Globally control the accuracy required for convergence of the self-energy.
+  %
+  See \fdf{TS!Elec.<>!Accuracy}.
+  
+\end{fdfentry}
+
+\begin{fdflogicalF}{TS!Elecs!Neglect.Principal}
+  
+  If this is \fdffalse\ \tsiesta\ dies if there are connections beyond
+  the principal cell.
+
+  \note set this to \fdftrue\ with care, non-physical results may
+  arise. 
+
+\end{fdflogicalF}  
 
 \begin{fdflogicalT}{TS!Elecs!GF.Reuse}
   

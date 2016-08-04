@@ -832,8 +832,8 @@ currents may only be calculated in the selected device region.
   %
   \begin{fdfexample}
     %block TBT.Atoms.Device 
-       atom { 10 -- 20 }
-       atom { 30 -- 40 }
+       atom [ 10 -- 20 ]
+       atom [ 30 -- 40 ]
     %endblock
   \end{fdfexample}
   will limit the device region to atoms [10--20, 30--40].
@@ -851,7 +851,7 @@ currents may only be calculated in the selected device region.
   %
   \begin{fdfexample}
     %block TBT.Atoms.Buffer
-       atom { 1 -- 5 }
+       atom [ 1 -- 5 ]
     %endblock
   \end{fdfexample}
   will remove atoms [1--5] from the calculation.
@@ -1293,6 +1293,16 @@ work. However, the \fdf*{TBT} has precedence.
     Control the imaginary part of the surface Green function for this
     electrode. See \fdf{TBT.Elecs!Eta}.
 
+    \option[tbt.Accuracy/Accuracy]%
+    \fdfindex{TBT.Elec.<>!tbt.Accuracy}%
+    Control the convergence accuracy required for the self-energy
+    calculation when using the Lopez-Sanchez, Lopez-Sanchez iterative
+    scheme.
+    %
+    See \fdf{TBT.Elecs!Accuracy}.
+
+    \note advanced use \emph{only}.
+
     \option[Bloch]%
     \fdfindex{TBT.Elec.<>!Bloch}%
     $3$ integers are present on this line which each denote the number
@@ -1357,6 +1367,24 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
   See \fdf{TBT.Elec.<>!tbt.Eta}.
   
 \end{fdfentry}
+
+\begin{fdfentry}{TBT.Elecs!Accuracy}[energy]<$10^{-13}\,\mathrm{eV}$>
+  
+  Globally control the accuracy required for convergence of the self-energy.
+  %
+  See \fdf{TBT!Elec.<>!tbt.Accuracy}.
+  
+\end{fdfentry}
+
+\begin{fdflogicalF}{TBT.Elecs!Neglect.Principal}
+
+  If this is \fdffalse\ \tsiesta\ dies if there are connections beyond
+  the principal cell.
+
+  \note set this to \fdftrue\ with care, non-physical results may
+  arise. 
+
+\end{fdflogicalF}  
 
 \begin{fdflogicalT}{TBT.Elecs!GF.Reuse}
   
@@ -1632,14 +1660,14 @@ region. \tbtrans\ will die if this is not enforced.
       \emph{s}.
 
       % Generic input (compatible with the <= 4.0)
-      \option[atom {\{<A>, \emph{B} -\mbox{}- \emph{C} [step
-          \emph{s}], \emph{D}\}}]%
+      \option[atom {[<A>, \emph{B} -\mbox{}- \emph{C} [step
+          \emph{s}], \emph{D}]}]%
       Equivalent to \fdf*{from \dots to} specification, however in a
       shorter variant. Note that the list may contain arbitrary number
       of ranges and/or individual indices.
 
       \begin{fdfexample}
-        atom {2, 3 -- 10 step 2, 6}
+        atom [2, 3 -- 10 step 2, 6]
       \end{fdfexample}
       will add atoms 2, 3, 5, 7, 9 and 6.
 
@@ -1704,7 +1732,7 @@ region. \tbtrans\ will die if this is not enforced.
       All eigenstates specified will be part of the molecular orbitals
       that constitute this projection
 
-      \option[level \{ <list> \}] %
+      \option[level {[ <list> ]}] %
       A comma-separated list specification.
 
       \option[end] %
