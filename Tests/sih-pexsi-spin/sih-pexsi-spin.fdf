@@ -30,10 +30,10 @@ PEXSI.verbosity 2
 #------
 #--------------
 PEXSI.DOS T
-PEXSI.LocalDOS T
-PEXSI.LocalDOS.np-per-pole 20
-PEXSI.LocalDOS.Energy -3.5141 eV
-PEXSI.LocalDOS.Broadening 0.05 eV
+PEXSI.LDOS T
+PEXSI.LDOS.np-per-pole 20
+PEXSI.LDOS.Energy -3.5141 eV
+PEXSI.LDOS.Broadening 0.05 eV
 
 
 WriteDMHS.NetCDF F

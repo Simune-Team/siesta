@@ -26,7 +26,7 @@ KINDS="4 8"
 FPPFLAGS_MPI=-DMPI
 #
 PEXSI_INCFLAGS = -I/project/projectdirs/m1027/PEXSI/libpexsi_interfaces/$(PEXSI_VERSION)
-FPPFLAGS_PEXSI=-DPEXSI
+FPPFLAGS_PEXSI=-DSIESTA__PEXSI
 #
 # Extended interface
 PEXSI_DIR     = /project/projectdirs/m1027/PEXSI/libpexsi_edison
@@ -48,7 +48,7 @@ LIBS             = ${PEXSI_LIB} ${DSUPERLU_LIB} ${SELINV_LIB} ${SCOTCH_LIB} ${ME
 LDFLAGS  = -no-ipo
 #
 SYS=cpu_time
-FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI) -DMPI_TIMING -DF2003
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI) -DMPI_TIMING -DF2003 $(FPPFLAGS_PEXSI)
 #
 #
 .F.o:

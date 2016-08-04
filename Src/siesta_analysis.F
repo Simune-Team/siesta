@@ -21,7 +21,7 @@
       use m_ksv
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
       USE m_pexsi_local_DOS, only: pexsi_local_DOS
       USE m_pexsi_dos, only: pexsi_dos
 #endif      
@@ -126,7 +126,7 @@
          endif
       endif
 
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
       if (fdf_get("PEXSI.DOS",.false.)) then
          call pexsi_dos(no_u, no_l, spinor_dim,
      $        maxnh, numh, listhptr, listh, H, S, qtot, ef)
@@ -550,8 +550,8 @@ C     Find local density of states
 !      in 'siesta_move'
 
       endif ! SIESTA_worker
-#ifdef PEXSI
-      if (fdf_get("PEXSI.LocalDOS",.false.)) then
+#ifdef SIESTA__PEXSI
+      if (fdf_get("PEXSI.LDOS",.false.)) then
          call pexsi_local_DOS()
       endif
 #endif

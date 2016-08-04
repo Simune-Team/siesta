@@ -34,7 +34,7 @@
       use parallel, only: IONode
       use parallel, only: SIESTA_worker
       use m_compute_ebs_shift, only: compute_ebs_shift
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
       use m_pexsi_solver,  only: pexsi_solver
 #endif
       use m_hsx, only      : write_hs_formatted
@@ -108,7 +108,7 @@
          endif
       endif
 
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
       if (isolve .eq. SOLVE_PEXSI) then
         ! This test done in node 0 since NonCol and SpOrb
         ! are not set for PEXSI-solver-only processes

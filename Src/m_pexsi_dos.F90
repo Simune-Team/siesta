@@ -1,7 +1,7 @@
 
 ! Tangled code
 module m_pexsi_dos
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
     use precision, only  : dp
 
   public :: pexsi_dos

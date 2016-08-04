@@ -1,6 +1,6 @@
 
 module m_pexsi
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
   use precision, only: dp
   use iso_c_binding
 

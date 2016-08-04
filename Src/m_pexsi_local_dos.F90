@@ -1,7 +1,7 @@
 
 ! Tangled code
   MODULE m_pexsi_local_dos
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
   private
   public :: pexsi_local_dos
 
@@ -36,8 +36,8 @@
   
     type(filesOut_t)     :: filesOut  ! blank output file names
   
-    energy = fdf_get('PEXSI.LocalDOS.Energy',0.0_dp,"Ry")
-    broadening = fdf_get('PEXSI.LocalDOS.Broadening',0.01_dp,"Ry")
+    energy = fdf_get('PEXSI.LDOS.Energy',0.0_dp,"Ry")
+    broadening = fdf_get('PEXSI.LDOS.Broadening',0.01_dp,"Ry")
   
     ! Note that we re-use Dscf, so it will be obliterated
     call get_LDOS_SI( no_u, no_l, nspin,  &
@@ -63,7 +63,7 @@
   END subroutine pexsi_local_dos
   subroutine get_LDOS_SI( no_u, no_l, nspin_in,  &
        maxnh, numh, listh, H, S,  &
-       LocalDOSDM, energy, broadening)
+       LDOS_DM, energy, broadening)
   
   use precision, only  : dp
   use fdf
@@ -92,7 +92,7 @@
   integer, intent(in), target  :: listh(maxnh), numh(no_l)
   real(dp), intent(in), target :: H(maxnh,nspin_in), S(maxnh)
   real(dp), intent(in)         :: energy, broadening
-  real(dp), intent(out)        :: LocalDOSDM(maxnh,nspin_in)
+  real(dp), intent(out)        :: LDOS_DM(maxnh,nspin_in)
   integer        :: ih, i
   integer        :: info
   logical        :: write_ok
@@ -170,7 +170,7 @@
   call mpi_comm_size( World_Comm, numNodesTotal, ierr )
   
   npPerPole  = fdf_get("PEXSI.np-per-pole",4)
-  npPerPole  = fdf_get("PEXSI.LocalDOS.np-per-pole",npPerPole)
+  npPerPole  = fdf_get("PEXSI.LDOS.np-per-pole",npPerPole)
   if (nspin*npPerPole > numNodesTotal) &
        call die("PEXSI.np-per-pole is too big for MPI size")
   
@@ -445,7 +445,7 @@
   
      if (SIESTA_worker) then
   
-        LocalDOSDM(:,ispin)  = m1%vals(1)%data(:)    
+        LDOS_DM(:,ispin)  = m1%vals(1)%data(:)    
         ! Check no_l
         if (no_l /= m1%no_l) then
            call die("Mismatch in no_l")

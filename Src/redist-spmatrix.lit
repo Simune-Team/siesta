@@ -25,7 +25,7 @@ non-disjoint groups.
 The general structure is
 #+BEGIN_SRC f90 :noweb-ref code-structure
 module m_redist_spmatrix
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
  implicit none
  <<module-type-declarations>>
  public :: redistribute_spmatrix

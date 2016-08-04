@@ -1,7 +1,7 @@
 
 ! --- Tangled code
 module m_redist_spmatrix
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
  implicit none
  type, public :: comm_t
     integer :: src, dst, i1, i2, nitems

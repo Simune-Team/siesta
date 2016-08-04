@@ -17,7 +17,7 @@ factorization information.
 
 #+BEGIN_SRC f90 :noweb yes :tangle m_pexsi.F90
   module m_pexsi
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
   use precision, only: dp
   use iso_c_binding
 
@@ -119,7 +119,7 @@ module m_pexsi_solver
  real(dp), save :: prevDmax  ! For communication of max diff in DM in scf loop
                              ! used in the heuristics for N_el tolerance
  public :: prevDmax
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
  public :: pexsi_solver
 
 CONTAINS
@@ -391,7 +391,7 @@ communicator. For now, this is World_Comm.
 
   allocate (PEXSI_Pole_ranks_in_World_Spin(npPerPole,nspin))
   call MPI_AllGather(pexsi_pole_ranks_in_world,npPerPole,MPI_integer,&
-       PEXSI_Pole_Ranks_in_World_Spin,npPerPole, &
+       PEXSI_Pole_Ranks_in_World_Spin(1,1),npPerPole, &
        MPI_integer,PEXSI_Spin_Comm,ierr)
 
   ! Create distributions known to all nodes

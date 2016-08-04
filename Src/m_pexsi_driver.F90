@@ -9,7 +9,7 @@ module m_pexsi_solver
  real(dp), save :: prevDmax  ! For communication of max diff in DM in scf loop
                              ! used in the heuristics for N_el tolerance
  public :: prevDmax
-#ifdef PEXSI
+#ifdef SIESTA__PEXSI
  public :: pexsi_solver
 
 CONTAINS
