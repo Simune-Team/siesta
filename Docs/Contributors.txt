@@ -38,11 +38,13 @@ Jaime Ferrer
 Chu-Chun Fu
 Sandra Garcia
 Victor M. Garcia-Suarez
+Georg Huhs
 Rogeli Grima
 Rainer Hoft
 Jorge Kohanoff
 Richard Korytar
 In-Ho Lee
+Lin Lin
 Nicolas Lorente
 Miquel Llunell
 Eduardo Machado
@@ -61,7 +63,7 @@ Andrew Walker
 Andrew Walkingshaw
 Toby White
 Francois Willaime
-
+Chao Yang
 
 O.F. Sankey, D.J. Niklewski and D.A. Drabold made the FIREBALL code
 available to P. Ordejon.  Although we no longer use the routines in

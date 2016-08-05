@@ -171,6 +171,11 @@ module dictionary
   end interface pop
   public :: pop
 
+  interface copy
+     module procedure copy_
+  end interface 
+  public :: copy
+
   interface nullify
      module procedure nullify_
   end interface nullify
@@ -723,6 +728,35 @@ contains
     end subroutine del_d_entry_tree
 
   end subroutine delete_
+
+
+  !> Generate the copy routine
+  subroutine copy_(from, to)
+    type(dict), intent(in) :: from
+    type(dict), intent(inout) :: to
+
+    type(d_entry), pointer :: d
+    type(var) :: v
+
+    ! Delete the dictionary
+    call delete(to)
+
+    d => from%first
+    do while ( associated(d) )
+       
+       ! Associate data...
+       call associate(v, d%value)
+       ! Copy data, hence .kv.
+       to = to // (trim(d%key).kv.v)
+       
+       d => d%next
+    end do
+
+    ! Clean up pointers...
+    call nullify(v)
+    nullify(d)
+    
+  end subroutine copy_
 
   subroutine pop_(val,this,key,dealloc)
     type(var), intent(inout) :: val

@@ -46,8 +46,7 @@ C
       use parallel,   only : Node
       use precision,  only : dp
 #ifdef MPI
-      use mpi_siesta, only : MPI_Bcast, MPI_Comm_World, 
-     . MPI_Integer, MPI_Double_Precision, MPI_Logical 
+      use mpi_siesta
 #endif
 
       implicit          none

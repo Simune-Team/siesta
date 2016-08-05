@@ -146,8 +146,13 @@ module m_ts_electype
      ! and NOT: i (Sigma - Sigma^\dagger)
      complex(dp), pointer :: Gamma(:), Sigma(:)
 
+     ! The accuracy required for the self-energy
+     !  == 1e-13 * eV
+     real(dp) :: accu = 7.349806700083788e-15_dp
+
      ! The imaginary part in the electrode
-     real(dp) :: Eta = 7.3498067e-6_dp ! corresponds to 0.0001 eV
+     !  == 0.0001 * eV
+     real(dp) :: Eta = 7.3498067e-6_dp
 
      ! The region of the down-folded region
      type(tRgn) :: o_inD, inDpvt
@@ -555,6 +560,14 @@ contains
             leqi(ln,'TSDE') .or. leqi(ln,'TSDE-file') ) then
           if ( fdf_bnnames(pline) < 2 ) call die('DE name not supplied')
           this%DEfile = trim(fdf_bnames(pline,2))
+
+#ifdef TBTRANS
+       else if ( leqi(ln,'tbt.Accuracy') .or. leqi(ln,'Accuracy') ) then
+#else
+       else if ( leqi(ln,'Accuracy') ) then
+#endif
+          call pline_E_parse(pline,1,ln, &
+               val = this%accu, before=3)
 
 #ifdef TBTRANS
        else if ( leqi(ln,'tbt.Eta') .or. leqi(ln,'Eta') ) then
@@ -1635,7 +1648,7 @@ contains
   end subroutine delete_
 
   
-  subroutine check_connectivity( this )
+  function check_connectivity(this) result(good)
 
     use parallel, only : IONode
     use units, only : eV
@@ -1650,6 +1663,7 @@ contains
 #endif
 
     type(Elec), intent(inout) :: this
+    logical :: good
 
     real(dp), pointer :: H(:,:)
     real(dp), pointer :: S(:)
@@ -1738,6 +1752,10 @@ contains
     ! clean-up
     call delete(sp02)
 
+    ! If both number
+    good = ind == 0
+    if ( .not. good ) good = maxi == 0
+
     if ( .not. IONode ) return
 
     if ( ind == 0 ) then
@@ -1756,7 +1774,7 @@ contains
             maxi,',',maxj,')|@R=',tm(this%t_dir),' = ',maxS
     end if
 
-  end subroutine check_connectivity
+  end function check_connectivity
 
   ! Routine for checking the validity of the electrode against the 
   ! system setup in transiesta
@@ -2021,6 +2039,7 @@ contains
 #else
     write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
 #endif
+    write(*,f9)  '  Electrode self-energy accuracy', this%accu/eV,' eV'
     write(*,f6)  '  Electrode inter-layer distance (semi-inf)', this%dINF_layer/Ang,' Ang'
 
 

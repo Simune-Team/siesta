@@ -1450,6 +1450,8 @@ C ----------------------------------------------------------------------
       endif
 
 !     Everything now is in UNIFORM, sequential form
+
+      call timer("CellXC",1)
 #ifdef BSC_CELLXC
       if (nodes.gt.1) then
          call setMeshDistr( LINEAR, nsm, nsp, nml, nmpl, ntml, ntpl )
@@ -1476,6 +1478,7 @@ C ----------------------------------------------------------------------
      .                           myBox(1,3), myBox(2,3), nspin,
      .             DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )
 #else /* BSC_CELLXC */
+
       if (nodes.gt.1) then
          call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
       endif
@@ -1503,6 +1506,8 @@ C ----------------------------------------------------------------------
 
       Exc =  Ex +  Ec
       Dxc = DEx + DEc
+
+      call timer("CellXC",2)
 
 !     Vscf contains only Vxc, and is UNIFORM and sequential
 !     Now we add up the other contributions to it, at 

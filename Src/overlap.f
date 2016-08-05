@@ -15,6 +15,10 @@
      &                          reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
       use m_new_matel,   only : new_matel
+      use m_iodm_old,    only : write_dm
+      use m_matio,       only : write_mat
+      use atomlist, only: no_l
+      use fdf
 
       implicit none
 
@@ -121,6 +125,23 @@ C     Deallocate local memory
 !      call new_MATEL( 'S', 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
       call de_alloc( Si, 'Si', 'overlap' )
+
+      if (fdf_get("Sonly",.false.)) then
+         call write_dm(maxnh, no_l, 1,
+     &               numh, listhptr, listh, S,
+     $               userfile="SOLD")
+
+         call write_mat(maxnh, no_l, 1,
+     &               numh, listhptr, listh, S,
+     $               userfile="SMAT")
+
+         call timer("fastWriteMat",1)
+         call write_mat(maxnh, no_l, 1,
+     &               numh, listhptr, listh, S,
+     $               userfile="SMATBS",compatible=.false.)
+         call timer("fastWriteMat",2)
+      endif
+
 
 C     Finish timer
       call timer( 'overlap', 2 )

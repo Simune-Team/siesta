@@ -52,6 +52,7 @@
       use m_gamma
       use m_hsx, only: write_hsx
       use sys, only: die
+      use fdf
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -81,8 +82,9 @@
       integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
-      ! To avoid overwriting the current Hamiltonian
+      ! To avoid overwriting the current Hamiltonian and S
       real(dp), pointer     :: H_tmp(:,:) => null()
+      real(dp), pointer     :: S_tmp(:) => null()  
       real(dp), pointer     :: H_ldau(:,:)
 
 #ifdef MPI
@@ -104,8 +106,10 @@
 !     Initialize Hamiltonian ........................................
       call re_alloc(H_tmp, 1,maxnh, 1, h_spin_dim,
      $             'H_tmp','final_H_f_stress')
+      call re_alloc(S_tmp, 1,maxnh,
+     $                       'S_tmp','final_H_f_stress')
 !$OMP parallel workshare default(shared)
-      H_tmp = 0.0_dp
+            H_tmp = 0.0_dp
 !$OMP end parallel workshare
 
 !     Initialize forces and stress ...................
@@ -216,7 +220,7 @@
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              spinor_dim, Escf, fal, stressl, S ) 
+     &              spinor_dim, Escf, fal, stressl, S_tmp ) 
 
 !     Metadynamics forces
       if (lMetaForce) then
@@ -258,6 +262,7 @@
 
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
       call de_alloc( H_tmp, 'H_tmp', 'final_H_f_stress' )
+      call de_alloc( S_tmp, 'S_tmp', 'final_H_f_stress' )
 
       ! Determine whether anything should be saved
       ! If not, return immediately
@@ -329,6 +334,7 @@
          end if
       endif
 #endif /* TRANSIESTA */
+
 !----------------------------------------------------------------------- END
       END subroutine final_H_f_stress
       END module m_final_H_f_stress

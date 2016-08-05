@@ -6,6 +6,7 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
 MODULE MPI_SIESTA
+#ifndef NO_MPI_INTERFACES
 !
 ! This is an interface to supplant some MPI routines called by siesta,
 ! in order to time-profile them. J.M.Soler. May.2009
@@ -20,13 +21,39 @@ MODULE MPI_SIESTA
     trueMPI_WAIT       => MPI_WAIT,       &
     trueMPI_WAITALL    => MPI_WAITALL
 
-  USE TIMER_MPI_M, only: timer_mpi
+    USE TIMER_MPI_M, only: timer_mpi
+
+#else /* NO_MPI_INTERFACES */
+! For this PEXSI version, temporarily removed timing versions of some
+! MPI routines.
+
+#undef MPI
+#endif /* NO_MPI_INTERFACES */
 
 ! The following construction allows to supplant MPI_Comm_World within SIESTA,
 ! and to use it as a subroutine with its own internal MPI communicator.
+#ifndef NO_MPI_INTERFACES
 ! JMS. Oct.2010
   USE MPI_INTERFACES, only: true_MPI_Comm_World => MPI_Comm_World
+#else /* NO_MPI_INTERFACES */
+! AG, March 2013
+  USE MPI, true_MPI_Comm_World => MPI_Comm_World
+#endif /* NO_MPI_INTERFACES */
   integer, public :: MPI_Comm_World = true_MPI_Comm_World
+#ifdef NO_MPI_INTERFACES
+  public :: true_MPI_Comm_World
+
+
+#ifdef GRID_SP
+        integer, parameter :: MPI_grid_real   = MPI_real
+#elif defined(GRID_DP)
+        integer, parameter :: MPI_grid_real   = MPI_double_precision
+#else
+        integer, parameter :: MPI_grid_real   = MPI_double_precision
+#endif
+
+
+#endif /* NO_MPI_INTERFACES */
 !
 !   Export explicitly some symbols to help some versions of
 !   the PGI compiler, which do not consider them public by default
@@ -44,11 +71,12 @@ MODULE MPI_SIESTA
         public :: mpi_comm_self
         public :: mpi_grid_real
         public :: mpi_finalize
-
+        public :: mpi_group_null, mpi_comm_null, mpi_proc_null
 !        public :: mpi_thread_single
         public :: mpi_thread_funneled
 
 
+#ifndef NO_MPI_INTERFACES
   PUBLIC :: MPI_BARRIER
   INTERFACE MPI_BARRIER
     MODULE PROCEDURE myMPI_BARRIER
@@ -176,4 +204,5 @@ CONTAINS
     call timer_mpi('MPI_WAITALL',2)
   END SUBROUTINE myMPI_WAITALL
           
+#endif /* ! NO_MPI_INTERFACES */
 END MODULE MPI_SIESTA

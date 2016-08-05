@@ -21,8 +21,6 @@ module m_ts_electrode
 
   private
 
-  ! Accuracy of the surface-Green function
-  real(dp), parameter :: accur = 1.e-15_dp
   ! BLAS parameters
   complex(dp), parameter :: z_1  = dcmplx(1._dp,0._dp)
   complex(dp), parameter :: z_m1 = dcmplx(-1._dp,0._dp)
@@ -39,7 +37,7 @@ contains
   ! Calculates the surface Green function for the electrodes
   ! Handles both the left and right one
   ! this is the Sancho, Sancho and Rubio algorithm
-  subroutine SSR_sGreen_DOS(no,ZE,H00,S00,H01,S01,GS, &
+  subroutine SSR_sGreen_DOS(no,ZE,H00,S00,H01,S01,accu, GS, &
        DOS, T, &
        nwork, zwork, &
        iterations, final_invert)
@@ -51,9 +49,11 @@ contains
 ! complex(dp) S00     : Overlap matrix within the first unit cell (discarding T-direction)
 ! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in T-direction)
 ! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in T-direction)
+! real(dp) accu       : Define the accuracy needed for convergence.
 ! ***************** OUTPUT *********************************************
 ! complex(dp) GS      : Surface Green function of the electrode
 ! real(dp) DOS        : DOS of bulk electrode (additive)
+! real(dp) T          : transmission of bulk electrode (additive)
 ! **********************************************************************
     use m_pivot_array, only : ipiv
     use m_mat_invert
@@ -68,8 +68,9 @@ contains
     complex(dp), intent(in) :: ZE 
     complex(dp), intent(in) :: H00(no*no),S00(no*no)
     complex(dp), intent(in) :: H01(no*no),S01(no*no)
+    real(dp), intent(in) :: accu
 
-    integer,     intent(in) :: nwork
+    integer, intent(in) :: nwork
 
     logical, intent(in), optional :: final_invert
 
@@ -174,9 +175,9 @@ contains
 !$OMP end parallel
 
     ! Initialize loop
-    ro = accur + 1._dp
+    ro = accu + 1._dp
     as_first = .false.
-    do while ( ro > accur ) 
+    do while ( ro > accu ) 
 
        ! Increment iterations
        if ( present(iterations) ) &
@@ -507,7 +508,7 @@ contains
   ! Calculates the surface Green function for the electrodes
   ! Handles both the left and right one
   ! this is the Sancho, Sancho and Rubio algorithm
-  subroutine SSR_sGreen_NoDOS(no,ZE,H00,S00,H01,S01,GS, &
+  subroutine SSR_sGreen_NoDOS(no,ZE,H00,S00,H01,S01,accu, GS, &
        nwork, zwork, &
        iterations, final_invert)
        
@@ -532,6 +533,7 @@ contains
     complex(dp), intent(in) :: ZE 
     complex(dp), intent(in) :: H00(no*no),S00(no*no)
     complex(dp), intent(in) :: H01(no*no),S01(no*no)
+    real(dp), intent(in) :: accu
 
     integer,     intent(in) :: nwork
 
@@ -619,9 +621,9 @@ contains
 !$OMP end parallel
 
     ! Initialize loop
-    ro = accur + 1._dp
+    ro = accu + 1._dp
     as_first = .false.
-    do while ( ro > accur ) 
+    do while ( ro > accu ) 
 
        ! Increment iterations
        if ( present(iterations) ) &
@@ -1193,7 +1195,8 @@ contains
                 ! Zenergy is wrt. to the system Fermi-level
                 if ( CalcDOS ) then
                    lDOS = 0._dp
-                   call SSR_sGreen_DOS(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
+                   call SSR_sGreen_DOS(nuo_E,ZEnergy,H00,S00,H01,S01, &
+                        El%accu, GS, &
                         lDOS,i_mean,9*nS,zwork, &
                         iterations=iters(iqpt,iEn,ikpt,1), final_invert = reduce_size)
                    
@@ -1202,7 +1205,8 @@ contains
                    if ( CalcT ) T(iEn,ispin) = T(iEn,ispin) + i_mean
 
                 else
-                   call SSR_sGreen_NoDos(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
+                   call SSR_sGreen_NoDos(nuo_E,ZEnergy,H00,S00,H01,S01, &
+                        El%accu, GS, &
                         8*nS,zwork, &
                         iterations=iters(iqpt,iEn,ikpt,1), final_invert = reduce_size)
                    
@@ -1520,12 +1524,20 @@ contains
 
 
   subroutine init_Electrode_HS(El)
-    use m_ts_electype
+    use fdf, only: fdf_get
+#ifdef MPI
+    use mpi_siesta
+#endif
     use class_Sparsity
     use class_dSpData1D
     use class_dSpData2D
+    use m_ts_electype
 
     type(Elec), intent(inout) :: El
+#ifdef MPI
+    integer :: error
+#endif
+    logical :: neglect_conn
     
     ! Read-in and create the corresponding transfer-matrices
     call delete(El) ! ensure clean electrode
@@ -1538,7 +1550,22 @@ contains
 
     ! print out the precision of the electrode (whether it extends
     ! beyond first principal layer)
-    call check_Connectivity(El)
+    if ( check_connectivity(El) ) then
+       neglect_conn = .true.
+    else
+       neglect_conn = fdf_get('TS.Elecs.Neglect.Principal', .false.)
+#ifdef TBTRANS
+       neglect_conn = fdf_get('TBT.Elecs.Neglect.Principal', neglect_conn)
+#endif
+    end if
+    
+#ifdef MPI
+    call MPI_Barrier(MPI_Comm_World,error)
+#endif
+    if ( .not. neglect_conn ) then
+       call die('Electrode connectivity is not perfect, &
+            &refer to the manual for achieving a perfect electrode.')
+    end if
     
     call create_sp2sp01(El)
     ! Clean-up, we will not need these!
@@ -1934,12 +1961,14 @@ contains
 
        ! calculate the contribution for this q-point
        if ( calc_DOS ) then
-          call SSR_sGreen_DOS(nuo_E,Z,H00,S00,H01,S01,GS, &
+          call SSR_sGreen_DOS(nuo_E,Z,H00,S00,H01,S01, &
+               El%accu, GS, &
                DOS(1:nuo_E), T, &
                nw, zwork, &
                final_invert = reduce_size)
        else
-          call SSR_sGreen_NoDOS(nuo_E,Z,H00,S00,H01,S01,GS, &
+          call SSR_sGreen_NoDOS(nuo_E,Z,H00,S00,H01,S01, &
+               El%accu, GS, &
                nw, zwork, &
                final_invert = reduce_size)
        end if

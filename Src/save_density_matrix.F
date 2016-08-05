@@ -12,7 +12,7 @@
 
       CONTAINS
 
-      subroutine save_density_matrix(id)
+      subroutine save_density_matrix(when,file)
 
       ! Stores DM and EDM on files
       ! This version uses module variables.
@@ -23,6 +23,7 @@
       use sparse_matrices,      only:  listh, listhptr
       use files, only : slabel
       use m_iodm,               only:  write_dm
+      use m_matio,              only:  write_mat
       use m_spin,               only:  nspin, h_spin_dim
       use atomlist,             only:  no_l
       use siesta_options,       only:  writedm, writedm_cdf
@@ -30,6 +31,7 @@
       use siesta_options,       only:  idyn
       use m_steps,              only:  istp
       use sparse_matrices,      only:  Dscf, DM_2D
+      use fdf,                  only:  fdf_get
 #ifdef CDF
       use iodm_netcdf,          only:  write_dm_netcdf
 #ifdef NCDF_4
@@ -48,8 +50,11 @@
 
       implicit none
 
-      ! This is a just a comment in the caller side, unused for now
-      character(len=*), intent(in)   :: id
+      logical, intent(in), optional  :: when
+      character(len=*), intent(in), optional   :: file
+
+      logical :: do_it
+
 #ifdef CDF
 #ifdef NCDF_4
       type(dict) :: dic_save
@@ -59,9 +64,15 @@
       integer :: i
 #endif
 
-#ifdef DEBUG
-      call write_debug( '    PRE save_density_matrix' )
-#endif
+      ! Control the condition to write the DM externally
+      ! This gives more flexibility
+      ! We retain the "writedm" default condition for compatibility
+
+      if (present(when)) then
+         do_it = when
+      else
+         do_it = writedm
+      endif
 
 #ifdef CDF
 !     Save density matrix on disk, after mixing, to
@@ -87,16 +98,25 @@
 #endif
     
 #ifndef TRANSIESTA
-      if (writedm) then
+      if (do_it) then
 #ifdef TIMING_IO
          call timer('IO-W-DM',1)
          do i = 1 , 100
 #endif
-        if ((idyn .eq. 6) .or. (idyn .eq. 7).or.(idyn.eq.9)) then
-          if (istp.eq.1)
-     &          call write_dm(trim(slabel)//'.DM', h_spin_dim, DM_2D)
+        if (((idyn .eq. 6) .or. (idyn .eq. 7).or.(idyn.eq.9))
+     $        .and. (istp .ne. 1)                      ) then
+            ! do not write
         else
-           call write_dm(trim(slabel)//'.DM', h_spin_dim, DM_2D)
+          if (fdf_get("Use.Blocked.WriteMat",.false.)) then
+             call write_mat (maxnh, no_l, h_spin_dim,
+     &               numh, listhptr, listh, Dscf,
+     $               userfile=trim(file)//'.blocked',compatible=.false.)
+          else
+             ! The filename falls back to the standard one     
+             !
+             call write_dm(trim(slabel)//'.DM',
+     $                     h_spin_dim, DM_2D)
+	  endif
         end if
 #ifdef TIMING_IO
       end do
@@ -106,7 +126,7 @@
       endif ! writedm
 #else /* TRANSIESTA */
 ! TSS Begin
-      if (writedm) then
+      if (do_it) then
         if (.not.TSrun) then   !TSS save Dscf
 #ifdef TIMING_IO
          call timer('IO-W-DM',1)
@@ -150,10 +170,6 @@
       end if ! writedm
 #endif /* TRANSIESTA */
 
-#ifdef DEBUG
-      call write_debug( '    POS save_density_matrix' )
-#endif
-      
       end subroutine save_density_matrix
 
       end module m_save_density_matrix

@@ -43,12 +43,12 @@
       use parallel,   only : Node, Nodes, BlockSize
 #ifdef MPI
       use mpi_siesta, only : mpi_comm_world
+      use elpa1, only: get_elpa_row_col_comms
+      use elpa2, only: solve_evp_real_2stage
 #endif
       use alloc
       use sys,        only : die
 
-      use elpa1, only: get_elpa_row_col_comms
-      use elpa2, only: solve_evp_real_2stage
 
       implicit          none
 

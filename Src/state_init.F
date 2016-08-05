@@ -20,7 +20,7 @@
       use siesta_options
       use units, only: Ang
       use sparse_matrices, only: maxnh, numh, listh, listhptr
-      use sparse_matrices, only: Dscf, Dold, Escf, Hold
+      use sparse_matrices, only: Dscf, Dold, Escf, Hold, Hprev
       use sparse_matrices, only: xijo, H, S_1D, S
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_ldau_2D, H_so_2D
@@ -412,6 +412,8 @@
 
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       write(oname,"(a,i0)") "H at geom step ", istep
+      call re_alloc( Hprev, 1, maxnh, 1, nspin, 'Hprev',
+     .              routine='sparseMat',shrink=.true.,copy=.false.)
       call newdSpData2D(sparse_pattern,h_spin_dim,block_dist,H_2D,
      &                  name=oname)
       !if (ionode) call print_type(H_2D)
@@ -581,6 +583,5 @@
 #endif
       call timer( 'state_init', 2 )
 
-!--------------------------------------------------------------------------- END
       END subroutine state_init
       END module m_state_init

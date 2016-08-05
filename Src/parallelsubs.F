@@ -18,6 +18,9 @@ C
       use sys,          only : die, message
       implicit none
 
+      logical, public, save :: pexsi_dist 
+      integer, public, save :: pexsi_bs
+
       contains
 
       subroutine set_processorY(n)
@@ -63,6 +66,18 @@ C Saved variables
 
 !      if (thisNode /= Node)
 !     $       call message("Non-local use of GetNodeOrbs")
+
+      if (pexsi_dist) then
+         remainder = Norb - pexsi_bs*Nodes
+         if (Node == Nodes-1) then
+            NorbNode = pexsi_bs + remainder
+         else
+            NorbNode = pexsi_bs
+         endif
+         
+         RETURN
+      endif
+
       if (NOrb .eq. NOrbLast) then
 C Values are the same as last call - no need to recalculate
         NOrbNode = NOrbNodeLast
@@ -146,7 +161,16 @@ C  Local variables
 
 !      if (thisNode /= Node)
 !     $       call message("Non-local use of GlobalToLocalOrb")
-      if (lspatial) then 
+
+      if (pexsi_dist) then
+         call WhichNodeOrb(Gorb,Nodes,OrbCheck)
+         if (OrbCheck == Node) then
+            lorb = gorb - pexsi_bs*Node
+         else
+            lorb = 0
+         endif
+         
+      else if (lspatial) then 
 C-------------------------
 C  Spatial distribution  -
 C-------------------------
@@ -223,7 +247,11 @@ C  Local variables
 
 !      if (thisNode /= Node)
 !     $       call message("Non-local use of LocalToGlobalOrb")
-      if (lspatial) then 
+
+      if (pexsi_dist) then
+         gorb = pexsi_bs*Node + lorb
+
+      else if (lspatial) then 
 C-------------------------
 C  Spatial distribution  - 
 C-------------------------
@@ -283,7 +311,14 @@ C
 C  Local variables
       integer GBlock
 
-      if (lspatial) then 
+      if (pexsi_dist) then
+         Node = (Gorb-1)/pexsi_bs
+         ! Check for overflow: if gorb is in the "remainder" set, 
+         ! the above will be incorrect (e.g. 4 (or even 5) in a {0,1,2,3} set)
+         ! (Consider the case norbs=13, pexsi_bs=2, nodes=5)
+         if (Node > Nodes-1) Node = Nodes-1
+
+      else if (lspatial) then 
 C-------------------------
 C  Spatial distribution  - 
 C-------------------------
