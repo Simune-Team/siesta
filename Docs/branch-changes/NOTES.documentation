@@ -78,7 +78,16 @@ fdf index, use \fdfindex. For adding to the file index, use \fileindex.
 This branch introduces the release.sh script which enables an
 easy release tarball creation.
 We encourage that it is called with these options:
-  ./Docs/release.sh --prev-tag v3.2 --tag v4.0 --out siesta-4.0
+  ./Docs/release.sh --prev-tag v3.2 --tag v4.0
 To create the release of version 4.0.
+The script will create a siesta-releases folder in your main shared
+directory with sub-folders with the appropriate files.
+By default will the release.sh script try and sign the files using your
+default GPG key. 
 The previous tag is used to generate a CHANGES and CHANGES_DETAILED file
 which contain the entire log of the commit messages.
+
+
+## Tags ##
+
+The release script of siesta requires certain strictness in the

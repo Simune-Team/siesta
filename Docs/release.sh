@@ -41,11 +41,7 @@ _prev_tag=`bzr tags --sort=time | grep -e '^v' | grep -v '-' | tail -2 | head -1
 _tag=`bzr tags --sort=time | grep -e '^v' | tail -1 | awk '{print $1}'`
 
 # Get default output file (siesta-<>.tar.gz)
-_out=siesta-${_tag//v/}
-_out=${_out//-release/}
-_out=${_out//-rel/}
-_out=${_out//release-/}
-_out=${_out//rel-/}
+_out=
 
 
 function _has_tag {
@@ -150,9 +146,20 @@ while [ $# -gt 0 ]; do
 done
 
 
+# Get default output file (siesta-<>.tar.gz)
+if [ -z "$_out" ]; then
+    _out=siesta-${_tag//v/}
+    _out=${_out//-release/}
+    _out=${_out//-rel/}
+    _out=${_out//release-/}
+    _out=${_out//rel-/}
+fi
+
 echo "Chosen tags are:"
 echo " previous tag: $_prev_tag"
 echo " current tag : $_tag"
+echo "Creating out file:"
+echo " $_out.tar.gz"
 sleep 1
 	    
 # The current procedure of releasing a SIESTA
