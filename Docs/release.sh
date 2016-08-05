@@ -24,16 +24,25 @@
 # This may actually not be changed, but is useful
 # throughout.
 main_dir=`bzr root`
+shared_dir=$(dirname $main_dir)
+# Ensure we are at the root of this file
 pushd $main_dir
 
-# First we setup the default options
-_reldir=siesta-releases
 
-# Get default tags...
-_prev_tag=`bzr tags --sort=time | tail -2 | head -1 | awk '{print $1}'`
-_tag=`bzr tags --sort=time | tail -1 | awk '{print $1}'`
+# First we setup the default options
+# _reldir is the main directory of the SIESTA shared
+# repository (or at least it should be)
+_reldir=$(dirname $main_dir)/siesta-releases
+_sign=1
+
+# Get the previous major release tag
+_prev_tag=`bzr tags --sort=time | grep -e '^v' | grep -v '-' | tail -2 | head -1 | awk '{print $1}'`
+# Get the latest tag
+_tag=`bzr tags --sort=time | grep -e '^v' | tail -1 | awk '{print $1}'`
+
 # Get default output file (siesta-<>.tar.gz)
-_out=siesta-${_tag//-release/}
+_out=siesta-${_tag//v/}
+_out=${_out//-release/}
 _out=${_out//-rel/}
 _out=${_out//release-/}
 _out=${_out//rel-/}
@@ -69,6 +78,32 @@ function _help {
     exit $ret
 }
 
+
+# Function for signing a specific file
+function _sign {
+    local file=$1
+    if [ -e $file ]; then
+	if [ $_sign -eq 1 ]; then
+	    gpg --armor --sign --detach-sig $file
+	fi
+	_store $file
+	if [ $_sign -eq 1 ]; then
+	    _store $file.asc
+	    rm -f $file.asc
+	fi
+    fi
+}
+
+# Save file in the $_tag-files folder
+function _store {
+    local file=$1
+    if [ -e $file ]; then
+	cp $file $_reldir/$_tag-files/
+    fi
+}
+    
+
+
 # First we check whether the release-manager has
 # specified the tag that is going to be shipped.
 while [ $# -gt 0 ]; do
@@ -97,6 +132,10 @@ while [ $# -gt 0 ]; do
 	    fi
 	    shift
 	    ;;
+
+	--no-sign)
+	    _sign=0
+	    ;;
 	
 	--out)
 	    _out=$1
@@ -111,34 +150,60 @@ while [ $# -gt 0 ]; do
 done
 
 
-# 
+echo "Chosen tags are:"
+echo " previous tag: $_prev_tag"
+echo " current tag : $_tag"
+sleep 1
 	    
 # The current procedure of releasing a SIESTA
 # version is the following:
-# 0. Create a temporary directory
-# 1. Make the proper documentation
-# 2. Create diff files (both detailed and non-detailed)
+# 0. Create the necessary directories
+# 1. Create CHANGES and sign-store them.
+# 2. Make the proper documentation
 # 3. Go out of the top-directory to create the repository.
 
+# Top release directories, in case it is not already
+# created.
+mkdir -p $_reldir
+# The final directory with ALL release files, possibly
+# signed.
+mkdir -p $_reldir/$_tag-files
 
-#   Create a temporary work-directory
-cd ../
 # If the release already exists... Tell the user and quit
-if [ -d $_reldir/$_tag ]; then
+if [ -d $_reldir/$_out ]; then
     echo "The release has already been processed."
     echo "Delete this folder:"
     echo "  rm -rf $(dirname $main_dir)/$_reldir/$_tag"
     exit 1
 fi
-bzr branch $main_dir -r $_tag release-manager-$_tag
-mkdir -p $_reldir
-# Move the branch into the directory.
-mv release-manager-$_tag $_reldir/$_tag
+
+
+#   Create a temporary work-directory
+bzr export -r $_tag $_reldir/$_out $main_dir
+
+# Create the changes files
+# This is necessary to do here as the previous
+# siesta versions may not have the tags related.
+{
+    echo "##############################################"
+    echo " Changes between $_prev_tag and $_tag"
+    echo "##############################################"
+    echo ""
+    bzr log -r$_prev_tag..$_tag
+} > $_reldir/$_out/CHANGES
+{
+    echo "##############################################"
+    echo " Detailed Changes between $_prev_tag and $_tag"
+    echo "##############################################"
+    echo ""
+    bzr log -n 0 -r$_prev_tag..$_tag
+} > $_reldir/$_out/CHANGES_DETAILED
+
 
 # Go into the release directory where all work will be done
 pushd $_reldir
-pushd $_tag
-rel_dir=`bzr root`
+
+pushd $_out
 
 
 #   Create documentation
@@ -147,27 +212,20 @@ pushd Docs
 make final-screen
 #   Then the regular documentation (for print)
 make final
-#   Only retain the pdf files
-make clean
+
+#   Clean-up the non-pdf files (currently
+#   this is not available through the make clean)
+rm -f siesta*.[^pt]* siesta*.toc
+rm -f tbtrans*.[^pt]* tbtrans*.toc
+
+# Create signatures and move files
+for f in *.pdf ; do
+    _sign $f
+done
 
 #   Go out of the documentation directory...
 popd
 
-# Create the two different CHANGES file
-{
-    echo "##############################################"
-    echo " Changes between $_prev_tag and $_tag"
-    echo "##############################################"
-    echo ""
-    bzr log -r$_prev_tag..$_tag
-} > CHANGES
-{
-    echo "##############################################"
-    echo " Detailed Changes between $_prev_tag and $_tag"
-    echo "##############################################"
-    echo ""
-    bzr log -n 0 -r$_prev_tag..$_tag
-} > CHANGES_DETAILED
 
 
 # Return from the branch release
@@ -176,16 +234,10 @@ popd
 # Tar the file
 # In some future cases will the tag and out name
 # be equivalent and we shouldn't delete what we should process!
-if [ $_out != $_tag ]; then
-    rm -rf $_out
-    cp -rf $_tag $_out
-fi
 
 # Create the archive... (without any .bzr files)
-tar --exclude '.bzr*' -czf $_out.tar.gz $_out
-
-if [ $_out != $_tag ]; then
-    rm -rf $_out
-fi
+tar -czf $_out.tar.gz $_out
+_sign $_out.tar.gz
+rm $_out.tar.gz
 
 popd

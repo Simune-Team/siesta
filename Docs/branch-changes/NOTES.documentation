@@ -5,14 +5,16 @@ formatting of the documentation.
 This will be a work-in-progress as not all flags are transferred but
 will be eventually.
 
-# Splitting of siesta and tbtrans documentation
+# Splitting of siesta and tbtrans documentation #
 
 The documentation also splits the tbtrans and siesta manual in two.
 This is to accommodate the tbtrans as a stand-alone program (which it
 now is).
 The siesta manual links to the tbtrans manual (if it is in the same folder).
 
-## fdf-options
+
+## fdf-options ##
+
 The fdf-options should be documented as these examples:
 
   \begin{fdfentry}{FDF.Name!SubName}[real]<$0.1$>
@@ -55,11 +57,15 @@ and automatically be moved to the location in the PDF (if the viewer supports it
 If one does not wish to create a link, one may use the starred variant of the
 \fdf* command.
 
-## Files
+
+## Files ##
+
 Files in the manual may be referenced using: \file{full-file-name} and/or
 \sysfile{file-ending}, where the latter is a shorthand for \file{<SystemLabel>.file-ending}.
 
-## Manual indices
+
+## Manual indices ##
+
 The new siesta documentation now splits the index into 3, 1) contains generic
 index entries, 2) all fdf-flags, and 3) the siesta files.
 
@@ -67,10 +73,12 @@ To add specific entries in the regular index, simply use the \index command. To 
 fdf index, use \fdfindex. For adding to the file index, use \fileindex.
 
 
-Secondly this branch introduces the release.sh script which enables an
+# release script #
+
+This branch introduces the release.sh script which enables an
 easy release tarball creation.
 We encourage that it is called with these options:
-  ./Docs/release.sh --prev-tag siesta-3.2 --tag 4.0-release --out siesta-4.0
+  ./Docs/release.sh --prev-tag v3.2 --tag v4.0 --out siesta-4.0
 To create the release of version 4.0.
 The previous tag is used to generate a CHANGES and CHANGES_DETAILED file
 which contain the entire log of the commit messages.
