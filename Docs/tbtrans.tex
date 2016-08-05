@@ -795,7 +795,7 @@ $\rho_{\mathrm{bound-states}}=0$.
   
 \end{fdflogicalF}
 
-\begin{fdfentry}{TBT.Spin}[integer]<\fdfabstract{all}>
+\begin{fdfentry}{TBT.Spin}[integer]<\nonvalue{all}>
 
   If the Hamiltonian is a polarized calculation one my define the
   index of the spin to be calculated.
@@ -825,7 +825,7 @@ Remark that the physical quantities such as DOS, spectral DOS, orbital
 currents may only be calculated in the selected device region. 
 
 \begin{fdfentry}{TBT.Atoms!Device}[block]%
-  <\fdfabstract{all but electrodes}>
+  <\nonvalue{all but electrodes}>
 
   A block with each line denoting the atoms that consists of the
   device region.
@@ -864,7 +864,7 @@ currents may only be calculated in the selected device region.
 \tbtrans\ allows calculating physical quantities via averaging in the
 Brillouin zone. 
 
-\begin{fdfentry}{TBT.k}[block]<\fdfabstract{kgrid\_Monkhorst\_Pack}>
+\begin{fdfentry}{TBT.k}[block]<\nonvalue{kgrid\_Monkhorst\_Pack}>
   
   Specify how to perform Brillouin zone integrations.
 
@@ -1010,7 +1010,7 @@ Brillouin zone.
 
     \end{fdfoptions}
 
-    \option[\fdfabstract{siesta-method}]%
+    \option[\fdfvalue{siesta-method}]%
 
     One may also use the typical \fdf*{kgrid\_Monkhorst\_Pack} method
     of input as done in \siesta. This is a $3\times3$ block such as:
@@ -1219,7 +1219,7 @@ work. However, the \fdf*{TBT} has precedence.
   \begin{fdfoptions}
 
     \option[HS]%
-    \fdfindex{TBT!Elec.<>!HS}%
+    \fdfindex*{TBT!Elec.<>!HS}%
     The electronic structure information from the initial
     electrode calculation. This file retains the geometrical
     information as well as the Hamiltonian, overlap matrix and the
@@ -1232,7 +1232,7 @@ work. However, the \fdf*{TBT} has precedence.
     structure. This may be created using \sisl.
 
     \option[semi-inf-direction|semi-inf-dir|semi-inf]%
-    \fdfindex{TBT.Elec.<>!semi-inf-direction}%
+    \fdfindex*{TBT.Elec.<>!semi-inf-direction}%
     The semi-infinite direction of the electrode with respect to the
     electrode unit-cell. 
 
@@ -1241,13 +1241,13 @@ work. However, the \fdf*{TBT} has precedence.
     and the scattering region unit-cell.
 
     \option[chemical-potential|chem-pot|mu]%
-    \fdfindex{TBT.Elec.<>!chemical-potential}%
+    \fdfindex*{TBT.Elec.<>!chemical-potential}%
     The chemical potential that is associated with this
     electrode. This is a string that should be present in the
     \fdf{TBT.ChemPots} block.
 
     \option[electrode-position|elec-pos]%
-    \fdfindex{TBT.Elec.<>!electrode-position}%
+    \fdfindex*{TBT.Elec.<>!electrode-position}%
     The index of the electrode in the scattering region.
     This may be given by either \fdf*{elec-pos <idx>}, which refers to
     the first atomic index of the electrode residing at index
@@ -1256,7 +1256,7 @@ work. However, the \fdf*{TBT} has precedence.
     will be located at \fdf*{<idx>}.
 
     \option[used-atoms]%
-    \fdfindex{TBT.Elec.<>!used-atoms}%
+    \fdfindex*{TBT.Elec.<>!used-atoms}%
     Number of atoms from the electrode calculation that is used in the
     scattering region as electrode. This may be useful when the
     periodicity of the electrodes forces extensive electrodes in the
@@ -1265,13 +1265,13 @@ work. However, the \fdf*{TBT} has precedence.
     \note do not set this if you use all atoms in the electrode.
 
     \option[Bulk]%
-    \fdfindex{TBT.Elec.<>!Bulk}%
+    \fdfindex*{TBT.Elec.<>!Bulk}%
     Logical controlling whether the Hamiltonian of the electrode
     region in the scattering region is enforced \emph{bulk} or whether
     the Hamiltonian is taken from the scattering region elements.
 
     \option[tbt.Gf/Gf]%
-    \fdfindex{TBT.Elec.<>!Gf}%
+    \fdfindex*{TBT.Elec.<>!Gf}%
     String with filename of the surface Green function data. This may
     be used to place a common surface Green function file in a top
     directory which may then be used in all calculations using the
@@ -1281,20 +1281,20 @@ work. However, the \fdf*{TBT} has precedence.
     performance at the cost of disk-space.
 
     \option[tbt.Gf-Reuse]%
-    \fdfindex{TBT.Elec.<>!Gf-Reuse}%
+    \fdfindex*{TBT.Elec.<>!tbt.Gf-Reuse}%
     Logical deciding whether the surface Green function file should be
     re-used or deleted.
     %
-    If this is \fdf*{false} the surface Green function file is deleted
+    If this is \fdffalse\ the surface Green function file is deleted
     and re-created upon start.
     
     \option[tbt.Eta/Eta]%
-    \fdfindex{TBT.Elec.<>!tbt.Eta}%
+    \fdfindex*{TBT.Elec.<>!tbt.Eta}%
     Control the imaginary part of the surface Green function for this
     electrode. See \fdf{TBT.Elecs!Eta}.
 
     \option[tbt.Accuracy/Accuracy]%
-    \fdfindex{TBT.Elec.<>!tbt.Accuracy}%
+    \fdfindex*{TBT.Elec.<>!tbt.Accuracy}%
     Control the convergence accuracy required for the self-energy
     calculation when using the Lopez-Sanchez, Lopez-Sanchez iterative
     scheme.
@@ -1304,7 +1304,7 @@ work. However, the \fdf*{TBT} has precedence.
     \note advanced use \emph{only}.
 
     \option[Bloch]%
-    \fdfindex{TBT.Elec.<>!Bloch}%
+    \fdfindex*{TBT.Elec.<>!Bloch}%
     $3$ integers are present on this line which each denote the number
     of times bigger the scattering region electrode is compared to the
     electrode, in each lattice direction. Remark that these expansion
@@ -1313,12 +1313,12 @@ work. However, the \fdf*{TBT} has precedence.
     Bloch waves.
 
     \option[Bloch-A/a1|B/a2|C/a3]%
-    \fdfindex{TBT.Elec.<>!Bloch}%
+    \fdfindex*{TBT.Elec.<>!Bloch}%
     Specific Bloch expansions in each of the electrode unit-cell
     direction. See \fdf*{Bloch} for details.
 
     \option[pre-expand]%
-    \fdfindex{TBT.Elec.<>!pre-expand}%
+    \fdfindex*{TBT.Elec.<>!pre-expand}%
     String denoting how the expansion of the surface Green function
     file will be performed. This only affects the Green function file
     if \fdf*{Bloch} is larger than 1. By default the Green function
@@ -1331,14 +1331,14 @@ work. However, the \fdf*{TBT} has precedence.
     For performance reasons \fdf*{all} is preferred. 
 
     \option[tbt.out-of-core/out-of-core]%
-    \fdfindex{TBT.Elec.<>!Out-of-core}%
-    If \fdf*{true} the GF files are created which contain the surface
+    \fdfindex*{TBT.Elec.<>!out-of-core}%
+    If \fdftrue\ the GF files are created which contain the surface
     Green function. Setting this to \fdftrue\ may be advantageous when
     performing many calculations using the same $k$ and energy grid
     using the same electrode. In those case this will heavily increase
     throughput. 
     % 
-    If \fdf*{false} (default) the surface Green function will be
+    If \fdffalse\ (default) the surface Green function will be
     calculated when needed. 
 
     \note simultaneous calculations may read the same GF file.
@@ -1389,9 +1389,9 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
 \begin{fdflogicalT}{TBT.Elecs!GF.Reuse}
   
   Globally control whether the surface Green function files should
-  be re-used (\fdf*{true}) or re-created (\fdf*{false}).
+  be re-used (\fdftrue) or re-created (\fdffalse).
   %
-  See \fdf{TBT.Elec.<>!tbt.GF-Reuse}.
+  See \fdf{TBT.Elec.<>!tbt.Gf-Reuse}.
   
 \end{fdflogicalT}
 
@@ -1400,7 +1400,7 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
   Whether the electrodes will calculate the self energy at each SCF
   step. Using this will not require the surface Green function files
   but at the cost of heavily degraded performance.
-  You are not encouraged to set this to \fdf*{false}.
+  You are not encouraged to set this to \fdffalse.
   %
   See \fdf{TBT.Elec.<>!out-of-core}.
   

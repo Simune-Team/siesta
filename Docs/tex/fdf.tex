@@ -49,7 +49,11 @@
 % Define the skip of a new fdf key
 \newcommand\fdfentrybody{\parskip2pt}
 
-\NewDocumentCommand\fdfabstract{ m }{\textlangle#1\textrangle}
+% How to show abstract option
+\NewDocumentCommand\nonvalue{ m }{\textlangle#1\textrangle}
+
+\NewDocumentCommand\fdfvalue{ m }{\nonvalue{\fdf{#1}}}
+
 
 % Counter for hyper link
 \newcount\siestatargetcount
@@ -99,7 +103,7 @@
         \expandafter\let\siesta@active@bar\siesta@bar
         \def\tmp@None{#3}%
         \ifx\tmp@None\fdfentryline@None%
-          \let\tmp@None\fdfabstract%
+          \let\tmp@None\nonvalue%
         \else%
           \let\tmp@None\relax%
         \fi%

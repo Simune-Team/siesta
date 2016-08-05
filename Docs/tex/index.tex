@@ -21,14 +21,22 @@
 
 
 % Create shorthand commands for fdf-indices
-\NewDocumentCommand\fdfindex{ m o }
+\NewDocumentCommand\fdfindex{ s m o }
 {%
-    \IfNoValueTF{#2}{%
+    % If this is the starred variant, we will
+    % create the hypertarget
+    \bgroup%
+    \StrSubstitute[0]{#2}{!}{.}[\@tmp]%
+    \IfBooleanT{#1}{%
+        \expandafter\cleanedhypertarget\expandafter{\@tmp}{\phantom{}}%
+    }
+    \egroup
+    \IfNoValueTF{#3}{%
         %\index{#1@\fdf*{#1}}%
-        \sindex[sfdf]{#1}%
+        \sindex[sfdf]{#2}%
     }{%
         %\index{#1@\fdf*{#1}#2}%
-        \sindex[sfdf]{#1#2}%
+        \sindex[sfdf]{#2#3}%
     }%
 }
 

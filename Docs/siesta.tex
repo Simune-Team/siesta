@@ -3711,7 +3711,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
   
 \end{fdfentry}
 
-\begin{fdfentry}{SCF.Mixer!Kick.Weight}[real]<\fdfabstract{SCF.Mixer.Weight}>%
+\begin{fdfentry}{SCF.Mixer!Kick.Weight}[real]<\fdfvalue{SCF.Mixer!Weight}>%
   \fdfindex{DM.KickMixingWeight}[|see SCF.Mixer.Kick.Weight]
 
   The mixing weight for the linear kick (if used).
@@ -3758,7 +3758,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 
 
 
-\begin{fdfentry}{SCF.Mixer!Linear.After.Weight}[real]<\fdfabstract{SCF.Mixer.Weight}>
+\begin{fdfentry}{SCF.Mixer!Linear.After.Weight}[real]<\fdfvalue{SCF.Mixer!Weight}>
 
   After reaching convergence one may run additional SCF cycles using a
   linear mixing scheme. If this has a value $\ge 0$ \siesta\ will
@@ -5970,7 +5970,8 @@ printed but the program does not stop. Overrides \textbf{UseSaveData}.
 
 \end{description}
 
-\subsection{The PEXSI solver}\label{SolverPEXSI}
+\subsection{The PEXSI solver}
+\label{SolverPEXSI}
 \index{PEXSI solver}
 
 The PEXSI solver is based on the combination of the pole expansion of
@@ -5997,16 +5998,10 @@ use of the full fine-grained-level interface in the PEXSI library
 is still restricted to $\Gamma$-point calculations. 
 
 The following is a brief description of the input-file parameters
-relevant to the workings of the PEXSI solver. For more background, 
+relevant to the workings of the PEXSI solver. For more background,
 including a discussion of the conditions under which this solver is
-competitive, the user is referred to the paper
-
-Lin Lin, Alberto Garcia, Georg Huhs, Chao Yang, \\
-{\it SIESTA-PEXSI: massively parallel method for efficient and
-  accurate ab initio materials simulation without matrix diagonalization}, \\
-J. Phys.: Condens. Matter {\bf 26}, 305503 (2014).
-\url{http://doi.org/10.1088/0953-8984/26/30/305503} \\
-and references therein.
+competitive, the user is referred to the paper \cite{Lin2014}, and
+references therein.
 
 The technology involved in the PEXSI solver can also be used
 to compute densities of states and ``local densities of
@@ -6016,559 +6011,491 @@ linked to in the relevant general sections.
 \subsubsection{Pole handling}
 
 Note that the temperature for the Fermi-Dirac distribution which is
-pole-expanded is taken directly from the {\bf ElectronicTemperature}
+pole-expanded is taken directly from the \fdf{ElectronicTemperature}
 parameter (see Sec.~\ref{electronic-occupation}).
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdfentry}{PEXSI!NumPoles}[integer]<40>
 
-\item[{\bf PEXSI.NumPoles}] ({\it integer}):
-\index{PEXSI.NumPoles@{\bf PEXSI.NumPoles}}
-Effective number of poles used to expand the Fermi-Dirac function.
+  Effective number of poles used to expand the Fermi-Dirac function.
+  
+\end{fdfentry}
 
-{\it Default value:} {\tt 40}
+\begin{fdfentry}{PEXSI!deltaE}[energy]<$3\,\mathrm{Ry}$>
+  
+  In principle \fdf{PEXSI!deltaE} should be $E_{\max}-\mu$, where
+  $E_{\max}$ is the largest eigenvalue for ($H$,$S$), and $\mu$ is the
+  chemical potential. However, due to the fast decay of the
+  Fermi-Dirac function, \fdf{PEXSI!deltaE} can often be chosen to be
+  much lower.  In practice we set the default to be 3 Ryd.  This
+  number should be set to be larger if the difference between
+  $\Tr[\mathrm H\cdot\mathrm{DM}]$ and $\Tr[\mathrm S*\mathrm{EDM}]$
+  (displayed in the output if \fdf{PEXSI!Verbosity} is at least 2)
+  does not decrease with the increase of the number of poles.
 
-\item[{\bf PEXSI.deltaE}] ({\it real energy}):
-\index{PEXSI.deltaE@{\bf PEXSI.deltaE}}
-
-In principle {\bf PEXSI.deltaE} should be $E_{\max}-\mu$, where
-$E_{\max}$ is the largest eigenvalue for ($H$,$S$), and $\mu$ is the
-chemical potential.  However, due to the fast decay of the Fermi-Dirac
-function, {\bf PEXSI.deltaE} can often be chosen to be much lower.  In
-practice we set the default to be 3 Ryd.  This number should be set to
-be larger if the difference between Tr[H*DM] and Tr[S*EDM] (displayed
-in the output if {\bf PEXSI.verbosity} is at least 2) does not
-decrease with the increase of the number of poles.
-
-{\it Default value:} {\tt 3 Ryd}
+\end{fdfentry}
 
 
-\item[{\bf PEXSI.gap}] ({\it real energy}):
-\index{PEXSI.gap@{\bf PEXSI.gap}}
+\begin{fdfentry}{PEXSI!Gap}[energy]<$0\,\mathrm{Ry}$>
 
-Spectral gap. This can be set to be 0 in most cases. 
+  Spectral gap. This can be set to be 0 in most cases.
 
-{\it Default value:} {\tt 0 Ryd}
-
-\end{description}
+\end{fdfentry}
 
 \subsubsection{Parallel environment and control options}
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
 
-\item[{\bf MPI.Nprocs.SIESTA}] ({\it integer}):
-  \index{MPI.Nprocs.SIESTA@{\bf MPI.Nprocs.SIESTA}} 
+\begin{fdfentry}{MPI!Nprocs.SIESTA}[integer]<\nonvalue{total processors}>
 
-Specifies the number of MPI processes to be used in those parts of the
-program (such as Hamiltonian setup and computation of forces) which
-are outside of the PEXSI solver itself. This is needed in large-scale
-calculations, for which the number of processors that can be used by
-the PEXSI solver is much higher than those needed by other parts of
-the code.
+  Specifies the number of MPI processes to be used in those parts of
+  the program (such as Hamiltonian setup and computation of forces)
+  which are outside of the PEXSI solver itself. This is needed in
+  large-scale calculations, for which the number of processors that
+  can be used by the PEXSI solver is much higher than those needed by
+  other parts of the code.
+  
+  Note that when the PEXSI solver is not used, this parameter will
+  simply reduce the number of processors actually used by all parts of
+  the program, leaving the rest idle for the whole calculation. This
+  will adversely affect the computing budget, so take care not to use
+  this option in that case.
+  
+\end{fdfentry}
 
-Note that when the PEXSI solver is not used, this parameter will
-simply reduce the number of processors actually used by all parts of
-the program, leaving the rest idle for the whole calculation. This
-will adversely affect the computing budget, so take care not to use
-this option in that case. 
+\begin{fdfentry}{PEXSI!NP-per-pole}[integer]<4>
 
-{\it Default value:} {\tt (the total number of available processors)}
+  Number of MPI processes used to perform the PEXSI computations in
+  one pole. If the total number of MPI processes is smaller than this
+  number times the number of poles (times the spin multiplicity), the
+  PEXSI library will compute appropriate groups of poles in
+  sequence. The minimum time to solution is achieved by increasing
+  this parameter as much as it is reasonable for parallel efficiency,
+  and using enough MPI processes to allow complete parallelization
+  over poles. On the other hand, the minimum computational cost (in
+  the sense of computing budget) is obtained by using the minimum
+  value of this parameter which is compatible with the memory
+  footprint. The additional parallelization over poles will be
+  irrelevant for cost, but it will obviously affect the time to
+  solution.
 
-\item[{\bf PEXSI.np-per-pole}] ({\it integer}):
-  \index{PEXSI.np-per-pole@{\bf PEXSI.np-per-pole}} 
-%
-Number of MPI processes used to perform the PEXSI computations in one
-pole. If the total number of MPI processes is smaller than this number
-times the number of poles (times the spin multiplicity), the PEXSI
-library will compute appropriate groups of poles in sequence. The
-minimum time to solution is achieved by increasing this parameter as
-much as it is reasonable for parallel efficiency, and using enough MPI
-processes to allow complete parallelization over poles. On the other
-hand, the minimum computational cost (in the sense of computing
-budget) is obtained by using the minimum value of this parameter which
-is compatible with the memory footprint. The additional
-parallelization over poles will be irrelevant for cost, but it will
-obviously affect the time to solution.
+  Internally, \siesta\ computes the processor grid parameters
+  \shell{nprow} and \shell{npcol} for the PEXSI library, with
+  \shell{nprow} $>$= \shell{npcol}, and as similar as possible. So it
+  is best to choose \fdf{PEXSI!NP-per-pole} as the product of two
+  similar numbers.
+  
+  \note The total number of MPI processes must be divisible by
+  \fdf{PEXSI!NP-per-pole}. In case of spin-polarized calculations, the
+  total number of MPI processes must be divisible by
+  \fdf{PEXSI!NP-per-pole} times 2.
 
-Internally, {\sc SIESTA} computes the processor grid parameters {\tt
-  nprow} and {\tt npcol} for the PEXSI library, with {\tt nprow} $>$=
-{\tt npcol}, and as similar as possible. So it is best to choose {\bf
-  PEXSI.np-per-pole} as the product of two similar numbers.
+\end{fdfentry}
 
-{\bf NOTE}: The total number of MPI processes must be divisible by
-{\bf PEXSI.np-per-pole}. In case of spin-polarized calculations, the
-total number of MPI processes must be divisible by {\bf
-  PEXSI.np-per-pole} times 2.
+\begin{fdfentry}{PEXSI!Ordering}[integer]<1>
 
-{\it Default value:} {\tt 4}
-
-\item[{\bf PEXSI.ordering}] ({\it integer}):
-  \index{PEXSI.ordering@{\bf PEXSI.ordering}} 
-%
-For large matrices, symbolic factorization should be performed in
-parallel to reduce the wall clock time.  This can be done using
-ParMETIS/PT-Scotch by setting {\bf PEXSI.ordering} to 0.  However, we have
-been experiencing some instability problem of the symbolic
-factorization phase when ParMETIS/PT-Scotch is used.  In such case,
-for relatively small matrices one can either use the sequential METIS
-({\bf PEXSI.ordering} = 1) or set {\bf PEXSI.np-symbfact} to 1.
-
-{\it Default value:} {\tt 1}
-
-\item[{\bf PEXSI.np-symbfact}] ({\it integer}):
-  \index{PEXSI.np-symbfact@{\bf PEXSI.np-symbfact}} 
-%
-Number of MPI processes used to perform the symbolic factorizations
-needed in the PEXSI procedure.
-A default value should be given to reduce the instability problem.
-From experience so far setting this to be 1 is most stable, but going
-beyond 64 does not usually improve much.  
-
-{\it Default value:} {\tt 1}
+  For large matrices, symbolic factorization should be performed in
+  parallel to reduce the wall clock time.  This can be done using
+  ParMETIS/PT-Scotch by setting \fdf{PEXSI!Ordering} to 0.  However,
+  we have been experiencing some instability problem of the symbolic
+  factorization phase when ParMETIS/PT-Scotch is used.  In such case,
+  for relatively small matrices one can either use the sequential
+  METIS (\fdf{PEXSI!Ordering} = 1) or set \fdf{PEXSI!NP-symbfact} to
+  1.
+  
+\end{fdfentry}
 
 
-\item[{\bf PEXSI.verbosity}] ({\it integer}):
-  \index{PEXSI.verbosity@{\bf PEXSI.verbosity}} 
-%
-It determines the amount of information logged by the solver in
-different places. A value of zero gives minimal information. 
-%
-\begin{itemize}
-\item In the files logPEXSI[0-9]+, the verbosity level is interpreted
-  by the PEXSI library itself. In the latest version, when PEXSI is
-  compiled in RELEASE mode, only logPEXSI0 is given in the output.
-  This is because we have observed that simultaneous output for all
-  processors can have very significant cost for a large number of
-  processors ($>$10000).
-\item In the SIESTA output file, a verbosity level of 1 and above will print
-  lines (prefixed by '\&o') indicating the various heuristics used at
-  each scf step. A verbosity level of 2 and above will print extra
-  information.
-\end{itemize}
-The design of the output logging is still in flux.
+\begin{fdfentry}{PEXSI!NP-symbfact}[integer]<1>
 
-{\it Default value:} {\tt 1}
+  Number of MPI processes used to perform the symbolic factorizations
+  needed in the PEXSI procedure.  A default value should be given to
+  reduce the instability problem.  From experience so far setting this
+  to be 1 is most stable, but going beyond 64 does not usually improve
+  much.
 
-\end{description}
+\end{fdfentry}
+
+\begin{fdfentry}{PEXSI!Verbosity}[integer]<1>
+
+  It determines the amount of information logged by the solver in
+  different places. A value of zero gives minimal information.
+  \begin{itemize}
+
+    \item%
+    In the files logPEXSI[0-9]+, the verbosity level is interpreted by
+    the PEXSI library itself. In the latest version, when PEXSI is
+    compiled in RELEASE mode, only logPEXSI0 is given in the output.
+    This is because we have observed that simultaneous output for all
+    processors can have very significant cost for a large number of
+    processors ($>$10000).  
+
+    \item%
+    In the SIESTA output file, a verbosity level of 1 and above will
+    print lines (prefixed by \shell{\&o}) indicating the various heuristics
+    used at each scf step. A verbosity level of 2 and above will print
+    extra information.
+
+  \end{itemize}
+  The design of the output logging is still in flux.
+  
+\end{fdfentry}
 
 \subsubsection{Electron tolerance and the PEXSI solver}
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
 
-\item[{\bf PEXSI.num-electron-tolerance}] ({\it real}):
-  \index{PEXSI.num-electron-tolerance@{\bf PEXSI.num-electron-tolerance}} 
-%
-Tolerance in the number of electrons for the PEXSI solver. At each
-iteration of the solver, the number of electrons is computed as the
-trace of the density matrix times the overlap matrix, and compared
-with the total number of electrons in the system. This tolerance can
-be fixed, or dynamically determined as a function of the degree of
-convergence of the self-consistent-field loop.
 
-{\it Default value:} {\tt $10^{-4}$}
+\begin{fdfentry}{PEXSI!num-electron-tolerance}[real]<$10^{-4}$>
 
-\item[{\bf PEXSI.num-electron-tolerance-lower-bound}] ({\it real}):
-  \index{PEXSI.num-electron-tolerance-lower-bound@
-        {\bf PEXSI.num-electron-tolerance-lower-bound}} 
-%
-(See next item.)
-{\it Default value:} {\tt 0.01}
+  Tolerance in the number of electrons for the PEXSI solver. At each
+  iteration of the solver, the number of electrons is computed as the
+  trace of the density matrix times the overlap matrix, and compared
+  with the total number of electrons in the system. This tolerance can
+  be fixed, or dynamically determined as a function of the degree of
+  convergence of the self-consistent-field loop.
+  
+\end{fdfentry}
 
-\item[{\bf PEXSI.num-electron-tolerance-upper-bound}] ({\it real}):
-  \index{PEXSI.num-electron-tolerance-upper-bound@
-        {\bf PEXSI.num-electron-tolerance-upper-bound}} 
-%
-The upper and lower bounds for the electron tolerance are used to
-dynamically change the tolerance in the PEXSI solver, following the
-simple algorithm:
+\begin{fdfentry}{PEXSI!num-electron-tolerance-lower-bound}[real]<$10^{-2}$>
+
+  See \fdf{PEXSI!num-electron-tolerance-upper-bound}.
+
+\end{fdfentry}
+
+\begin{fdfentry}{PEXSI!num-electron-tolerance-upper-bound}[real]<$0.5$>
+
+  The upper and lower bounds for the electron tolerance are used to
+  dynamically change the tolerance in the PEXSI solver, following the
+  simple algorithm:
 \begin{verbatim}
-   tolerance = Max(lower_bound,Min(dDmax, upper_bound))
+  tolerance = Max(lower_bound,Min(dDmax, upper_bound))
 \end{verbatim}
-The first scf step uses the upper bound of the tolerance range, and
-subsequent steps use progressively lower values, in correspondence
-with the convergence-monitoring variable {\tt dDmax}.
+  The first scf step uses the upper bound of the tolerance range, and
+  subsequent steps use progressively lower values, in correspondence
+  with the convergence-monitoring variable \fdf*{dDmax}.
+  
+  \note This simple update schedule tends to work quite well. There is
+  an experimental algorithm, documented only in the code itself, which
+  allows a finer degree of control of the tolerance update.
 
-NOTE: This simple update schedule tends to work quite well. There is an
-experimental algorithm, documented only in the code itself, which
-allows a finer degree of control of the tolerance update.
-
-{\it Default value:} {\tt 0.5}
+\end{fdfentry}
 
 
-\item[{\bf PEXSI.mu-max-iter}] ({\it integer}):
-  \index{PEXSI.mu-max-iter@{\bf PEXSI.mu-max-iter}} 
-%
-Maximum number of iterations of the PEXSI solver. Note that in this
-implementation there is no fallback procedure if the
-solver fails to converge in this number of iterations to the
-prescribed tolerance. In this case, the resulting density matrix might
-still be re-normalized, and the calculation able to continue, if the
-tolerance for non normalized DMs is not set too tight. For example,
+\begin{fdfentry}{PEXSI!mu-max-iter}[integer]<$10$>
+
+  Maximum number of iterations of the PEXSI solver. Note that in this
+  implementation there is no fallback procedure if the solver fails to
+  converge in this number of iterations to the prescribed
+  tolerance. In this case, the resulting density matrix might still be
+  re-normalized, and the calculation able to continue, if the
+  tolerance for non normalized DMs is not set too tight. For example,
 \begin{verbatim}
-# (true_no_electrons/no_electrons) - 1.0
-DM.NormalizationTolerance 1.0e-3  
+  # (true_no_electrons/no_electrons) - 1.0
+    DM.NormalizationTolerance 1.0e-3  
 \end{verbatim}
-will allow a 0.1\% error in the number of electrons. For obvious
-reasons, this feature, which is also useful in connection with the 
-dynamic tolerance update, should not be abused.
+  will allow a 0.1\% error in the number of electrons. For obvious
+  reasons, this feature, which is also useful in connection with the
+  dynamic tolerance update, should not be abused.
 
-If the parameters of the PEXSI solver are adjusted correctly
-(including a judicious use of inertia-counting to refine the $\mu$
-bracket), we should expect that the maximum number of solver
-iterations needed is around 3
+  If the parameters of the PEXSI solver are adjusted correctly
+  (including a judicious use of inertia-counting to refine the $\mu$
+  bracket), we should expect that the maximum number of solver
+  iterations needed is around 3
 
-{\it Default value:} {\tt 10}
+\end{fdfentry}
 
+\begin{fdfentry}{PEXSI!mu}[energy]<$-0.6\,\mathrm{Ry}$>
+  
+  The starting guess for the chemical potential for the PEXSI
+  solver. Note that this value does not affect the initial $\mu$
+  bracket for the inertia-count refinement, which is controlled by
+  \fdf{PEXSI!mu-min} and \fdf{PEXSI!mu-max}. After an inertia-count
+  phase, $\mu$ will be reset, and further iterations inherit this
+  estimate, so this parameter is only relevant if there is no
+  inertia-counting phase.
 
-\item[{\bf PEXSI.mu}] ({\it real energy}):
-  \index{PEXSI.mu@{\bf PEXSI.mu}} 
-%
-The starting guess for the chemical potential for the PEXSI
-solver. Note that this value does not affect the initial $\mu$ bracket
-for the inertia-count refinement, which is controlled by {\bf
-  PEXSI.mu-min} and {\bf PEXSI.mu-max}. After an inertia-count phase,
-$\mu$ will be reset, and further iterations inherit this estimate, so
-this parameter is only relevant if there is no inertia-counting phase.
+\end{fdfentry}
 
-{\it Default value:} {\tt -0.6 Ryd}
+\begin{fdfentry}{PEXSI!mu-pexsi-safeguard}[energy]<$0.05\,\mathrm{Ry}$>
 
-\item[{\bf PEXSI.mu-pexsi-safeguard}] ({\it real energy}):
-  \index{PEXSI.mu-pexsi-safeguard@{\bf PEXSI.mu-pexsi-safeguard}} 
-%
-{\bf NOTE:} This feature has been deactivated for now. The condition
-for starting a new phase of inertia-counting is that the Newton
-estimation falls outside the current bracket. The bracket is expanded
-accordingly.
+  \note This feature has been deactivated for now. The condition for
+  starting a new phase of inertia-counting is that the Newton
+  estimation falls outside the current bracket. The bracket is
+  expanded accordingly.
         
-The PEXSI solver uses Newton's method to update the estimate of $\mu$.
-If the attempted change in $\mu$ is larger than {\bf
-  PEXSI.mu-pexsi-safeguard}, the solver cycle is stopped and a fresh
-phase of inertia-counting is started.
+  The PEXSI solver uses Newton's method to update the estimate of
+  $\mu$.  If the attempted change in $\mu$ is larger than
+  \fdf{PEXSI!mu-pexsi-safeguard}, the solver cycle is stopped and a
+  fresh phase of inertia-counting is started.
 
-{\it Default value:} {\tt 0.05 Ryd}
-
-\end{description}
+\end{fdfentry}
 
 \subsubsection{Inertia-counting}
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[{\bf PEXSI.inertia-counts}] ({\it integer}):
-  \index{PEXSI.inertia-counts@{\bf PEXSI.inertia-counts}} 
-%
-In a given scf step, the PEXSI procedure can optionally employ
-a $\mu$ bracket-refinement procedure based on
-inertia-counting. Typically, this is used only in the first few
-scf steps, and this parameter determines how many. If positive,
-inertia-counting will be performed for exactly that number of scf
-steps. If negative, inertia-counting will be performed for at least
-that number of scf steps, and then for as long as the scf cycle is
-not yet deemed to be near convergence (as determined by the {\bf
-  PEXSI.safe-dDmax-no-inertia} parameter).
-
-NOTE: Since it is cheaper to perform an inertia-count phase than to
-execute one iteration of the solver, it pays to call the solver only
-when the $\mu$ bracket is sufficiently refined. 
-
-NOTE: The use of the old {\bf PEXSI.inertia-count} parameter (with
-value one or zero depending on whether inertia-counting was desired or
-not) is deprecated. For backward compatibilty, it is honored only when
-its value is zero.  To completely turn off inertia-counting, use a
-value of zero for {\bf PEXSI.inertia-counts}.
-
-{\it Default value:} {\tt 3}
-
-\item[{\bf PEXSI.mu-min}] ({\it real energy}):
-  \index{PEXSI.mu-min@{\bf PEXSI.mu-min}} 
-%
-The lower bound of the initial range for $\mu$ used
-in the inertia-count refinement. In runs with multiple geometry
-iterations, it is used only for the very first scf iteration at the
-first geometry step. Further iterations inherit possibly refined
-values of this parameter.
-
-{\it Default value:} {\tt -1.0 Ryd}
-
-\item[{\bf PEXSI.mu-max}] ({\it real energy}):
-  \index{PEXSI.mu-max@{\bf PEXSI.mu-max}} 
-%
-The upper bound of the initial range for $\mu$ used
-in the inertia-count refinement. In runs with multiple geometry
-iterations, it is used only for the very first scf iteration at the
-first geometry step. Further iterations inherit possibly refined
-values of this parameter.
-
-{\it Default value:} {\tt 0.0 Ryd}
 
 
-\item[{\bf PEXSI.safe-dDmax-no-inertia}] ({\it integer}):
-  \index{PEXSI.safe-dDmax-no-inertia@{\bf PEXSI.safe-dDmax-no-inertia}} 
-%
-During the scf cycle, the variable conventionally called {\tt dDmax}
-monitors how far the cycle is from convergence. If {\bf
-  PEXSI.inertia-counts} is negative, an inertia-counting phase will be
-performed in a given scf step for as long as {\tt dDmax} is greater
-than {\bf PEXSI.safe-dDmax-no-inertia}.
+\begin{fdfentry}{PEXSI!Inertia-Counts}[integer]<3>
 
-NOTE: Even though {\tt dDmax} represents historically how far from
-convergence the density-matrix is, the same mechanism applies to other
-forms of mixing in which other magnitudes are monitored for
-convergence (Hamiltonian, charge density...).
+  In a given scf step, the PEXSI procedure can optionally employ a
+  $\mu$ bracket-refinement procedure based on
+  inertia-counting. Typically, this is used only in the first few scf
+  steps, and this parameter determines how many. If positive,
+  inertia-counting will be performed for exactly that number of scf
+  steps. If negative, inertia-counting will be performed for at least
+  that number of scf steps, and then for as long as the scf cycle is
+  not yet deemed to be near convergence (as determined by the
+  \fdf{PEXSI!safe-dDmax-no-inertia} parameter).
 
-{\it Default value:} {\tt 0.05} 
+  \note Since it is cheaper to perform an inertia-count phase than to
+  execute one iteration of the solver, it pays to call the solver only
+  when the $\mu$ bracket is sufficiently refined.
 
-\item[{\bf PEXSI.lateral-expansion-inertia}] ({\it real energy}):
-  \index{PEXSI.lateral-expansion-inertia@{\bf PEXSI.lateral-expansion-inertia}} 
-%
-If the correct $\mu$ is outside the bracket provided to the
-inertia-counting phase, the bracket is expanded in the appropriate
-direction(s) by this amoount.
+\end{fdfentry}
 
-{\it Default value:} {\tt 3 eV}
+\begin{fdfentry}{PEXSI!mu-min}[energy]<$-1\,\mathrm{Ry}$>
 
-\item[{\bf PEXSI.inertia-mu-tolerance}] ({\it real energy}):
-  \index{PEXSI.inertia-mu-tolerance@{\bf PEXSI.inertia-mu-tolerance}} 
-%
-One of the criteria for early termination of the inertia-counting phase.
-The value of the estimated $\mu$ (basically the center of the
-resulting brackets) is monitored, and the cycle stopped if its change
-from one iteration to the next is below this parameter.
+  The lower bound of the initial range for $\mu$ used in the
+  inertia-count refinement. In runs with multiple geometry iterations,
+  it is used only for the very first scf iteration at the first
+  geometry step. Further iterations inherit possibly refined values of
+  this parameter.
 
-{\it Use:} Used only if {\bf SolutionMethod} = {\tt PEXSI}
+\end{fdfentry}
 
-{\it Default value:} {\tt 0.05 Ryd}
+\begin{fdfentry}{PEXSI!mu-max}[energy]<$0\,\mathrm{Ry}$>
 
-\item[{\bf PEXSI.inertia-max-iter}] ({\it integer}):
-  \index{PEXSI.inertia-max-iter@{\bf PEXSI.inertia-max-iter}} 
+  The upper bound of the initial range for $\mu$ used in the
+  inertia-count refinement. In runs with multiple geometry iterations,
+  it is used only for the very first scf iteration at the first
+  geometry step. Further iterations inherit possibly refined values of
+  this parameter.
+
+\end{fdfentry}
+
+\begin{fdfentry}{PEXSI!safe-dDmax-no-inertia}[real]<0.05>
+
+  During the scf cycle, the variable conventionally called
+  \fdf*{dDmax} monitors how far the cycle is from convergence. If
+  \fdf{PEXSI!Inertia-Counts} is negative, an inertia-counting phase
+  will be performed in a given scf step for as long as \fdf*{dDmax} is
+  greater than \fdf{PEXSI!safe-dDmax-no-inertia}.
+
+  \note Even though \fdf*{dDmax} represents historically how far from
+  convergence the density-matrix is, the same mechanism applies to
+  other forms of mixing in which other magnitudes are monitored for
+  convergence (Hamiltonian, charge density...).
+  
+\end{fdfentry}
+
+\begin{fdfentry}{PEXSI!lateral-expansion-inertia}[energy]<$3\,\mathrm{eV}$>
+
+  If the correct $\mu$ is outside the bracket provided to the
+  inertia-counting phase, the bracket is expanded in the appropriate
+  direction(s) by this amoount.
+
+\end{fdfentry}
+
+\begin{fdfentry}{PEXSI!Inertia-mu-tolerance}[energy]<$0.05\,\mathrm{Ry}$>
+
+  One of the criteria for early termination of the inertia-counting
+  phase.  The value of the estimated $\mu$ (basically the center of
+  the resulting brackets) is monitored, and the cycle stopped if its
+  change from one iteration to the next is below this parameter.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{PEXSI!Inertia-max-iter}[integer]<$5$>
+
   Maximum number of inertia-count iterations per cycle.
 
-  {\it Default value:} {\tt 5}
+\end{fdfentry}
+
+\begin{fdfentry}{PEXSI!Inertia-min-num-shifts}[integer]<$10$>
   
-\item[{\bf PEXSI.inertia-min-num-shifts}] ({\it integer}):
-  \index{PEXSI.inertia-min-num-shifts@{\bf PEXSI.inertia-min-num-shifts}} 
+  Minimum number of sampling points for inertia counts.
 
-Minimum number of sampling points for inertia counts.
+\end{fdfentry}
 
-{\it Default value:} {\tt 10}
+\begin{fdfentry}{PEXSI!Inertia-energy-width-tolerance}[energy]<\fdfvalue{PEXSI!Inertia-mu-tolerance}>
+
+  One of the criteria for early termination of the inertia-counting
+  phase.  The cycle stops if the width of the resulting bracket is
+  below this parameter.
   
+\end{fdfentry}
 
-\item[{\bf PEXSI.inertia-energy-width-tolerance}] ({\it real energy}):
-  \index{PEXSI.inertia-energy-width-tolerance@{\bf PEXSI.inertia-energy-width-tolerance}} 
-%
-One of the criteria for early termination of the inertia-counting
-phase.  The cycle stops if the width of the resulting bracket is
-below this parameter.
-
-{\it Use:} Used only if {\bf SolutionMethod} = {\tt PEXSI}
-
-{\it Default value:} {\tt (The value given to {\bf PEXSI.inertia-mu-tolerance}) }
-
-\end{description}
 
 \subsubsection{Re-use of $\mu$ information accross iterations}
 
 This is an important issue, as the efficiency of the PEXSI procedure
 depends on how close a guess of $\mu$ we have at our
 disposal. There are two types of information re-use:
+
 \begin{itemize}
-\item Bracketing information used in the inertia-counting phase.
-\item The values of $\mu$ itself for the solver.
+  \item%
+  Bracketing information used in the inertia-counting phase.
+  
+  \item%
+  The values of $\mu$ itself for the solver.
 \end{itemize}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdfentry}{PEXSI!safe-width-ic-bracket}[energy]<$4\,\mathrm{eV}$>
 
-\item[{\bf PEXSI.safe-width-ic-bracket}] ({\it real energy}):
-\index{PEXSI.safe-width-ic-bracket@{\bf PEXSI.safe-width-ic-bracket}}
-
-By default, the $\mu$ bracket used for the inertia-counting phase in
-scf steps other than the first is taken as an interval of width 
-{\bf PEXSI.safe-width-ic-bracket} around the latest estimate of $\mu$.
-
-{\it Default value:} {\tt 4 eV}
-
-\item[{\bf PEXSI.safe-dDmax-ef-inertia}] ({\it real}):
-\index{PEXSI.safe-dDmax-ef-inertia@{\bf PEXSI.safe-dDmax-ef-inertia}}
-
-The change in $\mu$ from one scf iteration to the next can be crudely
-estimated by assuming that the change in the band structure energy
-(estimated as Tr$\Delta H$DM) is due to a rigid shift.  When the scf
-cycle is near convergence, this $\Delta\mu$ can be used to estimate
-the new initial bracket for the inertia-counting phase, rigidly
-shifting the output bracket from the previous scf step. 
-The cycle is assumed to be near convergence when
-the monitoring variable {\tt dDmax} is smaller
-than {\bf PEXSI.safe-dDmax-ef-inertia}.
-
-NOTE: Even though {\tt dDmax} represents historically how far from
-convergence the density-matrix is, the same mechanism applies to other
-forms of mixing in which other magnitudes are monitored for
-convergence (Hamiltonian, charge density...).
-
-NOTE: This criterion will lead in general to tighter brackets than the
-previous one, but oscillations in H in the first few iterations might
-make it more dangerous. More information from real use cases is needed
-to refine the heuristics in this area.
-
-{\it Default value:} {\tt 0.1}
-
-\item[{\bf PEXSI.safe-dDmax-ef-solver}] ({\it real}):
-\index{PEXSI.safe-dDmax-ef-solver@{\bf PEXSI.safe-dDmax-ef-solver}}
-
-When the scf cycle is near convergence, the $\Delta\mu$ estimated as
-above can be used to shift the initial guess for $\mu$ for the PEXSI
-solver.  The cycle is assumed to be near convergence when the
-monitoring variable {\tt dDmax} is smaller than {\bf
-  PEXSI.safe-dDmax-ef-solver}.
-
-NOTE: Even though {\tt dDmax} represents historically how far from
-convergence the density-matrix is, the same mechanism applies to other
-forms of mixing in which other magnitudes are monitored for
-convergence (Hamiltonian, charge density...).
-
-{\it Default value:} {\tt 0.05}
-
-\item[{\bf PEXSI.safe-width-solver-bracket}] ({\it real energy}):
-\index{PEXSI.safe-width-solver-bracket@{\bf PEXSI.safe-width-solver-bracket}}
-
-In all cases, a ``safe'' bracket around $\mu$ is provided even in
-direct calls to the PEXSI solver, in case a fallback to executing
-internally a cycle of inertia-counting is needed. The size of the
-bracket is given by {\bf PEXSI.safe-width-solver-bracket}
-
-{\it Default value:} {\tt 4 eV}
+  By default, the $\mu$ bracket used for the inertia-counting phase in
+  scf steps other than the first is taken as an interval of width
+  \fdf{PEXSI!safe-width-ic-bracket} around the latest estimate of
+  $\mu$.
+  
+\end{fdfentry}
 
 
-\end{description}
+\begin{fdfentry}{PEXSI!safe-dDmax-ef-inertia}[real]<$0.1$>
+
+  The change in $\mu$ from one scf iteration to the next can be
+  crudely estimated by assuming that the change in the band structure
+  energy (estimated as Tr$\Delta H$DM) is due to a rigid shift.  When
+  the scf cycle is near convergence, this $\Delta\mu$ can be used to
+  estimate the new initial bracket for the inertia-counting phase,
+  rigidly shifting the output bracket from the previous scf step.  The
+  cycle is assumed to be near convergence when the monitoring variable
+  \fdf*{dDmax} is smaller than \fdf{PEXSI!safe-dDmax-ef-inertia}.
+
+  \note Even though \fdf*{dDmax} represents historically how far from
+  convergence the density-matrix is, the same mechanism applies to
+  other forms of mixing in which other magnitudes are monitored for
+  convergence (Hamiltonian, charge density...).
+
+  NOTE: This criterion will lead in general to tighter brackets than
+  the previous one, but oscillations in H in the first few iterations
+  might make it more dangerous. More information from real use cases
+  is needed to refine the heuristics in this area.
+
+\end{fdfentry}
+
+\begin{fdfentry}{PEXSI!safe-dDmax-ef-solver}[real]<0.05>
+  
+  When the scf cycle is near convergence, the $\Delta\mu$ estimated as
+  above can be used to shift the initial guess for $\mu$ for the PEXSI
+  solver.  The cycle is assumed to be near convergence when the
+  monitoring variable \fdf*{dDmax} is smaller than \fdf{PEXSI!safe-dDmax-ef-solver}.
+
+  \note Even though \fdf*{dDmax} represents historically how far from
+  convergence the density-matrix is, the same mechanism applies to
+  other forms of mixing in which other magnitudes are monitored for
+  convergence (Hamiltonian, charge density...).
+
+\end{fdfentry}
+
+\begin{fdfentry}{PEXSI!safe-width-solver-bracket}[energy]<$4\,\mathrm{eV}$>
+
+  In all cases, a ``safe'' bracket around $\mu$ is provided even in
+  direct calls to the PEXSI solver, in case a fallback to executing
+  internally a cycle of inertia-counting is needed. The size of the
+  bracket is given by \fdf{PEXSI!safe-width-solver-bracket}
+
+\end{fdfentry}
 
 \subsubsection{Calculation of the density of states by
   inertia-counting}
 \label{pexsi-dos}
 
-The cumulative or integrated density of states (INTDOS) can be easily obtained by
-inertia-counting, which involves a factorization of
-$H-\sigma S$  for varying $\sigma$ (see SIESTA-PEXSI paper).  Apart from the
-DOS-specific options below, the ``ordering'', ``symbolic
+The cumulative or integrated density of states (INTDOS) can be easily
+obtained by inertia-counting, which involves a factorization of
+$H-\sigma S$ for varying $\sigma$ (see SIESTA-PEXSI paper).  Apart
+from the DOS-specific options below, the ``ordering'', ``symbolic
 factorization'', and ``pole group size'' (re-interpreted as the number
 of MPI processes dealing with a given $\sigma$) options are honored.
 
-The current version of the code generates a file with the energy-INTDOS
-information, {\tt PEXSI\_INTDOS}, which can be later processed 
-to generate the DOS by direct numerical differentiation, or
-a {\sc Siesta}-style EIG file (using the {\tt Util/PEXSI/intdos2eig} program).
+The current version of the code generates a file with the
+energy-INTDOS information, \file{PEXSI\_INTDOS}, which can be later
+processed to generate the DOS by direct numerical differentiation, or
+a \siesta-style \sysfile{EIG} file (using the \program{Util/PEXSI/intdos2eig}
+program).
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdflogicalF}{PEXSI!DOS}
 
-\item[{\bf PEXSI.DOS}] ({\it boolean}):
-\index{PEXSI.DOS@{\bf PEXSI.DOS}}
+  Whether to compute the DOS (actually, the INTDOS --- see above)
+  using the PEXSI technology.
+  
+\end{fdflogicalF}
 
-Whether to compute the DOS (actually, the INTDOS --- see above) using
-the PEXSI technology.
+\begin{fdfentry}{PEXSI!DOS!Emin}[energy]<$-1\,\mathrm{Ry}$>
 
-{\it Default value:} {\tt .false.}
+  Lower bound of energy window to compute the DOS in.
 
-\item[{\bf PEXSI.DOS.emin}] ({\it real energy}):
-\index{PEXSI.DOS.emin@{\bf PEXSI.DOS.emin}}
+  See \fdf{PEXSI!DOS!Ef.Reference}.
 
-(see next item)
+\end{fdfentry}
 
-{\it Default value:} {\tt -1 Ryd}
+\begin{fdfentry}{PEXSI!DOS!Emax}[energy]<$1\,\mathrm{Ry}$>
 
-\item[{\bf PEXSI.DOS.emax}] ({\it real energy}):
-\index{PEXSI.DOS.emax@{\bf PEXSI.DOS.emax}}
+  Upper bound of energy window to compute the DOS in.
 
-(see next item)
+  See \fdf{PEXSI!DOS!Ef.Reference}.
 
-{\it Default value:} {\tt +1 Ryd}
+\end{fdfentry}
 
-\item[{\bf PEXSI.DOS.Ef.Reference}] ({\it boolean}):
-\index{PEXSI.DOS.Ef.Reference@{\bf PEXSI.DOS.Ef.Reference}}
+\begin{fdflogicalT}{PEXSI!DOS!Ef.Reference}
 
-{\it Default value:} {\tt .true.}
+  If this flag is true, the bounds of the energy window
+  (\fdf{PEXSI!DOS!Emin} and \fdf{PEXSI!DOS!Emax}) are with respect to
+  the Fermi level.
 
-The above three parameters determine the energy interval in which to compute
-the DOS. If {\bf PEXSI.DOS.Ef.Reference} is {\tt .true.}, the minimum
-and maximum energies are referred to the Fermi level.
+\end{fdflogicalT}
 
-\item[{\bf PEXSI.DOS.npoints}] ({\it integer}):
-\index{PEXSI.DOS.npoints@{\bf PEXSI.DOS.npoints}}
+\begin{fdfentry}{PEXSI!DOS!NPoints}[integer]<200>
 
-The number of points in the energy interval at which the DOS is
-computed. It is rounded up to the nearest multiple of the number of
-available factorization groups, as the operations are perfectly
-parallel and there will be no extra cost involved.
-
-{\it Default value:} {\tt 200}
-
-\end{description}
+  The number of points in the energy interval at which the DOS is
+  computed. It is rounded up to the nearest multiple of the number of
+  available factorization groups, as the operations are perfectly
+  parallel and there will be no extra cost involved.
+  
+\end{fdfentry}
 
 \subsubsection{Calculation of the LDOS by selected-inversion}
 \label{pexsi-ldos}
 
-The local-density-of-states (LDOS) around a given reference energy  $\varepsilon$,
-representing the contribution to the charge density of the
-states with eigenvalues in the vicinity of $\varepsilon$,
-can be obtained formally by a ``one-pole expansion'' with suitable
-broadening (see SIESTA-PEXSI paper).  
+The local-density-of-states (LDOS) around a given reference energy
+$\varepsilon$, representing the contribution to the charge density of
+the states with eigenvalues in the vicinity of $\varepsilon$, can be
+obtained formally by a ``one-pole expansion'' with suitable broadening
+(see SIESTA-PEXSI paper).
 
 Apart from the LDOS-specific options below, the ``ordering'',
 ``verbosity'', and ``symbolic factorization'' options are honored.
 
 The current version of the code generates a real-space grid file with
-extension {\tt .LDSI}, and (if netCDF is compiled-in) a file {\tt
-  Rho.grid.nc} (which unfortunately will overwrite any other
+extension \sysfile{LDSI}, and (if netCDF is compiled-in) a file
+\file{Rho.grid.nc} (which unfortunately will overwrite any other
 charge-density files produced in the same run).
 
 NOTE: The LDOS computed with this procedure is not exactly the same as
-the vanilla {\sc Siesta} LDOS, which uses an explicit energy
+the vanilla \siesta\ LDOS, which uses an explicit energy
 interval. Here the broadening acts around a single value of the
 energy.
 
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdflogicalF}{PEXSI!LDOS}
 
-\item[{\bf PEXSI.LDOS}] ({\it boolean}):
-\index{PEXSI.LDOS@{\bf PEXSI.LDOS}}
+  Whether to compute the LDOS using the PEXSI technology.
+  
+\end{fdflogicalF}
 
-Whether to compute the LDOS using the PEXSI technology.
+\begin{fdfentry}{PEXSI!LDOS!Energy}[energy]<$0\,\mathrm{Ry}$>
 
-{\it Default value:} {\tt .false.}
+  The (absolute) energy at which to compute the LDOS.
 
-\item[{\bf PEXSI.LDOS.Energy}] ({\it real energy}):
-\index{PEXSI.LDOS.Energy@{\bf PEXSI.LDOS.Energy}}
+\end{fdfentry}
 
-The (absolute) energy at which to compute the LDOS.
+\begin{fdfentry}{PEXSI!LDOS!Broadening}[energy]<$0.01\,\mathrm{Ry}$>
 
-{\it Default value:} {\tt 0 Ryd}
+  The broadening parameter for the LDOS.
 
-\item[{\bf PEXSI.LDOS.Broadening}] ({\it real energy}):
-\index{PEXSI.LDOS.Broadening@{\bf PEXSI.LDOS.Broadening}}
+\end{fdfentry}
 
-The broadening parameter for the LDOS.
+\begin{fdfentry}{PEXSI!LDOS!NP-per-pole}[integer]<\fdfvalue{PEXSI!NP-per-pole}>
 
-{\it Default value:} {\tt 0.01 Ryd}
+  The value of this parameter supersedes \fdf{PEXSI!NP-per-pole} for
+  the calculation of the LDOS, which otherwise would keep idle all but
+  \fdf{PEXSI!NP-per-pole} MPI processes, as it essentially consists of
+  a ``one-pole'' procedure.
 
-\item[{\bf PEXSI.LDOS.np-per-pole}] ({\it integer}):
-\index{PEXSI.LDOS.np-per-pole@{\bf PEXSI.LDOS.np-per-pole}}
-
-The value of this parameter supersedes {\bf PEXSI.np-per-pole} for the
-calculation of the LDOS, which otherwise would keep idle all but
-{\bf PEXSI.np-per-pole} MPI processes, as it essentially consists of a
-``one-pole'' procedure.
-
-{\it Default value:} {\tt the value of PEXSI.np-per-pole}
-
-
-\end{description}
+\end{fdfentry}
 
 \subsection{Band-structure analysis}
 \label{sec:band-structure}
@@ -9202,7 +9129,7 @@ create custom-made MD scripts.
 an alternative constraint formulation which can be useful for system
 involving molecules.
 
-\begin{fdfentry}{Geometry!Constraints}[block]<\fdfabstract{None}>
+\begin{fdfentry}{Geometry!Constraints}[block]<\nonvalue{None}>
   \index{constraints in relaxations}
 
 
@@ -10011,7 +9938,7 @@ for the program for additional options.
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!ElectronicTemperature}[energy]<\fdfabstract{ElectronicTemperature}>
+\begin{fdfentry}{TS!ElectronicTemperature}[energy]<\fdfvalue{ElectronicTemperature}>
 
   Define the temperature used for the Fermi distributions for the
   chemical potentials. 
@@ -10222,15 +10149,15 @@ for the program for additional options.
 
 \begin{fdflogicalT}{TS!HS.Save}
 
-  Must be \fdf*{true} for saving the Hamiltonian. In almost no cases
+  Must be \fdftrue\ for saving the Hamiltonian. In almost no cases
   is this useful to redefine.
 
 \end{fdflogicalT}  
 
 \begin{fdflogicalT}{TS!DE.Save}
 
-  Must be \fdf*{true} for saving the density matrix for continuation
-  runs. If \fdf*{false} the \sysfile{TSDE} file will not be created.
+  Must be \fdftrue\ for saving the density matrix for continuation
+  runs. If \fdffalse\ the \sysfile{TSDE} file will not be created.
 
 \end{fdflogicalT}  
 
@@ -10269,7 +10196,7 @@ These options adhere to the specific solution methods available for
 \tsiesta. For instance the \fdf*{TS.BTD.*} options adhere when using
 \fdf*{TS.SolutionMethod btd}, and similarly for \fdf*{MUMPS}.
 
-\begin{fdfentry}{TS!BTD!Pivot}[string]<\fdfabstract{first electrode}>
+\begin{fdfentry}{TS!BTD!Pivot}[string]<\nonvalue{first electrode}>
 
   Decide on the partitioning for the BTD matrix. One may denote either
   \fdf*{atom+} or \fdf*{orb+} as a prefix which does the analysis on
@@ -10312,7 +10239,7 @@ These options adhere to the specific solution methods available for
   where the first two are equivalent. The 3rd and 4th are more heavily
   on analysis and will typically not improve the bandwidth reduction.
 
-  \note we encourage to run this with \fdf*{true} to always choose the
+  \note we encourage to run this with \fdftrue\ to always choose the
   best pivoting algorithm before performing large scale
   calculations. Using the optimal pivoting algorithm can hugely affect
   the performance of \tsiesta.
@@ -10345,7 +10272,7 @@ These options adhere to the specific solution methods available for
 \end{fdfentry}
 
 
-\begin{fdfentry}{TS!MUMPS!Ordering}[string]<\fdfabstract{read MUMPS
+\begin{fdfentry}{TS!MUMPS!Ordering}[string]<\nonvalue{read MUMPS
       manual}>
 
   One may select from a number of different matrix orderings which are
@@ -10507,7 +10434,7 @@ electrodes in a generic input format.
     Logical deciding whether the surface Green function file should be
     re-used or deleted.
     %
-    If this is \fdf*{false} the surface Green function file is deleted
+    If this is \fdffalse\ the surface Green function file is deleted
     and re-created upon start.
     
     \option[Eta]%
@@ -10565,11 +10492,11 @@ electrodes in a generic input format.
 
     \option[out-of-core]%
     \fdfindex{TS!Elec.<>!Out-of-core}%
-    If \fdf*{true} (default) the GF files are created which contain
+    If \fdftrue\ (default) the GF files are created which contain
     the surface Green function.
-    If \fdf*{false} the surface Green function will be calculated when
+    If \fdffalse\ the surface Green function will be calculated when
     needed. 
-    Setting this to \fdf*{false} will heavily degrade performance and
+    Setting this to \fdffalse\ will heavily degrade performance and
     it is highly discouraged!
 
   \end{fdfoptions}
@@ -10618,7 +10545,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
 \begin{fdflogicalT}{TS!Elecs!GF.Reuse}
   
   Globally control whether the surface Green function files should
-  be re-used (\fdf*{true}) or re-created (\fdf*{false}).
+  be re-used (\fdftrue) or re-created (\fdffalse).
   %
   See \fdf{TS!Elec.<>!GF-Reuse}.
   
@@ -10629,7 +10556,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   Whether the electrodes will calculate the self energy at each SCF
   step. Using this will not require the surface Green function files
   but at the cost of heavily degraded performance.
-  You are not encouraged to set this to \fdf*{false}.
+  You are not encouraged to set this to \fdffalse.
   %
   See \fdf{TS!Elec.<>!out-of-core}.
   
