@@ -1,4 +1,4 @@
-d% Manual for the SIESTA program
+% Manual for the SIESTA program
 %
 % To generate the printed version:
 %
@@ -8,6 +8,52 @@ d% Manual for the SIESTA program
 % pdflatex siesta
 %
 %
+
+% NOTE:
+% If you want to reference a fdf flag, use:
+%  \fdf{#1}
+% This command will automatically create the necessary link
+% to the created entry of the flag. Thus every flag will
+% eventually become a link to the correct.
+% If you want to create an fdf flag which is not referenced
+% For instance a sub-block segment, use \fdf*{#1}.
+% Two very used fdf-flags are \fdftrue and \fdffalse which
+% are short-hands for \fdf*{true} and \fdf*{false}.
+% 
+% To document a new flag, do this:
+%
+%  \begin{fdfentry}{FDF.Flag}
+%    Description
+%  \end{fdfentry}
+%
+% Remark that it is not necessary to create any index commands
+% as that is handled by the fdfentry environment.
+% Optionally one may specify the type of variable it corresponds
+% to:
+%
+%  \begin{fdfentry}{FDF.Flag}[integer]<0>
+%    Description
+%  \end{fdfentry}
+%
+% where [#1] may be any of:
+%    block, integer, real, energy, logical
+% and <#1> is the default value of the flag.
+%
+% There are two shorthands for the logical input with T/F default:
+%
+%  \begin{fdflogicalT}{FlagDefaultTrue}
+%    This flag is default \fdftrue.
+%  \end{fdflogicalT}
+%  \begin{fdflogicalF}{FlagDefaultFalse}
+%    This flag is default \fdffalse.
+%  \end{fdflogicalF}
+%
+% Do NOT use \bf, \it, \tt, \rm etc!
+% 
+% If you want to emphasize a word in a sentence, prefer to
+% use \emph{#1}.
+% If you want bold, use \textbf{#1}
+% If you want italics, use \textit{#1}.
 
 % Include settings appropriate for siesta
 \input{tex/init.tex}
@@ -1414,7 +1460,7 @@ A balanced and systematic starting point for defining all the
 different radii is achieved by giving one single parameter, the energy
 shift, i.e., the energy increase experienced by the orbital when confined.
 Allowing for system and physical-quantity variablity, as a rule of
-thumb $\Delta E_{\small \rm PAO} \approx 100$ meV gives typical
+thumb $\Delta E_{\mathrm{PAO}} \approx 100$ meV gives typical
 precisions within the accuracy of current GGA functionals.  The user
 can, nevertheless, change the cutoff radii at will.
 
@@ -1467,13 +1513,13 @@ The confining potential is flat (zero) in the core region, starts off
 at some internal radius $r_i$ with all derivatives continuous and
 diverges at $r_c$ ensuring the strict localization there.  It is
 \begin{equation}
-  V(r) = V_{\rm o} { e^{- { {r_c - r_i} \over {r - r_i} } } \over {r_c -r} }
+  V(r) = V_{\mathrm o} { e^{- { {r_c - r_i} \over {r - r_i} } } \over {r_c -r} }
 \end{equation}
-and both $r_i$ and $V_{\rm o}$ can be given to \siesta\ together
+and both $r_i$ and $V_{\mathrm o}$ can be given to \siesta\ together
 with $r_c$ in the input (see \textbf{PAO.Basis} below).
 The kink is normally well smoothened with the default values 
 for soft confinement by default (\textbf{PAO.SoftDefault} true), which 
-are $r_i = 0.9 \, r_c$ and $V_{\rm o} = 40$ Ry.
+are $r_i = 0.9 \, r_c$ and $V_{\mathrm o} = 40$ Ry.
 
 When explicitly introducing orbitals in the basis that would be empty in 
 the atom (e.g. polarisation orbitals) these tend to be extremely 
@@ -1487,7 +1533,7 @@ very good shapes for empty orbitals. Essentially a $Z/r$ potential
 is added to the soft confined potential above. For flexibility
 the charge confinement option in \siesta\ is defined as
 \begin{equation}
-  V_{\rm Q}(r) = {Z e^{-\lambda r} \over \sqrt{r^2 + \delta^2}} 
+  V_{\mathrm Q}(r) = {Z e^{-\lambda r} \over \sqrt{r^2 + \delta^2}} 
 \end{equation}
 where $\delta$ is there to avoid the singularity (default $\delta=0.01$ Bohr),
 and $\lambda$ allows to screen the potential if longer tails are needed.
@@ -2818,8 +2864,7 @@ as the \texttt{XV} file.
 
 See \textbf{MD.UseStructFile}\index{MD.UseStructFile@\textbf{MD.UseStructFile}}.
 
-\item\textbf{XV file:} The coordinates are always written in the {\it
-  Systemlabel}.XV file, and overriden at every step.
+\item\textbf{XV file:} The coordinates are always written in the \sysfile{XV} file, and overriden at every step.
 
 \item\textbf{OUT.UCELL.ZMATRIX file:}
 \index{OUT.UCELL.ZMATRIX}@{\textit{OUT.UCELL.ZMATRIX}}
@@ -4689,11 +4734,11 @@ which the I/O could take a significant fraction of the total
 computation time.
   
 To enable this``blocked format'' (recommended for large-scale
-calculations) use the option {\bf Use.Blocked.WriteMat T}. Note that
+calculations) use the option \fdf{Use.Blocked.WriteMat T}. Note that
 it is off by default.
   
 The new format is not backwards compatible. A converter program
-({\tt Util/DensityMatrix/dmUnblock.F90}) has been written to post-process
+(\shell{Util/DensityMatrix/dmUnblock.F90}) has been written to post-process
 those files intended for further analysis or re-use in Siesta. This is
 the best option for now, since it allows liberal checkpointing with a
 much smaller time consumption, and only incurs costs when re-using or
@@ -4702,7 +4747,7 @@ analyzing files.
 Note that TranSiesta will continue to produce .DM files, in the old
 format (See save\_density\_matrix.F)
 
-( To test the new features, the option {\bf S.Only T} can be used. It
+( To test the new features, the option \fdf{S.Only T} can be used. It
 will produce three files: a standard one, another one with optimized
 MPI communications, and a third, blocked one.  )
 
@@ -4733,17 +4778,17 @@ in a restarted calculation to pick up from the appropriate point.
   
 \item Options affecting which files are written, and when:
   
-For checkpointing,  {\bf WriteDM} and  {\bf WriteH} force the writing
+For checkpointing,  \fdf{WriteDM} and  \fdf{WriteH} force the writing
 of the DM (resp. the Hamiltonian) at every scf step. They are ``on''
 by default.
   
-For later analysis, {\bf WriteDM.end.of.cycle} and
-{\bf WriteH.end.of.cycle} will write DM and/or H at the end of the scf
+For later analysis, \fdf{WriteDM.end.of.cycle} and
+\fdf{WriteH.end.of.cycle} will write DM and/or H at the end of the scf
 cycle. In this case, the objects written depends on the setting of the
-variable {\bf SCF.MixAfterConvergence}, which is {\tt .false.} by
+variable \fdf{SCF.MixAfterConvergence}, which is \fdffalse\ by
 default. The details can be seen in the
-code (in file {\tt siesta\_forces.F}. By default, they are ``on'' or
-``off'' depending on the settings of  {\bf WriteDM} and  {\bf WriteH},
+code (in file \shell{siesta\_forces.F}. By default, they are ``on'' or
+``off'' depending on the settings of  \fdf{WriteDM} and  \fdf{WriteH},
 respectively.
 
 \end{itemize}
@@ -4834,19 +4879,19 @@ the selfconsistency has been achieved.
 
 
 
-\item[{\bf DM.Normalization.Tolerance}] ({\it real}):
-\index{DM.Normalization.Tolerance@{\bf DM.Normalization.Tolerance}}
+\item[\fdf{DM.Normalization.Tolerance}] (\textit{real}):
+\index{DM.Normalization.Tolerance@\fdf*{DM.Normalization.Tolerance}}
 Tolerance for unnormalized density matrices (typically the product of
 solvers such as PEXSI which have a built-in electron-count tolerance).
 If this tolerance is exceeded, the program stops. It is understood as a
 fractional tolerance. For example, the default will allow an excess or
 shorfall of 0.01 electrons in a 1000-electron system.
 
-{\it Default value:} {${\tt 10^{-5}}$}
+\textit{Default value:} $10^{-5}$
 
 
 
-\item[{\bf DM.Require.Energy.Convergence}] ({\it logical}):
+\item[\fdf{DM.Require.Energy.Convergence}] (\textit{logical}):
   \index{SCF!mixing!energy convergence}
   \index{DM.Require.Energy.Convergence@\textbf{DM.Require.Energy.Convergence}} Logical variable to request an
   additional requirement for self-consistency: it is considered
@@ -5275,21 +5320,15 @@ OMM method) for the calculation of the electronic structure. This is
 so because the vast majority of calculations (done for intermediate
 system sizes) would not benefit from the O(N) or PEXSI solvers.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdfentry}{SolutionMethod}[string]<diagon>
 
-\item[{\bf SolutionMethod}] ({\it string}):
-\index{SolutionMethod@{\bf SolutionMethod}}
-%
-Character string to choose among diagonalization (\fdf*{diagon}),
-cubic-scaling minimization (\fdf*{OMM}), Order-N (\fdf*{OrderN})
-solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, or the PEXSI
-method (\fdf*{PEXSI}).
+  Character string to choose among diagonalization (\fdf*{diagon}),
+  cubic-scaling minimization (\fdf*{OMM}), Order-N (\fdf*{OrderN})
+  solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, or the
+  PEXSI method (\fdf*{PEXSI}).
+  
+\end{fdfentry}
 
-\textit{Default value:} \fdf*{diagon}
-
-\end{description}
 
 \subsubsection{Diagonalization options}
 \begin{description}
@@ -5310,8 +5349,8 @@ and less than the number of basis functions.
 
 \textit{Default value:} \texttt{all orbitals}
 
-\item[{\bf Diag.ELPA}] ({\it logical}):
-\index{Diag.ELPA@{\bf Diag.ELPA}}
+\item[\fdf{Diag!ELPA}] (\textit{logical}):
+\index{Diag.ELPA@\fdf*{Diag.ELPA}}
 
 (For parallel gamma-point calculations without spin orbit only)
 Use the ELPA routines for diagonalization.
@@ -5335,24 +5374,24 @@ structure theory and computational science'',
 Journal of Physics Condensed Matter, 26 (2014)
 doi:10.1088/0953-8984/26/21/213201
 
-Note: It is not compatible with the {\tt Diag.Parallel.Over.K} option.
+Note: It is not compatible with the \fdf{Diag!Parallel.Over.K} option.
 
-{\it Default value:} {\tt .false.}
+\textit{Default value:} \fdffalse
 
-\item[{\bf Diag.MRRR}] ({\it logical}):
-\index{Diag.MRRR@{\bf Diag.MRRR}}
+\item[\fdf{Diag!MRRR}] (\textit{logical}):
+\index{Diag.MRRR@\fdf*{Diag.MRRR}}
 
 (For parallel gamma-point calculations without spin orbit only)
 Use the MRRR method in Scalapack for diagonalization.
 Specifying a number of eigenvectors to store is possible through
 the symbol NumberOfEigenstates (see above).
 
-Note: It is not compatible with the {\tt Diag.Parallel.Over.K} option.
+Note: It is not compatible with the \fdf{Diag!Parallel.Over.K} option.
 
-{\it Default value:} {\tt .false.}
+\textit{Default value:} \fdffalse
 
-\item[{\bf Use.New.Diagk}] ({\it logical}):
-\index{Use.New.Diagk@{\bf Use.New.Diagk}}
+\item[\fdf{Use.New.Diagk}] (\textit{logical}):
+\index{Use.New.Diagk@\fdf*{Use.New.Diagk}}
 Selects whether a more efficient diagonalization routine (with
 intermediate storage of eigenvectors in netCDF format) is
 used for the case of k-point sampling.
@@ -5992,7 +6031,7 @@ Hamiltonian. It can achieve accuracy fully comparable to that obtained
 from a matrix diagonalization procedure for general systems, including
 metallic systems at low temperature.  
 
-The current implementation of the PEXSI solver in {\sc Siesta} makes
+The current implementation of the PEXSI solver in \siesta\ makes
 use of the full fine-grained-level interface in the PEXSI library
 (\url{http://pexsi.org}), and can deal with spin-polarization, but it
 is still restricted to $\Gamma$-point calculations. 
@@ -6627,8 +6666,8 @@ kAtEndOfLastLine, kPointLabel \\
 
 \noindent
 The \textsc{gnubands}\index{gnubands@\texttt{gnubands}} postprocessing
-utility program (found in the Util/Bands directory) reads the {\it
-  Systemlabel}.bands for plotting.  See the \textbf{BandLines} data
+utility program (found in the Util/Bands directory) reads the
+\sysfile{bands} for plotting.  See the \textbf{BandLines} data
 descriptor above for more information.
 
 \subsubsection{Output of wavefunctions associated to bands}
@@ -6870,11 +6909,10 @@ processed by utilites in \program{Util/Contrib/APostnikov}.
 In all cases, the units for the DOS are (number of states/eV), and the
 Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
 
-\begin{eqnarray}
-   \int_{-\infty}^{+\infty} g \left(\epsilon\right) d\epsilon =
-   number \;\; of \;\; basis \;\; orbitals \;\; in \;\;  unit \;\; cell \;\;
-   \nonumber \\
-\end{eqnarray}
+\begin{equation}
+  \int_{-\infty}^{+\infty} g \left(\epsilon\right) d\epsilon =
+  \text{number of basis orbitals in unit cell}
+\end{equation}
 
 
 \textit{Default value:} PDOS not calculated nor written.
@@ -7986,7 +8024,7 @@ of ``model core charges'' placed at the atomic sites. For a given
 atom, the model core charge has the same shape as the ``local
 pseudopotential charge'' used elsewhere by \siesta\ (a generalized
 Gaussian), but confined to a radius of 1.0 Bohr, and integrating to
-the total core charge ($Z$-$Z_{\rm val}$). These core charges are
+the total core charge ($Z$-$Z_{\mathrm{val}}$). These core charges are
 needed to provide local maxima for the charge density at the atomic
 sites, which are not guaranteed in a pseudopotential calculation. For
 hydrogen, an artificial core of 1 electron is added, with a
@@ -9435,13 +9473,13 @@ independent values of the U and J parameters for
 each atomic shell,
 in the actual calculation
 the two  parameters are combined to produce
-an effective Coulomb repulsion U$_{\rm eff}$=U-J. U$_{\rm eff}$
+an effective Coulomb repulsion U$_{\mathrm{eff}}$=U-J. U$_{\mathrm{eff}}$
 is the parameter actually used in the calculations
 for the time being.
 
-For large or intermediate values of U$_{\rm eff}$ the convergence
+For large or intermediate values of U$_{\mathrm{eff}}$ the convergence
 is sometimes difficult. A step-by-step increase of the
-value of U$_{\rm eff}$ can be advisable in such cases.
+value of U$_{\mathrm{eff}}$ can be advisable in such cases.
 
 \begin{description}
 \itemsep 10pt
