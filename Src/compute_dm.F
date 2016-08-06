@@ -22,7 +22,7 @@
       use siesta_geom
       use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
      &                    qtot, no_l
-      use sys, only: die
+      use sys, only: die, bye
       use Kpoint_grid
       use m_energies,   only: Ebs, Ecorrec, Ef, Entropy
       use m_rmaxh
@@ -32,6 +32,15 @@
       use m_diagon, only: diagon
       use m_gamma
       use parallel, only: IONode
+      use parallel, only: SIESTA_worker
+      use m_compute_ebs_shift, only: compute_ebs_shift
+#ifdef SIESTA__PEXSI
+      use m_pexsi_solver,  only: pexsi_solver
+#endif
+      use m_hsx, only      : write_hs_formatted
+#ifdef MPI
+      use mpi_siesta
+#endif
 #ifdef CDF
       use iodmhs_netcdf, only: write_dmh_netcdf
 #endif
@@ -47,25 +56,75 @@
       implicit none
 !     Input variables
       integer, intent(in) :: iscf
-!     Local variables
+
+      real(dp)            :: delta_Ebs, delta_Ef
       logical             :: CallDiagon
       integer             :: nnz
       real(dp), pointer :: H_kin(:)
 
       ! e1>e2 to signal that we do not want DOS weights
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
+      real(dp)            :: buffer1
+      integer             :: mpierr
 
-!-------------------------------------------------------------- BEGIN
-      call timer( 'compute_dm', 1 )
+!       character(15)            :: filename, indexstr
+!       character(15), parameter :: fnameform = '(A,A,A)'
 
-! Save present DM here, instead of in setup_hamiltonian...
 
+!-------------------------------------------------------------------- BEGIN
+
+      if (SIESTA_worker) call timer( 'compute_dm', 1 )
+
+#ifdef MPI
+      call MPI_Bcast(isolve,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
+#endif     
+
+      if (SIESTA_worker) then
+         ! Save present density matrix 
 !$OMP parallel workshare default(shared)
-      Dold(:,:) = Dscf(:,:)
+!!         Eold(:,:) = Escf(:,:)
+         Dold(:,:) = Dscf(:,:)
 !$OMP end parallel workshare
+      endif
 
-!     Solve eigenvalue problem 
+      ! Compute shift in Tr(H*DM) for fermi-level bracketting
+      ! Use the current H, the previous iteration H, and the
+      ! previous iteration DM
 
+      if (SIESTA_worker) then
+         if (iscf > 1) then
+            call compute_Ebs_shift(Dscf,H,Hprev,delta_Ebs)
+            delta_Ef = delta_Ebs / qtot
+            if (ionode) then
+               write(6,"(a,f16.5)")
+     $              "Estimated change in band-structure energy:",
+     $              delta_Ebs/eV, "Estimated shift in E_fermi: ",
+     $              delta_Ef/eV
+            endif
+               
+         else
+            delta_Ebs = 0.0_dp
+            delta_Ef  = 0.0_dp
+         endif
+      endif
+
+#ifdef SIESTA__PEXSI
+      if (isolve .eq. SOLVE_PEXSI) then
+        ! This test done in node 0 since NonCol and SpOrb
+        ! are not set for PEXSI-solver-only processes
+         if (ionode) then
+            if (NonCol .or. SpOrb) call die(
+     $               "The PEXSI solver does not implement "//
+     $               "non-coll spins or Spin-orbit yet")
+         endif
+         call pexsi_solver(iscf, no_u, no_l, spinor_dim,
+     $              maxnh, numh, listhptr, listh,
+     $              H, S, qtot, Dscf, Escf,
+     $              ef, Entropy, temp, delta_Ef)
+         if (ionode) write (6,"(/a,f14.6)") 'Entropy/k:', Entropy
+      endif
+      if (.not. SIESTA_worker) RETURN
+#endif
       ! Here we decide if we want to calculate one or more SCF steps by
       ! diagonalization before proceeding with the OMM routine
       CallDiagon=.false.
@@ -79,7 +138,30 @@
         endif
       endif
 
-      if ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
+      if (isolve .eq. MATRIX_WRITE) then
+!             write(indexstr,'(I15)') iscf
+!             write(filename,fnameform) 'H_', trim(adjustl(indexstr)), 
+!      &                                '.matrix'
+!             call write_global_matrix( no_s, no_l, maxnh, numh, listh,
+!      &           H(1:maxnh,1), filename )
+!  
+!             write(filename,fnameform) 'S_', trim(adjustl(indexstr)), 
+!      &                                '.matrix'
+
+!        Note: only one-shot for now
+         call write_hs_formatted(no_u, nspin,
+     $        maxnh, numh, listhptr, listh, H, S)
+         call bye("End of run after writing H.matrix and S.matrix")
+
+c$$$        call write_global_matrix_singlenodewrite( 
+c$$$     &           no_u, no_s, maxnh, numh, listhptr, listh, 
+c$$$     &           H(:,1), 'H.matrix')
+c$$$
+c$$$        call write_global_matrix_singlenodewrite( 
+c$$$     &           no_u, no_s, maxnh, numh, listhptr, listh, 
+c$$$     &           S, 'S.matrix')
+
+      elseif ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
         call diagon(no_s, spinor_dim, 
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -89,6 +171,7 @@
      &              occtol, iscf, neigwanted)
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
+        if (ionode) write (6,"(/a,f14.6)") 'Entropy/k:', Entropy
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
         if (NonCol .or. SpOrb)
@@ -139,7 +222,7 @@
          Entropy = 0.0_dp
 #endif /* TRANSIESTA */
       else
-        call die('siesta: ERROR: wrong solution method')
+        !call die('siesta: ERROR: wrong solution method')
       endif
 
 #ifdef CDF
@@ -188,8 +271,12 @@
       call normalize_dm(first=.false.)
 #endif
       
-      call timer( 'compute_dm', 2 )
+! Save Hamiltonian used to generate the DM in this iteration
+      Hprev = H
 
-!----------------------------------------------------------------- END
+      call timer( 'compute_dm', 2 )
+      if (ionode) call memory_snapshot("after compute_DM")
+
+!----------------------------------------------------------------------- END
       END subroutine compute_dm
       END MODULE m_compute_dm

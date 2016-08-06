@@ -105,6 +105,8 @@ subroutine read_options( na, ns, nspin )
   !                                                 1   = Order-N
   !                                                 2   = Transiesta
   !                                                 3   = OMM
+  !                                                 4   = PEXSI
+  !                                                 5   = (Matrix write)
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
   ! real*8  ts               : Total spin of the system
@@ -659,7 +661,14 @@ subroutine read_options( na, ns, nspin )
           value=method, dictRef='siesta:SCFmethod' )
   endif
 
-  if (leqi(method,'diagon')) then
+    if (leqi(method,'matrix')) then
+      isolve = MATRIX_WRITE
+      if (ionode)  then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ',&
+                            'Matrix write only'
+      endif
+
+    else if (leqi(method,'diagon')) then
      isolve = SOLVE_DIAGON
      ! DivideAndConquer is now the default
      DaC = fdf_get('Diag.DivideAndConquer',.true.)
@@ -689,7 +698,17 @@ subroutine read_options( na, ns, nspin )
      if (ionode) then
         write(6,3) 'redata: Method of Calculation', 'Orbital Minimization Method'
      endif
-     
+  else if (leqi(method,"pexsi")) then
+#ifdef PEXSI     
+      isolve = SOLVE_PEXSI
+      if (ionode) then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
+                            'PEXSI'
+      endif
+#else
+      call die("PEXSI solver is not compiled in. Use -DPEXSI")
+#endif
+      
 #ifdef TRANSIESTA
   else if (leqi(method,'transi') .or. leqi(method,'transiesta') ) then
      isolve = SOLVE_TRANSI
@@ -1531,7 +1550,12 @@ subroutine read_options( na, ns, nspin )
   ! Find some switches 
   writek                = fdf_get( 'WriteKpoints', outlng )
   writef                = fdf_get( 'WriteForces', outlng )
+
   writedm               = fdf_get( 'WriteDM', .true. )
+  write_dm_at_end_of_cycle = fdf_get( 'WriteDM.End.Of.Cycle', writedm )
+  writeH                = fdf_get( 'WriteH', .true. )
+  write_H_at_end_of_cycle  = fdf_get( 'WriteH.End.Of.Cycle', writeH )
+
   writedm_cdf           = fdf_get('WriteDM.NetCDF', .false. )
 #ifdef NCDF_4
   write_cdf             = fdf_get('CDF.Save', .false. )

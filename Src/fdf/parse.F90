@@ -1129,8 +1129,11 @@ MODULE parse
 !     String delimiters: "  '  `
       is_delstr(i)  = (i .eq. 34) .or. (i .eq. 39) .or. (i .eq. 96)
 
-!     List delimiters: { }
-      is_dellist(i)  = (i .eq. 123) .or. (i .eq. 125)
+!     List delimiters: [ ]
+      is_dellist(i)  = (i .eq. 91) .or. (i .eq. 93)
+
+!     Dictionary delimiters: { }
+!      is_deldict(i)  = (i .eq. 123) .or. (i .eq. 125)
 
 !     Special characters which are tokens by themselves: <
       is_special(i) = (i .eq. 60)
@@ -1258,10 +1261,14 @@ MODULE parse
       do i= 1, ntokens
         token = line(first(i):last(i))
         j = last(i) - first(i) + 1
-        if ( ichar(token(1:1)) .eq. 123 .and. &
-             ichar(token(j:j)) .eq. 125 ) then
-           ! if the token starts with { and ends with }, it will be a list
+        if ( ichar(token(1:1)) .eq. 91 .and. &
+             ichar(token(j:j)) .eq. 93 ) then
+           ! if the token starts with [ and ends with ], it will be a list
            token_id(i) = 'a'
+!        else if ( ichar(token(1:1)) .eq. 123 .and. &
+!             ichar(token(j:j)) .eq. 125 ) then
+           ! if the token starts with { and ends with }, it will be a dictionary
+!           token_id(i) = 'd'
         elseif (is_value(token)) then
 
 !         This read also serves to double check the token for

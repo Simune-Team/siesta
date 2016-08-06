@@ -58,7 +58,7 @@ C
 
       use diagmemory, only : MemoryFactor
 #ifdef MPI
-      use mpi_siesta, only : mpi_bcast, mpi_logical, mpi_comm_world
+      use mpi_siesta
 #endif
       use alloc
       use sys,        only : die

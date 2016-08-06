@@ -118,6 +118,9 @@ MODULE siesta_options
 #endif
   logical :: write_hs_history ! Write the MD track of Hamiltonian and overlap matrices
   logical :: writedm       ! Write file with density matrix?
+  logical :: write_dm_at_end_of_cycle ! Write DM at end of SCF cycle? (converged or not)
+  logical :: writeH        ! Write file with Hamiltonian? (in "DM" format)
+  logical :: write_H_at_end_of_cycle ! Write H at end of SCF cycle? 
   logical :: writedm_cdf   ! Write file with density matrix in netCDF form?
 #ifdef NCDF_4
   logical :: write_cdf     ! Write file with all information attached
@@ -237,7 +240,9 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_ORDERN = 1
   integer,  parameter :: SOLVE_TRANSI = 2
   integer,  parameter :: SOLVE_MINIM  = 3
-
+  integer,  parameter :: SOLVE_PEXSI  = 4
+  integer,  parameter :: MATRIX_WRITE = 5
+  
 #ifdef SIESTA__FLOOK
   ! LUA-handle
   type(luaState) :: LUA

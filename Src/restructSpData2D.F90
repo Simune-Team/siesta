@@ -75,10 +75,9 @@
 
       if ( maxval_j_in /= maxval_j_out ) then
          ! Print out the different values
-         print *,'in, out',maxval_j_in,maxval_j_out
-         call die('Supercell has changed from a read &
-              &in structure. I do not dare to continue... &
-              &Full restart is required.')
+         write(*,'(a,tr2,i0,a,tr2,i0)') &
+              'WARNING: Connected supercells may have changed: [in]/[out]', &
+              maxval_j_in, '/',maxval_j_out
       end if
 
       ! Maximum "column" index

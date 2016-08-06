@@ -31,6 +31,7 @@ contains
     use parallel, only : IONode
 
     use m_os, only : file_exist
+    use fdf, only: fdf_get
 
     use m_ts_gf,        only : do_Green, do_Green_Fermi
     use m_ts_electrode, only : init_Electrode_HS
@@ -66,6 +67,7 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
+    logical :: neglect_conn
     integer :: i, ia
     integer :: nC, nTS
     real(dp) :: mean_kT
@@ -210,17 +212,35 @@ contains
        end do
     else
 
+       neglect_conn = .false.
+
        do i = 1 , N_Elec
           call delete(Elecs(i)) ! ensure clean electrode
           call read_Elec(Elecs(i),Bcast=.true.)
           
           ! print out the precision of the electrode (whether it extends
           ! beyond first principal layer)
-          call check_Connectivity(Elecs(i))
+          if ( .not. check_Connectivity(Elecs(i)) ) then
+
+             neglect_conn = .true.
+             
+          end if
 
           call delete(Elecs(i))
        end do
-       
+
+       if ( neglect_conn ) then
+          neglect_conn = fdf_get('TS.Elecs.Neglect.Principal', .false.)
+
+          if ( .not. neglect_conn ) then
+
+             call die('Electrode connectivity is not perfect, refer &
+                  &to the manual for achieving a perfect electrode.')
+
+          end if
+
+       end if
+
     end if
 
   end subroutine ts_init

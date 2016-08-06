@@ -157,7 +157,7 @@ MODULE fdf
   public :: fdf_block, fdf_bline, fdf_bbackspace, fdf_brewind
   public :: fdf_bnintegers, fdf_bnreals, fdf_bnvalues, fdf_bnnames, fdf_bntokens
   public :: fdf_bintegers, fdf_breals, fdf_bvalues, fdf_bnames, fdf_btokens
-  public :: fdf_bboolean
+  public :: fdf_bboolean, fdf_bphysical
   public :: fdf_bnlists, fdf_blists
 
 ! Match, search over blocks, and destroy block structure
@@ -2349,6 +2349,66 @@ MODULE fdf
     END FUNCTION fdf_physical
 
 !
+!   Returns a double precision value from a block-line after a certain input value
+!   or the default value if label is not found in the fdf file.
+!   Converts the units to defunit.
+!
+    FUNCTION fdf_bphysical(pline, default, defunit, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      type(parsed_line), pointer        :: pline
+      real(dp)                          :: default
+      character(*)                      :: defunit
+      integer(ip), intent(in), optional :: after
+
+!-------------------------------------------------------------- Output Variables
+      real(dp)                            :: fdf_bphysical
+
+!--------------------------------------------------------------- Local Variables
+      character(10)                       :: unitstr
+      character(80)                       :: msg
+      real(dp)                            :: value
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+         call die('FDF module: fdf_bphysical', 'FDF subsystem not initialized', &
+              THIS_FILE, __LINE__, fdf_err)
+      endif
+      
+      if (.not. match(pline, 'vn', after)) then
+         write(msg,*) 'no real value for line: '//pline%line
+         call die('FDF module: fdf_bphysical', msg, THIS_FILE, &
+              __LINE__, fdf_err)
+      endif
+      
+      ! get value in block-line
+      value = values(pline, 1, after)
+
+      ! get unit in block-line
+      unitstr = names(pline, 1, after)
+      if ( leqi(unitstr, defunit) ) then
+         fdf_bphysical = value
+      else
+         fdf_bphysical = value * fdf_convfac(unitstr, defunit)
+      end if
+
+      if ( fdf_output ) then
+         if ( present(after) ) then
+            write(fdf_out,'(5x,g20.10,1x,a10,1x,i0)') fdf_bphysical, &
+                 defunit, after
+         else
+            write(fdf_out,'(5x,g20.10,1x,a10)') fdf_bphysical, defunit
+         end if
+         write(fdf_out,'(a,a,5x,g20.10,1x,a10)') &
+              '# above item on line: ', pline%line
+      end if
+
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_bphysical
+
+!
 !   Returns conversion factor between a subset of physical units
 !   Written by j.m.soler. dec'96.
 !   Modified by alberto garcia, jan'97.
@@ -2640,6 +2700,8 @@ MODULE fdf
 !--------------------------------------------------------------------------- END
     END FUNCTION fdf_bline
 
+
+    
 !
 !   Backspace to the previous physical line in the block
 !   returning .TRUE. while more lines exist in the block bfdf.

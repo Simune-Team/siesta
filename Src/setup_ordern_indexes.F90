@@ -14,8 +14,7 @@ subroutine setup_ordern_indexes(no_l,no_u,Nodes)
   use parallel, only: Node
 
 #ifdef MPI
-  use mpi_siesta, only: MPI_Comm_World, MPI_Integer
-  use mpi_siesta, only: MPI_AllGather, MPI_AllGatherV
+  use mpi_siesta
 #endif
 
   implicit none

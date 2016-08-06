@@ -266,6 +266,10 @@ contains
     rtmp = rtmp ** 2
 #endif
     Elecs(:)%Eta = rtmp
+    rtmp = 1.e-14_dp * eV
+    rtmp = fdf_get('TS.Elecs.Accuracy',rtmp,'Ry')
+    rtmp = fdf_get('TBT.Elecs.Accuracy',rtmp,'Ry')
+    Elecs(:)%accu = rtmp
 
     ! whether all calculations should be performed
     ! "out-of-core" i.e. whether the GF files should be created or not

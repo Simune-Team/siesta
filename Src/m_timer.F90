@@ -195,15 +195,7 @@ MODULE m_timer
   use moreParallelSubs, only: copyFile  ! Copies a file across nodes
   use parallel,   only: parallel_init   ! Initialize parallel variables
 #ifdef MPI
-  use mpi_siesta, only: MPI_AllGather
-  use mpi_siesta, only: MPI_Bcast
-  use mpi_siesta, only: MPI_Recv
-  use mpi_siesta, only: MPI_Send
-  use mpi_siesta, only: MPI_Integer
-  use mpi_siesta, only: MPI_Double_Precision
-  use mpi_siesta, only: MPI_Character
-  use mpi_siesta, only: MPI_COMM_WORLD
-  use mpi_siesta, only: MPI_STATUS_SIZE
+  use mpi_siesta
 #endif
 
 ! Used module parameters and variables

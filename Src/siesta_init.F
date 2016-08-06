@@ -19,7 +19,7 @@
      &                              estimate_pol_kpoints
       use m_struct_init,      only: struct_init
       use siesta_options
-      use timer_options,      only: use_tree_timer
+      use timer_options,      only: use_tree_timer, use_parallel_timer
       use sparse_matrices
       use class_Fstack_Pair_Geometry_dSpData2D, only: new, max_size
       use siesta_geom
@@ -45,10 +45,13 @@
       use m_timestamp,        only: timestamp
       use m_wallclock,        only: wallclock
       use parallel,           only: Node, Nodes, IOnode
+      use parallel,           only: SIESTA_worker
+      use parallel,           only: SIESTA_Group, SIESTA_Comm
       use densematrix,        only: Haux, Saux, Psi
       use m_energies
       use m_steps
-      use m_spin
+      use m_spin,             only: init_spin, nspin, spinor_dim, SpPol
+      use m_spin,             only: qs, init_spiral
       use m_rmaxh
       use m_forces 
       use m_eo
@@ -103,12 +106,21 @@
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
 
+      integer :: World_Group
+      integer :: npSIESTA
       external :: read_options
 
-!-------------------------------------------------------------------------BEGIN
+
+      character(len=256) :: output_file
+      logical            :: use_explicit_output_file
+
+!---------------------------------------------------------------------- BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
 ! of a driver program that may have initialized MPI already
+
 #ifdef MPI
+C     Initialise MPI and set processor number
+
       call MPI_Initialized( initialized, MPIerror )
       if (.not.initialized) then
 #ifdef _OPENMP
@@ -125,24 +137,80 @@
         call MPItrace_shutdown( )
 #endif
       endif ! (.not.initialized)
+      
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+      if (Node == 0) then
+         call get_command_line_options()
+         if (use_explicit_output_file) then
+            close(unit=6)
+            open(unit=6,file=trim(output_file),form="formatted",
+     $           position="rewind",
+     $           action="write",status="unknown")
+         endif
+      endif
+
+      if (Node == 0) write(6,"(a,i6)")
+     $      "** Total Number of Nodes: ", Nodes
+
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
      &           'doesn''t have parallel support')
       endif
 #endif
       if (Node==0) then
-         call system("rm -f 0_NORMAL_EXIT")
+         call system("/bin/rm -f 0_NORMAL_EXIT")
       endif
+
+#ifdef DEBUG_XC
+! Set output file unit for debug info
+      call setDebugOutputUnit()
+#endif /* DEBUG_XC */
+
+!     Initialise read .................................................
+      call reinit( sname )
+
+#ifdef MPI
+      ! Optionally, restrict the number of processors that SIESTA uses, out
+      ! of the total pool
+      npSIESTA  = fdf_get("MPI.Nprocs.SIESTA",Nodes)
+      call MPI_Comm_Group(MPI_Comm_World, World_Group, MPIerror)
+      call MPI_Group_incl(World_Group, npSIESTA,
+     $                    (/ (i,i=0,npSIESTA-1) /),
+     $                    SIESTA_Group, MPIerror)
+      call MPI_Comm_create(MPI_Comm_World, SIESTA_Group,
+     $                     SIESTA_Comm, MPIerror)
+
+      SIESTA_worker = (Node < npSIESTA)
+
+      ! Swap communicator
+      ! This is needed since MPI_COMM_WORLD is used implicitly by
+      ! Siesta for all operations. 
+      MPI_COMM_WORLD = SIESTA_Comm
+      if (SIESTA_worker) then
+         call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
+         call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+      endif
+#else
+      SIESTA_worker = .true.
+      Node = 0
+      Nodes = 1
+#endif
+      IOnode = SIESTA_worker .and. (Node .eq. 0)
+
+      ! Be sure to initialize the spin-configuration data
+      ! for all processors.
+
+      call init_spin( )
+
+      if (.not. SIESTA_worker) RETURN
+
 #ifdef DEBUG
 !     Generates a debug file for every process to track the execution.
 !     The file is called debug.$(PID) Where PID is the process number.
 !     It also works in secuencial mode.
       call debugMpiOn( )
-      call write_debug( 'PRE siesta_init' )
 #endif
-      IOnode = (Node .eq. 0)
 #ifdef NCDF_4
       call ncdf_IONode( IONode )
 #endif
@@ -217,13 +285,6 @@
       DEldau  = 0.0_dp
 
       
-#ifdef DEBUG_XC
-! Set output file unit for debug info
-      call setDebugOutputUnit()
-#endif /* DEBUG_XC */
-
-!     Initialise read .................................................
-      call reinit( sname )
 !
 !     Set object debugging level
 !
@@ -242,8 +303,10 @@
       threshold = fdf_get('timer_report_threshold', 0._dp)
       call timer_report( file=trim(slabel)//'.times', 
      .                   threshold=threshold )
-      ! This variable lives in siesta_options
-      use_tree_timer = fdf_get('UseTreeTimer', .false.)
+      ! Note that the parallel timer might be inefficient for reports
+      ! when large numbers of processors are used
+      use_parallel_timer = fdf_get('UseParallelTimer', .false.)
+      use_tree_timer = fdf_get('UseTreeTimer', .true.)
 
 !     Start time counter
 !     Note new placement of this first use, so that
@@ -267,10 +330,6 @@
          call add_citation("10.1088/0953-8984/14/11/302")
       end if
 
-      ! be sure to initialize spin-configuration
-      ! as the first thing.
-      ! Subsequent routines require this to be filled
-      call init_spin( )
 
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
@@ -394,7 +453,7 @@
 
 !     Parallel initialisation
       call initparallel( no_u, na_u, lasto, xa, ucell, rmaxh )
-!     if (IOnode) call show_distribution( )
+      if (IOnode) call show_distribution( )
 
 !     Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
@@ -548,11 +607,44 @@
       if (ionode) call pxfflush( 6 )
 
       call timer( 'Setup', 2 )
-#ifdef DEBUG
-      call write_debug( 'POS siesta_init' )
-#endif
+
 !--------------------------------------------------------------------------- END
-      
+      CONTAINS
+
+      subroutine get_command_line_options()
+      use m_getopts
+      use f2kcli
+
+      character(len=200) :: opt_arg
+      character(len=10)  :: opt_name 
+      integer :: nargs, iostat, n_opts, nlabels
+
+!     Process options
+!     
+      use_explicit_output_file = .false.
+      n_opts = 0
+      do
+         call getopts('dho:',
+     $                 opt_name,opt_arg,n_opts,iostat)
+         if (iostat /= 0) exit
+         select case(opt_name)
+         case ('d')
+          !           debug = .true.
+         case ('o')
+           use_explicit_output_file = .true.
+           output_file = trim(opt_arg)
+        case ('h')
+           !call manual()
+        case ('?',':')
+           write(0,*) "Invalid option: ", opt_name(1:1)
+           write(0,*) "Usage: siesta [ -o output_file ]"
+           !write(0,*) "Use -h option for manual"
+           call die()
+        end select
+      enddo
+
+      end subroutine get_command_line_options
+
       END subroutine siesta_init
 
       END MODULE m_siesta_init

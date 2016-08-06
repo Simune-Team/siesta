@@ -59,15 +59,19 @@ module m_spin
   !> Spin configuration for SIESTA
   type(tSpin), public :: spin
 
+  ! Use plain integers instead of pointers, to avoid problems
+  ! in the PEXSI-only nodes, which might not call the spin_init
+  ! routine. The values are copied at the end of that routine.
+  
   ! Create short-hands for the spin-configuration
   ! DO NOT USE THIS VARIABLE, USE -> type(tSpin) :: spin%Grid
-  integer, save, public, pointer :: nspin ! (Grid)
+    integer, save, public, pointer :: nspin => null() ! (Grid)
   ! DO NOT USE THIS VARIABLE, USE -> type(tSpin) :: spin%spinor
-  integer, save, public, pointer :: spinor_dim ! (spinor)
+    integer, save, public, pointer :: spinor_dim => null() ! (spinor)
   ! DO NOT USE THIS VARIABLE, USE -> type(tSpin) :: spin%H, spin%DM
-  integer, save, public, pointer :: h_spin_dim ! (H and DM)
+    integer, save, public, pointer :: h_spin_dim => null() ! (H and DM)
   ! DO NOT USE THIS VARIABLE, USE -> type(tSpin) :: spin%EDM
-  integer, save, public, pointer :: e_spin_dim ! (EDM)
+    integer, save, public, pointer :: e_spin_dim => null() ! (EDM)
   
 
   ! DO NOT USE THIS VARIABLE, USE -> type(tSpin) :: spin%none

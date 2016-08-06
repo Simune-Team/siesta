@@ -100,7 +100,7 @@ radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 sys.o: parallel.o
 siesta_options.o: parallel.o precision.o units.o
-timer.o: sys.o m_timer.o timer_tree.o 
+timer.o: sys.o m_timer.o timer_tree.o extrae_module.o extrae_eventllist.o
 timer_tree.o: m_walltime.o
 vdwxc.o: alloc.o debugxc.o interpolation.o ggaxc.o ldaxc.o mesh1d.o
 vdwxc.o: precision.o radfft.o vv_vdwxc.o sys.o
