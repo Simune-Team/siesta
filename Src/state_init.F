@@ -56,7 +56,7 @@
       use m_spin,            only: h_spin_dim, e_spin_dim
       use m_rmaxh
       ! NP new mixing
-      use m_mixing,          only: mixing_history_clear
+      use m_mixing,          only: mixers_history_init
       use m_mixing_scf,      only: scf_mixs, scf_mix
 
       use m_normalize_dm, only: normalize_dm
@@ -303,7 +303,7 @@
       call proximity_check(rmax)
 
       ! Clear history of mixing parameters
-      call mixing_history_clear( scf_mixs )
+      call mixers_history_init( scf_mixs )
       scf_mix => scf_mixs(1)
 
       ! Ensure sparsity pattern is empty

@@ -64,6 +64,7 @@ Andrew Walkingshaw
 Toby White
 Francois Willaime
 Chao Yang
+Ramon Cuadrado
 
 O.F. Sankey, D.J. Niklewski and D.A. Drabold made the FIREBALL code
 available to P. Ordejon.  Although we no longer use the routines in

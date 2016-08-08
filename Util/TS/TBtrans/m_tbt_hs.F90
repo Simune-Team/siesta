@@ -56,7 +56,7 @@ module m_tbt_hs
 
   ! A list of hamiltonian files and their biases
   type :: tHSfile
-     character(len=250) :: HSfile ! The Hamiltonian file
+     character(len=256) :: HSfile ! The Hamiltonian file
      real(dp) :: Volt ! The bias
   end type tHSfile
 
@@ -111,8 +111,7 @@ contains
     IsVolt = abs(Volt) > 0.00001_dp * eV
 
     ! Read in device region via the new block
-    btmp = fdf_block('TBT.TSHS.Files',bfdf)
-    if ( .not. btmp ) btmp = fdf_block('TBT.HS.Files',bfdf)
+    btmp = fdf_block('TBT.HS.Files',bfdf)
 
     if ( btmp ) then
        
@@ -128,7 +127,7 @@ contains
        end if
 
        ! backspace to the block
-       if ( .not. fdf_block('TBT.TSHS.Files',bfdf) ) then
+       if ( .not. fdf_block('TBT.HS.Files',bfdf) ) then
           call die('Error on second reading of block')
        end if
 
@@ -149,8 +148,7 @@ contains
        allocate(ipvt(N_HS))
        call crt_pivot(N_HS,tmpHS(:)%Volt,ipvt)
 
-       chars = fdf_get('TBT.TSHS.Interp','spline')
-       chars = fdf_get('TBT.HS.Interp',chars)
+       chars = fdf_get('TBT.HS.Interp','spline')
 
        if ( leqi(chars,'linear') ) then
 
@@ -209,8 +207,7 @@ contains
        N_HS = 1
        allocate(tHS(1))
 
-       tHS(1)%HSfile = fdf_get('TBT.TSHS',trim(slabel)//'.TSHS')
-       tHS(1)%HSfile = fdf_get('TBT.HS',tHS(1)%HSfile)
+       tHS(1)%HSfile = fdf_get('TBT.HS',trim(slabel)//'.TSHS')
        tHS(1)%Volt = Volt
 
     end if

@@ -354,8 +354,8 @@ m_mat_invert.o: intrinsic_missing.o m_pivot_array.o precision.o
 m_matio.o: alloc.o parallel.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mesh_node.o: intrinsic_missing.o parallel.o precision.o
-m_mixing.o: alloc.o class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
-m_mixing_scf.o: class_Fstack_Data1D.o m_mixing.o parallel.o
+m_mixing.o: class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
+m_mixing_scf.o: class_Fstack_Data1D.o m_mixing.o parallel.o precision.o
 m_monitor.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_monitor.o: parallel.o precision.o
 m_mpi_utils.o: precision.o sys.o
@@ -657,10 +657,9 @@ radial.o: alloc.o interpolation.o precision.o xml.o
 rdiag.o: alloc.o m_diagon_opt.o memoryinfo.o parallel.o precision.o sys.o
 rdiag_elpa.o: alloc.o elpa1.o elpa2.o parallel.o precision.o sys.o
 rdiag_mrrr.o: alloc.o parallel.o precision.o sys.o
-read_options.o: files.o m_charge_add.o m_hartree_add.o m_mixing.o
-read_options.o: m_mixing_scf.o m_spin.o m_target_stress.o memoryinfo.o
-read_options.o: parallel.o precision.o siesta_cml.o siesta_options.o sys.o
-read_options.o: units.o
+read_options.o: files.o m_charge_add.o m_hartree_add.o m_mixing_scf.o m_spin.o
+read_options.o: m_target_stress.o memoryinfo.o parallel.o precision.o
+read_options.o: siesta_cml.o siesta_options.o sys.o units.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o

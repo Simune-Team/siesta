@@ -33,8 +33,8 @@ subroutine read_options( na, ns, nspin )
   use m_charge_add, only : read_charge_add
   use m_hartree_add, only : read_hartree_add
   
-  use m_mixing_scf, only: scf_mixs
-  use m_mixing, only: mixing_init, mixing_print
+  use m_mixing_scf, only: mixers_scf_init
+  use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
   implicit none
   !----------------------------------------------------------- Input Variables
@@ -350,7 +350,10 @@ subroutine read_options( na, ns, nspin )
           units="cmlUnits:countable")
   endif
 
-  call fdf_deprecated('TS.MixH','MixHamiltonian') ! Prepare for obsoletion
+  call fdf_deprecated('TS.MixH','SCF.Mix')
+  call fdf_deprecated('MixHamiltonian','SCF.Mix')
+  call fdf_deprecated('MixCharge','SCF.Mix')
+
   mixH = fdf_get('TS.MixH',mixH_def) ! Catch old-style keyword (prefer new key)
   mixH = fdf_get('MixHamiltonian',mixH)
   mix_charge = fdf_get('MixCharge',.false.)
@@ -362,29 +365,30 @@ subroutine read_options( na, ns, nspin )
   else
      ctmp = 'density'
   end if
-  ctmp = fdf_get('Mix', trim(ctmp))
-  if ( leqi(ctmp, 'charge') ) then
+  
+  ctmp = fdf_get('SCF.Mix', trim(ctmp))
+  if ( leqi(ctmp, 'charge') .or. &
+       leqi(ctmp,'rho') ) then
      mix_charge = .true.
-  else if ( leqi(ctmp, 'Hamiltonian') ) then
+     mixH = .false.
+  else if ( leqi(ctmp, 'Hamiltonian') &
+       .or. leqi(ctmp, 'H') ) then
      mixH = .true.
+  else if ( leqi(ctmp, 'density') &
+       .or. leqi(ctmp, 'density-matrix') &
+       .or. leqi(ctmp, 'DM') ) then
+     mixH = .false.
   end if
-
+  
+  if ( IONode ) then
   if ( mix_charge ) then
-     if (ionode) then
-        write(6,1) 'redata: Mix charge density rho_g', mix_charge
-     endif
-     if (mixH) then
-        mixH = .false.
-        if (ionode) then
-           write(6,2) 'redata: ***MixCharge takes precedence over MixH'
-        endif
-     endif
-  endif
-  if (mixH) then
-     if (ionode) then
-        write(6,1) 'redata: Mix Hamiltonian instead of DM', mixH
-     endif
-  endif
+     write(6,3) 'redata: SCF mix quantity', 'charge'
+  else if ( mixH ) then
+     write(6,3) 'redata: SCF mix quantity', 'Hamiltonian'
+  else
+     write(6,3) 'redata: SCF mix quantity', 'density-matrix'
+  end if
+  end if
 
   ! Options for pre-4.0 compatibility
   compat_pre_v4_DM_H  = fdf_get('Compat-pre-v4-DM-H',.false.)
@@ -419,6 +423,7 @@ subroutine read_options( na, ns, nspin )
   ! Mix density matrix on first SCF step (mix)
   mix_scf_first = fdf_get('DM.MixSCF1', &
        .not. compat_pre_v4_DM_H)
+  mix_scf_first = fdf_get('SCF.Mix.First', mix_scf_first)
   if (ionode) then
      write(6,1) 'redata: Mix DM in first SCF step',mix_scf_first
   endif
@@ -1440,45 +1445,9 @@ subroutine read_options( na, ns, nspin )
 #endif
 
   ! Read in mixing parameters (SCF)
-  call mixing_init( 'SCF', scf_mixs )
-  call mixing_print( 'SCF', scf_mixs )
+  call mixers_scf_init( nspin )
+  call mixers_scf_print( nspin )
 
-  ! When performing spin-calculations this decides whether
-  ! only the spinor-components should be mixed.
-  ctmp = fdf_get('SCF.Mix.Spin','all')
-  if      ( leqi(ctmp, 'all') ) then
-     mix_spin = MIX_SPIN_ALL
-  else if ( leqi(ctmp, 'spinor') ) then
-     mix_spin = MIX_SPIN_SPINOR
-  else if ( leqi(ctmp, 'sum') ) then
-     mix_spin = MIX_SPIN_SUM
-  else if ( leqi(ctmp, 'sum+diff') ) then
-     mix_spin = MIX_SPIN_SUM_DIFF
-  else
-     call die("Unknown option given for SCF.Mix.Spin &
-          &all|spinor|sum|sum+diff")
-  end if
-  ! Default to not have any options for non-spin polarized
-  ! calculations
-  if ( nspin == 1 ) mix_spin = MIX_SPIN_ALL
-  
-  if ( IONode .and. nspin > 1 ) then
-     select case ( mix_spin )
-     case ( MIX_SPIN_ALL )
-        write(6,3) 'redata: Spin-component mixing','all'
-     case ( MIX_SPIN_SPINOR )
-        write(6,3) 'redata: Spin-component mixing','spinor'
-        if ( nspin <= 2 ) then
-           call die("SCF.Mix.Spin spinor option only valid for &
-                &non-collinear and SOC calculations")
-        end if
-     case ( MIX_SPIN_SUM ) 
-        write(6,3) 'redata: Spin-component mixing','sum'
-     case ( MIX_SPIN_SUM_DIFF ) 
-        write(6,3) 'redata: Spin-component mixing','sum and diff'
-     end select
-  end if
-  
   ! We read in relevant data for ChargeGeometries block
   call read_charge_add( min(2, nspin) , charnet )
   
@@ -1688,6 +1657,9 @@ subroutine read_options( na, ns, nspin )
   if (cml_p) then
      call cmlEndParameterList(mainXML)
   endif
+
+  ! Print blocks
+  call mixers_scf_print_block( )
 
   RETURN
   !-------------------------------------------------------------------- END

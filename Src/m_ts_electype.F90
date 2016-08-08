@@ -165,8 +165,10 @@ module m_ts_electype
 
   end type Elec
 
+  ! Fraction of alignment for considering two vectors having a similar
+  ! component
   real(dp), parameter :: cell_unit_align = 1.e-5_dp
-  
+
 contains
 
   function fdf_nElec(prefix,this_n) result(n)
@@ -254,7 +256,7 @@ contains
     found = fdf_block(trim(bName),bfdf)
 
     ! Allow the filename to be read in individually
-    name = trim(bName)//'.TSHS'
+    name = trim(bName)//'.HS'
     if ( fdf_defined(trim(name)) ) then
        this%HSfile = trim(fdf_get(name,''))
        info(1) = .true.
@@ -262,12 +264,7 @@ contains
 
     do i = 1 , 3
        write(name,'(2a,i0)') trim(bName),'.Bloch.A',i
-       if ( fdf_defined(trim(name)) ) then
-          this%Bloch(i) = fdf_get(name,i)
-       else
-          write(name,'(2a,i0)') trim(bName),'.Rep.A',i
-          if ( fdf_defined(trim(name)) ) this%Bloch(i) = fdf_get(name,i)
-       end if
+       this%Bloch(i) = fdf_get(name, 1)
     end do
     name = trim(bName)//'.GF'
     if ( fdf_defined(trim(name)) ) this%GFfile = trim(fdf_get(name,''))
@@ -305,9 +302,10 @@ contains
        ln = fdf_bnames(pline,1) 
        
        ! We select the input
-       if ( leqi(ln,'TSHS') .or. &
+       if ( leqi(ln,'HS') .or. leqi(ln,'HS-file') .or. &
+            leqi(ln,'TSHS') .or. &
             leqi(ln,'TSHS-file') ) then
-          if ( fdf_bnnames(pline) < 2 ) call die('TSHS name not supplied')
+          if ( fdf_bnnames(pline) < 2 ) call die('HS name not supplied')
           this%HSfile = trim(fdf_bnames(pline,2))
           info(1) = .true.
 
@@ -558,9 +556,9 @@ contains
           ! and still suspects a non-Gamma calculation
           this%kcell_check = fdf_bboolean(pline,1,after=1)
 
-       else if ( leqi(ln,'TSDE') .or. &
-            leqi(ln,'TSDE-file') ) then
-          if ( fdf_bnnames(pline) < 2 ) call die('TSDE name not supplied')
+       else if ( leqi(ln,'DE') .or. leqi(ln,'DE-file') .or. &
+            leqi(ln,'TSDE') .or. leqi(ln,'TSDE-file') ) then
+          if ( fdf_bnnames(pline) < 2 ) call die('DE name not supplied')
           this%DEfile = trim(fdf_bnames(pline,2))
 
 #ifdef TBTRANS
@@ -619,7 +617,7 @@ contains
 
     if ( .not. all(info(1:4)) ) then
        write(*,*)'You need to supply at least:'
-       write(*,*)' - TSHS'
+       write(*,*)' - HS'
        write(*,*)' - semi-inf-direction'
        write(*,*)' - chemical-potential'
        write(*,*)' - electrode-position'

@@ -234,7 +234,7 @@ contains
 
 ! ******************** Timer variables ***********************
     real(dp) :: loop_time, init_time
-    integer  :: last_progress_print
+    real :: last_progress, cur_progress
 ! ************************************************************
 
     T_all = 'T-all' .in. save_DATA
@@ -692,7 +692,7 @@ contains
 #endif
 
     ! The current progress is 0%
-    last_progress_print = 0
+    last_progress = 0.
 
     ! In case we do several spin, then the estimated time
     ! is wrong for the second run, hence we start and stop, and
@@ -796,12 +796,12 @@ contains
           ! Calculate progress
           jEl = (itt_cur_step(Kp) - 1) * N_E + iE
           iEl = itt_steps(Kp) * N_E
-          io = int(100._dp*real(jEl,dp)/real(iEl,dp))
-          if ( io - last_progress_print >= percent_tracker ) then
+          cur_progress = 100. * real(jEl)/real(iEl)
+          if ( cur_progress - last_progress >= percent_tracker ) then
              ! We have passed another 'percent_tracker'% of calculation time
 
              ! save current progress in integer form
-             last_progress_print = io
+             last_progress = cur_progress
 
              ! Stop timer
              call timer_stop('E-loop')
@@ -811,11 +811,10 @@ contains
              loop_time = loop_time - init_time
 
              if ( IONode ) then
-                loop_time = iEl * loop_time / (100._dp*real(jEl,dp))
-                loop_time = loop_time * ( 100._dp - last_progress_print )
+                loop_time = loop_time / cur_progress
+                loop_time = loop_time * ( 100._dp - cur_progress )
                 write(*,'(a,f7.3,'' %, ETA in '',f20.3,'' s'')') &
-                     'tbt: Calculated ', &
-                     100._dp*real(jEl,dp)/real(iEl,dp), loop_time
+                     'tbt: Calculated ', cur_progress, loop_time
              end if
 
              ! Start the timer again
@@ -1117,6 +1116,13 @@ contains
                       ! Copy the eigenvalues over
                       do io = 1 , N_eigen
                          Teig(io,jEl,iEl) = dreal(eig(io))
+#ifdef TBT_PHONON
+                         if ( Teig(io,jEl,iEl) >= 0._dp ) then
+                            Teig(io,jEl,iEl) = sqrt( Teig(io,jEl,iEl) )
+                         else
+                            Teig(io,jEl,iEl) = - sqrt( -Teig(io,jEl,iEl) )
+                         end if
+#endif
                       end do
                    else
                       call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl))
@@ -1300,6 +1306,13 @@ contains
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
                         bTkeig(io,jEl,ipt) = dreal(eig(io))
+#ifdef TBT_PHONON
+                        if ( bTkeig(io,jEl,ipt) >= 0._dp ) then
+                           bTkeig(io,jEl,ipt) = sqrt( bTkeig(io,jEl,ipt) )
+                        else
+                           bTkeig(io,jEl,ipt) = - sqrt( -bTkeig(io,jEl,ipt) )
+                        end if
+#endif
                      end do
                   else
                      call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
@@ -1316,6 +1329,13 @@ contains
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
                         bTkeig(io,jEl,ipt) = dreal(eig(io))
+#ifdef TBT_PHONON
+                        if ( bTkeig(io,jEl,ipt) >= 0._dp ) then
+                           bTkeig(io,jEl,ipt) = sqrt( bTkeig(io,jEl,ipt) )
+                        else
+                           bTkeig(io,jEl,ipt) = - sqrt( -bTkeig(io,jEl,ipt) )
+                        end if
+#endif
                      end do
                   else
                      call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt))

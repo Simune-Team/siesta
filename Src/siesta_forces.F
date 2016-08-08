@@ -30,10 +30,9 @@
       use m_compute_max_diff
       use m_scfconvergence_test
       use m_post_scf_work
-      use m_mixer
-      ! NP new mixing
+      use m_mixer, only: mixer
       use m_mixing_scf, only: mixing_scf_converged
-      use m_mixing_scf, only: mixing_scf_history_clear
+      use m_mixing_scf, only: mixers_scf_history_init
 
       use m_rhog,                only: mix_rhog, compute_charge_diff
       use siesta_options
@@ -301,6 +300,10 @@
            end if
         end if
 
+        ! Check whether we should step to the next
+        ! mixer
+        call mixing_scf_converged( SCFconverged )
+        
 #ifdef TRANSIESTA
         ! In case the user has requested a Fermi-level correction
         ! Then we start by correcting the fermi-level
@@ -407,7 +410,7 @@
 #endif
 
       ! Clean-up here to limit memory usage
-      call mixing_scf_history_clear( )
+      call mixers_scf_history_init( )
 
       
 !     End of standard SCF loop.
