@@ -214,7 +214,7 @@ And also (though not all options are compatible):
 \item Dielectric polarization.
 \item Vibrations (phonons).
 \item Band structure.
-\item Ballistic electron transport (through \tsiesta)
+\item Ballistic electron transport under non-equilibrium (through \tsiesta)
 \end{itemize}
 
 
@@ -308,7 +308,7 @@ For more information you can visit the web page
 
 \section{COMPILATION}
 
-\subsection{The building directory}
+\subsection{The build directory}
 
 Rather than using the top-level Src directory as building directory,
 the user has to use an ad-hoc building directory (by default the
@@ -326,19 +326,15 @@ programs is used. This scheme has many advantages. Among them:
 
 If you just want to compile the program, go to \shell{Obj} and issue the
 command:
-
-\begin{verbatim}
+\begin{shellexample}
   sh ../Src/obj_setup.sh
-\end{verbatim}
-
+\end{shellexample}
 to populate this directory with the minimal scaffolding of makefiles,
 and then make sure that you create or generate an appropriate \shell{arch.make}
 file (see below, in Sect.~\ref{sec:arch-make}). Then, type
-
-\begin{verbatim}
+\begin{shellexample}
   make
-\end{verbatim}
-
+\end{shellexample}
 The executable should work for any job. (This is not exactly true,
 since some of the parameters in the atomic routines are still
 hardwired (see \shell{Src/atmparams.f}), but those would seldom need to
@@ -357,11 +353,9 @@ parallel, debug, etc), by working in separate building directories.
 
 Simply provide the appropriate arch.make, and issue the setup command
 above. To compile utility programs, you need to use the form:
-
-\begin{verbatim}
+\begin{shellexample}
    make OBJDIR=ObjName
-\end{verbatim}
-
+\end{shellexample}
 where \shell{ObjName} is the name of the object directory of your
 choice. Be sure to type \shell{make clean} before attempting to
 re-compile a utility program.
@@ -462,8 +456,6 @@ The above will yield the most basic parallelism using OpenMP. However,
 the BLAS/LAPACK libraries which is the most time-consuming part of
 \siesta\ also requires to be threaded, please see Sec.~\ref{sec:libs}
 for correct linking.
-
-%
 
 Subsequently one may run \siesta\ using OpenMP through the environment
 variable \shell{OMP\_NUM\_THREADS} which determine the number of
@@ -709,11 +701,11 @@ libraries
   \index{PEXSI}%
   \index{External library!PEXSI}%
   The PEXSI library may be used with \siesta\ for exa-scale
-  calculations. Currently the interface is implemented (tested) as in
-  PEXSI version 0.8.0, 0.9.0 and 0.9.2. If newer versions retain the same
-  interface they may also be used.
+  calculations, see Sec.~\ref{SolverPEXSI}. Currently the interface is
+  implemented (tested) as in PEXSI version 0.8.0, 0.9.0 and 0.9.2. If
+  newer versions retain the same interface they may also be used.
 
-  To successfully compile \siesta\ with PEXSI support one requires the
+  To successfully compile \siesta\ with PEXSI support one require the
   PEXSI fortran interface. When installing PEXSI copy the
   \shell{f\_interface.f90} file to the include directory of
   PEXSI such that the module may be found\footnote{Optionally the file
@@ -722,14 +714,15 @@ libraries
 
   Add these flags to your \file{arch.make} file to enable PEXSI
 \begin{shellexample}
+  INCFLAGS += -I/opt/pexsi/0.9.2/include
   LIBS += -L/opt/pexsi/0.9.2/lib -lpexsi_linux <>
   FPPFLAGS += -DSIESTA__PEXSI
 \end{shellexample}
   \index{compile!pre-processor!-DSIESTA\_\_PEXSI}
   where \shell{<>} are any libraries that PEXSI depend on. 
   %
-  If one experiences linker failures, one possible solution may help
-  is
+  If one experiences linker failures, one possible solution that may
+  help is
 \begin{shellexample}
   LIBS += -lmpi_cxx -lstdc++
 \end{shellexample}
@@ -3386,7 +3379,7 @@ This flag has precedence from \textbf{SpinOrbit}, \textbf{NonCollinearSpin} and
 \textbf{SpinPolarized} while they may still be used.
 
 Certain options may not be used together with specific parallelization routines.
-For instance only a spin-polarized calculation may use the \textbf{Diag.ParallelOverK}
+For instance only a spin-polarized calculation may use the \fdf{Diag!ParallelOverK}
 option. 
 
 \textit{Default value:} \texttt{non-polarized}
@@ -3842,27 +3835,27 @@ control commands. This can greatly speed up convergence.
   \begin{fdfoptions}
 
     \option[method]%
-    \fdfindex{SCF.Mixer.<>!method}%
+    \fdfindex*{SCF.Mixer.<>!method}%
     Define the method for the mixer, see \fdf{SCF.Mixer!Method} for
     possible values.
 
     \option[variant]%
-    \fdfindex{SCF.Mixer.<>!variant}%
+    \fdfindex*{SCF.Mixer.<>!variant}%
     Define the variant of the method, see \fdf{SCF.Mixer!Variant} for
     possible values.
 
     \option[weight|w]%
-    \fdfindex{SCF.Mixer.<>!weight}%
+    \fdfindex*{SCF.Mixer.<>!weight}%
     Define the mixing weight for the mixing scheme, see
     \fdf{SCF.Mixer!Weight}.
 
     \option[history]%
-    \fdfindex{SCF.Mixer.<>!history}%
+    \fdfindex*{SCF.Mixer.<>!history}%
     Define number of previous history steps used in the minimization process, see
     \fdf{SCF.Mixer!History}.
 
     \option[weight.linear|w.linear]%
-    \fdfindex{SCF.Mixer.<>!weight.linear}%
+    \fdfindex*{SCF.Mixer.<>!weight.linear}%
     Define the linear mixing weight for the mixing scheme. This only
     has meaning for Pulay or Broyden mixing. It defines the initial
     linear mixing weight. 
@@ -3871,34 +3864,34 @@ control commands. This can greatly speed up convergence.
     should set this to $1$.
 
     \option[restart]%
-    \fdfindex{SCF.Mixer.<>!restart}%
+    \fdfindex*{SCF.Mixer.<>!restart}%
     Define the periodic restart of the saved history, see
     \fdf{SCF.Mixer!Restart}.
 
     \option[restart.save]%
-    \fdfindex{SCF.Mixer.<>!restart.save}%
+    \fdfindex*{SCF.Mixer.<>!restart.save}%
     Define number of latest history steps retained when restarting the
     history, see \fdf{SCF.Mixer!Restart.Save}.
 
     \option[iterations]%
-    \fdfindex{SCF.Mixer.<>!iterations}%
+    \fdfindex*{SCF.Mixer.<>!iterations}%
     Define the maximum number of iterations this mixer should run
     before changing to another mixing method.
 
     \note this \emph{must} be used in conjunction with the \fdf*{next} setting.
 
     \option[next \fdf*{<>}]%
-    \fdfindex{SCF.Mixer.<>!next}%
+    \fdfindex*{SCF.Mixer.<>!next}%
     Specify the name of the next mixing scheme after having conducted
     \fdf*{iterations} SCF cycles using this mixing method.
 
     \option[next.conv \fdf*{<>}]%
-    \fdfindex{SCF.Mixer.<>!next.conv}%
+    \fdfindex*{SCF.Mixer.<>!next.conv}%
     If SCF convergence is reached using this mixer, switch to the
     mixing scheme via \fdf*{<>}. Then proceed with the SCF cycle.
 
     \option[next.p]%
-    \fdfindex{SCF.Mixer.<>!next.p}%
+    \fdfindex*{SCF.Mixer.<>!next.p}%
     If the relative difference between the latest two residuals is
     below this quantity, the mixer will switch to the method given in
     \fdf*{next}.
@@ -3912,7 +3905,7 @@ control commands. This can greatly speed up convergence.
     is fulfilled it will skip to the next mixer.
 
     \option[restart.p]%
-    \fdfindex{SCF.Mixer.<>!restart.p}%
+    \fdfindex*{SCF.Mixer.<>!restart.p}%
     If the relative difference between the latest two residuals is
     below this quantity, the mixer will restart the history.
     Thus if
@@ -5331,138 +5324,138 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 
 \subsubsection{Diagonalization options}
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-\item[\textbf{NumberOfEigenStates}] (\textit{integer}):
-\index{NumberOfEigenStates@\textbf{NumberOfEigenStates}}
-This parameter allows the user to reduce the number of eigenstates
-that are calculated from the maximum possible. The benefit is that,
-for a gamma point calculation, the cost of the diagonalisation is
-reduced by finding fewer eigenvectors. For example, during a geometry
-optimisation, only the occupied states are required rather than the
-full set of virtual orbitals. Note, that if the electronic temperature
-is greater than zero then the number of partially occupied states
-increases, depending on the band gap.
-The value specified must greater than the number of occupied states
-and less than the number of basis functions.
 
-\textit{Default value:} \texttt{all orbitals}
+\begin{fdfentry}{NumberOfEigenStates}[integer]<\nonvalue{all orbitals}>
 
-\item[\fdf{Diag!ELPA}] (\textit{logical}):
-\index{Diag.ELPA@\fdf*{Diag.ELPA}}
+  This parameter allows the user to reduce the number of eigenstates
+  that are calculated from the maximum possible. The benefit is that,
+  for a gamma point calculation, the cost of the diagonalisation is
+  reduced by finding fewer eigenvectors. For example, during a
+  geometry optimisation, only the occupied states are required rather
+  than the full set of virtual orbitals. Note, that if the electronic
+  temperature is greater than zero then the number of partially
+  occupied states increases, depending on the band gap.  The value
+  specified must greater than the number of occupied states and less
+  than the number of basis functions.
+  
+\end{fdfentry}
 
-(For parallel gamma-point calculations without spin orbit only)
-Use the ELPA routines for diagonalization.
-Specifying a number of eigenvectors to store is possible through
-the symbol NumberOfEigenstates (see above).
+\begin{fdflogicalF}{Diag!ELPA}
 
-A description of some algorithms present in ELPA can be found in:
+  (For parallel gamma-point calculations without spin orbit only) Use
+  the ELPA routines for diagonalization.  Specifying a number of
+  eigenvectors to store is possible through the symbol
+  \fdf{NumberOfEigenStates} (see above).
 
-T. Auckenthaler, V. Blum, H.-J. Bungartz, T. Huckle, R. Johanni,
-L. Kr\"amer, B. Lang, H. Lederer, and P. R. Willems,
-``Parallel solution of partial symmetric eigenvalue problems from
-electronic structure calculations'',
-Parallel Computing 37, 783-794 (2011).
-doi:10.1016/j.parco.2011.05.002.
+  A description of some algorithms present in ELPA can be found in:
 
-Marek, A.; Blum, V.; Johanni, R.; Havu, V.; Lang, B.; Auckenthaler,
-T.; Heinecke, A.; Bungartz, H.-J.; Lederer, H.
-  ``The ELPA library: scalable parallel eigenvalue solutions for
-electronic
-structure theory and computational science'',
-Journal of Physics Condensed Matter, 26 (2014)
-doi:10.1088/0953-8984/26/21/213201
+  T. Auckenthaler, V. Blum, H.-J. Bungartz, T. Huckle, R. Johanni,
+  L. Kr\"amer, B. Lang, H. Lederer, and P. R. Willems, ``Parallel
+  solution of partial symmetric eigenvalue problems from electronic
+  structure calculations'', Parallel Computing 37, 783-794 (2011).
+  doi:10.1016/j.parco.2011.05.002.
 
-Note: It is not compatible with the \fdf{Diag!Parallel.Over.K} option.
+  Marek, A.; Blum, V.; Johanni, R.; Havu, V.; Lang, B.; Auckenthaler,
+  T.; Heinecke, A.; Bungartz, H.-J.; Lederer, H.  ``The ELPA library:
+  scalable parallel eigenvalue solutions for electronic structure
+  theory and computational science'', Journal of Physics Condensed
+  Matter, 26 (2014) doi:10.1088/0953-8984/26/21/213201
 
-\textit{Default value:} \fdffalse
+  \note It is not compatible with the \fdf{Diag!Parallel.Over.K}
+  option.
+  
+\end{fdflogicalF}
 
-\item[\fdf{Diag!MRRR}] (\textit{logical}):
-\index{Diag.MRRR@\fdf*{Diag.MRRR}}
+\begin{fdflogicalF}{Diag!MRRR}
 
-(For parallel gamma-point calculations without spin orbit only)
-Use the MRRR method in Scalapack for diagonalization.
-Specifying a number of eigenvectors to store is possible through
-the symbol NumberOfEigenstates (see above).
+  For parallel gamma-point calculations without spin orbit only.
 
-Note: It is not compatible with the \fdf{Diag!Parallel.Over.K} option.
+  Use the MRRR method in Scalapack for diagonalization. Specifying a
+  number of eigenvectors to store is possible through the symbol
+  \fdf{NumberOfEigenStates} (see above).
 
-\textit{Default value:} \fdffalse
+  \note it is not compatible with the \fdf{Diag!Parallel.Over.K}
+  option.
 
-\item[\fdf{Use.New.Diagk}] (\textit{logical}):
-\index{Use.New.Diagk@\fdf*{Use.New.Diagk}}
-Selects whether a more efficient diagonalization routine (with
-intermediate storage of eigenvectors in netCDF format) is
-used for the case of k-point sampling.
-
-In order to use the new routine, netCDF support should be compiled in.
-Specifying a number of eigenvectors to store is possible through
-the symbol NumberOfEigenstates (see above). Note that for now, for safety, all
-eigenvectors for a given k-point and spin are computed by the
-diagonalization routine, but only that number specified by the user
-are stored. If they are insufficient, the program stops.  A rule of
-thumb to select the number of eigenvectors to store is to count the
-number of electrons and divide by two, and then apply a "safety
-factor" of around 1.1-1.2 to take into account fractional occupations
-and band overlaps.
-
-A new file \texttt{OCCS} is produced with information about the number of
-states occupied.
-
-This is an experimental feature. Note: It is not compatible with the
-\texttt{Diag.Parallel.Over.K} option.
-
-\textit{Default value:} \texttt{.false.}
+\end{fdflogicalF}
 
 
-\item[\textbf{Diag.DivideAndConquer}] (\textit{logical}):
-\index{Diag.DivideAndConquer@\textbf{Diag.DivideAndConquer}}
-Logical to select whether the normal or Divide and Conquer algorithms are
-used within the Lapack diagonalisation routines.
+\begin{fdflogicalF}{Diag!UseNewDiagk}
 
-(Note: Some system library implementations of the D\&C algorithm are
-buggy. It is advisable to use Siesta's own (fixed) version -- configure will
-try to do that.)
+  Selects whether a more efficient diagonalization routine (with
+  intermediate storage of eigenvectors in NetCDF format) is used for
+  the case of k-point sampling.
 
-\textit{Default value:} \texttt{true}
+  In order to use the new routine, netCDF support should be compiled
+  in.  Specifying a number of eigenvectors to store is possible
+  through the symbol \fdf{NumberOfEigenStates} (see above). Note that for
+  now, for safety, all eigenvectors for a given k-point and spin are
+  computed by the diagonalization routine, but only that number
+  specified by the user are stored. If they are insufficient, the
+  program stops.  A rule of thumb to select the number of eigenvectors
+  to store is to count the number of electrons and divide by two, and
+  then apply a "safety factor" of around 1.1-1.2 to take into account
+  fractional occupations and band overlaps.
 
-\item[\textbf{Diag.AllInOne}] (\textit{logical}):
-\index{Diag.AllInOne@\textbf{Diag.AllInOne}}
-Logical to select whether a single call to lapack/scalapack is made to
-perform the diagonalisation or whether the individual steps are controlled
-by \siesta. Normally this option should not need to be used.
+  A new file \file{OCCS} is produced with information about the number
+  of states occupied.
 
-\textit{Default value:} \texttt{false}
+  This is an experimental feature. 
 
-\item[\textbf{Diag.NoExpert}] (\textit{logical}):
-\index{Diag.NoExpert@\textbf{Diag.NoExpert}}
-Logical to select whether the simple or expert versions of the lapack/
-scalapack routines are used. Usually the expert routines are faster, but
-may require slightly more memory.
+  \note It is not compatible with the \fdf{Diag!Parallel.Over.K}
+  option.
 
-\textit{Default value:} \texttt{false}
+\end{fdflogicalF}
 
-\item[\textbf{Diag.PreRotate}] (\textit{logical}):
-\index{Diag.PreRotate@\textbf{Diag.PreRotate}}
-Logical to select whether the eigensystem is transformed according to
-previously saved eigenvectors to create a near diagonal matrix and then
-back transformed afterwards. This is included for future options, but
-currently should not make any difference except to increase the
-computational work!
 
-\textit{Default value:} \texttt{false}
+\begin{fdflogicalT}{Diag!DivideAndConquer}
 
-\item[\textbf{Diag.Use2D}] (\textit{logical}):
-\index{Diag.Use2D@\textbf{Diag.Use2D}}
-Logical to select whether a 1-D or 2-D data decomposition should be used
-when calling scalapack. The use of 2-D leads to superior scaling to
-large numbers of processors and is therefore the default. This option
-only influences the parallel performance.
+  Logical to select whether the normal or Divide and Conquer
+  algorithms are used within the Lapack diagonalisation routines.
 
-\textit{Default value:} \texttt{true}
+  (Note: Some system library implementations of the D\&C algorithm are
+  buggy. It is advisable to use Siesta's own (fixed) version --
+  configure will try to do that.)
+  
+\end{fdflogicalT}
 
-\end{description}
+\begin{fdflogicalF}{Diag!AllInOne}
+
+  Logical to select whether a single call to lapack/scalapack is made
+  to perform the diagonalisation or whether the individual steps are
+  controlled by \siesta. Normally this option should not need to be
+  used.
+  
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{Diag!NoExpert}
+
+  Logical to select whether the simple or expert versions of the
+  lapack/ scalapack routines are used. Usually the expert routines are
+  faster, but may require slightly more memory.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{Diag!PreRotate}
+
+  Logical to select whether the eigensystem is transformed according
+  to previously saved eigenvectors to create a near diagonal matrix
+  and then back transformed afterwards. This is included for future
+  options, but currently should not make any difference except to
+  increase the computational work!
+  
+\end{fdflogicalF}
+
+
+\begin{fdflogicalT}{Diag!Use2D}
+
+  Logical to select whether a 1-D or 2-D data decomposition should be
+  used when calling scalapack. The use of 2-D leads to superior
+  scaling to large numbers of processors and is therefore the
+  default. This option only influences the parallel performance.
+  
+\end{fdflogicalT}
+
 
 \subsubsection{Output of eigenvalues and wavefunctions}
 
@@ -5476,7 +5469,7 @@ Secs.~\ref{sec:band-structure} and~\ref{sec:wf-output-user}, respectively.
 
 The complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to a NetCDF file
-\texttt{WFS.nc} if the \textbf{Diag.UseNewDiagk} option is in effect.
+\texttt{WFS.nc} if the \fdf{Diag!UseNewDiagk} option is in effect.
 
 The complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
@@ -6735,7 +6728,7 @@ if the \textbf{COOP.write} option is in effect.
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to a NetCDF file
-\texttt{WFS.nc} if the \textbf{Diag.UseNewDiagk} option is in effect.
+\texttt{WFS.nc} if the \fdf{Diag!UseNewDiagk} option is in effect.
 
 \begin{description}
 
@@ -8210,28 +8203,32 @@ matrix diagonalisation
 
 \textit{Default value:}  1.0
 
-\item[\textbf{Diag.ParallelOverK}] (\textit{logical}): \index{Diag.ParallelOverK@\textbf{Diag.ParallelOverK}} For the diagonalisation there is a choice in strategy
-about whether to parallelise over the K points or over the orbitals. K
-point diagonalisation is close to perfectly parallel but is only
-useful where the number of K points is much larger than the number of
-processors and therefore orbital parallelisation is generally
-preferred. The exception is for metals where the unit cell is small,
-but the number of K points to be sampled is very large. In this last
-case it is recommend that this option be used.
-
-NOTE: This scheme is not used for the diagonalizations involved in the
-generation of the band-structure (as specified with \textbf{BandLines} or
-\textbf{BandPoints}) or in the generation of wave-function information
-(as specified with \textbf{WaveFuncKpoints}). In these cases the program
-falls back to using parallelization over orbitals.
-
-\textit{Use:} Controls whether the diagonalisation is parallelised with
-respect to orbitals or K points - not allowed for non-co-linear spin
-case.
-
-\textit{Default value:}  false
-
 \end{description}
+
+\begin{fdflogicalF}{Diag!ParallelOverK}
+  
+  For the diagonalisation there is a choice in strategy about whether
+  to parallelise over the K points or over the orbitals. K point
+  diagonalisation is close to perfectly parallel but is only useful
+  where the number of K points is much larger than the number of
+  processors and therefore orbital parallelisation is generally
+  preferred. The exception is for metals where the unit cell is small,
+  but the number of K points to be sampled is very large. In this last
+  case it is recommend that this option be used.
+
+  \note This scheme is not used for the diagonalizations involved in
+  the generation of the band-structure (as specified with
+  \fdf{BandLines} or \fdf{BandPoints}) or in the generation of
+  wave-function information (as specified with
+  \fdf{WaveFuncKpoints}). In these cases the program falls back to
+  using parallelization over orbitals.
+
+  \emph{Use:} Controls whether the diagonalisation is parallelised
+  with respect to orbitals or K points - not allowed for non-co-linear
+  spin case.
+
+\end{fdflogicalF}
+
 
 \subsubsection{Parallel decompositions for O(N)}
 \label{parallel-on}
@@ -9990,10 +9987,10 @@ for the program for additional options.
   Control which initial guess should be used for \tsiesta. The
   general way is the \fdf*{diagon} solution method, however, one can
   start immediately in a \tsiesta\ run. If you start directly with
-  \tsiesta\ please refer to these flags: \fdf{TS!Elecs!DM.Bulk},
+  \tsiesta\ please refer to these flags: \fdf{TS.Elecs!DM.Bulk},
   \fdf{DM.Init.Bulk} and \fdf{TS!Fermi.Initial}.
   
-  \note Setting this to \fdf{transiesta} is highly experimental and
+  \note Setting this to \fdf*{transiesta} is highly experimental and
   convergence may be extremely poor.
 
 \end{fdfentry}
@@ -10028,11 +10025,11 @@ for the program for additional options.
   \begin{fdfoptions}
 
     \option[orb-orb]%
-    \fdfindex{TS!Weight.Method!orb-orb}%
+    \fdfindex*{TS!Weight.Method!orb-orb}%
     Weight each orbital-density matrix element individually.
 
     \option[tr-atom-atom]%
-    \fdfindex{TS!Weight.Method!tr-atom-atom}%
+    \fdfindex*{TS!Weight.Method!tr-atom-atom}%
     Weight according to the trace of the atomic density matrix sub-blocks
     \begin{equation}
       w_{ij}^{\Tr} \mypropto
@@ -10046,7 +10043,7 @@ for the program for additional options.
     \end{equation}
 
     \option[tr-atom-orb]%
-    \fdfindex{TS!Weight.Method!tr-atom-orb}%
+    \fdfindex*{TS!Weight.Method!tr-atom-orb}%
     
     Weight according to the trace of the atomic density matrix
     sub-block times the weight of the orbital weight
@@ -10059,7 +10056,7 @@ for the program for additional options.
     \end{equation}
 
     \option[sum-atom-atom]%
-    \fdfindex{TS!Weight.Method!sum-atom-atom}%
+    \fdfindex*{TS!Weight.Method!sum-atom-atom}%
     
     Weight according to the total sum of the atomic density matrix
     sub-blocks
@@ -10075,7 +10072,7 @@ for the program for additional options.
     \end{equation}
 
     \option[sum-atom-orb]%
-    \fdfindex{TS!Weight.Method!sum-atom-orb}%
+    \fdfindex*{TS!Weight.Method!sum-atom-orb}%
     
     Weight according to the total sum of the atomic density matrix
     sub-block times the weight of the orbital weight
@@ -10088,7 +10085,7 @@ for the program for additional options.
     \end{equation}
 
     \option[mean]%
-    \fdfindex{TS!Weight.Method!mean}%
+    \fdfindex*{TS!Weight.Method!mean}%
     
     A standard average.
     
@@ -10399,7 +10396,7 @@ electrodes in a generic input format.
   \begin{fdfoptions}
 
     \option[HS]%
-    \fdfindex{TS!Elec.<>!HS}%
+    \fdfindex*{TS!Elec.<>!HS}%
     The Hamiltonian information from the initial electrode
     calculation. This file retains the geometrical information as well
     as the Hamiltonian, overlap matrix and the Fermi-level of the
@@ -10409,7 +10406,7 @@ electrodes in a generic input format.
     located in the simulation folder.
 
     \option[semi-inf-direction|semi-inf-dir|semi-inf]%
-    \fdfindex{TS!Elec.<>!semi-inf-direction}%
+    \fdfindex*{TS!Elec.<>!semi-inf-direction}%
     The semi-infinite direction of the electrode with respect to the
     electrode unit-cell. 
 
@@ -10418,13 +10415,13 @@ electrodes in a generic input format.
     and the scattering region unit-cell.
 
     \option[chemical-potential|chem-pot|mu]%
-    \fdfindex{TS!Elec.<>!chemical-potential}%
+    \fdfindex*{TS!Elec.<>!chemical-potential}%
     The chemical potential that is associated with this
     electrode. This is a string that should be present in the
     \fdf{TS!ChemPots} block.
 
     \option[electrode-position|elec-pos]%
-    \fdfindex{TS!Elec.<>!electrode-position}%
+    \fdfindex*{TS!Elec.<>!electrode-position}%
     The index of the electrode in the scattering region.
     This may be given by either \fdf*{elec-pos <idx>}, which refers to
     the first atomic index of the electrode residing at index
@@ -10433,7 +10430,7 @@ electrodes in a generic input format.
     will be located at \fdf*{<idx>}.
 
     \option[used-atoms]%
-    \fdfindex{TS!Elec.<>!used-atoms}%
+    \fdfindex*{TS!Elec.<>!used-atoms}%
     Number of atoms from the electrode calculation that is used in the
     scattering region as electrode. This may be useful when the
     periodicity of the electrodes forces extensive electrodes in the
@@ -10442,13 +10439,13 @@ electrodes in a generic input format.
     \note do not set this if you use all atoms in the electrode.
 
     \option[Bulk]%
-    \fdfindex{TS!Elec.<>!Bulk}%
+    \fdfindex*{TS!Elec.<>!Bulk}%
     Logical controlling whether the Hamiltonian of the electrode
     region in the scattering region is enforced \emph{bulk} or whether
     the Hamiltonian is taken from the scattering region elements.
 
     \option[DM-update]%
-    \fdfindex{TS!Elec.<>!DM-update}%
+    \fdfindex*{TS!Elec.<>!DM-Update}%
     String of values \fdf*{none}, \fdf*{cross-terms} or \fdf*{all}
     which controls which part of the electrode density matrix elements
     that are updated. If \fdf*{all}, both the density matrix elements
@@ -10458,7 +10455,7 @@ electrodes in a generic input format.
     scattering region are updated.
 
     \option[Gf]%
-    \fdfindex{TS!Elec.<>!Gf}%
+    \fdfindex*{TS!Elec.<>!Gf}%
     String with filename of the surface Green function data. This may
     be used to place a common surface Green function file in a top
     directory which may then be used in all calculations using the
@@ -10467,8 +10464,8 @@ electrodes in a generic input format.
     If many calculations are performed this will heavily increase
     performance at the cost of disk-space.
 
-    \option[Gf-reuse]%
-    \fdfindex{TS!Elec.<>!Gf-reuse}%
+    \option[Gf-Reuse]%
+    \fdfindex*{TS!Elec.<>!Gf-Reuse}%
     Logical deciding whether the surface Green function file should be
     re-used or deleted.
     %
@@ -10476,12 +10473,12 @@ electrodes in a generic input format.
     and re-created upon start.
     
     \option[Eta]%
-    \fdfindex{TS!Elec.<>!Eta}%
+    \fdfindex*{TS!Elec.<>!Eta}%
     Control the imaginary part of the surface Green function for this
     electrode. See \fdf{TS!Elecs!Eta}.
 
     \option[Accuracy]%
-    \fdfindex{TS!Elec.<>!Accuracy}%
+    \fdfindex*{TS!Elec.<>!Accuracy}%
     Control the convergence accuracy required for the self-energy
     calculation when using the Lopez-Sanchez, Lopez-Sanchez iterative
     scheme. 
@@ -10491,7 +10488,7 @@ electrodes in a generic input format.
     \note advanced use \emph{only}.
     
     \option[DE]%
-    \fdfindex{TS!Elec.<>!DE}%
+    \fdfindex*{TS!Elec.<>!DE}%
     Density and energy density matrix file for the electrode. This may
     be used to initialize the density matrix elements in the electrode
     region by the bulk values. This may be used to increase the
@@ -10502,7 +10499,7 @@ electrodes in a generic input format.
     electrode density matrix.
 
     \option[Bloch]%
-    \fdfindex{TS!Elec.<>!Bloch}%
+    \fdfindex*{TS!Elec.<>!Bloch}%
     $3$ integers are present on this line which each denote the number
     of times bigger the scattering region electrode is compared to the
     electrode, in each lattice direction. Remark that these expansion
@@ -10511,12 +10508,12 @@ electrodes in a generic input format.
     Bloch waves.
 
     \option[Bloch-A/a1|B/a2|C/a3]%
-    \fdfindex{TS!Elec.<>!Bloch}%
+    \fdfindex*{TS!Elec.<>!Bloch}%
     Specific Bloch expansions in each of the electrode unit-cell
     direction. See \fdf*{Bloch} for details.
 
     \option[pre-expand]%
-    \fdfindex{TS!Elec.<>!pre-expand}%
+    \fdfindex*{TS!Elec.<>!pre-expand}%
     String denoting how the expansion of the surface Green function
     file will be performed. This only affects the Green function file
     if \fdf*{Bloch} is larger than 1. By default the Green function
@@ -10529,7 +10526,7 @@ electrodes in a generic input format.
     For performance reasons \fdf*{all} is preferred. 
 
     \option[out-of-core]%
-    \fdfindex{TS!Elec.<>!Out-of-core}%
+    \fdfindex*{TS!Elec.<>!Out-of-core}%
     If \fdftrue\ (default) the GF files are created which contain
     the surface Green function.
     If \fdffalse\ the surface Green function will be calculated when
@@ -10580,12 +10577,12 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
 
 \end{fdflogicalF}  
 
-\begin{fdflogicalT}{TS!Elecs!GF.Reuse}
+\begin{fdflogicalT}{TS!Elecs!Gf.Reuse}
   
   Globally control whether the surface Green function files should
   be re-used (\fdftrue) or re-created (\fdffalse).
   %
-  See \fdf{TS!Elec.<>!GF-Reuse}.
+  See \fdf{TS!Elec.<>!Gf-Reuse}.
   
 \end{fdflogicalT}
 
@@ -10596,7 +10593,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   but at the cost of heavily degraded performance.
   You are not encouraged to set this to \fdffalse.
   %
-  See \fdf{TS!Elec.<>!out-of-core}.
+  See \fdf{TS!Elec.<>!Out-of-core}.
   
 \end{fdflogicalT}
 
@@ -10659,15 +10656,15 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
   \begin{fdfoptions}
     
     \option[chemical-shift|mu]%
-    \fdfindex{TS!ChemPot.<>!chemical-shift}%
-    \fdfindex{TS!ChemPot.<>!mu}%
+    \fdfindex*{TS!ChemPot.<>!chemical-shift}%
+    \fdfindex*{TS!ChemPot.<>!mu}%
 
     Define the chemical shift (an energy) for this chemical
     potential. One may specify the shift in terms of the applied bias
     using \fdf*{V/<integer>} instead of explicitly typing the energy.
 
     \option[contour.eq]%
-    \fdfindex{TS!ChemPot.<>!contour.eq}%
+    \fdfindex*{TS!ChemPot.<>!contour.eq}%
     A subblock which defines the integration curves for the
     equilibrium contour for this equilibrium chemical potential. One
     may supply as many different contours to create whatever shape of
@@ -10688,9 +10685,9 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
     are encouraged to use $50$ or more poles\cite{Ozaki2010}.
 
     \option[ElectronicTemperature|Temp|kT]%
-    \fdfindex{TS!ChemPot.<>!ElectronicTemperature}%
-    \fdfindex{TS!ChemPot.<>!Temp}%
-    \fdfindex{TS!ChemPot.<>!kT}%
+    \fdfindex*{TS!ChemPot.<>!ElectronicTemperature}%
+    \fdfindex*{TS!ChemPot.<>!Temp}%
+    \fdfindex*{TS!ChemPot.<>!kT}%
 
     Specify the electronic temperature (as an energy or in
     Kelvin). This defaults to \fdf{TS!ElectronicTemperature}.
@@ -10699,7 +10696,7 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
     using the unit \fdf*{kT}.
 
     \option[contour.eq.pole]%
-    \fdfindex{TS!ChemPot.<>!contour.eq.pole}%
+    \fdfindex*{TS!ChemPot.<>!contour.eq.pole}%
 
     Define the number of poles used via an energy
     specification. \tsiesta\ will automatically convert the energy to
@@ -10711,7 +10708,7 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
     directly control the number of poles.
 
     \option[contour.eq.pole.N]%
-    \fdfindex{TS!ChemPot.<>!contour.eq.pole.N}%
+    \fdfindex*{TS!ChemPot.<>!contour.eq.pole.N}%
 
     Define the number of poles via an integer.
     
@@ -10816,7 +10813,7 @@ section the non-equilibrium contours are defined.
   \begin{fdfoptions}
 
     \option[part]%
-    \fdfindex{TS!Contour.<>!part}%
+    \fdfindex*{TS!Contour.<>!part}%
 
     Specify which part of the equilibrium contour this is:
     \begin{fdfoptions}
@@ -10837,7 +10834,7 @@ section the non-equilibrium contours are defined.
     \end{fdfoptions}
 
     \option[from \emph{a} to \emph{b}]%
-    \fdfindex{TS!Contour.<>!from}%
+    \fdfindex*{TS!Contour.<>!from}%
 
     Define the integration range on the energy axis.
     Thus \emph{a} and \emph{b} are energies.
@@ -10846,8 +10843,8 @@ section the non-equilibrium contours are defined.
     parts. 
 
     \option[points/delta]%
-    \fdfindex{TS!Contour.<>!points}%
-    \fdfindex{TS!Contour.<>!delta}%
+    \fdfindex*{TS!Contour.<>!points}%
+    \fdfindex*{TS!Contour.<>!delta}%
 
     Define the number of integration points/energy separation.
     If specifying the number of points an integer should be supplied.
@@ -10856,7 +10853,7 @@ section the non-equilibrium contours are defined.
     should be supplied.
 
     \option[method]%
-    \fdfindex{TS!Contour.<>!method}%
+    \fdfindex*{TS!Contour.<>!method}%
 
     Specify the numerical method used to conduct the integration. Here
     a number of different numerical integration schemes are accessible
@@ -10889,7 +10886,7 @@ section the non-equilibrium contours are defined.
     \end{fdfoptions}
 
     \option[opt]%
-    \fdfindex{TS!Contour.<>!opt}%
+    \fdfindex*{TS!Contour.<>!opt}%
 
     Specify additional options for the \fdf*{method}. Only a selected
     subset of the methods have additional options.
@@ -11064,7 +11061,7 @@ device region.
   density matrix. During a transiesta run, the \sysfile{DM} values are
   used for the density matrix in the buffer (if used) and electrode
   regions. The coupling terms may or may not be updated in a \tsiesta\
-  run, see \fdf{TS!Elec.<>!DM-update}.
+  run, see \fdf{TS!Elec.<>!DM-Update}.
   
   \item[\sysfile{TSHS}]: The Hamiltonian corresponding to
   \sysfile{TSDE}. This file also contains geometry information
@@ -11174,7 +11171,7 @@ Stopping Program from Node:    0}
 It is related to the use of the Divide \& Conquer algorithm for
 diagonalisation.
 
-\textit{Solution:} If it happens, disable Diag.DivideAndConquer and run again.
+\textit{Solution:} If it happens, disable \fdf{Diag!DivideAndConquer} and run again.
 
 \end{itemize}
 
@@ -11458,7 +11455,7 @@ the overlap integrals and matrix diagonalisation/order N. Note that
 for matrix diagonalisation, the default option is now to transform the
 Hamiltonian and Overlap matrices into a 2-D blocked distribution since
 this gives better scaling within Scalapack. The 1-D block cyclic
-data distribution can be maintained by setting the option \textbf{Diag.Use2D}
+data distribution can be maintained by setting the option \fdf{Diag!Use2D}
 to false.
 
 \item
