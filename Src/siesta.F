@@ -55,7 +55,9 @@
       call extrae_shutdown
 #endif      
 
+#ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after siesta_init")
+#endif
 
 C     Begin of coordinate relaxation iteration
       relaxd = .false.
@@ -77,16 +79,22 @@ C     Begin of coordinate relaxation iteration
         if (.not. relaxd) then
           istep = istep + 1
         endif
+#ifdef SIESTA__PEXSI
         if (ionode) call memory_snapshot("after geometry step")
+#endif
 
       ENDDO
 
 C     End of coordinate-relaxation loop 
       call siesta_analysis( relaxd )
+#ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after siesta_analysis")
+#endif
 
       call siesta_end()
+#ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("at end of program")
+#endif
 
-!----------------------------------------------------------------------- END
+!-----------------------------------------------------------------------END
       END program siesta

@@ -8285,89 +8285,96 @@ Localized Wannier Function radius
 \end{description}
 
 
-\vspace{5pt}
 \subsection{Efficiency options}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdflogicalF}{DirectPhi}
 
-\item[\textbf{DirectPhi}] (\textit{logical}):
-\index{DirectPhi@\textbf{DirectPhi}}
-The calculation of the matrix elements on the mesh requires the
-value of the orbitals on the mesh points. This array represents one of
-the largest uses of memory within the code. If set to true this option
-allows the code to generate the orbital values when needed rather than
-storing the values. This obviously costs more computer time but will
-make it possible to run larger jobs where memory is the limiting factor.
+  The calculation of the matrix elements on the mesh requires the
+  value of the orbitals on the mesh points. This array represents one
+  of the largest uses of memory within the code. If set to true this
+  option allows the code to generate the orbital values when needed
+  rather than storing the values. This obviously costs more computer
+  time but will make it possible to run larger jobs where memory is
+  the limiting factor.
 
-\textit{Use:} Controls whether the values of the orbitals at the mesh points
+  This controls whether the values of the orbitals at the mesh points
   are stored or calculated on the fly.
+  
+\end{fdflogicalF}
 
-\textit{Default value:}  false
-
-\end{description}
 
 \subsection{Memory, CPU-time, and Wall time accounting options}
-\begin{description}
 
-\item[\textbf{AllocReportLevel}] (\textit{integer}):
-\index{AllocReportLevel@\textbf{AllocReportLevel}}
-Sets the level of the allocation report, printed in file
-\texttt{SystemLabel}.alloc. However, not all the allocated arrays are 
-included in the report (this will be corrected in future versions).
-The allowed values are:
-\begin{itemize}
-\item
-  level 0 : no report at all (the default)
-\item
-  level 1 : only total memory peak and where it occurred
-\item
-  level 2 : detailed report printed only at
-            normal program termination
-\item
-  level 3 : detailed report printed at every new memory peak
-\item
-  level 4 : print every individual (re)allocation or deallocation
-\end{itemize}
+\begin{fdfentry}{AllocReportLevel}[integer]<$0$>
 
-NOTE: In MPI runs, only node-0 peak reports are produced.
+  Sets the level of the allocation report, printed in file
+  \sysfile{alloc}. However, not all the allocated arrays are included
+  in the report (this will be corrected in future versions). The
+  allowed values are:
+  \begin{itemize}
+    \item%
+    level 0 : no report at all (the default)
+    \item%
+    level 1 : only total memory peak and where it occurred
+    \item%
+    level 2 : detailed report printed only at
+    normal program termination
+    \item%
+    level 3 : detailed report printed at every new memory peak
+    \item%
+    level 4 : print every individual (re)allocation or deallocation
+  \end{itemize}
 
-\item[\textbf{AllocReportThreshold}] (\textit{real}): 
-\index{AllocReportThreshold@\textbf{AllocReportThreshold}}
-Sets the minimum size (in bytes) of the arrays whose memory use
-is individually printed in the detailed allocation reports 
-(levels 2 and 3). It does not affect the reported memory sums
-and peaks, which always include all arrays.
-
-\textit{Default value:} \texttt{0.0}
+  \note In MPI runs, only node-0 peak reports are produced.
+  
+\end{fdfentry}
 
 
-\item[\textbf{TimerReportThreshold}] (\textit{real}): 
-\index{TimerReportThreshold@\textbf{TimerReportThreshold}}
-Sets the minimum fraction, of total CPU time, of the subroutines or
-code sections whose CPU time is individually printed in the detailed 
-timer reports. To obtain the accounting of MPI communication times
-in parallel executions, you must compile with option \texttt{-DMPI\_TIMING}.
-In serial execution, the CPU times are printed at the end of the
-output file. In parallel execution, they are reported in a separated
-file named \texttt{SystemLabel}.times.
+\begin{fdfentry}{AllocReportThreshold}[real]<$0.$>
 
-\textit{Default value:} \texttt{0.0}
+Sets the minimum size (in bytes) of the arrays whose memory use is
+individually printed in the detailed allocation reports (levels 2 and
+3). It does not affect the reported memory sums and peaks, which
+always include all arrays.
+  
+\end{fdfentry}
 
-\item[\textbf{UseTreeTimer}] (\textit{logical}): 
-\index{UseTreeTimer@\textbf{UseTreeTimer}}
+\begin{fdfentry}{TimerReportThreshold}[real]<$0.$>
 
-Enable an experimental timer which is based on wall time on the master
-node and is aware of the tree-structure of the timed sections.
+  Sets the minimum fraction, of total CPU time, of the subroutines or
+  code sections whose CPU time is individually printed in the detailed
+  timer reports. To obtain the accounting of MPI communication times
+  in parallel executions, you must compile with option
+  \shell{-DMPI\_TIMING}\index{compile!pre-processor!-DMPI\_TIMING}.
+  In serial execution, the CPU times are printed at the end of the
+  output file. In parallel execution, they are reported in a separated
+  file named \sysfile{times}.
+  
+\end{fdfentry}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdflogicalF}{UseTreeTimer}
+
+  Enable an experimental timer which is based on wall time on the
+  master node and is aware of the tree-structure of the timed
+  sections.
+
+  \note, if used with the PEXSI solver (see Sec.~\ref{SolverPEXSI})
+  this defaults to \fdftrue.
+  
+\end{fdflogicalF}
+
+\begin{fdflogicalT}{UseParallelTimer}
+
+  Determine whether timings are performed in parallel. This may
+  introduce slight overhead.
+
+  \note, if used with the PEXSI solver (see Sec.~\ref{SolverPEXSI})
+  this defaults to \fdffalse.
+  
+\end{fdflogicalT}
 
 
-\end{description}
 
-
-\vspace{5pt}
 \subsection{The catch-all option UseSaveData}
 \index{reading saved data}
 

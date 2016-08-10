@@ -309,8 +309,13 @@ C     Initialise MPI and set processor number
      .                   threshold=threshold )
       ! Note that the parallel timer might be inefficient for reports
       ! when large numbers of processors are used
-      use_parallel_timer = fdf_get('UseParallelTimer', .false.)
-      use_tree_timer = fdf_get('UseTreeTimer', .true.)
+      if ( PEXSINodes /= Nodes ) then
+         use_parallel_timer = fdf_get('UseParallelTimer', .false.)
+         use_tree_timer = fdf_get('UseTreeTimer', .true.)
+      else
+         use_parallel_timer = fdf_get('UseParallelTimer', .true.)
+         use_tree_timer = fdf_get('UseTreeTimer', .false.)
+      end if
 
 !     Start time counter
 !     Note new placement of this first use, so that

@@ -125,7 +125,9 @@
          call state_init( istep )
       endif
 
+#ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after state_init")
+#endif
 
       if (fdf_get("Sonly",.false.)) then
          if (SIESTA_worker) then
@@ -166,7 +168,9 @@
       ! would suit "analysis" runs in which nscf = 0
       if (SIESTA_worker) call setup_H0()
 
+#ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after setup_H0")
+#endif
 
 #ifdef NCDF_4
       ! Initialize the SIESTA.nc file
@@ -418,7 +422,9 @@
 
       if (fdf_get("compute-forces",.true.)) then
          call post_scf_work( istep, iscf , SCFconverged )
+#ifdef SIESTA__PEXSI
          if (ionode) call memory_snapshot("after post_scf_work")
+#endif
       endif
 
 !     ... so H at this point is the latest generator of the DM, except
@@ -426,7 +432,9 @@
 !     without convergence while mixing H
 
       call state_analysis( istep )
+#ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after state_analysis")
+#endif
 
       ! If siesta is running as a subroutine, send forces to master program
       if (siesta_server) 
