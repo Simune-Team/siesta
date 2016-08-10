@@ -67,7 +67,7 @@
       use m_compute_energies, only: compute_energies
       use m_mpi_utils, only: broadcast
       use fdf
-#ifdef PEXSI      
+#ifdef SIESTA__PEXSI      
       use m_pexsi, only: pexsi_finalize_scfloop
 #endif     
 
@@ -114,7 +114,7 @@
       call write_debug( '    PRE siesta_forces' )
 #endif
 
-#ifdef PEXSI      
+#ifdef SIESTA__PEXSI      
       ! Broadcast relevant things for program logic
       ! These were set in read_options, called only by "SIESTA_workers".
       call broadcast(nscf,comm=true_MPI_Comm_World)
@@ -372,7 +372,7 @@
 
        endif ! SIESTA_worker
 
-#ifdef PEXSI       
+#ifdef SIESTA__PEXSI       
        call broadcast(last_step,comm=true_MPI_Comm_World)
        call broadcast(iscf,comm=true_MPI_Comm_World)
 #endif
@@ -380,7 +380,7 @@
 
       end do
 
-#ifdef PEXSI      
+#ifdef SIESTA__PEXSI      
       if (isolve == SOLVE_PEXSI) then
          call pexsi_finalize_scfloop()
       endif

@@ -44,7 +44,7 @@
       use siesta_cmlsubs,     only: siesta_cml_init
       use m_timestamp,        only: timestamp
       use m_wallclock,        only: wallclock
-      use parallel,           only: Node, Nodes, IOnode
+      use parallel,           only: Node, Nodes, PEXSINodes, IOnode
       use parallel,           only: SIESTA_worker
       use parallel,           only: SIESTA_Group, SIESTA_Comm
       use densematrix,        only: Haux, Saux, Psi
@@ -140,6 +140,8 @@ C     Initialise MPI and set processor number
       
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+      ! Keeper for PEXSI-runs..
+      PEXSINodes = Nodes
       if (Node == 0) then
          call get_command_line_options()
          if (use_explicit_output_file) then
@@ -149,9 +151,6 @@ C     Initialise MPI and set processor number
      $           action="write",status="unknown")
          endif
       endif
-
-      if (Node == 0) write(6,"(a,i6)")
-     $      "** Total Number of Nodes: ", Nodes
 
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
@@ -195,6 +194,7 @@ C     Initialise MPI and set processor number
       SIESTA_worker = .true.
       Node = 0
       Nodes = 1
+      PEXSINodes = 1
 #endif
       IOnode = SIESTA_worker .and. (Node .eq. 0)
 
@@ -219,11 +219,15 @@ C     Initialise MPI and set processor number
       if (IOnode) then
         call prversion()
 #ifdef MPI
-        if (Nodes.gt.1) then
-          write(6,'(/,a,i0,a)')
-     &        '* Running on ', Nodes, ' nodes in parallel'
+        if ( PEXSINodes /= Nodes ) then
+           write(6,'(/,a,2(i0,a))')
+     &          '* Running on ', Nodes, ' SIESTA-nodes and ',
+     &          PEXSINodes, ' PEXSI-nodes in parallel'
+        else if ( Nodes > 1 ) then           
+           write(6,'(/,a,i0,a)')
+     &          '* Running on ', Nodes, ' nodes in parallel'
         else
-          write(6,'(/,a)') '* Running in serial mode with MPI'
+           write(6,'(/,a)') '* Running in serial mode with MPI'
         endif
 #else
         write(6,'(/,a)') '* Running in serial mode'

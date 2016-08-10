@@ -662,27 +662,26 @@ subroutine read_options( na, ns, nspin )
           value=method, dictRef='siesta:SCFmethod' )
   endif
 
-    if (leqi(method,'matrix')) then
-      isolve = MATRIX_WRITE
-      if (ionode)  then
-        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ',&
-                            'Matrix write only'
-      endif
-
-    else if (leqi(method,'diagon')) then
+  if (leqi(method,'matrix')) then
+     isolve = MATRIX_WRITE
+     if (ionode)  then
+        write(*,3) 'redata: Method of Calculation', 'Matrix write only'
+     endif
+     
+  else if (leqi(method,'diagon')) then
      isolve = SOLVE_DIAGON
      ! DivideAndConquer is now the default
      DaC = fdf_get('Diag.DivideAndConquer',.true.)
      if (ionode)  then
-        write(6,3) 'redata: Method of Calculation', 'Diagonalization'
-        write(6,1) 'redata: Divide and Conquer', DaC
+        write(*,3) 'redata: Method of Calculation', 'Diagonalization'
+        write(*,1) 'redata: Divide and Conquer', DaC
      endif
-
+     
   else if (leqi(method,'ordern')) then
      isolve = SOLVE_ORDERN
      DaC    = .false.
      if (ionode) then
-        write(6,3) 'redata: Method of Calculation','Order-N'
+        write(*,3) 'redata: Method of Calculation','Order-N'
      endif
      if (nspin .gt. 2) then
         call die( 'redata: You chose the Order-N solution option '// &
@@ -697,21 +696,21 @@ subroutine read_options( na, ns, nspin )
      call_diagon_first_step=fdf_integer('OMM.DiagonFirstStep',call_diagon_default)
      minim_calc_eigenvalues=fdf_boolean('OMM.Eigenvalues',.false.)
      if (ionode) then
-        write(6,3) 'redata: Method of Calculation', 'Orbital Minimization Method'
+        write(*,3) 'redata: Method of Calculation', 'Orbital Minimization Method'
      endif
   else if (leqi(method,"pexsi")) then
-#ifdef PEXSI     
-      isolve = SOLVE_PEXSI
-      if (ionode) then
-        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
-                            'PEXSI'
-      endif
+#ifdef SIESTA__PEXSI     
+     isolve = SOLVE_PEXSI
+     if (ionode) then
+        write(*,3) 'redata: Method of Calculation', 'PEXSI'
+     endif
 #else
-      call die("PEXSI solver is not compiled in. Use -DPEXSI")
+     call die("PEXSI solver is not compiled in. Use -DSIESTA__PEXSI")
 #endif
-      
+     
 #ifdef TRANSIESTA
-  else if (leqi(method,'transi') .or. leqi(method,'transiesta') ) then
+  else if (leqi(method,'transi') .or. leqi(method,'transiesta') &
+       .or. leqi(method,'negf') ) then
      isolve = SOLVE_TRANSI
      if (ionode) then
         write(*,3) 'redata: Method of Calculation','Transiesta'
@@ -721,6 +720,9 @@ subroutine read_options( na, ns, nspin )
      call die( 'redata: The method of solution must be either '//&
 #ifdef TRANSIESTA
           'Transiesta, '//&
+#endif
+#ifdef SIESTA__PEXSI
+          'PEXSI, '//&
 #endif
           'OrderN, OMM or Diagon' )
   endif

@@ -60,7 +60,7 @@
 C     Begin of coordinate relaxation iteration
       relaxd = .false.
 
-#ifdef PEXSI      
+#ifdef SIESTA__PEXSI      
       ! Broadcast relevant things for program logic
       ! These were set in siesta_options, called only by "SIESTA_workers".
       call broadcast(inicoor,comm=true_MPI_Comm_World)
@@ -71,7 +71,7 @@ C     Begin of coordinate relaxation iteration
         call siesta_forces( istep )
 
         if (SIESTA_worker) call siesta_move( istep, relaxd )
-#ifdef PEXSI        
+#ifdef SIESTA__PEXSI        
         call broadcast(relaxd,comm=true_MPI_Comm_World)
 #endif
         if (.not. relaxd) then
