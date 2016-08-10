@@ -1044,7 +1044,6 @@ contains
     real(dp), pointer :: res(:), rres(:)
 
     integer :: i, ns
-    integer :: rsave
     real(dp) :: dnorm, dtmp
     logical :: p_next, p_restart
 
@@ -1806,16 +1805,16 @@ contains
 
     select case ( mix%m )
     case ( MIX_LINEAR )
-       call mix_linear()
+       call mixing_linear()
     case ( MIX_PULAY )
-       call mix_pulay()
+       call mixing_pulay()
     case ( MIX_BROYDEN )
-       call mix_broyden()
+       call mixing_broyden()
     end select
 
   contains
 
-    subroutine mix_linear()
+    subroutine mixing_linear()
       integer :: i
       real(dp) :: w
       w = mix%w
@@ -1829,9 +1828,9 @@ contains
       end do
 !$OMP end parallel do
       
-    end subroutine mix_linear
+    end subroutine mixing_linear
 
-    subroutine mix_pulay()
+    subroutine mixing_pulay()
       integer :: ns, nh
       integer :: i, j
       logical :: lreturn
@@ -1921,9 +1920,9 @@ contains
 
 !$OMP end parallel
 
-    end subroutine mix_pulay
+    end subroutine mixing_pulay
 
-    subroutine mix_broyden()
+    subroutine mixing_broyden()
       integer :: ns, nh
       integer :: i, j
       real(dp) :: G
@@ -1993,7 +1992,7 @@ contains
 
 !$OMP end parallel
 
-    end subroutine mix_broyden
+    end subroutine mixing_broyden
 
   end subroutine mixing_calc_next
 
@@ -2625,7 +2624,6 @@ contains
     integer, intent(in) :: n
 
     type(dData1D) :: dD1
-    integer :: in
 
     if ( .not. stack_check(s_F,n) ) then
        call die('mixing: history has changed size...')
@@ -2801,7 +2799,7 @@ contains
     
     norm = 0._dp
 !$OMP parallel do default(shared), private(i) &
-!$OMP& reduction(+,norm)
+!$OMP& reduction(+:norm)
     do i = 1 , n
        norm = norm + x1(i) * x2(i)
     end do

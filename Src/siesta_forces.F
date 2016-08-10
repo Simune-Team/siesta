@@ -315,9 +315,6 @@
            
            if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
 
-              !call mixing_history_clear( scf_mixs )
-              !scf_mix => scf_mixs(1)
-              
               ! Call transiesta with fermi-correct
               call transiesta(iscf,nspin, 
      &             block_dist, sparse_pattern, Gamma_Scf, ucell, nsc,
@@ -556,9 +553,8 @@
       use atomlist, only: lasto
       use siesta_geom, only: nsc, isc_off, na_u, xa, ucell
       use m_energies, only : Ef
-      ! NP new mixing
       use m_mixing_scf, only: scf_mixs, scf_mix
-      use m_mixing, only: mixing_history_clear
+      use m_mixing, only: mixers_history_init
 
       use m_ts_global_vars,      only: TSinit, TSrun
       use m_ts_global_vars,      only: ts_print_transiesta
@@ -617,7 +613,7 @@
             scf_mix%cur_itt = n_items(scf_mix%stack(iel))
          end do
       else
-         call mixing_history_clear(scf_mixs)
+         call mixers_history_init(scf_mixs)
       end if
       ! Transfer scf_mixing to the transiesta mixing routine
       scf_mix => ts_scf_mixs(1)
