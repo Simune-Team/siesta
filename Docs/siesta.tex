@@ -918,12 +918,17 @@ substitute spaces by \fdf*{:}.
 
   \shell{siesta -L Hello}.
 
+  \option[-out|-o]%
+  Specify the output file (instead of printing to the terminal).
+
+  \shell{siesta -out RUN.out}.
+
 \end{fdfoptions}
 Additionally \tsiesta\ accepts these flags:
 \begin{fdfoptions}
 
   \option[-V]%
-  specify the bias for the current \tsiesta\ run
+  specify the bias for the current \tsiesta\ run. 
 
   \shell{transiesta -V 0.25:eV} or \shell{transiesta -V "0.25 eV"}
   which sets the applied bias to $0.25\,\mathrm{eV}$.
