@@ -48,7 +48,7 @@
 %    This flag is default \fdffalse.
 %  \end{fdflogicalF}
 %
-% Do NOT use \bf, \it, \tt, \rm etc!
+% Do NOT use \bf, \it, \tt, \rm, \em etc!
 % 
 % If you want to emphasize a word in a sentence, prefer to
 % use \emph{#1}.
@@ -1053,66 +1053,65 @@ legacy \textbf{LongOutput} option, as in the current implementation might
 silently activate output to the main .out file at the expense of
 auxiliary files.
 
-\begin{description}
+\begin{fdflogicalF}{LongOutput}
+  \index{output!long}
 
-\item[\textbf{LongOutput}] (\textit{logical}):
-\index{LongOutput@\textbf{LongOutput}}\index{output!long}
-\siesta\ can write to standard output different data sets
-depending on the values for output options described below.
-By default \siesta\ will not write most of them. They can be
-large for large systems (coordinates, eigenvalues, forces, etc.)
-and, if written to standard output, they accumulate for all the steps of
-the dynamics. \siesta\ writes the information in other files
-(see Output Files) in addition to the standard output, and these
-can be cumulative or not.
+  \siesta\ can write to standard output different data sets depending
+  on the values for output options described below.  By default
+  \siesta\ will not write most of them. They can be large for large
+  systems (coordinates, eigenvalues, forces, etc.)  and, if written to
+  standard output, they accumulate for all the steps of the
+  dynamics. \siesta\ writes the information in other files (see Output
+  Files) in addition to the standard output, and these can be
+  cumulative or not.
 
-Setting \textbf{LongOutput} to \texttt{.true.} changes the default of
-some options, obtaining more information in the output (verbose).
-In particular, it redefines the defaults for the following:
+  Setting \fdf{LongOutput} to \fdftrue\ changes the default of some
+  options, obtaining more information in the output (verbose).  In
+  particular, it redefines the defaults for the following:
 
-\begin{itemize}
+  \begin{itemize}
+    
+    \item \fdf{WriteKpoints}%
+    \index{output!grid $\vec k$ points}
+    
+    \item \fdf{WriteKbands}%
+    \index{output!band $\vec k$ points}
 
-\item
-\textbf{WriteKpoints}\index{WriteKpoints@\textbf{WriteKpoints}}
-\index{output!grid $\vec k$ points}
-\item
-\textbf{WriteKbands}\index{WriteKbands@\textbf{WriteKbands}}
-\index{output!band $\vec k$ points}
-\item
-\textbf{WriteCoorStep}\index{WriteCoorStep@\textbf{WriteCoorStep}}
-\index{output!atomic coordinates!in a dynamics step}
-\item
-\textbf{WriteForces}\index{WriteForces@\textbf{WriteForces}}
-\index{output!forces}
-\item
-\textbf{WriteEigenvalues}\index{WriteEigenvalues@\textbf{WriteEigenvalues}}
-\index{output!eigenvalues}
-\item
-\textbf{WriteWaveFunctions}
-\index{WriteWaveFunctions@\textbf{WriteWaveFunctions}}
-\index{output!wave functions}
-\item
-\textbf{WriteMullikenPop}\index{WriteMullikenPop@\textbf{WriteMullikenPop}}
-\index{output!Mulliken analysis}\index{Mulliken population analysis}
-(it sets it to 1)
-\end{itemize}
+    \item \fdf{WriteCoorStep}%
+    \index{output!atomic coordinates!in a dynamics step}
 
-The specific changing of any of these options overrides the
-\textbf{LongOutput} setting for it.
+    \item \fdf{WriteForces}%
+    \index{output!forces}
 
-\textit{Default value:} \texttt{.false.}
+    \item \fdf{WriteEigenvalues}%
+    \index{output!eigenvalues}
+    
+    \item \fdf{WriteWaveFunctions}%
+    \index{output!wave functions}
+    
+    \item \fdf{WriteMullikenPop}%
+    \index{output!Mulliken analysis}%
+    \index{Mulliken population analysis}%
+    (it sets it to 1)
 
-\end{description}
+  \end{itemize}
 
-\subsection{Output to dedicated files} \index{output!dedicated files}
+  The specific changing of any of these options has precedence.
+  
+\end{fdflogicalF}
+
+
+\subsection{Output to dedicated files}%
+\index{output!dedicated files}
 
 \siesta\ can produce a wealth of information in dedicated files,
 with specific formats, that can be used for further analysis. See the
 appropriate sections, and the appendix on file formats.
 Please take into account the behavior of
-\textbf{LongOutput}, as in the current implementation might silently
+\fdf{LongOutput}, as in the current implementation might silently
 activate output to the main .out file at the expense of auxiliary
 files.
+
 
 \section{DETAILED DESCRIPTION OF PROGRAM OPTIONS}
 
@@ -1126,143 +1125,141 @@ Almost all of the tags are optional: \siesta\ will assign a
 default if a given tag is not found when needed (see \shell{fdf.log}).
 
 
-\vspace{5pt}
 \subsection{General system descriptors}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdfentry}{SystemLabel}[string]<siesta>
+  
+  A \emph{single} word (max. 20 characters \emph{without blanks})
+  containing a nickname of the system, used to name output files.
 
-\item[\textbf{SystemName}] (\textit{string}):
-\index{Systemname@\textbf{SystemName}}
-A string of one or several words containing a descriptive
-name of the system (max. 150 characters).
-
-\textit{Default value:} blank
-
-\item[\textbf{SystemLabel}] (\textit{string}):
-\index{SystemLabel@\textbf{SystemLabel}}
-A \textbf{single} word (max. 20 characters \textbf{without blanks})
-containing a nickname of the system, used to name output files.
-
-\textit{Default value:} \texttt{siesta}\index{siesta}
-
-\item[\textbf{NumberOfSpecies}] (\textit{integer}):
-\index{NumberOfSpecies@\textbf{NumberOfSpecies}}
-Number of different atomic species in the simulation.
-Atoms of the same species, but with a different
-pseudopotential or basis set are counted as different species.
-
-\textit{Default value:} Number of inputs in the \textbf{ChemicalSpeciesLabel}
-block. Is not required to be set.
-
-\item[\textbf{NumberOfAtoms}] (\textit{integer}):
-\index{NumberOfAtoms@\textbf{NumberOfAtoms}}
-Number of atoms in the simulation.
-
-\textit{Default value:} Number of inputs in the \textbf{AtomicCoordinatesAndAtomicSpecies}
-block. Is not required to be set.
-
-\item[\textbf{ChemicalSpeciesLabel}] (\textit{data block}):
-\index{ChemicalSpeciesLabel@\textbf{ChemicalSpeciesLabel}}
-It specifies the different chemical species\index{species} that are present,
-assigning them a number for further identification.
-\siesta\ recognizes the different atoms by the given atomic number.
-
-\begin{verbatim}
-         %block Chemical_Species_label
-            1   6   C
-            2  14   Si
-            3  14   Si_surface
-         %endblock Chemical_Species_label
-\end{verbatim}
-
-The first number in a line is the species number, it is followed by the
-atomic number, and then by the desired label. This label will be used
-to identify corresponding files, namely, pseudopotential file, user basis
-file, basis output file, and local pseudopotential output file.
-
-This construction allows you to have atoms of the same species but with
-different basis or pseudopotential, for example.
-
-Negative atomic numbers are used for \textit{ghost} atoms\index{ghost atoms}
-(see \textbf{PAO.basis}).
-
-Atomic numbers over 200 are used to represent \textit{synthetic atoms}
-\index{synthetic atoms} (created for example as a ``mixture'' of two
-real ones for a ``virtual crystal'' (VCA)\index{VCA} calculation). In
-this special case a new 'SyntheticAtoms' block
-\index{SyntheticAtoms@\textbf{SyntheticAtoms}}  must be present to give
-\siesta\ information about the ``ground state'' of the synthetic
-atom.
-
-\begin{verbatim}
-         %block Chemical_Species_label
-            1   201 ON-0.50000
-         %endblock Chemical_Species_label
-         %block SyntheticAtoms
-         1               # Species index
-         2 2 3 4         # n numbers for valence states  with l=0,1,2,3
-         2.0 3.5 0.0 0.0 # occupations of valence states with l=0,1,2,3
-         %endblock SyntheticAtoms
-\end{verbatim}
-
-Pseudopotentials for synthetic atoms can be created using the
-\program{mixps} and \program{fractional} programs \index{mixps
-    program}\index{fractional program} in the \shell{Util/VCA}
-directory.
-
-Atomic numbers below -200 represent \textit{ghost synthetic atoms}.
-
-\textit{Use:} This block is mandatory.
-
-\textit{Default:} There is no default. You must supply this block.
+\end{fdfentry}
 
 
+\begin{fdfentry}{SystemName}[string]
 
-\item[\textbf{AtomicMass}] (\textit{data block}):
-\index{AtomicMass@\textbf{AtomicMass}}
-It allows the user to introduce
-the atomic masses of the different species used in the calculation, useful
-for the dynamics with isotopes,\index{isotopes} for example. If
-a species index is not found within the block, the natural mass for the
-corresponding atomic number is assumed. If the block is absent all masses
-are the natural ones. One line per species with the species index (integer)
-and the desired mass (real). The order is not important. If there is no
-integer and/or no real numbers within the line, the line is disregarded.
-
-\begin{verbatim}
-         %block AtomicMass
-            3  21.5
-            1  3.2
-         %endblock AtomicMass
-\end{verbatim}
-
-\textit{Default:} (Block absent or empty) Natural masses assumed. For
-\textit{ghost} atoms (i.e. floating orbitals), a default of 1.d30 a.u. is
-assigned.
+  A string of one or several words containing a descriptive name of
+  the system (max. 150 characters).
+  
+\end{fdfentry}
 
 
-\end{description}
+\begin{fdfentry}{NumberOfSpecies}[integer]<\nonvalue{lines in \fdf{ChemicalSpeciesLabel}}>
 
-\vspace{5pt}
+  Number of different atomic species in the simulation.  Atoms of the
+  same species, but with a different pseudopotential or basis set are
+  counted as different species.
+
+  \note is not required to be set.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{NumberOfAtoms}[integer]<\nonvalue{lines in \fdf{AtomicCoordinatesAndAtomicSpecies}}>
+
+  Number of atoms in the simulation.
+
+  \note is not required to be set.
+
+\end{fdfentry}
+
+
+\begin{fdfentry}{ChemicalSpeciesLabel}[block]
+
+  It specifies the different chemical species\index{species} that are
+  present, assigning them a number for further identification.
+  \siesta\ recognizes the different atoms by the given atomic number.
+
+  \begin{fdfexample}
+     %block ChemicalSpecieslabel
+        1   6   C
+        2  14   Si
+        3  14   Si_surface
+     %endblock ChemicalSpecieslabel
+  \end{fdfexample}
+  The first number in a line is the species number, it is followed by
+  the atomic number, and then by the desired label. This label will be
+  used to identify corresponding files, namely, pseudopotential file,
+  user basis file, basis output file, and local pseudopotential output
+  file.
+
+  This construction allows you to have atoms of the same species but
+  with different basis or pseudopotential, for example.
+
+  Negative atomic numbers are used for \emph{ghost}
+  atoms\index{ghost atoms} (see \fdf{PAO!Basis}).
+
+  Atomic numbers over 200 are used to represent \emph{synthetic atoms}
+  \index{synthetic atoms} (created for example as a ``mixture'' of two
+  real ones for a ``virtual crystal'' (VCA)\index{VCA}
+  calculation). In this special case a new \fdf{SyntheticAtoms} block
+  must be present to give \siesta\ information about the ``ground
+  state'' of the synthetic atom.
+
+  \begin{fdfexample}
+     %block ChemicalSpeciesLabel
+        1   201 ON-0.50000
+     %endblock ChemicalSpeciesLabel
+     %block SyntheticAtoms
+        1               # Species index
+        2 2 3 4         # n numbers for valence states  with l=0,1,2,3
+        2.0 3.5 0.0 0.0 # occupations of valence states with l=0,1,2,3
+     %endblock SyntheticAtoms
+  \end{fdfexample}
+
+  Pseudopotentials for synthetic atoms can be created using the
+  \program{mixps} and \program{fractional} programs \index{mixps
+      program}\index{fractional program} in the \shell{Util/VCA}
+  directory.
+
+  Atomic numbers below $-200$ represent \emph{ghost synthetic atoms}.
+
+  \note this block is mandatory.
+  
+\end{fdfentry}
+
+
+\begin{fdfentry}{AtomicMass}[block]
+
+  It allows the user to introduce the atomic masses of the different
+  species used in the calculation, useful for the dynamics with
+  isotopes,\index{isotopes} for example. If a species index is not
+  found within the block, the natural mass for the corresponding
+  atomic number is assumed. If the block is absent all masses are the
+  natural ones. One line per species with the species index (integer)
+  and the desired mass (real). The order is not important. If there is
+  no integer and/or no real numbers within the line, the line is
+  disregarded.
+
+  \begin{fdfexample}
+     %block AtomicMass
+        3  21.5
+        1  3.2
+     %endblock AtomicMass
+  \end{fdfexample}
+
+  The default atomic mass are the natural masses. For \emph{ghost}
+  atoms (i.e. floating orbitals) the mass is $10^{30}\,\mathrm{a.u.}$ 
+
+\end{fdfentry}
+
+
+
 \subsection{Pseudopotentials}
 \index{pseudopotential!generation}
 
 \siesta\ uses pseudopotentials to represent the electron-ion
 interaction (as do most plane-wave codes and in contrast to so-called
 ``all-electron'' programs). In particular, the pseudopotentials are of
-the ``norm-conserving'' kind, and can be generated by the \textsc{Atom} program,
-(see \texttt{Pseudo/README.ATOM}). Remember that \textbf{all pseudopotentials
+the ``norm-conserving'' kind, and can be generated by the \program{Atom} program,
+(see \shell{Pseudo/README.ATOM}). Remember that \textbf{all pseudopotentials
   should be thoroughly tested} before using them. We refer you to the
-standard literature on pseudopotentials and to the \textsc{ATOM} manual
+standard literature on pseudopotentials and to the \program{ATOM} manual
 for more information. A number of
-other codes (such as \texttt{APE}) can generate pseudopotentials that
-\siesta\ can use directly (typically in the \texttt{.psf} format).
+other codes (such as \program{APE}) can generate pseudopotentials that
+\siesta\ can use directly (typically in the \shell{.psf} format).
 
 The pseudopotentials will be read by \siesta\ from different files, one
 for each defined species (species defined either in block
-\textbf{ChemicalSpeciesLabel}).\index{pseudopotential!files}
+\fdf{ChemicalSpeciesLabel}).\index{pseudopotential!files}
 The name of the files should be:
 
 \textit{Chemical\_label}\texttt{.vps} (unformatted) or
@@ -1270,18 +1267,18 @@ The name of the files should be:
 
 \noindent
 where \textit{Chemical\_label} corresponds to the label defined in the
-\textbf{ChemicalSpeciesLabel} block.
+\fdf{ChemicalSpeciesLabel} block.
 
 This version of Siesta can handle pseudopotential files in a
 \textit{deprecated} XML format designed by Junquera, Garcia, and
 Verstraete to enable interoperability with some versions of the
 ABINIT code. The directory \texttt{Util/pseudo-xml} contains a program to
-translate the pseudo XML files to the \texttt{.psf} form. This XML format
+translate the pseudo XML files to the \shell{.psf} form. This XML format
 will be soon superseded by the new PSML specification, which will be
 supported by forthcoming versions of Siesta and ABINIT.
 
 
-\vspace{5pt}
+
 \subsection{Basis set and KB projectors}
 
 \subsubsection{Overview of atomic-orbital bases implemented in \texorpdfstring{\siesta}{SIESTA}}
@@ -1299,7 +1296,7 @@ It is important to stress at this point that neither the \siesta\
 method nor the program
 are bound to the use of any particular kind of atomic orbitals. The
 user can feed into \siesta\ the atomic basis set he/she choses by
-means of radial tables (see \textbf{User.Basis} below), the
+means of radial tables (see \fdf{User.Basis} below), the
 only limitations being: $(i)$ the functions have to be atomic-like (radial
 functions mutiplied by spherical harmonics), and $(ii)$ they have to be
 of finite support, i.e., each orbital becomes strictly zero beyond some
@@ -1383,7 +1380,7 @@ orbital, the most contracted Gaussians are used to define the first
 orbital of the double-$\zeta$ and the most extended ones for the second.
   For strictly localized functions there was a first proposal
 of using the excited states of the confined atoms, but it would work only
-for tight confinement (see \textbf{PAO.BasisType} \texttt{nodes} below).
+for tight confinement (see \fdf{PAO!BasisType} \texttt{nodes} below).
   This construction was proposed and tested in D. S\'anchez-Portal
 \textit{et al.}, J. Phys.: Condens. Matter \textbf{8}, 3859-3880 (1996).
 
@@ -1396,7 +1393,7 @@ Phys. Rev. B \textbf{69}, 195113 (2004)].
 
   We then proposed an extension of the split valence idea of Quantum Chemistry
 to strictly localized NAO which has become the standard and has been used
-quite successfully in many systems (see \textbf{PAO.BasisType} \texttt{split} below).
+quite successfully in many systems (see \fdf{PAO!BasisType} \texttt{split} below).
   It is based on the idea of suplementing the first $\zeta$ with, instead of
 a gaussian, a numerical orbital that reproduces the tail of the original PAO
 outside a matching radius $r_{m}$, and continues smoothly towards the origin as
@@ -1409,7 +1406,7 @@ confined within the matching radius $r_{m}$ (smaller than the
 original PAO!) continuously differentiable throughout.
 
   Extra parameters have thus appeared: one $r_m$ per orbital to be doubled.
-The user can again introduce them by hand (see \textbf{PAO.Basis} below).
+The user can again introduce them by hand (see \fdf{PAO!Basis} below).
 Alternatively, all the $r_m$'s can be defined at once by specifying
 the value of the tail of the original PAO beyond $r_m$, the so-called
 split norm. Variational optimization
@@ -1419,13 +1416,13 @@ shows a very general and stable performance for values around
   It generalizes to multiple-$\zeta$ trivially by adding an additional
 matching radius per new zeta.
 
-Note: What is actually used is the norm of the tail {\em plus} the
+Note: What is actually used is the norm of the tail \emph{plus} the
 norm of the parabola-like inner function.
 
 Angular flexibility is obtained by adding shells of higher angular
 momentum.  Ways to generate these so-called polarization orbitals have
 been described in the literature for Gaussians.  For NAOs there are
-two ways for \siesta\ and \textsc{Gen-basis} to generate them: $(i)$
+two ways for \siesta\ and \program{Gen-basis} to generate them: $(i)$
 Use atomic PAO's of higher angular momentum with suitable confinement,
 and $(ii)$ solve the pseudoatom in the presence of an electric field
 and obtain the $l+1$ orbitals from the perturbation of the $l$
@@ -1469,7 +1466,7 @@ The first proposal (and quite a standard among \siesta\ users)
 uses an infinite square-well potential.  It was originally proposed
 and has been widely and successfully used by Otto Sankey and
 collaborators, for minimal bases within the ab initio tight-binding
-scheme, using the \textsc{Fireball } program, but also for more flexible
+scheme, using the \program{Fireball} program, but also for more flexible
 bases using the methodology of \siesta.  This scheme has the
 disadavantage, however, of generating orbitals with a discontinuous
 derivative at $r_c$.  This discontinuity is more pronounced for
@@ -1506,13 +1503,13 @@ The confining potential is flat (zero) in the core region, starts off
 at some internal radius $r_i$ with all derivatives continuous and
 diverges at $r_c$ ensuring the strict localization there.  It is
 \begin{equation}
-  V(r) = V_{\mathrm o} { e^{- { {r_c - r_i} \over {r - r_i} } } \over {r_c -r} }
+  V(r) = V_{\mathrm o} \frac{e^{- { \frac{r_c - r_i}{r - r_i} } }}{r_c -r}
 \end{equation}
 and both $r_i$ and $V_{\mathrm o}$ can be given to \siesta\ together
-with $r_c$ in the input (see \textbf{PAO.Basis} below).
+with $r_c$ in the input (see \fdf{PAO!Basis} below).
 The kink is normally well smoothened with the default values 
-for soft confinement by default (\textbf{PAO.SoftDefault} true), which 
-are $r_i = 0.9 \, r_c$ and $V_{\mathrm o} = 40$ Ry.
+for soft confinement by default (\fdf{PAO!SoftDefault} true), which 
+are $r_i = 0.9 r_c$ and $V_{\mathrm o} = 40\,\mathrm{Ry}$.
 
 When explicitly introducing orbitals in the basis that would be empty in 
 the atom (e.g. polarisation orbitals) these tend to be extremely 
@@ -1526,12 +1523,12 @@ very good shapes for empty orbitals. Essentially a $Z/r$ potential
 is added to the soft confined potential above. For flexibility
 the charge confinement option in \siesta\ is defined as
 \begin{equation}
-  V_{\mathrm Q}(r) = {Z e^{-\lambda r} \over \sqrt{r^2 + \delta^2}} 
+  V_{\mathrm Q}(r) = \frac{Z e^{-\lambda r}}{\sqrt{r^2 + \delta^2}}
 \end{equation}
 where $\delta$ is there to avoid the singularity (default $\delta=0.01$ Bohr),
 and $\lambda$ allows to screen the potential if longer tails are needed.
 The description on how to introduce this option can be found in
-the \textbf{PAO.Basis} entry below.
+the \fdf{PAO!Basis} entry below.
 
 Finally, the shape of an orbital is also changed by the ionic
 character of the atom.  Orbitals in cations tend to shrink, and they
@@ -1552,7 +1549,7 @@ determination of the range, etc. Of course, the more you experiment
 with the different options, the better your basis set can get. To aid
 in this process we offer an auxiliary program for optimization which
 can be used in particular to obtain variationally optimal basis sets
-(within a chosen basis size). See \texttt{Util/Optimizer}
+(within a chosen basis size). See \texttt{Util/Optimizer}
 for general information, and \texttt{Util/Optimizer/Examples/Basis\_Optim}
 for an example. The directory \texttt{Tutorials/Bases} in the main \siesta\
 distribution contains some tutorial material for the generation of
@@ -2849,7 +2846,7 @@ See \textbf{MD.UseStructFile}\index{MD.UseStructFile@\textbf{MD.UseStructFile}}.
 \index{Systemlabel.STRUCT\_NEXT\_ITER@{\textit{Systemlabel}.STRUCT\_NEXT\_ITER}}
 This file is always written, in the same format as \texttt{.STRUCT\_OUT}
 file. The only difference is that it contains the structural
-information {\em after} it has been updated by the relaxation or the
+information \emph{after} it has been updated by the relaxation or the
 molecular-dynamics
 algorithms, and thus it could be used as input (renamed as
 \textit{SystemLabel}.STRUCT\_IN) for a continuation run, in the same way
@@ -3315,7 +3312,7 @@ J. Chem. Phys. \textbf{133}, 244103 (2010)
 This data block allows the user to create a ``cocktail'' functional by
 mixing the desired amounts of exchange and correlation from each of
 the functionals described under XC.authors. Note that these ``mixed''
-functionals do {\em not} have the exact Hartree-Fock exchange which
+functionals do \emph{not} have the exact Hartree-Fock exchange which
 is a key ingredient of the true ``hybrid'' functionals. The use of
 the word ``hybrid'' in the label is unfortunate in this regard, and
 might be deprecated in a future version.
@@ -3499,7 +3496,7 @@ the Perdew-Zunger parametrization. It really only applies to starting
 densities which are superpositions of atomic charge densities.
 
 When this option is choosen, the values of DM.UseSaveDM,
-MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set
+MaxSCFIterations, SCFMustConverge and \fdf{DM.MixSCF1} are automatically set
 up to False, 1, False and False respectively, no matter whatever other
 specification are in the INPUT file.
 \end{itemize}
@@ -3540,20 +3537,19 @@ calculations as choosing optimal parameters can mean a difference of
 several orders of consistency cycles. 
 
 
-\begin{fdfentry}{SCF.Mix}[string]<density|Hamiltonian|charge>
+\begin{fdfentry}{SCF.Mix}[string]<Hamiltonian|density|charge>
   \index{SCF!mixing}
   Control what physical quantity to mix in the self-consistent cycle.
 
-  The default is mixing the density matrix, while mixing the
-  Hamiltonian might be better than density-matrix mixing in most
-  cases. It is seldom worse.
+  The default is mixing the Hamiltonian, which may typically perform
+  better than density matrix mixing. 
 
   \begin{fdfoptions}
+    \option[Hamiltonian]%
+    Mix the Hamiltonian matrix (default).
+
     \option[density]%
     Mix the density matrix.
-
-    \option[Hamiltonian]%
-    Mix the Hamiltonian matrix.
 
     \option[charge]%
     Mix the real-space charge density.
@@ -3594,7 +3590,7 @@ several orders of consistency cycles.
 \end{fdfentry}
 
 \begin{fdflogicalT}{SCF.Mix!First}
-  \index{DM.MixSCF1@\fdf*{DM.MixSCF1}|see SCF.Mix.First}
+  \fdfindex{DM.MixSCF1}[|see SCF.Mix.First]
 
   Whether the first SCF should be mixed or it uses the output as input
   in the next SCF step. It is generally advised to set this to true,
@@ -3624,6 +3620,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
       \DM^{n+1}_{\mathrm{in}} = \DM^n_{\mathrm{in}} + w \Res[n].
     \end{equation}
 
+
     \option[Pulay] %
     \index{SCF!mixing!Pulay}
     Using the Pulay mixing method corresponds using the
@@ -3648,6 +3645,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 
     \note Pulay mixing is a special case of Broyden mixing, see the
     Broyden method.
+
 
     \option[Broyden] %
     \index{SCF!mixing!Broyden}
@@ -3715,7 +3713,6 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 \end{fdfentry}
 
 \begin{fdfentry}{SCF.Mixer!Weight}[real]<0.25>%
-  \fdfindex{DM.MixingWeight}%
   \fdfindex{DM.MixingWeight}[|see SCF.Mixer.Weight]
 
   The mixing weight used to mix the quantity.
@@ -5644,7 +5641,7 @@ accuracy).
 
 \item[\textbf{OMM.Precon}] (\textit{integer}):
 \index{OMM.Precon@\textbf{OMM.Precon}}
-Number of SCF steps for {\em all} MD steps for which to apply a preconditioning
+Number of SCF steps for \em{all} MD steps for which to apply a preconditioning
 scheme based on the overlap and kinetic energy matrices; for negative values the
 preconditioning is always applied. Preconditioning is usually essential for fast
 and accurate convergence (note, however, that it is not needed if a Cholesky
@@ -5658,7 +5655,7 @@ the calculation).
 
 \item[\textbf{OMM.PreconFirstStep}] (\textit{integer}):
 \index{OMM.PreconFirstStep@\textbf{OMM.PreconFirstStep}}
-Number of SCF steps in the {\em first} MD step for which to apply the preconditioning
+Number of SCF steps in the \emph{first} MD step for which to apply the preconditioning
 scheme; if present, this will overwrite the value given in \textbf{OMM.Precon} for the
 first MD step only.
 
@@ -5669,7 +5666,7 @@ first MD step only.
 
 \item[\textbf{OMM.Diagon}] (\textit{integer}):
 \index{OMM.Diagon@\textbf{OMM.Diagon}}
-Number of SCF steps for {\em all} MD steps for which to use a standard diagonalization
+Number of SCF steps for \emph{all} MD steps for which to use a standard diagonalization
 before switching to the OMM; for negative values diagonalization is always used, and
 so the calculation is effectively equivalent to \textbf{SolutionMethod} = \texttt{diagon}.
 In general, selecting the first few SCF steps can speed up the calculation by removing
@@ -5682,7 +5679,7 @@ calculations).
 
 \item[\textbf{OMM.DiagonFirstStep}] (\textit{integer}):
 \index{OMM.DiagonFirstStep@\textbf{OMM.DiagonFirstStep}}
-Number of SCF steps in the {\em first} MD step for which to use a standard diagonalization
+Number of SCF steps in the \emph{first} MD step for which to use a standard diagonalization
 before switching to the OMM; if present, this will overwrite the value given in
 \textbf{OMM.Diagon} for the first MD step only.
 
@@ -5703,7 +5700,7 @@ the dimension relating to the underlying basis orbitals is controlled by \textbf
 
 \item[\textbf{OMM.TPreconScale}] (\textit{real energy}):
 \index{OMM.TPreconScale@\textbf{OMM.TPreconScale}}
-Scale of the kinetic energy preconditioning (see C.~K.~Gan {\em et al.}, Comput. Phys. Commun.
+Scale of the kinetic energy preconditioning (see C.~K.~Gan \emph{et al.}, Comput. Phys. Commun.
 \textbf{134}, 33 (2001)). A smaller value indicates more aggressive kinetic energy preconditioning,
 while an infinite value indicates no kinetic energy preconditioning. In general, the kinetic
 energy preconditioning is much less important than the tensorial correction brought about by
@@ -5905,7 +5902,7 @@ Chemical Potential, instead of the parameter
 for the order-\textit{N} energy functional minimization.
 This is useful if you do not know the position
 of the Fermi level, typically in the beginning
-of an order-{\em N} run.
+of an order-\emph{N} run.
 
 \textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN}.
 Overrides the value of \textbf{ON.eta}.
@@ -11515,20 +11512,20 @@ In order to use the parallel version of the code you must have the following
 libraries installed on your computer :
 
 \begin{verbatim}
-
 (a) MPI :       The Message Passing Interface library - this allows the
                 processors to communicate. Most machine vendors have their
                 own implementations available for their own platforms.
-                However, there are two freely available versions that can
-                be installed :
+                However, there are several freely available versions that can
+                be installed, two of which are :
+
+                OpenMPI :
+
+                  https://www.open-mpi.org/
 
                 MPICH :
 
-                  http://www-unix.mcs.anl.gov/mpi/mpich/
+                  https://www.mpich.org/
 
-                LAMMPI :
-
-                  http://www.lam-mpi.org/
 
 (b) Blacs :     This is a communications library that runs on top of MPI. Again
                 if can be obtained for free from :
@@ -11542,7 +11539,6 @@ libraries installed on your computer :
                 available as source code or in precompiled form from :
 
                   http://www.netlib.org/
-
 \end{verbatim}
 
 \noindent
@@ -11629,7 +11625,7 @@ information on the meaning of each column at the end of the file.
 DM
 
 Traditional Density Matrix (DM) file. The DM is written by default at
-the end of each SCF step, {\em after mixing}, so it can be directly used
+the end of each SCF step, \emph{after mixing}, so it can be directly used
 in a restart. It is a binary file.
 
 DM.nc

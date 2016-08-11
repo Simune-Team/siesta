@@ -53,8 +53,6 @@ subroutine read_options( na, ns, nspin )
   real(dp), parameter :: g2cut_default = 100.e0_dp
   real(dp), parameter :: temp_default  = 1.900e-3_dp 
 
-  logical, parameter  :: mixH_def = .false.
-
   integer,  parameter :: maxsav_default = 0
   integer,  parameter :: nscf_default = 50
   integer,  parameter :: ncgmax_default = 1000
@@ -354,7 +352,8 @@ subroutine read_options( na, ns, nspin )
   call fdf_deprecated('MixHamiltonian','SCF.Mix')
   call fdf_deprecated('MixCharge','SCF.Mix')
 
-  mixH = fdf_get('TS.MixH',mixH_def) ! Catch old-style keyword (prefer new key)
+  ! Note, since 4.1 mixing the Hamiltonian is the default option!
+  mixH = fdf_get('TS.MixH',.true.) ! Catch old-style keyword (prefer new key)
   mixH = fdf_get('MixHamiltonian',mixH)
   mix_charge = fdf_get('MixCharge',.false.)
 
@@ -373,10 +372,12 @@ subroutine read_options( na, ns, nspin )
      mixH = .false.
   else if ( leqi(ctmp, 'Hamiltonian') &
        .or. leqi(ctmp, 'H') ) then
+     mix_charge = .false.
      mixH = .true.
   else if ( leqi(ctmp, 'density') &
        .or. leqi(ctmp, 'density-matrix') &
        .or. leqi(ctmp, 'DM') ) then
+     mix_charge = .false.
      mixH = .false.
   end if
   
