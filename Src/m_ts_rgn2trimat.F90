@@ -97,6 +97,8 @@ contains
     integer :: MPIerror
 #endif
 
+    call timer('TS-rgn2tri',1)
+
     lpar = .true.
     if ( present(par) ) lpar = par
     if ( Nodes == 1 ) lpar = .false.
@@ -118,13 +120,9 @@ contains
     ! create array containing max-min for each ts-orbital
     call re_alloc(mm_col, 1, 2, 1, no, &
          routine='tsR2TM', name='mm_col')
-!$OMP parallel do default(shared), private(i)
-    do i = 1 , no
-       mm_col(:,i) = minmax_col(sp,r,r%r(i))
-!       print '(a,tr1,i5,tr3,2(tr1,i5),'' d'',tr1,i4,tr4,i0)', &
-!            'Orb: ',i,mm_col(:,i),mm_col(2,i)-mm_col(1,i),no
-    end do
-!$OMP end parallel do
+    
+    ! Set the min/max column indices in the pivoted matrix
+    call set_minmax_col(sp, r, mm_col)
 
     parts = 2
     n_part(1) = no / 2
@@ -285,6 +283,8 @@ contains
     end if
 
     call de_alloc(mm_col,routine='tsR2TM',name='mm_col')
+
+    call timer('TS-rgn2tri',2)
 
     if ( .not. IONode ) return
 
@@ -530,14 +530,14 @@ contains
 
     ! We will check in between the above selected rows and find the 
     ! difference in size...
-    n_part(part) = 0
+    mcol = 0
     do i = sRow, eRow
        ! this is the # of elements from the RHS of the 'part-1'
        ! part of the tridiagonal matrix and out to the last element of
        ! this row...
-       mcol = mm_col(2,i) - eRow
-       n_part(part) = max(n_part(part),mcol)
+       if ( mm_col(2,i) > mcol ) mcol = mm_col(2,i)
     end do
+    n_part(part) = max(0, mcol - eRow)
 
     ! In case there is actually no connection, we should
     ! force the next-part to be 1!
@@ -749,30 +749,60 @@ contains
 ! Min and max column requires that the sparsity pattern
 ! supplied has already stripped off the buffer orbitals.
 ! Otherwise this will fail
-  function minmax_col(sp,r,row)
+  subroutine set_minmax_col(sp, r, mm_col)
     use class_Sparsity
     use geom_helper, only : UCORB
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     type(tRgn), intent(in) :: r
-    ! the row which we will check for (in TranSIESTA counting)
-    integer, intent(in) :: row 
-    ! The result
-    integer :: minmax_col(2), ptr, nr, j
+    integer, intent(out) :: mm_col(2,r%n)
+    ! The results
+    type(tRgn) :: pvt
+    integer :: ir, row, ptr, nr, j
     integer, pointer :: l_col(:), l_ptr(:), ncol(:)
     
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col,nrows_g=nr)
-    
-    minmax_col(:) = rgn_pivot(r,row)
-    do ptr = l_ptr(row) + 1 , l_ptr(row) + ncol(row)
-       j = rgn_pivot(r,ucorb(l_col(ptr),nr))
-       if ( j > 0 ) then
-          if ( j < minmax_col(1) ) minmax_col(1) = j
-          if ( j > minmax_col(2) ) minmax_col(2) = j
-       end if
+
+    ! Using a pivoting table reduces overhead
+    ! of performing rgn_pivot on a non-sorted
+    ! region! SUBSTANTIALLY!
+    call rgn_init(pvt, nr)
+
+!$OMP parallel default(shared)
+
+!$OMP do private(ir)
+    do ir = 1 , nr
+       pvt%r(ir) = rgn_pivot(r, ir)
     end do
+!$OMP end do
     
-  end function minmax_col
+!$OMP do private(ir,row,ptr,j)
+    do ir = 1 , r%n
+
+       ! Get original sparse matrix row
+       row = r%r(ir)
+       
+       ! initialize to region row
+       mm_col(1,ir) = ir
+       mm_col(2,ir) = ir
+
+       ! Loop on the sparse entries
+       do ptr = l_ptr(row) + 1 , l_ptr(row) + ncol(row)
+          j = pvt%r( ucorb(l_col(ptr),nr) )
+          if ( j > 0 ) then
+             if ( j < mm_col(1,ir) ) mm_col(1,ir) = j
+             if ( j > mm_col(2,ir) ) mm_col(2,ir) = j
+          end if
+       end do
+
+    end do
+!$OMP end do nowait
+    
+!$OMP end parallel
+
+    call rgn_delete(pvt)
+    
+  end subroutine set_minmax_col
 
   function valid_tri(no,r,mm_col,parts,n_part,last_eq) result(val) 
     integer, intent(in) :: no, mm_col(2,no)

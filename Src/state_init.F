@@ -387,7 +387,8 @@
          end if
          call delete(g_Sp)
       end if
-         
+
+             
       ! Copy over xijo array (we can first do it here... :( )
       call newdData2D(tmp_2D,xijo,'xijo')
       deallocate(xijo)
@@ -396,6 +397,43 @@
      &     name=oname)
       call delete(tmp_2D) ! decrement container...
       xijo => val(xij_2D)
+
+      ! Calculate the super-cell offsets...
+      if ( Gamma ) then
+         ! Here we create the super-cell offsets
+         call re_alloc(isc_off,1,3,1,1)
+         isc_off(:,:) = 0
+      else
+         call xij_offset(ucell,nsc, na_u,xa,lasto, 
+     &        xij_2D, isc_off,
+     &        Bcast=.true.)
+      end if
+
+      
+#ifdef TRANSIESTA
+      ! When the user requests to only do an analyzation, we can call
+      ! appropriate routines and quit
+      if ( TS_Analyze ) then
+
+         ! Force the creation of the full sparsity pattern
+         call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
+     &        ucell, nsc, na_u, xa, lasto, block_dist, sparse_pattern, 
+     &        Gamma, isc_off)
+
+         ! create the tri-diagonal matrix
+         call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
+     &        Elecs, ucell, na_u, lasto, nsc, isc_off,
+     &        BTD_method )
+
+         ! Print-out timers
+         call timer('TS-rgn2tri',3)
+
+         ! Bye also waits for all processors
+         call bye('transiesta analyzation performed')
+         
+      end if
+#endif
+
 
       write(oname,"(a,i0)") "EDM at geom step ", istep
       call newdSpData2D(sparse_pattern,e_spin_dim,block_dist,EDM_2D,
@@ -461,15 +499,6 @@
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
-      if ( Gamma ) then
-         ! Here we create the super-cell offsets
-         call re_alloc(isc_off,1,3,1,1)
-         isc_off(:,:) = 0
-      else
-         call xij_offset(ucell,nsc, na_u,xa,lasto, 
-     &        xij_2D, isc_off,
-     &        Bcast=.true.)
-      end if
 
 !
 !     Here we could also read a Hamiltonian, either to proceed to
@@ -519,25 +548,6 @@
          call bye( 'Save overlap matrix and exit' ) ! Exit siesta
          
       endif 
-
-      ! When the user requests to only do an analyzation, we can call
-      ! appropriate routines and quit
-      if ( TS_Analyze ) then
-
-         ! Force the creation of the full sparsity pattern
-         call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
-     &        ucell, nsc, na_u, xa, lasto, block_dist, sparse_pattern, 
-     &        Gamma, isc_off)
-
-         ! create the tri-diagonal matrix
-         call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
-     &        Elecs, ucell, na_u, lasto, nsc, isc_off,
-     &        BTD_method )
-         
-         ! Bye also waits for all processors
-         call bye('transiesta analyzation performed')
-         
-      end if
 
       ! In case the user is requesting a Fermi-correction
       ! we need to delete the TS_FERMI file after each iteration
