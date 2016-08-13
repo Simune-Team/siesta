@@ -519,7 +519,11 @@ libraries and how each of them may be added to the compilation step
   \begin{itemize}
     \item If you use your *nix distribution package manager to install
     BLAS you are bound to have a poor performance. Please try and use
-    performance libraries.
+    performance libraries, whenever possible!
+
+    \item If you do not have the BLAS library you may use the BLAS
+    library shipped with \siesta. To do so simply add
+    \shell{libsiestaBLAS.a} to the \shell{COMP_LIBS} variable.
   \end{itemize}
 
   To add BLAS to the \shell{arch.make} file you need to add the
@@ -551,6 +555,10 @@ libraries and how each of them may be added to the compilation step
   (\href{https://github.com/xianyi/OpenBLAS}{OpenBLAS}\footnote{OpenBLAS
       enables the inclusion of the LAPACK routines. This is advised.}
   or MKL library from Intel)
+
+  If you do not have the LAPACK library you may use the LAPACK
+  library shipped with \siesta. To do so simply add
+  \shell{libsiestaLAPACK.a} to the \shell{COMP_LIBS} variable.
 
   Example variables
 \begin{shellexample}
