@@ -1,3 +1,10 @@
+2016-08-15  19:40 CET Rafi Ullah <rraffiu@gmail.com>  trunk-541-tddft-17
+
+* Added branch notes.
+
+added:
+  Docs/branch-changes/NOTES.tddft
+
 2016-08-06  13:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-541-tddft-16
 
 Synced to trunk-541
