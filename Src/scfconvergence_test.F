@@ -71,7 +71,7 @@
       endif
 
       is_DM_conv = (dDmax.lt.dDtol)
-      is_H_conv =  (dHmax.lt.dHtol)
+      is_H_conv  = (dHmax.lt.dHtol)
       is_Harris_conv = is_converged(conv_harris)
       is_FreeEnergy_conv = is_converged(conv_freeE)
       is_LDAU_conv = switch_ldau .and.
@@ -111,7 +111,6 @@
             else
               write(6,"(/,a)") "SCF Convergence by dHmax criterion"
             endif
-            write(6,"(a,f14.8)") "max |H_out - H_in| (eV): ", dHmax/eV
          endif
             
          if (default_DM_convergence) then
@@ -122,19 +121,23 @@
             else 
               write(6,"(/,a)") "SCF Convergence by dDmax criteria"
             endif
-
-            if (mix_charge) then
-               write(6,"(a,f14.8)") "max |DM_i - DM_(i-1)|: ", dDmax
-            else
-               write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
-            endif
          endif
+
+         ! No matter what we print out the convergence finalization step
+         if (mix_charge) then
+            write(6,"(a,f16.10)") "max |DM_i - DM_(i-1)|  : ", dDmax
+         else
+            write(6,"(a,f16.10)") "max |DM_out - DM_in|   : ", dDmax
+         endif
+         if ( dHmax >= 0._dp ) then
+            write(6,"(a,f16.10)") "max |H_out - H_in| (eV): ", dHmax/eV
+         end if
 
 	 if ( is_LDAU_conv ) then
 	    ! Inform of LDA+U population convergence
-            write(6,"(/,a)") 
+            write(6,"(a)") 
      $           "LDA+U population converged by dTol_pop criteria:"
-            write(6,"(a,f14.8)") 
+            write(6,"(a,f16.10)") 
      $           "max |pop(LDA+U)_i - pop(LDA+U)_j|: ", LDAU_dPop
          end if
          
