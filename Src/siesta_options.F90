@@ -26,17 +26,6 @@ MODULE siesta_options
   ! -- pre 4.0 coordinate output logic -- to be implemented
   logical :: compat_pre_v4_dynamics      ! General switch
 
-  integer, parameter :: MIX_SPIN_ALL = 1
-  ! Only use spinor components for mixing
-  integer, parameter :: MIX_SPIN_SPINOR = 2
-  ! Only use spin-sum for mixing (implicit on spinor)
-  integer, parameter :: MIX_SPIN_SUM = 3
-  ! Use both spin-sum and spin-difference density for mixing (implicit on spinor)
-  integer, parameter :: MIX_SPIN_SUM_DIFF = 4
-  ! It makes little sense to only mix difference as for spin-polarised
-  ! calculations with no difference it will converge immediately
-  
-  integer :: mix_spin      ! How the spin mixing algorthim is chosen
   
   logical :: mix_scf_first ! Mix first SCF step?
   logical :: mix_charge    ! New: mix fourier components of rho

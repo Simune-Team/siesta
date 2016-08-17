@@ -167,7 +167,7 @@ contains
     save_parallel = .false.
 #endif
 
-    save_dir = fdf_get('TBT.Directory.Save',' ')
+    save_dir = fdf_get('TBT.Directory',' ')
     ! Correct with suffix
     ldir = len_trim(save_dir)
     if ( ldir == 0 ) then
@@ -213,11 +213,17 @@ contains
   subroutine print_save_options()
 
     use parallel, only: IONode
+#ifdef NCDF_4
+    use nf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
+#endif
 
     character(len=*), parameter :: f1 ='(''tbt: '',a,t53,''='',tr4,l1)'
     character(len=*), parameter :: f10='(''tbt: '',a,t53,''='',tr4,a)'
     character(len=*), parameter :: f11='(''tbt: '',a)'
     character(len=*), parameter :: f12='(''tbt: '',a,t53,''='',tr2,i0)'
+#ifdef NCDF_4
+    integer :: prec
+#endif
 
     if ( .not. IONode ) return
 
@@ -232,6 +238,12 @@ contains
        write(*,f12) 'Compression level of TBT.nc files',cmp_lvl
     else
        write(*,f11)'No compression of TBT.nc files'
+    end if
+    call cdf_precision_real('none', 'single', prec)
+    if ( prec == NF90_FLOAT ) then
+       write(*,f10) 'Default NetCDF precision','single'
+    else
+       write(*,f10) 'Default NetCDF precision','double'
     end if
 #ifdef NCDF_PARALLEL
     write(*,f1)'Use parallel MPI-IO for NetCDF file',save_parallel
@@ -260,21 +272,21 @@ contains
     tmp = fdf_get('TBT.CDF.Precision',default)
     if ( leqi(tmp,'double') ) then
        prec = NF90_DOUBLE
-    else if ( leqi(tmp,'single') ) then
-       prec = NF90_FLOAT
-    else if ( leqi(tmp,'float') ) then
+    else if ( leqi(tmp,'single') &
+         .or. leqi(tmp,'float') ) then
        prec = NF90_FLOAT
     else if ( IONode ) then
        write(*,'(a)')'WARNING: Could not recognize TBT.CDF.Precision, &
-            &must be double|single|float, defaults to double.'
+            &must be single|float|double, will use single.'
     end if
+
+    if ( leqi(name, 'none') ) return
     
     tmp = fdf_get('TBT.CDF.'//trim(name)//'.Precision',tmp)
     if ( leqi(tmp,'double') ) then
        prec = NF90_DOUBLE
-    else if ( leqi(tmp,'single') ) then
-       prec = NF90_FLOAT
-    else if ( leqi(tmp,'float') ) then
+    else if ( leqi(tmp,'single') &
+         .or. leqi(tmp,'float') ) then
        prec = NF90_FLOAT
     end if
     

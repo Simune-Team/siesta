@@ -95,7 +95,7 @@
          if (iscf > 1) then
             call compute_Ebs_shift(Dscf,H,Hprev,delta_Ebs)
             delta_Ef = delta_Ebs / qtot
-            if (ionode) then
+            if (ionode.and.isolve.eq.SOLVE_PEXSI) then
                write(6,"(a,f16.5)")
      $              "Estimated change in band-structure energy:",
      $              delta_Ebs/eV, "Estimated shift in E_fermi: ",
@@ -171,7 +171,9 @@ c$$$     &           S, 'S.matrix')
      &              occtol, iscf, neigwanted)
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
+#ifdef SIESTA__PEXSI
         if (ionode) write (6,"(/a,f14.6)") 'Entropy/k:', Entropy
+#endif
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
         if (NonCol .or. SpOrb)
@@ -275,8 +277,10 @@ c$$$     &           S, 'S.matrix')
       Hprev = H
 
       call timer( 'compute_dm', 2 )
+#ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after compute_DM")
+#endif
 
-!----------------------------------------------------------------------- END
+!-----------------------------------------------------------------------END
       END subroutine compute_dm
       END MODULE m_compute_dm

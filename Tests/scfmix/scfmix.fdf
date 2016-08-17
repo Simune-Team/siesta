@@ -2,32 +2,55 @@
 #DM.MixingWeight         0.01
 #DM.NumberPulay          4
 
-# New:
-#SCF.Mix.Debug T
-%block SCF.Mix
-  init
+# Default stuff...
+Mixer.Debug.MPI
+SCF.Mixer.Weight 0.01
+SCF.Mixer.History 4
+SCF.Mixer.Restart 2
+SCF.Mixer.Restart.Save 3
+
+# Define all the mixing methods used
+%block SCF.Mixers
+  linear-before
+  pulay
+  broyden
+  linear-after
+  kick
 %endblock
-  
-%block SCF.Mix.init
-  # Specify mixing method
+
+%block SCF.Mixer.linear-before
+  method linear
+  iterations 2
+  history 2
+  next pulay
+%endblock
+
+%block SCF.Mixer.pulay
   method pulay
-  # Run for at least this number of 
-  # iterations (negative == infinite)
-  iterations 150
-  # Mixing weight
-  w 0.01
-  # Number of previous steps saved
-  history 4
-  
-  # Restart history after every 16 steps
-  restart 16
-  # Restart history if:
-  #  || f_k-1 || < 0.25 * || f_k ||
-  restart.p 0.25
-  # Store the latest 2 residuals in the
-  # history (reduces kick)
-  restart.save 2
+  iterations 10
+  next kick
+  next.conv linear-after
 %endblock
+
+%block SCF.Mixer.linear-after
+  method linear
+  w 0.025
+%endblock
+
+%block SCF.Mixer.kick
+  method linear
+  w 0.1
+  iterations 1
+  next broyden
+%endblock
+
+%block SCF.Mixer.broyden
+  method broyden
+  iterations 10
+  next kick
+  next.conv linear-after
+%endblock
+
 
 
 SystemName          Linear Fe3 cluster.

@@ -30,10 +30,9 @@
       use m_compute_max_diff
       use m_scfconvergence_test
       use m_post_scf_work
-      use m_mixer
-      ! NP new mixing
+      use m_mixer, only: mixer
       use m_mixing_scf, only: mixing_scf_converged
-      use m_mixing_scf, only: mixing_scf_history_clear
+      use m_mixing_scf, only: mixers_scf_history_init
 
       use m_rhog,                only: mix_rhog, compute_charge_diff
       use siesta_options
@@ -91,7 +90,7 @@
 
       use m_mpi_utils, only: broadcast
       use fdf
-#ifdef PEXSI      
+#ifdef SIESTA__PEXSI      
       use m_pexsi, only: pexsi_finalize_scfloop
 #endif     
 
@@ -147,9 +146,7 @@
       call write_debug( '    PRE siesta_forces' )
 #endif
 
-!---------------------------------------------------------------------- BEGIN
-
-#ifdef PEXSI      
+#ifdef SIESTA__PEXSI      
       ! Broadcast relevant things for program logic
       ! These were set in read_options, called only by "SIESTA_workers".
       call broadcast(nscf,comm=true_MPI_Comm_World)
@@ -160,7 +157,9 @@
          call state_init( istep )
       endif
 
+#ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after state_init")
+#endif
 
       if (fdf_get("Sonly",.false.)) then
          if (SIESTA_worker) then
@@ -201,8 +200,9 @@
       ! would suit "analysis" runs in which nscf = 0
       if (SIESTA_worker) call setup_H0()
 
-      
+#ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after setup_H0")
+#endif
 
       if (.not. td_elec_dyn) then     !tddft
 
@@ -338,6 +338,10 @@
            end if
         end if
 
+        ! Check whether we should step to the next
+        ! mixer
+        call mixing_scf_converged( SCFconverged )
+        
 #ifdef TRANSIESTA
         ! In case the user has requested a Fermi-level correction
         ! Then we start by correcting the fermi-level
@@ -349,9 +353,6 @@
            
            if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
 
-              !call mixing_history_clear( scf_mixs )
-              !scf_mix => scf_mixs(1)
-              
               ! Call transiesta with fermi-correct
               call transiesta(iscf,nspin, 
      &             block_dist, sparse_pattern, Gamma_Scf, ucell, nsc,
@@ -409,7 +410,7 @@
 
        endif ! SIESTA_worker
 
-#ifdef PEXSI       
+#ifdef SIESTA__PEXSI       
        call broadcast(last_step,comm=true_MPI_Comm_World)
        call broadcast(iscf,comm=true_MPI_Comm_World)
 #endif
@@ -417,7 +418,7 @@
 
       end do
 
-#ifdef PEXSI      
+#ifdef SIESTA__PEXSI      
       if (isolve == SOLVE_PEXSI) then
          call pexsi_finalize_scfloop()
       endif
@@ -451,7 +452,7 @@
 #endif
 
       ! Clean-up here to limit memory usage
-      call mixing_scf_history_clear( )
+      call mixers_scf_history_init( )
 
       
 !     End of standard SCF loop.
@@ -462,7 +463,9 @@
 
       if (fdf_get("compute-forces",.true.)) then
          call post_scf_work( istep, iscf , SCFconverged )
+#ifdef SIESTA__PEXSI
          if (ionode) call memory_snapshot("after post_scf_work")
+#endif
       endif
 
 !     ... so H at this point is the latest generator of the DM, except
@@ -470,7 +473,9 @@
 !     without convergence while mixing H
 
       call state_analysis( istep )
+#ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after state_analysis")
+#endif
 
       ! If siesta is running as a subroutine, send forces to master program
       if (siesta_server) 
@@ -654,9 +659,8 @@
       use atomlist, only: lasto
       use siesta_geom, only: nsc, isc_off, na_u, xa, ucell
       use m_energies, only : Ef
-      ! NP new mixing
       use m_mixing_scf, only: scf_mixs, scf_mix
-      use m_mixing, only: mixing_history_clear
+      use m_mixing, only: mixers_history_init
 
       use m_ts_global_vars,      only: TSinit, TSrun
       use m_ts_global_vars,      only: ts_print_transiesta
@@ -715,7 +719,7 @@
             scf_mix%cur_itt = n_items(scf_mix%stack(iel))
          end do
       else
-         call mixing_history_clear(scf_mixs)
+         call mixers_history_init(scf_mixs)
       end if
       ! Transfer scf_mixing to the transiesta mixing routine
       scf_mix => ts_scf_mixs(1)

@@ -426,7 +426,7 @@ contains
     integer, intent(in) :: NBuf, RepA1, RepA2, na
 
     call sblock('TS.Elec.'//trim(name))
-    write(*,'(tr2,2a)') 'TSHS ',trim(TSHS)
+    write(*,'(tr2,2a)') 'HS ',trim(TSHS)
     if ( is_Left ) then
        write(*,'(tr2,a)') 'chem-pot Left'
        write(*,'(tr2,a)') 'semi-inf-dir -a3'

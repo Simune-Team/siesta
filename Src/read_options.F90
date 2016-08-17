@@ -33,8 +33,8 @@ subroutine read_options( na, ns, nspin )
   use m_charge_add, only : read_charge_add
   use m_hartree_add, only : read_hartree_add
   
-  use m_mixing_scf, only: scf_mixs
-  use m_mixing, only: mixing_init, mixing_print
+  use m_mixing_scf, only: mixers_scf_init
+  use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
   implicit none
   !----------------------------------------------------------- Input Variables
@@ -52,8 +52,6 @@ subroutine read_options( na, ns, nspin )
 
   real(dp), parameter :: g2cut_default = 100.e0_dp
   real(dp), parameter :: temp_default  = 1.900e-3_dp 
-
-  logical, parameter  :: mixH_def = .false.
 
   integer,  parameter :: maxsav_default = 0
   integer,  parameter :: nscf_default = 50
@@ -354,8 +352,12 @@ subroutine read_options( na, ns, nspin )
           units="cmlUnits:countable")
   endif
 
-  call fdf_deprecated('TS.MixH','MixHamiltonian') ! Prepare for obsoletion
-  mixH = fdf_get('TS.MixH',mixH_def) ! Catch old-style keyword (prefer new key)
+  call fdf_deprecated('TS.MixH','SCF.Mix')
+  call fdf_deprecated('MixHamiltonian','SCF.Mix')
+  call fdf_deprecated('MixCharge','SCF.Mix')
+
+  ! Note, since 4.1 mixing the Hamiltonian is the default option!
+  mixH = fdf_get('TS.MixH',.true.) ! Catch old-style keyword (prefer new key)
   mixH = fdf_get('MixHamiltonian',mixH)
   mix_charge = fdf_get('MixCharge',.false.)
 
@@ -366,29 +368,32 @@ subroutine read_options( na, ns, nspin )
   else
      ctmp = 'density'
   end if
-  ctmp = fdf_get('Mix', trim(ctmp))
-  if ( leqi(ctmp, 'charge') ) then
+  
+  ctmp = fdf_get('SCF.Mix', trim(ctmp))
+  if ( leqi(ctmp, 'charge') .or. &
+       leqi(ctmp,'rho') ) then
      mix_charge = .true.
-  else if ( leqi(ctmp, 'Hamiltonian') ) then
+     mixH = .false.
+  else if ( leqi(ctmp, 'Hamiltonian') &
+       .or. leqi(ctmp, 'H') ) then
+     mix_charge = .false.
      mixH = .true.
+  else if ( leqi(ctmp, 'density') &
+       .or. leqi(ctmp, 'density-matrix') &
+       .or. leqi(ctmp, 'DM') ) then
+     mix_charge = .false.
+     mixH = .false.
   end if
-
+  
+  if ( IONode ) then
   if ( mix_charge ) then
-     if (ionode) then
-        write(6,1) 'redata: Mix charge density rho_g', mix_charge
-     endif
-     if (mixH) then
-        mixH = .false.
-        if (ionode) then
-           write(6,2) 'redata: ***MixCharge takes precedence over MixH'
-        endif
-     endif
-  endif
-  if (mixH) then
-     if (ionode) then
-        write(6,1) 'redata: Mix Hamiltonian instead of DM', mixH
-     endif
-  endif
+     write(6,3) 'redata: SCF mix quantity', 'charge'
+  else if ( mixH ) then
+     write(6,3) 'redata: SCF mix quantity', 'Hamiltonian'
+  else
+     write(6,3) 'redata: SCF mix quantity', 'density-matrix'
+  end if
+  end if
 
   ! Options for pre-4.0 compatibility
   compat_pre_v4_DM_H  = fdf_get('Compat-pre-v4-DM-H',.false.)
@@ -423,6 +428,7 @@ subroutine read_options( na, ns, nspin )
   ! Mix density matrix on first SCF step (mix)
   mix_scf_first = fdf_get('DM.MixSCF1', &
        .not. compat_pre_v4_DM_H)
+  mix_scf_first = fdf_get('SCF.Mix.First', mix_scf_first)
   if (ionode) then
      write(6,1) 'redata: Mix DM in first SCF step',mix_scf_first
   endif
@@ -661,27 +667,26 @@ subroutine read_options( na, ns, nspin )
           value=method, dictRef='siesta:SCFmethod' )
   endif
 
-    if (leqi(method,'matrix')) then
-      isolve = MATRIX_WRITE
-      if (ionode)  then
-        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ',&
-                            'Matrix write only'
-      endif
-
-    else if (leqi(method,'diagon')) then
+  if (leqi(method,'matrix')) then
+     isolve = MATRIX_WRITE
+     if (ionode)  then
+        write(*,3) 'redata: Method of Calculation', 'Matrix write only'
+     endif
+     
+  else if (leqi(method,'diagon')) then
      isolve = SOLVE_DIAGON
      ! DivideAndConquer is now the default
      DaC = fdf_get('Diag.DivideAndConquer',.true.)
      if (ionode)  then
-        write(6,3) 'redata: Method of Calculation', 'Diagonalization'
-        write(6,1) 'redata: Divide and Conquer', DaC
+        write(*,3) 'redata: Method of Calculation', 'Diagonalization'
+        write(*,1) 'redata: Divide and Conquer', DaC
      endif
-
+     
   else if (leqi(method,'ordern')) then
      isolve = SOLVE_ORDERN
      DaC    = .false.
      if (ionode) then
-        write(6,3) 'redata: Method of Calculation','Order-N'
+        write(*,3) 'redata: Method of Calculation','Order-N'
      endif
      if (nspin .gt. 2) then
         call die( 'redata: You chose the Order-N solution option '// &
@@ -696,21 +701,21 @@ subroutine read_options( na, ns, nspin )
      call_diagon_first_step=fdf_integer('OMM.DiagonFirstStep',call_diagon_default)
      minim_calc_eigenvalues=fdf_boolean('OMM.Eigenvalues',.false.)
      if (ionode) then
-        write(6,3) 'redata: Method of Calculation', 'Orbital Minimization Method'
+        write(*,3) 'redata: Method of Calculation', 'Orbital Minimization Method'
      endif
   else if (leqi(method,"pexsi")) then
-#ifdef PEXSI     
-      isolve = SOLVE_PEXSI
-      if (ionode) then
-        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
-                            'PEXSI'
-      endif
+#ifdef SIESTA__PEXSI     
+     isolve = SOLVE_PEXSI
+     if (ionode) then
+        write(*,3) 'redata: Method of Calculation', 'PEXSI'
+     endif
 #else
-      call die("PEXSI solver is not compiled in. Use -DPEXSI")
+     call die("PEXSI solver is not compiled in. Use -DSIESTA__PEXSI")
 #endif
-      
+     
 #ifdef TRANSIESTA
-  else if (leqi(method,'transi') .or. leqi(method,'transiesta') ) then
+  else if (leqi(method,'transi') .or. leqi(method,'transiesta') &
+       .or. leqi(method,'negf') ) then
      isolve = SOLVE_TRANSI
      if (ionode) then
         write(*,3) 'redata: Method of Calculation','Transiesta'
@@ -720,6 +725,9 @@ subroutine read_options( na, ns, nspin )
      call die( 'redata: The method of solution must be either '//&
 #ifdef TRANSIESTA
           'Transiesta, '//&
+#endif
+#ifdef SIESTA__PEXSI
+          'PEXSI, '//&
 #endif
           'OrderN, OMM or Diagon' )
   endif
@@ -1473,45 +1481,9 @@ subroutine read_options( na, ns, nspin )
 #endif
 
   ! Read in mixing parameters (SCF)
-  call mixing_init( 'SCF', scf_mixs )
-  call mixing_print( 'SCF', scf_mixs )
+  call mixers_scf_init( nspin )
+  call mixers_scf_print( nspin )
 
-  ! When performing spin-calculations this decides whether
-  ! only the spinor-components should be mixed.
-  ctmp = fdf_get('SCF.Mix.Spin','all')
-  if      ( leqi(ctmp, 'all') ) then
-     mix_spin = MIX_SPIN_ALL
-  else if ( leqi(ctmp, 'spinor') ) then
-     mix_spin = MIX_SPIN_SPINOR
-  else if ( leqi(ctmp, 'sum') ) then
-     mix_spin = MIX_SPIN_SUM
-  else if ( leqi(ctmp, 'sum+diff') ) then
-     mix_spin = MIX_SPIN_SUM_DIFF
-  else
-     call die("Unknown option given for SCF.Mix.Spin &
-          &all|spinor|sum|sum+diff")
-  end if
-  ! Default to not have any options for non-spin polarized
-  ! calculations
-  if ( nspin == 1 ) mix_spin = MIX_SPIN_ALL
-  
-  if ( IONode .and. nspin > 1 ) then
-     select case ( mix_spin )
-     case ( MIX_SPIN_ALL )
-        write(6,3) 'redata: Spin-component mixing','all'
-     case ( MIX_SPIN_SPINOR )
-        write(6,3) 'redata: Spin-component mixing','spinor'
-        if ( nspin <= 2 ) then
-           call die("SCF.Mix.Spin spinor option only valid for &
-                &non-collinear and SOC calculations")
-        end if
-     case ( MIX_SPIN_SUM ) 
-        write(6,3) 'redata: Spin-component mixing','sum'
-     case ( MIX_SPIN_SUM_DIFF ) 
-        write(6,3) 'redata: Spin-component mixing','sum and diff'
-     end select
-  end if
-  
   ! We read in relevant data for ChargeGeometries block
   call read_charge_add( min(2, nspin) , charnet )
   
@@ -1721,6 +1693,9 @@ subroutine read_options( na, ns, nspin )
   if (cml_p) then
      call cmlEndParameterList(mainXML)
   endif
+
+  ! Print blocks
+  call mixers_scf_print_block( )
 
   RETURN
   !-------------------------------------------------------------------- END

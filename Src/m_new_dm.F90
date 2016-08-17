@@ -372,7 +372,7 @@
       use m_ts_options,   only : ts_Dtol, ts_Htol
       use siesta_options, only : dDtol, dHtol
 
-      use m_mixing, only: mixing_history_clear
+      use m_mixing, only: mixers_history_init
       use m_mixing_scf, only: scf_mixs, scf_mix
 #endif /* TRANSIESTA */
 
@@ -575,13 +575,12 @@
 
          ! From now on, a new mixing cycle starts,
          ! Check in mixer.F for new mixing schemes.
-         ! NP new mixing
          if ( associated(ts_scf_mixs, target=scf_mixs) ) then
             do i = 1 , size(scf_mix%stack)
                call reset(scf_mix%stack(i), -ts_hist_keep)
             end do
          else
-            call mixing_history_clear(scf_mixs)
+            call mixers_history_init(scf_mixs)
          end if
          ! Transfer scf_mixing to the transiesta mixing routine
          scf_mix => ts_scf_mixs(1)

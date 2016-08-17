@@ -44,7 +44,7 @@
       use siesta_cmlsubs,     only: siesta_cml_init
       use m_timestamp,        only: timestamp
       use m_wallclock,        only: wallclock
-      use parallel,           only: Node, Nodes, IOnode
+      use parallel,           only: Node, Nodes, PEXSINodes, IOnode
       use parallel,           only: SIESTA_worker
       use parallel,           only: SIESTA_Group, SIESTA_Comm
       use densematrix,        only: Haux, Saux, Psi
@@ -110,10 +110,6 @@
       integer :: npSIESTA
       external :: read_options
 
-
-      character(len=256) :: output_file
-      logical            :: use_explicit_output_file
-
 !---------------------------------------------------------------------- BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
 ! of a driver program that may have initialized MPI already
@@ -140,18 +136,9 @@ C     Initialise MPI and set processor number
       
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
-      if (Node == 0) then
-         call get_command_line_options()
-         if (use_explicit_output_file) then
-            close(unit=6)
-            open(unit=6,file=trim(output_file),form="formatted",
-     $           position="rewind",
-     $           action="write",status="unknown")
-         endif
-      endif
-
-      if (Node == 0) write(6,"(a,i6)")
-     $      "** Total Number of Nodes: ", Nodes
+      
+      ! Keeper for PEXSI-runs..
+      PEXSINodes = Nodes
 
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
@@ -167,7 +154,7 @@ C     Initialise MPI and set processor number
       call setDebugOutputUnit()
 #endif /* DEBUG_XC */
 
-!     Initialise read .................................................
+!     Initialise input/output...........................................
       call reinit( sname )
 
 #ifdef MPI
@@ -195,6 +182,7 @@ C     Initialise MPI and set processor number
       SIESTA_worker = .true.
       Node = 0
       Nodes = 1
+      PEXSINodes = 1
 #endif
       IOnode = SIESTA_worker .and. (Node .eq. 0)
 
@@ -219,11 +207,15 @@ C     Initialise MPI and set processor number
       if (IOnode) then
         call prversion()
 #ifdef MPI
-        if (Nodes.gt.1) then
-          write(6,'(/,a,i0,a)')
-     &        '* Running on ', Nodes, ' nodes in parallel'
+        if ( PEXSINodes /= Nodes ) then
+           write(6,'(/,a,2(i0,a))')
+     &          '* Running on ', Nodes, ' SIESTA-nodes and ',
+     &          PEXSINodes, ' PEXSI-nodes in parallel'
+        else if ( Nodes > 1 ) then           
+           write(6,'(/,a,i0,a)')
+     &          '* Running on ', Nodes, ' nodes in parallel'
         else
-          write(6,'(/,a)') '* Running in serial mode with MPI'
+           write(6,'(/,a)') '* Running in serial mode with MPI'
         endif
 #else
         write(6,'(/,a)') '* Running in serial mode'
@@ -305,8 +297,13 @@ C     Initialise MPI and set processor number
      .                   threshold=threshold )
       ! Note that the parallel timer might be inefficient for reports
       ! when large numbers of processors are used
-      use_parallel_timer = fdf_get('UseParallelTimer', .false.)
-      use_tree_timer = fdf_get('UseTreeTimer', .true.)
+      if ( PEXSINodes /= Nodes ) then
+         use_parallel_timer = fdf_get('UseParallelTimer', .false.)
+         use_tree_timer = fdf_get('UseTreeTimer', .true.)
+      else
+         use_parallel_timer = fdf_get('UseParallelTimer', .true.)
+         use_tree_timer = fdf_get('UseTreeTimer', .false.)
+      end if
 
 !     Start time counter
 !     Note new placement of this first use, so that
@@ -609,41 +606,6 @@ C     Initialise MPI and set processor number
       call timer( 'Setup', 2 )
 
 !--------------------------------------------------------------------------- END
-      CONTAINS
-
-      subroutine get_command_line_options()
-      use m_getopts
-      use f2kcli
-
-      character(len=200) :: opt_arg
-      character(len=10)  :: opt_name 
-      integer :: nargs, iostat, n_opts, nlabels
-
-!     Process options
-!     
-      use_explicit_output_file = .false.
-      n_opts = 0
-      do
-         call getopts('dho:',
-     $                 opt_name,opt_arg,n_opts,iostat)
-         if (iostat /= 0) exit
-         select case(opt_name)
-         case ('d')
-          !           debug = .true.
-         case ('o')
-           use_explicit_output_file = .true.
-           output_file = trim(opt_arg)
-        case ('h')
-           !call manual()
-        case ('?',':')
-           write(0,*) "Invalid option: ", opt_name(1:1)
-           write(0,*) "Usage: siesta [ -o output_file ]"
-           !write(0,*) "Use -h option for manual"
-           call die()
-        end select
-      enddo
-
-      end subroutine get_command_line_options
 
       END subroutine siesta_init
 

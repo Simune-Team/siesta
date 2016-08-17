@@ -10,9 +10,18 @@
 !     Contains the short system label, used to generate file names
 !     slabel is currently set in reinit.
 !
-      integer, parameter, public                  :: label_length = 60
+      integer, parameter, public                  :: label_length = 64
       character(len=label_length), save, public   :: slabel
 
+      ! Standard files for output/input
+
+      ! STDIN, the file that should be read fdf-options from
+      character(len=label_length), save, public :: stdin_file
+      ! STDOUT, the file that is printed to.
+      !    If ' ', then regular STDOUT is used
+      character(len=label_length), save, public :: stdout_file
+
+      
       ! Derived type to hold some output file names
       type, public:: filesOut_t
         character(len=label_length+6)::

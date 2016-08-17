@@ -6093,7 +6093,7 @@ fi;
 if test "x$with_siesta_blas" = xyes; then
    { echo "$as_me:$LINENO: Using BLAS library packaged with SIESTA" >&5
 echo "$as_me: Using BLAS library packaged with SIESTA" >&6;}
-   COMP_LIBS="libblas.a $COMP_LIBS"
+   COMP_LIBS="libsiestaBLAS.a $COMP_LIBS"
    # if we're using SIESTA's blas, we have to use SIESTA's lapack as well, since we can't
    # test for lapack without a blas library already built. Would not make much sense anyway.
    with_siesta_lapack=yes
@@ -7068,7 +7068,7 @@ if test x"$acx_blas_ok" = xyes; then
   :
 else
   { echo "$as_me:$LINENO: Using BLAS packaged with SIESTA" >&5
-echo "$as_me: Using BLAS packaged with SIESTA" >&6;}; BLAS_LIBS="libblas.a"; COMP_LIBS="libblas.a $COMP_LIBS"
+echo "$as_me: Using BLAS packaged with SIESTA" >&6;}; BLAS_LIBS="libsiestaBLAS.a"; COMP_LIBS="libsiestaBLAS.a $COMP_LIBS"
 
 fi
 
@@ -7089,7 +7089,7 @@ fi;
 if test "x$with_siesta_lapack" = xyes; then
      { echo "$as_me:$LINENO: Using LAPACK packaged with SIESTA" >&5
 echo "$as_me: Using LAPACK packaged with SIESTA" >&6;}
-     COMP_LIBS="dc_lapack.a liblapack.a $COMP_LIBS"
+     COMP_LIBS="libsiestaLAPACK.a $COMP_LIBS"
 else
      siesta_lapack=no
 
@@ -7293,8 +7293,8 @@ else
         acx_lapack_ok=no
         { echo "$as_me:$LINENO: Using LAPACK packaged with SIESTA" >&5
 echo "$as_me: Using LAPACK packaged with SIESTA" >&6;}
-                     COMP_LIBS="dc_lapack.a liblapack.a $COMP_LIBS";
-                     LAPACK_LIBS="dc_lapack.a liblapack.a"
+                     COMP_LIBS="libsiestaLAPACK.a $COMP_LIBS";
+                     LAPACK_LIBS="libsiestaLAPACK.a"
 fi
 
 #FIXME: also need to test if we have all necessary calls. eg dsygst

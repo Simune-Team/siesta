@@ -255,7 +255,9 @@
       endif
 
       call timer('setup_H',2)
+#ifdef SIESTA__PEXSI
       if (node==0) call memory_snapshot("after setup_H")
+#endif
 
       if ( h_setup_only ) then
          call timer( 'all', 2 )  ! New call to close the tree

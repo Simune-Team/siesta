@@ -434,6 +434,14 @@ $(ALL_OBJS): $(XC) $(COMP_LIBS)
 #
 # Linear algebra routines
 #
+libsiestaBLAS.a: Libs/blas.f
+	@echo "==> Compiling libsiestaBLAS.a in Libs..."
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaBLAS.a)
+	@cp Libs/libsiestaBLAS.a .
+libsiestaLAPACK.a: Libs/lapack.f
+	@echo "==> Compiling libsiestaLAPACK.a in Libs..."
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaLAPACK.a)
+	@cp Libs/libsiestaLAPACK.a .
 libblas.a: Libs/blas.f
 	@echo "==> Compiling libblas.a in Libs..."
 	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libblas.a)
@@ -452,6 +460,7 @@ zgesv_lapack.a:  Libs/zgesv_lapack.f
 essl_lapack.a: Libs/essl_lapack.f
 	@echo "==> Compiling essl_lapack.a in Libs..."
 	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
+
 
 .PHONY: version.o
 version.o: version
@@ -878,8 +887,8 @@ m_mat_invert.o: intrinsic_missing.o m_pivot_array.o precision.o
 m_matio.o: alloc.o parallel.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mesh_node.o: intrinsic_missing.o parallel.o precision.o
-m_mixing.o: alloc.o class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
-m_mixing_scf.o: class_Fstack_Data1D.o m_mixing.o parallel.o
+m_mixing.o: class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
+m_mixing_scf.o: class_Fstack_Data1D.o m_mixing.o parallel.o precision.o
 m_monitor.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_monitor.o: parallel.o precision.o
 m_mpi_utils.o: precision.o sys.o
@@ -1195,10 +1204,9 @@ radial.o: alloc.o interpolation.o precision.o xml.o
 rdiag.o: alloc.o m_diagon_opt.o memoryinfo.o parallel.o precision.o sys.o
 rdiag_elpa.o: alloc.o elpa1.o elpa2.o parallel.o precision.o sys.o
 rdiag_mrrr.o: alloc.o parallel.o precision.o sys.o
-read_options.o: files.o m_charge_add.o m_hartree_add.o m_mixing.o
-read_options.o: m_mixing_scf.o m_spin.o m_target_stress.o memoryinfo.o
-read_options.o: parallel.o precision.o siesta_cml.o siesta_options.o sys.o
-read_options.o: units.o
+read_options.o: files.o m_charge_add.o m_hartree_add.o m_mixing_scf.o m_spin.o
+read_options.o: m_target_stress.o memoryinfo.o parallel.o precision.o
+read_options.o: siesta_cml.o siesta_options.o sys.o units.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
@@ -1280,16 +1288,15 @@ siesta_forces.o: m_initwf.o wavefunctions.o m_evolve.o
 siesta_forces.o: m_iotddft.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o
-siesta_init.o: class_Fstack_Pair_Geometry_SpData2D.o densematrix.o f2kcli.o
-siesta_init.o: files.o flook_siesta.o ioxv.o kpoint_grid.o kpoint_pdos.o
-siesta_init.o: ksvinit.o m_cite.o m_energies.o m_eo.o m_fixed.o m_forces.o
-siesta_init.o: m_gamma.o m_getopts.o m_iostruct.o m_mpi_utils.o m_new_dm.o
-siesta_init.o: m_rmaxh.o m_spin.o m_steps.o m_supercell.o m_timer.o
-siesta_init.o: m_wallclock.o metaforce.o molecularmechanics.o object_debug.o
-siesta_init.o: parallel.o parallelsubs.o projected_DOS.o siesta_cmlsubs.o
-siesta_init.o: siesta_dicts.o siesta_geom.o siesta_options.o sparse_matrices.o
-siesta_init.o: struct_init.o sys.o timer.o timestamp.o ts_init.o writewave.o
-siesta_init.o: zmatrix.o
+siesta_init.o: class_Fstack_Pair_Geometry_SpData2D.o densematrix.o files.o
+siesta_init.o: flook_siesta.o ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o
+siesta_init.o: m_cite.o m_energies.o m_eo.o m_fixed.o m_forces.o m_gamma.o
+siesta_init.o: m_iostruct.o m_mpi_utils.o m_new_dm.o m_rmaxh.o m_spin.o
+siesta_init.o: m_steps.o m_supercell.o m_timer.o m_wallclock.o metaforce.o
+siesta_init.o: molecularmechanics.o object_debug.o parallel.o parallelsubs.o
+siesta_init.o: projected_DOS.o siesta_cmlsubs.o siesta_dicts.o siesta_geom.o
+siesta_init.o: siesta_options.o sparse_matrices.o struct_init.o sys.o timer.o
+siesta_init.o: timestamp.o ts_init.o writewave.o zmatrix.o
 siesta_master.o: iopipes.o iosockets.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o

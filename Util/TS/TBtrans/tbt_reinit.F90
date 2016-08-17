@@ -210,7 +210,7 @@ subroutine tbt_reinit( sname , slabel )
                 call die('Missing argument on command line')
            in = in + 1
            call get_command_argument(in,line,length)
-           line = 'TBT.Directory.Save '//trim(line)
+           line = 'TBT.Directory '//trim(line)
            call fdf_overwrite(line)
 
         else if ( line(1:12) == 'HS' ) then
@@ -218,7 +218,7 @@ subroutine tbt_reinit( sname , slabel )
                 call die('Missing argument on command line')
            in = in + 1
            call get_command_argument(in,line,length)
-           line = 'TBT.TSHS '//trim(line)
+           line = 'TBT.HS '//trim(line)
            call fdf_overwrite(line)
 
         else if ( line(1:1) == 'L' ) then
@@ -235,13 +235,13 @@ subroutine tbt_reinit( sname , slabel )
            write(*,'(a)') '  -fdf <label>=<value>[:<unit>]'
            write(*,'(a)') '      Set the label to the corresponding value.'
            write(*,'(a)') '  -V <value>:<unit>'
-           write(*,'(a)') '      Short-hand for setting TBT.Voltage.'
+           write(*,'(a)') '      Short-hand for setting TBT.Voltage'
            write(*,'(a)') '  -D <directory>'
-           write(*,'(a)') '      Short-hand for setting TBT.Directory.Save.'
+           write(*,'(a)') '      Short-hand for setting TBT.Directory'
            write(*,'(a)') '  -HS <Hamiltonian>'
-           write(*,'(a)') '      Short-hand for setting TBT.TSHS.'
+           write(*,'(a)') '      Short-hand for setting TBT.HS'
            write(*,'(a)') '  -L <name>'
-           write(*,'(a)') '      Short-hand for setting SystemLabel.'
+           write(*,'(a)') '      Short-hand for setting SystemLabel'
            write(*,'(a)') '  <fdf-file>'
            write(*,'(a)') '      Use file as fdf-input, you need not to pipe it in.'
            call bye('Help-menu requested, stopping')

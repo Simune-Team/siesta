@@ -8,7 +8,7 @@ For the LAPACK code, the conditions in the file LICENSE apply.
 Use the code in this directory if you do not have compiled (presumably
 optimized) blas and lapack libraries in your system.
 
-Define COMP_LIBS = linalg.a
+Define COMP_LIBS = libsiestaLAPACK.a libsiestaBLAS.a
 
 	in your XXXXX.make file
 
@@ -21,4 +21,4 @@ from version 3.0 of Lapack. In that case, define
 
 You might already have an optimized blas, but not lapack, in which case:
 
-	COMP_LIBS= liblapack.a $BLAS_LIBS
+	COMP_LIBS= libsiestaLAPACK.a $BLAS_LIBS
