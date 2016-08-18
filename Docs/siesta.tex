@@ -523,7 +523,7 @@ libraries and how each of them may be added to the compilation step
 
     \item If you do not have the BLAS library you may use the BLAS
     library shipped with \siesta. To do so simply add
-    \shell{libsiestaBLAS.a} to the \shell{COMP_LIBS} variable.
+    \shell{libsiestaBLAS.a} to the \shell{COMP\_LIBS} variable.
   \end{itemize}
 
   To add BLAS to the \shell{arch.make} file you need to add the
@@ -558,7 +558,7 @@ libraries and how each of them may be added to the compilation step
 
   If you do not have the LAPACK library you may use the LAPACK
   library shipped with \siesta. To do so simply add
-  \shell{libsiestaLAPACK.a} to the \shell{COMP_LIBS} variable.
+  \shell{libsiestaLAPACK.a} to the \shell{COMP\_LIBS} variable.
 
   Example variables
 \begin{shellexample}
@@ -1762,172 +1762,162 @@ set to their problem under consideration.
 
 
 \subsubsection{Generation of multiple-zeta orbitals}
-\begin{description}
 
-\item[\textbf{PAO.SplitNorm}] (\textit{real}):
-\index{PAO.SplitNorm@\textbf{PAO.SplitNorm}}\index{basis!split valence}
-A standard to define sensible default
-radii for the split-valence type of basis. It gives the amount of norm that
-the second-$\zeta$ split-off piece has to carry. The split radius is defined
-accordingly. If multiple-$\zeta$\index{multiple-$\zeta$}
-is used, the corresponding radii are obtained
-by imposing smaller fractions of the SplitNorm (1/2, 1/4 ...) value as
-norm carried by the higher zetas. It only has an effect when the block
-\textbf{PAO.Basis} is not present or when the radii
-specified in that block are zero for zetas higher than one.
+\begin{fdfentry}{PAO!SplitNorm}[real]<$0.15$>
+  \index{basis!split valence}
 
-\textit{Default value:} \texttt{0.15} (sensible values range between 0.05 and 0.5).
+  A standard to define sensible default radii for the split-valence
+  type of basis. It gives the amount of norm that the second-$\zeta$
+  split-off piece has to carry. The split radius is defined
+  accordingly. If multiple-$\zeta$\index{multiple-$\zeta$} is used,
+  the corresponding radii are obtained by imposing smaller fractions
+  of the SplitNorm (1/2, 1/4 ...) value as norm carried by the higher
+  zetas. It only has an effect when the block \fdf{PAO!Basis} is
+  not present or when the radii specified in that block are zero for
+  zetas higher than one.
+  
+\end{fdfentry}
 
-\item[\textbf{PAO.SplitNormH}] (\textit{real}):
-\index{PAO.SplitNormH@\textbf{PAO.SplitNormH}}\index{basis!split valence
-  for H}
-This option is as per \textbf{PAO.SplitNorm} but allows a separate
-default to be
-specified for hydrogen which typically needs larger values than those
-for other
-elements.
+\begin{fdfentry}{PAO!SplitNormH}[real]<\fdfvalue{PAO!SplitNorm}>
+  \index{basis!split valence for H}  
 
-\item[\textbf{PAO.NewSplitCode}] (\textit{boolean}):
-\index{PAO.NewSplitCode@\textbf{PAO.NewSplitCode}}\index{basis!new
-  split-valence code}
+  This option is as per \fdf{PAO!SplitNorm} but allows a separate
+  default to be specified for hydrogen which typically needs larger
+  values than those for other elements.
+  
+\end{fdfentry}
 
-Enables a new, simpler way to match the multiple-zeta radii.
+\begin{fdflogicalF}{PAO!NewSplitCode}
+  \index{basis!new split-valence code}  
 
-If an old-style (tail+parabola) calculation is being done, perform a
-scan of the tail+parabola norm in the whole range of the 1st-zeta
-orbital, and store that in a table. The construction of the
-2nd-zeta orbital involves simply scanning the table to find the
-appropriate place. Due to the idiosyncracies of the old algorithm,
-the new one is not guaranteed to produce exactly the same results,
-as it might settle on a neighboring grid point for the matching.
+  Enables a new, simpler way to match the multiple-zeta radii.
 
-\textit{Default value:} \texttt{.false.}
+  If an old-style (tail+parabola) calculation is being done, perform a
+  scan of the tail+parabola norm in the whole range of the 1st-zeta
+  orbital, and store that in a table. The construction of the 2nd-zeta
+  orbital involves simply scanning the table to find the appropriate
+  place. Due to the idiosyncracies of the old algorithm, the new one
+  is not guaranteed to produce exactly the same results, as it might
+  settle on a neighboring grid point for the matching.
+  
+\end{fdflogicalF}
 
-\item[\textbf{PAO.FixSplitTable}] (\textit{boolean}):
-\index{PAO.FixSplitTable@\textbf{PAO.FixSplitTable}}\index{basis!fix
-  split-valence table}
+\begin{fdflogicalF}{PAO!FixSplitTable}
+  \index{basis!fix split-valence table}  
 
-After the scan of the allowable split-norm values, apply a damping
-function to the tail to make sure that the table goes to zero at
-the radius of the first-zeta orbital.
+  After the scan of the allowable split-norm values, apply a damping
+  function to the tail to make sure that the table goes to zero at the
+  radius of the first-zeta orbital.
+  
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdflogicalF}{PAO!SplitTailNorm}
+  \index{basis!new split-valence code}
 
-\item[\textbf{PAO.SplitTailNorm}] (\textit{boolean}):
-\index{PAO.SplitTailNorm@\textbf{PAO.SplitTailNorm}}\index{basis!new
-  split-valence code}
+  Use the norm of the tail instead of the full tail+parabola
+  norm. This is the behavior described in the JPC paper. (But note
+  that, for numerical reasons, the square root of the tail norm is
+  used in the algorithm.) This is the preferred mode of operation for
+  automatic operation, as in non-supervised basis-optimization runs.
+  
+\end{fdflogicalF}
 
-Use the norm of the tail instead of the full tail+parabola
-norm. This is the behavior described in the JPC paper. (But note
-that, for numerical reasons, the square root of the tail norm is used
-in the algorithm.) This is the preferred mode of operation for
-automatic operation, as in non-supervised basis-optimization runs.
-
-\textit{Default value:} \texttt{.false.}
 
 As a summary of the above options:
 \begin{itemize}
-\item For complete backwards compatibility, do nothing.
-\item To exercise the new code, set \texttt{PAO.NewSplitCode}.
-\item To maintain the old split-norm heuristic, but
-making sure that the program finds a solution (even
-if not optimal, in the sense of producing a second-$\zeta$ $r_c$
-very close to the first-$\zeta$ one), set \texttt{PAO.FixSplitTable}
-(this will automatically set \texttt{PAO.NewSplitCode}).
-\item If the old heuristic is of no interest (for example, if
-only a robust way of mapping split-norms to radii is needed), set
-\texttt{PAO.SplitTailNorm} (this will set \texttt{PAO.NewSplitCode}
-automatically).
+  \item%
+  For complete backwards compatibility, do nothing.
+
+  \item%
+  To exercise the new code, set \fdf{PAO!NewSplitCode}.
+  
+  \item%
+  To maintain the old split-norm heuristic, but making sure that the
+  program finds a solution (even if not optimal, in the sense of
+  producing a second-$\zeta$ $r_c$ very close to the first-$\zeta$
+  one), set \fdf{PAO!FixSplitTable} (this will automatically set
+  \fdf{PAO!NewSplitCode}).
+  
+  \item%
+  If the old heuristic is of no interest (for example, if only a
+  robust way of mapping split-norms to radii is needed), set
+  \fdf{PAO!SplitTailNorm} (this will set \fdf{PAO!NewSplitCode}
+  automatically).
+
 \end{itemize}
 
-\end{description}
+\begin{fdfentry}{PAO!EnergyCutoff}[energy]<$20\,\mathrm{Ry}$>
 
-\begin{description}
-\item[\textbf{PAO.EnergyCutoff}] (\textit{real energy}): If the multiple
-zetas are generated using filterets then only the filterets with
-an energy lower than this cutoff are included. Increasing this
-value leads to a richer basis set (provided the cutoff is raised
-above the energy of any filteret that was previously not included)
-but a more expensive calculation.
-It only has an effect when the option
-\textbf{PAO.BasisType} is set to filteret.
+  If the multiple zetas are generated using filterets then only the
+  filterets with an energy lower than this cutoff are
+  included. Increasing this value leads to a richer basis set
+  (provided the cutoff is raised above the energy of any filteret that
+  was previously not included) but a more expensive calculation.  It
+  only has an effect when the option \fdf{PAO!BasisType} is set to
+  \fdf*{filteret}.
+  
+\end{fdfentry}
 
-\textit{Use:} It has to be positive.
+\begin{fdfentry}{PAO!EnergyPolCutoff}[energy]<$20\,\mathrm{Ry}$>
 
-\textit{Default value:} \texttt{20.0 Ry}
-\end{description}
+  If the multiple zetas are generated using filterets then only the
+  filterets with an energy lower than this cutoff are included for the
+  polarisation functions. Increasing this value leads to a richer
+  basis set (provided the cutoff is raised above the energy of any
+  filteret that was previously not included) but a more expensive
+  calculation. It only has an effect when the option
+  \fdf{PAO!BasisType} is set to filteret.
 
-\begin{description}
-\item[\textbf{PAO.EnergyPolCutoff}] (\textit{real energy}): If the multiple
-zetas are generated using filterets then only the filterets with
-an energy lower than this cutoff are included for the polarisation
-functions. Increasing this value leads to a richer basis set 
-(provided the cutoff is raised above the energy of any filteret 
-that was previously not included) but a more expensive calculation.
-It only has an effect when the option
-\textbf{PAO.BasisType} is set to filteret.
+\end{fdfentry}
 
-\textit{Use:} It has to be positive.
+\begin{fdfentry}{PAO!ContractionCutoff}[real]<$0$|$0--1$>
 
-\textit{Default value:} \texttt{20.0 Ry}
-\end{description}
+  If the multiple zetas are generated using filterets then any
+  filterets that have a coefficient less than this threshold within
+  the original PAO will be contracted together to form a single
+  filteret.  Increasing this value leads to a smaller basis set but
+  allows the underlying basis to have a higher kinetic energy cut-off
+  for filtering. It only has an effect when the option
+  \fdf{PAO!BasisType} is set to \fdf*{filteret}.
+  
+\end{fdfentry}
 
-\begin{description}
-\item[\textbf{PAO.ContractionCutoff}] (\textit{real}): If the multiple
-zetas are generated using filterets then any filterets that have
-a coefficient less than this threshold within the original PAO
-will be contracted together to form a single filteret.
-Increasing this value leads to a smaller basis set but allows
-the underlying basis to have a higher kinetic energy cut-off for
-filtering. It only has an effect when the option
-\textbf{PAO.BasisType} is set to filteret.
 
-\textit{Use:} It has to be in the range 0 to 1.
-
-\textit{Default value:} \texttt{0.0}
-\end{description}
 
 \subsubsection{Soft-confinement options}
-\begin{description}
 
-\item[\textbf{PAO.SoftDefault}] (\textit{boolean}):
-\index{PAO.SoftDefault@\textbf{PAO.SoftDefault}}\index{basis!default soft
-  confinement}
-If set to true then this option causes soft confinement to be the
-default form
-of potential during orbital generation. The default potential and
-inner radius
-are set by the commands given below.
+\begin{fdflogicalF}{PAO!SoftDefault}
+  \index{basis!default soft confinement}
 
-\textit{Default value:} \texttt{.false.}
+  If set to true then this option causes soft confinement to be the
+  default form of potential during orbital generation. The default
+  potential and inner radius are set by the commands given below.
 
-\item[\textbf{PAO.SoftInnerRadius}] (\textit{real}):
-\index{PAO.SoftInnerRadius@\textbf{PAO.SoftInnerRadius}}\index{basis!default soft confinement radius}
-For default soft confinement, the inner radius is set at a fraction of
-the outer
-confinement radius determined by the energy shift. This option
-controls the fraction
-of the confinement radius to be used.
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{0.9}
+\begin{fdfentry}{PAO!SoftInnerRadius}[real]<$0.9$>
+  \index{basis!default soft confinement radius} 
 
-\item[\textbf{PAO.SoftPotential}] (\textit{real}):
-\index{PAO.SoftPotential@\textbf{PAO.SoftPotential}}\index{basis!default
-  soft confinement potential}
-For default soft confinement, this option controls the value of the
-potential used
-for all orbitals.
+  For default soft confinement, the inner radius is set at a fraction
+  of the outer confinement radius determined by the energy shift. This
+  option controls the fraction of the confinement radius to be used.
+  
+\end{fdfentry}
 
-\textit{Default value:} \texttt{40.0 Ry}
+\begin{fdfentry}{PAO!SoftPotential}[energy]<$40\,\mathrm{Ry}$>
+  \index{basis!default soft confinement potential}
 
+  For default soft confinement, this option controls the value of the
+  potential used for all orbitals.
 
-Note: Soft-confinement options (inner radius, prefactor) have been
-traditionally used to optimize the basis set, even though formally
-they are just a technical necessity to soften the decay of the
-orbitals at rc. To achieve this, it might be enough to use the above
-global options.
+  \note Soft-confinement options (inner radius, prefactor) have been
+  traditionally used to optimize the basis set, even though formally
+  they are just a technical necessity to soften the decay of the
+  orbitals at rc. To achieve this, it might be enough to use the above
+  global options.
+  
+\end{fdfentry}
 
-\end{description}
 
 \subsubsection{Kleinman-Bylander projectors}
 
@@ -2041,17 +2031,17 @@ normalization).
 \end{description}
 
 \subsubsection{The PAO.Basis block}
-\begin{description}
 
-  \item[\textbf{PAO.Basis}] (\textit{data block}):
-  \index{PAO.Basis@\textbf{PAO.Basis}\index{basis!PAO}} Block with
-  data to define explicitly the basis to be used.  It allows the
-  definition by hand of all the parameters that are used to construct
-  the atomic basis. There is no need to enter information for all the
-  species present in the calculation. The basis\index{basis!PAO} for
-  the species not mentioned in this block will be generated
-  automatically using the parameters \fdf{PAO!BasisSize},
-  \fdf{PAO!BasisType}, \fdf{PAO!EnergyShift},
+\begin{fdfentry}{PAO!Basis}[block]
+  \index{basis!PAO}
+
+  Block with data to define explicitly the basis to be used.  It
+  allows the definition by hand of all the parameters that are used to
+  construct the atomic basis. There is no need to enter information
+  for all the species present in the calculation. The
+  basis\index{basis!PAO} for the species not mentioned in this block
+  will be generated automatically using the parameters
+  \fdf{PAO!BasisSize}, \fdf{PAO!BasisType}, \fdf{PAO!EnergyShift},
   \fdf{PAO!SplitNorm} (or \fdf{PAO!SplitNormH}), and the
   soft-confinement defaults, if used (see \fdf{PAO!SoftDefault}).
 
@@ -2063,8 +2053,8 @@ normalization).
   zero; the scale factors will be put to 1 if they are zero or not
   given in the input.  An example block for a two-species calculation
   (H and O) is the following (\texttt{opt} means optional):
-
-\begin{verbatim}
+  
+  \begin{fdfexample}
 %block PAO.Basis     # Define Basis set
 O    2  nodes  1.0   # Label, l_shells, type (opt), ionic_charge (opt)
  n=2 0 2  E 50.0 2.5 # n (opt if not using semicore levels),l,Nzeta,Softconf(opt)
@@ -2078,14 +2068,15 @@ H    2               # Label, l_shells, type (opt), ionic_charge (opt)
      1 1 Q 3. 0.2    # l, Nzeta, Charge conf (opt): Z and screening
      5.00            #    rc(izeta=1,Nzeta)(Bohr)
 %endblock PAO.Basis
-\end{verbatim}
+  \end{fdfexample}
+   
 
-\noindent
-The reading is done this way (those variables in brackets are
-optional, therefore they are only read if present) (See
-the routines in \texttt{Src/basis\_specs.f} for detailed information):
-
-\begin{verbatim}
+  \noindent
+  The reading is done this way (those variables in brackets are
+  optional, therefore they are only read if present) (See
+  the routines in \shell{Src/basis\_specs.f} for detailed information):
+  
+\begin{shellexample}
     From js = 1 to  nspecies
        read: label(is), l_shells(is), { type(is) }, { ionic_charge(is) }
        From lsh=1 to l_shells(is)
@@ -2097,90 +2088,136 @@ the routines in \texttt{Src/basis\_specs.f} for detailed information):
          {ChargeConfFlag(lsh,is)}, {Z(lsh,is)}, {Screen(lsh,is)}, {delta(lsh,is}
            read: rcls(izeta,lsh,is), from izeta = 1 to nzls(l,is)
            read: { contrf(izeta,il,is) }, from izeta = 1 to nzls(l,is)
-\end{verbatim}
+\end{shellexample}
 
-\noindent
-And here is the variable description:
-\begin{itemize}
-\item[-] \texttt{Label}: Species label, this label determines
-the species index \texttt{is} according to the block \textbf{ChemicalSpecieslabel}
-\item[-] \texttt{l\_shells(is)}: Number of shells of orbitals
-with different angular momentum for species \texttt{is}
-\item[-] \texttt{type(is)}: \textit{Optional input}.
-Kind of basis set generation procedure for species \texttt{is}.
-Same options as \textbf{PAO.BasisType}
-\item[-] \texttt{ionic\_charge(is)}: \textit{Optional input}.
-Net charge of species \texttt{is}. This is  only used for
-basis set generation purposes. \textit{Default value}: \texttt{0.0} (neutral
-atom). Note that if the pseudopotential was generated in an ionic
-configuration, and no charge is specified in PAO.Basis, the ionic
-charge setting will be that of pseudopotential generation.
-\item[-] \texttt{n}: Principal quantum number of the shell. This is an optional
-input for normal atoms, however it must be specified when there are
-\textit{semicore} states (i.e. when states that usually are not
-considered to belong to the
-valence shell have been included in the calculation)
-\item[-] \texttt{l}: Angular momentum of
-basis orbitals of this shell
-\item[-] \texttt{nzls(lsh,is)}: Number of 'zetas' for this shell. For a filteret 
-basis this number is ignored since the number is controlled by the cutoff.
-\item[-] \texttt{PolOrb(l+1)}: \textit{Optional input}. If set equal to \texttt{P}, a
-shell of
-polarization functions (with angular momentum $l+1$)  will be constructed
-from the first-zeta orbital of angular momentum $l$. \textit{Default value}: ' '
-(blank = No polarization orbitals).
-\item[-] \texttt{NzetaPol(l+1)}: \textit{Optional input}. Number of
-'zetas' for the
-polarization shell (generated automatically in a split-valence fashion).
-For a filteret basis this number is ignored since the number is controlled
-by the cutoff.
-Only active if \texttt{PolOrb = P}. \textit{Default value}: \texttt{1}
-\item[-] \texttt{SplitNormFlag(lsh,is)}:\index{basis!per-shell split norm}
-\textit{Optional input}. If set equal to
-\texttt{S}, the following number sets the split-norm parameter for that shell.
-\item[-] \texttt{SoftConfFlag(l,is)}:\index{basis!soft confinement potential}
-\textit{Optional input}. If set equal to
-\texttt{E}, the soft confinement potential proposed in equation (1) of
-the paper by J. Junquera \textit{et al.}, Phys. Rev. B \textbf{64}, 235111 (2001),
-is used instead of the Sankey hard-well potential.
-\item[-] \texttt{PrefactorSoft(l,is)}: \textit{Optional input}. Prefactor
-of the soft confinement potential ($V_{0}$ in the formula). Units in Ry.
-\textit{Default value}: 0 Ry.
-\item[-] \texttt{InnerRadSoft(l,is)}: \textit{Optional input}. Inner radius where
-the soft confinement potential starts off ($r_{i}$ in the formula).
-If negative, the inner radius will be computed as the given fraction
-of the PAO cutoff radius.
-Units in bohrs. \textit{Default value}: 0 bohrs.
-\item[-] \texttt{FilteretFlag(l,is)}:\index{basis!filteret basis set}
-\textit{Optional input}. If set equal to
-\texttt{F}, then an individual filter cut-off can be specified for the shell.
-\item[-] \texttt{FilteretCutoff(l,is)}: \textit{Optional input}. Shell-specific
-value for the filteret basis cutoff. Units in Ry.
-\textit{Default value}: The same as the value given by \textit{FilterCutoff}.
-\item[-] \texttt{ChargeConfFlag(lsh,is)}: \textit{Optional input}. If set equal to 
-\texttt{Q}, the charge confinement potential in equation (2) above is
-added to the confining potential. If present it requires at least
-one number after it (\texttt{Z}), but it can be followed by two or three numbers.
-\index{Charge confinement}
-\item[-] \texttt{Z(lhs,is)}: \textit{Optional input, needed if \texttt{Q} is set}. $Z$
-charge in equation (2) above for charge confinement (units of $e$). 
-\item[-] \texttt{Screen(lhs,is)}: \textit{Optional input}. Yukawa screening parameter
-$\lambda$ in equation (2) above for charge confinement (in Bohr$^{-1}$).
-\item[-] \texttt{delta(lhs,is)}: \textit{Optional input}. Singularity regularisation parameter
-$\delta$ in equation (2) above for charge confinement (in Bohr).
-\item[-] \texttt{rcls(izeta,l,is)}: Cutoff radius (Bohr) of
-each 'zeta' for this shell. For the second zeta onwards, if this value
-is negative, the actual rc used will be the given fraction of the
-first zeta's rc.
-\item[-] \texttt{contrf(izeta,l,is)}: \textit{Optional input}.
-Contraction factor\index{scale factor} of
-each 'zeta' for this shell.
-\textit{Default value}: \texttt{1.0}
+  \noindent
+  And here is the variable description:
+  \begin{itemize}
+    \item[-] %
+    \texttt{Label}: Species label, this label determines
+    the species index \texttt{is} according to the block
+    \fdf{ChemicalSpeciesLabel}
+
+    \item[-]%
+    \texttt{l\_shells(is)}: Number of shells of orbitals
+    with different angular momentum for species \texttt{is}
+
+    \item[-]%
+    \texttt{type(is)}: \textit{Optional input}.  Kind of basis set
+    generation procedure for species \texttt{is}.  Same options as
+    \fdf{PAO!BasisType}
+
+    \item[-]%
+    \texttt{ionic\_charge(is)}: \textit{Optional input}.  Net charge
+    of species \texttt{is}. This is only used for basis set generation
+    purposes. \textit{Default value}: \texttt{0.0} (neutral
+    atom). Note that if the pseudopotential was generated in an ionic
+    configuration, and no charge is specified in PAO.Basis, the ionic
+    charge setting will be that of pseudopotential generation.
+
+    \item[-]%
+    \texttt{n}: Principal quantum number of the shell. This is an
+    optional input for normal atoms, however it must be specified when
+    there are \textit{semicore} states (i.e. when states that usually
+    are not considered to belong to the valence shell have been
+    included in the calculation)
+
+    \item[-]%
+    \texttt{l}: Angular momentum of basis orbitals of this shell
+
+    \item[-]%
+    \texttt{nzls(lsh,is)}: Number of ``zetas'' for this shell. For a
+    filteret basis this number is ignored since the number is
+    controlled by the cutoff.
+
+    \item[-]%
+    \texttt{PolOrb(l+1)}: \textit{Optional input}. If set equal to
+    \texttt{P}, a shell of polarization functions (with angular
+    momentum $l+1$) will be constructed from the first-zeta orbital of
+    angular momentum $l$. \textit{Default value}: ' ' (blank = No
+    polarization orbitals).
+
+    \item[-]%
+    \texttt{NzetaPol(l+1)}: \textit{Optional input}. Number of
+    ``zetas'' for the polarization shell (generated automatically in a
+    split-valence fashion).  For a filteret basis this number is
+    ignored since the number is controlled by the cutoff.  Only active
+    if \texttt{PolOrb = P}. \textit{Default value}: \texttt{1}
+
+    \item[-]%
+    \texttt{SplitNormFlag(lsh,is)}:\index{basis!per-shell split norm}
+    \textit{Optional input}. If set equal to \texttt{S}, the following
+    number sets the split-norm parameter for that shell.
+
+    \item[-]%
+    \texttt{SoftConfFlag(l,is)}:\index{basis!soft confinement
+        potential} \textit{Optional input}. If set equal to
+    \texttt{E}, the soft confinement potential proposed in equation
+    (1) of the paper by J. Junquera \textit{et al.}, Phys. Rev. B
+    \textbf{64}, 235111 (2001), is used instead of the Sankey
+    hard-well potential.
+
+    \item[-]%
+    \texttt{PrefactorSoft(l,is)}: \textit{Optional input}. Prefactor
+    of the soft confinement potential ($V_{0}$ in the formula). Units
+    in Ry.  \textit{Default value}: 0 Ry.
+
+    \item[-]%
+    \texttt{InnerRadSoft(l,is)}: \textit{Optional input}. Inner radius
+    where the soft confinement potential starts off ($r_{i}$ in the
+    formula).  If negative, the inner radius will be computed as the
+    given fraction of the PAO cutoff radius.  Units in
+    bohrs. \textit{Default value}: 0 bohrs.
+
+    \item[-]%
+    \texttt{FilteretFlag(l,is)}:\index{basis!filteret basis set}
+    \textit{Optional input}. If set equal to \texttt{F}, then an
+    individual filter cut-off can be specified for the shell.
+
+    \item[-]%
+    \texttt{FilteretCutoff(l,is)}: \textit{Optional
+        input}. Shell-specific value for the filteret basis
+    cutoff. Units in Ry.  \textit{Default value}: The same as the
+    value given by \fdf{FilterCutoff}.
+
+    \item[-]%
+    \texttt{ChargeConfFlag(lsh,is)}: \textit{Optional input}. If set
+    equal to \texttt{Q}, the charge confinement potential in equation
+    (2) above is added to the confining potential. If present it
+    requires at least one number after it (\texttt{Z}), but it can be
+    followed by two or three numbers.  \index{Charge confinement}
+
+    \item[-]%
+    \texttt{Z(lhs,is)}: \textit{Optional input, needed if \texttt{Q}
+        is set}. $Z$ charge in equation (2) above for charge
+    confinement (units of $e$).
+
+    \item[-]%
+    \texttt{Screen(lhs,is)}: \textit{Optional input}. Yukawa screening
+    parameter $\lambda$ in equation (2) above for charge confinement
+    (in Bohr$^{-1}$).
+
+    \item[-]%
+    \texttt{delta(lhs,is)}: \textit{Optional input}. Singularity
+    regularisation parameter $\delta$ in equation (2) above for charge
+    confinement (in Bohr).
+
+    \item[-]%
+    \texttt{rcls(izeta,l,is)}: Cutoff radius (Bohr) of each 'zeta' for
+    this shell. For the second zeta onwards, if this value is
+    negative, the actual rc used will be the given fraction of the
+    first zeta's rc.
+
+    \item[-]%
+    \texttt{contrf(izeta,l,is)}: \textit{Optional input}.  Contraction
+    factor\index{scale factor} of each ``zeta'' for this shell.
+    \textit{Default value}: \texttt{1.0}
+
 \end{itemize}
 
 Polarization orbitals\index{perturbative
-polarization}\index{basis!polarization} are generated by solving the
-atomic problem in the presence of a polarizing electric field. The
+    polarization}\index{basis!polarization} are generated by solving
+the atomic problem in the presence of a polarizing electric field. The
 orbitals are generated applying perturbation theory to the first-zeta
 orbital of lower angular momentum.  They have the same cutoff radius
 as the orbitals from which they are constructed.
@@ -2189,15 +2226,15 @@ Note: The perturbative method has traditionally used the 'l' component
 of the pseudopotential. It can be argued that it should use the 'l+1'
 component. By default, for backwards compatibility, the traditional
 method is used, but the alternative one can be activated by setting
-the logical \textbf{PAO.OldStylePolOrbs} variable to \texttt{.false.}
+the logical \fdf{PAO!OldStylePolOrbs} variable to \fdffalse.
 
 There is a different possibility for generating polarization orbitals:
-by introducing them explicitly in the \textbf{PAO.Basis} block.
+by introducing them explicitly in the \fdf{PAO!Basis} block.
 It has to be remembered, however, that they sometimes correspond to
 unbound states of the atom, their shape depending very much on the
 cutoff radius, not converging by increasing it, similarly to the
 multiple-zeta orbitals generated with the \texttt{nodes} option.
-Using \textbf{PAO.EnergyShift} makes no sense, and a cut off
+Using \fdf{PAO!EnergyShift} makes no sense, and a cut off
 radius different from zero must be explicitly given (the same cutoff radius
 as the orbitals they polarize is usually a sensible choice).
 
@@ -2221,63 +2258,64 @@ semicore states are present.
 \textit{Default:} Basis characteristics defined by global definitions given
 above.
 
-\end{description}
+\end{fdfentry}
 
 \subsubsection{Filtering}
 \label{sec:filtering}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdfentry}{FilterCutoff}[energy]<$0$>
+  \index{basis!filtering}
 
-\item[\textbf{FilterCutoff}] (\textit{physical energy}):
-\index{FilterCutoff@\textbf{FilterCutoff}}\index{basis!filtering}
-Kinetic energy cutoff of plane waves used to filter all the
-atomic basis functions, the pseudo-core densities
-for partial core corrections, and the neutral-atom potentials.
-The basis functions (which must be squared to obtain the
-valence density) are really filtered with a cutoff reduced by an
-empirical factor $0.7^2 \simeq 0.5$. The \textbf{FilterCutoff} should
-be similar or lower than the \textbf{MeshCutoff} to avoid the
-\textit{eggbox effect} on the atomic forces.
-However, one should
-not try to converge \textbf{MeshCutoff} while simultaneously
-changing \textbf{FilterCutoff}, since the latter in fact changes
-the used basis functions. Rather, fix a sufficiently large
-\textbf{FilterCutoff} and converge only \textbf{MeshCutoff}.
-If \textbf{FilterCutoff} is not explicitly set, its value is
-calculated from \textbf{FilterTol}.
+  Kinetic energy cutoff of plane waves used to filter all the atomic
+  basis functions, the pseudo-core densities for partial core
+  corrections, and the neutral-atom potentials.  The basis functions
+  (which must be squared to obtain the valence density) are really
+  filtered with a cutoff reduced by an empirical factor
+  $0.7^2 \simeq 0.5$. The \fdf{FilterCutoff} should be similar or
+  lower than the \fdf{MeshCutoff} to avoid the \emph{eggbox
+      effect} on the atomic forces.  However, one should not try to
+  converge \fdf{MeshCutoff} while simultaneously changing
+  \fdf{FilterCutoff}, since the latter in fact changes the used
+  basis functions. Rather, fix a sufficiently large
+  \fdf{FilterCutoff} and converge only \fdf{MeshCutoff}.  If
+  \fdf{FilterCutoff} is not explicitly set, its value is calculated
+  from \fdf{FilterTol}.
 
-\item[\textbf{FilterTol}] (\textit{physical energy}):
-\index{FilterTol@\textbf{FilterTol}}\index{basis!filtering}
-Residual kinetic-energy leaked by filtering each basis function.
-While \textbf{FilterCutoff} sets a common reciprocal-space cutoff
-for all the basis functions, \textbf{FilterTol} sets a specific 
-cutoff for each basis function, much as the \textbf{EnergyShift}
-sets their real-space cutoff. Therefore,
-it is reasonable to use similar values for both parameters.
-The maximum cutoff required to meet the \textbf{FilterTol},
-among all the basis functions, is used (multiplied by the
-empirical factor $1/0.7^2 \simeq 2$) to filter the pseudo-core
-densities and the neutral-atom potentials. \textbf{FilterTol} is ignored if
-\textbf{FilterCutoff} is present in the input file.
-If neither \textbf{FilterCutoff} nor \textbf{FilterTol} are
-present, no filtering is performed.
-See Soler and Anglada, arXiv:0807.5030, for details of the
-filtering procedure.
+\end{fdfentry}
 
-\textbf{Warning:} If the value of \textbf{FilterCutoff} is
-made too small (or \textbf{FilterTol} too large) some of
-the filtered basis orbitals may be meaningless, leading to
-incorrect results or even a program crash.
+\begin{fdfentry}{FilterTol}[energy]<$0$>
+  \index{basis!filtering}
 
-To be implemented: If \textbf{MeshCutoff} is not present in the input
-file, it can be set using the maximum filtering cutoff used for the given 
-\textbf{FilterTol} (for the time being, you can use \texttt{AtomSetupOnly T} 
-to stop the program after basis generation, look at the maximum filtering
-cutoff used, and set the mesh-cutoff manually in a later run.)
+  Residual kinetic-energy leaked by filtering each basis function.
+  While \fdf{FilterCutoff} sets a common reciprocal-space cutoff
+  for all the basis functions, \fdf{FilterTol} sets a specific
+  cutoff for each basis function, much as the \fdf{EnergyShift}
+  sets their real-space cutoff. Therefore, it is reasonable to use
+  similar values for both parameters.  The maximum cutoff required to
+  meet the \fdf{FilterTol}, among all the basis functions, is used
+  (multiplied by the empirical factor $1/0.7^2 \simeq 2$) to filter
+  the pseudo-core densities and the neutral-atom
+  potentials. \fdf{FilterTol} is ignored if \fdf{FilterCutoff}
+  is present in the input file.  If neither \fdf{FilterCutoff} nor
+  \fdf{FilterTol} are present, no filtering is performed.  See
+  Soler and Anglada, arXiv:0807.5030, for details of the filtering
+  procedure.
 
-\end{description}
+  \textbf{Warning:} If the value of \fdf{FilterCutoff} is made too
+  small (or \fdf{FilterTol} too large) some of the filtered basis
+  orbitals may be meaningless, leading to incorrect results or even a
+  program crash.
+
+  To be implemented: If \fdf{MeshCutoff} is not present in the
+  input file, it can be set using the maximum filtering cutoff used
+  for the given \fdf{FilterTol} (for the time being, you can use
+  \fdf{AtomSetupOnly T} to stop the program after basis generation,
+  look at the maximum filtering cutoff used, and set the mesh-cutoff
+  manually in a later run.)
+
+\end{fdfentry}
+
+
 
 \subsubsection{Saving and reading basis-set information}
 
@@ -2457,176 +2495,200 @@ There are many ways to give \siesta\ structural information.
 \begin{itemize}
 \item Directly from the fdf file in traditional format.
 \item Directly from the fdf file in the newer Z-Matrix format, using
-a \textbf{Zmatrix} block.
+a \fdf{Zmatrix} block.
 \item From an external data file
 \item From a FIFO file, when working in ``server'' mode.
 \end{itemize}
 
 Note that, regardless of the way in which the structure is described,
-the tags
-\textbf{NumberOfSpecies}, \index{NumberOfSpecies@\textbf{NumberOfSpecies}}
-\textbf{NumberOfAtoms}, \index{NumberOfAtoms@\textbf{NumberOfAtoms}}
-and \textbf{ChemicalSpeciesLabel}
-\index{ChemicalSpeciesLabel@\textbf{ChemicalSpeciesLabel}} are mandatory.
+the tags \fdf{NumberOfSpecies}, \fdf{NumberOfAtoms}, and
+\fdf{ChemicalSpeciesLabel} are mandatory.
 
 In the following sections we document the different structure input
 methods, and provide a guide to their precedence.
 
 \subsubsection{Traditional structure input in the fdf file}
 
-Firstly, the size of the cell itself should be specified, using
-some combination of the options
-\textbf{LatticeConstant}, \textbf{LatticeParameters},
-and \textbf{LatticeVectors}, and \textbf{SuperCell}.
-If nothing is specified, \siesta\ will construct a cubic
-cell in which the atoms will reside as a cluster.
+Firstly, the size of the cell itself should be specified, using some
+combination of the options \fdf{LatticeConstant},
+\fdf{LatticeParameters}, and \fdf{LatticeVectors}, and
+\fdf{SuperCell}.  If nothing is specified, \siesta\ will construct a
+cubic cell in which the atoms will reside as a cluster.
 
-Secondly, the positions of the atoms within the cells
-must be specified, using either the traditional \siesta\
-input format (a modified xyz format) which must be described
-within
-a \textbf{AtomicCoordinatesAndAtomicSpecies} block.
+Secondly, the positions of the atoms within the cells must be
+specified, using either the traditional \siesta\ input format (a
+modified xyz format) which must be described within a
+\fdf{AtomicCoordinatesAndAtomicSpecies} block.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-\item[\textbf{LatticeConstant}] (\textit{real length}):
-\index{LatticeConstant@\textbf{LatticeConstant}}
-Lattice constant. This is just to define the scale of the lattice vectors.
+\begin{fdfentry}{LatticeConstant}[length]
 
-\textit{Default value:} Minimum size to include the system (assumed to be a
-molecule) without intercell interactions, plus 10\%.
+  Lattice constant. This is just to define the scale of the lattice
+  vectors.
 
-NOTE: A LatticeConstant value, even if redundant, might be needed for
-other options, such as the units of the k-points used for
-band-structure calculations. This mis-feature will be corrected in
-future versions.
+  \textit{Default value:} Minimum size to include the system (assumed
+  to be a molecule) without intercell interactions, plus 10\%.
 
-\item[\textbf{LatticeParameters}] (\textit{data block}):
-\index{LatticeParameters@\textbf{LatticeParameters}}
-Crystallographic way of specifying the lattice vectors, by giving
-six real numbers: the three vector modules, $a$, $b$, and $c$, and
-the three angles $\alpha$ (angle between $\vec b$ and $\vec c$),
-$\beta$, and $\gamma$. The three modules are in units of
-\textbf{LatticeConstant}, the three angles are in degrees.
+  \note A LatticeConstant value, even if redundant, might be needed
+  for other options, such as the units of the $k$-points used for
+  band-structure calculations. This mis-feature will be corrected in
+  future versions.
+  
+\end{fdfentry}
 
-\textit{Default value:}
-\begin{verbatim}
-           1.0   1.0   1.0    90.   90.  90.
-\end{verbatim}
-\noindent
-(see the following)
+\begin{fdfentry}{LatticeParameters}[block]
 
-\item[\textbf{LatticeVectors}] (\textit{data block}):
-\index{LatticeVectors@\textbf{LatticeVectors}}
-The cell vectors are read in units of the lattice constant defined above.
-They are read as a matrix \texttt{CELL(ixyz,ivector)}, each vector being
-one line.
+  Crystallographic way of specifying the lattice vectors, by giving
+  six real numbers: the three vector modules, $a$, $b$, and $c$, and
+  the three angles $\alpha$ (angle between $\vec b$ and $\vec c$),
+  $\beta$, and $\gamma$. The three modules are in units of
+  \fdf{LatticeConstant}, the three angles are in degrees.
 
-\textit{Default value:}
-\begin{verbatim}
-            1.0    0.0    0.0
-            0.0    1.0    0.0
-            0.0    0.0    1.0
-\end{verbatim}
-\noindent
-If the \textbf{LatticeConstant} default is used, the default of
-\textbf{LatticeVectors} is still diagonal but not necessarily cubic.
+  This defaults to a square cell with side-lengths equal to \fdf{LatticeConstant}.
+  \begin{fdfexample}
+    1.0  1.0  1.0   90.  90.  90.
+  \end{fdfexample}
+  
+\end{fdfentry}
 
+\begin{fdfentry}{LatticeVectors}[block]
 
-\item[\textbf{SuperCell}] (\textit{data block}): 
-\index{SuperCell@\textbf{SuperCell}} 
-Integer 3x3 matrix defining a supercell in terms of the unit cell: 
+  The cell vectors are read in units of the lattice constant defined
+  above.  They are read as a matrix \texttt{CELL(ixyz,ivector)}, each
+  vector being one line.
 
-\begin{verbatim}
+  This defaults to a square cell with side-lengths equal to \fdf{LatticeConstant}.
+  \begin{fdfexample}
+    1.0  0.0  0.0
+    0.0  1.0  0.0
+    0.0  0.0  1.0
+  \end{fdfexample}
+
+  \noindent
+  If the \fdf{LatticeConstant} default is used, the default of
+  \fdf{LatticeVectors} is still diagonal but not necessarily cubic.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{SuperCell}[block]
+
+  Integer 3x3 matrix defining a supercell in terms of the unit cell.
+  Any values larger than $1$ will expand the unitcell (plus atoms)
+  along that lattice vector direction (if possible).
+  \begin{fdfexample}
      %block SuperCell
         M(1,1)  M(2,1)  M(3,1) 
         M(1,2)  M(2,2)  M(3,2) 
         M(1,3)  M(2,3)  M(3,3) 
      %endblock SuperCell
-\end{verbatim}
+  \end{fdfexample}
+  and the supercell is defined as
+  $\mathrm{SuperCell}(ix,i) = \sum_j \mathrm{CELL}(ix,j)*M(j,i)$.
+  Notice that the matrix indexes are inverted: each input line
+  specifies one supercell vector.
 
-and the supercell is defined as
-$SuperCell(ix,i) = \sum_j CELL(ix,j)*M(j,i)$.
-Notice that the matrix indexes are inverted: each input line 
-specifies one supercell vector.
+  \textit{Warning:} \fdf{SuperCell} is disregarded if the geometry is
+  read from the XV file, which can happen inadvertently.
 
-\textit{Warning:} \textbf{SuperCell} is disregarded if the geometry is read from
-the XV file, which can happen unadvertedly.
+  \textit{Use:} The atomic positions must be given only for the unit
+  cell, and they are 'cloned' automatically in the rest of the
+  supercell. The \fdf{NumberOfAtoms} given must also be that in a
+  single unit cell. However, all values in the output are given for
+  the entire supercell. In fact, \texttt{CELL} is immediately
+  redefined as the whole supercell and the program no longer knows the
+  existence of an underlying unit cell.  All other input (apart from
+  NumberOfAtoms and atomic positions), including
+  \fdf{kgridMonkhorstPack} must refer to the supercell (this is a
+  change over previous versions). Therefore, to avoid confusions, we
+  recommend to use \fdf{SuperCell} only to generate atomic positions,
+  and then to copy them from the output to a new input file with all
+  the atoms specified explicitly and with the supercell given as a
+  normal unit cell.
+  
+\end{fdfentry}
 
-\textit{Use:} The atomic positions must be given only for the unit cell,
-and they are 'cloned' automatically in the rest of the supercell.
-The \textbf{NumberOfAtoms} given must also be that in a single unit cell.
-However, all values in the output are given for the entire supercell. 
-In fact, CELL is inmediately redefined as the whole supercell and the 
-program no longer knows the existence of an underlying unit cell.
-All other input (apart from NumberOfAtoms and atomic positions), 
-including \textbf{kgridMonkhorstPack} must refer to the supercell 
-(this is a change over previous versions). Therefore, to avoid
-confusions, we recommend to use \textbf{SuperCell} only to
-generate atomic positions, and then to copy them from the output
-to a new input file with all the atoms specified explicitly and
-with the supercell given as a normal unit cell.
+\begin{fdfentry}{AtomicCoordinatesFormat}[string]<Bohr>
 
-\textit{Default value:} No supercell (supercell equal to unit cell).
+  Character string to specify the format of the atomic positions in
+  input. These can be expressed in four forms:
 
+  \begin{fdfoptions}
+    \option[Bohr|NotScaledCartesianBohr]%
+    \fdfindex*{AtomicCoordinatesFormat!Bohr}
+    \fdfindex*{AtomicCoordinatesFormat!NotScaledCartesianBohr} 
 
-\item[\textbf{AtomicCoordinatesFormat}] (\textit{string}):
-\index{AtomicCoordinatesFormat@\textbf{AtomicCoordinatesFormat}}
-Character string to specify the format of the atomic positions in
-input. These can be expressed in four forms:
-\begin{itemize}
-\item \texttt{Bohr} or \texttt{NotScaledCartesianBohr} (atomic positions
-are given directly in Bohr, in Cartesian coordinates)
-\item \texttt{Ang} or \texttt{NotScaledCartesianAng} (atomic positions
-are given directly in {\AA}ngstr\"om, in Cartesian coordinates)
-\item \texttt{ScaledCartesian} (atomic positions are given
-in Cartesian coordinates, in units of the lattice constant)
-\item \texttt{Fractional} or \texttt{ScaledByLatticeVectors} (atomic positions
-are given referred to the lattice vectors)
-\end{itemize}
+    atomic positions are given directly in Bohr, in Cartesian
+    coordinates
 
-\textit{Default value:} \texttt{NotScaledCartesianBohr}
+    \option[Ang|NotScaledCartesianAng]%
+    \fdfindex*{AtomicCoordinatesFormat!Ang}
+    \fdfindex*{AtomicCoordinatesFormat!NotScaledCartesianAng}
 
+    atomic positions are given directly in \AA ngstr\"om, in Cartesian
+    coordinates
 
-\item[\textbf{AtomCoorFormatOut}] (\textit{string}):
-\index{AtomCoorFormatOut@\textbf{AtomCoorFormatOut}}
-Character string to specify the format of the atomic positions in output.
-Same possibilities as for input (\textbf{AtomicCoordinatesFormat}).
+    \option[ScaledCartesian]%
+    \fdfindex*{AtomicCoordinatesFormat!ScaledCartesian}
 
-\textit{Default value:} value of \textbf{AtomicCoordinatesFormat}
+    atomic positions are given in Cartesian coordinates, in units of
+    the lattice constant
+
+    \option[Fractional|ScaledByLatticeVectors]%
+    \fdfindex*{AtomicCoordinatesFormat!Fractional}
+    \fdfindex*{AtomicCoordinatesFormat!ScaledCartesian}
+
+    atomic positions are given referred to the lattice vectors
+
+  \end{fdfoptions}
+  
+\end{fdfentry}
 
 
-\item[\textbf{AtomicCoordinatesOrigin}] (\textit{data block}):
-\index{AtomicCoordinatesOrigin@\textbf{AtomicCoordinatesOrigin}}
-Vector specifying a rigid shift to apply to the atomic coordinates,
-given in the same format and units as these. Notice that the atomic
-positions (shifted or not) need not be within the cell formed by
-\textbf{LatticeVectors}, since periodic boundary conditions are always
-assumed.
+\begin{fdfentry}{AtomCoorFormatOut}[string]<\fdfvalue{AtomicCoordinatesFormat}>
 
-\textit{Default value:}
-\begin{verbatim}
-  0.000   0.000   0.000
-\end{verbatim}
+  Character string to specify the format of the atomic positions in
+  output. 
 
-\item[\textbf{AtomicCoordinatesAndAtomicSpecies}] (\textit{data block}):
-\index{AtomicCoordinatesAndAtomicSpecies@\textbf{AtomicCoordinatesAndAtomicSpecies}}
-Block specifying the position and species of each atom.
-One line per atom, the reading is done this way:
-\begin{verbatim}
+  Same possibilities as for input \fdf{AtomicCoordinatesFormat}.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{AtomicCoordinatesOrigin}[block]
+
+  Vector specifying a rigid shift to apply to the atomic coordinates,
+  given in the same format and units as these. Notice that the atomic
+  positions (shifted or not) need not be within the cell formed by
+  \fdf{LatticeVectors}, since periodic boundary conditions are
+  always assumed.
+
+  This defaults to the origo:
+  \begin{fdfexample}
+    0.0   0.0   0.0
+  \end{fdfexample}
+  
+\end{fdfentry}
+
+\begin{fdfentry}{AtomicCoordinatesAndAtomicSpecies}[block]
+
+  Block specifying the position and species of each atom.  One line
+  per atom, the reading is done this way:
+  \begin{shellexample}
        From ia = 1 to natoms
             read: xa(ix,ia), isa(ia)
-\end{verbatim}
-where \texttt{xa(ix,ia)} is the \texttt{ix} coordinate of atom
-\texttt{iai} in the format (units) specified by
-\textbf{AtomCoordinatesFormat}, and \texttt{isa(ia)} is the species
-index of atom \texttt{ia}.
+  \end{shellexample}
+  where \shell{xa(ix,ia)} is the \shell{ix} coordinate of atom
+  \shell{iai} in the format (units) specified by
+  \fdf{AtomCoordinatesFormat}, and \shell{isa(ia)} is the species
+  index of atom \shell{ia}.
 
-\textit{Default:} There is no default. The positions must be introduced
-either using this block or the $Z$ matrix (see \textbf{Zmatrix}).
+  \note this block \emph{must} be present in the fdf file. If
+  \fdf{NumberOfAtoms} is not specified, \fdf{NumberOfAtoms} will be
+  defaulted to the number of atoms in this block.
 
-\end{description}
+  \note \fdf{Zmatrix} has precedence if specified.
+  
+\end{fdfentry}
+
+
 \subsubsection{Z-matrix format and constraints}
 \label{sec:Zmatrix}
 
@@ -2638,7 +2700,7 @@ within this format, and recompilation is needed for each
 new constraint.
 
 For any more involved set of constraints, a
-full \textbf{Zmatrix} formulation should be used - this
+full \fdf{Zmatrix} formulation should be used - this
 offers much more control, and may be specified fully at
 run time (thus not requiring recompilation) - but
 it is more work to generate the input files for this form.
