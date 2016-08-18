@@ -1,46 +1,28 @@
-Siesta Version: trunk-509
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from ../force_2.fdf
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: si2 Force constants
+reinit: -----------------------------------------------------------------------
+reinit: System Label: force_2
+reinit: -----------------------------------------------------------------------
+Siesta Version: trunk-554
 Architecture  : x86_64-linux-gcc
-Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
 PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
-Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
 
-* Running on 2 nodes in parallel
->> Start of run:   5-JUN-2016  11:57:44
-
-                           ***********************       
-                           *  WELCOME TO SIESTA  *       
-                           ***********************       
-
-reinit: Reading from standard input
-************************** Dump of input data file ****************************
-Systemlabel  force_2
-Systemname   si2 Force constants
-NumberOfSpecies 1
-%block chemicalspecieslabel
-1 14 Si
-%endblock chemicalspecieslabel
-PAO.BasisSize SZ
-MeshCutoff 130.0 Ry
-# In a real calculation, a high degree of self-consistency should be achieved
-#DM.MixingWeight  0.3
-#DM.NumberPulay    3
-#DM.Tolerance     1.0d-5
-# Here we use Harris since we are just interested in testing the displacement
-# logic
-HarrisFunctional T
-%include FC.fdf
-************************** End of input data file *****************************
-
-reinit: -----------------------------------------------------------------------
-reinit: System Name: si2 Force constants
-reinit: -----------------------------------------------------------------------
-reinit: System Label: force_2                                                     
-reinit: -----------------------------------------------------------------------
+* Running on 4 nodes in parallel
+>> Start of run:  18-AUG-2016   8:32:42
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:   14 Label: Si
@@ -200,7 +182,7 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Spin configuration                          = non-polarized
+redata: Spin configuration                          = none
 redata: Number of spin components                   = 1
 redata: Time-Reversal Symmetry                      = T
 redata: Spin-spiral                                 = F
@@ -212,6 +194,7 @@ redata: Mesh Cutoff                                 =   130.0000 Ry
 redata: Net charge of the system                    =     0.0000 |e|
 redata: Min. number of SCF Iter                     =        0
 redata: Max. number of SCF Iter                     =       50
+redata: SCF mix quantity                            = Hamiltonian
 redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
@@ -221,13 +204,14 @@ redata: New DM Mixing Weight                        =     0.2500
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks                  =     0.5000
-redata: DM Tolerance for SCF                        =     0.000100
-redata: Require H convergence for SCF               =   F
-redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
-redata: Require (free) Energy convergence in SCF    =   F
-redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
 redata: Require Harris convergence for SCF          =   F
-redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Harris energy tolerance for SCF             =     0.000100 eV
+redata: Require DM convergence for SCF              =   T
+redata: DM tolerance for SCF                        =     0.000100
+redata: Require H convergence for SCF               =   T
+redata: Hamiltonian tolerance for SCF               =     0.001000 eV
+redata: Require (free) Energy convergence for SCF   =   F
+redata: (free) Energy tolerance for SCF             =     0.000100 eV
 redata: Using Saved Data (generic)                  =   F
 redata: Use continuation files for DM               =   F
 redata: Neglect nonoverlap interactions             =   F
@@ -243,19 +227,39 @@ mix.SCF: Pulay mixing                            = Pulay
 mix.SCF:    Variant                              = stable
 mix.SCF:    History steps                        = 2
 mix.SCF:    Linear mixing weight                 =     0.250000
-mix.SCF:    Damping                              =     0.250000
+mix.SCF:    Mixing weight                        =     0.250000
 mix.SCF:    SVD condition                        = 0.1000E-07
 redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+
+%block SCF.Mixers
+  Pulay                   
+%endblock SCF.Mixers
+
+%block SCF.Mixer.Pulay
+  # Mixing method
+  method pulay
+  variant stable
+
+  # Mixing options
+  weight 0.2500
+  weight.linear 0.2500
+  history 2
+  restart 0
+  restart.save 1
+
+  # Continuation options
+%endblock SCF.Mixer.Pulay
+
 DM_history_depth set to zero for 'Harris' run
 Size of DM history Fstack: 0
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    1   5
+* ProcessorY, Blocksize:    2   2
 
 
-* Orbital distribution balance (max,min):     5     3
+* Orbital distribution balance (max,min):     2     2
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -283,38 +287,46 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 0
   <sparsity:sparsity for geom step 0
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:     1
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 0
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24886
-rdiag-debug: Node=0, lwork=       145>= lworkq=       145, liwork=        74>= liworkq=        74
-rdiag-debug: Node=1, lwork=       130>= lworkq=       113, liwork=        74>= liworkq=        74
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11951
+rdiag-debug: Node=0, lwork=        97>= lworkq=        97, liwork=        90>= liworkq=        74
+rdiag-debug: Node=1, lwork=        97>= lworkq=        97, liwork=        90>= liworkq=        74
+rdiag-debug: Node=3, lwork=        97>= lworkq=        97, liwork=        90>= liworkq=        74
+rdiag-debug: Node=2, lwork=        97>= lworkq=        97, liwork=        90>= liworkq=        74
 
 stepf: Fermi-Dirac step function
 
@@ -344,7 +356,7 @@ siesta: Eharris(eV) =    -194.939313
 
 siesta: Eharris(eV) =    -194.939313
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.020  10.00
+timer: Routine,Calls,Time,% =    IterSCF     1       0.024   8.00
 
 Using DM_out to compute the final energy and forces
 
@@ -352,7 +364,7 @@ siesta: E_KS - E_eggbox =      -194.6964
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot    0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.000000
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
@@ -380,36 +392,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 1
   <sparsity:sparsity for geom step 1
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:     2
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 1
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24883
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11963
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -449,36 +467,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 2
   <sparsity:sparsity for geom step 2
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:     3
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 2
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24871
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11937
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -518,36 +542,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 3
   <sparsity:sparsity for geom step 3
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:     4
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 3
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24883
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11939
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -587,36 +617,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 4
   <sparsity:sparsity for geom step 4
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:     5
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 4
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24871
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11967
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -656,36 +692,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 5
   <sparsity:sparsity for geom step 5
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:     6
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 5
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24845
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11939
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -725,36 +767,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 6
   <sparsity:sparsity for geom step 6
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:     7
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 6
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24908
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11967
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -794,36 +842,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 7
   <sparsity:sparsity for geom step 7
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:     8
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 7
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24862
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11944
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -863,36 +917,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 8
   <sparsity:sparsity for geom step 8
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:     9
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 8
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24899
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11968
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -932,36 +992,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 9
   <sparsity:sparsity for geom step 9
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:    10
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 9
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24862
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11954
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -1001,36 +1067,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 10
   <sparsity:sparsity for geom step 10
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:    11
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 10
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24899
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11958
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -1070,36 +1142,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 11
   <sparsity:sparsity for geom step 11
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:    12
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 11
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24883
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11954
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -1139,36 +1217,42 @@ outcell: Cell volume (Ang**3)        :     40.0258
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 12
   <sparsity:sparsity for geom step 12
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 7>
-  <dData1D:(new from dSpData1D) n=40, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 7>
+  <dData1D:(new from dSpData1D) n=16, refcount: 1>
 refcount: 1>
 New_DM. Step:    13
 Initializing Density Matrix...
 DM after filling with atomic data:
 <dSpData2D:(DM initialized from atoms)
   <sparsity:sparsity for geom step 12
-    nrows_g=8 nrows=5 sparsity=.6250 nnzs=40, refcount: 8>
-  <dData2D:(DMatomic) n=40 m=1, refcount: 1>
+    nrows_g=8 nrows=2 sparsity=.2500 nnzs=16, refcount: 8>
+  <dData2D:(DMatomic) n=16 m=1, refcount: 1>
 refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
 New grid distribution:   2
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:   12    1:    6
-           2       1:   12    1:   12    7:   12
+           1       1:   12    1:    6    1:    6
+           2       1:   12    1:    6    7:   12
+           3       1:   12    7:   12    1:    6
+           4       1:   12    7:   12    7:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    64 x    58 =      237568
-PhiOnMesh: Number of (b)points on node 0 =                  864
-PhiOnMesh: nlist on node 0 =                24877
+ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+PhiOnMesh: Number of (b)points on node 0 =                  432
+PhiOnMesh: nlist on node 0 =                11958
 
 siesta: Eharris(eV) =    -194.932994
 
@@ -1224,6 +1308,7 @@ siesta:  Ion-electron =    -120.258615
 siesta:       Ion-ion =    -145.138996
 siesta:       Ekinion =       0.000000
 siesta:         Total =    -194.689432
+siesta:         Fermi =      -2.005769
 
 siesta: Atomic forces (eV/Ang):
 siesta:      1   -0.000000   -0.000000    0.782343
@@ -1245,4 +1330,4 @@ siesta:           0.29943949          0.30836373  eV/Ang**3
 siesta:         479.76014453        494.05850669  kBar
 (Free)E+ p_basis*V_orbitals  =        -194.112732
 (Free)Eharris+ p_basis*V_orbitals  =        -194.356294
->> End of run:   5-JUN-2016  11:57:47
+>> End of run:  18-AUG-2016   8:32:46

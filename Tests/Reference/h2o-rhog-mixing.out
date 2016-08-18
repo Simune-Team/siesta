@@ -3,12 +3,12 @@
                            *  WELCOME TO SIESTA  *       
                            ***********************       
 
-reinit: Reading from ../h2o_findp_bug.fdf
+reinit: Reading from ../h2o-rhog-mixing.fdf
 
 reinit: -----------------------------------------------------------------------
-reinit: System Name: Water molecule
+reinit: System Name: Water molecule -- Charge mixing
 reinit: -----------------------------------------------------------------------
-reinit: System Label: h2o_findp_bug
+reinit: System Label: h2o-rhog-mixing
 reinit: -----------------------------------------------------------------------
 Siesta Version: trunk-554
 Architecture  : x86_64-linux-gcc
@@ -22,7 +22,7 @@ NetCDF-4 MPI-IO support
 METIS ordering support
 
 * Running on 4 nodes in parallel
->> Start of run:  18-AUG-2016   8:42:22
+>> Start of run:  18-AUG-2016   8:42:40
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:    8 Label: O
@@ -138,10 +138,10 @@ SPLIT: energy shift=  0.020000 Ry
    izeta = 2
                  rmatch =    2.510382
               splitnorm =    0.150000
-                 energy =   -1.471081
-                kinetic =    2.446738
-    potential(screened) =   -3.917818
-       potential(ionic) =  -12.476310
+                 energy =   -1.471299
+                kinetic =    2.446434
+    potential(screened) =   -3.917732
+       potential(ionic) =  -12.476133
 
 SPLIT: Orbitals with angular momentum L= 1
 
@@ -161,10 +161,10 @@ SPLIT: energy shift=  0.020000 Ry
    izeta = 2
                  rmatch =    2.541963
               splitnorm =    0.150000
-                 energy =   -0.367387
-                kinetic =    7.530138
-    potential(screened) =   -7.897525
-       potential(ionic) =  -16.611418
+                 energy =   -0.367441
+                kinetic =    7.530509
+    potential(screened) =   -7.897949
+       potential(ionic) =  -16.611953
 
 POLgen: Perturbative polarization orbital with L=  2
 
@@ -260,10 +260,10 @@ SPLIT: energy shift=  0.020000 Ry
    izeta = 2
                  rmatch =    3.854947
               splitnorm =    0.150000
-                 energy =   -0.335649
-                kinetic =    1.505971
-    potential(screened) =   -1.841620
-       potential(ionic) =   -2.413776
+                 energy =   -0.336153
+                kinetic =    1.505294
+    potential(screened) =   -1.841447
+       potential(ionic) =   -2.413582
 
 POLgen: Perturbative polarization orbital with L=  1
 
@@ -347,23 +347,23 @@ redata: Mesh Cutoff                                 =    50.0000 Ry
 redata: Net charge of the system                    =     0.0000 |e|
 redata: Min. number of SCF Iter                     =        0
 redata: Max. number of SCF Iter                     =       50
-redata: SCF mix quantity                            = Hamiltonian
+redata: SCF mix quantity                            = charge
 redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
 redata: Discard 1st Pulay DM after kick             =   F
-redata: New DM Mixing Weight                        =     0.2500
+redata: New DM Mixing Weight                        =     0.5000
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks                  =     0.5000
 redata: Require Harris convergence for SCF          =   F
 redata: Harris energy tolerance for SCF             =     0.000100 eV
 redata: Require DM convergence for SCF              =   T
-redata: DM tolerance for SCF                        =     0.000100
+redata: DM tolerance for SCF                        =     0.100000
 redata: Require H convergence for SCF               =   T
 redata: Hamiltonian tolerance for SCF               =     0.001000 eV
-redata: Require (free) Energy convergence for SCF   =   F
+redata: Require (free) Energy convergence for SCF   =   T
 redata: (free) Energy tolerance for SCF             =     0.000100 eV
 redata: Using Saved Data (generic)                  =   F
 redata: Use continuation files for DM               =   F
@@ -376,8 +376,8 @@ redata: Dynamics option                             = Single-point calculation
 mix.SCF: Pulay mixing                            = Pulay
 mix.SCF:    Variant                              = stable
 mix.SCF:    History steps                        = 2
-mix.SCF:    Linear mixing weight                 =     0.250000
-mix.SCF:    Mixing weight                        =     0.250000
+mix.SCF:    Linear mixing weight                 =     0.500000
+mix.SCF:    Mixing weight                        =     0.500000
 mix.SCF:    SVD condition                        = 0.1000E-07
 redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
@@ -392,8 +392,8 @@ redata: ***********************************************************************
   variant stable
 
   # Mixing options
-  weight 0.2500
-  weight.linear 0.2500
+  weight 0.5000
+  weight.linear 0.5000
   history 2
   restart 0
   restart.save 1
@@ -470,132 +470,266 @@ Setting up quadratic distribution...
 ExtMesh (bp) on 0 =    36 x    32 x    36 =       41472
 PhiOnMesh: Number of (b)points on node 0 =                  576
 PhiOnMesh: nlist on node 0 =                 3687
-rdiag-debug: Node=0, lwork=       473>= lworkq=       473, liwork=       195>= liworkq=       179
-rdiag-debug: Node=1, lwork=       449>= lworkq=       449, liwork=       195>= liworkq=       179
+Thomas-Fermi K2 (Ry):    0.675190
+L max (bohr):   13.769329
+q0_size = 2pi/L (Bohr^-1):    0.456317
+q0_size^2 (Ry) :    0.208226
+Kerker preconditioner q0^2 (Ry):    0.000000
+ Number of stars:         3263
+Number of G's in DIIS:        728
+Distrib of G's in DIIS (min, ave, max):        130       182       240
+
+Setting up DIIS for rho(G) -------
+Number of G's treated with DIIS in Node 0:    240
+Minimum and maximum g2 in DIIS:      0.208     8.955
+Metric preconditioner cutoff default (Ry):      7.395 n: 20
+Metric preconditioner cutoff (Ry):      7.395
+Max and min weights:    36.5155    1.8258
 rdiag-debug: Node=2, lwork=       449>= lworkq=       449, liwork=       195>= liworkq=       179
 rdiag-debug: Node=3, lwork=       427>= lworkq=       427, liwork=       195>= liworkq=       179
+rdiag-debug: Node=0, lwork=       473>= lworkq=       473, liwork=       195>= liworkq=       179
+rdiag-debug: Node=1, lwork=       449>= lworkq=       449, liwork=       195>= liworkq=       179
 
 stepf: Fermi-Dirac step function
+ Max |\Delta rho(G)|:     0.553515
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99735   0.00000       0.00005   0.00000    0.0000
+  0.2082     7.09623  -0.00000       0.22812  -0.00000    1.0000
+  0.3347     6.83140   1.01687       0.21684  -0.33172    1.0000
+  0.3499     7.13367   0.00000       0.03460  -0.00000    1.0000
+  0.5429     6.14953   0.73301       0.33894  -0.19687    1.0000
+  0.5581     6.36277  -0.00000       0.21595  -0.00000    1.0000
+  0.6846     6.13317   0.86508       0.20250  -0.25940    1.0000
+  0.8329     5.13483  -0.00000       0.55352   0.00000    1.0000
+  0.8928     5.54475   0.62654       0.29949  -0.15275    1.0000
+  1.1676     4.62331   0.18382       0.49421   0.01332    1.0000
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -86.532532
+siesta: Ebs     =      -122.646900
 siesta: Eions   =       815.854478
 siesta: Ena     =       175.154321
-siesta: Ekin    =       370.742505
-siesta: Enl     =       -67.178195
+siesta: Ekin    =       370.751244
+siesta: Enl     =       -67.181676
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =       -13.601001
-siesta: DUscf   =         1.705393
+siesta: DEna    =       -13.606308
+siesta: DUscf   =         1.705533
 siesta: DUext   =         0.000000
-siesta: Exc     =      -116.211150
+siesta: Exc     =      -116.213094
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -467.641468
-siesta: Etot    =      -465.242606
-siesta: FreeEng =      -465.242606
+siesta: Eharris =         0.000000
+siesta: Etot    =      -465.244457
+siesta: FreeEng =      -465.244457
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
-   scf:    1     -467.641468     -465.242606     -465.242606  1.438276 -4.247520  6.303289
-timer: Routine,Calls,Time,% =    IterSCF     1       0.024   1.40
-   scf:    2     -466.123035     -465.762021     -465.762021  0.046595 -3.197626  2.535562
-   scf:    3     -465.847875     -465.834620     -465.834620  0.025049 -2.444319  0.346599
-   scf:    4     -465.839659     -465.837287     -465.837287  0.010778 -2.365449  0.255397
-   scf:    5     -465.839251     -465.838676     -465.838676  0.023611 -2.146823  0.044611
-   scf:    6     -465.838885     -465.838793     -465.838793  0.001571 -2.144056  0.027771
-   scf:    7     -465.838847     -465.838823     -465.838823  0.000882 -2.144296  0.014701
-   scf:    8     -465.838836     -465.838830     -465.838830  0.000436 -2.146427  0.010107
-   scf:    9     -465.838833     -465.838832     -465.838832  0.000478 -2.150515  0.003366
-   scf:   10     -465.838832     -465.838832     -465.838832  0.000046 -2.151961  0.001953
-   scf:   11     -465.838832     -465.838832     -465.838832  0.000014 -2.152979  0.001334
-   scf:   12     -465.838832     -465.838832     -465.838832  0.000015 -2.153167  0.000757
+   scf:    1        0.000000     -465.244457     -465.244457  1.438728 -4.254018 32.912074
+timer: Routine,Calls,Time,% =    IterSCF     1       0.060   3.62
+ Max |\Delta rho(G)|:     0.601170
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99740   0.00000       0.00055   0.00000    0.0000
+  0.2082     7.32435  -0.00000      -0.14664   0.00000    1.0000
+  0.3347     7.04824   0.68516      -0.20261   0.33099    1.0000
+  0.3499     7.16827  -0.00000      -0.11814   0.00000    1.0000
+  0.5429     6.48847   0.53615      -0.29526   0.24828    1.0000
+  0.5581     6.57872  -0.00000      -0.23417   0.00000    1.0000
+  0.6846     6.33567   0.60568      -0.27699   0.27297    1.0000
+  0.8329     5.68834   0.00000      -0.43303  -0.00000    1.0000
+  0.8928     5.84424   0.47379      -0.34852   0.20413    1.0000
+  1.1676     5.11752   0.19714      -0.47048   0.07763    1.0000
+   scf:    2        0.000000     -463.922277     -463.922277  0.175611 -0.152933  6.304090
+ Max |\Delta rho(G)|:     0.236366
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99767   0.00000      -0.00023   0.00000    0.0000
+  0.2082     7.25102  -0.00000       0.05647  -0.00000    1.0000
+  0.3347     6.94694   0.85065       0.08036  -0.11812    1.0000
+  0.3499     7.10920  -0.00000       0.04817   0.00000    1.0000
+  0.5429     6.34084   0.66029       0.11612  -0.08640    1.0000
+  0.5581     6.46163  -0.00000       0.09289   0.00000    1.0000
+  0.6846     6.19718   0.74216       0.11136  -0.09729    1.0000
+  0.8329     5.47183   0.00000       0.16812   0.00000    1.0000
+  0.8928     5.66998   0.57586       0.13897  -0.07076    1.0000
+  1.1676     4.88228   0.23596       0.18473  -0.02052    1.0000
+   scf:    3        0.000000     -465.541502     -465.541502  0.175032 -3.072266  4.756217
+ Max |\Delta rho(G)|:     0.011249
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99755   0.00000       0.00003   0.00000    0.0000
+  0.2082     7.27116  -0.00000       0.00165  -0.00000    1.0000
+  0.3347     6.97559   0.80854       0.00431  -0.00525    1.0000
+  0.3499     7.12637  -0.00000       0.00181   0.00000    1.0000
+  0.5429     6.38224   0.62948       0.00452  -0.00321    1.0000
+  0.5581     6.49475  -0.00000       0.00289   0.00000    1.0000
+  0.6846     6.23688   0.70747       0.00496  -0.00383    1.0000
+  0.8329     5.53177   0.00000       0.00427   0.00000    1.0000
+  0.8928     5.71953   0.55063       0.00492  -0.00224    1.0000
+  1.1676     4.94814   0.22864       0.00452   0.00060    1.0000
+   scf:    4        0.000000     -465.840578     -465.840578  0.054615 -2.193686  1.373766
+ Max |\Delta rho(G)|:     0.006426
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99757   0.00000       0.00002   0.00000    0.0000
+  0.2082     7.27186  -0.00000       0.00028  -0.00000    1.0000
+  0.3347     6.97763   0.80612       0.00141  -0.00163    1.0000
+  0.3499     7.12718  -0.00000       0.00055   0.00000    1.0000
+  0.5429     6.38428   0.62804       0.00120  -0.00098    1.0000
+  0.5581     6.49600  -0.00000       0.00066   0.00000    1.0000
+  0.6846     6.23917   0.70574       0.00154  -0.00113    1.0000
+  0.8329     5.53353   0.00000       0.00060   0.00000    1.0000
+  0.8928     5.72171   0.54966       0.00129  -0.00064    1.0000
+  1.1676     4.94997   0.22903       0.00067   0.00021    1.0000
+   scf:    5        0.000000     -465.840669     -465.840669  0.000956 -2.167318  0.030520
+ Max |\Delta rho(G)|:     0.003310
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99758   0.00000       0.00001   0.00000    0.0000
+  0.2082     7.27207  -0.00000      -0.00007  -0.00000    1.0000
+  0.3347     6.97876   0.80482       0.00010  -0.00008    1.0000
+  0.3499     7.12762  -0.00000       0.00006  -0.00000    1.0000
+  0.5429     6.38523   0.62727       0.00000  -0.00007    1.0000
+  0.5581     6.49651  -0.00000      -0.00002  -0.00000    1.0000
+  0.6846     6.24040   0.70484       0.00011  -0.00005    1.0000
+  0.8329     5.53395   0.00000      -0.00020  -0.00000    1.0000
+  0.8928     5.72272   0.54916       0.00002  -0.00004    1.0000
+  1.1676     4.95045   0.22922      -0.00017  -0.00004    1.0000
+   scf:    6        0.000000     -465.840671     -465.840671  0.000667 -2.158222  0.009081
+ Max |\Delta rho(G)|:     0.001519
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99758   0.00000       0.00000   0.00000    0.0000
+  0.2082     7.27204  -0.00000       0.00001   0.00000    1.0000
+  0.3347     6.97885   0.80474       0.00008  -0.00006    1.0000
+  0.3499     7.12767  -0.00000       0.00007  -0.00000    1.0000
+  0.5429     6.38526   0.62721       0.00009  -0.00005    1.0000
+  0.5581     6.49652  -0.00000       0.00008  -0.00000    1.0000
+  0.6846     6.24050   0.70479       0.00013  -0.00005    1.0000
+  0.8329     5.53386   0.00000       0.00006  -0.00000    1.0000
+  0.8928     5.72277   0.54912       0.00013  -0.00004    1.0000
+  1.1676     4.95037   0.22919       0.00011  -0.00003    1.0000
+   scf:    7        0.000000     -465.840672     -465.840672  0.000501 -2.159207  0.003113
+ Max |\Delta rho(G)|:     0.000727
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99759   0.00000       0.00000   0.00000    0.0000
+  0.2082     7.27204  -0.00000       0.00001  -0.00000    1.0000
+  0.3347     6.97886   0.80473       0.00008  -0.00004    1.0000
+  0.3499     7.12768  -0.00000       0.00007  -0.00000    1.0000
+  0.5429     6.38527   0.62721       0.00008  -0.00004    1.0000
+  0.5581     6.49653  -0.00000       0.00008  -0.00000    1.0000
+  0.6846     6.24052   0.70479       0.00013  -0.00004    1.0000
+  0.8329     5.53386   0.00000       0.00006   0.00000    1.0000
+  0.8928     5.72279   0.54912       0.00013  -0.00003    1.0000
+  1.1676     4.95039   0.22919       0.00011  -0.00002    1.0000
+   scf:    8        0.000000     -465.840672     -465.840672  0.000221 -2.159370  0.002221
+ Max |\Delta rho(G)|:     0.000407
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99759   0.00000       0.00000   0.00000    0.0000
+  0.2082     7.27204  -0.00000      -0.00003   0.00000    1.0000
+  0.3347     6.97885   0.80478       0.00004  -0.00002    1.0000
+  0.3499     7.12769  -0.00000       0.00002  -0.00000    1.0000
+  0.5429     6.38527   0.62724       0.00000  -0.00001    1.0000
+  0.5581     6.49655  -0.00000      -0.00000  -0.00000    1.0000
+  0.6846     6.24053   0.70482       0.00005  -0.00001    1.0000
+  0.8329     5.53389   0.00000      -0.00007  -0.00000    1.0000
+  0.8928     5.72281   0.54913       0.00002  -0.00001    1.0000
+  1.1676     4.95044   0.22919      -0.00005  -0.00001    1.0000
+   scf:    9        0.000000     -465.840672     -465.840672  0.000057 -2.158652  0.001250
+ Max |\Delta rho(G)|:     0.000219
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99759   0.00000       0.00000   0.00000    0.0000
+  0.2082     7.27203  -0.00000      -0.00003   0.00000    1.0000
+  0.3347     6.97887   0.80478      -0.00001   0.00001    1.0000
+  0.3499     7.12772  -0.00000      -0.00001   0.00000    1.0000
+  0.5429     6.38528   0.62723      -0.00003   0.00001    1.0000
+  0.5581     6.49656  -0.00000      -0.00003  -0.00000    1.0000
+  0.6846     6.24058   0.70482      -0.00002   0.00002    1.0000
+  0.8329     5.53386   0.00000      -0.00009  -0.00000    1.0000
+  0.8928     5.72284   0.54913      -0.00004   0.00001    1.0000
+  1.1676     4.95043   0.22918      -0.00009  -0.00000    1.0000
+   scf:   10        0.000000     -465.840672     -465.840672  0.000033 -2.158272  0.000526
 
-SCF Convergence by DM+H criterion
-max |DM_out - DM_in|   :     0.0000151594
-max |H_out - H_in| (eV):     0.0007572043
-SCF cycle converged after 12 iterations
+SCF Convergence by FreeE+DM+H criterion
+|FreeE_i-FreeE_(i-1)| (eV) <     0.00010000
+max |DM_i - DM_(i-1)|  :     0.0000325180
+max |H_out - H_in| (eV):     0.0005255327
+SCF cycle converged after 10 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: E_KS(eV) =             -465.8388
+siesta: E_KS(eV) =             -465.8407
 
-siesta: E_KS - E_eggbox =      -465.8388
+siesta: E_KS - E_eggbox =      -465.8407
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.054733   -0.000000
+   Tot   -0.000000    0.055956   -0.000000
 ----------------------------------------
-   Max    0.719902
-   Res    0.401354    sqrt( Sum f_i^2 / 3N )
+   Max    0.717325
+   Res    0.399209    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.719902    constrained
+   Max    0.717325    constrained
 
-Stress-tensor-Voigt (kbar):      -20.23       -3.70       22.43       -0.00        0.00        0.00
-(Free)E + p*V (eV/cell)     -465.7654
-Target enthalpy (eV/cell)     -465.8388
+Stress-tensor-Voigt (kbar):      -20.20       -3.67       22.43        0.00        0.00       -0.00
+(Free)E + p*V (eV/cell)     -465.7700
+Target enthalpy (eV/cell)     -465.8407
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -104.745683
+siesta: Ebs     =      -104.738358
 siesta: Eions   =       815.854478
 siesta: Ena     =       175.154321
-siesta: Ekin    =       350.783032
-siesta: Enl     =       -61.958582
+siesta: Ekin    =       350.782749
+siesta: Enl     =       -61.959760
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =        -1.777600
-siesta: DUscf   =         0.727300
+siesta: DEna    =        -1.777331
+siesta: DUscf   =         0.727276
 siesta: DUext   =         0.000000
-siesta: Exc     =      -112.912824
+siesta: Exc     =      -112.913449
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -465.838832
-siesta: Etot    =      -465.838832
-siesta: FreeEng =      -465.838832
+siesta: Eharris =         0.000000
+siesta: Etot    =      -465.840672
+siesta: FreeEng =      -465.840672
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -104.745683
-siesta:       Kinetic =     350.783032
-siesta:       Hartree =     382.616224
+siesta:  Band Struct. =    -104.738358
+siesta:       Kinetic =     350.782749
+siesta:       Hartree =     382.616500
 siesta:       Eldau   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -112.912824
-siesta:  Ion-electron =   -1072.819396
+siesta:   Exch.-corr. =    -112.913449
+siesta:  Ion-electron =   -1072.820605
 siesta:       Ion-ion =     -13.505868
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -465.838832
-siesta:         Fermi =      -2.153167
+siesta:         Total =    -465.840672
+siesta:         Fermi =      -2.158272
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1   -0.000000   -0.506002   -0.000000
-siesta:      2    0.719902    0.280367   -0.000000
-siesta:      3   -0.719902    0.280367   -0.000000
+siesta:      1   -0.000000   -0.500423   -0.000000
+siesta:      2    0.717325    0.278190   -0.000000
+siesta:      3   -0.717325    0.278190   -0.000000
 siesta: ----------------------------------------
-siesta:    Tot   -0.000000    0.054733   -0.000000
+siesta:    Tot   -0.000000    0.055956   -0.000000
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.012624    0.000000    0.000000
-siesta:    -0.000000   -0.002312   -0.000000
-siesta:     0.000000    0.000000    0.014000
+siesta:    -0.012607    0.000000    0.000000
+siesta:     0.000000   -0.002292   -0.000000
+siesta:    -0.000000    0.000000    0.013998
 
 siesta: Cell volume =        235.378012 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00000340         -0.00001815  Ry/Bohr**3
-siesta:           0.00031192         -0.00166666  eV/Ang**3
-siesta:           0.49975346         -2.67030996  kBar
-(Free)E+ p_basis*V_orbitals  =        -465.253665
-(Free)Eharris+ p_basis*V_orbitals  =        -465.253665
+siesta:           0.00000327         -0.00001817  Ry/Bohr**3
+siesta:           0.00030025         -0.00166851  eV/Ang**3
+siesta:           0.48105074         -2.67328252  kBar
+(Free)E+ p_basis*V_orbitals  =        -465.255505
+(Free)Eharris+ p_basis*V_orbitals  =           0.585167
 
-siesta: Electric dipole (a.u.)  =    0.000000    0.558129    0.000000
-siesta: Electric dipole (Debye) =    0.000000    1.418624    0.000000
+siesta: Electric dipole (a.u.)  =    0.000000    0.558168    0.000000
+siesta: Electric dipole (Debye) =    0.000000    1.418723    0.000000
 
-dhscf: Vacuum level (max, mean) =    0.636909   -0.068227 eV
->> End of run:  18-AUG-2016   8:42:23
+dhscf: Vacuum level (max, mean) =    0.636881   -0.068246 eV
+>> End of run:  18-AUG-2016   8:42:42
