@@ -263,19 +263,7 @@ C     Initialise MPI and set processor number
       nullify(xijo)
 
 !     Initialize some variables
-      DUext   = 0.0_dp
-      Eharrs  = 0.0_dp
-      Eions   = 0.0_dp
-      Ekinion = 0.0_dp
-      Emad    = 0.0_dp
-      Emeta   = 0.0_dp
-      Emm     = 0.0_dp
-      Entropy = 0.0_dp
-      FreeE   = 0.0_dp
-      Ef      = 0.0_dp
-      Eldau   = 0.0_dp
-      DEldau  = 0.0_dp
-
+      call init_Energies()
       
 !
 !     Set object debugging level

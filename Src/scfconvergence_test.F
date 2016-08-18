@@ -36,12 +36,8 @@
       type(converger_t), intent(inout)  :: conv_harris, conv_freeE
       logical, intent(out)              :: converged
 
-
-      logical :: default_DM_convergence
-      logical :: default_NoEnergy_convergence
-      logical :: is_Harris_conv, is_FreeEnergy_conv
-      logical :: is_H_conv, is_DM_conv, is_Delta_conv
       logical :: is_LDAU_conv
+      character(len=64) :: conv_text
 
 !------------------------------------------------------------------- BEGIN
 
@@ -70,61 +66,54 @@
         call wallclock("-------------- end of scf step")
       endif
 
-      is_DM_conv = (dDmax.lt.dDtol)
-      is_H_conv  = (dHmax.lt.dHtol)
-      is_Harris_conv = is_converged(conv_harris)
-      is_FreeEnergy_conv = is_converged(conv_freeE)
       is_LDAU_conv = switch_ldau .and.
      &     LDAU_dPop < dTol_ldaupop
 
-      default_DM_convergence =
-     $      (.not. require_hamiltonian_convergence)
-      default_NoEnergy_convergence =
-     $      (.not. require_energy_convergence)
-
-      is_Delta_conv = ((require_hamiltonian_convergence
-     $                  .and. is_H_conv) .or.
-     $                 (default_DM_convergence
-     $                  .and. is_DM_conv) ) 
-
-      converged = ( (require_harris_convergence
-     $               .and. is_Harris_conv) .or.
-     $              (require_energy_convergence
-     $               .and. is_FreeEnergy_conv 
-     $               .and. is_Delta_conv)  .or.
-     $              (default_NoEnergy_convergence
-     $               .and. is_Delta_conv)      )
-
-      if (converged .and. IOnode) then
-
-         if (require_harris_convergence) then
-            write(6,"(/,a)") "SCF Convergence by Harris criterion"
-            write(6,"(a,f14.8)") "|EH_i-EH_(i-1)| (eV) < ",
-     $           tolerance(conv_harris)/eV
-         endif
+      ! Assume initial convergence
+      ! Since 4.1 this logic has changed to be fully determined
+      ! by the user.
+      ! The defaults are however as in pre 4.1 versions so there
+      ! should be no surprises.
       
-         if (require_hamiltonian_convergence) then
-            if (require_energy_convergence) then
-              write(6,"(/,a)") "SCF Convergence by FreeE+dHmax criteria"
-              write(6,"(a,f14.8)") "|FreeE_i-FreeE_(i-1)| (eV) < ",
-     $              tolerance(conv_freeE)/eV
-            else
-              write(6,"(/,a)") "SCF Convergence by dHmax criterion"
-            endif
-         endif
-            
-         if (default_DM_convergence) then
-            if (require_energy_convergence) then
-              write(6,"(/,a)") "SCF Convergence by FreeE+dDmax criteria"
-              write(6,"(a,f14.8)") "|FreeE_i-FreeE_(i-1)| (eV) < ",
-     $                             tolerance(conv_freeE)/eV
-            else 
-              write(6,"(/,a)") "SCF Convergence by dDmax criteria"
-            endif
-         endif
+      converged = .true.
+      conv_text = ' '
+      if ( converge_Eharr ) then
+         conv_text = trim(conv_text)//'+Harris'
+         converged = converged .and. is_converged(conv_harris)
+      end if
+      if ( converge_FreeE ) then
+         conv_text = trim(conv_text)//'+FreeE'
+         converged = converged .and. is_converged(conv_FreeE)
+      end if
+      if ( converge_DM ) then
+         conv_text = trim(conv_text)//'+DM'
+         converged = converged .and. dDmax < dDtol
+      end if
+      if ( converge_H ) then
+         conv_text = trim(conv_text)//'+H'
+         converged = converged .and. dHmax < dHtol
+      end if
+      
+      if (converged .and. IOnode) then
+         
+         ! Remove the initial '+'
+         conv_text = conv_text(2:)
 
-         ! No matter what we print out the convergence finalization step
-         if (mix_charge) then
+         write(6,"(/,3a)") "SCF Convergence by ",trim(conv_text),
+     &        " criterion"
+         
+         if ( converge_Eharr ) then
+            write(6,"(a,f14.8)") "|EH_i-EH_(i-1)| (eV) < ",
+     &           tolerance(conv_harris)/eV
+         end if
+
+         if ( converge_FreeE ) then
+            write(6,"(a,f14.8)") "|FreeE_i-FreeE_(i-1)| (eV) < ",
+     &           tolerance(conv_freeE)/eV
+         end if
+
+         ! No matter what we print out the differences of DM and H
+         if ( mix_charge ) then
             write(6,"(a,f16.10)") "max |DM_i - DM_(i-1)|  : ", dDmax
          else
             write(6,"(a,f16.10)") "max |DM_out - DM_in|   : ", dDmax
@@ -136,13 +125,13 @@
 	 if ( is_LDAU_conv ) then
 	    ! Inform of LDA+U population convergence
             write(6,"(a)") 
-     $           "LDA+U population converged by dTol_pop criteria:"
+     &           "LDA+U population converged by dTol_pop criteria:"
             write(6,"(a,f16.10)") 
-     $           "max |pop(LDA+U)_i - pop(LDA+U)_j|: ", LDAU_dPop
+     &           "max |pop(LDA+U)_i - pop(LDA+U)_j|: ", LDAU_dPop
          end if
          
          write(6,"(a,i0,a)") "SCF cycle converged after ",
-     $           iscf," iterations"
+     &           iscf," iterations"
 
          call pxfflush(6)
 

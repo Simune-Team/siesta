@@ -128,9 +128,14 @@ MODULE siesta_options
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
-  logical :: require_energy_convergence ! free Energy conv. to finish SCF iteration?
-  logical :: require_harris_convergence ! to finish SCF iteration?
-  logical :: require_hamiltonian_convergence ! to finish SCF iteration?
+  logical :: converge_FreeE    ! free Energy conv. to finish SCF iteration?
+  real(dp) :: tolerance_FreeE  ! Free-energy tolerance
+  logical :: converge_Eharr    ! to finish SCF iteration?
+  real(dp) :: tolerance_Eharr  ! Harris tolerance
+  logical :: converge_DM       ! to finish SCF iteration?
+  real(dp) :: dDtol            ! Tolerance in change of DM elements to finish SCF iteration
+  logical :: converge_H        ! to finish SCF iteration?
+  real(dp) :: dHtol            ! Tolerance in change of H elements to finish SCF iteration
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
   logical :: fire_optim    ! Use FIRE method to optimize geometry?
   logical :: struct_only   ! Output initial structure only?
@@ -174,13 +179,9 @@ MODULE siesta_options
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
   real(dp) :: charnet       ! Net electric charge
-  real(dp) :: Energy_tolerance   ! Free-energy tolerance
-  real(dp) :: Harris_tolerance
   real(dp) :: rijmin        ! Min. permited interatomic distance without warning
   real(dp) :: dm_normalization_tol    ! Threshold for DM normalization mismatch error
   logical  :: normalize_dm_during_scf ! Whether we normalize the DM 
-  real(dp) :: dDtol         ! Tolerance in change of DM elements to finish SCF iteration
-  real(dp) :: dHtol         ! Tolerance in change of H elements to finish SCF iteration
   real(dp) :: dt            ! Time step in dynamics
   real(dp) :: dx            ! Atomic displacement used to calculate Hessian matrix
   real(dp) :: dxmax         ! Max. atomic displacement allowed during geom. relaxation

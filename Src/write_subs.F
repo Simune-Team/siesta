@@ -496,11 +496,11 @@
      .    'siesta: ',        'Total =', (Etot+Ekinion)/eV
         if ( fixspin ) then
            write(6,'(a,a15,f15.6)')
-     .          'siesta: ', 'E_F_up =', Efs(1)/eV,
-     .          'siesta: ', 'E_F_dn =', Efs(2)/eV
+     .          'siesta: ', 'Fermi_up =', Efs(1)/eV,
+     .          'siesta: ', 'Fermi_dn =', Efs(2)/eV
         else
            write(6,'(a,a15,f15.6)')
-     .          'siesta: ', 'E_F =', Ef/eV
+     .          'siesta: ', 'Fermi =', Ef/eV
         end if
         if (cml_p) then
           call cmlStartPropertyList(xf=mainXML, title='Final Energy')

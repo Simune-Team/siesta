@@ -29,8 +29,6 @@
 
       ! Used to hold the "input" H when mixing the Hamiltonian
       real(dp), dimension(:,:), public, pointer :: Hold => null()   
-      ! Used to hold the previous iteration's H to estimate Ef shift
-      real(dp), dimension(:,:), public, pointer :: Hprev => null()   
 
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this
@@ -75,16 +73,13 @@
 
       call delete( DM_history )
       
-
-      call de_alloc( Hprev,       'Hprev',       'sparseMat' )
-      call de_alloc( Dold, 'Dold', 'sparseMat' )
-
       ! Using MixH is bad as several utilities
       ! are not relying on FoX, better to leave out
       ! Note that it is nullified from start, 
       ! and hence de_alloc returns immediately
       
       call de_alloc( Hold, 'Hold', 'sparseMat' )
+      call de_alloc( Dold, 'Dold', 'sparseMat' )
 
       end subroutine resetSparseMatrices
 

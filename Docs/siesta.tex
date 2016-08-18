@@ -3518,7 +3518,7 @@ The current version introduces several changes:
   ``right'' on the basis of DM(out), exhibit somehow better convergence
   as a function of the scf step. In order to gain some more data and
   heuristics on this we have implemented a force-monitoring option,
-  activated by setting to \texttt{.true.} the variable \textbf{MonitorForcesInSCF}. The program will then print the maximum
+  activated by setting to \texttt{.true.} the variable \fdf{SCF.MonitorForces}. The program will then print the maximum
   absolute value of the change in forces from one step to the
   next. Other statistics could be implemented.
 
@@ -4906,104 +4906,127 @@ option only works with \tsiesta.
 \subsubsection{Convergence criteria}
 \index{SCF convergence criteria}
 
-\textbf{NOTE}: Some of the options below have a \texttt{DM} prefix. This is
-for historical reasons, as the density-matrix convergence was
-typically the only criterion for termination of the scf cycle.
+\textbf{NOTE}: The older options with a \texttt{DM} prefix is still
+working for backwards compatibility. However, these flags has
+precedence.
 
-\begin{description}
-\item[\textbf{DM.Tolerance}] (\textit{real}):
-\index{DM.Tolerance@\textbf{DM.Tolerance}}
-Tolerance of Density Matrix.
-When the maximum difference between the output and the
-input on each element of the DM
-in a SCF cycle is smaller than DM.Tolerance,
-the selfconsistency has been achieved.
+Note that all convergence criteria are additive and may thus be used
+simultaneously for complete control.
 
-\textit{Default value:} {$10^{-4}$}
+\begin{fdflogicalT}{SCF.Converge!DM}
+  \index{SCF!mixing!Density matrix convergence}
 
+  Logical variable to use the density matrix elements as monitor
+  of self-consistency.
+  
+\end{fdflogicalT}
 
+\begin{fdfentry}{SCF.Tolerance!DM}[real]<$10^{-4}$>
+  \fdfindex*{DM.Tolerance}
 
-\item[\fdf{DM.Normalization.Tolerance}] (\textit{real}):
-\index{DM.Normalization.Tolerance@\fdf*{DM.Normalization.Tolerance}}
-Tolerance for unnormalized density matrices (typically the product of
-solvers such as PEXSI which have a built-in electron-count tolerance).
-If this tolerance is exceeded, the program stops. It is understood as a
-fractional tolerance. For example, the default will allow an excess or
-shorfall of 0.01 electrons in a 1000-electron system.
-
-\textit{Default value:} $10^{-5}$
+  Tolerance of Density Matrix.
+  %
+  When the maximum difference between the output and the input on each
+  element of the DM in a SCF cycle is smaller than
+  \fdf{SCF.Tolerance!DM}, the self-consistency has been achieved.
 
 
+  \note \fdf{DM.Tolerance} is the actual default for this flag.
 
-\item[\fdf{DM.Require.Energy.Convergence}] (\textit{logical}):
-  \index{SCF!mixing!energy convergence}
-  \index{DM.Require.Energy.Convergence@\textbf{DM.Require.Energy.Convergence}} Logical variable to request an
-  additional requirement for self-consistency: it is considered
-  achieved when the change in the total (free) energy between cycles
-  of the SCF procedure is below \textbf{DM.EnergyTolerance} and the
-  density matrix change criterion is also satisfied.
+\end{fdfentry}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdfentry}{DM.Normalization.Tolerance}[real]<$10^{-5}$>
 
-\item[\textbf{DM.Energy.Tolerance}] (\textit{real energy}):
-  \index{DM.EnergyTolerance@\textbf{DM.EnergyTolerance}} If \fdf{DM.Require.Energy.Convergence} is \texttt{.true.}, then
-  self-consistency is achieved when the change in the total (free)
-  energy between cycles of the SCF procedure is below this value and
-  the density matrix change criterion is also satisfied.
+  Tolerance for unnormalized density matrices (typically the product
+  of solvers such as PEXSI which have a built-in electron-count
+  tolerance). If this tolerance is exceeded, the program stops. It is
+  understood as a fractional tolerance. For example, the default will
+  allow an excess or shorfall of 0.01 electrons in a 1000-electron
+  system.
 
-\textit{Default value:} {$10^{-4}$ eV}
-
-\item[\textbf{DM.Require.Harris.Convergence}] (\textit{logical}):
-\index{SCF!mixing!harris energy convergence}
-\index{DM.Require.Harris.Convergence@\textbf{DM.Require.Harris.Convergence}}
-Logical variable to use the Harris energy as monitor of
-self-consistency: this is considered achieved when the change in the Harris energy between cycles
-of the SCF procedure is below \textbf{DM.Harris.Tolerance}. No density
-matrix change criterion is used.
-This is useful if only energies are needed, as the Harris energy tends
-to converge faster than the Kohn-Sham energy.
-The user is responsible for using the correct energies in further
-processing, e.g., the Harris energy if the Harris criterion is used.
-
-To help in basis-optimization tasks, a new file BASIS\_HARRIS\_ENTHALPY
-is provided, holding the same information as BASIS\_ENTHALPY but using
-the Harris energy instead of the Kohn-Sham energy.
-
-\textit{Default value:} \texttt{.false.}
+\end{fdfentry}
 
 
-\item[\textbf{DM.Harris.Tolerance}] (\textit{real energy}):
-\index{DM.Harris.Tolerance@\textbf{DM.Harris.Tolerance}}
-If \textbf{DM.Require.Harris.Convergence} is \texttt{.true.}, then
-self-consistency is achieved when the change in the Harris energy between cycles
-of the SCF procedure is below this value.
-This is useful if only energies are needed, as the Harris energy tends
-to converge faster than the Kohn-Sham energy.
 
-\textit{Default value:} {$10^{-4}$ eV}
-
-\item[\textbf{SCF.Require.Hamiltonian.Convergence}] (\textit{logical}):
+\begin{fdflogicalT}{SCF.Converge!H}
   \index{SCF!mixing!Hamiltonian convergence}
-  \index{DM.Require.Hamiltonian.Convergence@\textbf{DM.Require.Hamiltonian.Convergence}} Logical variable to use the
-  Hamiltonian matrix elements as monitor of self-consistency: this is
-  considered achieved when the maximum absolute change (dHmax) in the
-  H matrix elements is below \textbf{SCF.H.Tolerance}.  The actual
-  meaning of dHmax depends on whether DM or H mixing is in effect: if
-  mixing the DM, dHmax refers to the change in H(in) with respect to
-  the previous step; if mixing H, dHmax refers to H(out)-H(in) in the
-  previous(?) step. No density matrix change criterion is used.
 
-\textit{Default value:} \texttt{.false.}
+  Logical variable to use the Hamiltonian matrix elements as monitor
+  of self-consistency: this is considered achieved when the maximum
+  absolute change (dHmax) in the H matrix elements is below
+  \fdf{SCF.Tolerance!H}. The actual meaning of dHmax depends on
+  whether DM or H mixing is in effect: if mixing the DM, dHmax refers
+  to the change in H(in) with respect to the previous step; if mixing
+  H, dHmax refers to H(out)-H(in) in the previous(?) step. 
+  
+\end{fdflogicalT}
+
+\begin{fdfentry}{SCF.Tolerance!H}[energy]<$10^{-3}\,\mathrm{eV}$>
+
+  If \fdf{SCF.Converge!H} is \fdftrue, then self-consistency is
+  achieved when the maximum absolute change in the Hamiltonian matrix
+  elements is below this value.
+  
+\end{fdfentry}
 
 
-\item[\textbf{SCF.H.Tolerance}] (\textit{real energy}):
-  \index{SCF.H.Tolerance@\textbf{SCF.H.Tolerance}} If \fdf{SCF.Require.Hamiltonian.Convergence} is \texttt{.true.}, then
-  self-consistency is achieved when the maximum absolute change in the
-  H matrix elements is below this value.
 
-\textit{Default value:} \texttt{0.1 mRy}
+\begin{fdflogicalF}{SCF.Converge!FreeE}
+  \index{SCF!mixing!energy convergence}
+  \fdfindex*{DM.RequireEnergyConvergence}
 
-\end{description}
+  Logical variable to request an additional requirement for
+  self-consistency: it is considered achieved when the change in the
+  total (free) energy between cycles of the SCF procedure is below
+  \fdf{SCF.Tolerance!FreeE} and the density matrix change criterion is
+  also satisfied.
+
+\end{fdflogicalF}
+
+\begin{fdfentry}{SCF.Tolerance!FreeE}[energy]<$10^{-4}\,\mathrm{eV}$>
+  \fdfindex*{DM.EnergyTolerance}
+
+  If \fdf{SCF.Converge!FreeE} is \fdftrue, then self-consistency is
+  achieved when the change in the total (free) energy between cycles
+  of the SCF procedure is below this value and the density matrix
+  change criterion is also satisfied.
+
+\end{fdfentry}
+
+\begin{fdflogicalF}{SCF.Converge.Harris}
+  \index{SCF!mixing!harris energy convergence}
+  \fdfindex*{DM.Require.Harris.Convergence}
+
+  Logical variable to use the Harris energy as monitor of
+  self-consistency: this is considered achieved when the change in the
+  Harris energy between cycles of the SCF procedure is below
+  \fdf{SCF.Tolerance!Harris}. This is useful if only
+  energies are needed, as the Harris energy tends to converge faster
+  than the Kohn-Sham energy. The user is responsible for using the
+  correct energies in further processing, e.g., the Harris energy if
+  the Harris criterion is used.
+
+  To help in basis-optimization tasks, a new file
+  \file{BASIS\_HARRIS\_ENTHALPY} is provided, holding the same
+  information as \file{BASIS\_ENTHALPY} but using the Harris energy
+  instead of the Kohn-Sham energy.
+
+  \note setting this to \fdftrue\ makes \fdf{SCF.Converge!DM}
+  \fdf{SCF.Converge!H} default to \fdffalse.
+
+\end{fdflogicalF}
+
+\begin{fdfentry}{SCF.Tolerance!Harris}[energy]<$10^{-4}\,\mathrm{eV}$>
+
+  If \fdf{SCF.Converge!Harris} is \fdftrue, then self-consistency is
+  achieved when the change in the Harris energy between cycles of the
+  SCF procedure is below this value. This is useful if only energies
+  are needed, as the Harris energy tends to converge faster than the
+  Kohn-Sham energy.
+  
+\end{fdfentry}
+
+
 
 \vspace{5pt}
 \subsection{The real-space grid and the eggbox-effect}
@@ -8574,6 +8597,8 @@ their values at the previous step for the analysis of the electronic
 structure (band structure calculations, DOS, LDOS, etc).
 \item Some output files reflect the values of the ``un-moved''
   coordinates.
+\item The default convergence criteria is now \emph{both} density
+and Hamiltonian convergence, see \fdf{SCF.Converge!DM} and \fdf{SCF.Converge!H}.
 \end{itemize}
 
 To recover the previous behavior, the user can turn on the

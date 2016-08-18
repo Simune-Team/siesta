@@ -63,7 +63,7 @@ CONTAINS
       real(dp) :: buffer1
 #endif
 
-      real(dp) :: const, Escf_out
+      real(dp) :: const
       real(dp) :: dummy_stress(3,3), dummy_fa(1,1)
       real(dp) :: dummy_E, g2max, dummy_H(1,1)
       logical  :: mixDM
@@ -84,9 +84,8 @@ CONTAINS
 
       ! E0 = Ena + Ekin + Enl + Eso - Eions
 
-      DEna = Enascf - Enaatm
-      Etot = E0 + DEna + DUscf + DUext + Exc + &
-           Ecorrec + Emad + Emm + Emeta + Eldau
+      call update_DEna()
+      call update_Etot()
 
 
 ! Harris energy
@@ -120,8 +119,8 @@ CONTAINS
       else if (mix_charge) then
          call compute_correct_EKS()
       endif
-         
-      FreeE  = Etot - Temp * Entropy
+
+      call update_FreeE(Temp)
 
  CONTAINS
 
@@ -242,12 +241,7 @@ CONTAINS
                   Exc, Dxc, dipol, dummy_stress, dummy_fa, dummy_stress)
       ! (when mix_charge is true, rhog will contain the output rho(G))
 
-      DEna     = Enascf - Enaatm
-
-      ! Clarify: 
-      !          DUext (external electric field) -- should it be in or out?
-
-      Escf_out = DEna + DUscf + DUext + Exc 
+      call update_DEna()
 
 !     Compute Tr[H_0*DM_out] = Ekin + Enl + Eso with DM_out
 
@@ -289,9 +283,7 @@ CONTAINS
       ! E0 = Ena + Ekin + Enl + Eso - Eions
 
       ! Clarify: Ecorrec (from O(N))
-      Etot = Ena + Ekin + Enl + Eso - Eions + &
-           Escf_out + Ecorrec + Emad + Emm + &
-           Emeta + Eldau
+      call update_Etot()
       
     end subroutine compute_correct_EKS
 

@@ -80,16 +80,14 @@
 
 !$OMP parallel default(shared), private(ispin,io)
 
-      if ( MixH .or. require_hamiltonian_convergence ) then
-!        Save present H matrix
+!     Save present H matrix
 !$OMP do collapse(2)
-         do ispin = 1,h_spin_dim
-            do io = 1,maxnh
-               Hold(io,ispin) = H(io,ispin)
-            enddo
+      do ispin = 1,h_spin_dim
+         do io = 1,maxnh
+            Hold(io,ispin) = H(io,ispin)
          enddo
+      enddo
 !$OMP end do
-      end if
 
 !$OMP single
       H_kin => val(H_kin_1D)
@@ -186,7 +184,7 @@
 #endif
 
 !     Non-SCF part of total energy
-      E0 = Ena + Ekin + Enl + Eso - Eions
+      call update_E0()
 
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then

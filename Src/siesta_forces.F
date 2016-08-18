@@ -227,13 +227,13 @@
 
         if (SIESTA_worker) then
            if (first) then
-              if (require_harris_convergence) then
+              if ( converge_Eharr ) then
                  call reset(conv_harris)
-                 call set_tolerance(conv_harris,harris_tolerance)
+                 call set_tolerance(conv_harris,tolerance_Eharr)
               endif
-              if (require_energy_convergence) then
-                 call reset(conv_freeE)
-                 call set_tolerance(conv_freeE,energy_tolerance)
+              if ( converge_FreeE ) then
+                 call reset(conv_FreeE)
+                 call set_tolerance(conv_FreeE,tolerance_FreeE)
               endif
            endif
 
@@ -253,17 +253,17 @@
           endif
           
           call compute_dm( iscf )
-          ! Maybe set Dold to zero if reading charge or H...
-          call compute_max_diff(Dold,Dscf,dDmax) ! Assuming we have Dold
-          if (SIESTA_worker) call setup_hamiltonian( iscf )
-          if (SIESTA_worker) call compute_max_diff(Hold,H,dHmax)
+          if (SIESTA_worker) then
+             ! Maybe set Dold to zero if reading charge or H...
+             call compute_max_diff(Dold,Dscf,dDmax)
+             call setup_hamiltonian( iscf )
+             call compute_max_diff(Hold,H,dHmax)
+          end if
        else
           if (SIESTA_worker) then
              call setup_hamiltonian( iscf )
-             if ( require_hamiltonian_convergence ) then
-                call compute_max_diff(Hold,H,dHmax)
-             end if
-          endif
+             call compute_max_diff(Hold,H,dHmax)
+          end if
           call compute_dm( iscf )
           if (SIESTA_worker) call compute_max_diff(Dold,Dscf,dDmax)
        endif
@@ -289,7 +289,7 @@
      &                            SCFconverged )
         !
         ! ** Check this heuristic
-        if (MixH) then
+        if ( MixH ) then
            prevDmax = dHmax
         else
            prevDmax = dDmax
@@ -464,28 +464,30 @@
       subroutine compute_forces()
       ! Computes forces and stresses with the current DM_out
 
-      use m_final_H_f_stress,    only: final_H_f_stress
+      use siesta_options, only: recompute_H_after_scf
+      use m_final_H_f_stress, only: final_H_f_stress
       use write_subs
 
       real(dp), allocatable  :: fa_old(:,:), Hsave(:,:)
 
       allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
-      allocate(Hsave(size(H,dim=1),size(H,dim=2)))
-!$OMP parallel workshare default(shared)
       fa_old(:,:) = fa(:,:)
-      Hsave(:,:) = H(:,:)
-!$OMP end parallel workshare
+      if ( recompute_H_after_scf ) then
+         allocate(Hsave(size(H,dim=1),size(H,dim=2)))
+         Hsave(:,:) = H(:,:)
+      end if
       call final_H_f_stress( istep , iscf , .false. )
-!$OMP parallel workshare default(shared)
-      H(:,:) = Hsave(:,:)
-!$OMP end parallel workshare
+      if ( recompute_H_after_scf ) then
+         H(:,:) = Hsave(:,:)
+         deallocate(Hsave)
+      end if
       if (ionode) then
          print *, "Max diff in force (eV/Ang): ",
      $        maxval(abs(fa-fa_old))*Ang/eV
          call siesta_write_forces(-1)
          call siesta_write_stress_pressure()
       endif
-      deallocate(fa_old,Hsave)
+      deallocate(fa_old)
 
       end subroutine compute_forces
 

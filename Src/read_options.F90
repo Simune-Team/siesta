@@ -59,9 +59,6 @@ subroutine read_options( na, ns, nspin )
 
   real(dp), parameter :: wmix_default = 0.25_dp
   real(dp), parameter :: wmixkick_default = 0.5_dp
-  real(dp), parameter :: dDtol_default = 1.0e-4_dp
-  real(dp), parameter :: Energy_tolerance_default = 1.0e-5_dp * eV  ! Free energy...
-  real(dp), parameter :: Harris_tolerance_default = 1.0e-5_dp * eV
   real(dp), parameter :: occtol_default = 1.0e-12_dp
   real(dp), parameter :: etol_default = 1.0e-8_dp
   real(dp), parameter :: rcoor_default = 9.5_dp
@@ -194,6 +191,7 @@ subroutine read_options( na, ns, nspin )
   character(len=6) :: method
 
   logical :: DaC, qnch, qnch2, usesaveddata
+  logical :: tBool
 
   !--------------------------------------------------------------------- BEGIN
   ! New template, using fdf
@@ -517,103 +515,111 @@ subroutine read_options( na, ns, nspin )
           units="cmlUnits:dimensionless" )
   endif
 
-  ! Density Matrix Tolerance for achieving Self-Consistency
-  dDtol = fdf_get('DM.Tolerance',dDtol_default)
-  dDtol = fdf_get('SCF.DM.Tolerance',dDtol)
-  if (ionode) then
-     write(6,7) 'redata: DM Tolerance for SCF',dDtol
+
+  !-----------------------------------!
+  !                                   !
+  ! Reading of convergence criteria   !
+  !                                   !
+  !-----------------------------------!
+
+  ! Harris energy convergence
+  ! If this is TRUE, then the following options are defaulted to FALSE.
+  converge_Eharr = fdf_get('DM.RequireHarrisConvergence', .false.)
+  converge_Eharr = fdf_get('SCF.Converge.Harris', converge_Eharr)
+  tolerance_Eharr = fdf_get('DM.HarrisTolerance', 1.e-4_dp*eV, 'Ry' )
+  tolerance_Eharr = fdf_get('SCF.Tolerance.Harris', tolerance_Eharr, 'Ry' )
+  if ( IONode ) then
+     write(6,1) 'redata: Require Harris convergence for SCF', &
+          converge_Eharr
+     write(6,7) 'redata: Harris energy tolerance for SCF', tolerance_Eharr/eV, ' eV'
   endif
 
   if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='DM.Tolerance',     &
+     call cmlAddParameter( xf=mainXML, name='SCF.Converge.Harris', &
+          value=converge_Eharr, &
+          dictRef='siesta:ReqHarrisConv' )
+     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.Harris', units='siestaUnits:eV', &
+          value=tolerance_Eharr/eV, dictRef='siesta:Harris_tolerance')
+  endif
+  
+
+  ! Density matrix convergence
+  converge_DM = fdf_get('SCF.Converge.DM', .not. converge_Eharr)
+  dDtol = fdf_get('DM.Tolerance',1.e-4_dp)
+  dDtol = fdf_get('SCF.Tolerance.DM',dDtol)
+  if ( IONode ) then
+     write(6,1) 'redata: Require DM convergence for SCF', converge_DM
+     write(6,7) 'redata: DM tolerance for SCF',dDtol
+  end if
+  if (cml_p) then
+     call cmlAddParameter( xf=mainXML, name='SCF.Converge.DM', &
+          value=converge_DM, &
+          dictRef='siesta:ReqDMConv' )
+     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.DM',     &
           value=dDtol, dictRef='siesta:dDtol', &
           units='siestaUnits:eAng_3' )
-  endif
-  !--------------------------------------
+  end if
 
-  ! Require Hamiltonian convergence for achieving Self-Consistency?
-  require_hamiltonian_convergence = fdf_get('SCF.RequireHConvergence', &
-       .false.)
-  if (ionode) then
-     write(6,1) 'redata: Require H convergence for SCF', &
-          require_hamiltonian_convergence
+
+  ! Hamiltonian convergence
+  if ( compat_pre_v4_DM_H ) then
+     tBool = .false.
+  else
+     tBool = .not. converge_Eharr
+  end if
+  converge_H = fdf_get('SCF.Converge.H', tBool)
+  dHtol = fdf_get('SCF.Tolerance.H',1.e-3_dp*eV, 'Ry')
+  if ( IONode ) then
+     write(6,1) 'redata: Require H convergence for SCF', converge_H
+     write(6,7) 'redata: Hamiltonian tolerance for SCF', dHtol/eV, ' eV'
   endif
   
   if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='SCF.RequireHConvergence', &
-          value=require_hamiltonian_convergence,               &
+     call cmlAddParameter( xf=mainXML, name='SCF.Converge.H', &
+          value=converge_H, &
           dictRef='siesta:ReqHConv' )
+     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.H',     &
+          value=dHtol/eV, dictRef='siesta:dHtol', &
+          units='siestaUnits:eV' )
   endif
-  
-  ! Hamiltonian tolerance for achieving Self-Consistency
-  dHtol = fdf_get('SCF.H.Tolerance',1.e-4_dp, 'Ry')
-  if (ionode) then
-     write(6,7) 'redata: Hamiltonian Tolerance in SCF', dHtol, ' Ry'
-  endif
-  
-  if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='SCF.H.Tolerance',     &
-          value=dHtol, dictRef='siesta:dHtol', &
-          units='siestaUnits:Ry' )
-  endif
-!--------------------------------------
 
 
-  ! Require Energy convergence for achieving Self-Consistency?
-  require_energy_convergence = fdf_get('DM.RequireEnergyConvergence', &
-       .false.)
-  if (ionode) then
-     write(6,1) 'redata: Require (free) Energy convergence in SCF', &
-          require_energy_convergence
+  ! Free energy convergence
+  converge_FreeE = fdf_get('DM.RequireEnergyConvergence', .false.)
+  converge_FreeE = fdf_get('SCF.Converge.FreeE',converge_FreeE)
+  tolerance_FreeE = fdf_get('DM.EnergyTolerance', 1.e-4_dp*eV, 'Ry' )
+  tolerance_FreeE = fdf_get('SCF.Tolerance.FreeE',tolerance_FreeE, 'Ry')
+  if ( IONode ) then
+     write(6,1) 'redata: Require (free) Energy convergence for SCF', converge_FreeE
+     write(6,7) 'redata: (free) Energy tolerance for SCF', tolerance_FreeE/eV, ' eV'
   endif
 
   if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='DM.RequireEnergyConvergence', &
-          value=require_energy_convergence,               &
+     call cmlAddParameter( xf=mainXML, name='SCF.Converge.FreeE', &
+          value=converge_FreeE, &
           dictRef='siesta:ReqEnergyConv' )
-  endif
-
-  ! Energy tolerance for achieving Self-Consistency
-  Energy_tolerance = fdf_get('DM.EnergyTolerance',    &
-       Energy_tolerance_default, 'Ry' )
-  if (ionode) then
-     write(6,7) 'redata: DM (free)Energy tolerance for SCF', Energy_tolerance/eV, ' eV'
-  endif
-
-  if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='DM.EnergyTolerance', &
-          value=Energy_tolerance/eV, dictRef='siesta:dEtol', &
+     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.FreeE', &
+          value=tolerance_FreeE/eV, dictRef='siesta:dEtol', &
           units="siestaUnits:eV" )
   endif
-
-  !--------------------------------------
-  ! Require Harris Energy convergence for achieving Self-Consistency?
-  require_harris_convergence = fdf_get('DM.RequireHarrisConvergence', .false.)
-  if (ionode) then
-     write(6,1) 'redata: Require Harris convergence for SCF', &
-          require_harris_convergence
-  endif
-
-  if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='DM.RequireHarrisConvergence', &
-          value=require_harris_convergence,               &
-          dictRef='siesta:ReqHarrisConv' )
-  endif
-
-  ! Harris energy tolerance for achieving Self-Consistency
-  Harris_tolerance = fdf_get('DM.HarrisTolerance',    &
-       Harris_tolerance_default, 'Ry' )
-  if (ionode) then
-     write(6,7) 'redata: DM Harris energy tolerance for SCF', Harris_tolerance/eV, ' eV'
-  endif
-
-  if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='DM.HarrisTolerance', units='siestaUnits:eV', &
-          value=Harris_tolerance, dictRef='siesta:Harris_tolerance')
-  endif
+  
+  ! Check that there indeed is at least one convergence criteria
+  tBool = .false.
+  tBool = tBool .or. converge_Eharr
+  tBool = tBool .or. converge_FreeE
+  tBool = tBool .or. converge_DM
+  tBool = tBool .or. converge_H
+  if ( .not. tBool ) then
+     call die('There is no convergence criteria. Please at least have one.')
+  end if
+  
+  !------------------------------------
+  ! Done reading convergence criteria
+  !------------------------------------
 
   ! Monitor forces and stresses during SCF loop
   monitor_forces_in_scf = fdf_get('MonitorForcesInSCF',.false.)
+  monitor_forces_in_scf = fdf_get('SCF.MonitorForces',monitor_forces_in_scf)
 
   !--------------------------------------
   ! Initial spin density: Maximum polarization, Ferro (false), AF (true)
@@ -1466,6 +1472,8 @@ subroutine read_options( na, ns, nspin )
   harrisfun = fdf_get('Harris_functional',.false.)
 
   if (harrisfun) then
+     mixH = .false.
+     mix_charge = .false.
      usesavedm = .false.
      nscf      = 1  ! Note change from tradition, since siesta_forces        
      ! now explicitly separates the "compute_forces"        
