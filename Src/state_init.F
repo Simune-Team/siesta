@@ -20,15 +20,18 @@
       use siesta_options
       use units, only: Ang
       use sparse_matrices, only: maxnh, numh, listh, listhptr
-      use sparse_matrices, only: Dscf, Dold, Escf, Hold
-      use sparse_matrices, only: xijo, H, S_1D, S
+      use sparse_matrices, only: Dold, Dscf, DM_2D
+      use sparse_matrices, only: Eold, Escf, EDM_2D
+      use sparse_matrices, only: Hold, H   , H_2D
+      use sparse_matrices, only: xijo, xij_2D
+      use sparse_matrices, only: S   , S_1D
+
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_ldau_2D, H_so_2D
 
-      use sparse_matrices, only: H_2D, xij_2D
       use sparse_matrices, only: sparse_pattern
       use sparse_matrices, only: block_dist, single_dist
-      use sparse_matrices, only: DM_2D, EDM_2D, DM_history
+      use sparse_matrices, only: DM_history
 
 
       use m_sparsity_handling, only: SpOrb_to_SpAtom
@@ -438,10 +441,14 @@
       !if (ionode) call print_type(EDM_2D)
       Escf => val(EDM_2D)
 
-      call re_alloc(Dold,1,maxnh,1,spin%H,name='Dold',
+      call re_alloc(Dold,1,maxnh,1,spin%DM,name='Dold',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
       call re_alloc(Hold,1,maxnh,1,spin%H,name='Hold',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
+      if ( converge_EDM ) then
+         call re_alloc(Eold,1,maxnh,1,spin%EDM,name='Eold',
+     .     routine='sparseMat',copy=.false.,shrink=.true.)
+      end if
 
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       write(oname,"(a,i0)") "H at geom step ", istep

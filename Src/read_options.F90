@@ -549,15 +549,32 @@ subroutine read_options( na, ns, nspin )
   dDtol = fdf_get('SCF.Tolerance.DM',dDtol)
   if ( IONode ) then
      write(6,1) 'redata: Require DM convergence for SCF', converge_DM
-     write(6,7) 'redata: DM tolerance for SCF',dDtol
+     write(6,9) 'redata: DM tolerance for SCF',dDtol
   end if
   if (cml_p) then
      call cmlAddParameter( xf=mainXML, name='SCF.Converge.DM', &
           value=converge_DM, &
           dictRef='siesta:ReqDMConv' )
-     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.DM',     &
+     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.DM', &
           value=dDtol, dictRef='siesta:dDtol', &
           units='siestaUnits:eAng_3' )
+  end if
+
+
+  ! Energy-density matrix convergence
+  converge_EDM = fdf_get('SCF.Converge.EDM', .false.)
+  tolerance_EDM = fdf_get('SCF.Tolerance.EDM',1.e-3_dp*eV, 'Ry')
+  if ( IONode ) then
+     write(6,1) 'redata: Require EDM convergence for SCF', converge_EDM
+     write(6,7) 'redata: EDM tolerance for SCF',tolerance_EDM/eV, ' eV'
+  end if
+  if (cml_p) then
+     call cmlAddParameter( xf=mainXML, name='SCF.Converge.EDM', &
+          value=converge_EDM, &
+          dictRef='siesta:ReqEDMConv' )
+     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.EDM', &
+          value=tolerance_EDM/eV, dictRef='siesta:EDM_tolerance', &
+          units='siestaUnits:eV' )
   end if
 
 
@@ -607,6 +624,7 @@ subroutine read_options( na, ns, nspin )
   tBool = .false.
   tBool = tBool .or. converge_Eharr
   tBool = tBool .or. converge_FreeE
+  tBool = tBool .or. converge_EDM
   tBool = tBool .or. converge_DM
   tBool = tBool .or. converge_H
   if ( .not. tBool ) then

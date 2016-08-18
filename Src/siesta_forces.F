@@ -40,7 +40,7 @@
       use m_state_analysis
       use m_steps
       use sys, only : die, bye
-      use sparse_matrices, only: H, Hold
+      use sparse_matrices, only: H, Hold, Dold, Dscf, Eold, Escf
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
       use siesta_geom,   only: na_u           ! Number of atoms in unit cell
@@ -53,7 +53,6 @@
       use m_iodm_old,    only: write_spmatrix
 !
       use units,         only: eV, Ang
-      use sparse_matrices, only: H, Hold, Dold, Dscf
       use m_pexsi_solver,        only: prevDmax
       use m_forces,              only: fa
       use units,                 only: eV, Ang
@@ -97,6 +96,7 @@
       logical :: SCFconverged
       real(dp) :: dDmax     ! Max. change in DM elements
       real(dp) :: dHmax     ! Max. change in H elements
+      real(dp) :: dEmax     ! Max. change in EDM elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
 !---------------------------------------------------------------------- BEGIN
@@ -155,6 +155,7 @@
       call dict_variable_add('SCF.iteration',iscf)
       call dict_variable_add('SCF.dD',dDmax)
       call dict_variable_add('SCF.dH',dHmax)
+      call dict_variable_add('SCF.dE',dEmax)
       call dict_variable_add('SCF.drhoG',drhog)
 #endif
 
@@ -204,6 +205,7 @@
       ! The dHmax variable only has meaning for Hamiltonian
       ! mixing, or when requiring the Hamiltonian to be converged.
       dHmax = -1._dp
+      dEmax = -1._dp
 
       DO 
         ! Conditions of exit:
@@ -256,6 +258,8 @@
           if (SIESTA_worker) then
              ! Maybe set Dold to zero if reading charge or H...
              call compute_max_diff(Dold,Dscf,dDmax)
+             if ( converge_EDM ) 
+     &            call compute_max_diff(Eold,Escf,dEmax)
              call setup_hamiltonian( iscf )
              call compute_max_diff(Hold,H,dHmax)
           end if
@@ -265,7 +269,11 @@
              call compute_max_diff(Hold,H,dHmax)
           end if
           call compute_dm( iscf )
-          if (SIESTA_worker) call compute_max_diff(Dold,Dscf,dDmax)
+          if (SIESTA_worker) then
+             call compute_max_diff(Dold,Dscf,dDmax)
+             if ( converge_EDM ) 
+     &            call compute_max_diff(Eold,Escf,dEmax)
+          end if
        endif
 
 
@@ -284,7 +292,8 @@
         !        Dscf=DM_out, Dold=DM_in, H=H_(DM_out), Hold=H_in(mixed)
         !        dDmax=maxdiff(DM_out,DM_in)
         !        dHmax=maxdiff(H(DM_out),H_in)
-        call scfconvergence_test( first, iscf, dDmax, dHmax, 
+        call scfconvergence_test( first, iscf, 
+     &                            dDmax, dHmax, dEmax,
      &                            conv_harris, conv_freeE,
      &                            SCFconverged )
         !

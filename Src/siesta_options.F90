@@ -128,14 +128,16 @@ MODULE siesta_options
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
-  logical :: converge_FreeE    ! free Energy conv. to finish SCF iteration?
-  real(dp) :: tolerance_FreeE  ! Free-energy tolerance
-  logical :: converge_Eharr    ! to finish SCF iteration?
-  real(dp) :: tolerance_Eharr  ! Harris tolerance
-  logical :: converge_DM       ! to finish SCF iteration?
-  real(dp) :: dDtol            ! Tolerance in change of DM elements to finish SCF iteration
-  logical :: converge_H        ! to finish SCF iteration?
-  real(dp) :: dHtol            ! Tolerance in change of H elements to finish SCF iteration
+  logical :: converge_FreeE   ! free Energy conv. to finish SCF iteration?
+  real(dp):: tolerance_FreeE  ! Free-energy tolerance
+  logical :: converge_Eharr   ! to finish SCF iteration?
+  real(dp):: tolerance_Eharr  ! Harris tolerance
+  logical :: converge_EDM     ! to finish SCF iteration?
+  real(dp):: tolerance_EDM    ! Tolerance in change of EDM elements to finish SCF iteration
+  logical :: converge_DM      ! to finish SCF iteration?
+  real(dp):: dDtol            ! Tolerance in change of DM elements to finish SCF iteration
+  logical :: converge_H       ! to finish SCF iteration?
+  real(dp):: dHtol            ! Tolerance in change of H elements to finish SCF iteration
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
   logical :: fire_optim    ! Use FIRE method to optimize geometry?
   logical :: struct_only   ! Output initial structure only?

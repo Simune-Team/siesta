@@ -10,7 +10,8 @@
       public :: scfconvergence_test
       CONTAINS
 
-      subroutine scfconvergence_test( first, iscf, dDmax, dHmax,
+      subroutine scfconvergence_test( first, iscf,
+     &                                dDmax, dHmax, dEmax,
      $                                conv_harris, conv_freeE,
      $                                converged)
       use precision, only: dp
@@ -31,8 +32,10 @@
       integer :: iscf
       logical :: first
 
-      real(dp), intent(in) :: dDmax     ! Max. change in dens. matrix
-      real(dp), intent(in) :: dHmax     ! Max. change in H
+      real(dp), intent(in) :: dDmax ! Max. change in dens. matrix
+      real(dp), intent(in) :: dHmax ! Max. change in H
+      real(dp), intent(in) :: dEmax ! Max. change in EDM
+
       type(converger_t), intent(inout)  :: conv_harris, conv_freeE
       logical, intent(out)              :: converged
 
@@ -85,6 +88,10 @@
          conv_text = trim(conv_text)//'+FreeE'
          converged = converged .and. is_converged(conv_FreeE)
       end if
+      if ( converge_EDM ) then
+         conv_text = trim(conv_text)//'+EDM'
+         converged = converged .and. dEmax < tolerance_EDM
+      end if
       if ( converge_DM ) then
          conv_text = trim(conv_text)//'+DM'
          converged = converged .and. dDmax < dDtol
@@ -114,12 +121,21 @@
 
          ! No matter what we print out the differences of DM and H
          if ( mix_charge ) then
-            write(6,"(a,f16.10)") "max |DM_i - DM_(i-1)|  : ", dDmax
+            write(6,"(a,f16.10)") "max |DM_i - DM_(i-1)|        : ",
+     &           dDmax
+            if ( dEmax >= 0._dp ) 
+     &      write(6,"(a,f16.10)") "max |EDM_i - EDM_(i-1)| (eV) : ",
+     &              dEmax/eV
          else
-            write(6,"(a,f16.10)") "max |DM_out - DM_in|   : ", dDmax
+            write(6,"(a,f16.10)") "max |DM_out - DM_in|         : ",
+     &           dDmax
+            if ( dEmax >= 0._dp ) 
+     &      write(6,"(a,f16.10)") "max |EDM_out - EDM_in|  (eV) : ",
+     &              dEmax/eV
          endif
          if ( dHmax >= 0._dp ) then
-            write(6,"(a,f16.10)") "max |H_out - H_in| (eV): ", dHmax/eV
+            write(6,"(a,f16.10)") "max |H_out - H_in|      (eV) : ",
+     &           dHmax/eV
          end if
 
 	 if ( is_LDAU_conv ) then

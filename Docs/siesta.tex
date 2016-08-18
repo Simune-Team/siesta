@@ -5032,6 +5032,25 @@ simultaneously for complete control.
 \end{fdfentry}
 
 
+\begin{fdflogicalT}{SCF.Converge!EDM}
+  \index{SCF!mixing!energy density matrix convergence}
+
+  Logical variable to use the energy density matrix elements as monitor
+  of self-consistency: this is considered achieved when the maximum
+  absolute change (dEmax) in the energy density matrix elements is below
+  \fdf{SCF.Tolerance!EDM}. The meaning of dEmax is equivalent to that
+  of \fdf{SCF.Tolerance!DM}.
+  
+\end{fdflogicalT}
+
+\begin{fdfentry}{SCF.Tolerance!EDM}[energy]<$10^{-3}\,\mathrm{eV}$>
+
+  If \fdf{SCF.Converge!EDM} is \fdftrue, then self-consistency is
+  achieved when the maximum absolute change in the energy density
+  matrix elements is below this value.
+  
+\end{fdfentry}
+
 
 \begin{fdflogicalF}{SCF.Converge!FreeE}
   \index{SCF!mixing!energy convergence}

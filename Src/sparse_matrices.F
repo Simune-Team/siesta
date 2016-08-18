@@ -23,12 +23,14 @@
       integer, public, pointer :: listh(:)=>null(), listhptr(:)=>null(),
      $                            numh(:)=>null()
 
-      real(dp), public, pointer :: Dold(:,:)=>null(), Dscf(:,:)=>null(),
-     &                             Escf(:,:)=>null(), H(:,:)=>null(),
-     &                             xijo(:,:)=>null(), S(:)=>null()
+      real(dp), public, pointer :: Dold(:,:)=>null(), Dscf(:,:)=>null()
+      real(dp), public, pointer :: Eold(:,:)=>null(), Escf(:,:)=>null()
+      real(dp), public, pointer :: Hold(:,:)=>null(), H(:,:)=>null()
 
-      ! Used to hold the "input" H when mixing the Hamiltonian
-      real(dp), dimension(:,:), public, pointer :: Hold => null()   
+      real(dp), public, pointer :: S(:)=>null()
+
+      real(dp), public, pointer :: xijo(:,:)=>null()
+
 
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this
@@ -80,6 +82,7 @@
       
       call de_alloc( Hold, 'Hold', 'sparseMat' )
       call de_alloc( Dold, 'Dold', 'sparseMat' )
+      call de_alloc( Eold, 'Eold', 'sparseMat' )
 
       end subroutine resetSparseMatrices
 
