@@ -121,8 +121,6 @@ TS.Contours.Eq.Pole 2.5 eV
       method g-fermi
 %endblock TS.Contour.T-Right
 
-MSG: You may need to correct the TS.Contours.nEq for signs of bias
-MSG: The energies must be in increasing order (you may use |V|/2 to designate absolute values)
 %block TS.Contours.nEq
   neq-1
 %endblock TS.Contours.nEq

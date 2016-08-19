@@ -202,37 +202,8 @@ WriteEigenvalues                yes
 
 ==================================================
 ==================================================
-# Transmission 
-TS.TBT.NPoints      101
-TS.TBT.Emin        -0.5 eV
-TS.TBT.Emax         0.5 eV
 
-TS.TBT.NEigen              9
-
-# Bias voltage
 TS.Voltage 0.25 eV
-TS.biasContour.NumPoints       20
-
-
-# Transiesta: electrode definition:
-# LEFT ELECTRODE
-TS.HSFileLeft ./elec_au_100.TSHS
-TS.ReplicateA1Left    3
-TS.ReplicateA2Left    3
-TS.NumUsedAtomsLeft   4
-TS.BufferAtomsLeft    0
-# RIGHT ELECTRODE
-TS.HSFileRight ./elec_au_100.TSHS
-TS.ReplicateA1Right   3
-TS.ReplicateA2Right   3
-TS.NumUsedAtomsRight  4
-TS.BufferAtomsRight   0
-
-# SPECIES AND ATOMS
-# DYNAMICS
-TS.UseBulkInElectrodes  T
-TS.Voltage    0.25000 eV                                     
-
 %block TS.ChemPots
   Left
   Right
@@ -283,10 +254,10 @@ TS.Elecs.GF.ReUse false
   bloch-a2 3
 %endblock TS.Elec.Right
 
-TS.Contours.Eq.Pole.N 6
+TS.Contours.Eq.Pole 2.5 eV
 %block TS.Contour.c-Left
   part circle
-   from   -3.00000 Ry + V/2 to -10. kT + V/2
+   from   -40.00000 eV + V/2 to -10. kT + V/2
     points 30
      method g-legendre
 %endblock TS.Contour.c-Left
@@ -298,7 +269,7 @@ TS.Contours.Eq.Pole.N 6
 %endblock TS.Contour.t-Left
 %block TS.Contour.c-Right
   part circle
-   from   -3.00000 Ry - V/2 to -10. kT - V/2
+   from   -40.00000 eV - V/2 to -10. kT - V/2
     points 30
      method g-legendre
 %endblock TS.Contour.c-Right
@@ -309,23 +280,13 @@ TS.Contours.Eq.Pole.N 6
      method g-fermi
 %endblock TS.Contour.t-Right
 
-TS.Contours.nEq.Eta    0.0000010000 Ry                                
-%block TS.Contours.Bias.Window
+TS.Contours.nEq.Eta    0.0001 eV
+%block TS.Contours.nEq
   neq
-%endblock TS.Contours.Bias.Window
-%block TS.Contour.Bias.Window.neq
+%endblock TS.Contours.nEq
+%block TS.Contour.nEq.neq
   part line
-   from -|V|/2 to |V|/2
-    delta    0.01250 eV
-     method simpson-mix
-%endblock TS.Contour.Bias.Window.neq
-
-%block TS.Contours.Bias.Tail
-  neq-tail
-%endblock TS.Contours.Bias.tail
-%block TS.Contour.Bias.Tail.neq-tail
-  part tail
-   from 0. kT to 12. kT
-    delta    0.01250 eV
-     method simpson-mix
-%endblock TS.Contour.Bias.Tail.neq-tail
+   from -|V|/2 - 5 kT to |V|/2 + 5 kT
+    delta    0.01 eV
+     method mid-rule
+%endblock TS.Contour.nEq.neq

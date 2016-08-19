@@ -13,7 +13,7 @@
 function parse_diff {
     local f=$1
     shift
-    if [ ! -e $f ];
+    if [ ! -e $f ]; then
        return 0
     fi
 
