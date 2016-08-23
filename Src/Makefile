@@ -421,24 +421,28 @@ libsiestaLAPACK.a: Libs/lapack.f
 	@echo "==> Compiling libsiestaLAPACK.a in Libs..."
 	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaLAPACK.a)
 	@cp Libs/libsiestaLAPACK.a .
-libblas.a: Libs/blas.f
-	@echo "==> Compiling libblas.a in Libs..."
-	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libblas.a)
-liblapack.a: Libs/lapack.f
-	@echo "==> Compiling liblapack.a in Libs..."
-	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" liblapack.a)
-linalg.a: Libs/blas.f Libs/lapack.f
-	@echo "==> Compiling linalg.a in Libs..."
-	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" linalg.a)
-dc_lapack.a:  Libs/dc_lapack.f
-	@echo "==> Compiling dc_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" dc_lapack.a)
-zgesv_lapack.a:  Libs/zgesv_lapack.f
-	@echo "==> Compiling zgesv_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" zgesv_lapack.a)
-essl_lapack.a: Libs/essl_lapack.f
-	@echo "==> Compiling essl_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
+
+libblas.a:
+	@echo ""
+	@echo "SIESTA: $@ has been deprecated in favor of:"
+	@echo "  COMP_LIBS += libsiestaBLAS.a"
+	@echo "Please update your arch.make file accordingly..."
+	@echo ""
+	@false
+liblapack.a dc_lapack.a zgesv_lapack.a essl_lapack.a:
+	@echo ""
+	@echo "SIESTA: $@ has been deprecated in favor of:"
+	@echo "  COMP_LIBS += libsiestaLAPACK.a"
+	@echo "Please update your arch.make file accordingly..."
+	@echo ""
+	@false
+linalg.a:
+	@echo ""
+	@echo "SIESTA: $@ has been deprecated in favor of:"
+	@echo "  COMP_LIBS += libsiestaLAPACK.a libsiestaBLAS.a"
+	@echo "Please update your arch.make file accordingly..."
+	@echo ""
+	@false
 
 
 .PHONY: version.o
@@ -1088,7 +1092,7 @@ m_ts_voltage.o: m_ts_electype.o m_ts_options.o m_ts_tdir.o parallel.o
 m_ts_voltage.o: precision.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_weight.o: geom_helper.o m_ts_chem_pot.o m_ts_contour_neq.o m_ts_electype.o
-m_ts_weight.o: parallel.o precision.o
+m_ts_weight.o: parallel.o precision.o units.o
 m_wallclock.o: m_walltime.o
 m_writedelk.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o
 m_writedelk.o: parallelsubs.o precision.o siesta_geom.o sys.o

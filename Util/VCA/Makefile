@@ -613,7 +613,7 @@ m_ts_voltage.o: m_ts_electype.o m_ts_options.o m_ts_tdir.o parallel.o
 m_ts_voltage.o: precision.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_weight.o: geom_helper.o m_ts_chem_pot.o m_ts_contour_neq.o m_ts_electype.o
-m_ts_weight.o: parallel.o precision.o
+m_ts_weight.o: parallel.o precision.o units.o
 m_wallclock.o: m_walltime.o
 m_writedelk.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o
 m_writedelk.o: parallelsubs.o precision.o siesta_geom.o sys.o
