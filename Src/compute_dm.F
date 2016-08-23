@@ -130,7 +130,6 @@
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
      $              ef, Entropy, temp, delta_Ef)
-         if (ionode) write (6,"(/a,f14.6)") 'Entropy/k:', Entropy
       endif
       if (.not. SIESTA_worker) RETURN
 #endif
@@ -180,9 +179,6 @@ c$$$     &           S, 'S.matrix')
      &              occtol, iscf, neigwanted)
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
-#ifdef SIESTA__PEXSI
-        if (ionode) write (6,"(/a,f14.6)") 'Entropy/k:', Entropy
-#endif
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
         if ( spin%NCol .or. spin%SO )
