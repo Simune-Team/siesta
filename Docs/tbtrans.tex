@@ -710,6 +710,8 @@ see Sec.~\ref{sec:arch-make}, as quantities will be orbital resolved.
   is computationally more demanding than using \fdf{TBT.DOS!A} an
   \fdf{TBT.DOS!A.Elecs.All}.
 
+  See \fdf{TBT.Atoms!Device.Connect}.
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.DOS!A}
@@ -717,6 +719,8 @@ see Sec.~\ref{sec:arch-make}, as quantities will be orbital resolved.
   Calculate the DOS from the spectral function. This will not
   calculate the DOS from the last electrode (last in the list
   \fdf{TBT.Elecs}). 
+
+  See \fdf{TBT.Atoms!Device.Connect}.
 
 \end{fdflogicalF}
 
@@ -839,6 +843,16 @@ currents may only be calculated in the selected device region.
   will limit the device region to atoms [10--20, 30--40].
   
 \end{fdfentry}
+
+\begin{fdflogicalF}{TBT.Atoms!Device.Connect}
+  
+  Whether the device region is extended such that the DOS is
+  calculated correctly on the device defined atoms.
+
+  \note this parameter should be set to \fdftrue\ in case accurate DOS
+  calculations are required on the specified device atoms. 
+
+\end{fdflogicalF}
 
 \begin{fdfentry}{TBT.Atoms!Buffer}[block]%
 

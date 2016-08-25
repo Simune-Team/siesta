@@ -73,7 +73,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge \textbf{S I E S T A \, \, 4.1}
+{\Huge \textbf{S I E S T A \, \, 4.1}}
 
 \vspace{1cm}
 \hrulefill
@@ -743,6 +743,22 @@ libraries
 \begin{shellexample}
   LIBS += -Wl,--allow-multiple-definition -lpexsi_linux <>
 \end{shellexample}
+
+  \item[flook]%
+  \index{flook}%
+  \index{External library!flook}%
+  \siesta\ allows external control via the LUA scripting language.
+  Using this library one may do advanced MD simulations and much more
+  \emph{without} changing any code in \siesta.
+  
+  Add these flags to your \file{arch.make} file to enable \program{flook}
+\begin{shellexample}
+  LIBS += -L/opt/flook/lib -lflookall -ldl
+  FPPFLAGS += -DSIESTA__FLOOK
+\end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_FLOOK}
+  
+  See \program{Tests/h2o\_lua} for an example on the LUA interface.
 
 \end{description}
 
