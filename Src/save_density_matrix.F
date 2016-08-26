@@ -89,7 +89,7 @@
 
          dic_save = ('Ef'.kv.1)
          dic_save = dic_save//('DM'.kv.1)//('EDM'.kv.1)
-         call cdf_save_state('SIESTA.nc',dic_save)
+         call cdf_save_state(trim(slabel)//'.nc',dic_save)
 
          call delete(dic_save)
 

@@ -1545,20 +1545,20 @@ subroutine read_options( na, ns, nspin )
 
   if ( IONode ) then
      ! Write out
-     write(*,1) 'redata: Save data in SIESTA.nc',write_cdf
+     write(*,1) 'redata: Save all siesta data in one NC',write_cdf
      if ( write_cdf ) then
         if ( grid_p == dp ) then
            ctmp = fdf_get('CDF.Grid.Precision','double')
            if ( leqi(ctmp,'single') .or. leqi(ctmp,'float') ) then
-              write(*,2) 'redata: Grids in SIESTA.nc reduced to single precision'
+              write(*,2) 'redata: Grids in NC reduced to single precision'
            end if
         end if
-        write(*,4) 'redata: SIESTA.nc compression level',cdf_comp_lvl
+        write(*,4) 'redata: NC compression level',cdf_comp_lvl
         if ( cdf_r_parallel ) then
-           write(*,2) 'redata: Reads SIESTA.nc in parallel'
+           write(*,2) 'redata: Reads NC in parallel'
         end if
         if ( cdf_w_parallel ) then
-           write(*,2) 'redata: Writes SIESTA.nc in parallel (possibly not working)'
+           write(*,2) 'redata: Writes NC in parallel (possibly not working)'
         end if
      end if
   end if
