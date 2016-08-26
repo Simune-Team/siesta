@@ -5,9 +5,8 @@
 !  or http://www.gnu.org/copyleft/gpl.txt .
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
-
       module m_rdiag_mrrr
-
+#ifdef SIESTA__MRRR
       implicit none
 
       public :: rdiag_mrrr
@@ -312,5 +311,5 @@
       
 #endif MPI
       end subroutine rdiag_mrrr
-      
+#endif      
       end module m_rdiag_mrrr
