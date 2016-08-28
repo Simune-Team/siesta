@@ -129,6 +129,7 @@ C Write target stress down --------------------------------------------------
       real(dp), intent(in)  :: stress_in(3,3)
       real(dp), intent(out) :: stress(3,3)
 
+      real(dp) :: trace
       integer :: i, j
 
       stress = stress_in

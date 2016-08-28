@@ -199,6 +199,8 @@ subroutine writeamn( ispin )
                                          !   with a Bloch orbital
                                          !   <\psi_{m k}|g_n>
 
+  integer, intent(in) :: ispin
+
 !
 ! Local variables
 !
