@@ -86,10 +86,18 @@
 #endif
 #ifdef _OPENMP
       use omp_lib, only : omp_get_num_threads, omp_get_schedule
+      use omp_lib, only : omp_get_nested, omp_set_nested
+      use omp_lib, only : omp_get_max_active_levels
       use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
       use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+#if _OPENMP >= 201307
+      ! The above value should correspond to OMP-4.0
+      use omp_lib, only : omp_get_proc_bind
+#endif
 #else
-!$    use omp_lib, only : omp_get_num_threads, omp_get_schedule
+!$    use omp_lib, only : omp_get_num_threads, omp_get_sched
+!$    use omp_lib, only : omp_get_nested, omp_get_max_active_levels
+!$    use omp_lib, only : omp_get_max_active_levels
 !$    use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
 !$    use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
 #endif
@@ -247,6 +255,32 @@ C     Initialise MPI and set processor number
 !$    case default
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',is
 !$    end select
+!     Now write out about nested levels
+!$    if ( omp_get_nested() ) then
+!$       ns = omp_get_max_active_levels()
+!$    else
+!$       write(*,'(a)') '** OpenMP (trying to FORCE nesting)'
+!$       call omp_set_nested(.true.)
+!$       ns = omp_get_max_active_levels()
+!$    end if
+!$    write(*,'(a,i0,a)') '* OpenMP allows ',ns,' nested levels.'
+#if _OPENMP >= 201307
+!$    ns = omp_get_proc_bind()
+!$    select case ( ns )
+!$    case ( 0 ) 
+!$    write(*,'(a)') '* OpenMP binding: FALSE'
+!$    case ( 1 )
+!$    write(*,'(a)') '* OpenMP binding: TRUE'
+!$    case ( 2 )
+!$    write(*,'(a)') '* OpenMP binding: MASTER'
+!$    case ( 3 )
+!$    write(*,'(a)') '* OpenMP binding: CLOSE'
+!$    case ( 4 )
+!$    write(*,'(a)') '* OpenMP binding: SPREAD'
+!$    case default
+!$    write(*,'(a)') '* OpenMP binding: UNKNOWN'
+!$    end select
+#endif
 !$OMP end master
 !$OMP end parallel
 !$    call omp_set_schedule(i,is)
