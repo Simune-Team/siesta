@@ -2,7 +2,9 @@ Release notes for siesta 4.1-b1 beta version
 
 (This is also known as the MaX R1 release)
 
--- Compatibility issues:
+Please see the Manual for full details
+
+*** Backward-compatibility issues:
 
     * The mixing routines have completely changed, hence the same
     convergence path cannot be expected. This, unfortunately, makes
@@ -10,13 +12,15 @@ Release notes for siesta 4.1-b1 beta version
     converged system should be transferable.
 
     * SIESTA now defaults to mixing the Hamiltonian instead of the
-    density matrix. To revert to the density matrix mixing, use
+    density matrix. To revert to density-matrix mixing, use
     "SCF.Mix DM"
 
-    * SIESTA now defaults to converge both the density matrix AND the
-    Hamiltonian. To revert to only density matrix convergence, use:
-    "SCF.Converge.H false"
+    * SIESTA now defaults to monitoring convergence for both the
+    density matrix AND the Hamiltonian. To revert to only density
+    matrix convergence, use: "SCF.Converge.H false"
 
+*** New features
+    
 -- LDA+U (Javier Junquera)
 
     * Full incorporation of the LDA+U implementation in SIESTA
@@ -25,29 +29,27 @@ Release notes for siesta 4.1-b1 beta version
 
 -- Spin-Orbit coupling (Ramon Cuadrado)
 
-    * On-site spin-orbit
+    * On-site approximation for spin-orbit-coupling matrix elements.
 
--- Added MRRR method for diagonalization (Alberto Garcia)
+-- MRRR method for diagonalization (Alberto Garcia)
 
     * This will typically be faster than divide-and-conquer algorithm
-    and may be the future default
+    and may be the future default. For Gamma-point calculations.
 
--- Added ELPA method for diagonalization (Alberto Garcia)
+-- ELPA method for diagonalization (Alberto Garcia)
 
     * This provides better scalability compared to ScaLAPACK for large
-    # of processors.
+    # of processors. For Gamma-point calculations.
 
--- Added the PEXSI solver for calculating the density matrix and DOS
-(Alberto Garcia)
+-- Added interface to the PEXSI library for calculating the density
+   matrix, DOS, and LDOS (Alberto Garcia)
 
-    * This library provides EXA-scale capability in siesta and should
-    typically be used for very large systems.
-
-    * Calculate the DOS using PEXSI.
+    * This library provides massive parallelism and better
+    scalability, but should only be used for very large systems.
 
 -- SIESTA is now hybrid-parallelised (Nick R. Papior)
 
-    * One may compile siesta/transiesta in serial, OpenMP, MPI, or
+    * One may compile Siesta/Transiesta in serial, OpenMP, MPI, or
     MPI+OpenMP mode.
 
 -- Re-write of non-equilibrium Green function code (Nick R. Papior)
@@ -96,6 +98,8 @@ Release notes for siesta 4.1-b1 beta version
     nearly all siesta related information in one file.
 
 -- LUA scripting in siesta (Nick R. Papior)
+    
+    * This is an experimental feature
 
 -- Gate calculations (Nick R. Papior)
 
@@ -103,8 +107,8 @@ Release notes for siesta 4.1-b1 beta version
 
 -- Utilities (Nick R. Papior)
 
-    * All make-files are now made to enable parallel builds
-      - this makes compilation *MUCH* faster:
+    * All make-files are now prepared to enable parallel builds
+      - this makes compilation *MUCH* faster. For example:
          make -j4
         will compile using 4 cores.
     * Grimme utility
