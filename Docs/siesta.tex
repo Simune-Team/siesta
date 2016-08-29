@@ -8599,6 +8599,75 @@ orbitals.
 \end{description}
 
 
+\subsection{NetCDF-4 output file}
+\label{cdf-output}
+
+\note this requires \siesta\ compiled with NetCDF-4 support.
+
+To unify and construct a simple output file for an entire \siesta\
+calculation a generic NetCDF file will be created if \siesta\ is
+compiled with \program{ncdf} support, see Sec.~\ref{sec:libs} and the
+\program{ncdf} section\index{compile!pre-processor!-DNCDF\_4}.
+
+Generally all output to NetCDF flags,
+\fdf{Save.ElectrostaticPotential}, etc. apply to this file as well.
+
+
+One may control the output file with compressibility and parallel I/O,
+if needed.
+
+\begin{fdflogicalF}{CDF!Save}
+
+  Create the \sysfile{nc} file which is a NetCDF-4 file.
+  
+  This file will be created with a large set of \emph{groups} which
+  make separating the quantities easily. Also it will inherently
+  denote the units for the stored quantities.
+  
+\end{fdflogicalF}
+
+
+\begin{fdfentry}{CDF!Compress}[integer]<$0$>
+
+  Integer between 0 and 9. The former represents \emph{no} compressing
+  and the latter is the highest compressing. 
+
+  The higher the number the more computation time is spent on
+  compressing the data. A good compromise between speed and
+  compression is $3$.
+
+  \note if one requests parallel I/O (\fdf{CDF!MPI}) this will
+  automatically be set to $0$. One cannot perform parallel IO and
+  compress the data simultaneously.
+
+  \note instead of using \siesta\ for compression you may compress
+  after execution by:
+  \begin{shellexample}
+    nccopy -d 3 -s noncompressed.nc compressed.nc
+  \end{shellexample}
+  
+\end{fdfentry}
+
+
+\begin{fdflogicalF}{CDF!MPI}
+
+  Write \sysfile{nc} in parallel using MPI for increased
+  performance. This has almost no memory overhead but may for very
+  large number of processors saturate the file-system.
+
+  \note this is an experimental flag.
+
+\end{fdflogicalF}
+
+\begin{fdfentry}{CDF!Grid.Precision}[string]<single|double>
+
+  At which precision should the real-space grid quantities be stored,
+  such as the density, electrostatic potential etc.
+  
+\end{fdfentry}
+
+
+
 \vspace{5pt}
 \section{STRUCTURAL RELAXATION, PHONONS, AND MOLECULAR DYNAMICS}
 

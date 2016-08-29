@@ -281,9 +281,13 @@ FC_SERIAL?=$(FC_DEFAULT)
 $(FoX_configured):
 	(cd FoX; touch arch.make ; \
          CONFIGURE="$(VPATH)/FoX/configure"; \
+	 AR="$(AR)" RANLIB="$(RANLIB)" \
          $$CONFIGURE VPATH="$(VPATH)/FoX" \
          FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS:$(IPO_FLAG)=)" \
          --enable-wcml $(DUMMY_FOX) || false )
+# Sadly the configure script does not store the AR and RANLIB flags... :(
+	(cd FoX ; echo "AR = $(AR)" >> arch.make ; \
+	echo "RANLIB = $(RANLIB)" >> arch.make )
 
 # Note we have to make sure to use the same compiler as SIESTA,
 # and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.

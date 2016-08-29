@@ -18,6 +18,7 @@
       use mpi_siesta
 #endif      
       use precision, only: dp
+      use files, only: slabel
       use siesta_cml
 #ifdef SIESTA__FLOOK
       use flook_siesta, only : slua_call, LUA_SCF_LOOP
@@ -174,17 +175,17 @@
 #endif
 
 #ifdef NCDF_4
-      ! Initialize the SIESTA.nc file
+      ! Initialize the NC file
       if ( write_cdf ) then
 
          ! Initialize the file...
-         call cdf_init_file('SIESTA.nc',is_MD = .false.)
+         call cdf_init_file(trim(slabel)//'.nc',is_MD = .false.)
 #ifdef MPI
          call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
 
          ! Save the settings
-         call cdf_save_settings('SIESTA.nc')
+         call cdf_save_settings(trim(slabel)//'.nc')
 #ifdef MPI
          call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
@@ -193,11 +194,11 @@
          d_sav = d_sav//('nsc'.kv.1)//('xij'.kv.1)
          d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
          d_sav = d_sav//('isc_off'.kv.1)
-         call cdf_save_state('SIESTA.nc',d_sav)
+         call cdf_save_state(trim(slabel)//'.nc',d_sav)
          call delete(d_sav)
 
          ! Save the basis set
-         call cdf_save_basis('SIESTA.nc')
+         call cdf_save_basis(trim(slabel)//'.nc')
 
       end if
 #endif
