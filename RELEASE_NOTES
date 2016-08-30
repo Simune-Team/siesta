@@ -1,3 +1,10 @@
+################################
+#                              #
+#            SIESTA            #
+#             4.1              #
+#                              #
+################################
+
 Release notes for siesta 4.1-b1 beta version
 
 (This is also known as the MaX R1 release)
@@ -19,6 +26,21 @@ Please see the Manual for full details
     * SIESTA now defaults to monitoring convergence for both the
     density matrix AND the Hamiltonian. To revert to only density
     matrix convergence, use: "SCF.Converge.H false"
+
+    * A major number of fdf-flags concerning mixing
+    parameters have changed to a more consistent naming scheme.
+    However, all previous flags are still in effect but the newer
+    flags have precedence. The previous flags are the default values
+    for the newer flag-names.
+
+    * Two additional files are created:
+       H_DMGEN and
+       H_MIXED
+      these contain the Hamiltonian at various stages through the SCF.
+      Currently they are intended for developers and may be removed in
+      the final 4.1 release.
+      You may delete these without problems.
+      
 
 *** New features
     
@@ -55,8 +77,8 @@ Please see the Manual for full details
 
 -- Re-write of non-equilibrium Green function code (Nick R. Papior)
 
-    * N-terminal support in transiesta
-    * Convergence of transiesta much better.
+    * N>=1 terminal support in transiesta
+    * Improved convergence
     * Different ways of handling charge-reductions in SCF
     * All electrodes have settings _per electrode_ for full customization
     * Greatly reduced memory usage
@@ -73,7 +95,7 @@ Please see the Manual for full details
     * Made tbtrans a stand-alone utility for user-defined tight-binding method
     * EXTREME SCALE version (BTD-only)
       - Memory consumption _only_ dependent on "device" region
-    * N-electrode support
+    * N>=1 electrode support
     * Region projections for transmission through "eigenstates"
     * Custom change of the self-energies
     * k -> k' transmissions
@@ -97,6 +119,9 @@ Please see the Manual for full details
 
     * Provides a standard intrinsically grouped file for retaining
     nearly all siesta related information in one file.
+
+-- Enabled convergence control of density-, energy density matrices,
+   Hamiltonian and energy. 
 
 -- LUA scripting in siesta (Nick R. Papior)
     

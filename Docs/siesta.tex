@@ -5610,9 +5610,10 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   \note it is not compatible with the \fdf{Diag!Parallel.Over.K}
   option.
 
-  \note The code must be compiled with the \texttt{-DSIESTA\_\_MRRR}
-  pre-processor flag.
-  \index{compile!pre-processor!-DSIESTA\_\_MRRR}
+  \note The MRRR method is defaulted to be compiled in, however, if
+  your ScaLAPACK library does not contain the relevant sources one
+  should add this pre-processor flag \texttt{-DSIESTA\_\_NO\_MRRR}
+  \index{compile!pre-processor!-DSIESTA\_\_NO\_MRRR}
 \end{fdflogicalF}
 
 

@@ -6,9 +6,9 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
       module m_rdiag_mrrr
-#ifdef SIESTA__MRRR
       implicit none
 
+#ifndef SIESTA__NO_MRRR
       public :: rdiag_mrrr
 
       CONTAINS
@@ -311,5 +311,9 @@
       
 #endif MPI
       end subroutine rdiag_mrrr
+#else
+      ! Some compilers do not allow empty modules
+      subroutine rdiag_mrrr_dummy()
+      end subroutine
 #endif      
       end module m_rdiag_mrrr
