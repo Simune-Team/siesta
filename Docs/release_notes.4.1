@@ -1,0 +1,118 @@
+Release notes for siesta 4.1-b1 beta version
+
+(This is also known as the MaX R1 release)
+
+Please see the Manual for full details
+
+*** Backward-compatibility issues:
+
+    * The mixing routines have completely changed, hence the same
+    convergence path cannot be expected. This, unfortunately, makes
+    comparison difficult with prior versions. However, the final
+    converged system should be transferable.
+
+    * SIESTA now defaults to mixing the Hamiltonian instead of the
+    density matrix. To revert to density-matrix mixing, use
+    "SCF.Mix DM". The option to mix after the initial scf step is now
+    'on' by default.
+
+    * SIESTA now defaults to monitoring convergence for both the
+    density matrix AND the Hamiltonian. To revert to only density
+    matrix convergence, use: "SCF.Converge.H false"
+
+*** New features
+    
+-- LDA+U (Javier Junquera)
+
+    * Full incorporation of the LDA+U implementation in SIESTA
+    * Two different LDA+U projectors available
+    * Estimate the best U according to: Cococcioni and Gironcoli in PRB, 2005
+
+-- Spin-Orbit coupling (Ramon Cuadrado)
+
+    * On-site approximation for spin-orbit-coupling matrix elements.
+
+-- MRRR method for diagonalization (Alberto Garcia)
+
+    * This will typically be faster than divide-and-conquer algorithm
+    and may be the future default. For Gamma-point calculations.
+
+-- ELPA method for diagonalization (Alberto Garcia)
+
+    * This provides better scalability compared to ScaLAPACK for large
+    # of processors. For Gamma-point calculations.
+
+-- Added interface to the PEXSI library for calculating the density
+   matrix, DOS, and LDOS (Alberto Garcia)
+
+    * This library provides massive parallelism and better
+    scalability, but should only be used for very large systems.
+
+-- SIESTA is now hybrid-parallelised (Nick R. Papior)
+
+    * One may compile Siesta/Transiesta in serial, OpenMP, MPI, or
+    MPI+OpenMP mode.
+
+-- Re-write of non-equilibrium Green function code (Nick R. Papior)
+
+    * N-terminal support in transiesta
+    * Convergence of transiesta much better.
+    * Different ways of handling charge-reductions in SCF
+    * All electrodes have settings _per electrode_ for full customization
+    * Greatly reduced memory usage
+    * Skewed axis are enabled for further reduction of complex systems
+    * Implemented MUMPS method for inversion
+    * Implemented LAPACK for inversion
+    * Implemented BTD method for inversion (extremely fast)
+    * Fully OpenMP threaded
+    * Start directly from transiesta enabled
+    * Temperature gradients as non-equilibrium a possibility
+    
+-- Complete rewrite of tbtrans utility (Nick R. Papior)
+
+    * Made tbtrans a stand-alone utility for user-defined tight-binding method
+    * EXTREME SCALE version (BTD-only)
+      - Memory consumption _only_ dependent on "device" region
+    * N-electrode support
+    * Region projections for transmission through "eigenstates"
+    * Custom change of the self-energies
+    * k -> k' transmissions
+    * Interpolation of bias Hamiltonians
+    * Bond-currents
+    * Fully OpenMP threaded and/or MPI parallelized
+    * DOS and bulk transmission for electrodes
+    * Gf-DOS/spectral-DOS for device region
+      
+
+-- Mixing routines rewritten (Nick R. Papior)
+    
+    * New mixing schemes Pulay (Guarenteed Reduction)
+    * Custom mixing restart options (full user customizability)
+
+-- Added more constraints (Nick R. Papior)
+
+    * Constraints are verbose and many new ways of using constraints exists
+
+-- NetCDF4 file format for siesta -> parallel IO (Nick R. Papior)
+
+    * Provides a standard intrinsically grouped file for retaining
+    nearly all siesta related information in one file.
+
+-- LUA scripting in siesta (Nick R. Papior)
+    
+    * This is an experimental feature
+
+-- Gate calculations (Nick R. Papior)
+
+    * Charge and Hartree gate
+
+-- Utilities (Nick R. Papior)
+
+    * All make-files are now prepared to enable parallel builds
+      - this makes compilation *MUCH* faster. For example:
+         make -j4
+        will compile using 4 cores.
+    * Grimme utility
+      - easy creation of FDF block for Grimme parameters
+    * SpPivot, pivot sparsity pattern using several different routines
+    * TS/** different utilities related to transiesta
