@@ -47,6 +47,7 @@ tests = ag anneal-cont ar2_vdw \
 	fe fe_broyden fe_clust_noncollinear fe_clust_noncollinear-gga \
 	fe_cohp fen fe_noncol_kp \
 	fire_benzene floating force_2 force_constants \
+    gate_G_charge gate_G_hartree \
 	ge111 graphite_c6 graphite_vdw_df \
 	h2_bessel \
 	h2o h2o_2 h2o_basis h2o_dipole h2o_dipole2 h2o_dos \
