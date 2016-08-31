@@ -12,7 +12,8 @@
 
       subroutine final_H_f_stress( istep, iscf , SCFconverged )
       use units, only: eV
-      
+
+      use files,        only : slabel
 #ifdef NCDF_4
       use siesta_options, only: write_cdf
 #endif
@@ -67,7 +68,7 @@
 #ifdef TRANSIESTA
       use siesta_options, only : idyn, ia1, write_tshs_history
       use sparse_matrices, only: H_2D, S_1D
-      use files,        only : slabel, label_length
+      use files,        only : label_length
       use m_ts_global_vars, only : TSrun
       use m_ts_options, only : TS_HS_save
       use m_ts_kpoints, only : ts_Gamma, ts_kscell, ts_kdispl
@@ -321,7 +322,7 @@
 #ifdef TRANSIESTA
          if ( TS_HS_save ) dic_save = dic_save //('H'.kv.1)
 #endif
-         call cdf_save_state('SIESTA.nc',dic_save)
+         call cdf_save_state(trim(slabel)//'.nc',dic_save)
          call delete(dic_save)
       end if
 #endif

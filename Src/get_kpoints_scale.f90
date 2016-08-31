@@ -12,6 +12,8 @@ CONTAINS
     use parallel,       only: IOnode
     use siesta_geom,    only: ucell
 
+    implicit none
+
     integer, parameter :: dp = selected_real_kind(10,100)
     
     character(len=*), intent(in) :: block_string  ! BandLinesScale, etc
@@ -19,7 +21,8 @@ CONTAINS
     integer,  intent(out)        :: ierr          ! Error code: 0: success
 
     character(len=30)  :: scale
-    real(dp)           :: pi
+    real(dp)           :: pi, alat
+    integer            :: i
 
     ierr = 0
     

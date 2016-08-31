@@ -77,6 +77,7 @@
 \newcommand\prephyperlink
 
 \def\fdfentryline@None{None}
+\def\fdfentryline@block{block}
 % Create the entry for the fdf-key
 %
 % #1: the name of the fdf-key
@@ -91,7 +92,18 @@
     % Create fdf-label (with indexing)
     \strut{\bgroup\color{fdf-list}%
         \StrSubstitute[0]{#1}{!}{.}[\@tmp]%
-        \expandafter\cleanedhypertarget\expandafter{\@tmp}{\expandafter\fontfdf\expandafter{\@tmp}}%
+        \edef\@tmpword{\@tmp}
+        % In case the fdfentry is a block,
+        % we prepend the %block to the 
+        % word.
+        \IfValueT{#2}{%
+            \def\tmp@None{#2}%
+            \ifx\tmp@None\fdfentryline@block
+               \def\tmp@None{\%block }%
+               \edef\@tmpword{\tmp@None\@tmp}
+            \fi
+        }
+        \expandafter\cleanedhypertarget\expandafter{\@tmp}{\expandafter\fontfdf\expandafter{\@tmpword}}%
         \sindex[sfdf]{#1}%
         % Create label for the entry (allows pageref)
         \label{#1}%

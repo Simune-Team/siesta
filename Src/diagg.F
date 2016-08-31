@@ -92,7 +92,9 @@ C
       use alloc
       use fdf,           only : fdf_get
       use m_rdiag_elpa,  only : rdiag_elpa
+#ifndef SIESTA__NO_MRRR
       use m_rdiag_mrrr,  only : rdiag_mrrr
+#endif
 
 #ifdef MPI
       use mpi_siesta
@@ -176,9 +178,14 @@ C Solve eigenvalue problem
      $              nuo, nuotot, eo(1,ispin), 
      .              psi(1,1,ispin), neigwanted, ierror )
         else if (use_mrrr) then
+#ifdef SIESTA__NO_MRRR
+           call die("MRRR method not compiled-in. Remove 
+     & -DSIESTA__NO_MRRR")
+#else
            call rdiag_mrrr( Haux, Saux, nuotot,
      $              nuo, nuotot, eo(1,ispin), 
      .              psi(1,1,ispin), neigwanted, ierror )
+#endif
         else
            call rdiag( Haux, Saux, nuotot, nuo, nuotot,
      $              eo(1,ispin), 

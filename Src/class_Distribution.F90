@@ -6,7 +6,7 @@ module class_Distribution
 
   implicit none
 
-  character(len=*), parameter :: mod_name=__FILE__
+  character(len=*), parameter :: mod_name="class_Distribution.F90"
 
 #ifndef MPI
   ! To allow compilation in serial mode

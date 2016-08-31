@@ -100,7 +100,7 @@
            extrae_value)
          integer*4:: num
          integer*4:: extrae_types
-         integer*8:: extrae_values
+         integer*8:: extrae_value
          end subroutine extrae_neventandcounters
 
          subroutine extrae_counters

@@ -47,37 +47,6 @@ subroutine read_options( na, ns, nspin )
 
   ! This routine sets variables in the 'siesta_options' module
 
-  ! g2max_default : Mesh cutoff default, in Ry
-  ! temp_default  : Electronic temperature default, in Ry
-
-  real(dp), parameter :: g2cut_default = 100.e0_dp
-  real(dp), parameter :: temp_default  = 1.900e-3_dp 
-
-  integer,  parameter :: maxsav_default = 0
-  integer,  parameter :: nscf_default = 50
-  integer,  parameter :: ncgmax_default = 1000
-
-  real(dp), parameter :: wmix_default = 0.25_dp
-  real(dp), parameter :: wmixkick_default = 0.5_dp
-  real(dp), parameter :: occtol_default = 1.0e-12_dp
-  real(dp), parameter :: etol_default = 1.0e-8_dp
-  real(dp), parameter :: rcoor_default = 9.5_dp
-  real(dp), parameter :: rcoorcp_default = 9.5_dp
-  real(dp), parameter :: tcp_default = 0.05_dp
-  integer,  parameter :: pmax_default = 100
-
-  real(dp), parameter :: dxmax_default = 0.2_dp             ! Bohr
-  real(dp), parameter :: ftol_default =  0.00155574_dp      ! Ry/Bohr 
-  ! 0.04 eV/Ang
-  real(dp), parameter :: strtol_default = 6.79773e-5_dp     ! 1 GPa
-  real(dp), parameter :: dt_default = 1.0_dp                ! 1 fs
-  real(dp), parameter :: mn_default = 1.0e2_dp              ! Nose mass in Ry*fs**2
-  real(dp), parameter :: mpr_default = 1.0e2_dp             ! PR mass in Ry*fs**2
-  real(dp), parameter :: taurelax_default = 1.0e2_dp        ! fs
-  real(dp), parameter :: bulkm_default = 100*6.79773e-5_dp  ! 100 GPa
-  real(dp), parameter :: dx_default = 0.04_dp               ! Bohr
-
-
   ! The following are comment lines that should be merged into 'siesta_options'.
 
   ! real*8 charnet           : Net charge (in units of |e|)
@@ -303,7 +272,7 @@ subroutine read_options( na, ns, nspin )
 
 
   ! Planewave cutoff of the real space mesh ...
-  g2cut = fdf_get('MeshCutoff',g2cut_default,'Ry')
+  g2cut = fdf_get('MeshCutoff',100._dp,'Ry')
   if (ionode) then
      write(6,6) 'redata: Mesh Cutoff', g2cut,' Ry'
   endif
@@ -327,7 +296,7 @@ subroutine read_options( na, ns, nspin )
   ! SCF Loop parameters ...
   !     Minimum/Maximum number of SCF iterations
   min_nscf = fdf_get('MinSCFIterations',0)
-  nscf     = fdf_get('MaxSCFIterations',nscf_default)
+  nscf     = fdf_get('MaxSCFIterations',50)
   SCFMustConverge = fdf_get('SCFMustConverge', .false.)
   if (ionode) then
      write(6,4) 'redata: Min. number of SCF Iter',min_nscf
@@ -403,7 +372,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)
-  maxsav = fdf_get('DM.NumberPulay', maxsav_default)
+  maxsav = fdf_get('DM.NumberPulay', 0)
 
   ! Broyden SCF mixing, number of iterations 
   broyden_maxit = fdf_get('DM.NumberBroyden',0)
@@ -462,7 +431,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Density Matrix Mixing  (proportion of output DM in new input DM)
-  wmix = fdf_get('DM.MixingWeight',wmix_default)
+  wmix = fdf_get('DM.MixingWeight',0.25_dp)
   if (ionode) then
      write(6,6) 'redata: New DM Mixing Weight',wmix
   endif
@@ -474,7 +443,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Density Matrix occupancy tolerance
-  occtol = fdf_get('DM.OccupancyTolerance',occtol_default)
+  occtol = fdf_get('DM.OccupancyTolerance',1.e-12_dp)
   if (ionode) then
      write(6,8) 'redata: New DM Occupancy tolerance',occtol
   endif
@@ -504,7 +473,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Density Matrix Mixing each nkick SCF iterations
-  wmixkick = fdf_get('DM.KickMixingWeight',wmixkick_default)
+  wmixkick = fdf_get('DM.KickMixingWeight',0.5_dp)
   if (ionode) then
      write(6,6) 'redata: DM Mixing Weight for Kicks',wmixkick
   endif
@@ -772,7 +741,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Electronic temperature for Fermi Smearing ...
-  temp = fdf_get('ElectronicTemperature',temp_default,'Ry')
+  temp = fdf_get('ElectronicTemperature',1.9e-3_dp,'Ry')
   if (ionode .and. isolve.eq.SOLVE_DIAGON) then
      write(6,6) 'redata: Electronic Temperature',temp/Kelvin,' K'
   endif
@@ -813,7 +782,7 @@ subroutine read_options( na, ns, nspin )
 
   ! Order-N solution parameters ...
   !     Maximum number of CG minimization iterations
-  ncgmax = fdf_get('ON.MaxNumIter',ncgmax_default)
+  ncgmax = fdf_get('ON.MaxNumIter',1000)
   if (ncgmax<1) then
      if (ionode) then
         write(6,2) 'ON.MaxNumIter cannot be less than 1.  Resetting to 1'
@@ -822,7 +791,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Relative tolerance in total band structure energy
-  etol = fdf_get('ON.etol',etol_default)
+  etol = fdf_get('ON.etol',1.e-8_dp)
 
   ! Fermi level parameter
   eta(1:2) = 0.0_dp
@@ -832,7 +801,7 @@ subroutine read_options( na, ns, nspin )
   eta(2) = fdf_physical('ON.eta_beta',eta(2),'Ry')
 
   ! Cutoff radius for Localized Wave Functions
-  rcoor = fdf_get('On.RcLWF',rcoor_default,'Bohr')
+  rcoor = fdf_get('On.RcLWF',9.5_dp,'Bohr')
 
   ! Use continumation LWF files
   usesavelwf = fdf_get('ON.UseSaveLWF',usesaveddata)
@@ -870,17 +839,15 @@ subroutine read_options( na, ns, nspin )
 #endif
 
   ! Cutoff radius to calculate the Chemical Potential by projection
-  rcoorcp = fdf_get( 'ON.ChemicalPotentialRc', &
-       rcoorcp_default, 'Bohr' )
+  rcoorcp = fdf_get( 'ON.ChemicalPotentialRc', 9.5_dp, 'Bohr' )
 
   ! Temperature of the Fermi distribution to calculate the
   ! Chemical potential by projection
-  tcp = fdf_get( 'ON.ChemicalPotentialTemperature', &
-       tcp_default,'Ry' )
+  tcp = fdf_get( 'ON.ChemicalPotentialTemperature', 0.05_dp,'Ry' )
   beta = 1.0_dp/tcp
 
   ! Order of the Chebishev expansion to calculate the Chemical potential
-  pmax = fdf_get('ON.ChemicalPotentialOrder',pmax_default)
+  pmax = fdf_get('ON.ChemicalPotentialOrder',100)
 
 
   if (isolve==SOLVE_ORDERN) then
@@ -1041,13 +1008,13 @@ subroutine read_options( na, ns, nspin )
   nmove = fdf_get('MD.NumCGsteps',0)
 
   ! Maximum atomic displacement in one CG step
-  dxmax = fdf_get('MD.MaxCGDispl',dxmax_default,'Bohr')
+  dxmax = fdf_get('MD.MaxCGDispl',0.2_dp,'Bohr')
 
-  ! Tolerance in the maximum atomic force 
-  ftol = fdf_get('MD.MaxForceTol', ftol_default, 'Ry/Bohr')
+  ! Tolerance in the maximum atomic force [0.04 eV/Ang]
+  ftol = fdf_get('MD.MaxForceTol', 0.00155574_dp, 'Ry/Bohr')
 
-  ! Tolerance in the maximum residual stress (var cell) def = 1 GPa 
-  strtol = fdf_get('MD.MaxStressTol', strtol_default, 'Ry/Bohr**3')
+  ! Tolerance in the maximum residual stress (var cell) [1 GPa]
+  strtol = fdf_get('MD.MaxStressTol', 6.79773e-5_dp, 'Ry/Bohr**3')
   strtol = abs(strtol)
 
   if (ionode) then
@@ -1202,7 +1169,7 @@ subroutine read_options( na, ns, nspin )
   ifinal = fdf_get('MD.FinalTimeStep',1)
 
   ! Length of time step for MD
-  dt = fdf_get('MD.LengthTimeStep',dt_default,'fs')
+  dt = fdf_get('MD.LengthTimeStep',1._dp,'fs')
 
   ! Quench Option
   qnch  = fdf_get('MD.Quench',.false.)
@@ -1283,10 +1250,10 @@ subroutine read_options( na, ns, nspin )
 
 
   ! Mass of Nose variable
-  mn = fdf_get('MD.NoseMass',mn_default,'Ry*fs**2')
+  mn = fdf_get('MD.NoseMass',100._dp,'Ry*fs**2')
 
   ! Mass of Parrinello-Rahman variables
-  mpr = fdf_get('MD.ParrinelloRahmanMass',mpr_default,'Ry*fs**2')
+  mpr = fdf_get('MD.ParrinelloRahmanMass',100._dp,'Ry*fs**2')
 
   if (idyn==2 .or. idyn==4) then
      if (ionode) then
@@ -1385,7 +1352,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Relaxation Time for Annealing
-  taurelax = fdf_get( 'MD.TauRelax',taurelax_default,'fs' )
+  taurelax = fdf_get( 'MD.TauRelax', 100._dp,'fs' )
   if (idyn==5) then
      if (ionode) then
         write(6,6) 'redata: Annealing Relaxation Time', taurelax,' fs'
@@ -1398,8 +1365,8 @@ subroutine read_options( na, ns, nspin )
      endif
   endif
 
-  ! Estimated Bulk modulus (for Pressure annealing)
-  bulkm = fdf_get( 'MD.BulkModulus',bulkm_default,'Ry/Bohr**3' )
+  ! Estimated Bulk modulus (for Pressure annealing) [100 GPa]
+  bulkm = fdf_get( 'MD.BulkModulus',100*6.79773e-5_dp,'Ry/Bohr**3' )
   if (ionode) then
      if (idyn==5 .and. (ianneal==2 .or. ianneal==3)) then
         write(6,6) 'redata: Approx. Bulk Modulus ', bulkm/eV*Ang**3, ' eV/Ang**3'
@@ -1414,7 +1381,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Atomic displacement for force constant calculation
-  dx = fdf_get('MD.FCDispl',dx_default,'Bohr')
+  dx = fdf_get('MD.FCDispl',0.04_dp,'Bohr')
 
   ! First and last atoms to displace for calculation of force constants
   ia1 = fdf_get('MD.FCfirst',1)
@@ -1545,20 +1512,20 @@ subroutine read_options( na, ns, nspin )
 
   if ( IONode ) then
      ! Write out
-     write(*,1) 'redata: Save data in SIESTA.nc',write_cdf
+     write(*,1) 'redata: Save all siesta data in one NC',write_cdf
      if ( write_cdf ) then
         if ( grid_p == dp ) then
            ctmp = fdf_get('CDF.Grid.Precision','double')
            if ( leqi(ctmp,'single') .or. leqi(ctmp,'float') ) then
-              write(*,2) 'redata: Grids in SIESTA.nc reduced to single precision'
+              write(*,2) 'redata: Grids in NC reduced to single precision'
            end if
         end if
-        write(*,4) 'redata: SIESTA.nc compression level',cdf_comp_lvl
+        write(*,4) 'redata: NC compression level',cdf_comp_lvl
         if ( cdf_r_parallel ) then
-           write(*,2) 'redata: Reads SIESTA.nc in parallel'
+           write(*,2) 'redata: Reads NC in parallel'
         end if
         if ( cdf_w_parallel ) then
-           write(*,2) 'redata: Writes SIESTA.nc in parallel (possibly not working)'
+           write(*,2) 'redata: Writes NC in parallel (possibly not working)'
         end if
      end if
   end if
@@ -1634,6 +1601,8 @@ subroutine read_options( na, ns, nspin )
   dm_normalization_tol   = fdf_get( 'DM.NormalizationTolerance',1.0d-5)
   normalize_dm_during_scf= fdf_get( 'DM.NormalizeDuringSCF',.true.)
   muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
+  ! If no mulliken is requested, set it to false
+  if ( mullipop == 0 ) muldeb = .false.
   rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &
        1.0_dp, 'Bohr' )
   bornz                  = fdf_get( 'BornCharge'   , .false. )
