@@ -105,7 +105,7 @@ subroutine writemmn( ispin )
 !      periodic part of the wavefunction with a neighbour k-point will be 
 !      computed
 !   nncount:     the number of neighbour k-points 
-  write( unit=mmnunit, fmt="(i5,x,i5,x,i2)", err=1984 )             &
+  write( unit=mmnunit, fmt="(i5,1x,i5,1x,i2)", err=1984 )             &
  &  numincbands(ispin),numkpoints,nncount
 
 ! Then, there are numkpoints x nncount blocks of data.
@@ -238,7 +238,7 @@ subroutine writeamn( ispin )
 !      periodic part of the wavefunction with a neighbour k-point will be 
 !      computed
 !   numproj:     the number of projections
-  write( unit=amnunit, fmt="(i5,x,i5,x,i2)", err=1992 )             &
+  write( unit=amnunit, fmt="(i5,1x,i5,1x,i2)", err=1992 )             &
  &  numincbands(ispin), numkpoints, numproj
 
 ! Subsequent numincbands x numproj x numkpoint lines:  
@@ -252,7 +252,7 @@ subroutine writeamn( ispin )
   do ik = 1, numkpoints
     do iproj = 1, numproj
       do mband = 1, numincbands(ispin)
-        write(unit=amnunit,fmt="(3i5,x,f12.5,2x,f12.5)",err=1992)      &
+        write(unit=amnunit,fmt="(3i5,1x,f12.5,2x,f12.5)",err=1992)      &
  &         mband, iproj, ik,                                           &
  &         real(Amnmat(mband,iproj,ik)),aimag(Amnmat(mband,iproj,ik))
       enddo

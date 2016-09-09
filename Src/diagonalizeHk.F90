@@ -187,8 +187,9 @@ subroutine diagonalizeHk( ispin )
 
   real(dp), dimension(:), pointer :: epsilon ! Eigenvalues of the Hamiltonian
 
+#ifdef MPI
   integer, external :: numroc
-
+#endif
   call timer('diagonalizeHk',1)
 
 ! Initialize the number of occupied bands

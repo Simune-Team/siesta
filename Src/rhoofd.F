@@ -56,8 +56,8 @@ C  Modules
       implicit none
 
 C     Argument types and dimensions
-      integer,       intent(in) :: no, np, maxnd, numd(nuo), nspin,
-     &                             nuo, nuotot, iaorb(*), iphorb(*), 
+      integer,       intent(in) :: no, np, maxnd, nuo, numd(nuo), nspin,
+     &                             nuotot, iaorb(*), iphorb(*), 
      &                             isa(*), listdptr(nuo), listd(maxnd)
       real(dp),      intent(in) :: Dscf(maxnd,nspin)
       real(grid_p), intent(out) :: rhoscf(nsp,np,nspin)
