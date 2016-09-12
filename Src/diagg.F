@@ -179,8 +179,8 @@ C Solve eigenvalue problem
      .              psi(1,1,ispin), neigwanted, ierror )
         else if (use_mrrr) then
 #ifdef SIESTA__NO_MRRR
-           call die("MRRR method not compiled-in. Remove 
-     & -DSIESTA__NO_MRRR")
+           call die("MRRR method not compiled-in. " //
+     $              "Remove -DSIESTA__NO_MRRR")
 #else
            call rdiag_mrrr( Haux, Saux, nuotot,
      $              nuo, nuotot, eo(1,ispin), 
