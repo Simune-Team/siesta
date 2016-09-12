@@ -313,6 +313,7 @@
       end subroutine rdiag_mrrr
 #else
       ! Some compilers do not allow empty modules
+      CONTAINS
       subroutine rdiag_mrrr_dummy()
       end subroutine
 #endif      
