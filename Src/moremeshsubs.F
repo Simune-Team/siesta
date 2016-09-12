@@ -27,7 +27,7 @@ C allocASynBuffer   = Allocate buffer for asynchronous
 C                     communications if necessary
 C 
       MODULE moreMeshSubs
-      use precision, only : grid_p, dp
+      use precision, only : grid_p, dp, i8b
       use parallel,  only : node, Nodes, ProcessorY
       use sys,       only : die
       use alloc,     only : re_alloc, de_alloc
@@ -2644,10 +2644,10 @@ C     Local variables
       character(len=*), parameter :: errMsg = myName//'ERROR: '
       integer                     :: PP, Lbox(2,3), Ldim,
      &                               QQ, P1, P2, POS, ini
-      integer*8,          pointer :: lwload(:), gwload(:), recvB(:)
+      integer(i8b),          pointer :: lwload(:), gwload(:), recvB(:)
       logical                     :: found, inters
       integer                     :: mGdim, mLdim, nAxis, nms(3)
-      integer*8                   :: h1, h2
+      integer(i8b)                   :: h1, h2
       integer,            pointer :: PROCS(:)
       integer                     :: MPIerror, Status(MPI_Status_Size)
 !------------------------------------------------------------------------- BEGIN
@@ -2788,11 +2788,11 @@ C INPUT:
 C integer   iaxis         : Axe to be reduced
 C integer   Ibox(2,3)     : Limits of the input array
 C integer   Lbox(2,3)     : Limits of the intersection that we want to reduce
-C integer*8 wload         : 3-D array that we want to reduce to one of its
+C integer(i8b) wload         : 3-D array that we want to reduce to one of its
 C                           dimensions
 C
 C OUTPUT:
-C integer*8 lwload        : 1-D array. Reduction of the intersected part
+C integer(i8b) lwload        : 1-D array. Reduction of the intersected part
 C                           of wload.
 C
 C BEHAVIOR:
@@ -2809,7 +2809,7 @@ C ==================================================================
       implicit none
 C     Passed arguments
       integer,    intent(in) :: iaxis, Ibox(2,3), Lbox(2,3), wload(*)
-      integer*8, intent(out) :: lwload(*)
+      integer(i8b), intent(out) :: lwload(*)
 C     Local variables
       integer              :: Idim(3), Ldim(3), ind, ind1, ind2, ind3,
      &                        I1, I2, I3
@@ -2889,14 +2889,14 @@ C SUBROUTINE vecBisec( nval, values, nparts, pos, h1, h2 )
 C
 C INPUT:
 C integer   nval         : Dimension of the input array
-C integer*8 values       : Input array
+C integer(i8b) values       : Input array
 C integer   nparts       : Numbers of partitions that we want to make from
 C                          the input array (in this call we only make one cut).
 C
 C OUTPUT:
 C integer   pos          : Position of the cut
-C integer*8 h1           : Load of the first part
-C integer*8 h2           : Load of the second part
+C integer(i8b) h1           : Load of the first part
+C integer(i8b) h2           : Load of the second part
 C
 C BEHAVIOR:
 C We want to split array "values" in "nparts", but in this call to
@@ -2913,13 +2913,13 @@ C ==================================================================
       implicit none
 C     Input variables
       integer,    intent(in) :: nval, nparts
-      integer*8,  intent(in) :: values(nval)
+      integer(i8b),  intent(in) :: values(nval)
       integer,   intent(out) :: pos
-      integer*8, intent(out) :: h1, h2
+      integer(i8b), intent(out) :: h1, h2
 
 C     Local variables
       integer               :: p1, p2, ii
-      integer*8             :: total, halfG, halfL
+      integer(i8b)             :: total, halfG, halfL
 !------------------------------------------------------------------------- BEGIN
       if (nparts.gt.1) then
 C       Split the number of parts in 2
