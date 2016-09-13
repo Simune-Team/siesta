@@ -7,6 +7,14 @@
 ! ---
 MODULE MPI_SIESTA
 !
+! This module embodies three different things:
+!
+!  - MPI interfaces for the subset of routines and types needed in Siesta
+!  - A trick to make mpi_comm_world into a variable that can be reset
+!    inside the code.
+!  - Time-profiling of a few key MPI routines
+!
+!
 ! This is an interface to supplant some MPI routines called by siesta,
 ! in order to time-profile them. J.M.Soler. May.2009
 !
@@ -18,14 +26,15 @@ MODULE MPI_SIESTA
     trueMPI_GET_COUNT  => MPI_GET_COUNT,  &
     trueMPI_INIT       => MPI_INIT,       &
     trueMPI_WAIT       => MPI_WAIT,       &
-    trueMPI_WAITALL    => MPI_WAITALL
+    trueMPI_WAITALL    => MPI_WAITALL,    &
+    true_MPI_Comm_World => MPI_Comm_World      ! Note
 
   USE TIMER_MPI_M, only: timer_mpi
 
 ! The following construction allows to supplant MPI_Comm_World within SIESTA,
 ! and to use it as a subroutine with its own internal MPI communicator.
 ! JMS. Oct.2010
-  USE MPI_INTERFACES, only: true_MPI_Comm_World => MPI_Comm_World
+
   integer, public :: MPI_Comm_World = true_MPI_Comm_World
 !
 !   Export explicitly some symbols to help some versions of
