@@ -37,7 +37,6 @@
 module geom_helper
 
   use intrinsic_missing, only : UCORB  => MODP
-  use intrinsic_missing, only : UCATOM => MODP
   implicit none
 
   integer, parameter :: dp = selected_real_kind(10,100)
@@ -46,7 +45,7 @@ module geom_helper
 
   ! We fetch this from the intrinsic_missing module
   ! It does the same thing
-  public :: ucorb, ucatom
+  public :: ucorb
   public :: iaorb
   interface cell_abc
      module procedure cell_abc_ij, cell_abc_c

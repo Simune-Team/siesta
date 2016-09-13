@@ -21,12 +21,14 @@ c****************************************************************************
 
         implicit none
 
+        integer, parameter :: dp = selected_real_kind(10,100)
+
         integer io,iu, nk, nspin, ik, iik, ispin, iispin,
      .          nwflist, iw, indwf, j, nuotot, jj
 
         logical gamma
 
-        real*8 k(3), energy
+        real(dp) k(3), energy
 
         iu = 10
         io = 6

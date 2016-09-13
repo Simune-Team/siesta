@@ -2530,7 +2530,7 @@ contains
     integer, intent(in) :: sidx
     integer, intent(in), optional :: hidx
 
-    real(dp), pointer, contiguous :: d1(:)
+    real(dp), pointer :: d1(:)
 
     type(dData1D), pointer :: dD1
     
@@ -2646,7 +2646,7 @@ contains
     real(dp), intent(in), optional :: fact
 
     type(dData1D) :: dD1
-    real(dp), pointer, contiguous :: sF(:)
+    real(dp), pointer :: sF(:)
     integer :: in, ns
     integer :: i
 
@@ -2694,7 +2694,7 @@ contains
     real(dp), intent(in) :: F(n)
 
     type(dData1D), pointer :: dD1
-    real(dp), pointer, contiguous :: FF(:)
+    real(dp), pointer :: FF(:)
     integer :: in
 
     if ( .not. stack_check(s_F,n) ) then
@@ -2728,7 +2728,7 @@ contains
 
     type(dData1D) :: dD1
     type(dData1D), pointer :: pD1
-    real(dp), pointer, contiguous :: res1(:), res2(:), rres(:)
+    real(dp), pointer :: res1(:), res2(:), rres(:)
     integer :: in, ns, i, n
 
     if ( n_items(s_res) < 2 ) then

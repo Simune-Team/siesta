@@ -129,7 +129,7 @@ C     Add on force field contribution to energy
 ! should be enough
 !
       if ( SpOrb ) then
-         H_so(1:,3:) => val(H_so_2D)
+         H_so => val(H_so_2D)
 !$OMP parallel workshare default(shared)
          H_so = 0._dp
 !$OMP end parallel workshare

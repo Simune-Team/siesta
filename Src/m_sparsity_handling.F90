@@ -929,7 +929,7 @@ contains
        dim2 = size(array(1)%v(1,:))
     else
        call die('How on earth should we interpolate &
-            dependent data...')
+            &dependent data...')
     end if
     n_nzs = nnzs(A_2Ds(1))
 

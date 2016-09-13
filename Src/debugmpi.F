@@ -8,6 +8,7 @@
       module debugMpi
       logical, save     :: debugON = .false.
       integer, save     :: mpiUnit  = 23
+      integer, parameter :: local_dp = selected_real_kind(10,300)
       end module
 
       subroutine debugMpiOn( )
@@ -57,7 +58,7 @@
       use debugMpi
       implicit none
       integer        :: n
-      real*8         :: x(n)
+      real(local_dp)       :: x(n)
 !------------------------------------------------------------------------- BEGIN
       if (debugON) then
         write(mpiUnit,*) x
@@ -69,7 +70,7 @@
       subroutine write_double( x )
       use debugMpi
       implicit none
-      real*8         :: x
+      real(local_dp)       :: x
 !------------------------------------------------------------------------- BEGIN
       if (debugON) then
         write(mpiUnit,*) x

@@ -25,7 +25,7 @@ module m_ts_tri_init
   implicit none
 
   ! arrays for containing the tri-diagonal matrix part sizes
-  type(tRgn) :: c_Tri
+  type(tRgn), save :: c_Tri
 
   public :: ts_tri_init
   public :: ts_tri_analyze
@@ -482,7 +482,7 @@ contains
                    if ( in_rgn(r_El,r_tmp%r(i)) ) then
                       call die('This is extremely difficult. &
                            &Please do not sort the BTD format as &
-                           it cannot figure out what to do.')
+                           &it cannot figure out what to do.')
                    end if
                 end do
                 call rgn_append(r_El, r_tmp, r_El)

@@ -822,7 +822,7 @@ contains
     call n_distribute(c%c_io%N, N_seg, li, Ni)
     if ( any(Ni < 2) ) then
        call die('Could not divide contour points appropriately. &
-            Choose a different contour method or increase contour points.')
+            &Choose a different contour method or increase contour points.')
     end if
 
     ! Get first segment
