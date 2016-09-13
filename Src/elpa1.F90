@@ -11,6 +11,8 @@ module ELPA1
 
   implicit none
 
+  integer, parameter :: dprec = kind(1.d0)
+
   PRIVATE ! By default, all routines contained are private
 
   ! The following routines are public:
@@ -46,9 +48,9 @@ module ELPA1
 
   ! Timing results, set by every call to solve_evp_xxx
 
-  real*8, public :: time_evp_fwd    ! forward transformations (to tridiagonal form)
-  real*8, public :: time_evp_solve  ! time for solving the tridiagonal system
-  real*8, public :: time_evp_back   ! time for back transformations of eigenvectors
+  real(dprec), public :: time_evp_fwd    ! forward transformations (to tridiagonal form)
+  real(dprec), public :: time_evp_solve  ! time for solving the tridiagonal system
+  real(dprec), public :: time_evp_back   ! time for back transformations of eigenvectors
 
   ! Set elpa_print_times to .true. for explicit timing outputs
 
@@ -140,13 +142,14 @@ subroutine solve_evp_real(na, nev, a, lda, ev, q, ldq, nblk, mpi_comm_rows, mpi_
 !-------------------------------------------------------------------------------
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer, intent(in) :: na, nev, lda, ldq, nblk, mpi_comm_rows, mpi_comm_cols
-   real*8 :: a(lda,*), ev(na), q(ldq,*)
+   real(dprec) :: a(lda,*), ev(na), q(ldq,*)
 
    integer my_prow, my_pcol, mpierr
-   real*8, allocatable :: e(:), tau(:)
-   real*8 ttt0, ttt1
+   real(dprec), allocatable :: e(:), tau(:)
+   real(dprec) ttt0, ttt1
 
    call mpi_comm_rank(mpi_comm_rows,my_prow,mpierr)
    call mpi_comm_rank(mpi_comm_cols,my_pcol,mpierr)
@@ -215,16 +218,17 @@ subroutine solve_evp_complex(na, nev, a, lda, ev, q, ldq, nblk, mpi_comm_rows, m
 !-------------------------------------------------------------------------------
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer, intent(in) :: na, nev, lda, ldq, nblk, mpi_comm_rows, mpi_comm_cols
-   complex*16 :: a(lda,*), q(ldq,*)
-   real*8 :: ev(na)
+   complex(dprec) :: a(lda,*), q(ldq,*)
+   real(dprec) :: ev(na)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer l_rows, l_cols, l_cols_nev
-   real*8, allocatable :: q_real(:,:), e(:)
-   complex*16, allocatable :: tau(:)
-   real*8 ttt0, ttt1
+   real(dprec), allocatable :: q_real(:,:), e(:)
+   complex(dprec), allocatable :: tau(:)
+   real(dprec) ttt0, ttt1
 
    call mpi_comm_rank(mpi_comm_rows,my_prow,mpierr)
    call mpi_comm_size(mpi_comm_rows,np_rows,mpierr)
@@ -298,9 +302,10 @@ subroutine tridiag_real(na, a, lda, nblk, mpi_comm_rows, mpi_comm_cols, d, e, ta
 !-------------------------------------------------------------------------------
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer na, lda, nblk, mpi_comm_rows, mpi_comm_cols
-   real*8 a(lda,*), d(na), e(na), tau(na)
+   real(dprec) a(lda,*), d(na), e(na), tau(na)
 
    integer, parameter :: max_stored_rows = 32
 
@@ -310,9 +315,9 @@ subroutine tridiag_real(na, a, lda, nblk, mpi_comm_rows, mpi_comm_cols, d, e, ta
    integer istep, i, j, lcs, lce, lrs, lre
    integer tile_size, l_rows_tile, l_cols_tile
 
-   real*8 vav, vnorm2, x, aux(2*max_stored_rows), aux1(2), aux2(2), vrl, xf
+   real(dprec) vav, vnorm2, x, aux(2*max_stored_rows), aux1(2), aux2(2), vrl, xf
 
-   real*8, allocatable:: tmp(:), vr(:), vc(:), ur(:), uc(:), vur(:,:), uvc(:,:)
+   real(dprec), allocatable:: tmp(:), vr(:), vc(:), ur(:), uc(:), vur(:,:), uvc(:,:)
 
    integer pcol, prow
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -586,8 +591,10 @@ subroutine trans_ev_real(na, nqc, a, lda, tau, q, ldq, nblk, mpi_comm_rows, mpi_
 
    implicit none
 
+   integer, parameter :: dprec = kind(1.d0)
+
    integer na, nqc, lda, ldq, nblk, mpi_comm_rows, mpi_comm_cols
-   real*8 a(lda,*), q(ldq,*), tau(na)
+   real(dprec) a(lda,*), q(ldq,*), tau(na)
 
    integer :: max_stored_rows
 
@@ -596,8 +603,8 @@ subroutine trans_ev_real(na, nqc, a, lda, tau, q, ldq, nblk, mpi_comm_rows, mpi_
    integer l_cols, l_rows, l_colh, nstor
    integer istep, i, n, nc, ic, ics, ice, nb, cur_pcol
 
-   real*8, allocatable:: tmp1(:), tmp2(:), hvb(:), hvm(:,:)
-   real*8, allocatable:: tmat(:,:), h1(:), h2(:)
+   real(dprec), allocatable:: tmp1(:), tmp2(:), hvb(:), hvm(:,:)
+   real(dprec), allocatable:: tmat(:,:), h1(:), h2(:)
 
    integer pcol, prow
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -778,10 +785,12 @@ subroutine mult_at_b_real(uplo_a, uplo_c, na, ncb, a, lda, b, ldb, nblk, mpi_com
 
    implicit none
 
+   integer, parameter :: dprec = kind(1.d0)
+
    character*1 uplo_a, uplo_c
 
    integer na, ncb, lda, ldb, nblk, mpi_comm_rows, mpi_comm_cols, ldc
-   real*8 a(lda,*), b(ldb,*), c(ldc,*)
+   real(dprec) a(lda,*), b(ldb,*), c(ldc,*)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer l_cols, l_rows, l_rows_np
@@ -792,7 +801,7 @@ subroutine mult_at_b_real(uplo_a, uplo_c, na, ncb, a, lda, b, ldb, nblk, mpi_com
 
    logical a_lower, a_upper, c_lower, c_upper
 
-   real*8, allocatable:: aux_mat(:,:), aux_bc(:), tmp1(:,:), tmp2(:,:)
+   real(dprec), allocatable:: aux_mat(:,:), aux_bc(:), tmp1(:,:), tmp2(:,:)
 
 
    call mpi_comm_rank(mpi_comm_rows,my_prow,mpierr)
@@ -972,13 +981,15 @@ subroutine tridiag_complex(na, a, lda, nblk, mpi_comm_rows, mpi_comm_cols, d, e,
 
    implicit none
 
+   integer, parameter :: dprec = kind(1.d0)
+
    integer na, lda, nblk, mpi_comm_rows, mpi_comm_cols
-   complex*16 a(lda,*), tau(na)
-   real*8 d(na), e(na)
+   complex(dprec) a(lda,*), tau(na)
+   real(dprec) d(na), e(na)
 
    integer, parameter :: max_stored_rows = 32
 
-   complex*16, parameter :: CZERO = (0.d0,0.d0), CONE = (1.d0,0.d0)
+   complex(dprec), parameter :: CZERO = (0.d0,0.d0), CONE = (1.d0,0.d0)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer totalblocks, max_blocks_row, max_blocks_col, max_local_rows, max_local_cols
@@ -986,11 +997,11 @@ subroutine tridiag_complex(na, a, lda, nblk, mpi_comm_rows, mpi_comm_cols, d, e,
    integer istep, i, j, lcs, lce, lrs, lre
    integer tile_size, l_rows_tile, l_cols_tile
 
-   real*8 vnorm2
-   complex*16 vav, xc, aux(2*max_stored_rows),  aux1(2), aux2(2), vrl, xf
+   real(dprec) vnorm2
+   complex(dprec) vav, xc, aux(2*max_stored_rows),  aux1(2), aux2(2), vrl, xf
 
-   complex*16, allocatable:: tmp(:), vr(:), vc(:), ur(:), uc(:), vur(:,:), uvc(:,:)
-   real*8, allocatable:: tmpr(:)
+   complex(dprec), allocatable:: tmp(:), vr(:), vc(:), ur(:), uc(:), vur(:,:), uvc(:,:)
+   real(dprec), allocatable:: tmpr(:)
 
    integer pcol, prow
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -1274,21 +1285,22 @@ subroutine trans_ev_complex(na, nqc, a, lda, tau, q, ldq, nblk, mpi_comm_rows, m
 !-------------------------------------------------------------------------------
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer na, nqc, lda, ldq, nblk, mpi_comm_rows, mpi_comm_cols
-   complex*16 a(lda,*), q(ldq,*), tau(na)
+   complex(dprec) a(lda,*), q(ldq,*), tau(na)
 
    integer :: max_stored_rows
 
-   complex*16, parameter :: CZERO = (0.d0,0.d0), CONE = (1.d0,0.d0)
+   complex(dprec), parameter :: CZERO = (0.d0,0.d0), CONE = (1.d0,0.d0)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer totalblocks, max_blocks_row, max_blocks_col, max_local_rows, max_local_cols
    integer l_cols, l_rows, l_colh, nstor
    integer istep, i, n, nc, ic, ics, ice, nb, cur_pcol
 
-   complex*16, allocatable:: tmp1(:), tmp2(:), hvb(:), hvm(:,:)
-   complex*16, allocatable:: tmat(:,:), h1(:), h2(:)
+   complex(dprec), allocatable:: tmp1(:), tmp2(:), hvb(:), hvm(:,:)
+   complex(dprec), allocatable:: tmat(:,:), h1(:), h2(:)
 
    integer pcol, prow
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -1473,11 +1485,12 @@ subroutine mult_ah_b_complex(uplo_a, uplo_c, na, ncb, a, lda, b, ldb, nblk, mpi_
 !-------------------------------------------------------------------------------
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    character*1 uplo_a, uplo_c
 
    integer na, ncb, lda, ldb, nblk, mpi_comm_rows, mpi_comm_cols, ldc
-   complex*16 a(lda,*), b(ldb,*), c(ldc,*)
+   complex(dprec) a(lda,*), b(ldb,*), c(ldc,*)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer l_cols, l_rows, l_rows_np
@@ -1488,7 +1501,7 @@ subroutine mult_ah_b_complex(uplo_a, uplo_c, na, ncb, a, lda, b, ldb, nblk, mpi_
 
    logical a_lower, a_upper, c_lower, c_upper
 
-   complex*16, allocatable:: aux_mat(:,:), aux_bc(:), tmp1(:,:), tmp2(:,:)
+   complex(dprec), allocatable:: aux_mat(:,:), aux_bc(:), tmp1(:,:), tmp2(:,:)
 
 
    call mpi_comm_rank(mpi_comm_rows,my_prow,mpierr)
@@ -1638,9 +1651,10 @@ end subroutine mult_ah_b_complex
 subroutine solve_tridi( na, nev, d, e, q, ldq, nblk, mpi_comm_rows, mpi_comm_cols )
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer  na, nev, ldq, nblk, mpi_comm_rows, mpi_comm_cols
-   real*8 d(na), e(na), q(ldq,*)
+   real(dprec) d(na), e(na), q(ldq,*)
 
    integer i, j, n, np, nc, nev1, l_cols, l_rows
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
@@ -1829,12 +1843,14 @@ subroutine solve_tridi_col( na, nev, nqoff, d, e, q, ldq, nblk, mpi_comm_rows )
 
    implicit none
 
+   integer, parameter :: dprec = kind(1.d0)
+
    integer  na, nev, nqoff, ldq, nblk, mpi_comm_rows
-   real*8 d(na), e(na), q(ldq,*)
+   real(dprec) d(na), e(na), q(ldq,*)
 
    integer, parameter:: min_submatrix_size = 16 ! Minimum size of the submatrices to be used
 
-   real*8, allocatable :: qmat1(:,:), qmat2(:,:)
+   real(dprec), allocatable :: qmat1(:,:), qmat2(:,:)
 
    integer i, n, np
    integer ndiv, noff, nmid, nlen, max_size
@@ -1991,11 +2007,13 @@ subroutine solve_tridi_single(nlen, d, e, q, ldq)
 
    implicit none
 
-   integer nlen, ldq
-   real*8 d(nlen), e(nlen), q(ldq,nlen)
+   integer, parameter :: dprec = kind(1.d0)
 
-   real*8, allocatable :: work(:), qtmp(:), ds(:), es(:)
-   real*8 dtmp
+   integer nlen, ldq
+   real(dprec) d(nlen), e(nlen), q(ldq,nlen)
+
+   real(dprec), allocatable :: work(:), qtmp(:), ds(:), es(:)
+   real(dprec) dtmp
 
    integer i, j, lwork, liwork, info, mpierr
    integer, allocatable :: iwork(:)
@@ -2073,16 +2091,18 @@ subroutine merge_systems( na, nm, d, e, q, ldq, nqoff, nblk, mpi_comm_rows, mpi_
 
    implicit none
 
+   integer, parameter :: dprec = kind(1.d0)
+
    integer  na, nm, ldq, nqoff, nblk, mpi_comm_rows, mpi_comm_cols, npc_0, npc_n
    integer  l_col(na), p_col(na), l_col_out(na), p_col_out(na)
-   real*8 d(na), e, q(ldq,*)
+   real(dprec) d(na), e, q(ldq,*)
 
    integer, parameter :: max_strip=128
 
-   real*8 beta, sig, s, c, t, tau, rho, eps, tol, dlamch, dlapy2, qtrans(2,2), dmax, zmax, d1new, d2new
-   real*8 z(na), d1(na), d2(na), z1(na), delta(na), dbase(na), ddiff(na), ev_scale(na), tmp(na)
-   real*8 d1u(na), zu(na), d1l(na), zl(na)
-   real*8, allocatable :: qtmp1(:,:), qtmp2(:,:), ev(:,:)
+   real(dprec) beta, sig, s, c, t, tau, rho, eps, tol, dlamch, dlapy2, qtrans(2,2), dmax, zmax, d1new, d2new
+   real(dprec) z(na), d1(na), d2(na), z1(na), delta(na), dbase(na), ddiff(na), ev_scale(na), tmp(na)
+   real(dprec) d1u(na), zu(na), d1l(na), zl(na)
+   real(dprec), allocatable :: qtmp1(:,:), qtmp2(:,:), ev(:,:)
 
    integer i, j, na1, na2, l_rows, l_cols, l_rqs, l_rqe, l_rqm, ns, info
    integer l_rnm, nnzu, nnzl, ndef, ncnt, max_local_cols, l_cols_qreorg, np, l_idx, nqcols1, nqcols2
@@ -2630,10 +2650,12 @@ subroutine resort_ev(idx_ev)
 
    implicit none
 
+   integer, parameter :: dprec = kind(1.d0)
+
    integer idx_ev(*)
    integer i, nc, pc1, pc2, lc1, lc2, l_cols_out
 
-   real*8, allocatable :: qtmp(:,:)
+   real(dprec), allocatable :: qtmp(:,:)
 
    if(l_rows==0) return ! My processor column has no work to do
 
@@ -2730,10 +2752,12 @@ subroutine global_gather(z, n)
 
    implicit none
 
-   integer n
-   real*8 z(n)
+   integer, parameter :: dprec = kind(1.d0)
 
-   real*8 tmp(n)
+   integer n
+   real(dprec) z(n)
+
+   real(dprec) tmp(n)
 
    if(npc_n==1 .and. np_rows==1) return ! nothing to do
 
@@ -2768,11 +2792,12 @@ subroutine global_product(z, n)
    ! This routine calculates the global product of z.
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer n
-   real*8 z(n)
+   real(dprec) z(n)
 
-   real*8 tmp(n)
+   real(dprec) tmp(n)
 
    if(npc_n==1 .and. np_rows==1) return ! nothing to do
 
@@ -2817,9 +2842,10 @@ subroutine check_monotony(n,d,text)
 ! It is for debug purposes only, an error should never be triggered!
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer n
-   real*8 d(n)
+   real(dprec) d(n)
    character*(*) text
 
    integer i
@@ -2839,8 +2865,10 @@ end subroutine merge_systems
 
 subroutine v_add_s(v,n,s)
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
+
    integer n
-   real*8 v(n),s
+   real(dprec) v(n),s
 
    v(:) = v(:) + s
 end subroutine v_add_s
@@ -2850,9 +2878,11 @@ end subroutine v_add_s
 subroutine distribute_global_column(g_col, l_col, noff, nlen, my_prow, np_rows, nblk)
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
-   real*8 g_col(nlen), l_col(*)
-   integer noff, nlen, my_prow, np_rows, nblk
+   integer :: nlen
+   real(dprec) g_col(nlen), l_col(*)
+   integer noff, my_prow, np_rows, nblk
 
    integer nbs, nbe, jb, g_off, l_off, js, je
 
@@ -2930,12 +2960,13 @@ subroutine solve_secular_equation(n, i, d, z, delta, rho, dlam)
 
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer n, i
-   real*8 d(n), z(n), delta(n), rho, dlam
+   real(dprec) d(n), z(n), delta(n), rho, dlam
 
    integer iter
-   real*8 a, b, x, y, dshift
+   real(dprec) a, b, x, y, dshift
 
    ! In order to obtain sufficient numerical accuracy we have to shift the problem
    ! either by d(i) or d(i+1), whichever is closer to the solution
@@ -3098,9 +3129,10 @@ subroutine cholesky_real(na, a, lda, nblk, mpi_comm_rows, mpi_comm_cols)
 !-------------------------------------------------------------------------------
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer na, lda, nblk, mpi_comm_rows, mpi_comm_cols
-   real*8 a(lda,*)
+   real(dprec) a(lda,*)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer l_cols, l_rows, l_col1, l_row1, l_colx, l_rowx
@@ -3108,7 +3140,7 @@ subroutine cholesky_real(na, a, lda, nblk, mpi_comm_rows, mpi_comm_cols)
    integer lcs, lce, lrs, lre
    integer tile_size, l_rows_tile, l_cols_tile
 
-   real*8, allocatable:: tmp1(:), tmp2(:,:), tmatr(:,:), tmatc(:,:)
+   real(dprec), allocatable:: tmp1(:), tmp2(:,:), tmatr(:,:), tmatc(:,:)
 
    integer pcol, prow
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -3274,15 +3306,16 @@ subroutine invert_trm_real(na, a, lda, nblk, mpi_comm_rows, mpi_comm_cols)
 !-------------------------------------------------------------------------------
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer na, lda, nblk, mpi_comm_rows, mpi_comm_cols
-   real*8 a(lda,*)
+   real(dprec) a(lda,*)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer l_cols, l_rows, l_col1, l_row1, l_colx, l_rowx
    integer n, nc, i, info, ns, nb
 
-   real*8, allocatable:: tmp1(:), tmp2(:,:), tmat1(:,:), tmat2(:,:)
+   real(dprec), allocatable:: tmp1(:), tmp2(:,:), tmat1(:,:), tmat2(:,:)
 
    integer pcol, prow
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -3408,9 +3441,10 @@ subroutine cholesky_complex(na, a, lda, nblk, mpi_comm_rows, mpi_comm_cols)
 !-------------------------------------------------------------------------------
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer na, lda, nblk, mpi_comm_rows, mpi_comm_cols
-   complex*16 a(lda,*)
+   complex(dprec) a(lda,*)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer l_cols, l_rows, l_col1, l_row1, l_colx, l_rowx
@@ -3418,7 +3452,7 @@ subroutine cholesky_complex(na, a, lda, nblk, mpi_comm_rows, mpi_comm_cols)
    integer lcs, lce, lrs, lre
    integer tile_size, l_rows_tile, l_cols_tile
 
-   complex*16, allocatable:: tmp1(:), tmp2(:,:), tmatr(:,:), tmatc(:,:)
+   complex(dprec), allocatable:: tmp1(:), tmp2(:,:), tmatr(:,:), tmatc(:,:)
 
    integer pcol, prow
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -3585,15 +3619,16 @@ subroutine invert_trm_complex(na, a, lda, nblk, mpi_comm_rows, mpi_comm_cols)
 !-------------------------------------------------------------------------------
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer na, lda, nblk, mpi_comm_rows, mpi_comm_cols
-   complex*16 a(lda,*)
+   complex(dprec) a(lda,*)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer l_cols, l_rows, l_col1, l_row1, l_colx, l_rowx
    integer n, nc, i, info, ns, nb
 
-   complex*16, allocatable:: tmp1(:), tmp2(:,:), tmat1(:,:), tmat2(:,:)
+   complex(dprec), allocatable:: tmp1(:), tmp2(:,:), tmat1(:,:), tmat2(:,:)
 
    integer pcol, prow
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -3718,11 +3753,13 @@ subroutine hh_transform_real(alpha, xnorm_sq, xf, tau)
    ! since this would be expensive for the parallel implementation.
 
    implicit none
-   real*8, intent(inout) :: alpha
-   real*8, intent(in)    :: xnorm_sq
-   real*8, intent(out)   :: xf, tau
+   integer, parameter :: dprec = kind(1.d0)
 
-   real*8 BETA
+   real(dprec), intent(inout) :: alpha
+   real(dprec), intent(in)    :: xnorm_sq
+   real(dprec), intent(out)   :: xf, tau
+
+   real(dprec) BETA
 
    if( XNORM_SQ==0. ) then
 
@@ -3764,11 +3801,13 @@ subroutine hh_transform_complex(alpha, xnorm_sq, xf, tau)
    ! since this would be expensive for the parallel implementation.
 
    implicit none
-   complex*16, intent(inout) :: alpha
-   real*8, intent(in)        :: xnorm_sq
-   complex*16, intent(out)   :: xf, tau
+   integer, parameter :: dprec = kind(1.d0)
 
-   real*8 ALPHR, ALPHI, BETA
+   complex(dprec), intent(inout) :: alpha
+   real(dprec), intent(in)        :: xnorm_sq
+   complex(dprec), intent(out)   :: xf, tau
+
+   real(dprec) ALPHR, ALPHI, BETA
 
    ALPHR = DBLE( ALPHA )
    ALPHI = DIMAG( ALPHA )
@@ -3839,13 +3878,15 @@ subroutine elpa_transpose_vectors(vmat_s,ld_s,comm_s,vmat_t,ld_t,comm_t,nvs,nvr,
 
    implicit none
 
+   integer, parameter :: dprec = kind(1.d0)
+
    include 'mpif.h'
 
    integer, intent(in)   :: ld_s, comm_s, ld_t, comm_t, nvs, nvr, nvc, nblk
-   real*8, intent(in)    :: vmat_s(ld_s,nvc)
-   real*8, intent(inout) :: vmat_t(ld_t,nvc)
+   real(dprec), intent(in)    :: vmat_s(ld_s,nvc)
+   real(dprec), intent(inout) :: vmat_t(ld_t,nvc)
 
-   real*8, allocatable :: aux(:)
+   real(dprec), allocatable :: aux(:)
    integer myps, mypt, nps, npt
    integer n, lc, k, i, ips, ipt, ns, nl, mpierr
    integer lcm_s_t, nblks_tot, nblks_comm, nblks_skip
@@ -3944,14 +3985,15 @@ subroutine elpa_reduce_add_vectors(vmat_s,ld_s,comm_s,vmat_t,ld_t,comm_t,nvr,nvc
    use ELPA1 ! for least_common_multiple
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    include 'mpif.h'
 
    integer, intent(in)   :: ld_s, comm_s, ld_t, comm_t, nvr, nvc, nblk
-   real*8, intent(in)    :: vmat_s(ld_s,nvc)
-   real*8, intent(inout) :: vmat_t(ld_t,nvc)
+   real(dprec), intent(in)    :: vmat_s(ld_s,nvc)
+   real(dprec), intent(inout) :: vmat_t(ld_t,nvc)
 
-   real*8, allocatable :: aux1(:), aux2(:)
+   real(dprec), allocatable :: aux1(:), aux2(:)
    integer myps, mypt, nps, npt
    integer n, lc, k, i, ips, ipt, ns, nl, mpierr
    integer lcm_s_t, nblks_tot

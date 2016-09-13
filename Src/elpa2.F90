@@ -38,8 +38,11 @@ module ELPA2
   ! trans_ev_tridi_to_band_real.
   ! It must be deallocated by the user after trans_ev_tridi_to_band_real!
 
-  real*8, allocatable :: hh_trans_real(:,:)
-  complex*16, allocatable :: hh_trans_complex(:,:)
+  integer, parameter :: dprec = kind(1.d0)
+  integer, parameter :: int8 = selected_int_kind(18)
+
+  real(dprec), allocatable :: hh_trans_real(:,:)
+  complex(dprec), allocatable :: hh_trans_complex(:,:)
 
 !-------------------------------------------------------------------------------
 
@@ -89,12 +92,12 @@ subroutine solve_evp_real_2stage(na, nev, a, lda, ev, q, ldq, nblk, mpi_comm_row
    implicit none
 
    integer, intent(in) :: na, nev, lda, ldq, nblk, mpi_comm_rows, mpi_comm_cols, mpi_comm_all
-   real*8, intent(inout) :: a(lda,*), ev(na), q(ldq,*)
+   real(dprec), intent(inout) :: a(lda,*), ev(na), q(ldq,*)
 
    integer my_pe, n_pes, my_prow, my_pcol, np_rows, np_cols, mpierr
    integer nbw, num_blocks
-   real*8, allocatable :: tmat(:,:,:), e(:)
-   real*8 ttt0, ttt1, ttts
+   real(dprec), allocatable :: tmat(:,:,:), e(:)
+   real(dprec) ttt0, ttt1, ttts
 
    call mpi_comm_rank(mpi_comm_all,my_pe,mpierr)
    call mpi_comm_size(mpi_comm_all,n_pes,mpierr)
@@ -219,14 +222,14 @@ subroutine solve_evp_complex_2stage(na, nev, a, lda, ev, q, ldq, nblk, mpi_comm_
    implicit none
 
    integer, intent(in) :: na, nev, lda, ldq, nblk, mpi_comm_rows, mpi_comm_cols, mpi_comm_all
-   complex*16, intent(inout) :: a(lda,*), q(ldq,*)
-   real*8, intent(inout) :: ev(na)
+   complex(dprec), intent(inout) :: a(lda,*), q(ldq,*)
+   real(dprec), intent(inout) :: ev(na)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer l_cols, l_rows, l_cols_nev, nbw, num_blocks
-   complex*16, allocatable :: tmat(:,:,:)
-   real*8, allocatable :: q_real(:,:), e(:)
-   real*8 ttt0, ttt1, ttts
+   complex(dprec), allocatable :: tmat(:,:,:)
+   real(dprec), allocatable :: q_real(:,:), e(:)
+   real(dprec) ttt0, ttt1, ttts
 
    call mpi_comm_rank(mpi_comm_rows,my_prow,mpierr)
    call mpi_comm_size(mpi_comm_rows,np_rows,mpierr)
@@ -347,7 +350,7 @@ subroutine bandred_real(na, a, lda, nblk, nbw, mpi_comm_rows, mpi_comm_cols, tma
    implicit none
 
    integer na, lda, nblk, nbw, mpi_comm_rows, mpi_comm_cols
-   real*8 a(lda,*), tmat(nbw,nbw,*)
+   real(dprec) a(lda,*), tmat(nbw,nbw,*)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer l_cols, l_rows
@@ -355,9 +358,9 @@ subroutine bandred_real(na, a, lda, nblk, nbw, mpi_comm_rows, mpi_comm_cols, tma
    integer istep, ncol, lch, lcx, nlc
    integer tile_size, l_rows_tile, l_cols_tile
 
-   real*8 vnorm2, xf, aux1(nbw), aux2(nbw), vrl, tau, vav(nbw,nbw)
+   real(dprec) vnorm2, xf, aux1(nbw), aux2(nbw), vrl, tau, vav(nbw,nbw)
 
-   real*8, allocatable:: tmp(:,:), vr(:), vmr(:,:), umc(:,:)
+   real(dprec), allocatable:: tmp(:,:), vr(:), vmr(:,:), umc(:,:)
 
    integer pcol, prow
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -615,10 +618,10 @@ subroutine symm_matrix_allreduce(n,a,lda,comm)
 
    implicit none
    integer n, lda, comm
-   real*8 a(lda,*)
+   real(dprec) a(lda,*)
 
    integer i, nc, mpierr
-   real*8 h1(n*n), h2(n*n)
+   real(dprec) h1(n*n), h2(n*n)
 
    nc = 0
    do i=1,n
@@ -677,14 +680,14 @@ subroutine trans_ev_band_to_full_real(na, nqc, nblk, nbw, a, lda, tmat, q, ldq, 
    implicit none
 
    integer na, nqc, lda, ldq, nblk, nbw, mpi_comm_rows, mpi_comm_cols
-   real*8 a(lda,*), q(ldq,*), tmat(nbw, nbw, *)
+   real(dprec) a(lda,*), q(ldq,*), tmat(nbw, nbw, *)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer max_blocks_row, max_blocks_col, max_local_rows, max_local_cols
    integer l_cols, l_rows, l_colh, n_cols
    integer istep, lc, ncol, nrow, nb, ns
 
-   real*8, allocatable:: tmp1(:), tmp2(:), hvb(:), hvm(:,:)
+   real(dprec), allocatable:: tmp1(:), tmp2(:), hvb(:), hvm(:,:)
 
    integer pcol, prow, i
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -808,12 +811,12 @@ subroutine tridiag_band_real(na, nb, nblk, a, lda, d, e, mpi_comm_rows, mpi_comm
    implicit none
 
    integer, intent(in) ::  na, nb, nblk, lda, mpi_comm_rows, mpi_comm_cols, mpi_comm
-   real*8, intent(in)  :: a(lda,*)
-   real*8, intent(out) :: d(na), e(na) ! set only on PE 0
+   real(dprec), intent(in)  :: a(lda,*)
+   real(dprec), intent(out) :: d(na), e(na) ! set only on PE 0
 
 
-   real*8 vnorm2, hv(nb), tau, x, h(nb), ab_s(1+nb), hv_s(nb), hv_new(nb), tau_new, hf
-   real*8 hd(nb), hs(nb)
+   real(dprec) vnorm2, hv(nb), tau, x, h(nb), ab_s(1+nb), hv_s(nb), hv_new(nb), tau_new, hf
+   real(dprec) hd(nb), hs(nb)
 
    integer i, j, n, nc, nr, ns, ne, istep, iblk, nblocks_total, nblocks, nt
    integer my_pe, n_pes, mpierr
@@ -823,9 +826,9 @@ subroutine tridiag_band_real(na, nb, nblk, a, lda, d, e, mpi_comm_rows, mpi_comm
    integer, allocatable :: ireq_hhr(:), ireq_hhs(:), global_id(:,:), hh_cnt(:), hh_dst(:)
    integer, allocatable :: limits(:), snd_limits(:,:)
    integer, allocatable :: block_limits(:)
-   real*8, allocatable :: ab(:,:), hh_gath(:,:,:), hh_send(:,:,:)
+   real(dprec), allocatable :: ab(:,:), hh_gath(:,:,:), hh_send(:,:,:)
    ! dummies for calling redist_band
-   complex*16 :: c_a(1,1), c_ab(1,1)
+   complex(dprec) :: c_a(1,1), c_ab(1,1)
 
 
    call mpi_comm_rank(mpi_comm,my_pe,mpierr)
@@ -1198,7 +1201,7 @@ subroutine trans_ev_tridi_to_band_real(na, nev, nblk, nbw, q, ldq, mpi_comm_rows
     implicit none
 
     integer, intent(in) :: na, nev, nblk, nbw, ldq, mpi_comm_rows, mpi_comm_cols
-    real*8 q(ldq,*)
+    real(dprec) q(ldq,*)
 
     integer np_rows, my_prow, np_cols, my_pcol
 
@@ -1212,11 +1215,11 @@ subroutine trans_ev_tridi_to_band_real(na, nev, nblk, nbw, q, ldq, mpi_comm_rows
     integer mpierr, src, src_offset, dst, offset, nfact, num_blk
     logical flag
 
-    real*8, allocatable :: a(:,:,:), row(:)
-    real*8, allocatable :: top_border_send_buffer(:,:,:), top_border_recv_buffer(:,:,:)
-    real*8, allocatable :: bottom_border_send_buffer(:,:,:), bottom_border_recv_buffer(:,:,:)
-    real*8, allocatable :: result_buffer(:,:,:)
-    real*8, allocatable :: bcast_buffer(:,:)
+    real(dprec), allocatable :: a(:,:,:), row(:)
+    real(dprec), allocatable :: top_border_send_buffer(:,:,:), top_border_recv_buffer(:,:,:)
+    real(dprec), allocatable :: bottom_border_send_buffer(:,:,:), bottom_border_recv_buffer(:,:,:)
+    real(dprec), allocatable :: result_buffer(:,:,:)
+    real(dprec), allocatable :: bcast_buffer(:,:)
 
     integer n_off
     integer, allocatable :: result_send_request(:), result_recv_request(:), limits(:)
@@ -1230,8 +1233,8 @@ subroutine trans_ev_tridi_to_band_real(na, nev, nblk, nbw, q, ldq, mpi_comm_rows
     integer, parameter :: result_recv_tag = 333
 
     ! Just for measuring the kernel performance
-    real*8 kernel_time
-    integer*8 kernel_flops
+    real(dprec) kernel_time
+    integer(int8) kernel_flops
 
 
     kernel_time = 1.d-100
@@ -1262,7 +1265,7 @@ subroutine trans_ev_tridi_to_band_real(na, nev, nblk, nbw, q, ldq, mpi_comm_rows
         stripe_count = 0
         last_stripe_width = 0
     else
-        ! Suggested stripe width is 48 since 48*64 real*8 numbers should fit into
+        ! Suggested stripe width is 48 since 48*64 real(dprec) numbers should fit into
         ! every primary cache
         stripe_width = 48 ! Must be a multiple of 4
         stripe_count = (l_nev-1)/stripe_width + 1
@@ -1667,7 +1670,7 @@ subroutine trans_ev_tridi_to_band_real(na, nev, nblk, nbw, q, ldq, mpi_comm_rows
 contains
 
     subroutine pack_row(row, n)
-        real*8 row(:)
+        real(dprec) row(:)
         integer n, i, noff, nl
 
         do i=1,stripe_count
@@ -1679,7 +1682,7 @@ contains
     end subroutine
 
     subroutine unpack_row(row, n)
-        real*8 row(:)
+        real(dprec) row(:)
         integer n, i, noff, nl
 
         do i=1,stripe_count
@@ -1693,7 +1696,7 @@ contains
     subroutine compute_hh_trafo(off, ncols, istripe)
 
         integer off, ncols, istripe, j, nl, jj
-        real*8 w(nbw,2), ttt
+        real(dprec) w(nbw,2), ttt
 
         ttt = mpi_wtime()
         nl = merge(stripe_width, last_stripe_width, istripe<stripe_count)
@@ -1719,10 +1722,10 @@ subroutine single_hh_trafo(q, hh, nb, nq, ldq)
 
     implicit none
     integer nb, nq, ldq
-    real*8 q(ldq, *), hh(*)
+    real(dprec) q(ldq, *), hh(*)
 
     integer i
-    real*8 v(nq)
+    real(dprec) v(nq)
 
     ! v = q * hh
     v(:) = q(1:nq,1)
@@ -1803,9 +1806,9 @@ subroutine bandred_complex(na, a, lda, nblk, nbw, mpi_comm_rows, mpi_comm_cols, 
    implicit none
 
    integer na, lda, nblk, nbw, mpi_comm_rows, mpi_comm_cols
-   complex*16 a(lda,*), tmat(nbw,nbw,*)
+   complex(dprec) a(lda,*), tmat(nbw,nbw,*)
 
-   complex*16, parameter :: CZERO = (0.d0,0.d0), CONE = (1.d0,0.d0)
+   complex(dprec), parameter :: CZERO = (0.d0,0.d0), CONE = (1.d0,0.d0)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer l_cols, l_rows
@@ -1813,10 +1816,10 @@ subroutine bandred_complex(na, a, lda, nblk, nbw, mpi_comm_rows, mpi_comm_cols, 
    integer istep, ncol, lch, lcx, nlc
    integer tile_size, l_rows_tile, l_cols_tile
 
-   real*8 vnorm2
-   complex*16 xf, aux1(nbw), aux2(nbw), vrl, tau, vav(nbw,nbw)
+   real(dprec) vnorm2
+   complex(dprec) xf, aux1(nbw), aux2(nbw), vrl, tau, vav(nbw,nbw)
 
-   complex*16, allocatable:: tmp(:,:), vr(:), vmr(:,:), umc(:,:)
+   complex(dprec), allocatable:: tmp(:,:), vr(:), vmr(:,:), umc(:,:)
 
    integer pcol, prow
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -2074,10 +2077,10 @@ subroutine herm_matrix_allreduce(n,a,lda,comm)
 
    implicit none
    integer n, lda, comm
-   complex*16 a(lda,*)
+   complex(dprec) a(lda,*)
 
    integer i, nc, mpierr
-   complex*16 h1(n*n), h2(n*n)
+   complex(dprec) h1(n*n), h2(n*n)
 
    nc = 0
    do i=1,n
@@ -2136,16 +2139,16 @@ subroutine trans_ev_band_to_full_complex(na, nqc, nblk, nbw, a, lda, tmat, q, ld
    implicit none
 
    integer na, nqc, lda, ldq, nblk, nbw, mpi_comm_rows, mpi_comm_cols
-   complex*16 a(lda,*), q(ldq,*), tmat(nbw, nbw, *)
+   complex(dprec) a(lda,*), q(ldq,*), tmat(nbw, nbw, *)
 
-   complex*16, parameter :: CZERO = (0.d0,0.d0), CONE = (1.d0,0.d0)
+   complex(dprec), parameter :: CZERO = (0.d0,0.d0), CONE = (1.d0,0.d0)
 
    integer my_prow, my_pcol, np_rows, np_cols, mpierr
    integer max_blocks_row, max_blocks_col, max_local_rows, max_local_cols
    integer l_cols, l_rows, l_colh, n_cols
    integer istep, lc, ncol, nrow, nb, ns
 
-   complex*16, allocatable:: tmp1(:), tmp2(:), hvb(:), hvm(:,:)
+   complex(dprec), allocatable:: tmp1(:), tmp2(:), hvb(:), hvm(:,:)
 
    integer pcol, prow, i
    pcol(i) = MOD((i-1)/nblk,np_cols) !Processor col for global col number
@@ -2269,13 +2272,13 @@ subroutine tridiag_band_complex(na, nb, nblk, a, lda, d, e, mpi_comm_rows, mpi_c
    implicit none
 
    integer, intent(in) ::  na, nb, nblk, lda, mpi_comm_rows, mpi_comm_cols, mpi_comm
-   complex*16, intent(in) :: a(lda,*)
-   real*8, intent(out) :: d(na), e(na) ! set only on PE 0
+   complex(dprec), intent(in) :: a(lda,*)
+   real(dprec), intent(out) :: d(na), e(na) ! set only on PE 0
 
 
-   real*8 vnorm2
-   complex*16 hv(nb), tau, x, h(nb), ab_s(1+nb), hv_s(nb), hv_new(nb), tau_new, hf
-   complex*16 hd(nb), hs(nb)
+   real(dprec) vnorm2
+   complex(dprec) hv(nb), tau, x, h(nb), ab_s(1+nb), hv_s(nb), hv_new(nb), tau_new, hf
+   complex(dprec) hd(nb), hs(nb)
 
    integer i, j, n, nc, nr, ns, ne, istep, iblk, nblocks_total, nblocks, nt
    integer my_pe, n_pes, mpierr
@@ -2285,9 +2288,9 @@ subroutine tridiag_band_complex(na, nb, nblk, a, lda, d, e, mpi_comm_rows, mpi_c
    integer, allocatable :: ireq_hhr(:), ireq_hhs(:), global_id(:,:), hh_cnt(:), hh_dst(:)
    integer, allocatable :: limits(:), snd_limits(:,:)
    integer, allocatable :: block_limits(:)
-   complex*16, allocatable :: ab(:,:), hh_gath(:,:,:), hh_send(:,:,:)
+   complex(dprec), allocatable :: ab(:,:), hh_gath(:,:,:), hh_send(:,:,:)
    ! dummies for calling redist_band
-   real*8 :: r_a(1,1), r_ab(1,1)
+   real(dprec) :: r_a(1,1), r_ab(1,1)
 
 
    call mpi_comm_rank(mpi_comm,my_pe,mpierr)
@@ -2661,7 +2664,7 @@ subroutine trans_ev_tridi_to_band_complex(na, nev, nblk, nbw, q, ldq, mpi_comm_r
     implicit none
 
     integer, intent(in) :: na, nev, nblk, nbw, ldq, mpi_comm_rows, mpi_comm_cols
-    complex*16 q(ldq,*)
+    complex(dprec) q(ldq,*)
 
     integer np_rows, my_prow, np_cols, my_pcol
 
@@ -2675,11 +2678,11 @@ subroutine trans_ev_tridi_to_band_complex(na, nev, nblk, nbw, q, ldq, mpi_comm_r
     integer mpierr, src, src_offset, dst, offset, nfact, num_blk
     logical flag
 
-    complex*16, allocatable :: a(:,:,:), row(:)
-    complex*16, allocatable :: top_border_send_buffer(:,:,:), top_border_recv_buffer(:,:,:)
-    complex*16, allocatable :: bottom_border_send_buffer(:,:,:), bottom_border_recv_buffer(:,:,:)
-    complex*16, allocatable :: result_buffer(:,:,:)
-    complex*16, allocatable :: bcast_buffer(:,:)
+    complex(dprec), allocatable :: a(:,:,:), row(:)
+    complex(dprec), allocatable :: top_border_send_buffer(:,:,:), top_border_recv_buffer(:,:,:)
+    complex(dprec), allocatable :: bottom_border_send_buffer(:,:,:), bottom_border_recv_buffer(:,:,:)
+    complex(dprec), allocatable :: result_buffer(:,:,:)
+    complex(dprec), allocatable :: bcast_buffer(:,:)
 
     integer n_off
     integer, allocatable :: result_send_request(:), result_recv_request(:), limits(:)
@@ -2693,8 +2696,8 @@ subroutine trans_ev_tridi_to_band_complex(na, nev, nblk, nbw, q, ldq, mpi_comm_r
     integer, parameter :: result_recv_tag = 333
 
     ! Just for measuring the kernel performance
-    real*8 kernel_time
-    integer*8 kernel_flops
+    real(dprec) kernel_time
+    integer(int8) kernel_flops
 
 
     kernel_time = 1.d-100
@@ -3129,7 +3132,7 @@ subroutine trans_ev_tridi_to_band_complex(na, nev, nblk, nbw, q, ldq, mpi_comm_r
 contains
 
     subroutine pack_row(row, n)
-        complex*16 row(:)
+        complex(dprec) row(:)
         integer n, i, noff, nl
 
         do i=1,stripe_count
@@ -3141,7 +3144,7 @@ contains
     end subroutine
 
     subroutine unpack_row(row, n)
-        complex*16 row(:)
+        complex(dprec) row(:)
         integer n, i, noff, nl
 
         do i=1,stripe_count
@@ -3155,7 +3158,7 @@ contains
     subroutine compute_hh_trafo(off, ncols, istripe)
 
         integer off, ncols, istripe, j, nl, jj
-        real*8 ttt
+        real(dprec) ttt
 
         ttt = mpi_wtime()
         nl = merge(stripe_width, last_stripe_width, istripe<stripe_count)
@@ -3174,16 +3177,17 @@ end subroutine
 
 subroutine redist_band(l_real, r_a, c_a, lda, na, nblk, nbw, mpi_comm_rows, mpi_comm_cols, mpi_comm, r_ab, c_ab)
 
+   integer, intent(in)     :: lda
    logical, intent(in)     :: l_real
-   real*8, intent(in)      :: r_a(lda, *)
-   complex*16, intent(in)  :: c_a(lda, *)
-   integer, intent(in)     :: lda, na, nblk, nbw, mpi_comm_rows, mpi_comm_cols, mpi_comm
-   real*8, intent(out)     :: r_ab(:,:)
-   complex*16, intent(out) :: c_ab(:,:)
+   real(dprec), intent(in)      :: r_a(lda, *)
+   complex(dprec), intent(in)  :: c_a(lda, *)
+   integer, intent(in)     :: na, nblk, nbw, mpi_comm_rows, mpi_comm_cols, mpi_comm
+   real(dprec), intent(out)     :: r_ab(:,:)
+   complex(dprec), intent(out) :: c_ab(:,:)
 
    integer, allocatable :: ncnt_s(:), nstart_s(:), ncnt_r(:), nstart_r(:), global_id(:,:), block_limits(:)
-   real*8, allocatable :: r_sbuf(:,:,:), r_rbuf(:,:,:), r_buf(:,:)
-   complex*16, allocatable :: c_sbuf(:,:,:), c_rbuf(:,:,:), c_buf(:,:)
+   real(dprec), allocatable :: r_sbuf(:,:,:), r_rbuf(:,:,:), r_buf(:,:)
+   complex(dprec), allocatable :: c_sbuf(:,:,:), c_rbuf(:,:,:), c_buf(:,:)
 
    integer i, j, my_pe, n_pes, my_prow, np_rows, my_pcol, np_cols, nfact, np, npr, npc, mpierr, is, js
    integer nblocks_total, il, jl, l_rows, l_cols, n_off

@@ -15,12 +15,13 @@
 subroutine double_hh_trafo(q, hh, nb, nq, ldq, ldh)
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer, intent(in) :: nb, nq, ldq, ldh
-   real*8, intent(inout) :: q(ldq,*)
-   real*8, intent(in) :: hh(ldh,*)
+   real(dprec), intent(inout) :: q(ldq,*)
+   real(dprec), intent(in) :: hh(ldh,*)
 
-   real*8 s
+   real(dprec) s
    integer i
 
    ! Safety only:
@@ -54,7 +55,7 @@ end
 
 ! --------------------------------------------------------------------------------------------------
 ! The following kernels perform the Householder transformation on Q for 12/8/4 rows.
-! Please note that Q is declared complex*16 here.
+! Please note that Q is declared complex(dprec) here.
 ! This is a hint for compilers that packed arithmetic can be used for Q
 ! (relevant for Intel SSE and BlueGene double hummer CPUs).
 ! --------------------------------------------------------------------------------------------------
@@ -62,13 +63,14 @@ end
 subroutine hh_trafo_kernel_12(q, hh, nb, ldq, ldh, s)
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer, intent(in) :: nb, ldq, ldh
-   complex*16, intent(inout) :: q(ldq/2,*)
-   real*8, intent(in) :: hh(ldh,*), s
+   complex(dprec), intent(inout) :: q(ldq/2,*)
+   real(dprec), intent(in) :: hh(ldh,*), s
 
-   complex*16 x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
-   real*8 h1, h2, tau1, tau2
+   complex(dprec) x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
+   real(dprec) h1, h2, tau1, tau2
    integer i
 
 
@@ -169,13 +171,14 @@ end
 subroutine hh_trafo_kernel_8(q, hh, nb, ldq, ldh, s)
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer, intent(in) :: nb, ldq, ldh
-   complex*16, intent(inout) :: q(ldq/2,*)
-   real*8, intent(in) :: hh(ldh,*), s
+   complex(dprec), intent(inout) :: q(ldq/2,*)
+   real(dprec), intent(in) :: hh(ldh,*), s
 
-   complex*16 x1, x2, x3, x4, y1, y2, y3, y4
-   real*8 h1, h2, tau1, tau2
+   complex(dprec) x1, x2, x3, x4, y1, y2, y3, y4
+   real(dprec) h1, h2, tau1, tau2
    integer i
 
 
@@ -254,13 +257,14 @@ end
 subroutine hh_trafo_kernel_4(q, hh, nb, ldq, ldh, s)
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer, intent(in) :: nb, ldq, ldh
-   complex*16, intent(inout) :: q(ldq/2,*)
-   real*8, intent(in) :: hh(ldh,*), s
+   complex(dprec), intent(inout) :: q(ldq/2,*)
+   real(dprec), intent(in) :: hh(ldh,*), s
 
-   complex*16 x1, x2, y1, y2
-   real*8 h1, h2, tau1, tau2
+   complex(dprec) x1, x2, y1, y2
+   real(dprec) h1, h2, tau1, tau2
    integer i
 
 
@@ -317,10 +321,11 @@ end
 subroutine single_hh_trafo_complex(q, hh, nb, nq, ldq)
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer, intent(in) :: nb, nq, ldq
-   complex*16, intent(inout) :: q(ldq,*)
-   complex*16, intent(in) :: hh(*)
+   complex(dprec), intent(inout) :: q(ldq,*)
+   complex(dprec), intent(in) :: hh(*)
 
    integer i
 
@@ -351,13 +356,14 @@ end
 subroutine hh_trafo_complex_kernel_12(q, hh, nb, ldq)
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer, intent(in) :: nb, ldq
-   complex*16, intent(inout) :: q(ldq,*)
-   complex*16, intent(in) :: hh(*)
+   complex(dprec), intent(inout) :: q(ldq,*)
+   complex(dprec), intent(in) :: hh(*)
 
-   complex*16 x1, x2, x3, x4, x5, x6, x7, x8, x9, xa, xb, xc
-   complex*16 h1, tau1
+   complex(dprec) x1, x2, x3, x4, x5, x6, x7, x8, x9, xa, xb, xc
+   complex(dprec) h1, tau1
    integer i
 
 
@@ -444,13 +450,14 @@ end
 subroutine hh_trafo_complex_kernel_8(q, hh, nb, ldq)
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer, intent(in) :: nb, ldq
-   complex*16, intent(inout) :: q(ldq,*)
-   complex*16, intent(in) :: hh(*)
+   complex(dprec), intent(inout) :: q(ldq,*)
+   complex(dprec), intent(in) :: hh(*)
 
-   complex*16 x1, x2, x3, x4, x5, x6, x7, x8
-   complex*16 h1, tau1
+   complex(dprec) x1, x2, x3, x4, x5, x6, x7, x8
+   complex(dprec) h1, tau1
    integer i
 
 
@@ -517,13 +524,14 @@ end
 subroutine hh_trafo_complex_kernel_4(q, hh, nb, ldq)
 
    implicit none
+   integer, parameter :: dprec = kind(1.d0)
 
    integer, intent(in) :: nb, ldq
-   complex*16, intent(inout) :: q(ldq,*)
-   complex*16, intent(in) :: hh(*)
+   complex(dprec), intent(inout) :: q(ldq,*)
+   complex(dprec), intent(in) :: hh(*)
 
-   complex*16 x1, x2, x3, x4
-   complex*16 h1, tau1
+   complex(dprec) x1, x2, x3, x4
+   complex(dprec) h1, tau1
    integer i
 
 
