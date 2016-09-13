@@ -53,6 +53,9 @@ c****************************************************************************
 
         implicit none
 
+        integer, parameter :: dp = selected_real_kind(10,100)
+        integer, parameter :: sp = selected_real_kind(5,10)
+
         integer io,iu, nk, nspin, ik, iik, ispin, iispin,
      .          nwflist, iw, indwf, j, nuotot, jj
 
@@ -60,10 +63,10 @@ c****************************************************************************
         integer, allocatable, dimension(:) :: iaorb,iphorb,cnfigfio
         character(len=20), allocatable, dimension(:) :: symfio,labelfis
 
-        real*4, allocatable, dimension(:,:) :: psi
+        real(sp), allocatable, dimension(:,:) :: psi
         logical gamma
 
-        real*8 k(3), energy,thress
+        real(dp) k(3), energy,thress
  
         read(5,*) fname
         read(5,*) oname

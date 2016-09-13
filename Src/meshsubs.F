@@ -31,7 +31,7 @@
      &                     nm, nml, ntm, ntml, ntpl, dvol)
 
 !  Modules
-      use precision,     only : dp
+      use precision,     only : dp, i8b
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : HowManyMeshPerNode, GlobalToLocalMesh
       use moreMeshSubs,  only : initMeshDistr, setMeshDistr
@@ -111,7 +111,7 @@ C
 C     Local variables
       integer                 :: i, ia, i1, i2, i3, io, iphi, is, isp,
      &                           ity, j, nep, j1, j2, j3, indi
-      integer*8               :: ntp
+      integer(i8b)            :: ntp
       real(dp)                :: dx(3), dxp(3), pldist, r,
      &                           volume
       logical                 :: within
@@ -140,7 +140,7 @@ C     Functions
 ! Note needed integer*8 !
 !!AG** Check proper kind name
 
-      ntp = product(INT(ntm,kind=8))
+      ntp = product(INT(ntm,kind=i8b))
 
 C     Create the first mesh distribution
       call initMeshDistr( oDistr=UNIFORM, nm=nm )

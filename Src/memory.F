@@ -42,7 +42,7 @@ C
 
 C Local variables
       integer   :: Sign
-      integer*8 :: prevMem
+      integer(i8b) :: prevMem
       integer         :: allocSize
       character(len=1):: allocType
 CAG
@@ -157,8 +157,8 @@ C Passed arguments
       integer            :: Unit, Level
 C Local arguments
       integer            :: n
-      integer*8          :: MaxMemory
-      integer*8, pointer :: maxmemlist(:)
+      integer(i8b)          :: MaxMemory
+      integer(i8b), pointer :: maxmemlist(:)
 #ifdef MPI
       integer            :: MPIerror
 #endif

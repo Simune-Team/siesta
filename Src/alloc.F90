@@ -204,6 +204,7 @@ MODULE alloc
 
   use precision, only: sp        ! Single precision real type
   use precision, only: dp        ! Double precision real type
+  use precision, only: i8b       ! 8-byte integer
   use parallel,  only: Node      ! My processor node index
   use parallel,  only: Nodes     ! Number of parallel processors
   use parallel,  only: ionode    ! Am I the I/O processor?
@@ -552,7 +553,7 @@ SUBROUTINE realloc_E1( array, i1min, i1max, &
                        name, routine, copy, shrink )
 ! Arguments
 implicit none
-integer*8, dimension(:),    pointer    :: array
+integer(i8b), dimension(:),    pointer    :: array
 integer,                    intent(in) :: i1min
 integer,                    intent(in) :: i1max
 character(len=*), optional, intent(in) :: name
@@ -563,7 +564,7 @@ logical,          optional, intent(in) :: shrink
 ! Internal variables and arrays
 character, parameter                   :: type='I'
 integer, parameter                     :: rank=1
-integer*8, dimension(:), pointer       :: old_array
+integer(i8b), dimension(:), pointer       :: old_array
 integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
 
 ! Get old array bounds
@@ -1535,7 +1536,7 @@ SUBROUTINE dealloc_E1( array, name, routine )
 
 ! Arguments
 implicit none
-integer*8, dimension(:),      pointer    :: array
+integer(i8b), dimension(:),      pointer    :: array
 character(len=*), optional, intent(in) :: name
 character(len=*), optional, intent(in) :: routine
 

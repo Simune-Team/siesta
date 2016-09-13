@@ -69,7 +69,7 @@ module m_rhog
   real(dp)               :: q0sq    !  Thomas-Fermi K2 for damping
   real(dp)               :: q1sq    !  For scalar product
 
-  type(Fstack_Pair_Vectors) :: rhog_stack
+  type(Fstack_Pair_Vectors), save :: rhog_stack
 
   integer :: jg0   ! Index of G=0 vector
 

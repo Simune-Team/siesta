@@ -77,8 +77,8 @@ C WRITTEN BY J.M.SOLER. MAY/95.
 
       ! packed complex array in a real array twice as long
 
-      real(dp), intent(inout) :: data(2*n)
       integer, intent(in)     :: n
+      real(dp), intent(inout) :: data(2*n)
       integer, intent(in)     :: isign
 
 !        ISIGN = +1 FOR FORWARD TRANSFORM
@@ -162,8 +162,8 @@ C WRITTEN BY J.M.SOLER. MAY/95.
 !
       SUBROUTINE SETGPFA_check(TRIGS,maxtrigs,ntrigs,N)
 *
-      REAL(dp)  TRIGS(maxtrigs)
       integer, intent(in)  :: maxtrigs  ! The current size of trigs
+      REAL(dp)  TRIGS(maxtrigs)
       integer, intent(out) :: ntrigs    ! The needed size for trigs
       integer, intent(in)  :: N
 

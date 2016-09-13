@@ -10,6 +10,8 @@ MODULE timer_mpi_m
 ! Disconnectable interface to siesta's timer routine. 
 ! J.M.Soler. May.2009
 
+public :: timer_mpi
+
 CONTAINS
 
   SUBROUTINE timer_mpi( name, opt )

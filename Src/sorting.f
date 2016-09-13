@@ -105,9 +105,9 @@ C **********************************************************************
       integer, parameter  :: dp = kind(1.d0)
       real(dp),parameter  :: tol = 1.e-12_dp  ! tolerance for value comparisons
 
+      integer, intent(in) :: m, n     ! Dimensions of array x
       real(dp),intent(in) :: x(m,n)   ! Array with the values to be ordered
                                       ! will order against the first element (m)
-      integer, intent(in) :: m, n     ! Dimensions of array x
       integer, intent(out):: indx(n)  ! Increasing order of x(1,:)
 
       integer:: child, child2, k, nFamily, parent
@@ -208,7 +208,8 @@ C *************** INPUT AND OUTPUT **********************************
 C REAL*8  IA(M,N): Array(s) to be ordered: IAout(I,J) = IAin(I,INDEX(J))
 C *******************************************************************
       IMPLICIT NONE
-      INTEGER  IA(M,N), INDX(N), M, N
+      INTEGER  M, N
+      INTEGER  IA(M,N), INDX(N)
       IA = IA(:,INDX)
       END SUBROUTINE IORDER
 

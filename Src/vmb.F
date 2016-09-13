@@ -149,7 +149,7 @@ C Correct velocity to exact temperature .....................
 
 
 
-      real*8 function velo(iseed,temp,mass)
+      function velo(iseed,temp,mass) 
 C *************************************************************************
 C This function assigns velocities to atoms according to the 
 C Maxwell-Boltzman distribution.
@@ -170,17 +170,21 @@ C ************************* OUTPUT ****************************************
 C real*8  velo             : Velocity component 
 C *************************************************************************
 
+      use precision
+
       implicit none
 
       integer 
      . iseed
 
-      real*8
+      real(dp)
      . mass,temp
+
+      real(dp) :: velo
 
 C Internal variables .................
 
-      real*8
+      real(dp)
      .  arg1, arg2, gauss, med, pi, randomg, var
       
       external

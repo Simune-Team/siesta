@@ -8,6 +8,11 @@
   !     special siesta version to allow specific storage of eigenvectors
   !     jdg august 2004
 
+  ! "double precision" is equivalent to "real(dprec)", where dprec=kind(1.d0)
+  ! It is deprecated but accepted by the standard
+  ! We will use complex(dprec) instead of "complex*16"
+  integer, parameter :: dprec = kind(1.d0)
+
   ! scalar arguments
   character       :: jobz
   character       :: uplo
@@ -23,7 +28,7 @@
   ! array arguments ..
   integer         :: iwork( * )
   double precision:: rwork( * ), w( * )
-  complex*16      :: a( lda, * ), z( ldz, * ), work( * )
+  complex(dprec)  :: a( lda, * ), z( ldz, * ), work( * )
 
 
 !  Purpose
@@ -136,7 +141,7 @@
   double precision   :: zero
   double precision   :: one
   parameter          ( zero = 0.0d0, one = 1.0d0 )
-  complex*16         cone
+  complex(dprec)     :: cone
   parameter          ( cone = ( 1.0d0, 0.0d0 ) )
   !------------------------------------------------------------- Local Variables
   logical            :: lower
