@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Literate version of DOS calculation with PEXSI</title>
-<!-- 2015-11-05 Thu 12:35 -->
+<!-- 2016-09-14 Wed 11:32 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Alberto Garcia" />
@@ -210,6 +210,7 @@ This is the main structure of the code.
 <div class="org-src-container">
 
 <pre class="src src-f90"><span style="color: #a020f0;">module</span> <span style="color: #0000ff;">m_pexsi_dos</span>
+<span style="color: #483d8b;">#ifdef</span> SIESTA__PEXSI
     <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">precision</span>, <span style="color: #a020f0;">only</span>  : dp
 
   <span style="color: #a020f0;">public</span> :: pexsi_dos
@@ -237,6 +238,7 @@ This is the main structure of the code.
 &lt;&lt;support-routines&gt;&gt;
 
 <span style="color: #a020f0;">end subroutine</span> <span style="color: #0000ff;">pexsi_dos</span>
+<span style="color: #483d8b;">#endif</span>
 <span style="color: #a020f0;">end module</span> <span style="color: #0000ff;">m_pexsi_dos</span>
 </pre>
 </div>
@@ -492,7 +494,7 @@ pbs = norbs/npPerPole
 <span style="color: #b22222;">! </span><span style="color: #b22222;">in the distribution object</span>
 <span style="color: #a020f0;">allocate</span> (PEXSI_Pole_ranks_in_World_Spin(npPerPole,nspin))
 <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">MPI_AllGather</span>(pexsi_pole_ranks_in_world,npPerPole,MPI_integer,<span style="color: #a020f0;">&amp;</span>
-     PEXSI_Pole_Ranks_in_World_Spin,npPerPole, <span style="color: #a020f0;">&amp;</span>
+     PEXSI_Pole_Ranks_in_World_Spin(1,1),npPerPole, <span style="color: #a020f0;">&amp;</span>
      MPI_integer,PEXSI_Spin_Comm,ierr)
 
 <span style="color: #b22222;">! </span><span style="color: #b22222;">Create distributions known to all nodes</span>
@@ -854,7 +856,7 @@ is also rank 0 in the spin communicator!
 
 <pre class="src src-f90"><span style="color: #a020f0;">allocate</span>(intdos_spin(npoints,nspin))
 <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">MPI_Gather</span>( intdos, npoints, MPI_double_precision, <span style="color: #a020f0;">&amp;</span>
-     intdos_spin, npoints, MPI_double_precision, <span style="color: #a020f0;">&amp;</span>
+     intdos_spin(1,1), npoints, MPI_double_precision, <span style="color: #a020f0;">&amp;</span>
      0, PEXSI_Spin_Comm, ierr )
 
 <span style="color: #a020f0;">if</span> (mpirank == 0) <span style="color: #a020f0;">then</span>
@@ -1005,7 +1007,7 @@ ncol  = <span style="color: #a020f0;">floor</span>(<span style="color: #a020f0;"
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Alberto Garcia</p>
-<p class="date">Created: 2015-11-05 Thu 12:35</p>
+<p class="date">Created: 2016-09-14 Wed 11:32</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
