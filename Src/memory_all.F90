@@ -1,7 +1,7 @@
 subroutine memory_all(str,comm)
   use m_rusage, only :  rss_max
 #ifdef MPI  
-  use mpi
+  use mpi_siesta
 #endif
   character(len=*), intent(in) :: str
   integer, intent(in)          :: comm

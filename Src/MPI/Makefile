@@ -21,31 +21,34 @@ include $(ARCH_MAKE)
 #
 TEMPLATES= mpi__type_s.f90 mpi__type_sv.f90 mpi__type_v.f90 mpi__type_vs.f90
 #
-INCFLAGS=-I$(MPI_INCLUDE)
+INCFLAGS:= $(INCFLAGS) -I$(MPI_INCLUDE)
 #
 Interfaces.f90 V_S.uses VS.uses: $(TEMPLATES)
 	if [ -z "$(KINDS)" ] ; then  $(MAKE) kind_explorer ; fi
-	@echo "The kind numbers for single and double precision reals follow"
+	$(MAKE) int_explorer
 	sh ${<D}/generate.sh "$(KINDS)"
 #
 kind_explorer: kind_explorer.o
-	$(FC) -o kind_explorer $(LDFLAGS) kind_explorer.o
+	$(FC) $(FFLAGS) -o kind_explorer $(LDFLAGS) kind_explorer.o
 #
-mpi.o: mpi__include.o Interfaces.o V_S.uses VS.uses
+int_explorer: int_explorer.o
+	$(FC) $(FFLAGS) -o int_explorer $(LDFLAGS) int_explorer.o
+#
+mpi_interfaces.o: mpi__include.o Interfaces.o V_S.uses VS.uses
 #
 module_built: libmpi_f90.a
 	@cp libmpi_f90.a ..
 	@cp *.mod ..
 	@touch module_built
 #
-libmpi_f90.a: mpi.o mpi__include.o Interfaces.o mpi_siesta.o timer_mpi.o
-	@$(AR) $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi_siesta.o mpi__include.o \
-                                                       timer_mpi.o Interfaces.o
+libmpi_f90.a: mpi_interfaces.o mpi__include.o Interfaces.o mpi_siesta.o timer_mpi.o
+	@$(AR) $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi_interfaces.o \
+               mpi_siesta.o mpi__include.o Interfaces.o timer_mpi.o
 	-$(RANLIB) libmpi_f90.a
 #
 clean:
 	@rm -f Interfaces.f90 *.o *.mod
-	@rm -f module_built *.uses kind_explorer
+	@rm -f module_built *.uses kind_explorer int_explorer
 	@rm -f libmpi_f90.a
 
 mpi_siesta.o: timer_mpi.o

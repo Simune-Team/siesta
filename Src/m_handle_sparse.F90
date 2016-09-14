@@ -103,7 +103,7 @@ contains
        end if
        if ( .not. file_exist(DMfile, Bcast = .true. ) ) then
           call die('DM file could not be found, have you supplied an &
-               erroneous path?')
+               &erroneous path?')
        end if
 
        ! Get the starting atom we need to copy into!

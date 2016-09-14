@@ -400,7 +400,7 @@ contains
          i = i + 1
          if ( len_trim(ln) > C_N_NAME_LEN ) then
             call die('Contour name: '//trim(ln)//' is too long, please use a &
-                 shorter name.')
+                 &shorter name.')
          end if
          con(i) = trim(ln)
       end do

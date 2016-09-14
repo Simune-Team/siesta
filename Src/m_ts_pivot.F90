@@ -613,7 +613,7 @@ contains
                    if ( in_rgn(r_pvt,r_tmp%r(i)) ) then
                       call die('This is extremely difficult. &
                            &Please do not sort the BTD format as &
-                           it cannot figure out what to do.')
+                           &it cannot figure out what to do.')
                    end if
                 end do
 

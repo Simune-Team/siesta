@@ -57,7 +57,7 @@ module m_spin
   private
 
   !> Spin configuration for SIESTA
-  type(tSpin), public :: spin
+  type(tSpin), public, save :: spin
 
   ! Use plain integers instead of pointers, to avoid problems
   ! in the PEXSI-only nodes, which might not call the spin_init

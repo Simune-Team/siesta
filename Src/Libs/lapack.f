@@ -1205,7 +1205,7 @@
       REAL               AMAX, UMAX, RPVGRW, TMP
       LOGICAL            UPPER, LSAME
       COMPLEX            ZDUM
-      EXTERNAL           LSAME, CLASET
+      EXTERNAL           LSAME
       INTRINSIC          ABS, REAL, AIMAG, MAX, MIN
       REAL               CABS1
       CABS1( ZDUM ) = ABS( REAL ( ZDUM ) ) + ABS( AIMAG ( ZDUM ) )
@@ -1600,7 +1600,7 @@
       REAL               AMAX, UMAX, RPVGRW
       LOGICAL            UPPER
       COMPLEX            ZDUM
-      EXTERNAL           LSAME, CLASET
+      EXTERNAL           LSAME
       LOGICAL            LSAME
       INTRINSIC          ABS, MAX, MIN, REAL, AIMAG
       REAL               CABS1
@@ -1913,7 +1913,7 @@
       LOGICAL            UPPER
       COMPLEX            ZDUM
       INTRINSIC          ABS, REAL, AIMAG, MAX, MIN
-      EXTERNAL           LSAME, CLASET
+      EXTERNAL           LSAME
       LOGICAL            LSAME
       REAL               CABS1
       CABS1( ZDUM ) = ABS( REAL ( ZDUM ) ) + ABS( AIMAG ( ZDUM ) )
@@ -23845,7 +23845,7 @@
       REAL               AMAX, UMAX, RPVGRW
       LOGICAL            UPPER
       INTRINSIC          ABS, MAX, MIN
-      EXTERNAL           LSAME, SLASET
+      EXTERNAL           LSAME
       LOGICAL            LSAME
       UPPER = LSAME( 'Upper', UPLO )
       RPVGRW = 1.0
@@ -23915,7 +23915,7 @@
       INTEGER            ISAMAX
       REAL               SLAMCH
       EXTERNAL           LSAME, ISAMAX, SLAMCH
-      EXTERNAL           SLACN2, SLATRS, SRSCL, XERBLA, SSYTRS
+      EXTERNAL           SLACN2, XERBLA, SSYTRS
       INTRINSIC          ABS, MAX
       SLA_SYRCOND = 0.0
       INFO = 0
@@ -24052,7 +24052,7 @@
       REAL               AMAX, UMAX, RPVGRW, TMP
       LOGICAL            UPPER
       INTRINSIC          ABS, MAX, MIN
-      EXTERNAL           LSAME, SLASET
+      EXTERNAL           LSAME
       LOGICAL            LSAME
       UPPER = LSAME( 'Upper', UPLO )
       IF ( INFO.EQ.0 ) THEN
