@@ -604,7 +604,7 @@ broyden_optim.o: siesta_options.o sys.o units.o
 bsc_cellxc.o: alloc.o bsc_xcmod.o cellxc_mod.o mesh.o moremeshsubs.o parallel.o
 bsc_cellxc.o: parallelsubs.o precision.o sys.o
 bsc_xcmod.o: parallel.o precision.o sys.o
-cart2frac.o: sys.o
+cart2frac.o: precision.o sys.o
 cdiag.o: alloc.o m_diagon_opt.o memoryinfo.o parallel.o precision.o sys.o
 cell_broyden_optim.o: m_broyddj_nocomm.o parallel.o precision.o sys.o units.o
 cell_broyden_optim.o: zmatrix.o
@@ -688,7 +688,7 @@ delk.o: parallelsubs.o precision.o siesta_geom.o
 denmat.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 denmatlomem.o: alloc.o globalise.o onmod.o precision.o
 densematrix.o: alloc.o precision.o
-detover.o: alloc.o parallel.o parallelsubs.o precision.o
+detover.o: alloc.o linpack.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o m_spin.o mesh.o
 dfscf.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o bsc_xcmod.o cellxc_mod.o delk.o dfscf.o
@@ -1454,6 +1454,7 @@ m_kinefsm.o: kinefsm.o
 m_ksv.o: ksv.o
 m_ksvinit.o: ksvinit.o
 m_ldau.o: ldau.o
+m_linpack.o: linpack.o
 m_local_dos.o: local_DOS.o
 m_matel_registry.o: matel_registry.o
 m_minvec.o: minvec.o

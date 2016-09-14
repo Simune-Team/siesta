@@ -302,8 +302,8 @@ contains
 
           ! Do a couple of simple checks...
           if ( any(files(iHS-1)%lasto /= files(iHS)%lasto) ) then
-             call die('The orbitals per atom are not consistent. &
-                  This is pretty grave. Do not mix different simulations.')
+             call die('The orbitals per atom are not consistent. ' // &
+                  'This is pretty grave. Do not mix different simulations.')
           end if
 
           ! We know the sparsity pattern is the same...

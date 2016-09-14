@@ -23,7 +23,7 @@ CONTAINS
        numd, listdptr, listd, mat, userfile, compatible)
 
 #ifdef MPI
-    use mpi
+    use mpi_siesta
     use parallel, only: blocksize, SIESTA_comm
     use alloc
 #endif

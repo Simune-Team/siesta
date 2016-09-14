@@ -267,11 +267,13 @@ CONTAINS
 
       Eso = 0._dp
       if ( SpOrb ) then
-         H_so(1:,3:) => val(H_so_2D)
+         ! Sadly some compilers (g95), does
+         ! not allow bounds for pointer assignments :(
+         H_so => val(H_so_2D)
          do io = 1,maxnh
-            Eso = Eso + H_so(io,3)*Dscf(io,7) + H_so(io,4)*Dscf(io,8) &
-                 + H_so(io,7)*Dscf(io,3) + H_so(io,8)*Dscf(io,4) &
-                 - H_so(io,5)*Dscf(io,5) - H_so(io,6)*Dscf(io,6)
+            Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8) &
+                 + H_so(io,5)*Dscf(io,3) + H_so(io,6)*Dscf(io,4) &
+                 - H_so(io,3)*Dscf(io,5) - H_so(io,4)*Dscf(io,6)
          end do
 #ifdef MPI
          ! Global reduction of Eso

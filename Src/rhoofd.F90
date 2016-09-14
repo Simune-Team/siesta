@@ -67,8 +67,8 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
   implicit none
 
 !     Argument types and dimensions
-  integer, intent(in) :: no, np, maxnd, numd(nuo), nspin, &
-       nuo, nuotot, iaorb(*), iphorb(*), &
+  integer, intent(in) :: no, np, nuo, maxnd, numd(nuo), nspin, &
+       nuotot, iaorb(*), iphorb(*), &
        isa(*), listdptr(nuo), listd(maxnd)
   real(dp), intent(in) :: Dscf(:,:)
   real(grid_p), intent(out) :: rhoscf(nsp,np,nspin)

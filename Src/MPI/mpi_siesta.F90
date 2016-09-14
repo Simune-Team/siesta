@@ -6,6 +6,14 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
 MODULE MPI_SIESTA
+!
+! This module embodies three different things:
+!
+!  - MPI interfaces for the subset of routines and types needed in Siesta
+!  - A trick to make mpi_comm_world into a variable that can be reset
+!    inside the code.
+!  - Time-profiling of a few key MPI routines
+!
 #ifndef NO_MPI_INTERFACES
 !
 ! This is an interface to supplant some MPI routines called by siesta,
@@ -19,28 +27,26 @@ MODULE MPI_SIESTA
     trueMPI_GET_COUNT  => MPI_GET_COUNT,  &
     trueMPI_INIT       => MPI_INIT,       &
     trueMPI_WAIT       => MPI_WAIT,       &
-    trueMPI_WAITALL    => MPI_WAITALL
+    trueMPI_WAITALL    => MPI_WAITALL,    &
+    true_MPI_Comm_World => MPI_Comm_World      ! Note
 
     USE TIMER_MPI_M, only: timer_mpi
 
 #else /* NO_MPI_INTERFACES */
-! For this PEXSI version, temporarily removed timing versions of some
-! MPI routines.
-
-#undef MPI
+! Removed interfaces and timing versions of the MPI routines.
 #endif /* NO_MPI_INTERFACES */
 
 ! The following construction allows to supplant MPI_Comm_World within SIESTA,
 ! and to use it as a subroutine with its own internal MPI communicator.
+
 #ifndef NO_MPI_INTERFACES
-! JMS. Oct.2010
   USE MPI_INTERFACES, only: true_MPI_Comm_World => MPI_Comm_World
 #else /* NO_MPI_INTERFACES */
-! AG, March 2013
-  USE MPI, true_MPI_Comm_World => MPI_Comm_World
+  USE MPI__INCLUDE, true_MPI_Comm_World => MPI_Comm_World
 #endif /* NO_MPI_INTERFACES */
+
   integer, public :: MPI_Comm_World = true_MPI_Comm_World
-#ifdef NO_MPI_INTERFACES
+
   public :: true_MPI_Comm_World
 
 
@@ -52,8 +58,6 @@ MODULE MPI_SIESTA
         integer, parameter :: MPI_grid_real   = MPI_double_precision
 #endif
 
-
-#endif /* NO_MPI_INTERFACES */
 !
 !   Export explicitly some symbols to help some versions of
 !   the PGI compiler, which do not consider them public by default

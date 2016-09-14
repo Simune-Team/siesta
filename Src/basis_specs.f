@@ -1067,9 +1067,9 @@ c (according to atmass subroutine).
       subroutine semicore_check(is)
       integer, intent(in)  :: is
 
-      real*8, parameter :: tiny = 1.d-5
+      real(dp), parameter :: tiny = 1.d-5
       integer ndiff
-      real*8 zval, zval_vps, charge_loc
+      real(dp) zval, zval_vps, charge_loc
 
       basp => basis_parameters(is)
 

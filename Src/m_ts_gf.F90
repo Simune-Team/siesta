@@ -441,7 +441,7 @@ contains
              write(*,'(2(a,2(tr1,g12.5)))') 'Energies, TS / Gf:', &
                   cE%e / eV, ' /', ZE_cur / eV
              call die('Energy point in GF file does &
-                  not match the internal energy-point in transiesta. &
+                  &not match the internal energy-point in transiesta. &
                   &Please correct your GF files.')
           end if
        end if
