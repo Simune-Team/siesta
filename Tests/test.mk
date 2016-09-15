@@ -2,13 +2,23 @@
 # Single-test makefile template
 #
 # You can edit the SIESTA macro here, or pass it on the command line
-#
+
+MPI=mpirun -np 2
 SIESTA=../../../siesta
-#
+
 # Example for BSC runs
 #
-#SIESTA= mpirun -np 4 ../../../siesta
-#
+#MPI=mpirun -np 2
+#SIESTA= ../../../siesta
+
+# Make compatibility layer for old test-runs
+ifeq ($(strip $(firstword $(SIESTA))),mpirun)
+MPI=
+endif
+ifeq ($(strip $(firstword $(SIESTA))),mpiexec)
+MPI=
+endif
+
 #----------------------------------------------------------------------------
 REFERENCE_DIR?=../../../Tests/Reference
 REFERENCE_CHECKER?=../cmp_digest.sh
@@ -26,8 +36,8 @@ completed_$(label):
           echo "    ==> Copying pseudopotential file for $$i..." ;\
           ln ../Pseudos/$$i.psf $(label)/$$i.psf ;\
          done
-	@echo "    ==> Running SIESTA as ${SIESTA}"
-	@(cd $(label) ; ${SIESTA} 2>&1 > $(name).out < ../$(name).fdf) \
+	@echo "    ==> Running SIESTA as $(MPI) $(SIESTA) -fdf XML.Write ../$(name).fdf "
+	@(cd $(label) ; $(MPI) $(SIESTA) -fdf XML.Write ../$(name).fdf 2>&1 > $(name).out ) \
           && touch completed_$(label)
 	@if [ -f completed_$(label) ] ; then cp $(label)/$(name).out $(label)/$(name).xml .;\
            echo "    ===> SIESTA finished successfully";\

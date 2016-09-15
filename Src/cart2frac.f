@@ -23,21 +23,23 @@ C  xyzfrac(3,na) = fractional X coordinate
 C
 C  Julian Gale, NRI, Curtin University, May 2004
 C
+      use precision
+
       implicit none
 C
 C  Passed variables
 C
       integer, intent(in)     :: na
-      real*8,  intent(inout)  :: xc(na)
-      real*8,  intent(inout)  :: yc(na)
-      real*8,  intent(inout)  :: zc(na)
-      real*8,  intent(out)    :: xyzfrac(3,na)
-      real*8,  intent(in)     :: rv(3,3)
+      real(dp),  intent(inout)  :: xc(na)
+      real(dp),  intent(inout)  :: yc(na)
+      real(dp),  intent(inout)  :: zc(na)
+      real(dp),  intent(out)    :: xyzfrac(3,na)
+      real(dp),  intent(in)     :: rv(3,3)
 C
 C  Local variables
 C
       integer                 :: i
-      real*8                  :: rmat(3,3)
+      real(dp)                  :: rmat(3,3)
 C
 C  Copy lattice vectors to scratch array
 C
@@ -89,14 +91,15 @@ C
 C  Invert matrix A by Gaussian elimination and apply to
 C  multiple vectors x
 C
+      use precision
       use sys, only : die
       implicit none
 C
 C  Passed variables
 C
       integer, intent(in)     :: m
-      real*8,  intent(inout)  :: a(3,3)
-      real*8,  intent(inout)  :: xf(3,m)
+      real(dp),  intent(inout)  :: a(3,3)
+      real(dp),  intent(inout)  :: xf(3,m)
 C
 C  Local variables
 C
@@ -107,9 +110,9 @@ C
       integer                 :: j
       integer                 :: k
       integer                 :: kk
-      real*8                  :: delt
-      real*8                  :: u
-      real*8                  :: x
+      real(dp)                  :: delt
+      real(dp)                  :: u
+      real(dp)                  :: x
 C
       delt = 1.0d-10
       do k = 1,2

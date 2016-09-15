@@ -135,7 +135,7 @@ contains
        else
           print *,'Parsed line: ',pline%line
           call die('Unrecognized designator of ending range, &
-               [to, plus, minus] accepted.')
+               &[to, plus, minus] accepted.')
        end if
 
        ! Check input for list creation

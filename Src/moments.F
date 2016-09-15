@@ -227,7 +227,7 @@ C .... printout in a loop over species, and atoms in species
 
         if (ionode) then
          write(6,'(/2a)')'Species: ', atm_label
-         write(6,'(/,a4,a7,8x,a9,2x,a13,3x,a17,4x,a12,a18,/,100(1h-))')
+         write(6,'(/,a4,a7,8x,a9,2x,a13,3x,a17,4x,a12,a18,/,100("-"))')
      .            'Atom', 'Orb', 'Charge', 'sqrt(<S>^2)', 
      .            '<(Sx,Sy,Sz)>', 'sqrt(<L>^2)', '<(Lx,Ly,Lz)>'
         endif
@@ -300,7 +300,7 @@ C Global reduction of terms
          if (ionode) then
            s_sqr = sqrt(svec(1)**2+svec(2)**2+svec(3)**2)
            l_sqr = sqrt(lvec(1)**2+lvec(2)**2+lvec(3)**2)
-           write(6,'(100(1h-))')
+           write(6,'(100("-"))')
            write(6,'(i4,5x,a6,5x,f8.4,6x,f8.3,3x,
      .           3f7.3,4x,f8.3,1x,3f7.3/)')
      .           ia, 'Total', qtot, s_sqr, svec, l_sqr, lvec
@@ -329,7 +329,7 @@ C Global reduction of terms
       if (ionode) then
            s_sqr = sqrt(svec(1)**2+svec(2)**2+svec(3)**2)
            l_sqr = sqrt(lvec(1)**2+lvec(2)**2+lvec(3)**2)
-           write(6,'(100(1h-))')
+           write(6,'(100("-"))')
            write(6,'(a4,14x,f10.4,4x,f10.3,3x,3f7.3,
      .           4x,f8.3,1x,3f7.3/)')
      .           'Sum', qtot, s_sqr, svec, l_sqr,lvec

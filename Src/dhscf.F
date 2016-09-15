@@ -862,7 +862,7 @@ C-------------------------------------------------------------------------
         ! Uniform dist, sequential form
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid('SIESTA.nc','Vna',1,ntpl,Vna)
+           call cdf_save_grid(trim(slabel)//'.nc','Vna',1,ntpl,Vna)
         else
            call write_rho( filesOut%vna, 
      &          cell, ntm, nsm, ntpl, 1, Vna)
@@ -960,8 +960,8 @@ C       Set the UNIFORM distribution again and copy DRho to it
         if (save_initial_charge_density) then 
 #ifdef NCDF_4
           if ( write_cdf ) then
-             call cdf_save_grid('SIESTA.nc','RhoInit',nspin,ntpl,
-     &            DRho)
+             call cdf_save_grid(trim(slabel)//'.nc','RhoInit',nspin,ntpl
+     &            ,DRho)
           else
              call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
      $            nspin, DRho)
@@ -1031,7 +1031,7 @@ C ----------------------------------------------------------------------
         !  DRho is already using a uniform, sequential form
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid('SIESTA.nc','Rho',nspin,ntpl,
+           call cdf_save_grid(trim(slabel)//'.nc','Rho',nspin,ntpl,
      &          DRho)
         else
            call write_rho( filesOut%rho, cell, ntm, nsm, ntpl, nspin,
@@ -1075,7 +1075,7 @@ C       Save diffuse ionic charge
         if (filesOut%psch .ne. ' ') then
 #ifdef NCDF_4
           if ( write_cdf ) then
-             call cdf_save_grid('SIESTA.nc','Chlocal',1,ntpl,
+             call cdf_save_grid(trim(slabel)//'.nc','Chlocal',1,ntpl,
      &            Chlocal)
           else
              call write_rho( filesOut%psch, cell, ntm, nsm, ntpl, 1,
@@ -1115,7 +1115,7 @@ C       Save total (ionic+electronic) charge
           ! See note above
 #ifdef NCDF_4
            if ( write_cdf ) then
-              call cdf_save_grid('SIESTA.nc','RhoTot',1,ntpl,
+              call cdf_save_grid(trim(slabel)//'.nc','RhoTot',1,ntpl,
      &             Chlocal)
            else
               call write_rho(filesOut%toch,cell,ntm,nsm,ntpl,1,Chlocal)
@@ -1158,7 +1158,7 @@ C ----------------------------------------------------------------------
       if (filesOut%drho .ne. ' ') then
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid('SIESTA.nc','RhoDelta',nspin,ntpl,
+           call cdf_save_grid(trim(slabel)//'.nc','RhoDelta',nspin,ntpl,
      &          DRho)
         else
            call write_rho( filesOut%drho, cell, ntm, nsm, ntpl, nspin,
@@ -1371,7 +1371,7 @@ C ----------------------------------------------------------------------
         ! Note that only the first spin component is used
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid('SIESTA.nc','Vh',1,ntpl,
+           call cdf_save_grid(trim(slabel)//'.nc','Vh',1,ntpl,
      &          Vaux)
         else
            call write_rho( filesOut%vh, cell, ntm, nsm, ntpl, 1, Vaux )
@@ -1443,7 +1443,7 @@ C ----------------------------------------------------------------------
       if (filesOut%rhoxc .ne. ' ') then
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid('SIESTA.nc','RhoXC',nspin,ntpl,
+           call cdf_save_grid(trim(slabel)//'.nc','RhoXC',nspin,ntpl,
      &          DRho )
         else
            call write_rho( filesOut%rhoxc, cell, ntm, nsm, ntpl, nspin,
@@ -1555,7 +1555,7 @@ C ----------------------------------------------------------------------
       if (filesOut%vt .ne. ' ') then
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid('SIESTA.nc','Vt',nspin,ntpl,
+           call cdf_save_grid(trim(slabel)//'.nc','Vt',nspin,ntpl,
      &          Vscf)
         else 
            call write_rho( filesOut%vt, cell, ntm, nsm, ntpl, nspin,
@@ -1819,7 +1819,7 @@ C ----------------------------------------------------------------------
       enddo
 #ifdef NCDF_4
       if ( write_cdf ) then
-         call cdf_save_grid('SIESTA.nc','RhoBader',1,ntpl,
+         call cdf_save_grid(trim(slabel)//'.nc','RhoBader',1,ntpl,
      &        BaderCharge)
       else
          call write_rho( trim(slabel)// ".BADER", cell,

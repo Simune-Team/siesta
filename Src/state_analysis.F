@@ -33,6 +33,7 @@
       use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
       use m_ntm
       use m_forces
+      use m_energies, only: update_FreeE, update_FreeEHarris
       use m_intramol_pressure, only: remove_intramol_pressure
 
 #ifdef SIESTA__FLOOK
@@ -82,8 +83,8 @@
       endif
       if (cml_p) call cmlEndPropertyList( mainXML )
 
-      FreeE       = Etot - Temp * Entropy
-      FreeEHarris = Eharrs - Temp * Entropy
+      call update_FreeE( Temp )
+      call update_FreeEHarris( Temp )
 
 !     Substract egg box effect from the forces 
       if (eggbox_block) then

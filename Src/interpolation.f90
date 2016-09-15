@@ -463,9 +463,9 @@ SUBROUTINE generate_spline_x( x, y, n, dydx1, dydxn, d2ydx2 )
 ! Included for compatibility with an older interface
 
 implicit none
+integer, intent(in) :: n         ! number of mesh points
 real(dp),intent(in) :: x(n)      ! mesh of independent variable
 real(dp),intent(in) :: y(n)      ! function value at mesh points
-integer, intent(in) :: n         ! number of mesh points
 real(dp),intent(in) :: dydx1     ! dy/dx at x(1)
 real(dp),intent(in) :: dydxn     ! dy/dx at x(n)
 real(dp),intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
@@ -496,9 +496,9 @@ SUBROUTINE generate_spline_dx( dx, y, n, dydx1, dydxn, d2ydx2 )
 ! Included for compatibility with an older interface
 
 implicit none
+integer, intent(in) :: n         ! number of mesh points
 real(dp),intent(in) :: dx        ! mesh interval
 real(dp),intent(in) :: y(n)      ! function value at mesh points
-integer, intent(in) :: n         ! number of mesh points
 real(dp),intent(in) :: dydx1     ! dy/dx at x(1)
 real(dp),intent(in) :: dydxn     ! dy/dx at x(n)
 real(dp),intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
@@ -521,10 +521,10 @@ SUBROUTINE evaluate_spline_x( xi, yi, d2ydx2, n, x, y, dydx )
 ! Included for compatibility with an older interface
 
 implicit none
+integer,          intent(in) :: n         ! number of mesh points
 real(dp),         intent(in) :: xi(n)     ! mesh of independent variable
 real(dp),         intent(in) :: yi(n)     ! function value at mesh points
 real(dp),         intent(in) :: d2ydx2(n) ! function value at point x
-integer,          intent(in) :: n         ! number of mesh points
 real(dp),         intent(in) :: x         ! point at which function is needed
 real(dp),         intent(out):: y         ! function value at point x
 real(dp),optional,intent(out):: dydx      ! function derivative at point x
@@ -555,10 +555,10 @@ SUBROUTINE evaluate_spline_dx( dx, yi, d2ydx2, n, x, y, dydx )
 ! Included for compatibility with an older interface
 
 implicit none
+integer,          intent(in) :: n         ! number of mesh points
 real(dp),         intent(in) :: dx        ! mesh interval
 real(dp),         intent(in) :: yi(n)     ! function value at mesh points
 real(dp),         intent(in) :: d2ydx2(n) ! function value at point x
-integer,          intent(in) :: n         ! number of mesh points
 real(dp),         intent(in) :: x         ! point at which function is needed
 real(dp),         intent(out):: y         ! function value at point x
 real(dp),optional,intent(out):: dydx      ! function derivative at point x
@@ -590,9 +590,9 @@ END SUBROUTINE evaluate_spline_dx
 SUBROUTINE polint( xi, yi, n, x, y, dydx )  ! Lagrange interpolation
 
   implicit none
+  integer, intent(in) :: n     ! number of mesh points
   real(dp),intent(in) :: xi(*) ! mesh points
   real(dp),intent(in) :: yi(*) ! function values at mesh points
-  integer, intent(in) :: n     ! number of mesh points
   real(dp),intent(in) :: x     ! point at which function is required
   real(dp),intent(out):: y     ! function value at point x
   real(dp),intent(out):: dydx  ! function derivative at point x

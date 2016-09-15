@@ -18,6 +18,7 @@
       use mpi_siesta
 #endif      
       use precision, only: dp
+      use files, only: slabel
       use siesta_cml
 #ifdef SIESTA__FLOOK
       use flook_siesta, only : slua_call, LUA_SCF_LOOP
@@ -40,7 +41,7 @@
       use m_state_analysis
       use m_steps
       use sys, only : die, bye
-      use sparse_matrices, only: H, Hold
+      use sparse_matrices, only: H, Hold, Dold, Dscf, Eold, Escf
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
       use siesta_geom,   only: na_u           ! Number of atoms in unit cell
@@ -122,6 +123,7 @@
       logical  :: writetdfw
       real(dp) :: dDmax     ! Max. change in DM elements
       real(dp) :: dHmax     ! Max. change in H elements
+      real(dp) :: dEmax     ! Max. change in EDM elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
 !tddft
@@ -187,6 +189,7 @@
       call dict_variable_add('SCF.iteration',iscf)
       call dict_variable_add('SCF.dD',dDmax)
       call dict_variable_add('SCF.dH',dHmax)
+      call dict_variable_add('SCF.dE',dEmax)
       call dict_variable_add('SCF.drhoG',drhog)
 #endif
 
@@ -207,17 +210,17 @@
       if (.not. td_elec_dyn) then     !tddft
 
 #ifdef NCDF_4
-      ! Initialize the SIESTA.nc file
+      ! Initialize the NC file
       if ( write_cdf ) then
 
          ! Initialize the file...
-         call cdf_init_file('SIESTA.nc',is_MD = .false.)
+         call cdf_init_file(trim(slabel)//'.nc',is_MD = .false.)
 #ifdef MPI
          call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
 
          ! Save the settings
-         call cdf_save_settings('SIESTA.nc')
+         call cdf_save_settings(trim(slabel)//'.nc')
 #ifdef MPI
          call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
@@ -226,11 +229,11 @@
          d_sav = d_sav//('nsc'.kv.1)//('xij'.kv.1)
          d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
          d_sav = d_sav//('isc_off'.kv.1)
-         call cdf_save_state('SIESTA.nc',d_sav)
+         call cdf_save_state(trim(slabel)//'.nc',d_sav)
          call delete(d_sav)
 
          ! Save the basis set
-         call cdf_save_basis('SIESTA.nc')
+         call cdf_save_basis(trim(slabel)//'.nc')
 
       end if
 #endif
@@ -238,6 +241,7 @@
       ! The dHmax variable only has meaning for Hamiltonian
       ! mixing, or when requiring the Hamiltonian to be converged.
       dHmax = -1._dp
+      dEmax = -1._dp
 
       DO 
         ! Conditions of exit:
@@ -261,13 +265,13 @@
 
         if (SIESTA_worker) then
            if (first) then
-              if (require_harris_convergence) then
+              if ( converge_Eharr ) then
                  call reset(conv_harris)
-                 call set_tolerance(conv_harris,harris_tolerance)
+                 call set_tolerance(conv_harris,tolerance_Eharr)
               endif
-              if (require_energy_convergence) then
-                 call reset(conv_freeE)
-                 call set_tolerance(conv_freeE,energy_tolerance)
+              if ( converge_FreeE ) then
+                 call reset(conv_FreeE)
+                 call set_tolerance(conv_FreeE,tolerance_FreeE)
               endif
            endif
 
@@ -287,19 +291,25 @@
           endif
           
           call compute_dm( iscf )
-          ! Maybe set Dold to zero if reading charge or H...
-          call compute_max_diff(Dold,Dscf,dDmax) ! Assuming we have Dold
-          if (SIESTA_worker) call setup_hamiltonian( iscf )
-          if (SIESTA_worker) call compute_max_diff(Hold,H,dHmax)
+          if (SIESTA_worker) then
+             ! Maybe set Dold to zero if reading charge or H...
+             call compute_max_diff(Dold,Dscf,dDmax)
+             if ( converge_EDM ) 
+     &            call compute_max_diff(Eold,Escf,dEmax)
+             call setup_hamiltonian( iscf )
+             call compute_max_diff(Hold,H,dHmax)
+          end if
        else
           if (SIESTA_worker) then
              call setup_hamiltonian( iscf )
-             if ( require_hamiltonian_convergence ) then
-                call compute_max_diff(Hold,H,dHmax)
-             end if
-          endif
+             call compute_max_diff(Hold,H,dHmax)
+          end if
           call compute_dm( iscf )
-          if (SIESTA_worker) call compute_max_diff(Dold,Dscf,dDmax)
+          if (SIESTA_worker) then
+             call compute_max_diff(Dold,Dscf,dDmax)
+             if ( converge_EDM ) 
+     &            call compute_max_diff(Eold,Escf,dEmax)
+          end if
        endif
 
 
@@ -318,12 +328,13 @@
         !        Dscf=DM_out, Dold=DM_in, H=H_(DM_out), Hold=H_in(mixed)
         !        dDmax=maxdiff(DM_out,DM_in)
         !        dHmax=maxdiff(H(DM_out),H_in)
-        call scfconvergence_test( first, iscf, dDmax, dHmax, 
+        call scfconvergence_test( first, iscf, 
+     &                            dDmax, dHmax, dEmax,
      &                            conv_harris, conv_freeE,
      &                            SCFconverged )
         !
         ! ** Check this heuristic
-        if (MixH) then
+        if ( MixH ) then
            prevDmax = dHmax
         else
            prevDmax = dDmax
@@ -562,28 +573,30 @@
       subroutine compute_forces()
       ! Computes forces and stresses with the current DM_out
 
-      use m_final_H_f_stress,    only: final_H_f_stress
+      use siesta_options, only: recompute_H_after_scf
+      use m_final_H_f_stress, only: final_H_f_stress
       use write_subs
 
       real(dp), allocatable  :: fa_old(:,:), Hsave(:,:)
 
       allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
-      allocate(Hsave(size(H,dim=1),size(H,dim=2)))
-!$OMP parallel workshare default(shared)
       fa_old(:,:) = fa(:,:)
-      Hsave(:,:) = H(:,:)
-!$OMP end parallel workshare
+      if ( recompute_H_after_scf ) then
+         allocate(Hsave(size(H,dim=1),size(H,dim=2)))
+         Hsave(:,:) = H(:,:)
+      end if
       call final_H_f_stress( istep , iscf , .false. )
-!$OMP parallel workshare default(shared)
-      H(:,:) = Hsave(:,:)
-!$OMP end parallel workshare
+      if ( recompute_H_after_scf ) then
+         H(:,:) = Hsave(:,:)
+         deallocate(Hsave)
+      end if
       if (ionode) then
          print *, "Max diff in force (eV/Ang): ",
      $        maxval(abs(fa-fa_old))*Ang/eV
          call siesta_write_forces(-1)
          call siesta_write_stress_pressure()
       endif
-      deallocate(fa_old,Hsave)
+      deallocate(fa_old)
 
       end subroutine compute_forces
 

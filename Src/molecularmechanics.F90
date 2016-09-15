@@ -11,6 +11,7 @@
 !     Implementation: Julian Gale (Curtin, AU)
 !     Modified by Alberto Garcia  (stress sign fix, plots of V(r))
 !     Implemented Grimme's cutoff function (A. Garcia, April 2008)
+!     Updated for arbitrary number of potentials (N. Papior, 2016)
 !
       use precision, only: dp
       implicit none
@@ -30,7 +31,7 @@
       real(dp), save          :: d_grimme
       real(dp), pointer, save :: MMpotpar(:,:) => null() ! (6,:)
 
-      public :: inittwobody, twobody
+      public :: inittwobody, twobody, reset_twobody
 
       CONTAINS
 
@@ -53,6 +54,7 @@
 
       ! initialize all the arrays, and allocate them dynamically.
       call prep_arrays()
+
       
 !     Get potential cutoff
       MMcutoff = fdf_get('MM.Cutoff',30._dp,'Bohr')
@@ -65,9 +67,17 @@
       ! this will allow arbitrary length conversions
       Lscale = fdf_convfac(scale, 'Bohr')
 
+      ! If there are no molecular potentials we may quickly
+      ! exit
+      if ( sizeMMpot == 0 ) then
+         nMMpot = 0
+         return
+      end if
+
+      
 !     Read in data from block
       nMMpot = 0 ! reset to count the actual number of potentials
-      if (fdf_block('MM.Potentials', bfdf).and. sizeMMpot>0) then
+      if ( fdf_block('MM.Potentials', bfdf) ) then
         if (IONode) then
           write(6,"(a)") "Reading two-body potentials"
         endif
@@ -76,129 +86,75 @@
         do while ( fdf_bline(bfdf,pline) )
 
           nn = fdf_bnnames(pline)
+          ! If there are no names on this line
+          ! there is no specification of the type of
+          ! potential used. Hence, we immediately skip it
+          if ( nn == 0 ) cycle
+          
           ni = fdf_bnintegers(pline)
           nr = fdf_bnreals(pline)
           potential = fdf_bnames(pline,1)
 
-          if (nn .gt. 0) then
-            if (leqi(potential,'C6')) then
-              nMMpot = nMMpot + 1
-               
-              MMpottype(nMMpot) = 1
-              if (ni .lt. 2) then
-                call die('MM: Species numbers missing in potential input!')
-              endif
-             
-              MMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
-              MMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              if (IONode) then
-                 write(6,"(a,i0,a,i0)") "C6 - two-body potential between ", &
-                      fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-              endif
-              if (nr .ge. 2) then
+          if (leqi(potential,'C6')) then
+             call step_species(nMMpot, 1, ni, 'C6 - two-body')
+
+             if (nr .ge. 2) then
 !               C6 : Parameter one is C6 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
 !               C6 : Parameter two is damping exponent
                 MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Lscale
-              elseif (nr .eq. 1) then
+             else if (nr .eq. 1) then
 !               C6 : Parameter one is C6 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
                 MMpotpar(2,nMMpot) = 0.0_dp
-              endif
+             end if
              
-            elseif (leqi(potential,'C8')) then
-              nMMpot = nMMpot + 1
-               
-              MMpottype(nMMpot) = 2
-              if (ni .lt. 2) then
-                call die('MM: Species numbers missing in potential input!')
-              endif
-             
-              MMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
-              MMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              if (IONode) then
-                 write(6,"(a,i0,a,i0)") "C8 - two-body potential between ", &
-                      fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-              end if
+          else if (leqi(potential,'C8')) then
+             call step_species(nMMpot, 2, ni, 'C8 - two-body')
 
-              if (nr .ge. 2) then
+             if (nr .ge. 2) then
 !               C8 : Parameter one is C8 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
 !               C8 : Parameter two is damping exponent
                 MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Lscale
-              elseif (nr .eq. 1) then
+             elseif (nr .eq. 1) then
 !               C8 : Parameter one is C8 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
                 MMpotpar(2,nMMpot) = 0.0_dp
-              endif
+             end if
 
-            elseif (leqi(potential,'C10')) then
-              nMMpot = nMMpot + 1
+          else if (leqi(potential,'C10')) then
+             call step_species(nMMpot, 3, ni, 'C10 - two-body')
 
-              MMpottype(nMMpot) = 3
-              if (ni .lt. 2) then
-                call die('MM: Species numbers missing in potential input!')
-              endif
-
-              MMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
-              MMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              if (IONode) then
-                 write(6,"(a,i0,a,i0)") "C10 - two-body potential between ", &
-                      fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-              end if
-              if (nr .ge. 2) then
+             if (nr .ge. 2) then
 !               C10 : Parameter one is C10 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
 !               C10 : Parameter two is damping exponent
                 MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Lscale
-              elseif (nr.eq.1) then
+             else if (nr.eq.1) then
 !               C10 : Parameter one is C10 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
                 MMpotpar(2,nMMpot) = 0.0_dp
-              endif
+             end if
 
-            elseif (leqi(potential,'HARM')) then
-              nMMpot = nMMpot + 1
+          else if (leqi(potential,'HARM')) then
+             call step_species(nMMpot, 4, ni, 'Harmonic - two-body')
 
-              MMpottype(nMMpot) = 4
-              if (ni .lt. 2) then
-                call die('MM: Species numbers missing in potential input!')
-              endif
-
-              MMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
-              MMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              if (IONode) then
-                 write(6,"(a,i0,a,i0)") "Harmonic two-body potential between ",   &
-                      fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-              end if
-
-              if (nr .ge. 2) then
+             if (nr .ge. 2) then
 !               Harm : Parameter one is force constant
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Lscale**2)
 !               Harm : Parameter two is r0
                 MMpotpar(2,nMMpot) = fdf_breals(pline,2)*Lscale
-              elseif (nr .eq. 1) then
+             else if (nr .eq. 1) then
 !               Harm : Parameter one is force constant
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Lscale**2)
                 MMpotpar(2,nMMpot) = 0.0_dp
-              endif
+             end if
 
-            elseif (leqi(potential,'Grimme')) then
-              nMMpot = nMMpot + 1
+          else if (leqi(potential,'Grimme')) then
+             call step_species(nMMpot, 5, ni, 'Grimme - two-body')
 
-              MMpottype(nMMpot) = 5
-              if (ni.lt.2) then
-                call die('MM: Species numbers missing in potential input!')
-              endif
-
-              MMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
-              MMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              if (IONode) then
-                 write(6,"(a,i0,a,i0)") "Grimme two-body potential between ", &
-                      fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-              end if
-
-              if (nr.eq.2) then
+             if (nr.eq.2) then
 !               C6 : Parameter one is C6 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
 
@@ -208,13 +164,12 @@
 !                       potentials, so note the correct application of the scale factor.
                 MMpotpar(2,nMMpot) = fdf_breals(pline,2) * Lscale
 
-              else
+             else
                 call die('MM: Need both C6 and R0 values in Grimme line!')
-              endif
-            endif
+             end if
+          end if
            
-          endif
-        enddo
+        end do
 
         ! R. Peverati for DZ basis sets
         s6_grimme = fdf_get("MM.Grimme.S6",1.66_dp)
@@ -230,7 +185,37 @@
              &read. Please delete non-applicable lines.")
      end if
 
-   contains 
+   contains
+
+     !> @param MMpot current potential index
+     !> @param method the method value for the current potential
+     !> @param ni number of integers on the line (simple check)
+     !> @param name additional print out of method name
+     subroutine step_species(MMpot, method, ni, name)
+       integer, intent(inout) :: MMpot
+       integer, intent(in) :: method, ni
+       character(len=*), intent(in) :: name
+
+       ! Step potential
+       MMpot = MMpot + 1
+
+       ! Assign potential type
+       MMpottype(MMpot) = method
+
+       ! Check whether the correct species are found
+       if ( ni < 2 ) then
+          call die('MM: Species numbers missing in potential input!')
+       end if
+
+       ! Read the species indices
+       MMpotptr(1,MMpot) = fdf_bintegers(pline,1)
+       MMpotptr(2,MMpot) = fdf_bintegers(pline,2)
+       if ( IONode ) then
+          write(*,"(a,2(a,i0))") name, " potential between ", &
+               MMpotptr(1,MMpot), " and ", MMpotptr(2,MMpot)
+       end if
+
+     end subroutine step_species
         
      ! dynamically create the arrays to allow 
      ! arbitrary number of potentials attached.
@@ -263,8 +248,8 @@
             'MMpotptr','twobody')
        call re_alloc(MMpottype , 1 , sizeMMpot, &
             'MMpottype','twobody')
-       call re_alloc(MMpotpar , 1 , 6 , 1 , nMMpot, &
-            'sizeMMpotpar','twobody')
+       call re_alloc(MMpotpar , 1 , 6 , 1 , sizeMMpot, &
+            'MMpotpar','twobody')
 
        ! initialize them to zero
        ! ensures that we don't accidentally assign wrong
@@ -277,7 +262,20 @@
 
    end subroutine inittwobody
 
-      subroutine twobody( na, xa, isa, cell, emm, ifa, fa, istr, stress )
+   subroutine reset_twobody()
+
+     use alloc, only: de_alloc
+
+     ! deallocate them
+     call de_alloc(MMpotptr, 'MMpotptr','twobody')
+     call de_alloc(MMpottype, 'MMpottype','twobody')
+     call de_alloc(MMpotpar, 'MMpotpar','twobody')
+     nMMpot = 0
+
+   end subroutine reset_twobody
+
+   
+   subroutine twobody( na, xa, isa, cell, emm, ifa, fa, istr, stress )
       use parallel,         only : IONode
       use units,            only : kbar
       use alloc,            only : re_alloc, de_alloc

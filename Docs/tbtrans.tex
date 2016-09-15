@@ -28,35 +28,16 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge \textbf{T B t r a n s \, \, \input{../version.info}}}
+{\Huge \textbf{T B t r a n s \, \, 4.1-b1}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{0.5cm}
 
-{\Large August 5, 2016 }
+{\Large August 31, 2016 }
 
 \vspace{1.5cm}
-
-\hbox{ 
-    \hskip 1.5cm
-    \Large
-    \begin{tabular}{p{.3\linewidth}p{.6\linewidth}}
-      
-      Nick R\"ubner Papior &
-      \emph{Technical University of Denmark and Institut Catal\`a
-          de Nanoci\`encia i Nanotecnologia}
-
-      \\
-
-    \end{tabular}
-}
-
-\vspace{0.5cm}
-
-\vspace{0.5cm}
-Copyright \copyright\
-N. R. Papior, 2016-2016
+{\Large \url{http://www.uam.es/siesta}}
 
 \end{center}
 
@@ -65,6 +46,17 @@ N. R. Papior, 2016-2016
 % END TITLE PAGE --------------------------------------------------------------
 
 \newpage
+
+\section*{Contributors to \tbtrans}
+\addcontentsline{toc}{section}{Contributors to \siesta}
+
+\siesta\ is Copyright \copyright\  2016-2016 by Nick R. Papior.
+The original \tbtrans\ code was implemented by Mads Brandbyge, Jose
+L. Mozos, Jeremy Taylor, Pablo Ordejon and Kurt Stokbro. The current
+\tbtrans\ is implemented by the following contributors:
+
+Nick R. Papior.
+
 
 \tableofcontents
 
@@ -132,10 +124,9 @@ It routinely provides:
 
 \begin{itemize}
 
-\item \cite{Papior2016b}
-
-Description of the \tbtrans\ and \tsiesta\ code in the $N$ terminal
-generic implementation.
+  \item%
+  Description of the \tbtrans\ and \tsiesta\ code in the $N$ terminal
+  generic implementation \cite{Papior2016b}.
 
 \end{itemize}
 
@@ -710,6 +701,8 @@ see Sec.~\ref{sec:arch-make}, as quantities will be orbital resolved.
   is computationally more demanding than using \fdf{TBT.DOS!A} an
   \fdf{TBT.DOS!A.Elecs.All}.
 
+  See \fdf{TBT.Atoms!Device.Connect}.
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.DOS!A}
@@ -717,6 +710,8 @@ see Sec.~\ref{sec:arch-make}, as quantities will be orbital resolved.
   Calculate the DOS from the spectral function. This will not
   calculate the DOS from the last electrode (last in the list
   \fdf{TBT.Elecs}). 
+
+  See \fdf{TBT.Atoms!Device.Connect}.
 
 \end{fdflogicalF}
 
@@ -839,6 +834,16 @@ currents may only be calculated in the selected device region.
   will limit the device region to atoms [10--20, 30--40].
   
 \end{fdfentry}
+
+\begin{fdflogicalF}{TBT.Atoms!Device.Connect}
+  
+  Whether the device region is extended such that the DOS is
+  calculated correctly on the device defined atoms.
+
+  \note this parameter should be set to \fdftrue\ in case accurate DOS
+  calculations are required on the specified device atoms. 
+
+\end{fdflogicalF}
 
 \begin{fdfentry}{TBT.Atoms!Buffer}[block]%
 
@@ -1382,7 +1387,7 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
   the principal cell.
 
   \note set this to \fdftrue\ with care, non-physical results may
-  arise. 
+  arise. Use at your own risk!
 
 \end{fdflogicalF}  
 

@@ -1,12 +1,12 @@
 !
 module class_Distribution
 #ifdef MPI
-  use mpi
+  use mpi_siesta
 #endif
 
   implicit none
 
-  character(len=*), parameter :: mod_name=__FILE__
+  character(len=*), parameter :: mod_name="class_Distribution.F90"
 
 #ifndef MPI
   ! To allow compilation in serial mode
@@ -194,7 +194,9 @@ module class_Distribution
     integer, intent(in)                    :: Node
     integer                                :: nl
 
+#ifdef MPI
     integer, external :: numroc
+#endif
     integer :: remainder
 
     obj => this%data
@@ -232,8 +234,10 @@ module class_Distribution
     integer, intent(in)                    :: il
     integer, intent(in)                    :: Node
     integer                                :: ig
-
+    
+#ifdef MPI
     integer, external :: indxl2g
+#endif
 
     obj => this%data
 
@@ -268,7 +272,9 @@ module class_Distribution
     integer                                :: il
 
     integer :: owner, myrank, error
+#ifdef MPI
     integer, external :: indxg2l
+#endif
 
     obj => this%data
 
@@ -329,8 +335,10 @@ module class_Distribution
     integer                                :: proc
 
     integer, parameter :: dummy_Node = 0
+#ifdef MPI
     integer, external  :: indxg2p
-
+#endif
+    
     obj => this%data
 
     select case(obj%dist_type)

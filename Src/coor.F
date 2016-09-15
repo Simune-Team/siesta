@@ -116,7 +116,7 @@ C Format of atomic coordinates
         endif
       else
         if (Node.eq.0) then
-          write(6,"(/,'coor: ',72(1h*))")
+          write(6,"(/,'coor: ',72('*'))")
           write(6,"('coor:                  INPUT ERROR')")
           write(6,'(a)') 'coor: '
           write(6,'(2a)') 'coor: You must use one of the following',
@@ -126,7 +126,7 @@ C Format of atomic coordinates
           write(6,'(a)') 'coor:     - ScaledCartesian                '
           write(6,'(2a)') 'coor:     - ScaledByLatticeVectors ',
      .                                                 '(or Fractional)'
-          write(6,"('coor: ',72(1h*))")
+          write(6,"('coor: ',72('*'))")
         endif
 
         call die()

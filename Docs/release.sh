@@ -180,7 +180,7 @@ mkdir -p $_reldir/$_tag-files
 if [ -d $_reldir/$_out ]; then
     echo "The release has already been processed."
     echo "Delete this folder:"
-    echo "  rm -rf $(dirname $main_dir)/$_reldir/$_tag"
+    echo "  rm -rf $_reldir/$_tag"
     exit 1
 fi
 
@@ -224,6 +224,8 @@ make final
 #   this is not available through the make clean)
 rm -f siesta*.[^pt]* siesta*.toc
 rm -f tbtrans*.[^pt]* tbtrans*.toc
+# Also do not ship the release script
+rm release.sh
 
 # Create signatures and move files
 for f in *.pdf ; do

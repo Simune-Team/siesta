@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Literate version of PEXSI LDOS calculator</title>
-<!-- 2015-11-09 Mon 15:28 -->
+<!-- 2016-09-14 Wed 11:32 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Alberto Garcia" />
@@ -188,14 +188,16 @@ Module structure:
 
 <div class="org-src-container">
 
-<pre class="src src-f90"><span style="color: #a020f0;">MODULE</span> <span style="color: #0000ff;">m_pexsi_local_dos</span>
-<span style="color: #a020f0;">private</span>
-<span style="color: #a020f0;">public</span> :: pexsi_local_dos
+<pre class="src src-f90">  <span style="color: #a020f0;">MODULE</span> <span style="color: #0000ff;">m_pexsi_local_dos</span>
+<span style="color: #483d8b;">#ifdef</span> SIESTA__PEXSI
+  <span style="color: #a020f0;">private</span>
+  <span style="color: #a020f0;">public</span> :: pexsi_local_dos
 
-<span style="color: #a020f0;">CONTAINS</span>
-&lt;&lt;siesta-side-parent-routine&gt;&gt;
-&lt;&lt;pexsi-ldos-routine&gt;&gt;
-<span style="color: #a020f0;">end module</span> <span style="color: #0000ff;">m_pexsi_local_dos</span>
+  <span style="color: #a020f0;">CONTAINS</span>
+  &lt;&lt;siesta-side-parent-routine&gt;&gt;
+  &lt;&lt;pexsi-ldos-routine&gt;&gt;
+<span style="color: #483d8b;">#endif</span>
+  <span style="color: #a020f0;">end module</span> <span style="color: #0000ff;">m_pexsi_local_dos</span>
 </pre>
 </div>
 </div>
@@ -244,8 +246,8 @@ will have extension <code>.LDSI</code>.
 
   <span style="color: #228b22;">type(filesOut_t)</span>     :: <span style="color: #a0522d;">filesOut  </span><span style="color: #b22222;">! </span><span style="color: #b22222;">blank output file names</span>
 
-  energy = fdf_get(<span style="color: #8b2252;">'PEXSI.LocalDOS.Energy'</span>,0.0_dp,<span style="color: #8b2252;">"Ry"</span>)
-  broadening = fdf_get(<span style="color: #8b2252;">'PEXSI.LocalDOS.Broadening'</span>,0.01_dp,<span style="color: #8b2252;">"Ry"</span>)
+  energy = fdf_get(<span style="color: #8b2252;">'PEXSI.LDOS.Energy'</span>,0.0_dp,<span style="color: #8b2252;">"Ry"</span>)
+  broadening = fdf_get(<span style="color: #8b2252;">'PEXSI.LDOS.Broadening'</span>,0.01_dp,<span style="color: #8b2252;">"Ry"</span>)
 
   <span style="color: #b22222;">! </span><span style="color: #b22222;">Note that we re-use Dscf, so it will be obliterated</span>
   <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">get_LDOS_SI</span>( no_u, no_l, nspin,  <span style="color: #a020f0;">&amp;</span>
@@ -290,9 +292,6 @@ This is the main structure of the LDOS routine.
 <pre class="src src-f90">&lt;&lt;routine-header&gt;&gt;
 &lt;&lt;routine-variables&gt;&gt;
 <span style="color: #b22222;">!  </span><span style="color: #b22222;">--------  for serial compilation</span>
-<span style="color: #483d8b;">#ifndef</span> MPI
-    <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">die</span>(<span style="color: #8b2252;">"PEXSI LDOS needs MPI"</span>)
-<span style="color: #483d8b;">#else</span>
 &lt;&lt;define-communicators&gt;&gt;
 &lt;&lt;re-<span style="color: #a020f0;">distribute</span>-matrices&gt;&gt;
 &lt;&lt;set-options&gt;&gt;
@@ -302,7 +301,6 @@ This is the main structure of the LDOS routine.
 &lt;&lt;compute-ldos&gt;&gt;
 &lt;&lt;copy-to-siesta-side&gt;&gt;
 &lt;&lt;clean-up&gt;&gt;
-<span style="color: #483d8b;">#endif</span>
 
 <span style="color: #a020f0;">CONTAINS</span>
 
@@ -322,7 +320,7 @@ This is the main structure of the LDOS routine.
 
 <pre class="src src-f90"><span style="color: #a020f0;">subroutine</span> <span style="color: #0000ff;">get_LDOS_SI</span>( no_u, no_l, nspin_in,  <span style="color: #a020f0;">&amp;</span>
      maxnh, numh, listh, H, S,  <span style="color: #a020f0;">&amp;</span>
-     LocalDOSDM, energy, broadening)
+     LDOS_DM, energy, broadening)
 
 &lt;&lt;used-modules&gt;&gt;
 
@@ -332,7 +330,7 @@ This is the main structure of the LDOS routine.
 <span style="color: #228b22;">integer</span>, <span style="color: #a020f0;">intent</span>(in), <span style="color: #a020f0;">target</span>  ::<span style="color: #a0522d;"> listh(maxnh), numh(no_l)</span>
 <span style="color: #228b22;">real</span>(dp), <span style="color: #a020f0;">intent</span>(in), <span style="color: #a020f0;">target</span> ::<span style="color: #a0522d;"> H(maxnh,nspin_in), S(maxnh)</span>
 <span style="color: #228b22;">real</span>(dp), <span style="color: #a020f0;">intent</span>(in)         ::<span style="color: #a0522d;"> energy, broadening</span>
-<span style="color: #228b22;">real</span>(dp), <span style="color: #a020f0;">intent</span>(out)        ::<span style="color: #a0522d;"> LocalDOSDM(maxnh,nspin_in)</span>
+<span style="color: #228b22;">real</span>(dp), <span style="color: #a020f0;">intent</span>(out)        ::<span style="color: #a0522d;"> LDOS_DM(maxnh,nspin_in)</span>
 </pre>
 </div>
 </div>
@@ -342,28 +340,26 @@ This is the main structure of the LDOS routine.
 <div class="outline-text-4" id="text-3-2-1">
 <div class="org-src-container">
 
-<pre class="src src-f90">      <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">precision</span>, <span style="color: #a020f0;">only</span>  : dp
-      <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">fdf</span>
-      <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">units</span>,       <span style="color: #a020f0;">only</span>: eV, pi
-      <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">sys</span>,         <span style="color: #a020f0;">only</span>: die
-      <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">m_mpi_utils</span>, <span style="color: #a020f0;">only</span>: broadcast
-      <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">parallel</span>, <span style="color: #a020f0;">only</span>   : SIESTA_worker, BlockSize
-      <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">parallel</span>, <span style="color: #a020f0;">only</span>   : SIESTA_Group, SIESTA_Comm
-      <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">m_redist_spmatrix</span>, <span style="color: #a020f0;">only</span>: aux_matrix, redistribute_spmatrix
-      <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">class_Distribution</span>
-      <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">alloc</span>,             <span style="color: #a020f0;">only</span>: re_alloc, de_alloc
-<span style="color: #483d8b;">#ifdef</span> MPI
-    <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">mpi_siesta</span>
-<span style="color: #483d8b;">#endif</span>
-    <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">iso_c_binding</span>
-    <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_options
-    <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_plan_finalize
-    <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_plan_initialize
-    <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_selinv_complex_symmetric_matrix
-    <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_load_real_symmetric_hs_matrix
-    <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_set_default_options
-    <span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">&amp;</span>
-          <span style="color: #a020f0;">only</span>: f_ppexsi_symbolic_factorize_complex_symmetric_matrix
+<pre class="src src-f90"><span style="color: #a020f0;">use</span> <span style="color: #0000ff;">precision</span>, <span style="color: #a020f0;">only</span>  : dp
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">fdf</span>
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">units</span>,       <span style="color: #a020f0;">only</span>: eV, pi
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">sys</span>,         <span style="color: #a020f0;">only</span>: die
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">m_mpi_utils</span>, <span style="color: #a020f0;">only</span>: broadcast
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">parallel</span>, <span style="color: #a020f0;">only</span>   : SIESTA_worker, BlockSize
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">parallel</span>, <span style="color: #a020f0;">only</span>   : SIESTA_Group, SIESTA_Comm
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">m_redist_spmatrix</span>, <span style="color: #a020f0;">only</span>: aux_matrix, redistribute_spmatrix
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">class_Distribution</span>
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">alloc</span>,             <span style="color: #a020f0;">only</span>: re_alloc, de_alloc
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">mpi_siesta</span>
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">iso_c_binding</span>
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_options
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_plan_finalize
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_plan_initialize
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_selinv_complex_symmetric_matrix
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_load_real_symmetric_hs_matrix
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">only</span>: f_ppexsi_set_default_options
+<span style="color: #a020f0;">use</span> <span style="color: #0000ff;">f_ppexsi_interface</span>, <span style="color: #a020f0;">&amp;</span>
+      <span style="color: #a020f0;">only</span>: f_ppexsi_symbolic_factorize_complex_symmetric_matrix
 </pre>
 </div>
 </div>
@@ -495,7 +491,7 @@ per pole for the LDOS calculation.
 <pre class="src src-f90"><span style="color: #a020f0;">call</span> <span style="color: #0000ff;">mpi_comm_size</span>( World_Comm, numNodesTotal, ierr )
 
 npPerPole  = fdf_get(<span style="color: #8b2252;">"PEXSI.np-per-pole"</span>,4)
-npPerPole  = fdf_get(<span style="color: #8b2252;">"PEXSI.LocalDOS.np-per-pole"</span>,npPerPole)
+npPerPole  = fdf_get(<span style="color: #8b2252;">"PEXSI.LDOS.np-per-pole"</span>,npPerPole)
 <span style="color: #a020f0;">if</span> (nspin*npPerPole &gt; numNodesTotal) <span style="color: #a020f0;">&amp;</span>
      <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">die</span>(<span style="color: #8b2252;">"PEXSI.np-per-pole is too big for MPI size"</span>)
 
@@ -540,7 +536,7 @@ pbs = norbs/npPerPole
 <span style="color: #b22222;">! </span><span style="color: #b22222;">in the distribution object</span>
 <span style="color: #a020f0;">allocate</span> (PEXSI_Pole_ranks_in_World_Spin(npPerPole,nspin))
 <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">MPI_AllGather</span>(pexsi_pole_ranks_in_world,npPerPole,MPI_integer,<span style="color: #a020f0;">&amp;</span>
-     PEXSI_Pole_Ranks_in_World_Spin,npPerPole, <span style="color: #a020f0;">&amp;</span>
+     PEXSI_Pole_Ranks_in_World_Spin(1,1),npPerPole, <span style="color: #a020f0;">&amp;</span>
      MPI_integer,PEXSI_Spin_Comm,ierr)
 
 <span style="color: #b22222;">! </span><span style="color: #b22222;">Create distributions known to all nodes</span>
@@ -906,7 +902,7 @@ Note that only the first-pole team does this.
 
    <span style="color: #a020f0;">if</span> (SIESTA_worker) <span style="color: #a020f0;">then</span>
 
-      LocalDOSDM(:,ispin)  = m1%vals(1)%data(:)    
+      LDOS_DM(:,ispin)  = m1%vals(1)%data(:)    
       <span style="color: #b22222;">! </span><span style="color: #b22222;">Check no_l</span>
       <span style="color: #a020f0;">if</span> (no_l /= m1%no_l) <span style="color: #a020f0;">then</span>
          <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">die</span>(<span style="color: #8b2252;">"Mismatch in no_l"</span>)
@@ -1030,7 +1026,7 @@ ncol  = <span style="color: #a020f0;">floor</span>(<span style="color: #a020f0;"
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Alberto Garcia</p>
-<p class="date">Created: 2015-11-09 Mon 15:28</p>
+<p class="date">Created: 2016-09-14 Wed 11:32</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>

@@ -28,35 +28,37 @@
 !* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- 
 
       module EXTRAE_MODULE
+      integer, parameter :: INT4 = selected_int_kind(9)
+      integer, parameter :: INT8 = selected_int_kind(18)
 
-      integer*4 extrae_disable_all_options
+      integer(INT4) extrae_disable_all_options
       parameter (extrae_disable_all_options=0)
 
-      integer*4 extrae_caller_option 
+      integer(INT4) extrae_caller_option 
       parameter (extrae_caller_option=1)
 
-      integer*4 extrae_hwc_option
+      integer(INT4) extrae_hwc_option
       parameter (extrae_hwc_option=2)  
 
-      integer*4 extrae_mpi_hwc_option
+      integer(INT4) extrae_mpi_hwc_option
       parameter (extrae_mpi_hwc_option=4)
 
-      integer*4 extrae_mpi_option
+      integer(INT4) extrae_mpi_option
       parameter (extrae_mpi_option=8)
 
-      integer*4 extrae_omp_option
+      integer(INT4) extrae_omp_option
       parameter (extrae_omp_option=16)
 
-      integer*4 extrae_omp_hwc_option
+      integer(INT4) extrae_omp_hwc_option
       parameter (extrae_omp_hwc_option=32)
 
-      integer*4 extrae_uf_hwc_option
+      integer(INT4) extrae_uf_hwc_option
       parameter (extrae_uf_hwc_option=64)
 
-      integer*4 extrae_sampling_option
+      integer(INT4) extrae_sampling_option
       parameter (extrae_sampling_option=128)
 
-      integer*4 extrae_enable_all_options
+      integer(INT4) extrae_enable_all_options
       parameter (extrae_enable_all_options=255)
 
       interface
@@ -68,9 +70,10 @@
          end subroutine extrae_fini
 
          subroutine extrae_version (major, minor, revision)
-         integer*4, intent (out) :: major
-         integer*4, intent (out) :: minor
-         integer*4, intent (out) :: revision
+           integer, parameter :: INT4 = selected_int_kind(9)
+         integer(INT4), intent (out) :: major
+         integer(INT4), intent (out) :: minor
+         integer(INT4), intent (out) :: revision
          end subroutine extrae_version
 
          subroutine extrae_shutdown
@@ -80,27 +83,35 @@
          end subroutine extrae_restart
 
          subroutine extrae_event (extrae_type, extrae_value)
-         integer*4, intent(in) :: extrae_type
-         integer*8, intent(in) :: extrae_value
+         integer, parameter :: INT4 = selected_int_kind(9)
+         integer, parameter :: INT8 = selected_int_kind(18)
+         integer(INT4), intent(in) :: extrae_type
+         integer(INT8), intent(in) :: extrae_value
          end subroutine extrae_event
 
          subroutine extrae_eventandcounters (extrae_type, extrae_value)
-         integer*4, intent(in) :: extrae_type
-         integer*8, intent(in) :: extrae_value
+         integer, parameter :: INT4 = selected_int_kind(9)
+         integer, parameter :: INT8 = selected_int_kind(18)
+         integer(INT4), intent(in) :: extrae_type
+         integer(INT8), intent(in) :: extrae_value
          end subroutine extrae_eventandcounters
 
 
          subroutine extrae_nevent (num, extrae_types, extrae_values)
-         integer*4, intent(in) :: num
-         integer*4, intent(in) :: extrae_types
-         integer*8, intent(in) :: extrae_values
+         integer, parameter :: INT4 = selected_int_kind(9)
+         integer, parameter :: INT8 = selected_int_kind(18)
+         integer(INT4), intent(in) :: num
+         integer(INT4), intent(in) :: extrae_types
+         integer(INT8), intent(in) :: extrae_values
          end subroutine extrae_nevent
 
          subroutine extrae_neventandcounters (num, extrae_types, &
            extrae_value)
-         integer*4:: num
-         integer*4:: extrae_types
-         integer*8:: extrae_values
+         integer, parameter :: INT8 = selected_int_kind(18)
+         integer, parameter :: INT4 = selected_int_kind(9)
+         integer(INT4):: num
+         integer(INT4):: extrae_types
+         integer(INT8):: extrae_value
          end subroutine extrae_neventandcounters
 
          subroutine extrae_counters
@@ -113,16 +124,19 @@
          end subroutine extrae_next_hwc_set
 
          subroutine extrae_set_options (options)
-         integer*4, intent(in) :: options
+         integer, parameter :: INT4 = selected_int_kind(9)
+         integer(INT4), intent(in) :: options
          end subroutine extrae_set_options
 
          subroutine extrae_set_tracing_tasks (task_from, task_to)
-         integer*4, intent(in) :: task_from
-         integer*4, intent(in) :: task_to
+         integer, parameter :: INT4 = selected_int_kind(9)
+         integer(INT4), intent(in) :: task_from
+         integer(INT4), intent(in) :: task_to
          end subroutine extrae_set_tracing_tasks
 
          subroutine extrae_user_function (enter)
-         integer*4, intent(in) :: enter
+         integer, parameter :: INT4 = selected_int_kind(9)
+         integer(INT4), intent(in) :: enter
          end subroutine extrae_user_function
 
       end interface

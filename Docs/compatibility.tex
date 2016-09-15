@@ -39,6 +39,11 @@ This list describes the compatibility issues when using different versions of \s
     Nearly all flags regarding the mixing options have changed name. However, the old
     flags are still read (and used). In future versions they may be fully removed.
 
+    \begin{itemize}
+      \item All mixing routines are re-written. This means that one cannot compare with
+      prior versions in terms of the convergence path. Sometimes they will differ due to numerics.
+    \end{itemize}
+
     \item \fdf{NumberOfSpecies} and \fdf{NumberOfAtoms} are now defaulted to \# of lines
     in their respective blocks. If they are specified, however, they will be honoured.
 

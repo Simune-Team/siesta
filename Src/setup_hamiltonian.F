@@ -80,22 +80,22 @@
 
 !$OMP parallel default(shared), private(ispin,io)
 
-      if ( MixH .or. require_hamiltonian_convergence ) then
-!        Save present H matrix
+!     Save present H matrix
 !$OMP do collapse(2)
-         do ispin = 1,h_spin_dim
-            do io = 1,maxnh
-               Hold(io,ispin) = H(io,ispin)
-            enddo
+      do ispin = 1,h_spin_dim
+         do io = 1,maxnh
+            Hold(io,ispin) = H(io,ispin)
          enddo
+      enddo
 !$OMP end do
-      end if
 
 !$OMP single
       H_kin => val(H_kin_1D)
       H_vkb => val(H_vkb_1D)
       if ( SpOrb ) then
-         H_so(1:,3:) => val(H_so_2D)
+         ! Sadly some compilers (g95), does
+         ! not allow bounds for pointer assignments :(
+         H_so => val(H_so_2D)
       end if
 !$OMP end single ! keep wait
 
@@ -119,7 +119,7 @@
 !$OMP do collapse(2)
          do ispin = 3 , h_spin_dim
             do io = 1,maxnh
-               H(io,ispin) = H_so(io,ispin)
+               H(io,ispin) = H_so(io,ispin-2)
             end do
          end do
 !$OMP end do nowait
@@ -160,12 +160,11 @@
       Eso = 0._dp
 !$OMP end single
       if ( SpOrb ) then
-         H_so(1:,3:) => val(H_so_2D)
 !$OMP do reduction(+:Eso)
          do io = 1,maxnh
-            Eso = Eso + H_so(io,3)*Dscf(io,7) + H_so(io,4)*Dscf(io,8)
-     .           + H_so(io,7)*Dscf(io,3) + H_so(io,8)*Dscf(io,4)
-     .           - H_so(io,5)*Dscf(io,5) - H_so(io,6)*Dscf(io,6)
+            Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8)
+     .           + H_so(io,5)*Dscf(io,3) + H_so(io,6)*Dscf(io,4)
+     .           - H_so(io,3)*Dscf(io,5) - H_so(io,4)*Dscf(io,6)
          end do
 !$OMP end do nowait
       end if
@@ -186,7 +185,7 @@
 #endif
 
 !     Non-SCF part of total energy
-      E0 = Ena + Ekin + Enl + Eso - Eions
+      call update_E0()
 
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then

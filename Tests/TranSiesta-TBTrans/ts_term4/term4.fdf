@@ -147,7 +147,7 @@ TS.BTD.Pivot atom+GGPS
 
 %block TS.Contour.C-high
   part circle
-   from -30. eV + V to -10 kT + V
+   from -40. eV + V to -10 kT + V
      points 34
       method g-legendre
 %endblock TS.Contour.C-high
@@ -159,7 +159,7 @@ TS.BTD.Pivot atom+GGPS
 %endblock TS.Contour.T-high
 %block TS.Contour.C-low
   part circle
-   from -30. eV to -10 kT
+   from -40. eV to -10 kT
      points 34
       method g-legendre
 %endblock TS.Contour.C-low

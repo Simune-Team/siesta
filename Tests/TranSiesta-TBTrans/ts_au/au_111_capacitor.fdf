@@ -111,7 +111,6 @@ Diag.ParallelOverK      yes
 # Transiesta information
 
 TS.Voltage    1.00000 eV
-
 %block TS.ChemPots
   Left
   Right
@@ -135,7 +134,10 @@ TS.Voltage    1.00000 eV
 %endblock TS.ChemPot.Right
 
 TS.Elecs.Bulk true
-TS.Elecs.DM.Update cross-terms
+TS.Elecs.DM.Update none
+# This is for testing purposes!
+# DO NOT USE IF YOU DO NOT UNDERSTAND!
+TS.Elecs.Neglect.Principal true
 TS.Elecs.GF.ReUse true
 %block TS.Elecs
   Left
@@ -159,7 +161,7 @@ TS.Elecs.GF.ReUse true
 TS.Contours.Eq.Pole    2.50000 eV
 %block TS.Contour.c-Left
   part circle
-   from  -30.00000 eV + V/2 to -10. kT + V/2
+   from  -40.00000 eV + V/2 to -10. kT + V/2
     points 30
      method g-legendre
 %endblock TS.Contour.c-Left
@@ -171,7 +173,7 @@ TS.Contours.Eq.Pole    2.50000 eV
 %endblock TS.Contour.t-Left
 %block TS.Contour.c-Right
   part circle
-   from  -30.00000 eV - V/2 to -10. kT - V/2
+   from  -40.00000 eV - V/2 to -10. kT - V/2
     points 30
      method g-legendre
 %endblock TS.Contour.c-Right
@@ -182,7 +184,7 @@ TS.Contours.Eq.Pole    2.50000 eV
      method g-fermi
 %endblock TS.Contour.t-Right
 
-TS.Elecs.Eta    0.0001000000 eV
+TS.Elecs.Eta    0.0001 eV
 %block TS.Contours.nEq
   neq
 %endblock TS.Contours.nEq

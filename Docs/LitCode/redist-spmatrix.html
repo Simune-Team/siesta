@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Redistribution of sparse matrices</title>
-<!-- 2015-11-05 Thu 12:42 -->
+<!-- 2016-09-14 Wed 11:31 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Alberto Garcia" />
@@ -185,12 +185,14 @@ The general structure is
 <div class="org-src-container">
 
 <pre class="src src-f90"><span style="color: #a020f0;">module</span> <span style="color: #0000ff;">m_redist_spmatrix</span>
+<span style="color: #483d8b;">#ifdef</span> SIESTA__PEXSI
  <span style="color: #a020f0;">implicit</span> <span style="color: #228b22;">none</span>
  &lt;&lt;module-type-declarations&gt;&gt;
  <span style="color: #a020f0;">public</span> :: redistribute_spmatrix
 <span style="color: #a020f0;">CONTAINS</span>
  &lt;&lt;routine-redist-spmatrix&gt;&gt;
  &lt;&lt;transfers&gt;&gt;
+<span style="color: #483d8b;">#endif</span>
 <span style="color: #a020f0;">end module</span> <span style="color: #0000ff;">m_redist_spmatrix</span>
 </pre>
 </div>
@@ -554,7 +556,7 @@ classification of the contiguous chunks of orbital data.
       <span style="color: #a020f0;">if</span> (myid == 0 <span style="color: #a020f0;">.and.</span> comms_not_printed) <span style="color: #a020f0;">then</span>
          <span style="color: #a020f0;">do</span> i = 1, ncomms
             c =&gt; comms(i)
-            <span style="color: #a020f0;">write</span>(6,<span style="color: #8b2252;">"(a,i5,a,2i5,2i7,i5)"</span>), <span style="color: #a020f0;">&amp;</span>
+            <span style="color: #a020f0;">write</span>(6,<span style="color: #8b2252;">"(a,i5,a,2i5,2i7,i5)"</span>) <span style="color: #a020f0;">&amp;</span>
                  <span style="color: #8b2252;">"comm: "</span>, i, <span style="color: #8b2252;">" src, dst, i1, i2, n:"</span>, <span style="color: #a020f0;">&amp;</span>
                  c%src, c%dst, c%i1, c%i2, c%nitems
          <span style="color: #a020f0;">enddo</span>
@@ -801,7 +803,7 @@ work well, but it could be changed if needed.
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Alberto Garcia</p>
-<p class="date">Created: 2015-11-05 Thu 12:42</p>
+<p class="date">Created: 2016-09-14 Wed 11:31</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
