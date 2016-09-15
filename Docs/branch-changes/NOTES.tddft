@@ -42,7 +42,8 @@ Parallelisation:
 ---------------
 Both the time-evolution and basis transformation involve matrix operations, like
 multiplication, addition, inversion and diagonalization. We utilize MatrixSwitch
-module by Fabiano Corsetti to exploit parallel matrix storage and manipulation. 
+module by Fabiano Corsetti to exploit parallel matrix storage and manipulation within
+Scalapack library. 
 
 Notes:
 ------

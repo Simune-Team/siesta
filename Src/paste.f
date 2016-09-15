@@ -24,7 +24,7 @@ c Concatenates the integer nitter and STR2 - Rafi Ullah, July 2014
       CHARACTER*(*)  STR2
       character(len=8) :: fmt, xx11
       integer :: l, nitter
-      fmt = '(I4.4)'
+      fmt = '(I0)'
       write (xx11,fmt) nitter
       NPASTE=trim(xx11)//STR2
       END
