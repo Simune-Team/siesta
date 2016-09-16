@@ -19,7 +19,7 @@ MODULE MPI_SIESTA
 ! This is an interface to supplant some MPI routines called by siesta,
 ! in order to time-profile them. J.M.Soler. May.2009
 !
-  USE MPI_INTERFACES,  &! Previously called MPI_SIESTA
+  USE MPI_INTERFACES,  &
     trueMPI_BARRIER    => MPI_BARRIER,    & ! Renamed to avoid conflicts
     trueMPI_COMM_RANK  => MPI_COMM_RANK,  &
     trueMPI_COMM_SIZE  => MPI_COMM_SIZE,  &
@@ -34,16 +34,11 @@ MODULE MPI_SIESTA
 
 #else /* NO_MPI_INTERFACES */
 ! Removed interfaces and timing versions of the MPI routines.
+  USE MPI__INCLUDE, true_MPI_Comm_World => MPI_Comm_World
 #endif /* NO_MPI_INTERFACES */
 
 ! The following construction allows to supplant MPI_Comm_World within SIESTA,
 ! and to use it as a subroutine with its own internal MPI communicator.
-
-#ifndef NO_MPI_INTERFACES
-  USE MPI_INTERFACES, only: true_MPI_Comm_World => MPI_Comm_World
-#else /* NO_MPI_INTERFACES */
-  USE MPI__INCLUDE, true_MPI_Comm_World => MPI_Comm_World
-#endif /* NO_MPI_INTERFACES */
 
   integer, public :: MPI_Comm_World = true_MPI_Comm_World
 
