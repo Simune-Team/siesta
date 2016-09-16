@@ -310,7 +310,7 @@
   character(3)                    :: m_operation
   ! Internal variables ...
   integer                :: i, j , k, info, no2, nocc, l
-  complex*16             ::  alpha,hh, sum
+  complex(dp)            ::  alpha,hh, sum
   logical, save          :: fsttim(2) = (/.true. , .true./)
   logical, save          :: frsttime = .true.
   logical, save          :: onlyelectrons  = .false.

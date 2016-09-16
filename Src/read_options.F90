@@ -960,8 +960,7 @@ subroutine read_options( na, ns, nspin )
            writetdwf = fdf_get('WriteInitialTDWF',.false.)
            if(writetdwf) then
              if (ionode) then
-              write(6,1) 'redata: Write Initial TDWF               &
-                              = ',writetdwf
+              write(6,1) 'redata: Write Initial TDWF' , writetdwf
              endif
            endif
            tdsaverho  = fdf_get('TDED.Saverho', .false.)

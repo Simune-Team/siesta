@@ -2420,8 +2420,8 @@ subroutine die(message)
 
   !**********************************************!
 
-  print('(a)'), 'FATAL ERROR in matrix_switch!'
-  print('(a)'), message
+  print '(a)', 'FATAL ERROR in matrix_switch!'
+  print '(a)', message
   stop
 
 end subroutine die

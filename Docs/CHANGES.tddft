@@ -1,3 +1,14 @@
+2016-09-16  19:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-566-tddft-22
+
+*Fixed a few syntax issues.
+
+modified:
+
+  Src/MatrixSwitch/src/MatrixSwitch.F90
+  Src/evolg.F90
+  Src/m_initwf.F90
+  Src/read_options.F90
+
 2016-09-16  17:20 CET Rafi Ullah <rraffiu@gmail.com>  trunk-566-tddft-21
 
 Synced to trunk-566

@@ -232,7 +232,7 @@ CONTAINS
       degen= .false.
       !
       if (Node .eq. 0) then
-      write(6,fmt="(a,tr3,a,tr3,a,tr3,a)")   ,"initwf:","ik", "occupancy","maximum occupancy"
+      write(6,fmt="(a,tr3,a,tr3,a,tr3,a)") "initwf:","ik", "occupancy","maximum occupancy"
       end if
       !
       do ik=1,nk
@@ -312,8 +312,9 @@ CONTAINS
 !--------------------------------------------------------------------------------------!
 !     Stop if the system has degenracy.
       if (degen) then
-        STOP "initwf: System has degenracy. Change spin polarization or Fermi &
-        temperature to avoid it"
+        STOP "initwf: System has degeneracy. " // &
+             "Change spin polarization or Fermi " // &
+             "temperature to avoid it"
       end if
       !..............
 #ifdef MPI
