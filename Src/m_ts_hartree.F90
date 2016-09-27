@@ -198,7 +198,7 @@ contains
 
     if ( TS_HA == TS_HA_PLANE ) then
 
-       call reclat(cell,rcell)
+       call reclat(cell,rcell,0) ! without 2pi
        
        ! Calculate the index where we will fix
        ! the Hartree potential.
