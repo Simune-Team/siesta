@@ -1423,7 +1423,7 @@ contains
     real(dp) :: lfmin, lfmax, rcell(3,3), r
     integer :: i
 
-    call reclat(cell,rcell)
+    call reclat(cell,rcell,0) ! without 2pi
     lfmin =  huge(1._dp)
     lfmax = -huge(1._dp)
     do i = this%idx_a , this%idx_a + TotUsedAtoms(this) - 1
