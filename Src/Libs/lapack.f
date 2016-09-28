@@ -2333,11 +2333,11 @@
       ELSE IF( LSAME( NORM, 'M' ) ) THEN
          ANORM = ABS( D( N ) )
          DO 10 I = 1, N - 1
-            IF( ANORM.LT.ABS( DL( I ) ) .OR. SISNAN( ABS( DL( I ) ) ) ) 
+            IF( ANORM.LT.ABS( DL( I ) ) .OR. SISNAN( ABS( DL( I ) ) ) )
      $           ANORM = ABS(DL(I))
-            IF( ANORM.LT.ABS( D( I ) ) .OR. SISNAN( ABS( D( I ) ) ) ) 
+            IF( ANORM.LT.ABS( D( I ) ) .OR. SISNAN( ABS( D( I ) ) ) )
      $           ANORM = ABS(D(I))
-            IF( ANORM.LT.ABS( DU( I ) ) .OR. SISNAN (ABS( DU( I ) ) ) ) 
+            IF( ANORM.LT.ABS( DU( I ) ) .OR. SISNAN (ABS( DU( I ) ) ) )
      $           ANORM = ABS(DU(I))
    10    CONTINUE
       ELSE IF( LSAME( NORM, 'O' ) .OR. NORM.EQ.'1' ) THEN
@@ -2345,7 +2345,7 @@
             ANORM = ABS( D( 1 ) )
          ELSE
             ANORM = ABS( D( 1 ) )+ABS( DL( 1 ) )
-            TEMP = ABS( D( N ) )+ABS( DU( N-1 ) ) 
+            TEMP = ABS( D( N ) )+ABS( DU( N-1 ) )
             IF( ANORM .LT. TEMP .OR. SISNAN( TEMP ) ) ANORM = TEMP
             DO 20 I = 2, N - 1
                TEMP = ABS( D( I ) )+ABS( DL( I ) )+ABS( DU( I-1 ) )
@@ -2400,7 +2400,7 @@
             DO 20 J = 1, N
                DO 10 I = MAX( K+2-J, 1 ), K
                   SUM = ABS( AB( I, J ) )
-                  IF( VALUE .LT. SUM .OR. SISNAN( SUM ) ) VALUE = SUM                  
+                  IF( VALUE .LT. SUM .OR. SISNAN( SUM ) ) VALUE = SUM
    10          CONTINUE
                SUM = ABS( REAL( AB( K+1, J ) ) )
                IF( VALUE .LT. SUM .OR. SISNAN( SUM ) ) VALUE = SUM
@@ -2629,11 +2629,11 @@
                IF( ILU.EQ.1 ) THEN
                   J = 0
                   TEMP = ABS( REAL( A( J+J*LDA ) ) )
-                  IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                  IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                 VALUE = TEMP
                   DO I = 1, N - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                   DO J = 1, K - 1
@@ -2967,7 +2967,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                ELSE
@@ -4232,7 +4232,7 @@
                      SUM = SUM + ABS( AB( I, J ) )
   100             CONTINUE
                END IF
-               IF( VALUE .LT. SUM .OR. SISNAN( SUM ) ) VALUE = SUM               
+               IF( VALUE .LT. SUM .OR. SISNAN( SUM ) ) VALUE = SUM
   110       CONTINUE
          ELSE
             DO 140 J = 1, N
@@ -6100,7 +6100,7 @@
                   CALL DGEBRD( M, M, A, LDA, S, DUM(1), DUM(1),
      $                      DUM(1), DUM(1), -1, INFO )
                   LWORK_DGEBRD=DUM(1)
-                  CALL DORMBR( 'Q', 'L', 'T', M, NRHS, N, A, LDA, 
+                  CALL DORMBR( 'Q', 'L', 'T', M, NRHS, N, A, LDA,
      $                DUM(1), B, LDB, DUM(1), -1, INFO )
                   LWORK_DORMBR=DUM(1)
                   CALL DORGBR( 'P', M, M, M, A, LDA, DUM(1),
@@ -6124,7 +6124,7 @@
                   CALL DGEBRD( M, N, A, LDA, S, DUM(1), DUM(1),
      $                      DUM(1), DUM(1), -1, INFO )
                   LWORK_DGEBRD=DUM(1)
-                  CALL DORMBR( 'Q', 'L', 'T', M, NRHS, M, A, LDA, 
+                  CALL DORMBR( 'Q', 'L', 'T', M, NRHS, M, A, LDA,
      $                DUM(1), B, LDB, DUM(1), -1, INFO )
                   LWORK_DORMBR=DUM(1)
                   CALL DORGBR( 'P', M, N, M, A, LDA, DUM(1),
@@ -6620,9 +6620,9 @@
          IF ( INFO.EQ.0 .AND. IINFO.GT.0 )
      $      INFO = IINFO
          CALL DLASWP( N2, A( 1, N1+1 ), LDA, 1, N1, IPIV, 1 )
-         CALL DTRSM( 'L', 'L', 'N', 'U', N1, N2, ONE, A, LDA, 
+         CALL DTRSM( 'L', 'L', 'N', 'U', N1, N2, ONE, A, LDA,
      $               A( 1, N1+1 ), LDA )
-         CALL DGEMM( 'N', 'N', M-N1, N2, N1, -ONE, A( N1+1, 1 ), LDA, 
+         CALL DGEMM( 'N', 'N', M-N1, N2, N1, -ONE, A( N1+1, 1 ), LDA,
      $               A( 1, N1+1 ), LDA, ONE, A( N1+1, N1+1 ), LDA )
          CALL DGETRF2( M-N1, N2, A( N1+1, N1+1 ), LDA, IPIV( N1+1 ),
      $                 IINFO )
@@ -7221,7 +7221,7 @@
       RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dla_porpvgrw.f
-      DOUBLE PRECISION FUNCTION DLA_PORPVGRW( UPLO, NCOLS, A, LDA, AF, 
+      DOUBLE PRECISION FUNCTION DLA_PORPVGRW( UPLO, NCOLS, A, LDA, AF,
      $                                        LDAF, WORK )
       CHARACTER*1        UPLO
       INTEGER            NCOLS, LDA, LDAF
@@ -7230,7 +7230,7 @@
       DOUBLE PRECISION   AMAX, UMAX, RPVGRW
       LOGICAL            UPPER
       INTRINSIC          ABS, MAX, MIN
-      EXTERNAL           LSAME, DLASET
+      EXTERNAL           LSAME
       LOGICAL            LSAME
       UPPER = LSAME( 'Upper', UPLO )
       RPVGRW = 1.0D+0
@@ -7285,7 +7285,7 @@
       DLA_PORPVGRW = RPVGRW
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dla_syrcond.f
-      DOUBLE PRECISION FUNCTION DLA_SYRCOND( UPLO, N, A, LDA, AF, LDAF, 
+      DOUBLE PRECISION FUNCTION DLA_SYRCOND( UPLO, N, A, LDA, AF, LDAF,
      $                                       IPIV, CMODE, C, INFO, WORK,
      $                                       IWORK )
       CHARACTER          UPLO
@@ -7438,7 +7438,7 @@
       DOUBLE PRECISION   AMAX, UMAX, RPVGRW, TMP
       LOGICAL            UPPER
       INTRINSIC          ABS, MAX, MIN
-      EXTERNAL           LSAME, DLASET
+      EXTERNAL           LSAME
       LOGICAL            LSAME
       UPPER = LSAME( 'Upper', UPLO )
       IF ( INFO.EQ.0 ) THEN
@@ -7839,12 +7839,10 @@
       AB = MAX( ABS(A), ABS(B) )
       CD = MAX( ABS(C), ABS(D) )
       S = 1.0D0
-      
       OV = DLAMCH( 'Overflow threshold' )
       UN = DLAMCH( 'Safe minimum' )
       EPS = DLAMCH( 'Epsilon' )
       BE = BS / (EPS*EPS)
-      
       IF( AB >= HALF*OV ) THEN
          AA = HALF * AA
          BB = HALF * BB
@@ -7875,7 +7873,6 @@
       Q = Q * S
       RETURN
       END
-      
       SUBROUTINE DLADIV1( A, B, C, D, P, Q )
       DOUBLE PRECISION   A, B, C, D, P, Q
       DOUBLE PRECISION   ONE
@@ -8592,10 +8589,10 @@
          I = I + 1
   170 CONTINUE
       IF( K.LT.N ) THEN
-         CALL DLACPY( 'A', N, CTOT( 4 ), Q2( IQ1 ), N, 
+         CALL DLACPY( 'A', N, CTOT( 4 ), Q2( IQ1 ), N,
      $                Q( 1, K+1 ), LDQ )
          CALL DCOPY( N-K, Z( K+1 ), 1, D( K+1 ), 1 )
-      END IF         
+      END IF
       DO 180 J = 1, 4
          COLTYP( J ) = CTOT( J )
   180 CONTINUE
@@ -9315,7 +9312,7 @@
       INTEGER            I, ITER, NITER
       DOUBLE PRECISION   A, B, BASE, C, DDF, DF, EPS, ERRETM, ETA, F,
      $                   FC, SCLFAC, SCLINV, SMALL1, SMALL2, SMINV1,
-     $                   SMINV2, TEMP, TEMP1, TEMP2, TEMP3, TEMP4, 
+     $                   SMINV2, TEMP, TEMP1, TEMP2, TEMP3, TEMP4,
      $                   LBD, UBD
       INTRINSIC          ABS, INT, LOG, MAX, MIN, SQRT
       INFO = 0
@@ -9329,7 +9326,7 @@
       IF( FINIT .LT. ZERO )THEN
          LBD = ZERO
       ELSE
-         UBD = ZERO 
+         UBD = ZERO
       END IF
       NITER = 1
       TAU = ZERO
@@ -9456,7 +9453,7 @@
          END IF
          TAU = TAU + ETA
          IF( TAU .LT. LBD .OR. TAU .GT. UBD )
-     $      TAU = ( LBD + UBD )/TWO 
+     $      TAU = ( LBD + UBD )/TWO
          FC = ZERO
          ERRETM = ZERO
          DF = ZERO
@@ -10528,11 +10525,11 @@
       ELSE IF( LSAME( NORM, 'M' ) ) THEN
          ANORM = ABS( D( N ) )
          DO 10 I = 1, N - 1
-            IF( ANORM.LT.ABS( DL( I ) ) .OR. DISNAN( ABS( DL( I ) ) ) ) 
+            IF( ANORM.LT.ABS( DL( I ) ) .OR. DISNAN( ABS( DL( I ) ) ) )
      $           ANORM = ABS(DL(I))
-            IF( ANORM.LT.ABS( D( I ) ) .OR. DISNAN( ABS( D( I ) ) ) ) 
+            IF( ANORM.LT.ABS( D( I ) ) .OR. DISNAN( ABS( D( I ) ) ) )
      $           ANORM = ABS(D(I))
-            IF( ANORM.LT.ABS( DU( I ) ) .OR. DISNAN (ABS( DU( I ) ) ) ) 
+            IF( ANORM.LT.ABS( DU( I ) ) .OR. DISNAN (ABS( DU( I ) ) ) )
      $           ANORM = ABS(DU(I))
    10    CONTINUE
       ELSE IF( LSAME( NORM, 'O' ) .OR. NORM.EQ.'1' ) THEN
@@ -10540,7 +10537,7 @@
             ANORM = ABS( D( 1 ) )
          ELSE
             ANORM = ABS( D( 1 ) )+ABS( DL( 1 ) )
-            TEMP = ABS( D( N ) )+ABS( DU( N-1 ) ) 
+            TEMP = ABS( D( N ) )+ABS( DU( N-1 ) )
             IF( ANORM .LT. TEMP .OR. DISNAN( TEMP ) ) ANORM = TEMP
             DO 20 I = 2, N - 1
                TEMP = ABS( D( I ) )+ABS( DL( I ) )+ABS( DU( I-1 ) )
@@ -10768,7 +10765,7 @@
                DO J = 0, K - 1
                   DO I = 0, N - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END DO
@@ -10776,7 +10773,7 @@
                DO J = 0, N - 1
                   DO I = 0, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END DO
@@ -10786,7 +10783,7 @@
                DO J = 0, K - 1
                   DO I = 0, N
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END DO
@@ -10794,7 +10791,7 @@
                DO J = 0, N
                   DO I = 0, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END DO
@@ -10836,7 +10833,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                ELSE
@@ -10871,7 +10868,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END IF
@@ -10904,7 +10901,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                ELSE
@@ -10936,7 +10933,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END IF
@@ -10989,7 +10986,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                ELSE
@@ -11039,7 +11036,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END IF
@@ -11098,7 +11095,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                ELSE
@@ -11154,7 +11151,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END IF
@@ -12650,10 +12647,10 @@
                   END DO
                   DO J = 1, I-1
                      T( J, I ) = -TAU( I ) * V( I , J )
-                  END DO   
+                  END DO
                   J = MIN( LASTV, PREVLASTV )
-                  CALL DGEMV( 'Transpose', J-I, I-1, -TAU( I ), 
-     $                        V( I+1, 1 ), LDV, V( I+1, I ), 1, ONE, 
+                  CALL DGEMV( 'Transpose', J-I, I-1, -TAU( I ),
+     $                        V( I+1, 1 ), LDV, V( I+1, I ), 1, ONE,
      $                        T( 1, I ), 1 )
                ELSE
                   DO LASTV = N, I+1, -1
@@ -12661,7 +12658,7 @@
                   END DO
                   DO J = 1, I-1
                      T( J, I ) = -TAU( I ) * V( J , I )
-                  END DO   
+                  END DO
                   J = MIN( LASTV, PREVLASTV )
                   CALL DGEMV( 'No transpose', I-1, J-I, -TAU( I ),
      $                        V( 1, I+1 ), LDV, V( I, I+1 ), LDV, ONE,
@@ -12692,7 +12689,7 @@
                      END DO
                      DO J = I+1, K
                         T( J, I ) = -TAU( I ) * V( N-K+I , J )
-                     END DO   
+                     END DO
                      J = MAX( LASTV, PREVLASTV )
                      CALL DGEMV( 'Transpose', N-K+I-J, K-I, -TAU( I ),
      $                           V( J, I+1 ), LDV, V( J, I ), 1, ONE,
@@ -12703,7 +12700,7 @@
                      END DO
                      DO J = I+1, K
                         T( J, I ) = -TAU( I ) * V( J, N-K+I )
-                     END DO   
+                     END DO
                      J = MAX( LASTV, PREVLASTV )
                      CALL DGEMV( 'No transpose', K-I, N-K+I-J,
      $                    -TAU( I ), V( I+1, J ), LDV, V( I, J ), LDV,
@@ -14775,7 +14772,7 @@
      $                     TWO = 2.0D0, FOUR = 4.0D0, HUNDRD = 100.0D0 )
       LOGICAL            IEEE
       INTEGER            I0, I1, I4, IINFO, IPN4, ITER, IWHILA, IWHILB,
-     $                   K, KMIN, N0, N1, NBIG, NDIV, NFAIL, PP, SPLT, 
+     $                   K, KMIN, N0, N1, NBIG, NDIV, NFAIL, PP, SPLT,
      $                   TTYPE
       DOUBLE PRECISION   D, DEE, DEEMIN, DESIG, DMIN, DMIN1, DMIN2, DN,
      $                   DN1, DN2, E, EMAX, EMIN, EPS, G, OLDEMN, QMAX,
@@ -14815,7 +14812,7 @@
          END IF
          Z( 5 ) = Z( 1 ) + Z( 2 ) + Z( 3 )
          IF( Z( 2 ).GT.Z( 3 )*TOL2 ) THEN
-            T = HALF*( ( Z( 1 )-Z( 3 ) )+Z( 2 ) ) 
+            T = HALF*( ( Z( 1 )-Z( 3 ) )+Z( 2 ) )
             S = Z( 3 )*( Z( 2 ) / T )
             IF( S.LE.T ) THEN
                S = Z( 3 )*( Z( 2 ) / ( T*( ONE+SQRT( ONE+S / T ) ) ) )
@@ -14874,12 +14871,12 @@
          RETURN
       END IF
       IEEE = ILAENV( 10, 'DLASQ2', 'N', 1, 2, 3, 4 ).EQ.1 .AND.
-     $       ILAENV( 11, 'DLASQ2', 'N', 1, 2, 3, 4 ).EQ.1      
+     $       ILAENV( 11, 'DLASQ2', 'N', 1, 2, 3, 4 ).EQ.1
       DO 30 K = 2*N, 2, -2
-         Z( 2*K ) = ZERO 
-         Z( 2*K-1 ) = Z( K ) 
-         Z( 2*K-2 ) = ZERO 
-         Z( 2*K-3 ) = Z( K-1 ) 
+         Z( 2*K ) = ZERO
+         Z( 2*K-1 ) = Z( K )
+         Z( 2*K-2 ) = ZERO
+         Z( 2*K-3 ) = Z( K-1 )
    30 CONTINUE
       I0 = 1
       N0 = N
@@ -14924,7 +14921,7 @@
                D = Z( I4+1 )*( D / Z( I4-2*PP-2 ) )
             END IF
             EMIN = MIN( EMIN, Z( I4-2*PP ) )
-   60    CONTINUE 
+   60    CONTINUE
          Z( 4*N0-PP-2 ) = D
          QMAX = Z( 4*I0-PP-2 )
          DO 70 I4 = 4*I0 - PP + 2, 4*N0 - PP - 2, 4
@@ -14944,7 +14941,7 @@
       NFAIL = 0
       NDIV = 2*( N0-I0 )
       DO 160 IWHILA = 1, N + 1
-         IF( N0.LT.1 ) 
+         IF( N0.LT.1 )
      $      GO TO 170
          DESIG = ZERO
          IF( N0.EQ.N ) THEN
@@ -14956,7 +14953,7 @@
             INFO = 1
             RETURN
          END IF
-         EMAX = ZERO 
+         EMAX = ZERO
          IF( N0.GT.I0 ) THEN
             EMIN = ABS( Z( 4*N0-5 ) )
          ELSE
@@ -14974,7 +14971,7 @@
             QMAX = MAX( QMAX, Z( I4-7 )+Z( I4-5 ) )
             EMIN = MIN( EMIN, Z( I4-5 ) )
    90    CONTINUE
-         I4 = 4 
+         I4 = 4
   100    CONTINUE
          I0 = I4 / 4
          PP = 0
@@ -14989,7 +14986,7 @@
                   KMIN = ( I4+3 )/4
                END IF
   110       CONTINUE
-            IF( (KMIN-I0)*2.LT.N0-KMIN .AND. 
+            IF( (KMIN-I0)*2.LT.N0-KMIN .AND.
      $         DEEMIN.LE.HALF*Z(4*N0-3) ) THEN
                IPN4 = 4*( I0+N0 )
                PP = 2
@@ -15012,7 +15009,7 @@
          DMIN = -MAX( ZERO, QMIN-TWO*SQRT( QMIN )*SQRT( EMAX ) )
          NBIG = 100*( N0-I0+1 )
          DO 140 IWHILB = 1, NBIG
-            IF( I0.GT.N0 ) 
+            IF( I0.GT.N0 )
      $         GO TO 150
             CALL DLASQ3( I0, N0, Z, PP, DMIN, SIGMA, DESIG, QMAX, NFAIL,
      $                   ITER, NDIV, IEEE, TTYPE, DMIN1, DMIN2, DN, DN1,
@@ -15087,7 +15084,7 @@
       DO 190 K = N, 1, -1
          E = E + Z( K )
   190 CONTINUE
-      Z( 2*N+1 ) = TRACE 
+      Z( 2*N+1 ) = TRACE
       Z( 2*N+2 ) = E
       Z( 2*N+3 ) = DBLE( ITER )
       Z( 2*N+4 ) = DBLE( NDIV ) / DBLE( N**2 )
@@ -15162,7 +15159,7 @@
       N0 = N0 - 2
       GO TO 10
    50 CONTINUE
-      IF( PP.EQ.2 ) 
+      IF( PP.EQ.2 )
      $   PP = 0
       IF( DMIN.LE.ZERO .OR. N0.LT.N0IN ) THEN
          IF( CBIAS*Z( 4*I0+PP-3 ).LT.Z( 4*N0+PP-3 ) ) THEN
@@ -15203,7 +15200,7 @@
       ITER = ITER + 1
       IF( DMIN.GE.ZERO .AND. DMIN1.GE.ZERO ) THEN
          GO TO 90
-      ELSE IF( DMIN.LT.ZERO .AND. DMIN1.GT.ZERO .AND. 
+      ELSE IF( DMIN.LT.ZERO .AND. DMIN1.GT.ZERO .AND.
      $         Z( 4*( N0-1 )-PP ).LT.TOL*( SIGMA+DN1 ) .AND.
      $         ABS( DN ).LT.TOL*SIGMA ) THEN
          Z( 4*( N0-1 )-PP+2 ) = ZERO
@@ -15325,7 +15322,7 @@
      $               RETURN
                   B2 = B2*( Z( I4 ) / Z( I4-2 ) )
                   A2 = A2 + B2
-                  IF( HUNDRD*MAX( B2, B1 ).LT.A2 .OR. CNST1.LT.A2 ) 
+                  IF( HUNDRD*MAX( B2, B1 ).LT.A2 .OR. CNST1.LT.A2 )
      $               GO TO 20
    10          CONTINUE
    20          CONTINUE
@@ -15354,7 +15351,7 @@
      $               RETURN
                   B2 = B2*( Z( I4 ) / Z( I4-2 ) )
                   A2 = A2 + B2
-                  IF( HUNDRD*MAX( B2, B1 ).LT.A2 .OR. CNST1.LT.A2 ) 
+                  IF( HUNDRD*MAX( B2, B1 ).LT.A2 .OR. CNST1.LT.A2 )
      $               GO TO 40
    30          CONTINUE
    40          CONTINUE
@@ -15374,7 +15371,7 @@
             TTYPE = -6
          END IF
       ELSE IF( N0IN.EQ.( N0+1 ) ) THEN
-         IF( DMIN1.EQ.DN1 .AND. DMIN2.EQ.DN2 ) THEN 
+         IF( DMIN1.EQ.DN1 .AND. DMIN2.EQ.DN2 ) THEN
             TTYPE = -7
             S = THIRD*DMIN1
             IF( Z( NN-5 ).GT.Z( NN-7 ) )
@@ -15389,7 +15386,7 @@
      $            RETURN
                B1 = B1*( Z( I4 ) / Z( I4-2 ) )
                B2 = B2 + B1
-               IF( HUNDRD*MAX( B1, A2 ).LT.B2 ) 
+               IF( HUNDRD*MAX( B1, A2 ).LT.B2 )
      $            GO TO 60
    50       CONTINUE
    60       CONTINUE
@@ -15398,7 +15395,7 @@
             GAP2 = HALF*DMIN2 - A2
             IF( GAP2.GT.ZERO .AND. GAP2.GT.B2*A2 ) THEN
                S = MAX( S, A2*( ONE-CNST2*A2*( B2 / GAP2 )*B2 ) )
-            ELSE 
+            ELSE
                S = MAX( S, A2*( ONE-CNST2*B2 ) )
                TTYPE = -8
             END IF
@@ -15409,7 +15406,7 @@
             TTYPE = -9
          END IF
       ELSE IF( N0IN.EQ.( N0+2 ) ) THEN
-         IF( DMIN2.EQ.DN2 .AND. TWO*Z( NN-5 ).LT.Z( NN-7 ) ) THEN 
+         IF( DMIN2.EQ.DN2 .AND. TWO*Z( NN-5 ).LT.Z( NN-7 ) ) THEN
             TTYPE = -10
             S = THIRD*DMIN2
             IF( Z( NN-5 ).GT.Z( NN-7 ) )
@@ -15433,7 +15430,7 @@
      $             SQRT( Z( NN-11 ) )*SQRT( Z( NN-9 ) ) - A2
             IF( GAP2.GT.ZERO .AND. GAP2.GT.B2*A2 ) THEN
                S = MAX( S, A2*( ONE-CNST2*A2*( B2 / GAP2 )*B2 ) )
-            ELSE 
+            ELSE
                S = MAX( S, A2*( ONE-CNST2*B2 ) )
             END IF
          ELSE
@@ -15441,7 +15438,7 @@
             TTYPE = -11
          END IF
       ELSE IF( N0IN.GT.( N0+2 ) ) THEN
-         S = ZERO 
+         S = ZERO
          TTYPE = -12
       END IF
       TAU = S
@@ -15466,14 +15463,14 @@
       IF( TAU.LT.DTHRESH*HALF ) TAU = ZERO
       IF( TAU.NE.ZERO ) THEN
       J4 = 4*I0 + PP - 3
-      EMIN = Z( J4+4 ) 
+      EMIN = Z( J4+4 )
       D = Z( J4 ) - TAU
       DMIN = D
       DMIN1 = -Z( J4 )
       IF( IEEE ) THEN
          IF( PP.EQ.0 ) THEN
             DO 10 J4 = 4*I0, 4*( N0-3 ), 4
-               Z( J4-2 ) = D + Z( J4-1 ) 
+               Z( J4-2 ) = D + Z( J4-1 )
                TEMP = Z( J4+1 ) / Z( J4-2 )
                D = D*TEMP - TAU
                DMIN = MIN( DMIN, D )
@@ -15482,7 +15479,7 @@
    10       CONTINUE
          ELSE
             DO 20 J4 = 4*I0, 4*( N0-3 ), 4
-               Z( J4-3 ) = D + Z( J4 ) 
+               Z( J4-3 ) = D + Z( J4 )
                TEMP = Z( J4+2 ) / Z( J4-3 )
                D = D*TEMP - TAU
                DMIN = MIN( DMIN, D )
@@ -15508,10 +15505,10 @@
       ELSE
          IF( PP.EQ.0 ) THEN
             DO 30 J4 = 4*I0, 4*( N0-3 ), 4
-               Z( J4-2 ) = D + Z( J4-1 ) 
+               Z( J4-2 ) = D + Z( J4-1 )
                IF( D.LT.ZERO ) THEN
                   RETURN
-               ELSE 
+               ELSE
                   Z( J4 ) = Z( J4+1 )*( Z( J4-1 ) / Z( J4-2 ) )
                   D = Z( J4+1 )*( D / Z( J4-2 ) ) - TAU
                END IF
@@ -15520,10 +15517,10 @@
    30       CONTINUE
          ELSE
             DO 40 J4 = 4*I0, 4*( N0-3 ), 4
-               Z( J4-3 ) = D + Z( J4 ) 
+               Z( J4-3 ) = D + Z( J4 )
                IF( D.LT.ZERO ) THEN
                   RETURN
-               ELSE 
+               ELSE
                   Z( J4-1 ) = Z( J4+2 )*( Z( J4 ) / Z( J4-3 ) )
                   D = Z( J4+2 )*( D / Z( J4-3 ) ) - TAU
                END IF
@@ -15557,14 +15554,14 @@
       END IF
       ELSE
          J4 = 4*I0 + PP - 3
-         EMIN = Z( J4+4 ) 
+         EMIN = Z( J4+4 )
          D = Z( J4 ) - TAU
          DMIN = D
          DMIN1 = -Z( J4 )
          IF( IEEE ) THEN
             IF( PP.EQ.0 ) THEN
                DO 50 J4 = 4*I0, 4*( N0-3 ), 4
-                  Z( J4-2 ) = D + Z( J4-1 ) 
+                  Z( J4-2 ) = D + Z( J4-1 )
                   TEMP = Z( J4+1 ) / Z( J4-2 )
                   D = D*TEMP - TAU
                   IF( D.LT.DTHRESH ) D = ZERO
@@ -15574,7 +15571,7 @@
  50            CONTINUE
             ELSE
                DO 60 J4 = 4*I0, 4*( N0-3 ), 4
-                  Z( J4-3 ) = D + Z( J4 ) 
+                  Z( J4-3 ) = D + Z( J4 )
                   TEMP = Z( J4+2 ) / Z( J4-3 )
                   D = D*TEMP - TAU
                   IF( D.LT.DTHRESH ) D = ZERO
@@ -15601,10 +15598,10 @@
          ELSE
             IF( PP.EQ.0 ) THEN
                DO 70 J4 = 4*I0, 4*( N0-3 ), 4
-                  Z( J4-2 ) = D + Z( J4-1 ) 
+                  Z( J4-2 ) = D + Z( J4-1 )
                   IF( D.LT.ZERO ) THEN
                      RETURN
-                  ELSE 
+                  ELSE
                      Z( J4 ) = Z( J4+1 )*( Z( J4-1 ) / Z( J4-2 ) )
                      D = Z( J4+1 )*( D / Z( J4-2 ) ) - TAU
                   END IF
@@ -15614,10 +15611,10 @@
  70            CONTINUE
             ELSE
                DO 80 J4 = 4*I0, 4*( N0-3 ), 4
-                  Z( J4-3 ) = D + Z( J4 ) 
+                  Z( J4-3 ) = D + Z( J4 )
                   IF( D.LT.ZERO ) THEN
                      RETURN
-                  ELSE 
+                  ELSE
                      Z( J4-1 ) = Z( J4+2 )*( Z( J4 ) / Z( J4-3 ) )
                      D = Z( J4+2 )*( D / Z( J4-3 ) ) - TAU
                   END IF
@@ -15672,12 +15669,12 @@
      $   RETURN
       SAFMIN = DLAMCH( 'Safe minimum' )
       J4 = 4*I0 + PP - 3
-      EMIN = Z( J4+4 ) 
+      EMIN = Z( J4+4 )
       D = Z( J4 )
       DMIN = D
       IF( PP.EQ.0 ) THEN
          DO 10 J4 = 4*I0, 4*( N0-3 ), 4
-            Z( J4-2 ) = D + Z( J4-1 ) 
+            Z( J4-2 ) = D + Z( J4-1 )
             IF( Z( J4-2 ).EQ.ZERO ) THEN
                Z( J4 ) = ZERO
                D = Z( J4+1 )
@@ -15688,7 +15685,7 @@
                TEMP = Z( J4+1 ) / Z( J4-2 )
                Z( J4 ) = Z( J4-1 )*TEMP
                D = D*TEMP
-            ELSE 
+            ELSE
                Z( J4 ) = Z( J4+1 )*( Z( J4-1 ) / Z( J4-2 ) )
                D = Z( J4+1 )*( D / Z( J4-2 ) )
             END IF
@@ -15697,7 +15694,7 @@
    10    CONTINUE
       ELSE
          DO 20 J4 = 4*I0, 4*( N0-3 ), 4
-            Z( J4-3 ) = D + Z( J4 ) 
+            Z( J4-3 ) = D + Z( J4 )
             IF( Z( J4-3 ).EQ.ZERO ) THEN
                Z( J4-1 ) = ZERO
                D = Z( J4+2 )
@@ -15708,7 +15705,7 @@
                TEMP = Z( J4+2 ) / Z( J4-3 )
                Z( J4-1 ) = Z( J4 )*TEMP
                D = D*TEMP
-            ELSE 
+            ELSE
                Z( J4-1 ) = Z( J4+2 )*( Z( J4 ) / Z( J4-3 ) )
                D = Z( J4+2 )*( D / Z( J4-3 ) )
             END IF
@@ -18620,7 +18617,7 @@
       DOUBLE PRECISION   A( LDA, * )
       DOUBLE PRECISION   ONE, ZERO
       PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
-      LOGICAL            UPPER            
+      LOGICAL            UPPER
       INTEGER            N1, N2, IINFO
       LOGICAL            LSAME, DISNAN
       EXTERNAL           LSAME, DISNAN
@@ -18654,10 +18651,10 @@
          IF ( IINFO.NE.0 ) THEN
             INFO = IINFO
             RETURN
-         END IF    
+         END IF
          IF( UPPER ) THEN
             CALL DTRSM( 'L', 'U', 'T', 'N', N1, N2, ONE,
-     $                  A( 1, 1 ), LDA, A( 1, N1+1 ), LDA )            
+     $                  A( 1, 1 ), LDA, A( 1, N1+1 ), LDA )
             CALL DSYRK( UPLO, 'T', N2, N1, -ONE, A( 1, N1+1 ), LDA,
      $                  ONE, A( N1+1, N1+1 ), LDA )
             CALL DPOTRF2( UPLO, N2, A( N1+1, N1+1 ), LDA, IINFO )
@@ -18666,7 +18663,7 @@
                RETURN
             END IF
          ELSE
-            CALL DTRSM( 'R', 'L', 'T', 'N', N2, N1, ONE, 
+            CALL DTRSM( 'R', 'L', 'T', 'N', N2, N1, ONE,
      $                  A( 1, 1 ), LDA, A( N1+1, 1 ), LDA )
             CALL DSYRK( UPLO, 'N', N2, N1, -ONE, A( N1+1, 1 ), LDA,
      $                  ONE, A( N1+1, N1+1 ), LDA )
@@ -20432,7 +20429,7 @@
       ANORM = DLANST( 'M', LEND-L+1, D( L ), E( L ) )
       ISCALE = 0
       IF( ANORM.EQ.ZERO )
-     $   GO TO 10      
+     $   GO TO 10
       IF( (ANORM.GT.SSFMAX) ) THEN
          ISCALE = 1
          CALL DLASCL( 'G', 0, 0, ANORM, SSFMAX, LEND-L+1, 1, D( L ), N,
@@ -24311,12 +24308,10 @@
       AB = MAX( ABS(A), ABS(B) )
       CD = MAX( ABS(C), ABS(D) )
       S = 1.0E0
-      
       OV = SLAMCH( 'Overflow threshold' )
       UN = SLAMCH( 'Safe minimum' )
       EPS = SLAMCH( 'Epsilon' )
       BE = BS / (EPS*EPS)
-      
       IF( AB >= HALF*OV ) THEN
          AA = HALF * AA
          BB = HALF * BB
@@ -24347,7 +24342,6 @@
       Q = Q * S
       RETURN
       END
-      
       SUBROUTINE SLADIV1( A, B, C, D, P, Q )
       REAL               A, B, C, D, P, Q
       REAL               ONE
@@ -24473,7 +24467,7 @@
          VALUE = ZERO
          DO 20 J = 1, N
             DO 10 I = MAX( KU+2-J, 1 ), MIN( N+KU+1-J, KL+KU+1 )
-               TEMP = ABS( AB( I, J ) ) 
+               TEMP = ABS( AB( I, J ) )
                IF( VALUE.LT.TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
    10       CONTINUE
    20    CONTINUE
@@ -24533,7 +24527,7 @@
          VALUE = ZERO
          DO 20 J = 1, N
             DO 10 I = 1, M
-               TEMP = ABS( A( I, J ) ) 
+               TEMP = ABS( A( I, J ) )
                IF( VALUE.LT.TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
    10       CONTINUE
    20    CONTINUE
@@ -24589,11 +24583,11 @@
       ELSE IF( LSAME( NORM, 'M' ) ) THEN
          ANORM = ABS( D( N ) )
          DO 10 I = 1, N - 1
-            IF( ANORM.LT.ABS( DL( I ) ) .OR. SISNAN( ABS( DL( I ) ) ) ) 
+            IF( ANORM.LT.ABS( DL( I ) ) .OR. SISNAN( ABS( DL( I ) ) ) )
      $           ANORM = ABS(DL(I))
-            IF( ANORM.LT.ABS( D( I ) ) .OR. SISNAN( ABS( D( I ) ) ) ) 
+            IF( ANORM.LT.ABS( D( I ) ) .OR. SISNAN( ABS( D( I ) ) ) )
      $           ANORM = ABS(D(I))
-            IF( ANORM.LT.ABS( DU( I ) ) .OR. SISNAN (ABS( DU( I ) ) ) ) 
+            IF( ANORM.LT.ABS( DU( I ) ) .OR. SISNAN (ABS( DU( I ) ) ) )
      $           ANORM = ABS(DU(I))
    10    CONTINUE
       ELSE IF( LSAME( NORM, 'O' ) .OR. NORM.EQ.'1' ) THEN
@@ -24601,7 +24595,7 @@
             ANORM = ABS( D( 1 ) )
          ELSE
             ANORM = ABS( D( 1 ) )+ABS( DL( 1 ) )
-            TEMP = ABS( D( N ) )+ABS( DU( N-1 ) ) 
+            TEMP = ABS( D( N ) )+ABS( DU( N-1 ) )
             IF( ANORM .LT. TEMP .OR. SISNAN( TEMP ) ) ANORM = TEMP
             DO 20 I = 2, N - 1
                TEMP = ABS( D( I ) )+ABS( DL( I ) )+ABS( DU( I-1 ) )
@@ -24829,7 +24823,7 @@
                DO J = 0, K - 1
                   DO I = 0, N - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END DO
@@ -24837,7 +24831,7 @@
                DO J = 0, N - 1
                   DO I = 0, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END DO
@@ -24847,7 +24841,7 @@
                DO J = 0, K - 1
                   DO I = 0, N
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END DO
@@ -24855,7 +24849,7 @@
                DO J = 0, N
                   DO I = 0, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END DO
@@ -24897,7 +24891,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                ELSE
@@ -24932,7 +24926,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END IF
@@ -24965,7 +24959,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                ELSE
@@ -24997,7 +24991,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END IF
@@ -25050,7 +25044,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                ELSE
@@ -25100,7 +25094,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. SISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                END IF
@@ -25391,7 +25385,7 @@
    60       CONTINUE
             DO 70 I = 1, N
                SUM = WORK( I )
-               IF( VALUE .LT. SUM .OR. SISNAN( SUM ) ) VALUE = SUM               
+               IF( VALUE .LT. SUM .OR. SISNAN( SUM ) ) VALUE = SUM
    70       CONTINUE
          ELSE
             DO 80 I = 1, N
@@ -25406,7 +25400,7 @@
                   WORK( I ) = WORK( I ) + ABSA
                   K = K + 1
    90          CONTINUE
-               IF( VALUE .LT. SUM .OR. SISNAN( SUM ) ) VALUE = SUM               
+               IF( VALUE .LT. SUM .OR. SISNAN( SUM ) ) VALUE = SUM
   100       CONTINUE
          END IF
       ELSE IF( ( LSAME( NORM, 'F' ) ) .OR. ( LSAME( NORM, 'E' ) ) ) THEN
@@ -26648,7 +26642,6 @@
       INTEGER            I, ICA, IEXC, IRA, J, K, L, M
       DOUBLE PRECISION   C, CA, F, G, R, RA, S, SFMAX1, SFMAX2, SFMIN1,
      $                   SFMIN2
-      COMPLEX*16         CDUM
       LOGICAL            DISNAN, LSAME
       INTEGER            IZAMAX
       DOUBLE PRECISION   DLAMCH, DZNRM2
@@ -27028,7 +27021,7 @@
       PARAMETER          ( NBMAX = 64, LDT = NBMAX+1,
      $                     TSIZE = LDT*NBMAX )
       COMPLEX*16        ZERO, ONE
-      PARAMETER          ( ZERO = ( 0.0D+0, 0.0D+0 ), 
+      PARAMETER          ( ZERO = ( 0.0D+0, 0.0D+0 ),
      $                     ONE = ( 1.0D+0, 0.0D+0 ) )
       LOGICAL            LQUERY
       INTEGER            I, IB, IINFO, IWT, J, LDWORK, LWKOPT, NB,
@@ -27101,7 +27094,7 @@
      $                   WORK( IWT ), LDT, WORK, LDWORK )
             EI = A( I+IB, I+IB-1 )
             A( I+IB, I+IB-1 ) = ONE
-            CALL ZGEMM( 'No transpose', 'Conjugate transpose', 
+            CALL ZGEMM( 'No transpose', 'Conjugate transpose',
      $                  IHI, IHI-I-IB+1,
      $                  IB, -ONE, WORK, LDWORK, A( I+IB, I ), LDA, ONE,
      $                  A( 1, I+IB ), LDA )
@@ -27269,9 +27262,9 @@
          IF ( INFO.EQ.0 .AND. IINFO.GT.0 )
      $      INFO = IINFO
          CALL ZLASWP( N2, A( 1, N1+1 ), LDA, 1, N1, IPIV, 1 )
-         CALL ZTRSM( 'L', 'L', 'N', 'U', N1, N2, ONE, A, LDA, 
+         CALL ZTRSM( 'L', 'L', 'N', 'U', N1, N2, ONE, A, LDA,
      $               A( 1, N1+1 ), LDA )
-         CALL ZGEMM( 'N', 'N', M-N1, N2, N1, -ONE, A( N1+1, 1 ), LDA, 
+         CALL ZGEMM( 'N', 'N', M-N1, N2, N1, -ONE, A( N1+1, 1 ), LDA,
      $               A( 1, N1+1 ), LDA, ONE, A( N1+1, N1+1 ), LDA )
          CALL ZGETRF2( M-N1, N2, A( N1+1, N1+1 ), LDA, IPIV( N1+1 ),
      $                 IINFO )
@@ -29737,7 +29730,7 @@
       END IF
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/zla_gbrcond_c.f
-      DOUBLE PRECISION FUNCTION ZLA_GBRCOND_C( TRANS, N, KL, KU, AB, 
+      DOUBLE PRECISION FUNCTION ZLA_GBRCOND_C( TRANS, N, KL, KU, AB,
      $                                         LDAB, AFB, LDAFB, IPIV,
      $                                         C, CAPPLY, INFO, WORK,
      $                                         RWORK )
@@ -30002,7 +29995,7 @@
       ZLA_GBRPVGRW = RPVGRW
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/zla_gercond_c.f
-      DOUBLE PRECISION FUNCTION ZLA_GERCOND_C( TRANS, N, A, LDA, AF, 
+      DOUBLE PRECISION FUNCTION ZLA_GERCOND_C( TRANS, N, A, LDA, AF,
      $                                         LDAF, IPIV, C, CAPPLY,
      $                                         INFO, WORK, RWORK )
       CHARACTER          TRANS
@@ -30253,7 +30246,7 @@
       ZLA_GERPVGRW = RPVGRW
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/zla_hercond_c.f
-      DOUBLE PRECISION FUNCTION ZLA_HERCOND_C( UPLO, N, A, LDA, AF, 
+      DOUBLE PRECISION FUNCTION ZLA_HERCOND_C( UPLO, N, A, LDA, AF,
      $                                         LDAF, IPIV, C, CAPPLY,
      $                                         INFO, WORK, RWORK )
       CHARACTER          UPLO
@@ -30507,7 +30500,7 @@
       DOUBLE PRECISION   AMAX, UMAX, RPVGRW, TMP
       LOGICAL            UPPER, LSAME
       COMPLEX*16         ZDUM
-      EXTERNAL           LSAME, ZLASET
+      EXTERNAL           LSAME
       INTRINSIC          ABS, REAL, DIMAG, MAX, MIN
       DOUBLE PRECISION   CABS1
       CABS1( ZDUM ) = ABS( DBLE ( ZDUM ) ) + ABS( DIMAG ( ZDUM ) )
@@ -30653,7 +30646,7 @@
       ZLA_HERPVGRW = RPVGRW
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/zla_porcond_c.f
-      DOUBLE PRECISION FUNCTION ZLA_PORCOND_C( UPLO, N, A, LDA, AF, 
+      DOUBLE PRECISION FUNCTION ZLA_PORCOND_C( UPLO, N, A, LDA, AF,
      $                                         LDAF, C, CAPPLY, INFO,
      $                                         WORK, RWORK )
       CHARACTER          UPLO
@@ -30895,7 +30888,7 @@
       RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/zla_porpvgrw.f
-      DOUBLE PRECISION FUNCTION ZLA_PORPVGRW( UPLO, NCOLS, A, LDA, AF, 
+      DOUBLE PRECISION FUNCTION ZLA_PORPVGRW( UPLO, NCOLS, A, LDA, AF,
      $                                        LDAF, WORK )
       CHARACTER*1        UPLO
       INTEGER            NCOLS, LDA, LDAF
@@ -30905,7 +30898,7 @@
       DOUBLE PRECISION   AMAX, UMAX, RPVGRW
       LOGICAL            UPPER
       COMPLEX*16         ZDUM
-      EXTERNAL           LSAME, ZLASET
+      EXTERNAL           LSAME
       LOGICAL            LSAME
       INTRINSIC          ABS, MAX, MIN, REAL, DIMAG
       DOUBLE PRECISION   CABS1
@@ -31220,7 +31213,7 @@
       LOGICAL            UPPER
       COMPLEX*16         ZDUM
       INTRINSIC          ABS, REAL, DIMAG, MAX, MIN
-      EXTERNAL           LSAME, ZLASET
+      EXTERNAL           LSAME
       LOGICAL            LSAME
       DOUBLE PRECISION   CABS1
       CABS1( ZDUM ) = ABS( DBLE ( ZDUM ) ) + ABS( DIMAG ( ZDUM ) )
@@ -32330,7 +32323,7 @@
          I1 = 1
          I2 = N
       END IF
-      ITMAX = 30 * MAX( 10, NH ) 
+      ITMAX = 30 * MAX( 10, NH )
       I = IHI
    30 CONTINUE
       IF( I.LT.ILO )
@@ -32491,7 +32484,7 @@
       COMPLEX*16        A( LDA, * ), T( LDT, NB ), TAU( NB ),
      $                   Y( LDY, NB )
       COMPLEX*16        ZERO, ONE
-      PARAMETER          ( ZERO = ( 0.0D+0, 0.0D+0 ), 
+      PARAMETER          ( ZERO = ( 0.0D+0, 0.0D+0 ),
      $                     ONE = ( 1.0D+0, 0.0D+0 ) )
       INTEGER            I
       COMPLEX*16        EI
@@ -32502,24 +32495,24 @@
      $   RETURN
       DO 10 I = 1, NB
          IF( I.GT.1 ) THEN
-            CALL ZLACGV( I-1, A( K+I-1, 1 ), LDA ) 
+            CALL ZLACGV( I-1, A( K+I-1, 1 ), LDA )
             CALL ZGEMV( 'NO TRANSPOSE', N-K, I-1, -ONE, Y(K+1,1), LDY,
      $                  A( K+I-1, 1 ), LDA, ONE, A( K+1, I ), 1 )
-            CALL ZLACGV( I-1, A( K+I-1, 1 ), LDA ) 
+            CALL ZLACGV( I-1, A( K+I-1, 1 ), LDA )
             CALL ZCOPY( I-1, A( K+1, I ), 1, T( 1, NB ), 1 )
-            CALL ZTRMV( 'Lower', 'Conjugate transpose', 'UNIT', 
+            CALL ZTRMV( 'Lower', 'Conjugate transpose', 'UNIT',
      $                  I-1, A( K+1, 1 ),
      $                  LDA, T( 1, NB ), 1 )
-            CALL ZGEMV( 'Conjugate transpose', N-K-I+1, I-1, 
+            CALL ZGEMV( 'Conjugate transpose', N-K-I+1, I-1,
      $                  ONE, A( K+I, 1 ),
      $                  LDA, A( K+I, I ), 1, ONE, T( 1, NB ), 1 )
-            CALL ZTRMV( 'Upper', 'Conjugate transpose', 'NON-UNIT', 
+            CALL ZTRMV( 'Upper', 'Conjugate transpose', 'NON-UNIT',
      $                  I-1, T, LDT,
      $                  T( 1, NB ), 1 )
-            CALL ZGEMV( 'NO TRANSPOSE', N-K-I+1, I-1, -ONE, 
+            CALL ZGEMV( 'NO TRANSPOSE', N-K-I+1, I-1, -ONE,
      $                  A( K+I, 1 ),
      $                  LDA, T( 1, NB ), 1, ONE, A( K+I, I ), 1 )
-            CALL ZTRMV( 'Lower', 'NO TRANSPOSE', 
+            CALL ZTRMV( 'Lower', 'NO TRANSPOSE',
      $                  'UNIT', I-1,
      $                  A( K+1, 1 ), LDA, T( 1, NB ), 1 )
             CALL ZAXPY( I-1, -ONE, T( 1, NB ), 1, A( K+1, I ), 1 )
@@ -32529,33 +32522,33 @@
      $                TAU( I ) )
          EI = A( K+I, I )
          A( K+I, I ) = ONE
-         CALL ZGEMV( 'NO TRANSPOSE', N-K, N-K-I+1, 
+         CALL ZGEMV( 'NO TRANSPOSE', N-K, N-K-I+1,
      $               ONE, A( K+1, I+1 ),
      $               LDA, A( K+I, I ), 1, ZERO, Y( K+1, I ), 1 )
-         CALL ZGEMV( 'Conjugate transpose', N-K-I+1, I-1, 
+         CALL ZGEMV( 'Conjugate transpose', N-K-I+1, I-1,
      $               ONE, A( K+I, 1 ), LDA,
      $               A( K+I, I ), 1, ZERO, T( 1, I ), 1 )
-         CALL ZGEMV( 'NO TRANSPOSE', N-K, I-1, -ONE, 
+         CALL ZGEMV( 'NO TRANSPOSE', N-K, I-1, -ONE,
      $               Y( K+1, 1 ), LDY,
      $               T( 1, I ), 1, ONE, Y( K+1, I ), 1 )
          CALL ZSCAL( N-K, TAU( I ), Y( K+1, I ), 1 )
          CALL ZSCAL( I-1, -TAU( I ), T( 1, I ), 1 )
-         CALL ZTRMV( 'Upper', 'No Transpose', 'NON-UNIT', 
+         CALL ZTRMV( 'Upper', 'No Transpose', 'NON-UNIT',
      $               I-1, T, LDT,
      $               T( 1, I ), 1 )
          T( I, I ) = TAU( I )
    10 CONTINUE
       A( K+NB, NB ) = EI
       CALL ZLACPY( 'ALL', K, NB, A( 1, 2 ), LDA, Y, LDY )
-      CALL ZTRMM( 'RIGHT', 'Lower', 'NO TRANSPOSE', 
+      CALL ZTRMM( 'RIGHT', 'Lower', 'NO TRANSPOSE',
      $            'UNIT', K, NB,
      $            ONE, A( K+1, 1 ), LDA, Y, LDY )
       IF( N.GT.K+NB )
-     $   CALL ZGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', K, 
+     $   CALL ZGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', K,
      $               NB, N-K-NB, ONE,
      $               A( 1, 2+NB ), LDA, A( K+1+NB, 1 ), LDA, ONE, Y,
      $               LDY )
-      CALL ZTRMM( 'RIGHT', 'Upper', 'NO TRANSPOSE', 
+      CALL ZTRMM( 'RIGHT', 'Upper', 'NO TRANSPOSE',
      $            'NON-UNIT', K, NB,
      $            ONE, T, LDT, Y, LDY )
       RETURN
@@ -32698,11 +32691,11 @@
       ELSE IF( LSAME( NORM, 'M' ) ) THEN
          ANORM = ABS( D( N ) )
          DO 10 I = 1, N - 1
-            IF( ANORM.LT.ABS( DL( I ) ) .OR. DISNAN( ABS( DL( I ) ) ) ) 
+            IF( ANORM.LT.ABS( DL( I ) ) .OR. DISNAN( ABS( DL( I ) ) ) )
      $           ANORM = ABS(DL(I))
-            IF( ANORM.LT.ABS( D( I ) ) .OR. DISNAN( ABS( D( I ) ) ) ) 
+            IF( ANORM.LT.ABS( D( I ) ) .OR. DISNAN( ABS( D( I ) ) ) )
      $           ANORM = ABS(D(I))
-            IF( ANORM.LT.ABS( DU( I ) ) .OR. DISNAN (ABS( DU( I ) ) ) ) 
+            IF( ANORM.LT.ABS( DU( I ) ) .OR. DISNAN (ABS( DU( I ) ) ) )
      $           ANORM = ABS(DU(I))
    10    CONTINUE
       ELSE IF( LSAME( NORM, 'O' ) .OR. NORM.EQ.'1' ) THEN
@@ -32710,7 +32703,7 @@
             ANORM = ABS( D( 1 ) )
          ELSE
             ANORM = ABS( D( 1 ) )+ABS( DL( 1 ) )
-            TEMP = ABS( D( N ) )+ABS( DU( N-1 ) ) 
+            TEMP = ABS( D( N ) )+ABS( DU( N-1 ) )
             IF( ANORM .LT. TEMP .OR. DISNAN( TEMP ) ) ANORM = TEMP
             DO 20 I = 2, N - 1
                TEMP = ABS( D( I ) )+ABS( DL( I ) )+ABS( DU( I-1 ) )
@@ -32994,11 +32987,11 @@
                IF( ILU.EQ.1 ) THEN
                   J = 0
                   TEMP = ABS( DBLE( A( J+J*LDA ) ) )
-                  IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                  IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                 VALUE = TEMP
                   DO I = 1, N - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                   DO J = 1, K - 1
@@ -33332,7 +33325,7 @@
                   VALUE = WORK( 0 )
                   DO I = 1, N-1
                      TEMP = WORK( I )
-                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) ) 
+                     IF( VALUE .LT. TEMP .OR. DISNAN( TEMP ) )
      $                    VALUE = TEMP
                   END DO
                ELSE
@@ -36684,10 +36677,10 @@
                   END DO
                   DO J = 1, I-1
                      T( J, I ) = -TAU( I ) * CONJG( V( I , J ) )
-                  END DO                     
+                  END DO
                   J = MIN( LASTV, PREVLASTV )
                   CALL ZGEMV( 'Conjugate transpose', J-I, I-1,
-     $                        -TAU( I ), V( I+1, 1 ), LDV, 
+     $                        -TAU( I ), V( I+1, 1 ), LDV,
      $                        V( I+1, I ), 1, ONE, T( 1, I ), 1 )
                ELSE
                   DO LASTV = N, I+1, -1
@@ -36695,11 +36688,11 @@
                   END DO
                   DO J = 1, I-1
                      T( J, I ) = -TAU( I ) * V( J , I )
-                  END DO                     
+                  END DO
                   J = MIN( LASTV, PREVLASTV )
                   CALL ZGEMM( 'N', 'C', I-1, 1, J-I, -TAU( I ),
      $                        V( 1, I+1 ), LDV, V( I, I+1 ), LDV,
-     $                        ONE, T( 1, I ), LDT )                  
+     $                        ONE, T( 1, I ), LDT )
                END IF
                CALL ZTRMV( 'Upper', 'No transpose', 'Non-unit', I-1, T,
      $                     LDT, T( 1, I ), 1 )
@@ -36726,7 +36719,7 @@
                      END DO
                      DO J = I+1, K
                         T( J, I ) = -TAU( I ) * CONJG( V( N-K+I , J ) )
-                     END DO                        
+                     END DO
                      J = MAX( LASTV, PREVLASTV )
                      CALL ZGEMV( 'Conjugate transpose', N-K+I-J, K-I,
      $                           -TAU( I ), V( J, I+1 ), LDV, V( J, I ),
@@ -36737,7 +36730,7 @@
                      END DO
                      DO J = I+1, K
                         T( J, I ) = -TAU( I ) * V( J, N-K+I )
-                     END DO                                           
+                     END DO
                      J = MAX( LASTV, PREVLASTV )
                      CALL ZGEMM( 'N', 'C', K-I, 1, N-K+I-J, -TAU( I ),
      $                           V( I+1, J ), LDV, V( I, J ), LDV,
@@ -37950,7 +37943,7 @@
       PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
       COMPLEX*16         CONE
       PARAMETER          ( CONE = (1.0D+0, 0.0D+0) )
-      LOGICAL            UPPER            
+      LOGICAL            UPPER
       INTEGER            N1, N2, IINFO
       DOUBLE PRECISION   AJJ
       LOGICAL            LSAME, DISNAN
@@ -37986,7 +37979,7 @@
          IF ( IINFO.NE.0 ) THEN
             INFO = IINFO
             RETURN
-         END IF    
+         END IF
          IF( UPPER ) THEN
             CALL ZTRSM( 'L', 'U', 'C', 'N', N1, N2, CONE,
      $                  A( 1, 1 ), LDA, A( 1, N1+1 ), LDA )
@@ -39191,7 +39184,7 @@
                   WORK( K + IV*N ) = CZERO
                END DO
                IF( (IV.EQ.NB) .OR. (KI.EQ.N) ) THEN
-                  CALL ZGEMM( 'N', 'N', N, IV, N-KI+IV, ONE,
+                  CALL ZGEMM( 'N', 'N', N, IV, N-KI+IV, CONE,
      $                        VL( 1, KI-IV+1 ), LDVL,
      $                        WORK( KI-IV+1 + (1)*N ), N,
      $                        CZERO,
@@ -39240,16 +39233,16 @@
          INFO = -4
       ELSE IF( LDQ.LT.1 .OR. ( WANTQ .AND. LDQ.LT.MAX( 1, N ) ) ) THEN
          INFO = -6
-      ELSE IF( IFST.LT.1 .OR. IFST.GT.N ) THEN
+      ELSE IF(( IFST.LT.1 .OR. IFST.GT.N ).AND.( N.GT.0 )) THEN
          INFO = -7
-      ELSE IF( ILST.LT.1 .OR. ILST.GT.N ) THEN
+      ELSE IF(( ILST.LT.1 .OR. ILST.GT.N ).AND.( N.GT.0 )) THEN
          INFO = -8
       END IF
       IF( INFO.NE.0 ) THEN
          CALL XERBLA( 'ZTREXC', -INFO )
          RETURN
       END IF
-      IF( N.EQ.1 .OR. IFST.EQ.ILST )
+      IF( N.LE.1 .OR. IFST.EQ.ILST )
      $   RETURN
       IF( IFST.LT.ILST ) THEN
          M1 = 0

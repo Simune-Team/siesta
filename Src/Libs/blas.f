@@ -910,7 +910,7 @@
                DY(I) = DX(I)
             END DO
             IF (N.LT.7) RETURN
-         END IF   
+         END IF
          MP1 = M + 1
          DO I = MP1,N,7
             DY(I) = DX(I)
@@ -921,7 +921,7 @@
             DY(I+5) = DX(I+5)
             DY(I+6) = DX(I+6)
          END DO
-      ELSE      
+      ELSE
          IX = 1
          IY = 1
          IF (INCX.LT.0) IX = (-N+1)*INCX + 1
@@ -4105,7 +4105,7 @@
                SY(I) = SX(I)
             END DO
             IF (N.LT.7) RETURN
-         END IF   
+         END IF
          MP1 = M + 1
          DO I = MP1,N,7
             SY(I) = SX(I)
@@ -4116,7 +4116,7 @@
             SY(I+5) = SX(I+5)
             SY(I+6) = SX(I+6)
          END DO
-      ELSE      
+      ELSE
          IX = 1
          IY = 1
          IF (INCX.LT.0) IX = (-N+1)*INCX + 1
@@ -4181,7 +4181,7 @@
       IF (N.LE.0) THEN
          SDSDOT = DSDOT
          RETURN
-      END IF   
+      END IF
       IF (INCX.EQ.INCY .AND. INCX.GT.0) THEN
          NS = N*INCX
          DO I = 1,NS,INCX

@@ -361,7 +361,7 @@ $(FDICT):
 	            "FC=$(FC_SERIAL)" \
 		    "ARCH_MAKE=$(PWD)/arch.make" \
 		    "FPPFLAGS=$(FPPFLAGS) -UMPI" \
-		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=) $(INCFLAGS)" lib)
 	@cp -p fdict/*.*d ./
 	cp fdict/$(FDICT) ./
 
@@ -374,7 +374,7 @@ $(NCDF): $(FDICT)
 		"DIR_FDICT=$(VPATH)/fdict" \
 		"ARCH_MAKE=$(PWD)/arch.make" \
 		"FPPFLAGS=$(FPPFLAGS)" \
-		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
+		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../ $(INCFLAGS)" lib)
 	@cp -p NCDF/src/*.*d ./
 	cp NCDF/src/$(NCDF) ./
 
