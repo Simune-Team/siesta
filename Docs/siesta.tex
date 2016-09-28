@@ -79,7 +79,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large August 31, 2016 }
+{\Large September 28, 2016 }
 
 \vspace{1.5cm}
 {\Large \url{http://www.uam.es/siesta}}
@@ -187,6 +187,7 @@ Magnus Paulsson,
 Oscar Paz,
 Andrei Postnikov,
 Tristana Sondon,
+Rafi Ullah,
 Andrew Walker,
 Andrew Walkingshaw,
 Toby White,
@@ -2464,7 +2465,7 @@ determination of the range, etc. Of course, the more you experiment
 with the different options, the better your basis set can get. To aid
 in this process we offer an auxiliary program for optimization which
 can be used in particular to obtain variationally optimal basis sets
-(within a chosen basis size). See \texttt{Util/Optimizer}
+(within a chosen basis size). See \texttt{Util/Optimizer}
 for general information, and \texttt{Util/Optimizer/Examples/Basis\_Optim}
 for an example.
 
@@ -7759,8 +7760,8 @@ with \siesta's standard eigenvalue file in case-insensitive filesystems.
  The periodic part of the Bloch functions is defined by
  \begin{equation}
    u_{n \vec{k}} (\vec{r}) =
-   \sum_{\vec{R} \mu} c_{n \mu}(\vec{k})
-        e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
+   \sum_{\vec{R} \mu} c_{n \mu}(\vec{k})
+        e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
         \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} ) ,
 \end{equation}
 
@@ -9933,7 +9934,140 @@ proposed by Cococcioni and Gironcoli in Phys. Rev. B \textbf{71},
 
 \end{description}
 
+\section{RT-TDDFT}\index{RT-TDDFT}\index{TDDFT}
+Now it is possible to perform Real-Time Time-Dependent Density
+Functional Theory (RT-TDDFT)-based calculations using the
+\siesta\ method. This section includes a brief introduction to the
+TDDFT method and implementation, shows how to run the TDDFT-based
+calculations, and provides a reference guide to the additional input
+options.
 
+\subsection{Brief description}
+The basic features of the TDDFT have been implemented 
+within the \siesta\ code. Most of the 
+details can be found in the paper Phys. Rev. B
+\textbf{66} 235416 (2002), by A. Tsolakidis,
+D. S\'anchez-Portal and, Richard M. Martin.
+However, the practical implementation of the present version 
+is very different 
+from the initial version. The present implementation of the TDDFT has been 
+programmed with the primary aim of calculating the optical 
+response of clusters and solids, however, it has been successfully used to
+calculate the electronic stopping power of solids as well.
+ 
+For the calculation of the optical response of the electronic
+systems a perturbation 
+to the system is applied at time step 0, and the system is 
+allowed to reach a self-consistent solution. Then, the perturbation 
+is switched off for all subsequent time steps, and the electrons
+are allowed to evolve according to time-dependent Kohn-Sham
+equations. For the case of a cluster the perturbation 
+is a finite (small) electric field. For the case of bulk 
+material (not yet fully implemented) the initial perturbation
+is different but the main strategy is similar.
+
+The present version of the RT-TDDFT implementation is also capable of
+performing a simultaneous  dynamics of electrons and
+ions but this is limited to the cases in which forces on the ions are within
+ignorable limit.
+
+The general working scheme is as following. First, the system is
+allowed to reach a self-consistent solution for some initial
+conditions (for example an initial ionic configuration or with applied
+external field). This is achieved using standard
+diagonalization \footnote{Caution! we need the Kohn-Sham
+  orbitals.}. The occupied Kohn-Sham orbitals (KSOs) are then selected
+and stored in memory.  The occupied KSOs are then made to evolve in
+time, and the Hamiltonian is recalculated for each time step.
+
+\subsection{Input options for RT-TDDFT}
+
+A TDDFT calculation requires two runs of \siesta. In the first run
+with appropriate flags it calculates the self-consistent initial
+state, i.e., only occupied initial KSOs stored in \sysfile{TDWF}
+file. The second run uses this file as input and evolves the occupied
+KSOs.
+
+\begin{fdflogicalF}{ WriteInitialTDWF}
+
+If set to .true. in a standard self-consistent \siesta calculation, it
+makes the program save the KSOs after reaching
+self-consistency. This constitutes the first run.
+
+\end{fdflogicalF}
+
+\begin{fdfentry}{ElectronDynamics}[string]
+
+A new Molecular Dynamics option, \fdf{MD.TypeOfRun}, has been
+included. The second run of \siesta\ uses this option with the file
+\sysfile{TDWF} present in the working directory.  In this option ions
+and electrons are assumed to move simultaneously.  The occupied
+electronic states are time-evolved instead of the usual SCF
+calculations in each step.  Choose this option even if you intend to
+do only-electron dynamics. If you want to do an electron dynamics-only
+calculation set \fdf{MD.FinalTimeStep} equal to $1$. For optical
+response calculations switch off the external field during the second
+run. The \fdf{MD.LengthTimeStep} is, as in the standard MD simulation,
+used to set the time step for each MD step.
+
+\end{fdfentry}
+
+\begin{fdfentry}{TDED.Nsteps}[integer]<1>
+
+Number of electronic time steps between each atomic movement. The time
+step for each electronic step is determined by dividing the MD time
+step (\fdf{MD.LengthTimeStep}) over number of electronic steps
+(\fdf{TDED.Nsteps}). In case of an only electron dynamics simulation
+the \fdf{MD.LengthTimeStep} becomes total simulation time.
+
+\end{fdfentry}
+
+\begin{fdfentry}{TDED.Nwrite}[integer]<100>
+
+Fixes the number of steps of ion-electron dynamics after which the
+instanteneous wavefunctions are saved in file \sysfile{TDWF} for a
+possible restart. The writing of wavefunctions is not parallel, hence
+writing too often can affect efficiency.
+
+\end{fdfentry}
+
+ \begin{fdflogicalT}{ WriteEtotvsTime}
+
+If .true. the total energy for every time step is stored in the file
+\sysfile{etot\_vs\_time}.
+
+\end{fdflogicalT}
+
+ \begin{fdflogicalF}{WriteDipolevsTime}
+
+If .true. a file \sysfile{dipol\_vs\_time} is created that can be
+further processed to calculate polarizability.
+
+\end{fdflogicalF}
+
+ \begin{fdflogicalF}{WriteEigenvsTime}
+
+If .true. the quantities $\langle \phi(t)|H|\phi(t)\rangle$ in every
+time step are calculated and stored in the file
+\sysfile{eigenvalues\_vs\_time} (not fully implemented yet!)
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TDED.Saverho}
+
+If .true. the instantaneous time-dependent density is saved to
+\texttt{ <istep>}.\texttt{TDRho}\index{TDRho@{\bf TDRho}} after every
+\fdf{TDED.Nsaverho} number of steps.
+
+\end{fdflogicalF}
+
+\begin{fdfentry}{TDED.Nsaverho}[integer]<50>
+
+Fixes the number of steps of ion-electron dynamics after which the
+instantaneous time-dependent density is saved. May require a lot of
+disk space.
+
+\end{fdfentry}
 
 \section{TRANSIESTA}
 

@@ -370,6 +370,18 @@
             call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
           endif
 
+      ! Saving XV file after the same number of MD steps as TDWF and DM
+      ! is saved for a consistent start in case of TDDFT calculation
+      !   if(td_elec_dyn) then
+      !      if (mod(istep+1, tdednwrite).eq.0) then
+      !      call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va,
+      !&             foundxv)
+      !      end if
+      !   else 
+      !  call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+      !&             foundxv)
+      !  end if    ! td_elec_dyn
+
 #ifdef NCDF_4
        case (9)                 ! explicit coordinate mode
 

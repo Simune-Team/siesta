@@ -71,7 +71,7 @@ tests = ag anneal-cont ar2_vdw \
 	SOC_Pt2_xx SOC_Pt2_xz SOC_Pt2_zy SOC_Pt2_zz \
 	var_cell \
 	wannier \
-	zmatrix
+	zmatrix TDDFT_h2o
 
 # These tests are extremely time consuming and
 # should only be runned sometimes

@@ -47,6 +47,11 @@ subroutine read_options( na, ns, nspin )
 
   ! This routine sets variables in the 'siesta_options' module
 
+  !tddft  
+  integer,  parameter :: ntded_default  = 1
+  integer,  parameter :: ntdsaverho_default = 50
+  integer,  parameter :: tdednwrite_default = 100
+  !end tddft
   ! The following are comment lines that should be merged into 'siesta_options'.
 
   ! real*8 charnet           : Net charge (in units of |e|)
@@ -950,6 +955,28 @@ subroutine read_options( na, ns, nspin )
      endif
   endif
 
+!TD-DFT options      
+           td_elec_dyn = .false. 
+           writetdwf = fdf_get('WriteInitialTDWF',.false.)
+           if(writetdwf) then
+             if (ionode) then
+              write(6,1) 'redata: Write Initial TDWF' , writetdwf
+             endif
+           endif
+           tdsaverho  = fdf_get('TDED.Saverho', .false.)
+           ntdsaverho = fdf_get('TDED.Nsaverho', ntdsaverho_default)
+           etot_time  =  fdf_get('WriteEtotvsTime',.true.)
+           eigen_time =  fdf_get('WriteEigenvsTime',.false.)        
+           dip_time   =  fdf_get('WriteDipolevsTime',.false.)
+           ntded  = fdf_get('TDED.Nsteps',ntded_default)
+          if (ionode) then
+            write(6,4) 'redata: Max. number of TDED Iter         = ',ntded
+          end if
+    
+          tdednwrite = fdf_get('TDED.Nwrite',tdednwrite_default)
+          if (ionode) then
+            write(6,4) 'redata: Write .TDWF and .DM after time steps= ',tdednwrite
+          end if
   ! Dynamics parameters ...
   varcel = fdf_get('MD.VariableCell', .false. )
 
@@ -978,6 +1005,12 @@ subroutine read_options( na, ns, nspin )
      fire_optim = .true.
   else if (leqi(dyntyp,'verlet')) then
      idyn = 1
+  else if (leqi(dyntyp,'electrondynamics')) then
+     idyn = 1    ! For the time being verlet is used 
+                 ! for TDDFT calculations.
+     td_elec_dyn = .true.
+     rstart_time = 0.00_dp
+     totime      = 0.00_dp
   else if (leqi(dyntyp,'nose')) then
      idyn = 2
   else if (leqi(dyntyp,'parrinellorahman')) then

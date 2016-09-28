@@ -120,7 +120,7 @@
 !
 !     Except if there are explicit instructions
 !
-      if (.not. allow_dm_reuse) then
+      if (.not. allow_dm_reuse .or. td_elec_dyn) then
          dminit = .true.
          try_to_read_from_file = .false.  ! In case the user has a fossil DM.UseSaveDM
          if (IOnode) then

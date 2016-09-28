@@ -153,6 +153,24 @@ MODULE siesta_options
   logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
 
   logical :: minim_calc_eigenvalues ! Use diagonalization at the end of each MD step to find eigenvalues for OMM
+ 
+!TDDFT Feb 17, 2014 
+  logical :: writetdwf      ! To write the wavefuctions at the end of SCF. These
+                            ! would serve as the initial states for time evolution
+                            ! of KS states in TD-DFT.
+  logical :: td_elec_dyn    ! To do TDDFT calculation on second run
+  logical :: etot_time     ! Write Etot vs time during TDDFT
+  logical :: eigen_time    ! Write instataneous energy of the electronic states in TDDFT
+  logical :: dip_time      ! Write dipol moment againstan time in TDDFT
+  logical :: tdsaverho      ! To save TD-Rho after a given number of time steps
+  integer :: ntdsaverho     ! Each number of steps TD-Rho is saved.
+  integer :: itded          ! a TDDFT counterpart of iscf
+  integer :: ntded          ! Number of TDED steps in each MD iteration. 
+                            ! Or total number of TDED steps in an only electron calcuation
+                            ! (MD.FinalTimeStep = 1)  
+  integer  :: tdednwrite    ! Number steps after which .TDWF and .DM are saved for restarting.
+  real(dp) :: rstart_time   ! Restart time
+  real(dp) :: totime        ! Total time including the restart time mainly for plotting 
 
   integer :: ia1           ! Atom index
   integer :: ia2           ! Atom index
