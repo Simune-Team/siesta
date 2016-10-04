@@ -2,11 +2,37 @@
 B                             B
 E            SIESTA           E
 #             4.1             #
+T             b-2             T
+A                             A
+#BETA#BETA#BETA#BETA#BETA#BETA#
+
+Release notes for siesta 4.1-b2 beta version
+
+--- The configure script has been removed.
+    Its use was discouraged and would often yield erroneous
+    arch.make files.
+    To circumvent any confusions it has been obsoleted until
+    further notice.
+
+    * Instead of the configure script two default arch.make files
+    now exist in the Obj directory.
+       gfortran.make
+       intel.make
+    which should be guidelines for creating ones own arch.make file.
+
+--- Several bug-fixes which was reported for the b1 release has been
+    resolved.
+
+
+#BETA#BETA#BETA#BETA#BETA#BETA#
+B                             B
+E            SIESTA           E
+#             4.1             #
 T             b-1             T
 A                             A
 #BETA#BETA#BETA#BETA#BETA#BETA#
 
-Release notes for siesta 4.1-b1 beta version
+Release notes for siesta 4.1-b2 beta version
 
 (This is also known as the MaX R1 release)
 

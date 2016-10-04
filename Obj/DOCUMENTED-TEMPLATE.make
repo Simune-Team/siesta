@@ -16,26 +16,28 @@
 # It is included in most makefiles in the source tree, but it does not
 # hurt to have it here too.
 .SUFFIXES:
-.SUFFIXES: .f .F .o .a .f90 .F90
+.SUFFIXES: .f .F .o .c .a .f90 .F90
 
-#
-# This string will be copied to the executable, so it pays to
-# use something meaningful
-SIESTA_ARCH=cscs-ibm-blanc-mpi
+# This string will be copied to the executable, you may write any
+# descriptive statement regarding the compilation setup
+SIESTA_ARCH = unknown
 
-#
+# CC is the C-compiler.
+# This currently need not be an MPI C-compiler for MPI compilation.
+CC = gcc
+
 # In case your compiler does not understand the special meaning of 
 # the .F and .F90 extensions ("files in need of preprocessing"), you
 # will need to use an explicit preprocessing step.
-FPP=/opt/ibmcmp/xlf/10.1/exe/cpp
+# Typically this is sufficient to be the compiler with -E -P -x c
+FPP = $(FC) -E -P -x c
 
-#
 # FC is typically the name of your fortran compiler. It is not always
 # a good idea to add options here, except when they are essential for
-# a proper operation. For example, here we request 64 bits and a special
-# sub-compiler.
-FC=mpfort -m64 -compiler xlf95_r
-#
+# a proper operation.
+# In case of MPI compilation this should be the mpi compiler (mpifort).
+FC = mpif90
+
 # The FC_SERIAL symbol is useful in at least two cases:
 #   1. When the "MPI compiler environment" is so complex that it might
 #      trick the configure scripts (for FoX at least).
@@ -43,90 +45,101 @@ FC=mpfort -m64 -compiler xlf95_r
 #      the computer centers as "queuing-system-only". 
 # Most utilities are thus compiled with FC_SERIAL, which in practice
 # defaults to FC if it is not defined.
-FC_SERIAL=xlf95_r -q64
-#
+FC_SERIAL = gfortran
+
 # Here we should put mainly optimization flags
-FFLAGS=-O3 -qstrict -qarch=pwr5 -qtune=pwr5 -qcache=auto -qessl
-#
+FFLAGS = -O2 -fPIC -ftree-vectorize -march=native
+
+# If you want to use a specific archive function you may specify it here
+# Note that if you use LTO(gcc)/IPO(intel) specifying the correct AR
+# is REQUIRED
+AR = ar
+# Extra flags for library creation by the 'ar' command
+ARFLAGS_EXTRA =
+
 # Some systems do not have 'ranlib'. If so, use "echo" instead of "ranlib"
-RANLIB=ranlib
+RANLIB = ranlib
 
 # A compiler-specific file holding special versions of some routines
 # For most f95 compilers, "nag" should work. (The name is historical)
-SYS=xlf   # for IBM machines
-#SYS=nag
+# The currently supported systems are:
+#   nag (generic)
+#   bsd
+#   ibm
+#   ibm_pessl
+#   sgi
+#   t3e
+#   xlf
+SYS = nag
 
 # These symbols should not need to be specified. They will be detected
 # automatically at the time of compiling the MPI interface. Set them
 # only if the automatic detection fails and you are sure of their values.
-SP_KIND=1
-DP_KIND=8
-KINDS=$(SP_KIND) $(DP_KIND)
+SP_KIND = 4
+DP_KIND = 8
+KINDS = $(SP_KIND) $(DP_KIND)
 
 # Some compilers (notably IBM's) are not happy with the standard 
 # syntax for definition of preprocessor symbols ( -DSOME_SYMBOL),
-# and thy need a prefix (i.e. WF,-DSOME_SYMBOL). This is used
+# and thy need a prefix (i.e. -WF,-DSOME_SYMBOL). This is used
 # in some utility makefiles.
-DEFS_PREFIX=-WF,
+# Typically this need not be defined
+DEFS_PREFIX =
 
-#
-# Used only at the linking stage. For example, you might neeed "-static"
-LDFLAGS=
+# Used only at the linking stage. For example, you might need "-static"
+LDFLAGS =
 
-# Extra flags for library creation by the 'ar' command
-ARFLAGS_EXTRA=
-# Note that the 'ar' command can itself be specified by
-# defining the AR variable. In most 'make' programs, AR is a
-# built-in variable
 
-#
 # These symbols help to keep the building rules concise
-# (they are generated automatically by the 'configure' script
-# in some cases) 
-FCFLAGS_fixed_f=-qfixed -qsuffix=cpp=f
-FCFLAGS_free_f90=
-FPPFLAGS_fixed_F=-qfixed -qsuffix=cpp=F
-FPPFLAGS_free_F90=
+# This enables specific compilation options for certain
+# source files.
+FCFLAGS_fixed_f =
+FCFLAGS_free_f90 =
+FPPFLAGS_fixed_F =
+FPPFLAGS_free_F90 =
 
-#
 # This is the most installation-dependent part
 # We can make things a bit easier by grouping symbols, and maybe
 # using the -L flag to define search directories (see examples
 # in this directory).
-#
-BLAS_LIBS=-lessl
-LAPACK_LIBS=/apps/lapack/3.1.1/XL/lib/liblapack_ppc64.a -lessl
-BLACS_LIBS=/apps/scalapack/64/lib/blacsCinit_MPI-ppc64-0.a /apps/scalapack/64/lib/blacsF77init_MPI-ppc64-0.a /apps/scalapack/64/lib/blacs_MPI-ppc64-0.a
-SCALAPACK_LIBS=/apps/scalapack/64/lib/blacsCinit_MPI-ppc64-0.a /apps/scalapack/64/lib/blacs_MPI-ppc64-0.a -L/apps/scalapack/64/lib -lscalapack
-#
-# If you are using a "wrapper compiler" such as mpif90, MPI_LIBS can
-# be left empty. If not, you might need something like -L somepath/ -l mpi ....
-#
-MPI_LIBS=
-#
-# Even if you have an optimized system library (such as ESSL), you might
-# not have all of LAPACK. In particular, the divide_and_conquer routines
-# might not be available, or they might be buggy. 
-# In this case, you need to compile them from source 
-# (COMP stands for "compiled")
-# If you do not have any optimized linear algebra library, you can
-# specify COMP_LIBS=linalg.a
-#
-##COMP_LIBS=dc_lapack.a 
+# For the most simplistic compilation one requires the following
+# libraries:
+#   BLAS
+#   LAPACK
+#   ScaLAPACK (only for MPI compilation)
+BLAS_LIBS = -lblas
+LAPACK_LIBS = -llapack
+# The most recent ScaLAPACK versions have built in the BLACS library.
+# If BLACS is not included in the ScaLAPACK library you are
+# required to add it here as well:
+#SCALAPACK_LIBS = -lscalapack
 
+# If you do not have BLAS/LAPACK installed on your machine
+# you may use the shipped BLAS/LAPACK versions.
 #
+# If you do not have the LAPACK library you may do:
+# COMP_LIBS = libsiestaLAPACK.a
+# If you have neither the BLAS, nor LAPACK library you may do:
+# COMP_LIBS = libsiestaLAPACK.a libsiestaBLAS.a
+#
+# You are HIGHLY encouraged to use an optimized BLAS/LAPACK
+# library as SIESTA performance is mainly governed by these
+# libraries.
+COMP_LIBS =
+
 # For netCDF support. Make sure you get a version compatible
 # with the other options (for example, 32/64 bit). Don't forget
 # to set -DCDF below.
-#
-NETCDF_ROOT=/apps/netcdf/64
-NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
-NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
+# To use NetCDF define the installation directory of the library.
+# By default NetCDF is not used, but it may become mandatory in
+# later versions of SIESTA.
+#NETCDF_ROOT = /opt/netcdf/4.4.0
+#NETCDF_INCFLAGS = -I$(NETCDF_ROOT)/include
+#NETCDF_LIBS = -L$(NETCDF_ROOT)/lib -lnetcdff -lnetcdf
 
-#
 # This (as well as the -DMPI definition) is essential for MPI support
-MPI_INTERFACE=libmpi_f90.a
-MPI_INCLUDE=.
+#MPI_INTERFACE = libmpi_f90.a
+#MPI_INCLUDE = .
 
 # Preprocessor definitions or flags.
 # Here we use FPPFLAGS (as 'configure' calls them), but historically
@@ -137,18 +150,15 @@ MPI_INCLUDE=.
 
 # CDF and MPI are self-explanatory
 # Other definitions might be needed to work around some glitch in the compiler
-#
-# For old versions of gfortran, add -DGFORTRAN
-#
-FPPFLAGS= -WF,-DMPI -WF,-DFC_HAVE_ABORT -WF,-DCDF
-#
+# See the manual for more details.
+FPPFLAGS = $(DEFS_PREFIX)-DFC_HAVE_ABORT
+
 # We put here all the neeeded libraries.
 # Sometimes the BLAS are included in LAPACK (or it could be that everything
 # is included in SCALAPACK...). You might need to experiment if you find 
 # duplicate symbols. See examples in this directory.
 #
-LIBS=$(NETCDF_LIBS) $(SCALAPACK_LIBS) $(BLACS_LIBS) $(LAPACK_LIBS) \
-     $(MPI_LIBS) $(COMP_LIBS)
+LIBS = $(NETCDF_LIBS) $(SCALAPACK_LIBS) $(LAPACK_LIBS) $(MPI_LIBS) $(COMP_LIBS)
 
 # Dependency rules ---------
 
@@ -158,14 +168,13 @@ LIBS=$(NETCDF_LIBS) $(SCALAPACK_LIBS) $(BLACS_LIBS) $(LAPACK_LIBS) \
 # insert extra lines. Use exactly the format shown, as it is general enough
 # to work with VPATH.
 #
-FFLAGS_DEBUG=-g -O0   # your appropriate flags here...
-#
-atom.o: atom.f
-	$(FC) -c $(FFLAGS_DEBUG) $<
-#
-electrostatic.o: electrostatic.f
-	$(FC) -c $(FFLAGS_DEBUG) $<
-#
+FFLAGS_DEBUG = -g -O0   # your appropriate flags here...
+
+# The atom.f code is very vulnerable. Particularly the Intel compiler
+# will make an erroneous compilation of atom.f with high optimization
+# levels.
+atom.o: atom.F
+	$(FC) -c $(FFLAGS_DEBUG) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F) $<
 
 # Finally, the default building rules which will be used everywhere,
 # unless overriden.
@@ -188,6 +197,8 @@ electrostatic.o: electrostatic.f
 #        @rm -f tmp_$*.f90
 #
 #---------------- Example of actual rules  
+.c.o:
+	$(CC) -c $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) $< 
 .F.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F)  $< 
 .F90.o:

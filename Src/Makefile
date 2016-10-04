@@ -10,7 +10,7 @@
 #
 # Makefile for SIESTA
 #
-# Remove implicit rules (including for Modula-2, which just confuses matters)
+# Remove implicit rules
 .SUFFIXES:
 .SUFFIXES: .f .F .f90 .F90 .o .c .a
 
@@ -20,24 +20,10 @@ VPATH=.
 AR ?= ar
 RANLIB ?= ranlib
 
-default: what siesta  # fsiesta_pipes.o fsiesta_sockets.o libSiestaForces.a
+default: what siesta
 
 lib: libSiestaXC.a libfdf.a libSiestaForces.a
 
-configure: configure.ac aclocal.m4
-	@autoconf ${<D}/configure.ac
-
-M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAGS.m4  \
- m4/ACX_MPI.m4             m4/TW_CHECK_FC_TR15580.m4  m4/TW_FC_ID.m4        \
- m4/fortran.m4             m4/TW_CHECK_FC_TR15581.m4  m4/TW_FIND_FC_BLAS.m4 \
- m4/TW_CHECK_BLACS.m4      m4/TW_CHECK_SCALAPACK.m4   m4/TW_FIND_LAPACK.m4  \
- m4/TW_CHECK_FC_90.m4      m4/TW_FC_CHECK_ABORT.m4    m4/TW_PATH_NETCDF.m4  \
- m4/TW_CHECK_FC_95.m4      m4/TW_FC_CHECK_DCFUNS.m4   m4/TW_TRY_DC_LAPACK.m4\
- m4/TW_CHECK_FC_FPP_90.m4  m4/TW_FC_CHECK_FLUSH.m4    m4/TW_FC_KINDS.m4
-
-aclocal.m4: $(M4_FILES)
-	cat ${<D}/$(M4_FILES) > aclocal.m4
-#
 dist:
 	make -f makefile.lit dist
 dep:
@@ -62,8 +48,6 @@ INCFLAGS:= $(NETCDF_INCFLAGS) $(PEXSI_INCFLAGS) $(INCFLAGS)
 # libraries (it removes names when a routine can be fully moved into others)
 IPO_FLAG?= -ipo
 
-# Uncomment the following line for debugging support
-##FFLAGS=$(FFLAGS_DEBUG)
 
 .PHONY: .siesta .transiesta what version
 
@@ -90,7 +74,7 @@ ELPA_KERNELS ?= elpa2_kernels.o
 # Note that machine-specific files are now in top Src directory.
 MAIN_OBJ = siesta.o
 
-#
+
 OBJS =  automatic_cell.o atom_options.o \
         arw.o  atomlwf.o bands.o basis_enthalpy.o bessph.o bonds.o \
         born_charge.o cellxc_mod.o cgwf.o chkdim.o chkgmx.o \
@@ -255,9 +239,8 @@ OBJS += flook_siesta.o siesta_dicts.o
 OBJS += m_cite.o
 
 # Special dependency that sfmakedepend cannot grasp for now
-#
 m_pexsi.o m_pexsi_driver.o m_pexsi_dos.o m_pexsi_local_dos.o: f_ppexsi_interface.o
-#
+
 #--------------------------------------------------------------
 # FoX whatnot
 
@@ -392,16 +375,6 @@ atom.o basis_io.o basis_specs.o: $(FDF)
 ldau_specs.o: $(FDF)
 
 
-
-# C/Fortran sockets library 
-#
-# As it stands, it will use the CC in the default rules
-# Define CC (and maybe CFLAGS) in arch.make for full control
-#
-sockets.o: sockets.c   # Will be picked-up in the VPATH
-	$(CC) -c $(CFLAGS) $<
-
-
 # Create all objects
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 
@@ -411,8 +384,6 @@ ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 # This will setup the correct compilation sequence as
 # XC => FDF => MPI
 $(ALL_OBJS): $(XC) $(COMP_LIBS)
-
-# Libraries that might need to be compiled
 
 #
 # Linear algebra routines
