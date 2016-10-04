@@ -50,8 +50,6 @@ contains
 
     use m_fixed, only : is_fixed, is_constr
 
-    use m_cite, only: add_citation
-    
     implicit none
 ! *********************
 ! * INPUT variables   *
@@ -110,11 +108,6 @@ contains
 
     ! If onlyS we do not need to do anything about the electrodes
     if ( onlyS ) return
-
-    ! add citation
-    if ( IONode ) then
-       call add_citation("10.1103/PhysRevB.65.165401")
-    end if
 
     ! Print out the contour blocks etc. for transiesta
     call print_ts_blocks( na_u, xa )
