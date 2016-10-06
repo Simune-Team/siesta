@@ -182,7 +182,7 @@ Volodymyr Maslyuk,
 Juana Moreno,
 Frederico Dutilh Novaes, 
 Micael Oliveira,
-Nick Rubner Papior,
+Nick R\"ubner Papior,
 Magnus Paulsson,
 Oscar Paz,
 Andrei Postnikov,
@@ -437,23 +437,29 @@ minimum of tuning required from the user and encapsulated in a
 separate file called \shell{arch.make}.
 
 You are strongly encouraged to look at
-\shell{Src/Sys/DOCUMENTED-TEMPLATE.make} for information about the
-fine points of the \shell{arch.make} file. You can also get
-inspiration by looking at the actual \shell{arch.make} examples in
-the \shell{Src/Sys} subdirectory. If you intend to create a parallel
-version of \siesta, make sure you have all the extra support libraries
-(\program{MPI}, \program{scalapack}, \program{blacs}\dots) (see Sec.~\ref{sec:parallel}).
+\shell{Obj/DOCUMENTED-TEMPLATE.make} for information about the
+fine points of the \shell{arch.make} file. There are two sample make
+files for compilation of \siesta\ with \shell{gfortran} and
+\shell{ifort} named \shell{Obj/gfortran.make} and
+\shell{Obj/intel.make}, respectively. Please use those as guidelines
+for creating the final \shell{arch.make}.
+
+% You can also get
+% inspiration by looking at the actual \shell{arch.make} examples in
+% the \shell{Src/Sys} subdirectory. If you intend to create a parallel
+% version of \siesta, make sure you have all the extra support libraries
+% (\program{MPI}, \program{scalapack}, \program{blacs}\dots) (see Sec.~\ref{sec:parallel}).
   
-Optionally, the command \shell{../Src/configure} will start an
-automatic scan of your system and try to build an \shell{arch.make}
-for you. Please note that the configure script might need some help in
-order to find your Fortran compiler, and that the created
-\shell{arch.make} may not be optimal, mostly in regard to compiler
-switches and preprocessor definitions, but the process should provide
-a reasonable first version. Type \shell{../Src/configure --help} to
-see the flags understood by the script, and take a look at the
-\shell{Src/Confs} subdirectory for some examples of their explicit
-use. 
+% Optionally, the command \shell{../Src/configure} will start an
+% automatic scan of your system and try to build an \shell{arch.make}
+% for you. Please note that the configure script might need some help in
+% order to find your Fortran compiler, and that the created
+% \shell{arch.make} may not be optimal, mostly in regard to compiler
+% switches and preprocessor definitions, but the process should provide
+% a reasonable first version. Type \shell{../Src/configure --help} to
+% see the flags understood by the script, and take a look at the
+% \shell{Src/Confs} subdirectory for some examples of their explicit
+% use. 
 
 
 
@@ -5652,10 +5658,6 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   Logical to select whether the normal or Divide and Conquer
   algorithms are used within the Lapack diagonalisation routines.
 
-  (Note: Some system library implementations of the D\&C algorithm are
-  buggy. It is advisable to use Siesta's own (fixed) version --
-  configure will try to do that.)
-  
 \end{fdflogicalT}
 
 \begin{fdflogicalF}{Diag!AllInOne}
@@ -10769,11 +10771,6 @@ These options adhere to the specific solution methods available for
   \end{fdfexample}
   where the first two are equivalent. The 3rd and 4th are more heavily
   on analysis and will typically not improve the bandwidth reduction.
-
-  \note we encourage to run this with \fdftrue\ to always choose the
-  best pivoting algorithm before performing large scale
-  calculations. Using the optimal pivoting algorithm can hugely affect
-  the performance of \tsiesta.
   
 \end{fdfentry}
 

@@ -20,6 +20,11 @@ then make sure that you create or generate an 'arch.make' file. Then, type
 To compile utility programs (those living in Util), you can just simply
 use the provided makefiles, typing "make" as appropriate.
 
+* arch.make files
+  This directory contains two default arch.make files:
+    gfortran.make which is the serial compilation of siesta using gfortran
+    intel.make which is the serial compilation of siesta using intel compiler
+
 * NOTE for Advanced Users
 
 The mechanism described here can be repeated in other directories at the same level,

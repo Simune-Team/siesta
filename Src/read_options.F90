@@ -36,6 +36,8 @@ subroutine read_options( na, ns, nspin )
   use m_mixing_scf, only: mixers_scf_init
   use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
+  use m_cite, only: add_citation
+  
   implicit none
   !----------------------------------------------------------- Input Variables
   ! integer na               : Number of atoms
@@ -701,6 +703,7 @@ subroutine read_options( na, ns, nspin )
 #ifdef SIESTA__PEXSI     
      isolve = SOLVE_PEXSI
      if (ionode) then
+        call add_citation("10.1088/0953-8984/26/30/305503")
         write(*,3) 'redata: Method of Calculation', 'PEXSI'
      endif
 #else
@@ -712,6 +715,8 @@ subroutine read_options( na, ns, nspin )
        .or. leqi(method,'negf') ) then
      isolve = SOLVE_TRANSI
      if (ionode) then
+        call add_citation("10.1103/PhysRevB.65.165401")
+        call add_citation("10.1016/j.cpc.2016.09.022")
         write(*,3) 'redata: Method of Calculation','Transiesta'
      endif
 #endif /* TRANSIESTA */

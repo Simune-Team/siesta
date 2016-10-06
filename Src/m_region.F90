@@ -1545,7 +1545,7 @@ contains
           end if
 
           ! Write ending comma
-          if ( j + k < r%n ) write(*,'(a)',advance='no') ','
+          if ( j + k <= r%n ) write(*,'(a)',advance='no') ','
 
           if ( c == 0 .and. j + k < r%n ) then
              ! Should we start a new line

@@ -1,3 +1,52 @@
+!Copyright (c) 1992-2016 The University of Tennessee and The University
+!                        of Tennessee Research Foundation.  All rights
+!                        reserved.
+!Copyright (c) 2000-2016 The University of California Berkeley. All
+!                        rights reserved.
+!Copyright (c) 2006-2016 The University of Colorado Denver.  All rights
+!                        reserved.
+!
+!$COPYRIGHT$
+!
+!Additional copyrights may follow
+!
+!$HEADER$
+!
+!Redistribution and use in source and binary forms, with or without
+!modification, are permitted provided that the following conditions are
+!met:
+!
+!- Redistributions of source code must retain the above copyright
+!  notice, this list of conditions and the following disclaimer.
+!
+!- Redistributions in binary form must reproduce the above copyright
+!  notice, this list of conditions and the following disclaimer listed
+!  in this license in the documentation and/or other materials
+!  provided with the distribution.
+!
+!- Neither the name of the copyright holders nor the names of its
+!  contributors may be used to endorse or promote products derived from
+!  this software without specific prior written permission.
+!
+!The copyright holders provide no reassurances that the source code
+!provided does not infringe any patent, copyright, or any other
+!intellectual property rights of third parties.  The copyright holders
+!disclaim any liability to any recipient for claims brought against
+!recipient by any third party for infringement of that parties
+!intellectual property rights.
+!
+!THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+!"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+!LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+!A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+!OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+!SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+!LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+!DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+!THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+!(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+!OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 ! SOURCE-FILE = /home/nicpa/LA/lapack/BLAS/SRC/caxpy.f
       SUBROUTINE CAXPY(N,CA,CX,INCX,CY,INCY)
       COMPLEX CA
@@ -910,7 +959,7 @@
                DY(I) = DX(I)
             END DO
             IF (N.LT.7) RETURN
-         END IF   
+         END IF
          MP1 = M + 1
          DO I = MP1,N,7
             DY(I) = DX(I)
@@ -921,7 +970,7 @@
             DY(I+5) = DX(I+5)
             DY(I+6) = DX(I+6)
          END DO
-      ELSE      
+      ELSE
          IX = 1
          IY = 1
          IF (INCX.LT.0) IX = (-N+1)*INCX + 1
@@ -4105,7 +4154,7 @@
                SY(I) = SX(I)
             END DO
             IF (N.LT.7) RETURN
-         END IF   
+         END IF
          MP1 = M + 1
          DO I = MP1,N,7
             SY(I) = SX(I)
@@ -4116,7 +4165,7 @@
             SY(I+5) = SX(I+5)
             SY(I+6) = SX(I+6)
          END DO
-      ELSE      
+      ELSE
          IX = 1
          IY = 1
          IF (INCX.LT.0) IX = (-N+1)*INCX + 1
@@ -4181,7 +4230,7 @@
       IF (N.LE.0) THEN
          SDSDOT = DSDOT
          RETURN
-      END IF   
+      END IF
       IF (INCX.EQ.INCY .AND. INCX.GT.0) THEN
          NS = N*INCX
          DO I = 1,NS,INCX

@@ -92,8 +92,7 @@ tight-binding calculations.
 
 \end{itemize}
 
-A list of the currently implemented features are
-It routinely provides:
+A list of the currently implemented features are:
 \begin{itemize}
 
   \item Density of states (orbital resolved)
@@ -1451,6 +1450,74 @@ following will be shown in the output file.
 It is imperative that you have a \emph{perfect} electrode as otherwise
 nonphysical results will occur.
 
+
+\subsection{Calculation settings}
+
+The calculation time is currently governed by two things:
+\begin{enumerate}
+  
+  \item%
+  the size of the device region, 
+
+  \item%
+  and by the partitioning of the block-tri-diagonal matrix.
+  
+\end{enumerate}
+The first may be controlled via \fdf{TBT.Atoms!Device}. If one is only
+interested in transmission coefficients this flag is encouraged to
+select the minimum number of atoms that will successfully run the
+calculation. Please see the flag entry for further details.
+
+Secondly there is, currently, no way to determine the most optimal
+block-partitioning of a banded matrix and \tbtrans\ allows several
+algorithms to determine an optimal partitioning scheme. The following
+flag controls the partitioning for the device region.
+
+
+\begin{fdfentry}{TBT.BTD!Pivot.Device}[string]<\nonvalue{first electrode}>
+
+  Decide on the partitioning for the BTD matrix. One may denote either
+  \fdf*{atom+} or \fdf*{orb+} as a prefix which does the analysis on
+  the atomic sparsity pattern or the full orbital sparsity pattern,
+  respectively. If neither are used it will default to \fdf*{atom+}.
+
+  \begin{fdfoptions}
+
+    \option[<elec-name>]%
+    The partitioning will be a connectivity graph starting from the
+    electrode denoted by the name. This name \emph{must} be found in
+    the \fdf{TBT!Elecs} block. 
+
+    \option[rev-CM] %
+    Use the reverse Cuthill-McKee for pivoting the matrix elements to
+    reduce bandwidth. One may omit \fdf*{rev-} to use the standard
+    Cuthill-McKee algorithm.
+
+    \option[GPS] %
+    Use the Gibbs-Poole-Stockmeyer algorithm for reducing the
+    bandwidth.
+
+    \option[GGPS] %
+    Use the generalized Gibbs-Poole-Stockmeyer algorithm for reducing
+    the bandwidth.
+
+    \option[PCG] %
+    Use the perphiral connectivity graph algorithm for reducing the
+    bandwidth.
+
+  \end{fdfoptions}
+
+  Examples are
+  \begin{fdfexample}
+    TBT.BTD.Pivot.Device atom+GGPS
+    TBT.BTD.Pivot.Device GGPS
+    TBT.BTD.Pivot.Device orb+GGPS
+    TBT.BTD.Pivot.Device orb+PCG
+  \end{fdfexample}
+  where the first two are equivalent. The 3rd and 4th are more heavily
+  on analysis and will typically not improve the bandwidth reduction.
+
+\end{fdfentry}
 
 
 \subsection{Input/Output}

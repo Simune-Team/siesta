@@ -10,7 +10,7 @@
 #
 # Makefile for SIESTA
 #
-# Remove implicit rules (including for Modula-2, which just confuses matters)
+# Remove implicit rules
 .SUFFIXES:
 .SUFFIXES: .f .F .f90 .F90 .o .c .a
 
@@ -20,24 +20,10 @@ VPATH=.
 AR ?= ar
 RANLIB ?= ranlib
 
-default: what siesta  # fsiesta_pipes.o fsiesta_sockets.o libSiestaForces.a
+default: what siesta
 
 lib: libSiestaXC.a libfdf.a libSiestaForces.a
 
-configure: configure.ac aclocal.m4
-	@autoconf ${<D}/configure.ac
-
-M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAGS.m4  \
- m4/ACX_MPI.m4             m4/TW_CHECK_FC_TR15580.m4  m4/TW_FC_ID.m4        \
- m4/fortran.m4             m4/TW_CHECK_FC_TR15581.m4  m4/TW_FIND_FC_BLAS.m4 \
- m4/TW_CHECK_BLACS.m4      m4/TW_CHECK_SCALAPACK.m4   m4/TW_FIND_LAPACK.m4  \
- m4/TW_CHECK_FC_90.m4      m4/TW_FC_CHECK_ABORT.m4    m4/TW_PATH_NETCDF.m4  \
- m4/TW_CHECK_FC_95.m4      m4/TW_FC_CHECK_DCFUNS.m4   m4/TW_TRY_DC_LAPACK.m4\
- m4/TW_CHECK_FC_FPP_90.m4  m4/TW_FC_CHECK_FLUSH.m4    m4/TW_FC_KINDS.m4
-
-aclocal.m4: $(M4_FILES)
-	cat ${<D}/$(M4_FILES) > aclocal.m4
-#
 dist:
 	make -f makefile.lit dist
 dep:
@@ -62,8 +48,6 @@ INCFLAGS:= $(NETCDF_INCFLAGS) $(PEXSI_INCFLAGS) $(INCFLAGS)
 # libraries (it removes names when a routine can be fully moved into others)
 IPO_FLAG?= -ipo
 
-# Uncomment the following line for debugging support
-##FFLAGS=$(FFLAGS_DEBUG)
 
 .PHONY: .siesta .transiesta what version
 
@@ -90,7 +74,7 @@ ELPA_KERNELS ?= elpa2_kernels.o
 # Note that machine-specific files are now in top Src directory.
 MAIN_OBJ = siesta.o
 
-#
+
 OBJS =  automatic_cell.o atom_options.o \
         arw.o  atomlwf.o bands.o basis_enthalpy.o bessph.o bonds.o \
         born_charge.o cellxc_mod.o cgwf.o chkdim.o chkgmx.o \
@@ -258,9 +242,8 @@ OBJS += flook_siesta.o siesta_dicts.o
 OBJS += m_cite.o
 
 # Special dependency that sfmakedepend cannot grasp for now
-#
 m_pexsi.o m_pexsi_driver.o m_pexsi_dos.o m_pexsi_local_dos.o: f_ppexsi_interface.o
-#
+
 #--------------------------------------------------------------
 # FoX whatnot
 
@@ -374,7 +357,7 @@ $(FDICT):
 	            "FC=$(FC_SERIAL)" \
 		    "ARCH_MAKE=$(PWD)/arch.make" \
 		    "FPPFLAGS=$(FPPFLAGS) -UMPI" \
-		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=) $(INCFLAGS)" lib)
 	@cp -p fdict/*.*d ./
 	cp fdict/$(FDICT) ./
 
@@ -387,7 +370,7 @@ $(NCDF): $(FDICT)
 		"DIR_FDICT=$(VPATH)/fdict" \
 		"ARCH_MAKE=$(PWD)/arch.make" \
 		"FPPFLAGS=$(FPPFLAGS)" \
-		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
+		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../ $(INCFLAGS)" lib)
 	@cp -p NCDF/src/*.*d ./
 	cp NCDF/src/$(NCDF) ./
 
@@ -408,16 +391,6 @@ evolk.o: $(FDF)
 evolg.o: $(FDF)
 changebasis.o: $(FDF)
 
-
-# C/Fortran sockets library 
-#
-# As it stands, it will use the CC in the default rules
-# Define CC (and maybe CFLAGS) in arch.make for full control
-#
-sockets.o: sockets.c   # Will be picked-up in the VPATH
-	$(CC) -c $(CFLAGS) $<
-
-
 # Create all objects
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 
@@ -427,8 +400,6 @@ ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 # This will setup the correct compilation sequence as
 # XC => FDF => MPI
 $(ALL_OBJS): $(XC) $(COMP_LIBS)
-
-# Libraries that might need to be compiled
 
 #
 # Linear algebra routines
@@ -1223,8 +1194,8 @@ radial.o: alloc.o interpolation.o precision.o xml.o
 rdiag.o: alloc.o m_diagon_opt.o memoryinfo.o parallel.o precision.o sys.o
 rdiag_elpa.o: alloc.o elpa1.o elpa2.o parallel.o precision.o sys.o
 rdiag_mrrr.o: alloc.o parallel.o precision.o sys.o
-read_options.o: files.o m_charge_add.o m_hartree_add.o m_mixing_scf.o m_spin.o
-read_options.o: m_target_stress.o memoryinfo.o parallel.o precision.o
+read_options.o: files.o m_charge_add.o m_cite.o m_hartree_add.o m_mixing_scf.o
+read_options.o: m_spin.o m_target_stress.o memoryinfo.o parallel.o precision.o
 read_options.o: siesta_cml.o siesta_options.o sys.o units.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
@@ -1356,10 +1327,9 @@ timer.o: extrae_eventllist.o extrae_module.o m_timer.o parallel.o sys.o
 timer.o: timer_tree.o
 timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-ts_init.o: m_cite.o m_fixed.o m_os.o m_ts_cctype.o m_ts_charge.o
-ts_init.o: m_ts_electrode.o m_ts_electype.o m_ts_gf.o m_ts_global_vars.o
-ts_init.o: m_ts_kpoints.o m_ts_method.o m_ts_options.o parallel.o
-ts_init.o: siesta_options.o
+ts_init.o: m_fixed.o m_os.o m_ts_cctype.o m_ts_charge.o m_ts_electrode.o
+ts_init.o: m_ts_electype.o m_ts_gf.o m_ts_global_vars.o m_ts_kpoints.o
+ts_init.o: m_ts_method.o m_ts_options.o parallel.o siesta_options.o
 ts_show_regions.o: m_region.o m_ts_electype.o m_ts_method.o parallel.o
 ts_show_regions.o: precision.o units.o
 typecell.o: precision.o
