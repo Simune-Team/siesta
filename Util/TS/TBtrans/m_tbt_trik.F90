@@ -39,7 +39,7 @@ module m_tbt_trik
 
   use m_verbosity, only : verbosity
   use m_tbt_hs
-  use m_tbt_regions, only : sp_uc, sp_dev, r_aDev
+  use m_tbt_regions, only : sp_uc, sp_dev_sc, r_aDev
 #ifdef NOT_WORKING
   use m_tbt_regions, only : r_oEl
 #endif
@@ -148,7 +148,7 @@ contains
     ! Just as in transiesta, these matrices are transposed.
     type(zSpData1D) :: spH, spS
     type(Sparsity), pointer :: sp
-    real(dp), pointer :: H(:,:), S(:)
+    real(dp), pointer :: H2D(:,:), S(:), H(:)
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
     logical :: calc_GF_DOS
@@ -249,7 +249,13 @@ contains
     ! sparsity patterns we cannot ensure they are the
     ! same
     sp => spar(TSHS%H_2D)
-    H => val(TSHS%H_2D)
+    H2D => val(TSHS%H_2D)
+    if ( ispin == spin_idx ) then
+       ! we have downscaled the Hamiltonian
+       H => H2D(:,1)
+    else
+       H => H2D(:,ispin)
+    end if
     S => val(TSHS%S_1D)
 
     allocate(nE%iE(0:Nodes-1))
@@ -635,7 +641,7 @@ contains
     if ( ('orb-current'.in.save_DATA) .or. &
          ('proj-orb-current'.in.save_DATA) ) then
        
-       call newdSpData1D(sp_dev,fdist,orb_J,name='TBT orb_J')
+       call newdSpData1D(sp_dev_sc,fdist,orb_J,name='TBT orb_J')
        ! Initialize to 0, it will be overwritten for all
        ! values, so there is no need to initialize it
        ! in the orb_current routine (neither here actually)
@@ -740,14 +746,14 @@ contains
        if ( n_k == 0 ) then
           call create_HS(TSHS%dit, sp, 0._dp, &
                N_Elec, Elecs, TSHS%no_u, product(TSHS%nsc), &
-               iE,H(:,1), S(:), TSHS%sc_off, &
+               iE,H, S, TSHS%sc_off, &
                spH, spS, kpt, &
                nmaxwork, maxwork) ! not used...
        else
           call create_region_HS(TSHS%dit,sp, 0._dp, &
                TSHS%cell, n_k, r_k, TSHS%na_u, TSHS%lasto, &
                N_Elec, Elecs, TSHS%no_u, product(TSHS%nsc), &
-               iE, H(:,1), S(:), TSHS%sc_off, spH, spS, &
+               iE, H, S, TSHS%sc_off, spH, spS, &
                nmaxwork, maxwork)
        end if
 
@@ -1072,9 +1078,13 @@ contains
                 if ( 'orb-current' .in. save_DATA ) then
 
 #ifdef TBT_PHONON
-                   call orb_current(spH,spS,cOmega,zwork_tri,r_oDev,orb_J,pvt)
+                   call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
+                        kpt, &
+                        cOmega,zwork_tri,r_oDev,orb_J,pvt)
 #else
-                   call orb_current(spH,spS,cE,zwork_tri,r_oDev,orb_J,pvt)
+                   call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
+                        kpt, &
+                        cE,zwork_tri,r_oDev,orb_J,pvt)
 #endif
                    
                 end if
@@ -1270,9 +1280,13 @@ contains
                if ( 'proj-orb-current' .in. save_DATA ) then
 
 #ifdef TBT_PHONON
-                  call orb_current(spH,spS,cOmega,zwork_tri,r_oDev,orb_J,pvt)
+                  call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
+                       kpt, &
+                       cOmega,zwork_tri,r_oDev,orb_J,pvt)
 #else
-                  call orb_current(spH,spS,cE,zwork_tri,r_oDev,orb_J,pvt)
+                  call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
+                       kpt, &
+                       cE,zwork_tri,r_oDev,orb_J,pvt)
 #endif
 
                   ! We need to save it immediately, we

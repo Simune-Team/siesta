@@ -48,6 +48,8 @@ contains
     use create_Sparsity_SC
     use m_sparsity_handling
 
+    use geom_helper, only: iaorb
+    
     use m_pivot
 
 #ifdef TRANSIESTA_DEBUG
