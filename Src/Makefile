@@ -937,7 +937,8 @@ m_sparse.o: precision.o
 m_sparsity_handling.o: class_Data1D.o class_Data2D.o
 m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
 m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
-m_sparsity_handling.o: m_interpolate.o m_region.o precision.o
+m_sparsity_handling.o: intrinsic_missing.o m_interpolate.o m_region.o
+m_sparsity_handling.o: precision.o
 m_spin.o: alloc.o parallel.o precision.o sys.o units.o
 m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
@@ -1049,9 +1050,10 @@ m_ts_options.o: m_ts_contour_neq.o m_ts_electype.o m_ts_global_vars.o
 m_ts_options.o: m_ts_hartree.o m_ts_method.o m_ts_mumps_init.o m_ts_tdir.o
 m_ts_options.o: m_ts_weight.o parallel.o precision.o siesta_options.o units.o
 m_ts_pivot.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
-m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o intrinsic_missing.o
-m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
-m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
+m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o geom_helper.o
+m_ts_pivot.o: intrinsic_missing.o m_char.o m_pivot.o m_region.o
+m_ts_pivot.o: m_sparsity_handling.o m_ts_debug.o m_ts_electype.o parallel.o
+m_ts_pivot.o: precision.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
 m_ts_rgn2trimat.o: m_ts_electype.o m_ts_method.o m_ts_tri_common.o parallel.o

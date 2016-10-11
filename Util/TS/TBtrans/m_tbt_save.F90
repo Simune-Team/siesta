@@ -22,7 +22,7 @@ module m_tbt_save
   logical, save :: save_parallel = .false.
   
   ! Optional directory
-  character(len=100), save :: save_dir = ' '
+  character(len=128), save :: save_dir = ' '
   public :: save_dir
 
   public :: init_save_options, print_save_options
@@ -318,7 +318,7 @@ contains
 
   subroutine init_cdf_save(fname,TSHS,r,ispin,N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE, &
-       a_Dev, a_Buf, sp_dev, &
+       a_Dev, a_Buf, sp_dev_sc, &
        save_DATA ) 
 
     use parallel, only : Node
@@ -357,7 +357,7 @@ contains
     ! In case the system has some buffer atoms.
     type(tRgn), intent(in) :: a_Buf
     ! The device sparsity pattern
-    type(Sparsity), intent(inout) :: sp_dev
+    type(Sparsity), intent(inout) :: sp_dev_sc
     ! Options read from tbt_options
     type(dict), intent(inout) :: save_DATA
 
@@ -419,6 +419,7 @@ contains
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
             ('pivot'.kvp. r%r )
        dic = dic // ('xa'.kvp. TSHS%xa) // ('a_dev'.kvp.a_Dev%r )
+       dic = dic // ('nsc'.kvp. TSHS%nsc)
        if ( a_Buf%n > 0 )then
           dic = dic // ('a_buf'.kvp.a_Buf%r )
        end if
@@ -499,8 +500,9 @@ contains
     call ncdf_def_dim(ncdf,'one',1)
     call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
-    !call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
-    call ncdf_def_dim(ncdf,'ne',NE) ! Parallel does not work
+    !call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED) ! Parallel does not work
+    call ncdf_def_dim(ncdf,'ne',NE)
+    call ncdf_def_dim(ncdf,'n_s',product(TSHS%nsc))
 
     ! Create eigenvalue dimension, if needed
     if ( N_eigen > 0 ) then
@@ -555,7 +557,14 @@ contains
          atts = dic , chunks = (/3, TSHS%na_u/) )
     call delete(dic)
 
-    dic = ('info'.kv.'Device region orbital pivot table')
+    dic = ('info'.kv.'Supercell offsets')
+    call ncdf_def_var(ncdf,'isc_off',NF90_INT,(/'xyz', 'n_s'/), &
+         atts = dic)
+    dic = ('info'.kv.'Number of supercells in each direction')
+    call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
+         atts = dic)
+
+    dic = dic // ('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
 
@@ -596,6 +605,8 @@ contains
          atts = dic, chunks = (/1/) )
     call delete(dic)
 
+    call ncdf_put_var(ncdf,'nsc',TSHS%nsc)
+    call ncdf_put_var(ncdf,'isc_off',TSHS%isc_off)
     call ncdf_put_var(ncdf,'pivot',r%r)
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
@@ -624,14 +635,14 @@ contains
        
        ! In case we need to save the device sparsity pattern
        ! Create dimensions
-       nnzs_dev = nnzs(sp_dev)
+       nnzs_dev = nnzs(sp_dev_sc)
        call ncdf_def_dim(ncdf,'nnzs',nnzs_dev)
 
        call delete(dic)
 
        dic = ('info'.kv.'Number of non-zero elements per row')
        call ncdf_def_var(ncdf,'n_col',NF90_INT,(/'no_u'/), &
-            compress_lvl=cmp_lvl,atts=dic)
+            atts=dic)
 
        dic = dic//('info'.kv. &
             'Supercell column indices in the sparse format ')
@@ -644,7 +655,7 @@ contains
        call newDistribution(TSHS%no_u,-1           ,fdit,name='TBT-fake dist')
 #endif
 
-       call cdf_w_Sp(ncdf,fdit,sp_dev)
+       call cdf_w_Sp(ncdf,fdit,sp_dev_sc)
        call delete(fdit)
        call delete(dic)
 
@@ -2006,7 +2017,7 @@ contains
     integer, intent(in) :: N_eigen
     type(dict), intent(in) :: save_DATA
 
-    character(len=100) :: ascii_file, tmp
+    character(len=128) :: ascii_file, tmp
     integer :: iu, cu
 
     integer :: iEl, jEl
@@ -2153,7 +2164,7 @@ contains
     type(Elec), intent(in) :: Elecs(N_Elec)
     type(dict), intent(in) :: save_DATA
 
-    character(len=100) :: ascii_file, tmp
+    character(len=128) :: ascii_file, tmp
     integer :: iu, cu
 
     integer :: iEl

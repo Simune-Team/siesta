@@ -14,6 +14,7 @@
 
 module m_tbt_regions
 
+  use precision, only: dp
   use m_region
   use class_OrbitalDistribution
   use class_Sparsity
@@ -31,8 +32,8 @@ module m_tbt_regions
   ! matrices. In principle this could be made obsolete.
   type(Sparsity), public :: sp_uc ! TBT-GLOBAL (UC)
 
-  ! The UC sparsity pattern in the device region
-  type(Sparsity), public :: sp_dev
+  ! The SC sparsity pattern in the device region
+  type(Sparsity), public :: sp_dev_sc
 
   ! the different regions that becomes the electrodes
   type(tRgn), allocatable, target, public :: r_aEl_alone(:), r_oEl_alone(:)
@@ -646,13 +647,14 @@ contains
   end subroutine tbt_init_regions
 
 
-  subroutine tbt_region_options( save_DATA )
+  subroutine tbt_region_options( sp, save_DATA )
     use dictionary
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif
-    use m_sparsity_handling, only : Sp_retain_rgn
+    use m_sparsity_handling, only : Sp_retain_region, Sp_sort
 
+    type(Sparsity), intent(inout) :: sp
     type(dict), intent(in) :: save_DATA
 #ifdef NCDF_4
     type(OrbitalDistribution) :: fdit
@@ -662,19 +664,20 @@ contains
 
     ! Make sure to initialize the device region
     ! sparsity pattern
-    call delete(sp_dev)
+    call delete(sp_dev_sc)
 #ifdef NCDF_4
     if ( ('orb-current' .in. save_DATA) .or. &
          ('proj-orb-current' .in. save_DATA) ) then
 
-       call attach(sp_uc,nrows_g=no_u)
+       call attach(sp,nrows_g=no_u)
 #ifdef MPI
        call newDistribution(no_u,MPI_Comm_Self,fdit,name='TBT-fake dist')
 #else
        call newDistribution(no_u,-1           ,fdit,name='TBT-fake dist')
 #endif
 
-       call Sp_retain_rgn(fdit,sp_uc,r_oDev,sp_dev)
+       call Sp_retain_region(fdit,sp,r_oDev,sp_dev_sc)
+       call Sp_sort(sp)
        call delete(fdit)
 
     end if

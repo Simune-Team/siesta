@@ -280,8 +280,6 @@ subroutine tbt_init()
        TSHS%dit,tmp_sp,TSHS%na_u,TSHS%xa,TSHS%lasto, &
        TSHS%nsc,TSHS%isc_off)
 
-  call tbt_region_options( save_DATA )
-
   if ( Node == 0 ) then
      write(*,'(/,a,/)')'tbtrans: Reducing sparsity pattern...'
   end if
@@ -295,6 +293,9 @@ subroutine tbt_init()
   call delete(tmp_2D)
   TSHS%sp = tmp_sp
   call delete(tmp_sp)
+
+  ! Create the device region sparsity pattern
+  call tbt_region_options( TSHS%sp, save_DATA )
 
   call tbt_print_regions(N_Elec, Elecs)
 
