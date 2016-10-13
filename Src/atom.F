@@ -4460,8 +4460,8 @@ C
 C Generate PAO orbitals with increasing number of nodes
 C for the different shells
 C 
-                nnodes=izeta+nsm
-                nprin=l+izeta+nsm
+                nnodes=izeta+nsm-1
+                nprin=l+izeta+nsm-1
                 eorb=0.0d0 
                 call schro_eq(Zval,rofi,vps(1,l),vePAO,s,drdi,
      .                        nrc,l,a,b,nnodes,nprin,eorb,g)  
