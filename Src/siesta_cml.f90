@@ -7,34 +7,36 @@
 !
 Module siesta_cml
 
+  !
+  ! Now using the CML module in xmlf90
+  !
   Use flib_wcml, only: cmlStartModule, cmlEndModule
+  Use flib_wcml, only: cmlNamespaceAttribute
   Use flib_wcml, only: cmlStartStep, cmlEndStep
   Use flib_wcml, only: cmlStartPropertyList, cmlEndPropertyList
   Use flib_wcml, only: cmlStartParameterList, cmlEndParameterList
   Use flib_wcml, only: cmlAddProperty, cmlAddLattice, cmlAddKPoint
   Use flib_wcml, only: cmlAddMolecule, cmlAddParameter, cmlAddCrystal
-!  Use FoX_common, only: str_fox => str
-  Use flib_wxml, only: xmlf_t      ! help pgf95...
-  Use flib_wcml, only: cmlBeginFile, cmlAddNamespace, cmlStartCml
+
+  Use flib_wxml, only: xmlf_t  
+  Use flib_wcml, only: cmlBeginFile, cmlStartCml
   Use flib_wcml, only: cmlStartMetadataList, cmlAddMetadata
   Use flib_wcml, only: cmlEndMetadataList, cmlEndCml, cmlFinishFile
-!  Use FoX_common, only: FoX_set_fatal_warnings, FoX_set_fatal_errors
 
   Implicit None
   Logical, public      :: cml_p = .False.
   Type(xmlf_t), public, save :: mainXML
 
-!  Public :: str_fox
   public :: cmlStartModule, cmlEndModule
   public :: cmlStartStep, cmlEndStep
+  public :: cmlNamespaceAttribute
   public :: cmlStartPropertyList, cmlEndPropertyList
   public :: cmlStartParameterList, cmlEndParameterList
   public :: cmlAddProperty, cmlAddLattice, cmlAddKPoint
   public :: cmlAddMolecule, cmlAddParameter, cmlAddCrystal
-  public :: cmlBeginFile, cmlAddNamespace, cmlStartCml
+  public :: cmlBeginFile, cmlStartCml
   public :: cmlStartMetadataList, cmlAddMetadata
   public :: cmlEndMetadataList, cmlEndCml, cmlFinishFile
-!  public :: FoX_set_fatal_warnings, FoX_set_fatal_errors
 
   private
   

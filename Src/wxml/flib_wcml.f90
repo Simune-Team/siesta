@@ -136,7 +136,7 @@ module flib_wcml
 
   public :: cmlBeginFile, cmlFinishFile
   public :: cmlStartCML, cmlEndCML
-  public :: cmlAddNamespace
+  public :: cmlNamespaceAttribute
   
 CONTAINS
 
@@ -158,14 +158,14 @@ CONTAINS
 
     end subroutine cmlFinishFile
     
-    subroutine cmlAddNamespace(xf, prefix, URI)
+    subroutine cmlNamespaceAttribute(xf, prefix, URI)
       type(xmlf_t), intent(inout) :: xf
       character(len=*), intent(in) :: prefix
       character(len=*), intent(in) :: URI
 
       call xml_AddAttribute(xf,prefix,URI)
 
-    end subroutine cmlAddNamespace
+    end subroutine cmlNamespaceAttribute
     
     subroutine cmlStartCml(xf, id, title, convention, dictref, fileId, version)
       type(xmlf_t), intent(inout) :: xf
@@ -1884,7 +1884,7 @@ CONTAINS
     if (present(name))    call xml_AddAttribute(xf, 'name', name)
     if (present(role))    call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    call stmAddScalar(xf,value,dataType="fxp:real",fmt=fmt,units=units)
+    call stmAddScalar(xf,value,dataType="xsd:float",fmt=fmt,units=units)
 !!$    if (present(units)) then
 !!$       call xml_NewElement(xf, 'scalar')
 !!$       call xml_AddAttribute(xf, 'units', units)
@@ -1936,7 +1936,7 @@ CONTAINS
     if (present(name))    call xml_AddAttribute(xf, 'name', name)
     if (present(role))    call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    call stmAddScalar(xf,value,dataType="fxp:real",fmt=fmt,units=units)
+    call stmAddScalar(xf,value,dataType="xsd:double",fmt=fmt,units=units)
 !!$    if (present(units)) then
 !!$       call xml_NewElement(xf, 'scalar')
 !!$       call xml_AddAttribute(xf, 'units', units)
