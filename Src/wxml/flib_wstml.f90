@@ -125,7 +125,7 @@ CONTAINS
     if (present(min))        call xml_AddAttribute(xf, 'min', min)
     if (present(max))        call xml_AddAttribute(xf, 'max', max)
     if (present(units))      call xml_AddAttribute(xf, 'units', units)
-    call xml_AddPcdata(xf, value)
+    call xml_AddPcdata(xf, value, line_feed=.false.)
     call xml_EndElement(xf, 'scalar')
 
   END SUBROUTINE stmAddString
@@ -204,16 +204,11 @@ CONTAINS
     character(len=*), intent(in), optional :: min
     character(len=*), intent(in), optional :: max
     character(len=*), intent(in), optional :: units        ! units
-    character(len=*), intent(in), optional :: fmt          ! the format (default 'f10.4')
+    character(len=*), intent(in), optional :: fmt          ! the format 
 
-!    if (present(fmt)) then
+
        call stmAddString(xf, str(value,fmt), id, title, dictref, dataType, &
          convention, errorValue, errorBasis, min, max, units)
-!    else
-!       call stmAddString(xf, trim(str(value,'(f10.4)')), id, title, dictref, dataType, &
-!         convention, errorValue, errorBasis, min, max, units)
-!    endif
-
 
   END SUBROUTINE stmAddFloatDP
 
@@ -237,15 +232,10 @@ CONTAINS
     character(len=*), intent(in), optional :: errorBasis
     character(len=*), intent(in), optional :: min
     character(len=*), intent(in), optional :: max
-    character(len=*), intent(in), optional :: fmt          ! the format (default 'f10.4')
-
-    if (present(fmt)) then
+    character(len=*), intent(in), optional :: fmt
+    
        call stmAddString(xf, str(value,fmt), id, title, dictref, dataType, &
          convention, errorValue, errorBasis, min, max, units)
-    else
-       call stmAddString(xf, trim(str(value,'(f10.4)')), id, title, dictref, dataType, &
-         convention, errorValue, errorBasis, min, max, units)
-    endif
 
   END SUBROUTINE stmAddFloatSP
 
@@ -383,11 +373,6 @@ CONTAINS
 
     call xml_AddArray(xf,array(1:nvalue))
 
-!!    call xml_AddPcdata(xf, array(1))
-!!    do i = 2, nvalue
-!!       call xml_AddPcdata(xf, array(i), space=.true.)
-!!    enddo
-    
     call xml_EndElement(xf, 'array')
     
   END SUBROUTINE stmAddIntegerArray
@@ -410,15 +395,6 @@ CONTAINS
     character(len=*), intent(in), optional :: ref           ! 
     character(len=*), intent(in), optional :: fmt           ! the output format
 
-    ! Internal Variable
-    character(len=200) :: formt
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
-
     ! splits data into lines whenever it overflows workspace/linelength
     ! Flush on entry and exit
 
@@ -430,7 +406,7 @@ CONTAINS
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     call xml_AddAttribute(xf, 'size', nvalue)
     call xml_AddAttribute(xf, 'dataType', 'xsd:double')
-    !    call STMARCF9DP(xf, nvalue, array, formt)
+
     call xml_AddArray(xf,array(1:nvalue),fmt)
     call xml_EndElement(xf, 'array')
 
@@ -453,14 +429,6 @@ CONTAINS
     character(len=*), intent(in), optional :: fmt           ! the output format
     character(len=*), intent(in), optional :: ref           ! the output format
 
-    ! Internal Variable
-    character(len=200) :: formt
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
 
     ! splits data into lines whenever it overflows workspace/linelength
     ! Flush on entry and exit
@@ -473,7 +441,7 @@ CONTAINS
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     call xml_AddAttribute(xf, 'size', nvalue)
     call xml_AddAttribute(xf, 'dataType', 'xsd:float')
-!    call STMARCF9SP(xf, nvalue, array, formt)
+
     call xml_AddArray(xf,array(1:nvalue),fmt)
     call xml_EndElement(xf, 'array')
 
@@ -552,9 +520,6 @@ CONTAINS
 
     do i = 1, ncols
        call xml_AddArray(xf,matrix(1:nrows,i))
-!       do j = 1, nrows
-!          call xml_AddPcdata(xf, matrix(j, i), space=.true.)
-!       enddo
     enddo
     call xml_EndElement(xf, 'matrix')
 
@@ -615,15 +580,7 @@ CONTAINS
     character(len=*), intent(in), optional :: units                ! scienitific units (default ' ')
     character(len=*), intent(in), optional :: fmt                  ! format
 
-    ! internal variable
-    character(len=200) :: formt
     integer ::  i, j
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
 
     ! splits data into lines wherever it overflows the workspace
     ! Flush on entry and exit      
@@ -639,9 +596,6 @@ CONTAINS
     !-------------
     do i = 1, nrows
        call xml_AddArray(xf,matrix(1:nrows,i),fmt)
-!       do j = 1, ncols
-!          call xml_AddPcdata(xf, matrix(j, i), formt, space=.true.)
-!       enddo
     enddo
     call xml_EndElement(xf, 'matrix')
 
@@ -665,14 +619,7 @@ CONTAINS
     character(len=*), intent(in), optional :: fmt                 ! format
 
     ! internal variable
-    character(len=200) :: formt
     integer ::  i, j
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
 
     ! splits data into lines wherever it overflows the workspace
     ! Flush on entry and exit      
@@ -687,9 +634,6 @@ CONTAINS
     call xml_AddAttribute(xf, 'dataType', 'xsd:float')
     do i = 1, nrows
        call xml_AddArray(xf,matrix(1:nrows,i),fmt)
-!       do j = 1, ncols
-!          call xml_AddPcdata(xf, matrix(j, i), formt, space=.true.)
-!       enddo
     enddo
     call xml_EndElement(xf, 'matrix')
 

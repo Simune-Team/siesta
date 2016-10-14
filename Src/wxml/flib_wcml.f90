@@ -1833,14 +1833,9 @@ CONTAINS
     if (present(name))    call xml_AddAttribute(xf, 'name', name)
     if (present(role))    call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
+
     call stmAddScalar(xf,value,dataType="xsd:string",units=units)
-!       call xml_NewElement(xf, 'scalar')
-!       if (present(units)) call xml_AddAttribute(xf, 'units', units)
-!       call xml_AddPcdata(xf, value)
-!       call xml_EndElement(xf, 'scalar')
-!    else
-!       call xml_AddAttribute(xf, 'value', value)
-!    endif
+
     call xml_EndElement(xf, 'parameter')
 
   END SUBROUTINE CMLADDPARAMETERCH
@@ -1867,14 +1862,6 @@ CONTAINS
     character(len=*), optional :: fmt
     character(len=*), intent(in), optional :: dictref
 
-    character(len=10) :: formt
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
-
     call xml_NewElement(xf, 'parameter')
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
@@ -1884,15 +1871,9 @@ CONTAINS
     if (present(name))    call xml_AddAttribute(xf, 'name', name)
     if (present(role))    call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
+
     call stmAddScalar(xf,value,dataType="xsd:float",fmt=fmt,units=units)
-!!$    if (present(units)) then
-!!$       call xml_NewElement(xf, 'scalar')
-!!$       call xml_AddAttribute(xf, 'units', units)
-!!$       call xml_AddPcdata(xf, value, formt)
-!!$       call xml_EndElement(xf, 'scalar')
-!!$    else
-!!$       call xml_AddAttribute(xf, 'value', value, formt)
-!!$    endif
+
     call xml_EndElement(xf, 'parameter')
 
   END SUBROUTINE CMLADDPARAMETERSP
@@ -1919,14 +1900,6 @@ CONTAINS
     character(len=*), intent(in), optional :: dictref
     character(len=*), optional :: fmt    
 
-    character(len=10) :: formt
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
-
     call xml_NewElement(xf, 'parameter')
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
@@ -1936,15 +1909,9 @@ CONTAINS
     if (present(name))    call xml_AddAttribute(xf, 'name', name)
     if (present(role))    call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
+
     call stmAddScalar(xf,value,dataType="xsd:double",fmt=fmt,units=units)
-!!$    if (present(units)) then
-!!$       call xml_NewElement(xf, 'scalar')
-!!$       call xml_AddAttribute(xf, 'units', units)
-!!$       call xml_AddPcdata(xf, value, formt)
-!!$       call xml_EndElement(xf, 'scalar')
-!!$    else
-!!$       call xml_AddAttribute(xf, 'value', value, formt)
-!!$    endif
+
     call xml_EndElement(xf, 'parameter')
 
   END SUBROUTINE CMLADDPARAMETERDP
@@ -1979,15 +1946,9 @@ CONTAINS
     if (present(name))  call xml_AddAttribute(xf, 'name', name)
     if (present(role))  call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
+
     call stmAddScalar(xf,value,dataType="xsd:integer",units=units)
-!!$    if (present(units)) then
-!!$       call xml_NewElement(xf, 'scalar')
-!!$       call xml_AddAttribute(xf, 'units', units)
-!!$       call xml_AddPcdata(xf, value)
-!!$       call xml_EndElement(xf, 'scalar')
-!!$    else
-!!$       call xml_AddAttribute(xf, 'value', value)
-!!$    endif
+
     call xml_EndElement(xf, 'parameter')
 
   END SUBROUTINE CMLADDPARAMETERI
@@ -2017,20 +1978,12 @@ CONTAINS
     if (present(name))    call xml_AddAttribute(xf, 'name', name)
     if (present(role))    call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
+
     call stmAddScalar(xf,value,dataType="xsd:boolean",units=units)
-!!$    if (present(units)) then
-!!$       call xml_NewElement(xf, 'scalar')
-!!$       call xml_AddAttribute(xf, 'units', units)
-!!$       call xml_AddPcdata(xf, value)
-!!$       call xml_EndElement(xf, 'scalar')
-!!$    else
-!!$       call xml_AddAttribute(xf, 'value', value)
-!!$    endif
+
     call xml_EndElement(xf, 'parameter')
 
   END SUBROUTINE CMLADDPARAMETERLG
-
-
 
 
 ! =================================================
