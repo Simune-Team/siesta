@@ -70,8 +70,17 @@ CONTAINS
       character(len=*), intent(in), optional  :: format
       character(len=100)    :: s
 
+      character(len=50) :: fmt_local
+      
       if (present(format)) then
-         write(s,format) x
+         ! Catch FoX's optional "rX" descriptor
+         ! which encodes a number of digits after the decimal point
+         if ((format(1:1)=="r") .or. (format(1:1)=="R")) then
+            write(fmt_local,"(a)") "(f99." // trim(format(2:)) // ")"
+         else
+            fmt_local = format
+         endif
+         write(s,fmt_local) x
       else
          write(s,"(g22.12)") x
       endif

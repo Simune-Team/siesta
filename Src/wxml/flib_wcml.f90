@@ -2,7 +2,7 @@ module flib_wcml
 
   use flib_wxml, only: xmlf_t, str, xml_OpenFile, xml_Close
   use flib_wxml, only: xml_NewElement, xml_AddPcData, xml_AddAttribute
-  use flib_wxml, only: xml_EndElement
+  use flib_wxml, only: xml_EndElement, xml_AddArray
   use flib_wstml, only: stmAddScalar
   use flib_wstml, only: stmAddMatrix
   use flib_wstml, only: stmAddArray
@@ -993,7 +993,7 @@ CONTAINS
     if (present(fmt)) then
        formt = fmt
     else
-       formt = '(f8.3)'
+       formt = '(f14.8)'
     endif
     if (present(style)) then
        stylei = style
@@ -1588,9 +1588,10 @@ CONTAINS
        call xml_NewElement(xf, 'latticeVector')
        if (present(units)) call xml_AddAttribute(xf, 'units', units)
        call xml_AddAttribute(xf, 'dictRef', 'cml:latticeVector')
-       call xml_AddPcdata(xf, cell(1,i), formt)
-       call xml_AddPcdata(xf, cell(2,i), formt, space=.true.)
-       call xml_AddPcdata(xf, cell(3,i), formt, space=.true.)
+       call xml_AddArray(xf,cell(1:,i),fmt)
+!       call xml_AddPcdata(xf, cell(1,i), formt)
+!       call xml_AddPcdata(xf, cell(2,i), formt, space=.true.)
+!       call xml_AddPcdata(xf, cell(3,i), formt, space=.true.)
        call xml_EndElement(xf, 'latticeVector')
     enddo
     call xml_EndElement(xf, 'lattice')
@@ -1643,12 +1644,12 @@ CONTAINS
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictRef)
     if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
-    call stmAddScalar(xf=xf, value=a, title='a', dictref='cml:a', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=b, title='b', dictref='cml:b', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=c, title='c', dictref='cml:c', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=alpha, title='alpha', dictref='cml:alpha', units=aunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=beta,  title='beta',  dictref='cml:beta',  units=aunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=gamma, title='gamma', dictref='cml:gamma', units=aunits, fmt=formt)
+    call stmAddScalar(xf=xf, value=a, title='a', dictref='cml:a', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=b, title='b', dictref='cml:b', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=c, title='c', dictref='cml:c', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=alpha, title='alpha', dictref='cml:alpha', units=aunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=beta,  title='beta',  dictref='cml:beta',  units=aunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=gamma, title='gamma', dictref='cml:gamma', units=aunits, fmt=fmt)
     if (present(spaceType)) then
       call xml_NewElement(xf, 'symmetry')
       call xml_AddAttribute(xf, 'spaceGroup', spaceType)
@@ -1703,12 +1704,12 @@ CONTAINS
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictRef)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
-    call stmAddScalar(xf=xf, value=a, title='a', dictref='cml:a', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=b, title='b', dictref='cml:b', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=c, title='c', dictref='cml:c', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=alpha, title='alpha', dictref='cml:alpha', units=aunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=beta,  title='beta',  dictref='cml:beta', units=aunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=gamma, title='gamma', dictref='cml:gamma', units=aunits, fmt=formt)
+    call stmAddScalar(xf=xf, value=a, title='a', dictref='cml:a', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=b, title='b', dictref='cml:b', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=c, title='c', dictref='cml:c', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=alpha, title='alpha', dictref='cml:alpha', units=aunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=beta,  title='beta',  dictref='cml:beta', units=aunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=gamma, title='gamma', dictref='cml:gamma', units=aunits, fmt=fmt)
     if (present(spaceType)) then
       call xml_NewElement(xf, 'symmetry')
       call xml_AddAttribute(xf, 'spaceGroup', spaceType)
@@ -1736,13 +1737,6 @@ CONTAINS
     character(len=*), intent(in), optional :: title          ! title
     character(len=*), intent(in), optional :: dictref        ! dictionary reference
     character(len=*), intent(in), optional :: fmt            ! format
-    character(len=10):: formt
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
 
     ! Flush on entry and exit
     call xml_NewElement(xf, 'eigen')
@@ -1773,13 +1767,7 @@ CONTAINS
     character(len=*), intent(in), optional :: title          ! title
     character(len=*), intent(in), optional :: dictref        ! dictionary reference
     character(len=*), intent(in), optional :: fmt            ! format
-    character(len=10):: formt
 
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
 
     ! Flush on entry and exit
     call xml_NewElement(xf, 'eigen')
