@@ -895,7 +895,7 @@
                       Dscf(ind,1) = (qio + spio * costh) / 2
                       Dscf(ind,2) = (qio - spio * costh) / 2
                       Dscf(ind,3) =   spio * sinth * cosph / 2
-                      Dscf(ind,4) = - spio * sinth * sinph / 2
+                      Dscf(ind,4) =   spio * sinth * sinph / 2
                       if ( h_spin_dim == 8 ) then ! spin-orbit coupling
                          Dscf(ind,5) = 0._dp
                          Dscf(ind,6) = 0._dp
@@ -984,21 +984,24 @@
       use m_mpi_utils, only: Globalize_sum
       use sparse_matrices, only: S
 
-      real(dp) :: qspin(2)
+      real(dp) :: qspin(4)
       integer  :: io, j, ispin, ind
 #ifdef MPI
-      real(dp) :: qtmp(2)
+      real(dp) :: qtmp(4)
 #endif
 
       if ( h_spin_dim == 1 ) return
 
 ! Print spin polarization
-      do ispin = 1, min(2, h_spin_dim)
+      do ispin = 1, min(4, h_spin_dim)
          qspin(ispin) = 0.0_dp
          do io = 1,no_l
             do j = 1,numh(io)
                ind = listhptr(io)+j
-               qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
+               jo = listh(ind)
+               if ( io.eq.jo ) then
+                qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
+               endif
             end do
          end do
       end do
@@ -1010,9 +1013,16 @@
 #endif
       if ( .not. IONode ) return
       
+     if ( h_spin_dim .eq. 2 ) then
       write(6,'(/,a,f12.6)')   &
            'initdm: Initial spin polarization (Qup-Qdown) =',  &
            qspin(1) - qspin(2)
+      elseif ( h_spin_dim .gt. 2 ) then
+        write(6,'(/,a,3f12.6)')   &
+           'initdm: Initial spin polarization =',  &
+           qspin(3)*2.0d0, qspin(4)*2.0d0, qspin(1) - qspin(2)
+      endif
+
 
       end subroutine print_initial_spin
     
