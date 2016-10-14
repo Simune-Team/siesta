@@ -3,6 +3,7 @@ module flib_wcml
   use flib_wxml, only: xmlf_t, str, xml_OpenFile, xml_Close
   use flib_wxml, only: xml_NewElement, xml_AddPcData, xml_AddAttribute
   use flib_wxml, only: xml_EndElement, xml_AddArray
+  use flib_wxml, only: xml_AddXMLDeclaration
   use flib_wstml, only: stmAddScalar
   use flib_wstml, only: stmAddMatrix
   use flib_wstml, only: stmAddArray
@@ -146,6 +147,7 @@ CONTAINS
       logical, intent(in), optional :: replace
 
       call xml_OpenFile(filename, xf, indent=.true.)
+      call xml_AddXMLDeclaration(xf,encoding="UTF-8")
 
     end subroutine cmlBeginFile
 
@@ -161,7 +163,7 @@ CONTAINS
       character(len=*), intent(in) :: prefix
       character(len=*), intent(in) :: URI
 
-      ! Do nothing
+      call xml_AddAttribute(xf,prefix,URI)
 
     end subroutine cmlAddNamespace
     
@@ -178,21 +180,15 @@ CONTAINS
       if (present(id)) call xml_AddAttribute(xf, 'id', id)
       if (present(title)) call xml_AddAttribute(xf, 'title', title)
       if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-      if (present(convention)) then
-         call xml_AddAttribute(xf, 'convention', convention)
-      else
-         call xml_AddAttribute(xf, 'convention', 'CMLComp')
-      endif
+
+      call xml_AddAttribute(xf, 'convention', 'CMLComp')
+
       if (present(fileId)) then
          call xml_AddAttribute(xf, 'fileId', fileId)
-      else
-         call xml_AddAttribute(xf, 'fileId', 'NameOfCMLFIle')
       endif
       if (present(version)) then
          call xml_AddAttribute(xf, 'version', version)
       endif
-
-!      call cmlAddMetadata(xf, name='UUID', content=generate_uuid(1))
 
     end subroutine cmlStartCml
     !--------------------------------------------------------------------
@@ -1603,7 +1599,7 @@ CONTAINS
   ! 1. creates and writes a DP <cell> element
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddCrystalDP(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, lenfmt, angfmt, spaceType, fmt)
+  SUBROUTINE cmlAddCrystalDP(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, lenunits, angunits, spaceType, fmt)
     implicit none
     type(xmlf_t), intent(inout) :: xf
     real(kind=dp), intent(in)               :: a, b, c      ! cell parameters
@@ -1614,27 +1610,21 @@ CONTAINS
     character(len=*), intent(in), optional :: title        ! title
     character(len=*), intent(in), optional :: dictref      ! dictref
     character(len=*), intent(in), optional :: conv         ! convention
-    character(len=*), intent(in), optional :: lenfmt     ! units for length (default = angstrom)
-    character(len=*), intent(in), optional :: angfmt     ! units for angles (default = degree)
+    character(len=*), intent(in), optional :: lenunits     ! units for length (default = angstrom)
+    character(len=*), intent(in), optional :: angunits     ! units for angles (default = degree)
     character(len=*), intent(in), optional :: spaceType    ! spacegroup
     character(len=*), intent(in), optional :: fmt          ! format
 
     ! Flush on entry and exit
     character(len=30) ::  lunits, aunits
-    character(len=10) :: formt
 
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
-    if (present(lenfmt)) then
-       lunits = lenfmt
+    if (present(lenunits)) then
+       lunits = lenunits
     else
        lunits = U_ANGSTR
     endif
-    if (present(angfmt)) then
-       aunits = angfmt
+    if (present(angunits)) then
+       aunits = angunits
     else
        aunits = U_DEGREE
     endif
@@ -1663,7 +1653,7 @@ CONTAINS
   ! 2. creates and writes a SP <cell> element
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddCrystalSP(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, lenfmt, angfmt, spaceType, fmt)
+  SUBROUTINE cmlAddCrystalSP(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, lenunits, angunits, spaceType, fmt)
     implicit none
     type(xmlf_t), intent(inout) :: xf
     real(kind=sp), intent(in)     :: a, b, c      ! cell parameters
@@ -1674,8 +1664,8 @@ CONTAINS
     character(len=*), intent(in), optional :: title        ! title
     character(len=*), intent(in), optional :: dictref      ! dictref
     character(len=*), intent(in), optional :: conv         ! convention
-    character(len=*), intent(in), optional :: lenfmt     ! units for length (' ' = angstrom)
-    character(len=*), intent(in), optional :: angfmt     ! units for angles (' ' = degree)
+    character(len=*), intent(in), optional :: lenunits     ! units for length (' ' = angstrom)
+    character(len=*), intent(in), optional :: angunits     ! units for angles (' ' = degree)
     character(len=*), intent(in), optional :: spaceType    ! spacegroup
     character(len=*), intent(in), optional :: fmt          ! format
 
@@ -1688,13 +1678,13 @@ CONTAINS
     else
        formt = '(f8.3)'
     endif
-    if (present(lenfmt)) then
-       lunits = lenfmt
+    if (present(lenunits)) then
+       lunits = lenunits
     else
        lunits = U_ANGSTR
     endif
-    if (present(angfmt)) then
-       aunits = angfmt
+    if (present(angunits)) then
+       aunits = angunits
     else
        aunits = U_DEGREE
     endif

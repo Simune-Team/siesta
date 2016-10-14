@@ -25,6 +25,7 @@ Module siesta_cmlsubs
       Use files, only : slabel, label_length
       Use parallel, only : nodes, ionode
       Use version_info
+      use m_uuid, only: generate_uuid
       Use m_timestamp, only: datestring
 
       Character(len=label_length+4) :: fname
@@ -43,9 +44,20 @@ Module siesta_cmlsubs
       If (cml_p) Then
          Write(fname,'(a)') Trim(slabel)//'.xml'
          Call cmlBeginFile(mainXML, trim(fname), unit=-1)
-         Call cmlAddNamespace(mainXML, 'siesta', 'http://www.uam.es/siesta/namespace')
-         Call cmlAddNamespace(mainXML, 'siestaUnits', 'http://www.uam.es/siesta/namespace/units')
-         Call cmlStartCml(mainXML, convention="CMLComp")
+
+         Call cmlStartCml(mainXML)
+         
+         call cmlAddNamespace(mainXML, 'xmlns', 'http://www.xml-cml.org/schema')
+         Call cmlAddNamespace(mainXML, 'xmlns:siesta', 'http://www.uam.es/siesta/namespace')
+         Call cmlAddNamespace(mainXML, 'xmlns:siestaUnits', 'http://www.uam.es/siesta/namespace/units')
+         call cmlAddNamespace(mainXML, 'xmlns:xsd', 'http://www.w3.org/2001/XMLSchema')
+         call cmlAddNamespace(mainXML, 'xmlns:fpx', 'http://www.uszla.me.uk/fpx')
+         call cmlAddNamespace(mainXML, 'xmlns:dc', 'http://purl.org/dc/elements/1.1/')
+         call cmlAddNamespace(mainXML, 'xmlns:units', 'http://www.uszla.me.uk/FoX/units')
+         call cmlAddNamespace(mainXML, 'xmlns:cmlUnits', 'http://www.xml-cml.org/units/units')
+         call cmlAddNamespace(mainXML, 'xmlns:siUnits', 'http://www.xml-cml.org/units/siUnits')
+         call cmlAddNamespace(mainXML, 'xmlns:atomicUnits', 'http://www.xml-cml.org/units/atomic')
+
          Call cmlStartMetadataList(mainXML)
          Call cmlAddMetadata(mainXML, name='siesta:Program', content='Siesta')
          Call cmlAddMetadata(mainXML, name='siesta:Version', content=version_str)
@@ -53,6 +65,7 @@ Module siesta_cmlsubs
          Call cmlAddMetadata(mainXML, name='siesta:Flags',   content=fflags)
          Call cmlAddMetadata(mainXML, name='siesta:PPFlags',   content=fppflags)
          Call cmlAddMetadata(mainXML, name='siesta:StartTime',content=datestring()) 
+         Call cmlAddMetadata(mainXML, name='siesta:run_UUID',content=generate_uuid(1))
          If (nodes>1) Then
            Call cmlAddMetadata(mainXML, name='siesta:Mode', content='Parallel')
          Else
