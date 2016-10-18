@@ -1,4 +1,13 @@
 ------------------------------------------------------------
+October 18, 2016  Alberto Garcia    trunk-506--psml-82
+Added patch file for oncvpsp-3.2.3
+
+added:
+  Pseudo/ThirdParty-Tools/ONCVPSP/oncvpsp-3.2.3--psml-43.patch
+modified:
+  Pseudo/ThirdParty-Tools/ONCVPSP/README
+  
+------------------------------------------------------------
 July 16, 2016  Alberto Garcia       trunk-506--psml-81
 Add new tests with a no-kinks vlocal
 

@@ -6,7 +6,8 @@ pseudopotentials, in addition to the local potential and
 fully-nonlocal projectors.
 
 Instead of re-distributing a patched version, we make available a
-patch file in this directory, of the form:
+patch file in this directory, of the form (for V. 3.2.2; there is
+also a patch for the newer 3.2.3 version):
 
     oncvpsp-3.2.2--psml-patch-XX
 
