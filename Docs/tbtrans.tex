@@ -803,6 +803,18 @@ $\rho_{\mathrm{bound-states}}=0$.
   
 \end{fdfentry}
 
+\begin{fdflogicalT}{TBT.Symmetry!TimeReversal}
+
+  Whether the Hamiltonian and the calculation should use time-reversal
+  symmetry. 
+  Currently this only affects $\mathbf k$-point sampling calculations
+  by not removing any symmetry $\mathbf k$-points.
+
+  If one has $\mathbf k$-point sampling and wishes to use
+  \fdf{TBT.Current!Orb} this should be \fdffalse.
+  
+\end{fdflogicalT}
+
 
 \subsubsection{Device region} 
 
