@@ -3,7 +3,7 @@ MODULE flib_wstml
   use flib_wxml, only: xmlf_t
   use flib_wxml, only: str, xml_AddArray
   use flib_wxml, only: xml_NewElement, xml_AddPcData, xml_AddAttribute
-  use flib_wxml, only: xml_EndElement
+  use flib_wxml, only: xml_EndElement, xml_AddComment
   use m_wxml_overloads
 
   implicit none
@@ -458,7 +458,7 @@ CONTAINS
     type(xmlf_t),     intent(inout)        :: xf
     integer,          intent(in)           :: nrows         ! the number of rows to be output
     integer,          intent(in)           :: ncols         ! the number of rows to be output
-    character(len=*), intent(in)           :: matrix(ncols,nrows) ! the values to be output
+    character(len=*), intent(in)           :: matrix(nrows,ncols) ! the values to be output
     character(len=*), intent(in), optional :: id            ! the id
     character(len=*), intent(in), optional :: title         ! the title
     character(len=*), intent(in), optional :: dictref       ! the dictionary reference
@@ -467,6 +467,7 @@ CONTAINS
     ! splits data into lines wherever it overflows the workspace
     integer ::  i, j
 
+    call xml_AddComment(xf,"In matrix, row (first) index is fastest")
     call xml_NewElement(xf, 'matrix')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
     if (present(dictref))   call xml_AddAttribute(xf, 'dictRef', dictref)
@@ -497,7 +498,7 @@ CONTAINS
     type(xmlf_t) :: xf
     integer, intent(in)                    :: nrows         ! the number of rows to be output
     integer, intent(in)                    :: ncols         ! the number of rows to be output
-    integer, intent(in)                    :: matrix(ncols,nrows) ! the values to be output
+    integer, intent(in)                    :: matrix(nrows,ncols) ! the values to be output
     character(len=*), intent(in), optional :: id            ! the id
     character(len=*), intent(in), optional :: title         ! the title
     character(len=*), intent(in), optional :: dictref       ! the dictionary reference
@@ -509,6 +510,7 @@ CONTAINS
 
 
 
+    call xml_AddComment(xf,"In matrix, row (first) index is fastest")
     call xml_NewElement(xf, 'matrix')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
     if (present(dictref))   call xml_AddAttribute(xf, 'dictRef', dictref)
@@ -533,7 +535,7 @@ CONTAINS
     type(xmlf_t) :: xf
     integer, intent(in)                    :: nrows         ! the number of rows to be output
     integer, intent(in)                    :: ncols         ! the number of rows to be output
-    logical, intent(in)                    :: matrix(ncols,nrows) ! the values to be output
+    logical, intent(in)                    :: matrix(nrows,ncols) ! the values to be output
     character(len=*), intent(in), optional :: id            ! the id
     character(len=*), intent(in), optional :: title         ! the title
     character(len=*), intent(in), optional :: dictref       ! the dictionary reference
@@ -543,6 +545,7 @@ CONTAINS
     ! Flush on entry and exit
     integer ::  i, j 
 
+    call xml_AddComment(xf,"In matrix, row (first) index is fastest")
     call xml_NewElement(xf, 'matrix')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
     if (present(dictref))   call xml_AddAttribute(xf, 'dictRef', dictref)
@@ -573,7 +576,7 @@ CONTAINS
     type(xmlf_t) :: xf
     integer, intent(in)                    :: ncols                ! the number of cols to be output
     integer, intent(in)                    :: nrows                ! the number of rows to be output
-    real(kind=dp), intent(in)               :: matrix(ncols,nrows)  ! the values to be output
+    real(kind=dp), intent(in)               :: matrix(nrows,ncols)  ! the values to be output
     character(len=*), intent(in), optional :: id                   ! the id
     character(len=*), intent(in), optional :: title                ! the title
     character(len=*), intent(in), optional :: dictref              ! the dictionary reference
@@ -585,6 +588,7 @@ CONTAINS
     ! splits data into lines wherever it overflows the workspace
     ! Flush on entry and exit      
     !-------------
+    call xml_AddComment(xf,"In matrix, row (first) index is fastest")
     call xml_NewElement(xf, 'matrix')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
@@ -594,7 +598,7 @@ CONTAINS
     call xml_AddAttribute(xf, 'rows', nrows)
     call xml_AddAttribute(xf, 'dataType', 'xsd:double')
     !-------------
-    do i = 1, nrows
+    do i = 1, ncols
        call xml_AddArray(xf,matrix(1:nrows,i),fmt)
     enddo
     call xml_EndElement(xf, 'matrix')
@@ -611,7 +615,7 @@ CONTAINS
     type(xmlf_t) :: xf
     integer, intent(in)                    :: ncols               ! the number of cols to be output
     integer, intent(in)                    :: nrows               ! the number of rows to be output
-    real(kind=sp), intent(in)               :: matrix(ncols,nrows) ! the values to be output
+    real(kind=sp), intent(in)              :: matrix(nrows,ncols) ! the values to be output
     character(len=*), intent(in), optional :: id                  ! the id
     character(len=*), intent(in), optional :: title               ! the title
     character(len=*), intent(in), optional :: dictref             ! the dictionary reference
@@ -624,6 +628,7 @@ CONTAINS
     ! splits data into lines wherever it overflows the workspace
     ! Flush on entry and exit      
     !
+    call xml_AddComment(xf,"In matrix, row (first) index is fastest")
     call xml_NewElement(xf, 'matrix')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
@@ -632,7 +637,7 @@ CONTAINS
     call xml_AddAttribute(xf, 'columns', ncols)
     call xml_AddAttribute(xf, 'rows', nrows)
     call xml_AddAttribute(xf, 'dataType', 'xsd:float')
-    do i = 1, nrows
+    do i = 1, ncols
        call xml_AddArray(xf,matrix(1:nrows,i),fmt)
     enddo
     call xml_EndElement(xf, 'matrix')

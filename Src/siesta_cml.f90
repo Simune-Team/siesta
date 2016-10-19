@@ -11,7 +11,7 @@ Module siesta_cml
   ! Now using the CML module in xmlf90
   !
   Use flib_wcml, only: cmlStartModule, cmlEndModule
-  Use flib_wcml, only: cmlNamespaceAttribute
+  Use flib_wcml, only: cmlNamespaceAttribute, cmlAddComment
   Use flib_wcml, only: cmlStartStep, cmlEndStep
   Use flib_wcml, only: cmlStartPropertyList, cmlEndPropertyList
   Use flib_wcml, only: cmlStartParameterList, cmlEndParameterList
@@ -29,7 +29,7 @@ Module siesta_cml
 
   public :: cmlStartModule, cmlEndModule
   public :: cmlStartStep, cmlEndStep
-  public :: cmlNamespaceAttribute
+  public :: cmlNamespaceAttribute, cmlAddComment
   public :: cmlStartPropertyList, cmlEndPropertyList
   public :: cmlStartParameterList, cmlEndParameterList
   public :: cmlAddProperty, cmlAddLattice, cmlAddKPoint

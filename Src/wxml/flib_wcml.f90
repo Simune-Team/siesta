@@ -3,7 +3,7 @@ module flib_wcml
   use flib_wxml, only: xmlf_t, str, xml_OpenFile, xml_Close
   use flib_wxml, only: xml_NewElement, xml_AddPcData, xml_AddAttribute
   use flib_wxml, only: xml_EndElement, xml_AddArray
-  use flib_wxml, only: xml_AddXMLDeclaration
+  use flib_wxml, only: xml_AddXMLDeclaration, xml_AddComment
   use flib_wstml, only: stmAddScalar
   use flib_wstml, only: stmAddMatrix
   use flib_wstml, only: stmAddArray
@@ -136,9 +136,16 @@ module flib_wcml
 
   public :: cmlBeginFile, cmlFinishFile
   public :: cmlStartCML, cmlEndCML
-  public :: cmlNamespaceAttribute
+  public :: cmlNamespaceAttribute, cmlAddComment
   
 CONTAINS
+
+    subroutine cmlAddComment(xf, comment)
+      type(xmlf_t), intent(inout) :: xf
+      character(len=*) :: comment
+
+      call xml_AddComment(xf,comment)
+    end subroutine cmlAddComment
 
     subroutine cmlBeginFile(xf, filename, unit, replace)
       type(xmlf_t), intent(out) :: xf
@@ -159,6 +166,7 @@ CONTAINS
     end subroutine cmlFinishFile
     
     subroutine cmlNamespaceAttribute(xf, prefix, URI)
+      ! A fake namespace declaration
       type(xmlf_t), intent(inout) :: xf
       character(len=*), intent(in) :: prefix
       character(len=*), intent(in) :: URI
@@ -500,8 +508,8 @@ CONTAINS
     
     integer :: nrows, ncols
 
-    ncols=size(value, 1)
-    nrows=size(value, 2)
+    ncols=size(value, 2)
+    nrows=size(value, 1)
 
     call xml_NewElement(xf, 'property')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
@@ -557,8 +565,8 @@ CONTAINS
 
     integer :: nrows, ncols
 
-    ncols=size(property, 1)
-    nrows=size(property, 2)
+    ncols=size(property, 2)
+    nrows=size(property, 1)
 
     call xml_NewElement(xf, 'property')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
@@ -861,8 +869,8 @@ CONTAINS
 
     integer :: nrows, ncols
 
-    ncols=size(value, 1)
-    nrows=size(value, 2)
+    ncols=size(value, 2)
+    nrows=size(value, 1)
 
     call xml_NewElement(xf, 'property')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)

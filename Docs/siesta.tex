@@ -11791,34 +11791,6 @@ Determine if the main XML file should be created for this run.
 
 \textit{Default value:} \texttt{true}
 
-\item[\textbf{XML.AbortOnErrors}] (\textit{logical}): 
-\index{XML.AbortOnErrors@\textbf{XML.AbortOnErrors}} 
-This controls the behaviour of the XML output library when it detects 
-internal errors or erroneous use of the API and is intended to aid debugging.
-When this option is false, the library will emit a diagnostic message to 
-standard error before stopping execution with a Fortran stop statement.
-When this option is true, the message is generated but execution will be 
-terminated by generating a runtime exception leading to an abort signal. 
-Depending on the execution environment and compiler options, this can lead 
-to the generation of a core file or stack trace. 
-
-\textit{Default value:} \texttt{false}
-
-\item[\textbf{XML.AbortOnWarnings}] (\textit{logical}): 
-\index{XML.AbortOnWarnings@\textbf{XML.AbortOnWarnings}} 
-This controls the behaviour of the XML output library when it detects 
-minor errors and is intended to aid debugging.  When this option is false,
-the library will emit a diagnostic message to standard error before 
-continuing execution. When this option is true, the message is generated 
-but execution will also be terminated by generating a runtime exception 
-leading to an abort signal. Depending on the execution environment and 
-compiler options, this can lead to the generation of a core file or 
-stack trace.
-
-\textit{Default value:} \texttt{false}
-
-\end{description}
-
 \subsection{Converting XML to XHTML}
 
 The translation of the \siesta\ XML output to a HTML-based webpage is
