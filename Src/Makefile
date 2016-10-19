@@ -521,10 +521,10 @@ check-ts:
 	@touch .transiesta
 
 transiesta: check-ts what version \
-            $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
+            $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(MS) $(XC) \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(MS) $(XC) \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
                $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 
