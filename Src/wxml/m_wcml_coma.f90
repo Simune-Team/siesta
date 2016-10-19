@@ -67,9 +67,9 @@ Contains
     if (present(kptfmt)) then
        write(aux_str,fmt=kptfmt) coords
     else
-       write(aux_str,fmt="(3f12.6)") coords
+       write(aux_str,fmt="(3f12.8)") coords
     endif
-    call xml_AddAttribute(xf, "coords", aux_str)
+    call xml_AddAttribute(xf, "coords", trim(aux_str))
 
        
     if (present(weight)) then
@@ -79,7 +79,7 @@ Contains
           write(aux_str,fmt="(f12.8)") weight
        endif
        
-       call xml_AddAttribute(xf, "weight", aux_str)
+       call xml_AddAttribute(xf, "weight", trim(aux_str))
     endif
     
   end subroutine cmlStartKPoint
