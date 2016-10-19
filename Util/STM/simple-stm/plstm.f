@@ -92,16 +92,14 @@ c maxp   : Maximun number of points
 
 c Internal variables
        character
-     .   name*75, fform*12, fname*80, paste*80, oname*80, task*15,
+     .   name*75, fform*12, fname*80, oname*80, task*15,
      .   mode*25
        integer
-     .   i, ip, is, j, mesh(3), np, nspin, nt, Ind, iz, iy, lb, length
+     .   i, ip, is, j, mesh(3), np, nspin, nt, Ind, iz, iy
        real
      .   f(maxp,2), fvalue, rho
        double precision
      .   cell(3,3)
-       external
-     .   paste, lb
 
 c Read plot data
        read(5,*) name
@@ -113,9 +111,9 @@ c Read plot data
 c Read density
 
        if (task .eq. 'ldos') then
-         fname = paste( name, '.LDOS' )
+         fname = trim(name)//'.LDOS'
        else if (task .eq. 'rho') then
-         fname = paste( name, '.RHO' )
+         fname = trim(name)//'.RHO'
        else
          stop ' ERROR: Task should be RHO or LDOS'
        endif
@@ -126,12 +124,12 @@ c Read density
          write(6,*) 'Calculating STM image in Constant Current mode'
          write(6,*) 'The STM image is obtained as the isosurface of'
          write(6,*) 'constant charge density RHO =', fvalue,' e/Bohr**3'
-         oname = paste( name, '.CC.STM' )
+         oname = trim(name)//'.CC.STM'
        else if (mode .eq. 'constant-height') then 
          write(6,*) 'Calculating STM image in Constant Height mode'
          write(6,*) 'The STM image is obtained as the value of the'
          write(6,*) 'charge at a given tip height Z = ', fvalue, 'Bohr'
-         oname = paste( name, '.CH.STM' )
+         oname = trim(name)//'.CH.STM'
        else 
          write(6,*) 'ERROR: mode must be either constant current'
          write(6,*) '       or constant height (in lower case)'
@@ -141,9 +139,8 @@ c Read density
        write(6,*)
   
 
-       length = lb(fname)
        write(6,*)
-       write(6,*) 'Reading grid data from file ',fname(1:length)
+       write(6,*) 'Reading grid data from file ',trim(fname)
 
        open( unit=1, file=fname, status='old', form=fform )
        if (fform .eq. 'formatted') then
@@ -255,16 +252,14 @@ C Local variables and arrays
        LOGICAL
      .   HIGH, ZERO
        INTEGER
-     .   IC, IP, IPM, IX, K1, K2, K3, LB, LENGTH
+     .   IC, IP, IPM, IX, K1, K2, K3
        REAL
      .   DXDM(3,3), ZK3
-       EXTERNAL LB
 
 
        OPEN( unit=2, file=oname)
 
-       length = lb(oname)
-       write(6,*) 'Writing STM image in file', oname(1:length)
+       write(6,*) 'Writing STM image in file', trim(oname)
 
  
 
@@ -367,17 +362,14 @@ C Argument types and dimensions
 
 C Local variables and arrays
        INTEGER
-     .   IC, IP, IPM, IX, K1, K2, K3, LB, LENGTH
+     .   IC, IP, IPM, IX, K1, K2, K3
        REAL
      .   DXDM(3,3), ZK3
-       EXTERNAL
-     .   LB
 
 
        OPEN( unit=2, file=oname )
 
-       length = lb(oname)
-       write(6,*) 'Writing STM image in file', oname(1:length)
+       write(6,*) 'Writing STM image in file', trim(oname)
  
 
 C Find Jacobian matrix dx/dmesh and its inverse
@@ -430,35 +422,3 @@ C Linear interpolation to find the value of F at ZVALUE
        CLOSE(2)
 
        END
-
-
-
-
-       CHARACTER*(*) FUNCTION PASTE( STR1, STR2 )
-
-C CONCATENATES THE STRINGS STR1 AND STR2 REMOVING BLANKS IN BETWEEN
-C Written by Jose M. Soler
-
-       CHARACTER*(*) STR1, STR2
-       integer L
-       DO 10 L = LEN( STR1 ), 1, -1
-          IF (STR1(L:L) .NE. ' ') GOTO 20
-   10  CONTINUE
-   20  PASTE = STR1(1:L)//STR2
-       END
-
-
-       INTEGER FUNCTION LB ( STR1 )
-
-C RETURNS THE SIZE IF STRING STR1 WITH BLANKS REMOVED
-C Writen by P. Ordejon from Soler's paste.f
-
-       CHARACTER*(*) STR1
-
-       integer L
-       DO 10 L = LEN( STR1 ), 1, -1
-          IF (STR1(L:L) .NE. ' ') GOTO 20
-   10  CONTINUE
-   20  LB = L
-       END
-

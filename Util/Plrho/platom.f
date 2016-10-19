@@ -32,7 +32,7 @@ c   rijmax : Maximun bond length
       parameter ( rijmax = 10.d0 )
 
       logical           found
-      character         fname*30, paste*30
+      character         fname*30
       integer           i1, i2, i3, ia, isa(maxa), iv, ix, iza(maxa),
      .                  j, j1, j2, j3, ja, jn, jna(maxna), na, nna
       real              scell(3,3), xi(3), xj(3)
@@ -41,7 +41,7 @@ c   rijmax : Maximun bond length
       external          ratom
 
 c Look for coordinates file
-      fname = paste( sname, '.XV' )
+      fname = trim(sname)//'.XV'
       inquire( file=fname, exist=found )
       if (.not.found) return
 

@@ -68,8 +68,6 @@
 
       implicit none
 
-      character(len=label_length+6), external :: paste
-
       logical :: relaxd, getPSI, quenched_MD, found
 
       real(dp)          :: dummy_str(3,3)

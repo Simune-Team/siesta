@@ -56,8 +56,7 @@ C
       real(dp)          cell(3,3), va(3,na), vcell(3,3), xa(3,na)
       character(len=*) ::         task
 
-      character(len=label_length+3) :: paste
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal variables and arrays
       character(len=label_length+3), save ::   fname
@@ -73,7 +72,7 @@ C Only do reading and writing for IOnode
 
 C Find name of file
         if (frstme) then
-          fname = paste( slabel, '.XV')
+          fname = trim(slabel)//'.XV'
           frstme = .false.
         endif
 

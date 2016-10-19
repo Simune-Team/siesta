@@ -23,11 +23,10 @@ c ******************************************************************
       implicit          none
 
       character(len=2) :: sym
-      character(len=label_length+4) :: paste
       integer                       :: na
       integer                       :: iza(na)
       real(dp)                      :: xa(3,na)
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal variables and arrays
  
@@ -39,7 +38,7 @@ c Internal variables and arrays
 
 c Find file name
 
-      fname = paste(slabel,'.xyz')
+      fname = trim(slabel)//'.xyz'
 
       write(6,'(/,2a)')'coxmol: Writing XMOL coordinates into file ',
      .                  fname

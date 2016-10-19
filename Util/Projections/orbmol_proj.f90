@@ -84,15 +84,12 @@ program orbmol_proj
    character( len = 200 )  :: fname_sys, fname_mol, fname_hs, &
                              fname_out, fname_out_up,        &
                              fname_out_down                    ! filenames 
-!  character( len = 33 )  :: paste
 
    integer :: i, j, n, m, ih, ind, jj, nnz, im, io, is0, iw, k, iw0
    integer :: nao, nkp, nsp, no_s, ik
    integer :: wfs_u = 1, wfs_m=2, iu_hs=3, stdin=5, iu_out=4,            &
               iu_out_up=11, iu_out_down=12
    logical :: gamma, debug, gamma_wfsx, gamma_wfsx_m
-
-!  external paste
 
 ! variables of the whole system
 

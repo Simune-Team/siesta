@@ -138,8 +138,6 @@ C
       integer, intent(out) :: nk
       real(dp), pointer ::  kpoint(:,:)
 
-      character         paste*30
-      external          paste, redcel
 C *********************************************************************
 
       logical BandLinesPresent, BandPointsPresent

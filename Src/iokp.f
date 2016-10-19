@@ -20,10 +20,9 @@ c *******************************************************************
 
       implicit          none
 
-      character(len=label_length+3) :: paste
       integer                       :: nk
       real(dp)                      :: points(3,*), weight(*)
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal 
       character(len=label_length+3), save :: fname
@@ -32,7 +31,7 @@ c Internal
 c -------------------------------------------------------------------
 
       if (frstme) then
-        fname = paste( slabel, '.KP' )
+        fname = trim(slabel)//'.KP'
         frstme = .false.
       endif
 

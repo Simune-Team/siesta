@@ -48,10 +48,9 @@ C
       implicit  none
 
       character task*(*)
-      character(len=label_length+4) :: paste
       logical   found
       integer   nbasis, nbasisCloc, nbasisloc, nspin, maxnc
-      external  chkdim, io_assign, io_close, paste, timer
+      external  chkdim, io_assign, io_close, timer
 
 C Internal variables and arrays
       character(len=label_length+4), save :: fname
@@ -76,7 +75,7 @@ C Allocate local buffer array
 C Find file name
       if (frstme) then
         if (Node.eq.0) then
-          fname = paste(slabel,'.LWF')
+          fname = trim(slabel)//'.LWF'
         endif
         frstme = .false.
       endif
