@@ -62,14 +62,13 @@ C
       implicit          none
 
       character         task*(*)
-      character(len=label_length+3) :: paste
       logical           gamma
       integer           maxnh, no_u, no_s, nspin
       integer           indxuo(no_s), listh(maxnh), numh(*), listhptr(*)
       real(dp)          H(maxnh,nspin), S(maxnh),
      .                  qtot, temp, xij(3,maxnh)
 
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 C Internal variables and arrays
       character(len=label_length+3) :: fname
@@ -86,7 +85,7 @@ C Internal variables and arrays
       data frstme /.true./
 C Find name of file
       if (frstme) then
-        fname = paste( slabel, '.HS' )
+        fname = trim(slabel)//'.HS'
         frstme = .false.
       endif
 

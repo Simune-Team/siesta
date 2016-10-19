@@ -81,6 +81,7 @@ contains
     real(dp), allocatable :: k3_1(:,:), k3_2(:,:), k3_3(:,:)
     real(dp), allocatable :: tmp3(:,:)
 
+    logical :: is_block
     character(len=50) :: ctmp
     logical :: even_path
 
@@ -92,12 +93,26 @@ contains
     kscell(2,2) = 1
     kscell(3,3) = 1
     K_METHOD = -1
-    
+    is_block = .true.
+
     ! If the block does not exist, simply 
     ! create the Gamma-point
     nullify(kpt,wkpt)
 
-    if ( .not. fdf_block(bName,bfdf) ) then
+    if ( fdf_islist(bName) ) then
+       
+       ! This is an easy read...
+       K_METHOD = K_METHOD_MONKHORST_PACK
+       ! Try and read the list information
+       call fdf_list(bName, 3, kscell(:,1))
+       kscell(2,2) = kscell(2,1)
+       kscell(2,1) = 0
+       kscell(3,3) = kscell(3,1)
+       kscell(3,1) = 0
+
+       is_block = .false.
+       
+    else if ( .not. fdf_block(bName,bfdf) ) then
        K_METHOD = K_METHOD_MONKHORST_PACK
 
        ! the block does not exist, hence the user
@@ -123,6 +138,7 @@ contains
     ! Brillouin zone
     call reclat(cell,rcell,1)
 
+    if ( is_block ) then
     do while ( fdf_bnext(bfdf,pline) )
        if ( fdf_bnnames(pline) > 0 ) then
           ctmp = fdf_bnames(pline,1)
@@ -345,6 +361,7 @@ contains
        end if
 
     end do
+    end if ! whether the input is a block
 
     ! We do not allow different methods if we do not have a diagonal
     ! size matrix

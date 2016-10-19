@@ -39,8 +39,6 @@
       use m_dhscf,        only: dhscf
       implicit none
 
-      character(len=label_length+6), external :: paste
-
       integer :: dummy_iscf = 1
 
       real(dp):: e1  ! Lower bound of energy range
@@ -85,7 +83,7 @@
      .                occtol, dummy_iscf, neigwanted)
 
           !Find the LDOS in the real space mesh
-          filesOut%rho = paste( slabel, '.LDOS' )
+          filesOut%rho = trim(slabel)//'.LDOS'
           g2max = g2cut
           call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 

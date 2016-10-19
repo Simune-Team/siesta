@@ -53,9 +53,9 @@ C  Internal variables ...
      .  emax, emin, eV, path
 
       character(len=150):: 
-     .  fname, paste, sname, string
+     .  fname, sname, string
 
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 C ...
 
       if (iunits .eq. 0) then
@@ -67,7 +67,7 @@ C ...
       endif
 C       Find name of output file and open it
         sname = fdf_string('SystemLabel','dispersion')
-        fname = paste(sname,'.bands')
+        fname = trim(sname)//'.bands'
         call io_assign(iu)
 *       write(6,*) 'bands: iu,fname=', iu, fname
         open( iu, file=fname, status='unknown')
@@ -122,9 +122,9 @@ C       Write abscisas of line ends and their labels
           if (ik .eq. lastk(il)) then
 C           Put label between quotes
             if (label(il) .eq. ' ') then
-              string = ''' '''
+              string = "' '"
             else
-              string = paste( ''''//label(il),'''' )
+              string = "'"//trim(label(il))//"'"
             endif
             write(iu,'(f12.6,3x,a)') path, string
             il = il + 1

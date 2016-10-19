@@ -92,7 +92,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_supercell.o mulliken.o minvec.o naefs.o \
 	m_new_dm.o normalize_dm.o ordern.o outcell.o outcoor.o \
 	m_fft_gpfa.o \
-	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
+	pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	projected_DOS.o propor.o m_partial_charges.o \
 	randomg.o reclat.o redcel.o \
 	reinit.o reord.o reordpsi.o rhoofd.o rhoofdsp.o rhooda.o \
