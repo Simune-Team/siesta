@@ -113,9 +113,9 @@ C Internal variables
 
       parameter (Debye  = 0.393430d0)  
 
-      character         paste*30, shape*10
+      character         shape*10
 
-      external          ddot, paste, volcel, reclat, memory
+      external          ddot, volcel, reclat, memory
 
       integer, dimension(:), pointer ::  muo => null()
       real(dp), dimension(:), pointer :: psi1 => null()

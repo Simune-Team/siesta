@@ -38,13 +38,13 @@ C Internal variables
      .  cell(3,3), dxdm(3,3), z, zvac
 
       character
-     .  sname*75, fname*80, paste*80
+     .  sname*75, fname*80
 
       logical
      .  found
 
       external 
-     .  io_assign, io_close, paste
+     .  io_assign, io_close
 
 
 C Initialize variables
@@ -61,7 +61,7 @@ C Read value of the vacuum Z position
 
 C Assign file name and open file
       sname = fdf_string('SystemLabel','siesta')
-      fname = paste( sname, '.VH' )
+      fname = trim(sname)//'.VH'
       call io_assign(unit1)
       inquire( file=fname, exist=found)
       if (.not. found) then

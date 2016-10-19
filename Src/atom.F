@@ -3330,7 +3330,7 @@ C Internal variables
         real(dp),allocatable,dimension(:,:) :: filterets !filtered orbitals
         real(dp),allocatable,dimension(:)   :: forb !filtered orbital
 
-        character  filename*80, paste*80
+        character  filename*80
 C
 C Number of points used by polint for the interpolation
 C 

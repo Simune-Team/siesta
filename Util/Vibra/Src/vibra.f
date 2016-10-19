@@ -32,7 +32,7 @@ c Internal variables ...
       logical overflow, eigen, intensity
 
       character(len=150)::
-     .  filein, fileout, fname, paste,
+     .  filein, fileout, fname, 
      .  slabel, sname, slabel_defect, sname_defect
 
       integer 
@@ -85,10 +85,6 @@ c Work space for diagonalization.
 c Conversion factor from dsqrt(K/M) in eV and Ang to cm**-1 is 519.6
       real*8 xmagic
       parameter (xmagic=519.6d0)
-
-      external
-     .  paste
-c     .  io_assign, io_close, paste
 
       data pi / 3.1415926d0 /
       data overflow /.false./
@@ -320,7 +316,7 @@ c ...
 
 c Read Force Constants Matrix ...
       call io_assign(iunit2)
-      fname = fdf_string('Vibra.FC',paste(slabel,'.FC'))
+      fname = fdf_string('Vibra.FC',trim(slabel)//'.FC')
       open(iunit2,file=fname,status='old')
       read(iunit2,*)
 c Negative displacements
@@ -366,7 +362,7 @@ c ...
 c If intensities are required then read Born effective charges
       if (intensity) then
         call io_assign(iunit2)
-        fname = paste(slabel,'.BC')
+        fname = trim(slabel)//'.BC'
         open(iunit2,file=fname,status='old')
         read(iunit2,*)
         do j = 1,natoms
@@ -614,7 +610,7 @@ Cc =================================================================
 c write the eigenvalues and eigenvectors to output data file.
         if (icall .eq. 3) then
           call io_assign(iunit3)
-          fname = paste(slabel,'.vectors')
+          fname = trim(slabel)//'.vectors'
           open(iunit3,file=fname,status='unknown',position='append')
           if (ik.eq.1) then
             rewind(iunit3)

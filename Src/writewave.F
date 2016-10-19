@@ -169,8 +169,7 @@ C
 
       integer           :: norb, nk
       real(dp), pointer :: kpoint(:,:)
-      character         :: paste*30
-      external          :: paste, memory
+      external          :: memory
 C *********************************************************************
 
       character
