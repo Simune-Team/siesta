@@ -41,8 +41,8 @@
        
        use files,     only : slabel, label_length
        
-       character(len=label_length+3) :: paste, dipolefile
-       external io_assign, io_close, paste
+       character(len=label_length+3) :: dipolefile
+       external io_assign, io_close
        double precision dipole(3), extfield(3), totime, rstart_time
        integer iu
        character*15 fform
@@ -51,7 +51,7 @@
        save iu 
 
       if(frstme) then
-        dipolefile = paste (slabel, '.dipol_vs_time')  
+        dipolefile = trim(slabel)//'.dipol_vs_time'
         call io_assign( iu )
         fform='formatted'
         open( iu, file=dipolefile, form=fform, status='unknown' )

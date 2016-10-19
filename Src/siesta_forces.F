@@ -131,7 +131,6 @@
       integer              :: istpp, nhs, kk
       logical              :: rstart, found
       double precision     :: dt_tded, EF7
-      character*70, external  :: paste
       complex(dp) :: varaux,varaux2
 ! End -tddft
 #ifdef TRANSIESTA

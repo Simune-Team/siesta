@@ -104,9 +104,9 @@ CONTAINS
       real(dp), intent (inout) :: totime
       logical, intent (in)     :: gamma
       ! 
-      external           :: io_assign, io_close, readsp, paste
+      external           :: io_assign, io_close, readsp
       !
-      character          :: sname*30, fname*33, paste*33, m_storage*5
+      character          :: sname*30, fname*33, m_storage*5
       !
       logical            :: fixspin, ioifound, degen
       logical, save      :: spiral

@@ -34,11 +34,11 @@ CONTAINS
     character*(*), intent(in):: task
     type(matrix), intent(inout)  :: wavef_rw(nk,nspin)
     ! Internal variables and arrays
-    character :: fname*33, sname*30, paste*33, m_storage*5
+    character :: fname*33, sname*30, m_storage*5
     logical   ::  exist1, frstme
     integer   :: unit1, ie,nuototread,nkread,nspinread,dim2read
     integer   :: nwf, ik, ispin, mxnwf, io, ix,i,j
-    external  :: chkdim, io_assign, io_close, paste, timer,memory
+    external  :: chkdim, io_assign, io_close, timer,memory
     complex(kind=dp) :: varaux
     save      :: frstme, fname
     data         frstme /.true./
@@ -68,7 +68,7 @@ CONTAINS
 #else
       m_storage='szden'
 #endif
-      fname = paste(sname,'.TDWF')
+      fname = trim(sname)//'.TDWF'
       frstme = .false.
     endif
     !
