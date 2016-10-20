@@ -285,7 +285,7 @@ subroutine xml_EndElement(xf,name)
 type(xmlf_t), intent(inout)   :: xf
 character(len=*), intent(in)  :: name
 
-character(len=100)  :: current
+character(len=2000)  :: current
 
 if (is_empty(xf%stack)) then
    call wxml_fatal(xf, "Out of elements to close")
@@ -312,7 +312,7 @@ end subroutine xml_EndElement
 subroutine xml_Close(xf)
 type(xmlf_t), intent(inout)   :: xf
 
-character(len=200) :: name
+character(len=2000) :: name
 
 do
    if (is_empty(xf%stack)) exit
@@ -407,7 +407,7 @@ subroutine write_attributes(xf)
 type(xmlf_t), intent(inout)   :: xf
 
 integer  :: i, status, size, key_len, value_len
-character(len=200)  :: key, value
+character(len=2000)  :: key, value
 
 do i = 1, len(xf%dict)
    call get_key(xf%dict,i,key,key_len,status)
