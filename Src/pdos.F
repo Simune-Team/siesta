@@ -58,8 +58,9 @@ C **********************************************************************
       use m_spin,       only : e_spin_dim
       use atomlist,     only : iphorb, iaorb
       use atmfuncs,     only : zetafio, mofio, lofio, cnfigfio, labelfis
-      use FoX_wxml,     only : xmlf_t, xml_OpenFile, xml_NewElement, 
-     .                         xml_AddCharacters, xml_AddAttribute,
+      use flib_wxml,    only : xmlf_t, xml_OpenFile, xml_NewElement, 
+     .                         xml_AddArray, xml_AddPCData,
+     $                         xml_AddAttribute,
      .                         xml_EndElement, xml_Close
       use xml,          only : str, xml_dump_attribute
       use densematrix,  only : Haux, Saux, psi
@@ -255,14 +256,14 @@ C Close file for write
 
 C New writing
       if (IOnode) then
-         call xml_OpenFile("pdos.xml",xf)
+         call xml_OpenFile("pdos.xml",xf,indent=.false.)
 
         fnamepro = trim(slabel)//'.PDOS'
         call io_assign(iunit2)
         open(iunit2,file=fnamepro,form='formatted',status='unknown')
         call xml_NewElement(xf,"pdos")
         call xml_NewElement(xf,"nspin")
-        call xml_AddCharacters(xf,e_spin_dim)
+        call xml_AddPCData(xf,e_spin_dim)
         call xml_EndElement(xf,"nspin")
 
         write(iunit2,'(a)') '<pdos>'
@@ -282,7 +283,7 @@ C New writing
         enddo
         write(iunit2,'(a)') '</energy_values>'
 
-        call xml_AddCharacters(xf,tmp(1:nhist))
+        call xml_AddArray(xf,tmp(1:nhist))
         call xml_EndElement(xf,"energy_values")
 
         do i = 1, no_u
@@ -316,17 +317,17 @@ C New writing
           call xml_NewElement(xf,"data")
           select case ( e_spin_dim ) 
           case ( 1 )
-             call xml_AddCharacters(xf,dpr(1:nhist,i,1)*eV)
+             call xml_AddArray(xf,dpr(1:nhist,i,1)*eV)
           case ( 2 )
              tmp(1:2*nhist-1:2) = dpr(1:nhist,i,1)*eV
              tmp(2:2*nhist:2) = dpr(1:nhist,i,2)*eV
-             call xml_AddCharacters(xf,tmp(1:2*nhist),fmt="r6")
+             call xml_AddArray(xf,tmp(1:2*nhist),format="r6")
           case ( 4 )
              tmp(1:4*nhist-3:4) = dpr(1:nhist,i,1)*eV
              tmp(2:4*nhist-2:4) = dpr(1:nhist,i,2)*eV
              tmp(3:4*nhist-1:4) = dpr(1:nhist,i,3)*eV
              tmp(4:4*nhist:4)   = dpr(1:nhist,i,2)*eV
-             call xml_AddCharacters(xf,tmp(1:4*nhist),fmt="r6")
+             call xml_AddArray(xf,tmp(1:4*nhist),format="r6")
           end select
           call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"orbital")

@@ -1,8 +1,9 @@
 module flib_wcml
 
-  use flib_wxml, only: xmlf_t, str
+  use flib_wxml, only: xmlf_t, str, xml_OpenFile, xml_Close
   use flib_wxml, only: xml_NewElement, xml_AddPcData, xml_AddAttribute
-  use flib_wxml, only: xml_EndElement
+  use flib_wxml, only: xml_EndElement, xml_AddArray
+  use flib_wxml, only: xml_AddXMLDeclaration, xml_AddComment
   use flib_wstml, only: stmAddScalar
   use flib_wstml, only: stmAddMatrix
   use flib_wstml, only: stmAddArray
@@ -56,6 +57,7 @@ module flib_wcml
   PUBLIC :: cmlStartBandList
   PUBLIC :: cmlEndBandList
   PUBLIC :: cmlAddBand
+  public :: cmlAddKpoint
 
 ! CMLCore
   INTERFACE cmlAddCoordinates
@@ -132,7 +134,80 @@ module flib_wcml
      MODULE PROCEDURE cmlAddMetaDataI
   END INTERFACE
 
+  public :: cmlBeginFile, cmlFinishFile
+  public :: cmlStartCML, cmlEndCML
+  public :: cmlNamespaceAttribute, cmlAddComment
+  
 CONTAINS
+
+    subroutine cmlAddComment(xf, comment)
+      type(xmlf_t), intent(inout) :: xf
+      character(len=*) :: comment
+
+      call xml_AddComment(xf,comment)
+    end subroutine cmlAddComment
+
+    subroutine cmlBeginFile(xf, filename, unit, replace)
+      type(xmlf_t), intent(out) :: xf
+      character(len=*), intent(in) :: filename
+      integer, intent(in) :: unit
+      logical, intent(in), optional :: replace
+
+      call xml_OpenFile(filename, xf, indent=.true.)
+      call xml_AddXMLDeclaration(xf,encoding="UTF-8")
+
+    end subroutine cmlBeginFile
+
+    subroutine cmlFinishFile(xf)
+      type(xmlf_t), intent(inout) :: xf
+
+      call xml_Close(xf)
+
+    end subroutine cmlFinishFile
+    
+    subroutine cmlNamespaceAttribute(xf, prefix, URI)
+      ! A fake namespace declaration
+      type(xmlf_t), intent(inout) :: xf
+      character(len=*), intent(in) :: prefix
+      character(len=*), intent(in) :: URI
+
+      call xml_AddAttribute(xf,prefix,URI)
+
+    end subroutine cmlNamespaceAttribute
+    
+    subroutine cmlStartCml(xf, id, title, convention, dictref, fileId, version)
+      type(xmlf_t), intent(inout) :: xf
+      character(len=*), intent(in), optional :: id
+      character(len=*), intent(in), optional :: title
+      character(len=*), intent(in), optional :: convention
+      character(len=*), intent(in), optional :: dictref
+      character(len=*), intent(in), optional :: fileId
+      character(len=*), intent(in), optional :: version
+
+      call xml_NewElement(xf, 'cml')
+      if (present(id)) call xml_AddAttribute(xf, 'id', id)
+      if (present(title)) call xml_AddAttribute(xf, 'title', title)
+      if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
+
+      call xml_AddAttribute(xf, 'convention', 'CMLComp')
+
+      if (present(fileId)) then
+         call xml_AddAttribute(xf, 'fileId', fileId)
+      endif
+      if (present(version)) then
+         call xml_AddAttribute(xf, 'version', version)
+      endif
+
+    end subroutine cmlStartCml
+    !--------------------------------------------------------------------
+    
+    subroutine cmlEndCml(xf)
+      type(xmlf_t), intent(inout) :: xf
+
+      call cmlAddMetadata(xf, name='dc:contributor', content='Siesta-CML')
+      call xml_EndElement(xf, 'cml')
+
+    end subroutine cmlEndCml
 
   ! =================================================
   ! convenience CML routines
@@ -312,11 +387,11 @@ CONTAINS
   ! 1. writes a DP property to xml channel
   ! -------------------------------------------------
   
-  SUBROUTINE cmlAddPropScalarDP(xf, property, id, title, conv, dictref, ref, units, fmt)
+  SUBROUTINE cmlAddPropScalarDP(xf, value, id, title, conv, dictref, ref, units, fmt)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
-    real(kind=dp), intent(in)               :: property
+    real(kind=dp), intent(in)               :: value
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -331,7 +406,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))    call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddScalar(xf=xf, value=property, datatype='xsd:double', units=units, fmt=fmt)
+    call stmAddScalar(xf=xf, value=value, datatype='xsd:double', units=units, fmt=fmt)
     call xml_EndElement(xf, 'property')
 
   END SUBROUTINE cmlAddPropScalarDP
@@ -367,11 +442,11 @@ CONTAINS
   ! 3. writes a Scalar integer property to xml channel
   ! -------------------------------------------------
   
-  SUBROUTINE cmlAddPropScalarI(xf, property, id, title, conv, dictref, ref, units)
+  SUBROUTINE cmlAddPropScalarI(xf, value, id, title, conv, dictref, ref, units)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
-    integer, intent(in) :: property
+    integer, intent(in) :: value
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -385,7 +460,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddScalar(xf=xf, value=property, datatype='xsd:integer', units=units)
+    call stmAddScalar(xf=xf, value=value, datatype='xsd:integer', units=units)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropScalarI
 
@@ -393,13 +468,13 @@ CONTAINS
   ! 4. writes a DP Float matrix property to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddPropMatrixDPSi(xf, property, nrows, ncols, id, title, conv, dictref, ref, units, fmt)
+  SUBROUTINE cmlAddPropMatrixDPSi(xf, value, nrows, ncols, id, title, conv, dictref, ref, units, fmt)
 
     implicit none
     type(xmlf_t), intent(inout)            :: xf
     integer, intent(in)                    :: nrows
     integer, intent(in)                    :: ncols
-    real(kind=dp), Intent(in)              :: property(ncols, nrows)
+    real(kind=dp), Intent(in)              :: value(ncols, nrows)
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -414,15 +489,15 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddMatrix(xf=xf, matrix=property, ncols=ncols, nrows=nrows, units=units, fmt=fmt)
+    call stmAddMatrix(xf=xf, matrix=value, ncols=ncols, nrows=nrows, units=units, fmt=fmt)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropMatrixDPSi
 
-  SUBROUTINE cmlAddPropMatrixDPSh(xf, property, id, title, conv, dictref, ref, units, fmt)
+  SUBROUTINE cmlAddPropMatrixDPSh(xf, value, id, title, conv, dictref, ref, units, fmt)
 
     implicit none
     type(xmlf_t), intent(inout)            :: xf
-    real(kind=dp), intent(in)              :: property(:,:)
+    real(kind=dp), intent(in)              :: value(:,:)
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -433,8 +508,8 @@ CONTAINS
     
     integer :: nrows, ncols
 
-    ncols=size(property, 1)
-    nrows=size(property, 2)
+    ncols=size(value, 2)
+    nrows=size(value, 1)
 
     call xml_NewElement(xf, 'property')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
@@ -442,7 +517,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddMatrix(xf=xf, matrix=property, ncols=ncols, nrows=nrows, units=units, fmt=fmt)
+    call stmAddMatrix(xf=xf, matrix=value, ncols=ncols, nrows=nrows, units=units, fmt=fmt)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropMatrixDPSh
 
@@ -490,8 +565,8 @@ CONTAINS
 
     integer :: nrows, ncols
 
-    ncols=size(property, 1)
-    nrows=size(property, 2)
+    ncols=size(property, 2)
+    nrows=size(property, 1)
 
     call xml_NewElement(xf, 'property')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
@@ -507,13 +582,13 @@ CONTAINS
   ! 6. writes an Integer matrix property to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddPropMatrixISi(xf, property, nrows, ncols, id, title, conv, dictref, ref, units)
+  SUBROUTINE cmlAddPropMatrixISi(xf, value, nrows, ncols, id, title, conv, dictref, ref, units)
 
     implicit none
     type(xmlf_t), intent(inout)            :: xf
     integer, intent(in)                    :: nrows
     integer, intent(in)                    :: ncols
-    integer, intent(in)                    :: property(nrows,ncols)
+    integer, intent(in)                    :: value(nrows,ncols)
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -527,15 +602,15 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(conv))    call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddMatrix(xf=xf, matrix=property, ncols=ncols, nrows=nrows, units=units)
+    call stmAddMatrix(xf=xf, matrix=value, ncols=ncols, nrows=nrows, units=units)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropMatrixISi
 
-  SUBROUTINE cmlAddPropMatrixISh(xf, property, id, title, conv, dictref, ref, units)
+  SUBROUTINE cmlAddPropMatrixISh(xf, value, id, title, conv, dictref, ref, units)
 
     implicit none
     type(xmlf_t), intent(inout)            :: xf
-    integer, intent(in)                    :: property(:,:)
+    integer, intent(in)                    :: value(:,:)
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -545,8 +620,8 @@ CONTAINS
 
     integer :: nrows, ncols
 
-    ncols=size(property, 2)
-    nrows=size(property, 1)
+    ncols=size(value, 2)
+    nrows=size(value, 1)
 
     call xml_NewElement(xf, 'property')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
@@ -554,7 +629,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(conv))    call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddMatrix(xf=xf, matrix=property, ncols=ncols, nrows=nrows, units=units)
+    call stmAddMatrix(xf=xf, matrix=value, ncols=ncols, nrows=nrows, units=units)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropMatrixISh
 
@@ -563,11 +638,11 @@ CONTAINS
   ! 7. writes an Array DP property to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddPropArrayDPSi(xf, property, nvalue, id, title, conv, dictref, ref, units, fmt)
+  SUBROUTINE cmlAddPropArrayDPSi(xf, value, nvalue, id, title, conv, dictref, ref, units, fmt)
 
     implicit none
     type(xmlf_t), intent(inout)            :: xf
-    real(kind=dp), intent(in)              :: property(*)
+    real(kind=dp), intent(in)              :: value(*)
     integer, intent(in)                    :: nvalue
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
@@ -583,15 +658,15 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref)) call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddArray(xf=xf, array=property, nvalue=nvalue, units=units, fmt=fmt)
+    call stmAddArray(xf=xf, array=value, nvalue=nvalue, units=units, fmt=fmt)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropArrayDPSi
 
-  SUBROUTINE cmlAddPropArrayDPSh(xf, property, id, title, conv, dictref, ref, units, fmt)
+  SUBROUTINE cmlAddPropArrayDPSh(xf, value, id, title, conv, dictref, ref, units, fmt)
 
     implicit none
     type(xmlf_t), intent(inout)            :: xf
-    real(kind=dp), intent(in)              :: property(:)
+    real(kind=dp), intent(in)              :: value(:)
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -602,7 +677,7 @@ CONTAINS
 
     integer :: nvalue
     
-    nvalue=size(property)
+    nvalue=size(value)
 
     call xml_NewElement(xf, 'property')
     if (present(id)) call xml_AddAttribute(xf, 'id', id)
@@ -610,7 +685,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref)) call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddArray(xf=xf, array=property, nvalue=nvalue, units=units, fmt=fmt)
+    call stmAddArray(xf=xf, array=value, nvalue=nvalue, units=units, fmt=fmt)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropArrayDPSh
 
@@ -673,11 +748,11 @@ CONTAINS
   ! 9. writes an Array integer property to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddPropArrayISi(xf, property, nvalue, id, title, conv, dictref, ref, units)
+  SUBROUTINE cmlAddPropArrayISi(xf, value, nvalue, id, title, conv, dictref, ref, units)
 
     implicit none
     type(xmlf_t), intent(inout)            :: xf
-    integer, intent(in)                    :: property(*)
+    integer, intent(in)                    :: value(*)
     integer, intent(in)                    :: nvalue
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
@@ -692,15 +767,15 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddArray(xf, array=property, nvalue=nvalue, units=units)
+    call stmAddArray(xf, array=value, nvalue=nvalue, units=units)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropArrayISi
 
-  SUBROUTINE cmlAddPropArrayISh(xf, property, id, title, conv, dictref, ref, units)
+  SUBROUTINE cmlAddPropArrayISh(xf, value, id, title, conv, dictref, ref, units)
 
     implicit none
     type(xmlf_t), intent(inout)            :: xf
-    integer, intent(in)                    :: property(:)
+    integer, intent(in)                    :: value(:)
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -710,7 +785,7 @@ CONTAINS
 
     integer :: nvalue
 
-    nvalue=size(property)
+    nvalue=size(value)
 
     call xml_NewElement(xf, 'property')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
@@ -718,7 +793,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddArray(xf, array=property, nvalue=nvalue, units=units)
+    call stmAddArray(xf, array=value, nvalue=nvalue, units=units)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropArrayISh
 
@@ -727,11 +802,11 @@ CONTAINS
   ! 10. writes a character property to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddPropScalarCH(xf, property, id, title, conv, dictref, ref, units)
+  SUBROUTINE cmlAddPropScalarCH(xf, value, id, title, conv, dictref, ref, units)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
-    character(len=*), intent(in)           :: property
+    character(len=*), intent(in)           :: value
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -745,7 +820,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddScalar(xf=xf, value=property, units=units)
+    call stmAddScalar(xf=xf, value=value, units=units)
     call xml_EndElement(xf, 'property')
 
   END SUBROUTINE cmlAddPropScalarCH
@@ -755,13 +830,13 @@ CONTAINS
   ! 11. writes an character matrix property to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddPropMatrixCHSi(xf, property, nrows, ncols, id, title, conv, dictref, ref, units)
+  SUBROUTINE cmlAddPropMatrixCHSi(xf, value, nrows, ncols, id, title, conv, dictref, ref, units)
 
     implicit none
     type(xmlf_t),     intent(inout)        :: xf
     integer,          intent(in)           :: nrows
     integer,          intent(in)           :: ncols
-    character(len=*), intent(in)           :: property(ncols,nrows)
+    character(len=*), intent(in)           :: value(ncols,nrows)
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -775,16 +850,16 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddMatrix(xf=xf, matrix=property, ncols=ncols, nrows=nrows, units=units)
+    call stmAddMatrix(xf=xf, matrix=value, ncols=ncols, nrows=nrows, units=units)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropMatrixCHSi
 
 
-  SUBROUTINE cmlAddPropMatrixCHSh(xf, property, id, title, conv, dictref, ref, units)
+  SUBROUTINE cmlAddPropMatrixCHSh(xf, value, id, title, conv, dictref, ref, units)
 
     implicit none
     type(xmlf_t),     intent(inout)        :: xf
-    character(len=*), intent(in)           :: property(:,:)
+    character(len=*), intent(in)           :: value(:,:)
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -794,8 +869,8 @@ CONTAINS
 
     integer :: nrows, ncols
 
-    ncols=size(property, 1)
-    nrows=size(property, 2)
+    ncols=size(value, 2)
+    nrows=size(value, 1)
 
     call xml_NewElement(xf, 'property')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
@@ -803,19 +878,19 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddMatrix(xf=xf, matrix=property, ncols=ncols, nrows=nrows, units=units)
+    call stmAddMatrix(xf=xf, matrix=value, ncols=ncols, nrows=nrows, units=units)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropMatrixCHSh
 
   ! -------------------------------------------------
-  ! 12. writes an character array property to xml channel
+  ! 12. writes an character array value to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddPropArrayCHSi(xf, property, nvalue, id, title, conv, dictref, ref)
+  SUBROUTINE cmlAddPropArrayCHSi(xf, value, nvalue, id, title, conv, dictref, ref)
 
     implicit none
     type(xmlf_t),     intent(inout)        :: xf
-    character(len=*), intent(in)           :: property(*)
+    character(len=*), intent(in)           :: value(*)
     integer,          intent(in)           :: nvalue
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
@@ -829,15 +904,15 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddArray(xf, array=property, nvalue=nvalue)
+    call stmAddArray(xf, array=value, nvalue=nvalue)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropArrayCHSi
 
-  SUBROUTINE cmlAddPropArrayCHSh(xf, property, id, title, conv, dictref, ref)
+  SUBROUTINE cmlAddPropArrayCHSh(xf, value, id, title, conv, dictref, ref)
 
     implicit none
     type(xmlf_t),     intent(inout)        :: xf
-    character(len=*), intent(in)           :: property(:)
+    character(len=*), intent(in)           :: value(:)
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -846,7 +921,7 @@ CONTAINS
 
     integer :: nvalue
 
-    nvalue=size(property)
+    nvalue=size(value)
 
     call xml_NewElement(xf, 'property')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
@@ -854,7 +929,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddArray(xf, array=property, nvalue=nvalue)
+    call stmAddArray(xf, array=value, nvalue=nvalue)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropArrayCHSh
 
@@ -863,11 +938,11 @@ CONTAINS
   ! 13. writes a logical property to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddPropScalarLG(xf, property, id, title, conv, dictref, ref, units)
+  SUBROUTINE cmlAddPropScalarLG(xf, value, id, title, conv, dictref, ref, units)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
-    logical,          intent(in)           :: property
+    logical,          intent(in)           :: value
     character(len=*), intent(in), optional :: id
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: dictref
@@ -881,7 +956,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddScalar(xf=xf, value=property, units=units)
+    call stmAddScalar(xf=xf, value=value, units=units)
     call xml_EndElement(xf, 'property')
 
   END SUBROUTINE cmlAddPropScalarLG
@@ -896,14 +971,14 @@ CONTAINS
   ! 1. writes complete DP molecule to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddMoleculeDP(xf, natoms, elements, refs, coords, style, id, title, dictref, fmt)
+  SUBROUTINE cmlAddMoleculeDP(xf, natoms, elements, atomRefs, coords, style, id, title, dictref, fmt)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
     integer, intent(in)                    :: natoms             ! number of atoms
     real(kind=dp), intent(in)              :: coords(3, natoms)  ! atomic coordinates
     character(len=*), intent(in)           :: elements(natoms)   ! chemical element types
-    character(len=*), intent(in), optional :: refs(natoms)       ! id
+    character(len=*), intent(in), optional :: atomRefs(natoms)       ! id
     character(len=*), intent(in), optional :: id                 ! id
     character(len=*), intent(in), optional :: title              ! the title
     character(len=*), intent(in), optional :: dictref            ! the dictionary reference
@@ -922,7 +997,7 @@ CONTAINS
     if (present(fmt)) then
        formt = fmt
     else
-       formt = '(f8.3)'
+       formt = '(f14.8)'
     endif
     if (present(style)) then
        stylei = style
@@ -938,7 +1013,7 @@ CONTAINS
        id1 = 'a'
        id1(2:) = id0
        call cmlAddAtom(xf=xf, elem=elements(i), id=trim(id1))
-       if (present(refs)) call xml_AddAttribute(xf, 'ref', trim(refs(i)))
+       if (present(atomRefs)) call xml_AddAttribute(xf, 'ref', trim(atomRefs(i)))
        if (stylei .eq. 'x3') then
           call CMLATX39DP(xf, coords(1, i), coords(2, i), coords(3, i), formt)
        elseif (stylei .eq. 'xFrac') then
@@ -961,13 +1036,13 @@ CONTAINS
   ! 2. writes complete SP molecule to xml channel
   ! -------------------------------------------------
   
-  SUBROUTINE cmlAddMoleculeSP(xf, natoms, elements, refs, coords, style, id, title, dictref, fmt)
+  SUBROUTINE cmlAddMoleculeSP(xf, natoms, elements, atomRefs, coords, style, id, title, dictref, fmt)
     implicit none
     type(xmlf_t), intent(inout) :: xf
     integer, intent(in)                    :: natoms          ! number of atoms
     character(len=*), intent(in)           :: elements(*)     ! chemical element types
     real(kind=sp), intent(in)              :: coords(3, *)    ! atomic coordinates
-    character(len=*), intent(in), optional :: refs(natoms)    ! id
+    character(len=*), intent(in), optional :: atomRefs(natoms)    ! id
     character(len=*), intent(in), optional :: id              ! id
     character(len=*), intent(in), optional :: title           ! the title
     character(len=*), intent(in), optional :: dictref         ! the dictionary reference
@@ -998,7 +1073,7 @@ CONTAINS
        id1 = 'a'
        id1(2:) = id0
        call cmlAddAtom(xf=xf, elem=elements(i), id=trim(id1))
-       if (present(refs)) call xml_AddAttribute(xf, 'ref', trim(refs(i)))
+       if (present(atomRefs)) call xml_AddAttribute(xf, 'ref', trim(atomRefs(i)))
        if (stylei .eq. 'x3') then
           call CMLATX39SP(xf, coords(1, i), coords(2, i), coords(3, i), formt)
        elseif (stylei .eq. 'xFrac') then
@@ -1517,9 +1592,10 @@ CONTAINS
        call xml_NewElement(xf, 'latticeVector')
        if (present(units)) call xml_AddAttribute(xf, 'units', units)
        call xml_AddAttribute(xf, 'dictRef', 'cml:latticeVector')
-       call xml_AddPcdata(xf, cell(1,i), formt)
-       call xml_AddPcdata(xf, cell(2,i), formt, space=.true.)
-       call xml_AddPcdata(xf, cell(3,i), formt, space=.true.)
+       call xml_AddArray(xf,cell(1:,i),fmt)
+!       call xml_AddPcdata(xf, cell(1,i), formt)
+!       call xml_AddPcdata(xf, cell(2,i), formt, space=.true.)
+!       call xml_AddPcdata(xf, cell(3,i), formt, space=.true.)
        call xml_EndElement(xf, 'latticeVector')
     enddo
     call xml_EndElement(xf, 'lattice')
@@ -1549,13 +1625,7 @@ CONTAINS
 
     ! Flush on entry and exit
     character(len=30) ::  lunits, aunits
-    character(len=10) :: formt
 
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
     if (present(lenunits)) then
        lunits = lenunits
     else
@@ -1572,12 +1642,12 @@ CONTAINS
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictRef)
     if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
-    call stmAddScalar(xf=xf, value=a, title='a', dictref='cml:a', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=b, title='b', dictref='cml:b', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=c, title='c', dictref='cml:c', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=alpha, title='alpha', dictref='cml:alpha', units=aunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=beta,  title='beta',  dictref='cml:beta',  units=aunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=gamma, title='gamma', dictref='cml:gamma', units=aunits, fmt=formt)
+    call stmAddScalar(xf=xf, value=a, title='a', dictref='cml:a', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=b, title='b', dictref='cml:b', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=c, title='c', dictref='cml:c', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=alpha, title='alpha', dictref='cml:alpha', units=aunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=beta,  title='beta',  dictref='cml:beta',  units=aunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=gamma, title='gamma', dictref='cml:gamma', units=aunits, fmt=fmt)
     if (present(spaceType)) then
       call xml_NewElement(xf, 'symmetry')
       call xml_AddAttribute(xf, 'spaceGroup', spaceType)
@@ -1632,12 +1702,12 @@ CONTAINS
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictRef)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
-    call stmAddScalar(xf=xf, value=a, title='a', dictref='cml:a', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=b, title='b', dictref='cml:b', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=c, title='c', dictref='cml:c', units=lunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=alpha, title='alpha', dictref='cml:alpha', units=aunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=beta,  title='beta',  dictref='cml:beta', units=aunits, fmt=formt)
-    call stmAddScalar(xf=xf, value=gamma, title='gamma', dictref='cml:gamma', units=aunits, fmt=formt)
+    call stmAddScalar(xf=xf, value=a, title='a', dictref='cml:a', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=b, title='b', dictref='cml:b', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=c, title='c', dictref='cml:c', units=lunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=alpha, title='alpha', dictref='cml:alpha', units=aunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=beta,  title='beta',  dictref='cml:beta', units=aunits, fmt=fmt)
+    call stmAddScalar(xf=xf, value=gamma, title='gamma', dictref='cml:gamma', units=aunits, fmt=fmt)
     if (present(spaceType)) then
       call xml_NewElement(xf, 'symmetry')
       call xml_AddAttribute(xf, 'spaceGroup', spaceType)
@@ -1665,13 +1735,6 @@ CONTAINS
     character(len=*), intent(in), optional :: title          ! title
     character(len=*), intent(in), optional :: dictref        ! dictionary reference
     character(len=*), intent(in), optional :: fmt            ! format
-    character(len=10):: formt
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
 
     ! Flush on entry and exit
     call xml_NewElement(xf, 'eigen')
@@ -1702,13 +1765,7 @@ CONTAINS
     character(len=*), intent(in), optional :: title          ! title
     character(len=*), intent(in), optional :: dictref        ! dictionary reference
     character(len=*), intent(in), optional :: fmt            ! format
-    character(len=10):: formt
 
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
 
     ! Flush on entry and exit
     call xml_NewElement(xf, 'eigen')
@@ -1784,14 +1841,9 @@ CONTAINS
     if (present(name))    call xml_AddAttribute(xf, 'name', name)
     if (present(role))    call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(units)) then
-       call xml_NewElement(xf, 'scalar')
-       call xml_AddAttribute(xf, 'units', units)
-       call xml_AddPcdata(xf, value)
-       call xml_EndElement(xf, 'scalar')
-    else
-       call xml_AddAttribute(xf, 'value', value)
-    endif
+
+    call stmAddScalar(xf,value,dataType="xsd:string",units=units)
+
     call xml_EndElement(xf, 'parameter')
 
   END SUBROUTINE CMLADDPARAMETERCH
@@ -1818,14 +1870,6 @@ CONTAINS
     character(len=*), optional :: fmt
     character(len=*), intent(in), optional :: dictref
 
-    character(len=10) :: formt
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
-
     call xml_NewElement(xf, 'parameter')
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
@@ -1835,14 +1879,9 @@ CONTAINS
     if (present(name))    call xml_AddAttribute(xf, 'name', name)
     if (present(role))    call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(units)) then
-       call xml_NewElement(xf, 'scalar')
-       call xml_AddAttribute(xf, 'units', units)
-       call xml_AddPcdata(xf, value, formt)
-       call xml_EndElement(xf, 'scalar')
-    else
-       call xml_AddAttribute(xf, 'value', value, formt)
-    endif
+
+    call stmAddScalar(xf,value,dataType="xsd:float",fmt=fmt,units=units)
+
     call xml_EndElement(xf, 'parameter')
 
   END SUBROUTINE CMLADDPARAMETERSP
@@ -1869,14 +1908,6 @@ CONTAINS
     character(len=*), intent(in), optional :: dictref
     character(len=*), optional :: fmt    
 
-    character(len=10) :: formt
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
-
     call xml_NewElement(xf, 'parameter')
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
@@ -1886,14 +1917,9 @@ CONTAINS
     if (present(name))    call xml_AddAttribute(xf, 'name', name)
     if (present(role))    call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(units)) then
-       call xml_NewElement(xf, 'scalar')
-       call xml_AddAttribute(xf, 'units', units)
-       call xml_AddPcdata(xf, value, formt)
-       call xml_EndElement(xf, 'scalar')
-    else
-       call xml_AddAttribute(xf, 'value', value, formt)
-    endif
+
+    call stmAddScalar(xf,value,dataType="xsd:double",fmt=fmt,units=units)
+
     call xml_EndElement(xf, 'parameter')
 
   END SUBROUTINE CMLADDPARAMETERDP
@@ -1928,14 +1954,9 @@ CONTAINS
     if (present(name))  call xml_AddAttribute(xf, 'name', name)
     if (present(role))  call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(units)) then
-       call xml_NewElement(xf, 'scalar')
-       call xml_AddAttribute(xf, 'units', units)
-       call xml_AddPcdata(xf, value)
-       call xml_EndElement(xf, 'scalar')
-    else
-       call xml_AddAttribute(xf, 'value', value)
-    endif
+
+    call stmAddScalar(xf,value,dataType="xsd:integer",units=units)
+
     call xml_EndElement(xf, 'parameter')
 
   END SUBROUTINE CMLADDPARAMETERI
@@ -1965,19 +1986,12 @@ CONTAINS
     if (present(name))    call xml_AddAttribute(xf, 'name', name)
     if (present(role))    call xml_AddAttribute(xf, 'role', role)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(units)) then
-       call xml_NewElement(xf, 'scalar')
-       call xml_AddAttribute(xf, 'units', units)
-       call xml_AddPcdata(xf, value)
-       call xml_EndElement(xf, 'scalar')
-    else
-       call xml_AddAttribute(xf, 'value', value)
-    endif
+
+    call stmAddScalar(xf,value,dataType="xsd:boolean",units=units)
+
     call xml_EndElement(xf, 'parameter')
 
   END SUBROUTINE CMLADDPARAMETERLG
-
-
 
 
 ! =================================================

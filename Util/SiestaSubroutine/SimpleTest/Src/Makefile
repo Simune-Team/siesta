@@ -52,9 +52,8 @@ SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
 XMLPARSER=libxmlparser.a
 XC=libSiestaXC.a
-FoX_LIBS=`$(OBJ_DIR)/FoX/FoX-config --libs --wcml`
 ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-	$(MPI_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
+	$(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 #
 libs_collected:
 	(cd $(OBJ_DIR) ; \

@@ -67,7 +67,7 @@ c Cell volume
 
       if (cml_p) then
         call cmlAddCrystal(xf=mainXML, 
-     .       title='Lattice Parameters', lenfmt='r6', angfmt='r6', 
+     .       title='Lattice Parameters', fmt='r6',
      .       alpha=celang(1), beta=celang(2), gamma=celang(3),
      .       a=cellm(1)/Ang, b=cellm(2)/Ang, c=cellm(3)/Ang )
       endif
