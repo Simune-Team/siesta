@@ -340,8 +340,8 @@ ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 # In practice they do not but it greatly simplifies the logic
 # here.
 # This will setup the correct compilation sequence as
-# XC => FDF => MPI
-$(ALL_OBJS): $(XC) $(COMP_LIBS)
+#  WXML => XC => FDF => MPI
+$(ALL_OBJS): $(WXML) $(XC) $(COMP_LIBS)
 
 #
 # Linear algebra routines
@@ -465,11 +465,11 @@ check-ts:
 	@touch .transiesta
 
 transiesta: check-ts what version \
-            $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
+            $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
-               $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
+               $(XC) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(LIBS)
 
 
