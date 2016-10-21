@@ -51,8 +51,8 @@
       use ldau_specs, only: ldau_proj_gen
 
       use m_ncps, only: pseudo_read
-!!      use m_psml, only: ps_HasSemilocalPotentials
-    
+      use m_spin_orbit_potentials, only: valid_spin_orbit_potentials
+
       use chemical
 
       use m_spin, only: SpOrb
@@ -113,12 +113,13 @@
              basp%label = species_label(is)
              call pseudo_read(basp%label,basp%pseudopotential,
      $            basp%psml_handle,basp%has_psml_ps)
-c$$$             if (basp%psml_ps) then
-c$$$                if ( .not. ps_HasSemilocalPotentials(basp%psml_ps)) then
-c$$$                   call die(
-c$$$     $                  "Cannot do spin-orbit without semilocal pots")
-c$$$                endif
-c$$$             endif
+             if (basp%has_psml_ps) then
+                if (.not. valid_spin_orbit_potentials(basp%psml_handle))
+     $                    then
+                   call die(
+     $            "Cannot do spin-orbit without proper semilocal pots")
+                endif
+             endif
           end do
        end if
        write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'

@@ -174,7 +174,8 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_trialorbitalclass.o siesta2wannier90.o m_planewavematrixvar.o \
 	delk.o m_planewavematrix.o m_digest_nnkp.o broadcast_projections.o \
 	compute_pw_matrix.o m_writedelk.o mmn.o m_noccbands.o amn.o \
-	m_overkkneig.o write_inp_wannier.o diagonalizeHk.o m_orderbands.o
+	m_overkkneig.o write_inp_wannier.o diagonalizeHk.o m_orderbands.o \
+        m_spin_orbit_potentials.o
 
 # Add citation package
 OBJS += m_cite.o
@@ -382,7 +383,8 @@ bands.o: precision.o siesta_geom.o sys.o writewave.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
 basis_io.o: precision.o radial.o sys.o xml.o
-basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o sys.o
+basis_specs.o: basis_types.o chemical.o m_spin.o m_spin_orbit_potentials.o
+basis_specs.o: periodic_table.o precision.o sys.o
 basis_types.o: alloc.o atmparams.o precision.o sys.o
 bessph.o: precision.o sys.o
 bonds.o: alloc.o atmfuncs.o mneighb.o precision.o sorting.o units.o
@@ -522,7 +524,7 @@ hsparse.o: siesta_options.o sorting.o sparse_matrices.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o chemical.o electrostatic.o ldau_specs.o m_spin.o
-initatom.o: old_atmfuncs.o precision.o
+initatom.o: m_spin_orbit_potentials.o old_atmfuncs.o precision.o
 initparallel.o: alloc.o domain_decom.o m_fdf_global.o parallel.o parallelsubs.o
 initparallel.o: precision.o siesta_options.o spatial.o sys.o
 io.o: sys.o
