@@ -161,7 +161,7 @@ C Find eigenvalues and eigenvectors
           call build_dense_HS(ik,ispin)
           ! Compute all eigenvectors for now
           call cdiag(Haux,Saux,nuotot,nuo,nuotot,eo(1,ispin,ik),psi,
-     .      nuotot,iscf,ierror)
+     .      nuotot,iscf,ierror, BlockSize)
 
           if (ierror.gt.0) then
             call die('Terminating due to failed diagonalisation')
@@ -171,7 +171,7 @@ C Find eigenvalues and eigenvectors
              call build_dense_HS(ik,ispin)
 
              call cdiag(Haux,Saux,nuotot,nuo,nuotot,eo(1,ispin,ik),psi,
-     .            nuotot,iscf,ierror)
+     .            nuotot,iscf,ierror, BlockSize)
           endif
           call timer( 'c-eigval', 2 )
 !

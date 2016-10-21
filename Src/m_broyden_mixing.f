@@ -34,7 +34,8 @@ C integer maxnd              : First dimension of D.M., and
 C                              maximum number of nonzero elements of D.M.
 C integer numd(:)            : Control vector of D.M.
 C                              (number of nonzero elements of each row)
-C integer nspin              : Spin polarization (1=unpolarized, 2=polarized)
+C integer nspin              : Spin polarization (1=unpolarized, 2=polarized,
+C                               4=Non-collinear)
 C real*8 alpha               : Mixing parameter (for linear mixing)
 C integer nkick              : A kick is given every nkick iterations
 C real*8 alpha_kick          : Mixing parameter for kicks

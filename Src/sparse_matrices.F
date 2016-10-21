@@ -26,6 +26,7 @@
       ! Formerly there was a single array H0 for this
       real(dp), pointer :: H_kin(:) => null()
       real(dp), pointer :: H_vkb(:) => null()
+      real(dp), pointer :: H_so(:,:) => null()
 
       ! LDA+U Hamiltonian
       real(dp), pointer :: H_ldau(:,:) => null()
@@ -50,6 +51,7 @@
       call de_alloc( Hold,        'Hold',        'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
       call de_alloc( H_vkb,       'H_vkb',       'sparseMat' )
+      call de_alloc( H_so,        'H_so',        'sparseMat' )
       call de_alloc( H_ldau,      'H_ldau',      'sparseMat' )
       call de_alloc( xijo,        'xijo',        'sparseMat' )
       call de_alloc( S,           'S',           'sparseMat' )

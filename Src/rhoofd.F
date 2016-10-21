@@ -5,6 +5,12 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
+
+      module m_rhoofd
+      implicit none
+      private
+      public :: rhoofd
+      contains
       subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, 
      &                   Dscf, rhoscf, nuo, nuotot, iaorb, iphorb, isa )
 C ********************************************************************
@@ -40,6 +46,7 @@ C  Modules
       use atmfuncs,      only: rcut, all_phi
       use atm_types,     only: nsmax=>nspecies
       use atomlist,      only: indxuo
+      use m_spin,        only: SpOrb
       use listsc_module, only: LISTSC
       use mesh,          only: nsp, dxa, xdop, xdsp, meshLim
       use meshdscf,      only: matrixOtoM
@@ -56,15 +63,18 @@ C  Modules
       implicit none
 
 C     Argument types and dimensions
+
       integer,       intent(in) :: no, np, maxnd, numd(nuo), nspin,
-     &                             nuo, nuotot, iaorb(*), iphorb(*), 
-     &                             isa(*), listdptr(nuo), listd(maxnd)
-      real(dp),      intent(in) :: Dscf(maxnd,nspin)
+     &                             nuo, nuotot, iaorb(*), 
+     &                             iphorb(*), isa(*), listdptr(nuo), 
+     &                             listd(maxnd)
+      real(dp),      intent(in) :: Dscf(:,:)
       real(grid_p), intent(out) :: rhoscf(nsp,np,nspin)
       external                  :: memory, timer
 C     Internal variables and arrays
       integer,        parameter :: minloc = 1000,  ! Min buffer size for local copy of Dscf
      &                             maxoa  = 100   ! Max # of orbitals per atom
+      integer :: h_spin_dim
       logical                   :: ParallelLocal
       integer                   :: i, ia, ic, ii, ijl, il, imp, ind,
      &                             ispin, io, iop, ip, iphi, is,
@@ -87,8 +97,11 @@ C     Internal variables and arrays
       call MPI_Barrier( MPI_Comm_World, MPIerror )
       call MPItrace_event( 1000, 1 )
 #endif
+
 C     Start time counter
       call timer('rhoofd',1)
+
+      h_spin_dim = size(Dscf, 2)
 
 C     Set algorithm logical
       ParallelLocal = (Nodes.gt.1)
@@ -100,10 +113,11 @@ C     Set algorithm logical
           maxndl = 1
         endif
         nullify(DscfL)
-        call re_alloc( DscfL, 1, maxndl, 1, nspin, 'DscfL', 'rhoofd' )
+        call re_alloc( DscfL, 1, maxndl, 1, h_spin_dim, 
+     &                'DscfL', 'rhoofd' )
 C       Redistribute Dscf to DscfL form
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo,
-     &                   nspin, Dscf, DscfL )
+     &                   h_spin_dim, Dscf, DscfL )
       endif
 
 C     Find atomic cutoff radii
@@ -211,10 +225,14 @@ C           Copy row i of Dscf into row last of Dlocal
                   else
                     ijl = jl*(jl+1)/2 + il + 1
                   endif
-                  do ispin = 1,nspin
-                    Dij = DscfL(ind,ispin)
-                    Dlocal(ijl,ispin) = Dij
-                  enddo
+                  if ( SpOrb ) then
+                    Dlocal(ijl,1) = DscfL(ind,1)
+                    Dlocal(ijl,2) = DscfL(ind,2)
+                    Dlocal(ijl,3) = 0.5*(DscfL(ind,3)+DscfL(ind,7))
+                    Dlocal(ijl,4) = 0.5*(DscfL(ind,4)+DscfL(ind,8))
+                  else
+                    Dlocal(ijl,1:nspin) = DscfL(ind,1:nspin)
+                  endif
                 enddo
               else
                 do ii = 1, numdl(iul)
@@ -226,10 +244,14 @@ C           Copy row i of Dscf into row last of Dlocal
                   else
                     ijl = jl*(jl+1)/2 + il + 1
                   endif
-                  do ispin = 1,nspin
-                    Dij = DscfL(ind,ispin)
-                    Dlocal(ijl,ispin) = Dij
-                  enddo
+                  if ( SpOrb ) then
+                    Dlocal(ijl,1) = DscfL(ind,1)
+                    Dlocal(ijl,2) = DscfL(ind,2)
+                    Dlocal(ijl,3) = 0.5*(DscfL(ind,3)+DscfL(ind,7))
+                    Dlocal(ijl,4) = 0.5*(DscfL(ind,4)+DscfL(ind,8))
+                  else
+                    Dlocal(ijl,1:nspin) = DscfL(ind,1:nspin)
+                  endif
                 enddo
               endif
             else
@@ -244,10 +266,14 @@ C           Copy row i of Dscf into row last of Dlocal
                   else
                     ijl = jl*(jl+1)/2 + il + 1
                   endif
-                  do ispin = 1,nspin
-                    Dij = Dscf(ind,ispin)
-                    Dlocal(ijl,ispin) = Dij
-                  enddo
+                  if ( SpOrb ) then
+                    Dlocal(ijl,1) = Dscf(ind,1)
+                    Dlocal(ijl,2) = Dscf(ind,2)
+                    Dlocal(ijl,3) = 0.5*(Dscf(ind,3)+Dscf(ind,7))
+                    Dlocal(ijl,4) = 0.5*(Dscf(ind,4)+Dscf(ind,8))
+                  else
+                    Dlocal(ijl,1:nspin) = Dscf(ind,1:nspin)
+                  endif
                 enddo
               else
                 do ii = 1, numd(iul)
@@ -259,10 +285,14 @@ C           Copy row i of Dscf into row last of Dlocal
                   else
                     ijl = jl*(jl+1)/2 + il + 1
                   endif
-                  do ispin = 1,nspin
-                    Dij = Dscf(ind,ispin)
-                    Dlocal(ijl,ispin) = Dij
-                  enddo
+                  if ( SpOrb ) then
+                    Dlocal(ijl,1) = Dscf(ind,1)
+                    Dlocal(ijl,2) = Dscf(ind,2)
+                    Dlocal(ijl,3) = 0.5*(Dscf(ind,3)+Dscf(ind,7))
+                    Dlocal(ijl,4) = 0.5*(Dscf(ind,4)+Dscf(ind,8))
+                  else
+                    Dlocal(ijl,1:nspin) = Dscf(ind,1:nspin)
+                  endif
                 enddo
               endif
             endif
@@ -371,3 +401,4 @@ C     Free local memory
       call write_debug( '    POS rhoofd' )
 #endif
       end subroutine rhoofd
+      end module 

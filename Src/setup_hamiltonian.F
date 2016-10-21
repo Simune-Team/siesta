@@ -13,7 +13,8 @@
       subroutine setup_hamiltonian( iscf )
 
       USE siesta_options
-      use sparse_matrices, only: H_kin, H_vkb, H_ldau
+      use sparse_matrices, only: H_kin, H_vkb
+      use sparse_matrices, only: H_ldau, H_so
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H, S, Hold
       use sparse_matrices, only: Dscf, Escf, xijo
@@ -36,7 +37,8 @@
       use parallel, only: Node
       use m_steps, only: istp
       use m_ntm
-      use m_spin,         only: nspin
+      use m_spin,         only: nspin, SpOrb, NonCol
+      use m_spin,         only: h_spin_dim, e_spin_dim, spinor_dim
       use m_dipol
       use alloc, only: re_alloc, de_alloc
       use m_gamma
@@ -74,24 +76,22 @@
       nullify(fal)
 
       ! Save present H matrix
-      if(mixH) then
-         Hold(1:maxnh,1:nspin) = H(1:maxnh,1:nspin)
+      if ( mixH ) then
+         Hold(1:maxnh,1:h_spin_dim) = H(1:maxnh,1:h_spin_dim)
       end if
 
-
+      
       ! Initialize Hamiltonian with the non-SCF part...................
+      do is = 1 , spinor_dim
+         H(:,is) = H_kin(:) + H_vkb(:)
+      end do 
+      if ( SpOrb ) then
+         H(:,3:) = H_so(:,:)
+      else if ( NonCol ) then
+         H(:,3) = 0._dp
+         H(:,4) = 0._dp
+      end if
 
-      do ispin = 1,nspin
-        if (ispin .le. 2) then
-          do io = 1,maxnh
-            H(io,ispin) = H_kin(io) + H_vkb(io)
-          enddo
-        else
-          do io = 1,maxnh
-            H(io,ispin) = 0.0_dp
-          enddo
-        endif
-      enddo          
 ! ..................
 
 ! Non-SCF part of total energy .......................................
@@ -103,21 +103,38 @@
 ! coming out of this routine need to be corrected.
 ! 
       Ekin = 0.0_dp
-      Enl = 0.0_dp
-      do ispin = 1,min(nspin,2)
-        do io = 1,maxnh
+      Enl  = 0.0_dp
+      do ispin = 1, spinor_dim
+        do io = 1, maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
-          Enl = Enl + H_vkb(io) * Dscf(io,ispin)
+          Enl  = Enl  + H_vkb(io) * Dscf(io,ispin)
         enddo
       enddo
+
 #ifdef MPI
-! Global reduction of Ekin and Enl
+! Global reduction of Ekin, Enl and Eso 
       call globalize_sum(Ekin,buffer1)
       Ekin = buffer1
       call globalize_sum(Enl,buffer1)
       Enl = buffer1
 #endif
-      E0 = Ekin + Enl - Eions + Ena
+
+      Eso = 0._dp
+      if ( SpOrb ) then
+         do io = 1,maxnh
+            Eso = Eso + H_so(io,3)*Dscf(io,7) + H_so(io,4)*Dscf(io,8)
+     .           + H_so(io,7)*Dscf(io,3) + H_so(io,8)*Dscf(io,4)
+     .           - H_so(io,5)*Dscf(io,5) - H_so(io,6)*Dscf(io,6)
+         enddo
+#ifdef MPI
+!     Global reduction of Ekin, Enl and Eso 
+         call globalize_sum(Eso,buffer1)
+         Eso = buffer1
+#endif
+      endif
+      
+!     Non-SCF part of total energy
+      E0 = Ena + Ekin + Enl + Eso - Eions
 
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
@@ -157,6 +174,7 @@
          want_partial_charges = .true.
       endif
       use_rhog_in =  (mix_charge .and. iscf > 1)
+  
       call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
      .            ntm, ifa, istr, ihmat, filesOut,

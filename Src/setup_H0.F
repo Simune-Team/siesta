@@ -16,11 +16,11 @@ C     Computes non-self-consistent part of the Hamiltonian
 C     and initializes data structures on the grid.
       
       USE siesta_options,  only: g2cut
-      use sparse_matrices, only: H_kin, H_vkb
+      use sparse_matrices, only: H_kin, H_vkb, H_so, Dscf
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use siesta_geom
       use atmfuncs, only: uion
-      use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
+      use atomlist, only: no_u, iaorb, iphkb, indxuo, datm, 
      &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
      &                    rmaxo, no_l
       use metaforce, only: lMetaForce, meta
@@ -30,18 +30,23 @@ C     and initializes data structures on the grid.
       use m_naefs,      only: naefs
       use m_dnaefs,     only: dnaefs
       use m_dhscf,      only: dhscf_init
-      use m_energies,   only: Eions, Ena, DEna, Emm, Emeta
+      use m_energies,   only: Eions, Ena, DEna, Emm, Emeta, Eso
       use m_ntm
-      use m_spin,         only: nspin
+      use m_spin,       only: nspin, SpOrb
+      use spinorbit,    only: spinorb
       use alloc, only: re_alloc, de_alloc
+
+#ifdef MPI
+      use m_mpi_utils, only: globalize_sum
+#endif
 
       implicit none
       real(dp) :: dummy_stress(3,3), dummy_fa(1,1), dummy_dm(1,1)
       real(dp) :: dummy_E
-      integer  :: ia, is, local_nspin
+      integer  :: ia, is
       real(dp) :: g2max
 
-!---------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------------------BEGIN
       call timer('Setup_H0',1)
 
 C     Self-energy of isolated ions
@@ -79,29 +84,46 @@ C     Add on force field contribution to energy
 !     parts of H
 
 !     Kinetic: matrix elements only
-      local_nspin = 1   ! We will not touch Dscf, and H_kin does
-                        ! not depend on spin
-      H_kin(:) = 0.0_dp
+      H_kin = 0.0_dp
       call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, maxnh, lasto, iphorb, isa, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
-     &             local_nspin,
+     &             1,
      &             dummy_dm, dummy_E, dummy_fa, dummy_stress,
      &             H_kin,
      &             matrix_elements_only=.true.) 
 
 C     Non-local-pseudop:  matrix elements only
-      local_nspin = 1   ! We will not touch Dscf, and H_vkb does
-                        ! not depend on spin
-      H_vkb(:) = 0.0_dp
+      H_vkb = 0.0_dp
       call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
      &            maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &            numh, listhptr, listh, numh, listhptr, listh, 
-     &            local_nspin,
+     &            1,
      &            dummy_dm, dummy_E, dummy_fa, dummy_stress,
      &            H_vkb,
      &            matrix_elements_only=.true.) 
 
+
+! ..................
+
+! If in the future the spin-orbit routine is able to compute
+! forces and stresses, then "last" will be needed. If we are not
+! computing forces and stresses, calling it in the first iteration
+! should be enough
+!
+      if ( SpOrb ) then
+         H_so = 0._dp
+         call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
+     .        maxnh,numh,listhptr,listh,Dscf,H_so,Eso)
+#ifdef MPI
+!     Global reduction of energy terms
+         call globalize_sum(Eso,dummy_E)
+         Eso = dummy_E
+#endif
+      else
+         Eso = 0._dp
+      end if
+      
 
 C     This will take care of possible changes to the mesh and atomic-related
 C     mesh structures for geometry changes
@@ -112,7 +134,7 @@ C     mesh structures for geometry changes
      &                 mscell, G2max, ntm,
      &                 maxnh, numh, listhptr, listh, datm,
      &                 dummy_fa, dummy_stress)
-
+  
       call timer('Setup_H0',2)
 
 !---------------------------------------------------------------------- END

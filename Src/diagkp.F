@@ -255,7 +255,7 @@ C Note : sign of complex part changed to match change in order of iuo/juo
             enddo
           enddo
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,eo(1,ispin,ik),psi,
-     &               0,iscf,ierror)
+     &               0,iscf,ierror, -1) ! dummy blocksize
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif
@@ -343,7 +343,7 @@ C Find eigenvectors
             enddo
           enddo
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
-     &               neigneeded,iscf,ierror)
+     &               neigneeded,iscf,ierror, -1) !dummy blocksize
 
 C Check error flag and take appropriate action
           if (ierror.gt.0) then
@@ -370,7 +370,7 @@ C Repeat diagonalisation with increased memory to handle clustering
               enddo
             enddo
             call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
-     &                 neigneeded,iscf,ierror)
+     &                 neigneeded,iscf,ierror, -1) ! dummy blocksize
           endif
 !
 !         Here we could write the wavefunctions, taking care to

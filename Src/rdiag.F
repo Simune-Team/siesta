@@ -50,8 +50,8 @@ C
       use alloc,      only : re_alloc, de_alloc, allocdefaults,
      &                       alloc_default
       use sys,        only : die
-      use m_diagon,   only : saveeigenvectors, maxclustersize, i2d_ctxt,
-     &                       serial, noexpert, divideconquer, use2d,
+      use m_diagon_opt,only : saveeigenvectors, maxclustersize, serial,
+     &                       i2d_ctxt, noexpert, divideconquer, use2d,
      &                       prerotate, ictxt, allinone, doread,
      &                       firstcall
 #ifdef MPI

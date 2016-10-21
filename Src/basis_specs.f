@@ -171,6 +171,8 @@
 !---
       subroutine read_basis_specs()
 
+!!      use m_spin, only: SpOrb
+
       character(len=15), parameter  :: basis_size_default='standard'
       character(len=10), parameter  :: basistype_default='split'
 
@@ -299,8 +301,17 @@ C Sanity checks on values
 !        if (reparametrize_pseudos)
 !     .    call pseudo_reparametrize(p=basp%pseudopotential,
 !     .                             a=new_a, b=new_b,label=basp%label)
+
+c$$$       if (SpOrb .and. basp%psml_ps) then
+c$$$           if ( .not. ps_HasSemilocalPotentials(basp%psml_ps)) then
+c$$$               call die(
+c$$$     $                  "Cannot do spin-orbit without semilocal pots")
+c$$$          endif
+c$$$       endif
+
       enddo
 
+      
       if (synthetic_atoms) then
 
         found = fdf_block('SyntheticAtoms',bfdf)

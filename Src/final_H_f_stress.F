@@ -40,7 +40,9 @@
       use m_energies
       use m_steps, only: istp
       use m_ntm
-      use m_spin,         only: nspin
+      use m_spin,         only: SpOrb
+      use m_spin,         only: nspin, h_spin_dim, spinor_dim
+      use spinorbit,      only: spinorb
       use m_dipol
       use m_forces,          only: fa
       use alloc, only: re_alloc, de_alloc
@@ -89,7 +91,7 @@
 !--------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
-      call re_alloc(H_tmp, 1,maxnh, 1,nspin,
+      call re_alloc(H_tmp, 1,maxnh, 1, h_spin_dim,
      $                       'H_tmp','final_H_f_stress')
       H_tmp = 0.0_dp
 
@@ -113,7 +115,7 @@
       call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              min(nspin,2), Dscf, Ekin, fal, stressl, H_tmp,
+     &              spinor_dim, Dscf, Ekin, fal, stressl, H_tmp,
      &              matrix_elements_only=.false. ) 
 #ifdef MPI
 ! Global reduction of energy terms
@@ -126,7 +128,7 @@
       call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
-     &             min(nspin,2), Dscf, Enl, fal, stressl, H_tmp,
+     &             spinor_dim, Dscf, Enl, fal, stressl, H_tmp,
      &             matrix_elements_only=.false. ) 
 
 #ifdef MPI
@@ -135,8 +137,25 @@
       Enl = buffer1
 #endif
 
+! If in the future the spin-orbit routine is able to compute
+! forces and stresses, then "last" will be needed. If we are not
+! computing forces and stresses, calling it in the first iteration
+! should be enough
+!
+      if ( SpOrb ) then
+         call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
+     .        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
+#ifdef MPI
+!     Global reduction of energy terms
+         call globalize_sum(Eso,buffer1)
+         Eso = buffer1
+#endif
+      else
+         Eso = 0._dp
+      endif
+      
 !     Non-SCF part of total energy
-      E0 = -Eions + Ena + Ekin + Enl
+      E0 = Ena + Ekin + Enl + Eso - Eions
 
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
@@ -181,7 +200,7 @@
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              min(nspin,2), Escf, fal, stressl, S ) 
+     &              spinor_dim, Escf, fal, stressl, S ) 
 
 !     Metadynamics forces
       if (lMetaForce) then
@@ -228,7 +247,7 @@
 ! This call could be moved to a more appropriate place
 !
       if (savehs) then
-         call write_hsx( gamma, no_u, no_s, nspin, indxuo,
+         call write_hsx( gamma, no_u, no_s, h_spin_dim, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, qtot,
      &        temp, xijo)
       endif
