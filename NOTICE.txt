@@ -5,9 +5,6 @@ Some of the accompanying software has an attribution requirement, or
 different licensing terms, so see below. Other accompanying products
 without special requirements are not listed.
 
-This package includes a copy of the FoX software, which has its own
-license, copyright, and attribution terms. (See Src/FoX)
-
 This package includes a copy of the SiestaXC library, which has its own
 license, copyright, and attribution terms. (See Src/SiestaXC)
 
