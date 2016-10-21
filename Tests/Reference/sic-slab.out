@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-trunk-506
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:43:27
+* Running on    2 nodes in parallel
+>> Start of run:  31-MAY-2016   9:04:09
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -166,9 +166,10 @@ reinit: System Label: sic-slab
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: Si.pbe Atomic number:          14
- Species number:            2  Label: C.pbe Atomic number:           6
- Species number:            3  Label: H.pbe Atomic number:           1
+Species number:   1 Atomic number:   14 Label: Si.pbe
+Species number:   2 Atomic number:    6 Label: C.pbe
+Species number:   3 Atomic number:    1 Label: H.pbe
+
 Ground state valence configuration:   3s02  3p02
 Reading pseudopotential information in formatted form from Si.pbe.psf
 
@@ -215,7 +216,7 @@ L=0  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    6.2845    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -225,7 +226,7 @@ L=1  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    7.4564    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -318,7 +319,7 @@ L=0  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    6.1031    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -328,7 +329,7 @@ L=1  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    8.2107    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -423,7 +424,7 @@ L=0  Nsemic=0  Cnfigmx=1
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -680,10 +681,10 @@ madelung: WARNING: Charged system, but not an atom or molecule.
 madelung: WARNING: Energy correction terms can not be applied. 
 madelung: WARNING: Continue only if you really know what you are doing.
 
-* ProcessorY, Blocksize:    2  24
+* ProcessorY, Blocksize:    1  24
 
 
-* Orbital distribution balance (max,min):    96    72
+* Orbital distribution balance (max,min):   168   156
 
 k-point displ. along   3 input, could be:     0.50    0.00
  Kpoints in:            2 . Kpoints trimmed:            2
@@ -718,29 +719,23 @@ New_DM. Step:     1
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =        277.00000000        276.00000207
 New grid distribution:   1
-           1       1:   36    1:   12    1:   50
-           2       1:   36    1:   12   51:  100
-           3       1:   36   13:   24    1:   50
-           4       1:   36   13:   24   51:  100
+           1       1:   36    1:   24    1:   50
+           2       1:   36    1:   24   51:  100
 
 InitMesh: MESH =    72 x    48 x   200 =      691200
 InitMesh: (bp) =    36 x    24 x   100 =       86400
 InitMesh: Mesh cutoff (required, used) =   150.000   157.900 Ry
-ExtMesh (bp) on 0 =   104 x    80 x   118 =      981760
+ExtMesh (bp) on 0 =   104 x    92 x   118 =     1129024
 New grid distribution:   2
-           1       1:   36    1:   24    1:   12
-           2       1:   36    1:   24   34:  100
-           3       1:   36    1:   24   23:   33
-           4       1:   36    1:   24   13:   22
+           1       1:   36    1:   24    1:   22
+           2       1:   36    1:   24   23:  100
 New grid distribution:   3
-           1       1:   36    1:   24   39:   57
-           2       1:   36    1:   24   58:  100
-           3       1:   36    1:   24    1:   19
-           4       1:   36    1:   24   20:   38
+           1       1:   36    1:   24    1:   38
+           2       1:   36    1:   24   39:  100
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =   104 x    92 x    80 =      765440
-PhiOnMesh: Number of (b)points on node 0 =                10368
-PhiOnMesh: nlist on node 0 =               983134
+ExtMesh (bp) on 0 =   104 x    92 x    90 =      861120
+PhiOnMesh: Number of (b)points on node 0 =                19008
+PhiOnMesh: nlist on node 0 =              1895093
 
 doping: SimulateDoping = .true. in input file
 doping: Neutralizing background will be added to points
@@ -750,16 +745,17 @@ efield: SlabDipoleCorrection = .true. in input file
 efield: A dipole layer will be introduced in the vacuum
 efield: region to compensate the system dipole
 Dipole moment in unit cell   =      0.0000     -0.0000      1.8475 D
-Electric field for dipole correction =    0.000000    0.000000   -0.001754 Ry/Bohr/e
+Electric field for dipole correction =   -0.000000    0.000000   -0.001754 Ry/Bohr/e
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -3840.063915
+siesta: Ebs     =     -3840.063913
 siesta: Eions   =     14694.110283
 siesta: Ena     =      3895.775417
 siesta: Ekin    =      3900.433705
 siesta: Enl     =       741.280612
+siesta: EldaU   =         0.000000
 siesta: DEna    =       -18.708477
 siesta: DUscf   =         0.033660
 siesta: DUext   =         0.017342
@@ -775,137 +771,137 @@ siesta: FreeEng =     -8918.226211
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1    -8823.6980    -8918.1904    -8918.2262  1.74602 -3.8236
-timer: Routine,Calls,Time,% =    IterSCF     1       3.659  35.70
+timer: Routine,Calls,Time,% =    IterSCF     1       5.784  47.38
 Dipole moment in unit cell   =      0.0000     -0.0000      1.6334 D
-Electric field for dipole correction =    0.000000    0.000000   -0.001550 Ry/Bohr/e
+Electric field for dipole correction =   -0.000000    0.000000   -0.001550 Ry/Bohr/e
    scf:    2    -8819.1600    -8917.2244    -8917.2602  1.72135 -3.7849
-Dipole moment in unit cell   =      0.0000      0.0000     -8.9575 D
+Dipole moment in unit cell   =     -0.0000      0.0000     -8.9575 D
 Electric field for dipole correction =    0.000000   -0.000000    0.008502 Ry/Bohr/e
    scf:    3    -8727.4709    -8811.9683    -8812.0086  0.77932 -2.2576
-Dipole moment in unit cell   =      0.0000      0.0000     -7.6531 D
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.6531 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007264 Ry/Bohr/e
    scf:    4    -8724.8309    -8819.9376    -8819.9760  0.73197 -2.1633
-Dipole moment in unit cell   =      0.0000      0.0000     -7.9451 D
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.9451 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007541 Ry/Bohr/e
    scf:    5    -8726.4590    -8808.5644    -8808.6022  0.74571 -2.1288
-Dipole moment in unit cell   =      0.0000      0.0000     -8.0510 D
+Dipole moment in unit cell   =     -0.0000      0.0000     -8.0510 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007642 Ry/Bohr/e
-   scf:    6    -8731.5131    -8781.9357    -8781.9716  0.73828 -2.1700
-Dipole moment in unit cell   =      0.0000      0.0000     -4.5121 D
+   scf:    6    -8731.5131    -8781.9358    -8781.9716  0.73828 -2.1700
+Dipole moment in unit cell   =     -0.0000      0.0000     -4.5121 D
 Electric field for dipole correction =    0.000000   -0.000000    0.004283 Ry/Bohr/e
-   scf:    7    -8725.2000    -8765.2420    -8765.2779  0.47990 -3.0571
-Dipole moment in unit cell   =      0.0000      0.0000     -0.5614 D
+   scf:    7    -8725.1999    -8765.2418    -8765.2776  0.47990 -3.0571
+Dipole moment in unit cell   =     -0.0000      0.0000     -0.5614 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000533 Ry/Bohr/e
    scf:    8    -8727.7454    -8730.5233    -8730.5592  0.35249 -4.0974
-Dipole moment in unit cell   =      0.0000      0.0000     -1.2051 D
+Dipole moment in unit cell   =     -0.0000      0.0000     -1.2051 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001144 Ry/Bohr/e
-   scf:    9    -8727.8827    -8721.2079    -8721.2437  0.33729 -3.9654
-Dipole moment in unit cell   =      0.0000      0.0000     -2.1508 D
+   scf:    9    -8727.8827    -8721.2078    -8721.2437  0.33729 -3.9654
+Dipole moment in unit cell   =     -0.0000      0.0000     -2.1508 D
 Electric field for dipole correction =    0.000000   -0.000000    0.002041 Ry/Bohr/e
-   scf:   10    -8728.0002    -8710.8519    -8710.8878  0.30982 -3.7574
-Dipole moment in unit cell   =      0.0000      0.0000     -7.9316 D
+   scf:   10    -8728.0002    -8710.8520    -8710.8878  0.30982 -3.7574
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.9316 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007528 Ry/Bohr/e
-   scf:   11    -8722.3192    -8710.7689    -8710.8048  0.07750 -2.2570
-Dipole moment in unit cell   =      0.0000      0.0000     -8.2156 D
+   scf:   11    -8722.3192    -8710.7690    -8710.8049  0.07750 -2.2570
+Dipole moment in unit cell   =     -0.0000      0.0000     -8.2156 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007798 Ry/Bohr/e
-   scf:   12    -8722.2787    -8710.6649    -8710.7009  0.08725 -2.1997
-Dipole moment in unit cell   =      0.0000      0.0000     -8.1377 D
+   scf:   12    -8722.2787    -8710.6650    -8710.7011  0.08726 -2.1997
+Dipole moment in unit cell   =     -0.0000      0.0000     -8.1377 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007724 Ry/Bohr/e
-   scf:   13    -8722.2712    -8710.7971    -8710.8331  0.07293 -2.2157
-Dipole moment in unit cell   =      0.0000      0.0000     -8.2132 D
-Electric field for dipole correction =    0.000000   -0.000000    0.007795 Ry/Bohr/e
-   scf:   14    -8722.2156    -8711.4586    -8711.4946  0.07381 -2.2118
-Dipole moment in unit cell   =      0.0000      0.0000     -8.1449 D
+   scf:   13    -8722.2712    -8710.7973    -8710.8332  0.07293 -2.2157
+Dipole moment in unit cell   =     -0.0000      0.0000     -8.2132 D
+Electric field for dipole correction =    0.000000   -0.000000    0.007796 Ry/Bohr/e
+   scf:   14    -8722.2156    -8711.4588    -8711.4947  0.07381 -2.2118
+Dipole moment in unit cell   =     -0.0000      0.0000     -8.1449 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007731 Ry/Bohr/e
-   scf:   15    -8722.2056    -8711.8732    -8711.9091  0.07090 -2.2341
-Dipole moment in unit cell   =      0.0000      0.0000     -7.9633 D
+   scf:   15    -8722.2056    -8711.8733    -8711.9092  0.07090 -2.2341
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.9633 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007558 Ry/Bohr/e
-   scf:   16    -8722.1802    -8712.2086    -8712.2445  0.06869 -2.2787
-Dipole moment in unit cell   =      0.0000      0.0000     -7.7236 D
+   scf:   16    -8722.1802    -8712.2087    -8712.2446  0.06869 -2.2787
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.7237 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007331 Ry/Bohr/e
-   scf:   17    -8722.1580    -8712.6185    -8712.6543  0.06870 -2.3363
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5775 D
+   scf:   17    -8722.1580    -8712.6185    -8712.6544  0.06870 -2.3363
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5775 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007192 Ry/Bohr/e
-   scf:   18    -8722.1618    -8712.8846    -8712.9204  0.06724 -2.3673
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5834 D
+   scf:   18    -8722.1618    -8712.8847    -8712.9205  0.06724 -2.3673
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5834 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007198 Ry/Bohr/e
    scf:   19    -8722.1534    -8712.9592    -8712.9950  0.06676 -2.3695
-Dipole moment in unit cell   =      0.0000      0.0000     -7.1523 D
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.1523 D
 Electric field for dipole correction =    0.000000   -0.000000    0.006789 Ry/Bohr/e
-   scf:   20    -8722.1360    -8714.8392    -8714.8750  0.05947 -2.4985
-Dipole moment in unit cell   =      0.0000      0.0000     -6.9790 D
+   scf:   20    -8722.1360    -8714.8394    -8714.8753  0.05947 -2.4985
+Dipole moment in unit cell   =     -0.0000      0.0000     -6.9790 D
 Electric field for dipole correction =    0.000000   -0.000000    0.006624 Ry/Bohr/e
-   scf:   21    -8722.1453    -8715.7806    -8715.8164  0.06157 -2.5474
-Dipole moment in unit cell   =      0.0000      0.0000     -6.9865 D
+   scf:   21    -8722.1453    -8715.7808    -8715.8167  0.06157 -2.5474
+Dipole moment in unit cell   =     -0.0000      0.0000     -6.9866 D
 Electric field for dipole correction =    0.000000   -0.000000    0.006631 Ry/Bohr/e
-   scf:   22    -8722.1489    -8716.4990    -8716.5349  0.04679 -2.5362
-Dipole moment in unit cell   =      0.0000      0.0000     -6.9950 D
+   scf:   22    -8722.1489    -8716.4993    -8716.5352  0.04678 -2.5362
+Dipole moment in unit cell   =     -0.0000      0.0000     -6.9951 D
 Electric field for dipole correction =    0.000000   -0.000000    0.006639 Ry/Bohr/e
-   scf:   23    -8722.1459    -8716.5185    -8716.5543  0.04953 -2.5361
-Dipole moment in unit cell   =      0.0000      0.0000     -7.1382 D
+   scf:   23    -8722.1459    -8716.5187    -8716.5546  0.04953 -2.5361
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.1382 D
 Electric field for dipole correction =    0.000000   -0.000000    0.006775 Ry/Bohr/e
-   scf:   24    -8722.1454    -8718.4124    -8718.4482  0.04322 -2.4985
-Dipole moment in unit cell   =      0.0000      0.0000     -7.1865 D
+   scf:   24    -8722.1454    -8718.4126    -8718.4484  0.04322 -2.4985
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.1866 D
 Electric field for dipole correction =    0.000000   -0.000000    0.006821 Ry/Bohr/e
-   scf:   25    -8722.1435    -8718.7157    -8718.7516  0.04494 -2.4840
-Dipole moment in unit cell   =      0.0000      0.0000     -7.6179 D
+   scf:   25    -8722.1435    -8718.7160    -8718.7518  0.04494 -2.4840
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.6179 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007230 Ry/Bohr/e
-   scf:   26    -8722.1177    -8720.1928    -8720.2286  0.04443 -2.3509
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5493 D
+   scf:   26    -8722.1177    -8720.1930    -8720.2289  0.04442 -2.3509
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5494 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007165 Ry/Bohr/e
-   scf:   27    -8722.1164    -8719.7934    -8719.8292  0.03983 -2.3702
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5821 D
+   scf:   27    -8722.1164    -8719.7936    -8719.8294  0.03983 -2.3702
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5821 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007196 Ry/Bohr/e
-   scf:   28    -8722.1126    -8719.7746    -8719.8105  0.03341 -2.3591
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5989 D
+   scf:   28    -8722.1125    -8719.7749    -8719.8107  0.03341 -2.3591
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5989 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007212 Ry/Bohr/e
-   scf:   29    -8722.1101    -8719.7415    -8719.7773  0.02509 -2.3525
-Dipole moment in unit cell   =      0.0000      0.0000     -7.4763 D
+   scf:   29    -8722.1101    -8719.7416    -8719.7774  0.02509 -2.3525
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.4764 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007096 Ry/Bohr/e
-   scf:   30    -8722.1086    -8719.6532    -8719.6891  0.01916 -2.3889
-Dipole moment in unit cell   =      0.0000      0.0000     -7.4659 D
+   scf:   30    -8722.1086    -8719.6523    -8719.6882  0.01916 -2.3889
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.4660 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007086 Ry/Bohr/e
-   scf:   31    -8722.1084    -8719.6704    -8719.7063  0.01922 -2.3926
-Dipole moment in unit cell   =      0.0000      0.0000     -7.4918 D
+   scf:   31    -8722.1084    -8719.6694    -8719.7053  0.01922 -2.3925
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.4917 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007111 Ry/Bohr/e
-   scf:   32    -8722.1073    -8720.0981    -8720.1339  0.01869 -2.3924
-Dipole moment in unit cell   =      0.0000      0.0000     -7.4990 D
+   scf:   32    -8722.1073    -8720.0967    -8720.1325  0.01868 -2.3924
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.4989 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007118 Ry/Bohr/e
-   scf:   33    -8722.1064    -8720.0883    -8720.1241  0.01692 -2.3895
-Dipole moment in unit cell   =      0.0000      0.0000     -7.7037 D
+   scf:   33    -8722.1064    -8720.0869    -8720.1227  0.01691 -2.3896
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.7037 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007312 Ry/Bohr/e
-   scf:   34    -8722.0988    -8720.7100    -8720.7458  0.01266 -2.3285
-Dipole moment in unit cell   =      0.0000      0.0000     -7.6754 D
+   scf:   34    -8722.0988    -8720.7089    -8720.7448  0.01269 -2.3285
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.6754 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007285 Ry/Bohr/e
-   scf:   35    -8722.0995    -8720.6852    -8720.7211  0.01231 -2.3367
-Dipole moment in unit cell   =      0.0000      0.0000     -7.6934 D
+   scf:   35    -8722.0995    -8720.6842    -8720.7201  0.01234 -2.3367
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.6936 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007302 Ry/Bohr/e
-   scf:   36    -8722.1001    -8721.9145    -8721.9504  0.00962 -2.3279
-Dipole moment in unit cell   =      0.0000      0.0000     -7.6109 D
+   scf:   36    -8722.1001    -8721.9119    -8721.9477  0.00958 -2.3279
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.6113 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007224 Ry/Bohr/e
-   scf:   37    -8722.1026    -8721.8566    -8721.8924  0.00606 -2.3517
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5978 D
-Electric field for dipole correction =    0.000000   -0.000000    0.007211 Ry/Bohr/e
-   scf:   38    -8722.1030    -8721.8563    -8721.8922  0.00587 -2.3553
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5017 D
+   scf:   37    -8722.1026    -8721.8541    -8721.8900  0.00608 -2.3516
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5981 D
+Electric field for dipole correction =    0.000000   -0.000000    0.007212 Ry/Bohr/e
+   scf:   38    -8722.1030    -8721.8540    -8721.8899  0.00589 -2.3553
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5017 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007120 Ry/Bohr/e
-   scf:   39    -8722.1045    -8722.1000    -8722.1358  0.00253 -2.3779
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5304 D
+   scf:   39    -8722.1046    -8722.1031    -8722.1390  0.00251 -2.3779
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5303 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007147 Ry/Bohr/e
-   scf:   40    -8722.1034    -8722.1258    -8722.1617  0.00216 -2.3695
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5347 D
+   scf:   40    -8722.1034    -8722.1292    -8722.1650  0.00216 -2.3695
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5346 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007151 Ry/Bohr/e
-   scf:   41    -8722.1032    -8722.1308    -8722.1666  0.00217 -2.3683
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5469 D
+   scf:   41    -8722.1032    -8722.1341    -8722.1699  0.00217 -2.3683
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5469 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007163 Ry/Bohr/e
-   scf:   42    -8722.1025    -8722.1669    -8722.2027  0.00084 -2.3657
+   scf:   42    -8722.1025    -8722.1696    -8722.2054  0.00086 -2.3657
 
 SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00083859
+max |DM_out - DM_in|:     0.00085591
 SCF cycle converged after   42 iterations
 
 Using DM_out to compute the final energy and forces
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5843 D
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5847 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007199 Ry/Bohr/e
 
 siesta: E_KS(eV) =            -8722.1011
@@ -914,148 +910,150 @@ siesta: E_KS - E_eggbox =     -8722.1011
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.001620    0.003463   -0.328302
+   Tot   -0.001621    0.003463   -0.328313
 ----------------------------------------
-   Max    2.412956
-   Res    0.556664    sqrt( Sum f_i^2 / 3N )
+   Max    2.412944
+   Res    0.556681    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    2.412956    constrained
+   Max    2.412944    constrained
 
-Stress-tensor-Voigt (kbar):      -76.53      -69.52      -64.50       -0.01        0.19        2.47
-(Free)E + p*V (eV/cell)    -8654.5148
+Stress-tensor-Voigt (kbar):      -76.54      -69.53      -64.51       -0.01        0.19        2.47
+(Free)E + p*V (eV/cell)    -8654.5065
 Target enthalpy (eV/cell)    -8722.1369
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -3426.766170
+siesta: Ebs     =     -3426.759298
 siesta: Eions   =     14694.110283
 siesta: Ena     =      3895.775417
-siesta: Ekin    =      4991.975050
-siesta: Enl     =       133.187770
-siesta: DEna    =      -260.413489
-siesta: DUscf   =        63.581568
-siesta: DUext   =         0.292251
-siesta: Exc     =     -2852.389349
+siesta: Ekin    =      4991.978846
+siesta: Enl     =       133.185846
+siesta: EldaU   =         0.000000
+siesta: DEna    =      -260.415543
+siesta: DUscf   =        63.582515
+siesta: DUext   =         0.292276
+siesta: Exc     =     -2852.390126
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -8722.102537
-siesta: Etot    =     -8722.101065
-siesta: FreeEng =     -8722.136902
+siesta: Eharris =     -8722.102536
+siesta: Etot    =     -8722.101052
+siesta: FreeEng =     -8722.136889
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =   -3426.766170
-siesta:       Kinetic =    4991.975050
-siesta:       Hartree =   66137.065296
-siesta:    Ext. field =       0.292251
-siesta:   Exch.-corr. =   -2852.389349
-siesta:  Ion-electron = -137037.882677
-siesta:       Ion-ion =   60038.838364
+siesta:  Band Struct. =   -3426.759298
+siesta:       Kinetic =    4991.978846
+siesta:       Hartree =   66137.023708
+siesta:       Eldau   =       0.000000
+siesta:    Ext. field =       0.292276
+siesta:   Exch.-corr. =   -2852.390126
+siesta:  Ion-electron = -137037.844097
+siesta:       Ion-ion =   60038.838341
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -8722.101065
+siesta:         Total =   -8722.101052
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.006271    0.002246   -0.553898
-siesta:      2    0.006019   -0.001362   -0.553897
-siesta:      3    0.001399    0.002515   -0.555081
-siesta:      4    0.001504   -0.001538   -0.555073
-siesta:      5   -0.003347    0.000487   -0.552572
-siesta:      6   -0.003415    0.000476   -0.552416
-siesta:      7    0.151491    0.004065    0.240450
-siesta:      8    0.157919    0.006161    0.335344
-siesta:      9   -0.185180    0.006303    0.248683
-siesta:     10   -0.178711    0.004225    0.335293
-siesta:     11   -0.017187    0.005927    0.341442
-siesta:     12   -0.037409    0.004426    0.460776
-siesta:     13   -0.050531    0.016278    0.578693
-siesta:     14   -0.060834   -0.022058    0.576567
-siesta:     15   -0.001332    0.003612    0.687451
-siesta:     16    0.005759   -0.012064    0.686272
-siesta:     17    0.035035   -0.003161    0.580588
-siesta:     18    0.031419   -0.002404    0.572599
-siesta:     19    0.192326   -0.002202    0.817570
-siesta:     20    0.225058   -0.005463    0.865980
-siesta:     21   -0.231791   -0.000711    0.814168
-siesta:     22   -0.140746    0.000601    0.878040
-siesta:     23   -0.043441    0.000179    0.076280
-siesta:     24   -0.013346    0.003112    0.095783
-siesta:     25   -0.008161    0.081254    1.061231
-siesta:     26   -0.013020   -0.096133    1.057329
-siesta:     27    0.285617   -0.020058    0.718879
-siesta:     28    0.287378    0.027591    0.724457
-siesta:     29   -0.047091    0.075126    1.231730
-siesta:     30   -0.048611   -0.084247    1.224113
-siesta:     31   -0.351999   -0.266380    0.089213
-siesta:     32    0.013082    0.083644    0.172270
-siesta:     33   -0.348881    0.258967    0.095081
-siesta:     34    0.014971   -0.077797    0.168802
-siesta:     35   -0.709367    0.002131    1.674145
-siesta:     36    1.049732   -0.000269    1.381896
-siesta:     37   -2.412956    0.000007    0.325773
-siesta:     38    1.082513   -0.000042    0.052741
-siesta:     39   -2.409575   -0.000176    0.320402
-siesta:     40    1.089719   -0.000012    0.047986
-siesta:     41   -2.408830   -0.000006    0.325244
-siesta:     42    1.097379   -0.000014    0.052768
-siesta:     43    0.039762   -0.000245   -0.432366
-siesta:     44    0.039309    0.000940   -0.431963
-siesta:     45   -0.034114    0.000509   -0.431700
-siesta:     46   -0.034115    0.000156   -0.432194
-siesta:     47    0.000207   -0.000869   -0.427383
-siesta:     48    0.000599    0.001612   -0.427519
-siesta:     49   -0.041769    0.003377   -0.542787
-siesta:     50   -0.026992   -0.001248   -0.512165
-siesta:     51    0.004309    0.001160   -0.515407
-siesta:     52   -0.004739    0.002948   -0.502713
-siesta:     53    0.017059    0.000812   -0.536336
-siesta:     54    0.042109   -0.000481   -0.527685
-siesta:     55   -0.058875    0.013824   -0.754073
-siesta:     56   -0.059209   -0.012815   -0.748736
-siesta:     57    0.088436   -0.003154   -0.751789
-siesta:     58    0.093198    0.007055   -0.752979
-siesta:     59    0.018042    0.000924   -0.732184
-siesta:     60    0.021483   -0.003326   -0.730882
-siesta:     61   -0.196730    0.002814   -0.852603
-siesta:     62   -0.211200    0.001857   -0.845019
-siesta:     63    0.244744   -0.009484   -0.940767
-siesta:     64   -0.344209   -0.000623   -0.967522
-siesta:     65    0.220903    0.007008   -0.900300
-siesta:     66    0.255074   -0.003232   -0.818561
-siesta:     67    1.568883   -0.000120   -1.171168
-siesta:     68    0.808684    0.000050    0.805601
-siesta:     69   -0.267031    0.000079    0.388714
-siesta:     70   -0.795034    0.000032   -0.489084
-siesta:     71    1.567176    0.000071   -1.172726
-siesta:     72    0.808475    0.000335    0.804359
-siesta:     73   -0.272429    0.000036    0.390234
-siesta:     74   -0.798840    0.000041   -0.493838
-siesta:     75    1.567627    0.000038   -1.170430
-siesta:     76    0.807270    0.000042    0.805396
-siesta:     77   -0.274575    0.000062    0.393061
-siesta:     78   -0.803937    0.000043   -0.495887
+siesta:      1    0.006269    0.002246   -0.553987
+siesta:      2    0.006018   -0.001362   -0.553986
+siesta:      3    0.001400    0.002515   -0.555171
+siesta:      4    0.001504   -0.001538   -0.555164
+siesta:      5   -0.003347    0.000487   -0.552660
+siesta:      6   -0.003415    0.000476   -0.552504
+siesta:      7    0.151492    0.004065    0.240305
+siesta:      8    0.157920    0.006161    0.335201
+siesta:      9   -0.185180    0.006303    0.248541
+siesta:     10   -0.178711    0.004225    0.335153
+siesta:     11   -0.017189    0.005928    0.341298
+siesta:     12   -0.037412    0.004426    0.460635
+siesta:     13   -0.050542    0.016280    0.578621
+siesta:     14   -0.060846   -0.022060    0.576495
+siesta:     15   -0.001326    0.003614    0.687384
+siesta:     16    0.005765   -0.012067    0.686205
+siesta:     17    0.035042   -0.003159    0.580521
+siesta:     18    0.031426   -0.002406    0.572532
+siesta:     19    0.192312   -0.002202    0.817686
+siesta:     20    0.225055   -0.005463    0.866094
+siesta:     21   -0.231762   -0.000711    0.814288
+siesta:     22   -0.140731    0.000602    0.878166
+siesta:     23   -0.043453    0.000179    0.076338
+siesta:     24   -0.013360    0.003112    0.095851
+siesta:     25   -0.008163    0.081253    1.061454
+siesta:     26   -0.013022   -0.096132    1.057552
+siesta:     27    0.285637   -0.020046    0.719106
+siesta:     28    0.287398    0.027580    0.724684
+siesta:     29   -0.047098    0.075121    1.231941
+siesta:     30   -0.048618   -0.084243    1.224324
+siesta:     31   -0.351992   -0.266336    0.089215
+siesta:     32    0.013092    0.083652    0.172245
+siesta:     33   -0.348874    0.258922    0.095084
+siesta:     34    0.014980   -0.077805    0.168776
+siesta:     35   -0.709437    0.002131    1.674155
+siesta:     36    1.049765   -0.000269    1.381940
+siesta:     37   -2.412944    0.000007    0.325886
+siesta:     38    1.082508   -0.000042    0.052855
+siesta:     39   -2.409564   -0.000176    0.320515
+siesta:     40    1.089714   -0.000012    0.048100
+siesta:     41   -2.408818   -0.000006    0.325357
+siesta:     42    1.097374   -0.000014    0.052882
+siesta:     43    0.039763   -0.000245   -0.432352
+siesta:     44    0.039309    0.000940   -0.431949
+siesta:     45   -0.034115    0.000509   -0.431687
+siesta:     46   -0.034116    0.000156   -0.432181
+siesta:     47    0.000207   -0.000870   -0.427368
+siesta:     48    0.000598    0.001612   -0.427504
+siesta:     49   -0.041765    0.003377   -0.542786
+siesta:     50   -0.026988   -0.001248   -0.512164
+siesta:     51    0.004308    0.001160   -0.515403
+siesta:     52   -0.004740    0.002948   -0.502708
+siesta:     53    0.017054    0.000812   -0.536336
+siesta:     54    0.042104   -0.000481   -0.527685
+siesta:     55   -0.058872    0.013821   -0.754099
+siesta:     56   -0.059206   -0.012812   -0.748762
+siesta:     57    0.088429   -0.003159   -0.751817
+siesta:     58    0.093191    0.007059   -0.753007
+siesta:     59    0.018043    0.000922   -0.732207
+siesta:     60    0.021485   -0.003324   -0.730905
+siesta:     61   -0.196714    0.002814   -0.852682
+siesta:     62   -0.211189    0.001857   -0.845097
+siesta:     63    0.244741   -0.009484   -0.940834
+siesta:     64   -0.344236   -0.000623   -0.967565
+siesta:     65    0.220894    0.007008   -0.900379
+siesta:     66    0.255072   -0.003232   -0.818640
+siesta:     67    1.568895   -0.000120   -1.171197
+siesta:     68    0.808660    0.000050    0.805572
+siesta:     69   -0.267010    0.000079    0.388685
+siesta:     70   -0.795051    0.000032   -0.489113
+siesta:     71    1.567189    0.000071   -1.172754
+siesta:     72    0.808452    0.000335    0.804331
+siesta:     73   -0.272408    0.000036    0.390206
+siesta:     74   -0.798856    0.000041   -0.493866
+siesta:     75    1.567640    0.000038   -1.170458
+siesta:     76    0.807247    0.000042    0.805368
+siesta:     77   -0.274553    0.000062    0.393032
+siesta:     78   -0.803953    0.000043   -0.495915
 siesta: ----------------------------------------
-siesta:    Tot   -0.001620    0.003463   -0.328302
+siesta:    Tot   -0.001621    0.003463   -0.328313
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.047766   -0.000005    0.001540
-siesta:    -0.000005   -0.043389    0.000121
-siesta:     0.001540    0.000121   -0.040256
+siesta:    -0.047771   -0.000005    0.001540
+siesta:    -0.000005   -0.043395    0.000121
+siesta:     0.001540    0.000121   -0.040261
 
 siesta: Cell volume =       1543.760568 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00047708          0.00031444  Ry/Bohr**3
-siesta:           0.04380347          0.02887058  eV/Ang**3
-siesta:          70.18165100         46.25626613  kBar
-(Free)E+ p_basis*V_orbitals  =       -8682.946877
+siesta:           0.00047713          0.00031448  Ry/Bohr**3
+siesta:           0.04380883          0.02887422  eV/Ang**3
+siesta:          70.19023875         46.26210290  kBar
+(Free)E+ p_basis*V_orbitals  =       -8682.946864
 (Free)Eharris+ p_basis*V_orbitals  =       -8682.948348
 
-siesta: Electric dipole (a.u.)  =    0.000000    0.000000   -2.983900
-siesta: Electric dipole (Debye) =    0.000000    0.000000   -7.584323
-Dipole moment in unit cell   =      0.0000      0.0000     -7.5843 D
+siesta: Electric dipole (a.u.)  =   -0.000000    0.000000   -2.984030
+siesta: Electric dipole (Debye) =   -0.000000    0.000000   -7.584652
+Dipole moment in unit cell   =     -0.0000      0.0000     -7.5847 D
 Electric field for dipole correction =    0.000000   -0.000000    0.007199 Ry/Bohr/e
 
-dhscf: Vacuum level (max, mean) =    2.203490   -0.038347 eV
->> End of run:  29-SEP-2015  15:46:18
+dhscf: Vacuum level (max, mean) =    2.203774   -0.038165 eV
+>> End of run:  31-MAY-2016   9:09:06

@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-trunk-506
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:46:25
+* Running on    2 nodes in parallel
+>> Start of run:  31-MAY-2016   8:58:11
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -149,8 +149,9 @@ reinit: System Label: sih_fire
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: Si Atomic number:          14
- Species number:            2  Label: H Atomic number:           1
+Species number:   1 Atomic number:   14 Label: Si
+Species number:   2 Atomic number:    1 Label: H
+
 Ground state valence configuration:   3s02  3p02
 Reading pseudopotential information in formatted form from Si.psf
 
@@ -189,7 +190,7 @@ L=0  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -199,7 +200,7 @@ L=1  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -497,10 +498,10 @@ redata: ***********************************************************************
 Total number of electrons:   257.000000
 Total ionic charge:   257.000000
 
-* ProcessorY, Blocksize:    2  24
+* ProcessorY, Blocksize:    1  24
 
 
-* Orbital distribution balance (max,min):    72    48
+* Orbital distribution balance (max,min):   137   120
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -526,57 +527,52 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:     1
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65244
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130620
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -1990.109942
+siesta: Ebs     =     -1990.109940
 siesta: Eions   =     12205.375272
 siesta: Ena     =      3582.441728
 siesta: Ekin    =      2865.981919
 siesta: Enl     =      1148.863992
+siesta: EldaU   =         0.000000
 siesta: DEna    =        -0.000036
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
-siesta: Exc     =     -2114.517630
+siesta: Exc     =     -2114.517639
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -6826.425202
-siesta: Etot    =     -6722.605299
-siesta: FreeEng =     -6722.663506
+siesta: Eharris =     -6826.425189
+siesta: Etot    =     -6722.605308
+siesta: FreeEng =     -6722.663515
 
-siesta: Eharris(eV) =   -6826.425202
+siesta: Eharris(eV) =   -6826.425189
 
 
-siesta: Eharris(eV) =   -6826.425202
+siesta: Eharris(eV) =   -6826.425189
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.122  12.49
+timer: Routine,Calls,Time,% =    IterSCF     1       0.208  24.53
 :!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
@@ -585,12 +581,12 @@ siesta: E_KS - E_eggbox =     -6823.9186
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
-   Max    9.204390
+   Max    9.204391
    Res    1.616532    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    9.204390    constrained
+   Max    9.204391    constrained
 
 Stress-tensor-Voigt (kbar):      -50.72      -50.72      -50.72      -14.06      -14.06      -14.06
 (Free)E + p*V (eV/cell)    -6783.4329
@@ -601,14 +597,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.008777   -0.031655   -0.008777
         -0.008777   -0.008777   -0.031655
 
-siesta: Pressure (static):         50.71668069  kBar
+siesta: Pressure (static):         50.71670963  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031655   -0.008777   -0.008777
         -0.008777   -0.031655   -0.008777
         -0.008777   -0.008777   -0.031655
 
-siesta: Pressure (total):         50.71668069  kBar
+siesta: Pressure (total):         50.71670963  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:      1    2.5000   0    0.1000      0.0000
 
@@ -629,34 +625,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:     2
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65272
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130596
 
-siesta: Eharris(eV) =   -6828.956470
+siesta: Eharris(eV) =   -6828.956471
 
 
-siesta: Eharris(eV) =   -6828.956470
+siesta: Eharris(eV) =   -6828.956471
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -664,7 +654,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    6.004315
    Res    1.054359    sqrt( Sum f_i^2 / 3N )
@@ -680,14 +670,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.006514   -0.031542   -0.006514
         -0.006514   -0.006514   -0.031542
 
-siesta: Pressure (static):         50.53622576  kBar
+siesta: Pressure (static):         50.53622685  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031542   -0.006514   -0.006514
         -0.006514   -0.031542   -0.006514
         -0.006514   -0.006514   -0.031542
 
-siesta: Pressure (total):         50.53622576  kBar
+siesta: Pressure (total):         50.53622685  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:      2    2.5000   1    0.1000      0.0422
 
@@ -708,29 +698,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:     3
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65296
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130592
 
 siesta: Eharris(eV) =   -6829.957756
 
@@ -743,7 +727,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot    0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    4.526075
    Res    0.795926    sqrt( Sum f_i^2 / 3N )
@@ -759,14 +743,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.005330   -0.031323   -0.005330
         -0.005330   -0.005330   -0.031323
 
-siesta: Pressure (static):         50.18596467  kBar
+siesta: Pressure (static):         50.18596309  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031592   -0.005599   -0.005599
         -0.005599   -0.031592   -0.005599
         -0.005599   -0.005599   -0.031592
 
-siesta: Pressure (total):         50.61671465  kBar
+siesta: Pressure (total):         50.61671309  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:      3    2.5000   2    0.1000      0.0714
 
@@ -787,34 +771,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:     4
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65340
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130604
 
-siesta: Eharris(eV) =   -6830.950067
+siesta: Eharris(eV) =   -6830.950066
 
 
-siesta: Eharris(eV) =   -6830.950067
+siesta: Eharris(eV) =   -6830.950066
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -822,10 +800,10 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot    0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    2.832778
-   Res    0.506290    sqrt( Sum f_i^2 / 3N )
+   Res    0.506289    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    2.832778    constrained
 
@@ -838,14 +816,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.003780   -0.030883   -0.003780
         -0.003780   -0.003780   -0.030883
 
-siesta: Pressure (static):         49.48110211  kBar
+siesta: Pressure (static):         49.48109687  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031653   -0.004548   -0.004548
         -0.004548   -0.031653   -0.004548
         -0.004548   -0.004548   -0.031653
 
-siesta: Pressure (total):         50.71443036  kBar
+siesta: Pressure (total):         50.71442513  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:      4    2.5000   3    0.1000      0.0918
 
@@ -866,34 +844,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:     5
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65276
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130408
 
-siesta: Eharris(eV) =   -6831.617899
+siesta: Eharris(eV) =   -6831.617900
 
 
-siesta: Eharris(eV) =   -6831.617899
+siesta: Eharris(eV) =   -6831.617900
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -917,14 +889,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002180   -0.030646   -0.002180
         -0.002180   -0.002180   -0.030646
 
-siesta: Pressure (static):         49.10052029  kBar
+siesta: Pressure (static):         49.10052015  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031917   -0.003446   -0.003446
         -0.003446   -0.031917   -0.003446
         -0.003446   -0.003446   -0.031917
 
-siesta: Pressure (total):         51.13718269  kBar
+siesta: Pressure (total):         51.13718254  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:      5    2.5000   4    0.1000      0.1034
 
@@ -945,34 +917,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:     6
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65324
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130360
 
-siesta: Eharris(eV) =   -6831.908661
+siesta: Eharris(eV) =   -6831.908662
 
 
-siesta: Eharris(eV) =   -6831.908661
+siesta: Eharris(eV) =   -6831.908662
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -980,7 +946,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.570688
    Res    0.171253    sqrt( Sum f_i^2 / 3N )
@@ -996,14 +962,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000928   -0.030614   -0.000928
         -0.000928   -0.000928   -0.030614
 
-siesta: Pressure (static):         49.04909940  kBar
+siesta: Pressure (static):         49.04910163  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.032198   -0.002483   -0.002483
         -0.002483   -0.032198   -0.002483
         -0.002483   -0.002483   -0.032198
 
-siesta: Pressure (total):         51.58765656  kBar
+siesta: Pressure (total):         51.58765875  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:      6    2.5000   5    0.1000      0.1072
 
@@ -1024,34 +990,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:     7
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65344
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130356
 
-siesta: Eharris(eV) =   -6831.933218
+siesta: Eharris(eV) =   -6831.933219
 
 
-siesta: Eharris(eV) =   -6831.933218
+siesta: Eharris(eV) =   -6831.933219
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -1059,7 +1019,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.506810
    Res    0.175920    sqrt( Sum f_i^2 / 3N )
@@ -1075,14 +1035,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000404   -0.030604   -0.000404
         -0.000404   -0.000404   -0.030604
 
-siesta: Pressure (static):         49.03288713  kBar
+siesta: Pressure (static):         49.03288665  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.032140   -0.001815   -0.001815
         -0.001815   -0.032140   -0.001815
         -0.001815   -0.001815   -0.032140
 
-siesta: Pressure (total):         51.49406150  kBar
+siesta: Pressure (total):         51.49406096  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:      7    1.2500   0    0.1000      0.0000
 
@@ -1103,29 +1063,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:     8
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65344
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130356
 
 siesta: Eharris(eV) =   -6831.942130
 
@@ -1138,7 +1092,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.493405
    Res    0.171222    sqrt( Sum f_i^2 / 3N )
@@ -1154,14 +1108,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000447   -0.030597   -0.000447
         -0.000447   -0.000447   -0.030597
 
-siesta: Pressure (static):         49.02226447  kBar
+siesta: Pressure (static):         49.02226462  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030597   -0.000447   -0.000447
         -0.000447   -0.030597   -0.000447
         -0.000447   -0.000447   -0.030597
 
-siesta: Pressure (total):         49.02226447  kBar
+siesta: Pressure (total):         49.02226462  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:      8    1.2500   1    0.1000      0.0027
 
@@ -1182,29 +1136,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:     9
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65344
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130356
 
 siesta: Eharris(eV) =   -6831.948527
 
@@ -1217,7 +1165,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.478950
    Res    0.167371    sqrt( Sum f_i^2 / 3N )
@@ -1233,14 +1181,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000489   -0.030605   -0.000489
         -0.000489   -0.000489   -0.030605
 
-siesta: Pressure (static):         49.03491706  kBar
+siesta: Pressure (static):         49.03491838  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030606   -0.000489   -0.000489
         -0.000489   -0.030606   -0.000489
         -0.000489   -0.000489   -0.030606
 
-siesta: Pressure (total):         49.03673697  kBar
+siesta: Pressure (total):         49.03673830  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:      9    1.2500   2    0.1000      0.0054
 
@@ -1261,34 +1209,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    10
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65344
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130356
 
-siesta: Eharris(eV) =   -6831.958755
+siesta: Eharris(eV) =   -6831.958756
 
 
-siesta: Eharris(eV) =   -6831.958755
+siesta: Eharris(eV) =   -6831.958756
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -1296,7 +1238,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.462505
    Res    0.161034    sqrt( Sum f_i^2 / 3N )
@@ -1312,14 +1254,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000616   -0.030679   -0.000616
         -0.000616   -0.000616   -0.030679
 
-siesta: Pressure (static):         49.15304342  kBar
+siesta: Pressure (static):         49.15304471  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030683   -0.000616   -0.000616
         -0.000616   -0.030683   -0.000616
         -0.000616   -0.000616   -0.030683
 
-siesta: Pressure (total):         49.16014475  kBar
+siesta: Pressure (total):         49.16014604  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     10    1.2500   3    0.1000      0.0080
 
@@ -1340,34 +1282,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    11
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65344
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130368
 
-siesta: Eharris(eV) =   -6831.972084
+siesta: Eharris(eV) =   -6831.972083
 
 
-siesta: Eharris(eV) =   -6831.972084
+siesta: Eharris(eV) =   -6831.972083
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -1375,7 +1311,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.436203
    Res    0.148851    sqrt( Sum f_i^2 / 3N )
@@ -1391,14 +1327,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000684   -0.030620   -0.000684
         -0.000684   -0.000684   -0.030620
 
-siesta: Pressure (static):         49.05841690  kBar
+siesta: Pressure (static):         49.05841655  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030629   -0.000685   -0.000685
         -0.000685   -0.030629   -0.000685
         -0.000685   -0.000685   -0.030629
 
-siesta: Pressure (total):         49.07394745  kBar
+siesta: Pressure (total):         49.07394711  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     11    1.2500   4    0.1000      0.0105
 
@@ -1419,29 +1355,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    12
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65352
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130392
 
 siesta: Eharris(eV) =   -6831.987540
 
@@ -1454,7 +1384,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.400658
    Res    0.138629    sqrt( Sum f_i^2 / 3N )
@@ -1470,14 +1400,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000762   -0.030557   -0.000762
         -0.000762   -0.000762   -0.030557
 
-siesta: Pressure (static):         48.95865270  kBar
+siesta: Pressure (static):         48.95865288  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030574   -0.000763   -0.000763
         -0.000763   -0.030574   -0.000763
         -0.000763   -0.000763   -0.030574
 
-siesta: Pressure (total):         48.98511739  kBar
+siesta: Pressure (total):         48.98511757  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     12    1.2500   5    0.1000      0.0127
 
@@ -1498,29 +1428,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    13
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65340
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130392
 
 siesta: Eharris(eV) =   -6832.004384
 
@@ -1533,10 +1457,10 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.364911
-   Res    0.126786    sqrt( Sum f_i^2 / 3N )
+   Res    0.126785    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.364911    constrained
 
@@ -1549,14 +1473,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000852   -0.030607   -0.000852
         -0.000852   -0.000852   -0.030607
 
-siesta: Pressure (static):         49.03780580  kBar
+siesta: Pressure (static):         49.03780499  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030631   -0.000854   -0.000854
         -0.000854   -0.030631   -0.000854
         -0.000854   -0.000854   -0.030631
 
-siesta: Pressure (total):         49.07698977  kBar
+siesta: Pressure (total):         49.07698896  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     13    1.2500   6    0.1000      0.0148
 
@@ -1577,34 +1501,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    14
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65340
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130408
 
-siesta: Eharris(eV) =   -6832.021925
+siesta: Eharris(eV) =   -6832.021926
 
 
-siesta: Eharris(eV) =   -6832.021925
+siesta: Eharris(eV) =   -6832.021926
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -1612,7 +1530,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.327533
    Res    0.114561    sqrt( Sum f_i^2 / 3N )
@@ -1628,14 +1546,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000953   -0.030611   -0.000953
         -0.000953   -0.000953   -0.030611
 
-siesta: Pressure (static):         49.04503437  kBar
+siesta: Pressure (static):         49.04503502  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030644   -0.000957   -0.000957
         -0.000957   -0.030644   -0.000957
         -0.000957   -0.000957   -0.030644
 
-siesta: Pressure (total):         49.09812182  kBar
+siesta: Pressure (total):         49.09812247  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     14    1.3750   7    0.0990      0.0167
 
@@ -1656,29 +1574,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    15
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65300
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130360
 
 siesta: Eharris(eV) =   -6832.040807
 
@@ -1691,7 +1603,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.278344
    Res    0.097670    sqrt( Sum f_i^2 / 3N )
@@ -1699,7 +1611,7 @@ siesta: Atomic forces (eV/Ang):
    Max    0.278344    constrained
 
 Stress-tensor-Voigt (kbar):      -48.93      -48.93      -48.93       -1.83       -1.83       -1.83
-(Free)E + p*V (eV/cell)    -6791.6446
+(Free)E + p*V (eV/cell)    -6791.6445
 Target enthalpy (eV/cell)    -6830.7579
 
 siesta: Stress tensor (static) (eV/Ang**3):
@@ -1707,14 +1619,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001137   -0.030496   -0.001137
         -0.001137   -0.001137   -0.030496
 
-siesta: Pressure (static):         48.85980092  kBar
+siesta: Pressure (static):         48.85980303  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030538   -0.001142   -0.001142
         -0.001142   -0.030538   -0.001142
         -0.001142   -0.001142   -0.030538
 
-siesta: Pressure (total):         48.92727226  kBar
+siesta: Pressure (total):         48.92727437  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     15    1.5125   8    0.0980      0.0185
 
@@ -1735,34 +1647,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    16
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65316
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130376
 
-siesta: Eharris(eV) =   -6832.059579
+siesta: Eharris(eV) =   -6832.059578
 
 
-siesta: Eharris(eV) =   -6832.059579
+siesta: Eharris(eV) =   -6832.059578
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -1770,7 +1676,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000    0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.230420
    Res    0.081368    sqrt( Sum f_i^2 / 3N )
@@ -1786,14 +1692,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001297   -0.030474   -0.001297
         -0.001297   -0.001297   -0.030474
 
-siesta: Pressure (static):         48.82568493  kBar
+siesta: Pressure (static):         48.82568602  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030526   -0.001304   -0.001304
         -0.001304   -0.030526   -0.001304
         -0.001304   -0.001304   -0.030526
 
-siesta: Pressure (total):         48.90845811  kBar
+siesta: Pressure (total):         48.90845920  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     16    1.6638   9    0.0970      0.0202
 
@@ -1814,34 +1720,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    17
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65340
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130392
 
-siesta: Eharris(eV) =   -6832.077054
+siesta: Eharris(eV) =   -6832.077055
 
 
-siesta: Eharris(eV) =   -6832.077054
+siesta: Eharris(eV) =   -6832.077055
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -1849,7 +1749,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.176095
    Res    0.064426    sqrt( Sum f_i^2 / 3N )
@@ -1865,14 +1765,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001456   -0.030554   -0.001456
         -0.001456   -0.001456   -0.030554
 
-siesta: Pressure (static):         48.95326412  kBar
+siesta: Pressure (static):         48.95326150  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030615   -0.001465   -0.001465
         -0.001465   -0.030615   -0.001465
         -0.001465   -0.001465   -0.030615
 
-siesta: Pressure (total):         49.05104371  kBar
+siesta: Pressure (total):         49.05104109  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     17    1.8301  10    0.0961      0.0215
 
@@ -1893,34 +1793,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    18
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65340
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130408
 
-siesta: Eharris(eV) =   -6832.090751
+siesta: Eharris(eV) =   -6832.090752
 
 
-siesta: Eharris(eV) =   -6832.090751
+siesta: Eharris(eV) =   -6832.090752
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -1928,7 +1822,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000    0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.117211
    Res    0.048040    sqrt( Sum f_i^2 / 3N )
@@ -1944,14 +1838,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001706   -0.030893   -0.001706
         -0.001706   -0.001706   -0.030893
 
-siesta: Pressure (static):         49.49701763  kBar
+siesta: Pressure (static):         49.49701912  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030962   -0.001719   -0.001719
         -0.001719   -0.030962   -0.001719
         -0.001719   -0.001719   -0.030962
 
-siesta: Pressure (total):         49.60744484  kBar
+siesta: Pressure (total):         49.60744633  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     18    2.0131  11    0.0951      0.0224
 
@@ -1972,34 +1866,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    19
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65348
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130396
 
-siesta: Eharris(eV) =   -6832.098569
+siesta: Eharris(eV) =   -6832.098568
 
 
-siesta: Eharris(eV) =   -6832.098569
+siesta: Eharris(eV) =   -6832.098568
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -2007,7 +1895,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.103064
    Res    0.043035    sqrt( Sum f_i^2 / 3N )
@@ -2023,14 +1911,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002001   -0.030945   -0.002001
         -0.002001   -0.002001   -0.030945
 
-siesta: Pressure (static):         49.57921115  kBar
+siesta: Pressure (static):         49.57921347  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031017   -0.002018   -0.002018
         -0.002018   -0.031017   -0.002018
         -0.002018   -0.002018   -0.031017
 
-siesta: Pressure (total):         49.69489101  kBar
+siesta: Pressure (total):         49.69489334  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     19    2.2145  12    0.0941      0.0225
 
@@ -2051,29 +1939,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    20
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65320
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130328
 
 siesta: Eharris(eV) =   -6832.100677
 
@@ -2086,7 +1968,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000    0.000000
 ----------------------------------------
    Max    0.141451
    Res    0.049462    sqrt( Sum f_i^2 / 3N )
@@ -2102,14 +1984,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002230   -0.031229   -0.002230
         -0.002230   -0.002230   -0.031229
 
-siesta: Pressure (static):         50.03514812  kBar
+siesta: Pressure (static):         50.03514620  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031296   -0.002249   -0.002249
         -0.002249   -0.031296   -0.002249
         -0.002249   -0.002249   -0.031296
 
-siesta: Pressure (total):         50.14228114  kBar
+siesta: Pressure (total):         50.14227923  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     20    1.1072   0    0.1000      0.0000
 
@@ -2130,29 +2012,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    21
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65288
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130296
 
 siesta: Eharris(eV) =   -6832.101225
 
@@ -2165,7 +2041,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.138641
    Res    0.045959    sqrt( Sum f_i^2 / 3N )
@@ -2181,14 +2057,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002090   -0.031093   -0.002090
         -0.002090   -0.002090   -0.031093
 
-siesta: Pressure (static):         49.81757198  kBar
+siesta: Pressure (static):         49.81757290  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031093   -0.002090   -0.002090
         -0.002090   -0.031093   -0.002090
         -0.002090   -0.002090   -0.031093
 
-siesta: Pressure (total):         49.81757198  kBar
+siesta: Pressure (total):         49.81757290  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     21    1.1072   1    0.1000      0.0007
 
@@ -2209,29 +2085,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    22
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65288
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130296
 
 siesta: Eharris(eV) =   -6832.101592
 
@@ -2244,7 +2114,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.133072
    Res    0.045059    sqrt( Sum f_i^2 / 3N )
@@ -2260,14 +2130,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002113   -0.031121   -0.002113
         -0.002113   -0.002113   -0.031121
 
-siesta: Pressure (static):         49.86141225  kBar
+siesta: Pressure (static):         49.86141240  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031121   -0.002113   -0.002113
         -0.002113   -0.031121   -0.002113
         -0.002113   -0.002113   -0.031121
 
-siesta: Pressure (total):         49.86151979  kBar
+siesta: Pressure (total):         49.86151994  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     22    1.1072   2    0.1000      0.0013
 
@@ -2288,29 +2158,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    23
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65272
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130264
 
 siesta: Eharris(eV) =   -6832.102181
 
@@ -2323,7 +2187,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.129395
    Res    0.043918    sqrt( Sum f_i^2 / 3N )
@@ -2339,14 +2203,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002106   -0.031129   -0.002106
         -0.002106   -0.002106   -0.031129
 
-siesta: Pressure (static):         49.87445702  kBar
+siesta: Pressure (static):         49.87445678  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031129   -0.002106   -0.002106
         -0.002106   -0.031129   -0.002106
         -0.002106   -0.002106   -0.031129
 
-siesta: Pressure (total):         49.87486792  kBar
+siesta: Pressure (total):         49.87486768  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     23    1.1072   3    0.1000      0.0019
 
@@ -2367,34 +2231,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    24
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65272
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130264
 
-siesta: Eharris(eV) =   -6832.102969
+siesta: Eharris(eV) =   -6832.102968
 
 
-siesta: Eharris(eV) =   -6832.102969
+siesta: Eharris(eV) =   -6832.102968
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -2402,10 +2260,10 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.124331
-   Res    0.042246    sqrt( Sum f_i^2 / 3N )
+   Res    0.042245    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.124331    constrained
 
@@ -2418,14 +2276,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002097   -0.031130   -0.002097
         -0.002097   -0.002097   -0.031130
 
-siesta: Pressure (static):         49.87601477  kBar
+siesta: Pressure (static):         49.87601131  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031130   -0.002097   -0.002097
         -0.002097   -0.031130   -0.002097
         -0.002097   -0.002097   -0.031130
 
-siesta: Pressure (total):         49.87691204  kBar
+siesta: Pressure (total):         49.87690858  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     24    1.1072   4    0.1000      0.0025
 
@@ -2446,34 +2304,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    25
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65272
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130272
 
-siesta: Eharris(eV) =   -6832.103918
+siesta: Eharris(eV) =   -6832.103920
 
 
-siesta: Eharris(eV) =   -6832.103918
+siesta: Eharris(eV) =   -6832.103920
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -2481,7 +2333,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.118140
    Res    0.040273    sqrt( Sum f_i^2 / 3N )
@@ -2497,14 +2349,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002086   -0.031133   -0.002086
         -0.002086   -0.002086   -0.031133
 
-siesta: Pressure (static):         49.88083641  kBar
+siesta: Pressure (static):         49.88083702  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031134   -0.002086   -0.002086
         -0.002086   -0.031134   -0.002086
         -0.002086   -0.002086   -0.031134
 
-siesta: Pressure (total):         49.88238334  kBar
+siesta: Pressure (total):         49.88238394  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     25    1.1072   5    0.1000      0.0031
 
@@ -2525,29 +2377,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    26
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65264
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130248
 
 siesta: Eharris(eV) =   -6832.104998
 
@@ -2560,7 +2406,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.111626
    Res    0.037349    sqrt( Sum f_i^2 / 3N )
@@ -2576,14 +2422,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002144   -0.030912   -0.002144
         -0.002144   -0.002144   -0.030912
 
-siesta: Pressure (static):         49.52725986  kBar
+siesta: Pressure (static):         49.52726032  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030914   -0.002144   -0.002144
         -0.002144   -0.030914   -0.002144
         -0.002144   -0.002144   -0.030914
 
-siesta: Pressure (total):         49.52959315  kBar
+siesta: Pressure (total):         49.52959361  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     26    1.1072   6    0.1000      0.0036
 
@@ -2604,29 +2450,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    27
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65272
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130256
 
 siesta: Eharris(eV) =   -6832.106139
 
@@ -2639,7 +2479,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.103697
    Res    0.034904    sqrt( Sum f_i^2 / 3N )
@@ -2655,14 +2495,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002133   -0.030911   -0.002133
         -0.002133   -0.002133   -0.030911
 
-siesta: Pressure (static):         49.52578722  kBar
+siesta: Pressure (static):         49.52578676  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030913   -0.002133   -0.002133
         -0.002133   -0.030913   -0.002133
         -0.002133   -0.002133   -0.030913
 
-siesta: Pressure (total):         49.52899694  kBar
+siesta: Pressure (total):         49.52899648  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     27    1.2179   7    0.0990      0.0041
 
@@ -2683,34 +2523,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    28
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65272
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130248
 
-siesta: Eharris(eV) =   -6832.107434
+siesta: Eharris(eV) =   -6832.107435
 
 
-siesta: Eharris(eV) =   -6832.107434
+siesta: Eharris(eV) =   -6832.107435
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -2718,7 +2552,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000000
+   Tot    0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.093977
    Res    0.032079    sqrt( Sum f_i^2 / 3N )
@@ -2734,14 +2568,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002113   -0.030921   -0.002113
         -0.002113   -0.002113   -0.030921
 
-siesta: Pressure (static):         49.54121459  kBar
+siesta: Pressure (static):         49.54121572  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030923   -0.002114   -0.002114
         -0.002114   -0.030923   -0.002114
         -0.002114   -0.002114   -0.030923
 
-siesta: Pressure (total):         49.54535837  kBar
+siesta: Pressure (total):         49.54535949  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     28    1.3397   8    0.0980      0.0046
 
@@ -2762,29 +2596,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    29
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65268
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130240
 
 siesta: Eharris(eV) =   -6832.108841
 
@@ -2797,7 +2625,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot    0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.083104
    Res    0.027150    sqrt( Sum f_i^2 / 3N )
@@ -2813,14 +2641,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002015   -0.030858   -0.002015
         -0.002015   -0.002015   -0.030858
 
-siesta: Pressure (static):         49.44064554  kBar
+siesta: Pressure (static):         49.44064687  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030861   -0.002016   -0.002016
         -0.002016   -0.030861   -0.002016
         -0.002016   -0.002016   -0.030861
 
-siesta: Pressure (total):         49.44585460  kBar
+siesta: Pressure (total):         49.44585593  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     29    1.4737   9    0.0970      0.0051
 
@@ -2841,29 +2669,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    30
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65300
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130272
 
 siesta: Eharris(eV) =   -6832.110218
 
@@ -2876,7 +2698,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot    0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.065018
    Res    0.023279    sqrt( Sum f_i^2 / 3N )
@@ -2892,14 +2714,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002040   -0.030716   -0.002040
         -0.002040   -0.002040   -0.030716
 
-siesta: Pressure (static):         49.21267357  kBar
+siesta: Pressure (static):         49.21267416  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030720   -0.002041   -0.002041
         -0.002041   -0.030720   -0.002041
         -0.002041   -0.002041   -0.030720
 
-siesta: Pressure (total):         49.21900978  kBar
+siesta: Pressure (total):         49.21901038  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     30    1.6211  10    0.0961      0.0056
 
@@ -2920,34 +2742,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    31
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65324
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130280
 
-siesta: Eharris(eV) =   -6832.111537
+siesta: Eharris(eV) =   -6832.111538
 
 
-siesta: Eharris(eV) =   -6832.111537
+siesta: Eharris(eV) =   -6832.111538
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -2955,7 +2771,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.048660
    Res    0.020769    sqrt( Sum f_i^2 / 3N )
@@ -2971,14 +2787,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001933   -0.030655   -0.001933
         -0.001933   -0.001933   -0.030655
 
-siesta: Pressure (static):         49.11523481  kBar
+siesta: Pressure (static):         49.11523524  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030660   -0.001935   -0.001935
         -0.001935   -0.030660   -0.001935
         -0.001935   -0.001935   -0.030660
 
-siesta: Pressure (total):         49.12261400  kBar
+siesta: Pressure (total):         49.12261443  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     31    1.7832  11    0.0951      0.0059
 
@@ -2999,29 +2815,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    32
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65364
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130308
 
 siesta: Eharris(eV) =   -6832.112764
 
@@ -3034,7 +2844,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.043509
    Res    0.019379    sqrt( Sum f_i^2 / 3N )
@@ -3050,14 +2860,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001899   -0.030660   -0.001899
         -0.001899   -0.001899   -0.030660
 
-siesta: Pressure (static):         49.12278311  kBar
+siesta: Pressure (static):         49.12278268  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030665   -0.001901   -0.001901
         -0.001901   -0.030665   -0.001901
         -0.001901   -0.001901   -0.030665
 
-siesta: Pressure (total):         49.13099621  kBar
+siesta: Pressure (total):         49.13099578  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     32    1.9615  12    0.0941      0.0062
 
@@ -3078,34 +2888,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    33
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65348
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130292
 
-siesta: Eharris(eV) =   -6832.113889
+siesta: Eharris(eV) =   -6832.113888
 
 
-siesta: Eharris(eV) =   -6832.113889
+siesta: Eharris(eV) =   -6832.113888
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -3113,7 +2917,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.044338
    Res    0.019382    sqrt( Sum f_i^2 / 3N )
@@ -3129,14 +2933,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001866   -0.030666   -0.001866
         -0.001866   -0.001866   -0.030666
 
-siesta: Pressure (static):         49.13337373  kBar
+siesta: Pressure (static):         49.13337132  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030672   -0.001869   -0.001869
         -0.001869   -0.030672   -0.001869
         -0.001869   -0.001869   -0.030672
 
-siesta: Pressure (total):         49.14213839  kBar
+siesta: Pressure (total):         49.14213598  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     33    2.1577  13    0.0932      0.0063
 
@@ -3157,29 +2961,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    34
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65332
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130260
 
 siesta: Eharris(eV) =   -6832.114924
 
@@ -3192,7 +2990,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.049098
    Res    0.019523    sqrt( Sum f_i^2 / 3N )
@@ -3208,14 +3006,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001810   -0.030691   -0.001810
         -0.001810   -0.001810   -0.030691
 
-siesta: Pressure (static):         49.17282931  kBar
+siesta: Pressure (static):         49.17282697  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030697   -0.001814   -0.001814
         -0.001814   -0.030697   -0.001814
         -0.001814   -0.001814   -0.030697
 
-siesta: Pressure (total):         49.18181545  kBar
+siesta: Pressure (total):         49.18181312  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     34    2.3734  14    0.0923      0.0064
 
@@ -3236,29 +3034,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    35
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65332
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130252
 
 siesta: Eharris(eV) =   -6832.115767
 
@@ -3287,14 +3079,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001787   -0.030897   -0.001787
         -0.001787   -0.001787   -0.030897
 
-siesta: Pressure (static):         49.50253216  kBar
+siesta: Pressure (static):         49.50253366  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030902   -0.001791   -0.001791
         -0.001791   -0.030902   -0.001791
         -0.001791   -0.001791   -0.030902
 
-siesta: Pressure (total):         49.51139931  kBar
+siesta: Pressure (total):         49.51140082  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     35    2.6108  15    0.0914      0.0063
 
@@ -3315,29 +3107,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    36
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65324
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130244
 
 siesta: Eharris(eV) =   -6832.116634
 
@@ -3350,7 +3136,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.053511
    Res    0.021349    sqrt( Sum f_i^2 / 3N )
@@ -3366,14 +3152,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001808   -0.030943   -0.001808
         -0.001808   -0.001808   -0.030943
 
-siesta: Pressure (static):         49.57667812  kBar
+siesta: Pressure (static):         49.57667797  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030948   -0.001812   -0.001812
         -0.001812   -0.030948   -0.001812
         -0.001812   -0.001812   -0.030948
 
-siesta: Pressure (total):         49.58514804  kBar
+siesta: Pressure (total):         49.58514790  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     36    2.8719  16    0.0904      0.0062
 
@@ -3394,29 +3180,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    37
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65356
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130268
 
 siesta: Eharris(eV) =   -6832.117820
 
@@ -3429,7 +3209,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot    0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.059306
    Res    0.021118    sqrt( Sum f_i^2 / 3N )
@@ -3445,14 +3225,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001831   -0.030961   -0.001831
         -0.001831   -0.001831   -0.030961
 
-siesta: Pressure (static):         49.60550977  kBar
+siesta: Pressure (static):         49.60551123  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030966   -0.001835   -0.001835
         -0.001835   -0.030966   -0.001835
         -0.001835   -0.001835   -0.030966
 
-siesta: Pressure (total):         49.61374747  kBar
+siesta: Pressure (total):         49.61374894  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     37    3.1590  17    0.0895      0.0062
 
@@ -3473,29 +3253,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    38
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65356
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130276
 
 siesta: Eharris(eV) =   -6832.119320
 
@@ -3508,7 +3282,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.055203
    Res    0.019316    sqrt( Sum f_i^2 / 3N )
@@ -3524,14 +3298,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001895   -0.030825   -0.001895
         -0.001895   -0.001895   -0.030825
 
-siesta: Pressure (static):         49.38814797  kBar
+siesta: Pressure (static):         49.38815000  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030831   -0.001899   -0.001899
         -0.001899   -0.030831   -0.001899
         -0.001899   -0.001899   -0.030831
 
-siesta: Pressure (total):         49.39657177  kBar
+siesta: Pressure (total):         49.39657380  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     38    3.4749  18    0.0886      0.0063
 
@@ -3552,34 +3326,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    39
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65348
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130244
 
-siesta: Eharris(eV) =   -6832.120716
+siesta: Eharris(eV) =   -6832.120717
 
 
-siesta: Eharris(eV) =   -6832.120716
+siesta: Eharris(eV) =   -6832.120717
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -3587,7 +3355,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.043027
    Res    0.014524    sqrt( Sum f_i^2 / 3N )
@@ -3603,14 +3371,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001814   -0.030795   -0.001814
         -0.001814   -0.001814   -0.030795
 
-siesta: Pressure (static):         49.34008384  kBar
+siesta: Pressure (static):         49.34008391  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030801   -0.001818   -0.001818
         -0.001818   -0.030801   -0.001818
         -0.001818   -0.001818   -0.030801
 
-siesta: Pressure (total):         49.34899491  kBar
+siesta: Pressure (total):         49.34899497  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     39    3.8224  19    0.0878      0.0064
 
@@ -3631,34 +3399,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    40
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65348
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130252
 
-siesta: Eharris(eV) =   -6832.121055
+siesta: Eharris(eV) =   -6832.121054
 
 
-siesta: Eharris(eV) =   -6832.121055
+siesta: Eharris(eV) =   -6832.121054
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -3666,7 +3428,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.037697
    Res    0.015130    sqrt( Sum f_i^2 / 3N )
@@ -3682,14 +3444,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001700   -0.030542   -0.001700
         -0.001700   -0.001700   -0.030542
 
-siesta: Pressure (static):         48.93363058  kBar
+siesta: Pressure (static):         48.93362983  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030547   -0.001704   -0.001704
         -0.001704   -0.030547   -0.001704
         -0.001704   -0.001704   -0.030547
 
-siesta: Pressure (total):         48.94256189  kBar
+siesta: Pressure (total):         48.94256113  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     40    1.9112   0    0.1000      0.0000
 
@@ -3710,29 +3472,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    41
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65348
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130260
 
 siesta: Eharris(eV) =   -6832.121205
 
@@ -3745,7 +3501,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.035131
    Res    0.014224    sqrt( Sum f_i^2 / 3N )
@@ -3761,14 +3517,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001709   -0.030537   -0.001709
         -0.001709   -0.001709   -0.030537
 
-siesta: Pressure (static):         48.92688097  kBar
+siesta: Pressure (static):         48.92688165  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030537   -0.001709   -0.001709
         -0.001709   -0.030537   -0.001709
         -0.001709   -0.001709   -0.030537
 
-siesta: Pressure (total):         48.92688097  kBar
+siesta: Pressure (total):         48.92688165  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     41    1.9112   1    0.1000      0.0004
 
@@ -3789,34 +3545,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    42
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65356
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130276
 
-siesta: Eharris(eV) =   -6832.121309
+siesta: Eharris(eV) =   -6832.121308
 
 
-siesta: Eharris(eV) =   -6832.121309
+siesta: Eharris(eV) =   -6832.121308
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -3840,14 +3590,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001715   -0.030532   -0.001715
         -0.001715   -0.001715   -0.030532
 
-siesta: Pressure (static):         48.91847011  kBar
+siesta: Pressure (static):         48.91846892  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030532   -0.001715   -0.001715
         -0.001715   -0.030532   -0.001715
         -0.001715   -0.001715   -0.030532
 
-siesta: Pressure (total):         48.91850052  kBar
+siesta: Pressure (total):         48.91849933  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     42    1.9112   2    0.1000      0.0007
 
@@ -3868,34 +3618,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    43
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65356
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130276
 
-siesta: Eharris(eV) =   -6832.121467
+siesta: Eharris(eV) =   -6832.121466
 
 
-siesta: Eharris(eV) =   -6832.121467
+siesta: Eharris(eV) =   -6832.121466
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -3903,7 +3647,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.030601
    Res    0.012599    sqrt( Sum f_i^2 / 3N )
@@ -3919,14 +3663,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001727   -0.030531   -0.001727
         -0.001727   -0.001727   -0.030531
 
-siesta: Pressure (static):         48.91604252  kBar
+siesta: Pressure (static):         48.91604002  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030531   -0.001727   -0.001727
         -0.001727   -0.030531   -0.001727
         -0.001727   -0.001727   -0.030531
 
-siesta: Pressure (total):         48.91615788  kBar
+siesta: Pressure (total):         48.91615538  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     43    1.9112   3    0.1000      0.0010
 
@@ -3947,29 +3691,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    44
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65356
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130284
 
 siesta: Eharris(eV) =   -6832.121662
 
@@ -3982,7 +3720,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.027480
    Res    0.011488    sqrt( Sum f_i^2 / 3N )
@@ -3998,14 +3736,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001742   -0.030519   -0.001742
         -0.001742   -0.001742   -0.030519
 
-siesta: Pressure (static):         48.89756231  kBar
+siesta: Pressure (static):         48.89756087  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030519   -0.001742   -0.001742
         -0.001742   -0.030519   -0.001742
         -0.001742   -0.001742   -0.030519
 
-siesta: Pressure (total):         48.89780734  kBar
+siesta: Pressure (total):         48.89780590  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     44    1.9112   4    0.1000      0.0013
 
@@ -4026,34 +3764,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    45
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65356
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130292
 
-siesta: Eharris(eV) =   -6832.121876
+siesta: Eharris(eV) =   -6832.121877
 
 
-siesta: Eharris(eV) =   -6832.121876
+siesta: Eharris(eV) =   -6832.121877
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -4061,7 +3793,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.022975
    Res    0.010132    sqrt( Sum f_i^2 / 3N )
@@ -4077,14 +3809,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001756   -0.030513   -0.001756
         -0.001756   -0.001756   -0.030513
 
-siesta: Pressure (static):         48.88731361  kBar
+siesta: Pressure (static):         48.88731256  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030513   -0.001756   -0.001756
         -0.001756   -0.030513   -0.001756
         -0.001756   -0.001756   -0.030513
 
-siesta: Pressure (total):         48.88771929  kBar
+siesta: Pressure (total):         48.88771824  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     45    1.9112   5    0.1000      0.0016
 
@@ -4105,34 +3837,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    46
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65388
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130324
 
-siesta: Eharris(eV) =   -6832.121972
+siesta: Eharris(eV) =   -6832.121973
 
 
-siesta: Eharris(eV) =   -6832.121972
+siesta: Eharris(eV) =   -6832.121973
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -4140,7 +3866,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.018810
    Res    0.008465    sqrt( Sum f_i^2 / 3N )
@@ -4156,14 +3882,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001983   -0.030716   -0.001983
         -0.001983   -0.001983   -0.030716
 
-siesta: Pressure (static):         49.21266799  kBar
+siesta: Pressure (static):         49.21266930  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030716   -0.001983   -0.001983
         -0.001983   -0.030716   -0.001983
         -0.001983   -0.001983   -0.030716
 
-siesta: Pressure (total):         49.21324842  kBar
+siesta: Pressure (total):         49.21324973  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     46    1.9112   6    0.1000      0.0017
 
@@ -4184,29 +3910,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    47
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65396
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130340
 
 siesta: Eharris(eV) =   -6832.122048
 
@@ -4219,7 +3939,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.020910
    Res    0.008795    sqrt( Sum f_i^2 / 3N )
@@ -4235,14 +3955,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001919   -0.030637   -0.001919
         -0.001919   -0.001919   -0.030637
 
-siesta: Pressure (static):         49.08687902  kBar
+siesta: Pressure (static):         49.08688088  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030638   -0.001919   -0.001919
         -0.001919   -0.030638   -0.001919
         -0.001919   -0.001919   -0.030638
 
-siesta: Pressure (total):         49.08749696  kBar
+siesta: Pressure (total):         49.08749882  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     47    2.1023   7    0.0990      0.0017
 
@@ -4263,34 +3983,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    48
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65404
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130356
 
-siesta: Eharris(eV) =   -6832.122140
+siesta: Eharris(eV) =   -6832.122141
 
 
-siesta: Eharris(eV) =   -6832.122140
+siesta: Eharris(eV) =   -6832.122141
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -4298,7 +4012,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.022244
    Res    0.008840    sqrt( Sum f_i^2 / 3N )
@@ -4314,14 +4028,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001929   -0.030622   -0.001929
         -0.001929   -0.001929   -0.030622
 
-siesta: Pressure (static):         49.06218394  kBar
+siesta: Pressure (static):         49.06218756  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030622   -0.001929   -0.001929
         -0.001929   -0.030622   -0.001929
         -0.001929   -0.001929   -0.030622
 
-siesta: Pressure (total):         49.06278406  kBar
+siesta: Pressure (total):         49.06278768  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     48    2.3126   8    0.0980      0.0017
 
@@ -4342,34 +4056,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    49
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65416
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130384
 
-siesta: Eharris(eV) =   -6832.122262
+siesta: Eharris(eV) =   -6832.122260
 
 
-siesta: Eharris(eV) =   -6832.122262
+siesta: Eharris(eV) =   -6832.122260
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -4393,14 +4101,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001931   -0.030607   -0.001931
         -0.001931   -0.001931   -0.030607
 
-siesta: Pressure (static):         49.03891475  kBar
+siesta: Pressure (static):         49.03891069  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030608   -0.001931   -0.001931
         -0.001931   -0.030608   -0.001931
         -0.001931   -0.001931   -0.030608
 
-siesta: Pressure (total):         49.03952256  kBar
+siesta: Pressure (total):         49.03951851  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     49    2.5438   9    0.0970      0.0017
 
@@ -4421,34 +4129,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    50
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65448
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130416
 
-siesta: Eharris(eV) =   -6832.122396
+siesta: Eharris(eV) =   -6832.122395
 
 
-siesta: Eharris(eV) =   -6832.122396
+siesta: Eharris(eV) =   -6832.122395
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -4456,7 +4158,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.019983
    Res    0.008365    sqrt( Sum f_i^2 / 3N )
@@ -4472,14 +4174,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002036   -0.030708   -0.002036
         -0.002036   -0.002036   -0.030708
 
-siesta: Pressure (static):         49.20053565  kBar
+siesta: Pressure (static):         49.20053473  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030709   -0.002036   -0.002036
         -0.002036   -0.030709   -0.002036
         -0.002036   -0.002036   -0.030709
 
-siesta: Pressure (total):         49.20118331  kBar
+siesta: Pressure (total):         49.20118238  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     50    2.7982  10    0.0961      0.0018
 
@@ -4500,34 +4202,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    51
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65472
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130464
 
-siesta: Eharris(eV) =   -6832.122541
+siesta: Eharris(eV) =   -6832.122540
 
 
-siesta: Eharris(eV) =   -6832.122541
+siesta: Eharris(eV) =   -6832.122540
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -4535,7 +4231,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.018142
    Res    0.007885    sqrt( Sum f_i^2 / 3N )
@@ -4551,14 +4247,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002015   -0.030690   -0.002015
         -0.002015   -0.002015   -0.030690
 
-siesta: Pressure (static):         49.17097031  kBar
+siesta: Pressure (static):         49.17096706  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030690   -0.002015   -0.002015
         -0.002015   -0.030690   -0.002015
         -0.002015   -0.002015   -0.030690
 
-siesta: Pressure (total):         49.17165310  kBar
+siesta: Pressure (total):         49.17164985  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     51    3.0780  11    0.0951      0.0018
 
@@ -4579,34 +4275,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    52
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65472
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130468
 
-siesta: Eharris(eV) =   -6832.122713
+siesta: Eharris(eV) =   -6832.122714
 
 
-siesta: Eharris(eV) =   -6832.122713
+siesta: Eharris(eV) =   -6832.122714
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -4614,7 +4304,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.017616
    Res    0.007375    sqrt( Sum f_i^2 / 3N )
@@ -4630,14 +4320,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001980   -0.030683   -0.001980
         -0.001980   -0.001980   -0.030683
 
-siesta: Pressure (static):         49.15949225  kBar
+siesta: Pressure (static):         49.15949117  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030683   -0.001980   -0.001980
         -0.001980   -0.030683   -0.001980
         -0.001980   -0.001980   -0.030683
 
-siesta: Pressure (total):         49.16022900  kBar
+siesta: Pressure (total):         49.16022793  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     52    3.3858  12    0.0941      0.0019
 
@@ -4658,34 +4348,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    53
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65456
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130468
 
-siesta: Eharris(eV) =   -6832.122898
+siesta: Eharris(eV) =   -6832.122899
 
 
-siesta: Eharris(eV) =   -6832.122898
+siesta: Eharris(eV) =   -6832.122899
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -4693,7 +4377,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000    0.000000
+   Tot   -0.000000   -0.000000    0.000000
 ----------------------------------------
    Max    0.018835
    Res    0.007853    sqrt( Sum f_i^2 / 3N )
@@ -4709,14 +4393,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001975   -0.030598   -0.001975
         -0.001975   -0.001975   -0.030598
 
-siesta: Pressure (static):         49.02350082  kBar
+siesta: Pressure (static):         49.02349979  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030598   -0.001975   -0.001975
         -0.001975   -0.030598   -0.001975
         -0.001975   -0.001975   -0.030598
 
-siesta: Pressure (total):         49.02431144  kBar
+siesta: Pressure (total):         49.02431040  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     53    3.7244  13    0.0932      0.0020
 
@@ -4737,34 +4421,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    54
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65448
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130452
 
-siesta: Eharris(eV) =   -6832.122914
+siesta: Eharris(eV) =   -6832.122915
 
 
-siesta: Eharris(eV) =   -6832.122914
+siesta: Eharris(eV) =   -6832.122915
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -4772,10 +4450,10 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.029426
-   Res    0.012418    sqrt( Sum f_i^2 / 3N )
+   Res    0.012417    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.029426    constrained
 
@@ -4788,14 +4466,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001614   -0.030441   -0.001614
         -0.001614   -0.001614   -0.030441
 
-siesta: Pressure (static):         48.77306435  kBar
+siesta: Pressure (static):         48.77306588  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030442   -0.001615   -0.001615
         -0.001615   -0.030442   -0.001615
         -0.001615   -0.001615   -0.030442
 
-siesta: Pressure (total):         48.77394607  kBar
+siesta: Pressure (total):         48.77394760  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     54    4.0969  14    0.0923      0.0020
 
@@ -4816,29 +4494,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    55
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65452
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130456
 
 siesta: Eharris(eV) =   -6832.123113
 
@@ -4851,7 +4523,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.026824
    Res    0.011675    sqrt( Sum f_i^2 / 3N )
@@ -4867,14 +4539,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001587   -0.030409   -0.001587
         -0.001587   -0.001587   -0.030409
 
-siesta: Pressure (static):         48.72080586  kBar
+siesta: Pressure (static):         48.72080340  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030409   -0.001587   -0.001587
         -0.001587   -0.030409   -0.001587
         -0.001587   -0.001587   -0.030409
 
-siesta: Pressure (total):         48.72164792  kBar
+siesta: Pressure (total):         48.72164547  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     55    4.5066  15    0.0914      0.0021
 
@@ -4895,34 +4567,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    56
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65384
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130356
 
-siesta: Eharris(eV) =   -6832.123496
+siesta: Eharris(eV) =   -6832.123498
 
 
-siesta: Eharris(eV) =   -6832.123496
+siesta: Eharris(eV) =   -6832.123498
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -4938,7 +4604,7 @@ siesta: Atomic forces (eV/Ang):
    Max    0.017112    constrained
 
 Stress-tensor-Voigt (kbar):      -48.67      -48.67      -48.67       -2.68       -2.68       -2.68
-(Free)E + p*V (eV/cell)    -6791.9608
+(Free)E + p*V (eV/cell)    -6791.9609
 Target enthalpy (eV/cell)    -6830.8686
 
 siesta: Stress tensor (static) (eV/Ang**3):
@@ -4946,14 +4612,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001675   -0.030377   -0.001675
         -0.001675   -0.001675   -0.030377
 
-siesta: Pressure (static):         48.66918041  kBar
+siesta: Pressure (static):         48.66917693  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030377   -0.001675   -0.001675
         -0.001675   -0.030377   -0.001675
         -0.001675   -0.001675   -0.030377
 
-siesta: Pressure (total):         48.67009617  kBar
+siesta: Pressure (total):         48.67009268  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     56    4.9572  16    0.0904      0.0023
 
@@ -4974,34 +4640,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    57
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65304
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130244
 
-siesta: Eharris(eV) =   -6832.123689
+siesta: Eharris(eV) =   -6832.123690
 
 
-siesta: Eharris(eV) =   -6832.123689
+siesta: Eharris(eV) =   -6832.123690
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -5009,7 +4669,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.031394
    Res    0.011772    sqrt( Sum f_i^2 / 3N )
@@ -5025,14 +4685,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002010   -0.030795   -0.002010
         -0.002010   -0.002010   -0.030795
 
-siesta: Pressure (static):         49.34034564  kBar
+siesta: Pressure (static):         49.34034753  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030796   -0.002010   -0.002010
         -0.002010   -0.030796   -0.002010
         -0.002010   -0.002010   -0.030796
 
-siesta: Pressure (total):         49.34150426  kBar
+siesta: Pressure (total):         49.34150615  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     57    5.4529  17    0.0895      0.0024
 
@@ -5053,34 +4713,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    58
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65296
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130204
 
-siesta: Eharris(eV) =   -6832.123921
+siesta: Eharris(eV) =   -6832.123920
 
 
-siesta: Eharris(eV) =   -6832.123921
+siesta: Eharris(eV) =   -6832.123920
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -5088,7 +4742,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    0.042014
    Res    0.013859    sqrt( Sum f_i^2 / 3N )
@@ -5104,14 +4758,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.002073   -0.030757   -0.002073
         -0.002073   -0.002073   -0.030757
 
-siesta: Pressure (static):         49.27907391  kBar
+siesta: Pressure (static):         49.27907109  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030758   -0.002073   -0.002073
         -0.002073   -0.030758   -0.002073
         -0.002073   -0.002073   -0.030758
 
-siesta: Pressure (total):         49.28020600  kBar
+siesta: Pressure (total):         49.28020318  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     58    5.9982  18    0.0886      0.0024
 
@@ -5132,34 +4786,28 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    59
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65260
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130176
 
-siesta: Eharris(eV) =   -6832.124302
+siesta: Eharris(eV) =   -6832.124303
 
 
-siesta: Eharris(eV) =   -6832.124302
+siesta: Eharris(eV) =   -6832.124303
 
 :!: SCF did not converge in maximum number of steps.
 
@@ -5167,7 +4815,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.011894
    Res    0.005340    sqrt( Sum f_i^2 / 3N )
@@ -5183,14 +4831,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001735   -0.030693   -0.001735
         -0.001735   -0.001735   -0.030693
 
-siesta: Pressure (static):         49.17686196  kBar
+siesta: Pressure (static):         49.17686298  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030694   -0.001735   -0.001735
         -0.001735   -0.030694   -0.001735
         -0.001735   -0.001735   -0.030694
 
-siesta: Pressure (total):         49.17807653  kBar
+siesta: Pressure (total):         49.17807755  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     59    6.5981  19    0.0878      0.0025
 
@@ -5211,29 +4859,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    60
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65220
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130112
 
 siesta: Eharris(eV) =   -6832.124490
 
@@ -5246,12 +4888,12 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
-   Max    0.014835
+   Max    0.014834
    Res    0.006528    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.014835    constrained
+   Max    0.014834    constrained
 
 Stress-tensor-Voigt (kbar):      -49.22      -49.22      -49.22       -2.69       -2.69       -2.69
 (Free)E + p*V (eV/cell)    -6791.5202
@@ -5262,14 +4904,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001676   -0.030722   -0.001676
         -0.001676   -0.001676   -0.030722
 
-siesta: Pressure (static):         49.22280719  kBar
+siesta: Pressure (static):         49.22280758  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.030723   -0.001676   -0.001676
         -0.001676   -0.030723   -0.001676
         -0.001676   -0.001676   -0.030723
 
-siesta: Pressure (total):         49.22418433  kBar
+siesta: Pressure (total):         49.22418472  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     60    7.2579  20    0.0869      0.0025
 
@@ -5290,29 +4932,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    61
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65252
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130144
 
 siesta: Eharris(eV) =   -6832.124450
 
@@ -5325,7 +4961,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.026149
    Res    0.009744    sqrt( Sum f_i^2 / 3N )
@@ -5341,14 +4977,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001922   -0.031171   -0.001922
         -0.001922   -0.001922   -0.031171
 
-siesta: Pressure (static):         49.94141970  kBar
+siesta: Pressure (static):         49.94142005  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031171   -0.001922   -0.001922
         -0.001922   -0.031171   -0.001922
         -0.001922   -0.001922   -0.031171
 
-siesta: Pressure (total):         49.94278602  kBar
+siesta: Pressure (total):         49.94278638  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     61    3.6289   0    0.1000      0.0000
 
@@ -5369,29 +5005,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    62
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65252
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130144
 
 siesta: Eharris(eV) =   -6832.124645
 
@@ -5404,7 +5034,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.020105
    Res    0.006997    sqrt( Sum f_i^2 / 3N )
@@ -5420,14 +5050,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001945   -0.031093   -0.001945
         -0.001945   -0.001945   -0.031093
 
-siesta: Pressure (static):         49.81642699  kBar
+siesta: Pressure (static):         49.81642638  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031093   -0.001945   -0.001945
         -0.001945   -0.031093   -0.001945
         -0.001945   -0.001945   -0.031093
 
-siesta: Pressure (total):         49.81642699  kBar
+siesta: Pressure (total):         49.81642638  kBar
 FIRE: istep, dt, firenpos, firealf, magv
 FIRE:     62    3.6289   1    0.1000      0.0004
 
@@ -5448,29 +5078,23 @@ outcell: Cell volume (Ang**3)        :   1280.8241
 New_DM. Step:    63
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 
 InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: (bp) =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
 New grid distribution:   2
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 New grid distribution:   3
-           1       1:   24    1:   12    1:   12
-           2       1:   24    1:   12   13:   24
-           3       1:   24   13:   24    1:   12
-           4       1:   24   13:   24   13:   24
+           1       1:   24    1:   24    1:   12
+           2       1:   24    1:   24   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    36 x    36 =       62208
-PhiOnMesh: Number of (b)points on node 0 =                 3456
-PhiOnMesh: nlist on node 0 =                65252
+ExtMesh (bp) on 0 =    48 x    48 x    36 =       82944
+PhiOnMesh: Number of (b)points on node 0 =                 6912
+PhiOnMesh: nlist on node 0 =               130144
 
 siesta: Eharris(eV) =   -6832.124735
 
@@ -5483,7 +5107,7 @@ Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000   -0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.009790
    Res    0.004009    sqrt( Sum f_i^2 / 3N )
@@ -5499,14 +5123,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001872   -0.031018   -0.001872
         -0.001872   -0.001872   -0.031018
 
-siesta: Pressure (static):         49.69761449  kBar
+siesta: Pressure (static):         49.69761349  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.031018   -0.001872   -0.001872
         -0.001872   -0.031018   -0.001872
         -0.001872   -0.001872   -0.031018
 
-siesta: Pressure (total):         49.69764881  kBar
+siesta: Pressure (total):         49.69764780  kBar
 
 outcoor: Relaxed atomic coordinates (scaled):               
    -0.00000485   -0.00000485   -0.00000485   1       1  Si
@@ -5517,24 +5141,24 @@ outcoor: Relaxed atomic coordinates (scaled):
     0.74911820    0.24914622    0.74911820   1       6  Si
     0.49947078    0.49947078   -0.00174822   1       7  Si
     0.74911820    0.74911820    0.24914622   1       8  Si
-    0.99965940    0.00169873    0.00169873   1       9  Si
-    1.25034060    0.24830127    0.24830127   1      10  Si
+    0.99965940    0.00169872    0.00169872   1       9  Si
+    1.25034060    0.24830128    0.24830128   1      10  Si
     0.99847216    0.49523600    0.49523600   1      11  Si
     1.25256849    0.73904643    0.73904643   1      12  Si
     1.49897585    0.00003695    0.50070940   1      13  Si
     1.74929060    0.24996305    0.75102415   1      14  Si
     1.49897585    0.50070940    0.00003695   1      15  Si
     1.74929060    0.75102415    0.24996305   1      16  Si
-    0.00169873    0.99965940    0.00169873   1      17  Si
-    0.24830127    1.25034060    0.24830127   1      18  Si
+    0.00169872    0.99965940    0.00169872   1      17  Si
+    0.24830128    1.25034060    0.24830128   1      18  Si
     0.00003695    1.49897585    0.50070940   1      19  Si
     0.24996305    1.74929060    0.75102415   1      20  Si
     0.49523600    0.99847216    0.49523600   1      21  Si
     0.73904643    1.25256849    0.73904643   1      22  Si
     0.50070940    1.49897585    0.00003695   1      23  Si
     0.75102415    1.74929060    0.24996305   1      24  Si
-    0.00169873    0.00169873    0.99965940   1      25  Si
-    0.24830127    0.24830127    1.25034060   1      26  Si
+    0.00169872    0.00169872    0.99965940   1      25  Si
+    0.24830128    0.24830128    1.25034060   1      26  Si
     0.00003695    0.50070940    1.49897585   1      27  Si
     0.24996305    0.75102415    1.74929060   1      28  Si
     0.50070940    0.00003695    1.49897585   1      29  Si
@@ -5543,28 +5167,28 @@ outcoor: Relaxed atomic coordinates (scaled):
     0.73904643    0.73904643    1.25256849   1      32  Si
     0.99984001    0.99984001    0.00085257   1      33  Si
     1.25015999    1.25015999    0.24914743   1      34  Si
-    1.00146700    1.49930501    0.49957947   1      35  Si
-    1.24853300    1.75042053    0.75069499   1      36  Si
-    1.49930501    1.00146700    0.49957947   1      37  Si
-    1.75042053    1.24853300    0.75069499   1      38  Si
+    1.00146700    1.49930500    0.49957947   1      35  Si
+    1.24853300    1.75042053    0.75069500   1      36  Si
+    1.49930500    1.00146700    0.49957947   1      37  Si
+    1.75042053    1.24853300    0.75069500   1      38  Si
     1.50088180    1.50088180    0.00085378   1      39  Si
     1.75052922    1.75052922    0.25174822   1      40  Si
     0.99984001    0.00085257    0.99984001   1      41  Si
     1.25015999    0.24914743    1.25015999   1      42  Si
-    1.00146700    0.49957947    1.49930501   1      43  Si
-    1.24853300    0.75069499    1.75042053   1      44  Si
+    1.00146700    0.49957947    1.49930500   1      43  Si
+    1.24853300    0.75069500    1.75042053   1      44  Si
     1.50088180    0.00085378    1.50088180   1      45  Si
     1.75052922    0.25174822    1.75052922   1      46  Si
-    1.49930501    0.49957947    1.00146700   1      47  Si
-    1.75042053    0.75069499    1.24853300   1      48  Si
+    1.49930500    0.49957947    1.00146700   1      47  Si
+    1.75042053    0.75069500    1.24853300   1      48  Si
     0.00085257    0.99984001    0.99984001   1      49  Si
     0.24914743    1.25015999    1.25015999   1      50  Si
     0.00085378    1.50088180    1.50088180   1      51  Si
     0.25174822    1.75052922    1.75052922   1      52  Si
-    0.49957947    1.00146700    1.49930501   1      53  Si
-    0.75069499    1.24853300    1.75042053   1      54  Si
-    0.49957947    1.49930501    1.00146700   1      55  Si
-    0.75069499    1.75042053    1.24853300   1      56  Si
+    0.49957947    1.00146700    1.49930500   1      53  Si
+    0.75069500    1.24853300    1.75042053   1      54  Si
+    0.49957947    1.49930500    1.00146700   1      55  Si
+    0.75069500    1.75042053    1.24853300   1      56  Si
     0.94954240    0.94954240    0.94954240   1      57  Si
     1.30045760    1.30045760    1.30045760   1      58  Si
     0.99743151    1.51095357    1.51095357   1      59  Si
@@ -5576,15 +5200,16 @@ outcoor: Relaxed atomic coordinates (scaled):
     1.12500000    1.12500000    1.12500000   2      65  H
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -1985.324037
+siesta: Ebs     =     -1985.324035
 siesta: Eions   =     12205.375272
 siesta: Ena     =      3580.587855
 siesta: Ekin    =      2732.770470
 siesta: Enl     =       958.324401
+siesta: EldaU   =         0.000000
 siesta: DEna    =       197.450969
 siesta: DUscf   =         5.558051
 siesta: DUext   =         0.000000
-siesta: Exc     =     -2100.153129
+siesta: Exc     =     -2100.153128
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
@@ -5595,13 +5220,14 @@ siesta: Etot    =     -6830.836612
 siesta: FreeEng =     -6830.871270
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =   -1985.324037
+siesta:  Band Struct. =   -1985.324035
 siesta:       Kinetic =    2732.770470
 siesta:       Hartree =     493.162455
+siesta:       Eldau   =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =   -2100.153129
-siesta:  Ion-electron =   -3000.435874
-siesta:       Ion-ion =   -4956.180576
+siesta:   Exch.-corr. =   -2100.153128
+siesta:  Ion-electron =   -3000.435872
+siesta:       Ion-ion =   -4956.180578
 siesta:       Ekinion =       0.000041
 siesta:         Total =   -6830.836612
 
@@ -5616,7 +5242,7 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00033783          0.00033874  Ry/Bohr**3
 siesta:           0.03101848          0.03110228  eV/Ang**3
-siesta:          49.69761449         49.83188366  kBar
-(Free)E+ p_basis*V_orbitals  =       -6818.317332
-(Free)Eharris+ p_basis*V_orbitals  =       -6819.605413
->> End of run:  29-SEP-2015  15:47:01
+siesta:          49.69761349         49.83188715  kBar
+(Free)E+ p_basis*V_orbitals  =       -6818.317331
+(Free)Eharris+ p_basis*V_orbitals  =       -6819.605412
+>> End of run:  31-MAY-2016   8:59:03
