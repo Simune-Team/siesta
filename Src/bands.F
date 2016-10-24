@@ -138,8 +138,6 @@ C
       integer, intent(out) :: nk
       real(dp), pointer ::  kpoint(:,:)
 
-      character         paste*30
-      external          paste, redcel
 C *********************************************************************
 
       logical BandLinesPresent, BandPointsPresent
@@ -499,13 +497,12 @@ C Handle parallel over K points option which is not allowed for here
             endif
             RETURN
          endif
-        call diag2k(no_l, no_s, no_l, maxnh, maxnh, no_u,
+        call diag2k(no_l, no_s, maxnh, maxnh, no_u,
      .              numh, listhptr, listh, numh, listhptr,
      .              listh, H, S, getD, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, Entropy,
-     .              Haux, Saux, psi, Haux, Saux, aux,
-     .              no_u, occtol, 1 )
+     .              psi, no_u, occtol, 1 )
 
       elseif ( SpOrb ) then
         call diag3k(nuo, no_s, maxnh, maxnh, no_u, numh,

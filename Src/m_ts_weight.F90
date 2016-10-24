@@ -130,7 +130,8 @@ contains
 
   subroutine weight_DM(N_Elec,Elecs,N_mu, mus, na_u, lasto, &
        spDM, spDMneq, spEDM, n_s, sc_off)
-    
+
+    use units, only: eV
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -642,8 +643,8 @@ contains
     ! Reduce number of updated elements
     allocate(DM(3,2))
     DM(1,1) = real(n_nzs,dp)
-    DM(2,1) = m_err ! DM mean-error
-    DM(3,1) = Em_err ! EDM mean-error
+    DM(2,1) = m_err   ! DM mean-error
+    DM(3,1) = Em_err  ! EDM mean-error
     call MPI_Reduce(DM(1,1),DM(1,2),3,MPI_Double_Precision, &
          MPI_SUM, 0, MPI_Comm_World, MPIerror)
     ! Get total number of updated elements
@@ -725,8 +726,12 @@ contains
     call print_error_estimate(IONode,'ts-err-D:', &
          eM,ew,eM_i,eM_j,DMe,m_err)
     if ( hasEDM ) then
-         call print_error_estimate(IONode,'ts-err-E:', &
-              EeM,Eew,EeM_i,EeM_j,EDMe,Em_err)
+       EeM    = EeM / eV
+       Eew    = Eew / eV
+       EDMe   = EDMe / eV
+       Em_err = Em_err / eV
+       call print_error_estimate(IONode,'ts-err-E:', &
+            EeM,Eew,EeM_i,EeM_j,EDMe,Em_err)
     end if
 
 #ifdef TRANSIESTA_DEBUG

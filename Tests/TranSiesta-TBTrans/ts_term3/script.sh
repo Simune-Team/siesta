@@ -26,6 +26,14 @@ OBJDIR=$(basename $ABS_EXEC_DIR)
 ROOT_DIR=$(dirname $ABS_EXEC_DIR)
 echo "Running script with TranSIESTA=$TS, compiled in OBJDIR=$OBJDIR"
 
+if [ -z "$TBT" ] ; then
+    TBT="${TS_EXEC_PREFIX} ${ROOT_DIR}/Util/TS/TBtrans/tbtrans"
+    if [ ! -e ${ROOT_DIR}/Util/TS/TBtrans/tbtrans ]; then
+	(cd "${ROOT_DIR}/Util/TS/TBtrans" ;
+	 make OBJDIR="$OBJDIR" )
+    fi
+fi
+
 
 # Start with the electrode calculation
 for e in x z ; do
@@ -65,16 +73,6 @@ cd ..
 
 # TBTrans calculation
 echo "==> TBTrans Calculation for $SCAT"
-
-# TBT can be specified in the command line, and will override
-# the default location in Util
-if [ -z "$TBT" ] ; then
-    TBT=${ROOT_DIR}/Util/TS/TBtrans/tbtrans
-    echo "==> (Compiling $TBT...)"
-    # Clean in case the compiled version there is not compatible
-    (cd "${ROOT_DIR}/Util/TS/TBtrans" ; make OBJDIR="$OBJDIR" )
-    TBT="${TS_EXEC_PREFIX} ${ROOT_DIR}/Util/TS/TBtrans/tbtrans"
-fi
 
 echo "==> Running $SCAT with tbtrans=$TBT"
 mkdir $SCAT-tbt

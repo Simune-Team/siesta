@@ -106,8 +106,8 @@ module m_ts_electype
      ! k-point changes...
      real(dp) :: bkpt_cur(3)
      ! Used xa and lasto
-     real(dp), pointer, contiguous :: xa_used(:,:) => null()
-     integer,  pointer, contiguous :: lasto_used(:) => null()
+     real(dp), pointer :: xa_used(:,:) => null()
+     integer,  pointer :: lasto_used(:) => null()
 
      ! Advanced stuff...
      logical :: kcell_check = .true.
@@ -121,14 +121,14 @@ module m_ts_electype
      ! The inter-layer distance between succeeding layers along
      ! the semi-infinite direction
      real(dp) :: dINF_layer
-     real(dp), pointer, contiguous :: xa(:,:) => null()
-     integer,  pointer, contiguous :: lasto(:) => null()
+     real(dp), pointer :: xa(:,:) => null()
+     integer,  pointer :: lasto(:) => null()
      type(Sparsity)  :: sp
      type(dSpData2D) :: H
      type(dSpData1D) :: S
      ! Supercell offsets
      integer :: nsc(3)
-     integer, pointer, contiguous :: isc_off(:,:) => null()
+     integer, pointer :: isc_off(:,:) => null()
      ! --- --- completed the content of the TSHS file
      ! Below we create the content for the self-energy creation
      ! Notice that we can save some elements simply by extracting the 0-1 connections
@@ -138,16 +138,21 @@ module m_ts_electype
      type(dSpData1D) :: S00, S01
 
      ! These arrays are used to construct the full Hamiltonian and overlap and Green function
-     complex(dp), pointer, contiguous :: HA(:,:,:), SA(:,:,:), GA(:)
+     complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:)
 
      ! Arrays needed to partition the scattering matrix and self-energies
 
      ! Gamma stored is actually this: (Sigma - Sigma^\dagger) ^ T
      ! and NOT: i (Sigma - Sigma^\dagger)
-     complex(dp), pointer, contiguous :: Gamma(:), Sigma(:)
+     complex(dp), pointer :: Gamma(:), Sigma(:)
+
+     ! The accuracy required for the self-energy
+     !  == 1e-13 * eV
+     real(dp) :: accu = 7.349806700083788e-15_dp
 
      ! The imaginary part in the electrode
-     real(dp) :: Eta = 7.3498067e-6_dp ! corresponds to 0.0001 eV
+     !  == 0.0001 * eV
+     real(dp) :: Eta = 7.3498067e-6_dp
 
      ! The region of the down-folded region
      type(tRgn) :: o_inD, inDpvt
@@ -160,8 +165,10 @@ module m_ts_electype
 
   end type Elec
 
+  ! Fraction of alignment for considering two vectors having a similar
+  ! component
   real(dp), parameter :: cell_unit_align = 1.e-5_dp
-  
+
 contains
 
   function fdf_nElec(prefix,this_n) result(n)
@@ -249,7 +256,7 @@ contains
     found = fdf_block(trim(bName),bfdf)
 
     ! Allow the filename to be read in individually
-    name = trim(bName)//'.TSHS'
+    name = trim(bName)//'.HS'
     if ( fdf_defined(trim(name)) ) then
        this%HSfile = trim(fdf_get(name,''))
        info(1) = .true.
@@ -257,12 +264,7 @@ contains
 
     do i = 1 , 3
        write(name,'(2a,i0)') trim(bName),'.Bloch.A',i
-       if ( fdf_defined(trim(name)) ) then
-          this%Bloch(i) = fdf_get(name,i)
-       else
-          write(name,'(2a,i0)') trim(bName),'.Rep.A',i
-          if ( fdf_defined(trim(name)) ) this%Bloch(i) = fdf_get(name,i)
-       end if
+       this%Bloch(i) = fdf_get(name, 1)
     end do
     name = trim(bName)//'.GF'
     if ( fdf_defined(trim(name)) ) this%GFfile = trim(fdf_get(name,''))
@@ -300,9 +302,10 @@ contains
        ln = fdf_bnames(pline,1) 
        
        ! We select the input
-       if ( leqi(ln,'TSHS') .or. &
+       if ( leqi(ln,'HS') .or. leqi(ln,'HS-file') .or. &
+            leqi(ln,'TSHS') .or. &
             leqi(ln,'TSHS-file') ) then
-          if ( fdf_bnnames(pline) < 2 ) call die('TSHS name not supplied')
+          if ( fdf_bnnames(pline) < 2 ) call die('HS name not supplied')
           this%HSfile = trim(fdf_bnames(pline,2))
           info(1) = .true.
 
@@ -553,10 +556,18 @@ contains
           ! and still suspects a non-Gamma calculation
           this%kcell_check = fdf_bboolean(pline,1,after=1)
 
-       else if ( leqi(ln,'TSDE') .or. &
-            leqi(ln,'TSDE-file') ) then
-          if ( fdf_bnnames(pline) < 2 ) call die('TSDE name not supplied')
+       else if ( leqi(ln,'DE') .or. leqi(ln,'DE-file') .or. &
+            leqi(ln,'TSDE') .or. leqi(ln,'TSDE-file') ) then
+          if ( fdf_bnnames(pline) < 2 ) call die('DE name not supplied')
           this%DEfile = trim(fdf_bnames(pline,2))
+
+#ifdef TBTRANS
+       else if ( leqi(ln,'tbt.Accuracy') .or. leqi(ln,'Accuracy') ) then
+#else
+       else if ( leqi(ln,'Accuracy') ) then
+#endif
+          call pline_E_parse(pline,1,ln, &
+               val = this%accu, before=3)
 
 #ifdef TBTRANS
        else if ( leqi(ln,'tbt.Eta') .or. leqi(ln,'Eta') ) then
@@ -606,7 +617,7 @@ contains
 
     if ( .not. all(info(1:4)) ) then
        write(*,*)'You need to supply at least:'
-       write(*,*)' - TSHS'
+       write(*,*)' - HS'
        write(*,*)' - semi-inf-direction'
        write(*,*)' - chemical-potential'
        write(*,*)' - electrode-position'
@@ -1412,7 +1423,7 @@ contains
     real(dp) :: lfmin, lfmax, rcell(3,3), r
     integer :: i
 
-    call reclat(cell,rcell)
+    call reclat(cell,rcell,0) ! without 2pi
     lfmin =  huge(1._dp)
     lfmax = -huge(1._dp)
     do i = this%idx_a , this%idx_a + TotUsedAtoms(this) - 1
@@ -1496,13 +1507,13 @@ contains
 
     logical :: lio
 
-    real(dp), pointer, contiguous :: H(:,:), H00(:,:), H01(:,:)
-    real(dp), pointer, contiguous :: S(:), S00(:), S01(:)
+    real(dp), pointer :: H(:,:), H00(:,:), H01(:,:)
+    real(dp), pointer :: S(:), S00(:), S01(:)
     type(OrbitalDistribution), pointer :: fdist
 
-    integer, pointer, contiguous :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, pointer, contiguous :: ncol00(:), ptr00(:), col00(:)
-    integer, pointer, contiguous :: ncol01(:), ptr01(:), col01(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: ncol00(:), ptr00(:), col00(:)
+    integer, pointer :: ncol01(:), ptr01(:), col01(:)
 
     integer :: no_l, i, iio, j, ind, ind00, ind01, ia
     integer :: tm(3)
@@ -1637,7 +1648,7 @@ contains
   end subroutine delete_
 
   
-  subroutine check_connectivity(this)
+  function check_connectivity(this) result(good)
 
     use parallel, only : IONode
     use units, only : eV
@@ -1652,18 +1663,19 @@ contains
 #endif
 
     type(Elec), intent(inout) :: this
+    logical :: good
 
-    real(dp), pointer, contiguous :: H(:,:)
-    real(dp), pointer, contiguous :: S(:)
+    real(dp), pointer :: H(:,:)
+    real(dp), pointer :: S(:)
     type(OrbitalDistribution), pointer :: fdist
     type(Sparsity) :: sp02
 
-    integer, pointer, contiguous :: l_ncol(:) => null()
-    integer, pointer, contiguous :: l_ptr(:)  => null()
-    integer, pointer, contiguous :: l_col(:)  => null()
-    integer, pointer, contiguous :: ncol02(:) => null()
-    integer, pointer, contiguous :: ptr02(:)  => null()
-    integer, pointer, contiguous :: col02(:)  => null()
+    integer, pointer :: l_ncol(:) => null()
+    integer, pointer :: l_ptr(:)  => null()
+    integer, pointer :: l_col(:)  => null()
+    integer, pointer :: ncol02(:) => null()
+    integer, pointer :: ptr02(:)  => null()
+    integer, pointer :: col02(:)  => null()
 
     integer :: no_l, no_u, i, io, j, ind, ind02, ia
     integer :: tm(3)
@@ -1740,6 +1752,10 @@ contains
     ! clean-up
     call delete(sp02)
 
+    ! If both number
+    good = ind == 0
+    if ( .not. good ) good = maxi == 0
+
     if ( .not. IONode ) return
 
     if ( ind == 0 ) then
@@ -1758,7 +1774,7 @@ contains
             maxi,',',maxj,')|@R=',tm(this%t_dir),' = ',maxS
     end if
 
-  end subroutine check_connectivity
+  end function check_connectivity
 
   ! Routine for checking the validity of the electrode against the 
   ! system setup in transiesta
@@ -1848,7 +1864,7 @@ contains
     type(OrbitalDistribution) :: fake_dit
     type(Sparsity), pointer :: sp
     type(dSpData2D) :: f_DM_2D, f_EDM_2D
-    real(dp), pointer, contiguous :: DM(:,:), EDM(:,:)
+    real(dp), pointer :: DM(:,:), EDM(:,:)
     real(dp) :: tmp, Ef
     integer, parameter :: One3(3) = (/1,1,1/)
     integer :: i
@@ -2023,6 +2039,7 @@ contains
 #else
     write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
 #endif
+    write(*,f9)  '  Electrode self-energy accuracy', this%accu/eV,' eV'
     write(*,f6)  '  Electrode inter-layer distance (semi-inf)', this%dINF_layer/Ang,' Ang'
 
 

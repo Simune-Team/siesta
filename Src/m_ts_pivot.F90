@@ -48,6 +48,8 @@ contains
     use create_Sparsity_SC
     use m_sparsity_handling
 
+    use geom_helper, only: iaorb
+    
     use m_pivot
 
 #ifdef TRANSIESTA_DEBUG
@@ -129,6 +131,7 @@ contains
        ! We are doing atomic comparison
        call rgn_orb2atom(r_Els,na_u,lasto,r_tmp)
        call rgn_copy(r_tmp,r_Els)
+       call rgn_delete(r_tmp)
 
        call SpOrb_to_SpAtom(dit,sp,na_u,lasto,tmp_Sp)
        ! *** the distribution will always
@@ -139,7 +142,9 @@ contains
     end if
 
     ! The size of the sparsity pattern
+    ! Note this is WITH buffer atoms...
     n = nrows_g(tmp_Sp)
+    ! This is without buffer atoms
     n_pvt = c_pvt%n
 
     ! Create priority list for electrodes
@@ -154,11 +159,16 @@ contains
     call rgn_sort(r_Els)
 
     if ( str_contain(pvt_str,'none') ) then
-       str_tmp = trim(str_tmp)//'+none'
+       str_tmp = 'orb+none'
 
        ! do nothing, the pivoting array
        ! is already arranged correctly
-
+       ! We simply copy the r_pvt to c_pvt
+       ! a 'none' pivoting is equivalent
+       ! to an 'orb+none'
+       call rgn_copy(r_pvt, c_pvt)
+       pvt_orb = .true.
+       
     else if ( str_contain(pvt_str,'CM') ) then
        str_tmp = trim(str_tmp)//'+CM'
 
@@ -605,7 +615,7 @@ contains
                    if ( in_rgn(r_pvt,r_tmp%r(i)) ) then
                       call die('This is extremely difficult. &
                            &Please do not sort the BTD format as &
-                           it cannot figure out what to do.')
+                           &it cannot figure out what to do.')
                    end if
                 end do
 

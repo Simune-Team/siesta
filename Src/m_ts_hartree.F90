@@ -198,7 +198,7 @@ contains
 
     if ( TS_HA == TS_HA_PLANE ) then
 
-       call reclat(cell,rcell)
+       call reclat(cell,rcell,0) ! without 2pi
        
        ! Calculate the index where we will fix
        ! the Hartree potential.
@@ -304,7 +304,7 @@ contains
                trim(El%name)//' might be outside of &
                &unit cell.'
           write(*,'(a)') 'ts: Please move structure so this point is &
-               inside unit cell (Ang):'
+               &inside unit cell (Ang):'
           write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', El%p%c/Ang
           write(*,'(a)') 'ts: You can use %block AtomicCoordinatesOrigin'
           write(*,'(a)') 'ts: to easily move the entire structure.'

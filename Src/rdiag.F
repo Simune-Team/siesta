@@ -159,10 +159,10 @@ C Initialise error flag
 
 ! Trap n=1 case, which is not handled correctly otherwise (JMS 2011/07/19)
       if (n==1) then
-        w(:) = 0._dp
+        w(:) = zero
         w(1) = H(1,1) / S(1,1)
-        Z(:,:) = 0._dp
-        Z(1,1) = 1._dp / sqrt(S(1,1))
+        Z(:,:) = zero
+        Z(1,1) = one / sqrt(S(1,1))
         goto 1000   ! exit point
       end if
 

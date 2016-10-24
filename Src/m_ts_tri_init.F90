@@ -25,7 +25,7 @@ module m_ts_tri_init
   implicit none
 
   ! arrays for containing the tri-diagonal matrix part sizes
-  type(tRgn) :: c_Tri
+  type(tRgn), save :: c_Tri
 
   public :: ts_tri_init
   public :: ts_tri_analyze
@@ -312,7 +312,7 @@ contains
     integer :: no_u_TS, i, iEl, no
 
     integer :: n, n_nzs
-    integer, pointer, contiguous :: ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
 
     character(len=40), parameter :: fmt = '(/,''TS.BTD.Pivot '',a,''+'',a)'
     character(len=50) :: fmethod
@@ -482,7 +482,7 @@ contains
                    if ( in_rgn(r_El,r_tmp%r(i)) ) then
                       call die('This is extremely difficult. &
                            &Please do not sort the BTD format as &
-                           it cannot figure out what to do.')
+                           &it cannot figure out what to do.')
                    end if
                 end do
                 call rgn_append(r_El, r_tmp, r_El)
@@ -662,29 +662,6 @@ contains
        call tri(r_El)
     end if
 
-#ifdef SIESTA__METIS
-    fmethod = trim(corb)//'+metis'
-    if ( IONode ) write(*,fmt) trim(corb),'metis'
-    call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS, sub = full)
-    if ( orb_atom == 1 ) then
-       call tri(r_tmp)
-    else
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
-       call tri(r_El)
-    end if
-
-    fmethod = trim(corb)//'+metis+priority'
-    if ( IONode ) write(*,fmt) trim(corb),'metis+priority'
-    call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS, sub = full, &
-         priority = priority%r)
-    if ( orb_atom == 1 ) then
-       call tri(r_tmp)
-    else
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
-       call tri(r_El)
-    end if
-#endif
-
     end do orb_atom_switch
 
     call rgn_delete(r_tmp,r_Els,r_El,full,priority)
@@ -704,8 +681,9 @@ contains
       use fdf, only : fdf_overwrite
       type(tRgn), intent(inout) :: r_pvt
 
-      integer :: bw, els, pad, work, i
-      integer(i8b) :: prof
+      integer :: bw, i
+      ! Possibly very large numbers
+      integer(i8b) :: prof, els, pad, work
       type(tRgn) :: ctri
       character(len=132) :: fname
 
@@ -751,7 +729,9 @@ contains
       if ( ts_A_method == TS_BTD_A_COLUMN ) then
          ! Get the padding for the array to hold the entire column
          call GFGGF_needed_worksize(ctri%n, ctri%r, &
-              N_Elec, Elecs, pad, work)
+              N_Elec, Elecs, i, bw)
+         pad = i
+         work = bw
       else
          pad = 0
          work = 0

@@ -39,7 +39,7 @@ module m_tbt_trik
 
   use m_verbosity, only : verbosity
   use m_tbt_hs
-  use m_tbt_regions, only : sp_uc, sp_dev, r_aDev
+  use m_tbt_regions, only : sp_uc, sp_dev_sc, r_aDev
 #ifdef NOT_WORKING
   use m_tbt_regions, only : r_oEl
 #endif
@@ -140,7 +140,7 @@ contains
 
 ! ******************* Computational arrays *******************
     integer :: nzwork, nGfwork, nmaxwork
-    complex(dp), pointer, contiguous :: zwork(:), Gfwork(:), maxwork(:)
+    complex(dp), pointer :: zwork(:), Gfwork(:), maxwork(:)
     type(zTriMat) :: zwork_tri, GF_tri
     ! A local orbital distribution class (this is "fake")
     type(OrbitalDistribution) :: fdist
@@ -148,7 +148,7 @@ contains
     ! Just as in transiesta, these matrices are transposed.
     type(zSpData1D) :: spH, spS
     type(Sparsity), pointer :: sp
-    real(dp), pointer, contiguous :: H(:,:), S(:)
+    real(dp), pointer :: H2D(:,:), S(:), H(:)
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
     logical :: calc_GF_DOS
@@ -159,7 +159,7 @@ contains
 
 ! ********************** Result arrays ***********************
     real(dp), allocatable, target :: allDOS(:,:)
-    real(dp), pointer, contiguous :: DOS(:,:), DOS_El(:,:)
+    real(dp), pointer :: DOS(:,:), DOS_El(:,:)
 #ifdef NOT_WORKING
     type tLife
        real(dp), allocatable :: life(:)
@@ -190,9 +190,9 @@ contains
 
 ! ****************** Electrode variables *********************
     integer :: nGFGGF ! For the triple-product
-    complex(dp), pointer, contiguous :: GFGGF_work(:) => null()
+    complex(dp), pointer :: GFGGF_work(:) => null()
     integer :: ntt_work
-    complex(dp), pointer, contiguous :: tt_work(:), eig(:)
+    complex(dp), pointer :: tt_work(:), eig(:)
 ! ************************************************************
 
 ! ******************* Computational variables ****************
@@ -234,7 +234,7 @@ contains
 
 ! ******************** Timer variables ***********************
     real(dp) :: loop_time, init_time
-    integer  :: last_progress_print
+    real :: last_progress, cur_progress
 ! ************************************************************
 
     T_all = 'T-all' .in. save_DATA
@@ -249,7 +249,13 @@ contains
     ! sparsity patterns we cannot ensure they are the
     ! same
     sp => spar(TSHS%H_2D)
-    H => val(TSHS%H_2D)
+    H2D => val(TSHS%H_2D)
+    if ( ispin == spin_idx ) then
+       ! we have downscaled the Hamiltonian
+       H => H2D(:,1)
+    else
+       H => H2D(:,ispin)
+    end if
     S => val(TSHS%S_1D)
 
     allocate(nE%iE(0:Nodes-1))
@@ -635,7 +641,7 @@ contains
     if ( ('orb-current'.in.save_DATA) .or. &
          ('proj-orb-current'.in.save_DATA) ) then
        
-       call newdSpData1D(sp_dev,fdist,orb_J,name='TBT orb_J')
+       call newdSpData1D(sp_dev_sc,fdist,orb_J,name='TBT orb_J')
        ! Initialize to 0, it will be overwritten for all
        ! values, so there is no need to initialize it
        ! in the orb_current routine (neither here actually)
@@ -692,7 +698,7 @@ contains
 #endif
 
     ! The current progress is 0%
-    last_progress_print = 0
+    last_progress = 0.
 
     ! In case we do several spin, then the estimated time
     ! is wrong for the second run, hence we start and stop, and
@@ -740,14 +746,14 @@ contains
        if ( n_k == 0 ) then
           call create_HS(TSHS%dit, sp, 0._dp, &
                N_Elec, Elecs, TSHS%no_u, product(TSHS%nsc), &
-               iE,H(:,1), S(:), TSHS%sc_off, &
+               iE,H, S, TSHS%sc_off, &
                spH, spS, kpt, &
                nmaxwork, maxwork) ! not used...
        else
           call create_region_HS(TSHS%dit,sp, 0._dp, &
                TSHS%cell, n_k, r_k, TSHS%na_u, TSHS%lasto, &
                N_Elec, Elecs, TSHS%no_u, product(TSHS%nsc), &
-               iE, H(:,1), S(:), TSHS%sc_off, spH, spS, &
+               iE, H, S, TSHS%sc_off, spH, spS, &
                nmaxwork, maxwork)
        end if
 
@@ -796,12 +802,12 @@ contains
           ! Calculate progress
           jEl = (itt_cur_step(Kp) - 1) * N_E + iE
           iEl = itt_steps(Kp) * N_E
-          io = int(100._dp*real(jEl,dp)/real(iEl,dp))
-          if ( io - last_progress_print >= percent_tracker ) then
+          cur_progress = 100. * real(jEl)/real(iEl)
+          if ( cur_progress - last_progress >= percent_tracker ) then
              ! We have passed another 'percent_tracker'% of calculation time
 
              ! save current progress in integer form
-             last_progress_print = io
+             last_progress = cur_progress
 
              ! Stop timer
              call timer_stop('E-loop')
@@ -811,11 +817,10 @@ contains
              loop_time = loop_time - init_time
 
              if ( IONode ) then
-                loop_time = iEl * loop_time / (100._dp*real(jEl,dp))
-                loop_time = loop_time * ( 100._dp - last_progress_print )
+                loop_time = loop_time / cur_progress
+                loop_time = loop_time * ( 100._dp - cur_progress )
                 write(*,'(a,f7.3,'' %, ETA in '',f20.3,'' s'')') &
-                     'tbt: Calculated ', &
-                     100._dp*real(jEl,dp)/real(iEl,dp), loop_time
+                     'tbt: Calculated ', cur_progress, loop_time
              end if
 
              ! Start the timer again
@@ -1073,9 +1078,13 @@ contains
                 if ( 'orb-current' .in. save_DATA ) then
 
 #ifdef TBT_PHONON
-                   call orb_current(spH,spS,cOmega,zwork_tri,r_oDev,orb_J,pvt)
+                   call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
+                        kpt, &
+                        cOmega,zwork_tri,r_oDev,orb_J,pvt)
 #else
-                   call orb_current(spH,spS,cE,zwork_tri,r_oDev,orb_J,pvt)
+                   call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
+                        kpt, &
+                        cE,zwork_tri,r_oDev,orb_J,pvt)
 #endif
                    
                 end if
@@ -1117,6 +1126,13 @@ contains
                       ! Copy the eigenvalues over
                       do io = 1 , N_eigen
                          Teig(io,jEl,iEl) = dreal(eig(io))
+#ifdef TBT_PHONON
+                         if ( Teig(io,jEl,iEl) >= 0._dp ) then
+                            Teig(io,jEl,iEl) = sqrt( Teig(io,jEl,iEl) )
+                         else
+                            Teig(io,jEl,iEl) = - sqrt( -Teig(io,jEl,iEl) )
+                         end if
+#endif
                       end do
                    else
                       call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl))
@@ -1264,9 +1280,13 @@ contains
                if ( 'proj-orb-current' .in. save_DATA ) then
 
 #ifdef TBT_PHONON
-                  call orb_current(spH,spS,cOmega,zwork_tri,r_oDev,orb_J,pvt)
+                  call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
+                       kpt, &
+                       cOmega,zwork_tri,r_oDev,orb_J,pvt)
 #else
-                  call orb_current(spH,spS,cE,zwork_tri,r_oDev,orb_J,pvt)
+                  call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
+                       kpt, &
+                       cE,zwork_tri,r_oDev,orb_J,pvt)
 #endif
 
                   ! We need to save it immediately, we
@@ -1300,6 +1320,13 @@ contains
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
                         bTkeig(io,jEl,ipt) = dreal(eig(io))
+#ifdef TBT_PHONON
+                        if ( bTkeig(io,jEl,ipt) >= 0._dp ) then
+                           bTkeig(io,jEl,ipt) = sqrt( bTkeig(io,jEl,ipt) )
+                        else
+                           bTkeig(io,jEl,ipt) = - sqrt( -bTkeig(io,jEl,ipt) )
+                        end if
+#endif
                      end do
                   else
                      call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
@@ -1316,6 +1343,13 @@ contains
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
                         bTkeig(io,jEl,ipt) = dreal(eig(io))
+#ifdef TBT_PHONON
+                        if ( bTkeig(io,jEl,ipt) >= 0._dp ) then
+                           bTkeig(io,jEl,ipt) = sqrt( bTkeig(io,jEl,ipt) )
+                        else
+                           bTkeig(io,jEl,ipt) = - sqrt( -bTkeig(io,jEl,ipt) )
+                        end if
+#endif
                      end do
                   else
                      call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt))
@@ -1712,7 +1746,7 @@ contains
     complex(dp), intent(inout), target :: work(nwork)
 
     ! All our work-arrays...
-    complex(dp), pointer, contiguous :: A(:), B(:), C(:), Y(:)
+    complex(dp), pointer :: A(:), B(:), C(:), Y(:)
 
     integer :: no, off, i, ii, j, ierr
     integer :: ip, itmp
@@ -1865,7 +1899,7 @@ contains
     complex(dp), intent(inout), target :: work(nwork)
 
     ! All our work-arrays...
-    complex(dp), pointer, contiguous :: A(:), B(:), C(:), Y(:)
+    complex(dp), pointer :: A(:), B(:), C(:), Y(:)
 
     integer :: no, off, i, ii, j, jj, ierr, o_life
     integer :: ip, itmp
@@ -2083,8 +2117,8 @@ contains
 
     ! Local variables
     type(Sparsity), pointer :: sp
-    integer, pointer, contiguous :: l_ncol(:), l_ptr(:), l_col(:)
-    complex(dp), pointer, contiguous :: H(:), S(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    complex(dp), pointer :: H(:), S(:)
     integer :: io, iu, ind, ju
 
     sp => spar(spH)

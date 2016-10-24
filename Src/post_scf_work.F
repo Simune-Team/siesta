@@ -124,9 +124,8 @@
       ! last SCF step, except if mixing the Hamiltonian, in which case they
       ! are the same.
 
-      DEna = Enascf - Enaatm
-      Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec +
-     &       Emad + Emm + Emeta + Eldau
+      call update_DEna()
+      call update_Etot()
 
 !     Since this Etot is computed with DM_mixed (the DM predicted by
 !     'mixer' for a hypothetical next SCF iteration) or with DM_out
@@ -144,9 +143,9 @@
       ! and the latest entropy. This is not completely 
       ! consistent if using a mixed DM to compute Etot, but
       ! is a reasonable approximation
-      !
-      FreeE  = Etot - Temp * Entropy
-!
+      call update_FreeE( Temp )
+      
+      
       if (dumpcharge) then
         call plcharge( no_s, na_s, no_u, maxnh, maxna, h_spin_dim,
      &       isa, iphorb, indxuo, lasto,

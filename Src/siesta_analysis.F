@@ -21,6 +21,10 @@
       use m_ksv
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
+#ifdef SIESTA__PEXSI
+      USE m_pexsi_local_DOS, only: pexsi_local_DOS
+      USE m_pexsi_dos, only: pexsi_dos
+#endif      
       USE siesta_options
       use units, only: Debye, eV
       use sparse_matrices, only: maxnh, listh, listhptr, numh
@@ -29,6 +33,7 @@
       use m_dhscf, only: dhscf
       use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
      &                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
+      use atomlist, only: qtot
       use fdf
       use writewave,    only: wwave
       use siesta_cml
@@ -37,6 +42,7 @@
       use zmatrix,      only: lUseZmatrix, write_zmatrix
       use Kpoint_grid
       use parallel, only: IOnode
+      use parallel, only: SIESTA_worker
       use files,       only : label_length
       use m_energies
       use m_steps
@@ -50,6 +56,7 @@
       use alloc,             only: re_alloc, de_alloc
       use basis_enthalpy,    only: write_basis_enthalpy
       use m_partial_charges, only: want_partial_charges
+      use m_iodm_old,        only: read_spmatrix
       use m_siesta2wannier90, only: siesta2wannier90
 
 #ifdef MPI
@@ -61,9 +68,7 @@
 
       implicit none
 
-      character(len=label_length+6), external :: paste
-
-      logical :: relaxd, getPSI, quenched_MD
+      logical :: relaxd, getPSI, quenched_MD, found
 
       real(dp)          :: dummy_str(3,3)
       real(dp)          :: dummy_strl(3,3)
@@ -78,13 +83,15 @@
 
       integer           :: j, ix, ind, ik, io, ispin
       integer           :: wfs_band_min, wfs_band_max
-      real(dp)          :: g2max
+      real(dp)          :: g2max, current_ef
 #ifdef MPI
       real(dp)          :: qtmp(4)
 #endif
       type(filesOut_t)  :: filesOut  ! blank output file names
 
 !----------------------------------------------------------------------- BEGIN
+
+      if (SIESTA_worker) call timer("Analysis",1)
 
 !     All the comments below assume that this compatibility option
 !     is not used.
@@ -106,6 +113,26 @@
       endif
 
       !** zmatrix info reset??
+
+      if (fdf_get("Read-H-from-file",.false.)) then
+         if (SIESTA_worker) then
+            call read_spmatrix(maxnh, no_l, h_spin_dim, numh,
+     .           listhptr, listh, H, found, userfile="H_IN")
+            if (.not. found) call die("Could not find H_IN")
+            current_ef = ef
+            ef = fdf_get("Manual-Fermi-Level",current_ef,"Ry") 
+         endif
+      endif
+
+#ifdef SIESTA__PEXSI
+      if (fdf_get("PEXSI.DOS",.false.)) then
+         call pexsi_dos(no_u, no_l, spinor_dim,
+     $        maxnh, numh, listhptr, listh, H, S, qtot, ef)
+         
+      endif
+#endif
+      ! section done by Siesta subset of nodes
+      if (SIESTA_worker) then
 
       final = .true.
       if (cml_p) then
@@ -520,6 +547,14 @@ C     Find local density of states
 !   -- Set xa to xa_last at the top of this file. Write any "next iter" coordinate file
 !      in 'siesta_move'
 
-!--------------------------------------------------------------------------- END
+      endif ! SIESTA_worker
+#ifdef SIESTA__PEXSI
+      if (fdf_get("PEXSI.LDOS",.false.)) then
+         call pexsi_local_DOS()
+      endif
+#endif
+      if (SIESTA_worker) call timer("Analysis",2)
+
+!------------------------------------------------------------------------- END
       END subroutine siesta_analysis
       END module m_siesta_analysis

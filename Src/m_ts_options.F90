@@ -123,7 +123,7 @@ contains
     use m_ts_mumps_init, only : read_ts_mumps
 #endif
 
-    use m_mixing, only: mixing_init
+    use m_mixing, only: mixers_init
     use m_mixing_scf, only: scf_mixs
 
     ! Input variables
@@ -150,7 +150,7 @@ contains
     if ( onlyS .or. .not. TSmode ) return
 
     ! Read in the transiesta SCF mixing options
-    call mixing_init('TS.SCF', ts_scf_mixs , force = .false.)
+    call mixers_init('TS.SCF', ts_scf_mixs )
     if ( .not. associated(ts_scf_mixs) ) then
        ts_scf_mixs => scf_mixs
     end if
@@ -165,7 +165,7 @@ contains
 
     ! Read in information about the voltage placement.
     ! This is only used if TS.Poisson == ramp
-    chars = fdf_get('TS.Poisson.Position','central')
+    chars = fdf_get('TS.Poisson.Position','cell')
     VoltageInC = .true.
     if ( leqi(trim(chars),'cell') ) then
        VoltageInC = .false.
@@ -428,6 +428,8 @@ contains
     ! the remaining electrodes have their chemical potential at 0
     ! We should probably warn if +2 electrodes are used and t_dir is the
     ! same for all electrodes... Then the user needs to know what (s)he is doing...
+    ! Accuracy required for self-energy convergence
+    Elecs(:)%accu = fdf_get('TS.Elecs.Accuracy',1e-14_dp*eV,'Ry')
     Elecs(:)%Eta  = fdf_get('TS.Contours.nEq.Eta',0.0001_dp*eV,'Ry')
     Elecs(:)%Eta  = fdf_get('TS.Elecs.Eta',Elecs(1)%Eta,'Ry')
     Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
@@ -762,7 +764,7 @@ contains
 
     use units, only: eV, Kelvin
 
-    use m_mixing, only: mixing_print
+    use m_mixing, only: mixers_print
     use m_mixing_scf, only: scf_mixs
 
     use m_ts_electype, only: print_settings
@@ -1000,7 +1002,7 @@ contains
     if ( associated(ts_scf_mixs, target=scf_mixs) ) then
        write(*,f11)'TS.SCF mixing options same as SCF'
     else
-       call mixing_print('TS.SCF', ts_scf_mixs)
+       call mixers_print('TS.SCF', ts_scf_mixs)
     end if
 
     write(*,f11)'          >> Electrodes << '

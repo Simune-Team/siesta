@@ -77,7 +77,7 @@ contains
     do i = 1 + Node , N_Elec , Nodes
 
        ! Retain region
-       call Sp_retain_rgn(dit,sp,r_oElpD(i),tmpSp2)
+       call Sp_retain_region(dit,sp,r_oElpD(i),tmpSp2)
 
        ! Add the self-energy of the electrode (in its original position)
        call crtSparsity_Union_region(dit,tmpSp2, r_oEl_alone(i),tmpSp1)
@@ -200,7 +200,7 @@ contains
 
     ! Create the device region sparsity pattern by removing everything
     ! else....
-    call Sp_retain_rgn(dit,tmpSp1,r_oDev,tmpSp2)
+    call Sp_retain_region(dit,tmpSp1,r_oDev,tmpSp2)
     call delete(tmpSp1)
 
 #ifdef TRANSIESTA_DEBUG

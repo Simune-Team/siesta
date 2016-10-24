@@ -11,6 +11,9 @@
       CONTAINS
 
       subroutine final_H_f_stress( istep, iscf , SCFconverged )
+      use units, only: eV
+
+      use files,        only : slabel
 #ifdef NCDF_4
       use siesta_options, only: write_cdf
 #endif
@@ -43,8 +46,7 @@
       use m_energies
       use m_steps, only: istp
       use m_ntm
-      use m_spin,         only: SpOrb
-      use m_spin,         only: nspin, h_spin_dim, spinor_dim
+      use m_spin,         only: spin
       use spinorbit,      only: spinorb
       use m_dipol
       use m_forces,          only: fa
@@ -52,6 +54,7 @@
       use m_gamma
       use m_hsx, only: write_hsx
       use sys, only: die
+      use fdf
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -65,12 +68,17 @@
 #ifdef TRANSIESTA
       use siesta_options, only : idyn, ia1, write_tshs_history
       use sparse_matrices, only: H_2D, S_1D
-      use files,        only : slabel, label_length
+      use files,        only : label_length
       use m_ts_global_vars, only : TSrun
       use m_ts_options, only : TS_HS_save
       use m_ts_kpoints, only : ts_Gamma, ts_kscell, ts_kdispl
       use m_ts_io,      only : ts_write_TSHS,fname_TSHS, FC_index
 #endif /* TRANSIESTA */
+
+#ifdef FINAL_CHECK_HS
+      use m_compute_max_diff, only: compute_max_diff
+#endif
+      
       implicit none
 
       ! MD-step, SCF-step
@@ -81,10 +89,13 @@
       integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
-      ! To avoid overwriting the current Hamiltonian
+      ! To avoid overwriting the current Hamiltonian and S
       real(dp), pointer     :: H_tmp(:,:) => null()
+      real(dp), pointer     :: S_tmp(:) => null()  
       real(dp), pointer     :: H_ldau(:,:)
-
+#ifdef FINAL_CHECK_HS
+      real(dp) :: diff_H, diff_S
+#endif
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
@@ -102,22 +113,33 @@
 !------------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
-      call re_alloc(H_tmp, 1,maxnh, 1, h_spin_dim,
+      call re_alloc(H_tmp, 1,maxnh, 1, spin%H,
      $             'H_tmp','final_H_f_stress')
-!$OMP parallel workshare default(shared)
-      H_tmp = 0.0_dp
-!$OMP end parallel workshare
+      call re_alloc(S_tmp, 1,maxnh,
+     $             'S_tmp','final_H_f_stress')
 
+!$OMP parallel default(shared)
+
+!$OMP workshare
+      H_tmp = 0.0_dp
+      S_tmp = 0.0_dp
+!$OMP end workshare nowait
+
+!$OMP single
 !     Initialize forces and stress ...................
       nullify(fal)
       call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'final_H_f_stress' )
-
-!$OMP parallel workshare default(shared)
+!$OMP end single
+      
+!$OMP workshare
       fa(1:3,1:na_u)   = 0.0_dp
       fal(1:3,1:na_u)  = 0.0_dp
       stress(1:3,1:3)  = 0.0_dp
-      stressl(1:3,1:3) = 0.0_dp  ! fal already initialized
-!$OMP end parallel workshare
+      stressl(1:3,1:3) = 0.0_dp
+!$OMP end workshare nowait
+
+!$OMP end parallel
+      
 
 ! Neutral-atom: energy, forces and stress ............................
       call naefs( na_u, na_s, scell, xa, indxua, rmaxv,
@@ -130,7 +152,7 @@
       call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              spinor_dim, Dscf, Ekin, fal, stressl, H_tmp,
+     &              spin%spinor, Dscf, Ekin, fal, stressl, H_tmp,
      &              matrix_elements_only=.false. ) 
 #ifdef MPI
 ! Global reduction of energy terms
@@ -143,7 +165,7 @@
       call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
-     &             spinor_dim, Dscf, Enl, fal, stressl, H_tmp,
+     &             spin%spinor, Dscf, Enl, fal, stressl, H_tmp,
      &             matrix_elements_only=.false. ) 
 
 #ifdef MPI
@@ -157,7 +179,7 @@
 ! computing forces and stresses, calling it in the first iteration
 ! should be enough
 !
-      if ( SpOrb ) then
+      if ( spin%SO ) then
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
 #ifdef MPI
@@ -170,7 +192,7 @@
       endif
       
 !     Non-SCF part of total energy
-      E0 = Ena + Ekin + Enl + Eso - Eions
+      call update_E0()
 
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
@@ -178,7 +200,7 @@
          call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
      .        maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .        numh, listhptr, listh, numh, listhptr, listh,
-     .        min(nspin,2), Dscf, Eldau, DEldau, H_ldau, 
+     .        spin%spinor, Dscf, Eldau, DEldau, H_ldau, 
      .        fal, stressl, H_tmp, iscf,
      .        matrix_elements_only=.false.)
 #ifdef MPI
@@ -203,7 +225,7 @@
       ! This will call dhscf with the final DM coming out of
       ! the scf cycle
 
-      call grdsam( nspin, no_s, iaorb, iphorb, 
+      call grdsam( spin%Grid, no_s, iaorb, iphorb, 
      &             no_l, no_u, na_u, na_s, isa, xa, indxua,
      &             ucell, ntm, ifa, istr, maxnh,
      &             maxnh, numh, listhptr, listh, Dscf, Datm, H_tmp,
@@ -216,7 +238,7 @@
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              spinor_dim, Escf, fal, stressl, S ) 
+     &              spin%spinor, Escf, fal, stressl, S_tmp ) 
 
 !     Metadynamics forces
       if (lMetaForce) then
@@ -248,6 +270,22 @@
       ! If backward compatibility is requested, recover
       ! the old behavior with respect to H
 
+#ifdef FINAL_CHECK_HS
+      ! We also print-out the max-difference between the
+      ! final H after SCF and the final computed H used for
+      ! the forces.
+      ! These values should correspond to the dHmax and diff_S == 0.
+      call compute_max_diff(H, H_tmp, diff_H)
+      call compute_max_diff(S, S_tmp, diff_S)
+      if ( IONode ) then
+         ! Print out the final differences
+         write(*,"(a,f10.6)") ":!: Final H_scf - H_force (eV) : ",
+     &        diff_H/eV
+         write(*,"(a,f10.6)") ":!: Final S_scf - S_force      : ",
+     &        diff_S
+      end if
+#endif
+      
       if (recompute_H_after_scf) then
          if (ionode) then
             write(6,"(a)") ":!: Updating H after scf cycle" //
@@ -258,6 +296,7 @@
 
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
       call de_alloc( H_tmp, 'H_tmp', 'final_H_f_stress' )
+      call de_alloc( S_tmp, 'S_tmp', 'final_H_f_stress' )
 
       ! Determine whether anything should be saved
       ! If not, return immediately
@@ -271,7 +310,7 @@
 ! This call could be moved to a more appropriate place
 !
       if (savehs) then
-         call write_hsx( gamma, no_u, no_s, h_spin_dim, indxuo,
+         call write_hsx( gamma, no_u, no_s, spin%H, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, Qtot,
      &        Temp, xijo)
       endif
@@ -283,7 +322,7 @@
 #ifdef TRANSIESTA
          if ( TS_HS_save ) dic_save = dic_save //('H'.kv.1)
 #endif
-         call cdf_save_state('SIESTA.nc',dic_save)
+         call cdf_save_state(trim(slabel)//'.nc',dic_save)
          call delete(dic_save)
       end if
 #endif
@@ -294,7 +333,7 @@
          ! Together with this you cannot also save FC
          fname = fname_TSHS(slabel, istep = istep )
          call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &        ucell, nsc, isc_off, na_u, no_s, h_spin_dim, 
+     &        ucell, nsc, isc_off, na_u, no_s, spin%H, 
      &        ts_kscell, ts_kdispl, 
      &        xa, lasto, 
      &        H_2D, S_1D, indxuo,
@@ -313,7 +352,7 @@
             call FC_index(istep,ia1,io_istep,io_ia1)
             fname = fname_TSHS(slabel,istep = io_istep, ia1 = io_ia1)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &           ucell, nsc, isc_off, na_u, no_s, h_spin_dim, 
+     &           ucell, nsc, isc_off, na_u, no_s, spin%H, 
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto, 
      &           H_2D, S_1D, indxuo,
@@ -321,7 +360,7 @@
          else
             fname = fname_TSHS(slabel)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &           ucell, nsc, isc_off, na_u, no_s, h_spin_dim,
+     &           ucell, nsc, isc_off, na_u, no_s, spin%H,
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto,
      &           H_2D, S_1D, indxuo,
@@ -329,6 +368,7 @@
          end if
       endif
 #endif /* TRANSIESTA */
+
 !----------------------------------------------------------------------- END
       END subroutine final_H_f_stress
       END module m_final_H_f_stress

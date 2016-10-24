@@ -7,6 +7,8 @@
 !
       module memoryinfo
 
+      use precision, only: i8b
+
 C
 C WordsInteger = number of words of memory for integer variables
 C WordsSP      = number of words of memory for single precision variables
@@ -21,7 +23,7 @@ C                each data type
 C
       implicit none
 
-      integer*8, save ::
+      integer(i8b), save ::
      .  WordsInteger, WordsSP, WordsDP, WordsLogical, WordsSC, WordsDC, 
      .  WordsString, WordsLongInt,
      .  PeakMemory, CurrentMemory

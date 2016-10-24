@@ -204,6 +204,7 @@ MODULE alloc
 
   use precision, only: sp        ! Single precision real type
   use precision, only: dp        ! Double precision real type
+  use precision, only: i8b       ! 8-byte integer
   use parallel,  only: Node      ! My processor node index
   use parallel,  only: Nodes     ! Number of parallel processors
   use parallel,  only: ionode    ! Am I the I/O processor?
@@ -211,14 +212,7 @@ MODULE alloc
   use sys,       only: die       ! Termination routine
   use m_io,      only: io_assign ! Get and reserve an available IO unit
 #ifdef MPI
-!  use mpi_siesta
-  use mpi_siesta, only: MPI_AllGather
-  use mpi_siesta, only: MPI_Barrier
-  use mpi_siesta, only: MPI_Bcast
-  use mpi_siesta, only: MPI_Comm_World
-  use mpi_siesta, only: MPI_double_precision
-  use mpi_siesta, only: MPI_integer
-  use mpi_siesta, only: MPI_character
+  use mpi_siesta
 #endif
 
   implicit none
@@ -357,6 +351,8 @@ integer MPIerror
 if (present(level)) then
   REPORT_LEVEL = level
 end if
+
+if (REPORT_LEVEL <= 0) RETURN
 
 if (node == 0) then
   if (present(unit)) then  ! Assume that unit has been open outside
@@ -554,7 +550,7 @@ SUBROUTINE realloc_E1( array, i1min, i1max, &
                        name, routine, copy, shrink )
 ! Arguments
 implicit none
-integer*8, dimension(:),    pointer    :: array
+integer(i8b), dimension(:),    pointer    :: array
 integer,                    intent(in) :: i1min
 integer,                    intent(in) :: i1max
 character(len=*), optional, intent(in) :: name
@@ -565,7 +561,7 @@ logical,          optional, intent(in) :: shrink
 ! Internal variables and arrays
 character, parameter                   :: type='I'
 integer, parameter                     :: rank=1
-integer*8, dimension(:), pointer       :: old_array
+integer(i8b), dimension(:), pointer       :: old_array
 integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
 
 ! Get old array bounds
@@ -1622,7 +1618,7 @@ SUBROUTINE dealloc_E1( array, name, routine )
 
 ! Arguments
 implicit none
-integer*8, dimension(:),      pointer    :: array
+integer(i8b), dimension(:),      pointer    :: array
 character(len=*), optional, intent(in) :: name
 character(len=*), optional, intent(in) :: routine
 

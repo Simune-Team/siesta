@@ -90,6 +90,11 @@ C
       use m_fermid,      only : fermid, fermispin, stepf
       use m_spin,        only : spinor_dim, e_spin_dim
       use alloc
+      use fdf,           only : fdf_get
+      use m_rdiag_elpa,  only : rdiag_elpa
+#ifndef SIESTA__NO_MRRR
+      use m_rdiag_mrrr,  only : rdiag_mrrr
+#endif
 
 #ifdef MPI
       use mpi_siesta
@@ -124,7 +129,7 @@ C
       integer, parameter                :: nk = 1
 
       logical
-     &  getD, getPSI, fixspin
+     .  getD, getPSI, fixspin, use_elpa, use_mrrr
 
       external rdiag
 
@@ -145,8 +150,15 @@ C  Internal variables .............................................
       endif
 
 C Solve eigenvalue problem
+      
+      use_elpa = fdf_get("Diag.ELPA",.false.)
+      if (Nodes == 1) use_elpa = .false.
+      use_mrrr = fdf_get("Diag.MRRR",.false.)
+      if (Nodes == 1) use_mrrr = .false.
+
       do ispin = 1,spinor_dim
-        call timer( 'r-eigvec', 1 )
+
+         call timer( 'r-eigvec', 1 )
         call timer( 'r-buildHS', 1 )
 !$OMP parallel do default(shared), private(io,j,ind,jo)
         do io = 1,nuo
@@ -161,8 +173,24 @@ C Solve eigenvalue problem
         enddo
 !$OMP end parallel do
         call timer( 'r-buildHS', 2 )
-        call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
-     &              psi(1,1,ispin), neigwanted, iscf, ierror )
+        if (use_elpa) then
+           call rdiag_elpa( Haux, Saux, nuotot,
+     $              nuo, nuotot, eo(1,ispin), 
+     .              psi(1,1,ispin), neigwanted, ierror )
+        else if (use_mrrr) then
+#ifdef SIESTA__NO_MRRR
+           call die("MRRR method not compiled-in. " //
+     $              "Remove -DSIESTA__NO_MRRR")
+#else
+           call rdiag_mrrr( Haux, Saux, nuotot,
+     $              nuo, nuotot, eo(1,ispin), 
+     .              psi(1,1,ispin), neigwanted, ierror )
+#endif
+        else
+           call rdiag( Haux, Saux, nuotot, nuo, nuotot,
+     $              eo(1,ispin), 
+     .              psi(1,1,ispin), neigwanted, iscf, ierror )
+        endif
         call timer( 'r-eigvec', 2 )
 
 
@@ -170,6 +198,9 @@ C Check error flag and take appropriate action
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.lt.0) then
+           if (use_elpa) then
+              call die('Terminating due to failed diagonalisation')
+           endif
 C Repeat diagonalisation with increased memory to handle clustering
 !$OMP parallel do default(shared), private(io,j,ind,jo)
           do io = 1,nuo
@@ -263,7 +294,7 @@ C Global operation to form new density matrix
       do Bnode=0, Nodes-1
         if (BNode.eq.Node) then
           mm = 0
-          do ispin= 1, spinor_dim ! CC RC Changed for osSO
+          do ispin= 1, spinor_dim
             do io= 1, nuo
               PSI_TMP(mm+1:mm+nuotot) = PSI(1:nuotot,io, ispin)
               mm = mm + nuotot
@@ -275,7 +306,7 @@ C Global operation to form new density matrix
      &                  MPI_double_precision, BNode, MPI_Comm_World,
      &                  MPIerror )
 #endif
-        do ispin = 1,h_spin_dim ! CC RC Changed for osSO 
+        do ispin = 1,h_spin_dim
           do io = 1,nuo
             call LocalToGlobalOrb(io,Node,Nodes,iio)
             mm   = (ispin-1)*nuo_LOC(Bnode)*nuotot

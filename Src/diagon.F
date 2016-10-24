@@ -111,8 +111,7 @@ C
       use m_spin,       only: e_spin_dim
 #ifdef MPI
       use m_diagon_opt, only : paralleloverk
-      use mpi_siesta,   only : mpi_bcast, mpi_comm_world,
-     &                         mpi_logical
+      use mpi_siesta
 #endif
       use siesta_options, only: new_diagk
 

@@ -1,5 +1,12 @@
 .SUFFIXES: .f90 .o .a
 
+# Sadly the preprocessor for fortran is a bit of a pain.
+# -C is needed to disregard C-comments (the operator // is a comment!?!)
+# -nostdinc is needed to not include standard includes (which are C comments)
+# -E only preprocess, do not try and compile
+# -P do not add line markers
+CPP = $(FC) -E -P -x c
+
 ARCH_MAKE_DEFAULT=arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
@@ -8,13 +15,6 @@ include $(ARCH_MAKE)
 AR      ?= ar
 ARFLAGS ?= cru
 RANLIB  ?= ranlib
-
-# Sadly the preprocessor for fortran is a bit of a pain.
-# -C is needed to disregard C-comments (the operator // is a comment!?!)
-# -nostdinc is needed to not include standard includes (which are C comments)
-# -E only preprocess, do not try and compile
-# -P do not add line markers
-FPP ?= cpp -E -P -C -nostdinc
 
 VPATH   ?= $(shell pwd)
 
@@ -30,7 +30,7 @@ PIPE_SILENT ?= 2> /dev/null
 # The different libraries
 OBJS = variable.o iso_var_str.o dictionary.o
 
-LIB  = libvardict.a
+LIB  = libfdict.a
 
 .PHONY: lib
 lib: $(LIB)
@@ -48,16 +48,12 @@ test: lib
 .PHONY: prep-var prep-dict
 prep-var:
 	$(VPATH)/var.sh
-	$(PP) -I. -I$(VPATH) $(VPATH)/variable_pp.F90 \
-		| sed -f $(VPATH)/filter.sed > tmp.F90 $(PIPE_SILENT)
-	$(PP) -I. -I$(VPATH) tmp.F90 \
+	$(CPP) $(CPPFLAGS) $(FPPFLAGS) -I. -I$(VPATH) $(VPATH)/variable_pp.F90 \
 		| sed -f $(VPATH)/filter.sed > variable.f90 $(PIPE_SILENT)
 
 prep-dict:
 	$(VPATH)/dictionary.sh
-	$(PP) -I. -I$(VPATH) $(VPATH)/dictionary_pp.F90 \
-		| sed -f $(VPATH)/filter.sed > tmp.F90 $(PIPE_SILENT)
-	$(PP) -I. -I$(VPATH) tmp.F90 \
+	$(CPP) $(CPPFLAGS) $(FPPFLAGS) -I. -I$(VPATH) $(VPATH)/dictionary_pp.F90 \
 		| sed -f $(VPATH)/filter.sed > dictionary.f90 $(PIPE_SILENT)
 
 .PHONY: clean

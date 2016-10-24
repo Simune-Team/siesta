@@ -31,6 +31,7 @@ contains
     use parallel, only : IONode
 
     use m_os, only : file_exist
+    use fdf, only: fdf_get
 
     use m_ts_gf,        only : do_Green, do_Green_Fermi
     use m_ts_electrode, only : init_Electrode_HS
@@ -49,8 +50,6 @@ contains
 
     use m_fixed, only : is_fixed, is_constr
 
-    use m_cite, only: add_citation
-    
     implicit none
 ! *********************
 ! * INPUT variables   *
@@ -66,6 +65,7 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
+    logical :: neglect_conn
     integer :: i, ia
     integer :: nC, nTS
     real(dp) :: mean_kT
@@ -108,11 +108,6 @@ contains
 
     ! If onlyS we do not need to do anything about the electrodes
     if ( onlyS ) return
-
-    ! add citation
-    if ( IONode ) then
-       call add_citation("10.1103/PhysRevB.65.165401")
-    end if
 
     ! Print out the contour blocks etc. for transiesta
     call print_ts_blocks( na_u, xa )
@@ -210,17 +205,35 @@ contains
        end do
     else
 
+       neglect_conn = .false.
+
        do i = 1 , N_Elec
           call delete(Elecs(i)) ! ensure clean electrode
           call read_Elec(Elecs(i),Bcast=.true.)
           
           ! print out the precision of the electrode (whether it extends
           ! beyond first principal layer)
-          call check_Connectivity(Elecs(i))
+          if ( .not. check_Connectivity(Elecs(i)) ) then
+
+             neglect_conn = .true.
+             
+          end if
 
           call delete(Elecs(i))
        end do
-       
+
+       if ( neglect_conn ) then
+          neglect_conn = fdf_get('TS.Elecs.Neglect.Principal', .false.)
+
+          if ( .not. neglect_conn ) then
+
+             call die('Electrode connectivity is not perfect, refer &
+                  &to the manual for achieving a perfect electrode.')
+
+          end if
+
+       end if
+
     end if
 
   end subroutine ts_init

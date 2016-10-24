@@ -27,7 +27,10 @@ contains
     end do
   end function fdf_bnext
 
-  subroutine fdf_brange(pline,r,low,high)
+  !> Read a range of integers from a parsed line
+  !!
+  !! It returns the list of integers in a `tRng` object.
+  subroutine fdf_brange(pline,r, low, high)
     type(parsed_line), pointer :: pline
     type(tRgn), intent(out) :: r
     ! Practically min/max for the region
@@ -37,7 +40,7 @@ contains
 
     integer :: j, n, i, i1, i2, step
     integer, allocatable :: list(:)
-    character(len=20) :: g
+    character(len=32) :: g
 
     ! We allocate a temporary list
     allocate(list(high-low+1))
@@ -89,12 +92,14 @@ contains
        end if
 
     else if ( fdf_bnnames(pline) == 3 ) then
+
        g = fdf_bnames(pline,2)
        if ( .not. leqi(g,'from') ) then
           print *,'Parsed line: ',pline%line
           call die('Error in range block: &
                &from <int> to/plus/minus <int> is ill formatted')
        end if
+       
        g = fdf_bnames(pline,3)
        if ( fdf_bnintegers(pline) < 2 ) then
           print *,'Parsed line: ',pline%line
@@ -102,16 +107,21 @@ contains
                &from <int> to/plus/minus <int> is ill formatted')
        end if
 
-       ! Initialize step
-       step = 1
-
        ! Read in arguments
        i1 = fdf_bintegers(pline,1)
        i2 = fdf_bintegers(pline,2)
+
+       ! Figure out the step-level
        if ( fdf_bnintegers(pline) > 2 ) then
           step = fdf_bnintegers(pline,3)
           if ( step == 0 ) &
                call die('Stepping MUST be different from 0')
+       else
+          if ( i1 <= i2 ) then
+             step = 1
+          else
+             step = -1
+          end if
        end if
 
        if ( leqi(g,'to') ) then
@@ -125,19 +135,9 @@ contains
        else
           print *,'Parsed line: ',pline%line
           call die('Unrecognized designator of ending range, &
-               [to, plus, minus] accepted.')
+               &[to, plus, minus] accepted.')
        end if
 
-       ! Check whether we should correct the list indices
-       if ( i1 < i2 .and. step < 0 ) then
-          ! i1
-          i1 = correct(i1,low,high)
-       end if
-       if ( i2 < i1 .and. step > 0 ) then
-          ! i2
-          i2 = correct(i2,low,high)
-       end if
-          
        ! Check input for list creation
        if ( (i1 < i2 .and. step < 0) .or. &
             (i1 > i2 .and. step > 0) ) then
@@ -173,13 +173,35 @@ contains
     pure function correct(in,low,high) result(out)
       integer, intent(in) :: in, low, high
       integer :: out
-      if ( in < low ) then
-         out = high + in + 1
-      else if ( high < in ) then
-         out = in - high + low - 1
-      else
+      if ( low == 1 .and. high >= low ) then
+         ! Special case, we use wrap-arounds
          out = in
+         if ( out == 0 ) then
+            ! this is not allowed
+            return
+         end if
+         if ( out < 0 ) then
+            ! correct for the zero-base
+            out = out + 1
+            do while ( out < 1 )
+               out = out + high
+            end do
+         end if
+         if ( out > high ) then
+            do while ( high < out )
+               out = out - high
+            end do
+         end if
+      else
+         if ( in < low ) then
+            out = high + in + 1
+         else if ( high < in ) then
+            out = in - high + low - 1
+         else
+            out = in
+         end if
       end if
+      
     end function correct
           
   end subroutine fdf_brange
@@ -199,8 +221,8 @@ contains
     type(parsed_line), pointer :: pline => null()
     type(tRgn) :: r1
     integer :: i, il, ic
-    character(len=50) :: g
-    character(len=50), allocatable :: rlist(:)
+    character(len=64) :: g
+    character(len=64), allocatable :: rlist(:)
     logical :: found
 
     n_r = 0

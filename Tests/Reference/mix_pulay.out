@@ -1,0 +1,1380 @@
+Siesta Version: trunk-527-doc-8
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PARALLEL version
+NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
+
+* Running on 2 nodes in parallel
+>> Start of run:   7-JUL-2016  12:27:23
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+# Default stuff...
+Mixer.Debug.MPI
+SCF.Mixer.Weight 0.01
+SCF.Mixer.History 6
+# Define all the mixing methods used
+%block SCF.Mixers
+  pulay
+  pulay-GR
+%endblock
+%block SCF.Mixer.pulay
+  method pulay
+  iterations 12
+  next pulay-GR
+%endblock
+%block SCF.Mixer.pulay-GR
+  method pulay
+  variant GR
+  iterations 12
+  next pulay
+%endblock
+SystemName          Linear Fe3 cluster.
+SystemLabel         mix_pulay
+NumberOfAtoms       3
+NumberOfSpecies     1
+%block ChemicalSpeciesLabel
+ 1  26  fe_nc      # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+LatticeConstant    1.0 Bohr
+%block LatticeVectors
+ 12.000   0.000   0.000
+  0.000  12.000   0.000
+  0.000   0.000  20.000
+%endblock LatticeVectors
+AtomicCoordinatesFormat  NotScaledCartesianBohr
+%block AtomicCoordinatesAndAtomicSpecies
+  0.000   0.000   3.644  1
+  0.000   0.000   0.000  1
+  0.000   0.000  -3.644  1
+%endblock AtomicCoordinatesAndAtomicSpecies
+%block AtomicCoordinatesOrigin
+  0.000   0.000   0.000
+%endblock AtomicCoordinatesOrigin
+PAO.BasisType    split
+PAO.SplitNorm    0.15
+%block PAO.BasisAndPSlmax
+  1   26   2   3
+    0    2
+      5.30   0.00
+      1.00   1.00
+    1    1
+      5.30   0.00
+      1.00   1.00
+    2    2
+      4.50   0.00
+      1.00   1.00
+%endblock PAO.BasisAndPSlmax
+MeshCutoff        150. Ry
+ElectronicTemperature   0.1 eV
+MaxSCFiterations      200
+MD.TypeOfRun      CG
+MD.NumCGsteps     0
+WriteMullikenPop  1
+SpinPolarized     yes
+NonCollinearSpin  yes
+DM.UseSaveDM      yes
+%block DM.InitSpin
+ 1  +3.00     0.   0.   # atom,spin,theta,phi (deg)
+ 2  +1.50    90.   0.
+ 3  +3.00   180.   0.
+%endblock DM.InitSpin
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: Linear Fe3 cluster.
+reinit: -----------------------------------------------------------------------
+reinit: System Label: mix_pulay                                                   
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+Species number:   1 Atomic number:   26 Label: fe_nc
+
+Ground state valence configuration:   4s02  3d06
+Reading pseudopotential information in formatted form from fe_nc.psf
+
+Valence configuration for pseudopotential generation:
+4s( 1.00) rc: 2.00
+4p( 0.00) rc: 2.00
+3d( 7.00) rc: 2.00
+4f( 0.00) rc: 2.00
+For fe_nc, standard SIESTA heuristics set lmxkb to 3
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+fe_nc                Z=  26    Mass=  55.850        Charge= 0.17977+309
+Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=4
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+L=1  Nsemic=0  Cnfigmx=4
+L=2  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for fe_nc                 (Z =  26)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+Total valence charge:    8.00000
+
+read_vps: Pseudopotential includes a core correction:
+read_vps: Pseudo-core for xc-correction
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  2.8345
+V l=1 = -2*Zval/r beyond r=  2.8345
+V l=2 = -2*Zval/r beyond r=  2.8345
+V l=3 = -2*Zval/r beyond r=  2.8345
+All V_l potentials equal beyond r=  1.9726
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  2.8345
+Using large-core scheme for Vlocal
+
+atom: Estimated core radius    2.83451
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    3.13263
+atom: Maximum radius for r*vlocal+2*Zval:    2.87017
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+GHOST: No ghost state for L =  3
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  2.047986   el= -0.319855   Ekb=  3.923406   kbcos=  0.252820
+   l= 1   rc=  2.047986   el= -0.070931   Ekb=  3.313875   kbcos=  0.157841
+   l= 2   rc=  2.022544   el= -0.307264   Ekb=-12.478630   kbcos= -0.654791
+   l= 3   rc=  2.047986   el=  0.003534   Ekb= -1.656634   kbcos= -0.005966
+
+KBgen: Total number of  Kleinman-Bylander projectors:   16
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 4s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    6.799774
+                 energy =   -0.302238
+                kinetic =    0.298810
+    potential(screened) =   -0.601048
+       potential(ionic) =   -5.818758
+
+   izeta = 2
+                 rmatch =    6.468141
+              splitnorm =    0.150000
+                 energy =   -0.257217
+                kinetic =    0.445909
+    potential(screened) =   -0.703126
+       potential(ionic) =   -6.273620
+
+SPLIT: Orbitals with angular momentum L= 2
+
+SPLIT: Basis orbitals for state 3d
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.022404
+                 energy =   -0.287031
+                kinetic =    8.952870
+    potential(screened) =   -9.239901
+       potential(ionic) =  -18.247427
+
+   izeta = 2
+                 rmatch =    2.291856
+              splitnorm =    0.150000
+                 energy =    0.070417
+                kinetic =   12.282791
+    potential(screened) =  -12.212374
+       potential(ionic) =  -21.929746
+
+POLgen: Perturbative polarization orbital with L=  1
+
+POLgen: Polarization orbital for state 4s
+
+   izeta = 1
+                     rc =    6.799774
+                 energy =   -0.003154
+                kinetic =    0.566601
+    potential(screened) =   -0.569755
+       potential(ionic) =   -5.393577
+atom: Total number of Sankey-type orbitals: 15
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 4s( 2.00)                                                            
+ 4p( 0.00)                                                            
+ 3d( 6.00)                                                            
+Vna: chval, zval:    8.00000   8.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   6.799774
+comcore: Pseudo-core radius Rcore=  3.874354
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1   26 fe_nc                   # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+fe_nc                 2                    # Species label, number of l-shells
+ n=4   0   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   6.800      6.468   
+   1.000      1.000   
+ n=3   2   2                         # n, l, Nzeta 
+   4.022      2.292   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+Dumping basis to NetCDF file fe_nc.ion.nc
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                            (in Bohr units)
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000   3.64400  1        1
+siesta:      0.00000   0.00000   0.00000  1        2
+siesta:      0.00000   0.00000  -3.64400  1        3
+
+siesta: System type = bulk      
+
+initatomlists: Number of atoms, orbitals, and projectors:      3    45    48
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+redata: Spin configuration                          = non-collinear
+redata: Number of spin components                   = 4
+redata: Time-Reversal Symmetry                      = F
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.                         = Atomic and Orbital charges
+redata: Mesh Cutoff                                 =   150.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =      200
+redata: SCF mix quantity                            = density-matrix
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.2500
+redata: New DM Occupancy tolerance                  = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: DM Tolerance for SCF                        =     0.000100
+redata: Require H convergence for SCF               =   F
+redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
+redata: Require (free) Energy convergence in SCF    =   F
+redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
+redata: Require Harris convergence for SCF          =   F
+redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   T
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =  1160.4438 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Single-point calculation
+mix.SCF: Pulay mixing                            = pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 6
+mix.SCF:    Linear mixing weight                 =     0.010000
+mix.SCF:    Mixing weight                        =     0.010000
+mix.SCF:    SVD condition                        = 0.1000E-07
+mix.SCF:    Number of mixing iterations          = 12
+mix.SCF:    Following mixer                      = pulay-GR
+mix.SCF: Pulay mixing                            = pulay-GR
+mix.SCF:    Variant                              = GR
+mix.SCF:    History steps                        = 6
+mix.SCF:    Linear mixing weight                 =     0.010000
+mix.SCF:    Mixing weight                        =     0.010000
+mix.SCF:    SVD condition                        = 0.1000E-07
+mix.SCF:    Number of mixing iterations          = 12
+mix.SCF:    Following mixer                      = pulay
+mix.SCF: Spin-component mixingall
+redata: Save data in SIESTA.nc                      =   F
+redata: ***********************************************************************
+
+%block SCF.Mixers
+  pulay                   
+  pulay-GR                
+%endblock SCF.Mixers
+
+%block SCF.Mixer.pulay
+  # Mixing method
+  method pulay
+  variant stable
+
+  # Mixing options
+  weight 0.0100
+  weight.linear 0.0100
+  history 6
+  restart 0
+  restart.save 1
+
+  # Continuation options
+  iterations 12
+  next pulay-GR
+%endblock SCF.Mixer.pulay
+
+%block SCF.Mixer.pulay-GR
+  # Mixing method
+  method pulay
+  variant GR
+
+  # Mixing options
+  weight 0.0100
+  weight.linear 0.0100
+  history 6
+  restart 0
+  restart.save 1
+
+  # Continuation options
+  iterations 12
+  next pulay
+%endblock SCF.Mixer.pulay-GR
+
+DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
+Size of DM history Fstack: 1
+Total number of electrons:    24.000000
+Total ionic charge:    24.000000
+
+* ProcessorY, Blocksize:    1  23
+
+
+* Orbital distribution balance (max,min):    23    22
+
+
+Time-reversal symmetry not used.
+
+siesta: k-grid: Number of k-points =     1
+siesta: k-grid: Cutoff (effective) =     3.175 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
+siesta: k-grid:    0   0   1      0.000
+
+
+                     ====================================
+                        Single-point calculation
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        6.350124    0.000000    0.000000
+        0.000000    6.350124    0.000000
+        0.000000    0.000000   10.583540
+
+outcell: Cell vector modules (Ang)   :    6.350124    6.350124   10.583540
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    426.7715
+ Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=45 nrows=23 sparsity=.5111 nnzs=1035, refcount: 7>
+  <dData1D:(new from dSpData1D) n=1035, refcount: 1>
+refcount: 1>
+New_DM. Step:     1
+Initializing Density Matrix...
+Attempting to read DM from file... Failed...
+
+initdm: Initial spin polarization (Qup-Qdown) =    0.000000
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 0
+    nrows_g=45 nrows=23 sparsity=.5111 nnzs=1035, refcount: 8>
+  <dData2D:(DMatomic) n=1035 m=4, refcount: 1>
+refcount: 1>
+New grid distribution:   1
+           1       1:   24    1:   24    1:   20
+           2       1:   24    1:   24   21:   40
+
+InitMesh: MESH =    48 x    48 x    80 =      184320
+InitMesh: (bp) =    24 x    24 x    40 =       23040
+InitMesh: Mesh cutoff (required, used) =   150.000   157.914 Ry
+ExtMesh (bp) on 0 =    80 x    80 x    76 =      486400
+New grid distribution:   2
+           1       1:   24    1:   24    1:   15
+           2       1:   24    1:   24   16:   40
+New grid distribution:   3
+           1       1:   24    1:   24    1:   19
+           2       1:   24    1:   24   20:   40
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    80 x    80 x    71 =      454400
+PhiOnMesh: Number of (b)points on node 0 =                 8640
+PhiOnMesh: nlist on node 0 =               100501
+cdiag-debug: Node=0, lwork=     12512>= lworkq=      8462, lrwork=     13321>= lrworkq=     13231, liwork=       648>= liworkq=       648
+cdiag-debug: Node=1, lwork=     12420>= lworkq=      8462, lrwork=     12781>= lrworkq=     12691, liwork=       648>= liworkq=       648
+
+stepf: Fermi-Dirac step function
+
+siesta: Program's energy decomposition (eV):
+mix (1): Pulay
+siesta: Ebs     =      -252.848281
+siesta: Eions   =      2141.484345
+siesta: Ena     =        95.468898
+mix (1): n_hist = 1 / 6
+siesta: Ekin    =      2216.239670
+siesta: Enl     =     -1358.876616
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =         0.116554
+siesta: DUscf   =         0.000091
+siesta: DUext   =         0.000000
+siesta: Exc     =     -1125.170258
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2338.038961
+siesta: Etot    =     -2313.706006
+siesta: FreeEng =     -2314.260044
+
+        iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV)  dHmx(Ry)
+   scf:    1    -2338.038961    -2313.706006    -2314.260044  0.982602 -7.995772 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 1 / 6
+timer: Routine,Calls,Time,% =    IterSCF     1       0.224  13.69
+mix (1): Pulay
+mix (1): n_hist = 2 / 6
+   scf:    2    -2336.906201    -2313.943446    -2314.492230  0.969953 -7.845823 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 2 / 6
+mix (0): G =   0.010000, sum(alpha) =   1.292635, alpha =  0.1293E+01
+mix (1): G =   0.010000, sum(alpha) =   1.292635, alpha =  0.1293E+01
+   scf:    3    -2334.785596    -2314.442979    -2314.962445  0.938391 -7.503551 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 3 / 6
+mix (0): G =   0.010000, sum(alpha) =  -6.195899, alpha =  -.1110E+02 0.4907E+01
+mix (1): Pulay
+mix (1): n_hist = 3 / 6
+mix (1): G =   0.010000, sum(alpha) =  -6.195899, alpha =  -.1110E+02 0.4907E+01
+mix (1): Pulay
+mix (1): n_hist = 4 / 6
+   scf:    4    -2334.681981    -2314.660102    -2315.159545  0.923023 -7.369202 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 4 / 6
+mix (0): G =   0.010000, sum(alpha) =   5.768363, alpha =  -.2381E+01 0.3246E+01 0.4904E+01
+mix (1): G =   0.010000, sum(alpha) =   5.768363, alpha =  -.2381E+01 0.3246E+01 0.4904E+01
+mix (1): Pulay
+mix (1): n_hist = 5 / 6
+   scf:    5    -2330.206672    -2316.676508    -2317.088499  0.801280 -5.828470 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 5 / 6
+mix (1): G =   0.010000, sum(alpha) =  -1.150065, alpha =  0.1059E+01 -.3517E+01 -.2330E+01 0.3639E+01
+mix (0): G =   0.010000, sum(alpha) =  -1.150065, alpha =  0.1059E+01 -.3517E+01 -.2330E+01 0.3639E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:    6    -2328.343466    -2319.965157    -2320.029235  0.464178 -2.174774 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -3.979713, alpha =  -.4630E+00 -.2422E+01 -.2649E+01 0.2176E+01 -.6216E+00
+mix (0): G =   0.010000, sum(alpha) =  -3.979713, alpha =  -.4630E+00 -.2422E+01 -.2649E+01 0.2176E+01 -.6216E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:    7    -2328.093599    -2319.836067    -2319.877750  0.436470 -2.719743 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -0.982568, alpha =  -.3394E+01 -.5009E+01 0.3738E+01 -.2644E+00 0.3947E+01
+mix (0): G =   0.010000, sum(alpha) =  -0.982568, alpha =  -.3394E+01 -.5009E+01 0.3738E+01 -.2644E+00 0.3947E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:    8    -2328.230714    -2320.460172    -2320.527985  0.447020 -2.247398 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  27.273204, alpha =  -.1271E+01 0.1467E+01 -.3402E+00 0.1382E+02 0.1360E+02
+mix (1): G =   0.010000, sum(alpha) =  27.273204, alpha =  -.1271E+01 0.1467E+01 -.3402E+00 0.1382E+02 0.1360E+02
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:    9    -2327.924820    -2326.899803    -2327.229463  0.328991 -2.709714 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  24.033541, alpha =  0.1189E+01 -.4331E+00 0.1181E+02 0.1240E+02 -.9334E+00
+mix (1): G =   0.010000, sum(alpha) =  24.033541, alpha =  0.1189E+01 -.4331E+00 0.1181E+02 0.1240E+02 -.9334E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   10    -2327.728204    -2326.669892    -2326.982302  0.270619 -2.848124 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  25.310942, alpha =  -.4430E+00 0.1283E+02 0.1544E+02 -.1135E+01 -.1376E+01
+mix (0): G =   0.010000, sum(alpha) =  25.310942, alpha =  -.4430E+00 0.1283E+02 0.1544E+02 -.1135E+01 -.1376E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   11    -2327.650702    -2326.293255    -2326.588652  0.230338 -3.646225 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  23.225514, alpha =  0.1066E+02 0.1446E+02 -.1097E+01 -.3836E+01 0.3034E+01
+mix (0): G =   0.010000, sum(alpha) =  23.225514, alpha =  0.1066E+02 0.1446E+02 -.1097E+01 -.3836E+01 0.3034E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   12    -2327.869139    -2326.645409    -2326.991980  0.302812 -3.998339 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   4.231899, alpha =  0.3758E+01 -.2397E+00 -.1306E+01 0.3391E+01 -.1371E+01
+mix (0): G =   0.010000, sum(alpha) =   4.231899, alpha =  0.3758E+01 -.2397E+00 -.1306E+01 0.3391E+01 -.1371E+01
+mix (0): switching mixer --> pulay-GR
+   scf:   13    -2327.765680    -2326.295993    -2326.642834  0.256467 -4.095983 -1.000000
+mix (0): Pulay, GR
+mix (1): Pulay, GR
+mix (1): Direct mixing
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   14    -2327.725972    -2326.310401    -2326.643174  0.251698 -4.081866 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  32.745208, alpha =  -.3490E-02 -.6515E-01 -.4409E-03 0.3989E-01 0.3277E+02
+mix (1): G =   0.010000, sum(alpha) =  32.745208, alpha =  -.3490E-02 -.6515E-01 -.4409E-03 0.3989E-01 0.3277E+02
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   15    -2330.224206    -2326.433111    -2326.441634  0.323357 -3.615371 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   16    -2329.304203    -2326.466188    -2326.475996  0.312121 -3.635843 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   3.964655, alpha =  -.1548E-01 0.1764E-02 0.1569E-01 0.1921E-01 0.3943E+01
+mix (0): G =   0.010000, sum(alpha) =   3.964655, alpha =  -.1548E-01 0.1764E-02 0.1569E-01 0.1921E-01 0.3943E+01
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   17    -2327.089294    -2326.495560    -2326.636195  0.195088 -3.390923 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   18    -2327.052556    -2326.501364    -2326.657439  0.192325 -3.384779 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  -0.355662, alpha =  -.1764E-02 0.2632E-01 0.4042E+00 0.3032E+00 -.1088E+01
+mix (1): G =   0.010000, sum(alpha) =  -0.355662, alpha =  -.1764E-02 0.2632E-01 0.4042E+00 0.3032E+00 -.1088E+01
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   19    -2327.803075    -2326.319533    -2326.349685  0.261832 -3.187842 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   20    -2327.515666    -2326.332904    -2326.390104  0.228720 -3.148993 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   0.336191, alpha =  0.2401E-01 0.4248E+00 0.6623E-01 -.9838E+00 0.8049E+00
+mix (0): G =   0.010000, sum(alpha) =   0.336191, alpha =  0.2401E-01 0.4248E+00 0.6623E-01 -.9838E+00 0.8049E+00
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   21    -2327.873379    -2326.339871    -2326.365375  0.262838 -3.218096 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   22    -2327.557567    -2326.353584    -2326.404521  0.232359 -3.174834 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  50.737643, alpha =  -.5382E+00 0.3561E+00 0.1544E+01 0.3955E+02 0.9829E+01
+mix (1): G =   0.010000, sum(alpha) =  50.737643, alpha =  -.5382E+00 0.3561E+00 0.1544E+01 0.3955E+02 0.9829E+01
+   scf:   23    -2327.265897    -2327.014381    -2327.232782  0.239776 -3.748808 -1.000000
+mix (0): Pulay, GR
+mix (1): Pulay, GR
+mix (1): Direct mixing
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   24    -2327.118226    -2327.015959    -2327.226161  0.189681 -3.729140 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  21.838128, alpha =  0.1103E+01 0.2807E-01 0.2092E+02 -.5503E+00 0.3420E+00
+mix (1): G =   0.010000, sum(alpha) =  21.838128, alpha =  0.1103E+01 0.2807E-01 0.2092E+02 -.5503E+00 0.3420E+00
+mix (0): switching mixer --> pulay
+   scf:   25    -2327.155743    -2326.977550    -2327.189981  0.199256 -3.669975 -1.000000
+mix (0): Pulay
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) = -84.926430, alpha =  -.3141E+01 -.6194E+02 -.5691E+01 -.1306E+02 -.1101E+01
+mix (1): G =   0.010000, sum(alpha) = -84.926430, alpha =  -.3141E+01 -.6194E+02 -.5691E+01 -.1306E+02 -.1101E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   26    -2638.246405    -2143.703414    -2143.795389  3.031223-11.822478 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) = -73.518664, alpha =  -.6269E+02 -.3441E+01 -.5358E+01 -.1035E+01 -.9993E+00
+mix (0): G =   0.010000, sum(alpha) = -73.518664, alpha =  -.6269E+02 -.3441E+01 -.5358E+01 -.1035E+01 -.9993E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   27    -2782.176875    -2086.301538    -2086.417999  2.953791-15.532108 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  21.081430, alpha =  0.2627E+00 0.2357E+02 -.7457E+00 -.9997E+00 -.1003E+01
+mix (0): G =   0.010000, sum(alpha) =  21.081430, alpha =  0.2627E+00 0.2357E+02 -.7457E+00 -.9997E+00 -.1003E+01
+   scf:   28    -2541.521857    -2268.301555    -2268.306495  3.119748 -8.967451 -1.000000
+mix (0): Pulay
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =   2.215584, alpha =  0.6164E+01 -.9418E+00 -.1002E+01 -.1003E+01 -.1002E+01
+mix (1): G =   0.010000, sum(alpha) =   2.215584, alpha =  0.6164E+01 -.9418E+00 -.1002E+01 -.1003E+01 -.1002E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   29    -2336.859834    -2327.573108    -2327.894704  1.049803 -6.445820 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -5.038791, alpha =  -.1017E+01 -.1005E+01 -.1006E+01 -.1006E+01 -.1004E+01
+mix (0): G =   0.010000, sum(alpha) =  -5.038791, alpha =  -.1017E+01 -.1005E+01 -.1006E+01 -.1006E+01 -.1004E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   30    -2357.373634    -2323.217901    -2323.246177  0.385407 -2.361468 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  -4.453303, alpha =  -.8898E+00 -.8949E+00 -.8869E+00 -.8607E+00 -.9209E+00
+mix (1): G =   0.010000, sum(alpha) =  -4.453303, alpha =  -.8898E+00 -.8949E+00 -.8869E+00 -.8607E+00 -.9209E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   31    -2328.488971    -2326.636217    -2326.645395  0.241894 -3.517875 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -0.052970, alpha =  -.1293E-01 -.2312E-01 -.3247E-01 -.9497E-01 0.1105E+00
+mix (0): G =   0.010000, sum(alpha) =  -0.052970, alpha =  -.1293E-01 -.2312E-01 -.3247E-01 -.9497E-01 0.1105E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   32    -2328.766717    -2326.979933    -2327.181544  0.551839 -4.080906 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  -0.474744, alpha =  0.6298E-02 0.2969E-03 0.2972E-01 0.1125E+00 -.6236E+00
+mix (1): G =   0.010000, sum(alpha) =  -0.474744, alpha =  0.6298E-02 0.2969E-03 0.2972E-01 0.1125E+00 -.6236E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   33    -2327.119012    -2326.892316    -2327.099600  0.173673 -3.542400 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -0.737416, alpha =  -.1143E-01 0.2495E-02 0.7030E-01 -.4003E+00 -.3984E+00
+mix (0): G =   0.010000, sum(alpha) =  -0.737416, alpha =  -.1143E-01 0.2495E-02 0.7030E-01 -.4003E+00 -.3984E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   34    -2327.298900    -2326.963272    -2327.179582  0.237202 -3.631385 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -3.297331, alpha =  -.3999E-01 0.1912E-01 -.3166E+00 -.4652E+00 -.2495E+01
+mix (0): G =   0.010000, sum(alpha) =  -3.297331, alpha =  -.3999E-01 0.1912E-01 -.3166E+00 -.4652E+00 -.2495E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   35    -2327.046917    -2326.925080    -2327.123761  0.136019 -3.605443 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   0.713280, alpha =  0.4872E-01 -.2608E+00 -.2888E+00 0.6589E+00 0.5553E+00
+mix (0): G =   0.010000, sum(alpha) =   0.713280, alpha =  0.4872E-01 -.2608E+00 -.2888E+00 0.6589E+00 0.5553E+00
+mix (0): switching mixer --> pulay-GR
+   scf:   36    -2327.043950    -2326.938287    -2327.136948  0.133767 -3.632319 -1.000000
+mix (0): Pulay, GR
+mix (1): Pulay, GR
+mix (1): Direct mixing
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   37    -2327.027717    -2326.939184    -2327.128556  0.104997 -3.629182 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  12.471160, alpha =  0.1500E-02 0.1536E-02 -.1021E-01 -.2866E-01 0.1251E+02
+mix (0): G =   0.010000, sum(alpha) =  12.471160, alpha =  0.1500E-02 0.1536E-02 -.1021E-01 -.2866E-01 0.1251E+02
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   38    -2327.540240    -2326.932190    -2326.986658  0.164058 -3.681022 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   39    -2327.278545    -2326.936963    -2327.028163  0.111109 -3.642275 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   4.140368, alpha =  0.5289E-03 0.7230E-02 -.9652E-02 0.7291E+00 0.3413E+01
+mix (0): G =   0.010000, sum(alpha) =   4.140368, alpha =  0.5289E-03 0.7230E-02 -.9652E-02 0.7291E+00 0.3413E+01
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   40    -2327.073689    -2326.937487    -2327.080657  0.058044 -3.580403 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   41    -2327.046808    -2326.938756    -2327.094021  0.056863 -3.574144 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  17.832218, alpha =  0.1338E-01 0.1370E-02 0.2231E+01 0.1734E+01 0.1385E+02
+mix (1): G =   0.010000, sum(alpha) =  17.832218, alpha =  0.1338E-01 0.1370E-02 0.2231E+01 0.1734E+01 0.1385E+02
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   42    -2327.141622    -2326.936849    -2327.053759  0.100860 -3.445837 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   43    -2327.086996    -2326.938680    -2327.075195  0.069421 -3.437364 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  12.437760, alpha =  -.8917E-02 0.1837E+01 0.5645E+00 -.6693E+00 0.1071E+02
+mix (0): G =   0.010000, sum(alpha) =  12.437760, alpha =  -.8917E-02 0.1837E+01 0.5645E+00 -.6693E+00 0.1071E+02
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   44    -2327.136303    -2326.944426    -2327.062928  0.087452 -3.491276 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   45    -2327.079027    -2326.946115    -2327.084827  0.054268 -3.481649 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   4.186050, alpha =  -.8670E+00 -.4467E+00 0.1696E+01 0.5421E+01 -.1617E+01
+mix (0): G =   0.010000, sum(alpha) =   4.186050, alpha =  -.8670E+00 -.4467E+00 0.1696E+01 0.5421E+01 -.1617E+01
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   46    -2327.025666    -2326.981595    -2327.154882  0.017041 -3.510555 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   47    -2327.026984    -2326.982033    -2327.153617  0.013180 -3.510866 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -7.658794, alpha =  -.1207E-01 0.4238E+00 0.1373E+01 -.2586E+00 -.9185E+01
+mix (0): G =   0.010000, sum(alpha) =  -7.658794, alpha =  -.1207E-01 0.4238E+00 0.1373E+01 -.2586E+00 -.9185E+01
+mix (0): switching mixer --> pulay
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   48    -2327.032071    -2326.977639    -2327.144241  0.011133 -3.503439 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  20.581719, alpha =  0.1840E+01 0.4901E+00 0.2723E+01 0.1633E+02 -.7986E+00
+mix (0): G =   0.010000, sum(alpha) =  20.581719, alpha =  0.1840E+01 0.4901E+00 0.2723E+01 0.1633E+02 -.7986E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   49    -2329.445053    -2327.699222    -2327.747737  0.549678 -4.044292 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  12.806917, alpha =  -.5939E+01 0.2509E+01 0.1802E+02 -.7840E+00 -.9992E+00
+mix (1): G =   0.010000, sum(alpha) =  12.806917, alpha =  -.5939E+01 0.2509E+01 0.1802E+02 -.7840E+00 -.9992E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   50    -2331.963098    -2326.361860    -2326.805207  0.697823 -4.796441 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  31.271948, alpha =  0.3783E+01 0.3018E+02 -.6926E+00 -.1000E+01 -.1001E+01
+mix (1): G =   0.010000, sum(alpha) =  31.271948, alpha =  0.3783E+01 0.3018E+02 -.6926E+00 -.1000E+01 -.1001E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   51    -2330.255819    -2328.290747    -2328.513530  1.297023 -4.907125 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   6.539969, alpha =  0.1037E+02 -.8331E+00 -.9998E+00 -.1001E+01 -.9977E+00
+mix (0): G =   0.010000, sum(alpha) =   6.539969, alpha =  0.1037E+02 -.8331E+00 -.9998E+00 -.1001E+01 -.9977E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   52    -2336.180179    -2326.946345    -2326.954985  0.403636 -3.689686 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -4.903973, alpha =  -.9026E+00 -.9984E+00 -.1003E+01 -.9990E+00 -.1001E+01
+mix (0): G =   0.010000, sum(alpha) =  -4.903973, alpha =  -.9026E+00 -.9984E+00 -.1003E+01 -.9990E+00 -.1001E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   53    -2346.632320    -2325.511163    -2325.514617  0.369338 -3.176149 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -4.857306, alpha =  -.9997E+00 -.9522E+00 -.9384E+00 -.9517E+00 -.1015E+01
+mix (0): G =   0.010000, sum(alpha) =  -4.857306, alpha =  -.9997E+00 -.9522E+00 -.9384E+00 -.9517E+00 -.1015E+01
+   scf:   54    -2327.041434    -2326.979372    -2327.139160  0.022118 -3.496038 -1.000000
+mix (0): Pulay
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   0.368912, alpha =  0.1283E+00 0.1348E+00 0.1089E+00 -.2099E-01 0.1798E-01
+mix (0): G =   0.010000, sum(alpha) =   0.368912, alpha =  0.1283E+00 0.1348E+00 0.1089E+00 -.2099E-01 0.1798E-01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   55    -2327.039895    -2326.976835    -2327.137564  0.019585 -3.491577 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   7.925845, alpha =  0.1052E-01 -.4688E-02 -.6764E-01 -.3952E-01 0.8027E+01
+mix (0): G =   0.010000, sum(alpha) =   7.925845, alpha =  0.1052E-01 -.4688E-02 -.6764E-01 -.3952E-01 0.8027E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   56    -2327.030654    -2326.990371    -2327.158711  0.008907 -3.484304 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =   3.657641, alpha =  -.4417E-02 -.4094E-01 -.2383E-01 0.4121E+01 -.3940E+00
+mix (1): G =   0.010000, sum(alpha) =   3.657641, alpha =  -.4417E-02 -.4094E-01 -.2383E-01 0.4121E+01 -.3940E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   57    -2327.031034    -2326.993235    -2327.161005  0.008492 -3.490003 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   1.576815, alpha =  -.2882E-01 -.1482E-01 0.2182E+01 -.3579E-01 -.5253E+00
+mix (0): G =   0.010000, sum(alpha) =   1.576815, alpha =  -.2882E-01 -.1482E-01 0.2182E+01 -.3579E-01 -.5253E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   58    -2327.030910    -2326.996713    -2327.164642  0.007980 -3.489969 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  15.921344, alpha =  0.4059E-02 0.3387E+01 -.7974E+00 -.6891E+00 0.1402E+02
+mix (0): G =   0.010000, sum(alpha) =  15.921344, alpha =  0.4059E-02 0.3387E+01 -.7974E+00 -.6891E+00 0.1402E+02
+mix (0): switching mixer --> pulay-GR
+   scf:   59    -2327.026246    -2327.024620    -2327.198056  0.015433 -3.475820 -1.000000
+mix (1): Pulay, GR
+mix (1): Direct mixing
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   60    -2327.027421    -2327.024634    -2327.196583  0.012021 -3.476762 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  58.490621, alpha =  -.1233E+00 0.1463E+00 -.5123E-01 -.5406E+00 0.5906E+02
+mix (0): G =   0.010000, sum(alpha) =  58.490621, alpha =  -.1233E+00 0.1463E+00 -.5123E-01 -.5406E+00 0.5906E+02
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   61    -2327.550272    -2326.994467    -2327.043643  0.195264 -3.577532 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   62    -2327.293707    -2326.998748    -2327.083295  0.145606 -3.538446 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =   0.116863, alpha =  0.3003E-01 0.4820E-03 -.2935E-01 -.3495E+00 0.4652E+00
+mix (1): G =   0.010000, sum(alpha) =   0.116863, alpha =  0.3003E-01 0.4820E-03 -.2935E-01 -.3495E+00 0.4652E+00
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   63    -2327.055068    -2327.008148    -2327.160670  0.032703 -3.491528 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   64    -2327.041897    -2327.008581    -2327.168568  0.018541 -3.489324 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  -0.267931, alpha =  -.5075E-03 -.2366E-02 -.3236E+00 -.3351E+00 0.3936E+00
+mix (1): G =   0.010000, sum(alpha) =  -0.267931, alpha =  -.5075E-03 -.2366E-02 -.3236E+00 -.3351E+00 0.3936E+00
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   65    -2327.030932    -2327.013921    -2327.182145  0.005132 -3.484010 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   66    -2327.030255    -2327.014091    -2327.182946  0.005025 -3.484313 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  68.924137, alpha =  -.3651E-01 -.6344E+01 -.6046E+01 -.1408E+02 0.9543E+02
+mix (0): G =   0.010000, sum(alpha) =  68.924137, alpha =  -.3651E-01 -.6344E+01 -.6046E+01 -.1408E+02 0.9543E+02
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   67    -2327.023909    -2327.054928    -2327.231227  0.016368 -3.498549 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   68    -2327.025115    -2327.054616    -2327.229393  0.012924 -3.498839 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   3.057745, alpha =  0.9790E-01 0.2144E+00 -.3268E+00 -.1340E+00 0.3206E+01
+mix (0): G =   0.010000, sum(alpha) =   3.057745, alpha =  0.9790E-01 0.2144E+00 -.3268E+00 -.1340E+00 0.3206E+01
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   69    -2327.026156    -2327.045080    -2327.218511  0.009350 -3.497658 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   70    -2327.026657    -2327.044890    -2327.217782  0.008103 -3.497810 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  82.504261, alpha =  -.1541E-01 0.3051E+01 0.4730E+00 0.1707E+01 0.7729E+02
+mix (1): G =   0.010000, sum(alpha) =  82.504261, alpha =  -.1541E-01 0.3051E+01 0.4730E+00 0.1707E+01 0.7729E+02
+mix (0): switching mixer --> pulay
+   scf:   71    -2327.027306    -2327.049959    -2327.222512  0.006111 -3.497810 -1.000000
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) = **********, alpha =  -.2123E+02 -.2633E+02 -.2401E+03 0.9825E+02 -.7330E+00
+mix (0): G =   0.010000, sum(alpha) = **********, alpha =  -.2123E+02 -.2633E+02 -.2401E+03 0.9825E+02 -.7330E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   72    -2439.723796    -2304.440475    -2304.589176  2.566146  2.485276 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  36.151498, alpha =  0.5362E+01 -.4442E+02 0.7686E+02 -.6489E+00 -.1000E+01
+mix (1): G =   0.010000, sum(alpha) =  36.151498, alpha =  0.5362E+01 -.4442E+02 0.7686E+02 -.6489E+00 -.1000E+01
+   scf:   73    -2330.465965    -2324.176182    -2324.178491  0.470173 -2.830653 -1.000000
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  22.353438, alpha =  -.5068E+02 0.7568E+02 -.6439E+00 -.1001E+01 -.1001E+01
+mix (1): G =   0.010000, sum(alpha) =  22.353438, alpha =  -.5068E+02 0.7568E+02 -.6439E+00 -.1001E+01 -.1001E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   74    -2331.725239    -2323.818828    -2323.821600  0.484535 -2.709601 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  58.571716, alpha =  0.6231E+02 -.7261E+00 -.1004E+01 -.1004E+01 -.9998E+00
+mix (1): G =   0.010000, sum(alpha) =  58.571716, alpha =  0.6231E+02 -.7261E+00 -.1004E+01 -.1004E+01 -.9998E+00
+   scf:   75    -2327.654491    -2326.376208    -2326.408456  0.258353 -3.540158 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  -4.460015, alpha =  -.4280E+00 -.9950E+00 -.9950E+00 -.1039E+01 -.1003E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -4.460015, alpha =  -.4280E+00 -.9950E+00 -.9950E+00 -.1039E+01 -.1003E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -5.799831, alpha =  -.1150E+01 -.1151E+01 -.1210E+01 -.1168E+01 -.1120E+01
+   scf:   76    -2327.023376    -2327.032054    -2327.222714  0.047906 -3.504901 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  -5.799831, alpha =  -.1150E+01 -.1151E+01 -.1210E+01 -.1168E+01 -.1120E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   77    -2327.026583    -2327.045674    -2327.218938  0.005473 -3.488218 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =   0.023489, alpha =  -.1789E-03 -.2107E-01 -.3471E-02 -.1040E-02 0.4925E-01
+mix (1): G =   0.010000, sum(alpha) =   0.023489, alpha =  -.1789E-03 -.2107E-01 -.3471E-02 -.1040E-02 0.4925E-01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   78    -2327.027453    -2327.041961    -2327.214357  0.004709 -3.486007 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  12.216912, alpha =  0.1127E+00 0.3727E-01 0.4186E-02 -.3955E+00 0.1246E+02
+mix (1): G =   0.010000, sum(alpha) =  12.216912, alpha =  0.1127E+00 0.3727E-01 0.4186E-02 -.3955E+00 0.1246E+02
+   scf:   79    -2327.027161    -2327.045904    -2327.218697  0.005184 -3.486062 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =   1.257118, alpha =  0.8219E-02 0.3548E-01 0.1046E+00 0.4527E+01 -.3418E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   1.257118, alpha =  0.8219E-02 0.3548E-01 0.1046E+00 0.4527E+01 -.3418E+01
+   scf:   80    -2327.024900    -2327.057497    -2327.232635  0.009742 -3.482258 -1.000000
+mix (0): Pulay
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  -7.627242, alpha =  0.5718E-01 0.1094E+00 -.7473E+00 -.4324E+01 -.2723E+01
+mix (1): G =   0.010000, sum(alpha) =  -7.627242, alpha =  0.5718E-01 0.1094E+00 -.7473E+00 -.4324E+01 -.2723E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  41.679864, alpha =  0.1562E+00 0.2194E+02 0.4671E+01 0.8188E+01 0.6722E+01
+   scf:   81    -2327.024957    -2327.048251    -2327.223348  0.005923 -3.494834 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  41.679864, alpha =  0.1562E+00 0.2194E+02 0.4671E+01 0.8188E+01 0.6722E+01
+mix (0): switching mixer --> pulay-GR
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   82    -2327.026361    -2327.020461    -2327.194283  0.001039 -3.497448 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   83    -2327.026393    -2327.020520    -2327.194310  0.001040 -3.497410 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =   2.345867, alpha =  0.6123E-02 0.2734E-03 0.2646E-02 0.1933E-02 0.2335E+01
+mix (1): G =   0.010000, sum(alpha) =   2.345867, alpha =  0.6123E-02 0.2734E-03 0.2646E-02 0.1933E-02 0.2335E+01
+   scf:   84    -2327.026616    -2327.020619    -2327.194190  0.001059 -3.497387 -1.000000
+mix (0): Pulay, GR
+mix (1): Pulay, GR
+mix (1): Direct mixing
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   85    -2327.026535    -2327.020679    -2327.194331  0.001049 -3.497326 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  40.539023, alpha =  0.3836E-03 -.1324E-02 -.1624E-03 0.7294E+01 0.3325E+02
+mix (0): G =   0.010000, sum(alpha) =  40.539023, alpha =  0.3836E-03 -.1324E-02 -.1624E-03 0.7294E+01 0.3325E+02
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   86    -2327.025724    -2327.023865    -2327.198385  0.001569 -3.494837 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   87    -2327.025955    -2327.023883    -2327.198166  0.000896 -3.494894 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =   3.022700, alpha =  -.5150E-04 0.4465E-03 0.2657E+00 0.4470E+00 0.2310E+01
+mix (1): G =   0.010000, sum(alpha) =   3.022700, alpha =  -.5150E-04 0.4465E-03 0.2657E+00 0.4470E+00 0.2310E+01
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   88    -2327.026201    -2327.025421    -2327.199477  0.000873 -3.493879 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   89    -2327.026204    -2327.025429    -2327.199482  0.000872 -3.493907 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  83.370016, alpha =  0.2962E-03 -.1128E+01 0.2664E+00 0.4682E+00 0.8376E+02
+mix (0): G =   0.010000, sum(alpha) =  83.370016, alpha =  0.2962E-03 -.1128E+01 0.2664E+00 0.4682E+00 0.8376E+02
+   scf:   90    -2327.026219    -2327.027532    -2327.201624  0.000719 -3.495195 -1.000000
+mix (1): Pulay, GR
+mix (1): Direct mixing
+mix (0): Pulay, GR
+mix (0): Direct mixing
+   scf:   91    -2327.026226    -2327.027519    -2327.201604  0.000718 -3.495199 -1.000000
+mix (0): Pulay, GR
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) = 145.446691, alpha =  -.7073E+00 0.5190E+00 -.7460E+00 0.4474E+00 0.1459E+03
+mix (0): G =   0.010000, sum(alpha) = 145.446691, alpha =  -.7073E+00 0.5190E+00 -.7460E+00 0.4474E+00 0.1459E+03
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:   92    -2327.026289    -2327.027071    -2327.201150  0.000449 -3.495738 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:   93    -2327.026277    -2327.027063    -2327.201155  0.000446 -3.495738 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  49.469156, alpha =  -.3043E+00 0.6349E+00 -.4421E-02 0.2828E+00 0.4886E+02
+mix (0): G =   0.010000, sum(alpha) =  49.469156, alpha =  -.3043E+00 0.6349E+00 -.4421E-02 0.2828E+00 0.4886E+02
+mix (0): switching mixer --> pulay
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   94    -2327.026281    -2327.026573    -2327.200676  0.000325 -3.496034 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) = 178.548578, alpha =  0.1510E+01 0.1535E+02 0.5445E+02 0.1082E+03 -.9591E+00
+mix (0): G =   0.010000, sum(alpha) = 178.548578, alpha =  0.1510E+01 0.1535E+02 0.5445E+02 0.1082E+03 -.9591E+00
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   95    -2327.271434    -2328.848824    -2328.956577  0.201191 -3.589166 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) = 178.261473, alpha =  0.1612E+02 0.5628E+02 0.1078E+03 -.9613E+00 -.1000E+01
+mix (0): G =   0.010000, sum(alpha) = 178.261473, alpha =  0.1612E+02 0.5628E+02 0.1078E+03 -.9613E+00 -.1000E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   96    -2327.283729    -2328.856725    -2328.962695  0.203604 -3.596129 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) = 141.549058, alpha =  0.4263E+02 0.1017E+03 -.7749E+00 -.9998E+00 -.1006E+01
+mix (0): G =   0.010000, sum(alpha) = 141.549058, alpha =  0.4263E+02 0.1017E+03 -.7749E+00 -.9998E+00 -.1006E+01
+   scf:   97    -2327.148480    -2328.396115    -2328.518075  0.169660 -3.572976 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  86.404428, alpha =  0.8986E+02 -.4193E+00 -.9991E+00 -.1035E+01 -.9989E+00
+mix (1): G =   0.010000, sum(alpha) =  86.404428, alpha =  0.8986E+02 -.4193E+00 -.9991E+00 -.1035E+01 -.9989E+00
+   scf:   98    -2327.060901    -2327.619743    -2327.758802  0.107713 -3.503892 -1.000000
+mix (0): Pulay
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -3.858737, alpha =  0.1613E+00 -.9995E+00 -.1023E+01 -.9967E+00 -.1000E+01
+mix (0): G =   0.010000, sum(alpha) =  -3.858737, alpha =  0.1613E+00 -.9995E+00 -.1023E+01 -.9967E+00 -.1000E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:   99    -2327.019608    -2327.026766    -2327.212417  0.027218 -3.494224 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -5.087996, alpha =  -.1009E+01 -.1054E+01 -.1008E+01 -.1010E+01 -.1007E+01
+mix (0): G =   0.010000, sum(alpha) =  -5.087996, alpha =  -.1009E+01 -.1054E+01 -.1008E+01 -.1010E+01 -.1007E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:  100    -2327.026255    -2327.026699    -2327.200826  0.000348 -3.495827 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -0.003267, alpha =  -.9996E-02 0.1550E-02 -.5626E-03 0.2837E-03 0.5458E-02
+mix (0): G =   0.010000, sum(alpha) =  -0.003267, alpha =  -.9996E-02 0.1550E-02 -.5626E-03 0.2837E-03 0.5458E-02
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:  101    -2327.026265    -2327.026673    -2327.200788  0.000359 -3.495799 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =   0.252175, alpha =  0.1406E-02 -.1743E-03 0.5246E-04 0.3254E-02 0.2476E+00
+mix (0): G =   0.010000, sum(alpha) =   0.252175, alpha =  0.1406E-02 -.1743E-03 0.5246E-04 0.3254E-02 0.2476E+00
+   scf:  102    -2327.026273    -2327.026609    -2327.200715  0.000367 -3.495799 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  -1.099040, alpha =  0.5513E-03 0.1519E-03 0.3841E-02 0.7629E+00 -.1866E+01
+mix (1): G =   0.010000, sum(alpha) =  -1.099040, alpha =  0.5513E-03 0.1519E-03 0.3841E-02 0.7629E+00 -.1866E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:  103    -2327.026282    -2327.026663    -2327.200759  0.000370 -3.495743 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  -9.704957, alpha =  0.9932E-03 0.1182E-01 0.3761E+01 -.7464E+01 -.6014E+01
+mix (0): G =   0.010000, sum(alpha) =  -9.704957, alpha =  0.9932E-03 0.1182E-01 0.3761E+01 -.7464E+01 -.6014E+01
+mix (1): Pulay
+mix (1): n_hist = 6 / 6
+   scf:  104    -2327.026295    -2327.026749    -2327.200834  0.000365 -3.495942 -1.000000
+mix (0): Pulay
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) = -16.698443, alpha =  0.1186E-01 0.5790E+01 -.1101E+02 -.9366E+01 -.2127E+01
+mix (0): G =   0.010000, sum(alpha) = -16.698443, alpha =  0.1186E-01 0.5790E+01 -.1101E+02 -.9366E+01 -.2127E+01
+mix (0): switching mixer --> pulay-GR
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:  105    -2327.026285    -2327.026609    -2327.200708  0.000333 -3.495905 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:  106    -2327.026279    -2327.026606    -2327.200710  0.000332 -3.495905 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  30.919425, alpha =  -.7257E-01 0.1279E+00 0.1186E+00 0.1583E-01 0.3073E+02
+mix (1): G =   0.010000, sum(alpha) =  30.919425, alpha =  -.7257E-01 0.1279E+00 0.1186E+00 0.1583E-01 0.3073E+02
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:  107    -2327.026103    -2327.026521    -2327.200805  0.000467 -3.495945 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:  108    -2327.026176    -2327.026517    -2327.200727  0.000299 -3.495961 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =  12.089563, alpha =  -.1824E-01 -.3831E-01 -.1726E-01 0.2801E+01 0.9362E+01
+mix (1): G =   0.010000, sum(alpha) =  12.089563, alpha =  -.1824E-01 -.3831E-01 -.1726E-01 0.2801E+01 0.9362E+01
+   scf:  109    -2327.026372    -2327.026240    -2327.200261  0.000260 -3.496226 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:  110    -2327.026340    -2327.026242    -2327.200294  0.000256 -3.496215 -1.000000
+mix (0): Pulay, GR
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+mix (0): n_hist = 6 / 6
+mix (0): G =   0.010000, sum(alpha) =   3.692434, alpha =  -.1785E-01 -.1291E-01 -.3810E+00 0.1439E+00 0.3960E+01
+mix (1): G =   0.010000, sum(alpha) =   3.692434, alpha =  -.1785E-01 -.1291E-01 -.3810E+00 0.1439E+00 0.3960E+01
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:  111    -2327.026333    -2327.026243    -2327.200304  0.000253 -3.496196 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:  112    -2327.026317    -2327.026244    -2327.200320  0.000250 -3.496189 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  65.986902, alpha =  0.2182E-01 -.4204E+01 0.2274E+01 0.1548E+02 0.5241E+02
+mix (0): G =   0.010000, sum(alpha) =  65.986902, alpha =  0.2182E-01 -.4204E+01 0.2274E+01 0.1548E+02 0.5241E+02
+mix (1): Pulay, GR
+mix (1): Direct mixing
+   scf:  113    -2327.026250    -2327.026070    -2327.200221  0.000182 -3.495833 -1.000000
+mix (0): Pulay, GR
+mix (0): Direct mixing
+mix (1): Pulay, GR
+mix (1): n_hist = 6 / 6
+   scf:  114    -2327.026270    -2327.026072    -2327.200203  0.000177 -3.495845 -1.000000
+mix (0): Pulay, GR
+mix (0): n_hist = 6 / 6
+mix (1): G =   0.010000, sum(alpha) =  98.767695, alpha =  0.8032E+01 -.3376E+01 -.1192E+02 0.1136E+01 0.1049E+03
+mix (0): G =   0.010000, sum(alpha) =  98.767695, alpha =  0.8032E+01 -.3376E+01 -.1192E+02 0.1136E+01 0.1049E+03
+   scf:  115    -2327.026326    -2327.026286    -2327.200364  0.000053 -3.496412 -1.000000
+
+SCF Convergence by dDmax criteria
+max |DM_out - DM_in|:     0.00005345
+SCF cycle converged after 115 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =            -2327.0263
+
+siesta: E_KS - E_eggbox =     -2327.0263
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot    0.000000   -0.000000   -0.000000
+----------------------------------------
+   Max    0.070433
+   Res    0.033197    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.070433    constrained
+
+Stress-tensor-Voigt (kbar):        6.67        6.67       -1.35        0.00       -0.00        0.00
+(Free)E + p*V (eV/cell)    -2328.2650
+Target enthalpy (eV/cell)    -2327.2004
+
+mulliken: Atomic and Orbital Populations:
+
+Species: fe_nc               
+
+Atom      Orb        Charge      Spin       Svec
+----------------------------------------------------------------
+    1  1 4s         1.34049   0.02227     -0.014  -0.000  -0.017
+    1  2 4s         0.10725   0.06308      0.004  -0.000   0.063
+    1  3 3dxy       1.22801   0.65160      0.059  -0.000   0.649
+    1  4 3dyz       1.24672   0.48497     -0.000  -0.000   0.485
+    1  5 3dz2       1.27207   0.47689      0.011  -0.000   0.477
+    1  6 3dxz       1.24672   0.48497     -0.000  -0.000   0.485
+    1  7 3dx2-y2    1.22662   0.65305      0.059  -0.000   0.650
+    1  8 3dxy       0.04753   0.06833      0.010  -0.000   0.068
+    1  9 3dyz       0.03199   0.06030      0.004  -0.000   0.060
+    1 10 3dz2       0.07188   0.04632      0.003  -0.000   0.046
+    1 11 3dxz       0.03199   0.06030      0.004  -0.000   0.060
+    1 12 3dx2-y2    0.04751   0.06830      0.010  -0.000   0.068
+    1 13 4Ppy       0.02838   0.00570      0.001  -0.000  -0.006
+    1 14 4Ppz       0.00542   0.00461      0.004  -0.000   0.001
+    1 15 4Ppx       0.02838   0.00570      0.001  -0.000  -0.006
+    1     Total     7.96094   3.08759      0.156  -0.000   3.084
+
+    2  1 4s         0.86620   0.01538     -0.015  -0.000   0.000
+    2  2 4s         0.19135   0.03199      0.032  -0.000   0.000
+    2  3 3dxy       1.43219   0.46916      0.469  -0.000   0.000
+    2  4 3dyz       1.29856   0.11929      0.119  -0.000   0.000
+    2  5 3dz2       1.17965   0.13296      0.133  -0.000   0.000
+    2  6 3dxz       1.29856   0.11929      0.119  -0.000   0.000
+    2  7 3dx2-y2    1.43186   0.46955      0.470  -0.000   0.000
+    2  8 3dxy       0.00177   0.03725      0.037  -0.000   0.000
+    2  9 3dyz      -0.01651   0.01897      0.019  -0.000   0.000
+    2 10 3dz2       0.07317   0.00948      0.009  -0.000  -0.000
+    2 11 3dxz      -0.01651   0.01897      0.019  -0.000   0.000
+    2 12 3dx2-y2    0.00170   0.03721      0.037  -0.000   0.000
+    2 13 4Ppy       0.11939   0.01146      0.011  -0.000  -0.000
+    2 14 4Ppz       0.09735   0.00414      0.004  -0.000   0.000
+    2 15 4Ppx       0.11939   0.01146      0.011  -0.000  -0.000
+    2     Total     8.07812   1.47583      1.476  -0.000   0.000
+
+    3  1 4s         1.34049   0.02227     -0.014  -0.000   0.017
+    3  2 4s         0.10725   0.06308      0.004  -0.000  -0.063
+    3  3 3dxy       1.22801   0.65160      0.059  -0.000  -0.649
+    3  4 3dyz       1.24672   0.48497     -0.000  -0.000  -0.485
+    3  5 3dz2       1.27207   0.47689      0.011  -0.000  -0.477
+    3  6 3dxz       1.24672   0.48497     -0.000  -0.000  -0.485
+    3  7 3dx2-y2    1.22661   0.65305      0.059  -0.000  -0.650
+    3  8 3dxy       0.04753   0.06833      0.010  -0.000  -0.068
+    3  9 3dyz       0.03199   0.06030      0.004  -0.000  -0.060
+    3 10 3dz2       0.07188   0.04632      0.003  -0.000  -0.046
+    3 11 3dxz       0.03199   0.06030      0.004  -0.000  -0.060
+    3 12 3dx2-y2    0.04751   0.06830      0.010  -0.000  -0.068
+    3 13 4Ppy       0.02838   0.00570      0.001  -0.000   0.006
+    3 14 4Ppz       0.00542   0.00461      0.004  -0.000  -0.001
+    3 15 4Ppx       0.02838   0.00570      0.001  -0.000   0.006
+    3     Total     7.96094   3.08759      0.156  -0.000  -3.084
+
+----------------------------------------------------------------
+Total              24.00000   1.78802      1.788  -0.000  -0.000
+
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =      -138.223126
+siesta: Eions   =      2141.484345
+siesta: Ena     =        95.468898
+siesta: Ekin    =      2356.540508
+siesta: Enl     =     -1464.255258
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =       -28.366179
+siesta: DUscf   =         2.906562
+siesta: DUext   =         0.000000
+siesta: Exc     =     -1147.836511
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2327.026326
+siesta: Etot    =     -2327.026326
+siesta: FreeEng =     -2327.200404
+
+siesta: Final energy (eV):
+siesta:  Band Struct. =    -138.223126
+siesta:       Kinetic =    2356.540508
+siesta:       Hartree =    1407.497451
+siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =   -1147.836511
+siesta:  Ion-electron =   -4749.529575
+siesta:       Ion-ion =    -193.698198
+siesta:       Ekinion =       0.000000
+siesta:         Total =   -2327.026326
+
+siesta: Atomic forces (eV/Ang):
+siesta:      1   -0.000000   -0.000000   -0.070410
+siesta:      2    0.000000   -0.000000   -0.000024
+siesta:      3    0.000000    0.000000    0.070433
+siesta: ----------------------------------------
+siesta:    Tot    0.000000   -0.000000   -0.000000
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:     0.004163    0.000000    0.000000
+siesta:     0.000000    0.004163   -0.000000
+siesta:     0.000000   -0.000000   -0.000842
+
+siesta: Cell volume =        426.771459 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:          -0.00002717         -0.00002486  Ry/Bohr**3
+siesta:          -0.00249444         -0.00228231  eV/Ang**3
+siesta:          -3.99657266         -3.65670303  kBar
+(Free)E+ p_basis*V_orbitals  =       -2324.930475
+(Free)Eharris+ p_basis*V_orbitals  =       -2324.930475
+ Calling spnvec: nspin, qspin =     4    12.00000    12.00000     0.89401     0.00000
+ Leaving spnvec: qaux,stot,svec=      24.0000      1.7880      1.7880     -0.0000     -0.0000
+
+siesta: Total spin polarization (Qup-Qdown) =    1.788023
+siesta: Spin vector =    1.788023   -0.000000   -0.000003
+>> End of run:   7-JUL-2016  12:27:55

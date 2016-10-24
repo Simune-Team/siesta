@@ -991,8 +991,8 @@ end subroutine gen_pol_filteret
         call die('Illegal argument to standard eigensolver')
       elseif (info.gt.0)   then
         if (mod(info/2,2).ne.0) then
-          write(6,'(/,''Clustered eigenvectors not converged - '', &
-            ''more memory required'',/)')
+          write(6,'(/,"Clustered eigenvectors not converged - ", &
+            &"more memory required",/)')
         endif
         call die('Failure to converge standard eigenproblem')
       endif

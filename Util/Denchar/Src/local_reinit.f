@@ -45,8 +45,6 @@ C **********************************************************************
 
 C Internal variables --------------------------------------------------
 
-      CHARACTER*33 PASTE
-
       CHARACTER*30 FNAME1
 
       CHARACTER 
@@ -57,11 +55,11 @@ C Internal variables --------------------------------------------------
      .  UNIT1 
 
       EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE
+     .  IO_ASSIGN, IO_CLOSE
 
 C Assign the name of the output file -----------------------------------
       slabel = FDF_STRING('SystemLabel','siesta')
-      FNAME1 = trim(slabel) // '.DIM'
+      FNAME1 = TRIM(slabel)// '.DIM'
 
       TYPRUN_DEFECT = '2D'
       TYPRUN = FDF_STRING('Denchar.TypeOfRun',TYPRUN_DEFECT)

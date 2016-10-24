@@ -19,6 +19,7 @@
 #ifdef CDF
         use md_out,     only: md_netcdf
 #ifdef NCDF_4
+        use files, only: slabel
         use m_ncdf_siesta, only : cdf_save_md
 #endif
 #endif
@@ -57,7 +58,7 @@
 #ifdef CDF
 #ifdef NCDF_4
         if (writmd .and. fincoor > 1 ) then
-           !call cdf_save_md('SIESTA.nc')
+           !call cdf_save_md(trim(slabel)//'.nc')
         end if
 #endif
 #endif

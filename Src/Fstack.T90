@@ -43,6 +43,7 @@ end interface
 interface pop
  module procedure pop__
  module procedure pop_delete__
+ module procedure pop_delete_idx_
 end interface
 interface get
  module procedure get__
@@ -185,6 +186,30 @@ call delete(this%data%val(this%data%nvals))
 this%data%nvals = this%data%nvals - 1
 
 end subroutine pop_delete__
+
+subroutine pop_delete_idx_(this, index)
+type(FSTACK_NAME), intent(inout) :: this
+integer, intent(in) :: index
+integer :: lidx, i, n
+
+if (max_size(this) == 0) RETURN
+n = n_items(this) 
+if (n == 0) RETURN
+
+if ( index > 0 ) then
+   lidx = index
+else
+   lidx = n + index + 1
+end if
+
+! Delete the local item and decrease counter
+do i = lidx , n - 1
+   this%data%val(i) = this%data%val(i+1)
+end do
+call delete(this%data%val(n))
+this%data%nvals = this%data%nvals - 1
+
+end subroutine pop_delete_idx_
 
 !---------------------------------------------
 subroutine get__(this,i,value)

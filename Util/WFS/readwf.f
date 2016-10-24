@@ -53,6 +53,8 @@ c****************************************************************************
 
         implicit none
 
+        integer, parameter :: dp = selected_real_kind(10,100)
+
         integer nkmax
         parameter (nkmax=100000)
 
@@ -63,7 +65,7 @@ c****************************************************************************
         character(len=20) labelfis, symfio
         character fname*33, oname*33
 
-        real*8 k(3), repsi,impsi,energy,thress
+        real(dp) k(3), repsi,impsi,energy,thress
  
         read(5,*) fname
         read(5,*) oname

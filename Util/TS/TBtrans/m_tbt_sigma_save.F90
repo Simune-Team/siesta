@@ -383,6 +383,9 @@ contains
 
        dic = ('info'.kv.'Imaginary part of self-energy')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'Eta',NF90_DOUBLE,(/'one'/), atts = dic)
+       
+       dic = ('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
+       call ncdf_def_var(grp,'Accuracy',NF90_DOUBLE,(/'one'/), atts = dic)
        call delete(dic)
 
        call ncdf_def_dim(grp,'no_e',Elecs(iEl)%o_inD%n)
@@ -399,6 +402,7 @@ contains
        call delete(dic)
 
        call ncdf_put_var(grp,'Eta',Elecs(iEl)%Eta)
+       call ncdf_put_var(grp,'Accuracy',Elecs(iEl)%accu)
        call ncdf_put_var(grp,'pivot',Elecs(iEl)%o_inD%r)
 
     end do
@@ -432,7 +436,7 @@ contains
     type(hNCDF) :: ncdf, grp
     integer :: iEl, i, iN
 #ifdef MPI
-    complex(dp), pointer, contiguous :: Sigma(:)
+    complex(dp), pointer :: Sigma(:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
@@ -535,7 +539,7 @@ contains
     integer :: NE, nkpt, no_e
     real(dp), allocatable :: rwkpt(:)
     complex(dp), allocatable :: c2(:,:)
-    complex(dp), pointer, contiguous :: Sigma(:,:)
+    complex(dp), pointer :: Sigma(:,:)
 
 #ifdef MPI
     integer :: MPIerror
@@ -636,7 +640,7 @@ contains
   subroutine pass2pnt(no,Sigma,new_pnt)
     integer :: no
     complex(dp), target :: Sigma(no,no)
-    complex(dp), pointer, contiguous :: new_pnt(:,:)
+    complex(dp), pointer :: new_pnt(:,:)
     new_pnt => Sigma(:,:)
   end subroutine pass2pnt
 

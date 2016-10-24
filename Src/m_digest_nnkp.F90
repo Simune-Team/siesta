@@ -54,12 +54,12 @@ subroutine read_nnkp( seedname, latvec, reclatvec, numkpoints,          &
   integer,                         intent(out) :: nncount
   integer,                         intent(out) :: numproj
   integer,                         intent(out) :: numexcluded
-  integer,  pointer,               intent(out) :: nnlist(:,:)
-  integer,  pointer,               intent(out) :: nnfolding(:,:,:)
-  integer,  pointer,               intent(out) :: excludedbands(:)
+  integer,  pointer       :: nnlist(:,:)
+  integer,  pointer       :: nnfolding(:,:,:)
+  integer,  pointer       :: excludedbands(:)
   real(dp),                        intent(out) :: latvec(3,3)
   real(dp),                        intent(out) :: reclatvec(3,3)
-  real(dp), pointer,               intent(out) :: kpointsfrac(:,:)
+  real(dp), pointer       :: kpointsfrac(:,:)
   type(trialorbital), allocatable, intent(out) :: projections(:)
   logical,                         intent(out) :: w90_write_amn
 
@@ -427,7 +427,7 @@ subroutine scan_file_to (keyword)
    if(line2/=keyword)  goto 10
    return
 20 write (6,*) keyword," data-block missing "
-   call die
+   call die("--")
 end subroutine scan_file_to
 !-----------------------------------------------------------------------
 
@@ -489,10 +489,10 @@ subroutine chosing_b_vectors( kpointsfrac, nncount, nnlist, nnfolding, &
   implicit none
 
   integer,  intent(in)           :: nncount
-  integer,  pointer, intent(in)  :: nnlist(:,:)
-  integer,  pointer, intent(in)  :: nnfolding(:,:,:)
-  real(dp), pointer, intent(in)  :: kpointsfrac(:,:)
-  real(dp), pointer, intent(out) :: bvectorsfrac(:,:)
+  integer,  pointer  :: nnlist(:,:)
+  integer,  pointer  :: nnfolding(:,:,:)
+  real(dp), pointer  :: kpointsfrac(:,:)
+  real(dp), pointer  :: bvectorsfrac(:,:)
 
 !
 ! Internal variables
@@ -763,14 +763,14 @@ subroutine set_excluded_bands( ispin, numexcluded, excludedbands, numbands, &
                                       !   and projection matrices.
                                       !   This variable is read from the .nnkp 
                                       !   file
-  integer,  pointer, intent(in)   :: excludedbands(:)
+  integer,  pointer   :: excludedbands(:)
                                       ! Bands to be excluded.
                                       !   This variable is read from the .nnkp 
                                       !   file
   integer,  intent(in)            :: numbands(2)
-  logical,  pointer, intent(out)  :: isexcluded(:)  ! List of bands excluded for
+  logical,  pointer   :: isexcluded(:)  ! List of bands excluded for
                                                     !   Wannierization
-  integer,  pointer, intent(out)  :: isincluded(:)  ! List of bands included for
+  integer,  pointer   :: isincluded(:)  ! List of bands included for
                                                     !   Wannierization
   integer,  intent(out)           :: numincbands(2)
 

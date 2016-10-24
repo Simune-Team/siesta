@@ -2826,7 +2826,7 @@ C Internal variables
         real(dp),allocatable,dimension(:,:) :: filterets !filtered orbitals
         real(dp),allocatable,dimension(:)   :: forb !filtered orbital
 
-        character  filename*80, paste*80
+        character  filename*80
 C
 C Number of points used by polint for the interpolation
 C 
@@ -3980,8 +3980,8 @@ C
 C Generate PAO orbitals with increasing number of nodes
 C for the different shells
 C 
-                nnodes=izeta+nsm
-                nprin=l+izeta+nsm
+                nnodes=izeta+nsm-1
+                nprin=l+izeta+nsm-1
                 eorb=0.0d0 
                 call schro_eq(Zval,rofi,Vpot,vePAO,s,drdi,
      .                        nrc,l,a,b,nnodes,nprin,eorb,g)  

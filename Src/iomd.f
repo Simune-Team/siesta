@@ -46,7 +46,6 @@ c *******************************************************************
 
 c Internal variables and arrays
       logical, save ::     formtt = .false.
-      character(len=label_length+4)       :: paste
       character(len=label_length+4), save :: fncel
       character(len=label_length+4), save :: fnene
       character(len=label_length+4), save :: fnpos
@@ -56,18 +55,18 @@ c Internal variables and arrays
       save       formt, iupos, iuene, iucel, eV
       logical, save :: frstme = .true.
 
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Find name of file
       if (frstme) then
         eV = 13.60580d0
         formt = formtt
-        fnene = paste( slabel, '.MDE' )
+        fnene = trim(slabel)//'.MDE'
         if (formt) then
-          fnpos = paste( slabel, '.MDX' )
-          if (varcel) fncel = paste( slabel, '.MDC' )
+          fnpos = trim(slabel)//'.MDX'
+          if (varcel) fncel = trim(slabel)//'.MDC'
         else
-          fnpos = paste( slabel, '.MD' )
+          fnpos = trim(slabel)//'.MD'
         endif
         frstme = .false.
       endif

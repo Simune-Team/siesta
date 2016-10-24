@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 # Run TS tests
+MPI=${MPI:-mpirun -np 4}
 
 # To run in serial mode, replace the 'mpirun' line
 # by the appropriate incantation.
@@ -15,6 +16,6 @@ for d in ts_au \
 do
     cd $d
     #make clean
-    make TS="mpirun -np 4 ../../../../transiesta"
+    make MPI="$MPI"
     cd ..
 done

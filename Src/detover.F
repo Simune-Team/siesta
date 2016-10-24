@@ -52,6 +52,7 @@ C *********************************************************************
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use alloc,        only : re_alloc, de_alloc
+      use m_linpack,    only : zgedi, zgefa
 #ifdef MPI
       use mpi_siesta
 #endif

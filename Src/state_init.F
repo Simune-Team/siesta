@@ -20,15 +20,18 @@
       use siesta_options
       use units, only: Ang
       use sparse_matrices, only: maxnh, numh, listh, listhptr
-      use sparse_matrices, only: Dscf, Dold, Escf, Hold
-      use sparse_matrices, only: xijo, H, S_1D, S
+      use sparse_matrices, only: Dold, Dscf, DM_2D
+      use sparse_matrices, only: Eold, Escf, EDM_2D
+      use sparse_matrices, only: Hold, H   , H_2D
+      use sparse_matrices, only: xijo, xij_2D
+      use sparse_matrices, only: S   , S_1D
+
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_ldau_2D, H_so_2D
 
-      use sparse_matrices, only: H_2D, xij_2D
       use sparse_matrices, only: sparse_pattern
       use sparse_matrices, only: block_dist, single_dist
-      use sparse_matrices, only: DM_2D, EDM_2D, DM_history
+      use sparse_matrices, only: DM_history
 
 
       use m_sparsity_handling, only: SpOrb_to_SpAtom
@@ -51,12 +54,9 @@
       use m_ioxv,            only: ioxv
       use m_steps
       use parallel,          only: IOnode, node, nodes
-      use m_spin,            only: SpOrb
-      use m_spin,            only: nspin, spinor_dim
-      use m_spin,            only: h_spin_dim, e_spin_dim
+      use m_spin,            only: spin
       use m_rmaxh
-      ! NP new mixing
-      use m_mixing,          only: mixing_history_clear
+      use m_mixing,          only: mixers_history_init
       use m_mixing_scf,      only: scf_mixs, scf_mix
 
       use m_normalize_dm, only: normalize_dm
@@ -242,9 +242,9 @@
 !       Will print k-points also
         call setup_Kpoint_grid( ucell )
 
-        call re_alloc( eo, 1, no_u, 1, spinor_dim, 1, maxk, 'eo',
+        call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, maxk, 'eo',
      &                 'state_init')
-        call re_alloc( qo, 1, no_u, 1, spinor_dim, 1, maxk, 'qo',
+        call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, maxk, 'qo',
      &                 'state_init' )
 
 !       Find required supercell
@@ -303,7 +303,7 @@
       call proximity_check(rmax)
 
       ! Clear history of mixing parameters
-      call mixing_history_clear( scf_mixs )
+      call mixers_history_init( scf_mixs )
       scf_mix => scf_mixs(1)
 
       ! Ensure sparsity pattern is empty
@@ -387,7 +387,8 @@
          end if
          call delete(g_Sp)
       end if
-         
+
+             
       ! Copy over xijo array (we can first do it here... :( )
       call newdData2D(tmp_2D,xijo,'xijo')
       deallocate(xijo)
@@ -397,22 +398,61 @@
       call delete(tmp_2D) ! decrement container...
       xijo => val(xij_2D)
 
+      ! Calculate the super-cell offsets...
+      if ( Gamma ) then
+         ! Here we create the super-cell offsets
+         call re_alloc(isc_off,1,3,1,1)
+         isc_off(:,:) = 0
+      else
+         call xij_offset(ucell,nsc, na_u,xa,lasto, 
+     &        xij_2D, isc_off,
+     &        Bcast=.true.)
+      end if
+
+      
+#ifdef TRANSIESTA
+      ! When the user requests to only do an analyzation, we can call
+      ! appropriate routines and quit
+      if ( TS_Analyze ) then
+
+         ! Force the creation of the full sparsity pattern
+         call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
+     &        ucell, nsc, na_u, xa, lasto, block_dist, sparse_pattern, 
+     &        Gamma, isc_off)
+
+         ! create the tri-diagonal matrix
+         call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
+     &        Elecs, ucell, na_u, lasto, nsc, isc_off,
+     &        BTD_method )
+
+         ! Print-out timers
+         call timer('TS-rgn2tri',3)
+
+         ! Bye also waits for all processors
+         call bye('transiesta analyzation performed')
+         
+      end if
+#endif
+
+
       write(oname,"(a,i0)") "EDM at geom step ", istep
-      call newdSpData2D(sparse_pattern,e_spin_dim,block_dist,EDM_2D,
+      call newdSpData2D(sparse_pattern,spin%EDM,block_dist,EDM_2D,
      &     name=oname)
       !if (ionode) call print_type(EDM_2D)
       Escf => val(EDM_2D)
 
-      call re_alloc(Dold,1,maxnh,1,h_spin_dim,name='Dold',
+      call re_alloc(Dold,1,maxnh,1,spin%DM,name='Dold',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
-      if ( mixH .or. require_hamiltonian_convergence ) then
-         call re_alloc(Hold,1,maxnh,1,h_spin_dim,name='Hold',
-     .        routine='sparseMat',copy=.false.,shrink=.true.)
+      call re_alloc(Hold,1,maxnh,1,spin%H,name='Hold',
+     .     routine='sparseMat',copy=.false.,shrink=.true.)
+      if ( converge_EDM ) then
+         call re_alloc(Eold,1,maxnh,1,spin%EDM,name='Eold',
+     .     routine='sparseMat',copy=.false.,shrink=.true.)
       end if
 
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       write(oname,"(a,i0)") "H at geom step ", istep
-      call newdSpData2D(sparse_pattern,h_spin_dim,block_dist,H_2D,
+      call newdSpData2D(sparse_pattern,spin%H,block_dist,H_2D,
      &                  name=oname)
       !if (ionode) call print_type(H_2D)
       H => val(H_2D)
@@ -427,7 +467,7 @@
 
       if ( switch_ldau ) then
          write(oname,"(a,i0)") "H_ldau at geom step ", istep
-         call newdSpData2D(sparse_pattern,spinor_dim,
+         call newdSpData2D(sparse_pattern,spin%spinor,
      &        block_dist,H_ldau_2D,name=oname)
          
          ! Initialize to 0, LDA+U may re-calculate
@@ -444,9 +484,9 @@
          end if
       end if
       
-      if ( SpOrb ) then
+      if ( spin%SO ) then
          write(oname,"(a,i0)") "H_so at geom step ", istep
-         call newdSpData2D(sparse_pattern,h_spin_dim - 2,
+         call newdSpData2D(sparse_pattern,spin%H - 2,
      &        block_dist,H_so_2D,name=oname)
       end if
 
@@ -459,15 +499,6 @@
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
-      if ( Gamma ) then
-         ! Here we create the super-cell offsets
-         call re_alloc(isc_off,1,3,1,1)
-         isc_off(:,:) = 0
-      else
-         call xij_offset(ucell,nsc, na_u,xa,lasto, 
-     &        xij_2D, isc_off,
-     &        Bcast=.true.)
-      end if
 
 !
 !     Here we could also read a Hamiltonian, either to proceed to
@@ -498,7 +529,7 @@
 
 #ifdef TEST_IO
       ! We test the io-performance here
-      call time_io(nspin,H_2D)
+      call time_io(spin%H,H_2D)
 #endif
 
 #ifdef TRANSIESTA
@@ -509,7 +540,7 @@
          ! them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 
      &        .true., Gamma, ts_Gamma_file,
-     &        ucell, nsc, isc_off, na_u, no_s, nspin,
+     &        ucell, nsc, isc_off, na_u, no_s, spin%H,
      &        ts_kscell_file, ts_kdispl_file,
      &        xa, lasto, 
      &        H_2D, S_1D, indxuo, 
@@ -517,25 +548,6 @@
          call bye( 'Save overlap matrix and exit' ) ! Exit siesta
          
       endif 
-
-      ! When the user requests to only do an analyzation, we can call
-      ! appropriate routines and quit
-      if ( TS_Analyze ) then
-
-         ! Force the creation of the full sparsity pattern
-         call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
-     &        ucell, nsc, na_u, xa, lasto, block_dist, sparse_pattern, 
-     &        Gamma, isc_off)
-
-         ! create the tri-diagonal matrix
-         call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
-     &        Elecs, ucell, na_u, lasto, nsc, isc_off,
-     &        BTD_method )
-         
-         ! Bye also waits for all processors
-         call bye('transiesta analyzation performed')
-         
-      end if
 
       ! In case the user is requesting a Fermi-correction
       ! we need to delete the TS_FERMI file after each iteration
@@ -555,24 +567,24 @@
 
 #ifdef CDF
       if (writedm_cdf) then
-         call setup_dm_netcdf_file( maxnh, no_l, h_spin_dim,
+         call setup_dm_netcdf_file( maxnh, no_l, spin%H,
      &                              no_s, indxuo,
      &                              numh, listhptr, listh)
       endif
       if (writedm_cdf_history) then
-         call setup_dm_netcdf_file( maxnh, no_l, h_spin_dim,
+         call setup_dm_netcdf_file( maxnh, no_l, spin%H,
      &                              no_s, indxuo,
      &                              numh, listhptr, listh,
      &                              istep)
       endif
       if (writedmhs_cdf) then
-         call setup_dmhs_netcdf_file( maxnh, no_l, h_spin_dim,
+         call setup_dmhs_netcdf_file( maxnh, no_l, spin%H,
      &                              no_s, indxuo,
      &                              numh, listhptr, listh,
      &                              s)
       endif
       if(writedmhs_cdf_history) then
-         call setup_dmhs_netcdf_file( maxnh, no_l, h_spin_dim,
+         call setup_dmhs_netcdf_file( maxnh, no_l, spin%H,
      &                              no_s, indxuo,
      &                              numh, listhptr, listh,
      &                              s,
@@ -581,6 +593,5 @@
 #endif
       call timer( 'state_init', 2 )
 
-!--------------------------------------------------------------------------- END
       END subroutine state_init
       END module m_state_init

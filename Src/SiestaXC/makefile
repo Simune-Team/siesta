@@ -45,9 +45,9 @@ ALL_OBJS=$(SIESTA_OBJS) $(LOCAL_OBJS)
 ALL_SOURCES=$(SIESTA_SOURCES) $(LOCAL_SRCS)
 #
 libSiestaXC.a: $(ALL_OBJS)
-	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS) 
+	$(AR) $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS) 
 	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
-            ar $(ARFLAGS_EXTRA) cru libSiestaXC.a ../MPI/*.o ; fi
+            $(AR) $(ARFLAGS_EXTRA) cru libSiestaXC.a ../MPI/*.o ; fi
 	-$(RANLIB) libSiestaXC.a
 #
 OTHER_FILES=lib-makefile lib-arch.make mpi-makefile lib-00-README test-makefile
@@ -103,7 +103,7 @@ siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 siestaxc.o: m_libxc_sxc_translation.o
 sys.o: parallel.o
 siesta_options.o: parallel.o precision.o units.o
-timer.o: sys.o m_timer.o timer_tree.o 
+timer.o: sys.o m_timer.o timer_tree.o extrae_module.o extrae_eventllist.o
 timer_tree.o: m_walltime.o
 vdwxc.o: alloc.o debugxc.o interpolation.o ggaxc.o ldaxc.o mesh1d.o
 vdwxc.o: precision.o radfft.o vv_vdwxc.o sys.o

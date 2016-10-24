@@ -74,8 +74,8 @@ contains
     complex(dp), intent(inout), target :: work(nwork)
 
     type(Sparsity), pointer :: sp
-    complex(dp), pointer, contiguous :: S(:), Gf(:), Mnn(:), XY(:)
-    integer, pointer, contiguous :: ncol(:), l_ptr(:), l_col(:), lcol(:)
+    complex(dp), pointer :: S(:), Gf(:), Mnn(:), XY(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np
 
@@ -195,8 +195,8 @@ contains
     complex(dp), intent(inout), target :: work(nwork)
 
     type(Sparsity), pointer :: sp
-    complex(dp), pointer, contiguous :: S(:), Gf(:), Mnn(:), XY(:)
-    integer, pointer, contiguous :: ncol(:), l_ptr(:), l_col(:)
+    complex(dp), pointer :: S(:), Gf(:), Mnn(:), XY(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np, iD
 
@@ -384,8 +384,8 @@ contains
     real(dp), intent(out) :: DOS(r%n)
 
     type(Sparsity), pointer :: sp
-    complex(dp), pointer, contiguous :: S(:), A(:)
-    integer, pointer, contiguous :: ncol(:), l_ptr(:), l_col(:), lcol(:)
+    complex(dp), pointer :: S(:), A(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np
 
@@ -478,8 +478,8 @@ contains
     integer :: i_Elec, ii, isN, in, A_i
     integer :: j_Elec, jj, jsN, jn, A_j
     integer :: o
-    integer, pointer, contiguous :: crows(:)
-    complex(dp), pointer, contiguous :: A(:)
+    integer, pointer :: crows(:)
+    complex(dp), pointer :: A(:)
 
     ! External BLAS routine
     complex(dp), external :: zdotu
@@ -583,8 +583,8 @@ contains
     integer :: no
     integer :: i_Elec, ii, isN, in, A_i
     integer :: j_Elec, jj, jsN, jn, A_j
-    integer, pointer, contiguous :: crows(:)
-    complex(dp), pointer, contiguous :: A(:)
+    integer, pointer :: crows(:)
+    complex(dp), pointer :: A(:)
     complex(dp) :: z
     
 #ifdef TBTRANS_TIMING
@@ -745,12 +745,12 @@ contains
     type(Elec), intent(inout) :: El
     real(dp), intent(out) :: T
 
-    complex(dp), pointer, contiguous :: Gf(:)
-    complex(dp), pointer, contiguous :: z(:)
+    complex(dp), pointer :: Gf(:)
+    complex(dp), pointer :: z(:)
 
     integer :: no, np
     integer :: i, ii, i_Elec
-    integer, pointer, contiguous :: crows(:)
+    integer, pointer :: crows(:)
 
     integer :: sN, n, nb
     ! BLAS routines
@@ -843,11 +843,11 @@ contains
     integer, intent(in) :: nzwork
     complex(dp), intent(out) :: zwork(nzwork)
 
-    complex(dp), pointer, contiguous :: z(:)
+    complex(dp), pointer :: z(:)
 
     integer :: no, np
     integer :: i, ii, i_Elec
-    integer, pointer, contiguous :: crows(:)
+    integer, pointer :: crows(:)
     integer :: sN, n
     integer :: nb
     ! BLAS routines
@@ -1037,16 +1037,19 @@ contains
 
 
 #ifdef NCDF_4
-  subroutine orb_current(spH,spS,cE,A_tri,r,orb_J,pvt)
+  subroutine orb_current(sp,H,S,sc_off,k,cE,A_tri,r,orb_J,pvt)
 
     use class_Sparsity
     use class_zSpData1D
     use class_dSpData1D
     use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
 
     use m_ts_cctype, only: ts_c_idx
 
-    type(zSpData1D), intent(inout) :: spH, spS
+    type(Sparsity), intent(inout) :: sp
+    real(dp), intent(in) :: H(:), S(:), sc_off(:,:)
+    real(dp), intent(in) :: k(3)
     type(ts_c_idx) :: cE
     type(zTriMat), intent(inout) :: A_tri
     ! The region that specifies the size of orb_J
@@ -1056,16 +1059,15 @@ contains
     type(tRgn), intent(in) :: pvt
 
     type(Sparsity), pointer :: i_sp
-    integer, pointer, contiguous :: i_ncol(:), i_ptr(:), i_col(:)
-    type(Sparsity), pointer :: sp
-    integer, pointer, contiguous :: l_ncol(:), l_ptr(:), l_col(:), lcol(:)
+    integer, pointer :: i_ncol(:), i_ptr(:), i_col(:), icol(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
 
-    complex(dp), pointer, contiguous :: H(:), S(:)
-    complex(dp), pointer, contiguous :: A(:)
+    complex(dp), allocatable :: ph(:)
+    complex(dp), pointer :: A(:)
     complex(dp) :: Hi
-    real(dp), pointer, contiguous :: J(:)
+    real(dp), pointer :: J(:)
     real(dp) :: E
-    integer :: iu, io, i, ind, iind, ju, jo
+    integer :: no_u, iu, io, i, ind, iind, ju, jo
 
 #ifdef TBTRANS_TIMING
     call timer('orb-current',1)
@@ -1074,10 +1076,8 @@ contains
     ! Retrieve energy
     E = real(cE%e,dp)
 
-    sp => spar(spH)
-    H  => val (spH)
-    S  => val (spS)
-    call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
+    call attach(sp, nrows_g=no_u, &
+         n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     i_sp => spar(orb_J)
     J    => val (orb_J)
@@ -1085,10 +1085,18 @@ contains
 
     ! We do not initialize J as every entry is overwritten
 
-    A => val(A_tri)
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do i = 1 , size(sc_off, dim=2)
+       ph(i-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,i) + &
+            k(2) * sc_off(2,i) + &
+            k(3) * sc_off(3,i)))
+    end do
 
+    A => val(A_tri)
 !$OMP parallel do default(shared), &
-!$OMP&private(iu,io,ju,jo,i,iind,ind,Hi,lcol)
+!$OMP&private(iu,io,ju,jo,i,iind,ind,Hi,icol)
     do iu = 1, r%n
        io = r%r(iu)
 
@@ -1097,54 +1105,52 @@ contains
             &for at least one row')
 #endif
 
-       ! Get lookup columns for the Hamiltonian
-       lcol => l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))
+       ! Get lookup columns for the orbital current
+       icol => i_col(i_ptr(io)+1:i_ptr(io)+i_ncol(io))
 
-       ! Index in sparsity pattern
-       iind = i_ptr(io)
+       ! Index in Hamiltonian sparsity pattern
+       ind = l_ptr(io)
 
-       ! Loop on bond current entries here...
-       do i = 1 , i_ncol(io)
+       ! Loop on Hamiltonian entries here...
+       do i = 1 , l_ncol(io)
 
           ! Index in sparsity pattern
-          iind = iind + 1
-
-          ! J(iind) = J(io,jo)
-          jo = i_col(iind)
+          ind = ind + 1
 
           ! Check if the orbital exists in the region
-          ! We are dealing with a UC sparsity pattern.
-          ! this wil ALWAYS be non-zero, note that 
-          ! the device region is a subset of the full sparsity
-          ! pattern
-          ind = l_ptr(io) + SFIND(lcol,jo)
+          iind = i_ptr(io) + SFIND(icol, l_col(ind))
+          ! if zero the element does not exist
+          ! This is the case on the elements connecting out
+          ! of the device region
+          if ( iind <= i_ptr(io) ) cycle
 
+          ! H_ind == H_ij
           ! Get H for the current index
 #ifdef TBT_ORB_CURRENT_NO_S
-          Hi = H(ind)
+          Hi = H(ind) * ph( (l_col(ind)-1)/no_u )
 #else
           ! We may take the conjugate later as
           ! E is a real quantity
-          Hi = H(ind) - S(ind) * E
+          Hi = (H(ind) - S(ind) * E) * ph( (l_col(ind)-1)/no_u )
 #endif
 
-          ! Notice that H is transposed
-          ! H(ind) = H(io,jo) ^ * = H(jo,io)
+          ! J(iind) = J(io,jo)
+          jo = ucorb(l_col(ind),no_u)
 
           ! Get spectral function indices
-          ju  = pvt%r(jo) ! pivoted orbital index
-          ind = index(A_tri,iu,ju)
-          jo  = index(A_tri,ju,iu)
+          ju = pvt%r(jo) ! pivoted orbital index in tri-diagonal matrix
+          jo = index(A_tri,iu,ju) ! A_ij
+          ju = index(A_tri,ju,iu) ! A_ji
 
           ! We skip the pre-factors as the units are never used
           
-          ! Currently the bond-currents are calculated
-          ! regardless of the non-orthogonality! YES WE KNOW !
-          J(iind) = aimag( A(ind) * Hi - A(jo) * dconjg( Hi ) )
-          
+          J(iind) = aimag( A(ju) * Hi - A(jo) * dconjg( Hi ) )
+
        end do
     end do
 !$OMP end parallel do
+
+    deallocate(ph)
 
 #ifdef TBTRANS_TIMING
     call timer('orb-current',2)

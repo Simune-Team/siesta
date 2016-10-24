@@ -1,9 +1,12 @@
 !     
-! Copyright (C) 1996-2016	The SIESTA group
-!  This file is distributed under the terms of the
-!  GNU General Public License: see COPYING in the top directory
-!  or http://www.gnu.org/copyleft/gpl.txt.
-! See Docs/Contributors.txt for a list of contributors.
+!     This file is part of the SIESTA package.
+!     
+!     Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+!     E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+!     and J.M.Soler, 1996- .
+!     
+!     Use of this software constitutes agreement with the full conditions
+!     given in the SIESTA license, as signed by all legitimate users.
 !     
       module m_matio
 
@@ -21,7 +24,7 @@ CONTAINS
 
 #ifdef MPI
     use mpi_siesta
-    use parallel, only: blocksize
+    use parallel, only: blocksize, SIESTA_comm
     use alloc
 #endif
 
@@ -79,11 +82,11 @@ CONTAINS
        call io_close(lun)
 
 #else  
-    call MPI_Comm_Size( MPI_Comm_World, nprocs, MPIerror )
-    call MPI_Comm_Rank( MPI_Comm_World, myrank, MPIerror )
+    call MPI_Comm_Size( SIESTA_Comm, nprocs, MPIerror )
+    call MPI_Comm_Rank( SIESTA_Comm, myrank, MPIerror )
 
 !     Find total number of orbitals over all Nodes
-    call MPI_Reduce(no_l,no_u,1,MPI_integer,MPI_sum,0,MPI_Comm_World,MPIerror)
+    call MPI_Reduce(no_l,no_u,1,MPI_integer,MPI_sum,0,SIESTA_Comm,MPIerror)
 
     if (myrank.eq.0) then
        if (.not. present(userfile)) then
@@ -133,7 +136,7 @@ CONTAINS
           else
              !print *, "myrank: ", myrank, " will send to 0: ", norbs_l
              call MPI_Send(numd(n_l+1),norbs_l,MPI_integer, &
-                  0,1,MPI_Comm_World,MPIerror)
+                  0,1,SIESTA_Comm,MPIerror)
              !print *, "myrank: ", myrank, " completed send ", norbs_l
           endif
           n_l = n_l + norbs_l
@@ -144,7 +147,7 @@ CONTAINS
           !print *, "will put it starting at: ", n_g+1
 
           call MPI_Recv(numdg(n_g+1:),norbs_g,MPI_integer, &
-                node,1,MPI_Comm_World,stat,MPIerror)
+                node,1,SIESTA_Comm,stat,MPIerror)
           n_g = n_g + norbs_g
           !print *, "root has received so far: ", n_g
        endif
@@ -187,7 +190,7 @@ CONTAINS
 
 !     Get listh
 
-      call mpi_barrier(MPI_Comm_World, mpierror)
+      call mpi_barrier(SIESTA_comm, mpierror)
 
 
     n_g = 0
@@ -218,7 +221,7 @@ CONTAINS
              !print *, "myrank: ", myrank, " will send to 0: ", norbs_l
              !print *, "myrank: ", myrank, " will start at: ", base_l+1
              call MPI_Send(listd(base_l+1:),nnzs_bl,MPI_integer, &
-                  0,1,MPI_Comm_World,MPIerror)
+                  0,1,SIESTA_Comm,MPIerror)
              !print *, "myrank: ", myrank, " completed send ", nnzs_bl
           endif
           n_l = n_l + norbs_l
@@ -229,7 +232,7 @@ CONTAINS
           !print *, "root will receive from ", node, " size: ", nnzs_bg
 
           call MPI_Recv(ibuffer,nnzs_bg,MPI_integer, &
-                node,1,MPI_Comm_World,stat,MPIerror)
+                node,1,SIESTA_Comm,stat,MPIerror)
        endif
 
        if (myrank == 0) then
@@ -262,7 +265,7 @@ CONTAINS
 
  do is = 1, nspin
 
-     call mpi_barrier(MPI_Comm_World, mpierror)
+     call mpi_barrier(SIESTA_comm, mpierror)
 
 
     n_g = 0
@@ -293,7 +296,7 @@ CONTAINS
              !print *, "myrank: ", myrank, " will send to 0: ", norbs_l
              !print *, "myrank: ", myrank, " will start at: ", base_l+1
              call MPI_Send(mat(base_l+1:,is),nnzs_bl,MPI_double_precision, &
-                  0,1,MPI_Comm_World,MPIerror)
+                  0,1,SIESTA_Comm,MPIerror)
              !print *, "myrank: ", myrank, " completed send ", nnzs_bl
           endif
           n_l = n_l + norbs_l
@@ -304,7 +307,7 @@ CONTAINS
           !print *, "root will receive from ", node, " size: ", nnzs_bg
 
           call MPI_Recv(buffer,nnzs_bg,MPI_double_precision, &
-                node,1,MPI_Comm_World,stat,MPIerror)
+                node,1,SIESTA_Comm,stat,MPIerror)
        endif
 
        if (myrank == 0) then

@@ -49,6 +49,7 @@
 
   interface size
      module procedure sizeData2D
+     module procedure sizeData2D_Dim
   end interface
 
   interface init_val
@@ -173,13 +174,22 @@
   end function valData2D_Idx
 
 
-  function sizeData2D(this,dim) result(n)
+  function sizeData2D(this) result(n)
     type(TYPE_NAME), intent(in) :: this
-    integer,         intent(in), optional :: dim
     integer :: n
+
+    n = size(this%data%val)
     
-    n = size(this%data%val,dim)
   end function sizeData2D
+
+  function sizeData2D_Dim(this,dim) result(n)
+    type(TYPE_NAME), intent(in) :: this
+    integer,         intent(in) :: dim
+    integer :: n
+
+    n = size(this%data%val,dim)
+
+  end function sizeData2D_Dim
 
 
   subroutine printData2D(this)

@@ -134,11 +134,10 @@ C **********************************************************************
       LOGICAL FIRST
 
       CHARACTER
-     .  SNAME*30, FNAMESCF*38, FNAMEDEL*38, FNAMEUP*38, FNAMEDOWN*38,
-     .  PASTE*38
+     .  SNAME*30, FNAMESCF*38, FNAMEDEL*38, FNAMEUP*38, FNAMEDOWN*38
 
       EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE
+     .  IO_ASSIGN, IO_CLOSE, 
      .  NEIGHB, WROUT
 
 C **********************************************************************
@@ -251,8 +250,8 @@ C Open files to store charge density -----------------------------------
 
       IF (NSPIN .EQ. 1) THEN
         IF (IDIMEN .EQ. 2) THEN
-          FNAMESCF = PASTE(SNAME,'.CON.SCF')
-          FNAMEDEL = PASTE(SNAME,'.CON.DEL')
+          FNAMESCF = TRIM(SNAME)//'.CON.SCF'
+          FNAMEDEL = TRIM(SNAME)//'.CON.DEL'
           CALL IO_ASSIGN(UNIT1)
           OPEN(UNIT = UNIT1, FILE = FNAMESCF, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
@@ -262,8 +261,8 @@ C Open files to store charge density -----------------------------------
      .         FORM = 'FORMATTED')
           REWIND(UNIT2)
         ELSEIF (IDIMEN .EQ. 3) THEN
-          FNAMESCF = PASTE(SNAME,'.RHO.cube')
-          FNAMEDEL = PASTE(SNAME,'.DRHO.cube')
+          FNAMESCF = TRIM(SNAME)//'.RHO.cube'
+          FNAMEDEL = TRIM(SNAME)//'.DRHO.cube'
           CALL IO_ASSIGN(UNIT1)
           OPEN(UNIT = UNIT1, FILE = FNAMESCF, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
@@ -275,10 +274,10 @@ C Open files to store charge density -----------------------------------
         ENDIF
       ELSEIF (NSPIN .EQ. 2) THEN
         IF (IDIMEN .EQ. 2) THEN
-          FNAMESCF = PASTE(SNAME,'.CON.MAG' )
-          FNAMEDEL = PASTE(SNAME,'.CON.DEL' )
-          FNAMEUP  = PASTE(SNAME,'.CON.UP'  )
-          FNAMEDOWN= PASTE(SNAME,'.CON.DOWN')
+          FNAMESCF = TRIM(SNAME)//'.CON.MAG'
+          FNAMEDEL = TRIM(SNAME)//'.CON.DEL'
+          FNAMEUP  = TRIM(SNAME)//'.CON.UP'
+          FNAMEDOWN= TRIM(SNAME)//'.CON.DOWN'
           CALL IO_ASSIGN(UNIT1)
           OPEN(UNIT = UNIT1, FILE = FNAMESCF, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
@@ -296,9 +295,9 @@ C Open files to store charge density -----------------------------------
      .         FORM = 'FORMATTED')
           REWIND(UNIT4)
         ELSE IF (IDIMEN .EQ. 3) THEN
-          FNAMEUP = PASTE(SNAME,'.RHO.UP.cube' )
-          FNAMEDOWN = PASTE(SNAME,'.RHO.DOWN.cube' )
-          FNAMEDEL = PASTE(SNAME,'.DRHO.cube' )
+          FNAMEUP = TRIM(SNAME)//'.RHO.UP.cube'
+          FNAMEDOWN = TRIM(SNAME)//'.RHO.DOWN.cube'
+          FNAMEDEL = TRIM(SNAME)//'.DRHO.cube'
           CALL IO_ASSIGN(UNIT1)
           OPEN(UNIT = UNIT1, FILE = FNAMEUP, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')

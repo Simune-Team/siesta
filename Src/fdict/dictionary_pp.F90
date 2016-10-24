@@ -71,11 +71,11 @@ module dictionary
 
   ! Concatenate dicts or list of dicts to list of dicts
   !> Concatenate, or extend, dictionaries, this can
-  !! be done on it-self `dic = dic // ('key'.kv.1)
-  interface operator( // )
+  !! be done on it-self `dic = dic / / ('key'.kv.1)
+  interface operator( / / )
      module procedure d_cat_d
-  end interface operator( // )
-  public :: operator( // )
+  end interface
+  public :: operator( / / )
 
   ! Retrieve the key from a dictionary (unary)
   !> Returns the key of the current _top_ entry,
@@ -170,6 +170,11 @@ module dictionary
      module procedure pop_
   end interface pop
   public :: pop
+
+  interface copy
+     module procedure copy_
+  end interface 
+  public :: copy
 
   interface nullify
      module procedure nullify_
@@ -625,7 +630,7 @@ contains
     ld = .first. d
     do while ( .not. .empty. ld ) 
        write(*,'(t2,a,tr1,a,i0,a)') trim(.key. ld), &
-            '['//ld%first%value%t//'] (',.hash. ld,')'
+            '['/ /ld%first%value%t/ /'] (',.hash. ld,')'
        ld = .next. ld
     end do
   end subroutine print_
@@ -723,6 +728,35 @@ contains
     end subroutine del_d_entry_tree
 
   end subroutine delete_
+
+
+  !> Generate the copy routine
+  subroutine copy_(from, to)
+    type(dict), intent(in) :: from
+    type(dict), intent(inout) :: to
+
+    type(d_entry), pointer :: d
+    type(var) :: v
+
+    ! Delete the dictionary
+    call delete(to)
+
+    d => from%first
+    do while ( associated(d) )
+       
+       ! Associate data...
+       call associate(v, d%value)
+       ! Copy data, hence .kv.
+       to = to // (trim(d%key).kv.v)
+       
+       d => d%next
+    end do
+
+    ! Clean up pointers...
+    call nullify(v)
+    nullify(d)
+    
+  end subroutine copy_
 
   subroutine pop_(val,this,key,dealloc)
     type(var), intent(inout) :: val

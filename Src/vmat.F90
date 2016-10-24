@@ -14,7 +14,7 @@ module m_vmat
 
 contains
 
-  subroutine vmat( no, np, dvol, nspin, V, nvmax, &
+  subroutine vmat( no, np, dvol, spin, V, nvmax, &
        numVs, listVsptr, listVs, Vs, &
        nuo, nuotot, iaorb, iphorb, isa )
 
@@ -30,8 +30,8 @@ contains
 ! integer no              : Number of basis orbitals
 ! integer np              : Number of columns in C (local)
 ! real*8  dvol            : Volume per mesh point
-! integer nspin           : Number of spin components
-! real*4  V(np,nspin)     : Value of the potential at the mesh points
+! type(tSpin) spin        : Spin configuration
+! real*4  V(np,spin%Grid) : Value of the potential at the mesh points
 ! integer nvmax           : First dimension of listV and Vs, and maxim.
 !                           number of nonzero elements in any row of Vs
 ! integer numVs(nuo)      : Number of non-zero elements in a row of Vs
@@ -41,7 +41,7 @@ contains
 ! integer iphorb(*)       : Orbital index within each atom
 ! integer isa(*)          : Species index of all atoms
 ! ******************** INPUT AND OUTPUT *******************************
-! real*8  Vs(nvmax,nspin) : Value of nonzero elements in each row 
+! real*8  Vs(nvmax,spin%H): Value of nonzero elements in each row 
 !                           of Vs to which the potential matrix 
 !                           elements are summed up
 ! *********************************************************************
@@ -51,7 +51,7 @@ contains
     use atmfuncs,      only: rcut, all_phi
     use atm_types,     only: nsmax=>nspecies
     use atomlist,      only: indxuo
-    use m_spin,        only: SpOrb
+    use t_spin,        only: tSpin
     use listsc_module, only: LISTSC
     use mesh,          only: dxa, nsp, xdop, xdsp, meshLim
     use meshdscf,      only: matrixMtoO
@@ -69,11 +69,12 @@ contains
 
 ! Argument types and dimensions
     integer                  :: no, np, nvmax, nuo, nuotot, iaorb(*)
-    integer                  :: nspin, iphorb(*), isa(*), numVs(nuo)
+    type(tSpin), intent(in)  :: spin
+    integer                  :: iphorb(*), isa(*), numVs(nuo)
     integer                  :: listVsptr(nuo), listVs(nvmax)
-    real(grid_p), intent(in) :: V(nsp,np,nspin)
+    real(grid_p), intent(in) :: V(nsp,np,spin%Grid)
     real(dp)                 :: dvol
-    real(dp),         target :: Vs(:,:)
+    real(dp),         target :: Vs(nvmax,spin%H)
 ! Internal variables and arrays
     integer, parameter :: minloc = 1000 ! Min buffer size
     integer, parameter :: maxoa  = 100  ! Max # of orb/atom
@@ -84,7 +85,6 @@ contains
     integer :: nvmaxl, triang, lenx, leny, lenz,lenxy
 
     ! Size of Hamiltonian
-    integer :: h_spin_dim
     logical :: ParallelLocal
     real(dp) :: Vij, r2sp, dxsp(3), VClocal(nsp)
 
@@ -108,10 +108,6 @@ contains
 
 !   Start time counter
     call timer('vmat',1)
-
-    ! grab number of spin-components in the
-    ! Hamiltonian.
-    h_spin_dim = size(Vs, 2)
 
 !   Find atomic cutoff radii
     nullify(r2cut)
@@ -146,7 +142,7 @@ contains
 
 !   Allocate local memory
 !$OMP parallel default(shared), &
-!$OMP&shared(NTH,t_DscfL,t_Vss), &
+!$OMP&shared(NTH,t_DscfL,t_Vss,spin), &
 !$OMP&private(TID,last), &
 !$OMP&private(ip,nc,nlocal,ic,imp,i,il,iu,iul,ii,ind,j,ijl,ispin), &
 !$OMP&private(lasta,lastop,ia,is,iop,isp,dxsp,r2sp,nphiloc,iphi,jc,jl), &
@@ -174,19 +170,19 @@ contains
     ! place the memory in the best position.
     allocate( Clocal(nsp,maxloc2) )
     allocate( ilocal(no) , ilc(maxloc2) , iorb(maxloc) )
-    allocate( Vlocal(triang,nspin) )
+    allocate( Vlocal(triang,spin%Grid) )
     if ( DirectPhi ) allocate( phia(maxoa,nsp) )
 !$OMP end critical
 
 !$OMP single
     if ( ParallelLocal ) then
        nullify( t_DscfL )
-       call re_alloc( t_DscfL, 1, nvmaxl, 1, h_spin_dim, 1, NTH, &
+       call re_alloc( t_DscfL, 1, nvmaxl, 1, spin%H, 1, NTH, &
             'DscfL',  'vmat' )
     else
        if ( NTH > 1 ) then
           nullify( t_Vss )
-          call re_alloc( t_Vss, 1, nvmax, 1, h_spin_dim, 2, NTH, &
+          call re_alloc( t_Vss, 1, nvmax, 1, spin%H, 2, NTH, &
                'Vss',  'vmat' )
        end if
     end if
@@ -239,10 +235,10 @@ contains
                       ind = listdlptr(iul) + ii
                       j   = listdl(ind)
                       ijl = idx_ijl(il,ilocal(j))
-                      do ispin = 1,nspin
+                      do ispin = 1, spin%Grid
                          DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
-                      if ( SpOrb ) then
+                      if ( spin%SO ) then
                          DscfL(ind,7:8) = DscfL(ind,7:8) + &
                               Vlocal(ijl,3:4) * dVol
                       end if
@@ -252,10 +248,10 @@ contains
                       ind = listdlptr(iul) + ii
                       j   = LISTSC( i, iu, listdl(ind) )
                       ijl = idx_ijl(il,ilocal(j))
-                      do ispin = 1,nspin
+                      do ispin = 1, spin%Grid
                          DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
-                      if ( SpOrb ) then
+                      if ( spin%SO ) then
                          DscfL(ind,7:8) = DscfL(ind,7:8) + &
                               Vlocal(ijl,3:4) * dVol
                       end if
@@ -272,10 +268,10 @@ contains
                       ind = listVsptr(iul) + ii
                       j   = listVs(ind)
                       ijl = idx_ijl(il,ilocal(j))
-                      do ispin = 1,nspin
+                      do ispin = 1, spin%Grid
                          Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
-                      if ( SpOrb ) then
+                      if ( spin%SO ) then
                          Vss(ind,7:8) = Vss(ind,7:8) + Vlocal(ijl,3:4) * dVol
                       end if
                    end do
@@ -284,10 +280,10 @@ contains
                       ind = listVsptr(iul) + ii
                       j   = LISTSC( i, iu, listVs(ind) )
                       ijl = idx_ijl(il,ilocal(j))
-                      do ispin = 1,nspin
+                      do ispin = 1, spin%Grid
                          Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
-                      if ( SpOrb ) then
+                      if ( spin%SO ) then
                          Vss(ind,7:8) = Vss(ind,7:8) + Vlocal(ijl,3:4) * dVol
                       end if
                    end do
@@ -300,7 +296,11 @@ contains
           end do
           iorb(1:last) = 0
           ijl = (last+1)*(last+2)/2
-          Vlocal(1:ijl,1:nspin) = 0._dp
+          do ispin = 1 , spin%Grid
+             do i = 1 , ijl
+                Vlocal(i,ispin) = 0._dp
+             end do
+          end do
           last = 0
        end if
 
@@ -350,7 +350,7 @@ contains
              
              Clocal(:,ic) = phia(iphi,:)
           
-             do ispin = 1 , nspin
+             do ispin = 1 , spin%Grid
 
 !               Create VClocal for the first orbital of mesh point
                 Vij = 0._dp
@@ -395,7 +395,7 @@ contains
 
              Clocal(:,ic) = phi(:,imp)
 
-             do ispin = 1 , nspin
+             do ispin = 1 , spin%Grid
 
 !               Create VClocal for the first orbital of mesh point
                 Vij = 0._dp
@@ -448,10 +448,10 @@ contains
                 ind = listdlptr(iul) + ii
                 j   = listdl(ind)
                 ijl = idx_ijl(il,ilocal(j))
-                do ispin = 1,nspin
+                do ispin = 1, spin%Grid
                    DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
-                if ( SpOrb ) then
+                if ( spin%SO ) then
                    DscfL(ind,7:8) = DscfL(ind,7:8) + Vlocal(ijl,3:4) * dVol
                 end if
              end do
@@ -460,10 +460,10 @@ contains
                 ind = listdlptr(iul) + ii
                 j   = LISTSC( i, iu, listdl(ind) )
                 ijl = idx_ijl(il,ilocal(j))
-                do ispin = 1,nspin
+                do ispin = 1, spin%Grid
                    DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
-                if ( SpOrb ) then
+                if ( spin%SO ) then
                    DscfL(ind,7:8) = DscfL(ind,7:8) + Vlocal(ijl,3:4) * dVol
                 end if
              end do
@@ -478,10 +478,10 @@ contains
                 ind = listVsptr(iu)+ii
                 j   = listVs(ind)
                 ijl = idx_ijl(il,ilocal(j))
-                do ispin = 1,nspin
+                do ispin = 1, spin%Grid
                    Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
-                if ( SpOrb ) then
+                if ( spin%SO ) then
                    Vss(ind,7:8) = Vss(ind,7:8) + Vlocal(ijl,3:4) * dVol
                 end if
              end do
@@ -490,10 +490,10 @@ contains
                 ind = listVsptr(iu)+ii
                 j   = LISTSC( i, iu, listVs(ind) )
                 ijl = idx_ijl(il,ilocal(j))
-                do ispin = 1,nspin
+                do ispin = 1, spin%Grid
                    Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
-                if ( SpOrb ) then
+                if ( spin%SO ) then
                    Vss(ind,7:8) = Vss(ind,7:8) + Vlocal(ijl,3:4) * dVol
                 end if
              end do
@@ -505,7 +505,7 @@ contains
 
     if ( ParallelLocal .and. NTH > 1 ) then
 !$OMP do collapse(2)
-       do ispin = 1 , h_spin_dim
+       do ispin = 1 , spin%H
           do ind = 1, nvmaxl
              do ii = 2, NTH
                 t_DscfL(ind,ispin,1) = t_DscfL(ind,ispin,1) + &
@@ -516,7 +516,7 @@ contains
 !$OMP end do
     else if ( NTH > 1 ) then
 !$OMP do collapse(2)
-       do ispin = 1 , h_spin_dim
+       do ispin = 1 , spin%H
           do ind = 1, nvmax
              do ii = 2, NTH
                 Vs(ind,ispin) = Vs(ind,ispin) + t_Vss(ind,ispin,ii)
@@ -533,9 +533,9 @@ contains
 !$OMP master
     if ( ParallelLocal ) then
 !      Redistribute Hamiltonian from mesh to orbital based distribution
-       DscfL => t_DscfL(1:nvmaxl,1:h_spin_dim,1)
+       DscfL => t_DscfL(1:nvmaxl,1:spin%H,1)
        call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, &
-            h_spin_dim, DscfL, Vs )
+            spin%H, DscfL, Vs )
        call de_alloc( t_DscfL, 'DscfL', 'vmat' )
     else if ( NTH > 1 ) then
        call de_alloc( t_Vss, 'Vss', 'vmat' )

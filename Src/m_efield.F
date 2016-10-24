@@ -144,7 +144,7 @@
 
       use parallel,     only: ionode
       use siesta_cml,   only: cml_p, cmlAddProperty, mainXML
-      use fdf,          only: fdf_boolean, fdf_bnames, fdf_block
+      use fdf,          only: fdf_get, fdf_bnames, fdf_block
       use fdf,          only: block_fdf, parsed_line, fdf_bline
       use fdf,          only: fdf_bmatch, fdf_convfac, fdf_bvalues
       use units,        only: Ang, eV
@@ -198,15 +198,17 @@
       if ( nbcell == 2 ) then
          ! Note that we enable the correction if there is an
          ! external field
-         dipole_correction = fdf_boolean("SlabDipoleCorrection",
-     &        .false.)
+         dipole_correction = fdf_get("SlabDipoleCorrection",
+     &        acting_efield)
          if (acting_efield .and. (.not. dipole_correction)) then
             if (ionode) write(6,'(/,(a))')
-     .        'efield: SlabDipoleCorrection turned on automatically',
-     .        'efield: when an external electric field is applied.',
-     .        'efield: For backward compatibility, set if to .false.'
-            dipole_correction = .true.
-         endif
+     .        'efield: WARNING!',
+     .        'efield: SlabDipoleCorrection is .false. with an external'
+     .           //' efield.',
+     .        'efield: For correct physics SlabDipoleCorrection should'
+     .           //' be .true.',
+     .        'efield: This is only for backwards compatibility!'
+         end if
       else
          dipole_correction = .false.
       end if

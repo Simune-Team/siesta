@@ -63,7 +63,6 @@
       use precision, only: dp
       use alloc, only: re_alloc, de_alloc
       use parallel,  only: IOnode
-      use m_fdf_global, only: fdf_global_get
 
 #ifdef MPI
       use mpi_siesta
@@ -211,8 +210,8 @@
          if (idyn == 0) then
             ! do not extrapolate for CG relaxation, in case
             ! there are big jumps
-            call fdf_global_get(allow_dm_extrapolation,
-     $                          'DM.AllowExtrapolation'  , .FALSE.)
+            allow_dm_extrapolation = fdf_get(
+     $           'DM.AllowExtrapolation', .FALSE.)
             if (allow_dm_extrapolation) then
                ! The user insisted...
                if (ionode) then

@@ -421,11 +421,9 @@
         if (harrisfun) then 
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
 !         No need for further cml output
-        elseif (isolve==SOLVE_DIAGON.or.isolve==SOLVE_TRANSI) then
+        elseif ((isolve==SOLVE_DIAGON) .or. (isolve==SOLVE_PEXSI)
+     .                              .or. (isolve==SOLVE_TRANSI)) then
           if (cml_p) then
-             call cmlAddProperty(xf=mainXML, value=FreeE/eV, 
-     .            units="siestaUnits:eV", 
-     .            dictRef="siesta:FreeE", fmt="r7")
              call cmlAddProperty(xf=mainXML, value=Etot/eV, 
      .             units="siestaUnits:eV", 
      .             dictRef="siesta:Etot", fmt="r7")
@@ -443,47 +441,39 @@
              end if
           endif
 
-          if (fixspin) then
-            if ((iscf .eq. 1).or.muldeb)
-     .           write(6,'(/,a12,3a14,3a9)')
-     .           '     iscf', '   Eharris(eV)', 
-     .           '      E_KS(eV)', '   FreeEng(eV)', 
-     .           '    dDmax', '  Ef_up', '  Ef_dn(eV)'
-            write(6,'(a8,i4,3f14.4,f9.5,2f9.4)')
-     .  trim(scf_name)//': ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax, 
-     .           (Efs(i)/eV,i=1,2)
-          else                   !fixspin
-            if ( NonCol .or. SpOrb ) then
-               if ((iscf .eq. 1).or.muldeb)
-     .              write(6,'(/,a12,3a16,3a10)')
-     .              '     iscf', '   Eharris(eV)', 
-     .              '      E_KS(eV)', '   FreeEng(eV)', 
-     .              '   dDmax', '  Ef(eV)', 'dHmx(Ry)'
-               write(6,'(a8,i4,3f16.6,3f10.6)')
+          if ( fixspin ) then
+             if ( (iscf == 1) .or. muldeb ) then
+                write(6,'(/,a12,3a16,4a10)')
+     .           'iscf', 'Eharris(eV)', 'E_KS(eV)', 'FreeEng(eV)', 
+     .           'dDmax', 'Ef_up', 'Ef_dn(eV)','dHmax(eV)'
+             end if
+             write(6,'(a8,i4,3f16.6,4f10.6)')
      .  trim(scf_name)//': ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
-     .              dDmax, Ef/eV, dHmax
-            else
-               if ((iscf .eq. 1).or.muldeb)
-     .              write(6,'(/,a12,3a14,3a9)')
-     .              '     iscf', '   Eharris(eV)', 
-     .              '      E_KS(eV)', '   FreeEng(eV)', 
-     .              '   dDmax', '  Ef(eV)', 'dHmx(Ry)'
-               write(6,'(a8,i4,3f14.4,3f9.5)')
+     .           dDmax, Efs(1:2)/eV, dHmax/eV
+          else                  ! fixspin
+             if ( (iscf == 1) .or. muldeb ) then
+                write(6,'(/,a12,3a16,3a10)')
+     .           'iscf', 'Eharris(eV)', 'E_KS(eV)', 'FreeEng(eV)', 
+     .           'dDmax','Ef(eV)','dHmax(eV)'
+             end if
+             write(6,'(a8,i4,3f16.6,3f10.6)')
      .  trim(scf_name)//': ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
-     .              dDmax, Ef/eV, dHmax
-            end if
-          endif !fixspin
-        elseif ((isolve==SOLVE_ORDERN) .or. (isolve==SOLVE_MINIM)) then
+     .           dDmax, Ef      /eV, dHmax/eV
+          end if                ! fixspin
+          
+       elseif ((isolve==SOLVE_ORDERN) .or. (isolve==SOLVE_MINIM)) then
+          
           write(6,'(/,a15,i4)') 'siesta: iscf = ',iscf
-          write(6,'(a14,f15.4,a13,f15.4,a10,f7.4/)') 
+          write(6,'(a14,f15.4,a13,f15.4,a10,f10.6/)') 
      .         'Eharris(eV) = ',Eharrs/eV,
-     .         '  E_KS(eV) = ',Etot/eV,'  dDmax = ',dDmax
+     .         'E_KS(eV) = ',Etot/eV,'dDmax = ',dDmax
           if (cml_p) then
             call cmlAddProperty(xf=mainXML, value=Etot/eV, 
      .           units="siestaUnits:eV", 
      .           dictRef="siesta:Etot", fmt="r7")
-          endif
-        endif !harrisfun/isolve
+         endif
+         
+       endif                     !harrisfun/isolve
 
         if (cml_p) then
           call cmlEndPropertyList(mainXML)
@@ -504,6 +494,14 @@
      .    'siesta: ',      'Ion-ion =', (Ena+Uatm-Enaatm-Eions)/eV,
      .    'siesta: ',      'Ekinion =', Ekinion/eV,
      .    'siesta: ',        'Total =', (Etot+Ekinion)/eV
+        if ( fixspin ) then
+           write(6,'(a,a15,f15.6)')
+     .          'siesta: ', 'Fermi_up =', Efs(1)/eV,
+     .          'siesta: ', 'Fermi_dn =', Efs(2)/eV
+        else
+           write(6,'(a,a15,f15.6)')
+     .          'siesta: ', 'Fermi =', Ef/eV
+        end if
         if (cml_p) then
           call cmlStartPropertyList(xf=mainXML, title='Final Energy')
           call cmlAddProperty(xf=mainXML, value=Ebs/eV,  
@@ -580,11 +578,11 @@
 #ifdef DEBUG
       call write_debug( '    PRE siesta_write_forces' )
 #endif
-        fmax = maxval(abs(fa))
-        ftot = sum(fa, dim=2)
-        cfmax = maxval(abs(cfa))
-        cftot = sum(cfa, dim=2)
-        fres = sqrt( sum(fa**2) / (na_u*3.0_dp))
+      fmax = maxval(abs(fa))
+      ftot = sum(fa, dim=2)
+      cfmax = maxval(abs(cfa))
+      cftot = sum(cfa, dim=2)
+      fres = sqrt( sum(fa**2) / (na_u*3.0_dp))
 
       ! Almost the same forces output whether during simulation
       ! or at the end. Unfortunately not quite, therefore slightly

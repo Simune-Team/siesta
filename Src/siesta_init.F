@@ -19,7 +19,7 @@
      &                              estimate_pol_kpoints
       use m_struct_init,      only: struct_init
       use siesta_options
-      use timer_options,      only: use_tree_timer
+      use timer_options,      only: use_tree_timer, use_parallel_timer
       use sparse_matrices
       use class_Fstack_Pair_Geometry_dSpData2D, only: new, max_size
       use siesta_geom
@@ -44,11 +44,14 @@
       use siesta_cmlsubs,     only: siesta_cml_init
       use m_timestamp,        only: timestamp
       use m_wallclock,        only: wallclock
-      use parallel,           only: Node, Nodes, IOnode
+      use parallel,           only: Node, Nodes, PEXSINodes, IOnode
+      use parallel,           only: SIESTA_worker
+      use parallel,           only: SIESTA_Group, SIESTA_Comm
       use densematrix,        only: Haux, Saux, Psi
       use m_energies
       use m_steps
-      use m_spin
+      use m_spin,             only: init_spin, nspin, spinor_dim, SpPol
+      use m_spin,             only: qs, init_spiral
       use m_rmaxh
       use m_forces 
       use m_eo
@@ -83,10 +86,18 @@
 #endif
 #ifdef _OPENMP
       use omp_lib, only : omp_get_num_threads, omp_get_schedule
+      use omp_lib, only : omp_get_nested, omp_set_nested
+      use omp_lib, only : omp_get_max_active_levels
       use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
       use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+#if _OPENMP >= 201307
+      ! The above value should correspond to OMP-4.0
+      use omp_lib, only : omp_get_proc_bind
+#endif
 #else
-!$    use omp_lib, only : omp_get_num_threads, omp_get_schedule
+!$    use omp_lib, only : omp_get_num_threads, omp_get_sched
+!$    use omp_lib, only : omp_get_nested, omp_get_max_active_levels
+!$    use omp_lib, only : omp_get_max_active_levels
 !$    use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
 !$    use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
 #endif
@@ -103,12 +114,17 @@
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
 
+      integer :: World_Group
+      integer :: npSIESTA
       external :: read_options
 
-!-------------------------------------------------------------------------BEGIN
+!---------------------------------------------------------------------- BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
 ! of a driver program that may have initialized MPI already
+
 #ifdef MPI
+C     Initialise MPI and set processor number
+
       call MPI_Initialized( initialized, MPIerror )
       if (.not.initialized) then
 #ifdef _OPENMP
@@ -125,24 +141,72 @@
         call MPItrace_shutdown( )
 #endif
       endif ! (.not.initialized)
+      
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+      
+      ! Keeper for PEXSI-runs..
+      PEXSINodes = Nodes
+
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
      &           'doesn''t have parallel support')
       endif
 #endif
       if (Node==0) then
-         call system("rm -f 0_NORMAL_EXIT")
+         call system("/bin/rm -f 0_NORMAL_EXIT")
       endif
+
+#ifdef DEBUG_XC
+! Set output file unit for debug info
+      call setDebugOutputUnit()
+#endif /* DEBUG_XC */
+
+!     Initialise input/output...........................................
+      call reinit( sname )
+
+#ifdef MPI
+      ! Optionally, restrict the number of processors that SIESTA uses, out
+      ! of the total pool
+      npSIESTA  = fdf_get("MPI.Nprocs.SIESTA",Nodes)
+      call MPI_Comm_Group(MPI_Comm_World, World_Group, MPIerror)
+      call MPI_Group_incl(World_Group, npSIESTA,
+     $                    (/ (i,i=0,npSIESTA-1) /),
+     $                    SIESTA_Group, MPIerror)
+      call MPI_Comm_create(MPI_Comm_World, SIESTA_Group,
+     $                     SIESTA_Comm, MPIerror)
+
+      SIESTA_worker = (Node < npSIESTA)
+
+      ! Swap communicator
+      ! This is needed since MPI_COMM_WORLD is used implicitly by
+      ! Siesta for all operations. 
+      MPI_COMM_WORLD = SIESTA_Comm
+      if (SIESTA_worker) then
+         call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
+         call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+      endif
+#else
+      SIESTA_worker = .true.
+      Node = 0
+      Nodes = 1
+      PEXSINodes = 1
+#endif
+      IOnode = SIESTA_worker .and. (Node .eq. 0)
+
+      ! Be sure to initialize the spin-configuration data
+      ! for all processors.
+
+      call init_spin( )
+
+      if (.not. SIESTA_worker) RETURN
+
 #ifdef DEBUG
 !     Generates a debug file for every process to track the execution.
 !     The file is called debug.$(PID) Where PID is the process number.
 !     It also works in secuencial mode.
       call debugMpiOn( )
-      call write_debug( 'PRE siesta_init' )
 #endif
-      IOnode = (Node .eq. 0)
 #ifdef NCDF_4
       call ncdf_IONode( IONode )
 #endif
@@ -151,11 +215,15 @@
       if (IOnode) then
         call prversion()
 #ifdef MPI
-        if (Nodes.gt.1) then
-          write(6,'(/,a,i0,a)')
-     &        '* Running on ', Nodes, ' nodes in parallel'
+        if ( PEXSINodes /= Nodes ) then
+           write(6,'(/,a,2(i0,a))')
+     &          '* Running on ', Nodes, ' SIESTA-nodes and ',
+     &          PEXSINodes, ' PEXSI-nodes in parallel'
+        else if ( Nodes > 1 ) then           
+           write(6,'(/,a,i0,a)')
+     &          '* Running on ', Nodes, ' nodes in parallel'
         else
-          write(6,'(/,a)') '* Running in serial mode with MPI'
+           write(6,'(/,a)') '* Running in serial mode with MPI'
         endif
 #else
         write(6,'(/,a)') '* Running in serial mode'
@@ -187,6 +255,32 @@
 !$    case default
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',is
 !$    end select
+!     Now write out about nested levels
+!$    if ( omp_get_nested() ) then
+!$       ns = omp_get_max_active_levels()
+!$    else
+!$       write(*,'(a)') '** OpenMP (trying to FORCE nesting)'
+!$       call omp_set_nested(.true.)
+!$       ns = omp_get_max_active_levels()
+!$    end if
+!$    write(*,'(a,i0,a)') '* OpenMP allows ',ns,' nested levels.'
+#if _OPENMP >= 201307
+!$    ns = omp_get_proc_bind()
+!$    select case ( ns )
+!$    case ( 0 ) 
+!$    write(*,'(a)') '* OpenMP binding: FALSE'
+!$    case ( 1 )
+!$    write(*,'(a)') '* OpenMP binding: TRUE'
+!$    case ( 2 )
+!$    write(*,'(a)') '* OpenMP binding: MASTER'
+!$    case ( 3 )
+!$    write(*,'(a)') '* OpenMP binding: CLOSE'
+!$    case ( 4 )
+!$    write(*,'(a)') '* OpenMP binding: SPREAD'
+!$    case default
+!$    write(*,'(a)') '* OpenMP binding: UNKNOWN'
+!$    end select
+#endif
 !$OMP end master
 !$OMP end parallel
 !$    call omp_set_schedule(i,is)
@@ -203,27 +297,8 @@
       nullify(xijo)
 
 !     Initialize some variables
-      DUext   = 0.0_dp
-      Eharrs  = 0.0_dp
-      Eions   = 0.0_dp
-      Ekinion = 0.0_dp
-      Emad    = 0.0_dp
-      Emeta   = 0.0_dp
-      Emm     = 0.0_dp
-      Entropy = 0.0_dp
-      FreeE   = 0.0_dp
-      Ef      = 0.0_dp
-      Eldau   = 0.0_dp
-      DEldau  = 0.0_dp
-
+      call init_Energies()
       
-#ifdef DEBUG_XC
-! Set output file unit for debug info
-      call setDebugOutputUnit()
-#endif /* DEBUG_XC */
-
-!     Initialise read .................................................
-      call reinit( sname )
 !
 !     Set object debugging level
 !
@@ -242,8 +317,15 @@
       threshold = fdf_get('timer_report_threshold', 0._dp)
       call timer_report( file=trim(slabel)//'.times', 
      .                   threshold=threshold )
-      ! This variable lives in siesta_options
-      use_tree_timer = fdf_get('UseTreeTimer', .false.)
+      ! Note that the parallel timer might be inefficient for reports
+      ! when large numbers of processors are used
+      if ( PEXSINodes /= Nodes ) then
+         use_parallel_timer = fdf_get('UseParallelTimer', .false.)
+         use_tree_timer = fdf_get('UseTreeTimer', .true.)
+      else
+         use_parallel_timer = fdf_get('UseParallelTimer', .true.)
+         use_tree_timer = fdf_get('UseTreeTimer', .false.)
+      end if
 
 !     Start time counter
 !     Note new placement of this first use, so that
@@ -267,10 +349,6 @@
          call add_citation("10.1088/0953-8984/14/11/302")
       end if
 
-      ! be sure to initialize spin-configuration
-      ! as the first thing.
-      ! Subsequent routines require this to be filled
-      call init_spin( )
 
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
@@ -394,7 +472,7 @@
 
 !     Parallel initialisation
       call initparallel( no_u, na_u, lasto, xa, ucell, rmaxh )
-!     if (IOnode) call show_distribution( )
+      if (IOnode) call show_distribution( )
 
 !     Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
@@ -548,11 +626,9 @@
       if (ionode) call pxfflush( 6 )
 
       call timer( 'Setup', 2 )
-#ifdef DEBUG
-      call write_debug( 'POS siesta_init' )
-#endif
+
 !--------------------------------------------------------------------------- END
-      
+
       END subroutine siesta_init
 
       END MODULE m_siesta_init
