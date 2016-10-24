@@ -27,11 +27,7 @@
 !    by the dipole moment of the system, thus allowing to deal with
 !    asymmetric slabs (and compute properties such as the work funcion
 !    of each of the surfaces).
-!       One can also specify the vacuum region by hand.
-!       Simply use this block
-!       %block SlabDipoleCorrection.Vacuum
-!           0.000  0.000  3.000 Ang
-!       %endblock SlabDipoleCorrection.Vacuum
+!    See L. Bengtsson, PRB 59, 12301 (1999), DOI: 10.1103/PhysRevB.59.12301
 
       use precision, only: dp
       use sys,       only: die
@@ -40,9 +36,6 @@
       logical, public  :: acting_efield = .false.
       logical, public  :: dipole_correction = .false.
       real(dp), public :: user_specified_field(3) =
-     &     (/ 0.0_dp, 0.0_dp, 0.0_dp /)
-      logical, public  :: user_dipole_correction_vacuum = .false.
-      real(dp), public :: user_specified_vacuum(3) = 
      &     (/ 0.0_dp, 0.0_dp, 0.0_dp /)
 
       public :: initialize_efield
@@ -86,7 +79,8 @@
       end subroutine get_user_specified_field
 !----------------------------------------------------------------
        
-      subroutine orthogonalize_efield(input_field,orthog_field,orthog)
+      subroutine orthogonalize_efield(input_field,orthog_field,orthog,
+     &     nbcell)
 
 !     Orthogonalizes the field to the bulk directions
 
@@ -94,13 +88,15 @@
 
       real(dp), intent(in)  :: input_field(3)
       real(dp), intent(out) :: orthog_field(3)
-      logical,  intent(out) :: orthog           ! originally orthogonal?
+      logical,  intent(out) :: orthog ! originally orthogonal?
+      integer,  intent(out) :: nbcell ! shape of cell
+
 
 !     tolerance for bulk components of the electric field
       real(dp), parameter    :: tol = 1.0d-12
 
       real(dp)  :: eb1, eb2, eb3, b1xb2(3), bcell(3,3)
-      integer   :: nbcell, ix
+      integer   :: ix
       character(len=8) :: shape
 
       real(dp), external :: ddot
@@ -157,6 +153,7 @@
       real(dp) :: input_field(3), orthog_field(3), cfactor
       logical  :: orthog
       integer :: ix
+      integer :: nbcell
       character(len=20) :: eunits
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline => null()
@@ -165,8 +162,12 @@
 
       call get_user_specified_field(input_field)
       acting_efield = (ddot(3,input_field,1,input_field,1) /= 0.0_dp)
+
+      ! always orthogonalize retrieve the shape of the cell
+      call orthogonalize_efield(input_field,orthog_field,orthog,
+     &     nbcell)
+      
       if (acting_efield) then
-         call orthogonalize_efield(input_field,orthog_field,orthog)
 
          if (orthog) then
             if (ionode) then
@@ -193,40 +194,33 @@
       acting_efield =
      $ (ddot(3,user_specified_field,1,user_specified_field,1) /= 0.0_dp)
 
-      dipole_correction = fdf_boolean("SlabDipoleCorrection",.false.)
-      if ( fdf_block('SlabDipoleCorrection.Vacuum',bfdf) ) then
-         if (.not. fdf_bline(bfdf,pline)) 
-     & call die('No line in SlabDipoleCorrection.Vacuum block')
-         if (.not. fdf_bmatch(pline,"vvvn"))
-     & call die("Wrong format in SlabDipoleCorrection.Vacuum block")
-         
-         ! Notify about user supplied vacuum middle
-         user_dipole_correction_vacuum = .true.
-
-         ! Read the coordinate
-         eunits = fdf_bnames(pline,1)
-         cfactor = fdf_convfac(eunits,'Bohr')
-         do ix = 1 , 3
-            user_specified_vacuum(ix) = fdf_bvalues(pline,ix) * cfactor
-         end do
-
+      ! Only allow slab dipole corrections for slabs
+      if ( nbcell == 2 ) then
+         ! Note that we enable the correction if there is an
+         ! external field
+         dipole_correction = fdf_boolean("SlabDipoleCorrection",
+     &        .false.)
+         if (acting_efield .and. (.not. dipole_correction)) then
+            if (ionode) write(6,'(/,(a))')
+     .        'efield: SlabDipoleCorrection turned on automatically',
+     .        'efield: when an external electric field is applied.',
+     .        'efield: For backward compatibility, set if to .false.'
+            dipole_correction = .true.
+         endif
+      else
+         dipole_correction = .false.
       end if
 
-      if (dipole_correction) then
+      if ( dipole_correction ) then
          if ( IONode ) then
             call add_citation("10.1103/PhysRevB.59.12301")
          end if
          if (ionode) write(6,'(/,(a))')
-     .        'efield: SlabDipoleCorrection = .true. in input file',
+     .        'efield: SlabDipoleCorrection enabled.',
      .        'efield: A dipole layer will be introduced in the vacuum',
      .        'efield: region to compensate the system dipole'
-         if (ionode.and.user_dipole_correction_vacuum ) then
-            write(*,'(a)')'efield: SlabDipoleCorrection vacuum point'
-            write(*,'(tr4,3(tr2,f10.3),a)')
-     &           user_specified_vacuum/Ang,' Ang'
-         end if
          acting_efield = .true.
-      endif
+      end if
 
       end subroutine initialize_efield
 !----------------------------------------------------------------
@@ -330,42 +324,11 @@ C     Find the geometric center of the system
          enddo
       enddo
 
-      if ( user_dipole_correction_vacuum ) then
-C        Define the vacuum center
-         do ix = 1,3
-            xfrac = ddot(3,user_specified_vacuum,1,rcell(1,ix),1)
-            i0(ix) = nint( xfrac * meshG(ix) )
-            if ( abs(efield(ix)) > 1.e-9_dp ) then
-               ! Only check against fields above certain margin
-            if ( xmin(ix) < xmax(ix) ) then
-               ! stringent ordering
-               if ( nint(xmin(ix) * meshG(ix)) <= i0(ix) .and. 
-     &              i0(ix) <= nint(xmax(ix) * meshG(ix)) ) then
-                  ! the vacuum specified by the user lies
-                  ! in between atomic ranges
-      call die('User specified vacuum lies within atomic orbital range. 
-     &This is not allowed.')
-               end if
-            else
-               ! wrapping ordering
-               if ( i0(ix) <= nint(xmin(ix) * meshG(ix)) .and. 
-     &              nint(xmax(ix) * meshG(ix)) <= i0(ix) ) then
-                  ! the vacuum specified by the user lies
-                  ! in between atomic ranges
-      call die('User specified vacuum lies within atomic orbital range. 
-     &This is not allowed.')
-               end if
-            end if
-            end if
-         end do
-      else 
-C        Find the mesh index of the origin of the shifted cell
-         do ix = 1,3
-            xmean = (xmin(ix) + xmax(ix)) / 2
-            i0(ix) = nint( (xmean-0.5_dp) * meshG(ix) )
-         end do
-      end if
-
+C     Find the mesh index of the origin of the shifted cell
+      do ix = 1,3
+         xmean = (xmin(ix) + xmax(ix)) / 2
+         i0(ix) = nint( (xmean-0.5_dp) * meshG(ix) )
+      end do
 
 C     Ensure that all indices become positive in the below loop
       do ix = 1 , 3

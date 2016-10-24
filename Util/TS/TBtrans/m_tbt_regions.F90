@@ -159,6 +159,9 @@ contains
     ! Delete to be ready to populate the device
     call rgn_delete(r_aDev)
 
+    ! Read in electrode down-folding regions
+    call rgn_delete(r_Els)
+       
     ! Read in device region via the new block
     if ( fdf_block('TBT.Atoms.Device',bfdf) ) then
 
@@ -168,8 +171,9 @@ contains
           if ( fdf_bnnames(pline) == 0 ) cycle
        
           g = fdf_bnames(pline,1)
+
+          ! Actual device atoms...
           if ( leqi(g,'atom') .or. leqi(g,'position') ) then
-             ! We can read in a range
              call fdf_brange(pline,r_tmp,1,na_u)
              if ( r_tmp%n == 0 ) &
                   call die('Could not read in any atoms &
@@ -177,20 +181,28 @@ contains
              call rgn_union(r_aDev,r_tmp,r_aDev)
              
           end if
+
+          ! Atoms NOT in the device region...
+          if ( leqi(g,'not-atom') .or. leqi(g,'not-position') ) then
+             call fdf_brange(pline,r_tmp,1,na_u)
+             if ( r_tmp%n == 0 ) &
+                  call die('Could not read in any atoms &
+                  &in line of TBT.Atoms.Device')
+             call rgn_union(r_Els,r_tmp,r_Els)
+             
+          end if
           
        end do
        call rgn_delete(r_tmp)
 
-    else
-       
-       ! populate the device region with all but the 
-       ! electrodes and buffer atoms
-       call rgn_range(r_aDev,1,na_u)
-
     end if
 
-
-    ! We immediately remove the buffer and electrode atoms
+    if ( r_aDev%n == 0 ) then
+       ! populate the device region with all atoms
+       call rgn_range(r_aDev,1,na_u)
+    end if
+    
+    ! remove the buffer and electrode atoms
     if ( r_aBuf%n > 0 ) then
        call rgn_complement(r_aBuf,r_aDev,r_aDev)
     end if
@@ -198,6 +210,10 @@ contains
        call rgn_complement(r_aEl_alone(iEl),r_aDev,r_aDev)
     end do
 
+    ! remove the downfolding region from the device region
+    call rgn_complement(r_Els,r_aDev,r_aDev)
+    ! Clean atomic downfolding region
+    call rgn_delete(r_Els)
 
     if ( r_aDev%n == 0 ) then
        call die('Zero atoms are in the device region...???')
@@ -648,7 +664,8 @@ contains
     ! sparsity pattern
     call delete(sp_dev)
 #ifdef NCDF_4
-    if ( 'orb-current' .in. save_DATA ) then
+    if ( ('orb-current' .in. save_DATA) .or. &
+         ('proj-orb-current' .in. save_DATA) ) then
 
        call attach(sp_uc,nrows_g=no_u)
 #ifdef MPI

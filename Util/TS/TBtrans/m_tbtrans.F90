@@ -52,7 +52,7 @@ contains
 
     use m_tbt_options, only : N_Elec, Elecs
 #ifdef NCDF_4
-    use m_tbt_dH, only : use_dH, read_Sp_dH
+    use m_tbt_dH, only : use_dH, read_Sp_dH, dH
     use m_tbt_kpoint, only : nkpnt, kpoint, kweight
     use m_tbt_options, only : save_DATA
     use m_tbt_options, only : cdf_fname, cdf_fname_sigma, cdf_fname_proj
@@ -242,6 +242,14 @@ contains
        else
           ispin = spin_idx
        end if
+
+#ifdef NCDF_4
+       if ( use_dH ) then
+          ! Force to re-read the following dH matrices
+          dH%lvl = -1
+          dH%ispin = ispin
+       end if
+#endif
 
        ! The initial spin has already been 
        ! setup for the first spin, hence we

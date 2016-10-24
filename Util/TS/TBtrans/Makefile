@@ -47,7 +47,8 @@ SIESTA_OBJS= precision.o sys.o m_io.o alloc.o memoryinfo.o memory.o pxf.o \
              moreParallelSubs.o m_mpi_utils.o \
              m_fdf_global.o paste.o reclat.o idiag.o minvec.o \
              parallel.o io.o files.o cellsubs.o sorting.o \
-	     kpoint_convert.o timestamp.o m_wallclock.o cdiag.o m_spin.o \
+	     kpoint_convert.o timestamp.o m_wallclock.o m_spin.o \
+             cdiag.o m_diagon_opt.o \
 	     zheevds.o debugmpi.o find_kgrid.o die.o
 
 # Siesta timings

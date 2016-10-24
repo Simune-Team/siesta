@@ -37,7 +37,7 @@
 
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
       real(dp)                :: Uharrs     ! Harris energy
-      logical                 :: IsDiag, IsEfld, spiral
+      logical                 :: IsDiag, spiral
       character(len=10)       :: shape
       integer                 :: nml(3), ntml(3), npcc,
      &                           nmpl, ntpl
@@ -740,7 +740,6 @@ C integer io            : Orbital index
 C integer ip            : Point index
 C integer is            : Species index
 C logical IsDiag        : Is supercell diagonal?
-C logical IsEfld        : Is there an external electric field?
 C integer ispin         : Spin index
 C integer j             : General-purpose index
 #ifndef BSC_CELLXC
@@ -1237,7 +1236,7 @@ C ----------------------------------------------------------------------
      &             DUscf, Vaux, DStres, nsm )
 
       if ( debug_dhscf ) then
-         write(*,debug_fmt) Node,'Poisson',sqrt(sum(Vscf(:,1)**2))
+         write(*,debug_fmt) Node,'Poisson',sqrt(sum(Vaux(:)**2))
       end if
 
       ! Vscf is in the UNIFORM, sequential form, and only using
@@ -1296,8 +1295,8 @@ C ----------------------------------------------------------------------
 C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
-      if (acting_efield) then
-         if (dipole_correction) then
+      if ( acting_efield ) then
+         if ( dipole_correction ) then
             field = get_field_from_dipole(dipol,cell)
             if (Node == 0) then
 	       write(6,'(a,3f12.4,a)')
@@ -1305,15 +1304,24 @@ C ----------------------------------------------------------------------
 	       write(6,'(a,3f12.6,a)')
      $              'Electric field for dipole correction =',
      $              field/eV*Ang, ' eV/Ang/e'
-            endif
+            end if
+            ! The dipole correction energy has an extra factor
+            ! of one half because the field involved is internal.
+            ! See the paper by Bengtsson DOI:10.1103/PhysRevB.59.12301
+            ! Hence we compute this part separately
+            DUext = -0.5_dp * ddot(3,field,1,dipol,1)
          else
-            field = user_specified_field
-         endif
+            field = 0._dp
+            DUext = 0._dp
+         end if
+         ! Add the external electric field
+         field = field + user_specified_field
          ! This routine expects a sequential array,
          ! but it is distribution-blind
          call add_potential_from_field( field, cell, nua, isa, xa,
      &                                  ntm, nsm, Vaux )
-         DUext = - ddot(3,field,1,dipol,1)
+         ! Add energy of external electric field
+         DUext = DUext - ddot(3,user_specified_field,1,dipol,1)
       endif
 
 #ifdef TRANSIESTA

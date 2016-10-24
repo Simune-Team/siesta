@@ -126,7 +126,7 @@
 
       DEna = Enascf - Enaatm
       Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec +
-     &       Emad + Emm + Emeta
+     &       Emad + Emm + Emeta + Eldau
 
 !     Since this Etot is computed with DM_mixed (the DM predicted by
 !     'mixer' for a hypothetical next SCF iteration) or with DM_out

@@ -51,8 +51,8 @@ contains
 ! *********************
     ! The Green function column
     type(zTriMat), intent(inout) :: Gf_tri
-    type(Elec), intent(in) :: El ! contains: i (Sigma - Sigma^dagger) ^T
-    integer, intent(in) :: no ! The dimension of i (Sigma - Sigma^dagger) ^T
+    type(Elec), intent(in) :: El ! contains: (Sigma - Sigma^dagger) ^T
+    integer, intent(in) :: no ! The dimension of (Sigma - Sigma^dagger) ^T
     logical, intent(in) :: calc_parts(:)
 
 ! *********************
@@ -210,7 +210,7 @@ contains
     type(zTriMat), intent(inout) :: A_tri
 
     type(tRgn), intent(in) :: pvt ! the pivoting array for the sparse pattern
-    type(Elec), intent(in) :: El ! contains: i (Sigma - Sigma^dagger) ^T
+    type(Elec), intent(in) :: El ! contains: (Sigma - Sigma^dagger) ^T
     logical, intent(in) :: calc_parts(:)
 #ifdef TBTRANS
 ! **********************

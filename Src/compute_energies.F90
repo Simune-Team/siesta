@@ -82,9 +82,11 @@ CONTAINS
       ! Emad, Emm, Emeta are extra terms that are added for
       ! consistency of the total energy.
 
+      ! E0 = Ena + Ekin + Enl + Eso - Eions
+
       DEna = Enascf - Enaatm
-      Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad + Emm + Emeta + &
- &           Eldau
+      Etot = E0 + DEna + DUscf + DUext + Exc + &
+           Ecorrec + Emad + Emm + Emeta + Eldau
 
 
 ! Harris energy
@@ -287,7 +289,9 @@ CONTAINS
       ! E0 = Ena + Ekin + Enl + Eso - Eions
 
       ! Clarify: Ecorrec (from O(N))
-      Etot = Ena + Ekin + Enl + Eso - Eions + Escf_out + Ecorrec + Emad + Emm + Emeta
+      Etot = Ena + Ekin + Enl + Eso - Eions + &
+           Escf_out + Ecorrec + Emad + Emm + &
+           Emeta + Eldau
       
     end subroutine compute_correct_EKS
 

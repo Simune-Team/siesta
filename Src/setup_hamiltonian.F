@@ -249,7 +249,7 @@
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
 
       if (savehs .or. write_coop) then
-         call write_hsx( gamma, no_u, no_s, nspin, indxuo,
+         call write_hsx( gamma, no_u, no_s, h_spin_dim, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, qtot,
      &        temp, xijo)
       endif

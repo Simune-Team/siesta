@@ -92,7 +92,7 @@
       end select
 
       ! Calculate the residual
-!$OMP workshare default(shared)
+!$OMP workshare
       F = Xout - Xin
 !$OMP end workshare
 

@@ -330,14 +330,13 @@ class TBTFile(object):
             Ja[:] = np.sqrt(Jb * Ja)
         return Ja
     
-    def Jij2Jab(self,Jij,symmetry=True):
+    def Jij2Jab(self,Jij,sum="+"):
         """ Returns the total current flowing through each atom.
         
         It requires a sparse matrix return from ``self.Jij`` that
         contains the orbital current.
         
-        If ``symmetry`` is ``True`` it will only return one of the 
-        bond currents, the one which is positive.
+        If ``sum`` is ``"+"`` it will only return the positive bond-currents.
 
         It returns the atomic current on all atoms in the device
         region.
@@ -355,16 +354,16 @@ class TBTFile(object):
 
         # Faster to loop across data
         tmp = Jij.tocoo()
-        if symmetry:
-            for ja,ia,d in zip(self.o2a(tmp.row),self.o2a(tmp.col),tmp.data*.5):
-                if ia == ja: continue
+        if sum == "+":
+            for ja,ia,d in zip(self.o2a(tmp.row),self.o2a(tmp.col),tmp.data):
                 if d > 0:
                     Jab[ja,ia] += d
-                else:
-                    Jab[ia,ja] -= d
+        elif sum == "-":
+            for ja,ia,d in zip(self.o2a(tmp.row),self.o2a(tmp.col),tmp.data):
+                if d < 0:
+                    Jab[ja,ia] -= d
         else:
             for ja,ia,d in zip(self.o2a(tmp.row),self.o2a(tmp.col),tmp.data):
-                if ia == ja: continue # it is zero anyway
                 Jab[ja,ia] += d
         return Jab.tocsr()
 

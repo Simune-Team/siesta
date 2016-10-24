@@ -1266,9 +1266,10 @@ contains
                 call MPI_Start(req,MPIerror)
                 call MPI_Wait(req,status,MPIerror)
              end if
-#endif
              
           end if E_Nodes
+
+#endif
 
           ! Save the surface Green function file
           call store_GS()

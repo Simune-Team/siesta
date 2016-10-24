@@ -32,6 +32,9 @@ module m_ts_options
 
   ! ###### end SIESTA-options #####
 
+  ! Whether we should stop before transiesta begins...
+  logical :: TS_siesta_stop = .false.
+
   ! Controls to save the TSHS file
   logical :: TS_HS_save = .true.
   logical :: TS_DE_save = .false.
@@ -115,7 +118,6 @@ contains
 
     use m_ts_weight, only : read_ts_weight
     use m_ts_charge, only : read_ts_charge_cor
-    use m_ts_hartree, only: read_ts_hartree_options
 
 #ifdef SIESTA__MUMPS
     use m_ts_mumps_init, only : read_ts_mumps
@@ -142,30 +144,6 @@ contains
     onlyS      = fdf_get('TS.onlyS',.false.)
     onlyS      = fdf_get('TS.S.Save',onlyS)
 
-    ! Enables pure siesta runs to fix the Hartree potential such that
-    ! a restart from siesta is possible in transiesta
-    ! This will only work for two electrodes, or if the plane
-    ! coincides with the electrode plane
-    c          = fdf_get('Hartree.Fix.Plane','A3')
-
-    ! Pre-select the "transport direction"
-    if ( leqi(c,'A1').or.leqi(c,'A') ) then
-       ts_tidx = 1
-    else if ( leqi(c,'A2').or.leqi(c,'B') ) then
-       ts_tidx = 2
-    else if ( leqi(c,'A3').or.leqi(c,'C') ) then
-       ts_tidx = 3
-    else
-       call die('Hartree.Fix.Plane erroneously setup.')
-    end if
-
-    ! Read in the settings for the Hartree fixation
-    call read_ts_hartree_options( )
-
-    ! Calculate Cartesian transport direction
-    call eye(3,tmp33)
-    ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx),mag = .true.)
-
     ! Immediately return from transiesta when this occurs
     ! no settings from the intrinsic transiesta routines
     ! are needed.
@@ -182,9 +160,12 @@ contains
     ts_Htol = fdf_get('TS.SCF.Tolerance.H',dHTol)
     ts_hist_keep = fdf_get('TS.SCF.Mix.History.Keep',0)
 
+    ! Stop after siesta has converged
+    TS_siesta_stop = fdf_get('TS.SIESTA.Only',.false.)
 
     ! Read in information about the voltage placement.
-    chars = fdf_get('TS.Hartree.Position','central')
+    ! This is only used if TS.Poisson == ramp
+    chars = fdf_get('TS.Poisson.Position','central')
     VoltageInC = .true.
     if ( leqi(trim(chars),'cell') ) then
        VoltageInC = .false.
@@ -230,8 +211,6 @@ contains
 
     ! Determine whether the user wishes to only do an analyzation
     TS_Analyze = fdf_get('TS.Analyze',.false.)
-
-    call read_ts_hartree_options( )
 
     call read_ts_charge_cor( )
 
@@ -580,17 +559,17 @@ contains
        
     end if
 
-    ! The user can selectively decide how the Hartree-fix
-    ! is applied
-    ! In case the transport direction is "fixed" in two terminal
-    ! setups, we can still force it to use the basal plane of the 
-    ! electrodes
-    ! The user can also specify it using a file
-    chars = fdf_get('TS.Hartree','ramp')
+    ! The user can selectively decide how the bias
+    ! is applied.
+    ! For N-terminal calculations we advice the user
+    ! to use a Poisson solution they add.
+    chars = fdf_get('TS.Poisson','ramp')
 #ifdef NCDF_4
-    if ( file_exist(chars) ) then
+    if ( file_exist(chars, Bcast = .true.) ) then
+       
        Hartree_fname = trim(chars)
        ts_tidx = 0
+       
     else
 #endif
        Hartree_fname = ' '
@@ -694,7 +673,7 @@ contains
     
     use m_ts_weight, only : read_ts_weight
     use m_ts_charge, only : read_ts_charge_cor
-
+    
     use m_ts_hartree, only: read_ts_hartree_options
     use m_ts_hartree, only: ts_hartree_elec
 

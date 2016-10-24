@@ -1,12 +1,16 @@
-Siesta Version: siesta-trunk-506
+Siesta Version: trunk-509
 Architecture  : x86_64-linux-gcc
 Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
 PARALLEL version
 NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
 
-* Running on    2 nodes in parallel
->> Start of run:  31-MAY-2016   8:58:03
+* Running on 2 nodes in parallel
+>> Start of run:   5-JUN-2016  12:06:19
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -452,48 +456,59 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     F
-redata: Number of spin components        =     1
-redata: Long output                      =     F
-redata: Number of Atomic Species         =        3
+redata: Spin configuration                          = non-polarized
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        3
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     NO
-redata: Mesh Cutoff                      =   100.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Min. number of SCF Iter          =        0
-redata: Max. number of SCF Iter          =       50
-redata: Mix DM or H after convergence    =     F
-redata: Recompute H after scf cycle      =     F
-redata: Mixing is linear
-redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?        =     F
-redata: Discard 1st Pulay DM after  kick =     F
-redata: New DM Mixing Weight             =     0.2500
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = NO
+redata: Mesh Cutoff                                 =   100.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =       50
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.2500
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.000100
-redata: Require (free) Energy convergence in SCF =     F
-redata: DM (free)Energy tolerance for SCF =     0.000010 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000010 eV
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     F
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Diagonalization
-redata: Divide and Conquer               =     T
-redata: Electronic Temperature           =     0.0019  Ry
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     Nose thermostat MD run
-redata: Initial MD time step             =        1
-redata:   Final MD time step             =        5
-redata: Length of MD time step           =     1.0000  fs
-redata: Initial Temperature of MD run    =   600.0000  K
-redata: Perform a MD quench              =     F
-redata: Nose mass                        =   100.0000  Ry/fs**2
-redata: Target Temperature               =   600.0000  Kelvin
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: DM Tolerance for SCF                        =     0.000100
+redata: Require H convergence for SCF               =   F
+redata: Hamiltonian Tolerance in SCF                =     0.000100 Ry
+redata: Require (free) Energy convergence in SCF    =   F
+redata: DM (free)Energy tolerance for SCF           =     0.000010 eV
+redata: Require Harris convergence for SCF          =   F
+redata: DM Harris energy tolerance for SCF          =     0.000010 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   F
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =   299.9869 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Nose thermostat MD run
+redata: Initial MD time step                        =        1
+redata:   Final MD time step                        =        5
+redata: Length of MD time step                      =     1.0000 fs
+redata: Initial Temperature of MD run               =   600.0000 K
+redata: Perform a MD quench                         =   F
+redata: Nose mass                                   =  1360.5800 eV/fs**2
+redata: Target Temperature                          =   600.0000 Kelvin
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 2
+mix.SCF:    Linear mixing weight                 =     0.250000
+mix.SCF:    Damping                              =     0.250000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+DM_history_depth set to zero for 'Harris' run
+Size of DM history Fstack: 0
 Total number of electrons:    48.000000
 Total ionic charge:    48.000000
 
@@ -510,6 +525,7 @@ siesta: k-grid: Supercell and displacements
 siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
+
 
                      ====================================
                         Begin MD step =      1
@@ -536,8 +552,19 @@ outcell: Cell vector modules (Ang)   :    5.677830    5.677830    5.677830
 outcell: Cell angles (23,13,12) (deg):     48.1790     48.1790     48.1790
 outcell: Cell volume (Ang**3)        :     93.1663
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 1
+  <sparsity:sparsity for geom step 1
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     1
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 1
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.58964258
 New grid distribution:   1
            1       1:   16    1:   16    1:    8
@@ -557,6 +584,8 @@ Setting up quadratic distribution...
 ExtMesh (bp) on 0 =    76 x    76 x    68 =      392768
 PhiOnMesh: Number of (b)points on node 0 =                 2048
 PhiOnMesh: nlist on node 0 =                43792
+rdiag-debug: Node=1, lwork=      1872>= lworkq=      1361, liwork=       256>= liworkq=       256
+rdiag-debug: Node=0, lwork=      1872>= lworkq=      1497, liwork=       256>= liworkq=       256
 
 stepf: Fermi-Dirac step function
 
@@ -566,7 +595,8 @@ siesta: Eions   =      5228.674091
 siesta: Ena     =      1092.429444
 siesta: Ekin    =      2069.792750
 siesta: Enl     =      -254.036133
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =        15.976649
 siesta: DUscf   =         0.158309
 siesta: DUext   =         0.000000
@@ -585,8 +615,7 @@ siesta: Eharris(eV) =   -2966.548611
 
 siesta: Eharris(eV) =   -2966.548611
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.052   6.50
-:!: SCF did not converge in maximum number of steps.
+timer: Routine,Calls,Time,% =    IterSCF     1       0.032   4.82
 
 Using DM_out to compute the final energy and forces
 
@@ -627,7 +656,7 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.068982    0.285181    0.017520
          0.044751    0.017520    0.265547
 
-siesta: Pressure (total):       -512.14302768  kBar
+siesta: Pressure (total):       -512.14302767  kBar
 
 siesta: Temp_ion =     600.000 K
 
@@ -656,8 +685,19 @@ outcell: Cell vector modules (Ang)   :    5.677830    5.677830    5.677830
 outcell: Cell angles (23,13,12) (deg):     48.1790     48.1790     48.1790
 outcell: Cell volume (Ang**3)        :     93.1663
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 2
+  <sparsity:sparsity for geom step 2
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     2
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 2
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.58964258
 New grid distribution:   1
            1       1:   16    1:   16    1:    8
@@ -683,7 +723,6 @@ siesta: Eharris(eV) =   -2966.465553
 
 siesta: Eharris(eV) =   -2966.465553
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -751,8 +790,19 @@ outcell: Cell vector modules (Ang)   :    5.677830    5.677830    5.677830
 outcell: Cell angles (23,13,12) (deg):     48.1790     48.1790     48.1790
 outcell: Cell volume (Ang**3)        :     93.1663
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 3
+  <sparsity:sparsity for geom step 3
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     3
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 3
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.58964258
 New grid distribution:   1
            1       1:   16    1:   16    1:    8
@@ -778,7 +828,6 @@ siesta: Eharris(eV) =   -2966.534021
 
 siesta: Eharris(eV) =   -2966.534021
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -846,8 +895,19 @@ outcell: Cell vector modules (Ang)   :    5.677830    5.677830    5.677830
 outcell: Cell angles (23,13,12) (deg):     48.1790     48.1790     48.1790
 outcell: Cell volume (Ang**3)        :     93.1663
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 4
+  <sparsity:sparsity for geom step 4
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     4
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 4
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.58964258
 New grid distribution:   1
            1       1:   16    1:   16    1:    8
@@ -873,7 +933,6 @@ siesta: Eharris(eV) =   -2966.748455
 
 siesta: Eharris(eV) =   -2966.748455
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -941,8 +1000,19 @@ outcell: Cell vector modules (Ang)   :    5.677830    5.677830    5.677830
 outcell: Cell angles (23,13,12) (deg):     48.1790     48.1790     48.1790
 outcell: Cell volume (Ang**3)        :     93.1663
  Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 5
+  <sparsity:sparsity for geom step 5
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 7>
+  <dData1D:(new from dSpData1D) n=612, refcount: 1>
+refcount: 1>
 New_DM. Step:     5
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 5
+    nrows_g=34 nrows=18 sparsity=.5294 nnzs=612, refcount: 8>
+  <dData2D:(DMatomic) n=612 m=1, refcount: 1>
+refcount: 1>
 Note: For starting DM, Qtot, Tr[D*S] =         48.00000000         48.58964258
 New grid distribution:   1
            1       1:   16    1:   16    1:    8
@@ -968,7 +1038,6 @@ siesta: Eharris(eV) =   -2967.075002
 
 siesta: Eharris(eV) =   -2967.075002
 
-:!: SCF did not converge in maximum number of steps.
 
 Using DM_out to compute the final energy and forces
 
@@ -1017,7 +1086,8 @@ siesta: Eions   =      5228.674091
 siesta: Ena     =      1093.495874
 siesta: Ekin    =      2394.509675
 siesta: Enl     =      -403.173746
-siesta: EldaU   =         0.000000
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =      -103.588927
 siesta: DUscf   =        24.883789
 siesta: DUext   =         0.000000
@@ -1036,6 +1106,7 @@ siesta:  Band Struct. =    -714.755278
 siesta:       Kinetic =    2394.509675
 siesta:       Hartree =    1091.794736
 siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =    -722.934795
 siesta:  Ion-electron =   -4161.365962
@@ -1071,4 +1142,4 @@ siesta:          -0.36299877         -0.51060882  eV/Ang**3
 siesta:        -581.59443647       -818.09435747  kBar
 (Free)E+ p_basis*V_orbitals  =       -2944.287923
 (Free)Eharris+ p_basis*V_orbitals  =       -2965.880705
->> End of run:  31-MAY-2016   8:58:06
+>> End of run:   5-JUN-2016  12:06:21

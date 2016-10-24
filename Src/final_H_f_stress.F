@@ -159,7 +159,7 @@
 !
       if ( SpOrb ) then
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
-     .        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
+     &        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
 #ifdef MPI
 !     Global reduction of energy terms
          call globalize_sum(Eso,buffer1)
@@ -271,7 +271,7 @@
 ! This call could be moved to a more appropriate place
 !
       if (savehs) then
-         call write_hsx( gamma, no_u, no_s, nspin, indxuo,
+         call write_hsx( gamma, no_u, no_s, h_spin_dim, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, Qtot,
      &        Temp, xijo)
       endif
@@ -294,7 +294,7 @@
          ! Together with this you cannot also save FC
          fname = fname_TSHS(slabel, istep = istep )
          call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &        ucell, nsc, isc_off, na_u, no_s, nspin, 
+     &        ucell, nsc, isc_off, na_u, no_s, h_spin_dim, 
      &        ts_kscell, ts_kdispl, 
      &        xa, lasto, 
      &        H_2D, S_1D, indxuo,
@@ -313,7 +313,7 @@
             call FC_index(istep,ia1,io_istep,io_ia1)
             fname = fname_TSHS(slabel,istep = io_istep, ia1 = io_ia1)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &           ucell, nsc, isc_off, na_u, no_s, nspin, 
+     &           ucell, nsc, isc_off, na_u, no_s, h_spin_dim, 
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto, 
      &           H_2D, S_1D, indxuo,
@@ -321,7 +321,7 @@
          else
             fname = fname_TSHS(slabel)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &           ucell, nsc, isc_off, na_u, no_s, nspin,
+     &           ucell, nsc, isc_off, na_u, no_s, h_spin_dim,
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto,
      &           H_2D, S_1D, indxuo,

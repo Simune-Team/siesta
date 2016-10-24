@@ -492,13 +492,14 @@
            endif
            DM_found = .false.
         endif
-
-        if (nrows_g(DMread) /= nrows_g(sparse_pattern)) then
+        
+        if ( nrows_g(DMread) /= nrows_g(sparse_pattern) ) then
            if (IONode) then
-              write(6,"(a,/,a)")                             &
-             "WARNING: Wrong number of orbs in DM file. ",     &
+              write(6,"(2(a,i0,/),a)") &
+             "WARNING: Wrong number of orbs in DM file: ",nrows_g(DMread), &
+             "WARNING: Expected number of orbs in DM file: ",nrows_g(sparse_pattern), &
              "WARNING: Falling back to atomic initialization of DM."
-           endif
+           end if
            DM_found = .false.
         endif
 

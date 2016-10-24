@@ -299,7 +299,7 @@ C Sanity checks on values
      $         new_grid=reparametrize_pseudos,a=new_a,b=new_b,
      $         rmax=new_rmax)
         endif
-!        if (reparametrize_pseudos)
+!        if (reparametrize_pseudos.and. .not. basp%bessel)
 !     .    call pseudo_reparametrize(p=basp%pseudopotential,
 !     .                             a=new_a, b=new_b,label=basp%label)
 

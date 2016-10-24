@@ -47,7 +47,7 @@ tests = h2o h2o_reparam h2o_basis h2o_dos h2o-pop \
 	fe_clust_noncollinear fe_clust_noncollinear-gga \
 	h_chain n_chain si64_coop si_pdos_kgrid \
 	si2x1h-dipole ar2_vdw graphite_vdw_df sic-slab si-optical OMM_si \
-	OMM_h2o scfmix \
+	OMM_h2o scfmix h2o_dipole h2o_dipole2  h2_bessel\
 	SOC_Pt2_xx SOC_Pt2_xz SOC_Pt2_zy SOC_Pt2_zz \
 	wannier
 

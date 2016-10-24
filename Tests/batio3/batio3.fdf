@@ -92,7 +92,7 @@ DM.Tolerance           1.d-4       # Tolerance in maximum difference
 DM.NumberKick          15
 DM.KickMixingWeight    1.000
 ElectronicTemperature  100 K
-MaxSCFIterations       2
+MaxSCFIterations       100
 
 %block GridCellSampling
    0.5  0.0  0.0

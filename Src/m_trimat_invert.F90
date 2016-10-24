@@ -340,6 +340,7 @@ contains
     ! Local variables
     complex(dp), pointer, contiguous :: ztmp(:), Xn(:), Cnp2(:)
     integer :: sN, sNp1, sNp1SQ, sNp2, ierr
+    character(len=50) :: cerr
 
 #ifndef TS_NOCHECKS
     if ( n < 1 .or. parts(M) <= n .or. parts(M) /= parts(Minv) ) then
@@ -389,7 +390,11 @@ contains
 
     ! Calculate Xn/Cn+1
     call zgesv(sNp1,sN,zwork,sNp1,ipiv,Xn,sNp1,ierr)
-    if ( ierr /= 0 ) call die('Error on inverting Xn/Cn+1')
+    if ( ierr /= 0 ) then
+       write(cerr,'(3(a,i0))') &
+            'Error on inverting X',n,'/C',n+1,' with error: ',ierr
+       call die(trim(cerr))
+    end if
 
   end subroutine calc_Xn_div_Cn_p1
 
@@ -411,6 +416,7 @@ contains
     ! Local variables
     complex(dp), pointer, contiguous :: ztmp(:), Yn(:), Bnm2(:)
     integer :: sN, sNm1, sNm1SQ, sNm2, ierr
+    character(len=50) :: cerr
 
 #ifndef TS_NOCHECKS
     if ( n < 2 .or. parts(M) < n .or. parts(M) /= parts(Minv) ) then
@@ -460,7 +466,11 @@ contains
 
     ! Calculate Yn/Bn-1
     call zgesv(sNm1,sN,zwork,sNm1,ipiv,Yn,sNm1,ierr)
-    if ( ierr /= 0 ) call die('Error on inverting Yn/Bn-1')
+    if ( ierr /= 0 ) then
+       write(cerr,'(3(a,i0))') &
+            'Error on inverting Y',n,'/B',n-1,' with error: ',ierr
+       call die(trim(cerr))
+    end if
 
   end subroutine calc_Yn_div_Bn_m1
 

@@ -87,14 +87,13 @@ contains
     ! If the total number of orbitals does not match, bail out
     if ( no_u /= two(1) .or. nspin /= two(2) ) then
        if ( Node == 0 ) then
-          write(*,"(a,i6,/,a)") &
-               "WARNING: Wrong number of orbitals in DM file: ",two(1), &
-               "WARNING: Falling back to atomic initialization of DM."
-          write(0,"(a,i6,/,a)") &
-               "WARNING: Wrong number of orbitals in DM file: ",two(1), &
-               "WARNING: Falling back to atomic initialization of DM."
+          write(*,"(a,2(i6,tr1),/,a,2(i6,tr1))") &
+               "WARNING: Number of orbitals in DM/expected file: ",two(1),no_u, &
+               "WARNING: Number of spin in DM/expected file: ",two(2),nspin
+          
           call io_close(iu)
-       endif
+          
+       end if
 
        found = .false.
 
