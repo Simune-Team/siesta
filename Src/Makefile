@@ -296,6 +296,13 @@ siesta_cml.o siesta_cmlsubs.o siesta_end.o siesta_forces.o      \
 siesta_init.o siesta_move.o siesta_options.o state_analysis.o   \
 state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
 
+#
+# These subordinate make processes take options from the top level.
+# In some cases they are superfluous, since they can be read
+# from the arch.make file, which is 'included' by all subordinate
+# makefiles. But in some other cases they are needed: VPATH, for
+# example, needs to be passed always.
+#
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
@@ -306,7 +313,7 @@ $(XMLPARSER):
 libmpi_f90.a: 
 	@(cd MPI ; $(MAKE) -j 1 \
                     "VPATH=$(VPATH)/MPI" \
-                    "FPP_FLAGS=$(FPP_FLAGS)" \
+                    "FPPFLAGS=$(FPPFLAGS)" \
                     "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" )
 
 #--------------------------------------------------------------
@@ -322,6 +329,7 @@ $(MS):
 	(cd MatrixSwitch/src ; \
 	 $(MAKE) -j 1\
 	            "VPATH=$(VPATH)/MatrixSwitch/src" \
+		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" all)
 #
 m_initwf.o changebasis.o m_evolve.o evolg.o evolk.o: $(MS)
