@@ -26,7 +26,7 @@ destdir=$(pwd)
 # Replicate the hierarchy of makefiles
 #
 (cd $srcdir;
-  for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile); do
+  for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile) ; do
     relpath=${i%/*}
     mkdir -p ${destdir}/$relpath
     cp $relpath/*akefile ${destdir}/$relpath

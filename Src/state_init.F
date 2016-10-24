@@ -14,25 +14,37 @@
 
       subroutine state_init( istep )
       use Kpoint_grid,       only: setup_Kpoint_grid, maxk
+      use m_os,              only: file_exist
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
       use units, only: Ang
       use sparse_matrices, only: maxnh, numh, listh, listhptr
-      use sparse_matrices, only: Dscf, Dold, Escf, Eold, Hold
-      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
-      use sparse_matrices, only: H_ldau, H_so
+      use sparse_matrices, only: Dscf, Dold, Escf, Hold
+      use sparse_matrices, only: xijo, H, S_1D, S
+      use sparse_matrices, only: H_kin_1D, H_vkb_1D
+      use sparse_matrices, only: H_ldau_2D, H_so_2D
+
+      use sparse_matrices, only: H_2D, xij_2D
+      use sparse_matrices, only: sparse_pattern
+      use sparse_matrices, only: block_dist, single_dist
+      use sparse_matrices, only: DM_2D, EDM_2D, DM_history
+
+
+      use m_sparsity_handling, only: SpOrb_to_SpAtom
+      use m_sparsity_handling, only: Sp_to_Spglobal
+      use m_pivot_methods, only: sp2graphviz
+
       use siesta_geom
-      use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
+      use atomlist,          only: iphorb, iphkb, indxua,
      &                             rmaxo, rmaxkb, rmaxv, rmaxldau,
-     &                             lastkb, lasto, superc, rmaxv, indxuo,
-     &                             no_u, no_s
-      use atomlist,          only: no_l, iza
+     &                             lastkb, lasto, superc, indxuo,
+     &                             no_u, no_s, no_l, iza
       use alloc,             only: re_alloc, de_alloc, alloc_report
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
-      use m_check_supercell, only: check_sc_factors
-      use siesta_cml,   only: cml_p, cmlStartStep, mainXML
+      use m_supercell,       only: exact_sc_ag
+      use siesta_cml,        only: cml_p, cmlStartStep, mainXML
       use zmatrix,           only: lUseZmatrix, write_zmatrix
       use m_energies,        only: Emad
       use write_subs
@@ -43,7 +55,12 @@
       use m_spin,            only: nspin, spinor_dim
       use m_spin,            only: h_spin_dim, e_spin_dim
       use m_rmaxh
-      use m_pulay,           only: init_pulay_arrays
+      ! NP new mixing
+      use m_mixing,          only: mixing_history_clear
+      use m_mixing_scf,      only: scf_mixs, scf_mix
+
+      use m_normalize_dm, only: normalize_dm
+
       use m_eo
       use m_gamma
       use files,             only: slabel
@@ -52,15 +69,31 @@
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
       use ldau_specs,        only: switch_ldau, ldau_init
 
+      use m_sparse, only : xij_offset
+
 #ifdef TRANSIESTA
-      use m_ts_options, only : onlyS
+      use m_ts_charge, only : TS_RHOCORR_METHOD, TS_RHOCORR_FERMI
+      use m_ts_options, only : BTD_method
+      use m_ts_options, only : TS_Analyze
+      use m_ts_options, only : N_Elec, Elecs, IsVolt
+      use m_ts_electype
+      use m_ts_global_vars, only: TSrun, TSmode, onlyS
       use sys, only : bye
-      use m_ts_io, only : ts_iohs
+      use m_ts_io, only : fname_TSHS, ts_write_tshs
+      use m_ts_sparse, only : ts_sparse_init
+      use m_ts_tri_init, only : ts_tri_init, ts_tri_analyze
       use files, only: slabel, label_length
 #endif
 #ifdef CDF
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
+#endif
+      use class_Sparsity
+      use class_dSpData1D
+      use class_dSpData2D
+      use class_dData2D
+#ifdef TEST_IO
+      use m_test_io
 #endif
 
       implicit none
@@ -79,92 +112,112 @@
 #ifdef TRANSIESTA
       integer                       :: ts_kscell_file(3,3) = 0
       real(dp)                      :: ts_kdispl_file(3) = 0.0
-      logical                       :: ts_gamma_scf_file = .true.
+      logical                       :: ts_Gamma_file = .true.
       character(len=label_length+6) :: fname
-      integer                       :: fnlength
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
-      real(dp),             pointer :: dummyH(:,:)
 #endif
-!------------------------------------------------------------------------- BEGIN
-      call timer( 'IterGeom', 1 )
+      type(Sparsity) :: g_Sp
+      
+      character(len=256)            :: oname
 
+      type(dData2D) :: tmp_2D
+
+
+!------------------------------------------------------------------- BEGIN
+      call timer( 'IterGeom', 1 )
+#ifdef DEBUG
+      call write_debug( '  PRE state_init' )
+#endif
       call timer( 'state_init', 1 )
 
       istp = istp + 1
 
       if (IOnode) then
-        write(6,'(/,t22,a)') repeat('=',36)
-        select case (idyn)
-        case (0)
-           if (nmove == 0) then
-              write(6,'(t25,a)') 'Single-point calculation'
-              if (cml_p) call cmlStartStep(mainXML, type='Single-Point',
-     $                        index=istp)
-           else
-              if (broyden_optim) then
-                 write(6,'(t25,a,i6)') 'Begin Broyden opt. move = ',
-     $                istep
-              else if (fire_optim) then
-                 write(6,'(t25,a,i6)') 'Begin FIRE opt. move = ',
-     $                istep
-              else
-                 write(6,'(t25,a,i6)') 'Begin CG opt. move = ',
-     $                istep
-              end if
-              if (cml_p) call cmlStartStep(mainXML, type='Geom. Optim',
-     $             index=istp)
-           endif
-
-!         Print Z-matrix coordinates
-          if (lUseZmatrix) then
-             call write_Zmatrix()
-          endif
-        case (1, 3)
-           if (iquench > 0 ) then
-              write(6,'(t25,a,i6)') 'Begin MD quenched step = ',
-     $             istep
-              if (cml_p) call cmlStartStep(mainXML, type='MD-quenched',
+      write(6,'(/,t22,a)') repeat('=',36)
+      select case (idyn)
+      case (0)
+         if (nmove == 0) then
+            write(6,'(t25,a)') 'Single-point calculation'
+            if (cml_p) call cmlStartStep(mainXML, type='Single-Point',
+     $           index=istp)
+         else
+            if (broyden_optim) then
+               write(6,'(t25,a,i6)') 'Begin Broyden opt. move = ',
+     $              istep
+            else if (fire_optim) then
+               write(6,'(t25,a,i6)') 'Begin FIRE opt. move = ',
+     $              istep
+            else
+               write(6,'(t25,a,i6)') 'Begin CG opt. move = ',
+     $              istep
+            end if
+            if (cml_p) call cmlStartStep(mainXML, type='Geom. Optim',
+     $           index=istp)
+         endif
+         
+!        Print Z-matrix coordinates
+         if (lUseZmatrix) then
+            call write_Zmatrix()
+         endif
+      case (1, 3)
+         if (iquench > 0 ) then
+            write(6,'(t25,a,i6)') 'Begin MD quenched step = ',
+     $           istep
+            if (cml_p) call cmlStartStep(mainXML, type='MD-quenched',
+     $           index=istep)
+         else
+            write(6,'(t25,a,i6)') 'Begin MD step = ',
+     $           istep
+            if (cml_p) call cmlStartStep(mainXML, type='MD',
      $             index=istep)
-           else
-              write(6,'(t25,a,i6)') 'Begin MD step = ',
-     $             istep
-              if (cml_p) call cmlStartStep(mainXML, type='MD',
-     $             index=istep)
-           endif
-        case (2,4,5)
-           write(6,'(t25,a,i6)') 'Begin MD step = ', istep
-           if (cml_p) call cmlStartStep(mainXML, type='MD', index=istep)
-        case (6)
+         endif
+      case (2,4,5)
+         write(6,'(t25,a,i6)') 'Begin MD step = ', istep
+         if (cml_p) call cmlStartStep(mainXML, type='MD', index=istep)
+      case (6)
           write(6,'(t25,a,i6)') 'Begin FC step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='FC', index=istep)
-
+          
           if (istep .eq. 0) then
             write(6,'(t25,a)') 'Undisplaced coordinates'
-          else
+         else
             iadispl = (istep-mod(istep-1,6))/6+ia1
             ix = mod(istep-1,6)+1
             ixdispl = (ix - mod(ix-1,2) +1)/2
             write(6,'(t26,a,i0,/,t26,a,i1,a,f10.6,a)') 'displace atom ',
      &           iadispl,'in direction ',ixdispl,' by', dx/Ang,' Ang'
-          endif
+         endif
+         
+      case (8)
+         write(6,'(t25,a,i6)') 'Begin Server step = ',istep
+         if (cml_p) call cmlStartStep(mainXML, type='FS', index=istep)
+         
+      case (9)
+         if ( istep == 0 ) then
+            write(6,'(t25,a,i7)')'Explicit coord. initialization'
+         else
+            write(6,'(t25,a,i7)')'Explicit coord. step =',istep
+         end if
+         if (cml_p) call cmlStartStep(mainXML, type='ECS', index=istep)
+         
+      case (10)
+         write(6,'(t25,a,i7)')'LUA coord. step =',istep
+         if (cml_p) call cmlStartStep(mainXML, type='LUA', index=istep)
+         
+      end select
+      
+      write(6,'(t22,a)') repeat('=',36)
+      
+!     Print atomic coordinates
+      call outcoor( ucell, xa, na_u, ' ', writec )
 
-        case (8)
-          write(6,'(t25,a,i6)') 'Begin Server step = ',istep
-          if (cml_p) call cmlStartStep(mainXML, type='FS', index=istep)
-
-       end select
-       write(6,'(t22,a)') repeat('=',36)
-
-!      Print atomic coordinates
-       call outcoor( ucell, xa, na_u, ' ', writec )
-
-!       Save structural information in crystallographic format
-!       (in file SystemLabel.STRUCT_OUT),
-!       canonical Zmatrix (if applicable), and CML record
-
-       call siesta_write_positions(moved=.false.)
+!     Save structural information in crystallographic format
+!     (in file SystemLabel.STRUCT_OUT),
+!     canonical Zmatrix (if applicable), and CML record
+      
+      call siesta_write_positions(moved=.false.)
        
-      endif
+      endif ! IONode
 
       ! Write the XV file for single-point calculations, so that
       ! it is there at the end for those users who rely on it
@@ -200,18 +253,18 @@
         else if (fixauxcell) then
            nsc(1:3) = nscold(1:3)
         else
-           do i=1,3
+           do i = 1 , 3
               veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-              nsc(i) = ceiling( 2 * rmaxh / veclen )
-           enddo
-           if (.not. naiveauxcell)
-     &         call check_sc_factors(ucell,nsc,2*rmaxh)
+              nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
+           end do
+           if ( .not. naiveauxcell )
+     &          call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
         endif
 
         mscell = 0.0_dp
         do i = 1, 3
            mscell(i,i) = nsc(i)
-           if (nsc(i).ne.nscold(i)) auxchanged = .true.
+           if (nsc(i) /= nscold(i)) auxchanged = .true.
            nscold(i) = nsc(i)
         enddo
 
@@ -249,12 +302,31 @@
 !     Check if any two atoms are unreasonably close
       call proximity_check(rmax)
 
+      ! Clear history of mixing parameters
+      call mixing_history_clear( scf_mixs )
+      scf_mix => scf_mixs(1)
+
+      ! Ensure sparsity pattern is empty
+      call delete(sparse_pattern)
+      ! sadly deleting the sparse pattern does not necessarily
+      ! mean that the arrays are de-associated.
+      ! Remember that the reference counter could (in MD)
+      ! be higher than 1, hence we need to create "fake"
+      ! containers and let the new<class> delete the old
+      ! sparsity pattern
+      nullify(numh,listhptr,listh)
+      allocate(numh(no_l),listhptr(no_l))
+      ! We do not need to allocate listh
+      ! that will be allocated in hsparse
+
 !     List of nonzero Hamiltonian matrix elements
 !     and, if applicable,  vectors between orbital centers
 
 !     Listh and xijo are allocated inside hsparse
 !     Note: We always generate xijo now, for COOP and other
 !           analyses.
+      call delete(xij_2D) ! as xijo will be reallocated
+      nullify(xijo)
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma,
      $                 set_xijo=.true., folding=folding1)
@@ -288,36 +360,81 @@
          call setup_ordern_indexes(no_l, no_u, Nodes)
       endif
 
-      ! Note that the resizing of Dscf is done inside new_dm below
-      call re_alloc( Dold, 1, maxnh, 1, h_spin_dim,name='Dold',
-     .     routine='sparseMat',copy=.false.,shrink=.true.)
-      call re_alloc( Eold, 1, maxnh, 1, e_spin_dim, 'Eold',
-     .     routine='sparseMat',copy=.false.,shrink=.true.)
-      call re_alloc( Escf, 1, maxnh, 1, e_spin_dim, 'Escf',
-     .     routine='sparseMat',copy=.false.,shrink=.true.)
+      ! I would like to skip this alloc/move/dealloc/attach
+      ! by allowing sparsity to have pointer targets.
+      ! However, this poses a problem with intel compilers,
+      ! as it apparently errors out when de-allocating a target pointer
+      write(oname,"(a,i0)") "sparsity for geom step ", istep
+      call newSparsity(sparse_pattern,no_l,no_u,maxnh,
+     &     numh,listhptr,listh, name = oname)
+      deallocate(numh,listhptr,listh)
+      call attach(sparse_pattern, 
+     &     n_col = numh, list_ptr = listhptr, list_col = listh )
 
-      if ( mixH ) then
-         call re_alloc(Hold,1,maxnh,1,h_spin_dim,name='Hold',
+      ! In case the user requests to create the connectivity graph
+      if ( write_GRAPHVIZ > 0 ) then
+         ! first create global sparsity pattern...
+         call Sp_to_Spglobal(block_dist, sparse_pattern,
+     &        g_Sp)
+         if ( IONode ) then
+            if ( write_GRAPHVIZ /= 2 )
+     &           call sp2graphviz(trim(slabel)//'.ORB.gv', g_Sp)
+            ! Convert to atomic 
+            if ( write_GRAPHVIZ /= 1 ) then
+               call SpOrb_to_SpAtom(single_dist,g_Sp, na_u,lasto,g_Sp)
+               call sp2graphviz(trim(slabel)//'.ATOM.gv', g_Sp)
+            end if
+         end if
+         call delete(g_Sp)
+      end if
+         
+      ! Copy over xijo array (we can first do it here... :( )
+      call newdData2D(tmp_2D,xijo,'xijo')
+      deallocate(xijo)
+      write(oname,"(a,i0)") "xijo at geom step ", istep
+      call newdSpData2D(sparse_pattern,tmp_2D,block_dist,xij_2D, 
+     &     name=oname)
+      call delete(tmp_2D) ! decrement container...
+      xijo => val(xij_2D)
+
+      write(oname,"(a,i0)") "EDM at geom step ", istep
+      call newdSpData2D(sparse_pattern,e_spin_dim,block_dist,EDM_2D,
+     &     name=oname)
+      !if (ionode) call print_type(EDM_2D)
+      Escf => val(EDM_2D)
+
+      call re_alloc(Dold,1,maxnh,1,h_spin_dim,name='Dold',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
+      if ( mixH .or. require_hamiltonian_convergence ) then
+         call re_alloc(Hold,1,maxnh,1,h_spin_dim,name='Hold',
+     .        routine='sparseMat',copy=.false.,shrink=.true.)
       end if
 
-      
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
-      call re_alloc( H, 1, maxnh, 1, h_spin_dim, 'H',
-     &              routine='sparseMat', shrink=.true., copy=.false.)
+      write(oname,"(a,i0)") "H at geom step ", istep
+      call newdSpData2D(sparse_pattern,h_spin_dim,block_dist,H_2D,
+     &                  name=oname)
+      !if (ionode) call print_type(H_2D)
+      H => val(H_2D)
 
-      call re_alloc(H_kin, 1, maxnh, 'H_kin',
-     &              routine='sparseMat', shrink=.true., copy=.false.)
-      call re_alloc(H_vkb, 1, maxnh, 'H_vkb',
-     &              routine='sparseMat', shrink=.true., copy=.false.)
+      write(oname,"(a,i0)") "H_vkb at geom step ", istep
+      call newdSpData1D(sparse_pattern,block_dist,H_vkb_1D,name=oname)
+      !if (ionode) call print_type(H_vkb_1D)
+
+      write(oname,"(a,i0)") "H_kin at geom step ", istep
+      call newdSpData1D(sparse_pattern,block_dist,H_kin_1D,name=oname)
+      !if (ionode) call print_type(H_kin_1D)
+
       if ( switch_ldau ) then
-         call re_alloc( H_ldau, 1, maxnh, 1, min(2,nspin), 'H_ldau',
-     &              routine='sparseMat', shrink=.true., copy=.false.)
+         write(oname,"(a,i0)") "H_ldau at geom step ", istep
+         call newdSpData2D(sparse_pattern,spinor_dim,
+     &        block_dist,H_ldau_2D,name=oname)
+         
          ! Initialize to 0, LDA+U may re-calculate
          !   this matrix sporadically doing the SCF.
          ! Hence initialization MUST be performed upon
          ! re-allocation.
-         H_ldau = 0._dp
+         call init_val(H_ldau_2D)
          if ( inicoor /= istep ) then
             ! Force initialization of the LDA+U
             ! when changing geometry
@@ -326,17 +443,31 @@
             ldau_init = .true.
          end if
       end if
+      
       if ( SpOrb ) then
-         call re_alloc(H_so, 1, maxnh, 3, h_spin_dim, 'H_so',
-     &              routine='sparseMat', shrink=.true., copy=.false.)
+         write(oname,"(a,i0)") "H_so at geom step ", istep
+         call newdSpData2D(sparse_pattern,h_spin_dim - 2,
+     &        block_dist,H_so_2D,name=oname)
       end if
 
-      call re_alloc(S,1,maxnh,name='S',routine='sparseMat',
-     .              copy=.false.,shrink=.true.)
+      write(oname,"(a,i0)") "S at geom step ", istep
+      call newdSpData1D(sparse_pattern,block_dist,S_1D,name=oname)
+      if (ionode) call print_type(S_1D)
+      S => val(S_1D)
 
 !     Find overlap matrix 
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
+
+      if ( Gamma ) then
+         ! Here we create the super-cell offsets
+         call re_alloc(isc_off,1,3,1,1)
+         isc_off(:,:) = 0
+      else
+         call xij_offset(ucell,nsc, na_u,xa,lasto, 
+     &        xij_2D, isc_off,
+     &        Bcast=.true.)
+      end if
 
 !
 !     Here we could also read a Hamiltonian, either to proceed to
@@ -344,28 +475,82 @@
 !
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
-      call new_dm( auxchanged, numh, listhptr, listh, Dscf)
+      call new_dm( auxchanged,DM_history,DM_2D,EDM_2D )
+      Dscf => val(DM_2D)
+      Escf => val(EDM_2D)
 
-!     Check for size of Pulay auxiliary matrices
-      call init_pulay_arrays()
+      ! Initialize energy-density matrix to zero for first call to overfsm
+#ifdef TRANSIESTA
+      ! Only part of Escf is updated in TS, so if it is put as zero here
+      ! a continuation run gives bad forces.
+      if ( .not. TSrun ) then
+         call normalize_dm( first= .true. )
+!$OMP parallel workshare default(shared)
+         Escf(:,:) = 0.0_dp
+!$OMP end parallel workshare
+      end if
+#else
+      call normalize_dm( first= .true. )
+!$OMP parallel workshare default(shared)
+      Escf(:,:) = 0.0_dp
+!$OMP end parallel workshare
+#endif /* TRANSIESTA */
+
+#ifdef TEST_IO
+      ! We test the io-performance here
+      call time_io(nspin,H_2D)
+#endif
 
 #ifdef TRANSIESTA
-!     If onlyS, Save overlap matrix and exit                       ! MPN
-      if (onlyS) then                                              ! MPN    
-        fname = trim(slabel) // '.onlyS'
-        fnlength = len_trim(fname)
-        nullify(dummyH)
-        call re_alloc( dummyH, 1, maxnh, 1, 1, 'dummyH', 'state_init' )
+!     If onlyS, Save overlap matrix and exit
+      if ( onlyS ) then
+         fname = fname_TSHS(slabel, onlyS = .true. )
+         ! We include H as S, well-knowing that we only write one of
+         ! them, there is no need to allocate space for no reason!
+         call ts_write_tshs(fname, 
+     &        .true., Gamma, ts_Gamma_file,
+     &        ucell, nsc, isc_off, na_u, no_s, nspin,
+     &        ts_kscell_file, ts_kdispl_file,
+     &        xa, lasto, 
+     &        H_2D, S_1D, indxuo, 
+     &        dummyEf, dummyQtot, Temp,0,0)
+         call bye( 'Save overlap matrix and exit' ) ! Exit siesta
+         
+      endif 
 
-        call ts_iohs('write   ', gamma, .true., no_u, no_s, 
-     &       1, indxuo, maxnh, numh, listhptr, listh, dummyH, 
-     &       S, dummyqtot, temp, xijo, fnlength, fname, na_u, 
-     &       lasto, isa, dummyef, 
-     &       ucell, ts_kscell_file, ts_kdispl_file,            
-     &       ts_gamma_scf_file, xa, 0, 0 )
-        call de_alloc( dummyH, 'dummyH', 'state_init' )
-        call bye( 'Save overlap matrix and exit' ) ! Exit siesta   ! MPN 
-      endif                                                        ! MPN    
+      ! When the user requests to only do an analyzation, we can call
+      ! appropriate routines and quit
+      if ( TS_Analyze ) then
+
+         ! Force the creation of the full sparsity pattern
+         call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
+     &        ucell, nsc, na_u, xa, lasto, block_dist, sparse_pattern, 
+     &        Gamma, isc_off)
+
+         ! create the tri-diagonal matrix
+         call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
+     &        Elecs, ucell, na_u, lasto, nsc, isc_off,
+     &        BTD_method )
+         
+         ! Bye also waits for all processors
+         call bye('transiesta analyzation performed')
+         
+      end if
+
+      ! In case the user is requesting a Fermi-correction
+      ! we need to delete the TS_FERMI file after each iteration
+      if ( TSmode .and. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI
+     &     .and. IONode ) then
+          ! Delete the TS_FERMI file (enables
+          ! reading it in and improve on the convergence)
+          if ( file_exist('TS_FERMI') ) then
+             i = 23455 ! this should just not be used any were...
+             ! Delete the file...
+             open(unit=i,file='TS_FERMI')
+             close(i,status='delete')
+          end if
+       end if
+      
 #endif /* TRANSIESTA */
 
 #ifdef CDF

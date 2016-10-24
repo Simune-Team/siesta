@@ -204,8 +204,11 @@ C     Find reciprocal mesh-cell vectors (not multiplied by 2*pi)
       ne(:) = ne(:) + 1
 
 C     Find sub-points
-      isp = 0
+!$OMP parallel default(shared), private(i1,i2,i3,i,isp)
+
+!$OMP do
       do i3 = 0, nsm-1
+        isp = i3 * nsm ** 2
         do i2 = 0, nsm-1
           do i1 = 0, nsm-1
             isp = isp + 1
@@ -217,9 +220,13 @@ C     Find sub-points
           enddo
         enddo
       enddo
+!$OMP end do
 
 ! Find number of points within rmax (orbital points)
+!$OMP single ! Only used for OpenMP
       mop = 0
+!$OMP end single 
+!$OMP do private(dxp,within,dx,r), reduction(+:mop)
       do i3 = -ne(3), ne(3)    ! Loop over neighbor (super) points
         do i2 = -ne(2), ne(2)
           do i1 = -ne(1), ne(1)
@@ -242,6 +249,9 @@ C     Find sub-points
           enddo ! i1
         enddo ! i2
       enddo ! i3
+!$OMP end do nowait
+
+!$OMP end parallel
 
 C     Create extended mesh arrays for the first data distribution
       call setupExtMesh( UNIFORM, rmax )

@@ -37,8 +37,11 @@ module m_spin
   real(dp), save, public :: qSpiral(3) = 0._dp
 
   public :: init_spin
+
   public :: print_spin
   public :: init_spiral
+
+  public :: fname_spin
 
 contains
   
@@ -164,6 +167,7 @@ contains
 
   end subroutine init_spin
 
+
   ! Print out spin-configuration options
   subroutine print_spin( )
     use parallel, only: IONode
@@ -182,10 +186,10 @@ contains
        opt = 'non-polarized'
     end if
 
-    write(*,'(2a)')  'redata: Spin configuration               = ',trim(opt)
-    write(*,'(a,i0)')'redata: Number of spin components        = ',h_spin_dim
-    write(*,'(a,l1)')'redata: Time-Reversal Symmetry           = ',TRSym
-    write(*,'(a,l1)')'redata: Spin-spiral                      = ',Spiral
+    write(*,'(a,t53,''= '',a)') 'redata: Spin configuration',trim(opt)
+    write(*,'(a,t53,''= '',i0)')'redata: Number of spin components',h_spin_dim
+    write(*,'(a,t53,''= '',l1)')'redata: Time-Reversal Symmetry',TRSym
+    write(*,'(a,t53,''= '',l1)')'redata: Spin-spiral',Spiral
     if ( Spiral .and. .not. NonCol ) then
        write(*,'(a)') 'redata: WARNING: spin-spiral requires non-collinear spin'
     end if
@@ -246,7 +250,32 @@ contains
        call die('init_spiral: ERROR: ReciprocalCoordinates must be' // &
             ' ''Cubic'' or ''ReciprocalLatticeVectors''')
     end if
-
   end subroutine init_spiral
+
+  function fname_spin(nspin,ispin,slabel,suffix,basename) result(fname)
+    integer, intent(in) :: nspin, ispin
+    character(len=*), intent(in), optional :: slabel, suffix, basename
+    character(len=200) :: fname
+    
+    if ( present(basename) ) then
+       if ( nspin == 1 ) then
+          fname = trim(basename)
+       else
+          if ( ispin == 1 ) fname = trim(basename)//'_UP'
+          if ( ispin == 2 ) fname = trim(basename)//'_DN'
+       end if
+    else
+       if ( .not. &
+            ( present(slabel) .and. present(suffix) ) ) &
+            call die('Error in filename input')
+       if ( nspin == 1 ) then
+          fname = trim(slabel)//'.'//trim(suffix)
+       else
+          if ( ispin == 1 ) fname = trim(slabel)//'.'//trim(suffix)//'_UP'
+          if ( ispin == 2 ) fname = trim(slabel)//'.'//trim(suffix)//'_DN'
+       end if
+    end if
+    
+  end function fname_spin
   
 end module m_spin

@@ -21,6 +21,7 @@
       use siesta_options
       use timer_options,      only: use_tree_timer
       use sparse_matrices
+      use class_Fstack_Pair_Geometry_dSpData2D, only: new, max_size
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
      &                              iza, rmaxo, zvaltot, superc,
@@ -38,7 +39,7 @@
       use m_iostruct,         only: write_struct, read_struct
       use zmatrix,            only: lUseZmatrix
       use zmatrix,            only: write_canonical_ucell_and_Zmatrix
-      use m_check_supercell,  only: check_sc_factors
+      use m_supercell,        only: exact_sc_ag
       use files,              only: slabel
       use siesta_cmlsubs,     only: siesta_cml_init
       use m_timestamp,        only: timestamp
@@ -52,10 +53,13 @@
       use m_forces 
       use m_eo
       use m_gamma
+      use m_fixed,            only: init_fixed, print_fixed
       use m_ioxv,             only: xv_file_read
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
+      use m_new_dm,           only: get_allowed_history_depth
+      use m_object_debug,     only: set_object_debug_level
 #ifdef DEBUG_XC
       USE siestaXC, only: setDebugOutputUnit
 #endif /* DEBUG_XC */
@@ -69,26 +73,54 @@
       use m_ts_init, only : ts_init
 #endif
 
+#ifdef SIESTA__FLOOK
+      use siesta_dicts, only : dict_populate
+      use flook_siesta, only : slua_init, slua_call, LUA_INITIALIZE
+#endif
+
+#ifdef NCDF_4
+      use nf_ncdf
+#endif
+#ifdef _OPENMP
+      use omp_lib, only : omp_get_num_threads, omp_get_schedule
+      use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
+      use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+#else
+!$    use omp_lib, only : omp_get_num_threads, omp_get_schedule
+!$    use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
+!$    use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+#endif
+
       implicit none
+
 #ifdef MPI
       logical :: initialized
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
-      integer :: i, is, ispin
+      integer :: i, is, ispin, n_dm_items
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
 
       external :: read_options
-      
-!------------------------------------------------------------------------- BEGIN
+
+!-------------------------------------------------------------------------BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
 ! of a driver program that may have initialized MPI already
 #ifdef MPI
       call MPI_Initialized( initialized, MPIerror )
       if (.not.initialized) then
-        call MPI_Init( MPIerror )
+#ifdef _OPENMP
+         call MPI_Init_Thread(MPI_Thread_Funneled, i, MPIerror)
+         if ( MPI_Thread_Funneled /= i ) then
+            ! the requested threading level cannot be asserted
+            ! Notify the user
+           write(*,'(a)') '!!! Could not assert funneled threads'
+         end if
+#else
+         call MPI_Init( MPIerror )
+#endif
 #ifdef _TRACE_
         call MPItrace_shutdown( )
 #endif
@@ -111,30 +143,61 @@
       call write_debug( 'PRE siesta_init' )
 #endif
       IOnode = (Node .eq. 0)
+#ifdef NCDF_4
+      call ncdf_IONode( IONode )
+#endif
 
 !     Print version information
       if (IOnode) then
         call prversion()
 #ifdef MPI
         if (Nodes.gt.1) then
-          write(6,'(/,a,i4,a)')
+          write(6,'(/,a,i0,a)')
      &        '* Running on ', Nodes, ' nodes in parallel'
         else
-          write(6,'(/,a,i4,a)')
-     &        '* Running in serial mode with MPI'
+          write(6,'(/,a)') '* Running in serial mode with MPI'
         endif
 #else
-        write(6,'(/,a,i4,a)')
-     &        '* Running in serial mode'
+        write(6,'(/,a)') '* Running in serial mode'
 #endif
+!$OMP parallel default(shared)
+!$OMP master
+!$    i = omp_get_num_threads()
+!$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
+!$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
+#ifdef _OPENMP
+!$    write(*,'(a,i0)') '* OpenMP version ', _OPENMP
+#endif
+!$    call omp_get_schedule(i,is)
+!$    select case ( i )
+!$    case ( OMP_SCHED_STATIC ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule STATIC, chunks ',is
+!$    case ( OMP_SCHED_DYNAMIC ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    if ( is == 1 ) then
+!$     ! this is the default scheduling, probably the user
+!$     ! have not set the value, predefine it to 32
+!$     is = 32
+!$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    end if
+!$    case ( OMP_SCHED_GUIDED ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',is
+!$    case ( OMP_SCHED_AUTO ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule AUTO, chunks ',is
+!$    case default
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',is
+!$    end select
+!$OMP end master
+!$OMP end parallel
+!$    call omp_set_schedule(i,is)
          call timestamp('Start of run')
          call wallclock('Start of run')
       endif
 
-
+!
 !     Nullify arrays
       nullify(Haux,Saux,psi)
-      nullify(Dscf,Dold,Eold,Escf)
+      nullify(Dscf,Dold,Escf)
       nullify(listh)
       nullify(H,S)
       nullify(xijo)
@@ -149,10 +212,11 @@
       Emm     = 0.0_dp
       Entropy = 0.0_dp
       FreeE   = 0.0_dp
+      Ef      = 0.0_dp
       Eldau   = 0.0_dp
       DEldau  = 0.0_dp
 
-
+      
 #ifdef DEBUG_XC
 ! Set output file unit for debug info
       call setDebugOutputUnit()
@@ -160,7 +224,17 @@
 
 !     Initialise read .................................................
       call reinit( sname )
-
+!
+!     Set object debugging level
+!
+      call set_object_debug_level(0)
+      i = fdf_get('DebugObjects.Node',0)
+      if (Node==i) then
+         if (fdf_get('DebugObjects',.false.)) then
+            call set_object_debug_level(1)
+         endif
+      endif
+         
 !     Initialize CML (relies on reinit)
       call siesta_cml_init( )
 
@@ -243,7 +317,9 @@
       if (struct_only) then
          call bye('End of structure processing')
       endif
-      
+
+!-------------- Now we have the initial geometry
+!
 !     End of Initial Structure Processing
       if (Node.eq.0) then
         write(6,'(/,a,20("*"),a,28("*"))')
@@ -264,6 +340,11 @@
 
 !     Read simulation data
       call read_options( na_u, ns, nspin )
+
+      call get_allowed_history_depth(n_dm_items)
+      call new(DM_history,n_dm_items,"(DM history stack)")
+      if (ionode) print "(a,i0)", "Size of DM history Fstack: ",
+     $                            max_size(DM_history)
 
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
@@ -351,10 +432,6 @@
         gamma = gamma .and. gamma_pdos
       endif
 
-#ifdef TRANSIESTA
-      call ts_init(nspin,ucell,na_u,xa)
-#endif
-
       nullify(eo,qo)
       call re_alloc(eo, 1, no_u, 1, spinor_dim, 1, maxk, 'eo', 
      &              'siesta_init')
@@ -384,13 +461,14 @@
       if (gamma) then
         nsc(1:3) = 1
       else
-        do i=1,3
+        ! Discussion with Jose-Soler we get this size ! NPA
+        do i = 1 , 3
           veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-          nsc(i) = ceiling( 2 * rmaxh / veclen )
-        enddo
-        if (.not. naiveauxcell)
-     &    call check_sc_factors( ucell, nsc, 2*rmaxh )
-      endif
+          nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
+        end do
+        if ( .not. naiveauxcell ) 
+     &       call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
+      end if
 
       mscell = 0.0_dp
       do i = 1, 3
@@ -418,6 +496,19 @@
       else if (idyn .eq. 8) then
         inicoor = 0
         fincoor = huge(1)
+#ifdef NCDF_4
+      else if (idyn == 9) then
+         if ( IONode ) then
+            write(*,'(/,a)')'expcoord: '//repeat('*',69)
+            write(*,'(a,i0)')
+     &           'expcoord: Currently reached coordinate step = ',
+     &           inicoor
+            write(*,'(a,i0)')
+     &           'expcoord: Final coordinate step = ',
+     &           fincoor
+            write(*,'(a,/)')'expcoord: '//repeat('*',69)
+         end if
+#endif
       else
         call die( 'siesta: wrong idyn' )
       endif
@@ -427,6 +518,28 @@
      &    call vmb( na_u, tempinit, amass, xa, isa, va )
 
       istp = 0
+
+      ! initialize the fixed positions (we need to check whether the 
+      ! fixed positions make sense)
+      call init_fixed( na_u , isa, iza )
+      call print_fixed( )
+      
+#ifdef TRANSIESTA
+      call ts_init(nspin,ucell,na_u,xa,lasto,no_u,inicoor,fincoor)
+#endif
+
+#ifdef SIESTA__FLOOK
+
+      ! Populate dictionaries
+      call dict_populate()
+
+      ! Initialize LUA handle
+      call slua_init(LUA)
+
+      ! Call a preprocess step right after initialization
+      call slua_call(LUA,LUA_INITIALIZE)
+
+#endif
 
 !     Output memory use before main loop
 !!      call printmemory( 6, 0 )
@@ -439,6 +552,7 @@
       call write_debug( 'POS siesta_init' )
 #endif
 !--------------------------------------------------------------------------- END
+      
       END subroutine siesta_init
 
       END MODULE m_siesta_init

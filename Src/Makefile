@@ -8,20 +8,26 @@
 # See Docs/Contributors.txt for a list of contributors.
 #
 #
-# Makefile for siesta
+# Makefile for SIESTA
 #
 # Remove implicit rules (including for Modula-2, which just confuses matters)
 .SUFFIXES:
-.SUFFIXES: .f .F .o .a  .f90 .F90 .c
-#
+.SUFFIXES: .f .F .f90 .F90 .o .c .a
+
 VPATH=.
 MAIN_OBJDIR=.
-#
+
+# Default compiler variables
+AR ?= ar
+RANLIB ?= ranlib
+
 default: what siesta  # fsiesta_pipes.o fsiesta_sockets.o libSiestaForces.a
-#
+
+lib: libSiestaXC.a libfdf.a libSiestaForces.a
+
 configure: configure.ac aclocal.m4
-	autoconf ${<D}/configure.ac
-#
+	@autoconf ${<D}/configure.ac
+
 M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAGS.m4  \
  m4/ACX_MPI.m4             m4/TW_CHECK_FC_TR15580.m4  m4/TW_FC_ID.m4        \
  m4/fortran.m4             m4/TW_CHECK_FC_TR15581.m4  m4/TW_FIND_FC_BLAS.m4 \
@@ -29,21 +35,21 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
  m4/TW_CHECK_FC_90.m4      m4/TW_FC_CHECK_ABORT.m4    m4/TW_PATH_NETCDF.m4  \
  m4/TW_CHECK_FC_95.m4      m4/TW_FC_CHECK_DCFUNS.m4   m4/TW_TRY_DC_LAPACK.m4\
  m4/TW_CHECK_FC_FPP_90.m4  m4/TW_FC_CHECK_FLUSH.m4    m4/TW_FC_KINDS.m4
-#
+
 aclocal.m4: $(M4_FILES)
-	cat ${<D}/$(M4_FILES)  > aclocal.m4
+	cat ${<D}/$(M4_FILES) > aclocal.m4
+
 dep:
-	@if [ $(VPATH) = "." ] ; then \
-	sfmakedepend --depend=obj  --modext=o \
+	-if [ $(VPATH) = "." ] ; then \
+	sfmakedepend --depend=obj --modext=o \
                               *.f *.f90 *.F *.F90 ; \
         else \
-	sfmakedepend --depend=obj  --modext=o \
+	sfmakedepend --depend=obj --modext=o \
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 ; \
         fi
-	@sed "/^siesta_cmlsubs.o:/s/version.o//;\
-		/^m_ts_io.o:/s/m_tbt_kpoints.o//"  Makefile > tmp.Makefile
-	@mv tmp.Makefile Makefile
-#
+	@sed -i -e "/^siesta_cmlsubs.o:/s/version.o//" Makefile
+	@sed -i -e 's/\.T90\.o:/.o:/g' Makefile
+
 ARCH_MAKE?=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
@@ -63,13 +69,12 @@ INCFLAGS:= $(NETCDF_INCFLAGS)  $(PSML_INCFLAGS) $(NCPS_INCFLAGS) \
 # This is so because inter-procedural compilation should NOT be performed in
 # libraries (it removes names when a routine can be fully moved into others)
 IPO_FLAG?= -ipo
-#
+
 # Uncomment the following line for debugging support
-#
 ##FFLAGS=$(FFLAGS_DEBUG)
-#
+
 .PHONY: .siesta .transiesta what version
-#
+
 what:
 	@echo
 	@if [ "$(VPATH)" = . ]; then \
@@ -83,11 +88,11 @@ what:
 	@echo
 	@echo "Hit ^C to abort..."
 	@sleep 2
-#
+
+
 SYSOBJ=$(SYS).o pxf.o sockets.o fsockets.o # includes C socket library and F90 interface
-#
+
 # Note that machine-specific files are now in top Src directory.
-#
 MAIN_OBJ = siesta.o
 
 OBJS =  automatic_cell.o atom_options.o \
@@ -99,13 +104,14 @@ OBJS =  automatic_cell.o atom_options.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diag3g.o diag3k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o doping_uniform.o dot.o  \
 	m_efield.o egandd.o ener3.o ener3lomem.o errorf.o extrapolon.o \
-	fixed.o interpolation.o gradient.o gradientlomem.o grdsam.o \
+	m_fixed.o interpolation.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
 	iodmhs_netcdf.o iogrid_netcdf.o iolwf.o iozm.o ipack.o iopipes.o iosockets.o \
 	iowfs_netcdf.o kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
 	madelung.o mesh.o meshphi.o meshdscf.o memory.o meshsubs.o metaforce.o \
-        m_check_supercell.o m_fft_gpfa.o mulliken.o minvec.o m_pulay.o naefs.o \
-	new_dm.o normalize_dm.o ordern.o outcell.o outcoor.o \
+        m_supercell.o mulliken.o minvec.o naefs.o \
+	m_new_dm.o normalize_dm.o ordern.o outcell.o outcoor.o \
+	m_fft_gpfa.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	projected_DOS.o propor.o m_partial_charges.o \
 	randomg.o reclat.o redcel.o \
@@ -129,7 +135,7 @@ OBJS =  automatic_cell.o atom_options.o \
         cart2frac.o obc.o \
         precision.o sys.o m_cell.o files.o \
         spatial.o parallel.o parallelsubs.o  parsing.o chemical.o atom.o atmparams.o \
-        m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
+        m_mpi_utils.o fdf_extra.o m_fdf_global.o m_iorho.o  \
         atmfuncs.o listsc.o memoryinfo.o m_memory.o sorting.o \
         atomlist.o atm_types.o old_atmfuncs.o radial.o \
         alloc.o spher_harm.o periodic_table.o version.o timestamp.o \
@@ -142,18 +148,18 @@ OBJS =  automatic_cell.o atom_options.o \
         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o \
         molecularmechanics.o zm_broyden_optim.o \
         cell_broyden_optim.o remove_intramol_pressure.o \
-        m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
+        m_ntm.o m_dipol.o m_kinetic.o m_rmaxh.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o m_fire.o setup_H0.o \
         get_kpoints_scale.o get_target_stress.o fire_optim.o zm_fire_optim.o \
         cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
         pdos2g.o pdos2k.o pdos3g.o pdos3k.o spinorbit.o moments.o \
 	fsiesta_mpi.o \
         final_H_f_stress.o \
-        debugmpi.o qsort.o \
+        debugmpi.o qsort.o save_density_matrix.o \
         m_dscfcomm.o schecomm.o moremeshsubs.o \
-        domain_decom.o printmatrix.o  mmio.o pspltm1.o lenstr.o \
+        domain_decom.o printmatrix.o mmio.o pspltm1.o lenstr.o \
         setup_ordern_indexes.o\
-        m_iodm.o m_sparse.o \
+        m_iodm.o \
 	m_filter.o \
         m_io.o \
 	m_timer.o \
@@ -163,127 +169,245 @@ OBJS =  automatic_cell.o atom_options.o \
         bsc_xcmod.o bsc_cellxc.o xc.o \
 	vacuum_level.o \
 	write_orb_indx.o \
-	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
-        die.o m_dminim.o m_zminim.o m_svd.o compute_max_diff.o \
-        save_density_matrix.o \
-        m_rhog.o rhofft.o m_diis.o compute_energies.o \
-        class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o\
-        m_target_stress.o\
         psml_die.o\
-	matel_registry.o register_rfs.o new_matel.o\
-	m_trialorbitalclass.o siesta2wannier90.o m_planewavematrixvar.o \
+	matel_registry.o register_rfs.o new_matel.o \
+	kpoint_convert.o \
+	m_dminim.o m_zminim.o compute_max_diff.o \
+	die.o m_svd.o m_target_stress.o \
+        m_spin_orbit_potentials.o
+
+# Mixing algorithms
+OBJS += m_mixing.o m_mixing_scf.o
+
+# Wannier90 interface
+OBJS += m_trialorbitalclass.o siesta2wannier90.o m_planewavematrixvar.o \
 	delk.o m_planewavematrix.o m_digest_nnkp.o broadcast_projections.o \
 	compute_pw_matrix.o m_writedelk.o mmn.o m_noccbands.o amn.o \
-	m_overkkneig.o write_inp_wannier.o diagonalizeHk.o m_orderbands.o \
-        m_spin_orbit_potentials.o
+	m_overkkneig.o write_inp_wannier.o diagonalizeHk.o m_orderbands.o
+
+# class Objects
+OBJS += class_OrbitalDistribution.o \
+	class_Sparsity.o \
+	class_Data1D.o class_Data2D.o \
+	class_SpData1D.o class_SpData2D.o \
+        restructSpData2D.o extrapolateSpData2D.o \
+        class_Geometry.o \
+	class_Fstack_Data1D.o \
+	class_Pair_Data1D.o \
+	class_Fstack_Pair_Data1D.o \
+	class_Pair_Geometry_SpData2D.o \
+	class_Fstack_Pair_Geometry_SpData2D.o \
+	class_Pair_SpData1D.o \
+	class_Fstack_Pair_SpData1D.o \
+	class_TriMat.o m_trimat_invert.o \
+        m_uuid.o object_debug.o
+
+# As the classes are based on inputs we force the dependency to alloc
+class_Sparsity.o class_Data1D.o class_Data2D.o class_TriMat.o: alloc.o
+
+OBJS += m_rhog.o rhofft.o m_diis.o compute_energies.o
+
+# Generic modules
+OBJS += m_char.o m_os.o
+OBJS += intrinsic_missing.o geom_helper.o m_sparse.o
+OBJS += m_handle_sparse.o m_mesh_node.o
+OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
+OBJS += m_gauss_quad.o
+OBJS += m_gauss_fermi_inf.o m_gauss_fermi_30.o m_gauss_fermi_28.o
+OBJS += m_gauss_fermi_26.o m_gauss_fermi_24.o m_gauss_fermi_22.o
+OBJS += m_gauss_fermi_20.o m_gauss_fermi_19.o m_gauss_fermi_18.o
+OBJS += m_gauss_fermi_17.o
+OBJS += m_integrate.o m_interpolate.o m_mat_invert.o m_monitor.o
+OBJS += m_iterator.o m_pivot_array.o
+
+# Pivot (of sparsity pattern) routines
+OBJS += m_pivot.o m_pivot_methods.o
+
+# Super-cell calculations/information modules
+OBJS += atom_graph.o
+
+# Geometry modules
+OBJS += m_geom_aux.o m_geom_objects.o
+OBJS += m_geom_box.o m_geom_coord.o m_geom_square.o m_geom_plane.o
+
+# Charge and Hartree Geometries
+OBJS += m_charge_add.o m_hartree_add.o
+
+# New io-routines
+OBJS += m_io_s.o
+ifneq (,$(findstring -DTEST_IO,$(FPPFLAGS)))
+OBJS += m_test_io.o m_matio.o
+endif
+
+# Region objects
+OBJS += m_region.o m_sparsity_handling.o
+
+# IO-modules
+OBJS += m_ncdf_siesta.o m_ncdf_io.o m_exp_coord.o
+
+# Lua interface
+OBJS += flook_siesta.o siesta_dicts.o
 
 # Add citation package
 OBJS += m_cite.o
 
 #--------------------------------------------------------------
 
-INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
-#
+
+
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
-#
+
 NCPS=ncps/src/libncps.a
 $(NCPS): $(PSML)
-	(cd ncps/src ; $(MAKE) VPATH="$(VPATH)/ncps/src" \
+	(cd ncps/src ; $(MAKE) -j 1 VPATH="$(VPATH)/ncps/src" \
 	ARCH_MAKE=$(ARCH_MAKE) \
 	"PSML_INCFLAGS=$(PSML_INCFLAGS)" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
-#
+
 #--------------------------------------------------------------
 PSOP=psoplib/src/libpsop.a
 $(PSOP): 
-	(cd psoplib/src ; $(MAKE) VPATH="$(VPATH)/psoplib/src" \
+	(cd psoplib/src ; $(MAKE) -j 1 VPATH="$(VPATH)/psoplib/src" \
 	ARCH_MAKE=$(ARCH_MAKE) \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
-#
+
 #--------------------------------------------------------------
-XC=libSiestaXC.a
-$(XC): 
-	(cd SiestaXC ; $(MAKE) \
+libmpi_f90.a: 
+	@(cd MPI ; $(MAKE) -j 1 \
+                    "VPATH=$(VPATH)/MPI" \
 	MAIN_OBJDIR=$(MAIN_OBJDIR) \
-                    "VPATH_ROOT=$(VPATH)"  \
-	            "INCFLAGS=-I../MPI" \
-		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
+                    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" )
+
 #--------------------------------------------------------------
 FDF=libfdf.a
-$(FDF): 
-	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" \
+$(FDF): $(MPI_INTERFACE)
+	(cd fdf ; $(MAKE) -j 1 "VPATH=$(VPATH)/fdf" \
 	MAIN_OBJDIR=$(MAIN_OBJDIR) \
 		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
+
+#--------------------------------------------------------------
+XC=libSiestaXC.a
+$(XC): $(FDF)
+	(cd SiestaXC ; $(MAKE) -j 1 \
+                    "VPATH_ROOT=$(VPATH)"  \
+	            "INCFLAGS=-I../MPI" \
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
+
+# In case the user requests compilation of flook
+# we force the compilation of the libvardict
+ifdef USE_FLOOK
+FPPFLAGS += -DFLOOK
+COMP_LIBS += libvardict.a
+endif
+
+#######################
+#  TS-TBT libs:
 #
-# Routines using fdf calls. Woefully incomplete, but the $(FDF) target is made first.
-#
-dhscf.o iolwf.o  grdsam.o : $(FDF)
+# Libraries used by transiesta and tbtrans
+# They are currently supplied by this distribution
+# All rights reserved for the author of these libraries.
+# Author: Nick Papior Andersen
+
+# This library can be found at:
+#  https://github.com/zerothi/fdict
+FDICT=libvardict.a
+$(FDICT): 
+	(cd fdict ; $(MAKE) -j 1 "VPATH=$(VPATH)/fdict" \
+	            "FC=$(FC_SERIAL)" \
+		    "ARCH_MAKE=$(PWD)/arch.make" \
+		    "FPPFLAGS=$(FPPFLAGS) -UMPI" \
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
+	@cp -p fdict/*.*d ./
+	cp fdict/$(FDICT) ./
+
+# This library can be found at:
+#  https://github.com/zerothi/ncdf
+NCDF=libncdf.a
+$(NCDF): $(FDICT)
+	(cd NCDF ; $(MAKE) -j 1 "VPATH=$(VPATH)/NCDF" \
+		"LIBVARDICT=$(FDICT)" \
+		"DIR_FDICT=$(VPATH)/fdict" \
+		"ARCH_MAKE=$(PWD)/arch.make" \
+		"FPPFLAGS=$(FPPFLAGS)" \
+		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
+	@cp -p NCDF/src/*.*d ./
+	cp NCDF/src/$(NCDF) ./
+
+#######################
+
+
+# Routines using fdf calls.
+# Woefully incomplete, but the $(FDF) target is made first.
+dhscf.o iolwf.o grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
 readsp.o eggbox.o iopipes.o : $(FDF)
-#
 atom.o basis_io.o basis_specs.o: $(FDF)
 ldau_specs.o: $(FDF)
-#
+
+
+
 # C/Fortran sockets library 
 #
 # As it stands, it will use the CC in the default rules
 # Define CC (and maybe CFLAGS) in arch.make for full control
 #
-sockets.o:  sockets.c   # Will be picked-up in the VPATH
+sockets.o: sockets.c   # Will be picked-up in the VPATH
 	$(CC) -c $(CFLAGS) $<
-#
+
+
+# Create all objects
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
-#
-# Interfaces to libraries
-#
-libmpi_f90.a: 
-	@(cd MPI ; $(MAKE) \
-                    "VPATH=$(VPATH)/MPI" \
-                    "FPP_FLAGS=$(FPP_FLAGS)" \
-                    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" )
-#
+
+# All objects require the XC library (in theory)
+# In practice they do not but it greatly simplifies the logic
+# here.
+# This will setup the correct compilation sequence as
+# XC => FDF => MPI
+$(ALL_OBJS): $(XC) $(COMP_LIBS)
+
 # Libraries that might need to be compiled
-#
+
 libblas.a: Libs/blas.f
 	@echo "==> Compiling libblas.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libblas.a)
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libblas.a)
 liblapack.a: Libs/lapack.f
 	@echo "==> Compiling liblapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" liblapack.a)
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" liblapack.a)
 linalg.a: Libs/blas.f Libs/lapack.f
 	@echo "==> Compiling linalg.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" linalg.a)
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" linalg.a)
 dc_lapack.a:  Libs/dc_lapack.f
 	@echo "==> Compiling dc_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" dc_lapack.a)
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" dc_lapack.a)
 zgesv_lapack.a:  Libs/zgesv_lapack.f
 	@echo "==> Compiling zgesv_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" zgesv_lapack.a)
-#
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" zgesv_lapack.a)
 essl_lapack.a: Libs/essl_lapack.f
 	@echo "==> Compiling essl_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
-#
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
 
-version: version.F90 $(FoX_built)
+#version: version.F90
+.PHONY: version.o
+version.o: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
 		s'SIESTA_VERSION'$$(cat ${<D}/../version.info)'g;\
-		s'FPPFLAGS'$(FPPFLAGS) $(DEFS)'g" $<  > tmp.F90
+		s'LIBS'$(LIBS)'g;\
+		s'FPPFLAGS'$(FPPFLAGS)'g" $<  > tmp.F90
 	@awk '{if (length>80) { cur=78; \
 		printf "%s&\n",substr($$0,0,78); \
 		while(length-cur>78){ cur=cur+76 ; \
 		printf "&%s&\n",substr($$0,cur-76,76) \
 		} printf "&%s\n",substr($$0,cur)} else { print $$0 }}' tmp.F90 > compinfo.F90
-	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" "DEFS=$(DEFS)" compinfo.o)
+	$(MAKE) "FPPFLAGS=$(FPPFLAGS)" compinfo.o
 	@mv compinfo.o version.o
 	@echo
-#
+
 check-siesta:
 	@if [ -f .transiesta ]; then \
               echo "** You were building transiesta in this directory." ;\
@@ -291,7 +415,7 @@ check-siesta:
               false ;\
 	fi
 	@touch .siesta
-#
+
 siesta: check-siesta what version \
                 $(MPI_INTERFACE) $(FDF) $(XC) \
 		$(NCPS) $(PSOP) $(PSML)\
@@ -306,23 +430,48 @@ siesta: check-siesta what version \
 	@echo "PSML-related libs: $(PSML_LIBS)"
 	@echo "XMLf90 libs: $(XMLF90_LIBS)"
 	@echo "--- end of reference section "
-#
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
-	ar $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)
+	$(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)
 	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
-            ar $(ARFLAGS_EXTRA) cru libSiestaForces.a MPI/*.o ; fi
+            $(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a MPI/*.o ; fi
 	-$(RANLIB) libSiestaForces.a
-#
+
 #----------------------------------------------------------------------------
+# TranSIESTA objects needed for siesta
+OBJS += m_ts_io.o
+
 # TranSIESTA...
-#
-TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
-         m_ts_iodm.o m_ts_io.o m_ts_scattering.o m_ts_contour.o \
-         m_ts_electrode.o m_ts_in_siesta.o m_ts_voltage.o m_ts_gf.o \
-	 m_ts_cctype.o ts_init.o ts_show_regions.o
-#
-transiesta: FPPFLAGS+=$(DEFS_PREFIX)-DTRANSIESTA 
-transiesta: DEFS+=$(DEFS_PREFIX)-DTRANSIESTA
+TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux.o m_ts_kpoints.o \
+         m_ts_iodm.o \
+         m_ts_electrode.o m_ts_gf.o \
+	 m_ts_cctype.o ts_init.o ts_show_regions.o m_ts_electype.o \
+	 m_ts_method.o m_ts_elec_se.o \
+	 m_ts_debug.o m_ts_tdir.o \
+	 m_ts_chem_pot.o m_transiesta.o m_ts_hartree.o m_ts_voltage.o
+
+# contour objects
+TS_OBJS += m_ts_contour_eq.o m_ts_contour_neq.o m_ts_io_ctype.o \
+	   m_ts_contour.o m_ts_io_contour.o
+
+# Transiesta objects (new memory reduced objects)
+TS_OBJS += m_ts_rgn2trimat.o \
+	m_ts_dm_update.o m_ts_weight.o \
+	m_ts_sparse.o m_ts_sparse_helper.o \
+	m_ts_charge.o m_ts_pivot.o
+
+# Sparse full-matrix method
+TS_OBJS += m_ts_fullg.o m_ts_fullk.o m_ts_full_scat.o
+
+# Sparse tri-diagonal matrix method
+TS_OBJS += m_ts_tri_init.o m_ts_tri_common.o \
+	m_ts_trimat_invert.o \
+	m_ts_tri_scat.o m_ts_trig.o m_ts_trik.o
+
+# MUMPS method
+TS_OBJS += m_ts_mumps_init.o m_ts_mumpsg.o m_ts_mumpsk.o m_ts_mumps_scat.o
+
+ts: transiesta
+transiesta: FPPFLAGS += -DTRANSIESTA 
 check-ts:
 	@if [ -f .siesta ]; then \
               echo "** You were building plain siesta in this directory." ;\
@@ -330,7 +479,7 @@ check-ts:
               false ;\
 	fi
 	@touch .transiesta
-#
+
 transiesta: check-ts what version \
             $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
             $(NCPS) $(PSOP) $(PSML)\
@@ -342,13 +491,12 @@ transiesta: check-ts what version \
                $(COMP_LIBS) $(FOX_LIBS) \
                $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
                $(LIBS)
-#
-#
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f siesta transiesta *.o  *.a *.pcl *.pc
 	rm -f .siesta .transiesta
 	rm -f *.mod
+	rm -f compinfo.F90 tmp.F90
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
@@ -356,8 +504,11 @@ clean:
 	(cd ncps/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	(cd psoplib/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
+	@if [ -d fdict ] ; then (cd fdict && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
+	@if [ -d NCDF ] ; then (cd NCDF && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 	(cd SiestaXC ; $(MAKE) clean )
+
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
@@ -372,6 +523,10 @@ atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: interpolation.o m_filter.o old_atmfuncs.o periodic_table.o precision.o
 atom.o: sys.o
+atom_graph.o: alloc.o atm_types.o atmfuncs.o class_OrbitalDistribution.o
+atom_graph.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
+atom_graph.o: class_Sparsity.o intrinsic_missing.o ldau_specs.o mneighb.o
+atom_graph.o: precision.o radial.o sorting.o sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o ldau_specs.o parallel.o precision.o
 atomlist.o: radial.o siesta_geom.o
@@ -389,7 +544,7 @@ basis_types.o: alloc.o atmparams.o precision.o sys.o
 bessph.o: precision.o sys.o
 bonds.o: alloc.o atmfuncs.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
-born_charge.o: siesta_geom.o siesta_options.o sparse_matrices.o
+born_charge.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
 broadcast_basis.o: atm_types.o ldau_specs.o m_mpi_utils.o parallel.o radial.o
 broadcast_projections.o: m_trialorbitalclass.o parallel.o siesta2wannier90.o
 broyden_optim.o: m_broyddj_nocomm.o m_memory.o parallel.o precision.o
@@ -413,21 +568,49 @@ chemical.o: parallel.o precision.o sys.o
 chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
-class_Fstack_Pair_Vectors.o: Fstack.T90 basic_type.inc
-class_Fstack_Pair_Vectors.o: class_Pair_Vectors.o
-class_Pair_Vectors.o: Pair.T90 basic_type.inc
-class_Pair_Vectors.o: class_Vector.o
-class_Vector.o: basic_type.inc
-class_Vector.o: alloc.o
+class_Data1D.o: class_Data1D.T90 basic_type.inc
+class_Data1D.o: alloc.o
+class_Data2D.o: class_Data2D.T90 basic_type.inc
+class_Data2D.o: alloc.o
+class_Fstack_Data1D.o: Fstack.T90 basic_type.inc
+class_Fstack_Data1D.o: class_Data1D.o class_Data1D.o
+class_Fstack_Pair_Data1D.o: Fstack.T90 basic_type.inc
+class_Fstack_Pair_Data1D.o: class_Pair_Data1D.o class_Pair_Data1D.o
+class_Fstack_Pair_Geometry_SpData2D.o: Fstack.T90 basic_type.inc
+class_Fstack_Pair_Geometry_SpData2D.o: class_Pair_Geometry_SpData2D.o
+class_Fstack_Pair_SpData1D.o: Fstack.T90 basic_type.inc
+class_Fstack_Pair_SpData1D.o: class_Pair_SpData1D.o class_Pair_SpData1D.o
+class_Geometry.o: basic_type.inc
+class_Geometry.o: alloc.o
+class_OrbitalDistribution.o: basic_type.inc
+class_Pair_Data1D.o: Pair.T90 basic_type.inc
+class_Pair_Data1D.o: class_Data1D.o class_Data1D.o
+class_Pair_Geometry_SpData2D.o: Pair.T90 basic_type.inc
+class_Pair_Geometry_SpData2D.o: class_Geometry.o class_SpData2D.o
+class_Pair_SpData1D.o: Pair.T90 basic_type.inc
+class_Pair_SpData1D.o: class_SpData1D.o class_SpData1D.o
+class_SpData1D.o: class_SpData1D.T90 basic_type.inc
+class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
+class_SpData1D.o: class_Data1D.o class_Data1D.o class_OrbitalDistribution.o
+class_SpData1D.o: class_Sparsity.o
+class_SpData2D.o: class_SpData2D.T90 basic_type.inc
+class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
+class_SpData2D.o: class_Data2D.o class_Data2D.o class_OrbitalDistribution.o
+class_SpData2D.o: class_Sparsity.o
+class_Sparsity.o: basic_type.inc
+class_Sparsity.o: alloc.o
+class_TriMat.o: class_TriMat.T90 basic_type.inc
+class_TriMat.o: alloc.o
 coceri.o: files.o periodic_table.o precision.o
-compute_dm.o: atomlist.o diagon.o iodmhs_netcdf.o kpoint_grid.o m_dminim.o
-compute_dm.o: m_energies.o m_eo.o m_gamma.o m_rmaxh.o m_spin.o m_steps.o
-compute_dm.o: m_ts_global_vars.o m_ts_in_siesta.o m_ts_options.o m_zminim.o
+compute_dm.o: atomlist.o class_SpData1D.o diagon.o iodmhs_netcdf.o
+compute_dm.o: kpoint_grid.o m_dminim.o m_energies.o m_eo.o m_gamma.o m_rmaxh.o
+compute_dm.o: m_spin.o m_steps.o m_transiesta.o m_ts_global_vars.o m_zminim.o
 compute_dm.o: normalize_dm.o ordern.o parallel.o precision.o siesta_geom.o
 compute_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
-compute_energies.o: atomlist.o dhscf.o files.o m_dipol.o m_energies.o
-compute_energies.o: m_mpi_utils.o m_ntm.o m_rhog.o m_spin.o precision.o
-compute_energies.o: siesta_geom.o siesta_options.o sparse_matrices.o
+compute_energies.o: atomlist.o class_SpData1D.o class_SpData2D.o dhscf.o
+compute_energies.o: files.o m_dipol.o m_energies.o m_mpi_utils.o m_ntm.o
+compute_energies.o: m_rhog.o m_spin.o precision.o siesta_geom.o
+compute_energies.o: siesta_options.o sparse_matrices.o
 compute_max_diff.o: atomlist.o m_mpi_utils.o m_spin.o precision.o
 compute_max_diff.o: sparse_matrices.o
 compute_norm.o: m_mpi_utils.o m_spin.o precision.o sparse_matrices.o
@@ -441,6 +624,9 @@ conjgr.o: precision.o
 conjgr_old.o: precision.o
 coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o units.o zmatrix.o
 coxmol.o: files.o periodic_table.o precision.o
+create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
+create_Sparsity_Union.o: class_OrbitalDistribution.o class_Sparsity.o
+create_Sparsity_Union.o: m_region.o parallel.o precision.o
 debugmpi.o: parallel.o
 delk.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o
 delk.o: m_planewavematrixvar.o mesh.o meshdscf.o meshphi.o parallel.o
@@ -452,11 +638,13 @@ detover.o: alloc.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o m_spin.o mesh.o
 dfscf.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o bsc_xcmod.o cellxc_mod.o delk.o dfscf.o
-dhscf.o: doping_uniform.o files.o forhar.o iogrid_netcdf.o m_efield.o m_iorho.o
-dhscf.o: m_partial_charges.o m_rhog.o m_spin.o m_ts_global_vars.o
-dhscf.o: m_ts_in_siesta.o m_ts_options.o m_ts_voltage.o mesh.o meshdscf.o
-dhscf.o: meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o rhofft.o
-dhscf.o: rhoofd.o siesta_options.o sys.o units.o vmat.o
+dhscf.o: doping_uniform.o files.o forhar.o iogrid_netcdf.o m_charge_add.o
+dhscf.o: m_efield.o m_hartree_add.o m_iorho.o m_mesh_node.o m_ncdf_io.o
+dhscf.o: m_ncdf_siesta.o m_partial_charges.o m_rhog.o m_spin.o
+dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_options.o m_ts_tdir.o
+dhscf.o: m_ts_voltage.o mesh.o meshdscf.o meshsubs.o moremeshsubs.o parallel.o
+dhscf.o: parsing.o precision.o rhofft.o rhoofd.o siesta_options.o sys.o units.o
+dhscf.o: vmat.o
 diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag3g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
@@ -477,6 +665,7 @@ diagpol.o: parallel.o precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 die.o: parallel.o
+die.o: parallel.o
 dipole.o: mesh.o parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
@@ -491,26 +680,31 @@ electrostatic.o: atm_types.o atmfuncs.o atmparams.o bessph.o interpolation.o
 electrostatic.o: precision.o radfft.o radial.o sys.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
+extrapolateSpData2D.o: class_Data2D.o class_OrbitalDistribution.o
+extrapolateSpData2D.o: class_SpData2D.o class_Sparsity.o
 extrapolon.o: parallel.o precision.o sys.o
+fdf_extra.o: m_region.o
 fermid.o: errorf.o parallel.o precision.o sys.o
 fft.o: alloc.o fft1d.o m_timer.o mesh.o parallel.o parallelsubs.o precision.o
 fft.o: sys.o
 fft1d.o: parallel.o precision.o sys.o
-final_H_f_stress.o: alloc.o atomlist.o dnaefs.o files.o grdsam.o kinefsm.o
-final_H_f_stress.o: ldau.o ldau_specs.o m_dipol.o m_energies.o m_forces.o
-final_H_f_stress.o: m_gamma.o m_hsx.o m_mpi_utils.o m_ntm.o m_spin.o m_steps.o
-final_H_f_stress.o: m_stress.o m_ts_global_vars.o m_ts_io.o m_ts_kpoints.o
-final_H_f_stress.o: m_ts_options.o metaforce.o molecularmechanics.o naefs.o
-final_H_f_stress.o: nlefsm.o overfsm.o parallel.o siesta_geom.o
-final_H_f_stress.o: siesta_options.o sparse_matrices.o spinorbit.o sys.o
+final_H_f_stress.o: alloc.o atomlist.o class_SpData2D.o dnaefs.o files.o
+final_H_f_stress.o: grdsam.o kinefsm.o ldau.o ldau_specs.o m_dipol.o
+final_H_f_stress.o: m_energies.o m_forces.o m_gamma.o m_hsx.o m_mpi_utils.o
+final_H_f_stress.o: m_ncdf_siesta.o m_ntm.o m_spin.o m_steps.o m_stress.o
+final_H_f_stress.o: m_ts_global_vars.o m_ts_io.o m_ts_kpoints.o m_ts_options.o
+final_H_f_stress.o: metaforce.o molecularmechanics.o naefs.o nlefsm.o overfsm.o
+final_H_f_stress.o: parallel.o siesta_geom.o siesta_options.o sparse_matrices.o
+final_H_f_stress.o: spinorbit.o sys.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
 fire_optim.o: precision.o siesta_options.o units.o
-fixed.o: alloc.o parallel.o precision.o
+flook_siesta.o: m_os.o parallel.o siesta_dicts.o siesta_geom.o siesta_options.o
 forhar.o: alloc.o mesh.o moremeshsubs.o parallel.o precision.o
 fsiesta_mpi.o: precision.o siesta_analysis.o siesta_end.o siesta_forces.o
 fsiesta_mpi.o: siesta_init.o siesta_master.o siesta_move.o sys.o
 fsiesta_sockets.o: fsockets.o
+geom_helper.o: intrinsic_missing.o
 get_kpoints_scale.o: parallel.o siesta_geom.o
 get_target_stress.o: parallel.o precision.o sys.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
@@ -525,8 +719,9 @@ idiag.o: parallel.o sys.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o chemical.o electrostatic.o ldau_specs.o m_spin.o
 initatom.o: m_spin_orbit_potentials.o old_atmfuncs.o precision.o
-initparallel.o: alloc.o domain_decom.o m_fdf_global.o parallel.o parallelsubs.o
-initparallel.o: precision.o siesta_options.o spatial.o sys.o
+initparallel.o: alloc.o class_OrbitalDistribution.o domain_decom.o
+initparallel.o: m_fdf_global.o parallel.o parallelsubs.o precision.o
+initparallel.o: siesta_options.o sparse_matrices.o spatial.o sys.o
 io.o: sys.o
 iocg.o: files.o precision.o sys.o
 iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o sys.o
@@ -570,13 +765,14 @@ m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
 m_broyddj_nocomm.o: alloc.o m_fdf_global.o parallel.o precision.o sys.o
 m_broyden_mixing.o: alloc.o m_broyddj.o m_mpi_utils.o parallel.o precision.o
 m_cell.o: precision.o siesta_geom.o units.o
-m_check_supercell.o: minvec.o parallel.o precision.o
+m_charge_add.o: intrinsic_missing.o m_cite.o m_geom_objects.o m_mesh_node.o
+m_charge_add.o: parallel.o precision.o units.o
 m_diagon_opt.o: parallel.o
 m_digest_nnkp.o: alloc.o atomlist.o files.o m_mpi_utils.o m_noccbands.o
 m_digest_nnkp.o: m_spin.o m_trialorbitalclass.o parallel.o precision.o
 m_digest_nnkp.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
-m_diis.o: class_Fstack_Pair_Vectors.o class_Pair_Vectors.o class_Vector.o
-m_diis.o: m_svd.o parallel.o precision.o
+m_diis.o: class_Data1D.o class_Fstack_Pair_Data1D.o class_Pair_Data1D.o m_svd.o
+m_diis.o: parallel.o precision.o
 m_dipol.o: precision.o
 m_dminim.o: densematrix.o files.o parallel.o parallelsubs.o precision.o
 m_dminim.o: siesta_options.o sys.o
@@ -585,28 +781,65 @@ m_efield.o: atmfuncs.o m_cite.o mesh.o parallel.o precision.o siesta_cml.o
 m_efield.o: siesta_geom.o sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
+m_exp_coord.o: files.o m_os.o parallel.o precision.o units.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_filter.o: bessph.o precision.o radfft.o sorting.o sys.o
 m_fire.o: parallel.o precision.o
 m_fire_mixing.o: alloc.o m_fdf_global.o m_fire_para.o m_mpi_utils.o parallel.o
 m_fire_mixing.o: precision.o
 m_fire_para.o: m_mpi_utils.o parallel.o precision.o
+m_fixed.o: fdf_extra.o intrinsic_missing.o m_region.o parallel.o precision.o
 m_forces.o: precision.o
+m_geom_box.o: intrinsic_missing.o m_geom_aux.o
+m_geom_coord.o: intrinsic_missing.o m_geom_aux.o parallel.o
+m_geom_objects.o: m_geom_aux.o m_geom_box.o m_geom_coord.o m_geom_plane.o
+m_geom_objects.o: m_geom_square.o
+m_geom_plane.o: intrinsic_missing.o m_geom_aux.o
+m_geom_square.o: intrinsic_missing.o m_geom_aux.o m_geom_plane.o
 m_getopts.o: f2kcli.o
-m_glob_sparse.o: parallel.o parallelsubs.o precision.o
-m_history.o: alloc.o
-m_hs_matrix.o: alloc.o precision.o sys.o
+m_handle_sparse.o: class_OrbitalDistribution.o class_SpData1D.o
+m_handle_sparse.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_iodm.o
+m_handle_sparse.o: m_os.o m_ts_io.o parallel.o precision.o
+m_hartree_add.o: intrinsic_missing.o m_cite.o m_geom_objects.o m_mesh_node.o
+m_hartree_add.o: parallel.o precision.o units.o
+m_hs_matrix.o: alloc.o cellsubs.o geom_helper.o precision.o sys.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
+m_integrate.o: precision.o
 m_io.o: sys.o
-m_iodm.o: alloc.o files.o m_mpi_utils.o parallel.o parallelsubs.o precision.o
-m_iodm.o: sys.o
+m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+m_io_s.o: class_Sparsity.o parallel.o precision.o
+m_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
+m_iodm.o: m_io_s.o parallel.o
 m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
+m_mat_invert.o: intrinsic_missing.o m_pivot_array.o precision.o
+m_matio.o: alloc.o parallel.o
 m_memory.o: memoryinfo.o parallel.o sys.o
+m_mesh_node.o: intrinsic_missing.o parallel.o precision.o
+m_mixing.o: alloc.o class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
+m_mixing_scf.o: class_Fstack_Data1D.o m_mixing.o parallel.o
+m_monitor.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
+m_monitor.o: parallel.o precision.o
 m_mpi_utils.o: precision.o sys.o
+m_ncdf_io.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+m_ncdf_io.o: class_Sparsity.o m_io_s.o parallel.o precision.o
+m_ncdf_siesta.o: atm_types.o atmparams.o atomlist.o class_Sparsity.o files.o
+m_ncdf_siesta.o: kpoint_grid.o m_energies.o m_forces.o m_gamma.o m_kinetic.o
+m_ncdf_siesta.o: m_ncdf_io.o m_ntm.o m_spin.o m_stress.o m_ts_electype.o
+m_ncdf_siesta.o: m_ts_kpoints.o m_ts_options.o parallel.o precision.o radial.o
+m_ncdf_siesta.o: siesta_geom.o siesta_options.o sparse_matrices.o timestamp.o
+m_new_dm.o: alloc.o atomlist.o class_Data2D.o class_Fstack_Data1D.o
+m_new_dm.o: class_Fstack_Pair_Geometry_SpData2D.o class_Geometry.o
+m_new_dm.o: class_OrbitalDistribution.o class_Pair_Geometry_SpData2D.o
+m_new_dm.o: class_SpData2D.o class_Sparsity.o files.o m_energies.o
+m_new_dm.o: m_handle_sparse.o m_iodm.o m_mixing.o m_mixing_scf.o m_mpi_utils.o
+m_new_dm.o: m_os.o m_spin.o m_steps.o m_svd.o m_ts_electype.o
+m_new_dm.o: m_ts_global_vars.o m_ts_iodm.o m_ts_method.o m_ts_options.o
+m_new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
+m_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
 m_noccbands.o: alloc.o atmfuncs.o m_spin.o parallel.o precision.o siesta_geom.o
 m_noccbands.o: sys.o
 m_options.o: precision.o
@@ -615,43 +848,188 @@ m_overkkneig.o: alloc.o atomlist.o m_orderbands.o parallel.o parallelsubs.o
 m_overkkneig.o: precision.o siesta_geom.o sparse_matrices.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
+m_pivot.o: class_Sparsity.o m_pivot_methods.o m_region.o
+m_pivot_methods.o: class_Sparsity.o m_region.o precision.o
 m_planewavematrix.o: atomlist.o dhscf.o m_planewavematrixvar.o precision.o
 m_planewavematrix.o: siesta_geom.o sparse_matrices.o
 m_planewavematrixvar.o: precision.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
-m_rhog.o: alloc.o atomlist.o class_Fstack_Pair_Vectors.o class_Pair_Vectors.o
-m_rhog.o: class_Vector.o m_diis.o m_mpi_utils.o m_spin.o parallel.o precision.o
-m_rhog.o: siesta_options.o sorting.o
+m_region.o: class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
+m_region.o: intrinsic_missing.o
+m_rhog.o: alloc.o atomlist.o class_Data1D.o class_Fstack_Pair_Data1D.o
+m_rhog.o: class_Pair_Data1D.o m_diis.o m_mpi_utils.o m_spin.o parallel.o
+m_rhog.o: precision.o siesta_options.o sorting.o
 m_rmaxh.o: precision.o
-m_sparse.o: alloc.o precision.o
+m_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData2D.o
+m_sparse.o: class_Sparsity.o geom_helper.o intrinsic_missing.o parallel.o
+m_sparse.o: precision.o
+m_sparsity_handling.o: class_Data1D.o class_Data2D.o
+m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
+m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
+m_sparsity_handling.o: m_interpolate.o m_region.o precision.o
 m_spin.o: alloc.o parallel.o precision.o sys.o units.o
 m_stress.o: precision.o
+m_supercell.o: atom_graph.o class_OrbitalDistribution.o intrinsic_missing.o
+m_supercell.o: parallel.o parallelsubs.o precision.o
 m_svd.o: precision.o
 m_target_stress.o: parallel.o precision.o sys.o units.o
+m_test_io.o: class_SpData2D.o class_Sparsity.o m_iodm.o m_matio.o parallel.o
+m_test_io.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
+m_transiesta.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_transiesta.o: class_SpData2D.o class_Sparsity.o files.o m_interpolate.o
+m_transiesta.o: m_ts_charge.o m_ts_contour_eq.o m_ts_contour_neq.o
+m_transiesta.o: m_ts_electype.o m_ts_fullg.o m_ts_fullk.o m_ts_gf.o
+m_transiesta.o: m_ts_kpoints.o m_ts_method.o m_ts_mumpsg.o m_ts_mumpsk.o
+m_transiesta.o: m_ts_options.o m_ts_sparse.o m_ts_tri_common.o m_ts_tri_init.o
+m_transiesta.o: m_ts_trig.o m_ts_trik.o parallel.o precision.o units.o
 m_trialorbitalclass.o: precision.o units.o
-m_ts_aux_rout.o: precision.o sys.o
-m_ts_cctype.o: precision.o
-m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o sys.o
-m_ts_contour.o: units.o
-m_ts_electrode.o: files.o m_hs_matrix.o m_ts_aux_rout.o m_ts_cctype.o m_ts_io.o
-m_ts_electrode.o: m_ts_kpoints.o parallel.o precision.o sys.o units.o
-m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o parallel.o precision.o sys.o units.o
-m_ts_global_vars.o: precision.o
-m_ts_in_siesta.o: m_glob_sparse.o m_hs_matrix.o m_ts_cctype.o m_ts_contour.o
-m_ts_in_siesta.o: m_ts_gf.o m_ts_kpoints.o m_ts_options.o m_ts_scattering.o
-m_ts_in_siesta.o: parallel.o parallelsubs.o precision.o sys.o units.o
-m_ts_io.o: files.o m_spin.o m_ts_kpoints.o parallel.o parallelsubs.o
-m_ts_io.o: precision.o sys.o
-m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
-m_ts_iodm.o: parallelsubs.o precision.o sys.o
-m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
-m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
-m_ts_options.o: files.o m_fdf_global.o m_ts_contour.o m_ts_global_vars.o
-m_ts_options.o: m_ts_io.o parallel.o precision.o siesta_options.o sys.o units.o
-m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
-m_ts_voltage.o: m_ts_options.o mesh.o parallel.o precision.o units.o
+m_trimat_invert.o: class_TriMat.o intrinsic_missing.o m_pivot_array.o
+m_trimat_invert.o: precision.o
+m_ts_aux.o: precision.o
+m_ts_cctype.o: m_gauss_fermi_inf.o m_ts_io_ctype.o precision.o
+m_ts_charge.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
+m_ts_charge.o: geom_helper.o m_interpolate.o m_ts_electype.o m_ts_method.o
+m_ts_charge.o: parallel.o precision.o units.o
+m_ts_chem_pot.o: m_ts_cctype.o m_ts_io_ctype.o parallel.o precision.o units.o
+m_ts_contour.o: m_ts_cctype.o m_ts_chem_pot.o m_ts_contour_eq.o
+m_ts_contour.o: m_ts_contour_neq.o m_ts_electype.o m_ts_io_contour.o
+m_ts_contour.o: precision.o
+m_ts_contour_eq.o: m_gauss_fermi_17.o m_gauss_fermi_18.o m_gauss_fermi_19.o
+m_ts_contour_eq.o: m_gauss_fermi_20.o m_gauss_fermi_22.o m_gauss_fermi_24.o
+m_ts_contour_eq.o: m_gauss_fermi_26.o m_gauss_fermi_28.o m_gauss_fermi_30.o
+m_ts_contour_eq.o: m_gauss_fermi_inf.o m_gauss_quad.o m_integrate.o m_ts_aux.o
+m_ts_contour_eq.o: m_ts_cctype.o m_ts_chem_pot.o m_ts_electype.o
+m_ts_contour_eq.o: m_ts_io_contour.o m_ts_io_ctype.o parallel.o precision.o
+m_ts_contour_eq.o: units.o
+m_ts_contour_neq.o: m_gauss_quad.o m_integrate.o m_ts_aux.o m_ts_cctype.o
+m_ts_contour_neq.o: m_ts_chem_pot.o m_ts_electype.o m_ts_io_contour.o
+m_ts_contour_neq.o: m_ts_io_ctype.o parallel.o precision.o units.o
+m_ts_debug.o: class_Sparsity.o class_TriMat.o geom_helper.o parallel.o
+m_ts_debug.o: precision.o
+m_ts_dm_update.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+m_ts_dm_update.o: class_SpData2D.o class_Sparsity.o geom_helper.o
+m_ts_dm_update.o: intrinsic_missing.o precision.o
+m_ts_elec_se.o: intrinsic_missing.o m_ts_cctype.o m_ts_electype.o precision.o
+m_ts_elec_se.o: units.o
+m_ts_electrode.o: alloc.o class_SpData1D.o class_SpData2D.o class_Sparsity.o
+m_ts_electrode.o: geom_helper.o intrinsic_missing.o m_iterator.o m_mat_invert.o
+m_ts_electrode.o: m_pivot_array.o m_ts_elec_se.o m_ts_electype.o parallel.o
+m_ts_electrode.o: precision.o sys.o units.o
+m_ts_electype.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+m_ts_electype.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
+m_ts_electype.o: intrinsic_missing.o m_geom_box.o m_geom_plane.o
+m_ts_electype.o: m_handle_sparse.o m_iodm.o m_os.o m_region.o m_ts_chem_pot.o
+m_ts_electype.o: m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o parallel.o precision.o
+m_ts_electype.o: units.o
+m_ts_full_scat.o: intrinsic_missing.o m_ts_cctype.o m_ts_electype.o
+m_ts_full_scat.o: m_ts_method.o parallel.o precision.o
+m_ts_fullg.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_fullg.o: class_SpData2D.o class_Sparsity.o m_iterator.o m_ts_cctype.o
+m_ts_fullg.o: m_ts_contour_eq.o m_ts_contour_neq.o m_ts_debug.o
+m_ts_fullg.o: m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o m_ts_full_scat.o
+m_ts_fullg.o: m_ts_gf.o m_ts_method.o m_ts_options.o m_ts_sparse.o
+m_ts_fullg.o: m_ts_sparse_helper.o m_ts_weight.o parallel.o precision.o units.o
+m_ts_fullk.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_fullk.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o m_iterator.o
+m_ts_fullk.o: m_ts_cctype.o m_ts_contour_eq.o m_ts_contour_neq.o m_ts_debug.o
+m_ts_fullk.o: m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o m_ts_full_scat.o
+m_ts_fullk.o: m_ts_gf.o m_ts_kpoints.o m_ts_method.o m_ts_options.o
+m_ts_fullk.o: m_ts_sparse.o m_ts_sparse_helper.o m_ts_weight.o parallel.o
+m_ts_fullk.o: precision.o units.o
+m_ts_gf.o: m_os.o m_ts_cctype.o m_ts_contour_eq.o m_ts_contour_neq.o
+m_ts_gf.o: m_ts_electrode.o m_ts_electype.o parallel.o precision.o sys.o
+m_ts_gf.o: units.o
+m_ts_global_vars.o: parallel.o
+m_ts_hartree.o: intrinsic_missing.o m_mesh_node.o m_ts_electype.o
+m_ts_hartree.o: m_ts_global_vars.o m_ts_tdir.o parallel.o precision.o units.o
+m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_ncdf_io.o
+m_ts_io.o: m_os.o m_sparse.o parallel.o precision.o sys.o
+m_ts_io_contour.o: precision.o units.o
+m_ts_io_ctype.o: parallel.o precision.o units.o
+m_ts_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
+m_ts_iodm.o: m_io_s.o m_os.o parallel.o precision.o
+m_ts_kpoints.o: files.o find_kgrid.o m_ts_global_vars.o m_ts_tdir.o minvec.o
+m_ts_kpoints.o: parallel.o precision.o siesta_cml.o siesta_options.o sys.o
+m_ts_method.o: alloc.o fdf_extra.o geom_helper.o m_region.o m_ts_electype.o
+m_ts_mumps_init.o: class_OrbitalDistribution.o class_Sparsity.o
+m_ts_mumps_init.o: create_Sparsity_Union.o m_ts_electype.o m_ts_method.o
+m_ts_mumps_init.o: m_ts_sparse.o precision.o
+m_ts_mumps_scat.o: m_ts_electype.o precision.o
+m_ts_mumpsg.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_mumpsg.o: class_SpData2D.o class_Sparsity.o intrinsic_missing.o
+m_ts_mumpsg.o: m_iterator.o m_ts_cctype.o m_ts_contour_eq.o m_ts_contour_neq.o
+m_ts_mumpsg.o: m_ts_debug.o m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o
+m_ts_mumpsg.o: m_ts_gf.o m_ts_method.o m_ts_mumps_init.o m_ts_mumps_scat.o
+m_ts_mumpsg.o: m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o m_ts_weight.o
+m_ts_mumpsg.o: parallel.o precision.o units.o
+m_ts_mumpsk.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_mumpsk.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o
+m_ts_mumpsk.o: intrinsic_missing.o m_iterator.o m_ts_cctype.o m_ts_contour_eq.o
+m_ts_mumpsk.o: m_ts_contour_neq.o m_ts_debug.o m_ts_dm_update.o m_ts_elec_se.o
+m_ts_mumpsk.o: m_ts_electype.o m_ts_gf.o m_ts_kpoints.o m_ts_method.o
+m_ts_mumpsk.o: m_ts_mumps_init.o m_ts_mumps_scat.o m_ts_options.o m_ts_sparse.o
+m_ts_mumpsk.o: m_ts_sparse_helper.o m_ts_weight.o parallel.o precision.o
+m_ts_mumpsk.o: units.o
+m_ts_options.o: files.o intrinsic_missing.o m_mixing.o m_mixing_scf.o m_os.o
+m_ts_options.o: m_ts_charge.o m_ts_chem_pot.o m_ts_contour.o m_ts_contour_eq.o
+m_ts_options.o: m_ts_contour_neq.o m_ts_electype.o m_ts_global_vars.o
+m_ts_options.o: m_ts_hartree.o m_ts_method.o m_ts_mumps_init.o m_ts_tdir.o
+m_ts_options.o: m_ts_weight.o parallel.o precision.o siesta_options.o units.o
+m_ts_pivot.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
+m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o intrinsic_missing.o
+m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
+m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
+m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
+m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
+m_ts_rgn2trimat.o: m_ts_electype.o m_ts_method.o m_ts_tri_common.o parallel.o
+m_ts_rgn2trimat.o: precision.o
+m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
+m_ts_sparse.o: intrinsic_missing.o m_region.o m_sparsity_handling.o
+m_ts_sparse.o: m_ts_debug.o m_ts_electype.o m_ts_method.o parallel.o
+m_ts_sparse.o: precision.o
+m_ts_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
+m_ts_sparse_helper.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
+m_ts_sparse_helper.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
+m_ts_sparse_helper.o: m_region.o m_ts_electype.o m_ts_method.o precision.o
+m_ts_tri_common.o: intrinsic_missing.o m_region.o m_ts_electype.o precision.o
+m_ts_tri_init.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
+m_ts_tri_init.o: create_Sparsity_SC.o create_Sparsity_Union.o fdf_extra.o
+m_ts_tri_init.o: m_pivot.o m_pivot_methods.o m_region.o m_sparsity_handling.o
+m_ts_tri_init.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_pivot.o
+m_ts_tri_init.o: m_ts_rgn2trimat.o m_ts_sparse.o m_ts_tri_common.o parallel.o
+m_ts_tri_init.o: precision.o
+m_ts_tri_scat.o: alloc.o class_TriMat.o m_region.o m_trimat_invert.o
+m_ts_tri_scat.o: m_ts_electype.o m_ts_method.o m_ts_trimat_invert.o precision.o
+m_ts_trig.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_trig.o: class_SpData2D.o class_Sparsity.o class_TriMat.o m_iterator.o
+m_ts_trig.o: m_mat_invert.o m_region.o m_trimat_invert.o m_ts_cctype.o
+m_ts_trig.o: m_ts_charge.o m_ts_contour_eq.o m_ts_contour_neq.o m_ts_debug.o
+m_ts_trig.o: m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o m_ts_gf.o
+m_ts_trig.o: m_ts_method.o m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o
+m_ts_trig.o: m_ts_tri_common.o m_ts_tri_init.o m_ts_tri_scat.o
+m_ts_trig.o: m_ts_trimat_invert.o m_ts_weight.o parallel.o precision.o units.o
+m_ts_trik.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_trik.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o class_TriMat.o
+m_ts_trik.o: m_iterator.o m_mat_invert.o m_region.o m_trimat_invert.o
+m_ts_trik.o: m_ts_cctype.o m_ts_charge.o m_ts_contour_eq.o m_ts_contour_neq.o
+m_ts_trik.o: m_ts_debug.o m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o
+m_ts_trik.o: m_ts_gf.o m_ts_kpoints.o m_ts_method.o m_ts_options.o
+m_ts_trik.o: m_ts_sparse.o m_ts_sparse_helper.o m_ts_tri_common.o
+m_ts_trik.o: m_ts_tri_init.o m_ts_tri_scat.o m_ts_trimat_invert.o m_ts_weight.o
+m_ts_trik.o: parallel.o precision.o units.o
+m_ts_trimat_invert.o: class_TriMat.o m_pivot_array.o m_region.o
+m_ts_trimat_invert.o: m_trimat_invert.o m_ts_electype.o m_ts_method.o
+m_ts_trimat_invert.o: precision.o
+m_ts_voltage.o: intrinsic_missing.o m_geom_box.o m_mesh_node.o m_ncdf_io.o
+m_ts_voltage.o: m_ts_electype.o m_ts_options.o m_ts_tdir.o parallel.o
+m_ts_voltage.o: precision.o units.o
+m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
+m_ts_weight.o: geom_helper.o m_ts_chem_pot.o m_ts_contour_neq.o m_ts_electype.o
+m_ts_weight.o: parallel.o precision.o
 m_wallclock.o: m_walltime.o
 m_writedelk.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o
 m_writedelk.o: parallelsubs.o precision.o siesta_geom.o sys.o
@@ -673,9 +1051,8 @@ meshsubs.o: fft1d.o mesh.o meshphi.o moremeshsubs.o parallel.o parallelsubs.o
 meshsubs.o: precision.o siesta_cml.o sys.o
 metaforce.o: alloc.o parallel.o precision.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
-mixer.o: atomlist.o m_broyden_mixing.o m_fire_mixing.o m_pulay.o m_spin.o
-mixer.o: m_ts_global_vars.o parallel.o siesta_geom.o siesta_options.o
-mixer.o: sparse_matrices.o
+mixer.o: atomlist.o m_mixing.o m_mixing_scf.o m_spin.o parallel.o precision.o
+mixer.o: siesta_geom.o siesta_options.o sparse_matrices.o
 mmn.o: alloc.o atomlist.o m_digest_nnkp.o m_noccbands.o m_planewavematrixvar.o
 mmn.o: parallel.o precision.o siesta2wannier90.o siesta_geom.o
 mmn.o: sparse_matrices.o
@@ -687,11 +1064,6 @@ moremeshsubs.o: alloc.o mesh.o parallel.o precision.o schecomm.o sys.o
 mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o new_matel.o precision.o
-new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_mpi_utils.o
-new_dm.o: m_sparse.o m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o
-new_dm.o: m_ts_options.o normalize_dm.o parallel.o parallelsubs.o parsing.o
-new_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o sys.o
-new_dm.o: units.o
 new_matel.o: alloc.o errorf.o interpolation.o matel_registry.o parallel.o
 new_matel.o: precision.o radfft.o spher_harm.o sys.o
 nlefsm.o: alloc.o atm_types.o atmfuncs.o mneighb.o new_matel.o parallel.o
@@ -731,42 +1103,49 @@ phirphi_opt.o: parallel.o parallelsubs.o precision.o spher_harm.o sys.o
 pixmol.o: files.o periodic_table.o precision.o
 plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
 poison.o: alloc.o cellsubs.o chkgmx.o fft.o parallel.o precision.o sys.o
-post_scf_work.o: atomlist.o compute_dm.o diagon.o final_H_f_stress.o
-post_scf_work.o: kpoint_grid.o m_dminim.o m_energies.o m_eo.o m_gamma.o
-post_scf_work.o: m_spin.o m_steps.o m_zminim.o mneighb.o parallel.o
-post_scf_work.o: siesta_geom.o siesta_options.o sparse_matrices.o
+post_scf_work.o: atomlist.o class_Fstack_Pair_Geometry_SpData2D.o
+post_scf_work.o: class_Geometry.o class_Pair_Geometry_SpData2D.o compute_dm.o
+post_scf_work.o: diagon.o final_H_f_stress.o kpoint_grid.o m_dminim.o
+post_scf_work.o: m_energies.o m_eo.o m_gamma.o m_spin.o m_steps.o m_zminim.o
+post_scf_work.o: mneighb.o parallel.o siesta_geom.o siesta_options.o
+post_scf_work.o: sparse_matrices.o
 printmatrix.o: alloc.o
 projected_DOS.o: alloc.o atomlist.o kpoint_grid.o kpoint_pdos.o m_eo.o
 projected_DOS.o: m_gamma.o m_spin.o parallel.o precision.o siesta_geom.o
 projected_DOS.o: siesta_options.o sparse_matrices.o sys.o units.o
 propor.o: precision.o sys.o
-proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
+proximity_check.o: m_ts_global_vars.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o units.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 radial.o: alloc.o interpolation.o precision.o xml.o
 rdiag.o: alloc.o m_diagon_opt.o memoryinfo.o parallel.o precision.o sys.o
-read_options.o: files.o m_spin.o m_target_stress.o memoryinfo.o parallel.o
-read_options.o: precision.o siesta_cml.o siesta_options.o sys.o units.o
+read_options.o: files.o m_charge_add.o m_hartree_add.o m_mixing.o
+read_options.o: m_mixing_scf.o m_spin.o m_target_stress.o memoryinfo.o
+read_options.o: parallel.o precision.o siesta_cml.o siesta_options.o sys.o
+read_options.o: units.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
 register_rfs.o: atm_types.o atmfuncs.o matel_registry.o parallel.o precision.o
 register_rfs.o: radial.o
-reinit.o: files.o parallel.o siesta_master.o
+reinit.o: files.o parallel.o siesta_master.o sys.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: m_spin.o parallel.o precision.o sys.o
 reord.o: alloc.o precision.o
 reordpsi.o: alloc.o m_orderbands.o parallel.o parallelsubs.o precision.o
 reordpsi.o: siesta2wannier90.o
+restructSpData2D.o: class_Data2D.o class_OrbitalDistribution.o class_SpData2D.o
+restructSpData2D.o: class_Sparsity.o parallel.o
 rhofft.o: cellsubs.o fft.o precision.o sys.o
 rhooda.o: atmfuncs.o atomlist.o mesh.o meshphi.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o m_spin.o mesh.o
 rhoofd.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o
 rhoofdsp.o: meshdscf.o meshphi.o precision.o sys.o
-save_density_matrix.o: atomlist.o iodm_netcdf.o m_energies.o m_iodm.o m_spin.o
-save_density_matrix.o: m_steps.o m_ts_global_vars.o m_ts_iodm.o precision.o
-save_density_matrix.o: siesta_options.o sparse_matrices.o
+save_density_matrix.o: atomlist.o files.o iodm_netcdf.o m_energies.o m_iodm.o
+save_density_matrix.o: m_ncdf_siesta.o m_spin.o m_steps.o m_ts_global_vars.o
+save_density_matrix.o: m_ts_iodm.o m_ts_options.o precision.o siesta_options.o
+save_density_matrix.o: sparse_matrices.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
 scfconvergence_test.o: ldau.o ldau_specs.o m_convergence.o m_energies.o
 scfconvergence_test.o: m_wallclock.o parallel.o precision.o siesta_cml.o
@@ -774,16 +1153,16 @@ scfconvergence_test.o: siesta_options.o units.o write_subs.o
 schecomm.o: alloc.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
-setup_H0.o: alloc.o atmfuncs.o atomlist.o dhscf.o dnaefs.o kinefsm.o
-setup_H0.o: m_energies.o m_mpi_utils.o m_ntm.o m_spin.o metaforce.o
-setup_H0.o: molecularmechanics.o naefs.o nlefsm.o siesta_geom.o
-setup_H0.o: siesta_options.o sparse_matrices.o spinorbit.o
-setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o dhscf.o files.o ldau.o
-setup_hamiltonian.o: ldau_specs.o m_dipol.o m_energies.o m_gamma.o m_hsx.o
-setup_hamiltonian.o: m_mpi_utils.o m_ntm.o m_partial_charges.o m_rhog.o
-setup_hamiltonian.o: m_spin.o m_steps.o m_stress.o m_ts_global_vars.o
-setup_hamiltonian.o: metaforce.o molecularmechanics.o parallel.o siesta_geom.o
-setup_hamiltonian.o: siesta_options.o sparse_matrices.o sys.o
+setup_H0.o: alloc.o atmfuncs.o atomlist.o class_SpData1D.o class_SpData2D.o
+setup_H0.o: dhscf.o dnaefs.o kinefsm.o m_energies.o m_mpi_utils.o m_ntm.o
+setup_H0.o: m_spin.o metaforce.o molecularmechanics.o naefs.o nlefsm.o
+setup_H0.o: siesta_geom.o siesta_options.o sparse_matrices.o spinorbit.o
+setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o class_SpData1D.o
+setup_hamiltonian.o: class_SpData2D.o dhscf.o files.o ldau.o ldau_specs.o
+setup_hamiltonian.o: m_dipol.o m_energies.o m_gamma.o m_hsx.o m_mpi_utils.o
+setup_hamiltonian.o: m_ntm.o m_partial_charges.o m_rhog.o m_spin.o m_steps.o
+setup_hamiltonian.o: m_stress.o metaforce.o molecularmechanics.o parallel.o
+setup_hamiltonian.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
@@ -793,68 +1172,85 @@ siesta.o: siesta_init.o siesta_move.o
 siesta2wannier90.o: files.o m_digest_nnkp.o m_spin.o m_trialorbitalclass.o
 siesta2wannier90.o: parallel.o precision.o siesta_options.o sys.o
 siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
-siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
-siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
-siesta_analysis.o: m_ntm.o m_partial_charges.o m_spin.o m_steps.o parallel.o
-siesta_analysis.o: projected_DOS.o siesta2wannier90.o siesta_cml.o
+siesta_analysis.o: flook_siesta.o kpoint_grid.o ksv.o ksvinit.o local_DOS.o
+siesta_analysis.o: m_dipol.o m_energies.o m_eo.o m_forces.o m_gamma.o
+siesta_analysis.o: m_mpi_utils.o m_ntm.o m_partial_charges.o m_spin.o m_steps.o
+siesta_analysis.o: parallel.o projected_DOS.o siesta2wannier90.o siesta_cml.o
 siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o units.o
 siesta_analysis.o: write_subs.o writewave.o zmatrix.o
-siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o 
-siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
-siesta_end.o: m_rhog.o m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o
-siesta_end.o: parallel.o siesta_cml.o siesta_cmlsubs.o siesta_master.o
-siesta_end.o: sparse_matrices.o timestamp.o
-siesta_forces.o: compute_dm.o compute_energies.o compute_max_diff.o
-siesta_forces.o: final_H_f_stress.o m_convergence.o m_energies.o m_forces.o
-siesta_forces.o: m_pulay.o m_rhog.o m_steps.o m_stress.o m_ts_global_vars.o
+siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o version.o
+siesta_dicts.o: atomlist.o m_energies.o m_forces.o precision.o siesta_geom.o
+siesta_dicts.o: siesta_options.o
+siesta_end.o: alloc.o bands.o densematrix.o flook_siesta.o m_dscfcomm.o
+siesta_end.o: m_fixed.o m_mixing_scf.o m_rhog.o m_wallclock.o meshdscf.o
+siesta_end.o: meshphi.o moremeshsubs.o parallel.o siesta_cml.o siesta_cmlsubs.o
+siesta_end.o: siesta_master.o siesta_options.o sparse_matrices.o timestamp.o
+siesta_forces.o: atomlist.o class_Fstack_Data1D.o class_SpData2D.o compute_dm.o
+siesta_forces.o: compute_energies.o compute_max_diff.o final_H_f_stress.o
+siesta_forces.o: flook_siesta.o kpoint_grid.o m_convergence.o m_energies.o
+siesta_forces.o: m_forces.o m_mixing.o m_mixing_scf.o m_ncdf_siesta.o m_rhog.o
+siesta_forces.o: m_spin.o m_steps.o m_stress.o m_transiesta.o m_ts_charge.o
+siesta_forces.o: m_ts_electype.o m_ts_global_vars.o m_ts_method.o
 siesta_forces.o: m_ts_options.o mixer.o parallel.o post_scf_work.o precision.o
 siesta_forces.o: save_density_matrix.o scfconvergence_test.o setup_H0.o
-siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_geom.o siesta_master.o
-siesta_forces.o: siesta_options.o sparse_matrices.o state_analysis.o
-siesta_forces.o: state_init.o sys.o units.o write_subs.o
+siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_dicts.o siesta_geom.o
+siesta_forces.o: siesta_master.o siesta_options.o sparse_matrices.o
+siesta_forces.o: state_analysis.o state_init.o sys.o units.o write_subs.o
 siesta_geom.o: precision.o
-siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
-siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
-siesta_init.o: m_cite.o m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
-siesta_init.o: m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o m_timer.o
-siesta_init.o: m_wallclock.o metaforce.o molecularmechanics.o parallel.o
-siesta_init.o: parallelsubs.o projected_DOS.o siesta_cmlsubs.o siesta_geom.o
+siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o
+siesta_init.o: class_Fstack_Pair_Geometry_SpData2D.o densematrix.o files.o
+siesta_init.o: flook_siesta.o ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o
+siesta_init.o: m_cite.o m_energies.o m_eo.o m_fixed.o m_forces.o m_gamma.o
+siesta_init.o: m_iostruct.o m_mpi_utils.o m_new_dm.o m_rmaxh.o m_spin.o
+siesta_init.o: m_steps.o m_supercell.o m_timer.o m_wallclock.o metaforce.o
+siesta_init.o: molecularmechanics.o object_debug.o parallel.o parallelsubs.o
+siesta_init.o: projected_DOS.o siesta_cmlsubs.o siesta_dicts.o siesta_geom.o
 siesta_init.o: siesta_options.o sparse_matrices.o struct_init.o sys.o timer.o
 siesta_init.o: timestamp.o ts_init.o writewave.o zmatrix.o
 siesta_master.o: iopipes.o iosockets.o m_fdf_global.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
-siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o ioxv.o m_energies.o
-siesta_move.o: m_forces.o m_kinetic.o m_steps.o m_stress.o m_target_stress.o
-siesta_move.o: parallel.o siesta_cml.o siesta_geom.o siesta_master.o
-siesta_move.o: siesta_options.o sys.o units.o write_subs.o zm_broyden_optim.o
-siesta_move.o: zm_fire_optim.o zmatrix.o
-sparse_matrices.o: alloc.o precision.o
+siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o
+siesta_move.o: m_energies.o m_exp_coord.o m_forces.o m_kinetic.o m_steps.o
+siesta_move.o: m_stress.o m_target_stress.o parallel.o siesta_cml.o
+siesta_move.o: siesta_geom.o siesta_master.o siesta_options.o sys.o units.o
+siesta_move.o: write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
+sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpData2D.o
+sparse_matrices.o: class_OrbitalDistribution.o class_SpData1D.o
+sparse_matrices.o: class_SpData2D.o class_Sparsity.o precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
 spinorbit.o: atm_types.o atmfuncs.o atmparams.o basis_types.o m_mpi_utils.o
 spinorbit.o: parallel.o parallelsubs.o precision.o sys.o
-state_analysis.o: atomlist.o born_charge.o fixed.o m_energies.o m_forces.o
-state_analysis.o: m_ntm.o m_spin.o m_stress.o m_wallclock.o parallel.o
-state_analysis.o: remove_intramol_pressure.o siesta_cml.o siesta_geom.o
-state_analysis.o: siesta_options.o sparse_matrices.o units.o write_subs.o
-state_analysis.o: zmatrix.o
-state_init.o: alloc.o atomlist.o domain_decom.o files.o hsparse.o iodm_netcdf.o
-state_init.o: iodmhs_netcdf.o ioxv.o kpoint_grid.o ldau_specs.o
-state_init.o: m_check_supercell.o m_energies.o m_eo.o m_gamma.o m_mpi_utils.o
-state_init.o: m_pulay.o m_rmaxh.o m_spin.o m_steps.o m_ts_io.o m_ts_options.o
-state_init.o: new_dm.o overlap.o parallel.o proximity_check.o siesta_cml.o
-state_init.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
-state_init.o: write_subs.o zmatrix.o
-struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_iostruct.o
-struct_init.o: m_mpi_utils.o parallel.o periodic_table.o siesta_cml.o
-struct_init.o: siesta_geom.o siesta_master.o siesta_options.o units.o zmatrix.o
+state_analysis.o: atomlist.o born_charge.o flook_siesta.o m_energies.o
+state_analysis.o: m_fixed.o m_forces.o m_ntm.o m_spin.o m_stress.o
+state_analysis.o: m_wallclock.o parallel.o remove_intramol_pressure.o
+state_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
+state_analysis.o: units.o write_subs.o zmatrix.o
+state_init.o: alloc.o atomlist.o class_Data2D.o class_SpData1D.o
+state_init.o: class_SpData2D.o class_Sparsity.o domain_decom.o files.o
+state_init.o: hsparse.o iodm_netcdf.o iodmhs_netcdf.o ioxv.o kpoint_grid.o
+state_init.o: ldau_specs.o m_energies.o m_eo.o m_gamma.o m_mixing.o
+state_init.o: m_mixing_scf.o m_mpi_utils.o m_new_dm.o m_os.o m_pivot_methods.o
+state_init.o: m_rmaxh.o m_sparse.o m_sparsity_handling.o m_spin.o m_steps.o
+state_init.o: m_supercell.o m_test_io.o m_ts_charge.o m_ts_electype.o
+state_init.o: m_ts_global_vars.o m_ts_io.o m_ts_options.o m_ts_sparse.o
+state_init.o: m_ts_tri_init.o normalize_dm.o overlap.o parallel.o
+state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
+state_init.o: sparse_matrices.o sys.o units.o write_subs.o zmatrix.o
+struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_exp_coord.o
+struct_init.o: m_iostruct.o m_mpi_utils.o m_steps.o parallel.o periodic_table.o
+struct_init.o: siesta_cml.o siesta_geom.o siesta_master.o siesta_options.o
+struct_init.o: units.o zmatrix.o
 sys.o: parallel.o
 timer.o: m_timer.o parallel.o sys.o timer_tree.o
 timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-ts_init.o: files.o m_cite.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o
-ts_init.o: m_ts_options.o parallel.o
-ts_show_regions.o: parallel.o precision.o units.o
+ts_init.o: m_cite.o m_fixed.o m_os.o m_ts_cctype.o m_ts_charge.o
+ts_init.o: m_ts_electrode.o m_ts_electype.o m_ts_gf.o m_ts_global_vars.o
+ts_init.o: m_ts_kpoints.o m_ts_method.o m_ts_options.o parallel.o
+ts_init.o: siesta_options.o
+ts_show_regions.o: m_region.o m_ts_electype.o m_ts_method.o parallel.o
+ts_show_regions.o: precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o
 units.o: precision.o
@@ -863,12 +1259,13 @@ vmat.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o m_spin.o mesh.o
 vmat.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 vmatsp.o: meshphi.o precision.o
-vmb.o: fixed.o parallel.o precision.o sys.o
+vmb.o: m_fixed.o parallel.o precision.o sys.o
 write_inp_wannier.o: alloc.o atmfuncs.o atomlist.o m_ntm.o m_orderbands.o
 write_inp_wannier.o: mneighb.o parallel.o parallelsubs.o precision.o
 write_inp_wannier.o: siesta2wannier90.o siesta_geom.o
-write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_steps.o m_stress.o
-write_md_record.o: md_out.o parallel.o siesta_geom.o siesta_options.o units.o
+write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_ncdf_siesta.o
+write_md_record.o: m_steps.o m_stress.o md_out.o parallel.o siesta_geom.o
+write_md_record.o: siesta_options.o units.o
 write_orb_indx.o: atmfuncs.o cellsubs.o files.o precision.o
 write_raw_efs.o: atmfuncs.o atomlist.o precision.o siesta_geom.o
 write_subs.o: alloc.o atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
@@ -886,6 +1283,55 @@ zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 aux_proj.o: atom.o
 band.o: bands.o
+class_cdata1d.o: class_Data1D.o
+class_cdata2d.o: class_Data2D.o
+class_cspdata1d.o: class_SpData1D.o
+class_cspdata2d.o: class_SpData2D.o
+class_ctrimat.o: class_TriMat.o
+class_ddata1d.o: class_Data1D.o
+class_ddata2d.o: class_Data2D.o
+class_dspdata1d.o: class_SpData1D.o
+class_dspdata2d.o: class_SpData2D.o
+class_dtrimat.o: class_TriMat.o
+class_fstack_ddata1d.o: class_Fstack_Data1D.o
+class_fstack_gdata1d.o: class_Fstack_Data1D.o
+class_fstack_pair_ddata1d.o: class_Fstack_Pair_Data1D.o
+class_fstack_pair_dspdata1d.o: class_Fstack_Pair_SpData1D.o
+class_fstack_pair_gdata1d.o: class_Fstack_Pair_Data1D.o
+class_fstack_pair_geometry_dspdata2d.o: class_Fstack_Pair_Geometry_SpData2D.o
+class_fstack_pair_gspdata1d.o: class_Fstack_Pair_SpData1D.o
+class_fstack_pair_sdata1d.o: class_Fstack_Pair_Data1D.o
+class_fstack_pair_sspdata1d.o: class_Fstack_Pair_SpData1D.o
+class_fstack_sdata1d.o: class_Fstack_Data1D.o
+class_gdata1d.o: class_Data1D.o
+class_gspdata1d.o: class_SpData1D.o
+class_idata1d.o: class_Data1D.o
+class_idata2d.o: class_Data2D.o
+class_ispdata1d.o: class_SpData1D.o
+class_ispdata2d.o: class_SpData2D.o
+class_itrimat.o: class_TriMat.o
+class_ldata1d.o: class_Data1D.o
+class_ldata2d.o: class_Data2D.o
+class_lspdata1d.o: class_SpData1D.o
+class_lspdata2d.o: class_SpData2D.o
+class_ltrimat.o: class_TriMat.o
+class_pair_ddata1d.o: class_Pair_Data1D.o
+class_pair_dspdata1d.o: class_Pair_SpData1D.o
+class_pair_gdata1d.o: class_Pair_Data1D.o
+class_pair_geometry_dspdata2d.o: class_Pair_Geometry_SpData2D.o
+class_pair_gspdata1d.o: class_Pair_SpData1D.o
+class_pair_sdata1d.o: class_Pair_Data1D.o
+class_pair_sspdata1d.o: class_Pair_SpData1D.o
+class_sdata1d.o: class_Data1D.o
+class_sdata2d.o: class_Data2D.o
+class_sspdata1d.o: class_SpData1D.o
+class_sspdata2d.o: class_SpData2D.o
+class_strimat.o: class_TriMat.o
+class_zdata1d.o: class_Data1D.o
+class_zdata2d.o: class_Data2D.o
+class_zspdata1d.o: class_SpData1D.o
+class_zspdata2d.o: class_SpData2D.o
+class_ztrimat.o: class_TriMat.o
 diagmemory.o: memoryinfo.o
 f90sockets.o: fsockets.o
 fsiesta.o: fsiesta_sockets.o
@@ -920,7 +1366,6 @@ m_fft.o: fft.o
 m_final_h_f_stress.o: final_H_f_stress.o
 m_find_kgrid.o: find_kgrid.o
 m_fire_optim.o: fire_optim.o
-m_fixed.o: fixed.o
 m_forhar.o: forhar.o
 m_get_kpoints_scale.o: get_kpoints_scale.o
 m_gradient.o: gradient.o
@@ -937,11 +1382,11 @@ m_matel_registry.o: matel_registry.o
 m_minvec.o: minvec.o
 m_mixer.o: mixer.o
 m_naefs.o: naefs.o
-m_new_dm.o: new_dm.o
 m_new_matel.o: new_matel.o
 m_nlefsm.o: nlefsm.o
 m_norm.o: compute_norm.o
 m_normalize_dm.o: normalize_dm.o
+m_object_debug.o: object_debug.o
 m_on_subs.o: on_subs.o
 m_ordern.o: ordern.o
 m_overfsm.o: overfsm.o

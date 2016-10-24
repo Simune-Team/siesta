@@ -16,7 +16,7 @@ MODULE Kpoint_grid
   implicit none
 
   public :: setup_kpoint_grid, scf_kgrid_first_time, gamma_scf, maxk,   &
-            nkpnt, kweight, kpoint
+            nkpnt, kweight, kpoint, kscell, kdispl
 
 
   private

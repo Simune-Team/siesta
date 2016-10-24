@@ -140,6 +140,13 @@ C Matrices for 2D
       real(dp), pointer, save :: rwork(:)
       real(dp), pointer, save :: work(:)
       real(dp), pointer, save :: Zsave(:,:,:)
+#ifdef MPI
+#ifdef SCALAPACK_DEBUG
+      integer                 :: d_lwork, d_lrwork, d_liwork
+      logical,           save :: debugged = .false.
+#endif
+#endif
+
 
       complex(dp), parameter  :: 
      .             zero_z = (0.0_dp, 0.0_dp)
@@ -391,6 +398,44 @@ C For 2D case, copy arrays to new distribution
         call pzgemr2d(n, n, H, 1, 1, desch, h2d, 1, 1, desc_h2d, ictxt)
         call pzgemr2d(n, n, S, 1, 1, desch, s2d, 1, 1, desc_h2d, ictxt)
       endif
+#ifdef SCALAPACK_DEBUG
+      if ( .not. (Serial .or. debugged) ) then
+      debugged = .true.
+      d_lwork = -1
+      d_lrwork = -1
+      d_liwork = -1
+      if (DivideConquer) then
+         if (Use2D) then
+            call pzheevd(jobz,'U',n,h2d,1,1,desc_h2d,w,z2d,1,1,
+     .           desc_h2d,work,d_lwork,rwork,d_lrwork,iwork,
+     .           d_liwork,info)
+         else
+            call pzheevd(jobz,'U',n,H,1,1,desch,w,Z,1,1,desch,work,
+     .           d_lwork,rwork,d_lrwork,iwork,d_liwork,info)
+         endif
+      else
+         if (Use2D) then
+            call pzheevx(jobz,range,'U',n,h2d,1,1,desc_h2d,vl,vu,1,
+     .           neigvec,abstol,neigok,nz,w,orfac,z2d,1,1,
+     .           desc_h2d,work,d_lwork,rwork,d_lrwork,iwork,
+     .           d_liwork,ifail,iclustr,gap,info)
+         else
+            call pzheevx(jobz,range,'U',n,H,1,1,desch,vl,vu,1,neigvec,
+     .           abstol,neigok,nz,w,orfac,Z,1,1,desch,work,
+     .           d_lwork,rwork,d_lrwork,iwork,d_liwork,ifail,
+     .           iclustr,gap,info)
+         endif
+      endif
+      d_lwork  = nint(work(1))
+      d_lrwork = nint(rwork(1))
+      d_liwork = iwork(1)
+      write(*,'(a,i0,6(a,i10))')'cdiag-debug: Node=',Node,
+     &     ', lwork=', lwork,'>= lworkq=',d_lwork,
+     &     ', lrwork=',lrwork,'>= lrworkq=',d_lrwork,
+     &     ', liwork=',liwork,'>= liworkq=',d_liwork
+      endif
+#endif
+
 #endif
 
       if (AllInOne) then

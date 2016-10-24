@@ -38,7 +38,6 @@ CONTAINS
       use fdf,             only: fdf_get
       use siesta_options,  only: g2cut, Temp
       use siesta_options,  only: mix_charge, mixH
-      use sparse_matrices, only: H_kin, H_vkb, H_so
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H
       use sparse_matrices, only: Dscf, Dold
@@ -215,8 +214,12 @@ CONTAINS
     subroutine compute_correct_EKS()
 
       use files, only : filesOut_t    ! derived type for output file names
+      use class_dSpData1D, only : val
+      use class_dSpData2D, only : val
+      use sparse_matrices, only: H_kin_1D, H_vkb_1D, H_so_2D
 
-      type(filesOut_t)    :: filesOut  ! blank output file names
+      type(filesOut_t)  :: filesOut  ! blank output file names
+      real(dp), pointer :: H_vkb(:), H_kin(:), H_so(:,:)
 
       ! Compute E_KS(DM_out)
 
@@ -245,6 +248,9 @@ CONTAINS
       Escf_out = DEna + DUscf + DUext + Exc 
 
 !     Compute Tr[H_0*DM_out] = Ekin + Enl + Eso with DM_out
+
+      H_vkb => val(H_vkb_1D)
+      H_kin => val(H_kin_1D)
       
       Ekin = 0.0_dp
       Enl  = 0.0_dp
@@ -265,6 +271,7 @@ CONTAINS
 
       Eso = 0._dp
       if ( SpOrb ) then
+         H_so(1:,3:) => val(H_so_2D)
          do io = 1,maxnh
             Eso = Eso + H_so(io,3)*Dscf(io,7) + H_so(io,4)*Dscf(io,8) &
                  + H_so(io,7)*Dscf(io,3) + H_so(io,8)*Dscf(io,4) &

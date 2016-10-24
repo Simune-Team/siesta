@@ -29,7 +29,11 @@ C
       use parallelsubs, only : set_processorY, set_processorYdefault
 #ifdef MPI
       use parallelsubs, only : set_BlockSizeDefault
+      use mpi_siesta,   only: MPI_Comm_World, MPI_Comm_Self
 #endif
+      use class_OrbitalDistribution
+      use sparse_matrices,     only : block_dist, single_dist
+
       implicit none
 
 #ifdef MPI
@@ -195,11 +199,22 @@ C Set BlockSize
 #ifdef MPI
         call set_blocksizedefault(Nodes,no_u,blocksizedefault)
         BlockSize = fdf_integer('blocksize',blocksizedefault)
-
+        call newDistribution(blocksize,MPI_Comm_World,block_dist)
 #else
         BlockSize = 8
+        call newDistribution(blocksize,-1,block_dist)
 #endif
       endif
+
+      ! Create single communicator
+#ifdef MPI
+      call newDistribution(no_u,MPI_Comm_Self,single_dist,
+     &     name='Single-dist')
+#else
+      call newDistribution(no_u,-1           ,single_dist,
+     &     name='Singledist')
+#endif
+
 
 #ifdef MPI
 C Output indication of parallel parameters

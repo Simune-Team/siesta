@@ -26,7 +26,7 @@
       subroutine overfsm(nua, na, no, scell, xa, indxua, rmaxo,
      .                   maxnh, maxnd, lasto, iphorb, isa, 
      .                   numd, listdptr, listd, numh, listhptr, listh, 
-     .                   nspin, Emat, fa, stress, S)
+     .                   nspin, Escf, fa, stress, S)
 C *********************************************************************
 C Overlap matrix and orthonormalization contribution to forces and stress.
 C Energies in Ry. Lengths in Bohr.
@@ -45,18 +45,18 @@ C integer lasto(0:na)      : Last orbital index of each atom
 C integer iphorb(no)       : Orbital index of each orbital in its atom
 C integer isa(na)          : Species index of each atom
 C integer numd(nuotot)     : Number of nonzero elements of each row
-C                            of Emat
-C integer listdptr(nuotot) : Pointer to start of rows (-1) of Emat
+C                            of Escf
+C integer listdptr(nuotot) : Pointer to start of rows (-1) of Escf
 C integer listd(maxnh)     : Column indexes of the nonzero elements  
-C                            of each row of Emat
+C                            of each row of Escf
 C integer numh(nuotot)     : Number of nonzero elements of each row
 C                            of the overlap matrix
 C integer listhptr(nuotot) : Pointer to start of rows (-1) of overlap
 C                            matrix
 C integer listh(maxnh)     : Column indexes of the nonzero elements  
 C                            of each row of the overlap matrix
-C integer nspin            : Number of spin components of Emat
-C integer Emat(maxnd,nspin): Energy-Density matrix
+C integer nspin            : Number of spin components of Escf
+C integer Escf(maxnd,nspin): Energy-Density matrix
 C **************************** OUTPUT *********************************
 C real*8  S(maxnh)         : Sparse overlap matrix
 C ********************** INPUT and OUTPUT *****************************
@@ -73,7 +73,7 @@ C *********************************************************************
      . listhptr(*)
 
       real(dp) , intent(inout)  :: fa(3,nua), stress(3,3)
-      real(dp) , intent(in)     :: scell(3,3), Emat(maxnd,nspin), 
+      real(dp) , intent(in)     :: scell(3,3), Escf(maxnd,nspin), 
      .                 rmaxo, xa(3,na)
       real(dp), intent(out)     :: S(maxnh)
 
@@ -124,7 +124,7 @@ C Valid orbital
               ind = listdptr(iio)+j
               jo = listd(ind)
               do ispin = 1,nspin  
-                Di(jo) = Di(jo) + Emat(ind,ispin)
+                Di(jo) = Di(jo) + Escf(ind,ispin)
               enddo
             enddo
             do jn = 1,nnia

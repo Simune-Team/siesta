@@ -110,6 +110,9 @@ C of referencing has been changed in several places to reflect this.
       integer MPIerror
 #endif
       external              cdiag
+#ifdef DEBUG
+      call write_debug( '    PRE diag2k' )
+#endif
 !***********************************************************************
 !     B E G I N
 !***********************************************************************
@@ -330,6 +333,9 @@ C of referencing has been changed in several places to reflect this.
       deallocate(Saux)
       call memory('D','Z',2*nuotot,'diag2g')
       deallocate(caux)
+#ifdef DEBUG
+      call write_debug( '    POS diag2k' )
+#endif
 !***********************************************************************
       return
       end

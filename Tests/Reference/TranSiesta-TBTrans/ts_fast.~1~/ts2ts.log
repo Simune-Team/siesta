@@ -1,0 +1,29 @@
+TS.BufferAtomsLeft              0
+TS.BufferAtomsRight              0
+TS.ReplicateA1Left         1     # default value
+TS.ReplicateA2Left         1     # default value
+TS.NumUsedAtomsLeft              3
+TS.HSFileLeft     ./elec.fast.TSHS                                                                
+TS.ReplicateA1Right         1     # default value
+TS.ReplicateA2Right         1     # default value
+TS.NumUsedAtomsRight              3
+TS.HSFileRight     ./elec.fast.TSHS                                                                
+TS.Voltage          0.000000000             Ry
+# above item originally: TS.Voltage          0.000000000     eV        
+TS.ComplexContour.NLine             10
+TS.ComplexContour.NPoles              3
+TS.ComplexContour.NCircle             30
+TS.biasContour.NumPoints              0
+TS.ComplexContourEmin         -2.204939653             Ry
+# above item originally: TS.ComplexContourEmin         -30.00000000     eV        
+TS.biasContour.Eta         0.7349806700E-05 Ry     # default value
+TS.UseBulkInElectrodes              T     # default value
+TS.UpdateDMCROnly              F     # default value
+TS.ReUseGF              T     # default value
+TS.TBT.Emin        -0.7349798845E-01         Ry
+# above item originally: TS.TBT.Emin         -1.000000000     eV        
+TS.TBT.Emax         0.7349798845E-01         Ry
+# above item originally: TS.TBT.Emax          1.000000000     eV        
+TS.TBT.Npoints            100
+TS.TBT.Eta         0.1000000000E-05         Ry
+# above item originally: TS.TBT.Eta         0.1000000000E-05 Ry        
