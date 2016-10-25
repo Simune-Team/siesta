@@ -9704,15 +9704,24 @@ involving molecules.
 
     \fdf*{alpha} is the angle between the 2nd and 3rd cell vector.
 
-    \fdf*{beta} is the angle between the 1st and 3rd cell vector. 
+    \fdf*{beta} is the angle between the 1st and 3rd cell vector.
 
-    \fdf*{gamma} is the angle between the 1st and 2nd cell vector. 
+    \fdf*{gamma} is the angle between the 1st and 2nd cell vector.
+
+    \note currently only one angle can be constrained at a time and it
+    forces only the spanning vectors to be relaxed.
+
 
     \option[cell-vector]%
     Control whether the cell vectors ($A$, $B$, $C$) may be altered.
 
     This takes either one or more of \fdf*{A}/\fdf*{B}/\fdf*{C} as
     argument.
+
+    Constraining the cell-vectors are only allowed if they only have a
+    component along their respective Cartesian
+    direction. I.e. \fdf*{B} must only have a $y$-component.
+
 
     \option[stress]%
     Control which of the 6 stress components are constrained.

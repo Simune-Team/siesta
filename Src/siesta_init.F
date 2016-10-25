@@ -565,7 +565,7 @@ C     Initialise MPI and set processor number
 
       ! initialize the fixed positions (we need to check whether the 
       ! fixed positions make sense)
-      call init_fixed( na_u , isa, iza )
+      call init_fixed( ucell, na_u , isa, iza )
       call print_fixed( )
       
 #ifdef TRANSIESTA

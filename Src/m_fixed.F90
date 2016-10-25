@@ -196,55 +196,40 @@ contains
     cstress(1,2) = cstress(1,2) - xs(6) * cstress(1,2)
     cstress(2,1) = cstress(2,1) - xs(6) * cstress(2,1)
 
-    ! apply cell-constraints. This corresponds to 
-    ! stress release.
+    ! stress-directions will be symmetrized
+    ! This constrain is equivalent to only
+    ! allow the same expansion factor in front
+    ! of each cell-vector.
+    if ( cell_angle(1) ) then
+       ! alpha angle, ang(B,C)
+       am = ( cstress(2,2) + cstress(3,3) ) * .5_dp
+       ! Kill everything else...
+       cstress(:,:) = 0._dp
+       cstress(2,2) = am
+       cstress(3,3) = am
+    end if
+    if ( cell_angle(2) ) then
+       ! beta angle, ang(A,C)
+       am = ( cstress(1,1) + cstress(3,3) ) * .5_dp
+       cstress(:,:) = 0._dp
+       cstress(1,1) = am
+       cstress(3,3) = am
+    end if
+    if ( cell_angle(3) ) then
+       ! gamma angle, ang(A,B)
+       am = ( cstress(1,1) + cstress(2,2) ) * .5_dp
+       cstress(:,:) = 0._dp
+       cstress(1,1) = am
+       cstress(2,2) = am
+    end if
+
+    ! should be done after angles...
     do if = 1 , 3
        if ( cell_vector(if) ) then
           cstress(:,if) = 0._dp
           cstress(if,:) = 0._dp
        end if
     end do
-    if ( cell_angle(1) ) then
-       ! alpha angle, ang(B,C)
-       ! kill A
-       cstress(2:3,1) = 0._dp
-       cstress(1,2:3) = 0._dp
-       ! stress-directions will be symmetrized
-       cf(1) = ( cstress(2,2) + cstress(3,3) ) * .5_dp
-       cf(2) = ( cstress(2,3) + cstress(3,2) ) * .5_dp
-       cstress(2,2) = cf(1)
-       cstress(3,3) = cf(1)
-       cstress(2,3) = cf(2)
-       cstress(3,2) = cf(2)
-    end if
-    if ( cell_angle(2) ) then
-       ! beta angle, ang(A,C)
-       ! kill B
-       cstress(1,2) = 0._dp
-       cstress(3,2) = 0._dp
-       cstress(2,1) = 0._dp
-       cstress(2,3) = 0._dp
-       ! stress-directions will be symmetrized
-       cf(1) = ( cstress(1,1) + cstress(3,3) ) * .5_dp
-       cf(2) = ( cstress(1,3) + cstress(3,1) ) * .5_dp
-       cstress(1,1) = cf(1)
-       cstress(3,3) = cf(1)
-       cstress(1,3) = cf(2)
-       cstress(3,1) = cf(2)
-    end if
-    if ( cell_angle(3) ) then
-       ! gamma angle, ang(A,B)
-       ! kill C
-       cstress(1:2,3) = 0._dp
-       cstress(3,1:2) = 0._dp
-       ! stress-directions will be symmetrized
-       cf(1) = ( cstress(1,1) + cstress(2,2) ) * .5_dp
-       cf(2) = ( cstress(1,2) + cstress(2,1) ) * .5_dp
-       cstress(1,1) = cf(1)
-       cstress(2,2) = cf(1)
-       cstress(1,2) = cf(2)
-       cstress(2,1) = cf(2)
-    end if
 
     lmag_use = .false.
     if ( present(magnitude_usage) ) lmag_use = magnitude_usage
@@ -601,15 +586,16 @@ contains
 
   end subroutine print_fixed
   
-  subroutine init_fixed( na , isa , iza )
+  subroutine init_fixed( cell, na , isa , iza )
 
     use fdf
     use fdf_extra
-    use intrinsic_missing, only : VNORM
+    use intrinsic_missing, only : VNORM, VEC_PROJ
     use parallel, only : IONode
 
     use m_region
 
+    real(dp), intent(in) :: cell(3,3)
     integer,  intent(in)  :: na, isa(na), iza(na)
 
     ! Internal variables
@@ -711,16 +697,55 @@ contains
             leqi(namec,'cell-angle') ) then
 
           N = fdf_bnnames(pline)
+
+          ! When fixing the cell-angles
+          ! the cell-vectors must be orthogonal
+          ! This is because of non-symmetry in
+          ! the stress-tensor for non-orthogonal
+          ! lattice vectors.
           
           do i = 2 , N
              namec = fdf_bnames(pline,i)
              ! Fix alpha angle
              if ( leqi(namec,'alpha') ) then
-                cell_angle(1) = .true.
+                if ( is_zero(cell(1,2)) .and. &
+                     is_zero(cell(1,3)) ) then
+                   cell_angle(1) = .true.
+                else
+                   if ( IONOde ) then
+                      write(*,'(a)') 'fixed: alpha-angle cannot &
+                           &be constrained due to B and C having &
+                           &components along Cartesian X-direction.'
+                   end if
+                   call die('fixed: alpha-angle cannot be constrained.')
+                end if
+                
              else if ( leqi(namec,'beta') ) then
-                cell_angle(2) = .true.
+                if ( is_zero(cell(2,1)) .and. &
+                     is_zero(cell(2,3)) ) then
+                   cell_angle(2) = .true.
+                else
+                   if ( IONOde ) then
+                      write(*,'(a)') 'fixed: beta-angle cannot &
+                           &be constrained due to A and C having &
+                           &components along Cartesian Y-direction.'
+                   end if
+                   call die('fixed: beta-angle cannot be constrained.')
+                end if
+                
              else if ( leqi(namec,'gamma') ) then
-                cell_angle(3) = .true.
+                if ( is_zero(cell(3,1)) .and. &
+                     is_zero(cell(3,2)) ) then
+                   cell_angle(3) = .true.
+                else
+                   if ( IONOde ) then
+                      write(*,'(a)') 'fixed: gamma-angle cannot &
+                           &be constrained due to A and B having &
+                           &components along Cartesian Z-direction.'
+                   end if
+                   call die('fixed: gamma-angle cannot be constrained.')
+                end if
+                
              end if
           end do
 
@@ -735,11 +760,41 @@ contains
              namec = fdf_bnames(pline,i)
              ! Fix alpha angle
              if ( leqi(namec,'a1') .or. leqi(namec,'a') ) then
-                cell_vector(1) = .true.
+                if ( is_zero(cell(2,1)) .and. is_zero(cell(3,1)) ) then
+                   cell_vector(1) = .true.
+                else
+                   if ( IONOde ) then
+                      write(*,'(a)') 'fixed: A-vector cannot &
+                           &be constrained due to A having Y and Z &
+                           &components.'
+                   end if
+                   call die('fixed: A-vector cannot be constrained.')
+                end if
+                
              else if ( leqi(namec,'a2') .or. leqi(namec,'b') ) then
-                cell_vector(2) = .true.
+                if ( is_zero(cell(1,2)) .and. is_zero(cell(3,2)) ) then
+                   cell_vector(2) = .true.
+                else
+                   if ( IONOde ) then
+                      write(*,'(a)') 'fixed: B-vector cannot &
+                           &be constrained due to B having X and Z &
+                           &components.'
+                   end if
+                   call die('fixed: B-vector cannot be constrained.')
+                end if
+                
              else if ( leqi(namec,'a3') .or. leqi(namec,'c') ) then
-                cell_vector(3) = .true.
+                if ( is_zero(cell(1,3)) .and. is_zero(cell(2,3)) ) then
+                   cell_vector(3) = .true.
+                else
+                   if ( IONOde ) then
+                      write(*,'(a)') 'fixed: C-vector cannot &
+                           &be constrained due to C having X and Y &
+                           &components.'
+                   end if
+                   call die('fixed: C-vector cannot be constrained.')
+                end if
+                
              end if
           end do
 
@@ -944,6 +999,22 @@ contains
 #endif
 
   contains
+
+    function is_ortho(v1,v2) result(is)
+      real(dp), intent(in) :: v1(3), v2(3)
+      logical :: is
+
+      is = is_zero( vnorm( vec_proj(v1,v2) ) )
+      
+    end function is_ortho
+
+    function is_zero(v) result(is)
+      real(dp), intent(in) :: v
+      logical :: is
+      
+      is = abs(v) < 1.e-9_dp
+      
+    end function is_zero
 
     subroutine fix_brange(pline,r,na)
       type(parsed_line), pointer :: pline
