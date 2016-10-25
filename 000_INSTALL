@@ -8,7 +8,9 @@ http://launchpad.net/xmlf90
 Direct links to current tarballs:
 
 wget https://launchpad.net/libpsml/trunk/0.9-build/+download/libpsml-0.9.3.tgz
-wget https://launchpad.net/xmlf90/trunk/1.4/+download/xmlf90-1.4.1.tgz
+wget https://launchpad.net/xmlf90/trunk/1.5/+download/xmlf90-1.5.0.tgz
+
+NOTE: You need at least version 1.5.0 of the xmlf90 library
 
 ** Steps in detail
 
