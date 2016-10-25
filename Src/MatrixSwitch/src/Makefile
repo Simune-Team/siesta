@@ -17,11 +17,15 @@ include $(ARCH_MAKE)
 #
 EXTFLAGS=$(FPPFLAGS)
 #
+# Use the override command in case we still want
+# to pass FPPFLAGS in the command line. (Now it
+# is superfluous since we include the arch.make file)
+#
 MPI_STRING=$(findstring -DMPI,$(EXTFLAGS))
 ifneq (,$(MPI_STRING))
-FPPFLAGS += -DLAP -DSLAP -DCONV
+override FPPFLAGS += -DLAP -DSLAP -DCONV
 else
-FPPFLAGS += -DLAP -DCONV
+override FPPFLAGS += -DLAP -DCONV
 endif
 #
 #

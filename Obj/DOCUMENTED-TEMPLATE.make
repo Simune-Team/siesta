@@ -40,7 +40,7 @@ FC = mpif90
 
 # The FC_SERIAL symbol is useful in at least two cases:
 #   1. When the "MPI compiler environment" is so complex that it might
-#      trick the configure scripts (for FoX at least).
+#      trick the configure scripts.
 #   2. When executables compiled with a (parallel) FC are flagged by 
 #      the computer centers as "queuing-system-only". 
 # Most utilities are thus compiled with FC_SERIAL, which in practice

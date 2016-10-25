@@ -257,30 +257,27 @@ OBJS += m_cite.o
 m_pexsi.o m_pexsi_driver.o m_pexsi_dos.o m_pexsi_local_dos.o: f_ppexsi_interface.o
 
 #--------------------------------------------------------------
-
-
-
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
-
+#
+# These subordinate make processes take options from the top level.
+# In some cases they are superfluous, since they can be read
+# from the arch.make file, which is 'included' by all subordinate
+# makefiles. But in some other cases they are needed: VPATH, for
+# example, needs to be passed always.
+#
 NCPS=ncps/src/libncps.a
 $(NCPS): $(PSML)
 	(cd ncps/src ; $(MAKE) -j 1 VPATH="$(VPATH)/ncps/src" \
 	ARCH_MAKE=$(ARCH_MAKE) \
-	 AR="$(AR)" RANLIB="$(RANLIB)" \
 	"PSML_INCFLAGS=$(PSML_INCFLAGS)" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
-# Sadly the configure script does not store the AR and RANLIB flags... :(
-	(cd FoX ; echo "AR = $(AR)" >> arch.make ; \
-	echo "RANLIB = $(RANLIB)" >> arch.make )
-
 #--------------------------------------------------------------
 PSOP=psoplib/src/libpsop.a
 $(PSOP): 
 	(cd psoplib/src ; $(MAKE) -j 1 VPATH="$(VPATH)/psoplib/src" \
 	ARCH_MAKE=$(ARCH_MAKE) \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
-
 #--------------------------------------------------------------
 libmpi_f90.a: 
 	@(cd MPI ; $(MAKE) -j 1 \
@@ -302,6 +299,7 @@ $(MS):
 	(cd MatrixSwitch/src ; \
 	 $(MAKE) -j 1\
 	            "VPATH=$(VPATH)/MatrixSwitch/src" \
+		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" all)
 #
 m_initwf.o changebasis.o m_evolve.o evolg.o evolk.o: $(MS)
@@ -449,8 +447,8 @@ siesta: check-siesta what version \
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MS)  \
                $(XC) $(MPI_INTERFACE) \
-               $(COMP_LIBS) $(FOX_LIBS) \
-               $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
+               $(COMP_LIBS) $(LIBS) \
+	       $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
 	       $(LIBS)
 	@echo "--- reference section "
 	@echo "PSML-related libs: $(PSML_LIBS)"
@@ -461,6 +459,8 @@ libSiestaForces.a: $(OBJS) $(SYSOBJ)
 	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
             $(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a MPI/*.o ; fi
 	-$(RANLIB) libSiestaForces.a
+#
+
 
 #----------------------------------------------------------------------------
 # TranSIESTA objects needed for siesta
@@ -507,14 +507,13 @@ check-ts:
 	@touch .transiesta
 
 transiesta: check-ts what version \
-            $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
+            $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(MS) $(XC) \
             $(NCPS) $(PSOP) $(PSML)\
-            $(XMLPARSER)  \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(MS) $(XC) \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
-               $(COMP_LIBS) $(FOX_LIBS) \
+               $(COMP_LIBS) $(LIBS) \
                $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
                $(LIBS)
 clean: 
@@ -526,7 +525,6 @@ clean:
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
-	@if [ -d FoX ] ; then (cd FoX ; touch arch.make ; $(MAKE) distclean) ; fi
 	(cd ncps/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	(cd psoplib/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
@@ -1243,7 +1241,8 @@ siesta_analysis.o: m_pexsi_dos.o m_pexsi_local_dos.o m_spin.o m_steps.o
 siesta_analysis.o: parallel.o projected_DOS.o siesta2wannier90.o siesta_cml.o
 siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o units.o
 siesta_analysis.o: write_subs.o writewave.o zmatrix.o
-siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o version.o
+siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
+siesta_cmlsubs.o: version.o
 siesta_dicts.o: atomlist.o m_energies.o m_forces.o precision.o siesta_geom.o
 siesta_dicts.o: siesta_options.o
 siesta_end.o: alloc.o bands.o densematrix.o extrae_eventllist.o flook_siesta.o

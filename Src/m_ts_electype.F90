@@ -253,7 +253,6 @@ contains
     info(:) = .false.
 
     bName = trim(prefix)//'.Elec.'//trim(this%name)
-    found = fdf_block(trim(bName),bfdf)
 
     ! Allow the filename to be read in individually
     name = trim(bName)//'.HS'
@@ -269,8 +268,32 @@ contains
     name = trim(bName)//'.GF'
     if ( fdf_defined(trim(name)) ) this%GFfile = trim(fdf_get(name,''))
 
+    ! Default to use the chemical potential with the same
+    ! name as the electrode
+    ! If the block specifies the chemical
+    ! potential, it will be the preferred method
+    ln = trim(this%name)
+    nullify(this%mu)
+    do i = 1 , N_mu
+       if ( leqi(ln,mus(i)%name) ) then
+          this%mu => mus(i)
+          info(3) = .true.
+          exit
+       end if
+    end do
+    ! If there is only one chemical potential
+    ! then, of course, they are associated.
+    if ( N_mu == 1 ) then
+       this%mu => mus(1)
+       info(3) = .true.
+    end if
+
+    
+    ! Figure out if we should return immediately
+    found = fdf_block(trim(bName),bfdf)
     if ( .not. found ) return
 
+    
     cidx_a = 0
     ! Denote that no bloch expansion coefficients has
     ! been set.

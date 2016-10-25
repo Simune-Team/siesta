@@ -1,9 +1,9 @@
 MODULE flib_wstml
 
   use flib_wxml, only: xmlf_t
-  use flib_wxml, only: str
+  use flib_wxml, only: str, xml_AddArray
   use flib_wxml, only: xml_NewElement, xml_AddPcData, xml_AddAttribute
-  use flib_wxml, only: xml_EndElement
+  use flib_wxml, only: xml_EndElement, xml_AddComment
   use m_wxml_overloads
 
   implicit none
@@ -125,7 +125,7 @@ CONTAINS
     if (present(min))        call xml_AddAttribute(xf, 'min', min)
     if (present(max))        call xml_AddAttribute(xf, 'max', max)
     if (present(units))      call xml_AddAttribute(xf, 'units', units)
-    call xml_AddPcdata(xf, value)
+    call xml_AddPcdata(xf, value, line_feed=.false.)
     call xml_EndElement(xf, 'scalar')
 
   END SUBROUTINE stmAddString
@@ -204,16 +204,11 @@ CONTAINS
     character(len=*), intent(in), optional :: min
     character(len=*), intent(in), optional :: max
     character(len=*), intent(in), optional :: units        ! units
-    character(len=*), intent(in), optional :: fmt          ! the format (default 'f10.4')
+    character(len=*), intent(in), optional :: fmt          ! the format 
 
-    if (present(fmt)) then
+
        call stmAddString(xf, str(value,fmt), id, title, dictref, dataType, &
          convention, errorValue, errorBasis, min, max, units)
-    else
-       call stmAddString(xf, trim(str(value,'(f10.4)')), id, title, dictref, dataType, &
-         convention, errorValue, errorBasis, min, max, units)
-    endif
-
 
   END SUBROUTINE stmAddFloatDP
 
@@ -237,15 +232,10 @@ CONTAINS
     character(len=*), intent(in), optional :: errorBasis
     character(len=*), intent(in), optional :: min
     character(len=*), intent(in), optional :: max
-    character(len=*), intent(in), optional :: fmt          ! the format (default 'f10.4')
-
-    if (present(fmt)) then
+    character(len=*), intent(in), optional :: fmt
+    
        call stmAddString(xf, str(value,fmt), id, title, dictref, dataType, &
          convention, errorValue, errorBasis, min, max, units)
-    else
-       call stmAddString(xf, trim(str(value,'(f10.4)')), id, title, dictref, dataType, &
-         convention, errorValue, errorBasis, min, max, units)
-    endif
 
   END SUBROUTINE stmAddFloatSP
 
@@ -381,11 +371,8 @@ CONTAINS
     call xml_AddAttribute(xf, 'size', nvalue)
     call xml_AddAttribute(xf, 'dataType', 'xsd:integer')
 
+    call xml_AddArray(xf,array(1:nvalue))
 
-    call xml_AddPcdata(xf, array(1))
-    do i = 2, nvalue
-       call xml_AddPcdata(xf, array(i), space=.true.)
-    enddo
     call xml_EndElement(xf, 'array')
     
   END SUBROUTINE stmAddIntegerArray
@@ -408,15 +395,6 @@ CONTAINS
     character(len=*), intent(in), optional :: ref           ! 
     character(len=*), intent(in), optional :: fmt           ! the output format
 
-    ! Internal Variable
-    character(len=200) :: formt
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
-
     ! splits data into lines whenever it overflows workspace/linelength
     ! Flush on entry and exit
 
@@ -428,7 +406,8 @@ CONTAINS
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     call xml_AddAttribute(xf, 'size', nvalue)
     call xml_AddAttribute(xf, 'dataType', 'xsd:double')
-    call STMARCF9DP(xf, nvalue, array, formt)
+
+    call xml_AddArray(xf,array(1:nvalue),fmt)
     call xml_EndElement(xf, 'array')
 
   END SUBROUTINE stmAddFloatArrayDP
@@ -450,14 +429,6 @@ CONTAINS
     character(len=*), intent(in), optional :: fmt           ! the output format
     character(len=*), intent(in), optional :: ref           ! the output format
 
-    ! Internal Variable
-    character(len=200) :: formt
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
 
     ! splits data into lines whenever it overflows workspace/linelength
     ! Flush on entry and exit
@@ -470,7 +441,8 @@ CONTAINS
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     call xml_AddAttribute(xf, 'size', nvalue)
     call xml_AddAttribute(xf, 'dataType', 'xsd:float')
-    call STMARCF9SP(xf, nvalue, array, formt)
+
+    call xml_AddArray(xf,array(1:nvalue),fmt)
     call xml_EndElement(xf, 'array')
 
   END SUBROUTINE stmAddFloatArraySP
@@ -486,7 +458,7 @@ CONTAINS
     type(xmlf_t),     intent(inout)        :: xf
     integer,          intent(in)           :: nrows         ! the number of rows to be output
     integer,          intent(in)           :: ncols         ! the number of rows to be output
-    character(len=*), intent(in)           :: matrix(ncols,nrows) ! the values to be output
+    character(len=*), intent(in)           :: matrix(nrows,ncols) ! the values to be output
     character(len=*), intent(in), optional :: id            ! the id
     character(len=*), intent(in), optional :: title         ! the title
     character(len=*), intent(in), optional :: dictref       ! the dictionary reference
@@ -495,6 +467,7 @@ CONTAINS
     ! splits data into lines wherever it overflows the workspace
     integer ::  i, j
 
+    call xml_AddComment(xf,"In matrix, row (first) index is fastest")
     call xml_NewElement(xf, 'matrix')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
     if (present(dictref))   call xml_AddAttribute(xf, 'dictRef', dictref)
@@ -525,7 +498,7 @@ CONTAINS
     type(xmlf_t) :: xf
     integer, intent(in)                    :: nrows         ! the number of rows to be output
     integer, intent(in)                    :: ncols         ! the number of rows to be output
-    integer, intent(in)                    :: matrix(ncols,nrows) ! the values to be output
+    integer, intent(in)                    :: matrix(nrows,ncols) ! the values to be output
     character(len=*), intent(in), optional :: id            ! the id
     character(len=*), intent(in), optional :: title         ! the title
     character(len=*), intent(in), optional :: dictref       ! the dictionary reference
@@ -537,6 +510,7 @@ CONTAINS
 
 
 
+    call xml_AddComment(xf,"In matrix, row (first) index is fastest")
     call xml_NewElement(xf, 'matrix')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
     if (present(dictref))   call xml_AddAttribute(xf, 'dictRef', dictref)
@@ -547,9 +521,7 @@ CONTAINS
     call xml_AddAttribute(xf, 'dataType', 'xsd:integer')
 
     do i = 1, ncols
-       do j = 1, nrows
-          call xml_AddPcdata(xf, matrix(j, i), space=.true.)
-       enddo
+       call xml_AddArray(xf,matrix(1:nrows,i))
     enddo
     call xml_EndElement(xf, 'matrix')
 
@@ -563,7 +535,7 @@ CONTAINS
     type(xmlf_t) :: xf
     integer, intent(in)                    :: nrows         ! the number of rows to be output
     integer, intent(in)                    :: ncols         ! the number of rows to be output
-    logical, intent(in)                    :: matrix(ncols,nrows) ! the values to be output
+    logical, intent(in)                    :: matrix(nrows,ncols) ! the values to be output
     character(len=*), intent(in), optional :: id            ! the id
     character(len=*), intent(in), optional :: title         ! the title
     character(len=*), intent(in), optional :: dictref       ! the dictionary reference
@@ -573,6 +545,7 @@ CONTAINS
     ! Flush on entry and exit
     integer ::  i, j 
 
+    call xml_AddComment(xf,"In matrix, row (first) index is fastest")
     call xml_NewElement(xf, 'matrix')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
     if (present(dictref))   call xml_AddAttribute(xf, 'dictRef', dictref)
@@ -603,26 +576,19 @@ CONTAINS
     type(xmlf_t) :: xf
     integer, intent(in)                    :: ncols                ! the number of cols to be output
     integer, intent(in)                    :: nrows                ! the number of rows to be output
-    real(kind=dp), intent(in)               :: matrix(ncols,nrows)  ! the values to be output
+    real(kind=dp), intent(in)               :: matrix(nrows,ncols)  ! the values to be output
     character(len=*), intent(in), optional :: id                   ! the id
     character(len=*), intent(in), optional :: title                ! the title
     character(len=*), intent(in), optional :: dictref              ! the dictionary reference
     character(len=*), intent(in), optional :: units                ! scienitific units (default ' ')
     character(len=*), intent(in), optional :: fmt                  ! format
 
-    ! internal variable
-    character(len=200) :: formt
     integer ::  i, j
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
 
     ! splits data into lines wherever it overflows the workspace
     ! Flush on entry and exit      
     !-------------
+    call xml_AddComment(xf,"In matrix, row (first) index is fastest")
     call xml_NewElement(xf, 'matrix')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
@@ -632,10 +598,8 @@ CONTAINS
     call xml_AddAttribute(xf, 'rows', nrows)
     call xml_AddAttribute(xf, 'dataType', 'xsd:double')
     !-------------
-    do i = 1, nrows
-       do j = 1, ncols
-          call xml_AddPcdata(xf, matrix(j, i), formt, space=.true.)
-       enddo
+    do i = 1, ncols
+       call xml_AddArray(xf,matrix(1:nrows,i),fmt)
     enddo
     call xml_EndElement(xf, 'matrix')
 
@@ -651,7 +615,7 @@ CONTAINS
     type(xmlf_t) :: xf
     integer, intent(in)                    :: ncols               ! the number of cols to be output
     integer, intent(in)                    :: nrows               ! the number of rows to be output
-    real(kind=sp), intent(in)               :: matrix(ncols,nrows) ! the values to be output
+    real(kind=sp), intent(in)              :: matrix(nrows,ncols) ! the values to be output
     character(len=*), intent(in), optional :: id                  ! the id
     character(len=*), intent(in), optional :: title               ! the title
     character(len=*), intent(in), optional :: dictref             ! the dictionary reference
@@ -659,18 +623,12 @@ CONTAINS
     character(len=*), intent(in), optional :: fmt                 ! format
 
     ! internal variable
-    character(len=200) :: formt
     integer ::  i, j
-
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'
-    endif
 
     ! splits data into lines wherever it overflows the workspace
     ! Flush on entry and exit      
     !
+    call xml_AddComment(xf,"In matrix, row (first) index is fastest")
     call xml_NewElement(xf, 'matrix')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
@@ -679,10 +637,8 @@ CONTAINS
     call xml_AddAttribute(xf, 'columns', ncols)
     call xml_AddAttribute(xf, 'rows', nrows)
     call xml_AddAttribute(xf, 'dataType', 'xsd:float')
-    do i = 1, nrows
-       do j = 1, ncols
-          call xml_AddPcdata(xf, matrix(j, i), formt, space=.true.)
-       enddo
+    do i = 1, ncols
+       call xml_AddArray(xf,matrix(1:nrows,i),fmt)
     enddo
     call xml_EndElement(xf, 'matrix')
 

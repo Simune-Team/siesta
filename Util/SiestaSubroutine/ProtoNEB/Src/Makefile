@@ -16,21 +16,24 @@ OBJDIR=Obj
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 #
+#
+default: protoNEB clean 
+#
 MAIN_OBJDIR:=$(shell cd -P -- ../../../../\$(OBJDIR) && pwd -P)
 ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
-TOP_LEVEL=$(shell pwd)../../../../../Src
+TOP_LEVEL=$(shell pwd)/../../../../Src
 VPATH:=$(TOP_LEVEL)
 #
-PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
+include $(PSML_ROOT)/psml.mk
+include $(XMLF90_ROOT)/xmlf90.mk
+#
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 INCFLAGS:=$(NETCDF_INCFLAGS) \
           $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
-          $(INCFLAGS)
-#
-default: protoNEB clean 
+          $(INCFLAGS) $(XMLF90_INCFLAGS)
 #
 # Routines used by pipes version (VPATH knows where they are)
 #
@@ -38,18 +41,17 @@ default: protoNEB clean
 #
 SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
-XMLPARSER=libxmlparser.a
 XC=libSiestaXC.a
+MS=MatrixSwitch.a
 #
-include $(MAIN_OBJDIR)/Mk/FoX.mk
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
-PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
+PSML=$(PSML_LIBS)
 #
-ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-	$(NCPS) $(PSML) $(PSOP) \
-	$(MPI_INTERFACE) $(COMP_LIBS) $(FOX_LIBS) $(LIBS)
+ALL_LIBS= $(SIESTA_LIB) $(FDF) $(XMLF90_LIBS)  $(XC) \
+	$(NCPS) $(PSML) $(PSOP) $(MS)\
+	$(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 #
 libs_collected:
 	(cd $(MAIN_OBJDIR) ; \
