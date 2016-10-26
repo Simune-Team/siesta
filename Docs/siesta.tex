@@ -2310,7 +2310,7 @@ Note: The perturbative method has traditionally used the 'l' component
 of the pseudopotential. It can be argued that it should use the 'l+1'
 component. By default, for backwards compatibility, the traditional
 method is used, but the alternative one can be activated by setting
-the logical \fdf{PAO!OldStylePolOrbs} variable to \fdffalse.
+the logical \fdf*{PAO!OldStylePolOrbs} variable to \fdffalse.
 
 There is a different possibility for generating polarization orbitals:
 by introducing them explicitly in the \fdf{PAO!Basis} block.
@@ -2373,7 +2373,7 @@ above.
   Residual kinetic-energy leaked by filtering each basis function.
   While \fdf{FilterCutoff} sets a common reciprocal-space cutoff
   for all the basis functions, \fdf{FilterTol} sets a specific
-  cutoff for each basis function, much as the \fdf{EnergyShift}
+  cutoff for each basis function, much as the \fdf{PAO!EnergyShift}
   sets their real-space cutoff. Therefore, it is reasonable to use
   similar values for both parameters.  The maximum cutoff required to
   meet the \fdf{FilterTol}, among all the basis functions, is used
@@ -2496,7 +2496,7 @@ pseudopotential file. Any ``interesting'' radii have to fall on a grid
 point, which introduces a certain degree of coarseness that can limit
 the accuracy of the results and the faithfulness of the mapping of
 input parameters to actual operating parameters. For example, the same
-orbital will be produced by a finite range of \textbf{PAO.EnergyShift}
+orbital will be produced by a finite range of \fdf{PAO!EnergyShift}
 values, and any user-defined cutoffs will not be exactly reflected in
 the actual cutoffs. This is particularly troublesome for automatic
 optimization procedures (such as those implemented in
@@ -2673,7 +2673,7 @@ modified xyz format) which must be described within a
   redefined as the whole supercell and the program no longer knows the
   existence of an underlying unit cell.  All other input (apart from
   NumberOfAtoms and atomic positions), including
-  \fdf{kgridMonkhorstPack} must refer to the supercell (this is a
+  \fdf{kgrid!MonkhorstPack} must refer to the supercell (this is a
   change over previous versions). Therefore, to avoid confusions, we
   recommend to use \fdf{SuperCell} only to generate atomic positions,
   and then to copy them from the output to a new input file with all
@@ -2753,7 +2753,7 @@ modified xyz format) which must be described within a
   \end{shellexample}
   where \shell{xa(ix,ia)} is the \shell{ix} coordinate of atom
   \shell{iai} in the format (units) specified by
-  \fdf{AtomCoordinatesFormat}, and \shell{isa(ia)} is the species
+  \fdf{AtomicCoordinatesFormat}, and \shell{isa(ia)} is the species
   index of atom \shell{ia}.
 
   \note this block \emph{must} be present in the fdf file. If
@@ -10403,7 +10403,7 @@ information.
   Control which initial guess should be used for \tsiesta. The
   general way is the \fdf*{diagon} solution method, however, one can
   start immediately in a \tsiesta\ run. If you start directly with
-  \tsiesta\ please refer to these flags: \fdf{TS!Elecs!DM.Bulk},
+  \tsiesta\ please refer to these flags: \fdf{TS!Elecs!DM.Init},
   \fdf{DM.Init.Bulk} and \fdf{TS!Fermi.Initial}.
   
   \note Setting this to \fdf*{transiesta} is highly experimental and
