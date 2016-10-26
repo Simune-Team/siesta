@@ -7,34 +7,36 @@
 !
 Module siesta_cml
 
-  Use FoX_wcml, only: cmlStartModule, cmlEndModule
-  Use FoX_wcml, only: cmlStartStep, cmlEndStep
-  Use FoX_wcml, only: cmlStartPropertyList, cmlEndPropertyList
-  Use FoX_wcml, only: cmlStartParameterList, cmlEndParameterList
-  Use FoX_wcml, only: cmlAddProperty, cmlAddLattice, cmlAddKPoint
-  Use FoX_wcml, only: cmlAddMolecule, cmlAddParameter, cmlAddCrystal
-  Use FoX_common, only: str_fox => str
-  Use FoX_wxml, only: xmlf_t      ! help pgf95...
-  Use FoX_wcml, only: cmlBeginFile, cmlAddNamespace, cmlStartCml
-  Use FoX_wcml, only: cmlStartMetadataList, cmlAddMetadata
-  Use FoX_wcml, only: cmlEndMetadataList, cmlEndCml, cmlFinishFile
-  Use FoX_common, only: FoX_set_fatal_warnings, FoX_set_fatal_errors
+  !
+  ! Now using the CML module in xmlf90
+  !
+  Use xmlf90_cml, only: cmlStartModule, cmlEndModule
+  Use xmlf90_cml, only: cmlNamespaceAttribute, cmlAddComment
+  Use xmlf90_cml, only: cmlStartStep, cmlEndStep
+  Use xmlf90_cml, only: cmlStartPropertyList, cmlEndPropertyList
+  Use xmlf90_cml, only: cmlStartParameterList, cmlEndParameterList
+  Use xmlf90_cml, only: cmlAddProperty, cmlAddLattice, cmlAddKPoint
+  Use xmlf90_cml, only: cmlAddMolecule, cmlAddParameter, cmlAddCrystal
+
+  Use xmlf90_wxml, only: xmlf_t  
+  Use xmlf90_cml, only: cmlBeginFile, cmlStartCml
+  Use xmlf90_cml, only: cmlStartMetadataList, cmlAddMetadata
+  Use xmlf90_cml, only: cmlEndMetadataList, cmlEndCml, cmlFinishFile
 
   Implicit None
   Logical, public      :: cml_p = .False.
   Type(xmlf_t), public, save :: mainXML
 
-  Public :: str_fox
   public :: cmlStartModule, cmlEndModule
   public :: cmlStartStep, cmlEndStep
+  public :: cmlNamespaceAttribute, cmlAddComment
   public :: cmlStartPropertyList, cmlEndPropertyList
   public :: cmlStartParameterList, cmlEndParameterList
   public :: cmlAddProperty, cmlAddLattice, cmlAddKPoint
   public :: cmlAddMolecule, cmlAddParameter, cmlAddCrystal
-  public :: cmlBeginFile, cmlAddNamespace, cmlStartCml
+  public :: cmlBeginFile, cmlStartCml
   public :: cmlStartMetadataList, cmlAddMetadata
   public :: cmlEndMetadataList, cmlEndCml, cmlFinishFile
-  public :: FoX_set_fatal_warnings, FoX_set_fatal_errors
 
   private
   

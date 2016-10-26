@@ -5,6 +5,20 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2016-06-23                                                    trunk-525
+Merged 4.0-500
+
+* Update list of contributors.
+* Electric-field/slab-dipole-correction fix.
+* Fix to avoid ps reparametrization in bessel case
+* Remove Util/pseudo-xml
+* Other minor changes in README files
+
+
+-----------------------------------------------------------------------
+...
+...
+-----------------------------------------------------------------------
 2016-05-29                                                    trunk-504
 Update makefile in Util/Gen-basis after ldau inclusion
 
@@ -489,6 +503,188 @@ modified:
   Src/broadcast_basis.F
   Src/initatom.f
   Src/register_rfs.F90
+
+
+-----------------------------------------------------------------------
+2016-03-21                                                    trunk-493
+Merged Ramon SO changes + fixes
+
+- Merged Ramon's SO changes.
+
+- Changed alot of interfaces from Ramon initial
+  commit.
+  This is to better conform with the transiesta merge
+  to happen shortly.
+
+- Clarified a lot of output for the user when performing
+  SO / non-collinear calculations.
+
+- Reduce memory usage from Ramon's version considerably in
+  terms of the sparsity pattern.
+  In Ramon's implementation the H_kin/H_vkb/H_so where
+  full spin-matrices.
+  However, this is not needed.
+  H_kin/H_vkb == same for all spin
+  H_so == only has 6 components
+
+- Fixed calculation of total energy if one requests mixing charge
+
+- Fixed potential memory overflow in dfscf where V was
+  allocated on the stack.
+
+- Moved spin-spiral options to m_spin module
+
+- Enabled one flag for controlling the spin-configuration
+
+    Magnetization non-polarized/polarized/non-collinear/spin-orbit
+
+  with some variations of short-hands.
+  These are merely added for consistency
+
+    Magnetization NP/P/NC/SO
+
+  This removes the obscure choice of several options for _one_
+  selection of computational type.
+
+  For backwards compatibility the old flags still exist and are
+  the basis for the initial option for Magnetization.
+
+- Diagonalization options moved to a common module
+  TODO extend this to streamline r/c-diag.
+  TODO externalize the diagonalization modules for easier
+       abstraction.
+
+removed:
+  Src/m_diagon.F
+added:
+  Src/diag3g.F
+  Src/diag3k.F
+  Src/m_diagon_opt.F90
+  Src/moments.F
+  Src/pdos2g.F
+  Src/pdos2k.F
+  Src/pdos3g.F
+  Src/pdos3k.F
+  Src/spinorbit.f
+  Tests/SpinOrbit/
+  Tests/SpinOrbit/FePt-L1_0-so/
+  Tests/SpinOrbit/FePt-L1_0-so/README
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/config
+  Tests/SpinOrbit/FePt-L1_0-so/makefile
+  Tests/SpinOrbit/FePt-L1_0-so/script-fept.sh
+  Tests/SpinOrbit/Pt2-so-bis/
+  Tests/SpinOrbit/Pt2-so-bis/README
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/x-axis/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/x-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/x-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/y-axis/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/y-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/y-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/z-axis/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/z-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/z-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/config
+  Tests/SpinOrbit/Pt2-so-bis/makefile
+  Tests/SpinOrbit/Pt2-so-bis/script-pt2.sh
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/bands.F
+  Src/born_charge.F
+  Src/cdiag.F
+  Src/compute_dm.F
+  Src/compute_energies.F90
+  Src/compute_norm.F
+  Src/compute_rhog.F
+  Src/dfscf.f
+  Src/dhscf.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/diagg.F
+  Src/diagk.F
+  Src/diagon.F
+  Src/final_H_f_stress.F
+  Src/grdsam.F
+  Src/initatom.f
+  Src/iodm_netcdf.F90
+  Src/ioeig.f
+  Src/local_DOS.F
+  Src/m_broyden_mixing.f
+  Src/m_energies.F90
+  Src/m_fire_mixing.f
+  Src/m_pulay.F90
+  Src/m_spin.F90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/pdos.F
+  Src/periodic_table.f
+  Src/post_scf_work.F
+  Src/projected_DOS.F
+  Src/rdiag.F
+  Src/reoptical.F
+  Src/rhoofd.F
+  Src/save_density_matrix.F
+  Src/scfconvergence_test.F
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/vmat.F
+  Src/write_subs.F
+  Src/writewave.F
+  Src/xc.f
 
 -----------------------------------------------------------------------
 2016-03-07                                                    trunk-492

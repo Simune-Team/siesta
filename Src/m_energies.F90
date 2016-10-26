@@ -7,10 +7,12 @@
 ! ---
 module m_energies
   use precision, only: dp
-	implicit none
+  implicit none
 
+  private :: dp
   public
-
+  save
+  
   real(dp):: DEharr     ! Tr[H * (DM_out - DM_in)], for Harris energy
   real(dp):: DEna       ! Neutral-atom energy term, calculated  in dnaefs
   real(dp):: DUext      ! Interaction energy with external  electric field,
@@ -40,8 +42,88 @@ module m_energies
   real(dp):: Uatm       ! Harris hartree electron energy,  calculated in dhscf
   real(dp):: Uscf       ! SCF hartree electron energy,  calculated in dhscf
   real(dp):: Ebs        ! Band-structure energy, Tr(DM*H), calculated in compute_dm
+  real(dp):: Eso        ! Spin-orbit energy
   real(dp):: Eldau      
-  real(dp):: DEldau      
+  real(dp):: DEldau
+
+contains
+
+  !> Initialize ALL energies to 0.
+  subroutine init_Energies()
+
+    DEharr = 0._dp
+    DEna = 0._dp
+    DUext = 0._dp
+    DUscf = 0._dp
+    Dxc = 0._dp
+    Ecorrec = 0._dp
+    ef = 0._dp
+    Eharrs = 0._dp
+    Eions = 0._dp
+    Ekin = 0._dp
+    Ekinion = 0._dp
+    Emad = 0._dp
+    Ena = 0._dp
+    Enaatm = 0._dp
+    Enascf = 0._dp
+    Enl = 0._dp
+    Emeta = 0._dp
+    Entropy = 0._dp
+    Etot = 0._dp
+    Exc = 0._dp
+    E0 = 0._dp
+    Emm = 0._dp
+    FreeE = 0._dp
+    FreeEharris = 0._dp
+    Uatm = 0._dp
+    Uscf = 0._dp
+    Ebs = 0._dp
+    Eso = 0._dp
+    Eldau = 0._dp      
+    DEldau = 0._dp
+
+  end subroutine init_Energies
+
+  !> To ease the computation of specific deferred
+  !> quantites we allow the computation of these quantites
+  !> In ONE place
+
+  subroutine update_DEna()
+
+    DEna = Enascf - Enaatm
+    
+  end subroutine update_DEna
+
+  subroutine update_E0()
+
+    E0 = Ena + Ekin + Enl + Eso - Eions
+    
+  end subroutine update_E0
+  
+  subroutine update_Etot()
+    
+    ! DUext (external electric field) -- should it be in or out?
+    Etot = Ena + Ekin + Enl + Eso - Eions + &
+         DEna + DUscf + DUext + Exc + &
+         Ecorrec + Emad + Emm + Emeta + Eldau
+    
+  end subroutine update_Etot
+
+  !> @param kBT the temperature in energy
+  subroutine update_FreeE( kBT )
+    real(dp), intent(in) :: kBT
+
+    FreeE = Etot - kBT * Entropy
+
+  end subroutine update_FreeE
+
+  !> @param kBT the temperature in energy
+  subroutine update_FreeEHarris( kBT )
+    real(dp), intent(in) :: kBT
+
+    FreeEHarris = Eharrs - kBT * Entropy
+
+  end subroutine update_FreeEHarris
 
 end module m_energies
 

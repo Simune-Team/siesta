@@ -122,7 +122,6 @@
       use basis_types, only: basis_def_t, shell_t, lshell_t, kbshell_t
       use basis_types, only: nsp, basis_parameters, ground_state_t
       use basis_types, only: destroy, copy_shell, initialize
-      use m_ncps, only: pseudo_read
       use periodic_table, only: qvlofz, lmxofz, cnfig, atmass
       use chemical
       use sys
@@ -170,6 +169,10 @@
 
 !---
       subroutine read_basis_specs()
+
+      use m_spin, only: SpOrb
+      use m_ncps, only: pseudo_read
+      use m_spin_orbit_potentials, only: valid_spin_orbit_potentials
 
       character(len=15), parameter  :: basis_size_default='standard'
       character(len=10), parameter  :: basistype_default='split'
@@ -296,11 +299,21 @@ C Sanity checks on values
      $         new_grid=reparametrize_pseudos,a=new_a,b=new_b,
      $         rmax=new_rmax)
         endif
-!        if (reparametrize_pseudos)
+!        if (reparametrize_pseudos.and. .not. basp%bessel)
 !     .    call pseudo_reparametrize(p=basp%pseudopotential,
 !     .                             a=new_a, b=new_b,label=basp%label)
+
+             if (SpOrb .and. basp%has_psml_ps) then
+                if (.not. valid_spin_orbit_potentials(basp%psml_handle))
+     $                    then
+                   call die(
+     $            "Cannot do spin-orbit without proper semilocal pots")
+                endif
+             endif
+
       enddo
 
+      
       if (synthetic_atoms) then
 
         found = fdf_block('SyntheticAtoms',bfdf)
@@ -1074,9 +1087,9 @@ c (according to atmass subroutine).
       subroutine semicore_check(is)
       integer, intent(in)  :: is
 
-      real*8, parameter :: tiny = 1.d-5
+      real(dp), parameter :: tiny = 1.d-5
       integer ndiff
-      real*8 zval, zval_vps, charge_loc
+      real(dp) zval, zval_vps, charge_loc
 
       basp => basis_parameters(is)
 

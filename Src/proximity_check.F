@@ -15,17 +15,17 @@
       USE siesta_options
       use units, only: Ang
       use siesta_geom
+      use chemical, only: is_floating
       use parallel,     only : IOnode
       use neighbour,    only : jna=>jan, r2ij, mneighb,
      &                         reset_neighbour_arrays
 #ifdef TRANSIESTA
-      use m_ts_options, only : onlyS
+      use m_ts_global_vars, only : onlyS
 #endif
       implicit none
       real(dp), intent(in)  :: rmax
       integer :: ii, jj, jamin, idxneighJ, nneigbI, isel, nna
       real(dp):: rmin, r2min 
-
 
 !     Check if any two atoms are unreasonably close
       isel = 0   ! Get back all neighbors, regardless of whether ja>ia
@@ -33,11 +33,15 @@
 !     Initialize neighb
       call mneighb( scell, rmax, na_s, xa, 0, isel, nna )
       do ii = 1,na_s
+        ! Check whether the atom is a floating orbital
+        ! If that is the case, simply skip checking...
+        if ( is_floating(isa(ii)) ) cycle
         r2min = huge(1._dp)
         jamin = 0
         call mneighb( scell, rmax, na_s, xa, ii, isel, nneigbI )
         do jj = 1,nneigbI
           idxneighJ = jna(jj)
+          if ( is_floating(isa(idxneighJ)) ) cycle
           if ( r2ij(jj).lt.r2min .and. idxneighJ.ge.ii ) then
 !           Check that it is not the same atom
             if ( idxneighJ.ne.ii .or. r2ij(jj).gt.1.d-12 ) then

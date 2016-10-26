@@ -138,8 +138,6 @@ C
       integer, intent(out) :: nk
       real(dp), pointer ::  kpoint(:,:)
 
-      character         paste*30
-      external          paste, redcel
 C *********************************************************************
 
       logical BandLinesPresent, BandPointsPresent
@@ -311,7 +309,8 @@ C WFS options by A. Garcia, April 2012
 C **************************** INPUT **********************************
 C integer no_s                : Number of basis orbitals in supercell
 C integer nspin               : Number of spin components
-C integer maxspn              : Second dimension of ek
+C integer maxspn              : Maximum number of spin components
+C                               nspin /= maxspn for spin-orbit
 C integer maxnh               : Maximum number of orbitals interacting
 C                               with any orbital
 C integer maxk                : Last dimension of kpoint and ek
@@ -368,21 +367,24 @@ C
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use writewave,    only : wfs_filename
 
+      use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
+
 
       implicit          none
 
       integer  ::   nspin
       integer  ::   maxk, maxnh, maxspn, no_u, no_l, nk, no_s,
      .              indxuo(no_s), listh(maxnh), numh(no_l),
-     .              listhptr(*)
+     .              listhptr(*), nuo
       logical  ::   writeb
       real(dp) ::   ef, ek(no_u,maxspn,maxk),
      .              H(maxnh,nspin), kpoint(3,maxk),
      .              S(maxnh), xij(3,maxnh), occtol
       logical, intent(in) :: getPSI
 
-      character(len=label_length+6) :: paste
-      external ::       io_assign, io_close, paste, memory
+
+
+      external ::       io_assign, io_close, memory
 
 
       character(len=label_length+6) :: fname
@@ -407,6 +409,13 @@ C Dynamic arrays
 
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
+C Get number of local orbitals
+#ifdef MPI
+      call GetNodeOrbs(no_u,Node,Nodes,nuo)
+#else
+      nuo = no_u
+#endif
+
 C Start time counter
       call timer( 'bands', 1 )
 
@@ -420,8 +429,12 @@ C Check parameter maxk
         goto 999
       endif
 
-C Allocate local arrays - only aux is relevant here
-      nhs = 2*no_u*no_l
+C     Allocate local arrays - only aux is relevant here
+      if (nspin >=4 ) then
+         nhs  = 2 * (2*no_u) * (2*nuo) 
+      else
+         nhs = 2*no_u*no_l
+      endif
       naux  = 2*no_u*5
       call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
       call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
@@ -445,11 +458,11 @@ C Allocate local arrays - only aux is relevant here
      .            symfio(isa(iaorb(j)),iphorb(j)), j=1,no_u)
 
         call io_close(iu_wfs)
-
       endif
 
 C Find the band energies
-      if (nspin.le.2) then
+CC RC      if (nspin.le.2) then
+      if (NoMagn .or. SPpol) then
 C fixspin and qs are not used in diagk, since getD=.false. ...
         fixspin = .false.
         qs(1) = 0.0_dp
@@ -465,7 +478,8 @@ C Handle parallel over K points option which is not allowed for here
         ParallelOverK = .false.
         ResetFirstCall = .true.
 
-        call diagk( nspin, no_l, no_s, maxspn, maxnh, maxnh,
+        call diagk( nspin, no_l, no_s, maxspn, 
+     .              maxnh, maxnh, 
      .              no_u, numh, listhptr, listh, numh, listhptr,
      .              listh, H, S, getD, getPSI, fixspin, qtot, qs, temp,
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
@@ -476,19 +490,26 @@ C Handle parallel over K points option which is not allowed for here
         ParallelOverK = SaveParallelOverK
         ResetFirstCall = .false.
 
-      elseif (nspin.eq.4) then
+      elseif ( NonCol ) then
          if (getPSI) then
             if (node==0) then
                write(6,*) "No WFS for nspin=4 yet..."
             endif
             RETURN
          endif
-        call diag2k(no_l, no_s, no_l, maxnh, maxnh, no_u,
+        call diag2k(no_l, no_s, maxnh, maxnh, no_u,
      .              numh, listhptr, listh, numh, listhptr,
      .              listh, H, S, getD, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, Entropy,
-     .              Haux, Saux, psi, Haux, Saux, aux,
+     .              psi, no_u, occtol, 1 )
+
+      elseif ( SpOrb ) then
+        call diag3k(nuo, no_s, maxnh, maxnh, no_u, numh,
+     .              listhptr, listh, numh, listhptr, listh,
+     .              H, S, getD, getPSI, qtot, temp, e1, e2, xij,
+     .              indxuo, nk, kpoint, wk, ek, qk, Dnew,
+     .              Enew, ef, Entropy, psi,
      .              no_u, occtol, 1 )
       else
         call die( 'bands: ERROR: incorrect value of nspin')
@@ -498,12 +519,12 @@ C Write bands
       if (writeb.and.Node.eq.0) then
 
 C Find name of output file and open it
-        fname = paste(slabel,'.bands')
+        fname = trim(slabel) // '.bands'
         call io_assign(iu)
         open( iu, file=fname, status='unknown')
 
 C Write Fermi energy
-        write(iu,*) ef/eV
+        write(iu,*) Ef/eV
 
 C Find and write the ranges of k and ek
         path = 0.d0
@@ -514,7 +535,7 @@ C Find and write the ranges of k and ek
      .      path = path + sqrt( (kpoint(1,ik)-kpoint(1,ik-1))**2 +
      .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
-          do ispin = 1,min(nspin,2)
+          do ispin = 1,maxspn
             do io = 1, no_u
               emax = max( emax, ek(io,ispin,ik) )
               emin = min( emin, ek(io,ispin,ik) )
@@ -526,7 +547,13 @@ C Write path for BandLines but not for BandPoints
         write(iu,*) emin/eV, emax/eV
 
 C Write eigenvalues
-        write(iu,*) no_u, min(nspin,2), nk
+        if ( nspin <= 2 ) then
+          write(iu,*) no_u, maxspn, nk
+        else if ( nspin <= 8 ) then
+          write(iu,*) 2*no_u, 1, nk
+        else
+          call die( 'bands: ERROR: incorrect value of nspin' )
+        end if
         path = 0.d0
         do ik = 1,nk
           if (nlines .ge. 0) then
@@ -535,12 +562,12 @@ C Write eigenvalues
      .                            (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                            (kpoint(3,ik)-kpoint(3,ik-1))**2 )
             write(iu,'(f10.6,10f12.4,/,(10x,10f12.4))')
-     .        path, ((ek(io,ispin,ik)/eV,io=1,no_u),
-     .        ispin=1,min(nspin,2))
+     .         path, ((ek(io,ispin,ik)/eV,io=1,no_u),
+     .         ispin=1,maxspn)
           else
             write(iu,'(3f9.5,8f12.4,/,(27x,8f12.4))')
      .        kpoint(1,ik), kpoint(2,ik), kpoint(3,ik),
-     .           ((ek(io,ispin,ik)/eV,io=1,no_u),ispin=1,min(nspin,2))
+     .        ((ek(io,ispin,ik)/eV,io=1,no_u),ispin=1,maxspn)
           endif
         enddo
 
@@ -557,9 +584,9 @@ C Write abscisas of line ends and their labels
             if (ik .eq. lastk(il)) then
 C Put label between quotes
               if (label(il) .eq. ' ') then
-                string = ''' '''
+                string = "' '"
               else
-                string = paste( ''''//label(il),'''' )
+                string = "'"//trim(label(il))//"'"
               endif
               write(iu,'(f12.6,3x,a)') path, string
               il = il + 1

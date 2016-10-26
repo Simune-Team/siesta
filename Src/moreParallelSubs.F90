@@ -167,17 +167,7 @@ MODULE moreParallelSubs
 
 ! Used MPI procedures and types
 #ifdef MPI
-  use mpi_siesta, only: MPI_Send
-  use mpi_siesta, only: MPI_Recv
-  use mpi_siesta, only: MPI_Integer
-  use mpi_siesta, only: MPI_Double_Precision
-  use mpi_siesta, only: MPI_Character
-  use mpi_siesta, only: MPI_Max
-  use mpi_siesta, only: MPI_Min
-  use mpi_siesta, only: MPI_Prod
-  use mpi_siesta, only: MPI_Sum
-  use mpi_siesta, only: MPI_COMM_WORLD
-  use mpi_siesta, only: MPI_STATUS_SIZE
+  use mpi_siesta
 #endif
 
   implicit none

@@ -16,15 +16,6 @@ OBJDIR=Obj
 .SUFFIXES:
 .SUFFIXES: .c .f .F .o .a .f90 .F90
 #
-MAIN_OBJDIR:=$(shell cd -P -- ../../../../\$(OBJDIR) && pwd -P)
-ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
-include $(ARCH_MAKE)
-#
-TOP_LEVEL=$(shell pwd)/../../../../Src
-VPATH:=$(TOP_LEVEL)
-#
-NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
-PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 #
 #  simple_pipes_serial     : Simple serial test with pipes version
 #  simple_pipes_parallel   : Simple parallel test with pipes version
@@ -34,10 +25,25 @@ PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 #  simple_mpi_parallel     : Simple parallel test with MPI version
 #
 # default: simple_pipes_serial simple_sockets_serial clean
+#  Do not move default list from here, or else a default target from arch.make can
+#  interfere
+#
+default: simple_pipes_serial simple_sockets_serial simple_mpi_serial \
+         simple_pipes_parallel simple_sockets_parallel simple_mpi_parallel clean 
+#
+MAIN_OBJDIR:=$(shell cd -P -- ../../../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
+include $(ARCH_MAKE)
+#
+TOP_LEVEL=$(shell pwd)/../../../../Src
+VPATH:=$(TOP_LEVEL)
+#
+include $(PSML_ROOT)/psml.mk
+include $(XMLF90_ROOT)/xmlf90.mk
+#
+NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
+PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 
-default: simple_pipes_serial simple_pipes_parallel \
-	simple_sockets_serial simple_sockets_parallel \
-	simple_mpi_serial simple_mpi_parallel clean 
 #
 # Uncomment the following line for debugging support
 #
@@ -55,21 +61,22 @@ FDF=libfdf.a
 include $(PSML_ROOT)/psml.mk
 include $(XMLF90_ROOT)/xmlf90.mk
 include $(GRIDXC_ROOT)/gridxc.mk
-include $(MAIN_OBJDIR)/Mk/FoX.mk
 XMLPARSER=$(XMLF90_LIBS)
 XC=$(GRIDXC_LIBS)
 PSML=$(PSML_LIBS)
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
-#
+PSML=$(PSML_LIBS)
 INCFLAGS:=$(NETCDF_INCFLAGS) \
           $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
           $(XMLF90_INCFLAGS) $(GRIDXC_INCFLAGS) $(INCFLAGS)
 #
-ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-	$(NCPS) $(PSML) $(PSOP) \
-	$(MPI_INTERFACE) $(COMP_LIBS) $(FOX_LIBS) $(LIBS)
+MS=MatrixSwitch.a
+#
+ALL_LIBS= $(SIESTA_LIB) $(FDF) $(XMLF90_LIBS) $(XC) \
+	$(NCPS) $(PSML) $(PSOP) $(MS) \
+	$(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 #
 libs_collected:
 	(cd $(MAIN_OBJDIR) ; \

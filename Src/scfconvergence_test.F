@@ -10,9 +10,11 @@
       public :: scfconvergence_test
       CONTAINS
 
-      subroutine scfconvergence_test( first, iscf, dDmax,
+      subroutine scfconvergence_test( first, iscf,
+     &                                dDmax, dHmax, dEmax,
      $                                conv_harris, conv_freeE,
      $                                converged)
+      use precision, only: dp
       USE siesta_options
       use siesta_cml
       use m_wallclock, only : wallclock
@@ -22,17 +24,23 @@
       use units, only: eV
       use m_convergence, only: converger_t, tolerance
       use m_convergence, only: add_value, is_converged
-      use ldau_specs,    only: switch_ldau
-      use m_ldau,        only: LDAU_pop_conv
+      use ldau_specs,    only: switch_ldau, dTol_ldaupop
+      use m_ldau,        only: LDAU_dPop
 
       implicit none
 
       integer :: iscf
       logical :: first
 
-      real(dp), intent(in) :: dDmax     ! Max. change in dens. matrix or H
+      real(dp), intent(in) :: dDmax ! Max. change in dens. matrix
+      real(dp), intent(in) :: dHmax ! Max. change in H
+      real(dp), intent(in) :: dEmax ! Max. change in EDM
+
       type(converger_t), intent(inout)  :: conv_harris, conv_freeE
       logical, intent(out)              :: converged
+
+      logical :: is_LDAU_conv
+      character(len=64) :: conv_text
 
 !------------------------------------------------------------------- BEGIN
 
@@ -43,7 +51,7 @@
 
       ! Print energies
       if (IOnode) then
-        call siesta_write_energies( first, iscf, dDmax )
+        call siesta_write_energies( iscf, dDmax, dHmax )
 
         if (harrisfun) then
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ',Eharrs/eV
@@ -61,108 +69,89 @@
         call wallclock("-------------- end of scf step")
       endif
 
-      converged = .false.
+      is_LDAU_conv = switch_ldau .and.
+     &     LDAU_dPop < dTol_ldaupop
 
-      if (require_energy_convergence) then
-         if( switch_ldau ) then
-           if (   dDmax.lt.dDtol
-     $            .and. is_converged(conv_freeE)
-     $            .and. LDAU_pop_conv) then
-             converged = .true.
-             if (IOnode) then
-               write(6,"(/,a)") "SCF Convergence by FreeE+dmax criteria"
-               if (mixH) then
-                  write(6,"(a,f14.8)") "max |H_out - H_in| (Ry): ",
-     $                                  dDmax/eV
-               else if (mix_charge) then
-                  write(6,"(a,f14.8)") "max |DM_i - DM_(i-1)|: ", dDmax
-               else
-                  write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
-               endif
-               write(6,"(a,f14.8)") "|FreeE_i-FreeE_(i-1)| (eV) < ",
-     $                              tolerance(conv_freeE)/eV
-               call pxfflush(6)
-               write(6,"(/,a)") 
-     $           "Population in the LDA+U projector convergence "
-               write(6,"(a)") 
-     $           "by dtol_ldaupop criterion"
-             endif
-           endif 
-         endif
-         if (   dDmax.lt.dDtol
-     &        .and. is_converged(conv_freeE)) then
-            converged = .true.
-            if (IOnode) then
-              write(6,"(/,a)") "SCF Convergence by FreeE+dmax criteria"
-              if (mixH) then
-                 write(6,"(a,f14.8)") "max |H_out - H_in| (Ry): ",
-     $                                 dDmax/eV
-              else if (mix_charge) then
-                 write(6,"(a,f14.8)") "max |DM_i - DM_(i-1)|: ", dDmax
-              else
-                 write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
-              endif
-              write(6,"(a,f14.8)") "|FreeE_i-FreeE_(i-1)| (eV) < ",
-     $                             tolerance(conv_freeE)/eV
-              call pxfflush(6)
-            endif
-         endif
-      else if (require_harris_convergence) then
-         if (is_converged(conv_harris)) then
-            converged = .true.
-            if (IOnode) then
-               write(6,"(/,a)") "SCF Convergence by Harris criterion"
-               write(6,"(a,f14.8)") "|EH_i-EH_(i-1)| (eV) < ",
-     $                             tolerance(conv_harris)/eV
-               call pxfflush(6)
-            endif
-         endif
-      else
-        if ( switch_ldau ) then 
-          if (dDmax.lt.dDtol.and.LDAU_pop_conv) then
-            converged = .true.
-            if (IOnode) then
-              write(6,"(/,a)") "SCF Convergence by dMax criterion"
-              if (mixH) then
-                 write(6,"(a,f14.8)") "max |H_out - H_in| (eV): ",
-     $                                 dDmax/eV
-              else if (mix_charge) then
-                 write(6,"(a,f14.8)") "max |DM_i - DM_(i-1)|: ", dDmax
-              else
-                 write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
-              endif
-              write(6,"(/,a)") 
-     $          "Population in the LDA+U projector convergence "
-              write(6,"(a)") 
-     $          "by dtol_ldaupop criterion"
-              call pxfflush(6)
-            endif
-          endif 
-        else 
-          if (dDmax.lt.dDtol) then
-            converged = .true.
-            if (IOnode) then
-               write(6,"(/,a)") "SCF Convergence by dMax criterion"
-               if (mixH) then
-                  write(6,"(a,f14.8)") "max |H_out - H_in| (eV): ",
-     $                                  dDmax/eV
-               else if (mix_charge) then
-                  write(6,"(a,f14.8)") "max |DM_i - DM_(i-1)|: ", dDmax
-               else
-                  write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
-               endif
-               call pxfflush(6)
-            endif
-          endif 
-        endif
-      endif
-      if (converged) then
-         if (IOnode) then
-            write(6,"(a,i4,a)") "SCF cycle converged after ",
-     $           iscf," iterations"
-         endif
-      endif
+      ! Assume initial convergence
+      ! Since 4.1 this logic has changed to be fully determined
+      ! by the user.
+      ! The defaults are however as in pre 4.1 versions so there
+      ! should be no surprises.
+      
+      converged = .true.
+      conv_text = ' '
+      if ( converge_Eharr ) then
+         conv_text = trim(conv_text)//'+Harris'
+         converged = converged .and. is_converged(conv_harris)
+      end if
+      if ( converge_FreeE ) then
+         conv_text = trim(conv_text)//'+FreeE'
+         converged = converged .and. is_converged(conv_FreeE)
+      end if
+      if ( converge_EDM ) then
+         conv_text = trim(conv_text)//'+EDM'
+         converged = converged .and. dEmax < tolerance_EDM
+      end if
+      if ( converge_DM ) then
+         conv_text = trim(conv_text)//'+DM'
+         converged = converged .and. dDmax < dDtol
+      end if
+      if ( converge_H ) then
+         conv_text = trim(conv_text)//'+H'
+         converged = converged .and. dHmax < dHtol
+      end if
+      
+      if (converged .and. IOnode) then
+         
+         ! Remove the initial '+'
+         conv_text = conv_text(2:)
 
+         write(6,"(/,3a)") "SCF Convergence by ",trim(conv_text),
+     &        " criterion"
+         
+         if ( converge_Eharr ) then
+            write(6,"(a,f14.8)") "|EH_i-EH_(i-1)| (eV) < ",
+     &           tolerance(conv_harris)/eV
+         end if
+
+         if ( converge_FreeE ) then
+            write(6,"(a,f14.8)") "|FreeE_i-FreeE_(i-1)| (eV) < ",
+     &           tolerance(conv_freeE)/eV
+         end if
+
+         ! No matter what we print out the differences of DM and H
+         if ( mix_charge ) then
+            write(6,"(a,f16.10)") "max |DM_i - DM_(i-1)|        : ",
+     &           dDmax
+            if ( dEmax >= 0._dp ) 
+     &      write(6,"(a,f16.10)") "max |EDM_i - EDM_(i-1)| (eV) : ",
+     &              dEmax/eV
+         else
+            write(6,"(a,f16.10)") "max |DM_out - DM_in|         : ",
+     &           dDmax
+            if ( dEmax >= 0._dp ) 
+     &      write(6,"(a,f16.10)") "max |EDM_out - EDM_in|  (eV) : ",
+     &              dEmax/eV
+         endif
+         if ( dHmax >= 0._dp ) then
+            write(6,"(a,f16.10)") "max |H_out - H_in|      (eV) : ",
+     &           dHmax/eV
+         end if
+
+	 if ( is_LDAU_conv ) then
+	    ! Inform of LDA+U population convergence
+            write(6,"(a)") 
+     &           "LDA+U population converged by dTol_pop criteria:"
+            write(6,"(a,f16.10)") 
+     &           "max |pop(LDA+U)_i - pop(LDA+U)_j|: ", LDAU_dPop
+         end if
+         
+         write(6,"(a,i0,a)") "SCF cycle converged after ",
+     &           iscf," iterations"
+
+         call pxfflush(6)
+
+      endif
 
 !---------------------------------------------------------------- END
       END subroutine scfconvergence_test

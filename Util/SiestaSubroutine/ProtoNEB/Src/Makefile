@@ -16,14 +16,16 @@ OBJDIR=Obj
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 #
+#
+default: protoNEB clean 
+#
 MAIN_OBJDIR:=$(shell cd -P -- ../../../../\$(OBJDIR) && pwd -P)
 ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
-TOP_LEVEL=$(shell pwd)../../../../../Src
+TOP_LEVEL=$(shell pwd)/../../../../Src
 VPATH:=$(TOP_LEVEL)
 #
-default: protoNEB clean 
 #
 # Routines used by pipes version (VPATH knows where they are)
 #
@@ -34,7 +36,8 @@ FDF=libfdf.a
 include $(PSML_ROOT)/psml.mk
 include $(XMLF90_ROOT)/xmlf90.mk
 include $(GRIDXC_ROOT)/gridxc.mk
-include $(MAIN_OBJDIR)/Mk/FoX.mk
+#
+MS=MatrixSwitch.a
 XMLPARSER=$(XMLF90_LIBS)
 XC=$(GRIDXC_LIBS)
 PSML=$(PSML_LIBS)
@@ -49,9 +52,9 @@ INCFLAGS:=$(NETCDF_INCFLAGS) \
           $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
           $(XMLF90_INCFLAGS) $(GRIDXC_INCFLAGS) $(INCFLAGS)
 #
-ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-          $(NCPS) $(PSML) $(PSOP) \
-          $(MPI_INTERFACE) $(COMP_LIBS) $(FOX_LIBS) $(LIBS)
+ALL_LIBS= $(SIESTA_LIB) $(FDF) $(XMLF90_LIBS)  $(XC) \
+	$(NCPS) $(PSML) $(PSOP) $(MS)\
+	$(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 #
 libs_collected:
 	(cd $(MAIN_OBJDIR) ; \

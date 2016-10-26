@@ -21,11 +21,10 @@
 #endif /* DEBUG_XC */
       use m_timestamp,     only : timestamp
       use m_wallclock,     only : wallclock
-      use parallel,        only : IOnode
+      use parallel,        only : IOnode, SIESTA_worker
 #ifdef MPI
-      use mpi_siesta,      only : MPI_Finalize
+      use mpi_siesta
 #endif
-      use m_pulay,         only : resetPulayArrays
       use moreMeshSubs,    only : resetMeshDistr
       use densematrix,     only : resetDenseMatrix
       use sparse_matrices, only : resetSparseMatrices
@@ -35,6 +34,18 @@
       use meshdscf,        only : resetDscfPointers
       use m_dscfcomm,      only : resetdscfComm
       use m_rhog,          only : resetRhog
+      ! NP, new mixing
+      use m_mixing_scf,    only : mixers_scf_reset
+
+#ifdef SIESTA__FLOOK
+      use flook_siesta,    only : slua_close
+      use siesta_options,  only : LUA
+#endif
+
+
+#ifdef TRACING
+      use extrae_eventllist, only : writeList, deleteList, eventlist
+#endif
 
       implicit none
 
@@ -42,12 +53,16 @@
       integer MPIerror
 #endif
 !------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( 'PRE SIESTA_END' )
+
+      if (SIESTA_worker) then
+
+#ifdef SIESTA__FLOOK
+      ! Clean up the lua environment
+      call slua_close(LUA)
 #endif
+
 !     Free allocated memory
       call resetSparseMatrices( )
-      call resetPulayArrays( )
       call resetMeshDistr( )
       call resetdscfComm( )
       call resetDenseMatrix( )
@@ -56,7 +71,8 @@
       call resetMeshPhi( )
       call resetDscfPointers( )
       call resetRhog()
-
+      call mixers_scf_reset()
+      
 !     Output memory use up to the end of the program
 !!      call printmemory( 6, 1 )
 
@@ -72,6 +88,15 @@
       call timer( 'siesta', 2 )
       call timer( 'all', 3 )
 
+#ifdef TRACING
+!     Write extrae user function list
+      if (IOnode) then
+        call writeList(eventlist)
+      end if
+      call deleteList(eventlist)
+#endif /* TRACING */
+
+
 !     Print final date and time
       if (IOnode) then
         call timestamp('End of run')
@@ -82,17 +107,15 @@
         call cmlEndModule(mainXML)
         call siesta_cml_exit()
       endif      
+      endif  ! SIESTA_worker
 
 ! Finalize MPI, unless siesta is running as a subroutine
-#ifdef DEBUG
-      call write_debug( 'POS SIESTA_END' )
-#endif
 #ifdef MPI
       if (.not.siesta_subroutine) call MPI_Finalize( MPIerror )
 #endif
 
       if (IOnode) then
-         call system("touch 0_NORMAL_EXIT")
+         call system("/usr/bin/touch 0_NORMAL_EXIT")
       endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_end

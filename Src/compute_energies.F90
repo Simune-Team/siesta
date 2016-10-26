@@ -38,7 +38,6 @@ CONTAINS
       use fdf,             only: fdf_get
       use siesta_options,  only: g2cut, Temp
       use siesta_options,  only: mix_charge, mixH
-      use sparse_matrices, only: H_kin, H_vkb
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H
       use sparse_matrices, only: Dscf, Dold
@@ -48,7 +47,8 @@ CONTAINS
                                  lastkb, no_s, rmaxv, indxua, iphorb, lasto, &
                                  rmaxo, no_l
       use m_ntm,           only: ntm
-      use m_spin,          only: nspin
+      use m_spin,          only: NoMagn, SPpol, NonCol, SpOrb 
+      use m_spin,          only: nspin, h_spin_dim, spinor_dim
       use m_dipol,         only: dipol
       use siesta_geom,     only: na_u, na_s, xa, isa
       use m_rhog,          only: rhog
@@ -63,7 +63,7 @@ CONTAINS
       real(dp) :: buffer1
 #endif
 
-      real(dp) :: const, Escf_out
+      real(dp) :: const
       real(dp) :: dummy_stress(3,3), dummy_fa(1,1)
       real(dp) :: dummy_E, g2max, dummy_H(1,1)
       logical  :: mixDM
@@ -73,8 +73,7 @@ CONTAINS
 !     Compute the band-structure energy
 
       call compute_EBS()
-
-
+    
       ! These energies were calculated in the latest call to
       ! setup_hamiltonian, using as ingredient D_in 
 
@@ -83,9 +82,10 @@ CONTAINS
       ! Emad, Emm, Emeta are extra terms that are added for
       ! consistency of the total energy.
 
-      DEna = Enascf - Enaatm
-      Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad + Emm + Emeta + &
- &           Eldau
+      ! E0 = Ena + Ekin + Enl + Eso - Eions
+
+      call update_DEna()
+      call update_Etot()
 
 
 ! Harris energy
@@ -119,25 +119,48 @@ CONTAINS
       else if (mix_charge) then
          call compute_correct_EKS()
       endif
-         
-      FreeE  = Etot - Temp * Entropy
+
+      call update_FreeE(Temp)
 
  CONTAINS
 
    subroutine compute_EBS()
 
       Ebs = 0.0_dp
-      do ispin = 1,nspin
 !       const factor takes into account that there are two nondiagonal
 !       elements in non-collinear spin density matrix, stored as
 !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
 !       ispin=4 => Imag(D12)
-        const = 1._dp
-        if (ispin .gt. 2) const = 2._dp
+
+      if ( SpOrb ) then
         do io = 1,maxnh
-          Ebs = Ebs + H(io,ispin) * const * Dscf(io,ispin)
+          Ebs = Ebs      + H(io,1) * ( Dscf(io,1) )   &
+                         + H(io,2) * ( Dscf(io,2) )   &
+                         + H(io,3) * ( Dscf(io,7) )   &
+                         + H(io,4) * ( Dscf(io,8) )   &
+                         - H(io,5) * ( Dscf(io,5) )   &
+                         - H(io,6) * ( Dscf(io,6) )   &
+                         + H(io,7) * ( Dscf(io,3) )   &
+                         + H(io,8) * ( Dscf(io,4) )
         enddo
-      enddo
+      else if ( NonCol ) then
+        do io = 1,maxnh
+          Ebs    = Ebs    + H(io,1) * ( Dscf(io,1)  )   &
+                          + H(io,2) * ( Dscf(io,2)  )   &
+                 + 2.0_dp * H(io,3) * ( Dscf(io,3)  )   &
+                 + 2.0_dp * H(io,4) * ( Dscf(io,3)  )
+        enddo
+      else if ( SPpol )  then
+        do io = 1,maxnh
+          Ebs    = Ebs    + H(io,1) * Dscf(io,1)  &
+                          + H(io,2) * Dscf(io,2)
+        enddo
+      else if ( NoMagn ) then
+        do io = 1,maxnh
+          Ebs    = Ebs + H(io,1) *  Dscf(io,1)
+        enddo
+      endif
+
 #ifdef MPI
 !     Global reduction 
       call globalize_sum(Ebs,buffer1)
@@ -147,31 +170,57 @@ CONTAINS
 
     subroutine compute_DEharr()
 
-          DEharr = 0.0_dp
-          do ispin = 1,nspin
+      DEharr = 0.0_dp
              !       const factor takes into account that there are two nondiagonal
              !       elements in non-collinear spin density matrix, stored as
              !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
              !       ispin=4 => Imag(D12)
-             const = 1._dp
-             if (ispin .gt. 2) const = 2._dp
-             do io = 1,maxnh
-                DEharr = DEharr +  &
-                         H(io,ispin) * const * ( Dscf(io,ispin) - Dold(io,ispin) )
-             enddo
-          enddo
+
+      if ( SpOrb ) then
+        do io = 1,maxnh
+          DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
+                          + H(io,2) * ( Dscf(io,2) - Dold(io,2) )  &
+                          + H(io,3) * ( Dscf(io,7) - Dold(io,7) )  &
+                          + H(io,4) * ( Dscf(io,8) - Dold(io,8) )  &
+                          - H(io,5) * ( Dscf(io,5) - Dold(io,5) )  &
+                          - H(io,6) * ( Dscf(io,6) - Dold(io,6) )  &
+                          + H(io,7) * ( Dscf(io,3) - Dold(io,3) )  &
+                          + H(io,8) * ( Dscf(io,4) - Dold(io,4) )
+        enddo
+      else if ( NonCol ) then
+        do io = 1,maxnh
+          DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
+                          + H(io,2) * ( Dscf(io,2) - Dold(io,2) )  &
+                 + 2.0_dp * H(io,3) * ( Dscf(io,3) - Dold(io,3) )  &
+                 + 2.0_dp * H(io,4) * ( Dscf(io,3) - Dold(io,3) )
+        enddo
+      elseif (SPpol)  then
+        do io = 1,maxnh
+          DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
+                          + H(io,2) * ( Dscf(io,2) - Dold(io,2) )
+        enddo
+      elseif (NoMagn) then
+        do io = 1,maxnh
+          DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )
+        enddo
+      endif
+
 #ifdef MPI
-          !     Global reduction of DEharr
-          call globalize_sum( DEharr, buffer1 )
-          DEharr = buffer1
+      !     Global reduction of DEharr
+      call globalize_sum( DEharr, buffer1 )
+      DEharr = buffer1
 #endif
     end subroutine compute_DEharr
       
     subroutine compute_correct_EKS()
 
       use files, only : filesOut_t    ! derived type for output file names
+      use class_dSpData1D, only : val
+      use class_dSpData2D, only : val
+      use sparse_matrices, only: H_kin_1D, H_vkb_1D, H_so_2D
 
-      type(filesOut_t)    :: filesOut  ! blank output file names
+      type(filesOut_t)  :: filesOut  ! blank output file names
+      real(dp), pointer :: H_vkb(:), H_kin(:), H_so(:,:)
 
       ! Compute E_KS(DM_out)
 
@@ -184,7 +233,7 @@ CONTAINS
 
       ! Remove unwanted arguments...
 
-      call dhscf( nspin, no_s, iaorb, iphorb, no_l,                         &
+      call dhscf( nspin, no_s, iaorb, iphorb, no_l,      &
                   no_u, na_u, na_s, isa, xa, indxua,                        &
                   ntm, ifa, istr, ihmat, filesOut,                          &
                   maxnh, numh, listhptr, listh, Dscf, Datm,                 &
@@ -192,36 +241,52 @@ CONTAINS
                   Exc, Dxc, dipol, dummy_stress, dummy_fa, dummy_stress)
       ! (when mix_charge is true, rhog will contain the output rho(G))
 
-      DEna     = Enascf - Enaatm
+      call update_DEna()
 
-      ! Clarify: 
-      !          DUext (external electric field) -- should it be in or out?
+!     Compute Tr[H_0*DM_out] = Ekin + Enl + Eso with DM_out
 
-      Escf_out = DEna + DUscf + DUext + Exc 
-
-!     Compute Tr[H_0*DM_out] = Ekin + Enl with DM_out
-
+      H_vkb => val(H_vkb_1D)
+      H_kin => val(H_kin_1D)
+      
       Ekin = 0.0_dp
       Enl  = 0.0_dp
-      do ispin = 1,min(nspin,2)
-        do io = 1,maxnh
-          Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
-          Enl  = Enl  + H_vkb(io)* Dscf(io,ispin)
-        enddo
+      do ispin = 1, spinor_dim
+         do io = 1,maxnh
+            Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
+            Enl  = Enl  + H_vkb(io) * Dscf(io,ispin)
+         enddo
       enddo
+
 #ifdef MPI
-!     Global reduction of Ekin, Enl
+      ! Global reduction of Ekin, Enl
       call globalize_sum( Ekin, buffer1 )
       Ekin = buffer1
       call globalize_sum( Enl, buffer1 )
       Enl = buffer1
 #endif
 
-      ! E0 = Ekin + Enl - Eions + Ena
+      Eso = 0._dp
+      if ( SpOrb ) then
+         ! Sadly some compilers (g95), does
+         ! not allow bounds for pointer assignments :(
+         H_so => val(H_so_2D)
+         do io = 1,maxnh
+            Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8) &
+                 + H_so(io,5)*Dscf(io,3) + H_so(io,6)*Dscf(io,4) &
+                 - H_so(io,3)*Dscf(io,5) - H_so(io,4)*Dscf(io,6)
+         end do
+#ifdef MPI
+         ! Global reduction of Eso
+         call globalize_sum( Eso, buffer1 )
+         Eso = buffer1
+#endif
+      end if
+      
+      ! E0 = Ena + Ekin + Enl + Eso - Eions
 
       ! Clarify: Ecorrec (from O(N))
-      !          
-      Etot = Ekin + Enl - Eions + Ena + Escf_out + Ecorrec + Emad + Emm + Emeta
+      call update_Etot()
+      
     end subroutine compute_correct_EKS
 
   end subroutine compute_energies

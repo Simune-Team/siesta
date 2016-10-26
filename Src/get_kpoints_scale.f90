@@ -12,6 +12,8 @@ CONTAINS
     use parallel,       only: IOnode
     use siesta_geom,    only: ucell
 
+    implicit none
+
     integer, parameter :: dp = selected_real_kind(10,100)
     
     character(len=*), intent(in) :: block_string  ! BandLinesScale, etc

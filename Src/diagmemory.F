@@ -5,6 +5,8 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
+
+
       module diagmemory
 C
 C  Stores the factor used to scale the default memory in rdiag/cdiag

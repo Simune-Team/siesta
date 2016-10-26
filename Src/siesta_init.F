@@ -19,10 +19,11 @@
      &                              estimate_pol_kpoints
       use m_struct_init,      only: struct_init
       use siesta_options
-      use timer_options,      only: use_tree_timer
+      use timer_options,      only: use_tree_timer, use_parallel_timer
       use timer_options,      only: time_mpi_calls
       use timer_options,      only: use_walltime
       use sparse_matrices
+      use class_Fstack_Pair_Geometry_dSpData2D, only: new, max_size
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
      &                              iza, rmaxo, zvaltot, superc,
@@ -43,24 +44,30 @@
       use m_iostruct,         only: write_struct, read_struct
       use zmatrix,            only: lUseZmatrix
       use zmatrix,            only: write_canonical_ucell_and_Zmatrix
-      use m_check_supercell,  only: check_sc_factors
+      use m_supercell,        only: exact_sc_ag
       use files,              only: slabel
       use siesta_cmlsubs,     only: siesta_cml_init
       use m_timestamp,        only: timestamp
       use m_wallclock,        only: wallclock
-      use parallel,           only: Node, Nodes, IOnode
+      use parallel,           only: Node, Nodes, PEXSINodes, IOnode
+      use parallel,           only: SIESTA_worker
+      use parallel,           only: SIESTA_Group, SIESTA_Comm
       use densematrix,        only: Haux, Saux, Psi
       use m_energies
       use m_steps
-      use m_spin
+      use m_spin,             only: init_spin, nspin, spinor_dim, SpPol
+      use m_spin,             only: qs, init_spiral
       use m_rmaxh
       use m_forces 
       use m_eo
       use m_gamma
+      use m_fixed,            only: init_fixed, print_fixed
       use m_ioxv,             only: xv_file_read
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
+      use m_new_dm,           only: get_allowed_history_depth
+      use m_object_debug,     only: set_object_debug_level
 #ifdef DEBUG_XC
       USE siestaXC, only: setDebugOutputUnit
 #endif /* DEBUG_XC */
@@ -74,107 +81,255 @@
       use m_ts_init, only : ts_init
 #endif
 
+#ifdef SIESTA__FLOOK
+      use siesta_dicts, only : dict_populate
+      use flook_siesta, only : slua_init, slua_call, LUA_INITIALIZE
+#endif
+
+#ifdef NCDF_4
+      use nf_ncdf
+#endif
+#ifdef _OPENMP
+      use omp_lib, only : omp_get_num_threads, omp_get_schedule
+      use omp_lib, only : omp_get_nested, omp_set_nested
+      use omp_lib, only : omp_get_max_active_levels
+      use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
+      use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+#if _OPENMP >= 201307
+      ! The above value should correspond to OMP-4.0
+      use omp_lib, only : omp_get_proc_bind
+#endif
+#else
+!$    use omp_lib, only : omp_get_num_threads, omp_get_sched
+!$    use omp_lib, only : omp_get_nested, omp_get_max_active_levels
+!$    use omp_lib, only : omp_get_max_active_levels
+!$    use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
+!$    use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+#endif
+
       implicit none
+
 #ifdef MPI
       logical :: initialized
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
-      integer :: i, is, ispin
+      integer :: i, is, ispin, n_dm_items
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
 
+      integer :: World_Group
+      integer :: npSIESTA
       external :: read_options
-      
-!------------------------------------------------------------------------- BEGIN
+
+!---------------------------------------------------------------------- BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
 ! of a driver program that may have initialized MPI already
+
 #ifdef MPI
+C     Initialise MPI and set processor number
+
       call MPI_Initialized( initialized, MPIerror )
       if (.not.initialized) then
-        call MPI_Init( MPIerror )
+#ifdef _OPENMP
+         call MPI_Init_Thread(MPI_Thread_Funneled, i, MPIerror)
+         if ( MPI_Thread_Funneled /= i ) then
+            ! the requested threading level cannot be asserted
+            ! Notify the user
+           write(*,'(a)') '!!! Could not assert funneled threads'
+         end if
+#else
+         call MPI_Init( MPIerror )
+#endif
 #ifdef _TRACE_
         call MPItrace_shutdown( )
 #endif
       endif ! (.not.initialized)
+      
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+      
+      ! Keeper for PEXSI-runs..
+      PEXSINodes = Nodes
+
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
      &           'doesn''t have parallel support')
       endif
 #endif
       if (Node==0) then
-         call system("rm -f 0_NORMAL_EXIT")
+         call system("/bin/rm -f 0_NORMAL_EXIT")
       endif
-#ifdef DEBUG
-!     Generates a debug file for every process to track the execution.
-!     The file is called debug.$(PID) Where PID is the process number.
-!     It also works in secuencial mode.
-      call debugMpiOn( )
-      call write_debug( 'PRE siesta_init' )
-#endif
-      IOnode = (Node .eq. 0)
-
-!     Print version information
-      if (IOnode) then
-        call prversion()
-#ifdef MPI
-        if (Nodes.gt.1) then
-          write(6,'(/,a,i4,a)')
-     &        '* Running on ', Nodes, ' nodes in parallel'
-        else
-          write(6,'(/,a,i4,a)')
-     &        '* Running in serial mode with MPI'
-        endif
-#else
-        write(6,'(/,a,i4,a)')
-     &        '* Running in serial mode'
-#endif
-         call timestamp('Start of run')
-         call wallclock('Start of run')
-      endif
-
-
-!     Nullify arrays
-      nullify(Haux,Saux,psi)
-      nullify(Dscf,Dold,Eold,Escf)
-      nullify(listh)
-      nullify(H,S)
-      nullify(xijo)
-
-!     Initialize some variables
-      DUext   = 0.0_dp
-      Eharrs  = 0.0_dp
-      Eions   = 0.0_dp
-      Ekinion = 0.0_dp
-      Emad    = 0.0_dp
-      Emeta   = 0.0_dp
-      Emm     = 0.0_dp
-      Entropy = 0.0_dp
-      FreeE   = 0.0_dp
-      Eldau   = 0.0_dp
-      DEldau  = 0.0_dp
-
 
 #ifdef DEBUG_XC
 ! Set output file unit for debug info
       call setDebugOutputUnit()
 #endif /* DEBUG_XC */
 
-!     Initialise read .................................................
+!     Initialise input/output...........................................
       call reinit( sname )
 
+#ifdef MPI
+      ! Optionally, restrict the number of processors that SIESTA uses, out
+      ! of the total pool
+      npSIESTA  = fdf_get("MPI.Nprocs.SIESTA",Nodes)
+      call MPI_Comm_Group(MPI_Comm_World, World_Group, MPIerror)
+      call MPI_Group_incl(World_Group, npSIESTA,
+     $                    (/ (i,i=0,npSIESTA-1) /),
+     $                    SIESTA_Group, MPIerror)
+      call MPI_Comm_create(MPI_Comm_World, SIESTA_Group,
+     $                     SIESTA_Comm, MPIerror)
+
+      SIESTA_worker = (Node < npSIESTA)
+
+      ! Swap communicator
+      ! This is needed since MPI_COMM_WORLD is used implicitly by
+      ! Siesta for all operations. 
+      MPI_COMM_WORLD = SIESTA_Comm
+      if (SIESTA_worker) then
+         call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
+         call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+      endif
+#else
+      SIESTA_worker = .true.
+      Node = 0
+      Nodes = 1
+      PEXSINodes = 1
+#endif
+      IOnode = SIESTA_worker .and. (Node .eq. 0)
+
+      ! Be sure to initialize the spin-configuration data
+      ! for all processors.
+
+      call init_spin( )
+
+      if (.not. SIESTA_worker) RETURN
+
+#ifdef DEBUG
+!     Generates a debug file for every process to track the execution.
+!     The file is called debug.$(PID) Where PID is the process number.
+!     It also works in secuencial mode.
+      call debugMpiOn( )
+#endif
+#ifdef NCDF_4
+      call ncdf_IONode( IONode )
+#endif
+
+!     Print version information
+      if (IOnode) then
+        call prversion()
+#ifdef MPI
+        if ( PEXSINodes /= Nodes ) then
+           write(6,'(/,a,2(i0,a))')
+     &          '* Running on ', Nodes, ' SIESTA-nodes and ',
+     &          PEXSINodes, ' PEXSI-nodes in parallel'
+        else if ( Nodes > 1 ) then           
+           write(6,'(/,a,i0,a)')
+     &          '* Running on ', Nodes, ' nodes in parallel'
+        else
+           write(6,'(/,a)') '* Running in serial mode with MPI'
+        endif
+#else
+        write(6,'(/,a)') '* Running in serial mode'
+#endif
+!$OMP parallel default(shared)
+!$OMP master
+!$    i = omp_get_num_threads()
+!$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
+!$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
+#ifdef _OPENMP
+!$    write(*,'(a,i0)') '* OpenMP version ', _OPENMP
+#endif
+!$    call omp_get_schedule(i,is)
+!$    select case ( i )
+!$    case ( OMP_SCHED_STATIC ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule STATIC, chunks ',is
+!$    case ( OMP_SCHED_DYNAMIC ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    if ( is == 1 ) then
+!$     ! this is the default scheduling, probably the user
+!$     ! have not set the value, predefine it to 32
+!$     is = 32
+!$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    end if
+!$    case ( OMP_SCHED_GUIDED ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',is
+!$    case ( OMP_SCHED_AUTO ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule AUTO, chunks ',is
+!$    case default
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',is
+!$    end select
+!     Now write out about nested levels
+!$    if ( omp_get_nested() ) then
+!$       ns = omp_get_max_active_levels()
+!$    else
+!$       write(*,'(a)') '** OpenMP (trying to FORCE nesting)'
+!$       call omp_set_nested(.true.)
+!$       ns = omp_get_max_active_levels()
+!$    end if
+!$    write(*,'(a,i0,a)') '* OpenMP allows ',ns,' nested levels.'
+#if _OPENMP >= 201307
+!$    ns = omp_get_proc_bind()
+!$    select case ( ns )
+!$    case ( 0 ) 
+!$    write(*,'(a)') '* OpenMP binding: FALSE'
+!$    case ( 1 )
+!$    write(*,'(a)') '* OpenMP binding: TRUE'
+!$    case ( 2 )
+!$    write(*,'(a)') '* OpenMP binding: MASTER'
+!$    case ( 3 )
+!$    write(*,'(a)') '* OpenMP binding: CLOSE'
+!$    case ( 4 )
+!$    write(*,'(a)') '* OpenMP binding: SPREAD'
+!$    case default
+!$    write(*,'(a)') '* OpenMP binding: UNKNOWN'
+!$    end select
+#endif
+!$OMP end master
+!$OMP end parallel
+!$    call omp_set_schedule(i,is)
+         call timestamp('Start of run')
+         call wallclock('Start of run')
+      endif
+
+!
+!     Nullify arrays
+      nullify(Haux,Saux,psi)
+      nullify(Dscf,Dold,Escf)
+      nullify(listh)
+      nullify(H,S)
+      nullify(xijo)
+
+!     Initialize some variables
+      call init_Energies()
+      
+!
+!     Set object debugging level
+!
+      call set_object_debug_level(0)
+      i = fdf_get('DebugObjects.Node',0)
+      if (Node==i) then
+         if (fdf_get('DebugObjects',.false.)) then
+            call set_object_debug_level(1)
+         endif
+      endif
+         
 !     Initialize CML (relies on reinit)
       call siesta_cml_init( )
 
 ! Set timer report file and threshold .................................
       call timer_report( file=trim(slabel)//'.times', 
      .        threshold=fdf_get('timer_report_threshold', 0._dp))
-
-      use_tree_timer = fdf_get('UseTreeTimer', .false.)
-      time_mpi_calls = fdf_get('time-mpi-calls', .false.)
+      ! Note that the parallel timer might be inefficient for reports
+      ! when large numbers of processors are used
+      if ( PEXSINodes /= Nodes ) then
+         use_parallel_timer = fdf_get('UseParallelTimer', .false.)
+         use_tree_timer = fdf_get('UseTreeTimer', .true.)
+      else
+         use_parallel_timer = fdf_get('UseParallelTimer', .true.)
+         use_tree_timer = fdf_get('UseTreeTimer', .false.)
+      end if
       use_walltime = fdf_get('use-walltime', use_tree_timer)
 
 !     Start time counter
@@ -190,13 +345,14 @@
      $           file=trim(slabel)//'.alloc',
      .           threshold=fdf_get('alloc_report_threshold', 0._dp),
      &           printNow=.false. )
-
+      
       if ( IONode ) then
          ! Add citations
          call init_citation(trim(slabel))
          call add_citation("10.1088/0953-8984/14/11/302")
       end if
-      
+
+
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
       call read_xc_info()
@@ -227,6 +383,9 @@
 !     Read geometry
       call struct_init( )      ! Sets na_u, isa, ucell
 
+      ! Initialize the spin-spiral settings
+      call init_spiral( ucell )
+      
 !     Initialize atom lists
       call initatomlists( )    ! Sets iza
 
@@ -245,7 +404,9 @@
       if (struct_only) then
          call bye('End of structure processing')
       endif
-      
+
+!-------------- Now we have the initial geometry
+!
 !     End of Initial Structure Processing
       if (Node.eq.0) then
         write(6,'(/,a,20("*"),a,28("*"))')
@@ -264,10 +425,13 @@
       call re_alloc( fa, 1, 3, 1, na_u, 'fa', 'siesta_init' )
       call re_alloc( cfa, 1, 3, 1, na_u, 'cfa', 'siesta_init' )
 
-      call init_spin( )
-
 !     Read simulation data
       call read_options( na_u, ns, nspin )
+
+      call get_allowed_history_depth(n_dm_items)
+      call new(DM_history,n_dm_items,"(DM history stack)")
+      if (ionode) print "(a,i0)", "Size of DM history Fstack: ",
+     $                            max_size(DM_history)
 
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
@@ -290,20 +454,17 @@
 
 ! Calculate spin populations for fixed spin case...
       if (fixspin) then
-        if (nspin .ne. 2)
+        if (.not.SPpol)
      &    call die( 'siesta: ERROR: ' //
      &              'You can only fix the spin of the system' //
      &              ' for collinear spin polarized calculations.' )
-        do i = 1,2
-          qs(i) = (qtot + (3-2*i)*ts) / 2.0_dp
-        enddo
+        qs(1) = (qtot + ts) / 2.0_dp
+        qs(2) = (qtot - ts) / 2.0_dp
       else
-        qs(1:nspin) = 0.0_dp
-        if (nspin .le. 2) then
-          do ispin = 1,nspin
-            qs(ispin) = qtot/nspin
-          enddo
-        endif
+        qs(1:spinor_dim) = 0.0_dp
+        do ispin = 1,spinor_dim
+           qs(ispin) = qtot/spinor_dim
+        end do
       endif
 
 !     Find maximum interaction range
@@ -320,7 +481,7 @@
 
 !     Parallel initialisation
       call initparallel( no_u, na_u, lasto, xa, ucell, rmaxh )
-!     if (IOnode) call show_distribution( )
+      if (IOnode) call show_distribution( )
 
 !     Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
@@ -338,9 +499,9 @@
 !     Check number of eigenstates - cannot be larger than number of
 !     basis functions or smaller than number of occupied states + 1
 !     so that the Fermi level can be estimated
-      do is = 1,nspin
-        neigmin = nint(qs(is)/real(3 - min(nspin,2), kind=dp)) + 1
-        neigwanted = max(neigwanted,neigmin)
+      do is = 1 , spinor_dim
+         neigmin = nint(qs(is)/real(3 - spinor_dim, dp)) + 1
+         neigwanted = max(neigwanted,neigmin)
       enddo
       neigwanted = min(neigwanted,no_u)
 
@@ -358,13 +519,11 @@
         gamma = gamma .and. gamma_pdos
       endif
 
-#ifdef TRANSIESTA
-      call ts_init(nspin,ucell,na_u,xa)
-#endif
-
       nullify(eo,qo)
-      call re_alloc(eo, 1, no_u, 1, nspin, 1, maxk, 'eo', 'siesta_init')
-      call re_alloc(qo, 1, no_u, 1, nspin, 1, maxk, 'qo', 'siesta_init')
+      call re_alloc(eo, 1, no_u, 1, spinor_dim, 1, maxk, 'eo', 
+     &              'siesta_init')
+      call re_alloc(qo, 1, no_u, 1, spinor_dim, 1, maxk, 'qo', 
+     &              'siesta_init')
 
       call setup_bands( )
       gamma = gamma .and. gamma_bands
@@ -389,13 +548,14 @@
       if (gamma) then
         nsc(1:3) = 1
       else
-        do i=1,3
+        ! Discussion with Jose-Soler we get this size ! NPA
+        do i = 1 , 3
           veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-          nsc(i) = ceiling( 2 * rmaxh / veclen )
-        enddo
-        if (.not. naiveauxcell)
-     &    call check_sc_factors( ucell, nsc, 2*rmaxh )
-      endif
+          nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
+        end do
+        if ( .not. naiveauxcell ) 
+     &       call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
+      end if
 
       mscell = 0.0_dp
       do i = 1, 3
@@ -423,6 +583,19 @@
       else if (idyn .eq. 8) then
         inicoor = 0
         fincoor = huge(1)
+#ifdef NCDF_4
+      else if (idyn == 9) then
+         if ( IONode ) then
+            write(*,'(/,a)')'expcoord: '//repeat('*',69)
+            write(*,'(a,i0)')
+     &           'expcoord: Currently reached coordinate step = ',
+     &           inicoor
+            write(*,'(a,i0)')
+     &           'expcoord: Final coordinate step = ',
+     &           fincoor
+            write(*,'(a,/)')'expcoord: '//repeat('*',69)
+         end if
+#endif
       else
         call die( 'siesta: wrong idyn' )
       endif
@@ -433,6 +606,28 @@
 
       istp = 0
 
+      ! initialize the fixed positions (we need to check whether the 
+      ! fixed positions make sense)
+      call init_fixed( na_u , isa, iza )
+      call print_fixed( )
+      
+#ifdef TRANSIESTA
+      call ts_init(nspin,ucell,na_u,xa,lasto,no_u,inicoor,fincoor)
+#endif
+
+#ifdef SIESTA__FLOOK
+
+      ! Populate dictionaries
+      call dict_populate()
+
+      ! Initialize LUA handle
+      call slua_init(LUA)
+
+      ! Call a preprocess step right after initialization
+      call slua_call(LUA,LUA_INITIALIZE)
+
+#endif
+
 !     Output memory use before main loop
 !!      call printmemory( 6, 0 )
 
@@ -440,10 +635,9 @@
       if (ionode) call pxfflush( 6 )
 
       call timer( 'Setup', 2 )
-#ifdef DEBUG
-      call write_debug( 'POS siesta_init' )
-#endif
+
 !--------------------------------------------------------------------------- END
+
       END subroutine siesta_init
 
       END MODULE m_siesta_init

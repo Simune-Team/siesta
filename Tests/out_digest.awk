@@ -30,6 +30,8 @@
 /siesta: Eions /  {printf "%-20s %20.4f\n", "Eions", $4}
 /siesta: Ena   /  {printf "%-20s %20.4f\n", "Ena", $4}
 /siesta: Ekin  /  {printf "%-20s %20.4f\n", "Ekin", $4}
+/siesta: Eldau /  {printf "%-20s %20.4f\n", "Eldau", $4}
+/siesta: Eso   /  {printf "%-20s %20.4f\n", "Eso", $4}
 /siesta: Enl   / {printf "%-20s %20.4f\n", "Enl", $4}
 /siesta: Eharris / {printf "%-20s %20.4f\n", "Eharris", $4}
 /siesta: Etot / {printf "%-20s %20.4f\n", "Etot", $4}
@@ -62,7 +64,3 @@
 # mulliken
 #
 /mulliken: Qtot / {printf "%-20s %20.4f\n", "Spin-pol", $4}
-
-
-
-

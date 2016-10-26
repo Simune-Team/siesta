@@ -60,7 +60,7 @@ C ********* VARIABLES **************************************************
 
       CHARACTER
      .   SNAME*15, INPDATA*15, FNAMERHO*24, 
-     .   FNAMEPLAVE*26, FNAMEDELV*25, PASTE*26
+     .   FNAMEPLAVE*26, FNAMEDELV*25
 
       LOGICAL
      .  SIESTA, ABINIT, POTENTIAL, CHARGE, TOTALCHARGE,
@@ -108,7 +108,7 @@ C ABINIT variables
 C end ABINIT variables
 
       EXTERNAL
-     .   IO_ASSIGN, IO_CLOSE, PASTE, THETAFT, VOLCEL 
+     .   IO_ASSIGN, IO_CLOSE, THETAFT, VOLCEL 
 
 C *********************************************************************
 C CHARACTER CODE       : First principles-code used to generate the
@@ -243,11 +243,11 @@ C potential in a FFT grid? ---------------------------------------------
 C Reading charge density from a file -----------------------------------
       IF ( SIESTA ) THEN
          IF (POTENTIAL) THEN
-           FNAMERHO = PASTE(SNAME,'.VH')
+           FNAMERHO = TRIM(SNAME)//'.VH'
          ELSEIF (CHARGE) THEN 
-           FNAMERHO = PASTE(SNAME,'.RHO')
+           FNAMERHO = TRIM(SNAME)//'.RHO'
          ELSEIF (TOTALCHARGE) THEN 
-           FNAMERHO = PASTE(SNAME,'.TOCH')
+           FNAMERHO = TRIM(SNAME)//'.TOCH'
          ENDIF
       ELSE IF ( ABINIT ) THEN
          FNAMERHO = SNAME
@@ -427,7 +427,7 @@ C ...
  
 C Print planar average of the electrostatic potential or ---------------
 C the electronic charge density ----------------------------------------
-      FNAMEPLAVE = PASTE(SNAME,'.PAV')
+      FNAMEPLAVE = TRIM(SNAME)//'.PAV'
       CALL IO_ASSIGN(UNIT3)
         OPEN(UNIT=UNIT3, FILE=FNAMEPLAVE,STATUS='UNKNOWN') 
           I = 0
@@ -566,7 +566,7 @@ c          ENDIF
 C ...
 
 C Print averaged electronic charge density and potential ---------------
-      FNAMEDELV = PASTE( SNAME,'.MAV')
+      FNAMEDELV = TRIM(SNAME)//'.MAV'
       CALL IO_ASSIGN(UNIT4)
         OPEN(UNIT=UNIT4, FILE=FNAMEDELV, STATUS='UNKNOWN') 
           DO I = 1, N
@@ -581,7 +581,7 @@ C ...
 
 C Print electrostatic potential ----------------------------------------
 c      IF (POISON) THEN
-c        FNAMEVEC = PASTE( SNAME,'.VEC')
+c        FNAMEVEC = TRIM(SNAME)//'.VEC'
 c        CALL IO_ASSIGN(UNIT5)
 c        OPEN(UNIT=UNIT5, FILE=FNAMEVEC, STATUS='UNKNOWN')
 c        DO I = 1, N

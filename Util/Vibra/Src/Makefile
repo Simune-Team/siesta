@@ -65,7 +65,7 @@ $(FDF):
 BUILD-SRCS= fcbuild.f chkdim.f recoor.f io.f
 BUILD-OBJS=$(BUILD-SRCS:.f=.o)
 
-VIBRA-SRCS= vibra.f chkdim.f recoor.f hermdp.f paste.f klines.f outbands.f \
+VIBRA-SRCS= vibra.f chkdim.f recoor.f hermdp.f klines.f outbands.f \
             reclat.f parse.f io.f
 VIBRA-OBJS=$(VIBRA-SRCS:.f=.o)
 

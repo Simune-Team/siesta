@@ -74,7 +74,7 @@ module m_cite
   ! Increment this after having added a new
   ! citation!
   ! OTHERWISE YOU WILL EXPERIENCE A SEG-FAULT.
-  integer, parameter :: N_citations = 4
+  integer, parameter :: N_citations = 7
 
   private
 
@@ -211,6 +211,37 @@ contains
        cit%cite_key = "Dudarev1998"
        ID = 4
 
+    case ( "10.1039/C5CP04613K" )
+       ! charge/hartree gate
+       cit%comment = "Charge/Hartree gate model"
+       cit%doi = "10.1039/C5CP04613K"
+       cit%journal = "Phys. Chem. Chem. Phys."
+       cit%year = 2016
+       cit%volume = "18"
+       cit%issue = "2"
+       cit%cite_key = "Papior2016A"
+       ID = 5
+
+    case ( "10.1016/j.cpc.2016.09.022" )
+       ! new transiesta article
+       cit%comment = "TranSIESTA N-electrode"
+       cit%doi = "10.1016/j.cpc.2016.09.022"
+       cit%journal = "Computer Physics Communications"
+       cit%year = 2016
+       cit%cite_key = "Papior2016B"
+       ID = 6
+
+    case ( "10.1088/0953-8984/26/30/305503" )
+       ! PEXSI-siesta
+       cit%comment = "SIESTA-PEXSI"
+       cit%doi = "10.1088/0953-8984/26/30/305503"
+       cit%journal = "Journal of Physics: Condensed Matter"
+       cit%year = 2014
+       cit%volume = "26"
+       cit%issue = "30"
+       cit%cite_key = "Lin2014"
+       ID = 7
+       
     end select
 
     ! probably we should error out...

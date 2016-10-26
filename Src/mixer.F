@@ -12,37 +12,44 @@
       CONTAINS
  
       subroutine mixer( iscf )
-      USE siesta_options
-      use sparse_matrices
-      use siesta_geom
-      use atomlist, only: iaorb, iphorb, lasto, no_u, no_l
-      use m_broyden_mixing
-      use m_fire_mixing
-      use m_spin,   only: nspin
-      use m_pulay
-      use parallel, only: IONode
-#ifdef TRANSIESTA
-      use m_ts_global_vars, only : TSiscf, TSrun
-#endif
+
+      use precision,        only: dp
+      use siesta_options,   only: mixH, mix_scf_first
+      use siesta_options,   only: mullipop, muldeb
+      ! Spin mixing options
+      use m_mixing_scf, only: MIX_SPIN_ALL, MIX_SPIN_SPINOR
+      use m_mixing_scf, only: MIX_SPIN_SUM, MIX_SPIN_SUM_DIFF
+      use m_mixing_scf, only: mix_spin
+
+      use sparse_matrices,  only: Dold, Dscf, Hold, H, S
+      use sparse_matrices,  only: maxnh, numh, listhptr, listh
+      use siesta_geom,      only: na_u, isa
+      use atomlist,         only: iaorb, iphorb, lasto, no_u, no_l
+      use atomlist,         only: indxuo
+
+      use m_mixing_scf, only: scf_mix
+      use m_mixing, only: mixing
+      
+      use m_spin,           only: h_spin_dim, SpOrb
+      use parallel,         only: IONode
 
       implicit none
 
-      real(dp), dimension(:,:), pointer :: Xin => null()
-      real(dp), dimension(:,:), pointer :: Xout => null()  
+      real(dp), pointer :: Xin(:,:), Xout(:,:)
+      real(dp), allocatable :: F(:,:)
 
       integer,  intent(in)  :: iscf
 
-      real(dp)              :: dummy_dmax   ! Now local variable
-      integer               :: iiscf
-      logical               :: mmix    ! Same as mix. Used in pulayx
+      real(dp)              :: dtmp
+      integer               :: iiscf, i, is
 
-      external ::  mulliken
+      external :: mulliken
 
-!----------------------------------------------------------- BEGIN
+!-------------------------------------------------------------------- BEGIN
 
       call timer( 'MIXER', 1 )
 
-      if (mixH) then
+      if ( mixH ) then
          ! Mix Hamiltonian
          Xin => Hold
          Xout => H
@@ -50,46 +57,132 @@
          ! Mix density matrix
          Xin => Dold
          Xout => Dscf
-      endif
+      end if
 
-! Mix input and output energy-density and density matrices ............
-! Following line for using and saving the density matrix without mix ..
 
-      if (wmix.ne.0._dp) then
-! Pulay or Broyden mixing
-        mmix  = mix
-        iiscf = iscf
-        if (maxsav .le. 0) then
-          iiscf = 1
-          if (iscf .ne. 1) mmix = .true.
-        endif
-#ifdef TRANSIESTA
-        if ( TSrun ) then
-           iiscf=TSiscf
-           if (maxsav .le. 0) then
-             iiscf = 1
-             if (TSiscf .ne. 1) mmix = .true.
-           endif
-        end if
-#endif /* TRANSIESTA */
+      ! Create residual function to minimize
+      allocate(F(maxnh,h_spin_dim))
 
-        if (fire_mix) then
-          call fire_mixing( iscf, mix, no_l, maxnh,
-     &                      numh(1:no_l), listhptr(1:no_l), nspin,
-     $                      wmix, nkick, wmixkick, Xout, Xin,dummy_dmax)
-        else if (broyden_maxit == 0) then
-               call pulayx( iiscf, mmix, no_l, maxnh,
-     &                 numh, listhptr, nspin, maxsav, wmix, nkick, 
-     .                 wmixkick, XOut, XIn, dummy_dmax)
-        else
-          call broyden_mixing( iscf, mix, no_l, maxnh,
-     &                         numh(1:no_l), listhptr(1:no_l),
-     &                         nspin, wmix, nkick, wmixkick,
-     $                         XOut, XIn, dummy_dmax)
-        endif
-      endif
+!$OMP parallel default(shared), private(dtmp,i)
 
-!     Print populations at each SCF step, if requested
+      ! prepare input...
+      select case ( mix_spin )
+      case ( MIX_SPIN_ALL , MIX_SPIN_SPINOR )
+         ! Xin and Xout are unchanged...
+      case ( MIX_SPIN_SUM , MIX_SPIN_SUM_DIFF )
+
+         ! transfer spin density to
+         ! spin-sum and spin-difference
+!$OMP do
+         do i = 1 , size(Xin,1)
+            dtmp = (Xin(i,1) + Xin(i,2)) * 0.5_dp
+            Xin(i,2) = (Xin(i,1) - Xin(i,2)) * 0.5_dp
+            Xin(i,1) = dtmp
+         end do
+!$OMP end do nowait
+
+!$OMP do
+         do i = 1 , size(Xout,1)
+            dtmp = (Xout(i,1) + Xout(i,2)) * 0.5_dp
+            Xout(i,2) = (Xout(i,1) - Xout(i,2)) * 0.5_dp
+            Xout(i,1) = dtmp
+         end do
+!$OMP end do
+
+      end select
+
+      ! Calculate the residual
+!$OMP workshare
+      F = Xout - Xin
+!$OMP end workshare
+
+!$OMP end parallel
+
+      ! Call mixing routine
+      ! Xin contains the input element, F contains
+      !  F = Xout - Xin
+      ! Upon exit Xout contains the mixed quantity
+      select case ( mix_spin )
+      case ( MIX_SPIN_ALL )
+         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout)
+      case ( MIX_SPIN_SPINOR )
+         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+     &        nsub=2)
+      case ( MIX_SPIN_SUM )
+         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+     &        nsub=1)
+      case ( MIX_SPIN_SUM_DIFF )
+         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+     &        nsub=2)
+      end select
+
+!$OMP parallel default(shared), private(dtmp,i,is)
+
+      ! correct output...
+      select case ( mix_spin )
+      case ( MIX_SPIN_ALL , MIX_SPIN_SPINOR )
+         ! Xin and Xout are unchanged...
+      case ( MIX_SPIN_SUM , MIX_SPIN_SUM_DIFF )
+
+         ! transfer spin-sum and difference to
+         ! spin-up and spin-down
+
+!$OMP do
+         do i = 1 , size(Xin,1)
+            dtmp = Xin(i,1) + Xin(i,2)
+            Xin(i,2) = Xin(i,1) - Xin(i,2)
+            Xin(i,1) = dtmp
+         end do
+!$OMP end do nowait
+
+!$OMP do
+         do i = 1 , size(Xout,1)
+            dtmp = Xout(i,1) + Xout(i,2)
+            Xout(i,2) = Xout(i,1) - Xout(i,2)
+            Xout(i,1) = dtmp
+         end do
+!$OMP end do
+
+      end select
+
+      
+      ! Correctly handle mixed quantity
+      ! move over mixed quantity to "input"
+      if ( mix_scf_first ) then
+         
+         ! always allow mixing
+!$OMP do
+         do is = 1 , size(Xin, 2)
+            do i = 1 , size(Xin, 1)
+               Xin(i,is) = Xout(i,is)
+            end do
+         end do
+!$OMP end do nowait
+         
+      else if ( iscf == 1 ) then
+         
+         ! We are not allowed to mix the first SCF
+         ! Remember that Xout contains the MIXED
+         ! quantity and F is the current residual
+         ! hence:
+         !   Xout = Xin + F
+!$OMP do
+         do is = 1 , size(Xin, 2)
+            do i = 1 , size(Xin, 1)
+               Xin(i,is) = Xin(i,is) + F(i,is)
+               ! we require that Xin == Xout:
+               Xout(i,is) = Xin(i,is)
+            end do
+         end do
+!$OMP end do nowait
+
+      end if
+
+!$OMP end parallel
+      
+      deallocate(F)
+
+      ! Print populations at each SCF step, if requested
       ! Note that this is after mixing, which is not
       ! entirely correct. It should be moved to the top,
       ! or done somewhere else.
@@ -98,9 +191,15 @@
          if (IONode)
      &        write (6,"(/a)")
      &        'siesta: Mulliken populations after mixing'
-        call mulliken( mullipop, nspin, na_u, no_u, maxnh,
-     &                 numh, listhptr, listh, S, Dscf, isa,
-     &                 lasto, iaorb, iphorb )
+         if ( SpOrb ) then
+            call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
+     .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
+     .           indxuo )
+         else
+            call mulliken( mullipop, h_spin_dim, na_u, no_u, maxnh,
+     &           numh, listhptr, listh, S, Dscf, isa,
+     &           lasto, iaorb, iphorb )
+         endif
       endif
 
       call timer( 'MIXER', 2 )

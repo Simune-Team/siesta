@@ -799,11 +799,11 @@ C  WRITTEN BY J.M.SOLER.
       use precision
       implicit none
 
+      integer, intent(in) :: n, iopt
       real(dp) A(N,N),B(N,N)
 
       real(dp) :: c, ci
-      integer iopt
-      integer n, i
+      integer i
 
       C=1.D0
       IF (IOPT.EQ.1) C=2.D0*ACOS(-1.D0)

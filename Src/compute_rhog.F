@@ -25,7 +25,7 @@
       use m_stress
       use m_energies
       use m_ntm
-      use m_spin,         only: nspin
+      use m_spin,         only: nspin, h_spin_dim
       use m_dipol
       use alloc, only: re_alloc, de_alloc
       use m_gamma
@@ -33,7 +33,7 @@
 
       implicit none
 
-      real(dp), intent(in):: DM(maxnh,nspin)
+      real(dp), intent(in):: DM(maxnh,h_spin_dim)
 
       real(dp)            :: stressl(3,3)
       real(dp), pointer   :: fal(:,:)   ! Local-node part of atomic F

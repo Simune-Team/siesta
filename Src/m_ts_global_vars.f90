@@ -5,25 +5,67 @@
 !  or http://www.gnu.org/copyleft/gpl.txt .
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
-!==========================================================================*
-!                                                                          *
-!  TRANSIESTA MODULE m_ts_global_vars : Declaration of the TS variables    *
-!  that are accessed in different parts of the code by using a:            *
-!      use m_ts_global_vars                                                *
-!  declaration, instead of passing as dummy arguments                      *  
-!                                                                          *
-!  Written by F.D.Novaes, Apr'10                                           *
-!==========================================================================*                                         
-
 
 module m_ts_global_vars
+  
+  implicit none
+  
+  save
 
-USE precision, only : dp
+  ! Whether transiesta is the solver
+  logical :: TSmode = .false.
 
-integer :: TSiscf=0
+  ! Controls the change from diagon to transiesta solver
+  logical :: TSinit = .false. , TSrun = .false.
 
-logical :: TSinit=.false.,TSrun=.false.
+  ! Whether this is an only overlap calculation
+  logical :: onlyS = .false.
 
-integer :: ts_istep      ! FC step in phonon calculation
+contains
+
+  subroutine ts_method_init( start )
+
+    use parallel, only : IONode
+    
+    logical, intent(in) :: start
+
+    ! If we are not in transiesta mode, return
+    if ( .not. TSmode ) return
+
+    if ( start ) then
+
+       ! We will immediately start Transiesta
+       TSinit = .false.
+       TSrun  = .true.
+       
+       if ( IONode ) then
+          write(*,'(/a)')'transiesta: Starting immediately'
+       end if
+       
+       call ts_print_transiesta()
+
+    else
+
+       ! Tell transiesta to initialize the Hamiltonian with siesta
+
+       TSinit = .true.
+       TSrun  = .false.
+       
+       if ( IONode ) then
+          write(*,'(/,a,/)') 'transiesta: Initialization run using siesta'
+       end if
+
+    end if
+    
+  end subroutine ts_method_init
+
+  subroutine ts_print_transiesta()
+    use parallel, only : IONode
+    if ( IONode ) then
+       write(*,'(/,t22,a)') repeat('*',27)
+       write(*,  '(t22,a)') '*  WELCOME TO TRANSIESTA  *'
+       write(*,'(t22,a,/)') repeat('*',27)
+    end if
+  end subroutine ts_print_transiesta
 
 end module m_ts_global_vars

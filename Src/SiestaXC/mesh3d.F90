@@ -653,15 +653,7 @@ MODULE mesh3D
 
 ! Used MPI procedures and types
 #ifdef MPI
-  use mpi_siesta, only: MPI_AllGather
-  use mpi_siesta, only: MPI_AllReduce
-  use mpi_siesta, only: MPI_Send
-  use mpi_siesta, only: MPI_Recv
-  use mpi_siesta, only: MPI_COMM_WORLD
-  use mpi_siesta, only: MPI_STATUS_SIZE
-  use mpi_siesta, only: MPI_Integer
-  use mpi_siesta, only: MPI_Max
-  use mpi_siesta, only: MPI_grid_real
+  use mpi_siesta
 #endif
 
   implicit none

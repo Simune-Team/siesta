@@ -11,6 +11,11 @@ Bands:     Tools for plotting band structures (including "fatbands")
 COOP: Generation of COOP/COHP/PDOS curves for chemical analysis.
       Computation of data to generate "fatbands" plots.
 
+Grimme: Enable easy creation of the atomic potential block by reading
+	the ChemicalSpecies block and printing out the relevant information.
+	This makes it _very_ easy to create the correct units and quantities.
+	(by Nick Papior)
+
 Optimizer: General-purpose optimizer. Useful for basis-set and
 	   pseudopotential optimization (by A. Garcia)
 

@@ -26,7 +26,7 @@ destdir=$(pwd)
 # Replicate the hierarchy of makefiles
 #
 (cd $srcdir;
-  for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile); do
+  for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile) ; do
     relpath=${i%/*}
     mkdir -p ${destdir}/$relpath
     cp $relpath/*akefile ${destdir}/$relpath
@@ -80,6 +80,7 @@ sed "s#MAIN_OBJDIR=\.#MAIN_OBJDIR=${objdir}#g" > ${destdir}/Makefile
               -path *.arch-ids  -prune -o -print \
               | tar -cf - --no-recursion -T- )   | ( cd ${destdir} ; tar xf -)
 #
+# (deactivated for now)
 echo " *** Compilation setup done. "
 echo " *** Remember to copy an arch.make file or run configure as:"
 echo "    ${user_specified_dir}/configure [configure_options]"

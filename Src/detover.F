@@ -52,6 +52,7 @@ C *********************************************************************
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use alloc,        only : re_alloc, de_alloc
+      use m_linpack,    only : zgedi, zgefa
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -104,7 +105,7 @@ C Allocate local memory
           skxij = dsin(kxij)
           Aux2(juo,iuo)=Aux2(juo,iuo)+
      .      cmplx(  S(ind)*ckxij + Sr(ind)*skxij, 
-     .      S(ind)*skxij - Sr(ind)*ckxij  )  
+     .      S(ind)*skxij - Sr(ind)*ckxij , dp )  
  
         enddo 
       enddo 
@@ -143,7 +144,7 @@ C Broadcast copy of psi on node n to all other nodes
      .                  psiprev(2,iuo,ie) * psitmp(2,juo,je)
                 pipj2 = psiprev(1,iuo,ie) * psitmp(2,juo,je) -
      .                  psiprev(2,iuo,ie) * psitmp(1,juo,je)
-                pipj=cmplx(pipj1,pipj2)
+                pipj=cmplx(pipj1,pipj2, dp)
   
                 Aux(jeg,ie) = Aux(jeg,ie) + pipj*Aux2(juo,iuo)
 
@@ -167,7 +168,7 @@ C Broadcast copy of psi on node n to all other nodes
      .                psiprev(2,iuo,ie) * psi(2,juo,je)
               pipj2 = psiprev(1,iuo,ie) * psi(2,juo,je) -
      .                psiprev(2,iuo,ie) * psi(1,juo,je) 
-              pipj=cmplx(pipj1,pipj2)
+              pipj=cmplx(pipj1,pipj2, dp)
 
               Aux(je,ie) = Aux(je,ie) + pipj*Aux2(juo,iuo)
 

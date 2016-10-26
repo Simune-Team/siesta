@@ -26,7 +26,7 @@
       use fdf
       use precision
       use basis_types, only: basis_specs_transfer, nsp
-      use basis_types, only: deallocate_spec_arrays
+      use basis_types, only: deallocate_spec_arrays, initialize
       use basis_types, only: iz, lmxkb, nkbl, 
      &           erefkb, lmxo, nzeta, rco, 
      &           lambda, filtercut,
@@ -50,6 +50,13 @@
       use ldau_specs, only: read_ldau_specs
       use ldau_specs, only: ldau_proj_gen
 
+      use m_ncps, only: pseudo_read
+      use m_spin_orbit_potentials, only: valid_spin_orbit_potentials
+
+      use chemical
+
+      use m_spin, only: SpOrb
+
       implicit none
       integer,         intent(out) :: ns   ! Number of species
 !     Internal variables ...................................................
@@ -57,7 +64,7 @@
       logical                      :: user_basis, user_basis_netcdf
       logical :: req_init_setup
       type(basis_def_t),   pointer :: basp
-      
+
       external atm_transfer
 
       call get_atom_options()
@@ -89,9 +96,35 @@
         call read_basis_netcdf(ns)
         call elec_corr_setup()
       else if (user_basis) then
-        write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
-        call read_basis_ascii(ns)
-        call elec_corr_setup()
+
+       if ( SpOrb ) then  
+          write(6,'(a)') ' initatom: Spin configuration = spin-orbit'
+          call read_chemical_types()
+          nsp = number_of_species()
+          
+          allocate(basis_parameters(nsp))
+          do is = 1 , nsp
+             call initialize(basis_parameters(is))
+          enddo
+          
+          do is = 1 , nsp
+             basp => basis_parameters(is)
+             
+             basp%label = species_label(is)
+             call pseudo_read(basp%label,basp%pseudopotential,
+     $            basp%psml_handle,basp%has_psml_ps)
+             if (basp%has_psml_ps) then
+                if (.not. valid_spin_orbit_potentials(basp%psml_handle))
+     $                    then
+                   call die(
+     $            "Cannot do spin-orbit without proper semilocal pots")
+                endif
+             endif
+          end do
+       end if
+       write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
+       call read_basis_ascii(ns)
+       call elec_corr_setup()
       else
 !       New routines in basis_specs and basis_types.
         call read_basis_specs()

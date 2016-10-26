@@ -23,7 +23,7 @@ c maxp   : Maximun number of points
 
 c Internal variables
       character
-     .  name*75, fform*12, fname*80, output*20, paste*80, task*15
+     .  name*75, fform*12, fname*80, output*20, task*15
       logical
      .  found
       integer
@@ -40,7 +40,7 @@ c Internal variables
       double precision
      .  dcell(3,3)
       external
-     .  grays, paste, pgclos, pgenv, pgopen, pgpixl, plsurf,
+     .  grays, pgclos, pgenv, pgopen, pgpixl, plsurf,
      .  rotate
       data
      .  ncolor /0/
@@ -60,9 +60,9 @@ c Read plot data
 
 c Read density
       if (task .eq. 'ldos') then
-        fname = paste( name, '.LDOS' )
+        fname = trim(name)//'.LDOS'
       else
-        fname = paste( name, '.RHO' )
+        fname = trim(name)//'.RHO'
       endif
       nsm = 1
       np = maxp
@@ -102,8 +102,8 @@ c Reorder spin density as sum and difference
 c Read potential
       if (task.eq.'vt' .or. task.eq.'vh') then
         ncolor = 1
-        if (task .eq. 'vt') fname = paste( name, '.VT' )
-        if (task .eq. 'vh') fname = paste( name, '.VH' )
+        if (task .eq. 'vt') fname = trim(name)//'.VT'
+        if (task .eq. 'vh') fname = trim(name)//'.VH'
         call iorho( 'read', fname, dcell, mesh, nsm, np, nspin, 
      .              f(1,2), found )
         if (.not.found) then
@@ -222,7 +222,6 @@ c Copy pixmap to window and show it
 
       include 'icolor.f'
       include 'iorho.f'
-      include 'paste.f'
       include 'plsurf.f'
       include 'pltr3d.f'
       include 'ray.f'

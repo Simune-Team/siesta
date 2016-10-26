@@ -25,7 +25,8 @@
          integer, pointer              :: z(:)
       end type chemical_types
 
-      type(chemical_types), save       :: chemical_list
+      ! For now this is public information...
+      type(chemical_types), save, public :: chemical_list
 
 
       CONTAINS

@@ -1067,12 +1067,9 @@
       if (irel.eq.'rel') irelt=1
       if (irel.ne.'rel') irelt=0
 
-!     Set the exchange and correlation functional
-      call setXC( 1, (/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/) )
-
 !     Compute the exchange and correlation potential
       call atomxc( irelt, nrval, nrmax, rofi,
-     .             1, auxrho, ex, ec, dx, dc, vxc )
+     &             1, auxrho, ex, ec, dx, dc, vxc )
 
 !!     For debugging
 !      write(6,'(a,i5)') 'irelt = ', irelt
@@ -1112,7 +1109,7 @@
       auxrho(1) = auxrho(2) -(auxrho(3)-auxrho(2))*r2
 
       call atomxc( irelt, nrval, nrmax, rofi,
-     .             1, auxrho, ex, ec, dx, dc, vxc )
+     &             1, auxrho, ex, ec, dx, dc, vxc )
 
       vePAO(1:nrval) = vePAO(1:nrval) + vxc(1:nrval)
 

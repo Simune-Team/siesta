@@ -37,8 +37,6 @@ C **********************************************************************
 
 C Internal variables --------------------------------------------------
 
-      CHARACTER*33 PASTE
-
       CHARACTER*30
      .  SNAME, FNAME1
 
@@ -47,11 +45,11 @@ C Internal variables --------------------------------------------------
      .  UNIT1 
 
       EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE
+     .  IO_ASSIGN, IO_CLOSE
 
 C Assign the name of the output file -----------------------------------
       SNAME = FDF_STRING('SystemLabel','siesta')
-      FNAME1 = PASTE(sname,'.DIM')
+      FNAME1 = TRIM(sname)//'.DIM'
 
       CALL IO_ASSIGN(UNIT1)
         OPEN ( UNIT = UNIT1, FILE = FNAME1, FORM = 'UNFORMATTED',

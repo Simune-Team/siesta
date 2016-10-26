@@ -20,8 +20,10 @@ module:  libSiestaXC.a
 SIESTA_SRCS= alloc.F90 memory_log.F90 bessph.f cellsubs.f  debugmpi.F \
              chkgmx.f fft1d.F interpolation.f90  \
              minvec.f m_io.f moreParallelSubs.F90 \
+             class_OrbitalDistribution.F90 \
              m_timer.F90 timer_tree.F90 m_walltime.f90 parallel.F \
 	     precision.F pxf.F90 radfft.f m_fft_gpfa.F sorting.f sys.F timer.f90 die.F
+
 SIESTA_OBJS:= $(SIESTA_SRCS:.f=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.f90=.o)
@@ -43,9 +45,9 @@ ALL_OBJS=$(SIESTA_OBJS) $(LOCAL_OBJS)
 ALL_SOURCES=$(SIESTA_SOURCES) $(LOCAL_SRCS)
 #
 libSiestaXC.a: $(ALL_OBJS)
-	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS) 
+	$(AR) $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS) 
 	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
-            ar $(ARFLAGS_EXTRA) cru libSiestaXC.a ../MPI/*.o ; fi
+            $(AR) $(ARFLAGS_EXTRA) cru libSiestaXC.a ../MPI/*.o ; fi
 	-$(RANLIB) libSiestaXC.a
 #
 OTHER_FILES=lib-makefile lib-arch.make mpi-makefile lib-00-README test-makefile
@@ -96,12 +98,13 @@ mesh1d.o: precision.o
 mesh3d.o: alloc.o debugxc.o parallel.o precision.o sorting.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
+parallel.o: class_OrbitalDistribution.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 siestaxc.o: m_libxc_sxc_translation.o
 sys.o: parallel.o
 siesta_options.o: parallel.o precision.o units.o
-timer.o: sys.o m_timer.o timer_tree.o 
+timer.o: sys.o m_timer.o timer_tree.o extrae_module.o extrae_eventllist.o
 timer_tree.o: m_walltime.o
 vdwxc.o: alloc.o debugxc.o interpolation.o ggaxc.o ldaxc.o mesh1d.o
 vdwxc.o: precision.o radfft.o vv_vdwxc.o sys.o

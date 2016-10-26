@@ -10,10 +10,9 @@
 !     Fire geometry optimization
 !      
       use precision, only : dp
-      use m_fdf_global, only: fdf_global_get
       use sys, only: die
       use alloc
-!
+      use fdf, only: fdf_get
 
       use m_fire
       use siesta_options, only: dt
@@ -106,23 +105,19 @@ c ---------------------------------------------------------------------------
       volume = volcel(cell)
 
       if ( frstme ) then
-             call fdf_global_get(fire_mass,"MD.FIRE.Mass",1.0_dp)
-             call fdf_global_get(fire_dt,"MD.FIRE.TimeStep",dt)
-             call fdf_global_get(fire_dt_inc,"MD.FIRE.TimeInc",
-     $            FIRE_DEF_dt_inc)
-             call fdf_global_get(fire_dt_dec,"MD.FIRE.TimeDec",
-     $            FIRE_DEF_dt_dec)
-             call fdf_global_get(fire_nmin,"MD.FIRE.Nmin",FIRE_DEF_nmin)
-             call fdf_global_get(fire_alphamax,"MD.FIRE.AlphaMax",
-     $            FIRE_DEF_alphamax)
-             call fdf_global_get(fire_alpha_factor,
-     $            "MD.FIRE.AlphaFactor", FIRE_DEF_alpha_factor)
-             call fdf_global_get(fire_dtmax,"MD.FIRE.MaxTimeStep",
-     $            FIRE_DEF_dtmax)
-             call fdf_global_get(fire_dt,"MD.FIRE.TimeStep",dt)
-             call fdf_global_get(fire_debug,"MD.FIRE.Debug",.false.)
+         fire_mass = fdf_get("MD.FIRE.Mass", 1.0_dp)
+         fire_dt = fdf_get("MD.FIRE.TimeStep", dt)
+         fire_dt_inc = fdf_get("MD.FIRE.TimeInc", FIRE_DEF_dt_inc)
+         fire_dt_dec = fdf_get("MD.FIRE.TimeDec", FIRE_DEF_dt_dec)
+         fire_nmin = fdf_get("MD.FIRE.Nmin", FIRE_DEF_nmin)
+         fire_alphamax = fdf_get("MD.FIRE.AlphaMax", FIRE_DEF_alphamax)
+         fire_alpha_factor = fdf_get("MD.FIRE.AlphaFactor",
+     &        FIRE_DEF_alpha_factor)
+         fire_dtmax = fdf_get("MD.FIRE.MaxTimeStep", FIRE_DEF_dtmax)
+         fire_dt = fdf_get("MD.FIRE.TimeStep", dt)
+         fire_debug = fdf_get("MD.FIRE.Debug", .false.)
 
-  
+         
          if (varcel ) then
             numel =  6
          else
@@ -143,8 +138,7 @@ c ---------------------------------------------------------------------------
         if ( varcel ) then
 
 C Check if we want a constant-volume simulation
-          call fdf_global_get(constant_volume,
-     .                        "MD.ConstantVolume", .false.)
+          constant_volume = fdf_get("MD.ConstantVolume", .false.)
 
           call get_target_stress(tp,target_stress)
           if (constant_volume) target_stress = 0.0_dp
@@ -153,7 +147,7 @@ C Check if we want a constant-volume simulation
 C Scale factor for strain variables to share magnitude with coordinates 
 C ---- (a length in Bohrs typical of bond lengths ..) ------------------
 
-          call fdf_global_get(precon,'MD.PreconditionVariableCell',
+          precon = fdf_get('MD.PreconditionVariableCell',
      .                           9.4486344d0,'Bohr')
 
 C Initialize absolute strain and save initial cell vectors -------------

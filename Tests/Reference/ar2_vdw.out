@@ -1,77 +1,32 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
-PARALLEL version
-NetCDF support
-
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:27:02
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
                            ***********************       
 
-reinit: Reading from standard input
-************************** Dump of input data file ****************************
-##### GENERAL SYSTEM DESCRIPTORS ##############################################
-SystemName	Argon dimer. VDW-DF. Unconverged test.
-SystemLabel	ar2_vdw
-NumberOfAtoms     2
-NumberOfSpecies   1
-%block ChemicalSpeciesLabel
-  1    18    Ar.vdw
-%endblock ChemicalSpeciesLabel
-##### INITIAL GEOMETRY ########################################################
-LatticeConstant	1.00000 Ang
-%block LatticeVectors
-	15.0000     0.0000    0.0000
-	 0.0000    10.0000    0.0000
-	 0.0000     0.0000   10.0000
-%endblock LatticeVectors
-AtomicCoordinatesFormat Ang
-%block AtomicCoordinatesAndAtomicSpecies
-	0.0000    0.0000    0.0000   1  Ar         1
-	4.0000    0.0000    0.0000   1  Ar         2
-%endblock AtomicCoordinatesAndAtomicSpecies
-##### FUNCTIONAL ##############################################################
-XC.functional		VDW
-XC.authors		DRSLL
-##### BASIS DEFINITION ########################################################
-PAO.BasisType		split
-PAO.BasisSize		DZP
-PAO.EnergyShift	        100 meV
-##### PRECISION PARAMETERS ####################################################
-%block Ps.lmax
-    Ar.vdw 	  2
-%endblock Ps.lmax
-FilterCutoff             80 Ry
-MeshCutoff		100 Ry
-##### TASK SPECIFIERS #########################################################
-SolutionMethod	        diagon
-MaxSCFIterations	50
-DM.UseSaveDM		no
-DM.MixingWeight		0.1
-DM.NumberPulay		5
-DM.Tolerance		1.0d-4
-MD.TypeOfRun		CG
-MD.NumCGsteps		10
-MD.MaxCGDispl		0.1 Ang
-MD.MaxForceTol	        0.03 eV/Ang
-MD.UseSaveXV		no
-##### OUTPUT OPTIONS ##########################################################
-alloc_report_level      2
-timer_report_threshold  1.e-4
-************************** End of input data file *****************************
+reinit: Reading from ../ar2_vdw.fdf
 
 reinit: -----------------------------------------------------------------------
 reinit: System Name: Argon dimer. VDW-DF. Unconverged test.
 reinit: -----------------------------------------------------------------------
-reinit: System Label: ar2_vdw                                                     
+reinit: System Label: ar2_vdw
 reinit: -----------------------------------------------------------------------
+Siesta Version: trunk-554
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
+Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+PARALLEL version
+NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
+
+* Running on 4 nodes in parallel
+>> Start of run:  18-AUG-2016   7:58:17
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: Ar.vdw Atomic number:          18
+Species number:   1 Atomic number:   18 Label: Ar.vdw
+
 Ground state valence configuration:   3s02  3p06
 Reading pseudopotential information in formatted form from Ar.vdw.psf
 
@@ -99,7 +54,7 @@ L=0  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=3
           n=1  nzeta=2  polorb=1
             splnorm:   0.15000    
@@ -109,7 +64,7 @@ L=1  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -301,46 +256,79 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     F
-redata: Number of spin components        =     1
-redata: Long output                      =     F
-redata: Number of Atomic Species         =        1
+redata: Spin configuration                          = none
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        1
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     NO
-redata: Mesh Cutoff                      =   100.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Min. number of SCF Iter          =        0
-redata: Max. number of SCF Iter          =       50
-redata: Mix DM or H after convergence    =     F
-redata: Recompute H after scf cycle      =     F
-redata: Performing Pulay mixing using    =     5 iterations
-redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?        =     F
-redata: Discard 1st Pulay DM after  kick =     F
-redata: New DM Mixing Weight             =     0.1000
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = NO
+redata: Mesh Cutoff                                 =   100.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =       50
+redata: SCF mix quantity                            = Hamiltonian
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: Discard 1st Pulay DM after kick             =   F
+redata: New DM Mixing Weight                        =     0.1000
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.000100
-redata: Require (free) Energy convergence in SCF =     F
-redata: DM (free)Energy tolerance for SCF =     0.000010 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000010 eV
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     F
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Diagonalization
-redata: Divide and Conquer               =     T
-redata: Electronic Temperature           =     0.0019  Ry
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     CG coord. optimization
-redata: Variable cell                    =     F
-redata: Use continuation files for CG    =     F
-redata: Max atomic displ per move        =     0.1890  Bohr
-redata: Maximum number of CG moves       =       10
-redata: Force tolerance                  =     0.0012  Ry/Bohr
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: Require Harris convergence for SCF          =   F
+redata: Harris energy tolerance for SCF             =     0.000100 eV
+redata: Require DM convergence for SCF              =   T
+redata: DM tolerance for SCF                        =     0.000100
+redata: Require H convergence for SCF               =   T
+redata: Hamiltonian tolerance for SCF               =     0.001000 eV
+redata: Require (free) Energy convergence for SCF   =   F
+redata: (free) Energy tolerance for SCF             =     0.000100 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   F
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =   299.9869 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = CG coord. optimization
+redata: Variable cell                               =   F
+redata: Use continuation files for CG               =   F
+redata: Max atomic displ per move                   =     0.1000 Ang
+redata: Maximum number of CG moves                  =       10
+redata: Force tolerance                             =     0.0300 eV/Ang
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 5
+mix.SCF:    Linear mixing weight                 =     0.100000
+mix.SCF:    Mixing weight                        =     0.100000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: Save data in SIESTA.nc                      =   F
 redata: ***********************************************************************
+
+%block SCF.Mixers
+  Pulay                   
+%endblock SCF.Mixers
+
+%block SCF.Mixer.Pulay
+  # Mixing method
+  method pulay
+  variant stable
+
+  # Mixing options
+  weight 0.1000
+  weight.linear 0.1000
+  history 5
+  restart 0
+  restart.save 1
+
+  # Continuation options
+%endblock SCF.Mixer.Pulay
+
+DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
+Size of DM history Fstack: 1
 Total number of electrons:    16.000000
 Total ionic charge:    16.000000
 
@@ -358,6 +346,7 @@ siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
 
+
                      ====================================
                         Begin CG opt. move =      0
                      ====================================
@@ -370,8 +359,19 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   15.000000   10.000000   10.000000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1500.0000
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=26 nrows=7 sparsity=.2411 nnzs=163, refcount: 7>
+  <dData1D:(new from dSpData1D) n=163, refcount: 1>
+refcount: 1>
 New_DM. Step:     1
 Initializing Density Matrix...
+DM after filling with atomic data:
+<dSpData2D:(DM initialized from atoms)
+  <sparsity:sparsity for geom step 0
+    nrows_g=26 nrows=7 sparsity=.2411 nnzs=163, refcount: 8>
+  <dData2D:(DMatomic) n=163 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   48    1:   16    1:   16
            2       1:   48    1:   16   17:   32
@@ -396,40 +396,48 @@ Setting up quadratic distribution...
 ExtMesh (bp) on 0 =    71 x    68 x    46 =      222088
 PhiOnMesh: Number of (b)points on node 0 =                11200
 PhiOnMesh: nlist on node 0 =                13405
+rdiag-debug: Node=2, lwork=       545>= lworkq=       545, liwork=       216>= liworkq=       200
+rdiag-debug: Node=3, lwork=       497>= lworkq=       497, liwork=       216>= liworkq=       200
+rdiag-debug: Node=0, lwork=       601>= lworkq=       601, liwork=       216>= liworkq=       200
+rdiag-debug: Node=1, lwork=       545>= lworkq=       545, liwork=       216>= liworkq=       200
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -201.911991
+siesta: Ebs     =      -211.452519
 siesta: Eions   =      1490.478905
 siesta: Ena     =       145.951094
-siesta: Ekin    =       424.968056
-siesta: Enl     =       -20.150483
-siesta: DEna    =         0.000002
-siesta: DUscf   =         0.000000
+siesta: Ekin    =       416.588727
+siesta: Enl     =       -19.500456
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =         5.399411
+siesta: DUscf   =         0.069940
 siesta: DUext   =         0.000000
-siesta: Exc     =      -222.732370
+siesta: Exc     =      -220.511124
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -1162.535757
-siesta: Etot    =     -1162.442605
-siesta: FreeEng =     -1162.442605
+siesta: Eharris =     -1162.465677
+siesta: Etot    =     -1162.481313
+siesta: FreeEng =     -1162.481313
 
-   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-   scf:    1    -1162.5358    -1162.4426    -1162.4426  0.17712 -1.0259
-timer: Routine,Calls,Time,% =    IterSCF     1       3.947  11.06
-   scf:    2    -1162.5186    -1162.4813    -1162.4813  0.11888 -1.5345
-   scf:    3    -1162.5035    -1162.4807    -1162.4807  0.03284 -1.3352
-   scf:    4    -1162.5035    -1162.5031    -1162.5031  0.00703 -1.3153
-   scf:    5    -1162.5035    -1162.5032    -1162.5032  0.00015 -1.3275
-   scf:    6    -1162.5035    -1162.5033    -1162.5033  0.00004 -1.3274
+        iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
+   scf:    1    -1162.465677    -1162.481313    -1162.481313  0.177115 -1.025935  0.768424
+timer: Routine,Calls,Time,% =    IterSCF     1      14.196  51.94
+   scf:    2    -1162.494798    -1162.488185    -1162.488185  0.012118 -1.076784  0.638536
+   scf:    3    -1162.512615    -1162.503478    -1162.503478  0.058852 -1.326792  0.002135
+   scf:    4    -1162.503473    -1162.503476    -1162.503476  0.000994 -1.330763  0.008272
+   scf:    5    -1162.503480    -1162.503479    -1162.503479  0.000542 -1.328406  0.002314
+   scf:    6    -1162.503479    -1162.503479    -1162.503479  0.000195 -1.327393  0.000028
+   scf:    7    -1162.503479    -1162.503479    -1162.503479  0.000002 -1.327401  0.000048
 
-SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00004072
-SCF cycle converged after    6 iterations
+SCF Convergence by DM+H criterion
+max |DM_out - DM_in|   :     0.0000019066
+max |H_out - H_in| (eV):     0.0000476384
+SCF cycle converged after 7 iterations
 
 Using DM_out to compute the final energy and forces
 
@@ -441,10 +449,10 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Tot   -0.001787   -0.000001   -0.000001
 ----------------------------------------
-   Max    0.075364
+   Max    0.075365
    Res    0.042999    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.075364    constrained
+   Max    0.075365    constrained
 
 Stress-tensor-Voigt (kbar):        0.35        0.03        0.03        0.00        0.00        0.00
 (Free)E + p*V (eV/cell)    -1162.6293
@@ -462,9 +470,22 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   15.000000   10.000000   10.000000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1500.0000
+<dSpData1D:S at geom step 1
+  <sparsity:sparsity for geom step 1
+    nrows_g=26 nrows=7 sparsity=.2411 nnzs=163, refcount: 7>
+  <dData1D:(new from dSpData1D) n=163, refcount: 1>
+refcount: 1>
 New_DM. Step:     2
-Re-using DM from previous geometry...
-Re-using DM without extrapolation (not allowed)
+Re-using DM from previous geometries...
+N DMs in history: 1
+ DM extrapolation coefficients: 
+1   1.00000
+New DM after history re-use:
+<dSpData2D:SpM extrapolated using coords
+  <sparsity:sparsity for geom step 1
+    nrows_g=26 nrows=7 sparsity=.2411 nnzs=163, refcount: 8>
+  <dData2D:(temp array for extrapolation) n=163 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   48    1:   16    1:   16
            2       1:   48    1:   16   17:   32
@@ -490,15 +511,16 @@ ExtMesh (bp) on 0 =    72 x    68 x    46 =      225216
 PhiOnMesh: Number of (b)points on node 0 =                11520
 PhiOnMesh: nlist on node 0 =                14115
 
-   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-   scf:    1    -1162.5145    -1162.5125    -1162.5125  0.01772 -1.2515
-   scf:    2    -1162.5145    -1162.5145    -1162.5145  0.00035 -1.2524
-   scf:    3    -1162.5145    -1162.5145    -1162.5145  0.00030 -1.2523
-   scf:    4    -1162.5145    -1162.5145    -1162.5145  0.00004 -1.2518
+        iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
+   scf:    1    -1162.516573    -1162.514547    -1162.514547  0.017718 -1.251467  0.001799
+   scf:    2    -1162.514547    -1162.514547    -1162.514547  0.000035 -1.251559  0.001484
+   scf:    3    -1162.514548    -1162.514547    -1162.514547  0.000153 -1.251939  0.000143
+   scf:    4    -1162.514547    -1162.514547    -1162.514547  0.000034 -1.251909  0.000072
 
-SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00004025
-SCF cycle converged after    4 iterations
+SCF Convergence by DM+H criterion
+max |DM_out - DM_in|   :     0.0000341969
+max |H_out - H_in| (eV):     0.0000723778
+SCF cycle converged after 4 iterations
 
 Using DM_out to compute the final energy and forces
 
@@ -506,12 +528,12 @@ siesta: E_KS(eV) =            -1162.5145
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.015256   -0.000001   -0.000001
+   Tot   -0.015255   -0.000001   -0.000001
 ----------------------------------------
-   Max    0.101405
-   Res    0.054321    sqrt( Sum f_i^2 / 3N )
+   Max    0.101407
+   Res    0.054322    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.101405    constrained
+   Max    0.101407    constrained
 
 Stress-tensor-Voigt (kbar):        0.31        0.02        0.02        0.00        0.00        0.00
 (Free)E + p*V (eV/cell)    -1162.6258
@@ -529,10 +551,22 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   15.000000   10.000000   10.000000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1500.0000
+<dSpData1D:S at geom step 2
+  <sparsity:sparsity for geom step 2
+    nrows_g=26 nrows=7 sparsity=.2485 nnzs=168, refcount: 7>
+  <dData1D:(new from dSpData1D) n=168, refcount: 1>
+refcount: 1>
 New_DM. Step:     3
-Re-using DM from previous geometry...
-Re-using DM without extrapolation (not allowed)
-Density Matrix sparsity pattern changed.
+Re-using DM from previous geometries...
+N DMs in history: 1
+ DM extrapolation coefficients: 
+1   1.00000
+New DM after history re-use:
+<dSpData2D:SpM extrapolated using coords
+  <sparsity:sparsity for geom step 2
+    nrows_g=26 nrows=7 sparsity=.2485 nnzs=168, refcount: 8>
+  <dData2D:(temp array for extrapolation) n=168 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   48    1:   16    1:   16
            2       1:   48    1:   16   17:   32
@@ -558,15 +592,16 @@ ExtMesh (bp) on 0 =    73 x    68 x    46 =      228344
 PhiOnMesh: Number of (b)points on node 0 =                11840
 PhiOnMesh: nlist on node 0 =                14589
 
-   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-   scf:    1    -1162.5286    -1162.5251    -1162.5251  0.02549 -0.9456
-   scf:    2    -1162.5286    -1162.5286    -1162.5286  0.00069 -0.9452
-   scf:    3    -1162.5286    -1162.5286    -1162.5286  0.00058 -0.9451
-   scf:    4    -1162.5286    -1162.5286    -1162.5286  0.00008 -0.9446
+        iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
+   scf:    1    -1162.532008    -1162.528578    -1162.528578  0.025483 -0.945499  0.007037
+   scf:    2    -1162.528583    -1162.528580    -1162.528580  0.000069 -0.945477  0.005601
+   scf:    3    -1162.528587    -1162.528585    -1162.528585  0.000293 -0.945305  0.000864
+   scf:    4    -1162.528585    -1162.528585    -1162.528585  0.000072 -0.944877  0.000125
 
-SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00007539
-SCF cycle converged after    4 iterations
+SCF Convergence by DM+H criterion
+max |DM_out - DM_in|   :     0.0000724659
+max |H_out - H_in| (eV):     0.0001248804
+SCF cycle converged after 4 iterations
 
 Using DM_out to compute the final energy and forces
 
@@ -574,12 +609,12 @@ siesta: E_KS(eV) =            -1162.5286
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.003931   -0.000001   -0.000001
+   Tot   -0.003929   -0.000001   -0.000001
 ----------------------------------------
-   Max    0.057807
-   Res    0.032260    sqrt( Sum f_i^2 / 3N )
+   Max    0.057790
+   Res    0.032251    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.057807    constrained
+   Max    0.057790    constrained
 
 Stress-tensor-Voigt (kbar):        0.19       -0.00       -0.00        0.00        0.00        0.00
 (Free)E + p*V (eV/cell)    -1162.5864
@@ -597,10 +632,22 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   15.000000   10.000000   10.000000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1500.0000
+<dSpData1D:S at geom step 3
+  <sparsity:sparsity for geom step 3
+    nrows_g=26 nrows=7 sparsity=.2515 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
 New_DM. Step:     4
-Re-using DM from previous geometry...
-Re-using DM without extrapolation (not allowed)
-Density Matrix sparsity pattern changed.
+Re-using DM from previous geometries...
+N DMs in history: 1
+ DM extrapolation coefficients: 
+1   1.00000
+New DM after history re-use:
+<dSpData2D:SpM extrapolated using coords
+  <sparsity:sparsity for geom step 3
+    nrows_g=26 nrows=7 sparsity=.2515 nnzs=170, refcount: 8>
+  <dData2D:(temp array for extrapolation) n=170 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   48    1:   16    1:   16
            2       1:   48    1:   16   17:   32
@@ -626,16 +673,17 @@ ExtMesh (bp) on 0 =    74 x    68 x    46 =      231472
 PhiOnMesh: Number of (b)points on node 0 =                12160
 PhiOnMesh: nlist on node 0 =                14994
 
-   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-   scf:    1    -1162.5330    -1162.5321    -1162.5321  0.02026 -0.3253
-   scf:    2    -1162.5330    -1162.5329    -1162.5329  0.00280 -0.3229
-   scf:    3    -1162.5330    -1162.5329    -1162.5329  0.00224 -0.3228
-   scf:    4    -1162.5330    -1162.5330    -1162.5330  0.00018 -0.3221
-   scf:    5    -1162.5330    -1162.5330    -1162.5330  0.00002 -0.3231
+        iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
+   scf:    1    -1162.533570    -1162.532919    -1162.532919  0.020256 -0.325001  0.017524
+   scf:    2    -1162.532962    -1162.532941    -1162.532941  0.000278 -0.324816  0.013781
+   scf:    3    -1162.532997    -1162.532979    -1162.532979  0.001180 -0.323853  0.002302
+   scf:    4    -1162.532980    -1162.532980    -1162.532980  0.000202 -0.322952  0.000283
+   scf:    5    -1162.532980    -1162.532980    -1162.532980  0.000027 -0.323028  0.000065
 
-SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00002294
-SCF cycle converged after    5 iterations
+SCF Convergence by DM+H criterion
+max |DM_out - DM_in|   :     0.0000268131
+max |H_out - H_in| (eV):     0.0000648287
+SCF cycle converged after 5 iterations
 
 Using DM_out to compute the final energy and forces
 
@@ -643,12 +691,12 @@ siesta: E_KS(eV) =            -1162.5330
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.032263   -0.000007   -0.000007
+   Tot    0.032265   -0.000007   -0.000007
 ----------------------------------------
-   Max    0.038100
-   Res    0.015736    sqrt( Sum f_i^2 / 3N )
+   Max    0.038099
+   Res    0.015735    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.038100    constrained
+   Max    0.038099    constrained
 
 Stress-tensor-Voigt (kbar):       -0.05        0.03        0.03        0.00        0.00        0.00
 (Free)E + p*V (eV/cell)    -1162.5362
@@ -666,9 +714,22 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :   15.000000   10.000000   10.000000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1500.0000
+<dSpData1D:S at geom step 4
+  <sparsity:sparsity for geom step 4
+    nrows_g=26 nrows=7 sparsity=.2515 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
 New_DM. Step:     5
-Re-using DM from previous geometry...
-Re-using DM without extrapolation (not allowed)
+Re-using DM from previous geometries...
+N DMs in history: 1
+ DM extrapolation coefficients: 
+1   1.00000
+New DM after history re-use:
+<dSpData2D:SpM extrapolated using coords
+  <sparsity:sparsity for geom step 4
+    nrows_g=26 nrows=7 sparsity=.2515 nnzs=170, refcount: 8>
+  <dData2D:(temp array for extrapolation) n=170 m=1, refcount: 1>
+refcount: 1>
 New grid distribution:   1
            1       1:   48    1:   16    1:   16
            2       1:   48    1:   16   17:   32
@@ -694,15 +755,16 @@ ExtMesh (bp) on 0 =    74 x    68 x    45 =      226440
 PhiOnMesh: Number of (b)points on node 0 =                10944
 PhiOnMesh: nlist on node 0 =                15231
 
-   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-   scf:    1    -1162.5333    -1162.5326    -1162.5326  0.00781 -0.5275
-   scf:    2    -1162.5333    -1162.5333    -1162.5333  0.00112 -0.5283
-   scf:    3    -1162.5333    -1162.5332    -1162.5332  0.00086 -0.5283
-   scf:    4    -1162.5333    -1162.5333    -1162.5333  0.00007 -0.5286
+        iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
+   scf:    1    -1162.533914    -1162.533281    -1162.533281  0.007807 -0.527544  0.006649
+   scf:    2    -1162.533287    -1162.533284    -1162.533284  0.000111 -0.527623  0.005222
+   scf:    3    -1162.533292    -1162.533290    -1162.533290  0.000472 -0.528017  0.000846
+   scf:    4    -1162.533290    -1162.533290    -1162.533290  0.000077 -0.528315  0.000114
 
-SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00006859
-SCF cycle converged after    4 iterations
+SCF Convergence by DM+H criterion
+max |DM_out - DM_in|   :     0.0000766601
+max |H_out - H_in| (eV):     0.0001140832
+SCF cycle converged after 4 iterations
 
 Using DM_out to compute the final energy and forces
 
@@ -710,20 +772,20 @@ siesta: E_KS(eV) =            -1162.5333
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.014023   -0.000002   -0.000002
+   Tot   -0.014019   -0.000003   -0.000002
 ----------------------------------------
-   Max    0.010452
-   Res    0.004509    sqrt( Sum f_i^2 / 3N )
+   Max    0.010428
+   Res    0.004503    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.010452    constrained
+   Max    0.010428    constrained
 
 Stress-tensor-Voigt (kbar):        0.03        0.00        0.00        0.00        0.00        0.00
 (Free)E + p*V (eV/cell)    -1162.5448
 Target enthalpy (eV/cell)    -1162.5333
 
 outcoor: Relaxed atomic coordinates (Ang):                  
-    0.23738580   -0.00000154   -0.00000153   1       1  Ar.vdw
-    3.75684932   -0.00000138   -0.00000137   1       2  Ar.vdw
+    0.23738255   -0.00000154   -0.00000153   1       1  Ar.vdw
+    3.75685328   -0.00000138   -0.00000137   1       2  Ar.vdw
 
 WARNING: alloc-realloc-dealloc name mismatch
          Name: xap
@@ -732,34 +794,39 @@ WARNING: alloc-realloc-dealloc name mismatch
          Subsequent mismatches will not be reported
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -207.651445
+siesta: Ebs     =      -207.648394
 siesta: Eions   =      1490.478905
 siesta: Ena     =       145.955647
-siesta: Ekin    =       419.898337
-siesta: Enl     =       -19.760828
-siesta: DEna    =         3.223846
-siesta: DUscf   =         0.025417
+siesta: Ekin    =       419.896968
+siesta: Enl     =       -19.760726
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =         3.224736
+siesta: DUscf   =         0.025430
 siesta: DUext   =         0.000000
-siesta: Exc     =      -221.396803
+siesta: Exc     =      -221.396439
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
 siesta: Eharris =     -1162.533290
-siesta: Etot    =     -1162.533289
-siesta: FreeEng =     -1162.533289
+siesta: Etot    =     -1162.533290
+siesta: FreeEng =     -1162.533290
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -207.651445
-siesta:       Kinetic =     419.898337
-siesta:       Hartree =     836.308299
+siesta:  Band Struct. =    -207.648394
+siesta:       Kinetic =     419.896968
+siesta:       Hartree =     836.304420
+siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -221.396803
-siesta:  Ion-electron =   -2033.252403
-siesta:       Ion-ion =    -164.090719
+siesta:   Exch.-corr. =    -221.396439
+siesta:  Ion-electron =   -2033.246988
+siesta:       Ion-ion =    -164.091250
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -1162.533289
+siesta:         Total =   -1162.533290
+siesta:         Fermi =      -0.528315
 
 siesta: Stress tensor (static) (eV/Ang**3):
 siesta:     0.000019    0.000000    0.000000
@@ -771,11 +838,11 @@ siesta: Cell volume =       1500.000000 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00000008         -0.00000011  Ry/Bohr**3
-siesta:          -0.00000764         -0.00001033  eV/Ang**3
-siesta:          -0.01224366         -0.01655458  kBar
+siesta:          -0.00000767         -0.00001034  eV/Ang**3
+siesta:          -0.01228595         -0.01656988  kBar
 (Free)E+ p_basis*V_orbitals  =       -1161.986141
 (Free)Eharris+ p_basis*V_orbitals  =       -1161.986141
 
-siesta: Electric dipole (a.u.)  =    0.000047   -0.000006   -0.000006
-siesta: Electric dipole (Debye) =    0.000119   -0.000015   -0.000015
->> End of run:  29-SEP-2015  15:28:57
+siesta: Electric dipole (a.u.)  =    0.000053   -0.000006   -0.000006
+siesta: Electric dipole (Debye) =    0.000134   -0.000015   -0.000015
+>> End of run:  18-AUG-2016   8:03:00

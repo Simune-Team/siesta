@@ -5,7 +5,14 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
-      subroutine diagon(no, nspin, maxspn, maxuo, maxnh, maxnd, 
+      module m_diagon
+
+      private
+      public :: diagon
+
+      contains 
+
+      subroutine diagon(no, nspin, maxuo, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, 
      .                  listdptr, listd, H, S, qtot, fixspin, 
      .                  qs, temp, e1, e2, gamma, xij, indxuo, nk, 
@@ -22,8 +29,7 @@ C Modified by J.Gale, November 1999.
 C Added new diagk_file routine, A. Garcia, June 2008.
 C **************************** INPUT **********************************
 C integer no                  : Number of basis orbitals
-C integer nspin               : Spin polarization (1 or 2)
-C integer maxspn              : Second dimension of eo and qo
+C integer nspin               : Spin polarization, spinor (1 or 2)
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : Maximum number of nonzero elements of 
 C                               each row of density matrix
@@ -40,11 +46,11 @@ C integer listdptr(nuo)       : Pointer to each row (-1) of the
 C                               density matrix
 C integer listd(maxnh)        : Nonzero density-matrix element column 
 C                               indexes for each matrix row
-C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
+C real*8  H(maxnh,h_spin_dim) : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C real*8  qtot                : Number of electrons in unit cell
 C logical fixspin             : Fix the spin of the system?
-C real*8  qs(nspin)           : Number of electrons in unit cell for each
+C real*8  qs(nspin)          : Number of electrons in unit cell for each
 C                               spin component (if fixed spin option is used)
 C real*8  temp                : Electronic temperature 
 C real*8  e1, e2              : Energy range for density-matrix states
@@ -66,14 +72,14 @@ C real*8  occtol              : Occupancy threshold for DM build
 C integer iscf                : SCF cycle number
 C integer neigwanted          : Number of eigenvalues wanted
 C *************************** OUTPUT **********************************
-C real*8 eo(maxo,maxspn,nk)   : Eigenvalues
-C real*8 qo(maxo,maxspn,nk)   : Occupations of eigenstates
-C real*8 Dnew(maxnd,nspin)    : Output Density Matrix
-C real*8 Enew(maxnd,nspin)    : Output Energy-Density Matrix
-C real*8 ef                   : Fermi energy
-C real*8 efs(nspin)           : Fermi energy for each spin
-C                                (for fixed spin calculations)
-C real*8 Entropy              : Electronic entropy
+C real*8 eo(maxo,nspin,nk)  : Eigenvalues 
+C real*8 qo(maxo,nspin,nk)  : Occupations of eigenstates
+C real*8 Dnew(maxnd,h_spin_dim)  : Output Density Matrix
+C real*8 Enew(maxnd,e_spin_dim)  : Output Energy-Density Matrix
+C real*8 ef                      : Fermi energy
+C real*8 efs(nspin)         : Fermi energy for each spin
+C                                   (for fixed spin calculations)
+C real*8 Entropy                 : Electronic entropy
 C *************************** UNITS ***********************************
 C xij and kpoint must be in reciprocal coordinates of each other.
 C temp and H must be in the same energy units.
@@ -95,38 +101,44 @@ C
       use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
       use densematrix,  only : Haux, Saux, psi
       use sys,          only : die
-      use m_diagon,     only : qspiral, spiral, frstme
+      use m_diagon_opt, only : init_diagon_opt
+
       use fdf
       use alloc
       use memory_log
+      use m_spin,       only: Spiral, qSpiral
+      use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
+      use m_spin,       only: e_spin_dim
 #ifdef MPI
-      use m_diagon,     only : paralleloverk
-      use mpi_siesta,   only : mpi_bcast, mpi_comm_world,
-     &                         mpi_logical
+      use m_diagon_opt, only : paralleloverk
+      use mpi_siesta
 #endif
       use siesta_options, only: new_diagk
 
       implicit none
 
+      real(dp), intent(in) :: H(:,:)
+
       integer
-     .  iscf, maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin, nuotot,
-     .  neigwanted
+     .  iscf, maxnd, maxnh, maxuo, maxo, nk, no, nuotot,
+     .  neigwanted, h_spin_dim, nspin
 
       integer 
      .  indxuo(no), listh(maxnh), numh(*), listd(maxnd), numd(*),
      .  listhptr(*), listdptr(*)
 
       real(dp)
-     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), 
-     .  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin), kpoint(3,nk), 
-     .  qo(maxo,maxspn,nk), qtot, S(maxnh), temp, wk(nk), occtol,
-     .  xij(3,maxnh), qs(nspin), efs(nspin)
+     .  Dnew(maxnd,size(H,2)), e1, e2, ef, Enew(maxnd,e_spin_dim), 
+     .  Entropy, eo(maxo,nspin,nk),  
+     .  kpoint(3,nk), 
+     .  qo(maxo,nspin,nk), qtot, S(maxnh), temp, wk(nk), occtol,
+     .  xij(3,maxnh), qs(:), efs(nspin)
      
       logical
      .  fixspin, gamma, getD, getPSI
 
       external
-     .  diagg, diagk, diag2g, diag2k, readsp, diagsprl
+     .  diag2g, diag2k, diagsprl
 #ifdef CDF
       external diagk_file
 #endif
@@ -138,28 +150,15 @@ C
       real(dp),  pointer :: aux(:)
       integer,   pointer :: muo(:)
 
+      h_spin_dim=size(H,dim=2)
+
 #ifdef DEBUG
       call write_debug( '    PRE diagon' )
 #endif
 
 C  ....................
-C First call initialisation
-      if (frstme) then
-#ifdef MPI
-        ParallelOverK = fdf_boolean( 'Diag.ParallelOverK', .false. )
-#endif
-
-C Read spin-spiral wavevector (if defined)
-        call readsp( qspiral, spiral )
-        if (spiral.and.Node.eq.0) then
-          if (gamma) write(6,*) 
-     .      'diagon: WARNING: spin-spiral requires k sampling'
-          if (nspin.ne.4) write(6,*)
-     .      'diagon: WARNING: spin-spiral requires nspin=4'
-        endif
-
-        frstme = .false.
-      endif
+C     First call initialisation
+      call init_diagon_opt( Gamma )
 
 C Get Node number and calculate local orbital range
 #ifdef MPI
@@ -172,11 +171,13 @@ C Start time counter ................................................
       call timer( 'diagon', 1 )
 
 C Check internal dimensions ..........................................
-      if (nspin.le.2 .and. gamma) then
+CC RC Changed for SO
+      if (NoMagn .or. SPpol) then
+       if (gamma) then
         nhs  = nuotot * nuo
         npsi = nuotot * maxuo * nspin
         naux = nuotot * 5
-      elseif (nspin.le.2 .and. .not.gamma) then
+       elseif (.not.gamma) then
         nhs  = 2 * nuotot * nuo
         npsi = 2 * nuotot * nuo
         naux = 2 * nuotot * 5            !!!! AG: Put factor 2 !!
@@ -186,7 +187,8 @@ C Check internal dimensions ..........................................
           npsi = 2 * nuotot * nuotot
         endif
 #endif
-      elseif (nspin.eq.4) then
+       endif
+      elseif (NonCol .or. SpOrb) then
         nhs  = 2 * (2*nuotot) * (2*nuo)
         npsi = 2 * (2*nuotot) * (2*maxuo)
         naux = (2*nuotot) * 5
@@ -195,17 +197,20 @@ C Check internal dimensions ..........................................
       endif
 
       call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
-      if (nspin .ne. 4) then
+      
+      ! Check when we should allocate the auxiliary
+      ! arrays
+      if ( .not. (SpOrb .or.
+     &     (NonCol.and..not.Spiral) )) then
          call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
          call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
-      endif
+      end if
 
 
-C Allocate local arrays
+C Allocate local arrays ! TODO conditional allocation...
       nullify(aux,muo)
       call re_alloc( aux,  1, naux, 'aux',  'diagon' )
       call re_alloc( muo,  1, nuo,  'muo',  'diagon' )
-
 
 
 C Check indxuo
@@ -238,17 +243,20 @@ C Call apropriate routine
       getD = .true.
       getPSI = .false.
 
-      if (nspin.le.2 .and. gamma) then
-        call diagg( nspin, nuo, maxuo, maxnh, maxnd, maxo,
+CC RC Changed for SO
+      if (NoMagn .or. SPpol) then
+       if (gamma) then
+        call diagg( h_spin_dim, nuo, maxuo, maxnh, maxnd, maxo,
      .              numh, listhptr, listh, numd, listdptr, listd, 
      .              H, S, getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, nuotot, occtol, iscf,
      .              neigwanted )
-      elseif (nspin.le.2 .and. .not.gamma) then
+       elseif (.not.gamma) then 
 #ifdef MPI
         if (ParallelOverK) then
-          call diagkp( nspin, nuo, no, maxspn, maxnh, maxnd, maxo, numh,
+          call diagkp( h_spin_dim, nuo, no, nspin, maxnh,
+     .              maxnd, maxo, numh,
      .              listhptr, listh, H, S, getD, fixspin, qtot, qs,
      .              temp, e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
@@ -270,7 +278,7 @@ C Call apropriate routine
            if (new_diagk) then
 #ifdef CDF
               ! Use new routine with file storage
-              call diagk_file(nspin, nuo, no, maxspn, 
+              call diagk_file(h_spin_dim, nuo, no, nspin,
      $              maxnh, maxnd, 
      .              maxo, numh, listhptr, listh, numd, listdptr,
      .              listd, H, S, getD, getPSI, fixspin, qtot, qs, temp, 
@@ -280,25 +288,30 @@ C Call apropriate routine
      .              nuotot, occtol, iscf, neigwanted )
 #endif
            else
-              call diagk( nspin, nuo, no, maxspn, maxnh, maxnd, 
+              call diagk( h_spin_dim, nuo, no, nspin,
+     .              maxnh, maxnd, 
      .              maxo, numh, listhptr, listh, numd, listdptr,
      .              listd, H, S, getD, getPSI, fixspin, qtot, qs, temp, 
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
      .              nuotot, occtol, iscf )
+
            endif
            call output_kpoint_occupation()
 #ifdef MPI
         endif
 #endif
-      elseif (nspin.eq.4 .and. gamma) then
+       endif
+      
+      elseif (NonCol) then
+       if (gamma) then
         call diag2g( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
      .               H, S, getD, qtot, temp, e1, e2, eo, qo, 
      .               Dnew, Enew, ef, Entropy, psi, 
      .               nuotot, occtol, iscf, neigwanted )
-      elseif (nspin.eq.4 .and. spiral) then
+       elseif (spiral) then
         call diagsprl( nuo, no, maxnh, maxnd, maxo,
      .               numh, listhptr, listh, numd, listdptr,
      .               listd, H, S, getD, qtot, temp, e1, e2,
@@ -306,14 +319,31 @@ C Call apropriate routine
      .               Dnew, Enew, ef, Entropy, qspiral, Haux,
      .               Saux, psi, Haux, Saux, aux, nuotot, occtol,
      .               iscf )
-      elseif (nspin.eq.4 .and. .not.gamma) then
+       elseif (.not.gamma) then
         call diag2k( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
      .               H, S, getD, qtot, temp, e1, e2, xij,
      .               indxuo, nk, kpoint, wk, eo, qo, Dnew,
      .               Enew, ef, Entropy, psi, 
      .               nuotot, occtol, iscf )
-      endif
+       endif
+      elseif (SpOrb) then
+        if (gamma) then
+          call diag3g( nuo, no, maxuo, maxnh, maxnd, maxo, numh,
+     .                 listhptr, listh, numd, listdptr, listd,
+     .                 H, S, getD, getPSI, qtot, temp, e1, e2, eo, qo,
+     .                 Dnew, Enew, ef, Entropy, psi,
+     .                 nuotot, occtol, iscf, neigwanted )
+        elseif (.not.gamma) then
+          call diag3k( nuo, no, maxnh, maxnd, maxo, numh,
+     .                 listhptr, listh, numd, listdptr, listd,
+     .                 H, S, getD, getPSI, qtot, temp, e1, e2, xij,
+     .                 indxuo, nk, kpoint, wk, eo, qo, Dnew,
+     .                 Enew, ef, Entropy, psi,
+     .                 nuotot, occtol, iscf )
+        endif
+      endif      
+
 
 C Free local arrays
       call de_alloc( aux, name='aux', routine='diagon' )
@@ -326,7 +356,7 @@ C Stop time counter
 #endif
       CONTAINS
       
-      subroutine output_kpoint_occupation()
+      subroutine output_kpoint_occupation() ! CC RC It seems ok for osSO
       !  Creates the OCCS file. This was formerly
       !  done in diagk and diagk_file
 
@@ -361,6 +391,7 @@ C Stop time counter
          call io_close(iu)
       endif
       end subroutine output_kpoint_occupation
+
       end subroutine diagon
-
-
+   
+      end module m_diagon

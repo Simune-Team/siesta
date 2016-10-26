@@ -1032,25 +1032,25 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
   ! gradient g at each new step being modified to obtain the search direction d
   if (Node==0) then
     if (ispin==1) then
-      print('(a)'), '+---------------------------------------------+'
+      print'(a)', '+---------------------------------------------+'
       if (UseCholesky) then
-        print('(a)'), '| OMM (Cholesky factorization)                |'
+        print'(a)', '| OMM (Cholesky factorization)                |'
       else if (UsePrecon) then
-        print('(a)'), '| OMM (preconditioning)                       |'
+        print'(a)', '| OMM (preconditioning)                       |'
       else
-        print('(a)'), '| OMM                                         |'
+        print'(a)', '| OMM                                         |'
       end if
-      print('(a)'),      '+---------------------------------------------+'
+      print'(a)',      '+---------------------------------------------+'
     end if
     if (nspin==2) then
       if (ispin==1) then
-        print('(a)'),      '| up spin                                     |'
+        print'(a)',      '| up spin                                     |'
       else
-        print('(a)'),      '| down spin                                   |'
+        print'(a)',      '| down spin                                   |'
       end if
-      print('(a)'),      '+---------------------------------------------+'
+      print'(a)',      '+---------------------------------------------+'
     end if
-    if (LongOut) print('(a)'), '|             E_OMM            E_diff         |'
+    if (LongOut) print'(a)', '|             E_OMM            E_diff         |'
   end if
   conv=.false.
   d=0.0_dp
@@ -1114,7 +1114,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
       ! matrix; the only known cure, unfortunately, is to scale down the entire matrix, thus returning to
       ! a  safe region of the coeffs. space.
       if (ls_fail) then
-        if (Node==0) print('(a)'), '| WARNING: Rescaling coefficients!            |'
+        if (Node==0) print'(a)', '| WARNING: Rescaling coefficients!            |'
         E_OMM=3.0*E_OMM
         c(ispin)%mtrx=0.5_dp*c(ispin)%mtrx
         ls_conv=.false.
@@ -1144,7 +1144,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
         S(ispin)%mtrx=S(ispin)%mtrx+x_min(ispin)*Sd+x_min(ispin)**2*Sdd
       end if
       E_diff=2.0_dp*abs((E_OMM-E_OMM_old)/(E_OMM+E_OMM_old))
-      if ((Node==0) .and. LongOut) print('(a,2(1x,i5),2(1x,es15.7e3),1x,a)'), '|', i, j, E_OMM, E_diff, '|'
+      if ((Node==0) .and. LongOut) print'(a,2(1x,i5),2(1x,es15.7e3),1x,a)', '|', i, j, E_OMM, E_diff, '|'
       icg=icg+1
       if (E_diff<=cg_tol) then
         conv=.true.
@@ -1208,9 +1208,9 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     if (conv) exit
   end do
   if (i>n_step_max) then
-    if (Node==0) print('(a)'), '| WARNING: OMM failed to converge!            |'
+    if (Node==0) print'(a)', '| WARNING: OMM failed to converge!            |'
   end if
-  if ((Node==0) .and. LongOut) print('(a)'), '+---------------------------------------------+'
+  if ((Node==0) .and. LongOut) print'(a)', '+---------------------------------------------+'
 
   deallocate(work1)
   deallocate(hg)
@@ -1281,13 +1281,13 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
 #endif
   if (Node==0) then
     if (nspin==1) then
-      print('(a,i5,a)'),    '| minim: icg             = ', icg, '              |'
-      print('(a,f13.7,a)'), '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
+      print'(a,i5,a)',    '| minim: icg             = ', icg, '              |'
+      print'(a,f13.7,a)', '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
     else
-      print('(a,i5,a)'),    '| minim: icg           = ', icg, '                |'
-      print('(a,f13.7,a)'), '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
+      print'(a,i5,a)',    '| minim: icg           = ', icg, '                |'
+      print'(a,f13.7,a)', '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
     end if
-    print('(a)'),       '+---------------------------------------------+'
+    print'(a)',       '+---------------------------------------------+'
   end if
 
   if (FirstCall(ispin)) FirstCall(ispin)=.false.
@@ -1816,23 +1816,23 @@ end if
   ! gradient g at each new step being modified to obtain the search direction d
   if (Node==0) then
     if (ispin==1) then
-      print('(a)'), '+---------------------------------------------+'
+      print'(a)', '+---------------------------------------------+'
       if (UsePrecon) then
-        print('(a)'), '| OMM (sparse algebra+preconditioning)        |'
+        print'(a)', '| OMM (sparse algebra+preconditioning)        |'
       else
-        print('(a)'), '| OMM (sparse algebra)                        |'
+        print'(a)', '| OMM (sparse algebra)                        |'
       end if
-      print('(a)'), '+---------------------------------------------+'
+      print'(a)', '+---------------------------------------------+'
     end if
     if (nspin==2) then
       if (ispin==1) then
-        print('(a)'),      '| up spin                                     |'
+        print'(a)',      '| up spin                                     |'
       else
-        print('(a)'),      '| down spin                                   |'
+        print'(a)',      '| down spin                                   |'
       end if
-      print('(a)'),      '+---------------------------------------------+'
+      print'(a)',      '+---------------------------------------------+'
     end if
-    if (LongOut) print('(a)'), '|             E_OMM            E_diff         |'
+    if (LongOut) print'(a)', '|             E_OMM            E_diff         |'
   end if
   conv=.false.
   d=0.0_dp
@@ -1871,7 +1871,7 @@ end if
       ! matrix; the only known cure, unfortunately, is to scale down the entire matrix, thus returning to
       ! a  safe region of the coeffs. space.
       if (ls_fail) then
-        if (Node==0) print('(a)'), '| WARNING: Rescaling coefficients!            |'
+        if (Node==0) print'(a)', '| WARNING: Rescaling coefficients!            |'
         E_OMM=3.0*E_OMM
         c(ispin)%mtrx=0.5_dp*c(ispin)%mtrx
         ls_conv=.false.
@@ -1901,7 +1901,7 @@ end if
         S(ispin)%mtrx=S(ispin)%mtrx+x_min(ispin)*Sd+x_min(ispin)**2*Sdd
       end if
       E_diff=2.0_dp*abs((E_OMM-E_OMM_old)/(E_OMM+E_OMM_old))
-      if ((Node==0) .and. LongOut) print('(a,2(1x,i5),2(1x,es15.7e3),1x,a)'), '|', i, j, E_OMM, E_diff, '|'
+      if ((Node==0) .and. LongOut) print'(a,2(1x,i5),2(1x,es15.7e3),1x,a)', '|', i, j, E_OMM, E_diff, '|'
       icg=icg+1
       if (E_diff<=cg_tol) then
         conv=.true.
@@ -1961,9 +1961,9 @@ end if
     if (conv) exit
   end do
   if (i>n_step_max) then
-    if (Node==0) print('(a)'), '| WARNING: OMM failed to converge!            |'
+    if (Node==0) print'(a)', '| WARNING: OMM failed to converge!            |'
   end if
-  if ((Node==0) .and. LongOut) print('(a)'), '+---------------------------------------------+'
+  if ((Node==0) .and. LongOut) print'(a)', '+---------------------------------------------+'
 
   deallocate(work1)
   deallocate(hg)
@@ -2013,13 +2013,13 @@ end if
 #endif
   if (Node==0) then
     if (nspin==1) then
-      print('(a,i5,a)'),    '| minim: icg             = ', icg, '              |'
-      print('(a,f13.7,a)'), '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
+      print'(a,i5,a)',    '| minim: icg             = ', icg, '              |'
+      print'(a,f13.7,a)', '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
     else
-      print('(a,i5,a)'),    '| minim: icg           = ', icg, '                |'
-      print('(a,f13.7,a)'), '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
+      print'(a,i5,a)',    '| minim: icg           = ', icg, '                |'
+      print'(a,f13.7,a)', '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
     end if
-    print('(a)'),       '+---------------------------------------------+'
+    print'(a)',       '+---------------------------------------------+'
   end if
 
   if (FirstCall(ispin)) FirstCall(ispin)=.false.

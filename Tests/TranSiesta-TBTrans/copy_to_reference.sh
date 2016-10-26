@@ -64,5 +64,5 @@ EOF
 for i in `cat _sources`; do
  target=`echo $i | cut -d "/" -f 2`
  echo "-- Copying $i to $target"
- /bin/cp -p $i ${refdir}/${target}
+ cp -p $i ${refdir}/${target}
 done

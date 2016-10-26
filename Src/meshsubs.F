@@ -31,7 +31,7 @@
      &                     nm, nml, ntm, ntml, ntpl, dvol)
 
 !  Modules
-      use precision,     only : dp
+      use precision,     only : dp, i8b
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : HowManyMeshPerNode, GlobalToLocalMesh
       use moreMeshSubs,  only : initMeshDistr, setMeshDistr
@@ -111,7 +111,7 @@ C
 C     Local variables
       integer                 :: i, ia, i1, i2, i3, io, iphi, is, isp,
      &                           ity, j, nep, j1, j2, j3, indi
-      integer*8               :: ntp
+      integer(i8b)            :: ntp
       real(dp)                :: dx(3), dxp(3), pldist, r,
      &                           volume
       logical                 :: within
@@ -140,7 +140,7 @@ C     Functions
 ! Note needed integer*8 !
 !!AG** Check proper kind name
 
-      ntp = product(INT(ntm,kind=8))
+      ntp = product(INT(ntm,kind=i8b))
 
 C     Create the first mesh distribution
       call initMeshDistr( oDistr=UNIFORM, nm=nm )
@@ -204,8 +204,11 @@ C     Find reciprocal mesh-cell vectors (not multiplied by 2*pi)
       ne(:) = ne(:) + 1
 
 C     Find sub-points
-      isp = 0
+!$OMP parallel default(shared), private(i1,i2,i3,i,isp)
+
+!$OMP do
       do i3 = 0, nsm-1
+        isp = i3 * nsm ** 2
         do i2 = 0, nsm-1
           do i1 = 0, nsm-1
             isp = isp + 1
@@ -217,9 +220,13 @@ C     Find sub-points
           enddo
         enddo
       enddo
+!$OMP end do
 
 ! Find number of points within rmax (orbital points)
+!$OMP single ! Only used for OpenMP
       mop = 0
+!$OMP end single 
+!$OMP do private(dxp,within,dx,r), reduction(+:mop)
       do i3 = -ne(3), ne(3)    ! Loop over neighbor (super) points
         do i2 = -ne(2), ne(2)
           do i1 = -ne(1), ne(1)
@@ -242,6 +249,9 @@ C     Find sub-points
           enddo ! i1
         enddo ! i2
       enddo ! i3
+!$OMP end do nowait
+
+!$OMP end parallel
 
 C     Create extended mesh arrays for the first data distribution
       call setupExtMesh( UNIFORM, rmax )

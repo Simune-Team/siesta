@@ -521,7 +521,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: integers', 'Wrong starting position', &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__, cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -542,7 +542,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: integers', 'Not enough integers in line', &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -572,7 +572,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: reals', 'Wrong starting position',    &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -593,7 +593,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: reals', 'Not enough reals in line',     &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -708,7 +708,11 @@ MODULE parse
                     end if
                     
                     ! Correct sign of stepper
-                    if ( uR < lR ) sR = min(-sR,sR)
+                    if ( lR <= uR ) sR = abs(sR)
+                    if ( uR <  lR ) sR = -abs(sR)
+                    if ( sR == 0 ) call die('PARSE module: lists', &
+                         'Stepping a list cannot be stepped by 0', &
+                         THIS_FILE, __LINE__ )
                     do iR = lR , uR, sR
                        call add_exit(count,li,ni,iR)
                     end do
@@ -794,7 +798,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: values', 'Wrong starting position',   &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -816,7 +820,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: values', 'Not enough values in line',   &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -846,7 +850,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: names', 'Wrong starting position',    &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -867,7 +871,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: names', 'Not enough names in line',     &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -965,7 +969,7 @@ MODULE parse
       if (PRESENT(after)) then
         if ((after .lt. 0) .or. (after .ge. pline%ntokens))             &
           call die('PARSE module: tokens', 'Wrong starting position',   &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         starting_pos = after
       else
         starting_pos = 0
@@ -973,7 +977,7 @@ MODULE parse
 
       if (starting_pos+ind .gt. pline%ntokens)                          &
         call die('PARSE module: tokens', 'Wrong starting position',     &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
 
       loc = starting_pos+ind
       tokens = pline%line(pline%first(loc):pline%last(loc))
@@ -1110,11 +1114,12 @@ MODULE parse
       is_alpha(i) = is_upper(i) .or. is_lower(i)
       is_alnum(i) = is_digit(i) .or. is_alpha(i)
 
-!     Extra characters allowed in tokens:  $ % * + & - . / @ ^ _ ~
+!     Extra characters allowed in tokens:  $ % * + & - . / @ ^ _ | ~
       is_extra(i) = ((i .ge. 36) .and. (i .le. 38))                     &
                      .or. (i .eq. 42) .or. (i .eq. 43) .or. (i .eq. 45) &
                      .or. (i .eq. 46) .or. (i .eq. 47) .or. (i .eq. 64) &
-                     .or. (i .eq. 94) .or. (i .eq. 95) .or. (i .eq. 126)
+                     .or. (i .eq. 94) .or. (i .eq. 95) .or. (i .eq. 124)&
+                     .or. (i .eq. 126)
 
       is_tokch(i) = is_alnum(i) .or. is_extra(i)
 
@@ -1124,8 +1129,11 @@ MODULE parse
 !     String delimiters: "  '  `
       is_delstr(i)  = (i .eq. 34) .or. (i .eq. 39) .or. (i .eq. 96)
 
-!     List delimiters: { }
-      is_dellist(i)  = (i .eq. 123) .or. (i .eq. 125)
+!     List delimiters: [ ]
+      is_dellist(i)  = (i .eq. 91) .or. (i .eq. 93)
+
+!     Dictionary delimiters: { }
+!      is_deldict(i)  = (i .eq. 123) .or. (i .eq. 125)
 
 !     Special characters which are tokens by themselves: <
       is_special(i) = (i .eq. 60)
@@ -1253,10 +1261,14 @@ MODULE parse
       do i= 1, ntokens
         token = line(first(i):last(i))
         j = last(i) - first(i) + 1
-        if ( ichar(token(1:1)) .eq. 123 .and. &
-             ichar(token(j:j)) .eq. 125 ) then
-           ! if the token starts with { and ends with }, it will be a list
+        if ( ichar(token(1:1)) .eq. 91 .and. &
+             ichar(token(j:j)) .eq. 93 ) then
+           ! if the token starts with [ and ends with ], it will be a list
            token_id(i) = 'a'
+!        else if ( ichar(token(1:1)) .eq. 123 .and. &
+!             ichar(token(j:j)) .eq. 125 ) then
+           ! if the token starts with { and ends with }, it will be a dictionary
+!           token_id(i) = 'd'
         elseif (is_value(token)) then
 
 !         This read also serves to double check the token for
@@ -1535,7 +1547,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: match', 'Wrong starting position',    &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         shift = after
       else
@@ -1794,7 +1806,7 @@ MODULE parse
     if (len(string) < SERIALIZED_LENGTH)  then
        call die('PARSE module: recreate_pline', &
             "String too short", &
-            THIS_FILE, __LINE__)
+            THIS_FILE, __LINE__,cline=characters(pline,1,-1))
     endif
 
     pline%line = string(1:MAX_LENGTH)

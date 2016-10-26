@@ -199,17 +199,6 @@ MODULE m_timer
   use m_walltime, only: wall_time       ! Wall time routine
   use moreParallelSubs, only: copyFile  ! Copies a file across nodes
   use parallel,   only: parallel_init   ! Initialize parallel variables
-#ifdef MPI
-  use mpi_siesta, only: MPI_AllGather
-  use mpi_siesta, only: MPI_Bcast
-  use mpi_siesta, only: MPI_Recv
-  use mpi_siesta, only: MPI_Send
-  use mpi_siesta, only: MPI_Integer
-  use mpi_siesta, only: MPI_Double_Precision
-  use mpi_siesta, only: MPI_Character
-  use mpi_siesta, only: MPI_COMM_WORLD
-  use mpi_siesta, only: MPI_STATUS_SIZE
-#endif
 
 ! Used module parameters and variables
   use precision,  only: dp              ! Double precision real kind
@@ -273,6 +262,9 @@ CONTAINS
 
 subroutine print_report( prog )   ! Write a report of counted times 
 
+#ifdef MPI
+  use mpi_siesta
+#endif
 ! Arguments
   implicit none
   character(len=*),intent(in):: prog   ! Name of program or code section
@@ -833,15 +825,25 @@ end subroutine timer_all_stop
     ! CPU or walltime, depending on the setting of 'use_walltime'
     !
     use m_walltime, only: wall_time
-    real(dp), intent(out) :: t
+#ifdef _OPENMP
+  use omp_lib
+#endif
 
-    real  :: treal   ! for call to cpu_time
+  real(dp), intent(out) :: t
+
+#ifndef _OPENMP
+  real    :: treal    ! Single precision to call cpu_time
+#endif
 
     if (use_walltime) then
        call wall_time(t)
     else
-       call cpu_time(treal)
+#ifdef _OPENMP
+       t = omp_get_wtime( )
+#else
+       call cpu_time( treal )
        t = treal
+#endif
     endif
   end subroutine current_time
 

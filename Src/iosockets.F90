@@ -20,7 +20,6 @@
 ! use precision,    only: dp
 ! use parallel,     only: IOnode
 ! use fdf
-! use m_fdf_global, only: fdf_global_get
 ! use f90sockets,   only: open_socket, writebuffer, readbuffer
 ! use sys,          only: die, bye
 ! use m_mpi_utils,  only: broadcast
@@ -56,7 +55,6 @@ module iosockets
   use precision,    only: dp
   use parallel,     only: IOnode
   use fdf
-  use m_fdf_global, only: fdf_global_get
   use f90sockets,   only: open_socket, writebuffer, readbuffer, close_socket
   use sys,          only: die, bye
   use m_mpi_utils,  only: broadcast
@@ -118,10 +116,10 @@ subroutine coordsFromSocket( na, xa, cell )
 
 ! Open the socket, shared by the receive and send sides of communication
   if (firstTime) then
-    call fdf_global_get(master, "Master.code", "fsiesta")
-    call fdf_global_get(host,   "Master.address", "localhost")
-    call fdf_global_get(port,   "Master.port", 10001)
-    call fdf_global_get(stype,  "Master.socketType", "inet")
+    master = fdf_get( "Master.code",  "fsiesta")
+    host = fdf_get(   "Master.address",  "localhost")
+    port = fdf_get(   "Master.port",  10001)
+    stype = fdf_get(  "Master.socketType",  "inet")
 
     if (leqi(stype,'unix')) then
       inet = 0
