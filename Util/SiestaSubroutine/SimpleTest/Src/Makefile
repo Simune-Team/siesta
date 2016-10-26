@@ -23,12 +23,8 @@ include $(ARCH_MAKE)
 TOP_LEVEL=$(shell pwd)/../../../../Src
 VPATH:=$(TOP_LEVEL)
 #
-PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
-INCFLAGS:=$(NETCDF_INCFLAGS) \
-          $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
-          $(INCFLAGS)
 #
 #  simple_pipes_serial     : Simple serial test with pipes version
 #  simple_pipes_parallel   : Simple parallel test with pipes version
@@ -56,13 +52,20 @@ FSIESTA_SOCKETS= fsockets.o sockets.o fsiesta_sockets.o
 #
 SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
-XMLPARSER=libxmlparser.a
-XC=libSiestaXC.a
+include $(PSML_ROOT)/psml.mk
+include $(XMLF90_ROOT)/xmlf90.mk
+include $(GRIDXC_ROOT)/gridxc.mk
 include $(MAIN_OBJDIR)/Mk/FoX.mk
+XMLPARSER=$(XMLF90_LIBS)
+XC=$(GRIDXC_LIBS)
+PSML=$(PSML_LIBS)
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
-PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
+#
+INCFLAGS:=$(NETCDF_INCFLAGS) \
+          $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
+          $(XMLF90_INCFLAGS) $(GRIDXC_INCFLAGS) $(INCFLAGS)
 #
 ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
 	$(NCPS) $(PSML) $(PSOP) \

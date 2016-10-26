@@ -20,6 +20,8 @@
       use m_struct_init,      only: struct_init
       use siesta_options
       use timer_options,      only: use_tree_timer
+      use timer_options,      only: time_mpi_calls
+      use timer_options,      only: use_walltime
       use sparse_matrices
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
@@ -29,11 +31,14 @@
       use sys,                only: die, bye
 #ifdef BSC_CELLXC
       use bsc_xcmod,          only: setXC
+#else
+      use gridxc,             only: gridxc_init
 #endif /* BSC_CELLXC */
       use molecularmechanics, only: inittwobody
       use metaforce,          only: initmeta
       use m_mpi_utils,        only: broadcast
-      use alloc,              only: re_alloc, alloc_report
+      use alloc,              only: re_alloc
+      use memory_log,         only: memory_report
       use parallelsubs,       only: getnodeorbs
       use m_iostruct,         only: write_struct, read_struct
       use zmatrix,            only: lUseZmatrix
@@ -165,11 +170,12 @@
       call siesta_cml_init( )
 
 ! Set timer report file and threshold .................................
-      threshold = fdf_get('timer_report_threshold', 0._dp)
       call timer_report( file=trim(slabel)//'.times', 
-     .                   threshold=threshold )
-      ! This variable lives in siesta_options
+     .        threshold=fdf_get('timer_report_threshold', 0._dp))
+
       use_tree_timer = fdf_get('UseTreeTimer', .false.)
+      time_mpi_calls = fdf_get('time-mpi-calls', .false.)
+      use_walltime = fdf_get('use-walltime', use_tree_timer)
 
 !     Start time counter
 !     Note new placement of this first use, so that
@@ -180,12 +186,10 @@
       call timer( 'Setup', 1 )
 
 ! Set allocation report level .........................................
-! variables level and threshold imported from module siesta_options
-      level = fdf_get('alloc_report_level', 0)
-      threshold = fdf_get('alloc_report_threshold', 0._dp)
-      call alloc_report( level=level, file=trim(slabel)//'.alloc',
-     .                   threshold=threshold,
-     &                   printNow=.false. )
+      call memory_report( level=fdf_get('alloc_report_level',0),
+     $           file=trim(slabel)//'.alloc',
+     .           threshold=fdf_get('alloc_report_threshold', 0._dp),
+     &           printNow=.false. )
 
       if ( IONode ) then
          ! Add citations
@@ -196,6 +200,12 @@
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
       call read_xc_info()
+#ifdef MPI
+      call gridxc_init(comm=MPI_Comm_World,
+     $     time_mpi_calls=fdf_get('gridxc-time-mpi-calls',.false.))
+#else
+      call gridxc_init()
+#endif
 #else /* BSC_CELLXC */
       call setXC( )
 #endif /* BSC_CELLXC */

@@ -559,7 +559,7 @@ SUBROUTINE miscAllReduceInt( op, a0, b0, c0, d0, e0, f0, &
     call MPI_AllReduce( sendBuff, recvBuff, n, MPI_Integer, &
                         MPI_Min, MPI_Comm_World, MPIerror )
   else
-    call die(errHead//'unknown operator')
+    call die(errHead//'unknown operator:'//op)
   end if
 
 ! Unpack recvBuff
@@ -738,7 +738,7 @@ SUBROUTINE miscAllReduceDouble( op, a0, b0, c0, d0, e0, f0, &
     call MPI_AllReduce( sendBuff, recvBuff, n, MPI_double_precision, &
                         MPI_Min, MPI_Comm_World, MPIerror )
   else
-    call die(errHead//'unknown operator')
+    call die(errHead//'unknown operator:'//op)
   end if
 
 ! Unpack recvBuff

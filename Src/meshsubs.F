@@ -261,7 +261,7 @@ C     Create extended mesh arrays for the first data distribution
       use precision,     only : dp
       use cellsubs,      only : reclat  ! Finds reciprocal unit cell
       use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
-      use fft1d,         only : nfft    ! Finds allowed value for 1-D FFT
+      use m_fft_gpfa,    only : nfft    ! Finds allowed value for 1-D FFT
       use fdf
       use sys,           only : die, message
 
@@ -490,7 +490,7 @@ C     If cell has changed then it is necessary to reinitialise coordinates
 !     (Re)allocate atom-mesh arrays
       call allocIpaDistr( distr, na )
       if (na.ne.lastna) then
-        call re_alloc( dxa, 1,3, 1,na, myName//'dxa' )
+        call re_alloc( dxa, 1,3, 1,na, 'dxa', myName )
         call re_alloc( iatfold, 1,3, 1,na, myName//'iatfold' )
       endif
       lastna = na

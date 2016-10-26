@@ -20,8 +20,6 @@ MODULE MPI_SIESTA
     trueMPI_WAIT       => MPI_WAIT,       &
     trueMPI_WAITALL    => MPI_WAITALL
 
-  USE TIMER_MPI_M, only: timer_mpi
-
 ! The following construction allows to supplant MPI_Comm_World within SIESTA,
 ! and to use it as a subroutine with its own internal MPI communicator.
 ! JMS. Oct.2010

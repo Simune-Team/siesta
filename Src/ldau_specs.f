@@ -658,8 +658,8 @@
       use basis_specs, only : restricted_grid
       use basis_specs, only : rmax_radial_grid
 
-      use siestaXC,    only : setXC
-      use siestaXC,    only : atomXC
+      use gridXC,  only : setXC=>gridxc_setXC
+      use gridXC,  only : atomXC=>gridxc_atomXC
 
       integer, intent(in)   :: isp   ! Species index
 

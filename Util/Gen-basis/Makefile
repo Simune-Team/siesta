@@ -39,6 +39,8 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
+GRIDXC_SERIAL_ROOT ?= $(GRIDXC_ROOT)
+#
 DEFS:= $(DEFS) $(DEFS_PREFIX)-UMPI
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 #
@@ -60,36 +62,25 @@ SYSOBJ=$(SYS).o
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
-          parsing.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
+          parsing.o basis_io.o chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o interpolation.o \
 	  paste.o   bessph.o radfft.o  sorting.o m_filter.o \
-          basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
+          basis_specs.o ldau_specs.o atom.o memory.o memory_log.o periodic_table.o\
           pxf.o dot.o  atom_options.o arw.o  \
-          sys.o timer.o  xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
-          xc.o bsc_xcmod.o local_die.o ldau_specs.o m_cite.o
+          sys.o xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
+          xc.o bsc_xcmod.o handlers.o m_fft_gpfa.o m_cite.o
 #
 IONCAT_OBJS=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
           parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o  atm_types.o\
           atmparams.o radial.o  memory.o chkdim.o\
 	  paste.o chemical.o \
-          basis_specs.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
+          basis_specs.o memory_log.o periodic_table.o pxf.o \
            atmfuncs.o spher_harm.o interpolation.o\
-          sys.o  xml.o m_walltime.o ioncat.o  local_die.o $(SYSOBJ)
+          sys.o  xml.o m_walltime.o ioncat.o handlers.o $(SYSOBJ)
 #
-# Compile XC in a private directory, without MPI
-#
-XC=libSiestaXC.a
-XC_MAKEFILE=$(TOP_LEVEL)/SiestaXC/makefile
-XC_INCFLAGS:=-I $(TOP_LEVEL)/SiestaXC ##$(INCFLAGS)
-$(XC): 
-	(mkdir -p SiestaXC ; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
-                          "FC=$(FC)" "VPATH_ROOT=$(TOP_LEVEL)" \
-                          "ARCH_MAKE=$(ARCH_MAKE)" \
-                          "INCFLAGS=$(XC_INCFLAGS)" \
-                          "DEFS=$(DEFS)" \
-                          "FPPFLAGS=$(FPPFLAGS)" \
-                          "MPI_INTERFACE= " \
-                          "FFLAGS=$(FFLAGS)"  module )
+include $(GRIDXC_SERIAL_ROOT)/gridxc.mk
+XC = $(GRIDXC_LIBS)
+INCFLAGS:= $(INCFLAGS) $(GRIDXC_INCFLAGS)
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
@@ -98,7 +89,7 @@ PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
 #
 FDF=libfdf.a
 FDF_MAKEFILE=$(TOP_LEVEL)/fdf/makefile
-FDF_INCFLAGS:=-I $(TOP_LEVEL)/fdf $(INCFLAGS)
+FDF_INCFLAGS:=#-I $(TOP_LEVEL)/fdf $(INCFLAGS)
 $(FDF): 
 	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(TOP_LEVEL)/fdf" \
                           "ARCH_MAKE=$(ARCH_MAKE)" \
@@ -132,7 +123,6 @@ clean:
 	rm -f gen-basis ioncat *.o  *.a
 	rm -f *.mod
 	rm -rf fdf
-	rm -rf SiestaXC
 	rm -f _tmp_deps deps.list  protomake*
 #
 ALL_OBJS=$(IONCAT_OBJS) $(OBJS_GEN-BASIS)
@@ -153,27 +143,25 @@ m_getopts.o: f2kcli.o
 basis_types.o: alloc.o atmparams.o precision.o sys.o
 m_io.o: sys.o
 io.o: sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
 atom_options.o: sys.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
 basis_io.o: precision.o radial.o sys.o xml.o
 atm_types.o: precision.o radial.o
 radial.o: alloc.o interpolation.o precision.o xml.o
-memory.o: alloc.o memoryinfo.o parallel.o precision.o
+memory.o: memory_log.o parallel.o
 chkdim.o: sys.o
 chemical.o: parallel.o precision.o sys.o
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o sys.o
-memoryinfo.o: precision.o
-m_memory.o: memoryinfo.o parallel.o sys.o
+memory_log.o: m_io.o parallel.o precision.o
 periodic_table.o: precision.o sys.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 spher_harm.o: alloc.o precision.o sys.o
 sys.o: parallel.o
 xml.o: precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
+handlers.o: memory_log.o
 m_io.o: sys.o
 io.o: sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
 basis_types.o: alloc.o atmparams.o precision.o sys.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
 basis_io.o: precision.o radial.o sys.o xml.o
@@ -187,22 +175,25 @@ bessph.o: precision.o sys.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 m_filter.o: bessph.o precision.o radfft.o sorting.o sys.o
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o sys.o
+ldau_specs.o: alloc.o atm_types.o atmparams.o atom.o atom_options.o
+ldau_specs.o: basis_specs.o basis_types.o interpolation.o m_cite.o parallel.o
+ldau_specs.o: precision.o radial.o sys.o units.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: interpolation.o m_filter.o old_atmfuncs.o periodic_table.o precision.o
 atom.o: sys.o
-memoryinfo.o: precision.o
-memory.o: alloc.o memoryinfo.o parallel.o precision.o
+memory.o: memory_log.o parallel.o
+memory_log.o: m_io.o parallel.o precision.o
 periodic_table.o: precision.o sys.o
 atom_options.o: sys.o
 arw.o: alloc.o parallel.o precision.o sys.o
 sys.o: parallel.o
-timer.o: m_timer.o parallel.o sys.o timer_tree.o
 xml.o: precision.o
 read_xc_info.o: parallel.o precision.o sys.o
 gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
 gen-basis.o: old_atmfuncs.o parallel.o precision.o sys.o
 xc.o: alloc.o bsc_xcmod.o precision.o sys.o
 bsc_xcmod.o: parallel.o precision.o sys.o
+handlers.o: memory_log.o
 ldau_specs.o: alloc.o atm_types.o atmparams.o atom.o atom_options.o
 ldau_specs.o: basis_specs.o basis_types.o interpolation.o m_cite.o parallel.o
 ldau_specs.o: precision.o radial.o sys.o units.o

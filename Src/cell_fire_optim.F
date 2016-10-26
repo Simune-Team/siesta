@@ -18,7 +18,7 @@
       use m_fire
       use siesta_options, only: dt
 
-      use m_memory, only: memory, mem_stat
+      use memory_log, only: memory, mem_stat
       use parallel, only : ionode
 
       implicit none

@@ -85,7 +85,7 @@ $(FDF):
 #
 MIXPS_OBJS= f2kcli.o interpolation.o atom_options.o \
             sys.o m_io.o io.o alloc.o pxf.o parallel.o periodic_table.o \
-            memory.o memoryinfo.o mixps.o psml_die.o die.o
+            memory.o memory_log.o mixps.o handlers.o
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 #
@@ -94,8 +94,8 @@ mixps:  $(FDF) $(MIXPS_OBJS) $(NCPS)
 	       $(LDFLAGS) $(MIXPS_OBJS) $(NCPS) $(FDF) $(PSML_LIBS) $(XMLF90_LIBS)
 #----------------------------------------------------------------------------
 FRACTIONAL_OBJS= f2kcli.o m_io.o alloc.o interpolation.o fractional.o \
-                 atom_options.o  memory.o memoryinfo.o  sys.o \
-                 io.o pxf.o parallel.o periodic_table.o psml_die.o die.o
+                 atom_options.o  memory.o memory_log.o   \
+                 io.o pxf.o parallel.o periodic_table.o handlers.o sys.o
 
 fractional: $(FDF) $(FRACTIONAL_OBJS) $(NCPS) 
 	$(FC) -o fractional \
@@ -128,19 +128,17 @@ atom_options.o: sys.o
 sys.o: parallel.o
 m_io.o: sys.o
 io.o: sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
 periodic_table.o: precision.o sys.o
-memory.o: alloc.o memoryinfo.o parallel.o precision.o
-memoryinfo.o: precision.o
+memory.o: memory_log.o parallel.o
+memory_log.o: m_io.o parallel.o precision.o
 mixps.o: f2kcli.o interpolation.o periodic_table.o precision.o
-die.o: parallel.o
+handlers.o: memory_log.o
 m_io.o: sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
 fractional.o: f2kcli.o periodic_table.o precision.o
 atom_options.o: sys.o
-memory.o: alloc.o memoryinfo.o parallel.o precision.o
-memoryinfo.o: precision.o
-sys.o: parallel.o
+memory.o: memory_log.o parallel.o
+memory_log.o: m_io.o parallel.o precision.o
 io.o: sys.o
 periodic_table.o: precision.o sys.o
-die.o: parallel.o
+handlers.o: memory_log.o
+sys.o: parallel.o

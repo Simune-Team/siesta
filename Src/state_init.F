@@ -27,7 +27,7 @@
      &                             lastkb, lasto, superc, rmaxv, indxuo,
      &                             no_u, no_s
       use atomlist,          only: no_l, iza
-      use alloc,             only: re_alloc, de_alloc, alloc_report
+      use alloc,             only: re_alloc, de_alloc
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
       use m_check_supercell, only: check_sc_factors

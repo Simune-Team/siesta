@@ -98,7 +98,7 @@ C
       use m_diagon,     only : qspiral, spiral, frstme
       use fdf
       use alloc
-      use m_memory
+      use memory_log
 #ifdef MPI
       use m_diagon,     only : paralleloverk
       use mpi_siesta,   only : mpi_bcast, mpi_comm_world,

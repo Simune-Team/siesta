@@ -112,13 +112,13 @@ $(FDF):
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
-MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
+MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
          radial.o spher_harm.o  basis_io.o basis_types.o \
          domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
          sparse_matrices.o interpolation.o m_fft_gpfa.o\
          files.o   chemical.o xml.o \
-         parallelsubs.o spatial.o
+         parallelsubs.o spatial.o memory_log.o
 #
 COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
 ALL_OBJS_STM=$(MOD_OBJS) $(COM_OBJS_STM)
@@ -150,8 +150,6 @@ dep:
 # -- specially prepared dependency list -- do not remove this line!
 sys.o: parallel.o
 m_io.o: sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
-memoryinfo.o: precision.o
 listsc.o: alloc.o
 atom_options.o: sys.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
@@ -177,7 +175,7 @@ extrapolate.o: fftw3_mymod.o precision.o
 io.o: sys.o
 iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o sys.o
 mainstm.o: basis_io.o listsc.o parallel.o precision.o
-memory.o: alloc.o memoryinfo.o parallel.o precision.o
+memory.o: memory_log.o parallel.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 ranger.o: precision.o
 stm.o: atmfuncs.o chemical.o precision.o
