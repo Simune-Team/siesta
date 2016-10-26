@@ -36,7 +36,7 @@
 %  \end{fdfentry}
 %
 % where [#1] may be any of:
-%    block, integer, real, energy, logical
+%    block, integer, real, energy, length, logical
 % and <#1> is the default value of the flag.
 %
 % There are two shorthands for the logical input with T/F default:
@@ -1955,7 +1955,7 @@ As a summary of the above options:
 
 \end{fdfentry}
 
-\begin{fdfentry}{PAO!ContractionCutoff}[real]<$0$|$0--1$>
+\begin{fdfentry}{PAO!ContractionCutoff}[real]<$0$|$0-1$>
 
   If the multiple zetas are generated using filterets then any
   filterets that have a coefficient less than this threshold within
@@ -2506,69 +2506,60 @@ the mapping.  They are not enabled by default, as they change the
 numerical results apreciably (in effect, they lead to different basis
 orbitals and projectors).
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdflogicalF}{Reparametrize.Pseudos}
 
-\item[\textbf{Reparametrize.Pseudos}] (\textit{logical}):
-\index{Reparametrize.Pseudos@\textbf{Reparametrize.Pseudos}}
+  By changing the $a$ and $b$ parameters of the logarithmic grid, a new
+  one with a more adequate grid-point separation can be used for the
+  generation of basis sets and projectors. For example, by using
+  $a=0.001$ and $b=0.01$, the grid point separations at $r=0$ and 10
+  bohrs are 0.00001 and 0.01 bohrs, respectively. More points are needed
+  to reach r's of the order of a hundred bohrs, but the extra
+  computational effort is negligible.  The net effect of this option
+  (notably when coupled to \fdf{Restricted.Radial.Grid} \fdffalse)
+  is a closer mapping of any user-specified cutoff radii and of the
+  radii implicitly resulting from other input parameters to the actual
+  values used by the program. (The small grid-point separation near r=0
+  is still needed to avoid instabilities for s channels that occurred
+  with the previous (reparametrized) default spacing of 0.005 bohr. This
+  effect is not yet completely understood. )
 
-By changing the $a$ and $b$ parameters of the logarithmic grid, a new
-one with a more adequate grid-point separation can be used for the
-generation of basis sets and projectors. For example, by using
-$a=0.001$ and $b=0.01$, the grid point separations at $r=0$ and 10
-bohrs are 0.00001 and 0.01 bohrs, respectively. More points are needed
-to reach r's of the order of a hundred bohrs, but the extra
-computational effort is negligible.  The net effect of this option
-(notably when coupled to \textbf{Restricted.Radial.Grid} \texttt{.false.})
-is a closer mapping of any user-specified cutoff radii and of the
-radii implicitly resulting from other input parameters to the actual
-values used by the program. (The small grid-point separation near r=0
-is still needed to avoid instabilities for s channels that occurred
-with the previous (reparametrized) default spacing of 0.005 bohr. This
-effect is not yet completely understood. )
+\end{fdflogicalF}
 
+\begin{fdfentry}{New!A.Parameter}[real]<$0.001$>
+  \index{basis!reparametrization of pseudopotential}
 
+  New setting for the pseudopotential grid's $a$ parameter
 
-\textit{Default value:} \texttt{.false.}
+\end{fdfentry}
 
-\item[\textbf{New.A.Parameter}] (\textit{real}):
-\index{New.A.Parameter@\textbf{New.A.Parameter}}\index{basis!reparametrization of pseudopotential}
+\begin{fdfentry}{New!B.Parameter}[real]<$0.01$>
+  \index{basis!reparametrization of pseudopotential}
 
-New setting for the pseudopotential grid's $a$ parameter
+  New setting for the pseudopotential grid's $b$ parameter
 
-\textit{Default value:} { $0.001$}
+\end{fdfentry}
 
-\item[\textbf{New.B.Parameter}] (\textit{real}):
-\index{New.B.Parameter@\textbf{New.B.Parameter}}\index{basis!reparametrization of pseudopotential}
+\begin{fdfentry}{Rmax.Radial.Grid}[real]<$50.0$>
+  \index{basis!point at infinity}
 
-New setting for the pseudopotential grid's $b$ parameter
+  New setting for the maximum value of the radial coordinate for
+  integration of the atomic Schrodinger equation.
 
-\textit{Default value:} { $0.01$}
+  If \fdf{Reparametrize.Pseudos} is \fdffalse\ this will be the
+  maximum radius in the pseudopotential file.
 
-\item[\textbf{Rmax.Radial.Grid}] (\textit{real}):
-\index{Rmax.Radial.Gridr@\textbf{Rmax.Radial.Grid}}\index{basis!point at infinity}
+\end{fdfentry}
 
-New setting for the maximum value of the radial coordinate for
-integration of the atomic Schrodinger equation.
+\begin{fdflogicalT}{Restricted.Radial.Grid}
+  
+  In normal operation of the basis-set and projector generation code
+  the radial grid is restricted to having an odd number of points, and
+  the cutoffs are shifted accordingly. This restriction can be lifted
+  by setting this parameter to \fdffalse.
 
-\textit{Default value:} { $50.0$} if \texttt{Reparametrize.Pseudos} is set,
-zero otherwise (which means that the maximum radius from the pseudopotential
-file is used).
-
-\item[\textbf{Restricted.Radial.Grid}] (\textit{logical}):
-\index{Restricted.Radial.Grid@\textbf{Restricted.Radial.Grid}}
-
-In normal operation of the basis-set and projector generation code the
-radial grid is restricted to having an odd number of points, and the
-cutoffs are shifted accordingly. This restriction can be lifted by
-setting this parameter to \texttt{.false.}
-
-\textit{Default value:} \texttt{.true.}
-\end{description}
+\end{fdflogicalT}
 
 
-\vspace{5pt}
 \subsection{Structural information}
 
 There are many ways to give \siesta\ structural information.
@@ -2791,11 +2782,8 @@ run time (thus not requiring recompilation) - but
 it is more work to generate the input files for this form.
 
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[\textbf{Zmatrix}] (\textit{data block}): \index{Zmatrix@\textbf{Zmatrix}}
+\begin{fdfentry}{Zmatrix}[block]
+  
   This block provides a means for inputting the system geometry using
   a Z-matrix format, as well as controlling the optimization
   variables. This is particularly useful when working with molecular
@@ -2807,10 +2795,9 @@ it is more work to generate the input files for this form.
   chose a sensible relationship between the variables to avoid triads
   of atoms that become linear.
 
-Below is an example of a Z-matrix input for a water molecule:
-\begin{verbatim}
+  Below is an example of a Z-matrix input for a water molecule:
+  \begin{fdfexample}
     %block Zmatrix
-
     molecule fractional
       1 0 0 0   0.0 0.0 0.0 0 0 0
       2 1 0 0   HO1 90.0 37.743919 1 0 0
@@ -2820,211 +2807,219 @@ Below is an example of a Z-matrix input for a water molecule:
         HO2 0.956997
         HOH 104.4
     %endblock Zmatrix
-\end{verbatim}
+  \end{fdfexample}
 
-The sections that can be used within the Zmatrix block are as follows:
+  The sections that can be used within the Zmatrix block are as
+  follows:
 
-Firstly, all atomic positions must be specified within either a
-``\texttt{molecule}'' block or a ``\texttt{cartesian}'' block.  Any
-atoms subject to constraints more complicated than ``do not change
-this coordinate of this atom'' must be specified within a
-``\texttt{molecule}'' block.
+  Firstly, all atomic positions must be specified within either a
+  ``\texttt{molecule}'' block or a ``\texttt{cartesian}'' block.  Any
+  atoms subject to constraints more complicated than ``do not change
+  this coordinate of this atom'' must be specified within a
+  ``\texttt{molecule}'' block.
 
-\item \texttt{molecule}:
+  \begin{fdfoptions}
+    
+    \option[molecule]%
+    There must be one of these blocks for each independent set of
+    constrained atoms within the simulation.
+    
+    This specifies the atoms that make up each molecule and their
+    geometry. In addition, an option of ``\texttt{fractional}'' or
+    ``\texttt{scaled}'' may be passed, which indicates that distances are
+    specified in scaled or fractional units. In the absence of such an
+    option, the distance units are taken to be the value of
+    ``\texttt{ZM.UnitsLength}''.
 
-There must be one of these blocks for each independent set of
-constrained atoms within the simulation.
+    A line is needed for each atom in the molecule; the format of each
+    line should be:
+    \begin{fdfexample}
+      Nspecies i j k r a t ifr ifa ift
+    \end{fdfexample}
 
-This specifies the atoms that make up each molecule and their
-geometry. In addition, an option of ``\texttt{fractional}'' or
-``\texttt{scaled}'' may be passed, which indicates that distances are
-specified in scaled or fractional units. In the absence of such an
-option, the distance units are taken to be the value of
-``\texttt{ZM.UnitsLength}''.
+    Here the values \texttt{Nspecies}, \texttt{i}, \texttt{j}, \texttt{k},
+    \texttt{ifr}, \texttt{ifa}, and \texttt{ift} are integers and
+    \texttt{r}, \texttt{a}, and \texttt{t} are double precision reals.
 
-A line is needed for each atom in the molecule; the format of each
-line should be:
-
-\noindent\texttt{    Nspecies i j k r a t ifr ifa ift}
-
-Here the values \texttt{Nspecies}, \texttt{i}, \texttt{j}, \texttt{k},
-\texttt{ifr}, \texttt{ifa}, and \texttt{ift} are integers and
-\texttt{r}, \texttt{a}, and \texttt{t} are double precision reals.
-
-For most atoms, \texttt{Nspecies} is the species number of the atom,
-\texttt{r} is distance to atom number \texttt{i}, \texttt{a} is the
-angle made by the present atom with atoms \texttt{j} and \texttt{i},
-while \texttt{t} is the torsional angle made by the present atom with
-atoms \texttt{k}, \texttt{j}, and \texttt{i}. The values \texttt{ifr},
-\texttt{ifa} and \texttt{ift} are integer flags that indicate whether
-\texttt{r}, \texttt{a}, and \texttt{t}, respectively, should be
-varied; 0 for fixed, 1 for varying.
-
-
-The first three atoms in a molecule are a special case. Because there
-are insufficient atoms defined to specify a distance/angle/torsion,
-the values are set differently. For atom 1, \texttt{r}, \texttt{a},
-and \texttt{t}, are the Cartesian coordinates of the atom.  For the
-second atom, \texttt{r}, \texttt{a}, and \texttt{t} are the
-coordinates in spherical form of the second atom relative to the
-first: first the radius, then the polar angle (angle between the
-$z$-axis and the displacement vector) and then the azimuthal angle
-(angle between the $x$-axis and the projection of the displacement
-vector on the $x$-$y$ plane). Finally, for the third atom, the numbers
-take their normal form, but the torsional angle is defined relative to
-a notional atom 1 unit in the z-direction above the atom \texttt{j}.
-
-Secondly. blocks of atoms all of which are subject to the simplest of
-constraints may be specified in one of the following three ways,
-according to the units used to specify their coordinates:
+    For most atoms, \texttt{Nspecies} is the species number of the atom,
+    \texttt{r} is distance to atom number \texttt{i}, \texttt{a} is the
+    angle made by the present atom with atoms \texttt{j} and \texttt{i},
+    while \texttt{t} is the torsional angle made by the present atom with
+    atoms \texttt{k}, \texttt{j}, and \texttt{i}. The values \texttt{ifr},
+    \texttt{ifa} and \texttt{ift} are integer flags that indicate whether
+    \texttt{r}, \texttt{a}, and \texttt{t}, respectively, should be
+    varied; 0 for fixed, 1 for varying.
 
 
-\item \texttt{cartesian}: This section specifies a block of atoms
-whose coordinates are to be specified in Cartesian coordinates. Again,
-an option of ``\texttt{fractional}'' or ``\texttt{scaled}'' may be
-added, to specify the units used; and again, in their absence, the
-value of ``\texttt{ZM.UnitsLength}'' is taken.
+    The first three atoms in a molecule are a special case. Because there
+    are insufficient atoms defined to specify a distance/angle/torsion,
+    the values are set differently. For atom 1, \texttt{r}, \texttt{a},
+    and \texttt{t}, are the Cartesian coordinates of the atom.  For the
+    second atom, \texttt{r}, \texttt{a}, and \texttt{t} are the
+    coordinates in spherical form of the second atom relative to the
+    first: first the radius, then the polar angle (angle between the
+    $z$-axis and the displacement vector) and then the azimuthal angle
+    (angle between the $x$-axis and the projection of the displacement
+    vector on the $x$-$y$ plane). Finally, for the third atom, the numbers
+    take their normal form, but the torsional angle is defined relative to
+    a notional atom 1 unit in the z-direction above the atom \texttt{j}.
 
-The format of each atom in the block will look like:
+    Secondly. blocks of atoms all of which are subject to the simplest of
+    constraints may be specified in one of the following three ways,
+    according to the units used to specify their coordinates:
 
-\noindent\texttt{      Nspecies x y z ix iy iz}
+    \option[cartesian]%
+    This section specifies a block of atoms
+    whose coordinates are to be specified in Cartesian coordinates. Again,
+    an option of ``\texttt{fractional}'' or ``\texttt{scaled}'' may be
+    added, to specify the units used; and again, in their absence, the
+    value of ``\texttt{ZM.UnitsLength}'' is taken.
 
-Here \texttt{Nspecies}, \texttt{ix}, \texttt{iy}, and \texttt{iz} are
-integers and \texttt{x}, \texttt{y}, \texttt{z} are
-reals. \texttt{Nspecies} is the species number of the atom being
-specified, while \texttt{x}, \texttt{y}, and \texttt{z} are the
-Cartesian coordinates of the atom in whichever units are being
-used. The values \texttt{ix}, \texttt{iy} and \texttt{iz} are integer
-flags that indicate whether the \texttt{x}, \texttt{y}, and \texttt{z}
-coordinates, respectively, should be varied or not. A value of 0
-implies that the coordinate is fixed, while 1 implies that it should
-be varied.  \textbf{NOTE}: When performing ``variable cell''
-optimization while using a Zmatrix format for input, the algorithm
-will not work if some of the coordinates of an atom in a
-\texttt{cartesian} block are variables and others are not (i.e.,
-\texttt{ix iy iz} above must all be 0 or 1). This will be fixed in
-future versions of the program.
+    The format of each atom in the block will look like:
+    \begin{fdfexample}
+      Nspecies x y z ix iy iz
+    \end{fdfexample}
 
-A Zmatrix block may also contain the following, additional, sections, which
-are designed to make it easier to read.
+    Here \texttt{Nspecies}, \texttt{ix}, \texttt{iy}, and \texttt{iz} are
+    integers and \texttt{x}, \texttt{y}, \texttt{z} are
+    reals. \texttt{Nspecies} is the species number of the atom being
+    specified, while \texttt{x}, \texttt{y}, and \texttt{z} are the
+    Cartesian coordinates of the atom in whichever units are being
+    used. The values \texttt{ix}, \texttt{iy} and \texttt{iz} are integer
+    flags that indicate whether the \texttt{x}, \texttt{y}, and \texttt{z}
+    coordinates, respectively, should be varied or not. A value of 0
+    implies that the coordinate is fixed, while 1 implies that it should
+    be varied.  \textbf{NOTE}: When performing ``variable cell''
+    optimization while using a Zmatrix format for input, the algorithm
+    will not work if some of the coordinates of an atom in a
+    \texttt{cartesian} block are variables and others are not (i.e.,
+    \texttt{ix iy iz} above must all be 0 or 1). This will be fixed in
+    future versions of the program.
 
-\item \texttt{constants}: Instead of specifying a numerical value, it
-  is possible to specify a symbol within the above geometry
-  definitions. This section allows the user to define the value of the
-  symbol as a constant. The format is just a symbol followed by the
-  value:
+    A Zmatrix block may also contain the following, additional, sections, which
+    are designed to make it easier to read.
+    
 
-\noindent\texttt{      HOH 104.4}
+    \option[constants]%
+    Instead of specifying a numerical value, it is possible to specify
+    a symbol within the above geometry definitions. This section
+    allows the user to define the value of the symbol as a
+    constant. The format is just a symbol followed by the value:
+    \begin{fdfexample}
+      HOH 104.4
+    \end{fdfexample}
 
-\item \texttt{variables}: Instead of specifying a numerical value, it
-  is possible to specify a symbol within the above geometry
-  definitions. This section allows the user to define the value of the
-  symbol as a variable. The format is just a symbol followed by the
-  value:
 
-\noindent\texttt{      HO1 0.956997}
+    \option[variables]%
+    Instead of specifying a numerical value, it is possible to specify
+    a symbol within the above geometry definitions. This section
+    allows the user to define the value of the symbol as a
+    variable. The format is just a symbol followed by the value:
+    \begin{fdfexample}
+      HO1 0.956997
+    \end{fdfexample}
+    
+    Finally, constraints must be specified in a \fdf*{constraints} block.
 
-Finally, constraints must be specified in a \texttt{constraints} block.
-
-\item \texttt{constraint} This sub-section allows the user to create
-  constraints between symbols used in a Z-matrix:
-\begin{verbatim}
-    constraint
-      var1 var2 A B
-\end{verbatim}
-Here var1 and var2 are text symbols for two quantities in the Z-matrix
-definition, and A and B are real numbers. The variables are related by
-$var1 = A*var2 + B$.
-
-An example of a Z-matrix input for a benzene molecule over a metal surface is:
-\begin{verbatim}
+    
+    \option[constraint]%
+    This sub-section allows the user to create
+    constraints between symbols used in a Z-matrix:
+    \begin{fdfexample}
+      constraint
+        var1 var2 A B
+    \end{fdfexample}
+    Here \fdf*{var1} and \fdf*{var2} are text symbols for two
+    quantities in the Z-matrix definition, and $A and $B are real
+    numbers. The variables are related by $\fdf*{var1} = A*\fdf*{var2}
+    + B$.
+    
+  \end{fdfoptions}
+  
+  An example of a Z-matrix input for a benzene molecule over a metal surface is:
+  \begin{fdfexample}
     %block Zmatrix
-    molecule
-      2 0 0 0 xm1 ym1 zm1 0 0 0
-      2 1 0 0 CC 90.0 60.0 0 0 0
-      2 2 1 0 CC CCC 90.0 0 0 0
-      2 3 2 1 CC CCC 0.0 0 0 0
-      2 4 3 2 CC CCC 0.0 0 0 0
-      2 5 4 3 CC CCC 0.0 0 0 0
-      1 1 2 3 CH CCH 180.0 0 0 0
-      1 2 1 7 CH CCH 0.0 0 0 0
-      1 3 2 8 CH CCH 0.0 0 0 0
-      1 4 3 9 CH CCH 0.0 0 0 0
-      1 5 4 10 CH CCH 0.0 0 0 0
-      1 6 5 11 CH CCH 0.0 0 0 0
-    fractional
-      3 0.000000 0.000000 0.000000 0 0 0
-      3 0.333333 0.000000 0.000000 0 0 0
-      3 0.666666 0.000000 0.000000 0 0 0
-      3 0.000000 0.500000 0.000000 0 0 0
-      3 0.333333 0.500000 0.000000 0 0 0
-      3 0.666666 0.500000 0.000000 0 0 0
-      3 0.166667 0.250000 0.050000 0 0 0
-      3 0.500000 0.250000 0.050000 0 0 0
-      3 0.833333 0.250000 0.050000 0 0 0
-      3 0.166667 0.750000 0.050000 0 0 0
-      3 0.500000 0.750000 0.050000 0 0 0
-      3 0.833333 0.750000 0.050000 0 0 0
-      3 0.000000 0.000000 0.100000 0 0 0
-      3 0.333333 0.000000 0.100000 0 0 0
-      3 0.666666 0.000000 0.100000 0 0 0
-      3 0.000000 0.500000 0.100000 0 0 0
-      3 0.333333 0.500000 0.100000 0 0 0
-      3 0.666666 0.500000 0.100000 0 0 0
-      3 0.166667 0.250000 0.150000 0 0 0
-      3 0.500000 0.250000 0.150000 0 0 0
-      3 0.833333 0.250000 0.150000 0 0 0
-      3 0.166667 0.750000 0.150000 0 0 0
-      3 0.500000 0.750000 0.150000 0 0 0
-      3 0.833333 0.750000 0.150000 0 0 0
-    constants
-        ym1 3.68
-    variables
-        zm1 6.9032294
-        CC 1.417
-        CH 1.112
-        CCH 120.0
-        CCC 120.0
-    constraints
-        xm1 CC -1.0 3.903229
-    %endblock Zmatrix
-\end{verbatim}
+      molecule
+       2 0 0 0 xm1 ym1 zm1 0 0 0
+       2 1 0 0 CC 90.0 60.0 0 0 0
+       2 2 1 0 CC CCC 90.0 0 0 0
+       2 3 2 1 CC CCC 0.0 0 0 0
+       2 4 3 2 CC CCC 0.0 0 0 0
+       2 5 4 3 CC CCC 0.0 0 0 0
+       1 1 2 3 CH CCH 180.0 0 0 0
+       1 2 1 7 CH CCH 0.0 0 0 0
+       1 3 2 8 CH CCH 0.0 0 0 0
+       1 4 3 9 CH CCH 0.0 0 0 0
+       1 5 4 10 CH CCH 0.0 0 0 0
+       1 6 5 11 CH CCH 0.0 0 0 0
+      fractional
+       3 0.000000 0.000000 0.000000 0 0 0
+       3 0.333333 0.000000 0.000000 0 0 0
+       3 0.666666 0.000000 0.000000 0 0 0
+       3 0.000000 0.500000 0.000000 0 0 0
+       3 0.333333 0.500000 0.000000 0 0 0
+       3 0.666666 0.500000 0.000000 0 0 0
+       3 0.166667 0.250000 0.050000 0 0 0
+       3 0.500000 0.250000 0.050000 0 0 0
+       3 0.833333 0.250000 0.050000 0 0 0
+       3 0.166667 0.750000 0.050000 0 0 0
+       3 0.500000 0.750000 0.050000 0 0 0
+       3 0.833333 0.750000 0.050000 0 0 0
+       3 0.000000 0.000000 0.100000 0 0 0
+       3 0.333333 0.000000 0.100000 0 0 0
+       3 0.666666 0.000000 0.100000 0 0 0
+       3 0.000000 0.500000 0.100000 0 0 0
+       3 0.333333 0.500000 0.100000 0 0 0
+       3 0.666666 0.500000 0.100000 0 0 0
+       3 0.166667 0.250000 0.150000 0 0 0
+       3 0.500000 0.250000 0.150000 0 0 0
+       3 0.833333 0.250000 0.150000 0 0 0
+       3 0.166667 0.750000 0.150000 0 0 0
+       3 0.500000 0.750000 0.150000 0 0 0
+       3 0.833333 0.750000 0.150000 0 0 0
+     constants
+       ym1 3.68
+     variables
+       zm1 6.9032294
+       CC 1.417
+       CH 1.112
+       CCH 120.0
+       CCC 120.0
+     constraints
+       xm1 CC -1.0 3.903229
+   %endblock Zmatrix
+  \end{fdfexample}
+  
+  Here the species 1, 2 and 3 represent H, C, and the metal of the
+  surface, respectively.
+   
+  (Note: the above example shows the usefulness of symbolic names
+  for the relevant coordinates, in particular for those which are
+  allowed to vary. The current output options for Zmatrix information
+  work best when this approach is taken. By using a ``fixed'' symbolic
+  Zmatrix block and specifying the actual coordinates in a ``variables''
+  section, one can monitor the progress of the optimization and
+  easily reconstruct the coordinates of intermediate steps in the
+  original format.)
 
-Here the species 1, 2 and 3 represent H, C, and the metal of the
-surface, respectively.
+\end{fdfentry}
 
-(Note: the above example shows the usefulness of symbolic names
-for the relevant coordinates, in particular for those which are
-allowed to vary. The current output options for Zmatrix information
-work best when this approach is taken. By using a ``fixed'' symbolic
-Zmatrix block and specifying the actual coordinates in a ``variables''
-section, one can monitor the progress of the optimization and
-easily reconstruct the coordinates of intermediate steps in the
-original format.)
+\begin{fdfentry}{ZM!UnitsLength}[string]<\nonvalue{Bohr}>
 
-\textit{Use:} Specifies the geometry of the system according to a Z-matrix
-\textit{Default value:} Geometry is not specified using a Z-matrix
+  Parameter that specifies the units of length used during Z-matrix
+  input.
 
-\item[\textbf{ZM.UnitsLength}] (\textit{length}):
-\index{ZM.UnitsLength@\textbf{ZM.UnitsLength}}
-Parameter that specifies the units of length used during Z-matrix input.
+  Specify \fdf*{Bohr} or \fdf*{Ang} for the corresponding unit of length.
+  
+\end{fdfentry}
 
-\textit{Use:} This option allows the user to chose between inputing distances
-in Bohr or Angstroms within the Z-matrix data block.
+\begin{fdfentry}{ZM!UnitsAngle}[string]<\nonvalue{rad}>
 
-\textit{Default value:} \texttt{Bohr}
+  Parameter that specifies the units of angles used during Z-matrix input.
 
-\item[\textbf{ZM.UnitsAngle}] (\textit{angle}):
-\index{ZM.UnitsAngle@\textbf{ZM.UnitsAngle}}
-Parameter that specifies the units of angles used during Z-matrix input.
+  Specify \fdf*{rad} or \fdf*{deg} for the corresponding unit of angle.
 
-\textit{Use:} This option allows the user to chose between inputing angles
-in radians or degrees within the Z-matrix data block.
-
-\textit{Default value:} \texttt{rad}
-
-\end{description}
-
+\end{fdfentry}
 
 
 \subsubsection{Output of structural information}
@@ -3034,38 +3029,35 @@ structural information (maybe too many).
 
 \begin{itemize}
 
-\item\textbf{STRUCT\_OUT file:}
-\index{Systemlabel.STRUCT\_OUT@{\textit{Systemlabel}.STRUCT\_OUT}}
-Siesta always produces a \texttt{.STRUCT\_OUT} file with cell vectors in {\AA}
-and atomic positions in fractional coordinates. This file, renamed to
-\textit{SystemLabel}.STRUCT\_IN can be used for crystal-structure input.
-Note that the geometry reported is the last one for which forces and
-stresses were computed.
-See \textbf{MD.UseStructFile}\index{MD.UseStructFile@\textbf{MD.UseStructFile}}.
+  \item\sysfile{STRUCT\_OUT}:%
+  Siesta always produces a \sysfile*{STRUCT\_OUT} file with cell
+  vectors in {\AA} and atomic positions in fractional
+  coordinates. This file, renamed to \sysfile*{STRUCT\_IN} can be used
+  for crystal-structure input.  Note that the geometry reported is the
+  last one for which forces and stresses were computed.  See
+  \fdf{MD!UseStructFile}
+  
+  \item\sysfile{STRUCT\_NEXT\_ITER}:%
+  This file is always written, in the same format as
+  \sysfile*{STRUCT\_OUT} file. The only difference is that it contains
+  the structural information \emph{after} it has been updated by the
+  relaxation or the molecular-dynamics algorithms, and thus it could
+  be used as input (renamed as \sysfile*{STRUCT\_IN}) for a
+  continuation run, in the same way as the \sysfile*{XV} file.
+  
+  See \fdf{MD!UseStructFile}
 
-\item\textbf{STRUCT\_NEXT\_ITER file:}
-\index{Systemlabel.STRUCT\_NEXT\_ITER@{\textit{Systemlabel}.STRUCT\_NEXT\_ITER}}
-This file is always written, in the same format as \texttt{.STRUCT\_OUT}
-file. The only difference is that it contains the structural
-information \emph{after} it has been updated by the relaxation or the
-molecular-dynamics
-algorithms, and thus it could be used as input (renamed as
-\textit{SystemLabel}.STRUCT\_IN) for a continuation run, in the same way
-as the \texttt{XV} file.
-
-See \textbf{MD.UseStructFile}\index{MD.UseStructFile@\textbf{MD.UseStructFile}}.
-
-\item\textbf{XV file:} The coordinates are always written in the \sysfile{XV} file, and overriden at every step.
-
-\item\textbf{OUT.UCELL.ZMATRIX file:}
-\index{OUT.UCELL.ZMATRIX}@{\textit{OUT.UCELL.ZMATRIX}}
-
-This file is produced if the Zmatrix format is being used for
-input. (Please note that \textit{SystemLabel} is not used as a prefix.)
-It contains the structural information in fdf form, with
-blocks for unit-cell vectors and for Zmatrix coordinates. The
-Zmatrix block is in a ``canonical'' form with the following
-characteristics:
+  \item\sysfile{XV}:%
+  The coordinates are always written in the \sysfile*{XV} file, and
+  overriden at every step.
+  
+  \item\file{OUT.UCELL.ZMATRIX}:%
+  This file is produced if the Zmatrix format is being used for
+  input. (Please note that \fdf{SystemLabel} is not used as a
+  prefix.)  It contains the structural information in fdf form, with
+  blocks for unit-cell vectors and for Zmatrix coordinates. The
+  Zmatrix block is in a ``canonical'' form with the following
+  characteristics:
 
 \begin{verbatim}
 1. No symbolic variables or constants are used.
@@ -3077,116 +3069,105 @@ characteristics:
    noted also in fdf form.
 \end{verbatim}
 
-Note that the geometry reported is the last one for which forces and
-stresses were computed.
+  Note that the geometry reported is the last one for which forces and
+  stresses were computed.
 
-\item\textbf{NEXT\_ITER.UCELL.ZMATRIX file:}
-\index{NEXT\_ITER.UCELL.ZMATRIX}@{\textit{NEXT\_ITER.UCELL.ZMATRIX}}
+  \item\file{NEXT\_ITER.UCELL.ZMATRIX}:%
+  A file with the same format as \file{OUT.UCELL.ZMATRIX} but with
+  a possibly updated geometry.
+  
+  \item The coordinates can be also accumulated
+  in the \sysfile{MD} or \sysfile{MDX} files
+  depending on \fdf{WriteMDhistory}.
 
-A file with the same format as \texttt{OUT.UCELL.ZMATRIX} but with
-a possibly updated geometry.
+  \item Additionally, several optional formats are supported:
+  \begin{fdflogicalF}{WriteCoorXmol}
+    \index{JMol@\textsc{JMol}}
+    \index{XMol@\textsc{XMol}}
+    \index{Molden@\textsc{Molden}}
 
-\item The coordinates can be also accumulated
-in the \textit{Systemlabel}.MD or \textit{Systemlabel}.MDX files
-depending on \textbf{WriteMDhistory}.
+    If \fdftrue\ it originates the writing of an extra file named
+    \sysfile{xyz} containing the final atomic coordinates in a format
+    directly readable by \method{XMol}.\footnote{XMol is under
+        \copyright\ copyright of Research Equipment Inc., dba
+        Minnesota Supercomputer Center Inc.} Coordinates come out in
+    \AA ngstr\"om independently of what specified in
+    \fdf{AtomicCoordinatesFormat} and in
+    \fdf{AtomCoorFormatOut}. There is a present \method{Java}
+    implementation of \method{XMol} called \method{JMol}.
+    
+  \end{fdflogicalF}
+  
+  \begin{fdflogicalF}{WriteCoorCerius}
+    \index{Cerius2@\textsc{Cerius2}}
 
-\item Additionally, several optional formats are supported:
+    If \fdftrue it originates the writing of an extra file named
+    \sysfile{xtl} containing the final atomic coordinates in a format
+    directly readable by \method{Cerius}.\footnote{\method{Cerius} is
+        under \copyright\ copyright of Molecular Simulations Inc.}
+    Coordinates come out in \fdf*{Fractional} format (the same as
+    \fdf{ScaledByLatticeVectors}) independently of what specified
+    in \fdf{AtomicCoordinatesFormat} and in
+    \fdf{AtomCoorFormatOut}.  If negative coordinates are to be
+    avoided, it has to be done from the start by shifting all the
+    coordinates rigidly to have them positive, by using
+    \fdf{AtomicCoordinatesOrigin}.  See the
+    \program{Sies2arc}\index{Sies2arc@\textsc{Sies2arc}} utility in the
+    \program{Util/} directory for generating \sysfile*{.arc} files for CERIUS animation.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+  \end{fdflogicalF}
 
-\item[\textbf{WriteCoorXmol}] (\textit{logical}):
-\index{WriteCoorXmol@\textbf{WriteCoorXmol}}\index{XMol@\textsc{XMol}}
-\index{JMol@\textsc{JMol}}
-If \texttt{.true.} it originates the writing of an extra file
-named \textit{SystemLabel}\texttt{.xyz} containing the final atomic
-coordinates in a format directly readable by \textsc{XMol}.\footnote{XMol
-is under \copyright\ copyright of Research Equipment Inc., dba Minnesota
-Supercomputer Center Inc.} Coordinates come out in {\AA}ngstr\"om
-independently of what specified in \textbf{AtomicCoordinatesFormat} and
-in \textbf{AtomCoorFormatOut}. There is a present \textsc{Java} implementation
-of \textsc{XMol} called \textsc{JMol}.
+  \begin{fdflogicalF}{WriteMDXmol}
+    \index{XMol@\textsc{XMol}}
+    \index{Molden@\textsc{Molden}}
 
-\textit{Default value:} \texttt{.false.}
+    If \fdftrue\ it causes the writing of an extra file
+    named \sysfile{ANI} containing all the atomic
+    coordinates of the simulation in a format directly readable by
+    \method{XMol} for animation.\index{animation} Coordinates come out in
+    \AA ngstr\"om independently of what is specified in
+    \fdf{AtomicCoordinatesFormat} and in \fdf{AtomCoorFormatOut}.
+    This file is accumulative even for different runs.
+    
+    There is an alternative for animation by generating a \sysfile*{arc} file for
+    \method{CERIUS}. It is through the
+    \method{Sies2arc}\index{Sies2arc@\program{Sies2arc}} postprocessing
+    utility in the Util/ directory, and it 
+    requires the coordinates to be accumulated in the output file, i.e.,
+    \fdf*{WriteCoorStep = \fdftrue}
 
-
-\item[\textbf{WriteCoorCerius}] (\textit{logical}):
-\index{WriteCoorCerius@\textbf{WriteCoorCerius}}\index{Cerius2@\textsc{Cerius2}}
-If \texttt{.true.} it originates the writing of an extra file
-named \textit{SystemLabel}\texttt{.xtl} containing the final atomic
-coordinates in a format directly readable by
-\method{Cerius}.\footnote{\method{Cerius} is under \copyright\
-    copyright of Molecular Simulations Inc.} 
-Coordinates come out in
-\texttt{Fractional} format (the same as \texttt{ScaledByLatticeVectors})
-independently of what specified in \textbf{AtomicCoordinatesFormat} and
-in \textbf{AtomCoorFormatOut}.
-If negative coordinates are to be avoided, it has to be
-done from the start by shifting all the coordinates rigidly
-to have them positive, by using \textbf{AtomicCoordinatesOrigin}.
-See the \textsc{Sies2arc}\index{Sies2arc@\textsc{Sies2arc}} utility in the Util/
-directory for generating .arc files for CERIUS animation.
-
-\textit{Default value:} \texttt{.false.}
-
-
-\item[\textbf{WriteMDXmol}] (\textit{logical}):
-\index{WriteMDXmol@\textbf{WriteMDXmol}}\index{XMol@\textsc{XMol}}
-If \texttt{.true.} it causes the writing of an extra file
-named \textit{SystemLabel}\texttt{.ANI} containing all the atomic
-coordinates of the simulation in a format directly readable by
-\textsc{XMol} for animation.\index{animation} Coordinates come out in
-{\AA}ngstr\"om independently of what is specified in
-\textbf{AtomicCoordinatesFormat} and in \textbf{AtomCoorFormatOut}.
-This file is accumulative even for different runs.
-
-There is an alternative for animation by generating a .arc file for
-CERIUS. It is through the
-\textsc{Sies2arc}\index{Sies2arc@\program{Sies2arc}} postprocessing
-utility in the Util/ directory, and it 
-requires the coordinates to be accumulated in the output file, i.e.,
-WriteCoorStep = \texttt{.true.}
-
-\textit{Default value:} \texttt{.false.}
-
-Note change with respect to previous versions. This option is no
-longer coupled to \textbf{WriteCoorStep}.
-
-\end{description}
+  \end{fdflogicalF}
 
 \end{itemize}
+
+
 
 \subsubsection{Input of structural information from external files}
 
 The structural information can be also read from external files. Note
-that the NumberOfAtoms, NumberOfSpecies, and ChemicalSpeciesLabel
+that the \fdf{NumberOfAtoms}, \fdf{NumberOfSpecies}, and \fdf{ChemicalSpeciesLabel}
 options are still mandatory in the fdf file.
 
-\begin{itemize}
+\begin{fdflogicalF}{MD!UseSaveXV}
+  \index{reading saved data!XV}
 
-\item The XV file.
-\index{MD.UseSaveXV@\textbf{MD.UseSaveXV}} \index{reading saved data!XV}
-The logical variable \textbf{MD.UseSaveXV} instructs \siesta\ to
-read the atomic positions and velocities stored in file \sysfile{XV} by a previous run.
+  Logical variable which instructs \siesta\ to read the atomic
+  positions and velocities stored in file \sysfile{XV} by a previous
+  run.
+  
+  If the file does not exist, a warning is printed but the
+  program does not stop. Overrides \fdf{UseSaveData}, but can be
+  implicitly set by it.
 
-If the required file does not exist, a warning is printed but the
-program does not stop. Overrides \textbf{UseSaveData}, but can be
-implicitly set by it.
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdflogicalF}{UseStructFile}
 
-\item A .STRUCT\_IN file. The logical fdf variable \textbf{UseStructFile}
-  (for historical reasons, \textbf{MD.UseStructFile} is also accepted,
-  but deprecated)
-  controls whether the structural information is read from an external
-  file of name \textit{SystemLabel}.STRUCT\_IN.  If \texttt{.true.}, all
-  other structural information in the fdf file will be
-  ignored.\index{UseStructFile@\textbf{UseStructFile}}
-  \index{Systemlabel.STRUCT\_IN@{\textit{Systemlabel}.STRUCT\_IN}}
+  Controls whether the structural information is read from an external
+  file of name \sysfile{STRUCT\_IN}. If \fdftrue, all other
+  structural information in the fdf file will be ignored.
 
-The format of the file is implied by the following code:
-
+  The format of the file is implied by the following code:
 \begin{verbatim}
 read(*,*) ((cell(ixyz,ivec),ixyz=1,3),ivec=1,3)  ! Cell vectors, in Angstroms
 read(*,*) na
@@ -3196,53 +3177,53 @@ do ia = 1,na
                                              ! Fractional coordinates
 enddo
 \end{verbatim}
+  
+  \textit{Warning:} Note that the resulting geometry could be clobbered if
+  an \sysfile*{XV} file is read after this file. It is up to the user to remove
+  any \sysfile*{XV} files.
+  
+\end{fdflogicalF}
 
-\textit{Warning:} Note that the resulting geometry could be clobbered if
-an XV file is read after this file. It is up to the user to remove
-any XV files.\index{MD.UseSaveXV@\textbf{MD.UseSaveXV}}.
+\begin{fdflogicalF}{MD!UseSaveZM}
+  \index{reading saved data!ZM}
 
-\textit{Default value:} \texttt{.false.}
+  Instructs to read the Zmatrix information stored
+  in file \sysfile*{ZM} by a previous run.
+
+  If the required file does not exist, a warning is
+  printed but the program does not stop. Overrides \fdf{UseSaveData},
+  but can be implicitly set by it.
+  
+  \textit{Warning:} Note that the resulting geometry could be clobbered if
+  an \sysfile*{XV} file is read after this file. It is up to the user to remove
+  any \sysfile*{XV} files.
+  
+\end{fdflogicalF}
 
 
-\item A Zmatrix input file
-\textbf{MD.UseSaveZM} (\textit{logical}):
-\index{MD.UseSaveZM@\textbf{MD.UseSaveZM}}
-\index{reading saved data!ZM}
-instructs the program to read the Zmatrix information stored
-in file \texttt{SystemLabel}.ZM by a previous run.
-
-\textit{Use:} If the required file does not exist, a warning is
-printed but the program does not stop. Overrides \textbf{UseSaveData},
-but can be implicitly set by it.
-
-\textit{Warning:} Note that the resulting geometry could be clobbered if
-an XV file is read after this file. It is up to the user to remove
-any XV files.\index{MD.UseSaveXV@\textbf{MD.UseSaveXV}}.
-
-\textit{Default value:} \texttt{.false.}
-\end{itemize}
 
 \subsubsection{Input from a FIFO file}
 
-See the ``Forces'' option in \textbf{MD.TypeOfRun}.
-Note that the NumberOfAtoms, NumberOfSpecies, and ChemicalSpeciesLabel
-options are still mandatory in the fdf file.
+See the ``Forces'' option in \fdf{MD!TypeOfRun}.  Note that the
+\fdf{NumberOfAtoms}, \fdf{NumberOfSpecies}, and
+\fdf{ChemicalSpeciesLabel} options are still mandatory in the fdf
+file.
 
 \subsubsection{Precedence issues in structural input}
 \index{structure input precedence issues}
 
 \begin{itemize}
-\item If the ``server'' option is active, it takes precedence over
-everything (it will overwrite all other input with the information it
-gets from the FIFO file).
+  \item If the ``server'' option is active, it takes precedence over
+  everything (it will overwrite all other input with the information it
+  gets from the FIFO file).
 
-\item If MD.UseSaveXV is active, it takes precedence over the options below.
+  \item If \fdf{MD!UseSaveXV} is active, it takes precedence over the options below.
 
-\item If UseStructFile (or MD.UseStructFile) is active, it takes precedence
-over the options below.
+  \item If \fdf{UseStructFile} (or \fdf{MD!UseStructFile}) is active, it takes precedence
+  over the options below.
 
-\item For atomic coordinates, the traditional and Zmatrix formats in
-  the fdf file are mutually exclusive. If \textbf{MD.UseSaveZM} is
+  \item For atomic coordinates, the traditional and Zmatrix formats in
+  the fdf file are mutually exclusive. If \fdf{MD!UseSaveZM} is
   active, the contents of the ZM file, if found, take precedence over
   the Zmatrix information in the fdf file.
 
@@ -3278,343 +3259,366 @@ These are options for the k-point grid used in the SCF cycle. For
 other specialized grids, see the Macroscopic Polarization and Density
 of States sections.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdfentry}{kgrid!Cutoff}[length]<$0.\,\mathrm{Bohr}$>
 
+  Parameter which determines the fineness of the k-grid used for
+  Brillouin zone sampling.  It is half the length of the smallest
+  lattice vector of the supercell required to obtain the same sampling
+  precision with a single k point.  Ref: Moreno and Soler, PRB 45,
+  13891 (1992).
 
-\item[\textbf{kgrid\_cutoff}] (\textit{real length}):
-\index{kgrid\_cutoff@\textbf{kgrid\_cutoff}}
-Parameter which determines
-the fineness of the k-grid used for Brillouin zone sampling.
-It is half the length of the smallest lattice vector of the supercell
-required to obtain the same sampling precision with a single k point.
-Ref: Moreno and Soler, PRB 45, 13891 (1992).
+  \textit{Use:} If it is zero, only the gamma point is used.  The resulting
+  k-grid is chosen in an optimal way, according to the method of Moreno
+  and Soler (using an effective supercell which is as spherical as
+  possible, thus minimizing the number of k-points for a given
+  precision). The grid is displaced for even numbers of effective mesh
+  divisions.  This parameter is not used if \fdf{kgrid!MonkhorstPack}
+  is specified. If the unit cell changes during the calculation (for
+  example, in a cell-optimization run, the k-point
+  grid will change accordingly (see \fdf{ChangeKgridInMD} for the case
+  of variable-cell molecular-dynamics runs, such as Parrinello-Rahman).
+  This is analogous to the changes in the
+  real-space grid, whose fineness is specified by an energy cutoff. If
+  sudden changes in the number of k-points are not desired, then the
+  Monkhorst-Pack data block should be used instead. In this case there
+  will be an implicit change in the quality of the sampling as the cell
+  changes. Both methods should be equivalent for a well-converged
+  sampling.
+  
+\end{fdfentry}
 
-\textit{Use:} If it is zero, only the gamma point is used.  The resulting
-k-grid is chosen in an optimal way, according to the method of Moreno
-and Soler (using an effective supercell which is as spherical as
-possible, thus minimizing the number of k-points for a given
-precision). The grid is displaced for even numbers of effective mesh
-divisions.  This parameter is not used if \textbf{kgrid\_Monkhorst\_Pack}
-is specified. If the unit cell changes during the calculation (for
-example, in a cell-optimization run, the k-point
-grid will change accordingly (see \textbf{ChangeKgridInMD} for the case
-of variable-cell molecular-dynamics runs, such as Parrinello-Rahman).
-This is analogous to the changes in the
-real-space grid, whose fineness is specified by an energy cutoff. If
-sudden changes in the number of k-points are not desired, then the
-Monkhorst-Pack data block should be used instead. In this case there
-will be an implicit change in the quality of the sampling as the cell
-changes. Both methods should be equivalent for a well-converged
-sampling.
+\begin{fdfentry}{kgrid!MonkhorstPack}[block]<$\Gamma$-point>
+  
+  Real-space supercell, whose reciprocal unit cell is that of the
+  k-sampling grid, and grid displacement for each grid coordinate.
+  Specified as an integer matrix and a real vector:
 
-\textit{Default value:} \texttt{0.0 Bohr}
-
-
-\item[\textbf{kgrid\_Monkhorst\_Pack}] (\textit{data block}):
-\index{kgrid\_Monkhorst\_Pack@\textbf{kgrid\_Monkhorst\_Pack}}
-Real-space supercell, whose reciprocal unit cell is that of the
-k-sampling grid, and grid displacement for each grid coordinate.
-Specified as an integer matrix and a real vector:
-
-\begin{verbatim}
-     %block kgrid_Monkhorst_Pack
+  \begin{fdfexample}
+     %block kgrid.MonkhorstPack
         Mk(1,1)  Mk(2,1)  Mk(3,1)   dk(1)
         Mk(1,2)  Mk(2,2)  Mk(3,2)   dk(2)
         Mk(1,3)  Mk(2,3)  Mk(3,3)   dk(3)
-     %endblock kgrid_Monkhorst_Pack
-\end{verbatim}
+     %endblock
+  \end{fdfexample}
+  
+  where \texttt{Mk(j,i)} are integers and \texttt{dk(i)} are usually
+  either 0.0 or 0.5 (the program will warn the user if the displacements
+  chosen are not optimal).
+  The k-grid supercell is defined from \texttt{Mk}
+  as in block \fdf{SuperCell} above, i.e.:
+  $KgridSuperCell(ix,i) = \sum_j CELL(ix,j)*Mk(j,i)$.
+  Note again that the matrix indexes are inverted: each input line
+  gives the decomposition of a supercell vector in terms of the unit
+  cell vectors.
+  
+  
+  \textit{Use:} Used only if \fdf*{SolutionMethod diagon}.
+  The k-grid supercell is compatible and unrelated
+  (except for the default value, see below)
+  with the \fdf{SuperCell} specifier. Both supercells are given in
+  terms of the CELL specified by the \fdf{LatticeVectors} block.
+  If \texttt{Mk} is the identity matrix and \texttt{dk}
+  is zero, only the $\Gamma$ point of the \textbf{unit} cell is used.
+  Overrides \fdf{kgrid!Cutoff}
 
-where \texttt{Mk(j,i)} are integers and \texttt{dk(i)} are usually
-either 0.0 or 0.5 (the program will warn the user if the displacements
-chosen are not optimal).
-The k-grid supercell is defined from \texttt{Mk}
-as in block \textbf{SuperCell} above, i.e.:
-$KgridSuperCell(ix,i) = \sum_j CELL(ix,j)*Mk(j,i)$.
-Note again that the matrix indexes are inverted: each input line
-gives the decomposition of a supercell vector in terms of the unit
-cell vectors.
+\end{fdfentry}
+
+\begin{fdflogicalF}{ChangeKgridInMD}
+
+  If \fdftrue, the $k$-point grid is recomputed at every
+  iteration during MD runs that potentially change the unit cell:
+  Parrinello-Rahman, Nose-Parrinello-Rahman, and Anneal. Regardless of
+  the setting of this flag, the k-point grid is always updated at
+  every iteration of a variable-cell optimization and after each step
+  in a ``siesta-as-server'' run.
+
+  It is defaulted to \fdffalse\ for historical reasons. The rationale
+  was to avoid sudden jumps in some properties when the sampling
+  changes, but if the calculation is well-converged there should be no
+  problems if the update is enabled.
+  
+\end{fdflogicalF}
 
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{diagon}.
-The k-grid supercell is compatible and unrelated
-(except for the default value, see below)
-with the \textbf{SuperCell} specifier. Both supercells are given in
-terms of the CELL specified by the \textbf{LatticeVectors} block.
-If \texttt{Mk} is the identity matrix and \texttt{dk}
-is zero, only the $\Gamma$ point of the \textbf{unit} cell is used.
-Overrides \textbf{kgrid\_cutoff}
+\begin{fdflogicalT}{TimeReversalSymmetryForKpoints}
 
-\textit{Default value:} $\Gamma$ point of the (super)cell.
-(Default used only when \textbf{kgrid\_cutoff} is not defined).
+  If \fdftrue, the $k$-points in the BZ generated by the methods above
+  are paired as ($k$,$-k$) and only one member of the pair is
+  retained. This symmetry is valid in the absence of external magnetic
+  fields or spin-orbit interaction.
 
-\item[\textbf{ChangeKgridInMD}] (\textit{boolean}):
-\index{ChangeKgridInMD@\textbf{ChangeKgridInMD}}
+  Note this defaults to \fdffalse\ if \fdf{Spin} is
+  \fdf*{non-collinear}, \fdf*{spin-orbit} or \fdf{Spin!Spiral} is  used.
 
-If \texttt{.true.}, the k-point grid is
-recomputed at every iteration during MD runs that potentially
-change the unit cell: Parrinello-Rahman, Nose-Parrinello-Rahman, and
-Anneal. Regardless of the setting of this flag, the k-point grid
-is always updated at every iteration of a variable-cell optimization
-and after each step in a ``siesta-as-server'' run.
+\end{fdflogicalT}
 
-\textit{Default value:} \texttt{.false.} for historical reasons. The
-rationale was to avoid sudden jumps in some properties when the
-sampling changes, but if the calculation is well-converged there
-should be no problems if the update is enabled.
-
-\item[\textbf{TimeReversalSymmetryForKpoints}] (\textit{boolean}):
-\index{TimeReversalSymmetryForKpoints@\textbf{TimeReversalSymmetryForKpoints}}
-
-If \texttt{.true.}, the k-points in the BZ generated by the methods above
-are paired as (k,-k) and only one member of the pair is retained. This
-symmetry is valid in the absence of external magnetic fields or
-spin-orbit interaction.
-
-\textit{Default value:} \texttt{.true.} unless the option \textbf{SpinSpiral} 
-is used. In this case time-reversal-symmetry is broken explicitly.
-
-\end{description}
 
 \subsubsection{Output of k-point information}
-
 \index{output!grid $\vec k$ points}
+
 The coordinates of the $\vec k$ points used in the sampling
-are always stored in the file SystemLabel.KP.
+are always stored in the file \sysfile{KP}.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-\item[\textbf{WriteKpoints}] (\textit{logical}):
-\index{WriteKpoints@\textbf{WriteKpoints}}\index{output!grid $\vec k$ points}
-If \texttt{.true.} it writes the coordinates of the $\vec k$ vectors
-used in the grid for $k$-sampling, into the main output file.
+\begin{fdflogicalF}{WriteKpoints}
+  \index{output!grid $\vec k$ points}
+  
+  If \fdftrue\ it writes the coordinates of the $\vec k$ vectors used
+  in the grid for $k$-sampling, into the main output file.
+  
+  Default depends on \fdf{LongOutput}.
 
-\textit{Default value:} \texttt{.false.} (see \textbf{LongOutput})
+\end{fdflogicalF}
 
-\end{description}
 
-\vspace{5pt}
+
 \subsection{Exchange-correlation functionals}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+
+\begin{fdfentry}{XC!Functional}[string]<LDA>
+  
+  Exchange-correlation functional type. May be \fdf*{LDA} (local
+  density approximation, equivalent to \fdf*{LSD}), \fdf*{GGA}
+  (Generalized Gradient Approximation), or \fdf*{VDW} (van der
+  Waals).
+
+\end{fdfentry}
+
+\begin{fdfentry}{XC!Authors}[string]<\nonvalue{PZ}>
+  \newcommand\xcidx[1]{\index{exchange-correlation!#1}}
+  
+  Particular parametrization of the exchange-correlation
+  functional. Options are:
+  \begin{itemize}
+    \item%
+    \fdf*{CA} (equivalent to \fdf*{PZ}): \xcidx{CA} \xcidx{PZ}
+    (Spin) local density approximation (LDA/LSD). \xcidx{LDA}
+    \xcidx{LSD} Quantum Monte Carlo calculation of the homogeneous
+    electron gas by D. M. Ceperley and B. J. Alder,
+    Phys. Rev. Lett. \textbf{45},566 (1980), as parametrized by
+    J. P. Perdew and A. Zunger, Phys. Rev B \textbf{23}, 5075 (1981)
+    
+    \item% 
+    \fdf*{PW92}: \xcidx{PW92}
+    LDA/LSD, as parametrized by 
+    J. P. Perdew and Y. Wang, Phys. Rev B, \textbf{45}, 13244 (1992)
+    
+    \item%
+    \fdf*{PW91}: \xcidx{PW91}%
+    Generalized gradients approximation (GGA) \xcidx{GGA} of Perdew and Wang. 
+    Ref: P\&W, J. Chem. Phys., \textbf{100}, 1290 (1994)
+
+    \item%
+    \fdf*{PBE}: \xcidx{PBE}%
+    GGA of J. P. Perdew, K. Burke and M. Ernzerhof, 
+    Phys. Rev. Lett. \textbf{77}, 3865 (1996) 
+    
+    \item%
+    \fdf*{revPBE}: \xcidx{revPBE}%
+    Modified GGA-PBE functional of Y. Zhang and W. Yang, 
+    Phys. Rev. Lett. \textbf{80}, 890 (1998)
+
+    \item%
+    \fdf*{RPBE}: \xcidx{RPBE}%
+    Modified GGA-PBE functional of 
+    B. Hammer, L. B. Hansen and J. K. Norskov Phys. Rev. B \textbf{59}, 7413 (1999)
+    
+    \item%
+    \fdf*{WC}: \xcidx{WC}%
+    Modified GGA-PBE functional of 
+    Z. Wu and R. E. Cohen, Phys. Rev. B \textbf{73}, 235116 (2006)
+
+    \item%
+    \fdf*{AM05}: \xcidx{AM05}%
+    Modified GGA-PBE functional of 
+    R. Armiento and A. E. Mattsson, Phys. Rev. B \textbf{72}, 085108 (2005)
+    
+    \item%
+    \fdf*{PBEsol}: \xcidx{PBEsol}%
+    Modified GGA-PBE functional of 
+    J. P. Perdew et al, Phys. Rev. Lett. \textbf{100}, 136406 (2008)
+
+    \item%
+    \fdf*{PBEJsJrLO}: \xcidx{PBEJsJrLO}%
+    GGA-PBE functional with parameters $\beta, \mu$, and $\kappa$ fixed by 
+    the jellium surface (Js), jellium response (Jr), 
+    and Lieb-Oxford bound (LO) criteria, respectively, as described by 
+    L. S. Pedroza, A. J. R. da Silva, and K. Capelle, 
+    Phys. Rev. B \textbf{79}, 201106(R) (2009), and by 
+    M. M. Odashima, K. Capelle, and S. B. Trickey, 
+    J. Chem. Theory Comput. \textbf{5}, 798 (2009)
+
+    \item%
+    \fdf*{PBEJsJrHEG}: \xcidx{PBEJsJrHEG}%
+    Same as PBEJsJrLO, with parameter $\kappa$ fixed by the  Lieb-Oxford bound 
+    for the low density limit of the homogeneous electron gas (HEG)
+
+    \item%
+    \fdf*{PBEGcGxLO}: \xcidx{PBEGcGxLO}%
+    Same as PBEJsJrLO, with parameters $\beta$ and $\mu$ fixed by the 
+    gradient expansion of correlation (Gc) and exchange (Gx), respectively
+    
+    \item%
+    \fdf*{PBEGcGxHEG}: \xcidx{PBEGcGxHEG}%
+    Same as previous ones, with parameters $\beta,\mu$, and $\kappa$ fixed by 
+    the Gc, Gx, and HEG criteria, respectively.
+
+    \item%
+    \fdf*{BLYP} (equivalent to \fdf*{LYP}): \xcidx{BLYP}%
+    GGA with Becke exchange (A. D. Becke, Phys. Rev. A \textbf{38}, 3098 (1988)) 
+    and Lee-Yang-Parr correlation 
+    (C. Lee, W. Yang, R. G. Parr, Phys. Rev. B \textbf{37}, 785 (1988)), 
+    as modified by B. Miehlich, A. Savin, H. Stoll, and H. Preuss,
+    Chem. Phys. Lett. \textbf{157}, 200 (1989). 
+    See also B. G. Johnson, P. M. W. Gill and J. A. Pople,
+    J. Chem. Phys. \textbf{98}, 5612 (1993). (Some errors were detected in this
+    last paper, so not all of their expressions correspond exactly to those
+    implemented in \siesta)
+
+    \item%
+    \fdf*{DRSLL} (equivalent to \fdf*{DF1}): \xcidx{vdW-DF1}
+    \xcidx{DRSLL}%
+    van der Waals \xcidx{vdW} density functional (vdW-DF) \xcidx{vdW-DF}
+    of M. Dion, H. Rydberg, E. Schr\"{o}der, D. C. Langreth, and B. I. Lundqvist,
+    Phys. Rev. Lett. \textbf{92}, 246401 (2004), with the efficient implementation of 
+    G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. \textbf{103},  096102 (2009)
+    
+    \item%
+    \fdf*{LMKLL} (equivalent to \fdf*{DF2}): \xcidx{vdW-DF2} \xcidx{LMKLL}%
+    vdW-DF functional of Dion \textit{et al} (same as DRSLL)
+    reparametrized by K. Lee, E. Murray, L. Kong, B. I. Lundqvist and 
+    D. C. Langreth, Phys. Rev. B \textbf{82}, 081101 (2010)
+
+    \item%
+    \fdf*{KBM}: \xcidx{KBM}%
+    vdW-DF functional of Dion \textit{et al} (same as DRSLL)
+    with exchange modified by J. Klimes, D. R. Bowler, and A. Michaelides, 
+    J. Phys.: Condens. Matter \textbf{22}, 022201 (2010) (optB88-vdW version)
+    
+    \item%
+    \fdf*{C09}: \xcidx{C09}%
+    vdW-DF functional of Dion \textit{et al} (same as DRSLL)
+    with exchange modified by V. R. Cooper, Phys. Rev. B \textbf{81}, 161104 (2010)
+    
+    \item%
+    \fdf*{BH}: \xcidx{BH}%
+    vdW-DF functional of Dion \textit{et al} (same as DRSLL) 
+    with exchange modified by 
+    K. Berland and P. Hyldgaard, Phys. Rev. B 89, 035412 (2014)
+    
+    \item%
+    \fdf*{VV}: \xcidx{VV}%
+    vdW-DF functional of O. A. Vydrov and T. Van Voorhis, 
+    J. Chem. Phys. \textbf{133}, 244103 (2010)
+    
+  \end{itemize}
+
+\end{fdfentry}
 
 
-\item[\textbf{XC.functional}] (\textit{string}): 
-\index{XC.functional@\textbf{XC.functional}} 
-Exchange-correlation functional type. May be \texttt{LDA} 
-(local density approximation, equivalent to \texttt{LSD}),
-\texttt{GGA} (Generalized Gradient Approximation), or
-\texttt{VDW} (van der Waals).
+\begin{fdfentry}{XC!Hybrid}[block]
+  
+  This data block allows the user to create a ``cocktail'' functional by
+  mixing the desired amounts of exchange and correlation from each of
+  the functionals described under XC.authors. Note that these ``mixed''
+  functionals do \emph{not} have the exact Hartree-Fock exchange which
+  is a key ingredient of the true ``hybrid'' functionals. The use of
+  the word ``hybrid'' in the label is unfortunate in this regard, and
+  might be deprecated in a future version.
 
-\textit{Use:} Spin polarization is defined by SpinPolarized label for
-both \texttt{LDA} and \texttt{GGA}. There is no difference between \texttt{LDA}
-and \texttt{LSD}.
+  The first line of the block must contain the number of functionals to
+  be mixed. On the subsequent lines the values of XC.functl and
+  XC.authors must be given and then the weights for the exchange and
+  correlation, in that order. If only one number is given then the same
+  weight is applied to both exchange and correlation.
 
-\textit{Default value:} \texttt{LDA}
-
-
-\item[\textbf{XC.authors}] (\textit{string}):
-\index{XC.authors@\textbf{XC.authors}}
-Particular parametrization of the
-exchange-correlation functional. Options are:
-\begin{itemize}
-\item \texttt{CA} (equivalent to \texttt{PZ}):  \index{CA} \index{PZ}
-(Spin) local density approximation (LDA/LSD). \index{LDA} \index{LSD}
-Quantum Monte Carlo calculation of the homogeneous electron gas 
-by D. M. Ceperley and B. J. Alder, Phys. Rev. Lett. \textbf{45},566 (1980),
-as parametrized by J. P. Perdew and A. Zunger, Phys. Rev B \textbf{23}, 5075 (1981)
-\item \texttt{PW92}: \index{PW92}
-LDA/LSD, as parametrized by 
-J. P. Perdew and Y. Wang, Phys. Rev B, \textbf{45}, 13244 (1992)
-\item \texttt{PW91}: \index{PW91}
-Generalized gradients approximation (GGA) \index{GGA} of Perdew and Wang. 
-Ref: P\&W, J. Chem. Phys., \textbf{100}, 1290 (1994)
-\item \texttt{PBE}: \index{PBE}
-GGA of J. P. Perdew, K. Burke and M. Ernzerhof, 
-Phys. Rev. Lett. \textbf{77}, 3865 (1996) 
-\item \texttt{revPBE}: \index{revPBE}
-Modified GGA-PBE functional of Y. Zhang and W. Yang, 
-Phys. Rev. Lett. \textbf{80}, 890 (1998)
-\item \texttt{RPBE}: \index{RPBE}
-Modified GGA-PBE functional of 
-B. Hammer, L. B. Hansen and J. K. Norskov Phys. Rev. B \textbf{59}, 7413 (1999)
-\item \texttt{WC} \index{WC}
-Modified GGA-PBE functional of 
-Z. Wu and R. E. Cohen, Phys. Rev. B \textbf{73}, 235116 (2006)
-\item \texttt{AM05}: \index{AM05}
-Modified GGA-PBE functional of 
-R. Armiento and A. E. Mattsson, Phys. Rev. B \textbf{72}, 085108 (2005)
-\item \texttt{PBEsol}: \index{PBEsol}
-Modified GGA-PBE functional of 
-J. P. Perdew et al, Phys. Rev. Lett. \textbf{100}, 136406 (2008)
-\item \texttt{PBEJsJrLO}: 
-GGA-PBE functional with parameters $\beta, \mu$, and $\kappa$ fixed by 
-the jellium surface (Js), jellium response (Jr), 
-and Lieb-Oxford bound (LO) criteria, respectively, as described by 
-L. S. Pedroza, A. J. R. da Silva, and K. Capelle, 
-Phys. Rev. B \textbf{79}, 201106(R) (2009), and by 
-M. M. Odashima, K. Capelle, and S. B. Trickey, 
-J. Chem. Theory Comput. \textbf{5}, 798 (2009)
-\item \texttt{PBEJsJrHEG}: 
-Same as PBEJsJrLO, with parameter $\kappa$ fixed by the  Lieb-Oxford bound 
-for the low density limit of the homogeneous electron gas (HEG)
-\item \texttt{PBEGcGxLO}:
-Same as PBEJsJrLO, with parameters $\beta$ and $\mu$ fixed by the 
-gradient expansion of correlation (Gc) and exchange (Gx), respectively
-\item \texttt{PBEGcGxHEG}:
-Same as previous ones, with parameters $\beta,\mu$, and $\kappa$ fixed by 
-the Gc, Gx, and HEG criteria, respectively.
-\item \texttt{BLYP} (equivalent to \texttt{LYP}): \index{BLYP}
-GGA with Becke exchange (A. D. Becke, Phys. Rev. A \textbf{38}, 3098 (1988)) 
-and Lee-Yang-Parr correlation 
-(C. Lee, W. Yang, R. G. Parr, Phys. Rev. B \textbf{37}, 785 (1988)), 
-as modified by B. Miehlich, A. Savin, H. Stoll, and H. Preuss,
-Chem. Phys. Lett. \textbf{157}, 200 (1989). 
-See also B. G. Johnson, P. M. W. Gill and J. A. Pople,
-J. Chem. Phys. \textbf{98}, 5612 (1993). (Some errors were detected in this
-last paper, so not all of their expressions correspond exactly to those
-implemented in \siesta)
-\item \texttt{DRSLL} (equivalent to \texttt{DF1}): \index{vdW-DF1} \index{DRSLL}
-van der Waals \index{vdW} density functional (vdW-DF) \index{vdW-DF}
-of M. Dion, H. Rydberg, E. Schr\"{o}der, D. C. Langreth, and B. I. Lundqvist,
-Phys. Rev. Lett. \textbf{92}, 246401 (2004), with the efficient implementation of 
-G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. \textbf{103},  096102 (2009)
-\item \texttt{LMKLL} (equivalent to \texttt{DF2}): \index{vdW-DF2} \index{LMKLL}
-vdW-DF functional of Dion \textit{et al} (same as DRSLL)
-reparametrized by K. Lee, E. Murray, L. Kong, B. I. Lundqvist and 
-D. C. Langreth, Phys. Rev. B \textbf{82}, 081101 (2010)
-\item \texttt{KBM}:
-vdW-DF functional of Dion \textit{et al} (same as DRSLL)
-with exchange modified by J. Klimes, D. R. Bowler, and A. Michaelides, 
-J. Phys.: Condens. Matter \textbf{22}, 022201 (2010) (optB88-vdW version)
-\item \texttt{C09}:
-vdW-DF functional of Dion \textit{et al} (same as DRSLL)
-with exchange modified by V. R. Cooper, Phys. Rev. B \textbf{81}, 161104 (2010)
-\item \texttt{BH}:
-vdW-DF functional of Dion \textit{et al} (same as DRSLL) 
-with exchange modified by 
-K. Berland and P. Hyldgaard, Phys. Rev. B 89, 035412 (2014)
-\item \texttt{VV}: 
-vdW-DF functional of O. A. Vydrov and T. Van Voorhis, 
-J. Chem. Phys. \textbf{133}, 244103 (2010)
-
-\end{itemize}
-
-\textit{Use:} \textbf{XC.functional} and \textbf{XC.authors} must be compatible.
-
-\textit{Default value:} \texttt{PZ}
-
-\item[\textbf{XC.hybrid}] (\textit{data block}):
-\index{XC.hybrid@\textbf{XC.hybrid}}
-This data block allows the user to create a ``cocktail'' functional by
-mixing the desired amounts of exchange and correlation from each of
-the functionals described under XC.authors. Note that these ``mixed''
-functionals do \emph{not} have the exact Hartree-Fock exchange which
-is a key ingredient of the true ``hybrid'' functionals. The use of
-the word ``hybrid'' in the label is unfortunate in this regard, and
-might be deprecated in a future version.
-
-The first line of the block must contain the number of functionals to
-be mixed. On the subsequent lines the values of XC.functl and
-XC.authors must be given and then the weights for the exchange and
-correlation, in that order. If only one number is given then the same
-weight is applied to both exchange and correlation.
-
-The following is an example in which a 75:25 mixture of Ceperley-Alder
-and PBE correlation is made, with an equal split of the exchange
-energy:
-
-\begin{verbatim}
+  The following is an example in which a 75:25 mixture of Ceperley-Alder
+  and PBE correlation is made, with an equal split of the exchange
+  energy:
+  
+  \begin{fdfexample}
      %block XC.hybrid
         2
         LDA CA  0.5 0.75
         GGA PBE 0.5 0.25
      %endblock XC.hybrid
-\end{verbatim}
+  \end{fdfexample}
 
-\textit{Default value:} \texttt{not hybrid}
+\end{fdfentry}
 
 
-\end{description}
 
-\vspace{5pt}
 \subsection{Spin polarization}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdfentry}{Spin}[string]<\nonvalue{non-polarized}>
 
-\item[\textbf{Spin}] (\textit{string}):
-\index{Spin@\textbf{Spin}}\index{spin}
-Choose spin configuration. The following are available:
-\begin{description}
-\itemsep 2pt
-\parsep 0pt
-\small
-\item[non-polarized] Spin unpolarized
+  Choose the spin-components in the simulation.
 
-\item[polarized] Spin polarized
+  \note this flag has precedence from \fdf*{SpinOrbit}, \fdf*{NonCollinearSpin} and
+  \fdf*{SpinPolarized} while they may still be used.
+  \begin{fdfoptions}
 
-\item[non-collinear] Non collinear spin
+    \option[non-polarized]%
+    Perform a calculation with spin-degeneracy (only one component).
 
-Refs: T. Oda et al, PRL, \textbf{80}, 3622 (1998); 
-V. M. Garc\'{\i}a-Su\'arez et al, Eur. Phys. Jour. B \textbf{40}, 371 (2004);
-V. M. Garc\'{\i}a-Su\'arez et al, Journal of
-Phys: Cond. Matt \textbf{16}, 5453 (2004).
+    \option[polarized]%
+    Perform a calculation with collinear spin (two spin components).
 
-\item[spin-orbit] Spin-orbit coupling
+    \option[non-collinear]%
+    Perform a calculation with non-collinear spin (4 spin components),
+    up-down and angles.
 
-This flag requires that the generated pseudopotential be relativistic.
+    Refs: T. Oda et al, PRL, \textbf{80}, 3622 (1998); 
+    V. M. Garc\'{\i}a-Su\'arez et al, Eur. Phys. Jour. B \textbf{40}, 371 (2004);
+    V. M. Garc\'{\i}a-Su\'arez et al, Journal of
+    Phys: Cond. Matt \textbf{16}, 5453 (2004).
 
-\emph{Currently this is in experimental use.}
-\end{description}
+    \option[spin-orbit]%
+    Perform a calculation with spin-orbit coupling.  This requires the
+    pseudopotentials to be relativistic.
 
-This flag has precedence from \textbf{SpinOrbit}, \textbf{NonCollinearSpin} and
-\textbf{SpinPolarized} while they may still be used.
+    See Sect.~\ref{sec:spin-orbit}.
 
-Certain options may not be used together with specific parallelization routines.
-For instance only a spin-polarized calculation may use the \fdf{Diag!ParallelOverK}
-option. 
+  \end{fdfoptions}
 
-\textit{Default value:} \texttt{non-polarized}
+  Certain options may not be used together with specific
+  parallelization routines.  For instance only a spin-polarized
+  calculation may use the \fdf{Diag!ParallelOverK} option.
+  
+\end{fdfentry}
 
-\item[\textbf{FixSpin}] (\textit{logical}):
-\index{FixSpin@\textbf{FixSpin}}\index{spin}
-\index{fixed spin state}\index{LSD}
-If \texttt{.true.}, the calculation is done with a fixed value of the
-spin of the system, defined by variable  \textbf{TotalSpin}.
-This option can only be used for collinear spin polarized
-calculations.
+\begin{fdflogicalF}{Spin!Fix}
+  \index{fixed spin state}\index{LSD}
+  \fdfindex{FixSpin}[|Spin!Fix]
 
-\textit{Default value:} \texttt{.false.}
+  If \fdftrue, the calculation is done with a fixed value of the spin
+  of the system, defined by variable \fdf{Spin!Total}. This option can
+  only be used for collinear spin polarized calculations.
 
-\item[\textbf{TotalSpin}] (\textit{real}):
-\index{TotalSpin@\textbf{TotalSpin}}
-\index{spin}
-\index{fixed spin state}\index{LSD}
-Value of the imposed total spin polarization of the system (in units of the
-electron spin, 1/2). It is only used
-if \textbf{FixSpin} = \texttt{.true.}
+\end{fdflogicalF}
 
-\textit{Default value:} 0.0
+\begin{fdfentry}{Spin!Total}[real]<$0$>
+  \index{fixed spin state}\index{LSD}
+  \index{spin}
+  \fdfindex{TotalSpin}[|Spin!Total]
+  
+  Value of the imposed total spin polarization of the system (in units
+  of the electron spin, 1/2). It is only used if \fdf*{Spin.Fix =
+      \fdftrue}.
+  
+\end{fdfentry}
 
-\item[\textbf{SingleExcitation}] (\textit{logical}):
-\index{SingleExcitation@\textbf{SingleExcitation}}
-If true, \siesta\ calculates a very rough approximation to
-the lowest excited state by swapping the populations of the HOMO
-and the LUMO. If there is no spin polarisation, it is half swap only.
-It is done for the first spin component (up) and first k vector.
+\begin{fdflogicalF}{SingleExcitation}
 
-\textit{Default value:} \texttt{.false.}
-
-\end{description}
+  If \fdftrue, \siesta\ calculates a very rough approximation to the
+  lowest excited state by swapping the populations of the HOMO and the
+  LUMO. If there is no spin polarisation, it is half swap only.  It is
+  done for the first spin component (up) and first $k$ vector.
+  
+\end{fdflogicalF}
 
 
 \subsection{Spin--Orbit coupling}
+\label{sec:spin-orbit}
 
 \siesta\ includes the posibility to perform fully relativistic
 calculations by means of the inclusion in the total Hamiltonian not
@@ -3686,7 +3690,7 @@ addition, the pseudopotentials have to be well generated and tested
 for each specific system and they have to be generated in their fully
 relativistic form and use the non-linear core corrections.
  
-\begin{fdfentry}{SpinOrbitStrength}[real]<1.0>
+\begin{fdfentry}{Spin!OrbitStrength}[real]<1.0>
 
   It allows to vary the strength of the spin--orbit interaction from
   zero to any positive value, including the physical value. This flag
@@ -3735,7 +3739,7 @@ The current version introduces several changes:
   variational. This involves an extra call to \texttt{dhscf} (although
   with neiter forces nor matrix elements being calculated, i.e. only
   calls to \texttt{rhoofd}, \texttt{poison}, and \texttt{cellxc}), and is
-  turned on by the option \textbf{SCF.Want.Variational.EKS}.
+  turned on by the option \fdf{SCF!Want.Variational.EKS}.
 
 
 \item The program now prints a new column labeled ``dHmax'' for the
@@ -3746,79 +3750,77 @@ The current version introduces several changes:
   step; if mixing H, dHmax refers to H(out)-H(in) in the previous(?)
   step.
 
-\item When achieving convergence, the loop might be exited without a further
-  mixing of the DM, thus preserving DM(out) for further processing
-  (including the calculation of forces and the analysis of the
-  electronic structure) (see the \textbf{MixAfterConvergence} option).
+  \item When achieving convergence, the loop might be exited without a
+  further mixing of the DM, thus preserving DM(out) for further
+  processing (including the calculation of forces and the analysis of
+  the electronic structure) (see the \fdf{MixAfterConvergence}
+  option).
 
-\index{Variational character of E\_KS}
+  \index{Variational character of E\_KS}
 
-\item It remains to be seen whether the forces, being computed
-  ``right'' on the basis of DM(out), exhibit somehow better convergence
-  as a function of the scf step. In order to gain some more data and
-  heuristics on this we have implemented a force-monitoring option,
-  activated by setting to \texttt{.true.} the variable \fdf{SCF.MonitorForces}. The program will then print the maximum
-  absolute value of the change in forces from one step to the
+  \item It remains to be seen whether the forces, being computed
+  ``right'' on the basis of DM(out), exhibit somehow better
+  convergence as a function of the scf step. In order to gain some
+  more data and heuristics on this we have implemented a
+  force-monitoring option, activated by setting to \fdftrue\ the
+  variable \fdf{SCF.MonitorForces}. The program will then print the
+  maximum absolute value of the change in forces from one step to the
   next. Other statistics could be implemented.
 
-\item While the (mixed) DM is saved at every SCF step, as was standard
-  practice, the final DM(out) overwrites the .DM file at the end of
-  the SCF cycle. Thus it is still possible to use a ``mixed'' DM for
-  restarting an interrupted loop, but a ``good'' DM will be used for
-  any other post-processing.
+  \item While the (mixed) DM is saved at every SCF step, as was
+  standard practice, the final DM(out) overwrites the .DM file at the
+  end of the SCF cycle. Thus it is still possible to use a ``mixed''
+  DM for restarting an interrupted loop, but a ``good'' DM will be
+  used for any other post-processing.
 
 \end{itemize}
 
 
 \subsubsection{Harris functional and basic options}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdflogicalF}{Harris!Functional}
+  
+  Logical variable to choose between self-consistent Kohn-Sham
+  functional or non self-consistent Harris functional to calculate
+  energies and forces.
+  \begin{itemize}
+    \item \fdffalse: Fully self-consistent Kohn-Sham functional.
+    \item \fdftrue: Non self consistent Harris functional. Cheap but
+    pretty crude for some systems. The forces are computed within the
+    Harris functional in the first SCF step. Only implemented for LDA in
+    the Perdew-Zunger parametrization. It really only applies to starting
+    densities which are superpositions of atomic charge densities.
 
-\item[\textbf{Harris\_functional}] (\textit{logical}):
-\index{Harris\_functional@\textbf{Harris\_functional}}
-Logical variable to choose between self-consistent Kohn-Sham functional or
- non self-consistent Harris functional to calculate energies and forces.
-\begin{itemize}
-\item \texttt{.false.} : Fully self-consistent Kohn-Sham functional.
-\item \texttt{.true.} : Non self consistent Harris functional. Cheap but
-pretty crude for some systems. The forces are computed within the
-Harris functional in the first SCF step. Only implemented for LDA in
-the Perdew-Zunger parametrization. It really only applies to starting
-densities which are superpositions of atomic charge densities.
+    When this option is choosen, the values of \fdf{DM!UseSaveDM},
+    \fdf{MaxSCFIterations}, \fdf{SCF!MustConverge} and \fdf{DM.MixSCF1} are automatically set
+    up to False, 1, False and False respectively, no matter whatever other
+    specification are in the INPUT file.
+  \end{itemize}
 
-When this option is choosen, the values of DM.UseSaveDM,
-MaxSCFIterations, SCFMustConverge and \fdf{DM.MixSCF1} are automatically set
-up to False, 1, False and False respectively, no matter whatever other
-specification are in the INPUT file.
-\end{itemize}
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdfentry}{MinSCFIterations}[integer]<0>
 
-\item[\textbf{MinSCFIterations}] (\textit{integer}):
-\index{MinSCFIterations@\textbf{MinSCFIterations}}
-Minimum number of SCF\index{SCF} iterations per time step. In MD simulations
-this can with benefit be set to 3.
+  Minimum number of SCF\index{SCF} iterations per time step. In MD
+  simulations this can with benefit be set to 3.
+  
+\end{fdfentry}
 
-\textit{Default value:} \texttt{0}
+\begin{fdfentry}{MaxSCFIterations}[integer]<50>
 
-\item[\textbf{MaxSCFIterations}] (\textit{integer}):
-\index{MaxSCFIterations@\textbf{MaxSCFIterations}}
-Maximum number of SCF\index{SCF} iterations per time step.
+  Maximum number of SCF\index{SCF} iterations per time step. 
+  
+\end{fdfentry}
 
-\textit{Default value:} \texttt{50}
+\begin{fdflogicalF}{SCF!MustConverge}
 
-\item[\textbf{SCFMustConverge}] (\textit{logical}):
-\index{SCFMustConverge@\textbf{SCFMustConverge}}
-Defines the behaviour if convergence is not reached in the maximum
-number of SCF iterations. The default is to update the forces, perform
-an MD or geometry optimisation step and carry on. When set to true
-the calculation will stop on the first SCF convergence failure.
+  Defines the behaviour if convergence is not reached in the maximum
+  number of SCF iterations. The default is to update the forces, perform
+  an MD or geometry optimisation step and carry on. When set to true
+  the calculation will stop on the first SCF convergence failure.
+  
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
-
-\end{description}
 
 \subsubsection{Mixing options}
 \index{SCF!mixing}
@@ -3839,12 +3841,15 @@ several orders of consistency cycles.
 
   \begin{fdfoptions}
     \option[Hamiltonian]%
+    \index{SCF!mixing!Hamiltonian}
     Mix the Hamiltonian matrix (default).
 
     \option[density]%
+    \index{SCF!mixing!Density}
     Mix the density matrix.
 
     \option[charge]%
+    \index{SCF!mixing!Charge}
     Mix the real-space charge density.
     
   \end{fdfoptions}
@@ -4467,17 +4472,6 @@ This mixing is done every \textbf{DM.NumberKick} cycles.
 
 \textit{Default value:} \texttt{0.50}
 
-\item[\textbf{DM.Pulay.Avoid.First.After.Kick}] (\textit{logical}):
-\index{DM.Pulay.Avoid.First.After.Kick@\textbf{DM.Pulay.Avoid.First.After.Kick}}
-\index{SCF!mixing} 
-
-Controls whether the first density-matrix residual of the SCF cycle and the first residual
-after a kick are included in the Pulay history. It can be argued that in these cases the
-``output'' DM might be significantly different from the ``input'' DM. To preserve
-backwards compatibility, these residuals are kept in the Pulay history unless this
-variable is activated.
-
-\textit{Default value:} \texttt{.false.}
 
 \item[\textbf{SCF.Pulay.LinearMixing.Before}] (\textit{integer}):
 \index{SCF.Pulay.LinearMixing.Before@\textbf{SCF.Pulay.LinearMixing.Before}}
@@ -4624,51 +4618,55 @@ norm of their residual $\rho^n_{out}-\rho^n_{in}$.
 
 \fi
 
+
 \subsubsection{Mixing of the Charge Density}
+\index{SCF!mixing!Charge}
 
-\begin{description}
-
-\item[\textbf{MixCharge}] (\textit{logical}):
-\index{MixCharge@\textbf{MixCharge}}\index{SCF!mixing!Charge}
-
-If set, this enables an experimental feature, in which the fourier
-components of the charge density are mixed, as done in some plane-wave
-codes. (See for example Kresse and Furthm\"uller, Comp. Mat. Sci. 6,
-15-50 (1996), KF in what follows.) Default: \texttt{.false.}
-
-\end{description}
+See \fdf{SCF.Mix} on how to enable charge density mixing.  If charge
+density mixing is enabled the fourier components of the charge density
+are mixed, as done in some plane-wave codes. (See for example Kresse
+and Furthm\"uller, Comp. Mat. Sci. 6, 15-50 (1996), KF in what
+follows.)
 
 The charge mixing is implemented roughly as follows:
-
 \begin{itemize}
   \item The charge density computed in dhscf is fourier-transformed
   and stored in a new module. This is done both for
   ``$\rho(\mathbf{G})(\mathrm{in})$'' and
   ``$\rho(\mathbf{G})(\mathrm{out})$'' (the ``out'' charge is computed
   during the extra call to dhscf for correction of the variational
-  character of the Kohn-Sham energy) \item The ``in'' and ``out''
+  character of the Kohn-Sham energy)
+
+  \item The ``in'' and ``out''
   charges are mixed (see below), and the resulting ``in'' fourier
   components are used by dhscf in successive iterations to reconstruct
-  the charge density.  \item The new arrays needed and the processing
+  the charge density.
+
+  \item The new arrays needed and the processing
   of most new options is done in the new module m\_rhog.F90. The
-  fourier-transforms are carried out by code in rhofft.F.  \item
+  fourier-transforms are carried out by code in rhofft.F.  
+
+  \item
   Following standard practice, two options for mixing are offered:
   \begin{itemize}
-  \item A simple Kerker mixing, with an optional Thomas-Fermi wavevector to 
-  damp the contributions for small G's. The overall mixing weight is
-  the same as for other kinds of mixing, read from \textbf{DM.MixingWeight}.
-  \item A DIIS (Pulay) procedure that takes into account a sub-set of
+    \item A simple Kerker mixing, with an optional Thomas-Fermi wavevector to 
+    damp the contributions for small G's. The overall mixing weight is
+    the same as for other kinds of mixing, read from \fdf{DM!MixingWeight}.
+    
+    \item A DIIS (Pulay) procedure that takes into account a sub-set of
     the G vectors (those within a smaller cutoff). Optionally, the
     scalar product used for the construction of the DIIS matrix from
     the residuals uses a weight factor. 
-
+    
     The DIIS extrapolation is followed by a  Kerker mixing step.
-
+    
     The code is m\_diis.F90. The DIIS history is kept in a circular
     stack, implemented using the new framework for reference-counted
     types. This might be overkill for this particular use, and there
     are a few rough edges, but it works well.
+
   \end{itemize}
+
 \end{itemize}
 
 The default convergence criteria remains based on the differences in
@@ -4693,82 +4691,81 @@ and could be a drop-in replacement for density-matrix mixing, but many
 more tests are needed to calibrate its efficiency for different kinds
 of systems, and the heuristics for the (perhaps too many) parameters:
 
-\begin{description}
 
-\item[\textbf{SCF.Kerker.q0sq}] (\textit{physical energy}):
-\index{SCF.Kerker.q0sq@\textbf{SCF.Kerker.q0sq}}
+\begin{fdfentry}{SCF.Kerker.q0sq}[energy]<$0\,\mathrm{Ry}$>
 
-Determines the parameter $q_0^2$ featuring in the Kerker
-preconditioning, which is always performed on all components of
-$\rho(\textbf{G})$, even those treated with the DIIS scheme. 
+  Determines the parameter $q_0^2$ featuring in the Kerker
+  preconditioning, which is always performed on all components of
+  $\rho(\mathbf{G})$, even those treated with the DIIS scheme. 
+  
+\end{fdfentry}
 
-\textit{Default value:} 0.0 Ry.
+\begin{fdfentry}{SCF.RhoGMixingCutoff}[energy]<$9\,\mathrm{Ry}$>
 
-\item[\textbf{SCF.RhoGMixingCutoff}] (\textit{physical energy}):
-\index{RhoGMixingCutoff@\textbf{RhoGMixingCutoff}}
+  Determines the sub-set of G vectors which will undergo the DIIS
+  procedure.  Only those with kinetic energies below this cutoff will
+  be considered.  The optimal extrapolation of the $\rho(\textbf{G})$
+  elements will be replaced in the fourier series before performing
+  the Kerker mixing.
+  
+\end{fdfentry}
 
-Determines the sub-set of G vectors which will undergo the DIIS
-procedure.  Only those with kinetic energies below this cutoff will be
-considered.  The optimal extrapolation of the $\rho(\textbf{G})$ elements will be
-replaced in the fourier series before performing the Kerker
-mixing.
+\begin{fdfentry}{SCF.RhoG.DIIS.Depth}[integer]<0>
 
-\textit{Default value:} 9.0 Ry.
+  Determines the maximum number of previous steps considered in the DIIS
+  procedure. 
+  
+\end{fdfentry}
 
-\item[\textbf{SCF.RhoG.DIIS.Depth}] (\textit{integer}):
-\index{SCF.RhoG.DIIS.Depth@\textbf{SCF.RhoG.DIIS.Depth}}
-
-Determines the maximum number of previous steps considered in the DIIS
-procedure. 
-
-\textit{Default value:} 0 (no DIIS procedure performed).
 
 \textbf{NOTE}: The information from the first scf step is not included in
 the DIIS history. There is no provision yet for any other kind of
 ``kick-starting'' procedure. The logic is in m\_rhog (rhog\_mixing routine).
 
-\item[\textbf{SCF.RhoG.Metric.Preconditioner.Cutoff}] (\textit{physical energy}):
-\index{SCF.RhoG.Metric.Preconditioner.Cutoff\textbf{SCF.RhoG.Metric.Preconditioner.Cutoff}}
+\begin{fdfentry}{SCF.RhoG.Metric.Preconditioner.Cutoff}[energy]
 
-Determines the value of $q_1^2$ in the weighing of the different \textbf{G}
-components in the scalar products among residuals in the DIIS
-procedure. Following the KF ansatz, this parameter is chosen so that
-the smallest (non-zero) \textbf{G} has a weight 20 times larger than that of
-the smallest G vector in the DIIS set. 
+  Determines the value of $q_1^2$ in the weighing of the different \textbf{G}
+  components in the scalar products among residuals in the DIIS
+  procedure. Following the KF ansatz, this parameter is chosen so that
+  the smallest (non-zero) \textbf{G} has a weight 20 times larger than that of
+  the smallest G vector in the DIIS set. 
 
-\textit{Default value:} The result of the KF prescription.
+  The default is the result of the KF prescription.
 
-\item[\textbf{SCF.DebugRhogMixing}] (\textit{logical}):
-\index{SCF.DebugRhogMixing@\textbf{SCF.DebugRhogMixing}}\index{SCF!mixing!Charge}
+\end{fdfentry}
 
-Controls the level of debugging output in the mixing procedure
-(basically whether the first few stars worth of Fourier components are
-printed). Note that this feature will only display the components in
-the master node.
+\begin{fdflogicalF}{SCF.DebugRhoGMixing}
+  \index{SCF!mixing!Charge}
 
-Default: \texttt{.false.}
+  Controls the level of debugging output in the mixing procedure
+  (basically whether the first few stars worth of Fourier components are
+  printed). Note that this feature will only display the components in
+  the master node.
 
-\item[\textbf{DebugDIIS}] (\textit{logical}):
-\index{DebugDIIS@\textbf{DebugDIIS}}\index{SCF!mixing!Charge}
-
-Controls the level of debugging output in the DIIS procedure. If set,
-the program prints the DIIS matrix and the extrapolation coefficients.
-
-Default: \texttt{.false.}
-
-\item[\textbf{SCF.MixCharge.SCF1}] (\textit{logical}):
-\index{SCF.MixCharge.SCF1@\textbf{SCF.MixCharge.SCF1}}\index{SCF!mixing!Charge}
-
-Logical variable to indicate whether or not the charge is mixed in the
-first SCF cycle. Anecdotal evidence indicates that it might be
-advantageous, at least for calculations started from scratch, to avoid
-that first mixing, and retain the ``out'' charge density as ``in'' for
-the next step. 
-
-Default: \texttt{.false.}
+\end{fdflogicalF} 
 
 
-\end{description}
+\begin{fdflogicalF}{Debug!DIIS}
+  \index{SCF!mixing!Charge}
+
+  Controls the level of debugging output in the DIIS procedure. If set,
+  the program prints the DIIS matrix and the extrapolation coefficients.
+  
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{SCF.MixCharge!SCF1}
+  \index{SCF!mixing!Charge}
+
+
+  Logical variable to indicate whether or not the charge is mixed in the
+  first SCF cycle. Anecdotal evidence indicates that it might be
+  advantageous, at least for calculations started from scratch, to avoid
+  that first mixing, and retain the ``out'' charge density as ``in'' for
+  the next step. 
+
+\end{fdflogicalF}
+
+
 
 \subsubsection{Initialization of the density-matrix}
 
@@ -4829,137 +4826,128 @@ The Density matrix can be:
 \end{verbatim}
 
 
-\begin{description}
+\begin{fdflogicalF}{DM!UseSaveDM}
+  \index{reading saved data!density matrix}
+  
+  Instructs to read the density matrix stored in file
+  \sysfile{.DM} by a previous run.
+  
+  \siesta\ will continue even if \sysfile*{DM} is not found.
 
-\item[\textbf{DM.UseSaveDM}] (\textit{logical}):
-\index{DM.UseSaveDM@\textbf{DM.UseSaveDM}}
-\index{reading saved data!density matrix}
-Instructs to read the density matrix stored in file
-\texttt{SystemLabel}.DM by a previous run.
+\end{fdflogicalF}
 
-\textit{Use:} If the required file does not exist, a warning is
-printed but the program does not stop. Overrides \textbf{UseSaveData}.
+\begin{fdflogicalF}{DM!FormattedFiles}
+  \index{reading saved data!density matrix}
 
-\textit{Default value:} \texttt{.false.}
+  Setting this alters the default for \fdf{DM!FormattedInput} and 
+  \fdf{DM!FormattedOutput}.
+  Instructs to use formatted files for reading and writing
+  the density matrix. In this case, the files are labelled
+  \sysfile{DMF}.
+  
+  Only usable if one has problems transferring files from one computer
+  to another.
 
+\end{fdflogicalF}
 
-\item[\textbf{DM.FormattedFiles}] (\textit{logical}):
-\index{DM.FormattedFiles@\textbf{DM.FormattedFiles}}
-\index{reading saved data!density matrix}
-Instructs to use formatted files for reading and writing
-the density matrix. In this case, the files are labelled
-\texttt{SystemLabel}.DMF.
+\begin{fdflogicalF}{DM!FormattedInput}
+  \index{reading saved data!density matrix}
 
-\textit{Use:} This makes for much larger files, and slower i/o. However, the
-files are transferable between different computers, which is
-not the case normally.
+  Instructs to use formatted files for reading the density
+  matrix.
+  
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdflogicalF}{DM!FormattedOutput}
+  \index{reading saved data!density matrix}
 
+  Instructs to use formatted files for writing the density
+  matrix.
+  
+\end{fdflogicalF}
 
-\item[\textbf{DM.FormattedInput}] (\textit{logical}):
-\index{DM.FormattedInput@\textbf{DM.FormattedInput}}
-\index{reading saved data!density matrix}
-Instructs to use formatted files for reading the density
-matrix.
+\begin{fdflogicalF}{DM!InitSpinAF}
+  \index{spin!initialization}%
+  \index{ferromagnetic initial DM}%
+  \index{antiferromagnetic initial DM}
+  
+  It defines the initial spin density for a spin polarized calculation.
+  The spin density is initially constructed with the maximum possible
+  spin polarization for each atom in its atomic configuration.
+  This variable defines the relative orientation of the atomic
+  spins:
 
-\textit{Use:} Overrides the value of \textbf{DM.FormattedFiles}.
+  If \fdffalse\ the initial spin-configuration is a ferromagnetic
+  order (all spins up).
+  If \fdftrue\ all odd atoms are initialized to spin-up, all even
+  atoms are initialized to spin-down.
 
-\textit{Default value:} \texttt{.false.}
+\end{fdflogicalF}
 
+\begin{fdfentry}{DM!InitSpin}[block]
+  
+  It defines the initial spin density for a spin polarized calculation
+  atom by atom.  In the block there is one line per atom to be
+  spin-polarized, containing the atom index (integer, ordinal in the
+  block \fdf{AtomicCoordinatesAndAtomicSpecies}) and the desired
+  initial spin-polarization (real, positive for spin up, negative for
+  spin down). A value larger than possible will be reduced to the
+  maximum possible polarization, keeping its sign.  Maximum
+  polarization can also be given by introducing the symbol \texttt{+}
+  or \texttt{-} instead of the polarization value.  There is no need
+  to include a line for every atom, only for those to be
+  polarized. The atoms not contemplated in the block will be given
+  non-polarized initialization.  For non-collinear spin, the spin
+  direction may be specified for each atom by the polar angles theta
+  and phi, given as the last two arguments in degrees. If not
+  specified, theta=0 is assumed.  \fdf*{Spin non-collinear} must be
+  \fdftrue\ to use the spin direction.
 
-\item[\textbf{DM.FormattedOutput}] (\textit{logical}):
-\index{DM.FormattedInput@\textbf{DM.FormattedOutput}}
-\index{reading saved data!density matrix}
-Instructs to use formatted files for writing the density
-matrix.
-
-\textit{Use:} Overrides the value of \textbf{DM.FormattedFiles}.
-
-\textit{Default value:} \texttt{.false.}
-
-
-\item[\textbf{DM.InitSpinAF}] (\textit{logical}):\index{spin}
-\index{spin!initialization}\index{ferromagnetic initial DM}
-\index{antiferromagnetic initial DM}
-\index{DM.InitSpinAF@\textbf{DM.InitSpinAF}}
-It defines the initial spin density for a spin polarized calculation.
-The spin density is initially constructed with the maximum possible
-spin polarization for each atom in its atomic configuration.
-This variable defines the relative orientation of the atomic
-spins:
-
-\begin{itemize}
-\item \texttt{.false.} gives ferromagnetic order (all spins up).
-\item \texttt{.true.} gives antiferromagnetic order. Up and down are
-assigned according to order in the block
-\textbf{AtomicCoordinatesAndAtomicSpecies}: up for the odd atoms, down for even.
-\end{itemize}
-
-\textit{Default value:} \texttt{.false.}
-
-
-\item[\textbf{DM.InitSpin}] (\textit{data block}):
-\index{DM.InitSpin@\textbf{DM.InitSpin}} It defines the
-initial spin density for a spin polarized calculation atom by atom.
-In the block there is one line per atom to be spin-polarized,
-containing the atom index (integer, ordinal in the block
-\textbf{AtomicCoordinatesAndAtomicSpecies}) and the desired
-initial spin-polarization (real, positive for spin up, negative for
-spin down). A value larger than possible will be reduced
-to the maximum possible polarization, keeping its sign.
-Maximum polarization can also be given by introducing the
-symbol \texttt{+} or \texttt{-} instead of the polarization value.
-There is no need to include a line for every atom, only for
-those to be polarized. The atoms not contemplated in the block will
-be given non-polarized initialization.
-For non-collinear spin, the spin direction may be specified for
-each atom by the polar angles theta and phi, given as the last
-two arguments in degrees. If not specified, theta=0 is assumed.
-\textbf{NonCollinearSpin} must be \texttt{.true.} to use the spin direction.
-
-Example:
-
-\begin{verbatim}
+  Example:
+  \begin{fdfexample}
      %block DM.InitSpin
         5  -1.   90.   0.   # Atom index, spin, theta, phi (deg)
         3   +    45. -90.
         7   -
      %endblock DM.InitSpin
-\end{verbatim}
+  \end{fdfexample}
 
-\textit{Default value:} If present but empty, all atoms are not polarized.
-If absent, \textbf{DM.InitSpinAF} defines the polarization.
+  If this block is defined, but empty, all atoms are not polarized.
+  This block has precedence over \fdf{DM!InitSpinAF}.
 
-\item[\textbf{DM.AllowReuse}] (\textit{logical}):
-\index{DM.AllowReuse@\textbf{DM.AllowReuse}}
-Controls whether density matrix information from previous geometry
-iterations is re-used to start the new geometry's SCF cycle.
+\end{fdfentry}
 
-\textit{Default value:} \texttt{.true.}
+\begin{fdflogicalT}{DM!AllowReuse}
+
+  Controls whether density matrix information from previous geometry
+  iterations is re-used to start the new geometry's SCF cycle.
+  
+\end{fdflogicalT}
+
+\begin{fdflogicalT}{DM!AllowExtrapolation}
+
+  Controls whether the density matrix information from several
+  previous geometry iterations is extrapolated to start the new
+  geometry's SCF cycle.  This feature is useful for molecular dynamics
+  simulations and possibly also for geometry relaxations.  The number
+  of geometry steps saved is controlled by the variable
+  \fdf{DM!History.Depth}.
+
+  This is default \fdftrue\ for molecular-dynamics simulations, but
+  \fdffalse, for now, for geometry-relaxations (pending further tests
+  which users are kindly requested to perform).
+
+\end{fdflogicalT}
 
 
-\item[\textbf{DM.AllowExtrapolation}] (\textit{logical}):
-  \index{DM.AllowExtrapolation@\textbf{DM.AllowExtrapolation}} Controls
-  whether the density matrix information from several previous
-  geometry iterations is extrapolated to start the new geometry's SCF
-  cycle.  This feature is useful for molecular dynamics simulations
-  and possibly also for geometry relaxations.  The number of geometry
-  steps saved is controlled by the variable \textbf{DM.History.Depth}
+\begin{fdfentry}{DM!History.Depth}[integer]<1>
 
-\textit{Default values:} \texttt{.true.} for molecular-dynamics simulations,
-but \texttt{.false.} for now for geometry-relaxations (pending further
-tests which users are kindly requested to perform).
+  Sets the number of geometry steps for which density-matrix information
+  is saved for extrapolation.
+  
+\end{fdfentry}
 
 
-\item[\textbf{DM.History.Depth}] (\textit{integer}):
-\index{DM.History.Depth@\textbf{DM.Hitory.Depth}}
-Sets the number of geometry steps for which density-matrix information
-is saved for extrapolation.
-
-\textit{Default value:} 4
-
-\end{description}
 
 \subsubsection{Initialization of the SCF cycle with charge densities}
 
