@@ -43,9 +43,7 @@ include $(XMLF90_ROOT)/xmlf90.mk
 #
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
-INCFLAGS:=$(NETCDF_INCFLAGS) \
-          $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
-          $(INCFLAGS) $(XMLF90_INCFLAGS) 
+
 #
 # Uncomment the following line for debugging support
 #
@@ -60,12 +58,19 @@ FSIESTA_SOCKETS= fsockets.o sockets.o fsiesta_sockets.o
 #
 SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
-XMLPARSER=libxmlparser.a
-XC=libSiestaXC.a
+include $(PSML_ROOT)/psml.mk
+include $(XMLF90_ROOT)/xmlf90.mk
+include $(GRIDXC_ROOT)/gridxc.mk
+XMLPARSER=$(XMLF90_LIBS)
+XC=$(GRIDXC_LIBS)
+PSML=$(PSML_LIBS)
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
 PSML=$(PSML_LIBS)
+INCFLAGS:=$(NETCDF_INCFLAGS) \
+          $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
+          $(XMLF90_INCFLAGS) $(GRIDXC_INCFLAGS) $(INCFLAGS)
 #
 MS=MatrixSwitch.a
 #

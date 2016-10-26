@@ -11,9 +11,9 @@
 #ifndef BSC_CELLXC
       use parallel,  only : ProcessorY
       use mesh,      only : NSM
-      use siestaXC,  only : cellXC       ! Finds xc energy and potential
-      use siestaXC,  only : myMeshBox    ! Returns my processor mesh box
-      use siestaXC, only : jms_setMeshDistr => setMeshDistr
+      use gridXC,  only : cellXC=>gridxc_cellXC   ! Finds xc energy and potential
+      use gridXC,  only : myMeshBox    ! Returns my processor mesh box
+      use gridXC , only : jms_setMeshDistr => setMeshDistr
                                         ! Sets a distribution of mesh
                                         ! points over parallel processors
 

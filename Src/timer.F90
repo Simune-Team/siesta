@@ -25,7 +25,9 @@
 !=============================================================================
 module timer_options
  logical, public :: use_tree_timer = .true.
+ logical, public :: use_walltime 
  logical, public :: use_parallel_timer = .false.
+ logical, public :: time_mpi_calls
 end module timer_options
 
 recursive subroutine timer( prog, iOpt )
@@ -126,3 +128,32 @@ end if
 
 end subroutine timer
 
+subroutine timer_mpi( prog, iOpt )
+ use timer_options, only : time_mpi_calls
+
+  implicit none
+  character(len=*),intent(in):: prog   ! Name of program to time
+  integer,         intent(in):: iOpt   ! Action option
+
+  if (time_mpi_calls) then
+     call timer(prog,iOpt)
+  endif
+
+end subroutine timer_mpi
+
+function use_walltime_in_timer()
+  use timer_options, only: use_walltime
+
+  logical :: use_walltime_in_timer
+  use_walltime_in_timer = use_walltime
+end function use_walltime_in_timer
+
+subroutine gridxc_timer_start(str)
+  character(len=*), intent(in)  :: str
+  call timer("gridxc@"//trim(str),1)
+end subroutine gridxc_timer_start
+!
+subroutine gridxc_timer_stop(str)
+  character(len=*), intent(in)  :: str
+  call timer("gridxc@"//trim(str),2)
+end subroutine gridxc_timer_stop

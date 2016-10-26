@@ -1,13 +1,26 @@
-! ---
-! Copyright (C) 1996-2016	The SIESTA group
-!  This file is distributed under the terms of the
-!  GNU General Public License: see COPYING in the top directory
-!  or http://www.gnu.org/copyleft/gpl.txt .
-! See Docs/Contributors.txt for a list of contributors.
-! ---
 !--------------------------------------------------
 ! Stand-alone 'die' routine for use by libraries and
 ! low-level modules.
+!
+! Each program using the module or library needs to
+! provide a routine with the proper interface, but
+! accomodating the needs and conventions of the program.
+! For example, in Siesta:
+!
+!   - The use of a Siesta-specific 'mpi_siesta' module.
+!   - The need to have the pxf functionality.
+!   - The use of 'unit 6' as output.
+!
+! Routines using this functionality should include
+! the following
+!
+!     interface
+!      subroutine die(str)
+!      character(len=*), intent(in)  :: str
+!      end subroutine die
+!     end interface
+!
+!------------------------------------------------------
 
       subroutine die(str)
 
@@ -15,20 +28,20 @@
 
       write(6,'(a)') trim(str)
       write(0,'(a)') trim(str)
-
+      write(6,'(a,i4)') 'Stopping Program from Node: ', Node
+      write(0,'(a,i4)') 'Stopping Program from Node: ', Node
          call pxfflush(6)
          call pxfflush(0)
       call pxfabort()
+
       end subroutine die
 
+      subroutine timer(str,i)
 
-      subroutine timer(str,iopt)
       character(len=*), intent(in)  :: str
-      integer, intent(in)  :: iopt
-      ! do nothing
+      integer,  intent(in)  :: i
       end subroutine timer
 
-      
 !--------------------------------------------------
 ! Stand-alone routine to capture error messages from
 ! the alloc module
@@ -100,16 +113,7 @@
 
       end subroutine alloc_memory_event
 
-! The PSML library calls a "die" routine when it encounters an
-! error. This routine should take care of carrying out any needed
-! cleaning and terminating the program.  As the details would vary with
-! the client program, each program has to provide its own.
-! 
-
       subroutine psml_die(str)
-      character(len=*), intent(in) :: str
-
-      write(0,"(a)") str
-      STOP
-
+      character(len=*), intent(in)  :: str
+      call die(str)
       end subroutine psml_die

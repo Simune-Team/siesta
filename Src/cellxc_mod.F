@@ -12,7 +12,7 @@
       CONTAINS
       subroutine setGGA( )
 #ifndef BSC_CELLXC
-      use siestaXC, only : getXC        ! Returns the XC functional used
+      use gridXC, only : gridxc_getXC        ! Returns the XC functional used
 #else /* BSC_CELLXC */
       use bsc_xcmod, only : nXCfunc, XCfunc
 #endif /* BSC_CELLXC */
@@ -28,7 +28,7 @@ C     Local variables
 
 !---------------------------------------------------------------------- BEGIN
 #ifndef BSC_CELLXC
-      call getXC( nXCfunc, XCfunc, XCauth )
+      call gridxc_getXC( nXCfunc, XCfunc, XCauth )
 #endif /* ! BSC_CELLXC */
       do nf = 1,nXCfunc
         if ( XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga') then

@@ -26,14 +26,6 @@ include $(ARCH_MAKE)
 TOP_LEVEL=$(shell pwd)/../../../../Src
 VPATH:=$(TOP_LEVEL)
 #
-include $(PSML_ROOT)/psml.mk
-include $(XMLF90_ROOT)/xmlf90.mk
-#
-NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
-PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
-INCFLAGS:=$(NETCDF_INCFLAGS) \
-          $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
-          $(INCFLAGS) $(XMLF90_INCFLAGS)
 #
 # Routines used by pipes version (VPATH knows where they are)
 #
@@ -41,13 +33,24 @@ INCFLAGS:=$(NETCDF_INCFLAGS) \
 #
 SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
-XC=libSiestaXC.a
-MS=MatrixSwitch.a
+include $(PSML_ROOT)/psml.mk
+include $(XMLF90_ROOT)/xmlf90.mk
+include $(GRIDXC_ROOT)/gridxc.mk
 #
+MS=MatrixSwitch.a
+XMLPARSER=$(XMLF90_LIBS)
+XC=$(GRIDXC_LIBS)
+PSML=$(PSML_LIBS)
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
-PSML=$(PSML_LIBS)
+#
+NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
+PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
+#
+INCFLAGS:=$(NETCDF_INCFLAGS) \
+          $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
+          $(XMLF90_INCFLAGS) $(GRIDXC_INCFLAGS) $(INCFLAGS)
 #
 ALL_LIBS= $(SIESTA_LIB) $(FDF) $(XMLF90_LIBS)  $(XC) \
 	$(NCPS) $(PSML) $(PSOP) $(MS)\

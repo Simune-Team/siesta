@@ -9,7 +9,10 @@
 !
 ! ==================================================================
 ! Allocation, reallocation, and deallocation utility routines
+! for pointers
+!
 ! Written by J.M.Soler. May 2000.
+! Re-organized by A. Garcia, June 2015.
 ! ==================================================================
 ! SUBROUTINE alloc_default( old, new, restore, &
 !                           copy, shrink, imin, routine )
@@ -44,44 +47,6 @@
 !   call alloc_default( restore=oldDefaults )
 ! Notice that, if the restore call is skipped, the new defaults will
 ! stay in effect until a new call to alloc_dafault is made.
-! ==================================================================
-! SUBROUTINE alloc_report( level, unit, file, printNow, threshold )
-!   Sets the output file for the allocation report
-! INPUT (optional):
-!   integer      :: level     : Level (detail) of report
-!   integer      :: unit      : Output file unit
-!   character*(*):: file      : Output file name
-!   logical      :: printNow  : If present & true => print report now
-!   real(dp)     :: threshold : Memory threshold (in bytes) to print
-!                               the memory use of any given array 
-! BEHAVIOR:
-!   The detail/extent of the report increses with the value of level:
-! level=0 : no report at all (the default)
-! level=1 : only total memory peak and where it occurred
-! level=2 : detailed report created but printed only upon request
-! level=3 : detailed report printed at every new memory peak
-! level=4 : print every individual reallocation or deallocation
-!   If unit is present, alloc_report merely takes note of it for
-! future use, assuming that it has been already open outside.
-! In this case, file is not used.
-!   If unit is absent, and file is present, a file with that
-! name is open for future use.
-!   If both arguments are absent, a file named 'alloc_report'
-! is open for future use.
-!   If alloc_report is called with printNow=.true. several times in
-! a program, with the same unit or file argument, the subsequent 
-! reports are written consecutively in the same file, each with a 
-! time stamp header.
-!   If threshold is not present, threshold=0 is assumed.
-!   In parallel execution, the report sections that involve every
-! reallocation (levels 1, 3, and 4) are written only by node 0.
-! The section that is written upon request (level 2) is written
-! only by the node with the highest peak of memory up to that time,
-! but it contains a summary of the memory used by all other nodes.
-!   In parallel execution, the nodes that share the same file
-! system (e.g. different chip cores or NFS-connected nodes) write
-! on the same file. Otherwise they write on files with the same name 
-! in their local disks.
 ! ==================================================================
 ! SUBROUTINE re_alloc( array, [i1min,] i1max,
 !                      [[i2min,] i2max, [[i3min,] i3max]],
@@ -138,22 +103,21 @@
 ! zero (integer and real), .false. (logical), or blank (character).
 !   If imin>imax for any dimension, the array pointer returns
 ! associated to a zero-size array.
-!   Besides allocating or reallocating the array, re_alloc keeps a count
-! of memory usage (and prints a report in a file previously fixed by a
-! call to alloc_report). Thus, it is not recommended to call re_alloc
-! to reallocate an array not allocated by it the first time.
-!   If name is not present, the memory count associated to the
-! allocation/deallocation is still made, but the allocation report
-! will account the array under the generic name 'unknown'.
-!   The routine argument is NOT used to classify the counting of
-! memory usage. The classification uses only the name argument.
-! This is because a pointer may be allocated in one routine and
-! deallocated in a different one (i.e. when it is used to return an
-! array whose size is not known in advance). However, the routine
-! argument is reported when alloc_report=4, and it is also used to
-! report in which routine the memory peack occurs. If you want the
-! routine name to be used for classification, you should include it
-! as part of the name argument, like in name='matInvert '//'aux'.
+!
+!   Besides allocating or reallocating the array, re_alloc calls
+! the external routine 'alloc_memory_event' with the number
+! of bytes involved in the allocation and a string identifier
+! built from the 'routine' and 'name' arguments: 'routine@name'.
+! Clients of this module can process this information at will.
+!
+!   Error conditions are reported via a callback to the external
+! routine 'alloc_error_report', with a string message and an
+! integer code.
+! Clients of this module can process this information at will.
+!
+! In future, an extra 'stat' argument might be included in the calls
+! to re_alloc and de_alloc for finer control.
+!
 ! ==================================================================---
 ! SUBROUTINE de_alloc( array, name, routine )
 ! INPUT (optional):
@@ -170,62 +134,47 @@
 ! Equally, arrays allocated or reallocated by re_alloc should be 
 ! deallocated by dealloc.
 ! ==================================================================---
-! SUBROUTINE alloc_count( delta_size, type, name, routine )
-! INPUT:
-!   integer         :: delta_size : +/-size(array)
-!                                   + => allocation
-!                                   - => deallocation
-!   character       :: type       : 'I' => integer
-!                                   'E' => integer*8
-!                                   'R' => real*4
-!                                   'D' => real*8
-!                                   'L' => logical
-!                                   'S' => character (string)
-! INPUT (optional):
-!   character(len=*) :: name      : Actual array name or a label for it
-!   character(len=*) :: routine   : Name of the calling routine
-!                                   or routine section
-! USAGE:
-!   integer,         allocatable:: intArray(:)
-!   double precision,allocatable:: doubleArray(:)
-!   complex,         allocatable:: complexArray(:)
-!   allocate( intArray(n), doubleArray(n), complexArray(n) )
-!   call alloc_count(   +n, 'I', 'intArray',  programName )
-!   call alloc_count(   +n, 'D', 'doubleArray', programName )
-!   call alloc_count( +2*n, 'R', 'complexArray', programName )
-!   deallocate( intArray, doubleArray, complexArray )
-!   call alloc_count(   -n, 'I', 'intArray',  programName )
-!   call alloc_count(   -n, 'D', 'doubleArray', programName )
-!   call alloc_count( -2*n, 'R', 'complexArray', programName )
-!
-! ==================================================================---
-
 MODULE alloc
-
-  use precision, only: sp        ! Single precision real type
-  use precision, only: dp        ! Double precision real type
-  use precision, only: i8b       ! 8-byte integer
-  use parallel,  only: Node      ! My processor node index
-  use parallel,  only: Nodes     ! Number of parallel processors
-  use parallel,  only: ionode    ! Am I the I/O processor?
-  use parallel,  only: parallel_init  ! Initialize parallel variables
-  use sys,       only: die       ! Termination routine
-  use m_io,      only: io_assign ! Get and reserve an available IO unit
-#ifdef MPI
-  use mpi_siesta
-#endif
-
+!
+! This module has no external build dependencies
+! Final executables must resolve the symbols for the two handlers
+!   alloc_memory_event
+!   alloc_error_report
+! with interfaces specified below
+!
   implicit none
 
 PUBLIC ::             &
   alloc_default,      &! Sets allocation defaults
-  alloc_report,       &! Sets log report defaults
   re_alloc,           &! Allocation/reallocation
   de_alloc,           &! Deallocation
-  alloc_count,        &! Memory counting for external allocs
   allocDefaults        ! Derived type to hold allocation defaults
 
 PRIVATE      ! Nothing is declared public beyond this point
+
+integer, parameter :: sp = selected_real_kind(5,10)
+integer, parameter :: dp = selected_real_kind(10,100)
+integer, parameter :: i8b = selected_int_kind(18)
+
+! Interfaces to external routines that must be provided
+! by the calling program
+!
+interface
+   ! Error message and integer code
+   ! If 'code' is 0, this is the last call in a series
+   ! (see below for usage)
+   subroutine alloc_error_report(str,code)
+     character(len=*), intent(in) :: str
+     integer, intent(in)          :: code
+   end subroutine alloc_error_report
+   !
+   ! Logger for memory events
+   !
+   subroutine alloc_memory_event(bytes,name)
+     integer, intent(in)          :: bytes
+     character(len=*), intent(in) :: name
+   end subroutine alloc_memory_event
+end interface
 
   interface de_alloc
     module procedure &
@@ -261,14 +210,6 @@ PRIVATE      ! Nothing is declared public beyond this point
     DEFAULT_NAME = 'unknown_name'         ! Array name default
   character(len=*), parameter :: &
     DEFAULT_ROUTINE = 'unknown_routine'   ! Routine name default
-  integer, save ::               &
-    REPORT_LEVEL = 0,            &! Level (detail) of allocation report
-    REPORT_UNIT  = 0              ! Output file unit for report
-  character(len=50), save ::     &
-    REPORT_FILE = 'alloc_report'  ! Output file name for report
-  real(dp), save ::              &
-    REPORT_THRESHOLD = 0          ! Memory threshold (in bytes) to print
-                                  ! the memory use of any given array 
 
   ! Derived type to hold allocation default options
   type allocDefaults
@@ -282,28 +223,6 @@ PRIVATE      ! Nothing is declared public beyond this point
   ! Object to hold present allocation default options
   type(allocDefaults), save :: DEFAULT
 
-  ! Internal auxiliary type for a binary tree
-  type TREE
-    character(len=80)   :: name  ! Name of an allocated array
-    real(DP)            :: mem   ! Present memory use of the array
-    real(DP)            :: max   ! Maximum memory use of the array
-    real(DP)            :: peak  ! Memory use of the array during
-                                 !   peak of total memory
-    type(TREE), pointer :: left  ! Pointer to data of allocated arrays 
-                                 !   preceeding in alphabetical order
-    type(TREE), pointer :: right ! Pointer to data of allocated arrays 
-                                 !   trailing in alphabetical order
-  end type TREE
-
-  ! Global variables used to store allocation data
-  real(DP),   parameter     :: MBYTE = 1.e6_dp
-  type(TREE), pointer, save :: REPORT_TREE
-  real(DP),            save :: TOT_MEM  = 0._dp
-  real(DP),            save :: PEAK_MEM = 0._dp
-  character(len=80),   save :: PEAK_ARRAY = ' '
-  character(len=32),   save :: PEAK_ROUTINE = ' '
-  integer,             save :: MAX_LEN  = 0
-  
   ! Other common variables
   integer :: IERR
   logical :: ASSOCIATED_ARRAY, NEEDS_ALLOC, NEEDS_COPY, NEEDS_DEALLOC
@@ -331,77 +250,6 @@ if (present(new))     new = DEFAULT
 
 END SUBROUTINE alloc_default
 
-! ==================================================================
-
-SUBROUTINE alloc_report( level, unit, file, printNow, threshold )
-
-implicit none
-
-integer,          optional, intent(in) :: level, unit
-character(len=*), optional, intent(in) :: file
-logical,          optional, intent(in) :: printNow
-real(dp),         optional, intent(in) :: threshold
-
-logical open
-
-#ifdef MPI
-integer MPIerror
-#endif
-
-if (present(level)) then
-  REPORT_LEVEL = level
-end if
-
-if (REPORT_LEVEL <= 0) RETURN
-
-if (node == 0) then
-  if (present(unit)) then  ! Assume that unit has been open outside
-    if (unit > 0) then
-      REPORT_UNIT = unit
-      if (present(file)) then
-        REPORT_FILE = file
-      else
-        REPORT_FILE = 'unknown'
-      end if
-    end if
-  else if (present(file)) then    ! If file is the same, do nothing
-    if (file /= REPORT_FILE) then ! Check if file was open outside
-      REPORT_FILE = file
-      inquire( file=REPORT_FILE, opened=open, number=REPORT_UNIT )
-      if (.not.open) then         ! Open new file
-        call io_assign(REPORT_UNIT)
-        open( REPORT_UNIT, file=REPORT_FILE, status='unknown')
-        write(REPORT_UNIT,*) ' '  ! Overwrite previous reports
-      end if
-    end if
-  else if (REPORT_UNIT==0) then   ! No unit has been open yet
-    REPORT_FILE = 'alloc_report'
-    call io_assign(REPORT_UNIT)
-    open( REPORT_UNIT, file=REPORT_FILE, status='unknown')
-    write(REPORT_UNIT,*) ' '      ! Overwrite previous reports
-  end if
-end if
-
-#ifdef MPI
-! Distribute information to other nodes and open REPORT_UNIT
-call MPI_Bcast(REPORT_LEVEL,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-call MPI_Bcast(REPORT_UNIT,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-call MPI_Bcast(REPORT_FILE,50,MPI_character,0,MPI_Comm_World,MPIerror)
-! JMS: open file only in node 0
-!if (node > 0) then
-!  open( REPORT_UNIT, file=REPORT_FILE )
-!end if
-#endif
-
-if (present(threshold)) REPORT_THRESHOLD = threshold
-
-if (present(printNow)) then
-  if (printNow) call print_report( )
-end if
-
-END SUBROUTINE alloc_report
-
-! ==================================================================
 ! Integer array reallocs
 ! ==================================================================
 
@@ -445,7 +293,6 @@ call options( b, c, old_bounds, new_bounds, copy, shrink )
 if (NEEDS_DEALLOC .and. .not.NEEDS_COPY) then
   call alloc_count( -size(old_array), type, name, routine )
   deallocate(old_array,stat=IERR)
-  call alloc_err( IERR, name, routine, old_bounds )
 end if
 
 ! Allocate new space
@@ -1921,8 +1768,53 @@ END SUBROUTINE options
 
 ! ==================================================================
 
+SUBROUTINE alloc_err( ierr, name, routine, bounds )
+implicit none
+
+integer,                    intent(in) :: ierr
+character(len=*), optional, intent(in) :: name
+character(len=*), optional, intent(in) :: routine
+integer, dimension(:,:), optional, intent(in) :: bounds
+
+integer i
+character(len=128) :: msg
+
+if (ierr/=0) then
+   write(msg,*) 'alloc_err: allocate status error', ierr
+   call alloc_error_report(trim(msg),1)
+  if (present(name).and.present(routine)) then
+     write(msg,*) 'alloc_err: array ', name, &
+               ' requested by ', routine
+     call alloc_error_report(trim(msg),2)
+  elseif (present(name)) then
+     write(msg,*) 'alloc_err: array ', name, &
+               ' requested by unknown'
+     call alloc_error_report(trim(msg),3)
+  elseif (present(routine)) then
+     write(msg,*) 'alloc_err: array unknown', &
+               ' requested by ', routine
+     call alloc_error_report(trim(msg),4)
+  endif
+  if (present(bounds)) then
+     write(msg,'(a,i3,2i10)') ('alloc_err: dim, lbound, ubound:',  &
+          i,bounds(1,i),bounds(2,i),                         &
+          i=1,size(bounds,dim=2))            
+     call alloc_error_report(trim(msg),5)
+  endif
+  call alloc_error_report("alloc_err: end of error report",0)
+end if
+
+END SUBROUTINE alloc_err
+
+! ==================================================================
+
 SUBROUTINE alloc_count( delta_size, type, name, routine )
 
+!
+!  This version simply computes the total size and calls
+!  the external routine  alloc_memory_event with the size
+!  in bytes and a string identifier of the form 'routine@name'.
+!
 implicit none
 
 integer, intent(in)          :: delta_size  ! +/-size(array)
@@ -1935,114 +1827,32 @@ character, intent(in)        :: type        ! 'I' => integer
 character(len=*), optional, intent(in) :: name
 character(len=*), optional, intent(in) :: routine
 
-character(len=32)   :: aname, rname
-character(len=1)    :: memType, task
-real(DP)            :: delta_mem
-logical             :: newPeak
-logical,  save      :: header_written = .false.
-logical,  save      :: tree_nullified = .false.
-integer             :: memSize
-
-! Set routine name
-if (present(routine)) then
-  rname = routine
-else
-  rname = DEFAULT%routine
-end if
-
-! Call siesta counting routine 'memory'
-! Switched off in Aug.2009, and made 'memory' call alloc_count instead
-! if (delta_size > 0) then
-!   task = 'A'
-! else
-!   task = 'D'
-! end if
-! select case( type )
-! case ('R')         ! Real --> single
-!   memType = 'S'
-!   memSize = abs(delta_size)
-! case ('S')         ! Character (string) --> integer/4
-!   memType = 'I'
-!   memSize = abs(delta_size) / type_mem('I')
-! case default
-!   memType = type
-!   memSize = abs(delta_size)
-! end select
-! call memory( task, memType, memSize, trim(rname) )
-
-
-if (REPORT_LEVEL <= 0) return
+character(len=32)   :: aname
+integer             :: bytes
 
 ! Compound routine+array name
 if (present(name) .and. present(routine)) then
-  aname = trim(routine)//' '//name
+  aname = trim(routine)//'@'//name
 else if (present(name) .and. DEFAULT%routine/=DEFAULT_ROUTINE) then
-  aname = trim(DEFAULT%routine)//' '//name
+  aname = trim(DEFAULT%routine)//'@'//name
 else if (present(name)) then
-  aname = name
+  aname = trim(DEFAULT_ROUTINE)//'@'//name
 else if (present(routine)) then
-  aname = trim(routine)//' '//DEFAULT_NAME
+  aname = trim(routine)//'@'//DEFAULT_NAME
 else if (DEFAULT%routine/=DEFAULT_ROUTINE) then
-  aname = trim(DEFAULT%routine)//' '//DEFAULT_NAME
+  aname = trim(DEFAULT%routine)//'@'//DEFAULT_NAME
 else
-  aname = DEFAULT_ROUTINE//' '//DEFAULT_NAME
+  aname = DEFAULT_ROUTINE//'@'//DEFAULT_NAME
 end if
-
-MAX_LEN = max( MAX_LEN, len(trim(aname)) )
 
 ! Find memory increment and total allocated memory
-delta_mem = delta_size * type_mem(type)
-TOT_MEM = TOT_MEM + delta_mem
-if (TOT_MEM > PEAK_MEM+0.5_dp) then
-  newPeak = .true.
-  PEAK_MEM = TOT_MEM
-  PEAK_ARRAY = aname
-  PEAK_ROUTINE = rname
-!  print'(/,a,f18.6),a,/)',
-!    'alloc_count: Memory peak =', PEAK_MEM/MBYTE, ' Mbytes'
-else
-  newPeak = .false.
-end if
+bytes = delta_size * type_mem(type)
 
-! Add/subtract/classify array memory
-if (REPORT_LEVEL > 1) then
-  if (.not.tree_nullified) then
-    nullify(report_tree)
-    tree_nullified = .true.
-  end if
-  call tree_add( report_tree, aname, delta_mem )
-  if (newPeak) call tree_peak( report_tree )
-end if
+call alloc_memory_event(bytes,trim(aname))
 
-! Print report, but only in node 0, as not all 
-! processors may follow the same route here
-!   The detail/extent of the report increses with the value of level:
-! level=0 : no report at all (the default)
-! level=1 : only total memory peak and where it occurred
-! level=2 : detailed report created but printed only upon request
-! level=3 : detailed report printed at every new memory peak
-! level=4 : print every individual reallocation or deallocation
+CONTAINS
 
-
-if (newPeak .and. (REPORT_LEVEL==1 .or. REPORT_LEVEL==3) .and. &
-    node == 0) then
-  call print_report(.false.)
-end if
-
-if (REPORT_LEVEL == 4 .and. node == 0) then
-  if (.not.header_written) then
-    write(REPORT_UNIT,'(/,a7,9x,1x,a4,28x,1x,2a15)') &
-     'Routine', 'Name', 'Incr. (MB)', 'Total (MB)'
-    header_written = .true.
-  end if
-  write(REPORT_UNIT,'(a16,1x,a32,1x,2f15.6)') &
-     rname, aname, delta_mem/MBYTE, TOT_MEM/MBYTE
-end if
-END SUBROUTINE alloc_count
-
-! ==================================================================
-
-INTEGER FUNCTION type_mem( var_type )
+  INTEGER FUNCTION type_mem( var_type )
 !
 ! It is not clear that the sizes assumed are universal for
 ! non-Cray machines...
@@ -2076,274 +1886,48 @@ case('S')
 case default
   write(message,"(2a)") &
     'alloc_count: ERROR: unknown type = ', var_type
-  call die(trim(message))
+  call alloc_error_report(trim(message),0)
 end select
 
 END FUNCTION type_mem
 
-! ==================================================================
-
-RECURSIVE SUBROUTINE tree_add( t, name, delta_mem )
-
-implicit none
-type(TREE),       pointer    :: t
-character(len=*), intent(in) :: name
-real(DP),         intent(in) :: delta_mem
-
-logical, save :: warn_negative = .true.
-
-if (.not.associated(t)) then
-  allocate( t )
-  t%name = name
-  t%mem  = delta_mem
-  t%max  = delta_mem
-  t%peak = 0._dp
-  nullify( t%left, t%right )
-else if (name == t%name) then
-  t%mem = t%mem + delta_mem
-  ! The abs is to handle the case of apparent de_allocs without re_allocs,
-  ! caused by routine/name argument mismatches
-  if (abs(t%mem) > abs(t%max)) t%max = t%mem
-else if ( llt(name,t%name) ) then
-  call tree_add( t%left, name, delta_mem )
-else
-  call tree_add( t%right, name, delta_mem )
-end if
-
-if (warn_negative .and. t%mem<0._dp) then
-  call parallel_init()   ! Make sure that node and Nodes are initialized
-  if (Node==0) then
-   write(6,'(/,a,/,2a,/,a,f18.0,a)')  &
-      'WARNING: alloc-realloc-dealloc name mismatch',  &
-      '         Name: ', trim(name),                   &
-      '         Size: ', t%mem, ' Bytes'
-    if (Nodes>1) write(6,'(9x,a,i6)') 'Node:', Node
-    write(6,'(9x,a)') 'Subsequent mismatches will not be reported'
-    warn_negative = .false.  ! Print this warning only once
-  end if
-end if
-
-END SUBROUTINE tree_add
-
-! ==================================================================
-
-RECURSIVE SUBROUTINE tree_peak( t )
-
-implicit none
-type(TREE), pointer :: t
-
-if (.not.associated(t)) return
-
-t%peak = t%mem
-call tree_peak( t%left )
-call tree_peak( t%right )
-
-END SUBROUTINE tree_peak
-
-! ==================================================================
-
-RECURSIVE SUBROUTINE tree_print( t )
-
-implicit none
-type(TREE), pointer :: t
-
-if (.not.associated(t)) return
-
-call tree_print( t%left )
-
-if (abs(t%max) >= REPORT_THRESHOLD) then
-  write(REPORT_UNIT,'(a,1x,3f15.6,f9.2)') &
-    t%name(1:MAX_LEN), t%mem/MBYTE, t%max/MBYTE, t%peak/MBYTE, &
-    100._dp * t%peak / (PEAK_MEM + tiny(PEAK_MEM) )
-end if
-
-call tree_print( t%right )
-
-END SUBROUTINE tree_print
-
-! ==================================================================
-
-SUBROUTINE print_report(all)
-
-implicit none
-
-! Whether MPI reductions should be performed
-! If, not then ensure that no MPI calls are performed
-logical, intent(in), optional :: all 
-
-character(len=80)   :: string = 'Name'
-character           :: date*8, time*10, zone*5
-integer             :: iNode, peakNode
-real(dp)            :: maxPeak
-real(dp),allocatable:: nodeMem(:), nodePeak(:)
-logical             :: lall
-
-#ifdef MPI
-integer           :: MPIerror
-#endif
-
-! Enables parallel call of print-report
-lall = .true.
-if ( present(all) ) lall = all
-
-! Only if MPI should all be used
-if ( lall ) then
-! Make sure that variables node and Nodes are initialized
-call parallel_init()
-end if
-
-! Allocate and initialize two small arrays
-allocate( nodeMem(0:Nodes-1), nodePeak(0:Nodes-1) )
-! initialize (in case all == .false.)
-nodeMem = 0._dp
-nodePeak = 0._dp
-
-! Initializations for Nodes=1 (serial case)
-nodeMem(node) = TOT_MEM
-nodePeak(node) = PEAK_MEM
-peakNode = node
-
-! In parallel, find the memory values of all nodes
-#ifdef MPI
-if (Nodes > 1 .and. lall ) then
-  ! Gather the present and peak memories of all nodes
-  call MPI_AllGather( TOT_MEM, 1, MPI_double_precision, &
-                      nodeMem, 1, MPI_double_precision, &
-                      MPI_COMM_WORLD, MPIerror )
-  call MPI_AllGather( PEAK_MEM, 1, MPI_double_precision, &
-                      nodePeak, 1, MPI_double_precision, &
-                      MPI_COMM_WORLD, MPIerror )
-  ! Find the node with the highest peak of memory
-  maxPeak = 0
-  do iNode = 0,Nodes-1
-    if (nodePeak(iNode) > maxPeak) then
-      peakNode = iNode
-      maxPeak = nodePeak(iNode)
-    end if
-  end do ! iNode
-  ! Change the writing node for the peak-node information
-  if (node==0 .and. peakNode/=0) close( unit=REPORT_UNIT )
-  call MPI_Barrier( MPI_COMM_WORLD, MPIerror )
-  if (node==peakNode .and. peakNode/=0) &
-    open( unit=REPORT_UNIT, file=REPORT_FILE, &
-          status='unknown', position='append' )
-end if ! (Nodes>1)
-#endif
-
-! The report is printed by the highest-peak node
-if (node == peakNode) then
-
-  ! AG: Commented out to allow multiple batches of information
-  ! if (REPORT_LEVEL < 4) rewind(REPORT_UNIT)
-
-  call date_and_time( date, time, zone )
-
-  write(REPORT_UNIT,'(/,a,16a)')                &
-    'Allocation summary at ',                   &
-    date(1:4),'/',date(5:6),'/',date(7:8),' ',  &
-    time(1:2),':',time(3:4),':',time(5:10),' ', &
-    zone(1:3),':',zone(4:5)
-
-  if (Nodes > 1) then
-    write(REPORT_UNIT,'(/,(a,f18.6,a))')            &
-      'Present memory all nodes : ', sum(nodeMem)/MBYTE,  ' MB', &
-      'Added peak mem all nodes : ', sum(nodePeak)/MBYTE, ' MB', &
-      'Min peak memory in a node: ', minval(nodePeak)/MBYTE, ' MB', &
-      'Max peak memory in a node: ', maxval(nodePeak)/MBYTE, ' MB'
-!   Impractical for many nodes:
-!    write(REPORT_UNIT,'(/,a,/,(i6,f12.6))') &
-!      'Memory peaks of individual nodes (Mb):', &
-!      (iNode,nodePeak(iNode)/MBYTE,iNode=0,Nodes-1)
-    write(REPORT_UNIT,'(/,a,i6)') &
-      'Maximum peak of memory occurred in node:', peakNode
-  end if
-
-  write(REPORT_UNIT,'(2(/,a,f18.6,a),/,2a,/,2a)')            &
-    'Present memory allocation: ', TOT_MEM/MBYTE,  ' MB', &
-    'Maximum memory allocation: ', PEAK_MEM/MBYTE, ' MB', &
-    'Occurred after allocating: ', trim(PEAK_ARRAY),         &
-    'In routine:                ', trim(PEAK_ROUTINE)
-
-  if (REPORT_LEVEL > 1) then
-    if (REPORT_THRESHOLD > 0._dp) then
-      write(REPORT_UNIT,'(/,a,f12.6,a,/,a,1x,3a15,a9)') &
-        'Allocated sizes (in MByte) of arrays larger than ', &
-        REPORT_THRESHOLD/MBYTE, ' MB:', &
-        string(1:MAX_LEN), 'Present', 'Maximum', 'At peak', '%'
-    else
-      write(REPORT_UNIT,'(/,a,/,a,1x,3a15,a9)') &
-        'Allocated array sizes (in MByte):', &
-        string(1:MAX_LEN), 'Present', 'Maximum', 'At peak', '%'
-    end if
-    call tree_print( report_tree )
-  end if
-
-end if ! (node == peakNode)
-
-! Change again the writing node for the rest of the report
-#ifdef MPI
-if (node==peakNode .and. peakNode/=0) close( unit=REPORT_UNIT )
-if (lall) call MPI_Barrier( MPI_COMM_WORLD, MPIerror )
-if (node==0 .and. peakNode/=0) &
-  open( unit=REPORT_UNIT, file=REPORT_FILE, &
-        status='unknown', position='append' )
-#endif
-
-deallocate( nodeMem, nodePeak )
-
-END SUBROUTINE print_report
-
-! ==================================================================
-
-SUBROUTINE alloc_err( ierr, name, routine, bounds )
-#ifdef DEBUG
-      use debugMpi, only : mpiUnit
-#endif
-implicit none
-
-integer,                    intent(in) :: ierr
-character(len=*), optional, intent(in) :: name
-character(len=*), optional, intent(in) :: routine
-integer, dimension(:,:), optional, intent(in) :: bounds
-
-integer i
-
-if (ierr/=0) then
-  if (ionode) print*, 'alloc_err: allocate status error', ierr
-  if (present(name).and.present(routine)) then
-    if (ionode) print*, 'alloc_err: array ', name, &
-               ' requested by ', routine
-  elseif (present(name)) then
-    if (ionode) print*, 'alloc_err: array ', name, &
-               ' requested by unknown'
-  elseif (present(routine)) then
-    if (ionode) print* , 'alloc_err: array unknown', &
-               ' requested by ', routine
-  endif
-  if (ionode.and.present(bounds))                            &
-    print '(a,i3,2i10)', ('alloc_err: dim, lbound, ubound:',  &
-          i,bounds(1,i),bounds(2,i),                         &
-          i=1,size(bounds,dim=2))            
-#ifdef DEBUG
-  write(mpiUnit,*) 'alloc_err: allocate status error', ierr
-  if (present(name).and.present(routine)) then
-    write(mpiUnit,*) 'alloc_err: array ', name, ' requested by ', routine
-  elseif (present(name)) then
-    write(mpiUnit,*) 'alloc_err: array ', name, ' requested by unknown'
-  elseif (present(routine)) then
-    write(mpiUnit,*) 'alloc_err: array unknown requested by ', routine
-  endif
-  write(mpiUnit,'(a,i3,2i10)') ('alloc_err: dim, lbound, ubound:', &
-                      i,bounds(1,i),bounds(2,i),         &
-                      i=1,size(bounds,dim=2))
-  call pxfflush(mpiUnit)
-#endif
-
-  call die('alloc_err: allocate error')
-end if
-
-END SUBROUTINE alloc_err
-
-! ==================================================================
+END SUBROUTINE alloc_count
 
 END MODULE alloc
+
+#ifdef __TEST__MODULE__ALLOC__
+! Optional test code
+!
+program testalloc
+use alloc, only: re_alloc, de_alloc
+
+real, pointer :: x(:) => null()
+real(kind=kind(1.d0)), pointer :: y(:,:) => null()
+
+call re_alloc(x,1,10,"x","testalloc")
+call re_alloc(y,-3,4,1,3,"y","testalloc")
+print *, "Shape of x: ", shape(x)
+print *, "Shape of y: ", shape(y)
+call de_alloc(x,"x","testalloc")
+call de_alloc(y,"y","testalloc")
+
+end program testalloc
+!
+! Handlers
+! Note: In systems with weak symbols, these handlers
+! could be compiled marked as such. (Future extension)
+!
+subroutine alloc_memory_event(bytes,name)
+integer, intent(in) :: bytes
+character(len=*), intent(in) :: name
+write(*,*) "alloc: allocated ", bytes, "bytes for "//trim(name)
+end subroutine alloc_memory_event
+
+subroutine alloc_error_report(name,code)
+character(len=*), intent(in) :: name
+integer, intent(in) :: code
+write(*,*) "alloc error: "//trim(name)
+end subroutine alloc_error_report
+
+#endif
+

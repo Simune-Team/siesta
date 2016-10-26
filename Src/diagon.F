@@ -105,7 +105,7 @@ C
 
       use fdf
       use alloc
-      use m_memory
+      use memory_log
       use m_spin,       only: Spiral, qSpiral
       use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
       use m_spin,       only: e_spin_dim

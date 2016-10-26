@@ -81,7 +81,6 @@
       use parallelsubs,      only : GlobalToLocalOrb, GetNodeOrbs
       use fdf
       use alloc
-      use m_memory
       use sys,               only : die
       use MatrixSwitch
 #ifdef MPI

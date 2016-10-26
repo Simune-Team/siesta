@@ -55,6 +55,15 @@ destdir=$(pwd)
     cp -f $relpath/*.h ${destdir}/$relpath
   done
 )
+# Replicate any .inc files
+#
+(cd $srcdir;
+  for i in $(find . -name '*.inc' ); do
+    relpath=${i%/*}
+    mkdir -p ${destdir}/$relpath
+    cp -f $relpath/*.inc ${destdir}/$relpath
+  done
+)
 #
 sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile | \
 sed "s#MAIN_OBJDIR=\.#MAIN_OBJDIR=${objdir}#g" > ${destdir}/Makefile

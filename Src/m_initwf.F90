@@ -85,7 +85,7 @@ CONTAINS
       use fdf
       use densematrix,  only : Haux, Saux, psi
       use alloc
-      use m_memory
+      use memory_log
       use m_fermid,      only : fermid
       use sys, only: die
 #ifdef MPI

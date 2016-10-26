@@ -11,7 +11,7 @@ C     Reads the exchange-correlation functional information
 C     and calls setXC to store it
 C
       use precision, only : dp
-      use SiestaXC,  only : setXC
+      use gridXC,  only : setXC=>gridxc_setXC
       use fdf
       use parallel,  only : Node
       use sys,       only : die
