@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+October 27, 2016  Alberto Garcia    trunk-506--psml-86
+Revert addition of reduced_vlocal to .ion file
+
+This was in patch 489..490
+
+and it caused compatibility problems.
+
+modified:
+  Src/basis_io.F
+
+------------------------------------------------------------
 October 27, 2016  Alberto Garcia    trunk-506--psml-85
 REVERT: Increase radial fft parameters (for) non-smooth chlocal/vlocal
 
