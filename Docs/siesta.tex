@@ -7601,15 +7601,15 @@ References:
 {Maximally Localized Wannier Functions. \\
     Interface with the \textsc{wannier90} code}
 
-\textsc{wannier90} (http://www.wannier.org) is a code to generate
+\program{wannier90} (http://www.wannier.org) is a code to generate
 maximally localized wannier functions according to the original
 Marzari and Vanderbilt recipe.
 
 It is strongly recommended to read the original papers on which this
-method is based and the  documentation of the \textsc{wannier90} code.
+method is based and the  documentation of \program{wannier90} code.
 Here we shall focus only on those internal \siesta\ variables
 required to produce the files that will be processed
-by \textsc{wannier90}.
+by \program{wannier90}.
 
 A complete list of examples and tests (including molecules, metals, 
 semiconductors, insulators, magnetic systems, plotting of Fermi surfaces
@@ -7622,167 +7622,156 @@ or interpolation of bands), can be downloaded from
       used and other possibly non-reproducible details of the
       calculation. In what follows it is essential to maintain
       consistency in the handling of the overlap and Bloch-funcion
-      files produced and fed to \textsc{wannier90}.
+      files produced and fed to \program{wannier90}.
+%
 
-\begin{description}
-\item[\textbf{Siesta2Wannier90.WriteMmn}] (\textit{logical}):
-\index{Siesta2Wannier90.WriteMmn@\textbf{Siesta2Wannier90.WriteMmn}}
+\begin{fdflogicalF}{Siesta2Wannier90.WriteMmn}
+        
+  This flag determines whether the overlaps between the periodic part
+  of the Bloch states at neighbour k-points are computed and dumped
+  into a file in the format required by \program{wannier90}.  These
+  overlaps are defined in Eq. (27) in the paper by N. Marzari
+  \textit{et al.}, Review of Modern Physics \textbf{84}, 1419 (2012),
+  or Eq. (1.7) of the Wannier90 User Guide, Version 2.0.1.
 
-This flag determines whether the overlaps between the periodic part
-of the Bloch states at neighbour k-points are computed and dumped into a file
-in the format required by \textsc{wannier90}.
-These overlaps are defined in Eq. (27) in the paper by
-N. Marzari \textit{et al.}, Review of Modern Physics \textbf{84}, 1419 (2012),
-or Eq. (1.7) of the Wannier90 User Guide, Version 2.0.1.
+  The k-points for which the overlaps will be computed are read from a
+  \sysfile*{nnkp} file produced by \program{wannier90}. It is strongly
+  recommended for the user to read the corresponding user guide.
 
-The k-points for which the overlaps will be computed are read from a
-\texttt{.nnkp} file produced by \textsc{wannier90}. It is strongly
-recommended for the user to read the corresponding user guide.
+  The overlap matrices are written in a file with extension
+  \sysfile*{mmn}.
 
-The overlap matrices are written in a file with extension \texttt{.mmn}.
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdflogicalF}{Siesta2Wannier90.WriteAmn}
+  
+  This flag determines whether the overlaps between Bloch states and
+  trial localized orbitals are computed and dumped into a file in the
+  format required by \program{wannier90}.  These projections are
+  defined in Eq. (16) in the paper by N. Marzari \textit{et al.},
+  Review of Modern Physics \textbf{84}, 1419 (2012), or Eq. (1.8) of
+  the Wannier90 User Guide, Version 2.0.1.
 
-\item[\textbf{Siesta2Wannier90.WriteAmn}] (\textit{logical}):
-\index{Siesta2Wannier90.WriteAmn@\textbf{Siesta2Wannier90.WriteAmn}}
+  The localized trial functions to use are taken from the
+  \sysfile*{nnkp} file produced by \program{wannier90}. It is strongly
+  recommended for the user to read the corresponding user guide.
 
-This flag determines whether the overlaps between Bloch states
-and trial localized orbitals are computed and dumped into a file in the
-format required by \textsc{wannier90}.
-These projections are defined in Eq. (16) in the paper by
-N. Marzari \textit{et al.}, Review of Modern Physics \textbf{84}, 1419 (2012),
-or Eq. (1.8) of the Wannier90 User Guide, Version 2.0.1.
+  The overlap matrices are written in a file with extension
+  \sysfile*{amn}.
 
-The localized trial functions to use are taken from the \texttt{.nnkp}
-file produced by \textsc{wannier90}. It is strongly recommended for the
-user to read the corresponding user guide.
+\end{fdflogicalF}
 
-The overlap matrices are written in a file with extension \texttt{.amn}.
+\begin{fdflogicalF}{Siesta2Wannier90.WriteEig}
+  
+  Flag that determines whether the Kohn-Sham eigenvalues (in eV) at
+  each point in the Monkhorst-Pack mesh required by
+  \program{wannier90} are written to file.  This file is mandatory in
+  \program{wannier90} if any of disentanglement, plot\_bands,
+  plot\_fermi\_surface or hr\_plot options are set to true in the
+  \program{wannier90} input file.
 
-\textit{Default value:} \texttt{.false.}
+  The eigenvalues are written in a file with extension \sysfile*{eigW}.
+  This extension is chosen to avoid name clashes with \siesta's
+  standard eigenvalue file in case-insensitive filesystems.
 
-\item[\textbf{Siesta2Wannier90.WriteEig}] (\textit{logical}):
-\index{Siesta2Wannier90.WriteEig@\textbf{Siesta2Wannier90.WriteEig}}
+\end{fdflogicalF}
 
-Flag that determines whether the Kohn-Sham eigenvalues 
-(in eV) at each point in the Monkhorst-Pack mesh required by
-\program{wannier90} are written to file. 
-This file is mandatory in \program{wannier90} if any of disentanglement, 
-plot\_bands, plot\_fermi\_surface or hr\_plot options are set to true in 
-the \program{wannier90} input file.
+\begin{fdflogicalF}{Siesta2Wannier90.WriteUnk}
+  
+  Produces \file{UNKXXXXX.Y} files which contain the periodic part
+  of a Bloch function in the unit cell on a grid given by global
+  unk\_nx, unk\_ny, unk\_nz variables.  The name of the output files
+  is assumed to have the previous form, where the \texttt{XXXXXX}
+  refer to the k-point index (from 00001 to the total number of
+  k-points considered), and the \texttt{Y} refers to the spin
+  component (1 or 2)
 
-The eigenvalues are written in a file with extension \sysfile{eigW}.
-This extension is chosen to avoid name clashes
-with \siesta's standard eigenvalue file in case-insensitive filesystems.
+  The periodic part of the Bloch functions is defined by
+  \begin{equation}
+    u_{n \vec{k}} (\vec{r}) =
+    \sum_{\vec{R} \mu} c_{n \mu}(\vec{k})
+    e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
+    \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} ) ,
+  \end{equation}
+  where $\phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )$ is a basis
+  set atomic orbital centered on atom $\mu$ in the unit cell
+  $\vec{R}$, and $c_{n \mu}(\vec{k})$ are the coefficients of the wave
+  function. The latter must be identical to the ones used for
+  wannierization in $M_{mn}$. (See the above comment about arbitrary
+  phases.)
 
-\textit{Default value:} \texttt{.false.}
+\end{fdflogicalF}
 
-\item[\textbf{Siesta2Wannier90.WriteUnk}] (\textit{logical}):
-\index{Siesta2Wannier90.WriteUnk@\textbf{Siesta2Wannier90.WriteUnk}}
+\begin{fdfentry}{Siesta2Wannier90.UnkGrid1}[integer]<\nonvalue{mesh
+      points along $A$}>
 
- Produces \texttt{UNKXXXXX.Y} files which contain the periodic part of a
- Bloch function in the unit cell on a grid given by global unk\_nx,
- unk\_ny, unk\_nz variables.  The name of the output files is assumed
- to have the previous form, where the \texttt{XXXXXX} refer to the k-point
- index (from 00001 to the total number of k-points considered), and
- the \texttt{Y} refers to the spin component (1 or 2)
+  Number of points along the first lattice vector in the grid where
+  the periodic part of the wave functions will be plotted.
 
- The periodic part of the Bloch functions is defined by
- \begin{equation}
-   u_{n \vec{k}} (\vec{r}) =
-   \sum_{\vec{R} \mu} c_{n \mu}(\vec{k})
-        e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
-        \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} ) ,
-\end{equation}
+\end{fdfentry}
 
-\noindent where $\phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )$
- is a basis set atomic orbital centered on atom $\mu$ in
- the unit cell $\vec{R}$, and $c_{n \mu}(\vec{k})$ are the coefficients
- of the wave function. The latter must be identical to the ones used
- for wannierization in $M_{mn}$. (See the above comment about
- arbitrary phases.)
+\begin{fdfentry}{Siesta2Wannier90.UnkGrid2}[integer]<\nonvalue{mesh
+      points along $B$}>
 
-\textit{Default value:} \texttt{.false.}
+  Number of points along the second lattice vector in the grid where
+  the periodic part of the wave functions will be plotted.
 
-\item[\textbf{Siesta2Wannier90.UnkGrid1}] (\textit{integer}):
-\index{Siesta2Wannier90.UnkGrid1@\textbf{Siesta2Wannier90.UnkGrid1}}
+\end{fdfentry}
 
-Number of points along the first lattice vector in the grid where
-the periodic part of the wave functions will be plotted.
+\begin{fdfentry}{Siesta2Wannier90.UnkGrid3}[integer]<\nonvalue{mesh
+      points along $C$}>
 
-\textit{Default value:}{number of points in the \siesta\ mesh along this lattice vector}
+  Number of points along the third lattice vector in the grid where
+  the periodic part of the wave functions will be plotted.
 
-\item[\textbf{Siesta2Wannier90.UnkGrid2}] (\textit{integer}):
-\index{Siesta2Wannier90.UnkGrid2@\textbf{Siesta2Wannier90.UnkGrid2}}
-
-Number of points along the second lattice vector in the grid where
-the periodic part of the wave functions will be plotted.
-
-\textit{Default value:}{number of points in the \siesta\ mesh along this lattice vector}
-
-\item[\textbf{Siesta2Wannier90.UnkGrid3}] (\textit{integer}):
-\index{Siesta2Wannier90.UnkGrid3@\textbf{Siesta2Wannier90.UnkGrid3}}
-
-Number of points along the third lattice vector in the grid where
-the periodic part of the wave functions will be plotted.
-
-\textit{Default value:}{number of points in the \siesta\ mesh along this lattice vector}
-
-\item[\textbf{Siesta2Wannier90.UnkGridBinary}] (\textit{logical}):
-\index{Siesta2Wannier90.UnkGridBinary@\textbf{Siesta2Wannier90.UnkGridBinary}}
-
-Flag that determines whether the periodic part of the wave function in the
-real space grid is written in binary format (default) or in ASCII format.
-
-\textit{Default value:} \texttt{.true.}
-
-\item[\textbf{Siesta2Wannier90.NumberOfBands}] (\textit{integer}):
-\index{Siesta2Wannier90.NumberOfBands@\textbf{Siesta2Wannier90.NumberOfBands}}
-
-In spin unpolarized calculations, number of bands that will be
-initially considered by \siesta\ to generate the information
-required by \textsc{wannier90}. Note that it should be at least as large as the
-index of the highest-lying band in the \textsc{wannier90} post-processing. For
-example, if the wannierization is going to involve bands 3 to 5, the
-\siesta\ number of bands should be at least 5. Bands 1 and 2
-should appear in a ``excluded'' list.
-
-\textit{Default value:} {Number of occupied bands. To avoid problems
-  of interpretation, it is strongly advised to avoid relying on the
-  defaults and to specify the number of bands explicitly.}
+\end{fdfentry}
 
 
-\item[\textbf{Siesta2Wannier90.NumberOfBandsUp}] (\textit{integer}):
-\index{Siesta2Wannier90.NumberOfBandsUp@\textbf{Siesta2Wannier90.NumberOfBandsUp}}
+\begin{fdflogicalT}{Siesta2Wannier90.UnkGridBinary}
+  
+  Flag that determines whether the periodic part of the wave function
+  in the real space grid is written in binary format (default) or in
+  ASCII format.
 
-In spin-polarized calculations, number of bands with spin up that will be
-initially considered by \siesta\ to generate the information
-required by \textsc{wannier90}. (See above for details.)
+\end{fdflogicalT}
 
-\textit{Default value:} {Number of occupied bands with spin up. To
-  avoid problems of interpretation, it is strongly advised to avoid
-  relying on the defaults and to specify the number of bands
-  explicitly. }
+\begin{fdfentry}{Siesta2Wannier90.NumberOfBands}[integer]<occupied bands>
+  
+  In spin unpolarized calculations, number of bands that will be
+  initially considered by \siesta\ to generate the information
+  required by \program{wannier90}. Note that it should be at least as
+  large as the index of the highest-lying band in the
+  \program{wannier90} post-processing. For example, if the
+  wannierization is going to involve bands 3 to 5, the \siesta\ number
+  of bands should be at least 5. Bands 1 and 2 should appear in a
+  ``excluded'' list.
 
-\item[\textbf{Siesta2Wannier90.NumberOfBandsDown}] (\textit{integer}):
-\index{Siesta2Wannier90.NumberOfBandsDown@\textbf{Siesta2Wannier90.NumberOfBandsDown}}
+  \note you are highly encouraged to explicitly specify the number of
+  bands.
 
-In spin-polarized calculations, number of bands with spin down that will be
-initially considered by \siesta\ to generate the information
-required by \textsc{wannier90}. (See above for details.)
+\end{fdfentry}
+
+\begin{fdfentry}{Siesta2Wannier90.NumberOfBandsUp}[integer]<\fdfvalue{Siesta2Wannier90.NumberOfBands}>
+
+  In spin-polarized calculations, number of bands with spin up that
+  will be initially considered by \siesta\ to generate the information
+  required by \program{wannier90}. 
+
+\end{fdfentry}
+
+\begin{fdfentry}{Siesta2Wannier90.NumberOfBandsDown}[integer]<\fdfvalue{Siesta2Wannier90.NumberOfBands}>
+
+  In spin-polarized calculations, number of bands with spin down that
+  will be initially considered by \siesta\ to generate the information
+  required by \program{wannier90}.
+
+\end{fdfentry}
 
 
-\textit{Default value:} {Number of occupied bands with spin down. To
-  avoid problems of interpretation, it is strongly advised to avoid
-  relying on the defaults and to specify the number of bands
-  explicitly. }
 
-\end{description}
-
-\vspace{5pt}
 \subsection{Systems with net charge or dipole, and electric fields}
 
-\begin{fdfentry}{NetCharge}[real]<$0.$>%
+\begin{fdfentry}{NetCharge}[real]<$0$>%
   \index{Charge of the system}
   \index{Doping}%
   \index{SCF!Doping}%
@@ -7804,77 +7793,72 @@ required by \textsc{wannier90}. (See above for details.)
 \end{fdfentry}
 
 
-\begin{description}
+\begin{fdflogicalF}{SimulateDoping}
+  \index{Slabs with net charge}
 
-\item[\textbf{SimulateDoping}] (\textit{boolean}):
-\index{SimulateDoping@\textbf{SimulateDoping}}\index{Slabs with net charge}
+  This option instructs the program to add a background charge density
+  to simulate doping.  The new ``doping'' routine calculates the net
+  charge of the system, and adds a compensating background charge that
+  makes the system neutral. This background charge is constant at
+  points of the mesh near the atoms, and zero at points far from the
+  atoms.  This simulates situations like doped slabs, where the extra
+  electrons (holes) are compensated by oposite charges at the material
+  (the ionized dopant impurities), but not at the vacuum.  This serves
+  to simulate properly doped systems in which there are large portions
+  of vacuum, such as doped slabs.
 
-This option instructs the program to add a background charge density
-to simulate doping.  The new ``doping'' routine calculates the net
-charge of the system, and adds a compensating background charge that
-makes the system neutral. This background charge is constant at points
-of the mesh near the atoms, and zero at points far from the atoms.
-This simulates situations like doped slabs, where the extra electrons
-(holes) are compensated by oposite charges at the material (the
-ionized dopant impurities), but not at the vacuum.  This serves to
-simulate properly doped systems in which there are large portions of
-vacuum, such as doped slabs.
+  (See \texttt{Tests/sic-slab})
 
-(See \texttt{Tests/sic-slab})
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
-
-\item[\textbf{ExternalElectricField}] (\textit{data block}):
-\index{ExternalElectricField@\textbf{ExternalElectricField}}
-It specifies an external electric field for molecules, chains and slabs.
-The electric field should be orthogonal to `bulk directions', like
-those parallel to a slab (bulk electric fields, like in
-dielectrics or ferroelectrics, are not allowed). If it is not, an
-error message is issued and the components of the field in bulk
-directions are suppressed automatically. The input is a
-vector in Cartesian coordinates, in the specified units. Example:
-
-\begin{verbatim}
+\begin{fdfentry}{ExternalElectricField}[block]
+  
+  It specifies an external electric field for molecules, chains and
+  slabs.  The electric field should be orthogonal to `bulk
+  directions', like those parallel to a slab (bulk electric fields,
+  like in dielectrics or ferroelectrics, are not allowed). If it is
+  not, an error message is issued and the components of the field in
+  bulk directions are suppressed automatically. The input is a vector
+  in Cartesian coordinates, in the specified units. Example:
+  \begin{fdfexample}
      %block ExternalElectricField
         0.000  0.000  0.500  V/Ang
      %endblock ExternalElectricField
-\end{verbatim}
+  \end{fdfexample}
 
-Starting with version 4.0, applying an electric field perpendicular to
-a slab will by default enable the slab dipole
-correction\index{SlabDipoleCorrection@\textbf{SlabDipoleCorrection}}
-option. To reproduce older calculations, set this correction option
-explicitly to \texttt{.false.} in the input file.
+  Starting with version 4.0, applying an electric field perpendicular
+  to a slab will by default enable the slab dipole correction, see
+  \fdf{SlabDipoleCorrection}. To reproduce older calculations, set
+  this correction option explicitly to \fdffalse\ in the input file.
 
-\textit{Default value:} zero field
+\end{fdfentry}
 
-\item[\textbf{SlabDipoleCorrection}] (\textit{boolean}):
-\index{SlabDipoleCorrection@\textbf{SlabDipoleCorrection}}
+\begin{fdflogicalF}{SlabDipoleCorrection}
+  
+  If \fdftrue, \siesta\ calculates the electric field required to
+  compensate the dipole of the system at every iteration of the
+  self-consistent cycle. The potential added to the grid corresponds
+  to that of a dipole layer at the middle of the vacuum layer. For
+  slabs, this exactly compensates the electric field at the vacuum
+  created by the dipole moment of the system, thus allowing to treat
+  asymmetric slabs (including systems with an adsorbate on one
+  surface) and compute properties such as the work funcion of each of
+  the surfaces.
 
-If \texttt{true}, \siesta\ calculates the electric field required to
-compensate the dipole of the system at every iteration of the
-self-consistent cycle. The potential added to the grid corresponds to
-that of a dipole layer at the middle of the vacuum layer. For slabs,
-this exactly compensates the electric field at the vacuum created by
-the dipole moment of the system, thus allowing to treat asymmetric
-slabs (including systems with an adsorbate on one surface) and compute
-properties such as the work funcion of each of the surfaces.
+  NOTE: If the program is fed a starting density matrix from an
+  uncorrected calculation (i.e., with an exagerated dipole), the first
+  iteration might use a compensating field that is too big, with the
+  risk of taking the system out of the convergence basin. In that
+  case, it is advisable to use the
+  \fdf{SCF.Mix!First}\index{Slab dipole correction} option to request a mix of the input and
+  output density matrices after that first iteration.
 
-NOTE: If the program is fed a starting density matrix from an
-uncorrected calculation (i.e., with an exagerated dipole), the first
-iteration might use a compensating field that is too big, with the
-risk of taking the system out of the convergence basin. In that case,
-it is advisable to use the \texttt{DM.MixSCF1}\index{DM.MixSCF1@\textbf{DM.MixSCF1}}\index{Slab dipole correction} option to request a mix of the
-input and output density matrices after that first iteration.
+  (See \texttt{Tests/sic-slab})
 
-(See \texttt{Tests/sic-slab})
+  This will default to \fdftrue\ if an external field is applied to a
+  slab calculation, otherwise it will default to \fdffalse.
 
-This will default to \texttt{true} if an external field is applied to a slab 
-calculation, otherwise it will default to \texttt{false}.
-
-\textit{Default value:} \texttt{false}
-
-\end{description}
+\end{fdflogicalF}
 
 
 \begin{fdfentry}{Geometry!Hartree}[block]%
@@ -8039,7 +8023,8 @@ calculation, otherwise it will default to \texttt{false}.
 \end{fdfentry}
 
 
-\vspace{5pt}
+
+
 \subsection{Output of charge densities and potentials on the grid}
 
 \siesta\ represents these magnitudes on the real-space grid. The
