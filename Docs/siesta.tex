@@ -6066,203 +6066,160 @@ been more resilient than in more popular bits of the code.  Work is
 ongoing to clean and automate the O(N) process, to make the solver
 more user-friendly and robust.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-\item[\textbf{ON.functional}] (\textit{string}):
-\index{ON.functional@\textbf{ON.functional}}
-Choice of order-N minimization functionals:
-\begin{itemize}
-\item \texttt{Kim}:\index{Kim@\texttt{Kim}}
-Functional of Kim, Mauri and Galli, PRB 52, 1640 (1995).
-\item \texttt{Ordejon-Mauri}:\index{Ordejon-Mauri@\texttt{Ordejon-Mauri}}
-Functional of Ordej\'on et al, or Mauri et al, see PRB 51, 1456 (1995).
-The number of localized wave functions (LWFs) used must coincide with
-$N_{el}/2$ (unless spin polarized).
-For the initial assignment of LWF centers to atoms, atoms
-with even number of electrons, n, get n/2 LWFs. Odd atoms
-get (n+1)/2 and (n-1)/2 in an alternating sequence, ir order
-of appearance (controlled by the input in the atomic coordinates block).
+\begin{fdfentry}{ON.functional}[string]<Kim>
+  
+  Choice of order-N minimization functionals:
+  \begin{fdfoptions}
+    \option[Kim]%
+    Functional of Kim, Mauri and Galli, PRB 52, 1640 (1995).
 
-\item \texttt{files}:\index{files (ON.functional)@\texttt{files} (ON.functional)}
-Reads localized-function information from a file and
-chooses automatically the functional to be used.
-\end{itemize}
+    \option[Ordejon-Mauri]%
+    Functional of Ordej\'on et al, or Mauri et al, see PRB 51, 1456
+    (1995).  The number of localized wave functions (LWFs) used must
+    coincide with $N_{el}/2$ (unless spin polarized).  For the initial
+    assignment of LWF centers to atoms, atoms with even number of
+    electrons, $n$, get $n/2$ LWFs. Odd atoms get $(n+1)/2$ and
+    $(n-1)/2$ in an alternating sequence, ir order of appearance
+    (controlled by the input in the atomic coordinates block).
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{ordern}
+    \option[files]%
+    Reads localized-function information from a file and chooses
+    automatically the functional to be used.
+  \end{fdfoptions}
 
-\textit{Default value:} \texttt{Kim}
+\end{fdfentry}
 
-\item[\textbf{ON.MaxNumIter}] (\textit{integer}):
-\index{ON.MaxNumIter@\textbf{ON.MaxNumIter}}
-Maximum number of iterations
-in the conjugate minimization of the electronic
-energy, in each SCF cycle.
+\begin{fdfentry}{ON.MaxNumIter}[integer]<1000>
+  
+  Maximum number of iterations in the conjugate minimization of the
+  electronic energy, in each SCF cycle.
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN}
+\end{fdfentry}
 
-\textit{Default value:} \texttt{1000}
+\begin{fdfentry}{ON.Etol}[real]<$10^{-8}$>
+  
+  Relative-energy tolerance in the conjugate minimization of the
+  electronic energy. The minimization finishes if 
+  $2 (E_n - E_{n-1}) / (E_n + E_{n-1}) \leq $ \fdf{ON.Etol}.
 
-\item[\textbf{ON.etol}] (\textit{real}):
-\index{ON.etol@\textbf{ON.etol}}
-Relative-energy tolerance in the conjugate minimization of the electronic
-energy. The minimization finishes if
-\hspace{0.2truecm} $2 (E_n - E_{n-1}) / (E_n + E_{n-1}) \leq $ ON.etol.
+\end{fdfentry}
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN}
+\begin{fdfentry}{ON.eta}[energy]<$0\,\mathrm{eV}$>
 
-\textit{Default value:} $10^{-8}$
+  Fermi level parameter of Kim \textit{et al.}. This should be in the
+  energy gap, and tuned to obtain the correct number of electrons. If
+  the calculation is spin polarised, then separate Fermi levels for
+  each spin can be specified.
+  
+\end{fdfentry}
 
-\item[\textbf{ON.eta}] (\textit{real energy}):
-\index{ON.eta@\textbf{ON.eta}}
-Fermi level parameter of Kim
-\textit{et al.}. This should be in the energy gap, and tuned to obtain
-the correct number of electrons. If the calculation is spin polarised,
-then separate Fermi levels for each spin can be specified.
+\begin{fdfentry}{ON.eta.alpha}[energy]<$0\,\mathrm{eV}$>
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN}
+  Fermi level parameter of Kim \textit{et al.} for alpha spin
+  electrons.  This should be in the energy gap, and tuned to obtain
+  the correct number of electrons. Note that if the Fermi level is not
+  specified individually for each spin then the same global eta will
+  be used.
 
-\textit{Default value:} \texttt{0.0 eV}
+\end{fdfentry}
 
-\item[\textbf{ON.eta\_alpha}] (\textit{real energy}):
-\index{ON.eta\_alpha@\textbf{ON.eta\_alpha}}
-Fermi level parameter of Kim \textit{et al.} for alpha spin electrons.
-This should be in the energy gap, and tuned to obtain
-the correct number of electrons. Note that if the Fermi
-level is not specified individually for each spin then the
-same global eta will be used.
+\begin{fdfentry}{ON.eta.beta}[energy]<$0\,\mathrm{eV}$>
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN}
+  Fermi level parameter of Kim \textit{et al.} for beta spin
+  electrons.  This should be in the energy gap, and tuned to obtain
+  the correct number of electrons. Note that if the Fermi level is not
+  specified individually for each spin then the same global eta will
+  be used.
 
-\textit{Default value:} \texttt{0.0 eV}
+\end{fdfentry}
 
-\item[\textbf{ON.eta\_beta}] (\textit{real energy}):
-\index{ON.eta\_beta@\textbf{ON.eta\_beta}}
-Fermi level parameter of Kim \textit{et al.} for beta spin electrons.
-This should be in the energy gap, and tuned to obtain
-the correct number of electrons. Note that if the Fermi
-level is not specified individually for each spin then the
-same global eta will be used.
+\begin{fdfentry}{ON.RcLWF}[length]<$9.5\,\mathrm{Bohr}$>
+  \index{Localized Wave Functions}
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN}
+  Localization redius for the Localized Wave Functions (LWF's).
 
-\textit{Default value:} \texttt{0.0 eV}
+\end{fdfentry}
 
-\item[\textbf{ON.RcLWF}] (\textit{real legth}):
-\index{ON.RcLWF@\textbf{ON.RcLWF}}\index{Localized Wave Functions}
-Localization redius for the Localized Wave Functions (LWF's).
-
-\textit{Use:} Used only if  \textbf{SolutionMethod} = \texttt{OrderN}
-
-\textit{Default value:} \texttt{9.5 Bohr}
-
-\item[\textbf{ON.ChemicalPotential}] (\textit{logical}):
-\index{ON.ChemicalPotential@\textbf{ON.ChemicalPotential}}
-\index{Chemical Potential}
-Specifies whether to calculate an order-\textit{N} estimate of the
-Chemical Potential, by the projection method
-(Goedecker and Teter, PRB \textbf{51}, 9455 (1995);
-Stephan, Drabold and Martin, PRB \textbf{58}, 13472
-(1998)). This is
-done by expanding the Fermi function (or density matrix)
-at a given temperature, by means of Chebyshev
-polynomials\index{Chebyshev Polynomials}, and imposing a
-real space truncation on the density matrix.
-To obtain a realistic estimate, the temperature
-should be small enough (typically, smaller than
-the energy gap), the localization range large enough
-(of the order of the one you would use for the Localized Wannier
-Functions), and the order of the polynomial expansion
-sufficiently large (how large depends on the temperature;
-typically, 50-100).
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN}.
-
-\textit{Default value:} \texttt{.false.}
-
-\textbf{Note:} This option does not work in parallel. An alternative
-is to obtain the approximate value of the chemical potential using
-an initial diagonalization.
+\begin{fdflogicalF}{ON.ChemicalPotential}
+  \index{Chemical Potential}
+  
+  Specifies whether to calculate an order-$N$ estimate of the Chemical
+  Potential, by the projection method (Goedecker and Teter, PRB
+  \textbf{51}, 9455 (1995); Stephan, Drabold and Martin, PRB
+  \textbf{58}, 13472 (1998)). This is done by expanding the Fermi
+  function (or density matrix) at a given temperature, by means of
+  Chebyshev polynomials\index{Chebyshev Polynomials}, and imposing a
+  real space truncation on the density matrix.  To obtain a realistic
+  estimate, the temperature should be small enough (typically, smaller
+  than the energy gap), the localization range large enough (of the
+  order of the one you would use for the Localized Wannier Functions),
+  and the order of the polynomial expansion sufficiently large (how
+  large depends on the temperature; typically, 50-100).
 
 
-\item[\textbf{ON.ChemicalPotentialUse}] (\textit{logical}):
-\index{ON.ChemicalPotentialUse@\textbf{ON.ChemicalPotentialUse}}
-\index{Chemical Potential}
-Specifies whether to use the calculated estimate of the
-Chemical Potential, instead of the parameter
-\textbf{ON.eta}\index{ON.eta@\textbf{ON.eta}}
-for the order-\textit{N} energy functional minimization.
-This is useful if you do not know the position
-of the Fermi level, typically in the beginning
-of an order-\emph{N} run.
+  \note this option does not work in parallel. An alternative is to
+  obtain the approximate value of the chemical potential using an
+  initial diagonalization.
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN}.
-Overrides the value of \textbf{ON.eta}.
-Overrides the value of \textbf{ON.ChemicalPotential}, setting
-it to \texttt{.true.}.
-
-\textit{Default value:} \texttt{.false.}
-
-\textbf{Note:} This option does not work in parallel. An alternative
-is to obtain the approximate value of the chemical potential using
-an initial diagonalization.
-
-\item[\textbf{ON.ChemicalPotentialRc}]  (\textit{real length}):
-\index{ON.ChemicalPotentialRc@\textbf{ON.ChemicalPotentialRc}}
-\index{Chemical Potential}
-Defines the cutoff radius for the density matrix or Fermi
-operator in the calculation of the estimate of the
-Chemical Potential.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN}
-and \textbf{ON.ChemicalPotential} or  \textbf{ON.ChemicalPotentialUse}
-= \texttt{.true.}
-
-\textit{Default value:} \texttt{9.5 Bohr}.
-
-\item[\textbf{ON.ChemicalPotentialTemperature}]  (\textit{real temperature
-or energy}):
-\index{ON.ChemicalPotentialTemperature@\textbf{ON.ChemicalPotentialTemperature}}
-\index{Chemical Potential}
-Defines the temperature to be used in the Fermi function expansion
-in the calculation of the estimate of the Chemical Potential.
-To have an accurate results, this temperature should be smaller
-than the gap of the system.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN},
-and \textbf{ON.ChemicalPotential} or  \textbf{ON.ChemicalPotentialUse} =
-\texttt{.true.}
-
-\textit{Default value:} \texttt{0.05 Ry}.
-
-\item[\textbf{ON.ChemicalPotentialOrder}] (\textit{integer}):
-\index{ON.ChemicalPotentialOrder@\textbf{ON.ChemicalPotentialOrder}}
-\index{Chemical Potential}
-Order of the Chebishev expansion to calculate the estimate
-of the Chemical Potential.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OrderN},
-and \textbf{ON.ChemicalPotential} or  \textbf{ON.ChemicalPotentialUse} =
-\texttt{.true.}
-
-\textit{Default value:} \texttt{100}
-
-\item[\textbf{ON.LowerMemory}] (\textit{logical}):
-\index{ON.LowerMemory@\textbf{ON.LowerMemory}}\index{Lower order N memory}
-If .true., then a slightly reduced memory algorithm is used in the
-3-point line search during the order N minimisation. Only affects
-parallel runs.
-
-\textit{Use:} Used only if  \textbf{SolutionMethod} = \texttt{OrderN}
-
-\textit{Default value:} \texttt{.false.}
+\end{fdflogicalF}
 
 
-\end{description}
+\begin{fdflogicalF}{ON.ChemicalPotential.Use}
+  \index{Chemical Potential}
 
-\textbf{Output of localized wavefunctions}
+  Specifies whether to use the calculated estimate of the Chemical
+  Potential, instead of the parameter
+  \fdf{ON.eta} for the
+  order-$N$ energy functional minimization.  This is useful if
+  you do not know the position of the Fermi level, typically in the
+  beginning of an order-$N$ run.
 
+  \note this overrides the value of \fdf{ON.eta} and \fdf{ON.ChemicalPotential}.
+  Also, this option does not work in parallel. An alternative
+  is to obtain the approximate value of the chemical potential using
+  an initial diagonalization.
+  
+\end{fdflogicalF}
+
+\begin{fdfentry}{ON.ChemicalPotential.Rc}[length]<$9.5\,\mathrm{Bohr}$>
+  \index{Chemical Potential}
+
+  Defines the cutoff radius for the density matrix or Fermi operator
+  in the calculation of the estimate of the Chemical Potential.
+
+\end{fdfentry}
+
+\begin{fdfentry}{ON.ChemicalPotential.Temperature}[temperature/energy]<$0.05\,\mathrm{Ry}$>
+  \index{Chemical Potential}
+
+  Defines the temperature to be used in the Fermi function expansion
+  in the calculation of the estimate of the Chemical Potential.  To
+  have an accurate results, this temperature should be smaller than
+  the gap of the system.
+
+\end{fdfentry}
+
+\begin{fdfentry}{ON.ChemicalPotential.Order}[integer]<$100$>
+  \index{Chemical Potential}
+
+  Order of the Chebishev expansion to calculate the estimate of the
+  Chemical Potential.
+
+\end{fdfentry}
+
+\begin{fdflogicalF}{ON.LowerMemory}
+  \index{Lower order N memory}
+
+  If \fdftrue, then a slightly reduced memory algorithm is used in the
+  3-point line search during the order N minimisation. Only affects
+  parallel runs.
+
+\end{fdflogicalF}
+
+
+\paragraph{Output of localized wavefunctions}
 \index{Localized Wave Functions}
+
 At the end of each conjugate gradient minimization of the energy
 functional, the LWF's are stored on disk. These can be used as an
 input for the same system in a restart, or in case something goes
@@ -6274,22 +6231,15 @@ the whole minimization again. It is also a good practice to save it
 periodically during the simulation, in case a mid-run restart is
 necessary.
 
-\begin{description}
+\begin{fdflogicalF}{ON.UseSaveLWF}
+  \index{reading saved data!localized wave functions (order-$N$)}
+  \index{Restart of O(N) calculations}
 
-\item[\textbf{ON.UseSaveLWF}] (\textit{logical}):
-\index{ON.UseSaveLWF@\textbf{ON.UseSaveLWF}}
-\index{reading saved data!localized wave functions (order-$N$)}
-\index{Restart of O(N) calculations}
-Instructs to read the localized wave functions stored in file
-\texttt{SystemLabel}.LWF by a previous run.
+  Instructs to read the localized wave functions stored in file
+  \sysfile{LWF} by a previous run.
 
-\textit{Use:} Used only if \textbf{SolutionMethod} is \texttt{OrderN}.
-If the required file does not exist, a warning is
-printed but the program does not stop. Overrides \textbf{UseSaveData}.
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
-
-\end{description}
 
 \subsection{The PEXSI solver}
 \label{SolverPEXSI}
@@ -6361,6 +6311,7 @@ parameter (see Sec.~\ref{electronic-occupation}).
   Spectral gap. This can be set to be 0 in most cases.
 
 \end{fdfentry}
+
 
 \subsubsection{Parallel environment and control options}
 
