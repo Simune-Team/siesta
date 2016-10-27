@@ -8034,193 +8034,203 @@ directory, and also by Andrei Postnikov's utilities in
 \program{Util/Contrib/APostnikov}. See also \program{Util/Denchar} for
 an alternative way to plot the charge density (and wavefunctions).
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdflogicalF}{SaveRho}
+  \index{output!charge density}
 
-\item[\textbf{SaveRho}] (\textit{logical}): \index{SaveRho@\textbf{SaveRho}}\index{output!charge density} Instructs to write the
-  valence pseudocharge density at the mesh used by DHSCF, in file \sysfile{RHO}.
+  Instructs to write the valence pseudocharge density at the mesh used
+  by DHSCF, in file \sysfile{RHO}.
 
-\textit{Use:} File \texttt{SystemLabel}.RHO is only written, not read, by siesta.
-This file can be read by routine IORHO, which may be used by other
-application programs.
+  \note file \sysfile*{RHO} is only written, not read, by siesta.
+  This file can be read by routine IORHO, which may be used by other
+  application programs.
 
-If netCDF support is compiled in, the file \texttt{Rho.grid.nc} is produced.
+  If netCDF support is compiled in, the file \file{Rho.grid.nc} is
+  produced.
+  
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdflogicalF}{SaveDeltaRho}
+  \index{output!$\delta \rho(\vec r)$}
+
+  Instructs to write
+  $\delta \rho(\vec r) = \rho(\vec r) - \rho_{atm}(\vec r)$, i.e., the
+  valence pseudocharge density minus the sum of atomic valence
+  pseudocharge densities. It is done for the mesh points used by DHSCF
+  and it comes in file \sysfile{DRHO}. This file can be
+  read by routine IORHO, which may be used by an application program
+  in later versions.
+
+  \note file \sysfile*{DRHO} is only written, not read, by siesta.
+
+  If netCDF support is compiled in, the file \file{DeltaRho.grid.nc}
+  is produced.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{SaveRhoXC}
+  \index{output!charge density}
+  
+  Instructs to write the valence pseudocharge density at the mesh,
+  including the nonlocal core corrections used to calculate the
+  exchange-correlation energy, in file \sysfile{RHOXC}.
+
+  \textit{Use:} File \sysfile*{RHOXC} is only written, not read, by
+  siesta.
+
+  If netCDF support is compiled in, the file \file{RhoXC.grid.nc} is produced.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{SaveElectrostaticPotential}
+  \index{output!electrostatic potential}
+
+  Instructs to write the total electrostatic potential, defined as the
+  sum of the hartree potential plus the local pseudopotential, at the
+  mesh used by DHSCF, in file \sysfile{VH}. This file can be read by
+  routine IORHO, which may be used by an application program in later
+  versions.
+
+  \textit{Use:} File \sysfile*{VH} is only written, not read, by
+  siesta.
+
+  If netCDF support is compiled in, the file
+  \file{ElectrostaticPotential.grid.nc} is produced.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{SaveNeutralAtomPotential}
+  \index{output!electrostatic potential}
+
+  Instructs to write the neutral-atom potential, defined as the sum of
+  the hartree potential of a ``pseudo atomic valence charge'' plus the
+  local pseudopotential, at the mesh used by DHSCF, in file
+  \sysfile{VNA}. It is written at the start of the
+  self-consistency cycle, as this potential does not change.
+
+  \textit{Use:} File \sysfile*{VNA} is only written, not read, by
+  siesta.
+
+  If netCDF support is compiled in, the file \file{Vna.grid.nc} is
+  produced.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{SaveTotalPotential}
+  \index{output!total potential}
+
+  Instructs to write the valence total effective local potential
+  (local pseudopotential + Hartree + Vxc), at the mesh used by DHSCF,
+  in file \sysfile{VT}. This file can be read by routine
+  IORHO, which may be used by an application program in later
+  versions.
+
+  \textit{Use:} File \sysfile*{VT} is only written, not read, by
+  siesta.
+
+  If netCDF support is compiled in, the file
+  \file{TotalPotential.grid.nc} is produced.
+
+  \note a side effect; the vacuum level, defined as the effective
+  potential at grid points with zero density, is printed in the
+  standard output whenever such points exist (molecules, slabs) and
+  either \fdf{SaveElectrostaticPotential} or \fdf{SaveTotalPotential}
+  are \fdftrue.  In a symetric (nonpolar) slab, the work function can
+  be computed as the difference between the vacuum level and the Fermi
+  energy.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{SaveIonicCharge}
+  \index{output!ionic charge}
+
+  Instructs to write the soft diffuse ionic charge at the mesh used by
+  DHSCF, in file \sysfile{IOCH}. This file can be read by routine
+  IORHO, which may be used by an application program in later
+  versions. Remember that, within the \siesta\ sign convention, the
+  electron charge density is positive and the ionic charge density is
+  negative.
+
+  \textit{Use:} File \sysfile*{IOCH} is only written, not read, by siesta.
+
+  If netCDF support is compiled in, the file \file{Chlocal.grid.nc} is produced.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{SaveTotalCharge}
+  \index{output!total charge}
+
+  Instructs to write the total charge density (ionic+electronic) at
+  the mesh used by DHSCF, in file \sysfile{TOCH}. This file
+  can be read by routine IORHO, which may be used by an application
+  program in later versions.  Remember that, within the \siesta\ sign
+  convention, the electron charge density is positive and the ionic
+  charge density is negative.
+
+  \textit{Use:} File \sysfile*{TOCH} is only written, not read, by
+  siesta.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{SaveBaderCharge}
+  \index{output!Bader charge}
+
+  Instructs the program to save the charge density for further
+  post-processing by a Bader-analysis program.  This ``Bader
+  charge'' is the sum of the electronic valence charge density and a
+  set of ``model core charges'' placed at the atomic sites. For a
+  given atom, the model core charge has the same shape as the
+  ``local pseudopotential charge'' used elsewhere by \siesta\ (a
+  generalized Gaussian), but confined to a radius of 1.0 Bohr, and
+  integrating to the total core charge
+  ($Z$-$Z_{\mathrm{val}}$). These core charges are needed to provide
+  local maxima for the charge density at the atomic sites, which are
+  not guaranteed in a pseudopotential calculation. For hydrogen, an
+  artificial core of 1 electron is added, with a confinement radius
+  of 0.4 Bohr.  The Bader charge is projected on the grid points of
+  the mesh used by DHSCF, and saved in file
+  \sysfile{BADER}. This file can be post-processed by the
+  program \program{Util/grid2cube} to convert it to the ``cube''
+  format, accepted by several Bader-analysis programs (for example,
+  see \url{http://theory.cm.utexas.edu/bader/}).  Due to the need to
+  represent a localized core charge, it is advisable to use a
+  moderately high MeshCutoff when invoking this option (300-500
+  Ry). The size of the ``basin of attraction'' around each atom in
+  the Bader analysis should be monitored to check that the model
+  core charge is contained in it.
+
+  The suggested way to run the Bader analysis with the Univ. of
+  Texas code is to use both the RHO and BADER files (both in
+  ``cube'' format), with the BADER file providing the ``reference''
+  and the RHO file the actual significant valence charge data which
+  is important in bonding. (See the notes for pseudopotential codes
+  in the above web page.) For example, for the h2o-pop example:
+
+  \begin{shellexample}
+    bader h2o-pop.RHO.cube -ref h2o-pop.BADER.cube}
+  \end{shellexample}
+
+  If netCDF support is compiled in, the file \file{BaderCharge.grid.nc}
+  is produced.
+
+\end{fdflogicalF}
 
 
-\item[\textbf{SaveDeltaRho}] (\textit{logical}):
-\index{SaveDeltaRho@\textbf{SaveDeltaRho}}\index{output!$\delta \rho(\vec r)$}
-Instructs to write $\delta \rho(\vec r) = \rho(\vec r) - \rho_{atm}(\vec r)$,
-i.e., the valence pseudocharge density minus the sum of atomic valence
-pseudocharge densities. It is done for the mesh points used by DHSCF and it
-comes in file \texttt{SystemLabel}.DRHO. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
+\begin{fdflogicalF}{SaveInitialChargeDensity}
+  \index{output!charge density}
 
-\textit{Use:} File \texttt{SystemLabel}.DRHO is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file \texttt{DeltaRho.grid.nc} is produced.
-
-\textit{Default value:} \texttt{.false.}
-
-
-\item[\textbf{SaveRhoXC}] (\textit{logical}): \index{SaveRhoXC@\textbf{SaveRhoXC}}\index{output!charge density} Instructs to write the
-  valence pseudocharge density at the mesh, including the nonlocal
-core corrections used to calculate the exchange-correlation energy, 
-in file \sysfile{RHOXC}.
-
-\textit{Use:} File \texttt{SystemLabel}.RHOXC is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file \texttt{RhoXC.grid.nc} is produced.
-
-\textit{Default value:} \texttt{.false.}
-
-
-\item[\textbf{SaveElectrostaticPotential}] (\textit{logical}):
-\index{SaveElectrostaticPotential@\textbf{SaveElectrostaticPotential}}
-\index{output!electrostatic potential}
-Instructs to write the total electrostatic potential, defined as the
-sum of the hartree potential plus the local pseudopotential, at the
-mesh used by DHSCF,
-in file \texttt{SystemLabel}.VH. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-
-\textit{Use:} File \texttt{SystemLabel}.VH is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file \file{ElectrostaticPotential.grid.nc} is produced.
-
-\textit{Default value:} \texttt{.false.}
-
-\item[\textbf{SaveNeutralAtomPotential}] (\textit{logical}):
-\index{SaveNeutralAtomPotential@\textbf{SaveNeutralAtomPotential}}
-\index{output!electrostatic potential}
-Instructs to write the neutral-atom potential, defined as the
-sum of the hartree potential of a ``pseudo atomic valence charge''
-plus the local pseudopotential, at the mesh used by DHSCF,
-in file \texttt{SystemLabel}.VNA. It is written at the start of the
-self-consistency cycle, as this potential does not change.
-
-\textit{Use:} File \texttt{SystemLabel}.VNA is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file \texttt{Vna.grid.nc} is produced.
-
-\textit{Default value:} \texttt{.false.}
-
-
-\item[\textbf{SaveTotalPotential}] (\textit{logical}):
-\index{SaveTotalPotential@\textbf{SaveTotalPotential}}
-\index{output!total potential}
-Instructs to write the valence total effective local potential
-(local pseudopotential + Hartree + Vxc), at the
-mesh used by DHSCF,
-in file \texttt{SystemLabel}.VT. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-
-\textit{Use:} File \texttt{SystemLabel}.VT is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file \texttt{TotalPotential.grid.nc} is produced.
-
-\textit{Default value:} \texttt{.false.}
-
-\textit{Side effect:} the vacuum level, defined as the effective 
-potential at grid points with zero density, is printed in the standard 
-output whenever such points exist (molecules, slabs) and either 
-SaveElectrostaticPotential or SaveTotalPotential are true.
-In a symetric (nonpolar) slab, the work function can be computed as 
-the difference between the vacuum level and the Fermi energy.
-
-
-\item[\textbf{SaveIonicCharge}] (\textit{logical}):
-\index{SaveIonicCharge@\textbf{SaveIonicCharge}}
-\index{output!ionic charge}
-Instructs to write the soft diffuse ionic charge at the
-mesh used by DHSCF,
-in file \texttt{SystemLabel}.IOCH. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-Remember that, within the \siesta\ sign convention, the electron charge
-density is positive and the ionic charge density is negative.
-
-
-\textit{Use:} File \texttt{SystemLabel}.IOCH is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file \texttt{Chlocal.grid.nc} is produced.
-
-\textit{Default value:} \texttt{.false.}
-
-\item[\textbf{SaveTotalCharge}] (\textit{logical}):
-\index{SaveTotalCharge@\textbf{SaveTotalCharge}}
-\index{output!total charge}
-Instructs to write the total charge density (ionic+electronic) at the
-mesh used by DHSCF,
-in file \texttt{SystemLabel}.TOCH. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-Remember that, within the \siesta\ sign convention, the electron charge
-density is positive and the ionic charge density is negative.
-
-\textit{Use:} File \texttt{SystemLabel}.TOCH is only written, not read, by siesta.
-
-\textit{Default value:} \texttt{.false.}
-
-\item[\textbf{SaveBaderCharge}] (\textit{logical}):
-\index{SaveBaderCharge@\textbf{SaveBaderCharge}} \index{output!Bader
-    charge} Instructs the program to save the charge density for
-further post-processing by a Bader-analysis program.  This ``Bader
-charge'' is the sum of the electronic valence charge density and a set
-of ``model core charges'' placed at the atomic sites. For a given
-atom, the model core charge has the same shape as the ``local
-pseudopotential charge'' used elsewhere by \siesta\ (a generalized
-Gaussian), but confined to a radius of 1.0 Bohr, and integrating to
-the total core charge ($Z$-$Z_{\mathrm{val}}$). These core charges are
-needed to provide local maxima for the charge density at the atomic
-sites, which are not guaranteed in a pseudopotential calculation. For
-hydrogen, an artificial core of 1 electron is added, with a
-confinement radius of 0.4 Bohr.  The Bader charge is projected on the
-grid points of the mesh used by DHSCF, and saved in file
-\texttt{SystemLabel}.BADER. This file can be post-processed by the
-program \texttt{Util/grid2cube} to convert it to the ``cube'' format,
-accepted by several Bader-analysis programs (for example, see
-\url{http://theory.cm.utexas.edu/bader/}).  Due to the need to
-represent a localized core charge, it is advisable to use a moderately
-high MeshCutoff when invoking this option (300-500 Ry). The size of
-the ``basin of attraction'' around each atom in the Bader analysis
-should be monitored to check that the model core charge is contained
-in it.
-
-  The suggested way to run the Bader analysis with the Univ. of Texas
-  code is to use both the RHO and BADER files (both in ``cube''
-  format), with the BADER file providing the ``reference'' and the RHO
-  file the actual significant valence charge data which is important
-  in bonding. (See the notes for pseudopotential codes in the above
-  web page.) For example, for the h2o-pop example:
-
-  \texttt{bader  h2o-pop.RHO.cube -ref h2o-pop.BADER.cube}
-
-
-If netCDF support is compiled in, the file \texttt{BaderCharge.grid.nc}
-is produced.
-
-\textit{Default value:} \texttt{.false.}
-
-
-
-\item[\textbf{SaveInitialChargeDensity}] (\textit{logical}):
-  \index{SaveInitialChargeDensity@\textbf{SaveInitialChargeDensity}}\index{output!charge density}
-
-  If ``true'', the program generates a \texttt{SystemLabel}.RHOINIT file
-  (and a \texttt{RhoInit.grid.nc} file if netCDF support is compiled in)
-  containing the charge density used to start the first
+  If \fdftrue, the program generates a \sysfile{RHOINIT}
+  file (and a \file{RhoInit.grid.nc} file if netCDF support is
+  compiled in) containing the charge density used to start the first
   self-consistency step, and it stops. Note that if an initial density
   matrix (DM file) is used, it is not normalized. This is useful to
   generate the charge density associated to ``partial'' DMs, as
-  created by progras such as \texttt{dm\_creator} and \texttt{dm\_filter}.
+  created by progras such as \program{dm\_creator} and
+  \program{dm\_filter}.
 
-\textit{Default value:} \texttt{.false.}
+\end{fdflogicalF}
 
 
-\end{description}
 
-\vspace{5pt}
 \subsection{Auxiliary Force field}
 \fdfindex{MM}
 
@@ -8236,13 +8246,19 @@ used for that.
   of molecular mechanics potentials between species. The following
   potentials are currently implemented:
   \begin{itemize}
-    \item C6, C8, C10 powers of the Tang-Toennes damped dispersion
+    \item%
+    C6, C8, C10 powers of the Tang-Toennes damped dispersion
     potential.
-    \item A harmonic interaction.
-    \item A dispersion potential of the Grimme type (similar to the C6
+
+    \item%
+    A harmonic interaction.
+
+    \item%
+    A dispersion potential of the Grimme type (similar to the C6
     type but with a different damping function). (See S. Grimme,
     J. Comput. Chem. Vol 27, 1787-1799 (2006)). See also
     \fdf{MM!Grimme.D} and \fdf{MM!Grimme.S6} below. 
+
   \end{itemize}
 
   The format of the input is the two species numbers that are to
@@ -8308,7 +8324,6 @@ used for that.
 \end{fdfentry}
 
 
-\vspace{5pt}
 \subsection{Parallel options}
 
 \begin{description}
