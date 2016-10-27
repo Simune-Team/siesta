@@ -8326,53 +8326,46 @@ used for that.
 
 \subsection{Parallel options}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
 
-\item[\textbf{BlockSize}] (\textit{integer}): \index{BlockSize@\textbf{BlockSize}} The orbitals are distributed over the processors when
-running in parallel using a 1-D block-cyclic algorithm. \textbf{BlockSize} is the number of consecutive orbitals which are located on
-a given processor before moving to the next one. Large values of this
-parameter lead to poor load balancing, while small values can lead to
-inefficient execution.  The performance of the parallel code can be
-optimised by varying this parameter until a suitable value is found.
+\begin{fdfentry}{BlockSize}[integer]<\nonvalue{automatic}>
 
-\textit{Use:} Controls the blocksize used for distributing orbitals over
-processors
+  The orbitals are distributed over the processors when running in
+  parallel using a 1-D block-cyclic algorithm. \fdf{BlockSize} is
+  the number of consecutive orbitals which are located on a given
+  processor before moving to the next one. Large values of this
+  parameter lead to poor load balancing, while small values can lead
+  to inefficient execution.  The performance of the parallel code can
+  be optimised by varying this parameter until a suitable value is
+  found.
 
-\textit{Default value:}  Estimated by a heuristic algorithm, with a
-maximum value of 24. The imbalance in the distribution is not
-larger than 2.
+\end{fdfentry}
 
-\item[\textbf{ProcessorY}] (\textit{integer}): \index{ProcessorY@\textbf{ProcessorY}} The mesh points are divided in the Y and Z directions
-(more precisely, along the second and third lattice vectors)
-over the processors in a 2-D grid. \textbf{ProcessorY} specifies the
-dimension of the processor grid in the Y-direction and must be a
-factor of the total number of processors. Ideally the processors
-should be divided so that the number of mesh points per processor
-along each axis is as similar as possible.
+\begin{fdfentry}{ProcessorY}[integer]<\nonvalue{automatic}>
+  
+  The mesh points are divided in the Y and Z directions (more
+  precisely, along the second and third lattice vectors) over the
+  processors in a 2-D grid. \fdf{ProcessorY} specifies the
+  dimension of the processor grid in the Y-direction and must be a
+  factor of the total number of processors. Ideally the processors
+  should be divided so that the number of mesh points per processor
+  along each axis is as similar as possible.
 
-\textit{Use:} Controls the dimensions of the 2-D processor grid for mesh
-distribution
+  Defaults to a multiple of number of processors.
 
-\textit{Default value:} Variable - chosen using multiples of factors of
-  the total number of processors
+\end{fdfentry}
 
-\item[\textbf{Diag.Memory}] (\textit{real no units}):
-\index{Diag.Memory@\textbf{Diag.Memory}}
-Whether the parallel diagonalisation of a matrix is successful or not can
-depend on how much workspace is available to the routine when there are
-clusters of eigenvalues. \textbf{Diag.Memory} allows the user to increase
-the memory available, when necessary, to achieve successful diagonalisation
-and is a scale factor relative to the minimum amount of memory that
-SCALAPACK might need.
 
-\textit{Use:} Controls the amount of workspace available to parallel
-matrix diagonalisation
+\begin{fdfentry}{Diag!Memory}[real]<$1$>
+  
+  Whether the parallel diagonalisation of a matrix is successful or
+  not can depend on how much workspace is available to the routine
+  when there are clusters of eigenvalues. \fdf{Diag!Memory} allows
+  the user to increase the memory available, when necessary, to
+  achieve successful diagonalisation and is a scale factor relative to
+  the minimum amount of memory that SCALAPACK might need.
 
-\textit{Default value:}  1.0
+\end{fdfentry}
 
-\end{description}
 
 \begin{fdflogicalF}{Diag!ParallelOverK}
   
@@ -8408,50 +8401,47 @@ efficient: spatial decomposition (based on atom proximity), and domain
 decomposition (based on the most efficient abstract partition of the
 interaction graph of the Hamiltonian). 
 
-\begin{description}
 
-\item[\textbf{UseDomainDecomposition}] (\textit{logical}):
-  \index{UseDomainDecomposition@\textbf{UseDomainDecomposition}} This
-  option instructs the program to employ a graph-partitioning
-  algorithm (using the \texttt{METIS} library (See \url{www.cs.umn.edu/~metis}) 
-  to find an efficient distribution of the
-  orbital data over processors.  To use this option (meaningful only
-  in parallel) the program has to be compiled with the preprocessor
-  option \texttt{ON\_DOMAIN\_DECOMP} and the \texttt{METIS} library has to
+\begin{fdflogicalF}{UseDomainDecomposition}
+  
+  This option instructs the program to employ a graph-partitioning
+  algorithm (using the \program{METIS} library (See
+  \url{www.cs.umn.edu/~metis}) to find an efficient distribution of
+  the orbital data over processors.  To use this option (meaningful
+  only in parallel) the program has to be compiled with the
+  preprocessor option \shell{SIESTA\_\_METIS} (or the deprecated
+  \shell{ON\_DOMAIN\_DECOMP}) and the \program{METIS} library has to
   be linked in.
 
-\textit{Default value:}  false
+\end{fdflogicalF}
 
-\item[\textbf{UseSpatialDecomposition}] (\textit{logical}):
-  \index{UseSpatialDecomposition@\textbf{UseSpatialDecomposition}} When
-  performing a parallel order N calculation, this option instructs the
-  program to execute a spatial decomposition algorithm in which the
-  system is divided into cells, which are then assigned, together with
-  the orbitals centered in them, to the different processors. The size
-  of the cells is, by default, equal to the maximum distance at which
-  there is a non-zero matrix element in the Hamiltonian between two
-  orbitals, or the radius of the Localized Wannier function - which
-  ever is the larger. If this is the case, then an orbital will only
-  interact with other orbitals in the same or neighbouring
-  cells. However, by decreasing the cell size and searching over more
-  cells it is possible to achieve better load balance in some
-  cases. This is controlled by the variable \textbf{RcSpatial}.
+\begin{fdflogicalF}{UseSpatialDecomposition}
 
-NOTE: The distribution algorithm is quite fragile and a careful tuning
-of \textbf{RcSpatial} might be needed. This option is therefore not
-enabled by default.
+  When performing a parallel order N calculation, this option
+  instructs the program to execute a spatial decomposition algorithm
+  in which the system is divided into cells, which are then assigned,
+  together with the orbitals centered in them, to the different
+  processors. The size of the cells is, by default, equal to the
+  maximum distance at which there is a non-zero matrix element in the
+  Hamiltonian between two orbitals, or the radius of the Localized
+  Wannier function - which ever is the larger. If this is the case,
+  then an orbital will only interact with other orbitals in the same
+  or neighbouring cells. However, by decreasing the cell size and
+  searching over more cells it is possible to achieve better load
+  balance in some cases. This is controlled by the variable
+  \fdf{RcSpatial}.
 
-\textit{Default value:}  false
+  \note the distribution algorithm is quite fragile and a careful
+  tuning of \fdf{RcSpatial} might be needed. This option is therefore
+  not enabled by default.
 
-\item[\textbf{RcSpatial}] (\textit{real distance}):
-\index{RcSpatial@\textbf{RcSpatial}}
+\end{fdflogicalF}
 
-Controls the cell size during the spatial decomposition.
+\begin{fdfentry}{RcSpatial}[length]<\nonvalue{maximum orbital range}>
+  
+  Controls the cell size during the spatial decomposition.
 
-\textit{Default value:}  maximum of the matrix element range or the
-Localized Wannier Function radius
-
-\end{description}
+\end{fdfentry}
 
 
 \subsection{Efficiency options}
@@ -8550,48 +8540,41 @@ always include all arrays.
 This is a dangerous feature, and is deprecated, but retained for
 historical compatibility. Use the individual options instead.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+
+\begin{fdflogicalF}{UseSaveData}
+  \index{reading saved data!all} 
+
+  Instructs to use as much information as possible stored from
+  previous runs in files \sysfile{XV}, \sysfile{DM} and \sysfile{LWF},
+
+  \note if the files are not existing it will read the information
+  from the fdf file.
+
+\end{fdflogicalF}
 
 
-\item[\textbf{UseSaveData}] (\textit{logical}): \index{UseSaveData@\textbf{UseSaveData}} \index{reading saved data!all} Instructs to use as
-  much information as possible stored from previous runs in files \sysfile{XV}
-  \sysfile{DM} and \sysfile{LWF},
-  where SystemLabel is the name associated to parameter \fdf{SystemLabel}.
 
-\textit{Use:} If the required files do not exist, warnings are
-printed but the program does not stop.
-
-\textit{Default value:} \texttt{.false.}
-
-\end{description}
-
-\vspace{5pt}
 \subsection{Output of information for Denchar}
 \index{denchar}
 
-The program \texttt{denchar} in \texttt{Util/Denchar} can generate
+The program \program{denchar} in \program{Util/Denchar} can generate
 charge-density and wavefunction information in real space.
 
-\begin{description}
+\begin{fdflogicalF}{WriteDenchar}
+  \index{output!charge density and/or wfs for DENCHAR code} 
 
-  \item[\textbf{WriteDenchar}] (\textit{logical}):
-  \index{WriteDenchar@\textbf{WriteDenchar}} \index{output!charge density
-      and/or wfs for DENCHAR code} Instructs to write information
-  needed by the utility program DENCHAR (by J. Junquera and
-  P. Ordej\'on) to generate valence charge densities and/or
-  wavefunctions in real space (see \program{Util/Denchar}). The
-  information is written in files \sysfile{PLD} and \sysfile{DIM}.
+  Instructs to write information needed by the utility program DENCHAR
+  (by J. Junquera and P. Ordej\'on) to generate valence charge
+  densities and/or wavefunctions in real space (see
+  \program{Util/Denchar}). The information is written in files
+  \sysfile{PLD} and \sysfile{DIM}.
 
-To run DENCHAR you will need, apart from the PLD and DIM files,
-the Density-Matrix (DM) file and/or a wavefunction (WFSX)
-file, and the .ion files containing the information about the basis
-orbitals.
+  To run DENCHAR you will need, apart from the \sysfile*{PLD} and \sysfile*{DIM} files,
+  the Density-Matrix (DM) file and/or a wavefunction (\sysfile*{WFSX})
+  file, and the .ion files containing the information about the basis
+  orbitals.
 
-\textit{Default value:} \texttt{.false.}
-
-\end{description}
+\end{fdflogicalF}
 
 
 \subsection{NetCDF-4 output file}
@@ -8675,76 +8658,87 @@ to the next cycle.
 
 Several options for MD and structural optimizations are
 implemented, selected by
-\textbf{MD.TypeOfRun} (\textit{string}):
-\index{MD.TypeOfRun@\textbf{MD.TypeOfRun}}
+\begin{fdfentry}{MD.TypeOfRun}[string]<CG>
 
-\begin{itemize}
+  \begin{fdfoptions}
+    
+    \option[CG]%
+    Coordinate optimization by conjugate gradients). Optionally (see
+    variable \fdf{MD.VariableCell} below), the optimization can include the
+    cell vectors.
 
-\item \texttt{CG} Coordinate optimization by conjugate
-  gradients). Optionally (see variable MD.VariableCell below), the
-  optimization can include the cell vectors.
+    \option[Broyden]%
+    Coordinate optimization by a modified Broyden scheme). Optionally,
+    (see variable \fdf{MD.VariableCell} below), the optimization can
+    include the cell vectors.
 
-\item \texttt{Broyden} Coordinate optimization by a modified Broyden
-  scheme). Optionally, (see variable MD.VariableCell below), the
-  optimization can include the cell vectors.
+    \option[FIRE]%
+    Coordinate optimization by Fast Inertial Relaxation Engine (FIRE)
+    (E. Bitzek et al, PRL 97, 170201, (2006)).  Optionally, (see
+    variable \fdf{MD.VariableCell} below), the optimization can
+    include the cell vectors.
 
-\item \texttt{FIRE} Coordinate optimization by Fast Inertial Relaxation
-  Engine (FIRE) (E. Bitzek et al, PRL 97, 170201, (2006)).
-  Optionally, (see variable MD.VariableCell below), the
-  optimization can include the cell vectors.
+    \option[Verlet]%
+    Standard Verlet algorithm MD
 
-\item \texttt{Verlet} Standard Verlet algorithm MD
+    \option[Nose]%
+    MD with temperature controlled  by means of a Nos\'e
+    thermostat
 
-\item \texttt{Nose}  MD with temperature controlled  by means of a Nos\'e
-thermostat
+    \option[ParrinelloRahman]%
+    MD with pressure controlled by the Parrinello-Rahman method
 
-\item \texttt{ParrinelloRahman}  MD with pressure controlled by
-the Parrinello-Rahman method
+    \option[NoseParrinelloRahman]%
+    MD with temperature controlled by means of a Nos\'e thermostat and
+    pressure controlled by the Parrinello-Rahman method
 
-\item \texttt{NoseParrinelloRahman}  MD with temperature controlled
-by means of a Nos\'e thermostat and pressure controlled by
-the Parrinello-Rahman method
+    \option[Anneal]%
+    MD with annealing to a desired temperature and/or pressure (see
+    variable \fdf{MD.AnnealOption} below)
 
-\item \texttt{Anneal}  MD with annealing to a desired
-temperature and/or pressure (see variable MD.AnnealOption below)
-
-\item \texttt{FC} Compute force constants matrix\index{Force Constants
-  Matrix} for phonon calculations.
+    \option[FC]%
+    Compute force constants matrix\index{Force Constants Matrix} for
+    phonon calculations.
 
 
-\item \texttt{Forces} (Receive coordinates from, and return forces to, an
-  external driver program, using MPI, Unix pipes, or Inet sockets for 
-  communication.
-  The routines in module fsiesta allow the user's program to perform
-  this communication transparently, as if siesta were a conventional
-  force-field subroutine. See \texttt{Util/SiestaSubroutine/README} for
-  details. WARNING: if this option is specified without a driver
-  program sending data, siesta may hang without any notice).
+    \option[Forces]%
+    (Receive coordinates from, and return forces to, an external
+    driver program, using MPI, Unix pipes, or Inet sockets for
+    communication.  The routines in module fsiesta allow the user's
+    program to perform this communication transparently, as if siesta
+    were a conventional force-field subroutine. See
+    \shell{Util/SiestaSubroutine/README} for details. WARNING: if
+    this option is specified without a driver program sending data,
+    siesta may hang without any notice).
+    
+    See directory Util/Scripting \index{Scripting} for other driving options.
+  \end{fdfoptions}
 
-See directory Util/Scripting \index{Scripting} for other driving options.
+  \note if \fdf{compat-pre-v4-dynamics} is \fdftrue\ this will default
+  to \fdf*{Verlet}.
 
-\end{itemize}
+  Note that some options specified in later variables (like quenching)
+  modify the behavior of these MD options.
 
-\textit{Default value:} \texttt{CG} (except if \textbf{compat-pre-v4-dynamics}
-is set. See the notes below.
-
-Note that some options specified in later variables
-(like quenching) modify the behavior of these MD options.
-
-Appart from being able to act as a force subroutine for a driver program that
-uses module fsiesta, \siesta\ is also prepared to communicate with the 
-i-PI code (see \texttt{http://epfl-cosmo.github.io/gle4md/index.html?page=ipi}).
-To do this, \siesta\ must be started after i-PI (it acts as a client of
-i-PI, communicating with it through Inet or Unix sockets), and the following 
-lines must be present in the .fdf data file:
-\begin{verbatim}
+  Appart from being able to act as a force subroutine for a driver
+  program that uses module fsiesta, \siesta\ is also prepared to
+  communicate with the i-PI code (see
+  \texttt{http://epfl-cosmo.github.io/gle4md/index.html?page=ipi}).
+  To do this, \siesta\ must be started after i-PI (it acts as a client
+  of i-PI, communicating with it through Inet or Unix sockets), and
+  the following lines must be present in the .fdf data file:
+  \begin{fdfexample}
      MD.TypeOfRun      Master     # equivalent to 'Forces'
      Master.code       i-pi       # ( fsiesta | i-pi )
      Master.interface  socket     # ( pipes | socket | mpi )
      Master.address    localhost  # or driver's IP, e.g. 150.242.7.140
      Master.port       10001      # 10000+siesta_process_order
      Master.socketType inet       # ( inet | unix )
-\end{verbatim}
+  \end{fdfexample}
+
+\end{fdfentry}
+
+
 
 \subsection{Compatibility with pre-v4 versions}
 \index{Backward compatibility}
@@ -8755,18 +8749,27 @@ coordinates to work with during post-processing of the electronic
 structure. The changes are:
 
 \begin{itemize}
-\item The default dynamics option is ``CG'' instead of ``Verlet''.
-\item The coordinates, if moved by the dynamics routines, are reset to
-their values at the previous step for the analysis of the electronic 
-structure (band structure calculations, DOS, LDOS, etc).
-\item Some output files reflect the values of the ``un-moved''
+  \item %
+  The default dynamics option is ``CG'' instead of ``Verlet''.
+
+  \item%
+  The coordinates, if moved by the dynamics routines, are reset to
+  their values at the previous step for the analysis of the electronic 
+  structure (band structure calculations, DOS, LDOS, etc).
+
+  \item%
+  Some output files reflect the values of the ``un-moved''
   coordinates.
-\item The default convergence criteria is now \emph{both} density
-and Hamiltonian convergence, see \fdf{SCF.Converge!DM} and \fdf{SCF.Converge!H}.
+
+  \item%
+  The default convergence criteria is now \emph{both} density and
+  Hamiltonian convergence, see \fdf{SCF.Converge!DM} and
+  \fdf{SCF.Converge!H}.
+
 \end{itemize}
 
 To recover the previous behavior, the user can turn on the
-compatibility switch \textbf{compat-pre-v4-dynamics}, which is off by
+compatibility switch \fdf{compat-pre-v4-dynamics}, which is off by
 default.
 
 Note that complete compatibility cannot be perfectly guaranteed.
