@@ -2310,7 +2310,7 @@ Note: The perturbative method has traditionally used the 'l' component
 of the pseudopotential. It can be argued that it should use the 'l+1'
 component. By default, for backwards compatibility, the traditional
 method is used, but the alternative one can be activated by setting
-the logical \fdf*{PAO!OldStylePolOrbs} variable to \fdffalse.
+the logical \fdf{PAO!OldStylePolOrbs} variable to \fdffalse.
 
 There is a different possibility for generating polarization orbitals:
 by introducing them explicitly in the \fdf{PAO!Basis} block.
@@ -2393,7 +2393,7 @@ above.
   To be implemented: If \fdf{MeshCutoff} is not present in the
   input file, it can be set using the maximum filtering cutoff used
   for the given \fdf{FilterTol} (for the time being, you can use
-  \fdf*{AtomSetupOnly T} to stop the program after basis generation,
+  \fdf{AtomSetupOnly} \fdftrue\ to stop the program after basis generation,
   look at the maximum filtering cutoff used, and set the mesh-cutoff
   manually in a later run.)
 
@@ -3134,7 +3134,7 @@ structural information (maybe too many).
     \method{Sies2arc}\index{Sies2arc@\program{Sies2arc}} postprocessing
     utility in the Util/ directory, and it 
     requires the coordinates to be accumulated in the output file, i.e.,
-    \fdf*{WriteCoorStep = \fdftrue}
+    \fdf{WriteCoorStep} \fdftrue.
 
   \end{fdflogicalF}
 
@@ -3312,14 +3312,13 @@ of States sections.
   cell vectors.
   
   
-  \textit{Use:} Used only if \fdf*{SolutionMethod diagon}.
-  The k-grid supercell is compatible and unrelated
-  (except for the default value, see below)
-  with the \fdf{SuperCell} specifier. Both supercells are given in
-  terms of the CELL specified by the \fdf{LatticeVectors} block.
-  If \texttt{Mk} is the identity matrix and \texttt{dk}
-  is zero, only the $\Gamma$ point of the \textbf{unit} cell is used.
-  Overrides \fdf{kgrid!Cutoff}
+  \textit{Use:} Used only if \fdf{SolutionMethod} \fdf*{diagon}.  The
+  k-grid supercell is compatible and unrelated (except for the default
+  value, see below) with the \fdf{SuperCell} specifier. Both
+  supercells are given in terms of the CELL specified by the
+  \fdf{LatticeVectors} block.  If \texttt{Mk} is the identity matrix
+  and \texttt{dk} is zero, only the $\Gamma$ point of the
+  \textbf{unit} cell is used.  Overrides \fdf{kgrid!Cutoff}
 
 \end{fdfentry}
 
@@ -3602,8 +3601,7 @@ are always stored in the file \sysfile{KP}.
   \fdfindex{TotalSpin}[|Spin!Total]
   
   Value of the imposed total spin polarization of the system (in units
-  of the electron spin, 1/2). It is only used if \fdf*{Spin.Fix =
-      \fdftrue}.
+  of the electron spin, 1/2). It is only used if \fdf{Spin!Fix} \fdftrue.
   
 \end{fdfentry}
 
@@ -3683,8 +3681,8 @@ low \fdf{ElectronicTemperature}, extremely small \fdf{SCF.Tolerance!H}
 and high values of \fdf{MeshCutoff}.  We encourage the user to test
 carefully these options for each system. An additional point to take
 into account when the spin--orbit contribution is included is the
-mixing scheme employed. You are encouraged to use \fdf*{SCF.Mix
-    hamiltonian} instead of the density matrix, due to the fact that
+mixing scheme employed. You are encouraged to use \fdf{SCF.Mix}
+\fdf*{hamiltonian} instead of the density matrix, due to the fact that
 the convergence speed increases considerably for the first case. In
 addition, the pseudopotentials have to be well generated and tested
 for each specific system and they have to be generated in their fully
@@ -4110,7 +4108,7 @@ control commands. This can greatly speed up convergence.
 \begin{fdfentry}{SCF.Mixers}[block]
   
   Each line in this block defines a separate mixer that is defined in
-  a subsequent \fdf*{SCF.Mixer.<>} block.
+  a subsequent \fdf{SCF.Mixer.<>} block.
 
   The first line is the initial mixer used.
 
@@ -4900,7 +4898,7 @@ The Density matrix can be:
   non-polarized initialization.  For non-collinear spin, the spin
   direction may be specified for each atom by the polar angles theta
   and phi, given as the last two arguments in degrees. If not
-  specified, theta=0 is assumed.  \fdf*{Spin non-collinear} must be
+  specified, theta=0 is assumed.  \fdf{Spin} \fdf*{non-collinear} must be
   \fdftrue\ to use the spin direction.
 
   Example:
@@ -5004,7 +5002,7 @@ which the I/O could take a significant fraction of the total
 computation time.
   
 To enable this``blocked format'' (recommended for large-scale
-calculations) use the option \fdf*{Use.Blocked.WriteMat T}. Note that
+calculations) use the option \fdf{Use.Blocked.WriteMat} \fdftrue. Note that
 it is off by default.
   
 The new format is not backwards compatible. A converter program
@@ -5017,7 +5015,7 @@ analyzing files.
 Note that TranSiesta will continue to produce .DM files, in the old
 format (See save\_density\_matrix.F)
 
-( To test the new features, the option \fdf*{S.Only T} can be used. It
+( To test the new features, the option \fdf{S.Only} \fdftrue\ can be used. It
 will produce three files: a standard one, another one with optimized
 MPI communications, and a third, blocked one.  )
 
@@ -5784,7 +5782,7 @@ Secs.~\ref{sec:band-structure} and~\ref{sec:wf-output-user}, respectively.
 
 The complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to a NetCDF file
-\sysfile*{WFS.nc} if the \fdf{Diag!UseNewDiagk} option is in effect.
+\file{WFS.nc} if the \fdf{Diag!UseNewDiagk} option is in effect.
 
 The complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to \sysfile{fullBZ.WFSX}
@@ -6774,104 +6772,86 @@ energy.
 
 This calculation of the band structure is performed optionally after
 the geometry loop finishes, and the output information written
-to the SystemLabel.bands file (see below for the format).
+to the \sysfile{bands} file (see below for the format).
 
-\begin{description}
+\begin{fdfentry}{BandLinesScale}[string]<pi/a>
+  
+  Specifies the scale of the $k$ vectors given in \fdf{BandLines}
+  and \fdf{BandPoints} below.  The options are:
+  \begin{fdfoptions}
+    \option[pi/a]%
+    k-vector coordinates are given in Cartesian coordinates, in units
+    of $\pi/a$, where $a$ is the lattice constant
 
-\itemsep 10pt
-\parsep 0pt
+    \option[ReciprocalLatticeVectors]%
+    $k$ vectors are given in reciprocal-lattice-vector coordinates
+  \end{fdfoptions}
 
-\item[\textbf{BandLinesScale}] (\textit{string}):
-\index{BandLinesScale@\textbf{BandLinesScale}}
-Specifies the scale of the $k$ vectors given in \textbf{BandLines}
-and \textbf{BandPoints} below.
-The options are:
-\begin{itemize}
-\item \texttt{pi/a} (k-vector coordinates are given in Cartesian
-coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
-\item \texttt{ReciprocalLatticeVectors} ($k$ vectors are given in
-reciprocal-lattice-vector coordinates)
-\end{itemize}
+  \note you might need to define explicitly a LatticeConstant tag in
+  your fdf file if you do not already have one, and make it consistent
+  with the scale of the k-points and any unit-cell vectors you might
+  have already defined.
 
-\textit{Default value:} \texttt{pi/a}
+\end{fdfentry}
 
-\textbf{Note:} You might need to define explicitly a LatticeConstant tag
-in your fdf file if you do not already have one, and make it
-consistent
-with the scale of the k-points and any unit-cell vectors you might
-have already defined.
+\begin{fdfentry}{BandLines}[block]
 
-\item[\textbf{BandLines}] (\textit{data block}):
-\index{BandLines@\textbf{BandLines}}
-Specifies the lines along which band energies are calculated
-(usually along high-symmetry directions).
-An example for an FCC lattice is:
-
-\begin{verbatim}
+  Specifies the lines along which band energies are calculated
+  (usually along high-symmetry directions).  An example for an FCC
+  lattice is:
+  \begin{fdfexample}
      %block BandLines
        1  1.000  1.000  1.000  L        # Begin at L
       20  0.000  0.000  0.000  \Gamma   # 20 points from L to gamma
       25  2.000  0.000  0.000  X        # 25 points from gamma to X
       30  2.000  2.000  2.000  \Gamma   # 30 points from X to gamma
      %endblock BandLines
-\end{verbatim}
+  \end{fdfexample}
+  where the last column is an optional \LaTeX\ label for use in the
+  band plot. If only given points (not lines) are required, simply
+  specify 1 in the first column of each line. The first column of the
+  first line must be always 1.
 
-where the last column is an optional \LaTeX\ label for use in the band plot.
-If only given points (not lines) are required, simply specify 1 in the
-first column of each line. The first column of the first line must be
-always 1.
+  \note this block is not used if \fdf{BandPoints} is present.
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{diagon}.
-The band k points are unrelated and compatible with any k-grid used
-to calculate the total energy and charge density.
-This block is overriden by \textbf{BandPoints} if both are present.
+\end{fdfentry}
 
-\textit{Default value:} No band energies calculated.
-
-\item[\textbf{BandPoints}] (\textit{data block}):
-\index{BandPoints@\textbf{BandPoints}}
-Band energies are calculated for the list of arbitrary $k$ points
-given in the block. Units defined by \textbf{BandLinesScale} as
-for \textbf{BandLines}. The generated \textit{Systemlabel}.\texttt{bands} file
-will contain the $k$ point coordinates (in a.u.) and the corresponding
-band energies (in eV). Example:
-
-\begin{verbatim}
+\begin{fdfentry}{BandPoints}[block]
+  
+  Band energies are calculated for the list of arbitrary $k$ points
+  given in the block. Units defined by \fdf{BandLinesScale} as for
+  \fdf{BandLines}. The generated \sysfile{bands} file will contain the
+  $k$ point coordinates (in a.u.) and the corresponding band energies
+  (in eV). Example:
+  \begin{fdfexample}
      %block BandPoints
         0.000  0.000  0.000   # This is a comment. eg this is gamma
         1.000  0.000  0.000
         0.500  0.500  0.500
      %endblock BandPoints
-\end{verbatim}
+  \end{fdfexample}
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{diagon}.
-The band $k$ points are unrelated and compatible with any k-grid used
-to calculate the total energy and charge density. If both are present, this
-block supersedes \textbf{BandLines}.
-
-\textit{Default value:} No band energies calculated.
-
-\item[\textbf{WriteKbands}] (\textit{logical}):
-\index{WriteKbands@\textbf{WriteKbands}}\index{output!band $\vec k$ points}
-If \texttt{.true.} it writes the coordinates of the $\vec k$ vectors
-defined for band plotting, to the main output file.
-
-\textit{Use:} Only if \textbf{SolutionMethod} is \texttt{diagon}.
-
-\textit{Default value:} \texttt{.false.} (see \textbf{LongOutput})
+  See also \fdf{BandLines}.
+\end{fdfentry}
 
 
-\item[\textbf{WriteBands}] (\textit{logical}): \index{WriteBands@\textbf{WriteBands}}\index{output!band structure} If \texttt{.true.} it
-  writes the Hamiltonian eigenvalues corresponding to the $\vec k$
-  vectors defined for band plotting, in the main output file.
+\begin{fdflogicalF}{WriteKbands}
+  \index{output!band $\vec k$ points}
+
+  If \fdftrue, it writes the coordinates of the $\vec k$ vectors
+  defined for band plotting, to the main output file.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{WriteBands}
+  \index{output!band structure}%
   \index{band structure}
 
-\textit{Use:} Only if \textbf{SolutionMethod} is \texttt{diagon}.
+  If \fdftrue, it writes the Hamiltonian eigenvalues corresponding to
+  the $\vec k$ vectors defined for band plotting, in the main output
+  file. 
 
-\textit{Default value:} \texttt{.false.} (see \textbf{LongOutput})
-
-
-\end{description}
+\end{fdflogicalF}
 
 
 \subsubsection{Format of the .bands file}
@@ -6898,58 +6878,52 @@ kAtEndOfLastLine, kPointLabel \\
 \end{verbatim}
 
 \noindent
-The \textsc{gnubands}\index{gnubands@\texttt{gnubands}} postprocessing
+The \program{gnubands}\index{gnubands@\texttt{gnubands}} postprocessing
 utility program (found in the Util/Bands directory) reads the
-\sysfile{bands} for plotting.  See the \textbf{BandLines} data
+\sysfile{bands} for plotting.  See the \fdf{BandLines} data
 descriptor above for more information.
+
 
 \subsubsection{Output of wavefunctions associated to bands}
 \label{sec:wf-bands}
 
 The user can optionally request that the wavefunctions corresponding
-to the computed bands be written to file. 
-They are written to the \textit{SystemLabel}.bands.WFSX file
-\index{WFSX file!bands.WFSX@\texttt{bands.WFSX}} 
-(see section below for the
-format). The relevant options are:
+to the computed bands be written to file.  They are written to the
+\sysfile{bands.WFSX} file (see section below for the format). The
+relevant options are:
 
-\begin{description}
+\begin{fdflogicalF}{WFS.Write.For.Bands}
+  \index{output of wave functions for bands}
+  
+  Instructs the program to compute and write the wave functions
+  associated to the bands specified (by a \fdf{BandLines} or a
+  \fdf{BandPoints} block) to the file \sysfile{WFSX}.
 
-\item[\textbf{WFS.Write.For.Bands}] (\textit{logical}):
-\index{WFS.Write.For.Bands@\textbf{WFS.Write.For.Bands}}
-\index{output of wave functions for bands}
-Instructs the program to compute and write the wave functions
-associated to the bands specified (by a \textbf{BandLines} or a \fdf{BandPoints} block) to the file \texttt{SystemLabel.bands}.WFSX.
+  The information in this file might be useful, among other things, to
+  generate ``fatbands'' plots, in which both band eigenvalues and
+  information about orbital projections is presented.
+  \index{fatbands} See the \program{fat} program in the
+  \texttt{Util/COOP} directory for details.
 
-The information in this file might be useful, among other things, to
-generate ``fatbands'' plots, in which both  band eigenvalues and
-information about orbital projections is presented.
-\index{fatbands}
- See the
-\texttt{fat} program in the \texttt{Util/COOP} directory for details.
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdfentry}{WFS.Band.Min}[integer]<1>
+  \index{output of wave functions for bands}
+  
+  Specifies the lowest band index of the wave-functions to be written
+  to the file \sysfile{WFSX} for each $k$-point (all $k$-points in the
+  band set are affected).
 
-\item[\textbf{WFS.Band.Min}] (\textit{integer}):
-\index{WFS.Band.Min@\textbf{WFS.Band.Min}}
-\index{output of wave functions for bands}
-Specifies the lowest band index of the wave-functions to be written to 
-the file \texttt{SystemLabel.bands}.WFSX for each k-point (all k-points
-in the band set are affected). 
+\end{fdfentry}
 
-\textit{Default value:} \texttt{1}
+\begin{fdfentry}{WFS.Band.Max}[integer]<number of orbitals>
+  \index{output of wave functions for bands}
+  
+  Specifies the highest band index of the wave-functions to be written
+  to the file \sysfile{WFSX} for each $k$-point (all $k$-points in the
+  band set are affected).
 
-\item[\textbf{WFS.Band.Max}] (\textit{integer}):
-\index{WFS.Band.Max@\textbf{WFS.Band.Max}}
-\index{output of wave functions for bands}
-Specifies the highest band index of the wave-functions to be written to 
-the file \texttt{SystemLabel.bands}.WFSX for each k-point (all k-points
-in the band set are affected).
-
-\textit{Default value:} \texttt{(the number of orbitals)}
-
-\end{description}
-
+\end{fdfentry}
 
 \subsection{Output of selected wavefunctions}
 \label{sec:wf-output-user}
@@ -6959,84 +6933,74 @@ written to file. These wavefunctions are re-computed after the
 geometry loop (if any) finishes, using the last (presumably converged)
 density matrix produced during the last self-consistent field loop
 (after a final mixing). They are written to the
-SystemLabel.selected.WFSX file (see below for the format).
-\index{WFSX file!selected.WFSX@\texttt{selected.WFSX}} 
+\sysfile{selected.WFSX} file (see below for the format).
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
-if the \textbf{COOP.write} option is in effect.
+if the \fdf{COOP.write} option is in effect.
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to a NetCDF file
-\texttt{WFS.nc} if the \fdf{Diag!UseNewDiagk} option is in effect.
+\file{WFS.nc} if the \fdf{Diag!UseNewDiagk} option is in effect.
 
-\begin{description}
+\begin{fdfentry}{WaveFuncKPointsScale}[string]<pi/a>
+  
+  Specifies the scale of the $k$ vectors given in
+  \fdf{WaveFuncKPoints} below.  The options are:
+  \begin{fdfoptions}
+    \option[pi/a]%
+    k-vector coordinates are given in Cartesian coordinates, in units
+    of $\pi/a$, where $a$ is the lattice constant
 
-\item[\textbf{WaveFuncKPointsScale}] (\textit{string}):
-\index{WaveFuncKPointsScale@\textbf{WaveFuncKPointsScale}}
-Specifies the scale of the $k$ vectors given in
-\textbf{WaveFuncKPoints} below.
-The options are:
-\begin{itemize}
-\item \texttt{pi/a} (k-vector coordinates are given in Cartesian
-coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
-\item \texttt{ReciprocalLatticeVectors} ($k$ vectors are given in
-reciprocal-lattice-vector coordinates)
-\end{itemize}
+    \option[ReciprocalLatticeVectors]%
+    $k$ vectors are given in reciprocal-lattice-vector coordinates
 
-\textit{Default value:} \texttt{pi/a}
+  \end{fdfoptions}
 
+\end{fdfentry}
 
-\item[\textbf{WaveFuncKPoints}] (\textit{data block}):
-\index{WaveFuncKPoints@\textbf{WaveFuncKPoints}}
-Specifies the k-points at which the electronic wavefunction
-coefficients are written.
-An example for an FCC lattice is:
-
-\begin{verbatim}
+\begin{fdfentry}{WaveFuncKPoints}[block]
+  
+  Specifies the $k$-points at which the electronic wavefunction
+  coefficients are written.  An example for an FCC lattice is:
+  \begin{fdfexample}
      %block WaveFuncKPoints
      0.000  0.000  0.000  from 1 to 10   # Gamma wavefuncs 1 to 10
      2.000  0.000  0.000  1 3 5          # X wavefuncs 1,3 and 5
      1.500  1.500  1.500                 # K wavefuncs, all
      %endblock WaveFuncKPoints
-\end{verbatim}
+  \end{fdfexample}
+  The index of a wavefunction is defined by its energy, so that the
+  first one has lowest energy.
 
-The index of a wavefunction is defined by its energy, so that the
-first one has lowest energy.
+  The user can also narrow the energy-range used with the
+  \fdf{WFS.Energy.Min} and \fdf{WFS.Energy.Max} options (both take
+  an energy (with units) as extra argument -- see
+  section~\ref{sec:coop}). Care should be taken to make sure that the
+  actual values of the options make sense.
 
-The user can also narrow the energy-range used with the \fdf{WFS.Energy.Min} and \textbf{WFS.Energy.Max} options (both take an
-energy (with units) as extra argument -- see
-section~\ref{sec:coop}). Care should be taken to make sure that the
-actual values of the options make sense.
+  The output of the wavefunctions in described in Section
+  \ref{sec:wf-output-user}.
 
-The output of the wavefunctions in described in Section \ref{sec:wf-output-user}
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{diagon}.
-These k points are unrelated and compatible with any k-grid used
-to calculate the total energy,  charge density and band structure.
-
-\textit{Default value:} No wavefunctions are written.
-
-\item[\textbf{WriteWaveFunctions}] (\textit{logical}):
-  \index{WriteWaveFunctions@\textbf{WriteWaveFunctions}}
-  \index{output!wave functions} If \texttt{.true.} it writes to the
-  output file a list of the wavefunctions actually written to the
-\textit{Systemlabel}.selected.WFSX file, which is always produced.
-
-\textit{Use:} Only if \textbf{SolutionMethod} is \texttt{diagon}.
-
-\textit{Default value:} \texttt{.false.} (see \textbf{LongOutput})
+\end{fdfentry}
 
 
-\end{description}
+\begin{fdflogicalF}{WriteWaveFunctions}
+  \index{output!wave functions}
+
+  If \fdftrue, it writes to the output file a list of the
+  wavefunctions actually written to the \sysfile{selected.WFSX} file,
+  which is always produced.
+
+\end{fdflogicalF}
 
 The unformatted WFSX file contains the information of the
 k-points for which wavefunctions coefficients are written, and the
 energies and coefficients of each wavefunction which was specified in
-the input file (see \textbf{WaveFuncKPoints}\index{WaveFuncKPoints@\textbf{WaveFuncKPoints}} descriptor above). It also contains information
+the input file (see \fdf{WaveFuncKPoints} descriptor above). It also contains information
 on the atomic species and the orbitals for postprocessing purposes.
 
-\index{WFSX file} \textbf{NOTE:} The WFSX file is in a more compact
+\textbf{NOTE:} The \sysfile{WFSX} file is in a more compact
 form than the old WFS, and the wavefunctions are output in single
 precision. The \program{Util/WFS/wfsx2wfs} program can be used to
 convert to the old format.
@@ -7044,11 +7008,11 @@ convert to the old format.
 \noindent
 The \program{readwf}\index{readwf} and
 \program{readwfsx}\index{readwfsx} postprocessing utilities programs
-(found in the Util/WFS directory) read the WFS or WFSX files,
-respectively, and generate a readable file.
+(found in the Util/WFS directory) read the \sysfile{WFS} or
+\sysfile{WFSX} files, respectively, and generate a readable file.
 
 
-\vspace{5pt}
+
 \subsection{Densities of states}
 
 \subsubsection{Total density of states}
@@ -7059,14 +7023,14 @@ total density of states:
 \item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
 dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
 but without the kmin, kmax, emin, emax information, and without
-the abscissa. The \textsc{Eig2DOS}\index{Eig2DOS@\textsc{Eig2DOS}}
+the abscissa. The \program{Eig2DOS}\index{Eig2DOS@\textsc{Eig2DOS}}
 postprocessing utility can be then used to obtain the density of
 states.\index{density of states}
-See the \textbf{WriteEigenvalues} descriptor.
+See the \fdf{WriteEigenvalues} descriptor.
 %
 \item As a side-product of a partial-density-of-states calculation
   (see below)
-\item As one of the files produced by the \texttt{Util/COOP/mprop} during
+\item As one of the files produced by the \program{Util/COOP/mprop} during
   the off-line analysis of the electronic structure. This method
   allows the flexibility of specifying energy ranges and resolutions
   at will, without re-running \siesta\ See Sec.~\ref{sec:coop}.
@@ -7078,78 +7042,68 @@ See the \textbf{WriteEigenvalues} descriptor.
 There are two options to obtain the partial density of states
 \begin{itemize}
 \item Using the options below
-\item Using the \texttt{Util/COOP/mprop} program for the off-line analysis of
+\item Using the \program{Util/COOP/mprop} program for the off-line analysis of
   the electronic structure in PDOS mode. This method allows the
   flexibility of specifying energy ranges, orbitals, and resolutions
   at will, without re-running \siesta. See Sec.~\ref{sec:coop}.
 \end{itemize}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-\item[\textbf{ProjectedDensityOfStates}] (\textit{block}):
-\index{ProjectedDensityOfStates@\textbf{ProjectedDensityOfStates}}
-\index{output!projected density of states}
+\begin{fdfentry}{ProjectedDensityOfStates}[block]
+  \index{output!projected density of states}
 
-Instructs to write the Total Density Of States (Total DOS) and the
-Projected Density Of States (PDOS) on the basis orbitals,
-between two given energies,
-in files \texttt{SystemLabel}.DOS and
-\texttt{SystemLabel}.PDOS, respectively.
-The block must be a single line with the energies of the range for
-PDOS projection,
-(relative to the program's zero, i.e. the same as the eigenvalues
-printed by the program), the peak width (an energy) for broadening
-the eigenvalues, the number of points in the energy window,
-and the energy units.
-An example is:
-
-\begin{verbatim}
+  Instructs to write the Total Density Of States (Total DOS) and the
+  Projected Density Of States (PDOS) on the basis orbitals, between
+  two given energies, in files \sysfile{DOS} and \sysfile{PDOS},
+  respectively.  The block must be a single line with the energies of
+  the range for PDOS projection, (relative to the program's zero,
+  i.e. the same as the eigenvalues printed by the program), the peak
+  width (an energy) for broadening the eigenvalues, the number of
+  points in the energy window, and the energy units.  An example is:
+  \begin{fdfexample}
      %block ProjectedDensityOfStates
         -20.00  10.00  0.200  500  eV
      %endblock ProjectedDensityOfStates
-\end{verbatim}
+  \end{fdfexample}
 
-By default the projected density of states is generated for the same
-grid of points in reciprocal space as used for the SCF calculation.
-However, a separate set of K-points, usually on a finer grid, can
-be generated using one of the options \textbf{PDOS.kgrid\_cutoff} or
-\textbf{PDOS.kgrid\_Monkhorst\_Pack}. The format of these options is
-exactly the same as for \textbf{kgrid\_cutoff} and
-\textbf{kgrid\_Monkhorst\_Pack}, respectively. Note that if a gamma
-point calculation is being used in the SCF part, especially as part
-of a geometry optimisation, and this is then to
-be run with a grid of K-points for the PDOS calculation it is more
-efficient to run the SCF phase first and then restart to perform the
-PDOS evaluation using the density matrix saved from the SCF phase.
+  By default the projected density of states is generated for the same
+  grid of points in reciprocal space as used for the SCF calculation.
+  However, a separate set of K-points, usually on a finer grid, can be
+  generated using one of the options \fdf{PDOS.kgrid.Cutoff} or
+  \fdf{PDOS.kgrid.MonkhorstPack}. The format of these options is
+  exactly the same as for \fdf{kgrid.Cutoff} and
+  \fdf{kgrid.MonkhorstPack}, respectively. Note that if a gamma
+  point calculation is being used in the SCF part, especially as part
+  of a geometry optimisation, and this is then to be run with a grid
+  of K-points for the PDOS calculation it is more efficient to run the
+  SCF phase first and then restart to perform the PDOS evaluation
+  using the density matrix saved from the SCF phase.
 
-\textit{Use:} The two energies of the range must be ordered, with lowest
-first.
+  \note the two energies of the range must be ordered, with lowest
+  first.
 
-\textit{Output:} The Total DOS is dumped into a file
-called \texttt{SystemLabel}.DOS. The format of this file is:
+  The total DOS is stored in a file called \sysfile{DOS}.  The format
+  of this file is:
+  \begin{shellexample}
+   Energy value, Total DOS (spin up), Total DOS (spin down)
+  \end{shellexample}
 
-Energy value, Total DOS (spin up), Total DOS (spin down)
+  The Projected Density Of States for all the orbitals in the unit
+  cell is dumped sequentially into a file called
+  \sysfile{PDOS}. This file is structured using spacing and
+  xml tags. A machine-readable (but not very human readable) xml file
+  \file{pdos.xml} is also produced. Both can be processed by the
+  program in \program{Util/pdosxml}. The \sysfile{PDOS} file can be
+  processed by utilites in \program{Util/Contrib/APostnikov}.
 
-The Projected Density Of States for all the orbitals in the unit cell
-is dumped sequentially into a file called
-\texttt{SystemLabel}.PDOS. This file is structured using spacing and
-xml tags. A machine-readable (but not very human readable) xml file
-\texttt{pdos.xml} is also produced. Both can be processed by the
-program in \program{Util/pdosxml}. The \sysfile{PDOS} file can be
-processed by utilites in \program{Util/Contrib/APostnikov}.
+  In all cases, the units for the DOS are (number of states/eV), and the
+  Total DOS, $g(\epsilon)$, is normalized as follows:
+  \begin{equation}
+    \int_{-\infty}^\infty g (\epsilon) d\epsilon =
+    \text{number of basis orbitals in unit cell}
+  \end{equation}
 
-In all cases, the units for the DOS are (number of states/eV), and the
-Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
+\end{fdfentry}
 
-\begin{equation}
-  \int_{-\infty}^{+\infty} g \left(\epsilon\right) d\epsilon =
-  \text{number of basis orbitals in unit cell}
-\end{equation}
-
-
-\textit{Default value:} PDOS not calculated nor written.
-\end{description}
 
 
 \subsubsection{Local density of states}
@@ -7157,158 +7111,144 @@ Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
 The LDOS is formally the DOS weighted by the amplitude of the
 corresponding wavefunctions at different points in space, and is then
 a function of energy and position. \siesta\ can output the LDOS
-integrated over a range of energies.  This information can be used to
+integrated over a range of energies. This information can be used to
 obtain simple STM images in the Tersoff-Hamann approximation (See
 \program{Util/STM/simple-stm}).
 
-\begin{description}
-\item[\textbf{LocalDensityOfStates}] (\textit{block}):
-\index{LocalDensityOfStates@\textbf{LocalDensityOfStates}}
-\index{output!local density of states}
-Instructs to write the LDOS, integrated between two given energies,
-at the mesh used by DHSCF,
-in file \texttt{SystemLabel}.LDOS. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-The block must be a single line with the energies of the range for
-LDOS integration
-(relative to the program's zero, i.e. the same as the eigenvalues
-printed by the program) and their units.
-An example is:
-
-\begin{verbatim}
+\begin{fdfentry}{LocalDensityOfStates}[block]
+  \index{output!local density of states}
+  
+  Instructs to write the LDOS, integrated between two given energies,
+  at the mesh used by DHSCF, in file \sysfile{LDOS}. This file can be
+  read by routine IORHO, which may be used by an application program
+  in later versions.  The block must be a single line with the
+  energies of the range for LDOS integration (relative to the
+  program's zero, i.e. the same as the eigenvalues printed by the
+  program) and their units.  An example is:
+  \begin{fdfexample}
      %block LocalDensityOfStates
         -3.50  0.00   eV
      %endblock LocalDensityOfStates
-\end{verbatim}
+  \end{fdfexample}
 
-\textit{Use:} The two energies of the range must be ordered,
-with lowest first.
-File \texttt{SystemLabel}.LDOS is only written, not read, by siesta.
+  \note the two energies of the range must be ordered, with lowest
+  first.
 
-\textit{Default value:} LDOS not calculated nor written.
+\end{fdfentry}
 
-Note that the LDOS can also be computed using the selected-inversion
-technology within the PEXSI solver (see Sec.~\ref{pexsi-ldos}).
-\end{description}
 
 
 \subsection{Options for chemical analysis}
 
 \subsubsection{Mulliken charges and overlap populations}
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
 
-\item[\textbf{WriteMullikenPop}] (\textit{integer}):
-\index{WriteMullikenPop@\textbf{WriteMullikenPop}}\index{Mulliken population
-analysis}\index{output!Mulliken analysis}
-It determines the level of Mulliken population analysis printed:
-\begin{itemize}
-\item 0 = None
-\item 1 = atomic and orbital charges
-\item 2 = 1 + atomic overlap pop.
-\item 3 = 2 + orbital overlap pop.
-\end{itemize}
-The order of the orbitals in the population lists is defined
-by the order of atoms. For each atom, populations for PAO orbitals and
-double-$z$, triple-$z$, etc... derived from them are displayed first for
-all the angular momenta. Then, populations for perturbative polarization
-orbitals are written.
-Within a $l$-shell be aware that the order is not
-conventional, being $y$, $z$, $x$ for $p$ orbitals, and
-$xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals.
+\begin{fdfentry}{WriteMullikenPop}[integer]<0>
+  \index{Mulliken population analysis}%
+  \index{output!Mulliken analysis}
+  
+  It determines the level of Mulliken population analysis printed:
+  \begin{fdfoptions}
+    \option[0]% 
+    none
 
-\textit{Default value:} \texttt{0} (see \textbf{LongOutput})
+    \option[1]%
+    atomic and orbital charges
+
+    \option[2]%
+    atomic, orbital and atomic overlap populations
+
+    \option[3]%
+    atomic, orbital, atomic overlap and orbital overlap populations
+    
+  \end{fdfoptions}
+  The order of the orbitals in the population lists is defined by the
+  order of atoms. For each atom, populations for PAO orbitals and
+  double-$z$, triple-$z$, etc... derived from them are displayed first
+  for all the angular momenta. Then, populations for perturbative
+  polarization orbitals are written.  Within a $l$-shell be aware that
+  the order is not conventional, being $y$, $z$, $x$ for $p$ orbitals,
+  and $xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals.
+
+\end{fdfentry}
 
 
-\item[\textbf{MullikenInSCF}] (\textit{logical}):
-\index{MullikenInSCF@\textbf{MullikenInSCF}}
-If true, the Mulliken populations will be written for every SCF step
-at the level of detail specified in \textbf{WriteMullikenPop}. Useful
-when dealing with SCF problems, otherwise too verbose.
+\begin{fdflogicalF}{MullikenInSCF}
 
-\textit{Default value:} \texttt{.false.}
+  If \fdftrue, the Mulliken populations will be written for every SCF
+  step at the level of detail specified in
+  \fdf{WriteMullikenPop}. Useful when dealing with SCF problems,
+  otherwise too verbose.
+  
+\end{fdflogicalF}
 
-\end{description}
+
 
 \subsubsection{Voronoi and Hirshfeld atomic population analysis}
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[\textbf{WriteHirshfeldPop}] (\textit{logical}): 
-\index{WriteHirshfeldPop@\textbf{WriteHirshfeldPop}}\index{Hirshfeld population
-analysis}\index{output!Hirshfeld analysis} 
-%
-If \texttt{.true.}, the program calculates and prints the Hirshfeld
-``net'' atomic populations on each atom in the system. For a
-definition of the Hirshfeld charges, see Hirshfeld, Theo Chem Acta
-\textbf{44}, 129 (1977) and Fonseca et al, J. Comp. Chem. \textbf{25},
-189 (2003).  Hirshfeld charges are more reliable than Mulliken
-charges, specially for large basis sets.  The number printed is the
-total net charge of the atom: the variation from the neutral charge,
-in units of $|e|$: positive (negative) values indicate deficiency
-(excess) of electrons in the atom.
-
-\textit{Default value:} \texttt{.false.} 
 
 
-\item[\textbf{WriteVoronoiPop}] (\textit{logical}): 
-\index{WriteVoronoiPop@\textbf{WriteVoronoiPop}} %
-\index{Voronoi population analysis}\index{output!Voronoi analysis} 
-%
-If \texttt{.true.}, the program calculates and prints the Voronoi
-``net'' atomic populations on each atom in the system. For a
-definition of the Voronoi charges, see Bickelhaupt et al,
-Organometallics \textbf{15}, 2923 (1996) and Fonseca et al,
-J. Comp. Chem. \textbf{25}, 189 (2003).  Voronoi charges are more
-reliable than Mulliken charges, specially for large basis sets.  The
-number printed is the total net charge of the atom: the variation from
-the neutral charge, in units of $|e|$: positive (negative) values
-indicate deficiency (excess) of electrons in the atom.
+\begin{fdflogicalF}{WriteHirshfeldPop}
+  \index{Hirshfeld population analysis}%
+  \index{output!Hirshfeld analysis} 
 
-\textit{Default value:} \texttt{.false.}
+  If \fdftrue, the program calculates and prints the Hirshfeld ``net''
+  atomic populations on each atom in the system. For a definition of
+  the Hirshfeld charges, see Hirshfeld, Theo Chem Acta \textbf{44},
+  129 (1977) and Fonseca et al, J. Comp. Chem. \textbf{25}, 189
+  (2003).  Hirshfeld charges are more reliable than Mulliken charges,
+  specially for large basis sets.  The number printed is the total net
+  charge of the atom: the variation from the neutral charge, in units
+  of $|e|$: positive (negative) values indicate deficiency (excess) of
+  electrons in the atom.
 
-\end{description}
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{WriteVoronoiPop}
+  \index{Voronoi population analysis}%
+  \index{output!Voronoi analysis} 
+
+  If \fdftrue, the program calculates and prints the Voronoi ``net''
+  atomic populations on each atom in the system. For a definition of
+  the Voronoi charges, see Bickelhaupt et al, Organometallics
+  \textbf{15}, 2923 (1996) and Fonseca et al,
+  J. Comp. Chem. \textbf{25}, 189 (2003).  Voronoi charges are more
+  reliable than Mulliken charges, specially for large basis sets.  The
+  number printed is the total net charge of the atom: the variation
+  from the neutral charge, in units of $|e|$: positive (negative)
+  values indicate deficiency (excess) of electrons in the atom.
+
+\end{fdflogicalF}
 
 The Hirshfeld and Voronoi populations (partial charges) are computed
 by default only at the end of the program (i.e., for the final
-geometry, after self-consistency). The following options allow more control:
+geometry, after self-consistency). The following options allow more
+control:
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[\textbf{PartialChargesAtEveryGeometry}] (\textit{logical}):
-  \index{PartialChargesAtEveryGeometry@\textbf{PartialChargesAtEveryGeometry}}%
+\begin{fdflogicalF}{PartialChargesAtEveryGeometry}
   \index{Voronoi population analysis}%
   \index{output!Voronoi analysis} %
   \index{Hirshfeld population analysis} %
   \index{output!Hirshfeld analysis}
 
-The Hirshfeld and Voronoi populations are computed after
-self-consistency is achieved, for all the geometry steps.
+  The Hirshfeld and Voronoi populations are computed after
+  self-consistency is achieved, for all the geometry steps.
 
-\textit{Default value:} \texttt{.false.}
+\end{fdflogicalF}
 
-\item[\textbf{PartialChargesAtEveryScfStep}] (\textit{logical}):
-  \index{PartialChargesAtEveryScfStep@\textbf{PartialChargesAtEveryScfStep}}%
+\begin{fdflogicalF}{PartialChargesAtEverySCFStep}
   \index{Voronoi population analysis}%
   \index{output!Voronoi analysis}%
   \index{Hirshfeld population analysis}%
   \index{output!Hirshfeld analysis}
 
-The Hirshfeld and Voronoi populations are computed for every
-step of the self-consistency process.
+  The Hirshfeld and Voronoi populations are computed for every step of
+  the self-consistency process.
 
-\textit{Default value:} \texttt{.false.}
-
-\end{description}
+\end{fdflogicalF}
 
 \textbf{Performance note:}
 The default behavior (computing at the end of the program) involves
 an extra calculation of the charge density.
-%
+
 
 
 \subsubsection{Crystal-Orbital overlap and hamilton populations (COOP/COHP)}
@@ -7316,357 +7256,346 @@ an extra calculation of the charge density.
 \index{COOP/COHP curves}
 
 These curves are quite useful to analyze the electronic structure to
-get insight about bonding characteristics. See the \texttt{Util/COOP}
-directory for more details. The \textbf{COOP.Write} option must be
+get insight about bonding characteristics. See the \program{Util/COOP}
+directory for more details. The \fdf{COOP.Write} option must be
 activated to get the information needed.
 
 References:
-
 \begin{itemize}
-\item Original COOP reference:
-Hughbanks, T.; Hoffmann, R., J. Am. Chem. Soc., 1983, 105, 3528.
-\item Original COHP reference: Dronskowski, R.; Blöchl, P. E., J. Phys. Chem., 1993, 97, 8617.
-\item A tutorial introduction: Dronskowski, R. Computational Chemistry of Solid State
-Materials; Wiley-VCH: Weinheim, 2005.
-\item Online material maintained by R. Dronskowski's group: \url{http://www.cohp.de/}
+  \item%
+  Original COOP reference:
+  Hughbanks, T.; Hoffmann, R., J. Am. Chem. Soc., 1983, 105, 3528.
+
+  \item%
+  Original COHP reference: Dronskowski, R.; Blöchl, P. E., J. Phys. Chem., 1993, 97, 8617.
+
+  \item%
+  A tutorial introduction: Dronskowski, R. Computational Chemistry of Solid State
+  Materials; Wiley-VCH: Weinheim, 2005.
+
+  \item%
+  Online material maintained by R. Dronskowski's group: \url{http://www.cohp.de/}
 \end{itemize}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
 
-\item[\textbf{COOP.Write}] (\textit{logical}):
-\index{COOP.Write@\textbf{COOP.Write}}
-\index{output!Information for COOP/COHP curves}
-Instructs the program to generate  \texttt{SystemLabel.fullBZ}.WFSX (packed
-wavefunction file) and  \texttt{SystemLabel}.HSX (H, S and X\_~{ij} file),
-to be processed by \texttt{Util/COOP/mprop} to generate COOP/COHP curves,
-(projected) densities of states, etc.
+\begin{fdflogicalF}{COOP.Write}
+  \index{output!Information for COOP/COHP curves}
+  
+  Instructs the program to generate \sysfile{fullBZ.WFSX} (packed
+  wavefunction file) and  \sysfile{HSX} (H, S and X\_~{ij} file),
+  to be processed by \program{Util/COOP/mprop} to generate COOP/COHP curves,
+  (projected) densities of states, etc.
 
-The WFSX file is in a more compact form than the usual WFS, and the
-wavefunctions are output in single precision. The \texttt{Util/wfsx2wfs}
-program can be used to convert to the old format.
-The HSX file is in a more compact form than the usual HS, and the
-Hamiltonian, overlap matrix, and relative-positions array (which is
-always output, even for gamma-point only calculations) are in
-single precision.
+  The \sysfile*{WFSX} file is in a more compact form than the usual
+  \sysfile*{WFS}, and the wavefunctions are output in single
+  precision. The \program{Util/wfsx2wfs} program can be used to
+  convert to the old format.  The HSX file is in a more compact form
+  than the usual HS, and the Hamiltonian, overlap matrix, and
+  relative-positions array (which is always output, even for
+  gamma-point only calculations) are in single precision.
 
-\textit{Default value:} \texttt{.false.}
+  The user can narrow the energy-range used (and save some file space)
+  by using the \fdf{WFS.Energy.Min} and \fdf{WFS.Energy.Max} options
+  (both take an energy (with units) as extra argument), and/or the
+  \fdf{WFS.Band.Min} and \fdf{WFS.Band.Max} options. Care should be
+  taken to make sure that the actual values of the options make sense.
 
-The user can narrow the energy-range used (and save some file space)
-by using the \textbf{WFS.Energy.Min} and \textbf{WFS.Energy.Max} options (both take an
-energy (with units) as extra argument), and/or the \textbf{WFS.Band.Min} and
-\textbf{WFS.Band.Max} options. Care should be taken to make sure that the 
-actual values of the options make sense.
+  Note that the band range options could also affect the output of
+  wave-functions associated to bands (see section~\ref{sec:wf-bands}),
+  and that the energy range options could also affect the output of
+  user-selected wave-functions with the \fdf{WaveFuncKpoints} block
+  (see section~\ref{sec:wf-output-user}).
 
-Note that the band range options could also affect the output of
-wave-functions associated to bands (see section~\ref{sec:wf-bands}),
-and that the energy range options could also affect the output of
-user-selected wave-functions with the \textbf{WaveFuncKpoints} block (see
-section~\ref{sec:wf-output-user}).
-
-\item[\textbf{WFS.Energy.Min}] (\textit{physical energy}):
-\index{WFS.Energy.Min@\textbf{WFS.Energy.Min}}
-Specifies the lowest value of the energy (eigenvalue) of the wave-functions to be written to 
-the file \texttt{SystemLabel.fullBZ}.WFSX for each k-point (all k-points
-in the BZ sampling are affected). 
-
-\textit{Default value:} $-\infty$
-
-\item[\textbf{WFS.Energy.Max}] (\textit{physical energy}):
-\index{WFS.Energy.Max@\textbf{WFS.Energy.Max}}
-Specifies the highest value of the energy (eigenvalue) of the wave-functions to be written to 
-the file \texttt{SystemLabel.fullBZ}.WFSX for each k-point (all k-points
-in the BZ sampling are affected).
-
-\textit{Default value:} $+\infty$
-
-\item[\textbf{WFS.Band.Min}] (\textit{integer}):
-\index{WFS.Band.Min@\textbf{WFS.Band.Min}}
-Specifies the lowest band index of the wave-functions to be written to 
-the file (in this context) \texttt{SystemLabel.fullBZ}.WFSX for each k-point (all k-points
-in the BZ sampling are affected). 
-
-\textit{Default value:} \texttt{1}
-
-\item[\textbf{WFS.Band.Max}] (\textit{integer}):
-\index{WFS.Band.Max@\textbf{WFS.Band.Max}}
-Specifies the highest band index of the wave-functions to be written to 
-the file (in this context) \texttt{SystemLabel.fullBZ}.WFSX for each k-point (all k-points
-in the BZ sampling are affected).
-
-\textit{Default value:} \texttt{(the number of orbitals)}
-
-\end{description}
+\end{fdflogicalF}
 
 
-\vspace{5pt}
+\begin{fdfentry}{WFS.Energy.Min}[energy]<$-\infty$>
+  
+  Specifies the lowest value of the energy (eigenvalue) of the
+  wave-functions to be written to the file
+  \sysfile{fullBZ.WFSX} for each $k$-point (all $k$-points in
+  the BZ sampling are affected).
+
+\end{fdfentry}
+
+\begin{fdfentry}{WFS.Energy.Max}[energy]<$\infty$>
+  
+  Specifies the highest value of the energy (eigenvalue) of the
+  wave-functions to be written to the file \sysfile{fullBZ.WFSX} for
+  each $k$-point (all $k$-points in the BZ sampling are affected).
+
+\end{fdfentry}
+
+
+
+
 \subsection{Optical properties}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdflogicalF}{OpticalCalculation}
+  \index{Dielectric function,optical absorption}
 
-\item[\textbf{OpticalCalculation}] (\textit{logical}):\index{Dielectric function,
-optical absorption}
-If specified, the imaginary part of the dielectric function
-will be calculated and stored in a file called \textit{Systemlabel}.\textbf{EPSIMG}.
-The calculation is performed using the simplest approach based on the
-dipolar transition matrix elements between different eigenfunctions
-of the self-consistent Hamiltonian. For molecules the calculation
-is performed using the position operator matrix elements, while
-for solids the calculation is carried out in the momentum space
-formulation.
-Corrections due to the non-locality of the pseudopotentials
-are introduced in the usual way.
+  If specified, the imaginary part of the dielectric function will be
+  calculated and stored in a file called \sysfile{EPSIMG}. The
+  calculation is performed using the simplest approach based on the
+  dipolar transition matrix elements between different eigenfunctions
+  of the self-consistent Hamiltonian. For molecules the calculation is
+  performed using the position operator matrix elements, while for
+  solids the calculation is carried out in the momentum space
+  formulation. Corrections due to the non-locality of the
+  pseudopotentials are introduced in the usual way.
 
-\textit{Default value:} \texttt{false}
+\end{fdflogicalF}
 
-\item[\textbf{Optical.EnergyMinimum}] (\textit{real energy}):
-\index{Optical.EnergyMinimum@\textbf{Optical.EnergyMinimum}}
-This specifies the minimum of the energy range in which
-the frequency spectrum will be calculated.
+\begin{fdfentry}{Optical.Energy.Minimum}[energy]<$0\,\mathrm{Ry}$>
 
-\textit{Default value:} 0 Ry.
+  This specifies the minimum of the energy range in which the
+  frequency spectrum will be calculated.
 
-\item[\textbf{Optical.EnergyMaximum}] (\textit{real energy}):
-\index{Optical.EnergyMaximum@\textbf{Optical.EnergyMaximum}}
-This specifies the maximum of the energy range in which
-the frequency spectrum will be calculated.
+\end{fdfentry}
 
-\textit{Default value:} 10 Ry.
+\begin{fdfentry}{Optical.Energy.Maximum}[energy]<$10\,\mathrm{Ry}$>
 
-\item[\textbf{Optical.Broaden}] (\textit{real energy}):
-\index{Optical.Broaden@\textbf{Optical.Broaden}}
-If this is value is set then a Gaussian broadening will be
-applied to the frequency values.
+  This specifies the maximum of the energy range in which the
+  frequency spectrum will be calculated.
 
-\textit{Default value:} 0 Ry.
+\end{fdfentry}
 
-\item[\textbf{Optical.Scissor}] (\textit{real energy}):
-\index{Optical.Scissor@\textbf{Optical.Scissor}}
-Because of the tendency of DFT calculations to under estimate
-the band gap, a rigid shift of the unoccupied states, known as
-the scissor operator, can be added to correct the gap and
-thereby improve the calculated results. This shift is only
-applied to the optical calculation and no where else within
-the calculation.
+\begin{fdfentry}{Optical.Broaden}[energy]<$0\,\mathrm{Ry}$>
 
-\textit{Default value:} 0 Ry.
+  If this is value is set then a Gaussian broadening will be applied
+  to the frequency values.
 
-\item[\textbf{Optical.NumberOfBands}] (\textit{integer}):
-\index{Optical.NumberOfBands@\textbf{Optical.NumberOfBands}}
-This option controls the number of bands that are included in
-the optical property calculation. Clearly this number must be
-larger than the number of occupied bands and less than or
-equal to the number of basis functions (which determines the
-number of unoccupied bands available). Note, while including
-all the bands may be the most accurate choice this will also
-be the most expensive!
+\end{fdfentry}
 
-\textit{Default value:} All bands.
+\begin{fdfentry}{Optical.Scissor}[energy]<$0\,\mathrm{Ry}$>
 
-\item[\textbf{Optical.Mesh}] (\textit{data block}):
-\index{Optical.Mesh@\textbf{Optical.Mesh}}
-This block contains 3 numbers that determine the mesh size
-used for the integration across the Brillouin zone. For
-example:
+  Because of the tendency of DFT calculations to under estimate the
+  band gap, a rigid shift of the unoccupied states, known as the
+  scissor operator, can be added to correct the gap and thereby
+  improve the calculated results. This shift is only applied to the
+  optical calculation and no where else within the calculation.
 
-\begin{verbatim}
-        %block  Optical.Mesh
-          5 5 5
-        %endblock  Optical.Mesh
-\end{verbatim}
+\end{fdfentry}
 
-The three values represent the number of mesh points in
-the direction of each reciprocal lattice vector.
+\begin{fdfentry}{Optical.NumberOfBands}[integer]<all bands>
+  
+  This option controls the number of bands that are included in the
+  optical property calculation. Clearly this number must be larger
+  than the number of occupied bands and less than or equal to the
+  number of basis functions (which determines the number of unoccupied
+  bands available). Note, while including all the bands may be the
+  most accurate choice this will also be the most expensive!
 
-\textit{Default value:} Empty in general. For atoms
-or molecules a k-sampling of only one point is assumed.
+\end{fdfentry}
 
-\item[\textbf{Optical.OffsetMesh}] (\textit{logical}):
-\index{Optical.OffsetMesh@\textbf{Optical.OffsetMesh}}
-If set to true, then the mesh is offset away from the
-gamma point for odd numbers of points.
+\begin{fdfentry}{Optical.Mesh}[block]
 
-\textit{Default value:} \texttt{false}
+  This block contains 3 numbers that determine the mesh size used for
+  the integration across the Brillouin zone. For example:
+  \begin{fdfexample}
+      %block  Optical.Mesh
+        5 5 5
+      %endblock  Optical.Mesh
+  \end{fdfexample}
+  The three values represent the number of mesh points in the
+  direction of each reciprocal lattice vector.
 
-\item[\textbf{Optical.PolarizationType}] (\textit{string}):
-\index{Optical.PolarizationType@\textbf{Optical.PolarizationType}}
-This option has three possible values that represent the
-type of polarization to be used in the calculation. The options
-are \textbf{polarized}, which implies the application of an electric
-field in a given direction, \textbf{unpolarized}, which implies the
-propagation of light in a given direction, and \textbf{polycrystal}.
-In the case of the first two options a direction in space must
-be specified for the electric field or propagation using the
-\textit{Optical.Vector} data block.
+\end{fdfentry}
 
-\textit{Default value:} \texttt{polycrystal}
 
-\item[\textbf{Optical.Vector}] (\textit{data block}):
-\index{Optical.Vector@\textbf{Optical.Vector}}
-This block contains 3 numbers that specify the vector direction
-for either the electric field or light propagation, for a polarized
-or unpolarized calculation, respectively. A typical block might look
-like:
+\begin{fdflogicalF}{Optical.OffsetMesh}
+  
+  If set to true, then the mesh is offset away from the gamma point
+  for odd numbers of points.
 
-\begin{verbatim}
-        %block  Optical.Vector
-          1.0 0.0 0.5
-        %endblock  Optical.Vector
-\end{verbatim}
+\end{fdflogicalF}
 
-\textit{Default value:} Empty.
+\begin{fdfentry}{Optical.PolarizationType}[string]<polycrystal>
 
-\end{description}
+  This option has three possible values that represent the type of
+  polarization to be used in the calculation. The options are
+  \begin{fdfoptions}
+    \option[polarized]%
+    implies the application of an electric field in a given direction
 
-\vspace{5pt}
+    \option[unpolarized]%
+    implies the propagation of light in a given direction
+
+    \option[polycrystal]%
+    In the case of the first two options a direction in space must be
+    specified for the electric field or propagation using the
+    \fdf{Optical.Vector} data block.
+
+  \end{fdfoptions}
+  
+\end{fdfentry}
+
+\begin{fdfentry}{Optical.Vector}[block]
+  
+  This block contains 3 numbers that specify the vector direction for
+  either the electric field or light propagation, for a polarized or
+  unpolarized calculation, respectively. A typical block might look
+  like:
+  \begin{fdfexample}
+      %block  Optical.Vector
+        1.0 0.0 0.5
+      %endblock  Optical.Vector
+  \end{fdfexample}
+
+\end{fdfentry}
+
+
+
+
 \subsection{Macroscopic polarization}
 
-\begin{description}
 
-\item[\textbf{PolarizationGrids}] (\textit{data block}):
-\index{PolarizationGrids@\textbf{PolarizationGrids}}
-\index{bulk polarization}\index{Berry phase}
-If specified, the macroscopic polarization will be calculated using the
-geometric Berry phase approach (R.D. King-Smith, and D. Vanderbilt,
-PRB \textbf{47}, 1651 (1993)). In this method the electronic
-contribution to the macroscopic polarization, along a given direction,
-is calculated using
-a discretized version of the formula
-\begin{equation}
-\label{pol_formula}
-    P_{e,\parallel}={ifq_e \over 8\pi^3} \int_A d\textbf{k}_\perp
+\begin{fdfentry}{PolarizationGrids}[block]
+  \index{bulk polarization}%
+  \index{Berry phase}
+
+  If specified, the macroscopic polarization will be calculated using
+  the geometric Berry phase approach (R.D. King-Smith, and
+  D. Vanderbilt, PRB \textbf{47}, 1651 (1993)). In this method the
+  electronic contribution to the macroscopic polarization, along a
+  given direction, is calculated using a discretized version of the
+  formula
+  \begin{equation}
+    \label{pol_formula}
+    P_{e,\parallel}={ifq_e \over 8\pi^3} \int_A d\mathbf{k}_\perp
     \sum_{n=1}^M \int_0^{|G_\parallel|} dk_{\parallel}
-     \langle u_{\textbf{k} n} |{\delta \over \delta k_{\parallel}} |
-      u_{\textbf{k} n} \rangle
-\end{equation}
-where $f$ is the occupation (2 for a non-magnetic system),
-$q_e$ the electron charge, $M$ is the number of occupied bands (the
-system \textbf{must} be an insulator), and $u_{\textbf{k} n}$ are
-the periodic Bloch functions. $\textbf{G}_\parallel$ is the shortest
-reciprocal vector along the chosen direction.
+    \langle u_{\mathbf{k} n} |{\delta \over \delta k_{\parallel}} |
+    u_{\mathbf{k} n} \rangle
+  \end{equation}
+  where $f$ is the occupation (2 for a non-magnetic system), $q_e$ the
+  electron charge, $M$ is the number of occupied bands (the system
+  \textbf{must} be an insulator), and $u_{\mathbf{k} n}$ are the
+  periodic Bloch functions. $\mathbf{G}_\parallel$ is the shortest
+  reciprocal vector along the chosen direction.
 
-As it can be seen in formula (\ref{pol_formula}), to compute each
-component of the polarization we must perform a surface integration
-of the result of a 1-D integral in the selected direction.
-The grids for the calculation along the direction of each of the
-three lattice vectors are specified in the block
-\textbf{PolarizationGrids}.
-\begin{verbatim}
+  As it can be seen in formula \eqref{pol_formula}, to compute each
+  component of the polarization we must perform a surface integration
+  of the result of a 1-D integral in the selected direction.  The
+  grids for the calculation along the direction of each of the three
+  lattice vectors are specified in the block \fdf{PolarizationGrids}.
+  \begin{fdfexample}
      %block PolarizationGrids
         10   3  4      yes
          2  20  2       no
          4   4 15
      %endblock PolarizationGrids
-\end{verbatim}
+  \end{fdfexample}
 
-All three grids must be specified, therefore a 3$\times$3 matrix of
-integer numbers must be given: the first row specifies the grid that
-will be used to calculate the polarization along the direction of the
-first lattice vector, the second row will be used for the calculation
-along the the direction of the second lattice vector, and the third
-row for the third lattice vector.  The numbers in the diagonal of the
-matrix specifie the number of points to be used in the one dimensional
-line integrals along the different directions. The other numbers
-specifie the mesh used in the surface integrals.  The last column
-specifies if the bidimensional grids are going to be diplaced from the
-origin or not, as in the Monkhorst-Pack algorithm (PRB \textbf{13}, 5188
-(1976)).  This last column is optional.  If the number of points in
-one of the grids is zero, the calculation will not be performed for
-this particular direction.
+  All three grids must be specified, therefore a $3\times3$ matrix of
+  integer numbers must be given: the first row specifies the grid that
+  will be used to calculate the polarization along the direction of
+  the first lattice vector, the second row will be used for the
+  calculation along the the direction of the second lattice vector,
+  and the third row for the third lattice vector.  The numbers in the
+  diagonal of the matrix specifie the number of points to be used in
+  the one dimensional line integrals along the different
+  directions. The other numbers specifie the mesh used in the surface
+  integrals.  The last column specifies if the bidimensional grids are
+  going to be diplaced from the origin or not, as in the
+  Monkhorst-Pack algorithm (PRB \textbf{13}, 5188 (1976)).  This last
+  column is optional.  If the number of points in one of the grids is
+  zero, the calculation will not be performed for this particular
+  direction.
 
-For example, in the given example, for the computation in the
-direction of the first lattice vector, 15 points will be used for the
-line integrals, while a 3$\times$4 mesh will be used for the surface
-integration. This last grid will be displaced from the origin, so
-$\Gamma$ will not be included in the bidimensional integral. For the
-directions of the second and third lattice vectors, the number of
-points will be 20 and 2$\times$2, and 15 and 4$\times$4, respectively.
+  For example, in the given example, for the computation in the
+  direction of the first lattice vector, 15 points will be used for
+  the line integrals, while a $3\times4$ mesh will be used for the
+  surface integration. This last grid will be displaced from the
+  origin, so $\Gamma$ will not be included in the bidimensional
+  integral. For the directions of the second and third lattice
+  vectors, the number of points will be $20$ and $2\times2$, and $15$
+  and $4\times4$, respectively.
 
-It has to be stressed that the macroscopic polarization can only be
-meaningfully calculated using this approach for insulators.
-Therefore, the presence of an energy gap is necessary, and no band can
-cross the Fermi level. The program performs a simple check of this
-condition, just by counting the electrons in the unit cell ( the
-number must be even for a non-magnetic system, and the total spin
-polarization must have an integer value for spin polarized systems),
-however is the responsability of the user to check that the system
-under study is actually an insulator (for both spin components if spin
-polarized).
+  It has to be stressed that the macroscopic polarization can only be
+  meaningfully calculated using this approach for insulators.
+  Therefore, the presence of an energy gap is necessary, and no band
+  can cross the Fermi level. The program performs a simple check of
+  this condition, just by counting the electrons in the unit cell (
+  the number must be even for a non-magnetic system, and the total
+  spin polarization must have an integer value for spin polarized
+  systems), however is the responsability of the user to check that
+  the system under study is actually an insulator (for both spin
+  components if spin polarized).
 
-The total macroscopic polarization, given in the output of the
-program, is the sum of the electronic contribution (calculated as the
-Berry phase of the valence bands), and the ionic contribution, which
-is simply defined as the sum of the atomic positions within the unit
-cell multiply by the ionic charges ($\sum_i^{N_a} Z_i \textbf{r}_i$).  In
-the case of the magnetic systems, the bulk polarization for each spin
-component has been defined as
-\begin{equation}
-       \textbf{P}^\sigma = \textbf{P}_e^\sigma +
-   {1 \over 2} \sum_i^{N_a}  Z_i \textbf{r}_i
-\end{equation}
-$N_a$ is the number of atoms in the unit cell, and $\textbf{r}_i$ and
-$Z_i$
-are the positions and charges of the ions.
+  The total macroscopic polarization, given in the output of the
+  program, is the sum of the electronic contribution (calculated as
+  the Berry phase of the valence bands), and the ionic contribution,
+  which is simply defined as the sum of the atomic positions within
+  the unit cell multiply by the ionic charges
+  ($\sum_i^{N_a} Z_i \mathbf{r}_i$).  In the case of the magnetic
+  systems, the bulk polarization for each spin component has been
+  defined as
+  \begin{equation}
+    \mathbf{P}^\sigma = \mathbf{P}_e^\sigma +
+    {1 \over 2} \sum_i^{N_a}  Z_i \mathbf{r}_i
+  \end{equation}
+  $N_a$ is the number of atoms in the unit cell, and $\mathbf{r}_i$
+  and $Z_i$ are the positions and charges of the ions.
 
-It is also worth noting, that the macroscopic polarization given by
-formula (\ref{pol_formula}) is only defined modulo a ``quantum" of
-polarization (the bulk polarization per unit cell is only well defined
-modulo $fq_e$\textbf{R}, being \textbf{R} an arbitrary lattice
-vector). However, the experimentally observable quantities are
-associated to changes in the polarization induced by changes on the
-atomic positions (dynamical charges), strains (piezoelectric tensor),
-etc... The calculation of those changes, between different
-configurations of the solid, will be well defined as long as they are
-smaller than the ``quantum", i.e. the perturbations are small enough
-to create small changes in the polarization.
+  It is also worth noting, that the macroscopic polarization given by
+  formula \eqref{pol_formula} is only defined modulo a ``quantum'' of
+  polarization (the bulk polarization per unit cell is only well
+  defined modulo $fq_e\mathbf{R}$, being $\mathbf{R}$ an arbitrary
+  lattice vector). However, the experimentally observable quantities
+  are associated to changes in the polarization induced by changes on
+  the atomic positions (dynamical charges), strains (piezoelectric
+  tensor), etc... The calculation of those changes, between different
+  configurations of the solid, will be well defined as long as they
+  are smaller than the ``quantum'', i.e. the perturbations are small
+  enough to create small changes in the polarization.
 
-\textit{Use:} Only compatible with \textbf{SolutionMethod} = diagon.\\
-\textit{Default value:} Empty. No calculation performed.
+\end{fdfentry}
 
-\item[\textbf{BornCharge}] (\textit{logical}):\index{Born effective charges}
-\index{BornCharge@\textbf{BornCharge}}
-If true, the Born effective charge tensor is calculated for each atom
-by finite differences, by calculating the change in electric polarization
-(see \textbf{PolarizationGrids}) induced by the small displacements generated
-for the force constants calculation (see \textbf{MD.TypeOfRun} = \texttt{FC}):
-\begin{equation}\label {eq:effective_charge}
-Z^*_{i,\alpha,\beta}=\frac{\Omega_0}{e} \left. {\frac{\partial{P_\alpha}}
-{\partial{u_{i,\beta}}}}\right|_{q=0}
-\end{equation}
-where e is the charge of an electron and $\Omega_0$ is the unit cell volume.
+\begin{fdflogicalF}{BornCharge}
+  \index{Born effective charges}
 
-To calculate the Born charges it is necessary to specify both the Born
-charge flag and the mesh used to calculate the polarization, for example:
-\begin{verbatim}
-%block PolarizationGrids
-7  3  3
-3  7  3
-3  3  7
-%endblock PolarizationGrids
-BornCharge True
-\end{verbatim}
+  If true, the Born effective charge tensor is calculated for each
+  atom by finite differences, by calculating the change in electric
+  polarization (see \fdf{PolarizationGrids}) induced by the small
+  displacements generated for the force constants calculation (see
+  \fdf{MD.TypeOfRun} \fdf*{FC}):
+  \begin{equation}
+    \label{eq:effective_charge}
+    Z^*_{i,\alpha,\beta}=\frac{\Omega_0}{e} \left. {\frac{\partial{P_\alpha}}
+          {\partial{u_{i,\beta}}}}\right|_{q=0}
+  \end{equation}
+  where e is the charge of an electron and $\Omega_0$ is the unit cell
+  volume.
 
-The Born effective charge matrix is then written to the file
-\textit{SystemLabel}.\texttt{BC}.
+  To calculate the Born charges it is necessary to specify both the
+  Born charge flag and the mesh used to calculate the polarization,
+  for example:
+  \begin{fdfexample}
+    %block PolarizationGrids
+      7  3  3
+      3  7  3
+      3  3  7
+    %endblock PolarizationGrids
+    BornCharge True
+  \end{fdfexample}
 
-The method by which the polarization is calculated may introduce an arbitrary
-phase (polarization quantum), which in general is far larger than the change
-in polarization which results from the atomic displacement. It is removed
-during the calculation of the Born effective charge tensor.
+  The Born effective charge matrix is then written to the file
+  \sysfile{BC}.
 
-The Born effective charges allow the calculation of LO-TO splittings and
-infrared activities. The version of the Vibra utility code in which these
-magnitudes are calculated is not yet distributed with \siesta, but can be
-obtained form Tom Archer (archert@tcd.ie).
+  The method by which the polarization is calculated may introduce an
+  arbitrary phase (polarization quantum), which in general is far
+  larger than the change in polarization which results from the atomic
+  displacement. It is removed during the calculation of the Born
+  effective charge tensor.
 
-\textit{Use:} Only used if \textbf{MD.TypeOfRun} is \texttt{FC}.
+  The Born effective charges allow the calculation of LO-TO splittings
+  and infrared activities. The version of the Vibra utility code in
+  which these magnitudes are calculated is not yet distributed with
+  \siesta, but can be obtained form Tom Archer (archert@tcd.ie).
 
-\textit{Default value:} \texttt{false}
+\end{fdflogicalF}
 
-\end{description}
+
 
 \subsection[Maximally Localized Wannier Functions]%
 {Maximally Localized Wannier Functions. \\
@@ -7868,8 +7797,8 @@ required by \textsc{wannier90}. (See above for details.)
   is not advised to do charged systems other than atoms and molecules
   in SC, FCC or BCC cells, unless you know what you are doing.
 
-  \textit{Use:} For example, the F$^-$ ion would have \fdf*{NetCharge
-      -1}, and the Na$^+$ ion would have \fdf*{NetCharge 1}.
+  \textit{Use:} For example, the F$^-$ ion would have \fdf{NetCharge}
+  \fdf*{-1} , and the Na$^+$ ion would have \fdf{NetCharge} \fdf*{1}.
   Fractional charges can also be used.
   
 \end{fdfentry}
@@ -10600,7 +10529,7 @@ TS.BTD.Pivot atom+GGPS
 
 These options adhere to the specific solution methods available for
 \tsiesta. For instance the \fdf*{TS.BTD.*} options adhere when using
-\fdf*{TS.SolutionMethod btd}, and similarly for \fdf*{MUMPS}.
+\fdf{TS.SolutionMethod} \fdf*{btd}, and similarly for \fdf*{MUMPS}.
 
 \begin{fdfentry}{TS!BTD!Pivot}[string]<\nonvalue{first electrode}>
 
