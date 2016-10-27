@@ -4951,40 +4951,39 @@ The Density matrix can be:
 
 \subsubsection{Initialization of the SCF cycle with charge densities}
 
-\begin{description}
-  \item[\textbf{SCF.Read.Charge.NetCDF}] (\textit{logical}):
-  \index{SCF.Read.Charge.NetCDF@\textbf{SCF.Read.Charge.NetCDF}}
-  \index{reading saved data!charge density} Instructs Siesta to read
-  the charge density stored in the netCDF file
-  \file{Rho.IN.grid.nc}. This feature allows the easier re-use of
+
+\begin{fdflogicalF}{SCF.Read.Charge.NetCDF}
+  \index{reading saved data!charge density} 
+
+  Instructs \siesta\ to read the charge density stored in the netCDF
+  file \file{Rho.IN.grid.nc}. This feature allows the easier re-use of
   electronic-structure information from a previous run. It is not
   necessary that the basis sets are ``similar'' (a requirement if
   density-matrices are to be read in).
 
-\textit{Use:} This is an experimental feature.  Until robust checks are
-implemented, care must be taken to make sure that the FFT grids in the
-.grid.nc file and in Siesta are the same.
+  \note this is an experimental feature. Until robust checks are
+  implemented, care must be taken to make sure that the FFT grids in
+  the \sysfile*{grid.nc} file and in \siesta\ are the same.
 
-\textit{Default value:} \texttt{.false.}
+\end{fdflogicalF}
 
-\item[\textbf{SCF.Read.Deformation.Charge.NetCDF}] (\textit{logical}):
-\index{SCF.Read.Deformation.Charge.NetCDF@\textbf{SCF.Read.Deformation.Charge.NetCDF}} \index{reading saved
-    data!deformation charge density} Instructs Siesta to read the
-deformation charge density stored in the netCDF file
-\file{DeltaRho.IN.grid.nc}. This feature allows the easier re-use of
-electronic-structure information from a previous run. It is not
-necessary that the basis sets are ``similar'' (a requirement if
-density-matrices are to be read in). The deformation charge is
-particularly useful to give a good starting point for slightly
-different geometries.
 
-\textit{Use:} This is an experimental feature.  Until robust checks are
-implemented, care must be taken to make sure that the FFT grids in the
-.grid.nc file and in Siesta are the same.
+\begin{fdflogicalF}{SCF.Read.Deformation.Charge.NetCDF}
+  \index{reading saved data!deformation charge density} 
+  
+  Instructs Siesta to read the deformation charge density stored in
+  the netCDF file \file{DeltaRho.IN.grid.nc}. This feature allows the
+  easier re-use of electronic-structure information from a previous
+  run. It is not necessary that the basis sets are ``similar'' (a
+  requirement if density-matrices are to be read in). The deformation
+  charge is particularly useful to give a good starting point for
+  slightly different geometries.
 
-\textit{Default value:} \texttt{.false.}
+  \note this is an experimental feature. Until robust checks are
+  implemented, care must be taken to make sure that the FFT grids in
+  the \sysfile*{grid.nc} file and in Siesta are the same.
 
-\end{description}
+\end{fdflogicalF}
 
 
 \subsubsection{Output of density matrix and Hamiltonian}
@@ -5069,72 +5068,83 @@ relevant routines have not been optimized yet for large-scale
 calculations, so in this case the options should not be turned on
 (they are off by default).
 
-\begin{description}
 
-\item[\textbf{WriteDM.NetCDF}] (\textit{logical}): \index{WriteDM.NetCDF@\textbf{WriteDM.NetCDF}}
-\index{output!density matrix} It determines whether the density matrix
-(after the mixing step) is output as a DM.nc netCDF file or not.
+\begin{fdflogicalT}{WriteDM.NetCDF}
+  \index{output!density matrix}
+  
+  It determines whether the density matrix (after the mixing step) is
+  output as a \file{DM.nc} netCDF file or not.
 
-The file is overwritten at every SCF step. Use the \fdf{WriteDM.History.NetCDF} option if a complete history is desired.
+  The file is overwritten at every SCF step. Use the
+  \fdf{WriteDM.History.NetCDF} option if a complete history is
+  desired.
 
-The DM.nc and standard DM file formats can be converted at will with
-the programs in \texttt{Util/DensityMatrix} directory. Note that the
-DM values in the DM.nc file are in single precision.
+  The \file{DM.nc} and standard DM file formats can be converted at
+  will with the programs in \texttt{Util/DensityMatrix}
+  directory. Note that the DM values in the \file{DM.nc} file are in
+  single precision.
 
-\textit{Default value:} \texttt{.true.} if netCDF support is enabled (see Appendix).
+\end{fdflogicalT}
 
-\item[\textbf{WriteDMHS.NetCDF}] (\textit{logical}): \index{WriteDMHS.NetCDF@\textbf{WriteDMHS.NetCDF}}
-\index{output!density
-  matrix}\index{output!Hamiltonian}\index{output!overlap matrix}
-If true, the input density matrix, Hamiltonian, and output density matrix, are stored in a netCDF file
-named \texttt{DMHS.nc}. The file also contains the overlap matrix S.
+\begin{fdflogicalT}{WriteDMHS.NetCDF}
+  \index{output!density matrix}%
+  \index{output!Hamiltonian}%
+  \index{output!overlap matrix}
 
-The file is overwritten at every SCF step. Use the \fdf{WriteDMHS.History.NetCDF} option if a complete history is desired.
+  
+  If true, the input density matrix, Hamiltonian, and output density
+  matrix, are stored in a netCDF file named \file{DMHS.nc}. The file
+  also contains the overlap matrix S.
 
-\textit{Default value:} \texttt{.true.} if netCDF support is enabled (see Appendix).
+  The file is overwritten at every SCF step. Use the
+  \fdf{WriteDMHS.History.NetCDF} option if a complete history is
+  desired.
 
-\item[\textbf{WriteDM.History.NetCDF}] (\textit{logical}):
-\index{WriteDM.History.NetCDF@\textbf{WriteDM.History.NetCDF}}
-\index{output!density matrix}\index{output!density matrix history} If
-true, a series of netCDF files with names of the form \texttt{DM-NNNN.nc}
-is created to hold the complete history of the density matrix (after
-mixing).  (See also \textbf{WriteDM.NetCDF}). Each file corresponds to a
-geometry step.
+\end{fdflogicalT}
 
-\textit{Default value:} \texttt{.false.}
 
-\item[\textbf{WriteDMHS.History.NetCDF}] (\textit{logical}):
-\index{WriteDMHS.History.NetCDF@\textbf{WriteDMHS.History.NetCDF}}
-\index{output!density matrix history}\index{output!Hamiltonian
-history}\index{output!overlap matrix} If true, a series of netCDF
-files with names of the form \texttt{DMHS-NNNN.nc} is created to hold the
-complete history of the input and output density matrix, and the
-Hamiltonian.  (See also \textbf{WriteDMHS.NetCDF}). Each file corresponds
-to a geometry step. The overlap matrix is stored only once per SCF
-cycle.
+\begin{fdflogicalF}{WriteDM.History.NetCDF}
+  \index{output!density matrix}%
+  \index{output!density matrix history}
 
-\textit{Default value:} \texttt{.false.}
+  If \fdftrue, a series of netCDF files with names of the form
+  \file{DM-NNNN.nc} is created to hold the complete history of the
+  density matrix (after mixing). (See also \fdf{WriteDM.NetCDF}). Each
+  file corresponds to a geometry step.
 
-\item[\textbf{Write.TSHS.History}] (\textit{logical}):
-\index{Write.TSHS.History@\textbf{Write.TSHS.History}}%
-\index{output!Hamiltonian history}%
-\index{output!overlap matrix history}%
-If true, a series of TSHS files with names of the form
-\sysfile{N.TSHS} is created to hold the complete history of the
-Hamiltonian and overlap matrix. Each file corresponds to a geometry
-step. The overlap matrix is stored only once per SCF cycle. This
-option only works with \tsiesta.
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdflogicalF}{WriteDMHS.History.NetCDF}
+  \index{output!density matrix history}%
+  \index{output!Hamiltonian history}%
+  \index{output!overlap matrix}
 
-\end{description}
+  If \fdftrue, a series of netCDF files with names of the form
+  \file{DMHS-NNNN.nc} is created to hold the complete history of the
+  input and output density matrix, and the Hamiltonian.  (See also
+  \fdf{WriteDMHS.NetCDF}). Each file corresponds to a geometry
+  step. The overlap matrix is stored only once per SCF cycle.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{Write.TSHS.History}
+  \index{output!Hamiltonian history}%
+  \index{output!overlap matrix history}%
+
+  If true, a series of TSHS files with names of the form
+  \sysfile{N.TSHS} is created to hold the complete history of the
+  Hamiltonian and overlap matrix. Each file corresponds to a geometry
+  step. The overlap matrix is stored only once per SCF cycle. This
+  option only works with \tsiesta.
+
+\end{fdflogicalF}
 
 
 \subsubsection{Convergence criteria}
 \index{SCF convergence criteria}
 
 \textbf{NOTE}: The older options with a \texttt{DM} prefix is still
-working for backwards compatibility. However, these flags has
+working for backwards compatibility. However, the following flags has
 precedence.
 
 Note that all convergence criteria are additive and may thus be used
@@ -5280,7 +5290,7 @@ simultaneously for complete control.
 \siesta\ uses a finite 3D grid for the calculation of some
 integrals and the representation of charge densities and potentials.
 Its fineness is determined by its plane-wave cutoff, as
-given by the \textbf{MeshCutoff} option. It means that all periodic
+given by the \fdf{MeshCutoff} option. It means that all periodic
 plane waves with kinetic energy lower than this cutoff 
 can be represented in the grid without aliasing. In turn,
 this implies that if a function (e.g. the density or the 
@@ -5290,7 +5300,7 @@ back and forth without any approximation.
 
 The existence of the grid causes the breaking of translational
 symmetry (the egg-box effect, due to the fact that the density
-and potential \textit{do have} plane wave components above
+and potential \emph{do have} plane wave components above
 the mesh cutoff).  This symmetry breaking is clear when
 moving one single atom in an otherwise empty simulation cell. The
 total energy and the forces oscillate with the grid periodicity when
@@ -5308,83 +5318,81 @@ The Util/Scripting/eggbox\_checker.py script can be used to diagnose
 the eggbox effect to be expected for a particular
 pseudopotential/basis-set combination.
 
-Apart from increasing the mesh cutoff (see the \textbf{MeshCutoff} option),
+Apart from increasing the mesh cutoff (see the \fdf{MeshCutoff} option),
 the following options might help in lessening a given eggbox problem. But
 note also that a filtering of the orbitals and the relevant parts of
 the pseudopotential and the pseudocore charge might be enough to solve
 the issue (see Sec.~\ref{sec:filtering}).
 
-\begin{description}
+\begin{fdfentry}{MeshCutoff}[energy]<$100\,\mathrm{Ry}$>
+  \index{grid}%
+  \index{mesh}
 
-\item[\textbf{MeshCutoff}] (\textit{real energy}):
-\index{MeshCutoff@\textbf{MeshCutoff}}\index{grid}\index{mesh}
-Defines the plane wave cutoff for the grid.
-
-% JMS/AG. To be implemented:
-%\textit{Default value:} If not present, \textbf{MeshCutoff} is made equal 
-%to \textbf{FilterCutoff}, if present. If not, it is obtained from
-%\textbf{FilterTol}, if present, as explained in that parameter.
-%If none of these parameters is present, the default value for 
-%\textbf{MeshCutoff} is \texttt{100 Ry}
+  Defines the plane wave cutoff for the grid.
+  
+  % JMS/AG. To be implemented:
+  % \textit{Default value:} If not present, \textbf{MeshCutoff} is made equal 
+  % to \textbf{FilterCutoff}, if present. If not, it is obtained from
+  % \textbf{FilterTol}, if present, as explained in that parameter.
+  % If none of these parameters is present, the default value for 
+  % \textbf{MeshCutoff} is \texttt{100 Ry}
  
-\textit{Default value:} \texttt{100 Ry}
+\end{fdfentry}
 
-\item[\textbf{MeshSubDivisions}] (\textit{integer}):
-\index{MeshSubDivisions@\textbf{MeshSubDivisions}}\index{grid}\index{mesh}
-Defines the number of sub-mesh points in each direction used
-to save index storage on the mesh. It affects the memory
-requirements and the CPU time, but not the results. 
+\begin{fdfentry}{MeshSubDivisions}[integer]<$2$>
+  \index{grid}%
+  \index{mesh}
+  
+  Defines the number of sub-mesh points in each direction used
+  to save index storage on the mesh. It affects the memory
+  requirements and the CPU time, but not the results. 
 
-\textit{Default value:} \texttt{2}
+  \note the default value might be a bit conservative. Users might
+  experiment with higher values, 4 or 6, to lower the memory and
+  cputime usage.
 
-NOTE: The default value might be a bit conservative. Users might
-experiment with higher values (4, 6) to lower the memory and cputime
-usage.
+\end{fdfentry}
 
-\item[\textbf{GridCellSampling}] (\textit{data block}):\index{egg-box effect}
-\index{GridCellSampling@\textbf{GridCellSampling}}\index{rippling}
+\begin{fdfentry}{GridCellSampling}[block]
+  \index{egg-box effect}%
+  \index{rippling}
 
-It specifies points within the grid cell for a symmetrization sampling.
+  It specifies points within the grid cell for a symmetrization
+  sampling.
 
-For a given grid the grid-cutoff convergence can be improved (and the
-eggbox lessened) by recovering the lost symmetry: by symmetrizing the
-sensitive quantities. The full symmetrization implies an integration
-(averaging) over the grid cell. Instead, a finite sampling can be
-performed.
+  For a given grid the grid-cutoff convergence can be improved (and
+  the eggbox lessened) by recovering the lost symmetry: by
+  symmetrizing the sensitive quantities. The full symmetrization
+  implies an integration (averaging) over the grid cell. Instead, a
+  finite sampling can be performed.
 
-It is a sampling of rigid displacements of the system with respect
-to the grid. The original grid-system setup (one point of the grid
-at the origin) is always calculated. It is the (0,0,0) displacement.
-The block \textbf{GridCellSampling} gives the additional displacements
-wanted for the sampling. They are given relative to the grid-cell
-vectors, i.e., (1,1,1) would displace to the next grid point across
-the body diagonal, giving an equivalent grid-system situation
-(a useless displacement for a sampling).
+  It is a sampling of rigid displacements of the system with respect
+  to the grid. The original grid-system setup (one point of the grid
+  at the origin) is always calculated. It is the (0,0,0) displacement.
+  The block \fdf{GridCellSampling} gives the additional
+  displacements wanted for the sampling. They are given relative to
+  the grid-cell vectors, i.e., (1,1,1) would displace to the next grid
+  point across the body diagonal, giving an equivalent grid-system
+  situation (a useless displacement for a sampling).
 
-Examples: Assume a cubic cell, and therefore a (smaller) cubic grid cell.
-If there is no block or the block is empty, then the original (0,0,0)
-will be used only. The block:
-
-\begin{verbatim}
+  Examples: Assume a cubic cell, and therefore a (smaller) cubic grid
+  cell.  If there is no block or the block is empty, then the original
+  (0,0,0) will be used only. The block:
+  \begin{fdfexample}
      %block GridCellSampling
         0.5    0.5    0.5
      %endblock GridCellSampling
-\end{verbatim}
-
-would use the body center as a second point in the sampling. Or:
-
-
-\begin{verbatim}
+  \end{fdfexample}
+  would use the body center as a second point in the sampling. Or:
+  \begin{fdfexample}
      %block GridCellSampling
         0.5    0.5    0.0
         0.5    0.0    0.5
         0.0    0.5    0.5
      %endblock GridCellSampling
-\end{verbatim}
-
-gives an fcc kind of sampling, and
-
-\begin{verbatim}
+  \end{fdfexample}
+  gives an fcc kind of sampling, and
+  \begin{fdfexample}
      %block GridCellSampling
         0.5    0.0    0.0
         0.0    0.5    0.0
@@ -5394,76 +5402,72 @@ gives an fcc kind of sampling, and
         0.5    0.5    0.0
         0.5    0.5    0.5
      %endblock GridCellSampling
-\end{verbatim}
+  \end{fdfexample}
+  gives again a cubic sampling with half the original side length.  It
+  is not trivial to choose a right set of displacements so as to
+  maximize the new 'effective' cutoff. It depends on the kind of
+  cell. It may be automatized in the future, but it is now left to the
+  user, who introduces the displacements manually through this block.
 
-gives again a cubic sampling with half the original side length.
-It is not trivial to choose a right set of displacements so as
-to maximize the new 'effective' cutoff. It depends on the
-kind of cell. It may be automatized in the future, but it
-is now left to the user, who introduces the displacements
-manually through this block.
+  The quantities which are symmetrized are: ($i$) energy terms that
+  depend on the grid, ($ii$) forces, ($iii$) stress tensor, and ($iv$)
+  electric dipole.
 
-The quantities which are symmetrized are: ($i$) energy terms
-that depend on the grid, ($ii$) forces, ($iii$) stress
-tensor, and ($iv$) electric dipole.
+  The symmetrization is performed at the end of every SCF cycle. The
+  whole cycle is done for the (0,0,0) displacement, and, when the
+  density matrix is converged, the same (now fixed) density matrix is
+  used to obtain the desired quantities at the other displacements
+  (the density matrix itself is \emph{not} symmetrized as it gives a
+  much smaller egg-box effect). The CPU time needed for each
+  displacement in the \fdf{GridCellSampling} block is of the order
+  of one extra SCF iteration.
 
-The symmetrization is performed at the end of every SCF cycle. The
-whole cycle is done for the (0,0,0) displacement, and, when the
-density matrix is converged, the same (now fixed)
-density matrix is used to obtain the desired quantities at the
-other displacements (the density matrix itself is \textit{not}
-symmetrized as it gives a much smaller egg-box effect).
-The CPU time needed for each displacement
-in the \textbf{GridCellSampling} block
-is of the order of one extra SCF iteration.
+\end{fdfentry}
 
-\textit{Default value:} Empty.
+\begin{fdfentry}{EggboxRemove}[block]
+  \index{egg-box effect}%
+  \index{rippling}
 
+  For recovering translational invariance in an approximate way.
 
-\item[\textbf{EggboxRemove}] (\textit{data block}):\index{egg-box effect}
-\index{EggboxRemove@\textbf{EggboxRemove}}\index{rippling}
+  It works by substracting from Kohn-Sham's total energy (and forces)
+  an approximation to the eggbox energy, sum of atomic contributions.
+  Each atom has a predefined eggbox energy depending on where it sits
+  on the cell. This atomic contribution is species dependent and is
+  obviously invariant under grid-cell translations. Each species
+  contribution is thus expanded in the appropriate Fourier series.  It
+  is important to have a smooth eggbox, for it to be represented by a
+  few Fourier components. A jagged egg-box (unless very small, which
+  is then unimportant) is often an indication of a problem with the
+  pseudo.
 
-For recovering translational invariance in an approximate way.
+  In the block there is one line per Fourier component. The first
+  integer is for the atomic species it is associated with. The other
+  three represent the reciprocal lattice vector of the grid cell (in
+  units of the basis vectors of the reciprocal cell). The real number
+  is the Fourier coefficient in units of the energy scale given in
+  \fdf{EggboxScale} (see below), normally 1 eV.
 
-It works by substracting from Kohn-Sham's total energy (and forces) an
-approximation to the eggbox energy, sum of atomic contributions.
-Each atom has a predefined eggbox energy depending on where it sits on
-the cell. This atomic contribution is species dependent and is
-obviously invariant under grid-cell translations. Each species
-contribution is thus expanded in the appropriate Fourier series.
-It is important to have a smooth eggbox, for it to
-be represented by a few Fourier components. A jagged egg-box (unless
-very small, which is then unimportant) is often an
-indication of a problem with the pseudo.
+  The number and choice of Fourier components is free, as well as
+  their order in the block. One can choose to correct only some
+  species and not others if, for instance, there is a substantial
+  difference in hardness of the cores. The 0 0 0 components will add a
+  species-dependent constant energy per atom. It is thus irrelevant
+  except if comparing total energies of different calculations, in
+  which case they have to be considered with care (for instance by
+  putting them all to zero, i.e. by not introducing them in the list).
+  The other components average to zero representing no bias in the
+  total energy comparisons.
 
-In the block there is one line per Fourier component. The first integer
-is for the atomic species it is associated with. The other three
-represent the reciprocal lattice vector of the grid cell (in units
-of the basis vectors of the reciprocal cell). The real number is
-the Fourier coefficient in units of the energy scale given in
-\textbf{EggboxScale} (see below), normally 1 eV.
+  If the total energies of the free atoms are put as 0 0 0
+  coefficients (with spin polarisation if adequate etc.) the corrected
+  total energy will be the cohesive energy of the system (per unit
+  cell).
 
-The number and choice of Fourier components is free, as well as their
-order in the block. One can choose to correct only some species and not
-others if, for instance, there is a substantial difference in hardness
-of the cores. The 0 0 0 components will add a species-dependent
-constant energy per atom. It is thus irrelevant except if comparing
-total energies of different calculations, in which case they
-have to be considered with care (for instance by putting them all to zero,
-i.e. by not introducing them in the list).
-The other components average to zero representing no bias in the
-total energy comparisons.
-
-If the total
-energies of the free atoms are put as 0 0 0 coefficients (with
-spin polarisation if adequate etc.) the corrected total energy
-will be the cohesive energy of the system (per unit cell).
-
-\textit{Example:} For a two species system, this example would give a quite
-sufficent set in many instances (the actual values of the Fourier
-coefficients are not realistic).
-
-\begin{verbatim}
+  \emph{Example:} For a two species system, this example would give a
+  quite sufficent set in many instances (the actual values of the
+  Fourier coefficients are not realistic).
+  \begin{fdfexample}
      %block EggBoxRemove
        1   0   0   0 -143.86904
        1   0   0   1    0.00031
@@ -5479,79 +5483,74 @@ coefficients are not realistic).
        2   1   1   0   -0.00075
        2   1   1   1   -0.00002
      %endblock EggBoxRemove
-\end{verbatim}
+  \end{fdfexample}
 
-It represents an alternative to grid-cell sampling (above).
-It is only approximate, but once the Fourier components for each
-species are given, it does not represent any computational
-effort (neither memory nor time), while the grid-cell sampling
-requires CPU time (roughly one extra SCF step per point every
-MD step).
+  It represents an alternative to grid-cell sampling (above).  It is
+  only approximate, but once the Fourier components for each species
+  are given, it does not represent any computational effort (neither
+  memory nor time), while the grid-cell sampling requires CPU time
+  (roughly one extra SCF step per point every MD step).
 
-It will be particularly helpful in atoms with substantial partial
-core or semicore electrons.
+  It will be particularly helpful in atoms with substantial partial
+  core or semicore electrons.
 
-\textit{Use:} This technique as it stands should only be used for fixed cell
-calculations.
+  \note this should only be used for fixed cell calculations, i.e. not
+  with \fdf{MD.VariableCell}.
 
-For the time being, it is up to the user to obtain the Fourier
-components to be introduced. They can be obtained by moving one
-isolated atom through the cell to be used in the calculation
-(for a give cell size, shape and mesh), once for each species.
-The Util/Scripting/eggbox\_checker.py script can be used as a starting
-point for this.
+  For the time being, it is up to the user to obtain the Fourier
+  components to be introduced. They can be obtained by moving one
+  isolated atom through the cell to be used in the calculation (for a
+  give cell size, shape and mesh), once for each species.  The
+  Util/Scripting/eggbox\_checker.py script can be used as a starting
+  point for this.
 
-\textit{Default value:} Empty.
+\end{fdfentry}
 
+\begin{fdfentry}{EggboxScale}[energy]<$1\,\mathrm{eV}$>
+  \index{egg-box effect}%
+  \index{rippling}
 
-\item[\textbf{EggboxScale}] (\textit{real energy}):\index{egg-box effect}
-\index{EggboxScale@\textbf{EggboxScale}}\index{rippling}
+  Defines the scale in which the Fourier components of the egg-box
+  energy are given in the \fdf{EggboxRemove} block.
 
-Defines the scale in which the Fourier components of the
-egg-box energy are given in the \textbf{EggboxRemove} block.
-
-\textit{Default value:} 1 eV.
-
-\end{description}
+\end{fdfentry}
 
 \subsection{Matrix elements of the Hamiltonian and overlap}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
 
-\item[\textbf{NeglNonOverlapInt}] (\textit{logical}):
-\index{NeglNonOverlapInt@\textbf{NeglNonOverlapInt}}
-Logical variable to neglect or compute interactions between orbitals
-which do not overlap. These come from the KB projectors.
-Neglecting them makes the Hamiltonian more sparse, and
-the calculation faster.  \textbf{Use with care}
+\begin{fdflogicalF}{NeglNonOverlapInt}
+  
+  Logical variable to neglect or compute interactions between orbitals
+  which do not overlap. These come from the KB projectors.  Neglecting
+  them makes the Hamiltonian more sparse, and the calculation faster.
+  
+  \note use with care!
 
-\textit{Default value:} \texttt{.false.}
+\end{fdflogicalF}
 
-\item[\textbf{SaveHS}] (\textit{logical}):
-\index{SaveHS@\textbf{SaveHS}}\index{output!Hamiltonian \& overlap}
-Instructs to write the Hamiltonian and overlap matrices, as well
-as other data required to generate bands and density of states,
-in file \texttt{SystemLabel}.HSX. The HSX format is more
-compact than the traditional HS, and the Hamiltonian,
-overlap matrix, and relative-positions array (which is always output,
-even for gamma-point only calculations) are in single precision.
+\begin{fdflogicalF}{SaveHS}
+  \index{output!Hamiltonian \& overlap}
 
-The program \texttt{hsx2hs} in \texttt{Util/HSX} can be used to generate
-an old-style HS file if needed.
+  Instructs to write the Hamiltonian and overlap matrices, as well as
+  other data required to generate bands and density of states, in file
+  \sysfile{HSX}. The \sysfile*{HSX} format is more compact than the
+  traditional \sysfile*{HS}, and the Hamiltonian, overlap matrix, and
+  relative-positions array (which is always output, even for
+  gamma-point only calculations) are in single precision.
 
-\siesta\ produces also an HSX file if the \textbf{COOP.Write} option
-is active.
-\index{output!HSX file}
+  The program \program{hsx2hs} in \program{Util/HSX} can be used to
+  generate an old-style \sysfile*{HS} file if needed.
 
-\textit{Use:} File \texttt{SystemLabel}.HS is only written, not read, by siesta.
+  \siesta\ produces also an \sysfile*{HSX} file if the \fdf{COOP.Write} option
+  is active.  \index{output!HSX file}
 
-\textit{Default value:} \texttt{.false.}
 
-See also the \textbf{WriteDMHS.NetCDF} and \textbf{WriteDMHS.History.NetCDF}
-options.
-\end{description}
+  See also the \fdf{WriteDMHS.NetCDF} and \fdf{WriteDMHS.History.NetCDF}
+  options.
+
+\end{fdflogicalF}
+
+
 
 \subsubsection{The auxiliary supercell}
 
@@ -5559,37 +5558,33 @@ When using k-points, this auxiliary supercell is needed to compute properly
 the matrix elements involving orbitals in different unit cells.
 It is computed automatically by the program at every geometry step.
 
-\begin{description}
+\begin{fdflogicalF}{FixAuxiliaryCell}
+  
+  Logical variable to control whether the auxiliary cell is changed
+  during a variable cell optimization.
 
-\item[\textbf{FixAuxiliaryCell}] (\textit{logical}):
-\index{FixAuxiliaryCell@\textbf{FixAuxiliaryCell}}
+\end{fdflogicalF}
 
-Logical variable to control whether the auxiliary cell is changed
-during a variable cell optimization.
+\begin{fdflogicalF}{NaiveAuxiliaryCell}
+  
+  If \fdftrue, the program does not check whether the auxiliary cell
+  constructed with a naive algorithm is appropriate. This variable is
+  only useful if one wishes to reproduce calculations done with
+  previous versions of the program in which the auxiliary cell was not
+  large enough, as indicated by warnings such as:
 
-\item[\textbf{NaiveAuxiliaryCell}] (\textit{logical}):
-\index{NaiveAuxiliaryCell@\textbf{NaiveAuxiliaryCell}}
+  \texttt{WARNING: orbital pair 1 341 is multiply connected}
 
-If true, the program does not check whether the auxiliary cell
-constructed with a naive algorithm is appropriate. This variable is
-only useful if one wishes to reproduce calculations done with previous
-versions of the program in which the auxiliary cell was not large
-enough, as indicated by warnings such as:
+  Only small numerical differences in the results are to be expected.
+  
+  Note that for gamma-point-only calculations there is an implicit
+  ``folding'' of matrix elements corresponding to the images of orbitals
+  outside the unit cell. If information about the specific values of
+  these matrix elements is needed (as for COOP/COHP analysis), one has
+  to make sure that the unit cell is large enough.  
+  \index{COOP/COHP curves!Folding in Gamma-point calculations}
 
-\texttt{WARNING: orbital pair 1 341 is multiply connected}
-
-Only small numerical differences in the results are to be expected.
-
-Note that for gamma-point-only calculations there is an implicit
-``folding'' of matrix elements corresponding to the images of orbitals
-outside the unit cell. If information about the specific values of
-these matrix elements is needed (as for COOP/COHP analysis), one has
-to make sure that the unit cell is large enough.  
-\index{COOP/COHP curves!Folding in Gamma-point calculations}
-
-\textit{Default value:} \texttt{.false.}
-
-\end{description}
+\end{fdflogicalF}
 
 
 \subsection{Calculation of the electronic structure}
@@ -5789,303 +5784,277 @@ Secs.~\ref{sec:band-structure} and~\ref{sec:wf-output-user}, respectively.
 
 The complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to a NetCDF file
-\texttt{WFS.nc} if the \fdf{Diag!UseNewDiagk} option is in effect.
+\sysfile*{WFS.nc} if the \fdf{Diag!UseNewDiagk} option is in effect.
 
 The complete set of wavefunctions obtained during the last
-iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
-\index{WFSX file!fullBZ.WFSX@\texttt{fullBZ.WFSX}} 
-if the \textbf{COOP.write} option is in effect.
+iteration of the SCF loop will be written to \sysfile{fullBZ.WFSX}
+if the \fdf{COOP.write} option is in effect.
 
-\begin{description}
-\item[\textbf{WriteEigenvalues}] (\textit{logical}):
-\index{WriteEigenvalues@\textbf{WriteEigenvalues}}\index{output!eigenvalues}
-If \texttt{.true.} it writes the Hamiltonian eigenvalues for the sampling
-$\vec k$ points, in the main output file.
-If \texttt{.false.}, it writes them in the file \textit{Systemlabel}.EIG,
-which can be used by the \textsc{Eig2DOS}\index{Eig2DOS@\textsc{Eig2DOS}} postprocessing
-utility (in the Util/Eig2DOS directory) for obtaining the density of
-states.\index{density of states}
 
-\textit{Use:} Only if \textbf{SolutionMethod} is \texttt{diagon}.
+\begin{fdflogicalF}{WriteEigenvalues}
+  \index{output!eigenvalues}
 
-\textit{Default value:} \texttt{.false.} (see \textbf{LongOutput})
+  If \fdftrue\ it writes the Hamiltonian eigenvalues for the sampling
+  $\vec k$ points, in the main output file.  If \fdffalse, it
+  writes them in the file \sysfile{EIG}, which can be used
+  by the \program{Eig2DOS}\index{Eig2DOS@\textsc{Eig2DOS}}
+  postprocessing utility (in the Util/Eig2DOS directory) for obtaining
+  the density of states.\index{density of states}
 
-\end{description}
+  \note this option only works for \fdf{SolutionMethod} which
+  calculates the eigenvalues.
+
+\end{fdflogicalF}
+
 
 \subsubsection{Occupation of electronic states and Fermi level}
 \label{electronic-occupation}
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[\textbf{OccupationFunction}](\textit{string}):
-\index{OccupationFunction@\textbf{OccupationFunction}}
-\index{ElectronicTemperature@\textbf{ElectronicTemperature}}
-String variable to select the function that determines the occupation
-of the electronic states. Two options are available:
-\begin{itemize}
-\item \texttt{FD}: The usual Fermi-Dirac occupation function is used.
-\item \texttt{MP}: The occupation function proposed by Methfessel and
-Paxton (Phys. Rev. B, \textbf{40}, 3616 (1989)), is used.
-\end{itemize}
-The smearing of the electronic occupations is done, in both cases,
-using an energy width defined by the \textbf{ElectronicTemperature}
-variable. Note that, while in the case of Fermi-Dirac, the occupations
-correspond to the physical ones if the electronic temperature is
-set to the physical temperature of the system, this is not the case
-in the Methfessel-Paxton function. In this case, the tempeature
-is just a mathematical artifact to obtain a more accurate
-integration of the physical quantities at a lower cost. In
-particular, the Methfessel-Paxton scheme has the advantage
-that, even for quite large smearing temperatures, the
-obtained energy is very close to the physical energy at T=0.
-Also, it allows a much faster convergence with respect to
-k-points, specially for metals. Finally, the convergence to
-selfconsistency is very much improved (allowing the use
-of larger mixing coefficients).
-
-For the Methfessel-Paxton case, one can use relatively large
-values for the \textbf{ElectronicTemperature} parameter. How large
-depends on the specific system. A guide can be found in the
-article by J. Kresse and J. Furthm\"uller, Comp. Mat. Sci.
-\textbf{6}, 15 (1996).
-
-If Methfessel-Paxton smearing is used, the order of
-the corresponding Hermite polynomial expansion must also be chosen
-(see description of variable \textbf{OccupationMPOrder}).
-
-We finally note that, in both cases (FD and MP), once a finite
-temperature has been chosen, the relevant energy is not the Kohn-Sham
-energy, but the Free energy. In particular, the
-atomic forces are derivatives of the Free energy, not the KS
-energy. See R. Wentzcovitch \textit{et al.}, Phys. Rev. B \textbf{45},
-11372 (1992); S. de Gironcoli, Phys. Rev. B \textbf{51}, 6773 (1995);
-J. Kresse and J. Furthm\"uller, Comp. Mat. Sci.
-\textbf{6}, 15 (1996),
-for details.
 
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{diagon}
+\begin{fdfentry}{OccupationFunction}[string]<FD>
+  
+  String variable to select the function that determines the
+  occupation of the electronic states. Two options are available:
+  \begin{fdfoptions}
+    \option[FD]%
+    The usual Fermi-Dirac occupation function is used.
 
-\textit{Default value:} \texttt{FD}
+    \option[MP]%
+    The occupation function proposed by Methfessel and
+    Paxton (Phys. Rev. B, \textbf{40}, 3616 (1989)), is used.
 
-\item[\textbf{OccupationMPOrder}](\textit{integer}):
-\index{OccupationMPOrder@\textbf{OccupationMPOrder}}
-\index{OccupationFunction@\textbf{OccupationFunction}}
-Order of the Hermite-Gauss polynomial expansion for the
-electronic occupation functions in the Methfessel-Paxton
-scheme (see Phys. Rev. B  \textbf{40}, 3616 (1989)).
-Specially for metals, higher order expansions provide better convergence
-to the ground state result, even with larger smearing
-temperatures, and provide also better convergence with k-points.
+  \end{fdfoptions}
+  The smearing of the electronic occupations is done, in both cases,
+  using an energy width defined by the \fdf{ElectronicTemperature}
+  variable. Note that, while in the case of Fermi-Dirac, the
+  occupations correspond to the physical ones if the electronic
+  temperature is set to the physical temperature of the system, this
+  is not the case in the Methfessel-Paxton function. In this case, the
+  tempeature is just a mathematical artifact to obtain a more accurate
+  integration of the physical quantities at a lower cost. In
+  particular, the Methfessel-Paxton scheme has the advantage that,
+  even for quite large smearing temperatures, the obtained energy is
+  very close to the physical energy at $T=0$.  Also, it allows a much
+  faster convergence with respect to $k$-points, specially for
+  metals. Finally, the convergence to selfconsistency is very much
+  improved (allowing the use of larger mixing coefficients).
+
+  For the Methfessel-Paxton case, one can use relatively large values
+  for the \fdf{ElectronicTemperature} parameter. How large depends
+  on the specific system. A guide can be found in the article by
+  J. Kresse and J. Furthm\"uller, Comp. Mat. Sci.  \textbf{6}, 15
+  (1996).
+
+  If Methfessel-Paxton smearing is used, the order of the
+  corresponding Hermite polynomial expansion must also be chosen (see
+  description of variable \fdf{OccupationMPOrder}).
+
+  We finally note that, in both cases (FD and MP), once a finite
+  temperature has been chosen, the relevant energy is not the
+  Kohn-Sham energy, but the Free energy. In particular, the atomic
+  forces are derivatives of the Free energy, not the KS energy. See
+  R. Wentzcovitch \textit{et al.}, Phys. Rev. B \textbf{45}, 11372
+  (1992); S. de Gironcoli, Phys. Rev. B \textbf{51}, 6773 (1995);
+  J. Kresse and J. Furthm\"uller, Comp. Mat. Sci.  \textbf{6}, 15
+  (1996), for details.
+
+\end{fdfentry}
+
+\begin{fdfentry}{OccupationMPOrder}[integer]<1>
+  
+  Order of the Hermite-Gauss polynomial expansion for the electronic
+  occupation functions in the Methfessel-Paxton scheme (see
+  Phys. Rev. B \textbf{40}, 3616 (1989)).  Specially for metals,
+  higher order expansions provide better convergence to the ground
+  state result, even with larger smearing temperatures, and provide
+  also better convergence with k-points.
+
+  \note only used if \fdf{OccupationFunction} is \fdf*{MP}.
+
+\end{fdfentry}
 
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{diagon}
-and \textbf{OccupationFunction} =  \texttt{MP}
+\begin{fdfentry}{ElectronicTemperature}[temperature/energy]<$300\,\mathrm{K}$>
+  
+  Temperature for Fermi-Dirac or Methfessel-Paxton
+  distribution. Useful specially for metals, and to accelerate
+  selfconsistency in some cases.
 
-\textit{Default value:} \texttt{1}
+\end{fdfentry}
 
 
 
-\item[\textbf{ElectronicTemperature}] (\textit{real temperature or energy}):
-\index{ElectronicTemperature@\textbf{ElectronicTemperature}}
-\index{OccupationFunction@\textbf{OccupationFunction}}
-Temperature for Fermi-Dirac or Methfessel-Paxton
-distribution. Useful specially for
-metals, and to accelerate selfconsistency in some cases.
+\subsubsection{Orbital minimization method (OMM)}
+\label{SolverOMM}
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{diagon}
-
-\textit{Default value:} \texttt{300.0 K}
-pp
-
-\end{description}
-
-\subsubsection{Orbital minimization method (OMM)} \label{SolverOMM}
-
-The OMM is an alternative cubic-scaling solver that uses a minimization
-algorithm instead of direct diagonalization to find the occupied subspace.
-The main advantage over diagonalization is the possibility of iteratively
-reusing the solution from each SCF/MD step as the starting guess of the
-following one, thus greatly reducing the time to solution. Typically,
-therefore, the first few SCF cycles of the first MD step of a simulation
-will be slower than diagonalization, but the rest will be faster. The main
-disadvantages are that individual Kohn-Sham eigenvalues are not computed,
-and that only a fixed, integer number of electrons at each k point/spin is
-allowed. Therefore, only spin-polarized calculations with \textbf{FixSpin}
-are allowed, and \textbf{TotalSpin} must be chosen appropriately. For
-non-$\Gamma$ point calculations, the number of electrons is set to be equal
-at all k points. \textbf{NonCollinearSpin} calculations are not supported at
-present.
+The OMM is an alternative cubic-scaling solver that uses a
+minimization algorithm instead of direct diagonalization to find the
+occupied subspace.  The main advantage over diagonalization is the
+possibility of iteratively reusing the solution from each SCF/MD step
+as the starting guess of the following one, thus greatly reducing the
+time to solution. Typically, therefore, the first few SCF cycles of
+the first MD step of a simulation will be slower than diagonalization,
+but the rest will be faster. The main disadvantages are that
+individual Kohn-Sham eigenvalues are not computed, and that only a
+fixed, integer number of electrons at each k point/spin is
+allowed. Therefore, only spin-polarized calculations with
+\fdf{Spin!Fix} are allowed, and \fdf{Spin!Total} must be chosen
+appropriately. For non-$\Gamma$ point calculations, the number of
+electrons is set to be equal at all k points. Non-collinear
+calculations (see \fdf{Spin}) are not supported at present.
 
 It is important to note that the OMM requires all occupied Kohn-Sham
 eigenvalues to be negative; this can be achieved by applying a shift
-to the eigenspectrum, controlled by \textbf{ON.eta} (in this case,
-\textbf{ON.eta} simply needs to be higher than the HOMO level). If the OMM
-exhibits a pathologically slow or unstable convergence, this is almost
-certainly due to the fact that the default value of \textbf{ON.eta}
-(\texttt{0.0 eV}) is too low, and should be raised by a few eV.
+to the eigenspectrum, controlled by \fdf{ON.eta} (in this case,
+\fdf{ON.eta} simply needs to be higher than the HOMO level). If the
+OMM exhibits a pathologically slow or unstable convergence, this is
+almost certainly due to the fact that the default value of
+\fdf{ON.eta} (\fdf*{0.0 eV}) is too low, and should be raised by
+a few eV.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdflogicalT}{OMM!UseCholesky}
 
-\item[\textbf{OMM.UseCholesky}] (\textit{logical}):
-\index{OMM.UseCholesky@\textbf{OMM.UseCholesky}}
-Select whether to perform a Cholesky factorization of the generalized eigenvalue
-problem; this removes the overlap matrix from the problem but also destroys the
-sparsity of the Hamiltonian matrix.
+  Select whether to perform a Cholesky factorization of the
+  generalized eigenvalue problem; this removes the overlap matrix from
+  the problem but also destroys the sparsity of the Hamiltonian
+  matrix.
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
+\end{fdflogicalT}
 
-\textit{Default value:} \texttt{.true.}
+\begin{fdflogicalT}{OMM!Use2D}
+  
+  Select whether to use a 2D data decomposition of the matrices for
+  parallel calculations. This generally leads to superior scaling for
+  large numbers of MPI processes.
 
-\item[\textbf{OMM.Use2D}] (\textit{logical}):
-\index{OMM.Use2D@\textbf{OMM.Use2D}}
-Select whether to use a 2D data decomposition of the matrices for parallel
-calculations. This generally leads to superior scaling for large numbers of MPI
-processes.
+\end{fdflogicalT}
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
+\begin{fdflogicalF}{OMM!UseSparse}
 
-\textit{Default value:} \texttt{.true.}
+  Select whether to make use of the sparsity of the Hamiltonian and
+  overlap matrices where possible when performing matrix-matrix
+  multiplications (these operations are thus reduced from $O(N^3)$ to
+  $O(N^2)$ without loss of accuracy).
 
-\item[\textbf{OMM.UseSparse}] (\textit{logical}):
-\index{OMM.UseSparse@\textbf{OMM.UseSparse}}
-Select whether to make use of the sparsity of the Hamiltonian and overlap
-matrices where possible when performing matrix-matrix multiplications (these
-operations are thus reduced from $O(N^3)$ to $O(N^2)$ without loss of
-accuracy).
+  \note not compatible with \fdf{OMM!UseCholesky},
+  \fdf{OMM!Use2D}, or non-$\Gamma$ point calculations
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}; not compatible with
-\textbf{OMM.UseCholesky}, \textbf{OMM.Use2D}, or non-$\Gamma$ point calculations
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdfentry}{OMM!Precon}[integer]<-1>
+  
+  Number of SCF steps for \emph{all} MD steps for which to apply a
+  preconditioning scheme based on the overlap and kinetic energy
+  matrices; for negative values the preconditioning is always
+  applied. Preconditioning is usually essential for fast and accurate
+  convergence (note, however, that it is not needed if a Cholesky
+  factorization is performed; in such cases this variable will have no
+  effect on the calculation).
 
-\item[\textbf{OMM.Precon}] (\textit{integer}):
-\index{OMM.Precon@\textbf{OMM.Precon}}
-Number of SCF steps for \em{all} MD steps for which to apply a preconditioning
-scheme based on the overlap and kinetic energy matrices; for negative values the
-preconditioning is always applied. Preconditioning is usually essential for fast
-and accurate convergence (note, however, that it is not needed if a Cholesky
-factorization is performed; in such cases this variable will have no effect on
-the calculation).
+  \note cannot be used with \fdf{OMM!UseCholesky}.
 
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}; not used with
-\textbf{OMM.UseCholesky}
-
-\textit{Default value:} \texttt{-1}
-
-\item[\textbf{OMM.PreconFirstStep}] (\textit{integer}):
-\index{OMM.PreconFirstStep@\textbf{OMM.PreconFirstStep}}
-Number of SCF steps in the \emph{first} MD step for which to apply the preconditioning
-scheme; if present, this will overwrite the value given in \textbf{OMM.Precon} for the
-first MD step only.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}; not used with
-\textbf{OMM.UseCholesky}
-
-\textit{Default value:} \texttt{OMM.Precon}
-
-\item[\textbf{OMM.Diagon}] (\textit{integer}):
-\index{OMM.Diagon@\textbf{OMM.Diagon}}
-Number of SCF steps for \emph{all} MD steps for which to use a standard diagonalization
-before switching to the OMM; for negative values diagonalization is always used, and
-so the calculation is effectively equivalent to \textbf{SolutionMethod} = \texttt{diagon}.
-In general, selecting the first few SCF steps can speed up the calculation by removing
-the costly initial minimization (at present this works best for $\Gamma$ point
-calculations).
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
-
-\textit{Default value:} \texttt{0}
-
-\item[\textbf{OMM.DiagonFirstStep}] (\textit{integer}):
-\index{OMM.DiagonFirstStep@\textbf{OMM.DiagonFirstStep}}
-Number of SCF steps in the \emph{first} MD step for which to use a standard diagonalization
-before switching to the OMM; if present, this will overwrite the value given in
-\textbf{OMM.Diagon} for the first MD step only.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
-
-\textit{Default value:} \texttt{OMM.Diagon}
-
-\item[\textbf{OMM.BlockSize}] (\textit{integer}):
-\index{OMM.BlockSize@\textbf{OMM.BlockSize}}
-Blocksize used for distributing the elements of the matrix over MPI processes. Specifically,
-this variable controls the dimension relating to the trial orbitals used in the minimization
-(equal to the number of occupied states at each k point/spin); the equivalent variable for
-the dimension relating to the underlying basis orbitals is controlled by \textbf{BlockSize}.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
-
-\textit{Default value:} chosen by \siesta\
-
-\item[\textbf{OMM.TPreconScale}] (\textit{real energy}):
-\index{OMM.TPreconScale@\textbf{OMM.TPreconScale}}
-Scale of the kinetic energy preconditioning (see C.~K.~Gan \emph{et al.}, Comput. Phys. Commun.
-\textbf{134}, 33 (2001)). A smaller value indicates more aggressive kinetic energy preconditioning,
-while an infinite value indicates no kinetic energy preconditioning. In general, the kinetic
-energy preconditioning is much less important than the tensorial correction brought about by
-the overlap matrix, and so this value will have fairly little impact on the overall performace
-of the preconditioner; however, too aggressive kinetic energy preconditioning can have a
-detrimental effect on performance and accuracy.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
-
-\textit{Default value:} \texttt{10.0 Ry}
-
-\item[\textbf{OMM.RelTol}] (\textit{real}):
-\index{OMM.RelTol@\textbf{OMM.RelTol}}
-Relative tolerance in the conjugate gradients minimization of the Kohn-Sham band energy (see
-\textbf{ON.etol}).
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
-
-\textit{Default value:} $10^{-9}$
-
-\item[\textbf{OMM.Eigenvalues}] (\textit{logical}):
-\index{OMM.Eigenvalues@\textbf{OMM.Eigenvalues}}
-Select whether to perform a diagonalization at the end of each MD step to obtain the Kohn-Sham
-eigenvalues.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
-
-\textit{Default value:} \texttt{.false.}
-
-\item[\textbf{OMM.WriteCoeffs}] (\textit{logical}):
-\index{OMM.WriteCoeffs@\textbf{OMM.WriteCoeffs}}
-Select whether to write the coefficients of the solution orbitals to file at the end of each MD
-step.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
-
-\textit{Default value:} \texttt{.false.}
-
-\item[\textbf{OMM.ReadCoeffs}] (\textit{logical}):
-\index{OMM.ReadCoeffs@\textbf{OMM.ReadCoeffs}}
-Select whether to read the coefficients of the solution orbitals from file at the beginning of
-a new calculation. Useful for restarting an interrupted calculation, especially when used in
-conjuction with \textbf{DM.UseSaveDM}. Note that the same number of MPI processes and values of
-\textbf{OMM.Use2D}, \textbf{OMM.BlockSize}, and \textbf{BlockSize} must be used when restarting.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
-
-\textit{Default value:} \texttt{.false.}
-
-\item[\textbf{OMM.LongOutput}] (\textit{logical}):
-\index{OMM.LongOutput@\textbf{OMM.LongOutput}}
-Select whether to output detailed information of the conjugate gradients minimization for each
-SCF step.
-
-\textit{Use:} Used only if \textbf{SolutionMethod} = \texttt{OMM}
-
-\textit{Default value:} \texttt{.false.}
-
-\end{description}
+\end{fdfentry}
 
 
-\subsubsection{Order(N) calculations} \label{SolverON}
+\begin{fdfentry}{OMM!PreconFirstStep}[integer]<\fdfvalue{OMM!Precon}>
+  
+  Number of SCF steps in the \emph{first} MD step for which to apply
+  the preconditioning scheme; if present, this will overwrite the
+  value given in \fdf{OMM!Precon} for the first MD step only.
+
+\end{fdfentry}
+
+\begin{fdfentry}{OMM!Diagon}[integer]<0>
+
+  Number of SCF steps for \emph{all} MD steps for which to use a
+  standard diagonalization before switching to the OMM; for negative
+  values diagonalization is always used, and so the calculation is
+  effectively equivalent to \fdf{SolutionMethod} \fdf*{diagon}.
+  In general, selecting the first few SCF steps can speed up the
+  calculation by removing the costly initial minimization (at present
+  this works best for $\Gamma$ point calculations).
+
+\end{fdfentry}
+
+\begin{fdfentry}{OMM!DiagonFirstStep}[integer]<\fdfvalue{OMM!Diagon}>
+  
+  Number of SCF steps in the \emph{first} MD step for which to use a
+  standard diagonalization before switching to the OMM; if present,
+  this will overwrite the value given in \fdf{OMM!Diagon} for the
+  first MD step only.
+
+\end{fdfentry}
+
+\begin{fdfentry}{OMM!BlockSize}[integer]<\fdfvalue{BlockSize}>
+  
+  Blocksize used for distributing the elements of the matrix over MPI
+  processes. Specifically, this variable controls the dimension
+  relating to the trial orbitals used in the minimization (equal to
+  the number of occupied states at each k point/spin); the equivalent
+  variable for the dimension relating to the underlying basis orbitals
+  is controlled by \fdf{BlockSize}.
+
+\end{fdfentry}
+
+\begin{fdfentry}{OMM!TPreconScale}[energy]<$10\,\mathrm{Ry}$>
+  
+  Scale of the kinetic energy preconditioning (see C.~K.~Gan \emph{et
+      al.}, Comput. Phys. Commun.  \textbf{134}, 33 (2001)). A smaller
+  value indicates more aggressive kinetic energy preconditioning,
+  while an infinite value indicates no kinetic energy
+  preconditioning. In general, the kinetic energy preconditioning is
+  much less important than the tensorial correction brought about by
+  the overlap matrix, and so this value will have fairly little impact
+  on the overall performace of the preconditioner; however, too
+  aggressive kinetic energy preconditioning can have a detrimental
+  effect on performance and accuracy.
+
+\end{fdfentry}
+
+\begin{fdfentry}{OMM!RelTol}[real]<$10^{-9}$>
+  
+  Relative tolerance in the conjugate gradients minimization of the
+  Kohn-Sham band energy (see \fdf{ON!Etol}).
+
+\end{fdfentry}
+
+\begin{fdflogicalF}{OMM!Eigenvalues}
+
+  Select whether to perform a diagonalization at the end of each MD
+  step to obtain the Kohn-Sham eigenvalues.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{OMM!WriteCoeffs}
+
+  Select whether to write the coefficients of the solution orbitals to
+  file at the end of each MD step.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{OMM!ReadCoeffs}
+
+  Select whether to read the coefficients of the solution orbitals
+  from file at the beginning of a new calculation. Useful for
+  restarting an interrupted calculation, especially when used in
+  conjuction with \fdf{DM.UseSaveDM}. Note that the same number of
+  MPI processes and values of \fdf{OMM!Use2D},
+  \fdf{OMM!BlockSize}, and \fdf{BlockSize} must be used when
+  restarting.
+
+\end{fdflogicalF}
+
+
+\begin{fdflogicalF}{OMM!LongOutput}
+  
+  Select whether to output detailed information of the conjugate
+  gradients minimization for each SCF step.
+
+\end{fdflogicalF}
+
+
+\subsubsection{Order(N) calculations}
+\label{SolverON}
 
 The Ordern(N) subsystem is quite fragile and only works for systems
 with clearly separated occupied and empty states. Note also that the
