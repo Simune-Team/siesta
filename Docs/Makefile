@@ -89,7 +89,7 @@ final-screen: clean final-siesta-screen final-tbtrans-screen
 
 # Clean targets
 clean:
-	rm -f {siesta,tbtrans}.{lot,oct,aux,auxlock,makefile,figlist,bbl,log,ilg,lof,ind,out,blg,gls,glo,glg,idx,toc,bcf,run.xml} {siesta,tbtrans}-*.[^p]*
+	rm -f *.{lot,oct,aux,auxlock,makefile,figlist,bbl,log,ilg,lof,ind,out,blg,gls,glo,glg,idx,toc,bcf,run.xml}
 
 clean-all: cleanall
 cleanall: clean
