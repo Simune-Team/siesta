@@ -99,9 +99,9 @@ C  FFTOL is the tolerance for considering equal the radial part of
 C    two orbitals.
 C  TINY is a small number to avoid a zero denominator
       INTEGER,          PARAMETER :: NRTAB  =  128
-      INTEGER,          PARAMETER :: NQ     =  2048
+      INTEGER,          PARAMETER :: NQ     =  1024
       real(dp),         PARAMETER :: EXPAND =  1.20_dp
-      real(dp),         PARAMETER :: Q2CUT  =  6.50e3_dp
+      real(dp),         PARAMETER :: Q2CUT  =  2.50e3_dp
       real(dp),         PARAMETER :: GWBYDR =  1.5_dp
       real(dp),         PARAMETER :: FFTOL  =  1.e-8_dp
       real(dp),         PARAMETER :: TINY   =  1.e-12_dp

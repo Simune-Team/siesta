@@ -1,4 +1,29 @@
 ------------------------------------------------------------
+October 27, 2016  Alberto Garcia    trunk-506--psml-85
+REVERT: Increase radial fft parameters (for) non-smooth chlocal/vlocal
+
+This was patch 503..504:
+
+  * Vlocals from psml files might not be smooth in the fourier sense,
+    requiring a higher cutoff and number of points in the fourier
+    transforms in 'electrostatic' and 'matel'.
+
+  modified:
+    Src/electrostatic.f
+    Src/matel.f
+
+and it caused significant changes in output for normal runs.
+This has now been reverted, pending further investigation.
+  
+------------------------------------------------------------
+October 26, 2016  Alberto Garcia    trunk-506--psml-84
+Merge gridxc-integration
+
+------------------------------------------------------------
+October 25, 2016  Alberto Garcia    trunk-506--psml-83
+Add note about xmlf90 > 1.5.0 required
+    
+------------------------------------------------------------
 October 18, 2016  Alberto Garcia    trunk-506--psml-82
 Added patch file for oncvpsp-3.2.3
 

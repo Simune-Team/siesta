@@ -92,9 +92,9 @@ C     integration.
 
       integer nq, npoint
       real(dp)            :: q2cut, cherr
-      PARAMETER ( NQ     =  2048  )
+      PARAMETER ( NQ     =  512  )
       PARAMETER ( NPOINT =  4     ) 
-      PARAMETER ( Q2CUT  =  6.5e3_dp )
+      PARAMETER ( Q2CUT  =  2.5e3_dp )
       PARAMETER ( CHERR   =  5.e-2_dp )
 
       real(dp)
