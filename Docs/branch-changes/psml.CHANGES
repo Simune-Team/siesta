@@ -1,4 +1,27 @@
 ------------------------------------------------------------
+October 28, 2016  Alberto Garcia    trunk-506--psml-89
+Update *defaults* and building of psop in Pseudo/vnl-operator
+
+* IMPORTANT: The default behavior of psop with regard to the
+KB reference orbitals has changed to match the default (still)
+in Siesta: the old-style KB ref is used unless the -K option
+is specified.
+
+* Added files needed for libxc-siestaxc-atom translation that
+were previously in the SiestaXC tree.
+
+* Update building logic for libGridXC.
+
+added:
+  Pseudo/vnl-operator/handlers.f
+  Pseudo/vnl-operator/m_libxc_list.F90
+  Pseudo/vnl-operator/m_libxc_sxc_translation.F90
+  Pseudo/vnl-operator/m_siestaxc_list.F90
+modified:
+  Pseudo/vnl-operator/Makefile
+  Pseudo/vnl-operator/psop.f90
+	    
+------------------------------------------------------------
 October 28, 2016  Alberto Garcia    trunk-506--psml-88
 Remove wxml, xmlparser, SiestaXC. Build fixes in Util
 

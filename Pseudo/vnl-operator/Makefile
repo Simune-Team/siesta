@@ -21,6 +21,7 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 include $(PSML_ROOT)/psml.mk
 include $(XMLF90_ROOT)/xmlf90.mk
+include $(GRIDXC_ROOT)/gridxc.mk
 #
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
@@ -29,13 +30,15 @@ NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
 
 INCFLAGS:=$(INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS) $(PSOP_INCFLAGS)
-INCFLAGS:=$(INCFLAGS) $(XMLF90_INCFLAGS) 
-INCFLAGS:=$(INCFLAGS)  -I./SiestaXC # To pick up mod files
+INCFLAGS:=$(INCFLAGS) $(XMLF90_INCFLAGS) $(GRIDXC_INCFLAGS)
 #
 OBJS = 	psop_options.o\
 	psop.o local_xml.o write_proj_psml.o \
-        local_die.o psml_die.o semicore_info_froyen.o\
-        dpnint.o check_grid.o m_uuid.o
+        local_die.o psml_die.o handlers.o semicore_info_froyen.o\
+        dpnint.o check_grid.o m_uuid.o \
+        m_libxc_list.o m_libxc_sxc_translation.o \
+        m_siestaxc_list.o
+
 #
 #
 MOD_OBJS= m_getopts.o f2kcli.o
@@ -45,30 +48,18 @@ ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
 $(COM_OBJS): 
 #
-XC=libSiestaXC.a
-XC_MAKEFILE=$(TOP_LEVEL)/SiestaXC/makefile
-XC_INCFLAGS:=-I $(TOP_LEVEL)/SiestaXC ##$(INCFLAGS)
-$(XC): 
-	(mkdir -p SiestaXC; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
-                          "FC=$(FC)" "VPATH_ROOT=$(TOP_LEVEL)" \
-                          "ARCH_MAKE=$(ARCH_MAKE)" \
-                          "INCFLAGS=$(XC_INCFLAGS)" \
-                          "DEFS=$(DEFS) $(DEFS_PREFIX)-UMPI" \
-                          "FPPFLAGS=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI" \
-                          "MPI_INTERFACE= " \
-                          "FFLAGS=$(FFLAGS)"  module )
+XC=$(GRIDXC_LIBS)
 #
 what:
 	echo "VPATH: " $(VPATH)
-psop:   $(NCPS) $(PSML) $(PSOP) $(XC) $(ALL_OBJS)
+psop:   $(NCPS) $(PSOP) $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o psop $(ALL_OBJS) \
         $(NCPS) $(PSOP) $(PSML_LIBS) $(XC) $(XMLF90_LIBS)
 #
-$(NCPS): $(PSML)
-#
 psop.o: psop_options.o local_xml.o write_proj_psml.o m_uuid.o
-#
 psop.o: m_getopts.o semicore_info_froyen.o
+psop.o: m_libxc_sxc_translation.o 
+m_libxc_sxc_translation.o: m_libxc_list.o  m_siestaxc_list.o
 write_proj_psml.o: local_xml.o
 m_getopts.o: f2kcli.o
 #
@@ -76,7 +67,6 @@ clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f psop *.o  *.a *.pcl *.pc *.mod
 	rm -f *.mod
-	rm -fr SiestaXC
 #
 $(PSOP):
 	@echo "Making sure that the psop library is compiled..."

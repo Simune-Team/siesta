@@ -37,8 +37,10 @@
       use m_psop, only: nrmax, nkbmx
 
       use m_semicore_info_froyen, only: get_n_semicore_shells
-      use SiestaXC, only: xc_id_t, get_xc_id_from_atom_id, setXC
-      use SiestaXC, only: atomxc
+      use m_libxc_sxc_translation, only: xc_id_t, get_xc_id_from_atom_id
+      use GridXC, only: atomxc => gridxc_atomxc
+      use GridXC, only: setXC => gridxc_setXC
+      
 
       use psop_options
       use m_getopts
@@ -233,7 +235,7 @@
       n_opts = 0
 
       restricted_grid = .true.
-      new_kb_reference_orbitals = .true.
+      new_kb_reference_orbitals = .false.
       debug_kb_generation = .false.
       ignore_ghosts = .false.
       kb_rmax       = 0.0_dp
@@ -259,7 +261,7 @@
            case ('p')
               write_ion_plot_files = .true.
            case ('K')
-              new_kb_reference_orbitals = .false.
+              new_kb_reference_orbitals = .true.
            case ('R')
               read(opt_arg,*) kb_rmax
            case ('C')
@@ -274,7 +276,7 @@
             call manual()
            case ('?',':')
              write(0,*) "Invalid option: ", opt_arg(1:1)
-             write(0,*) "Usage: psop [ options ] FILE"
+             write(0,*) "Usage: psop FILE [ options ]"
              write(0,*) "Use -h option for manual"
              STOP
           end select
@@ -283,7 +285,7 @@
        nargs = command_argument_count()
        nlabels = nargs - n_opts + 1
        if (nlabels /= 1)  then
-          write(0,*) "Usage: psop [ options ] FILE"
+          write(0,*) "Usage: psop FILE [ options ]"
           write(0,*) "Use -h option for manual"
           STOP
        endif
@@ -716,12 +718,12 @@ end subroutine get_label
       end subroutine my_add_attribute
 
 subroutine manual()
-  write(0,*) "Usage: psop [ options ] FILE"
+  write(0,*) "Usage: psop FILE [ options ]"
   write(0,*) " FILE:       Any of .vps, .psf, or .psml"
   write(0,*) " Options: "
   write(0,*) " -d                                debug"
   write(0,*) " -p                 write_ion_plot_files"
-  write(0,*) " -K  use old-style KB reference orbitals"
+  write(0,*) " -K  use NEW-style KB reference orbitals"
   write(0,*) " -g            use unrestricted log grid"
   write(0,*) " -l      use linear grid for PSML output"
   write(0,*) " -R  Rmax_kb (bohr)    for KB generation"
