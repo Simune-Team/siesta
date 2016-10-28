@@ -1,4 +1,13 @@
 ------------------------------------------------------------
+October 28, 2016  Alberto Garcia    trunk-506--psml-87
+Make kb-new-reference-orbitals .false. by default
+
+In order to match the default in the trunk at this point.
+
+modified:
+  Src/atom_options.F90
+
+------------------------------------------------------------
 October 27, 2016  Alberto Garcia    trunk-506--psml-86
 Revert addition of reduced_vlocal to .ion file
 

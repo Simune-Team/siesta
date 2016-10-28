@@ -37,7 +37,7 @@ CONTAINS
 
     write_ion_plot_files = fdf_boolean('WriteIonPlotFiles',.true.)
     debug_kb_generation  = fdf_boolean('Atom.Debug.KB.Generation',.true.)
-    new_kb_reference_orbitals  = fdf_boolean('KB.New.Reference.Orbitals',.true.)
+    new_kb_reference_orbitals  = fdf_boolean('KB.New.Reference.Orbitals',.false.)
   end subroutine get_atom_options
 
 END MODULE atom_options
