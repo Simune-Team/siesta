@@ -38,16 +38,16 @@ DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI 
 INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
 
-SIESTA_OBJS = precision.o alloc.o parallel.o die.o m_io.o pxf.o moreParallelSubs.o
+SIESTA_OBJS = precision.o alloc.o parallel.o m_io.o pxf.o moreParallelSubs.o
 
 DEF_OBJS = m_getopts.o io.o subs.o sys_local.o units.o f2kcli.o
 DEF_OBJS += io_hs.o
 DEF_OBJS += main_vars.o
 
 # Create objects for each routine
-MPROP_OBJS = $(SIESTA_OBJS) $(DEF_OBJS) read_curves.o orbital_set.o
-FAT_OBJS   = $(SIESTA_OBJS) $(DEF_OBJS) read_curves.o orbital_set.o
-DM_OBJS    = $(SIESTA_OBJS) $(DEF_OBJS) iodm_netcdf.o write_dm.o
+MPROP_OBJS = $(SIESTA_OBJS) $(DEF_OBJS) read_curves.o orbital_set.o handlers.o
+FAT_OBJS   = $(SIESTA_OBJS) $(DEF_OBJS) read_curves.o orbital_set.o handlers.o
+DM_OBJS    = $(SIESTA_OBJS) $(DEF_OBJS) iodm_netcdf.o write_dm.o handlers.o
 
 dep: 
 	sfmakedepend --depend=obj --modext=o \

@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+October 28, 2016  Alberto Garcia    trunk-506--psml-88
+Remove wxml, xmlparser, SiestaXC. Build fixes in Util
+
+* As a note for building programs in Util:
+
+  Most of them will need a "handlers.f" file with implementations of
+  callback routines.
+
+* Move 'changes' files to branch-changes
+
+------------------------------------------------------------
 October 28, 2016  Alberto Garcia    trunk-506--psml-87
 Make kb-new-reference-orbitals .false. by default
 

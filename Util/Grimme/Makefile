@@ -38,8 +38,8 @@ SYSOBJ=$(SYS).o
 
 # Note that machine-specific files are now in top Src directory.
 OBJS = precision.o f2kcli.o parallel.o \
-          chemical.o io.o m_io.o alloc.o \
-          memoryinfo.o memory.o periodic_table.o \
+          chemical.o io.o m_io.o die.o \
+          memory_log.o memory.o periodic_table.o \
           pxf.o atom_options.o sys.o $(SYSOBJ)
 
 OBJS += grimme.o

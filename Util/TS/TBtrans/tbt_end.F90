@@ -16,7 +16,7 @@ subroutine tbt_end()
   use mpi_siesta, only : MPI_Finalize
 #endif
   use parallel, only : Node
-  use alloc, only   : alloc_report
+  use memory_log,      only : memory_report
   use m_timestamp, only : timestamp
   use m_wallclock, only : wallclock
 
@@ -29,7 +29,7 @@ subroutine tbt_end()
   call timer( 'all', 3 )
 
   ! Print allocation report
-  call alloc_report( printNow=.true. )
+  call memory_report( printNow=.true. )
 
   if ( Node == 0 ) then
      call timestamp("End of run")

@@ -41,9 +41,9 @@ SYSOBJ=$(SYS).o
 #
 OBJS_GET_CHEM_LABELS=precision.o f2kcli.o parallel.o \
           chemical.o io.o m_io.o alloc.o \
-          memoryinfo.o memory.o periodic_table.o\
+          memory_log.o memory.o periodic_table.o\
           pxf.o atom_options.o  \
-          sys.o get_chem_labels.o $(SYSOBJ)
+          sys.o get_chem_labels.o handlers.o $(SYSOBJ)
 #
 #
 # Use the makefile in Src/fdf and all the sources there.

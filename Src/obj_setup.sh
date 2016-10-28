@@ -40,9 +40,6 @@ destdir=$(pwd)
     cp $relpath/fortran.mk ${destdir}/$relpath
   done
 )
-# Copy the .mk files in Mk
-#
-(cd $srcdir; mkdir -p ${destdir}/Mk;  cp -p Mk/*.mk ${destdir}/Mk )
 
 # Replicate any .h files
 # This is needed in some systems with broken include file import heuristics
