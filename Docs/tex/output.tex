@@ -81,12 +81,12 @@
 {%
     % Typeset file
     \IfBooleanTF{#1}{%
-        \fontfile{.#1}%
+        \fontfile{.#2}%
     }{%
-        \fontfile{SystemLabel.#1}%
+        \fontfile{SystemLabel.#2}%
     }%
     % Add to the indices
-    \newfile{SystemLabel.#1}%
+    \newfile{SystemLabel.#2}%
 }
 
 

@@ -948,25 +948,24 @@ After a successful run of the program, you should have several
 files in your directory including the following:
 \begin{itemize}
 
-\item fdf.log\index{fdf.log}
+\item fdf.log
  (contains all the data used, explicit or chosen by default)
-\item O.ion and H.ion\index{species.ion@\textit{species.}ion}
+\item O.ion and H.ion
  (complete information about the basis and KB projectors)
-\item h2o.XV\index{Systemlabel.XV@\textit{Systemlabel.}XV}
+\item h2o.XV
  (contains positions and velocities)
 \item h2o.STRUCT\_OUT
-\index{Systemlabel.STRUCT\_OUT@{\textit{Systemlabel}.STRUCT\_OUT}}
  (contains the final cell vectors and positions in
  ``crystallographic'' format)
-\item h2o.DM\index{Systemlabel.DM@\textit{Systemlabel.}DM}
+\item h2o.DM
  (contains the density matrix to allow a restart)
-\item h2o.ANI\index{Systemlabel.ANI@\textit{Systemlabel.}.ANI}
+\item h2o.ANI
  (contains the coordinates of every MD step, in this case only one)
-\item h2o.FA\index{Systemlabel.FA@\textit{Systemlabel.}.FA}
+\item h2o.FA
  (contains the forces on the atoms)
-\item h2o.EIG\index{Systemlabel.EIG@\textit{Systemlabel.}.EIG}
+\item h2o.EIG
  (contains the eigenvalues of the Kohn-Sham Hamiltonian)
-\item h2o.xml\index{Systemlabel.xml@\textit{Systemlabel.}xml}
+\item h2o.xml
  (XML marked-up output)
 \end{itemize}
 
@@ -9695,144 +9694,147 @@ For large or intermediate values of $U_{\mathrm{eff}}$ the convergence
 is sometimes difficult. A step-by-step increase of the
 value of $U_{\mathrm{eff}}$ can be advisable in such cases.
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+\begin{fdfentry}{LDAU.ProjectorGenerationMethod}[integer]<2>
+  
+  Generation method of the LDA+U projectors. The LDA+U projectors are
+  the localized functions used to calculate the local populations used
+  in a Hubbard-like term that modifies the LDA Hamiltonian and
+  energy. It is important to recall that LDA+U projectors should be
+  quite localized functions.  Otherwise the calculated populations
+  loose their atomic character and physical meaning. Even more
+  importantly, the interaction range can increase so much that
+  jeopardizes the efficiency of the calculation.
 
-\item[\textbf{LDAU.ProjectorGenerationMethod}] (\textit{integer}):
-Generation method of the LDA+U projectors. The LDA+U projectors are the
-localized functions used
-to calculate the local populations used in a Hubbard-like term
-that modifies the LDA Hamiltonian and  energy. It is important
-to recall that LDA+U projectors should be quite localized functions.
-Otherwise the calculated populations loose their atomic character
-and physical meaning. Even more importantly,
-the interaction range can increase so much that jeopardizes
-the efficiency of the calculation.
+  Two methods are currently implemented:
+  \begin{fdfoptions}
+    \option[1]%
+    Projectors are slightly-excited numerical atomic orbitals similar
+    to those used as an automatic basis set by \siesta.  The radii of
+    these orbitals are controlled using the parameter
+    \fdf{LDAU.EnergyShift} and/or the data included in the block
+    \fdf{LDAU.Proj} (quite similar to the data block \fdf{PAO.Basis}
+    used to specify the basis set, see below).
 
-Two methods are currently implemented (accepted values are 1 and 2):
-\begin{itemize}
-\item 1. Projectors are slightly-excited numerical atomic orbitals
-similar to those used as an automatic basis set by  SIESTA.
-The radii of these orbitals are controlled using
-the parameter LDAU.EnergyShift and/or the data included in the 
-block LDAU.proj (quite similar to the data block PAO.Basis used
-to specify the basis set, see below).
-\item 2. Projectors are exact solutions of the pseudoatomic
-problem (and, in principle, are not strictly localized) which are
-cut using a Fermi function $1/\{1+\exp[(r-r_c)\omega]\}$.
-The values of $r_c$ and $\omega$ are controlled using
-the parameter LDAU.CutoffNorm and/or the  data included in the
-block LDAU.proj.
-\end{itemize}
+    \option[2]%
+    Projectors are exact solutions of the pseudoatomic problem (and,
+    in principle, are not strictly localized) which are cut using a
+    Fermi function $1/\{1+\exp[(r-r_c)\omega]\}$.  The values of $r_c$
+    and $\omega$ are controlled using the parameter \fdf{LDAU.CutoffNorm}
+    and/or the data included in the block \fdf{LDAU.Proj}.
 
-\textit{Default value:}  \texttt{2}
+  \end{fdfoptions}
 
-\item[\textbf{LDAU.EnergyShift}]  (\textit{physical }):
-Energy increase used to define the localization radius
-of the LDA+U projectors (similar to the parameter
-PAO.EnergyShift.
+\end{fdfentry}
 
-\textit{Use:} Used only if LDAU.ProjectorGenerationMethod is \texttt{1 }
+\begin{fdfentry}{LDAU.EnergyShift}[energy]<$0.05\,\mathrm{Ry}$>
+  
+  Energy increase used to define the localization radius of the LDA+U
+  projectors (similar to the parameter \fdf{PAO.EnergyShift}).
 
-\textit{Default value:} \texttt{0.05 Ry}
+  \note only used when \fdf{LDAU.ProjectorGenerationMethod} is \fdf*{1}.
 
-\item[\textbf{LDAU.CutoffNorm}] (\textit{real}):
-Parameter used to define the value of $r_c$ used in the Fermi distribution to
-cut the LDA+U projectors generated according to generation
-method 2 (see above). LDAU.CutoffNorm is
-the norm of the original pseudoatomic orbital
-contained inside a sphere of radius equal to $r_c$.
+\end{fdfentry}
 
-\textit{Use:} Used only if LDAU.ProjectorGenerationMethod is \texttt{2 }
+\begin{fdfentry}{LDAU.CutoffNorm}[real]<$0.9$>
+  
+  Parameter used to define the value of $r_c$ used in the Fermi
+  distribution to cut the LDA+U projectors generated according to
+  generation method 2 (see above). \fdf{LDAU.CutoffNorm} is the norm of the
+  original pseudoatomic orbital contained inside a sphere of radius
+  equal to $r_c$.
 
-\textit{Default value:} \texttt{0.90 }
+  \note only used when \fdf{LDAU.ProjectorGenerationMethod} is \fdf*{2}.
 
-\item[\textbf{LDAU.proj}] (\textit{data block}):
-Data block used to specify the LDA+U projectors.
-
-\begin{itemize}
-\item If LDAU.ProjectorGenerationMethod is \texttt{1 }, the
-syntax is as follows:
-\begin{verbatim}
-
-%block LDAU.proj     # Define LDA+U projectors
-Fe    2              # Label, l_shells
- n=3 2  E 50.0 2.5   # n (opt if not using semicore levels),l,Softconf(opt)
-     5.00  0.35      # U(eV), J(eV) for this shell
-     2.30            # rc (Bohr)
-     0.95            # scaleFactor (opt)
-     0               #    l
-     1.00  0.05      # U(eV), J(eV) for this shell
-     0.00            # rc(Bohr) (if 0, automatic r_c from LDAU.EnergyShift)
-%endblock LDAU.proj
+\end{fdfentry}
 
 
-\end{verbatim}
+\begin{fdfentry}{LDAU.Proj}[block]
+  
+  Data block used to specify the LDA+U projectors.
 
-\item If LDAU.ProjectorGenerationMethod is \texttt{2 }, the
-sintaxis is as follows:
-\begin{verbatim}
+  \begin{itemize}
+    \item%
+    If \fdf{LDAU.ProjectorGenerationMethod} is \fdf*{1}, the
+    syntax is as follows:
+    \begin{fdfexample}
+%block LDAU.Proj      # Define LDA+U projectors
+ Fe    2              # Label, l_shells
+  n=3 2  E 50.0 2.5   # n (opt if not using semicore levels),l,Softconf(opt)
+      5.00  0.35      # U(eV), J(eV) for this shell
+      2.30            # rc (Bohr)
+      0.95            # scaleFactor (opt)
+      0               #    l
+      1.00  0.05      # U(eV), J(eV) for this shell
+      0.00            # rc(Bohr) (if 0, automatic r_c from LDAU.EnergyShift)
+%endblock LDAU.Proj
+   \end{fdfexample}
 
-%block LDAU.proj     # Define LDAU projectors
-Fe    2              # Label, l_shells
- n=3 2  E 50.0 2.5   # n (opt if not using semicore levels),l,Softconf(opt)
-     5.00  0.35      # U(eV), J(eV) for this shell
-     2.30  0.15      # rc (Bohr), \omega(Bohr) (Fermi cutoff function)
-     0.95            # scaleFactor (opt)
-     0               #    l
-     1.00  0.05      # U(eV), J(eV) for this shell
-     0.00  0.00      # rc(Bohr), \omega(Bohr) (if 0 r_c from LDAU.CutoffNorm
-%endblock LDAU.proj  #                         and \omega from default value)
+    \item%
+    If \fdf{LDAU.ProjectorGenerationMethod} is \fdf*{2}, the
+    syntax is as follows:
+    \begin{fdfexample}
+%block LDAU.Proj      # Define LDAU projectors
+ Fe    2              # Label, l_shells
+  n=3 2  E 50.0 2.5   # n (opt if not using semicore levels),l,Softconf(opt)
+      5.00  0.35      # U(eV), J(eV) for this shell
+      2.30  0.15      # rc (Bohr), \omega(Bohr) (Fermi cutoff function)
+      0.95            # scaleFactor (opt)
+      0               #    l
+      1.00  0.05      # U(eV), J(eV) for this shell
+      0.00  0.00      # rc(Bohr), \omega(Bohr) (if 0 r_c from LDAU.CutoffNorm
+%endblock LDAU.Proj   #                         and \omega from default value)
+    \end{fdfexample}
+  \end{itemize}
+  
+  Certain of the quantites have default values:
 
-\end{verbatim}
-\end{itemize}
-\textit{Default values of the different parameters:} \\
-U = \texttt{0.0 eV} \\
-J = \texttt{0.0 eV} \\
-$\omega$ = \texttt{0.05 Bohr} \\
-$r_c$ = see LDAU.EnergyShift or LDAU.CutoffNorm depending on generation method\\
-Scale factor = \texttt{1.0 }
+  \begin{tabular}{cc}
+    U & \fdf*{0.0 eV} \\
+    J & \fdf*{0.0 eV} \\
+    $\omega$ & \fdf*{0.05 Bohr} \\
+    Scale factor & \fdf*{1.0}
+  \end{tabular}
 
-\textit{Default value:}  None.
+  $r_c$ depends on \fdf{LDAU.EnergyShift} or \fdf{LDAU.CutoffNorm}
+  depending on the generation method.
 
-\item[\textbf{LDAU.FirstIteration}] (\textit{logical})
-If .true. local populations are calculated and
-Hubbard-like term is switch on in the first iteration.
-Useful if restarting a calculation reading a converged
-or an almost converged density matrix from file.
+\end{fdfentry}
 
-\textit{Default value:} \texttt{.false.}
+\begin{fdflogicalF}{LDAU.FirstIteration}
+  
+  If \fdftrue, local populations are calculated and Hubbard-like term
+  is switch on in the first iteration.  Useful if restarting a
+  calculation reading a converged or an almost converged density
+  matrix from file.
 
-\item[\textbf{LDAU.ThresholdTol}] (\textit{real}):
-Local populations only calculated and/or updated
-if the change in the density matrix elements (dDmax)
-is lower than LDAU.ThresholdTol.
+\end{fdflogicalF}
 
-\textit{Default value:} \texttt{1.0$^{-2}$}
+\begin{fdfentry}{LDAU.ThresholdTol}[real]<$0.01$>
+  
+  Local populations only calculated and/or updated if the change in the
+  density matrix elements (dDmax) is lower than \fdf{LDAU.ThresholdTol}.
 
-\item[\textbf{LDAU.PopTol}] (\textit{real}):
-Convergence criterium for the LDA+U local populations.
-In the current implementation the
-Hubbard-like term of the Hamiltonian is only updated (except
-for the last iteration)
-if the variations of the local populations are larger than
-this value.
+\end{fdfentry}
 
-\textit{Default value:} \texttt{1.0$^{-3}$}
+\begin{fdfentry}{LDAU.PopTol}[real]<$0.001$>
+  
+  Convergence criterium for the LDA+U local populations.  In the
+  current implementation the Hubbard-like term of the Hamiltonian is
+  only updated (except for the last iteration) if the variations of
+  the local populations are larger than this value.
 
-\item[\textbf{LDAU.PotentialShift}] (\textit{logical}):
-If set to .true. the value given to the $U$ parameter in the
-input file
-is interpreted as a local potential shift. Recording
-the change of the local populations as a function of
-this potential shift, we can calculate the appropriate
-value of U for the system under study following the methology
-proposed by Cococcioni and Gironcoli in Phys. Rev. B \textbf{71},
-035105 (2005).
-\textit{Default value:} \texttt{.false.}
+\end{fdfentry}
 
-\end{description}
+\begin{fdflogicalF}{LDAU.PotentialShift}
+
+  If set to \fdftrue, the value given to the $U$ parameter in the
+  input file is interpreted as a local potential shift. Recording the
+  change of the local populations as a function of this potential
+  shift, we can calculate the appropriate value of U for the system
+  under study following the methology proposed by Cococcioni and
+  Gironcoli in Phys. Rev. B \textbf{71}, 035105 (2005).
+
+\end{fdflogicalF}
 
 
 
@@ -9941,7 +9943,7 @@ $ transiesta < elec.fast.fdf > elec.fast.out
 \end{verbatim}
 
 Note that apart from the usual files generated by \siesta, now you will 
-find the \texttt{elec.fast.TSHS} file (in general \texttt{<SystemLabel>.TSHS}). 
+find the \texttt{elec.fast.TSHS} file (in general \sysfile{TSHS}). 
 This file contains the real-space Hamiltonian and Overlap matrices, together 
 with some other information, that will be used, in the case of electrodes, to 
 calculate the surface Green's functions. 
@@ -9992,7 +9994,7 @@ Other automated TranSiesta-TBTrans examples can be found in
   Green's function self consistent cycle. As it is known, \siesta\
   stores the DM in a file with extension \sysfile{DM}. In the case of
   \tsiesta, this is done in a file named \sysfile{TSDE}. In a rerun of
-  the same system (meaning the same \texttt{<SystemLabel>}), if the
+  the same system (meaning the same \fdf{SystemLabel}), if the
   code finds a \sysfile{TSDE} file in the directory, it will take this
   DM as the initial input and this is then considered a continuation
   run. In this case it does not perform an initial \siesta\ run. It
