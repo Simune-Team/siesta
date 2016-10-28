@@ -8785,155 +8785,139 @@ input option is in effect (see Sec.~\ref{sec:Zmatrix}) the
 Zmatrix-specific options take precedence.  The 'MD' prefix is
 misleading but kept for historical reasons.
 
-\begin{description}
-\item[\textbf{MD.VariableCell}] (\textit{logical}):
-  \index{MD.VariableCell@\textbf{MD.VariableCell}} \index{cell
-    relaxation} If true, the lattice is relaxed together with the
-  atomic coordinates. It allows to target hydrostatic pressures or
-  arbitrary stress tensors.  See \textbf{MD.MaxStressTol}, \textbf{MD.TargetPressure}, \textbf{MD.TargetStress}, \textbf{MD.ConstantVolume}, and \textbf{MD.PreconditionVariableCell}.
+\begin{fdflogicalF}{MD.VariableCell}
+  \index{cell relaxation} 
 
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{CG} or \texttt{Broyden} or
-\texttt{FIRE}
+  If \fdftrue, the lattice is relaxed together with the atomic
+  coordinates. It allows to target hydrostatic pressures or arbitrary
+  stress tensors. See \fdf{MD.MaxStressTol},
+  \fdf{MD.TargetPressure}, \fdf{MD.TargetStress},
+  \fdf{MD.ConstantVolume}, and
+  \fdf{MD.PreconditionVariableCell}.
 
-\textit{Default value:} \texttt{.false.}
+  \note only compatible with \fdf{MD.TypeOfRun} \fdf*{CG},
+  \fdf*{Broyden} or \fdf*{fire}.
 
-\item[\textbf{MD.ConstantVolume}] (\textit{logical}):
-  \index{MD.ConstantVolume@\textbf{MD.ConstantVolume}}
-  \index{constant-volume cell relaxation} If true, the cell volume is
-  kept constant in a variable-cell relaxation: only the cell shape and
-  the atomic coordinates are allowed to change.  Note that it does not
-  make much sense to specify a target stress or pressure in this case,
-  except for anisotropic (traceless) stresses.  See \textbf{MD.VariableCell}, \textbf{MD.TargetStress}.
-
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{CG} or \texttt{Broyden} or
-\texttt{FIRE},  and  MD.VariableCell is \texttt{.true.}.
-
-\textit{Default value:} \texttt{.false.}
-
-\item[\textbf{MD.RelaxCellOnly}] (\textit{logical}):
-\index{MD.RelaxCellOnly@\textbf{MD.RelaxCellOnly}} \index{relaxation of
-cell parameters only}
-
-If true, only the cell parameters are relaxed (by the Broyden or FIRE
-method, not CG).  The atomic coordinates are re-scaled to the new
-cell, keeping the fractional coordinates constant. For Zmatrix
-calculations, the fractional position of the first atom in each
-molecule is kept fixed, and no attempt is made to rescale the bond
-distances or angles.
-
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{FIRE} or \texttt{Broyden}  and
- MD.VariableCell is \texttt{.true.}.
-
-\textit{Default value:} \texttt{.false.}
-
-\item[\textbf{MD.MaxForceTol}] (\textit{real force}):
-\index{MD.MaxForceTol@\textbf{MD.MaxForceTol}}
-Force tolerance in coordinate optimization.
-Run stops if the maximum atomic force is
-smaller than \textbf{MD.MaxForceTol} (see \textbf{MD.MaxStressTol}
-for variable cell).
-
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{CG} or \texttt{Broyden} or
-\texttt{FIRE}
-
-\textit{Default value:} \texttt{0.04 eV/Ang}
+\end{fdflogicalF}
 
 
-\item[\textbf{MD.MaxStressTol}] (\textit{real pressure}):
-\index{MD.MaxStressTol@\textbf{MD.MaxStressTol}}
-Stress tolerance in variable-cell CG optimization. Run stops
-if the maximum atomic force is smaller than \textbf{MD.MaxForceTol}
-and the maximum stress component is smaller than \textbf{MD.MaxStressTol}.
+\begin{fdflogicalF}{MD.ConstantVolume}
+  \index{constant-volume cell relaxation} 
 
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{CG} or \texttt{Broyden} or
-\texttt{FIRE}, and Md.VariableCell is \texttt{.true.}
+  If \fdftrue, the cell volume is kept constant in a variable-cell
+  relaxation: only the cell shape and the atomic coordinates are
+  allowed to change.  Note that it does not make much sense to specify
+  a target stress or pressure in this case, except for anisotropic
+  (traceless) stresses.  See \fdf{MD.VariableCell},
+  \fdf{MD.TargetStress}.
 
-Special consideration is needed if used with Sankey-type basis sets, since
-the combination of orbital kinks at the cutoff radii and the finite-grid
-integration originate discontinuities in the
-stress components, whose magnitude depends on the cutoff radii (or
-energy shift) and the mesh cutoff. The tolerance has to be larger
-than the discontinuities to avoid endless optimizations if the target
-stress happens to be in a discontinuity.
+  \note only compatible with \fdf{MD.TypeOfRun} \fdf*{CG},
+  \fdf*{Broyden} or \fdf*{fire}.
 
-\textit{Default value:} \texttt{1.0 GPa}
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{MD.RelaxCellOnly}
+  \index{relaxation of cell parameters only}
+
+  If \fdftrue, only the cell parameters are relaxed (by the Broyden or
+  FIRE method, not CG). The atomic coordinates are re-scaled to the
+  new cell, keeping the fractional coordinates constant. For
+  \fdf{Zmatrix} calculations, the fractional position of the first
+  atom in each molecule is kept fixed, and no attempt is made to
+  rescale the bond distances or angles.
+
+  \note only compatible with \fdf{MD.TypeOfRun} \fdf*{Broyden} or \fdf*{fire}.
+
+\end{fdflogicalF}
+
+\begin{fdfentry}{MD.MaxForceTol}[force]<$0.04\,\mathrm{eV/Ang}$>
+  
+  Force tolerance in coordinate optimization.
+  Run stops if the maximum atomic force is
+  smaller than \fdf{MD.MaxForceTol} (see \fdf{MD.MaxStressTol}
+  for variable cell).
+
+\end{fdfentry}
+
+\begin{fdfentry}{MD.MaxStressTol}[pressure]<$1\,\mathrm{GPa}$>
+  
+  Stress tolerance in variable-cell CG optimization. Run stops if the
+  maximum atomic force is smaller than \fdf{MD.MaxForceTol} and the
+  maximum stress component is smaller than \fdf{MD.MaxStressTol}.
+
+  Special consideration is needed if used with Sankey-type basis sets,
+  since the combination of orbital kinks at the cutoff radii and the
+  finite-grid integration originate discontinuities in the stress
+  components, whose magnitude depends on the cutoff radii (or energy
+  shift) and the mesh cutoff. The tolerance has to be larger than the
+  discontinuities to avoid endless optimizations if the target stress
+  happens to be in a discontinuity.
+
+\end{fdfentry}
+
+\begin{fdfentry}{MD.NumCGsteps}[integer]<0>
+  
+  Maximum number of conjugate gradient (or Broyden) minimization moves
+  (the minimization will stop if tolerance is reached before; see
+  \fdf{MD.MaxForceTol} below).
+
+\end{fdfentry}
+
+\begin{fdfentry}{MD.MaxCGDispl}[length]<$0.2\,\mathrm{Bohr}$>
+  
+  Maximum atomic displacements in an optimization move.
+
+  In the Broyden optimization method, it is also possible to limit
+  indirectly the \textit{initial\/} atomic displacements using
+  \fdf{MD.Broyden.Initial.Inverse.Jacobian}. For the \fdf*{FIRE} method, the
+  same result can be obtained by choosing a small time step.
+
+  Note that there are Zmatrix-specific options that override this option.
+
+\end{fdfentry}
+
+\begin{fdfentry}{MD.PreconditionVariableCell}[length]<$5\,\mathrm{Ang}$>
+  
+  A length to multiply to the strain components in a variable-cell
+  optimization. The strain components enter the minimization on the
+  same footing as the coordinates. For good efficiency, this length
+  should make the scale of energy variation with strain similar to the
+  one due to atomic displacements. It is also used for the application
+  of the \fdf{MD.MaxCGDispl} value to the strain components.
+
+\end{fdfentry}
 
 
-\item[\textbf{MD.NumCGsteps}] (\textit{integer}):
-\index{MD.NumCGsteps@\textbf{MD.NumCGsteps}}
-Maximum number of conjugate gradient (or Broyden) minimization
-moves (the minimization will stop
-if tolerance is reached before; see MD.MaxForceTol below).
+\begin{fdfentry}{ZM.ForceTolLength}[force]<$0.00155574\,\mathrm{Ry/Bohr}$>
+  
+  Parameter that controls the convergence with respect to forces on
+  Z-matrix lengths
 
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{CG} or \texttt{Broyden}
-
-\textit{Default value:} \texttt{0}
-
-\item[\textbf{MD.MaxCGDispl}] (\textit{real length}):
-\index{MD.MaxCGDispl@\textbf{MD.MaxCGDispl}}
-Maximum atomic displacements in an optimization move.
-
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{CG} or \texttt{Broyden} or
-\texttt{FIRE} (despite its name). For the Broyden optimization method, it is also
-possible to limit indirectly the \textit{initial\/} atomic displacements
-using \textbf{MD.Broyden.Initial.Inverse.Jacobian}. For the FIRE method,
-the same result can be obtained by choosing a small time step.
-
-Note that there are Zmatrix-specific options that override this option.
-
-\textit{Default value:} \texttt{0.2 Bohr}
+\end{fdfentry}
 
 
-\item[\textbf{MD.PreconditionVariableCell}] (\textit{real length}):
-  \index{MD.PreconditionVariableCell@\textbf{MD.PreconditionVariableCell}} A length to multiply to the strain
-  components in a variable-cell optimization.  The strain components
-  enter the minimization on the same footing as the coordinates. For
-  good efficiency, this length should make the scale of energy
-  variation with strain similar to the one due to atomic
-  displacements. It is also used for the application of the \textbf{MD.MaxCGDispl} value to the strain components.
+\begin{fdfentry}{ZM.ForceTolAngle}[torque]<$0.00356549\,\mathrm{Ry/rad}$>
+  
+  Parameter that controls the convergence with respect to forces on
+  Z-matrix angles
 
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{CG} or \texttt{Broyden} or
-\texttt{FIRE} and MD.VariableCell is \texttt{.true.}
+\end{fdfentry}
 
-\textit{Default value:} \texttt{5.0 Ang}
+\begin{fdfentry}{ZM.MaxDisplLength}[length]<$0.2\,\mathrm{Bohr}$>
+  
+  Parameter that controls the maximum change in a Z-matrix length
+  during an optimisation step.
 
-\item[\textbf{ZM.ForceTolLength}] (\textit{real force}):
-  \index{ZM.ForceTolLength@\textbf{ZM.ForceTolLength}} Parameter that
-  controls the convergence with respect to forces on Z-matrix lengths
+\end{fdfentry}
 
-\textit{Use:} This option sets the convergence criteria for the forces that
-act on Z-matrix components with units of length.
+\begin{fdfentry}{ZM.MaxDisplAngle}[angle]<$0.003\,\mathrm{rad}$>
+  
+  Parameter that controls the maximum change in a Z-matrix angle
+  during an optimisation step.
 
-\textit{Default value:} \texttt{$0.00155574$ Ry/Bohr}
+\end{fdfentry}
 
-\item[\textbf{ZM.ForceTolAngle}] (\textit{torque}):
-  \index{ZM.ForceTolAngle@\textbf{ZM.ForceTolAngle}} Parameter that
-  controls the convergence with respect to forces on Z-matrix angles
 
-\textit{Use:} This option sets the convergence criteria for the forces that
-act on Z-matrix components with units of angle.
-
-\textit{Default value:} \texttt{$0.00356549$ Ry/rad}
-
-\item[\textbf{ZM.MaxDisplLength}] (\textit{real length}):
-  \index{ZM.MaxDisplLength@\textbf{ZM.MaxDisplLength}} Parameter that
-  controls the maximum change in a Z-matrix length during an
-  optimisation step.
-
-\textit{Use:} This option sets the maximum displacement for a Z-matrix length
-
-\textit{Default value:} \texttt{0.2 Bohr}
-
-\item[\textbf{ZM.MaxDisplAngle}] (\textit{real angle}):
-  \index{ZM.MaxDisplAngle@\textbf{ZM.MaxDisplAngle}} Parameter that
-  controls the maximum change in a Z-matrix angle during an
-  optimisation step.
-
-\textit{Use:} This option sets the maximum displacement for a Z-matrix angle
-
-\textit{Default value:} \texttt{0.003 rad }
-
-\end{description}
 
 \subsubsection{Conjugate-gradients optimization}
 
@@ -8942,24 +8926,21 @@ all the above options were introduced specifically for it, hence their
 names. The following pertains only to this method:
 
 \index{Conjugate-gradient history information}
-\begin{description}
-\item[\textbf{MD.UseSaveCG}] (\textit{logical}):
-\index{MD.UseSaveCG@\textbf{MD.UseSaveCG}}
-\index{reading saved data!CG}
-Instructs to read the conjugate-gradient hystory information stored
-in file \texttt{SystemLabel}.CG by a previous run.
+\begin{fdflogicalF}{MD.UseSaveCG}
+  \index{reading saved data!CG}
 
-\textit{Use:} To get actual continuation of iterrupted CG runs, use
-together with \textbf{MD.UseSaveXV} = \texttt{.true.} with the XV
-file generated in the same run as the CG file.
-If the required file does not exist, a warning is
-printed but the program does not stop. Overrides \textbf{UseSaveData}.
+  Instructs to read the conjugate-gradient hystory information stored
+  in file \sysfile{CG} by a previous run.
 
-\textit{Default value:} \texttt{.false.}
+  \note to get actual continuation of iterrupted CG runs, use
+  together with \fdf{MD.UseSaveXV} \fdftrue\ with the \sysfile*{XV}
+  file generated in the same run as the CG file.  If the required file
+  does not exist, a warning is printed but the program does not
+  stop. Overrides \fdf{UseSaveData}.
 
-(No such feature exists yet for a Broyden-based relaxation.)
+  \note no such feature exists yet for a Broyden-based relaxation.
 
-\end{description}
+\end{fdflogicalF}
 
 \subsubsection{Broyden optimization}
 
@@ -8967,71 +8948,61 @@ It uses the modified Broyden algorithm to
 build up the Jacobian matrix. (See D.D. Johnson, PRB 38, 12807
 (1988)). (Note: This is not BFGS.)
 
-\begin{description}
-\item [\textbf{MD.Broyden.History.Steps}] (\textit{integer}):
-\index{MD.Broyden.History.Steps@\textbf{MD.Broyden.History.Steps}}
-\index{Broyden optimization}
+\begin{fdfentry}{MD.Broyden!History.Steps}[integer]<$5$>
+  \index{Broyden optimization}
 
-Number of relaxation steps during which the modified Broyden algorithm
-builds up the Jacobian matrix.
+  Number of relaxation steps during which the modified Broyden
+  algorithm builds up the Jacobian matrix.
 
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{Broyden}.
+\end{fdfentry}
 
-\textit{Default value:} \texttt{5}
+\begin{fdflogicalT}{MD.Broyden!Cycle.On.Maxit}
 
-\item [\textbf{MD.Broyden.Cycle.On.Maxit}] (\textit{logical}):
-\index{MD.Broyden.Cycle.On.Maxit@\textbf{MD.Broyden.Cycle.On.Maxit}}
+  Upon reaching the maximum number of history data sets which are kept
+  for Jacobian estimation, throw away the oldest and shift the rest to
+  make room for a new data set. The alternative is to re-start the
+  Broyden minimization algorithm from a first step of a diagonal
+  inverse Jacobian (which might be useful when the minimization is
+  stuck).
 
-Upon reaching the maximum number of history data sets which are kept
-for Jacobian estimation, throw away the oldest and shift the rest to
-make room for a new data set. The alternative is to re-start the
-Broyden minimization algorithm from a first step of a diagonal inverse
-Jacobian (which might be useful when the minimization is
-stuck).
+\end{fdflogicalT}
 
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{Broyden}.
+\begin{fdfentry}{MD.Broyden!Initial.Inverse.Jacobian}[real]<$1$>
 
-\textit{Default value:} \texttt{.true.}
+  Initial inverse Jacobian for the optimization procedure. (The units
+  are those implied by the internal Siesta usage. The default value
+  seems to work well for most systems.
 
-\item[\textbf{MD.Broyden.Initial.Inverse.Jacobian}] (\textit{real}):
-\index{MD.Broyden.Initial.Inverse.Jacobian@
-\textbf{MD.Broyden.Initial.Inverse.Jacobian}}
-
-Initial inverse Jacobian for the optimization procedure. (The units
-are those implied by the internal Siesta usage (Bohr for lenghts and
-Ry for energies). The default value seems to work well for most systems.
-
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{Broyden}.
-
-\textit{Default value:} \texttt{1.0}
+\end{fdfentry}
 
 
-\end{description}
 
 \subsubsection{FIRE relaxation}
 
-Implementation of the  Fast Inertial Relaxation
-Engine (FIRE) method (E. Bitzek et al, PRL 97, 170201, (2006) in a
-manner compatible with the CG and Broyden modes of relaxation. (An
-older implementation activated by the \textbf{MD.FireQuench} variable is
-still available).
+Implementation of the Fast Inertial Relaxation Engine (FIRE) method
+(E. Bitzek et al, PRL 97, 170201, (2006) in a manner compatible with
+the CG and Broyden modes of relaxation. (An older implementation
+activated by the \fdf{MD.FireQuench} variable is still available).
 
-\begin{description}
-\item[\textbf{MD.FIRE.TimeStep}] (\textit{real time}):
-\index{MD.FIRE.TimeStep@\textbf{MD.FIRE.TimeStep}}
+\begin{fdfentry}{MD.FIRE.TimeStep}[time]<\fdfvalue{MD.LengthTimeStep}>
+  
+  The (fictitious) time-step for FIRE relaxation.  This is the main
+  user-variable when the option \fdf*{FIRE} for
+  \fdf{MD.TypeOfRun} is active.
 
-The (fictitious) time-step for FIRE relaxation.
-This is the main user-variable
-when the option \texttt{FIRE} for \texttt{MD.TypeOfRun} is active.
+  \note the default value is encouraged to be changed as the link to
+  \fdf{MD.LengthTimeStep} is misleading.
 
-\textit{Default value:} The molecular-dynamics time-step, as
-specified by \texttt{MD.LengthTimeStep}, but this is misleading and
-should be avoided.
+  There are other low-level options tunable by the user (see the
+  routines \texttt{fire\_optim} and \texttt{cell\_fire\_optim} for
+  more details.
 
-There are other low-level options tunable by the user (see the
-routines \texttt{fire\_optim} and \texttt{cell\_fire\_optim} for more details.
+\end{fdfentry}
 
-\end{description}
+
+\ifdeprecated
+% The below options are deprecated in favor of:
+% MD.TypeOfRun fire
 
 \subsubsection{Quenched MD}
 
@@ -9047,118 +9018,115 @@ Note also that the force and stress tolerances have no effect on
 the termination conditions of these methods. They run for the number
 of MD steps requested (this is arguably a bug).
 
-\begin{description}
-\item[\textbf{MD.Quench}] (\textit{logical}):
-\index{MD.Quench@\textbf{MD.Quench}}
-Logical option to perform a power quench during the molecular dynamics.
-In the power quench, each velocity component is set to
-zero if it is opposite to the corresponding force
-of that component. This affects atomic velocities,
-or unit-cell velocities (for cell shape optimizations).
+\begin{fdflogicalF}{MD.Quench}
 
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{Verlet} or
-\texttt{ParrinelloRahman}.
-It is incompatible with Nose thermostat options.
-The quench option allows structural relaxations of
-only atomic coordinates (with \textbf{MD.TypeOfRun} = \texttt{Verlet})
-or atomic coordinates AND cell shape
-(with \textbf{MD.TypeOfRun} = \texttt{ParrinelloRahman}).
-\textbf{MD.Quench} is superseded by \textbf{MD.FireQuench} (see below).
+  Logical option to perform a power quench during the molecular
+  dynamics.  In the power quench, each velocity component is set to
+  zero if it is opposite to the corresponding force of that
+  component. This affects atomic velocities, or unit-cell velocities
+  (for cell shape optimizations).
 
-\textit{Default value:} \texttt{.false.}
+  \note only applicable for \fdf{MD.TypeOfRun} \fdf*{Verlet} or
+  \fdf*{ParrinelloRahman}.
+  %
+  It is incompatible with Nose thermostat options.  
 
-\item[\textbf{MD.FireQuench}] (\textit{logical}) (Deprecated)
-\index{MD.FireQuench@\textbf{MD.FireQuench}}
+  \note \fdf{MD.Quench} is superseded by \fdf{MD.FireQuench} (see
+  below).
 
-SEE the new option \texttt{FIRE} for \texttt{MD.TypeOfRun}
+\end{fdflogicalF}
 
-Logical option to perform a FIRE quench during a Verlet molecular dynamics
-run, as described by Bitzek \textit{et al.} in Phys. Rev. Lett. \textbf{97},
-170201 (2006). It is a relaxation algorithm, and thus the dynamics
-are of no interest per se: the initial time-step can be played with
-(it uses \textbf{MD.LengthTimeStep} as initial $\Delta t$),
-as well as the initial temperature (recommended 0) and the atomic
-masses (recommended equal). Preliminary tests seem to indicate that
-the combination of $\Delta t = 5$ fs and a value of 20 for the atomic
-masses works reasonably. The dynamics stops when the force
-tolerance is reached (\textbf{MD.MaxForceTol}). The other
-parameters controlling the algorithm (initial damping,
-increase and decrease thereof etc.) are hardwired in the code,
-at the recommended values in the cited paper,
-including $\Delta t_{max} = 10$ fs.
 
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{Verlet}.
-It is incompatible with Nose thermostat options. No variable
-cell option implemented for this at this stage.
-\textbf{MD.FireQuench} supersedes \textbf{MD.Quench}. This option is
-deprecated. The new option \texttt{FIRE} for \texttt{MD.TypeOfRun} should be
-used instead.
+\begin{fdflogicalF}{MD.FireQuench}
+  
+  See the new option \fdf*{FIRE} for \fdf{MD.TypeOfRun}.
 
-\textit{Default value:} \texttt{.false.}
+  Logical option to perform a FIRE quench during a Verlet molecular
+  dynamics run, as described by Bitzek \textit{et al.} in
+  Phys. Rev. Lett. \textbf{97}, 170201 (2006). It is a relaxation
+  algorithm, and thus the dynamics are of no interest per se: the
+  initial time-step can be played with (it uses
+  \fdf{MD.LengthTimeStep} as initial $\Delta t$), as well as the
+  initial temperature (recommended 0) and the atomic masses
+  (recommended equal). Preliminary tests seem to indicate that the
+  combination of $\Delta t = 5$ fs and a value of 20 for the atomic
+  masses works reasonably. The dynamics stops when the force tolerance
+  is reached (\fdf{MD.MaxForceTol}). The other parameters
+  controlling the algorithm (initial damping, increase and decrease
+  thereof etc.) are hardwired in the code, at the recommended values
+  in the cited paper, including $\Delta t_{max} = 10$ fs.
 
-\end{description}
+  Only available for \fdf{MD.TypeOfRun} \fdf*{Verlet}
+  It is incompatible with Nose thermostat options. No variable
+  cell option implemented for this at this stage.
+  \fdf{MD.FireQuench} supersedes \fdf{MD.Quench}. This option is
+  deprecated. The new option \fdf*{FIRE} for \fdf{MD.TypeOfRun} should be
+  used instead.
+
+\end{fdflogicalF}
+
+
+\fi
+
 
 \subsection{Target stress options}
 
 Useful for structural optimizations and constant-pressure molecular
 dynamics.
 
-\begin{description}
+\begin{fdfentry}{MD.TargetPressure}[pressure]<$0\,\mathrm{GPa}$>
+  
+  Target pressure for Parrinello-Rahman method, variable cell
+  optimizations, and annealing options.
+
+  \note this is only compatible with 
+  \fdf{MD.TypeOfRun} \fdf*{ParrinelloRahman}, \fdf*{NoseParrinelloRahman},
+  \fdf*{CG}, \fdf*{Broyden} or \fdf*{FIRE} (variable cell), or \fdf*{Anneal}
+  (if \fdf{MD.AnnealOption} \fdf*{Pressure} or \fdf*{TemperatureandPressure}).
+  
+\end{fdfentry}
 
 
-\item[\textbf{MD.TargetPressure}] (\textit{real pressure}):
-\index{MD.TargetPressure@\textbf{MD.TargetPressure}}
-Target pressure for Parrinello-Rahman method, variable cell optimizations,
-and annealing options.
+\begin{fdfentry}{MD.TargetStress}[block]<$-1 -1 -1 0 0 0$>
+  
+  External or target stress tensor for variable cell optimizations.
+  Stress components are given in a line, in the order \texttt{xx, yy,
+      zz, xy, xz, yz}. In units of \fdf{MD.TargetPressure}, but
+  with the opposite sign. For example, a uniaxial compressive stress
+  of 2 GPa along the 100 direction would be given by
+  \begin{fdfexample}
+     MD.TargetPressure  2. GPa
+     %block MD.TargetStress
+         -1.0  0.0  0.0  0.0  0.0  0.0
+     %endblock MD.TargetStress
+  \end{fdfexample}
 
-\textit{Use:} Used only if MD.TypeOfRun =
-\texttt{ParrinelloRahman}, \texttt{NoseParrinelloRahman},
-\texttt{CG, Broyden, or FIRE} (variable cell), or \texttt{Anneal}
-(if MD.AnnealOption = \texttt{Pressure} or \texttt{TemperatureandPressure})
+  Only used if \fdf{MD.TypeOfRun} is \fdf*{CG}, \fdf*{Broyden} or
+  \fdf*{FIRE} and \fdf{MD.VariableCell} is \fdftrue.
 
-\textit{Default value:} \texttt{0.0 GPa}
+\end{fdfentry}
 
 
-\item[\textbf{MD.TargetStress}] (\textit{data block}): External or
-target stress tensor for variable cell optimizations.  Stress
-components are given in a line, in the order \texttt{xx, yy, zz, xy,
-        xz, yz}. In units of \textbf{MD.TargetPressure}, but with the
-    opposite sign. For example, a uniaxial compressive stress of 2 GPa
-    along the 100 direction would be given by
-\begin{verbatim}
-       MD.TargetPressure  2. GPa
-       %block MD.TargetStress
-           -1.0  0.0  0.0  0.0  0.0  0.0
-       %endblock MD.TargetStress
-\end{verbatim}
+\begin{fdflogicalF}{MD.RemoveIntramolecularPressure}
+  \index{removal of intramolecular pressure}
 
-\textit{Use:} Used only if MD.TypeOfRun is \texttt{CG, Broyden, or FIRE} and
-MD.VariableCell is \texttt{.true.}
+  If \fdftrue, the contribution to the stress coming from the internal
+  degrees of freedom of the molecules will be subtracted from the
+  stress tensor used in variable-cell optimization or variable-cell
+  molecular-dynamics.  This is done in an approximate manner, using
+  the virial form of the stress, and assumming that the ``mean force''
+  over the coordinates of the molecule represents the
+  ``inter-molecular'' stress. The correction term was already computed
+  in earlier versions of \siesta\ and used to report the ``molecule
+  pressure''. The correction is now computed molecule-by-molecule if
+  the Zmatrix format is used.
 
-\textit{Default value:} Hydrostatic target pressure:
-\texttt{-1., -1., -1., 0., 0., 0.}
+  If the intra-molecular stress is removed, the corrected static and
+  total stresses are printed in addition to the uncorrected items.
+  The corrected Voigt form is also printed.
 
-\item[\textbf{MD.RemoveIntramolecularPressure}] (\textit{logical}):
-\index{MD.RemoveIntramolecularPressure@\textbf{MD.RemoveIntramolecularPressure}}
-\index{removal of intramolecular pressure}
+\end{fdflogicalF}
 
-If \texttt{.true.}, the contribution to the stress coming from the
-internal degrees of freedom of the molecules will be subtracted from
-the stress tensor used in variable-cell optimization or variable-cell
-molecular-dynamics.  This is done in an approximate manner, using the
-virial form of the stress, and assumming that the ``mean force'' over
-the coordinates of the molecule represents the ``inter-molecular''
-stress. The correction term was already computed in earlier versions
-of \siesta\ and used to report the ``molecule pressure''. The
-correction is now computed molecule-by-molecule if the Zmatrix format
-is used.
-
-If the intra-molecular stress is removed, the corrected static and
-total stresses are printed in addition to the uncorrected items.
-The corrected Voigt form is also printed.
-
-\textit{Default value:} \texttt{.false.}
-\end{description}
 
 
 \subsection{Molecular dynamics}
@@ -9167,214 +9135,211 @@ In this mode of operation, the program moves the atoms (and optionally
 the cell vectors) in response to the forces (and stresses), using the
 classical equations of motion.
 
-Note that the Zmatrix input option (see Sec.~\ref{sec:Zmatrix}) is not
+Note that the \fdf{Zmatrix} input option (see Sec.~\ref{sec:Zmatrix}) is not
 compatible with molecular dynamics. The initial geometry can be
 specified using the Zmatrix format, but the Zmatrix generalized
 coordinates will not be updated.
 
-\begin{description}
-\item[\textbf{MD.InitialTimeStep}] (\textit{integer}):
-\index{MD.InitialTimeStep@\textbf{MD.InitialTimeStep}}
-Initial time step of the MD simulation.
-In the current version of \siesta\ it must be 1.
 
-\textit{Use:} Used only if MD.TypeOfRun is not \texttt{CG} or \texttt{Broyden}
+\begin{fdfentry}{MD.InitialTimeStep}[integer]<$1$>
+  
+  Initial time step of the MD simulation.  In the current version of
+  \siesta\ it must be 1.
 
-\textit{Default value:} \texttt{1}
+  Used only if \fdf{MD.TypeOfRun} is not \fdf*{CG} or \fdf*{Broyden}.
 
-\item[\textbf{MD.FinalTimeStep}] (\textit{integer}):
-\index{MD.FinalTimeStep@\textbf{MD.FinalTimeStep}}
-Final time step of the MD simulation.
+\end{fdfentry}
 
-\textit{Default value:} \texttt{1}
+\begin{fdfentry}{MD.FinalTimeStep}[integer]<$1$>
 
-\item[\textbf{MD.LengthTimeStep}] (\textit{real time}):
-\index{MD.LengthTimeStep@\textbf{MD.LengthTimeStep}}
-Length of the time step of the MD simulation.
+  Final time step of the MD simulation.
 
-\textit{Default value:} \texttt{1.0 fs}
-
-\item[\textbf{MD.InitialTemperature}] (\textit{real temperature or energy}):
-\index{MD.InitialTemperature@\textbf{MD.InitialTemperature}}
-Initial temperature for the MD run. The atoms are assigned random
-velocities drawn from the Maxwell-Bolzmann distribution with the
-corresponding temperature. The constraint of zero center of
-mass velocity is imposed.
-
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{Verlet, Nose,
-ParrinelloRahman, NoseParrinelloRahman}
-or \texttt{Anneal}.
-
-\textit{Default value:} \texttt{0.0 K}
+\end{fdfentry}
 
 
-\item[\textbf{MD.TargetTemperature}] (\textit{real temperature or energy}):
-\index{MD.TargetTemperature@\textbf{MD.TargetTemperature}}
-Target temperature for Nose thermostat and annealing options.
+\begin{fdfentry}{MD.LengthTimeStep}[time]<$1\,\mathrm{fs}$>
 
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{Nose, NoseParrinelloRahman}
-or \texttt{Anneal} (if \textbf{MD.AnnealOption} = \texttt{Temperature} or
-\texttt{TemperatureandPressure})
+  Length of the time step of the MD simulation.
 
-\textit{Default value:} \texttt{0.0 K}
+\end{fdfentry}
 
+\begin{fdfentry}{MD.InitialTemperature}[temperature/energy]<$0\,\mathrm K$>
+  
+  Initial temperature for the MD run. The atoms are assigned random
+  velocities drawn from the Maxwell-Bolzmann distribution with the
+  corresponding temperature. The constraint of zero center of mass
+  velocity is imposed.
 
+  \note only used if \fdf{MD.TypeOfRun} \fdf*{Verlet}, \fdf*{Nose},
+  \fdf*{ParrinelloRahman}, \fdf*{NoseParrinelloRahman} or
+  \fdf*{Anneal}. 
 
-\item[\textbf{MD.NoseMass}] (\textit{real moment of inertia}):
-\index{MD.NoseMass@\textbf{MD.NoseMass}}
-Generalized mass of Nose variable.
-This determines the time scale of the Nose variable
-dynamics, and the coupling of the thermal bath to
-the physical system.
+\end{fdfentry}
 
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{Nose} or
-\texttt{NoseParrinelloRahman}
+\begin{fdfentry}{MD.TargetTemperature}[temperature/energy]<$0\,\mathrm K$>
 
-\textit{Default value:} \texttt{100.0 Ry*fs**2}
+  Target temperature for Nose thermostat and annealing options.
 
-\item[\textbf{MD.ParrinelloRahmanMass}] (\textit{real moment of inertia}):
-  \index{MD.ParrinelloRahmanMass@\textbf{MD.ParrinelloRahmanMass}}
+  \note only used if \fdf{MD.TypeOfRun} \fdf*{Nose},
+  \fdf*{NoseParrinelloRahman} or
+  \fdf*{Anneal} if \fdf{MD.AnnealOption} is \fdf*{Temperature} or
+  \fdf*{TemperatureandPressure}.
+
+\end{fdfentry}
+
+\begin{fdfentry}{MD.NoseMass}[moment of inertia]<$100\,\mathrm{Ry\,fs^2}$>
+  
+  Generalized mass of Nose variable.  This determines the time scale
+  of the Nose variable dynamics, and the coupling of the thermal bath
+  to the physical system.
+
+  Only used for Nose MD runs.
+
+\end{fdfentry}
+
+\begin{fdfentry}{MD.ParrinelloRahmanMass}[moment of inertia]<$100\,\mathrm{Ry\,fs^2}$>
+
   Generalized mass of Parrinello-Rahman variable.  This determines the
   time scale of the Parrinello-Rahman variable dynamics, and its
   coupling to the physical system.
 
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{ParrinelloRahman}
-or \texttt{NoseParrinelloRahman}
+  Only used for Parrinello-Rahman MD runs.
 
-\textit{Default value:} \texttt{100.0 Ry*fs**2}
+\end{fdfentry}
+
+\begin{fdfentry}{MD.AnnealOption}[string]<TemperatureAndPressure>
+  
+  Type of annealing MD to perform. The target temperature or pressure
+  are achieved by velocity and unit cell rescaling, in a given time
+  determined by the variable \fdf{MD.TauRelax} below.
+  \begin{fdfoptions}
+    \option[Temperature]%
+    Reach a target temperature by velocity rescaling
+
+    \option[Pressure]%
+    Reach a target pressure by scaling of the unit cell size and shape
+
+    \option[TemperatureandPressure]%
+    Reach a target temperature and pressure by velocity rescaling and
+    by scaling of the unit cell size and shape
+  \end{fdfoptions}
+
+  Only applicable for \fdf{MD.TypeOfRun} \fdf{Anneal}.
+
+\end{fdfentry}
+
+\begin{fdfentry}{MD.TauRelax}[time]<$100\,\mathrm{fs}$>
+  
+  Relaxation time to reach target temperature and/or pressure in
+  annealing MD. Note that this is a ``relaxation time'', and as such
+  it gives a rough estimate of the time needed to achieve the given
+  targets. As a normal simulation also exhibits oscillations, the
+  actual time needed to reach the \emph{averaged} targets will be
+  significantly longer.
+
+  Only applicable for \fdf{MD.TypeOfRun} \fdf{Anneal}.
+
+\end{fdfentry}
+
+\begin{fdfentry}{MD.BulkModulus}[pressure]<$100\,\mathrm{Ry/Bohr^3}$>  
+
+  Estimate (may be rough) of the bulk modulus of the system.  This is
+  needed to set the rate of change of cell shape to reach target
+  pressure in annealing MD.
+
+  Only applicable for \fdf{MD.TypeOfRun} \fdf{Anneal}, when
+  \fdf{MD.AnnealOption} is \fdf*{Pressure} or \fdf*{TemperatureAndPressure}
+
+\end{fdfentry}
 
 
-\textit{Default value:}  Same as \textbf{NumberOfAtoms}
-
-\item[\textbf{MD.AnnealOption}] (\textit{string}):
-  \index{MD.AnnealOption@\textbf{MD.AnnealOption}} Type of annealing MD
-  to perform. The target temperature or pressure are achieved by
-  velocity and unit cell rescaling, in a given time determined by the
-  variable \textbf{MD.TauRelax} below.
-\begin{itemize}
-\item \texttt{Temperature} (Reach a target temperature by velocity
-  rescaling)
-\item \texttt{Pressure} (Reach a target pressure by scaling of the unit
-  cell size and shape)
-\item \texttt{TemperatureandPressure} (Reach a target temperature and
-  pressure by velocity rescaling and by scaling of the unit cell size
-  and shape)
-\end{itemize}
-
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{Anneal}
-
-\textit{Default value:} \texttt{TemperatureAndPressure}
-
-\item[\textbf{MD.TauRelax}] (\textit{real time}): \index{MD.TauRelax@\textbf{MD.TauRelax}} Relaxation time to reach target temperature and/or
-  pressure in annealing MD. Note that this is a ``relaxation time'',
-  and as such it gives a rough estimate of the time needed to achieve
-  the given targets. As a normal simulation also exhibits
-  oscillations, the actual time needed to reach the \textit{averaged}
-  targets will be significantly longer.
-
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{Anneal}
-
-\textit{Default value:} \texttt{100.0 fs}
-
-\item[\textbf{MD.BulkModulus}] (\textit{real pressure}):
-  \index{MD.BulkModulus@\textbf{MD.BulkModulus}} Estimate (may be rough)
-  of the bulk modulus of the system.  This is needed to set the rate
-  of change of cell shape to reach target pressure in annealing MD.
-
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{Anneal}, when
-\textbf{MD.AnnealOption} = \texttt{Pressure} or \texttt{TemperatureAndPressure}
-
-\textit{Default value:}  \texttt{100.0 Ry/Bohr**3}
-
-
-\end{description}
 
 \subsection{Output options for dynamics}
 
 Every time the atoms move, either during coordinate relaxation or
-molecular dynamics, their positions \textbf{predicted for next step} and
-\textbf{current} velocities are stored in file SystemLabel.XV. The shape
-of the unit cell and its associated 'velocity' (in Parrinello-Rahman
-dynamics) are also stored in this file.
+molecular dynamics, their positions \textbf{predicted for next step}
+and \textbf{current} velocities are stored in file \sysfile{XV}. The
+shape of the unit cell and its associated 'velocity' (in
+Parrinello-Rahman dynamics) are also stored in this file.
 
-Other options follow.
+\begin{fdflogicalT}{WriteCoorInitial}
+  \index{output!atomic coordinates!initial}
 
-\begin{description}
-\item[\textbf{WriteCoorInitial}] (\textit{logical}):
-\index{WriteCoorInitial@\textbf{WriteCoorInitial}}
-\index{output!atomic coordinates!initial}
-It determines whether the initial atomic coordinates of the simulation are
-dumped into the main output file. These coordinates correspond to the
-ones actually used in the first step (see the section on precedence
-issues in structural input) and are output in Cartesian coordinates in
-Bohr units.
+  It determines whether the initial atomic coordinates of the
+  simulation are dumped into the main output file. These coordinates
+  correspond to the ones actually used in the first step (see the
+  section on precedence issues in structural input) and are output in
+  Cartesian coordinates in Bohr units.
 
-It is not affected by the setting of \textbf{LongOutput}.
+  It is not affected by the setting of \fdf{LongOutput}.
 
-\textit{Default value:} \texttt{.true.}
+\end{fdflogicalT}
 
 
-\item[\textbf{WriteCoorStep}] (\textit{logical}): \index{WriteCoorStep@\textbf{WriteCoorStep}} \index{output!atomic coordinates!in a dynamics
-  step} If \texttt{.true.} it writes the atomic coordinates to standard
+\begin{fdflogicalF}{WriteCoorStep}
+  \index{output!atomic coordinates!in a dynamics step}
+  
+  If \fdftrue, it writes the atomic coordinates to standard
   output at every MD time step or relaxation step. The coordinates are
-  always written in the \textit{Systemlabel}.XV file, but overriden at
-  every step. They can be also accumulated in the \textit{Systemlabel}.MD
-  or \textit{Systemlabel}.MDX files depending on \textbf{WriteMDhistory}.
+  always written in the \sysfile{XV} file, but overriden at
+  every step. They can be also accumulated in the \sysfile*{MD}
+  or \sysfile{MDX} files depending on \fdf{WriteMDhistory}.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{WriteForces}
+  \index{output!forces} 
+
+  If \fdftrue, it writes the atomic forces to the output file at every
+  MD time step or relaxation step.  Note that the forces of the last
+  step can be found in the file \sysfile{FA}. If constraints are used,
+  the file \sysfile{FAC} is also written.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{WriteMDHistory}
+  \index{output!molecular dynamics!history}
+
+  If \fdftrue, \siesta\ accumulates the molecular dynamics trajectory
+  in the following files:
+  \begin{itemize}
+    \item%
+    \sysfile{MD} : atomic coordinates and velocities (and lattice
+    vectors and their time derivatives, if the dynamics implies
+    variable cell). The information is stored unformatted for
+    postprocessing with utility programs to analyze the MD trajectory.
+
+    \item%
+    \sysfile{MDE} : shorter description of the run, with energy,
+    temperature, etc., per time step.
+
+  \end{itemize}
+  These files are accumulative even for different runs.
+
+  \index{output!molecular dynamics!history}
+
+  The trajectory of a molecular dynamics run (or a conjugate gradient
+  minimization) can be accumulated in different files: SystemLabel.MD,
+  SystemLabel.MDE, and SystemLabel.ANI. The first file keeps the whole
+  trajectory information, meaning positions and velocities at every time
+  step, including lattice vectors if the cell varies. NOTE that the
+  positions (and maybe the cell vectors) stored at each time step are
+  the \textbf{predicted} values for the next step. Care should be taken if
+  joint position-velocity correlations need to be computed from this
+  file.  The second gives global information (energy, temperature, etc),
+  and the third has the coordinates in a form suited for XMol animation.
+  See the \fdf{WriteMDhistory} and \fdf{WriteMDXmol} data descriptors
+  above for information. \siesta\ always appends new information on
+  these files, making them accumulative even for different runs.
+
+  The \program{iomd} subroutine can generate both an unformatted file
+  \sysfile*{MD} (default) or ASCII formatted files \sysfile*{MDX} and
+  \sysfile*{MDC} containing the atomic and lattice trajectories,
+  respectively. Edit the file to change the settings if desired.
+
+\end{fdflogicalF}
 
 
-\textit{Default value:} \texttt{.false.} (see \textbf{LongOutput})
-
-
-\item[\textbf{WriteForces}] (\textit{logical}): \index{WriteForces@\textbf{WriteForces}}\index{output!forces} If \texttt{.true.} it writes the
-  atomic forces to the output file at every MD time step or relaxation
-  step.  Note that the forces of the last step can be found in the
-  file \textit{Systemlabel}.FA. If constraints are used, the file
-   \textit{SystemLabel}.\texttt{FAC} is also written.
-
-
-\textit{Default value:} \texttt{.false.} (see \textbf{LongOutput})
-
-\item[\textbf{WriteMDhistory}] (\textit{logical}):
-  \index{WriteMDhistory@\textbf{WriteMDhistory}} \index{output!molecular
-    dynamics!history} If \texttt{.true.} \siesta\ accumulates the
-  molecular dynamics trajectory in the following files:
-\begin{itemize}
-\item
-\textit{Systemlabel}.MD : atomic coordinates and velocities (and lattice
-vectors and their time derivatives, if the dynamics implies variable
-cell). The information is stored unformatted for postprocessing with
-utility programs to analyze the MD trajectory.
-\item
-\textit{Systemlabel}.MDE : shorter description of the run, with energy,
-temperature, etc., per time step.
-\end{itemize}
-These files are accumulative even for different runs.
-
-\textit{Default value:} \texttt{.false.}
-
-\index{output!molecular dynamics!history}
-
-The trajectory of a molecular dynamics run (or a conjugate gradient
-minimization) can be accumulated in different files: SystemLabel.MD,
-SystemLabel.MDE, and SystemLabel.ANI. The first file keeps the whole
-trajectory information, meaning positions and velocities at every time
-step, including lattice vectors if the cell varies. NOTE that the
-positions (and maybe the cell vectors) stored at each time step are
-the \textbf{predicted} values for the next step. Care should be taken if
-joint position-velocity correlations need to be computed from this
-file.  The second gives global information (energy, temperature, etc),
-and the third has the coordinates in a form suited for XMol animation.
-See the \textbf{WriteMDhistory} and \textbf{WriteMDXmol} data descriptors
-above for information. \siesta\ always appends new information on
-these files, making them accumulative even for different runs.
-
-The \texttt{iomd} subroutine can generate both an unformatted file
-SystemLabel.MD (default) or ASCII formatted files SystemLabel.MDX and
-SystemLabel.MDC containing the atomic and lattice trajectories,
-respectively. Edit the file to change the settings if desired.
-
-
-\end{description}
 
 \subsection{Restarting geometry optimizations and MD runs}
 
@@ -9672,70 +9637,63 @@ involving molecules.
 
 \subsection{Phonon calculations}
 
-If \textbf{MD.TypeOfRun} = \texttt{FC}, \siesta\ sets up a special
-outer geometry loop that displaces individual atoms along the
-coordinate directions to build the force-constant matrix.
+If \fdf{MD.TypeOfRun} is \fdf*{FC}, \siesta\ sets up a special outer
+geometry loop that displaces individual atoms along the coordinate
+directions to build the force-constant matrix.
 \index{output!molecular dynamics!Force Constants Matrix}
 
 The output (see below) can be analyzed to extract phonon frequencies
-and vectors with the VIBRA\index{VIBRA} package in the \texttt{Util/Vibra}
+and vectors with the VIBRA\index{VIBRA} package in the \program{Util/Vibra}
 directory. For computing the Born effective charges together with the
-force constants, see \textbf{BornCharge} \index{BornCharge@\textbf{BornCharge}}).
+force constants, see \fdf{BornCharge}.
 
-\begin{description}
-\item[\textbf{MD.FCDispl}] (\textit{real length}):
-\index{MD.FCDispl@\textbf{MD.FCDispl}}
-Displacement to use for the computation of the force constant
-matrix\index{Force Constants Matrix} for phonon calculations.
+\begin{fdfentry}{MD.FCDispl}[length]<$0.04\,\mathrm{Bohr}$>
+  
+  Displacement to use for the computation of the force constant
+  matrix\index{Force Constants Matrix} for phonon calculations.
 
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{FC}.
+\end{fdfentry}
 
-\textit{Default value:}  \texttt{0.04 Bohr}
+\begin{fdfentry}{MD.FCFirst}[integer]<$1$>
+  
+  Index of first atom to displace for the computation of the force
+  constant matrix\index{Force Constants Matrix} for phonon
+  calculations.
 
-\item[\textbf{MD.FCfirst}] (\textit{integer}):
-\index{MD.FCfirst@\textbf{MD.FCfirst}}
-Index of first atom to displace for the computation of the force constant
-matrix\index{Force Constants Matrix} for phonon calculations.
+\end{fdfentry}
 
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{FC}.
+\begin{fdfentry}{MD.FCLast}[integer]<\fdfvalue{MD.FCFirst}>
 
-\textit{Default value:}  \texttt{1}
+  Index of last atom to displace for the computation of the force
+  constant matrix\index{Force Constants Matrix} for phonon
+  calculations.
 
-\item[\textbf{MD.FClast}] (\textit{integer}):
-\index{MD.FClast@\textbf{MD.FClast}}
-Index of last atom to displace for the computation of the force constant
-matrix\index{Force Constants Matrix} for phonon calculations.
+\end{fdfentry}
 
-\textit{Use:} Used only if \textbf{MD.TypeOfRun} = \texttt{FC}.
-\end{description}
+The force-constants matrix is written in file \sysfile{FC}.  The
+format is the following: for the displacement of each atom in each
+direction, the forces on each of the other atoms is writen (divided by
+the value of the displacement), in units of eV/\AA$^2$. Each line has
+the forces in the $x$, $y$ and $z$ direction for one of the atoms.
 
-The force-constants matrix is written in file \textit{SystemLabel}.\texttt{FC}.
-The format is the following: for the displacement of
-each atom in each direction, the forces on each of the other
-atoms is writen (divided by the value of the displacement),
-in units of eV/\AA$^2$. Each line has the forces in the $x$, $y$
-and $z$ direction for one of the atoms.
+If constraints are used, the file \sysfile{FCC} is also written.
 
-(If constraints are used, the file \textit{SystemLabel}.\texttt{FCC} is
-also written.)
 
 \section{LDA+U}
-Important note: Current implementation is based on the
-simplified rotationally invariant LDA+U formulation
-of Dudarev and collaborators
-[see, Dudarev \textit{et al.}, Phys. Rev. B \textbf{57}, 1505 (1998)].
-Although the input allows to define
-independent values of the U and J parameters for
-each atomic shell,
-in the actual calculation
-the two  parameters are combined to produce
-an effective Coulomb repulsion U$_{\mathrm{eff}}$=U-J. U$_{\mathrm{eff}}$
-is the parameter actually used in the calculations
-for the time being.
+\label{sec:lda+u}
 
-For large or intermediate values of U$_{\mathrm{eff}}$ the convergence
+Important note: Current implementation is based on the simplified
+rotationally invariant LDA+U formulation of Dudarev and collaborators
+[see, Dudarev \textit{et al.}, Phys. Rev. B \textbf{57}, 1505 (1998)].
+Although the input allows to define independent values of the U and J
+parameters for each atomic shell, in the actual calculation the two
+parameters are combined to produce an effective Coulomb repulsion
+$U_{\mathrm{eff}}=U-J$. $U_{\mathrm{eff}}$ is the parameter actually
+used in the calculations for the time being.
+
+For large or intermediate values of $U_{\mathrm{eff}}$ the convergence
 is sometimes difficult. A step-by-step increase of the
-value of U$_{\mathrm{eff}}$ can be advisable in such cases.
+value of $U_{\mathrm{eff}}$ can be advisable in such cases.
 
 \begin{description}
 \itemsep 10pt
@@ -11469,44 +11427,41 @@ that other routines may be due to different authors, please
 let us know.
 
 \begin{itemize}
-\item
-The main nonpublic contribution, that we thank thoroughly, are
-modified versions of a number of routines, originally written by \textbf{A. R.\ Williams} around 1985, for the solution of the radial
-Schr\"odinger and Poisson equations in the APW code of Soler and
-Williams (PRB \textbf{42}, 9728 (1990)).  Within \siesta, they are
-kept in files arw.f and periodic\_table.f, and they are used for the
-generation of the basis orbitals and the screened pseudopotentials.
+  \item%
+  The main nonpublic contribution, that we thank thoroughly, are
+  modified versions of a number of routines, originally written by
+  \textbf{A. R.\ Williams} around 1985, for the solution of the radial
+  Schr\"odinger and Poisson equations in the APW code of Soler and
+  Williams (PRB \textbf{42}, 9728 (1990)).  Within \siesta, they are
+  kept in files arw.f and periodic\_table.f, and they are used for the
+  generation of the basis orbitals and the screened pseudopotentials.
 
-\item
-Routine pulayx, used for the SCF mixing, was originally written by
-\textbf{In-Ho Lee} in 1997.
+  \item%
+  The exchange-correlation routines contained in file xc.f were
+  written by J.M.Soler in 1996 and 1997, in collaboration with
+  \textbf{C.\ Balb\'as} and \textbf{J. L.\ Martins}.  Routine pzxc (in
+  the same file), which implements the Perdew-Zunger LDA
+  parametrization of xc, is based on routine velect, written by
+  \textbf{S.\ Froyen}.
 
-\item
-The exchange-correlation routines contained in file xc.f were written
-by J.M.Soler in 1996 and 1997, in collaboration with \textbf{C.\ Balb\'as} and \textbf{J. L.\ Martins}.  Routine pzxc (in the same
-file), which implements the Perdew-Zunger LDA parametrization of xc,
-is based on routine velect, written by \textbf{S.\ Froyen}.
+  \item%
+  The serial version of the multivariate fast fourier transform used
+  to solve Poisson's equation was written by \textbf{Clive Temperton}.
 
-\item
-Some standard linear-algebra routines from the \textbf{EISPACK}, \textbf{BLAS}, and \textbf{LAPACK} packages are in several files in Libs and
-Util/Vibra.
+  \item%
+  Subroutine iomd.f for writing MD history in files was originally
+  written by \textbf{J. Kohanoff}.
 
-\item
-The serial version of the multivariate fast fourier transform used to
-solve Poisson's equation was written by \textbf{Clive Temperton}.
-
-\item
-Subroutine iomd.f for writing MD history in files was originally
-written by \textbf{J. Kohanoff}.
 \end{itemize}
 
-We want to thank very specially \textbf{O. F.\ Sankey, D. J.\ Niklewski}
-and \textbf{D. A.\ Drabold} for making the FIREBALL code available to
-P.\ Ordej\'on.  Although we no longer use the routines in that code,
-it was essential in the initial development of the \siesta\
-project, which still uses many of the algorithms developed by them.
+We want to thank very specially \textbf{O. F.\ Sankey}, \textbf{D. J.\
+    Niklewski} and \textbf{D. A.\ Drabold} for making the FIREBALL
+code available to P.\ Ordej\'on.  Although we no longer use the
+routines in that code, it was essential in the initial development of
+the \siesta\ project, which still uses many of the algorithms
+developed by them.
 
-We thank \textbf{V. Heine} for his supporting and encouraging us in this
+We thank \textbf{V. Heine} for his support and encouraging us in this
 project.
 
 The \siesta\ project is supported by the Spanish DGES through
