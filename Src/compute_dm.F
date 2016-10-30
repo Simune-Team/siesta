@@ -22,7 +22,6 @@
       use siesta_geom
       use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
      &                    qtot, no_l
-      use sys, only: die, bye
       use Kpoint_grid
       use m_energies,   only: Ebs, Ecorrec, Ef, Entropy
       use m_rmaxh
@@ -67,6 +66,8 @@
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
       real(dp)            :: buffer1
       integer             :: mpierr
+
+      external            :: die, bye
 
 !       character(15)            :: filename, indexstr
 !       character(15), parameter :: fnameform = '(A,A,A)'

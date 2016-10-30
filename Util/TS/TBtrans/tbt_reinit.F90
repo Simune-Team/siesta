@@ -22,7 +22,6 @@ subroutine tbt_reinit( sname , slabel )
 ! character(len=*) sname       : System Name
 ! **********************************************************************
 
-  use sys, only : bye
   use parallel, only : Node
   use fdf
   use m_verbosity
@@ -39,6 +38,8 @@ subroutine tbt_reinit( sname , slabel )
 
   logical :: debug_input, file_exists
 
+  external :: bye
+  
 ! Print Welcome and Presentation .......................................
 !     Non-master mpi-processes receive a copy of all the
 !     pre-processed fdf input information (recursively

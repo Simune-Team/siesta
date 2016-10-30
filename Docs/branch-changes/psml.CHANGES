@@ -1,4 +1,35 @@
 ------------------------------------------------------------
+October 30, 2016  Alberto Garcia    trunk-506--psml-90
+A further step in building-system refactoring
+
+A number of changes directed at removing complexity:
+
+- Module sys is being progressively emptied of code. The rationale is
+  that the low-level routines contained in it should be stand-alone,
+  and not part of a module, to avoid compilation cascades and to better
+  adapt to a particular client code.
+
+  The 'die' interface now calls the stand-alone routine in die.F.
+  The 'bye' interface has been removed. Siesta routines formerly using it
+  now call an external routine 'bye' in bye.F
+  Any other clients (such as some in Util) will need to define a proper
+  routine or use the version in Src (as is the case for TBtrans)
+
+- Each program in Util has a 'dep' target that only updates the relevant
+  dependencies. This used (in 4.0) to be done in a convoluted way using
+  shell commands. Now a more transparent system is employed, but it needs
+  a clear specification of "local" vs "dependent (on Src code)" objects.
+  This has been already implemented in VCA, Gen-Basis, TS/TBtrans, and Grimme,
+  and it will be deployed more widely in future revisions.
+  (Thanks to Nick Papior for the updated dependency method)
+
+  Some minor extra changes were needed in some makefiles.
+
+- The 'handlers.f' files now needed in Util are being progressively made more
+  uniform. This will be completed in future revisions.
+  
+
+------------------------------------------------------------
 October 28, 2016  Alberto Garcia    trunk-506--psml-89
 Update *defaults* and building of psop in Pseudo/vnl-operator
 

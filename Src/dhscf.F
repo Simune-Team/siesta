@@ -48,6 +48,8 @@
       character(len=*), parameter :: debug_fmt =
      &     '('' -- dhscf : Node '',i3,tr1,a,4(tr1,e20.7))'
 
+      external :: die, bye
+      
       public :: dhscf_init, dhscf
 
       CONTAINS
@@ -63,7 +65,6 @@
       use parallel,       only : Node, Nodes
       use atmfuncs,       only : rcut, rcore
       use fdf
-      use sys,            only : die
       use mesh,           only : xdsp, nsm, nsp, meshLim
       use parsing
 #ifndef BSC_CELLXC
@@ -621,7 +622,6 @@ C     Modules
       use atmfuncs,      only  : rcut, rcore
       use units,         only  : Debye, eV, Ang
       use fdf
-      use sys,           only  : die, bye
       use mesh,          only  : xdsp, nsm, nsp
       use parsing
       use m_iorho,       only  : write_rho

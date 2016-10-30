@@ -29,7 +29,6 @@
      &                              iza, rmaxo, zvaltot, superc,
      &                              initatomlists, no_l, rmaxldau
       use fdf
-      use sys,                only: die, bye
 #ifdef BSC_CELLXC
       use bsc_xcmod,          only: setXC
 #else
@@ -122,6 +121,7 @@
       integer :: World_Group
       integer :: npSIESTA
       external :: read_options
+      external :: die, bye
 
 !---------------------------------------------------------------------- BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 

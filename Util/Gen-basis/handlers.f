@@ -28,14 +28,11 @@
 
       write(6,'(a)') trim(str)
       write(0,'(a)') trim(str)
-      write(6,'(a,i4)') 'Stopping Program from Node: ', Node
-      write(0,'(a,i4)') 'Stopping Program from Node: ', Node
-         call pxfflush(6)
-         call pxfflush(0)
-      call pxfabort()
-
+      stop
+      
       end subroutine die
 
+!--------------------------------------------------
       subroutine timer(str,i)
 
       character(len=*), intent(in)  :: str
@@ -74,6 +71,8 @@
       character(len=*), intent(in)  :: str
       integer, intent(in)  :: code
 
+      external :: die
+      
       if (code == 0) then
         call die(str)
       else
@@ -104,16 +103,26 @@
 !------------------------------------------------------
 
       subroutine alloc_memory_event(bytes,name)
-      use memory_log, only: memory_event
+!      use memory_log, only: memory_event
 
       integer, intent(in)           :: bytes
       character(len=*), intent(in)  :: name
 
-      call memory_event(bytes,name)
+      ! call memory_event(bytes,name)
 
       end subroutine alloc_memory_event
 
+! The PSML library calls a "die" routine when it encounters an
+! error. This routine should take care of carrying out any needed
+! cleaning and terminating the program.  As the details would vary with
+! the client program, each program has to provide its own.
+! 
+
       subroutine psml_die(str)
-      character(len=*), intent(in)  :: str
+      character(len=*), intent(in) :: str
+
+      external :: die
+      
       call die(str)
+
       end subroutine psml_die

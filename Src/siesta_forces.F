@@ -40,7 +40,6 @@
       use parallel,     only : IOnode, Nodes, SIESTA_worker
       use m_state_analysis
       use m_steps
-      use sys, only : die, bye
       use sparse_matrices, only: H, Hold, Dold, Dscf, Eold, Escf
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
@@ -142,7 +141,7 @@
 #ifdef MPI
       integer :: MPIerror
 #endif
-
+      external :: die, bye
 #ifdef DEBUG
       call write_debug( '    PRE siesta_forces' )
 #endif

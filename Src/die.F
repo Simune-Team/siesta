@@ -31,17 +31,25 @@
 
       subroutine die(str)
 
-      use parallel, only : Node
 #ifdef MPI
       use mpi_siesta
 #endif
 
       character(len=*), intent(in)  :: str
 
+      integer Node
+      
 #ifdef MPI
       integer MPIerror
 #endif
 
+      external :: pxfflush, pxfabort
+#ifdef MPI
+      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
+#else
+      Node = 0
+#endif
+      
 ! Even though formally (in MPI 1.X), only the master node
 ! can do I/O, in those systems that allow it having each
 ! node state its complaint can be useful.

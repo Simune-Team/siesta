@@ -18,8 +18,6 @@ C RESTRICTION: Just a single species allowed
 C
       use fdf
 
-      use precision
-      use parallel,     only : Node, Nodes, IOnode
       use basis_types, only: nsp, basis_specs_transfer
       use basis_types, only: iz, lmxkb, nkbl, 
      .           erefkb, lmxo, nzeta, rco, 
@@ -41,7 +39,7 @@ C
       implicit none
 
       integer is
-!     integer narg
+
       character(len=50) filein
 
       type(basis_def_t), pointer   :: basp
@@ -50,12 +48,6 @@ C
 
 c Reading input for the pseudopotentials and atomic orbitals 
 
-      Node =  0
-      Nodes = 1
-      IOnode = (Node .eq. 0)
-
-      if (Ionode) then
-!
          filein = "stdin"
          call fdf_init(filein,'gen-basis_fdf.log')
 
@@ -100,8 +92,6 @@ c Reading input for the pseudopotentials and atomic orbitals
 
          call dump_basis_ascii
          call dump_basis_netcdf
-
-      endif
 
       end program gen_basis
 !

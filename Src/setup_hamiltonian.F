@@ -46,7 +46,6 @@
       use alloc, only: re_alloc, de_alloc
       use m_gamma
       use m_hsx, only: write_hsx
-      use sys, only: die, bye
       use m_partial_charges, only: want_partial_charges
       use files, only : filesOut_t    ! derived type for output file names
       use m_rhog, only: rhog_in, rhog
@@ -71,6 +70,7 @@
 
       real(dp), pointer   :: H_vkb(:), H_kin(:), H_ldau(:,:), H_so(:,:)
 
+      external :: bye, die
 !------------------------------------------------------------------------- BEGIN
 
       call timer('setup_H',1)

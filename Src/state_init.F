@@ -78,7 +78,6 @@
       use m_ts_options, only : N_Elec, Elecs, IsVolt
       use m_ts_electype
       use m_ts_global_vars, only: TSrun, TSmode, onlyS
-      use sys, only : bye
       use m_ts_io, only : fname_TSHS, ts_write_tshs
       use m_ts_sparse, only : ts_sparse_init
       use m_ts_tri_init, only : ts_tri_init, ts_tri_analyze
@@ -106,7 +105,8 @@
       logical            :: auxchanged   ! Auxiliary supercell changed?
       logical            :: folding, folding1
       logical            :: foundxv  ! dummy for call to ioxv
-      external           ::  madelung, timer
+      external           :: madelung, timer
+      external           :: bye
       real(dp), external :: volcel
 
 #ifdef TRANSIESTA
