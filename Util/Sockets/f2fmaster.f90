@@ -21,6 +21,8 @@ program f2fmaster
   integer              :: socket, intIn, vectorLen
   character(len=MSGLEN):: msgIn, msgOut, strIn, strOut
   real(kind=8)         :: realIn, vectorIn(3)
+
+  integer :: i
   
   host = TRIM(host)//achar(0)
   call create_socket( socket, inet, port, host )

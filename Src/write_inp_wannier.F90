@@ -199,6 +199,8 @@ subroutine writeamn( ispin )
                                          !   with a Bloch orbital
                                          !   <\psi_{m k}|g_n>
 
+  integer, intent(in) :: ispin
+
 !
 ! Local variables
 !
@@ -550,9 +552,9 @@ subroutine writeunk( ispin )
 !
 ! Variables related with the input/output
 !
-  character(len=11) :: unkfilename  ! Name of the file where the periodic
-                                    !   part of the wave functions at the
-                                    !   points of the grid will be saved
+  character(len=11) :: unkfilename ! Name of the file where the periodic
+                                   !   part of the wave functions at the
+                                   !   points of the grid will be saved
   integer      :: unkfileunit  ! Logical unit of the file
   integer      :: eof          ! Code error
 
