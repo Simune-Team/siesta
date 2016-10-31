@@ -1366,15 +1366,6 @@ The name of the files should be:
 where \textit{Chemical\_label} corresponds to the label defined in the
 \fdf{ChemicalSpeciesLabel} block.
 
-This version of Siesta can handle pseudopotential files in a
-\textit{deprecated} XML format designed by Junquera, Garcia, and
-Verstraete to enable interoperability with some versions of the
-ABINIT code. The directory \texttt{Util/pseudo-xml} contains a program to
-translate the pseudo XML files to the \shell{.psf} form. This XML format
-will be soon superseded by the new PSML specification, which will be
-supported by forthcoming versions of Siesta and ABINIT.
-
-
 
 \subsection{Basis set and KB projectors}
 
@@ -2550,11 +2541,11 @@ orbitals and projectors).
 \end{fdfentry}
 
 \begin{fdflogicalT}{Restricted.Radial.Grid}
-  
+
   In normal operation of the basis-set and projector generation code
-  the radial grid is restricted to having an odd number of points, and
-  the cutoffs are shifted accordingly. This restriction can be lifted
-  by setting this parameter to \fdffalse.
+  the various cutoff radii are restricted to falling on an
+  odd-numbered grid point, shifting then accordingly. This restriction
+  can be lifted by setting this parameter to \fdffalse.
 
 \end{fdflogicalT}
 
@@ -2576,8 +2567,7 @@ There are many ways to give \siesta\ structural information.
 \end{itemize}
 
 Note that, regardless of the way in which the structure is described,
-the tags \fdf{NumberOfSpecies}, \fdf{NumberOfAtoms}, and
-\fdf{ChemicalSpeciesLabel} are mandatory.
+the \fdf{ChemicalSpeciesLabel} block is mandatory.
 
 In the following sections we document the different structure input
 methods, and provide a guide to their precedence.
@@ -3144,8 +3134,7 @@ structural information (maybe too many).
 \subsubsection{Input of structural information from external files}
 
 The structural information can be also read from external files. Note
-that the \fdf{NumberOfAtoms}, \fdf{NumberOfSpecies}, and \fdf{ChemicalSpeciesLabel}
-options are still mandatory in the fdf file.
+that \fdf{ChemicalSpeciesLabel} is mandatory in the fdf file.
 
 \begin{fdflogicalF}{MD!UseSaveXV}
   \index{reading saved data!XV}
@@ -3203,16 +3192,14 @@ enddo
 
 \subsubsection{Input from a FIFO file}
 
-See the ``Forces'' option in \fdf{MD!TypeOfRun}.  Note that the
-\fdf{NumberOfAtoms}, \fdf{NumberOfSpecies}, and
-\fdf{ChemicalSpeciesLabel} options are still mandatory in the fdf
-file.
+See the ``Forces'' option in \fdf{MD!TypeOfRun}. Note that
+\fdf{ChemicalSpeciesLabel} is still mandatory in the fdf file.
 
 \subsubsection{Precedence issues in structural input}
 \index{structure input precedence issues}
 
 \begin{itemize}
-  \item If the ``server'' option is active, it takes precedence over
+  \item If the ``Forces'' option is active, it takes precedence over
   everything (it will overwrite all other input with the information it
   gets from the FIFO file).
 
@@ -3547,6 +3534,7 @@ are always stored in the file \sysfile{KP}.
 
 \subsection{Spin polarization}
 
+
 \begin{fdfentry}{Spin}[string]<\nonvalue{non-polarized}>
 
   Choose the spin-components in the simulation.
@@ -3625,12 +3613,13 @@ implementation is based on the on-site SO approximation, where only
 the intra-SO contribution of each atom is taken into account. See
 \fdf{Spin} on how to turn on the spin-orbit coupling.
 
-The current implementation in \siesta\ has been performed by
-Dr. Ram\'on Cuadrado being the original on-site SO formalism developed
-by Prof. Jaime Ferrer, \textit{et al}~(L Fern\'andez--Seivane, M
-Oliveira, S Sanvito, and J Ferrer, Journal of Physics: Condensed
-Matter, 2006 vol. 18 pp. 7999; L Fern\'andez--Seivane and Jaime
-Ferrer, Phys. Rev. Lett. 99, 2007, 183401).
+The current implementation in \siesta\ has been implemented by
+Dr. Ram\'on Cuadrado based on the original on-site SO formalism and
+implementation developed by Prof. Jaime Ferrer, \textit{et al}~(L
+Fern\'andez--Seivane, M Oliveira, S Sanvito, and J Ferrer, Journal of
+Physics: Condensed Matter, 2006 vol. 18 pp. 7999; L
+Fern\'andez--Seivane and Jaime Ferrer, Phys. Rev. Lett. 99, 2007,
+183401).
 
 The inclusion of the SO term in the Hamiltonian~(and in the Density
 Matrix) will involve the increase of non-zero elements in their
@@ -3734,7 +3723,7 @@ The current version introduces several changes:
 \begin{itemize}
 \item When mixing the DM, the Kohn-Sham energy may be corrected to make it
   variational. This involves an extra call to \texttt{dhscf} (although
-  with neiter forces nor matrix elements being calculated, i.e. only
+  with neither forces nor matrix elements being calculated, i.e. only
   calls to \texttt{rhoofd}, \texttt{poison}, and \texttt{cellxc}), and is
   turned on by the option \fdf{SCF!Want.Variational.EKS}.
 
@@ -3822,11 +3811,11 @@ The current version introduces several changes:
 \subsubsection{Mixing options}
 \index{SCF!mixing}
 
-Reaching self-consistency is heavily relying on the used mixing
-parameters.
-Any user, will be adviced to test mixing options for their
-calculations as choosing optimal parameters can mean a difference of
-several orders of consistency cycles. 
+Whether a calculation reaches self-consistency in a moderate number of
+steps depends strongly on the mixing parameters used. The available
+mixing options should be carefully tested for a given calculation
+type. This search for optimal parameters can repay itself handsomely
+by potentially saving many self-consistency steps in production runs.
 
 
 \begin{fdfentry}{SCF.Mix}[string]<Hamiltonian|density|charge>
@@ -3847,7 +3836,8 @@ several orders of consistency cycles.
 
     \option[charge]%
     \index{SCF!mixing!Charge}
-    Mix the real-space charge density.
+    Mix the real-space charge density. Note this is an experimental
+    feature.
     
   \end{fdfoptions}
   
