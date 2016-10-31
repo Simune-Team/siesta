@@ -2993,7 +2993,7 @@ it is more work to generate the input files for this form.
 
 \end{fdfentry}
 
-\begin{fdfentry}{ZM!UnitsLength}[string]<\nonvalue{Bohr}>
+\begin{fdfentry}{ZM!UnitsLength}[string]<Bohr>
 
   Parameter that specifies the units of length used during Z-matrix
   input.
@@ -3002,7 +3002,7 @@ it is more work to generate the input files for this form.
   
 \end{fdfentry}
 
-\begin{fdfentry}{ZM!UnitsAngle}[string]<\nonvalue{rad}>
+\begin{fdfentry}{ZM!UnitsAngle}[string]<rad>
 
   Parameter that specifies the units of angles used during Z-matrix input.
 
@@ -3368,7 +3368,7 @@ are always stored in the file \sysfile{KP}.
 
 \end{fdfentry}
 
-\begin{fdfentry}{XC!Authors}[string]<\nonvalue{PZ}>
+\begin{fdfentry}{XC!Authors}[string]<PZ>
   \newcommand\xcidx[1]{\index{exchange-correlation!#1}}
   
   Particular parametrization of the exchange-correlation
@@ -3535,7 +3535,7 @@ are always stored in the file \sysfile{KP}.
 \subsection{Spin polarization}
 
 
-\begin{fdfentry}{Spin}[string]<\nonvalue{non-polarized}>
+\begin{fdfentry}{Spin}[string]<non-polarized>
 
   Choose the spin-components in the simulation.
 
@@ -3848,8 +3848,8 @@ by potentially saving many self-consistency steps in production runs.
 
 \begin{fdfentry}{SCF.Mix!Spin}[string]<all|spinor|sum|sum+diff>
 
-  Controls how the mixing is performed using spin-polarized
-  calculations. 
+  Controls how the mixing is performed when carrying out
+  spin-polarized calculations.
   
   \begin{fdfoptions}
     \option[all] %
@@ -9368,7 +9368,7 @@ create custom-made MD scripts.
 an alternative constraint formulation which can be useful for system
 involving molecules.
 
-\begin{fdfentry}{Geometry!Constraints}[block]<\nonvalue{None}>
+\begin{fdfentry}{Geometry!Constraints}[block]
   \index{constraints in relaxations}
 
 
