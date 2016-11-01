@@ -51,8 +51,10 @@ FSIESTA_SOCKETS= fsockets.o sockets.o fsiesta_sockets.o
 SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
 XMLPARSER=libxmlparser.a
+WXML=libwxml.a
 XC=libSiestaXC.a
-ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
+MS=MatrixSwitch.a
+ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(MS) $(XC) \
 	$(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 #
 libs_collected:

@@ -143,6 +143,13 @@
             Psol = - ((stress(1,1) + stress(2,2) + stress(3,3))/3.0_dp)
             write(6,'(/,a,f20.8,a)')
      .           'siesta: Pressure (static):', Psol/kBar, '  kBar'
+!            write(6,'(/,a,3(/,a,3f12.6))')
+!     .       'siesta: Stress tensor (static-constrained) (eV/Ang**3):',
+!     .           ('     ',(cstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+!            write(6,'(a,f20.8,a)')
+!     .       'siesta: Pressure (static-constrained):',
+!     .       - ((cstress(1,1)+cstress(2,2)+cstress(3,3))/3.0_dp)/kBar,
+!     .       '  kBar'
             if (cml_p) then
               call cmlAddComment(mainXML,
      $              "Output: matrix stress(1:3,1:3)") 

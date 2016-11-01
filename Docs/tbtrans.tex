@@ -1160,6 +1160,9 @@ By default the \tbtrans\ energy grid is defined as
 
 For $N$ electrodes there will also be $N_\mu$ chemical
 potentials. They are defined via blocks similar to \fdf{TBT.Elecs}.
+If no bias is applied \tbtrans\ will default to a single chemical
+potential with the chemical potential in equilibrium. In this case you
+need not specify any chemical potentials.
 
 \begin{fdfentry}{TBT.ChemPots}[block]
   
@@ -1217,7 +1220,7 @@ setups is rather complicated.
 
 \tbtrans\ defaults to read the \tsiesta\ electrodes and as such one
 may replace \fdf*{TBT} by \fdf*{TS} and \tbtrans\ will still
-work. However, the \fdf*{TBT} has precedence.
+work. However, the \fdf*{TBT} has precedence. 
 
 \begin{fdfentry}{TBT.Elecs}[block]
 
@@ -1230,7 +1233,8 @@ work. However, the \fdf*{TBT} has precedence.
 
   Each line represents a setting for electrode \fdf*{<>}.
   There are a few lines that \emph{must} be present, \fdf*{HS},
-  \fdf*{semi-inf-dir}, \fdf*{electrode-pos}, \fdf*{chem-pot}.
+  \fdf*{semi-inf-dir}, \fdf*{electrode-pos}, \fdf*{chem-pot} (only if
+  \fdf{TBT!Voltage} is not $0$).
 
   \begin{fdfoptions}
 
@@ -1260,7 +1264,8 @@ work. However, the \fdf*{TBT} has precedence.
     \fdfindex*{TBT.Elec.<>!chemical-potential}%
     The chemical potential that is associated with this
     electrode. This is a string that should be present in the
-    \fdf{TBT.ChemPots} block.
+    \fdf{TBT.ChemPots} block in case there is a bias applied in the
+    calculation. 
 
     \option[electrode-position|elec-pos]%
     \fdfindex*{TBT.Elec.<>!electrode-position}%

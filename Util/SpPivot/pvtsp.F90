@@ -63,6 +63,7 @@ program pvtsp
   logical :: is_graphviz, is_metis, is_atom
   logical :: has_weight
   integer :: tm(3), graph_method
+  integer :: n_nzs
 
   method = -1
   graph_method = 1 ! regular graph

@@ -151,9 +151,14 @@ contains
     end if
 
     ! Easy determination of largest basal plane of electrodes
+    ! Note we scale according to the Bloch expansion
+    ! as this is necessary!
     area = -1._dp
     do iE = 1 , N_Elec
-       tmp = VOLCEL(Elecs(iE)%cell)
+
+       ! Scale according to the Bloch expansions
+       tmp = VOLCEL(Elecs(iE)%cell) * product(Elecs(iE)%Bloch)
+       
        if ( TS_HA == TS_HA_ELEC ) then
           ! calculate cell area of plane by non-semi-inf vectors
           tmp = tmp / VNORM(Elecs(iE)%cell(:,Elecs(iE)%t_dir))

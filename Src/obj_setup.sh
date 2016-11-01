@@ -55,5 +55,9 @@ sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
 #
 # (deactivated for now)
 echo " *** Compilation setup done. "
-echo " *** Remember to copy an arch.make file or run configure as:"
-echo "    ${user_specified_dir}/configure [configure_options]"
+echo " *** Remember to copy an arch.make file into the directory."
+echo " *** These files are template arch.make files:"
+echo " ***    gfortran.make (for gfortran compiler)"
+echo " ***    intel.make (for intel compiler)"
+echo " ***    DOCUMENTED-TEMPLATE.make (requires customization)"
+
