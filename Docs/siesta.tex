@@ -1146,7 +1146,7 @@ customize it, however,\index{output!customization} by defining
 different options that control the printing of informations like
 coordinates, forces, $\vec k$ points, etc.  The options are discussed
 in the appropriate sections, but take into account the behavior of the
-legacy \textbf{LongOutput} option, as in the current implementation might
+legacy \fdf{LongOutput} option, as in the current implementation might
 silently activate output to the main .out file at the expense of
 auxiliary files.
 
@@ -1284,7 +1284,19 @@ default if a given tag is not found when needed (see \shell{fdf.log}).
   Negative atomic numbers are used for \emph{ghost}
   atoms\index{ghost atoms} (see \fdf{PAO!Basis}).
 
-  Atomic numbers over 200 are used to represent \emph{synthetic atoms}
+  For atomic numbers over $200$ or below $-200$ you should read \fdf{SyntheticAtoms}.
+
+  \note this block is mandatory.
+  
+\end{fdfentry}
+
+
+\begin{fdfentry}{SyntheticAtoms}[block]
+
+  This block is an additional block to complement
+  \fdf{ChemicalSpeciesLabel} for special atomic numbers.
+  
+  Atomic numbers over $200$ are used to represent \emph{synthetic atoms}
   \index{synthetic atoms} (created for example as a ``mixture'' of two
   real ones for a ``virtual crystal'' (VCA)\index{VCA}
   calculation). In this special case a new \fdf{SyntheticAtoms} block
@@ -1308,11 +1320,8 @@ default if a given tag is not found when needed (see \shell{fdf.log}).
   directory.
 
   Atomic numbers below $-200$ represent \emph{ghost synthetic atoms}.
-
-  \note this block is mandatory.
   
 \end{fdfentry}
-
 
 \begin{fdfentry}{AtomicMass}[block]
 
@@ -2040,7 +2049,7 @@ functions which are made zero at very long distance of the nucleus).
 The units for the energy can be optionally specified, if not, the
 program will assumed that are given in Rydbergs.
 The data provided in this block must be consistent with those
-read from the block \textbf{PS.lmax}. For example,
+read from the block \fdf{PS!lmax}. For example,
 
 \begin{verbatim}
          %block PS.KBprojectors
@@ -2316,7 +2325,7 @@ A species with atomic number = -100 will be considered by \siesta\ as
 a constant-pseudopotential atom, \textit{i.e.}, the basis functions
 generated will be spherical Bessel functions\index{Bessel functions}
 with the specified $r_c$. In this case, $r_c$ has to be given, as
-\textbf{EnergyShift} will not calculate it.\index{basis!Bessel functions}
+\fdf*{EnergyShift} will not calculate it.\index{basis!Bessel functions}
 
 Other negative atomic numbers will be interpreted by \siesta\ as
 \textit{ghosts}\index{ghost atoms}\index{basis!ghost atoms}
@@ -2398,7 +2407,7 @@ above.
 \index{basis!Gen-basis standalone program}
 always generate the files
 \textit{Atomlabel}\texttt{.ion}, where \textit{Atomlabel} is the atomic label
-specified in block \textit{ChemicalSpeciesLabel}.  Optionally, if
+specified in block \fdf{ChemicalSpeciesLabel}.  Optionally, if
 NetCDF support is compiled in, the programs generate
 NetCDF files \index{NetCDF format}
 \textit{Atomlabel}\texttt{.ion.nc} (except for ghost atoms).
@@ -2444,7 +2453,7 @@ These files can be used to read back information into \siesta.
 The program \texttt{ioncat} in \texttt{Util/Gen-basis} can be used to
 extract orbital, KB projector, and other information contained in the
 \texttt{.ion} files. The output can be easily plotted with a graphics
-program.  If the option \textbf{WriteIonPlotFiles} is enabled, \siesta\ 
+program.  If the option \fdf{WriteIonPlotFiles} is enabled, \siesta\ 
 will generate and extra set of files that can be plotted
 with the \texttt{gnuplot} scripts in \texttt{Tutorials/Bases}.
 The stand-alone program \texttt{gen-basis} sets that option by default, and
@@ -3024,7 +3033,7 @@ structural information (maybe too many).
   coordinates. This file, renamed to \sysfile*{STRUCT\_IN} can be used
   for crystal-structure input.  Note that the geometry reported is the
   last one for which forces and stresses were computed.  See
-  \fdf{MD!UseStructFile}
+  \fdf{UseStructFile}
   
   \item\sysfile{STRUCT\_NEXT\_ITER}:%
   This file is always written, in the same format as
@@ -3034,7 +3043,7 @@ structural information (maybe too many).
   be used as input (renamed as \sysfile*{STRUCT\_IN}) for a
   continuation run, in the same way as the \sysfile*{XV} file.
   
-  See \fdf{MD!UseStructFile}
+  See \fdf{UseStructFile}
 
   \item\sysfile{XV}:%
   The coordinates are always written in the \sysfile*{XV} file, and
@@ -3067,7 +3076,7 @@ structural information (maybe too many).
   
   \item The coordinates can be also accumulated
   in the \sysfile{MD} or \sysfile{MDX} files
-  depending on \fdf{WriteMDhistory}.
+  depending on \fdf{WriteMDHistory}.
 
   \item Additionally, several optional formats are supported:
   \begin{fdflogicalF}{WriteCoorXmol}
@@ -3095,7 +3104,7 @@ structural information (maybe too many).
     directly readable by \method{Cerius}.\footnote{\method{Cerius} is
         under \copyright\ copyright of Molecular Simulations Inc.}
     Coordinates come out in \fdf*{Fractional} format (the same as
-    \fdf{ScaledByLatticeVectors}) independently of what specified
+    \fdf*{ScaledByLatticeVectors}) independently of what specified
     in \fdf{AtomicCoordinatesFormat} and in
     \fdf{AtomCoorFormatOut}.  If negative coordinates are to be
     avoided, it has to be done from the start by shifting all the
@@ -3205,7 +3214,7 @@ See the ``Forces'' option in \fdf{MD!TypeOfRun}. Note that
 
   \item If \fdf{MD!UseSaveXV} is active, it takes precedence over the options below.
 
-  \item If \fdf{UseStructFile} (or \fdf{MD!UseStructFile}) is active, it takes precedence
+  \item If \fdf{UseStructFile} (or \fdf*{MD!UseStructFile}) is active, it takes precedence
   over the options below.
 
   \item For atomic coordinates, the traditional and Zmatrix formats in
@@ -3739,7 +3748,7 @@ The current version introduces several changes:
   \item When achieving convergence, the loop might be exited without a
   further mixing of the DM, thus preserving DM(out) for further
   processing (including the calculation of forces and the analysis of
-  the electronic structure) (see the \fdf{MixAfterConvergence}
+  the electronic structure) (see the \fdf{SCF.MixAfterConvergence}
   option).
 
   \index{Variational character of E\_KS}
@@ -3778,7 +3787,7 @@ The current version introduces several changes:
     densities which are superpositions of atomic charge densities.
 
     When this option is choosen, the values of \fdf{DM!UseSaveDM},
-    \fdf{MaxSCFIterations}, \fdf{SCF!MustConverge} and \fdf{DM.MixSCF1} are automatically set
+    \fdf{MaxSCFIterations}, \fdf{SCF!MustConverge} and \fdf{SCF.Mix!First} are automatically set
     up to False, 1, False and False respectively, no matter whatever other
     specification are in the INPUT file.
   \end{itemize}
@@ -5130,7 +5139,7 @@ calculations, so in this case the options should not be turned on
 \subsubsection{Convergence criteria}
 \index{SCF convergence criteria}
 
-\textbf{NOTE}: The older options with a \texttt{DM} prefix is still
+\textbf{NOTE}: The older options with a \fdf*{DM} prefix is still
 working for backwards compatibility. However, the following flags has
 precedence.
 
@@ -5663,7 +5672,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   theory and computational science'', Journal of Physics Condensed
   Matter, 26 (2014) doi:10.1088/0953-8984/26/21/213201
 
-  \note It is not compatible with the \fdf{Diag!Parallel.Over.K}
+  \note It is not compatible with the \fdf{Diag!ParallelOverK}
   option.
   
 \end{fdflogicalF}
@@ -5676,7 +5685,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   number of eigenvectors to store is possible through the symbol
   \fdf{NumberOfEigenStates} (see above).
 
-  \note it is not compatible with the \fdf{Diag!Parallel.Over.K}
+  \note it is not compatible with the \fdf{Diag!ParallelOverK}
   option.
 
   \note The MRRR method is defaulted to be compiled in, however, if
@@ -5708,7 +5717,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
   This is an experimental feature. 
 
-  \note It is not compatible with the \fdf{Diag!Parallel.Over.K}
+  \note It is not compatible with the \fdf{Diag!ParallelOverK}
   option.
 
 \end{fdflogicalF}
@@ -5775,7 +5784,7 @@ iteration of the SCF loop will be written to a NetCDF file
 
 The complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to \sysfile{fullBZ.WFSX}
-if the \fdf{COOP.write} option is in effect.
+if the \fdf{COOP.Write} option is in effect.
 
 
 \begin{fdflogicalF}{WriteEigenvalues}
@@ -6926,7 +6935,7 @@ density matrix produced during the last self-consistent field loop
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
-if the \fdf{COOP.write} option is in effect.
+if the \fdf{COOP.Write} option is in effect.
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to a NetCDF file
@@ -7292,7 +7301,7 @@ References:
   Note that the band range options could also affect the output of
   wave-functions associated to bands (see section~\ref{sec:wf-bands}),
   and that the energy range options could also affect the output of
-  user-selected wave-functions with the \fdf{WaveFuncKpoints} block
+  user-selected wave-functions with the \fdf{WaveFuncKPoints} block
   (see section~\ref{sec:wf-output-user}).
 
 \end{fdflogicalF}
@@ -8007,7 +8016,7 @@ or interpolation of bands), can be downloaded from
 
   To see how the input should be formatted, see
   \fdf{Geometry!Hartree} and remove the unit-specification. Note that
-  the input value is number of electrons (similar to \fdf{NetDoping}).
+  the input value is number of electrons (similar to \fdf{NetCharge}).
   
 \end{fdfentry}
 
@@ -8371,7 +8380,7 @@ used for that.
   the generation of the band-structure (as specified with
   \fdf{BandLines} or \fdf{BandPoints}) or in the generation of
   wave-function information (as specified with
-  \fdf{WaveFuncKpoints}). In these cases the program falls back to
+  \fdf{WaveFuncKPoints}). In these cases the program falls back to
   using parallelization over orbitals.
 
   \emph{Use:} Controls whether the diagonalisation is parallelised
@@ -8577,7 +8586,7 @@ compiled with \program{ncdf} support, see Sec.~\ref{sec:libs} and the
 \program{ncdf} section\index{compile!pre-processor!-DNCDF\_4}.
 
 Generally all output to NetCDF flags,
-\fdf{Save.ElectrostaticPotential}, etc. apply to this file as well.
+\fdf{SaveElectrostaticPotential}, etc. apply to this file as well.
 
 
 One may control the output file with compressibility and parallel I/O,
@@ -8703,7 +8712,7 @@ implemented, selected by
     See directory Util/Scripting \index{Scripting} for other driving options.
   \end{fdfoptions}
 
-  \note if \fdf{compat-pre-v4-dynamics} is \fdftrue\ this will default
+  \note if \fdf{Compat!Pre-v4-Dynamics} is \fdftrue\ this will default
   to \fdf*{Verlet}.
 
   Note that some options specified in later variables (like quenching)
@@ -8758,7 +8767,7 @@ structure. The changes are:
 \end{itemize}
 
 To recover the previous behavior, the user can turn on the
-compatibility switch \fdf{compat-pre-v4-dynamics}, which is off by
+compatibility switch \fdf{Compat!Pre-v4-Dynamics}, which is off by
 default.
 
 Note that complete compatibility cannot be perfectly guaranteed.
@@ -9213,7 +9222,7 @@ coordinates will not be updated.
     by scaling of the unit cell size and shape
   \end{fdfoptions}
 
-  Only applicable for \fdf{MD.TypeOfRun} \fdf{Anneal}.
+  Only applicable for \fdf{MD.TypeOfRun} \fdf*{Anneal}.
 
 \end{fdfentry}
 
@@ -9226,7 +9235,7 @@ coordinates will not be updated.
   actual time needed to reach the \emph{averaged} targets will be
   significantly longer.
 
-  Only applicable for \fdf{MD.TypeOfRun} \fdf{Anneal}.
+  Only applicable for \fdf{MD.TypeOfRun} \fdf*{Anneal}.
 
 \end{fdfentry}
 
@@ -9236,7 +9245,7 @@ coordinates will not be updated.
   needed to set the rate of change of cell shape to reach target
   pressure in annealing MD.
 
-  Only applicable for \fdf{MD.TypeOfRun} \fdf{Anneal}, when
+  Only applicable for \fdf{MD.TypeOfRun} \fdf*{Anneal}, when
   \fdf{MD.AnnealOption} is \fdf*{Pressure} or \fdf*{TemperatureAndPressure}
 
 \end{fdfentry}
@@ -9272,7 +9281,7 @@ Parrinello-Rahman dynamics) are also stored in this file.
   output at every MD time step or relaxation step. The coordinates are
   always written in the \sysfile{XV} file, but overriden at
   every step. They can be also accumulated in the \sysfile*{MD}
-  or \sysfile{MDX} files depending on \fdf{WriteMDhistory}.
+  or \sysfile{MDX} files depending on \fdf{WriteMDHistory}.
 
 \end{fdflogicalF}
 
@@ -9317,7 +9326,7 @@ Parrinello-Rahman dynamics) are also stored in this file.
   joint position-velocity correlations need to be computed from this
   file.  The second gives global information (energy, temperature, etc),
   and the third has the coordinates in a form suited for XMol animation.
-  See the \fdf{WriteMDhistory} and \fdf{WriteMDXmol} data descriptors
+  See the \fdf{WriteMDHistory} and \fdf{WriteMDXmol} data descriptors
   above for information. \siesta\ always appends new information on
   these files, making them accumulative even for different runs.
 
@@ -9939,7 +9948,7 @@ with some other information, that will be used, in the case of electrodes, to
 calculate the surface Green's functions. 
 
 Once the electrode file has been generated, we can perform the \tsiesta\ 
-calculation (where the \textbf{SolutionMethod} flag is set
+calculation (where the \fdf{SolutionMethod} flag is set
 to \program{transiesta}).
 
 \begin{verbatim}
