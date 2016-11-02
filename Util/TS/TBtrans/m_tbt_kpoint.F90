@@ -800,8 +800,8 @@ contains
           call read_kgrid('TBT.k', &
                TRS, cell, kpoint, kweight, &
                kcell=kscell, kdispl=kdispl)
-       else if ( fdf_block('TBT.kgrid_Monkhorst_Pack',bfdf) ) then
-          call read_kgrid('TBT.kgrid_Monkhorst_Pack', &
+       else if ( fdf_block('TBT.kgrid.MonkhorstPack',bfdf) ) then
+          call read_kgrid('TBT.kgrid.MonkhorstPack', &
                TRS, cell, kpoint, kweight, &
                kcell=kscell, kdispl=kdispl)
        else if ( fdf_islist('TBT.k') ) then
@@ -809,7 +809,7 @@ contains
                TRS, cell, kpoint, kweight, &
                kcell=kscell, kdispl=kdispl)
        else
-          call read_kgrid('kgrid_Monkhorst_Pack', &
+          call read_kgrid('kgrid.MonkhorstPack', &
                TRS, cell, kpoint, kweight, &
                kcell=kscell, kdispl=kdispl)
        end if

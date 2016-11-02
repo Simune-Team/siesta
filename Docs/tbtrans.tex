@@ -1164,6 +1164,10 @@ If no bias is applied \tbtrans\ will default to a single chemical
 potential with the chemical potential in equilibrium. In this case you
 need not specify any chemical potentials.
 
+By default \tbtrans\ creates a single chemical potential with the
+chemical potential equal to the device Fermi-level. Hence, performing
+non-bias calculations does not require one to specify these blocks.
+
 \begin{fdfentry}{TBT.ChemPots}[block]
   
   Each line denotes a new chemical potential which may is further
@@ -1221,6 +1225,11 @@ setups is rather complicated.
 \tbtrans\ defaults to read the \tsiesta\ electrodes and as such one
 may replace \fdf*{TBT} by \fdf*{TS} and \tbtrans\ will still
 work. However, the \fdf*{TBT} has precedence. 
+
+If there is only $1$ chemical potential all electrodes will default
+to use this chemical potential, thus for non-bias calculations there
+is no need to specify the chemical potential
+(\fdf{TBT.Elec.<>!chemical-potential}).  
 
 \begin{fdfentry}{TBT.Elecs}[block]
 
