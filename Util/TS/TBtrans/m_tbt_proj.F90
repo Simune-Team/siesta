@@ -197,6 +197,7 @@ contains
     ! Whether we should assert and calculate
     ! all transmission amplitudes for the projections
     ltmp = fdf_get('TBT.Projs.T.Elecs.All', ('T-all'.in.save_DATA) )
+    ltmp = fdf_get('TBT.Projs.T.All', ltmp )
     if ( ltmp ) then
        save_DATA = save_DATA // ('proj-T-all'.kv.1)
     end if

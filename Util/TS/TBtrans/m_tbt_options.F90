@@ -545,6 +545,7 @@ contains
     ! Whether we should assert and calculate
     ! all transmission amplitudes
     ltmp = fdf_get('TBT.T.Elecs.All',N_Elec == 1)
+    ltmp = fdf_get('TBT.T.All',N_Elec == 1)
     if ( ltmp ) then
        save_DATA = save_DATA // ('T-all'.kv.1)
     end if

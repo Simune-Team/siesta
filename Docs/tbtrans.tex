@@ -28,13 +28,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge \textbf{T B t r a n s \, \, 4.1-b1}}
+{\Huge \textbf{T B t r a n s \, \, 4.1-b2}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{0.5cm}
 
-{\Large August 31, 2016 }
+{\Large October 27, 2016}
 
 \vspace{1.5cm}
 {\Large \url{http://www.uam.es/siesta}}
@@ -50,8 +50,8 @@
 \section*{Contributors to \tbtrans}
 \addcontentsline{toc}{section}{Contributors to \siesta}
 
-\siesta\ is Copyright \copyright\  2016-2016 by Nick R. Papior.
-The original \tbtrans\ code was implemented by Mads Brandbyge, Jose
+\tbtrans\ is Copyright \copyright\ 2016-2016 by Nick R. Papior. The
+original \tbtrans\ code was implemented by Mads Brandbyge, Jose
 L. Mozos, Jeremy Taylor, Pablo Ordejon and Kurt Stokbro. The current
 \tbtrans\ is implemented by the following contributors:
 
@@ -698,7 +698,7 @@ see Sec.~\ref{sec:arch-make}, as quantities will be orbital resolved.
   scattering region (or if one wish to uncover whether there are bound
   states). Due to internal algorithms the DOS from the Green function
   is computationally more demanding than using \fdf{TBT.DOS!A} an
-  \fdf{TBT.DOS!A.Elecs.All}.
+  \fdf{TBT.DOS!A.All}.
 
   See \fdf{TBT.Atoms!Device.Connect}.
 
@@ -714,7 +714,7 @@ see Sec.~\ref{sec:arch-make}, as quantities will be orbital resolved.
 
 \end{fdflogicalF}
 
-\begin{fdflogicalF}{TBT.DOS!A.Elecs.All}
+\begin{fdflogicalF}{TBT.DOS!A.All}
 
   Calculate the DOS from the spectral function and do so with
   \emph{all} electrodes.
@@ -723,7 +723,7 @@ see Sec.~\ref{sec:arch-make}, as quantities will be orbital resolved.
 
 \end{fdflogicalF}
 
-Setting the flags \fdf{TBT.DOS!Gf} and \fdf{TBT.DOS!A.Elecs.All} to
+Setting the flags \fdf{TBT.DOS!Gf} and \fdf{TBT.DOS!A.All} to
 \fdftrue\ enables the estimation of bound states in the scattering
 region via this simple expression
 \begin{equation}
@@ -745,7 +745,7 @@ $\rho_{\mathrm{bound-states}}=0$.
 
 \end{fdfentry}
 
-\begin{fdflogicalF}{TBT.T!Elecs.All}
+\begin{fdflogicalF}{TBT.T!All}
 
   By default \tbtrans\ only calculates transmissions in \emph{one}
   direction because time-reversal symmetry makes $T_{ij}=T_{ji}$. If
@@ -1164,6 +1164,10 @@ If no bias is applied \tbtrans\ will default to a single chemical
 potential with the chemical potential in equilibrium. In this case you
 need not specify any chemical potentials.
 
+By default \tbtrans\ creates a single chemical potential with the
+chemical potential equal to the device Fermi-level. Hence, performing
+non-bias calculations does not require one to specify these blocks.
+
 \begin{fdfentry}{TBT.ChemPots}[block]
   
   Each line denotes a new chemical potential which may is further
@@ -1221,6 +1225,11 @@ setups is rather complicated.
 \tbtrans\ defaults to read the \tsiesta\ electrodes and as such one
 may replace \fdf*{TBT} by \fdf*{TS} and \tbtrans\ will still
 work. However, the \fdf*{TBT} has precedence. 
+
+If there is only $1$ chemical potential all electrodes will default
+to use this chemical potential, thus for non-bias calculations there
+is no need to specify the chemical potential
+(\fdf{TBT.Elec.<>!chemical-potential}).  
 
 \begin{fdfentry}{TBT.Elecs}[block]
 
@@ -2069,9 +2078,9 @@ the molecule.
   
 \end{fdflogicalF}
 
-\begin{fdflogicalF}{TBT.Projs!T.Elecs.All}%
+\begin{fdflogicalF}{TBT.Projs!T.All}%
 
-  Same as \fdf{TBT.T!Elecs.All}, but for projections. If differing
+  Same as \fdf{TBT.T!All}, but for projections. If differing
   projections are performed on the scattering states the transmission
   will not be reversible. You can turn on all projection operations
   using this flag.

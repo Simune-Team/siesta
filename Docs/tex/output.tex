@@ -75,13 +75,18 @@
 % Use systemlabel.file.
 % This creates a file which is default to have the systemlabel
 % as prefix.
+%  *: do not add the SystemLabel to the output
 %  #1: suffix for the file.
-\NewDocumentCommand\sysfile{ m }
+\NewDocumentCommand\sysfile{ s m }
 {%
     % Typeset file
-    \fontfile{SystemLabel.#1}%
+    \IfBooleanTF{#1}{%
+        \fontfile{.#2}%
+    }{%
+        \fontfile{SystemLabel.#2}%
+    }%
     % Add to the indices
-    \newfile{SystemLabel.#1}%
+    \newfile{SystemLabel.#2}%
 }
 
 

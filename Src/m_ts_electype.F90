@@ -257,16 +257,16 @@ contains
     ! Allow the filename to be read in individually
     name = trim(bName)//'.HS'
     if ( fdf_defined(trim(name)) ) then
-       this%HSfile = trim(fdf_get(name,''))
+       this%HSfile = trim(fdf_get(trim(name),''))
        info(1) = .true.
     end if
 
     do i = 1 , 3
        write(name,'(2a,i0)') trim(bName),'.Bloch.A',i
-       this%Bloch(i) = fdf_get(name, 1)
+       this%Bloch(i) = fdf_get(trim(name), 1)
     end do
     name = trim(bName)//'.GF'
-    if ( fdf_defined(trim(name)) ) this%GFfile = trim(fdf_get(name,''))
+    if ( fdf_defined(trim(name)) ) this%GFfile = trim(fdf_get(trim(name),''))
 
     ! Default to use the chemical potential with the same
     ! name as the electrode
