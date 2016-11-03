@@ -336,7 +336,7 @@ subroutine read_options( na, ns, nspin )
   
   ctmp = fdf_get('SCF.Mix', trim(ctmp))
   if ( leqi(ctmp, 'charge') .or. &
-       leqi(ctmp,'rho') ) then
+       leqi(ctmp, 'rho') ) then
      mix_charge = .true.
      mixH = .false.
   else if ( leqi(ctmp, 'Hamiltonian') &
@@ -348,6 +348,8 @@ subroutine read_options( na, ns, nspin )
        .or. leqi(ctmp, 'DM') ) then
      mix_charge = .false.
      mixH = .false.
+  else
+     call die('Unrecognized option for: SCF.Mix. Please see the manual.')
   end if
   
   if ( IONode ) then
