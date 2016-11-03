@@ -106,7 +106,7 @@ C
       call re_alloc( qa, 1, na_u, 'qa', 'atomlist' )
       call re_alloc(xa_last,1,3,1,na_u,'xa_last','atomlist')
       call re_alloc( amass, 1, na_u, 'amass', 'atomlist' )
-      call re_alloc( in_kb_orb_u_range, 1, na_u, 'amass', 'atomlist' )
+      call re_alloc( in_kb_orb_u_range, 1, na_u, 'in_kb', 'atomlist' )
 !
 !     Find number of orbitals and KB projectors in cell
 !
@@ -239,8 +239,8 @@ C Internal variables
         call re_alloc( iza, 1, na, 'iza', 'atomlist', .true. )
         call re_alloc( lastkb, 0, na, 'lastkb', 'atomlist', .true. )
         call re_alloc( lasto, 0, na, 'lasto', 'atomlist', .true. )
-        call re_alloc( in_kb_orb_u_range, 0, na,
-     $                 'lasto', 'atomlist', .true. )
+        call re_alloc( in_kb_orb_u_range, 1, na,
+     $                 'in_kb', 'atomlist', .true. )
         call re_alloc( qa, 1, na, 'qa', 'atomlist', .true. )
         call re_alloc( xa, 1, 3, 1, na, 'xa', 'atomlist', .true. )
         call re_alloc(xa_last, 1,3, 1,na, 'xa_last', 'superc',

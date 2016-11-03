@@ -211,9 +211,11 @@ C     Initialize vector switch only once
       do io = 1,no
         conect(io) = .false.
         listhtmp(io) = 0
-        in_kb_orb_u_range(ka) = .false.
       enddo
-
+      do ia = 1 , na
+         in_kb_orb_u_range(ia) = .false.
+      end do
+      
       folding = .false.
 
 C------------------------------------C
