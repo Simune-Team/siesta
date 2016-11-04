@@ -77,6 +77,7 @@ C
       use atomlist,      only : in_kb_orb_u_range
       use atmfuncs,      only : rcut, epskb, orb_gindex, kbproj_gindex
       use atmfuncs,      only : nofis, nkbfis
+      use chemical,      only : is_floating
       use neighbour,     only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour,     only : mneighb, reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
@@ -112,6 +113,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
      .  io, iio, ioa, is, ispin, ix, ig, kg,
      .  j, jno, jo, jx, ka, ko, koa, ks, kua,
      .  nkb, nna, nno, no, nuo, nuotot, maxkba
+      integer :: natoms_k_over, max_nno_used
 
       integer, dimension(:), pointer :: iano, iono
 
@@ -226,9 +228,11 @@ C     Initialize neighb subroutine
 !        ... they are automatically accounted for, in
 !        the same way as the Hmu_nu terms themselves.
 !
+      natoms_k_over = 0
+      max_nno_used = 0
       do ka = 1,na
 !        Only the atoms within the proper
-!        distance of a unit cell orbital (in our proces) should
+!        distance of a unit cell orbital (in our process) should
 !        be considered, not the whole supercell.
 !        This array was initialized in hsparse
          
@@ -236,6 +240,7 @@ C     Initialize neighb subroutine
         
         ks = isa(ka)
         ! Cycle also if ghost-orbital species...
+        if (is_floating(ks)) CYCLE
         
         kua = indxua(ka)  ! Used only if forces and energies are comp.
 
@@ -247,7 +252,8 @@ C       Find neighbour atoms
           rki = sqrt(r2ki(ina))
           ia = iana(ina)
           is = isa(ia)
-          ! Early exit if too far
+          !     Early exit if too far
+          !     This duplicates the test in hsparse...
           if (rki - rkbmax(ks) - rorbmax(is) > 0.d0) CYCLE
 
           ! Loop over orbitals close enough to overlap
@@ -307,6 +313,7 @@ C           Only calculate if needed locally in our MPI process
 !     two orbitals: one in the unit cell, and handled by our process,
 !     and the other unrestricted
         
+        max_nno_used = max(max_nno_used, nno)
         do ino = 1,nno    ! loop over overlaps
           ia = iano(ino)
           if (ia > nua) CYCLE  ! We want the 1st orb to be in the unit cell
@@ -388,9 +395,17 @@ C         Pick up contributions to H and restore Di and Vi
           enddo
 
        enddo  ! loop over 1st orbitals
-
+       natoms_k_over = natoms_k_over + 1
       enddo   ! loop over atoms holding KB projectors
 
+      if (Node == 0) then
+         ! For future diagnostics
+         ! Currently only the root process outputs info
+         write(6,"(a,2i8)")
+     $     "Atoms with KB overlaps in this node, maxnno:",
+     $        natoms_k_over, max_nno_used
+      endif
+      
 C     Deallocate local memory
 !      call new_MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
       call reset_neighbour_arrays( )
