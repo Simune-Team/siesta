@@ -49,7 +49,6 @@ MODULE siesta_options
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
   logical :: outlng        ! Long output in the output file?
   logical :: pulfile       ! Use file to store Pulay info in pulayx? (Obsolete)
-  logical :: avoid_first_after_kick  ! Keep first residual after a kick?
   logical :: RelaxCellOnly ! Relax only lattice vectors, not atomic coordinates
   logical :: RemoveIntraMolecularPressure   ! Remove molecular virial contribution to p
   logical :: savehs        ! Write file with Hamiltonian electrostatic potential?
@@ -182,7 +181,7 @@ MODULE siesta_options
   integer :: iquench       ! Quenching option, read in redata, used in dynamics routines
   integer :: isolve        ! Option to find density matrix: 0=>diag, 1=>order-N
   integer :: istart        ! First geommetry iteration step for certain types of dynamics
-  integer :: DM_history_depth = 1 ! Number of previous density matrices used in extrapolation and reuse
+  integer :: DM_history_depth ! Number of previous density matrices used in extrapolation and reuse
   integer :: maxsav        ! Number of previous density matrices used in Pulay mixing
   integer :: broyden_maxit ! Max. iterations in Broyden geometry relaxation
   integer :: mullipop      ! Option for Mulliken population level of detail

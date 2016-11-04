@@ -156,18 +156,18 @@ if [ -z "$_out" ]; then
 fi
 
 echo "Chosen tags are:"
-echo " previous tag: $_prev_tag"
-echo " current tag : $_tag"
+echo "  previous tag: $_prev_tag"
+echo "  current tag : $_tag"
 echo "Creating out file:"
-echo " $_out.tar.gz"
+echo "  $_out.tar.gz"
 sleep 1
 	    
 # The current procedure of releasing a SIESTA
 # version is the following:
-# 0. Create the necessary directories
-# 1. Create CHANGES and sign-store them.
-# 2. Make the proper documentation
-# 3. Go out of the top-directory to create the repository.
+#  0. Create the necessary directories
+#  1. Create CHANGES and sign-store them.
+#  2. Make the proper documentation
+#  3. Go out of the top-directory to create the repository.
 
 # Top release directories, in case it is not already
 # created.
@@ -185,7 +185,7 @@ if [ -d $_reldir/$_out ]; then
 fi
 
 
-#   Create a temporary work-directory
+# Create a temporary work-directory
 bzr export -r $_tag $_reldir/$_out $main_dir
 
 # Create the changes files
@@ -213,17 +213,16 @@ pushd $_reldir
 pushd $_out
 
 
-#   Create documentation
+# Create documentation
 pushd Docs
-#   First create the screen variants...
+# First create the screen variants...
 make final-screen
-#   Then the regular documentation (for print)
+# Then the regular documentation (for print)
 make final
 
-#   Clean-up the non-pdf files (currently
-#   this is not available through the make clean)
-rm -f siesta*.[^pt]* siesta*.toc
-rm -f tbtrans*.[^pt]* tbtrans*.toc
+# Clean-up the non-pdf files (currently
+# this is not available through the make clean)
+make clean
 # Also do not ship the release script
 rm release.sh
 
@@ -232,7 +231,7 @@ for f in *.pdf ; do
     _sign $f
 done
 
-#   Go out of the documentation directory...
+# Go out of the documentation directory...
 popd
 
 
