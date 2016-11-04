@@ -17,8 +17,23 @@ module m_sparsity_handling
   use class_dSpData2D
   use geom_helper, only : iaorb, ucorb
   use m_region
+  use intrinsic_missing, only: SORT
 
   implicit none
+
+  private
+
+  public :: SpOrb_to_SpAtom
+  public :: Sp_remove_crossterms
+  public :: Sp_union
+  public :: Sp_sort
+  public :: Sp_remove_region
+  public :: Sp_retain_region
+  public :: Sp_remove_region2region
+  public :: Sp_to_Spglobal
+  public :: dSpData1D_to_Sp
+  public :: dSpData2D_to_Sp
+  public :: dSpData2D_interp
 
 contains
 
@@ -369,6 +384,33 @@ contains
 
   end subroutine Sp_union
 
+  ! Create a unified sparsity pattern
+  subroutine Sp_sort(sp)
+    ! sparsity pattern to be sorted
+    type(Sparsity), intent(inout) :: sp
+    
+    integer, pointer :: ncol(:), ptr(:), col(:)
+    integer :: io, no
+
+    if ( .not. initialized(sp) ) then
+       return
+    end if
+
+    ! Attach the sparsity pattern
+    call attach(sp,n_col=ncol,list_ptr=ptr,list_col=col, &
+         nrows=no)
+    
+    ! Count the new sparsity pattern
+    ! Loop over all the entries 
+    do io = 1 , no
+
+       ! Create sorted list
+       col(ptr(io)+1:ptr(io)+ncol(io)) = sort(col(ptr(io)+1:ptr(io)+ncol(io)))
+
+    end do
+
+  end subroutine Sp_sort
+
   subroutine Sp_remove_region(dit,in,rr,out)
     ! The distribution this sparsity pattern lives in
     type(OrbitalDistribution), intent(in) :: dit
@@ -473,7 +515,7 @@ contains
     
   end subroutine Sp_remove_region
 
-  subroutine Sp_retain_rgn(dit,in,rr,out)
+  subroutine Sp_retain_region(dit,in,rr,out)
     ! The distribution this sparsity pattern lives in
     type(OrbitalDistribution), intent(in) :: dit
     ! sparsity pattern to be reduced
@@ -504,7 +546,7 @@ contains
 
     call rgn_delete(rem_r)
     
-  end subroutine Sp_retain_rgn
+  end subroutine Sp_retain_region
 
   subroutine Sp_remove_region2region(dit,in,r1,r2,out)
     ! The distribution this sparsity pattern lives in

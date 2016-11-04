@@ -22,11 +22,10 @@ c *******************************************************************
 
       implicit          none
 
-      character(len=label_length+4)       :: paste
       integer                             :: na
       integer                             :: iza(na)
       real(dp)                            :: xa(3,na)
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal variables and arrays
  
@@ -40,7 +39,7 @@ c -------------------------------------------------------------------
       character(len=2) :: sym
 
       if ( frstme ) then
-        fname = paste(slabel,'.ANI')
+        fname = trim(slabel)//'.ANI'
         frstme = .false.
       endif
 

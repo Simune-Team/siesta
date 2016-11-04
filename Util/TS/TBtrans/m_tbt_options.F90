@@ -130,7 +130,7 @@ contains
 
     use m_ts_chem_pot, only : fdf_nmu, fdffake_mu, fdf_mu, name
     
-    use m_tbt_hs, only: Volt
+    use m_tbt_hs, only: Volt, IsVolt
 
     implicit none
 
@@ -153,7 +153,33 @@ contains
     err = .true.
     if ( N_mu < 1 ) then
        err = .false.
-       N_mu = fdffake_mu(mus,kT,Volt)
+       if ( IsVolt ) then
+          ! There is a bias: default
+          ! to two chemical potentials with the
+          ! applied bias
+          N_mu = fdffake_mu(mus,kT,Volt)
+          
+       else
+          ! There is no bias. Simply create
+          ! one chemical potential.
+          ! This will make the electrodes
+          ! default to the one chemical potential.
+          N_mu = 1
+          allocate(mus(1))
+          mus(1)%kT = kT
+          mus(1)%ckT = ' '
+          mus(1)%name = 'Fermi-level'
+          mus(1)%mu = 0._dp
+          mus(1)%cmu = '0. eV'
+          mus(1)%ID = 1
+          ! These are not used, but we populate
+          ! them anyway
+          mus(1)%N_poles = 1
+          allocate(mus(1)%Eq_seg(1))
+          mus(1)%Eq_seg(1) = '*NONE'
+          
+       end if
+       
     end if
     do i = 1 , N_mu
        ! Default things that could be of importance
@@ -519,6 +545,7 @@ contains
     ! Whether we should assert and calculate
     ! all transmission amplitudes
     ltmp = fdf_get('TBT.T.Elecs.All',N_Elec == 1)
+    ltmp = fdf_get('TBT.T.All',N_Elec == 1)
     if ( ltmp ) then
        save_DATA = save_DATA // ('T-all'.kv.1)
     end if
@@ -780,13 +807,13 @@ contains
     end if
 
     ! CHECK THIS (we could allow it by only checking the difference...)
-    if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 1.e-9_dp ) then
+    if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 1.e-8_dp * eV ) then
        if ( IONode ) then
           write(*,'(a)') 'Chemical potentials [eV]:'
           do i = 1 , N_Elec
              write(*,'(a,f10.5,a)') trim(Name(Elecs(i)))//' at ',Elecs(i)%mu%mu/eV,' eV'
           end do
-          write(*,'(a)') 'The difference must satisfy: "max(ChemPots)-min(ChemPots) - abs(Volt) > 1e-9"'
+          write(*,'(a)') 'The difference must satisfy: "max(ChemPots)-min(ChemPots) - abs(Volt) < 1e-8 eV"'
           write(*,'(a,f10.5,a)') 'max(ChemPots) at ', maxval(mus(:)%mu)/eV,' eV'
           write(*,'(a,f10.5,a)') 'min(ChemPots) at ', minval(mus(:)%mu)/eV,' eV'
           write(*,'(a,f10.5,a)') '|V| at ', abs(Volt)/eV,' eV'

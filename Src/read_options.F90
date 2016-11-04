@@ -336,7 +336,7 @@ subroutine read_options( na, ns, nspin )
   
   ctmp = fdf_get('SCF.Mix', trim(ctmp))
   if ( leqi(ctmp, 'charge') .or. &
-       leqi(ctmp,'rho') ) then
+       leqi(ctmp, 'rho') ) then
      mix_charge = .true.
      mixH = .false.
   else if ( leqi(ctmp, 'Hamiltonian') &
@@ -348,6 +348,8 @@ subroutine read_options( na, ns, nspin )
        .or. leqi(ctmp, 'DM') ) then
      mix_charge = .false.
      mixH = .false.
+  else
+     call die('Unrecognized option for: SCF.Mix. Please see the manual.')
   end if
   
   if ( IONode ) then
@@ -416,20 +418,6 @@ subroutine read_options( na, ns, nspin )
   if (cml_p) then
      call cmlAddParameter(xf=mainXML, name='DM.PulayOnFile',      &
           value=pulfile, dictRef='siesta:pulfile')
-  endif
-
-  ! 
-  avoid_first_after_kick = fdf_get (    &
-       'DM.Pulay.Avoid.First.After.Kick',.false.)
-  if (ionode) then
-     write(6,1) 'redata: Discard 1st Pulay DM after kick', &
-          avoid_first_after_kick
-  endif
-  if (cml_p) then
-     call cmlAddParameter(xf=mainXML,  &
-          name='DM.Pulay.Avoid.First.After.Kick', &
-          value=pulfile,   &
-          dictRef='siesta:avoid_first_after_kick')
   endif
 
   ! Density Matrix Mixing  (proportion of output DM in new input DM)
@@ -760,6 +748,7 @@ subroutine read_options( na, ns, nspin )
   ! Fix the spin of the system to a given value ; and
   ! value of the Spin of the system (only used if fixspin = TRUE)
   fixspin = fdf_get('FixSpin',.false.)
+  fixspin = fdf_get('Spin.Fix',fixspin)
   if (ionode) then
      write(6,1) 'redata: Fix the spin of the system',fixspin 
   endif
@@ -1603,6 +1592,7 @@ subroutine read_options( na, ns, nspin )
   initdmaux              = fdf_get( 'ReInitialiseDM', .TRUE. )
   allow_dm_reuse         = fdf_get( 'DM.AllowReuse', .TRUE. )
   allow_dm_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
+  DM_history_depth       = fdf_get( 'DM.History.Depth', 1)
   dm_normalization_tol   = fdf_get( 'DM.NormalizationTolerance',1.0d-5)
   normalize_dm_during_scf= fdf_get( 'DM.NormalizeDuringSCF',.true.)
   muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)

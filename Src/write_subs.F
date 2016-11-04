@@ -143,7 +143,16 @@
             Psol = - ((stress(1,1) + stress(2,2) + stress(3,3))/3.0_dp)
             write(6,'(/,a,f20.8,a)')
      .           'siesta: Pressure (static):', Psol/kBar, '  kBar'
+!            write(6,'(/,a,3(/,a,3f12.6))')
+!     .       'siesta: Stress tensor (static-constrained) (eV/Ang**3):',
+!     .           ('     ',(cstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+!            write(6,'(a,f20.8,a)')
+!     .       'siesta: Pressure (static-constrained):',
+!     .       - ((cstress(1,1)+cstress(2,2)+cstress(3,3))/3.0_dp)/kBar,
+!     .       '  kBar'
             if (cml_p) then
+              call cmlAddComment(mainXML,
+     $              "Output: matrix stress(1:3,1:3)") 
               call cmlAddProperty(xf=mainXML, value=stress*Ang**3, 
      .             dictref='siesta:stress', title='Stress',
      .             units='siestaUnits:evpa3')
@@ -593,6 +602,7 @@
         ! output forces to stdout depending on writef
         if (cml_p) then
           call cmlStartPropertyList(mainXML, title='Forces')
+          call cmlAddComment(mainXML,"Output: matrix fa(1:3,1:na_u)") 
           call cmlAddProperty(xf=mainXML, value=fa*Ang/eV,
      .         dictref='siesta:forces', units='siestaUnits:evpa')
           call cmlAddProperty(xf=mainXML, value=ftot*Ang/eV,
@@ -651,6 +661,7 @@
      .         'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
           if (cml_p) then
             call cmlStartPropertyList(mainXML, title='Force Summary')
+            call cmlAddComment(mainXML,"Output: matrix fa(1:3,1:na_u)") 
             call cmlAddProperty(xf=mainXML, value=fa*Ang/eV,
      .           dictref='siesta:forces', units='siestaUnits:evpa')
             call cmlAddProperty(xf=mainXML, value=ftot*Ang/eV, 
@@ -668,6 +679,8 @@
             if (cml_p) then
               call cmlStartPropertyList(mainXML,
      .             title='Constrained Force Summary')
+              call cmlAddComment(mainXML,
+     $             "Output: matrix cfa(1:3,1:na_u)") 
               call cmlAddProperty(xf=mainXML, value=cfa*Ang/eV, 
      .             dictref='siesta:cforces', units='siestaUnits:evpa')
               call cmlAddProperty(xf=mainXML, value=cftot*Ang/eV, 

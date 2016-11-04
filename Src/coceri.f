@@ -29,12 +29,11 @@ c ******************************************************************
       implicit          none
 
       character(len=150)            :: sname
-      character(len=label_length+4) :: paste
       integer                       :: na
       integer                       :: iza(na)
       real(dp)                      :: cell(3,3)
       real(dp)                      :: xa(3,na)
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal variables and arrays
  
@@ -97,7 +96,7 @@ c Obtain fractional coordinates (reclat inverts matrix)
 
 c Find file name
 
-      fname = paste(slabel,'.xtl')
+      fname = trim(slabel)//'.xtl'
 
       write(6,'(/,2a)')'coceri: Writing CERIUS coordinates into file ',
      .                  fname

@@ -27,13 +27,12 @@ c**************************************************************************
 
       implicit          none
 
-      character(len=label_length+3) :: paste
       character         task*(*)
       logical           found, relaxd
       integer           naux
       real(dp)          cgaux(naux), cgcntr(0:20)
 
-      external          chkdim, io_assign, io_close, paste
+      external          chkdim, io_assign, io_close
 
 
 c Internal variables and arrays ------------------------------------------
@@ -50,7 +49,7 @@ c ------------------------------------------------------------------------
 c find file name ---------------------------------------------------------
 
       if (frstme) then
-        fname = paste(slabel,'.CG')
+        fname = trim(slabel)//'.CG'
         frstme = .false.
       endif
 

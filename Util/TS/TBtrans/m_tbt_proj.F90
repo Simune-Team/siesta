@@ -197,6 +197,7 @@ contains
     ! Whether we should assert and calculate
     ! all transmission amplitudes for the projections
     ltmp = fdf_get('TBT.Projs.T.Elecs.All', ('T-all'.in.save_DATA) )
+    ltmp = fdf_get('TBT.Projs.T.All', ltmp )
     if ( ltmp ) then
        save_DATA = save_DATA // ('proj-T-all'.kv.1)
     end if
@@ -1267,7 +1268,7 @@ contains
 
   ! Initialize the TBT.Proj.nc file
   subroutine init_proj_save( fname, TSHS , r, ispin, N_Elec, Elecs, &
-       nkpt, kpt, wkpt, NE , a_Dev, a_Buf, sp_dev, save_DATA )
+       nkpt, kpt, wkpt, NE , a_Dev, a_Buf, sp_dev_sc, save_DATA )
 
     use parallel, only : Node, Nodes, IONode
     use units, only: eV
@@ -1305,7 +1306,7 @@ contains
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
     type(tRgn), intent(in) :: a_Dev
     type(tRgn), intent(in) :: a_Buf
-    type(Sparsity), intent(inout) :: sp_dev
+    type(Sparsity), intent(inout) :: sp_dev_sc
     type(dict), intent(inout) :: save_DATA
 
     type(hNCDF) :: ncdf, grp, grp2, grp3
@@ -1422,6 +1423,7 @@ contains
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) )
        dic = dic // ('xa'.kvp. TSHS%xa) // ('cell'.kvp.TSHS%cell)
        dic = dic // ('pivot'.kvp.r%r)//('a_dev'.kvp.a_Dev%r)
+       dic = dic // ('nsc'.kvp. TSHS%nsc)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('a_buf'.kvp.a_Buf%r)
        end if
@@ -1556,6 +1558,8 @@ contains
     call ncdf_def_dim(ncdf,'no_d',r%n)
     call ncdf_def_dim(ncdf,'nkpt',NF90_UNLIMITED)
     call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
+    call ncdf_def_dim(ncdf,'n_s',product(TSHS%nsc))
+
     ! Create eigenvalue dimension, if needed
     if ( N_eigen > 0 ) then
        call ncdf_def_dim(ncdf,'neig',N_eigen)
@@ -1602,6 +1606,13 @@ contains
          atts = dic)
     call delete(dic)
 
+    dic = ('info'.kv.'Supercell offsets')
+    call ncdf_def_var(ncdf,'isc_off',NF90_INT,(/'xyz', 'n_s'/), &
+         atts = dic)
+    dic = ('info'.kv.'Number of supercells in each direction')
+    call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
+         atts = dic)
+
     dic = dic//('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
@@ -1636,6 +1647,8 @@ contains
          atts = dic)
     call delete(dic)
 
+    call ncdf_put_var(ncdf,'nsc',TSHS%nsc)
+    call ncdf_put_var(ncdf,'isc_off',TSHS%isc_off)
     call ncdf_put_var(ncdf,'pivot',r%r)
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
@@ -1666,7 +1679,7 @@ contains
 
        ! In case we need to save the device sparsity pattern
        ! Create dimensions
-       nnzs_dev = nnzs(sp_dev)
+       nnzs_dev = nnzs(sp_dev_sc)
        call ncdf_def_dim(ncdf,'nnzs',nnzs_dev)
 
        call delete(dic)
@@ -1686,7 +1699,7 @@ contains
        call newDistribution(TSHS%no_u,-1           ,fdit,name='TBT-fake dist')
 #endif
 
-       call cdf_w_Sp(ncdf,fdit,sp_dev)
+       call cdf_w_Sp(ncdf,fdit,sp_dev_sc)
        call delete(fdit)
        call delete(dic)
 

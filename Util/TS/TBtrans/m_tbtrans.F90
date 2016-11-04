@@ -56,7 +56,7 @@ contains
     use m_tbt_kpoint, only : nkpnt, kpoint, kweight
     use m_tbt_options, only : save_DATA
     use m_tbt_options, only : cdf_fname, cdf_fname_sigma, cdf_fname_proj
-    use m_tbt_regions, only : r_aDev, r_aBuf, sp_dev
+    use m_tbt_regions, only : r_aDev, r_aBuf, sp_dev_sc
 
     use m_tbt_save
     use m_tbt_proj, only : N_mol, mols, init_proj_save
@@ -294,7 +294,7 @@ contains
           ! Initialize data files
           call name_save( ispin, TSHS%nspin,cdf_fname, end = 'nc')
           call init_cdf_save(cdf_fname,TSHS,r_oDev,ispin,N_Elec, Elecs, &
-               nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf, sp_dev, save_DATA )
+               nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf, sp_dev_sc, save_DATA )
        end if
        
        call name_save( ispin, TSHS%nspin,cdf_fname_sigma, end = 'SE.nc')
@@ -305,7 +305,7 @@ contains
        
           call name_save( ispin, TSHS%nspin, cdf_fname_proj, end = 'Proj.nc' )
           call init_Proj_save( cdf_fname_proj, TSHS , r_oDev, ispin, N_Elec, Elecs, &
-               nkpt, kpt, wkpt, NEn , r_aDev, r_aBuf, sp_dev, save_DATA )
+               nkpt, kpt, wkpt, NEn , r_aDev, r_aBuf, sp_dev_sc, save_DATA )
        end if
 
        if ( n_k /= 0 ) then
@@ -391,8 +391,9 @@ contains
          ! first the size of the real matrices
          nsize = nnzs(TSHS%sp)
 #ifdef NCDF_4
-         if ( initialized(sp_dev) ) then
-            nsize = nsize + nnzs(sp_dev)
+         ! this is the sparse orbital currents...
+         if ( initialized(sp_dev_sc) ) then
+            nsize = nsize + nnzs(sp_dev_sc)
          end if
 #endif
          mem = nsize * 8._dp / 1024._dp ** 2

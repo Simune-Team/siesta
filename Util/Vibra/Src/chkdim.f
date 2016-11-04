@@ -17,6 +17,7 @@ C INTEGER   N       : Required value of dimension parameter
 C INTEGER   IOPT    : Option switch: IOPT=0 => Require that ND.EQ.N
 C                                    IOPT=1 => Require that ND.GE.N
 C **********************************************************************
+      integer :: nd,n,iopt
       CHARACTER SUB*(*),VAR*(*)
       IF ( IOPT.EQ.0 ) THEN
         IF ( ND.EQ.N ) RETURN
@@ -34,6 +35,7 @@ C **********************************************************************
 
 
       SUBROUTINE CHKDIME (ND,N,OVERFLOW,NM)
+      integer :: nd, n, nm
       LOGICAL OVERFLOW
       NM = MAX(N,NM)
       IF ( ND.GE.N ) RETURN

@@ -43,13 +43,12 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
       integer                              :: ia, iu, iv
       integer                              :: ix, iostat
       logical,                        save :: frstme = .true.
-      character(len=label_length+10)       :: paste
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 
       if (frstme) then
          if (IOnode) then
-            fname = paste( slabel, '.STRUCT_IN' )
+            fname = trim(slabel)//'.STRUCT_IN'
          endif
          frstme = .false.
       endif
@@ -108,8 +107,7 @@ c                          one after application of forces/stress.
       real(dp), intent(in) ::          cell(3,3), xa(3,na)
       logical, intent(in), optional :: moved
 
-      character(len=label_length+11)       :: paste
-      external          io_assign, io_close, paste, reclat
+      external          io_assign, io_close, reclat
 
 c     Internal variables and arrays
       real(dp)                             :: celli(3,3)
@@ -129,9 +127,9 @@ C     Only do reading and writing for IOnode
       endif
 
       if (atoms_moved_after_forces) then
-         fname = paste( slabel, '.STRUCT_NEXT_ITER' )
+         fname = trim(slabel)//'.STRUCT_NEXT_ITER'
       else
-         fname = paste( slabel, '.STRUCT_OUT' )
+         fname = trim(slabel)//'.STRUCT_OUT'
       endif
 
       call io_assign( iu )

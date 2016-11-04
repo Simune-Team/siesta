@@ -45,7 +45,7 @@ SYSOBJ=$(SYS).o
 
 SIESTA_OBJS= precision.o sys.o m_io.o alloc.o memoryinfo.o memory.o pxf.o \
              moreParallelSubs.o m_mpi_utils.o \
-             paste.o reclat.o idiag.o minvec.o \
+             reclat.o idiag.o minvec.o \
              parallel.o io.o files.o cellsubs.o sorting.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o m_spin.o \
              cdiag.o m_diagon_opt.o \
@@ -352,7 +352,7 @@ broyden_optim.o: siesta_options.o sys.o units.o
 bsc_cellxc.o: alloc.o bsc_xcmod.o cellxc_mod.o mesh.o moremeshsubs.o parallel.o
 bsc_cellxc.o: parallelsubs.o precision.o sys.o
 bsc_xcmod.o: parallel.o precision.o sys.o
-cart2frac.o: sys.o
+cart2frac.o: precision.o sys.o
 cdiag.o: alloc.o m_diagon_opt.o memoryinfo.o parallel.o precision.o sys.o
 cell_broyden_optim.o: m_broyddj_nocomm.o parallel.o precision.o sys.o units.o
 cell_broyden_optim.o: zmatrix.o
@@ -415,7 +415,7 @@ delk.o: parallelsubs.o precision.o siesta_geom.o
 denmat.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 denmatlomem.o: alloc.o globalise.o onmod.o precision.o
 densematrix.o: alloc.o precision.o
-detover.o: alloc.o parallel.o parallelsubs.o precision.o
+detover.o: alloc.o linpack.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o m_spin.o mesh.o
 dfscf.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o bsc_xcmod.o cellxc_mod.o delk.o dfscf.o
@@ -661,7 +661,8 @@ m_sparse.o: precision.o
 m_sparsity_handling.o: class_Data1D.o class_Data2D.o
 m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
 m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
-m_sparsity_handling.o: m_interpolate.o m_region.o precision.o
+m_sparsity_handling.o: intrinsic_missing.o m_interpolate.o m_region.o
+m_sparsity_handling.o: precision.o
 m_spin.o: alloc.o parallel.o precision.o sys.o units.o
 m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
@@ -773,9 +774,10 @@ m_ts_options.o: m_ts_contour_neq.o m_ts_electype.o m_ts_global_vars.o
 m_ts_options.o: m_ts_hartree.o m_ts_method.o m_ts_mumps_init.o m_ts_tdir.o
 m_ts_options.o: m_ts_weight.o parallel.o precision.o siesta_options.o units.o
 m_ts_pivot.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
-m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o intrinsic_missing.o
-m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
-m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
+m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o geom_helper.o
+m_ts_pivot.o: intrinsic_missing.o m_char.o m_pivot.o m_region.o
+m_ts_pivot.o: m_sparsity_handling.o m_ts_debug.o m_ts_electype.o parallel.o
+m_ts_pivot.o: precision.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
 m_ts_rgn2trimat.o: m_ts_electype.o m_ts_method.o m_ts_tri_common.o parallel.o
@@ -918,8 +920,8 @@ radial.o: alloc.o interpolation.o precision.o xml.o
 rdiag.o: alloc.o m_diagon_opt.o memoryinfo.o parallel.o precision.o sys.o
 rdiag_elpa.o: alloc.o elpa1.o elpa2.o parallel.o precision.o sys.o
 rdiag_mrrr.o: alloc.o parallel.o precision.o sys.o
-read_options.o: files.o m_charge_add.o m_hartree_add.o m_mixing_scf.o m_spin.o
-read_options.o: m_target_stress.o memoryinfo.o parallel.o precision.o
+read_options.o: files.o m_charge_add.o m_cite.o m_hartree_add.o m_mixing_scf.o
+read_options.o: m_spin.o m_target_stress.o memoryinfo.o parallel.o precision.o
 read_options.o: siesta_cml.o siesta_options.o sys.o units.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
@@ -1049,10 +1051,9 @@ timer.o: extrae_eventllist.o extrae_module.o m_timer.o parallel.o sys.o
 timer.o: timer_tree.o
 timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-ts_init.o: m_cite.o m_fixed.o m_os.o m_ts_cctype.o m_ts_charge.o
-ts_init.o: m_ts_electrode.o m_ts_electype.o m_ts_gf.o m_ts_global_vars.o
-ts_init.o: m_ts_kpoints.o m_ts_method.o m_ts_options.o parallel.o
-ts_init.o: siesta_options.o
+ts_init.o: m_fixed.o m_os.o m_ts_cctype.o m_ts_charge.o m_ts_electrode.o
+ts_init.o: m_ts_electype.o m_ts_gf.o m_ts_global_vars.o m_ts_kpoints.o
+ts_init.o: m_ts_method.o m_ts_options.o parallel.o siesta_options.o
 ts_show_regions.o: m_region.o m_ts_electype.o m_ts_method.o parallel.o
 ts_show_regions.o: precision.o units.o
 typecell.o: precision.o
@@ -1120,7 +1121,7 @@ m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_char.o m_pivot.o
 m_tbt_regions.o: m_pivot_methods.o m_region.o m_sparsity_handling.o
 m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_pivot.o
-m_tbt_regions.o: m_ts_sparse.o m_verbosity.o parallel.o
+m_tbt_regions.o: m_ts_sparse.o m_verbosity.o parallel.o precision.o
 m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_save.o: files.o m_interpolate.o m_ncdf_io.o m_os.o m_region.o m_tbt_hs.o
 m_tbt_save.o: m_ts_electype.o m_verbosity.o parallel.o precision.o timestamp.o
@@ -1138,8 +1139,8 @@ m_tbt_tri_init.o: m_tbt_options.o m_tbt_regions.o m_ts_debug.o m_ts_electype.o
 m_tbt_tri_init.o: m_ts_method.o m_ts_rgn2trimat.o m_ts_tri_common.o
 m_tbt_tri_init.o: m_verbosity.o parallel.o precision.o
 m_tbt_tri_scat.o: class_SpData1D.o class_SpData1D.o class_Sparsity.o
-m_tbt_tri_scat.o: class_TriMat.o intrinsic_missing.o m_region.o m_tbt_proj.o
-m_tbt_tri_scat.o: m_ts_cctype.o m_ts_electype.o m_ts_tri_common.o
+m_tbt_tri_scat.o: class_TriMat.o geom_helper.o intrinsic_missing.o m_region.o
+m_tbt_tri_scat.o: m_tbt_proj.o m_ts_cctype.o m_ts_electype.o m_ts_tri_common.o
 m_tbt_tri_scat.o: m_ts_tri_scat.o m_ts_trimat_invert.o precision.o units.o
 m_tbt_trik.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_tbt_trik.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
@@ -1264,6 +1265,7 @@ m_kinefsm.o: kinefsm.o
 m_ksv.o: ksv.o
 m_ksvinit.o: ksvinit.o
 m_ldau.o: ldau.o
+m_linpack.o: linpack.o
 m_local_dos.o: local_DOS.o
 m_matel_registry.o: matel_registry.o
 m_minvec.o: minvec.o

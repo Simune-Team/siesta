@@ -15,7 +15,7 @@ integer, parameter, private            :: STACK_SIZE_INIT = 10
 real, parameter, private            :: STACK_SIZE_MULT = 1.5
 
 type, private :: elstack_item
-  character(len=100) :: data
+  character(len=200) :: data
 end type
 
 type, public :: elstack_t

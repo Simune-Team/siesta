@@ -59,7 +59,6 @@ C
 
       implicit          none
 
-      character(len=label_length+3) :: paste
       logical           gamma
       integer           maxnh, no_u, no_s, nspin
       integer           indxuo(no_s), listh(maxnh), numh(*), listhptr(*)
@@ -67,7 +66,7 @@ C
      .                  qtot, temp, xij(3,maxnh)
       complex(dp)       delkmat(maxnh)
 
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 C Internal variables and arrays
       character(len=label_length+3) :: fname
@@ -87,7 +86,7 @@ C Internal variables and arrays
 
 C Find name of file
       if (frstme) then
-        fname = paste( slabel, '.dek' )
+        fname = trim(slabel)//'.dek'
         frstme = .false.
       endif
 

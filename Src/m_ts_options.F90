@@ -1194,12 +1194,12 @@ contains
     end do
     
     ! CHECK THIS (we could allow it by only checking the difference...)
-    if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 0.0001_dp * eV ) then
+    if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 1.e-4_dp * eV ) then
        write(*,'(a)') 'Chemical potentials [eV]:'
        do i = 1 , N_Elec
           write(*,'(a,f10.5,a)') trim(Elecs(i)%name)//' at ',Elecs(i)%mu%mu/eV,' eV'
        end do
-       write(*,'(a)') 'The difference must satisfy: "max(ChemPots)-min(ChemPots) - abs(Volt) > 0.0001 eV"'
+       write(*,'(a)') 'The difference must satisfy: "max(ChemPots)-min(ChemPots) - abs(Volt) < 1e-4 eV"'
        write(*,'(a,f10.5,a)') 'max(ChemPots) at ', maxval(mus(:)%mu)/eV,' eV'
        write(*,'(a,f10.5,a)') 'min(ChemPots) at ', minval(mus(:)%mu)/eV,' eV'
        write(*,'(a,f10.5,a)') '|V| at ', abs(Volt)/eV,' eV'

@@ -41,12 +41,11 @@ C
       implicit          none
 
       character(len=*)                    :: task
-      character(len=label_length+3)       :: paste
       logical                             :: found
       real(dp)                            :: cell(3,3)
       real(dp)                            :: vcell(3,3)
       real(dp)                            :: xa(3,na_u)
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal variables and arrays
       character(len=label_length+3), save :: fname
@@ -61,7 +60,7 @@ C Only do reading and writing for IOnode
 
 C Find name of file
         if (frstme) then
-          fname = paste( slabel, '.ZM' )
+          fname = trim(slabel)//'.ZM'
           frstme = .false.
         endif
 

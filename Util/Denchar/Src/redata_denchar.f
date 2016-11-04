@@ -62,8 +62,6 @@ C **********************************************************************
 
 C Internal variables ---------------------------------------------------
 
-      CHARACTER*33 PASTE
-
       CHARACTER*30
      .  SNAME, FNAME
 
@@ -71,12 +69,12 @@ C Internal variables ---------------------------------------------------
      .  UNIT1, IL, IA, J
 
       EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE
+     .  IO_ASSIGN, IO_CLOSE
 
 
 C Assign the name of the output file -----------------------------------
       SNAME = FDF_STRING('SystemLabel','siesta')
-      FNAME = PASTE(sname,'.PLD')
+      FNAME = TRIM(sname)//'.PLD'
 
       CALL IO_ASSIGN(UNIT1)
 

@@ -521,6 +521,15 @@ contains
     integer :: im, is, ns
     logical :: is_GR
 
+    do im = 1 , size(mixers)
+       m => mixers(im)
+       if ( debug_mix .and. current_itt(m) >= 1 ) then
+          write(*,'(a,a)') trim(debug_msg), &
+               ' resetting history of all mixers'
+          exit
+       end if
+    end do
+
     ! Clean up all arrays and reference counted
     ! objects
     do im = 1 , size(mixers)
@@ -528,6 +537,7 @@ contains
        m => mixers(im)
 
        ! reset history track
+       m%start_itt = 0
        m%cur_itt = 0
 
        ! do not try and de-allocate something not
@@ -552,7 +562,7 @@ contains
 
        case ( MIX_PULAY )
 
-          is_GR = m%v == 1 .or. m%v == 3
+          is_GR = (m%v == 1) .or. (m%v == 3)
 
           if ( .not. is_GR ) then
              allocate(m%stack(3))
@@ -1488,7 +1498,6 @@ contains
       if ( debug_mix ) &
            write(*,'(a,2(a,i0))') trim(debug_msg), &
            ' n_hist = ',ns, ' / ',nmax
-
       
       ! Allocate arrays for calculating the
       ! coefficients
@@ -2025,7 +2034,7 @@ contains
     ! Fix the action to finalize it..
     if ( mix%restart > 0 .and. &
          mod(current_itt(mix),mix%restart) == 0 ) then
-       
+
        mix%action = IOR(mix%action, ACTION_RESTART)
 
     end if

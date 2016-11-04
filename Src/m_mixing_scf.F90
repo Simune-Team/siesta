@@ -94,15 +94,13 @@ contains
     ! If there is only one spinor we should mix all...
     if ( nspin == 1 ) mix_spin = MIX_SPIN_ALL
 
+    ! Initialize to ensure debug stuff read
+    call mixers_init('SCF', scf_mixs, Comm = Comm )
 
     ! Check for existance of the SCF.Mix block
-    if ( fdf_block('SCF.Mixers', bfdf) ) then
-       
-       call mixers_init('SCF', scf_mixs, Comm = Comm )
+    if ( associated(scf_mixs) ) then
 
-       if ( .not. associated(scf_mixs) ) then
-          ! do nothing... fall through
-       else if ( size(scf_mixs) > 0 ) then
+       if ( size(scf_mixs) > 0 ) then
           return
        end if
 
@@ -222,6 +220,7 @@ contains
        m => scf_mixs(im)
        m%name = 'Linear-Kick'
        m%n_itt = 1
+       m%n_hist = 0
        m%m = mix_method('linear')
        m%w = w_kick
        m%next => scf_mixs(im2)

@@ -92,7 +92,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_supercell.o mulliken.o minvec.o naefs.o \
 	m_new_dm.o normalize_dm.o ordern.o outcell.o outcoor.o \
 	m_fft_gpfa.o \
-	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
+	pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	projected_DOS.o propor.o m_partial_charges.o \
 	randomg.o reclat.o redcel.o \
 	reinit.o reord.o reordpsi.o rhoofd.o rhoofdsp.o rhooda.o \
@@ -242,56 +242,10 @@ OBJS += m_cite.o
 m_pexsi.o m_pexsi_driver.o m_pexsi_dos.o m_pexsi_local_dos.o: f_ppexsi_interface.o
 
 #--------------------------------------------------------------
-# FoX whatnot
-
-# FoX build targets:
-FoX_configured=FoX/.config
-FoX_built=FoX/.FoX
-
-# This is how we pick up modules and libraries for FoX:
-FoX_FCFLAGS=`FoX/FoX-config --fcflags`
-FoX_LIBS=`FoX/FoX-config --libs --wcml`
-
-# And add them to global compiler flags:
-INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS)
-
-
 # First, it needs to be configured. This may have been done
 # by the main SIESTA configure, but in case not:
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
-
-$(FoX_configured):
-	(cd FoX; touch arch.make ; \
-         CONFIGURE="$(VPATH)/FoX/configure"; \
-	 AR="$(AR)" RANLIB="$(RANLIB)" \
-         $$CONFIGURE VPATH="$(VPATH)/FoX" \
-         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS:$(IPO_FLAG)=)" \
-         --enable-wcml $(DUMMY_FOX) || false )
-# Sadly the configure script does not store the AR and RANLIB flags... :(
-	(cd FoX ; echo "AR = $(AR)" >> arch.make ; \
-	echo "RANLIB = $(RANLIB)" >> arch.make )
-
-# Note we have to make sure to use the same compiler as SIESTA,
-# and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
-# Note also that the "false" clause will stop the 'make' process if the configuration fails.
-
-# Then we want to make FoX itself. Like so:
-$(FoX_built): $(FoX_configured)
-	(cd FoX; $(MAKE) -j 1 )
-
-# Now ensure that building FoX is inserted into the dependency chain.
-# Routines using FoX:
-# version (compinfo.o) does not actually need FoX, but making it build after
-# FoX is done avoids a warning as we use the FoX-config script everywhere.
-
-$(SYSOBJ) $(OBJS) \
-basis_io.o efield.o initatom.o ioeig.o kpoint_grid.o meshsubs.o \
-mulliken.o ordern.o outcell.o pdos.o post_scf_work.o radial.o   \
-scfconvergence_test.o setup_hamiltonian.o siesta_analysis.o     \
-siesta_cml.o siesta_cmlsubs.o siesta_end.o siesta_forces.o      \
-siesta_init.o siesta_move.o siesta_options.o state_analysis.o   \
-state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
 
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
@@ -299,6 +253,10 @@ $(XMLPARSER):
 	(cd xmlparser ; $(MAKE) -j 1 "VPATH=$(VPATH)/xmlparser" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 
+WXML=libwxml.a
+$(WXML):
+	(cd wxml ; $(MAKE) -j 1 "VPATH=$(VPATH)/wxml" \
+	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #--------------------------------------------------------------
 libmpi_f90.a: 
 	@(cd MPI ; $(MAKE) -j 1 \
@@ -382,8 +340,8 @@ ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 # In practice they do not but it greatly simplifies the logic
 # here.
 # This will setup the correct compilation sequence as
-# XC => FDF => MPI
-$(ALL_OBJS): $(XC) $(COMP_LIBS)
+#  WXML => XC => FDF => MPI
+$(ALL_OBJS): $(WXML) $(XC) $(COMP_LIBS)
 
 #
 # Linear algebra routines
@@ -452,13 +410,15 @@ siesta: check-siesta what version \
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
                $(XC) $(MPI_INTERFACE) \
-               $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
+               $(COMP_LIBS) $(LIBS) 
 
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
 	$(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)
 	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
             $(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a MPI/*.o ; fi
 	-$(RANLIB) libSiestaForces.a
+#
+
 
 #----------------------------------------------------------------------------
 # TranSIESTA objects needed for siesta
@@ -505,12 +465,12 @@ check-ts:
 	@touch .transiesta
 
 transiesta: check-ts what version \
-            $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
+            $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
-               $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
-               $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
+               $(XC) $(MPI_INTERFACE) \
+               $(COMP_LIBS) $(LIBS)
 
 
 clean: 
@@ -522,7 +482,6 @@ clean:
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
-	(cd FoX ; touch arch.make ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
@@ -905,7 +864,8 @@ m_sparse.o: precision.o
 m_sparsity_handling.o: class_Data1D.o class_Data2D.o
 m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
 m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
-m_sparsity_handling.o: m_interpolate.o m_region.o precision.o
+m_sparsity_handling.o: intrinsic_missing.o m_interpolate.o m_region.o
+m_sparsity_handling.o: precision.o
 m_spin.o: alloc.o parallel.o precision.o sys.o units.o
 m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
@@ -1017,9 +977,10 @@ m_ts_options.o: m_ts_contour_neq.o m_ts_electype.o m_ts_global_vars.o
 m_ts_options.o: m_ts_hartree.o m_ts_method.o m_ts_mumps_init.o m_ts_tdir.o
 m_ts_options.o: m_ts_weight.o parallel.o precision.o siesta_options.o units.o
 m_ts_pivot.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
-m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o intrinsic_missing.o
-m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
-m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
+m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o geom_helper.o
+m_ts_pivot.o: intrinsic_missing.o m_char.o m_pivot.o m_region.o
+m_ts_pivot.o: m_sparsity_handling.o m_ts_debug.o m_ts_electype.o parallel.o
+m_ts_pivot.o: precision.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
 m_ts_rgn2trimat.o: m_ts_electype.o m_ts_method.o m_ts_tri_common.o parallel.o
@@ -1222,7 +1183,8 @@ siesta_analysis.o: m_pexsi_dos.o m_pexsi_local_dos.o m_spin.o m_steps.o
 siesta_analysis.o: parallel.o projected_DOS.o siesta2wannier90.o siesta_cml.o
 siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o units.o
 siesta_analysis.o: write_subs.o writewave.o zmatrix.o
-siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o 
+siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
+siesta_cmlsubs.o: 
 siesta_dicts.o: atomlist.o m_energies.o m_forces.o precision.o siesta_geom.o
 siesta_dicts.o: siesta_options.o
 siesta_end.o: alloc.o bands.o densematrix.o extrae_eventllist.o flook_siesta.o
