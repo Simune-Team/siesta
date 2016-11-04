@@ -211,7 +211,7 @@ $(NCDF): $(FDICT)
 libsiestaBLAS.a: $(VPATH)/Libs/blas.f
 	@echo "==> Compiling libsiestaBLAS.a in Libs..."
 	-mkdir -p Libs
-	@(cd Libs ; $(MAKE) -f $(VPATH)/Libs/makefile -j 1 \
+	@(cd Libs ; $(MAKE) -f $(VPATH)/Libs/Makefile -j 1 \
 		"VPATH=$(VPATH)/Libs" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaBLAS.a)
@@ -219,7 +219,7 @@ libsiestaBLAS.a: $(VPATH)/Libs/blas.f
 libsiestaLAPACK.a: $(VPATH)/Libs/lapack.f
 	@echo "==> Compiling libsiestaLAPACK.a in Libs..."
 	-mkdir -p Libs
-	@(cd Libs ; $(MAKE) -f $(VPATH)/Libs/makefile -j 1 \
+	@(cd Libs ; $(MAKE) -f $(VPATH)/Libs/Makefile -j 1 \
 		"VPATH=$(VPATH)/Libs" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaLAPACK.a)
@@ -268,7 +268,7 @@ pht: phtrans
 tbtrans: FPPFLAGS += -DTBTRANS
 tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(DEP_OBJS) $(TBTOBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
-              $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
+              $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE) \
               $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(LIBS)
 
 # We append the -DTBTRANS as some special routines
@@ -277,7 +277,7 @@ tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) 
 phtrans: FPPFLAGS += -DTBTRANS -DTBT_PHONON
 phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(DEP_OBJS) $(TBTOBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o phtrans \
-              $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
+              $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE) \
               $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(LIBS)
 
 .PHONY: clean-tbt

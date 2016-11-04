@@ -48,6 +48,14 @@ C real*8 qa(na)             : Neutral atom charge of each atom
       integer, pointer, save, public  :: lastkb(:)
       real(dp), pointer, save, public :: amass(:), qa(:)
       integer, pointer, save, public  :: indxua(:)
+      !
+      ! This array depends on the actual geometry, so
+      ! it does not properly belong here. It is used only
+      ! for communication between nlefsm and hsparse.
+      ! For safety, it is initialized in each invokation
+      ! of hsparse.
+      logical, pointer, save, public  :: in_kb_orb_u_range(:)
+      
 !     Index of equivalent atom in "u" cell
       real(dp), save, public          :: rmaxv    ! Max cutoff for Vna
       real(dp), save, public          :: rmaxo    ! Max cuoff for at. orb.
@@ -97,13 +105,14 @@ C
       type(rad_func), pointer :: pp
 
       nullify(indxua,lastkb,lasto,qa,amass,xa_last)
+      nullify(in_kb_orb_u_range)
       call re_alloc( indxua, 1, na_u, 'indxua', 'atomlist' )
       call re_alloc( lastkb, 0, na_u, 'lastkb', 'atomlist' )
       call re_alloc( lasto, 0, na_u, 'lasto', 'atomlist' )
       call re_alloc( qa, 1, na_u, 'qa', 'atomlist' )
       call re_alloc(xa_last,1,3,1,na_u,'xa_last','atomlist')
       call re_alloc( amass, 1, na_u, 'amass', 'atomlist' )
-
+      call re_alloc( in_kb_orb_u_range, 1, na_u, 'in_kb', 'atomlist' )
 !
 !     Find number of orbitals and KB projectors in cell
 !
@@ -235,6 +244,8 @@ C Internal variables
         call re_alloc( iza, 1, na, 'iza', 'atomlist', .true. )
         call re_alloc( lastkb, 0, na, 'lastkb', 'atomlist', .true. )
         call re_alloc( lasto, 0, na, 'lasto', 'atomlist', .true. )
+        call re_alloc( in_kb_orb_u_range, 1, na,
+     $                 'in_kb', 'atomlist', .true. )
         call re_alloc( qa, 1, na, 'qa', 'atomlist', .true. )
         call re_alloc( xa, 1, 3, 1, na, 'xa', 'atomlist', .true. )
         call re_alloc(xa_last, 1,3, 1,na, 'xa_last', 'superc',

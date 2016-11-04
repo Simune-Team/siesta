@@ -147,9 +147,9 @@ module m_tbt_proj
 
 #endif
 
-contains
-
 #ifdef NCDF_4
+
+contains
 
   subroutine proj_LME_assoc(lhs,rhs)
     type(tLvlMolEl), pointer :: lhs
