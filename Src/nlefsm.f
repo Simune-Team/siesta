@@ -318,14 +318,9 @@ C           Only calculate if needed locally in our MPI process
           ia = iano(ino)
           if (ia > nua) CYCLE  ! We want the 1st orb to be in the unit cell
 
-! AG:  Is io's range the whole supercell?
-! Will GlobalToLocalOrb work well then?
-! It does not, but the check "ia.le.nua"
-! effectively restricts io to be < nuo,
-! so that it does not matter.
-! The ia check must come first...
-          
           io = iono(ino)
+          ! Note that if ia is in the unit cell, io is <= nuo,
+          ! so that this call makes sense
           call GlobalToLocalOrb(io,Node,Nodes,iio)
           if (iio == 0) CYCLE
 
@@ -402,8 +397,8 @@ C         Pick up contributions to H and restore Di and Vi
          ! For future diagnostics
          ! Currently only the root process outputs info
          write(6,"(a,2i8)")
-     $     "Atoms with KB overlaps in this node, maxnno:",
-     $        natoms_k_over, max_nno_used
+     $     "No. of atoms with KB's overlaping orbs in proc 0." //
+     $     " Max # of overlaps:", natoms_k_over, max_nno_used
       endif
       
 C     Deallocate local memory
