@@ -267,7 +267,7 @@ contains
 
     if ( c%c_io%N < 1 ) then
        call die('Contour: '//trim(c%c_io%Name)//' has &
-            an erroneous number of points (<1).')
+            &an erroneous number of points (<1).')
     end if
 
     ! get bounds

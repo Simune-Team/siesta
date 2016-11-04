@@ -574,7 +574,7 @@ contains
     use intrinsic_missing, only : transpose, trace
     
     type(zTriMat), intent(inout) :: A_tri ! Spectral function
-    type(Elec), intent(in) :: El
+    type(Elec), intent(inout) :: El
     real(dp), intent(out) :: T
     integer, intent(in) :: nwork
     complex(dp), intent(inout) :: work(nwork)
