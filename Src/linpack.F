@@ -74,6 +74,7 @@ c
       real(dp) cabs1
       real(dp) real,aimag
       complex(dp) zdumr,zdumi
+      real(dp) :: local_real, local_aimag
       local_real(zdumr) = zdumr
       local_aimag(zdumi) = (0.0d0,-1.0d0)*zdumi
       cabs1(zdum) = abs(local_real(zdum)) + abs(local_aimag(zdum))

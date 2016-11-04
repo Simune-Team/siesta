@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+November 4, 2016  Alberto Garcia    trunk-580--psml-91
+Merge trunk-580
+
+Declare all variables
+Fixes non-colinear band calculation, fixes lp:1636100
+[merge] Merge 4.1-604
+Declare most variables
+Fixed cell constraints and the manual regarding this
+Fix electrode plane determination if Bloch expansions are used
+Fixed documentation with XML changes
+Fixed defaults for tbtrans and chemical potentials
+Updated obj_setup.sh to not mention the configure script
+Added gfortran.make and intel.make in Obj directory
+In FoX removal there was some changes that were not shipped to TS
+					
+
+(...)
+------------------------------------------------------------
 October 30, 2016  Alberto Garcia    trunk-506--psml-90
 A further step in building-system refactoring
 

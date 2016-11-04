@@ -102,6 +102,16 @@ FPPFLAGS_free_F90 =
 # We can make things a bit easier by grouping symbols, and maybe
 # using the -L flag to define search directories (see examples
 # in this directory).
+
+# Support for the (now needed) xmlf90, libpsml and libgridxc libraries
+# These need to be pre-compiled and installed somewhere. In
+# this file it is only necessary to provide the path to the
+# top of the installation directory.
+# 
+XMLF90_ROOT=$(HOME)/lib/gfortran/xmlf90
+PSML_ROOT=$(HOME)/lib/gfortran/libpsml
+GRIDXC_ROOT=$(HOME)/lib/gfortran/libgridxc
+
 # For the most simplistic compilation one requires the following
 # libraries:
 #   BLAS
@@ -141,19 +151,6 @@ COMP_LIBS =
 #NETCDF_INCFLAGS = -I$(NETCDF_ROOT)/include
 #NETCDF_LIBS = -L$(NETCDF_ROOT)/lib -lnetcdff -lnetcdf
 
-# Support for the (now needed) xmlf90 and libpsml libraries
-# These need to be pre-compiled and installed somewhere. In
-# this file it is only necessary to provide the path to the
-# top of the installation directory.
-# 
-XMLF90_ROOT=$(HOME)/lib/gfortran/xmlf90
-PSML_ROOT=$(HOME)/lib/gfortran/libpsml
-#
-# If FOX_ROOT is defined, Siesta will not compile its internal
-# copy of the FoX library, linking to an externally compiled
-# one instead
-# FOX_ROOT=$(HOME)/lib/FoX/gfortran
-#
 #--------------------------------------------------------------------
 #
 # This (as well as the -DMPI definition) is essential for MPI support,

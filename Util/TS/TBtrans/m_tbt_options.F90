@@ -130,7 +130,7 @@ contains
 
     use m_ts_chem_pot, only : fdf_nmu, fdffake_mu, fdf_mu, name
     
-    use m_tbt_hs, only: Volt
+    use m_tbt_hs, only: Volt, IsVolt
 
     implicit none
 
@@ -153,7 +153,33 @@ contains
     err = .true.
     if ( N_mu < 1 ) then
        err = .false.
-       N_mu = fdffake_mu(mus,kT,Volt)
+       if ( IsVolt ) then
+          ! There is a bias: default
+          ! to two chemical potentials with the
+          ! applied bias
+          N_mu = fdffake_mu(mus,kT,Volt)
+          
+       else
+          ! There is no bias. Simply create
+          ! one chemical potential.
+          ! This will make the electrodes
+          ! default to the one chemical potential.
+          N_mu = 1
+          allocate(mus(1))
+          mus(1)%kT = kT
+          mus(1)%ckT = ' '
+          mus(1)%name = 'Fermi-level'
+          mus(1)%mu = 0._dp
+          mus(1)%cmu = '0. eV'
+          mus(1)%ID = 1
+          ! These are not used, but we populate
+          ! them anyway
+          mus(1)%N_poles = 1
+          allocate(mus(1)%Eq_seg(1))
+          mus(1)%Eq_seg(1) = '*NONE'
+          
+       end if
+       
     end if
     do i = 1 , N_mu
        ! Default things that could be of importance

@@ -28,14 +28,11 @@
 
       write(6,'(a)') trim(str)
       write(0,'(a)') trim(str)
-      write(6,'(a,i4)') 'Stopping Program from Node: ', Node
-      write(0,'(a,i4)') 'Stopping Program from Node: ', Node
-         call pxfflush(6)
-         call pxfflush(0)
-      call pxfabort()
-
+      stop
+      
       end subroutine die
 
+!--------------------------------------------------
       subroutine timer(str,i)
 
       character(len=*), intent(in)  :: str
@@ -106,11 +103,12 @@
 !------------------------------------------------------
 
       subroutine alloc_memory_event(bytes,name)
+!      use memory_log, only: memory_event
 
       integer, intent(in)           :: bytes
       character(len=*), intent(in)  :: name
 
-      ! Do nothing
+      ! call memory_event(bytes,name)
 
       end subroutine alloc_memory_event
 
@@ -123,7 +121,8 @@
       subroutine psml_die(str)
       character(len=*), intent(in) :: str
 
-      write(0,"(a)") str
-      STOP
+      external :: die
+      
+      call die(str)
 
       end subroutine psml_die

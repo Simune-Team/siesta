@@ -7,19 +7,21 @@
 # ---
 .SUFFIXES: .f .F .o .a .f90 .F90
 
+EXE = tshs2tshs
+default: $(EXE)
+
 VPATH:=$(shell pwd)/../../../Src
 
 OBJDIR=Obj
 
-ARCH_MAKE=../../../$(OBJDIR)/arch.make
+MAIN_OBJDIR:=$(shell cd -P -- ../../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 
 # Set the default non-mpi routines
 FC_DEFAULT  := $(FC)
 FC_SERIAL   ?= $(FC_DEFAULT)
 
-EXE = tshs2tshs
-default: $(EXE)
 
 dep:
 	sfmakedepend --depend=obj  --modext=o \
@@ -34,6 +36,7 @@ dep:
 
 DEFS:=$(DEFS_PREFIX) $(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UNCDF_PARALLEL
 FPPFLAGS:=$(DEFS_PREFIX) $(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UNCDF_PARALLEL
+
 INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 
 # Uncomment the following line for debugging support
@@ -44,7 +47,7 @@ SYSOBJ=$(SYS).o
 # systematic siesta files
 OBJS = precision.o parallel.o \
         alloc.o pxf.o units.o sys.o  \
-	memory.o memory_log.o m_io.o io.o \
+	memory_log.o m_io.o io.o \
 	m_sparse.o intrinsic_missing.o geom_helper.o reclat.o \
 	m_io_s.o m_ncdf_io.o m_ts_io.o 
 
@@ -78,7 +81,7 @@ $(FDICT):
 	(cd fdict ; $(MAKE) -f $(FDICT_MAKEFILE) \
 		"VPATH=$(VPATH)/fdict" \
 		"FC=$(FC_SERIAL)" \
-		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
+		"ARCH_MAKE=$(ARCH_MAKE)" \
 		"FPPFLAGS=$(FPPFLAGS)" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
 	@cp -p fdict/*.*d ./
@@ -94,7 +97,7 @@ $(NCDF): $(FDICT)
 	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) \
 		"VPATH=$(VPATH)/NCDF/src" "LIBFDICT=$(FDICT)" \
 		"DIR_FDICT=$(VPATH)/fdict" \
-		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
+		"ARCH_MAKE=$(ARCH_MAKE)" \
 		"FPPFLAGS=$(FPPFLAGS)" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
 	@cp -p NCDF/src/*.*d ./
@@ -108,14 +111,15 @@ FDF_MAKEFILE=$(VPATH)/fdf/makefile
 FDF_INCFLAGS:=-I$(VPATH)/fdf $(INCFLAGS)
 $(FDF): 
 	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
-                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "ARCH_MAKE=$(ARCH_MAKE)" \
                           "DEFS=$(DEFS)" "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 
+NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 
 $(OBJS): $(FDF) $(COMP_LIBS) $(TSHS_COMP_LIBS)
-$(EXE): $(FDF) $(COMP_LIBS) $(TSHS_COMP_LIBS) $(OBJS) 
+$(EXE): $(FDF) $(NCPS) $(COMP_LIBS) $(TSHS_COMP_LIBS) $(OBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o $(EXE) \
 		$(OBJS) $(COMP_LIBS) $(TSHS_COMP_LIBS) $(FDF) $(LIBS) 
 
@@ -249,7 +253,7 @@ dhscf.o: m_efield.o m_hartree_add.o m_iorho.o m_iotddft.o m_mesh_node.o
 dhscf.o: m_ncdf_io.o m_ncdf_siesta.o m_partial_charges.o m_rhog.o m_spin.o
 dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_options.o m_ts_tdir.o
 dhscf.o: m_ts_voltage.o mesh.o meshdscf.o meshsubs.o moremeshsubs.o parallel.o
-dhscf.o: parsing.o precision.o rhofft.o rhoofd.o siesta_options.o sys.o units.o
+dhscf.o: parsing.o precision.o rhofft.o rhoofd.o siesta_options.o units.o
 dhscf.o: vmat.o
 diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
@@ -344,7 +348,7 @@ iogrid_netcdf.o: alloc.o parallel.o precision.o sys.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
-iopipes.o: parallel.o precision.o sys.o
+iopipes.o: parallel.o precision.o
 iosockets.o: cellsubs.o fsockets.o m_mpi_utils.o parallel.o precision.o
 iowfs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
@@ -577,7 +581,7 @@ m_ts_hartree.o: intrinsic_missing.o m_mesh_node.o m_ts_electype.o m_ts_tdir.o
 m_ts_hartree.o: parallel.o precision.o units.o
 m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_ncdf_io.o
-m_ts_io.o: m_os.o m_sparse.o parallel.o precision.o sys.o
+m_ts_io.o: m_os.o m_sparse.o memory_log.o parallel.o precision.o sys.o
 m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
@@ -797,7 +801,7 @@ setup_hamiltonian.o: class_SpData2D.o dhscf.o files.o ldau.o ldau_specs.o
 setup_hamiltonian.o: m_dipol.o m_energies.o m_gamma.o m_hsx.o m_mpi_utils.o
 setup_hamiltonian.o: m_ntm.o m_partial_charges.o m_rhog.o m_spin.o m_steps.o
 setup_hamiltonian.o: m_stress.o metaforce.o molecularmechanics.o parallel.o
-setup_hamiltonian.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
+setup_hamiltonian.o: siesta_geom.o siesta_options.o sparse_matrices.o
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
@@ -849,7 +853,7 @@ siesta_init.o: m_steps.o m_supercell.o m_timer.o m_wallclock.o memory_log.o
 siesta_init.o: metaforce.o molecularmechanics.o object_debug.o parallel.o
 siesta_init.o: parallelsubs.o projected_DOS.o siesta_cmlsubs.o siesta_dicts.o
 siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
-siesta_init.o: sys.o timer.o timestamp.o ts_init.o writewave.o zmatrix.o
+siesta_init.o: timer.o timestamp.o ts_init.o writewave.o zmatrix.o
 siesta_master.o: iopipes.o iosockets.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o

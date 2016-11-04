@@ -13,7 +13,7 @@ If you just want to compile the program, issue the command:
   sh ../Src/obj_setup.sh
 
 to populate this directory with the minimal scaffolding of makefiles, and
-then make sure that you create or generate an 'arch.make' file. Then, type
+then make sure that you create an 'arch.make' file. Then, type
 
   make
 

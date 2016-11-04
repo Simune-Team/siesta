@@ -491,12 +491,12 @@ check-ts:
 	@touch .transiesta
 
 transiesta: check-ts what version \
-            $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(MS) $(XC) \
+            $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(MS) $(XC) \
             $(NCPS) $(PSOP) $(PSML)\
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(MS) $(XC) \
-               $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MS) \
+               $(XC) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(LIBS) \
                $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
                $(LIBS)

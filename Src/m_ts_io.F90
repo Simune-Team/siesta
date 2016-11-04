@@ -680,6 +680,7 @@ contains
     use class_dSpData1D
     use class_dSpData2D
     use m_sparse, only : list_col_correct, xij_offset, calc_nsc
+    use memory_log, only: memory
 
     implicit none
 
