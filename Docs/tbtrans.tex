@@ -859,7 +859,7 @@ currents may only be calculated in the selected device region.
 \begin{fdfentry}{TBT.Atoms!Buffer}[block]%
 
   A block with each line denoting the atoms that are disregarded in
-  the calculation.
+  the Green function calculation.
   % 
   For self-consistent calculations it may be required to introduce
   buffer atoms which are removed from the SCF cycle. In such cases
@@ -1427,12 +1427,17 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
 
 \begin{fdflogicalF}{TBT.Elecs!Out-of-core}
 
-  Whether the electrodes will calculate the self energy at each SCF
-  step. Using this will not require the surface Green function files
-  but at the cost of heavily degraded performance.
-  You are not encouraged to set this to \fdffalse.
+  This enables reusing the self-energies by storing them on-disk
+  (\fdftrue). The surface Green function files may be large files but
+  heavily increases throughput if one performs several transport
+  calculations using the same electrodes.
+
+  You are encouraged to set this to \fdftrue\ to reduce computations. 
   %
   See \fdf{TBT.Elec.<>!out-of-core}.
+
+  Currently this option is not compatible with \fdf{TBT.T.Bulk} and
+  \fdf{TBT.DOS.Elecs}. 
   
 \end{fdflogicalF}
 
