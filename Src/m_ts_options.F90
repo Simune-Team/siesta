@@ -516,7 +516,6 @@ contains
        ! the electrodes
        i = Elecs(1)%pvt(Elecs(1)%t_dir)
        j = Elecs(2)%pvt(Elecs(2)%t_dir)
-
        bool = i == j
 
        ! For a single transport direction to be true,
@@ -550,16 +549,19 @@ contains
        
     end if
 
+
     ! The user can selectively decide how the bias
     ! is applied.
     ! For N-terminal calculations we advice the user
     ! to use a Poisson solution they add.
     VoltageInC = .false.
-    if ( ts_tidx == 2 ) then
+    if ( ts_tidx > 0 ) then
+       ! We have a single unified semi-inifinite direction
        chars = fdf_get('TS.Poisson','ramp-cell')
     else
        chars = fdf_get('TS.Poisson','elec-box')
     end if
+
 #ifdef NCDF_4
     if ( file_exist(chars, Bcast = .true.) ) then
        
@@ -571,13 +573,13 @@ contains
        Hartree_fname = ' '
        if ( leqi(chars,'ramp-cell') ) then
           VoltageInC = .false.
-          if ( ts_tidx /= 2 ) then
+          if ( ts_tidx <= 0 ) then
              call die('TS.Poisson cannot be ramp-cell for &
                   &anything but 2-electrodes with aligned transport direction.')
           end if
        else if ( leqi(chars, 'ramp-central') ) then
           VoltageInC = .true.
-          if ( ts_tidx /= 2 ) then
+          if ( ts_tidx <= 0 ) then
              call die('TS.Poisson cannot be ramp-central for &
                   &anything but 2-electrodes with aligned transport direction.')
           end if
