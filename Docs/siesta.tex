@@ -10601,14 +10601,22 @@ These options adhere to the specific solution methods available for
 \tsiesta\ requires fixed boundary conditions and forcing this is an
 intricate and important detail. 
 
-\begin{fdfentry}{TS!Poisson.Position}[string]<cell|central>
-
-  \note this only have meaning for a two electrode calculation with
-  both electrodes having the same semi-infinite direction.
+\begin{fdfentry}{TS!Poisson}[string]<ramp-cell|ramp-central|elec-box|\nonvalue{file}>
 
   Define how the correction of the Poisson equation is
-  superimposed. The default is to only apply the linear correction
-  within the boundaries of the electrodes. 
+  superimposed. The default is to apply the linear correction across
+  the entire cell (if there are two semi-infinite aligned electrodes).
+  Otherwise this defaults to the \emph{box} solution which will
+  introduce spurious effects at the electrode boundaries. In this case
+  you are encouraged to supply a \fdf*{file}.
+
+  If the input is a \fdf*{file}, it should be a NetCDF file containing
+  the grid information which acts as the boundary conditions for the
+  SCF cycle. 
+  The grid information should conform to the grid size of the
+  unit-cell in the simulation.
+  % 
+  \note the file option is only applicable if compiled with NetCDF4.
 
 \end{fdfentry}
 

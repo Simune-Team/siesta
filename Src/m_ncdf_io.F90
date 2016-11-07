@@ -1466,7 +1466,7 @@ contains
     if ( present(idx) ) then
        call ncdf_get_var(ncdf,name,grid,start=(/1,1,1,idx/))
     else
-       call ncdf_get_var(ncdf,name,grid)
+       call ncdf_get_var(ncdf,name,grid,start=(/1,1,1/))
     end if
 #endif
   

@@ -163,17 +163,6 @@ contains
     ! Stop after siesta has converged
     TS_siesta_stop = fdf_get('TS.SIESTA.Only',.false.)
 
-    ! Read in information about the voltage placement.
-    ! This is only used if TS.Poisson == ramp
-    chars = fdf_get('TS.Poisson.Position','cell')
-    VoltageInC = .true.
-    if ( leqi(trim(chars),'cell') ) then
-       VoltageInC = .false.
-    else if ( leqi(trim(chars),'central') .or. &
-         leqi(trim(chars),'scat') ) then
-       VoltageInC = .true.
-    end if
-
     ! Reading the Transiesta solution method
     chars = fdf_get('TS.SolutionMethod','BTD')
     if ( leqi(chars,'full') ) then
@@ -565,7 +554,12 @@ contains
     ! is applied.
     ! For N-terminal calculations we advice the user
     ! to use a Poisson solution they add.
-    chars = fdf_get('TS.Poisson','ramp')
+    VoltageInC = .false.
+    if ( ts_tidx == 2 ) then
+       chars = fdf_get('TS.Poisson','ramp-cell')
+    else
+       chars = fdf_get('TS.Poisson','elec-box')
+    end if
 #ifdef NCDF_4
     if ( file_exist(chars, Bcast = .true.) ) then
        
@@ -575,20 +569,28 @@ contains
     else
 #endif
        Hartree_fname = ' '
-       if ( ts_tidx > 0 ) then
-          if ( leqi(chars,'ramp') ) then
-             ! do nothing
-          else if ( leqi(chars,'elec-box') ) then
-             ts_tidx = - N_Elec
-          else
-#ifdef NCDF_4
-             call die('Error in specifying how the Hartree potential &
-                  &should be placed. [ramp|elec-box|NetCDF-file]')
-#else
-             call die('Error in specifying how the Hartree potential &
-                  &should be placed. [ramp|elec-box]')
-#endif
+       if ( leqi(chars,'ramp-cell') ) then
+          VoltageInC = .false.
+          if ( ts_tidx /= 2 ) then
+             call die('TS.Poisson cannot be ramp-cell for &
+                  &anything but 2-electrodes with aligned transport direction.')
           end if
+       else if ( leqi(chars, 'ramp-central') ) then
+          VoltageInC = .true.
+          if ( ts_tidx /= 2 ) then
+             call die('TS.Poisson cannot be ramp-central for &
+                  &anything but 2-electrodes with aligned transport direction.')
+          end if
+       else if ( leqi(chars,'elec-box') ) then
+          ts_tidx = - N_Elec
+       else
+#ifdef NCDF_4
+          call die('Error in specifying how the Hartree potential &
+               &should be placed. [ramp-cell|ramp-central|elec-box|NetCDF-file]')
+#else
+          call die('Error in specifying how the Hartree potential &
+               &should be placed. [ramp-cell|ramp-central|elec-box]')
+#endif
        end if
 #ifdef NCDF_4
     end if
@@ -940,7 +942,7 @@ contains
              write(*,f11) 'Hartree potential will be placed in electrode box'
           end if
        end if
-       write(*,f1) 'Thermal non-equilibrium in electrode distributions',has_T_gradient
+       write(*,f1) 'Thermal non-equilibrium in distributions',has_T_gradient
 
        chars = 'Non-equilibrium contour weight method'
        select case ( TS_W_METHOD )
@@ -1111,6 +1113,11 @@ contains
        write(*,*) 'Hartree potiental fix *must* be electrode as no transport &
             &plane is well-defined.'
        err = .true.
+    end if
+
+    if ( ts_tidx < 1 .and. len_trim(Hartree_fname) == 0 .and. IsVolt ) then
+       write(*,*) 'Hartree potiental correction is the box solution &
+            &which is not advised. Please supply your own Poisson solution.'
     end if
 
     if ( ts_A_method == TS_BTD_A_COLUMN ) then
