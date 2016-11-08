@@ -557,16 +557,16 @@ C     Initialise MPI and set processor number
         call die( 'siesta: wrong idyn' )
       endif
 
-!     Build initial velocities according to Maxwell-Bolzmann distribution....
-      if (idyn .ne. 0 .and. idyn .ne. 6 .and. (.not. xv_file_read)) 
-     &    call vmb( na_u, tempinit, amass, xa, isa, va )
-
-      istp = 0
-
       ! initialize the fixed positions (we need to check whether the 
       ! fixed positions make sense)
       call init_fixed( ucell, na_u , isa, iza )
       call print_fixed( )
+
+      ! Build initial velocities according to Maxwell-Bolzmann distribution....
+      if (idyn .ne. 0 .and. idyn .ne. 6 .and. (.not. xv_file_read)) 
+     &    call vmb( na_u, tempinit, amass, xa, isa, va )
+
+      istp = 0
       
 #ifdef TRANSIESTA
       call ts_init(nspin,ucell,na_u,xa,lasto,no_u,inicoor,fincoor)
