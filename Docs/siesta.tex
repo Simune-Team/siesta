@@ -9380,14 +9380,13 @@ involving molecules.
 \begin{fdfentry}{Geometry!Constraints}[block]
   \index{constraints in relaxations}
 
-
   Constrains certain atomic coordinates or cell parameters in a
   consistent method.
 
   There are a high number of configurable parameters that may be used
   to control the relaxation of the coordinates.
 
-  \note \siesta\ prints out a small notice of how the constraints are
+  \note \siesta\ prints out a small section of how the constraints are
   recognized. 
 
   \begin{fdfoptions}
@@ -9470,10 +9469,13 @@ involving molecules.
 
 
     \option[center]%
-    In CG optimizations one may retain the coordinate center of a
-    range of atoms (say molecules or other types of groups).
+    One may retain the coordinate center of a
+    range of atoms (say molecules or other groups of atoms).
 
     Atomic indices may be specified according to \fdf*{atom}.
+
+    \note this specification is apt for \emph{directional}
+    constraints. 
 
 
     \option[rigid|molecule]%
@@ -9495,7 +9497,6 @@ involving molecules.
     be expanded to act on all atoms specified.
 
     Atomic indices may be specified according to \fdf*{atom}.
-
 
 
     \option[cell-angle]%
@@ -9534,6 +9535,7 @@ involving molecules.
     \emph{CC}, $4$ is \emph{BC}/\emph{CB}, $5$ is \emph{AC}/\emph{CA}
     and $6$ is \emph{AB}/\emph{BA}.
 
+
     \option[routine]%
     This calls the \program{constr} routine specified in the file:
     \file{constr.f}. Without having changed the corresponding source
@@ -9549,6 +9551,7 @@ involving molecules.
     \fdf*{species-i}.
 
     Atomic indices may be specified according to \fdf*{atom}.
+
 
     \option[clear-prev]
     Remove constraints on selected atoms from the \emph{previous} specified
@@ -9632,6 +9635,8 @@ involving molecules.
   \end{fdfexample}
   
 \end{fdfentry}
+
+
 
 \subsection{Phonon calculations}
 
