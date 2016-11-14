@@ -366,7 +366,7 @@
         endif
 
         call timer( 'IterSCF', 2 )
-        call maybe_print_timings()
+        call print_timings( first, istep == inicoor )
         if (cml_p) call cmlEndStep(mainXML)
 
         ! This should be the last step if we have converged...
@@ -501,24 +501,37 @@
 
       end subroutine compute_forces
 
-      subroutine maybe_print_timings()
+      subroutine print_timings(first, first_md)
 #ifdef TRANSIESTA
+      use timer_options, only: use_tree_timer
       use m_ts_global_vars, only : TSrun
 #endif
+      logical, intent(in) :: first, first_md
+      character(len=20) :: routine
+
+      ! If this is not the first iteration,
+      ! we immediately return.
+      if ( .not. first ) return
+      if ( .not. first_md ) return
+
+      routine = 'IterSCF'
 
 #ifdef TRANSIESTA
       if ( TSrun ) then
-         if ( iscf == 1 ) then
-            call timer( 'TS', 3 ) ! with Green function generation
+         ! with Green function generation
+         ! The tree-timer requires direct
+         ! children of the routine to be 
+         ! queried.
+         ! This is not obeyed in the TS case... :(
+         if ( .not. use_tree_timer ) then
+            routine = 'TS'
          end if
-      else if ( first ) then
-         if ( istep == inicoor ) call timer( 'IterSCF', 3 )    
       endif
-#else
-      if (istep == inicoor .and. first ) call timer( 'IterSCF', 3 )    
 #endif
+      call timer( routine, 3 ) 
 
-      end subroutine maybe_print_timings
+      end subroutine 
+      
       !
       ! Depending on various conditions, save the DMin
       ! or the DMout, and possibly keep a copy of H
