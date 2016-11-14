@@ -109,7 +109,7 @@ contains
   subroutine read_ts_generic( cell )
 
     use fdf, only : fdf_get, leqi
-    use intrinsic_missing, only : VNORM, IDX_SPC_PROJ, EYE
+    use intrinsic_missing, only : VNORM
 
     use siesta_options, only : dDtol, dHtol
 
@@ -130,8 +130,7 @@ contains
     real(dp), intent(in) :: cell(3,3)
 
     ! Local variables
-    real(dp) :: tmp33(3,3)
-    character(len=200) :: c, chars
+    character(len=200) :: chars
 
     ! This has to be the first routine to be read
     if ( N_mu /= 0 ) call die('read_ts_generic: error in programming')
@@ -329,7 +328,7 @@ contains
 ! * LOCAL variables *
 ! *******************
     integer :: i, j
-    real(dp) :: tmp33(3,3), rtmp
+    real(dp) :: rtmp
     logical :: err, bool
     character(len=200) :: chars, c
     type(ts_mu) :: tmp_mu
@@ -506,7 +505,6 @@ contains
     ! Hence we use this as an error-check (also for N_Elec == 1)
     if ( N_Elec /= 2 ) then
        ! Signals no specific unit-cell direction of transport
-       ts_tdir = - N_Elec
        ts_tidx = - N_Elec
     else
        
@@ -534,16 +532,11 @@ contains
           ! direction.
           ts_tidx = i
           
-          ! Calculate Cartesian transport direction
-          call eye(3,tmp33)
-          ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx),mag=.true.)
-          
        else
           
           ! In case we have a skewed transport direction
           ! we have some restrictions...
           ts_tidx = - N_Elec
-          ts_tdir = - N_Elec
           
        end if
        
@@ -761,11 +754,12 @@ contains
   end subroutine read_ts_after_Elec
 
   
-  subroutine print_ts_options( )
+  subroutine print_ts_options( cell )
 
     use fdf, only: fdf_get, leqi
     use parallel, only: IOnode
 
+    use intrinsic_missing, only : IDX_SPC_PROJ, EYE
     use units, only: eV, Kelvin
 
     use m_mixing, only: mixers_print
@@ -799,13 +793,17 @@ contains
     use m_ts_hartree, only: TS_HA_NONE, TS_HA_PLANE, TS_HA_ELEC, TS_HA_ELEC_BOX
 
     implicit none
+
+    ! The unit-cell
+    real(dp), intent(in) :: cell(3,3)
     
 ! *******************
 ! * LOCAL variables *
 ! *******************
     character(len=200) :: chars
     logical :: ltmp
-    integer :: i
+    real(dp) :: tmp33(3,3)
+    integer :: i, tdir
 
     if ( .not. IONode ) return
 
@@ -850,7 +848,10 @@ contains
     else
        write(chars,'(a,i0)') 'A',ts_tidx
        write(*,f10) 'Transport along unit-cell vector',trim(chars)
-       select case ( ts_tdir )
+       ! Calculate Cartesian transport direction
+       call eye(3,tmp33)
+       tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx),mag=.true.)
+       select case ( tdir )
        case ( 1 )
           write(*,f10) 'Transport along Cartesian vector','X'
        case ( 2 )
@@ -1057,7 +1058,7 @@ contains
     integer, intent(in) :: Nmove
 
     ! Local variables
-    integer :: i, j, k, iEl, idx, idx1, idx2, itmp3(3)
+    integer :: i, j, idx, idx1, idx2, itmp3(3)
     real(dp) :: rtmp, tmp3(3), tmp33(3,3), bdir(2)
     real(dp) :: p(3)
     logical :: err, warn, ltmp

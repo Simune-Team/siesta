@@ -116,7 +116,7 @@
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode
       use m_ts_tdir,      only : ts_tidx
-      use m_ts_options,   only : IsVolt
+      use m_ts_options,   only : IsVolt, N_Elec, Elecs
       use m_ts_voltage,   only : ts_init_voltage
       use m_ts_hartree,   only : ts_init_hartree_fix
 #endif /* TRANSIESTA */
@@ -147,6 +147,8 @@
       character(len=20)       :: XCauth(10), XCfunc(10)
 #endif /* ! BSC_CELLXC */
 #ifdef TRANSIESTA
+      ! Transport direction (unit-cell aligned)
+      integer                 :: iE
       real(dp)                :: ortho, field(3), field2(3)
 #endif
 !--------------------------------------------------------------------- BEGIN
@@ -433,76 +435,94 @@ C     At the end of initializations:
 C ----------------------------------------------------------------------
       if (frstme) then
          call initialize_efield()
-      endif
 
 #ifdef TRANSIESTA
-      if (frstme) then
-!        Check if we need to add the potential 
-!        corresponding to the voltage-drop.
-        if (TSmode) then
-           call ts_init_hartree_fix( cell, nua, xa, ntm, ntml)
-           if ( IsVolt ) then
-              call ts_init_voltage( cell, nua, xa, ntm)
-           end if
-           ! We do not allow the electric field for 
-           ! transiesta runs with V = 0, either.
-           ! It does not make sense.
-           if ( acting_efield ) then
-              ! We need to check that the e-field is perpendicular
-              ! to the transport direction, and that the system is
-              ! either a chain, or a slab.
-              if ( shape .ne. 'chain' .and. shape .ne. 'slab' ) then
-                 ! a molecule with buffer layers is a viable 
-                 ! thing to put E-field across, however,
-                 ! we can not figure out where to place it. :(
-                 call die('Error, both external voltage and field!')
-              end if
-              ! check that we do not violate the periodicity
-              if ( Node .eq. 0 ) then
-                 write(*,'(3a)') 'WARNING: transiesta: ',
-     &                'E-field/dipole-correction and transiesta. ',
-     &                'I hope you know what you are doing!'
-              end if
-              if ( ts_tidx < 1 ) then
-                 call die('Error, electric field and undetermined &
-     &transport direction does not make sense!')
-              end if
-              ! Now we can check the directions of the slab
-              if ( dipole_correction ) then
-                 if ( shape .eq. 'chain' ) then
-                    field  = cell(1:3,ts_tidx)
-                    ortho  = ddot(3,field,1,field,1)
-                    field  = field / ortho
-                    ortho  = ddot(3,bcell,1,bcell,1)
-                    field2 = bcell(1:3,1) / ortho
-                    ! the transport direction must
-                    ! be the periodic direction
-                    if ( sum(abs(field-field2)) > 1.e-9_dp ) then
-                       call die('Dipole correction is not &
+!     Check if we need to add the potential 
+!     corresponding to the voltage-drop.
+      if ( TSmode ) then
+         call ts_init_hartree_fix( cell, nua, xa, ntm, ntml)
+         if ( IsVolt ) then
+            call ts_init_voltage( cell, nua, xa, ntm)
+         end if
+      end if
+
+      if ( TSmode .and. acting_efield ) then
+         ! We do not allow the electric field for 
+         ! transiesta runs with V = 0, either.
+         ! It does not make sense.
+         
+         ! We need to check that the e-field is perpendicular
+         ! to the transport direction, and that the system is
+         ! either a chain, or a slab.
+         if ( (shape.ne.'chain') .and. (shape.ne.'slab') ) then
+            ! a molecule with buffer layers is a viable 
+            ! thing to put E-field across, however,
+            ! we can not figure out where to place it. :(
+            call die('Error, both external voltage and field!')
+         end if
+            
+         ! check that we do not violate the periodicity
+         if ( Node .eq. 0 ) then
+            write(*,'(/,2(2a,/))') 'WARNING-ts: ',
+     &           'E-field/dipole-correction! ',
+     &           'WARNING-ts: ',
+     &           'I hope you know what you are doing!'
+         end if
+
+         if ( dipole_correction .and. ts_tidx > 0 ) then
+            ! Now we can check the directions of the chain/slab
+            if ( shape .eq. 'chain' ) then
+               field  = cell(1:3,ts_tidx)
+               ortho  = ddot(3,field,1,field,1)
+               field  = field / ortho
+               ortho  = ddot(3,bcell,1,bcell,1)
+               field2 = bcell(1:3,1) / ortho
+               ! the transport direction must
+               ! be the periodic direction
+               if ( sum(abs(field-field2)) > 1.e-9_dp ) then
+                  call die('Dipole correction is not &
      &perpendicular to transport direction')
-                    end if
-                 else if ( shape .eq. 'slab' ) then
-                    ! get the field-direction
-                    call cross( bcell(1,1), bcell(1,2), field )
-                    ortho = ddot(3,cell(1,ts_tidx),1,field,1) 
-                    if ( ortho > 1.e-9_dp ) then
-                       call die('Dipole-correction must be &
+               end if
+            else if ( shape .eq. 'slab' ) then
+               ! get the field-direction
+               call cross( bcell(1,1), bcell(1,2), field )
+               ortho = ddot(3,cell(1,ts_tidx),1,field,1) 
+               if ( ortho > 1.e-9_dp ) then
+                  call die('Dipole-correction must be &
      &perpendicular to transport direction')
-                    end if
-                 end if
-              else
-                 field = user_specified_field
-                 ortho = ddot(3,cell(1,ts_tidx),1,field,1)
-                 if ( ortho > 1.e-9_dp ) then
-                    call die('User defined E-field must be &
-     &perpendicular to transport direction')
-                 end if
-              end if
-              
-           end if
-        endif
-      endif
+               end if
+            end if
+         else if ( dipole_correction ) then
+            ! We will always allow dipole-correction
+            ! for mis-aligned electrodes...
+            ! However, it *MUST* be the users responsibility
+         end if
+
+         if ( .not. dipole_correction ) then
+            ! We have a user-defined electric-field
+            field(:) = user_specified_field(:)
+            do iE = 1 , N_Elec
+               field2 = cell(:,Elecs(iE)%pvt(Elec(iE)%t_dir))
+               ortho = ddot(3,field2,1,field,1)
+               if ( ortho > 1.e-9_dp ) then
+                  call die('User defined E-field must be &
+     &perpendicular to semi-infinite directions')
+               end if
+            end do
+         end if
+
+         ! We know that we currently allow people to do more than
+         ! they probably should be allowed. However, there are many
+         ! corner cases that may require dipole corrections, or 
+         ! electric fields to "correct" an intrinsic dipole.
+         ! For instance, what should we do with a dipole?
+         ! Should we apply a field to counter act it in a device
+         ! calculation?
+         
+      end if
 #endif /* TRANSIESTA */
+
+      end if
 
       frstme = .false.
 
@@ -616,13 +636,12 @@ C     Modules
 
 !     Number of Mesh divisions of each cell vector (global)
 !     The status of this variable is confusing
-      use mesh,          only  : nm => nmeshg
       use parallel,      only  : Node, Nodes
       use atmfuncs,      only  : rcut, rcore
       use units,         only  : Debye, eV, Ang
       use fdf
       use sys,           only  : die, bye
-      use mesh,          only  : xdsp, nsm, nsp
+      use mesh,          only  : nsm, nsp
       use parsing
       use m_iorho,       only  : write_rho
       use m_forhar,      only  : forhar
@@ -655,7 +674,7 @@ C     Modules
       use iogrid_netcdf, only: write_grid_netcdf
       use iogrid_netcdf, only: read_grid_netcdf
       use siesta_options, only: read_charge_cdf
-      use siesta_options, only: savevna, savebader
+      use siesta_options, only: savebader
       use siesta_options, only: read_deformation_charge_cdf
       use siesta_options, only: mix_charge
 
@@ -674,8 +693,7 @@ C     Modules
       use m_rhofft,       only: rhofft, FORWARD, BACKWARD
       use m_rhog,         only: rhog_in, rhog
       use m_spin,         only: spin
-      use m_spin,         only: NonCol, SpOrb
-      use m_spin,         only: h_spin_dim, Spiral, qSpiral
+      use m_spin,         only: Spiral, qSpiral
 
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode, TSrun
@@ -771,7 +789,7 @@ C     Local variables
       integer  :: i, ia, ip, ispin, nsd, np_vac
 #ifndef BSC_CELLXC
 !     Interface to JMS's SiestaXC
-      integer       :: iNode, myBox(2,3)
+      integer       :: myBox(2,3)
       integer, save :: JDGdistr=-1
       real(dp) :: stressXC(3,3)
 #endif /* ! BSC_CELLXC */
@@ -819,15 +837,15 @@ C     Work arrays
       call write_debug( '    PRE DHSCF' )
 #endif
 
-      if ( h_spin_dim /= size(Dscf,dim=2) ) then
+      if ( spin%H /= size(Dscf,dim=2) ) then
          call die('Spin components is not equal to options.')
       end if
 
       if ( debug_dhscf ) then
          write(*,debug_fmt) Node,'DM',
-     &        (sqrt(sum(Dscf(:,ispin)**2)),ispin=1,h_spin_dim)
+     &        (sqrt(sum(Dscf(:,ispin)**2)),ispin=1,spin%H)
          write(*,debug_fmt) Node,'H',
-     &        (sqrt(sum(Hmat(:,ispin)**2)),ispin=1,h_spin_dim)
+     &        (sqrt(sum(Hmat(:,ispin)**2)),ispin=1,spin%H)
       end if
       
 !-------------------------------------------------------------------- BEGIN
@@ -1837,7 +1855,7 @@ C ----------------------------------------------------------------------
 
       use moreMeshSubs,   only : setMeshDistr
       use moreMeshSubs,   only : UNIFORM, QUADRATIC
-      use parallel,       only : Nodes, Node
+      use parallel,       only : Nodes
       use mesh,           only : nsm, nsp
 
 !
