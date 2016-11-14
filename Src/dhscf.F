@@ -242,10 +242,10 @@ C ----------------------------------------------------------------------
       call init_mesh_node( cell, ntm , meshLim , nsm )
 
       ! Setup charge additions in the mesh
-      call init_charge_add(cell, ntm, nsm)
+      call init_charge_add(cell, ntm)
 
       ! Setup Hartree additions in the mesh
-      call init_hartree_add(cell, ntm, nsm)
+      call init_hartree_add(cell, ntm)
 
 #ifdef NCDF_4
       ! Initialize the box for each node...
@@ -440,9 +440,9 @@ C ----------------------------------------------------------------------
 !        Check if we need to add the potential 
 !        corresponding to the voltage-drop.
         if (TSmode) then
-           call ts_init_hartree_fix( cell, nua, xa , ntm , nsm)
+           call ts_init_hartree_fix( cell, nua, xa, ntm, ntml)
            if ( IsVolt ) then
-              call ts_init_voltage( cell, nua, xa, ntm, nsm)
+              call ts_init_voltage( cell, nua, xa, ntm)
            end if
            ! We do not allow the electric field for 
            ! transiesta runs with V = 0, either.
@@ -862,7 +862,7 @@ C-------------------------------------------------------------------------
         ! Uniform dist, sequential form
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid(trim(slabel)//'.nc','Vna',1,ntpl,Vna)
+           call cdf_save_grid(trim(slabel)//'.nc','Vna',1,ntml,Vna)
         else
            call write_rho( filesOut%vna, 
      &          cell, ntm, nsm, ntpl, 1, Vna)
@@ -960,8 +960,8 @@ C       Set the UNIFORM distribution again and copy DRho to it
         if (save_initial_charge_density) then 
 #ifdef NCDF_4
           if ( write_cdf ) then
-             call cdf_save_grid(trim(slabel)//'.nc','RhoInit',nspin,ntpl
-     &            ,DRho)
+             call cdf_save_grid(trim(slabel)//'.nc','RhoInit',nspin,
+     &            ntml,DRho)
           else
              call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
      $            nspin, DRho)
@@ -1031,7 +1031,7 @@ C ----------------------------------------------------------------------
         !  DRho is already using a uniform, sequential form
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid(trim(slabel)//'.nc','Rho',nspin,ntpl,
+           call cdf_save_grid(trim(slabel)//'.nc','Rho',nspin,ntml,
      &          DRho)
         else
            call write_rho( filesOut%rho, cell, ntm, nsm, ntpl, nspin,
@@ -1065,7 +1065,7 @@ C       Save diffuse ionic charge
         if (filesOut%psch .ne. ' ') then
 #ifdef NCDF_4
           if ( write_cdf ) then
-             call cdf_save_grid(trim(slabel)//'.nc','Chlocal',1,ntpl,
+             call cdf_save_grid(trim(slabel)//'.nc','Chlocal',1,ntml,
      &            Chlocal)
           else
              call write_rho( filesOut%psch, cell, ntm, nsm, ntpl, 1,
@@ -1105,7 +1105,7 @@ C       Save total (ionic+electronic) charge
           ! See note above
 #ifdef NCDF_4
            if ( write_cdf ) then
-              call cdf_save_grid(trim(slabel)//'.nc','RhoTot',1,ntpl,
+              call cdf_save_grid(trim(slabel)//'.nc','RhoTot',1,ntml,
      &             Chlocal)
            else
               call write_rho(filesOut%toch,cell,ntm,nsm,ntpl,1,Chlocal)
@@ -1148,7 +1148,7 @@ C ----------------------------------------------------------------------
       if (filesOut%drho .ne. ' ') then
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid(trim(slabel)//'.nc','RhoDelta',nspin,ntpl,
+           call cdf_save_grid(trim(slabel)//'.nc','RhoDelta',nspin,ntml,
      &          DRho)
         else
            call write_rho( filesOut%drho, cell, ntm, nsm, ntpl, nspin,
@@ -1245,7 +1245,7 @@ C ----------------------------------------------------------------------
 
 #ifdef TRANSIESTA
       ! We require that even the SIESTA potential is "fixed"
-      call ts_hartree_fix( ntm, ntpl , Vaux )
+      call ts_hartree_fix( ntm, ntml, Vaux)
 #endif /* TRANSIESTA */
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
@@ -1340,7 +1340,7 @@ C ----------------------------------------------------------------------
          Vaux(:) = 0._dp
 !$OMP end parallel workshare
 #endif
-         call ts_voltage( cell, ntm, ntpl, Vaux )
+         call ts_voltage(cell, ntm, ntml, Vaux)
 #ifdef TRANSIESTA_VOLTAGE_DEBUG
          call write_grid_netcdf( cell, ntm, 1, ntpl, Vaux, 
      &        "TransiestaHartreePotential")
@@ -1361,7 +1361,7 @@ C ----------------------------------------------------------------------
         ! Note that only the first spin component is used
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid(trim(slabel)//'.nc','Vh',1,ntpl,
+           call cdf_save_grid(trim(slabel)//'.nc','Vh',1,ntml,
      &          Vaux)
         else
            call write_rho( filesOut%vh, cell, ntm, nsm, ntpl, 1, Vaux )
@@ -1433,7 +1433,7 @@ C ----------------------------------------------------------------------
       if (filesOut%rhoxc .ne. ' ') then
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid(trim(slabel)//'.nc','RhoXC',nspin,ntpl,
+           call cdf_save_grid(trim(slabel)//'.nc','RhoXC',nspin,ntml,
      &          DRho )
         else
            call write_rho( filesOut%rhoxc, cell, ntm, nsm, ntpl, nspin,
@@ -1545,7 +1545,7 @@ C ----------------------------------------------------------------------
       if (filesOut%vt .ne. ' ') then
 #ifdef NCDF_4
         if ( write_cdf ) then
-           call cdf_save_grid(trim(slabel)//'.nc','Vt',nspin,ntpl,
+           call cdf_save_grid(trim(slabel)//'.nc','Vt',nspin,ntml,
      &          Vscf)
         else 
            call write_rho( filesOut%vt, cell, ntm, nsm, ntpl, nspin,
@@ -1809,7 +1809,7 @@ C ----------------------------------------------------------------------
       enddo
 #ifdef NCDF_4
       if ( write_cdf ) then
-         call cdf_save_grid(trim(slabel)//'.nc','RhoBader',1,ntpl,
+         call cdf_save_grid(trim(slabel)//'.nc','RhoBader',1,ntml,
      &        BaderCharge)
       else
          call write_rho( trim(slabel)// ".BADER", cell,

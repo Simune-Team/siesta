@@ -379,7 +379,7 @@ C OUTPUT:
 C integer nml(3)  : Local number of Mesh divisions in each cell vector
 C integer nmpl    : Local number of Mesh divisions
 C integer ntml(3) : Local number of Mesh points in each cell vector
-C integer nmpl    : Local number of Mesh points
+C integer ntpl    : Local number of Mesh points
 C
 C BEHAVIOR:
 C Fixes the new data limits and dimensions of the mesh to those of
