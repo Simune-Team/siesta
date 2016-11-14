@@ -1693,15 +1693,15 @@ contains
     type(OrbitalDistribution), pointer :: fdist
     type(Sparsity) :: sp02
 
-    integer, pointer :: l_ncol(:) => null()
-    integer, pointer :: l_ptr(:)  => null()
-    integer, pointer :: l_col(:)  => null()
-    integer, pointer :: ncol02(:) => null()
-    integer, pointer :: ptr02(:)  => null()
-    integer, pointer :: col02(:)  => null()
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: ncol01(:), ptr01(:), col01(:)
+    integer, pointer :: ncol02(:), ptr02(:), col02(:)
 
-    integer :: no_l, no_u, i, io, j, ind, ind02, ia
+    integer :: no_l, no_u, i, io, j, iu, ind, ind01, ind02, ia
+    integer :: n_nzs
+    integer :: istart, iend
     integer :: tm(3)
+    ! Print-out values stored...
     real(dp) :: maxH, maxS
     integer :: maxi, maxj, maxia, maxja
 
@@ -1733,6 +1733,7 @@ contains
     maxS = 0._dp
     maxi = 0
     maxj = 0
+    n_nzs = nnzs(sp02)
 
     ! loop and assign data elements
     do i = 1 , no_l
@@ -1771,23 +1772,87 @@ contains
        
     end do
 
-    ind = nnzs(sp02)
     ! clean-up
     call delete(sp02)
 
+    ! Secondly, we should also check for cases where the user requests
+    ! num-atoms, which is the equivalent of creating a smaller electrode.
+    if ( this%na_used /= this%na_u ) then
+
+       call attach(this%sp01,n_col=ncol01,list_ptr=ptr01,list_col=col01)
+       ! To assert the connectivity the removed atoms
+       ! must not connect with them-selves
+       if ( this%inf_dir == INF_NEGATIVE ) then
+          ! We select the last atoms!
+          ! so opposite here...
+          istart = 1 
+          iend = this%lasto(this%na_u-this%na_used)
+       else
+          ! We select the first atoms!
+          ! so opposite here...
+          istart = this%lasto(this%na_used) + 1
+          iend = no_l
+       end if
+       
+       ! loop and assign data elements
+       do i = istart , iend
+          
+          ! Shift out of the buffer region
+          io = index_local_to_global(fdist,i)
+          ia = iaorb(io,this%lasto)
+          
+          ! Loop number of entries in the row...
+          do j = 1 , ncol01(i)
+             
+             ! The index in the pointer array is retrieved
+             ind01 = ptr01(i) + j
+             
+             ! Loop in the super-set sparsity pattern
+             idx01: do ind = l_ptr(i) + 1 , l_ptr(i) + l_ncol(i)
+                
+                ! If we have the same column index it must be
+                ! the same entry they represent
+                iu = ucorb(col01(ind01), no_l)
+                if ( col01(ind01) == l_col(ind) .and. &
+                     istart <= iu .and. iu <= iend ) then
+
+                   ! increment number of elements extending..
+                   n_nzs = n_nzs + 1
+                   
+                   if ( any(abs(H(ind,:)) > maxH) ) then
+                      maxH  = maxval(abs(H(ind,:)))
+                   maxS  = S(ind)
+                   maxi  = io
+                   maxia = ia
+                   maxj  = col01(ind01)
+                   maxja = iaorb(col01(ind01),this%lasto)
+                end if
+                exit idx01
+             end if
+
+          end do idx01
+          
+       end do
+       
+    end do
+       
+
+    end if
+
+
     ! If both number
-    good = ind == 0
+    good = n_nzs == 0
     if ( .not. good ) good = maxi == 0
 
     if ( .not. IONode ) return
 
-    if ( ind == 0 ) then
+    if ( n_nzs == 0 ) then
        write(*,'(t2,a)') trim(this%name)//' principal cell is perfect!'
     else if ( maxi == 0 ) then
        write(*,'(t2,a,i0,a)') trim(this%name)//' principal cell is extending out &
-            &with ',ind,' elements, all being zero.'
+            &with ',n_nzs,' elements, all being zero.'
     else
-       write(*,'(t2,a,i0,a)') trim(this%name)//' principal cell is extending out with ',ind,' elements:'
+       write(*,'(t2,a,i0,a)') trim(this%name)//' principal cell is extending out with ',n_nzs,' elements:'
        write(*,'(t5,2(a,i0))') 'Atom ',maxia,' connects with atom ',maxja
        write(*,'(t5,2(a,i0))') 'Orbital ',UCORB(maxi,no_u) , &
             ' connects with orbital ',UCORB(maxj,no_u)
