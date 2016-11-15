@@ -98,7 +98,7 @@ contains
          ts_kscell, ts_kdispl)
 
     ! Print the options
-    call print_ts_options( )
+    call print_ts_options( ucell )
 
     ! Print all warnings
     call print_ts_warnings( ucell, na_u, xa, Nmove )

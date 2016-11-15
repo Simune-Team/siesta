@@ -17,13 +17,21 @@
 % eventually become a link to the correct.
 % If you want to create an fdf flag which is not referenced
 % For instance a sub-block segment, use \fdf*{#1}.
+% The \fdf command will automatically convert ! to . but retains
+% the ! for indexing of the flag. Thus \fdf{FDF!Flag} will print
+% as FDF.Flag, but indexed as \index{FDF!Flag}. If you reference
+% a flag you must use the exclamation mark as used in the fdfentry
+% environment.
+%
 % Two very used fdf-flags are \fdftrue and \fdffalse which
 % are short-hands for \fdf*{true} and \fdf*{false}.
 % 
 % To document a new flag, do this:
 %
 %  \begin{fdfentry}{FDF.Flag}
+%
 %    Description
+%
 %  \end{fdfentry}
 %
 % Remark that it is not necessary to create any index commands
@@ -32,7 +40,9 @@
 % to:
 %
 %  \begin{fdfentry}{FDF.Flag}[integer]<0>
+%
 %    Description
+%
 %  \end{fdfentry}
 %
 % where [#1] may be any of:
@@ -42,12 +52,40 @@
 % There are two shorthands for the logical input with T/F default:
 %
 %  \begin{fdflogicalT}{FlagDefaultTrue}
+%
 %    This flag is default \fdftrue.
+%
 %  \end{fdflogicalT}
 %  \begin{fdflogicalF}{FlagDefaultFalse}
+%
 %    This flag is default \fdffalse.
+%
 %  \end{fdflogicalF}
 %
+% Sometimes it is useful to create an index value without
+% having to create the entry (say if a flag has been
+% superseeded by a new flag), in this case you should do:
+%
+%  \begin{fdfentry}{FDF.Flag}[integer]<0>
+%    \fdfindex*{Old.Flag}
+%
+%    Description
+%
+%  \end{fdfentry}
+% 
+% Additionally one may create dependency flags to make it
+% easy to see dependencies on the flags
+%  \begin{fdfentry}{FDF.Flag}[integer]<0>
+%    \fdfdepend{FDF.First, FDF.Second}
+%
+%    Description
+%
+%  \end{fdfentry}
+% will create additional information in the PDF with 
+% proper dependencies and hyperlinks to the fdf-flags.
+%
+%
+% !!!IMPORTANT!!!
 % Do NOT use \bf, \it, \tt, \rm, \em etc!
 % 
 % If you want to emphasize a word in a sentence, prefer to
@@ -5155,7 +5193,8 @@ simultaneously for complete control.
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{SCF.Tolerance!DM}[real]<$10^{-4}$>
+\begin{fdfentry}{SCF.Tolerance!DM}[real]<$10^{-4}$>%
+  \fdfdepend{SCF.Converge!DM}
   \fdfindex*{DM.Tolerance}
 
   Tolerance of Density Matrix.
@@ -5196,6 +5235,7 @@ simultaneously for complete control.
 \end{fdflogicalT}
 
 \begin{fdfentry}{SCF.Tolerance!H}[energy]<$10^{-3}\,\mathrm{eV}$>
+  \fdfdepend{SCF.Converge!H}
 
   If \fdf{SCF.Converge!H} is \fdftrue, then self-consistency is
   achieved when the maximum absolute change in the Hamiltonian matrix
@@ -5216,6 +5256,7 @@ simultaneously for complete control.
 \end{fdflogicalT}
 
 \begin{fdfentry}{SCF.Tolerance!EDM}[energy]<$10^{-3}\,\mathrm{eV}$>
+  \fdfdepend{SCF.Converge!EDM}
 
   If \fdf{SCF.Converge!EDM} is \fdftrue, then self-consistency is
   achieved when the maximum absolute change in the energy density
@@ -5237,6 +5278,7 @@ simultaneously for complete control.
 \end{fdflogicalF}
 
 \begin{fdfentry}{SCF.Tolerance!FreeE}[energy]<$10^{-4}\,\mathrm{eV}$>
+  \fdfdepend{SCF.Converge!FreeE}
   \fdfindex*{DM.EnergyTolerance}
 
   If \fdf{SCF.Converge!FreeE} is \fdftrue, then self-consistency is
@@ -5270,6 +5312,7 @@ simultaneously for complete control.
 \end{fdflogicalF}
 
 \begin{fdfentry}{SCF.Tolerance!Harris}[energy]<$10^{-4}\,\mathrm{eV}$>
+  \fdfdepend{SCF.Converge!Harris}
 
   If \fdf{SCF.Converge!Harris} is \fdftrue, then self-consistency is
   achieved when the change in the Harris energy between cycles of the
@@ -5311,8 +5354,8 @@ However, it can affect substantially the process of relaxation, by
 increasing the number of steps considerably, and can also spoil the
 calculation of vibrations, usually much more demanding than relaxations.
 
-The Util/Scripting/eggbox\_checker.py script can be used to diagnose
-the eggbox effect to be expected for a particular
+The \program{Util/Scripting/eggbox\_checker.py} script can be used to
+diagnose the eggbox effect to be expected for a particular
 pseudopotential/basis-set combination.
 
 Apart from increasing the mesh cutoff (see the \fdf{MeshCutoff} option),
@@ -9381,14 +9424,13 @@ involving molecules.
 \begin{fdfentry}{Geometry!Constraints}[block]
   \index{constraints in relaxations}
 
-
   Constrains certain atomic coordinates or cell parameters in a
   consistent method.
 
   There are a high number of configurable parameters that may be used
   to control the relaxation of the coordinates.
 
-  \note \siesta\ prints out a small notice of how the constraints are
+  \note \siesta\ prints out a small section of how the constraints are
   recognized. 
 
   \begin{fdfoptions}
@@ -9471,10 +9513,13 @@ involving molecules.
 
 
     \option[center]%
-    In CG optimizations one may retain the coordinate center of a
-    range of atoms (say molecules or other types of groups).
+    One may retain the coordinate center of a
+    range of atoms (say molecules or other groups of atoms).
 
     Atomic indices may be specified according to \fdf*{atom}.
+
+    \note this specification is apt for \emph{directional}
+    constraints. 
 
 
     \option[rigid|molecule]%
@@ -9496,7 +9541,6 @@ involving molecules.
     be expanded to act on all atoms specified.
 
     Atomic indices may be specified according to \fdf*{atom}.
-
 
 
     \option[cell-angle]%
@@ -9535,6 +9579,7 @@ involving molecules.
     \emph{CC}, $4$ is \emph{BC}/\emph{CB}, $5$ is \emph{AC}/\emph{CA}
     and $6$ is \emph{AB}/\emph{BA}.
 
+
     \option[routine]%
     This calls the \program{constr} routine specified in the file:
     \file{constr.f}. Without having changed the corresponding source
@@ -9550,6 +9595,7 @@ involving molecules.
     \fdf*{species-i}.
 
     Atomic indices may be specified according to \fdf*{atom}.
+
 
     \option[clear-prev]
     Remove constraints on selected atoms from the \emph{previous} specified
@@ -9633,6 +9679,8 @@ involving molecules.
   \end{fdfexample}
   
 \end{fdfentry}
+
+
 
 \subsection{Phonon calculations}
 
@@ -10735,14 +10783,22 @@ These options adhere to the specific solution methods available for
 \tsiesta\ requires fixed boundary conditions and forcing this is an
 intricate and important detail. 
 
-\begin{fdfentry}{TS!Poisson.Position}[string]<cell|central>
-
-  \note this only have meaning for a two electrode calculation with
-  both electrodes having the same semi-infinite direction.
+\begin{fdfentry}{TS!Poisson}[string]<ramp-cell|ramp-central|elec-box|\nonvalue{file}>
 
   Define how the correction of the Poisson equation is
-  superimposed. The default is to only apply the linear correction
-  within the boundaries of the electrodes. 
+  superimposed. The default is to apply the linear correction across
+  the entire cell (if there are two semi-infinite aligned electrodes).
+  Otherwise this defaults to the \emph{box} solution which will
+  introduce spurious effects at the electrode boundaries. In this case
+  you are encouraged to supply a \fdf*{file}.
+
+  If the input is a \fdf*{file}, it should be a NetCDF file containing
+  the grid information which acts as the boundary conditions for the
+  SCF cycle. 
+  The grid information should conform to the grid size of the
+  unit-cell in the simulation.
+  % 
+  \note the file option is only applicable if compiled with NetCDF4.
 
 \end{fdfentry}
 

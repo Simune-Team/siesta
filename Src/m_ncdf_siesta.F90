@@ -600,11 +600,11 @@ contains
 
   end subroutine cdf_save_state
 
-  subroutine cdf_save_grid(fname,vname,nspin,lnpt,grid)
+  subroutine cdf_save_grid(fname,vname,nspin,nmeshl,grid)
 
     character(len=*), intent(in) :: fname, vname
-    integer, intent(in) :: nspin, lnpt
-    real(grid_p), intent(in) :: grid(lnpt,nspin)
+    integer, intent(in) :: nspin, nmeshl(3)
+    real(grid_p), intent(in) :: grid(product(nmeshl),nspin)
 
     type(hNCDF) :: ncdf
     integer :: is
@@ -628,10 +628,10 @@ contains
     ! Save the grid
     if ( nspin > 1 ) then
        do is = 1 , nspin 
-          call cdf_w_grid(ncdf,vname,lnpt,grid(:,is),idx=is)
+          call cdf_w_grid(ncdf,vname,nmeshl,grid(:,is),idx=is)
        end do
     else
-       call cdf_w_grid(ncdf,vname,lnpt,grid(:,1))
+       call cdf_w_grid(ncdf,vname,nmeshl,grid(:,1))
     end if
 
     call ncdf_close(ncdf)

@@ -54,6 +54,8 @@ final-siesta:
 	$(MAKE) extra-siesta
 	$(MAKE) siesta
 	$(MAKE) siesta
+	$(MAKE) extra-siesta
+	$(MAKE) siesta
 
 # Create final SIESTA manual for the screen
 final-siesta-screen:
@@ -61,6 +63,8 @@ final-siesta-screen:
 	$(MAKE) siesta-screen
 	$(MAKE) extra-siesta
 	$(MAKE) siesta-screen
+	$(MAKE) siesta-screen
+	$(MAKE) extra-siesta
 	$(MAKE) siesta-screen
 	-mv siesta.pdf siesta-screen.pdf
 
@@ -71,6 +75,8 @@ final-tbtrans:
 	$(MAKE) extra-tbtrans
 	$(MAKE) tbtrans
 	$(MAKE) tbtrans
+	$(MAKE) extra-tbtrans
+	$(MAKE) tbtrans
 
 # Create final tbtrans manual for the screen
 final-tbtrans-screen:
@@ -78,6 +84,8 @@ final-tbtrans-screen:
 	$(MAKE) tbtrans-screen
 	$(MAKE) extra-tbtrans
 	$(MAKE) tbtrans-screen
+	$(MAKE) tbtrans-screen
+	$(MAKE) extra-tbtrans
 	$(MAKE) tbtrans-screen
 	-mv tbtrans.pdf tbtrans-screen.pdf
 
