@@ -1548,6 +1548,12 @@ contains
             &Ensure good periodicity in the T-direction.')
     end if
 
+    ! Create the default sparsity patterns in the sub-spaces needed
+    ! for the self-energy calculations
+    ! This is also important to create before running
+    ! check_connectivity because of used-atoms possibly being set.
+    call create_sp2sp01(El)
+
     ! print out the precision of the electrode (whether it extends
     ! beyond first principal layer)
     if ( check_connectivity(El) ) then
@@ -1567,7 +1573,6 @@ contains
             &refer to the manual for achieving a perfect electrode.')
     end if
     
-    call create_sp2sp01(El)
     ! Clean-up, we will not need these!
     ! we should not be very memory hungry now, but just in case...
     call delete(El%H)

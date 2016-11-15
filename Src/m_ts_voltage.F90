@@ -49,7 +49,7 @@ module m_ts_voltage
 
 contains
 
-  subroutine ts_init_voltage(cell,na_u,xa,meshG,nsm)
+  subroutine ts_init_voltage(cell, na_u, xa, nmesh)
     use parallel, only : IONode
     use m_ts_electype, only : TotUsedAtoms
     use m_ts_options, only : Elecs, N_Elec
@@ -64,7 +64,7 @@ contains
     real(dp),      intent(in) :: cell(3,3)
     integer,       intent(in) :: na_u
     real(dp),      intent(in) :: xa(3,na_u)
-    integer,       intent(in) :: meshG(3), nsm
+    integer,       intent(in) :: nmesh(3) ! total number of mesh-points.
 
     logical :: bool
     real(dp) :: tmp, ll(3), zero(3)
@@ -86,7 +86,7 @@ contains
                'User supplied Poisson solution in file ', &
                trim(Hartree_fname)
 #ifdef NCDF_4
-          call ts_ncdf_voltage_assert(Hartree_fname,cell,meshG)
+          call ts_ncdf_voltage_assert(Hartree_fname,cell,nmesh)
 #else
           call die('NetCDF4 has not been compiled in, this functionality &
                &is not supported.')
@@ -138,7 +138,7 @@ contains
     end if
 
     ! set the left chemical potential
-    call get_elec_indices(cell,na_u, xa, iElL, iElR)
+    call get_elec_indices(cell, na_u, xa, iElL, iElR)
     ! this will be the applied bias in the "lower"
     ! electrode in the unit-cell
     V_low = Elecs(iElL)%mu%mu
@@ -146,32 +146,31 @@ contains
 
     if ( VoltageInC ) then
        ! Find the electrode mesh sets
-       call init_elec_indices(cell, meshG, nsm, na_u, xa)
+       call init_elec_indices(cell, nmesh, na_u, xa)
     else
        ! Simulate the electrodes at the ends
        ! This leverages a double routine
        left_elec_mesh_idx  = 1
-       right_elec_mesh_idx = meshG(ts_tidx)
+       right_elec_mesh_idx = nmesh(ts_tidx)
     end if
 
     ! Print out the coordinates of the ramp placement
-    call print_ts_voltage(cell, meshG )
+    call print_ts_voltage(cell, nmesh)
 
   end subroutine ts_init_voltage
 
-  subroutine ts_voltage(cell, meshG, ntpl, Vscf)
+  subroutine ts_voltage(cell, nmesh, nmeshl, Vscf)
     use precision,    only : grid_p
     use m_ts_options, only : Hartree_fname
     ! ***********************
     ! * INPUT variables     *
     ! ***********************
     real(dp), intent(in) :: cell(3,3)
-    integer, intent(in) :: meshG(3)
-    integer, intent(in) :: ntpl
+    integer, intent(in) :: nmesh(3), nmeshl(3)
     ! ***********************
     ! * OUTPUT variables    *
     ! ***********************
-    real(grid_p), intent(inout) :: Vscf(ntpl)
+    real(grid_p), intent(inout) :: Vscf(:)
 
     call timer('ts_volt',1)
 
@@ -180,13 +179,13 @@ contains
     ! correctly to not have two routines doing the
     ! same
     if ( ts_tidx > 0 ) then
-       call ts_ramp_elec(cell,ntpl,Vscf)
+       call ts_ramp_elec(cell, nmeshl, Vscf)
 #ifdef NCDF_4
     else if ( len_trim(Hartree_fname) > 0 ) then
-       call ts_ncdf_Voltage(Hartree_fname,'V',ntpl,Vscf)
+       call ts_ncdf_Voltage(Hartree_fname, 'V', nmeshl, Vscf)
 #endif
     else
-       call ts_elec_only(meshG,ntpl,Vscf)
+       call ts_elec_only(nmesh, nmeshl, Vscf)
     end if
 
     call timer('ts_volt',2)
@@ -194,19 +193,19 @@ contains
   end subroutine ts_voltage
 
 
-  subroutine ts_ramp_elec(cell, ntpl, Vscf)
+  subroutine ts_ramp_elec(cell, nmeshl, Vscf)
     use precision,    only : grid_p
     use m_ts_options, only : Volt
-    use m_mesh_node,  only : meshl, offset_i
+    use m_mesh_node,  only : offset_i
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
     real(dp),      intent(in) :: cell(3,3)
-    integer,       intent(in) :: ntpl
+    integer,       intent(in) :: nmeshl(3)
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    real(grid_p), intent(inout) :: Vscf(ntpl)
+    real(grid_p), intent(inout) :: Vscf(:)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -218,16 +217,16 @@ contains
     dF = Volt / real(right_elec_mesh_idx - left_elec_mesh_idx+1,dp)
 
     ! Find quantities in mesh coordinates
-    if ( meshl(1) * meshl(2) * meshl(3) /= ntpl ) &
-         call die('ERROR: Vscf size not correct')
+    if ( product(nmeshl) /= size(Vscf) ) &
+         call die('ramp_elec: Vscf size not correct')
 
     ! Add the electric field potential to the input potential
     imesh = 0
     if ( ts_tidx == 1 ) then
 
-       do i3 = 1 , meshl(3)
-          do i2 = 1 , meshl(2)
-             do i1 = offset_i(1)+1,offset_i(1)+meshl(1)
+       do i3 = 1 , nmeshl(3)
+          do i2 = 1 , nmeshl(2)
+             do i1 = offset_i(1)+1,offset_i(1)+nmeshl(1)
 
                 ! Check the region
                 if ( i1 < left_elec_mesh_idx ) then
@@ -252,8 +251,8 @@ contains
 
     else if ( ts_tidx == 2 ) then
 
-       do i3 = 1,meshl(3)
-          do i2 = offset_i(2)+1,offset_i(2)+meshl(2)
+       do i3 = 1,nmeshl(3)
+          do i2 = offset_i(2)+1,offset_i(2)+nmeshl(2)
 
              ! Check the region
              if ( i2 < left_elec_mesh_idx ) then
@@ -269,7 +268,7 @@ contains
                 dV = V_low - dF*(i2-left_elec_mesh_idx)
              end if
              
-             do i1 = 1 , meshl(1)
+             do i1 = 1 , nmeshl(1)
                 imesh = imesh + 1
                 Vscf(imesh) = Vscf(imesh) + dV
              end do
@@ -279,7 +278,7 @@ contains
        
     else
 
-       do i3 = offset_i(3)+1,offset_i(3)+meshl(3)
+       do i3 = offset_i(3)+1,offset_i(3)+nmeshl(3)
 
           ! Check the region
           if ( i3 < left_elec_mesh_idx ) then
@@ -295,8 +294,8 @@ contains
              dV = V_low - dF*(i3-left_elec_mesh_idx)
           end if
 
-          do i2 = 1 , meshl(2)
-             do i1 = 1 , meshl(1)
+          do i2 = 1 , nmeshl(2)
+             do i1 = 1 , nmeshl(1)
                 imesh = imesh + 1
                 Vscf(imesh) = Vscf(imesh) + dV
              end do
@@ -308,7 +307,7 @@ contains
 
   end subroutine ts_ramp_elec
 
-  subroutine ts_elec_only(meshG, ntpl, Vscf)
+  subroutine ts_elec_only(nmesh, nmeshl, Vscf)
     use precision,    only : grid_p
 #ifdef MPI
     use mpi_siesta
@@ -316,7 +315,7 @@ contains
 
     use m_ts_electype
     use m_ts_options, only : N_Elec, Elecs
-    use m_mesh_node,  only : meshl, dL
+    use m_mesh_node,  only : dL
 #ifdef TS_HARTREE_OLD
     use m_mesh_node,  only : dMesh, offset_r
     use m_geom_box, only : voxel_in_box_delta
@@ -327,12 +326,11 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    integer,       intent(in) :: meshG(3)
-    integer,       intent(in) :: ntpl
+    integer,       intent(in) :: nmesh(3), nmeshl(3)
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    real(grid_p), intent(inout) :: Vscf(ntpl)
+    real(grid_p), intent(inout) :: Vscf(:)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -354,11 +352,11 @@ contains
     
     ! We do a loop in the local grid
     imesh = 0
-    do i3 = 0 , meshl(3) - 1
+    do i3 = 0 , nmeshl(3) - 1
        llZ(:) = offset_r(:) + i3*dL(:,3)
-       do i2 = 0 , meshl(2) - 1
+       do i2 = 0 , nmeshl(2) - 1
           llYZ(:) = i2*dL(:,2) + llZ(:)
-          do i1 = 0 , meshl(1) - 1
+          do i1 = 0 , nmeshl(1) - 1
              ! The lower-left corner of the current box
              ll = i1*dL(:,1) + llYZ
              imesh = imesh + 1
@@ -386,7 +384,7 @@ contains
 
     do iEl = 1 , N_Elec
 
-       call Elec_box2grididx(Elecs(iEl),meshG,dL,imin,imax)
+       call Elec_box2grididx(Elecs(iEl),nmesh,dL,imin,imax)
 
        ! Now we have the minimum index for the box encompassing
        ! the electrode
@@ -403,19 +401,19 @@ contains
             idx = (/i1,i2,i3/)
             
             ! Transform the index to the unit-cell index
-            call mesh_correct_idx(meshG,idx)
+            call mesh_correct_idx(nmesh,idx)
 
             ! Figure out if this index lies
             ! in the current node
             idx(1) = idx(1) - offset_i(1)
-            if ( 0 < idx(1) .and. idx(1) <= meshl(1) ) then
+            if ( 0 < idx(1) .and. idx(1) <= nmeshl(1) ) then
              idx(2) = idx(2) - offset_i(2) - 1 ! one more for factor
-             if ( 0 <= idx(2) .and. idx(2) < meshl(2) ) then
+             if ( 0 <= idx(2) .and. idx(2) < nmeshl(2) ) then
               idx(3) = idx(3) - offset_i(3) - 1 ! one more for factor
-              if ( 0 <= idx(3) .and. idx(3) < meshl(3) ) then
+              if ( 0 <= idx(3) .and. idx(3) < nmeshl(3) ) then
                  ! Calculate position in local mesh
-                 imesh = idx(1) + idx(2)*meshl(1)
-                 imesh = imesh + idx(3)*meshl(1)*meshl(2)
+                 imesh = idx(1) + idx(2)*nmeshl(1)
+                 imesh = imesh + idx(3)*nmeshl(1)*nmeshl(2)
 #ifdef TRANSIESTA_BOX
                  n_V(iEl) = n_V(iEl) + 1
 #endif
@@ -453,7 +451,7 @@ contains
 
   end subroutine ts_elec_only
 
-  subroutine get_elec_indices(cell,na_u, xa, iElL, iElR)
+  subroutine get_elec_indices(cell, na_u, xa, iElL, iElR)
     use m_ts_electype
     use m_ts_options, only : Elecs
     
@@ -475,8 +473,8 @@ contains
     integer  :: i
     real(dp) :: r1, r2
 
-    call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmin = r1)
-    call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx, fmin = r2)
+    call Elec_frac(Elecs(1), cell, na_u, xa, ts_tidx, fmin = r1)
+    call Elec_frac(Elecs(2), cell, na_u, xa, ts_tidx, fmin = r2)
 
     if ( r1 < r2 ) then
        iElL = 1
@@ -488,7 +486,7 @@ contains
 
   end subroutine get_elec_indices
 
-  subroutine init_elec_indices(cell, meshG, nsm, na_u, xa)
+  subroutine init_elec_indices(cell, nmesh, na_u, xa)
     use intrinsic_missing, only : VNORM
     use parallel,     only : IONode
     use units,        only : Ang
@@ -500,7 +498,8 @@ contains
 ! * INPUT variables     *
 ! ***********************
     real(dp), intent(in) :: cell(3,3)
-    integer,  intent(in) :: meshG(3), nsm, na_u
+    ! total number of mesh-divisions
+    integer,  intent(in) :: nmesh(3), na_u
     real(dp), intent(in) :: xa(3,na_u)
 
 ! ***********************
@@ -514,10 +513,10 @@ contains
     Lvc = VNORM(cell(:,ts_tidx))
 
     ! Calculate the reciprocal cell (without 2Pi)
-    call reclat(cell,rcell,0)
+    call reclat(cell, rcell, 0)
 
     ! get the left/right electrodes
-    call get_elec_indices(cell,na_u,xa,iElL,iElR)
+    call get_elec_indices(cell, na_u, xa, iElL, iElR)
 
     if ( Elecs(iElL)%Bulk ) then
        sc = -huge(1._dp)
@@ -559,7 +558,7 @@ contains
     ! It has to place the ramp, far from atomic centers, but close to the electrode
     bdir = Elecs(iElL)%dINF_layer * 0.2_dp * cell(:,ts_tidx) / Lvc
     sc = sc + sum(bdir * rcell(:,ts_tidx))
-    left_elec_mesh_idx = nint(sc * meshG(ts_tidx))
+    left_elec_mesh_idx = nint(sc * nmesh(ts_tidx))
 
     if ( Elecs(iElR)%Bulk ) then
        sc =  huge(1._dp)
@@ -594,7 +593,7 @@ contains
     ! Subtract 0.2 interlayer distance
     bdir = Elecs(iElR)%dINF_layer * 0.2_dp * cell(:,ts_tidx) / Lvc
     sc = sc - sum(bdir * rcell(:,ts_tidx))
-    right_elec_mesh_idx = nint(sc * meshG(ts_tidx))
+    right_elec_mesh_idx = nint(sc * nmesh(ts_tidx))
 
 
     ! We correct for the case of users having put the electrode in 
@@ -608,9 +607,9 @@ contains
                & (0.,0.,0.).'
        end if
        left_elec_mesh_idx  = 1
-       right_elec_mesh_idx = meshG(ts_tidx)
+       right_elec_mesh_idx = nmesh(ts_tidx)
     end if
-    if ( left_elec_mesh_idx >= meshG(ts_tidx) ) then
+    if ( left_elec_mesh_idx >= nmesh(ts_tidx) ) then
        if ( IONode ) then
           write(*,'(1x,a)') 'WARNING: The voltage ramp could not be placed in &
                &between the electrodes, be sure to have the atomic &
@@ -618,19 +617,19 @@ contains
                & (0.,0.,0.).'
        end if
        left_elec_mesh_idx  = 1
-       right_elec_mesh_idx = meshG(ts_tidx)
+       right_elec_mesh_idx = nmesh(ts_tidx)
     end if
 
     ! Otherwise correct
     left_elec_mesh_idx = max(1,left_elec_mesh_idx)
-    left_elec_mesh_idx = min(meshG(ts_tidx),left_elec_mesh_idx)
+    left_elec_mesh_idx = min(nmesh(ts_tidx),left_elec_mesh_idx)
     right_elec_mesh_idx = max(1,right_elec_mesh_idx)
-    right_elec_mesh_idx = min(meshG(ts_tidx),right_elec_mesh_idx)
+    right_elec_mesh_idx = min(nmesh(ts_tidx),right_elec_mesh_idx)
 
   end subroutine init_elec_indices
 
   ! Print out the voltage direction dependent on the cell parameters.
-  subroutine print_ts_voltage( cell , meshG )
+  subroutine print_ts_voltage(cell, nmesh)
     use intrinsic_missing, only : VNORM
     use parallel,     only : IONode
     use units,        only : eV, Ang
@@ -638,7 +637,8 @@ contains
 ! * INPUT variables     *
 ! ***********************
     real(dp), intent(in) :: cell(3,3)
-    integer, intent(in) :: meshG(3)
+    ! total number of mesh-divisions
+    integer, intent(in) :: nmesh(3)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -658,7 +658,7 @@ contains
          vcdir(1),',',vcdir(2),',',vcdir(3),'}'
 
     ! Print the ramp coordinates
-    vcdir = cell(:,ts_tidx) / meshG(ts_tidx) / Ang
+    vcdir = cell(:,ts_tidx) / nmesh(ts_tidx) / Ang
     ElL = vcdir * (left_elec_mesh_idx - 1)
     ElR = vcdir *  right_elec_mesh_idx
     write(*,'(a,/,a,3(f9.3,tr1),a,3(tr1,f9.3),a)') &
@@ -673,7 +673,7 @@ contains
   ! We note that the potential landscape need only be calculated
   ! for one V, direct interpolation is possible as 
   ! the solution to the Poisson equation is linearly dependent on the BC
-  subroutine ts_ncdf_voltage(fname,V_name, npt,V)
+  subroutine ts_ncdf_voltage(fname, V_name, nmeshl, V)
     use precision, only: grid_p
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World, MPI_Bcast, MPI_Grid_Real
@@ -682,8 +682,9 @@ contains
     use nf_ncdf
     
     character(len=*), intent(in) :: fname, V_name
-    integer, intent(in) :: npt
-    real(grid_p), intent(inout) :: V(npt)
+    ! local number of mesh-divisions
+    integer, intent(in) :: nmeshl(3)
+    real(grid_p), intent(inout) :: V(:)
     
     type(hNCDF) :: ncdf
     real(grid_p) :: Vmm(2), fact
@@ -693,13 +694,15 @@ contains
 #endif
 
     ! All nodes should allocate an auxilliary grid
-    allocate(tmpV(npt))
+    allocate(tmpV(product(nmeshl)))
+    if ( size(V) /= size(tmpV) ) &
+         call die('ncdf_voltage: Vscf size not correct')
 
     ! Open the file
     call ncdf_open(ncdf,fname)
 
     ! Read in the grid
-    call cdf_r_grid(ncdf,trim(V_name),npt,tmpV)
+    call cdf_r_grid(ncdf,trim(V_name),nmeshl,tmpV)
 
     ! retrieve the max min from the file
     call ncdf_get_var(ncdf,trim(V_name)//'min',Vmm(1))
@@ -725,25 +728,25 @@ contains
   end subroutine ts_ncdf_voltage
 
 
-  subroutine ts_ncdf_voltage_assert(fname,cell,nsm)
+  subroutine ts_ncdf_voltage_assert(fname, cell, nmesh)
 
-    use parallel,     only : IONode
+    use parallel, only : IONode
 
     use nf_ncdf
     use dictionary
     
     character(len=*), intent(in) :: fname
     real(dp), intent(in) :: cell(3,3)
-    integer, intent(in) :: nsm(3)
+    integer, intent(in) :: nmesh(3)
     
     type(hNCDF) :: ncdf
     type(dict) :: dic
-    integer :: lnsm(3)
+    integer :: lnmesh(3)
 
     if ( .not. IONode ) return
 
     ! Ensure that it will fail if not found
-    lnsm = 0
+    lnmesh = 0
 
     call ncdf_open(ncdf,fname)
 
@@ -753,29 +756,29 @@ contains
 
     ! We allow the names to be n1/x/a
     if ( 'a' .in. dic ) then
-       call assign(lnsm(1),dic,'a')
+       call assign(lnmesh(1),dic,'a')
     else if ( 'n1' .in. dic ) then
-       call assign(lnsm(1),dic,'n1')
+       call assign(lnmesh(1),dic,'n1')
     else if ( 'x' .in. dic ) then
-       call assign(lnsm(1),dic,'x')
+       call assign(lnmesh(1),dic,'x')
     end if
 
     ! We allow the names to be n2/y/b
     if ( 'b' .in. dic ) then
-       call assign(lnsm(2),dic,'b')
+       call assign(lnmesh(2),dic,'b')
     else if ( 'n2' .in. dic ) then
-       call assign(lnsm(2),dic,'n2')
+       call assign(lnmesh(2),dic,'n2')
     else if ( 'y' .in. dic ) then
-       call assign(lnsm(2),dic,'y')
+       call assign(lnmesh(2),dic,'y')
     end if
 
     ! We allow the names to be n3/z/c
     if ( 'c' .in. dic ) then
-       call assign(lnsm(3),dic,'c')
+       call assign(lnmesh(3),dic,'c')
     else if ( 'n3' .in. dic ) then
-       call assign(lnsm(3),dic,'n3')
+       call assign(lnmesh(3),dic,'n3')
     else if ( 'z' .in. dic ) then
-       call assign(lnsm(3),dic,'z')
+       call assign(lnmesh(3),dic,'z')
     end if
 
     ! Clean up
@@ -784,13 +787,13 @@ contains
     call delete(dic)
 
     ! Check variables
-    if ( any(lnsm /= nsm) ) then       
+    if ( any(lnmesh /= nmesh) ) then       
        
        write(*,'(a)') 'TS.Hartree file does not contain correct indices'
        write(*,'(a)') 'Hartree dimensions *MUST* be [a|n1|x]/[b|n2|y]/[c|n3|z]'
 
-       write(*,'(a,3(tr1,i0))') 'transiesta grid size:',nsm
-       write(*,'(a,3(tr1,i0))') 'NetCDF file grid size:',lnsm
+       write(*,'(a,3(tr1,i0))') 'transiesta grid size:',nmesh
+       write(*,'(a,3(tr1,i0))') 'NetCDF file grid size:',lnmesh
        write(*,'(a)') 'They *MUST* be equivalent.'
 
        call die('Incorrect grid in NetCDF file for user supplied &

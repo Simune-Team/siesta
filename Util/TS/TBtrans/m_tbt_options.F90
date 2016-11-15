@@ -13,7 +13,7 @@ module m_tbt_options
 
   use precision, only : dp
 
-  use m_ts_tdir, only: ts_tdir, ts_tidx
+  use m_ts_tdir, only: ts_tidx
 
   use m_ts_electype
   use m_ts_chem_pot
@@ -396,7 +396,6 @@ contains
     ! Hence we use this as an error-check (also for N_Elec == 1)
     if ( N_Elec /= 2 ) then
        ! Signals no specific unit-cell direction of transport
-       ts_tdir = - N_Elec
        ts_tidx = - N_Elec
     else
 
@@ -425,16 +424,11 @@ contains
           ! direction.
           ts_tidx = i
           
-          ! Calculate Cartesian transport direction
-          call eye(3,tmp33)
-          ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx),mag=.true.)
-          
        else
 
           ! In case we have a skewed transport direction
           ! we have some restrictions...
           ts_tidx = -N_Elec
-          ts_tdir = -N_Elec
           
        end if
 

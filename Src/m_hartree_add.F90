@@ -111,7 +111,7 @@ module m_hartree_add
 contains
 
   ! We need to initialize information about the grid which we distribute in
-  subroutine init_hartree_add(ucell,mesh,nsm)
+  subroutine init_hartree_add(ucell, mesh)
     use parallel, only : IONode
     use units, only : Ang, eV
     use m_mesh_node, only : offset_r, dL, dMesh, meshl
@@ -122,8 +122,6 @@ contains
     real(dp), intent(in) :: ucell(3,3)
     ! Number of mesh divisions of each lattice vector
     integer, intent(in) :: mesh(3)
-    ! Number of fine points per big point (see iogrid_netcdf)
-    integer, intent(in) :: nsm 
     ! Local counters of the grid-intersections
     integer, allocatable :: count_is(:)
     integer :: ix,iy,iz, iC, i
