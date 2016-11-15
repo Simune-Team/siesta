@@ -200,7 +200,12 @@
 !     Interpolate into the grid of the first pseudo
 !      
       do j = 1, size(a1)
-         call evaluate_spline(x,y,y2,nr2,r1(j),val2)
+         ! In case the grid for p1 is longer than for p2...
+         if ( r1(j) > x(nr2) ) then
+            val2 = y(nr2)
+         else
+            call evaluate_spline(x,y,y2,nr2,r1(j),val2)
+         end if
          a(j) = xmix * a1(j) + (1.0_dp - xmix) * val2
       enddo
       
