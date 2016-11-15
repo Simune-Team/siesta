@@ -17,13 +17,21 @@
 % eventually become a link to the correct.
 % If you want to create an fdf flag which is not referenced
 % For instance a sub-block segment, use \fdf*{#1}.
+% The \fdf command will automatically convert ! to . but retains
+% the ! for indexing of the flag. Thus \fdf{FDF!Flag} will print
+% as FDF.Flag, but indexed as \index{FDF!Flag}. If you reference
+% a flag you must use the exclamation mark as used in the fdfentry
+% environment.
+%
 % Two very used fdf-flags are \fdftrue and \fdffalse which
 % are short-hands for \fdf*{true} and \fdf*{false}.
 % 
 % To document a new flag, do this:
 %
 %  \begin{fdfentry}{FDF.Flag}
+%
 %    Description
+%
 %  \end{fdfentry}
 %
 % Remark that it is not necessary to create any index commands
@@ -32,7 +40,9 @@
 % to:
 %
 %  \begin{fdfentry}{FDF.Flag}[integer]<0>
+%
 %    Description
+%
 %  \end{fdfentry}
 %
 % where [#1] may be any of:
@@ -42,12 +52,40 @@
 % There are two shorthands for the logical input with T/F default:
 %
 %  \begin{fdflogicalT}{FlagDefaultTrue}
+%
 %    This flag is default \fdftrue.
+%
 %  \end{fdflogicalT}
 %  \begin{fdflogicalF}{FlagDefaultFalse}
+%
 %    This flag is default \fdffalse.
+%
 %  \end{fdflogicalF}
 %
+% Sometimes it is useful to create an index value without
+% having to create the entry (say if a flag has been
+% superseeded by a new flag), in this case you should do:
+%
+%  \begin{fdfentry}{FDF.Flag}[integer]<0>
+%    \fdfindex*{Old.Flag}
+%
+%    Description
+%
+%  \end{fdfentry}
+% 
+% Additionally one may create dependency flags to make it
+% easy to see dependencies on the flags
+%  \begin{fdfentry}{FDF.Flag}[integer]<0>
+%    \fdfdepend{FDF.First, FDF.Second}
+%
+%    Description
+%
+%  \end{fdfentry}
+% will create additional information in the PDF with 
+% proper dependencies and hyperlinks to the fdf-flags.
+%
+%
+% !!!IMPORTANT!!!
 % Do NOT use \bf, \it, \tt, \rm, \em etc!
 % 
 % If you want to emphasize a word in a sentence, prefer to
@@ -5154,7 +5192,8 @@ simultaneously for complete control.
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{SCF.Tolerance!DM}[real]<$10^{-4}$>
+\begin{fdfentry}{SCF.Tolerance!DM}[real]<$10^{-4}$>%
+  \fdfdepend{SCF.Converge!DM}
   \fdfindex*{DM.Tolerance}
 
   Tolerance of Density Matrix.
@@ -5195,6 +5234,7 @@ simultaneously for complete control.
 \end{fdflogicalT}
 
 \begin{fdfentry}{SCF.Tolerance!H}[energy]<$10^{-3}\,\mathrm{eV}$>
+  \fdfdepend{SCF.Converge!H}
 
   If \fdf{SCF.Converge!H} is \fdftrue, then self-consistency is
   achieved when the maximum absolute change in the Hamiltonian matrix
@@ -5215,6 +5255,7 @@ simultaneously for complete control.
 \end{fdflogicalT}
 
 \begin{fdfentry}{SCF.Tolerance!EDM}[energy]<$10^{-3}\,\mathrm{eV}$>
+  \fdfdepend{SCF.Converge!EDM}
 
   If \fdf{SCF.Converge!EDM} is \fdftrue, then self-consistency is
   achieved when the maximum absolute change in the energy density
@@ -5236,6 +5277,7 @@ simultaneously for complete control.
 \end{fdflogicalF}
 
 \begin{fdfentry}{SCF.Tolerance!FreeE}[energy]<$10^{-4}\,\mathrm{eV}$>
+  \fdfdepend{SCF.Converge!FreeE}
   \fdfindex*{DM.EnergyTolerance}
 
   If \fdf{SCF.Converge!FreeE} is \fdftrue, then self-consistency is
@@ -5269,6 +5311,7 @@ simultaneously for complete control.
 \end{fdflogicalF}
 
 \begin{fdfentry}{SCF.Tolerance!Harris}[energy]<$10^{-4}\,\mathrm{eV}$>
+  \fdfdepend{SCF.Converge!Harris}
 
   If \fdf{SCF.Converge!Harris} is \fdftrue, then self-consistency is
   achieved when the change in the Harris energy between cycles of the
@@ -5310,8 +5353,8 @@ However, it can affect substantially the process of relaxation, by
 increasing the number of steps considerably, and can also spoil the
 calculation of vibrations, usually much more demanding than relaxations.
 
-The Util/Scripting/eggbox\_checker.py script can be used to diagnose
-the eggbox effect to be expected for a particular
+The \program{Util/Scripting/eggbox\_checker.py} script can be used to
+diagnose the eggbox effect to be expected for a particular
 pseudopotential/basis-set combination.
 
 Apart from increasing the mesh cutoff (see the \fdf{MeshCutoff} option),
