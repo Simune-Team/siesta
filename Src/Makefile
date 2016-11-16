@@ -1204,7 +1204,7 @@ siesta_forces.o: parallel.o post_scf_work.o precision.o save_density_matrix.o
 siesta_forces.o: scfconvergence_test.o setup_H0.o setup_hamiltonian.o
 siesta_forces.o: siesta_cml.o siesta_dicts.o siesta_geom.o siesta_master.o
 siesta_forces.o: siesta_options.o sparse_matrices.o state_analysis.o
-siesta_forces.o: state_init.o sys.o units.o write_subs.o
+siesta_forces.o: state_init.o sys.o timer.o units.o write_subs.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o
 siesta_init.o: class_Fstack_Pair_Geometry_SpData2D.o densematrix.o files.o
