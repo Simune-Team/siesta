@@ -3708,12 +3708,12 @@ energy, the level of precision requiered to perform a proper fully
 relativistic calculation during the selfconsistent process is quite
 demanding. The following values must be carefully converged and
 checked for each specific system to assure that the results are
-accurate enough: \fdf{SCF.Tolerance!H} during the
+accurate enough: \fdf{SCF.H!Tolerance} during the
 selfconsistency~(typically <10$^{-5}$eV), \fdf{ElectronicTemperature},
 \textbf{k}-point sampling and high values of
 \fdf{MeshCutoff}~(specifically for extended solids). In general, one
 can say that a good calculation will have high number of k--points,
-low \fdf{ElectronicTemperature}, extremely small \fdf{SCF.Tolerance!H}
+low \fdf{ElectronicTemperature}, extremely small \fdf{SCF.H!Tolerance}
 and high values of \fdf{MeshCutoff}.  We encourage the user to test
 carefully these options for each system. An additional point to take
 into account when the spin--orbit contribution is included is the
@@ -5185,7 +5185,7 @@ precedence.
 Note that all convergence criteria are additive and may thus be used
 simultaneously for complete control.
 
-\begin{fdflogicalT}{SCF.Converge!DM}
+\begin{fdflogicalT}{SCF.DM!Converge}
   \index{SCF!mixing!Density matrix convergence}
 
   Logical variable to use the density matrix elements as monitor
@@ -5193,15 +5193,15 @@ simultaneously for complete control.
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{SCF.Tolerance!DM}[real]<$10^{-4}$>%
-  \fdfdepend{SCF.Converge!DM}
+\begin{fdfentry}{SCF.DM!Tolerance}[real]<$10^{-4}$>%
+  \fdfdepend{SCF.DM!Converge}
   \fdfindex*{DM.Tolerance}
 
   Tolerance of Density Matrix.
   %
   When the maximum difference between the output and the input on each
   element of the DM in a SCF cycle is smaller than
-  \fdf{SCF.Tolerance!DM}, the self-consistency has been achieved.
+  \fdf{SCF.DM!Tolerance}, the self-consistency has been achieved.
 
 
   \note \fdf{DM.Tolerance} is the actual default for this flag.
@@ -5221,81 +5221,81 @@ simultaneously for complete control.
 
 
 
-\begin{fdflogicalT}{SCF.Converge!H}
+\begin{fdflogicalT}{SCF.H!Converge}
   \index{SCF!mixing!Hamiltonian convergence}
 
   Logical variable to use the Hamiltonian matrix elements as monitor
   of self-consistency: this is considered achieved when the maximum
   absolute change (dHmax) in the H matrix elements is below
-  \fdf{SCF.Tolerance!H}. The actual meaning of dHmax depends on
+  \fdf{SCF.H!Tolerance}. The actual meaning of dHmax depends on
   whether DM or H mixing is in effect: if mixing the DM, dHmax refers
   to the change in H(in) with respect to the previous step; if mixing
   H, dHmax refers to H(out)-H(in) in the previous(?) step. 
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{SCF.Tolerance!H}[energy]<$10^{-3}\,\mathrm{eV}$>
-  \fdfdepend{SCF.Converge!H}
+\begin{fdfentry}{SCF.H!Tolerance}[energy]<$10^{-3}\,\mathrm{eV}$>
+  \fdfdepend{SCF.H!Converge}
 
-  If \fdf{SCF.Converge!H} is \fdftrue, then self-consistency is
+  If \fdf{SCF.H!Converge} is \fdftrue, then self-consistency is
   achieved when the maximum absolute change in the Hamiltonian matrix
   elements is below this value.
   
 \end{fdfentry}
 
 
-\begin{fdflogicalT}{SCF.Converge!EDM}
+\begin{fdflogicalT}{SCF.EDM!Converge}
   \index{SCF!mixing!energy density matrix convergence}
 
   Logical variable to use the energy density matrix elements as monitor
   of self-consistency: this is considered achieved when the maximum
   absolute change (dEmax) in the energy density matrix elements is below
-  \fdf{SCF.Tolerance!EDM}. The meaning of dEmax is equivalent to that
-  of \fdf{SCF.Tolerance!DM}.
+  \fdf{SCF.EDM!Tolerance}. The meaning of dEmax is equivalent to that
+  of \fdf{SCF.DM!Tolerance}.
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{SCF.Tolerance!EDM}[energy]<$10^{-3}\,\mathrm{eV}$>
-  \fdfdepend{SCF.Converge!EDM}
+\begin{fdfentry}{SCF.EDM!Tolerance}[energy]<$10^{-3}\,\mathrm{eV}$>
+  \fdfdepend{SCF.EDM!Converge}
 
-  If \fdf{SCF.Converge!EDM} is \fdftrue, then self-consistency is
+  If \fdf{SCF.EDM!Converge} is \fdftrue, then self-consistency is
   achieved when the maximum absolute change in the energy density
   matrix elements is below this value.
   
 \end{fdfentry}
 
 
-\begin{fdflogicalF}{SCF.Converge!FreeE}
+\begin{fdflogicalF}{SCF.FreeE!Converge}
   \index{SCF!mixing!energy convergence}
   \fdfindex*{DM.RequireEnergyConvergence}
 
   Logical variable to request an additional requirement for
   self-consistency: it is considered achieved when the change in the
   total (free) energy between cycles of the SCF procedure is below
-  \fdf{SCF.Tolerance!FreeE} and the density matrix change criterion is
+  \fdf{SCF.FreeE!Tolerance} and the density matrix change criterion is
   also satisfied.
 
 \end{fdflogicalF}
 
-\begin{fdfentry}{SCF.Tolerance!FreeE}[energy]<$10^{-4}\,\mathrm{eV}$>
-  \fdfdepend{SCF.Converge!FreeE}
+\begin{fdfentry}{SCF.FreeE!Tolerance}[energy]<$10^{-4}\,\mathrm{eV}$>
+  \fdfdepend{SCF.FreeE!Converge}
   \fdfindex*{DM.EnergyTolerance}
 
-  If \fdf{SCF.Converge!FreeE} is \fdftrue, then self-consistency is
+  If \fdf{SCF.FreeE!Converge} is \fdftrue, then self-consistency is
   achieved when the change in the total (free) energy between cycles
   of the SCF procedure is below this value and the density matrix
   change criterion is also satisfied.
 
 \end{fdfentry}
 
-\begin{fdflogicalF}{SCF.Converge!Harris}
+\begin{fdflogicalF}{SCF.Harris!Converge}
   \index{SCF!mixing!harris energy convergence}
   \fdfindex*{DM.Require.Harris.Convergence}
 
   Logical variable to use the Harris energy as monitor of
   self-consistency: this is considered achieved when the change in the
   Harris energy between cycles of the SCF procedure is below
-  \fdf{SCF.Tolerance!Harris}. This is useful if only
+  \fdf{SCF.Harris!Tolerance}. This is useful if only
   energies are needed, as the Harris energy tends to converge faster
   than the Kohn-Sham energy. The user is responsible for using the
   correct energies in further processing, e.g., the Harris energy if
@@ -5306,15 +5306,15 @@ simultaneously for complete control.
   information as \file{BASIS\_ENTHALPY} but using the Harris energy
   instead of the Kohn-Sham energy.
 
-  \note setting this to \fdftrue\ makes \fdf{SCF.Converge!DM}
-  \fdf{SCF.Converge!H} default to \fdffalse.
+  \note setting this to \fdftrue\ makes \fdf{SCF.DM!Converge}
+  \fdf{SCF.H!Converge} default to \fdffalse.
 
 \end{fdflogicalF}
 
-\begin{fdfentry}{SCF.Tolerance!Harris}[energy]<$10^{-4}\,\mathrm{eV}$>
-  \fdfdepend{SCF.Converge!Harris}
+\begin{fdfentry}{SCF.Harris!Tolerance}[energy]<$10^{-4}\,\mathrm{eV}$>
+  \fdfdepend{SCF.Harris!Converge}
 
-  If \fdf{SCF.Converge!Harris} is \fdftrue, then self-consistency is
+  If \fdf{SCF.Harris!Converge} is \fdftrue, then self-consistency is
   achieved when the change in the Harris energy between cycles of the
   SCF procedure is below this value. This is useful if only energies
   are needed, as the Harris energy tends to converge faster than the
@@ -8805,8 +8805,8 @@ structure. The changes are:
 
   \item%
   The default convergence criteria is now \emph{both} density and
-  Hamiltonian convergence, see \fdf{SCF.Converge!DM} and
-  \fdf{SCF.Converge!H}.
+  Hamiltonian convergence, see \fdf{SCF.DM!Converge} and
+  \fdf{SCF.H!Converge}.
 
 \end{itemize}
 

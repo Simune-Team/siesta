@@ -698,8 +698,8 @@ mulliken.o: siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o new_matel.o precision.o
 new_matel.o: alloc.o errorf.o interpolation.o matel_registry.o parallel.o
 new_matel.o: precision.o radfft.o spher_harm.o sys.o
-nlefsm.o: alloc.o atm_types.o atmfuncs.o mneighb.o new_matel.o parallel.o
-nlefsm.o: parallelsubs.o precision.o
+nlefsm.o: alloc.o atm_types.o atmfuncs.o atomlist.o chemical.o mneighb.o
+nlefsm.o: new_matel.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: siesta_options.o sparse_matrices.o sys.o
 obc.o: alloc.o precision.o
@@ -814,7 +814,8 @@ siesta_analysis.o: m_pexsi_dos.o m_pexsi_local_dos.o m_spin.o m_steps.o
 siesta_analysis.o: parallel.o projected_DOS.o siesta2wannier90.o siesta_cml.o
 siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o units.o
 siesta_analysis.o: write_subs.o writewave.o zmatrix.o
-siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o 
+siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
+siesta_cmlsubs.o: 
 siesta_dicts.o: atomlist.o m_energies.o m_forces.o precision.o siesta_geom.o
 siesta_dicts.o: siesta_options.o
 siesta_end.o: alloc.o bands.o densematrix.o extrae_eventllist.o flook_siesta.o
@@ -835,8 +836,8 @@ siesta_forces.o: m_ts_options.o mixer.o overfsm.o parallel.o post_scf_work.o
 siesta_forces.o: precision.o save_density_matrix.o scfconvergence_test.o
 siesta_forces.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_dicts.o
 siesta_forces.o: siesta_geom.o siesta_master.o siesta_options.o
-siesta_forces.o: sparse_matrices.o state_analysis.o state_init.o sys.o units.o
-siesta_forces.o: wavefunctions.o write_subs.o
+siesta_forces.o: sparse_matrices.o state_analysis.o state_init.o sys.o timer.o
+siesta_forces.o: units.o wavefunctions.o write_subs.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o
 siesta_init.o: class_Fstack_Pair_Geometry_SpData2D.o densematrix.o files.o

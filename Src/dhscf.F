@@ -502,7 +502,7 @@ C ----------------------------------------------------------------------
             ! We have a user-defined electric-field
             field(:) = user_specified_field(:)
             do iE = 1 , N_Elec
-               field2 = cell(:,Elecs(iE)%pvt(Elec(iE)%t_dir))
+               field2 = cell(:,Elecs(iE)%pvt(Elecs(iE)%t_dir))
                ortho = ddot(3,field2,1,field,1)
                if ( ortho > 1.e-9_dp ) then
                   call die('User defined E-field must be &
