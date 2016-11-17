@@ -484,56 +484,56 @@ subroutine read_options( na, ns, nspin )
   ! Harris energy convergence
   ! If this is TRUE, then the following options are defaulted to FALSE.
   converge_Eharr = fdf_get('DM.RequireHarrisConvergence', .false.)
-  converge_Eharr = fdf_get('SCF.Converge.Harris', converge_Eharr)
+  converge_Eharr = fdf_get('SCF.Harris.Converge', converge_Eharr)
   tolerance_Eharr = fdf_get('DM.HarrisTolerance', 1.e-4_dp*eV, 'Ry' )
-  tolerance_Eharr = fdf_get('SCF.Tolerance.Harris', tolerance_Eharr, 'Ry' )
+  tolerance_Eharr = fdf_get('SCF.Harris.Tolerance', tolerance_Eharr, 'Ry' )
   if ( IONode ) then
      write(6,1) 'redata: Require Harris convergence for SCF', &
           converge_Eharr
      write(6,7) 'redata: Harris energy tolerance for SCF', tolerance_Eharr/eV, ' eV'
-  endif
+  end if
 
   if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='SCF.Converge.Harris', &
+     call cmlAddParameter( xf=mainXML, name='SCF.Harris.Converge', &
           value=converge_Eharr, &
           dictRef='siesta:ReqHarrisConv' )
-     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.Harris', units='siestaUnits:eV', &
+     call cmlAddParameter( xf=mainXML, name='SCF.Harris.Tolerance', units='siestaUnits:eV', &
           value=tolerance_Eharr/eV, dictRef='siesta:Harris_tolerance')
-  endif
+  end if
   
 
   ! Density matrix convergence
-  converge_DM = fdf_get('SCF.Converge.DM', .not. converge_Eharr)
+  converge_DM = fdf_get('SCF.DM.Converge', .not. converge_Eharr)
   dDtol = fdf_get('DM.Tolerance',1.e-4_dp)
-  dDtol = fdf_get('SCF.Tolerance.DM',dDtol)
+  dDtol = fdf_get('SCF.DM.Tolerance',dDtol)
   if ( IONode ) then
      write(6,1) 'redata: Require DM convergence for SCF', converge_DM
      write(6,9) 'redata: DM tolerance for SCF',dDtol
   end if
   if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='SCF.Converge.DM', &
+     call cmlAddParameter( xf=mainXML, name='SCF.DM.Converge', &
           value=converge_DM, &
           dictRef='siesta:ReqDMConv' )
-     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.DM', &
+     call cmlAddParameter( xf=mainXML, name='SCF.DM.Tolerance', &
           value=dDtol, dictRef='siesta:dDtol', &
           units='siestaUnits:eAng_3' )
   end if
 
 
   ! Energy-density matrix convergence
-  converge_EDM = fdf_get('SCF.Converge.EDM', .false.)
-  tolerance_EDM = fdf_get('SCF.Tolerance.EDM',1.e-3_dp*eV, 'Ry')
+  converge_EDM = fdf_get('SCF.EDM.Converge', .false.)
+  tolerance_EDM = fdf_get('SCF.EDM.Tolerance',1.e-3_dp*eV, 'Ry')
   if ( IONode ) then
      write(6,1) 'redata: Require EDM convergence for SCF', converge_EDM
      write(6,7) 'redata: EDM tolerance for SCF',tolerance_EDM/eV, ' eV'
   end if
   if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='SCF.Converge.EDM', &
+     call cmlAddParameter( xf=mainXML, name='SCF.EDM.Converge', &
           value=converge_EDM, &
           dictRef='siesta:ReqEDMConv' )
-     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.EDM', &
+     call cmlAddParameter( xf=mainXML, name='SCF.EDM.Tolerance', &
           value=tolerance_EDM/eV, dictRef='siesta:EDM_tolerance', &
-          units='siestaUnits:eV' )
+          units='siestaUnits:eVeAng_3' )
   end if
 
 
@@ -543,41 +543,41 @@ subroutine read_options( na, ns, nspin )
   else
      tBool = .not. converge_Eharr
   end if
-  converge_H = fdf_get('SCF.Converge.H', tBool)
-  dHtol = fdf_get('SCF.Tolerance.H',1.e-3_dp*eV, 'Ry')
+  converge_H = fdf_get('SCF.H.Converge', tBool)
+  dHtol = fdf_get('SCF.H.Tolerance',1.e-3_dp*eV, 'Ry')
   if ( IONode ) then
      write(6,1) 'redata: Require H convergence for SCF', converge_H
      write(6,7) 'redata: Hamiltonian tolerance for SCF', dHtol/eV, ' eV'
-  endif
+  end if
   
   if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='SCF.Converge.H', &
+     call cmlAddParameter( xf=mainXML, name='SCF.H.Converge', &
           value=converge_H, &
           dictRef='siesta:ReqHConv' )
-     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.H',     &
+     call cmlAddParameter( xf=mainXML, name='SCF.H.Tolerance',     &
           value=dHtol/eV, dictRef='siesta:dHtol', &
           units='siestaUnits:eV' )
-  endif
+  end if
 
 
   ! Free energy convergence
   converge_FreeE = fdf_get('DM.RequireEnergyConvergence', .false.)
-  converge_FreeE = fdf_get('SCF.Converge.FreeE',converge_FreeE)
+  converge_FreeE = fdf_get('SCF.FreeE.Converge',converge_FreeE)
   tolerance_FreeE = fdf_get('DM.EnergyTolerance', 1.e-4_dp*eV, 'Ry' )
-  tolerance_FreeE = fdf_get('SCF.Tolerance.FreeE',tolerance_FreeE, 'Ry')
+  tolerance_FreeE = fdf_get('SCF.FreeE.Tolerance',tolerance_FreeE, 'Ry')
   if ( IONode ) then
      write(6,1) 'redata: Require (free) Energy convergence for SCF', converge_FreeE
      write(6,7) 'redata: (free) Energy tolerance for SCF', tolerance_FreeE/eV, ' eV'
-  endif
+  end if
 
   if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='SCF.Converge.FreeE', &
+     call cmlAddParameter( xf=mainXML, name='SCF.FreeE.Converge', &
           value=converge_FreeE, &
           dictRef='siesta:ReqEnergyConv' )
-     call cmlAddParameter( xf=mainXML, name='SCF.Tolerance.FreeE', &
+     call cmlAddParameter( xf=mainXML, name='SCF.FreeE.Tolerance', &
           value=tolerance_FreeE/eV, dictRef='siesta:dEtol', &
           units="siestaUnits:eV" )
-  endif
+  end if
   
   ! Check that there indeed is at least one convergence criteria
   tBool = .false.

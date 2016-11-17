@@ -155,8 +155,8 @@ contains
     end if
     
     ! Read in the mixing for the transiesta cycles
-    ts_Dtol = fdf_get('TS.SCF.Tolerance.DM',dDTol)
-    ts_Htol = fdf_get('TS.SCF.Tolerance.H',dHTol)
+    ts_Dtol = fdf_get('TS.SCF.DM.Tolerance',dDTol)
+    ts_Htol = fdf_get('TS.SCF.H.Tolerance',dHTol)
     ts_hist_keep = fdf_get('TS.SCF.Mix.History.Keep',0)
 
     ! Stop after siesta has converged
