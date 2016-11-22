@@ -12,7 +12,6 @@
 #
 # Remove implicit rules
 .SUFFIXES:
-.SUFFIXES: .f .F .f90 .F90 .o .c .a
 
 VPATH=.
 
@@ -21,6 +20,15 @@ AR ?= ar
 RANLIB ?= ranlib
 
 default: what siesta
+include arch.make
+
+# Ensure the correct implicit rules for the compilation
+# SIESTA relies on these extensions and thus we
+# force them to be here.
+# Importantly these should be after the include statement.
+# Note that this will not help the utilities.
+.SUFFIXES: .f .f90 .F .F90 .c .o .a
+
 
 lib: libSiestaXC.a libfdf.a libSiestaForces.a
 
@@ -37,7 +45,6 @@ dep:
 	@sed -i -e "/^siesta_cmlsubs.o:/s/version.o//" Makefile
 	@sed -i -e 's/\.T90\.o:/.o:/g' Makefile
 
-include arch.make
 INCFLAGS:= $(NETCDF_INCFLAGS) $(PEXSI_INCFLAGS) $(INCFLAGS)
 
 
