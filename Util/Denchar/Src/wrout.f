@@ -98,6 +98,8 @@ C Write general information only if called for the first time
      .    '                          ************************       '
 
         WRITE(UNIT1,'(A,A)')
+     .    '  DENCHAR version: ', "2.2"
+        WRITE(UNIT1,'(A,A)')
      .    '  You are running DENCHAR for system: ',SNAME
         WRITE(UNIT1,'(A)')
      .    '  '
