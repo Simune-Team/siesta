@@ -467,11 +467,10 @@ defaults to \fdf*{TS.Voltage} if not supplied.
 \end{fdfentry}
 
 \begin{fdfentry}{TBT.HS.Interp}[string]<spline|linear>
+  \fdfdepend{TBT.HS.Files}
 
   Interpolate all files defined in \fdf{TBT.HS.Files} to the
   corresponding applied bias.
-
-  Only used if \fdf{TBT.HS.Files} is set.
 
   Generally \fdf*{spline} produces the best interpolated values and
   its use is encouraged. The linear interpolation scheme is mainly
@@ -619,6 +618,9 @@ group: LEVEL-4 {
   on. 
 
 \end{fdfentry}
+
+The remaining options are only applicable if \fdf{TBT.dH} has been
+set. 
 
 \begin{fdflogicalT}{TBT.dH!Parallel}
 
@@ -779,6 +781,7 @@ $\rho_{\mathrm{bound-states}}=0$.
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.Current!Orb}
+  \fdfdepend{TBT.DOS!A}
 
   Whether the orbital currents will be calculated and stored.  These
   will be stored in a sparse matrix format corresponding to the
@@ -880,13 +883,18 @@ currents may only be calculated in the selected device region.
 \tbtrans\ allows calculating physical quantities via averaging in the
 Brillouin zone. 
 
-\begin{fdfentry}{TBT.k}[block]<\nonvalue{kgrid\_Monkhorst\_Pack}>
+\begin{fdfentry}{TBT.k}[list/block]<\nonvalue{kgrid\_Monkhorst\_Pack}>
   
   Specify how to perform Brillouin zone integrations.
 
-  There are several ways of defining the $k$-points in the Brillouin
-  zone.
+  This may be given as a list like this:
+  \begin{fdfexample}
+    TBT.k [A B C]
+  \end{fdfexample}
+  where each integer corresponds to the diagonal elements of the
+  Monkhorst-Pack grid.
 
+  If you supply this flag as a block the following options are available:
   \begin{fdfoptions}
 
     \option[path]%
@@ -1056,7 +1064,7 @@ semi-infinite electrodes.
 It is thus important to define an energy grid for analysis of the DOS
 and transmission.
 
-\begin{fdfentry}{TBT.Contours.Eta}[energy]<$0\,\mathrm{eV}$>
+\begin{fdfentry}{TBT.Contours!Eta}[energy]<$0\,\mathrm{eV}$>
   
   The imaginary ($\eta$) part of the Green function in the device
   region. Note that the electrodes imaginary part may be controlled
@@ -1310,13 +1318,6 @@ is no need to specify the chemical potential
     If many calculations are performed this will heavily increase
     performance at the cost of disk-space.
 
-    \option[tbt.Gf-Reuse]%
-    \fdfindex*{TBT.Elec.<>!tbt.Gf-Reuse}%
-    Logical deciding whether the surface Green function file should be
-    re-used or deleted.
-    %
-    If this is \fdffalse\ the surface Green function file is deleted
-    and re-created upon start.
     
     \option[tbt.Eta/Eta]%
     \fdfindex*{TBT.Elec.<>!tbt.Eta}%
@@ -1361,7 +1362,7 @@ is no need to specify the chemical potential
     For performance reasons \fdf*{all} is preferred. 
 
     \option[tbt.out-of-core/out-of-core]%
-    \fdfindex*{TBT.Elec.<>!out-of-core}%
+    \fdfindex*{TBT.Elec.<>!tbt.out-of-core}%
     If \fdftrue\ the GF files are created which contain the surface
     Green function. Setting this to \fdftrue\ may be advantageous when
     performing many calculations using the same $k$ and energy grid
@@ -1372,6 +1373,15 @@ is no need to specify the chemical potential
     calculated when needed. 
 
     \note simultaneous calculations may read the same GF file.
+
+    \option[tbt.Gf-Reuse]%
+    \fdfindex*{TBT.Elec.<>!tbt.Gf-Reuse}%
+    \fdfdepend{TBT.Elec.<>!tbt.out-of-core}%
+    Logical deciding whether the surface Green function file should be
+    re-used or deleted.
+    %
+    If this is \fdffalse\ the surface Green function file is deleted
+    and re-created upon start.
 
   \end{fdfoptions}
   
@@ -1416,15 +1426,6 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
 
 \end{fdflogicalF}  
 
-\begin{fdflogicalT}{TBT.Elecs!GF.Reuse}
-  
-  Globally control whether the surface Green function files should
-  be re-used (\fdftrue) or re-created (\fdffalse).
-  %
-  See \fdf{TBT.Elec.<>!tbt.Gf-Reuse}.
-  
-\end{fdflogicalT}
-
 \begin{fdflogicalF}{TBT.Elecs!Out-of-core}
 
   This enables reusing the self-energies by storing them on-disk
@@ -1434,12 +1435,24 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
 
   You are encouraged to set this to \fdftrue\ to reduce computations. 
   %
-  See \fdf{TBT.Elec.<>!out-of-core}.
+  See \fdf{TBT.Elec.<>!tbt.out-of-core}.
 
   Currently this option is not compatible with \fdf{TBT.T.Bulk} and
-  \fdf{TBT.DOS.Elecs}. 
+  \fdf{TBT.DOS.Elecs}, and the bulk transmission and bulk DOS will not
+  be calculated if this option is \fdftrue.
   
 \end{fdflogicalF}
+
+\begin{fdflogicalT}{TBT.Elecs!Gf.Reuse}
+  \fdfdepend{TBT.Elecs!Out-of-core,TBT.Elec.<>!tbt.out-of-core}
+  
+  Globally control whether the surface Green function files should
+  be re-used (\fdftrue) or re-created (\fdffalse).
+  %
+  See \fdf{TBT.Elec.<>!tbt.Gf-Reuse}.
+  
+\end{fdflogicalT}
+
 
 \begin{fdfentry}{TBT!Elecs!Coord.EPS}[length]<$10^{-4}\,\mathrm{Bohr}$>
 
@@ -2074,6 +2087,7 @@ the molecule.
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.Projs!Current.Orb}%
+  \fdfdepend{TBT.Projs!DOS.A}
 
   Will calculate and save the orbital current for the device with the
   projections.
