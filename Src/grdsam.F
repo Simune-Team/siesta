@@ -137,7 +137,7 @@ C Internal variables and arrays
       logical, save :: blread = .false.
       logical, save :: samgrd = .false.
 
-      real(dp) :: d
+      real(dp) :: d, dx(3)
       real(dp) :: famax(3), fastd(3)
       real(dp) :: strmax
       real(dp), save :: lstcll(3,3) = 0.743978657912656D50
@@ -351,17 +351,17 @@ c loop sampling on displacements making averages ----------------------------
 
         do ipt = 1, npt
 
-          do ia = 1, na
-            do ix = 1, 3
-
-             ! Calculate the displacements
-             d = 0._dp
+          ! Calculate the displacement for this mesh sample
+          do ix = 1, 3
+             dx(ix) = 0._dp
              do iy = 1, 3
-                d = d + cell(ix,iy)*pt(iy,ipt)/dble(ntm(iy))
+               dx(ix) = dx(ix)
+     &              + cell(ix,iy)*pt(iy,ipt)/dble(ntm(iy))
              end do
+          end do
 
-             xanew(ix,ia) = xa(ix,ia) + d
-            enddo
+          do ia = 1, na
+             xanew(:,ia) = xa(:,ia) + dx(:)
           enddo
 
           ! Copy back the initial forces so we may
