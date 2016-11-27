@@ -3939,7 +3939,7 @@ NOTE: The default value might be a bit conservative. Users might
 experiment with higher values (4, 6) to lower the memory and cputime
 usage.
 
-\item[{\bf GridCellSampling}] ({\it data block}):\index{egg-box effect}
+\item[{\bf GridCellSampling}] ({\it data block/list}):\index{egg-box effect}
 \index{GridCellSampling@{\bf GridCellSampling}}\index{rippling}
 
 It specifies points within the grid cell for a symmetrization sampling.
@@ -4014,6 +4014,10 @@ symmetrized as it gives a much smaller egg-box effect).
 The CPU time needed for each displacement
 in the {\bf GridCellSampling} block
 is of the order of one extra SCF iteration.
+
+This may be required in systems where very precise forces are needed,
+and/or if partial cores are used. It is advantageous to test whether
+the forces are sampled sufficiently by sampling one point.
 
 {\it Default value:} Empty.
 

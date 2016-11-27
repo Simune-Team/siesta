@@ -86,8 +86,9 @@ C
       use precision
       use fdf
       use files,     only : filesOut_t    ! derived type for output file names
-      use parallel,  only : Node
+      use parallel,  only : IONode
       use sys,       only : die
+      use units, only : eV, Ang, kbar
       use m_dhscf,   only : dhscf, dhscf_init
       use alloc,     only : re_alloc, de_alloc
       use siesta_options, only: g2cut
@@ -96,6 +97,10 @@ C
       use siesta_options, only: partial_charges_at_every_geometry
       use m_partial_charges, only: want_partial_charges
 
+#ifdef MPI
+      use m_mpi_utils, only: globalize_sum
+#endif
+      
       implicit          none
 
       integer           maxnh, maxnd, na, norb, nspin, nuo, nuotot, 
@@ -113,19 +118,16 @@ C Internal variables and arrays
  
       logical           samesh
       integer           nr, ipt, ia,
-     &                  ix, iv
-      real(dp)          avexc, strold(3,3), avdipo(3), avstre(3,3),
+     &                  iv
+      real(dp)          avexc, strold(3,3,2), avdipo(3),
      &                  avdxc, avenaa, avenas, avuatm, avuscf, avdusc,
-     &                  anpt, strold2(3,3), avstre2(3,3)
+     &                  anpt
       real(dp)          G2max
 
-      integer, parameter      :: maxpt = 100
-
-      real(dp), pointer       :: avfa(:,:) => null(),
-     $                           faold(:,:) => null(),
-     &                           xanew(:,:) => null(),
-     $                           avfa2(:,:) => null(),
-     $                           faold2(:,:) => null()
+      real(dp), pointer :: allfa(:,:,:,:) => null()
+      real(dp), pointer :: allstr(:,:,:,:) => null()
+      real(dp), pointer :: faold(:,:,:) => null()
+      real(dp), pointer :: xanew(:,:) => null()
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -135,71 +137,143 @@ C Internal variables and arrays
       logical, save :: blread = .false.
       logical, save :: samgrd = .false.
 
+      real(dp) :: d, dx(3)
+      real(dp) :: famax(3), fastd(3)
+      real(dp) :: strmax
       real(dp), save :: lstcll(3,3) = 0.743978657912656D50
       integer, save  :: lstntm(3) = (/10000, 1, 1/) 
-      integer, save  :: npt
-      real(dp), pointer, save :: pt(:,:),  dpt(:,:)
+      integer, save  :: npt = 0
+      integer :: nABC(3), ix, iy, iz
+      real(dp), pointer, save :: pt(:,:) => null()
 
 c ----------------------------------------------------------------------------
 #ifdef DEBUG
       call write_debug( '    PRE grdsam' )
 #endif
 
-C Allocate local memory
-      call re_alloc( pt, 1, 3, 1, maxpt+1, 'pt', 'grdsam' )
-      call re_alloc( dpt, 1, 3, 1, maxpt+1, 'dpt', 'grdsam' )
-
-      call re_alloc( avfa, 1, 3, 1, na, 'avfa', 'grdsam' )
-      call re_alloc( avfa2, 1, 3, 1, na, 'avfa2', 'grdsam' )
-      call re_alloc( faold, 1, 3, 1, na, 'faold', 'grdsam' )
-      call re_alloc( faold2, 1, 3, 1, na, 'faold2', 'grdsam' )
-      call re_alloc( xanew, 1, 3, 1, na, 'xanew', 'grdsam' )
 
 C Check whether GridCellSampling block has been looked for ------------------
 
       if ( .not. blread ) then
 
-C Look for block and read it if found ---------------------------------------
- 
-        samgrd = fdf_block('GridCellSampling',bfdf)
+        ! Initialize number of sampled points...
+        npt = 0
+
+        ! The Grid.CellSampling may be given in a list
+        ! fashion such that one can do a "MP" style
+        ! sampling.
+
         
-        if (samgrd) then
-          if (Node.eq.0) then
-            write(6,'(a)') 'grdsam: Reading %block GridCellSampling'
-          endif
-          ipt = 1
-          do while(fdf_bline(bfdf,pline) .and. (ipt .le. maxpt+1))
-            nr = fdf_bnreals(pline)
-            if (nr .ge. 3) then
-              pt(1,ipt) = fdf_breals(pline,1)
-              pt(2,ipt) = fdf_breals(pline,2)
-              pt(3,ipt) = fdf_breals(pline,3)
+        if ( fdf_islist('Grid.CellSampling') ) then
+           samgrd = .true.
+           
+           ! There are two methods of using the 
+           ! Cell sampling, the diagonal one (via a list)
+
+           call fdf_list('Grid.CellSampling', 3, nABC)
+           if ( nABC(1) < 1 ) nABC(1) = 1
+           if ( nABC(2) < 1 ) nABC(2) = 1
+           if ( nABC(3) < 1 ) nABC(3) = 1
+
+           ! Get total number of points
+           npt = product(nABC) - 1 ! we do not have 0. 0. 0.
+
+           if ( npt == 0 ) then
+              ! This is the special case where the user
+              ! says [1 1 1]
+              ! in that case we sample the half diagonal
+              ! voxel
+              npt = 1
+           end if
+
+           if ( IONode ) then
+            write(6,'(/a)') 'grdsam: Reading Grid.CellSampling list'
+           end if
+
+           ! Allocate the sampled points
+           call re_alloc( pt, 1, 3, 1, npt, 'pt', 'grdsam' )
+           
+           ipt = 0
+           do iz = 0 , nABC(3) - 1
+            do iy = 0 , nABC(2) - 1
+              do ix = 0 , nABC(1) - 1
+                  
+              ! This is 0. 0. 0., we should skip it
+              if ( ix + iy + iz == 0 ) cycle
+
               ipt = ipt + 1
-            else
-              write(6,'(a,/,a)')
-     &          'grdsam: syntax ERROR in %block GridCellSampling:',
-     &          trim(fdf_getline(bfdf%mark))
-            endif
-          enddo
-          if (ipt .gt. maxpt+1) then
-            call die('grdsam: ERROR: Number of points' //
-     $               ' in block larger than MAXPT')
-          endif
-          npt = ipt - 1
-        endif
+              pt(1,ipt) = real(ix,dp) / real(nABC(1),dp)
+              pt(2,ipt) = real(iy,dp) / real(nABC(2),dp)
+              pt(3,ipt) = real(iz,dp) / real(nABC(3),dp)
+
+             end do
+            end do
+           end do
+
+           if ( npt == 1 ) then
+              ipt = ipt + 1
+              pt(:,1) = 0.5_dp
+           end if
+
+           if ( ipt /= npt ) then
+              call die('Error in creating the equi-grid-cell-sampling.')
+           end if
+           
+        else if ( fdf_block('Grid.CellSampling', bfdf) ) then
+           samgrd = .true.
+           ! The user-defined one
+           
+           ! First read the number of sampled points
+           npt = 0
+           do while ( fdf_bline(bfdf,pline) )
+              nr = fdf_bnreals(pline)
+              if ( nr >= 3 ) then
+                 npt = npt + 1
+              end if
+           end do
+
+           ! Rewind to re-read the points
+           call fdf_brewind(bfdf)
+
+           ! Allocate arrays
+           call re_alloc( pt, 1, 3, 1, npt, 'pt', 'grdsam' )
+           
+          if ( IONode ) then
+            write(6,'(/a)') 'grdsam: Reading %block Grid.CellSampling'
+          end if
+          ipt = 0
+          do while ( fdf_bline(bfdf,pline) )
+             nr = fdf_bnreals(pline)
+             if (nr .ge. 3) then
+                ipt = ipt + 1
+                pt(1,ipt) = fdf_breals(pline,1)
+                pt(2,ipt) = fdf_breals(pline,2)
+                pt(3,ipt) = fdf_breals(pline,3)
+             else
+                write(6,'(a,/,a)')
+     &             'grdsam: syntax ERROR in %block Grid.CellSampling:',
+     &             trim(fdf_getline(bfdf%mark))
+             end if
+          end do
+        end if
         blread = .true.
       endif
 
 c if sampling, store the forces and stresses prior to dhscf -----------------
 
-      if (samgrd) then
-        faold(1:3,1:nua) = fa(1:3,1:nua)
-        faold2(1:3,1:nua) = fal(1:3,1:nua)
-        strold(1:3,1:3) = stress(1:3,1:3)
-        strold2(1:3,1:3) = stressl(1:3,1:3)
-        if (Node.eq.0) then
-          write(6,'(a,i3)') 'grdsam: Grid-cell sampling, point ', 0
-        endif
+      if ( samgrd ) then
+
+        ! Allocate the old forces (to be summed for the averaged stuff)
+        call re_alloc( faold, 1, 3, 1, nua, 1, 2, 'faold', 'grdsam' )
+        faold(:,:,1) = fa(:,:)
+        faold(:,:,2) = fal(:,:)
+        strold(:,:,1) = stress(:,:)
+        strold(:,:,2) = stressl(:,:)
+        if ( IONode ) then
+           write(*,'(2(a,i0))') 'grdsam: Grid-cell sampling: ', 0,
+     &          ' / ',npt
+       endif
+       
       endif
 
 
@@ -224,7 +298,7 @@ c first (normal) call to DHSCF, ihmat=1 --------------------------------------
 
 c Sampling ------------------------------------------------------------------
 
-      if (samgrd) then
+      if ( samgrd ) then
 
 !       This check is superfluous, as the generation of the displacements
 !       can be done in each call without much overhead.
@@ -241,56 +315,65 @@ c find if mesh is new -------------------------------------------------------
           enddo
         enddo
 
-!
-c generate displacements (in Bohr cartesian) if first time or new mesh ------
-
-        if (.not. samesh) then
-          if (Node.eq.0) then
-            write(6,'(a)') 
-     &       'grdsam: Generating displacements for grid-cell sampling'
-          endif
-          do ipt = 1, npt
-            do ix = 1, 3
-              dpt(ix,ipt) = 0.0d0
-              do iv = 1, 3
-                dpt(ix,ipt) = dpt(ix,ipt) + 
-     &                          cell(ix,iv)*pt(iv,ipt)/dble(ntm(iv))
-              enddo
-            enddo
-          enddo
-        endif
-
 c initialize averages with output of regular DHSCF run -----------------------
 
-        avfa(1:3,1:nua) = fa(1:3,1:nua)
-        avfa2(1:3,1:nua) = fal(1:3,1:nua)
-        avstre(1:3,1:3) = stress(1:3,1:3)
-        avstre2(1:3,1:3) = stressl(1:3,1:3)
-        avdipo(1:3) = dipol(1:3)
-        avenaa = enaatm
-        avenas = enascf
-        avuatm = uatm
-        avuscf = uscf
-        avdusc = duscf
-        avexc  = exc
-        avdxc  = dxc
+        ! The average part...
+        anpt = dble(npt+1)
+
+        ! Allocate the used sampling arrays
+        call re_alloc( xanew, 1, 3, 1, na, 'xanew', 'grdsam' )
+        call re_alloc( allfa, 1, 3, 1, nua, 1, 2, 0, npt, 
+     &       'allfa', 'grdsam')
+        call re_alloc( allstr, 1, 3, 1, 3, 1, 2, 0, npt, 
+     &       'allstr', 'grdsam')
+
+        ! Instead of doing the consecutive average
+        ! It is rather instructive to save them all 
+        ! and get the difference between the consecutive
+        ! runs to get a magnitude of the difference.
+        allfa(:,:,1,0) = fa(:,:) - faold(:,:,1)
+        allfa(:,:,2,0) = fal(:,:) - faold(:,:,2)
+        allstr(:,:,1,0) = stress(:,:) - strold(:,:,1)
+        allstr(:,:,2,0) = stressl(:,:) - strold(:,:,2)
+
+        ! We do not print out anything related to the
+        ! energies and dipoles...
+        avdipo(:) = dipol(:) / anpt
+        avenaa = enaatm / anpt
+        avenas = enascf / anpt
+        avuatm = uatm / anpt
+        avuscf = uscf / anpt
+        avdusc = duscf / anpt
+        avexc  = exc / anpt
+        avdxc  = dxc / anpt
 
 c loop sampling on displacements making averages ----------------------------
 
         do ipt = 1, npt
 
+          ! Calculate the displacement for this mesh sample
+          do ix = 1, 3
+             dx(ix) = 0._dp
+             do iy = 1, 3
+               dx(ix) = dx(ix)
+     &              + cell(ix,iy)*pt(iy,ipt)/dble(ntm(iy))
+             end do
+          end do
+
           do ia = 1, na
-            do ix = 1, 3
-              xanew(ix,ia) = xa(ix,ia) + dpt(ix,ipt)
-            enddo
+             xanew(:,ia) = xa(:,ia) + dx(:)
           enddo
-          fa(1:3,1:nua) = faold(1:3,1:nua)
-          fal(1:3,1:nua) = faold2(1:3,1:nua)
-          stress(1:3,1:3) = strold(1:3,1:3)
-          stressl(1:3,1:3) = strold2(1:3,1:3)
+
+          ! Copy back the initial forces so we may
+          ! Correctly calculate the averaged forces
+          fa(:,:) = faold(:,:,1)
+          fal(:,:) = faold(:,:,2)
+          stress(:,:) = strold(:,:,1)
+          stressl(:,:) = strold(:,:,2)
         
-          if (Node.eq.0) then
-          write(6,'(a,i3)') 'grdsam: Grid-cell sampling, point ', ipt
+          if ( IONode ) then
+           write(*,'(2(a,i0))') 'grdsam: Grid-cell sampling: ',ipt,
+     &          ' / ',npt
           endif
 
           ! We have to call dhscf_init, among other things, to
@@ -310,45 +393,138 @@ c loop sampling on displacements making averages ----------------------------
      &                maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf,
      &                DUext, Exc, Dxc, dipol, stress, fal, stressl)
 
-          avfa(1:3,1:nua) = avfa(1:3,1:nua) + fa(1:3,1:nua)
-          avfa2(1:3,1:nua) = avfa2(1:3,1:nua) + fal(1:3,1:nua)
-          avstre(1:3,1:3) = avstre(1:3,1:3) + stress(1:3,1:3)
-          avstre2(1:3,1:3) = avstre2(1:3,1:3) + stressl(1:3,1:3)
-          avdipo(1:3) = avdipo(1:3) + dipol(1:3)
-          avenaa = avenaa + enaatm
-          avenas = avenas + enascf
-          avuatm = avuatm + uatm
-          avuscf = avuscf + uscf
-          avdusc = avdusc + duscf
-          avexc  = avexc  + exc
-          avdxc  = avdxc  + dxc
+          ! Collect the differences
+          allfa(:,:,1,ipt) = fa(:,:) - faold(:,:,1)
+          allfa(:,:,2,ipt) = fal(:,:) - faold(:,:,2)
+          allstr(:,:,1,ipt) = stress(:,:) - strold(:,:,1)
+          allstr(:,:,2,ipt) = stressl(:,:) - strold(:,:,2)
+
+          ! Perform the average of the energies
+          avdipo(:) = avdipo(:) + dipol(:) / anpt
+          avenaa = avenaa + enaatm / anpt
+          avenas = avenas + enascf / anpt
+          avuatm = avuatm + uatm / anpt
+          avuscf = avuscf + uscf / anpt
+          avdusc = avdusc + duscf / anpt
+          avexc  = avexc  + exc / anpt
+          avdxc  = avdxc  + dxc / anpt
+          
         enddo
 
-c final averages ------------------------------------------------------------
+        ! Calculate the averaged forces
 
-        anpt = dble(npt+1)
+        ! Reduce the forces, local-node forces
+        ! and stress so that we only compare a single part of the
+        ! forces.
+        fa(:,:) = 0._dp
+        fal(:,:) = 0._dp
+        stress(:,:) = 0._dp
+        stressl(:,:) = 0._dp
+        do ipt = 0 , npt
+           ! globalized forces
+           fa(:,:) = fa(:,:) + allfa(:,:,1,ipt) / anpt
+           ! node-local forces
+           fal(:,:) = fal(:,:) + allfa(:,:,2,ipt) / anpt
+           stress(:,:) = stress(:,:) + allstr(:,:,1,ipt) / anpt
+           stressl(:,:) = stressl(:,:) + allstr(:,:,2,ipt) / anpt
+        end do
 
-        fa(1:3,1:nua) = avfa(1:3,1:nua)/anpt
-        fal(1:3,1:nua) = avfa2(1:3,1:nua)/anpt
-        stress(1:3,1:3) = avstre(1:3,1:3)/anpt
-        stressl(1:3,1:3) = avstre2(1:3,1:3)/anpt
-        dipol(1:3) = avdipo(1:3)/anpt
-        enaatm = avenaa/anpt
-        enascf = avenas/anpt
-        uatm   = avuatm/anpt
-        uscf   = avuscf/anpt
-        duscf  = avdusc/anpt
-        exc    = avexc/anpt
-        dxc    = avdxc/anpt
+        ! Add the original forces...
+        fa(:,:) = fa + faold(:,:,1)
+        fal(:,:) = fal + faold(:,:,2)
+        stress(:,:) = stress + strold(:,:,1)
+        stressl(:,:) = stressl + strold(:,:,2)
+        ! In fact we are now done... But we calculate
+        ! the differences for informing the user.
 
-      endif
 
-C Deallocate local memory
-      call de_alloc( xanew, 'xanew', 'grdsam' )
-      call de_alloc( faold2, 'faold2', 'grdsam' )
-      call de_alloc( faold, 'faold', 'grdsam' )
-      call de_alloc( avfa2, 'avfa2', 'grdsam' )
-      call de_alloc( avfa, 'avfa', 'grdsam' )
+        ! Now perform the averages to be able to compare
+        ! differences.
+#ifdef MPI
+        do ipt = 0 , npt
+           call globalize_sum(allfa(:,:,2,ipt), faold(:,:,1))
+           ! After this, allfa(:,:,1,ipt) is the globalized forces
+           ! for the ipt mesh-sampled
+           allfa(:,:,1,ipt) = allfa(:,:,1,ipt) + faold(:,:,1)
+           call globalize_sum(allstr(:,:,2,ipt), strold(:,:,1))
+           allstr(:,:,1,ipt) = allstr(:,:,1,ipt) + strold(:,:,1)
+        end do
+#else
+        do ipt = 0 , npt
+           ! After this, allfa(:,:,1,ipt) is the globalized forces
+           ! for the ipt mesh-sampled
+           allfa(:,:,1,ipt) = allfa(:,:,1,ipt) + allfa(:,:,2,ipt)
+           allstr(:,:,1,ipt) = allstr(:,:,1,ipt) + allstr(:,:,2,ipt)
+        end do
+#endif
+
+        ! First we need to calculate the average sampled forces
+        faold(:,:,1) = 0._dp
+        strold(:,:,1) = 0._dp
+        do ipt = 0 , npt
+           faold(:,:,1) = faold(:,:,1) + allfa(:,:,1,ipt) / anpt
+           strold(:,:,1) = strold(:,:,1) + allstr(:,:,1,ipt) / anpt
+        end do
+
+        ! Calculate the maximum relative change in
+        ! the sampling
+        famax = 0._dp
+        fastd = 0._dp
+        strmax = 0._dp
+        do ipt = 0 , npt
+         do ia = 1 , nua
+          do ix = 1, 3
+           d = allfa(ix,ia,1,ipt) - faold(ix,ia,1)
+           if ( abs(d) > abs(famax(ix)) ) then
+             famax(ix) = d
+           end if
+           fastd(ix) = fastd(ix) + d ** 2 / anpt / nua
+          end do
+         end do
+         do iv = 1 , 3
+          do ix = 1, 3
+             d = allstr(ix,iv,1,ipt) - strold(ix,iv,1)
+             if ( abs(d) > abs(strmax) ) then
+              strmax = d
+           end if
+          end do
+         end do
+        end do
+        ! Calculate std. 
+        fastd = sqrt(fastd)
+        
+        ! Print out stuff
+        if ( IONode ) then
+           write(*,'(/a,3(tr1,f10.6),tr1,a)')
+     &      'grdsam: Max (sampled force - avg. force):',famax/eV*Ang,
+     &      'eV/Ang'
+           write(*,'(a,3(tr1,f10.6),tr1,a)')
+     &      'grdsam: Standard deviation of sampled force:',fastd/eV*Ang,
+     &      'eV/Ang'
+           write(*,'(a,tr1,f10.6,tr1,a/)')
+     &      'grdsam: Max (sampled stress - avg. stress):',strmax/kbar,
+     &      'kbar'
+        end if
+      
+        ! Copy back the resulting averaged energies
+        ! and dipole moments
+        dipol(:) = avdipo(:)
+        enaatm = avenaa
+        enascf = avenas
+        uatm   = avuatm
+        uscf   = avuscf
+        duscf  = avdusc
+        exc    = avexc
+        dxc    = avdxc
+        
+        ! Deallocate local memory
+        call de_alloc( faold, 'faold', 'grdsam' )
+        call de_alloc( xanew, 'xanew', 'grdsam' )
+        call de_alloc( allfa, 'allfa', 'grdsam' )
+        call de_alloc( allstr, 'allstr', 'grdsam' )
+
+      end if
+
 #ifdef DEBUG
       call write_debug( '    POS grdsam' )
 #endif
