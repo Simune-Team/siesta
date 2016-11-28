@@ -706,7 +706,7 @@
       type(basis_def_t), pointer :: basp
       type(ldaushell_t), pointer :: ldau
 
-      integer :: l, n, i
+      integer :: l, n, i !, nprin
 
       basp => basis_parameters(is)
 
@@ -723,7 +723,13 @@
      $        'L=', l, 'Nsemic=', nsemic(l,is),
      $        'Cnfigmx=', cnfigmx(l,is)
          do n=1,nsemic(l,is)+1
-            if (nzeta(l,n,is) == 0) exit
+            if (nzeta(l,n,is) == 0) then
+               ! Shell is not occupied in the GS
+               ! (see, e.g. basis_specs::autobasis)
+               exit
+            endif
+            ! nprin = cnfigmx(l,is) - nsemic(l,is) + n - 1
+            ! but we still write n as index within the shell
             write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1)')
      $           'n=', n, 'nzeta=',nzeta(l,n,is),
      $           'polorb=', polorb(l,n,is)

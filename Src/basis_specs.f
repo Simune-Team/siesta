@@ -27,8 +27,8 @@
 ! * Set up the information about the ground state of the atom.
 ! * Read information about the valence charge density in the
 !   pseudopotential file and determine whether there are semicore
-!   states. (Note that in this case  the user is explicitly asked 
-!   (see below) to input the 'n' quantum numbers in the PAO.Basis block.)
+!   states. 
+!   (A further semicore analysis is 'autobasis')
 ! * Read the optional fdf blocks:
 !   AtomicMass  (routine remass)
 !   PAO.BasisSize - Overrides the default 'basis_size' on a per-species basis.
@@ -59,20 +59,24 @@
 !   which is not already available is determined in routine 'autobasis', 
 !   using the following defaults:
 ! 
-!   (There is a first check to make sure that species with semicore
-!   states, or with Bessel floating orbitals,  have been included in 
+!   (There is a first check to make sure that species
+!   with Bessel floating orbitals  have been included in 
 !   the PAO.Basis block)
 !   
 !   The maximum angular momentum for the basis (lmxo) (excluding any
-!   polarization orbitals) is that of the ground state, as returned by
-!   routine 'lmxofz' from Z.
+!   polarization orbitals) is set to that of the ground state, as returned by
+!   routine 'lmxofz' from Z. If there are any semicore states with a
+!   higher l, lmxo is set to the maximum l needed.
 ! 
 !   Each l-shell contains just one shell of PAOS, with n set
-!   to the appropriate ground state value.
+!   to the appropriate ground state value, except in the case
+!   of semicore states, which add further lower-lying shells.      
 ! 
 !   Nzeta is determined by the first two characters of the 'basis_size'
-!   string: 1 for 'sz' and  2 for 'dz'.
-! 
+!   string: 1 for 'sz' and  2 for 'dz'. Lower-lying semicore states
+!   get nzeta=1. Nzeta will be zero (for the top-most shell) if the
+!   ground-state valence shell for this l is empty.      
+!      
 !   There are no 'per l-shell' polarization orbitals, except if the
 !   third character of 'basis_size' is 'p' (as in 'dzp'), in which
 !   case polarization orbitals are defined so they have the minimum      
@@ -110,7 +114,13 @@
 !           Set it to lmxo+1, or to lpol+1, where lpol is the angular
 !           momentum of the highest-l polarization orbital.
 !       endif
-! 
+!
+!       There is a further check for lmxkb: If the pseudopotential
+!       contains semilocal components up to lmax_pseudo, lmxkb is
+!       set to this number.
+!       (Note that this is appropriate for the new behavior of using
+!       just Vlocal for any channels for which there is no V_l(r).)      
+      
 !       The  number of KB projectors per l is set to the number of
 !       n-shells in the corresponding PAO shell with the same l. For l
 !       greater than lmxo, it is set to 1. The reference energies are
@@ -152,7 +162,7 @@
       real(dp), parameter       :: splnorm_default=0.15_dp
       real(dp), parameter       :: splnormH_default=-1.0_dp
       real(dp), save            :: global_splnorm, global_splnorm_H
-      integer           isp  ! just an index dummy variable for the whole module
+      integer        isp  ! just an index dummy variable for the whole module
 
 !
       logical, save, public     :: restricted_grid
@@ -445,6 +455,7 @@ C Sanity checks on values
 !---------------------------------------------------------------
       subroutine readkb()
       integer lpol, isp, ish, i, l
+      integer :: lmax_pseudo
       character(len=20) unitstr
 
       lpol = 0
@@ -470,6 +481,12 @@ C Sanity checks on values
             if (.not. fdf_bmatch(pline,'ii'))
      .        call die("Wrong format l nkbl")
             l = fdf_bintegers(pline,1)
+            ! Check that we have enough V_ls in the pseudo to
+            ! generate this l...
+            ! if (l > (basp%pseudopotential%npotd-1)) then
+            ! ... will do it later, once lmxkb has been
+            ! determined at the end of the cascade of possible
+            ! inputs.
             if (l .gt. basp%lmxkb) basp%lmxkb = l
             if (.not. fdf_bline(bfdf, pline)) then
               if (ish .ne. basp%nkbshells)
@@ -603,6 +620,20 @@ C Sanity checks on values
           enddo
         enddo   !! Over species
       endif
+
+      do isp=1,nsp
+!
+!      Check that we have enough semilocal components...
+!
+         basp=>basis_parameters(isp)
+         lmax_pseudo = basp%pseudopotential%npotd - 1 
+         if (basp%lmxkb > lmax_pseudo) then
+            write(6,'(a,i1,a)')
+     .           "Pseudopotential only contains V_ls up to l=",
+     .           lmax_pseudo, " -- lmxkb reset."
+            basp%lmxkb = lmax_pseudo
+         endif
+      enddo
 
       end subroutine readkb
 !---------------------------------------------------------------
@@ -1095,7 +1126,7 @@ c (according to atmass subroutine).
 
       basp%semic = .false.
       if (basp%bessel) return
-
+      
       zval_vps = basp%pseudopotential%zval
       zval = basp%ground_state%z_valence
       
@@ -1104,13 +1135,8 @@ c (according to atmass subroutine).
       ndiff = nint(abs(Zval-zval_vps))
       if (abs(ndiff-abs(Zval-zval_vps)).gt.tiny) then
         write(6,'(2a)')
-     .    'ERROR expected valence charge for species ',
+     .    'ERROR Fractional semicore charge for species ',
      .    basp%label
-        write(6,'(a)')
-     .    'ERROR and the value read from the vps file'
-        write(6,'(a,f6.3,a,f6.3)')
-     .    'ERROR differ:  Zval(expected)= ', Zval,
-     .    ' Zval(vps)= ',zval_vps
         call die()
       endif
 
@@ -1124,21 +1150,19 @@ c (according to atmass subroutine).
 !----------------------------------------------------------------------
       subroutine autobasis()
 
+      use m_semicore_info_froyen, only: get_n_semicore_shells
 !
 !     It sets the defaults if a species has not been included
 !     in the PAO.Basis block
 !
       integer l, nzeta, nzeta_pol
+      integer :: nsemic_shells(0:3), nsh, i
 
       loop: do isp=1, nsp
          basp=>basis_parameters(isp)
          if (basp%lmxo .ne. -1) cycle loop   ! Species already set
                                              ! in PAO.Basis block
-         if (basp%semic) then
-            write(6,'(2a)') basp%label,
-     .           ' must be in PAO.Basis (it has semicore states)'
-            call die()
-         endif
+
          if (basp%bessel) then
             write(6,'(2a)') basp%label,
      .      ' must be in PAO.Basis (it is a floating Bessel function)'
@@ -1148,6 +1172,16 @@ c (according to atmass subroutine).
          ! Set the default max l 
          !
          basp%lmxo = basp%ground_state%lmax_valence
+         !
+         call get_n_semicore_shells(basp%pseudopotential,nsemic_shells)
+         !
+         ! Check whether we need to consider larger l's due to
+         ! semicore states
+         do l=0,ubound(nsemic_shells,dim=1)
+            if (nsemic_shells(l) > 0) basp%lmxo = max(l,basp%lmxo)
+         enddo
+         
+         !
 
          allocate (basp%lshell(0:basp%lmxo))
 
@@ -1159,9 +1193,46 @@ c (according to atmass subroutine).
             ls=>basp%lshell(l)
             call initialize(ls)
             ls%l = l
-            ls%nn = 1
-            allocate(ls%shell(1:1))
-            s => ls%shell(1)
+            !  Include semicore shells
+            nsh = 1+nsemic_shells(l)
+            ls%nn = nsh
+            !
+            allocate(ls%shell(1:nsh))
+            !     
+            ! Inner shells get a single-z orbital
+            !
+            do i = 1, nsh -1
+               s => ls%shell(i)
+               call initialize(s)
+               s%l = l
+               ! e.g.: nsh=3; i=1:  n-2; i=2: n-1
+               s%n = basp%ground_state%n(l) - (nsh-i)
+               s%nzeta = 1
+               s%polarized = .false.
+               s%split_norm = global_splnorm
+               s%nzeta_pol = 0
+
+               if (lsoft) then
+                  s%vcte = softPt 
+                  s%rinn = -softRc
+               else
+                  s%rinn = 0.d0
+                  s%vcte = 0.d0
+               endif
+
+               ! Default filteret cutoff for shell
+               s%filtercut = 0.0d0
+
+               if (s%nzeta .ne.0) then
+                  allocate(s%rc(1:s%nzeta))
+                  allocate(s%lambda(1:s%nzeta))
+                  s%rc(1:s%nzeta) = 0.0d0
+                  s%lambda(1:s%nzeta) = 1.0d0
+               endif
+            enddo
+            ! Do the final (canonical valence)  shell
+            !  
+            s => ls%shell(nsh)
             call initialize(s)
             s%l = l
             s%n = basp%ground_state%n(l)
@@ -1218,9 +1289,14 @@ c (according to atmass subroutine).
             end select
 
             loop_angmom: do l=1,4
+               ! For example, in Ti, p is not occupied in the GS
+               ! The following code will mark the top-most s shell
+               ! as polarizable
+            
                if (.not. basp%ground_state%occupied(l)) then
                   ls=>basp%lshell(l-1)
-                  s => ls%shell(1)
+                  nsh = size(ls%shell)  ! Use only the last shell
+                  s => ls%shell(nsh)
         
               ! Check whether shell to be polarized is occupied in the gs.
               ! (i.e., whether PAOs are going to be generated for it)

@@ -181,7 +181,8 @@ OBJS =  automatic_cell.o atom_options.o \
         m_spin_orbit_potentials.o \
 	m_initwf.o wavefunctions.o \
 	m_evolve.o evolk.o evolg.o changebasis.o m_iotddft.o \
-	m_matdiag.o m_matswinvers.o
+	m_matdiag.o m_matswinvers.o \
+        semicore_info_froyen.o
 
 # Mixing algorithms
 OBJS += m_mixing.o m_mixing_scf.o
@@ -548,7 +549,7 @@ basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
 basis_io.o: precision.o radial.o sys.o xml.o
 basis_specs.o: basis_types.o chemical.o m_spin.o m_spin_orbit_potentials.o
-basis_specs.o: periodic_table.o precision.o sys.o
+basis_specs.o: periodic_table.o precision.o semicore_info_froyen.o sys.o
 basis_types.o: alloc.o atmparams.o precision.o sys.o
 bessph.o: precision.o sys.o
 bonds.o: alloc.o atmfuncs.o mneighb.o precision.o sorting.o units.o
@@ -657,7 +658,7 @@ dhscf.o: m_efield.o m_hartree_add.o m_iorho.o m_iotddft.o m_mesh_node.o
 dhscf.o: m_ncdf_io.o m_ncdf_siesta.o m_partial_charges.o m_rhog.o m_spin.o
 dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_options.o m_ts_tdir.o
 dhscf.o: m_ts_voltage.o mesh.o meshdscf.o meshsubs.o moremeshsubs.o parallel.o
-dhscf.o: parsing.o precision.o rhofft.o rhoofd.o siesta_options.o sys.o units.o
+dhscf.o: parsing.o precision.o rhofft.o rhoofd.o siesta_options.o units.o
 dhscf.o: vmat.o
 diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
@@ -752,7 +753,7 @@ iogrid_netcdf.o: alloc.o parallel.o precision.o sys.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
-iopipes.o: parallel.o precision.o sys.o
+iopipes.o: parallel.o precision.o
 iosockets.o: cellsubs.o fsockets.o m_mpi_utils.o parallel.o precision.o
 iowfs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
@@ -985,7 +986,7 @@ m_ts_hartree.o: intrinsic_missing.o m_mesh_node.o m_ts_electype.o m_ts_tdir.o
 m_ts_hartree.o: parallel.o precision.o units.o
 m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_ncdf_io.o
-m_ts_io.o: m_os.o m_sparse.o parallel.o precision.o sys.o
+m_ts_io.o: m_os.o m_sparse.o memory_log.o parallel.o precision.o sys.o
 m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
@@ -1205,7 +1206,7 @@ setup_hamiltonian.o: class_SpData2D.o dhscf.o files.o ldau.o ldau_specs.o
 setup_hamiltonian.o: m_dipol.o m_energies.o m_gamma.o m_hsx.o m_mpi_utils.o
 setup_hamiltonian.o: m_ntm.o m_partial_charges.o m_rhog.o m_spin.o m_steps.o
 setup_hamiltonian.o: m_stress.o metaforce.o molecularmechanics.o parallel.o
-setup_hamiltonian.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
+setup_hamiltonian.o: siesta_geom.o siesta_options.o sparse_matrices.o
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
@@ -1257,7 +1258,7 @@ siesta_init.o: m_steps.o m_supercell.o m_timer.o m_wallclock.o memory_log.o
 siesta_init.o: metaforce.o molecularmechanics.o object_debug.o parallel.o
 siesta_init.o: parallelsubs.o projected_DOS.o siesta_cmlsubs.o siesta_dicts.o
 siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
-siesta_init.o: sys.o timer.o timestamp.o ts_init.o writewave.o zmatrix.o
+siesta_init.o: timer.o timestamp.o ts_init.o writewave.o zmatrix.o
 siesta_master.o: iopipes.o iosockets.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o
@@ -1456,6 +1457,7 @@ m_rusage.o: rusage.o
 m_save_density_matrix.o: save_density_matrix.o
 m_scf_options.o: m_options.o
 m_scfconvergence_test.o: scfconvergence_test.o
+m_semicore_info_froyen.o: semicore_info_froyen.o
 m_setup_h0.o: setup_H0.o
 m_setup_hamiltonian.o: setup_hamiltonian.o
 m_siesta2wannier90.o: siesta2wannier90.o
