@@ -10873,6 +10873,16 @@ electrodes in a generic input format.
     Setting this to \fdffalse\ will heavily degrade performance and
     it is highly discouraged!
 
+    \option[check-kgrid]%
+    \fdfindex*{TS.Elec.<>!check-kgrid}%
+    For $N$ electrode calculations the $\mathbf k$ mesh will sometimes
+    not be equivalent for the electrodes and the device region
+    calculations. However, \tsiesta\ requires that the device and
+    electrode $\mathbf k$ samplings are commensurate. This flag
+    controls whether this check is enforced.
+
+    \note only use if fully aware of the implications.
+
   \end{fdfoptions}
   
 \end{fdfentry}
