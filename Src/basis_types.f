@@ -706,7 +706,11 @@
       type(basis_def_t), pointer :: basp
       type(ldaushell_t), pointer :: ldau
 
-      integer :: l, n, i !, nprin
+      integer :: l, n, i
+      integer :: nprin
+      character(len=4) :: orb_id
+      character(len=1), parameter   ::
+     $                           sym(0:4) = (/ 's','p','d','f','g' /)
 
       basp => basis_parameters(is)
 
@@ -728,11 +732,12 @@
                ! (see, e.g. basis_specs::autobasis)
                exit
             endif
-            ! nprin = cnfigmx(l,is) - nsemic(l,is) + n - 1
+            nprin = cnfigmx(l,is) - nsemic(l,is) + n - 1
+            write(orb_id,"(a1,i1,a1,a1)") "(",nprin, sym(l), ")"
             ! but we still write n as index within the shell
-            write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1)')
+            write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1,2x,a4)')
      $           'n=', n, 'nzeta=',nzeta(l,n,is),
-     $           'polorb=', polorb(l,n,is)
+     $           'polorb=', polorb(l,n,is), orb_id
             if (basistype(is).eq.'filteret') then
                write(lun,'(10x,a10,2x,g12.5)') 
      $              'fcutoff:', filtercut(l,n,is)
