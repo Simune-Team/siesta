@@ -29,7 +29,7 @@ destdir=$(pwd)
   for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile) ; do
     relpath=${i%/*}
     mkdir -p ${destdir}/$relpath
-    cp $relpath/*akefile ${destdir}/$relpath
+    cp -p $relpath/*akefile ${destdir}/$relpath
   done
 )
 # copy .mk files
@@ -37,7 +37,7 @@ destdir=$(pwd)
   for i in $(find . -name 'fortran.mk'); do
     relpath=${i%/*}
     mkdir -p ${destdir}/$relpath
-    cp $relpath/fortran.mk ${destdir}/$relpath
+    cp -p $relpath/fortran.mk ${destdir}/$relpath
   done
 )
 
@@ -49,7 +49,7 @@ destdir=$(pwd)
   for i in $(find . -name '*.h' ); do
     relpath=${i%/*}
     mkdir -p ${destdir}/$relpath
-    cp -f $relpath/*.h ${destdir}/$relpath
+    cp -fp $relpath/*.h ${destdir}/$relpath
   done
 )
 # Replicate any .inc files
@@ -58,7 +58,7 @@ destdir=$(pwd)
   for i in $(find . -name '*.inc' ); do
     relpath=${i%/*}
     mkdir -p ${destdir}/$relpath
-    cp -f $relpath/*.inc ${destdir}/$relpath
+    cp -fp $relpath/*.inc ${destdir}/$relpath
   done
 )
 #

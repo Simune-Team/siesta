@@ -14,7 +14,8 @@
       use atm_types, only: nspecies, species, elec_corr, npairs
       use radial
       use atmfuncs, only: floating, zvalfis, psch
-      use interpolation, only: polint  ! polynomial interpolation
+      use interpolation, only: polint ! polynomial interpolation
+      use m_fft_gpfa, only: nfft
       use m_radfft
       use sys, only: die
       use m_bessph, only: bessph   ! Spherical Bessel functions
@@ -90,11 +91,9 @@ C     (in Ry if lengths are in Bohr).
 C     CHERR is a small number to check the precision of the charge density
 C     integration.
 
-      integer nq, npoint
-      !!!       PARAMETER ( CHERR   =  5.e-2_dp )
+      integer nq, new_nq, npoint
       real(dp), parameter  :: cherr = 0.05_dp
       PARAMETER ( NPOINT =  4     ) 
-      !PARAMETER ( Q2CUT  =  2.5e3_dp )
 
       real(dp)            :: q2cut
       real(dp), parameter :: q_factor = 1.24_dp  ! To enlarge Q2CUT
@@ -126,13 +125,16 @@ C
       RMAX = PI * NQ / QMAX
       IF(RMX.GT.RMAX) THEN
             ! We need more points to cover the range at pi/Qmax spacing
+            ! The fft needs multiples of 2, 3, or 5...
             ! 
             write(6,'(a,2f15.6)') 'ch_overlap: rmx,rmax =', rmx, rmax
 
+            new_nq = ceiling(qmax*rmx/pi)
+            call nfft(new_nq)
             WRITE(6,*) 'CH_OVERLAP: THE NUMBER OF INTEGRATION',
      .           ' POINTS IS INCREASED from ', NQ, ' to ',
-     $           ceiling(qmax*rmx/pi)
-            NQ = ceiling(qmax*rmx/pi)
+     $           new_nq
+            NQ = new_nq
             RMAX = PI * NQ / QMAX
       ENDIF
       
