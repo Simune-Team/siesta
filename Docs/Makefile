@@ -23,11 +23,13 @@ extra:
 	$(makeidx) $(doc)
 
 final: clean $(doc).tex
-	$(latex) $(doc).tex
-	$(bibtex) $(doc)
-	$(makeidx) $(doc)
-	$(latex) $(doc).tex
-	$(latex) $(doc).tex
+	$(MAKE) $(doc)
+	$(MAKE) $(doc)
+	$(MAKE) extra
+	$(MAKE) $(doc)
+	$(MAKE) $(doc)
+	$(MAKE) extra
+	$(MAKE) $(doc)
 
 clean:
 	rm -f $(doc).{lot,oct,aux,auxlock,makefile,figlist,bbl,log,ilg,lof,ind,out,blg,gls,glo,glg,idx,toc,bcf,run.xml} $(doc)-blx.bib
