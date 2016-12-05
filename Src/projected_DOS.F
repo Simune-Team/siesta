@@ -26,7 +26,7 @@
       use Kpoint_pdos
       use parallel,    only: IOnode, Nodes
       use siesta_geom, only: ucell
-      use m_spin,      only: h_spin_dim
+      use m_spin,      only: spin
 
       type(block_fdf) :: bfdf
       
@@ -50,7 +50,7 @@
 
 C     PDOS not computed if non-collinear calculation is run in parallel
       
-      if ( (h_spin_dim .gt. 2) .and. (Nodes .gt. 1) ) then
+      if ( (spin%H > 2) .and. (Nodes .gt. 1) ) then
          
          if (IOnode) then
             write(6,'(/2a,/)')
