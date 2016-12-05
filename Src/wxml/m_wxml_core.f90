@@ -465,7 +465,7 @@ end subroutine write_attributes
       if (present(format)) then
          write(xf%lun,format) a
       else
-         write(xf%lun,"(4(es20.12))") a
+         write(xf%lun,"(4(es20.7))") a
       endif
     end subroutine xml_AddArray_real_sp
 

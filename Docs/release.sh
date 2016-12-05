@@ -215,6 +215,15 @@ pushd $_out
 
 # Create documentation
 pushd Docs
+
+# First we need to change the date to the current
+# date. This makes it automatic.
+_date=`date +"%B %d, %Y"`
+for f in siesta.tex tbtrans.tex
+do
+    sed -i -e "s/\\date{.*}/\\date{$_date}/" $f
+done
+
 # First create the screen variants...
 make final-screen
 # Then the regular documentation (for print)

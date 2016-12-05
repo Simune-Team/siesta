@@ -13,6 +13,9 @@
 % Include settings appropriate for tbtrans
 \input{tex/init.tex}
 
+% Set the date
+\date{November 29, 2016}
+
 \begin{document}
 
 % TITLE PAGE --------------------------------------------------------------
@@ -28,13 +31,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge \textbf{T B t r a n s \, \, 4.1-b2}}
+{\Huge \textbf{T B t r a n s \, \, 4.1-b3}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{0.5cm}
 
-{\Large October 27, 2016}
+{\Large \printdate}
 
 \vspace{1.5cm}
 {\Large \url{http://www.uam.es/siesta}}
@@ -662,7 +665,7 @@ set.
 
 
 \subsection{Determine calculated physical quantities}
-
+\label{sec:physical}
 
 \tbtrans\ can calculate a large variety of physical
 quantities. By default it will only calculate the transmission between
@@ -672,6 +675,29 @@ much longer run-times.
 
 You are heavily encouraged to compile \tbtrans\ with NetCDF4 support,
 see Sec.~\ref{sec:arch-make}, as quantities will be orbital resolved. 
+
+If \tbtrans\ has been compiled with NetCDF4 support, one may extract
+the projected DOS from the \sysfile{TBT.nc} using \sisl\ (or manual
+scripting). The calculated DOS can \emph{only} be extracted from the
+atoms in the device region (atoms in block
+\fdf{TBT.Atoms!Device}). Hence the \fdf{TBT.Atoms!Device} block is
+\emph{extremely} important when conducting detailed DOS analysis. 
+For instance if the input file has this:
+\begin{fdfexample}
+  %block TBT.Atoms.Device 
+    atom [20 -- 40]
+  %endblock
+\end{fdfexample}
+one may extract the PDOS on a subset of atoms using this \sisl\
+command
+\begin{shellexample}
+  sdata siesta.TBT.nc --atom 20-30 --dos --ados Left --out dos_20-30.dat
+  sdata siesta.TBT.nc --atom 20-30[1-3] --dos --ados Left --out dos_20-30_1-3.dat
+\end{shellexample}
+where the former is the total PDOS on atoms $20$ through $30$, and the
+latter is the PDOS on orbitals 1, 2 and 3 on atoms $20$ through
+$30$. It thus is extremely easy to extract different PDOS once the
+calculation has completed. 
 
 \begin{fdflogicalF}{TBT.T!Bulk}
 
@@ -693,8 +719,10 @@ see Sec.~\ref{sec:arch-make}, as quantities will be orbital resolved.
 
 
 \begin{fdflogicalF}{TBT.DOS!Gf}
+  \fdfdepend{TBT.Atoms!Device}
 
-  Calculate the DOS from the Green function.
+  Calculate the DOS from the Green function on the atoms in the device
+  region. 
 
   \note this flag should only be used if there are bound states in the
   scattering region (or if one wish to uncover whether there are bound
@@ -707,16 +735,18 @@ see Sec.~\ref{sec:arch-make}, as quantities will be orbital resolved.
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.DOS!A}
+  \fdfdepend{TBT.Atoms!Device}
 
   Calculate the DOS from the spectral function. This will not
   calculate the DOS from the last electrode (last in the list
-  \fdf{TBT.Elecs}). 
+  \fdf{TBT.Elecs}), see \fdf{TBT.DOS!A.All}. 
 
   See \fdf{TBT.Atoms!Device.Connect}.
 
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.DOS!A.All}
+  \fdfdepend{TBT.Atoms!Device}
 
   Calculate the DOS from the spectral function and do so with
   \emph{all} electrodes.
@@ -781,7 +811,7 @@ $\rho_{\mathrm{bound-states}}=0$.
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.Current!Orb}
-  \fdfdepend{TBT.DOS!A}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A}
 
   Whether the orbital currents will be calculated and stored.  These
   will be stored in a sparse matrix format corresponding to the
@@ -892,7 +922,17 @@ Brillouin zone.
     TBT.k [A B C]
   \end{fdfexample}
   where each integer corresponds to the diagonal elements of the
-  Monkhorst-Pack grid.
+  Monkhorst-Pack grid. I.e. 
+  \begin{fdfexample}
+    TBT.k [10 10 1]
+    %block TBT.k
+      10  0 0 0.
+       0 10 0 0.
+       0  0 1 0.
+    %endblock 
+  \end{fdfexample}
+  are equivalent.
+
 
   If you supply this flag as a block the following options are available:
   \begin{fdfoptions}
@@ -1070,7 +1110,10 @@ and transmission.
   region. Note that the electrodes imaginary part may be controlled
   via \fdf{TBT.Elecs!Eta} and \fdf{TBT.Elec.<>!tbt.Eta}.
 
-  This value controls the smearing of the DOS on the energy axis. 
+  This value controls the smearing of the DOS on the energy
+  axis. Generally will the electrode $\eta$ value contribute to a
+  smearing in the device region, while in certain situations an
+  imaginary $\eta$ is required in the device region. 
   
 \end{fdfentry}
 
@@ -1220,6 +1263,7 @@ non-bias calculations does not require one to specify these blocks.
 
 These options complicate the input sequence for regular $2$ electrode
 which is unfortunate. 
+
 
 
 \subsection{Electrode configuration}
@@ -1383,6 +1427,17 @@ is no need to specify the chemical potential
     If this is \fdffalse\ the surface Green function file is deleted
     and re-created upon start.
 
+    \option[tbt.check-kgrid]%
+    \fdfindex*{TBT.Elec.<>!tbt.check-kgrid}%
+    For $N$ electrode calculations the $\mathbf k$ mesh will sometimes
+    not be equivalent for the electrodes and the device region
+    calculations. However, \tbtrans\ requires that the device and
+    electrode $\mathbf k$ samplings are commensurate. This flag
+    controls whether this check is enforced. 
+
+    \note only use if fully aware of the implications (for
+    tight-binding calculations this may safely be set to \fdffalse).
+
   \end{fdfoptions}
   
 \end{fdfentry}
@@ -1402,7 +1457,8 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
 \begin{fdfentry}{TBT.Elecs!Eta}[energy]<$10^{-4}\,\mathrm{eV}$>
   
   Globally control the imaginary part used for the surface Green
-  function calculation.
+  function calculation. This $\eta$ value is \emph{not} used in the
+  device region.
   %
   See \fdf{TBT.Elec.<>!tbt.Eta}.
   
@@ -1713,6 +1769,10 @@ be used for $N$ electrode calculations.
 One important aspect of projection is that the self-energies that are
 to be projected \emph{must} be fully located on the projection
 region. \tbtrans\ will die if this is not enforced.
+
+This method should \emph{not} be confused with projected DOS. The PDOS
+may be obtained if compiled with the NetCDF4 library and via the use
+of \sisl, see Sec.~\ref{sec:physical}.
 
 \begin{fdfentry}{TBT.Projs}[block]
 

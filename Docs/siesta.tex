@@ -96,6 +96,9 @@
 % Include settings appropriate for siesta
 \input{tex/init.tex}
 
+% Set the date
+\date{\today}
+
 \begin{document}
 
 % TITLE PAGE --------------------------------------------------------------
@@ -117,7 +120,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large November 1, 2016 }
+{\Large \printdate}
 
 \vspace{1.5cm}
 {\Large \url{http://www.uam.es/siesta}}
@@ -5393,7 +5396,7 @@ the issue (see Sec.~\ref{sec:filtering}).
 
 \end{fdfentry}
 
-\begin{fdfentry}{GridCellSampling}[block]
+\begin{fdfentry}{Grid.CellSampling}[block]
   \index{egg-box effect}%
   \index{rippling}
 
@@ -5409,7 +5412,7 @@ the issue (see Sec.~\ref{sec:filtering}).
   It is a sampling of rigid displacements of the system with respect
   to the grid. The original grid-system setup (one point of the grid
   at the origin) is always calculated. It is the (0,0,0) displacement.
-  The block \fdf{GridCellSampling} gives the additional
+  The block \fdf{Grid.CellSampling} gives the additional
   displacements wanted for the sampling. They are given relative to
   the grid-cell vectors, i.e., (1,1,1) would displace to the next grid
   point across the body diagonal, giving an equivalent grid-system
@@ -5419,21 +5422,21 @@ the issue (see Sec.~\ref{sec:filtering}).
   cell.  If there is no block or the block is empty, then the original
   (0,0,0) will be used only. The block:
   \begin{fdfexample}
-     %block GridCellSampling
+     %block Grid.CellSampling
         0.5    0.5    0.5
-     %endblock GridCellSampling
+     %endblock Grid.CellSampling
   \end{fdfexample}
   would use the body center as a second point in the sampling. Or:
   \begin{fdfexample}
-     %block GridCellSampling
+     %block Grid.CellSampling
         0.5    0.5    0.0
         0.5    0.0    0.5
         0.0    0.5    0.5
-     %endblock GridCellSampling
+     %endblock Grid.CellSampling
   \end{fdfexample}
   gives an fcc kind of sampling, and
   \begin{fdfexample}
-     %block GridCellSampling
+     %block Grid.CellSampling
         0.5    0.0    0.0
         0.0    0.5    0.0
         0.0    0.0    0.5
@@ -5441,7 +5444,7 @@ the issue (see Sec.~\ref{sec:filtering}).
         0.5    0.0    0.5
         0.5    0.5    0.0
         0.5    0.5    0.5
-     %endblock GridCellSampling
+     %endblock Grid.CellSampling
   \end{fdfexample}
   gives again a cubic sampling with half the original side length.  It
   is not trivial to choose a right set of displacements so as to
@@ -5459,8 +5462,32 @@ the issue (see Sec.~\ref{sec:filtering}).
   used to obtain the desired quantities at the other displacements
   (the density matrix itself is \emph{not} symmetrized as it gives a
   much smaller egg-box effect). The CPU time needed for each
-  displacement in the \fdf{GridCellSampling} block is of the order
+  displacement in the \fdf{Grid.CellSampling} block is of the order
   of one extra SCF iteration.
+
+  This may be required in systems where very precise forces are needed,
+  and/or if partial cores are used. It is advantageous to test whether
+  the forces are sampled sufficiently by sampling one point.
+
+  Additionally this may be given as a list of 3 integers which
+  corresponds to a ``Monkhorst-Pack'' like grid sampling. I.e.
+  \begin{fdfexample}
+     Grid.CellSampling [2 2 2]
+  \end{fdfexample}
+  is equivalent to
+  \begin{fdfexample}
+     %block Grid.CellSampling
+        0.5    0.0    0.0
+        0.0    0.5    0.0
+        0.5    0.5    0.0
+        0.0    0.0    0.5
+        0.5    0.0    0.5
+        0.0    0.5    0.5
+        0.5    0.5    0.5
+     %endblock Grid.CellSampling
+  \end{fdfexample}
+  This is an easy method to see if the flag is important for your
+  system or not.
 
 \end{fdfentry}
 
@@ -10982,6 +11009,16 @@ electrodes in a generic input format.
     needed. 
     Setting this to \fdffalse\ will heavily degrade performance and
     it is highly discouraged!
+
+    \option[check-kgrid]%
+    \fdfindex*{TS.Elec.<>!check-kgrid}%
+    For $N$ electrode calculations the $\mathbf k$ mesh will sometimes
+    not be equivalent for the electrodes and the device region
+    calculations. However, \tsiesta\ requires that the device and
+    electrode $\mathbf k$ samplings are commensurate. This flag
+    controls whether this check is enforced.
+
+    \note only use if fully aware of the implications.
 
   \end{fdfoptions}
   
