@@ -321,13 +321,13 @@ C New writing
           case ( 2 )
              tmp(1:2*nhist-1:2) = dpr(1:nhist,i,1)*eV
              tmp(2:2*nhist:2) = dpr(1:nhist,i,2)*eV
-             call xml_AddArray(xf,tmp(1:2*nhist),format="r6")
+             call xml_AddArray(xf,tmp(1:2*nhist))
           case ( 4 )
              tmp(1:4*nhist-3:4) = dpr(1:nhist,i,1)*eV
              tmp(2:4*nhist-2:4) = dpr(1:nhist,i,2)*eV
              tmp(3:4*nhist-1:4) = dpr(1:nhist,i,3)*eV
              tmp(4:4*nhist:4)   = dpr(1:nhist,i,2)*eV
-             call xml_AddArray(xf,tmp(1:4*nhist),format="r6")
+             call xml_AddArray(xf,tmp(1:4*nhist))
           end select
           call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"orbital")
