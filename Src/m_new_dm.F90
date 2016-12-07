@@ -837,7 +837,7 @@
                 do in = 1, numh(iio)
                   ind = listhptr(iio)+in
                   jo = listh(ind)
-                  if (io .eq. jo) then
+                  if (io == jo) then
                     Dscf(ind,1) = 0.5d0 * Datm(io)
                     Dscf(ind,2) = Dscf(ind,1)
                   endif
@@ -875,41 +875,43 @@
             rate = spin(iat) / (spinat+epsilon)
             do io = lasto(ia-1) + 1, lasto(ia)
               call GlobalToLocalOrb(io,Node,Nodes,iio)
-              if (iio.gt.0) then
+              ! Immediately skip if not on this node... 
+              if ( iio < 1 ) cycle
+              
 !$OMP task firstprivate(iat,io,iio,rate), &
 !$OMP&private(qio,spio,in,ind,jo,costh,sinth,cosph,sinph)
-                qio = Datm(io)
-                spio = rate * min( Datm(io), 2.d0 - Datm(io) )
-                do in = 1, numh(iio)
-                  ind = listhptr(iio)+in
-                  jo = listh(ind)
-                  if (io .eq. jo) then
-                    if (noncol) then
+              qio = Datm(io)
+              spio = rate * min( qio, 2.d0 - qio )
+              do in = 1, numh(iio)
+                 ind = listhptr(iio)+in
+                 jo = listh(ind)
+                 ! Immediately skip if not diagonal terms..
+                 if ( io /= jo ) cycle
+                 
+                 if ( noncol ) then
 ! Store non-collinear-spin density matrix as
 !   ispin=1 => D11, ispin=2 => D22;
 !   ispin=3 => Real(D12); ispin=4 => Imag(D12)
-                      costh = cos(theta(iat))
-                      sinth = sin(theta(iat))
-                      cosph = cos(phi(iat))
-                      sinph = sin(phi(iat))
-                      Dscf(ind,1) = (qio + spio * costh) / 2
-                      Dscf(ind,2) = (qio - spio * costh) / 2
-                      Dscf(ind,3) =   spio * sinth * cosph / 2
-                      Dscf(ind,4) =   spio * sinth * sinph / 2
-                      if ( h_spin_dim == 8 ) then ! spin-orbit coupling
-                         Dscf(ind,5) = 0._dp
-                         Dscf(ind,6) = 0._dp
-                         Dscf(ind,7) = Dscf(ind,3)
-                         Dscf(ind,8) = Dscf(ind,4)
-                      end if
-                    else
-                      Dscf(ind,1) = (qio + spio) / 2
-                      Dscf(ind,2) = (qio - spio) / 2
-                    endif
-                  endif
-                enddo
+                    costh = cos(theta(iat))
+                    sinth = sin(theta(iat))
+                    cosph = cos(phi(iat))
+                    sinph = sin(phi(iat))
+                    Dscf(ind,1) = (qio + spio * costh) / 2
+                    Dscf(ind,2) = (qio - spio * costh) / 2
+                    Dscf(ind,3) =   spio * sinth * cosph / 2
+                    Dscf(ind,4) =   spio * sinth * sinph / 2
+                    if ( h_spin_dim == 8 ) then ! spin-orbit coupling
+                       Dscf(ind,5) = 0._dp
+                       Dscf(ind,6) = 0._dp
+                       Dscf(ind,7) = Dscf(ind,3)
+                       Dscf(ind,8) = Dscf(ind,4)
+                    end if
+                 else
+                    Dscf(ind,1) = (qio + spio) / 2
+                    Dscf(ind,2) = (qio - spio) / 2
+                 end if
+              enddo
 !$OMP end task
-              endif
             enddo
 
           enddo
@@ -985,23 +987,21 @@
       use sparse_matrices, only: S
 
       real(dp) :: qspin(4)
-      integer  :: io, j, ispin, ind
+      integer  :: lo, j, ispin, ind, io
 #ifdef MPI
       real(dp) :: qtmp(4)
 #endif
 
       if ( h_spin_dim == 1 ) return
 
-! Print spin polarization
+     ! Calculate initial spin-polarization
       do ispin = 1, min(4, h_spin_dim)
          qspin(ispin) = 0.0_dp
-         do io = 1,no_l
-            do j = 1,numh(io)
-               ind = listhptr(io)+j
+         do lo = 1,no_l
+            do j = 1,numh(lo)
+               ind = listhptr(lo)+j
                jo = listh(ind)
-               if ( io.eq.jo ) then
-                qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
-               endif
+               qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
             end do
          end do
       end do
@@ -1012,15 +1012,16 @@
       qspin = qtmp
 #endif
       if ( .not. IONode ) return
-      
-     if ( h_spin_dim .eq. 2 ) then
-      write(6,'(/,a,f12.6)')   &
-           'initdm: Initial spin polarization (Qup-Qdown) =',  &
-           qspin(1) - qspin(2)
-      elseif ( h_spin_dim .gt. 2 ) then
-        write(6,'(/,a,3f12.6)')   &
-           'initdm: Initial spin polarization =',  &
-           qspin(3)*2.0d0, qspin(4)*2.0d0, qspin(1) - qspin(2)
+
+      ! Print the initial spin components
+      if ( h_spin_dim == 2 ) then
+         write(6,'(/,a,f12.6)')   &
+              'initdm: Initial spin polarization (Qup-Qdown) =',  &
+              qspin(1) - qspin(2)
+      elseif ( h_spin_dim > 2 ) then
+         write(6,'(/,a,3f12.6)')   &
+              'initdm: Initial spin polarization =',  &
+              qspin(1) - qspin(2), qspin(3)*2, qspin(4)*2
       endif
 
 
