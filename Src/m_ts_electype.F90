@@ -1969,12 +1969,11 @@ contains
     i = len_trim(this%DEfile)
     is_TSDE = ( this%DEfile(i-3:i) == 'TSDE' )
     if ( is_TSDE ) then
-       call read_ts_dm( this%DEfile, this%nspin, fake_dit, &
-            this%no_u, f_DM_2D, f_EDM_2D, Ef, found, &
+       call read_ts_dm( this%DEfile, fake_dit, &
+            f_DM_2D, f_EDM_2D, Ef, found, &
             Bcast = .true. )
     else
-       call read_dm( this%DEfile, this%nspin, fake_dit, &
-            this%no_u, f_DM_2D, found, &
+       call read_dm( this%DEfile, fake_dit, f_DM_2D, found, &
             Bcast = .true. )
     end if
     if ( .not. found ) call die('Could not read file: '//trim(this%DEfile))

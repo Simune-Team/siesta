@@ -16,8 +16,9 @@ module m_ts_iodm
   use class_Sparsity
   use class_OrbitalDistribution
   use class_dSpData2D
-  use m_io_s
+
   use m_os, only : file_exist
+  use m_io_s
 
   implicit none
   
@@ -26,8 +27,7 @@ module m_ts_iodm
 
 contains
   
-  subroutine read_ts_dm( file, nspin, dit, no_u, DM, EDM, Ef, found , &
-       Bcast)
+  subroutine read_ts_dm( file, dit, DM, EDM, Ef, found, Bcast)
 
 #ifdef MPI
   use mpi_siesta
@@ -37,9 +37,7 @@ contains
 ! * INPUT variables    *
 ! **********************
     character(len=*), intent(in) :: file
-    integer, intent(in) :: nspin
     type(OrbitalDistribution), intent(inout) :: dit
-    integer, intent(in) :: no_u
     type(dSpData2D), intent(inout) :: DM, EDM
     real(dp), intent(inout) :: Ef
     logical, intent(out) :: found
@@ -50,8 +48,8 @@ contains
 ! ************************
     type(Sparsity) :: sp
     character(len=500) :: fn
-    logical :: exists, lBcast
-    integer :: iu, two(2)
+    logical :: lBcast
+    integer :: iu, two(2), no_u, nspin
     integer, allocatable, target :: gncol(:)
 #ifdef MPI
     integer :: MPIerror
@@ -59,20 +57,23 @@ contains
 
     external :: io_assign, io_close
 
-    exists = file_exist(file, Bcast = Bcast )
-
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
 
-#ifdef MPI
-    call MPI_Bcast(exists,1,MPI_Logical,0, &
-         MPI_Comm_World,MPIerror)
-#endif
+    found = file_exist(file, Bcast = Bcast )
 
+    if ( .not. found ) then
+
+       ! Clean-output
+       call delete(DM)
+       call delete(EDM)
+
+       return
+
+    end if
+
+    ! Make name for the readed TSDE
     fn = 'IO-TSDE: '//trim(file)
-    
-    found = .false.
-    if ( .not. exists ) return
 
     if ( Node == 0 ) then
        call io_assign(iu)
@@ -80,27 +81,13 @@ contains
        rewind(iu)
        read(iu) two
     end if
-
+    
 #ifdef MPI
     call MPI_Bcast(two,2,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
-    ! If the total number of orbitals does not match, bail out
-    if ( no_u /= two(1) .or. nspin /= two(2) ) then
-       if ( Node == 0 ) then
-          write(*,"(a,i6,/,a)") &
-               "WARNING: Wrong number of orbitals in TSDE file: ",two(1), &
-               "WARNING: Falling back to atomic initialization of DM."
-          write(0,"(a,i6,/,a)") &
-               "WARNING: Wrong number of orbitals in TSDE file: ",two(1), &
-               "WARNING: Falling back to atomic initialization of DM."
-          call io_close(iu)
-       endif
-
-       found = .false.
-
-       return
-    end if
+    no_u = two(1)
+    nspin = two(2)
 
     allocate(gncol(no_u))
     gncol(1) = 1
@@ -145,17 +132,14 @@ contains
          0,MPI_Comm_World, MPIerror)
 #endif
 
-    found = .true.
-    
   end subroutine read_ts_dm
 
-  subroutine write_ts_dm(file,nspin, DM, EDM, Ef )
+  subroutine write_ts_dm(file, DM, EDM, Ef )
     
 ! **********************
 ! * INPUT variables    *
 ! **********************
     character(len=*), intent(in) :: file
-    integer, intent(in) :: nspin
     type(dSpData2D), intent(inout) :: DM, EDM
     real(dp), intent(in) :: Ef
     
@@ -165,7 +149,7 @@ contains
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
     integer, allocatable, target :: gncol(:)
-    integer :: no_u
+    integer :: no_u, nspin
     integer :: iu
 
     external :: io_assign, io_close
@@ -174,6 +158,8 @@ contains
     dit => dist(DM)
     sp  => spar(DM)
     call attach(sp,nrows_g=no_u)
+    ! Retrieve number of spin-components
+    nspin = size(DM, 2)
     
     if ( Node == 0 ) then
 

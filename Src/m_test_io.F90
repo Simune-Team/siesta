@@ -58,7 +58,7 @@ contains
 
     call timer('NICK-io',1)
     do i = 1 , N_WRITES
-       call write_dm('TESTIO.DM',nspin,D_2D)
+       call write_dm('TESTIO.DM',D_2D)
     end do
     call timer('NICK-io',2)
 

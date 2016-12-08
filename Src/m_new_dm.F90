@@ -68,7 +68,7 @@
       use sparse_matrices,  only: sparse_pattern, block_dist
       use atomlist,         only: datm, iaorb, lasto, no_u, no_l
       use m_steps,          only: istp
-      use m_spin,   only: nspin, h_spin_dim, e_spin_dim
+      use m_spin,   only: spin, h_spin_dim
       use m_handle_sparse, only : bulk_expand
 
       use class_dSpData2D
@@ -340,13 +340,13 @@
 
 ! logical try_dm_from_file     : whether DM has to be read from files or not
 ! logical found         : whether DM was found in files
+        
 ! logical inspn         : true : AF ordering according to atom ordering
 !                                if no DM files, no DM.InitSpin, ispin=2
 !                         false: Ferro ordering  (fdf DM.InitSpinAF)
 ! integer na_u           : Number of atoms in the unit cell
 ! integer no_l           : Number of orbitals in the unit cell (local)
 ! integer no_u           : Number of orbitals in the unit cell (global)
-! integer h_spin_dim     : Number of spin components
 ! integer lasto(0:na_u) : List with last orbital of each atom
 ! integer iaorb(no_u)   : List saying to what atom an orbital belongs
 ! double Datm(no_u)       : Occupations of basis orbitals in free atom
@@ -376,8 +376,6 @@
       use m_mixing_scf, only: scf_mixs, scf_mix
 #endif /* TRANSIESTA */
 
-      implicit          none
-
       logical           DM_found, inspn, try_dm_from_file
       integer           no_l, na_u, no_u, h_spin_dim
       integer           lasto(0:na_u), iaorb(no_u)
@@ -394,7 +392,8 @@
 
       ! Enables the user to re-use a specific old DM every time
       character(len=250) :: old_DM
-      integer :: h_spin_dim_read, i
+      integer :: h_spin_dim_read, i, itmp
+      integer :: dim1, dim2
       real(dp), pointer              :: Dscf(:,:)
       integer, pointer, dimension(:) :: numh, listhptr, listh
       type(dSpData2D)                :: DMread
@@ -422,19 +421,14 @@
          call timer('IO-R-TS-DE',1)
          do i = 1 , 100
 #endif
-         call read_ts_dm(trim(old_DM),h_spin_dim,block_dist,no_u, &
+         call read_ts_dm(trim(old_DM), block_dist, &
               DMread, EDMread, Ef, TSDE_found )
 #ifdef TIMING_IO
          end do
          call timer('IO-R-TS-DE',2)
          call timer('IO-R-TS-DE',3)
 #endif
-         if ( TSDE_found .and. IONode ) then
-            write(*,'(a)') 'Succeeded!'
-         else if ( IONode ) then
-            write(*,'(a)') 'Failed...'
-         end if
-
+         
       end if
 
       ! Update init_method
@@ -459,51 +453,34 @@
             old_DM = trim(slabel)//'.DM'
          end if
 
-         call read_dm(trim(old_DM),h_spin_dim,block_dist,no_u, &
-              DMread, DM_found )
+         call read_dm(trim(old_DM), block_dist, DMread, DM_found )
+
 #ifdef TIMING_IO
          end do
          call timer('IO-R-DM',2)
          call timer('IO-R-DM',3)
 #endif
 
-         if ( DM_found .and. IONode ) then
-            write(*,'(a)') 'Succeeded!'
-         else if ( IONode ) then
-            write(*,'(a)') 'Failed...'
-         end if
-
-         ! Update init_method
-         if ( DM_found ) init_method = 1
-
       end if
 
-! If DM found, check and update, otherwise initialize with neutral atoms
-
+      ! If DM found, check and update, otherwise initialize with neutral atoms
       if ( DM_found ) then
+         
         ! Various degrees of sanity checks
-
-        h_spin_dim_read = size(val(DMread),dim=2)
-        if ( h_spin_dim_read /= h_spin_dim) then
-           if (IOnode) then
-              write(6,"(a,i0,/,a)")                   &
-              "WARNING: Wrong nspin in DM file: ", h_spin_dim_read,  &
-              "WARNING: Falling back to atomic initialization of DM."
-           endif
-           DM_found = .false.
-        endif
-        
         if ( nrows_g(DMread) /= nrows_g(sparse_pattern) ) then
-           if (IONode) then
-              write(6,"(2(a,i0,/),a)") &
+           if ( IONode ) then
+              write(*,'(a)') 'Failed...'
+              write(*,"(2(a,i0,/),a)") &
              "WARNING: Wrong number of orbs in DM file: ",nrows_g(DMread), &
              "WARNING: Expected number of orbs in DM file: ",nrows_g(sparse_pattern), &
              "WARNING: Falling back to atomic initialization of DM."
            end if
            DM_found = .false.
-        endif
+        end if
 
-      endif
+     else if ( IONode ) then
+        write(*,'(a)') 'Failed...'
+     end if
 
 #ifdef TRANSIESTA
       ! In case the sparsity pattern does not conform we update 
@@ -515,9 +492,53 @@
       ! Density matrix size checks
       if ( DM_found ) then
 
-         call restructdSpData2D(DMread,sparse_pattern,DMnew)
-         if (ionode) write(*,'(a)') "DM after reading file:"
-         if (ionode) call print_type(Dmread)
+         dim1 = h_spin_dim
+         dim2 = size(DMread, 2)
+
+         if ( dim1 == dim2 .and. IONode ) then
+            write(*,'(a)') 'Succeeded...'
+         else if ( dim1 /= dim2 .and. IONode ) then
+            if ( dim1 < dim2 ) then
+               write(*,'(a)') 'Succeeded by reducing spin-components...'
+            else
+               write(*,'(a)') 'Succeeded by increasing spin-components...'
+            end if
+         end if
+
+         if ( dim1 == 1 .and. dim1 /= dim2 ) then
+            ! This SCF has 1 spin-component.
+            ! The readed DM has, at least 2!
+            ! Thus we sum the spinors to form the non-polarized
+            ! case
+            Dscf => val(DMread)
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , size(Dscf, 1)
+               Dscf(i,1) = Dscf(i,1) + Dscf(i,2)
+            end do
+!$OMP end parallel do
+            
+         end if
+         
+         if ( IONode ) then
+            write(*,'(a)') "DM from file:"
+            call print_type(DMread)
+         end if
+         call restructdSpData2D(DMread,sparse_pattern,DMnew, dim1)
+
+         if ( dim2 == 1 .and. dim1 /= dim2 ) then
+            ! This SCF has more than 2 spin-components.
+            ! The readed DM has 1.
+            ! Thus we divide the spinors to form the polarized
+            ! case.
+            Dscf => val(DMnew)
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , size(Dscf, 1)
+               Dscf(i,1) = Dscf(i,1) * 0.5_dp
+               Dscf(i,2) = Dscf(i,1)
+            end do
+!$OMP end parallel do
+
+         end if
          
       else
          
@@ -532,7 +553,7 @@
               no_u, na_u, no_l, h_spin_dim, &
               iaorb, inspn)
 
-         call newdSpData2D(sparse_pattern,dm_a2d,block_dist,DMnew,  &
+         call newdSpData2D(sparse_pattern,dm_a2d,block_dist,DMnew, &
               "(DM initialized from atoms)")
          call delete(dm_a2d)
          if (ionode) write(*,'(a)') "DM after filling with atomic data:"
@@ -548,11 +569,45 @@
       ! the new sparsity pattern if read in from TSDE
       ! Else, it will remain associated to old EDM
       if ( TSDE_found ) then
-         call restructdSpData2D(EDMread,sparse_pattern,EDMnew)
-         if (IONode) then
-            write(*,'(a)') "EDM after reading file:"
+
+         dim1 = size(EDMnew, 2)
+         dim2 = size(EDMread, 2)
+
+         if ( dim1 == 1 .and. dim1 /= dim2 ) then
+            ! This SCF has 1 spin-component.
+            ! The readed EDM has, at least 2!
+            ! Thus we sum the spinors to form the non-polarized
+            ! case
+            Dscf => val(EDMread)
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , size(Dscf, 1)
+               Dscf(i,1) = Dscf(i,1) + Dscf(i,2)
+            end do
+!$OMP end parallel do
+            
+         end if
+
+         if ( IONode ) then
+            write(*,'(a)') "EDM from file:"
             call print_type(EDMread)
          end if
+         call restructdSpData2D(EDMread,sparse_pattern,EDMnew, dim1)
+         
+         if ( dim2 == 1 .and. dim1 /= dim2 ) then
+            ! This SCF has more than 2 spin-components.
+            ! The readed EDM has 1.
+            ! Thus we divide the spinors to form the polarized
+            ! case.
+            Dscf => val(EDMnew)
+!$OMP parallel do default(shared), private(i)
+            do i = 1 , size(Dscf, 1)
+               Dscf(i,1) = Dscf(i,1) * 0.5_dp
+               Dscf(i,2) = Dscf(i,1)
+            end do
+!$OMP end parallel do
+
+         end if
+
       end if
       
       if ( TS_scf_mode == 1 .and. TSinit ) then
@@ -633,7 +688,7 @@
 ! integer no_l           : Number of orbitals in the unit cell
 ! integer h_spin_dim    : Number of spin components
 ! integer no_u          : Max. number of orbitals (globally)
-! integer lasto(0:maxa) : List with last orbital of each atom
+! integer lasto(0:na_u) : List with last orbital of each atom
 ! integer iaorb(no_u)   : List saying to what atom an orbital belongs
 ! double Datm(no)       : Occupations of basis orbitals in free atom
 ! ********* OUTPUT **************************************************
@@ -674,9 +729,7 @@
       logical           noncol, peratm, badsyntax
       integer           nh, ni, nn, nr, nv, iat, nat, ia, iu,   &
                         i1, i2, in, ind, ispin, jo, io,         &
-                        iio, maxatnew
-
-      integer, save ::  maxat
+                        iio
 
       integer           integs(4), lastc, lc(0:3)
 
@@ -697,7 +750,6 @@
 
       integer :: is
 
-      data maxat / 1000 /
       data epsilon / 1.d-8 /
 
 ! See whether specific initial spins are given in a DM.InitSpin block
@@ -717,10 +769,10 @@
 
 ! Allocate local memory
           nullify(atom,phi,spin,theta)
-          call re_alloc( atom, 1, maxat, 'atom', 'initdm' )
-          call re_alloc( phi, 1, maxat, 'phi', 'initdm' )
-          call re_alloc( spin, 1, maxat, 'spin', 'initdm' )
-          call re_alloc( theta, 1, maxat, 'theta', 'initdm' )
+          call re_alloc( atom, 1, na_u, 'atom', 'initdm' )
+          call re_alloc( phi, 1, na_u, 'phi', 'initdm' )
+          call re_alloc( spin, 1, na_u, 'spin', 'initdm' )
+          call re_alloc( theta, 1, na_u, 'theta', 'initdm' )
 
           nat = 0
           badsyntax = .FALSE.
@@ -732,20 +784,8 @@
             nr = fdf_bnreals(pline)
 
             if (ni .eq. 1) then
-              if (nat .eq. maxat) then
-                ! fixed ceiling
-                maxatnew = nat + ceiling(0.1*nat)
-!
-                call re_alloc(atom, 1, maxatnew, 'atom', 'initdm',copy=.true.)
-!
-                call re_alloc( phi, 1, maxatnew, 'phi', 'initdm',    &
-                               copy=.true. )
-                call re_alloc( spin, 1, maxatnew, 'spin', 'initdm',  &
-                               copy=.true. )
-                call re_alloc( theta, 1, maxatnew, 'theta', 'initdm', &
-                               copy=.true. )
-!
-                maxat = maxatnew
+               if (nat .eq. na_u) then
+                 call die('There can only be one initial spin-component per atom.')
               endif
               nat = nat + 1
               atom(nat) = fdf_bintegers(pline,1)
@@ -1018,11 +1058,11 @@
          write(6,'(/,a,f12.6)')   &
               'initdm: Initial spin polarization (Qup-Qdown) =',  &
               qspin(1) - qspin(2)
-      elseif ( h_spin_dim > 2 ) then
+      else if ( h_spin_dim > 2 ) then
          write(6,'(/,a,3f12.6)')   &
               'initdm: Initial spin polarization =',  &
               qspin(1) - qspin(2), qspin(3)*2, qspin(4)*2
-      endif
+      end if
 
 
       end subroutine print_initial_spin

@@ -16,6 +16,7 @@ module m_iodm
   use class_OrbitalDistribution
   use class_dSpData2D
 
+  use m_os, only: file_exist
   use m_io_s
 
   implicit none
@@ -25,7 +26,7 @@ module m_iodm
 
 contains
         
-  subroutine read_dm( file, nspin, dit, no_u, DM, found , Bcast )
+  subroutine read_dm( file, dit, DM, found, Bcast )
 
 #ifdef MPI
     use mpi_siesta
@@ -35,9 +36,10 @@ contains
 ! * INPUT variables    *
 ! **********************
     character(len=*), intent(in) :: file
-    integer, intent(in) :: nspin
+    ! The orbital distribution that should be attached to
+    ! DM
     type(OrbitalDistribution), intent(inout) :: dit
-    integer, intent(in) :: no_u
+    ! The density matrix
     type(dSpData2D), intent(inout) :: DM
     logical, intent(out) :: found
     logical, intent(in), optional :: Bcast
@@ -47,8 +49,8 @@ contains
 ! ************************
     type(Sparsity) :: sp
     character(len=500) :: fn
-    logical :: exists, lBcast
-    integer :: iu, two(2)
+    logical :: lBcast
+    integer :: iu, two(2), no_u, nspin
     integer, allocatable, target :: gncol(:)
 #ifdef MPI
     integer :: MPIerror
@@ -56,22 +58,23 @@ contains
 
     external :: io_assign, io_close
 
-    if ( Node == 0 ) then
-       inquire(file=file, exist=exists)
-    end if
-
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
 
-#ifdef MPI
-    call MPI_Bcast(exists,1,MPI_Logical,0, &
-         MPI_Comm_World,MPIerror)
-#endif
+    found = file_exist(file, Bcast=.true.)
 
+    ! If the file has not been found
+    if ( .not. found ) then
+
+       ! Clean-output
+       call delete(DM)
+       
+       return
+       
+    end if
+
+    ! Make name for the readed DM
     fn = 'IO-DM: '//trim(file)
-    
-    found = .false.
-    if ( .not. exists ) return
 
     if ( Node == 0 ) then
        call io_assign(iu)
@@ -84,21 +87,8 @@ contains
     call MPI_Bcast(two,2,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
-    ! If the total number of orbitals does not match, bail out
-    if ( no_u /= two(1) .or. nspin /= two(2) ) then
-       if ( Node == 0 ) then
-          write(*,"(a,2(i6,tr1),/,a,2(i6,tr1))") &
-               "WARNING: Number of orbitals in DM/expected file: ",two(1),no_u, &
-               "WARNING: Number of spin in DM/expected file: ",two(2),nspin
-          
-          call io_close(iu)
-          
-       end if
-
-       found = .false.
-
-       return
-    end if
+    no_u = two(1)
+    nspin = two(2)
 
     allocate(gncol(no_u))
     gncol(1) = 1
@@ -131,17 +121,14 @@ contains
 
     end if
 
-    found = .true.
-    
   end subroutine read_dm
   
-  subroutine write_dm(file, nspin, DM )
+  subroutine write_dm( file, DM )
     
 ! **********************
 ! * INPUT variables    *
 ! **********************
     character(len=*), intent(in) :: file
-    integer, intent(in) :: nspin
     type(dSpData2D), intent(inout) :: DM
     
 ! ************************
@@ -150,7 +137,7 @@ contains
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
     integer, allocatable, target :: gncol(:)
-    integer :: no_u
+    integer :: no_u, nspin
     integer :: iu
 
     external :: io_assign, io_close
@@ -158,7 +145,9 @@ contains
     ! Gather sparse pattern
     dit => dist(DM)
     sp => spar(DM)
-    call attach(sp,nrows_g=no_u)
+    call attach(sp, nrows_g=no_u)
+    ! Retrieve number of spin-components
+    nspin = size(DM, 2)
     
     if ( Node == 0 ) then
 
@@ -176,10 +165,10 @@ contains
     gncol(1) = -1
 
     ! Write sparsity pattern...
-    call io_write_Sp(iu,sp,dit=dit,gncol=gncol)
+    call io_write_Sp(iu, sp, dit=dit, gncol=gncol)
 
     ! Write density matrix
-    call io_write_d2D(iu,DM,gncol=gncol)
+    call io_write_d2D(iu, DM, gncol=gncol)
 
     deallocate(gncol)
 
