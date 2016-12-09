@@ -218,7 +218,7 @@ contains
     character(len=*), intent(in) :: tag
     ! distribution if needed to be b-cast in a non-global
     ! fashion
-    type(OrbitalDistribution), intent(inout), optional :: dit
+    type(OrbitalDistribution), intent(in), optional :: dit
     ! Bcast the values?
     logical, intent(in), optional :: Bcast
     integer, intent(inout), target, optional :: gncol(no)
@@ -487,7 +487,7 @@ contains
     ! Sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! distribution
-    type(OrbitalDistribution), intent(inout), optional :: dit
+    type(OrbitalDistribution), intent(in), optional :: dit
     integer, intent(inout), target, optional :: gncol(:)
 
     ! Local variables for reading the values

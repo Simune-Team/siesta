@@ -37,7 +37,7 @@ contains
 ! * INPUT variables    *
 ! **********************
     character(len=*), intent(in) :: file
-    type(OrbitalDistribution), intent(inout) :: dit
+    type(OrbitalDistribution), intent(in) :: dit
     type(dSpData2D), intent(inout) :: DM, EDM
     real(dp), intent(inout) :: Ef
     logical, intent(out) :: found

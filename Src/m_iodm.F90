@@ -38,7 +38,7 @@ contains
     character(len=*), intent(in) :: file
     ! The orbital distribution that should be attached to
     ! DM
-    type(OrbitalDistribution), intent(inout) :: dit
+    type(OrbitalDistribution), intent(in) :: dit
     ! The density matrix
     type(dSpData2D), intent(inout) :: DM
     logical, intent(out) :: found
