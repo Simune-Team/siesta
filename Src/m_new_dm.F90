@@ -526,8 +526,8 @@ contains
               qspin(1) - qspin(2)
       else if ( spin%DM > 2 ) then
          write(*,'(/,a,3f12.6/)')   &
-              'initDM: Initial spin polarization =',  &
-              qspin(1) - qspin(2), qspin(3)*2, qspin(4)*2
+              'initDM: Initial spin polarization (x,y,z) =',  &
+              qspin(3)*2, qspin(4)*2, qspin(1) - qspin(2)
       end if
 
     end subroutine print_initial_spin

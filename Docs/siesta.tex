@@ -3590,7 +3590,7 @@ are always stored in the file \sysfile{KP}.
   Choose the spin-components in the simulation.
 
   \note this flag has precedence from \fdf*{SpinOrbit}, \fdf*{NonCollinearSpin} and
-  \fdf*{SpinPolarized} while they may still be used.
+  \fdf*{SpinPolarized} while these older flags may still be used.
   \begin{fdfoptions}
 
     \option[non-polarized]%
@@ -3616,10 +3616,19 @@ are always stored in the file \sysfile{KP}.
 
   \end{fdfoptions}
 
+  When conducting calculations with \fdf*{polarized},
+  \fdf*{non-collinear} or \fdf*{spin-orbit} it is advantageous to
+  start from a calculation with the previous spin-option and using
+  \fdf{DM!UseSaveDM}. \siesta\ will extrapolate a different
+  spin-calculation to the currently chosen calculation and is
+  recommend if one does not pursue particular polarization of the
+  atoms. Going from non-polarized to anything above will split the
+  charge equally in spin-up and spin-down states.
+
   Certain options may not be used together with specific
   parallelization routines.  For instance only a spin-polarized
   calculation may use the \fdf{Diag!ParallelOverK} option.
-  
+
 \end{fdfentry}
 
 \begin{fdflogicalF}{Spin!Fix}
@@ -3828,9 +3837,9 @@ The current version introduces several changes:
     densities which are superpositions of atomic charge densities.
 
     When this option is choosen, the values of \fdf{DM!UseSaveDM},
-    \fdf{MaxSCFIterations}, \fdf{SCF!MustConverge} and \fdf{SCF.Mix!First} are automatically set
-    up to False, 1, False and False respectively, no matter whatever other
-    specification are in the INPUT file.
+    \fdf{SCF!MustConverge} and \fdf{SCF.Mix!First} are automatically
+    set \fdffalse and \fdf{MaxSCFIterations} is set to $1$, no matter
+    whatever other specification are in the INPUT file.
   \end{itemize}
 
 \end{fdflogicalF}
@@ -4870,6 +4879,11 @@ The Density matrix can be:
   \sysfile{.DM} by a previous run.
   
   \siesta\ will continue even if \sysfile*{DM} is not found.
+
+  \note that if the spin settings has changed \siesta\ allows reading
+  a \sysfile*{DM} from a similar calculation with different \fdf{Spin}
+  option. This may be advantageous when going from non-polarized
+  calculations to polarized, and beyond, see \fdf{Spin} for details. 
 
 \end{fdflogicalF}
 
