@@ -77,8 +77,8 @@
       real(dp)          :: polxyz(3,nspin)  ! Autom., small
       real(dp)          :: polR(3,nspin)    ! Autom., small
       real(dp)          :: qaux
-      real(dp)          :: stot             ! Total spin polar.
-      real(dp)          :: svec(3)          ! Total spin vector
+      real(dp)          :: Stot             ! Total spin polar.
+      real(dp)          :: Svec(3)          ! Total spin vector
       real(dp), pointer :: ebk(:,:,:)       ! Band energies
 
       integer           :: j, ix, ind, ik, io, ispin
@@ -414,22 +414,18 @@
      .         value=qspin(1)-qspin(2), dictref='siesta:qspin',
      .         units='siestaUnits:spin')
         elseif (nspin .eq. 4) then
-          if (IONode)
-     $      write(6,'(a,i5,4f12.5)') ' Calling spnvec: nspin, qspin = ',  
-     .           nspin, qspin
-          call spnvec( nspin, qspin, qaux, stot, svec )
-          if (IONode)
-     $      write(6,'(a,5f12.4)') ' Leaving spnvec: qaux,stot,svec= ',
-     .           qaux, stot, svec(1:3)
-          if (IOnode) then
-            write(6,'(/,a,f12.6)')
-     &       'siesta: Total spin polarization (Qup-Qdown) =', stot
-            write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
+          call spnvec( nspin, qspin, qaux, Stot, Svec )
+          if (IONode) then
+             write(6,'(a,3f12.6)')
+     &            'siesta: Total spin polarization (x,y,z) = ',
+     &            qspin(3)*2, qspin(4)*2, qspin(1)-qspin(2)
+             write(6,'(a,4f12.6)')
+     &            'siesta: S , {S} = ', Stot, Svec
             if (cml_p) then
-              call cmlAddProperty(xf=mainXML, value=stot,
+              call cmlAddProperty(xf=mainXML, value=Stot,
      .             dictref='siesta:stot',
      .             units='siestaUnits:spin')
-              call cmlAddProperty(xf=mainXML, value=svec,
+              call cmlAddProperty(xf=mainXML, value=Svec,
      .             dictref='siesta:svec',
      .             units='siestaUnits:spin')
             endif !cml_p
