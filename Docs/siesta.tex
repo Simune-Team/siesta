@@ -3589,7 +3589,7 @@ are always stored in the file \sysfile{KP}.
 
   Choose the spin-components in the simulation.
 
-  \note this flag has precedence from \fdf*{SpinOrbit}, \fdf*{NonCollinearSpin} and
+  \note this flag has precedence over \fdf*{SpinOrbit}, \fdf*{NonCollinearSpin} and
   \fdf*{SpinPolarized} while these older flags may still be used.
   \begin{fdfoptions}
 
@@ -3616,14 +3616,10 @@ are always stored in the file \sysfile{KP}.
 
   \end{fdfoptions}
 
-  When conducting calculations with \fdf*{polarized},
-  \fdf*{non-collinear} or \fdf*{spin-orbit} it is advantageous to
-  start from a calculation with the previous spin-option and using
-  \fdf{DM!UseSaveDM}. \siesta\ will extrapolate a different
-  spin-calculation to the currently chosen calculation and is
-  recommend if one does not pursue particular polarization of the
-  atoms. Going from non-polarized to anything above will split the
-  charge equally in spin-up and spin-down states.
+  \siesta\ can read a \sysfile*{DM} with different spin structure by
+  adapting the information to the currently selected spin
+  multiplicity, averaging or splitting the spin components equally, as
+  needed. This may be used to greatly increase convergence.
 
   Certain options may not be used together with specific
   parallelization routines.  For instance only a spin-polarized
