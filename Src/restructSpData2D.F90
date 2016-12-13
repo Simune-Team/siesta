@@ -1,6 +1,5 @@
- subroutine restructdSpData2D(SpMin,sp_out,SpMout)
+ subroutine restructdSpData2D(SpMin,sp_out,SpMout, dim2)
 
-   use parallel, only : Node
    use class_dSpData2D
    use class_dData2D
    use class_Sparsity
@@ -12,7 +11,9 @@
    type(Sparsity), intent(in)    :: sp_out
    ! Note!!  inout is essential to avoid memory leaks...
    type(dSpData2D), intent(inout) :: SpMout
-
+   ! The size of the second dimension in SpMout
+   ! This is only used if passed, otherwise it defaults to size(SpMin, 2)
+   integer, intent(in), optional :: dim2
       ! Changes the sparsity pattern of a matrix, re-using
       ! as much information as possible. Newly appearing elements are
       ! set to zero. Presumably, elements which dissappear from
@@ -31,8 +32,9 @@
 
       integer, parameter :: dp = selected_real_kind(10,100)
 
-      integer :: i, in, ind, j, k, dim2, size_in, size_out
-      integer :: maxval_j_old, maxval_j_out, maxval_j_in, max_col
+      integer :: dim2_in, dim2_min, ldim2
+      integer :: i, in, ind, j, k, size_in, size_out
+      integer :: maxval_j_out, maxval_j_in, max_col
 
       type(dData2D)  :: a2d_out
 
@@ -85,10 +87,19 @@
       allocate(aux(1:max_col))
 
       a_in => val(SpMin)
-      dim2 = size(a_in,dim=2)
+      ! This enables the use of the same density matrix in
+      ! two different cases
+      dim2_in  = size(a_in,dim=2)
+      if ( present(dim2) ) then
+         ldim2 = dim2
+      else
+         ldim2 = dim2_in
+      end if
 
-      call newdData2D(a2d_out,size_out,dim2,"(new in restruct)")
+      ! This is the actual number of components.
+      dim2_min = min(dim2_in, ldim2)
 
+      call newdData2D(a2d_out,size_out,ldim2,"(new in restruct)")
       a_out => val(a2d_out)
 
       ! Use two loops, the outer one to cover the extra dimension
@@ -96,7 +107,7 @@
       ! (there will be also cache misses due to the sparse de-referencing,
       ! though.
 
-      do k = 1, dim2
+      do k = 1, dim2_min
          do i=1,nrows(SpMin)
             aux(:) = 0.0_dp
             do in=1,n_col_in(i)

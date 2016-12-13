@@ -506,7 +506,7 @@
 !
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
-      call new_dm( auxchanged,DM_history,DM_2D,EDM_2D )
+      call new_DM(auxchanged, DM_history, DM_2D, EDM_2D)
       Dscf => val(DM_2D)
       Escf => val(EDM_2D)
 
@@ -515,13 +515,13 @@
       ! Only part of Escf is updated in TS, so if it is put as zero here
       ! a continuation run gives bad forces.
       if ( .not. TSrun ) then
-         call normalize_dm( first= .true. )
+         call normalize_DM( first= .true. )
 !$OMP parallel workshare default(shared)
          Escf(:,:) = 0.0_dp
 !$OMP end parallel workshare
       end if
 #else
-      call normalize_dm( first= .true. )
+      call normalize_DM( first= .true. )
 !$OMP parallel workshare default(shared)
       Escf(:,:) = 0.0_dp
 !$OMP end parallel workshare

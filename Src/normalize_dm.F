@@ -19,7 +19,7 @@
       use atomlist, only: qtot
       use parallel, only: IOnode
       use sys,      only: die
-      use m_spin,   only: nspin
+      use m_spin,   only: spin
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -39,12 +39,13 @@
       qsol = 0.0_dp
 !$OMP parallel do default(shared), collapse(2),
 !$OMP&private(ispin,io), reduction(+:qsol)
-      do ispin = 1,min(nspin,2)
-        do io = 1,maxnh
-          qsol = qsol + Dscf(io,ispin) * S(io)
-        enddo
-      enddo
+      do ispin = 1 , spin%spinor
+         do io = 1 , maxnh
+            qsol = qsol + Dscf(io,ispin) * S(io)
+         end do
+      end do
 !$OMP end parallel do
+
 #ifdef MPI
       call globalize_sum(qsol,buffer1)
       qsol = buffer1
@@ -77,10 +78,15 @@
       ! Actually normalize only if not disallowed by the user
       !
       if (normalize_dm_during_scf) then
-!$OMP parallel workshare default(shared)
-         Dscf(1:maxnh,1:nspin) = Dscf(1:maxnh,1:nspin) * qtot/qsol
-         Escf(1:maxnh,1:nspin) = Escf(1:maxnh,1:nspin) * qtot/qsol
-!$OMP end parallel workshare
+         
+!$OMP parallel do default(shared), private(ispin,io), collapse(2)
+         do ispin = 1 , spin%spinor
+            do io = 1 , maxnh
+               Dscf(io,ispin) = Dscf(io,ispin) * qtot/qsol
+               Escf(io,ispin) = Escf(io,ispin) * qtot/qsol
+            end do
+         end do
+!$OMP end parallel do
       else
          if (IOnode) then
             write(6,'(a,g15.6)')

@@ -114,8 +114,7 @@
           else
              ! The filename falls back to the standard one     
              !
-             call write_dm(trim(slabel)//'.DM',
-     $                     h_spin_dim, DM_2D)
+             call write_dm(trim(slabel)//'.DM', DM_2D)
 	  endif
         end if
 #ifdef TIMING_IO
@@ -134,9 +133,9 @@
 #endif
           if ((idyn .eq. 6) .or. (idyn .eq. 7).or.(idyn==9)) then
             if (istp.eq.1)
-     &            call write_dm(trim(slabel)//'.DM', h_spin_dim, DM_2D)
+     &            call write_dm(trim(slabel)//'.DM', DM_2D)
           else
-             call write_dm(trim(slabel)//'.DM', h_spin_dim, DM_2D)
+             call write_dm(trim(slabel)//'.DM', DM_2D)
           end if
 #ifdef TIMING_IO
       end do
@@ -151,10 +150,10 @@
 #endif
              if ((idyn .eq. 6) .or. (idyn .eq. 7).or.(idyn==9)) then
                if (istp .eq.1)
-     &               call write_ts_dm(trim(slabel)//'.TSDE', h_spin_dim,
+     &               call write_ts_dm(trim(slabel)//'.TSDE', 
      &               DM_2D, EDM_2D, Ef)
              else
-                call write_ts_dm(trim(slabel)//'.TSDE', h_spin_dim,
+                call write_ts_dm(trim(slabel)//'.TSDE',
      &               DM_2D, EDM_2D, Ef)
              end if 
 #ifdef TIMING_IO
@@ -164,7 +163,7 @@
 #endif
         end if ! TSrun
         if ( TS_DE_save ) then
-           call write_ts_dm(trim(slabel)//'.TSDE', h_spin_dim,
+           call write_ts_dm(trim(slabel)//'.TSDE',
      &          DM_2D, EDM_2D, Ef)
         end if
       end if ! writedm
