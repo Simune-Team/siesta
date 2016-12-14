@@ -584,7 +584,7 @@ contains
 
           ! Create attached region starting from electrodes specified
           call rgn_sp_connect(r_pvt, dit, tmp_Sp, r_tmp, except=priority )
-          
+
           if ( r_tmp%n == 0 .and. r_pvt%n /= n_pvt .and. lextend ) then
              ! This check ensures that in case there is vacuum
              ! (i.e. the previous segment does not connect to anything)

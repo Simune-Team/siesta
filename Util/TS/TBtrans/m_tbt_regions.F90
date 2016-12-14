@@ -371,9 +371,11 @@ contains
        csort = fdf_get('TBT.BTD.Pivot.Elecs',trim(g))
        csort = fdf_get('TBT.BTD.Pivot.Elec.'//&
             trim(Elecs(iEl)%name),trim(csort))
-       g = lcase(g)
+       g = lcase(trim(Elecs(iEl)%name))
        csort = lcase(csort)
-       if ( index(csort, trim(Elecs(iEl)%name)) > 0 ) then
+       ! If the electrode is in the pivoting scheme we
+       ! are for sure doing a connectivity graph.
+       if ( index(csort, trim(g)) > 0 ) then
           ! the requested sorting algorithm
           ! is the connectivity graph, then we can do
           ! everything in one go!
@@ -384,6 +386,8 @@ contains
        else
           ! First find the connectivity graph to limit the
           ! electrode region
+          ! re-create g
+          g = 'atom+'//trim(Elecs(iEl)%name)
           call ts_pivot(dit, sp_tmp, &
                1, Elecs(iEl:iEl), &
                cell, na_u, xa, lasto, &

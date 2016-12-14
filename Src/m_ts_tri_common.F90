@@ -171,7 +171,7 @@ contains
   ! block to create the most consecutive blocks.
   subroutine ts_pivot_tri_sort(pvt,tri)
 
-    use intrinsic_missing, only: SORT
+    use intrinsic_missing, only: SORT_QUICK
     use m_region
 
     ! The pivoting region
@@ -203,7 +203,7 @@ contains
     do i = 1 , tri%n
 
        n = tri%r(i)
-       pvt%r(off+1:off+n) = SORT(pvt%r(off+1:off+n))
+       call sort_quick(n, pvt%r(off+1:))
 
        off = off + n
        

@@ -9,7 +9,8 @@
 
 module m_region
   
-  use intrinsic_missing, only : UNIQ, UNIQC, SORT, SFIND
+  use intrinsic_missing, only : UNIQ, UNIQC, SFIND
+  use intrinsic_missing, only : SORT_QUICK
   use geom_helper, only : UCORB, IAORB
 
   use class_OrbitalDistribution
@@ -1326,7 +1327,7 @@ contains
   subroutine rgn_sort(r)
     type(tRgn), intent(inout) :: r
     if ( r%n > 0 ) then
-       r%r(1:r%n) = SORT(r%r(1:r%n))
+       call sort_quick(r%n, r%r)
        r%sorted = .true.
     end if
   end subroutine rgn_sort
