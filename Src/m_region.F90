@@ -38,7 +38,7 @@ module m_region
   end type tRgnLL
 
   public :: tRgn, tRgnLL
-  public :: rgn_init
+  public :: rgn_init, rgn_init_pvt
   public :: rgn_assoc
   public :: rgn_delete, rgn_nullify, rgnll_delete
   public :: rgn_intersection
@@ -54,6 +54,10 @@ module m_region
   public :: rgn_reverse
   public :: rgn_wrap
   public :: in_rgn, rgn_pivot
+  interface rgn_push
+     module procedure rgn_push_val
+     module procedure rgn_push_rgn
+  end interface rgn_push
   public :: rgn_push, rgn_pop
 #ifdef MPI
   public :: rgn_MPI_union
@@ -290,7 +294,7 @@ contains
        end if
     end do
 
-    call rgn_list(rout,ni,tmp_r(1:ni))
+    call rgn_list(rout,ni,tmp_r)
 
     deallocate(tmp_r)
 
@@ -383,93 +387,111 @@ contains
     call rgn_delete(cr)
 
     allocate(rr(r%n))
-    ! Exclude it's own region, (no connection back)
-    call rgn_copy(r,tmp)
     allocate(ct(no_u-r%n))
 
-    if ( present(except) ) then
-       if ( except%n > 0 ) then
-          call rgn_copy(tmp,tmp2)
-          call rgn_insert(tmp2,except,tmp,0)
-          call rgn_delete(tmp2)
-       end if
-    end if
-
+    call rgn_copy(r, tmp)
     ! In case r%n is extremely big we can with benefit &
     ! search the region in a sorted array.
     ! We sort it once, and search that array instead
     ! This requires a slightly increased memory, but 
     ! drastically improves performance.
     call rgn_sort(tmp)
+    
+    if ( present(except) ) then
+       ! Exclude it's own region, (no connection back)
+       if ( except%n > 0 ) then
+          call rgn_copy(tmp,tmp2)
+          call rgn_insert(tmp2,except,tmp,0)
+          call rgn_delete(tmp2)
+          call rgn_sort(tmp)
+       end if
+    end if
 
     rt = 0
-    it = 0
+    ! A duplicate of ct for faster checks (sorted search)
+    call rgn_init(tmp2, no_u-r%n)
+    tmp2%n = 0
+    
     do i = 1 , r%n
 
        ! Orbital that should be folded from
-       io = index_global_to_local(dit,r%r(i))
+       io = index_global_to_local(dit, r%r(i))
        if ( io <= 0 ) cycle ! the orbital does not exist on this node
 
-       ! Count number of available orbitals to fold to
-       j = 0
+       ! Count number of orbitals that are connected
+       j = tmp2%n
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
           ! UC-orb
-          jo = ucorb(l_col(ind),no_u)
+          jo = ucorb(l_col(ind), no_u)
 
           ! Ensure that it is not a folding to the same region
           ! tmp is sorted, hence it uses SFIND
-          if ( in_rgn(tmp,jo) ) cycle
-          
-          if ( it == 0 ) then
-             it = it + 1
-             ct(it) = jo
-          else if ( .not. any(jo == ct(1:it)) ) then
-             it = it + 1
-             ct(it) = jo
-          end if
+          if ( in_rgn(tmp, jo) ) cycle
 
-          ! The connect_from region
-          ! will only make sense if we do not follow the orbitals
-          ! (else we still get where the connection starts)!
-          if ( rt == 0 ) then
-             rt = rt + 1
-             rr(rt) = io
-          else if ( .not. any(io == rr(1:rt)) ) then
-             rt = rt + 1
-             rr(rt) = io
+          if ( .not. in_rgn(tmp2, jo) ) then
+             tmp2%n = tmp2%n + 1
+             ct(tmp2%n) = jo
+             ! Retain two lists (in case there
+             ! are super-cell connections we must do
+             ! the sorting here, besides)
+             tmp2%r(tmp2%n) = jo
+             call rgn_sort(tmp2)
           end if
 
        end do
+       
+       if ( j /= tmp2%n ) then
+          ! The connect_from region
+          ! will only make sense if we do not follow the orbitals
+          ! (else we still get where the connection starts)!
+          ! This will never double check as
+          ! we already have each orbital only once per core...
+          rt = rt + 1
+          rr(rt) = io
+       end if
+
     end do
 
-#ifdef MPI
-    ! We have found the first group of regions
-    ! Now we need to align the regions for all the processors
-    ! in this orbital distribution (before we move on 
-    ! and check for "follow"
-
-    ! First we do the ct region
-    call rgn_list(tmp,it,ct)
-    call rgn_MPI_union(dit,tmp)
-    it = tmp%n
-    if ( it > 0 ) then
-       ct(1:it) = tmp%r
-    end if
-    call rgn_list(tmp,rt,rr)
-    call rgn_MPI_union(dit,tmp)
-    rt = tmp%n
-    if ( rt > 0 ) then
-       rr(1:rt) = tmp%r
-    end if
-    call rgn_delete(tmp) ! clean-up
-
-#endif
+    ! Store the current size of ct
+    it = tmp2%n
 
     ! If we are supposed to follow
     ! then loop and extend ct
     if ( present(follow) ) then
     if ( follow ) then
+
+#ifdef MPI
+       ! We have found the first group of regions
+       ! Now we need to align the regions for all the processors
+       ! in this orbital distribution (before we move on 
+       ! and check for "follow"
+
+       if ( dist_nodes(dit) > 1 ) then
+          ! b-cast the connected to region
+          call rgn_list(tmp2, it, ct)
+          call rgn_MPI_union(dit, tmp2)
+          it = tmp2%n
+          if ( it > 0 ) then
+             do i = 1 , it
+                ct(i) = tmp2%r(i)
+             end do
+          end if
+          
+          ! A duplicate of ct for faster checks (sorted search)
+          call rgn_init(tmp2, no_u-r%n)
+          do i = 1 , it
+             tmp2%r(i) = ct(i)
+          end do
+          tmp2%n = it
+
+          ! Ensure it is sorted.
+          call rgn_sort(tmp2)
+       end if
+#else
+       ! Do nothing, the tmp2 array is already the correct size
+       ! and sorted.
+#endif
 
        i = 1
        do while ( i <= it )
@@ -477,22 +499,23 @@ contains
           ! Orbital that should be folded from
           io = ct(i)
 
-          ! Count number of available orbitals to fold to
-          j = 0
           do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
              ! UC-orb
-             jo = ucorb(l_col(ind),no_u)
+             jo = ucorb(l_col(ind), no_u)
 
              ! Ensure that it is not a folding to the same region
-             if ( in_rgn(tmp,jo) ) cycle
+             if ( in_rgn(tmp, jo) ) cycle
 
-             if ( it == 0 ) then
+             if ( .not. in_rgn(tmp2, jo) ) then
                 it = it + 1
                 ct(it) = jo
-             else if ( .not. any(jo == ct(1:it)) ) then
-                it = it + 1
-                ct(it) = jo
+                ! Retain two lists (in case there
+                ! are super-cell connections we must do
+                ! the sorting here, besides)
+                tmp2%n = it
+                tmp2%r(it) = jo
+                call rgn_sort(tmp2)
              end if
              
           end do
@@ -501,30 +524,34 @@ contains
           i = i + 1
 
        end do
+       
+    end if
+    end if
 
-    end if
-    end if
+    ! Clean-up
+    call rgn_delete(tmp2)
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
-    call rgn_list(cr,it,ct)
+    call rgn_list(cr, it, ct)
 
     deallocate(ct)
 
 #ifdef MPI
-    call rgn_MPI_union(dit,cr)
+    call rgn_MPI_union(dit, cr)
 #endif
 
     if ( present(connect_from) ) then
 
-       call rgn_list(connect_from,rt,rr(1:rt))
+       call rgn_list(connect_from, rt, rr)
 
 #ifdef MPI
-       call rgn_MPI_union(dit,connect_from)
+       call rgn_MPI_union(dit, connect_from)
 #endif
 
     end if
 
+    call rgn_delete(tmp)
     deallocate(rr)
 
   end subroutine rgn_sp_connect
@@ -616,9 +643,9 @@ contains
     type(OrbitalDistribution), intent(in), optional :: dit
 
     ! ** local variables
-    type(tRgn) :: r_tmp
-    integer :: i, io, ci, ind, jo, last_n, idx_max
-    integer, allocatable :: n_c(:), cur_con(:)
+    type(tRgn) :: r_tmp, cc
+    integer :: i, io, ind, jo, ci, last_n, idx_max
+    integer, allocatable :: n_c(:)
 #ifdef MPI
     integer :: comm
     integer :: MPIerror
@@ -640,10 +667,10 @@ contains
     ! Prepare the collection arrays
     allocate(n_c(sr%n))
     n_c = 0 ! initialize to ensure MPI reduction
-    allocate(cur_con(n))
+    call rgn_init(cc, n)
+    cc%n = 0
 
     select case ( method ) 
-
     case ( R_SORT_MAX_FRONT ) 
        ! we sort and move the orbitals
        ! down in the rank according to their maximum
@@ -666,7 +693,7 @@ contains
           
           if ( n_col(io) == 0 ) cycle
 
-          ci = 0
+          cc%n = 0
           do ind = l_ptr(io) + 1 , l_ptr(io) + n_col(io)
              
              ! UC-orb
@@ -675,27 +702,28 @@ contains
              ! Ensure that it is not folding to the same region
              if ( in_rgn(r,jo) ) cycle
 
-             if ( ci == 0 ) then
-                ci = ci + 1
-                cur_con(ci) = jo
-             else if ( .not. any(jo == cur_con(1:ci)) ) then
-                ci = ci + 1
-                cur_con(ci) = jo
+             if ( .not. in_rgn(cc, jo) ) then
+                cc%n = cc%n + 1
+                cc%r(cc%n) = jo
+                call rgn_sort(cc)
              end if
+
           end do
 
           ! As the region is created "from a frontal search"
           ! we will reverse the result (maxloc returns the first max)
-          n_c(sr%n-i+1) = ci
+          n_c(sr%n-i+1) = cc%n
 
        end do
 
 #ifdef MPI
        if ( present(dit) ) then
           if ( dist_nodes(dit) > 1 ) then
-             call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
+             call MPI_AllReduce(n_c,cc%r,sr%n,MPI_Integer, &
                   MPI_MAX, comm, MPIerror)
-             n_c(1:sr%n) = cur_con(1:sr%n)
+             do i = 1 , sr%n
+                n_c(i) = cc%r(i)
+             end do
           end if
        end if
 #endif
@@ -723,7 +751,7 @@ contains
 
           if ( n_col(io) == 0 ) cycle
 
-          ci = 0
+          cc%n = 0
           do ind = l_ptr(io) + 1 , l_ptr(io) + n_col(io)
              
              ! UC-orb
@@ -732,34 +760,38 @@ contains
              ! Ensure that it is folding to the same region
              if ( .not. in_rgn(r,jo) ) cycle
 
-             if ( ci == 0 ) then
-                ci = ci + 1
-                cur_con(ci) = jo
-             else if ( .not. any(jo == cur_con(1:ci)) ) then
-                ci = ci + 1
-                cur_con(ci) = jo
+             if ( .not. in_rgn(cc, jo) ) then
+                cc%n = cc%n + 1
+                cc%r(cc%n) = jo
+                call rgn_sort(cc)
              end if
+
           end do
 
           ! As the region is created "from a frontal search"
           ! we will reverse the result (maxloc returns the first max)
-          n_c(sr%n-i+1) = ci
+          n_c(sr%n-i+1) = cc%n
 
        end do
 
 #ifdef MPI
        if ( present(dit) ) then
           if ( dist_nodes(dit) > 1 ) then
-             call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
+             call MPI_AllReduce(n_c,cc%r,sr%n,MPI_Integer, &
                   MPI_MAX, comm, MPIerror)
-             n_c(1:sr%n) = cur_con(1:sr%n)
+             do i = 1 , sr%n
+                n_c(i) = cc%r(i)
+             end do
           end if
        end if
 #endif
 
        ! We now reverse the values as we then control that the one
        ! with the least connections back, will be placed last
-       n_c(:) = maxval(n_c,dim=1) - n_c(:)
+       jo = maxval(n_c, dim=1)
+       do i = 1 , sr%n
+          n_c(i) = jo - n_c(i)
+       end do
 
     case ( R_SORT_LONGEST_BACK ) 
 
@@ -804,9 +836,11 @@ contains
 #ifdef MPI
        if ( present(dit) ) then
           if ( dist_nodes(dit) > 1 ) then
-             call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
+             call MPI_AllReduce(n_c,cc%r,sr%n,MPI_Integer, &
                   MPI_MIN, comm, MPIerror)
-             n_c(1:sr%n) = cur_con(1:sr%n)
+             do i = 1 , sr%n
+                n_c(i) = cc%r(i)
+             end do
           end if
        end if
 #endif
@@ -880,7 +914,17 @@ contains
 
     end select
 
-    deallocate(n_c,cur_con)
+    call rgn_delete(cc)
+    deallocate(n_c)
+
+    if ( r%sorted ) then
+       do i = 2 , r%n
+          if ( r%r(i-1) > r%r(i) ) then
+             r%sorted = .false.
+             exit
+          end if
+       end do
+    end if
 
   end subroutine rgn_sp_sort_explicit
 
@@ -897,6 +941,11 @@ contains
     integer :: i, it
     integer, allocatable :: ct(:)
 
+    if ( r1%n == 0 .or. r2%n == 0 ) then
+       call rgn_delete(ir)
+       return
+    end if
+
     ! Having a sorted array will greatly increase performance
     ! at minimal memory cost
     if ( r2%sorted ) then
@@ -908,19 +957,15 @@ contains
        call rgn_sort(sr)
     end if
 
-    if ( r1%n == 0 .or. r2%n == 0 ) then
-       call rgn_delete(ir)
-       return
-    end if
-
     it = 0
     allocate(ct(min(r1%n,r2%n)))
 
     do i = 1 , r1%n
        
-       if ( .not. in_rgn(sr,r1%r(i)) ) cycle
-       it = it + 1
-       ct(it) = r1%r(i)
+       if ( in_rgn(sr,r1%r(i)) ) then
+          it = it + 1
+          ct(it) = r1%r(i)
+       end if
 
     end do
 
@@ -928,7 +973,7 @@ contains
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
-    call rgn_list(ir,it,ct(1:it))
+    call rgn_list(ir,it,ct)
 
     deallocate(ct)
     
@@ -968,7 +1013,9 @@ contains
     end if
 
     ! Copy over r1
-    ct(1:r1%n) = r1%r(1:r1%n)
+    do i = 1 , r1%n
+       ct(i) = r1%r(i)
+    end do
 
     it = r1%n
     do i = 1 , r2%n
@@ -986,7 +1033,7 @@ contains
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
-    call rgn_list(ur,it,ct(1:it))
+    call rgn_list(ur,it,ct)
 
     deallocate(ct)
 
@@ -1000,7 +1047,8 @@ contains
     type(tRgn), intent(inout) :: r
 
     ! ** local variables
-    integer :: it
+    logical :: sorted
+    integer :: i
     integer, allocatable :: ct(:)
 
     if ( r1%n == 0 ) then
@@ -1011,17 +1059,25 @@ contains
        return
     end if
 
-    it = r1%n+r2%n
-    allocate(ct(it))
+    ! To retain the sorted attribute of the new region
+    sorted = r1%sorted .and. r2%sorted .and. r1%r(r1%n) <= r2%r(1)
+    
+    allocate(ct(r1%n+r2%n))
 
     ! Copy over r1
-    ct(1:r1%n) = r1%r(1:r1%n)
+    do i = 1 , r1%n
+       ct(i) = r1%r(i)
+    end do
     ! Copy over r2
-    ct(r1%n+1:it) = r2%r(1:r2%n)
+    do i = 1 , r2%n
+       ct(r1%n+i) = r2%r(i)
+    end do
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
-    call rgn_list(r,it,ct(1:it))
+    call rgn_list(r,size(ct),ct)
+
+    r%sorted = sorted
 
     deallocate(ct)
 
@@ -1132,17 +1188,18 @@ contains
 
     it = 0
     do i = 1 , r2%n
-       if ( in_rgn(sr,r2%r(i)) ) cycle
-
-       it = it + 1
-       ct(it) = r2%r(i)
+       
+       if ( .not. in_rgn(sr,r2%r(i)) ) then
+          it = it + 1
+          ct(it) = r2%r(i)
+       end if
 
     end do
 
     if ( .not. r1%sorted ) call rgn_delete(sr)
 
     ! Copy the list over
-    call rgn_list(cr,it,ct(1:it))
+    call rgn_list(cr,it,ct)
 
     deallocate(ct)
 
@@ -1191,8 +1248,7 @@ contains
 
     end do
     if ( r2%sorted ) then
-       sr%n = 0
-       nullify(sr%r)
+       call rgn_nullify(sr)
     else
        call rgn_delete(sr)
     end if
@@ -1215,7 +1271,7 @@ contains
     if ( .not. r1%sorted ) call rgn_delete(sr)
 
     ! Copy the list over
-    call rgn_list(cr,it,ct(1:it))
+    call rgn_list(cr,it,ct)
 
     deallocate(ct)
 
@@ -1251,6 +1307,7 @@ contains
     type(tRgn), intent(inout) :: r
     ! list to copy over
     integer, intent(in) :: n, list(n)
+    integer :: i
     character(len=*), intent(in), optional :: name
 
     call rgn_delete(r)
@@ -1258,7 +1315,9 @@ contains
     if ( n > 0 ) then
        allocate(r%r(n))
        call memory('A','I',n,'rgn-list')
-       r%r(1:n) = list(1:n)
+       do i = 1 , n
+          r%r(i) = list(i)
+       end do
     end if
     if ( present(name) ) r%name = name
     
@@ -1434,7 +1493,7 @@ contains
     ! to be sure we just depopulate the region
     ! and populate it with the correct atoms
     tmp = ar%name
-    call rgn_list(ar,na,ca(1:na), name = tmp )
+    call rgn_list(ar,na,ca, name = tmp )
 
   end subroutine rgn_Orb2Atom
 
@@ -1569,7 +1628,7 @@ contains
 
   end subroutine rgn_print
 
-  function rgn_push(r,val) result(good)
+  function rgn_push_val(r,val) result(good)
     type(tRgn), intent(inout) :: r
     integer, intent(in) :: val
     logical :: good
@@ -1577,12 +1636,34 @@ contains
     good = ( size(r%r) > r%n ) 
     if ( .not. good ) return
 
+    if ( r%sorted ) then
+       r%sorted = r%r(r%n) <= val
+    end if
+
     r%n = r%n + 1
     r%r(r%n) = val
-    ! pushing a value will (ultimately) destroy sorted array
-    r%sorted = .false.
+
+  end function rgn_push_val
+
+  function rgn_push_rgn(r,push) result(good)
+    type(tRgn), intent(inout) :: r
+    type(tRgn), intent(in) :: push
+    integer :: i
+    logical :: good
+
+    good = ( size(r%r) >= r%n + push%n ) 
+    if ( .not. good ) return
     
-  end function rgn_push
+    if ( r%sorted .and. push%sorted ) then
+       r%sorted = r%r(r%n) <= push%r(1)
+    end if
+    
+    do i = 1 , push%n
+       r%r(r%n+i) = push%r(i)
+    end do
+    r%n = r%n + push%n
+
+  end function rgn_push_rgn
 
   pure function rgn_sum(r) result(s)
     type(tRgn), intent(in) :: r
@@ -1601,7 +1682,7 @@ contains
   function rgn_pop(r,idx,val) result(out)
     type(tRgn), intent(inout) :: r
     integer, intent(in), optional :: val, idx
-    integer :: out, i
+    integer :: out, i, j
 
     if ( r%n == 0 ) then
        out = 0
@@ -1620,7 +1701,9 @@ contains
     out = r%r(i)
     if ( r%n > 1 .and. i < r%n ) then
        ! remove it
-       r%r(i:r%n-1) = r%r(i+1:r%n)
+       do j = i , r%n - 1
+          r%r(j) = r%r(j+1)
+       end do
     end if
     r%n = r%n - 1
     
@@ -1637,7 +1720,7 @@ contains
     type(tRgn), intent(inout) :: r
     
     ! Our temporary region
-    integer :: nt, ct, iN, it
+    integer :: i, nt, ct, iN, it
     integer, allocatable :: rd(:)
     character(len=R_NAME_LEN) :: tmp
     integer :: comm
@@ -1658,7 +1741,9 @@ contains
     ! the data, then we b-cast it...
     if ( dist_node(dit) == 0 ) then
        if ( r%n > 0 ) then
-          rd(1:r%n) = r%r(1:r%n)
+          do i = 1 , r%n
+             rd(i) = r%r(i)
+          end do
        end if
        ct = r%n + 1
        do iN = 1 , dist_nodes(dit) - 1
@@ -1701,7 +1786,7 @@ contains
 
     ! Deallocate and copy the new array
     tmp = r%name
-    call rgn_list(r,nt,rd(1:nt),name=tmp)
+    call rgn_list(r,nt,rd, name=tmp)
     
     ! Clean-up
     deallocate(rd)
