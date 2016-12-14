@@ -275,7 +275,8 @@ contains
   subroutine sparsity_row_entries_UC(sp,row, &
        n,entries)
     use class_Sparsity
-    use intrinsic_missing, only : SORT, UNIQC, UNIQ
+    use intrinsic_missing, only : UNIQC, UNIQ
+    use intrinsic_missing, only : SORT_QUICK
     use geom_helper
 
     type(Sparsity), intent(in out) :: sp
@@ -330,8 +331,7 @@ contains
           ! We need to do it in steps (gnu has troubles with non-allocated
           ! arrays in nesting constructs)...
           entries(1:no_e) = UNIQ(vals)
-          vals(1:no_e)    = SORT(entries(1:no_e))
-          entries(1:no_e) = vals(1:no_e)
+          call sort_quick(no_e, entries)
        end if
        ! When it returns the programmer should already know that no_e is
        ! zero
@@ -348,7 +348,7 @@ contains
        TM,ucell,lasto,xa,xij,&
        n,entries)
     use class_Sparsity
-    use intrinsic_missing, only : SORT
+    use intrinsic_missing, only : SORT_QUICK
     use geom_helper
 
     type(Sparsity), intent(in out) :: sp
@@ -444,7 +444,7 @@ contains
           end if
        end do
        ! lets sort the entries !
-       entries(1:j) = SORT(entries(1:j))
+       call sort_quick(j, entries)
 
        ! We need to check that the entries in fact does
        ! match the requested number of entries.
@@ -461,7 +461,7 @@ contains
        TM,isc_off,&
        n,entries)
     use class_Sparsity
-    use intrinsic_missing, only : SORT
+    use intrinsic_missing, only : SORT_QUICK
     use geom_helper
 
     type(Sparsity), intent(in out) :: sp
@@ -537,7 +537,7 @@ contains
           end if
        end do
        ! lets sort the entries !
-       entries(1:j) = SORT(entries(1:j))
+       call sort_quick(j, entries)
 
        ! We need to check that the entries in fact does
        ! match the requested number of entries.
@@ -555,7 +555,8 @@ contains
        MASK, &
        n,entries)
     use class_Sparsity
-    use intrinsic_missing, only : UNIQC, UNIQ, SORT
+    use intrinsic_missing, only : UNIQC, UNIQ
+    use intrinsic_missing, only : SORT_QUICK
     use geom_helper
 
     type(Sparsity), intent(in out) :: sp
@@ -613,8 +614,8 @@ contains
           end if
        end do
        ! lets sort the entries !
-       entries(1:j) = SORT(entries(1:j))
-
+       call sort_quick(j, entries)
+       
        ! We need to check that the entries in fact does
        ! match the requested number of entries.
        if ( j /= no_e ) then

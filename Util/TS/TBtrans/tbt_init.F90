@@ -281,7 +281,9 @@ subroutine tbt_init()
        TSHS%nsc,TSHS%isc_off)
 
   if ( Node == 0 ) then
-     write(*,'(/,a,/)')'tbtrans: Reducing sparsity pattern...'
+     itmp = nnzs(TSHS%sp) - nnzs(tmp_sp)
+     write(*,'(/,a,i0,/)')'tbtrans: Reducing matrix (H, S) &
+          &sparsity patterns by: ', itmp
   end if
 
   ! Change the data 

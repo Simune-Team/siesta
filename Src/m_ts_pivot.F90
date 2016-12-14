@@ -85,7 +85,11 @@ contains
 
     ! For certain pivoting schemes it can be good to make
     ! dependencies for the tight-binding model
-    logical :: pvt_fan, pvt_orb, pvt_fan2d
+    ! This pvt_option decides whether a
+    !   fan, fan2d/front
+    ! pivoting scheme is used.
+    integer :: pvt_option
+    logical :: pvt_orb, orb_1
     integer :: fan_option
     integer :: fan1, fan2
     real(dp) :: p_n(3,2), p_cr(3), p_center(3,2), tmp3(3)
@@ -98,19 +102,47 @@ contains
     lextend = .true.
     if ( present(extend) ) lextend = extend
 
+    ! If there is a fan option, grab it
+    pvt_option = 0
+    fan_option = -2
+    if ( str_contain(pvt_str,'fan-mean') ) then
+       pvt_option = 1
+       fan_option = 0
+    else if ( str_contain(pvt_str,'fan-min') ) then
+       pvt_option = 1
+       fan_option = -1
+    else if ( str_contain(pvt_str,'fan-max') ) then
+       pvt_option = 1
+       fan_option = 1
+    else if ( str_contain(pvt_str,'front') ) then
+       ! This forces the pvt_option
+       ! to only consider the normal vector to the
+       ! first electrode plane
+       pvt_option = 2
+       fan_option = 1
+    else if ( str_contain(pvt_str, 'fan') ) then
+       pvt_option = 1
+    end if
+    
     ! Electrode orbitals in the device
     call rgn_copy(Elecs(1)%o_inD,r_Els)
     do i = 2 , N_Elec
        call rgn_append(r_Els,Elecs(i)%o_inD,r_Els)
     end do
 
-    pvt_orb = str_contain(pvt_str,'orb')
-    if ( .not. pvt_orb ) then
+    pvt_orb = str_contain(pvt_str, 'orb')
+    ! variable to check for single orbital cases
+    do i = 1 , na_u
+       orb_1 = lasto(i) - lasto(i-1) == 1
+       if ( .not. orb_1 ) exit
+    end do
+    if ( pvt_orb ) then
        ! In case we have a tight-binding scheme with 1 orbital
-       ! per atom, no need to transform to atomic sparsity pattern,
-       ! they are equivalent.
-       pvt_orb = sum(lasto(1:na_u) - lasto(0:na_u-1)) == na_u
+       ! per atom, no need to act on orbital sparsity
+       ! pattern (they are equivalent).
+       pvt_orb = .not. orb_1
     end if
+    
     if ( pvt_orb ) then
        str_tmp = 'orb'
 
@@ -129,11 +161,17 @@ contains
        pvt_orb = .false. ! it isn't orbital sorted
 
        ! We are doing atomic comparison
-       call rgn_orb2atom(r_Els,na_u,lasto,r_tmp)
-       call rgn_copy(r_tmp,r_Els)
-       call rgn_delete(r_tmp)
+       ! But if we only have one orbital, we might as well
+       ! act in the orbital as though it was atomic
+       if ( orb_1 ) then
+          tmp_Sp = sp
+       else
+          call rgn_orb2atom(r_Els,na_u,lasto,r_tmp)
+          call rgn_copy(r_tmp,r_Els)
+          call rgn_delete(r_tmp)
+          call SpOrb_to_SpAtom(dit,sp,na_u,lasto,tmp_Sp)
+       end if
 
-       call SpOrb_to_SpAtom(dit,sp,na_u,lasto,tmp_Sp)
        ! *** the distribution will always
        !     be bigger than for the atoms, hence we need
        !     not re-construct it
@@ -150,7 +188,7 @@ contains
     ! Create priority list for electrodes
     call rgn_init(priority,n)
     call crt_El_priority(N_Elec, Elecs, priority, &
-         na_u,lasto, is_orb = pvt_orb )
+         na_u, lasto, is_orb = pvt_orb .or. orb_1 )
 
     ! Sort the pivoting region
     call rgn_sort(c_pvt)
@@ -273,7 +311,8 @@ contains
     else ! the user *must* have supplied an electrode       
 
        ! prepare the initial pivoting region
-       call rgn_delete(r_pvt)
+       call rgn_init(r_pvt, c_pvt%n)
+       r_pvt%n = 0
        
        ! Create exception region
        call rgn_range(priority,1,n)
@@ -288,20 +327,18 @@ contains
        fan1 = 0
        fan2 = 0
        do i = 1 , N_Elec
-          if ( str_contain(pvt_str,Elecs(i)%name) ) then
+          if ( str_contain(pvt_str,Elecs(i)%name) .or. N_Elec == 1 ) then
              str_tmp = trim(str_tmp)//'+'//trim(Elecs(i)%name)
              if ( fan1 == 0 ) fan1 = i
 
-             if ( pvt_orb ) then
+             if ( pvt_orb .or. orb_1 ) then
                 call rgn_copy(Elecs(i)%o_inD,r_tmp)
              else
                 call rgn_orb2atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
              end if
-             
-             if ( iEl == 0 ) then
-                call rgn_copy(r_tmp,r_pvt)
-             else
-                call rgn_union(r_pvt,r_tmp,r_pvt)
+
+             if ( .not. rgn_push(r_pvt, r_tmp) ) then
+                call die('ts_pivot: programming error -- 1')
              end if
              
              ! Sort this region
@@ -322,39 +359,34 @@ contains
                &please correct sorting method.')
        end if
 
-       ! We check for the fan-options
-       pvt_fan = .not. str_contain(pvt_str,'nofan')
-       pvt_fan2d = .false.
-       ! No need to fan for anything but two electrodes
-       ! We do not allow fan method if the sparsity pattern isn't complete
-       if ( N_Elec /= 2 .or. .not. lextend ) pvt_fan = .false.
+       if ( pvt_option == 1 .or. pvt_option == 2 ) then
 
-       ! Create the first vector of the fan
-       if ( pvt_fan ) then
+          ! The user has explicitly requested a fan-pivoting scheme
 
-          ! Calculate the plane-crossing between the first two electrodes
+          ! Calculate the normal vector along the semi-infinite direction
+          ! of the first electrode.
           p_n(:,1) = Elecs(fan1)%cell(:,Elecs(fan1)%t_dir)
           p_n(:,1) = p_n(:,1) / VNORM(p_n(:,1))
 
-          ! Correct sign for electrodes
-          ! 1st electrode points inwards
+          ! In case the semi-infinite direction is positive,
+          ! we flip the vector
           if ( Elecs(fan1)%inf_dir == INF_POSITIVE ) then
              p_n(:,1) = -p_n(:,1)
-          else
-             ! do nothing, the direction is good
           end if
 
-          ! First we find the electrode middle of the plane that
-          ! crosses the top
-          ! Create the correct region
+          ! Find the middle of the electrode atoms
           call rgn_orb2atom(Elecs(fan1)%o_inD,na_u,lasto,r_tmp)
           llsB = 0._dp
           do i = 1 , r_tmp%n
              llsB = llsB + xa(:,r_tmp%r(i))
           end do
           llsB = llsB / r_tmp%n ! take average
+          ! llsB is the middle of the electrode fan1
 
-          ! Calculate the top atom
+          ! This locates the atom which has the largest projection vector
+          ! on the normal vector to the atomic plane
+          ! Note that we subtract the middle of the electrode to
+          ! have the origo at the middle of the atoms.
           iEl = 0
           work(1) = -huge(0._dp)
           do i = 1 , r_tmp%n
@@ -387,8 +419,9 @@ contains
           ! Temporary clean-up
           call rgn_delete(r_tmp)
 
-          ! Check whether the fan should be applied
 
+          ! Set the second fan value in case it hasn't been
+          ! set.
           if ( fan2 == 0 ) then
              ! Correct fan2 index
              if ( fan1 < N_Elec ) then
@@ -404,64 +437,38 @@ contains
           ! 2nd electrode points outwards
           if ( Elecs(fan2)%inf_dir == INF_POSITIVE ) then
              p_n(:,2) = -p_n(:,2)
-          else
-             ! do nothing, the direction is good
           end if
           
           ! Create vector pointing along the line intersecting the
           ! two planes.
           call cross(p_n(:,1),p_n(:,2),p_cr)
 
+          ! Now we check for 
           ! If the length of the cross-product vector is too small,
           ! they *must* be parallel planes.
-          pvt_fan2d = pvt_fan
-          pvt_fan = VNORM(p_cr) > 1.e-6_dp
+          ! Then we remove the pivoting option.
+          ! We do the pivoting check later...
 
-       end if
+          if ( VNORM(p_cr) > 1.e-6_dp .and. pvt_option == 1 ) then
 
-       ! Now we can check whether we should apply the fan options
-       if ( pvt_fan2d ) then
-
-          ! We have processed the above and
-          ! will now do the option checking...
-          fan_option = -2
-
-          if ( str_contain(pvt_str,'fan-mean') ) then
-             fan_option = 0
-          else if ( str_contain(pvt_str,'fan-min') ) then
-             fan_option = -1
-          else if ( str_contain(pvt_str,'fan-max') ) then
-             fan_option = 1
-          end if
-          
-          if ( pvt_fan ) then
-             pvt_fan2d = .false.
-
-             ! The 2-electrode fan shall not apply
-             
-             if ( str_contain(pvt_str,'fan') ) then
-                fan_option = 0 ! default mean
-             end if
+             ! Default to mean
              if ( fan_option == -2 ) fan_option = 0
-          
+
           else
 
-             ! It is a linear 2-electrode system
-             if ( str_contain(pvt_str,'fan') ) then
-                fan_option = 1 ! default max
-             end if
-             if ( fan_option == -2 ) then
-                ! for 2D and direct electrodes
-                ! we force the user to specify 'fan'
-                ! to get it
-                pvt_fan2d = .false.
-             end if
+             ! The electrodes are parallel
+             ! so we might as well only use the frontal search
+             pvt_option = 2
+
+             ! Default to max
+             if ( fan_option == -2 ) fan_option = 1
              
           end if
 
        end if
-       
-       if ( pvt_fan .or. pvt_fan2d ) then
+
+       select case ( pvt_option )
+       case ( 1 )
           select case ( fan_option )
           case ( -1 )
              str_tmp = trim(str_tmp)//'+fan-min'
@@ -470,9 +477,11 @@ contains
           case (  1 )
              str_tmp = trim(str_tmp)//'+fan-max'
           end select
-       end if
+       case ( 2 )
+          str_tmp = trim(str_tmp)//'+front'
+       end select
        
-       if ( pvt_fan ) then
+       if ( pvt_option == 1 ) then
 
           ! Normalize vector for line
           p_cr = p_cr / VNORM(p_cr)
@@ -572,24 +581,26 @@ contains
        
        ! Loop the connectivity graph
        do 
-          
-          ! Create attached region starting from electrode 1
+
+          ! Create attached region starting from electrodes specified
           call rgn_sp_connect(r_pvt, dit, tmp_Sp, r_tmp, except=priority )
-          
+
           if ( r_tmp%n == 0 .and. r_pvt%n /= n_pvt .and. lextend ) then
+             ! This check ensures that in case there is vacuum
+             ! (i.e. the previous segment does not connect to anything)
+             ! we will still form the full sparsity pattern.
+             ! However, we select a "random" orbital/atom which may be
+             ! very sub-optimal!
 
              ! we need to ensure that all (even non-connected)
              ! orbitals are taken into account
              do i = 1 , n_pvt
                 ! if it already exists, skip it
                 if ( in_rgn(r_pvt,c_pvt%r(i)) ) cycle
-                if ( pvt_orb ) then
-                   call rgn_init(r_tmp,1,val=c_pvt%r(i))
-                   exit
-                else
-                   call rgn_init(r_tmp,1,val=c_pvt%r(i))
-                   exit
-                end if
+
+                call rgn_init(r_tmp,1,val=c_pvt%r(i))
+                exit
+
              end do
 
              if ( r_tmp%n /= 0 ) then
@@ -619,7 +630,9 @@ contains
                    end if
                 end do
 
-                call rgn_append(r_pvt, r_tmp, r_pvt)
+                if ( .not. rgn_push(r_pvt, r_tmp) ) then
+                   call die('ts_pivot: programming error -- 2')
+                end if
                 cycle
 
              end if
@@ -629,12 +642,11 @@ contains
           ! If no additional orbitals are found, exit
           if ( r_tmp%n == 0 ) exit
 
-          if ( pvt_fan .or. pvt_fan2d ) then
+          if ( pvt_option == 1 .or. pvt_option == 2 ) then
              
-             ! We want to add the 'fan' atoms based on the
-             ! two electrode system
-
-             if ( pvt_orb ) then
+             ! We want to add the 'fan' atoms
+             
+             if ( pvt_orb .and. .not. orb_1 ) then
                 call rgn_orb2atom(r_tmp,na_u,lasto,r_Els)
              else
                 r_Els%n =  r_tmp%n
@@ -643,7 +655,7 @@ contains
              
           end if
 
-          if ( pvt_fan ) then
+          if ( pvt_option == 1 ) then
 
              ! Calculate max angle between plane and vector 'C'-xa
              select case ( fan_option ) 
@@ -700,13 +712,14 @@ contains
              if ( fan_option == 0 ) work(1:2) = work(1:2) / r_Els%n
 
              ! Now we need to find all atoms below those angles
-             if ( .not. pvt_orb ) call rgn_nullify(r_Els)
+             if ( .not. pvt_orb .or. orb_1 ) call rgn_nullify(r_Els)
 
              ! Create the list of atoms that we should search as 
              ! possible candidates for adding based on the 'fan'
-             call rgn_complement(r_pvt,c_pvt,r_Els)
-             call rgn_complement(r_tmp,r_Els,r_Els)
-             if ( pvt_orb ) call rgn_orb2atom(r_Els,na_u,lasto,r_Els)
+             call rgn_append(r_pvt, r_tmp, r_tmp2)
+             call rgn_complement(r_tmp2,c_pvt,r_Els)
+             if ( pvt_orb .and. .not. orb_1 ) &
+                  call rgn_orb2atom(r_Els,na_u,lasto,r_Els)
 
              ! Pre-allocate maximum size of the added atoms
              call rgn_init(r_tmp2,r_Els%n)
@@ -748,7 +761,7 @@ contains
 !!$             ! Debugging
 !!$             print *,'Currently applying: ',work(1:2) / 3.1415926353_dp * 180._dp,r_tmp2%n
 
-          else if ( pvt_fan2d ) then
+          else if ( pvt_option == 2 ) then
 
              ! Calculate the plane that we wish to fan about
              select case ( fan_option ) 
@@ -767,7 +780,7 @@ contains
                 ! Get elec-center -> xa vector,
                 tmp3 = xa(:,r_Els%r(i)) - p_center(:,1)
                 ! Project onto vector
-                tmp3 = VEC_PROJ(p_n(:,1),tmp3)
+                tmp3 = VEC_PROJ(p_n(:,1), tmp3)
                 ! Get the length of this projected vector
                 work(2) = VNORM(tmp3)
                 
@@ -791,12 +804,13 @@ contains
 
              ! Create the list of atoms that we should search as 
              ! possible candidates for adding based on the 'fan'
-             call rgn_complement(r_pvt,c_pvt,r_Els)
-             call rgn_complement(r_tmp,r_Els,r_Els)
-             if ( pvt_orb ) call rgn_orb2atom(r_Els,na_u,lasto,r_Els)
+             call rgn_append(r_pvt, r_tmp, r_tmp2)
+             call rgn_complement(r_tmp2,c_pvt,r_Els)
+             if ( pvt_orb .and. .not. orb_1 ) &
+                  call rgn_orb2atom(r_Els,na_u,lasto,r_Els)
 
              ! Pre-allocate maximum size of the added atoms
-             call rgn_init(r_tmp2,r_Els%n)
+             call rgn_init(r_tmp2, r_Els%n)
              r_tmp2%n = 0
 
              ! 'r_Els' is now the list of atoms that hasn't been processed yet
@@ -815,15 +829,15 @@ contains
                 end if
                 
              end do
-                   
+
           end if
 
           ! Add the new atoms
-          if ( pvt_fan .or. pvt_fan2d ) then
+          if ( pvt_option == 1 .or. pvt_option == 2 ) then
 
              if ( r_tmp2%n > 0 ) then
                 ! Extend the added region to have the new fanned region
-                if ( pvt_orb ) then
+                if ( pvt_orb .and. .not. orb_1 ) then
                    call rgn_atom2orb(r_tmp2,na_u,lasto,r_Els)
                    call rgn_append(r_tmp,r_Els,r_tmp)
                 else
@@ -838,7 +852,9 @@ contains
 
           ! Append the newly found region that is connecting out to the
           ! full region
-          call rgn_append(r_pvt, r_tmp, r_pvt)
+          if ( .not. rgn_push(r_pvt, r_tmp) ) then
+             call die('ts_pivot: programming error -- 3')
+          end if
           
           ! we sort the newly attached region
           call rgn_sp_sort(r_pvt, dit, tmp_Sp, r_tmp, R_SORT_MAX_BACK )
@@ -860,12 +876,21 @@ contains
             &removal is erroneous')
     end if
 
-    if ( .not. pvt_orb ) then
+    if ( .not. (pvt_orb .or. orb_1) ) then
 
        ! re-create the orbital pivoting
        call rgn_copy(r_pvt,r_tmp)
        call rgn_atom2orb(r_tmp,na_u,lasto,r_pvt)
 
+    end if
+
+    ! Reduce the pivoting array to its size
+    if ( r_pvt%n /= size(r_pvt%r) ) then
+       call rgn_copy(r_pvt, r_tmp)
+       call rgn_delete(r_pvt)
+       r_pvt%n = r_tmp%n
+       r_pvt%r => r_tmp%r
+       call rgn_nullify(r_tmp)
     end if
 
     ! Clean-up

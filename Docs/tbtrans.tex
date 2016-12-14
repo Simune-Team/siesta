@@ -68,8 +68,8 @@ Nick R. Papior.
 \section{Introduction}
 
 \textit{This Reference Manual contains descriptions of all the input,
-  output and execution features of \tbtrans, but is not really a
-  tutorial introduction to the program.}
+    output and execution features of \tbtrans, but is not a tutorial
+    introduction to the program.}
 
 \tbtrans\ (Tight-Binding transport) is a generic computer program
 which calculates transport and other physical quantities using the
@@ -129,6 +129,10 @@ A list of the currently implemented features are:
   \item%
   Description of the \tbtrans\ and \tsiesta\ code in the $N$ terminal
   generic implementation \cite{Papior2016b}.
+
+  \item%
+  \sisl\ is a data extraction utility for \tbtrans\ which enables easy
+  access to the data stored in the output NetCDF-4 file \cite{sisl}.
 
 \end{itemize}
 
@@ -1574,7 +1578,7 @@ algorithms to determine an optimal partitioning scheme. The following
 flag controls the partitioning for the device region.
 
 
-\begin{fdfentry}{TBT.BTD!Pivot.Device}[string]<\nonvalue{first electrode}>
+\begin{fdfentry}{TBT.BTD!Pivot.Device}[string]<atom-\nonvalue{first electrode}>
 
   Decide on the partitioning for the BTD matrix. One may denote either
   \fdf*{atom+} or \fdf*{orb+} as a prefix which does the analysis on
@@ -1587,6 +1591,13 @@ flag controls the partitioning for the device region.
     The partitioning will be a connectivity graph starting from the
     electrode denoted by the name. This name \emph{must} be found in
     the \fdf{TBT!Elecs} block. 
+
+    \note One may append an optional setting \fdf*{front} or
+    \fdf*{fan} which makes the connectivity graph to consider the
+    geometric front of the atoms. For extreme scale simulations or
+    tight-binding calculations with constrictions this may improve the
+    BTD matrix substantially because it splits the unit-cell into
+    segments of equal width.
 
     \option[rev-CM] %
     Use the reverse Cuthill-McKee for pivoting the matrix elements to
@@ -1620,9 +1631,30 @@ flag controls the partitioning for the device region.
 \end{fdfentry}
 
 
+\begin{fdfentry}{TBT.BTD!Pivot.Elec.<>}[string]<atom-\nonvalue{<>}>
+  \fdfdepend{TBT.Atoms!Device}
+
+  If \fdf{TBT.Atoms!Device} has been set to a reduced region the
+  electrode self-energies must be \emph{down-folded} through the atoms
+  not part of the device-region. In this case these down-fold regions
+  can also be considered a BTD matrix which may be optimized
+  separately from the device region BTD matrix.
+
+  This option have all available options as described in
+  \fdf{TBT.BTD!Pivot.Device} but one will generally find the best
+  pivoting scheme by using the default (\fdf*{atom-<>}) which is the
+  atomic connectivity graph from the electrode it-self.
+
+  It may be advantageous to use \fdf*{atom-<>-front} for very large
+  tight-binding calculations where the device region is chosen far
+  from this electrode and normal to the electrode-plane. 
+
+\end{fdfentry}
+
+
 \subsection{Input/Output}
 
-\tbtrans\ IO are mainly relying on the NetCDF4 library and full
+\tbtrans\ IO is mainly relying on the NetCDF4 library and full
 capability is only achieved if compiled with this library.
 
 Several fdf-flags control how \tbtrans\ performs IO.
