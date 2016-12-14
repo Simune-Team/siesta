@@ -17,7 +17,7 @@ module m_sparsity_handling
   use class_dSpData2D
   use geom_helper, only : iaorb, ucorb
   use m_region
-  use intrinsic_missing, only: SORT
+  use intrinsic_missing, only: SORT_QUICK
 
   implicit none
 
@@ -405,7 +405,7 @@ contains
     do io = 1 , no
 
        ! Create sorted list
-       col(ptr(io)+1:ptr(io)+ncol(io)) = sort(col(ptr(io)+1:ptr(io)+ncol(io)))
+       call sort_quick(ncol(io), col(ptr(io)+1:))
 
     end do
 

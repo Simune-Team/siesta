@@ -1,1441 +1,1699 @@
-      MODULE m_new_dm
+module m_new_dm
 
-!     Prepares a starting density matrix for a new geometry iteration
-!     This DM can be:
-!     1. Synthesized directly from atomic occupations (not idempotent)
-!     2. Read from file
-!     3. Re-used (with possible extrapolation) from previous geometry step(s).
-!
-!     In cases 2 and 3, the structure of the read or extrapolated DM 
-!     is automatically adapted to the current sparsity pattern.
-!
-!     Special cases:
-!            Harris: The matrix is always initialized
-!            Force calculation: The DM should be written to disk
-!                               at the time of the "no displacement"
-!                               calculation and read from file at
-!                               every subsequent step.
-!            Variable-cell calculation:
-!              If the auxiliary cell changes, the DM is forced to be
-!              initialized (conceivably one could rescue some important
-!              information from an old DM, but it is too much trouble
-!              for now). NOTE that this is a change in policy with respect
-!              to previous versions of the program, in which a (blind?)
-!              re-use was allowed, except if 'ReInitialiseDM' was 'true'.
-!              Now 'ReInitialiseDM' is 'true' by default. Setting it to
-!              'false' is not recommended. (This fdf variable maps to the
-!              'initdmaux' module variable)
-!
-!              In all other cases (including "server operation"), the
-!              default is to allow DM re-use (with possible extrapolation)
-!              from previous geometry steps.
-!              The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
-!              (mapped to 'allow_dm_reuse' and 'allow_dm_extrapolation', and
-!              both 'true' by default) can be used to change this behavior.
-!
-!              There is no re-use of the DM for "Forces", and "Phonon"
-!              dynamics types (i.e., the DM is re-initialized)
-!
-!              For "CG" calculations, the default is not to extrapolate the
-!              DM (unless requested by setting 'DM.AllowExtrapolation' to
-!              "true"). The previous step's DM is reused.
-!
-!     Alberto Garcia, September 2007, April 2012
-!
+  !     Prepares a starting density matrix for a new geometry iteration
+  !     This DM can be:
+  !     1. Synthesized directly from atomic occupations (not idempotent)
+  !     2. Read from file
+  !     3. Re-used (with possible extrapolation) from previous geometry step(s).
+  !
+  !     In cases 2 and 3, the structure of the read or extrapolated DM 
+  !     is automatically adapted to the current sparsity pattern.
+  !
+  !     Special cases:
+  !            Harris: The matrix is always initialized
+  !            Force calculation: The DM should be written to disk
+  !                               at the time of the "no displacement"
+  !                               calculation and read from file at
+  !                               every subsequent step.
+  !            Variable-cell calculation:
+  !              If the auxiliary cell changes, the DM is forced to be
+  !              initialized (conceivably one could rescue some important
+  !              information from an old DM, but it is too much trouble
+  !              for now). NOTE that this is a change in policy with respect
+  !              to previous versions of the program, in which a (blind?)
+  !              re-use was allowed, except if 'ReInitialiseDM' was 'true'.
+  !              Now 'ReInitialiseDM' is 'true' by default. Setting it to
+  !              'false' is not recommended. (This fdf variable maps to the
+  !              'initdmaux' module variable)
+  !
+  !              In all other cases (including "server operation"), the
+  !              default is to allow DM re-use (with possible extrapolation)
+  !              from previous geometry steps.
+  !              The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
+  !              (mapped to 'allow_dm_reuse' and 'allow_dm_extrapolation', and
+  !              both 'true' by default) can be used to change this behavior.
+  !
+  !              There is no re-use of the DM for "Forces", and "Phonon"
+  !              dynamics types (i.e., the DM is re-initialized)
+  !
+  !              For "CG" calculations, the default is not to extrapolate the
+  !              DM (unless requested by setting 'DM.AllowExtrapolation' to
+  !              "true"). The previous step's DM is reused.
+  !
+  !     Alberto Garcia, September 2007, April 2012
+  !
 
-      use sys, only: die
-      use precision, only: dp
-      use alloc, only: re_alloc, de_alloc
-      use parallel,  only: IOnode
-      use fdf,       only: fdf_get, fdf_defined
+  use sys, only: die
+  use parallel, only: IONode
+  use precision, only: dp
+  use alloc, only: re_alloc, de_alloc
 
-      implicit none
+  implicit none
 
-      character(len=*),parameter:: modName = 'm_new_dm'
+  private
+  
+  public :: new_dm
+  public :: get_allowed_history_depth
 
-      private
-      public :: new_dm
-      public :: get_allowed_history_depth
+contains
 
-      CONTAINS
+  subroutine new_DM(SC_changed, DM_history, DM_2D, EDM_2D)
 
-!=====================================================================
+    use siesta_options
+    use siesta_geom,      only: ucell, xa, na_u, isc_off, nsc
+    use sparse_matrices,  only: sparse_pattern, block_dist
+    use atomlist,         only: Datm, iaorb, lasto, no_u
+    use m_steps,          only: istp
+    use m_spin,   only: spin
+    use m_handle_sparse, only : bulk_expand
 
-      subroutine new_dm( auxchanged, DM_history, DMnew, EDMnew)
-
-      USE siesta_options
-      use siesta_geom,      only: ucell, xa, na_u, isc_off, nsc
-      use sparse_matrices,  only: sparse_pattern, block_dist
-      use atomlist,         only: datm, iaorb, lasto, no_u, no_l
-      use m_steps,          only: istp
-      use m_spin,   only: nspin, h_spin_dim, e_spin_dim
-      use m_handle_sparse, only : bulk_expand
-
-      use class_dSpData2D
-      use class_Sparsity
-      use class_Pair_Geometry_dSpData2D
-      use class_Fstack_Pair_Geometry_dSpData2D
+    use class_dSpData2D
+    use class_Sparsity
+    use class_Pair_Geometry_dSpData2D
+    use class_Fstack_Pair_Geometry_dSpData2D
 
 #ifdef TRANSIESTA
-      use units, only : eV
-      use m_ts_global_vars,only: TSrun
-      use m_ts_electype, only : copy_DM
-      use m_ts_options, only : TS_analyze
-      use m_ts_options, only : N_Elec, Elecs, DM_bulk
-      use m_ts_method
-      use m_energies, only: Ef
+    use fdf, only: fdf_get, fdf_defined
+    use units, only : eV
+    use m_ts_global_vars,only: TSrun
+    use m_ts_electype, only : copy_DM
+    use m_ts_options, only : TS_analyze
+    use m_ts_options, only : N_Elec, Elecs, DM_bulk
+    use m_ts_method
+    use m_energies, only: Ef
 #endif
 
-      implicit none
+    logical, intent(in) :: SC_changed ! Has auxiliary supercell changed?
+    type(Fstack_Pair_Geometry_dSpData2D), intent(inout)      :: DM_history
+    type(dSpData2D), intent(inout) :: DM_2D, EDM_2D
 
-      logical, intent(in) :: auxchanged ! Has auxiliary supercell changed?
-      type(Fstack_Pair_Geometry_dSpData2D), intent(inout)      :: DM_history
-      type(dSpData2D), intent(inout)   :: DMnew, EDMnew
-
-!     Local variables
-
-      logical :: dminit     ! Initialize density matrix?
-      logical :: try_to_read_from_file
-      integer :: n_dms_in_history, n_depth
-      integer :: init_method
+    ! Local variables
+    logical :: DM_init ! Initialize density matrix from file or from atomic density
+    logical :: read_DM
+    integer :: DM_in_history, n_depth
+    integer :: init_method
 
 #ifdef TRANSIESTA
-      real(dp), pointer :: DM(:,:), EDM(:,:)
-      integer :: iElec
-      integer :: na_a, na_dev
-      integer, allocatable :: allowed_a(:)
-      logical :: set_Ef
-      real(dp) :: old_Ef, diff_Ef
+    real(dp), pointer :: DM(:,:), EDM(:,:)
+    integer :: iElec
+    integer :: na_a, na_dev
+    integer, allocatable :: allowed_a(:)
+    logical :: set_Ef
+    real(dp) :: old_Ef, diff_Ef
 #endif
 
-      if (IOnode) then
-         write(6,"(a,i5)") "New_DM. Step: ", istp
-      endif
+    if ( IONode ) then
+       write(*,"(a,i5)") "new_DM -- step: ", istp
+    endif
 
+    ! In principle we allow the re-use of the DM (i.e, we do not initialize it)
+    ! Initialization is either:
+    !  1) read of DM
+    !  2) atomic initialization of DM (possibly user-defined spin-configuration)
+    DM_init = .false.
+    
+    ! As per defaults
+    read_DM = UseSaveDM
 
-!     In principle we allow the re-use of the DM (i.e, we do not initialize it)
-!
-      dminit = .false.
-      try_to_read_from_file = usesavedm     ! As per defaults
-!
-!     Except if there are explicit instructions
-!
-      if (.not. allow_dm_reuse .or. td_elec_dyn) then
-         dminit = .true.
-         try_to_read_from_file = .false.  ! In case the user has a fossil DM.UseSaveDM
-         if (IOnode) then
-            write(6,"(a)") "DM re-use not allowed. Resetting always"
-            if (usesavedm) then
-               write(6,"(a)") "DM.UseSaveDM  overriden !!"
-            endif
-         endif
-      endif
-!
-!     or using Harris...
-!
-      if (harrisfun) dminit = .true.
-!
-!     or we are in the first step, or performing force-constant calculations
+    ! Except if there are explicit instructions
+    if ( .not. allow_DM_reuse ) then
+       DM_init = .true.
+       
+       ! Do not allow to re-use the dm
+       if (IONode) then
+          write(*,"(a)") "DM re-use not allowed. Resetting DM at every geometry step"
+          if ( read_DM ) then
+             write(*,"(a)") "DM.UseSaveDM  overridden!!"
+          end if
+       end if
+       read_DM = .false.
+       
+    end if
 
-      n_dms_in_history = n_items(DM_history)
+    ! or using Harris...
+    if ( harrisfun ) DM_init = .true.
 
-      if (n_dms_in_history== 0) then
-         dminit = .true.
-      else
-         if ((idyn .eq. 6)             &   ! Force Constants
-              .and. usesavedm .and. writedm)  dminit = .true.
-         if ((idyn .eq. 7).or.(idyn==9)&   ! Phonon series (writedm??)
-               .and. usesavedm)  dminit = .true.
-      endif
+    ! or we are in the first step, or performing force-constant calculations
+    DM_in_history = n_items(DM_history)
 
-!
-!     ... or if the auxiliary cell has changed
-!     (in this case we have to  avoid reading back saved copy from file)
-!
-      if (auxchanged) then
-         if (initdmaux) then
-            dminit = .true.
-            try_to_read_from_file = .false.
-            if (IOnode) then
-               write(6,"(a)") "DM history reset as supercell changed."
-            endif
-	    call get_allowed_history_depth(n_depth)
-            call new(DM_history,n_depth,"(reset DM history stack)")
-         else
-            if (IOnode) then
-               write(6,"(a)") "** Warning: DM history NOT reset upon supercell change"
-               write(6,"(a)") "** Warning: since 'ReinitialiseDM' is set to .false."
-            endif
-         endif
-      endif
+    ! Force initialization when
+    !  1) no DM are accummulated in the history
+    !  2) when force-constants runs are made
+    !     In this case reading the DM is equivalent to
+    !     reading the un-displaced DM which should be
+    !     closer to SCF than the previously displaced one.
+    if ( DM_in_history == 0 ) then
+       DM_init = .true.
+    else if ( UseSaveDM ) then
+       if ( idyn == 6 .and. writeDM )  & ! Force Constants
+            DM_init = .true.
+       if ( idyn == 7 .or. idyn == 9 ) & ! Phonon series (writedm??)
+            DM_init = .true.
+    end if
 
+    ! ... or if the auxiliary cell has changed
+    ! (in this case we have to  avoid reading back saved copy from file)
+    if ( SC_changed ) then
+       
+       if ( initDMaux ) then
+          ! Reset DM history, thus we MUST
+          ! also re-initialize DM
+          DM_init = .true.
+          read_DM = .false.
+          if ( IONode ) then
+             write(*,"(a)") "DM history reset as supercell changed."
+          end if
+          call get_allowed_history_depth(n_depth)
+          call new(DM_history, n_depth, "(reset DM history stack)")
+       else
+          if ( IONode ) then
+             write(*,"(a)") "** Warning: DM history NOT reset upon supercell change"
+             write(*,"(a)") "** Warning: since 'ReinitialiseDM' is set to .false."
+          end if
+       end if
+    end if
 
-      if (dminit) then
-         if (IOnode) then
-            write(6,"(a)") "Initializing Density Matrix..."
-         endif
+    if ( DM_init ) then
+       
+       if ( IOnode ) then
+          write(*,"(a)") "Initializing Density Matrix..."
+       end if
 
-         call initdm(Datm, DMnew, EDMnew, sparse_pattern, block_dist, &
-                     lasto, no_u, &
-                     no_l, h_spin_dim, na_u, &
-                     iaorb, inspn, &
-                     try_to_read_from_file, init_method)
+       call init_DM(spin, na_u, no_u, lasto, iaorb, &
+            Datm, &
+            block_dist, sparse_pattern, &
+            DM_2D, EDM_2D, &
+            read_DM, &
+            init_anti_ferro, &
+            init_method)
 
-      else    ! not initializing the DM
+    else
 
-         if (IOnode) then
-            write(6,"(a)") "Re-using DM from previous geometries..."
-         endif
+       if (IOnode) then
+          write(*,"(a)") "Re-using DM from previous geometries..."
+       endif
 
-         ! Extrapolation or simple re-structuring
+       ! Extrapolation or simple re-structuring
+       if ( IONode ) then
+          write(*,'(a,i0)') "Number of DMs in history: ", DM_in_history
+       end if
+       call extrapolate_dm_with_coords(DM_history, na_u, xa(:,1:na_u), &
+            sparse_pattern, DM_2D)
+       if ( IONode ) then
+          write(*,'(a)') "New DM after history re-use:"
+          call print_type(DM_2D)
+       end if
 
-         if (ionode) print "(a,i0)", "N DMs in history: ", n_dms_in_history
-         ! if (ionode) call print_type(DM_history)
-         call extrapolate_dm_with_coords(DM_history,na_u,xa(:,1:na_u),sparse_pattern,DMnew)
-         if (ionode)  print "(a)", "New DM after history re-use:"
-         if (ionode)  call print_type(DMnew)
+       ! Defines the initialiazation to be re-using
+       init_method = -1
 
-         ! Defines the initialiazation to be re-using
-         init_method = -1
+    end if
 
-      endif
+    if ( init_method == 0 ) then
 
-      if ( init_method == 0 ) then
+       ! In case we have initialized from atomic fillings
+       ! we allow the user to supply different files for
+       ! starting the calculation in a state of bulk 
+       ! calculations
+       call bulk_expand(na_u,xa,lasto,ucell,nsc,isc_off,DM_2D)
 
-         ! In case we have initialized from atomic fillings
-         ! we allow the user to supply different files for
-         ! starting the calculation in a state of bulk 
-         ! calculations
-         call bulk_expand(na_u,xa,lasto,ucell,nsc,isc_off,DMnew)
+       ! Note that normalization is performed later
 
-         ! Note that normalization is performed later
-
-      end if
+    end if
 
 #ifdef TRANSIESTA
-      ! In case we will immediately start a transiesta run
-      if ( TSrun .and. DMinit .and. (.not. TS_analyze ) ) then
-         ! In transiesta we can always initialize
-         ! the density matrix with the bulk-values
-         ! so as to "fix" the density in the leads
+    ! In case we will immediately start a transiesta run
+    if ( TSrun .and. DM_Init .and. (.not. TS_analyze ) ) then
+       ! In transiesta we can always initialize
+       ! the density matrix with the bulk-values
+       ! so as to "fix" the density in the leads
 
-         ! If the Fermi-level has not been
-         ! set, we initialize it to the mean of the
-         ! electrode chemical potentials
-         if ( DM_bulk > 0 ) then
+       ! If the Fermi-level has not been
+       ! set, we initialize it to the mean of the
+       ! electrode chemical potentials
+       if ( DM_bulk > 0 ) then
 
-            set_Ef = abs(Ef) < 0.00001_dp .and. &
-                 (.not. fdf_defined('TS.Fermi.Initial') ) 
-            if ( IONode ) then
-               write(*,'(/,a)') 'transiesta: Will read in bulk &
-                    &density matrices for electrodes'
-               if ( set_Ef ) then
-                  write(*,'(a)') &
-                       'transiesta: Will average Fermi-levels of electrodes'
-               end if
-            end if
-            
-            if ( init_method == 0 ) then
-               ! We are starting from atomic-filled orbitals
-               ! We are now allowed to overwrite everything!
-               na_a = na_u
-               allocate(allowed_a(na_a))
-               do iElec = 1 , na_a
-                  allowed_a(iElec) = iElec
-               end do
-            else
-               na_a = 0
-               do iElec = 1 , na_u
-                  if ( .not. a_isDev(iElec) ) na_a = na_a + 1
-               end do
-               allocate(allowed_a(na_a))
-               na_a = 0 
-               do iElec = 1 , na_u
-                  if ( .not. a_isDev(iElec) ) then
-                     na_a = na_a + 1
-                     allowed_a(na_a) = iElec
-                  end if
-               end do
-            end if
-          
-            do iElec = 1 , N_Elec
-               
-               if ( IONode ) then
-                  write(*,'(/,a)') 'transiesta: Reading in electrode TSDE for '//&
-                       trim(Elecs(iElec)%Name)
-               end if
-               
-               ! Copy over the DM in the lead
-               ! Notice that the EDM matrix that is copied over
-               ! will be equivalent at Ef == 0
-               call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
-                    ucell,DMnew,EDMnew, na_a, allowed_a)
+          set_Ef = abs(Ef) < 0.00001_dp .and. &
+               (.not. fdf_defined('TS.Fermi.Initial') ) 
+          if ( IONode ) then
+             write(*,'(/,a)') 'transiesta: Will read in bulk &
+                  &density matrices for electrodes'
+             if ( set_Ef ) then
+                write(*,'(a)') &
+                     'transiesta: Will average Fermi-levels of electrodes'
+             end if
+          end if
 
-               ! We shift the mean by one fraction of the electrode
-               if ( set_Ef ) then
-                  Ef = Ef + Elecs(iElec)%Ef / N_Elec
-               end if
-            
-            end do
+          if ( init_method == 0 ) then
+             ! We are starting from atomic-filled orbitals
+             ! We are now allowed to overwrite everything!
+             na_a = na_u
+             allocate(allowed_a(na_a))
+             do iElec = 1 , na_a
+                allowed_a(iElec) = iElec
+             end do
+          else
+             na_a = 0
+             do iElec = 1 , na_u
+                if ( .not. a_isDev(iElec) ) na_a = na_a + 1
+             end do
+             allocate(allowed_a(na_a))
+             na_a = 0 
+             do iElec = 1 , na_u
+                if ( .not. a_isDev(iElec) ) then
+                   na_a = na_a + 1
+                   allowed_a(na_a) = iElec
+                end if
+             end do
+          end if
 
-            ! Clean-up
-            deallocate(allowed_a)
-            
-         end if
+          do iElec = 1 , N_Elec
 
-         if ( fdf_defined('TS.Fermi.Initial') ) then
-            ! Write out some information regarding
-            ! how the Ef is set
+             if ( IONode ) then
+                write(*,'(/,a)') 'transiesta: Reading in electrode TSDE for '//&
+                     trim(Elecs(iElec)%Name)
+             end if
 
-            old_Ef = Ef
-            Ef = fdf_get('TS.Fermi.Initial',Ef,'Ry')
-            if ( init_method == 2 ) then
-               ! As the fermi-level has been read in from a previous
-               ! calculation (TSDE), the EDM should only be shifted by the difference
-               diff_Ef = Ef - old_Ef
-            else
-               ! Setting diff_Ef has no meaning
-               diff_Ef = Ef
-            end if
-            
-            if ( IONode ) then
-            write(*,*) ! new-line
-            if ( init_method < 2 ) then
-               write(*,'(a,f9.5,a)')'transiesta: Setting the Fermi-level to: ', &
-                    Ef / eV,' eV'
-            else if ( init_method == 2 ) then
-               write(*,'(a,2(f10.6,a))')'transiesta: Changing Fermi-level from -> to: ', &
-                    old_Ef / eV,' -> ',Ef / eV, ' eV'
-            end if
-            end if
+             ! Copy over the DM in the lead
+             ! Notice that the EDM matrix that is copied over
+             ! will be equivalent at Ef == 0
+             call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
+                  ucell, DM_2D, EDM_2D, na_a, allowed_a)
 
-         end if
+             ! We shift the mean by one fraction of the electrode
+             if ( set_Ef ) then
+                Ef = Ef + Elecs(iElec)%Ef / N_Elec
+             end if
 
-         ! The electrode EDM is aligned at Ef == 0
-         ! We need to align the energy matrix
-         iElec =  nnzs(sparse_pattern) * nspin
-         DM    => val(DMnew)
-         EDM   => val(EDMnew)
-         call daxpy(iElec,diff_Ef,DM(1,1),1,EDM(1,1),1)
+          end do
 
-      end if
+          ! Clean-up
+          deallocate(allowed_a)
+
+       end if
+
+       if ( fdf_defined('TS.Fermi.Initial') ) then
+          ! Write out some information regarding
+          ! how the Ef is set
+
+          old_Ef = Ef
+          Ef = fdf_get('TS.Fermi.Initial',Ef,'Ry')
+          if ( init_method == 2 ) then
+             ! As the fermi-level has been read in from a previous
+             ! calculation (TSDE), the EDM should only be shifted by the difference
+             diff_Ef = Ef - old_Ef
+          else
+             ! Setting diff_Ef has no meaning
+             diff_Ef = Ef
+          end if
+
+          if ( IONode ) then
+             write(*,*) ! new-line
+             if ( init_method < 2 ) then
+                write(*,'(a,f9.5,a)')'transiesta: Setting the Fermi-level to: ', &
+                     Ef / eV,' eV'
+             else if ( init_method == 2 ) then
+                write(*,'(a,2(f10.6,a))')'transiesta: Changing Fermi-level from -> to: ', &
+                     old_Ef / eV,' -> ',Ef / eV, ' eV'
+             end if
+          end if
+
+       end if
+
+       ! The electrode EDM is aligned at Ef == 0
+       ! We need to align the energy matrix
+       iElec =  nnzs(sparse_pattern) * spin%EDM
+       DM    => val(DM_2D)
+       EDM   => val(EDM_2D)
+       call daxpy(iElec,diff_Ef,DM(1,1),1,EDM(1,1),1)
+
+    end if
 #endif
-
-      END subroutine new_dm
-
-!====================================================================
-
-      subroutine initdm(Datm, DMnew, EDMnew, sparse_pattern, block_dist, &
-                        lasto, no_u, &
-                        no_l, h_spin_dim, na_u, &
-                        iaorb, inspn, &
-                        try_dm_from_file, init_method)
-
-! Density matrix initialization
-!
-!    If Try_Dm_From_File is true, it is read from file if present.
-!    Otherwise it is generated assuming atomic charging
-!      (filling up atomic orbitals).
+    
+  end subroutine new_DM
 
 
-! logical try_dm_from_file     : whether DM has to be read from files or not
-! logical found         : whether DM was found in files
-! logical inspn         : true : AF ordering according to atom ordering
-!                                if no DM files, no DM.InitSpin, ispin=2
-!                         false: Ferro ordering  (fdf DM.InitSpinAF)
-! integer na_u           : Number of atoms in the unit cell
-! integer no_l           : Number of orbitals in the unit cell (local)
-! integer no_u           : Number of orbitals in the unit cell (global)
-! integer h_spin_dim     : Number of spin components
-! integer lasto(0:na_u) : List with last orbital of each atom
-! integer iaorb(no_u)   : List saying to what atom an orbital belongs
-! double Datm(no_u)       : Occupations of basis orbitals in free atom
+  ! Tries to initialize the DM by:
+  !  1) reading a DM/TSDE(transiesta) file
+  !  2) fall-back to atomic initialization using
+  !     a possibly user-defined spin-configuration.
+  subroutine init_DM(spin, na_u, no_u, lasto, iaorb, &
+       DM_atom, &
+       dit, sp, DM_2D, EDM_2D, &
+       read_DM, &
+       anti_ferro, init_method)
+    
+    use t_spin, only : tSpin
 
-      use precision, only : dp
-      use files,     only : slabel
-      use class_Sparsity
-      use class_dSpData2D
-      use class_OrbitalDistribution
-      use class_dData2D
-      use m_iodm, only : read_dm
-      use m_os, only : file_exist
+    use class_OrbitalDistribution
+    use class_Sparsity
+    use class_dSpData2D
 #ifdef TRANSIESTA
-      use m_ts_iodm
-      use class_Fstack_dData1D, only: reset
-      use m_energies, only: Ef  ! Transiesta uses the EF obtained in a initial SIESTA run
-                                ! to place the electrodes and scattering region energy
-                                ! levels at the appropriate relative position, so it is
-                                ! stored in the TSDE file.
-      use m_ts_global_vars,only: ts_method_init, TSmode, TSinit, TSrun
-      use m_ts_options,   only : TS_scf_mode, ts_hist_keep
-      use m_ts_options,   only : val_swap, ts_scf_mixs
-      use m_ts_options,   only : ts_Dtol, ts_Htol
-      use siesta_options, only : dDtol, dHtol
+    use class_Fstack_dData1D, only: reset
+    use m_ts_global_vars,only: ts_method_init, TSinit, TSrun
+    use m_ts_options,   only : TS_scf_mode, ts_hist_keep
+    use m_ts_options,   only : val_swap, ts_scf_mixs
+    use m_ts_options,   only : ts_Dtol, ts_Htol
+    use siesta_options, only : dDtol, dHtol
 
-      use m_mixing, only: mixers_history_init
-      use m_mixing_scf, only: scf_mixs, scf_mix
+    use m_mixing, only: mixers_history_init
+    use m_mixing_scf, only: scf_mixs, scf_mix
 #endif /* TRANSIESTA */
 
-      implicit          none
+    ! ********* INPUT ***************************************************
+    ! type(tSpin) spin              : spin configuration for this system
+    ! integer na_u                  : number of atoms in unit-cell
+    ! integer no_u                  : number of orbitals in unit-cell
+    ! integer lasto(0:na_u)         : last orbital of each atom
+    ! integer iaorb(no_u)           : the atomic index of the corresponding orbital
+    ! real(dp) DM_atom(no_u)        : atomic density based on atomic configuration
+    ! type(OrbitalDistribution) dit : the distribution used for the orbitals
+    ! type(Sparsity) sp             : sparsity pattern of DM
+    ! type(dSpData2D) DM_2D         : the density matrix 
+    ! logical read_DM               : true if init_DM should try and read the DM from disk
+    ! logical anti_ferro            : whether the DM should be anti-ferro magnetic or not
+    ! integer init_method           : returns method it has read the data with
+    !                                   0 == atomic filling (possibly user-defined
+    !                                   1 == .DM read
+    !                                   2 == .TSDE read
+    ! *******************************************************************
 
-      logical           DM_found, inspn, try_dm_from_file
-      integer           no_l, na_u, no_u, h_spin_dim
-      integer           lasto(0:na_u), iaorb(no_u)
-      real(dp)          Datm(no_u)
+    ! The spin-configuration that is used to determine the spin-order.
+    type(tSpin), intent(in) :: spin
+    ! Number of atoms in the unit-cell
+    integer, intent(in) :: na_u
+    ! Number of orbitals in the unit-cell
+    integer, intent(in) :: no_u
+    ! The last orbital on each atom
+    integer, intent(in) :: lasto(0:na_u)
+    ! The atom containing orbital "io"
+    integer, intent(in) :: iaorb(no_u)
+    ! DM filled with atomic charges based on atom and orbitals
+    real(dp), intent(in) :: DM_atom(no_u)
+    ! Parallel distribution of DM
+    type(OrbitalDistribution), intent(in) :: dit
+    ! Sparse pattern for DM
+    type(Sparsity), intent(inout) :: sp
+    ! The DM, these will be initialiazed upon return by
+    ! the atomic filling
+    type(dSpData2D), intent(inout) :: DM_2D
+    ! The EDM, these will be initialiazed upon return by
+    ! the atomic filling
+    type(dSpData2D), intent(inout) :: EDM_2D
+    ! Whether we should try and read from DM/TSDE file
+    logical, intent(in) :: read_DM
+    ! Setting for the magnetic setup of DM
+    ! If .true. the spin-configuration will be anti-ferro-magnetic
+    logical, intent(in) :: anti_ferro
+    integer, intent(out) :: init_method
 
-      type(dSpData2D), intent(inout)      :: DMnew, EDMnew
-      type(Sparsity), intent(inout) :: sparse_pattern
-      type(OrbitalDistribution), intent(inout) :: block_dist
-      integer, intent(out) :: init_method
 
-! ---------------------------------------------------------------------
-
-      character(len=*),parameter:: myName = 'initdm'
-
-      ! Enables the user to re-use a specific old DM every time
-      character(len=250) :: old_DM
-      integer :: h_spin_dim_read, i
-      real(dp), pointer              :: Dscf(:,:)
-      integer, pointer, dimension(:) :: numh, listhptr, listh
-      type(dSpData2D)                :: DMread
-      type(dData2D)                  :: dm_a2d
+    ! *** Local variables
 #ifdef TRANSIESTA
-      logical                        :: TSDE_found
-      type(dSpData2D)                :: EDMread
+    integer :: i
 #endif
 
-! Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
+    ! Signal that we are using atomic fillings
+    init_method = 0
 
-      DM_found   = .false.
+    ! Try to read DM from disk if wanted
+    if ( read_DM ) then
+       
+       ! Try and read the DM from the files
+       call init_DM_file(spin, no_u, &
+            dit, sp, DM_2D, EDM_2D, &
+            init_method)
+
+    end if
+
+    if ( init_method == 0 ) then
+       ! The reading of DM did not succeed...
+       ! We will initialize with atomic charges
+       ! This is guarenteed to succeed.
+       call init_DM_atomic(spin, na_u, no_u, lasto, iaorb, &
+            DM_atom, &
+            dit, sp, DM_2D, &
+            anti_ferro)
+
+       ! The init_method now signals that it is atomic filling
+       
+    end if
+
+    
 #ifdef TRANSIESTA
-      TSDE_found = .false.
-      if ( try_dm_from_file .and. TSmode ) then
-         if (IONode) write(*,'(a)',advance='no') &
-              'Attempting to read DM, EDM from TSDE file... '
+    if ( TS_scf_mode == 1 .and. TSinit ) then
 
-         old_DM = fdf_get('File.TSDE.Init','FILEDOESNOTEXIST')
-         if ( .not. file_exist(old_DM,Bcast=.true.) ) then
-            old_DM = trim(slabel)//'.TSDE'
-         end if
+       ! if the user requests to start the transiesta SCF immediately.
+       call ts_method_init( .true. )
 
-#ifdef TIMING_IO
-         call timer('IO-R-TS-DE',1)
-         do i = 1 , 100
-#endif
-         call read_ts_dm(trim(old_DM),h_spin_dim,block_dist,no_u, &
-              DMread, EDMread, Ef, TSDE_found )
-#ifdef TIMING_IO
-         end do
-         call timer('IO-R-TS-DE',2)
-         call timer('IO-R-TS-DE',3)
-#endif
-         if ( TSDE_found .and. IONode ) then
-            write(*,'(a)') 'Succeeded!'
-         else if ( IONode ) then
-            write(*,'(a)') 'Failed...'
-         end if
+    else 
 
-      end if
+       ! Print-out whether transiesta is starting, or siesta is starting
+       call ts_method_init( init_method == 2 )
 
-      ! Update init_method
-      if ( TSDE_found ) init_method = 2
+    end if
 
-      ! In case TSDE is found, we set DM_found to be true
-      ! (prohibits the read of DM file)
-      DM_found = TSDE_found
-      
-#endif
+    if ( TSrun ) then
 
-      if ( try_dm_from_file .and. .not. DM_found ) then
-         if (IONode) write(*,'(a)',advance='no') &
-              'Attempting to read DM from file... '
+       ! Correct the convergence parameters in transiesta
+       call val_swap(dDtol,ts_Dtol)
+       call val_swap(dHtol,ts_Htol)
 
-#ifdef TIMING_IO
-         call timer('IO-R-DM',1)
-         do i = 1 , 100
-#endif
-         old_DM = fdf_get('File.DM.Init','FILEDOESNOTEXIST')
-         if ( .not. file_exist(old_DM,Bcast=.true.) ) then
-            old_DM = trim(slabel)//'.DM'
-         end if
+       ! From now on, a new mixing cycle starts,
+       ! Check in mixer.F for new mixing schemes.
+       if ( associated(ts_scf_mixs, target=scf_mixs) ) then
+          do i = 1 , size(scf_mix%stack)
+             call reset(scf_mix%stack(i), -ts_hist_keep)
+          end do
+       else
+          call mixers_history_init(scf_mixs)
+       end if
+       ! Transfer scf_mixing to the transiesta mixing routine
+       scf_mix => ts_scf_mixs(1)
 
-         call read_dm(trim(old_DM),h_spin_dim,block_dist,no_u, &
-              DMread, DM_found )
-#ifdef TIMING_IO
-         end do
-         call timer('IO-R-DM',2)
-         call timer('IO-R-DM',3)
-#endif
+    end if
 
-         if ( DM_found .and. IONode ) then
-            write(*,'(a)') 'Succeeded!'
-         else if ( IONode ) then
-            write(*,'(a)') 'Failed...'
-         end if
-
-         ! Update init_method
-         if ( DM_found ) init_method = 1
-
-      end if
-
-! If DM found, check and update, otherwise initialize with neutral atoms
-
-      if ( DM_found ) then
-        ! Various degrees of sanity checks
-
-        h_spin_dim_read = size(val(DMread),dim=2)
-        if ( h_spin_dim_read /= h_spin_dim) then
-           if (IOnode) then
-              write(6,"(a,i0,/,a)")                   &
-              "WARNING: Wrong nspin in DM file: ", h_spin_dim_read,  &
-              "WARNING: Falling back to atomic initialization of DM."
-           endif
-           DM_found = .false.
-        endif
-        
-        if ( nrows_g(DMread) /= nrows_g(sparse_pattern) ) then
-           if (IONode) then
-              write(6,"(2(a,i0,/),a)") &
-             "WARNING: Wrong number of orbs in DM file: ",nrows_g(DMread), &
-             "WARNING: Expected number of orbs in DM file: ",nrows_g(sparse_pattern), &
-             "WARNING: Falling back to atomic initialization of DM."
-           end if
-           DM_found = .false.
-        endif
-
-      endif
-
-#ifdef TRANSIESTA
-      ! In case the sparsity pattern does not conform we update 
-      ! the TSDE_found, note that DM_found is a logic containing
-      ! information regarding the sparsity pattern
-      if ( TSDE_found ) TSDE_found = DM_found
-#endif
-      
-      ! Density matrix size checks
-      if ( DM_found ) then
-
-         call restructdSpData2D(DMread,sparse_pattern,DMnew)
-         if (ionode) write(*,'(a)') "DM after reading file:"
-         if (ionode) call print_type(Dmread)
-         
-      else
-         
-         call newdData2D(DM_a2D,nnzs(sparse_pattern),h_spin_dim,"(DMatomic)")
-         Dscf     => val(DM_a2d)
-         numh     => n_col(sparse_pattern)
-         listhptr => list_ptr(sparse_pattern)
-         listh    => list_col(sparse_pattern)
-
-         call fill_dscf_from_atom_info(Datm, Dscf, &
-              numh, listhptr, listh, lasto, &
-              no_u, na_u, no_l, h_spin_dim, &
-              iaorb, inspn)
-
-         call newdSpData2D(sparse_pattern,dm_a2d,block_dist,DMnew,  &
-              "(DM initialized from atoms)")
-         call delete(dm_a2d)
-         if (ionode) write(*,'(a)') "DM after filling with atomic data:"
-         if (ionode) call print_type(DMnew)
-
-         ! The initialization method is the atomic filling...
-         init_method = 0
-
-      endif
-
-#ifdef TRANSIESTA
-      ! Energy-density matrix sparsity pattern is converted to
-      ! the new sparsity pattern if read in from TSDE
-      ! Else, it will remain associated to old EDM
-      if ( TSDE_found ) then
-         call restructdSpData2D(EDMread,sparse_pattern,EDMnew)
-         if (IONode) then
-            write(*,'(a)') "EDM after reading file:"
-            call print_type(EDMread)
-         end if
-      end if
-      
-      if ( TS_scf_mode == 1 .and. TSinit ) then
-
-         ! if the user requests to start the transiesta SCF immediately.
-         call ts_method_init( .true. )
-
-      else 
-
-         ! Print-out whether transiesta is starting, or siesta is starting
-         call ts_method_init( TSDE_found )
-
-      end if
-
-      if ( TSrun ) then
-
-         ! Correct the convergence parameters in transiesta
-         call val_swap(dDtol,ts_Dtol)
-         call val_swap(dHtol,ts_Htol)
-
-         ! From now on, a new mixing cycle starts,
-         ! Check in mixer.F for new mixing schemes.
-         if ( associated(ts_scf_mixs, target=scf_mixs) ) then
-            do i = 1 , size(scf_mix%stack)
-               call reset(scf_mix%stack(i), -ts_hist_keep)
-            end do
-         else
-            call mixers_history_init(scf_mixs)
-         end if
-         ! Transfer scf_mixing to the transiesta mixing routine
-         scf_mix => ts_scf_mixs(1)
-         
-      end if
-      
 #else
-      ! Energy-density matrix will remain associated to old EDM
+    ! Energy-density matrix will remain associated to old EDM
 #endif
 
-      ! Put deletes here to avoid complicating the logic
-      call delete(DMread)
-#ifdef TRANSIESTA
-      call delete(EDMread)
-#endif
+    ! print-out how the initial spin-configuration is
+    call print_initial_spin()
 
-    end subroutine initdm
+  contains
 
-!======================================================================
-    subroutine fill_dscf_from_atom_info(Datm, Dscf,              &
-         numh, listhptr, listh, lasto,        &
-         no_u,  na_u, no_l, h_spin_dim,     &
-         iaorb, inspn)
-
-
-!      The DM is generated assuming atomic charging
-!      (filling up atomic orbitals). The DM originated that way is
-!      not a good DM due to overlaps, but the SCF cycling corrects
-!      that for the next cycle.
-
-!    Spin polarized calculations starting from atoms:
-!      Default: All atoms with maximum polarization compatible with
-!               atomic configuration. In Ferromagnetic ordering (up).
-!      If DM.InitSpinAF is true, as default but in Antiferro order:
-!               even atoms have spin down, odd up.
-!      If fdf %block DM.InitSpin is present it overwrites previous
-!         schemes: magnetic moments are explicitly given for some atoms.
-!         Atoms not mentioned in the block are initialized non polarized.
-
-! Written by E. Artacho. December 1997. Taken from the original piece
-! of siesta.f written by P. Ordejon.
-! Non-collinear spin added by J.M.Soler, May 1998.
-! ********* INPUT ***************************************************
-! logical try_dm_from_file     : whether DM has to be read from files or not
-! logical found         : whether DM was found in files
-! logical inspn         : true : AF ordering according to atom ordering
-!                                if no DM files, no DM.InitSpin, ispin=2
-!                         false: Ferro ordering  (fdf DM.InitSpinAF)
-! integer na_u           : Number of atoms in the unit cell
-! integer no_l           : Number of orbitals in the unit cell
-! integer h_spin_dim    : Number of spin components
-! integer no_u          : Max. number of orbitals (globally)
-! integer lasto(0:maxa) : List with last orbital of each atom
-! integer iaorb(no_u)   : List saying to what atom an orbital belongs
-! double Datm(no)       : Occupations of basis orbitals in free atom
-! ********* OUTPUT **************************************************
-! double Dscf(:,:) : Density matrix in sparse form
-! *******************************************************************
-
-!
-!  Modules
-!
-      use precision
-      use parallel,     only : Node, Nodes, IOnode
-      use parallelsubs, only : LocalToGlobalOrb, GlobalToLocalOrb
-      use fdf
-      use parsing
-      use sys,          only : die
-      use alloc,        only : re_alloc, de_alloc
-
-#ifdef MPI
-      use mpi_siesta
-#endif
-      use units, only : pi
-
-      implicit          none
-
-      logical, intent(in)       :: inspn
-      integer, intent(in)       :: no_l, na_u, h_spin_dim, no_u
-      integer, intent(in)       :: lasto(0:na_u), iaorb(no_u)
-      real(dp), intent(in)      :: Datm(no_u)
-      integer, intent(in), dimension(:) :: numh, listhptr, listh
-
-      real(dp), intent(out)     :: Dscf(:,:)
-
-! ---------------------------------------------------------------------
-
-! Internal variables and arrays
-      character(len=*),parameter:: myName = 'fill_dscf_from_atom_info'
-      character         updo*1, msg*80
-      logical           noncol, peratm, badsyntax
-      integer           nh, ni, nn, nr, nv, iat, nat, ia, iu,   &
-                        i1, i2, in, ind, ispin, jo, io,         &
-                        iio, maxatnew
-
-      integer, save ::  maxat
-
-      integer           integs(4), lastc, lc(0:3)
-
-      integer, pointer, save ::  atom(:)
-
-#ifdef MPI
-      integer  MPIerror
-      logical  lbuffer
-#endif
-      real(dp)          aspin, cosph, costh, epsilon,        &
-                        qio, rate, reals(4),                 &
-                        sinph, sinth, spinat, spio, values(4)
-
-      type(block_fdf)            :: bfdf
-      type(parsed_line), pointer :: pline
-
-      real(dp), pointer, save :: phi(:), spin(:), theta(:)
-
-      integer :: is
-
-      data maxat / 1000 /
-      data epsilon / 1.d-8 /
-
-! See whether specific initial spins are given in a DM.InitSpin block
-! and read them in a loop on atoms where lines are read and parsed
-!   integer nat       : how many atoms to polarize
-!   integer atom(nat) : which atoms
-!   double  spin(nat) : what polarization -----------------------------
-
-        noncol = .false.
-        peratm = fdf_block('DM.InitSpin',bfdf)
-        if (Node.eq.0) then
-          if (peratm .and. h_spin_dim.lt.2) write(6,'(/,a)')             &
-          'initdm: WARNING: DM.InitSpin not used because nspin < 2'
-        endif
-
-        if (peratm .and. h_spin_dim >= 2 ) then
-
-! Allocate local memory
-          nullify(atom,phi,spin,theta)
-          call re_alloc( atom, 1, maxat, 'atom', 'initdm' )
-          call re_alloc( phi, 1, maxat, 'phi', 'initdm' )
-          call re_alloc( spin, 1, maxat, 'spin', 'initdm' )
-          call re_alloc( theta, 1, maxat, 'theta', 'initdm' )
-
-          nat = 0
-          badsyntax = .FALSE.
-          do while(fdf_bline(bfdf,pline) .and. (nat .lt. na_u) .and.  &
-                 (.not. badsyntax))
-
-            nn = fdf_bnnames(pline)
-            ni = fdf_bnintegers(pline)
-            nr = fdf_bnreals(pline)
-
-            if (ni .eq. 1) then
-              if (nat .eq. maxat) then
-                ! fixed ceiling
-                maxatnew = nat + ceiling(0.1*nat)
-!
-                call re_alloc(atom, 1, maxatnew, 'atom', 'initdm',copy=.true.)
-!
-                call re_alloc( phi, 1, maxatnew, 'phi', 'initdm',    &
-                               copy=.true. )
-                call re_alloc( spin, 1, maxatnew, 'spin', 'initdm',  &
-                               copy=.true. )
-                call re_alloc( theta, 1, maxatnew, 'theta', 'initdm', &
-                               copy=.true. )
-!
-                maxat = maxatnew
-              endif
-              nat = nat + 1
-              atom(nat) = fdf_bintegers(pline,1)
-
-              if (nn .eq. 0) then
-! Read value of spin
-                if (nr .eq. 3) then
-! Read spin value and direction
-                  spin(nat)  = fdf_breals(pline,1)
-                  theta(nat) = fdf_breals(pline,2) * pi/180.0d0
-                  phi(nat)   = fdf_breals(pline,3) * pi/180.0d0
-                elseif (nr .eq. 1) then
-! Read spin value. Default direction.
-                  spin(nat)  = fdf_breals(pline,1)
-                  theta(nat) = 0.d0
-                  phi(nat)   = 0.d0
-                else
-! Print bad-syntax error and stop
-                  badsyntax = .TRUE.
-                endif
-              elseif (nn .eq. 1) then
-! Read spin as + or - (maximun value)
-                updo = fdf_bnames(pline,1)
-                if (updo .eq. '+') then
-                  spin(nat) =  100.d0
-                elseif (updo .eq. '-') then
-                  spin(nat) = -100.d0
-                else
-! Print bad-syntax error and stop
-                  badsyntax = .TRUE.
-                endif
-                if (nr .eq. 2) then
-                  theta(nat) = fdf_breals(pline,1) * pi/180.0d0
-                  phi(nat)   = fdf_breals(pline,2) * pi/180.0d0
-                elseif (nr .eq. 0) then
-                  theta(nat) = 0.d0
-                  phi(nat)   = 0.d0
-                else
-! Print bad-syntax error and stop
-                  badsyntax = .TRUE.
-                endif
-              else
-! Print bad-syntax error and stop
-                badsyntax = .TRUE.
-              endif
-
-              if ((atom(nat) .lt. 1) .or. (atom(nat) .gt. na_u)) then
-                write(msg,'(a,a,i4)') 'intdm: ERROR: Bad atom ' //    &
-                 'index in DM.InitSpin, line', nat+1
-                call die(TRIM(msg))
-              endif
-              if (abs(theta(nat)) .gt. 1.d-12) noncol = .true.
-            else
-! Print bad-syntax error and stop
-              badsyntax = .TRUE.
-            endif
-          enddo
-
-          if (badsyntax) then
-            write(msg,'(a,i4)')   &
-             'initdm: ERROR: bad syntax in DM.InitSpin, line', nat+1
-            call die(msg)
-          endif
-
-          if (noncol .and. h_spin_dim < 4 ) then
-            if (Node.eq.0) then
-            write(6,'(/,2a)') 'initdm: WARNING: noncolinear spins ',  &
-                     'in DM.InitSpin not used because nspin < 4'
-            endif
-            noncol = .false.
-          endif
-
-!$OMP parallel default(shared)
-
-! Initialize to 0
-
-!$OMP workshare
-          Dscf = 0.0_dp
-!$OMP end workshare
-
-! Initialize all paramagnetic
-
-!$OMP single
-          do ia = 1, na_u
-            do io = lasto(ia-1) + 1, lasto(ia)
-              call GlobalToLocalOrb(io,Node,Nodes,iio)
-              if (iio.gt.0) then
-!$OMP task firstprivate(io,iio), private(in,ind,jo)
-                do in = 1, numh(iio)
-                  ind = listhptr(iio)+in
-                  jo = listh(ind)
-                  if (io .eq. jo) then
-                    Dscf(ind,1) = 0.5d0 * Datm(io)
-                    Dscf(ind,2) = Dscf(ind,1)
-                  endif
-                enddo
-!$OMP end task
-              endif
-            enddo
-          enddo
-!$OMP end single
-
-! Loop on atoms with spin
-
-!$OMP single
-          do iat = 1, nat
-            ia = atom(iat)
-
-! Find maximum atomic moment that the atoms involved can carry
-
-            spinat = 0.d0
-            do io = lasto(ia-1) + 1, lasto(ia)
-              spinat = spinat + min( Datm(io), 2.d0 - Datm(io) )
-            enddo
-            if (spinat.lt.epsilon .and. Node.eq.0) print'(a,i6,a)',  &
-             'initdm: WARNING: atom ', atom(iat),                    &
-             ' has a closed-shell and cannot be polarized'
-
-! If given spin is larger than possible, make it to max atomic
-
-            aspin = abs(spin(iat))
-            if ((aspin .gt. spinat) .and. (aspin .gt. epsilon))    &
-                spin(iat) = spinat*spin(iat)/aspin
-
-! Initialize orbitals with same rate as atom
-
-            rate = spin(iat) / (spinat+epsilon)
-            do io = lasto(ia-1) + 1, lasto(ia)
-              call GlobalToLocalOrb(io,Node,Nodes,iio)
-              if (iio.gt.0) then
-!$OMP task firstprivate(iat,io,iio,rate), &
-!$OMP&private(qio,spio,in,ind,jo,costh,sinth,cosph,sinph)
-                qio = Datm(io)
-                spio = rate * min( Datm(io), 2.d0 - Datm(io) )
-                do in = 1, numh(iio)
-                  ind = listhptr(iio)+in
-                  jo = listh(ind)
-                  if (io .eq. jo) then
-                    if (noncol) then
-! Store non-collinear-spin density matrix as
-!   ispin=1 => D11, ispin=2 => D22;
-!   ispin=3 => Real(D12); ispin=4 => Imag(D12)
-                      costh = cos(theta(iat))
-                      sinth = sin(theta(iat))
-                      cosph = cos(phi(iat))
-                      sinph = sin(phi(iat))
-                      Dscf(ind,1) = (qio + spio * costh) / 2
-                      Dscf(ind,2) = (qio - spio * costh) / 2
-                      Dscf(ind,3) =   spio * sinth * cosph / 2
-                      Dscf(ind,4) =   spio * sinth * sinph / 2
-                      if ( h_spin_dim == 8 ) then ! spin-orbit coupling
-                         Dscf(ind,5) = 0._dp
-                         Dscf(ind,6) = 0._dp
-                         Dscf(ind,7) = Dscf(ind,3)
-                         Dscf(ind,8) = Dscf(ind,4)
-                      end if
-                    else
-                      Dscf(ind,1) = (qio + spio) / 2
-                      Dscf(ind,2) = (qio - spio) / 2
-                    endif
-                  endif
-                enddo
-!$OMP end task
-              endif
-            enddo
-
-          enddo
-!$OMP end single nowait
-
-!$OMP end parallel
-
-! Deallocate local memory
-          call de_alloc( atom, 'atom', 'initdm' )
-          call de_alloc( phi, 'phi', 'initdm' )
-          call de_alloc( spin, 'spin', 'initdm' )
-          call de_alloc( theta, 'theta', 'initdm' )
-
-! ---------------------------------------------------------------------
-
-        else
-
-!$OMP parallel default(shared)
-
-! Initialize to 0
-!$OMP workshare
-          Dscf = 0.0d0
-!$OMP end workshare
-
-! Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
-!$OMP single
-          do io = 1, no_l
-            call LocalToGlobalOrb(io,Node,Nodes,iio)
-!$OMP task firstprivate(io,iio), private(in,ind,jo,i1,i2)
-            do in = 1,numh(io)
-              ind = listhptr(io)+in
-              jo = listh(ind)
-              if (iio .eq. jo) then
-                if ( h_spin_dim == 1 ) then
-
-! No spin polarization
-                  Dscf(ind,1) = Datm(iio)
-
-                else
-
-! Spin polarization
-                  i1 = 1
-                  i2 = 2
-
-! Ferro or antiferro according to DM.InitSpinAF (inspn)
-
-                  if (inspn) then
-                    if (mod(iaorb(iio),2).eq.0) then
-                      i1 = 2
-                      i2 = 1
-                    endif
-                  endif
-                  Dscf(ind,i1) = min( Datm(iio), 1.d0 )
-                  Dscf(ind,i2) = Datm(iio) - Dscf(ind,i1)
-                endif
-              endif
-            enddo
-!$OMP end task
-          enddo
-!$OMP end single nowait
-
-!$OMP end parallel
-
-        endif
-
-      call print_initial_spin()
-
-
-      CONTAINS
-
-      subroutine print_initial_spin()
+    subroutine print_initial_spin()
       use m_mpi_utils, only: Globalize_sum
       use sparse_matrices, only: S
 
+      ! Attach and calculate initial spin-configuration
+      real(dp), pointer :: DM(:,:)
       real(dp) :: qspin(4)
-      integer  :: io, j, ispin, ind
+      integer  :: is, i, nnz
 #ifdef MPI
       real(dp) :: qtmp(4)
 #endif
 
-      if ( h_spin_dim == 1 ) return
+      if ( spin%DM == 1 ) then
+         if ( IONode ) write(*,*) ! new line
+         return
+      end if
 
-! Print spin polarization
-      do ispin = 1, min(4, h_spin_dim)
-         qspin(ispin) = 0.0_dp
-         do io = 1,no_l
-            do j = 1,numh(io)
-               ind = listhptr(io)+j
-               jo = listh(ind)
-               if ( io.eq.jo ) then
-                qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
-               endif
-            end do
+      DM => val(DM_2D)
+      nnz = size(DM, 2)
+      
+      ! Calculate initial spin-polarization
+!$OMP parallel do default(shared), private(is,i), reduction(+:qspin)
+      do is = 1, min(4, spin%DM)
+         qspin(is) = 0.0_dp
+         do i = 1 , nnz
+            qspin(is) = qspin(is) + DM(i,is) * S(i)
          end do
       end do
+!$OMP end parallel do
       
 #ifdef MPI
       ! Global reduction of spin components
-      call globalize_sum(qspin,qtmp)
+      call globalize_sum(qspin, qtmp)
       qspin = qtmp
 #endif
       if ( .not. IONode ) return
-      
-     if ( h_spin_dim .eq. 2 ) then
-      write(6,'(/,a,f12.6)')   &
-           'initdm: Initial spin polarization (Qup-Qdown) =',  &
-           qspin(1) - qspin(2)
-      elseif ( h_spin_dim .gt. 2 ) then
-        write(6,'(/,a,3f12.6)')   &
-           'initdm: Initial spin polarization =',  &
-           qspin(3)*2.0d0, qspin(4)*2.0d0, qspin(1) - qspin(2)
-      endif
 
+      ! Print the initial spin components
+      if ( spin%DM == 2 ) then
+         write(*,'(/,a,f12.6/)')   &
+              'initDM: Initial spin polarization (Qup-Qdown) =', &
+              qspin(1) - qspin(2)
+      else if ( spin%DM > 2 ) then
+         write(*,'(/,a,3f12.6/)')   &
+              'initDM: Initial spin polarization (x,y,z) =',  &
+              qspin(3)*2, qspin(4)*2, qspin(1) - qspin(2)
+      end if
 
-      end subroutine print_initial_spin
+    end subroutine print_initial_spin
     
-      end subroutine fill_dscf_from_atom_info
+  end subroutine init_DM
 
-      subroutine extrapolate_dm_with_coords(DM_history,na_u,xa,sparse_pattern,DMnew)
-        use class_Sparsity
-        use class_dData2D
-        use class_OrbitalDistribution
-        use class_dSpData2D
-        use class_Geometry
-        use class_Pair_Geometry_dSpData2D
-        use class_Fstack_Pair_Geometry_dSpData2D
 
-        use fdf, only: fdf_get
+  subroutine init_DM_file(spin, no_u, &
+       dit, sp, DM_2D, EDM_2D, &
+       init_method)
 
-        type(Fstack_Pair_Geometry_dSpData2D), intent(in) :: DM_history
-	integer, intent(in)                             :: na_u 
-        real(dp), intent(in)                            :: xa(:,:)
-        type(Sparsity), intent(in)                      :: sparse_pattern
-        type(dSpData2D), intent(inout)                   :: DMnew
+    ! Routine for reading the DM from a file.
+    ! This is a simple read-inset routine which reads
+    ! a DM/TSDE file, and inserts the quantities
+    ! into the the resulting DM (and/or EDM).
 
-        integer :: n, i, nspin, nnzs_out
-        real(dp), allocatable   :: c(:)
-        real(dp), allocatable   :: xan(:,:,:), dummy_cell(:,:,:)
-        type(Geometry), pointer :: geom 
-        type(dSpData2D), pointer :: dm
-        type(OrbitalDistribution), pointer    :: orb_dist
-        type(Pair_Geometry_dSpData2D), pointer :: pair
+    ! If the readed DM file has a different number of spin-components,
+    ! this routine will easily extrapolate the quantities:
+    !
+    !   none => polarized/non-collinear/spin-orbit
+    !       DM(:,1) = DM_read(:,1) / 2
+    !       DM(:,2) = DM_read(:,1) / 2
+    !
+    !   polarized => none
+    !       DM(:,1) = DM_read(:,1) + DM_read(:,2)
+    !   polarized => non-collinear/spin-orbit
+    !       DM(:,1) = DM_read(:,1)
+    !       DM(:,2) = DM_read(:,2)
+    !
+    !   non-collinear => none
+    !       DM(:,1) = DM_read(:,1) + DM_read(:,2)
+    !   non-collinear => polarized
+    !       DM(:,1) = DM_read(:,1)
+    !       DM(:,2) = DM_read(:,2)
+    !   non-collinear => spin-orbit
+    !       DM(:,1) = DM_read(:,1)
+    !       DM(:,2) = DM_read(:,2)
+    !       DM(:,3) = DM_read(:,3)
+    !       DM(:,4) = DM_read(:,4)
+    !
+    !   spin-orbit => none
+    !       DM(:,1) = DM_read(:,1) + DM_read(:,2)
+    !   spin-orbit => polarized
+    !       DM(:,1) = DM_read(:,1)
+    !       DM(:,2) = DM_read(:,2)
+    !   spin-orbit => non-collinear
+    !       DM(:,1) = DM_read(:,1)
+    !       DM(:,2) = DM_read(:,2)
+    !       DM(:,3) = DM_read(:,3)
+    !       DM(:,4) = DM_read(:,4)
 
-        type(dSpData2D)       :: DMtmp
-        type(dData2D)       :: a_out
+    ! Data-structures
+    use class_Sparsity
+    use class_dSpData2D
+    use class_OrbitalDistribution
+    use t_spin, only: tSpin
 
-        real(dp), dimension(:,:) , pointer  :: a, ai, xp
+    use fdf, only: fdf_get
+    use files, only : slabel
+    use m_iodm, only : read_DM
+#ifdef TRANSIESTA
+    use m_ts_iodm, only: read_TS_DM
+    use m_energies, only: Ef  ! Transiesta uses the EF obtained in a initial SIESTA run
+    ! to place the electrodes and scattering region energy
+    ! levels at the appropriate relative position, so it is
+    ! stored in the TSDE file.
+    use m_ts_global_vars,only: TSmode
+#endif /* TRANSIESTA */
 
-        n = n_items(DM_history)
-        allocate(c(n))
+    ! ********* INPUT ***************************************************
+    ! type(tSpin) spin              : spin configuration for this system
+    ! integer no_u                  : number of orbitals in unit-cell
+    ! type(OrbitalDistribution) dit : the distribution used for the orbitals
+    ! type(Sparsity) sp             : sparsity pattern of DM
+    ! type(dSpData2D) DM_2D         : the density matrix 
+    ! type(dSpData2D) DM_2D         : the energy density matrix 
+    ! integer init_method           : returned value to determine the
+    !                                 method used to read the DM/EDM
+    !                                   0 == not read
+    !                                   1 == .DM read
+    !                                   2 == .TSDE read
+    ! *******************************************************************
 
-        allocate(xan(3,na_u,n),dummy_cell(3,3,n))
+    ! The spin-configuration that is used to determine the spin-order.
+    type(tSpin), intent(in) :: spin
+    ! Number of orbitals in the unit-cell
+    integer, intent(in) :: no_u
+    ! Parallel distribution of DM/EDM
+    type(OrbitalDistribution), intent(in) :: dit
+    ! Sparse pattern for DM/EDM
+    type(Sparsity), intent(inout) :: sp
+    ! The DM and EDM, these will be initialiazed upon return
+    ! if the routine could read the files
+    type(dSpData2D), intent(inout) :: DM_2D, EDM_2D
 
-        do i = 1, n
-           pair => get_pointer(DM_history,i)
-           call firstp(pair,geom)
-           xp => coords(geom)
-           xan(:,:,i) = xp(:,:)
-           dummy_cell(:,:,i) = 1.0_dp
-        enddo
-        if (fdf_get("UseDIISforDMExtrapolation",.true.)) then
-           ! Cast Jose Soler's idea into a DIIS framework
+    ! To signal the method by which we have read DM/EDM
+    integer, intent(out) :: init_method
 
-           if (fdf_get("UseSVDExperimental",.false.)) then
-              ! Attempt to use the "alternate" KF method with
-              ! first differences.  It does not work well yet
-              call extrapolate_diis_svd_new(na_u,n,dummy_cell,  &
-                                        xan,dummy_cell(:,:,1),xa,c)
-           else if (fdf_get("UseSVD",.true.)) then
-              ! Straightforward SVD
-              call extrapolate_diis_svd(na_u,n,dummy_cell,  &
-                                        xan,dummy_cell(:,:,1),xa,c)
-           else
-              call extrapolate_diis(na_u,n,dummy_cell, &
-                                    xan,dummy_cell(:,:,1),xa,c)
-           endif
-        else  
-           ! Use Jose Soler's original method
-           call extrapolate(na_u,n,dummy_cell,xan,dummy_cell(:,:,1),xa,c)
-        endif
-        if (ionode) then
-           print *, "DM extrapolation coefficients: "
-           do i = 1, n
-              print "(i0,f10.5)", i, c(i)
-           enddo
-        endif
+    
+    ! *** Local variables:
+    logical :: DM_found
+#ifdef TRANSIESTA
+    logical :: TSDE_found
+#endif
+    ! The file we should read
+    character(len=256) :: fname
+    ! Number of spin-components read from the DM/TSDE file
+    integer :: nspin_read
 
-        pair => get_pointer(DM_history,1)
-        call secondp(pair,dm)
+    ! The currently read stuff
+    type(dSpData2D) :: DM_read
+#ifdef TRANSIESTA
+    type(dSpData2D) :: EDM_read
+#endif
 
-        ! We assume that all DMs in the history stack have the same orbital distribution...
-        orb_dist => dist(dm)
-        a => val(dm)
-        nspin = size(a,dim=2)
-        nnzs_out = nnzs(sparse_pattern)
+    ! Signal the file has not been found.
+    init_method = 0
+    
+    if ( IONode ) write(*,*) ! New line
 
-        ! Scratch array to accumulate the elements
-        call newdData2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
-        a => val(a_out)
-!$OMP parallel workshare default(shared)
-        a(:,:) = 0.0_dp
-!$OMP end parallel workshare
+    DM_found = .false.
+#ifdef TRANSIESTA
+    TSDE_found = .false.
+    
+    if ( TSmode ) then
+       if ( IONode ) write(*,'(a)',advance='no') &
+            'Attempting to read DM, EDM from TSDE file... '
 
-        do i = 1, n
-           pair => get_pointer(DM_history,i)
-           call secondp(pair,dm)
-!           if (.not. associated(orb_dist,dist(dm))) then
-!              call die("Different orbital distributions in DM history stack")
-!           endif
-           call restructdSpData2D(dm,sparse_pattern,DMtmp)
-           ai => val(DMtmp)
-!$OMP parallel workshare default(shared)
-           a = a + c(i) * ai
-!$OMP end parallel workshare
-        enddo
+       ! Retrieve the name of the initialization file.
+       fname = fdf_get('File.TSDE.Init',trim(slabel)//'.TSDE')
 
-        call newdSpData2D(sparse_pattern,a_out,orb_dist, &
-                         DMnew,name="SpM extrapolated using coords")
-        call delete(a_out)
-        call delete(DMtmp)
-        deallocate(xan,c,dummy_cell)
+       ! Try and read the file
+       call read_ts_dm(trim(fname), dit, DM_read, EDM_read, Ef, TSDE_found)
 
-      end subroutine extrapolate_dm_with_coords
+       if ( TSDE_found ) then
+          ! Signal we have read TSDE
+          init_method = 2
 
-!
-!
-      subroutine get_allowed_history_depth(n)
-      ! 
-      ! Encapsulates the logic of DM extrapolation and re-use
-      ! (work in progress)
+          DM_found = .true.
+       else if ( IONode ) then
+          write(*,'(a)') 'Failed...'
+       end if
 
-        use siesta_options, only: DM_history_depth, harrisfun, idyn
+    end if
+#endif
 
-      integer, intent(out)         :: n
+    if ( .not. DM_found ) then
+       if ( IONode ) write(*,'(a)',advance='no') &
+            'Attempting to read DM from file... '
 
-      n = DM_history_depth     ! As set by default or by the user
+       ! Retrieve the name of the initialization file.
+       fname = fdf_get('File.DM.Init',trim(slabel)//'.DM')
 
-      if (harrisfun) then
-         n = 0
-         if (ionode) print "(a)", &
-          "DM_history_depth set to zero for 'Harris' run"
-         return
-      else if (.not. fdf_get("DM.AllowReuse",.true.)) then
-         n = 0
-         if (ionode) print "(a)",   &
+       call read_DM(trim(fname), dit, DM_read, DM_found)
+
+       if ( DM_found ) then
+          ! Signal that the DM file has been found
+          init_method = 1
+       end if
+       
+    end if
+
+    ! If DM is found, we check that it indeed is conformant with the number
+    ! of orbitals
+    if ( DM_found ) then
+
+       if ( nrows_g(DM_read) /= nrows_g(sp) ) then
+          if ( IONode ) then
+             write(*,'(a)') 'Failed...'
+             write(*,"(2(a,i0,/),a)") &
+                  "WARNING: Wrong number of orbitals in DM file: ",nrows_g(DM_read), &
+                  "WARNING: Expected number of orbitals in DM file: ",nrows_g(sp), &
+                  "WARNING: Falling back to alternate initialization of DM."
+          end if
+          
+          DM_found = .false.
+          
+       end if
+
+    else if ( IONode ) then
+       
+       ! The DM/TSDE was not found... Signal it has not been found
+       write(*,'(a)') 'Failed...'
+       
+    end if
+
+#ifdef TRANSIESTA
+    ! In case the sparsity pattern does not conform we update 
+    ! the TSDE_found, note that DM_found is a logic containing
+    ! information regarding the sparsity pattern
+    if ( TSDE_found ) TSDE_found = DM_found
+#endif
+
+    ! Density matrix size checks
+    if ( DM_found ) then
+
+       nspin_read = size(DM_read, 2)
+
+       if ( spin%DM == nspin_read .and. IONode ) then
+          write(*,'(a)') 'Succeeded...'
+       else if ( spin%DM /= nspin_read .and. IONode ) then
+          if ( spin%DM < nspin_read ) then
+             write(*,'(a)') 'Succeeded by reducing spin-components...'
+          else
+             write(*,'(a)') 'Succeeded by increasing spin-components...'
+          end if
+       end if
+
+       if ( IONode ) then
+          write(*,'(a)') "DM from file:"
+          call print_type(DM_read)
+       end if
+
+       call restruct_Data(spin%DM, DM_read, DM_2D)
+#ifdef TRANSIESTA
+       if ( TSDE_found ) then
+          call restruct_Data(spin%EDM, EDM_read, EDM_2D)
+       end if
+#endif
+
+    end if
+
+    ! Put deletes here to avoid complicating the logic
+    call delete(DM_read)
+#ifdef TRANSIESTA
+    call delete(EDM_read)
+#endif
+
+    if ( .not. DM_found ) init_method = 0
+
+  contains
+
+    subroutine restruct_Data(nspin, in_2D, out_2D)
+      integer, intent(in) :: nspin
+      type(dSpData2D), intent(inout) :: in_2D, out_2D
+      
+      integer :: nspin_read, i
+      real(dp), pointer :: ar2(:,:)
+
+      nspin_read = size(in_2D, 2)
+      
+      if ( nspin == 1 .and. nspin /= nspin_read ) then
+         ! This SCF has 1 spin-component.
+         
+         ! The readed DM has, at least 2!
+         ! Thus we sum the spinors to form the non-polarized
+         ar2 => val(in_2D)
+!$OMP parallel do default(shared), private(i)
+         do i = 1 , size(ar2, 1)
+            ar2(i,1) = ar2(i,1) + ar2(i,2)
+         end do
+!$OMP end parallel do
+
+      end if
+
+      ! Restructure the sparsity data to the output DM
+      ! with maximum spin%DM number of spin-components
+      call restructdSpData2D(in_2D, sp, out_2D, nspin)
+
+      if ( nspin_read == 1 .and. nspin /= nspin_read ) then
+         ! This SCF has more than 2 spin-components.
+         ! The readed DM has 1.
+         ! Thus we divide the spinors to form the polarized
+         ! case.
+         ar2 => val(out_2D)
+!$OMP parallel do default(shared), private(i)
+         do i = 1 , size(ar2, 1)
+            ar2(i,1) = ar2(i,1) * 0.5_dp
+            ar2(i,2) = ar2(i,1)
+         end do
+!$OMP end parallel do
+         
+      end if
+       
+    end subroutine restruct_Data
+
+  end subroutine init_DM_file
+
+  subroutine init_DM_atomic(spin, na_u, no_u, lasto, iaorb, &
+       DM_atom, &
+       dit, sp, DM_2D, &
+       anti_ferro)
+    
+    ! The DM is generated assuming atomic charging
+    ! (filling up atomic orbitals). The DM originated that way is
+    ! not a good DM due to overlaps, but the SCF cycling corrects
+    ! that for the next cycle.
+
+    ! Spin polarized calculations starting from atoms:
+    !    Default: All atoms with maximum polarization compatible with
+    !             atomic configuration. In Ferromagnetic ordering (up).
+    !    If DM.InitSpinAF is true, as default but in Antiferro order:
+    !             even atoms have spin down, odd up.
+    !    If fdf %block DM.InitSpin is present it overwrites previous
+    !         schemes: magnetic moments are explicitly given for some atoms.
+    !         Atoms not mentioned in the block are initialized non polarized.
+
+    ! Written by E. Artacho. December 1997. Taken from the original piece
+    ! of siesta.f written by P. Ordejon.
+    ! Non-collinear spin added by J.M.Soler, May 1998.
+    ! Updated by N.R.Papior, December, 2016
+    ! ********* INPUT ***************************************************
+    ! type(tSpin) spin              : spin configuration for this system
+    ! integer na_u                  : number of atoms in unit-cell
+    ! integer no_u                  : number of orbitals in unit-cell
+    ! integer lasto(0:na_u)         : last orbital of each atom
+    ! integer iaorb(no_u)           : the atomic index of the corresponding orbital
+    ! real(dp) DM_atom(no_u)        : atomic density based on atomic configuration
+    ! type(OrbitalDistribution) dit : the distribution used for the orbitals
+    ! type(Sparsity) sp             : sparsity pattern of DM
+    ! type(dSpData2D) DM_2D         : the density matrix 
+    ! logical anti_ferro            : whether the DM should be anti-ferro magnetic or not
+    ! *******************************************************************
+
+    use class_Sparsity
+    use class_OrbitalDistribution
+    use class_dSpData2D
+    use class_OrbitalDistribution
+    use class_dData2D
+    use t_spin, only: tSpin
+
+    use fdf
+    use parsing
+
+#ifdef MPI
+    use mpi_siesta
+#endif
+    use units, only : Pi
+
+    ! The spin-configuration that is used to determine the spin-order.
+    type(tSpin), intent(in) :: spin
+    ! Number of atoms in the unit-cell
+    integer, intent(in) :: na_u
+    ! Number of orbitals in the unit-cell
+    integer, intent(in) :: no_u
+    ! The last orbital on each atom
+    integer, intent(in) :: lasto(0:na_u)
+    ! The atom containing orbital "io"
+    integer, intent(in) :: iaorb(no_u)
+    ! DM filled with atomic charges based on atom and orbitals
+    real(dp), intent(in) :: DM_atom(no_u)
+    ! Parallel distribution of DM
+    type(OrbitalDistribution), intent(in) :: dit
+    ! Sparse pattern for DM
+    type(Sparsity), intent(inout) :: sp
+    ! The DM, these will be initialiazed upon return by
+    ! the atomic filling
+    type(dSpData2D), intent(inout) :: DM_2D
+    ! Setting for the magnetic setup of DM
+    ! If .true. the spin-configuration will be anti-ferro-magnetic
+    logical, intent(in) :: anti_ferro
+
+    ! *** Local variables
+    type(block_fdf) :: bfdf
+    logical :: init_spin_block
+    type(dData2D) :: arr_2D
+    ! The pointers for the sparse pattern
+    integer :: no_l, nnz
+    integer, pointer :: ncol(:), ptr(:), col(:)
+    real(dp), pointer :: DM(:,:)
+    
+    ! First we need to figure out the options
+    if ( spin%DM > 1 ) then
+       init_spin_block = fdf_block('DM.InitSpin', bfdf)
+    else
+       ! Do not read the initspin block in case of
+       ! non-polarized calculation
+       init_spin_block = .false.
+    end if
+
+    ! Retrieve pointers to data
+    call attach(sp, nrows=no_l, nnzs=nnz, &
+         n_col=ncol, list_ptr=ptr, list_col=col)
+
+    ! First we create the DM
+    call newdData2D(arr_2D, nnz, spin%DM, "DM")
+    call newdSpData2D(sp, arr_2D, dit, DM_2D, &
+         "DM initialized from atoms")
+    call delete(arr_2D)
+    DM => val(DM_2D)
+
+    if ( .not. init_spin_block ) then
+       call init_atomic()
+    else
+       call init_user()
+    end if
+
+  contains
+
+    subroutine init_atomic()
+
+      integer :: io, gio, i, ind, jo, i1, i2
+      ! This subroutine initializes the DM based on
+      ! the anti_ferro
+      
+!$OMP parallel default(shared), private(i1,i2)
+
+      ! Initialize to 0
+!$OMP do collapse(2)
+      do i2 = 1 , spin%DM
+         do i1 = 1 , nnz
+            DM(i1,i2) = 0._dp
+         end do
+      end do
+!$OMP end do
+
+      
+      ! Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro
+!$OMP single
+      do io = 1, no_l
+         
+         ! Retrieve global orbital index
+         gio = index_local_to_global(dit, io)
+         
+!$OMP task firstprivate(io,gio), private(i,ind,jo,i1,i2)
+         do i = 1 , ncol(io)
+            ind = ptr(io) + i
+            jo = col(ind)
+            ! Check for diagonal element
+            if ( gio /= jo ) cycle
+            
+            if ( spin%DM == 1 ) then
+               
+               ! No spin polarization
+               DM(ind,1) = DM_atom(gio)
+               
+            else
+               
+               ! Spin polarization
+               i1 = 1
+               i2 = 2
+               
+               ! Ferro or antiferro
+               if ( anti_ferro ) then
+                  if ( mod(iaorb(gio),2) == 0 ) then
+                     i1 = 2
+                     i2 = 1
+                  end if
+               end if
+               
+               DM(ind,i1) = min( DM_atom(gio), 1._dp )
+               DM(ind,i2) = DM_atom(gio) - DM(ind,i1)
+               
+            end if
+
+         end do
+!$OMP end task
+      end do
+!$OMP end single nowait
+      
+!$OMP end parallel
+
+      if ( IONode ) then
+         write(*,'(a)') "DM filled with atomic data:"
+         call print_type(DM_2D)
+      end if
+
+    end subroutine init_atomic
+
+    subroutine init_user()
+
+      type(parsed_line), pointer :: pline
+
+      integer, pointer :: atom_dat(:) => null()
+      integer, pointer :: atom
+      real(dp), pointer :: spin_dat(:,:) => null()
+      real(dp), pointer :: phi, theta, spin_val
+
+      real(dp), parameter :: epsilon = 1.e-8_dp
+      ! To grab +/-
+      character(len=1) :: updo
+      character(len=80) :: msg
+      logical :: bad_syntax, non_col
+
+      integer :: ni, nn, nr, na
+      integer :: i, io, jo, gio, ia, ind
+      real(dp) :: cosph, sinph, costh, sinth
+      real(dp) :: qio, rate, spin_at, spio
+
+
+      ! Define defaults
+      non_col = .false.
+      bad_syntax = .false.
+
+      ! Allocate options
+      call re_alloc( atom_dat, 1, na_u, 'atom_dat', 'init_dm_user')
+      call re_alloc( spin_dat, 1, na_u, 1, 3, 'spin_dat', 'init_dm_user' )
+      
+      ! Read the data from the block and then we populate DM
+      na = 0
+      do while( fdf_bline(bfdf,pline) .and. na < na_u )
+         
+         ! Read number of names, integers and reals on this line
+         ni = fdf_bnintegers(pline)
+         nn = fdf_bnnames(pline)
+         nr = fdf_bnreals(pline)
+
+         ! Simple check for bad syntax
+         if ( ni /= 1 ) then
+            bad_syntax = .true.
+            exit
+         end if
+
+         na = na + 1
+         if ( na > na_u ) then
+            call die('There can only be one initial spin-component per atom.')
+         end if
+
+         ! Point to the data
+         atom     => atom_dat(na)
+         spin_val => spin_dat(na,1)
+         phi      => spin_dat(na,2)
+         theta    => spin_dat(na,3)
+         
+         ! Default values for the not always supplied data
+         phi   = 0._dp
+         theta = 0._dp
+
+         ! Read atom involved
+         atom = fdf_bintegers(pline,1)
+         
+         ! Check that the atom is correct
+         ! Allow for negative indices...
+         if ( atom < 0 ) atom = atom + na_u + 1
+
+         ! Now check that it is within range...
+         if ( atom < 1 .or. na_u < atom ) then
+            bad_syntax = .true.
+            exit
+         end if
+
+
+         ! Now it depends on the type of input...
+         if ( nn == 0 ) then
+            ! There are no names in this one...
+            
+            ! Read value of spin
+            if ( nr == 3 ) then
+               spin_val = fdf_breals(pline,1)
+               theta    = fdf_breals(pline,2) * pi/180.0d0
+               phi      = fdf_breals(pline,3) * pi/180.0d0
+            else if ( nr == 1 ) then
+               spin_val = fdf_breals(pline,1)
+            else
+               ! Print bad-syntax error and stop
+               bad_syntax = .true.
+               exit
+            end if
+            
+         elseif ( nn == 1 ) then
+            ! Read spin as + or - (maximun value)
+            updo = fdf_bnames(pline,1)
+            if ( updo .eq. '+' ) then
+               spin_val =  100._dp
+            elseif ( updo .eq. '-' ) then
+               spin_val = -100._dp
+            else
+               bad_syntax = .true.
+               exit
+            end if
+            
+            if ( nr == 2 ) then
+               theta = fdf_breals(pline,1) * pi/180.0d0
+               phi   = fdf_breals(pline,2) * pi/180.0d0
+            else if ( nr /= 0 ) then
+               bad_syntax = .true.
+               exit
+            end if
+         else
+            ! Print bad-syntax error and stop
+            bad_syntax = .TRUE.
+            exit 
+         end if
+
+         if ( abs(theta) > 1.d-12 ) non_col = .true.
+         if ( abs(phi) > 1.d-12 ) non_col = .true.
+         
+      end do
+
+      if ( bad_syntax ) then
+         write(msg,'(a,i4)') &
+              'initDM: ERROR: bad syntax in DM.InitSpin, line', na
+         call die(trim(msg))
+      end if
+
+      if ( non_col .and. spin%DM < 4 ) then
+         ! The user has requested non-collinear spin.
+         ! This is not applicable to this simulation
+         
+          if ( IONode ) then
+             write(*,'(/,2a)') 'initDM: WARNING: noncollinear spins ',  &
+                  'in DM.InitSpin not used because nspin < 4'
+          end if
+          non_col = .false.
+       end if
+
+       ! Now we may fill DM
+
+!$OMP parallel default(shared), private(i,ind,jo)
+
+       ! Initialize to 0
+!$OMP do collapse(2)
+       do jo = 1 , spin%DM
+          do i = 1 , nnz
+             DM(i,jo) = 0._dp
+          end do
+       end do
+!$OMP end do
+
+       ! Initialize to paramagnetic case
+!$OMP single
+       do io = 1 , no_l
+          ! Get global index
+          gio = index_local_to_global(dit, io)
+          ! Get atomic index
+          ia = iaorb(gio)
+          
+!$OMP task firstprivate(io,gio)
+          do i = 1, ncol(io)
+             ind = ptr(io) + i
+             jo = col(ind)
+             if ( gio == jo ) then
+                DM(ind,1) = 0.5_dp * DM_atom(gio)
+                DM(ind,2) = DM(ind,1)
+             end if
+          end do
+!$OMP end task
+
+       end do
+!$OMP end single
+
+       ! Now correct for the user input 
+!$OMP single
+       do ia = 1, na
+          
+          ! Get data
+          atom => atom_dat(ia)
+          spin_val => spin_dat(ia,1)
+          phi      => spin_dat(ia,2)
+          theta    => spin_dat(ia,3)
+
+          ! Find maximum atomic moment that the atoms involved can carry
+          spin_at = 0._dp
+          do io = lasto(atom-1) + 1, lasto(atom)
+             spin_at = spin_at + min( DM_atom(io), 2._dp - DM_atom(io) )
+          end do
+
+         
+          if ( spin_at < epsilon ) then
+             ! This is the simple case.
+             ! The atom cannot be spin-polarized and thus
+             ! we may easily set the contribution
+             
+             if ( IONode ) then
+                write(*,'(a,i0,a)')  &
+                     'initDM: WARNING: atom ', atom, &
+                     ' has a closed-shell and cannot be polarized'
+             end if
+
+             do gio = lasto(atom-1) + 1, lasto(atom)
+                io = index_global_to_local(dit, gio)
+                
+                ! Immediately skip if not on this node... 
+                if ( io < 1 ) cycle
+
+!$OMP task firstprivate(gio,io), private(qio)
+                qio = DM_atom(gio) / 2
+                do i = 1, ncol(io)
+                   ind = ptr(io) + i
+                   jo = col(ind)
+                   
+                   ! skip if not diagonal term...
+                   if ( gio /= jo ) cycle
+
+                   DM(ind,1) = qio
+                   DM(ind,2) = qio
+                   
+                end do
+!$OMP end task
+             end do
+
+          else
+
+             ! If given spin is larger than possible, make it to max atomic
+             if ( abs(spin_val) > spin_at .and. &
+                  abs(spin_val) > epsilon ) &
+                  spin_val = spin_at * spin_val / abs(spin_val)
+             
+             ! Initialize orbitals with same rate as atom
+             rate = spin_val / spin_at
+             do gio = lasto(atom-1) + 1, lasto(atom)
+                io = index_global_to_local(dit, gio)
+             
+                ! Immediately skip if not on this node... 
+                if ( io < 1 ) cycle
+
+!$OMP task firstprivate(gio,io,rate), &
+!$OMP& private(qio,spio,costh,sinth,cosph,sinph)
+                qio = DM_atom(gio)
+                spio = rate * min( qio, 2._dp - qio )
+                do i = 1 , ncol(io)
+                   ind = ptr(io) + i
+                   jo = col(ind)
+                   
+                   ! Immediately skip if not diagonal terms..
+                   if ( gio /= jo ) cycle
+
+                   if ( non_col ) then
+                      
+                      ! Store non-collinear-spin density matrix as
+                      !   ispin=1 => D11
+                      !   ispin=2 => D22
+                      !   ispin=3 => Real(D12)
+                      !   ispin=4 => Imag(D12)
+                      costh = cos(theta)
+                      sinth = sin(theta)
+                      cosph = cos(phi)
+                      sinph = sin(phi)
+                      
+                      DM(ind,1) = (qio + spio * costh) / 2
+                      DM(ind,2) = (qio - spio * costh) / 2
+                      DM(ind,3) =   spio * sinth * cosph / 2
+                      DM(ind,4) =   spio * sinth * sinph / 2
+                      if ( spin%DM == 8 ) then ! spin-orbit coupling
+                         DM(ind,5) = 0._dp
+                         DM(ind,6) = 0._dp
+                         DM(ind,7) = DM(ind,3)
+                         DM(ind,8) = DM(ind,4)
+                      end if
+                      
+                   else
+                      
+                      DM(ind,1) = (qio + spio) / 2
+                      DM(ind,2) = (qio - spio) / 2
+                      
+                   end if
+                   
+                end do
+!$OMP end task
+             end do
+             
+          end if
+       enddo
+!$OMP end single nowait
+
+!$OMP end parallel
+       
+      call de_alloc(atom_dat, 'atom_dat', 'init_dm_user')
+      call de_alloc(spin_dat, 'spin_dat', 'init_dm_user')
+
+      if ( IONode ) then
+         write(*,'(a)') "DM filled with atomic data (user-defined):"
+         call print_type(DM_2D)
+      end if
+
+    end subroutine init_user
+
+  end subroutine init_DM_atomic
+
+  
+  subroutine extrapolate_dm_with_coords(DM_history,na_u,xa,sparse_pattern,DMnew)
+    use class_Sparsity
+    use class_dData2D
+    use class_OrbitalDistribution
+    use class_dSpData2D
+    use class_Geometry
+    use class_Pair_Geometry_dSpData2D
+    use class_Fstack_Pair_Geometry_dSpData2D
+
+    use fdf, only: fdf_get
+
+    type(Fstack_Pair_Geometry_dSpData2D), intent(in) :: DM_history
+    integer, intent(in)                             :: na_u 
+    real(dp), intent(in)                            :: xa(:,:)
+    type(Sparsity), intent(in)                      :: sparse_pattern
+    type(dSpData2D), intent(inout)                   :: DMnew
+
+    integer :: n, i, nspin, nnzs_out
+    real(dp), allocatable   :: c(:)
+    real(dp), allocatable   :: xan(:,:,:), dummy_cell(:,:,:)
+    type(Geometry), pointer :: geom 
+    type(dSpData2D), pointer :: dm
+    type(OrbitalDistribution), pointer    :: orb_dist
+    type(Pair_Geometry_dSpData2D), pointer :: pair
+
+    type(dSpData2D)       :: DMtmp
+    type(dData2D)       :: a_out
+
+    real(dp), dimension(:,:) , pointer  :: a, ai, xp
+
+    n = n_items(DM_history)
+    allocate(c(n))
+
+    allocate(xan(3,na_u,n),dummy_cell(3,3,n))
+
+    do i = 1, n
+       pair => get_pointer(DM_history,i)
+       call firstp(pair,geom)
+       xp => coords(geom)
+       xan(:,:,i) = xp(:,:)
+       dummy_cell(:,:,i) = 1.0_dp
+    enddo
+    if (fdf_get("UseDIISforDMExtrapolation",.true.)) then
+       ! Cast Jose Soler's idea into a DIIS framework
+
+       if (fdf_get("UseSVDExperimental",.false.)) then
+          ! Attempt to use the "alternate" KF method with
+          ! first differences.  It does not work well yet
+          call extrapolate_diis_svd_new(na_u,n,dummy_cell,  &
+               xan,dummy_cell(:,:,1),xa,c)
+       else if (fdf_get("UseSVD",.true.)) then
+          ! Straightforward SVD
+          call extrapolate_diis_svd(na_u,n,dummy_cell,  &
+               xan,dummy_cell(:,:,1),xa,c)
+       else
+          call extrapolate_diis(na_u,n,dummy_cell, &
+               xan,dummy_cell(:,:,1),xa,c)
+       endif
+    else  
+       ! Use Jose Soler's original method
+       call extrapolate(na_u,n,dummy_cell,xan,dummy_cell(:,:,1),xa,c)
+    endif
+    if (ionode) then
+       print *, "DM extrapolation coefficients: "
+       do i = 1, n
+          print "(i0,f10.5)", i, c(i)
+       enddo
+    endif
+
+    pair => get_pointer(DM_history,1)
+    call secondp(pair,dm)
+
+    ! We assume that all DMs in the history stack have the same orbital distribution...
+    orb_dist => dist(dm)
+    a => val(dm)
+    nspin = size(a,dim=2)
+    nnzs_out = nnzs(sparse_pattern)
+
+    ! Scratch array to accumulate the elements
+    call newdData2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
+    a => val(a_out)
+    !$OMP parallel workshare default(shared)
+    a(:,:) = 0.0_dp
+    !$OMP end parallel workshare
+
+    do i = 1, n
+       pair => get_pointer(DM_history,i)
+       call secondp(pair,dm)
+       !           if (.not. associated(orb_dist,dist(dm))) then
+       !              call die("Different orbital distributions in DM history stack")
+       !           endif
+       call restructdSpData2D(dm,sparse_pattern,DMtmp)
+       ai => val(DMtmp)
+       !$OMP parallel workshare default(shared)
+       a = a + c(i) * ai
+       !$OMP end parallel workshare
+    enddo
+
+    call newdSpData2D(sparse_pattern,a_out,orb_dist, &
+         DMnew,name="SpM extrapolated using coords")
+    call delete(a_out)
+    call delete(DMtmp)
+    deallocate(xan,c,dummy_cell)
+
+  end subroutine extrapolate_dm_with_coords
+
+  subroutine get_allowed_history_depth(n)
+    ! 
+    ! Encapsulates the logic of DM extrapolation and re-use
+    ! (work in progress)
+    use fdf, only: fdf_get
+    use siesta_options, only: DM_history_depth, harrisfun, idyn
+
+    integer, intent(out)         :: n
+
+    n = DM_history_depth     ! As set by default or by the user
+
+    if (harrisfun) then
+       n = 0
+       if (ionode) print "(a)", &
+            "DM_history_depth set to zero for 'Harris' run"
+       return
+    else if (.not. fdf_get("DM.AllowReuse",.true.)) then
+       n = 0
+       if (ionode) print "(a)",   &
             "DM_history_depth set to zero since no re-use is allowed"
-         return
-      else if (.not. fdf_get("DM.AllowExtrapolation",.true.)) then
-         n = 1
-         if (ionode) print "(a)", &
-         "DM_history_depth set to one since no extrapolation is allowed"
-         return
-      else if (idyn .eq. 0)  then   ! Geometry relaxation
-	 if (fdf_get("DM.AllowExtrapolation",.false.)) then
-           if (ionode) print "(a,i0)", "Requested Extrapolation for geometry relaxation. DM_history_depth: ", n
-         else	
-           n = 1
-           if (ionode) print "(a)", &
-            "DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation"
-         endif
-         return
-      else if ((idyn .eq. 6) .OR. (idyn .eq. 7))  then   ! Forces or Phonon series
-         n = 1
-         if (ionode) print "(a)", &
-         "DM_history_depth set to one for 'Forces' run"
-         return
-      endif
-      end subroutine get_allowed_history_depth
+       return
+    else if (.not. fdf_get("DM.AllowExtrapolation",.true.)) then
+       n = 1
+       if (ionode) print "(a)", &
+            "DM_history_depth set to one since no extrapolation is allowed"
+       return
+    else if (idyn .eq. 0)  then   ! Geometry relaxation
+       if (fdf_get("DM.AllowExtrapolation",.false.)) then
+          if (ionode) print "(a,i0)", "Requested Extrapolation for geometry relaxation. DM_history_depth: ", n
+       else	
+          n = 1
+          if (ionode) print "(a)", &
+               "DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation"
+       endif
+       return
+    else if ((idyn .eq. 6) .OR. (idyn .eq. 7))  then   ! Forces or Phonon series
+       n = 1
+       if (ionode) print "(a)", &
+            "DM_history_depth set to one for 'Forces' run"
+       return
+    endif
+  end subroutine get_allowed_history_depth
 
 
-! *******************************************************************
-! SUBROUTINE extrapolate( na, n, cell, xa, cell0, x0, c )
-! *******************************************************************
-! Finds optimal coefficients for an approximate expasion of the form
-! D_0 = sum_i c_i D_i, where D_i is the density matrix in the i'th
-! previous iteration, or any other function of the atomic positions. 
-! In practice, given points x_0 and x_i, i=1,...,n, it finds the
-! coefficients c_i such that sum_i c_i*x_i, is closest to x_0, with
-! sum_i c_i = 1. Unit cell vectors are included for completeness of
-! the geometry specification only. Though not used in this version,
-! this routine can be used if cell vectors change (see algorithms).
-! Written by J.M.Soler. Feb.2010.
-! ************************* INPUT ***********************************
-!  integer  na          ! Number of atoms
-!  integer  n           ! Number of previous atomic positions
-!  real(dp) cell(3,3,n) ! n previous unit cell vectors
-!  real(dp) xa(3,na,n)  ! n previous atomic positions (most recent first)
-!  real(dp) cell0(3,3)  ! Present unit cell vectors
-!  real(dp) x0(3,na)    ! Present atomic positions
-! ************************* OUTPUT **********************************
-!  real(dp) c(n)        ! Expansion coefficients
-! ************************ UNITS ************************************
-! Unit of distance is arbitrary, but must be the same in all arguments
-! ********* BEHAVIOUR ***********************************************
-! - Returns without any action if n<1 or na<1
-! - Stops with an error message if matrix inversion fails
-! ********* DEPENDENCIES ********************************************
-! Routines called: 
-!   inver     : Matrix inversion
-! Modules used:
-!   precision : defines parameter 'dp' (double precision real kind)
-!   sys       : provides the stopping subroutine 'die'
-! ********* ALGORITHMS **********************************************
-! Using a linear approximation for D(x), imposing that sum(c)=1, and
-! assuming that <dD/dx_i*dD/dx_j>=0, <(dD/dx_i)**2>=<(dD/dx_j)**2>
-! (i.e. assuming no knowledge on the parcial derivatives), we find
-! (D(x0)-D(sum_i c_i*x_i))**2 = const * (x0-sum_i c_i*x_i)**2
-! Therefore, given points x_0 and x_i, i=1,...,n, we look for the
-! coefficients c_i such that sum_i c_i*x_i, is closest to x_0, with
-! sum_i c_i = 1. It is straighforward to show that this reduces to 
-! solving S*c=s0, where S_ij=x_i*x_j and s0_i=x_i*x0, under the
-! constraint sum(c)=1. To impose it, we rewrite the expansion as
-! xmean + sum_i c_i*(x_i-xmean), where xmean=(1/n)*sum_i x_i.
-! Since the vectors (x_i-xmean) are linearly dependent, the matrix
-! S_ij=(x_i-xmean)*(x_j-xmean) is singular. Therefore, we substitute
-! the last row of S and s0 by 1, thus imposing sum(c)=1.
-! Unit cell vectors are not used in this version, but this routine
-! can be safely used even if cell vectors change, since D depends
-! on the interatomic distances, and it can be shown that
-! sum_ia,ja (xa(:,ia,i)-xa(:,ja,i))*(xa(:,ia,j)-xa(:,ja,j))
-!   = 2*na*sum_ia (xa(:,ia,i)-xmean(:,ia))*(xa(:,ia,j)-xmean(:,ia))
-!   = 2*na*S_ij
-! This implies that approximating the present ineratomic distances,
-! as an expansion of previous ones, is equivalent to approximating
-! the atomic positions.
-! *******************************************************************
+  ! *******************************************************************
+  ! SUBROUTINE extrapolate( na, n, cell, xa, cell0, x0, c )
+  ! *******************************************************************
+  ! Finds optimal coefficients for an approximate expasion of the form
+  ! D_0 = sum_i c_i D_i, where D_i is the density matrix in the i'th
+  ! previous iteration, or any other function of the atomic positions. 
+  ! In practice, given points x_0 and x_i, i=1,...,n, it finds the
+  ! coefficients c_i such that sum_i c_i*x_i, is closest to x_0, with
+  ! sum_i c_i = 1. Unit cell vectors are included for completeness of
+  ! the geometry specification only. Though not used in this version,
+  ! this routine can be used if cell vectors change (see algorithms).
+  ! Written by J.M.Soler. Feb.2010.
+  ! ************************* INPUT ***********************************
+  !  integer  na          ! Number of atoms
+  !  integer  n           ! Number of previous atomic positions
+  !  real(dp) cell(3,3,n) ! n previous unit cell vectors
+  !  real(dp) xa(3,na,n)  ! n previous atomic positions (most recent first)
+  !  real(dp) cell0(3,3)  ! Present unit cell vectors
+  !  real(dp) x0(3,na)    ! Present atomic positions
+  ! ************************* OUTPUT **********************************
+  !  real(dp) c(n)        ! Expansion coefficients
+  ! ************************ UNITS ************************************
+  ! Unit of distance is arbitrary, but must be the same in all arguments
+  ! ********* BEHAVIOUR ***********************************************
+  ! - Returns without any action if n<1 or na<1
+  ! - Stops with an error message if matrix inversion fails
+  ! ********* DEPENDENCIES ********************************************
+  ! Routines called: 
+  !   inver     : Matrix inversion
+  ! Modules used:
+  !   precision : defines parameter 'dp' (double precision real kind)
+  !   sys       : provides the stopping subroutine 'die'
+  ! ********* ALGORITHMS **********************************************
+  ! Using a linear approximation for D(x), imposing that sum(c)=1, and
+  ! assuming that <dD/dx_i*dD/dx_j>=0, <(dD/dx_i)**2>=<(dD/dx_j)**2>
+  ! (i.e. assuming no knowledge on the parcial derivatives), we find
+  ! (D(x0)-D(sum_i c_i*x_i))**2 = const * (x0-sum_i c_i*x_i)**2
+  ! Therefore, given points x_0 and x_i, i=1,...,n, we look for the
+  ! coefficients c_i such that sum_i c_i*x_i, is closest to x_0, with
+  ! sum_i c_i = 1. It is straighforward to show that this reduces to 
+  ! solving S*c=s0, where S_ij=x_i*x_j and s0_i=x_i*x0, under the
+  ! constraint sum(c)=1. To impose it, we rewrite the expansion as
+  ! xmean + sum_i c_i*(x_i-xmean), where xmean=(1/n)*sum_i x_i.
+  ! Since the vectors (x_i-xmean) are linearly dependent, the matrix
+  ! S_ij=(x_i-xmean)*(x_j-xmean) is singular. Therefore, we substitute
+  ! the last row of S and s0 by 1, thus imposing sum(c)=1.
+  ! Unit cell vectors are not used in this version, but this routine
+  ! can be safely used even if cell vectors change, since D depends
+  ! on the interatomic distances, and it can be shown that
+  ! sum_ia,ja (xa(:,ia,i)-xa(:,ja,i))*(xa(:,ia,j)-xa(:,ja,j))
+  !   = 2*na*sum_ia (xa(:,ia,i)-xmean(:,ia))*(xa(:,ia,j)-xmean(:,ia))
+  !   = 2*na*S_ij
+  ! This implies that approximating the present ineratomic distances,
+  ! as an expansion of previous ones, is equivalent to approximating
+  ! the atomic positions.
+  ! *******************************************************************
 
-SUBROUTINE extrapolate( na, n, cell, xa, cell0, x0, c )
+  SUBROUTINE extrapolate( na, n, cell, xa, cell0, x0, c )
 
-! Used procedures and parameters
-  USE sys,       only: message           ! Termination routine
-  USE precision, only: dp            ! Double precision real kind
-  use parallel,  only: Node
+    ! Used procedures and parameters
+    USE sys,       only: message           ! Termination routine
+    USE precision, only: dp            ! Double precision real kind
+    use parallel,  only: Node
 
-! Passed arguments
-  implicit none
-  integer, intent(in) :: na          ! Number of atoms
-  integer, intent(in) :: n           ! Number of previous atomic positions
-  real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
-  real(dp),intent(in) :: xa(3,na,n)  ! n previous atomic positions
-  real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
-  real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
-  real(dp),intent(out):: c(n)        ! Expansion coefficients
+    ! Passed arguments
+    implicit none
+    integer, intent(in) :: na          ! Number of atoms
+    integer, intent(in) :: n           ! Number of previous atomic positions
+    real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
+    real(dp),intent(in) :: xa(3,na,n)  ! n previous atomic positions
+    real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
+    real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
+    real(dp),intent(out):: c(n)        ! Expansion coefficients
 
-! Internal variables and arrays
-  integer :: i, ierr, j, m, ix, ia
-  real(dp):: s(n,n), s0(n), si(n,n), xmean(3,na)
+    ! Internal variables and arrays
+    integer :: i, ierr, j, m, ix, ia
+    real(dp):: s(n,n), s0(n), si(n,n), xmean(3,na)
 
-! Trap special cases
-  if (na<1 .or. n<1) then
-    return
-  else if (n==1) then
-    c(1) = 1
-    return
-  end if
+    ! Trap special cases
+    if (na<1 .or. n<1) then
+       return
+    else if (n==1) then
+       c(1) = 1
+       return
+    end if
 
-! Find average of previous positions
-  do ia=1,na
-     do ix=1,3
-        xmean(ix,ia) = sum(xa(ix,ia,1:n)) / n
-     enddo
-  enddo
- 
-! The above is equivalent to
-!   xmean = sum(xa,dim=3)/n
+    ! Find average of previous positions
+    do ia=1,na
+       do ix=1,3
+          xmean(ix,ia) = sum(xa(ix,ia,1:n)) / n
+       enddo
+    enddo
 
-! Find matrix s of dot products. Subtract xmean to place origin within the
-! hyperplane of x vectors
+    ! The above is equivalent to
+    !   xmean = sum(xa,dim=3)/n
 
-  do j = 1,n
-    s0(j) = sum( (x0-xmean) * (xa(:,:,j)-xmean) )
-    do i = j,n
-      s(i,j) = sum( (xa(:,:,i)-xmean) * (xa(:,:,j)-xmean) )
-      s(j,i) = s(i,j)
+    ! Find matrix s of dot products. Subtract xmean to place origin within the
+    ! hyperplane of x vectors
+
+    do j = 1,n
+       s0(j) = sum( (x0-xmean) * (xa(:,:,j)-xmean) )
+       do i = j,n
+          s(i,j) = sum( (xa(:,:,i)-xmean) * (xa(:,:,j)-xmean) )
+          s(j,i) = s(i,j)
+       end do
     end do
-  end do
 
-! Find the largest number of (first) m linearly independent vectors xa-xmean.
-! Notice that m<n because we have subtracted xmean. Optimally, we should not
-! restrict ourselves to the first (most recent) m vectors, but that would
-! complicate the code too much.
-  do m = n-1,0,-1
-    if (m==0) exit                   ! Do not try to invert a 0x0 'matrix'
+    ! Find the largest number of (first) m linearly independent vectors xa-xmean.
+    ! Notice that m<n because we have subtracted xmean. Optimally, we should not
+    ! restrict ourselves to the first (most recent) m vectors, but that would
+    ! complicate the code too much.
+    do m = n-1,0,-1
+       if (m==0) exit                   ! Do not try to invert a 0x0 'matrix'
+       call inver( s, si, m, n, ierr )
+       if (ierr==0) exit                ! Not too elegant, but it will do.
+    end do
+
+    if (node==0) print *, " # of linearly independent vectors: ", m
+
+    ! Trap the case in which the first two xa vectors are equal
+    if (m==0) then  ! Just use most recent point only
+       c(n) = 1
+       c(1:n-1) = 0
+       return
+    end if
+
+    ! Set one more row for equation sum(c)=1.
+    m = m+1
+    s0(m) = 1
+    s(m,1:m) = 1
+
+    ! Invert the full equations matrix
     call inver( s, si, m, n, ierr )
-    if (ierr==0) exit                ! Not too elegant, but it will do.
-  end do
+    if (ierr/=0) then
+       c(:) = 0.0_dp
+       c(n) = 1.0_dp
+       call message('extrapolate: matrix inversion failed')
+       call message('extrapolate: using last item in history')
+       return
+    endif
 
-  if (node==0) print *, " # of linearly independent vectors: ", m
+    ! Find expansion coefficients
+    ! This is wrong regarding the order...
+    c(1:m) = matmul( si(1:m,1:m), s0(1:m) )
+    c(m+1:n) = 0
 
-! Trap the case in which the first two xa vectors are equal
-  if (m==0) then  ! Just use most recent point only
-    c(n) = 1
-    c(1:n-1) = 0
-    return
-  end if
+  END SUBROUTINE extrapolate
 
-! Set one more row for equation sum(c)=1.
-  m = m+1
-  s0(m) = 1
-  s(m,1:m) = 1
+  ! *******************************************************************
+  ! SUBROUTINE extrapolate_diis( na, n, cell, xa, cell0, x0, c )
+  ! *******************************************************************
+  ! Finds optimal coefficients for an approximate expasion of the form
+  ! D_0 = sum_i c_i D_i, where D_i is the density matrix in the i'th
+  ! previous iteration, or any other function of the atomic positions. 
+  ! In practice, given points x_0 and x_i, i=1,...,n, it finds the
+  ! coefficients c_i such that sum_i c_i*x_i, is closest to x_0, with
+  ! sum_i c_i = 1. Unit cell vectors are included for completeness of
+  ! the geometry specification only. Though not used in this version,
+  ! this routine can be used if cell vectors change (see algorithms).
+  ! Original version Written by J.M.Soler. Feb.2010.
+  ! Couched in DIIS language by A. Garcia, Nov. 2012.
+  ! ************************* INPUT ***********************************
+  !  integer  na          ! Number of atoms
+  !  integer  n           ! Number of previous atomic positions
+  !  real(dp) cell(3,3,n) ! n previous unit cell vectors
+  !  real(dp) xa(3,na,n)  ! n previous atomic positions (most recent first)
+  !  real(dp) cell0(3,3)  ! Present unit cell vectors
+  !  real(dp) x0(3,na)    ! Present atomic positions
+  ! ************************* OUTPUT **********************************
+  !  real(dp) c(n)        ! Expansion coefficients
+  ! ************************ UNITS ************************************
+  ! Unit of distance is arbitrary, but must be the same in all arguments
+  ! ********* BEHAVIOUR ***********************************************
+  ! - Returns without any action if n<1 or na<1
+  ! - Stops with an error message if matrix inversion fails
+  ! ********* DEPENDENCIES ********************************************
+  ! Routines called: 
+  !   inver     : Matrix inversion
+  ! Modules used:
+  !   precision : defines parameter 'dp' (double precision real kind)
+  !   sys       : provides the stopping subroutine 'die'
+  ! ********* ALGORITHMS **********************************************
 
-! Invert the full equations matrix
-  call inver( s, si, m, n, ierr )
-  if (ierr/=0) then
-     c(:) = 0.0_dp
-     c(n) = 1.0_dp
-     call message('extrapolate: matrix inversion failed')
-     call message('extrapolate: using last item in history')
-     return
-  endif
+  SUBROUTINE extrapolate_diis( na, n, cell, xa, cell0, x0, c )
 
-! Find expansion coefficients
-! This is wrong regarding the order...
-  c(1:m) = matmul( si(1:m,1:m), s0(1:m) )
-  c(m+1:n) = 0
+    ! Used procedures and parameters
+    USE sys,       only: message, die
+    USE precision, only: dp            ! Double precision real kind
+    use parallel,  only: Node
 
-END SUBROUTINE extrapolate
+    ! Passed arguments
+    implicit none
+    integer, intent(in) :: na          ! Number of atoms
+    integer, intent(in) :: n           ! Number of previous atomic positions
+    real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
+    real(dp),intent(inout) :: xa(3,na,n)  ! n previous atomic positions
+    real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
+    real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
+    real(dp),intent(out):: c(n)        ! Expansion coefficients
 
-! *******************************************************************
-! SUBROUTINE extrapolate_diis( na, n, cell, xa, cell0, x0, c )
-! *******************************************************************
-! Finds optimal coefficients for an approximate expasion of the form
-! D_0 = sum_i c_i D_i, where D_i is the density matrix in the i'th
-! previous iteration, or any other function of the atomic positions. 
-! In practice, given points x_0 and x_i, i=1,...,n, it finds the
-! coefficients c_i such that sum_i c_i*x_i, is closest to x_0, with
-! sum_i c_i = 1. Unit cell vectors are included for completeness of
-! the geometry specification only. Though not used in this version,
-! this routine can be used if cell vectors change (see algorithms).
-! Original version Written by J.M.Soler. Feb.2010.
-! Couched in DIIS language by A. Garcia, Nov. 2012.
-! ************************* INPUT ***********************************
-!  integer  na          ! Number of atoms
-!  integer  n           ! Number of previous atomic positions
-!  real(dp) cell(3,3,n) ! n previous unit cell vectors
-!  real(dp) xa(3,na,n)  ! n previous atomic positions (most recent first)
-!  real(dp) cell0(3,3)  ! Present unit cell vectors
-!  real(dp) x0(3,na)    ! Present atomic positions
-! ************************* OUTPUT **********************************
-!  real(dp) c(n)        ! Expansion coefficients
-! ************************ UNITS ************************************
-! Unit of distance is arbitrary, but must be the same in all arguments
-! ********* BEHAVIOUR ***********************************************
-! - Returns without any action if n<1 or na<1
-! - Stops with an error message if matrix inversion fails
-! ********* DEPENDENCIES ********************************************
-! Routines called: 
-!   inver     : Matrix inversion
-! Modules used:
-!   precision : defines parameter 'dp' (double precision real kind)
-!   sys       : provides the stopping subroutine 'die'
-! ********* ALGORITHMS **********************************************
+    ! Internal variables and arrays
+    integer :: i, info, j, m, ix, ia
+    real(dp), allocatable, dimension(:,:) :: s, si
 
-SUBROUTINE extrapolate_diis( na, n, cell, xa, cell0, x0, c )
+    allocate (s(n+1,n+1), si(n+1,n+1))
 
-! Used procedures and parameters
-  USE sys,       only: message, die
-  USE precision, only: dp            ! Double precision real kind
-  use parallel,  only: Node
+    ! Trap special cases
+    if (na<1 .or. n<1) then
+       return
+    else if (n==1) then
+       c(1) = 1
+       return
+    end if
 
-! Passed arguments
-  implicit none
-  integer, intent(in) :: na          ! Number of atoms
-  integer, intent(in) :: n           ! Number of previous atomic positions
-  real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
-  real(dp),intent(inout) :: xa(3,na,n)  ! n previous atomic positions
-  real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
-  real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
-  real(dp),intent(out):: c(n)        ! Expansion coefficients
+    ! Find residuals with respect to x0 
+    do i = 1, n
+       do ia=1,na
+          do ix=1,3
+             xa(ix,ia,i) = xa(ix,ia,i) - x0(ix,ia)
+          enddo
+       enddo
+    enddo
 
-! Internal variables and arrays
-  integer :: i, info, j, m, ix, ia
-  real(dp), allocatable, dimension(:,:) :: s, si
+    ! Find matrix s of dot products.
 
-  allocate (s(n+1,n+1), si(n+1,n+1))
-
-! Trap special cases
-  if (na<1 .or. n<1) then
-    return
-  else if (n==1) then
-    c(1) = 1
-    return
-  end if
-
-! Find residuals with respect to x0 
-  do i = 1, n
-  do ia=1,na
-     do ix=1,3
-        xa(ix,ia,i) = xa(ix,ia,i) - x0(ix,ia)
-     enddo
-  enddo
-  enddo
- 
-! Find matrix s of dot products.
-
-  do j = 1,n
-    do i = j,n
-      s(i,j) = sum( xa(:,:,i) * xa(:,:,j) )
-      s(j,i) = s(i,j)
+    do j = 1,n
+       do i = j,n
+          s(i,j) = sum( xa(:,:,i) * xa(:,:,j) )
+          s(j,i) = s(i,j)
+       end do
+       ! Now extend the matrix with ones in an extra column
+       ! and row ...
+       s(j,n+1)=1.0_dp   ! This value is really arbitrary
+       s(n+1,j)=1.0_dp   ! This represents the Sum_{Ci} = 1 constraint
     end do
-    ! Now extend the matrix with ones in an extra column
-    ! and row ...
-    s(j,n+1)=1.0_dp   ! This value is really arbitrary
-    s(n+1,j)=1.0_dp   ! This represents the Sum_{Ci} = 1 constraint
-  end do
-  s(n+1,n+1) = 0.0_dp
+    s(n+1,n+1) = 0.0_dp
 
-  if (Node == 0) then
-     call print_mat(s,n+1)
-  endif
+    if (Node == 0) then
+       call print_mat(s,n+1)
+    endif
 
-  ! Find rank of the xi*xj matrix
-  do m = n,0,-1
-    if (m==0) exit                   ! Do not try to invert a 0x0 'matrix'
-    call inver( s, si, m, n+1, info )
-    if (info==0) exit                ! Not too elegant, but it will do.
-  end do
-  if (node==0) print *, " Rank of DIIS matrix: ", m
+    ! Find rank of the xi*xj matrix
+    do m = n,0,-1
+       if (m==0) exit                   ! Do not try to invert a 0x0 'matrix'
+       call inver( s, si, m, n+1, info )
+       if (info==0) exit                ! Not too elegant, but it will do.
+    end do
+    if (node==0) print *, " Rank of DIIS matrix: ", m
 
-  if (m<n) then
-     info = -1
-  else
-     ! Invert the full matrix
-     call inver( s, si, n+1, n+1, info)
-  endif
-  c(:) = 0.0_dp
+    if (m<n) then
+       info = -1
+    else
+       ! Invert the full matrix
+       call inver( s, si, n+1, n+1, info)
+    endif
+    c(:) = 0.0_dp
 
     ! If inver was successful, get coefficients for DIIS/Pulay mixing
     ! (Last column of the inverse matrix, corresponding to solving a
@@ -1447,404 +1705,210 @@ SUBROUTINE extrapolate_diis( na, n, cell, xa, cell0, x0, c )
     else
        ! Otherwise, use only last step
        if (Node == 0) then
-         write(6,"(a,i5)")  &
-         "Warning: unstable inversion in DIIS - use last item only"
+          write(*,"(a,i5)")  &
+               "Warning: unstable inversion in DIIS - use last item only"
        endif
        c(n) = 1.0_dp
     endif
 
     deallocate(s,si)
-end SUBROUTINE extrapolate_diis
+  end SUBROUTINE extrapolate_diis
 
-SUBROUTINE extrapolate_diis_svd( na, n, cell, xa, cell0, x0, c )
+  SUBROUTINE extrapolate_diis_svd( na, n, cell, xa, cell0, x0, c )
 
-! Used procedures and parameters
-  USE sys,       only: message, die
-  USE precision, only: dp            ! Double precision real kind
-  use parallel,  only: Node
-  use m_svd,     only: solve_with_svd
+    ! Used procedures and parameters
+    USE sys,       only: message, die
+    USE precision, only: dp            ! Double precision real kind
+    use parallel,  only: Node
+    use m_svd,     only: solve_with_svd
 
-! Passed arguments
-  implicit none
-  integer, intent(in) :: na          ! Number of atoms
-  integer, intent(in) :: n           ! Number of previous atomic positions
-  real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
-  real(dp),intent(inout) :: xa(3,na,n)  ! n previous atomic positions
-  real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
-  real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
-  real(dp),intent(out):: c(n)        ! Expansion coefficients
+    ! Passed arguments
+    implicit none
+    integer, intent(in) :: na          ! Number of atoms
+    integer, intent(in) :: n           ! Number of previous atomic positions
+    real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
+    real(dp),intent(inout) :: xa(3,na,n)  ! n previous atomic positions
+    real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
+    real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
+    real(dp),intent(out):: c(n)        ! Expansion coefficients
 
-! Internal variables and arrays
-  integer :: i, info, j, m, ix, ia, rank
-  real(dp), allocatable, dimension(:,:) :: s, si
-  real(dp), allocatable, dimension(:)   :: rhs, sigma, beta
+    ! Internal variables and arrays
+    integer :: i, info, j, m, ix, ia, rank
+    real(dp), allocatable, dimension(:,:) :: s, si
+    real(dp), allocatable, dimension(:)   :: rhs, sigma, beta
 
-  allocate (s(n+1,n+1), si(n+1,n+1), sigma(n+1), rhs(n+1))
-  allocate (beta(n+1))  ! full set of coefficients
+    allocate (s(n+1,n+1), si(n+1,n+1), sigma(n+1), rhs(n+1))
+    allocate (beta(n+1))  ! full set of coefficients
 
-! Trap special cases
-  if (na<1 .or. n<1) then
-    return
-  else if (n==1) then
-    c(1) = 1
-    return
-  end if
+    ! Trap special cases
+    if (na<1 .or. n<1) then
+       return
+    else if (n==1) then
+       c(1) = 1
+       return
+    end if
 
-! Find residuals with respect to x0 
-  do i = 1, n
-  do ia=1,na
-     do ix=1,3
-        xa(ix,ia,i) = xa(ix,ia,i) - x0(ix,ia)
-     enddo
-  enddo
-  enddo
- 
-! Find matrix s of dot products.
+    ! Find residuals with respect to x0 
+    do i = 1, n
+       do ia=1,na
+          do ix=1,3
+             xa(ix,ia,i) = xa(ix,ia,i) - x0(ix,ia)
+          enddo
+       enddo
+    enddo
 
-  do j = 1,n
-    do i = j,n
-      s(i,j) = sum( xa(:,:,i) * xa(:,:,j) )
-      s(j,i) = s(i,j)
+    ! Find matrix s of dot products.
+
+    do j = 1,n
+       do i = j,n
+          s(i,j) = sum( xa(:,:,i) * xa(:,:,j) )
+          s(j,i) = s(i,j)
+       end do
+       ! Now extend the matrix with ones in an extra column
+       ! and row ...
+       s(j,n+1)=1.0_dp   ! This value is really arbitrary
+       s(n+1,j)=1.0_dp   ! This represents the Sum_{Ci} = 1 constraint
     end do
-    ! Now extend the matrix with ones in an extra column
-    ! and row ...
-    s(j,n+1)=1.0_dp   ! This value is really arbitrary
-    s(n+1,j)=1.0_dp   ! This represents the Sum_{Ci} = 1 constraint
-  end do
-  s(n+1,n+1) = 0.0_dp
+    s(n+1,n+1) = 0.0_dp
 
-  if (Node == 0) then
-    ! call print_mat(s,n+1)
-  endif
+    if (Node == 0) then
+       ! call print_mat(s,n+1)
+    endif
 
-  ! Find rank of the xi*xj matrix
-  do m = n,0,-1
-    if (m==0) exit                   ! Do not try to invert a 0x0 'matrix'
-    call inver( s, si, m, n+1, info )
-    if (info==0) exit                ! Not too elegant, but it will do.
-  end do
-  if (node==0) print *, " Estimated Rank of xi*xj matrix: ", m
-
-  rhs(1:n) = 0.0_dp
-  rhs(n+1) = 1.0_dp
-  !
-  call solve_with_svd(s,rhs,beta,info,sigma=sigma,rank_out=rank)
-  !
-  if (node==0) then
-     print *, 'matrix rank: ', rank
-     print "(a,/,6g12.5)", 'Singular values: ', sigma(:)
-  endif
-  if (info == 0) then
-     c(1:n) = beta(1:n)
-  else
-     if (node==0) then
-        print *, 'The SVD algorithm failed to converge'
-        print *, 'Re-using last item only...'
-        print *, "info: ", info
-     endif
-     c(:) = 0.0_dp
-     c(n) = 1.0_dp
-  endif
-
-  deallocate(s,si,sigma,rhs,beta)
-end SUBROUTINE extrapolate_diis_svd
-
-SUBROUTINE extrapolate_diis_svd_new( na, n, cell, xa, cell0, x0, c )
-
-! Used procedures and parameters
-  USE sys,       only: message, die
-  USE precision, only: dp            ! Double precision real kind
-  use parallel,  only: Node
-  use m_svd,     only: solve_with_svd
-
-! Passed arguments
-  implicit none
-  integer, intent(in) :: na          ! Number of atoms
-  integer, intent(in) :: n           ! Number of previous atomic positions
-  real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
-  real(dp),intent(inout) :: xa(3,na,n)  ! n previous atomic positions
-  real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
-  real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
-  real(dp),intent(out):: c(n)        ! Expansion coefficients
-
-! Internal variables and arrays
-  integer :: i, info, j, m, ix, ia, rank
-  real(dp), allocatable, dimension(:,:) :: s
-  real(dp), allocatable, dimension(:)   :: rhs, sigma
-  real(dp), allocatable, dimension(:)   :: beta ! intermediate coeffs
-
-  allocate (s(n-1,n-1), rhs(n-1), beta(n-1), sigma(n-1))
-
-! Trap special cases
-  if (na<1 .or. n<1) then
-    return
-  else if (n==1) then
-    c(1) = 1
-    return
-  end if
-
-! Find residual of Nth term with respect to x0 
-  do ia=1,na
-     do ix=1,3
-        xa(ix,ia,n) = xa(ix,ia,n) - x0(ix,ia)
-     enddo
-  enddo
-
-! Find first differences
-! As in alternate method in KF
-  do j=1,n-1
-     do ia=1,na
-        do ix=1,3
-           xa(ix,ia,j) = xa(ix,ia,j+1) - xa(ix,ia,j)
-        enddo
-     enddo
-  enddo
- 
-! Find matrix s of dot products.
-
-  do j = 1,n-1
-    do i = j,n-1
-      s(i,j) = sum( xa(:,:,i) * xa(:,:,j) )
-      s(j,i) = s(i,j)
+    ! Find rank of the xi*xj matrix
+    do m = n,0,-1
+       if (m==0) exit                   ! Do not try to invert a 0x0 'matrix'
+       call inver( s, si, m, n+1, info )
+       if (info==0) exit                ! Not too elegant, but it will do.
     end do
-    ! And right-hand side
-    rhs(j) = -sum( xa(:,:,j) * xa(:,:,n) )
-  end do
+    if (node==0) print *, " Estimated Rank of xi*xj matrix: ", m
 
-  if (Node == 0) then
-    ! call print_mat(s,n+1)
-  endif
-
-  call solve_with_svd(s,rhs,beta,info,rank_out=rank,sigma=sigma)
-  if (node==0) then
-     print *, 'matrix rank: ', rank
-     print "(a,/,6g12.5)", 'Singular values: ', sigma(:)
-     print "(a,/,6g12.5)", 'Beta coeffs: ', beta(:)
-  endif
-  if (info /= 0) then
-     if (node==0) then
-        print *, 'The SVD algorithm failed to converge'
-        print *, 'Re-using last item only...'
-        print *, "info: ", info
-     endif
-     c(:) = 0.0_dp
-     c(n) = 1.0_dp
-  endif
-
-  ! Re-shuffle coefficients
-  c(n) = 1.0_dp
-  c(1) = -beta(1)
-  do j = 2, n-1
-     c(j) = beta(j-1)-beta(j)
-  enddo
-
-  deallocate(s,beta,rhs,sigma)
-end SUBROUTINE extrapolate_diis_svd_new
-
-    subroutine print_mat(a,n)
-      integer, intent(in)  :: n
-      real(dp), intent(in) :: a(n,n)
-      integer :: i, j
-
-      print *, "mat:"
-      do i = 1, n
-         print "(6g15.7)", (a(i,j),j=1,n)
-      enddo
-      print *, "------"
-    end subroutine print_mat
-
-    SUBROUTINE inverse(A,B,N,NDIM,INFO,debug_inverse)
-      use parallel, only: node
-
-      IMPLICIT NONE
-      INTEGER, intent(in) ::  N,NDIM
-      real(dp), intent(in)  ::  A(NDIM,NDIM)
-      real(dp), intent(out) ::  B(NDIM,NDIM)
-      integer, intent(out) :: info
-      logical, intent(in)  :: debug_inverse
-
-      real(dp)  ::  X
-
-!!$C Routine to obtain the inverse of a general, nonsymmetric
-!!$C square matrix, by calling the appropriate LAPACK routines
-!!$C The matrix A is of order N, but is defined with a 
-!!$C size NDIM >= N.
-!!$C If the LAPACK routines fail, try the good old Numerical Recipes
-!!$C algorithm
-!!$C
-!!$C P. Ordejon, June 2003
-!!$C
-!!$C **** INPUT ****
-!!$C A(NDIM,NDIM)   real*8      Matrix to be inverted
-!!$C N              integer     Size of the matrix
-!!$C NDIM           integer     Defined size of matrix
-!!$C **** OUTPUT ****
-!!$C B(NDIM,NDIM)   real*8      Inverse of A
-!!$C INFO           integer     If inversion was unsucessful, 
-!!$C                            INFO <> 0 is returned
-!!$C                            Is successfull, INFO = 0 returned
-!!$C ***************
-
-
-      real(dp) ::  C,ERROR,DELTA,TOL
-      real(dp), allocatable:: work(:), pm(:,:)
-      integer, dimension(:), allocatable  ::  IWORK, ipiv
-      INTEGER I,J,K
-      real(dp) :: ANORM, RCOND
-
-      logical :: debug
-      real(dp), external :: dlange
-
-      allocate (iwork(n), ipiv(n))
-      allocate (work(n), pm(n,n))
-
-      debug = debug_inverse .and. (node == 0)
-
-      TOL=1.0D-4
-      INFO = 0
-
-      DO I=1,N
-      DO J=1,N
-        B(I,J)=A(I,J)
-      ENDDO
-      ENDDO
-      ANORM = DLANGE( "1", N, N, B, NDIM, WORK )
-      CALL DGETRF(N,N,B,NDIM,IPIV,INFO)
-
-      IF (INFO .NE. 0) THEN
-       if (debug) print *,   &
-           'inver:  ERROR: DGETRF exited with error message', INFO
-        GOTO 100
-      ENDIF
-      CALL DGECON( "1", N, B, NDIM, ANORM, RCOND, WORK, IWORK, INFO )
-      IF (INFO .NE. 0) THEN
-       if (debug) print *,   &
-           'inver:  ERROR: DGECON exited with error message', INFO
-        GOTO 100
-      ENDIF
-      if (debug) print "(a,g20.8)", "Reciprocal condition number: ", rcond
-
-      CALL DGETRI(N,B,NDIM,IPIV,WORK,N,INFO)
-
-      IF (INFO .NE. 0) THEN
-       if (debug) print *,   &
-          'inver:  ERROR: DGETRI exited with error message', INFO
-        GOTO 100
-      ENDIF
-
-! CHECK THAT THE INVERSE WAS CORRECTLY CALCULATED
-
-      pm = matmul(a(1:n,1:n),b(1:n,1:n))
-
-      ERROR=0.0D0
-      DO I=1,N
-      DO J=1,N
-        C=0.0D0
-        DO K=1,N
-          C=C+A(I,K)*B(K,J)
-        ENDDO
-        DELTA=0.0D0
-        IF (I.EQ.J)  DELTA=1.0D0
-        ERROR=ERROR+DABS(C-DELTA)
-        C=0.0D0
-        DO K=1,N
-          C=C+B(I,K)*A(K,J)
-        ENDDO
-        DELTA=0.0D0
-        IF (I.EQ.J)  DELTA=1.0D0
-        ERROR=ERROR+DABS(C-DELTA)
-      ENDDO
-      ENDDO
-
-      IF (ERROR/N .GT. TOL) THEN
-       if (debug) then
-          print *,   &
-          'inver:  ERROR in lapack inverse. Error: ', error
-          call print_mat(a,n)
-          call print_mat(b,n)
-          call print_mat(pm,n)
+    rhs(1:n) = 0.0_dp
+    rhs(n+1) = 1.0_dp
+    !
+    call solve_with_svd(s,rhs,beta,info,sigma=sigma,rank_out=rank)
+    !
+    if (node==0) then
+       print *, 'matrix rank: ', rank
+       print "(a,/,6g12.5)", 'Singular values: ', sigma(:)
+    endif
+    if (info == 0) then
+       c(1:n) = beta(1:n)
+    else
+       if (node==0) then
+          print *, 'The SVD algorithm failed to converge'
+          print *, 'Re-using last item only...'
+          print *, "info: ", info
        endif
-        GOTO 100
-      ENDIF
+       c(:) = 0.0_dp
+       c(n) = 1.0_dp
+    endif
 
-      INFO = 0
-      deallocate(work,iwork,ipiv,pm)
-      RETURN
+    deallocate(s,si,sigma,rhs,beta)
+  end SUBROUTINE extrapolate_diis_svd
 
-100   CONTINUE
+  SUBROUTINE extrapolate_diis_svd_new( na, n, cell, xa, cell0, x0, c )
 
-! Try simple, old algorithm:
+    ! Used procedures and parameters
+    USE sys,       only: message, die
+    USE precision, only: dp            ! Double precision real kind
+    use parallel,  only: Node
+    use m_svd,     only: solve_with_svd
 
-      DO I=1,N
-        DO J=1,N
-          B(I,J)=A(I,J)
-        ENDDO
-      ENDDO
-      DO I=1,N
-        IF (B(I,I) .EQ. 0.0D0) THEN
-           if (debug) print *,   &
-            'inver:  zero pivot in fallback algorithm'
-          INFO = -777
-          deallocate(work,iwork,ipiv,pm)
-          RETURN
-        ENDIF
-        X=B(I,I)
-        B(I,I)=1.0d0
-        DO J=1,N
-          B(J,I)=B(J,I)/X
-        ENDDO
-        DO K=1,N
-          IF ((K-I).NE.0) THEN 
-            X=B(I,K)
-            B(I,K)=0.0d0
-            DO J=1,N
-              B(J,K)=B(J,K)-B(J,I)*X
-            ENDDO
-          ENDIF
-        ENDDO
-      ENDDO
+    ! Passed arguments
+    implicit none
+    integer, intent(in) :: na          ! Number of atoms
+    integer, intent(in) :: n           ! Number of previous atomic positions
+    real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
+    real(dp),intent(inout) :: xa(3,na,n)  ! n previous atomic positions
+    real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
+    real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
+    real(dp),intent(out):: c(n)        ! Expansion coefficients
 
-! CHECK THAT THE INVERSE WAS CORRECTLY CALCULATED
+    ! Internal variables and arrays
+    integer :: i, info, j, ix, ia, rank
+    real(dp), allocatable, dimension(:,:) :: s
+    real(dp), allocatable, dimension(:)   :: rhs, sigma
+    real(dp), allocatable, dimension(:)   :: beta ! intermediate coeffs
 
-      pm = matmul(a(1:n,1:n),b(1:n,1:n))
-      ERROR=0.0D0
-      DO I=1,N
-      DO J=1,N
-        C=0.0D0
-        DO K=1,N
-          C=C+A(I,K)*B(K,J)
-        ENDDO
-        DELTA=0.0D0
-        IF (I.EQ.J)  DELTA=1.0D0
-        ERROR=ERROR+DABS(C-DELTA)
-        C=0.0D0
-        DO K=1,N
-          C=C+B(I,K)*A(K,J)
-        ENDDO
-        DELTA=0.0D0
-        IF (I.EQ.J)  DELTA=1.0D0
-        ERROR=ERROR+DABS(C-DELTA)
-      ENDDO
-      ENDDO
+    allocate (s(n-1,n-1), rhs(n-1), beta(n-1), sigma(n-1))
 
-      IF (ERROR/N .GT. TOL) THEN
-       if (debug) then
-          print *,   &
-            'inver:  INVER unsuccessful, ERROR = ', ERROR
-          call print_mat(a,n)
-          call print_mat(b,n)
-          call print_mat(pm,n)
+    ! Trap special cases
+    if (na<1 .or. n<1) then
+       return
+    else if (n==1) then
+       c(1) = 1
+       return
+    end if
+
+    ! Find residual of Nth term with respect to x0 
+    do ia=1,na
+       do ix=1,3
+          xa(ix,ia,n) = xa(ix,ia,n) - x0(ix,ia)
+       enddo
+    enddo
+
+    ! Find first differences
+    ! As in alternate method in KF
+    do j=1,n-1
+       do ia=1,na
+          do ix=1,3
+             xa(ix,ia,j) = xa(ix,ia,j+1) - xa(ix,ia,j)
+          enddo
+       enddo
+    enddo
+
+    ! Find matrix s of dot products.
+
+    do j = 1,n-1
+       do i = j,n-1
+          s(i,j) = sum( xa(:,:,i) * xa(:,:,j) )
+          s(j,i) = s(i,j)
+       end do
+       ! And right-hand side
+       rhs(j) = -sum( xa(:,:,j) * xa(:,:,n) )
+    end do
+
+    if (Node == 0) then
+       ! call print_mat(s,n+1)
+    endif
+
+    call solve_with_svd(s,rhs,beta,info,rank_out=rank,sigma=sigma)
+    if (node==0) then
+       print *, 'matrix rank: ', rank
+       print "(a,/,6g12.5)", 'Singular values: ', sigma(:)
+       print "(a,/,6g12.5)", 'Beta coeffs: ', beta(:)
+    endif
+    if (info /= 0) then
+       if (node==0) then
+          print *, 'The SVD algorithm failed to converge'
+          print *, 'Re-using last item only...'
+          print *, "info: ", info
        endif
-        INFO = -888
-        deallocate(work,iwork,ipiv,pm)
-        RETURN
-      ENDIF
+       c(:) = 0.0_dp
+       c(n) = 1.0_dp
+    endif
 
-      INFO = 0
-      deallocate(work,iwork,ipiv,pm)
-      RETURN
+    ! Re-shuffle coefficients
+    c(n) = 1.0_dp
+    c(1) = -beta(1)
+    do j = 2, n-1
+       c(j) = beta(j-1)-beta(j)
+    enddo
 
-    end SUBROUTINE inverse
+    deallocate(s,beta,rhs,sigma)
+  end SUBROUTINE extrapolate_diis_svd_new
 
+  subroutine print_mat(a,n)
+    integer, intent(in)  :: n
+    real(dp), intent(in) :: a(n,n)
+    integer :: i, j
 
-      end module m_new_dm
+    print *, "mat:"
+    do i = 1, n
+       print "(6g15.7)", (a(i,j),j=1,n)
+    enddo
+    print *, "------"
+  end subroutine print_mat
+
+end module m_new_dm

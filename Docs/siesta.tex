@@ -3590,8 +3590,8 @@ are always stored in the file \sysfile{KP}.
 
   Choose the spin-components in the simulation.
 
-  \note this flag has precedence from \fdf*{SpinOrbit}, \fdf*{NonCollinearSpin} and
-  \fdf*{SpinPolarized} while they may still be used.
+  \note this flag has precedence over \fdf*{SpinOrbit}, \fdf*{NonCollinearSpin} and
+  \fdf*{SpinPolarized} while these older flags may still be used.
   \begin{fdfoptions}
 
     \option[non-polarized]%
@@ -3617,10 +3617,15 @@ are always stored in the file \sysfile{KP}.
 
   \end{fdfoptions}
 
+  \siesta\ can read a \sysfile*{DM} with different spin structure by
+  adapting the information to the currently selected spin
+  multiplicity, averaging or splitting the spin components equally, as
+  needed. This may be used to greatly increase convergence.
+
   Certain options may not be used together with specific
   parallelization routines.  For instance only a spin-polarized
   calculation may use the \fdf{Diag!ParallelOverK} option.
-  
+
 \end{fdfentry}
 
 \begin{fdflogicalF}{Spin!Fix}
@@ -3829,9 +3834,9 @@ The current version introduces several changes:
     densities which are superpositions of atomic charge densities.
 
     When this option is choosen, the values of \fdf{DM!UseSaveDM},
-    \fdf{MaxSCFIterations}, \fdf{SCF!MustConverge} and \fdf{SCF.Mix!First} are automatically set
-    up to False, 1, False and False respectively, no matter whatever other
-    specification are in the INPUT file.
+    \fdf{SCF!MustConverge} and \fdf{SCF.Mix!First} are automatically
+    set \fdffalse and \fdf{MaxSCFIterations} is set to $1$, no matter
+    whatever other specification are in the INPUT file.
   \end{itemize}
 
 \end{fdflogicalF}
@@ -4872,6 +4877,11 @@ The Density matrix can be:
   
   \siesta\ will continue even if \sysfile*{DM} is not found.
 
+  \note that if the spin settings has changed \siesta\ allows reading
+  a \sysfile*{DM} from a similar calculation with different \fdf{Spin}
+  option. This may be advantageous when going from non-polarized
+  calculations to polarized, and beyond, see \fdf{Spin} for details. 
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{DM!FormattedFiles}
@@ -4904,7 +4914,7 @@ The Density matrix can be:
   
 \end{fdflogicalF}
 
-\begin{fdflogicalF}{DM!InitSpinAF}
+\begin{fdflogicalF}{DM!InitSpin!AF}
   \index{spin!initialization}%
   \index{ferromagnetic initial DM}%
   \index{antiferromagnetic initial DM}
