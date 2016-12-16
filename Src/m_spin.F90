@@ -37,6 +37,9 @@ module t_spin
      !> Spin-orbit coupling
      logical :: SO = .false.
 
+     !> If .true. the spin-orbit is using the off-site implementation (else the on-site)
+     logical :: SO_off = .false.
+
      ! Perhaps one could argue that one may
      ! associate a symmetry to the spin which
      ! then denotes whether the spin-configuration
@@ -134,6 +137,7 @@ contains
     spin%Col = .false.
     spin%NCol = .false.
     spin%SO = .false.
+    spin%SO_off = .false.
     
     ! Read in old flags (discouraged)
     spin%Col  = fdf_get('SpinPolarized',.false.)
@@ -180,13 +184,32 @@ contains
        
     else if ( leqi(opt, 'spin-orbit') .or. leqi(opt, 'S-O') .or. &
          leqi(opt, 'SOC') .or. leqi(opt, 'SO') ) then
+       ! Spin-orbit is the same as using the off-site implementation
        
        spin%SO = .true.
+       spin%SO_off = .true.
+
+    else if ( leqi(opt, 'spin-orbit+off') .or. leqi(opt, 'S-O+off') .or. &
+         leqi(opt, 'SOC+off') .or. leqi(opt, 'SO+off') ) then
        
+       spin%SO = .true.
+       spin%SO_off = .true.
+
+    else if ( leqi(opt, 'spin-orbit+on') .or. leqi(opt, 'S-O+on') .or. &
+         leqi(opt, 'SOC+on') .or. leqi(opt, 'SO+on') ) then
+       
+       spin%SO = .true.
+       spin%SO_off = .false.
+
     else
        write(*,*) 'Unknown spin flag: ', trim(opt)
        call die('Spin: unknown flag, please assert the correct input.')
     end if
+
+    ! TODO once off-site is fully implemented
+    ! this should be removed to enable the off-site code
+    ! fully!
+    spin%SO_off = .false.
 
     ! Note that, in what follows,
     !   spinor_dim = min(h_spin_dim,2)
@@ -318,7 +341,11 @@ contains
     if ( .not. IONode ) return
 
     if ( spin%SO ) then
-       opt = 'spin-orbit'
+       if ( spin%SO_off ) then
+          opt = 'spin-orbit+off'
+       else
+          opt = 'spin-orbit+on'
+       end if
     else if ( spin%NCol ) then
        opt = 'non-collinear'
     else if ( spin%Col ) then
