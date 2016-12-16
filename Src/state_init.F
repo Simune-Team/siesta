@@ -34,6 +34,7 @@
       use sparse_matrices, only: DM_history
 
 
+      use create_Sparsity_SC, only: crtSparsity_SC
       use m_sparsity_handling, only: SpOrb_to_SpAtom
       use m_sparsity_handling, only: Sp_to_Spglobal
       use m_pivot_methods, only: sp2graphviz
@@ -373,15 +374,16 @@
 
       ! In case the user requests to create the connectivity graph
       if ( write_GRAPHVIZ > 0 ) then
-         ! first create global sparsity pattern...
-         call Sp_to_Spglobal(block_dist, sparse_pattern,
-     &        g_Sp)
+         ! first create the unit-cell sparsity pattern
+         call crtSparsity_SC(sparse_pattern, g_Sp, UC=.true.)
+         ! next move to global sparsity pattern
+         call Sp_to_Spglobal(block_dist, g_Sp, g_Sp)
          if ( IONode ) then
             if ( write_GRAPHVIZ /= 2 )
      &           call sp2graphviz(trim(slabel)//'.ORB.gv', g_Sp)
             ! Convert to atomic 
             if ( write_GRAPHVIZ /= 1 ) then
-               call SpOrb_to_SpAtom(single_dist,g_Sp, na_u,lasto,g_Sp)
+               call SpOrb_to_SpAtom(single_dist,g_Sp,na_u,lasto,g_Sp)
                call sp2graphviz(trim(slabel)//'.ATOM.gv', g_Sp)
             end if
          end if
