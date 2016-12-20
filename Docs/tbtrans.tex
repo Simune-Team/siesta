@@ -262,14 +262,14 @@ and processors are not oversubscribe and are not overlapping.
 For instance if using OpenMPI $\ge1.8.4$ one may run \tbtrans\
 using this command:
 \begin{shellexample}
- mpirun -np $((NP/$OMP_NUM_THREADS)) \
+ mpirun -np $((PBS_NP/OMP_NUM_THREADS)) \
    -x OMP_NUM_THREADS \
    -x OMP_PROC_BIND=true \
-   --map-by ppr:$((NP/NUM_SOCKETS)):socket:pe=$OMP_NUM_THREADS
+   --map-by ppr:1:socket:pe=$OMP_NUM_THREADS
 \end{shellexample}
-where \shell{NP} is the total number of processors and threads,
+where \shell{PBS\_NP} is the total number of processors,
 \shell{OMP\_NUM\_THREADS} is the number of threads per processor. The
-above command assumes using $N$ processors on $N$ sockets with each
+above command assumes using 1 MPI processor per socket with each
 socket having \shell{OMP\_NUM\_THREADS} cores.
 
 \subsubsection{BLAS GEMM3M kernel}
