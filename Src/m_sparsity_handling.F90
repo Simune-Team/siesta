@@ -83,7 +83,7 @@ contains
           do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
           
              ! Get connecting atom
-             ja = iaorb(l_col(ind),lasto)
+             ja = orb_to_atom(l_col(ind), na_u, lasto, no_u)
              if ( ic == 0 ) then
                 ic = 1 
                 a_c(ic) = ja
@@ -133,7 +133,7 @@ contains
           do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
              ! Get connecting atom
-             ja = iaorb(l_col(ind),lasto)
+             ja = orb_to_atom(l_col(ind), na_u, lasto, no_u)
              if ( ic == 0 ) then
                 ic = 1 
                 a_c(ic) = ja
@@ -162,6 +162,18 @@ contains
 
     ! Clean up
     deallocate(num,listptr,list,a_c)
+
+  contains
+
+    function orb_to_atom(orb, na_u, lasto, no_u) result(atom)
+      use geom_helper, only : iaorb
+      integer, intent(in) :: orb, na_u, lasto(0:na_u), no_u
+      integer :: atom
+
+      atom = (orb-1)/no_u
+      atom = iaorb(orb, lasto) + atom * na_u
+      
+    end function orb_to_atom
 
   end subroutine SpOrb_to_SpAtom
 

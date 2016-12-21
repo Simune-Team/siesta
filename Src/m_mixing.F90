@@ -10,8 +10,6 @@
 !  - Stable: G.Kresse and J.Furthmuller, Comp. Mat. Sci. 6, 15, 1996
 !  - gr (guarenteed-reduction) : http://arxiv.org/pdf/cond-mat/0005521.pdf
 
-! The Broyden scheme is implemented
-
 ! All implemented methods employ a restart with variable
 ! history saving.
 
@@ -77,7 +75,7 @@ module m_mixing
 
      ! When mod(cur_itt,restart_itt) == 0 the history will
      ! be _reset_
-     integer :: restart = huge(1)
+     integer :: restart = 0
      integer :: restart_save = 0
 
      ! This is an action token specifying the current
@@ -112,6 +110,7 @@ module m_mixing
 
   end type tMixer
 
+  
   ! Indices for special constanst
   integer, parameter :: I_PREVIOUS_RES = 0
   integer, parameter :: I_P_RESTART = -1
@@ -139,7 +138,7 @@ module m_mixing
   public :: mixers_history_init
   public :: mixers_reset
 
-  ! 2. Public functions for retrieving actual information
+  ! 2. Public functions for retrieving information
   !    from external routines
   public :: mix_method, mix_method_variant
 
@@ -163,7 +162,6 @@ contains
     use parallel, only: IONode, Node
     use fdf
     
-
     ! FDF-prefix for searching keywords
     character(len=*), intent(in) :: prefix
     ! The array of mixers (has to be nullified upon entry)
@@ -202,9 +200,9 @@ contains
     if ( .not. fdf_block(trim(lp)//'s', bfdf) ) return
 
     ! update mixing weight and kick mixing weight
-    w      = fdf_get(trim(lp)//'.Weight',w)
+    w      = fdf_get(trim(lp)//'.Weight',0.1_dp)
     ! Get history length
-    n_hist = fdf_get(trim(lp)//'.History',n_hist)
+    n_hist = fdf_get(trim(lp)//'.History',6)
     ! Restart after this number of iterations
     n_restart = fdf_get(trim(lp)//'.Restart',0)
     n_save    = fdf_get(trim(lp)//'.Restart.Save',1)
@@ -281,8 +279,8 @@ contains
       ! This enables NOT writing this in the block
       method = 'pulay'
       variant = ' '
-         
-      ! read options
+      
+      ! read method
       do while ( fdf_bline(bfdf,pline) )
          if ( fdf_bnnames(pline) == 0 ) cycle
          
@@ -295,8 +293,31 @@ contains
          else if ( leqi(opt,'variant') ) then
             
             variant = fdf_bnames(pline,2)
+            
+         end if
+         
+      end do
+      
+      ! Retrieve the method and the variant
+      m%m = mix_method(method)
+      m%v = mix_method_variant(m%m, variant)
 
-         else if ( leqi(opt,'iterations') &
+      ! Define separate defaults which are
+      ! not part of the default input options
+      select case ( m%m )
+      case ( MIX_LINEAR )
+         m%n_hist = 0
+      end select
+
+      call fdf_brewind(bfdf)
+
+      ! read options
+      do while ( fdf_bline(bfdf,pline) )
+         if ( fdf_bnnames(pline) == 0 ) cycle
+         
+         opt = fdf_bnames(pline,1)
+         
+         if ( leqi(opt,'iterations') &
               .or. leqi(opt,'itt') ) then
 
             m%n_itt = fdf_bintegers(pline,1)
@@ -322,14 +343,10 @@ contains
          
       end do
 
-      
-      ! Retrieve the method and the variant
-      m%m = mix_method(method)
-      m%v = mix_method_variant(m%m, variant)
-
+      ! Initialize the mixer by setting the correct
+      ! standard options and allocate space in the mixers...
       call mixer_init( m )
 
-      
       ! Read the options for this mixer
       call fdf_brewind(bfdf)
       
@@ -455,16 +472,38 @@ contains
   subroutine mixer_init( mix )
     type(tMixer), intent(inout) :: mix
     integer :: n
-    
+
+    ! Correct amount of history in the mixing.
+    if ( 0 < mix%restart .and. &
+         mix%restart < mix%n_hist ) then
+       ! This is if we restart this scheme,
+       ! then it does not make sense to have a history
+       ! greater than the restart count
+       mix%n_hist = mix%restart
+    end if
+    if ( 0 < mix%n_itt .and. &
+         mix%n_itt < mix%n_hist ) then
+       ! If this only runs for n_itt itterations,
+       ! it makes no sense to have a history greater
+       ! than this.
+       mix%n_hist = mix%n_itt
+    end if
+
     select case ( mix%m )
     case ( MIX_LINEAR )
        
        allocate(mix%rv(I_SVD_COND:0))
+       ! Kill any history settings that do not apply to the
+       ! linear mixer.
+       mix%restart = 0
+       mix%restart_save = 0
               
     case ( MIX_PULAY )
        
        allocate(mix%rv(I_SVD_COND:1))
        mix%rv(1) = mix%w
+       ! We allocate the double residual (n_hist-1)
+       mix%n_hist = max(2, mix%n_hist)
        if ( mix%v == 1 .or. mix%v == 3 ) then
           
           ! The GR method requires an even number
@@ -478,6 +517,7 @@ contains
     case ( MIX_BROYDEN )
        
        ! allocate temporary array
+       mix%n_hist = max(2, mix%n_hist)
        n = 1 + mix%n_hist
        allocate(mix%rv(I_SVD_COND:n))
        mix%rv(1:n) = mix%w
@@ -487,13 +527,7 @@ contains
     if ( mix%restart < 0 ) then
        call die('mixing: restart count must be positive')
     end if
-
-    ! Correct amount of history in the mixing.
-    if ( mix%restart < huge(1) .and. &
-         mix%n_hist <= mix%restart ) then
-       mix%n_hist = mix%restart + 1
-    end if
-
+    
     mix%restart_save = min(mix%n_hist - 1, mix%restart_save)
     mix%restart_save = max(0, mix%restart_save)
 
@@ -677,6 +711,11 @@ contains
 
     fmt = 'mix.'//trim(prefix)//':'
 
+    if ( debug_mix ) then
+       write(*,'(2a,t50,''= '',l)') trim(fmt), &
+            ' Debug messages',debug_mix
+    end if
+
     ! Print out options for all mixers
     do i = 1 , size(mixers)
 
@@ -694,7 +733,7 @@ contains
                associated(m%next) &
                .or. associated(m%next_conv)) ) then
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
-                  '    Subsequent history steps',m%n_hist
+                  '    Carried history steps',m%n_hist
           end if
 
        case ( MIX_PULAY )
@@ -754,7 +793,7 @@ contains
           !     '    Variant','original'
 
           write(*,'(2a,t50,''= '',i0)') trim(fmt), &
-               '    History steps',m%n_hist - 1
+               '    History steps',m%n_hist
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Jacobian weight',m%w
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
@@ -830,7 +869,7 @@ contains
     write(*,'(/3a)')'%block ',trim(prefix), '.Mixers'
     do i = 1 , size(mixers)
        m => mixers(i)
-       write(*,'(t3,a)') m%name
+       write(*,'(t3,a)') trim(m%name)
     end do
     write(*,'(3a)')'%endblock ',trim(prefix), '.Mixers'
 
@@ -891,7 +930,7 @@ contains
        end if
 
        bool = .false.
-       if ( m%restart < huge(1) ) then
+       if ( m%restart > 0 ) then
           write(*,'(t3,a,i0)') 'restart ', m%restart
           bool = .true.
        end if
@@ -909,16 +948,18 @@ contains
 
 
        ! remark
-       write(*,'(/,t3,a)') '# Continuation options'
 
        bool = .false.
        if ( m%n_itt > 0 ) then
+          write(*,'(/,t3,a)') '# Continuation options'
           write(*,'(t3,a,i0)')'iterations ', m%n_itt
           bool = .true.
        end if
        select case ( m%m )
        case ( MIX_PULAY , MIX_BROYDEN )
           if ( m%rv(I_P_NEXT) > 0._dp ) then
+             if ( .not. bool ) &
+                  write(*,'(/,t3,a)') '# Continuation options'
              write(*,'(t3,a,f6.4)')'next.p ', m%rv(I_P_NEXT)
              bool = .true.
           end if
@@ -931,6 +972,8 @@ contains
        end if
        
        if ( associated(m%next_conv) ) then
+          if ( .not. bool ) &
+               write(*,'(/,t3,a)') '# Continuation options'
           write(*,'(t2,2(tr1,a))') 'next.conv', trim(m%next_conv%name)
        end if
 
@@ -956,6 +999,7 @@ contains
     if ( leqi(str,'linear') ) then
        m = MIX_LINEAR
     else if ( leqi(str,'pulay') .or. &
+         leqi(str,'diis') .or. &
          leqi(str, 'anderson') ) then
        m = MIX_PULAY
     else if ( leqi(str,'broyden') ) then
@@ -1050,7 +1094,6 @@ contains
     ! In/out of the function
     real(dp), intent(in) :: xin(n), F(n)
 
-    real(dp), allocatable :: tmp(:)
     real(dp), pointer :: res(:), rres(:)
 
     integer :: i, ns
@@ -1175,7 +1218,7 @@ contains
          ns = n_items(mix%stack(1))
          
          ! Add the residuals of the residuals if applicable
-         if ( current_itt(mix) >= 2 .and. ns > 1 ) then
+         if ( ns > 1 ) then
             
             ! Create F[i+1] - F[i]
             call push_diff(mix%stack(2), mix%stack(1))
@@ -1232,7 +1275,7 @@ contains
       ns = n_items(mix%stack(1))
 
       ! Add the residuals of the residuals if applicable
-      if ( current_itt(mix) >= 2 .and. ns > 1 ) then
+      if ( ns > 1 ) then
 
          ! Create F[i+1] - F[i]
          call push_diff(mix%stack(2), mix%stack(1))
@@ -1250,17 +1293,13 @@ contains
       else
 
          ! Store F[x_in] (used to create the input residual)
-         allocate(tmp(n))
-
+         call push_stack_data(mix%stack(3), n)
+         res => getstackval(mix, 3)
 !$OMP parallel do default(shared), private(i)
          do i = 1 , n
-            tmp(i) = xin(i) + F(i)
+            res(i) = xin(i) + F(i)
          end do
 !$OMP end parallel do 
-
-         call push_F(mix%stack(3), n, tmp)
-
-         deallocate(tmp)
 
       end if
 
@@ -1283,19 +1322,14 @@ contains
          ! Here it depends on the variant
          select case ( next%v ) 
          case ( 0 , 2 ) ! stable pulay mixing
-            
+
             ! Add the residual to the stack
             call push_F(next%stack(1), n, F)
-            
-            ns = n_items(next%stack(1))
-            if ( ns >= nhl ) then
-               call reset(next%stack(1), 1)
-               call reset(next%stack(2), 1)
-               ns = ns - 1
-            end if
 
+            ns = n_items(next%stack(1))
+            
             ! Add the residuals of the residuals if applicable
-            if ( ns >= 2 ) then
+            if ( ns > 1 ) then
 
                ! Create F[i+1] - F[i]
                call push_diff(next%stack(2), next%stack(1))
@@ -1313,25 +1347,28 @@ contains
 
             else
 
-               allocate(tmp(n))
+               call push_stack_data(next%stack(3), n)
+               t1 => getstackval(next, 3)
 !$OMP parallel do default(shared), private(i)
                do i = 1 , n
-                  tmp(i) = xin(i) + F(i)
+                  t1(i) = xin(i) + F(i)
                end do
 !$OMP end parallel do
                
-               ! Store F[x_in] (used to create the input residual)
-               call push_F(next%stack(3), n, tmp)
+            end if
 
-               deallocate(tmp)
-
+            ! Clean up the data...
+            if ( ns >= nhl ) then
+               call reset(next%stack(1), 1)
+               call reset(next%stack(2), 1)
+               ns = ns - 1
             end if
 
             nh = max_size(next%stack(1))
 
             if ( debug_mix ) &
                  write(*,'(a,2(a,i0))') trim(debug_msg), &
-                 ' next%n_hist = ',ns, ' / ',nh
+                 ' next%n_hist = ', ns, ' / ', nh
             
          end select
          
@@ -1341,12 +1378,6 @@ contains
          call push_F(next%stack(1), n, F)
 
          ns = n_items(next%stack(1))
-
-         if ( ns >= nhl ) then
-            call reset(next%stack(1), 1)
-            call reset(next%stack(2), 1)
-            ns = ns - 1
-         end if
 
          ! Add the residuals of the residuals if applicable
          if ( ns >= 2 ) then
@@ -1367,25 +1398,28 @@ contains
 
          else
 
-            allocate(tmp(n))
+            call push_stack_data(next%stack(3), n)
+            t1 => getstackval(next, 3)
 !$OMP parallel do default(shared), private(i)
             do i = 1 , n
-               tmp(i) = xin(i) + F(i)
+               t1(i) = xin(i) + F(i)
             end do
 !$OMP end parallel do
 
-            ! Store F[x_in] (used to create the input residual)
-            call push_F(next%stack(3), n, tmp)
-            
-            deallocate(tmp)
+         end if
 
+         ! Clean up the data...
+         if ( ns >= nhl ) then
+            call reset(next%stack(1), 1)
+            call reset(next%stack(2), 1)
+            ns = ns - 1
          end if
 
          nh = max_size(next%stack(1))
 
          if ( debug_mix ) &
               write(*,'(a,2(a,i0))') trim(debug_msg), &
-              ' next%n_hist = ',ns, ' / ',nh
+              ' next%n_hist = ', ns, ' / ', nh
          
       end select
 
@@ -1655,6 +1689,12 @@ contains
       case ( 1 ) ! RMS Broyden
          
          dnorm = norm(n, F, F)
+#ifdef MPI
+         call MPI_AllReduce(dnorm, dtmp, 1, &
+              MPI_Double_Precision, MPI_Max, &
+              mix%Comm, i)
+         dnorm = dtmp
+#endif
          w(:) = 1._dp / sqrt(dnorm)
          if ( debug_mix ) &
               write(*,'(2(a,e10.4))') &
@@ -2196,9 +2236,9 @@ contains
       end if
 
       ! Update weights (if necessary)
-      if ( ns >= max_size(mix%stack(2)) ) then
-         do i = 1 , nh - 1
-            mix%rv(1+i) = mix%rv(1+i+1)
+      if ( nh > 1 ) then
+         do i = 2 , nh
+            mix%rv(i) = mix%rv(i+1)
          end do
       end if
       
@@ -2350,20 +2390,18 @@ contains
     
     if ( associated(next) ) then
        init_itt = 0
-       mix => mix%next
-       select case ( mix%m )
+       ! Set-up the next mixer
+       select case ( next%m )
        case ( MIX_PULAY , MIX_BROYDEN )
-          init_itt = n_items(mix%stack(1))
+          init_itt = n_items(next%stack(1))
        end select
-       mix%start_itt = init_itt
-       mix%cur_itt = init_itt
-       if ( init_itt > 0 ) then
-          mix%cur_itt = mix%cur_itt + 1
-       end if
+       next%start_itt = init_itt
+       next%cur_itt = init_itt
        if ( IONode ) then
           write(*,'(3a)') trim(debug_msg),' switching mixer --> ', &
-               trim(mix%name)
+               trim(next%name)
        end if
+       mix => mix%next
     end if
 
   end subroutine mixing_step

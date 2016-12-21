@@ -45,7 +45,6 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
     use create_Sparsity_Union
-    use create_Sparsity_SC
     use m_sparsity_handling
 
     use geom_helper, only: iaorb
@@ -58,6 +57,7 @@ contains
 
     type(OrbitalDistribution), intent(in) :: dit
     ! The sparse pattern we wish to pivot
+    ! This sparsity pattern *MUST* be in a unit-cell format
     type(Sparsity), intent(inout) :: sp
     integer, intent(in) :: N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
