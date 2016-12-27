@@ -93,6 +93,14 @@
 % If you want bold, use \textbf{#1}
 % If you want italics, use \textit{#1}.
 
+% In addition to the above specifications one may add developer
+% notes by encapsulating sections in:
+%  \ifdeveloper
+%    content only shown when compiling the developer version
+%  \fi
+% This may be handy for doing documentation in-line together
+% with the regular documentation.
+
 % Include settings appropriate for siesta
 \input{tex/init.tex}
 
@@ -108,7 +116,11 @@
 \begin{center}
 
 \vspace{1cm}
-{\Huge \textsc{U s e r' s \, \, G u i d e}}
+\ifdeveloper
+ {\Huge \textsc{D e v e l o p e r' s \, \, G u i d e}}
+\else
+ {\Huge \textsc{U s e r' s \, \, G u i d e}}
+\fi
 
 \vspace{1cm}
 \hrulefill
@@ -874,6 +886,17 @@ libraries
 \end{description}
 
 
+% start of developer section
+\ifdeveloper
+\section{Data Structures in \texorpdfstring{\siesta}{siesta}}
+
+\siesta\ comprises more than 200,000 lines of code. To interact with,
+and develop \siesta\ an understanding of the intrinsic data structures
+that govern the majority of \siesta\ modules.
+
+% end of developer
+\fi
+
 
 \section{EXECUTION OF THE PROGRAM}
 
@@ -898,9 +921,9 @@ pseudopotential generation input files. Since at some point you will
 have to generate your own pseudopotentials and run your own jobs, we
 describe here the whole process by means of the simple example of the
 water-molecule. It is advisable to create independent directories for
-each job, so that everything is clean and neat, and out of the \siesta\ directory, so that one can easily update version by replacing
-the whole \siesta\ tree. Go to your favorite working directory
-and:
+each job, so that everything is clean and neat, and out of the
+\siesta\ directory, so that one can easily update version by replacing
+the whole \siesta\ tree. Go to your favorite working directory and:
 
 \begin{fdfexample}
   $ mkdir h2o
