@@ -597,6 +597,8 @@ contains
     use m_ts_global_vars,only: TSmode
 #endif /* TRANSIESTA */
 
+    use m_restruct_SpData2D, only: restructdSpData2D
+    
     ! ********* INPUT ***************************************************
     ! type(tSpin) spin              : spin configuration for this system
     ! integer no_u                  : number of orbitals in unit-cell
@@ -1297,6 +1299,7 @@ contains
     use class_Pair_Geometry_dSpData2D
     use class_Fstack_Pair_Geometry_dSpData2D
 
+    use m_restruct_SpData2D, only: restructdSpData2D
     use fdf, only: fdf_get
 
     type(Fstack_Pair_Geometry_dSpData2D), intent(in) :: DM_history
@@ -1369,9 +1372,9 @@ contains
     ! Scratch array to accumulate the elements
     call newdData2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
     a => val(a_out)
-    !$OMP parallel workshare default(shared)
+!$OMP parallel workshare default(shared)
     a(:,:) = 0.0_dp
-    !$OMP end parallel workshare
+!$OMP end parallel workshare
 
     do i = 1, n
        pair => get_pointer(DM_history,i)
@@ -1381,9 +1384,9 @@ contains
        !           endif
        call restructdSpData2D(dm,sparse_pattern,DMtmp)
        ai => val(DMtmp)
-       !$OMP parallel workshare default(shared)
+!$OMP parallel workshare default(shared)
        a = a + c(i) * ai
-       !$OMP end parallel workshare
+!$OMP end parallel workshare
     enddo
 
     call newdSpData2D(sparse_pattern,a_out,orb_dist, &

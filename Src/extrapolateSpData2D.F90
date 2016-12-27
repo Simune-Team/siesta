@@ -5,6 +5,8 @@
    use class_Sparsity
    use class_OrbitalDistribution
 
+   use m_restruct_SpData2D, only: restructdSpData2D
+
    type(dSpData2D), intent(in)    :: SpM1, SpM2
    type(Sparsity), intent(in)    :: sp_out
    ! Note!!  inout is essential to avoid memory leaks...
