@@ -26,7 +26,7 @@ def list_read(files):
         for line in tmp:
             line = line.strip()
             if len(line) == 0: continue
-            line = line.lower().replace('\n','')
+            line = line.replace('\n','')
             if not line.startswith('#'):
                 lines.append(line.replace('\r',''))
     return lines
@@ -154,6 +154,7 @@ def find_files(d, infiles):
         for f in glob.glob(osp.join(d,infile)):
             if osp.isfile(f):
                 files.append(f)
+
     return files
 
 
@@ -165,7 +166,7 @@ def write_file(f, out, comments=False):
             for line in fh:
                 if comments:
                     oh.write(line)
-                elif line[0] == ' ':
+                elif line[0] in ' #':
                     oh.write(line)
 
 def write_files(files, out, comments=False):
