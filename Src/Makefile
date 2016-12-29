@@ -673,7 +673,7 @@ elpa2.o: elpa1.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolateSpData2D.o: class_Data2D.o class_OrbitalDistribution.o
-extrapolateSpData2D.o: class_SpData2D.o class_Sparsity.o
+extrapolateSpData2D.o: class_SpData2D.o class_Sparsity.o restructSpData2D.o
 extrapolon.o: parallel.o precision.o sys.o
 fdf_extra.o: m_region.o
 fermid.o: errorf.o parallel.o precision.o sys.o
@@ -830,8 +830,8 @@ m_new_dm.o: class_SpData2D.o class_Sparsity.o files.o m_energies.o
 m_new_dm.o: m_handle_sparse.o m_iodm.o m_mixing.o m_mixing_scf.o m_mpi_utils.o
 m_new_dm.o: m_spin.o m_spin.o m_steps.o m_svd.o m_ts_electype.o
 m_new_dm.o: m_ts_global_vars.o m_ts_iodm.o m_ts_method.o m_ts_options.o
-m_new_dm.o: parallel.o parsing.o precision.o siesta_geom.o siesta_options.o
-m_new_dm.o: sparse_matrices.o sys.o units.o
+m_new_dm.o: parallel.o parsing.o precision.o restructSpData2D.o siesta_geom.o
+m_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
 m_noccbands.o: alloc.o atmfuncs.o m_spin.o parallel.o precision.o siesta_geom.o
 m_noccbands.o: sys.o
 m_options.o: precision.o
@@ -1414,6 +1414,7 @@ m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
 m_rdiag_elpa.o: rdiag_elpa.o
 m_rdiag_mrrr.o: rdiag_mrrr.o
+m_restruct_spdata2d.o: restructSpData2D.o
 m_rhofft.o: rhofft.o
 m_rhoofd.o: rhoofd.o
 m_rusage.o: rusage.o
