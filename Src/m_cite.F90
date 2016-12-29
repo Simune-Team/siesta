@@ -227,8 +227,9 @@ contains
        cit%comment = "TranSIESTA N-electrode"
        cit%doi = "10.1016/j.cpc.2016.09.022"
        cit%journal = "Computer Physics Communications"
-       cit%year = 2016
-       cit%cite_key = "Papior2016B"
+       cit%year = 2017
+       cit%volume = "212"
+       cit%cite_key = "Papior2017"
        ID = 6
 
     case ( "10.1088/0953-8984/26/30/305503" )
