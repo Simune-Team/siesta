@@ -46,7 +46,6 @@
 !THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 !(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 !OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 ! SOURCE-FILE = /home/nicpa/LA/lapack/INSTALL/dlamch.f
       DOUBLE PRECISION FUNCTION DLAMCH( CMACH )
       CHARACTER          CMACH
@@ -4809,7 +4808,7 @@
          I2 = K2
          INC = 1
       ELSE IF( INCX.LT.0 ) THEN
-         IX0 = 1 + ( 1-K2 )*INCX
+         IX0 = K1 + ( K1-K2 )*INCX
          I1 = K2
          I2 = K1
          INC = -1
@@ -5692,87 +5691,6 @@
       CALL DGEBD2( M-I+1, N-I+1, A( I, I ), LDA, D( I ), E( I ),
      $             TAUQ( I ), TAUP( I ), WORK, IINFO )
       WORK( 1 ) = WS
-      RETURN
-      END
-! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dgecon.f
-      SUBROUTINE DGECON( NORM, N, A, LDA, ANORM, RCOND, WORK, IWORK,
-     $                   INFO )
-      CHARACTER          NORM
-      INTEGER            INFO, LDA, N
-      DOUBLE PRECISION   ANORM, RCOND
-      INTEGER            IWORK( * )
-      DOUBLE PRECISION   A( LDA, * ), WORK( * )
-      DOUBLE PRECISION   ONE, ZERO
-      PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
-      LOGICAL            ONENRM
-      CHARACTER          NORMIN
-      INTEGER            IX, KASE, KASE1
-      DOUBLE PRECISION   AINVNM, SCALE, SL, SMLNUM, SU
-      INTEGER            ISAVE( 3 )
-      LOGICAL            LSAME
-      INTEGER            IDAMAX
-      DOUBLE PRECISION   DLAMCH
-      EXTERNAL           LSAME, IDAMAX, DLAMCH
-      EXTERNAL           DLACN2, DLATRS, DRSCL, XERBLA
-      INTRINSIC          ABS, MAX
-      INFO = 0
-      ONENRM = NORM.EQ.'1' .OR. LSAME( NORM, 'O' )
-      IF( .NOT.ONENRM .AND. .NOT.LSAME( NORM, 'I' ) ) THEN
-         INFO = -1
-      ELSE IF( N.LT.0 ) THEN
-         INFO = -2
-      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
-         INFO = -4
-      ELSE IF( ANORM.LT.ZERO ) THEN
-         INFO = -5
-      END IF
-      IF( INFO.NE.0 ) THEN
-         CALL XERBLA( 'DGECON', -INFO )
-         RETURN
-      END IF
-      RCOND = ZERO
-      IF( N.EQ.0 ) THEN
-         RCOND = ONE
-         RETURN
-      ELSE IF( ANORM.EQ.ZERO ) THEN
-         RETURN
-      END IF
-      SMLNUM = DLAMCH( 'Safe minimum' )
-      AINVNM = ZERO
-      NORMIN = 'N'
-      IF( ONENRM ) THEN
-         KASE1 = 1
-      ELSE
-         KASE1 = 2
-      END IF
-      KASE = 0
-   10 CONTINUE
-      CALL DLACN2( N, WORK( N+1 ), WORK, IWORK, AINVNM, KASE, ISAVE )
-      IF( KASE.NE.0 ) THEN
-         IF( KASE.EQ.KASE1 ) THEN
-            CALL DLATRS( 'Lower', 'No transpose', 'Unit', NORMIN, N, A,
-     $                   LDA, WORK, SL, WORK( 2*N+1 ), INFO )
-            CALL DLATRS( 'Upper', 'No transpose', 'Non-unit', NORMIN, N,
-     $                   A, LDA, WORK, SU, WORK( 3*N+1 ), INFO )
-         ELSE
-            CALL DLATRS( 'Upper', 'Transpose', 'Non-unit', NORMIN, N, A,
-     $                   LDA, WORK, SU, WORK( 3*N+1 ), INFO )
-            CALL DLATRS( 'Lower', 'Transpose', 'Unit', NORMIN, N, A,
-     $                   LDA, WORK, SL, WORK( 2*N+1 ), INFO )
-         END IF
-         SCALE = SL*SU
-         NORMIN = 'Y'
-         IF( SCALE.NE.ONE ) THEN
-            IX = IDAMAX( N, WORK, 1 )
-            IF( SCALE.LT.ABS( WORK( IX ) )*SMLNUM .OR. SCALE.EQ.ZERO )
-     $         GO TO 20
-            CALL DRSCL( N, SCALE, WORK, 1 )
-         END IF
-         GO TO 10
-      END IF
-      IF( AINVNM.NE.ZERO )
-     $   RCOND = ( ONE / AINVNM ) / ANORM
-   20 CONTINUE
       RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dgelq2.f
@@ -7147,8 +7065,7 @@
       LOGICAL            UP
       INTEGER            ISAVE( 3 )
       LOGICAL            LSAME
-      INTEGER            IDAMAX
-      EXTERNAL           LSAME, IDAMAX
+      EXTERNAL           LSAME
       EXTERNAL           DLACN2, DPOTRS, XERBLA
       INTRINSIC          ABS, MAX
       DLA_PORCOND = 0.0D+0
@@ -7347,10 +7264,9 @@
       LOGICAL            UP
       INTEGER            ISAVE( 3 )
       LOGICAL            LSAME
-      INTEGER            IDAMAX
       DOUBLE PRECISION   DLAMCH
-      EXTERNAL           LSAME, IDAMAX, DLAMCH
-      EXTERNAL           DLACN2, DLATRS, DRSCL, XERBLA, DSYTRS
+      EXTERNAL           LSAME, DLAMCH
+      EXTERNAL           DLACN2, XERBLA, DSYTRS
       INTRINSIC          ABS, MAX
       DLA_SYRCOND = 0.0D+0
       INFO = 0
@@ -16320,7 +16236,7 @@
          I2 = K2
          INC = 1
       ELSE IF( INCX.LT.0 ) THEN
-         IX0 = 1 + ( 1-K2 )*INCX
+         IX0 = K1 + ( K1-K2 )*INCX
          I1 = K2
          I2 = K1
          INC = -1
@@ -16696,323 +16612,6 @@
       END IF
       RETURN
       END
-! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlatrs.f
-      SUBROUTINE DLATRS( UPLO, TRANS, DIAG, NORMIN, N, A, LDA, X, SCALE,
-     $                   CNORM, INFO )
-      CHARACTER          DIAG, NORMIN, TRANS, UPLO
-      INTEGER            INFO, LDA, N
-      DOUBLE PRECISION   SCALE
-      DOUBLE PRECISION   A( LDA, * ), CNORM( * ), X( * )
-      DOUBLE PRECISION   ZERO, HALF, ONE
-      PARAMETER          ( ZERO = 0.0D+0, HALF = 0.5D+0, ONE = 1.0D+0 )
-      LOGICAL            NOTRAN, NOUNIT, UPPER
-      INTEGER            I, IMAX, J, JFIRST, JINC, JLAST
-      DOUBLE PRECISION   BIGNUM, GROW, REC, SMLNUM, SUMJ, TJJ, TJJS,
-     $                   TMAX, TSCAL, USCAL, XBND, XJ, XMAX
-      LOGICAL            LSAME
-      INTEGER            IDAMAX
-      DOUBLE PRECISION   DASUM, DDOT, DLAMCH
-      EXTERNAL           LSAME, IDAMAX, DASUM, DDOT, DLAMCH
-      EXTERNAL           DAXPY, DSCAL, DTRSV, XERBLA
-      INTRINSIC          ABS, MAX, MIN
-      INFO = 0
-      UPPER = LSAME( UPLO, 'U' )
-      NOTRAN = LSAME( TRANS, 'N' )
-      NOUNIT = LSAME( DIAG, 'N' )
-      IF( .NOT.UPPER .AND. .NOT.LSAME( UPLO, 'L' ) ) THEN
-         INFO = -1
-      ELSE IF( .NOT.NOTRAN .AND. .NOT.LSAME( TRANS, 'T' ) .AND. .NOT.
-     $         LSAME( TRANS, 'C' ) ) THEN
-         INFO = -2
-      ELSE IF( .NOT.NOUNIT .AND. .NOT.LSAME( DIAG, 'U' ) ) THEN
-         INFO = -3
-      ELSE IF( .NOT.LSAME( NORMIN, 'Y' ) .AND. .NOT.
-     $         LSAME( NORMIN, 'N' ) ) THEN
-         INFO = -4
-      ELSE IF( N.LT.0 ) THEN
-         INFO = -5
-      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
-         INFO = -7
-      END IF
-      IF( INFO.NE.0 ) THEN
-         CALL XERBLA( 'DLATRS', -INFO )
-         RETURN
-      END IF
-      IF( N.EQ.0 )
-     $   RETURN
-      SMLNUM = DLAMCH( 'Safe minimum' ) / DLAMCH( 'Precision' )
-      BIGNUM = ONE / SMLNUM
-      SCALE = ONE
-      IF( LSAME( NORMIN, 'N' ) ) THEN
-         IF( UPPER ) THEN
-            DO 10 J = 1, N
-               CNORM( J ) = DASUM( J-1, A( 1, J ), 1 )
-   10       CONTINUE
-         ELSE
-            DO 20 J = 1, N - 1
-               CNORM( J ) = DASUM( N-J, A( J+1, J ), 1 )
-   20       CONTINUE
-            CNORM( N ) = ZERO
-         END IF
-      END IF
-      IMAX = IDAMAX( N, CNORM, 1 )
-      TMAX = CNORM( IMAX )
-      IF( TMAX.LE.BIGNUM ) THEN
-         TSCAL = ONE
-      ELSE
-         TSCAL = ONE / ( SMLNUM*TMAX )
-         CALL DSCAL( N, TSCAL, CNORM, 1 )
-      END IF
-      J = IDAMAX( N, X, 1 )
-      XMAX = ABS( X( J ) )
-      XBND = XMAX
-      IF( NOTRAN ) THEN
-         IF( UPPER ) THEN
-            JFIRST = N
-            JLAST = 1
-            JINC = -1
-         ELSE
-            JFIRST = 1
-            JLAST = N
-            JINC = 1
-         END IF
-         IF( TSCAL.NE.ONE ) THEN
-            GROW = ZERO
-            GO TO 50
-         END IF
-         IF( NOUNIT ) THEN
-            GROW = ONE / MAX( XBND, SMLNUM )
-            XBND = GROW
-            DO 30 J = JFIRST, JLAST, JINC
-               IF( GROW.LE.SMLNUM )
-     $            GO TO 50
-               TJJ = ABS( A( J, J ) )
-               XBND = MIN( XBND, MIN( ONE, TJJ )*GROW )
-               IF( TJJ+CNORM( J ).GE.SMLNUM ) THEN
-                  GROW = GROW*( TJJ / ( TJJ+CNORM( J ) ) )
-               ELSE
-                  GROW = ZERO
-               END IF
-   30       CONTINUE
-            GROW = XBND
-         ELSE
-            GROW = MIN( ONE, ONE / MAX( XBND, SMLNUM ) )
-            DO 40 J = JFIRST, JLAST, JINC
-               IF( GROW.LE.SMLNUM )
-     $            GO TO 50
-               GROW = GROW*( ONE / ( ONE+CNORM( J ) ) )
-   40       CONTINUE
-         END IF
-   50    CONTINUE
-      ELSE
-         IF( UPPER ) THEN
-            JFIRST = 1
-            JLAST = N
-            JINC = 1
-         ELSE
-            JFIRST = N
-            JLAST = 1
-            JINC = -1
-         END IF
-         IF( TSCAL.NE.ONE ) THEN
-            GROW = ZERO
-            GO TO 80
-         END IF
-         IF( NOUNIT ) THEN
-            GROW = ONE / MAX( XBND, SMLNUM )
-            XBND = GROW
-            DO 60 J = JFIRST, JLAST, JINC
-               IF( GROW.LE.SMLNUM )
-     $            GO TO 80
-               XJ = ONE + CNORM( J )
-               GROW = MIN( GROW, XBND / XJ )
-               TJJ = ABS( A( J, J ) )
-               IF( XJ.GT.TJJ )
-     $            XBND = XBND*( TJJ / XJ )
-   60       CONTINUE
-            GROW = MIN( GROW, XBND )
-         ELSE
-            GROW = MIN( ONE, ONE / MAX( XBND, SMLNUM ) )
-            DO 70 J = JFIRST, JLAST, JINC
-               IF( GROW.LE.SMLNUM )
-     $            GO TO 80
-               XJ = ONE + CNORM( J )
-               GROW = GROW / XJ
-   70       CONTINUE
-         END IF
-   80    CONTINUE
-      END IF
-      IF( ( GROW*TSCAL ).GT.SMLNUM ) THEN
-         CALL DTRSV( UPLO, TRANS, DIAG, N, A, LDA, X, 1 )
-      ELSE
-         IF( XMAX.GT.BIGNUM ) THEN
-            SCALE = BIGNUM / XMAX
-            CALL DSCAL( N, SCALE, X, 1 )
-            XMAX = BIGNUM
-         END IF
-         IF( NOTRAN ) THEN
-            DO 110 J = JFIRST, JLAST, JINC
-               XJ = ABS( X( J ) )
-               IF( NOUNIT ) THEN
-                  TJJS = A( J, J )*TSCAL
-               ELSE
-                  TJJS = TSCAL
-                  IF( TSCAL.EQ.ONE )
-     $               GO TO 100
-               END IF
-               TJJ = ABS( TJJS )
-               IF( TJJ.GT.SMLNUM ) THEN
-                  IF( TJJ.LT.ONE ) THEN
-                     IF( XJ.GT.TJJ*BIGNUM ) THEN
-                        REC = ONE / XJ
-                        CALL DSCAL( N, REC, X, 1 )
-                        SCALE = SCALE*REC
-                        XMAX = XMAX*REC
-                     END IF
-                  END IF
-                  X( J ) = X( J ) / TJJS
-                  XJ = ABS( X( J ) )
-               ELSE IF( TJJ.GT.ZERO ) THEN
-                  IF( XJ.GT.TJJ*BIGNUM ) THEN
-                     REC = ( TJJ*BIGNUM ) / XJ
-                     IF( CNORM( J ).GT.ONE ) THEN
-                        REC = REC / CNORM( J )
-                     END IF
-                     CALL DSCAL( N, REC, X, 1 )
-                     SCALE = SCALE*REC
-                     XMAX = XMAX*REC
-                  END IF
-                  X( J ) = X( J ) / TJJS
-                  XJ = ABS( X( J ) )
-               ELSE
-                  DO 90 I = 1, N
-                     X( I ) = ZERO
-   90             CONTINUE
-                  X( J ) = ONE
-                  XJ = ONE
-                  SCALE = ZERO
-                  XMAX = ZERO
-               END IF
-  100          CONTINUE
-               IF( XJ.GT.ONE ) THEN
-                  REC = ONE / XJ
-                  IF( CNORM( J ).GT.( BIGNUM-XMAX )*REC ) THEN
-                     REC = REC*HALF
-                     CALL DSCAL( N, REC, X, 1 )
-                     SCALE = SCALE*REC
-                  END IF
-               ELSE IF( XJ*CNORM( J ).GT.( BIGNUM-XMAX ) ) THEN
-                  CALL DSCAL( N, HALF, X, 1 )
-                  SCALE = SCALE*HALF
-               END IF
-               IF( UPPER ) THEN
-                  IF( J.GT.1 ) THEN
-                     CALL DAXPY( J-1, -X( J )*TSCAL, A( 1, J ), 1, X,
-     $                           1 )
-                     I = IDAMAX( J-1, X, 1 )
-                     XMAX = ABS( X( I ) )
-                  END IF
-               ELSE
-                  IF( J.LT.N ) THEN
-                     CALL DAXPY( N-J, -X( J )*TSCAL, A( J+1, J ), 1,
-     $                           X( J+1 ), 1 )
-                     I = J + IDAMAX( N-J, X( J+1 ), 1 )
-                     XMAX = ABS( X( I ) )
-                  END IF
-               END IF
-  110       CONTINUE
-         ELSE
-            DO 160 J = JFIRST, JLAST, JINC
-               XJ = ABS( X( J ) )
-               USCAL = TSCAL
-               REC = ONE / MAX( XMAX, ONE )
-               IF( CNORM( J ).GT.( BIGNUM-XJ )*REC ) THEN
-                  REC = REC*HALF
-                  IF( NOUNIT ) THEN
-                     TJJS = A( J, J )*TSCAL
-                  ELSE
-                     TJJS = TSCAL
-                  END IF
-                  TJJ = ABS( TJJS )
-                  IF( TJJ.GT.ONE ) THEN
-                     REC = MIN( ONE, REC*TJJ )
-                     USCAL = USCAL / TJJS
-                  END IF
-                  IF( REC.LT.ONE ) THEN
-                     CALL DSCAL( N, REC, X, 1 )
-                     SCALE = SCALE*REC
-                     XMAX = XMAX*REC
-                  END IF
-               END IF
-               SUMJ = ZERO
-               IF( USCAL.EQ.ONE ) THEN
-                  IF( UPPER ) THEN
-                     SUMJ = DDOT( J-1, A( 1, J ), 1, X, 1 )
-                  ELSE IF( J.LT.N ) THEN
-                     SUMJ = DDOT( N-J, A( J+1, J ), 1, X( J+1 ), 1 )
-                  END IF
-               ELSE
-                  IF( UPPER ) THEN
-                     DO 120 I = 1, J - 1
-                        SUMJ = SUMJ + ( A( I, J )*USCAL )*X( I )
-  120                CONTINUE
-                  ELSE IF( J.LT.N ) THEN
-                     DO 130 I = J + 1, N
-                        SUMJ = SUMJ + ( A( I, J )*USCAL )*X( I )
-  130                CONTINUE
-                  END IF
-               END IF
-               IF( USCAL.EQ.TSCAL ) THEN
-                  X( J ) = X( J ) - SUMJ
-                  XJ = ABS( X( J ) )
-                  IF( NOUNIT ) THEN
-                     TJJS = A( J, J )*TSCAL
-                  ELSE
-                     TJJS = TSCAL
-                     IF( TSCAL.EQ.ONE )
-     $                  GO TO 150
-                  END IF
-                  TJJ = ABS( TJJS )
-                  IF( TJJ.GT.SMLNUM ) THEN
-                     IF( TJJ.LT.ONE ) THEN
-                        IF( XJ.GT.TJJ*BIGNUM ) THEN
-                           REC = ONE / XJ
-                           CALL DSCAL( N, REC, X, 1 )
-                           SCALE = SCALE*REC
-                           XMAX = XMAX*REC
-                        END IF
-                     END IF
-                     X( J ) = X( J ) / TJJS
-                  ELSE IF( TJJ.GT.ZERO ) THEN
-                     IF( XJ.GT.TJJ*BIGNUM ) THEN
-                        REC = ( TJJ*BIGNUM ) / XJ
-                        CALL DSCAL( N, REC, X, 1 )
-                        SCALE = SCALE*REC
-                        XMAX = XMAX*REC
-                     END IF
-                     X( J ) = X( J ) / TJJS
-                  ELSE
-                     DO 140 I = 1, N
-                        X( I ) = ZERO
-  140                CONTINUE
-                     X( J ) = ONE
-                     SCALE = ZERO
-                     XMAX = ZERO
-                  END IF
-  150             CONTINUE
-               ELSE
-                  X( J ) = X( J ) / TJJS - SUMJ
-               END IF
-               XMAX = MAX( XMAX, ABS( X( J ) ) )
-  160       CONTINUE
-         END IF
-         SCALE = SCALE / TSCAL
-      END IF
-      IF( TSCAL.NE.ONE ) THEN
-         CALL DSCAL( N, ONE / TSCAL, CNORM, 1 )
-      END IF
-      RETURN
-      END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dopgtr.f
       SUBROUTINE DOPGTR( UPLO, N, AP, TAU, Q, LDQ, WORK, INFO )
       CHARACTER          UPLO
@@ -17299,8 +16898,7 @@
       LOGICAL            LQUERY, WANTQ
       INTEGER            I, IINFO, J, LWKOPT, MN
       LOGICAL            LSAME
-      INTEGER            ILAENV
-      EXTERNAL           LSAME, ILAENV
+      EXTERNAL           LSAME
       EXTERNAL           DORGLQ, DORGQR, XERBLA
       INTRINSIC          MAX, MIN
       INFO = 0
@@ -19962,8 +19560,8 @@
      $                   SCL, SEP, TOL, XJ, XJM, ZTR
       INTEGER            ISEED( 4 )
       INTEGER            IDAMAX
-      DOUBLE PRECISION   DASUM, DDOT, DLAMCH, DNRM2
-      EXTERNAL           IDAMAX, DASUM, DDOT, DLAMCH, DNRM2
+      DOUBLE PRECISION   DDOT, DLAMCH, DNRM2
+      EXTERNAL           IDAMAX, DDOT, DLAMCH, DNRM2
       EXTERNAL           DAXPY, DCOPY, DLAGTF, DLAGTS, DLARNV, DSCAL,
      $                   XERBLA
       INTRINSIC          ABS, MAX, SQRT
@@ -22605,10 +22203,11 @@
       LOGICAL            CNAME, SNAME
       CHARACTER          C1*1, C2*2, C4*2, C3*3, SUBNAM*6
       INTRINSIC          CHAR, ICHAR, INT, MIN, REAL
-      INTEGER            IEEECK, IPARMQ
-      EXTERNAL           IEEECK, IPARMQ
+      INTEGER            IEEECK, IPARMQ, IPARAM2STAGE
+      EXTERNAL           IEEECK, IPARMQ, IPARAM2STAGE
       GO TO ( 10, 10, 10, 80, 90, 100, 110, 120,
-     $        130, 140, 150, 160, 160, 160, 160, 160 )ISPEC
+     $        130, 140, 150, 160, 160, 160, 160, 160,
+     $        170, 170, 170, 170, 170 )ISPEC
       ILAENV = -1
       RETURN
    10 CONTINUE
@@ -22672,6 +22271,50 @@
                NB = 32
             ELSE
                NB = 32
+            END IF
+         ELSE IF( C3.EQ.'QR ') THEN
+            IF( N3 .EQ. 1) THEN
+               IF( SNAME ) THEN
+                  IF ((N1*N2.LE.131072).OR.(N1.LE.8192)) THEN
+                     NB = N1
+                  ELSE
+                     NB = 32768/N2
+                  END IF
+               ELSE
+                  IF ((N1*N2.LE.131072).OR.(N1.LE.8192)) THEN
+                     NB = N1
+                  ELSE
+                     NB = 32768/N2
+                  END IF
+               END IF
+            ELSE
+               IF( SNAME ) THEN
+                  NB = 1
+               ELSE
+                  NB = 1
+               END IF
+            END IF
+         ELSE IF( C3.EQ.'LQ ') THEN
+            IF( N3 .EQ. 2) THEN
+               IF( SNAME ) THEN
+                  IF ((N1*N2.LE.131072).OR.(N1.LE.8192)) THEN
+                     NB = N1
+                  ELSE
+                     NB = 32768/N2
+                  END IF
+               ELSE
+                  IF ((N1*N2.LE.131072).OR.(N1.LE.8192)) THEN
+                     NB = N1
+                  ELSE
+                     NB = 32768/N2
+                  END IF
+               END IF
+            ELSE
+               IF( SNAME ) THEN
+                  NB = 1
+               ELSE
+                  NB = 1
+               END IF
             END IF
          ELSE IF( C3.EQ.'HRD' ) THEN
             IF( SNAME ) THEN
@@ -22985,6 +22628,9 @@
   160 CONTINUE
       ILAENV = IPARMQ( ISPEC, NAME, OPTS, N1, N2, N3, N4 )
       RETURN
+  170 CONTINUE
+      ILAENV = IPARAM2STAGE( ISPEC, NAME, OPTS, N1, N2, N3, N4 )
+      RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/ilaprec.f
       INTEGER FUNCTION ILAPREC( PREC )
@@ -23128,6 +22774,156 @@
          END DO
       END IF
       RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/iparam2stage.F
+      INTEGER FUNCTION IPARAM2STAGE( ISPEC, NAME, OPTS, 
+     $                              NI, NBI, IBI, NXI )
+#if defined(_OPENMP)
+      use omp_lib
+#endif
+      IMPLICIT NONE
+      CHARACTER*( * )    NAME, OPTS
+      INTEGER            ISPEC, NI, NBI, IBI, NXI
+      INTEGER            I, IC, IZ, KD, IB, LHOUS, LWORK, NTHREADS,
+     $                   FACTOPTNB, QROPTNB, LQOPTNB
+      LOGICAL            RPREC, CPREC
+      CHARACTER          PREC*1, ALGO*3, STAG*5, SUBNAM*12, VECT*3
+      INTRINSIC          CHAR, ICHAR, MAX
+      INTEGER            ILAENV
+      EXTERNAL           ILAENV
+      IF( (ISPEC.LT.17).OR.(ISPEC.GT.21) ) THEN
+          IPARAM2STAGE = -1
+          RETURN
+      ENDIF
+      NTHREADS = 1
+#if defined(_OPENMP)
+      NTHREADS = OMP_GET_NUM_THREADS()
+#endif
+      IF( ISPEC .NE. 19 ) THEN
+         IPARAM2STAGE = -1
+         SUBNAM = NAME
+         IC = ICHAR( SUBNAM( 1: 1 ) )
+         IZ = ICHAR( 'Z' )
+         IF( IZ.EQ.90 .OR. IZ.EQ.122 ) THEN
+            IF( IC.GE.97 .AND. IC.LE.122 ) THEN
+               SUBNAM( 1: 1 ) = CHAR( IC-32 )
+               DO 100 I = 2, 12
+                  IC = ICHAR( SUBNAM( I: I ) )
+                  IF( IC.GE.97 .AND. IC.LE.122 )
+     $               SUBNAM( I: I ) = CHAR( IC-32 )
+  100          CONTINUE
+            END IF
+         ELSE IF( IZ.EQ.233 .OR. IZ.EQ.169 ) THEN
+            IF( ( IC.GE.129 .AND. IC.LE.137 ) .OR.
+     $          ( IC.GE.145 .AND. IC.LE.153 ) .OR.
+     $          ( IC.GE.162 .AND. IC.LE.169 ) ) THEN
+               SUBNAM( 1: 1 ) = CHAR( IC+64 )
+               DO 110 I = 2, 12
+                  IC = ICHAR( SUBNAM( I: I ) )
+                  IF( ( IC.GE.129 .AND. IC.LE.137 ) .OR.
+     $                ( IC.GE.145 .AND. IC.LE.153 ) .OR.
+     $                ( IC.GE.162 .AND. IC.LE.169 ) )SUBNAM( I:
+     $                I ) = CHAR( IC+64 )
+  110          CONTINUE
+            END IF
+         ELSE IF( IZ.EQ.218 .OR. IZ.EQ.250 ) THEN
+            IF( IC.GE.225 .AND. IC.LE.250 ) THEN
+               SUBNAM( 1: 1 ) = CHAR( IC-32 )
+               DO 120 I = 2, 12
+                 IC = ICHAR( SUBNAM( I: I ) )
+                 IF( IC.GE.225 .AND. IC.LE.250 )
+     $             SUBNAM( I: I ) = CHAR( IC-32 )
+  120          CONTINUE
+            END IF
+         END IF
+         PREC  = SUBNAM( 1: 1 )
+         ALGO  = SUBNAM( 4: 6 )
+         STAG  = SUBNAM( 8:12 )
+         RPREC = PREC.EQ.'S' .OR. PREC.EQ.'D'
+         CPREC = PREC.EQ.'C' .OR. PREC.EQ.'Z'
+         IF( .NOT.( RPREC .OR. CPREC ) ) THEN
+             IPARAM2STAGE = -1
+             RETURN
+         ENDIF
+      ENDIF
+      IF (( ISPEC .EQ. 17 ) .OR. ( ISPEC .EQ. 18 )) THEN 
+         IF( NTHREADS.GT.4 ) THEN
+            IF( CPREC ) THEN
+               KD = 128
+               IB = 32
+            ELSE
+               KD = 160
+               IB = 40
+            ENDIF
+         ELSE IF( NTHREADS.GT.1 ) THEN
+            IF( CPREC ) THEN
+               KD = 64
+               IB = 32
+            ELSE
+               KD = 64
+               IB = 32
+            ENDIF
+         ELSE
+            IF( CPREC ) THEN
+               KD = 16
+               IB = 16
+            ELSE
+               KD = 32
+               IB = 16
+            ENDIF
+         ENDIF
+         IF( ISPEC.EQ.17 ) IPARAM2STAGE = KD
+         IF( ISPEC.EQ.18 ) IPARAM2STAGE = IB
+      ELSE IF ( ISPEC .EQ. 19 ) THEN
+         VECT  = OPTS(1:1)
+         IF( VECT.EQ.'N' ) THEN
+            LHOUS = MAX( 1, 4*NI )
+         ELSE
+            LHOUS = MAX( 1, 4*NI ) + IBI
+         ENDIF
+         IF( LHOUS.GE.0 ) THEN
+            IPARAM2STAGE = LHOUS
+         ELSE
+            IPARAM2STAGE = -1
+         ENDIF
+      ELSE IF ( ISPEC .EQ. 20 ) THEN
+         LWORK        = -1
+         SUBNAM(1:1)  = PREC
+         SUBNAM(2:6)  = 'GEQRF'
+         QROPTNB      = ILAENV( 1, SUBNAM, ' ', NI, NBI, -1, -1 )
+         SUBNAM(2:6)  = 'GELQF'
+         LQOPTNB      = ILAENV( 1, SUBNAM, ' ', NBI, NI, -1, -1 )
+         FACTOPTNB    = MAX(QROPTNB, LQOPTNB)
+         IF( ALGO.EQ.'TRD' ) THEN
+            IF( STAG.EQ.'2STAG' ) THEN
+               LWORK = NI*NBI + NI*MAX(NBI+1,FACTOPTNB) 
+     $              + MAX(2*NBI*NBI, NBI*NTHREADS) 
+     $              + (NBI+1)*NI
+            ELSE IF( (STAG.EQ.'HE2HB').OR.(STAG.EQ.'SY2SB') ) THEN
+               LWORK = NI*NBI + NI*MAX(NBI,FACTOPTNB) + 2*NBI*NBI
+            ELSE IF( (STAG.EQ.'HB2ST').OR.(STAG.EQ.'SB2ST') ) THEN
+               LWORK = (2*NBI+1)*NI + NBI*NTHREADS
+            ENDIF
+         ELSE IF( ALGO.EQ.'BRD' ) THEN
+            IF( STAG.EQ.'2STAG' ) THEN
+               LWORK = 2*NI*NBI + NI*MAX(NBI+1,FACTOPTNB) 
+     $              + MAX(2*NBI*NBI, NBI*NTHREADS) 
+     $              + (NBI+1)*NI
+            ELSE IF( STAG.EQ.'GE2GB' ) THEN
+               LWORK = NI*NBI + NI*MAX(NBI,FACTOPTNB) + 2*NBI*NBI
+            ELSE IF( STAG.EQ.'GB2BD' ) THEN
+               LWORK = (3*NBI+1)*NI + NBI*NTHREADS
+            ENDIF
+         ENDIF
+         LWORK = MAX ( 1, LWORK )
+         IF( LWORK.GT.0 ) THEN
+            IPARAM2STAGE = LWORK
+         ELSE
+            IPARAM2STAGE = -1
+         ENDIF
+      ELSE IF ( ISPEC .EQ. 21 ) THEN
+         IPARAM2STAGE = NXI
+      ENDIF
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/iparmq.f
       INTEGER FUNCTION IPARMQ( ISPEC, NAME, OPTS, N, ILO, IHI, LWORK )
@@ -23760,8 +23556,7 @@
       LOGICAL            UP
       INTEGER            ISAVE( 3 )
       LOGICAL            LSAME
-      INTEGER            ISAMAX
-      EXTERNAL           LSAME, ISAMAX
+      EXTERNAL           LSAME
       EXTERNAL           SLACN2, SPOTRS, XERBLA
       INTRINSIC          ABS, MAX
       SLA_PORCOND = 0.0
@@ -23958,9 +23753,8 @@
       LOGICAL            UP
       INTEGER            ISAVE( 3 )
       LOGICAL            LSAME
-      INTEGER            ISAMAX
       REAL               SLAMCH
-      EXTERNAL           LSAME, ISAMAX, SLAMCH
+      EXTERNAL           LSAME, SLAMCH
       EXTERNAL           SLACN2, XERBLA, SSYTRS
       INTRINSIC          ABS, MAX
       SLA_SYRCOND = 0.0
@@ -26246,7 +26040,7 @@
          I2 = K2
          INC = 1
       ELSE IF( INCX.LT.0 ) THEN
-         IX0 = 1 + ( 1-K2 )*INCX
+         IX0 = K1 + ( K1-K2 )*INCX
          I1 = K2
          I2 = K1
          INC = -1
@@ -36706,7 +36500,7 @@
       PARAMETER          ( ONE = ( 1.0D+0, 0.0D+0 ),
      $                   ZERO = ( 0.0D+0, 0.0D+0 ) )
       INTEGER            I, J, PREVLASTV, LASTV
-      EXTERNAL           ZGEMV, ZLACGV, ZTRMV, ZGEMM
+      EXTERNAL           ZGEMV, ZTRMV, ZGEMM
       LOGICAL            LSAME
       EXTERNAL           LSAME
       IF( N.EQ.0 )
@@ -37335,7 +37129,7 @@
          I2 = K2
          INC = 1
       ELSE IF( INCX.LT.0 ) THEN
-         IX0 = 1 + ( 1-K2 )*INCX
+         IX0 = K1 + ( K1-K2 )*INCX
          I1 = K2
          I2 = K1
          INC = -1
@@ -38400,8 +38194,8 @@
      $                   SCL, SEP, TOL, XJ, XJM, ZTR
       INTEGER            ISEED( 4 )
       INTEGER            IDAMAX
-      DOUBLE PRECISION   DASUM, DLAMCH, DNRM2
-      EXTERNAL           IDAMAX, DASUM, DLAMCH, DNRM2
+      DOUBLE PRECISION   DLAMCH, DNRM2
+      EXTERNAL           IDAMAX, DLAMCH, DNRM2
       EXTERNAL           DCOPY, DLAGTF, DLAGTS, DLARNV, DSCAL, XERBLA
       INTRINSIC          ABS, DBLE, DCMPLX, MAX, SQRT
       INFO = 0
@@ -39049,6 +38843,7 @@
       DOUBLE PRECISION   DLAMCH, DZASUM
       EXTERNAL           LSAME, ILAENV, IZAMAX, DLAMCH, DZASUM
       EXTERNAL           XERBLA, ZCOPY, ZDSCAL, ZGEMV, ZLATRS
+     $                   ZGEMM, DLABAD, ZLASET
       INTRINSIC          ABS, DBLE, DCMPLX, CONJG, AIMAG, MAX
       DOUBLE PRECISION   CABS1
       CABS1( CDUM ) = ABS( DBLE( CDUM ) ) + ABS( AIMAG( CDUM ) )

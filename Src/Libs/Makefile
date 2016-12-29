@@ -31,7 +31,3 @@ libsiestaLAPACK.a: lapack.o
 
 clean:
 	rm -f lapack.o blas.o *.a
-
-
-
-

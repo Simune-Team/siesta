@@ -208,7 +208,7 @@ $(NCDF): $(FDICT)
 #
 # Linear algebra routines
 #
-libsiestaBLAS.a: $(VPATH)/Libs/blas.f
+libsiestaBLAS.a: $(VPATH)/Libs/blas.F
 	@echo "==> Compiling libsiestaBLAS.a in Libs..."
 	-mkdir -p Libs
 	@(cd Libs ; $(MAKE) -f $(VPATH)/Libs/Makefile -j 1 \
@@ -216,7 +216,7 @@ libsiestaBLAS.a: $(VPATH)/Libs/blas.f
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaBLAS.a)
 	@cp Libs/libsiestaBLAS.a .
-libsiestaLAPACK.a: $(VPATH)/Libs/lapack.f
+libsiestaLAPACK.a: $(VPATH)/Libs/lapack.F
 	@echo "==> Compiling libsiestaLAPACK.a in Libs..."
 	-mkdir -p Libs
 	@(cd Libs ; $(MAKE) -f $(VPATH)/Libs/Makefile -j 1 \

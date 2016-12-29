@@ -353,11 +353,11 @@ $(ALL_OBJS): $(WXML) $(XC) $(COMP_LIBS)
 #
 # Linear algebra routines
 #
-libsiestaBLAS.a: Libs/blas.f
+libsiestaBLAS.a: Libs/blas.F
 	@echo "==> Compiling libsiestaBLAS.a in Libs..."
 	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaBLAS.a)
 	@cp Libs/libsiestaBLAS.a .
-libsiestaLAPACK.a: Libs/lapack.f
+libsiestaLAPACK.a: Libs/lapack.F
 	@echo "==> Compiling libsiestaLAPACK.a in Libs..."
 	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaLAPACK.a)
 	@cp Libs/libsiestaLAPACK.a .
