@@ -1,7 +1,7 @@
-diff -Naur oncvpsp-3.2.2/INSTALL oncvpsp-3.2.2--psml-42/INSTALL
---- oncvpsp-3.2.2/INSTALL	2015-08-06 16:05:26.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/INSTALL	2016-06-30 16:57:17.000000000 +0200
-@@ -1,3 +1,14 @@
+diff -Naur oncvpsp-3.2.3/INSTALL oncvpsp-3.2.3--psml-51/INSTALL
+--- oncvpsp-3.2.3/INSTALL	2016-09-30 21:12:39.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/INSTALL	2017-01-17 17:29:43.000000000 +0100
+@@ -1,3 +1,20 @@
 +****
 +AG Notes for installation of the PSML version of oncvpsp
 +---
@@ -9,208 +9,67 @@ diff -Naur oncvpsp-3.2.2/INSTALL oncvpsp-3.2.2--psml-42/INSTALL
 +has to be compiled by going directly to the 'src' subdirectory, editing
 +the 'fortran.mk' file, and typing 'make all'.
 +
++Note that you need to pre-compile the (lightweight) xmlf90 library,
++which can be obtained from http://launchpad.net/xmlf90, and insert
++the appropriate path in 'fortran.mk'.
++
 +The 'run*' scripts in 'tests' have been modified to support PSML. The
 +environmental variable ONCVPSP_BIN must be set to the location of the
 +directory holding the executables.
++
++-- The original installation notes follow
 +****
  
                      ONCVPST INSTALLATION AND USAGE
  
-diff -Naur oncvpsp-3.2.2/make oncvpsp-3.2.2--psml-42/make
---- oncvpsp-3.2.2/make	2015-08-06 16:05:26.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/make	1970-01-01 01:00:00.000000000 +0100
-@@ -1,86 +0,0 @@
--cd src ; make all ; cd ..
--make[1]: Entering directory `/home/drh/temp2/oncvpsp-3.2.1/src'
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c oncvpsp.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c fphsft.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c fpovlp.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c gnu_script.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c linout.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c psatom.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c relatom.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_config.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_diag.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_phsft.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_plot.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_vkb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c sratom.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c upfout.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c wellstate.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c aeo.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c check_data.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c const_basis.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c dpnint.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c eresid.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c exchdl.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c exc_off_pbe.f
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c excpzca.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c excwig.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c ldiracfb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c ldiracfs.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschfb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschfs.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschkb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschpb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschpse.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschps.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschvkbbe.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschvkbb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschvkbs.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c modcore.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c optimize.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c pspot.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c qroots.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_optimize.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c sbf8.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c sbf_basis.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c sbf_rc_der.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c tfapot.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c vkboutwf.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c vkbphsft.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c vout.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c vpinteg.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c vploc.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c wf_rc_der.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c modcore2.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c gg1cc.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c gp1cc.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c gpp1cc.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c der2exc.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c fcrossover.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c modcore3.f90
--cpp -ansi -DLIBXC_VERSION=203   functionals.F90  > functionals_cpp.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -o functionals.o -c functionals_cpp.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c exc_libxc.f90
--gfortran -o oncvpsp.x oncvpsp.o fphsft.o fpovlp.o gnu_script.o linout.o psatom.o relatom.o run_config.o run_diag.o run_phsft.o run_plot.o run_vkb.o sratom.o upfout.o wellstate.o aeo.o check_data.o const_basis.o dpnint.o eresid.o exchdl.o exc_off_pbe.o excpzca.o excwig.o ldiracfb.o ldiracfs.o lschfb.o lschfs.o lschkb.o lschpb.o lschpse.o lschps.o lschvkbbe.o lschvkbb.o lschvkbs.o modcore.o optimize.o pspot.o qroots.o run_optimize.o sbf8.o sbf_basis.o sbf_rc_der.o tfapot.o vkboutwf.o vkbphsft.o vout.o vpinteg.o vploc.o wf_rc_der.o modcore2.o gg1cc.o gp1cc.o gpp1cc.o der2exc.o fcrossover.o modcore3.o functionals.o exc_libxc.o  -L/usr/local/lapack/lib -llapack -lrefblas -L/home/drh/abinit/fallbacks/exports/lib -lxc
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c oncvpsp_nr.f90
--gfortran -o oncvpspnr.x oncvpsp_nr.o fphsft.o fpovlp.o gnu_script.o linout.o psatom.o relatom.o run_config.o run_diag.o run_phsft.o run_plot.o run_vkb.o sratom.o upfout.o wellstate.o aeo.o check_data.o const_basis.o dpnint.o eresid.o exchdl.o exc_off_pbe.o excpzca.o excwig.o ldiracfb.o ldiracfs.o lschfb.o lschfs.o lschkb.o lschpb.o lschpse.o lschps.o lschvkbbe.o lschvkbb.o lschvkbs.o modcore.o optimize.o pspot.o qroots.o run_optimize.o sbf8.o sbf_basis.o sbf_rc_der.o tfapot.o vkboutwf.o vkbphsft.o vout.o vpinteg.o vploc.o wf_rc_der.o modcore2.o gg1cc.o gp1cc.o gpp1cc.o der2exc.o fcrossover.o modcore3.o functionals.o exc_libxc.o  -L/usr/local/lapack/lib -llapack -lrefblas -L/home/drh/abinit/fallbacks/exports/lib -lxc
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c oncvpsp_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c fphsft_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c fpovlp_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c gnu_script_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c linout_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c psatom_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c renorm_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_config_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_diag_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_diag_sr_so_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_phsft_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_plot_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_vkb_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c sr_so_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c upfout_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c wellstate_r.f90
--gfortran -o oncvpspr.x oncvpsp_r.o fphsft_r.o fpovlp_r.o gnu_script_r.o linout_r.o psatom_r.o relatom.o renorm_r.o run_config_r.o run_diag_r.o run_diag_sr_so_r.o run_phsft_r.o run_plot_r.o run_vkb_r.o sr_so_r.o upfout_r.o wellstate_r.o aeo.o check_data.o const_basis.o dpnint.o eresid.o exchdl.o exc_off_pbe.o excpzca.o excwig.o ldiracfb.o ldiracfs.o lschfb.o lschfs.o lschkb.o lschpb.o lschpse.o lschps.o lschvkbbe.o lschvkbb.o lschvkbs.o modcore.o optimize.o pspot.o qroots.o run_optimize.o sbf8.o sbf_basis.o sbf_rc_der.o tfapot.o vkboutwf.o vkbphsft.o vout.o vpinteg.o vploc.o wf_rc_der.o modcore2.o gg1cc.o gp1cc.o gpp1cc.o der2exc.o fcrossover.o modcore3.o functionals.o exc_libxc.o  -L/usr/local/lapack/lib -llapack -lrefblas -L/home/drh/abinit/fallbacks/exports/lib -lxc
--make[1]: Leaving directory `/home/drh/temp2/oncvpsp-3.2.1/src'
--./set_path
--cd tests/data ; ./TEST.sh
--make: *** No rule to make target `log'.  Stop.
-diff -Naur oncvpsp-3.2.2/make.log oncvpsp-3.2.2--psml-42/make.log
---- oncvpsp-3.2.2/make.log	2015-08-11 23:58:01.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/make.log	1970-01-01 01:00:00.000000000 +0100
-@@ -1,85 +0,0 @@
--cd src ; make all
--make[1]: Entering directory `/home/drh/oncvpsp-3.2.2/src'
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c oncvpsp.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c fphsft.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c fpovlp.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c gnu_script.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c linout.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c psatom.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c relatom.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_config.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_diag.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_phsft.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_plot.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_vkb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c sratom.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c upfout.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c wellstate.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c aeo.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c check_data.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c const_basis.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c dpnint.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c eresid.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c exchdl.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c exc_off_pbe.f
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c excpzca.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c excwig.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c ldiracfb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c ldiracfs.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschfb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschfs.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschkb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschpb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschpse.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschps.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschvkbbe.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschvkbb.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c lschvkbs.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c modcore.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c optimize.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c pspot.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c qroots.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_optimize.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c sbf8.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c sbf_basis.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c sbf_rc_der.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c tfapot.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c vkboutwf.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c vkbphsft.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c vout.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c vpinteg.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c vploc.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c wf_rc_der.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c modcore2.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c gg1cc.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c gp1cc.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c gpp1cc.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c der2exc.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c fcrossover.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c modcore3.f90
--cpp -ansi -DLIBXC_VERSION=203   functionals.F90  > functionals_cpp.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -o functionals.o -c functionals_cpp.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c exc_libxc.f90
--gfortran -o oncvpsp.x oncvpsp.o fphsft.o fpovlp.o gnu_script.o linout.o psatom.o relatom.o run_config.o run_diag.o run_phsft.o run_plot.o run_vkb.o sratom.o upfout.o wellstate.o aeo.o check_data.o const_basis.o dpnint.o eresid.o exchdl.o exc_off_pbe.o excpzca.o excwig.o ldiracfb.o ldiracfs.o lschfb.o lschfs.o lschkb.o lschpb.o lschpse.o lschps.o lschvkbbe.o lschvkbb.o lschvkbs.o modcore.o optimize.o pspot.o qroots.o run_optimize.o sbf8.o sbf_basis.o sbf_rc_der.o tfapot.o vkboutwf.o vkbphsft.o vout.o vpinteg.o vploc.o wf_rc_der.o modcore2.o gg1cc.o gp1cc.o gpp1cc.o der2exc.o fcrossover.o modcore3.o functionals.o exc_libxc.o  -L/usr/local/lapack/lib -llapack -lrefblas -L/home/drh/abinit/fallbacks/exports/lib -lxc
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c oncvpsp_nr.f90
--gfortran -o oncvpspnr.x oncvpsp_nr.o fphsft.o fpovlp.o gnu_script.o linout.o psatom.o relatom.o run_config.o run_diag.o run_phsft.o run_plot.o run_vkb.o sratom.o upfout.o wellstate.o aeo.o check_data.o const_basis.o dpnint.o eresid.o exchdl.o exc_off_pbe.o excpzca.o excwig.o ldiracfb.o ldiracfs.o lschfb.o lschfs.o lschkb.o lschpb.o lschpse.o lschps.o lschvkbbe.o lschvkbb.o lschvkbs.o modcore.o optimize.o pspot.o qroots.o run_optimize.o sbf8.o sbf_basis.o sbf_rc_der.o tfapot.o vkboutwf.o vkbphsft.o vout.o vpinteg.o vploc.o wf_rc_der.o modcore2.o gg1cc.o gp1cc.o gpp1cc.o der2exc.o fcrossover.o modcore3.o functionals.o exc_libxc.o  -L/usr/local/lapack/lib -llapack -lrefblas -L/home/drh/abinit/fallbacks/exports/lib -lxc
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c oncvpsp_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c fphsft_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c fpovlp_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c gnu_script_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c linout_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c psatom_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c renorm_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_config_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_diag_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_diag_sr_so_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_phsft_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_plot_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c run_vkb_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c sr_so_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c upfout_r.f90
--gfortran -O3 -ffast-math -funroll-loops -I/home/drh/abinit/fallbacks/exports/include  -c wellstate_r.f90
--gfortran -o oncvpspr.x oncvpsp_r.o fphsft_r.o fpovlp_r.o gnu_script_r.o linout_r.o psatom_r.o relatom.o renorm_r.o run_config_r.o run_diag_r.o run_diag_sr_so_r.o run_phsft_r.o run_plot_r.o run_vkb_r.o sr_so_r.o upfout_r.o wellstate_r.o aeo.o check_data.o const_basis.o dpnint.o eresid.o exchdl.o exc_off_pbe.o excpzca.o excwig.o ldiracfb.o ldiracfs.o lschfb.o lschfs.o lschkb.o lschpb.o lschpse.o lschps.o lschvkbbe.o lschvkbb.o lschvkbs.o modcore.o optimize.o pspot.o qroots.o run_optimize.o sbf8.o sbf_basis.o sbf_rc_der.o tfapot.o vkboutwf.o vkbphsft.o vout.o vpinteg.o vploc.o wf_rc_der.o modcore2.o gg1cc.o gp1cc.o gpp1cc.o der2exc.o fcrossover.o modcore3.o functionals.o exc_libxc.o  -L/usr/local/lapack/lib -llapack -lrefblas -L/home/drh/abinit/fallbacks/exports/lib -lxc
--make[1]: Leaving directory `/home/drh/oncvpsp-3.2.2/src'
--./set_path
--cd tests/data ; ./TEST.sh
-diff -Naur oncvpsp-3.2.2/src/.gitignore oncvpsp-3.2.2--psml-42/src/.gitignore
---- oncvpsp-3.2.2/src/.gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ oncvpsp-3.2.2--psml-42/src/.gitignore	2016-06-30 16:57:17.000000000 +0200
-@@ -0,0 +1,2 @@
-+*.o
-+*.x
-diff -Naur oncvpsp-3.2.2/src/Makefile oncvpsp-3.2.2--psml-42/src/Makefile
---- oncvpsp-3.2.2/src/Makefile	2015-08-06 16:05:26.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/src/Makefile	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/scripts/README oncvpsp-3.2.3--psml-51/scripts/README
+--- oncvpsp-3.2.3/scripts/README	2015-08-06 16:05:26.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/scripts/README	1970-01-01 01:00:00.000000000 +0100
+@@ -1,4 +0,0 @@
+-The *.sh scripts are replicated in the tests directory.
+-
+-The first line of fldiff.pl may have to be edited to specify the proper
+-location of perl.
+diff -Naur oncvpsp-3.2.3/scripts/replot.sh oncvpsp-3.2.3--psml-51/scripts/replot.sh
+--- oncvpsp-3.2.3/scripts/replot.sh	2015-08-06 16:05:26.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/scripts/replot.sh	1970-01-01 01:00:00.000000000 +0100
+@@ -1,26 +0,0 @@
+-#!/bin/sh
+-#invoking this script with <prefix> as the command-line argument in a
+-#directory with a corresponding <prefix>.out file lets you review the
+-#graphics that you saw when you ran the calculation.
+-
+-INFILE=$1.dat
+-
+-OUTFILE=$1.out
+-
+-GNUFILE=$$.scr
+-
+-PLOTFILE=$1.plot
+-
+-TEMP=$$.tmp
+-
+-awk 'BEGIN{out=0};/GNUSCRIPT/{out=0}; {if(out == 1) {print}};\
+-	/DATA FOR PLOTTING/{out=1}' $OUTFILE >$PLOTFILE
+-
+-awk 'BEGIN{out=0};/END_GNU/{out=0}; {if(out == 1) {print}};\
+-	/GNUSCRIPT/{out=1}' $OUTFILE >$TEMP
+-
+-sed -e 1,1000s/t1/$PLOTFILE/ $TEMP >$GNUFILE
+-
+-gnuplot $GNUFILE
+-
+-rm  $GNUFILE $TEMP $PLOTFILE
+diff -Naur oncvpsp-3.2.3/src/Makefile oncvpsp-3.2.3--psml-51/src/Makefile
+--- oncvpsp-3.2.3/src/Makefile	2016-09-30 21:35:42.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/Makefile	2017-01-17 17:29:43.000000000 +0100
 @@ -1,10 +1,16 @@
 -# Makefile for ONCVPSP
 +# Makefile for ONCVPSP+psml
  #
- # Copyright (c) 1989-2015 by D. R. Hamann, Mat-Sim Research LLC and Rutgers
+ # Copyright (c) 1989-2016 by D. R. Hamann, Mat-Sim Research LLC and Rutgers
  # University
-+# Copyright (c) 2015 by Alberto Garcia (PSML part)
++# Copyright (c) 2015-2016 by Alberto Garcia (PSML part)
  #
 -
 -include ../make.inc
@@ -224,10 +83,10 @@ diff -Naur oncvpsp-3.2.2/src/Makefile oncvpsp-3.2.2--psml-42/src/Makefile
  
  OBJS_ALL =	aeo.o check_data.o const_basis.o dpnint.o eresid.o exchdl.o \
  		exc_off_pbe.o excpzca.o excwig.o ldiracfb.o ldiracfs.o \
-@@ -14,51 +20,44 @@
+@@ -14,51 +20,45 @@
  		sbf_rc_der.o tfapot.o vkboutwf.o vkbphsft.o vout.o vpinteg.o \
  		vploc.o wf_rc_der.o modcore2.o gg1cc.o gp1cc.o gpp1cc.o \
- 		der2exc.o fcrossover.o modcore3.o
+ 		der2exc.o modcore3.o
 -
  OBJS_NRSR =	fphsft.o fpovlp.o gnu_script.o linout.o psatom.o \
  		relatom.o run_config.o run_diag.o run_phsft.o run_plot.o \
@@ -242,9 +101,10 @@ diff -Naur oncvpsp-3.2.2/src/Makefile oncvpsp-3.2.2--psml-42/src/Makefile
  		run_diag_sr_so_r.o run_phsft_r.o run_plot_r.o run_vkb_r.o \
  		sr_so_r.o upfout_r.o wellstate_r.o
 +#
-+OBJS_PSML = m_psmlout.o m_libxc_list.o m_uuid.o
++OBJS_PSML = m_psmlout.o m_uuid.o
 +#
 +m_psmlout.o: m_uuid.o
++exc_off_pbe.o: FFLAGS=$(FFLAGS_NOCHECKS)
  
 -OBJS_OPSP = 	$(OBJS_SR) $(OBJS_NRSR) $(OBJS_ALL) $(OBJS_LIBXC)
 -
@@ -259,7 +119,7 @@ diff -Naur oncvpsp-3.2.2/src/Makefile oncvpsp-3.2.2--psml-42/src/Makefile
 +OBJS_OPSPR = 	$(OBJS_R) $(OBJS_ALL) $(OBJS_LIBXC) $(OBJS_PSML)
 +#
 +oncvpsp.o oncvpsp_r.o oncvpsp_nr.o: m_psmlout.o
-+m_psmlout.o: m_libxc_list.o m_uuid.o
++m_psmlout.o: m_uuid.o
 +#
  all:	oncvpsp oncvpspnr oncvpspr
  
@@ -297,9 +157,94 @@ diff -Naur oncvpsp-3.2.2/src/Makefile oncvpsp-3.2.2--psml-42/src/Makefile
  
  clean:
  	 /bin/rm -f *.o  *.d  *.mod *.log *_cpp.f90
-diff -Naur oncvpsp-3.2.2/src/fortran.mk oncvpsp-3.2.2--psml-42/src/fortran.mk
---- oncvpsp-3.2.2/src/fortran.mk	1970-01-01 01:00:00.000000000 +0100
-+++ oncvpsp-3.2.2--psml-42/src/fortran.mk	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/src/exc_libxc.f90 oncvpsp-3.2.3--psml-51/src/exc_libxc.f90
+--- oncvpsp-3.2.3/src/exc_libxc.f90	2016-09-15 16:20:11.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/exc_libxc.f90	2017-01-17 17:29:43.000000000 +0100
+@@ -182,3 +182,59 @@
+  end do
+  
+ end subroutine derivs
++
++!
++! Adapted from libxc example in wiki
++! Alberto Garcia, for use by PSML module
++!
++subroutine libxc_info(id,libxc_str,libxc_type)
++  use xc_f90_types_m
++  use xc_f90_lib_m
++
++  implicit none
++
++  integer, intent(in) :: id
++  character(len=*), intent(out) :: libxc_str, libxc_type
++
++  TYPE(xc_f90_pointer_t) :: xc_func
++  TYPE(xc_f90_pointer_t) :: xc_info
++!  integer :: i
++  character(len=120) :: s1, s2
++!  type(xc_f90_pointer_t) :: str
++
++  call xc_f90_func_init(xc_func, xc_info, id, XC_UNPOLARIZED)
++
++  select case(xc_f90_info_kind(xc_info))
++  case(XC_EXCHANGE)
++     libxc_type = 'exchange'
++  case(XC_CORRELATION)
++     libxc_type = 'correlation'
++  case(XC_EXCHANGE_CORRELATION)
++     write(*, '(a)') 'Correlation'
++     libxc_type =  'exchange-correlation'
++  case(XC_KINETIC)
++     write(*, '(a)') 'Correlation'
++     libxc_type =  'kinetic'
++  end select
++
++  call xc_f90_info_name(xc_info, s1)
++  select case(xc_f90_info_family(xc_info))
++  case (XC_FAMILY_LDA);       write(s2,'(a)') "LDA"
++  case (XC_FAMILY_GGA);       write(s2,'(a)') "GGA"
++  case (XC_FAMILY_HYB_GGA);   write(s2,'(a)') "Hybrid GGA"
++  case (XC_FAMILY_MGGA);      write(s2,'(a)') "MGGA"
++  case (XC_FAMILY_HYB_MGGA);  write(s2,'(a)') "Hybrid MGGA"
++  case (XC_FAMILY_LCA);       write(s2,'(a)') "LCA"
++  end select
++  write(libxc_str, '(4a)') trim(s1), ' (', trim(s2), ')'
++
++!  i = 0
++!  call xc_f90_info_refs(xc_info, i, str, s1)
++!  do while(i >= 0)
++!     write(*, '(a,i1,2a)') '[', i, '] ', trim(s1)
++!     call xc_f90_info_refs(xc_info, i, str, s1)
++!  end do
++
++  call xc_f90_func_end(xc_func)
++
++end subroutine libxc_info
+diff -Naur oncvpsp-3.2.3/src/exc_libxc_stub.f90 oncvpsp-3.2.3--psml-51/src/exc_libxc_stub.f90
+--- oncvpsp-3.2.3/src/exc_libxc_stub.f90	2016-09-15 16:20:11.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/exc_libxc_stub.f90	2017-01-17 17:29:43.000000000 +0100
+@@ -38,3 +38,18 @@
+  stop
+  return
+ end subroutine exc_libxc
++!
++! Just a stub
++!
++subroutine libxc_info(id,libxc_str,libxc_type)
++!  dummy substitute to allow successful
++!  build without the libxc library
++  
++
++  implicit none
++
++  integer, intent(in) :: id
++  character(len=*), intent(out) :: libxc_str, libxc_type
++
++end subroutine libxc_info
++
+diff -Naur oncvpsp-3.2.3/src/fortran.mk oncvpsp-3.2.3--psml-51/src/fortran.mk
+--- oncvpsp-3.2.3/src/fortran.mk	1970-01-01 01:00:00.000000000 +0100
++++ oncvpsp-3.2.3--psml-51/src/fortran.mk	2017-01-17 17:29:43.000000000 +0100
 @@ -0,0 +1,67 @@
 +#
 +# 
@@ -331,9 +276,9 @@ diff -Naur oncvpsp-3.2.2/src/fortran.mk oncvpsp-3.2.2--psml-42/src/fortran.mk
 +# The xmlf90 library (its wxml subsystem) is needed to generate XML.
 +# You can download xmlf90 from http://launchpad.net/xmlf90
 +#
-+XMLF90_ROOT=$(HOME)/lib/xmlf90/1.3/gfortran
++XMLF90_ROOT=$(HOME)/lib/gfortran-5.2.0/xmlf90-1.5.0
 +LIBS += -L$(XMLF90_ROOT)/lib -lxmlf90
-+INC += -I$(XMLF90_ROOT)/modules
++INC += -I$(XMLF90_ROOT)/include
 +
 +#
 +# Optional LIBXC support
@@ -368,9 +313,9 @@ diff -Naur oncvpsp-3.2.2/src/fortran.mk oncvpsp-3.2.2--psml-42/src/fortran.mk
 +.F.o:
 +	$(F90) $(FFLAGS) $(FCCPPFLAGS) $(INC) -c $*.F
 +
-diff -Naur oncvpsp-3.2.2/src/gnu_script.f90 oncvpsp-3.2.2--psml-42/src/gnu_script.f90
---- oncvpsp-3.2.2/src/gnu_script.f90	2015-08-06 16:05:26.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/src/gnu_script.f90	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/src/gnu_script.f90 oncvpsp-3.2.3--psml-51/src/gnu_script.f90
+--- oncvpsp-3.2.3/src/gnu_script.f90	2016-09-15 16:20:11.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/gnu_script.f90	2017-01-17 17:29:43.000000000 +0100
 @@ -134,7 +134,7 @@
  
   write(6,'(a)') 'GNUSCRIPT'
@@ -380,9 +325,9 @@ diff -Naur oncvpsp-3.2.2/src/gnu_script.f90 oncvpsp-3.2.2--psml-42/src/gnu_scrip
   write(6,'(a/)') trim(set)
   set='set termoption dash'
   write(6,'(a/)') trim(set)
-diff -Naur oncvpsp-3.2.2/src/gnu_script_r.f90 oncvpsp-3.2.2--psml-42/src/gnu_script_r.f90
---- oncvpsp-3.2.2/src/gnu_script_r.f90	2015-08-06 16:05:26.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/src/gnu_script_r.f90	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/src/gnu_script_r.f90 oncvpsp-3.2.3--psml-51/src/gnu_script_r.f90
+--- oncvpsp-3.2.3/src/gnu_script_r.f90	2016-09-15 16:20:11.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/gnu_script_r.f90	2017-01-17 17:29:43.000000000 +0100
 @@ -178,7 +178,7 @@
  
   write(6,'(a)') 'GNUSCRIPT'
@@ -392,234 +337,14 @@ diff -Naur oncvpsp-3.2.2/src/gnu_script_r.f90 oncvpsp-3.2.2--psml-42/src/gnu_scr
   write(6,'(a/)') trim(set)
   set='set termoption dash'
   write(6,'(a/)') trim(set)
-diff -Naur oncvpsp-3.2.2/src/m_libxc_list.F90 oncvpsp-3.2.2--psml-42/src/m_libxc_list.F90
---- oncvpsp-3.2.2/src/m_libxc_list.F90	1970-01-01 01:00:00.000000000 +0100
-+++ oncvpsp-3.2.2--psml-42/src/m_libxc_list.F90	2016-06-30 16:57:17.000000000 +0200
-@@ -0,0 +1,215 @@
-+module m_libxc_list
-+!
-+! List of selected functionals in libxc, wrapped
-+! in a derived type record.
-+!
-+! Copyright (c) Alberto Garcia, 2014, 2015
-+! 
-+
-+type, public :: libxc_kind_t
-+   character(len=24) :: str
-+end type libxc_kind_t
-+
-+type(libxc_kind_t), parameter :: EXCH = libxc_kind_t("XC_EXCHANGE")
-+type(libxc_kind_t), parameter :: CORR = libxc_kind_t("XC_CORRELATION")
-+type(libxc_kind_t), parameter :: EXCH_CORR =  &
-+                                 libxc_kind_t("XC_EXCHANGE_CORRELATION")
-+
-+!character(len=*), parameter :: EXCH = "XC_EXCHANGE"
-+!character(len=*), parameter :: CORR = "XC_CORRELATION"
-+!character(len=*), parameter :: EXCH_CORR = "XC_EXCHANGE_CORRELATION"
-+
-+type, public :: libxc_t
-+   character(len=40)  :: name
-+   integer            :: code
-+   type(libxc_kind_t) :: xc_kind
-+!   character(len=40)  :: xc_kind
-+end type libxc_t
-+
-+type(libxc_t), parameter, public  ::                  &
-+   XC_EMPTY = libxc_t("XC_EMPTY", 0 , EXCH_CORR),  &
-+   XC_NOT_IMPL = libxc_t("XC_NOT_IMPL", -1 , EXCH_CORR)
-+
-+! Exchange
-+
-+type(libxc_t), parameter  ::                  &
-+   XC_LDA_X = libxc_t("XC_LDA_X", 1 , EXCH),  &
-+   XC_LDA_X_2D = libxc_t("XC_LDA_X_2D", 19 , EXCH),  &
-+   XC_LDA_X_1D = libxc_t("XC_LDA_X_1D", 21 , EXCH),  &
-+   XC_GGA_X_Q2D = libxc_t("XC_GGA_X_Q2D", 48 , EXCH),  &
-+   XC_GGA_X_PBE_MOL = libxc_t("XC_GGA_X_PBE_MOL", 49 , EXCH),  &
-+   XC_GGA_X_AK13 = libxc_t("XC_GGA_X_AK13", 56 , EXCH),  &
-+   XC_GGA_X_LV_RPW86 = libxc_t("XC_GGA_X_LV_RPW86", 58 , EXCH),  &
-+   XC_GGA_X_PBE_TCA = libxc_t("XC_GGA_X_PBE_TCA", 59 , EXCH),  &
-+   XC_GGA_X_PBEINT = libxc_t("XC_GGA_X_PBEINT", 60 , EXCH),  &
-+   XC_GGA_X_VMT84_GE = libxc_t("XC_GGA_X_VMT84_GE", 68 , EXCH),  &
-+   XC_GGA_X_VMT84_PBE = libxc_t("XC_GGA_X_VMT84_PBE", 69 , EXCH),  &
-+   XC_GGA_X_VMT_GE = libxc_t("XC_GGA_X_VMT_GE", 70 , EXCH),  &
-+   XC_GGA_X_VMT_PBE = libxc_t("XC_GGA_X_VMT_PBE", 71 , EXCH),  &
-+   XC_GGA_X_N12 = libxc_t("XC_GGA_X_N12", 82 , EXCH),  &
-+   XC_GGA_X_SSB_SW = libxc_t("XC_GGA_X_SSB_SW", 90 , EXCH),  &
-+   XC_GGA_X_SSB = libxc_t("XC_GGA_X_SSB", 91 , EXCH),  &
-+   XC_GGA_X_SSB_D = libxc_t("XC_GGA_X_SSB_D", 92 , EXCH),  &
-+   XC_GGA_X_BPCCAC = libxc_t("XC_GGA_X_BPCCAC", 98 , EXCH),  &
-+   XC_GGA_X_PBE = libxc_t("XC_GGA_X_PBE", 101 , EXCH),  &
-+   XC_GGA_X_PBE_R = libxc_t("XC_GGA_X_PBE_R", 102 , EXCH),  &
-+   XC_GGA_X_B86 = libxc_t("XC_GGA_X_B86", 103 , EXCH),  &
-+   XC_GGA_X_HERMAN = libxc_t("XC_GGA_X_HERMAN", 104 , EXCH),  &
-+   XC_GGA_X_B86_MGC = libxc_t("XC_GGA_X_B86_MGC", 105 , EXCH),  &
-+   XC_GGA_X_B88 = libxc_t("XC_GGA_X_B88", 106 , EXCH),  &
-+   XC_GGA_X_G96 = libxc_t("XC_GGA_X_G96", 107 , EXCH),  &
-+   XC_GGA_X_PW86 = libxc_t("XC_GGA_X_PW86", 108 , EXCH),  &
-+   XC_GGA_X_PW91 = libxc_t("XC_GGA_X_PW91", 109 , EXCH),  &
-+   XC_GGA_X_OPTX = libxc_t("XC_GGA_X_OPTX", 110 , EXCH),  &
-+   XC_GGA_X_DK87_R1 = libxc_t("XC_GGA_X_DK87_R1", 111 , EXCH),  &
-+   XC_GGA_X_DK87_R2 = libxc_t("XC_GGA_X_DK87_R2", 112 , EXCH),  &
-+   XC_GGA_X_LG93 = libxc_t("XC_GGA_X_LG93", 113 , EXCH),  &
-+   XC_GGA_X_FT97_A = libxc_t("XC_GGA_X_FT97_A", 114 , EXCH),  &
-+   XC_GGA_X_FT97_B = libxc_t("XC_GGA_X_FT97_B", 115 , EXCH),  &
-+   XC_GGA_X_PBE_SOL = libxc_t("XC_GGA_X_PBE_SOL", 116 , EXCH),  &
-+   XC_GGA_X_RPBE = libxc_t("XC_GGA_X_RPBE", 117 , EXCH),  &
-+   XC_GGA_X_WC = libxc_t("XC_GGA_X_WC", 118 , EXCH),  &
-+   XC_GGA_X_MPW91 = libxc_t("XC_GGA_X_MPW91", 119 , EXCH),  &
-+   XC_GGA_X_AM05 = libxc_t("XC_GGA_X_AM05", 120 , EXCH),  &
-+   XC_GGA_X_PBEA = libxc_t("XC_GGA_X_PBEA", 121 , EXCH),  &
-+   XC_GGA_X_MPBE = libxc_t("XC_GGA_X_MPBE", 122 , EXCH),  &
-+   XC_GGA_X_XPBE = libxc_t("XC_GGA_X_XPBE", 123 , EXCH),  &
-+   XC_GGA_X_2D_B86_MGC = libxc_t("XC_GGA_X_2D_B86_MGC", 124 , EXCH),  &
-+   XC_GGA_X_BAYESIAN = libxc_t("XC_GGA_X_BAYESIAN", 125 , EXCH),  &
-+   XC_GGA_X_PBE_JSJR = libxc_t("XC_GGA_X_PBE_JSJR", 126 , EXCH),  &
-+   XC_GGA_X_2D_B88 = libxc_t("XC_GGA_X_2D_B88", 127 , EXCH),  &
-+   XC_GGA_X_2D_B86 = libxc_t("XC_GGA_X_2D_B86", 128 , EXCH),  &
-+   XC_GGA_X_2D_PBE = libxc_t("XC_GGA_X_2D_PBE", 129 , EXCH),  &
-+   XC_GGA_X_OPTB88_VDW = libxc_t("XC_GGA_X_OPTB88_VDW", 139 , EXCH),  &
-+   XC_GGA_X_PBEK1_VDW = libxc_t("XC_GGA_X_PBEK1_VDW", 140 , EXCH),  &
-+   XC_GGA_X_OPTPBE_VDW = libxc_t("XC_GGA_X_OPTPBE_VDW", 141 , EXCH),  &
-+   XC_GGA_X_RGE2 = libxc_t("XC_GGA_X_RGE2", 142 , EXCH),  &
-+   XC_GGA_X_RPW86 = libxc_t("XC_GGA_X_RPW86", 144 , EXCH),  &
-+   XC_GGA_X_KT1 = libxc_t("XC_GGA_X_KT1", 145 , EXCH),  &
-+   XC_GGA_X_MB88 = libxc_t("XC_GGA_X_MB88", 149 , EXCH),  &
-+   XC_GGA_X_SOGGA = libxc_t("XC_GGA_X_SOGGA", 150 , EXCH),  &
-+   XC_GGA_X_SOGGA11 = libxc_t("XC_GGA_X_SOGGA11", 151 , EXCH),  &
-+   XC_GGA_X_C09X = libxc_t("XC_GGA_X_C09X", 158 , EXCH),  &
-+   XC_GGA_X_LB = libxc_t("XC_GGA_X_LB", 160 , EXCH),  &
-+   XC_GGA_X_LBM = libxc_t("XC_GGA_X_LBM", 182 , EXCH),  &
-+   XC_GGA_X_OL2 = libxc_t("XC_GGA_X_OL2", 183 , EXCH),  &
-+   XC_GGA_X_APBE = libxc_t("XC_GGA_X_APBE", 184 , EXCH),  &
-+   XC_GGA_X_HTBS = libxc_t("XC_GGA_X_HTBS", 191 , EXCH),  &
-+   XC_GGA_X_AIRY = libxc_t("XC_GGA_X_AIRY", 192 , EXCH),  &
-+   XC_GGA_X_LAG = libxc_t("XC_GGA_X_LAG", 193 , EXCH),  &
-+   XC_GGA_X_WPBEH = libxc_t("XC_GGA_X_WPBEH", 524 , EXCH),  &
-+   XC_GGA_X_HJS_PBE = libxc_t("XC_GGA_X_HJS_PBE", 525 , EXCH),  &
-+   XC_GGA_X_HJS_PBE_SOL = libxc_t("XC_GGA_X_HJS_PBE_SOL", 526 , EXCH),  &
-+   XC_GGA_X_HJS_B88 = libxc_t("XC_GGA_X_HJS_B88", 527 , EXCH),  &
-+   XC_GGA_X_HJS_B97X = libxc_t("XC_GGA_X_HJS_B97X", 528 , EXCH),  &
-+   XC_GGA_X_ITYH = libxc_t("XC_GGA_X_ITYH", 529 , EXCH),  &
-+   XC_GGA_X_SFAT = libxc_t("XC_GGA_X_SFAT", 530 , EXCH)
-+
-+! Correlation
-+
-+type(libxc_t), parameter  ::                  &
-+   XC_LDA_C_WIGNER = libxc_t("XC_LDA_C_WIGNER", 2 , CORR),  &
-+   XC_LDA_C_RPA = libxc_t("XC_LDA_C_RPA", 3 , CORR),  &
-+   XC_LDA_C_HL = libxc_t("XC_LDA_C_HL", 4 , CORR),  &
-+   XC_LDA_C_GL = libxc_t("XC_LDA_C_GL", 5 , CORR),  &
-+   XC_LDA_C_XALPHA = libxc_t("XC_LDA_C_XALPHA", 6 , CORR),  &
-+   XC_LDA_C_VWN = libxc_t("XC_LDA_C_VWN", 7 , CORR),  &
-+   XC_LDA_C_VWN_RPA = libxc_t("XC_LDA_C_VWN_RPA", 8 , CORR),  &
-+   XC_LDA_C_PZ = libxc_t("XC_LDA_C_PZ", 9 , CORR),  &
-+   XC_LDA_C_PZ_MOD = libxc_t("XC_LDA_C_PZ_MOD", 10 , CORR),  &
-+   XC_LDA_C_OB_PZ = libxc_t("XC_LDA_C_OB_PZ", 11 , CORR),  &
-+   XC_LDA_C_PW = libxc_t("XC_LDA_C_PW", 12 , CORR),  &
-+   XC_LDA_C_PW_MOD = libxc_t("XC_LDA_C_PW_MOD", 13 , CORR),  &
-+   XC_LDA_C_OB_PW = libxc_t("XC_LDA_C_OB_PW", 14 , CORR),  &
-+   XC_LDA_C_2D_AMGB = libxc_t("XC_LDA_C_2D_AMGB", 15 , CORR),  &
-+   XC_LDA_C_2D_PRM = libxc_t("XC_LDA_C_2D_PRM", 16 , CORR),  &
-+   XC_LDA_C_vBH = libxc_t("XC_LDA_C_vBH", 17 , CORR),  &
-+   XC_LDA_C_1D_CSC = libxc_t("XC_LDA_C_1D_CSC", 18 , CORR),  &
-+   XC_LDA_C_ML1 = libxc_t("XC_LDA_C_ML1", 22 , CORR),  &
-+   XC_LDA_C_ML2 = libxc_t("XC_LDA_C_ML2", 23 , CORR),  &
-+   XC_LDA_C_GOMBAS = libxc_t("XC_LDA_C_GOMBAS", 24 , CORR),  &
-+   XC_LDA_C_PW_RPA = libxc_t("XC_LDA_C_PW_RPA", 25 , CORR),  &
-+   XC_LDA_C_1D_LOOS = libxc_t("XC_LDA_C_1D_LOOS", 26 , CORR),  &
-+   XC_LDA_C_RC04 = libxc_t("XC_LDA_C_RC04", 27 , CORR),  &
-+   XC_LDA_C_VWN_1 = libxc_t("XC_LDA_C_VWN_1", 28 , CORR),  &
-+   XC_LDA_C_VWN_2 = libxc_t("XC_LDA_C_VWN_2", 29 , CORR),  &
-+   XC_LDA_C_VWN_3 = libxc_t("XC_LDA_C_VWN_3", 30 , CORR),  &
-+   XC_LDA_C_VWN_4 = libxc_t("XC_LDA_C_VWN_4", 31 , CORR),  &
-+   XC_GGA_C_Q2D = libxc_t("XC_GGA_C_Q2D", 47 , CORR),  &
-+   XC_GGA_C_ZPBEINT = libxc_t("XC_GGA_C_ZPBEINT", 61 , CORR),  &
-+   XC_GGA_C_PBEINT = libxc_t("XC_GGA_C_PBEINT", 62 , CORR),  &
-+   XC_GGA_C_ZPBESOL = libxc_t("XC_GGA_C_ZPBESOL", 63 , CORR),  &
-+   XC_GGA_C_N12_SX = libxc_t("XC_GGA_C_N12_SX", 79 , CORR),  &
-+   XC_GGA_C_N12 = libxc_t("XC_GGA_C_N12", 80 , CORR),  &
-+   XC_GGA_C_VPBE = libxc_t("XC_GGA_C_VPBE", 83 , CORR),  &
-+   XC_GGA_C_OP_XALPHA = libxc_t("XC_GGA_C_OP_XALPHA", 84 , CORR),  &
-+   XC_GGA_C_OP_G96 = libxc_t("XC_GGA_C_OP_G96", 85 , CORR),  &
-+   XC_GGA_C_OP_PBE = libxc_t("XC_GGA_C_OP_PBE", 86 , CORR),  &
-+   XC_GGA_C_OP_B88 = libxc_t("XC_GGA_C_OP_B88", 87 , CORR),  &
-+   XC_GGA_C_FT97 = libxc_t("XC_GGA_C_FT97", 88 , CORR),  &
-+   XC_GGA_C_SPBE = libxc_t("XC_GGA_C_SPBE", 89 , CORR),  &
-+   XC_GGA_C_REVTCA = libxc_t("XC_GGA_C_REVTCA", 99 , CORR),  &
-+   XC_GGA_C_TCA = libxc_t("XC_GGA_C_TCA", 100 , CORR),  &
-+   XC_GGA_C_PBE = libxc_t("XC_GGA_C_PBE", 130 , CORR),  &
-+   XC_GGA_C_LYP = libxc_t("XC_GGA_C_LYP", 131 , CORR),  &
-+   XC_GGA_C_P86 = libxc_t("XC_GGA_C_P86", 132 , CORR),  &
-+   XC_GGA_C_PBE_SOL = libxc_t("XC_GGA_C_PBE_SOL", 133 , CORR),  &
-+   XC_GGA_C_PW91 = libxc_t("XC_GGA_C_PW91", 134 , CORR),  &
-+   XC_GGA_C_AM05 = libxc_t("XC_GGA_C_AM05", 135 , CORR),  &
-+   XC_GGA_C_XPBE = libxc_t("XC_GGA_C_XPBE", 136 , CORR),  &
-+   XC_GGA_C_LM = libxc_t("XC_GGA_C_LM", 137 , CORR),  &
-+   XC_GGA_C_PBE_JRGX = libxc_t("XC_GGA_C_PBE_JRGX", 138 , CORR),  &
-+   XC_GGA_C_RGE2 = libxc_t("XC_GGA_C_RGE2", 143 , CORR),  &
-+   XC_GGA_C_WL = libxc_t("XC_GGA_C_WL", 147 , CORR),  &
-+   XC_GGA_C_WI = libxc_t("XC_GGA_C_WI", 148 , CORR),  &
-+   XC_GGA_C_SOGGA11 = libxc_t("XC_GGA_C_SOGGA11", 152 , CORR),  &
-+   XC_GGA_C_WI0 = libxc_t("XC_GGA_C_WI0", 153 , CORR),  &
-+   XC_GGA_C_SOGGA11_X = libxc_t("XC_GGA_C_SOGGA11_X", 159 , CORR),  &
-+   XC_GGA_C_APBE = libxc_t("XC_GGA_C_APBE", 186 , CORR),  &
-+   XC_GGA_C_OPTC = libxc_t("XC_GGA_C_OPTC", 200 , CORR)
-+
-+! Exchange and correlation
-+type(libxc_t), parameter  ::                  &
-+   XC_LDA_XC_TETER93 = libxc_t("XC_LDA_XC_TETER93", 20 , EXCH_CORR),  &
-+   XC_GGA_XC_OPBE_D = libxc_t("XC_GGA_XC_OPBE_D", 65 , EXCH_CORR),  &
-+   XC_GGA_XC_OPWLYP_D = libxc_t("XC_GGA_XC_OPWLYP_D", 66 , EXCH_CORR),  &
-+   XC_GGA_XC_OBLYP_D = libxc_t("XC_GGA_XC_OBLYP_D", 67 , EXCH_CORR),  &
-+   XC_GGA_XC_HCTH_407P = libxc_t("XC_GGA_XC_HCTH_407P", 93 , EXCH_CORR),  &
-+   XC_GGA_XC_HCTH_P76 = libxc_t("XC_GGA_XC_HCTH_P76", 94 , EXCH_CORR),  &
-+   XC_GGA_XC_HCTH_P14 = libxc_t("XC_GGA_XC_HCTH_P14", 95 , EXCH_CORR),  &
-+   XC_GGA_XC_B97_GGA1 = libxc_t("XC_GGA_XC_B97_GGA1", 96 , EXCH_CORR),  &
-+   XC_GGA_XC_HCTH_A = libxc_t("XC_GGA_XC_HCTH_A", 97 , EXCH_CORR),  &
-+   XC_GGA_XC_KT2 = libxc_t("XC_GGA_XC_KT2", 146 , EXCH_CORR),  &
-+   XC_GGA_XC_TH1 = libxc_t("XC_GGA_XC_TH1", 154 , EXCH_CORR),  &
-+   XC_GGA_XC_TH2 = libxc_t("XC_GGA_XC_TH2", 155 , EXCH_CORR),  &
-+   XC_GGA_XC_TH3 = libxc_t("XC_GGA_XC_TH3", 156 , EXCH_CORR),  &
-+   XC_GGA_XC_TH4 = libxc_t("XC_GGA_XC_TH4", 157 , EXCH_CORR),  &
-+   XC_GGA_XC_HCTH_93 = libxc_t("XC_GGA_XC_HCTH_93", 161 , EXCH_CORR),  &
-+   XC_GGA_XC_HCTH_120 = libxc_t("XC_GGA_XC_HCTH_120", 162 , EXCH_CORR),  &
-+   XC_GGA_XC_HCTH_147 = libxc_t("XC_GGA_XC_HCTH_147", 163 , EXCH_CORR),  &
-+   XC_GGA_XC_HCTH_407 = libxc_t("XC_GGA_XC_HCTH_407", 164 , EXCH_CORR),  &
-+   XC_GGA_XC_EDF1 = libxc_t("XC_GGA_XC_EDF1", 165 , EXCH_CORR),  &
-+   XC_GGA_XC_XLYP = libxc_t("XC_GGA_XC_XLYP", 166 , EXCH_CORR),  &
-+   XC_GGA_XC_B97 = libxc_t("XC_GGA_XC_B97", 167 , EXCH_CORR),  &
-+   XC_GGA_XC_B97_1 = libxc_t("XC_GGA_XC_B97_1", 168 , EXCH_CORR),  &
-+   XC_GGA_XC_B97_2 = libxc_t("XC_GGA_XC_B97_2", 169 , EXCH_CORR),  &
-+   XC_GGA_XC_B97_D = libxc_t("XC_GGA_XC_B97_D", 170 , EXCH_CORR),  &
-+   XC_GGA_XC_B97_K = libxc_t("XC_GGA_XC_B97_K", 171 , EXCH_CORR),  &
-+   XC_GGA_XC_B97_3 = libxc_t("XC_GGA_XC_B97_3", 172 , EXCH_CORR),  &
-+   XC_GGA_XC_PBE1W = libxc_t("XC_GGA_XC_PBE1W", 173 , EXCH_CORR),  &
-+   XC_GGA_XC_MPWLYP1W = libxc_t("XC_GGA_XC_MPWLYP1W", 174 , EXCH_CORR),  &
-+   XC_GGA_XC_PBELYP1W = libxc_t("XC_GGA_XC_PBELYP1W", 175 , EXCH_CORR),  &
-+   XC_GGA_XC_SB98_1a = libxc_t("XC_GGA_XC_SB98_1a", 176 , EXCH_CORR),  &
-+   XC_GGA_XC_SB98_1b = libxc_t("XC_GGA_XC_SB98_1b", 177 , EXCH_CORR),  &
-+   XC_GGA_XC_SB98_1c = libxc_t("XC_GGA_XC_SB98_1c", 178 , EXCH_CORR),  &
-+   XC_GGA_XC_SB98_2a = libxc_t("XC_GGA_XC_SB98_2a", 179 , EXCH_CORR),  &
-+   XC_GGA_XC_SB98_2b = libxc_t("XC_GGA_XC_SB98_2b", 180 , EXCH_CORR),  &
-+   XC_GGA_XC_SB98_2c = libxc_t("XC_GGA_XC_SB98_2c", 181 , EXCH_CORR),  &
-+   XC_GGA_XC_MOHLYP = libxc_t("XC_GGA_XC_MOHLYP", 194 , EXCH_CORR),  &
-+   XC_GGA_XC_MOHLYP2 = libxc_t("XC_GGA_XC_MOHLYP2", 195 , EXCH_CORR),  &
-+   XC_GGA_XC_TH_FL = libxc_t("XC_GGA_XC_TH_FL", 196 , EXCH_CORR),  &
-+   XC_GGA_XC_TH_FC = libxc_t("XC_GGA_XC_TH_FC", 197 , EXCH_CORR),  &
-+   XC_GGA_XC_TH_FCFO = libxc_t("XC_GGA_XC_TH_FCFO", 198 , EXCH_CORR),  &
-+   XC_GGA_XC_TH_FCO = libxc_t("XC_GGA_XC_TH_FCO", 199 , EXCH_CORR)
-+
-+end module m_libxc_list
-diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.f90
---- oncvpsp-3.2.2/src/m_psmlout.f90	1970-01-01 01:00:00.000000000 +0100
-+++ oncvpsp-3.2.2--psml-42/src/m_psmlout.f90	2016-06-30 16:57:17.000000000 +0200
-@@ -0,0 +1,1367 @@
+diff -Naur oncvpsp-3.2.3/src/m_psmlout.f90 oncvpsp-3.2.3--psml-51/src/m_psmlout.f90
+--- oncvpsp-3.2.3/src/m_psmlout.f90	1970-01-01 01:00:00.000000000 +0100
++++ oncvpsp-3.2.3--psml-51/src/m_psmlout.f90	2017-01-17 17:29:43.000000000 +0100
+@@ -0,0 +1,1438 @@
 +!
 +! Copyright (c) 1989-2015 by D. R. Hamann, Mat-Sim Research LLC and Rutgers
 +! University
-+! Copyright (c) 2015 by Alberto Garcia, ICMAB-CSIC for xmlf90-wxml calls
-+! in support of the PSML format
++! Copyright (c) 2015-2017 by Alberto Garcia, ICMAB-CSIC, for PSML output
 +!
 +! 
 +! This program is free software: you can redistribute it and/or modify
@@ -639,11 +364,16 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +!
 +module m_psmlout
 +
++  
 +  public :: psmlout, psmlout_r, copy_input_file_for_psml
 +  private
 +
 +  integer, parameter :: dp = selected_real_kind(10,100)
 +  character(len=1), dimension(0:4) :: lsymb = (/'s','p','d','f','g'/)
++  
++  character(len=*), parameter :: PSML_VERSION = "1.0"
++  character(len=*), parameter, public :: PSML_CREATOR = "ONCVPSP-3.2.3+psml-51"
++  character(len=*), parameter :: PSML_FILENAME = "ONCVPSPPSML"
 +
 +  CONTAINS
 +
@@ -680,7 +410,6 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +  ! Alberto Garcia, February 1, 2015
 +
 +  use xmlf90_wxml     ! To write XML files
-+  use m_libxc_list  ! For ease of libxc handling
 +  use m_uuid        ! To generate uuid
 +
 + implicit none
@@ -717,7 +446,6 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +!psml stuff
 +
 +  type(xmlf_t) :: xf
-+  type(libxc_t) :: libxc_id(2)
 +
 +  integer   :: i, j, npts
 +  integer   :: ii, jj, l1
@@ -725,8 +453,7 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +  real(dp)  :: total_valence_charge
 +  real(dp), pointer :: r(:), chval(:), chcore(:)
 +  real(dp), pointer :: vps(:), vlocal(:)
-+  real(dp), allocatable :: r0(:), f0(:)
-+
++  real(dp), allocatable :: r0(:), f0(:), div_by_r(:)
 +  character(len=100)    :: line
 +  character*4      :: polattrib, coreattrib
 +  character*1      :: pscode, char_dummy
@@ -735,8 +462,6 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +
 +  character(len=1), dimension(0:4) :: lsymb = (/'s','p','d','f','g'/)
 +
-+  character*30 xcfuntype, xcfunparam
-+  integer :: x_code, c_code
 +  integer          :: ncore, nval, ncp, norbs, npots
 +
 +  integer, allocatable  :: n(:), l(:)
@@ -756,18 +481,18 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 + call date_and_time(VALUES=dtime)
 + write(datestr,"(i4,'-',i2.2,'-',i2.2)") dtime(1:3)
 +
-+  call xml_OpenFile("ONCVPSPPSML",xf, indent=.false.)
++  call xml_OpenFile(PSML_FILENAME,xf, indent=.false.)
 +
 +  call xml_AddXMLDeclaration(xf,"UTF-8")
 +
 +  call xml_NewElement(xf,"psml")
-+  call my_add_attribute(xf,"version","0.9")
++  call my_add_attribute(xf,"version",PSML_VERSION)
 +  call my_add_attribute(xf,"energy_unit","hartree")
 +  call my_add_attribute(xf,"length_unit","bohr")
 +  call my_add_attribute(xf,"uuid",generate_uuid(version=1))
 +
 +  call xml_NewElement(xf,"provenance")
-+  call my_add_attribute(xf,"creator","ONCVPSP-3.2.2+psml")
++  call my_add_attribute(xf,"creator",PSML_CREATOR)
 +  call my_add_attribute(xf,"date",datestr)
 +  call xml_NewElement(xf,"input-file")
 +  call my_add_attribute(xf,"name","oncvpsp-input")
@@ -837,45 +562,6 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +     coreattrib = "no"
 +  endif
 +
-+  ! XC name handling
-+
-+  select case(iexc)
-+
-+  case(1) 
-+     xcfuntype    = 'LDA'
-+     xcfunparam   = 'Wigner'
-+     libxc_id = (/ XC_LDA_X, XC_LDA_C_WIGNER /)
-+  case(2) 
-+     xcfuntype    = 'LDA'
-+     xcfunparam   = 'Hedin-Lundqvist'
-+     libxc_id = (/ XC_LDA_X, XC_LDA_C_HL /)
-+  case(3) 
-+     xcfuntype    = 'LDA'
-+     xcfunparam   = 'Ceperley-Alder PZ'
-+     libxc_id = (/ XC_LDA_X, XC_LDA_C_PZ /)
-+
-+  case(4) 
-+     xcfuntype    = 'GGA'
-+     xcfunparam   = 'Perdew-Burke-Ernzerhof'
-+     libxc_id = (/ XC_GGA_X_PBE, XC_GGA_C_PBE /) 
-+
-+  case(:-1)      ! libxc encoding -XXXCCC
-+     xcfuntype    = 'libxc-family'
-+     xcfunparam   = 'libxc-authors'
-+     x_code = -iexc/1000
-+     c_code = -iexc - 1000*x_code
-+     ! We need a way to get the symbolic name from the code
-+     ! ... and to cover the special case of EXCH_CORR functionals
-+     libxc_id = (/ libxc_t("XC_???_X_???", x_code, EXCH), &
-+                   libxc_t("XC_???_C_???", c_code, CORR) /) 
-+     
-+  case default
-+
-+     xcfuntype    = '-----'
-+     xcfunparam   = '-----'
-+     libxc_id = (/  XC_NOT_IMPL, XC_NOT_IMPL /)   ! ???
-+
-+  end select
 +  !
 +  !
 +  call xml_NewElement(xf,"header")
@@ -891,28 +577,10 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +  call my_add_attribute(xf,"polarized",polattrib)
 +  call my_add_attribute(xf,"core-corrections",coreattrib)
 +
-+          call xml_NewElement(xf,"exchange-correlation")
-+          call xml_NewElement(xf,"annotation")
-+          call my_add_attribute(xf,"oncvpsp-xc-code",str(iexc))
-+          call my_add_attribute(xf,"oncvpsp-xc-type",trim(xcfuntype))
-+          call my_add_attribute(xf,"oncvpsp-xc-authors",trim(xcfunparam))
-+          call xml_EndElement(xf,"annotation")
-+
-+          call xml_NewElement(xf,"libxc-info")
-+          call my_add_attribute(xf,"number-of-functionals","2")
-+           do i = 1, 2
-+              call xml_NewElement(xf,"functional")
-+               call my_add_attribute(xf,"name",trim(libxc_id(i)%name))
-+               call my_add_attribute(xf,"type",trim(libxc_id(i)%xc_kind%str))
-+               call my_add_attribute(xf,"id",str(libxc_id(i)%code))
-+              call xml_EndElement(xf,"functional")
-+           enddo
-+          call xml_EndElement(xf,"libxc-info")
-+          call xml_EndElement(xf,"exchange-correlation")
-+          !
-+
++  ! XC name handling
++  call exchange_correlation_info(xf,iexc)
 +  !
-+  call do_configuration()
++  call configuration_info()
 +  call xml_EndElement(xf,"header")
 +
 +!AG: save
@@ -930,6 +598,7 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 + npts = mmax
 + nrl  = nrl0
 +
++ allocate(div_by_r(mmax))
 + r => rr(:)
 + chval => rho(:)
 + chcore => rhomod(:,1)
@@ -1037,8 +706,23 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +     call my_add_attribute(xf,"matching-radius",str(rcore))
 +     call my_add_attribute(xf,"number-of-continuous-derivatives", &
 +                                    str(4))
-+     call my_add_attribute(xf,"annotation",  &
-+                  "Monotonic 7th-order polynomial with no linear term")
++     call xml_NewElement(xf,"annotation")
++     select case (icmod)
++        case (1)
++           call my_add_attribute(xf,"model-charge-form",  &
++                "Polynomial")
++        case (2)
++           call my_add_attribute(xf,"model-charge-form",  &
++                "Teter function fitted using value and slope")
++        case (3)
++           call my_add_attribute(xf,"model-charge-form",  &
++                "Teter function with specified parameters")
++        case (4)
++           call my_add_attribute(xf,"model-charge-form",  &
++                "Teter function optimized using XC hardness")
++        end select
++     call xml_EndElement(xf,"annotation")
++        
 +     call xml_NewElement(xf,"radfunc")
 +
 +     call xml_NewElement(xf,"data")
@@ -1077,16 +761,17 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +      do l1=1,lmax+1
 +         if(l1==lloc+1) cycle
 +         do jj=1,nproj(l1)
-+            call dpnint(r,vkb(:,jj,l1),npts,r0,f0,nrl)
++            ! Store projectors without r factor
++            div_by_r(:) = vkb(:,jj,l1)/r(:)
++            call dpnint(r,div_by_r,npts,r0,f0,nrl)
 +            write(fname,"(a,i1,a,i1,a)") "vkb.", l1-1, ".", jj,".check"
-+            call check_grid(r,vkb(:,jj,l1),npts,r0,f0,nrl,fname)
++            call check_grid(r,div_by_r,npts,r0,f0,nrl,fname)
 +            call write_psml_item(xf, class="proj", &
 +                                 seq=jj, l=l1-1, &
 +                                 ekb=evkb(jj,l1), &
 +                                 type="oncv", f=f0)
 +         enddo
 +      enddo
-+
 +      call xml_EndElement(xf,"nonlocal-projectors")
 +
 +  call xml_EndElement(xf,"psml")
@@ -1094,10 +779,10 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +
 +  call xml_Close(xf)
 +
-+  deallocate(f0,r0)
++  deallocate(f0,r0, div_by_r)
 +
 +CONTAINS
-+  subroutine do_configuration()
++  subroutine configuration_info()
 +
 +  call xml_NewElement(xf,"valence-configuration")
 +  call my_add_attribute(xf,"total-valence-charge", str(total_valence_charge))
@@ -1114,7 +799,7 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +     call xml_EndElement(xf,"shell")
 +  enddo
 +  call xml_EndElement(xf,"valence-configuration")
-+end subroutine do_configuration
++end subroutine configuration_info
 +
 +end subroutine psmlout
 +!
@@ -1155,7 +840,6 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +  ! Alberto Garcia, February 1, 2015
 +
 +  use xmlf90_wxml     ! To write XML files
-+  use m_libxc_list  ! For ease of libxc handling
 +  use m_uuid        ! To generate uuid
 +
 + implicit none
@@ -1182,7 +866,7 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 + real(dp) :: fa(30),rc0(6),ep(6),qcut(6),debl(6),facnf(30,5)
 + real(dp) :: dvloc0,epsh1,epsh2,depsh,rlmax
 + character*4 :: psfile
-+ real(dp) :: uua(mmax,nv)
++ real(dp) :: uua(mmax,2,nv)
 +
 +
 +!Local variables
@@ -1191,7 +875,6 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 + integer :: npr_so(4), npr_sr(4)
 +
 +  type(xmlf_t) :: xf
-+  type(libxc_t) :: libxc_id(2)
 +
 +  integer   :: i, j, npts
 +  integer   :: ii, jj, l1, jk
@@ -1199,7 +882,7 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +  real(dp)  :: total_valence_charge
 +  real(dp), pointer :: r(:), chval(:), chcore(:)
 +  real(dp), pointer :: vlocal(:)
-+  real(dp), allocatable :: r0(:), f0(:), vps(:)
++  real(dp), allocatable :: r0(:), f0(:), vps(:), div_by_r(:)
 +
 +  character(len=100)    :: line
 +  character*4      :: polattrib, coreattrib
@@ -1209,8 +892,6 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +
 +  character(len=1), dimension(0:4) :: lsymb = (/'s','p','d','f','g'/)
 +
-+  character*30 xcfuntype, xcfunparam
-+  integer :: x_code, c_code
 +  integer          :: ncore, nval, ncp, norbs, npots
 +
 +  integer, allocatable  :: n(:), l(:)
@@ -1227,18 +908,18 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 + call date_and_time(VALUES=dtime)
 + write(datestr,"(i4,'-',i2.2,'-',i2.2)") dtime(1:3)
 +
-+  call xml_OpenFile("ONCVPSPPSML",xf, indent=.false.)
++  call xml_OpenFile(PSML_FILENAME,xf, indent=.false.)
 +
 +  call xml_AddXMLDeclaration(xf,"UTF-8")
 +
 +  call xml_NewElement(xf,"psml")
-+  call my_add_attribute(xf,"version","0.9")
++  call my_add_attribute(xf,"version",PSML_VERSION)
 +  call my_add_attribute(xf,"energy_unit","hartree")
 +  call my_add_attribute(xf,"length_unit","bohr")
 +  call my_add_attribute(xf,"uuid",generate_uuid(version=1))
 +
 +  call xml_NewElement(xf,"provenance")
-+  call my_add_attribute(xf,"creator","ONCVPSP-3.2.2+psml")
++  call my_add_attribute(xf,"creator",PSML_CREATOR)
 +  call my_add_attribute(xf,"date",datestr)
 +  call xml_NewElement(xf,"input-file")
 +  call my_add_attribute(xf,"name","oncvpsp-input")
@@ -1307,47 +988,6 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +     coreattrib = "no"
 +  endif
 +
-+  ! XC name handling
-+
-+  select case(iexc)
-+
-+  case(1) 
-+     xcfuntype    = 'LDA'
-+     xcfunparam   = 'Wigner'
-+     libxc_id = (/ XC_LDA_X, XC_LDA_C_WIGNER /)
-+  case(2) 
-+     xcfuntype    = 'LDA'
-+     xcfunparam   = 'Hedin-Lundqvist'
-+     libxc_id = (/ XC_LDA_X, XC_LDA_C_HL /)
-+  case(3) 
-+     xcfuntype    = 'LDA'
-+     xcfunparam   = 'Ceperley-Alder PZ'
-+     libxc_id = (/ XC_LDA_X, XC_LDA_C_PZ /)
-+
-+  case(4) 
-+     xcfuntype    = 'GGA'
-+     xcfunparam   = 'Perdew-Burke-Ernzerhof'
-+     libxc_id = (/ XC_GGA_X_PBE, XC_GGA_C_PBE /) 
-+
-+  case(:-1)      ! libxc encoding -XXXCCC
-+     xcfuntype    = 'libxc-family'
-+     xcfunparam   = 'libxc-authors'
-+     x_code = -iexc/1000
-+     c_code = -iexc - 1000*x_code
-+     ! We need a way to get the symbolic name from the code
-+     ! ... and to cover the special case of EXCH_CORR functionals
-+     libxc_id = (/ libxc_t("XC_???_X_???", x_code, EXCH), &
-+                   libxc_t("XC_???_C_???", c_code, CORR) /) 
-+     
-+  case  default
-+
-+     xcfuntype    = '-----'
-+     xcfunparam   = '-----'
-+     libxc_id = (/  XC_NOT_IMPL, XC_NOT_IMPL /)   ! ???
-+
-+  end select
-+  !
-+  !
 +  call xml_NewElement(xf,"header")
 +  call my_add_attribute(xf,"atomic-label",nameat)
 +  call my_add_attribute(xf,"atomic-number",str(zz))
@@ -1357,28 +997,10 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +  call my_add_attribute(xf,"polarized",polattrib)
 +  call my_add_attribute(xf,"core-corrections",coreattrib)
 +
-+          call xml_NewElement(xf,"exchange-correlation")
-+          call xml_NewElement(xf,"annotation")
-+          call my_add_attribute(xf,"oncvpsp-xc-code",str(iexc))
-+          call my_add_attribute(xf,"oncvpsp-xc-type",trim(xcfuntype))
-+          call my_add_attribute(xf,"oncvpsp-xc-authors",trim(xcfunparam))
-+          call xml_EndElement(xf,"annotation")
-+
-+          call xml_NewElement(xf,"libxc-info")
-+          call my_add_attribute(xf,"number-of-functionals","2")
-+           do i = 1, 2
-+              call xml_NewElement(xf,"functional")
-+               call my_add_attribute(xf,"name",trim(libxc_id(i)%name))
-+               call my_add_attribute(xf,"type",trim(libxc_id(i)%xc_kind%str))
-+               call my_add_attribute(xf,"id",str(libxc_id(i)%code))
-+              call xml_EndElement(xf,"functional")
-+           enddo
-+          call xml_EndElement(xf,"libxc-info")
-+          call xml_EndElement(xf,"exchange-correlation")
-+          !
-+
++  ! XC name handling
++  call exchange_correlation_info(xf,iexc)
 +  !
-+  call do_configuration()
++  call configuration_info()
 +  call xml_EndElement(xf,"header")
 +
 +!AG: save
@@ -1396,6 +1018,7 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 + npts = mmax
 + nrl  = nrl0
 +
++ allocate(div_by_r(mmax))
 + r => rr(:)
 + chval => rho(:)
 + chcore => rhomod(:,1)
@@ -1500,7 +1123,7 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +! Check that the range of the linear grid is appropriate to hold the orbitals
 +! (and, by implication, the charge density) correctly
 +
-+  call get_new_nrl(nrl0,drl,mmax,rr,nv,uua,nrl,nrl_changed)
++  call get_new_nrl_r(nrl0,drl,mmax,rr,nc,nv,la,uua,nrl,nrl_changed)
 +
 +  call xml_NewElement(xf,"valence-charge")
 +  call my_add_attribute(xf,"total-charge",  &
@@ -1553,9 +1176,26 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +     call xml_NewElement(xf,"pseudocore-charge")
 +     call my_add_attribute(xf,"matching-radius",str(rcore))
 +     call my_add_attribute(xf,"number-of-continuous-derivatives", &
-+                                    str(4))
-+     call my_add_attribute(xf,"annotation",  &
-+                  "Monotonic 7th-order polynomial with no linear term")
++          str(4))
++     
++     call xml_NewElement(xf,"annotation")
++
++     select case (icmod)
++        case (1)
++           call my_add_attribute(xf,"model-charge-form",  &
++                "Polynomial")
++        case (2)
++           call my_add_attribute(xf,"model-charge-form",  &
++                "Teter function fitted using value and slope")
++        case (3)
++           call my_add_attribute(xf,"model-charge-form",  &
++                "Teter function with specified parameters")
++        case (4)
++           call my_add_attribute(xf,"model-charge-form",  &
++                "Teter function optimized using XC hardness")
++        end select
++     call xml_EndElement(xf,"annotation")
++        
 +     call xml_NewElement(xf,"radfunc")
 +
 +     call xml_NewElement(xf,"data")
@@ -1567,7 +1207,6 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +     call xml_EndElement(xf,"pseudocore-charge")
 +     deallocate(chcore)
 +  endif
-+
 +
 +        vlocal => vpuns(:,lloc+1,1)
 +        call xml_NewElement(xf,"local-potential")
@@ -1606,24 +1245,28 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +      do l1=1,lmax+1
 +         if(l1==lloc+1) cycle
 +         do jj=1,npr_sr(l1)
-+            call dpnint(r,vsr(:,jj,l1),npts,r0,f0,nrl)
++            ! Store projectors without r factor
++            div_by_r(:) = vsr(:,jj,l1)/r(:)
++            call dpnint(r,div_by_r,npts,r0,f0,nrl)
 +            call write_psml_item(xf, class="proj", &
 +                                 seq=jj, l=l1-1, &
 +                                 ekb=esr(jj,l1), &
 +                                 type="oncv", f=f0)
 +         enddo
 +      enddo
-+      call xml_EndElement(xf,"projectors")
++      call xml_EndElement(xf,"nonlocal-projectors")
 +!
 +!     Spin-orbit part
 +!
-+      call xml_NewElement(xf,"projectors")
++      call xml_NewElement(xf,"nonlocal-projectors")
 +      call my_add_attribute(xf,"set","spin_orbit")
 +
 +      do l1=2,lmax+1
 +         if(l1==lloc+1) cycle
 +         do jj=1,npr_so(l1)
-+            call dpnint(r,vso(:,jj,l1),npts,r0,f0,nrl)
++            ! Store projectors without r factor
++            div_by_r(:) = vso(:,jj,l1)/r(:)
++            call dpnint(r,div_by_r,npts,r0,f0,nrl)
 +            call write_psml_item(xf, class="proj", &
 +                                 seq=jj, l=l1-1, &
 +                                 ekb=eso(jj,l1), &
@@ -1637,7 +1280,7 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +
 +      call xml_NewElement(xf,"nonlocal-projectors")
 +      call my_add_attribute(xf,"set","lj")
-+ 
++
 +      do l1=1,lmax+1
 +         if(l1==lloc+1) cycle
 +
@@ -1646,7 +1289,9 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +            jval = 0.0
 +
 +            do jj=1,nproj(l1)
-+               call dpnint(r,vkb(:,jj,l1,1),npts,r0,f0,nrl)
++               ! Store projectors without r factor
++               div_by_r(:) = vkb(:,jj,l1,1)/r(:)
++               call dpnint(r,div_by_r,npts,r0,f0,nrl)
 +               call write_psml_item(xf, class="proj", &
 +                                 seq=jj, l=l1-1, j=jval, &
 +                                 ekb=evkb(jj,l1,1), &
@@ -1659,7 +1304,9 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +           do jk=1,2
 +              jval = l1-1 + (3-2*jk)*0.5  ! convert (1,2) to (1,-1)*1/2
 +              do jj=1,nproj(l1)
-+                 call dpnint(r,vkb(:,jj,l1,jk),npts,r0,f0,nrl)
++                 ! Store projectors without r factor
++                 div_by_r(:) = vkb(:,jj,l1,jk)/r(:)
++                 call dpnint(r,div_by_r,npts,r0,f0,nrl)
 +                 call write_psml_item(xf, class="proj", &
 +                                 seq=jj, l=l1-1, j=jval, &
 +                                 ekb=evkb(jj,l1,jk), &
@@ -1673,16 +1320,16 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +      call xml_EndElement(xf,"nonlocal-projectors")
 +!
 +   endif ! upf vs psp8
-+
++   
 +  call xml_EndElement(xf,"psml")
 +
 +
 +  call xml_Close(xf)
 +
-+  deallocate(f0,r0)
++  deallocate(f0,r0,div_by_r)
 +
 +CONTAINS
-+  subroutine do_configuration()
++  subroutine configuration_info()
 +
 +  call xml_NewElement(xf,"valence-configuration")
 +  call my_add_attribute(xf,"total-valence-charge", str(total_valence_charge))
@@ -1699,7 +1346,7 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +     call xml_EndElement(xf,"shell")
 +  enddo
 +  call xml_EndElement(xf,"valence-configuration")
-+end subroutine do_configuration
++end subroutine configuration_info
 +
 +
 +end subroutine psmlout_r
@@ -1924,8 +1571,49 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 + if (uurcut > drl*dble(nrl-1)) then
 +   nrl_changed = .true.
 +   nrl_new = 1 + uurcut/drl
++   if(mod(nrl_new,2)/=0) nrl_new=nrl_new+1
++   write(6,'(a,i5,a,f10.5)') "Updating nrl = ", nrl_new, " for uurcut = ", uurcut
 + end if
 +end subroutine get_new_nrl
++
++ subroutine get_new_nrl_r(nrl,drl,mmax,rr,nc,nv,la,uua,nrl_new,nrl_changed)
++   integer, intent(in)  :: nrl, mmax, nc, nv, la(30)
++   real(dp), intent(in) :: drl, rr(mmax), uua(mmax,2,nv)
++   integer, intent(out) :: nrl_new
++   logical, intent(out) :: nrl_changed
++
++   real(dp) :: al, uurcut, nrmsum
++   integer  :: ii, jj, l1, ikap, mkap
++
++! adjust nrl to properly accomodate atomic orbitals
++ nrl_changed = .false.
++ al = dlog(rr(2)/rr(1))
++ uurcut = 0.d0
++ do ii=1,nv
++   l1 = la(nc+ii)
++   if(l1==0) then
++     mkap=1
++   else
++     mkap=2
++   end if
++   do ikap=1,mkap
++     nrmsum = 0.d0
++     do jj=mmax,1,-1
++       nrmsum = nrmsum + (uua(jj,ikap,ii)**2) * rr(jj)*al
++       if (nrmsum > 1.d-6) then
++         exit  ! Cutoff radius such that uu norm accurate to 10^-6
++       end if
++     end do
++     if (rr(jj) > uurcut) uurcut = rr(jj)  
++   end do
++ end do
++ if (uurcut > drl*dble(nrl-1)) then
++   nrl_changed = .true.
++   nrl_new = 1 + uurcut/drl
++   if(mod(nrl_new,2)/=0) nrl_new=nrl_new+1
++   write(6,'(a,i5,a,f10.5)') "Updating nrl = ", nrl_new, " for uurcut = ", uurcut
++ end if
++end subroutine get_new_nrl_r
 +
 +subroutine copy_input_file_for_psml()
 +! Makes two copies of the input file: one for oncvpsp
@@ -1981,10 +1669,119 @@ diff -Naur oncvpsp-3.2.2/src/m_psmlout.f90 oncvpsp-3.2.2--psml-42/src/m_psmlout.
 +      call xml_AddCDATASection(xf,trim(buffer),line_feed=.true.)
 +!                                                                     
 +    end subroutine cdata_section_from_file
++    
++    subroutine exchange_correlation_info(xf,iexc)
++      use xmlf90_wxml
++
++      type(xmlf_t), intent(inout)   :: xf
++      integer, intent(in)           :: iexc
++      
++      character(len=120) :: xcfuntype, names(2), libxc_string
++      character(len=60)  :: types(2), libxc_type
++      integer :: x_code, c_code
++      integer :: i, nfuncs
++      
++      integer :: libxc_id(2)
++
++      external :: libxc_info
++
++      call xml_NewElement(xf,"exchange-correlation")
++
++      select case(iexc)
++
++      case(1) 
++         xcfuntype    = 'LDA -- Wigner'
++         nfuncs = 2
++         libxc_id = (/ 1, 2 /)
++         names(1) = "Slater exchange (LDA)"
++         names(2) = "Wigner (LDA)"
++         types(1) = "exchange"
++         types(2) = "correlation" 
++      case(2) 
++         xcfuntype    = 'LDA -- Hedin-Lundqvist'
++         nfuncs = 2
++         libxc_id = (/ 1, 4 /)
++         names(1) = "Slater exchange (LDA)"
++         names(2) = "Hedin & Lundqvist (LDA)"
++         types(1) = "exchange"
++         types(2) = "correlation" 
++      case(3) 
++         xcfuntype    = 'LDA -- Ceperley-Alder Perdew-Zunger'
++         nfuncs = 2
++         libxc_id = (/ 1, 9 /)
++         names(1) = "Slater exchange (LDA)"
++         names(2) = "Perdew & Zunger (LDA)"
++         types(1) = "exchange"
++         types(2) = "correlation" 
++
++      case(4) 
++         xcfuntype    = 'GGA -- Perdew-Burke-Ernzerhof'
++         nfuncs = 2
++         libxc_id = (/ 101, 130 /)
++         names(1) = "Perdew, Burke & Ernzerhof (GGA)"
++         names(2) = "Perdew, Burke & Ernzerhof (GGA)"
++         types(1) = "exchange"
++         types(2) = "correlation" 
++
++      case(:-1)      ! libxc encoding -XXXCCC
++                     !             or -YYY for single exc functional
++         xcfuntype    = 'libxc-interface'
++         if (-iexc < 1000) then
++            ! Special syntax for single functional
++            ! (For example, Teter exch-corr functional: iexc=-020
++            nfuncs = 1
++            libxc_id(1) = -iexc
++         else
++            x_code = -iexc/1000
++            c_code = -iexc - 1000*x_code
++            nfuncs = 2 
++            libxc_id = (/ x_code, c_code /)
++         endif
++     
++      end select
++
++     call xml_NewElement(xf,"annotation")
++     call my_add_attribute(xf,"oncvpsp-xc-code",str(iexc))
++     call my_add_attribute(xf,"oncvpsp-xc-type",trim(xcfuntype))
++     call xml_EndElement(xf,"annotation")
++
++     call xml_NewElement(xf,"libxc-info")
++     select case(iexc)
++
++     case(1:4) 
++        call my_add_attribute(xf,"number-of-functionals",str(nfuncs))
++        do i = 1, nfuncs
++           call xml_NewElement(xf,"functional")
++           call my_add_attribute(xf,"name",trim(names(i)))
++           call my_add_attribute(xf,"type",trim(types(i)))
++           call my_add_attribute(xf,"id",str(libxc_id(i)))
++           call xml_EndElement(xf,"functional")
++        enddo
++        
++     case(:-1)      ! libxc encoding -XXXCCC
++                    !             or -YYY for single exc functional
++        call my_add_attribute(xf,"number-of-functionals",str(nfuncs))
++        do i = 1, nfuncs
++           call xml_NewElement(xf,"functional")
++           call libxc_info(libxc_id(i),libxc_string,libxc_type)
++           call my_add_attribute(xf,"name",trim(libxc_string))
++           call my_add_attribute(xf,"type",trim(libxc_type))
++           call my_add_attribute(xf,"id",str(libxc_id(i)))
++           call xml_EndElement(xf,"functional")
++        enddo
++        
++     end select
++  
++        call xml_EndElement(xf,"libxc-info")
++  
++  call xml_EndElement(xf,"exchange-correlation")
++
++end subroutine exchange_correlation_info
++
 +end module m_psmlout
-diff -Naur oncvpsp-3.2.2/src/m_uuid.f90 oncvpsp-3.2.2--psml-42/src/m_uuid.f90
---- oncvpsp-3.2.2/src/m_uuid.f90	1970-01-01 01:00:00.000000000 +0100
-+++ oncvpsp-3.2.2--psml-42/src/m_uuid.f90	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/src/m_uuid.f90 oncvpsp-3.2.3--psml-51/src/m_uuid.f90
+--- oncvpsp-3.2.3/src/m_uuid.f90	1970-01-01 01:00:00.000000000 +0100
++++ oncvpsp-3.2.3--psml-51/src/m_uuid.f90	2017-01-17 17:29:43.000000000 +0100
 @@ -0,0 +1,607 @@
 +module mtprng
 +
@@ -2593,9 +2390,9 @@ diff -Naur oncvpsp-3.2.2/src/m_uuid.f90 oncvpsp-3.2.2--psml-42/src/m_uuid.f90
 +
 +    uuid = generate_uuid(version=1)
 +end subroutine get_uuid
-diff -Naur oncvpsp-3.2.2/src/modcore.f90 oncvpsp-3.2.2--psml-42/src/modcore.f90
---- oncvpsp-3.2.2/src/modcore.f90	2015-08-07 16:30:16.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/src/modcore.f90	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/src/modcore.f90 oncvpsp-3.2.3--psml-51/src/modcore.f90
+--- oncvpsp-3.2.3/src/modcore.f90	2016-09-15 16:20:11.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/modcore.f90	2017-01-17 17:29:43.000000000 +0100
 @@ -24,7 +24,7 @@
  ! Teter, Phys. Rev. B 48, 5031 (1993) , Appendix, as 
  
@@ -2623,9 +2420,9 @@ diff -Naur oncvpsp-3.2.2/src/modcore.f90 oncvpsp-3.2.2--psml-42/src/modcore.f90
   real(dp), parameter :: eps=1.0d-7
 -
  !Local variables
-  real(dp) :: fcrossover
   real(dp) :: a0,al,et,yy,gg,a0min,a0max,dermax,psum,sf,eeel,eexc
-@@ -69,7 +70,7 @@
+  real(dp) :: d2mdiff,rmatch,rhocmatch
+@@ -68,7 +69,7 @@
   real(dp) :: aco(5),polym(5,5),work(5,5),constm(5,5),xpow(9),fmatch(5)
   real(dp), allocatable :: vxcae(:),vxcpsp(:),vo(:),d2excae(:,:),d2excps(:,:)
   real(dp), allocatable :: dvxcae(:,:),dvxcps(:,:),vxct(:)
@@ -2634,10 +2431,10 @@ diff -Naur oncvpsp-3.2.2/src/modcore.f90 oncvpsp-3.2.2--psml-42/src/modcore.f90
   integer :: ipvt(5),nodes(4)
  
  
-diff -Naur oncvpsp-3.2.2/src/modcore2.f90 oncvpsp-3.2.2--psml-42/src/modcore2.f90
---- oncvpsp-3.2.2/src/modcore2.f90	2015-08-07 17:05:02.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/src/modcore2.f90	2016-06-30 16:57:17.000000000 +0200
-@@ -24,7 +24,7 @@
+diff -Naur oncvpsp-3.2.3/src/modcore2.f90 oncvpsp-3.2.3--psml-51/src/modcore2.f90
+--- oncvpsp-3.2.3/src/modcore2.f90	2016-09-15 16:20:11.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/modcore2.f90	2017-01-17 17:29:43.000000000 +0100
+@@ -22,7 +22,7 @@
  ! Teter, Phys. Rev. B 48, 5031 (1993) , Appendix, as 
  
   subroutine modcore2(icmod,rhops,rhotps,rhoc,rhoae,rhotae,rhomod, &
@@ -2646,17 +2443,15 @@ diff -Naur oncvpsp-3.2.2/src/modcore2.f90 oncvpsp-3.2.2--psml-42/src/modcore2.f9
  
  !icmod  3 coefficient optimizaion, 4 for specivied fcfact and rfact
  !rhops  state-by-state pseudocharge density
-@@ -43,7 +43,8 @@
+@@ -41,6 +41,7 @@
  !la  angular-momenta
  !zion  ion charge
  !iexc  exchange-correlation function to be used
--
 +!ircc  index of matching point
-+   
+ 
   implicit none
   integer, parameter :: dp=kind(1.0d0)
- 
-@@ -57,6 +58,7 @@
+@@ -55,6 +56,7 @@
  
  !Output variables
   real(dp) :: rhomod(mmax,5)
@@ -2664,7 +2459,7 @@ diff -Naur oncvpsp-3.2.2/src/modcore2.f90 oncvpsp-3.2.2--psml-42/src/modcore2.f9
  
  !convergence criterion
   real(dp), parameter :: eps=1.0d-7
-@@ -70,7 +72,7 @@
+@@ -67,7 +69,7 @@
   real(dp) :: fmatch(5)
   real(dp), allocatable :: vxcae(:),vxcpsp(:),vo(:),d2excae(:,:),d2excps(:,:)
   real(dp), allocatable :: dvxcae(:,:),dvxcps(:,:),vxct(:)
@@ -2673,9 +2468,9 @@ diff -Naur oncvpsp-3.2.2/src/modcore2.f90 oncvpsp-3.2.2--psml-42/src/modcore2.f9
  
   allocate(vxcae(mmax),vxcpsp(mmax),vo(mmax))
   allocate(dvxcae(mmax,nv),dvxcps(mmax,nv),vxct(mmax))
-diff -Naur oncvpsp-3.2.2/src/modcore3.f90 oncvpsp-3.2.2--psml-42/src/modcore3.f90
---- oncvpsp-3.2.2/src/modcore3.f90	2015-08-07 17:12:25.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/src/modcore3.f90	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/src/modcore3.f90 oncvpsp-3.2.3--psml-51/src/modcore3.f90
+--- oncvpsp-3.2.3/src/modcore3.f90	2016-09-15 16:20:11.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/modcore3.f90	2017-01-17 17:29:43.000000000 +0100
 @@ -24,7 +24,7 @@
  ! Teter, Phys. Rev. B 48, 5031 (1993) , Appendix, as 
  
@@ -2701,7 +2496,7 @@ diff -Naur oncvpsp-3.2.2/src/modcore3.f90 oncvpsp-3.2.2--psml-42/src/modcore3.f9
  
  !convergence criterion
   real(dp), parameter :: eps=1.0d-7
-@@ -69,7 +71,7 @@
+@@ -68,7 +70,7 @@
   real(dp) :: gg,tt,yy
   real(dp), allocatable :: vxcae(:),vxcpsp(:),vo(:),d2excae(:,:),d2excps(:,:)
   real(dp), allocatable :: dvxcae(:,:),dvxcps(:,:),vxct(:)
@@ -2710,19 +2505,20 @@ diff -Naur oncvpsp-3.2.2/src/modcore3.f90 oncvpsp-3.2.2--psml-42/src/modcore3.f9
  
  !2-dimensional Nelder-Mead variables
   real(dp), parameter :: alpha_nm=1.0d0
-diff -Naur oncvpsp-3.2.2/src/oncvpsp.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp.f90
---- oncvpsp-3.2.2/src/oncvpsp.f90	2015-08-07 22:13:17.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/src/oncvpsp.f90	2016-06-30 16:57:17.000000000 +0200
-@@ -32,6 +32,8 @@
+diff -Naur oncvpsp-3.2.3/src/oncvpsp.f90 oncvpsp-3.2.3--psml-51/src/oncvpsp.f90
+--- oncvpsp-3.2.3/src/oncvpsp.f90	2016-09-15 16:23:30.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/oncvpsp.f90	2017-01-17 17:29:43.000000000 +0100
+@@ -32,6 +32,9 @@
  !
  !   Output format for ABINIT pspcod=8
  !
 + use m_psmlout, only: psmlout, copy_input_file_for_psml
++ use m_psmlout, only: PSML_CREATOR
 +
   implicit none
   integer, parameter :: dp=kind(1.0d0)
  
-@@ -39,6 +41,7 @@
+@@ -39,6 +42,7 @@
   integer :: ii,ierr,iexc,iexct,ios,iprint,irps,it,icmod,lpopt
   integer :: jj,kk,ll,l1,lloc,lmax,lt,inline
   integer :: mch,mchf,mmax,n1,n2,nc,nlim,nlloc,nlmax,irpsh,nrl
@@ -2730,31 +2526,32 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp.f90
   integer :: nv,irct,ncnf
  !
   integer :: dtime(8),na(30),la(30),np(6)
-@@ -83,6 +86,7 @@
-  write(6,'(a/a//)') &
+@@ -84,6 +88,8 @@
  &      'ONCVPSP  (Optimized Norm-Conservinng Vanderbilt PSeudopotential)', &
- &      'scalar-relativistic version 3.2.2 08/07/2015'
-+ include 'psml-version.info'
+ &      'scalar-relativistic version 3.2.3 09/16/2016'
  
++ write(6,'(a,/)') 'PSML module version: ' // PSML_CREATOR
++
   write(6,'(a/a/a//)') &
  &      'While it is not required under the terms of the GNU GPL, it is',&
-@@ -96,6 +100,7 @@
-  rcfact=0.0d0
+ &      'suggested that you cite D. R. Hamann, Phys. Rev. B 88, 085117 (2013)', &
+@@ -98,6 +104,7 @@
+  ep(:)=0.0d0
  
  ! read input data
 + call copy_input_file_for_psml()
   inline=0
  
  ! atom and reference configuration
-@@ -195,6 +200,7 @@
+@@ -197,6 +204,7 @@
  &                ncnf,na,la,nvcnf,nacnf,lacnf,ncon,nbas,nproj,psfile)
  
   nrl=int((rlmax/drl)-0.5d0)+1
 + nrl0 = nrl
  
  !PWSCF wants an even number of mesh pointe
-  if(trim(psfile)=='upf') then
-@@ -510,15 +516,15 @@
+ !if(trim(psfile)=='upf') then
+@@ -522,15 +530,15 @@
  
   if(icmod==1) then
     call modcore(icmod,rhops,rho,rhoc,rhoae,rhotae,rhomod, &
@@ -2773,7 +2570,7 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp.f90
  
  !   call modcore3(icmod,rho,rhoc,rhomod,fcfact,rcfact,mmax,rr, &
  !&                na,la,ea,fa,nc,nv,iexc,zz,vfull,srel, &
-@@ -542,6 +548,13 @@
+@@ -554,6 +562,13 @@
   do l1=1,max(lmax+1,lloc+1)
     vpuns(:,l1)=vp(:,l1)-vo(:)
   end do
@@ -2787,8 +2584,8 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp.f90
  
  ! fix unscreening error due to greater range of all-electron charge
   do ii=mmax,1,-1
-@@ -606,6 +619,15 @@
- &             fa,rc0,ep,qcut,debl,facnf,dvloc0,fcfact, &
+@@ -625,6 +640,15 @@
+ &             fa,rc0,ep,qcut,debl,facnf,dvloc0,fcfact,rcfact, &
  &             epsh1,epsh2,depsh,rlmax,psfile, uua,eacopy)
   end if
 +!
@@ -2803,19 +2600,20 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp.f90
  
   stop
   end program oncvpsp
-diff -Naur oncvpsp-3.2.2/src/oncvpsp_nr.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp_nr.f90
---- oncvpsp-3.2.2/src/oncvpsp_nr.f90	2015-08-07 22:13:28.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/src/oncvpsp_nr.f90	2016-06-30 16:57:17.000000000 +0200
-@@ -32,6 +32,8 @@
+diff -Naur oncvpsp-3.2.3/src/oncvpsp_nr.f90 oncvpsp-3.2.3--psml-51/src/oncvpsp_nr.f90
+--- oncvpsp-3.2.3/src/oncvpsp_nr.f90	2016-09-15 16:26:39.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/oncvpsp_nr.f90	2017-01-17 17:29:43.000000000 +0100
+@@ -32,6 +32,9 @@
  !
  !   Output format for ABINIT pspcod=8
  !
 + use m_psmlout, only: psmlout, copy_input_file_for_psml
++ use m_psmlout, only: PSML_CREATOR
 +
   implicit none
   integer, parameter :: dp=kind(1.0d0)
  
-@@ -39,6 +41,7 @@
+@@ -39,6 +42,7 @@
   integer :: ii,ierr,iexc,iexct,ios,iprint,irps,it,icmod,lpopt
   integer :: jj,kk,ll,l1,lloc,lmax,lt,inline
   integer :: mch,mchf,mmax,n1,n2,nc,nlim,nlloc,nlmax,irpsh,nrl
@@ -2823,31 +2621,32 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp_nr.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp_n
   integer :: nv,irct,ncnf
  !
   integer :: dtime(8),na(30),la(30),np(6)
-@@ -83,6 +86,7 @@
-  write(6,'(a/a//)') &
+@@ -84,6 +88,8 @@
  &      'ONCVPSP  (Optimized Norm-Conservinng Vanderbilt PSeudopotential)', &
- &      'non-relativistic version 3.2.2 08/07/2015'
-+ include 'psml-version.info'
+ &      'non-relativistic version 3.2.3 09/16/2016'
  
++ write(6,'(a,/)') 'PSML module version: ' // PSML_CREATOR
++
   write(6,'(a/a/a//)') &
  &      'While it is not required under the terms of the GNU GPL, it is',&
-@@ -96,6 +100,7 @@
-  rcfact=0.0d0
+ &      'suggested that you cite D. R. Hamann, Phys. Rev. B 88, 085117 (2013)', &
+@@ -98,6 +104,7 @@
+  ep(:)=0.0d0
  
  ! read input data
 + call copy_input_file_for_psml()
   inline=0
  
  ! atom and reference configuration
-@@ -195,6 +200,7 @@
+@@ -197,6 +204,7 @@
  &                ncnf,na,la,nvcnf,nacnf,lacnf,ncon,nbas,nproj,psfile)
  
   nrl=int((rlmax/drl)-0.5d0)+1
 + nrl0 = nrl
  
  !PWSCF wants an even number of mesh pointe
-  if(trim(psfile)=='upf') then
-@@ -510,15 +516,15 @@
+ !if(trim(psfile)=='upf') then
+@@ -522,15 +530,15 @@
  
   if(icmod==1) then
     call modcore(icmod,rhops,rho,rhoc,rhoae,rhotae,rhomod, &
@@ -2866,8 +2665,8 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp_nr.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp_n
  
  !   call modcore3(icmod,rho,rhoc,rhomod,fcfact,rcfact,mmax,rr, &
  !&                na,la,ea,fa,nc,nv,iexc,zz,vfull,srel, &
-@@ -606,6 +612,16 @@
- &             fa,rc0,ep,qcut,debl,facnf,dvloc0,fcfact, &
+@@ -625,6 +633,16 @@
+ &             fa,rc0,ep,qcut,debl,facnf,dvloc0,fcfact,rcfact, &
  &             epsh1,epsh2,depsh,rlmax,psfile, uua,eacopy)
   end if
 +!
@@ -2883,19 +2682,20 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp_nr.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp_n
  
   stop
   end program oncvpsp
-diff -Naur oncvpsp-3.2.2/src/oncvpsp_r.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp_r.f90
---- oncvpsp-3.2.2/src/oncvpsp_r.f90	2015-08-07 22:13:48.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/src/oncvpsp_r.f90	2016-06-30 16:57:17.000000000 +0200
-@@ -33,6 +33,8 @@
+diff -Naur oncvpsp-3.2.3/src/oncvpsp_r.f90 oncvpsp-3.2.3--psml-51/src/oncvpsp_r.f90
+--- oncvpsp-3.2.3/src/oncvpsp_r.f90	2016-09-30 20:40:33.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/oncvpsp_r.f90	2017-01-17 17:29:43.000000000 +0100
+@@ -33,6 +33,9 @@
  !
  !   Output format for ABINIT pspcod=8
  !
 + use m_psmlout, only: psmlout_r, copy_input_file_for_psml
++ use m_psmlout, only: PSML_CREATOR
 +
   implicit none
   integer, parameter :: dp=kind(1.0d0)
  
-@@ -40,6 +42,7 @@
+@@ -40,6 +43,7 @@
   integer :: ii,ierr,iexc,iexct,ios,iprint,irps,it,icmod,lpopt
   integer :: jj,kk,ll,l1,lloc,lmax,lt,inline
   integer :: mch,mchf,mmax,n1,n2,nc,nlim,nlloc,nlmax,irpsh,nrl
@@ -2903,7 +2703,7 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp_r.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp_r.
   integer :: nv,irct,ncnf
   integer :: ikap,kap,mkap
  !
-@@ -78,6 +81,7 @@
+@@ -78,6 +82,7 @@
   real(dp), allocatable :: rhomod(:,:),rhoae(:,:),rhops(:,:),rhotae(:)
   real(dp), allocatable :: uua(:,:,:), uuatmp(:,:,:)
   real(dp), allocatable :: vsr(:,:,:),vso(:,:,:),vpsr(:,:)
@@ -2911,42 +2711,45 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp_r.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp_r.
  
  
   character*2 :: atsym
-@@ -88,6 +92,7 @@
-  write(6,'(a/a//)') &
+@@ -89,6 +94,9 @@
  &      'ONCVPSP  (Optimized Norm-Conservinng Vanderbilt PSeudopotential)', &
- &      'fully-relativistic version 3.2.2 08/07/2015'
-+ include 'psml-version.info'
+ &      'fully-relativistic version 3.2.3 09/16/2016'
  
++ write(6,'(a,/)') 'PSML module version: ' // PSML_CREATOR
++
++
   write(6,'(a,a,a,a//)') &
  &      'While it is not required under the terms of the GNU GPL, it is',&
-@@ -98,6 +103,7 @@
-  nproj(:)=0
+ &      'suggested that you cite the arXiv preprint or Phys. Rev. B paper',&
+@@ -100,6 +108,7 @@
+  rcfact=0.0d0
  
  ! read input data
 + call copy_input_file_for_psml()
   inline=0
  
  ! atom and reference configuration
-@@ -200,6 +206,7 @@
- &                ncnf,na,la,nvcnf,nacnf,lacnf,ncon,nbas,nproj,psfile)
+@@ -211,6 +220,7 @@
+  end if
  
   nrl=int((rlmax/drl)-0.5d0)+1
 + nrl0 = nrl
  
  !PWSCF wants an even number of mesh pointe
   if(trim(psfile)=='upf') then
-@@ -566,7 +573,9 @@
+@@ -583,7 +593,10 @@
  ! for abinit output, need decomposition into scalar-relativistic and
  ! spin-orbit projectors
  
-- if(trim(psfile)=='psp8') then
+- if(trim(psfile)=='psp8' .or. trim(psfile)=='both') then
 +! Do it unconditionally, so that PSML has all the information
++
 +  if (.true.) then
-+! if(trim(psfile)=='psp8') then
++!if(trim(psfile)=='psp8' .or. trim(psfile)=='both') then
    call sr_so_r(lmax,irc,nproj,rr,mmax,evkb,vkb, &
  &              vsr,esr,vso,eso)
  
-@@ -594,15 +603,15 @@
+@@ -611,15 +624,15 @@
  
   if(icmod==1) then
     call modcore(icmod,rhops,rho,rhoc,rhoae,rhotae,rhomod, &
@@ -2965,7 +2768,7 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp_r.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp_r.
  
   end if
  
-@@ -629,6 +638,14 @@
+@@ -646,6 +659,14 @@
  
   end if
  
@@ -2980,8 +2783,8 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp_r.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp_r.
  ! unscreen semi-local potentials taking scalar-relativistic average
  
   do l1=1,max(lmax+1,lloc+1)
-@@ -711,6 +728,14 @@
- &             fa,rc0,ep,qcut,debl,facnf,dvloc0,fcfact, &
+@@ -734,6 +755,14 @@
+ &             fa,rc0,ep,qcut,debl,facnf,dvloc0,fcfact,rcfact, &
  &             epsh1,epsh2,depsh,rlmax,psfile, uua,eacopy)
   end if
 +!
@@ -2995,14 +2798,9 @@ diff -Naur oncvpsp-3.2.2/src/oncvpsp_r.f90 oncvpsp-3.2.2--psml-42/src/oncvpsp_r.
  
   stop
   end program oncvpsp_r
-diff -Naur oncvpsp-3.2.2/src/psml-version.info oncvpsp-3.2.2--psml-42/src/psml-version.info
---- oncvpsp-3.2.2/src/psml-version.info	1970-01-01 01:00:00.000000000 +0100
-+++ oncvpsp-3.2.2--psml-42/src/psml-version.info	2016-06-30 16:57:17.000000000 +0200
-@@ -0,0 +1 @@
-+ write(6,'(a/)') ' PSML module, patch level 42'
-diff -Naur oncvpsp-3.2.2/src/vploc.f90 oncvpsp-3.2.2--psml-42/src/vploc.f90
---- oncvpsp-3.2.2/src/vploc.f90	2015-08-06 16:05:26.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/src/vploc.f90	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/src/vploc.f90 oncvpsp-3.2.3--psml-51/src/vploc.f90
+--- oncvpsp-3.2.3/src/vploc.f90	2016-09-15 16:20:12.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/src/vploc.f90	2017-01-17 17:29:43.000000000 +0100
 @@ -111,6 +111,7 @@
  
  ! create polynomial potential inside irc
@@ -3011,9 +2809,20 @@ diff -Naur oncvpsp-3.2.2/src/vploc.f90 oncvpsp-3.2.2--psml-42/src/vploc.f90
  
   if(lpopt .eq. 1) then
     do ii=1,irc
-diff -Naur oncvpsp-3.2.2/tests/extract.sh oncvpsp-3.2.2--psml-42/tests/extract.sh
---- oncvpsp-3.2.2/tests/extract.sh	2015-08-06 16:05:26.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/tests/extract.sh	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/tests/data/57_La.dat oncvpsp-3.2.3--psml-51/tests/data/57_La.dat
+--- oncvpsp-3.2.3/tests/data/57_La.dat	2015-08-06 16:05:26.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/tests/data/57_La.dat	2017-01-17 17:29:43.000000000 +0100
+@@ -1,6 +1,6 @@
+ # ATOM AND REFERENCE CONFIGURATION
+ # atsym, z, nc, nv, iexc   psfile
+-    la  57.0   9   4   3   psp8
++    La  57.0   9   4   3   psp8
+ #
+ # n, l, f  (nc+nv lines)
+     1    0    2.0
+diff -Naur oncvpsp-3.2.3/tests/extract.sh oncvpsp-3.2.3--psml-51/tests/extract.sh
+--- oncvpsp-3.2.3/tests/extract.sh	2016-09-06 21:29:12.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/tests/extract.sh	2017-01-17 17:29:43.000000000 +0100
 @@ -13,7 +13,7 @@
  
  if [ "$STR1" ]
@@ -3021,20 +2830,20 @@ diff -Naur oncvpsp-3.2.2/tests/extract.sh oncvpsp-3.2.2--psml-42/tests/extract.s
 -	PSPFILE=~/$2/$1.oncvpsp.psp8
 +	PSPFILE=$1.oncvpsp.psp8
  
- 	awk 'BEGIN{out=0};{if(out == 1) {print}};/PSPCODE8/{out=1}' \
- 		$OUTFILE >$PSPFILE
-@@ -23,7 +23,7 @@
+ 	awk 'BEGIN{out=0};/END_PSP/{out=0}; \
+ 		{if(out == 1) {print}};/PSPCODE8/{out=1}' \
+@@ -24,7 +24,7 @@
  
  if [ "$STR2" ]
  	then
 -	PSPFILE=~/$2/$1.oncvpsp.upf
 +	PSPFILE=$1.oncvpsp.upf
  
- 	awk 'BEGIN{out=0};{if(out == 1) {print}};/PSP_UPF/{out=1}' \
- 		$OUTFILE >$PSPFILE
-diff -Naur oncvpsp-3.2.2/tests/pg.sh oncvpsp-3.2.2--psml-42/tests/pg.sh
---- oncvpsp-3.2.2/tests/pg.sh	1970-01-01 01:00:00.000000000 +0100
-+++ oncvpsp-3.2.2--psml-42/tests/pg.sh	2016-06-30 16:57:17.000000000 +0200
+ 	awk 'BEGIN{out=0};/END_PSP/{out=0}; \
+ 		{if(out == 1) {print}};/PSP_UPF/{out=1}' \
+diff -Naur oncvpsp-3.2.3/tests/pg.sh oncvpsp-3.2.3--psml-51/tests/pg.sh
+--- oncvpsp-3.2.3/tests/pg.sh	1970-01-01 01:00:00.000000000 +0100
++++ oncvpsp-3.2.3--psml-51/tests/pg.sh	2017-01-17 17:29:43.000000000 +0100
 @@ -0,0 +1,42 @@
 +#!/bin/sh
 +#runs ONCVPSP with the command-line argument <prefix> and the graphics
@@ -3078,14 +2887,14 @@ diff -Naur oncvpsp-3.2.2/tests/pg.sh oncvpsp-3.2.2--psml-42/tests/pg.sh
 +cd ..
 +echo "Results in $dir"
 +
-diff -Naur oncvpsp-3.2.2/tests/run.sh oncvpsp-3.2.2--psml-42/tests/run.sh
---- oncvpsp-3.2.2/tests/run.sh	2015-08-11 23:58:01.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/tests/run.sh	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/tests/run.sh oncvpsp-3.2.3--psml-51/tests/run.sh
+--- oncvpsp-3.2.3/tests/run.sh	2016-09-06 21:21:14.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/tests/run.sh	2017-01-17 17:29:43.000000000 +0100
 @@ -3,19 +3,19 @@
  #which review the results
  #uses the scalar-relativistic all-electron atom calculation
  
--PREFIX=/home/drh/oncvpsp-3.2.2
+-PREFIX=/home/drh/oncvpsp-3.2.3
  
  INFILE=$1.dat
  
@@ -3118,14 +2927,14 @@ diff -Naur oncvpsp-3.2.2/tests/run.sh oncvpsp-3.2.2--psml-42/tests/run.sh
 +##gnuplot $GNUFILE
 +
 +rm  $TEMP $PLOTFILE
-diff -Naur oncvpsp-3.2.2/tests/run_nr.sh oncvpsp-3.2.2--psml-42/tests/run_nr.sh
---- oncvpsp-3.2.2/tests/run_nr.sh	2015-08-11 23:58:01.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/tests/run_nr.sh	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/tests/run_nr.sh oncvpsp-3.2.3--psml-51/tests/run_nr.sh
+--- oncvpsp-3.2.3/tests/run_nr.sh	2016-09-06 21:21:14.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/tests/run_nr.sh	2017-01-17 17:29:43.000000000 +0100
 @@ -3,19 +3,18 @@
  #which review the results
  #uses the non-relativistic all-electron atom calculation
  
--PREFIX=/home/drh/oncvpsp-3.2.2
+-PREFIX=/home/drh/oncvpsp-3.2.3
 -
  INFILE=$1.dat
  
@@ -3149,7 +2958,7 @@ diff -Naur oncvpsp-3.2.2/tests/run_nr.sh oncvpsp-3.2.2--psml-42/tests/run_nr.sh
  sed -e 1,1000s/t1/$PLOTFILE/ $TEMP >$GNUFILE
  
 -
-+#mv ONCVPSPPSML $PSMLFILE
++mv ONCVPSPPSML $PSMLFILE
  if [ "$2" != "-np" ]
  then
  	gnuplot $GNUFILE
@@ -3159,14 +2968,14 @@ diff -Naur oncvpsp-3.2.2/tests/run_nr.sh oncvpsp-3.2.2--psml-42/tests/run_nr.sh
 +#gnuplot $GNUFILE
 +
 +rm  $TEMP $PLOTFILE
-diff -Naur oncvpsp-3.2.2/tests/run_r.sh oncvpsp-3.2.2--psml-42/tests/run_r.sh
---- oncvpsp-3.2.2/tests/run_r.sh	2015-08-11 23:58:01.000000000 +0200
-+++ oncvpsp-3.2.2--psml-42/tests/run_r.sh	2016-06-30 16:57:17.000000000 +0200
+diff -Naur oncvpsp-3.2.3/tests/run_r.sh oncvpsp-3.2.3--psml-51/tests/run_r.sh
+--- oncvpsp-3.2.3/tests/run_r.sh	2016-09-06 21:21:14.000000000 +0200
++++ oncvpsp-3.2.3--psml-51/tests/run_r.sh	2017-01-17 17:29:43.000000000 +0100
 @@ -4,19 +4,18 @@
  #_r is appended to the prefix of the output file
  #uses the fully-relativistic all-electron atom calculation
  
--PREFIX=/home/drh/oncvpsp-3.2.2
+-PREFIX=/home/drh/oncvpsp-3.2.3
 -
  INFILE=$1.dat
  

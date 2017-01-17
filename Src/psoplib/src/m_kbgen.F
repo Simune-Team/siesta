@@ -477,12 +477,15 @@
 !     that should read:
 !     v_{ln}^{KB} = [ < \phi_ln | \delta V_{l} | \phi_{ln} > ]^(-1)
 !     Note the radial part of the KB projector is divided by r**(l+1)
+!     for storage into Siesta's tables.      
 
 !     The cutoffs computed above are based on "dincv", which is the same as
 !     "vphi" below. Hence one has to multiply proj by r**l before re-computing
-!     any cutoffs. If reading the standard PSML proj, which is Siesta's proj
-!     multiplied by r**(l+1), one has to *divide* it by r before re-computing
-!     the cutoffs.
+!     any cutoffs. (vphi goes like r**l near the origin, just like wfs)
+      
+!     If reading the standard PSML proj, which is "vphi" below (with PSML 1.0
+!     convention) one can just re-compute the cutoffs
+!     without any extra factors.
 
       do 30 ir = 2, nrc
         r        = rofi(ir)

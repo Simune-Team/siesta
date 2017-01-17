@@ -52,6 +52,9 @@
 
       implicit none
 
+      character(len=*), parameter :: PSML_VERSION = "1.0"
+      character(len=*), parameter :: PSML_CREATOR = "psop-1.0"
+      
       integer, parameter :: dp = selected_real_kind(10,100)
 
 !
@@ -60,6 +63,7 @@
 !  
       character(len=200)      :: work_string
       character(len=200)      :: filename
+      character(len=20)       :: file_version
 
       character(len=30)       :: systemlabel ! System label, used to identify
                                              !   the file where the pseudo is
@@ -227,7 +231,9 @@
       integer :: nargs, iostat, n_opts, nlabels, iorb, ikb, i
 
       real(dp) :: rlmax
-
+      character(len=10)     :: datestr
+      integer               :: dtime(8)
+      
       external :: write_proj_psml, dpnint, check_grid
 !
 !     Process options
@@ -249,7 +255,7 @@
       rmax_ps_check = 0.0_dp
 
       do
-         call getopts('hdglpKR:C:3fc',opt_name,opt_arg,n_opts,iostat)
+         call getopts('hdglpKR:C:3fcv',opt_name,opt_arg,n_opts,iostat)
          if (iostat /= 0) exit
          select case(opt_name)
            case ('d')
@@ -272,6 +278,9 @@
               force_chlocal_method = .true.
            case ('c')
               use_charge_cutoff = .true.
+           case ('v')
+              write(6,"(a)") "Version: " // PSML_CREATOR
+              STOP
            case ('h')
             call manual()
            case ('?',':')
@@ -312,7 +321,8 @@
 !
       call pseudo_read( systemlabel, psr, psml_handle, has_psml)
       if (has_psml) then
-         write(6,"(a)") "Processing a PSML file"
+         file_version =  ps_GetPSMLVersion(psml_handle)
+         write(6,"(a)") "Processing a " // trim(file_version) // "PSML file"
          write(6,"(a)") ps_Creator(psml_handle)
          !
          call init_annotation(ann,4,status)
@@ -345,8 +355,11 @@
 
          call get_uuid(id)
          call ps_SetUUID(psml_handle,id)
-         call ps_AddProvenanceRecord(psml_handle,creator="psop 0.9", &
-              date="2016-01-01", annotation=ann)
+         call ps_SetPSMLVersion(psml_handle,PSML_VERSION)
+         call date_and_time(VALUES=dtime)
+         write(datestr,"(i4,'-',i2.2,'-',i2.2)") dtime(1:3)
+         call ps_AddProvenanceRecord(psml_handle,creator=PSML_CREATOR, &
+              date=trim(datestr), annotation=ann)
          
          call ps_DumpToPSMLFile(psml_handle,"PSML_BASE")
       else

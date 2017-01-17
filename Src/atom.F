@@ -2598,14 +2598,19 @@ C potential
           nkblsave(l,is) = nkbl  ! propagate to structures
           do ikb = 1, nkbl
              ekb = 2.0_dp * ps_Projector_Ekb(ps,idxl(ikb))
+             ! Projs are stored as P/r**l in the tables
              do ir = 2, nrval
                 proj(ir) = ps_Projector_Value(ps,idxl(ikb),rofi(ir))
-     $                        / (rofi(ir)**(l+1))
+     $                        / (rofi(ir)**l)
              enddo
+             ! Since we have divided by r**l, proj should go
+             ! as a + b*r^2 near the origin.
+             ! ** Check this extrapolation
              proj(1) =  extrapolate_to_zero(rofi,proj)
 
              ! Find cutoff
-             ! For compatibility with Siesta, do it on proj*r**l !!!
+             ! For compatibility with Siesta, do it on proj*r**l,
+             ! i.e., on \chi itself in the projector.
              do ir = nrval, 2, -1
                 if (abs((rofi(ir)**l)*proj(ir)) > eps_kb) exit
              enddo

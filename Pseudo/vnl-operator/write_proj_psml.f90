@@ -28,11 +28,11 @@ subroutine  write_proj_psml(l,ikb,ekb,nrc,erefkb,dkbcos,nrval,rofi,proj)
 !  write(filename,"(a,i1,a,i1)")  "KBproj-rl+1.", l, ".", ikb
 !  call file_out(nrc,rofi,proj,trim(filename)) 
 
-  ! Restore factor of r**(l+1) (See in KBproj)
-  ! for compliance with PSML standard
+  ! Restore factor of r**l (See in KBproj)
+  ! for compliance with PSML standard (1.0 and above!)
   allocate(f(nrval))
   do ir = 1, nrval
-     f(ir) = proj(ir) * rofi(ir)**(l+1)
+     f(ir) = proj(ir) * rofi(ir)**l
   enddo
 
   call xml_NewElement(xf,"proj")

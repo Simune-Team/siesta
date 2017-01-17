@@ -79,6 +79,8 @@ CONTAINS
         logical :: has_up_down, has_spin_ave
         real(dp) :: v
 
+        write(6,"(a)") "PSML file version: " // &
+                       trim(ps_GetPSMLVersion(ps))
         p%name = ps_AtomicSymbol(ps)
         p%zval         = ps_ZPseudo(ps)
         znuc           = ps_AtomicNumber(ps)
