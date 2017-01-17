@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<psml version="0.9" energy_unit="hartree" length_unit="bohr"
- uuid="22cbbc30-4836-11e6-5138-aa6e7ffe5918">
-<provenance creator="ATM4.0.2" date="12-JUL-16">
+<psml version="1.0" energy_unit="hartree" length_unit="bohr"
+ uuid="c10974b0-dce6-11e6-4926-4c0a7fb79b4a">
+<provenance creator="ATM4.1.0+rev-87" date="17-JAN-17">
 <input-file name="INP">
 <![CDATA[#
 #  Pseudopotential generation for Silicon
