@@ -283,7 +283,7 @@
          if (IONode) print "(a)", "Writing WFSX for COOP/COHP in " 
      $                           // trim(wfs_filename)
          call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
-     .        maxk,
+     .        nkpnt,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      .        nkpnt, kpoint, no_u, gamma, occtol)
       endif
@@ -367,7 +367,7 @@
      &     ((isolve.eq.SOLVE_MINIM).and.minim_calc_eigenvalues))
      &     .and.IOnode)
      &     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,spinor_dim,
-     &     maxk,kpoint, kweight)
+     &     nkpnt,kpoint, kweight)
 
 
 !**   This uses H,S, and xa, as it diagonalizes them again

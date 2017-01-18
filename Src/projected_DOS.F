@@ -129,7 +129,7 @@ C     PDOS not computed if non-collinear calculation is run in parallel
         if (different_pdos_grid) then
 
 ! If the number of k points has increased then reallocate eo and qo
-          if (maxk_pdos.gt.maxk) then
+          if (maxk_pdos.gt.nkpnt) then
             call re_alloc(eo,1,no_u,1,spinor_dim,1,maxk_pdos,name="eo",
      .                    routine="projected_dos")
           endif

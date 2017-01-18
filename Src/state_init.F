@@ -13,7 +13,7 @@
       CONTAINS
 
       subroutine state_init( istep )
-      use Kpoint_grid,       only: setup_Kpoint_grid, maxk
+      use Kpoint_grid,       only: setup_Kpoint_grid, nkpnt
       use m_os,              only: file_exist
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
@@ -243,9 +243,9 @@
 !       Will print k-points also
         call setup_Kpoint_grid( ucell )
 
-        call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, maxk, 'eo',
+        call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'eo',
      &                 'state_init')
-        call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, maxk, 'qo',
+        call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'qo',
      &                 'state_init' )
 
 !       Find required supercell
