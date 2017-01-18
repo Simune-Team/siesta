@@ -47,8 +47,8 @@ contains
     ! Normalize density matrix to exact charge
     
     qsol = 0.0_dp
-!$OMP parallel do default(shared), collapse(2),
-!$OMP&private(is,io), reduction(+:qsol)
+!$OMP parallel do default(shared), collapse(2), &
+!$OMP& private(is,io), reduction(+:qsol)
     do is = 1 , spin%spinor
        do io = 1 , maxnh
           qsol = qsol + Dscf(io,is) * S(io)
