@@ -488,10 +488,10 @@ contains
 
       ! Attach and calculate initial spin-configuration
       real(dp), pointer :: DM(:,:)
-      real(dp) :: qspin(4)
+      real(dp) :: qspin(8)
       integer  :: is, i, nnz
 #ifdef MPI
-      real(dp) :: qtmp(4)
+      real(dp) :: qtmp(8)
 #endif
 
       if ( spin%DM == 1 ) then
@@ -500,18 +500,18 @@ contains
       end if
 
       DM => val(DM_2D)
-      nnz = size(DM, 2)
+      nnz = size(DM, 1)
       
+      qspin(:) = 0.0_dp
       ! Calculate initial spin-polarization
 !$OMP parallel do default(shared), private(is,i), reduction(+:qspin)
-      do is = 1, min(4, spin%DM)
-         qspin(is) = 0.0_dp
+      do is = 1, spin%DM
          do i = 1 , nnz
             qspin(is) = qspin(is) + DM(i,is) * S(i)
          end do
       end do
 !$OMP end parallel do
-      
+
 #ifdef MPI
       ! Global reduction of spin components
       call globalize_sum(qspin, qtmp)
@@ -963,11 +963,10 @@ contains
                i2 = 2
                
                ! Ferro or antiferro
-               if ( anti_ferro ) then
-                  if ( mod(iaorb(gio),2) == 0 ) then
-                     i1 = 2
-                     i2 = 1
-                  end if
+               if ( anti_ferro .and. &
+                    mod(iaorb(gio),2) == 0 ) then
+                  i1 = 2
+                  i2 = 1
                end if
                
                DM(ind,i1) = min( DM_atom(gio), 1._dp )
@@ -1079,12 +1078,12 @@ contains
                exit
             end if
             
-         elseif ( nn == 1 ) then
+         else if ( nn == 1 ) then
             ! Read spin as + or - (maximun value)
             updo = fdf_bnames(pline,1)
             if ( updo .eq. '+' ) then
                spin_val =  100._dp
-            elseif ( updo .eq. '-' ) then
+            else if ( updo .eq. '-' ) then
                spin_val = -100._dp
             else
                bad_syntax = .true.
@@ -1124,6 +1123,7 @@ contains
                   'in DM.InitSpin not used because nspin < 4'
           end if
           non_col = .false.
+          
        end if
 
        ! Now we may fill DM
@@ -1253,7 +1253,7 @@ contains
                       DM(ind,2) = (qio - spio * costh) / 2
                       DM(ind,3) =   spio * sinth * cosph / 2
                       DM(ind,4) =   spio * sinth * sinph / 2
-                      if ( spin%DM == 8 ) then ! spin-orbit coupling
+                      if ( spin%SO ) then ! spin-orbit coupling
                          DM(ind,5) = 0._dp
                          DM(ind,6) = 0._dp
                          DM(ind,7) = DM(ind,3)
