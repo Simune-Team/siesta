@@ -857,7 +857,6 @@ contains
 #ifdef MPI
     use mpi_siesta
 #endif
-    use units, only : Pi
 
     ! The spin-configuration that is used to determine the spin-order.
     type(tSpin), intent(in) :: spin
@@ -990,6 +989,8 @@ contains
 
     subroutine init_user()
 
+      use units, only: deg
+
       type(parsed_line), pointer :: pline
 
       integer, pointer :: atom_dat(:) => null()
@@ -1004,7 +1005,7 @@ contains
       logical :: bad_syntax, non_col
 
       integer :: ni, nn, nr, na
-      integer :: i, io, jo, gio, ia, ind
+      integer :: i, io, jo, gio, ia, ind, is
       real(dp) :: cosph, sinph, costh, sinth
       real(dp) :: qio, rate, spin_at, spio
 
@@ -1068,8 +1069,8 @@ contains
             ! Read value of spin
             if ( nr == 3 ) then
                spin_val = fdf_breals(pline,1)
-               theta    = fdf_breals(pline,2) * pi/180.0d0
-               phi      = fdf_breals(pline,3) * pi/180.0d0
+               theta    = fdf_breals(pline,2) * deg
+               phi      = fdf_breals(pline,3) * deg
             else if ( nr == 1 ) then
                spin_val = fdf_breals(pline,1)
             else
@@ -1091,8 +1092,8 @@ contains
             end if
             
             if ( nr == 2 ) then
-               theta = fdf_breals(pline,1) * pi/180.0d0
-               phi   = fdf_breals(pline,2) * pi/180.0d0
+               theta = fdf_breals(pline,1) * deg
+               phi   = fdf_breals(pline,2) * deg
             else if ( nr /= 0 ) then
                bad_syntax = .true.
                exit
@@ -1128,22 +1129,23 @@ contains
 
        ! Now we may fill DM
 
-!$OMP parallel default(shared), private(i,ind,jo)
+!$OMP parallel default(shared), private(i,ind,is,jo,gio,ia,io)
 
        ! Initialize to 0
 !$OMP do collapse(2)
-       do jo = 1 , spin%DM
+       do is = 1 , spin%DM
           do i = 1 , nnz
-             DM(i,jo) = 0._dp
+             DM(i,is) = 0._dp
           end do
        end do
 !$OMP end do
 
-       ! Initialize to paramagnetic case
+       ! Initialize the paramagnetic case
 !$OMP single
        do io = 1 , no_l
           ! Get global index
           gio = index_local_to_global(dit, io)
+
           ! Get atomic index
           ia = iaorb(gio)
           
@@ -1152,8 +1154,8 @@ contains
              ind = ptr(io) + i
              jo = col(ind)
              if ( gio == jo ) then
-                DM(ind,1) = 0.5_dp * DM_atom(gio)
-                DM(ind,2) = DM(ind,1)
+                DM(ind, 1) = 0.5_dp * DM_atom(gio)
+                DM(ind, 2) = DM(ind, 1)
              end if
           end do
 !$OMP end task
@@ -1166,15 +1168,15 @@ contains
        do ia = 1, na
           
           ! Get data
-          atom => atom_dat(ia)
+          atom     => atom_dat(ia)
           spin_val => spin_dat(ia,1)
           phi      => spin_dat(ia,2)
           theta    => spin_dat(ia,3)
 
           ! Find maximum atomic moment that the atoms involved can carry
           spin_at = 0._dp
-          do io = lasto(atom-1) + 1, lasto(atom)
-             spin_at = spin_at + min( DM_atom(io), 2._dp - DM_atom(io) )
+          do gio = lasto(atom-1) + 1, lasto(atom)
+             spin_at = spin_at + min( DM_atom(gio), 2._dp - DM_atom(gio) )
           end do
 
          
@@ -1189,27 +1191,8 @@ contains
                      ' has a closed-shell and cannot be polarized'
              end if
 
-             do gio = lasto(atom-1) + 1, lasto(atom)
-                io = index_global_to_local(dit, gio)
-                
-                ! Immediately skip if not on this node... 
-                if ( io < 1 ) cycle
-
-!$OMP task firstprivate(gio,io), private(qio)
-                qio = DM_atom(gio) / 2
-                do i = 1, ncol(io)
-                   ind = ptr(io) + i
-                   jo = col(ind)
-                   
-                   ! skip if not diagonal term...
-                   if ( gio /= jo ) cycle
-
-                   DM(ind,1) = qio
-                   DM(ind,2) = qio
-                   
-                end do
-!$OMP end task
-             end do
+             ! We have already initialized for the
+             ! paramagnetic case (no polarization)
 
           else
 
@@ -1228,13 +1211,14 @@ contains
 
 !$OMP task firstprivate(gio,io,rate), &
 !$OMP& private(qio,spio,costh,sinth,cosph,sinph)
-                qio = DM_atom(gio)
-                spio = rate * min( qio, 2._dp - qio )
+                ! The orbital charge per spin
+                qio = DM_atom(gio) * 0.5_dp
+                spio = rate * min( qio, 1._dp - qio )
                 do i = 1 , ncol(io)
                    ind = ptr(io) + i
                    jo = col(ind)
                    
-                   ! Immediately skip if not diagonal terms..
+                   ! Immediately skip if not diagonal term..
                    if ( gio /= jo ) cycle
 
                    if ( non_col ) then
@@ -1249,10 +1233,10 @@ contains
                       cosph = cos(phi)
                       sinph = sin(phi)
                       
-                      DM(ind,1) = (qio + spio * costh) / 2
-                      DM(ind,2) = (qio - spio * costh) / 2
-                      DM(ind,3) =   spio * sinth * cosph / 2
-                      DM(ind,4) =   spio * sinth * sinph / 2
+                      DM(ind,1) = qio + spio * costh
+                      DM(ind,2) = qio - spio * costh
+                      DM(ind,3) =       spio * sinth * cosph
+                      DM(ind,4) =       spio * sinth * sinph
                       if ( spin%SO ) then ! spin-orbit coupling
                          DM(ind,5) = 0._dp
                          DM(ind,6) = 0._dp
@@ -1262,8 +1246,8 @@ contains
                       
                    else
                       
-                      DM(ind,1) = (qio + spio) / 2
-                      DM(ind,2) = (qio - spio) / 2
+                      DM(ind,1) = qio + spio
+                      DM(ind,2) = qio - spio
                       
                    end if
                    
