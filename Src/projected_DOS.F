@@ -110,13 +110,13 @@ C     PDOS not computed if non-collinear calculation is run in parallel
         if (.not. fdf_bline(bfdf,pline))
      $    call die('projected_DOS: ERROR in ' //
      $             'ProjectedDensityOfStates block')
-        if ((fdf_bnvalues(pline) .lt. 3) .or.
+        if ((fdf_bnreals(pline) .lt. 3) .or.
      $      (fdf_bnnames(pline) .ne. 1))
-     $    call die("Wrong format in PDOS block")
+     $    call die("Wrong format in PDOS block, not enough reals/names")
         factor = fdf_convfac( fdf_bnames(pline,1), 'Ry' )
-        e1 = fdf_bvalues(pline,1) * factor
-        e2 = fdf_bvalues(pline,2) * factor
-        sigma = fdf_bvalues(pline,3) * factor
+        e1 = fdf_breals(pline,1) * factor
+        e2 = fdf_breals(pline,2) * factor
+        sigma = fdf_breals(pline,3) * factor
         nhist = fdf_bintegers(pline,1)
         if (IOnode) then
           write(6,'(a)') 'siesta: PDOS info: '
