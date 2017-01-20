@@ -160,6 +160,7 @@ OBJS =  automatic_cell.o atom_options.o \
         rdiag_elpa.o elpa1.o elpa2.o $(ELPA_KERNELS) \
 	rdiag_mrrr.o\
         die.o m_pexsi.o m_pexsi_driver.o m_pexsi_dos.o m_pexsi_local_dos.o\
+		m_chess.o \
         m_redist_spmatrix.o \
         class_Distribution.o\
         m_dminim.o m_zminim.o \
@@ -616,7 +617,7 @@ class_Sparsity.o: alloc.o
 class_TriMat.o: class_TriMat.T90 basic_type.inc
 class_TriMat.o: alloc.o
 coceri.o: files.o periodic_table.o precision.o
-compute_dm.o: atomlist.o class_SpData1D.o compute_ebs_shift.o diagon.o
+compute_dm.o: atomlist.o class_SpData1D.o compute_ebs_shift.o diagon.o m_chess.o
 compute_dm.o: iodmhs_netcdf.o kpoint_grid.o m_dminim.o m_energies.o m_eo.o
 compute_dm.o: m_gamma.o m_hsx.o m_pexsi_driver.o m_rmaxh.o m_spin.o m_steps.o
 compute_dm.o: m_transiesta.o m_ts_global_vars.o m_zminim.o normalize_dm.o
@@ -796,6 +797,7 @@ m_diis.o: parallel.o precision.o
 m_dipol.o: precision.o
 m_dminim.o: densematrix.o files.o parallel.o parallelsubs.o precision.o
 m_dminim.o: siesta_options.o sys.o
+m_chess.o:
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 m_efield.o: atmfuncs.o m_cite.o mesh.o parallel.o precision.o siesta_cml.o
 m_efield.o: siesta_geom.o sys.o units.o
@@ -1230,7 +1232,7 @@ siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
 siesta_cmlsubs.o: 
 siesta_dicts.o: atomlist.o m_energies.o m_forces.o precision.o siesta_geom.o
 siesta_dicts.o: siesta_options.o
-siesta_end.o: alloc.o bands.o densematrix.o extrae_eventllist.o flook_siesta.o
+siesta_end.o: alloc.o bands.o densematrix.o extrae_eventllist.o flook_siesta.o m_chess.o
 siesta_end.o: m_dscfcomm.o m_fixed.o m_mixing_scf.o m_rhog.o m_wallclock.o
 siesta_end.o: meshdscf.o meshphi.o moremeshsubs.o parallel.o siesta_cml.o
 siesta_end.o: siesta_cmlsubs.o siesta_master.o siesta_options.o
@@ -1284,7 +1286,7 @@ state_init.o: alloc.o atomlist.o class_Data2D.o class_SpData1D.o
 state_init.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
 state_init.o: domain_decom.o files.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
 state_init.o: ioxv.o kpoint_grid.o ldau_specs.o m_energies.o m_eo.o m_gamma.o
-state_init.o: m_mixing.o m_mixing_scf.o m_mpi_utils.o m_new_dm.o m_os.o
+state_init.o: m_mixing.o m_mixing_scf.o m_mpi_utils.o m_new_dm.o m_os.o m_chess.o
 state_init.o: m_pivot_methods.o m_rmaxh.o m_sparse.o m_sparsity_handling.o
 state_init.o: m_spin.o m_steps.o m_supercell.o m_test_io.o m_ts_charge.o
 state_init.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_options.o

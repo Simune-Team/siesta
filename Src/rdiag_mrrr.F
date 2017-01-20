@@ -78,6 +78,7 @@
 
       integer :: neigok, nz, vl, vu
       character(len=256) :: msg
+      character(len=7) :: alg
       
 ! Matrices for 2D
       real(dp), pointer, dimension(:,:) ::  h2d =>null()
@@ -241,11 +242,19 @@
       ! Find the optimal work-space sizes
       lwork = -1
       liwork = -1
+#ifndef SIESTA__NO_MRRR
       call pdsyevr('V','I','U',n,h2d,1,1,desc_h2d,vl,vu,1,
      .     neigvec,neigok,nz,w,z2d,1,1,
      .     desc_h2d,work,lwork,iwork,liwork,info)
+      alg = 'pdsyevr'
+#else
+      call pdsyevd('V','U',n,h2d,1,1,desc_h2d,
+     .     w,z2d,1,1,
+     .     desc_h2d,work,lwork,iwork,liwork,info)
+      alg = 'pdsyevd'
+#endif
       if (info /= 0) then
-         write(msg,"(a,i0)") "Error in pdsyevr work estim. Info: ",
+         write(msg,"(a,i0)") "Error in "//alg//" work estim. Info: ",
      $        info
          call die(msg)
       endif
@@ -254,12 +263,20 @@
       call re_alloc(work, 1, lwork)
       call re_alloc(iwork, 1, liwork)
 
+#ifndef SIESTA__NO_MRRR
       call pdsyevr('V','I','U',n,h2d,1,1,desc_h2d,vl,vu,1,
      .     neigvec,neigok,nz,w,z2d,1,1,
      .     desc_h2d,work,lwork,iwork,liwork,info)
+      alg = 'pdsyevr'
+#else
+      call pdsyevd('V','U',n,h2d,1,1,desc_h2d,
+     .     w,z2d,1,1,
+     .     desc_h2d,work,lwork,iwork,liwork,info)
+      alg = 'pdsyevd'
+#endif
       
       if (info /= 0) then
-         write(msg,"(a,i0)") "Error in pdsyevr. Info: ", info
+         write(msg,"(a,i0)") "Error in "//alg//". Info: ", info
          call die(msg)
       endif
       if (node==0) then

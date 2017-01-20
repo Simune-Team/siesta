@@ -1,0 +1,1474 @@
+Siesta Version: siesta-trunk-486
+Architecture  : x86_64-linux-Intel
+Compiler flags: /home/stephan/Software/openmpi-1.10.2_gnu/bin/mpifort  -m64 -fPIC -O3 -march==native -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fno-second-underscore -C -g -O0 -fbacktrace 
+PP flags      : -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DSIESTA__CHESS 
+PARALLEL version
+
+* Running on    2 nodes in parallel
+>> Start of run:  19-JAN-2017   8:52:29
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+SystemName          Water molecule
+SystemLabel         CheSS H2O
+NumberOfAtoms       150
+NumberOfSpecies     2
+SolutionMethod CheSS
+MaxSCFIterations 10
+CheSSBufferKernel 2.0
+CheSSBufferMult 4.0
+PAO.BasisSize SZ
+MeshCutoff  50 Ry
+%block ChemicalSpeciesLabel
+ 1  8  O      # Species index, atomic number, species label
+ 2  1  H
+%endblock ChemicalSpeciesLabel
+AtomicCoordinatesFormat  Ang
+%block AtomicCoordinatesAndAtomicSpecies
+     8.73360E+01    1.08882E+02    9.08855E+01    1
+     8.96060E+01    1.09041E+02    9.23415E+01    1
+     9.03620E+01    1.07515E+02    8.95875E+01    1
+     8.72970E+01    1.06274E+02    8.99505E+01    1
+     8.95130E+01    1.06405E+02    9.35005E+01    1
+     9.05580E+01    1.09429E+02    8.75945E+01    1
+     8.63240E+01    1.10899E+02    8.95545E+01    1
+     8.58950E+01    1.08650E+02    9.29555E+01    1
+     8.86610E+01    1.11331E+02    8.82295E+01    1
+     9.14960E+01    1.11049E+02    9.14375E+01    1
+     8.82320E+01    1.04504E+02    9.19595E+01    1
+     9.29640E+01    1.07599E+02    9.01035E+01    1
+     9.03110E+01    1.04966E+02    8.85375E+01    1
+     8.97110E+01    1.11486E+02    9.36275E+01    1
+     8.97730E+01    1.12687E+02    9.02455E+01    1
+     8.80370E+01    1.05567E+02    8.70745E+01    1
+     8.87020E+01    1.07800E+02    8.58955E+01    1
+     9.30410E+01    1.08020E+02    9.30465E+01    1
+     8.63120E+01    1.06350E+02    9.42955E+01    1
+     9.30450E+01    1.10898E+02    8.89765E+01    1
+     8.87020E+01    1.07800E+02    9.57605E+01    1
+     9.17350E+01    1.09950E+02    9.46845E+01    1
+     9.21390E+01    1.05774E+02    9.39355E+01    1
+     8.46590E+01    1.05007E+02    8.97695E+01    1
+     8.66740E+01    1.09706E+02    9.54715E+01    1
+     9.24400E+01    1.06603E+02    8.68135E+01    1
+     8.56070E+01    1.12939E+02    9.14635E+01    1
+     8.66740E+01    1.09706E+02    8.56065E+01    1
+     8.42020E+01    1.08915E+02    8.73855E+01    1
+     8.97730E+01    1.02822E+02    9.02455E+01    1
+     8.30990E+01    1.07599E+02    9.01035E+01    1
+     8.82320E+01    1.14369E+02    9.19595E+01    1
+     8.31760E+01    1.08020E+02    9.30465E+01    1
+     8.80450E+01    1.12185E+02    8.57965E+01    1
+     9.40670E+01    1.08915E+02    8.73855E+01    1
+     8.56070E+01    1.03074E+02    9.14635E+01    1
+     8.80450E+01    1.12185E+02    9.56615E+01    1
+     8.31800E+01    1.10898E+02    8.89765E+01    1
+     9.29120E+01    1.13213E+02    9.25415E+01    1
+     9.17350E+01    1.09950E+02    8.48195E+01    1
+     8.58530E+01    1.03675E+02    9.42975E+01    1
+     9.28170E+01    1.03743E+02    8.80085E+01    1
+     9.45240E+01    1.05007E+02    8.97695E+01    1
+     9.29120E+01    1.03348E+02    9.25415E+01    1
+     9.03110E+01    1.14831E+02    8.85375E+01    1
+     8.58530E+01    1.13540E+02    9.42975E+01    1
+     8.80370E+01    1.05567E+02    9.69395E+01    1
+     8.63120E+01    1.06350E+02    8.44305E+01    1
+     9.28170E+01    1.13608E+02    8.80085E+01    1
+     9.05580E+01    1.09429E+02    9.74595E+01    1
+     8.73880E+01    1.08052E+02    9.03735E+01    2
+     8.87710E+01    1.09207E+02    9.18135E+01    2
+     9.01520E+01    1.07708E+02    9.04845E+01    2
+     8.75170E+01    1.05727E+02    9.07775E+01    2
+     9.04730E+01    1.06287E+02    9.37435E+01    2
+     8.99060E+01    1.08915E+02    8.70265E+01    2
+     8.68150E+01    1.10126E+02    8.99175E+01    2
+     8.59750E+01    1.07741E+02    9.33935E+01    2
+     8.93970E+01    1.10854E+02    8.78355E+01    2
+     9.09870E+01    1.10190E+02    9.15705E+01    2
+     8.74090E+01    1.04126E+02    9.22215E+01    2
+     9.34430E+01    1.08074E+02    8.93975E+01    2
+     9.11020E+01    1.04652E+02    8.80765E+01    2
+     9.05100E+01    1.11144E+02    9.41545E+01    2
+     8.93310E+01    1.13227E+02    9.09285E+01    2
+     8.87840E+01    1.05072E+02    8.73655E+01    2
+     8.91620E+01    1.07338E+02    8.51375E+01    2
+     9.29590E+01    1.07819E+02    9.20975E+01    2
+     8.72520E+01    1.06301E+02    9.44765E+01    2
+     9.38940E+01    1.10944E+02    8.94415E+01    2
+     8.91620E+01    1.07338E+02    9.50025E+01    2
+     9.19780E+01    1.09164E+02    9.41575E+01    2
+     9.21920E+01    1.05015E+02    9.32855E+01    2
+     8.40450E+01    1.05648E+02    9.01715E+01    2
+     8.74070E+01    1.09022E+02    9.56545E+01    2
+     9.14910E+01    1.06635E+02    8.71075E+01    2
+     8.60230E+01    1.12226E+02    9.08725E+01    2
+     8.74070E+01    1.09022E+02    8.57895E+01    2
+     8.37040E+01    1.08171E+02    8.70015E+01    2
+     8.93310E+01    1.03362E+02    9.09285E+01    2
+     8.35780E+01    1.08074E+02    8.93975E+01    2
+     8.74090E+01    1.13991E+02    9.22215E+01    2
+     8.30940E+01    1.07819E+02    9.20975E+01    2
+     8.83820E+01    1.12098E+02    8.66985E+01    2
+     9.35690E+01    1.08171E+02    8.70015E+01    2
+     8.60230E+01    1.02361E+02    9.08725E+01    2
+     8.83820E+01    1.12098E+02    9.65635E+01    2
+     8.40290E+01    1.10944E+02    8.94415E+01    2
+     9.38070E+01    1.13011E+02    9.22625E+01    2
+     9.19780E+01    1.09164E+02    8.42925E+01    2
+     8.56680E+01    1.03188E+02    9.34615E+01    2
+     9.30570E+01    1.03530E+02    8.70575E+01    2
+     9.39100E+01    1.05648E+02    9.01715E+01    2
+     9.38070E+01    1.03146E+02    9.22625E+01    2
+     9.11020E+01    1.14517E+02    8.80765E+01    2
+     8.56680E+01    1.13053E+02    9.34615E+01    2
+     8.87840E+01    1.05072E+02    9.72305E+01    2
+     8.72520E+01    1.06301E+02    8.46115E+01    2
+     9.30570E+01    1.13395E+02    8.70575E+01    2
+     8.99060E+01    1.08915E+02    9.68915E+01    2
+     8.66830E+01    1.08673E+02    9.16235E+01    2
+     8.96320E+01    1.09772E+02    9.30505E+01    2
+     9.00060E+01    1.06557E+02    8.94655E+01    2
+     8.63200E+01    1.06015E+02    8.97415E+01    2
+     8.94310E+01    1.07276E+02    9.30055E+01    2
+     9.07600E+01    1.08918E+02    8.84435E+01    2
+     8.68930E+01    1.11206E+02    8.87695E+01    2
+     8.63480E+01    1.09319E+02    9.36515E+01    2
+     8.90500E+01    1.11949E+02    8.89145E+01    2
+     9.20900E+01    1.10837E+02    9.05915E+01    2
+     8.86220E+01    1.05134E+02    9.26055E+01    2
+     9.20600E+01    1.07414E+02    8.97015E+01    2
+     9.01380E+01    1.04239E+02    8.91895E+01    2
+     8.89340E+01    1.11626E+02    9.42885E+01    2
+     9.04250E+01    1.12075E+02    9.07015E+01    2
+     8.76250E+01    1.05837E+02    8.79345E+01    2
+     8.83540E+01    1.06979E+02    8.64345E+01    2
+     9.40070E+01    1.08401E+02    9.32115E+01    2
+     8.60830E+01    1.05390E+02    9.42115E+01    2
+     9.31770E+01    1.10260E+02    8.82035E+01    2
+     8.83540E+01    1.06979E+02    9.62995E+01    2
+     9.13840E+01    1.09546E+02    9.55615E+01    2
+     9.27560E+01    1.06540E+02    9.34945E+01    2
+     8.40930E+01    1.04763E+02    8.89225E+01    2
+     8.69600E+01    1.10672E+02    9.56935E+01    2
+     9.23270E+01    1.06197E+02    8.58455E+01    2
+     8.51820E+01    1.13520E+02    9.07345E+01    2
+     8.69600E+01    1.10672E+02    8.58285E+01    2
+     8.50080E+01    1.08913E+02    8.67685E+01    2
+     9.04250E+01    1.02210E+02    9.07015E+01    2
+     8.21950E+01    1.07414E+02    8.97015E+01    2
+     8.86220E+01    1.14999E+02    9.26055E+01    2
+     8.41420E+01    1.08401E+02    9.32115E+01    2
+     8.75130E+01    1.13025E+02    8.57265E+01    2
+     9.48730E+01    1.08913E+02    8.67685E+01    2
+     8.51820E+01    1.03655E+02    9.07345E+01    2
+     8.75130E+01    1.13025E+02    9.55915E+01    2
+     8.33120E+01    1.10260E+02    8.82035E+01    2
+     9.23250E+01    1.12529E+02    9.20895E+01    2
+     9.13840E+01    1.09546E+02    8.56965E+01    2
+     8.50800E+01    1.03445E+02    9.48955E+01    2
+     9.28290E+01    1.02822E+02    8.84665E+01    2
+     9.39580E+01    1.04763E+02    8.89225E+01    2
+     9.23250E+01    1.02664E+02    9.20895E+01    2
+     9.01380E+01    1.14104E+02    8.91895E+01    2
+     8.50800E+01    1.13310E+02    9.48955E+01    2
+     8.76250E+01    1.05837E+02    9.77995E+01    2
+     8.60830E+01    1.05390E+02    8.43465E+01    2
+     9.28290E+01    1.12687E+02    8.84665E+01    2
+     9.07600E+01    1.08918E+02    9.83085E+01    2
+%endblock AtomicCoordinatesAndAtomicSpecies
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: Water molecule
+reinit: -----------------------------------------------------------------------
+reinit: System Label: CheSS H2O                                                   
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+ Species number:            1  Label: O Atomic number:           8
+ Species number:            2  Label: H Atomic number:           1
+Ground state valence configuration:   2s02  2p04
+Reading pseudopotential information in formatted form from O.psf
+
+Valence configuration for pseudopotential generation:
+2s( 2.00) rc: 1.14
+2p( 4.00) rc: 1.14
+3d( 0.00) rc: 1.14
+4f( 0.00) rc: 1.14
+Ground state valence configuration:   1s01
+Reading pseudopotential information in formatted form from H.psf
+
+Valence configuration for pseudopotential generation:
+1s( 1.00) rc: 1.25
+2p( 0.00) rc: 1.25
+3d( 0.00) rc: 1.25
+4f( 0.00) rc: 1.25
+For O, standard SIESTA heuristics set lmxkb to 2
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+For H, standard SIESTA heuristics set lmxkb to 1
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+O                    Z=   8    Mass=  16.000        Charge= 0.17977+309
+Lmxo=1 Lmxkb= 2    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=1  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000    
+            lambdas:    1.0000    
+L=1  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=1  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000    
+            lambdas:    1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for O                     (Z =   8)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+Total valence charge:    6.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  1.1278
+V l=1 = -2*Zval/r beyond r=  1.1278
+V l=2 = -2*Zval/r beyond r=  1.1278
+All V_l potentials equal beyond r=  1.1278
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.1278
+
+VLOCAL1: 99.0% of the norm of Vloc inside     34.126 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     77.774 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.37759
+atom: Maximum radius for r*vlocal+2*Zval:    1.18566
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.294105   el= -1.742414   Ekb=  9.135903   kbcos=  0.326910
+   l= 1   rc=  1.294105   el= -0.676589   Ekb= -8.124878   kbcos= -0.395047
+   l= 2   rc=  1.448233   el=  0.002386   Ekb= -2.039267   kbcos= -0.003484
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 2s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    3.305093
+                 energy =   -1.723766
+                kinetic =    1.614911
+    potential(screened) =   -3.338677
+       potential(ionic) =  -11.304675
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: Basis orbitals for state 2p
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    3.937239
+                 energy =   -0.658841
+                kinetic =    5.005986
+    potential(screened) =   -5.664827
+       potential(ionic) =  -13.452360
+atom: Total number of Sankey-type orbitals:  4
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 2s( 2.00)                                                            
+ 2p( 4.00)                                                            
+Vna: chval, zval:    6.00000   6.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   3.937239
+
+atom: _________________________________________________________________________
+
+<basis_specs>
+===============================================================================
+H                    Z=   1    Mass=  1.0100        Charge= 0.17977+309
+Lmxo=0 Lmxkb= 1    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=1
+          n=1  nzeta=1  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000    
+            lambdas:    1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for H                     (Z =   1)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+Total valence charge:    1.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  1.2343
+V l=1 = -2*Zval/r beyond r=  1.2189
+All V_l potentials equal beyond r=  1.2343
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.2343
+
+VLOCAL1: 99.0% of the norm of Vloc inside     28.493 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     64.935 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.45251
+atom: Maximum radius for r*vlocal+2*Zval:    1.21892
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.364359   el= -0.467325   Ekb= -2.005361   kbcos= -0.336422
+   l= 1   rc=  1.434438   el=  0.001430   Ekb= -0.501708   kbcos= -0.021697
+
+KBgen: Total number of  Kleinman-Bylander projectors:    4
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 1s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.828263
+                 energy =   -0.449375
+                kinetic =    0.929372
+    potential(screened) =   -1.378747
+       potential(ionic) =   -1.915047
+atom: Total number of Sankey-type orbitals:  1
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 1s( 1.00)                                                            
+Vna: chval, zval:    1.00000   1.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   4.828263
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1    8 O                       # Species index, atomic number, species label
+    2    1 H                       # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+O                     2                    # Species label, number of l-shells
+ n=2   0   1                         # n, l, Nzeta 
+   3.305   
+   1.000   
+ n=2   1   1                         # n, l, Nzeta 
+   3.937   
+   1.000   
+H                     1                    # Species label, number of l-shells
+ n=1   0   1                         # n, l, Nzeta 
+   4.828   
+   1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                          (in Angstroms)
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:    165.04119 205.75724 171.74877  1        1
+siesta:    169.33087 206.05771 174.50021  1        2
+siesta:    170.75950 203.17399 169.29591  1        3
+siesta:    164.96749 200.82883 169.98188  1        4
+siesta:    169.15512 201.07639 176.69041  1        5
+siesta:    171.12989 206.79092 165.52968  1        6
+siesta:    163.12878 209.56882 169.23355  1        7
+siesta:    162.31809 205.31883 175.66051  1        8
+siesta:    167.54507 210.38518 166.72966  1        9
+siesta:    172.90245 209.85228 172.79190  1       10
+siesta:    166.73438 197.48402 173.77834  1       11
+siesta:    175.67657 203.33272 170.27101  1       12
+siesta:    170.66312 198.35707 167.31169  1       13
+siesta:    169.52929 210.67809 176.93040  1       14
+siesta:    169.64645 212.94765 170.53935  1       15
+siesta:    166.36589 199.49280 164.54702  1       16
+siesta:    167.62255 203.71256 162.31904  1       17
+siesta:    175.82208 204.12830 175.83247  1       18
+siesta:    163.10611 200.97245 178.19274  1       19
+siesta:    175.82964 209.56693 168.14128  1       20
+siesta:    167.62255 203.71256 180.96119  1       21
+siesta:    173.35410 207.77547 178.92784  1       22
+siesta:    174.11754 199.88397 177.51244  1       23
+siesta:    159.98239 198.43455 169.63984  1       24
+siesta:    163.79019 207.31438 180.41506  1       25
+siesta:    174.68635 201.45055 164.05380  1       26
+siesta:    161.77385 213.42386 172.84103  1       27
+siesta:    163.79019 207.31438 161.77290  1       28
+siesta:    159.11878 205.81960 165.13473  1       29
+siesta:    169.64645 194.30550 170.53935  1       30
+siesta:    157.03441 203.33272 170.27101  1       31
+siesta:    166.73438 216.12617 173.77834  1       32
+siesta:    157.17992 204.12830 175.83247  1       33
+siesta:    166.38100 211.99901 162.13195  1       34
+siesta:    177.76094 205.81960 165.13473  1       35
+siesta:    161.77385 194.78171 172.84103  1       36
+siesta:    166.38100 211.99901 180.77411  1       37
+siesta:    157.18748 209.56693 168.14128  1       38
+siesta:    175.57830 213.94165 174.87816  1       39
+siesta:    173.35410 207.77547 160.28569  1       40
+siesta:    162.23872 195.91743 178.19652  1       41
+siesta:    175.39878 196.04594 166.31203  1       42
+siesta:    178.62454 198.43455 169.63984  1       43
+siesta:    175.57830 195.29949 174.87816  1       44
+siesta:    170.66312 216.99923 167.31169  1       45
+siesta:    162.23872 214.55959 178.19652  1       46
+siesta:    166.36589 199.49280 183.18918  1       47
+siesta:    163.10611 200.97245 159.55059  1       48
+siesta:    175.39878 214.68809 166.31203  1       49
+siesta:    171.12989 206.79092 184.17184  1       50
+siesta:    165.13945 204.18877 170.78123  2       51
+siesta:    167.75294 206.37140 173.50244  2       52
+siesta:    170.36266 203.53870 170.99099  2       53
+siesta:    165.38323 199.79515 171.54468  2       54
+siesta:    170.96926 200.85340 177.14961  2       55
+siesta:    169.89778 205.81960 164.45632  2       56
+siesta:    164.05664 208.10806 169.91952  2       57
+siesta:    162.46927 203.60106 176.48821  2       58
+siesta:    168.93591 209.48378 165.98511  2       59
+siesta:    171.94058 208.22900 173.04324  2       60
+siesta:    165.17914 196.76970 174.27345  2       61
+siesta:    176.58175 204.23034 168.93686  2       62
+siesta:    172.15790 197.76370 166.44053  2       63
+siesta:    171.03918 210.03180 177.92629  2       64
+siesta:    168.81119 213.96811 171.83003  2       65
+siesta:    167.77751 198.55738 165.09693  2       66
+siesta:    168.49183 202.83950 160.88662  2       67
+siesta:    175.66712 203.74846 174.03912  2       68
+siesta:    164.88245 200.87986 178.53478  2       69
+siesta:    177.43402 209.65386 169.02001  2       70
+siesta:    168.49183 202.83950 179.52878  2       71
+siesta:    173.81330 206.29014 177.93196  2       72
+siesta:    174.21770 198.44967 176.28412  2       73
+siesta:    158.82210 199.64587 170.39951  2       74
+siesta:    165.17536 206.02180 180.76088  2       75
+siesta:    172.89300 201.51103 164.60938  2       76
+siesta:    162.55998 212.07649 171.72421  2       77
+siesta:    165.17536 206.02180 162.11872  2       78
+siesta:    158.17770 204.41365 164.40907  2       79
+siesta:    168.81119 195.32595 171.83003  2       80
+siesta:    157.93959 204.23034 168.93686  2       81
+siesta:    165.17914 215.41186 174.27345  2       82
+siesta:    157.02497 203.74846 174.03912  2       83
+siesta:    167.01784 211.83460 163.83649  2       84
+siesta:    176.81985 204.41365 164.40907  2       85
+siesta:    162.55998 193.43433 171.72421  2       86
+siesta:    167.01784 211.83460 182.47864  2       87
+siesta:    158.79186 209.65386 169.02001  2       88
+siesta:    177.26961 213.55992 174.35093  2       89
+siesta:    173.81330 206.29014 159.28980  2       90
+siesta:    161.88912 194.99714 176.61671  2       91
+siesta:    175.85231 195.64342 164.51490  2       92
+siesta:    177.46425 199.64587 170.39951  2       93
+siesta:    177.26961 194.91777 174.35093  2       94
+siesta:    172.15790 216.40585 166.44053  2       95
+siesta:    161.88912 213.63929 176.61671  2       96
+siesta:    167.77751 198.55738 183.73909  2       97
+siesta:    164.88245 200.87986 159.89263  2       98
+siesta:    175.85231 214.28558 164.51490  2       99
+siesta:    169.89778 205.81960 183.09847  2      100
+siesta:    163.80719 205.36229 173.14339  2      101
+siesta:    169.38000 207.43910 175.84003  2      102
+siesta:    170.08676 201.36363 169.06536  2      103
+siesta:    163.12122 200.33939 169.58692  2      104
+siesta:    169.00016 202.72234 175.75499  2      105
+siesta:    171.51161 205.82527 167.13406  2      106
+siesta:    164.20404 210.14897 167.75011  2      107
+siesta:    163.17414 206.58305 176.97576  2      108
+siesta:    168.28018 211.55303 168.02412  2      109
+siesta:    174.02495 209.45166 171.19319  2      110
+siesta:    167.47138 198.67455 174.99910  2      111
+siesta:    173.96826 202.98312 169.51134  2      112
+siesta:    170.33620 196.98324 168.54380  2      113
+siesta:    168.06097 210.94265 178.17951  2      114
+siesta:    170.87855 211.79114 171.40106  2      115
+siesta:    165.58732 200.00302 166.17219  2      116
+siesta:    166.96493 202.16109 163.33760  2      117
+siesta:    177.64755 204.84828 176.14428  2      118
+siesta:    162.67336 199.15832 178.03400  2      119
+siesta:    176.07908 208.36129 166.68052  2      120
+siesta:    166.96493 202.16109 181.97975  2      121
+siesta:    172.69080 207.01202 180.58514  2      122
+siesta:    175.28351 201.33150 176.67907  2      123
+siesta:    158.91280 197.97346 168.03924  2      124
+siesta:    164.33065 209.13985 180.83458  2      125
+siesta:    174.47281 200.68333 162.22455  2      126
+siesta:    160.97071 214.52180 171.46342  2      127
+siesta:    164.33065 209.13985 162.19242  2      128
+siesta:    160.64190 205.81582 163.96877  2      129
+siesta:    170.87855 193.14898 171.40106  2      130
+siesta:    155.32610 202.98312 169.51134  2      131
+siesta:    167.47138 217.31670 174.99910  2      132
+siesta:    159.00540 204.84828 176.14428  2      133
+siesta:    165.37567 213.58638 161.99967  2      134
+siesta:    179.28406 205.81582 163.96877  2      135
+siesta:    160.97071 195.87964 171.46342  2      136
+siesta:    165.37567 213.58638 180.64183  2      137
+siesta:    157.43693 208.36129 166.68052  2      138
+siesta:    174.46903 212.64908 174.02400  2      139
+siesta:    172.69080 207.01202 161.94298  2      140
+siesta:    160.77796 195.48280 179.32658  2      141
+siesta:    175.42146 194.30550 167.17752  2      142
+siesta:    177.55496 197.97346 168.03924  2      143
+siesta:    174.46903 194.00692 174.02400  2      144
+siesta:    170.33620 215.62540 168.54380  2      145
+siesta:    160.77796 214.12495 179.32658  2      146
+siesta:    165.58732 200.00302 184.81434  2      147
+siesta:    162.67336 199.15832 159.39185  2      148
+siesta:    175.42146 212.94765 167.17752  2      149
+siesta:    171.51161 205.82527 185.77621  2      150
+
+siesta: Automatic unit cell vectors (Ang):
+siesta:   19.566812    0.000000    0.000000
+siesta:    0.000000   19.688912    0.000000
+siesta:    0.000000    0.000000   21.038612
+
+siesta: System type = molecule  
+
+initatomlists: Number of atoms, orbitals, and projectors:    150   300   850
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+redata: Non-Collinear-spin run           =     F
+redata: SpinPolarized (Up/Down) run      =     F
+redata: Number of spin components        =     1
+redata: Long output                      =     F
+redata: Number of Atomic Species         =        2
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.              =     NO
+redata: Mesh Cutoff                      =    50.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Min. number of SCF Iter          =        0
+redata: Max. number of SCF Iter          =       10
+redata: Mix DM or H after convergence    =     F
+redata: Recompute H after scf cycle      =     F
+redata: Mixing is linear
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk?        =     F
+redata: Discard 1st Pulay DM after  kick =     F
+redata: New DM Mixing Weight             =     0.2500
+redata: New DM Occupancy tolerance       = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.000100
+redata: Require (free) Energy convergence in SCF =     F
+redata: DM (free)Energy tolerance for SCF =     0.000010 eV
+redata: Require Harris convergence for SCF =     F
+redata: DM Harris energy tolerance for SCF =     0.000010 eV
+redata: Using Saved Data (generic)   =     F
+redata: Use continuation files for DM    =     F
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            =         CheSS
+redata: CheSSBufferKernel   =     2.000000
+redata: CheSSBufferMult     =     4.000000
+redata: CheSSBetax          = -1000.000000
+redata: Fix the spin of the system       =     F
+redata: Dynamics option                  =     Single-point calculation
+redata: ***********************************************************************
+Total number of electrons:   400.000000
+Total ionic charge:   400.000000
+
+* ProcessorY, Blocksize:    1  24
+
+
+* Orbital distribution balance (max,min):   156   144
+
+ Kpoints in:            1 . Kpoints trimmed:            1
+
+siesta: k-grid: Number of k-points =     1
+siesta: k-grid: Cutoff (effective) =     9.783 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
+siesta: k-grid:    0   0   1      0.000
+
+                     ====================================
+                        Single-point calculation
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+       19.566812    0.000000    0.000000
+        0.000000   19.688912    0.000000
+        0.000000    0.000000   21.038612
+
+outcell: Cell vector modules (Ang)   :   19.566812   19.688912   21.038612
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :   8105.1098
+---
+ Sparse matrices:
+   Overlap and hamiltonian matrix:
+     total elements                    :  90000
+     segments                          :  7026
+     non-zero elements                 :  16314
+     sparsity in %                     :  81.87
+     sparse matrix multiplication initialized:  No
+     taskgroup summary:
+       number of taskgroups            :  1
+       taskgroups overview:
+       -  {number of tasks:  2, start / end:  [  1,  16314 ], start / end disjoint: [ 1, 
+  16314]}
+   Density kernel matrix:
+     total elements                    :  90000
+     segments                          :  7484
+     non-zero elements                 :  66612
+     sparsity in %                     :  25.99
+     sparse matrix multiplication initialized:  Yes
+     sparse matrix multiplication setup:
+       segments                        :  472
+       non-zero elements               :  89680
+       sparsity in %                   :  0.36
+     taskgroup summary:
+       number of taskgroups            :  1
+       taskgroups overview:
+       -  {number of tasks:  2, start / end:  [  1,  66612 ], start / end disjoint: [ 1, 
+  66612]}
+New_DM. Step:     1
+Initializing Density Matrix...
+New grid distribution:   1
+           1       1:   45    1:   45    1:   23
+           2       1:   45    1:   45   24:   45
+
+InitMesh: MESH =    90 x    90 x    90 =      729000
+InitMesh: (bp) =    45 x    45 x    45 =       91125
+InitMesh: Mesh cutoff (required, used) =    50.000    50.577 Ry
+ExtMesh (bp) on 0 =    69 x    69 x    47 =      223767
+New grid distribution:   2
+           1       1:   45    1:   45    1:   15
+           2       1:   45    1:   45   16:   45
+New grid distribution:   3
+           1       1:   45    1:   45    1:   15
+           2       1:   45    1:   45   16:   45
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    69 x    69 x    39 =      185679
+PhiOnMesh: Number of (b)points on node 0 =                30375
+PhiOnMesh: nlist on node 0 =               100360
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel
+ S^-1/2:
+   Can take from memory                :  No
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  110, scale:  1.00E+00, bounds:  [  0.500,  1.500 ], exp accur:  [  5.35E-14 ], 
+   penalty: -2.8E+06,                   ok:  [  Yes,  No ]}
+   -  {npl:  120, scale:  5.00E-01, bounds:  [  0.500,  1.800 ], exp accur:  [  3.62E-14 ], 
+   penalty:  5.1E+06,                   ok:  [  No,  Yes ]}
+   -  {npl:  120, scale:  1.00E+00, bounds:  [  0.417,  1.800 ], exp accur:  [  3.91E-14 ], 
+   penalty: -6.8E+05,                   ok:  [  Yes,  No ]}
+   -  {npl:  140, scale:  5.00E-01, bounds:  [  0.417,  2.160 ], exp accur:  [  3.26E-14 ], 
+   penalty:  3.4E+06,                   ok:  [  No,  Yes ]}
+   -  {npl:  140, scale:  1.00E+00, bounds:  [  0.347,  2.160 ], exp accur:  [  3.71E-14 ], 
+   penalty: -4.9E+05,                   ok:  [  Yes,  No ]}
+   -  {npl:  160, scale:  5.00E-01, bounds:  [  0.347,  2.592 ], exp accur:  [  4.55E-14 ], 
+   penalty:  2.5E+06,                   ok:  [  No,  Yes ]}
+   -  {npl:  160, scale:  1.00E+00, bounds:  [  0.289,  2.592 ], exp accur:  [  4.8E-14 ], 
+   penalty:  1.8E+03,                   ok:  [  No,  Yes ]}
+   -  {npl:  160, scale:  2.00E+00, bounds:  [  0.241,  2.592 ], exp accur:  [  4.93E-14 ], 
+   penalty: -3.7E+06,                   ok:  [  Yes,  No ]}
+   -  {npl:  180, scale:  1.00E+00, bounds:  [  0.241,  3.110 ], exp accur:  [  5.82E-14 ], 
+   penalty: -1.1E-09,                   ok:  [  Yes,  Yes ]}
+   summary: {npl:  180, bounds:  [  0.241,  3.110 ], exp accur:  [  5.82E-14 ]}
+ Kernel calculation:
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 1
+   decay length of error function      :  2.000E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  140, bounds:  [ -0.500,  0.500 ], exp accur:  [  7.6E-06 ], penalty:  8.6E+05, ok: [
+  No,  Yes]}
+   -  {npl:  160, bounds:  [ -0.600,  0.500 ], exp accur:  [  6.67E-06 ], 
+   penalty:  1.1E+07, ok:  [  No,  Yes ]}
+   -  {npl:  180, bounds:  [ -0.720,  0.500 ], exp accur:  [  3.85E-06 ], 
+   penalty:  2.3E+06, ok:  [  No,  Yes ]}
+   -  {npl:  190, bounds:  [ -0.864,  0.500 ], exp accur:  [  7.29E-06 ], 
+   penalty:  8.3E+06, ok:  [  No,  Yes ]}
+   -  {npl:  210, bounds:  [ -1.037,  0.500 ], exp accur:  [  5.94E-06 ], 
+   penalty:  7.0E+05, ok:  [  No,  Yes ]}
+   -  {npl:  230, bounds:  [ -1.244,  0.500 ], exp accur:  [  5.41E-06 ], 
+   penalty:  3.9E+06, ok:  [  No,  Yes ]}
+   -  {npl:  250, bounds:  [ -1.493,  0.500 ], exp accur:  [  8.01E-06 ], 
+   penalty:  1.2E+06, ok:  [  No,  Yes ]}
+   -  {npl:  280, bounds:  [ -1.792,  0.500 ], exp accur:  [  4.63E-06 ], 
+   penalty:  4.0E+05, ok:  [  No,  Yes ]}
+   -  {npl:  290, bounds:  [ -2.150,  0.500 ], exp accur:  [  9.38E-06 ], 
+   penalty: -6.7E+04, ok:  [  Yes,  No ]}
+   -  {npl:  320, bounds:  [ -2.150,  0.600 ], exp accur:  [  8.79E-06 ], 
+   penalty: -3.0E-17, ok:  [  Yes,  Yes ]}
+   summary: {npl:  320, bounds:  [  0.24,  3.11 ], exp accur:  [  8.79E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -1.000000E-01, Tr(K):  4.0000004E+02, D Tr(K):  4.07E-05, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF: -2.000000E-01, Tr(K):  4.0000007E+02, D Tr(K):  6.63E-05, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF: -3.100000E-01, Tr(K):  3.9999991E+02, D Tr(K): -9.30E-05, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF:  1.000000E-01, Tr(K):  4.1835298E+02, D Tr(K):  1.84E+01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF: -2.074990E-01, Tr(K):  3.9999996E+02, D Tr(K): -4.07E-05, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF: -1.306239E-01, Tr(K):  4.0000002E+02, D Tr(K):  1.84E-05, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 7
+ eF: -1.618133E-01, Tr(K):  3.9999994E+02, D Tr(K): -5.68E-05, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 8
+ eF: -1.382559E-01, Tr(K):  3.9999995E+02, D Tr(K): -5.05E-05, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 9
+ eF: -1.322463E-01, Tr(K):  4.0000000E+02, D Tr(K): -2.03E-06, new eF: cubic interpol}
+   -  { #----------------------------------------------------------------------- it FOE: 10
+ eF: -1.320722E-01, Tr(K):  4.0000000E+02, D Tr(K):  2.26E-07, new eF: linear interpol}
+   summary: {nit:  10, eF: -1.320897E-01, Tr(K):  4.0000000E+02, D Tr(K):  2.26E-07}
+   Asymmetry of kernel                 :  4.72E-05
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -4.371883336029E+02
+   EBS higher temperature              : -4.371883216300E+02
+   difference                          :  1.197287127752E-05
+   relative difference                 :  2.738607221939E-08
+   trace(KS)                           :  400.0000006625788
+   modify error function decay length  : increase
+   need to repeat with sharper decay (new):  No
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel finished
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =     -5948.297019
+siesta: Eions   =     40792.723918
+siesta: Ena     =      8726.419127
+siesta: Ekin    =     17083.370273
+siesta: Enl     =     -2622.042165
+siesta: DEna    =        -0.000107
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Exc     =     -5510.813572
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =    -23225.307279
+siesta: Etot    =    -23115.790362
+siesta: FreeEng =    -23115.790362
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1   -23225.3073   -23115.7904   -23115.7904  0.71913 -1.7972
+timer: Routine,Calls,Time,% =    IterSCF     1      21.300  91.70
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel
+ S^-1/2:
+   Can take from memory                :  Yes
+ Kernel calculation:
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 1
+   decay length of error function      :  2.500E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  280, bounds:  [ -2.150,  0.600 ], exp accur:  [  7.85E-06 ], 
+   penalty: -1.2E+05, ok:  [  Yes,  No ]}
+   -  {npl:  300, bounds:  [ -2.150,  0.720 ], exp accur:  [  7.0E-06 ], penalty: -1.5E+05, ok: [
+  Yes,  No]}
+   -  {npl:  320, bounds:  [ -2.150,  0.864 ], exp accur:  [  9.84E-06 ], 
+   penalty: -1.2E+05, ok:  [  Yes,  No ]}
+   -  {npl:  350, bounds:  [ -2.150,  1.037 ], exp accur:  [  5.54E-06 ], 
+   penalty: -2.6E-01, ok:  [  Yes,  No ]}
+   -  {npl:  380, bounds:  [ -2.150,  1.244 ], exp accur:  [  5.68E-06 ], 
+   penalty:  2.2E-16, ok:  [  Yes,  Yes ]}
+   summary: {npl:  380, bounds:  [  0.24,  3.11 ], exp accur:  [  5.68E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -2.300997E-01, Tr(K):  3.2823743E+02, D Tr(K): -7.18E+01, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF: -3.407965E-02, Tr(K):  3.8149149E+02, D Tr(K): -1.85E+01, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF:  5.412935E-02, Tr(K):  3.9611564E+02, D Tr(K): -3.88E+00, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF:  1.511592E-01, Tr(K):  4.1729680E+02, D Tr(K):  1.73E+01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF:  1.882113E-02, Tr(K):  3.9170649E+02, D Tr(K): -8.29E+00, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF:  7.335024E-02, Tr(K):  4.0029519E+02, D Tr(K):  2.95E-01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 7
+ eF:  5.878089E-02, Tr(K):  3.9693847E+02, D Tr(K): -3.06E+00, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 8
+ eF:  6.906729E-02, Tr(K):  3.9920632E+02, D Tr(K): -7.94E-01, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 9
+ eF:  7.222340E-02, Tr(K):  4.0000271E+02, D Tr(K):  2.71E-03, new eF: linear interpol}
+   -  { #----------------------------------------------------------------------- it FOE: 10
+ eF:  7.221268E-02, Tr(K):  3.9999994E+02, D Tr(K): -5.90E-05, new eF: linear interpol}
+   -  { #----------------------------------------------------------------------- it FOE: 11
+ eF:  7.221291E-02, Tr(K):  4.0000000E+02, D Tr(K): -3.80E-09, new eF: linear interpol}
+   summary: {nit:  11, eF:  7.221291E-02, Tr(K):  4.0000000E+02, D Tr(K): -3.80E-09}
+   Asymmetry of kernel                 :  1.49E-03
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -3.052310670260E+02
+   EBS higher temperature              : -3.051992836915E+02
+   difference                          :  3.178333445783E-02
+   relative difference                 :  1.041287663393E-04
+   trace(KS)                           :  399.999998161842
+   modify error function decay length  : decrease
+   need to repeat with sharper decay (new):  Yes
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 2
+   decay length of error function      :  1.250E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  720, bounds:  [ -2.150,  1.244 ], exp accur:  [  9.62E-06 ], 
+   penalty:  2.1E-16, ok:  [  Yes,  Yes ]}
+   summary: {npl:  720, bounds:  [  0.24,  3.11 ], exp accur:  [  9.62E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -2.384670E-02, Tr(K):  3.8303015E+02, D Tr(K): -1.70E+01, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF:  1.682725E-01, Tr(K):  4.2113163E+02, D Tr(K):  2.11E+01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF:  6.696666E-02, Tr(K):  3.9798458E+02, D Tr(K): -2.02E+00, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF:  9.670348E-02, Tr(K):  4.0678978E+02, D Tr(K):  6.79E+00, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF:  7.780409E-02, Tr(K):  4.0147290E+02, D Tr(K):  1.47E+00, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF:  7.280674E-02, Tr(K):  3.9982561E+02, D Tr(K): -1.74E-01, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 7
+ eF:  7.334018E-02, Tr(K):  4.0000074E+02, D Tr(K):  7.40E-04, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 8
+ eF:  7.333793E-02, Tr(K):  4.0000000E+02, D Tr(K): -1.20E-06, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 9
+ eF:  7.333793E-02, Tr(K):  4.0000000E+02, D Tr(K): -7.73E-12, new eF: linear interpol}
+   summary: {nit:  9, eF:  7.333793E-02, Tr(K):  4.0000000E+02, D Tr(K): -7.73E-12}
+   Asymmetry of kernel                 :  3.43E-03
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -3.052522758969E+02
+   EBS higher temperature              : -3.052439954105E+02
+   difference                          :  8.280486381580E-03
+   relative difference                 :  2.712669826048E-05
+   trace(KS)                           :  399.9999978174602
+   modify error function decay length  : increase
+   need to repeat with sharper decay (new):  No
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel finished
+   scf:    2   -23202.3004   -23125.7442   -23125.7442  1.83753  0.9978
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel
+ S^-1/2:
+   Can take from memory                :  Yes
+ Kernel calculation:
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 1
+   decay length of error function      :  1.562E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  590, bounds:  [ -2.150,  1.244 ], exp accur:  [  7.8E-06 ], penalty:  5.4E-02, ok: [
+  No,  Yes]}
+   -  {npl:  640, bounds:  [ -2.580,  1.244 ], exp accur:  [  7.03E-06 ], 
+   penalty:  2.2E-16, ok:  [  Yes,  Yes ]}
+   summary: {npl:  640, bounds:  [  0.24,  3.11 ], exp accur:  [  7.03E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -4.470345E-03, Tr(K):  3.9702609E+02, D Tr(K): -2.97E+00, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF:  1.511462E-01, Tr(K):  4.1531942E+02, D Tr(K):  1.53E+01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF:  4.708295E-02, Tr(K):  4.0195365E+02, D Tr(K):  1.95E+00, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF:  2.397486E-02, Tr(K):  4.0026692E+02, D Tr(K):  2.67E-01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF:  1.569215E-02, Tr(K):  3.9909045E+02, D Tr(K): -9.10E-01, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF:  2.184759E-02, Tr(K):  3.9996153E+02, D Tr(K): -3.85E-02, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 7
+ eF:  2.211424E-02, Tr(K):  4.0000017E+02, D Tr(K):  1.65E-04, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 8
+ eF:  2.211310E-02, Tr(K):  4.0000000E+02, D Tr(K):  1.25E-07, new eF: linear interpol}
+   summary: {nit:  8, eF:  2.211310E-02, Tr(K):  4.0000000E+02, D Tr(K):  1.25E-07}
+   Asymmetry of kernel                 :  2.21E-03
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -3.379731337433E+02
+   EBS higher temperature              : -3.379728248193E+02
+   difference                          :  3.089240338454E-04
+   relative difference                 :  9.140490855703E-07
+   trace(KS)                           :  400.0000003618325
+   modify error function decay length  : increase
+   need to repeat with sharper decay (new):  No
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel finished
+   scf:    3   -23183.1151   -23123.2527   -23123.2527  0.56654  0.3009
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel
+ S^-1/2:
+   Can take from memory                :  Yes
+ Kernel calculation:
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 1
+   decay length of error function      :  1.953E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  510, bounds:  [ -2.580,  1.244 ], exp accur:  [  9.85E-06 ], 
+   penalty: -1.8E-16, ok:  [  Yes,  Yes ]}
+   summary: {npl:  510, bounds:  [  0.24,  3.11 ], exp accur:  [  9.85E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -4.091160E-02, Tr(K):  4.0000004E+02, D Tr(K):  3.59E-05, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF: -1.039363E-01, Tr(K):  3.9999999E+02, D Tr(K): -8.79E-06, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF:  8.513780E-02, Tr(K):  4.0499748E+02, D Tr(K):  5.00E+00, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF: -5.666761E-02, Tr(K):  3.9999997E+02, D Tr(K): -3.22E-05, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF: -2.121580E-02, Tr(K):  4.0000007E+02, D Tr(K):  6.53E-05, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF: -4.195180E-02, Tr(K):  4.0000004E+02, D Tr(K):  4.33E-05, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 7
+ eF: -8.284614E-02, Tr(K):  4.0000001E+02, D Tr(K):  5.90E-06, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 8
+ eF: -8.928537E-02, Tr(K):  4.0000004E+02, D Tr(K):  4.27E-05, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 9
+ eF: -7.182970E-02, Tr(K):  4.0000000E+02, D Tr(K): -3.35E-06, new eF: bisection/secant}
+   -  { #----------------------------------------------------------------------- it FOE: 10
+ eF: -7.682826E-02, Tr(K):  3.9999996E+02, D Tr(K): -4.19E-05, new eF: bisection/secant}
+   -  { #----------------------------------------------------------------------- it FOE: 11
+ eF: -8.302428E-02, Tr(K):  4.0000001E+02, D Tr(K):  8.10E-06, new eF: bisection/secant}
+   -  { #----------------------------------------------------------------------- it FOE: 12
+ eF: -8.097301E-02, Tr(K):  3.9999998E+02, D Tr(K): -1.68E-05, new eF: bisection/secant}
+   -  { #----------------------------------------------------------------------- it FOE: 13
+ eF: -8.217742E-02, Tr(K):  4.0000000E+02, D Tr(K): -2.41E-06, new eF: bisection/secant}
+   -  { #----------------------------------------------------------------------- it FOE: 14
+ eF: -8.248627E-02, Tr(K):  4.0000000E+02, D Tr(K):  1.43E-06, new eF: bisection/secant}
+   -  { #----------------------------------------------------------------------- it FOE: 15
+ eF: -8.235165E-02, Tr(K):  4.0000000E+02, D Tr(K): -2.49E-07, new eF: bisection/secant}
+   summary: {nit:  15, eF: -8.239530E-02, Tr(K):  4.0000000E+02, D Tr(K): -2.49E-07}
+   Asymmetry of kernel                 :  1.28E-04
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -3.530552752053E+02
+   EBS higher temperature              : -3.530552564577E+02
+   difference                          :  1.874762727994E-05
+   relative difference                 :  5.310111077942E-08
+   trace(KS)                           :  400.0000005313445
+   modify error function decay length  : increase
+   need to repeat with sharper decay (new):  No
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel finished
+   scf:    4   -23164.9813   -23134.2342   -23134.2342  0.31691 -1.1211
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel
+ S^-1/2:
+   Can take from memory                :  Yes
+ Kernel calculation:
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 1
+   decay length of error function      :  2.441E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  430, bounds:  [ -2.580,  1.244 ], exp accur:  [  8.42E-06 ], 
+   penalty: -3.2E-16, ok:  [  Yes,  Yes ]}
+   summary: {npl:  430, bounds:  [  0.24,  3.11 ], exp accur:  [  8.42E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -1.385503E-01, Tr(K):  4.0000005E+02, D Tr(K):  4.68E-05, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF: -1.947053E-01, Tr(K):  4.0000008E+02, D Tr(K):  7.71E-05, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF: -2.564758E-01, Tr(K):  3.9905215E+02, D Tr(K): -9.48E-01, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF: -2.624029E-02, Tr(K):  4.0001073E+02, D Tr(K):  1.07E-02, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF: -8.508760E-02, Tr(K):  4.0000003E+02, D Tr(K):  3.14E-05, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF: -1.279375E-01, Tr(K):  3.9999994E+02, D Tr(K): -6.07E-05, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 7
+ eF: -1.031069E-01, Tr(K):  3.9999995E+02, D Tr(K): -5.01E-05, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 8
+ eF:  1.367870E-02, Tr(K):  4.0083898E+02, D Tr(K):  8.39E-01, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 9
+ eF: -8.516626E-02, Tr(K):  4.0000003E+02, D Tr(K):  3.21E-05, new eF: cubic interpol}
+   -  { #----------------------------------------------------------------------- it FOE: 10
+ eF: -8.524715E-02, Tr(K):  4.0000003E+02, D Tr(K):  3.28E-05, new eF: bisection/secant}
+   -  { #----------------------------------------------------------------------- it FOE: 11
+ eF: -9.324474E-02, Tr(K):  4.0000003E+02, D Tr(K):  2.56E-05, new eF: bisection/secant}
+   -  { #----------------------------------------------------------------------- it FOE: 12
+ eF: -9.738008E-02, Tr(K):  3.9999998E+02, D Tr(K): -2.14E-05, new eF: bisection/secant}
+   -  { #----------------------------------------------------------------------- it FOE: 13
+ eF: -9.540569E-02, Tr(K):  4.0000000E+02, D Tr(K):  1.53E-06, new eF: bisection/secant}
+   -  { #----------------------------------------------------------------------- it FOE: 14
+ eF: -9.596500E-02, Tr(K):  3.9999999E+02, D Tr(K): -5.11E-06, new eF: linear interpol}
+   -  { #----------------------------------------------------------------------- it FOE: 15
+ eF: -9.553424E-02, Tr(K):  4.0000000E+02, D Tr(K):  1.05E-09, new eF: linear interpol}
+   summary: {nit:  15, eF: -9.553433E-02, Tr(K):  4.0000000E+02, D Tr(K):  1.05E-09}
+   Asymmetry of kernel                 :  1.41E-04
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -3.592330019586E+02
+   EBS higher temperature              : -3.592329693560E+02
+   difference                          :  3.260255294890E-05
+   relative difference                 :  9.075600730209E-08
+   trace(KS)                           :  400.0000006753964
+   modify error function decay length  : increase
+   need to repeat with sharper decay (new):  No
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel finished
+   scf:    5   -23160.7014   -23141.2233   -23141.2233  0.22693 -1.2998
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel
+ S^-1/2:
+   Can take from memory                :  Yes
+ Kernel calculation:
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 1
+   decay length of error function      :  3.052E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  310, bounds:  [ -2.322,  1.120 ], exp accur:  [  8.7E-06 ], penalty: -3.8E-16, ok: [
+  Yes,  Yes]}
+   summary: {npl:  310, bounds:  [  0.24,  3.11 ], exp accur:  [  8.7E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -1.505719E-01, Tr(K):  4.0000003E+02, D Tr(K):  3.26E-05, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF: -2.056094E-01, Tr(K):  3.9995744E+02, D Tr(K): -4.26E-02, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF: -4.049680E-02, Tr(K):  4.0014327E+02, D Tr(K):  1.43E-01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF: -1.454230E-01, Tr(K):  4.0000005E+02, D Tr(K):  5.02E-05, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF: -1.605051E-01, Tr(K):  3.9999994E+02, D Tr(K): -6.33E-05, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF: -1.525291E-01, Tr(K):  4.0000002E+02, D Tr(K):  1.59E-05, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 7
+ eF: -1.565182E-01, Tr(K):  3.9999997E+02, D Tr(K): -2.58E-05, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 8
+ eF: -1.540518E-01, Tr(K):  4.0000000E+02, D Tr(K):  6.15E-07, new eF: linear interpol}
+   summary: {nit:  8, eF: -1.541094E-01, Tr(K):  4.0000000E+02, D Tr(K):  6.15E-07}
+   Asymmetry of kernel                 :  1.09E-04
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -3.617938346359E+02
+   EBS higher temperature              : -3.617937159107E+02
+   difference                          :  1.187252669865E-04
+   relative difference                 :  3.281572421100E-07
+   trace(KS)                           :  400.0000012336055
+   modify error function decay length  : increase
+   need to repeat with sharper decay (new):  No
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel finished
+   scf:    6   -23159.3199   -23145.8787   -23145.8787  0.17745 -2.0968
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel
+ S^-1/2:
+   Can take from memory                :  Yes
+ Kernel calculation:
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 1
+   decay length of error function      :  3.815E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  230, bounds:  [ -2.090,  1.008 ], exp accur:  [  6.51E-06 ], 
+   penalty:  8.2E-12, ok:  [  Yes,  Yes ]}
+   summary: {npl:  230, bounds:  [  0.24,  3.11 ], exp accur:  [  6.51E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -2.031478E-01, Tr(K):  3.9849637E+02, D Tr(K): -1.50E+00, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF: -1.050709E-01, Tr(K):  4.0000579E+02, D Tr(K):  5.79E-03, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF: -1.297781E-01, Tr(K):  3.9999877E+02, D Tr(K): -1.23E-03, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF: -1.214300E-01, Tr(K):  4.0000028E+02, D Tr(K):  2.84E-04, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF: -1.242977E-01, Tr(K):  3.9999981E+02, D Tr(K): -1.94E-04, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF: -1.231295E-01, Tr(K):  4.0000000E+02, D Tr(K):  1.26E-07, new eF: linear interpol}
+   summary: {nit:  6, eF: -1.231302E-01, Tr(K):  4.0000000E+02, D Tr(K):  1.26E-07}
+   Asymmetry of kernel                 :  1.67E-04
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -3.628498696518E+02
+   EBS higher temperature              : -3.628483086200E+02
+   difference                          :  1.561031793869E-03
+   relative difference                 :  4.302142358126E-06
+   trace(KS)                           :  400.0000007071366
+   modify error function decay length  : increase
+   need to repeat with sharper decay (new):  No
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel finished
+   scf:    7   -23158.7521   -23149.1543   -23149.1543  0.13404 -1.6753
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel
+ S^-1/2:
+   Can take from memory                :  Yes
+ Kernel calculation:
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 1
+   decay length of error function      :  4.768E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  170, bounds:  [ -1.881,  0.907 ], exp accur:  [  3.09E-06 ], 
+   penalty:  5.0E+04, ok:  [  No,  Yes ]}
+   -  {npl:  190, bounds:  [ -2.257,  0.907 ], exp accur:  [  2.87E-06 ], 
+   penalty: -4.4E-09, ok:  [  Yes,  Yes ]}
+   summary: {npl:  190, bounds:  [  0.24,  3.11 ], exp accur:  [  2.87E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -1.628513E-01, Tr(K):  3.9900225E+02, D Tr(K): -9.98E-01, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF: -8.340908E-02, Tr(K):  4.0029509E+02, D Tr(K):  2.95E-01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF: -1.123360E-01, Tr(K):  4.0000735E+02, D Tr(K):  7.35E-03, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF: -1.251495E-01, Tr(K):  3.9990308E+02, D Tr(K): -9.69E-02, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF: -1.159909E-01, Tr(K):  3.9998022E+02, D Tr(K): -1.98E-02, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF: -1.133383E-01, Tr(K):  3.9999999E+02, D Tr(K): -1.43E-05, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 7
+ eF: -1.133363E-01, Tr(K):  4.0000000E+02, D Tr(K): -1.67E-07, new eF: linear interpol}
+   summary: {nit:  7, eF: -1.133363E-01, Tr(K):  4.0000000E+02, D Tr(K): -1.67E-07}
+   Asymmetry of kernel                 :  1.41E-04
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -3.632632084380E+02
+   EBS higher temperature              : -3.632448347470E+02
+   difference                          :  1.837369103993E-02
+   relative difference                 :  5.057955392436E-05
+   trace(KS)                           :  400.0000003309598
+   modify error function decay length  : No
+   need to repeat with sharper decay (new):  No
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel finished
+   scf:    8   -23158.3923   -23151.5149   -23151.5149  0.09847 -1.5420
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel
+ S^-1/2:
+   Can take from memory                :  Yes
+ Kernel calculation:
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 1
+   decay length of error function      :  4.768E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  190, bounds:  [ -2.257,  0.907 ], exp accur:  [  2.09E-06 ], 
+   penalty:  1.1E-09, ok:  [  Yes,  Yes ]}
+   summary: {npl:  190, bounds:  [  0.24,  3.11 ], exp accur:  [  2.09E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -1.455104E-01, Tr(K):  3.9928901E+02, D Tr(K): -7.11E-01, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF: -8.116219E-02, Tr(K):  4.0049500E+02, D Tr(K):  4.95E-01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF: -1.104550E-01, Tr(K):  4.0002519E+02, D Tr(K):  2.52E-02, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF: -1.198187E-01, Tr(K):  3.9989727E+02, D Tr(K): -1.03E-01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF: -1.137179E-01, Tr(K):  3.9998243E+02, D Tr(K): -1.76E-02, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF: -1.123881E-01, Tr(K):  3.9999998E+02, D Tr(K): -1.63E-05, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 7
+ eF: -1.123868E-01, Tr(K):  4.0000000E+02, D Tr(K): -9.85E-08, new eF: linear interpol}
+   summary: {nit:  7, eF: -1.123868E-01, Tr(K):  4.0000000E+02, D Tr(K): -9.85E-08}
+   Asymmetry of kernel                 :  1.39E-04
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -3.634012716264E+02
+   EBS higher temperature              : -3.633750934370E+02
+   difference                          :  2.617818937063E-02
+   relative difference                 :  7.203659264446E-05
+   trace(KS)                           :  400.0000003453771
+   modify error function decay length  : No
+   need to repeat with sharper decay (new):  No
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel finished
+   scf:    9   -23158.2081   -23153.2195   -23153.2195  0.07108 -1.5291
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel
+ S^-1/2:
+   Can take from memory                :  Yes
+ Kernel calculation:
+ -  #------------------------------------------------------------------- ispin: 1, itemp: 1
+   decay length of error function      :  4.768E-02
+   beta for penaltyfunction            : -1000.0
+   determine eigenvalue bounds:
+   -  {npl:  190, bounds:  [ -2.257,  0.907 ], exp accur:  [  1.94E-06 ], 
+   penalty: -1.4E-10, ok:  [  Yes,  Yes ]}
+   summary: {npl:  190, bounds:  [  0.24,  3.11 ], exp accur:  [  1.94E-06 ]}
+   determine Fermi energy:
+   -  { #------------------------------------------------------------------------ it FOE: 1
+ eF: -1.384479E-01, Tr(K):  3.9947332E+02, D Tr(K): -5.27E-01, new eF: bisec bounds}
+   -  { #------------------------------------------------------------------------ it FOE: 2
+ eF: -8.632578E-02, Tr(K):  4.0046563E+02, D Tr(K):  4.66E-01, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 3
+ eF: -1.115852E-01, Tr(K):  4.0003513E+02, D Tr(K):  3.51E-02, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 4
+ eF: -1.191407E-01, Tr(K):  3.9991772E+02, D Tr(K): -8.23E-02, new eF: bisection/secant}
+   -  { #------------------------------------------------------------------------ it FOE: 5
+ eF: -1.146043E-01, Tr(K):  3.9998970E+02, D Tr(K): -1.03E-02, new eF: cubic interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 6
+ eF: -1.139284E-01, Tr(K):  3.9999999E+02, D Tr(K): -8.17E-06, new eF: linear interpol}
+   -  { #------------------------------------------------------------------------ it FOE: 7
+ eF: -1.139279E-01, Tr(K):  4.0000000E+02, D Tr(K): -3.27E-08, new eF: linear interpol}
+   summary: {nit:  7, eF: -1.139279E-01, Tr(K):  4.0000000E+02, D Tr(K): -3.27E-08}
+   Asymmetry of kernel                 :  1.35E-04
+   symmetrize_kernel                   :  Yes
+   EBS                                 : -3.634458325549E+02
+   EBS higher temperature              : -3.634135528835E+02
+   difference                          :  3.227967147052E-02
+   relative difference                 :  8.881563242479E-05
+   trace(KS)                           :  400.0000003996701
+   modify error function decay length  : No
+   need to repeat with sharper decay (new):  No
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FOE calculation of kernel finished
+   scf:   10   -23158.1379   -23154.4607   -23154.4607  0.05093 -1.5501
+:!: SCF did not converge in maximum number of steps.
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =           -23155.3775
+
+siesta: E_KS - E_eggbox =    -23155.3775
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot   -6.536188   -8.651238    4.905187
+----------------------------------------
+   Max    9.048492
+   Res    3.079137    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    9.048492    constrained
+
+Stress-tensor-Voigt (kbar):      -16.22      -10.39      -18.53        1.46       -3.14        1.85
+(Free)E + p*V (eV/cell)   -23079.2613
+Target enthalpy (eV/cell)   -23155.3775
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =     -4944.971304
+siesta: Eions   =     40792.723918
+siesta: Ena     =      8726.419127
+siesta: Ekin    =     17925.003621
+siesta: Enl     =     -3145.127528
+siesta: DEna    =      -277.703186
+siesta: DUscf   =        67.565034
+siesta: DUext   =         0.000000
+siesta: Exc     =     -5658.810660
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =    -23158.137878
+siesta: Etot    =    -23155.377510
+siesta: FreeEng =    -23155.377510
+
+siesta: Final energy (eV):
+siesta:  Band Struct. =   -4944.971304
+siesta:       Kinetic =   17925.003621
+siesta:       Hartree =   63276.014549
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =   -5658.810660
+siesta:  Ion-electron = -142004.900934
+siesta:       Ion-ion =   43307.315915
+siesta:       Ekinion =       0.000000
+siesta:         Total =  -23155.377510
+
+siesta: Atomic forces (eV/Ang):
+siesta:      1    2.652892    5.658409   -0.284311
+siesta:      2    4.237486   -3.936677   -0.576710
+siesta:      3    2.005964    0.020543   -7.270182
+siesta:      4    1.598471    2.012475   -4.057062
+siesta:      5   -4.414348   -3.038531    0.681647
+siesta:      6    1.844535    4.920969    0.622645
+siesta:      7   -5.658355    4.818715    0.100553
+siesta:      8   -0.881308    4.055500   -4.218419
+siesta:      9   -6.644467    1.411815   -0.170233
+siesta:     10    1.629748    4.512370    1.123836
+siesta:     11    4.916665   -0.747398   -2.607989
+siesta:     12    2.224346   -4.387189    5.099153
+siesta:     13   -5.213677    5.236314   -1.665304
+siesta:     14    0.846653   -2.894192   -3.100728
+siesta:     15   -0.208104   -0.523307   -7.318829
+siesta:     16   -3.867386    2.968441   -4.571040
+siesta:     17   -0.846230    4.659452    0.867668
+siesta:     18   -0.648212    0.125918    5.386633
+siesta:     19   -4.275587    4.533730    4.788829
+siesta:     20   -5.812201    2.345466    1.320682
+siesta:     21   -0.913668    5.150239    3.560383
+siesta:     22   -2.002723    4.913930   -0.528686
+siesta:     23   -2.445157    2.653850   -0.429758
+siesta:     24    3.362476   -3.816689   -1.056247
+siesta:     25   -4.059798   -0.656617    2.526931
+siesta:     26    3.076136    2.912691   -2.515429
+siesta:     27   -0.637213    0.181581    4.331693
+siesta:     28   -4.219775   -1.548240    9.048492
+siesta:     29   -2.419977    3.705266    0.753306
+siesta:     30    1.028728    0.390930   -7.027793
+siesta:     31   -1.952185   -5.202846    4.373058
+siesta:     32    6.175931   -1.061939   -1.021235
+siesta:     33   -0.351857   -1.907978    5.105793
+siesta:     34   -0.196607   -1.387566   -6.571689
+siesta:     35    2.201645    3.951041    0.714356
+siesta:     36    0.195942   -0.914972    4.206240
+siesta:     37    0.447334   -2.711921   -6.927882
+siesta:     38   -4.519573    1.013983   -0.096900
+siesta:     39   -6.006611    3.000903   -1.706102
+siesta:     40   -0.687020    4.729373    5.161853
+siesta:     41    3.251100    3.250661   -0.850356
+siesta:     42   -2.815597    1.878242    1.657633
+siesta:     43    4.574775   -3.250479   -1.098782
+siesta:     44   -6.646924    3.397907   -1.530706
+siesta:     45   -4.422677    5.173244   -1.239339
+siesta:     46    4.524858    3.318798   -0.298243
+siesta:     47   -3.347795    2.694433   -4.600337
+siesta:     48   -5.151572    2.472702    8.215598
+siesta:     49   -2.818168    2.030766    0.793297
+siesta:     50    1.912918    4.488928    0.681430
+siesta:     51    0.529180   -5.327885   -3.271641
+siesta:     52   -4.295331    0.308258   -3.279354
+siesta:     53   -1.633104    2.620638    7.482706
+siesta:     54    1.509592   -2.497942    3.125146
+siesta:     55    6.097808   -1.450303    1.357624
+siesta:     56   -2.844742   -2.425179   -2.032096
+siesta:     57    2.449189   -4.351141    2.964174
+siesta:     58    0.576097   -4.361044    2.390473
+siesta:     59    5.007278   -4.483108   -1.983994
+siesta:     60   -3.080321   -3.463999    1.660060
+siesta:     61   -6.645986   -3.107655    1.670739
+siesta:     62    2.845222    2.828089   -3.252943
+siesta:     63    5.704231   -1.782128   -2.717349
+siesta:     64    3.226596   -1.397821    1.387061
+siesta:     65   -3.338376    3.422757    4.234396
+siesta:     66    7.086487   -3.521675    2.600262
+siesta:     67    2.064836   -0.997768   -2.558195
+siesta:     68   -0.365542   -0.576423   -7.147782
+siesta:     69    6.335418    0.447670    1.135057
+siesta:     70    4.781580    0.427176    2.152712
+siesta:     71    2.198399   -2.102502   -4.120087
+siesta:     72    1.691965   -4.022519   -3.884856
+siesta:     73    0.611123   -3.801264   -2.735325
+siesta:     74   -3.521969    4.983733    3.124014
+siesta:     75    3.009684   -2.265858    0.349957
+siesta:     76   -4.287577    0.556790    1.772404
+siesta:     77    1.815138   -3.942753   -2.724701
+siesta:     78    2.800137   -1.918928    0.331219
+siesta:     79   -3.029990   -3.837637   -1.951306
+siesta:     80   -3.271049    3.524960    4.701356
+siesta:     81    2.964076    3.529336   -3.606092
+siesta:     82   -6.556709   -2.905642    1.624612
+siesta:     83    0.122317   -0.659304   -6.096299
+siesta:     84    1.821587   -0.835421    6.925370
+siesta:     85   -4.222655   -5.055350   -1.712370
+siesta:     86    1.349298   -2.227229   -0.937391
+siesta:     87    2.160220   -0.490940    4.812140
+siesta:     88    5.506829    0.271621    2.203646
+siesta:     89    5.490954   -1.165991   -1.981466
+siesta:     90    1.207340   -3.845588   -2.903508
+siesta:     91   -0.522878   -2.220463   -5.070304
+siesta:     92    1.216282   -0.340384   -3.430726
+siesta:     93   -3.417531    4.511625    2.591665
+siesta:     94    5.563244   -0.828376   -1.889036
+siesta:     95    5.574788   -2.250273   -2.678485
+siesta:     96   -0.491312   -2.399575   -5.037444
+siesta:     97    6.104899   -3.727516    1.560146
+siesta:     98    6.296126    0.194168    1.573397
+siesta:     99    0.930058   -0.445451   -2.825473
+siesta:    100   -2.860078   -2.802465   -2.455592
+siesta:    101   -3.180168    0.068839    4.210620
+siesta:    102    0.018449    3.657941    3.026745
+siesta:    103   -0.360623   -3.036382   -2.015621
+siesta:    104   -2.733604   -0.971535   -0.499105
+siesta:    105   -0.038154    4.388627   -2.768282
+siesta:    106   -0.113455   -2.401200    2.824817
+siesta:    107    2.454097    0.747090   -2.448616
+siesta:    108    0.326563    0.953726    2.201383
+siesta:    109    1.815668    3.393772    3.773763
+siesta:    110    1.017623    0.070326   -2.229177
+siesta:    111    2.763949    3.940200    3.656624
+siesta:    112   -4.214116   -0.655056   -0.813199
+siesta:    113   -1.319639   -4.362366    3.774856
+siesta:    114   -1.912081    0.792943    1.873001
+siesta:    115    3.157387   -2.895892    2.280654
+siesta:    116   -2.248486    1.272102    4.002925
+siesta:    117   -1.440426   -3.051492    1.868879
+siesta:    118    0.688386    0.281508    0.161022
+siesta:    119   -1.950907   -5.404311   -0.232453
+siesta:    120    0.766291   -3.356222   -2.905558
+siesta:    121   -1.069692   -2.038123    1.168775
+siesta:    122   -0.689623   -0.388065    2.955570
+siesta:    123    0.343087    1.496822    0.153894
+siesta:    124   -0.072029   -0.495516   -1.730160
+siesta:    125    1.400720    2.141101   -0.060382
+siesta:    126    0.315950   -0.663660   -1.160374
+siesta:    127   -1.047754    1.474782   -1.044291
+siesta:    128    1.762210    2.684035    0.368833
+siesta:    129    3.960869    1.510157   -2.465167
+siesta:    130    2.167310   -1.901886    1.643078
+siesta:    131   -2.742118   -0.324228   -0.651879
+siesta:    132    1.234992    2.231602    2.090210
+siesta:    133    2.109867    0.853473   -0.370209
+siesta:    134   -1.750812    2.728018   -0.132847
+siesta:    135    2.229157    0.751883   -1.239016
+siesta:    136   -1.707430    3.227144   -1.854498
+siesta:    137   -2.942684    3.141885   -1.469956
+siesta:    138    1.164669   -2.789139   -2.164233
+siesta:    139   -2.377105   -2.726927   -1.579313
+siesta:    140   -0.860371   -0.504004    2.874299
+siesta:    141   -2.427541   -0.366992    1.782323
+siesta:    142   -0.072285   -1.984779    1.208256
+siesta:    143   -0.860011   -0.858991   -1.873098
+siesta:    144   -1.780329   -1.686421   -1.554692
+siesta:    145   -1.032931   -3.940446    3.442555
+siesta:    146   -2.606989   -0.614616    1.645286
+siesta:    147   -2.342593    1.049480    2.856354
+siesta:    148   -1.197193   -3.901483   -0.406072
+siesta:    149   -0.187598   -3.105175    1.304310
+siesta:    150    0.158657   -1.478149    2.196410
+siesta: ----------------------------------------
+siesta:    Tot   -6.536188   -8.651238    4.905187
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:    -0.010126    0.000918    0.001164
+siesta:     0.000913   -0.006485   -0.001953
+siesta:     0.001158   -0.001962   -0.011562
+
+siesta: Cell volume =       8105.109819 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:           0.00010228          0.00002961  Ry/Bohr**3
+siesta:           0.00939114          0.00271871  eV/Ang**3
+siesta:          15.04642672          4.35589274  kBar
+(Free)E+ p_basis*V_orbitals  =      -23142.892975
+(Free)Eharris+ p_basis*V_orbitals  =      -23145.653343
+
+siesta: Electric dipole (a.u.)  =    4.223296  -16.022213    1.862799
+siesta: Electric dipole (Debye) =   10.734555  -40.724431    4.734765
+ Memory Consumption Report:
+   Tot. No. of Allocations             :  4079
+   Tot. No. of Deallocations           :  4079
+   Remaining Memory (B)                :  0
+   Memory occupation:
+     Peak Value (MB)                   :  325.588
+     for the array                     : windows
+     in the routine                    : compress_matrix_distributed_core
+     Memory Peak of process            : 408.132 MB
+ Walltime since initialization         :  00:02:24.945853732
+ Max No. of dictionaries used          :  1438 #( 267 still in use)
+ Number of dictionary folders allocated:  1
+>> End of run:  19-JAN-2017   8:54:55

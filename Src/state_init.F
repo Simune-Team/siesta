@@ -54,8 +54,8 @@
       use write_subs
       use m_ioxv,            only: ioxv
       use m_steps
-      use parallel,          only: IOnode, node, nodes
-      use m_spin,            only: spin
+      use parallel,          only: IOnode, node, nodes, BlockSize
+      use m_spin,            only: spin, qs
       use m_rmaxh
       use m_mixing,          only: mixers_history_init
       use m_mixing_scf,      only: scf_mixs, scf_mix
@@ -84,6 +84,9 @@
       use m_ts_sparse, only : ts_sparse_init
       use m_ts_tri_init, only : ts_tri_init, ts_tri_analyze
       use files, only: slabel, label_length
+#endif
+#ifdef SIESTA__CHESS
+      use m_chess, only: CheSS_init, get_CheSS_parameter
 #endif
 #ifdef CDF
       use iodm_netcdf, only: setup_dm_netcdf_file
@@ -116,6 +119,12 @@
       logical                       :: ts_Gamma_file = .true.
       character(len=label_length+6) :: fname
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
+#endif
+#ifdef SIESTA__CHESS
+      integer :: maxnh_kernel, maxnh_mult, no_l_kernel, no_l_mult
+      integer,dimension(:),allocatable :: listh_kernel, listh_mult
+      integer,dimension(:),allocatable :: numh_kernel, numh_mult
+      real(dp) :: chess_value
 #endif
       type(Sparsity) :: g_Sp
       
@@ -320,6 +329,36 @@
       ! We do not need to allocate listh
       ! that will be allocated in hsparse
 
+#ifdef SIESTA__CHESS
+      if (isolve == SOLVE_CHESS) then
+!         Calculate a sparsity pattern with some buffers... Only required
+!         for CheSS
+          chess_value = get_chess_parameter('chess_buffer_kernel')
+          call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
+     &              lastkb, iphorb, iphKB, maxnh, gamma, 
+     &              chess_value,
+     $              set_xijo=.true., folding=folding1)
+          maxnh_kernel = maxnh
+          no_l_kernel = no_l
+          allocate(listh_kernel(maxnh_kernel))
+          allocate(numh_kernel(no_l_kernel))
+          listh_kernel = listh
+          numh_kernel = numh
+    
+          chess_value = get_chess_parameter('chess_buffer_mult')
+          call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
+     &                  lastkb, iphorb, iphKB, maxnh, gamma,
+     &                  chess_value, 
+     $                  set_xijo=.true., folding=folding1)
+          maxnh_mult = maxnh
+          no_l_mult = no_l
+          allocate(listh_mult(maxnh_mult))
+          allocate(numh_mult(no_l_mult))
+          listh_mult = listh
+          numh_mult = numh
+      end if
+#endif /* CHESS */
+
 !     List of nonzero Hamiltonian matrix elements
 !     and, if applicable,  vectors between orbital centers
 
@@ -329,9 +368,21 @@
       call delete(xij_2D) ! as xijo will be reallocated
       nullify(xijo)
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
-     &              lastkb, iphorb, iphKB, maxnh, gamma,
+     &              lastkb, iphorb, iphKB, maxnh, gamma, 0.0_dp,
      $                 set_xijo=.true., folding=folding1)
 !
+#ifdef SIESTA__CHESS
+      if (isolve == SOLVE_CHESS) then
+          call CheSS_init(node, nodes, maxnh, maxnh_kernel, maxnh_mult, 
+     &         no_u, no_l, no_l_kernel, no_l_mult, BlockSize, 
+     &         spin%spinor, qs, listh, listh_kernel, listh_mult, 
+     &         numh, numh_kernel, numh_mult)
+          deallocate(listh_kernel)
+          deallocate(numh_kernel)
+          deallocate(listh_mult)
+          deallocate(numh_mult)
+      end if
+#endif /* CHESS */
       call globalize_or(folding1,folding)
       if (folding) then
          if (IOnode) then

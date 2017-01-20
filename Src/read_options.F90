@@ -37,6 +37,9 @@ subroutine read_options( na, ns, nspin )
   use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
   use m_cite, only: add_citation
+#ifdef SIESTA__CHESS
+  use m_chess, only: set_CheSS_parameter
+#endif
   
   implicit none
   !----------------------------------------------------------- Input Variables
@@ -54,6 +57,9 @@ subroutine read_options( na, ns, nspin )
   integer,  parameter :: ntdsaverho_default = 50
   integer,  parameter :: tdednwrite_default = 100
   !end tddft
+#ifdef SIESTA__CHESS
+  real(dp) :: chess_value
+#endif
   ! The following are comment lines that should be merged into 'siesta_options'.
 
   ! real*8 charnet           : Net charge (in units of |e|)
@@ -74,6 +80,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 3   = OMM
   !                                                 4   = PEXSI
   !                                                 5   = (Matrix write)
+  !                                                 6   = CheSS
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
   ! real*8  ts               : Total spin of the system
@@ -697,6 +704,16 @@ subroutine read_options( na, ns, nspin )
 #else
      call die("PEXSI solver is not compiled in. Use -DSIESTA__PEXSI")
 #endif
+
+#ifdef SIESTA__CHESS
+  else if (leqi(method,'chess')) then
+     isolve = SOLVE_CHESS
+     if (ionode) then
+        write(*,'(a,4x,a)')                                &
+             'redata: Method of Calculation            = ',  &
+             '    CheSS'
+     endif
+#endif /* CHESS */
      
 #ifdef TRANSIESTA
   else if (leqi(method,'transi') .or. leqi(method,'transiesta') &
@@ -710,6 +727,9 @@ subroutine read_options( na, ns, nspin )
 #endif /* TRANSIESTA */
   else
      call die( 'redata: The method of solution must be either '//&
+#ifdef SIESTA__CHESS
+          'CheSS, '//&
+#endif
 #ifdef TRANSIESTA
           'Transiesta, '//&
 #endif
@@ -721,6 +741,30 @@ subroutine read_options( na, ns, nspin )
 
 #ifdef DEBUG
   call write_debug( '    Solution Method: ' // method )
+#endif
+
+#ifdef SIESTA__CHESS
+  ! Buffer for the density kernel within the CheSS calculation
+  chess_value = fdf_get('CheSSBufferKernel', 4.0_dp)
+  call set_CheSS_parameter('chess_buffer_kernel', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSSBufferKernel   = ',chess_value
+  !if (cml_p) call cmlAddParameter(xf=mainXML, name='CheSSBufferKernel', &
+  !                 value=chess_value, dictref='siesta:CheSSBufferKernel')
+
+  ! Buffer for the matrix vector multiplication within the CheSS calculation
+  chess_value = fdf_get('CheSSBufferMult', 6.0_dp)
+  call set_CheSS_parameter('chess_buffer_mult', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSSBufferMult     = ',chess_value
+
+  ! Parameters for the penalty function used to determine the eigenvalue bounds
+  chess_value = fdf_get('CheSSBetax', -1000.0_dp)
+  call set_CheSS_parameter('chess_betax', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSSBetax          = ',chess_value
+  !if (cml_p) call cmlAddParameter(xf=mainXML, name='CheSSBufferMult', &
+  !                 value=chess_value, dictref='siesta:CheSSBufferMult')
 #endif
 
   if (cml_p) then

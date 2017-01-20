@@ -47,7 +47,7 @@ C  Modules
 C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      &                    lasto, lastkb, iphorb, iphkb,     
-     &                    nlhmax, gamma,
+     &                    nlhmax, gamma, buffer,
      $                    set_xijo, folding)
 
       use precision
@@ -80,6 +80,7 @@ C
       logical,           intent(in) :: negl
       integer,        intent(out)   :: nlhmax
       logical, intent(in)           :: gamma
+      real(dp),intent(in)           :: buffer
       logical, intent(in)           :: set_xijo
       logical, intent(out)    :: folding
 
@@ -164,14 +165,14 @@ C     Allocate local arrays that depend on parameters
          ! Species orbital range
          rorbmax(is) = 0.0_dp
          do io = 1, nofis(is)
-            rorbmax(is) = max(rorbmax(is),rcut(is,io))
+            rorbmax(is) = max(rorbmax(is),rcut(is,io)+buffer)
          enddo
          rmaxo = max(rmaxo, rorbmax(is))
          
          ! Species KB range
          rkbmax(is) = 0.0_dp
          do ikb = 1, nkbfis(is)
-            rkbmax(is) = max(rkbmax(is),rcut(is,-ikb))
+            rkbmax(is) = max(rkbmax(is),rcut(is,-ikb)+buffer)
          enddo
          rmaxkb = max(rmaxkb, rkbmax(is))
          
@@ -181,7 +182,7 @@ C     Allocate local arrays that depend on parameters
            spp => species(is)
            do io = 1, spp%n_pjldaunl
              pp => spp%pjldau(io)
-             rldaumax(is) = max( rldaumax(is), pp%cutoff )
+             rldaumax(is) = max( rldaumax(is), pp%cutoff+buffer )
            enddo
          endif
          rmaxldau = max(rmaxldau, rldaumax(is))
@@ -241,7 +242,7 @@ C       Loop on orbitals of atom ia
           if (iio.gt.0) then
             is = isa(ia)
             ioa = iphorb(io)
-            rci = rcut(is,ioa)
+            rci = rcut(is,ioa)+buffer
 
             ! To be used in nlefsm
             ! Mark atoms whose KB projs overlap this process's
@@ -301,7 +302,7 @@ C           through a KB or LDA+U projector
                 !reserve space for it)
                 if (.not.conect(jo)) then
                   joa = iphorb(jo)
-                  rcj = rcut(js,joa)
+                  rcj = rcut(js,joa)+buffer
 C                 Find if there is direct overlap
                   if ( rci+rcj > rij ) then
                     conect(jo) = .true.
@@ -393,7 +394,7 @@ C       Loop on orbitals of atom ia
 
             is = isa(ia)
             ioa = iphorb(io)
-            rci = rcut(is,ioa)
+            rci = rcut(is,ioa)+buffer
 
 C           Find overlaping KB and LDA+U projectors
             if ( negl .and. switch_ldau ) then
@@ -438,7 +439,7 @@ C           through a KB or LDA+U projector
               do jo = lasto(ja-1)+1,lasto(ja)
 
                 joa = iphorb(jo)
-                rcj = rcut(js,joa)
+                rcj = rcut(js,joa)+buffer
 
                 ! Check connectivity
                 connected = rci + rcj > rij
