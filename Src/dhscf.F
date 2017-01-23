@@ -535,6 +535,7 @@ C     Modules
       use files,         only  : slabel
       use files,         only  : filesOut_t ! derived type for output file names
       use siesta_options, only : harrisfun, save_initial_charge_density
+      use siesta_options, only : analyze_charge_density_only
       use meshsubs,       only : LocalChargeOnMesh
       use meshsubs,       only : PartialCoreOnMesh
       use meshsubs,       only : NeutralAtomOnMesh
@@ -738,6 +739,13 @@ C ----------------------------------------------------------------------
       volume = volcel(cell)
 
 C-------------------------------------------------------------------------
+      
+      if (analyze_charge_density_only) then
+         !! Use the functionality in the first block
+         !! of the routine to get charge files and partial charges
+         call setup_analysis_options()
+      endif
+      
       if (filesOut%vna .ne. ' ') then
         ! Uniform dist, sequential form
         call write_rho( filesOut%vna,
@@ -817,7 +825,10 @@ C       Set the UNIFORM distribution again and copy DRho to it
         enddo
         call de_alloc( DRho_par, 'DRho_par','dhscf' )
 !
-        if (save_initial_charge_density) then 
+        if (save_initial_charge_density) then
+           ! This section is to be deprecated in favor
+           ! of "analyze_charge_density_only"
+           ! (except for the special name for the .nc file)
            call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
      $              nspin, DRho)
            call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
@@ -927,7 +938,8 @@ C       Save total (ionic+electronic) charge
 C ----------------------------------------------------------------------
 C Save the total charge (model core + valence) for Bader analysis
 C ----------------------------------------------------------------------
-
+      
+      ! The test for toch guarantees that we are in "analysis mode"
       if (filesOut%toch .ne. ' ' .and. savebader) then
         call save_bader_charge()
       endif
@@ -960,7 +972,17 @@ C ----------------------------------------------------------------------
          endif
       endif
 
-C Transform spin density into sum and difference
+! End of analysis section
+! Can exit now, if requested
+      
+        if (analyze_charge_density_only) then 
+            call timer('DHSCF3',2)
+            call timer('DHSCF',2)
+           call bye("STOP after analyzing charge from input DM")
+        endif
+
+!-------------------------------------------------------------
+C     Transform spin density into sum and difference
       if (nsd .eq. 2) then
         do ip = 1,ntpl
           rhotot     = DRho(ip,1) + DRho(ip,2)
@@ -1480,6 +1502,28 @@ C ----------------------------------------------------------------------
       call de_alloc( BaderCharge, name='BaderCharge' )
       end subroutine save_bader_charge
 
+      subroutine setup_analysis_options()
+      !! For the analyze-charge-density-only case,
+      !! avoiding any diagonalization
+      
+      use siesta_options, only: hirshpop, voropop
+      use siesta_options, only: saverho, savedrho, saverhoxc
+      use siesta_options, only: savevh, savevt, savevna
+      use siesta_options, only: savepsch, savetoch
+      
+      want_partial_charges = (hirshpop .or. voropop) 
+
+        if (saverho)   filesOut%rho   = trim(slabel)//'.RHO' 
+        if (savedrho)  filesOut%drho  = trim(slabel)//'.DRHO'
+        if (saverhoxc) filesOut%rhoxc = trim(slabel)//'.RHOXC'
+        if (savevh)    filesOut%vh    = trim(slabel)//'.VH'  
+        if (savevt)    filesOut%vt    = trim(slabel)//'.VT'  
+        if (savevna)   filesOut%vna   = trim(slabel)//'.VNA' 
+        if (savepsch)  filesOut%psch  = trim(slabel)//'.IOCH'
+        if (savetoch)  filesOut%toch  = trim(slabel)//'.TOCH'
+        
+        end subroutine setup_analysis_options
+      
       end subroutine dhscf
 
       subroutine delk_wrapper(isigneikr, norb, maxnd,
