@@ -862,6 +862,8 @@ C ----------------------------------------------------------------------
       use atmfuncs, only: izofis, zvalfis
       use atm_types, only : species
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
+      use fdf
+      use parallel, only: ionode
 
       implicit none
 
@@ -880,17 +882,20 @@ C
 
       real(dp) dx(3), ra, charge_ratio, r
       real(dp) core_charge
+      real(dp), parameter :: pi = 3.141592653589793_dp
 
         ! We want a total core charge of (Z-Zval), localized in a
         ! region of around 1.0 bohr.
-        ! Note that we put *nothing* for Hydrogen atoms.
+        ! Note that we put 1 electron (extra!) for Hydrogen atoms,
+        ! to provide the necessary "cuspy" behavior for the reference
+        ! file for Bader analysis. For H, the radius is 0.6 bohr
+       real(dp) :: radius_standard, radius_h
 
         ! The model function is N*f(r/ra), where 
         !  f(x) = exp( - (sinh(2.0_dp*x)/sinh(1.0_dp))**2 )
         !  f(1) is zero to within 10^-5
         ! For normalization, we need \int_{0,1} { x*x*f(x) }, which is:
         real(dp), parameter :: Integral = 0.0411548_dp
-        real(dp), parameter :: pi = 3.141592653589793_dp
 
         ! so that N above is Q/(4*pi*Integral*ra**3)
         
@@ -903,15 +908,31 @@ C
 
       ! Initialise array to zero
       ModelCore(1:ntpl) = 0.0_grid_p
-
-      ra = 1.0_dp
+        
+      radius_standard = fdf_get("bader-core-radius-standard",
+     $                      1.0_dp,"Bohr")
+      radius_h = fdf_get("bader-core-radius-hydrogen",
+     $                      0.6_dp,"Bohr")
+      
+      if (ionode) then
+         write(6,"(a,2f6.3)") "Bader Analysis core-charge setup. " //
+     $                        "Radii (standard, H): ",
+     $                        radius_standard, radius_h
+      endif
+      
       do ia = 1,na
         if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
         is = isa(ia)
-        if (izofis(is) == 1) CYCLE  ! discard hydrogen atoms
-
-        charge_ratio =  (izofis(is)-zvalfis(is)) /
+        if (izofis(is) == 1) then
+           ra = radius_h
+           charge_ratio =  1.0_dp /
      $             (4.0_dp*pi*Integral*ra**3.0_dp)
+        else
+           ra = radius_standard
+           charge_ratio =  (izofis(is)-zvalfis(is)) /
+     $             (4.0_dp*pi*Integral*ra**3.0_dp)
+        endif
+
 
 C Loop over mesh points inside rmax
         do iop = 1,mop
