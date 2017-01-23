@@ -512,8 +512,8 @@ get_target_stress.o: parallel.o precision.o sys.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 gradientlomem.o: alloc.o globalise.o onmod.o precision.o
-grdsam.o: alloc.o dhscf.o files.o m_partial_charges.o parallel.o precision.o
-grdsam.o: siesta_geom.o siesta_options.o sys.o
+grdsam.o: alloc.o dhscf.o files.o m_mpi_utils.o m_partial_charges.o parallel.o
+grdsam.o: precision.o siesta_geom.o siesta_options.o sys.o units.o
 hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mneighb.o
 hsparse.o: parallel.o parallelsubs.o precision.o siesta_options.o sorting.o
 hsparse.o: sparse_matrices.o sys.o
