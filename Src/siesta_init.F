@@ -553,6 +553,12 @@ C     Initialise MPI and set processor number
             write(*,'(a,/)')'expcoord: '//repeat('*',69)
          end if
 #endif
+#ifdef SIESTA__FLOOK
+      else if (idyn == 10) then
+         inicoor = 0
+         ! Controlled in external LUA machine
+         fincoor = huge(1)
+#endif
       else
         call die( 'siesta: wrong idyn' )
       endif

@@ -106,6 +106,8 @@ contains
     options = options // &
          ('MD.MaxForceTol'.kvp.ftol)
     options = options // &
+         ('MD.MaxStressTol'.kvp.strtol)
+    options = options // &
          ('MD.FinalTimeStep'.kvp.ifinal)
     options = options // &
          ('MD.FC.Displ'.kvp.dx)
@@ -124,6 +126,7 @@ contains
     use m_forces
     use m_energies
     use atomlist
+    use m_stress
 
     ! We simply re-create the options, (note the 
     ! de-allocation by "nullification")
@@ -159,6 +162,16 @@ contains
          ('geom.fa_pristine'.kvp.fa)
     variables = variables // &
          ('geom.fa_constrained'.kvp.cfa)
+
+    ! Add the stress components to the geometry
+    variables = variables // &
+         ('geom.stress'.kvp.cstress)
+    variables = variables // &
+         ('geom.stress_pristine'.kvp.stress)
+    variables = variables // &
+         ('geom.stress_constrained'.kvp.cstress)
+
+    
     variables = variables // &
          ('geom.species'.kvp.isa)
     variables = variables // &
