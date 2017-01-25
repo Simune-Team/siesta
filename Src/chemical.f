@@ -13,20 +13,23 @@
       implicit none
 
       private
-      public number_of_species, atomic_number, species_label
-      public is_floating, is_bessel, is_synthetic
-      public read_chemical_types, print_chemical_type
-!
-!     Species information
-!
+
+      public :: atomic_number
+      public :: number_of_species, species_label
+      public :: is_floating, is_bessel, is_synthetic
+      public :: read_chemical_types, print_chemical_type
+
+      ! Public due to Bcast routines
+      public :: chemical_types, chemical_list
+
+      ! Species information
       type chemical_types
-         integer                       :: no_of_species
-         character(len=20), pointer    :: spec_label(:)
-         integer, pointer              :: z(:)
+         integer                    :: no_of_species
+         character(len=20), pointer :: spec_label(:)
+         integer, pointer           :: z(:)
       end type chemical_types
 
-      ! For now this is public information...
-      type(chemical_types), save, public :: chemical_list
+      type(chemical_types), save :: chemical_list
 
 
       CONTAINS
