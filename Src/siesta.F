@@ -12,8 +12,11 @@
       use m_siesta_move
       use m_siesta_end
       use m_siesta_forces
+      use m_siesta_tddft
+
       USE m_steps, only: inicoor, fincoor
       use alloc
+      use siesta_options, only: td_elec_dyn
 
       use parallel, only: SIESTA_worker ! whether part of Siesta's communicator
       use parallel, only: ionode
@@ -70,7 +73,12 @@ C     Begin of coordinate relaxation iteration
 #endif
       istep  = inicoor
       DO WHILE ((istep.le.fincoor) .AND. (.not. relaxd))
-        call siesta_forces( istep )
+
+         if ( td_elec_dyn ) then
+            call siesta_tddft( istep )
+         else
+            call siesta_forces( istep )
+         end if
 
         if (SIESTA_worker) call siesta_move( istep, relaxd )
 #ifdef SIESTA__PEXSI        
