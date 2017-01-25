@@ -1718,6 +1718,9 @@ contains
   end function IDX_SPC_PROJ_dp
 
 
+  ! Scalar projection of 'vin=a' onto 'vec=b' (i.e. the fraction of the
+  ! vector along 'vec')
+  !   a . b / |b|
   pure function VEC_PROJ_SCA_sp(vec,vin) result(a)
     real(sp), intent(in) :: vec(:), vin(:)
     real(sp) :: a
@@ -1729,16 +1732,17 @@ contains
     a = sum(vec*vin) / VNORM(vec)
   end function VEC_PROJ_SCA_dp
 
-  ! Projection of 'vin' onto 'vec'
+  ! Projection of 'vin=a' onto 'vec=b'
+  !   a . b / ( b . b ) * b
   pure function VEC_PROJ_sp(vec,vin) result(vout)
     real(sp), intent(in) :: vec(:), vin(:)
     real(sp) :: vout(size(vec))
-    vout = VEC_PROJ_SCA_sp(vec,vin) * vec
+    vout = sum(vec * vin) / sum(vec * vec) * vec
   end function VEC_PROJ_sp
   pure function VEC_PROJ_dp(vec,vin) result(vout)
     real(dp), intent(in) :: vec(:), vin(:)
     real(dp) :: vout(size(vec))
-    vout = VEC_PROJ_SCA_dp(vec,vin) * vec
+    vout = sum(vec * vin) / sum(vec * vec) * vec
   end function VEC_PROJ_dp
 
 end module intrinsic_missing

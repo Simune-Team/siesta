@@ -503,10 +503,37 @@ contains
 
     ! If many electrodes, no transport direction can be specified
     ! Hence we use this as an error-check (also for N_Elec == 1)
-    if ( N_Elec /= 2 ) then
-       ! Signals no specific unit-cell direction of transport
-       ts_tidx = - N_Elec
-    else
+    select case ( N_Elec )
+    case ( 1 )
+       ! The easy case
+       ! We simple need to figure out if the electrode
+       ! has its transport direction aligned with the
+       ! lattice vectors
+
+       i = Elecs(1)%pvt(Elecs(1)%t_dir)
+
+       ! For a single transport direction to be true,
+       ! both the projections _has_ to be 1, exactly!
+       rtmp = VEC_PROJ_SCA(cell(:,i), Elecs(1)%cell(:,Elecs(1)%t_dir))
+       rtmp = rtmp / VNORM(Elecs(1)%cell(:,Elecs(1)%t_dir))
+       bool = abs(abs(rtmp) - 1._dp) < 1.e-5_dp
+
+       if ( bool ) then
+          
+          ! The transport direction for the electrodes are the same...
+          ! And fully encompassed! We have a single transport
+          ! direction.
+          ts_tidx = i
+          
+       else
+          
+          ! In case we have a skewed transport direction
+          ! we have some restrictions...
+          ts_tidx = - N_Elec
+          
+       end if
+
+    case ( 2 )
        
        ! Retrieve the indices of the unit-cell directions
        ! according to the electrode transport directions.
@@ -539,9 +566,14 @@ contains
           ts_tidx = - N_Elec
           
        end if
-       
-    end if
 
+    case default
+
+       ! N_Elec > 2
+       ! Here we always have these settings
+       ts_tidx = - N_Elec
+       
+    end select
 
     ! The user can selectively decide how the bias
     ! is applied.
@@ -1031,7 +1063,7 @@ contains
   subroutine print_ts_warnings( cell, na_u, xa, Nmove )
 
     use parallel, only: IONode, Nodes
-    use intrinsic_missing, only : VNORM, VEC_PROJ, VEC_PROJ_SCA
+    use intrinsic_missing, only : VNORM, VEC_PROJ_SCA
 
     use m_os, only: file_exist
 
@@ -1058,7 +1090,7 @@ contains
     integer, intent(in) :: Nmove
 
     ! Local variables
-    integer :: i, j, idx, idx1, idx2, itmp3(3)
+    integer :: i, j, iEl, idx, idx1, idx2, itmp3(3)
     real(dp) :: rtmp, tmp3(3), tmp33(3,3), bdir(2)
     real(dp) :: p(3)
     logical :: err, warn, ltmp
@@ -1348,73 +1380,102 @@ contains
        ! We will let the user know if any atoms co-incide with
        ! the plane as that might hurt convergence a little.
 
-       ! Get the electrode fraction of the position
-       call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmin = bdir(1))
-       call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx, fmin = bdir(2))
-
-       ! Determine the electrode closest to the
-       ! lower boundary
-       if ( bdir(1) < bdir(2) ) then
-          ! The first electrode is closest
-          i = 1
-          call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx, fmax = bdir(2))
-       else
-          ! The second electrode is closest
-          i = 2
-          call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmax = bdir(1))
-       end if
-
-       ! If the electrode is outside the unit-cell we tell the user
-       tmp3 = cell(:,ts_tidx) / VNORM(cell(:,ts_tidx))
-       if ( bdir(i) < 0._dp ) then
-
-          ! Tell the user to shift the entire structure
-          ! by the offset to origo + 1/2 a bond-length
-
-          ! Origo offset:
-          p = - cell(:,ts_tidx) * bdir(i)
-          p = p + tmp3 * Elecs(i)%dINF_layer
-          ! Bond-length
-          write(*,'(a,f9.5,a)')trim(Elecs(i)%name)//' lies outside &
-               &the unit-cell.'
-          write(*,'(a)')'Please shift the entire structure using the &
-               &following recipe:'
-          write(*,'(a)') 'If you already have AtomicCoordinatesFormat, add them'
-          write(*,'(tr1,a)') 'AtomicCoordinatesFormat Ang'
-          write(*,'(tr1,a)') '%block AtomicCoordinatesOrigin'
-          write(*,'(tr1,3(tr2,f12.4))') p / Ang
-          write(*,'(tr1,a)') '%endblock AtomicCoordinatesOrigin'
-          err = .true.
+       if ( N_Elec <= 2 ) then
           
-       end if
+          ! Get the electrode fraction of the position
+          if ( N_Elec == 1 ) then
+             
+             call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmin = bdir(1))
+             call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmax = bdir(2))
+             iEl = 1
+             if ( bdir(1) < bdir(2) ) then
+                i = 1
+             else
+                i = 2
+             end if
+             
+          else
+             
+             ! Get the electrode fraction of the position
+             call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmin = bdir(1))
+             call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx, fmin = bdir(2))
 
-       ! Select the electrode close to the upper cell boundary
-       if ( i == 1 ) then
-          i = 2
+             ! Determine the electrode closest to the
+             ! lower boundary
+             if ( bdir(1) < bdir(2) ) then
+                ! The first electrode is closest
+                i = 1
+                iEl = 1
+                call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx, fmax = bdir(2))
+             else
+                ! The second electrode is closest
+                i = 2
+                iEl = 2
+                call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmax = bdir(1))
+             end if
+             
+          end if
+
+          ! Get the fraction
+          tmp3 = cell(:,ts_tidx) / VNORM(cell(:,ts_tidx))
+
+          ! Check lower limit
+          if ( bdir(i) < 0._dp ) then
+
+             ! Tell the user to shift the entire structure
+             ! by the offset to origo + 1/2 a bond-length
+
+             ! Origo offset:
+             p = - cell(:,ts_tidx) * bdir(i)
+             p = p + tmp3 * Elecs(iEl)%dINF_layer
+             ! Bond-length
+             write(*,'(a,f9.5,a)') 'Electrode: '//trim(Elecs(iEl)%name)//' lies &
+                  &outside the unit-cell.'
+             write(*,'(a)')'Please shift the entire structure using the &
+                  &following recipe:'
+             write(*,'(a)') 'If you already have AtomicCoordinatesFormat, add these'
+             write(*,'(tr1,a)') 'AtomicCoordinatesFormat Ang'
+             write(*,'(tr1,a)') '%block AtomicCoordinatesOrigin'
+             write(*,'(tr1,3(tr2,f12.4))') p / Ang
+             write(*,'(tr1,a)') '%endblock AtomicCoordinatesOrigin'
+             err = .true.
+
+          end if
+
+          ! Check upper limit
+          if ( i == 1 ) then
+             i = 2
+          else
+             i = 1
+          end if
+          if ( N_Elec == 2 ) iEl = i
+          if ( 1._dp < bdir(i) ) then
+
+             bdir(i) = bdir(i) - 1._dp
+
+             ! Tell the user to shift the entire structure
+             ! by the offset to origo + 1/2 a bond-length
+
+             ! Origo offset:
+             p = - cell(:,ts_tidx) * bdir(i)
+             p = p - tmp3 * Elecs(iEl)%dINF_layer
+             ! Bond-length
+             write(*,'(a,f9.5,a)') 'Electrode: '//trim(Elecs(iEl)%name)//' lies &
+                  &outside the unit-cell.'
+             write(*,'(a)')'Please shift the entire structure using the &
+                  &following recipe:'
+             write(*,'(a)') 'If you already have AtomicCoordinatesFormat, add these'
+             write(*,'(tr1,a)') 'AtomicCoordinatesFormat Ang'
+             write(*,'(tr1,a)') '%block AtomicCoordinatesOrigin'
+             write(*,'(tr1,3(tr2,f12.4))') p / Ang
+             write(*,'(tr1,a)') '%endblock AtomicCoordinatesOrigin'
+             err = .true.
+
+          end if
+
        else
-          i = 1
-       end if
-       if ( 1._dp < bdir(i) ) then
 
-          bdir(i) = bdir(i) - 1._dp
-
-          ! Tell the user to shift the entire structure
-          ! by the offset to origo + 1/2 a bond-length
-
-          ! Origo offset:
-          p = - cell(:,ts_tidx) * bdir(i)
-          p = p - tmp3 * Elecs(i)%dINF_layer
-          ! Bond-length
-          write(*,'(a,f9.5,a)')trim(Elecs(i)%name)//' lies outside &
-               &the unit-cell.'
-          write(*,'(a)')'Please shift the entire structure using the &
-               &following recipe:'
-          write(*,'(a)') 'If you already have AtomicCoordinatesFormat, add them'
-          write(*,'(tr1,a)') 'AtomicCoordinatesFormat Ang'
-          write(*,'(tr1,a)') '%block AtomicCoordinatesOrigin'
-          write(*,'(tr1,3(tr2,f12.4))') p / Ang
-          write(*,'(tr1,a)') '%endblock AtomicCoordinatesOrigin'
-          err = .true.
+          call die("ts_options: ts_tidx < 0 with N_Elec > 2")
           
        end if
 

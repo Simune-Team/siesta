@@ -58,6 +58,7 @@
       use m_exp_coord, only : exp_coord_next
 #endif
 #ifdef SIESTA__FLOOK
+      use siesta_dicts, only : dict_variable_add
       use flook_siesta, only : slua_call, LUA_MOVE
 #endif
 
@@ -401,10 +402,13 @@
 
           relaxd = .false.
 
+          ! Add the quest for relaxed list of variables
+          call dict_variable_add('MD.Relaxed',relaxd)
+
           ! Communicate with lua
           call slua_call(LUA, LUA_MOVE)
           
-          call siesta_write_positions(moved=.true.)
+          call siesta_write_positions( moved=.true. )
           call write_md_record( istep )
           call superx_if_compat( ucell, nsc, na_u, na_s, xa, scell )
 
