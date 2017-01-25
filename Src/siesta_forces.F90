@@ -101,13 +101,12 @@ contains
     integer, intent(inout)  :: istep
 
     integer :: iscf
-    logical :: first, last_step
-    logical :: SCFconverged
-    real(dp) :: dDmax     ! Max. change in DM elements
-    real(dp) :: dHmax     ! Max. change in H elements
-    real(dp) :: dEmax     ! Max. change in EDM elements
-    real(dp) :: drhog     ! Max. change in rho(G) (experimental)
-    type(converger_t)  ::  conv_harris, conv_freeE
+    logical :: first, SCFconverged
+    real(dp) :: dDmax ! Max. change in DM elements
+    real(dp) :: dHmax ! Max. change in H elements
+    real(dp) :: dEmax ! Max. change in EDM elements
+    real(dp) :: drhog ! Max. change in rho(G) (experimental)
+    type(converger_t) ::  conv_harris, conv_freeE
 
     ! For initwf
     integer :: istpp
@@ -130,7 +129,7 @@ contains
 #ifdef SIESTA__PEXSI
     ! Broadcast relevant things for program logic
     ! These were set in read_options, called only by "SIESTA_workers".
-    call broadcast(nscf,comm=true_MPI_Comm_World)
+    call broadcast(nscf, comm=true_MPI_Comm_World)
 #endif
 
     if ( SIESTA_worker )  then
@@ -219,12 +218,25 @@ contains
     dEmax = -1._dp
     drhog = -1._dp
 
+    if ( SIESTA_worker ) then
+       if ( first ) then
+          if ( converge_Eharr ) then
+             call reset(conv_harris)
+             call set_tolerance(conv_harris,tolerance_Eharr)
+          end if
+          if ( converge_FreeE ) then
+             call reset(conv_FreeE)
+             call set_tolerance(conv_FreeE,tolerance_FreeE)
+          end if
+       end if
+    end if
+       
     ! Start of SCF loop
     iscf = 0
-    DO
+    do while ( iscf < nscf )
        ! Conditions of exit:
-       !  -- At the top, to catch a non-positive nscf
-       !  -- At the bottom, based on convergence or # of iterations
+       !  -- At the top, to catch a non-positive nscf and # of iterations
+       !  -- At the bottom, based on convergence
 
 #ifdef SIESTA__FLOOK
        ! Communicate with lua
@@ -232,7 +244,6 @@ contains
 #endif
        
        iscf = iscf + 1
-       if ( iscf > nscf ) EXIT
 
        ! Note implications for TranSiesta when mixing H
        ! Now H will be recomputed instead of simply being
@@ -243,17 +254,6 @@ contains
 
        ! Only code runned by the SIESTA_worker pool
        if ( SIESTA_worker ) then
-
-          if ( first ) then
-             if ( converge_Eharr ) then
-                call reset(conv_harris)
-                call set_tolerance(conv_harris,tolerance_Eharr)
-             endif
-             if ( converge_FreeE ) then
-                call reset(conv_FreeE)
-                call set_tolerance(conv_FreeE,tolerance_FreeE)
-             end if
-          end if
 
           call timer( 'IterSCF', 1 )
           if (cml_p) &
@@ -385,14 +385,11 @@ contains
           call print_timings( first, istep == inicoor )
           if (cml_p) call cmlEndStep(mainXML)
 
-          ! This should be the last step if we have converged...
-          last_step = SCFConverged
-
 #ifdef TRANSIESTA
           ! ... except that we might continue for TranSiesta
-          if ( last_step ) then
-             call transiesta_switch() ! might reset 'last_step'
-             ! and iscf
+          if ( SCFconverged ) then
+             call transiesta_switch()
+             ! might reset SCFconverged and iscf
           end if
 #endif
 
@@ -404,14 +401,12 @@ contains
        end if
 
 #ifdef SIESTA__PEXSI
-       call broadcast(iscf,comm=true_MPI_Comm_World)
+       call broadcast(iscf, comm=true_MPI_Comm_World)
+       call broadcast(SCFconverged, comm=true_MPI_Comm_World)
 #endif
-       
-       if ( iscf == nscf ) then
-          last_step = .true.
-       end if
-       
-       if ( last_step ) exit
+
+       ! Exit if converged
+       if ( SCFconverged ) exit
        
     end do ! end of SCF cycle
     
@@ -421,7 +416,7 @@ contains
     endif
 #endif
     
-    if (.not. SIESTA_worker) RETURN
+    if ( .not. SIESTA_worker ) return
 
     call end_of_cycle_save_operations()
     
@@ -434,7 +429,7 @@ contains
        
     end if
     
-    !To write the initial wavefunctions to be used in a
+    ! To write the initial wavefunctions to be used in a
     ! consequent TDDFT run.
     if( writetdwf ) then
        istpp = 0
@@ -663,13 +658,15 @@ contains
       end if
 
       ! Signal to continue...
-      last_step = .false.
-      iscf   = 0
+      ! These two variables are from the top-level
+      ! routine (siesta_forces)
+      SCFconverged = .false.
+      iscf = 0
 
       ! DANGER (when/if going back to the DIAGON run, we should
       ! re-instantiate the original mixing value)
-      call val_swap(dDtol,ts_Dtol)
-      call val_swap(dHtol,ts_Htol)
+      call val_swap(dDtol, ts_Dtol)
+      call val_swap(dHtol, ts_Htol)
 
       ! From now on, a new mixing cycle starts,
       ! Check in mixer.F for new mixing schemes.
