@@ -791,7 +791,7 @@ contains
 
     use units, only : Pi
     use intrinsic_missing, only : VNORM, SPC_PROJ, IDX_SPC_PROJ
-    use intrinsic_missing, only : VEC_PROJ, VEC_PROJ_SCA
+    use intrinsic_missing, only : VEC_PROJ_SCA
 
     ! The electrode that needs to be processed
     type(Elec), intent(inout) :: this
@@ -933,8 +933,7 @@ contains
 
     use parallel, only : IONode
     use units, only : Pi, Ang
-    use intrinsic_missing, only : VNORM, SPC_PROJ, IDX_SPC_PROJ
-    use intrinsic_missing, only : VEC_PROJ, VEC_PROJ_SCA
+    use intrinsic_missing, only : VNORM
 
     use m_ts_io, only: ts_read_TSHS_opt
 

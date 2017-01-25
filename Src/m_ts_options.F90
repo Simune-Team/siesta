@@ -1063,7 +1063,7 @@ contains
   subroutine print_ts_warnings( cell, na_u, xa, Nmove )
 
     use parallel, only: IONode, Nodes
-    use intrinsic_missing, only : VNORM, VEC_PROJ, VEC_PROJ_SCA
+    use intrinsic_missing, only : VNORM, VEC_PROJ_SCA
 
     use m_os, only: file_exist
 
