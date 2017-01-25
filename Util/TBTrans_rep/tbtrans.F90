@@ -260,7 +260,7 @@ program tbtrans
 
 ! We will not redistribute them as that will be done automatically in the loops
   if ( NEn > 1 ) then
-     dE = (Emax-Emin)/real(NEn-1,dp)
+     dE = (Emax-Emin)/real(NEn,dp)
   else
      dE = 0.0_dp
   end if

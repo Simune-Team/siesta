@@ -674,10 +674,10 @@ contains
     integer :: ic
 
     ! Calculate the weight of each contour point
-    delta = (E2-E1)/(1.d0*max(NEn-1,1))
+    delta = (E2-E1)/real(NEn, dp)
 
     do ic = 1 , NEn
-       contour(ic)%c = dcmplx(E1+(ic-1)*delta, GFeta)
+       contour(ic)%c = dcmplx(E1+(ic-0.5_dp)*delta, GFeta)
        contour(ic)%w = dcmplx(delta          , 0d0)
        contour(ic)%part = CC_PART_TRANSPORT
        ! ???
