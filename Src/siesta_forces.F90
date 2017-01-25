@@ -12,7 +12,7 @@ module m_siesta_forces
 
   public :: siesta_forces
 
-CONTAINS
+contains
 
   subroutine siesta_forces(istep)
 #ifdef MPI
@@ -155,22 +155,22 @@ CONTAINS
     call broadcast(nscf,comm=true_MPI_Comm_World)
 #endif
 
-    if (SIESTA_worker)  then
+    if ( SIESTA_worker )  then
        ! Initialization tasks for a given geometry
        call state_init( istep )
-    endif
+    end if
 
 #ifdef SIESTA__PEXSI
     if (ionode) call memory_snapshot("after state_init")
 #endif
 
-    if (fdf_get("Sonly",.false.)) then
-       if (SIESTA_worker) then
+    if ( fdf_get("Sonly",.false.) ) then
+       if ( SIESTA_worker ) then
           call timer( 'all', 2 )
           call timer( 'all', 3 )
-       endif
+       end if
        call bye("S only")
-    endif
+    end if
 
     ! The current structure of the loop tries to reproduce the
     ! historical Siesta usage. It should be made more clear.
@@ -194,15 +194,12 @@ CONTAINS
     call dict_variable_add('SCF.drhoG',drhog)
 #endif
 
-    ! Start of SCF loop
-    iscf = 0
-
     ! This call computes the non-scf part of H and initializes the
     ! real-space grid structures.  It might be better to split the two,
     ! putting the grid initialization into state_init and moving the
     ! calculation of H_0 to the body of the loop, done if first=.true.  This
     ! would suit "analysis" runs in which nscf = 0
-    if (SIESTA_worker) call setup_H0()
+    if ( SIESTA_worker ) call setup_H0()
 
 #ifdef SIESTA__PEXSI
     if (ionode) call memory_snapshot("after setup_H0")
@@ -241,9 +238,13 @@ CONTAINS
 
        ! The dHmax variable only has meaning for Hamiltonian
        ! mixing, or when requiring the Hamiltonian to be converged.
+       dDmax = -1._dp
        dHmax = -1._dp
        dEmax = -1._dp
+       drhog = -1._dp
 
+       ! Start of SCF loop
+       iscf = 0
        DO
           ! Conditions of exit:
           !  -- At the top, to catch a non-positive nscf
@@ -262,10 +263,12 @@ CONTAINS
           ! inherited, however, this is required as the
           ! if we have bias calculations as the electric
           ! field across the junction needs to be present.
-          first = (iscf == 1)
+          first = iscf == 1
 
-          if (SIESTA_worker) then
-             if (first) then
+          ! Only code runned by the SIESTA_worker pool
+          if ( SIESTA_worker ) then
+             
+             if ( first ) then
                 if ( converge_Eharr ) then
                    call reset(conv_harris)
                    call set_tolerance(conv_harris,tolerance_Eharr)
@@ -273,53 +276,51 @@ CONTAINS
                 if ( converge_FreeE ) then
                    call reset(conv_FreeE)
                    call set_tolerance(conv_FreeE,tolerance_FreeE)
-                endif
-             endif
+                end if
+             end if
 
              call timer( 'IterSCF', 1 )
              if (cml_p) &
                   call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
 
-          endif ! SIESTA_worker
+             if ( mixH ) then
 
-          if (mixH) then
-             if ( first .and. SIESTA_worker) then
-                if (fdf_get("Read-H-from-file",.false.)) then
-                   call get_H_from_file()
-                else
-                   call setup_hamiltonian( iscf )
-                endif
-             endif
+                if ( first ) then
+                   if (fdf_get("Read-H-from-file",.false.)) then
+                      call get_H_from_file()
+                   else
+                      call setup_hamiltonian( iscf )
+                   end if
+                end if
 
-             call compute_dm( iscf )
-             if (SIESTA_worker) then
+                call compute_DM( iscf )
+
                 ! Maybe set Dold to zero if reading charge or H...
-                call compute_max_diff(Dold,Dscf,dDmax)
+                call compute_max_diff(Dold, Dscf, dDmax)
                 if ( converge_EDM ) &
-                     call compute_max_diff(Eold,Escf,dEmax)
+                     call compute_max_diff(Eold, Escf, dEmax)
                 call setup_hamiltonian( iscf )
-                call compute_max_diff(Hold,H,dHmax)
-             end if
-          else
-             if (SIESTA_worker) then
+                call compute_max_diff(Hold, H, dHmax)
+
+             else
+
                 call setup_hamiltonian( iscf )
-                call compute_max_diff(Hold,H,dHmax)
-             end if
-             call compute_dm( iscf )
-             if (SIESTA_worker) then
-                call compute_max_diff(Dold,Dscf,dDmax)
+                call compute_max_diff(Hold, H, dHmax)
+
+                call compute_DM( iscf )
+                
+                call compute_max_diff(Dold, Dscf, dDmax)
                 if ( converge_EDM ) &
-                     call compute_max_diff(Eold,Escf,dEmax)
+                     call compute_max_diff(Eold, Escf, dEmax)
              end if
-          endif
 
-
-          if (SIESTA_worker) then
-
-             call compute_energies(iscf)
-             if (mix_charge) then
-                call compute_charge_diff(drhog)
-             endif
+             ! This itteration has completed calculating the new DM
+             
+             call compute_energies( iscf )
+             if ( mix_charge ) then
+                call compute_charge_diff( drhog )
+             end if
+             
              ! Note: For DM and H convergence checks. At this point:
              ! If mixing the DM:
              !        Dscf=DM_out, Dold=DM_in(mixed), H=H_in, Hold=H_in(prev step)
@@ -333,15 +334,18 @@ CONTAINS
                   dDmax, dHmax, dEmax, &
                   conv_harris, conv_freeE, &
                   SCFconverged )
-             !
+
              ! ** Check this heuristic
-             if ( MixH ) then
+             if ( mixH ) then
                 prevDmax = dHmax
              else
                 prevDmax = dDmax
-             endif
+             end if
 
-             if (SCFconverged .and. (iscf < min_nscf)) then
+             ! Check whether we should step to the next mixer
+             call mixing_scf_converged( SCFconverged )
+
+             if ( SCFconverged .and. iscf < min_nscf ) then
                 SCFconverged = .false.
                 if ( IONode ) then
                    write(6,"(a,i0)") &
@@ -350,14 +354,10 @@ CONTAINS
                 end if
              end if
 
-             ! Check whether we should step to the next
-             ! mixer
-             call mixing_scf_converged( SCFconverged )
-
 #ifdef TRANSIESTA
              ! In case the user has requested a Fermi-level correction
              ! Then we start by correcting the fermi-level
-             if ( SCFconverged .and. TSrun .and. &
+             if ( TSrun .and. SCFconverged .and. &
                   TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
 
                 call ts_get_charges(N_Elec, block_dist, sparse_pattern, &
@@ -380,26 +380,30 @@ CONTAINS
              end if
 #endif
 
-             if (monitor_forces_in_scf) call compute_forces()
+             if ( monitor_forces_in_scf ) call compute_forces()
 
              ! Mix_after_convergence preserves the old behavior of
              ! the program.
-             if ((.not. SCFconverged) .or. mix_after_convergence) then
+             if ( (.not. SCFconverged) .or. mix_after_convergence) then
+                
                 ! Mix for next step
                 if ( mix_charge ) then
-                   call mix_rhog(iscf)
+                   call mix_rhog( iscf )
                 else
                    call mixer( iscf )
-                endif
+                end if
+                
                 ! Save for possible restarts
-                if (MixH) then
+                if ( save_H_DM_extra ) then
+                 if ( mixH ) then
                    call write_spmatrix(H,file="H_MIXED",when=writeH)
                    call save_density_matrix(file="DM_OUT",when=writedm)
-                else
+                 else
                    call save_density_matrix(file="DM_MIXED",when=writedm)
                    call write_spmatrix(H,file="H_DMGEN",when=writeH)
-                endif
-             endif
+                 end if
+                end if
+             end if
 
              call timer( 'IterSCF', 2 )
              call print_timings( first, istep == inicoor )
@@ -416,22 +420,27 @@ CONTAINS
              end if
 #endif
 
-             if ( iscf == nscf ) then
-                last_step = .true.
-             end if
+          else
 
-          endif ! SIESTA_worker
+             ! non-siesta worker
+             call compute_DM( iscf )
+             
+          end if
 
 #ifdef SIESTA__PEXSI
-          call broadcast(last_step,comm=true_MPI_Comm_World)
           call broadcast(iscf,comm=true_MPI_Comm_World)
 #endif
+
+          if ( iscf == nscf ) then
+             last_step = .true.
+          end if
+          
           if ( last_step ) exit
 
        end do
 
 #ifdef SIESTA__PEXSI
-       if (isolve == SOLVE_PEXSI) then
+       if ( isolve == SOLVE_PEXSI ) then
           call pexsi_finalize_scfloop()
        endif
 #endif
@@ -578,7 +587,7 @@ CONTAINS
       use m_final_H_f_stress, only: final_H_f_stress
       use write_subs
 
-      real(dp), allocatable  :: fa_old(:,:), Hsave(:,:)
+      real(dp), allocatable :: fa_old(:,:), Hsave(:,:)
 
       allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
       fa_old(:,:) = fa(:,:)
@@ -632,7 +641,6 @@ CONTAINS
 
     end subroutine print_timings
 
-    !
     ! Depending on various conditions, save the DMin
     ! or the DMout, and possibly keep a copy of H
 
@@ -642,10 +650,22 @@ CONTAINS
     !
     subroutine end_of_cycle_save_operations()
 
-      if (mix_after_convergence) then
+      ! Depending on the option we should overwrite the
+      ! Hamiltonian
+      if ( mixH .and. .not. mix_after_convergence ) then
+         ! Make sure that we keep the H actually used
+         ! to generate the last DM, if needed.
+         H = Hold
+      end if
+
+      ! quick return if we should not write
+      ! any of the extra files
+      if ( .not. save_H_DM_extra ) return
+         
+      if ( mix_after_convergence ) then
          ! If we have been saving them, there is no point in doing
          ! it one more time
-         if (MixH) then
+         if ( mixH ) then
             call save_density_matrix(file="DM_OUT", &
                  when=((.not. writedm) .and. write_dm_at_end_of_cycle))
             call write_spmatrix(H,file="H_MIXED", &
@@ -655,18 +675,13 @@ CONTAINS
                  when=((.not. writedm) .and. write_dm_at_end_of_cycle))
             call write_spmatrix(H,file="H_DMGEN", &
                  when=((.not. writeH) .and. write_H_at_end_of_cycle))
-         endif
+         end if
       else
          call save_density_matrix(file="DM_OUT", &
               when=write_dm_at_end_of_cycle)
-         if (MixH) then
-            ! Make sure that we keep the H actually used
-            ! to generate the last DM, if needed.
-            H = Hold
-         endif
          call write_spmatrix(H,file="H_DMGEN", &
               when=write_H_at_end_of_cycle)
-      endif
+      end if
 
     end subroutine end_of_cycle_save_operations
 
@@ -813,6 +828,6 @@ CONTAINS
     end subroutine transiesta_switch
 #endif
 
-  END subroutine siesta_forces
+  end subroutine siesta_forces
 
-END module m_siesta_forces
+end module m_siesta_forces

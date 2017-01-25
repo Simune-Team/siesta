@@ -51,6 +51,8 @@ MODULE siesta_options
   logical :: pulfile       ! Use file to store Pulay info in pulayx? (Obsolete)
   logical :: RelaxCellOnly ! Relax only lattice vectors, not atomic coordinates
   logical :: RemoveIntraMolecularPressure   ! Remove molecular virial contribution to p
+  logical :: save_H_DM_extra! Write files in SCF step with extra information attached
+                           !  i.e. a DM before and after mixing
   logical :: savehs        ! Write file with Hamiltonian electrostatic potential?
   logical :: savevh        ! Write file with Hartree electrostatic potential?
   logical :: savevna       ! Write file with neutral-atom potential?
