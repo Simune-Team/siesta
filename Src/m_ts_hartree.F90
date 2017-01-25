@@ -117,6 +117,15 @@ contains
 
     if ( TS_HA == TS_HA_PLANE ) then
 
+       ! The hartree plane can only be used for 1 and 2
+       ! electrodes
+       if ( N_Elec == 1 ) then
+          
+          El => Elecs(1)
+          return
+          
+       end if
+
        ! The plane can only be chosen with
        ! 2 electrodes
        if ( N_Elec /= 2 ) then
