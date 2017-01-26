@@ -395,11 +395,23 @@
 
           ! Communicate with lua
           call slua_call(LUA, LUA_MOVE)
-          
-          call siesta_write_positions( moved=.true. )
-          call write_md_record( istep )
-          call superx_if_compat( ucell, nsc, na_u, na_s, xa, scell )
 
+          if ( volcel(ucell) < 1.0e-8_dp ) then
+             ! In case the user requests a recalculation of the
+             ! unit-cell size (for molecules)
+             call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
+          end if
+
+          if ( relaxd ) then
+             ! see comments for idyn == 1
+          else
+             call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+     &            foundxv)
+             
+             call siesta_write_positions( moved=.true. )
+             call write_md_record( istep )
+             call superx_if_compat( ucell, nsc, na_u, na_s, xa, scell )
+          end if
 #endif
 
        end select
@@ -420,22 +432,24 @@
       call write_debug( '    POS siesta_move' )
 #endif
 
-      CONTAINS
+      contains
 
       ! For backwards compatibility only
 
-      SUBROUTINE SUPERX_if_compat( UCELL, NSC, NA, MAXA, XA, SCELL )
+      subroutine superx_if_compat( ucell, nsc, na, maxa, xa, scell )
       use siesta_options, only : compat_pre_v4_dynamics
       use atomlist, only : superx
 
-      INTEGER           MAXA, NA, NSC(3)
-      real(dp)    SCELL(3,3), UCELL(3,3), XA(3,MAXA)
+      integer :: maxa, na, nsc(3)
+      real(dp) :: ucell(3,3), xa(3,MAXA), scell(3,3)
+      ! Only xa and scell are overwritten upon exit
+      ! but superx does not have intent (so we ca not either)
 
       if (compat_pre_v4_dynamics) then
          call superx( UCELL, NSC, NA, MAXA, XA, SCELL )
-      endif
-      end subroutine SUPERX_if_compat
+      end if
+      end subroutine superx_if_compat
+      
+      end subroutine siesta_move
 
-      END subroutine siesta_move
-
-      END MODULE m_siesta_move
+      end module m_siesta_move

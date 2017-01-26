@@ -117,6 +117,10 @@ contains
          ('MD.FC.Last'.kvp.ia2)
     options = options // &
          ('MD.Temperature.Target'.kvp.tt)
+    options = options // &
+         ('MD.Relax.CellOnly'.kvp.RelaxCellOnly)
+    options = options // &
+         ('MD.Relax.Cell'.kvp.varcel)
     
   end subroutine dict_populate_options
 
