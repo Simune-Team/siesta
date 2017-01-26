@@ -111,10 +111,7 @@ siesta_comm = function (_empty_tbl) end'
     call lua_register(LUA,'_internal_print_allowed', slua_siesta_print_objects)
     call lua_run(LUA, code = 'siesta.print_allowed = _internal_print_allowed' )
 
-    ! transfer the node info (from 1 to Nodes)
-    ! fortran/lua is 1-based, so why complicate matter for
-    ! non-experienced users in siesta internals... 
-    write(fortran_msg,'(a,i0)') 'siesta.Node = ',Node + 1
+    write(fortran_msg,'(a,i0)') 'siesta.Node = ',Node
     call lua_run(LUA, code = fortran_msg )
     write(fortran_msg,'(a,i0)') 'siesta.Nodes = ',Nodes
     call lua_run(LUA, code = fortran_msg )

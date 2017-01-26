@@ -142,6 +142,8 @@ contains
     variables = variables // &
          ('geom.cell'.kvp.ucell)
     variables = variables // &
+         ('geom.cell_last'.kvp.ucell_last)
+    variables = variables // &
          ('geom.vcell'.kvp.vcell)
     variables = variables // &
          ('geom.nsc'.kvp.nsc)
@@ -151,6 +153,19 @@ contains
          ('geom.xa_last'.kvp.xa_last)
     variables = variables // &
          ('geom.va'.kvp.va)
+
+    ! Additional information regarding the
+    ! atomic species
+    variables = variables // &
+         ('geom.species'.kvp.isa)
+    variables = variables // &
+         ('geom.z'.kvp.iza)
+    variables = variables // &
+         ('geom.last_orbital'.kvp.lasto)
+    variables = variables // &
+         ('geom.mass'.kvp.amass)
+    variables = variables // &
+         ('geom.neutral_charge'.kvp.qa)
 
     ! This is an abstraction made
     ! easy for the user.
@@ -175,17 +190,6 @@ contains
     variables = variables // &
          ('geom.stress_constrained'.kvp.cstress)
 
-    
-    variables = variables // &
-         ('geom.species'.kvp.isa)
-    variables = variables // &
-         ('geom.z'.kvp.iza)
-    variables = variables // &
-         ('geom.last_orbital'.kvp.lasto)
-    variables = variables // &
-         ('geom.mass'.kvp.amass)
-    variables = variables // &
-         ('geom.neutral_charge'.kvp.qa)
 
     ! Add energies
     variables = variables // &
@@ -204,6 +208,16 @@ contains
          ('E.exchange_correlation'.kvp.Exc)
     variables = variables // &
          ('E.free'.kvp.FreeE)
+    variables = variables // &
+         ('E.ions_kinetic'.kvp.Ekinion)
+    variables = variables // &
+         ('E.ions'.kvp.Eions)
+    variables = variables // &
+         ('E.band_structure'.kvp.Ebs)
+    variables = variables // &
+         ('E.spin_orbit'.kvp.Eso)
+    variables = variables // &
+         ('E.ldau'.kvp.Eldau)
 
     ! Add the number of charges to the system
     variables = variables // &
