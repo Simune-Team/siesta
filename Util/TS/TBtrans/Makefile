@@ -208,18 +208,18 @@ $(NCDF): $(FDICT)
 #
 # Linear algebra routines
 #
-libsiestaBLAS.a: $(VPATH)/Libs/blas.f
+libsiestaBLAS.a: $(VPATH)/Libs/blas.F
 	@echo "==> Compiling libsiestaBLAS.a in Libs..."
 	-mkdir -p Libs
-	@(cd Libs ; $(MAKE) -f $(VPATH)/Libs/makefile -j 1 \
+	@(cd Libs ; $(MAKE) -f $(VPATH)/Libs/Makefile -j 1 \
 		"VPATH=$(VPATH)/Libs" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaBLAS.a)
 	@cp Libs/libsiestaBLAS.a .
-libsiestaLAPACK.a: $(VPATH)/Libs/lapack.f
+libsiestaLAPACK.a: $(VPATH)/Libs/lapack.F
 	@echo "==> Compiling libsiestaLAPACK.a in Libs..."
 	-mkdir -p Libs
-	@(cd Libs ; $(MAKE) -f $(VPATH)/Libs/makefile -j 1 \
+	@(cd Libs ; $(MAKE) -f $(VPATH)/Libs/Makefile -j 1 \
 		"VPATH=$(VPATH)/Libs" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaLAPACK.a)
@@ -268,7 +268,7 @@ pht: phtrans
 tbtrans: FPPFLAGS += -DTBTRANS
 tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(DEP_OBJS) $(TBTOBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
-              $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
+              $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE) \
               $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(LIBS)
 
 # We append the -DTBTRANS as some special routines
@@ -277,7 +277,7 @@ tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) 
 phtrans: FPPFLAGS += -DTBTRANS -DTBT_PHONON
 phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(DEP_OBJS) $(TBTOBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o phtrans \
-              $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
+              $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE) \
               $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(LIBS)
 
 .PHONY: clean-tbt
@@ -335,11 +335,14 @@ debugmpi.o: parallel.o
 diagmemory.o: precision.o
 diagmemory.o: precision.o
 fdf_extra.o: m_region.o
+extrapolateSpData2D.o: class_SpData2D.o class_Sparsity.o restructSpData2D.o
 fdf_extra.o: m_region.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 geom_helper.o: intrinsic_missing.o
 geom_helper.o: intrinsic_missing.o
+grdsam.o: alloc.o dhscf.o files.o m_mpi_utils.o m_partial_charges.o m_spin.o
+grdsam.o: parallel.o precision.o siesta_geom.o siesta_options.o sys.o units.o
 idiag.o: parallel.o sys.o
 idiag.o: parallel.o sys.o
 io.o: sys.o
@@ -375,7 +378,7 @@ m_io_s.o: class_Sparsity.o parallel.o precision.o
 m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_io_s.o: class_Sparsity.o parallel.o precision.o
 m_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
-m_iodm.o: m_io_s.o parallel.o
+m_iodm.o: m_io_s.o m_os.o parallel.o
 m_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_iodm.o: m_io_s.o parallel.o
 m_mat_invert.o: intrinsic_missing.o m_pivot_array.o precision.o
@@ -387,6 +390,8 @@ m_ncdf_io.o: class_Sparsity.o m_io_s.o parallel.o precision.o
 m_ncdf_io.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_ncdf_io.o: class_Sparsity.o m_io_s.o parallel.o precision.o
 m_pivot.o: class_Sparsity.o m_pivot_methods.o m_region.o
+m_new_dm.o: m_spin.o m_spin.o m_steps.o m_svd.o m_ts_electype.o
+m_new_dm.o: parallel.o parsing.o precision.o restructSpData2D.o siesta_geom.o
 m_pivot.o: class_Sparsity.o m_pivot_methods.o m_region.o
 m_pivot_methods.o: class_Sparsity.o m_region.o precision.o
 m_pivot_methods.o: class_Sparsity.o m_region.o precision.o
@@ -495,10 +500,9 @@ m_ts_iodm.o: m_io_s.o m_os.o parallel.o precision.o
 m_ts_method.o: alloc.o fdf_extra.o geom_helper.o m_region.o m_ts_electype.o
 m_ts_method.o: alloc.o fdf_extra.o geom_helper.o m_region.o m_ts_electype.o
 m_ts_pivot.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
-m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o geom_helper.o
-m_ts_pivot.o: intrinsic_missing.o m_char.o m_pivot.o m_region.o
-m_ts_pivot.o: m_sparsity_handling.o m_ts_debug.o m_ts_electype.o parallel.o
-m_ts_pivot.o: precision.o
+m_ts_pivot.o: create_Sparsity_Union.o geom_helper.o intrinsic_missing.o
+m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
+m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
 m_ts_pivot.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o geom_helper.o
 m_ts_pivot.o: intrinsic_missing.o m_char.o m_pivot.o m_region.o
@@ -555,6 +559,21 @@ moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 timer.o: m_timer.o parallel.o sys.o timer_tree.o
 timer.o: m_timer.o parallel.o sys.o timer_tree.o
 timer_tree.o: m_walltime.o
+nlefsm.o: alloc.o atm_types.o atmfuncs.o atomlist.o chemical.o mneighb.o
+nlefsm.o: new_matel.o parallel.o parallelsubs.o precision.o
+restructSpData2D.o: class_Sparsity.o
+siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
+siesta_cmlsubs.o: 
+siesta_forces.o: sparse_matrices.o state_analysis.o state_init.o sys.o timer.o
+siesta_forces.o: units.o wavefunctions.o write_subs.o
+state_init.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
+state_init.o: domain_decom.o files.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
+state_init.o: ioxv.o kpoint_grid.o ldau_specs.o m_energies.o m_eo.o m_gamma.o
+state_init.o: m_mixing.o m_mixing_scf.o m_mpi_utils.o m_new_dm.o m_os.o
+state_init.o: m_pivot_methods.o m_rmaxh.o m_sparse.o m_sparsity_handling.o
+state_init.o: m_spin.o m_steps.o m_supercell.o m_test_io.o m_ts_charge.o
+state_init.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_options.o
+state_init.o: m_ts_sparse.o m_ts_tri_init.o normalize_dm.o overlap.o parallel.o
 timer_tree.o: m_walltime.o
 units.o: precision.o
 units.o: precision.o
@@ -615,16 +634,12 @@ m_tbt_proj.o: class_SpData2D.o class_Sparsity.o fdf_extra.o intrinsic_missing.o
 m_tbt_proj.o: m_ncdf_io.o m_os.o m_region.o m_tbt_diag.o m_tbt_hs.o
 m_tbt_proj.o: m_tbt_save.o m_ts_electype.o parallel.o precision.o timestamp.o
 m_tbt_proj.o: units.o
-m_tbt_proj.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
-m_tbt_proj.o: class_SpData2D.o class_Sparsity.o fdf_extra.o intrinsic_missing.o
-m_tbt_proj.o: m_ncdf_io.o m_os.o m_region.o m_tbt_diag.o m_tbt_hs.o
-m_tbt_proj.o: m_tbt_save.o m_ts_electype.o parallel.o precision.o timestamp.o
-m_tbt_proj.o: units.o
-m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
-m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_char.o m_pivot.o
-m_tbt_regions.o: m_pivot_methods.o m_region.o m_sparsity_handling.o
-m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_pivot.o
-m_tbt_regions.o: m_ts_sparse.o m_verbosity.o parallel.o precision.o
+m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o
+m_tbt_regions.o: create_Sparsity_SC.o fdf_extra.o geom_helper.o
+m_tbt_regions.o: intrinsic_missing.o m_char.o m_pivot.o m_pivot_methods.o
+m_tbt_regions.o: m_region.o m_sparsity_handling.o m_ts_debug.o m_ts_electype.o
+m_tbt_regions.o: m_ts_method.o m_ts_pivot.o m_ts_sparse.o m_verbosity.o
+m_tbt_regions.o: parallel.o precision.o
 m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_char.o m_pivot.o
 m_tbt_regions.o: m_pivot_methods.o m_region.o m_sparsity_handling.o
@@ -759,6 +774,7 @@ class_ztrimat.o: class_TriMat.o
 m_find_kgrid.o: find_kgrid.o
 m_minvec.o: minvec.o
 m_object_debug.o: object_debug.o
+m_restruct_spdata2d.o: restructSpData2D.o
 m_timer_tree.o: timer_tree.o
 m_timestamp.o: timestamp.o
 mtprng.o: m_uuid.o

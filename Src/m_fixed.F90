@@ -180,6 +180,9 @@ contains
        end do
     end do
 
+    ! Initialize the number of relaxed degrees of freedom
+    ntcon = 0
+
     ! If we should call the routine
     if ( use_constr ) then
        call constr( cell, na, isa, amass, xa, cstress, cfa, ntcon )
@@ -234,8 +237,6 @@ contains
     lmag_use = .false.
     if ( present(magnitude_usage) ) lmag_use = magnitude_usage
 
-    ! The number of constraints
-    ntcon = 0
 
     if ( N_fix > 0 ) then
     do if = 1 , N_fix
@@ -312,13 +313,52 @@ contains
 
           end do
 
-          ! in principle we do not constrain anything, we just scale 
-          ! the forces so that the center of the system will be the same.
+          ! We constrain the translational part which means that
+          ! we constrain 3 degrees of freedom
+          ntcon = ntcon + 3
 
-          if ( .not. lmag_use ) then
-             call die('Center of motion only works for CG')
-          end if
+       else if ( namec == 'center-dir' ) then
+          
+          ! Maintain the same center of the molecule
+          cf(:) = 0._dp
 
+          ! we center the molecule by constraining the 
+          ! average acceleration to 0 (for MD)
+          ! or by subtracting the average force for magnitude used forces
+          do i = 1 , N
+
+             ia = fixs(if)%a(i)
+
+             if ( lmag_use ) then
+                cf(:) = cf(:) + cfa(:,ia)
+             else
+                cf(:) = cf(:) + cfa(:,ia) / amass(ia)
+             end if
+
+          end do
+
+          ! This is the average force/acceleration
+          cf(:) = cf(:) / real(N,dp)
+          cf(:) = cf(:) - VEC_PROJ( fixs(if)%fix, cf )
+
+          ! fix for the correct direction, project onto the fixation vector
+          do i = 1 , N
+
+             ia = fixs(if)%a(i)
+
+             if ( lmag_use ) then
+                ! subtract the average force so that the net-force is zero.
+                cfa(:,ia) = cfa(:,ia) - cf(:)
+             else
+                cfa(:,ia) = cfa(:,ia) - cf(:) * amass(ia)
+             end if
+
+          end do
+
+          ! We constrain the translational part along one
+          ! direction, thus we constrain 1 degree of freedom
+          ntcon = ntcon + 1
+          
        else if ( namec == 'com' ) then
           
           ! Calculate center of mass of the molecule
@@ -617,9 +657,7 @@ contains
 
     ! Look for constraints data block, we also allow another 
     ! constraint block
-    if ( .not. fdf_block('GeometryConstraints',bfdf) ) then
-       if ( .not. fdf_block('Geometry.Constraints',bfdf) ) return
-    end if
+    if ( .not. fdf_block('Geometry.Constraints',bfdf) ) return
 
 #ifdef DEBUG
     call write_debug( '    PRE init_fixed' )
@@ -959,6 +997,7 @@ contains
           allocate(fixs(ifix)%a(rr%n))
           fixs(ifix)%a(:) = rr%r(:)
 
+          add_dir = .true.
           fixs(ifix)%type = 'center'
 
        else if ( IONode ) then

@@ -74,7 +74,29 @@
   \hyperlink{\csname siesta@hlink@#1\endcsname}{#2}%
 }
 
-\newcommand\prephyperlink
+% Create a list looper
+\ExplSyntaxOn
+
+\NewDocumentCommand{\fdfdepend}{ m }
+{%
+    \bgroup%
+    \scriptsize%
+    \hfill%
+    \emph{depends~on:}~%
+    % This construct maps each entry onto the 
+    % fdf command
+    % First create a sequence from a list
+    \seq_set_from_clist:Nn \l_tmpa_seq { #1 }%
+    % Map on each entry in the sequence
+    \seq_set_map:NNn \l_tmpb_seq \l_tmpa_seq { \exp_not:n { \fdf{##1} } }%
+    \seq_use:Nn \l_tmpb_seq { ,~ }%
+    \setlength{\parskip}{2pt}%
+    \par%
+    \egroup%
+}
+
+\ExplSyntaxOff
+
 
 \def\fdfentryline@None{None}
 \def\fdfentryline@block{block}
@@ -137,7 +159,7 @@
 % Create new fdf input
 % This finalizes the call with \fdfenttryline
 % which does the actual parsing of the arguments.
-% This environment only sets up the enviroment
+% This environment only sets up the environment
 % to typeset things in.
 \NewDocumentEnvironment{fdfentry}{ }
 {   %
@@ -165,7 +187,7 @@
 % Create new fdf input of type logical
 \NewDocumentEnvironment{fdflogicalT}{ m }
 {%
-    \begin{fdfentry}{#1}[logical]<true|false>%
+    \begin{fdfentry}{#1}[logical]<true>%
 }
 {%
   \end{fdfentry}
@@ -173,7 +195,7 @@
 % Create new fdf input of type logical
 \NewDocumentEnvironment{fdflogicalF}{ m }
 {%
-    \begin{fdfentry}{#1}[logical]<false|true>%
+    \begin{fdfentry}{#1}[logical]<false>%
 }
 {%
   \end{fdfentry}

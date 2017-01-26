@@ -20,8 +20,8 @@ C Modified to include the local density of states at a point
 C by P. Ordejon, July 2004
 C Modified to use the more efficient WFSX format for wave functions
 C by A. Garcia, May 2012
-C
-C Version: 2.1
+C Added more files in 3D mode (A. Garcia, Nov 2016)
+C Version: 2.2
 C **********************************************************************
 C
 C  Modules

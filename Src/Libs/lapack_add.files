@@ -78,6 +78,7 @@ ilatrans.f
 ilauplo.f
 ilazlc.f
 ilazlr.f
+iparam2stage.F
 iparmq.f
 izmax1.f
 lsamen.f

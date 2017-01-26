@@ -15,7 +15,7 @@
 
   public :: val, spar, dist, init_val
   public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
-  public :: print_type, spar_dim
+  public :: print_type, spar_dim, size
   public :: NEW_TYPE
 
   integer, parameter :: sp = selected_real_kind(5,10)
@@ -83,6 +83,10 @@
 
   interface spar_dim
      module procedure spar_dimSpData
+  end interface
+
+  interface size
+     module procedure sizeSpData
   end interface
 
   interface print_type
@@ -266,6 +270,29 @@
    end if
 
  end function spar_dimSpData 
+
+ function sizeSpData(this, dim) result(n)
+   type(TYPE_NAME), intent(in) :: this
+   integer, intent(in), optional :: dim
+   integer :: n, ldim
+ 
+   n = 0
+   if ( .not. initialized(this) ) return
+
+   if ( present(dim) ) then
+      if ( dim < 1 .or. 2 < dim ) then
+        n = 0
+      else
+        ! we have to use a different variable
+	! name than dim (due to interface problems)
+        ldim = dim
+        n = size(this%data%a%data%val,ldim)
+      end if
+   else
+      n = size(this%data%a%data%val)
+   end if
+
+ end function sizeSpData
 
  subroutine printSpData(this)
    type(TYPE_NAME), intent(in)  :: this

@@ -144,9 +144,6 @@
       type(lshell_t), pointer::  ls
       type(kbshell_t), pointer:: k
 
-      type(block_fdf)            :: bfdf
-      type(parsed_line), pointer :: pline
-
       character(len=*), parameter   :: defunit='Ry'
       character(len=1), parameter   ::
      $                           sym(0:4) = (/ 's','p','d','f','g' /)
@@ -190,7 +187,9 @@
       character(len=15) :: basis_size
       character(len=10) :: basistype_generic
 
-      
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
       type(ground_state_t), pointer :: gs
 
       integer nns, noccs, i, ns_read, l
@@ -458,6 +457,9 @@ C Sanity checks on values
       integer :: lmax_pseudo
       character(len=20) unitstr
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
       lpol = 0
 
       if (fdf_block('PS.KBprojectors',bfdf) ) then
@@ -641,6 +643,9 @@ C Sanity checks on values
       subroutine repaobasis()
 
       integer isp, ish, nn, i, ind, l, indexp, index_splnorm
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       if (.not. fdf_block('PAO.Basis',bfdf)) RETURN
 

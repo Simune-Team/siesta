@@ -62,6 +62,7 @@ C
       use sys,             only : die
       use alloc,           only : re_alloc, de_alloc
       use atomlist,        only : no_l
+      use atomlist,        only : in_kb_orb_u_range
       use sparse_matrices, only : listhptr, numh, listh, xijo
       use radial,          only : rad_func
       use ldau_specs, only  : switch_ldau       ! Switch that determines whether
@@ -211,7 +212,10 @@ C     Initialize vector switch only once
         conect(io) = .false.
         listhtmp(io) = 0
       enddo
-
+      do ia = 1 , na
+         in_kb_orb_u_range(ia) = .false.
+      end do
+      
       folding = .false.
 
 C------------------------------------C
@@ -225,6 +229,7 @@ C       Find neighbour atoms within maximum range
 C       In case neighbor arrays have expanded
         call re_alloc( index, 1, maxna, 'index', 'hsparse' )
 
+        
 C       Order neighbours in a well defined way
         call ordvec( tol, 3, nna, xij, index )
         call iorder( jna, 1, nna, index )
@@ -237,6 +242,18 @@ C       Loop on orbitals of atom ia
             is = isa(ia)
             ioa = iphorb(io)
             rci = rcut(is,ioa)
+
+            ! To be used in nlefsm
+            ! Mark atoms whose KB projs overlap this process's
+            ! base orbitals
+            do kna = 1,nna
+               ka = jna(kna)
+               rik = sqrt( r2ij(kna) )
+               ks = isa(ka)
+               if ( rik < (rkbmax(ks) + rci)) then
+                  in_kb_orb_u_range(ka) = .true.
+               endif
+            enddo
 
             if ( negl .and. switch_ldau ) then
               ! We ONLY add the LDAU projectors

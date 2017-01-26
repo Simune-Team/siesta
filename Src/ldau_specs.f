@@ -861,6 +861,7 @@
 !     for this species
       nldaupj = basp%nldaushells
 
+
 !     Determine whether the calculation of LDA+U projectors is required or not
 !     for this atomic species
       if( .not. nldaupj > 0 ) return 
@@ -1119,7 +1120,7 @@
 !     .    ' ir, rofi, rho, ve, vePAO = ', 
 !     .      ir, rofi(ir), rho(ir), ve(ir), vePAO(ir)
 !      enddo
-!      call die()
+!!      call die()
 !!     End debugging
 
 !
@@ -1132,7 +1133,7 @@
       loop_projectors: do iproj = 1, nldaupj
          shell => basp%ldaushell(iproj)
          n      = shell%n
-         l      = shell%l
+         l      = shell%l 
          U      = shell%u
          J      = shell%j
          rco    = shell%rc
@@ -1149,28 +1150,29 @@
 !        controlled by 
 !        - the EnergyShift parameter            (method_gen_ldau_proj = 1)
 !        - the cutoff of the Fermi distribution (method_gen_ldau_proj = 2)
-!        If the latter is the case, then we need to solve the
-!        Schrodinger equation for the isolated atom
+!        For the first generation method, and if we rely on the automatic
+!        determination, we have to compute the rc from the EnergyShift.
+!        This is done from a cut-and-paste from the corresponding lines
+!        in the generation of the PAOs for the basis sets.
+!        For the second generation method, 
+!        the rc is determined by the Fermi function,
+!        and it is done in fermicutoff distribution
          if ( rco .lt. 1.0d-5 ) then
-
-!          Independently of the generation method, we have to
-!          solve the Schrodinger equation for the isolated atom.
-!          Some required variables are defined below
-
-!          Determine the number of nodes in the radial part of
-!          the eigenfunction
-!          THIS HAS TO BE UPDATED WITH THE SUBROUTINES
-!          OF THE NEW PSEUDOS:
-!          FROM THE KNOWLEDGE OF n AND l, IT SHOULD BE POSSIBLE
-!          TO DETERMINE THE NUMBER OF NODES
-           nnodes = 1
-
-!          Determine the principal quantum number within the pseudoatom
-           nprin  = l + 1
-
 
 !          Cutoff controled by the energy shift parameter:
            if( method_gen_ldau_proj .eq. 1) then
+!            Some required variables to solve the Schrodinger
+!            equation are defined below 
+
+!            Determine the number of nodes in the radial part of
+!            the eigenfunction
+!            THIS HAS TO BE UPDATED WITH THE SUBROUTINES
+!            OF THE NEW PSEUDOS:
+!            FROM THE KNOWLEDGE OF n AND l, IT SHOULD BE POSSIBLE
+!            TO DETERMINE THE NUMBER OF NODES
+             nnodes = 1
+!            Determine the principal quantum number within the pseudoatom
+             nprin  = l + 1
 
              nrwf = nrval
              if (restricted_grid)  nrwf = nrwf + 1 - mod(nrwf,2)
@@ -1246,117 +1248,6 @@
 
            endif 
 
-           if( method_gen_ldau_proj .eq. 2 ) then
-!            An arbitrary long localization radius for these orbitals
-!            is set up with the parameter rmax (=60.0 Bohr by default). 
-!            This was suggested in the original implementation by Daniel
-!            and is kept here for backwards compatibility
-             nrwf = nint(log(rmax/b+1.0d0)/a)+1
-             nrwf = min(nrwf,nrval)
-             if (restricted_grid)  nrwf = nrwf + 1 - mod(nrwf,2)
-
-!!            For debugging
-!             write(6,'(/a,i2)')  
-!     .         'LDAUprojs with principal quantum number n = ', n
-!             write(6,'(a,i2)')  
-!     .         'LDAUprojs with angular momentum l = ', l 
-!             write(6,'(a,f12.5)')
-!     .         'LDAUprojs with U        = ',U
-!             write(6,'(a,f12.5)')
-!     .         'LDAUprojs with J        = ',J
-!             write(6,'(a,f12.5)')
-!     .         'LDAUprojs with lambda   = ',shell%lambda
-!             write(6,'(a,f12.5)')
-!     .         'LDAUprojs with rc       = ',shell%rc
-!             write(6,'(a,i5)')   
-!     .         'LDAUprojs with nnodes   = ',nnodes
-!             write(6,'(a,i5)')   
-!     .         'LDAUprojs with nprin    = ',nprin
-!             write(6,'(a,i5)')   
-!     .         'LDAUprojs with nrval    = ',nrval
-!             write(6,'(a,i5)')   
-!     .         'LDAUprojs with nrwf     = ',nrwf
-!             write(6,'(a,i5)')   
-!     .         'LDAUprojs with nrmax    = ',nrmax
-!             write(6,'(a,f12.5)')
-!     .         'LDAUprojs with zval     = ',zval
-!             write(6,'(a,f12.5)')
-!     .         'LDAUprojs with a        = ',a
-!             write(6,'(a,f12.5)')
-!     .         'LDAUprojs with b        = ',b
-!!            End debugging
-
-!            Initialize the eigenfunctions
-             rphi(:,l) = 0.0_dp
-
-!            Solve the Schrodinger for the long cutoff
-             call schro_eq( zval, rofi, vpseudo(1,l), vePAO, s, drdi,
-     .                      nrwf, l, a, b, nnodes, nprin,
-     .                      eigen(l), rphi(1,l) )
-
-!            We consider only the solutions to the Schrodinger 
-!            equation up to the point where its value is smaller than
-!            a given tolerance, setup by the min_func_val parameter
-             nrwf_new = nrwf
-             do ir = nrwf, 2, -1
-               if( abs(rphi(ir,l) ) .gt. min_func_val ) then
-                 nrwf_new = ir + 1
-                 write(6,'(a,f20.12,a)')
-     .             'ldau_proj_gen: updating the rc to', 
-     .              rofi(nrwf_new), ' Bohr'
-                 exit
-               endif
-             enddo 
-
-!            Divide the eigenfunctions by r^(l+1) and normalize them.
-!            In the previous subroutine, we compute r * phi,
-!            where phi is the radial part of the wave functions.
-!            In Siesta, we store in the tables phi/r^l.
-!            Therefore, we need to divide the previous solution by 
-!            r^(l+1)
-             do ir = 2, nrwf_new
-               rphi(ir,l)=rphi(ir,l)/(rofi(ir)**(l+1))
-             enddo
-             rphi(1,l)=rphi(2,l)
-!            Nullify the rest of the solution
-             rphi(nrwf_new+1:nrmax,l) = 0.0_dp
-
-             dnorm = 0.0_dp
-             do ir = 1, nrwf_new
-               phi  = rphi(ir,l)
-!              To compute the norm, we need to integrate
-!              r^2 \times wave_function^2.
-!              Since we have stored wave_function/r^l, we need to 
-!              multiply it by r^(l+2)
-               dnorm = dnorm + drdi(ir) * (phi * rofi(ir)**(l+1))**2
-             enddo
-             dnorm = dsqrt(dnorm)
-             do ir = 2, nrwf_new
-               rphi(ir,l) = rphi(ir,l)/dnorm
-             enddo
-
-!            Now, define the Fermi distribution that will be used 
-!            to cut the long eigenfunction
-!            The width of the Fermi distribution is defined by
-!            the shell%width parameter
-!            while the equivalent of the Fermi energy is determined by
-!            the shell%dnrm parameter
-             call fermicutoff( nrmax, nrwf_new, rofi, drdi, 
-     .                         rphi(:,l), shell, fermi_func )
-
-!!            For debugging
-!             write(6,'(/a,i5)')  '# l = '          , l 
-!             write(6,'(a,f12.5)')'# Eigenvalue =  ', eigen(l)
-!             write(6,'(a,f12.5)')'# rc         =  ', shell%rc
-!             write(6,'(a,f12.5)')'# width      =  ', shell%width
-!             write(6,'(a,f12.5)')'# Norm       =  ', dnorm
-!             write(6,'(a)')      '# Eigenfunction '
-!             do ir = 1, nrwf_new
-!               write(6,'(3f20.12)')rofi(ir), rphi(ir,l), fermi_func(ir)
-!             enddo 
-!!            End debugging
-           endif
-
          endif     ! End if automatic determination of the rc
 
 !        At this point, independently of the method,
@@ -1368,6 +1259,11 @@
 !        LDA+U projector vanishes
          nrc = nint(log(rco/b+1.0_dp)/a)+1
          shell%nrc = nrc
+
+!        Determine the number of nodes
+         nnodes = 1
+!        Determine the principal quantum number within the pseudoatom
+         nprin  = l + 1
 
          if( method_gen_ldau_proj .eq. 1) then
 !          Build the soft confinement potential
@@ -1420,11 +1316,6 @@
 !          Solve the Schrodinger equation for the required cutoff
 !          and with the Hartree potential from the scaled charge density
 
-!          Determine the number of nodes
-           nnodes = 1
-!          Determine the principal quantum number within the pseudoatom
-           nprin  = l + 1
-
 !          Initialize the eigenfunctions
            rphi(:,l) = 0.0_dp
            call schro_eq( zval, rofi, vpseudo(1,l), vePAOsoft, s, drdi,
@@ -1455,6 +1346,115 @@
            shell%rc  = rc
 
          else if( method_gen_ldau_proj .eq. 2) then
+!          An arbitrary long localization radius for these orbitals
+!          is set up with the parameter rmax (=60.0 Bohr by default). 
+!          This was suggested in the original implementation by Daniel
+!          and is kept here for backwards compatibility
+           nrwf = nint(log(rmax/b+1.0d0)/a)+1
+           nrwf = min(nrwf,nrval)
+           if (restricted_grid)  nrwf = nrwf + 1 - mod(nrwf,2)
+
+!          For debugging
+           write(6,'(/a,i2)')  
+     .       'LDAUprojs with principal quantum number n = ', n
+           write(6,'(a,i2)')  
+     .       'LDAUprojs with angular momentum l = ', l 
+           write(6,'(a,f12.5)')
+     .       'LDAUprojs with U        = ',U
+           write(6,'(a,f12.5)')
+     .       'LDAUprojs with J        = ',J
+           write(6,'(a,f12.5)')
+     .       'LDAUprojs with lambda   = ',shell%lambda
+           write(6,'(a,f12.5)')
+     .       'LDAUprojs with rc       = ',shell%rc
+           write(6,'(a,i5)')   
+     .         'LDAUprojs with nnodes   = ',nnodes
+           write(6,'(a,i5)')   
+     .       'LDAUprojs with nprin    = ',nprin
+           write(6,'(a,i5)')   
+     .       'LDAUprojs with nrval    = ',nrval
+           write(6,'(a,i5)')   
+     .       'LDAUprojs with nrwf     = ',nrwf
+           write(6,'(a,i5)')   
+     .       'LDAUprojs with nrmax    = ',nrmax
+           write(6,'(a,f12.5)')
+     .       'LDAUprojs with zval     = ',zval
+           write(6,'(a,f12.5)')
+     .       'LDAUprojs with a        = ',a
+           write(6,'(a,f12.5)')
+     .       'LDAUprojs with b        = ',b
+!          End debugging
+
+!          Initialize the eigenfunctions
+           rphi(:,l) = 0.0_dp
+
+!          Solve the Schrodinger for the long cutoff
+           call schro_eq( zval, rofi, vpseudo(1,l), vePAO, s, drdi,
+     .                    nrwf, l, a, b, nnodes, nprin,
+     .                    eigen(l), rphi(1,l) )
+
+!          We consider only the solutions to the Schrodinger 
+!          equation up to the point where its value is smaller than
+!          a given tolerance, setup by the min_func_val parameter
+           nrwf_new = nrwf
+           do ir = nrwf, 2, -1
+             if( abs(rphi(ir,l) ) .gt. min_func_val ) then
+               nrwf_new = ir + 1
+               write(6,'(a,f20.12,a)')
+     .           'ldau_proj_gen: updating the rc to', 
+     .            rofi(nrwf_new), ' Bohr'
+               exit
+             endif
+           enddo 
+
+!          Divide the eigenfunctions by r^(l+1) and normalize them.
+!          In the previous subroutine, we compute r * phi,
+!          where phi is the radial part of the wave functions.
+!          In Siesta, we store in the tables phi/r^l.
+!          Therefore, we need to divide the previous solution by 
+!          r^(l+1)
+           do ir = 2, nrwf_new
+             rphi(ir,l)=rphi(ir,l)/(rofi(ir)**(l+1))
+           enddo
+           rphi(1,l)=rphi(2,l)
+!          Nullify the rest of the solution
+           rphi(nrwf_new+1:nrmax,l) = 0.0_dp
+
+           dnorm = 0.0_dp
+           do ir = 1, nrwf_new
+             phi  = rphi(ir,l)
+!            To compute the norm, we need to integrate
+!            r^2 \times wave_function^2.
+!            Since we have stored wave_function/r^l, we need to 
+!            multiply it by r^(l+2)
+             dnorm = dnorm + drdi(ir) * (phi * rofi(ir)**(l+1))**2
+           enddo
+           dnorm = dsqrt(dnorm)
+           do ir = 2, nrwf_new
+             rphi(ir,l) = rphi(ir,l)/dnorm
+           enddo
+
+!          Now, define the Fermi distribution that will be used 
+!          to cut the long eigenfunction
+!          The width of the Fermi distribution is defined by
+!          the shell%width parameter
+!          while the equivalent of the Fermi energy is determined by
+!          the shell%dnrm parameter
+           call fermicutoff( nrmax, nrwf_new, rofi, drdi, 
+     .                       rphi(:,l), shell, fermi_func )
+
+!!          For debugging
+!           write(6,'(/a,i5)')  '# l = '          , l 
+!           write(6,'(a,f12.5)')'# Eigenvalue =  ', eigen(l)
+!           write(6,'(a,f12.5)')'# rc         =  ', shell%rc
+!           write(6,'(a,f12.5)')'# width      =  ', shell%width
+!           write(6,'(a,f12.5)')'# Norm       =  ', dnorm
+!           write(6,'(a)')      '# Eigenfunction '
+!           do ir = 1, nrwf_new
+!             write(6,'(3f20.12)')rofi(ir), rphi(ir,l), fermi_func(ir)
+!           enddo 
+!!          End debugging
+
 !          Here we multiply the long wave function times the 
 !          Fermi-Dirac distribution to cut it.
            projector(isp,iproj,:) = 0.0_dp
@@ -1509,14 +1509,14 @@
 !!        For debugging
 !         dnorm = 0.0_dp
 !         do ir = 1, shell%nrc
-!          The projector that has been stored in the array projector
-!          is written in the same format as the atomic orbitals in the
-!          inners of Siesta, i. e., in the format of R/r^l,
-!          where R is the radial part of the projector.
-!          To check if it is normalized,
-!          we have to integrate \int r^{2} R^{2} dr,
-!          and this implies just to take projector**2
-!          and multiply by r^(2l+2) = r^(2*(l+1))
+!!          The projector that has been stored in the array projector
+!!          is written in the same format as the atomic orbitals in the
+!!          inners of Siesta, i. e., in the format of R/r^l,
+!!          where R is the radial part of the projector.
+!!          To check if it is normalized,
+!!          we have to integrate \int r^{2} R^{2} dr,
+!!          and this implies just to take projector**2
+!!          and multiply by r^(2l+2) = r^(2*(l+1))
 !           dnorm = dnorm + drdi(ir)*(projector(isp,iproj,ir)**2)*
 !     .             rofi(ir)**(2*(l+1))
 !         enddo

@@ -27,6 +27,7 @@
 !  - SORT : allows sorting of an array. It currently only exists
 !           for an integer array. However, this is also the most stringent
 !           case as there has not to be any margin of error (EPS)
+!  - SORT_QUICK : allows sorting of an array (using the quick-sort algorithm)
 !  - UNIQ : returns the unique integer values of an array
 !  - UNIQC: returns the number of unique integer vaules of an array
 !  - SFIND: will return the index of an integer in a sorted array (by logical
@@ -75,7 +76,7 @@ module intrinsic_missing
 
 ! Pure functions.. (i.e. callable in interface declarations..)
   public :: VNORM
-  public :: SORT
+  public :: FSORT, SORT, SORT_QUICK
   public :: UNIQ, UNIQC
   public :: SFIND
   interface SFIND
@@ -334,7 +335,7 @@ contains
 ! This sorting routine has been optimized for consecutive segments
 ! in the original array, hence, sorting on arrays with:
 !   [1,2,3,4,25,26,27,28,15,16,17] are VERY fast!
-  pure function SORT(array) result(SO)
+  pure function FSORT(array) result(SO)
     integer, intent(in) :: array(:)
     integer :: SO(ubound(array,dim=1))
     integer :: i,j,DA,h,FM
@@ -591,7 +592,380 @@ contains
 
     end subroutine insert_back
 
-  end function SORT
+  end function FSORT
+
+  ! Returns an integer array sorted
+! It will contain dublicates if encountered. And hence sorting will amount to
+! arrays (/1,2,2,3,4,4,5/) for example.
+! This sorting routine has been optimized for consecutive segments
+! in the original array, hence, sorting on arrays with:
+!   [1,2,3,4,25,26,27,28,15,16,17] are VERY fast!
+  pure subroutine SORT(DA, array, so)
+    integer, intent(in) :: DA
+    integer, intent(in) :: array(DA)
+    integer, intent(out) :: SO(DA)
+    integer :: i, j, h, FM
+
+    ! No sorting
+    if ( DA == 0 ) return
+
+    SO(1) = array(1)
+    if ( DA == 1 ) return
+    
+    ! Everything else has to be checked...
+    ! This sorting routine is very efficient, and it works
+    ! Consider to change this function to a quick-sort algorithm...
+    i = 2
+    sort_loop: do while ( i <= DA )
+       if ( array(i) <= SO(1) ) then
+          !print '(a,1000(tr1,i0))','F1',SO(1:i-1),array(i)
+          !  put in front of the sorted array
+          call insert_front(DA,SO,array,i,FM)
+          i = i + FM
+          !print '(a,1000(tr1,i0))','F2',SO(1:i-1)
+       else if ( SO(i-1) <= array(i) ) then
+          !print '(a,1000(tr1,i0))','B1',SO(1:i-1),array(i)
+          call insert_back(DA,SO,array,i,FM)
+          i = i + FM
+          !print '(a,1000(tr1,i0))','B2',SO(1:i-1)
+       else if ( i-1 < 35 ) then
+          !print '(a,1000(tr1,i0))','M1',SO(1:i-1),array(i)
+          ! We assume that for array segments below 35 elements
+          ! it will be faster to do array search
+          expSearch: do j = 2 , i - 1
+             ! It will always be better to search for the end 
+             ! of the overlapping region. i.e. less elements to move
+             if ( array(i) <= SO(j) ) then
+                h = j
+                call insert_mid(DA,SO,array,h,i,FM)
+                i = i + FM
+                exit expSearch ! exit the loop
+             end if
+          end do expSearch
+          !print '(a,1000(tr1,i0))','M2',SO(1:i-1)
+
+       else
+          !print '(a,1000(tr1,i0))','S1',SO(1:i-1),array(i)
+
+          ! search using SFIND,
+          ! We are taking advantage that both SO(1) and SO(i-1)
+          ! has been checked, hence the -1
+          j = SFIND(SO(2:i-1),array(i),NEAREST=+1) + 1
+
+          ! Insert directly, we have found what we searched for
+          call insert_mid(DA,SO,array,j,i,FM)
+          i = i + FM
+
+          !print '(a,1000(tr1,i0))','S2',SO(1:i-1)
+       end if
+    end do sort_loop
+
+    !do i = 1 , DA -1 
+    !   if ( so(i) > so(i+1) )then
+    !      print *,i,DA,so(i),so(i+1)
+    !      print *,sum(so),sum(array)
+    !      call die('wrong sort')
+    !   end if
+    !end do
+
+    !if ( sum(so) /= sum(array) ) then
+    !   print *,sum(so),sum(array)
+    !   call die('wrong sort')
+    !end if
+
+  contains
+
+    pure subroutine insert_mid(DA,SO,array,sF,sA,P)
+      integer, intent(in)     :: DA
+      integer, intent(in out) :: SO(DA)
+      integer, intent(in)     :: array(DA)
+      ! The place where we found a SO(sF) <= array(sA)
+      integer, intent(in out) :: sF
+      integer, intent(in) :: sA ! The current reached iteration in array
+      integer, intent(out) :: P ! the number of inserted values
+
+      ! The last insertion point
+      integer :: lA, i
+      
+      ! First we will skip to the last non-SAME value
+      ! I.e. where we can do the insert in SO
+      do while ( sF < sA - 1 .and. SO(sF) == array(sA) )
+         sF = sF + 1
+      end do
+      
+      ! Now SO(sF) < array(sA)
+      if ( sF >= sA )  then
+         call insert_back(DA,SO,array,sA,P)
+         return
+      end if
+
+!******* OLD
+      ! We wish to find the last element of array                               
+      ! we can move into the sort'ed array                                      
+!      lA = sA + 1                                                               
+      ! We know we are in the middle of the sort array                          
+      ! hence, we can exploit the next element in the sorted                    
+      ! array                                                                   
+!      do while ( SO(sF-1) <= array(lA-1) .and. &                                
+!           array(lA) < SO(sF) .and. &                                           
+!           array(lA-1) <= array(lA) .and. &                                     
+!           lA <= DA  ) ! must be in the range [sF;sA-1]                         
+!         lA = lA + 1                                                            
+!      end do                                                                    
+!      do while ( SO(sF) == array(lA) .and. lA <= DA  )                          
+         ! must be in the range [sF;sA-1] 
+!         lA = lA + 1                                                            
+!      end do                       
+
+
+      lA = sA + 1
+      ! We know we are in the middle of the sort array
+      ! hence, we can exploit the next element in the sorted
+      ! array
+      do while ( lA <= DA )
+         ! If the previous SO value is larger than the insertion
+         if ( SO(sF-1)    >  array(lA - 1) ) exit
+         ! If the array is not consecutive
+         if ( array(lA-1) >  array(lA) )     exit
+         ! If the insertion point array is not consecutive
+         if ( array(lA)   >  SO(sF) )        exit
+         ! We need to ensure an overcount of 1
+         lA = lA + 1
+      end do
+      !if ( lA <= DA ) then
+      !   do while ( SO(sF) == array(lA) .and. lA <= DA  )
+           ! must be in the range [sF;sA-1]
+      !      lA = lA + 1
+      !end do
+
+      ! The number of elements we are pushing in
+      P = lA - sA
+      ! We have "overcounted"
+      !lA = lA - 1
+
+      !print '(6(tr1,a,tr1,i4))', &
+      !     'SO |-1| =',SO(sF-1), &
+      !     'SO |0| =',SO(sF), &
+      !     'SO |+1| =',SO(sF+1)
+      !print '(6(tr1,a,tr1,i4))','P===',P,&
+      !     'LH1',sA+P-1-(sF+P),&
+      !     'RH1',sA-1-sF,&
+      !     'LH2',sF+P-1-sF,&
+      !     'RH2',sA+P-1-sA
+      !print '(6(tr1,i4))',array(sA:sA+5)
+
+      ! Copy the mid to the front of the SO
+      if ( sF + P <= sA - 1 ) then
+         SO(sF+P:sA+P-1) = SO(sF:sA-1)
+      else
+         do i = sF , sA - 1
+            SO(i+P) = SO(i)
+         end do
+      end if
+      !SO(sF:sF+P-1)   = array(sA:sA+P-1)
+      do i = 0 , P - 1
+         SO(sF+i) = array(sA+i)
+      end do
+      
+    end subroutine insert_mid
+
+    pure subroutine insert_front(DA,SO,array,sA,P)
+      integer, intent(in)     :: DA
+      integer, intent(in out) :: SO(DA)
+      integer, intent(in)     :: array(DA)
+      integer, intent(in)     :: sA
+      integer, intent(out)    :: P ! The number of Pasted values
+
+      ! The last insertion point
+      integer :: lA, i
+
+      i = sA + 1
+      do lA = i , DA
+         ! if the previous element is larger than the current element
+         if ( array(lA-1) >= array(lA) ) exit
+         ! if the checked point is larger than the insertion point
+         if ( array(lA) >= SO(1) ) exit
+      end do
+      i = lA
+      do lA = i , DA
+         if ( array(lA) /= SO(1) ) exit
+      end do
+
+      
+!      lA = sA + 1
+      ! Take all the values which are smaller than SO(1)
+!      do while ( array(lA-1) < array(lA) .and. &
+!           array(lA) < SO(1) .and. &
+!           lA <= DA ) 
+!         lA = lA + 1
+!      end do
+      ! Take all the values which are EQUAL to SO(1)
+!      do while ( array(lA) == SO(1) .and. lA <= DA ) 
+!         lA = lA + 1
+!      end do
+
+      ! Number of points found in the sort routine
+      P = lA - sA
+      ! Correct the overstepping (remark the above line counts correctly!)
+      !lA = lA - 1
+      !print '(6(tr1,a,tr1,i4))',&
+      !     'LH1',P+sA-1-(1+P),&
+      !     'RH1',sA-1-1,&
+      !     'LH2',P-1,&
+      !     'RH2',lA-sA
+
+      ! Copy over the values
+      if ( P + 1 <= sA - 1 ) then
+         SO(P+1:P+sA-1) = SO(1:sA-1)
+      else
+         do i = 1 , sA - 1
+            SO(P+i) = SO(i)
+         end do
+      end if
+      !SO(1:P)        = array(sA:lA-1)
+      do i = 1 , P
+         SO(i) = array(sA+i-1)
+      end do
+      
+    end subroutine insert_front
+
+    pure subroutine insert_back(DA,SO,array,sA,P)
+      integer, intent(in)     :: DA
+      integer, intent(in out) :: SO(DA)
+      integer, intent(in)     :: array(DA)
+      integer, intent(in)     :: sA
+      integer, intent(out)    :: P ! 
+
+      ! The last insertion point
+      integer :: lA,i
+      
+      lA = sA + 1
+      ! Step until SO(sA-1) /= array(lA)
+      do lA = sA + 1 , DA
+         if ( SO(sA-1) /= array(lA-1) ) exit
+      end do
+! OLD
+!      do while ( SO(sA-1) == array(lA-1) .and. lA <= DA )
+!         lA = lA + 1
+!      end do
+      
+      ! Step until the last element of SO, SO(sA-1), is not
+      ! smaller than the array value
+      i = lA
+      do lA = i , DA
+         if ( SO(sA-1) >= array(lA-1) ) exit
+         if ( array(lA-1) >= array(lA) ) exit
+      end do
+!      do while ( SO(sA-1) < array(lA-1) .and. &
+!           array(lA-1) < array(lA) .and. & ! asserts the elements we choose are consecutive
+!           lA <= DA )
+!         lA = lA + 1
+!      end do
+      
+      ! The number of elements we are pushing in
+      P = lA - sA
+      !print '(6(tr1,a,tr1,i4))',&
+      !     'L/R H',sA+P-1-sA
+      do i = 0 , P - 1
+         SO(sA+i) = array(sA+i)
+      end do
+
+    end subroutine insert_back
+
+  end subroutine SORT
+  
+  recursive pure subroutine sort_quick(n, array)
+    integer, intent(in) :: n
+    integer, intent(inout) :: array(n)
+
+    integer :: div
+
+    if ( n <= 1 ) return
+
+    ! Retrieve the partition ID
+    call partition(n, array, div)
+    call sort_quick(div-1, array(1))
+    call sort_quick(n-div+1, array(div))
+
+  contains
+
+    ! Partition an array by swapping
+    pure subroutine partition(n, array, mark)
+      integer, intent(in) :: n
+      integer, intent(inout) :: array(n)
+      integer, intent(out) :: mark
+      
+      integer :: i, j, x, t
+
+      ! Simple check for n == 2
+      ! Note that n == 1 will NEVER happen because
+      ! of the sort_quick check
+      if ( n == 2 ) then
+         if ( array(2) < array(1) ) then
+            t = array(2)
+            array(2) = array(1)
+            array(1) = t
+         end if
+         mark = 2
+         return
+      end if
+
+      i = n / 2
+      ! Find the median of the searched elements
+      if ( array(1) < array(n) ) then
+         if ( array(n) < array(i) ) then
+            x = array(n)
+         else if ( array(1) < array(i) ) then
+            x = array(i)
+         else
+            x = array(1)
+         end if
+      else !if ( array(n) < array(1) )
+         if ( array(1) < array(i) ) then
+            x = array(1)
+         else if ( array(n) < array(i) ) then
+            x = array(i)
+         else
+            x = array(n)
+         end if
+      end if
+
+      ! Starting counters..
+      i = 0
+      j = n + 1
+
+      do
+         ! find point from below which is
+         ! above median
+         j = j - 1
+         do while ( j > 0 )
+            if ( array(j) <= x ) exit
+            j = j - 1
+         end do
+
+         i = i + 1
+         do while ( i < n )
+            if ( array(i) >= x ) exit
+            i = i + 1
+         end do
+
+         if ( i < j ) then
+            ! exchange array(i) and array(j)
+            t = array(i)
+            array(i) = array(j)
+            array(j) = t
+         else if ( i == j ) then
+            mark = i + 1
+            return
+         else
+            mark = i
+            return
+         end if
+      end do
+
+    end subroutine partition
+
+  end subroutine sort_quick
 
 ! ***************** old CORRECT version ******************
 ! Returns an integer array sorted
@@ -1344,6 +1718,9 @@ contains
   end function IDX_SPC_PROJ_dp
 
 
+  ! Scalar projection of 'vin=a' onto 'vec=b' (i.e. the fraction of the
+  ! vector along 'vec')
+  !   a . b / |b|
   pure function VEC_PROJ_SCA_sp(vec,vin) result(a)
     real(sp), intent(in) :: vec(:), vin(:)
     real(sp) :: a
@@ -1355,16 +1732,17 @@ contains
     a = sum(vec*vin) / VNORM(vec)
   end function VEC_PROJ_SCA_dp
 
-  ! Projection of 'vin' onto 'vec'
+  ! Projection of 'vin=a' onto 'vec=b'
+  !   a . b / ( b . b ) * b
   pure function VEC_PROJ_sp(vec,vin) result(vout)
     real(sp), intent(in) :: vec(:), vin(:)
     real(sp) :: vout(size(vec))
-    vout = VEC_PROJ_SCA_sp(vec,vin) * vec
+    vout = sum(vec * vin) / sum(vec * vec) * vec
   end function VEC_PROJ_sp
   pure function VEC_PROJ_dp(vec,vin) result(vout)
     real(dp), intent(in) :: vec(:), vin(:)
     real(dp) :: vout(size(vec))
-    vout = VEC_PROJ_SCA_dp(vec,vin) * vec
+    vout = sum(vec * vin) / sum(vec * vec) * vec
   end function VEC_PROJ_dp
 
 end module intrinsic_missing

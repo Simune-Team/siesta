@@ -11,6 +11,16 @@
 % Default to NOT show the deprecated options
 \deprecatedfalse
 
+% Whether developer notes should be shown
+\newif\ifdeveloper
+% Default to NOT show the developer options
+\developerfalse
+% Check that the user has requested developer version
+\def\@tmp{1}
+\ifx\siestadeveloper\@tmp
+  \developertrue
+\fi
+
 % Declare new font
 \DeclareTextFontCommand{\fontfile}{\ttfamily}
 
@@ -75,13 +85,18 @@
 % Use systemlabel.file.
 % This creates a file which is default to have the systemlabel
 % as prefix.
+%  *: do not add the SystemLabel to the output
 %  #1: suffix for the file.
-\NewDocumentCommand\sysfile{ m }
+\NewDocumentCommand\sysfile{ s m }
 {%
     % Typeset file
-    \fontfile{SystemLabel.#1}%
+    \IfBooleanTF{#1}{%
+        \fontfile{.#2}%
+    }{%
+        \fontfile{SystemLabel.#2}%
+    }%
     % Add to the indices
-    \newfile{SystemLabel.#1}%
+    \newfile{SystemLabel.#2}%
 }
 
 

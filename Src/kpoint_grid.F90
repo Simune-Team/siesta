@@ -15,7 +15,7 @@ MODULE Kpoint_grid
 
   implicit none
 
-  public :: setup_kpoint_grid, scf_kgrid_first_time, gamma_scf, maxk,   &
+  public :: setup_kpoint_grid, scf_kgrid_first_time, gamma_scf, &
             nkpnt, kweight, kpoint, kscell, kdispl
 
 
@@ -23,7 +23,6 @@ MODULE Kpoint_grid
   
   logical                  :: scf_kgrid_first_time = .true.
   logical                  :: gamma_scf
-  integer                  :: maxk              ! 
   integer                  :: nkpnt             ! Total number of k-points
   real(dp)                 :: eff_kgrid_cutoff  ! Effective kgrid_cutoff
 
@@ -75,7 +74,6 @@ MODULE Kpoint_grid
                     time_reversal_symmetry,             &
                     nkpnt,kpoint,kweight, eff_kgrid_cutoff)
 
-    maxk = nkpnt
     gamma_scf =  (nkpnt == 1 .and.  &
                   dot_product(kpoint(:,1),kpoint(:,1)) < 1.0e-20_dp)
 

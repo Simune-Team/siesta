@@ -58,7 +58,7 @@
 !----------------------------------------------------------------
       SUBROUTINE write_tdrho (filesOut)
       
-      TYPE(filesOut_t), INTENT(OUT)      :: filesOut
+      TYPE(filesOut_t), INTENT(INOUT)      :: filesOut
   
       IF (tdsaverho) THEN
          IF (mod(istp,ntdsaverho) .eq. 0) THEN

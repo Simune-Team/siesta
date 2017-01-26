@@ -64,11 +64,12 @@ contains
 
     use fdf
     use fdf_extra
-    use parallel, only : Node, Nodes
+    use parallel, only : IONode, Node, Nodes
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World, MPI_Barrier
 #endif
 
+    use m_char, only: lcase
     use m_pivot
 #ifdef GRAPHVIZ
     use m_pivot_methods, only : sp2graphviz
@@ -76,6 +77,8 @@ contains
 
     use geom_helper, only : iaorb
     use intrinsic_missing, only : SPC_PROJ, VNORM, VEC_PROJ
+    use create_Sparsity_SC
+
     use m_ts_electype
     use m_ts_method, only : ts_init_regions
     use m_ts_method, only : atom_type, TYP_DEVICE, TYP_BUFFER
@@ -175,7 +178,7 @@ contains
 
           ! Actual device atoms...
           if ( leqi(g,'atom') .or. leqi(g,'position') ) then
-             call fdf_brange(pline,r_tmp, 1, na_u)
+             call fdf_brange(pline, r_tmp, 1, na_u)
              if ( r_tmp%n == 0 ) &
                   call die('Could not read in any atoms &
                   &in line of TBT.Atoms.Device')
@@ -185,7 +188,7 @@ contains
 
           ! Atoms NOT in the device region...
           if ( leqi(g,'not-atom') .or. leqi(g,'not-position') ) then
-             call fdf_brange(pline,r_tmp, 1, na_u)
+             call fdf_brange(pline, r_tmp, 1, na_u)
              if ( r_tmp%n == 0 ) &
                   call die('Could not read in any atoms &
                   &in line of TBT.Atoms.Device')
@@ -200,7 +203,7 @@ contains
 
     if ( r_aDev%n == 0 ) then
        ! populate the device region with all atoms
-       call rgn_range(r_aDev,1,na_u)
+       call rgn_range(r_aDev, 1, na_u)
     end if
     
     ! remove the buffer and electrode atoms
@@ -223,9 +226,9 @@ contains
     ! Create device region
     call rgn_Atom2Orb(r_aDev,na_u,lasto,r_oDev)
 
-    if ( Node == 0 ) then
+    if ( IONode ) then
        write(*,'(/,a)')'tbtrans: Analyzing electrode sparsity &
-            &pattern to create optimal tri-diagonal blocks...'
+            &pattern to create optimal tri-diagonal blocks'
     end if
 
     ! In case the user wants "a correct DOS"
@@ -238,7 +241,8 @@ contains
             call die('No orbitals connect to the specified device &
             &region. This is not allowed.')
 
-       ! Convert connecting region to atoms
+       ! Convert connecting region to atoms (this also
+       ! folds supercell orbitals to the correct atoms)
        call rgn_Orb2Atom(r_tmp,na_u,lasto,r_oDev)
        call rgn_delete(r_tmp)
        ! Remove buffer atoms (in case the electrode is too small)
@@ -253,7 +257,7 @@ contains
        ! Append to device region
        if ( r_oDev%n > 0 ) then
           call rgn_append(r_aDev,r_oDev,r_aDev)
-       else if ( Node == 0 ) then
+       else if ( IONode ) then
           ! It only connects to electrodes
           write(*,'(a)')'tbtrans: Device regions &
                &connects directly with electrodes'
@@ -335,8 +339,8 @@ contains
     close(1400)
 #endif
 
-    ! Create the global transiesta H(k), S(k) sparsity pattern
-    call ts_Sparsity_Global(dit,sp, N_Elec, Elecs, sp_uc)
+    ! Create the temporary unit-cell sparsity pattern
+    call crtSparsity_SC(sp, sp_tmp, UC = .true. )
 
     ! Create the electrode down-folding regions.
     ! Note that sorting according to the more advanced methods
@@ -364,20 +368,52 @@ contains
        ! First get the actual sub region that connects
        ! from the electrode to the device
        g = 'atom+'//trim(Elecs(iEl)%name)
-       call ts_pivot( dit, sp, &
-            1, Elecs(iEl:iEl), &
-            cell, na_u, xa, lasto, &
-            r_oEl(iEl), g, extend = .false.)
        csort = fdf_get('TBT.BTD.Pivot.Elecs',trim(g))
        csort = fdf_get('TBT.BTD.Pivot.Elec.'//&
             trim(Elecs(iEl)%name),trim(csort))
-       if ( .not. leqi(g,csort) ) then
-          call ts_pivot( dit, sp, &
+       g = lcase(trim(Elecs(iEl)%name))
+       csort = lcase(csort)
+       ! If the electrode is in the pivoting scheme we
+       ! are for sure doing a connectivity graph.
+       if ( index(csort, trim(g)) > 0 ) then
+          ! the requested sorting algorithm
+          ! is the connectivity graph, then we can do
+          ! everything in one go!
+          call ts_pivot(dit, sp_tmp, &
                1, Elecs(iEl:iEl), &
                cell, na_u, xa, lasto, &
-               r_oEl(iEl), csort)
+               r_oEl(iEl), csort, extend = .false.)
+       else
+          ! First find the connectivity graph to limit the
+          ! electrode region
+          ! re-create g
+          g = 'atom+'//trim(Elecs(iEl)%name)
+          call ts_pivot(dit, sp_tmp, &
+               1, Elecs(iEl:iEl), &
+               cell, na_u, xa, lasto, &
+               r_oEl(iEl), g, extend = .false.)
+          ! now r_oEl(iEl) contains the connetivity graph
+          ! from electrode iEl (without crossing the device region)
+          call ts_pivot(dit, sp_tmp, &
+               1, Elecs(iEl:iEl), &
+               cell, na_u, xa, lasto, &
+               r_oEl(iEl), csort, extend = .false.)
+       end if
+
+       ! Print out the pivoting scheme that was used for this electrode
+       if ( IONode ) then
+          write(*,'(4a)')'tbtrans: BTD pivoting scheme for electrode (', &
+               trim(Elecs(iEl)%name),'): ', trim(csort)
+       end if
+
+       if ( .not. leqi(g, csort) ) then
+
           ! if the majority of the electrode pivoting
           ! elements are in the upper half, then reverse
+          ! Note that this will (can) only happen if the
+          ! method is not the connectivity graph from it-self
+          ! hence we have the above if-clause
+          
           tmp = sum(rgn_pivot(r_oEl(iEl),r_oEl_alone(iEl)%r))
           ! average position in pivoting array
           tmp = tmp / r_oEl_alone(iEl)%n
@@ -388,7 +424,7 @@ contains
              ! better sorting
              call rgn_reverse(r_oEl(iEl))
           end if
-          
+
        end if
        
        ! This aligns the atoms in the same way the orbitals 
@@ -397,7 +433,7 @@ contains
 
        ! Create the region that connects the electrode-followed
        ! region to the central region
-       call rgn_sp_connect(r_oEl(iEl), dit, sp, Elecs(iEl)%o_inD)
+       call rgn_sp_connect(r_oEl(iEl), dit, sp_tmp, Elecs(iEl)%o_inD)
        ! To streamline the memory layout in the tri-diagonal
        ! blocks we might as well sort this
        call rgn_sort(Elecs(iEl)%o_inD)
@@ -466,17 +502,17 @@ contains
 
 #ifdef GRAPHVIZ
        ! If the user requests GRAPHVIZ output
-       if ( fdf_get('TBT.BTD.Pivot.Graphviz',.false.) .and. Node == 0 ) then
+       if ( fdf_get('TBT.BTD.Pivot.Graphviz',.false.) .and. IONode ) then
           csort = trim(Elecs(iEl)%name) // '.pvt'
-          call sp2graphviz(csort,sp,pvt=r_oEl(iEl))
+          call sp2graphviz(csort, sp_tmp, pvt=r_oEl(iEl))
        end if
 #endif
 
     end do
 
-    if ( Node == 0 ) then
-       write(*,'(a)')'tbtrans: Analyzing device sparsity pattern to &
-            &create optimal tri-diagonal blocks...'
+    if ( IONode ) then
+       write(*,'(/a)')'tbtrans: Analyzing device sparsity pattern to &
+            &create optimal tri-diagonal blocks'
     end if
     
     ! We sort the device region based on the
@@ -498,13 +534,13 @@ contains
     csort = fdf_get('TS.BTD.Pivot',trim(csort))
     csort = fdf_get('TBT.BTD.Pivot',trim(csort))
     csort = fdf_get('TBT.BTD.Pivot.Device',trim(csort))
-    call ts_pivot( dit, sp, &
+    call ts_pivot(dit, sp_tmp, &
          N_Elec, Elecs, &
          cell, na_u, xa, lasto, &
          r_oDev, csort)
 
     ! Print out what we found
-    if ( Node == 0 ) then
+    if ( IONode ) then
        write(*,'(a)')'tbtrans: BTD pivoting scheme in device: '//trim(csort)
     end if
 
@@ -539,12 +575,16 @@ contains
     r_aDev%name = '[A]-device'
 #ifdef GRAPHVIZ
     ! If the user requests GRAPHVIZ output
-    if ( fdf_get('TBT.BTD.Pivot.Graphviz',.false.) .and. Node == 0 ) then
+    if ( fdf_get('TBT.BTD.Pivot.Graphviz',.false.) .and. IONode ) then
        csort = 'device.pvt'
-       call sp2graphviz(csort,sp,pvt=r_oDev)
+       call sp2graphviz(csort, sp_tmp, pvt=r_oDev)
     end if
 #endif
 
+    ! Before we proceed we should create the Hamiltonian
+    ! sparsity pattern used for setting up the Green function
+    call ts_Sparsity_Global(dit, sp, N_Elec, Elecs, sp_uc)
+    
     ! Do a final check that all regions are correctly setup
     ! We know that the sum of each segment has to be the 
     ! total number of orbitals in the region.
@@ -602,9 +642,8 @@ contains
     call rgn_delete(r_tmp,r_tmp2,r_tmp3,r_Els,priority)
     call delete(sp_tmp)
 
-    if ( Node == 0 ) then
-       write(*,'(a)')'tbtrans: Done analyzing sparsity pattern...'
-
+    if ( IONode ) then
+       write(*,'(a)')'tbtrans: Done analyzing sparsity pattern'
     end if
 
   contains

@@ -1259,12 +1259,12 @@ contains
 
   end subroutine cdf_r_d2D
   
-  subroutine cdf_w_grid(ncdf,name,lnpt,grid,idx)
+  subroutine cdf_w_grid(ncdf,name,nmeshl,grid,idx)
 
     type(hNCDF), intent(inout) :: ncdf
     character(len=*), intent(in) :: name
-    integer, intent(in) :: lnpt
-    real(grid_p), intent(in) :: grid(lnpt)
+    integer, intent(in) :: nmeshl(3)
+    real(grid_p), intent(in) :: grid(:)
     integer, intent(in), optional :: idx
 
 #ifdef MPI
@@ -1283,6 +1283,10 @@ contains
 
        lb(:)  = distr%box(1,:,Node)
        nel(:) = distr%box(2,:,Node) - lb(:) + 1
+       if ( .not. all(nel == nmeshl) ) then
+          call die('cdf_r_grid: cannot assert the grid-size from the &
+               &stored grid and the denoted size')
+       end if
 
        if ( present(idx) ) then
           call ncdf_put_var(ncdf,name,grid, &
@@ -1348,7 +1352,8 @@ contains
           
           deallocate(gb)
        else
-          call MPI_Send(grid,lnpt,MPI_grid_real,0, &
+          mnpt = product(nmeshl)
+          call MPI_Send(grid,mnpt,MPI_grid_real,0, &
                Node,MPI_Comm_World,MPIerror)
        end if
        
@@ -1356,20 +1361,22 @@ contains
 
 #else
     if ( present(idx) ) then
-       call ncdf_put_var(ncdf,name,grid,start=(/1,1,1,idx/))
+       call ncdf_put_var(ncdf,name,grid,start=(/1,1,1,idx/), &
+            count=nmeshl)
     else
-       call ncdf_put_var(ncdf,name,grid)
+       call ncdf_put_var(ncdf,name,grid, &
+            count=nmeshl)
     end if
 #endif
   
   end subroutine cdf_w_grid
 
-  subroutine cdf_r_grid(ncdf,name,lnpt,grid,idx)
+  subroutine cdf_r_grid(ncdf,name,nmeshl,grid,idx)
 
     type(hNCDF), intent(inout) :: ncdf
     character(len=*), intent(in) :: name
-    integer, intent(in) :: lnpt
-    real(grid_p), intent(inout), target :: grid(lnpt)
+    integer, intent(in) :: nmeshl(3)
+    real(grid_p), intent(inout), target :: grid(:)
     integer, intent(in), optional :: idx
 
 #ifdef MPI
@@ -1388,6 +1395,10 @@ contains
 
        lb(:)  = distr%box(1,:,Node)
        nel(:) = distr%box(2,:,Node) - lb(:) + 1
+       if ( .not. all(nel == nmeshl) ) then
+          call die('cdf_r_grid: cannot assert the grid-size from the &
+               &stored grid and the denoted size')
+       end if
 
        if ( present(idx) ) then
           call ncdf_get_var(ncdf,name,grid, &
@@ -1408,7 +1419,7 @@ contains
        ! The main node can safely read the data...
        if ( Node == 0 ) then
           
-          if ( mnpt > lnpt ) then
+          if ( mnpt > product(nmeshl) ) then
              ! allocate, the IO node have a smaller
              ! space than the others
              allocate(gb(mnpt))
@@ -1416,11 +1427,15 @@ contains
              gb => grid
           end if
                     
-          ! Loop on the remaining nodes
+          ! Loop on the remaining nodes (we may possibly
+          ! reuse the current grid array, and hence
+          ! we first read the other nodes...)
           do iN = 1 , Nodes - 1
      
              lb(:) = distr%box(1,:,iN) 
              nel(:) = distr%box(2,:,iN) - lb(:) + 1
+
+             ! get total number of points
              inpt = product(nel)
              
              if ( present(idx) ) then
@@ -1438,7 +1453,7 @@ contains
              
           end do
 
-          if ( mnpt > lnpt ) then
+          if ( mnpt > product(nmeshl) ) then
              deallocate(gb)
           end if
 
@@ -1456,7 +1471,8 @@ contains
           end if
           
        else
-          call MPI_Recv(grid,lnpt,MPI_grid_real,0, &
+          mnpt = product(nmeshl)
+          call MPI_Recv(grid,mnpt,MPI_grid_real,0, &
                Node,MPI_Comm_World,MPIstat,MPIerror)
        end if
        
@@ -1464,9 +1480,11 @@ contains
 
 #else
     if ( present(idx) ) then
-       call ncdf_get_var(ncdf,name,grid,start=(/1,1,1,idx/))
+       call ncdf_get_var(ncdf,name,grid,start=(/1,1,1,idx/), &
+            count=nmeshl)
     else
-       call ncdf_get_var(ncdf,name,grid)
+       call ncdf_get_var(ncdf,name,grid,start=(/1,1,1/), &
+            count=nmeshl)
     end if
 #endif
   

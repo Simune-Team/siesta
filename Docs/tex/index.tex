@@ -28,9 +28,9 @@
     \bgroup%
     \StrSubstitute[0]{#2}{!}{.}[\@tmp]%
     \IfBooleanT{#1}{%
-        \expandafter\cleanedhypertarget\expandafter{\@tmp}{\phantom{}}%
-    }
-    \egroup
+        \expandafter\cleanedhypertarget\expandafter{\@tmp}{{}}%
+    }%
+    \egroup%
     \IfNoValueTF{#3}{%
         %\index{#1@\fdf*{#1}}%
         \sindex[sfdf]{#2}%

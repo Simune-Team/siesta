@@ -13,7 +13,7 @@
       CONTAINS
 
       subroutine state_init( istep )
-      use Kpoint_grid,       only: setup_Kpoint_grid, maxk
+      use Kpoint_grid,       only: setup_Kpoint_grid, nkpnt
       use m_os,              only: file_exist
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
@@ -34,6 +34,7 @@
       use sparse_matrices, only: DM_history
 
 
+      use create_Sparsity_SC, only: crtSparsity_SC
       use m_sparsity_handling, only: SpOrb_to_SpAtom
       use m_sparsity_handling, only: Sp_to_Spglobal
       use m_pivot_methods, only: sp2graphviz
@@ -242,9 +243,9 @@
 !       Will print k-points also
         call setup_Kpoint_grid( ucell )
 
-        call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, maxk, 'eo',
+        call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'eo',
      &                 'state_init')
-        call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, maxk, 'qo',
+        call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'qo',
      &                 'state_init' )
 
 !       Find required supercell
@@ -373,15 +374,16 @@
 
       ! In case the user requests to create the connectivity graph
       if ( write_GRAPHVIZ > 0 ) then
-         ! first create global sparsity pattern...
-         call Sp_to_Spglobal(block_dist, sparse_pattern,
-     &        g_Sp)
+         ! first create the unit-cell sparsity pattern
+         call crtSparsity_SC(sparse_pattern, g_Sp, UC=.true.)
+         ! next move to global sparsity pattern
+         call Sp_to_Spglobal(block_dist, g_Sp, g_Sp)
          if ( IONode ) then
             if ( write_GRAPHVIZ /= 2 )
      &           call sp2graphviz(trim(slabel)//'.ORB.gv', g_Sp)
             ! Convert to atomic 
             if ( write_GRAPHVIZ /= 1 ) then
-               call SpOrb_to_SpAtom(single_dist,g_Sp, na_u,lasto,g_Sp)
+               call SpOrb_to_SpAtom(single_dist,g_Sp,na_u,lasto,g_Sp)
                call sp2graphviz(trim(slabel)//'.ATOM.gv', g_Sp)
             end if
          end if
@@ -506,7 +508,7 @@
 !
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
-      call new_dm( auxchanged,DM_history,DM_2D,EDM_2D )
+      call new_DM(auxchanged, DM_history, DM_2D, EDM_2D)
       Dscf => val(DM_2D)
       Escf => val(EDM_2D)
 
@@ -515,13 +517,13 @@
       ! Only part of Escf is updated in TS, so if it is put as zero here
       ! a continuation run gives bad forces.
       if ( .not. TSrun ) then
-         call normalize_dm( first= .true. )
+         call normalize_DM( first= .true. )
 !$OMP parallel workshare default(shared)
          Escf(:,:) = 0.0_dp
 !$OMP end parallel workshare
       end if
 #else
-      call normalize_dm( first= .true. )
+      call normalize_DM( first= .true. )
 !$OMP parallel workshare default(shared)
       Escf(:,:) = 0.0_dp
 !$OMP end parallel workshare

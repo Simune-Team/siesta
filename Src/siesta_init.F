@@ -12,7 +12,7 @@
       CONTAINS
 
       subroutine siesta_init()
-      use Kpoint_grid,        only: setup_Kpoint_grid, gamma_scf, maxk
+      use Kpoint_grid,        only: setup_Kpoint_grid, gamma_scf, nkpnt
       USE Kpoint_pdos,        only: gamma_pdos
       use Band,               only: gamma_bands, setup_bands
       use m_ksvinit,          only: gamma_polarization,
@@ -54,7 +54,7 @@
       use densematrix,        only: Haux, Saux, Psi
       use m_energies
       use m_steps
-      use m_spin,             only: init_spin, nspin, spinor_dim, SpPol
+      use m_spin,             only: init_spin, spin
       use m_spin,             only: qs, init_spiral
       use m_rmaxh
       use m_forces 
@@ -426,7 +426,7 @@ C     Initialise MPI and set processor number
       call re_alloc( cfa, 1, 3, 1, na_u, 'cfa', 'siesta_init' )
 
 !     Read simulation data
-      call read_options( na_u, ns, nspin )
+      call read_options( na_u, ns, spin%Grid )
 
       call get_allowed_history_depth(n_dm_items)
       call new(DM_history,n_dm_items,"(DM history stack)")
@@ -454,16 +454,16 @@ C     Initialise MPI and set processor number
 
 ! Calculate spin populations for fixed spin case...
       if (fixspin) then
-        if (.not.SPpol)
+        if (.not.spin%Col)
      &    call die( 'siesta: ERROR: ' //
      &              'You can only fix the spin of the system' //
      &              ' for collinear spin polarized calculations.' )
         qs(1) = (qtot + ts) / 2.0_dp
         qs(2) = (qtot - ts) / 2.0_dp
       else
-        qs(1:spinor_dim) = 0.0_dp
-        do ispin = 1,spinor_dim
-           qs(ispin) = qtot/spinor_dim
+        qs(1:spin%spinor) = 0.0_dp
+        do ispin = 1,spin%spinor
+           qs(ispin) = qtot/spin%spinor
         end do
       endif
 
@@ -499,8 +499,8 @@ C     Initialise MPI and set processor number
 !     Check number of eigenstates - cannot be larger than number of
 !     basis functions or smaller than number of occupied states + 1
 !     so that the Fermi level can be estimated
-      do is = 1 , spinor_dim
-         neigmin = nint(qs(is)/real(3 - spinor_dim, dp)) + 1
+      do is = 1 , spin%spinor
+         neigmin = nint(qs(is)/real(3 - spin%spinor, dp)) + 1
          neigwanted = max(neigwanted,neigmin)
       enddo
       neigwanted = min(neigwanted,no_u)
@@ -520,9 +520,9 @@ C     Initialise MPI and set processor number
       endif
 
       nullify(eo,qo)
-      call re_alloc(eo, 1, no_u, 1, spinor_dim, 1, maxk, 'eo', 
+      call re_alloc(eo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'eo', 
      &              'siesta_init')
-      call re_alloc(qo, 1, no_u, 1, spinor_dim, 1, maxk, 'qo', 
+      call re_alloc(qo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'qo', 
      &              'siesta_init')
 
       call setup_bands( )
@@ -596,23 +596,29 @@ C     Initialise MPI and set processor number
             write(*,'(a,/)')'expcoord: '//repeat('*',69)
          end if
 #endif
+#ifdef SIESTA__FLOOK
+      else if (idyn == 10) then
+         inicoor = 0
+         ! Controlled in external LUA machine
+         fincoor = huge(1)
+#endif
       else
         call die( 'siesta: wrong idyn' )
       endif
-
-!     Build initial velocities according to Maxwell-Bolzmann distribution....
-      if (idyn .ne. 0 .and. idyn .ne. 6 .and. (.not. xv_file_read)) 
-     &    call vmb( na_u, tempinit, amass, xa, isa, va )
-
-      istp = 0
 
       ! initialize the fixed positions (we need to check whether the 
       ! fixed positions make sense)
       call init_fixed( ucell, na_u , isa, iza )
       call print_fixed( )
+
+      ! Build initial velocities according to Maxwell-Bolzmann distribution....
+      if (idyn .ne. 0 .and. idyn .ne. 6 .and. (.not. xv_file_read)) 
+     &    call vmb( na_u, tempinit, amass, xa, isa, va )
+
+      istp = 0
       
 #ifdef TRANSIESTA
-      call ts_init(nspin,ucell,na_u,xa,lasto,no_u,inicoor,fincoor)
+      call ts_init(spin%Grid,ucell,na_u,xa,lasto,no_u,inicoor,fincoor)
 #endif
 
 #ifdef SIESTA__FLOOK

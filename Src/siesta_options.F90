@@ -38,7 +38,7 @@ MODULE siesta_options
   logical :: fire_mix      ! SCF mixing with FIRE method
   logical :: fixauxcell    ! Keep the auxiliary supercell fixed?
   logical :: fixspin       ! Keep the total spin fixed?
-  logical :: inspn         ! Antiferro spin ordering in initdm?
+  logical :: init_anti_ferro ! Antiferro spin ordering in initdm?
   logical :: initdmaux     ! Re-initialize DM when auxiliary supercell changes?        
   logical :: allow_dm_reuse! Allow re-use of the previous geometry DM ? (with possible extrapolation)
   logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
@@ -49,7 +49,6 @@ MODULE siesta_options
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
   logical :: outlng        ! Long output in the output file?
   logical :: pulfile       ! Use file to store Pulay info in pulayx? (Obsolete)
-  logical :: avoid_first_after_kick  ! Keep first residual after a kick?
   logical :: RelaxCellOnly ! Relax only lattice vectors, not atomic coordinates
   logical :: RemoveIntraMolecularPressure   ! Remove molecular virial contribution to p
   logical :: savehs        ! Write file with Hamiltonian electrostatic potential?
@@ -129,6 +128,8 @@ MODULE siesta_options
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
+
+  ! Convergence options
   logical :: converge_FreeE   ! free Energy conv. to finish SCF iteration?
   real(dp):: tolerance_FreeE  ! Free-energy tolerance
   logical :: converge_Eharr   ! to finish SCF iteration?
@@ -139,6 +140,7 @@ MODULE siesta_options
   real(dp):: dDtol            ! Tolerance in change of DM elements to finish SCF iteration
   logical :: converge_H       ! to finish SCF iteration?
   real(dp):: dHtol            ! Tolerance in change of H elements to finish SCF iteration
+  
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
   logical :: fire_optim    ! Use FIRE method to optimize geometry?
   logical :: struct_only   ! Output initial structure only?
@@ -182,7 +184,7 @@ MODULE siesta_options
   integer :: iquench       ! Quenching option, read in redata, used in dynamics routines
   integer :: isolve        ! Option to find density matrix: 0=>diag, 1=>order-N
   integer :: istart        ! First geommetry iteration step for certain types of dynamics
-  integer :: DM_history_depth = 1 ! Number of previous density matrices used in extrapolation and reuse
+  integer :: DM_history_depth ! Number of previous density matrices used in extrapolation and reuse
   integer :: maxsav        ! Number of previous density matrices used in Pulay mixing
   integer :: broyden_maxit ! Max. iterations in Broyden geometry relaxation
   integer :: mullipop      ! Option for Mulliken population level of detail

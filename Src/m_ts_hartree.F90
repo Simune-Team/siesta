@@ -117,6 +117,15 @@ contains
 
     if ( TS_HA == TS_HA_PLANE ) then
 
+       ! The hartree plane can only be used for 1 and 2
+       ! electrodes
+       if ( N_Elec == 1 ) then
+          
+          El => Elecs(1)
+          return
+          
+       end if
+
        ! The plane can only be chosen with
        ! 2 electrodes
        if ( N_Elec /= 2 ) then
@@ -173,11 +182,11 @@ contains
 
   end subroutine ts_hartree_elec
   
-  subroutine ts_init_hartree_fix(cell,na_u,xa,meshG,nsm)
+  subroutine ts_init_hartree_fix(cell, na_u, xa, nmesh, nmeshl)
 
-    use intrinsic_missing, only: VNORM
+    use intrinsic_missing, only: VNORM, VEC_PROJ
     use units, only : Ang
-    use m_mesh_node, only : meshl, offset_r, dMesh, dL
+    use m_mesh_node, only : offset_r, dMesh, dL
     use parallel, only : IONode
 #ifdef MPI
     use mpi_siesta, only : MPI_AllReduce, MPI_Sum
@@ -190,7 +199,7 @@ contains
     real(dp),   intent(in) :: cell(3,3)
     integer,    intent(in) :: na_u
     real(dp),   intent(in) :: xa(3,na_u)
-    integer,    intent(in) :: meshG(3), nsm
+    integer,    intent(in) :: nmesh(3), nmeshl(3)
 
     integer :: i1, i2, i3, nlp
     real(dp) :: ll(3), llZ(3), llYZ(3), rcell(3,3)
@@ -203,7 +212,7 @@ contains
 
     if ( TS_HA == TS_HA_PLANE ) then
 
-       call reclat(cell,rcell,0) ! without 2pi
+       call reclat(cell, rcell, 0) ! without 2pi
        
        ! Calculate the index where we will fix
        ! the Hartree potential.
@@ -234,9 +243,9 @@ contains
        end if
 
        ! Figure out the index
-       ha_idx = nint(llYZ(1) * meshG(ts_tidx))
+       ha_idx = nint(llYZ(1) * nmesh(ts_tidx))
        ha_idx = max(1,ha_idx)
-       ha_idx = min(meshG(ts_tidx),ha_idx)
+       ha_idx = min(nmesh(ts_tidx),ha_idx)
 
        if ( IONode ) then
          write(*,*)
@@ -262,11 +271,11 @@ contains
 !$OMP parallel do default(shared), &
 !$OMP&private(i3,i2,i1,llZ,llYZ,ll), &
 !$OMP&reduction(+:nlp)
-       do i3 = 0 , meshl(3) - 1
+       do i3 = 0 , nmeshl(3) - 1
           llZ(:) = offset_r(:) + i3*dL(:,3)
-          do i2 = 0 , meshl(2) - 1
+          do i2 = 0 , nmeshl(2) - 1
              llYZ(:) = i2*dL(:,2) + llZ(:)
-             do i1 = 0 , meshl(1) - 1
+             do i1 = 0 , nmeshl(1) - 1
                 ll(:) = i1*dL(:,1) + llYZ(:)
                 if ( in_basal_Elec(El%p,ll,dMesh) ) then
                    nlp = nlp + 1
@@ -279,11 +288,11 @@ contains
 !$OMP parallel do default(shared), &
 !$OMP&private(i3,i2,i1,llZ,llYZ,ll), &
 !$OMP&reduction(+:nlp)
-       do i3 = 0 , meshl(3) - 1
+       do i3 = 0 , nmeshl(3) - 1
           llZ(:) = offset_r(:) + i3*dL(:,3)
-          do i2 = 0 , meshl(2) - 1
+          do i2 = 0 , nmeshl(2) - 1
              llYZ(:) = i2*dL(:,2) + llZ(:)
-             do i1 = 0 , meshl(1) - 1
+             do i1 = 0 , nmeshl(1) - 1
                 ll(:) = i1*dL(:,1) + llYZ(:)
                 if ( in_Elec(El%box,ll,dMesh) ) then
                    nlp = nlp + 1
@@ -310,7 +319,8 @@ contains
                &unit cell.'
           write(*,'(a)') 'ts: Please move structure so this point is &
                &inside unit cell (Ang):'
-          write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', El%p%c/Ang
+          write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', &
+               VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
           write(*,'(a)') 'ts: You can use %block AtomicCoordinatesOrigin'
           write(*,'(a)') 'ts: to easily move the entire structure.'
        end if
@@ -351,12 +361,12 @@ contains
   if ( iT <= 0 ) then
      imesh = 0
      i30 = offset_i(3) - 1
-     do i3 = 0,meshl(3)-1
+     do i3 = 0,nmeshl(3)-1
         i30 = i30 + 1
         i20 = offset_i(2) - 1
-        do i2 = 0,meshl(2)-1
+        do i2 = 0,nmeshl(2)-1
            i20 = i20 + 1
-           do i10 = 0,meshl(1)-1
+           do i10 = 0,nmeshl(1)-1
               imesh = imesh + 1
               if (iT.eq.0) then
                  nlp = nlp + 1
@@ -369,7 +379,7 @@ contains
 #endif
 
   ! Fix the potential
-  subroutine ts_hartree_fix( meshG, ntpl , Vscf )
+  subroutine ts_hartree_fix(nmesh, nmeshl, Vscf)
 
     use parallel, only: IONode
     use units, only: eV
@@ -379,11 +389,10 @@ contains
     use mpi_siesta, only : MPI_double_precision
 #endif
     use m_mesh_node, only: mesh_correct_idx
-    use m_mesh_node, only : meshl, offset_i, offset_r, dMesh, dL
+    use m_mesh_node, only : offset_i, offset_r, dMesh, dL
 
-    integer, intent(in) :: meshG(3)
-    integer, intent(in) :: ntpl
-    real(grid_p), intent(inout) :: Vscf(ntpl)
+    integer, intent(in) :: nmesh(3), nmeshl(3)
+    real(grid_p), intent(inout) :: Vscf(:)
 
     ! Internal variables
     integer :: i1 , i2 , i3, i
@@ -416,30 +425,30 @@ contains
        ! Calculate index
        i = ha_idx - offset_i(ts_tidx)
        if ( ts_tidx == 1 .and. &
-            0 < i .and. i <= meshl(1) ) then
+            0 < i .and. i <= nmeshl(1) ) then
           imesh = i
-          do i3 = 1 , meshl(3)
-             do i2 = 1 , meshl(2)
+          do i3 = 1 , nmeshl(3)
+             do i2 = 1 , nmeshl(2)
                 nlp  = nlp + 1
                 Vtot = Vtot + Vscf(imesh)
-                imesh = imesh + meshl(1)
+                imesh = imesh + nmeshl(1)
              end do
           end do
        else if ( ts_tidx == 2 .and. &
-            0 < i .and. i <= meshl(2) ) then
-          do i3 = 1 , meshl(3)
-             imesh = imesh + (i-1)*meshl(1)
-             do i1 = 1 , meshl(1)
+            0 < i .and. i <= nmeshl(2) ) then
+          do i3 = 1 , nmeshl(3)
+             imesh = imesh + (i-1)*nmeshl(1)
+             do i1 = 1 , nmeshl(1)
                 nlp  = nlp + 1
                 imesh = imesh + 1
                 Vtot = Vtot + Vscf(imesh)
              end do
           end do
        else if ( ts_tidx == 3 .and. &
-            0 < i .and. i <= meshl(3) ) then
-          imesh = (i-1)*meshl(1)*meshl(2)
-          do i2 = 1 , meshl(2)
-             do i1 = 1 , meshl(1)
+            0 < i .and. i <= nmeshl(3) ) then
+          imesh = (i-1)*nmeshl(1)*nmeshl(2)
+          do i2 = 1 , nmeshl(2)
+             do i1 = 1 , nmeshl(1)
                 nlp  = nlp + 1
                 imesh = imesh + 1
                 Vtot = Vtot + Vscf(imesh)
@@ -452,11 +461,11 @@ contains
     case ( TS_HA_ELEC )
        
        ! This is an electrode averaging...
-       do i3 = 0 , meshl(3) - 1
+       do i3 = 0 , nmeshl(3) - 1
           llZ(:) = offset_r(:) + i3*dL(:,3)
-          do i2 = 0 , meshl(2) - 1
+          do i2 = 0 , nmeshl(2) - 1
              llYZ(:) = i2*dL(:,2) + llZ(:)
-             do i1 = 0 , meshl(1) - 1
+             do i1 = 0 , nmeshl(1) - 1
                 ll(:) = i1*dL(:,1) + llYZ(:)
                 imesh = imesh + 1
                 if ( in_basal_Elec(El%p,ll,dMesh) ) then
@@ -470,7 +479,7 @@ contains
     case ( TS_HA_ELEC_BOX )
        
        ! This is an electrode averaging...
-       call Elec_box2grididx(El,meshG,dL,imin,imax)
+       call Elec_box2grididx(El,nmesh,dL,imin,imax)
        
        ! Now we have the minimum index for the box encompassing
        ! the electrode
@@ -487,19 +496,19 @@ contains
             idx = (/i1,i2,i3/)
             
             ! Transform the index to the unit-cell index
-            call mesh_correct_idx(meshG,idx)
+            call mesh_correct_idx(nmesh,idx)
 
             ! Figure out if this index lies
             ! in the current node
             idx(1) = idx(1) - offset_i(1)
-            if ( 0 < idx(1) .and. idx(1) <= meshl(1) ) then
+            if ( 0 < idx(1) .and. idx(1) <= nmeshl(1) ) then
              idx(2) = idx(2) - offset_i(2) - 1 ! one more for factor
-             if ( 0 <= idx(2) .and. idx(2) < meshl(2) ) then
+             if ( 0 <= idx(2) .and. idx(2) < nmeshl(2) ) then
               idx(3) = idx(3) - offset_i(3) - 1 ! one more for factor
-              if ( 0 <= idx(3) .and. idx(3) < meshl(3) ) then
+              if ( 0 <= idx(3) .and. idx(3) < nmeshl(3) ) then
                  ! Calculate position in local mesh
-                 imesh = idx(1) + idx(2)*meshl(1)
-                 imesh = imesh + idx(3)*meshl(1)*meshl(2)
+                 imesh = idx(1) + idx(2)*nmeshl(1)
+                 imesh = imesh + idx(3)*nmeshl(1)*nmeshl(2)
                  Vtot = Vtot + Vscf(imesh)
                  nlp = nlp + 1
               end if
@@ -539,7 +548,7 @@ contains
     
     ! Align potential
 !$OMP parallel workshare default(shared)
-    Vscf(1:ntpl) = Vscf(1:ntpl) - Vav
+    Vscf(:) = Vscf(:) - Vav
 !$OMP end parallel workshare
 
 #ifdef TRANSIESTA_DEBUG

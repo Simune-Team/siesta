@@ -117,6 +117,8 @@ C call to constrains routine)
       ! as stress and fa in the call to fixed. Quick 
       ! workaround is to make the use of a temporary
       ! variable thus:
+      ! The "forces" are already mass-scaled,
+      ! so regardless of the dynamics the call is correct.
       call fixed( cell, stress, nat, isa, mass, xa, fa,
      .                  tmpstress, tmpfa, ntcon )
       stress = tmpstress

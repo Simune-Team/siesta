@@ -55,7 +55,7 @@ C **********************************************************************
       use parallel,     only : Node, Nodes, IOnode
       use fdf
       use siesta_geom,  only : xa, isa
-      use m_spin,       only : e_spin_dim
+      use m_spin,       only : spin
       use atomlist,     only : iphorb, iaorb
       use atmfuncs,     only : zetafio, mofio, lofio, cnfigfio, labelfis
       use xmlf90_wxml,  only : xmlf_t, xml_OpenFile, xml_NewElement, 
@@ -161,12 +161,12 @@ C Allocate local arrays ------------------------------------------------
       call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
       call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
       nullify( dtot, dpr )
-      call re_alloc( dtot, 1, nhist, 1, e_spin_dim, 'dtot', 'pdos' )
-      call re_alloc( dpr, 1, nhist, 1, no_u, 1, e_spin_dim,
+      call re_alloc( dtot, 1, nhist, 1, spin%EDM, 'dtot', 'pdos' )
+      call re_alloc( dpr, 1, nhist, 1, no_u, 1, spin%EDM,
      &               'dpr', 'pdos' )
 
 C Initialize the projected density of states ---------------------------
-      do ispin = 1, e_spin_dim
+      do ispin = 1, spin%EDM
         do ihist = 1,nhist
           dtot(ihist,ispin) = 0.d0
           do iuo = 1,no_u
@@ -230,23 +230,23 @@ C Open file for write on I/O node
      .       status='unknown') 
 
 C     Output histogram
-        select case ( e_spin_dim )
+        select case ( spin%EDM )
         case ( 1 )
          do ihist = 1,nhist
           ENER = E1 + (ihist-1) * delta
-          write(iunit1,'(2f20.5)') ener/ev,dtot(ihist,1)*ev
+          write(iunit1,'(2f20.5)') ener/ev,dtot(ihist,1)*eV
          enddo
         case ( 2 )
          do ihist = 1,nhist
           ENER = E1 + (ihist-1) * delta
-          write(iunit1,'(3f20.5)') ener/ev,dtot(ihist,1)*ev,
+          write(iunit1,'(3f20.5)') ener/ev,dtot(ihist,1)*eV,
      .         dtot(ihist,2)*eV
          enddo
         case default 
          do ihist = 1,nhist
           ENER = E1 + (ihist-1) * delta
-          write(iunit1,'(5f20.5)') ener/ev,dtot(ihist,1)*ev,
-     .         dtot(ihist,2)*eV,dtot(ihist,3)*eV,dtot(ihist,4)*eV
+          write(iunit1,'(5f20.5)') ener/ev,dtot(ihist,1)*eV,
+     .  dtot(ihist,2)*eV,2.0_dp*dtot(ihist,3)*eV,2.0_dp*dtot(ihist,4)*eV
          enddo
         end select
 
@@ -263,19 +263,19 @@ C New writing
         open(iunit2,file=fnamepro,form='formatted',status='unknown')
         call xml_NewElement(xf,"pdos")
         call xml_NewElement(xf,"nspin")
-        call xml_AddPCData(xf,e_spin_dim)
+        call xml_AddPCData(xf,spin%EDM)
         call xml_EndElement(xf,"nspin")
 
         write(iunit2,'(a)') '<pdos>'
         write(iunit2,'(a,i1,a)') 
-     .               '<nspin>', e_spin_dim,'</nspin>'
+     .               '<nspin>', spin%EDM,'</nspin>'
         write(iunit2,'(a,i4,a)') '<norbitals>', no_u, '</norbitals>'
         call xml_NewElement(xf,"energy_values")
         call xml_AddAttribute(xf,"units","eV")
         write(iunit2,'(a)') '<energy_values units="eV">'
 
         nullify( tmp )
-        call re_alloc( tmp, 1, e_spin_dim*nhist, 'tmp', 'pdos' )
+        call re_alloc( tmp, 1, spin%EDM*nhist, 'tmp', 'pdos' )
         do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
            tmp(ihist) = ener/eV
@@ -315,26 +315,26 @@ C New writing
 
 !------------------------------------------------------------
           call xml_NewElement(xf,"data")
-          select case ( e_spin_dim ) 
+          select case ( spin%EDM ) 
           case ( 1 )
              call xml_AddArray(xf,dpr(1:nhist,i,1)*eV)
           case ( 2 )
              tmp(1:2*nhist-1:2) = dpr(1:nhist,i,1)*eV
-             tmp(2:2*nhist:2) = dpr(1:nhist,i,2)*eV
-             call xml_AddArray(xf,tmp(1:2*nhist),format="r6")
+             tmp(2:2*nhist:2)   = dpr(1:nhist,i,2)*eV
+             call xml_AddArray(xf,tmp(1:2*nhist))
           case ( 4 )
-             tmp(1:4*nhist-3:4) = dpr(1:nhist,i,1)*eV
-             tmp(2:4*nhist-2:4) = dpr(1:nhist,i,2)*eV
-             tmp(3:4*nhist-1:4) = dpr(1:nhist,i,3)*eV
-             tmp(4:4*nhist:4)   = dpr(1:nhist,i,2)*eV
-             call xml_AddArray(xf,tmp(1:4*nhist),format="r6")
+             tmp(1:4*nhist-3:4) =   dpr(1:nhist,i,1)*eV
+             tmp(2:4*nhist-2:4) =   dpr(1:nhist,i,2)*eV
+             tmp(3:4*nhist-1:4) = 2*dpr(1:nhist,i,3)*eV
+             tmp(4:4*nhist:4)   = 2*dpr(1:nhist,i,4)*eV
+             call xml_AddArray(xf,tmp(1:4*nhist))
           end select
           call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"orbital")
 !------------------------------------------------------------
 
           write(iunit2,'(a)') '<data>'
-          select case ( e_spin_dim )
+          select case ( spin%EDM )
           case ( 1 )
              do ihist = 1,nhist
                 write(iunit2,'(f10.5)') dpr(ihist,i,1)*eV
@@ -346,10 +346,10 @@ C New writing
              end do
           case ( 4 )
              do ihist = 1,nhist
-                write(iunit2,'(2f10.5)') dpr(ihist,i,1)*eV,
+                write(iunit2,'(4f10.5)') dpr(ihist,i,1)*eV,
      &                                   dpr(ihist,i,2)*eV,
-     &                                   dpr(ihist,i,3)*eV,
-     &                                   dpr(ihist,i,4)*eV
+     &                                   2.0_dp*dpr(ihist,i,3)*eV,
+     &                                   2.0_dp*dpr(ihist,i,4)*eV
              end do
           end select
           write(iunit2,'(a)') '</data>'

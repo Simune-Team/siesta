@@ -26,7 +26,7 @@
       use Kpoint_pdos
       use parallel,    only: IOnode, Nodes
       use siesta_geom, only: ucell
-      use m_spin,      only: h_spin_dim
+      use m_spin,      only: spin
 
       type(block_fdf) :: bfdf
       
@@ -50,7 +50,7 @@
 
 C     PDOS not computed if non-collinear calculation is run in parallel
       
-      if ( (h_spin_dim .gt. 2) .and. (Nodes .gt. 1) ) then
+      if ( (spin%H > 2) .and. (Nodes .gt. 1) ) then
          
          if (IOnode) then
             write(6,'(/2a,/)')
@@ -110,13 +110,13 @@ C     PDOS not computed if non-collinear calculation is run in parallel
         if (.not. fdf_bline(bfdf,pline))
      $    call die('projected_DOS: ERROR in ' //
      $             'ProjectedDensityOfStates block')
-        if ((fdf_bnvalues(pline) .lt. 3) .or.
+        if ((fdf_bnreals(pline) .lt. 3) .or.
      $      (fdf_bnnames(pline) .ne. 1))
-     $    call die("Wrong format in PDOS block")
+     $    call die("Wrong format in PDOS block, not enough reals/names")
         factor = fdf_convfac( fdf_bnames(pline,1), 'Ry' )
-        e1 = fdf_bvalues(pline,1) * factor
-        e2 = fdf_bvalues(pline,2) * factor
-        sigma = fdf_bvalues(pline,3) * factor
+        e1 = fdf_breals(pline,1) * factor
+        e2 = fdf_breals(pline,2) * factor
+        sigma = fdf_breals(pline,3) * factor
         nhist = fdf_bintegers(pline,1)
         if (IOnode) then
           write(6,'(a)') 'siesta: PDOS info: '
@@ -129,7 +129,7 @@ C     PDOS not computed if non-collinear calculation is run in parallel
         if (different_pdos_grid) then
 
 ! If the number of k points has increased then reallocate eo and qo
-          if (maxk_pdos.gt.maxk) then
+          if (maxk_pdos.gt.nkpnt) then
             call re_alloc(eo,1,no_u,1,spinor_dim,1,maxk_pdos,name="eo",
      .                    routine="projected_dos")
           endif

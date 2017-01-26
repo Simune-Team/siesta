@@ -24,8 +24,8 @@ module m_tbt_tri_init
   public :: tbt_tri_init
   public :: tbt_tri_print_opti
 
-  type(tRgn), allocatable, target :: ElTri(:)
-  type(tRgn) :: DevTri
+  type(tRgn), save, allocatable, target :: ElTri(:)
+  type(tRgn), save :: DevTri
 
   public :: ElTri, DevTri
   public :: fold_elements

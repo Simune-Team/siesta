@@ -13,7 +13,7 @@ module m_tbt_options
 
   use precision, only : dp
 
-  use m_ts_tdir, only: ts_tdir, ts_tidx
+  use m_ts_tdir, only: ts_tidx
 
   use m_ts_electype
   use m_ts_chem_pot
@@ -396,7 +396,6 @@ contains
     ! Hence we use this as an error-check (also for N_Elec == 1)
     if ( N_Elec /= 2 ) then
        ! Signals no specific unit-cell direction of transport
-       ts_tdir = - N_Elec
        ts_tidx = - N_Elec
     else
 
@@ -425,16 +424,11 @@ contains
           ! direction.
           ts_tidx = i
           
-          ! Calculate Cartesian transport direction
-          call eye(3,tmp33)
-          ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx),mag=.true.)
-          
        else
 
           ! In case we have a skewed transport direction
           ! we have some restrictions...
           ts_tidx = -N_Elec
-          ts_tdir = -N_Elec
           
        end if
 
@@ -545,6 +539,7 @@ contains
     ! Whether we should assert and calculate
     ! all transmission amplitudes
     ltmp = fdf_get('TBT.T.Elecs.All',N_Elec == 1)
+    ltmp = fdf_get('TBT.T.All',N_Elec == 1)
     if ( ltmp ) then
        save_DATA = save_DATA // ('T-all'.kv.1)
     end if
@@ -806,13 +801,13 @@ contains
     end if
 
     ! CHECK THIS (we could allow it by only checking the difference...)
-    if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 1.e-9_dp ) then
+    if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 1.e-8_dp * eV ) then
        if ( IONode ) then
           write(*,'(a)') 'Chemical potentials [eV]:'
           do i = 1 , N_Elec
              write(*,'(a,f10.5,a)') trim(Name(Elecs(i)))//' at ',Elecs(i)%mu%mu/eV,' eV'
           end do
-          write(*,'(a)') 'The difference must satisfy: "max(ChemPots)-min(ChemPots) - abs(Volt) > 1e-9"'
+          write(*,'(a)') 'The difference must satisfy: "max(ChemPots)-min(ChemPots) - abs(Volt) < 1e-8 eV"'
           write(*,'(a,f10.5,a)') 'max(ChemPots) at ', maxval(mus(:)%mu)/eV,' eV'
           write(*,'(a,f10.5,a)') 'min(ChemPots) at ', minval(mus(:)%mu)/eV,' eV'
           write(*,'(a,f10.5,a)') '|V| at ', abs(Volt)/eV,' eV'

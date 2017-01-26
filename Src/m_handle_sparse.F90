@@ -152,10 +152,13 @@ contains
        ! exactly the same, except that TSDE has an extra EDM and Ef
        ! at the end, we do not care about that! :)
        ! read in DM file
-
-       call read_DM( DMfile, fnspin, fake_dit, fno_u, &
-            fDM_2D, d_log1 , & ! we have already checked that it exists
-            Bcast = .true.)
+       call read_DM( DMfile, fake_dit, fDM_2D, d_log1, Bcast=.true.)
+       if ( size(fDM_2D, 2) /= fnspin ) then
+          call die('bulk_expand: DM and TSHS does not have the same spin')
+       end if
+       if ( nrows_g(fDM_2D) /= fno_u ) then
+          call die('bulk_expand: DM and TSHS does not have the same no_u')
+       end if
        psp => spar(fDM_2D)
        psp = fsp
        call delete(fsp)
