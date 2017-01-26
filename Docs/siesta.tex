@@ -4956,22 +4956,25 @@ The Density matrix can be:
 
 \begin{fdfentry}{DM!InitSpin}[block]
   
-  It defines the initial spin density for a spin polarized calculation
-  atom by atom.  In the block there is one line per atom to be
+  Define the initial spin density for a spin polarized calculation
+  atom by atom. In the block there is one line per atom to be
   spin-polarized, containing the atom index (integer, ordinal in the
   block \fdf{AtomicCoordinatesAndAtomicSpecies}) and the desired
   initial spin-polarization (real, positive for spin up, negative for
   spin down). A value larger than possible will be reduced to the
-  maximum possible polarization, keeping its sign.  Maximum
+  maximum possible polarization, keeping its sign. Maximum
   polarization can also be given by introducing the symbol \texttt{+}
-  or \texttt{-} instead of the polarization value.  There is no need
+  or \texttt{-} instead of the polarization value. There is no need
   to include a line for every atom, only for those to be
   polarized. The atoms not contemplated in the block will be given
-  non-polarized initialization.  For non-collinear spin, the spin
-  direction may be specified for each atom by the polar angles theta
-  and phi, given as the last two arguments in degrees. If not
-  specified, theta=0 is assumed.  \fdf{Spin} \fdf*{non-collinear} must be
-  \fdftrue\ to use the spin direction.
+  non-polarized initialization. 
+
+  For non-collinear spin, the spin direction may be specified for each
+  atom by the polar angle $\theta$ and the azimuthal angle $\phi$
+  (using the physics ISO convention), given as the last two arguments
+  in degrees. If not specified, $\theta=0$ is assumed
+  ($z$-polarized). \fdf{Spin} must be set to use non-collinear or
+  spin-orbit for the directions to have effect.
 
   Example:
   \begin{fdfexample}
@@ -4981,6 +4984,7 @@ The Density matrix can be:
         7   -
      %endblock DM.InitSpin
   \end{fdfexample}
+  In the above example, atom 5 is polarized in the $x$-direction.
 
   If this block is defined, but empty, all atoms are not polarized.
   This block has precedence over \fdf{DM!InitSpinAF}.
