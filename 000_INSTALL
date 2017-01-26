@@ -5,14 +5,16 @@ xmlf90
 libPSML
 libGridXC
 
-These can be downloaded from Launchpad. The direct links to current tarballs are
+These can be downloaded from Launchpad. The direct links to current
+tarballs are
 
-wget https://launchpad.net/libpsml/trunk/0.9-build/+download/libpsml-0.9.4.tgz
+wget https://launchpad.net/libpsml/trunk/1.0-freeze/+download/libpsml-1.0.0.tgz
 wget https://launchpad.net/xmlf90/trunk/1.5/+download/xmlf90-1.5.0.tgz
-wget https://launchpad.net/libgridxc/trunk/0.6/+download/libgridxc-0.6.1.tgz
+wget https://launchpad.net/libgridxc/trunk/0.7/+download/libgridxc-0.7.0.tgz
 
 NOTE: You need at least version 1.5.0 of the xmlf90 library,
-      and at least version 0.6.1 of the libgridxc library.
+      at least version 0.7.0 of the libgridxc library, and
+      at least version 1.0.0 of the libpsml library.
 
 ** Steps in detail
 
@@ -20,26 +22,6 @@ NOTE: You need at least version 1.5.0 of the xmlf90 library,
 
 - Compile the xmlf90, libpsml, and libgridxc libraries (follow the
   instructions in the appropriate packages).
-
-  * For xmlf90, create a building directory and copy there the appropriate fortran.mk
-    (you can re-use the essential subset of your Siesta arch.make)
-
-    Then, type
-
-        make
-
-    (Optionally, make PREFIX=/path/to/installation install)
-	
-  * For libpsml, the  fortran.mk previously prepared for xmlf90 can be reused.
-
-    Simply make sure that the src/fortran.mk file contains the right path
-    for the location of the compiled xmlf90 library.
-
-  * For libgridxc, the  fortran.mk previously prepared for xmlf90 can be reused.
-
-    Optionally, support for libxc can be compiled in, but it is still early days
-    and the documentation is sparse.
-    
 
 - Go back to the Siesta building directory, review the settings of the
   xmlf90, libpsml, and libgridxc import lines in the arch.make file, and type

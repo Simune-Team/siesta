@@ -63,7 +63,8 @@ DEPS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
           basis_specs.o ldau_specs.o atom.o periodic_table.o\
           pxf.o dot.o  atom_options.o arw.o  m_spin_orbit_potentials.o \
           sys.o xml.o m_walltime.o read_xc_info.o  $(SYSOBJ) \
-          xc.o bsc_xcmod.o  m_fft_gpfa.o m_cite.o reclat.o units.o
+          xc.o bsc_xcmod.o  m_fft_gpfa.o m_cite.o reclat.o units.o \
+          semicore_info_froyen.o
 GEN-BASIS_LOCAL_OBJS=gen-basis.o handlers.o
 OBJS_GEN-BASIS=$(DEPS_GEN-BASIS) $(GEN-BASIS_LOCAL_OBJS)
 
@@ -71,7 +72,7 @@ DEPS_IONCAT=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
           parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o atm_transfer.o atm_types.o \
           atmparams.o radial.o  chkdim.o m_filter.o \
 	  chemical.o m_spin.o m_spin_orbit_potentials.o reclat.o \
-          basis_specs.o periodic_table.o pxf.o \
+          basis_specs.o periodic_table.o pxf.o semicore_info_froyen.o \
           atom.o atmfuncs.o spher_harm.o interpolation.o old_atmfuncs.o arw.o \
           sys.o xc.o bsc_xcmod.o xml.o m_walltime.o ldau_specs.o m_cite.o  units.o $(SYSOBJ)
 IONCAT_LOCAL_OBJS=ioncat.o handlers.o
@@ -101,8 +102,6 @@ $(FDF):
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 
 #
-gen-basis: $(FDF) $(XC) $(NCPS) $(OBJS_GEN-BASIS)
-#
 # Simple hack to link to any compiled lapack/blas code
 # If COMP_LIBS is empty, we do a no-op, else link the library file here.
 #
@@ -111,11 +110,11 @@ link_linalg:
    [ -f ../../$(OBJDIR)/$$llibs ] && ln -sf ../../$(OBJDIR)/$$llibs . ; \
 	done
 
-gen-basis: $(FDF) $(XC) $(OBJS_GEN-BASIS) link_linalg
+gen-basis: $(FDF) $(NCPS) $(PSOP) $(OBJS_GEN-BASIS) link_linalg
 	$(FC) -o gen-basis \
 	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) \
               $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) $(NETCDF_LIBS) $(COMP_LIBS) $(LIBS)
-ioncat:  $(FDF) $(NCPS) $(XC) $(OBJS_IONCAT)
+ioncat:  $(FDF) $(NCPS) $(PSOP) $(OBJS_IONCAT)
 	$(FC) -o ioncat \
 	       $(LDFLAGS) $(OBJS_IONCAT) $(FDF) \
               $(NCPS) $(PSOP) $(XC) $(PSML_LIBS) $(XMLF90_LIBS) $(NETCDF_LIBS) $(LIBS)
@@ -163,9 +162,9 @@ basis_io.o: precision.o radial.o sys.o xml.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
 basis_io.o: precision.o radial.o sys.o xml.o
 basis_specs.o: basis_types.o chemical.o m_spin.o m_spin_orbit_potentials.o
-basis_specs.o: periodic_table.o precision.o sys.o
+basis_specs.o: periodic_table.o precision.o semicore_info_froyen.o sys.o
 basis_specs.o: basis_types.o chemical.o m_spin.o m_spin_orbit_potentials.o
-basis_specs.o: periodic_table.o precision.o sys.o
+basis_specs.o: periodic_table.o precision.o semicore_info_froyen.o sys.o
 basis_types.o: alloc.o atmparams.o precision.o sys.o
 basis_types.o: alloc.o atmparams.o precision.o sys.o
 bessph.o: precision.o sys.o
@@ -219,4 +218,5 @@ ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 aux_proj.o: atom.o
 m_bessph.o: bessph.o
 m_radfft.o: radfft.o
+m_semicore_info_froyen.o: semicore_info_froyen.o
 t_spin.o: m_spin.o

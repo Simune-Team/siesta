@@ -425,8 +425,7 @@ check-siesta:
 	@touch .siesta
 
 siesta: check-siesta what version \
-                $(MPI_INTERFACE) $(FDF) $(MS) $(XC) \
-		$(NCPS) $(PSOP) $(PSML)\
+                $(MPI_INTERFACE) $(FDF) $(MS) $(NCPS) $(PSOP) \
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MS)  \
@@ -492,8 +491,8 @@ check-ts:
 	@touch .transiesta
 
 transiesta: check-ts what version \
-            $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(MS) $(XC) \
-            $(NCPS) $(PSOP) $(PSML)\
+            $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(MS) \
+            $(NCPS) $(PSOP) \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MS) \

@@ -45,19 +45,24 @@ C Local variables
         type(parsed_line), pointer :: pline
 
 C Read XC functionals
+        
         if (fdf_block('xc.hybrid',bfdf)) then
+           call die('XC.hybrid block is deprecated. Use XC.cocktail')
+        endif
+        
+        if (fdf_block('xc.cocktail',bfdf)) then
           if (.not. fdf_bline(bfdf,pline)) then
-            call die('setXC: ERROR no data in XC.hybrid block')
+            call die('setXC: ERROR no data in XC.cocktail block')
           endif
           ni = fdf_bnintegers(pline)
 
           if (ni .eq. 0) then
             call die('setXC: Number of functionals missing in ' //
-     .               'XC.hybrid')
+     .               'XC.cocktail')
           endif
           nXCfunc = abs(fdf_bintegers(pline,1))
           if (nXCfunc .gt. MaxFunc) then
-            call die('setXC: Too many functionals in XC.hybrid')
+            call die('setXC: Too many functionals in XC.cocktail')
           endif
           do n= 1, nXCfunc
             if (.not. fdf_bline(bfdf,pline)) then
@@ -95,10 +100,10 @@ C Read XC functionals
           XCweightC(1) = 1.0_dp
         endif
 
-C Output data for hybrid functionals
+C Output data for cocktail functionals
         if ((nXCfunc .gt. 1) .and. (Node .eq. 0)) then
           write(6,'(/,''xc:'')')
-          write(6,'(''xc:  Hybrid exchange-correlation functional:'')
+          write(6,'(''xc:  Cocktail exchange-correlation functional:'')
      .      ')
           write(6,'(''xc:'')')
           write(6,'(''xc: Number Functional Authors  '',

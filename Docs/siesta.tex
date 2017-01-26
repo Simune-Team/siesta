@@ -79,7 +79,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large November 1, 2016 }
+{\Large January 26, 2017 }
 
 \vspace{1.5cm}
 {\Large \url{http://www.uam.es/siesta}}
@@ -96,7 +96,7 @@
 \section*{Contributors to \siesta}
 \addcontentsline{toc}{section}{Contributors to \siesta}
 
-\siesta\ is Copyright \copyright\  1996-2016 by The Siesta Group:
+\siesta\ is Copyright \copyright\  1996-2017 by The Siesta Group:
 \vspace{0.5cm}
 
 \hbox{ \hskip 0.1cm
@@ -211,8 +211,6 @@ which still uses many of the algorithms developed by them.
   tutorial material prepared for \siesta\ schools and workshops at
   the project's web page} \url{http://www.uam.es/siesta}.
 
-
-\textbf{NOTE: See the description of changes in the logic of the SCF loop}
 
 \siesta\index{Siesta@\siesta} (Spanish Initiative for
 Electronic Simulations with
@@ -3427,6 +3425,11 @@ used in the grid for $k$-sampling, into the main output file.
 \vspace{5pt}
 \subsection{Exchange-correlation functionals}
 
+Apart from the built-in functionals, \siesta\ can use the functionals
+provided by the LibXC library, if support for it is compiled-in in the
+libGridXC library. See the description of the {\bf XC.cocktail} block
+below for the appropriate syntax. \index{LibXC library}
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -3537,15 +3540,12 @@ J. Chem. Phys. \textbf{133}, 244103 (2010)
 
 \textit{Default value:} \texttt{PZ}
 
-\item[\textbf{XC.hybrid}] (\textit{data block}):
+\item[\textbf{XC.cocktail}] (\textit{data block}):
+\index{XC.cocktail@\textbf{XC.cocktail}}
 \index{XC.hybrid@\textbf{XC.hybrid}}
 This data block allows the user to create a ``cocktail'' functional by
 mixing the desired amounts of exchange and correlation from each of
-the functionals described under XC.authors. Note that these ``mixed''
-functionals do \emph{not} have the exact Hartree-Fock exchange which
-is a key ingredient of the true ``hybrid'' functionals. The use of
-the word ``hybrid'' in the label is unfortunate in this regard, and
-might be deprecated in a future version.
+the functionals described under XC.authors.
 
 The first line of the block must contain the number of functionals to
 be mixed. On the subsequent lines the values of XC.functl and
@@ -3558,14 +3558,48 @@ and PBE correlation is made, with an equal split of the exchange
 energy:
 
 \begin{verbatim}
-     %block XC.hybrid
+     %block XC.cocktail
         2
         LDA CA  0.5 0.75
         GGA PBE 0.5 0.25
-     %endblock XC.hybrid
+     %endblock XC.cocktail
 \end{verbatim}
 
-\textit{Default value:} \texttt{not hybrid}
+These blocks can also be used to request the use of LibXC functionals
+(if the version of libGridXC in use is 0.7 or later and was compiled
+with LibXC support).  \index{LibXC library} For example:
+
+\begin{verbatim}
+     %block XC.cocktail
+     2
+     GGA LIBXC-00-GGA_X_PBE 1.0 0.0
+     GGA LIBXC-00-GGA_C_PBE 0.0 1.0
+     %endblock XC.cocktail
+\end{verbatim}
+
+The weights reflect the ``exchange'' or ``correlation''
+character of each individual functional. In the above example we use
+mnemonic symbols for the functionals and leave the numerical
+functional id field as zero. It is also possible to use only the
+numerical id:
+
+\begin{verbatim}
+     %block XC.cocktail
+     2
+     GGA LIBXC-101 1.0 0.0
+     GGA LIBXC-130 0.0 1.0
+     %endblock XC.cocktail
+\end{verbatim}
+
+If both fields are used the information must be compatible. Also, the
+``family'' field (GGA, LDA) must be compatible with the functional
+specified.
+
+{\bf NOTE:} In previous versions of the program this block was named,
+confusingly, {\bf XC.Hybrid}
+
+\textit{Default value:} If the block is not present, the XC
+information is read from the fdf variables 
 
 
 \end{description}
