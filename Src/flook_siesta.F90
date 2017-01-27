@@ -57,6 +57,17 @@ siesta = { &
 _empty_tbl = {} &
 siesta_comm = function (_empty_tbl) end'
 
+    character(*), parameter :: unit_static_lua = '&
+siesta.Units = { &
+    Ang    = 1. / 0.529177, &
+    eV     = 1. / 13.60580, &
+    kBar   = 1. / 1.47108e5, &
+    Debye  = 0.393430, &
+    amu    = 2.133107, &
+} &
+siesta.Units.GPa = siesta.Units.kBar * 10 &
+siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
+
     ! First retrieve lua file
     slua_file = fdf_get('LUA.Script',' ')
     ! Default debugging only on the io-node.
@@ -99,6 +110,8 @@ siesta_comm = function (_empty_tbl) end'
 
     ! Create LUA table for data container
     call lua_run(LUA, code = fortran_static_lua )
+    ! Append the unit table for SIESTA unit conversion
+    call lua_run(LUA, code = unit_static_lua )
 
     ! Register siesta calls to communicate to the lua layer
     call lua_register(LUA,'siesta_get', slua_get_siesta)
