@@ -49,6 +49,7 @@ contains
 
   subroutine dict_populate_options()
     use siesta_options
+    use m_steps, only: inicoor, fincoor
 
     ! We simply re-create the options, (note the 
     ! de-allocation by "nullification")
@@ -119,8 +120,6 @@ contains
          ('SCF.FreeE.Tolerance'.kvp.tolerance_FreeE)
     
     options = options // &
-         ('MD.NumSteps'.kvp.nmove)
-    options = options // &
          ('MD.MaxDispl'.kvp.dxmax)
     options = options // &
          ('MD.MaxForceTol'.kvp.ftol)
@@ -140,6 +139,10 @@ contains
          ('MD.Relax.CellOnly'.kvp.RelaxCellOnly)
     options = options // &
          ('MD.Relax.Cell'.kvp.varcel)
+    options = options // &
+         ('MD.Steps.First'.kvp.inicoor)
+    options = options // &
+         ('MD.Steps.Last'.kvp.fincoor)
 
     options = options // &
          ('MeshCutoff'.kvp.g2cut)
