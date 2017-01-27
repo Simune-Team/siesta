@@ -166,7 +166,7 @@ subroutine read_options( na, ns, nspin )
   character(len=30) :: ctmp
   character(len=6) :: method
 
-  logical :: DaC, qnch, qnch2, usesaveddata
+  logical :: DaC, qnch, qnch2
   logical :: tBool
 
   !--------------------------------------------------------------------- BEGIN
@@ -1618,7 +1618,6 @@ subroutine read_options( na, ns, nspin )
   end if
 
   writec                 = fdf_get( 'WriteCoorStep', outlng )
-  default                = fdf_get( 'UseSaveData', .false. )
   savehs                 = fdf_get( 'SaveHS', .false. )
   fixauxcell             = fdf_get( 'FixAuxiliaryCell', .false. )
   naiveauxcell           = fdf_get( 'NaiveAuxiliaryCell', .false. )

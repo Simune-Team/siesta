@@ -91,14 +91,33 @@ contains
     options = options // &
          ('SCF.KickMixingWeight'.kvp.wmixkick)
     options = options // &
-         ('SCF.DM.Tolerance'.kvp.dDtol)
-    options = options // &
-         ('SCF.H.Tolerance'.kvp.dHtol)
-    options = options // &
          ('SCF.MonitorForces'.kvp.monitor_forces_in_scf)
+
     options = options // &
          ('ElectronicTemperature'.kvp.temp)
 
+    ! Convergence criteria
+    options = options // &
+         ('SCF.Harris.Converge'.kvp.converge_Eharr)
+    options = options // &
+         ('SCF.Harris.Tolerance'.kvp.tolerance_Eharr)
+    options = options // &
+         ('SCF.DM.Converge'.kvp.converge_DM)
+    options = options // &
+         ('SCF.DM.Tolerance'.kvp.dDtol)
+    options = options // &
+         ('SCF.EDM.Converge'.kvp.converge_EDM)
+    options = options // &
+         ('SCF.EDM.Tolerance'.kvp.tolerance_EDM)
+    options = options // &
+         ('SCF.H.Converge'.kvp.converge_H)
+    options = options // &
+         ('SCF.H.Tolerance'.kvp.dHtol)
+    options = options // &
+         ('SCF.FreeE.Converge'.kvp.converge_FreeE)
+    options = options // &
+         ('SCF.FreeE.Tolerance'.kvp.tolerance_FreeE)
+    
     options = options // &
          ('MD.NumSteps'.kvp.nmove)
     options = options // &
@@ -121,7 +140,41 @@ contains
          ('MD.Relax.CellOnly'.kvp.RelaxCellOnly)
     options = options // &
          ('MD.Relax.Cell'.kvp.varcel)
+
+    options = options // &
+         ('MeshCutoff'.kvp.g2cut)
+
+
+    ! All write options    ! fdf-flag
+    options = options // & ! SaveHS
+         ('Write.HS'.kvp.savehs)
+    options = options // & ! DM.UseSaveDM
+         ('Use.Save.DM'.kvp.usesavedm)
+
+    options = options // & ! WriteHirshfeldPop
+         ('Write.Hirshfeld'.kvp.hirshpop)
+    options = options // & ! WriteVoronoiPop
+         ('Write.Voronoi'.kvp.voropop)
     
+    options = options // & ! SaveRho
+         ('Grid.Write.Rho'.kvp.saverho)
+    options = options // & ! SaveDeltaRho
+         ('Grid.Write.DeltaRho'.kvp.savedrho)
+    options = options // & ! SaveRhoXC
+         ('Grid.Write.RhoXC'.kvp.saverhoxc)
+    options = options // & ! SaveElectrostaticPotential
+         ('Grid.Write.HartreePotential'.kvp.savevh)
+    options = options // & ! SaveNeutralAtomPotential
+         ('Grid.Write.NeutralAtomPotential'.kvp.savevna)
+    options = options // & ! SaveTotalPotential
+         ('Grid.Write.TotalPotential'.kvp.savevt)
+    options = options // & ! SaveIonicCharge
+         ('Grid.Write.IonicRho'.kvp.savepsch)
+    options = options // & ! SaveBaderCharge
+         ('Grid.Write.BaderRho'.kvp.savebader)
+    options = options // & ! SaveTotalCharge
+         ('Grid.Write.TotalRho'.kvp.savetoch)
+
   end subroutine dict_populate_options
 
   subroutine dict_populate_variables()
@@ -131,6 +184,8 @@ contains
     use m_energies
     use atomlist
     use m_stress
+
+    real(dp), pointer :: r2(:,:)
 
     ! We simply re-create the options, (note the 
     ! de-allocation by "nullification")
@@ -147,10 +202,12 @@ contains
          ('geom.vcell'.kvp.vcell)
     variables = variables // &
          ('geom.nsc'.kvp.nsc)
+    r2 => xa(:,1:na_u)
     variables = variables // &
-         ('geom.xa'.kvp.xa)
+         ('geom.xa'.kvp.r2)
+    r2 => xa_last(:,1:na_u)
     variables = variables // &
-         ('geom.xa_last'.kvp.xa_last)
+         ('geom.xa_last'.kvp.r2)
     variables = variables // &
          ('geom.va'.kvp.va)
 
