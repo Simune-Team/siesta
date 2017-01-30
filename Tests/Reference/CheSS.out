@@ -625,9 +625,9 @@ redata: Using Saved Data (generic)                  =   F
 redata: Use continuation files for DM               =   F
 redata: Neglect nonoverlap interactions             =   F
 redata: Method of Calculation            =         CheSS
-redata: CheSSBufferKernel   =                       =     2.000000
-redata: CheSSBufferMult     =                       =     4.000000
-redata: CheSSBetax          =                       = -1000.000000
+redata: CheSS.Buffer.Kernel   =                     =     2.000000
+redata: CheSS.Buffer.Mult     =                     =     4.000000
+redata: CheSS.Betax          =                      = -1000.000000
 redata: Fix the spin of the system                  =   F
 redata: Max. number of TDED Iter         =          =        1
 redata: Write .TDWF and .DM after time steps=       =      100

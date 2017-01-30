@@ -745,24 +745,24 @@ subroutine read_options( na, ns, nspin )
 
 #ifdef SIESTA__CHESS
   ! Buffer for the density kernel within the CheSS calculation
-  chess_value = fdf_get('CheSSBufferKernel', 4.0_dp)
+  chess_value = fdf_get('CheSS.Buffer.Kernel', 4.0_dp)
   call set_CheSS_parameter('chess_buffer_kernel', chess_value)
   if (ionode)  write(6,7), &
-      'redata: CheSSBufferKernel   = ',chess_value
+      'redata: CheSS.Buffer.Kernel   = ',chess_value
   !if (cml_p) call cmlAddParameter(xf=mainXML, name='CheSSBufferKernel', &
   !                 value=chess_value, dictref='siesta:CheSSBufferKernel')
 
   ! Buffer for the matrix vector multiplication within the CheSS calculation
-  chess_value = fdf_get('CheSSBufferMult', 6.0_dp)
+  chess_value = fdf_get('CheSS.Buffer.Mult', 6.0_dp)
   call set_CheSS_parameter('chess_buffer_mult', chess_value)
   if (ionode)  write(6,7), &
-      'redata: CheSSBufferMult     = ',chess_value
+      'redata: CheSS.Buffer.Mult     = ',chess_value
 
   ! Parameters for the penalty function used to determine the eigenvalue bounds
   chess_value = fdf_get('CheSSBetax', -1000.0_dp)
   call set_CheSS_parameter('chess_betax', chess_value)
   if (ionode)  write(6,7), &
-      'redata: CheSSBetax          = ',chess_value
+      'redata: CheSS.Betax          = ',chess_value
   !if (cml_p) call cmlAddParameter(xf=mainXML, name='CheSSBufferMult', &
   !                 value=chess_value, dictref='siesta:CheSSBufferMult')
 #endif

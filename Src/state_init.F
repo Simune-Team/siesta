@@ -336,8 +336,8 @@
           chess_value = get_chess_parameter('chess_buffer_kernel')
           call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma, 
-     &              chess_value,
-     $              set_xijo=.true., folding=folding1)
+     &              set_xijo=.true., folding=folding1,
+     $              buffer=chess_value)
           maxnh_kernel = maxnh
           no_l_kernel = no_l
           allocate(listh_kernel(maxnh_kernel))
@@ -348,8 +348,8 @@
           chess_value = get_chess_parameter('chess_buffer_mult')
           call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &                  lastkb, iphorb, iphKB, maxnh, gamma,
-     &                  chess_value, 
-     $                  set_xijo=.true., folding=folding1)
+     &                  set_xijo=.true., folding=folding1,
+     $                  buffer=chess_value)
           maxnh_mult = maxnh
           no_l_mult = no_l
           allocate(listh_mult(maxnh_mult))
@@ -368,8 +368,8 @@
       call delete(xij_2D) ! as xijo will be reallocated
       nullify(xijo)
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
-     &              lastkb, iphorb, iphKB, maxnh, gamma, 0.0_dp,
-     $                 set_xijo=.true., folding=folding1)
+     &              lastkb, iphorb, iphKB, maxnh, gamma,
+     $              set_xijo=.true., folding=folding1)
 !
 #ifdef SIESTA__CHESS
       if (isolve == SOLVE_CHESS) then
