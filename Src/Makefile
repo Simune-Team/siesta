@@ -1194,9 +1194,9 @@ siesta_cmlsubs.o:
 siesta_dicts.o: atomlist.o kpoint_grid.o m_energies.o m_forces.o m_steps.o
 siesta_dicts.o: m_stress.o precision.o siesta_geom.o siesta_options.o
 siesta_end.o: alloc.o bands.o densematrix.o extrae_eventllist.o flook_siesta.o
-siesta_end.o: m_dscfcomm.o m_fixed.o m_mixing_scf.o m_rhog.o m_wallclock.o
-siesta_end.o: meshdscf.o meshphi.o moremeshsubs.o parallel.o siesta_cml.o
-siesta_end.o: siesta_cmlsubs.o siesta_master.o siesta_options.o
+siesta_end.o: m_dscfcomm.o m_fixed.o m_io.o m_mixing_scf.o m_rhog.o
+siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
+siesta_end.o: siesta_cml.o siesta_cmlsubs.o siesta_master.o siesta_options.o
 siesta_end.o: sparse_matrices.o timestamp.o
 siesta_forces.o: atomlist.o class_Fstack_Data1D.o class_SpData2D.o compute_dm.o
 siesta_forces.o: compute_energies.o compute_max_diff.o files.o
