@@ -512,8 +512,8 @@ get_target_stress.o: parallel.o precision.o sys.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 gradientlomem.o: alloc.o globalise.o onmod.o precision.o
-grdsam.o: alloc.o dhscf.o files.o m_partial_charges.o parallel.o precision.o
-grdsam.o: siesta_geom.o siesta_options.o sys.o
+grdsam.o: alloc.o dhscf.o files.o m_mpi_utils.o m_partial_charges.o parallel.o
+grdsam.o: precision.o siesta_geom.o siesta_options.o sys.o units.o
 hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mneighb.o
 hsparse.o: parallel.o parallelsubs.o precision.o siesta_options.o sorting.o
 hsparse.o: sparse_matrices.o sys.o
@@ -782,10 +782,10 @@ siesta_analysis.o: projected_DOS.o siesta2wannier90.o siesta_cml.o
 siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o units.o
 siesta_analysis.o: write_subs.o writewave.o zmatrix.o
 siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o 
-siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
-siesta_end.o: m_rhog.o m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o
-siesta_end.o: parallel.o siesta_cml.o siesta_cmlsubs.o siesta_master.o
-siesta_end.o: sparse_matrices.o timestamp.o
+siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_io.o
+siesta_end.o: m_pulay.o m_rhog.o m_wallclock.o meshdscf.o meshphi.o
+siesta_end.o: moremeshsubs.o parallel.o siesta_cml.o siesta_cmlsubs.o
+siesta_end.o: siesta_master.o sparse_matrices.o timestamp.o
 siesta_forces.o: compute_dm.o compute_energies.o compute_max_diff.o
 siesta_forces.o: final_H_f_stress.o m_convergence.o m_energies.o m_forces.o
 siesta_forces.o: m_pulay.o m_rhog.o m_steps.o m_stress.o m_ts_global_vars.o
