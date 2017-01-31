@@ -53,7 +53,7 @@ contains
 
     ! We simply re-create the options, (note the 
     ! de-allocation by "nullification")
-    call delete(options,dealloc=.false.)
+    call delete(options, dealloc=.false.)
 
     ! unluckily the dictionary does not
     ! implement a stringent way of doing characters
@@ -61,7 +61,7 @@ contains
 
     options = &
          ('DM.HistoryDepth'.kvp.DM_history_depth)
-
+    
     ! Output options
     options = options // &
          ('Write.DenChar'.kvp.dumpcharge)
@@ -144,45 +144,47 @@ contains
     options = options // &
          ('MD.Steps.Last'.kvp.fincoor)
 
-    options = options // &
-         ('MeshCutoff'.kvp.g2cut)
 
 
     ! All write options    ! fdf-flag
     options = options // & ! SaveHS
          ('Write.HS'.kvp.savehs)
     options = options // & ! DM.UseSaveDM
-         ('Use.Save.DM'.kvp.usesavedm)
+         ('Use.DM'.kvp.usesavedm)
 
     options = options // & ! WriteHirshfeldPop
          ('Write.Hirshfeld'.kvp.hirshpop)
     options = options // & ! WriteVoronoiPop
          ('Write.Voronoi'.kvp.voropop)
-    
+
+    ! Options related to the mesh!
+    options = options // &
+         ('Mesh.Cutoff'.kvp.g2cut)
     options = options // & ! SaveRho
-         ('Grid.Write.Rho'.kvp.saverho)
+         ('Mesh.Write.Rho'.kvp.saverho)
     options = options // & ! SaveDeltaRho
-         ('Grid.Write.DeltaRho'.kvp.savedrho)
+         ('Mesh.Write.DeltaRho'.kvp.savedrho)
     options = options // & ! SaveRhoXC
-         ('Grid.Write.RhoXC'.kvp.saverhoxc)
+         ('Mesh.Write.RhoXC'.kvp.saverhoxc)
     options = options // & ! SaveElectrostaticPotential
-         ('Grid.Write.HartreePotential'.kvp.savevh)
+         ('Mesh.Write.HartreePotential'.kvp.savevh)
     options = options // & ! SaveNeutralAtomPotential
-         ('Grid.Write.NeutralAtomPotential'.kvp.savevna)
+         ('Mesh.Write.NeutralAtomPotential'.kvp.savevna)
     options = options // & ! SaveTotalPotential
-         ('Grid.Write.TotalPotential'.kvp.savevt)
+         ('Mesh.Write.TotalPotential'.kvp.savevt)
     options = options // & ! SaveIonicCharge
-         ('Grid.Write.IonicRho'.kvp.savepsch)
+         ('Mesh.Write.IonicRho'.kvp.savepsch)
     options = options // & ! SaveBaderCharge
-         ('Grid.Write.BaderRho'.kvp.savebader)
+         ('Mesh.Write.BaderRho'.kvp.savebader)
     options = options // & ! SaveTotalCharge
-         ('Grid.Write.TotalRho'.kvp.savetoch)
+         ('Mesh.Write.TotalRho'.kvp.savetoch)
 
   end subroutine dict_populate_options
 
   subroutine dict_populate_variables()
 
     use siesta_geom
+    use kpoint_grid, only: kscell, kdispl
     use m_forces
     use m_energies
     use atomlist
@@ -192,7 +194,7 @@ contains
 
     ! We simply re-create the options, (note the 
     ! de-allocation by "nullification")
-    call delete(variables,dealloc=.false.)
+    call delete(variables, dealloc=.false.)
 
     ! Add geometries (lets do with this for now)
     variables = &
@@ -282,6 +284,12 @@ contains
     ! Add the number of charges to the system
     variables = variables // &
          ('charge'.kvp.qtot)
+
+    ! Add the k-point sampling
+    variables = variables // &
+         ('BZ.k.Matrix'.kvp.kscell)
+    variables = variables // &
+         ('BZ.k.Displacement'.kvp.kdispl)
 
   end subroutine dict_populate_variables
 
