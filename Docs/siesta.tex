@@ -5068,74 +5068,78 @@ at every scf step can have a severe impact on performance.
 The sparse-matrix I/O is undergoing a re-design, to facilitate the
 analysis of data and to increase the efficiency. 
 
-\begin{itemize}  
+\begin{fdflogicalF}{Use.Blocked.WriteMat}
 
-\item By using blocks of orbitals (according to the underlying default
-block-cyclic distribution), the sparse-matrix I/O can be speeded-up
-significantly, both by saving MPI communication and by reducing the
-number of file accesses. This is essential for large systems, for
-which the I/O could take a significant fraction of the total
-computation time.
+  By using blocks of orbitals (according to the underlying default
+  block-cyclic distribution), the sparse-matrix I/O can be speeded-up
+  significantly, both by saving MPI communication and by reducing the
+  number of file accesses. This is essential for large systems, for
+  which the I/O could take a significant fraction of the total
+  computation time.
   
-To enable this``blocked format'' (recommended for large-scale
-calculations) use the option \fdf{Use.Blocked.WriteMat} \fdftrue. Note that
-it is off by default.
+  To enable this ``blocked format'' (recommended for large-scale
+  calculations) use the option \fdf{Use.Blocked.WriteMat}
+  \fdftrue. Note that it is off by default.
   
-The new format is not backwards compatible. A converter program
-(\shell{Util/DensityMatrix/dmUnblock.F90}) has been written to post-process
-those files intended for further analysis or re-use in Siesta. This is
-the best option for now, since it allows liberal checkpointing with a
-much smaller time consumption, and only incurs costs when re-using or
-analyzing files.
+  The new format is not backwards compatible. A converter program
+  (\shell{Util/DensityMatrix/dmUnblock.F90}) has been written to
+  post-process those files intended for further analysis or re-use in
+  Siesta. This is the best option for now, since it allows liberal
+  checkpointing with a much smaller time consumption, and only incurs
+  costs when re-using or analyzing files.
   
-Note that TranSiesta will continue to produce .DM files, in the old
-format (See save\_density\_matrix.F)
+  Note that \tsiesta\ will continue to produce \sysfile{DM} files, in
+  the old format (See save\_density\_matrix.F)
 
-( To test the new features, the option \fdf{S.Only} \fdftrue\ can be used. It
-will produce three files: a standard one, another one with optimized
-MPI communications, and a third, blocked one.  )
+  To test the new features, the option \fdf{S.Only} \fdftrue\ can be
+  used. It will produce three files: a standard one, another one with
+  optimized MPI communications, and a third, blocked one.
 
-\item The Hamiltonian and/or the DM are saved with different file
-  names, depending on their status at the time of writing:
+\end{fdflogicalF}
 
-\begin{verbatim}  
-  If the ``blocked format'' is in effect:
+\begin{fdflogicalT}{Write!DM}
 
-    DM_MIXED.blocked: Useful for checkpointing
-    DM_OUT.blocked:   Latest DM computed
-  
-  otherwise a single SystemLabel.DM file is produced.
-  
-  H_MIXED:  Useful for checkpointing
-  H_DMGEN:  The H from which the latest electronic structure was
-            computed
+  Control the creation of the current iterations density matrix to a
+  file for restart purposes and post-processing. If \fdffalse\ nothing
+  will be written.
 
-  (if using the ``blocked format'' option, the above files have
-   the suffix .blocked)
+  If \fdf{Use.Blocked.WriteMat} is \fdffalse\ the \sysfile{DM} file
+  will be written. Otherwise these density matrix files will be
+  created; \file{DM\_MIXED.blocked} and \file{DM\_OUT.blocked} which
+  are the mixed and the diagonalization output, respectively.
 
-\end{verbatim}  
-  
-The ``mixed'' files are produced only in the appropriate runs (MixDM
-(default), or MixHamiltonian). For example, if mixing the DM, what is
-needed for checkpointing is the latest mixed DM. This can be read back
-in a restarted calculation to pick up from the appropriate point.
-  
-\item Options affecting which files are written, and when:
-  
-For checkpointing,  \fdf{WriteDM} and  \fdf{WriteH} force the writing
-of the DM (resp. the Hamiltonian) at every scf step. They are ``on''
-by default.
-  
-For later analysis, \fdf{WriteDM.end.of.cycle} and
-\fdf{WriteH.end.of.cycle} will write DM and/or H at the end of the scf
-cycle. In this case, the objects written depends on the setting of the
-variable \fdf{SCF.MixAfterConvergence}, which is \fdffalse\ by
-default. The details can be seen in the
-code (in file \shell{siesta\_forces.F}. By default, they are ``on'' or
-``off'' depending on the settings of  \fdf{WriteDM} and  \fdf{WriteH},
-respectively.
+\end{fdflogicalT}
 
-\end{itemize}
+\begin{fdfentry}{Write!DM.end.of.cycle}[logical]<\fdfvalue{Write!DM}>
+
+  Equivalent to \fdf{Write!DM}, but will only write at the end of each
+  SCF loop.
+
+  \note the file generated depends on \fdf{SCF.MixAfterConvergence}.
+
+\end{fdfentry}  
+
+\begin{fdflogicalF}{Write!H}
+
+  Whether restart Hamiltonians should be written (not intrinsically
+  supported in 4.1). 
+
+  If \fdftrue\ these files will be created; \file{H\_MIXED} or
+  \file{H\_DMGEN} which is the mixed or the generated Hamiltonian from
+  the current density matrix, respectively. If
+  \fdf{Use.Blocked.WriteMat} the just mentioned files will have the
+  additional suffix \fdf*{.blocked}.
+  
+\end{fdflogicalF}
+
+\begin{fdfentry}{Write!H.end.of.cycle}[logical]<\fdfvalue{Write!H}>
+
+  Equivalent to \fdf{Write!H}, but will only write at the end of each
+  SCF loop.
+
+  \note the file generated depends on \fdf{SCF.MixAfterConvergence}.
+
+\end{fdfentry}  
 
 The following options control the creation of netCDF files. The
 relevant routines have not been optimized yet for large-scale
@@ -5143,14 +5147,14 @@ calculations, so in this case the options should not be turned on
 (they are off by default).
 
 
-\begin{fdflogicalT}{WriteDM.NetCDF}
+\begin{fdflogicalT}{Write!DM.NetCDF}
   \index{output!density matrix}
   
   It determines whether the density matrix (after the mixing step) is
   output as a \file{DM.nc} netCDF file or not.
 
   The file is overwritten at every SCF step. Use the
-  \fdf{WriteDM.History.NetCDF} option if a complete history is
+  \fdf{Write!DM.History.NetCDF} option if a complete history is
   desired.
 
   The \file{DM.nc} and standard DM file formats can be converted at
@@ -5160,7 +5164,7 @@ calculations, so in this case the options should not be turned on
 
 \end{fdflogicalT}
 
-\begin{fdflogicalT}{WriteDMHS.NetCDF}
+\begin{fdflogicalT}{Write!DMHS.NetCDF}
   \index{output!density matrix}%
   \index{output!Hamiltonian}%
   \index{output!overlap matrix}
@@ -5171,24 +5175,24 @@ calculations, so in this case the options should not be turned on
   also contains the overlap matrix S.
 
   The file is overwritten at every SCF step. Use the
-  \fdf{WriteDMHS.History.NetCDF} option if a complete history is
+  \fdf{Write!DMHS.History.NetCDF} option if a complete history is
   desired.
 
 \end{fdflogicalT}
 
 
-\begin{fdflogicalF}{WriteDM.History.NetCDF}
+\begin{fdflogicalF}{Write!DM.History.NetCDF}
   \index{output!density matrix}%
   \index{output!density matrix history}
 
   If \fdftrue, a series of netCDF files with names of the form
   \file{DM-NNNN.nc} is created to hold the complete history of the
-  density matrix (after mixing). (See also \fdf{WriteDM.NetCDF}). Each
+  density matrix (after mixing). (See also \fdf{Write!DM.NetCDF}). Each
   file corresponds to a geometry step.
 
 \end{fdflogicalF}
 
-\begin{fdflogicalF}{WriteDMHS.History.NetCDF}
+\begin{fdflogicalF}{Write!DMHS.History.NetCDF}
   \index{output!density matrix history}%
   \index{output!Hamiltonian history}%
   \index{output!overlap matrix}
@@ -5196,12 +5200,12 @@ calculations, so in this case the options should not be turned on
   If \fdftrue, a series of netCDF files with names of the form
   \file{DMHS-NNNN.nc} is created to hold the complete history of the
   input and output density matrix, and the Hamiltonian.  (See also
-  \fdf{WriteDMHS.NetCDF}). Each file corresponds to a geometry
+  \fdf{Write!DMHS.NetCDF}). Each file corresponds to a geometry
   step. The overlap matrix is stored only once per SCF cycle.
 
 \end{fdflogicalF}
 
-\begin{fdflogicalF}{Write.TSHS.History}
+\begin{fdflogicalF}{Write!TSHS.History}
   \index{output!Hamiltonian history}%
   \index{output!overlap matrix history}%
 
@@ -5648,7 +5652,7 @@ the issue (see Sec.~\ref{sec:filtering}).
   is active.  \index{output!HSX file}
 
 
-  See also the \fdf{WriteDMHS.NetCDF} and \fdf{WriteDMHS.History.NetCDF}
+  See also the \fdf{Write!DMHS.NetCDF} and \fdf{Write!DMHS.History.NetCDF}
   options.
 
 \end{fdflogicalF}
@@ -8665,7 +8669,7 @@ historical compatibility. Use the individual options instead.
 The program \program{denchar} in \program{Util/Denchar} can generate
 charge-density and wavefunction information in real space.
 
-\begin{fdflogicalF}{WriteDenchar}
+\begin{fdflogicalF}{Write!Denchar}
   \index{output!charge density and/or wfs for DENCHAR code} 
 
   Instructs to write information needed by the utility program DENCHAR

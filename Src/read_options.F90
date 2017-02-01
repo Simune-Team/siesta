@@ -1479,7 +1479,7 @@ subroutine read_options( na, ns, nspin )
 
   writedm               = fdf_get( 'WriteDM', .true. )
   write_dm_at_end_of_cycle = fdf_get( 'WriteDM.End.Of.Cycle', writedm )
-  writeH                = fdf_get( 'WriteH', .true. )
+  writeH                = fdf_get( 'WriteH', .false. )
   write_H_at_end_of_cycle  = fdf_get( 'WriteH.End.Of.Cycle', writeH )
 
   writedm_cdf           = fdf_get('WriteDM.NetCDF', .false. )
