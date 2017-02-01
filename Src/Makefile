@@ -191,7 +191,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_initwf.o wavefunctions.o \
 	m_evolve.o evolk.o evolg.o changebasis.o m_iotddft.o \
 	m_matdiag.o m_matswinvers.o \
-        semicore_info_froyen.o
+        semicore_info_froyen.o hamann.o
 
 # Mixing algorithms
 OBJS += m_mixing.o m_mixing_scf.o
