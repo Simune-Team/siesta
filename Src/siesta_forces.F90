@@ -373,11 +373,13 @@ contains
              if ( save_H_DM_extra ) then
                 if ( mixH ) then
                    call write_spmatrix(H,file="H_MIXED",when=writeH)
-                   call save_density_matrix(file="DM_OUT",when=writedm)
+                   call save_density_matrix(file="DM_OUT",when=writeDM)
                 else
-                   call save_density_matrix(file="DM_MIXED",when=writedm)
+                   call save_density_matrix(file="DM_MIXED",when=writeDM)
                    call write_spmatrix(H,file="H_DMGEN",when=writeH)
                 end if
+             else
+                call save_density_matrix(when=writeDM)
              end if
           end if
 
@@ -567,6 +569,8 @@ contains
     !
     subroutine end_of_cycle_save_operations()
 
+      logical :: DM_write, H_write
+
       ! Depending on the option we should overwrite the
       ! Hamiltonian
       if ( mixH .and. .not. mix_after_convergence ) then
@@ -575,29 +579,34 @@ contains
          H = Hold
       end if
 
+      DM_write = write_DM_at_end_of_cycle .and. &
+           .not. writeDM
+      H_write = write_H_at_end_of_cycle .and. &
+           .not. writeH
+
       ! quick return if we should not write
       ! any of the extra files
-      if ( .not. save_H_DM_extra ) return
+      if ( .not. save_H_DM_extra ) then
+
+         call save_density_matrix( when=DM_write )
+
+         return
+
+      end if
          
       if ( mix_after_convergence ) then
          ! If we have been saving them, there is no point in doing
          ! it one more time
          if ( mixH ) then
-            call save_density_matrix(file="DM_OUT", &
-                 when=((.not. writedm) .and. write_dm_at_end_of_cycle))
-            call write_spmatrix(H,file="H_MIXED", &
-                 when=((.not. writeH) .and. write_H_at_end_of_cycle))
+            call save_density_matrix(file="DM_OUT", when=DM_write)
+            call write_spmatrix(H,file="H_MIXED", when=H_write)
          else
-            call save_density_matrix(file="DM_MIXED", &
-                 when=((.not. writedm) .and. write_dm_at_end_of_cycle))
-            call write_spmatrix(H,file="H_DMGEN", &
-                 when=((.not. writeH) .and. write_H_at_end_of_cycle))
+            call save_density_matrix(file="DM_MIXED", when=DM_write)
+            call write_spmatrix(H,file="H_DMGEN", when=H_write)
          end if
       else
-         call save_density_matrix(file="DM_OUT", &
-              when=write_dm_at_end_of_cycle)
-         call write_spmatrix(H,file="H_DMGEN", &
-              when=write_H_at_end_of_cycle)
+         call save_density_matrix(file="DM_OUT", when=DM_write)
+         call write_spmatrix(H,file="H_DMGEN", when=H_write)
       end if
 
     end subroutine end_of_cycle_save_operations
