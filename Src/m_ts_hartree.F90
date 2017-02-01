@@ -117,6 +117,15 @@ contains
 
     if ( TS_HA == TS_HA_PLANE ) then
 
+       ! The hartree plane can only be used for 1 and 2
+       ! electrodes
+       if ( N_Elec == 1 ) then
+          
+          El => Elecs(1)
+          return
+          
+       end if
+
        ! The plane can only be chosen with
        ! 2 electrodes
        if ( N_Elec /= 2 ) then
@@ -175,7 +184,7 @@ contains
   
   subroutine ts_init_hartree_fix(cell, na_u, xa, nmesh, nmeshl)
 
-    use intrinsic_missing, only: VNORM
+    use intrinsic_missing, only: VNORM, VEC_PROJ
     use units, only : Ang
     use m_mesh_node, only : offset_r, dMesh, dL
     use parallel, only : IONode
@@ -310,7 +319,8 @@ contains
                &unit cell.'
           write(*,'(a)') 'ts: Please move structure so this point is &
                &inside unit cell (Ang):'
-          write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', El%p%c/Ang
+          write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', &
+               VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
           write(*,'(a)') 'ts: You can use %block AtomicCoordinatesOrigin'
           write(*,'(a)') 'ts: to easily move the entire structure.'
        end if

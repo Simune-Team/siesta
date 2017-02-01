@@ -38,7 +38,7 @@ module m_tbt_trik
   use m_ts_tri_common, only : nnzs_tri
 
   use m_verbosity, only : verbosity
-  use m_tbt_hs
+  use m_tbt_hs, only: tTSHS, Volt, IsVolt
   use m_tbt_regions, only : sp_uc, sp_dev_sc, r_aDev
 #ifdef NOT_WORKING
   use m_tbt_regions, only : r_oEl
@@ -250,12 +250,10 @@ contains
     ! same
     sp => spar(TSHS%H_2D)
     H2D => val(TSHS%H_2D)
-    if ( ispin == spin_idx ) then
-       ! we have downscaled the Hamiltonian
-       H => H2D(:,1)
-    else
-       H => H2D(:,ispin)
-    end if
+    
+    ! we have downscaled the Hamiltonian regardless
+    ! of the number of spin-channels in the Hamiltonian
+    H => H2D(:,1)
     S => val(TSHS%S_1D)
 
     allocate(nE%iE(0:Nodes-1))

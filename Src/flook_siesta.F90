@@ -14,11 +14,18 @@ module flook_siesta
   private
 
   ! Signals to LUA
+  ! Right after reading initial options 
   integer, parameter, public :: LUA_INITIALIZE = 1
-  integer, parameter, public :: LUA_SCF_LOOP = 2
-  integer, parameter, public :: LUA_FORCES = 3
-  integer, parameter, public :: LUA_MOVE = 4
-  integer, parameter, public :: LUA_ANALYSIS = 5
+  ! Right before SCF step starts, but at each MD step
+  integer, parameter, public :: LUA_INIT_MD = 2
+  ! at the start of each SCF step
+  integer, parameter, public :: LUA_SCF_LOOP = 3
+  ! after each SCF has finished
+  integer, parameter, public :: LUA_FORCES = 4
+  ! when moving the atoms, right after the FORCES step
+  integer, parameter, public :: LUA_MOVE = 5
+  ! when SIESTA is complete, just before it exists
+  integer, parameter, public :: LUA_ANALYSIS = 6
 
 #ifdef SIESTA__FLOOK
 
@@ -45,10 +52,11 @@ contains
 siesta = { &
     Node = 1, &
     INITIALIZE = 1, &
-    SCF_LOOP = 2, &
-    FORCES = 3, &
-    MOVE = 4, &
-    ANALYSIS = 5, &
+    INIT_MD = 2, &
+    SCF_LOOP = 3, &
+    FORCES = 4, &
+    MOVE = 5, &
+    ANALYSIS = 6, &
     state = 0, &
     print = function(self,msg) &
        print("Lua-msg: " ..msg) &
@@ -56,6 +64,17 @@ siesta = { &
 } &
 _empty_tbl = {} &
 siesta_comm = function (_empty_tbl) end'
+
+    character(*), parameter :: unit_static_lua = '&
+siesta.Units = { &
+    Ang    = 1. / 0.529177, &
+    eV     = 1. / 13.60580, &
+    kBar   = 1. / 1.47108e5, &
+    Debye  = 0.393430, &
+    amu    = 2.133107, &
+} &
+siesta.Units.GPa = siesta.Units.kBar * 10 &
+siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
 
     ! First retrieve lua file
     slua_file = fdf_get('LUA.Script',' ')
@@ -99,6 +118,8 @@ siesta_comm = function (_empty_tbl) end'
 
     ! Create LUA table for data container
     call lua_run(LUA, code = fortran_static_lua )
+    ! Append the unit table for SIESTA unit conversion
+    call lua_run(LUA, code = unit_static_lua )
 
     ! Register siesta calls to communicate to the lua layer
     call lua_register(LUA,'siesta_get', slua_get_siesta)
@@ -111,9 +132,6 @@ siesta_comm = function (_empty_tbl) end'
     call lua_register(LUA,'_internal_print_allowed', slua_siesta_print_objects)
     call lua_run(LUA, code = 'siesta.print_allowed = _internal_print_allowed' )
 
-    ! transfer the node info (from 1 to Nodes)
-    ! fortran/lua is 1-based, so why complicate matter for
-    ! non-experienced users in siesta internals... 
     write(fortran_msg,'(a,i0)') 'siesta.Node = ',Node + 1
     call lua_run(LUA, code = fortran_msg )
     write(fortran_msg,'(a,i0)') 'siesta.Nodes = ',Nodes

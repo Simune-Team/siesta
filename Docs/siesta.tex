@@ -339,7 +339,7 @@ module. \tsiesta\ provides the ability to model open-boundary systems where ball
 electron transport is taking place.  Using \tsiesta\ one can compute electronic
 transport properties, such as the zero bias conductance and the I-V characteristic, of a
 nanoscale system in contact with two electrodes at different electrochemical potentials.
-The method is based on using non equilibrium Green's functions (NEGF), that are
+The method is based on using non equilibrium Greens functions (NEGF), that are
 constructed using the density functional theory Hamiltonian obtained from a given electron
 density. A new density is computed using the NEGF formalism, which closes the DFT-NEGF
 self consistent cycle.
@@ -4957,22 +4957,25 @@ The Density matrix can be:
 
 \begin{fdfentry}{DM!InitSpin}[block]
   
-  It defines the initial spin density for a spin polarized calculation
-  atom by atom.  In the block there is one line per atom to be
+  Define the initial spin density for a spin polarized calculation
+  atom by atom. In the block there is one line per atom to be
   spin-polarized, containing the atom index (integer, ordinal in the
   block \fdf{AtomicCoordinatesAndAtomicSpecies}) and the desired
   initial spin-polarization (real, positive for spin up, negative for
   spin down). A value larger than possible will be reduced to the
-  maximum possible polarization, keeping its sign.  Maximum
+  maximum possible polarization, keeping its sign. Maximum
   polarization can also be given by introducing the symbol \texttt{+}
-  or \texttt{-} instead of the polarization value.  There is no need
+  or \texttt{-} instead of the polarization value. There is no need
   to include a line for every atom, only for those to be
   polarized. The atoms not contemplated in the block will be given
-  non-polarized initialization.  For non-collinear spin, the spin
-  direction may be specified for each atom by the polar angles theta
-  and phi, given as the last two arguments in degrees. If not
-  specified, theta=0 is assumed.  \fdf{Spin} \fdf*{non-collinear} must be
-  \fdftrue\ to use the spin direction.
+  non-polarized initialization. 
+
+  For non-collinear spin, the spin direction may be specified for each
+  atom by the polar angle $\theta$ and the azimuthal angle $\phi$
+  (using the physics ISO convention), given as the last two arguments
+  in degrees. If not specified, $\theta=0$ is assumed
+  ($z$-polarized). \fdf{Spin} must be set to use non-collinear or
+  spin-orbit for the directions to have effect.
 
   Example:
   \begin{fdfexample}
@@ -4982,6 +4985,7 @@ The Density matrix can be:
         7   -
      %endblock DM.InitSpin
   \end{fdfexample}
+  In the above example, atom 5 is polarized in the $x$-direction.
 
   If this block is defined, but empty, all atoms are not polarized.
   This block has precedence over \fdf{DM!InitSpinAF}.
@@ -5065,74 +5069,78 @@ at every scf step can have a severe impact on performance.
 The sparse-matrix I/O is undergoing a re-design, to facilitate the
 analysis of data and to increase the efficiency. 
 
-\begin{itemize}  
+\begin{fdflogicalF}{Use.Blocked.WriteMat}
 
-\item By using blocks of orbitals (according to the underlying default
-block-cyclic distribution), the sparse-matrix I/O can be speeded-up
-significantly, both by saving MPI communication and by reducing the
-number of file accesses. This is essential for large systems, for
-which the I/O could take a significant fraction of the total
-computation time.
+  By using blocks of orbitals (according to the underlying default
+  block-cyclic distribution), the sparse-matrix I/O can be speeded-up
+  significantly, both by saving MPI communication and by reducing the
+  number of file accesses. This is essential for large systems, for
+  which the I/O could take a significant fraction of the total
+  computation time.
   
-To enable this``blocked format'' (recommended for large-scale
-calculations) use the option \fdf{Use.Blocked.WriteMat} \fdftrue. Note that
-it is off by default.
+  To enable this ``blocked format'' (recommended for large-scale
+  calculations) use the option \fdf{Use.Blocked.WriteMat}
+  \fdftrue. Note that it is off by default.
   
-The new format is not backwards compatible. A converter program
-(\shell{Util/DensityMatrix/dmUnblock.F90}) has been written to post-process
-those files intended for further analysis or re-use in Siesta. This is
-the best option for now, since it allows liberal checkpointing with a
-much smaller time consumption, and only incurs costs when re-using or
-analyzing files.
+  The new format is not backwards compatible. A converter program
+  (\shell{Util/DensityMatrix/dmUnblock.F90}) has been written to
+  post-process those files intended for further analysis or re-use in
+  Siesta. This is the best option for now, since it allows liberal
+  checkpointing with a much smaller time consumption, and only incurs
+  costs when re-using or analyzing files.
   
-Note that TranSiesta will continue to produce .DM files, in the old
-format (See save\_density\_matrix.F)
+  Note that \tsiesta\ will continue to produce \sysfile{DM} files, in
+  the old format (See save\_density\_matrix.F)
 
-( To test the new features, the option \fdf{S.Only} \fdftrue\ can be used. It
-will produce three files: a standard one, another one with optimized
-MPI communications, and a third, blocked one.  )
+  To test the new features, the option \fdf{S.Only} \fdftrue\ can be
+  used. It will produce three files: a standard one, another one with
+  optimized MPI communications, and a third, blocked one.
 
-\item The Hamiltonian and/or the DM are saved with different file
-  names, depending on their status at the time of writing:
+\end{fdflogicalF}
 
-\begin{verbatim}  
-  If the ``blocked format'' is in effect:
+\begin{fdflogicalT}{Write!DM}
 
-    DM_MIXED.blocked: Useful for checkpointing
-    DM_OUT.blocked:   Latest DM computed
-  
-  otherwise a single SystemLabel.DM file is produced.
-  
-  H_MIXED:  Useful for checkpointing
-  H_DMGEN:  The H from which the latest electronic structure was
-            computed
+  Control the creation of the current iterations density matrix to a
+  file for restart purposes and post-processing. If \fdffalse\ nothing
+  will be written.
 
-  (if using the ``blocked format'' option, the above files have
-   the suffix .blocked)
+  If \fdf{Use.Blocked.WriteMat} is \fdffalse\ the \sysfile{DM} file
+  will be written. Otherwise these density matrix files will be
+  created; \file{DM\_MIXED.blocked} and \file{DM\_OUT.blocked} which
+  are the mixed and the diagonalization output, respectively.
 
-\end{verbatim}  
-  
-The ``mixed'' files are produced only in the appropriate runs (MixDM
-(default), or MixHamiltonian). For example, if mixing the DM, what is
-needed for checkpointing is the latest mixed DM. This can be read back
-in a restarted calculation to pick up from the appropriate point.
-  
-\item Options affecting which files are written, and when:
-  
-For checkpointing,  \fdf{WriteDM} and  \fdf{WriteH} force the writing
-of the DM (resp. the Hamiltonian) at every scf step. They are ``on''
-by default.
-  
-For later analysis, \fdf{WriteDM.end.of.cycle} and
-\fdf{WriteH.end.of.cycle} will write DM and/or H at the end of the scf
-cycle. In this case, the objects written depends on the setting of the
-variable \fdf{SCF.MixAfterConvergence}, which is \fdffalse\ by
-default. The details can be seen in the
-code (in file \shell{siesta\_forces.F}. By default, they are ``on'' or
-``off'' depending on the settings of  \fdf{WriteDM} and  \fdf{WriteH},
-respectively.
+\end{fdflogicalT}
 
-\end{itemize}
+\begin{fdfentry}{Write!DM.end.of.cycle}[logical]<\fdfvalue{Write!DM}>
+
+  Equivalent to \fdf{Write!DM}, but will only write at the end of each
+  SCF loop.
+
+  \note the file generated depends on \fdf{SCF.MixAfterConvergence}.
+
+\end{fdfentry}  
+
+\begin{fdflogicalF}{Write!H}
+
+  Whether restart Hamiltonians should be written (not intrinsically
+  supported in 4.1). 
+
+  If \fdftrue\ these files will be created; \file{H\_MIXED} or
+  \file{H\_DMGEN} which is the mixed or the generated Hamiltonian from
+  the current density matrix, respectively. If
+  \fdf{Use.Blocked.WriteMat} the just mentioned files will have the
+  additional suffix \fdf*{.blocked}.
+  
+\end{fdflogicalF}
+
+\begin{fdfentry}{Write!H.end.of.cycle}[logical]<\fdfvalue{Write!H}>
+
+  Equivalent to \fdf{Write!H}, but will only write at the end of each
+  SCF loop.
+
+  \note the file generated depends on \fdf{SCF.MixAfterConvergence}.
+
+\end{fdfentry}  
 
 The following options control the creation of netCDF files. The
 relevant routines have not been optimized yet for large-scale
@@ -5140,14 +5148,14 @@ calculations, so in this case the options should not be turned on
 (they are off by default).
 
 
-\begin{fdflogicalT}{WriteDM.NetCDF}
+\begin{fdflogicalT}{Write!DM.NetCDF}
   \index{output!density matrix}
   
   It determines whether the density matrix (after the mixing step) is
   output as a \file{DM.nc} netCDF file or not.
 
   The file is overwritten at every SCF step. Use the
-  \fdf{WriteDM.History.NetCDF} option if a complete history is
+  \fdf{Write!DM.History.NetCDF} option if a complete history is
   desired.
 
   The \file{DM.nc} and standard DM file formats can be converted at
@@ -5157,7 +5165,7 @@ calculations, so in this case the options should not be turned on
 
 \end{fdflogicalT}
 
-\begin{fdflogicalT}{WriteDMHS.NetCDF}
+\begin{fdflogicalT}{Write!DMHS.NetCDF}
   \index{output!density matrix}%
   \index{output!Hamiltonian}%
   \index{output!overlap matrix}
@@ -5168,24 +5176,24 @@ calculations, so in this case the options should not be turned on
   also contains the overlap matrix S.
 
   The file is overwritten at every SCF step. Use the
-  \fdf{WriteDMHS.History.NetCDF} option if a complete history is
+  \fdf{Write!DMHS.History.NetCDF} option if a complete history is
   desired.
 
 \end{fdflogicalT}
 
 
-\begin{fdflogicalF}{WriteDM.History.NetCDF}
+\begin{fdflogicalF}{Write!DM.History.NetCDF}
   \index{output!density matrix}%
   \index{output!density matrix history}
 
   If \fdftrue, a series of netCDF files with names of the form
   \file{DM-NNNN.nc} is created to hold the complete history of the
-  density matrix (after mixing). (See also \fdf{WriteDM.NetCDF}). Each
+  density matrix (after mixing). (See also \fdf{Write!DM.NetCDF}). Each
   file corresponds to a geometry step.
 
 \end{fdflogicalF}
 
-\begin{fdflogicalF}{WriteDMHS.History.NetCDF}
+\begin{fdflogicalF}{Write!DMHS.History.NetCDF}
   \index{output!density matrix history}%
   \index{output!Hamiltonian history}%
   \index{output!overlap matrix}
@@ -5193,12 +5201,12 @@ calculations, so in this case the options should not be turned on
   If \fdftrue, a series of netCDF files with names of the form
   \file{DMHS-NNNN.nc} is created to hold the complete history of the
   input and output density matrix, and the Hamiltonian.  (See also
-  \fdf{WriteDMHS.NetCDF}). Each file corresponds to a geometry
+  \fdf{Write!DMHS.NetCDF}). Each file corresponds to a geometry
   step. The overlap matrix is stored only once per SCF cycle.
 
 \end{fdflogicalF}
 
-\begin{fdflogicalF}{Write.TSHS.History}
+\begin{fdflogicalF}{Write!TSHS.History}
   \index{output!Hamiltonian history}%
   \index{output!overlap matrix history}%
 
@@ -5672,7 +5680,7 @@ the issue (see Sec.~\ref{sec:filtering}).
   is active.  \index{output!HSX file}
 
 
-  See also the \fdf{WriteDMHS.NetCDF} and \fdf{WriteDMHS.History.NetCDF}
+  See also the \fdf{Write!DMHS.NetCDF} and \fdf{Write!DMHS.History.NetCDF}
   options.
 
 \end{fdflogicalF}
@@ -8689,7 +8697,7 @@ historical compatibility. Use the individual options instead.
 The program \program{denchar} in \program{Util/Denchar} can generate
 charge-density and wavefunction information in real space.
 
-\begin{fdflogicalF}{WriteDenchar}
+\begin{fdflogicalF}{Write!Denchar}
   \index{output!charge density and/or wfs for DENCHAR code} 
 
   Instructs to write information needed by the utility program DENCHAR
@@ -8840,7 +8848,38 @@ implemented, selected by
     this option is specified without a driver program sending data,
     siesta may hang without any notice).
     
-    See directory Util/Scripting \index{Scripting} for other driving options.
+    See directory Util/Scripting \index{Scripting} for other driving
+    options.
+
+    \option[Lua]%
+    Fully control the MD cycle and convergence path using an external
+    Lua script. 
+
+    With an external Lua script one may control nearly everything from
+    a script. One can query \emph{any} internal data-structures in
+    \siesta\ and, similarly, return \emph{any} data thus overwriting
+    the internals. A list of ideas which may be implemented in such a
+    Lua script are:
+    \begin{itemize}
+      \item New geometry relaxation algorithms
+
+      \item NEB calculations
+
+      \item New MD routines
+
+      \item Convergence tests of \fdf{MeshCutoff} and
+      \fdf{kgrid.MonkhorstPack}, or other parameters (currently basis
+      set optimizations cannot be performed in the Lua script).
+
+    \end{itemize}
+    For more details see Sec.~\ref{sec:lua}.
+
+    Using this option requires the compilation of \siesta\ with the
+    \program{flook} library.%
+    \index{flook}\index{External library!flook}%
+    If \siesta\ is not compiled as prescribed in Sec.~\ref{sec:libs}
+    this option will make \siesta\ die.
+
   \end{fdfoptions}
 
   \note if \fdf{Compat!Pre-v4-Dynamics} is \fdftrue\ this will default
@@ -10106,6 +10145,152 @@ disk space.
 
 \end{fdfentry}
 
+\section{External control of \texorpdfstring{\siesta}{SIESTA}}
+\label{sec:lua}
+
+Since \siesta\ 4.1 an additional method of controlling the convergence
+and MD of \siesta\ is enabled through external scripting
+capability. The external control comes in two variants:
+\begin{itemize}
+  \item Implicit control of MD through updating/changing parameters
+  and optimizing forces. For instance one may use a \fdf*{Verlet} MD
+  method but additionally update the forces through some external
+  force-field to amend limitations by the \fdf*{Verlet} method for
+  your particular case. In the implicit control the molecular dynamics
+  is controlled by \siesta.
+
+  \item Explicit control of MD. In this mode the molecular dynamics
+  \emph{must} be controlled in the external Lua script and the
+  convergence of the geometry should also be controlled via this
+  script.
+
+\end{itemize}
+
+The implicit control is in use if \fdf{MD.TypeOfRun} is something
+other than \fdf*{lua}, while if the option is \fdf*{lua} the explicit
+control is in use.
+
+For examples on the usage of the Lua scripting engine and the power
+you may find the library \program{flos}\footnote{This library is
+    implemented by Nick R. Papior to further enhance the
+    inter-operability with \siesta\ and external contributions.}, see
+\url{https://github.com/siesta-project/flos}. At the time of writing
+the \program{flos} library already implements new geometry/cell
+relaxation schemes and new force-constants algorithms. You are highly
+encouraged to use the new relaxation schemes as they may provide
+faster convergence of the relaxation.
+
+\begin{fdfentry}{Lua!Script}[file]<\nonvalue{none}>
+  
+  Specify a Lua script file which may be used to control the internal
+  variables in \siesta. Such a script file must contain at least one
+  function named \program{siesta\_comm} with no arguments.
+
+  An example file could be this (note this is Lua code):
+  \begin{codeexample}
+-- This function is REQUIRED
+function siesta_comm()
+   
+   -- Define which variables we want to retrieve from SIESTA
+   get_tbl = {"geom.xa", "E.total"}
+
+   -- Signal to SIESTA which variables we want to explore
+   siesta_get(get_tbl)
+
+   -- Now we have the required variables,
+   -- convert to a simpler variable name (not nested tables)
+   xa = siesta.geom.xa
+   Etot = siesta.E.total
+
+   -- If we know our energy is wrong by 0.001 Ry we may now
+   -- change the total energy
+   Etot = Etot - 0.001
+
+   -- Return to SIESTA the total energy such that
+   -- it internally has the "correct" energy.
+
+   siesta.E.total = Etot
+   ret_tbl = {"E.total"}
+
+   siesta_return(ret_tbl)
+
+end
+\end{codeexample}
+
+  Within this function there are certain \emph{states} which defines
+  different execution points in \siesta:
+  \begin{fdfoptions}
+
+    \option[Initialization]%
+    This is right after \siesta\ has read the options from the FDF
+    file. Here you may query some of the FDF options (and even change
+    them) for your particular problem.
+
+    \note \program{siesta.state == siesta.INITIALIZE}.
+
+    \option[Initialize-MD]%
+    Right before the SCF step starts. This point is somewhat
+    superfluous, but is necessary to communicate the actual meshcutoff
+    used\footnote{Remember that the \fdf{MeshCutoff} defined is the
+        minimum cutoff used.}.
+
+    \note \program{siesta.state == siesta.INIT\_MD}.
+
+    \option[SCF]%
+    Right after \siesta\ has calculated the output density matrix, and
+    just after \siesta\ has performed mixing.
+
+    \note \program{siesta.state == siesta.SCF\_LOOP}.
+
+    \option[Forces]%
+    This stage is right after \siesta\ has calculated the forces.
+
+    \note \program{siesta.state == siesta.FORCES}.
+
+    \option[Move]%
+    This state will \emph{only} be reached if \fdf{MD!TypeOfRun} is
+    \fdf*{lua}. If one does not return updated atomic coordinates
+    \siesta\ will reuse the same geometry as just analyzed.
+
+    \note \program{siesta.state == siesta.MOVE}.
+    
+    \option[Analysis]% 
+    Just before \siesta\ completes and exits. 
+
+    \note \program{siesta.state == siesta.ANALYSIS}.
+
+  \end{fdfoptions}
+
+  Beginning with implementations of Lua scripts may be cumbersome. It
+  is recommended to start by using \program{flos}, see
+  \url{https://github.com/siesta-project/flos} which contains several
+  examples on how to start implementing your own scripts.
+
+  \note The number of available variables continues to grow and to
+  find which quantities are accessible in Lua you may add this small
+  code in your Lua script:
+  \begin{codeexample}
+    siesta.print_allowed()
+  \end{codeexample}
+  which prints out a list of all accessible variables (note they are
+  not sorted).
+  
+\end{fdfentry}
+
+\begin{fdflogicalF}{Lua!Debug}
+
+  Debug the Lua script mode by printing out (on stdout) information
+  everytime \siesta\ communicates with Lua.
+  
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{Lua!Debug.MPI}
+
+  Debug all nodes (if in a parallel run).
+  
+\end{fdflogicalF}
+
+
 \section{TRANSIESTA}
 
 \siesta\ includes the possibility of performing calculations of
@@ -10125,10 +10310,10 @@ between two semi-infinite metallic leads. A finite bias can be applied
 between both leads, to drive a finite current. The method is described
 in detail in \cite{Brandbyge2002}. In practical terms,
 calculations using \tsiesta\ involve the solution of the
-electronic density from the DFT Hamiltonian using Green's functions
+electronic density from the DFT Hamiltonian using Greens functions
 techniques, instead of the usual diagonalization procedure. Therefore,
 \tsiesta\ calculations involve a \siesta\ run, in which a
-set of routines are invoked to solve the Green's functions and the
+set of routines are invoked to solve the Greens functions and the
 charge density for the open system. These routines are packed in a set
 of modules, and we will refer to it as the '\tsiesta\ module'
 in what follows.
@@ -10152,7 +10337,7 @@ R. Papior and encompass a highly advanced inversion algorithm as well
 as allowing $N$ electrode setups among just a few additional
 features. Furthermore, the utility \tbtrans\ has also been fully
 re-coded (by Nick R. Papior) to be a generic tight-binding code capable
-of analyzing physics from the Green's function perspective in $N\ge1$
+of analyzing physics from the Greens function perspective in $N\ge1$
 setups.
 
 \subsection{Source code structure}
@@ -10214,7 +10399,7 @@ Note that apart from the usual files generated by \siesta, now you will
 find the \texttt{elec.fast.TSHS} file (in general \sysfile{TSHS}). 
 This file contains the real-space Hamiltonian and Overlap matrices, together 
 with some other information, that will be used, in the case of electrodes, to 
-calculate the surface Green's functions. 
+calculate the surface Greens functions. 
 
 Once the electrode file has been generated, we can perform the \tsiesta\ 
 calculation (where the \fdf{SolutionMethod} flag is set
@@ -10259,7 +10444,7 @@ Other automated TranSiesta-TBTrans examples can be found in
   For the SR, \tsiesta\ starts with the usual \siesta\ procedure,
   converging a Density Matrix (DM) with the usual Kohn-Sham scheme for
   periodic systems. It uses this solution as an initial input for the
-  Green's function self consistent cycle. As it is known, \siesta\
+  Greens function self consistent cycle. As it is known, \siesta\
   stores the DM in a file with extension \sysfile{DM}. In the case of
   \tsiesta, this is done in a file named \sysfile{TSDE}. In a rerun of
   the same system (meaning the same \fdf{SystemLabel}), if the

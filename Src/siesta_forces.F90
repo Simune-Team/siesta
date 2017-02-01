@@ -24,7 +24,8 @@ contains
     use files, only: slabel
     use siesta_cml
 #ifdef SIESTA__FLOOK
-    use flook_siesta, only : slua_call, LUA_SCF_LOOP
+    use flook_siesta, only : slua_call
+    use flook_siesta, only : LUA_INIT_MD, LUA_SCF_LOOP
     use siesta_dicts
 #endif
     use m_state_init
@@ -106,6 +107,7 @@ contains
     real(dp) :: dHmax ! Max. change in H elements
     real(dp) :: dEmax ! Max. change in EDM elements
     real(dp) :: drhog ! Max. change in rho(G) (experimental)
+    real(dp) :: G2max ! actually used meshcutoff
     type(converger_t) ::  conv_harris, conv_freeE
 
     ! For initwf
@@ -140,7 +142,7 @@ contains
 #ifdef SIESTA__PEXSI
     if (ionode) call memory_snapshot("after state_init")
 #endif
-
+    
     if ( fdf_get("Sonly",.false.) ) then
        if ( SIESTA_worker ) then
           call timer( 'all', 2 )
@@ -148,17 +150,6 @@ contains
        end if
        call bye("S only")
     end if
-
-    ! The current structure of the loop tries to reproduce the
-    ! historical Siesta usage. It should be made more clear.
-    ! Two changes:
-    !
-    ! -- The number of scf iterations performed is exactly
-    !    equal to the number specified (i.e., the "forces"
-    !    phase is not counted as a final scf step)
-    !
-    ! -- At the change to a TranSiesta GF run the variable "first"
-    !    is implicitly reset to "true".
 
 #ifdef SIESTA__FLOOK
     ! Add the iscf constant to the list of variables
@@ -169,19 +160,31 @@ contains
     call dict_variable_add('SCF.dH',dHmax)
     call dict_variable_add('SCF.dE',dEmax)
     call dict_variable_add('SCF.drhoG',drhog)
+    ! We have to set the meshcutoff here
+    ! because the asked and required ones are not
+    ! necessarily the same
+    call dict_variable_add('Mesh.Cutoff.Minimum',G2cut)
+    call dict_variable_add('Mesh.Cutoff.Used',G2max)
 #endif
-
+        
     ! This call computes the non-scf part of H and initializes the
     ! real-space grid structures.  It might be better to split the two,
     ! putting the grid initialization into state_init and moving the
     ! calculation of H_0 to the body of the loop, done if first=.true.  This
     ! would suit "analysis" runs in which nscf = 0
-    if ( SIESTA_worker ) call setup_H0()
-
+    if ( SIESTA_worker ) call setup_H0(G2max)
+    
 #ifdef SIESTA__PEXSI
     if (ionode) call memory_snapshot("after setup_H0")
 #endif
-    
+
+#ifdef SIESTA__FLOOK
+    ! Communicate with lua, just before entering the SCF loop
+    ! This is mainly to be able to communicate
+    ! mesh-related quantities (g2max)
+    call slua_call(LUA, LUA_INIT_MD)
+#endif
+
 #ifdef NCDF_4
     ! Initialize the NC file
     if ( write_cdf ) then
@@ -217,7 +220,7 @@ contains
     dHmax = -1._dp
     dEmax = -1._dp
     drhog = -1._dp
-
+    
     if ( SIESTA_worker ) then
        if ( first ) then
           if ( converge_Eharr ) then
@@ -230,37 +233,43 @@ contains
           end if
        end if
     end if
-       
+
+    ! The current structure of the loop tries to reproduce the
+    ! historical Siesta usage. It should be made more clear.
+    ! Two changes: 
+    !
+    ! -- The number of scf iterations performed is exactly
+    !    equal to the number specified (i.e., the "forces"
+    !    phase is not counted as a final scf step)
+    !
+    ! -- At the change to a TranSiesta GF run the variable "first"
+    !    is implicitly reset to "true".
+
     ! Start of SCF loop
     iscf = 0
     do while ( iscf < nscf )
+
        ! Conditions of exit:
        !  -- At the top, to catch a non-positive nscf and # of iterations
        !  -- At the bottom, based on convergence
-
-#ifdef SIESTA__FLOOK
-       ! Communicate with lua
-       call slua_call(LUA, LUA_SCF_LOOP)
-#endif
        
        iscf = iscf + 1
-
+       
        ! Note implications for TranSiesta when mixing H
        ! Now H will be recomputed instead of simply being
-       ! inherited, however, this is required as the
+       ! inherited, however, this is required as the 
        ! if we have bias calculations as the electric
        ! field across the junction needs to be present.
-       first = iscf == 1
-
-       ! Only code runned by the SIESTA_worker pool
+       first = (iscf == 1)
+       
        if ( SIESTA_worker ) then
-
+           
           call timer( 'IterSCF', 1 )
           if (cml_p) &
                call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
-
+          
           if ( mixH ) then
-
+             
              if ( first ) then
                 if (fdf_get("Read-H-from-file",.false.)) then
                    call get_H_from_file()
@@ -268,7 +277,7 @@ contains
                    call setup_hamiltonian( iscf )
                 end if
              end if
-
+             
              call compute_DM( iscf )
 
              ! Maybe set Dold to zero if reading charge or H...
@@ -277,20 +286,20 @@ contains
                   call compute_max_diff(Eold, Escf, dEmax)
              call setup_hamiltonian( iscf )
              call compute_max_diff(Hold, H, dHmax)
-
+             
           else
-
+             
              call setup_hamiltonian( iscf )
              call compute_max_diff(Hold, H, dHmax)
-
+             
              call compute_DM( iscf )
-
+             
              call compute_max_diff(Dold, Dscf, dDmax)
              if ( converge_EDM ) &
                   call compute_max_diff(Eold, Escf, dEmax)
           end if
 
-          ! This itteration has completed calculating the new DM
+          ! This iteration has completed calculating the new DM
 
           call compute_energies( iscf )
           if ( mix_charge ) then
@@ -324,7 +333,7 @@ contains
           if ( SCFconverged .and. iscf < min_nscf ) then
              SCFconverged = .false.
              if ( IONode ) then
-                write(6,"(a,i0)") &
+                write(*,"(a,i0)") &
                      "SCF cycle continued for minimum number of iterations: ", &
                      min_nscf
              end if
@@ -383,6 +392,11 @@ contains
           call print_timings( first, istep == inicoor )
           if (cml_p) call cmlEndStep(mainXML)
 
+#ifdef SIESTA__FLOOK
+          ! Communicate with lua
+          call slua_call(LUA, LUA_SCF_LOOP)
+#endif
+
 #ifdef TRANSIESTA
           ! ... except that we might continue for TranSiesta
           if ( SCFconverged ) then
@@ -390,12 +404,12 @@ contains
              ! might reset SCFconverged and iscf
           end if
 #endif
-
+          
        else
           
           ! non-siesta worker
           call compute_DM( iscf )
-
+          
        end if
 
 #ifdef SIESTA__PEXSI
@@ -411,11 +425,11 @@ contains
 #ifdef SIESTA__PEXSI
     if ( isolve == SOLVE_PEXSI ) then
        call pexsi_finalize_scfloop()
-    endif
+    end if
 #endif
     
     if ( .not. SIESTA_worker ) return
-
+    
     call end_of_cycle_save_operations()
     
     if ( .not. SCFconverged) then
@@ -429,7 +443,7 @@ contains
     
     ! To write the initial wavefunctions to be used in a
     ! consequent TDDFT run.
-    if( writetdwf ) then
+    if ( writetdwf ) then
        istpp = 0
        call initwf(no_s, nspin, nspin, no_l, maxnh, no_u, qtot, &
             gamma, indxuo, nkpnt, kpoint, kweight, &
@@ -452,12 +466,12 @@ contains
     ! Note that this call will no longer overwrite H while computing the
     ! final energies, forces and stresses...
     
-    if (fdf_get("compute-forces",.true.)) then
+    if ( fdf_get("compute-forces",.true.) ) then
        call post_scf_work( istep, iscf , SCFconverged )
 #ifdef SIESTA__PEXSI
        if (ionode) call memory_snapshot("after post_scf_work")
 #endif
-    endif
+    end if
 
     ! ... so H at this point is the latest generator of the DM, except
     ! if mixing H beyond self-consistency or terminating the scf loop

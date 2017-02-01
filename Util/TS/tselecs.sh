@@ -41,7 +41,7 @@ while [ $# -gt 0 ]; do
 	-V|-bias)
 	    volt=$1 ; shift ; shift
 	    ;;
-	-2|-3|-4|-5|-6|-7|-8|-9)
+	-1|-2|-3|-4|-5|-6|-7|-8|-9)
 	    # Will produce output for standard TS
 	    def=${opt:1} ; shift
 	    ;;
@@ -280,22 +280,34 @@ done
 
 # In case of only two electrodes we have
 # the particular case of the traditional transiesta code
-if [ $def -eq 2 ]; then
-    add_opt -r "-mu1-name" "Left"
-    add_opt -r "-mu1-mu" "V/2"
-    add_opt -r "-el1-name" "Left"
-    add_opt -r "-el1-mu" "Left"
-    rem_opt -el1-pos -el1-end-pos -el1-semi-inf
-    add_opt "-el1-pos" "1"
-    add_opt "-el1-semi-inf" "-a3"
-    add_opt -r "-mu2-name" "Right"
-    add_opt -r "-mu2-mu" "-V/2"
-    add_opt -r "-el2-name" "Right"
-    add_opt -r "-el2-mu" "Right"
-    rem_opt -el2-pos -el2-end-pos -el2-semi-inf
-    add_opt "-el2-end-pos" "-1"
-    add_opt "-el2-semi-inf" "+a3"
-fi
+case $def in
+    1)
+	add_opt -r "-mu1-name" "single"
+	add_opt -r "-mu1-mu" "0."
+	add_opt -r "-el1-name" "single"
+	add_opt -r "-el1-mu" "single"
+	rem_opt -el1-pos -el1-end-pos -el1-semi-inf
+	add_opt "-el1-pos" "1"
+	add_opt "-el1-semi-inf" "-a3"
+	;;
+    2)
+	add_opt -r "-mu1-name" "Left"
+	add_opt -r "-mu1-mu" "V/2"
+	add_opt -r "-el1-name" "Left"
+	add_opt -r "-el1-mu" "Left"
+	rem_opt -el1-pos -el1-end-pos -el1-semi-inf
+	add_opt "-el1-pos" "1"
+	add_opt "-el1-semi-inf" "-a3"
+	add_opt -r "-mu2-name" "Right"
+	add_opt -r "-mu2-mu" "-V/2"
+	add_opt -r "-el2-name" "Right"
+	add_opt -r "-el2-mu" "Right"
+	rem_opt -el2-pos -el2-end-pos -el2-semi-inf
+	add_opt "-el2-end-pos" "-1"
+	add_opt "-el2-semi-inf" "+a3"
+	;;
+esac    
+
 
 # Add the user options
 while [ $# -gt 0 ]; do
@@ -473,13 +485,15 @@ echo ""
 echo "MSG: You may need to correct the TS.Contours.nEq for signs of bias" >&2
 echo "MSG: The energies must be in increasing order (you may use |V|/2 to designate absolute values)" >&2
 
-# Create the non-equilbrium contour
-echo "%block TS.Contours.nEq"
-for i in `seq 1 $_mus` ; do
-    [ $i -eq $_mus ] && continue
-    echo "  neq-$i"
-done
-echo "%endblock TS.Contours.nEq"
+if [ $_mus -gt 1 ]; then
+    # Create the non-equilbrium contour
+    echo "%block TS.Contours.nEq"
+    for i in `seq 1 $_mus` ; do
+	[ $i -eq $_mus ] && continue
+	echo "  neq-$i"
+    done
+    echo "%endblock TS.Contours.nEq"
+fi
 
 # Create array of chemical potentials sorted
 mus=()
@@ -499,33 +513,37 @@ if [ $_mus -gt 2 ]; then
     echo "MSG: Use the lowest bias to the highest bias." >&2
     echo "MSG: Here we supply as many different parts as there are chemical potentials" >&2
 fi
-i=1
-echo "%block TS.Contour.nEq.neq-$i"
-echo "  part line"
-j=$((i+1))
-if [ $j -eq $_mus ]; then
-    echo "   from ${mus[$i]} - 5 kT to ${mus[$j]} + 5 kT"
-else
-    echo "   from ${mus[$i]} - 5 kT to ${mus[$j]}"
-fi
-echo "     delta $de eV"
-echo "      method mid-rule"
-echo "%endblock TS.Contour.nEq.neq-$i"
 
-# Sort all chemical potentials
-for i in `seq 3 $((_mus))` ; do
-    # Create the contours
-    echo "%block TS.Contour.nEq.neq-$((i-1))"
+if [ $_mus -gt 1 ]; then
+
+    i=1
+    echo "%block TS.Contour.nEq.neq-$i"
     echo "  part line"
-    if [ $i -eq $_mus ]; then
-	echo "   from prev to ${mus[$i]} + 5 kT"
+    j=$((i+1))
+    if [ $j -eq $_mus ]; then
+	echo "   from ${mus[$i]} - 5 kT to ${mus[$j]} + 5 kT"
     else
-	echo "   from prev to ${mus[$i]}"
+	echo "   from ${mus[$i]} - 5 kT to ${mus[$j]}"
     fi
     echo "     delta $de eV"
     echo "      method mid-rule"
-    echo "%endblock TS.Contour.nEq.neq-$((i-1))"
-done
+    echo "%endblock TS.Contour.nEq.neq-$i"
+
+    # Sort all chemical potentials
+    for i in `seq 3 $((_mus))` ; do
+	# Create the contours
+	echo "%block TS.Contour.nEq.neq-$((i-1))"
+	echo "  part line"
+	if [ $i -eq $_mus ]; then
+	    echo "   from prev to ${mus[$i]} + 5 kT"
+	else
+	    echo "   from prev to ${mus[$i]}"
+	fi
+	echo "     delta $de eV"
+	echo "      method mid-rule"
+	echo "%endblock TS.Contour.nEq.neq-$((i-1))"
+    done
+fi
 
 fi
 

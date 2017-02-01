@@ -49,10 +49,11 @@ contains
 
   subroutine dict_populate_options()
     use siesta_options
+    use m_steps, only: inicoor, fincoor
 
     ! We simply re-create the options, (note the 
     ! de-allocation by "nullification")
-    call delete(options,dealloc=.false.)
+    call delete(options, dealloc=.false.)
 
     ! unluckily the dictionary does not
     ! implement a stringent way of doing characters
@@ -60,7 +61,7 @@ contains
 
     options = &
          ('DM.HistoryDepth'.kvp.DM_history_depth)
-
+    
     ! Output options
     options = options // &
          ('Write.DenChar'.kvp.dumpcharge)
@@ -91,20 +92,39 @@ contains
     options = options // &
          ('SCF.KickMixingWeight'.kvp.wmixkick)
     options = options // &
-         ('SCF.DM.Tolerance'.kvp.dDtol)
-    options = options // &
-         ('SCF.H.Tolerance'.kvp.dHtol)
-    options = options // &
          ('SCF.MonitorForces'.kvp.monitor_forces_in_scf)
+
     options = options // &
          ('ElectronicTemperature'.kvp.temp)
 
+    ! Convergence criteria
     options = options // &
-         ('MD.NumSteps'.kvp.nmove)
+         ('SCF.Harris.Converge'.kvp.converge_Eharr)
+    options = options // &
+         ('SCF.Harris.Tolerance'.kvp.tolerance_Eharr)
+    options = options // &
+         ('SCF.DM.Converge'.kvp.converge_DM)
+    options = options // &
+         ('SCF.DM.Tolerance'.kvp.dDtol)
+    options = options // &
+         ('SCF.EDM.Converge'.kvp.converge_EDM)
+    options = options // &
+         ('SCF.EDM.Tolerance'.kvp.tolerance_EDM)
+    options = options // &
+         ('SCF.H.Converge'.kvp.converge_H)
+    options = options // &
+         ('SCF.H.Tolerance'.kvp.dHtol)
+    options = options // &
+         ('SCF.FreeE.Converge'.kvp.converge_FreeE)
+    options = options // &
+         ('SCF.FreeE.Tolerance'.kvp.tolerance_FreeE)
+    
     options = options // &
          ('MD.MaxDispl'.kvp.dxmax)
     options = options // &
          ('MD.MaxForceTol'.kvp.ftol)
+    options = options // &
+         ('MD.MaxStressTol'.kvp.strtol)
     options = options // &
          ('MD.FinalTimeStep'.kvp.ifinal)
     options = options // &
@@ -115,19 +135,66 @@ contains
          ('MD.FC.Last'.kvp.ia2)
     options = options // &
          ('MD.Temperature.Target'.kvp.tt)
-    
+    options = options // &
+         ('MD.Relax.CellOnly'.kvp.RelaxCellOnly)
+    options = options // &
+         ('MD.Relax.Cell'.kvp.varcel)
+    options = options // &
+         ('MD.Steps.First'.kvp.inicoor)
+    options = options // &
+         ('MD.Steps.Last'.kvp.fincoor)
+
+
+
+    ! All write options    ! fdf-flag
+    options = options // & ! SaveHS
+         ('Write.HS'.kvp.savehs)
+    options = options // & ! DM.UseSaveDM
+         ('Use.DM'.kvp.usesavedm)
+
+    options = options // & ! WriteHirshfeldPop
+         ('Write.Hirshfeld'.kvp.hirshpop)
+    options = options // & ! WriteVoronoiPop
+         ('Write.Voronoi'.kvp.voropop)
+
+    ! Options related to the mesh!
+    options = options // & ! Required minimum meshcutoff
+         ('Mesh.Cutoff.Minimum'.kvp.g2cut)
+    options = options // & ! SaveRho
+         ('Mesh.Write.Rho'.kvp.saverho)
+    options = options // & ! SaveDeltaRho
+         ('Mesh.Write.DeltaRho'.kvp.savedrho)
+    options = options // & ! SaveRhoXC
+         ('Mesh.Write.RhoXC'.kvp.saverhoxc)
+    options = options // & ! SaveElectrostaticPotential
+         ('Mesh.Write.HartreePotential'.kvp.savevh)
+    options = options // & ! SaveNeutralAtomPotential
+         ('Mesh.Write.NeutralAtomPotential'.kvp.savevna)
+    options = options // & ! SaveTotalPotential
+         ('Mesh.Write.TotalPotential'.kvp.savevt)
+    options = options // & ! SaveIonicCharge
+         ('Mesh.Write.IonicRho'.kvp.savepsch)
+    options = options // & ! SaveBaderCharge
+         ('Mesh.Write.BaderRho'.kvp.savebader)
+    options = options // & ! SaveTotalCharge
+         ('Mesh.Write.TotalRho'.kvp.savetoch)
+
   end subroutine dict_populate_options
 
   subroutine dict_populate_variables()
 
     use siesta_geom
+    use kpoint_grid, only: kscell, kdispl
     use m_forces
     use m_energies
     use atomlist
+    use m_stress
+
+    real(dp), pointer :: r2(:,:)
 
     ! We simply re-create the options, (note the 
     ! de-allocation by "nullification")
-    call delete(variables,dealloc=.false.)
+    call delete(variables, dealloc=.false.)
 
     ! Add geometries (lets do with this for now)
     variables = &
@@ -135,15 +202,32 @@ contains
     variables = variables // &
          ('geom.cell'.kvp.ucell)
     variables = variables // &
+         ('geom.cell_last'.kvp.ucell_last)
+    variables = variables // &
          ('geom.vcell'.kvp.vcell)
     variables = variables // &
          ('geom.nsc'.kvp.nsc)
+    r2 => xa(:,1:na_u)
     variables = variables // &
-         ('geom.xa'.kvp.xa)
+         ('geom.xa'.kvp.r2)
+    r2 => xa_last(:,1:na_u)
     variables = variables // &
-         ('geom.xa_last'.kvp.xa_last)
+         ('geom.xa_last'.kvp.r2)
     variables = variables // &
          ('geom.va'.kvp.va)
+
+    ! Additional information regarding the
+    ! atomic species
+    variables = variables // &
+         ('geom.species'.kvp.isa)
+    variables = variables // &
+         ('geom.z'.kvp.iza)
+    variables = variables // &
+         ('geom.last_orbital'.kvp.lasto)
+    variables = variables // &
+         ('geom.mass'.kvp.amass)
+    variables = variables // &
+         ('geom.neutral_charge'.kvp.qa)
 
     ! This is an abstraction made
     ! easy for the user.
@@ -159,16 +243,15 @@ contains
          ('geom.fa_pristine'.kvp.fa)
     variables = variables // &
          ('geom.fa_constrained'.kvp.cfa)
+
+    ! Add the stress components to the geometry
     variables = variables // &
-         ('geom.species'.kvp.isa)
+         ('geom.stress'.kvp.cstress)
     variables = variables // &
-         ('geom.z'.kvp.iza)
+         ('geom.stress_pristine'.kvp.stress)
     variables = variables // &
-         ('geom.last_orbital'.kvp.lasto)
-    variables = variables // &
-         ('geom.mass'.kvp.amass)
-    variables = variables // &
-         ('geom.neutral_charge'.kvp.qa)
+         ('geom.stress_constrained'.kvp.cstress)
+
 
     ! Add energies
     variables = variables // &
@@ -187,40 +270,56 @@ contains
          ('E.exchange_correlation'.kvp.Exc)
     variables = variables // &
          ('E.free'.kvp.FreeE)
+    variables = variables // &
+         ('E.ions_kinetic'.kvp.Ekinion)
+    variables = variables // &
+         ('E.ions'.kvp.Eions)
+    variables = variables // &
+         ('E.band_structure'.kvp.Ebs)
+    variables = variables // &
+         ('E.spin_orbit'.kvp.Eso)
+    variables = variables // &
+         ('E.ldau'.kvp.Eldau)
 
     ! Add the number of charges to the system
     variables = variables // &
          ('charge'.kvp.qtot)
 
+    ! Add the k-point sampling
+    variables = variables // &
+         ('BZ.k.Matrix'.kvp.kscell)
+    variables = variables // &
+         ('BZ.k.Displacement'.kvp.kdispl)
+
   end subroutine dict_populate_variables
 
   subroutine dict_variable_add_b_0d(name,val)
     character(len=*), intent(in) :: name
-    logical, intent(inout) :: val
+    logical, intent(inout), target :: val
     if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
     variables = variables // (name.kvp.val)
   end subroutine dict_variable_add_b_0d
   subroutine dict_variable_add_i_0d(name,val)
     character(len=*), intent(in) :: name
-    integer, intent(inout) :: val
+    integer, intent(inout), target :: val
     if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
     variables = variables // (name.kvp.val)
   end subroutine dict_variable_add_i_0d
   subroutine dict_variable_add_d_0d(name,val)
     character(len=*), intent(in) :: name
-    real(dp), intent(inout) :: val
+    real(dp), intent(inout), target :: val
     if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
     variables = variables // (name.kvp.val)
   end subroutine dict_variable_add_d_0d
   subroutine dict_variable_add_d_1d(name,val)
     character(len=*), intent(in) :: name
-    real(dp), intent(inout) :: val(:)
+    real(dp), intent(inout), target :: val(:)
     if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
     variables = variables // (name.kvp.val)
   end subroutine dict_variable_add_d_1d
   subroutine dict_variable_add_d_2d(name,val)
     character(len=*), intent(in) :: name
-    real(dp), intent(inout) :: val(:,:)
+    real(dp), intent(inout), target :: val(:,:)
     if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
     variables = variables // (name.kvp.val)
   end subroutine dict_variable_add_d_2d

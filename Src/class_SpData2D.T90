@@ -274,7 +274,7 @@
  function sizeSpData(this, dim) result(n)
    type(TYPE_NAME), intent(in) :: this
    integer, intent(in), optional :: dim
-   integer :: n
+   integer :: n, ldim
  
    n = 0
    if ( .not. initialized(this) ) return
@@ -283,7 +283,10 @@
       if ( dim < 1 .or. 2 < dim ) then
         n = 0
       else
-        n = size(this%data%a%data%val,dim)
+        ! we have to use a different variable
+	! name than dim (due to interface problems)
+        ldim = dim
+        n = size(this%data%a%data%val,ldim)
       end if
    else
       n = size(this%data%a%data%val)
