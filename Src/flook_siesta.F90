@@ -14,11 +14,18 @@ module flook_siesta
   private
 
   ! Signals to LUA
+  ! Right after reading initial options 
   integer, parameter, public :: LUA_INITIALIZE = 1
-  integer, parameter, public :: LUA_SCF_LOOP = 2
-  integer, parameter, public :: LUA_FORCES = 3
-  integer, parameter, public :: LUA_MOVE = 4
-  integer, parameter, public :: LUA_ANALYSIS = 5
+  ! Right before SCF step starts, but at each MD step
+  integer, parameter, public :: LUA_INIT_MD = 2
+  ! at the start of each SCF step
+  integer, parameter, public :: LUA_SCF_LOOP = 3
+  ! after each SCF has finished
+  integer, parameter, public :: LUA_FORCES = 4
+  ! when moving the atoms, right after the FORCES step
+  integer, parameter, public :: LUA_MOVE = 5
+  ! when SIESTA is complete, just before it exists
+  integer, parameter, public :: LUA_ANALYSIS = 6
 
 #ifdef SIESTA__FLOOK
 
@@ -45,10 +52,11 @@ contains
 siesta = { &
     Node = 1, &
     INITIALIZE = 1, &
-    SCF_LOOP = 2, &
-    FORCES = 3, &
-    MOVE = 4, &
-    ANALYSIS = 5, &
+    INIT_MD = 2, &
+    SCF_LOOP = 3, &
+    FORCES = 4, &
+    MOVE = 5, &
+    ANALYSIS = 6, &
     state = 0, &
     print = function(self,msg) &
        print("Lua-msg: " ..msg) &
@@ -124,7 +132,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     call lua_register(LUA,'_internal_print_allowed', slua_siesta_print_objects)
     call lua_run(LUA, code = 'siesta.print_allowed = _internal_print_allowed' )
 
-    write(fortran_msg,'(a,i0)') 'siesta.Node = ',Node
+    write(fortran_msg,'(a,i0)') 'siesta.Node = ',Node + 1
     call lua_run(LUA, code = fortran_msg )
     write(fortran_msg,'(a,i0)') 'siesta.Nodes = ',Nodes
     call lua_run(LUA, code = fortran_msg )

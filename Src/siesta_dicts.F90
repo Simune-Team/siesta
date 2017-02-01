@@ -158,8 +158,8 @@ contains
          ('Write.Voronoi'.kvp.voropop)
 
     ! Options related to the mesh!
-    options = options // &
-         ('Mesh.Cutoff'.kvp.g2cut)
+    options = options // & ! Required minimum meshcutoff
+         ('Mesh.Cutoff.Minimum'.kvp.g2cut)
     options = options // & ! SaveRho
          ('Mesh.Write.Rho'.kvp.saverho)
     options = options // & ! SaveDeltaRho
@@ -295,31 +295,31 @@ contains
 
   subroutine dict_variable_add_b_0d(name,val)
     character(len=*), intent(in) :: name
-    logical, intent(inout) :: val
+    logical, intent(inout), target :: val
     if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
     variables = variables // (name.kvp.val)
   end subroutine dict_variable_add_b_0d
   subroutine dict_variable_add_i_0d(name,val)
     character(len=*), intent(in) :: name
-    integer, intent(inout) :: val
+    integer, intent(inout), target :: val
     if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
     variables = variables // (name.kvp.val)
   end subroutine dict_variable_add_i_0d
   subroutine dict_variable_add_d_0d(name,val)
     character(len=*), intent(in) :: name
-    real(dp), intent(inout) :: val
+    real(dp), intent(inout), target :: val
     if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
     variables = variables // (name.kvp.val)
   end subroutine dict_variable_add_d_0d
   subroutine dict_variable_add_d_1d(name,val)
     character(len=*), intent(in) :: name
-    real(dp), intent(inout) :: val(:)
+    real(dp), intent(inout), target :: val(:)
     if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
     variables = variables // (name.kvp.val)
   end subroutine dict_variable_add_d_1d
   subroutine dict_variable_add_d_2d(name,val)
     character(len=*), intent(in) :: name
-    real(dp), intent(inout) :: val(:,:)
+    real(dp), intent(inout), target :: val(:,:)
     if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
     variables = variables // (name.kvp.val)
   end subroutine dict_variable_add_d_2d

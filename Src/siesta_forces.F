@@ -21,7 +21,8 @@
       use files, only: slabel
       use siesta_cml
 #ifdef SIESTA__FLOOK
-      use flook_siesta, only : slua_call, LUA_SCF_LOOP
+      use flook_siesta, only : slua_call
+      use flook_siesta, only : LUA_INIT_MD, LUA_SCF_LOOP
       use siesta_dicts
 #endif
       use m_state_init
@@ -99,6 +100,7 @@
       real(dp) :: dHmax     ! Max. change in H elements
       real(dp) :: dEmax     ! Max. change in EDM elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
+      real(dp), target :: G2max      ! the actual mesh-cutoff used
       type(converger_t)  ::  conv_harris, conv_freeE
 !---------------------------------------------------------------------- BEGIN
 #ifdef TRANSIESTA
@@ -138,6 +140,22 @@
          call bye("S only")
       endif
 
+#ifdef SIESTA__FLOOK
+      ! Add the iscf constant to the list of variables
+      ! that are available only in this part of the
+      ! routine.
+      call dict_variable_add('SCF.iteration',iscf)
+      call dict_variable_add('SCF.dD',dDmax)
+      call dict_variable_add('SCF.dH',dHmax)
+      call dict_variable_add('SCF.dE',dEmax)
+      call dict_variable_add('SCF.drhoG',drhog)
+      ! We have to set the meshcutoff here
+      ! because the asked and required ones are not
+      ! necessarily the same
+      call dict_variable_add('Mesh.Cutoff.Minimum',G2cut)
+      call dict_variable_add('Mesh.Cutoff.Used',G2max)
+#endif
+
 !     The current structure of the loop tries to reproduce the
 !     historical Siesta usage. It should be made more clear.
 !     Two changes: 
@@ -149,17 +167,6 @@
 !       -- At the change to a TranSiesta GF run the variable "first"
 !          is implicitly reset to "true".
 
-#ifdef SIESTA__FLOOK
-      ! Add the iscf constant to the list of variables
-      ! that are available only in this part of the
-      ! routine.
-      call dict_variable_add('SCF.iteration',iscf)
-      call dict_variable_add('SCF.dD',dDmax)
-      call dict_variable_add('SCF.dH',dHmax)
-      call dict_variable_add('SCF.dE',dEmax)
-      call dict_variable_add('SCF.drhoG',drhog)
-#endif
-
 !     Start of SCF loop
       iscf = 0
       
@@ -168,10 +175,17 @@
       ! putting the grid initialization into state_init and moving the
       ! calculation of H_0 to the body of the loop, done if first=.true.  This
       ! would suit "analysis" runs in which nscf = 0
-      if (SIESTA_worker) call setup_H0()
+      if (SIESTA_worker) call setup_H0(G2max)
 
 #ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after setup_H0")
+#endif
+
+#ifdef SIESTA__FLOOK
+      ! Communicate with lua, just before entering the SCF loop
+      ! This is mainly to be able to communicate
+      ! mesh-related quantities (g2max)
+      call slua_call(LUA, LUA_INIT_MD)
 #endif
 
 #ifdef NCDF_4
@@ -212,11 +226,6 @@
         ! Conditions of exit:
         !  -- At the top, to catch a non-positive nscf
         !  -- At the bottom, based on convergence or # of iterations
-
-#ifdef SIESTA__FLOOK
-        ! Communicate with lua
-        call slua_call(LUA, LUA_SCF_LOOP)
-#endif
 
         iscf = iscf + 1
         if ( iscf > nscf ) EXIT
@@ -314,8 +323,7 @@
            end if
         end if
 
-        ! Check whether we should step to the next
-        ! mixer
+        ! Check whether we should step to the next mixer
         call mixing_scf_converged( SCFconverged )
         
 #ifdef TRANSIESTA
@@ -345,7 +353,7 @@
 #endif
 
         if (monitor_forces_in_scf) call compute_forces()
-
+        
         ! Mix_after_convergence preserves the old behavior of
         ! the program.
         if ((.not. SCFconverged) .or. mix_after_convergence) then
@@ -369,6 +377,11 @@
         call print_timings( first, istep == inicoor )
         if (cml_p) call cmlEndStep(mainXML)
 
+#ifdef SIESTA__FLOOK
+        ! Communicate with lua
+        call slua_call(LUA, LUA_SCF_LOOP)
+#endif
+        
         ! This should be the last step if we have converged...
         last_step = SCFConverged
 

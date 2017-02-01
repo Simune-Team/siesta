@@ -338,7 +338,7 @@ module. \tsiesta\ provides the ability to model open-boundary systems where ball
 electron transport is taking place.  Using \tsiesta\ one can compute electronic
 transport properties, such as the zero bias conductance and the I-V characteristic, of a
 nanoscale system in contact with two electrodes at different electrochemical potentials.
-The method is based on using non equilibrium Green's functions (NEGF), that are
+The method is based on using non equilibrium Greens functions (NEGF), that are
 constructed using the density functional theory Hamiltonian obtained from a given electron
 density. A new density is computed using the NEGF formalism, which closes the DFT-NEGF
 self consistent cycle.
@@ -8816,7 +8816,38 @@ implemented, selected by
     this option is specified without a driver program sending data,
     siesta may hang without any notice).
     
-    See directory Util/Scripting \index{Scripting} for other driving options.
+    See directory Util/Scripting \index{Scripting} for other driving
+    options.
+
+    \option[Lua]%
+    Fully control the MD cycle and convergence path using an external
+    Lua script. 
+
+    With an external Lua script one may control nearly everything from
+    a script. One can query \emph{any} internal data-structures in
+    \siesta\ and, similarly, return \emph{any} data thus overwriting
+    the internals. A list of ideas which may be implemented in such a
+    Lua script are:
+    \begin{itemize}
+      \item New geometry relaxation algorithms
+
+      \item NEB calculations
+
+      \item New MD routines
+
+      \item Convergence tests of \fdf{MeshCutoff} and
+      \fdf{kgrid.MonkhorstPack}, or other parameters (currently basis
+      set optimizations cannot be performed in the Lua script).
+
+    \end{itemize}
+    For more details see Sec.~\ref{sec:lua}.
+
+    Using this option requires the compilation of \siesta\ with the
+    \program{flook} library.%
+    \index{flook}\index{External library!flook}%
+    If \siesta\ is not compiled as prescribed in Sec.~\ref{sec:libs}
+    this option will make \siesta\ die.
+
   \end{fdfoptions}
 
   \note if \fdf{Compat!Pre-v4-Dynamics} is \fdftrue\ this will default
@@ -9949,6 +9980,152 @@ value of $U_{\mathrm{eff}}$ can be advisable in such cases.
 
 
 
+\section{External control of \texorpdfstring{\siesta}{SIESTA}}
+\label{sec:lua}
+
+Since \siesta\ 4.1 an additional method of controlling the convergence
+and MD of \siesta\ is enabled through external scripting
+capability. The external control comes in two variants:
+\begin{itemize}
+  \item Implicit control of MD through updating/changing parameters
+  and optimizing forces. For instance one may use a \fdf*{Verlet} MD
+  method but additionally update the forces through some external
+  force-field to amend limitations by the \fdf*{Verlet} method for
+  your particular case. In the implicit control the molecular dynamics
+  is controlled by \siesta.
+
+  \item Explicit control of MD. In this mode the molecular dynamics
+  \emph{must} be controlled in the external Lua script and the
+  convergence of the geometry should also be controlled via this
+  script.
+
+\end{itemize}
+
+The implicit control is in use if \fdf{MD.TypeOfRun} is something
+other than \fdf*{lua}, while if the option is \fdf*{lua} the explicit
+control is in use.
+
+For examples on the usage of the Lua scripting engine and the power
+you may find the library \program{flos}\footnote{This library is
+    implemented by Nick R. Papior to further enhance the
+    inter-operability with \siesta\ and external contributions.}, see
+\url{https://github.com/siesta-project/flos}. At the time of writing
+the \program{flos} library already implements new geometry/cell
+relaxation schemes and new force-constants algorithms. You are highly
+encouraged to use the new relaxation schemes as they may provide
+faster convergence of the relaxation.
+
+\begin{fdfentry}{Lua!Script}[file]<\nonvalue{none}>
+  
+  Specify a Lua script file which may be used to control the internal
+  variables in \siesta. Such a script file must contain at least one
+  function named \program{siesta\_comm} with no arguments.
+
+  An example file could be this (note this is Lua code):
+  \begin{codeexample}
+-- This function is REQUIRED
+function siesta_comm()
+   
+   -- Define which variables we want to retrieve from SIESTA
+   get_tbl = {"geom.xa", "E.total"}
+
+   -- Signal to SIESTA which variables we want to explore
+   siesta_get(get_tbl)
+
+   -- Now we have the required variables,
+   -- convert to a simpler variable name (not nested tables)
+   xa = siesta.geom.xa
+   Etot = siesta.E.total
+
+   -- If we know our energy is wrong by 0.001 Ry we may now
+   -- change the total energy
+   Etot = Etot - 0.001
+
+   -- Return to SIESTA the total energy such that
+   -- it internally has the "correct" energy.
+
+   siesta.E.total = Etot
+   ret_tbl = {"E.total"}
+
+   siesta_return(ret_tbl)
+
+end
+\end{codeexample}
+
+  Within this function there are certain \emph{states} which defines
+  different execution points in \siesta:
+  \begin{fdfoptions}
+
+    \option[Initialization]%
+    This is right after \siesta\ has read the options from the FDF
+    file. Here you may query some of the FDF options (and even change
+    them) for your particular problem.
+
+    \note \program{siesta.state == siesta.INITIALIZE}.
+
+    \option[Initialize-MD]%
+    Right before the SCF step starts. This point is somewhat
+    superfluous, but is necessary to communicate the actual meshcutoff
+    used\footnote{Remember that the \fdf{MeshCutoff} defined is the
+        minimum cutoff used.}.
+
+    \note \program{siesta.state == siesta.INIT\_MD}.
+
+    \option[SCF]%
+    Right after \siesta\ has calculated the output density matrix, and
+    just after \siesta\ has performed mixing.
+
+    \note \program{siesta.state == siesta.SCF\_LOOP}.
+
+    \option[Forces]%
+    This stage is right after \siesta\ has calculated the forces.
+
+    \note \program{siesta.state == siesta.FORCES}.
+
+    \option[Move]%
+    This state will \emph{only} be reached if \fdf{MD!TypeOfRun} is
+    \fdf*{lua}. If one does not return updated atomic coordinates
+    \siesta\ will reuse the same geometry as just analyzed.
+
+    \note \program{siesta.state == siesta.MOVE}.
+    
+    \option[Analysis]% 
+    Just before \siesta\ completes and exits. 
+
+    \note \program{siesta.state == siesta.ANALYSIS}.
+
+  \end{fdfoptions}
+
+  Beginning with implementations of Lua scripts may be cumbersome. It
+  is recommended to start by using \program{flos}, see
+  \url{https://github.com/siesta-project/flos} which contains several
+  examples on how to start implementing your own scripts.
+
+  \note The number of available variables continues to grow and to
+  find which quantities are accessible in Lua you may add this small
+  code in your Lua script:
+  \begin{codeexample}
+    siesta.print_allowed()
+  \end{codeexample}
+  which prints out a list of all accessible variables (note they are
+  not sorted).
+  
+\end{fdfentry}
+
+\begin{fdflogicalF}{Lua!Debug}
+
+  Debug the Lua script mode by printing out (on stdout) information
+  everytime \siesta\ communicates with Lua.
+  
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{Lua!Debug.MPI}
+
+  Debug all nodes (if in a parallel run).
+  
+\end{fdflogicalF}
+
+
 \section{TRANSIESTA}
 
 \siesta\ includes the possibility of performing calculations of
@@ -9968,10 +10145,10 @@ between two semi-infinite metallic leads. A finite bias can be applied
 between both leads, to drive a finite current. The method is described
 in detail in \cite{Brandbyge2002}. In practical terms,
 calculations using \tsiesta\ involve the solution of the
-electronic density from the DFT Hamiltonian using Green's functions
+electronic density from the DFT Hamiltonian using Greens functions
 techniques, instead of the usual diagonalization procedure. Therefore,
 \tsiesta\ calculations involve a \siesta\ run, in which a
-set of routines are invoked to solve the Green's functions and the
+set of routines are invoked to solve the Greens functions and the
 charge density for the open system. These routines are packed in a set
 of modules, and we will refer to it as the '\tsiesta\ module'
 in what follows.
@@ -9995,7 +10172,7 @@ R. Papior and encompass a highly advanced inversion algorithm as well
 as allowing $N$ electrode setups among just a few additional
 features. Furthermore, the utility \tbtrans\ has also been fully
 re-coded (by Nick R. Papior) to be a generic tight-binding code capable
-of analyzing physics from the Green's function perspective in $N\ge1$
+of analyzing physics from the Greens function perspective in $N\ge1$
 setups.
 
 \subsection{Source code structure}
@@ -10057,7 +10234,7 @@ Note that apart from the usual files generated by \siesta, now you will
 find the \texttt{elec.fast.TSHS} file (in general \sysfile{TSHS}). 
 This file contains the real-space Hamiltonian and Overlap matrices, together 
 with some other information, that will be used, in the case of electrodes, to 
-calculate the surface Green's functions. 
+calculate the surface Greens functions. 
 
 Once the electrode file has been generated, we can perform the \tsiesta\ 
 calculation (where the \fdf{SolutionMethod} flag is set
@@ -10102,7 +10279,7 @@ Other automated TranSiesta-TBTrans examples can be found in
   For the SR, \tsiesta\ starts with the usual \siesta\ procedure,
   converging a Density Matrix (DM) with the usual Kohn-Sham scheme for
   periodic systems. It uses this solution as an initial input for the
-  Green's function self consistent cycle. As it is known, \siesta\
+  Greens function self consistent cycle. As it is known, \siesta\
   stores the DM in a file with extension \sysfile{DM}. In the case of
   \tsiesta, this is done in a file named \sysfile{TSDE}. In a rerun of
   the same system (meaning the same \fdf{SystemLabel}), if the
