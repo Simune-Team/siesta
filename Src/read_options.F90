@@ -1502,15 +1502,15 @@ subroutine read_options( na, ns, nspin )
 
 
   ! Find some switches 
-  writek                = fdf_get( 'WriteKpoints', outlng )
-  writef                = fdf_get( 'WriteForces', outlng )
+  writek                = fdf_get( 'Write.Kpoints', outlng )
+  writeF                = fdf_get( 'Write.Forces', outlng )
 
-  writedm               = fdf_get( 'WriteDM', .true. )
-  write_dm_at_end_of_cycle = fdf_get( 'WriteDM.End.Of.Cycle', writedm )
-  writeH                = fdf_get( 'WriteH', .true. )
-  write_H_at_end_of_cycle  = fdf_get( 'WriteH.End.Of.Cycle', writeH )
+  writeDM               = fdf_get( 'Write.DM', .true. )
+  write_dm_at_end_of_cycle = fdf_get( 'Write.DM.End.Of.Cycle', writeDM )
+  writeH                = fdf_get( 'Write.H', .true. )
+  write_H_at_end_of_cycle  = fdf_get( 'Write.H.End.Of.Cycle', writeH )
 
-  writedm_cdf           = fdf_get('WriteDM.NetCDF', .false. )
+  writeDM_cdf           = fdf_get('Write.DM.NetCDF', .false. )
 #ifdef NCDF_4
   write_cdf             = fdf_get('CDF.Save', .false. )
   ! No compression is by far the fastest
@@ -1615,7 +1615,6 @@ subroutine read_options( na, ns, nspin )
   writec                 = fdf_get( 'WriteCoorStep', outlng )
   default                = fdf_get( 'UseSaveData', .false. )
   savehs                 = fdf_get( 'SaveHS', .false. )
-  save_H_DM_extra        = fdf_get( 'SCF.Write.Extra', .false. )
   fixauxcell             = fdf_get( 'FixAuxiliaryCell', .false. )
   naiveauxcell           = fdf_get( 'NaiveAuxiliaryCell', .false. )
   initdmaux              = fdf_get( 'ReInitialiseDM', .TRUE. )

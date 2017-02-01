@@ -370,16 +370,12 @@ contains
              end if
 
              ! Save for possible restarts
-             if ( save_H_DM_extra ) then
-                if ( mixH ) then
-                   call write_spmatrix(H,file="H_MIXED",when=writeH)
-                   call save_density_matrix(file="DM_OUT",when=writeDM)
-                else
-                   call save_density_matrix(file="DM_MIXED",when=writeDM)
-                   call write_spmatrix(H,file="H_DMGEN",when=writeH)
-                end if
+             if ( mixH ) then
+                call write_spmatrix(H,file="H_MIXED",when=writeH)
+                call save_density_matrix(file="DM_OUT",when=writeDM)
              else
-                call save_density_matrix(when=writeDM)
+                call save_density_matrix(file="DM_MIXED",when=writeDM)
+                call write_spmatrix(H,file="H_DMGEN",when=writeH)
              end if
           end if
 
@@ -584,16 +580,6 @@ contains
       H_write = write_H_at_end_of_cycle .and. &
            .not. writeH
 
-      ! quick return if we should not write
-      ! any of the extra files
-      if ( .not. save_H_DM_extra ) then
-
-         call save_density_matrix( when=DM_write )
-
-         return
-
-      end if
-         
       if ( mix_after_convergence ) then
          ! If we have been saving them, there is no point in doing
          ! it one more time
