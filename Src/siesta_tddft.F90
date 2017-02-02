@@ -55,7 +55,7 @@ contains
     
     integer :: mod_tded, mod_md
     integer :: istpp
-    real(dp) :: dt_tded
+    real(dp) :: dt_tded, G2max
 
 #ifdef DEBUG
     call write_debug( '    PRE siesta_tddft' )
@@ -100,7 +100,7 @@ contains
     ! putting the grid initialization into state_init and moving the
     ! calculation of H_0 to the body of the loop, done if first=.true.  This
     ! would suit "analysis" runs in which nscf = 0
-    if ( SIESTA_worker ) call setup_H0()
+    if ( SIESTA_worker ) call setup_H0( G2max )
 
 #ifdef SIESTA__PEXSI
     if (ionode) call memory_snapshot("after setup_H0")
