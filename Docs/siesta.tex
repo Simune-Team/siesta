@@ -867,6 +867,26 @@ libraries
   LIBS += -Wl,--allow-multiple-definition -lpexsi_linux <>
 \end{shellexample}
 
+
+  \item[CheSS]%
+  \index{CheSS}%
+  \index{External library!CheSS}%
+  \siesta\ allows calculation of the electronic structure through the
+  use of the Order-N method \program{CheSS}\footnote{See
+      \url{https://launchpad.net/chess}.}. To enable this solver (see
+  \fdf{SolutionMethod}) one needs to first compile the
+  \program{CheSS}-suite and subsequently adding this to the
+  \file{arch.make}. Here \program{<build-dir>} is the build-directory
+  of the \program{CheSS} suite:  
+
+\begin{shellexample}
+  LIBS += -L<build-dir> -lCheSS-1 -lfutile-1 -lyaml
+  INCFLAGS += -I<build-dir>/install/include
+  FPPFLAGS += -DSIESTA__CHESS
+\end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_CHESS}
+
+  
   \item[flook]%
   \index{flook}%
   \index{External library!flook}%
