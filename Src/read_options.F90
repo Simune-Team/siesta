@@ -49,11 +49,6 @@ subroutine read_options( na, ns, nspin )
 
   ! This routine sets variables in the 'siesta_options' module
 
-  !tddft  
-  integer,  parameter :: ntded_default  = 1
-  integer,  parameter :: ntdsaverho_default = 50
-  integer,  parameter :: tdednwrite_default = 100
-  !end tddft
   ! The following are comment lines that should be merged into 'siesta_options'.
 
   ! real*8 charnet           : Net charge (in units of |e|)
@@ -949,28 +944,28 @@ subroutine read_options( na, ns, nspin )
      endif
   endif
 
-!TD-DFT options      
-           td_elec_dyn = .false. 
-           writetdwf = fdf_get('WriteInitialTDWF',.false.)
-           if(writetdwf) then
-             if (ionode) then
-              write(6,1) 'redata: Write Initial TDWF' , writetdwf
-             endif
-           endif
-           tdsaverho  = fdf_get('TDED.Saverho', .false.)
-           ntdsaverho = fdf_get('TDED.Nsaverho', ntdsaverho_default)
-           etot_time  =  fdf_get('WriteEtotvsTime',.true.)
-           eigen_time =  fdf_get('WriteEigenvsTime',.false.)        
-           dip_time   =  fdf_get('WriteDipolevsTime',.false.)
-           ntded  = fdf_get('TDED.Nsteps',ntded_default)
-          if (ionode) then
-            write(6,4) 'redata: Max. number of TDED Iter         = ',ntded
-          end if
+!TD-DFT options
+  td_elec_dyn = .false. 
+  writetdwf = fdf_get('WriteInitialTDWF',.false.)
+  if( IONode .and. writetdwf ) then
+     write(6,1) 'redata: Write Initial TDWF' , writetdwf
+  end if
+  tdsaverho  = fdf_get('TDED.Saverho', .false.)
+  ntdsaverho = fdf_get('TDED.Nsaverho', 50)
+  etot_time  =  fdf_get('WriteEtotvsTime',.true.)
+  eigen_time =  fdf_get('WriteEigenvsTime',.false.)        
+  dip_time   =  fdf_get('WriteDipolevsTime',.false.)
+  ntded  = fdf_get('TDED.Nsteps', 1)
+  if (ionode) then
+     write(6,4) 'redata: Max. number of TDED Iter', ntded
+  end if
     
-          tdednwrite = fdf_get('TDED.Nwrite',tdednwrite_default)
-          if (ionode) then
-            write(6,4) 'redata: Write .TDWF and .DM after time steps= ',tdednwrite
-          end if
+  tdednwrite = fdf_get('TDED.Nwrite', 100)
+  if (ionode) then
+     write(6,4) 'redata: Write .TDWF and .DM after time steps', tdednwrite
+  end if
+
+  
   ! Dynamics parameters ...
   varcel = fdf_get('MD.VariableCell', .false. )
 
@@ -1507,15 +1502,15 @@ subroutine read_options( na, ns, nspin )
 
 
   ! Find some switches 
-  writek                = fdf_get( 'WriteKpoints', outlng )
-  writef                = fdf_get( 'WriteForces', outlng )
+  writek                = fdf_get( 'Write.Kpoints', outlng )
+  writeF                = fdf_get( 'Write.Forces', outlng )
 
-  writedm               = fdf_get( 'WriteDM', .true. )
-  write_dm_at_end_of_cycle = fdf_get( 'WriteDM.End.Of.Cycle', writedm )
-  writeH                = fdf_get( 'WriteH', .false. )
-  write_H_at_end_of_cycle  = fdf_get( 'WriteH.End.Of.Cycle', writeH )
+  writeDM               = fdf_get( 'Write.DM', .true. )
+  write_dm_at_end_of_cycle = fdf_get( 'Write.DM.End.Of.Cycle', writeDM )
+  writeH                = fdf_get( 'Write.H', .false. )
+  write_H_at_end_of_cycle  = fdf_get( 'Write.H.End.Of.Cycle', writeH )
 
-  writedm_cdf           = fdf_get('WriteDM.NetCDF', .false. )
+  writeDM_cdf           = fdf_get('Write.DM.NetCDF', .false. )
 #ifdef NCDF_4
   write_cdf             = fdf_get('CDF.Save', .false. )
   ! No compression is by far the fastest

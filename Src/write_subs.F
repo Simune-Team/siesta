@@ -298,7 +298,7 @@
 #endif /* TRANSIESTA */
       implicit none
 
-      integer              :: iscf
+      integer, intent(in) :: iscf
       real(dp), intent(in) :: dDmax ! Max. change in dens. matrix elem.
       real(dp), intent(in) :: dHmax ! Max. change in H elements
 

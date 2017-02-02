@@ -1,0 +1,761 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
+module m_siesta_forces
+
+  implicit none
+  private
+
+  public :: siesta_forces
+
+contains
+
+  subroutine siesta_forces(istep)
+#ifdef MPI
+    use mpi_siesta
+#endif
+    use units, only: eV, Ang
+    use precision, only: dp
+    
+    use files, only: slabel
+    use siesta_cml
+#ifdef SIESTA__FLOOK
+    use flook_siesta, only : slua_call
+    use flook_siesta, only : LUA_INIT_MD, LUA_SCF_LOOP
+    use siesta_dicts
+#endif
+    use m_state_init
+    use m_setup_hamiltonian
+    use m_setup_H0
+    use m_compute_dm
+    use m_compute_max_diff
+    use m_scfconvergence_test
+    use m_post_scf_work
+    use m_mixer, only: mixer
+    use m_mixing_scf, only: mixing_scf_converged
+    use m_mixing_scf, only: mixers_scf_history_init
+
+    use m_rhog,                only: mix_rhog, compute_charge_diff
+    use siesta_options
+    use parallel,     only : IOnode, SIESTA_worker
+    use m_state_analysis
+    use m_steps
+    use sys, only : die, bye
+    use sparse_matrices, only: H, Hold, Dold, Dscf, Eold, Escf, maxnh
+    use m_convergence, only: converger_t
+    use m_convergence, only: reset, set_tolerance
+    use siesta_geom,   only: na_u           ! Number of atoms in unit cell
+    use m_energies,    only: Etot           ! Total energy
+    use m_forces,      only: fa, cfa        ! Forces and constrained forces
+    use m_stress,      only: cstress        ! Constrained stress tensor
+    use siesta_master, only: forcesToMaster ! Send forces to master prog
+    use siesta_master, only: siesta_server  ! Is siesta a server?
+    use m_save_density_matrix, only: save_density_matrix
+    use m_iodm_old,    only: write_spmatrix
+
+    use atomlist,      only: no_s, no_l, no_u, qtot, indxuo
+    use m_spin,        only: nspin
+    use m_gamma
+    use Kpoint_grid,    only: nkpnt, kpoint, kweight
+    use m_eo
+
+    use m_pexsi_solver,        only: prevDmax
+    use write_subs,            only: siesta_write_forces
+    use write_subs,            only: siesta_write_stress_pressure
+#ifdef NCDF_4
+    use dictionary
+    use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
+    use m_ncdf_siesta, only : cdf_save_state, cdf_save_basis
+#endif
+    use m_compute_energies, only: compute_energies
+
+    use m_mpi_utils, only: broadcast
+    use fdf
+#ifdef SIESTA__PEXSI
+    use m_pexsi, only: pexsi_finalize_scfloop
+#endif
+
+#ifdef TRANSIESTA
+    use m_ts_options, only : N_Elec
+    use m_ts_method
+    use m_ts_global_vars,      only: TSmode, TSinit, TSrun
+    use siesta_geom,           only: nsc, xa, ucell, isc_off
+    use atomlist,              only: lasto, Qtot
+    use sparse_matrices,       only: sparse_pattern, block_dist
+    use sparse_matrices,       only: S
+    use m_spin,                only: nspin
+    use m_ts_charge, only : ts_get_charges
+    use m_ts_charge,           only: TS_RHOCORR_METHOD
+    use m_ts_charge,           only: TS_RHOCORR_FERMI
+    use m_ts_charge,           only: TS_RHOCORR_FERMI_TOLERANCE
+    use m_transiesta,          only: transiesta
+    use kpoint_grid, only : gamma_scf
+    use m_energies, only : Ef
+#endif /* TRANSIESTA */
+
+    use m_initwf, only: initwf
+
+    integer, intent(inout)  :: istep
+
+    integer :: iscf
+    logical :: first, SCFconverged
+    real(dp) :: dDmax ! Max. change in DM elements
+    real(dp) :: dHmax ! Max. change in H elements
+    real(dp) :: dEmax ! Max. change in EDM elements
+    real(dp) :: drhog ! Max. change in rho(G) (experimental)
+    real(dp) :: G2max ! actually used meshcutoff
+    type(converger_t) ::  conv_harris, conv_freeE
+
+    ! For initwf
+    integer :: istpp
+    real(dp) :: EF7
+
+#ifdef TRANSIESTA
+    real(dp) :: Qcur
+#endif
+#ifdef NCDF_4
+    type(dict) :: d_sav
+#endif
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+#ifdef DEBUG
+    call write_debug( '    PRE siesta_forces' )
+#endif
+
+#ifdef SIESTA__PEXSI
+    ! Broadcast relevant things for program logic
+    ! These were set in read_options, called only by "SIESTA_workers".
+    call broadcast(nscf, comm=true_MPI_Comm_World)
+#endif
+
+    if ( SIESTA_worker )  then
+       ! Initialization tasks for a given geometry
+       call state_init( istep )
+    end if
+
+#ifdef SIESTA__PEXSI
+    if (ionode) call memory_snapshot("after state_init")
+#endif
+    
+    if ( fdf_get("Sonly",.false.) ) then
+       if ( SIESTA_worker ) then
+          call timer( 'all', 2 )
+          call timer( 'all', 3 )
+       end if
+       call bye("S only")
+    end if
+
+#ifdef SIESTA__FLOOK
+    ! Add the iscf constant to the list of variables
+    ! that are available only in this part of the
+    ! routine.
+    call dict_variable_add('SCF.iteration',iscf)
+    call dict_variable_add('SCF.dD',dDmax)
+    call dict_variable_add('SCF.dH',dHmax)
+    call dict_variable_add('SCF.dE',dEmax)
+    call dict_variable_add('SCF.drhoG',drhog)
+    ! We have to set the meshcutoff here
+    ! because the asked and required ones are not
+    ! necessarily the same
+    call dict_variable_add('Mesh.Cutoff.Minimum',G2cut)
+    call dict_variable_add('Mesh.Cutoff.Used',G2max)
+#endif
+        
+    ! This call computes the non-scf part of H and initializes the
+    ! real-space grid structures.  It might be better to split the two,
+    ! putting the grid initialization into state_init and moving the
+    ! calculation of H_0 to the body of the loop, done if first=.true.  This
+    ! would suit "analysis" runs in which nscf = 0
+    if ( SIESTA_worker ) call setup_H0(G2max)
+    
+#ifdef SIESTA__PEXSI
+    if (ionode) call memory_snapshot("after setup_H0")
+#endif
+
+#ifdef SIESTA__FLOOK
+    ! Communicate with lua, just before entering the SCF loop
+    ! This is mainly to be able to communicate
+    ! mesh-related quantities (g2max)
+    call slua_call(LUA, LUA_INIT_MD)
+#endif
+
+#ifdef NCDF_4
+    ! Initialize the NC file
+    if ( write_cdf ) then
+
+       ! Initialize the file...
+       call cdf_init_file(trim(slabel)//'.nc',is_MD = .false.)
+#ifdef MPI
+       call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
+
+       ! Save the settings
+       call cdf_save_settings(trim(slabel)//'.nc')
+#ifdef MPI
+       call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
+       
+       d_sav = ('sp'.kv.1)//('S'.kv.1)
+       d_sav = d_sav//('nsc'.kv.1)//('xij'.kv.1)
+       d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
+       d_sav = d_sav//('isc_off'.kv.1)
+       call cdf_save_state(trim(slabel)//'.nc',d_sav)
+       call delete(d_sav)
+
+       ! Save the basis set
+       call cdf_save_basis(trim(slabel)//'.nc')
+
+    end if
+#endif
+    
+    ! The dHmax variable only has meaning for Hamiltonian
+    ! mixing, or when requiring the Hamiltonian to be converged.
+    dDmax = -1._dp
+    dHmax = -1._dp
+    dEmax = -1._dp
+    drhog = -1._dp
+    
+    if ( SIESTA_worker ) then
+       if ( first ) then
+          if ( converge_Eharr ) then
+             call reset(conv_harris)
+             call set_tolerance(conv_harris,tolerance_Eharr)
+          end if
+          if ( converge_FreeE ) then
+             call reset(conv_FreeE)
+             call set_tolerance(conv_FreeE,tolerance_FreeE)
+          end if
+       end if
+    end if
+
+    ! The current structure of the loop tries to reproduce the
+    ! historical Siesta usage. It should be made more clear.
+    ! Two changes: 
+    !
+    ! -- The number of scf iterations performed is exactly
+    !    equal to the number specified (i.e., the "forces"
+    !    phase is not counted as a final scf step)
+    !
+    ! -- At the change to a TranSiesta GF run the variable "first"
+    !    is implicitly reset to "true".
+
+    ! Start of SCF loop
+    iscf = 0
+    do while ( iscf < nscf )
+
+       ! Conditions of exit:
+       !  -- At the top, to catch a non-positive nscf and # of iterations
+       !  -- At the bottom, based on convergence
+       
+       iscf = iscf + 1
+       
+       ! Note implications for TranSiesta when mixing H
+       ! Now H will be recomputed instead of simply being
+       ! inherited, however, this is required as the 
+       ! if we have bias calculations as the electric
+       ! field across the junction needs to be present.
+       first = (iscf == 1)
+       
+       if ( SIESTA_worker ) then
+           
+          call timer( 'IterSCF', 1 )
+          if (cml_p) &
+               call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
+          
+          if ( mixH ) then
+             
+             if ( first ) then
+                if (fdf_get("Read-H-from-file",.false.)) then
+                   call get_H_from_file()
+                else
+                   call setup_hamiltonian( iscf )
+                end if
+             end if
+             
+             call compute_DM( iscf )
+
+             ! Maybe set Dold to zero if reading charge or H...
+             call compute_max_diff(Dold, Dscf, dDmax)
+             if ( converge_EDM ) &
+                  call compute_max_diff(Eold, Escf, dEmax)
+             call setup_hamiltonian( iscf )
+             call compute_max_diff(Hold, H, dHmax)
+             
+          else
+             
+             call setup_hamiltonian( iscf )
+             call compute_max_diff(Hold, H, dHmax)
+             
+             call compute_DM( iscf )
+             
+             call compute_max_diff(Dold, Dscf, dDmax)
+             if ( converge_EDM ) &
+                  call compute_max_diff(Eold, Escf, dEmax)
+          end if
+
+          ! This iteration has completed calculating the new DM
+
+          call compute_energies( iscf )
+          if ( mix_charge ) then
+             call compute_charge_diff( drhog )
+          end if
+
+          ! Note: For DM and H convergence checks. At this point:
+          ! If mixing the DM:
+          !        Dscf=DM_out, Dold=DM_in(mixed), H=H_in, Hold=H_in(prev step)
+          !        dDmax=maxdiff(DM_out,DM_in)
+          !        dHmax=maxdiff(H_in - H_in(prev step))
+          ! If mixing the Hamiltonian:
+          !        Dscf=DM_out, Dold=DM_in, H=H_(DM_out), Hold=H_in(mixed)
+          !        dDmax=maxdiff(DM_out,DM_in)
+          !        dHmax=maxdiff(H(DM_out),H_in)
+          call scfconvergence_test( first, iscf, &
+               dDmax, dHmax, dEmax, &
+               conv_harris, conv_freeE, &
+               SCFconverged )
+          
+          ! ** Check this heuristic
+          if ( mixH ) then
+             prevDmax = dHmax
+          else
+             prevDmax = dDmax
+          end if
+
+          ! Check whether we should step to the next mixer
+          call mixing_scf_converged( SCFconverged )
+
+          if ( SCFconverged .and. iscf < min_nscf ) then
+             SCFconverged = .false.
+             if ( IONode ) then
+                write(*,"(a,i0)") &
+                     "SCF cycle continued for minimum number of iterations: ", &
+                     min_nscf
+             end if
+          end if
+          
+#ifdef TRANSIESTA
+          ! In case the user has requested a Fermi-level correction
+          ! Then we start by correcting the fermi-level
+          if ( TSrun .and. SCFconverged .and. &
+               TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
+
+             call ts_get_charges(N_Elec, block_dist, sparse_pattern, &
+                  nspin, maxnh, Dscf, S, Qtot = Qcur )
+
+             if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
+
+                ! Call transiesta with fermi-correct
+                call transiesta(iscf,nspin, &
+                     block_dist, sparse_pattern, Gamma_Scf, ucell, nsc, &
+                     isc_off, no_u, na_u, lasto, xa, maxnh, H, S, &
+                     Dscf, Escf, Ef, Qtot, .true.)
+
+                ! We will not have not converged as we have just
+                ! changed the Fermi-level
+                SCFconverged = .false.
+
+             end if
+
+          end if
+#endif
+          
+          if ( monitor_forces_in_scf ) call compute_forces()
+
+          ! Mix_after_convergence preserves the old behavior of
+          ! the program.
+          if ( (.not. SCFconverged) .or. mix_after_convergence) then
+
+             ! Mix for next step
+             if ( mix_charge ) then
+                call mix_rhog( iscf )
+             else
+                call mixer( iscf )
+             end if
+
+             ! Save for possible restarts
+             if ( mixH ) then
+                call write_spmatrix(H,file="H_MIXED",when=writeH)
+                call save_density_matrix(file="DM_OUT",when=writeDM)
+             else
+                call save_density_matrix(file="DM_MIXED",when=writeDM)
+                call write_spmatrix(H,file="H_DMGEN",when=writeH)
+             end if
+          end if
+
+          call timer( 'IterSCF', 2 )
+          call print_timings( first, istep == inicoor )
+          if (cml_p) call cmlEndStep(mainXML)
+
+#ifdef SIESTA__FLOOK
+          ! Communicate with lua
+          call slua_call(LUA, LUA_SCF_LOOP)
+#endif
+
+#ifdef TRANSIESTA
+          ! ... except that we might continue for TranSiesta
+          if ( SCFconverged ) then
+             call transiesta_switch()
+             ! might reset SCFconverged and iscf
+          end if
+#endif
+          
+       else
+          
+          ! non-siesta worker
+          call compute_DM( iscf )
+          
+       end if
+
+#ifdef SIESTA__PEXSI
+       call broadcast(iscf, comm=true_MPI_Comm_World)
+       call broadcast(SCFconverged, comm=true_MPI_Comm_World)
+#endif
+
+       ! Exit if converged
+       if ( SCFconverged ) exit
+       
+    end do ! end of SCF cycle
+    
+#ifdef SIESTA__PEXSI
+    if ( isolve == SOLVE_PEXSI ) then
+       call pexsi_finalize_scfloop()
+    end if
+#endif
+    
+    if ( .not. SIESTA_worker ) return
+    
+    call end_of_cycle_save_operations()
+    
+    if ( .not. SCFconverged) then
+       if ( IONode .and. .not.harrisfun ) &
+            write(6,"(a)") ':!: SCF did not converge'// &
+            ' in maximum number of steps.'
+       if ( SCFMustConverge ) &
+            call die('SCF did not converge in maximum number of steps.')
+       
+    end if
+    
+    ! To write the initial wavefunctions to be used in a
+    ! consequent TDDFT run.
+    if ( writetdwf ) then
+       istpp = 0
+       call initwf(no_s, nspin, nspin, no_l, maxnh, no_u, qtot, &
+            gamma, indxuo, nkpnt, kpoint, kweight, &
+            no_u, EF7, istpp,totime)
+    end if
+    
+#ifdef TRANSIESTA
+    if ( TSmode.and.TSinit.and.(.not. SCFConverged) ) then
+       call die('SCF did not converge before proceeding to transiesta&
+            &calculation')
+    end if
+#endif
+    
+    ! Clean-up here to limit memory usage
+    call mixers_scf_history_init( )
+    
+    ! End of standard SCF loop.
+    ! Do one more pass to compute forces and stresses
+    
+    ! Note that this call will no longer overwrite H while computing the
+    ! final energies, forces and stresses...
+    
+    if ( fdf_get("compute-forces",.true.) ) then
+       call post_scf_work( istep, iscf , SCFconverged )
+#ifdef SIESTA__PEXSI
+       if (ionode) call memory_snapshot("after post_scf_work")
+#endif
+    end if
+
+    ! ... so H at this point is the latest generator of the DM, except
+    ! if mixing H beyond self-consistency or terminating the scf loop
+    ! without convergence while mixing H
+
+    call state_analysis( istep )
+#ifdef SIESTA__PEXSI
+    if (ionode) call memory_snapshot("after state_analysis")
+#endif
+
+    ! If siesta is running as a subroutine, send forces to master program
+    if (siesta_server) &
+         call forcesToMaster( na_u, Etot, cfa, cstress )
+
+    !------------------------------------------------------------------------ END
+#ifdef DEBUG
+    call write_debug( '    POS siesta_forces' )
+#endif
+    
+  contains
+
+    ! Read the Hamiltonian from a file
+    subroutine get_H_from_file()
+      use sparse_matrices, only: maxnh, numh, listh, listhptr
+      use atomlist,        only: no_l
+      use m_spin,          only: nspin
+      use m_iodm_old,      only: read_spmatrix
+
+      logical :: found
+
+      call read_spmatrix(maxnh, no_l, nspin, numh, &
+           listhptr, listh, H, found, userfile="H_IN")
+      if (.not. found) call die("Could not find H_IN")
+      
+    end subroutine get_H_from_file
+
+    ! Computes forces and stresses with the current DM_out
+    subroutine compute_forces()
+
+      use siesta_options, only: recompute_H_after_scf
+      use m_final_H_f_stress, only: final_H_f_stress
+      use write_subs
+
+      real(dp), allocatable :: fa_old(:,:), Hsave(:,:)
+
+      allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
+      fa_old(:,:) = fa(:,:)
+      if ( recompute_H_after_scf ) then
+         allocate(Hsave(size(H,dim=1),size(H,dim=2)))
+         Hsave(:,:) = H(:,:)
+      end if
+      call final_H_f_stress( istep , iscf , .false. )
+      if ( recompute_H_after_scf ) then
+         H(:,:) = Hsave(:,:)
+         deallocate(Hsave)
+      end if
+      if (ionode) then
+         print *, "Max diff in force (eV/Ang): ", &
+              maxval(abs(fa-fa_old))*Ang/eV
+         call siesta_write_forces(-1)
+         call siesta_write_stress_pressure()
+      endif
+      deallocate(fa_old)
+
+    end subroutine compute_forces
+
+    ! Print out timings of the first SCF loop only
+    subroutine print_timings(first, first_md)
+#ifdef TRANSIESTA
+      use timer_options, only: use_tree_timer
+      use m_ts_global_vars, only : TSrun
+#endif
+      logical, intent(in) :: first, first_md
+      character(len=20) :: routine
+
+      ! If this is not the first iteration,
+      ! we immediately return.
+      if ( .not. first ) return
+      if ( .not. first_md ) return
+
+      routine = 'IterSCF'
+
+#ifdef TRANSIESTA
+      if ( TSrun ) then
+         ! with Green function generation
+         ! The tree-timer requires direct
+         ! children of the routine to be
+         ! queried.
+         ! This is not obeyed in the TS case... :(
+         if ( .not. use_tree_timer ) then
+            routine = 'TS'
+         end if
+      endif
+#endif
+      call timer( routine, 3 )
+
+    end subroutine print_timings
+
+    ! Depending on various conditions, save the DMin
+    ! or the DMout, and possibly keep a copy of H
+
+    ! NOTE: Only if the scf cycle converged before exit it
+    ! is guaranteed that the DM is "pure out" and that
+    ! we can recover the right H if mixing H.
+    !
+    subroutine end_of_cycle_save_operations()
+
+      logical :: DM_write, H_write
+
+      ! Depending on the option we should overwrite the
+      ! Hamiltonian
+      if ( mixH .and. .not. mix_after_convergence ) then
+         ! Make sure that we keep the H actually used
+         ! to generate the last DM, if needed.
+         H = Hold
+      end if
+
+      DM_write = write_DM_at_end_of_cycle .and. &
+           .not. writeDM
+      H_write = write_H_at_end_of_cycle .and. &
+           .not. writeH
+
+      if ( mix_after_convergence ) then
+         ! If we have been saving them, there is no point in doing
+         ! it one more time
+         if ( mixH ) then
+            call save_density_matrix(file="DM_OUT", when=DM_write)
+            call write_spmatrix(H,file="H_MIXED", when=H_write)
+         else
+            call save_density_matrix(file="DM_MIXED", when=DM_write)
+            call write_spmatrix(H,file="H_DMGEN", when=H_write)
+         end if
+      else
+         call save_density_matrix(file="DM_OUT", when=DM_write)
+         call write_spmatrix(H,file="H_DMGEN", when=H_write)
+      end if
+
+    end subroutine end_of_cycle_save_operations
+
+#ifdef TRANSIESTA
+    subroutine transiesta_switch()
+
+      use precision,             only: dp
+      use parallel,              only: IONode
+      use class_dSpData2D
+      use class_Fstack_dData1D
+
+      use siesta_options,        only: fire_mix, broyden_maxit
+      use siesta_options,        only: dDtol, dHtol
+
+      use sparse_matrices, only : DM_2D, EDM_2D
+      use atomlist, only: lasto
+      use siesta_geom, only: nsc, isc_off, na_u, xa, ucell
+      use m_energies, only : Ef
+      use m_mixing_scf, only: scf_mixs, scf_mix
+      use m_mixing, only: mixers_history_init
+
+      use m_ts_global_vars,      only: TSinit, TSrun
+      use m_ts_global_vars,      only: ts_print_transiesta
+      use m_ts_method
+      use m_ts_options,          only: N_Elec, Elecs
+      use m_ts_options,          only: DM_bulk
+      use m_ts_options,          only: val_swap
+      use m_ts_options,          only: ts_scf_mixs
+      use m_ts_options,          only: ts_Dtol, ts_Htol
+      use m_ts_options,          only: ts_hist_keep
+      use m_ts_options,          only: ts_siesta_stop
+      use m_ts_electype
+
+      integer :: iEl, na_a
+      integer, allocatable :: allowed_a(:)
+      real(dp), pointer :: DM(:,:), EDM(:,:)
+
+      ! We are done with the initial diagon run
+      ! Now we start the TRANSIESTA (Green functions) run
+      if ( .not. TSmode ) return
+      if ( .not. TSinit ) return
+
+      ! whether we are in siesta initialization step
+      TSinit = .false.
+      ! whether transiesta is running
+      TSrun  = .true.
+
+      ! If transiesta should stop immediately
+      if ( ts_siesta_stop ) then
+
+         if ( IONode ) then
+            write(*,'(a)') 'ts: Stopping transiesta (user option)!'
+         end if
+
+         return
+
+      end if
+
+      ! Signal to continue...
+      ! These two variables are from the top-level
+      ! routine (siesta_forces)
+      SCFconverged = .false.
+      iscf = 0
+
+      ! DANGER (when/if going back to the DIAGON run, we should
+      ! re-instantiate the original mixing value)
+      call val_swap(dDtol, ts_Dtol)
+      call val_swap(dHtol, ts_Htol)
+
+      ! From now on, a new mixing cycle starts,
+      ! Check in mixer.F for new mixing schemes.
+      ! NP new mixing
+      if ( associated(ts_scf_mixs, target=scf_mixs) ) then
+         do iel = 1 , size(scf_mix%stack)
+            call reset(scf_mix%stack(iel), -ts_hist_keep)
+            ! Reset iteration count as certain
+            ! mixing schemes require this for consistency
+            scf_mix%cur_itt = n_items(scf_mix%stack(iel))
+         end do
+      else
+         call mixers_history_init(scf_mixs)
+      end if
+      ! Transfer scf_mixing to the transiesta mixing routine
+      scf_mix => ts_scf_mixs(1)
+
+      call ts_print_transiesta()
+
+      ! In case of transiesta and DM_bulk.
+      ! In case we ask for initialization of the DM in bulk
+      ! we read in the DM files from the electrodes and
+      ! initialize the bulk to those values
+      if ( DM_bulk > 0 ) then
+
+         if ( IONode ) then
+            write(*,'(/,2a)') 'transiesta: ', &
+                 'Initializing bulk DM in electrodes.'
+         end if
+
+         na_a = 0
+         do iEl = 1 , na_u
+            if ( .not. a_isDev(iEl) ) na_a = na_a + 1
+         end do
+         allocate(allowed_a(na_a))
+         na_a = 0
+         do iEl = 1 , na_u
+            ! We allow the buffer atoms as well (this will even out the
+            ! potential around the back of the electrode)
+            if ( .not. a_isDev(iEl) ) then
+               na_a = na_a + 1
+               allowed_a(na_a) = iEl
+            end if
+         end do
+
+         do iEl = 1 , N_Elec
+
+            if ( IONode ) then
+               write(*,'(/,2a)') 'transiesta: ', &
+                    'Reading in electrode TSDE for '// &
+                    trim(Elecs(iEl)%Name)
+            end if
+
+            ! Copy over the DM in the lead
+            ! Notice that the EDM matrix that is copied over
+            ! will be equivalent at Ef == 0
+            call copy_DM(Elecs(iEl),na_u,xa,lasto,nsc,isc_off, &
+                 ucell, DM_2D, EDM_2D, na_a, allowed_a)
+
+         end do
+
+         ! Clean-up
+         deallocate(allowed_a)
+
+         if ( IONode ) then
+            write(*,*) ! new-line
+         end if
+
+         ! The electrode EDM is aligned at Ef == 0
+         ! We need to align the energy matrix
+         DM  => val(DM_2D)
+         EDM => val(EDM_2D)
+         iEl =  size(DM)
+         call daxpy(iEl,Ef,DM(1,1),1,EDM(1,1),1)
+
+      end if
+
+    end subroutine transiesta_switch
+#endif
+
+  end subroutine siesta_forces
+
+end module m_siesta_forces

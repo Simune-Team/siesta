@@ -5636,6 +5636,33 @@ the issue (see Sec.~\ref{sec:filtering}).
 
 \end{fdflogicalF}
 
+\begin{fdflogicalF}{SCF!Write.Extra}
+  \index{output!Hamiltonian \& overlap}
+
+  Instructs \siesta\ to write out a variety of files with the
+  Hamiltonian and density matrix.
+
+  The output depends on whether a Hamiltonian mixing or density
+  matrix mixing is performed (see \fdf{SCF!Mixing}).
+  
+  These files are created
+  \begin{itemize}
+    \item \file{H_MIXED}; the Hamiltonian after
+    mixing
+    
+    \item \file{DM_OUT}; the density matrix as calculated by the
+    current iteration
+
+    \item \file{H_DMGEN}; the Hamiltonian used to calculate the
+    density matrix
+    
+    \item \file{DM_MIXED}; the density matrix after mixing
+
+  \end{itemize}
+  
+\end{fdflogicalF}
+
+
 \begin{fdflogicalF}{SaveHS}
   \index{output!Hamiltonian \& overlap}
 
