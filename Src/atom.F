@@ -2494,6 +2494,34 @@ C potential
 
 !     Extraction of chlocal
 
+        select case (trim(vlocal_type))
+        case ("siesta-fit")
+           use_charge_cutoff = fdf_boolean(
+     $          "use-charge-cutoff-for-vlocal-fit",.false.)
+           !
+           r0 = fdf_get("psml.chlocal.build.r0",0.004_dp)
+           delta = fdf_get("psml.chlocal.build.delta",0.005_dp)
+           poly_order_rlin =
+     $          fdf_get("psml.chlocal.build.poly_order_rlin",4)
+        case ("siesta-charge")
+           use_charge_cutoff = .true.
+           !
+           r0 = fdf_get("psml.chlocal.build.r0",0.009_dp)
+           delta = fdf_get("psml.chlocal.build.delta",0.01_dp)
+           poly_order_rlin =
+     $          fdf_get("psml.chlocal.build.poly_order_rlin",3)
+        case default
+
+           ! PSML files produced by other codes
+           r0 = fdf_get("psml.chlocal.build.r0",0.004_dp)
+           delta = fdf_get("psml.chlocal.build.delta",0.005_dp)
+           poly_order_rlin =
+     $          fdf_get("psml.chlocal.build.poly_order_rlin",4)
+           use_charge_cutoff =
+     $           fdf_boolean("use-charge-cutoff-for-vlocal-fit",.true.)
+        end select
+
+
 !     Set up reference grid in the manner of Don Hamann
 !     so that we can use his 'derivs' routine below
 
@@ -2503,12 +2531,11 @@ C potential
       !rr1 = 0.0005_dp / Z       ! first point (r(1))
       ! make them larger
       rr1 = fdf_get("psml.chlocal.build.rr1",0.001_dp)
-      exp_al = fdf_get("psml.chlocal.build.exp_al",1.04_dp)
+      exp_al = fdf_get("psml.chlocal.build.exp_al",1.012_dp)
       al = log(exp_al)       ! spacing factor
       mmax = log(rofi(nrval)/rr1)/al ! range of points
 
       ! First point to keep
-      r0 = fdf_get("psml.chlocal.build.r0",0.004_dp)
       if (r0 <= rr1) call die("psml: chlocal build: r0 < rr1")
       
       allocate(rr(mmax),vl(mmax))
@@ -2530,7 +2557,6 @@ C potential
 
       ! Now interpolate into linear grid, using
       ! the points from r0 onwards
-      delta = fdf_get("psml.chlocal.build.delta",0.01_dp)
       n0 = log(r0/rr1)/al       ! range of points
       npts= 2 + rofi(nrval)/delta   ! overkill. will have to reduce range
       allocate(rlin(npts))
@@ -2542,8 +2568,6 @@ C potential
       chlocal_rlin(:) = 0.0_dp
       ! to avoid out-of-range errors in interp routine
       nrange = log(rr(mmax)/rr1)/al - 2  
-      poly_order_rlin =
-     $     fdf_get("psml.chlocal.build.poly_order_rlin",7)
       call dpnint(rr(n0),ch(n0),mmax-n0+1,rlin,chlocal_rlin,
      $            nrange,poly_order=poly_order_rlin)
       call file_out(npts,rlin,chlocal_rlin,
@@ -2566,17 +2590,6 @@ C potential
       ! This section tries to keep compatibility with Siesta's behavior
       ! for its own vlocal/chlocal
 
-        select case (trim(vlocal_type))
-        case ("siesta-fit")
-           use_charge_cutoff = fdf_boolean(
-     $             "use-charge-cutoff-for-vlocal-fit",.false.)
-        case ("siesta-charge")
-           use_charge_cutoff = .true.
-        case default
-           use_charge_cutoff =
-     $           fdf_boolean("use-charge-cutoff-for-vlocal-fit",.true.)
-        end select
-
 
         if (use_charge_cutoff) then           
            ! Psop's vlocals for the 'siesta-charge' option
@@ -2590,7 +2603,7 @@ C potential
               charge = 4*pi*r*r*chlocal(ir)*drdi(ir)
               qtot = qtot - charge  ! minus sign for cosmetics in output
            enddo
-           write(6,*) "qtot in whole range of chlocal: ", qtot
+           !write(6,*) "qtot in whole range of chlocal: ", qtot
 
            !     The "charge" option for cutoff is
            !     based on "smallness" of the charge itself
@@ -2603,7 +2616,6 @@ C potential
                  exit
               endif
            enddo
-           write(6,*) "nchloc_charge, chlocal:", nchloc_charge, chlocal
            
            rcut_chloc = rofi(nchloc_charge)
            write(6,"(a,f10.6)") "Choosing charge chloc cutoff:",
