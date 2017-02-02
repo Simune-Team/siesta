@@ -536,11 +536,14 @@ c    .          'atom: The above configuration will be used ',
 
              if (use_psml_vlocal) then
                 call get_psml_vlocal_chlocal(basp%psml_handle,is,
-     $                               rofi,nrval,Zval,vlocal)
+     $                               rofi,drdi,nrval,a,b,Zval,vlocal,
+     $                               chlocal,nchloc)
 
                 if (write_ion_plot_files) then
                    call file_out(nrval,rofi,vlocal,
      .                  trim(global_label)//".Vlocal_psml")
+                   call file_out(nrval,rofi,chlocal,
+     .                  trim(global_label)//".Chlocal_psml")
                 endif
 
              else
@@ -565,10 +568,13 @@ c    .          'atom: The above configuration will be used ',
      $                         use_charge_cutoff,
      $                         vlocal_type)
 
+
+             endif
+
 ! 
 ! Save local-pseudopotential charge
 !  
-                Rchloc = rofi(nchloc)
+             Rchloc = rofi(nchloc)
             ! This comment is misleading. rchloc is the
             ! working cutoff for the place at which vlocal
             ! gets the Coulomb tail, at least when using the
@@ -576,14 +582,11 @@ c    .          'atom: The above configuration will be used ',
             ! only if vlocal is generated from the localized 
             ! charge distribution
 
-                write(6,'(2a,f10.5)') 'atom: Maximum radius for' ,
-     .        ' 4*pi*r*r*local-pseudopot. charge ',Rchloc
+             write(6,'(2a,f10.5)') 'atom: Maximum radius for' ,
+     .            ' 4*pi*r*r*local-pseudopot. charge ',Rchloc
 
-                call comlocal(is,a,b,rofi,chlocal,nchloc,flting)
+             call comlocal(is,a,b,rofi,chlocal,nchloc,flting)
 !
-
-             endif
-
 !------------------------------------------------------------------
 !new: Save vlocal (actually r*vlocal +2*Zval)
 !
@@ -2436,35 +2439,37 @@ C potential
           
         end subroutine read_vps
 !
-      subroutine get_psml_vlocal_chlocal(ps,is,rofi,nrval,Zval,vlocal)
+      subroutine get_psml_vlocal_chlocal(ps,is,rofi,drdi,nrval,a,b,
+     $                                   Zval,vlocal,chlocal,nchloc)
       
       !! Extracts Vlocal from PSML file and computes Chlocal
       !! by computing its Laplacian
-      !! Inserts Chlocal directly in the atmfunc tables
       
       use m_psml, psml_t => ps_t
 
       type(psml_t), intent(in)      :: ps         ! psml handle
       integer, intent(in)           :: is
       real(dp), intent(in)          :: rofi(:)
+      real(dp), intent(in)          :: drdi(:)
       integer, intent(in)           :: nrval
+      real(dp), intent(in)          :: a, b  ! r(i) = b*(exp(a(i-1))-1)
       real(dp), intent(in)          :: Zval
       real(dp), intent(out)         :: vlocal(:)
+      real(dp), intent(out)         :: chlocal(:)
+      integer, intent(out)          :: nchloc
 
-      integer  :: ir, i, mmax
+      integer  :: ir, i
       integer  :: nchloc_charge, nchloc_vlocal
       character(len=40) :: vlocal_type
       
-      real(dp) :: al, rr1, qtot, delta, yp1, ypn, r, g2, Z, charge
+      real(dp) :: qtot, r, g2, charge
       real(dp) :: rcut_chloc
-      real(dp), dimension(:), allocatable :: rr, vl
-      real(dp), dimension(:), allocatable :: vlp, vlpp, vllap, ch
+      real(dp), dimension(:), allocatable :: vlp, vlpp, vllap
       real(dp), parameter :: pi = 3.141592653589793_dp
 
       real(dp), parameter  :: eps_vlocal=1.0e-5_dp
       real(dp), parameter  :: eps_charge=1.0e-4_dp ! To match
 
-      real(dp), dimension(:), allocatable :: rlin
       logical :: use_charge_cutoff
       
       external :: derivs, dpnint
@@ -2487,110 +2492,99 @@ C potential
      $               // ") from psml data"
 
 !     Extraction of chlocal
-!     Set up reference grid in the manner of Don Hamann
-!     so that we can use his 'derivs' routine below
 
-      Z = ps_AtomicNumber(ps)
-      
-      al = log(1.012_dp)        ! spacing factor
-      rr1 = 0.0005_dp / Z       ! first point (r(1))
-      mmax = log(rofi(nrval)/rr1)/al ! range of points
-
-      allocate(rr(mmax),vl(mmax))
-      do i = 1, mmax
-         rr(i) = rr1 * exp(al*(i-1))
-         vl(i) = 2.0_dp * ps_LocalPotential_Value(ps,rr(i))
-      enddo
-
-      allocate(vlp(mmax),vlpp(mmax),vllap(mmax))
-      allocate(ch(mmax))
+      allocate(vlp(nrval),vlpp(nrval),vllap(nrval))
 
       ! Compute laplacian by finite differences
-      call derivs(mmax,vl,al,rr,vlp,vlpp,vllap)
-      ch(:) = - vllap(:) / (8.0_dp*pi) ! Rydberg units
+      call derivs(nrval,vlocal,a,b,rofi,vlp,vlpp,vllap)
+      chlocal(:) = - vllap(:) / (8.0_dp*pi) ! Rydberg units
 
       ! Compute chlocal cutoff
       ! This section tries to keep compatibility with Siesta's behavior
       ! for its own vlocal/chlocal
+
+        select case (trim(vlocal_type))
+        case ("siesta-fit")
+           use_charge_cutoff = fdf_boolean(
+     $             "use-charge-cutoff-for-vlocal-fit",.false.)
+        case ("siesta-charge")
+           use_charge_cutoff = .true.
+        case default
+           use_charge_cutoff =
+     $           fdf_boolean("use-charge-cutoff-for-vlocal-fit",.true.)
+        end select
+
+
+        if (use_charge_cutoff) then           
+           ! Psop's vlocals for the 'siesta-charge' option
+           ! are cut off at 1.1*rchloc... so it is hopeless
+           ! to try to reproduce exactly the behavior here.
+           ! It would be better to dampen off vlocal in all cases
+
+           qtot = 0.0_dp
+           do ir=1,nrval
+              r = rofi(ir)
+              charge = 4*pi*r*r*chlocal(ir)*drdi(ir)
+              qtot = qtot - charge  ! minus sign for cosmetics in output
+           enddo
+           write(6,*) "qtot in whole range of chlocal: ", qtot
+
+           !     The "charge" option for cutoff is
+           !     based on "smallness" of the charge itself
+           do ir = nrval, 1, -1
+              r = rofi(ir)
+              chlocal(ir) = zval*chlocal(ir)/qtot
+              charge = 4*pi*r*r*chlocal(ir)
+              if (abs(charge) .gt. eps_charge) then
+                 nchloc_charge = ir + 1
+                 exit
+              endif
+           enddo
+           write(6,*) "nchloc_charge, chlocal:", nchloc_charge, chlocal
+           
+           rcut_chloc = rofi(nchloc_charge)
+           write(6,"(a,f10.6)") "Choosing charge chloc cutoff:",
+     $          rcut_chloc
+           nchloc = nchloc_charge
+
+        else
 
 !     "vlocal" option for cutoff
 !     This sets the cutoff point for chlocal 
 !     as that in which Vlocal is close to
 !     -Z/r (see test inside the loop).
 
-        do ir=1,nrval-1
-           g2=vlocal(ir)*rofi(ir)
-           if (abs(g2+2.0_dp*zval).lt.eps_vlocal) exit
-        enddo
-        nchloc_vlocal = ir          
+           do ir=1,nrval-1
+              g2=vlocal(ir)*rofi(ir)
+              if (abs(g2+2.0_dp*zval).lt.eps_vlocal) exit
+           enddo
+           nchloc_vlocal = ir          
 
-!     "charge" option for cutoff
-!     Based on "smallness" of the charge itself
-        
-        do i = mmax, 1, -1
-           r = rr(ir)
-           charge = 4*pi*r*r*ch(i)
-           if (abs(charge) .gt. eps_charge) exit
-        enddo
-        nchloc_charge = ir
-
-        ! Choose
-
-        select case (trim(vlocal_type))
-           case ("siesta-fit")
-              use_charge_cutoff = fdf_boolean(
-     $             "use-charge-cutoff-for-vlocal-fit",.false.)
-           case ("siesta-charge")
-              use_charge_cutoff = .true.
-           case default
-              use_charge_cutoff =
-     $           fdf_boolean("use-charge-cutoff-for-vlocal-fit",.true.)
-           end select
-
-        if (use_charge_cutoff) then           
-           rcut_chloc = rr(nchloc_charge)
-           write(6,"(a,f10.6)") "Choosing charge chloc cutoff:",
-     $          rcut_chloc
-        else
-           ! classic behavior
            rcut_chloc = rofi(nchloc_vlocal)
            write(6,"(a,f10.6)") "Choosing vlocal chloc cutoff:",
      $          rcut_chloc
+           nchloc = nchloc_vlocal
+
+           ! Note the different normalization here
+           ! Compute qtot only up to nchloc
+           qtot = 0.0_dp
+           do ir=1,nchloc-1
+              r = rofi(ir)
+              charge = 4*pi*r*r*chlocal(ir)*drdi(ir)
+              qtot = qtot - charge
+           enddo
+           write(6,"(a,f14.8)") "qtot up to nchloc:", qtot
+
+           do ir=1,nchloc-1
+              chlocal(ir)=zval*chlocal(ir)/qtot
+           enddo  
+           do ir=nchloc,nrval
+              chlocal(ir)=0.0_dp
+           enddo 
+
         endif
         
-        ! Now compute qtot only up to the cutoff
-        qtot = 0.0_dp
-        do i=1,mmax
-           r = rr(i)
-           if (r > rcut_chloc) exit
-           qtot = qtot - (4*pi*r*r*ch(i) * (al*r))  ! minus sign for cosmetics in output
-        enddo
-        write(6,"(a,f14.8)") "qtot up to rcut_chloc:", qtot
-
-        ! Insert in linear table here.
-        delta=rcut_chloc/(ntbmax-1)
-        allocate(rlin(ntbmax))
-        do i = 1, ntbmax
-           rlin(i) = delta*(i-1)
-        enddo
-        
-        chloctab(1,1,is) = delta
-        call dpnint(rr,ch,mmax,rlin,chloctab(2,1,is),ntbmax)
-        ! re-normalize
-        do i=1,ntbmax
-          chloctab(i+1,1,is)=zval*chloctab(i+1,1,is)/qtot
-        enddo
-
-        ! Compute second derivative for spline interpolation
-        chloctab(1,2,is) = 1.0_dp
-        yp1=0.0_dp               ! not quite correct, but used historically
-        ypn=huge(1.0_dp)
-
-        call spline(delta, chloctab(2:1+ntbmax,1,is), ntbmax,
-     &                yp1, ypn, chloctab(2:1+ntbmax,2,is) )
-
-
-        deallocate(rlin, rr, vl, ch, vlp, vlpp, vllap)
+        deallocate(vlp, vlpp, vllap)
         
       end subroutine get_psml_vlocal_chlocal
 

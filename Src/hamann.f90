@@ -18,13 +18,23 @@
 
 ! Routines taken from Don Hamann's oncvpsp package
 
-subroutine derivs(mmax, f, al, rr, dpr, dppr, dlap)
+subroutine derivs(mmax, f, a, b, rr, dpr, dppr, dlap)
 
   ! Computes the first and second derivatives,
   ! and the laplacian 1/r d^2(rf)/dr^2  of a
   ! function f defined on a log grid of the
-  ! form rr(i) = rr(1) * exp( al*(i-1) )
-
+  ! form r(i) = b * [ exp( a*(i-1) ) - 1]
+  !
+  ! for which dr/di = a(r+b)
+  !
+  ! This routine will work also for Hamann-style
+  ! grids of the form
+  
+  ! r(i) = r1 * exp( a*(i-1) ) 
+  !
+  ! if b is formally set to zero, since dr/di = a*r
+  ! in this case (even though r1 (=b) is not zero, obviously)
+  
   ! Adapted from a subroutine by Don Hamann
   ! in the oncvpsp package. 
  
@@ -32,13 +42,14 @@ subroutine derivs(mmax, f, al, rr, dpr, dppr, dlap)
  integer, parameter :: dp=kind(1.0d0)
  
  integer, intent(in) :: mmax
- real(dp), intent(in) :: al
+ real(dp), intent(in) :: a, b
  real(dp), intent(in) :: rr(mmax)
  real(dp), intent(in) :: f(mmax)
  real(dp), intent(out) :: dpr(mmax), dppr(mmax), dlap(mmax)
  
 ! local vars
  integer :: i
+ real(dp) :: drdi
  real(dp) :: dpn(mmax), dppn(mmax)
  real(dp) :: c11,c12,c13,c14,c15
  real(dp) :: c21,c22,c23,c24,c25
@@ -89,9 +100,10 @@ subroutine derivs(mmax, f, al, rr, dpr, dppr, dlap)
 ! r derivatives of d
 !
  do i = 1, mmax
-   dpr(i) = dpn(i) / (al * rr(i))
-   dppr(i) = (dppn(i) - al * dpn(i)) / (al * rr(i))**2
-   dlap(i) = (dppn(i) + al * dpn(i)) / (al * rr(i))**2
+   drdi = a * (rr(i) + b)
+   dpr(i) = dpn(i) / drdi
+   dppr(i) = (dppn(i) - a * dpn(i)) / (drdi)**2
+   dlap(i) = (dppn(i) + a * dpn(i)) / (drdi)**2
  end do
  
 end subroutine derivs
