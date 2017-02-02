@@ -44,24 +44,23 @@ c=======================================================================
 c BEGIN:
 c=======================================================================
 
- 666  format(a10,f12.5,1X,f12.5,2X,f15.9,1X,f15.9,i4)
+ 666  format(a10,f12.5,1X,f12.5,2X,f15.9,i4)
 
 c
 c     Simple Line
 c
     
-      delta = (E2-E1)/(1.d0*max((nencont-1),1))
+      delta = (E2 - E1) / nencont
       if (IOnode) then
         write(joutfile,*) 'contour:  Simple Line Contour:'
       end if
         
       do ic=1,nencont
-         zcontour(ic) = dcmplx(E1+(ic-1)*delta,GFeta)
+         zcontour(ic) = dcmplx(E1+(ic-0.5d0)*delta,GFeta)
          wgzcontour(ic) = dcmplx(delta,0d0)
          if (IOnode) then
            write(joutfile,666) 'contour: ',
-     &        dreal(zcontour(ic)),dimag(zcontour(ic)),
-     &        dreal(wgzcontour(ic)),dimag(wgzcontour(ic)),ic
+     &        dreal(zcontour(ic))/eV,GFeta/eV,delta/eV,ic
          end if ! IOnode
          
       end do                    !ic

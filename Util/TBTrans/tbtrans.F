@@ -273,6 +273,7 @@ c
       EFermiR = -Volt*eV/2.0d0 !Ry
       EFermi0 =       0.0d0
       Temp = 0.0d0
+
 c
 c     Setup contour for Transmission 
 c      
@@ -284,7 +285,7 @@ c
 
 
       NEn=ncontour
-      dE = (Emax-Emin)/NEn
+      dE = (Emax - Emin) / NEn
       
       nspin=1
       if(sppol) then 
@@ -880,7 +881,7 @@ c
 
          f_L =  fermi(DREAL(ZEnergy),EFermiL,Temp)
          f_R =  fermi(DREAL(ZEnergy),EFermiR,Temp)
-    
+
          Current = Current + (f_L-f_R)*tottrans*dE*wkxy(ikxy)
          
 
@@ -1238,17 +1239,17 @@ c======================================================================
 c--------------------------------------------------------
       function fermi(e,ef,T)
       real*8 e,ef,T,tmp,fermi
-      if(T.eq.0) then
-         if(e>ef) fermi = 0.
-         if(e<ef) fermi = 1.
-         if(e.eq.ef) fermi = .5
+      if(T.eq.0.d0) then
+         if(e>ef) fermi = 0.d0
+         if(e<ef) fermi = 1.d0
+         if(e.eq.ef) fermi = .5d0
       else
          tmp = (e-ef)/T
-         if(abs(tmp).lt.40.) then
+         if(abs(tmp).lt.40.d0) then
             fermi = 1./(1.+exp(tmp)) 
          else
-            if(tmp.lt.-40.) fermi = 1.
-            if(tmp.gt.40.) fermi = 0.
+            if(tmp.lt.-40.d0) fermi = 1.d0
+            if(tmp.gt.40.d0) fermi = 0.d0
          endif
       endif
       return

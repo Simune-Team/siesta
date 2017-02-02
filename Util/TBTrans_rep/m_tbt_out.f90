@@ -140,10 +140,10 @@ contains
     character(len=*), intent(in), optional :: fmt
     if ( present(fmt) ) then
        if ( IONode ) write(funit,fmt) &
-            real(E,dp)/eV,T,real(DOS,dp),real(PDOS,dp)
+            E/eV,T,DOS*eV,PDOS*eV
     else
        if ( IONode ) write(funit,defTfmt) &
-            real(E,dp)/eV,T,real(DOS,dp),real(PDOS,dp)
+            E/eV,T,DOS*eV,PDOS*eV
     end if
   end subroutine out_Trans
 
@@ -157,10 +157,10 @@ contains
     character(len=*), intent(in), optional :: fmt
     if ( present(fmt) ) then
        if ( IONode ) write(funit,fmt) &
-            ia1,ia2,E/eV,cT,cL,cR
+            ia1,ia2,E/eV,cT*eV,cL*eV,cR*eV
     else
        if ( IONode ) write(funit,defCOOPfmt) &
-            ia1,ia2,E/eV,cT,cL,cR
+            ia1,ia2,E/eV,cT*eV,cL*eV,cR*eV
     end if
   end subroutine out_COOP
 
@@ -173,10 +173,10 @@ contains
     character(len=*), intent(in), optional :: fmt
     if ( present(fmt) ) then
        if ( IONode ) write(funit,fmt) &
-            ia1,E/eV,cLL,cL,cLR
+            ia1,E/eV,cLL*eV,cL*eV,cLR*eV
     else
        if ( IONode ) write(funit,defCOOPLRfmt) &
-            ia1,E/eV,cLL,cL,cLR
+            ia1,E/eV,cLL*eV,cL*eV,cLR*eV
     end if
   end subroutine out_COOPLR
 
@@ -253,10 +253,10 @@ contains
     if ( wE == 0.0_dp ) return
     if ( present(fmt) ) then
        if ( IONode ) write(funit,fmt) &
-            ia,E/eV,Tot,Left,Right
+            ia,E/eV,Tot*eV,Left*eV,Right*eV
     else
        if ( IONode ) write(funit,defAtomPDOSTOTfmt) &
-            ia,E/eV,Tot,Left,Right
+            ia,E/eV,Tot*eV,Left*eV,Right*eV
     end if
   end subroutine out_AtomPDOS_Tot
   
@@ -271,10 +271,10 @@ contains
     if ( wE == 0.0_dp ) return
     if ( present(fmt) ) then
        if ( IONode ) write(funit,fmt) &
-            ia,E/eV,(Orb(i),i=1,no)
+            ia,E/eV,(Orb(i)*eV,i=1,no)
     else
        if ( IONode ) write(funit,defAtomPDOSOrbfmt) &
-            ia,E/eV,(Orb(i),i=1,no)
+            ia,E/eV,(Orb(i)*eV,i=1,no)
     end if
   end subroutine out_AtomPDOS_Orb
 
