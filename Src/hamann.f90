@@ -1,3 +1,8 @@
+module m_hamann
+  public :: derivs, dpnint
+  private
+
+  CONTAINS
 !
 ! Copyright (c) 1989-2016 by D. R. Hamann, Mat-Sim Research LLC and Rutgers
 ! University
@@ -109,7 +114,7 @@ subroutine derivs(mmax, f, a, b, rr, dpr, dppr, dlap)
 end subroutine derivs
 
 
-subroutine dpnint(xx, yy, nn, tt, ss, mm)
+subroutine dpnint(xx, yy, nn, tt, ss, mm, poly_order)
 
 ! local polynomial interpolation of data yy on nn points xx
 ! giving values ss on mm points tt
@@ -124,14 +129,22 @@ subroutine dpnint(xx, yy, nn, tt, ss, mm)
 !Input variables
  real(dp) ::  xx(*),yy(*),tt(*),ss(*)
  integer nn,mm
+ integer, optional :: poly_order
 
 !Local variables
  real(dp) :: sum,term,zz
  integer ii,imin,imax,iprod,iy,istart,jj,kk
+ integer npoly
 
 ! set order of polynomial
- integer, parameter :: npoly=7
+! integer, parameter :: npoly=7
 
+ if (present(poly_order)) then
+    npoly = poly_order
+ else
+    npoly = 7
+ endif
+ 
  if(nn<npoly+1) then
    write(6,'(/a,i6,a,i4)') 'dpnint: interpolation error, n=', &
 &       nn,'< npoly=',npoly
@@ -228,3 +241,5 @@ subroutine dpnint(xx, yy, nn, tt, ss, mm)
  end do
  return
  end subroutine dpnint
+
+end module m_hamann

@@ -536,7 +536,7 @@ c    .          'atom: The above configuration will be used ',
 
              if (use_psml_vlocal) then
                 call get_psml_vlocal_chlocal(basp%psml_handle,is,
-     $                               rofi,drdi,nrval,a,b,Zval,vlocal,
+     $                               rofi,drdi,nrval,Zval,vlocal,
      $                               chlocal,nchloc)
 
                 if (write_ion_plot_files) then
@@ -2439,8 +2439,10 @@ C potential
           
         end subroutine read_vps
 !
-      subroutine get_psml_vlocal_chlocal(ps,is,rofi,drdi,nrval,a,b,
+      subroutine get_psml_vlocal_chlocal(ps,is,rofi,drdi,nrval,
      $                                   Zval,vlocal,chlocal,nchloc)
+
+      use m_hamann, only: derivs, dpnint
       
       !! Extracts Vlocal from PSML file and computes Chlocal
       !! by computing its Laplacian
@@ -2452,19 +2454,20 @@ C potential
       real(dp), intent(in)          :: rofi(:)
       real(dp), intent(in)          :: drdi(:)
       integer, intent(in)           :: nrval
-      real(dp), intent(in)          :: a, b  ! r(i) = b*(exp(a(i-1))-1)
       real(dp), intent(in)          :: Zval
       real(dp), intent(out)         :: vlocal(:)
       real(dp), intent(out)         :: chlocal(:)
       integer, intent(out)          :: nchloc
 
-      integer  :: ir, i
+      integer  :: ir, i, mmax, n0, npts, nrange
       integer  :: nchloc_charge, nchloc_vlocal
+      integer  :: poly_order_rlin, poly_order_rofi
       character(len=40) :: vlocal_type
       
-      real(dp) :: qtot, r, g2, charge
-      real(dp) :: rcut_chloc
-      real(dp), dimension(:), allocatable :: vlp, vlpp, vllap
+      real(dp) :: qtot, r, g2, charge, al, rr1, delta, Z
+      real(dp) :: rcut_chloc, exp_al, r0
+      real(dp), dimension(:), allocatable :: vl, vlp, vlpp, vllap
+      real(dp), dimension(:), allocatable :: rr, ch, rlin, chlocal_rlin
       real(dp), parameter :: pi = 3.141592653589793_dp
 
       real(dp), parameter  :: eps_vlocal=1.0e-5_dp
@@ -2472,8 +2475,6 @@ C potential
 
       logical :: use_charge_cutoff
       
-      external :: derivs, dpnint
-
       if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
          call die("Zval mismatch in psml file")
       endif
@@ -2493,12 +2494,74 @@ C potential
 
 !     Extraction of chlocal
 
-      allocate(vlp(nrval),vlpp(nrval),vllap(nrval))
+!     Set up reference grid in the manner of Don Hamann
+!     so that we can use his 'derivs' routine below
+
+      Z = ps_AtomicNumber(ps)
+      
+      ! al = log(1.012_dp)       ! spacing factor
+      !rr1 = 0.0005_dp / Z       ! first point (r(1))
+      ! make them larger
+      rr1 = fdf_get("psml.chlocal.build.rr1",0.001_dp)
+      exp_al = fdf_get("psml.chlocal.build.exp_al",1.04_dp)
+      al = log(exp_al)       ! spacing factor
+      mmax = log(rofi(nrval)/rr1)/al ! range of points
+
+      ! First point to keep
+      r0 = fdf_get("psml.chlocal.build.r0",0.004_dp)
+      if (r0 <= rr1) call die("psml: chlocal build: r0 < rr1")
+      
+      allocate(rr(mmax),vl(mmax))
+      do i = 1, mmax
+         rr(i) = rr1 * exp(al*(i-1))
+         vl(i) = 2.0_dp * ps_LocalPotential_Value(ps,rr(i))
+      enddo
+
+      allocate(vlp(mmax),vlpp(mmax),vllap(mmax))
+      allocate(ch(mmax))
 
       ! Compute laplacian by finite differences
-      call derivs(nrval,vlocal,a,b,rofi,vlp,vlpp,vllap)
-      chlocal(:) = - vllap(:) / (8.0_dp*pi) ! Rydberg units
+      call derivs(mmax,vl,al,0.0_dp,rr,vlp,vlpp,vllap)
+      ch(:) = - vllap(:) / (8.0_dp*pi) ! Rydberg units
 
+      call file_out(mmax,rr,ch,
+     .     trim(global_label)//".Chlocal_rr_psml")
+
+
+      ! Now interpolate into linear grid, using
+      ! the points from r0 onwards
+      delta = fdf_get("psml.chlocal.build.delta",0.01_dp)
+      n0 = log(r0/rr1)/al       ! range of points
+      npts= 2 + rofi(nrval)/delta   ! overkill. will have to reduce range
+      allocate(rlin(npts))
+      do i = 1, npts
+         rlin(i) = delta*(i-1)
+      enddo
+
+      allocate(chlocal_rlin(npts))
+      chlocal_rlin(:) = 0.0_dp
+      ! to avoid out-of-range errors in interp routine
+      nrange = log(rr(mmax)/rr1)/al - 2  
+      poly_order_rlin =
+     $     fdf_get("psml.chlocal.build.poly_order_rlin",7)
+      call dpnint(rr(n0),ch(n0),mmax-n0+1,rlin,chlocal_rlin,
+     $            nrange,poly_order=poly_order_rlin)
+      call file_out(npts,rlin,chlocal_rlin,
+     .     trim(global_label)//".Chlocal_rlin_psml")
+
+      ! Now interpolate into Siesta's grid
+      chlocal(:) = 0.0_dp
+      poly_order_rofi =
+     $     fdf_get("psml.chlocal.build.poly_order_rofi",7)
+      call dpnint(rlin,chlocal_rlin,npts,rofi,chlocal,
+     $     nrval-20,poly_order=poly_order_rofi)
+
+      call file_out(nrval,rofi,chlocal,
+     .     trim(global_label)//".Chlocal_psml")
+
+      deallocate(rlin, chlocal_rlin)
+      deallocate(rr, vl, ch, vlp, vlpp, vllap)
+      
       ! Compute chlocal cutoff
       ! This section tries to keep compatibility with Siesta's behavior
       ! for its own vlocal/chlocal
@@ -2583,8 +2646,6 @@ C potential
            enddo 
 
         endif
-        
-        deallocate(vlp, vlpp, vllap)
         
       end subroutine get_psml_vlocal_chlocal
 

@@ -539,8 +539,8 @@ atm_transfer.o: periodic_table.o radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: interpolation.o m_filter.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: sys.o
+atom.o: hamann.o interpolation.o m_filter.o old_atmfuncs.o periodic_table.o
+atom.o: precision.o sys.o
 atom_graph.o: alloc.o atm_types.o atmfuncs.o class_OrbitalDistribution.o
 atom_graph.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
 atom_graph.o: class_Sparsity.o intrinsic_missing.o ldau_specs.o mneighb.o
@@ -1430,6 +1430,7 @@ m_forhar.o: forhar.o
 m_get_kpoints_scale.o: get_kpoints_scale.o
 m_gradient.o: gradient.o
 m_grdsam.o: grdsam.o
+m_hamann.o: hamann.o
 m_hsparse.o: hsparse.o
 m_intramol_pressure.o: remove_intramol_pressure.o
 m_ioxv.o: ioxv.o
