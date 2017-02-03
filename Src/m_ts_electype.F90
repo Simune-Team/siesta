@@ -1149,16 +1149,26 @@ contains
           write(*,'(a)') 'Incompatible k-grids...'
           write(*,'(a)') 'Electrode file k-grid:'
           do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),this_kdispl(j)
+             write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), this_kdispl(j)
           end do
           write(*,'(a)') 'System k-grid:'
           do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (kcell(i,j),i=1,3),kdispl(j)
+             write(*,'(3(i4,tr1),f8.4)') kcell(:,j), kdispl(j)
           end do
-          write(*,'(a)') 'Electrode file k-grid should be:'
+          write(*,'(a)') 'Electrode file k-grid should probably be:'
+          ! Loop the electrode directions
           do j = 1 , 3
-             this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch(j)
-             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(pvt(j))
+             if ( j == this%t_dir ) then
+                ! ensure that we retain the semi-infinite
+                ! direction k-sampling, and suggest more k-points
+                ! if necessary
+                if ( this_kcell(j,j) < 20 ) then
+                   this_kcell(j,j) = 50
+                end if
+             else
+                this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch(j)
+             end if
+             write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), kdispl(pvt(j))
           end do
           
        end if
