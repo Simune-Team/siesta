@@ -34,7 +34,7 @@ C  Internal variables .................................................
       character(len=20) filein, fileout
 
       integer  ::  count, length, lun, lun_tmp, iostat
-      character :: slabel_default*59, sname_default*20, line*256
+      character :: line*256
 
       logical debug_input, file_exists
 
@@ -126,8 +126,7 @@ C Set up fdf ...
       call fdf_init(filein,trim(fileout))
 
 C Define Name of the system ...
-      sname_default = ' '
-      sname = fdf_string('SystemName',sname_default)
+      sname = fdf_string('SystemName',' ')
       if (Node.eq.0) then
         write(6,'(/a,71("-"))') 'reinit: '
         write(6,'(a,a)') 'reinit: System Name: ',trim(sname)
@@ -136,8 +135,14 @@ C Define Name of the system ...
 C ...
 
 C Define System Label (short name to label files) ...
-      slabel_default  = 'siesta'
-      slabel = fdf_string('SystemLabel',slabel_default)
+      slabel = fdf_string('SystemLabel','siesta')
+      slabel = trim(slabel)
+      ! Check that there are no spaces in the SystemLabel
+      count = len_trim(slabel)
+      length = index(slabel, ' ')
+      if ( length > 0 .and. length < count ) then
+         call die('SystemLabel must *NOT* contain any spaces!')
+      end if
       if (Node.eq.0) then
         write(6,'(a,a)') 'reinit: System Label: ',slabel
         write(6,'(a,71("-"))') 'reinit: '
