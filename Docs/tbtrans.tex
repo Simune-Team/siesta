@@ -710,7 +710,9 @@ calculation has completed.
 \begin{fdflogicalF}{TBT.T!Bulk}
 
   Calculate the bulk (pristine) electrode transmission if
-  \fdftrue. 
+  \fdftrue.
+
+  This generates \sysfile{BTRANS\_<>} and \sysfile{AVBTRANS\_<>}.
   
   \note implicitly enables \fdf{TBT.DOS!Elecs} if \fdftrue.
 
@@ -720,6 +722,8 @@ calculation has completed.
 
   Calculate the bulk (pristine) electrode DOS if
   \fdftrue. 
+
+  This generates \sysfile{BDOS\_<>} and \sysfile{AVBDOS\_<>}.
 
   \note implicitly enables \fdf{TBT.T!Bulk} if \fdftrue.
 
@@ -738,6 +742,8 @@ calculation has completed.
   is computationally more demanding than using \fdf{TBT.DOS!A} an
   \fdf{TBT.DOS!A.All}.
 
+  This generates \sysfile{DOS} and \sysfile{AVDOS}.
+
   See \fdf{TBT.Atoms!Device.Connect}.
 
 \end{fdflogicalF}
@@ -749,6 +755,8 @@ calculation has completed.
   calculate the DOS from the last electrode (last in the list
   \fdf{TBT.Elecs}), see \fdf{TBT.DOS!A.All}. 
 
+  This generates \sysfile{ADOS\_<>} and \sysfile{AVADOS\_<>}.
+
   See \fdf{TBT.Atoms!Device.Connect}.
 
 \end{fdflogicalF}
@@ -758,6 +766,9 @@ calculation has completed.
 
   Calculate the DOS from the spectral function and do so with
   \emph{all} electrodes.
+
+  This additionally generates \sysfile{ADOS\_<>} and
+  \sysfile{AVADOS\_<>} for the last electrode in \fdf{TBT.Elecs}.
 
   \note if \fdftrue, this implicitly sets \fdf{TBT.DOS!A} to \fdftrue.
 
@@ -779,6 +790,11 @@ $\rho_{\mathrm{bound-states}}=0$.
   Specify how many of the transmission eigenvalues will be
   calculated. 
 
+  This generates \sysfile{TEIG\_<1>\_<2>} and
+  \sysfile{AVTEIG\_<1>\_<2>}, however, only for the non-equivalent
+  electrode combinations (\tbtrans\ intrinsically assumes
+  time-reversal symmetry).
+
   \note if you specify a number of eigenvalues above the available
   number of eigenvalues, \tbtrans\ will automatically truncate it to a
   reasonable number.
@@ -793,28 +809,43 @@ $\rho_{\mathrm{bound-states}}=0$.
   apply for your system, one may set this to \fdftrue\ to explicitly
   calculate all transmissions.
 
+  This additionally generates \sysfile{TRANS\_<1>\_<2>} and
+  \sysfile{AVTRANS\_<1>\_<2>} for all electrode combinations (and the
+  equivalent eigenvalue files if \fdf{TBT.T!Eig} is \fdftrue.
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.T!Out}
   
-  The total transmission out of any electrode may easily be calculated
-  using only the scattering matrix of the origin electrode and the
-  scattering region Green function. 
+  The total transmission out of any electrode\footnote{In
+      $N>2$-electrode calculations one \emph{cannot} use this quantity
+      to calculate the total current out of an electrode.} may easily
+  be calculated using only the scattering matrix of the origin
+  electrode and the scattering region Green function.
   %
   This enables the calculation of these equations
   \begin{align}
-    \Tr[(\mathbf G - \mathbf G^\dagger)\boldsymbol \Gamma_j],
+    i\Tr[(\mathbf G - \mathbf G^\dagger)\boldsymbol \Gamma_j],
+    \label{eq:G.Gamma}
     \\
     \Tr[\mathbf G \boldsymbol \Gamma_j \mathbf G^\dagger\boldsymbol
     \Gamma_j].
+    \label{eq:G.Gamma.G.Gamma}
   \end{align}
   The total transmission out of electrode $j$ may then be calculated
   as
   \begin{equation}
+    \label{eq:T-out}
     T_j = i\Tr[(\mathbf G - \mathbf G^\dagger)\boldsymbol \Gamma_j] 
     -
     \Tr[\mathbf G \boldsymbol \Gamma_j \mathbf G^\dagger\boldsymbol \Gamma_j].
   \end{equation}
+
+  This generates two sets of files: \sysfile{CORR\_<>} and
+  \sysfile{TRANS\_<1>\_<1>} which corresponds to equations
+  Eqs.~\eqref{eq:G.Gamma} and \eqref{eq:G.Gamma.G.Gamma},
+  respectively. To calculate $T_j$ subtract the two files
+  according to Eq.~\eqref{eq:T-out}.
   
 \end{fdflogicalF}
 
@@ -827,6 +858,9 @@ $\rho_{\mathrm{bound-states}}=0$.
   %
   One may use \sisl\ to analyze this output and change into
   bond-currents etc.
+
+  \note this requires \tbtrans\ to be compiled with NetCDF-4 support,
+  see Sec.~\ref{sec:arch-make}.
   
 \end{fdflogicalF}
 
@@ -841,6 +875,8 @@ $\rho_{\mathrm{bound-states}}=0$.
   $ tbtrans -fdf TBT.Spin:1 -D UP RUN.fdf &
   $ tbtrans -fdf TBT.Spin:2 -D DOWN RUN.fdf &
 \end{shellexample}
+  which will create two folders \program{UP} and \program{DOWN} and
+  output the relevant physical quantities in the respective folders.
   
 \end{fdfentry}
 
@@ -2262,6 +2298,14 @@ These files are created if NetCDF4 support is enabled
 
   The $k$ averaged transmission from \fdf*{<1>} to \fdf*{<2>}. 
 
+  \item[\sysfile{CORR\_<1>}] \fillsee{TBT.T!Out}%
+
+  The $k$ resolved correction to the transmission for \fdf*{<1>}.
+
+  \item[\sysfile{AVCORR\_<1>}] \fillsee{TBT.T!Out}%
+
+  The $k$ averaged correction to the transmission for \fdf*{<1>}.
+
   \item[\sysfile{TEIG\_<1>\_<2>}] \fillsee{TBT.T!Eig}%
 
   The $k$ resolved transmission eigenvalues from \fdf*{<1>} to
@@ -2271,6 +2315,14 @@ These files are created if NetCDF4 support is enabled
 
   The $k$ averaged transmission eigenvalues from \fdf*{<1>} to
   \fdf*{<2>}. 
+
+  \item[\sysfile{CEIG\_<1>}] \fillsee{TBT.T!Out}%
+
+  The $k$ resolved correction eigenvalues for \fdf*{<1>}.
+
+  \item[\sysfile{AVCEIG\_<1>}] \fillsee{TBT.T!Out}%
+
+  The $k$ averaged correction eigenvalues for \fdf*{<1>}.
 
   \item[\sysfile{BDOS\_<>}] \fillsee{TBT.DOS!Elecs}/\fdf{TBT.T!Bulk}%
 

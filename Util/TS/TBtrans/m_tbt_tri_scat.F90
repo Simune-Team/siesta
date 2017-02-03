@@ -808,6 +808,9 @@ contains
        !    Tr[(G \Gamma)^\dagger]
        ! Hence we only calculate one of the contributions and double
        ! it after
+       ! Indeed we actually need to calculate:
+       !    i Tr[G \Gamma] and since Gamma is not having the i factor
+       ! we may take the negative real part.
        ii = 1
        do i = 1 , no
           T = T - zdotu(nb,Gf(ii),1,El%Gamma(i_Elec+(i-1)*no),1) ! G \Gamma
@@ -821,7 +824,7 @@ contains
     end do
 
     ! Now we have:
-    !   T = G \Gamma - G^\dagger \Gamma
+    !   T = Tr[G \Gamma - G^\dagger \Gamma]
 #ifndef TBT_T_G_GAMMA_OLD
     T = T * 2._dp
 #endif
