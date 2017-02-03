@@ -469,7 +469,34 @@ C ----------------------------------------------------------------------
      &           'I hope you know what you are doing!'
          end if
 
-         if ( dipole_correction .and. ts_tidx > 0 ) then
+         ! In case we have 1 electrode, we will force the
+         ! dipole correction along the transport direction,
+         ! Else, should the dipole correction be perpendicular
+         ! to the transport direction
+         if ( dipole_correction ) then
+          if ( N_Elec == 1 .and. ts_tidx > 0 ) then
+            if ( shape .eq. 'chain' ) then
+               field  = cell(1:3,ts_tidx)
+               ortho  = ddot(3,field,1,field,1)
+               field  = field / ortho
+               ortho  = ddot(3,bcell,1,bcell,1)
+               field2 = bcell(1:3,1) / ortho
+               ! the transport direction must
+               ! be the periodic direction
+               if ( sum(abs(field-field2)) < 1.e-7_dp ) then
+                  call die('Dipole correction is not parallel 
+     &to transport direction. Requirement for 1 electrode.') 
+               end if
+            else if ( shape .eq. 'slab' ) then
+               ! get the dipole-correction field
+               call cross( bcell(1,1), bcell(1,2), field )
+               ortho = ddot(3,cell(1,ts_tidx),1,field,1) 
+               if ( ortho < 1.e-7_dp ) then
+                  call die('Dipole-correction must be parallel
+     &to transport direction. Requirement for 1 electrode.')
+               end if
+            end if
+          else if ( ts_tidx > 0 ) then
             ! Now we can check the directions of the chain/slab
             if ( shape .eq. 'chain' ) then
                field  = cell(1:3,ts_tidx)
@@ -480,32 +507,36 @@ C ----------------------------------------------------------------------
                ! the transport direction must
                ! be the periodic direction
                if ( sum(abs(field-field2)) > 1.e-9_dp ) then
-                  call die('Dipole correction is not &
-     &perpendicular to transport direction')
+                  call die('Dipole correction is not
+     &perpendicular to transport direction.')
                end if
             else if ( shape .eq. 'slab' ) then
-               ! get the field-direction
+               ! get the dipole-correction field
                call cross( bcell(1,1), bcell(1,2), field )
                ortho = ddot(3,cell(1,ts_tidx),1,field,1) 
                if ( ortho > 1.e-9_dp ) then
-                  call die('Dipole-correction must be &
-     &perpendicular to transport direction')
+                  call die('Dipole-correction must be
+     &perpendicular to transport direction.')
                end if
             end if
-         else if ( dipole_correction ) then
-            ! We will always allow dipole-correction
-            ! for mis-aligned electrodes...
-            ! However, it *MUST* be the users responsibility
+          else 
+             ! the ts_tidx < 0 which means the electrodes are individual
+             ! in this case it is the complete responsibility of the
+             ! user that the dipole correction is aligned correctly
+          end if
          end if
 
-         if ( .not. dipole_correction ) then
-            ! We have a user-defined electric-field
+         ! If there is an efield, check that it is perpendicular
+         ! to the transport directions
+         if ( acting_efield ) then
+            ! This is either dipole or user or both, for the first
+            ! user_specified_field is 0 anyway.
             field(:) = user_specified_field(:)
             do iE = 1 , N_Elec
                field2 = cell(:,Elecs(iE)%pvt(Elecs(iE)%t_dir))
                ortho = ddot(3,field2,1,field,1)
                if ( ortho > 1.e-9_dp ) then
-                  call die('User defined E-field must be &
+                  call die('User defined E-field must be
      &perpendicular to semi-infinite directions')
                end if
             end do

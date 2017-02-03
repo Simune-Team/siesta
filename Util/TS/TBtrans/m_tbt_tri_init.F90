@@ -249,6 +249,9 @@ contains
           end if
        end do
 
+       ! It is clear that the inDpvt array is a sorted array
+       Elecs(iEl)%inDpvt%sorted = .true.
+       
        ! Copy this information to the ElpD
        if ( n /= Elecs(iEl)%o_inD%n ) &
             call die('Error programming, n')

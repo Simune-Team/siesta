@@ -143,14 +143,25 @@ contains
          ('MD.Steps.First'.kvp.inicoor)
     options = options // &
          ('MD.Steps.Last'.kvp.fincoor)
-
+    options = options // &
+         ('MD.DM.History.Depth'.kvp.DM_history_depth)
 
 
     ! All write options    ! fdf-flag
     options = options // & ! SaveHS
-         ('Write.HS'.kvp.savehs)
+         ('Write.HS'.kvp.saveHS)
+    options = options // & ! Write.DM
+         ('Write.DM'.kvp.writeDM)
+    options = options // & ! Write.DM.End.Of.Cycle
+         ('Write.EndOfCycle.DM'.kvp.write_DM_at_end_of_cycle)
+    options = options // & ! Write.H
+         ('Write.H'.kvp.writeH)
+    options = options // & ! Write.H.End.Of.Cycle
+         ('Write.EndOfCycle.H'.kvp.write_H_at_end_of_cycle)
+    options = options // & ! Write.H
+         ('Write.Forces'.kvp.writeF)
     options = options // & ! DM.UseSaveDM
-         ('Use.DM'.kvp.usesavedm)
+         ('Use.DM'.kvp.UseSaveDM)
 
     options = options // & ! WriteHirshfeldPop
          ('Write.Hirshfeld'.kvp.hirshpop)
