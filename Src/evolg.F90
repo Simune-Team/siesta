@@ -63,7 +63,7 @@
       use wavefunctions
       use MatrixSwitch
       use siesta_options,        only: eigen_time, ntded
-      use sparse_matrices,       only: H, S, numh, listh, listhptr 
+      use sparse_matrices,       only: H, S, numh, listh, listhptr, Dscf 
       use m_eo,                  only: eo
       use m_steps,               only: fincoor, final
 #ifdef MPI
@@ -80,14 +80,14 @@
       double precision     :: Dnew(maxnd,nspin), Enew(maxnd,nspin)
       double precision     :: delt
       !
-      type(matrix)         :: Hauxms,Sauxms, bix2
+      type(matrix)         :: Hauxms,Sauxms
       character(3)         :: m_operation
       character(5)         :: m_storage
       complex(dp)          :: varaux, varaux2,varaux3, pipj, pipj2, varaux4  
        
       integer              :: ie, io, iio,iee, ispin, j, jo, BNode, iie, ind, BTest
       integer              :: mm, maxnuo, ierror, nd, nocc, nstp,i,npsi
-      double precision     :: ee, qe, t, eigv, dnrm,el1,el2,el3,el4
+      double precision     :: spfa, qe, t, eigv, dnrm,el1,el2,el3,el4
       logical              :: calculateEnew ! Not sure if it is really needed?
       !
 #ifdef MPI
@@ -138,25 +138,11 @@
         !
         call timer( 'CntoCn1', 2 )
         !
-        call m_allocate(bix2,nuotot,nuotot,m_storage)
-        !
-        call timer( 'DMinMS', 1 )
-        ! Calculating denisty matrix with Matrix Switch.
-        call mm_multiply(wavef_ms(1,ispin),'n',wavef_ms(1,ispin),'c',bix2,            &
-            cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
-        !
-        call timer( 'DMinMS', 2 )
-        !
-        call timer( 'DM2Sparse', 1 )
-        ! Passing dense DM to sparse DM
-        DO io=1,nuo
-          DO j=1,numh(io)
-            ind=listhptr(io) + j
-            jo = listh(ind)
-            Dnew(ind,ispin)  = Dnew(ind, ispin) + bix2%zval(jo,io)
-          END DO
-        END DO
-        call timer( 'DM2Sparse', 2 )
+        ! Calculating denisty matrix.
+        IF (IONode .and. ispin .eq. 1) THEN
+          WRITE(*,'(a)') 'evolg: Computing DM after evolving TDKS wavefunctions'
+        END IF
+        call compute_tddm(ispin, Dscf)
         ! This needs to be fixes as it is not being properly done.
         call timer( 'Eigenvalue', 1 )
         if (eigen_time) then 
@@ -176,7 +162,6 @@
           enddo
         endif
         !
-        call m_deallocate(bix2)
         call timer( 'Eigenvalue', 2 )
       enddo ! ispin
       call m_deallocate(Hauxms)

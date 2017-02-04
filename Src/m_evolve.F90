@@ -3,7 +3,7 @@
       CONTAINS
       subroutine evolve(no, nspin, maxspn, maxuo, maxnh, maxnd,        &
                        maxo, gamma, indxuo, nk, kpoint, wk,            &
-                       Dnew, Enew, nuotot, delt, istep, itded)         
+                       Enew, nuotot, delt, istep, itded)         
 
 ! *********************************************************************
 ! Subroutine to time-evolve the eigenvectors, calculate the density 

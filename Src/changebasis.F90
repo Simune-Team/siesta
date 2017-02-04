@@ -1,5 +1,5 @@
       subroutine chgbasis(no, nspin, maxspn, maxuo, maxnh, maxnd,            &
-                          maxo, gamma, indxuo, nk, kpoint, wk, Dnew,         &
+                          maxo, gamma, indxuo, nk, kpoint, wk,               &
                           nuotot,istpmove)
 
 !******************************************************************************
@@ -68,7 +68,7 @@
 
 
   use precision
-  use parallel,            only : Node, Nodes,BlockSize
+  use parallel,            only : Node, Nodes,BlockSize, IONode
   use parallelsubs,        only : GlobalToLocalOrb, GetNodeOrbs,               &
                                   LocalToGlobalOrb
   use fdf
@@ -78,7 +78,7 @@
   use mpi_siesta,          only : mpi_bcast, mpi_comm_world, mpi_logical
 #endif
   use wavefunctions
-  use sparse_matrices,     only : numh, listhptr, listh, S, xijo
+  use sparse_matrices,     only : numh, listhptr, listh, S, xijo, Dscf
 !  use densematrix,         only : Saux, psi
   use MatrixSwitch
   use matdiagon,           only: geteigen 
@@ -90,7 +90,6 @@
   logical, intent(in)     :: gamma
   !
   real(dp), intent(in)       :: kpoint(3,nk), wk(nk)
-  real(dp), intent(out)      :: Dnew(maxnd,nspin) 
   !
 #ifdef MPI
   integer                 :: MPIerror,desch(9)
@@ -103,7 +102,7 @@
   logical, save           :: frstme = .true.
   integer                 :: io, iuo, iu, naux, nhs,  nuo, juo, jo, ind, &
                              ispin, nocc, nwf, ik, j,jio, nd, ierror, npsi
-  real(dp)                :: skxij,ckxij, kxij, qe
+  real(dp)                :: skxij,ckxij, kxij, qe, spfa
   complex(dp)             :: pipj, varaux,varaux2,varaux3
   !
   type(matrix)             :: Maux,invsqS,phi
@@ -167,10 +166,6 @@
     end do
     frstme=.false.
   endif
-  if(istpmove.gt.0) then
-    nd = listhptr(nuo) + numh(nuo)
-    Dnew(1:nd,1:nspin) = 0.d0
-  endif
   ! 
   do ik = 1,nk
     call timer( 'S2MSdense', 1 )
@@ -222,38 +217,18 @@
              cmplx(0.0_dp,0.0_dp,dp),m_operation)
         call timer( 'SauxCn', 2 )
         call m_deallocate(phi)
-        ! Constructing  the new DM
-        call timer('DMinMS-CB',1)
-        call mm_multiply(wavef_ms(1,ispin),'n',wavef_ms(1,ispin),'c',          &
-                         Maux,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp), &
-                         m_operation)
-        call timer('DMinMS-CB', 2)
-        call timer( 'dmDensetoSparse',1)
-        do iuo = 1,nuo
-          do j = 1,numh(iuo)
-            ind = listhptr(iuo) + j
-            jo = listh(ind)
-            juo = indxuo(jo)
-            if(.not.gamma) then 
-              kxij = kpoint(1,ik) * xijo(1,ind) +&
-              kpoint(2,ik) * xijo(2,ind) +&
-              kpoint(3,ik) * xijo(3,ind)
-              ckxij = cos(kxij)
-              skxij = -sin(kxij)
-            else
-              ckxij=1.0d0
-              skxij=0.0d0
-            endif
-            varaux2=real(Maux%zval(jo,iuo))*ckxij+ aimag(Maux%zval(jo,iuo))*skxij
-            Dnew(ind,ispin)=Dnew(ind,ispin)+varaux2
-          enddo
-        enddo
-        !        
-        call timer( 'dmDensetoSparse',2)
       enddo  
     endif   !istpmove 
   enddo          ! ik 
   !
+  IF(istpmove.gt.1) THEN   ! istpmove 
+    IF (IONode) THEN
+      WRITE(*,'(a)') 'chgbasis: Computing DM in new basis'
+    END IF
+    DO ispin=1,nspin
+      call compute_tddm(ispin, Dscf)
+    END DO 
+  END IF
   call m_deallocate(Sauxms)
   call m_deallocate(Maux)
   call m_deallocate(invsqS)

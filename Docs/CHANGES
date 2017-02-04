@@ -5,6 +5,17 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2017-02-04                                                    trunk-603
+Fix lp:1659577 
+
+*Src/Makefile
+*Src/changebasis.F90
+*Src/evolg.F90
+*Src/m_evolve.F90
+*Src/siesta_tddft.F90
+*Src/wavefunctions.F90
+
+-----------------------------------------------------------------------
 2016-06-23                                                    trunk-525
 Merged 4.0-500
 
