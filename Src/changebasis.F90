@@ -1,33 +1,22 @@
-      subroutine chgbasis(no, nspin, maxspn, maxuo, maxnh, maxnd,            &
-                          maxo, gamma, indxuo, nk, kpoint, wk,               &
+      subroutine chgbasis(nspin, gamma, nk, kpoint, wk,               &
                           nuotot,istpmove)
 
 !******************************************************************************
 !Modified  by D. Sanchez-Portal, Feb 2009
 !Modified by Adiran Garaizar, June 2015
 !Modified by Rafi Ullah, October 2015
+!Modified by Rafi Ullah, February 2017
 !**************************** INPUT ********************************************
-!integer no                  : Number of basis orbitals the supercell
 !integer nspin               : Spin polarization (1 or 2)
-!integer maxspn              : Maximum number of spin orentations 
-!integer maxuo               : Maximum number of orbitals stored in a 
-!                              given Node
 !integer maxnh               : Maximum number of orbitals interacting
-!integer maxnd               : Maximum number of nonzero elements of
 !                              each row of density matrix
-!integer maxo                : Maximum number of orbitals in the unit cell
 !integer numh(nuo)           : Number of nonzero elements of each row
 !                              of hamiltonian matrix
 !integer listhptr(nuo)       : Pointer to each row (-1) of the
 !                              hamiltonian matrix
 !integer listh(maxlh)        : Nonzero hamiltonian-matrix element
 !                              column indexes for each matrix row
-!integer numd(nuo)           : Number of nonzero elements of each row
 !                              of density matrix
-!integer listdptr(nuo)       : Pointer to each row (-1) of the
-!                              density matrix
-!integer listd(maxnh)        : Nonzero density-matrix element column
-!                              indexes for each matrix row
 !real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
 !real*8  S(maxnh)            : Overlap in sparse form
 !logical gamma               : Only gamma point?
@@ -52,20 +41,6 @@
 !xij and kpoint must be in reciprocal coordinates of each other.
 !Enew returned in the units of H.
 !delt in femtoseconds
-!*************************** Parallel ********************************
-! Very important!!!!!!!!!!!!
-! DSP: This subroutine is not yet prepared to run in parallel!!!!
-! Sorry!
-!When running in parallel some of the dimensions are now the
-!maximum per node and the corresponding number passed in as
-!an argument is the number of locally stored values. The
-!variables for which this is the case are:
-!
-!maxuo/no
-!
-!*********************************************************************
-
-
 
   use precision
   use parallel,            only : Node, Nodes,BlockSize, IONode
@@ -79,16 +54,13 @@
 #endif
   use wavefunctions
   use sparse_matrices,     only : numh, listhptr, listh, S, xijo, Dscf
-!  use densematrix,         only : Saux, psi
   use MatrixSwitch
   use matdiagon,           only: geteigen 
   !
   implicit none
   !
-  integer, intent(in)     :: no, nspin, maxspn, maxuo, maxnh, maxnd, maxo
-  integer, intent(in)     :: indxuo(no), nk, nuotot, istpmove
-  logical, intent(in)     :: gamma
-  !
+  integer, intent(in)        :: nspin, nk, nuotot, istpmove
+  logical, intent(in)        :: gamma
   real(dp), intent(in)       :: kpoint(3,nk), wk(nk)
   !
 #ifdef MPI
@@ -97,16 +69,14 @@
   external                :: diagkp
 #endif
   !
-  external                :: io_assign, io_close
-  !
   logical, save           :: frstme = .true.
-  integer                 :: io, iuo, iu, naux, nhs,  nuo, juo, jo, ind, &
-                             ispin, nocc, nwf, ik, j,jio, nd, ierror, npsi
-  real(dp)                :: skxij,ckxij, kxij, qe, spfa
-  complex(dp)             :: pipj, varaux,varaux2,varaux3
+  integer                 :: io, iuo, nuo, jo, ind, ispin,         &
+                             ik, j,ierror
+  real(dp)                :: skxij,ckxij, kxij, qe 
+  complex(dp)             :: varaux
   !
-  type(matrix)             :: Maux,invsqS,phi
-  type(matrix)             :: Sauxms
+  type(matrix)                     :: Maux,invsqS,phi
+  type(matrix)                     :: Sauxms
   type(matrix),allocatable,save    :: sqrtS(:)
   character(3)                     :: m_operation
   character(5)                     :: m_storage
@@ -130,11 +100,6 @@
   nuo = nuotot
 #endif
   call timer( 'chgbasis', 1 )
-#ifdef MPI
-  if (ParallelOverK) then
-    nhs  = 2 * nuotot * nuotot
-  endif
-#endif
   !
 #ifdef MPI
   m_storage='pzdbc'
@@ -144,18 +109,10 @@
   m_operation='lap'
 #endif
   !
-  if(nspin .le. 2 .and. gamma) then
-    nhs  = nuotot * nuo 
-    npsi = nuotot * maxuo * nspin
-  else if (nspin .le. 2 .and. .not. gamma) then
-    nhs  = 2 * nuotot * nuotot
-    npsi = 2 * nuotot * nuotot
-  else if (nspin .eq. 4) then
+  IF (nspin .eq. 4) THEN
     call die ('chgbasis: ERROR: EID not yet prepared for non-collinear spin')
-  else 
-    call die ('chgbasis: ERROR: incorrect value of nspin')
-  end if 
-  ! Allocate local arrays
+  END IF
+    ! Allocate local arrays
   call m_allocate(Sauxms,nuotot,nuotot,m_storage)
   call m_allocate(Maux,nuotot,nuotot,m_storage)
   call m_allocate(invsqS,nuotot,nuotot,m_storage)
@@ -174,7 +131,6 @@
       do j = 1,numh(iuo)
         ind = listhptr(iuo) + j
         jo = listh(ind)
-        juo = indxuo(jo)
         if(.not.gamma) then 
           kxij = kpoint(1,ik) * xijo(1,ind) +&
           kpoint(2,ik) * xijo(2,ind) +&
@@ -185,8 +141,8 @@
           ckxij=1.0_dp
           skxij=0.0_dp
         endif
-        varaux2 = cmplx(S(ind)*ckxij,S(ind)*skxij)
-        call m_set_element(Sauxms, jo, io, varaux2, m_operation)
+        varaux = cmplx(S(ind)*ckxij,S(ind)*skxij)
+        call m_set_element(Sauxms, jo, io, varaux, m_operation)
       enddo
     enddo
     !

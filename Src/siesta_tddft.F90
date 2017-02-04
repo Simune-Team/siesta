@@ -56,8 +56,6 @@ contains
     integer :: mod_tded, mod_md
     integer :: istpp, ispin
     real(dp) :: dt_tded, G2max
-    ! temporary variables for testing, delete after tests
-    integer :: i, kk, ind
 #ifdef DEBUG
     call write_debug( '    PRE siesta_tddft' )
 #endif
@@ -108,9 +106,7 @@ contains
 #endif
 
     ! The first call to change basis only calculates S^+1/2
-    call chgbasis(no_s, nspin, nspin, no_l, maxnh, maxnh, &
-         no_u, gamma, indxuo, nkpnt, kpoint, kweight, &
-         no_u,istep)
+    call chgbasis(nspin, gamma, nkpnt, kpoint, kweight, no_u,istep)
     
     ! Read the initial wavefunctions.
     ! In future reading wavefunctions can be moved before
@@ -122,7 +118,9 @@ contains
        allocate(wavef_ms(nkpnt,nspin))
        call iowavef('read',wavef_ms,no_u,nkpnt,nspin, istpp, &
             rstart_time)
+       IF (IONode) THEN
        write(6,'(a)') 'Computing DM from initial KS wavefunctions'
+       END IF 
        DO ispin=1,nspin
          call compute_tddm(ispin, Dscf)
        END DO

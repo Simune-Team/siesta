@@ -1,5 +1,5 @@
       subroutine evolg( nspin, nuo, no, maxo, maxnh, maxnd,           &
-                        Dnew, Enew, nuotot, delt, ist,itd)
+                        Enew, nuotot, delt, ist,itd)
 ! ********************************************************************
 ! Subroutine to calculate the eigenvalues and eigenvectors, density
 ! and energy-density matrices, and occupation weights of each 
@@ -77,7 +77,7 @@
       !
       integer              :: itd, ist
       integer              :: maxnd, maxnh, nuo, no, nspin, nuotot, ncounter, maxo, asn,desch(9)
-      double precision     :: Dnew(maxnd,nspin), Enew(maxnd,nspin)
+      double precision     :: Enew(maxnd,nspin)
       double precision     :: delt
       !
       type(matrix)         :: Hauxms,Sauxms
@@ -87,7 +87,7 @@
        
       integer              :: ie, io, iio,iee, ispin, j, jo, BNode, iie, ind, BTest
       integer              :: mm, maxnuo, ierror, nd, nocc, nstp,i,npsi
-      double precision     :: spfa, qe, t, eigv, dnrm,el1,el2,el3,el4
+      double precision     :: qe, t, eigv, dnrm,el1,el2,el3,el4
       logical              :: calculateEnew ! Not sure if it is really needed?
       !
 #ifdef MPI
@@ -108,8 +108,6 @@
       nstp=1 ! I guess this determines the Hamiltonia extrapolation.
              ! Needs to be checked and should be made user defined.
       !
-      nd = listhptr(nuo) + numh(nuo)
-      Dnew(1:nd,1:nspin) = 0.0_dp
       !if(calculateEnew) Enew(1:nd,1:nspin) = 0.d0
       ! Evolve wavefunctions.............................................
       do ispin = 1,nspin
