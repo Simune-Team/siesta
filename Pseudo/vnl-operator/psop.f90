@@ -53,7 +53,7 @@
       implicit none
 
       character(len=*), parameter :: PSML_VERSION = "1.0"
-      character(len=*), parameter :: PSML_CREATOR = "psop-1.0"
+      character(len=*), parameter :: PSML_CREATOR = "psop-1.01"
       
       integer, parameter :: dp = selected_real_kind(10,100)
 
@@ -562,6 +562,9 @@
         call xml_NewElement(xf,"tmp-wrapper")
         call xml_NewElement(xf,"local-potential")
             call my_add_attribute(xf,"type",trim(method_used))
+        call xml_NewElement(xf,"annotation")
+           call my_add_attribute(xf,"chlocal-cutoff",str(rchloc))
+        call xml_EndElement(xf,"annotation")
         call xml_NewElement(xf,"grid")
 
         if (use_linear_grid) then

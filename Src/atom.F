@@ -107,7 +107,6 @@
      .                       split_norm,filtercut_in,basp)
 
         use m_psop, only: compute_vlocal_chlocal
-        use m_psop, only: chlocal_from_vlocal
         use m_psop, only: kbgen
         use m_psml, only: ps_HasLocalPotential
         use m_psml, only: ps_HasProjectors
@@ -2473,7 +2472,11 @@ C potential
       real(dp), parameter  :: eps_vlocal=1.0e-5_dp
       real(dp), parameter  :: eps_charge=1.0e-4_dp ! To match
 
-      logical :: use_charge_cutoff
+      logical :: use_charge_cutoff, got_chlocal
+      integer  :: status
+      character(len=50) :: value
+      real(dp)          :: rchloc
+      type(ps_annotation_t)                :: annotation
       
       if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
          call die("Zval mismatch in psml file")
@@ -2494,7 +2497,56 @@ C potential
 
 !     Extraction of chlocal
 
-        select case (trim(vlocal_type))
+      ! Try to get chlocal from the PSML file
+      
+      got_chlocal = .false.
+      if (ps_HasLocalCharge(ps)) then
+         got_chlocal = .true.
+         write(6,"(a)") "Got Chlocal from " //
+     $        " psml data"
+         
+         do ir = 1, nrval
+            chlocal(ir) = ps_LocalCharge_Value(ps,rofi(ir))
+         enddo
+
+         annotation = ps_GetAnnotation(ps,"local-potential")
+         call get_annotation_value(annotation,"chlocal-cutoff",
+     $                             value,status)
+
+         if (status == 0) then
+
+            ! Get the chlocal cutoff from PSML file
+            read(value,*) rchloc
+
+            do ir = 1, nrval
+               if (rofi(ir) > (rchloc + 1.0e-6_dp)) exit
+            enddo
+            nchloc = ir - 1
+            write(6,*) "rchloc from  annotation, nchloc: ",
+     $           rchloc, nchloc
+            got_chlocal = .true.
+            
+         elseif (fdf_get("psml.chlocal.trust.tail",.true.)) then
+
+            ! Compute nchloc, assuming proper generation of local charge,
+            ! during which the tail is set to zero.
+            ! NOTE: The interpolator will return non-zero values for points
+            ! beyond the cutoff, particularly if using high orders of interpolation
+            do ir = nrval, 1, -1
+               if (abs(chlocal(ir)) > 0.0_dp) exit 
+            enddo
+            nchloc = ir + 1
+            write(6,"(a,i4,f10.6)") "nchloc from abs(chloc)>0: ",
+     $           nchloc, rofi(nchloc)
+            got_chlocal = .true.
+         endif
+         
+      endif
+
+      ! If we could not get the data from the PSML file...
+      
+      if (.not. got_chlocal) then   
+      select case (trim(vlocal_type))
         case ("siesta-fit")
            use_charge_cutoff = fdf_boolean(
      $          "use-charge-cutoff-for-vlocal-fit",.false.)
@@ -2581,7 +2633,7 @@ C potential
      $     nrval-20,poly_order=poly_order_rofi)
 
       call file_out(nrval,rofi,chlocal,
-     .     trim(global_label)//".Chlocal_psml")
+     .     trim(global_label)//".Chlocal_rofi_psml")
 
       deallocate(rlin, chlocal_rlin)
       deallocate(rr, vl, ch, vlp, vlpp, vllap)
@@ -2629,10 +2681,14 @@ C potential
 !     as that in which Vlocal is close to
 !     -Z/r (see test inside the loop).
 
+           ! This test is not very robust. If Vlocal crosses Z/r
+           ! at some point, the loop will end too soon.
            do ir=1,nrval-1
               g2=vlocal(ir)*rofi(ir)
               if (abs(g2+2.0_dp*zval).lt.eps_vlocal) exit
            enddo
+           ! "nchloc-1" is used below as the effective point...
+           ! This is historical usage.
            nchloc_vlocal = ir          
 
            rcut_chloc = rofi(nchloc_vlocal)
@@ -2658,7 +2714,7 @@ C potential
            enddo 
 
         endif
-        
+        endif  
       end subroutine get_psml_vlocal_chlocal
 
       subroutine get_psml_kbprojs(is,ps,atm_label,a,b,rofi,nrval,Zval,
