@@ -2441,8 +2441,6 @@ C potential
       subroutine get_psml_vlocal_chlocal(ps,is,rofi,drdi,nrval,
      $                                   Zval,vlocal,chlocal,nchloc)
 
-      use m_hamann, only: derivs, dpnint
-      
       !! Extracts Vlocal from PSML file and computes Chlocal
       !! by computing its Laplacian
       
@@ -2458,24 +2456,12 @@ C potential
       real(dp), intent(out)         :: chlocal(:)
       integer, intent(out)          :: nchloc
 
-      integer  :: ir, i, mmax, n0, npts, nrange
-      integer  :: nchloc_charge, nchloc_vlocal
-      integer  :: poly_order_rlin, poly_order_rofi
+      integer  :: ir, status
       character(len=40) :: vlocal_type
-      
-      real(dp) :: qtot, r, g2, charge, al, rr1, delta, Z
-      real(dp) :: rcut_chloc, exp_al, r0
-      real(dp), dimension(:), allocatable :: vl, vlp, vlpp, vllap
-      real(dp), dimension(:), allocatable :: rr, ch, rlin, chlocal_rlin
-      real(dp), parameter :: pi = 3.141592653589793_dp
-
-      real(dp), parameter  :: eps_vlocal=1.0e-5_dp
-      real(dp), parameter  :: eps_charge=1.0e-4_dp ! To match
-
-      logical :: use_charge_cutoff, got_chlocal
-      integer  :: status
+      logical :: got_chlocal
       character(len=50) :: value
       real(dp)          :: rchloc
+
       type(ps_annotation_t)                :: annotation
       
       if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
@@ -2501,13 +2487,6 @@ C potential
       
       got_chlocal = .false.
       if (ps_HasLocalCharge(ps)) then
-         got_chlocal = .true.
-         write(6,"(a)") "Got Chlocal from " //
-     $        " psml data"
-         
-         do ir = 1, nrval
-            chlocal(ir) = ps_LocalCharge_Value(ps,rofi(ir))
-         enddo
 
          annotation = ps_GetAnnotation(ps,"local-potential")
          call get_annotation_value(annotation,"chlocal-cutoff",
@@ -2515,6 +2494,12 @@ C potential
 
          if (status == 0) then
 
+            write(6,"(a)") "Got Chlocal from " //
+     $           " psml data"
+         
+            do ir = 1, nrval
+               chlocal(ir) = ps_LocalCharge_Value(ps,rofi(ir))
+            enddo
             ! Get the chlocal cutoff from PSML file
             read(value,*) rchloc
 
@@ -2524,6 +2509,7 @@ C potential
             nchloc = ir - 1
             write(6,*) "rchloc from  annotation, nchloc: ",
      $           rchloc, nchloc
+
             got_chlocal = .true.
             
          elseif (fdf_get("psml.chlocal.trust.tail",.true.)) then
@@ -2532,20 +2518,76 @@ C potential
             ! during which the tail is set to zero.
             ! NOTE: The interpolator will return non-zero values for points
             ! beyond the cutoff, particularly if using high orders of interpolation
+
+            ! Possibly use a lower order of interpolation here,
+            ! at least near the tail (to be implemented)
+            do ir = 1, nrval
+               chlocal(ir) = ps_LocalCharge_Value(ps,rofi(ir))
+            enddo
             do ir = nrval, 1, -1
                if (abs(chlocal(ir)) > 0.0_dp) exit 
             enddo
             nchloc = ir + 1
+            write(6,"(a)") "Got Chlocal from " //
+     $           " psml data"
             write(6,"(a,i4,f10.6)") "nchloc from abs(chloc)>0: ",
      $           nchloc, rofi(nchloc)
             got_chlocal = .true.
+
          endif
          
       endif
 
-      ! If we could not get the data from the PSML file...
+      ! If we could not get the data from the PSML file, we
+      ! have to construct chlocal from the local potential
+
+      if (.not. got_chlocal) then
+         call chlocal_from_vlocal(ps,nrval,rofi,drdi,vlocal,Zval,
+     $                            chlocal,nchloc)
+      endif
       
-      if (.not. got_chlocal) then   
+      end subroutine get_psml_vlocal_chlocal
+
+      subroutine chlocal_from_vlocal(ps,nrval,rofi,drdi,vlocal,Zval,
+     $                               chlocal,nchloc)
+
+      ! This routine computes the "local charge density" chlocal
+      ! which would produce Vlocal electrostatically
+      ! Use Poisson's equation:
+      !
+      !  Laplacian(Vlocal) = - 4 pi * chlocal   (Hartree units)
+
+      use m_hamann, only: derivs, dpnint
+      use m_psml, psml_t => ps_t
+      
+      type(psml_t), intent(in)      :: ps ! psml handle
+      real(dp), intent(in)          :: rofi(:)
+      real(dp), intent(in)          :: drdi(:)
+      integer, intent(in)           :: nrval
+      real(dp), intent(in)          :: Zval
+      real(dp), intent(in)          :: vlocal(:)
+      real(dp), intent(out)         :: chlocal(:)
+      integer, intent(out)          :: nchloc
+
+      integer  :: ir, i, mmax, n0, npts, nrange
+      integer  :: nchloc_charge, nchloc_vlocal
+      integer  :: poly_order_rlin, poly_order_rofi
+      character(len=40) :: vlocal_type
+      
+      real(dp) :: qtot, r, g2, charge, al, rr1, delta
+      real(dp) :: rcut_chloc, exp_al, r0
+      real(dp), dimension(:), allocatable :: vl, vlp, vlpp, vllap
+      real(dp), dimension(:), allocatable :: rr, ch, rlin, chlocal_rlin
+      real(dp), parameter :: pi = 3.141592653589793_dp
+
+      real(dp), parameter  :: eps_vlocal=1.0e-5_dp
+      real(dp), parameter  :: eps_charge=1.0e-4_dp ! To match
+
+      logical :: use_charge_cutoff
+
+      ! Heuristics for parameters
+
+      vlocal_type = ps_LocalPotential_Type(ps)
       select case (trim(vlocal_type))
         case ("siesta-fit")
            use_charge_cutoff = fdf_boolean(
@@ -2576,9 +2618,9 @@ C potential
 
 !     Set up reference grid in the manner of Don Hamann
 !     so that we can use his 'derivs' routine below
+!     Any grid would do, as long as the proper drdi and
+!     d^2r/di^2 is used.
 
-      Z = ps_AtomicNumber(ps)
-      
       ! al = log(1.012_dp)       ! spacing factor
       !rr1 = 0.0005_dp / Z       ! first point (r(1))
       ! make them larger
@@ -2607,7 +2649,7 @@ C potential
      .     trim(global_label)//".Chlocal_rr_psml")
 
 
-      ! Now interpolate into linear grid, using
+      ! Now interpolate first into linear grid, using
       ! the points from r0 onwards
       n0 = log(r0/rr1)/al       ! range of points
       npts= 2 + rofi(nrval)/delta   ! overkill. will have to reduce range
@@ -2714,9 +2756,8 @@ C potential
            enddo 
 
         endif
-        endif  
-      end subroutine get_psml_vlocal_chlocal
-
+      end subroutine chlocal_from_vlocal
+      
       subroutine get_psml_kbprojs(is,ps,atm_label,a,b,rofi,nrval,Zval,
      $                            lmxkb_true,nkb)
       use m_psml, psml_t => ps_t
