@@ -21,13 +21,16 @@ module siesta_dicts
   ! A dictionary for all variables
   type(dict) :: variables
 
+  private :: dict_variable_add_v_0d
   private :: dict_variable_add_b_0d
   private :: dict_variable_add_i_0d
   private :: dict_variable_add_d_0d
   private :: dict_variable_add_d_1d
   private :: dict_variable_add_d_2d
   interface dict_variable_add
-     module procedure dict_variable_add_i_0d, dict_variable_add_b_0d
+     module procedure dict_variable_add_v_0d
+     module procedure dict_variable_add_b_0d
+     module procedure dict_variable_add_i_0d
      module procedure dict_variable_add_d_0d
      module procedure dict_variable_add_d_1d, dict_variable_add_d_2d
   end interface dict_variable_add
@@ -48,18 +51,25 @@ contains
   end subroutine dict_populate
 
   subroutine dict_populate_options()
+    use files, only: slabel
     use siesta_options
     use m_steps, only: inicoor, fincoor
+
+    integer :: slabel_len
 
     ! We simply re-create the options, (note the 
     ! de-allocation by "nullification")
     call delete(options, dealloc=.false.)
 
+    slabel_len = len_trim(slabel)
+    options = &
+         ('Label'.kv.slabel(1:slabel_len))
+
     ! unluckily the dictionary does not
     ! implement a stringent way of doing characters
     ! by pointers (as we do not know their initial length).
 
-    options = &
+    options = options // &
          ('DM.HistoryDepth'.kvp.DM_history_depth)
     
     ! Output options
@@ -304,6 +314,12 @@ contains
 
   end subroutine dict_populate_variables
 
+  subroutine dict_variable_add_v_0d(name,val)
+    character(len=*), intent(in) :: name
+    character(len=*), intent(in) :: val
+    if ( name.in.variables ) call delete(variables,name,dealloc=.true.)
+    variables = variables // (name.kv.trim(val))
+  end subroutine dict_variable_add_v_0d
   subroutine dict_variable_add_b_0d(name,val)
     character(len=*), intent(in) :: name
     logical, intent(inout), target :: val
