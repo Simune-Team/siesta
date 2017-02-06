@@ -3,4 +3,4 @@
 #
 name=fe-psml
 #
-include ../test.psml.mk
+include ../test.mk

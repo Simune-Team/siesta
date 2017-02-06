@@ -1,20 +1,31 @@
 #
-# Single-test makefile template
+# Single-test makefile template (TDDFT version)
 #
 # You can edit the SIESTA macro here, or pass it on the command line
-#
+
+MPI=mpirun -np 2
 SIESTA=../../../siesta
-#
+
 # Example for BSC runs
 #
-#SIESTA= mpirun -np 4 ../../../siesta
-#
+#MPI=mpirun -np 2
+#SIESTA= ../../../siesta
+
+# Make compatibility layer for old test-runs
+ifeq ($(strip $(firstword $(SIESTA))),mpirun)
+MPI=
+endif
+ifeq ($(strip $(firstword $(SIESTA))),mpiexec)
+MPI=
+endif
+
 #----------------------------------------------------------------------------
-XML-TESTER=../../Util/test-xml/test-xml
-XML-REFERENCE=../../Tests/Reference-xml
-#
+REFERENCE_DIR?=../../../Tests/Reference
+REFERENCE_CHECKER?=../cmp_digest.sh
+
 label=work
 #
+.PHONY: completed
 completed: completed_$(label)
 #
 completed_$(label):
@@ -22,8 +33,10 @@ completed_$(label):
 	@if [ -d $(label) ] ; then rm -rf $(label) ; fi; mkdir $(label)
 	@if [ -n "$(EXTRAFILES)" ] ; then cp -f $(EXTRAFILES) $(label) ; fi
 	@for i in `cat $(name).pseudos` ; do \
-          echo "    ==> Copying pseudopotential file for $$i..." ;\
-          ln ../Pseudos/$$i.psf $(label)/$$i.psf ;\
+	    if [[ $$i =~ .*\.(psf|psml) ]] ; then fps=$$i ; \
+                    else fps=$${i}.psf ; fi; \
+            echo "    ==> Copying pseudopotential file for $$fps ..." ;\
+          ln ../Pseudos/$$fps $(label)/$$fps ;\
          done
 	@echo "    ==> Running SIESTA as ${SIESTA}"
 	@(cd $(label) ; ${SIESTA} 2>&1 > $(name)1.out < ../$(name)1.fdf) \
@@ -44,13 +57,12 @@ completed_$(label):
            echo " **** Test $(name)2 did not complete successfully";\
          fi
 #
-xmlcheck: completed
-	@echo "    ==> Running xmlcheck for system $(name)2"
-	@ln -sf ../tolerances.dat ./tolerances.dat
-	$(XML-TESTER) $(XML-REFERENCE)/$(name)2.xml $(label)/$(name).xml | tee $(label).diff-xml
-        # The following line erases the file if it is empty
-	@if [ ! -s $(label).diff-xml ] ; then rm -f $(label).diff-xml ; fi
+check: completed check-only
+
+check-only:
+	@echo "    ==> Running check for system $(name)"
+	@REFERENCE_DIR=$(REFERENCE_DIR) sh $(REFERENCE_CHECKER) $(name).out
 #
 clean:
 	@echo ">>>> Cleaning $(name)1 test..."
-	rm -rf $(label) completed* $(name)1.out $(name)2.out $(name).xml *.dat *diff-xml
+	rm -rf $(label) completed* $(name)1.out $(name)2.out $(name).xml *.dat 

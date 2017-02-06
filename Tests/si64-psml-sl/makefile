@@ -3,4 +3,4 @@
 #
 name=si64-psml-sl
 #
-include ../test.psml.mk
+include ../test.mk
