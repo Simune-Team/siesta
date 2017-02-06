@@ -151,7 +151,7 @@ contains
           call iowavef('write',wavef_ms,no_u,nkpnt,nspin, istep, totime)
        end if
        
-       call setup_hamiltonian( 3 )
+       call setup_hamiltonian( itded )
        
        call evolve(no_s,nspin,nspin,no_l,maxnh,maxnh,no_u, &
             gamma, indxuo,nkpnt,kpoint,kweight, &
