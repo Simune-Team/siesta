@@ -329,6 +329,26 @@ contains
 
     end if
 #endif
+
+
+    ! Determine how the mixing of the first step should be performed
+    !
+    ! The idea is that one will allow mixing on the first SCF step
+    ! only for atomicly filled orbitals. This will in most cases
+    ! be a good initial choice, while in certain systems (spin-orbit)
+    ! it may not be so good.
+    ! Subsequently for any MD steps beyond the initial step, we will not
+    ! allow mixing the first SCF step if the DM has been extrapolated
+    ! or re-used.
+    ! If allowing mixing on the first SCF step it has been known that
+    ! it may lead to "wrong" convergence due to memory effects in cases of few
+    ! iterations. For instance when performing FC runs (externally driven)
+    ! this would lead to non-degenerate transverse eigenmodes for simple molecules
+    if ( init_method == 0 ) then ! atomicly filled data
+       ! allow mix_scf_first
+    else if ( mix_scf_first ) then
+       mix_scf_first = .false.
+    end if
     
   end subroutine new_DM
 
