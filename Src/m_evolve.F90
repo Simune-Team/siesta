@@ -92,8 +92,8 @@
       !
       integer, intent(in)      ::  maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin 
       integer                  ::  nuotot, istep, itded,  indxuo(no) 
-      double precision         ::  Enew(maxnd,nspin) 
-      double precision         ::  kpoint(3,nk), wk(nk), delt
+      real(dp)                 ::  Enew(maxnd,nspin) 
+      real(dp)                 ::  kpoint(3,nk), wk(nk), delt
       logical                  ::  gamma
       external                 ::  io_assign, io_close
       !
