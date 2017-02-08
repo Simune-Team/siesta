@@ -75,10 +75,9 @@
       INTEGER :: MPIerror
 #endif
       !
-      integer              :: itd, ist
-      integer              :: maxnd, maxnh, nuo, no, nspin, nuotot, ncounter, maxo, asn,desch(9)
-      double precision     :: Enew(maxnd,nspin)
-      double precision     :: delt
+      integer              :: itd, ist, maxnd, maxnh, nuo, no, nspin, nuotot
+      integer              :: ncounter, maxo, asn,desch(9)
+      real(dp)             :: Enew(maxnd,nspin), delt
       !
       type(matrix)         :: Hauxms,Sauxms
       character(3)         :: m_operation
@@ -87,7 +86,7 @@
        
       integer              :: ie, io, iio,iee, ispin, j, jo, BNode, iie, ind, BTest
       integer              :: mm, maxnuo, ierror, nd, nocc, nstp,i,npsi
-      double precision     :: qe, t, eigv, dnrm,el1,el2,el3,el4
+      real(dp)             :: qe, t, eigv, dnrm,el1,el2,el3,el4
       logical              :: calculateEnew ! Not sure if it is really needed?
       !
 #ifdef MPI
@@ -285,7 +284,7 @@
   !
   integer                 :: no,  ispin, ncounter, nol, nstp, nspin,nuo
   complex(kind=dp)        :: pi, pj
-  double precision        :: deltat, delt, varaux
+  real(dp)                :: deltat, delt, varaux
   !
   type(matrix),intent(in)         :: Hauxms, Sauxms 
   type(matrix),allocatable,save   :: Hsve(:)

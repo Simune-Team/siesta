@@ -70,8 +70,8 @@
 #endif
   !
   logical, save           :: frstme = .true.
-  integer                 :: io, iuo, nuo, jo, ind, ispin,         &
-                             ik, j,ierror
+  integer                 :: io, iuo, nuo, jo, ind, ispin         
+  integer                 :: ik, j,ierror
   real(dp)                :: skxij,ckxij, kxij, qe 
   complex(dp)             :: varaux
   !
@@ -109,7 +109,7 @@
   m_operation='lap'
 #endif
   !
-  IF (nspin .eq. 4) THEN
+  IF (nspin .gt. 2) THEN
     call die ('chgbasis: ERROR: EID not yet prepared for non-collinear spin')
   END IF
     ! Allocate local arrays

@@ -19,7 +19,7 @@ CONTAINS
     !
     ! Although it is prepared to work with parallel TDDFT-siesta the
     ! reading/writing process itself is not parallel.
-
+    use precision
     use parallel
     use fdf
     use MatrixSwitch
@@ -31,7 +31,7 @@ CONTAINS
     !
     integer, intent(in)             :: nuotot, nk, nspin
     integer, intent(inout)          :: istpp
-    double precision, intent(inout) :: totime
+    real(dp), intent(inout)         :: totime
     character*(*), intent(in)       :: task
     type(matrix), intent(inout)     :: wavef_rw(nk,nspin)
     ! Internal variables and arrays
@@ -174,8 +174,8 @@ CONTAINS
     use m_spin,               only: nspin
     integer                      :: ispin, nuo, nuotot
     integer                      :: io,jo, j, ind, ik
-    double precision             :: Dnew (maxnh, nspin), spfa, kxij
-    double precision             :: ckxij, skxij
+    real(dp)                     :: Dnew (maxnh, nspin), spfa, kxij
+    real(dp)                     :: ckxij, skxij
     complex(dp)                  :: varaux
     type(matrix)                 :: Daux    
     character                    :: m_storage*5, m_operation*3
