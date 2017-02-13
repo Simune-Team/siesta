@@ -62,6 +62,11 @@ siesta = { &
        print("Lua-msg: " ..msg) &
     end, &
 } &
+IOprint = function(...) &
+    if siesta.IONode then &
+        print(...) &
+    end &
+end &
 _empty_tbl = {} &
 siesta_comm = function (_empty_tbl) end'
 
@@ -361,7 +366,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
       end if
 !      print *,'Attempt storing: ',trim(key), ' type= ',t
       select case ( t )
-      case ( 'b0' , 'i0', 's0', 'd0' )
+      case ( 'V0', 'b0' , 'i0', 's0', 'd0' )
          ! We need to handle the variables secondly
          call key_split(key,lkey,rkey)
          if ( len_trim(rkey) == 0 ) then
@@ -372,10 +377,13 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
          end if
       end select
       select case ( t )
-      case ( 'b0' ) 
+      case ( 'V0' )
+         call assign(lkey,v)
+         call lua_set(tbl,rkey,lkey(1:len_trim(lkey)))
+      case ( 'b0' )
          call associate(b0,v)
          call lua_set(tbl,rkey,b0)
-      case ( 'b1' ) 
+      case ( 'b1' )
          call associate(b1,v)
          call lua_set(tbl,key,b1)
       case ( 'b2' ) 
