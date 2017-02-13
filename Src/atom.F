@@ -544,6 +544,19 @@ c    .          'atom: The above configuration will be used ',
                    call file_out(nrval,rofi,chlocal,
      .                  trim(global_label)//".Chlocal_psml")
                 endif
+                !
+                ! Sanity check: re-compute Vlocal from chlocal
+                ! using the standard routine, and output to
+                ! debug file
+                !
+                do ir = 1, nrval
+                   local_charge(ir) =  4*pi*rofi(ir)**2 * chlocal(ir)
+                enddo
+                call vhrtre(local_charge,vlocal_tmp,rofi,drdi,s,nrval,a)
+                if (write_ion_plot_files) then
+                   call file_out(nrval,rofi,vlocal_tmp,
+     .                  trim(global_label)//".Vlocal_from_chlocal")
+                endif
 
              else
 
