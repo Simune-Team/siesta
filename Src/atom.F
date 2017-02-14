@@ -587,15 +587,8 @@ c    .          'atom: The above configuration will be used ',
 ! Save local-pseudopotential charge
 !  
              Rchloc = rofi(nchloc)
-            ! This comment is misleading. rchloc is the
-            ! working cutoff for the place at which vlocal
-            ! gets the Coulomb tail, at least when using the
-            ! "vlocal as fit" routine. rchloc has the stated meaning
-            ! only if vlocal is generated from the localized 
-            ! charge distribution
-
              write(6,'(2a,f10.5)') 'atom: Maximum radius for' ,
-     .            ' 4*pi*r*r*local-pseudopot. charge ',Rchloc
+     .            'chloc: ',Rchloc
 
              call comlocal(is,a,b,rofi,chlocal,nchloc,flting)
 !
@@ -609,7 +602,7 @@ c    .          'atom: The above configuration will be used ',
 !  Actually, eps=1.0e-5 in the "vlocal as fit" routine...
 !
             do ir = nrval,2,-1
-              if (abs(red_vlocal(ir)) .gt. 1.0e-4_dp) then
+              if (abs(red_vlocal(ir)) .gt. 1.0e-5_dp) then
                 nvlocal = ir + 1
                 exit
               endif
