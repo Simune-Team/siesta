@@ -2625,7 +2625,7 @@ C potential
            poly_order_rlin =
      $          fdf_get("psml.chlocal.build.poly_order_rlin",4)
            use_charge_cutoff =
-     $           fdf_boolean("use-charge-cutoff-for-vlocal-fit",.true.)
+     $           fdf_boolean("use-charge-cutoff-for-vlocal-fit",.false.)
         end select
 
 
@@ -2738,13 +2738,22 @@ C potential
 
            ! This test is not very robust. If Vlocal crosses Z/r
            ! at some point, the loop will end too soon.
-           do ir=1,nrval-1
+           ! do ir=1,nrval-1
+           !              g2=vlocal(ir)*rofi(ir)
+           !   if (abs(g2+2.0_dp*zval).lt.eps_vlocal) exit
+           ! enddo
+           ! "nchloc-1" is used below as the effective point...
+           ! This is historical usage.
+           ! nchloc_vlocal = ir          
+
+           ! This is more robust
+           do ir=nrval,1,-1
               g2=vlocal(ir)*rofi(ir)
-              if (abs(g2+2.0_dp*zval).lt.eps_vlocal) exit
+              if (abs(g2+2.0_dp*zval).ge.eps_vlocal) exit
            enddo
            ! "nchloc-1" is used below as the effective point...
            ! This is historical usage.
-           nchloc_vlocal = ir          
+           nchloc_vlocal = ir + 1
 
            rcut_chloc = rofi(nchloc_vlocal)
            write(6,"(a,f10.6)") "Choosing vlocal chloc cutoff:",
