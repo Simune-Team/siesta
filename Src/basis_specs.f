@@ -479,6 +479,8 @@ C Sanity checks on values
         if (basp%lmxkb .eq. -1) then ! not set in KBprojectors 
           if (basp%lmxkb_requested.eq.-1) then ! not set in PS.lmax
             basp%lmxkb = set_default_lmxkb(isp) ! Use PAO info
+! CC RC
+            write(6,*) ' basp%lmxkb=', basp%lmxkb
           else
             basp%lmxkb = basp%lmxkb_requested
           endif
@@ -499,6 +501,7 @@ C Sanity checks on values
             endif
             allocate(k%erefkb(1:k%nkbl))
             k%erefkb(1:k%nkbl) = huge(1.d0)
+            write(6,*) ' k%erefkb(1:k%nkbl)=', k%erefkb(1:k%nkbl)
           enddo
         else          ! Set in KBprojectors
           if (basp%lmxkb_requested.ne.-1) then ! set in PS.lmax

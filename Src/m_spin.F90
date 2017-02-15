@@ -40,6 +40,12 @@ module t_spin
      !> If .true. the spin-orbit is using the off-site implementation (else the on-site)
      logical :: SO_off = .false.
 
+!CC RC  Added for the offSpOrb
+     integer :: iout_SO
+     logical :: deb_offSO = .false.
+!CC RC  Added for the offSpOrb
+
+
      ! Perhaps one could argue that one may
      ! associate a symmetry to the spin which
      ! then denotes whether the spin-configuration
@@ -114,6 +120,13 @@ contains
     use fdf, only : fdf_get, leqi, fdf_deprecated
     use alloc, only: re_alloc
 
+! CC RC   Added for the offSpOrb
+    use files, only: slabel
+    use parallel, only: IONode
+
+    character(len=30) :: fname_SO
+! CC RC   Added for the offSpOrb
+
     character(len=32) :: opt
 
     ! Create pointer assignments...
@@ -138,6 +151,10 @@ contains
     spin%NCol = .false.
     spin%SO = .false.
     spin%SO_off = .false.
+
+!CC RC  Added for the offSpOrb
+    spin%deb_offSO = .false.
+!CC RC  Added for the offSpOrb
     
     ! Read in old flags (discouraged)
     spin%Col  = fdf_get('SpinPolarized',.false.)
@@ -189,6 +206,14 @@ contains
        spin%SO = .true.
        spin%SO_off = .true.
 
+!CC RC  Added for the offSpOrb
+    else if ( leqi(opt, 'spin-orbit+deb') .or. leqi(opt, 'S-O+deb') .or. &
+         leqi(opt, 'SOC+deb') .or. leqi(opt, 'SO+deb') ) then
+       
+       spin%SO = .true.
+       spin%SO_off = .true.
+       spin%deb_offSO = .true.
+
     else if ( leqi(opt, 'spin-orbit+off') .or. leqi(opt, 'S-O+off') .or. &
          leqi(opt, 'SOC+off') .or. leqi(opt, 'SO+off') ) then
        
@@ -206,10 +231,27 @@ contains
        call die('Spin: unknown flag, please assert the correct input.')
     end if
 
+!CC RC  Added for the offSpOrb
+    if ( IONode .and. spin%deb_offSO ) then
+     fname_SO = trim(slabel)//'.offSO'
+     call io_assign(spin%iout_SO)
+     open(unit=spin%iout_SO,file=fname_SO,form='formatted',status='unknown')
+     write(spin%iout_SO,'(a)') '    ' 
+     write(spin%iout_SO,'(a)') & 
+         '       ############################################    '
+     write(spin%iout_SO,'(a)') &
+         '       #    Off-Site Spin-Orbit debugging file    #    '
+     write(spin%iout_SO,'(a)') &
+         '       ############################################    '
+     write(spin%iout_SO,'(a)') '    ' 
+    endif
+!CC RC  Added for the offSpOrb
+
+
     ! TODO once off-site is fully implemented
     ! this should be removed to enable the off-site code
     ! fully!
-    spin%SO_off = .false.
+    ! spin%SO_off = .false.
 
     ! Note that, in what follows,
     !   spinor_dim = min(h_spin_dim,2)

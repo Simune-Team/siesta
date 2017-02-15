@@ -7,6 +7,12 @@
 ! ---
 module m_energies
   use precision, only: dp
+
+!CC RC  Added for the offSpOrb
+  use m_spin, only: spin
+  use parallel, only: IONode
+!CC RC  Added for the offSpOrb
+
   implicit none
 
   private :: dp
@@ -42,7 +48,9 @@ module m_energies
   real(dp):: Uatm       ! Harris hartree electron energy,  calculated in dhscf
   real(dp):: Uscf       ! SCF hartree electron energy,  calculated in dhscf
   real(dp):: Ebs        ! Band-structure energy, Tr(DM*H), calculated in compute_dm
-  real(dp):: Eso        ! Spin-orbit energy
+! CC RC  Added for the offSpOrb
+  real(dp):: Eso        ! On-site Spin-orbit energy
+  real(dp):: Enl_SO     ! Off-site Spin-orbit energy
   real(dp):: Eldau      
   real(dp):: DEldau
 
@@ -67,6 +75,8 @@ contains
     Enaatm = 0._dp
     Enascf = 0._dp
     Enl = 0._dp
+! CC RC  Added for the offSpOrb
+    Enl_SO = 0._dp
     Emeta = 0._dp
     Entropy = 0._dp
     Etot = 0._dp
@@ -96,16 +106,28 @@ contains
 
   subroutine update_E0()
 
-    E0 = Ena + Ekin + Enl + Eso - Eions
+    E0 = Ena + Ekin + Enl + Eso + Enl_SO - Eions
+
+    if ( IONode .and. spin%deb_offSO ) then
+     write(spin%iout_SO,'(a,f16.10)') ' update_E0: Ena    = ', Ena
+     write(spin%iout_SO,'(a,f16.10)') ' update_E0: Ekin   = ', Ekin
+     write(spin%iout_SO,'(a,f16.10)') ' update_E0: Enl    = ', Enl
+     write(spin%iout_SO,'(a,f16.10)') ' update_E0: Eso    = ', Eso
+     write(spin%iout_SO,'(a,f16.10)') ' update_E0: Enl_SO = ', Enl_SO
+    endif
     
   end subroutine update_E0
   
   subroutine update_Etot()
     
     ! DUext (external electric field) -- should it be in or out?
-    Etot = Ena + Ekin + Enl + Eso - Eions + &
+    Etot = Ena + Ekin + Enl + Eso + Enl_SO - Eions + &
          DEna + DUscf + DUext + Exc + &
          Ecorrec + Emad + Emm + Emeta + Eldau
+
+    if ( IONode .and. spin%deb_offSO ) then
+     write(spin%iout_SO,'(a,f16.10)') ' update_Etot: Etot = ', Etot
+    endif
     
   end subroutine update_Etot
 
@@ -115,6 +137,10 @@ contains
 
     FreeE = Etot - kBT * Entropy
 
+    if ( IONode .and. spin%deb_offSO ) then
+     write(spin%iout_SO,'(a,f16.10)') ' update_FreeE: FreeE = ', FreeE
+    endif
+
   end subroutine update_FreeE
 
   !> @param kBT the temperature in energy
@@ -122,6 +148,10 @@ contains
     real(dp), intent(in) :: kBT
 
     FreeEHarris = Eharrs - kBT * Entropy
+
+    if ( IONode .and. spin%deb_offSO ) then
+     write(spin%iout_SO,'(a,f16.10)') ' update_FreeEHarris: FreeEHarris = ', FreeEHarris
+    endif
 
   end subroutine update_FreeEHarris
 

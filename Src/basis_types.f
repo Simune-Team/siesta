@@ -26,6 +26,8 @@
       use pseudopotential, only: pseudopotential_t
       use precision, only: dp
       use sys, only : die
+! CC RC
+      use t_spin, only: tSpin
 
       Implicit None
 
@@ -697,7 +699,10 @@
       type(basis_def_t), pointer :: basp
       type(ldaushell_t), pointer :: ldau
 
-      integer :: l, n, i
+
+! CC RC  Added for the offSpOrb
+      type(tSpin) :: spin
+      integer :: l, n, i, j_SO, nj_SO
 
       basp => basis_parameters(is)
 
@@ -743,10 +748,12 @@
       end do
       if ( lmxkb(is) > 0 ) then
          write(lun,'(79("-"))')
+         nj_SO = 1 ! CC RC  Added for the offSpOrb
          do l=0,lmxkb(is)
+          if ( spin%SO_off .and. l.gt.0 ) nj_SO = 2
             write(lun,'(a2,i1,2x,a5,i1,2x,a6,4g12.5)')
      $           'L=', l, 'Nkbl=', nkbl(l,is),
-     $           'erefs:  ', (erefkb(i,l,is),i=1,nkbl(l,is))
+     $           'erefs:  ', (erefkb(j_SO,l,is),j_SO=1,nj_SO)
          end do
       end if
       if ( associated(basp%ldaushell) ) then

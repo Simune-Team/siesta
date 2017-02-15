@@ -41,7 +41,7 @@
       use basis_io, only: dump_basis_ascii, dump_basis_netcdf
       use basis_io, only: dump_basis_xml
 
-      use old_atmfuncs, only: nsmax, allocate_old_arrays
+      use old_atmfuncs, only: nsmax, allocate_old_arrays, nkblsave
       use old_atmfuncs, only: clear_tables, deallocate_old_arrays
       use atom, only: atom_main, prinput
       use electrostatic, only: elec_corr_setup
@@ -54,7 +54,12 @@
     
       use chemical
 
-      use m_spin, only: SpOrb
+! CC RC  Added for the offSpOrb
+      use m_spin,   only: spin
+      use alloc,    only: de_alloc
+      use parallel, only: IONode
+! CC RC  Added for the offSpOrb
+
 
       implicit none
       integer,         intent(out) :: ns   ! Number of species
@@ -95,8 +100,7 @@
         call read_basis_netcdf(ns)
         call elec_corr_setup()
       else if (user_basis) then
-
-       if ( SpOrb ) then  
+       if ( spin%SO ) then  
           write(6,'(a)') ' initatom: Spin configuration = spin-orbit'
           call read_chemical_types()
           nsp = number_of_species()
@@ -117,14 +121,22 @@
        call read_basis_ascii(ns)
        call elec_corr_setup()
       else
+        if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
+     &     '    initatom : Calling read_basis_specs... '
 !       New routines in basis_specs and basis_types.
         call read_basis_specs()
+        if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
+     &     '    initatom : Calling basis_specs_transfer... '
         call basis_specs_transfer()
+
+        stop 'Stopping after basis_specs_transfer call...'
 
 !       Get the parameters for the generation of the LDA+U projectors
         call read_ldau_specs()
 
         nsmax = nsp             !! For old_atmfuncs
+        if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
+     &     '    initatom : Calling allocate_old_arrays... '
         call allocate_old_arrays()
         call clear_tables()
 
@@ -161,8 +173,24 @@
       endif
 
       call dump_basis_ascii()
-      call dump_basis_netcdf()
+
+! CC RC  Added for the offSpOrb
+      if ( spin%SO ) then
+       write(6,*) ' WARNING: NETCDF is not supported for off-site SO'
+      else
+       call dump_basis_netcdf()
+      endif
+! CC RC  Added for the offSpOrb
+
       call dump_basis_xml()
+
+! CC RC  Added for the offSpOrb
+! It is deallocated here instead of do it in deallocate_old_arrays
+! Because the variable is needed to dump xml and ascii files
+! Check if it'd be better to add an if condition to split the offSO
+! from other type of calculation
+      call de_alloc( nkblsave,    'nkblsave',    'initatom' )
+! CC RC  Added for the offSpOrb
 
       if (.not. user_basis .and. .not. user_basis_netcdf) then
         call deallocate_spec_arrays()

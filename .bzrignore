@@ -1,2 +1,6 @@
 *.mod
+*.save
+*.~
+*.o
 Obj/*
+log1
