@@ -16,6 +16,10 @@
       use parallel,   only : Node, Nodes
       ! We also need to broadcast the chemical list
       use chemical, only : chemical_list
+
+! CC RC  Added for the offSpOrb
+      use m_spin, only: spin
+! CC RC  Added for the offSpOrb
       
       ! Broadcast LDA+U variables
       use ldau_specs, only: dTol_ldaupop
@@ -37,6 +41,10 @@
       end subroutine broadcast_basis
 #else
       integer MPIerror
+
+! CC RC  Added for the offSpOrb
+      integer j_SO, l, ntot 
+! CC RC  Added for the offSpOrb
 
       integer is, i
       type(species_info), pointer  :: spp
@@ -137,6 +145,15 @@
         call MPI_Bcast(spp%pj_m,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
 
+! CC RC  Added for the offSpOrb
+        call MPI_Bcast(spp%jso,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pj_j,maxnprojs,MPI_double_precision,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pj_mj,maxnprojs,MPI_double_precision,
+     $                 0,MPI_Comm_World,MPIerror)
+! CC RC  Added for the offSpOrb
+
         ! LDA+U
         call MPI_Bcast(spp%n_pjldaunl,1,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
@@ -176,10 +193,24 @@
            call broadcast_radial(func,Node)
         enddo
 
-        do i=1,spp%n_pjnl
+! CC RC  Added for the offSpOrb
+        if ( spin%SO_off ) then
+         ntot = 1
+         do i=1,spp%n_pjnl
            func=>spp%pjnl(i)
-           call broadcast_radial(func,Node)
-        enddo
+CC-SC
+           l = spp%pjnl_l(i)
+           j_SO = spp%jso(ntot)
+           call broadcast_radial_SO(func,i,l,j_SO,Node)
+           ntot = ntot + (2*l+1)
+         enddo
+        else
+         do i=1,spp%n_pjnl
+            func=>spp%pjnl(i)
+            call broadcast_radial(func,Node)
+         enddo
+        endif
+! CC RC  Added for the offSpOrb
 
         do i=1,spp%n_pjldaunl
            func=>spp%pjldau(i)
@@ -255,6 +286,32 @@
      $        0,MPI_Comm_World,MPIerror)
       endif
       end subroutine broadcast_radial
+
+      subroutine broadcast_radial_SO(func,ik,l,j__SO,Node)
+
+      type(rad_func), pointer     :: func
+      integer, intent(in)         :: Node
+      integer, intent(in)         :: ik, l, j__SO
+
+      call MPI_Bcast(func%n,1,MPI_integer,
+     $                  0,MPI_Comm_World,MPIerror)
+
+      if (func%n .eq. 0) then
+         call rad_zero(func)
+      else
+
+       if (Node.ne.0) call rad_alloc_SO(func,func%n)
+
+       call MPI_Bcast(func%cutoff_SO,1,MPI_double_precision,
+     $      0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(func%delta_SO(j__SO),1,MPI_double_precision,
+     $      0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(func%f_SO(:,j__SO),func%n,
+     $      MPI_double_precision,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(func%d2_SO(:,j__SO),func%n,
+     $      MPI_double_precision,0,MPI_Comm_World,MPIerror)
+      endif
+      end subroutine broadcast_radial_SO
 
       end subroutine broadcast_basis
 

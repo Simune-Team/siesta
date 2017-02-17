@@ -18,12 +18,21 @@
     use atm_types, only: species_info, species, nspecies
     use radial, only: rad_func
 
+! CC RC  Added for the offSpOrb
+    use m_matel_registry, only: register_in_rf_pool_KB
+    use m_spin, only: spin
+! CC RC  Added for the offSpOrb
+
     implicit none 
 !
     type(species_info), pointer        :: spp
     type(rad_func), pointer            :: func   
 !
     integer :: is, io, ko, ldauo, l, m, gindex
+
+! CC RC  Added for the offSpOrb
+    integer jso
+! CC RC  Added for the offSpOrb
 
     do is = 1, nspecies
        spp => species(is)
@@ -48,12 +57,19 @@
           l = spp%pj_l(ko)
           m = spp%pj_m(ko)
           io = -ko
-          call register_in_rf_pool(func,l,m,"kbproj",(/is,io/),gindex)
-          spp%pj_gindex(ko) = gindex
-#ifdef DEBUG_PAO
-          write(6,'(a20,a,3(tr1,i3))')'KB projectors ', &
-               'is, ko, gindex = ', is, ko, gindex 
-#endif
+! CC RC  Added for the offSpOrb
+          if ( spin%SO_off ) then
+           jso = spp%jso(ko)
+           call register_in_rf_pool_KB(func,l,m,jso,"kbproj",(/is,io/),gindex)
+           spp%pj_gindex(ko) = gindex
+          else
+           call register_in_rf_pool(func,l,m,"kbproj",(/is,io/),gindex)
+           spp%pj_gindex(ko) = gindex
+          endif
+!#ifdef DEBUG_PAO
+!          write(6,'(a20,a,3(tr1,i3))')'KB projectors ', &
+!               'is, ko, gindex = ', is, ko, gindex 
+!#endif
        enddo
     enddo
     

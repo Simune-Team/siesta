@@ -156,6 +156,10 @@
       enddo
 !$OMP end do nowait
 
+      write(6,*) ' setup_hamiltonian: Ekin = ', Ekin
+      write(6,*) ' setup_hamiltonian:  Enl = ', Enl
+
+
 !$OMP single
       Eso = 0._dp
 !$OMP end single
@@ -168,6 +172,9 @@
          end do
 !$OMP end do nowait
       end if
+
+      write(6,*) ' setup_hamiltonian:  Eso = ', Eso
+
 
 !$OMP end parallel
       

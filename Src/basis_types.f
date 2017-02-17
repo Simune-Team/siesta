@@ -26,8 +26,12 @@
       use pseudopotential, only: pseudopotential_t
       use precision, only: dp
       use sys, only : die
-! CC RC
-      use t_spin, only: tSpin
+
+! CC RC  Added for the offSpOrb
+      use m_spin,   only: spin
+      use parallel, only: IONode
+! CC RC  Added for the offSpOrb
+
 
       Implicit None
 
@@ -575,6 +579,14 @@
       call re_alloc( qwid, 0, lmaxd, 1, nsemx, 1, nsp,
      &               'qwid', 'basis_types' )
       nullify( erefkb )
+      if( IONode .and. spin%deb_offSO ) then 
+        write(spin%iout_SO,'(a,i3)') 
+     $     '       basis_specs_transfer: nkbmx = ', nkbmx 
+        write(spin%iout_SO,'(a,i3)') 
+     $     '       basis_specs_transfer: lmaxd = ', lmaxd 
+        write(spin%iout_SO,'(a,i3)') 
+     $     '       basis_specs_transfer:   nsp = ', nsp 
+      endif
       call re_alloc( erefkb, 1, nkbmx, 0, lmaxd, 1, nsp,
      &               'erefkb', 'basis_types' )
       nullify( charge )
@@ -683,7 +695,16 @@
          do l=0,basp%lmxkb
             k=>basp%kbshell(l)
             nkbl(l,isp) = k%nkbl
-            erefkb(1:k%nkbl,l,isp) = k%erefkb(1:k%nkbl)
+
+! CC RC  Added for the offSpOrb
+            if ( spin%SO_off .and. l.gt.0 ) then
+             erefkb(1:2*k%nkbl,l,isp) = k%erefkb(1:2*k%nkbl)
+            else
+             erefkb(1:k%nkbl,l,isp) = k%erefkb(1:k%nkbl)
+            endif
+! CC RC  Added for the offSpOrb
+
+
          enddo
 
       enddo
@@ -699,9 +720,7 @@
       type(basis_def_t), pointer :: basp
       type(ldaushell_t), pointer :: ldau
 
-
 ! CC RC  Added for the offSpOrb
-      type(tSpin) :: spin
       integer :: l, n, i, j_SO, nj_SO
 
       basp => basis_parameters(is)
@@ -746,13 +765,33 @@
      $           (lambda(i,l,n,is),i=1,min(4,nzeta(l,n,is)))
          end do
       end do
+
+      if( IONode .and. spin%deb_offSO ) then 
+        write(spin%iout_SO,'(a,i3)') 
+     $     '       write_basis_specs: Is lmxkb(is) > 0 ? ', lmxkb(is) 
+        write(spin%iout_SO,'(a,l2)') 
+     $     '       write_basis_specs: spin%SO_off = ', spin%SO_off
+        write(spin%iout_SO,'(a,i3)') 
+     $     '       write_basis_specs: size(erefkb,1) = ', 
+     $             size(erefkb,dim=1) 
+        write(spin%iout_SO,'(a,i3)') 
+     $     '       write_basis_specs: size(erefkb,2) = ', 
+     $             size(erefkb,dim=2) 
+        write(spin%iout_SO,'(a,i3)') 
+     $     '       write_basis_specs: size(erefkb,3) = ', 
+     $             size(erefkb,dim=3) 
+      endif
       if ( lmxkb(is) > 0 ) then
          write(lun,'(79("-"))')
          nj_SO = 1 ! CC RC  Added for the offSpOrb
          do l=0,lmxkb(is)
           if ( spin%SO_off .and. l.gt.0 ) nj_SO = 2
-            write(lun,'(a2,i1,2x,a5,i1,2x,a6,4g12.5)')
+            write(lun,'(a2,i1,2x,a5,i1,2x,a6,4g14.5)')
      $           'L=', l, 'Nkbl=', nkbl(l,is),
+     $           'erefs:  ', (erefkb(j_SO,l,is),j_SO=1,nj_SO)
+          if ( spin%deb_offSO ) 
+     $       write(spin%iout_SO,'(a,i1,2x,a5,i1,2x,a6,4g14.5)')
+     $       '       write_basis_specs: L=', l, 'Nkbl=', nkbl(l,is),
      $           'erefs:  ', (erefkb(j_SO,l,is),j_SO=1,nj_SO)
          end do
       end if

@@ -21,7 +21,13 @@ C                     for the same species.
 C INTEGER  NKBMX    : Maximum number of Kleinman-Bylander projectors
 C                     for each angular momentum
 
-         integer, parameter, public  :: nkbmx  =    2  
+C         integer, parameter, public  :: nkbmx  =    2  
+CC RC 
+C         For the off-site SO calculation plus semicore states
+C         there will be at most 4 KBs for each angular momentum due to
+C         that for each l we have J = l +/- 1/2  
+         integer, parameter, public  :: nkbmx  =    4
+
 
 C INTEGER  NSMX    : Maximum number of semicore shells for each angular
 C                    momentum present in the atom ( for normal atom nsmx=0)

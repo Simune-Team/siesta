@@ -43,6 +43,7 @@ module t_spin
 !CC RC  Added for the offSpOrb
      integer :: iout_SO
      logical :: deb_offSO = .false.
+     logical :: deb_P = .false. ! Spin Polarized debugging
 !CC RC  Added for the offSpOrb
 
 
@@ -154,6 +155,7 @@ contains
 
 !CC RC  Added for the offSpOrb
     spin%deb_offSO = .false.
+    spin%deb_P = .false.
 !CC RC  Added for the offSpOrb
     
     ! Read in old flags (discouraged)
@@ -194,6 +196,14 @@ contains
        
        spin%Col = .true.
        
+!CC RC  Added for the offSpOrb debugging
+    else if ( leqi(opt, 'polarized+deb') .or. &
+         leqi(opt, 'collinear+deb') .or. &
+         leqi(opt, 'polarised+deb') .or. leqi(opt, 'P+deb') ) then
+       
+       spin%Col = .true.
+       spin%deb_P = .true.
+       
     else if ( leqi(opt, 'non-collinear') .or. &
          leqi(opt, 'NC') .or. leqi(opt, 'N-C') ) then
        
@@ -225,6 +235,7 @@ contains
        
        spin%SO = .true.
        spin%SO_off = .false.
+       spin%deb_P = .true.
 
     else
        write(*,*) 'Unknown spin flag: ', trim(opt)
@@ -232,7 +243,7 @@ contains
     end if
 
 !CC RC  Added for the offSpOrb
-    if ( IONode .and. spin%deb_offSO ) then
+    if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
      fname_SO = trim(slabel)//'.offSO'
      call io_assign(spin%iout_SO)
      open(unit=spin%iout_SO,file=fname_SO,form='formatted',status='unknown')
@@ -243,6 +254,11 @@ contains
          '       #    Off-Site Spin-Orbit debugging file    #    '
      write(spin%iout_SO,'(a)') &
          '       ############################################    '
+     write(spin%iout_SO,'(a)') '    ' 
+     if ( spin%deb_offSO ) &
+        write(spin%iout_SO,'(a)') ' m_spin: Spin-Orbit debugging' 
+     if ( spin%deb_P ) &
+        write(spin%iout_SO,'(a)') ' m_spin: Spin-Polarized debugging' 
      write(spin%iout_SO,'(a)') '    ' 
     endif
 !CC RC  Added for the offSpOrb

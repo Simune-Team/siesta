@@ -18,6 +18,11 @@
       public :: radial_read_ascii, radial_dump_ascii
       public :: radial_dump_xml, reset_rad_func
 
+! CC RC  Added for the offSpOrb
+      public :: rad_alloc_SO, rad_get_KB, radial_dump_ascii_SO 
+      public :: radial_dump_xml_SO
+! CC RC  Added for the offSpOrb
+
       public :: rad_func
 
       type   :: rad_func
@@ -26,6 +31,16 @@
          real(dp) delta
          real(dp), pointer :: f(:)=>null()   ! Actual data
          real(dp), pointer :: d2(:)=>null()  ! 2nd derivative
+
+! CC RC  Added for the offSpOrb
+         double precision  cutoff_SO
+         double precision, dimension(2) :: delta_SO
+         double precision, pointer      :: f_SO(:,:)=>null()   ! Actual data
+         double precision, pointer      :: d2_SO(:,:)=>null()  ! 2nd derivative
+
+         integer, dimension(50)         :: jso    ! j = 1 or 2 for each KB proj. 
+! CC RC  Added for the offSpOrb
+
       end type rad_func
 
       private
@@ -55,7 +70,23 @@
       call re_alloc( func%d2, 1, n, 'func%d2', 'rad_alloc' )
 !      allocate(func%f(n),func%d2(n))
       end subroutine rad_alloc
-
+!
+! CC RC  Added for the offSpOrb
+      subroutine rad_alloc_SO(func,n)
+      use alloc, only: re_alloc
+      implicit none
+!
+!     Sets the 'size' n of the arrays and allocates f and d2.
+!
+      type(rad_func), intent(inout)    :: func
+      integer, intent(in)        :: n
+      func%n = n
+      nullify(func%f_SO,func%d2_SO)
+      call re_alloc( func%f_SO,1,n,1,2,'func%f_SO','rad_alloc_SO' )
+      call re_alloc( func%d2_SO,1,n,1,2,'func%d2_SO','rad_alloc_SO' )
+      end subroutine rad_alloc_SO
+! CC RC  Added for the offSpOrb
+!
       subroutine rad_get(func,r,fr,dfdr)
       type(rad_func), intent(in) :: func
       real(dp), intent(in)         :: r
@@ -70,6 +101,25 @@
        endif
       
       end subroutine rad_get
+!
+! CC RC  Added for the offSpOrb
+      subroutine rad_get_KB(func,ik,r,fr,dfdr)
+      type(rad_func), intent(in) :: func
+      real(dp), intent(in)         :: r
+      integer , intent(in)         :: ik
+      real(dp), intent(out)        :: fr
+      real(dp), intent(out)        :: dfdr
+
+      if (func%n .eq. 0) then
+          fr = 0._dp
+          dfdr = 0._dp
+       else
+          call splint(func%delta_SO(abs(ik)),func%f_SO(:,abs(ik)),
+     &                func%d2_SO(:,abs(ik)),func%n,r,fr,dfdr)
+       endif
+
+      end subroutine rad_get_KB
+! CC RC  Added for the offSpOrb
 !
 !     Set up second derivative in a radial function
 !
@@ -168,6 +218,58 @@
       write(lun,'(a)') '</data>'
       write(lun,'(a)') '</radfunc>'
       end subroutine radial_dump_xml
+!
+!--------------------------------------------------------------------
+! CC RC  Added for the offSpOrb
+      subroutine radial_dump_xml_SO(j_SO,op,lun)
+
+      type(rad_func)    :: op
+      integer lun
+      integer j_SO
+      integer j
+
+      write(lun,'(a)') '<radfunc>'
+      call xml_dump_element(lun,'npts',str(op%n))
+      call xml_dump_element(lun,'delta_SO',str(op%delta_SO(j_SO)))
+      call xml_dump_element(lun,'cutoff_SO',str(op%cutoff_SO))
+      write(lun,'(a)') '<data>'
+      do j=1,op%n
+        write(lun,'(2g22.12)') (j-1)*op%delta_SO(j_SO), op%f_SO(j,j_SO)
+      enddo
+      write(lun,'(a)') '</data>'
+      write(lun,'(a)') '</radfunc>'
+      end subroutine radial_dump_xml_SO
+!
+!--------------------------------------------------------------------
+      subroutine radial_dump_ascii_SO(j_SO,op,lun,header)
+      type(rad_func)      :: op
+      integer             :: lun
+      integer             :: j_SO
+      logical, intent(in), optional :: header
+
+      integer :: j
+      logical :: print_header
+!
+!     The standard dump is to unit "lun"
+!     and includes a header with npts, delta, and cutoff
+!
+      print_header = .true.
+      if (present(header)) then
+         print_header = header
+      endif
+!
+      if (print_header) then
+         write(lun,'(2i4,2g22.12,a)') op%n, j_SO,
+     $        op%delta_SO(j_SO), op%cutoff_SO,
+     $         " # npts, j_SO,  delta, cutoff"
+      endif
+      do j=1,op%n
+         write(lun,'(2g22.12)') (j-1)*op%delta_SO(j_SO), op%f_SO(j,j_SO)
+      enddo
+
+      end subroutine radial_dump_ascii_SO
+!
+! CC RC  Added for the offSpOrb
 !
       end module radial
 

@@ -26,6 +26,11 @@
       use sparse_matrices, only: xijo, xij_2D
       use sparse_matrices, only: S   , S_1D
 
+! CC RC  Added for the offSpOrb
+      use sparse_matrices, only: H0_SO
+      use sparse_matrices, only: MM_HDM, herm_HDM
+! CC RC  Added for the offSpOrb
+
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_ldau_2D, H_so_2D
 
@@ -486,11 +491,15 @@
          end if
       end if
       
-      if ( spin%SO ) then
+      if ( spin%SO .and. .not.spin%SO_off  ) then
          write(oname,"(a,i0)") "H_so at geom step ", istep
          call newdSpData2D(sparse_pattern,spin%H - 2,
      &        block_dist,H_so_2D,name=oname)
       end if
+
+! CC RC  Added for the offSpOrb
+      if ( spin%SO_off ) allocate ( H0_SO(maxnh,4) )
+! CC RC  Added for the offSpOrb
 
       write(oname,"(a,i0)") "S at geom step ", istep
       call newdSpData1D(sparse_pattern,block_dist,S_1D,name=oname)
@@ -508,9 +517,17 @@
 !
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
+       if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
+     &    ' state_init: Calling new_dm...'
       call new_DM(auxchanged, DM_history, DM_2D, EDM_2D)
+
       Dscf => val(DM_2D)
       Escf => val(EDM_2D)
+
+
+! CC RC
+      if ( IONode .and. spin%SO ) call MM_HDM( 'DM' )
+!      if ( IONOde .and. spin%deb_offSO ) call herm_HDM( 'DM' )
 
       ! Initialize energy-density matrix to zero for first call to overfsm
 #ifdef TRANSIESTA

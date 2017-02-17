@@ -48,6 +48,10 @@ module m_new_dm
   use precision, only: dp
   use alloc, only: re_alloc, de_alloc
 
+! CC RC  Added for the offSpOrb
+  use m_spin, only: spin
+! CC RC  Added for the offSpOrb
+
   implicit none
 
   private
@@ -1256,13 +1260,20 @@ contains
                       DM(ind,1) = qio + spio * costh
                       DM(ind,2) = qio - spio * costh
                       DM(ind,3) =       spio * sinth * cosph
-                      DM(ind,4) =       spio * sinth * sinph
-                      if ( spin%SO ) then ! spin-orbit coupling
-                         DM(ind,5) = 0._dp
-                         DM(ind,6) = 0._dp
-                         DM(ind,7) = DM(ind,3)
-                         DM(ind,8) = DM(ind,4)
+                      if ( spin%SO_off ) then
+                        DM(ind,4) = -spio * sinth * sinph 
+                        DM(ind,5) = 0.0_dp
+                        DM(ind,6) = 0.0_dp
+                        DM(ind,7)= DM(ind,3)
+                        DM(ind,8)=-DM(ind,4)
+                      elseif ( spin%DM == 8 .and. .not.spin%SO_off ) then
+                        DM(ind,4) = spio * sinth * sinph 
+                        DM(ind,5) = 0.0_dp
+                        DM(ind,6) = 0.0_dp
+                        DM(ind,7)= DM(ind,3)
+                        DM(ind,8)= DM(ind,4)
                       end if
+
                       
                    else
                       

@@ -19,6 +19,10 @@ C     chemical species present in the calculation.
       use atmparams, only: nzetmx, lmaxd, nsemx
       use atmparams, only: maxos, nkbmx, ntbmax
       use alloc,     only: re_alloc, de_alloc
+
+! CC RC  Added for the offSpOrb
+      use m_spin, only: spin
+
       implicit none 
 
       integer,  save, public     ::  nsmax            
@@ -46,6 +50,12 @@ C     chemical species present in the calculation.
 
       real(dp), public, pointer  :: qtb(:,:)
 
+! CC RC  Added for the offSpOrb
+      real(dp), public, pointer  :: table_SO(:,:,:,:,:)
+      real(dp), public, pointer  :: tab2_SO(:,:,:,:,:)
+      real(dp), public, pointer  :: rctb_SO(:,:,:,:)
+! CC RC  Added for the offSpOrb
+
       real(dp), public, pointer  :: table(:,:,:)
       real(dp), public, pointer  :: tabpol(:,:,:)
       real(dp), public, pointer  :: tab2(:,:,:)
@@ -66,6 +76,10 @@ C     chemical species present in the calculation.
       public :: labelfis, izofis, zvalfis, nkbfis
       public :: massfis, lomaxfis, nofis, lmxkbfis
       public :: cnfigfio, lofio, mofio
+! CC RC  Added for the offSpOrb
+      public :: jofio, rcut_SO
+      public :: epskb_SO
+! CC RC  Added for the offSpOrb
       public :: atmpopfio , epskb, rcut
       public :: clear_tables, allocate_old_arrays
       public :: deallocate_old_arrays
@@ -106,6 +120,12 @@ C     chemical species present in the calculation.
       call re_alloc( rctb, 1, nkbmx, 0, lmaxd, 1, nsmax,
      &               'rctb', 'old_atmfuncs' )
 
+CC RC  For offS-SO---------------------------
+      nullify( rctb_SO )
+      call re_alloc( rctb_SO, 1, nkbmx, 0, lmaxd, 1, 2, 1, nsmax,
+     &               'rctb_SO', 'old_atmfuncs' )
+CC RC  For offS-SO---------------------------
+
       !allocate(smasstb(nsmax))
       nullify( smasstb )
       call re_alloc( smasstb, 1, nsmax, 'smasstb', 'old_atmfuncs' )
@@ -137,6 +157,19 @@ C     chemical species present in the calculation.
       call re_alloc( tab2, 1, ntbmax,
      &               -nkbmx*(lmaxd+1), nzetmx*nsemx*(lmaxd+1),
      &               1, nsmax, 'tab2', 'old_atmfuncs' )
+
+CC RC  For offS-SO---------------------------
+      nullify( table_SO )
+      allocate( table_SO(1:ntbmax+2,
+     &                   -nkbmx*(lmaxd+1):nzetmx*nsemx*(lmaxd+1),
+     &                   0:lmaxd,1:2,1:nsmax) )
+
+      nullify( tab2_SO )
+      allocate( tab2_SO(1:ntbmax,
+     &                  -nkbmx*(lmaxd+1):nzetmx*nsemx*(lmaxd+1),
+     &                  0:lmaxd,1:2,1:nsmax) )
+CC RC  For offS-SO---------------------------
+
 !      allocate(tabpol((ntbmax+2),nzetmx*nsemx*(lmaxd+1),nsmax))
       nullify( tabpol )
       call re_alloc( tabpol, 1, ntbmax+2,
@@ -225,6 +258,11 @@ C     chemical species present in the calculation.
       call de_alloc( qtb,         'qtb',         'old_atmfuncs' )
       call de_alloc( slfe,        'slfe',        'old_atmfuncs' )
       call de_alloc( rctb,        'rctb',        'old_atmfuncs' )
+! CC RC  Added for the offSpOrb
+      call de_alloc( rctb_SO,     'rctb_SO',     'old_atmfuncs' )
+      deallocate( table_SO )
+      deallocate( tab2_SO )
+! CC RC  Added for the offSpOrb
       call de_alloc( smasstb,     'smasstb',     'old_atmfuncs' )
       call de_alloc( chargesave,  'chargesave',  'old_atmfuncs' )
       call de_alloc( table,       'table',       'old_atmfuncs' )
@@ -244,7 +282,8 @@ C     chemical species present in the calculation.
       call de_alloc( nkbmax,      'nkbmax',      'old_atmfuncs' )
       call de_alloc( zvaltb,      'zvaltb',      'old_atmfuncs' )
       call de_alloc( cnfigtb,     'cnfigtb',     'old_atmfuncs' )
-      call de_alloc( nkblsave,    'nkblsave',    'old_atmfuncs' )
+! CC RC Semi Core
+!      call de_alloc( nkblsave,    'nkblsave',    'old_atmfuncs' )
       call de_alloc( semicsave,   'semicsave',   'old_atmfuncs' )
       deallocate( label_save )
 !      call de_alloc( label_save, 'label_save', 'old_atmfuncs' )
@@ -277,6 +316,11 @@ C     chemical species present in the calculation.
         tab2(:,:,is) = 0.0_dp
         tabpol(:,:,is) = 0.0_dp
         tab2pol(:,:,is) = 0.0_dp
+
+! CC RC  Added for the offSpOrb
+        table_SO(:,:,:,:,is) = 0.0_dp
+        tab2_SO(:,:,:,:,is) = 0.0_dp
+! CC RC  Added for the offSpOrb
 
         qtb(1:maxos,is)=0.00_dp
 
@@ -517,7 +561,11 @@ C   INTEGER LOFIO  : Quantum number L of orbital or KB projector
         nkb=0
         do 50 l=0,lmxkbsave(is)
           do 45 izeta=1,nkblsave(l,is)
-             nkb=nkb-(2*l+1)
+             if (spin%SO_off.and.l.ne.0) then
+              nkb=nkb-(2*l+1)*2
+             else
+              nkb=nkb-(2*l+1)
+             endif
              if(nkb.le.io) goto 60
 45        continue
 50      continue 
@@ -548,6 +596,11 @@ C************************OUTPUT*****************************************
 C   INTEGER MOFIO  : Quantum number M of orbital or KB projector
 
       integer l, norb, izeta, ipol, nkb, lorb, lkb, nsm
+
+! CC RC  Added for the offSpOrb
+      integer nj_SO, j_SO, imj, ik, ikb
+      real aj, amj
+! CC RC  Added for the offSpOrb
 
       call check_is('mofio',is)
       if((io.gt.nomax(is)).or.(io.lt.-nkbmax(is))) then
@@ -592,30 +645,80 @@ C   INTEGER MOFIO  : Quantum number M of orbital or KB projector
 
        elseif(io.lt.0) then
 
+! CC RC  Added for the offSpOrb
+        ik=-abs(io)
 
         nkb=0
-        do 50 l=0,lmxkbsave(is)
-          do 45 izeta=1,nkblsave(l,is)
+        nj_SO = 1
+        do 35 l=0,lmxkbsave(is)
+          do 25 ikb=1,nkblsave(l,is)
+            if ( spin%SO_off .and. l.ne.0) nj_SO = 2 
+            do 55 j_SO = 1, nj_SO
              nkb=nkb-(2*l+1)
-             if(nkb.le.io) goto 60
-45        continue
-50      continue
+             if(nkb.le.ik) goto 50
+55          continue
+25        continue
+35      continue
 
-60      lkb=l
-        mofio=-io+nkb+lkb
+50      mofio=-ik+l+nkb
 c       elseif (io.eq.0) then
         else
 
         mofio=0
+! CC RC  Added for the offSpOrb
 
         endif
         
       end function mofio
-!
+
+! CC RC  Added for the offSpOrb
+      FUNCTION JOFIO (IS,IO)
+      real jofio
+      integer, intent(in) :: is    ! Species index
+      integer, intent(in) :: io    ! KB index (within atom)
+
+C Returns J quantum number of a Kleynman-Bylander projector.
+
+C    INTEGER  IO   :  IO < 0 => Kleynman-Bylander projectors
+C************************OUTPUT*****************************************
+C   INTEGER JOFIO  : Quantum number J of KB projector
+
+      integer l, norb, izeta, ipol, nkb, lorb, lkb, nsm
+      integer nj_SO, j_SO, imj, ik, ikb
+      real aj, amj
+
+      ik=-abs(io)
+
+      nkb=0
+      nj_SO = 2
+!  It would not be necessary to have jofio values 
+!  when offS-SO is false because of this subroutine 
+!  won't be called... 
+      if ( ik.eq.-1) then
+
+       jofio=0.0d0
+
+      else
+
+       do 35  l=0,lmxkbsave(is)
+        do 5 j_SO = 1, nj_SO
+         do 25 ikb=1,nkblsave(l,is)
+          aj=dble(l)+(2*j_SO-3)*0.5d0
+          nkb=nkb-(2*aj+1)
+          if(nkb.lt.ik) goto 50
+25        continue
+5      continue
+35     continue
+
+50     jofio=aj
+
+      endif
+
+      end function jofio
+! CC RC  Added for the offSpOrb
 
 !  End of FIOs 
 !
-
       FUNCTION EPSKB (IS,IO)
       real(dp) epskb
       integer, intent(in)   ::  is   ! Species index
@@ -638,12 +741,12 @@ C******************************************************************
 C*****************Variables in the common blocks*******************
 C
       call check_is('epskb',is)
- 
+
          ik=-abs(io)
-         if (ik.eq.0) then 
+         if (ik.eq.0) then
              write(6,*) 'EPSKB: FUNCTION CANNOT BE CALLED WITH'
-     .         ,' ARGUMENT EQUAL TO ZERO' 
-           CALL DIE 
+     .         ,' ARGUMENT EQUAL TO ZERO'
+           CALL DIE
          endif
 
          if(ik.lt.-nkbmax(is)) then
@@ -660,13 +763,90 @@ C
                 nkb=nkb-(2*l+1)
                 if(nkb.le.ik) goto 20
 5            continue
-10       continue 
+10       continue
 
 20        indx=-indx
- 
+
         epskb=table(2,indx,is)
 
       end function epskb
+
+
+      FUNCTION EPSKB_SO (IS,IO)
+      real(dp) epskb_so
+      integer, intent(in)   ::  is   ! Species index
+      integer, intent(in)   ::  io   ! KB proyector index (within atom)
+                                     ! May be positive or negative 
+                                     ! (only ABS(IO) is used).
+
+C  Returns the energies epsKB_l of the Kleynman-Bylander projectors:
+C       <Psi|V_KB|Psi'> = <Psi|V_local|Psi'> +
+C                 Sum_lm( epsKB_l * <Psi|Phi_lm> * <Phi_lm|Psi'> )
+C  where Phi_lm is returned by subroutine PHIATM.
+
+
+C  REAL(DP) EPSKB  : Kleynman-Bylander projector energy
+C  Energy in Rydbergs.
+
+      integer  ik, nkb, indx, l, ikb
+
+! CC RC  Added for the offSpOrb
+      integer  nj_SO, j_SO
+      real  :: aj
+! CC RC  Added for the offSpOrb
+
+C
+C******************************************************************
+C*****************Variables in the common blocks*******************
+C
+C      call check_is('epskb',is)
+      call check_is('epskb_so',is)
+ 
+         ik=-abs(io)
+         if (ik.eq.0) then 
+             write(6,*) 'EPSKB_SO: FUNCTION CANNOT BE CALLED WITH'
+     .         ,' ARGUMENT EQUAL TO ZERO' 
+           CALL DIE 
+         endif
+
+         if(ik.lt.-nkbmax(is)) then
+             write(6,*) 'EPSKB_SO: THERE ARE NO DATA FOR IO=',IK
+             write(6,*) 'EPSKB_SO: IOMIN= ',-nkbmax(is)
+           CALL DIE()
+         endif
+
+         nkb=0
+         indx=0
+         nj_SO = 1
+         do 15  l=0,lmxkbsave(is)
+             do 10 ikb=1,nkblsave(l,is)
+                 if ( spin%SO_off .and. l.ne.0) nj_SO = 2
+                 indx=indx+1
+                 do 5 j_SO = 1, nj_SO
+                    if ( .not.spin%SO_off .or. l.eq.0 ) then
+                     aj=l
+                    else
+                     aj=dble(l)+(2*j_SO-3)*0.5d0
+                    endif
+                    nkb=nkb-(2*l+1)
+                    if( nkb.le.ik ) then
+                     indx = -ikb
+                     goto 20
+                    endif
+5                continue
+10           continue
+15       continue
+
+20       continue
+
+         epskb_so=table_SO(2,indx,l,J_SO,is)
+!         write(spin%iout_SO,'(3(a,i5),a,f14.8)') 
+!     .       ' epskb_so_f: indx=',indx,
+!     .       ' l=', l, ' j_SO=', j_SO, 
+!     .       ' epskb_so=', epskb_so
+
+
+      end function epskb_SO
 !
 !
       function rcut(is,io)
@@ -764,4 +944,52 @@ c       elseif (io.eq.0) then
       end function rcut
 !
 !
+! CC RC  Added for the offSpOrb
+      function rcut_SO(is,io)
+      real(dp) rcut_SO
+      integer, intent(in)  :: is   ! Species index
+      integer, intent(in)  :: io   ! io<0  => KB projectors
+
+C  Returns cutoff radius of Kleynman-Bylander projectors
+C  Distances in Bohr
+
+      integer l, norb, lorb, nzetorb, izeta, ipol, nkb,lkb,nsm
+      integer  indx, nsmorb, nj_SO, j_SO, ik
+      real :: aj
+C
+      call check_is('rcut_SO',is)
+
+      ik=-abs(io)
+
+      if ((io.gt.nomax(is)).or.(io.lt.-nkbmax(is))) then
+          write(6,*) 'RCUT: THERE ARE NO DATA FOR IO=',IO
+          write(6,*) 'RCUT: IOMIN= ',-nkbmax(is),
+     .      ' IOMAX= ',nomax(is)
+        CALL DIE
+      endif
+
+        nkb=0
+        indx=0
+        nj_SO = 1
+        do 50 l=0,lmxkbsave(is)
+          do 45 izeta=1,nkblsave(l,is)
+            if ( spin%SO_off .and. l.ne.0) nj_SO = 2
+            indx=indx+1
+             do 35 j_SO = 1, nj_SO
+              if ( .not.spin%SO_off .or. l.eq.0 ) then
+               aj=l
+              else
+               aj=dble(l)+(2*j_SO-3)*0.5d0
+              endif
+              nkb=nkb-(2*l+1)
+             if(nkb.le.ik) goto 60
+35          continue
+45        continue
+50      continue
+
+60      continue  ! indx=indx-1 
+        rcut_SO=rctb_SO(izeta,l,j_SO,is)
+      end function rcut_SO
+! CC RC  Added for the offSpOrb
+
       end module old_atmfuncs

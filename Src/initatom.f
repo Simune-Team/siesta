@@ -122,27 +122,31 @@
        call elec_corr_setup()
       else
         if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
-     &     '    initatom : Calling read_basis_specs... '
+     &     '    initatom: Calling read_basis_specs... '
 !       New routines in basis_specs and basis_types.
         call read_basis_specs()
         if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
-     &     '    initatom : Calling basis_specs_transfer... '
+     &     '    initatom: Calling basis_specs_transfer... '
         call basis_specs_transfer()
-
-        stop 'Stopping after basis_specs_transfer call...'
 
 !       Get the parameters for the generation of the LDA+U projectors
         call read_ldau_specs()
 
         nsmax = nsp             !! For old_atmfuncs
         if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
-     &     '    initatom : Calling allocate_old_arrays... '
+     &     '    initatom: Calling allocate_old_arrays... '
         call allocate_old_arrays()
+        if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
+     &     '    initatom: Calling clear_tables... '
         call clear_tables()
 
         do is = 1,nsp
+         if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
+     &     '    initatom: Calling write_basis_specs... '
           call write_basis_specs(6,is)
           basp=>basis_parameters(is)
+         if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a,i3)')
+     &     '    initatom: Calling ATOM_MAIN for specie ', is
           call ATOM_MAIN( iz(is), lmxkb(is), nkbl(0:lmaxd,is),
      &                    erefkb(1:nkbmx,0:lmaxd,is), lmxo(is),
      &                    nzeta(0:lmaxd,1:nsemx,is),
@@ -165,23 +169,40 @@
         call prinput(nsp)
 
 !       Create the new data structures for atmfuncs.
+         if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) 
+     &    write(spin%iout_SO,'(a)') 
+     &     '    initatom: Calling atm_transfer... '
         call atm_transfer()
+
+         if ( IONode .and. spin%deb_offSO .or. spin%deb_P) 
+     &    write(spin%iout_SO,'(a)') 
+     &     '    initatom: Calling deallocate_old_arrays... '
         call deallocate_old_arrays()
+         if ( IONode .and. spin%deb_offSO .or. spin%deb_P) 
+     &    write(spin%iout_SO,'(a)') 
+     &     '    initatom: Leaving deallocate_old_arrays... '
         call elec_corr_setup()
         ns = nsp               ! Set number of species for main program
 
       endif
 
+      if ( IONode .and. spin%deb_offSO .or. spin%deb_P) 
+     &     write(spin%iout_SO,'(a)') 
+     &     '    initatom: Calling dump_basis_ascii... '
       call dump_basis_ascii()
 
 ! CC RC  Added for the offSpOrb
       if ( spin%SO ) then
-       write(6,*) ' WARNING: NETCDF is not supported for off-site SO'
+       write(6,*) 
+     & ' WARNING: NETCDF is not supported by the SO implementation'
       else
        call dump_basis_netcdf()
       endif
 ! CC RC  Added for the offSpOrb
 
+      if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) 
+     &     write(spin%iout_SO,'(a)') 
+     &     '    initatom: Calling dump_basis_xml... '
       call dump_basis_xml()
 
 ! CC RC  Added for the offSpOrb

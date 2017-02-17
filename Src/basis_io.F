@@ -26,6 +26,11 @@
 !      use flib_wxml, only: str
       use xml, only: xml_dump_attribute, xml_dump_element, str
 
+! CC RC  Added for the offSpOrb
+      use m_spin, only: spin 
+      use old_atmfuncs, only: nkblsave ! CC SC
+! CC RC  Added for the offSpOrb
+
       implicit none
 
       public :: dump_basis_ascii, read_basis_ascii
@@ -727,6 +732,10 @@ c
       integer i, l, ispol, lun, lun2, zeta, n_series
       integer lun_ldau
 
+! CC RC  Added for the offSpOrb
+      integer j_SO, n, nj_SO, ntot
+! CC RC  Added for the offSpOrb
+
       spp => species(is)
       if (spp%read_from_file) return    !! Do not dump
 
@@ -773,31 +782,82 @@ c
          
          write(lun,'(a)') "# KBs:__________________________"
          n_series = 0
-         do i=1,spp%n_pjnl
-            zeta = spp%pjnl_n(i)
-            l = spp%pjnl_l(i)
-            write(lun,'(2i3,f22.16,2x,a)')
-     $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i),
+!
+! CC RC  Added for the offSpOrb
+         n = 1
+         nj_SO = 1
+         do l = 0, spp%lmax_projs
+          do i = 1, nkblsave(l,is)
+           if ( spin%SO_off .and. l.ne.0 ) nj_SO = 2
+           do j_SO = 1, nj_SO
+
+            if ( .not.spin%SO_off .or. l.eq.0 ) then
+
+             write(lun,'(2i3,f22.16,2x,a)')
+     $           spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n),
      $           " #kb l, n (sequence number), Reference energy"
-            call radial_dump_ascii(spp%pjnl(i),lun)
 
-           if (write_ion_plot_files) then
-            write(fileid,'(a,i1,a,i1,a,a)') "KB.L", l , ".",
-     $            zeta, ".", trim(spp%label)
-            call io_assign(lun2)
-            open(unit=lun2,file=fileid,status='replace',
-     $                     form='formatted')
-            write(lun2,'(2a,2i3,f12.5)') "# ",trim(spp%label), 
-     $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i)
-            write(lun2,'(a)')
-     $           "#kb l, n (sequence number), Reference energy"
-            call radial_dump_ascii(spp%pjnl(i),lun2,header=.false.)
-            call io_close(lun2)
-           endif ! (write_ion_plot_files)
+             if ( spin%SO_off ) then
+              call radial_dump_ascii_SO(j_SO,spp%pjnl(n),lun,
+     $                                  header=.true.)
+             else
+              call radial_dump_ascii(spp%pjnl(n),lun,
+     $                               header=.true.)
+             endif
 
+             if (write_ion_plot_files) then
+              write(fileid,'(3(a,i1),2a)') "KB.L", l , ".",
+     $              i, ".J", j_SO, ".", trim(spp%label)
+              call io_assign(lun2)
+              open(unit=lun2,file=fileid,status='replace',
+     $                       form='formatted')
+              write(lun2,'(2a,2i3,f12.5)') "# ",trim(spp%label),
+     $              spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n)
+              write(lun2,'(a)')
+     $             "#kb l, n (sequence number), Reference energy"
+              if ( spin%SO_off ) then
+               call radial_dump_ascii_SO(j_SO,spp%pjnl(n),
+     $                                   lun2,header=.true.)
+              else
+               call radial_dump_ascii(spp%pjnl(n),
+     $                                lun2,header=.true.)
+              endif
+              call io_close(lun2)
+             endif ! (write_ion_plot_files)
 
+            elseif( spin%SO_off .and. l.ge.1 ) then
+
+             write(lun,'(2i3,f22.16,2x,a)')
+     $           spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n),
+     $           " #kb l, n (sequence number), Reference energy"
+
+             call radial_dump_ascii_SO(j_SO,spp%pjnl(n),lun,
+     $                                   header=.true.)
+
+             if (write_ion_plot_files) then
+              write(fileid,'(3(a,i1),2a)') "KB.L", l , ".",
+     $              i, ".J",
+     $              j_SO, ".", trim(spp%label)
+              call io_assign(lun2)
+              open(unit=lun2,file=fileid,status='replace',
+     $                       form='formatted')
+              write(lun2,'(2a,2i3,f12.5)') "# ",trim(spp%label),
+     $              spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n)
+              write(lun2,'(a)')
+     $             "#kb l, n (sequence number), Reference energy"
+              call radial_dump_ascii_SO(j_SO,spp%pjnl(n),
+     $                                  lun2,header=.true.)
+              call io_close(lun2)
+             endif ! (write_ion_plot_files)
+
+            endif
+            n = n + 1
+           enddo
+          enddo
          enddo
 
+! CC RC  Added for the offSpOrb
+!
          write(lun,'(a)') "# Vna:__________________________"
          call radial_dump_ascii(spp%vna,lun)
 
@@ -933,6 +993,10 @@ c
       character*40 filename
       integer i, ispol, lun
 
+! CC RC  Added for the offSpOrb
+      integer j_SO, l, nj_SO, n
+! CC RC  Added for the offSpOrb
+
       spp => species(is)
       if (spp%read_from_file) return    !! Do not dump
 
@@ -976,16 +1040,42 @@ c
       write(lun,'(a)') "</paos>"
          
       write(lun,'(a)') "<kbs>"
-      do i=1,spp%n_pjnl
+      n = 1
+      nj_SO = 1
+      do l = 0, spp%lmax_projs
+       do i = 1, nkblsave(l,is)
+        if ( spin%SO_off .and. l.ne.0 ) nj_SO = 2
+        do j_SO = 1, nj_SO
+
          write(lun,'(a)') "<projector "
-         call xml_dump_attribute(lun,'l',str(spp%pjnl_l(i)))
-         call xml_dump_attribute(lun,'n',str(spp%pjnl_n(i)))
+         call xml_dump_attribute(lun,'l',str(l))
+
+!         if ( l.eq.0 ) 
+!     $     call xml_dump_attribute(lun,'j',str(j_SO))
+!         if ( l.ne.0 ) 
+!     $     call xml_dump_attribute(lun,'j',str(j_SO))
+         call xml_dump_attribute(lun,'j',str(j_SO))
+
+         call xml_dump_attribute(lun,'n',str(i))
+
          call xml_dump_attribute(lun,'ref_energy',
-     $                                   str(spp%pjnl_ekb(i)))
+     $                                   str(spp%pjnl_ekb(n)))
          write(lun,'(a)') " >"
-         call radial_dump_xml(spp%pjnl(i),lun)
+!         if (.not. offSpOrb .or. l.eq.0 ) then
+!          call radial_dump_xml_SO(j_SO,spp%pjnl(n),lun)
+!         elseif( offSpOrb .and. l.ge.1 ) then
+          if ( spin%SO_off ) then
+           call radial_dump_xml_SO(j_SO,spp%pjnl(n),lun)
+          else
+           call radial_dump_xml(spp%pjnl(n),lun)
+          endif
+!         endif
          write(lun,'(a)') "</projector>"
+         n = n + 1
+        enddo
        enddo
+      enddo
+
        write(lun,'(a)') "</kbs>"
 
        write(lun,'(a)') "<vna>"

@@ -20,6 +20,14 @@ C     and initializes data structures on the grid.
       use sparse_matrices, only: H_so_2D
       use sparse_matrices, only: Dscf
 
+! CC RC  Added for the offSpOrb
+      use sparse_matrices, only: H0_SO
+      use m_nlefsm,        only: nlefsm_SO
+      use m_energies,      only: Enl_SO, Enl, Ekin
+      use m_spin,          only: spin
+      use parallel,        only: IONode
+! CC RC  Added for the offSpOrb
+
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use siesta_geom
       use atmfuncs, only: uion
@@ -52,6 +60,15 @@ C     and initializes data structures on the grid.
       real(dp) :: dummy_E
       integer  :: ia, is
 
+! CC RC  Added for the offSpOrb
+      real(dp)    :: dummy_E_SO
+      integer     :: io, ispin
+      complex(dp) :: Hc, Dc
+#ifdef MPI
+      real(dp)            :: buffer1
+#endif
+! CC RC  Added for the offSpOrb
+
       real(dp), pointer :: H_val(:), H_so(:,:)
 
 #ifdef DEBUG
@@ -73,6 +90,8 @@ C     Self-energy of isolated ions
 
 !     Neutral-atom: energy
 
+      if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
+     &   '    setup_H0: Calling naefs & dnaefs...'
       call naefs(na_u, na_s, scell, xa, indxua, rmaxv,
      &           isa, Ena, dummy_fa, dummy_stress,
      &           forces_and_stress=.false.)
@@ -100,6 +119,8 @@ C     Add on force field contribution to energy
 !$OMP parallel workshare default(shared)
       H_val(:) = 0.0_dp
 !$OMP end parallel workshare
+      if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
+     &  '    setup_H0: Calling kinefsm...'
       call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, maxnh, lasto, iphorb, isa, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
@@ -113,14 +134,60 @@ C     Add on force field contribution to energy
 !$OMP parallel workshare default(shared)
       H_val(:) = 0.0_dp
 !$OMP end parallel workshare
-      call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
-     &            maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
-     &            numh, listhptr, listh, numh, listhptr, listh, 
-     &            1,
-     &            dummy_dm, dummy_E, dummy_fa, dummy_stress,
-     &            H_val,
-     &            matrix_elements_only=.true.) 
 
+      if ( .not.spin%SO_off ) then
+       write(6,*) '     setup_H0: Calling nlefsm...'
+       if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
+     &  '    setup_H0: Calling nlefsm...'
+       call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
+     &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
+     &             numh, listhptr, listh, numh, listhptr, listh, 
+     &             1,
+     &             dummy_dm, dummy_E, dummy_fa, dummy_stress,
+     &             H_val,
+     &             matrix_elements_only=.true.) 
+      elseif ( spin%SO_off ) then
+        H0_SO=dcmplx(0.0d0,0.0d0)
+        if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
+     &   '    setup_H0: Calling nlefsm_SO...'
+        call nlefsm_SO(scell, na_u, na_s, isa, xa, indxua,
+     &                 maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
+     &                 numh, listhptr, listh, numh, listhptr, listh,
+     &                 spin%Grid,
+     &                 dummy_E, dummy_E_SO, dummy_fa,
+     &                 dummy_stress, H_val,
+     &                 matrix_elements_only=.true.)
+
+        Enl_SO = 0.0d0
+        do io = 1, maxnh
+!-------- Enl_SO(u,u)
+            Dc = cmplx(Dscf(io,1),-Dscf(io,5))
+            Hc = H0_SO(io,1)
+            Enl_SO = Enl_SO + real( Hc*Dc )
+!-------- Enl_SO(d,d)
+            Dc = cmplx(Dscf(io,2),-Dscf(io,6))
+            Hc = H0_SO(io,2)
+            Enl_SO = Enl_SO + real( Hc*Dc )
+!-------- Enl_SO(u,d)
+            Dc = cmplx(Dscf(io,7),-Dscf(io,8))
+            Hc = H0_SO(io,4)
+            Enl_SO = Enl_SO + real( Hc*Dc )
+!-------- Enl_SO(d,u)
+            Dc = cmplx(Dscf(io,3),-Dscf(io,4))
+            Hc = H0_SO(io,3)
+            Enl_SO = Enl_SO + real( Hc*Dc )
+        enddo
+
+        if ( IONode .and. spin%deb_offSO ) 
+     &   write(spin%iout_SO,'(a,f12.8)')
+     &   '    setup_H0: Enl_SO = ', Enl_SO
+
+#ifdef MPI
+! Global reduction of Ekin, Enl and Eso 
+      call globalize_sum(Enl_SO,buffer1)
+      Enl_SO = buffer1
+#endif
+      endif
 
 ! ..................
 
@@ -129,7 +196,7 @@ C     Add on force field contribution to energy
 ! computing forces and stresses, calling it in the first iteration
 ! should be enough
 !
-      if ( SpOrb ) then
+      if ( spin%SO .and. .not.spin%SO_off ) then
          H_so => val(H_so_2D)
 !$OMP parallel workshare default(shared)
          H_so = 0._dp
@@ -149,7 +216,7 @@ C     Add on force field contribution to energy
 C     This will take care of possible changes to the mesh and atomic-related
 C     mesh structures for geometry changes
       g2max = g2cut
-      call dhscf_init( nspin, no_s, iaorb, iphorb,
+      call dhscf_init( spin%Grid, no_s, iaorb, iphorb,
      &                 no_l, no_u, na_u, na_s,
      &                 isa, xa, indxua, ucell,
      &                 mscell, G2max, ntm,

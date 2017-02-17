@@ -18,6 +18,10 @@
       use alloc
       use siesta_options, only: td_elec_dyn
 
+! CC RC  Added for the offSpOrb
+      use m_spin, only: spin
+! CC RC  Added for the offSpOrb
+
       use parallel, only: SIESTA_worker ! whether part of Siesta's communicator
       use parallel, only: ionode
 #ifdef MPI      
@@ -77,6 +81,8 @@ C     Begin of coordinate relaxation iteration
          if ( td_elec_dyn ) then
             call siesta_tddft( istep )
          else
+          if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
+     &     ' siesta: Calling siesta_forces... '
             call siesta_forces( istep )
          end if
 

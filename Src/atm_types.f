@@ -94,6 +94,19 @@
          integer, dimension(maxnprojs)   ::  pj_l
          integer, dimension(maxnprojs)   ::  pj_m
          integer, dimension(maxnprojs)   ::  pj_gindex
+
+! CC RC  Added for the offSpOrb
+! Values of j and mj for each l of the KB projectors within the OffS-SO
+! 
+!     For each l, pj_j = l-1/2, l+1/2
+!     For each j, pj_mj will have (2j+1) values and each one of them 
+!     will belong to a one projector.  
+!    
+         integer, dimension(maxnprojs) ::  jso ! J_SO=1,2 for each proj
+         real   , dimension(maxnprojs) ::  pj_j
+         real   , dimension(maxnprojs) ::  pj_mj
+!
+! CC RC  Added for the offSpOrb
 !
 !        LDA+U Projectors
 !        Here we follow the scheme used for the KB projectors

@@ -46,6 +46,7 @@ contains
     use m_steps
     use sys, only : die, bye
     use sparse_matrices, only: H, Hold, Dold, Dscf, Eold, Escf, maxnh
+    use sparse_matrices, only: MM_HDM
     use m_convergence, only: converger_t
     use m_convergence, only: reset, set_tolerance
     use siesta_geom,   only: na_u           ! Number of atoms in unit cell
@@ -57,8 +58,12 @@ contains
     use m_save_density_matrix, only: save_density_matrix
     use m_iodm_old,    only: write_spmatrix
 
+! CC RC  Added for the offSpOrb
+    use m_spin,     only: spin
+! CC RC  Added for the offSpOrb
+
     use atomlist,      only: no_s, no_l, no_u, qtot, indxuo
-    use m_spin,        only: nspin
+!    use m_spin,        only: nspin
     use m_gamma
     use Kpoint_grid,    only: nkpnt, kpoint, kweight
     use m_eo
@@ -136,6 +141,8 @@ contains
 
     if ( SIESTA_worker )  then
        ! Initialization tasks for a given geometry
+       if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') & 
+         ' siesta: Calling state_init before selfconsistency loop'
        call state_init( istep )
     end if
 
@@ -172,7 +179,10 @@ contains
     ! putting the grid initialization into state_init and moving the
     ! calculation of H_0 to the body of the loop, done if first=.true.  This
     ! would suit "analysis" runs in which nscf = 0
+    if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') & 
+       ' siesta: Calling setup_H0...'
     if ( SIESTA_worker ) call setup_H0(G2max)
+!    stop 'Stopping after setup_H0'
     
 #ifdef SIESTA__PEXSI
     if (ionode) call memory_snapshot("after setup_H0")
@@ -245,6 +255,8 @@ contains
     ! -- At the change to a TranSiesta GF run the variable "first"
     !    is implicitly reset to "true".
 
+    if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') & 
+       ' siesta_forces: Starting the selfconsistency... '
     ! Start of SCF loop
     iscf = 0
     do while ( iscf < nscf )
@@ -279,6 +291,8 @@ contains
              end if
              
              call compute_DM( iscf )
+! CC RC
+      if ( IONode .and. spin%SO ) call MM_HDM( 'DM' )
 
              ! Maybe set Dold to zero if reading charge or H...
              call compute_max_diff(Dold, Dscf, dDmax)
@@ -445,7 +459,7 @@ contains
     ! consequent TDDFT run.
     if ( writetdwf ) then
        istpp = 0
-       call initwf(no_s, nspin, nspin, no_l, maxnh, no_u, qtot, &
+       call initwf(no_s, spin%Grid, spin%Grid, no_l, maxnh, no_u, qtot, &
             gamma, indxuo, nkpnt, kpoint, kweight, &
             no_u, EF7, istpp,totime)
     end if
