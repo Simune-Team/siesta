@@ -81,6 +81,8 @@ siesta.Units = { &
 siesta.Units.GPa = siesta.Units.kBar * 10 &
 siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
 
+    integer :: err
+    
     ! First retrieve lua file
     slua_file = fdf_get('LUA.Script',' ')
     ! Default debugging only on the io-node.
@@ -148,7 +150,10 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     end if
 
     ! Run the requested lua-script
-    call lua_run(LUA, slua_file)
+    call lua_run(LUA, slua_file, error = err)
+    if ( err /= 0 ) then
+       call die('LUA initialization failed, please check your Lua script!!!')
+    end if
     
   end subroutine slua_init
 
@@ -156,6 +161,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     type(luaState), intent(inout) :: LUA
     integer, intent(in) :: state
     character(len=30) :: tmp
+    integer :: err
 
     ! Return immediately if we should not run
     if ( .not. slua_run ) return
@@ -171,7 +177,11 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     end if
 
     ! Call communicator
-    call lua_run(LUA, code = 'siesta_comm()' )
+    call lua_run(LUA, code = 'siesta_comm()', error = err )
+    if ( err /= 0 ) then
+       call die('LUA could not run siesta_comm() without an error, please &
+            &check your Lua script')
+    end if
 
   end subroutine slua_call
 
