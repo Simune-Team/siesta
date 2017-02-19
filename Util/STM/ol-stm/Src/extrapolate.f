@@ -133,7 +133,8 @@ C      ENDDO
 C DO DIRECT FOURIER TRANSFORM TO GET SPATIAL FREQUENCIES OF WF AT 
 C REFERENCE PLANE ........
 
-      plan =  fftw_plan_dft_2d (NPX,NPY,CW,CW,FFTW_FORWARD, 
+      ! Reverse dimensions for f2003 interface !!!
+      plan =  fftw_plan_dft_2d (NPY,NPX,CW,CW,FFTW_FORWARD, 
      .                        FFTW_ESTIMATE)
       call fftw_execute_dft (plan,cw,cw)
       call fftw_destroy_plan(plan)
@@ -141,7 +142,7 @@ C REFERENCE PLANE ........
 C .....
 
 C LOOP OVER SIMULATION HEIGHTS ........
-      plan = fftw_plan_dft_2d (NPX,NPY,EXPSI,EXPSI,FFTW_BACKWARD, 
+      plan = fftw_plan_dft_2d (NPY,NPX,EXPSI,EXPSI,FFTW_BACKWARD, 
      .                        FFTW_ESTIMATE)
       DO NZ = 1, NPZ
         Z = ZMIN + (NZ-1)*STEPZ
