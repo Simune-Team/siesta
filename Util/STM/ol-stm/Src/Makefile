@@ -26,7 +26,7 @@
 # You must set these symbols properly, either here or 
 # (better) in your top arch.make
 # 
-FFTW_ROOT=/usr/local/Cellar/fftw/3.3.4
+FFTW_ROOT=/usr/local
 FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
 FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3f -lfftw3
 #-----------------------------------------
@@ -78,7 +78,7 @@ OBJS_STM = atompla.o  \
         mainstm.o matvect.o memory.o \
 	neighb.o paste.o pxf.o \
 	 radfft.o ranger.o \
-        readstm.o readwaves.o \
+        readstm.o m_wfsx.o \
         redata.o  reinitstm.o stm.o \
 	vacpot.o volcel.o wrout.o handlers.o
 #
@@ -163,7 +163,7 @@ chkdim.o: sys.o
 extrapolate.o: fftw3_mymod.o precision.o
 io.o: sys.o
 iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o sys.o
-mainstm.o: basis_io.o listsc.o parallel.o precision.o
+mainstm.o: basis_io.o listsc.o parallel.o precision.o m_wfsx.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 ranger.o: precision.o
