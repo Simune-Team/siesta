@@ -560,7 +560,7 @@ contains
     dic = ('info'.kv.'Supercell offsets')
     call ncdf_def_var(ncdf,'isc_off',NF90_INT,(/'xyz', 'n_s'/), &
          atts = dic)
-    dic = ('info'.kv.'Number of supercells in each direction')
+    dic = dic // ('info'.kv.'Number of supercells in each direction')
     call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
          atts = dic)
 
@@ -568,25 +568,25 @@ contains
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
 
-    dic = dic//('info'.kv.'Index of device atoms')
+    dic = dic // ('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
          atts = dic)
 
     if ( a_Buf%n > 0 ) then
-       dic = dic//('info'.kv.'Index of buffer atoms')
+       dic = dic // ('info'.kv.'Index of buffer atoms')
        call ncdf_def_var(ncdf,'a_buf',NF90_INT,(/'na_b'/), &
             atts = dic)
     end if
 
     if ( 'DOS-Gf' .in. save_DATA ) then
-       dic = dic//('info'.kv.'Density of states')//('unit'.kv.'1/Ry')
+       dic = dic // ('info'.kv.'Density of states')//('unit'.kv.'1/Ry')
        call ncdf_def_var(ncdf,'DOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
             atts = dic , chunks = (/r%n,1,1/) , compress_lvl = cmp_lvl )
     end if
 
     if ( .not. isGamma ) then
 
-       dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
+       dic = dic // ('info'.kv.'k point')//('unit'.kv.'b')
        call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
             atts = dic)
        call delete(dic)

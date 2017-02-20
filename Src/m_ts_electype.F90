@@ -195,6 +195,11 @@ contains
        if ( fdf_bnnames(pline) == 0 ) cycle
        n = n + 1 
     end do
+    
+    ! If there are no electrodes, return immediately
+    ! This will signal a new read, or default values of the
+    ! electrodes
+    if ( n == 0 ) return
 
     allocate(this_n(n))
 
@@ -1670,18 +1675,25 @@ contains
   subroutine delete_(this)
     type(Elec), intent(inout) :: this
 
+    ! Full matrices
     call delete(this%H)
     call delete(this%S)
-    call delete(this%H00)
-    call delete(this%H01)
-    call delete(this%S00)
-    call delete(this%S01)
-    call delete(this%sp00)
-    call delete(this%sp01)
     call delete(this%sp)
+
+    ! 00 matrices
+    call delete(this%H00)
+    call delete(this%S00)
+    call delete(this%sp00)
+
+    ! 01 matrices
+    call delete(this%H01)
+    call delete(this%S01)
+    call delete(this%sp01)
+
     if ( associated(this%xa) ) deallocate(this%xa)
     if ( associated(this%lasto) ) deallocate(this%lasto)
     nullify(this%xa,this%lasto)
+    if ( associated(this%isc_off) ) deallocate(this%isc_off)
     !if ( associated(this%xa_used) ) deallocate(this%xa_used)
     !if ( associated(this%lasto_used) ) deallocate(this%lasto_used)
     !nullify(this%xa_used,this%lasto_used)

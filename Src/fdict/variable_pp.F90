@@ -21,7 +21,7 @@ module variable
   character(len=1) :: local_enc_type(1)
   
   type :: var
-     character(len=2) :: t = '  '
+     character(len=4) :: t = '    '
      ! The encoding placement of all data
      character(len=1), dimension(:), allocatable :: enc
   end type var
@@ -72,7 +72,7 @@ contains
 
   elemental function which_(this) result(t)
     type(var), intent(in) :: this
-    character(len=2) :: t
+    character(len=4) :: t
     t = this%t
   end function which_
     
@@ -160,7 +160,7 @@ contains
     else
        call delete(this)
     end if
-    this%t = 'ut'
+    this%t = 'USER'
     allocate(this%enc(size(enc)))
     this%enc = enc
 
@@ -235,6 +235,7 @@ contains
     type(var_str) :: str
     str = rhs
     call assign(this,str,dealloc=dealloc)
+    str = "" ! deallocation
   end subroutine assign_set_char0
 
   subroutine assign_get_char0(lhs,this,success)
@@ -246,6 +247,7 @@ contains
     call assign(str,this,success=lsuccess)
     if ( present(success) ) success = lsuccess
     if ( lsuccess ) lhs = str
+    str = "" ! deallocation
   end subroutine assign_get_char0
 
 #include "var_funcs.inc"

@@ -28,7 +28,7 @@ module dictionary
   ! a better interface.
   !> Maximum character length of the keys in the dictionary, no 
   !! index/key can be longer than this.
-  integer, parameter, public :: DICT_KEY_LENGTH = 50
+  integer, parameter, public :: DICT_KEY_LENGTH = 48
   
   ! A parameter returned if not found.
   character(len=DICT_KEY_LENGTH), parameter :: DICT_NOT_FOUND = 'ERROR: key not found'
@@ -43,30 +43,24 @@ module dictionary
      private
      type(d_entry), pointer :: first => null()
      integer :: len = 0
-  end type dict
+  end type
   
-  ! HASH-comparisons are MUCH faster...
-  ! hence we store all values in an incremental fashion in terms
-  ! of the HASH-value
-  integer, parameter :: HASH_SIZE = 149087 ! a prime !
-  integer, parameter :: HASH_MULT = 67
-
   !> Return the length of a dictionary, by internal counting algorithms
   interface len
      module procedure len_
-  end interface len
+  end interface
   public :: LEN
 
   !> Actually count number of elements in the dictionary by forcing the traversing
   interface llen
      module procedure llen_
-  end interface llen
+  end interface
   public :: LLEN
 
   !> Print out all keys and which data-type it contains as well as the hash-number
   interface print
      module procedure print_
-  end interface print
+  end interface
   public :: print
 
   ! Concatenate dicts or list of dicts to list of dicts
@@ -81,94 +75,94 @@ module dictionary
   !> Returns the key of the current _top_ entry,
   interface operator( .KEY. )
      module procedure key
-  end interface operator( .KEY. )
+  end interface
   public :: operator(.KEY.)
 
   ! check whether key exists in dictionary
   !> Returns .true. if the key exists in the dictionary, else returns false.
   interface operator( .IN. )
      module procedure in
-  end interface operator( .IN. )
+  end interface
   public :: operator(.IN.)
 
   ! check whether key not exists in dictionary
   !> Returns .not. ('key' .in. dict)
   interface operator( .NIN. )
      module procedure nin
-  end interface operator( .NIN. )
+  end interface
   public :: operator(.NIN.)
   
   ! Retrieve the value from a dictionary (unary)
   !> Returns the value from a dictionary by copy
   interface operator( .VAL. )
      module procedure value
-  end interface operator( .VAL. )
+  end interface
   public :: operator(.VAL.)
   !> Returns the value from a dictionary by pointer
   interface operator( .VALP. )
      module procedure value_p
-  end interface operator( .VALP. )
+  end interface
   public :: operator(.VALP.)
 
   ! Retrieve the hash value from a dictionary entry (unary)
   interface operator( .HASH. )
      module procedure hash
-  end interface operator( .HASH. )
+  end interface
   public :: operator(.HASH.)
 
   ! Checks for two dicts have all the same keys
   !> Checks whether all keys are the same in two dictionaries.
   interface operator( .EQ. )
      module procedure d_eq_d
-  end interface operator( .EQ. )
+  end interface
   public :: operator(.EQ.) ! Overloaded
 
   ! Checks for two dicts do not share any common keys
   !> Checks whether not all keys are the same in two dictionaries.
   interface operator( .NE. )
      module procedure d_ne_d
-  end interface operator( .NE. )
+  end interface
   public :: operator(.NE.) ! Overloaded
 
   ! Steps one time in the dictionary (unary)
   !> Looping construct.
   interface operator( .NEXT. )
      module procedure d_next
-  end interface operator( .NEXT. )
+  end interface
   public :: operator(.NEXT.)
 
   ! Retrieve the first of a dictionary (unary)
   !> Returns the first entry
   interface operator( .FIRST. )
      module procedure d_first
-  end interface operator( .FIRST. )
+  end interface
   public :: operator(.FIRST.)
 
   ! Check whether the dictionary is empty (unary)
   !> Checks if it is an empty dictionary, i.e. no keys exist
   interface operator( .EMPTY. )
      module procedure d_empty
-  end interface operator( .EMPTY. )
+  end interface
   public :: operator(.EMPTY.)
 
-  interface hash_same
-     module procedure hash_same_
-  end interface hash_same
-  public :: hash_same
+  interface hash_coll
+     module procedure hash_coll_
+  end interface
+  public :: hash_coll
 
   interface delete
      module procedure delete_
-  end interface delete
+  end interface
   public :: delete
 
   interface remove
      module procedure remove_
-  end interface remove
+  end interface
   public :: remove
 
   interface pop
      module procedure pop_
-  end interface pop
+  end interface
   public :: pop
 
   interface copy
@@ -178,17 +172,17 @@ module dictionary
 
   interface nullify
      module procedure nullify_
-  end interface nullify
+  end interface
   public :: nullify
 
   interface extend
      module procedure sub_d_cat_d
-  end interface extend
+  end interface
   public :: extend
 
   interface which
      module procedure dict_key_which
-  end interface which
+  end interface
   public :: which
 
   public :: assign, associate
@@ -219,7 +213,27 @@ contains
   pure function hash_val(key) result(val)
     character(len=*), intent(in) :: key
     integer :: val
-    integer :: i, fac
+    integer :: i
+#ifndef HASH_ALGO
+# define HASH_ALGO 0
+#endif
+#if HASH_ALGO == 0
+    ! This is 32-bit integers, hence a 32-bit hash
+    integer, parameter :: FNV_OFF = 28491 ! see crt_hash_basis.f90
+    integer, parameter :: FNV_PRIME = 16777619
+    integer, parameter :: MAX_32 = huge(1)
+
+    ! Initialize by the FNV_OFF hash for 32 bit
+    val = FNV_OFF
+    do i = 1 , min(DICT_KEY_LENGTH,len_trim(key))
+       val = ieor(val,iachar(key(i:i)))
+       val = mod(val * FNV_PRIME, MAX_32)
+    end do
+#elif HASH_ALGO == -1
+    ! My own hash table, has a lot of collisions
+    integer, parameter :: HASH_SIZE = 149087 ! a prime !
+    integer, parameter :: HASH_MULT = 67
+    integer :: fac
     val = 0
     fac = mod(iachar(key(1:1)),HASH_MULT)
     do i = 1 , min(DICT_KEY_LENGTH,len_trim(key))
@@ -231,6 +245,9 @@ contains
     end do
     ! A hash has to be distinguished from the "empty"
     val = 1 + mod(val*HASH_MULT,HASH_SIZE)
+#else
+#error "HASH_ALGO has erroneous value, only -1, 0 are currently implemented"
+#endif
   end function hash_val
 
   pure function new_d_key(key) result(d)
@@ -274,34 +291,51 @@ contains
     hash = d%first%hash
   end function hash
 
-  function hash_same_(this) result(same)
+  ! Returns number of collisions in the hash-table
+  ! The optional keyword 'max' can be used to
+  ! extract the maximum number of collisions for
+  ! one hash-value (i.e. not total collisions).
+  function hash_coll_(this,max) result(col)
     type(dict), intent(inout) :: this
-    integer :: same
+    logical, intent(in), optional :: max
+    integer :: col
+    integer :: chash, max_now, same
     type(d_entry), pointer :: ld
-    integer :: max_now, chash
-    same = 0
+
+    col = 0
     if ( .empty. this ) return
 
     ! Initialize
+    same = 0
     max_now = 0
     ld => this%first
     chash = ld%hash
     do while ( associated(ld) )
        if ( chash == ld%hash ) then
+          ! total collisions
+          col = col + 1
+          ! count total current collisions
           max_now = max_now + 1
        else
           chash = ld%hash
           if ( max_now > same ) then
              same = max_now
-             max_now = 1
           end if
+          max_now = 0
        end if
           
        ld => ld%next
     end do
-    if ( max_now > same ) same = max_now
 
-  end function hash_same_
+    ! If the user requests maximum collisions
+    ! for any given hash value
+    if ( present(max) ) then
+       if ( max ) col = same
+    end if
+
+    ! return col
+
+  end function hash_coll_
     
 
   subroutine dict_key2val(val,d,key,dealloc)
@@ -579,6 +613,36 @@ contains
 
   end subroutine d_insert
 
+
+  !> Generate the copy routine
+  subroutine copy_(from, to)
+    type(dict), intent(in) :: from
+    type(dict), intent(inout) :: to
+
+    type(d_entry), pointer :: d
+    type(var) :: v
+
+    ! Delete the dictionary
+    call delete(to)
+
+    d => from%first
+    do while ( associated(d) )
+       
+       ! Associate data...
+       call associate(v, d%value)
+       ! Copy data, hence .kv.
+       to = to // (trim(d%key).kv.v)
+       
+       d => d%next
+    end do
+
+    ! Clean up pointers...
+    call nullify(v)
+    nullify(d)
+    
+  end subroutine copy_
+
+  
   ! Retrieve the length of the dictionary...
   pure function len_(d)
     type(dict), intent(in) :: d
@@ -619,18 +683,18 @@ contains
   
   subroutine copy_assign(din,dcopy)
     type(dict), intent(in)  :: din
-    type(dict), intent(out) :: dcopy
+    type(dict), intent(inout) :: dcopy
     dcopy%first => din%first
     dcopy%len = din%len
   end subroutine copy_assign
 
   subroutine print_(d)
     type(dict), intent(in)  :: d
-    type(dict)  :: ld
+    type(dict) :: ld
     ld = .first. d
     do while ( .not. .empty. ld ) 
        write(*,'(t2,a,tr1,a,i0,a)') trim(.key. ld), &
-            '['/ /ld%first%value%t/ /'] (',.hash. ld,')'
+            '['/ /trim(ld%first%value%t)/ /'] (',.hash. ld,')'
        ld = .next. ld
     end do
   end subroutine print_
@@ -728,35 +792,6 @@ contains
     end subroutine del_d_entry_tree
 
   end subroutine delete_
-
-
-  !> Generate the copy routine
-  subroutine copy_(from, to)
-    type(dict), intent(in) :: from
-    type(dict), intent(inout) :: to
-
-    type(d_entry), pointer :: d
-    type(var) :: v
-
-    ! Delete the dictionary
-    call delete(to)
-
-    d => from%first
-    do while ( associated(d) )
-       
-       ! Associate data...
-       call associate(v, d%value)
-       ! Copy data, hence .kv.
-       to = to // (trim(d%key).kv.v)
-       
-       d => d%next
-    end do
-
-    ! Clean up pointers...
-    call nullify(v)
-    nullify(d)
-    
-  end subroutine copy_
 
   subroutine pop_(val,this,key,dealloc)
     type(var), intent(inout) :: val
@@ -877,6 +912,7 @@ contains
     this = new_d_key(key)
     str = val
     call assign(this%first%value,str)
+    str = "" ! deallocation
   end function dict_kv_char0
 
   function dict_kv_var(key,val) result(this)
@@ -940,11 +976,11 @@ contains
   ! key.
   function dict_kvp_dict(key,dic) result(this)
     character(len=*), intent(in) :: key
-    type(dict), intent(in), target :: dic
+    type(dict), intent(in) :: dic
     type(dict) :: this
 
     type :: pd_entry
-       type(d_entry), pointer :: d
+       type(d_entry), pointer :: d => null()
     end type pd_entry
     type(pd_entry) :: pd
     type(var) :: v
@@ -953,6 +989,7 @@ contains
     pd%d => dic%first
     call associate_type(v,transfer(pd,c))
     this = (key.kvp.v)
+    call nullify(v)
 
   end function dict_kvp_dict
 
@@ -996,7 +1033,7 @@ contains
     ! Specifically because the address of the dic1 does not change.
     ! However, the d_entry pointer is irrespective of parent locality.
     type :: pd_entry
-       type(d_entry), pointer :: d
+       type(d_entry), pointer :: d => null()
     end type pd_entry
     type(pd_entry) :: pd
     type(dict) :: ld
@@ -1015,6 +1052,10 @@ contains
 
     ! Retrieve the dictionary key
     call associate(v,d,key=key)
+    if ( v%t .eq. '    ' ) then
+       call nullify(v)
+       return
+    end if
     
     i = size_enc(v)
     allocate(c(i))
