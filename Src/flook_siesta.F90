@@ -81,7 +81,9 @@ siesta.Units = { &
 siesta.Units.GPa = siesta.Units.kBar * 10 &
 siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
 
+    ! For error-handling with lua
     integer :: err
+    character(len=2048) :: err_msg
     
     ! First retrieve lua file
     slua_file = fdf_get('LUA.Script',' ')
@@ -120,7 +122,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        return
     end if
     
-    ! Initialize 
+    ! Initialize the Lua state
     call lua_init(LUA)
 
     ! Create LUA table for data container
@@ -150,8 +152,10 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     end if
 
     ! Run the requested lua-script
-    call lua_run(LUA, slua_file, error = err)
+    err_msg = " "
+    call lua_run(LUA, slua_file, error = err, message=err_msg)
     if ( err /= 0 ) then
+       write(*,'(a)') trim(err_msg)
        call die('LUA initialization failed, please check your Lua script!!!')
     end if
     
@@ -161,7 +165,10 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     type(luaState), intent(inout) :: LUA
     integer, intent(in) :: state
     character(len=30) :: tmp
+
+    ! For error-handling with lua
     integer :: err
+    character(len=2048) :: err_msg
 
     ! Return immediately if we should not run
     if ( .not. slua_run ) return
@@ -177,8 +184,9 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     end if
 
     ! Call communicator
-    call lua_run(LUA, code = 'siesta_comm()', error = err )
+    call lua_run(LUA, code = 'siesta_comm()', error = err, message=err_msg )
     if ( err /= 0 ) then
+       write(*,'(a)') trim(err_msg)
        call die('LUA could not run siesta_comm() without an error, please &
             &check your Lua script')
     end if
