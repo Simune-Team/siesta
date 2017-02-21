@@ -32,6 +32,7 @@
       subroutine die(str)
 
       use parallel, only : Node
+      use siesta_cml
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -59,6 +60,9 @@
          close(77)
          call pxfflush(6)
          call pxfflush(0)
+         If (cml_p) Then
+            Call cmlFinishFile(mainXML)
+         Endif                  !cml_p
       endif
 
 #ifdef MPI

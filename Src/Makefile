@@ -472,7 +472,7 @@ diagonalizeHk.o: sparse_matrices.o units.o
 diagpol.o: precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
-die.o: parallel.o
+die.o: parallel.o siesta_cml.o
 dipole.o: mesh.o parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
@@ -828,7 +828,7 @@ state_init.o: zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_iostruct.o
 struct_init.o: m_mpi_utils.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_master.o siesta_options.o units.o zmatrix.o
-sys.o: parallel.o
+sys.o: parallel.o siesta_cml.o
 timer.o: m_timer.o parallel.o sys.o timer_tree.o
 timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o

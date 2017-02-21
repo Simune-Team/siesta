@@ -57,7 +57,7 @@
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
 
-      external :: die
+      external :: die, message
 
 #ifdef TRANSIESTA
 ! Used in force constant runs
