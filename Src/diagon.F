@@ -147,6 +147,7 @@ C First call initialisation
       if (frstme) then
 #ifdef MPI
         ParallelOverK = fdf_boolean( 'Diag.ParallelOverK', .false. )
+        if ( nspin > 2 ) ParallelOverK = .false.
 #endif
 
 C Read spin-spiral wavevector (if defined)
