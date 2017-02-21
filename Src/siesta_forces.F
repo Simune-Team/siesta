@@ -30,7 +30,7 @@
       use parallel,     only : IOnode
       use m_state_analysis
       use m_steps
-      use sys, only : die, bye
+      use sys, only : bye
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
       use siesta_geom,   only: na_u           ! Number of atoms in unit cell
@@ -56,6 +56,8 @@
       real(dp) :: dmax      ! Max. change in DM or H elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
+
+      external :: die
 
 #ifdef TRANSIESTA
 ! Used in force constant runs
@@ -214,10 +216,13 @@
 
       else
 
-        if (ionode) write(6,"(a)") ':!: SCF did not converge'//
-     $                              ' in maximum number of steps.'
-        if (SCFMustConverge) call die('SCF did not converge' //
-     $                              ' in maximum number of steps.')
+        if (SCFMustConverge) then
+           call die('SCF did not converge' //
+     $          ' in maximum number of steps.')
+        else
+           call message('WARNING','SCF did not converge' //
+     $          ' in maximum number of steps.')
+        endif
       endif
 
 

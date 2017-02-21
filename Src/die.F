@@ -53,6 +53,10 @@
       write(0,'(a,i4)') 'Stopping Program from Node: ', Node
 !!                                       endif
       if (Node .eq. 0) then
+         open(77,file="MESSAGES",status="unknown",
+     $        position="append",action="write")
+         write(77,"(a)") 'FATAL: ' // trim(str)
+         close(77)
          call pxfflush(6)
          call pxfflush(0)
       endif
@@ -64,3 +68,24 @@
       call pxfabort()
 #endif
       end subroutine die
+      
+      subroutine message(level,str)
+
+      use parallel, only : Node
+
+      character(len=*), intent(in)  :: level
+      ! One of INFO, WARNING, FATAL
+      character(len=*), intent(in)  :: str
+
+      if (Node .eq. 0) then
+         write(6,'(a)') trim(str)
+         write(0,'(a)') trim(str)
+         open(77,file="MESSAGES",status="unknown",
+     $        position="append",action="write")
+         write(77,"(a)") trim(level) // ": " // trim(str)
+         close(77)
+         call pxfflush(6)
+         call pxfflush(0)
+      endif
+
+      end subroutine message

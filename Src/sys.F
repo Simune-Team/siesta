@@ -21,20 +21,23 @@
 
       CONTAINS
 
-      subroutine message(str)
+      subroutine message(level,str)
 
       use parallel, only : Node
-#ifdef MPI
-      use mpi_siesta
-#endif
 
-      character(len=*), intent(in), optional   :: str
+      character(len=*), intent(in)  :: level
+      ! One of INFO, WARNING, FATAL
+      character(len=*), intent(in)  :: str
 
-
-      if (Node.eq.0) then
-         if (present(str)) then
-            write(6,'(a)') trim(str)
-         endif
+      if (Node .eq. 0) then
+         write(6,'(a)') trim(str)
+         write(0,'(a)') trim(str)
+         open(77,file="MESSAGES",status="unknown",
+     $        position="append",action="write")
+         write(77,"(a)") trim(level) // ": " // trim(str)
+         close(77)
+         call pxfflush(6)
+         call pxfflush(0)
       endif
 
       end subroutine message
@@ -58,17 +61,21 @@
 ! node state its complaint can be useful.
 
 !!                                       if (Node.eq.0) then
-         if (present(str)) then
-            write(6,'(a)') trim(str)
-            write(0,'(a)') trim(str)
-         endif
-         write(6,'(a,i4)') 'Stopping Program from Node: ', Node
-         write(0,'(a,i4)') 'Stopping Program from Node: ', Node
+      if (present(str)) then
+         write(6,'(a)') trim(str)
+         write(0,'(a)') trim(str)
+      endif
+      write(6,'(a,i4)') 'Stopping Program from Node: ', Node
+      write(0,'(a,i4)') 'Stopping Program from Node: ', Node
 !!                                       endif
-         if (Node .eq. 0) then
-            call pxfflush(6)
-            call pxfflush(0)
-         endif
+      if (Node .eq. 0) then
+         open(77,file="MESSAGES",status="unknown",
+     $        position="append",action="write")
+         write(77,"(a)") 'FATAL: ' // trim(str)
+         close(77)
+         call pxfflush(6)
+         call pxfflush(0)
+      endif
 
 #ifdef MPI
       call MPI_Abort(MPI_Comm_World,1,MPIerror)
