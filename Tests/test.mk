@@ -33,8 +33,10 @@ completed_$(label):
 	@if [ -d $(label) ] ; then rm -rf $(label) ; fi; mkdir $(label)
 	@if [ -n "$(EXTRAFILES)" ] ; then cp -f $(EXTRAFILES) $(label) ; fi
 	@for i in `cat $(name).pseudos` ; do \
-          echo "    ==> Copying pseudopotential file for $$i..." ;\
-          ln ../Pseudos/$$i.psf $(label)/$$i.psf ;\
+	    if [[ $$i =~ .*\.(psf|psml) ]] ; then fps=$$i ; \
+                    else fps=$${i}.psf ; fi; \
+            echo "    ==> Copying pseudopotential file for $$fps ..." ;\
+          ln ../Pseudos/$$fps $(label)/$$fps ;\
          done
 	@echo "    ==> Running SIESTA as $(MPI) $(SIESTA) -fdf XML.Write ../$(name).fdf "
 	@(cd $(label) ; $(MPI) $(SIESTA) -fdf XML.Write ../$(name).fdf 2>&1 > $(name).out ) \

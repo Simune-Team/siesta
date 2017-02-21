@@ -3,4 +3,4 @@
 #
 name=si64-soft
 #
-include ../test.psml.mk
+include ../test.mk

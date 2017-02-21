@@ -15,7 +15,7 @@ include $(ARCH_MAKE)
 VPATH=.
 #
 OBJFILES= m_psop.o m_kbgen.o m_localgen.o schrodinger.o arw.o \
-          psop_params.o  flib_spline.o m_interpol.o
+          psop_params.o 
 #
 INCFLAGS=
 #
@@ -31,7 +31,6 @@ clean:
 #
 # DO NOT DELETE THIS LINE - used by make depend
 m_kbgen.o: psop_params.o schrodinger.o
-m_localgen.o: flib_spline.o m_interpol.o
 m_psop.o: m_kbgen.o m_localgen.o psop_params.o
 schrodinger.o: psop_params.o
 schrodinger_m.o: schrodinger.o

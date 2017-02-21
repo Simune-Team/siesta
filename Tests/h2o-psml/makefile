@@ -1,6 +1,6 @@
 #
 # Single-test makefile
 #
-name=si64-soft-psml-full
+name=h2o-psml
 #
 include ../test.mk

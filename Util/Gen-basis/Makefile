@@ -64,7 +64,7 @@ DEPS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
           pxf.o dot.o  atom_options.o arw.o  m_spin_orbit_potentials.o \
           sys.o xml.o m_walltime.o read_xc_info.o  $(SYSOBJ) \
           xc.o bsc_xcmod.o  m_fft_gpfa.o m_cite.o reclat.o units.o \
-          semicore_info_froyen.o
+          semicore_info_froyen.o hamann.o
 GEN-BASIS_LOCAL_OBJS=gen-basis.o handlers.o
 OBJS_GEN-BASIS=$(DEPS_GEN-BASIS) $(GEN-BASIS_LOCAL_OBJS)
 
@@ -74,7 +74,8 @@ DEPS_IONCAT=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
 	  chemical.o m_spin.o m_spin_orbit_potentials.o reclat.o \
           basis_specs.o periodic_table.o pxf.o semicore_info_froyen.o \
           atom.o atmfuncs.o spher_harm.o interpolation.o old_atmfuncs.o arw.o \
-          sys.o xc.o bsc_xcmod.o xml.o m_walltime.o ldau_specs.o m_cite.o  units.o $(SYSOBJ)
+          sys.o xc.o bsc_xcmod.o xml.o m_walltime.o ldau_specs.o\
+          hamann.o m_cite.o  units.o $(SYSOBJ)
 IONCAT_LOCAL_OBJS=ioncat.o handlers.o
 OBJS_IONCAT=$(DEPS_IONCAT) $(IONCAT_LOCAL_OBJS)
 
@@ -151,7 +152,7 @@ atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: interpolation.o m_filter.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: sys.o
+atom.o: sys.o hamann.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: interpolation.o m_filter.o old_atmfuncs.o periodic_table.o precision.o
 atom.o: sys.o

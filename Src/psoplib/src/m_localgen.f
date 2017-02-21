@@ -3,7 +3,7 @@
 
       implicit none
 
-      public :: compute_vlocal_chlocal, chlocal_from_vlocal
+      public :: compute_vlocal_chlocal
 
       private
 
@@ -319,17 +319,11 @@ C     Scaling factor for local-pseudopot. charge
         chlocal(1)= -rhor1* zval/qtot
 
         !
-        ! Test the reversibility
-        !
-        call ch_of_vlocal(rofi, vlocal, drdi, s, a,
-     $                    nrval, alt_chlocal,
-     $                    quadratic=.true.)
-
-        open(44,file="ch_ch.charge",form="formatted")
-        write(44,"(a)") "# r  chlocal_Siesta, computed"
+        open(44,file="chlocal.charge",form="formatted")
+        write(44,"(a)") "# r  chlocal_Siesta (raw)"
         do ir=2,nrval 
            r=rofi(ir)  
-           write(44,"(3f16.10)") r, chlocal(ir), alt_chlocal(ir)
+           write(44,"(2f16.10)") r, chlocal(ir)
         enddo
         close(44)
 
@@ -558,16 +552,11 @@ C If third derivative fit
           endif
         enddo              
 
-        ! get simply chlocal with an alternative method
-        call ch_of_vlocal(rofi, vlocal, drdi, s, a,
-     $                    nrval, alt_chlocal,
-     $                    quadratic=.false.)
-
-        open(44,file="ch_ch.fit",form="formatted")
-        write(44,"(a)") "# r  chlocal_Siesta, computed"
+        open(44,file="chlocal.fit",form="formatted")
+        write(44,"(a)") "# r  chlocal_Siesta (raw)"
         do ir=2,nrval 
            r=rofi(ir)  
-           write(44,"(3f16.10)") r, chlocal(ir), alt_chlocal(ir)
+           write(44,"(2f16.10)") r, chlocal(ir)
         enddo
         close(44)
         
@@ -634,292 +623,6 @@ C If third derivative fit
         enddo 
 
         end subroutine vlocal_as_fit
-
-      subroutine chlocal_from_vlocal(rofi, vlocal, drdi, s, a, nrval,
-     $                               Zval, nchloc, chlocal,
-     $                               use_charge_cutoff,quadratic)
-
-      ! This is a general version, which does not use
-      ! the details of the fit for r < rgauss
-      ! It should work for an arbitrary vlocal
-
-        real(dp), intent(in)    :: rofi(:), drdi(:), s(:), vlocal(:)
-        real(dp), intent(in)    :: a, Zval
-        integer,  intent(in)    :: nrval
-        real(dp), intent(out)   :: chlocal(:)
-        integer,  intent(out)   :: nchloc
-        ! Option for compatibility
-        logical, intent(in)  :: use_charge_cutoff
-        logical, intent(in)  :: quadratic
-
-        ! local variables
-
-        real(dp), parameter  :: eps=1.0d-5
-        real(dp), parameter  :: eps_charge=1.0d-4 ! To match
-        real(dp) :: qtot, charge
-        integer  :: ir
-        real(dp), parameter :: pi = 3.14159265358979323846_dp
-
-        integer :: status
-
-C     Once we have the local potential we define the 'local-pseudopotential 
-C     charge' which help us to calculate the electrostatic interation 
-C     between the ions
-
-
-        call ch_of_vlocal(rofi, vlocal, drdi, s, a,
-     $                  nrval, chlocal, quadratic)
-
-!
-!       This is the classic way of computing an effective cutoff
-!       for chlocal, but it is only a heuristic based on when
-!       rVlocal equals 2*Zval. There are other criteria, including
-!       a specific test for smallness of 4pi*r*r*chlocal, as in
-!       the "vlocal from a localized charge" routine
-!
-        do ir = 1, nrval
-           if (abs(rofi(ir)*vlocal(ir)+2.0_dp*zval).lt.eps) exit   !exit loop
-        enddo
-        nchloc = ir
-        write(6,"(a,i4,f10.6)") "nchloc from rV+2Z: ",
-     $       nchloc, rofi(nchloc)
-
-        if (use_charge_cutoff) then
-         !     Alternative way to compute nchloc,
-         !     used by Siesta when method="charge"
-           do ir = nrval, 1, -1
-              charge =  4*pi*rofi(ir)**2 * chlocal(ir)
-              if (abs(charge).gt.eps_charge) exit
-           enddo
-           nchloc=ir+1
-           write(6,"(a,i4,f10.6)") "nchloc from 4*pi*r*r*chloc: ",
-     $          nchloc, rofi(nchloc)
-        endif
-
-        qtot = 0.0_dp
-        do ir = 1, nchloc-1
-           qtot = qtot - 4*pi*rofi(ir)**2 * chlocal(ir) * drdi(ir)
-        enddo
-        print *, "qtot in chlocal_from_vlocal up to nchloc: ", qtot
-
-        do ir=1,nchloc-1
-          chlocal(ir)=zval*chlocal(ir)/qtot
-        enddo  
-        do ir=nchloc,nrval
-          chlocal(ir)=0.0_dp
-        enddo 
-
-        end subroutine chlocal_from_vlocal
-
-      subroutine ch_of_vlocal(rofi, vlocal, drdi, s, a,
-     $                        nrval, chlocal, quadratic)
-
-      use flib_spline
-      use m_interpol, only: interpolate
-
-      ! This is a general version, which
-      ! should work for an arbitrary vlocal
-
-      ! It uses some help from the user, if she knows that the
-      ! behavior of chlocal is quadratic near the origin
-
-        real(dp), intent(in)    :: rofi(:), drdi(:), s(:), vlocal(:)
-        real(dp), intent(in)    :: a
-        integer,  intent(in)    :: nrval
-        real(dp), intent(out)   :: chlocal(:)
-        logical, intent(in)     :: quadratic
-
-        ! local variables
-
-        real(dp) :: pi, r
-        real(dp) :: rmax, delta, a1, b1, x2, splval
-        real(dp) :: delta_1, factor
-        integer  :: ir, npts, ninitial, nstep
-
-        real(dp), allocatable :: f(:), f2(:)
-        real(dp), allocatable :: ralt(:), drd1(:), s1(:),
-     $                           chlocal_ralt(:)
-        real(dp), allocatable :: chlocal_ralt_spl(:)
-        real(dp), allocatable :: g(:), g2der(:), g2der_spl(:), ch2(:)
-        real(dp), allocatable :: xaux(:)
-
-        integer :: status
-
-C     Once we have the local potential we define the 'local-pseudopotential 
-C     charge' which help us to calculate the electrostatic interation 
-C     between the ions
-!
-!     Poisson's eq.:
-!
-!           1/r* d2(rV)/dr2 = -8*pi*rho
-!
-!     Important note:
-!   
-!     Near the origin, rho goes like -2*V'/r - V'', so V' must be zero at
-!     the origin in order for V to be rho-representable!
-!
-!     If V(r) = V_0 + a*r^2 + b*r^3 + c*r^4  near the origin,
-!
-!     8*pi*rho(r) = -6a - 18b*r -20c*r^2 ...
-!
-!     We could check:
-!
-!     1. Whether V' is indeed zero near the origin
-!     2. Try to estimate a (and maybe b) to help with the extrapolation
-!        of rho near the origin.
-!
-
-        pi=acos(-1.0_dp)        
-
-        allocate (f(nrval), f2(nrval))
-        do ir = 1, nrval
-           f(ir) = rofi(ir)*vlocal(ir)
-           write(44,*) rofi(ir), f(ir)
-        enddo
-
-        ! re-sample the range to avoid very small differences
-!        Example for linear grid:
-!        rmax = 10.0_dp
-!        delta= 0.0002_dp
-!        npts = rmax/delta + 1
-!        npts = 1000
-!        ----
-!        Empirically it is better to use a logarithmic grid, not so
-!        fine as the standard atomic one, and with reduced range.
-!        
-!        I want Rmax=10 au,
-         rmax = 10.0_dp
-!        Initial delta_r
-         delta_1 = 2e-4_dp
-!        expansion factor: 1 to 500:  1.e-1 at the end of the range
-         factor = 500.0_dp
-
-!        (note exchanged a, b with respect to Siesta usage...)
-!        We have, approximately:  exp(bN) = factor
-!                                 ab = delta_1
-!                                 a*exp(bN) = Rmax
-!        so
-!
-         a1 = rmax / factor
-         b1 = delta_1 / a1
-         npts = log(factor) / b1
-
-        allocate(ralt(npts), drd1(npts), s1(npts),
-     $           chlocal_ralt(npts))
-        allocate(g(npts), g2der(npts), ch2(npts))
-        allocate(g2der_spl(npts), chlocal_ralt_spl(npts))
-
-
-        ! Two ways of resampling, basically equivalent
-        ! Splines, and polynomial interpolation
-
-        call generate_spline(rofi,f,nrval,f2,stat=status)
-        if (status/=0) call die("error in generate_spline")
-
-        open(55,file="r.rV.rVspl",form="formatted")
-        write(55,"(a)") "# ralt, r*Vlocal (interp), r*Vlocal (spline)"
-        do ir = 1, npts
-           ralt(ir) = a1*(exp(b1*(ir-1)) -1)
-           drd1(ir) = a1*b1*(exp(b1*(ir-1)))
-           s1(ir) = sqrt(drd1(ir))
-!           ralt(ir) = (ir-1)*delta   ! for linear grid
-           call interpolate(rofi(1:nrval),f,ralt(ir),g(ir),npoint=2)
-           call evaluate_spline(rofi,f,f2,nrval,ralt(ir),splval)
-           write(55,*) ralt(ir), g(ir), splval
-        enddo
-        close(55)
-
-        ! Two ways of computing the second derivative
-        call compute_2nd_der(ralt,b1,drd1,s1,g,npts,g2der,g2der_spl)
-
-        ! Should we trust the second derivative for the points
-        ! near r=0? No.
-
-        open(55,file="r.ch.ch",form="formatted")
-        write(55,"(a)") "# ralt, chlocal_ralt_fd, chlocal_ralt_spline"
-        do ir = 2, npts
-           chlocal_ralt(ir) = - g2der(ir) / (ralt(ir)*8*pi)
-           chlocal_ralt_spl(ir) = - g2der_spl(ir) / (ralt(ir)*8*pi)
-           write(55,*) ralt(ir), chlocal_ralt(ir), chlocal_ralt_spl(ir)
-        enddo
-        close(55)
-
-        ! Now we have chlocal on the alternate grid
-        ! re-sample back to the original logarithmic grid
-
-        call generate_spline(ralt(2:npts),chlocal_ralt_spl(2:npts),
-     $                       npts-1,ch2,stat=status)
-        if (status/=0) call die("error in generate_spline")
-
-        if (quadratic) then
-           allocate(xaux(npts))
-           xaux(:) = ralt(:)**2
-        endif
-
-        ! Experimentally, it is better to use the spline data
-        !
-        do ir = 1, nrval
-           if (rofi(ir) > rmax) then
-              chlocal(ir) = 0.0_dp
-           else if (rofi(ir) > ralt(5)) then
-              call evaluate_spline(ralt(2:npts),
-     $              chlocal_ralt_spl(2:npts),ch2,npts-1,
-     $              rofi(ir),chlocal(ir))
-           else
-              ! The region near r=0 is tricky
-              ! We have to use some heuristics
-              if (quadratic) then
-                 ninitial = 4
-                 nstep = 2
-                 x2 = rofi(ir)**2
-                 call interpolate(xaux(ninitial:npts:nstep),
-     $                         chlocal_ralt_spl(ninitial:npts:nstep),
-     $                         x2,chlocal(ir),npoint=2)
-              else
-                 ninitial = 5
-                 nstep = 3
-                 call interpolate(ralt(ninitial:npts:nstep),
-     $                            chlocal_ralt_spl(ninitial:npts:nstep),
-     $                            rofi(ir),chlocal(ir),npoint=3)
-              endif
-           endif
-        enddo
-
-        CONTAINS
-
-        subroutine compute_2nd_der(ralt,b1,drd1,s1,g,npts,
-     $                             g2der,g2der_spl)
-        real(dp), intent(in) :: ralt(:), drd1(:), s1(:), g(:)
-        real(dp), intent(in) :: b1
-        integer, intent(in)  :: npts
-        real(dp), intent(out):: g2der(:)
-        real(dp), intent(out):: g2der_spl(:)
-
-        integer :: status, ir
-        real(dp) :: d2g, d2u, g1, g2, g3, a2b4
-
-        call generate_spline(ralt,g,npts,g2der_spl,stat=status)
-        if (status/=0) call die("error in generate_spline")
-
-        ! This section for finite-difference derivative
-        ! (it seems to have problems near the origin)
-
-        a2b4 = 0.25_dp * b1*b1  ! note exchange a-b with respect to Siesta
-
-        do ir = 2, npts-1
-           g1=g(ir-1)/s1(ir-1)
-           g2=g(ir)/s1(ir) 
-           g3=g(ir+1)/s1(ir+1)  
-               
-           d2g=g1+g3-2.0_dp*g2
-           d2u=d2g-a2b4*g2
-           g2der(ir) = d2u / (drd1(ir)*s1(ir))
-        enddo
-        g2der(npts) = 0.0_dp
-
-        end subroutine compute_2nd_der
-
-        end subroutine ch_of_vlocal
 
 !--------------------------------------------------------------
 !
