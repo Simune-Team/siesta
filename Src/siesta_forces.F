@@ -44,6 +44,8 @@
       use sparse_matrices, only: H, Hold, Dold, Dscf
       use m_save_density_matrix, only: save_density_matrix
       use m_compute_energies, only: compute_energies
+      use m_check_walltime
+      
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
@@ -56,6 +58,8 @@
       real(dp) :: dmax      ! Max. change in DM or H elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
+
+      logical               :: time_is_up
 
       external :: die, message
 
@@ -190,6 +194,14 @@
 
         if (cml_p) call cmlEndStep(mainXML)
 
+        ! Check whether we are short of time to continue
+        call check_walltime(time_is_up)
+        if (time_is_up) then
+           ! Save DM/H if we were not saving it...
+           ! Do any other bookeeping not done by "die"
+           call die("Time is up at end of SCF step. ")
+        endif
+        
         if (last_step) EXIT
 
       ENDDO

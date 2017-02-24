@@ -59,7 +59,8 @@
 #ifdef DEBUG_XC
       USE siestaXC, only: setDebugOutputUnit
 #endif /* DEBUG_XC */
-      USE m_timer, only: timer_report  ! Sets options for report of CPU times
+      USE m_timer, only: timer_report ! Sets options for report of CPU times
+      use m_check_walltime
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -78,6 +79,7 @@
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
+      integer :: walltime_slack
 
       external :: read_options
       
@@ -226,6 +228,13 @@
       if (struct_only) then
          call bye('End of structure processing')
       endif
+
+!     Walltime control (numbers in seconds)
+      walltime_max = fdf_get("max-walltime",huge(1))
+      ! Allow a minute per 100 atoms, with minimum slack 10 seconds
+      walltime_slack = fdf_get("max-walltime-slack",
+     $      max(10,int(1+0.6*na_u)))
+      walltime_warning = walltime_max - walltime_slack
       
 !     End of Initial Structure Processing
       if (Node.eq.0) then

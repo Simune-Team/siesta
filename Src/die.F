@@ -38,7 +38,9 @@
 #endif
 
       character(len=*), intent(in)  :: str
-
+      
+      external ::  io_assign, io_close
+      integer  ::  lun
 #ifdef MPI
       integer MPIerror
 #endif
@@ -54,10 +56,11 @@
       write(0,'(a,i4)') 'Stopping Program from Node: ', Node
 !!                                       endif
       if (Node .eq. 0) then
-         open(77,file="MESSAGES",status="unknown",
+         call io_assign( lun )
+         open(lun,file="MESSAGES",status="unknown",
      $        position="append",action="write")
-         write(77,"(a)") 'FATAL: ' // trim(str)
-         close(77)
+         write(lun,"(a)") 'FATAL: ' // trim(str)
+         call io_close(lun)
          call pxfflush(6)
          call pxfflush(0)
          If (cml_p) Then
@@ -77,17 +80,22 @@
 
       use parallel, only : Node
 
-      character(len=*), intent(in)  :: level
       ! One of INFO, WARNING, FATAL
+      character(len=*), intent(in)  :: level
+
       character(len=*), intent(in)  :: str
 
+      external ::  io_assign, io_close
+      integer  ::  lun
+      
       if (Node .eq. 0) then
          write(6,'(a)') trim(str)
          write(0,'(a)') trim(str)
-         open(77,file="MESSAGES",status="unknown",
+         call io_assign(lun)
+         open(lun,file="MESSAGES",status="unknown",
      $        position="append",action="write")
-         write(77,"(a)") trim(level) // ": " // trim(str)
-         close(77)
+         write(lun,"(a)") trim(level) // ": " // trim(str)
+         call io_close(lun)
          call pxfflush(6)
          call pxfflush(0)
       endif

@@ -54,6 +54,8 @@
       use siesta_master,   only: coordsFromMaster ! Get coords from master prog
       use m_target_stress, only: subtract_target_stress
 
+      use m_check_walltime
+      
       implicit none
 
       integer, intent(in)   :: istep
@@ -70,6 +72,8 @@
       logical               :: foundxv  ! dummy for call to ioxv
       logical               :: foundzm  ! dummy for call to iozm
 
+      logical               :: time_is_up
+      
       real(dp), external :: volcel
 
 
@@ -366,6 +370,13 @@
       call timer( 'IterGeom', 2 )
 ! End of one MD step - flush stdout
       if (ionode) call pxfflush(6)
+
+        ! Check whether we are short of time to continue
+        call check_walltime(time_is_up)
+        if (time_is_up) then
+           ! Do any other bookeeping not done by "die"
+           call die("Time is up at end of geometry step. ")
+        endif
 
 !--------------------------------------------------------------------------- END
 
