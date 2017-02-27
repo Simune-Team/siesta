@@ -1636,6 +1636,8 @@ subroutine read_options( na, ns, nspin )
   endif
   change_kgrid_in_md           = fdf_get('ChangeKgridInMD', .false.)
   ParallelOverK                = fdf_get('Diag.ParallelOverK', .false.)
+  ! If non-collinear spin, it *MUST* be false.
+  if ( nspin > 2 ) ParallelOverK = .false.
   RelaxCellOnly                = fdf_get('MD.RelaxCellOnly', .false.)
   RemoveIntraMolecularPressure = fdf_get( &
        'MD.RemoveIntraMolecularPressure', .false.)

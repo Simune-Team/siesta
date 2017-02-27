@@ -886,6 +886,7 @@ MODULE fdf
                 call setmorphol(1, 'b', pline)
                 call setmorphol(2, 'l', pline)
                 call fdf_addtoken(line, pline)
+                nullify(pline) ! it is stored in line
 
                 nlstart = file_in%nlines
                 call fdf_read(inc_file, label)
@@ -902,6 +903,7 @@ MODULE fdf
                 call setmorphol(1, 'e', pline)
                 call setmorphol(2, 'l', pline)
                 call fdf_addtoken(line, pline)
+                nullify(pline) ! it is stored in line
 
 !               Dump included file to fileout
                 if (dump) call fdf_dump(label)
@@ -920,6 +922,7 @@ MODULE fdf
               call setmorphol(1, 'b', pline)
               call setmorphol(2, 'l', pline)
               call fdf_addtoken(line, pline)
+              nullify(pline) ! it is stored in line
               nlstart = file_in%nlines
 
 !           Bad format in %block directive
@@ -950,6 +953,7 @@ MODULE fdf
               call setmorphol(1, 'e', pline)
               call setmorphol(2, 'l', pline)
               call fdf_addtoken(line, pline)
+              nullify(pline) ! it is stored in line
               label = ' '
             endif
 
@@ -965,6 +969,9 @@ MODULE fdf
               call fdf_read(inc_file)
             endif
 
+            ! Clean pline (we simply insert the next file)
+            call destroy(pline)
+            
 !         Label1 Label2 ... < Filename directive
           elseif (ind_less .ne. -1) then
 !           Check if '<' is in a valid position
@@ -1010,6 +1017,7 @@ MODULE fdf
           else
             if (label .eq. ' ') call setmorphol(1, 'l', pline)
             call fdf_addtoken(line, pline)
+            nullify(pline) ! it is stored in line
           endif
         else
 !         Destroy parsed_line structure if no elements

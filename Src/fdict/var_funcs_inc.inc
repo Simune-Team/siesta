@@ -8,7 +8,7 @@ subroutine ROUTINE(assign_set,VAR)(this,rhs,dealloc)
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
   type :: pt
-    VAR_TYPE, pointer DIMS :: p
+    VAR_TYPE, pointer DIMS :: p => null()
   end type
   type(pt) :: p
   ! ASSIGNMENT in fortran is per default destructive
@@ -22,11 +22,12 @@ subroutine ROUTINE(assign_set,VAR)(this,rhs,dealloc)
   ! With pointer transfer we need to deallocate
   ! else bounds might change...
   this%t = STR(VAR)
-  nullify(p%p)
   ALLOC(p%p,rhs) ! allocate space
   p%p = rhs ! copy data over
   allocate(this%enc(size(transfer(p, local_enc_type)))) ! allocate encoding
   this%enc = transfer(p, local_enc_type) ! transfer pointer type to the encoding
+  ! We already have shipped it
+  nullify(p%p)
 end subroutine ROUTINE(assign_set,VAR)
 
 subroutine ROUTINE(assign_get,VAR)(lhs,this,success)
@@ -35,10 +36,9 @@ subroutine ROUTINE(assign_get,VAR)(lhs,this,success)
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
-    VAR_TYPE, pointer DIMS :: p
+    VAR_TYPE, pointer DIMS :: p => null()
   end type
   type(pt) :: p
-  nullify(p%p)
   lsuccess = this%t == STR(VAR)
 #if DIM > 0
   if (lsuccess) then
@@ -64,7 +64,7 @@ subroutine ROUTINE(associate_get,VAR)(lhs,this,dealloc,success)
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
   type :: pt
-    VAR_TYPE, pointer DIMS :: p
+    VAR_TYPE, pointer DIMS :: p => null()
   end type
   type(pt) :: p
   lsuccess = this%t == STR(VAR)
@@ -78,7 +78,6 @@ subroutine ROUTINE(associate_get,VAR)(lhs,this,dealloc,success)
      nullify(lhs)
   end if
   if (.not. lsuccess ) return
-  nullify(p%p)
   p = transfer(this%enc,p) ! retrieve pointer encoding
   lhs => p%p
 end subroutine ROUTINE(associate_get,VAR)
@@ -96,7 +95,7 @@ subroutine ROUTINE(associate_set,VAR)(this,rhs,dealloc)
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
   type :: pt
-    VAR_TYPE, pointer DIMS :: p
+    VAR_TYPE, pointer DIMS :: p => null()
   end type
   type(pt) :: p
   ! ASSOCIATION in fortran is per default non-destructive
@@ -118,12 +117,11 @@ pure function ROUTINE(associatd_l,VAR)(lhs,this) result(ret)
   type(var), intent(in) :: this
   logical :: ret
   type :: pt
-    VAR_TYPE, pointer DIMS :: p
+    VAR_TYPE, pointer DIMS :: p => null()
   end type
   type(pt) :: p
   ret = this%t == STR(VAR)
   if (ret) then	
-     nullify(p%p)
      p = transfer(this%enc,p)
      ret = associated(lhs,p%p)
   endif
@@ -133,12 +131,11 @@ pure function ROUTINE(associatd_r,VAR)(this,rhs) result(ret)
   VAR_TYPE, pointer DIMS :: rhs
   logical :: ret
   type :: pt
-    VAR_TYPE, pointer DIMS :: p
+    VAR_TYPE, pointer DIMS :: p => null()
   end type
   type(pt) :: p
   ret = this%t == STR(VAR)
   if (ret) then	
-     nullify(p%p)
      p = transfer(this%enc,p)
      ret = associated(p%p,rhs)
   endif

@@ -229,7 +229,7 @@ contains
        ! Sort the region according to the device
        ! (this ensures that the Gamma function
        !  is laid out according to the device region)
-       call rgn_copy(Elecs(iEl)%o_inD,r_tmp)
+       call rgn_copy(Elecs(iEl)%o_inD, r_tmp)
        call rgn_sort(r_tmp)
 
        ! Loop on the device region and copy

@@ -232,7 +232,7 @@ contains
     end if
 
     ! Print memory usage (after open_GF)
-    call print_memory
+    call print_memory()
     
     do ils = 1 , TSHS%nspin
 
@@ -256,13 +256,13 @@ contains
        ! only need to re-read them for 
        ! following spin calculations
        if ( ils > 1 ) then
-          call prep_next_HS(ispin,Volt)
+          call prep_next_HS(ispin, Volt)
           do iEl = 1 , N_Elec
              ! Re-read in the electrode 
              ! Hamiltonian and build the H/S
              ! for this spin.
              if ( Elecs(iEl)%out_of_core ) cycle
-             call init_Electrode_HS(Elecs(iEl),ispin)
+             call init_Electrode_HS(Elecs(iEl), ispin)
           end do
        end if
 
@@ -421,7 +421,7 @@ contains
 
     end subroutine print_memory
 
-    subroutine init_Electrode_HS(El,spin_idx)
+    subroutine init_Electrode_HS(El, spin_idx)
       use class_Sparsity
       use class_dSpData1D
       use class_dSpData2D
@@ -434,7 +434,7 @@ contains
 
       ! Read-in and create the corresponding transfer-matrices
       call delete(El) ! ensure clean electrode
-      call read_Elec(El,Bcast=.true., IO = .false., ispin = spin_idx )
+      call read_Elec(El, Bcast=.true., IO = .false., ispin = spin_idx )
       
       if ( .not. associated(El%isc_off) ) then
          call die('An electrode file needs to be a non-Gamma calculation. &
