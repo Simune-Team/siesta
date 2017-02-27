@@ -1574,6 +1574,9 @@ subroutine read_options( na, ns, nspin )
   save_initial_charge_density = fdf_get(    &
        'SaveInitialChargeDensity' , .false.)
 
+  analyze_charge_density_only = fdf_get(    &
+       'AnalyzeChargeDensityOnly' , .false.)
+
   new_diagk              = fdf_get( 'UseNewDiagk', .false. )
   writb                  = fdf_get( 'WriteBands', outlng )
   writbk                 = fdf_get( 'WriteKbands', outlng )

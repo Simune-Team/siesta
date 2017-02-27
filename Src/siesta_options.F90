@@ -124,6 +124,7 @@ MODULE siesta_options
   logical :: read_deformation_charge_cdf   ! Read deformation charge density from file in netCDF form?
 !
   logical :: save_initial_charge_density ! Just save the initial charge density used
+  logical :: analyze_charge_density_only ! Exit dhscf after processing charge
 
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
