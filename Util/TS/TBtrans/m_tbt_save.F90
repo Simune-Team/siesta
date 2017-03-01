@@ -116,9 +116,6 @@ contains
     ! The file-name to be opened
     character(len=*), intent(in) :: fname
     type(hNCDF), intent(inout) :: ncdf
-#ifdef MPI
-    integer :: MPIerror
-#endif
 
 #ifdef MPI
     ! Open the netcdf file
@@ -139,9 +136,6 @@ contains
   subroutine init_save_options()
     use m_verbosity, only: verbosity
     use parallel, only : IONode
-#ifdef NCDF_4
-    use parallel, only : Node
-#endif
 #ifdef NCDF_PARALLEL
     use parallel, only : Nodes
 #endif
@@ -294,7 +288,6 @@ contains
 
   subroutine cdf_precision_cmplx(name,default,prec)
 
-    use parallel, only : IONode
     use nf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
     use nf_ncdf, only : NF90_FLOAT_COMPLEX, NF90_DOUBLE_COMPLEX
 
@@ -796,8 +789,6 @@ contains
 
   subroutine init_cdf_E_check(fname,E,NE)
 
-    use parallel, only : Node
-
     use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast
@@ -960,9 +951,6 @@ contains
   subroutine cdf_save_E(ncdf,nE)
     use parallel, only : Node, Nodes
     use nf_ncdf, ncdf_parallel => parallel
-#ifdef MPI
-    use mpi_siesta, only : MPI_COMM_WORLD
-#endif
 
     type(hNCDF), intent(inout) :: ncdf
     type(tNodeE), intent(in) :: nE

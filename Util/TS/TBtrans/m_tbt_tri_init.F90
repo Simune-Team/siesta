@@ -44,7 +44,6 @@ contains
     use m_ts_tri_common, only: ts_pivot_tri_sort_El
     use m_ts_rgn2trimat
     use m_ts_electype
-    use m_ts_method, only: ts_A_method
     use m_ts_method, only: TS_BTD_A_COLUMN, TS_BTD_A_PROPAGATION
 
 #ifdef MPI
@@ -63,10 +62,6 @@ contains
 
     type(Sparsity) :: tmpSp1, tmpSp2
     integer :: i, iEl
-
-#ifdef MPI
-    integer :: MPIerror
-#endif
 
     call timer('tri-init-elec',1)
 

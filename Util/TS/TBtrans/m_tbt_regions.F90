@@ -109,7 +109,7 @@ contains
     ! The supercell information
     integer, intent(in) :: nsc, isc_off(3,nsc)
 
-    integer :: iEl, na
+    integer :: iEl
 
     ! A temporary sparsity pattern
     type(Sparsity) :: sp_tmp
@@ -117,7 +117,7 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     character(len=50) :: g, csort
-    integer :: i, ia, ia1, ia2, no_u
+    integer :: i, ia1, ia2, no_u
     type(tRgn) :: r_tmp, r_tmp2, r_tmp3, r_Els, priority
     real(dp) :: tmp
 
