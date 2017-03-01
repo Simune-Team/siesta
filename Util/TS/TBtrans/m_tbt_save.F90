@@ -107,7 +107,7 @@ contains
   ! Opens the save file accordingly to the setup parameters
   subroutine open_cdf_save(fname,ncdf)
 
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
     
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD
@@ -214,7 +214,7 @@ contains
 
     use parallel, only: IONode
 #ifdef NCDF_4
-    use nf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
+    use netcdf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
 #endif
 
     character(len=*), parameter :: f1 ='(''tbt: '',a,t53,''='',tr4,l1)'
@@ -259,7 +259,7 @@ contains
 
     use fdf, only : fdf_get, leqi
     use parallel, only : IONode
-    use nf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
+    use netcdf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
 
     character(len=*), intent(in) :: name, default
     integer, intent(out) :: prec
@@ -295,8 +295,8 @@ contains
   subroutine cdf_precision_cmplx(name,default,prec)
 
     use parallel, only : IONode
-    use nf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
-    use nf_ncdf, only : NF90_FLOAT_COMPLEX, NF90_DOUBLE_COMPLEX
+    use netcdf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
+    use netcdf_ncdf, only : NF90_FLOAT_COMPLEX, NF90_DOUBLE_COMPLEX
 
     character(len=*), intent(in) :: name, default
     logical, intent(out) :: prec
@@ -326,7 +326,7 @@ contains
     use m_os, only : file_exist
 
     use dictionary, assign_int => assign
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
     use m_ncdf_io, only : cdf_w_Sp
     use m_timestamp, only : datestring
 #ifdef MPI
@@ -798,7 +798,7 @@ contains
 
     use parallel, only : Node
 
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast
     use mpi_siesta, only : MPI_Integer
@@ -879,7 +879,7 @@ contains
   subroutine cdf_get_kpt_idx(fname,bkpt,ikpt)
 
     use parallel, only : Node
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast
     use mpi_siesta, only : MPI_Integer
@@ -959,7 +959,7 @@ contains
 
   subroutine cdf_save_E(ncdf,nE)
     use parallel, only : Node, Nodes
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD
 #endif
@@ -1006,7 +1006,7 @@ contains
     use parallel, only : Node, Nodes
 
     use dictionary
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Gather
     use mpi_siesta, only : MPI_Send, MPI_Recv, MPI_DOUBLE_COMPLEX
@@ -1195,7 +1195,7 @@ contains
     use parallel, only : Node, Nodes
 
     use dictionary
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Double_Precision
 #endif
@@ -1287,7 +1287,7 @@ contains
     use mpi_siesta, only : Mpi_double_precision
 #endif
 
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 
     type(hNCDF), intent(inout) :: grp
     character(len=*), intent(in) :: var
@@ -1346,7 +1346,7 @@ contains
     use class_dSpData1D
 
     use dictionary
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD
     use mpi_siesta, only : MPI_Send, MPI_Recv
@@ -1418,7 +1418,7 @@ contains
 
     use variable
     use dictionary
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 
     use m_interpolate, only : crt_pivot
 

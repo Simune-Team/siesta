@@ -82,7 +82,7 @@
 #endif
 
 #ifdef NCDF_4
-      use nf_ncdf
+      use netcdf_ncdf
 #endif
 #ifdef _OPENMP
       use omp_lib, only : omp_get_num_threads, omp_get_schedule

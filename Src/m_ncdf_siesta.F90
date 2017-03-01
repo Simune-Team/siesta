@@ -12,7 +12,7 @@ module m_ncdf_siesta
   use siesta_options, only: cdf_comp_lvl, cdf_w_parallel
   use variable
   use dictionary
-  use nf_ncdf, ncdf_parallel => parallel
+  use netcdf_ncdf, ncdf_parallel => parallel
   use m_ncdf_io
 #endif
 #ifdef MPI
