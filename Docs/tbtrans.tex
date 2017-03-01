@@ -220,7 +220,7 @@ Highly encouraged libraries
   library\footnote{Remark that a NetCDF-3 compliant library is not
       sufficient for \tbtrans.}. This library is required for a
   multitude of advanced analysis methods such as orbital resolved DOS,
-  bond-currents, $\delta \mathbf H$, eigenstate projections.
+  bond-currents, $\delta \mathbf H$, eigenstate projections, etc.
 
   To use this library add these variables to your \shell{arch.make}
   file
@@ -285,6 +285,8 @@ enhancement for large matrices. To use these routines add this to your
 \begin{shellexample}
   FPPFLAGS += -DUSE_GEMM3M
 \end{shellexample}
+Note that OpenMP threaded BLAS libraries are known to fail with the
+GEMM3M kernels. 
 
 
 \subsubsection{Intel MKL libraries}
