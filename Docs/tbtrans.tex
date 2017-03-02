@@ -2100,9 +2100,11 @@ of \sisl, see Sec.~\ref{sec:physical}.
   calculated. This block will let the user decide which to calculate
   and which to not.
 
-  In the following L/R corresponds to
+  In the following \fdf*{Left}(L)/\fdf*{Right}(R) corresponds to
   $T=\Tr[\mathbf G\boldsymbol\Gamma_L\mathbf
-  G^\dagger\boldsymbol\Gamma_R]$.
+  G^\dagger\boldsymbol\Gamma_R]$
+  where \fdf*{Left}, \fdf*{Right} are found in the \fdf{TBT!Elecs}
+  block.
 
   \begin{fdfoptions}
 
@@ -2142,26 +2144,26 @@ of \sisl, see Sec.~\ref{sec:physical}.
   An example input for projection two molecules could be:
   \begin{fdfexample}
  %block TBT.Projs.T
-   from L.M-L.HOMO to
-     R.M-R
+   from Left.M-L.HOMO to
+     Right.M-R
      Right
    end
-   from L.M-L.LUMO to
-     R.M-R.LUMO
+   from Left.M-L.LUMO to
+     Right.M-R.LUMO
    end
  %endblock
   \end{fdfexample}
   which will be equivalent to the more verbose
   \begin{fdfexample}
  %block TBT.Projs.T
-   from L.M-L.HOMO to
-     R.M-R.HOMO
-     R.M-R.LUMO
-     R.M-R.H-plus-L
+   from Left.M-L.HOMO to
+     Right.M-R.HOMO
+     Right.M-R.LUMO
+     Right.M-R.H-plus-L
      Right
    end
-   from L.M-L.LUMO to
-     R.M-R.LUMO
+   from Left.M-L.LUMO to
+     Right.M-R.LUMO
    end
  %endblock
   \end{fdfexample}

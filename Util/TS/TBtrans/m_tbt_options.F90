@@ -245,7 +245,7 @@ contains
     ! * LOCAL variables *
     ! *******************
     integer :: i, j
-    real(dp) :: tmp33(3,3), rtmp
+    real(dp) :: rtmp
     logical :: err, bool
     character(len=200) :: chars
 
