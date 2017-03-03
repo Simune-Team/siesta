@@ -39,7 +39,7 @@
       use parallel, only: IOnode
       use files,       only : label_length
       use m_energies
-      use m_steps
+      use m_steps, only: final
       use m_ntm
       use m_spin,         only: nspin
       use m_dipol
