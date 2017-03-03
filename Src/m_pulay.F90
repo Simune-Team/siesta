@@ -8,7 +8,8 @@
 module m_pulay
 
   use precision, only: dp
-  use m_spin,    only: h_spin_dim, SpOrb
+!  use m_spin,    only: h_spin_dim, SpOrb
+  use m_spin,    only: spin 
   implicit none
 
   private
@@ -48,7 +49,7 @@ CONTAINS
     if (maxsav .le. 0) then
        ! No need for auxiliary arrays
     else
-       nauxpul = sum(numh(1:no_l)) * h_spin_dim * maxsav
+       nauxpul = sum(numh(1:no_l)) * spin%H * maxsav
        !
        call re_alloc(auxpul,1,nauxpul,1,2,name="auxpul",        &
             routine="pulay")
@@ -371,7 +372,7 @@ CONTAINS
        b(i,i) = 0.0_dp
        ssum=0.0_dp
 ! CC RC Added for on-site SO
-       if ( .not. SpOrb ) then
+       if ( .not. spin%SO ) then
         do is=1,nspin
          do ii=1,no_l
           do jj=1,numd(ii)
@@ -380,7 +381,7 @@ CONTAINS
           enddo
          enddo
         enddo
-       elseif ( SpOrb ) then
+       elseif ( spin%SO ) then
         do ii=1,no_l
          do jj=1,numd(ii)
           ind = listdptr(ii) + jj
@@ -414,7 +415,7 @@ CONTAINS
 
           b(i,j)=0.0_dp
           ssum=0.0_dp
-          if ( .not. SpOrb ) then
+          if ( .not. spin%SO ) then
            do is=1,nspin
             do ii=1,no_l
              do jj=1,numd(ii)
@@ -423,7 +424,7 @@ CONTAINS
              enddo
             enddo
            enddo
-          elseif ( SpOrb ) then
+          elseif ( spin%SO ) then
            do ii=1,no_l
             do jj=1,numd(ii)
              ind = listdptr(ii) + jj

@@ -50,6 +50,7 @@ module m_new_dm
 
 ! CC RC  Added for the offSpOrb
   use m_spin, only: spin
+  use sparse_matrices, only: listht
 ! CC RC  Added for the offSpOrb
 
   implicit none
@@ -1030,6 +1031,9 @@ contains
 
       integer :: ni, nn, nr, na
       integer :: i, io, jo, gio, ia, ind, is
+! CC RC
+      integer :: indt ! indt_tmp
+! CC RC
       real(dp) :: cosph, sinph, costh, sinth
       real(dp) :: qio, rate, spin_at, spio
 
@@ -1240,6 +1244,9 @@ contains
                 spio = rate * min( qio, 1._dp - qio )
                 do i = 1 , ncol(io)
                    ind = ptr(io) + i
+! CC RC
+                   indt= listht(ind)
+!                   indt_tmp = ptr(i)+io
                    jo = col(ind)
                    
                    ! Immediately skip if not diagonal term..
@@ -1264,8 +1271,10 @@ contains
                         DM(ind,4) = -spio * sinth * sinph 
                         DM(ind,5) = 0.0_dp
                         DM(ind,6) = 0.0_dp
-                        DM(ind,7)= DM(ind,3)
-                        DM(ind,8)=-DM(ind,4)
+!                        DM(ind,7)= DM(ind,3)
+!                        DM(ind,8)=-DM(ind,4)
+                        DM(indt,7)= DM(ind,3)
+                        DM(indt,8)=-DM(ind,4)
                       elseif ( spin%DM == 8 .and. .not.spin%SO_off ) then
                         DM(ind,4) = spio * sinth * sinph 
                         DM(ind,5) = 0.0_dp

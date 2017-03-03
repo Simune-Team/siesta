@@ -1,6 +1,15 @@
 *.mod
 *.save
+*.save.F90
+*.save.F
+*.new
+*.old
 *.~
 *.o
 Obj/*
 log*
+*604
+*514
+*.Off.F
+Src/SiestaXC/*.604
+Src/SiestaXC/*old_scheme.f

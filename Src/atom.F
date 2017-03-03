@@ -1971,8 +1971,7 @@ C Normalize the new function
         enddo 
         dnrm=sqrt(dnrm)
 CC
-CC        write(6,'(a,f12.6)') ' dnrm1=', dnrm
-
+        write(6,'(a,2f12.6)') ' dnrm/eps = ', dnrm, eps
         if (dnrm.lt.eps) then 
           do ir=1,nrwf
             rphi2(ir,ikb,j_SO)=0.0d0
@@ -1998,6 +1997,10 @@ C     .            ' rphi2/dnrm=', rphi2(ir,ikb,j_SO)
 
 CC
 CC        write(99,'(a,i4)') ' KBproj: nrwf=', nrwf
+          write(99,'(a)') ' ' 
+          write(99,'(a)') ' ' 
+          write(99,'(a)') '# ' 
+          write(99,'(2(a,i23))') ' ikb = ', ikb, ' j_SO = ', j_SO 
 
         do 10 ir=2,nrwf
           r=rofi(ir)
@@ -2008,8 +2011,9 @@ CC        write(99,'(a,i4)') ' KBproj: nrwf=', nrwf
           avgv=avgv+vphi*phi*drdi(ir)
 
 CC
-CC          write(99,'(8f12.6)') 
-CC     &    r, phi,vps(ir), vlocal(ir),drdi(ir),dnrm,avgv
+
+          write(99,'(8f12.6)') 
+     &    r, phi,vps(ir), vlocal(ir),drdi(ir),dnrm,avgv
 
 
 C          write(6,'(3(a,i4),7(a,f12.6))') ' ikb=', ikb, ' j_LS=', j_SO, 
@@ -2019,9 +2023,9 @@ C     .         ' avgv=', avgv, ' drdi=', drdi(ir)
  
   10    continue
 CC
-CC       write(6,'(2(a,i4),7(a,f12.6))')
-CC     &          ' ikb=', ikb, ' j_LS=', j_SO,
-CC     &          ' dnrm=', dnrm, ' avgv=', avgv
+C       write(6,'(2(a,i4),7(a,f12.6))')
+C     &          ' ikb=', ikb, ' j_LS=', j_SO,
+C     &          ' dnrm=', dnrm, ' avgv=', avgv
 
         vii(ikb,j_SO)=avgv
 
@@ -2034,12 +2038,12 @@ C     .              ' 1.0d0/(sqrt(dnrm)+1.0d-20)= ',
 C     .                1.0d0/(sqrt(dnrm)+1.0d-20), 
 C     .                ' dknrm= ', dknrm
 
-C        write(6,*) ' KBproj:      avgv= ', avgv 
-C        write(6,*) '              dnrm= ', dnrm
-C        write(6,*) '        sqrt(dnrm)= ', sqrt(dnrm)
-C        write(6,*) '             dknrm= ', dknrm 
-C        write(6,*) '            dkbcos= ', dknrm*avgv
-C        write(6,*) '               ekb= ', ekb
+        write(6,*) ' KBproj:      avgv= ', avgv 
+        write(6,*) '              dnrm= ', dnrm
+        write(6,*) '        sqrt(dnrm)= ', sqrt(dnrm)
+        write(6,*) '             dknrm= ', dknrm 
+        write(6,*) '            dkbcos= ', dknrm*avgv
+        write(6,*) '               ekb= ', ekb
 
 
 C
@@ -3448,6 +3452,8 @@ C        write(6,'(a,i3)') ' comKB: indx=', indx
      .    nint(Rc/deltmax)+2
         endif
 
+        write(6,*) ' rc/ntbmax/delta=', rc,ntbmax,delt
+
 C        table_SO(1,-indx,j_SO,is)=delt ! radial grid for kb's
 C        table_SO(2,-indx,j_SO,is)=ekb  ! kb energies
 CC
@@ -3464,12 +3470,12 @@ C        write(6,'(2(a,i3),2(a,f10.6))') ' comKB: i=',indx,' j_SO=',j_SO,
 C     .        ' delta=',table_SO(1,ikb,l,j_SO,is),
 C     .        '   ekb=',table_SO(2,ikb,l,j_SO,is)
 
-C        if (debug_kb_generation) then
+        if (debug_kb_generation) then
           nrckb = nint(log(rc/b+1.0d0)/a)+1
           write(filename,"(a,i1,a,i1)")
      .          trim(global_label) // "-KBProj.", indx, '_', j_SO
           call file_out(nrckb,rofi,proj,filename)
-C        endif
+        endif
 !
 
         do itb=1,ntbmax-1
@@ -3557,12 +3563,12 @@ C
         table(1,-indx,is)=delt
         table(2,-indx,is)=ekb
 
-C        if (debug_kb_generation) then
+        if (debug_kb_generation) then
           nrckb = nint(log(rc/b+1.0d0)/a)+1
           write(filename,"(a,i1)")
      .          trim(global_label) // "-KBProj.", indx
           call file_out(nrckb,rofi,proj,filename)
-C        endif
+        endif
 !
         do itb=1,ntbmax-1
           r=delt*(itb-1)

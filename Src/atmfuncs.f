@@ -384,7 +384,8 @@ C  Distances in Bohr
       else if (io.lt.0) then
          if (-io.gt.spp%nprojs)  call die("rcut: No such projector")
          pp => spp%pjnl(spp%pj_index(-io))
-         rcut = pp%cutoff
+         rcut = pp%cutoff_SO
+!         stop'atmfuncs: Check the rcut_SO for non off-site'
       else
          rcut = spp%vna%cutoff
       endif

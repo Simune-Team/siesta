@@ -18,6 +18,11 @@
       use parallel,      only : Node, Nodes, BlockSize
       use parallelsubs,  only : LocalToGlobalOrb
       use m_fermid,      only : fermid, stepf
+
+! CC RC  Added for the offSpOrb
+      use m_spin, only: spin
+! CC RC  Added for the offSpOrb
+
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -201,18 +206,43 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+
       
-            Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
-            Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
-            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
-     .                            dcmplx(H(ind,1), H(ind,5)) * kphs
-            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
-     .                            dcmplx(H(ind,2), H(ind,6)) * kphs
-            Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
-            Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                        + dcmplx(H(ind,7), + H(ind,8)) * kphs
+            if ( spin%SO .and. .not.spin%SO_off ) then
+              kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+              Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
+              Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
+              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
+     .                              dcmplx(H(ind,1), H(ind,5)) * kphs
+              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
+     .                              dcmplx(H(ind,2), H(ind,6)) * kphs
+              Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
+     .                          + dcmplx(H(ind,3), - H(ind,4)) * kphs
+              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
+     .                          + dcmplx(H(ind,7), + H(ind,8)) * kphs
+            else
+              kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+!              Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)*kphs
+!              Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)*kphs
+!              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) +
+!     .                            dcmplx(H(ind,1),-H(ind,5))*kphs
+!              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) +
+!     .                            dcmplx(H(ind,2),-H(ind,6))*kphs
+!              Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo) +
+!     .                            dcmplx(H(ind,7),-H(ind,8))*kphs
+!              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
+!     .                            dcmplx(H(ind,3),-H(ind,4))*kphs
+              Saux(1,iuo,1,juo) = Saux(1,iuo,1,juo) + S(ind)*kphs
+              Saux(2,iuo,2,juo) = Saux(2,iuo,2,juo) + S(ind)*kphs
+              Haux(1,iuo,1,juo) = Haux(1,iuo,1,juo) +
+     .                            dcmplx(H(ind,1), H(ind,5))*kphs
+              Haux(2,iuo,2,juo) = Haux(2,iuo,2,juo) +
+     .                            dcmplx(H(ind,2), H(ind,6))*kphs
+              Haux(1,iuo,2,juo) = Haux(1,iuo,2,juo) +
+     .                            dcmplx(H(ind,3), H(ind,4))*kphs
+              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
+     .                           dcmplx(H(ind,3),-H(ind,4))*dconjg(kphs)
+            endif
           enddo
         enddo
       
@@ -273,18 +303,42 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
-      
-            Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
-            Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
-            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
-     .                            dcmplx(H(ind,1), H(ind,5)) * kphs
-            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
-     .                            dcmplx(H(ind,2), H(ind,6)) * kphs
-            Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
-            Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                        + dcmplx(H(ind,7), + H(ind,8)) * kphs
+
+            if ( spin%SO .and. .not.spin%SO_off ) then
+              kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+              Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
+              Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
+              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
+     .                              dcmplx(H(ind,1), H(ind,5)) * kphs
+              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
+     .                              dcmplx(H(ind,2), H(ind,6)) * kphs
+              Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
+     .                          + dcmplx(H(ind,3), - H(ind,4)) * kphs
+              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
+     .                          + dcmplx(H(ind,7), + H(ind,8)) * kphs
+            else
+              kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+!              Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)*kphs
+!              Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)*kphs
+!              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) +
+!     .                            dcmplx(H(ind,1),-H(ind,5))*kphs
+!              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) +
+!     .                            dcmplx(H(ind,2),-H(ind,6))*kphs
+!              Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo) +
+!     .                            dcmplx(H(ind,7),-H(ind,8))*kphs
+!              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
+!     .                            dcmplx(H(ind,3),-H(ind,4))*kphs
+              Saux(1,iuo,1,juo) = Saux(1,iuo,1,juo) + S(ind)*kphs
+              Saux(2,iuo,2,juo) = Saux(2,iuo,2,juo) + S(ind)*kphs
+              Haux(1,iuo,1,juo) = Haux(1,iuo,1,juo) +
+     .                            dcmplx(H(ind,1), H(ind,5))*kphs
+              Haux(2,iuo,2,juo) = Haux(2,iuo,2,juo) +
+     .                            dcmplx(H(ind,2), H(ind,6))*kphs
+              Haux(1,iuo,2,juo) = Haux(1,iuo,2,juo) +
+     .                            dcmplx(H(ind,3), H(ind,4))*kphs
+              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
+     .                           dcmplx(H(ind,3),-H(ind,4))*dconjg(kphs)
+            endif
           enddo
         enddo
       
@@ -306,18 +360,44 @@ C *********************************************************************
               kxij = kpoint(1,ik) * xij(1,ind) +
      .               kpoint(2,ik) * xij(2,ind) +
      .               kpoint(3,ik) * xij(3,ind)
-              kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
-      
-              Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
-              Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
-              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
-     .                              dcmplx(H(ind,1), H(ind,5)) * kphs
-              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
-     .                              dcmplx(H(ind,2), H(ind,6)) * kphs
-              Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                          + dcmplx(H(ind,3), - H(ind,4)) * kphs
-              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                          + dcmplx(H(ind,7), + H(ind,8)) * kphs
+
+
+              if ( spin%SO .and. .not.spin%SO_off ) then
+       
+                kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+                Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
+                Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
+                Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
+     .                                dcmplx(H(ind,1), H(ind,5)) * kphs
+                Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
+     .                                dcmplx(H(ind,2), H(ind,6)) * kphs
+                Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
+     .                            + dcmplx(H(ind,3), - H(ind,4)) * kphs
+                Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
+     .                            + dcmplx(H(ind,7), + H(ind,8)) * kphs
+              else
+                kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+!                Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)*kphs
+!                Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)*kphs
+!                Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) +
+!     .                              dcmplx(H(ind,1),-H(ind,5))*kphs
+!                Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) +
+!     .                              dcmplx(H(ind,2),-H(ind,6))*kphs
+!                Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo) +
+!     .                              dcmplx(H(ind,7),-H(ind,8))*kphs
+!                Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
+!     .                              dcmplx(H(ind,3),-H(ind,4))*kphs
+              Saux(1,iuo,1,juo) = Saux(1,iuo,1,juo) + S(ind)*kphs
+              Saux(2,iuo,2,juo) = Saux(2,iuo,2,juo) + S(ind)*kphs
+              Haux(1,iuo,1,juo) = Haux(1,iuo,1,juo) +
+     .                            dcmplx(H(ind,1), H(ind,5))*kphs
+              Haux(2,iuo,2,juo) = Haux(2,iuo,2,juo) +
+     .                            dcmplx(H(ind,2), H(ind,6))*kphs
+              Haux(1,iuo,2,juo) = Haux(1,iuo,2,juo) +
+     .                            dcmplx(H(ind,3), H(ind,4))*kphs
+              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
+     .                           dcmplx(H(ind,3),-H(ind,4))*dconjg(kphs)
+              endif
             enddo
           enddo
           call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
@@ -416,26 +496,53 @@ C *********************************************************************
           D12 = Dkc(1,juo,2,iuo) * kphs
           D21 = Dkc(2,juo,1,iuo) * kphs
       
-          Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
-          Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
-          Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
-          Dnew(ind,4) = Dnew(ind,4) - dimag(D12)
-          Dnew(ind,5) = Dnew(ind,5) + dimag(D11) 
-          Dnew(ind,6) = Dnew(ind,6) + dimag(D22)
-          Dnew(ind,7) = Dnew(ind,7) + dreal(D21) 
-          Dnew(ind,8) = Dnew(ind,8) + dimag(D21)
+          if ( spin%SO .and. .not.spin%SO_off ) then
+
+            Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
+            Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
+            Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
+            Dnew(ind,4) = Dnew(ind,4) - dimag(D12)
+            Dnew(ind,5) = Dnew(ind,5) + dimag(D11) 
+            Dnew(ind,6) = Dnew(ind,6) + dimag(D22)
+            Dnew(ind,7) = Dnew(ind,7) + dreal(D21) 
+            Dnew(ind,8) = Dnew(ind,8) + dimag(D21)
 
       
-          D11 = Ekc(1,juo,1,iuo) * kphs
-          D22 = Ekc(2,juo,2,iuo) * kphs
-          D12 = Ekc(1,juo,2,iuo) * kphs
-          D21 = Ekc(2,juo,1,iuo) * kphs
+            D11 = Ekc(1,juo,1,iuo) * kphs
+            D22 = Ekc(2,juo,2,iuo) * kphs
+            D12 = Ekc(1,juo,2,iuo) * kphs
+            D21 = Ekc(2,juo,1,iuo) * kphs
       
-          Enew(ind,1) = Enew(ind,1) + dreal(D11)
-          Enew(ind,2) = Enew(ind,2) + dreal(D22)
-          Enew(ind,3) = Enew(ind,3) + dreal(D12) 
-          Enew(ind,4) = Enew(ind,4) - dimag(D12) 
-      
+            Enew(ind,1) = Enew(ind,1) + dreal(D11)
+            Enew(ind,2) = Enew(ind,2) + dreal(D22)
+            Enew(ind,3) = Enew(ind,3) + dreal(D12) 
+            Enew(ind,4) = Enew(ind,4) - dimag(D12) 
+
+          else
+
+!---------- D_new(u,u) = ( D(1), D(5) ) 
+            Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
+            Dnew(ind,5) = Dnew(ind,5) + dimag(D11)
+!---------- D_new(d,d) = ( D(2), D(6) ) 
+            Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
+            Dnew(ind,6) = Dnew(ind,6) + dimag(D22)
+!---------- D_new(u,d) = ( D(3), D(4) ) 
+            Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
+            Dnew(ind,4) = Dnew(ind,4) + dimag(D12)
+!---------- D_new(d,u) = ( D(7), D(8) ) 
+            Dnew(ind,7) = Dnew(ind,7) + dreal(D21)
+            Dnew(ind,8) = Dnew(ind,8) + dimag(D21)
+
+            D11 = Ekc(1,juo,1,iuo) * kphs
+            D22 = Ekc(2,juo,2,iuo) * kphs
+            D12 = Ekc(1,juo,2,iuo) * kphs
+            D21 = Ekc(2,juo,1,iuo) * kphs
+
+            Enew(ind,1) = Enew(ind,1) + dreal(D11)
+            Enew(ind,2) = Enew(ind,2) + dreal(D22)
+            Enew(ind,3) = Enew(ind,3) + dreal(D12)
+            Enew(ind,4) = Enew(ind,4) + dimag(D12)
+          endif
         enddo
         enddo
       enddo

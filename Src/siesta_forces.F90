@@ -46,7 +46,8 @@ contains
     use m_steps
     use sys, only : die, bye
     use sparse_matrices, only: H, Hold, Dold, Dscf, Eold, Escf, maxnh
-    use sparse_matrices, only: MM_HDM
+    use sparse_matrices, only: MM_HDM, herm_HDM
+    use sparse_matrices, only: numh, listhptr
     use m_convergence, only: converger_t
     use m_convergence, only: reset, set_tolerance
     use siesta_geom,   only: na_u           ! Number of atoms in unit cell
@@ -104,7 +105,18 @@ contains
 
     use m_initwf, only: initwf
 
+!CC RC
+    use sparse_matrices, only: H_kin_1D, H_vkb_1D
+      use class_dSpData1D,  only: val
+      use class_dSpData2D,  only: val
+
     integer, intent(inout)  :: istep
+
+!CC
+    integer  :: i, j, ind, io, ispin
+    real(dp) :: Ekin_tmp, Enl_tmp
+    real(dp), pointer   :: H_vkb(:), H_kin(:)
+
 
     integer :: iscf
     logical :: first, SCFconverged
@@ -182,7 +194,7 @@ contains
     if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') & 
        ' siesta: Calling setup_H0...'
     if ( SIESTA_worker ) call setup_H0(G2max)
-!    stop 'Stopping after setup_H0'
+!    stop ' siesta_force: Stopping after setup_H0'
     
 #ifdef SIESTA__PEXSI
     if (ionode) call memory_snapshot("after setup_H0")
@@ -286,19 +298,92 @@ contains
                 if (fdf_get("Read-H-from-file",.false.)) then
                    call get_H_from_file()
                 else
+! CC RC
+                 if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
+                  write(spin%iout_SO,'(a,f16.10)') & 
+                   ' siesta_forces: First call to setup_hamiltonian...'
+                 endif
+!                  write(6,'(a,f16.10)') & 
+!                   ' siesta_forces: First call to setup_hamiltonian...'
                    call setup_hamiltonian( iscf )
+!                   stop' siesta_forces: First call to setup_hamiltonian'
+!                   call herm_HDM( 'H' )
                 end if
              end if
-             
-             call compute_DM( iscf )
+
 ! CC RC
-      if ( IONode .and. spin%SO ) call MM_HDM( 'DM' )
+!             write(spin%iout_SO,*) ' Before compute_dm call in siesta_forces'
+!             do i = 1, no_u
+!              do j = 1, numh(i)
+!               ind = listhptr(i)+j
+!            if(abs(Dscf(ind,1)).gt.0.0d0.or.abs(Dscf(ind,2)).gt.0.0d0 &
+!            .or.abs(Dscf(ind,3)).gt.0.0d0.or.abs(Dscf(ind,4)).gt.0.0d0)&
+!               write(spin%iout_SO,'(a,i4,8f14.10)') ' ind/Dscf=',ind,&
+!                Dscf(ind,1), &
+!                Dscf(ind,5), Dscf(ind,2),Dscf(ind,6),Dscf(ind,3),&
+!                Dscf(ind,4),Dscf(ind,7),Dscf(ind,8)
+!              enddo
+!             enddo
+
+!             H_kin => val(H_kin_1D)
+!             H_vkb => val(H_vkb_1D)
+!             do ispin = 1, 2 ! spinor_dim 
+!              do io = 1,maxnh
+!               Ekin_tmp = Ekin_tmp + H_kin(io) * Dscf(io,ispin)
+!               Enl_tmp  = Enl_tmp  + H_vkb(io) * Dscf(io,ispin)
+!              enddo
+!             enddo
+!
+!             write(spin%iout_SO,*) ' Ekin/Enl = ', Ekin_tmp, Enl_tmp
+
+!             stop'Stopping before calling to compute_dm'
+
+
+             if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
+              write(spin%iout_SO,'(a,f16.10)') & 
+               ' siesta_forces: Calling to compute_DM...'
+             endif
+
+ 
+             call compute_DM( iscf )
+
+!             write(6,*) ' siesta_forces: Calling to MM_HDM...'
+!             call MM_HDM( 'DM' )
+
+!             stop'Stopping after calling 1st compute_dm...'
+!         write(spin%iout_SO,*) ' After compute_dm call in siesta_forces'
+!          do i = 1, no_u
+!           do j = 1, numh(i)
+!            ind = listhptr(i)+j
+!            if(abs(Dscf(ind,1)).gt.0.0d0.or.abs(Dscf(ind,2)).gt.0.0d0 &
+!            .or.abs(Dscf(ind,3)).gt.0.0d0.or.abs(Dscf(ind,4)).gt.0.0d0)&
+!               write(spin%iout_SO,'(a,i4,8f14.10)') ' ind/Dscf=',ind,&
+!                Dscf(ind,1),&
+!                Dscf(ind,5), Dscf(ind,2),Dscf(ind,6),Dscf(ind,3),&
+!                Dscf(ind,4),Dscf(ind,7),Dscf(ind,8)
+!           enddo
+!          enddo
+
+
+
+
+!             call herm_HDM( 'DM' )
 
              ! Maybe set Dold to zero if reading charge or H...
              call compute_max_diff(Dold, Dscf, dDmax)
              if ( converge_EDM ) &
                   call compute_max_diff(Eold, Escf, dEmax)
+! CC RC
+             if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
+              write(spin%iout_SO,'(a,f16.10)') & 
+               ' siesta_forces: Calling to setup_hamiltonian'
+             endif
+!                  write(6,'(a,f16.10)') & 
+!                   ' siesta_forces: Second call to setup_hamiltonian...'
              call setup_hamiltonian( iscf )
+!             stop' siesta_forces: Stopping in 2nd call to setup_h'
+!             if ( IONode .and.  spin%SO ) call MM_HDM( 'H' )
+!             call herm_HDM( 'H' ) 
              call compute_max_diff(Hold, H, dHmax)
              
           else
@@ -316,6 +401,9 @@ contains
           ! This iteration has completed calculating the new DM
 
           call compute_energies( iscf )
+
+!         stop'Stopping after calling to compute_energies'
+
           if ( mix_charge ) then
              call compute_charge_diff( drhog )
           end if
@@ -333,6 +421,7 @@ contains
                dDmax, dHmax, dEmax, &
                conv_harris, conv_freeE, &
                SCFconverged )
+!          stop' siesta_forces: Stopping after first call to compute_ene' 
           
           ! ** Check this heuristic
           if ( mixH ) then

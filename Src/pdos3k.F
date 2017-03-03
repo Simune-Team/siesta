@@ -59,6 +59,11 @@ C **********************************************************************
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use units,        only : pi
       use alloc,        only : re_alloc, de_alloc
+
+! CC RC  Added for the offSpOrb
+      use m_spin, only: spin
+! CC RC  Added for the offSpOrb
+
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -127,15 +132,25 @@ C Initialize some variables
      .             kpoint(3,ik) * xij(3,ind)
             kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
 
-            Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
-            Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
-            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
-            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
-            Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
-            Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                        + dcmplx(H(ind,7), + H(ind,8)) * kphs
-
+            if ( spin%SO .and. .not.spin%SO_off ) then
+              Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
+              Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
+              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
+              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+              Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
+     .                          + dcmplx(H(ind,3), - H(ind,4)) * kphs
+              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
+     .                          + dcmplx(H(ind,7), + H(ind,8)) * kphs
+            else ! offSpOrb
+              Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)*kphs
+              Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)*kphs
+              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
+              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+              Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo) +
+     .                            dcmplx(H(ind,7), - H(ind,8)) * kphs
+              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
+     .                            dcmplx(H(ind,3), - H(ind,4)) * kphs
+            endif
           enddo
         enddo
 
@@ -159,15 +174,25 @@ C Diagonalize for each k point. Note duplication of problem size
      .               kpoint(3,ik) * xij(3,ind)
               kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
 
-              Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
-              Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
-              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
-              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
-              Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                          + dcmplx(H(ind,3), - H(ind,4)) * kphs
-              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                          + dcmplx(H(ind,7), + H(ind,8)) * kphs
-
+              if ( spin%SO .and. .not.spin%SO_off ) then
+                Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
+                Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
+                Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
+                Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+                Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
+     .                            + dcmplx(H(ind,3), - H(ind,4)) * kphs
+                Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
+     .                            + dcmplx(H(ind,7), + H(ind,8)) * kphs
+              else ! offSpOrb
+                Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)*kphs
+                Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)*kphs
+                Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
+                Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+                Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo) +
+     .                              dcmplx(H(ind,7), - H(ind,8)) * kphs
+                Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
+     .                              dcmplx(H(ind,3), - H(ind,4)) * kphs
+              endif
             enddo
           enddo
 
@@ -243,7 +268,11 @@ C Loop over all the energy range
                  dpr(ihist,juo,1) = dpr(ihist,juo,1) + dreal(D11)
                  dpr(ihist,juo,2) = dpr(ihist,juo,2) + dreal(D22)
                  dpr(ihist,juo,3) = dpr(ihist,juo,3) + dreal(D12)
-                 dpr(ihist,juo,4) = dpr(ihist,juo,4) - dimag(D12)
+                 if ( spin%SO .and. .not.spin%SO_off ) then
+                   dpr(ihist,juo,4) = dpr(ihist,juo,4) - dimag(D12)
+                 else ! offSpOrb
+                   dpr(ihist,juo,4) = dpr(ihist,juo,4) + dimag(D12)
+                 endif
                enddo
               enddo
             enddo
@@ -282,7 +311,11 @@ C Loop over all the energy range
                 dpr(ihist,jo,1) = dpr(ihist,jo,1) + dreal(D11)
                 dpr(ihist,jo,2) = dpr(ihist,jo,2) + dreal(D22)
                 dpr(ihist,jo,3) = dpr(ihist,jo,3) + dreal(D12)
-                dpr(ihist,jo,4) = dpr(ihist,jo,4) - dimag(D12)
+                if ( spin%SO .and. .not.spin%SO_off ) then
+                  dpr(ihist,jo,4) = dpr(ihist,jo,4) - dimag(D12)
+                else ! offSpOrb
+                  dpr(ihist,jo,4) = dpr(ihist,jo,4) + dimag(D12)
+                endif
               enddo
             enddo
           enddo

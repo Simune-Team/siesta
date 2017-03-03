@@ -170,6 +170,10 @@ c$$$     &           no_u, no_s, maxnh, numh, listhptr, listh,
 c$$$     &           S, 'S.matrix')
 
       elseif ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
+CC
+        write(6,*) ' compute_dm: before diagon...'
+C        call MM_HDM( 'DM' )
+
         call diagon(no_s, spin%spinor, 
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -177,6 +181,10 @@ c$$$     &           S, 'S.matrix')
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
+CC
+        write(6,*) ' compute_dm: after diagon...'
+C        call MM_HDM( 'DM' )
+
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
       elseif (isolve .eq. SOLVE_ORDERN) then
@@ -245,7 +253,7 @@ c$$$     &           S, 'S.matrix')
       if (muldeb) then
         if (ionode) write (6,"(/a)")
      &    'siesta: Mulliken populations (DM_out)'
-            if ( spin%SO ) then
+            if ( spin%SO .and. .not.spin%SO_off) then
               call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
      .                      listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .                      indxuo )

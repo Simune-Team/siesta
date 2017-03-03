@@ -46,6 +46,8 @@
 
       ! convergence test
 
+      write(6,*) ' convergency_test: Enl_SO= ', Enl_SO/eV
+
       call add_value(conv_harris, eharrs)
       call add_value(conv_freeE, freeE)
 

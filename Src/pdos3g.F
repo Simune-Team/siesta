@@ -55,6 +55,11 @@ C **********************************************************************
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use units,        only : pi
       use alloc,        only : re_alloc, de_alloc
+
+! CC RC  Added for the offSpOrb
+      use m_spin, only: spin
+! CC RC  Added for the offSpOrb
+
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -102,12 +107,21 @@ C Initialize auxiliary variables
         do j = 1,numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-            Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-            Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-            Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-            Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
-            Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-            Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+            if ( spin%SO .and. .not.spin%SO_off ) then
+              Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+              Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+              Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
+              Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
+              Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
+              Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+            else ! offSpOrb
+             Saux(1,io,1,jo) = dcmplx(  S(ind),   0.0_dp)
+             Saux(2,io,2,jo) = dcmplx(  S(ind),   0.0_dp)
+             Haux(1,io,1,jo) = dcmplx(H(ind,1),   0.0_dp)
+             Haux(2,io,2,jo) = dcmplx(H(ind,2),   0.0_dp)
+             Haux(1,jo,2,io) = dcmplx(H(ind,7),-H(ind,8))
+             Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
+            endif
         enddo
       enddo
 
@@ -124,12 +138,21 @@ C Repeat diagonalisation with increased memory to handle clustering
           do j = 1,numh(io)
             ind = listhptr(io) + j
             jo = listh(ind)
-             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-             Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-             Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
-             Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-             Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+            if ( spin%SO .and. .not.spin%SO_off ) then
+              Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+              Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+              Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
+              Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
+              Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
+              Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+            else ! offSpOrb
+             Saux(1,io,1,jo) = dcmplx(  S(ind),   0.0_dp)
+             Saux(2,io,2,jo) = dcmplx(  S(ind),   0.0_dp)
+             Haux(1,io,1,jo) = dcmplx(H(ind,1),   0.0_dp)
+             Haux(2,io,2,jo) = dcmplx(H(ind,2),   0.0_dp)
+             Haux(1,jo,2,io) = dcmplx(H(ind,7),-H(ind,8))
+             Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
+            endif
           enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,

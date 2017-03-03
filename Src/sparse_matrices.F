@@ -33,6 +33,7 @@
 
 ! CC RC  Added for the offSpOrb
       complex(dp), public, pointer :: H0_SO(:,:) => null()
+      integer, public, pointer :: listht(:)=>null()
 ! CC RC  Added for the offSpOrb
 
       ! Pieces of H that do not depend on the SCF density matrix
@@ -84,6 +85,7 @@
 
 ! CC RC  Added for the offSpOrb
       deallocate( H0_SO )
+      call de_alloc( listht,'listht','sparseMat' ) ! CC RC 
 ! CC RC  Added for the offSpOrb
 
       
@@ -143,7 +145,9 @@ c---- set pointers
       allocate( MM_at(0:3,na_u) )
 
 !c--- atom resolved
-      write(spin%iout_SO,'(a)') trim(cindent)//
+c      write(spin%iout_SO,'(a)') trim(cindent)//
+c     & '    :  atom  MM_total   MM_x     MM_y     MM_z   THETA   PHI'
+      write(6,'(a)') trim(cindent)//
      & '    :  atom  MM_total   MM_x     MM_y     MM_z   THETA   PHI'
       MM_at(:,:)= 0.0_dp; ioff= 0
       theta= 0.0_dp; phi= 0.0_dp
@@ -166,7 +170,9 @@ c---- set pointers
        endif
 
        ioff = ioff + nh
-       write(spin%iout_SO,'(a,5x,i5,4f9.3,2f7.1)') trim(cindent),
+c       write(spin%iout_SO,'(a,5x,i5,4f9.3,2f7.1)') trim(cindent),
+c     &            ia,MM_at(0:3,ia), theta*fac, phi*fac
+       write(6,'(a,5x,i5,4f9.3,2f7.1)') trim(cindent),
      &            ia,MM_at(0:3,ia), theta*fac, phi*fac
       enddo ! ia
 
@@ -179,7 +185,10 @@ c---- total MMs
        MM(2)= sum(MM_at(2,:))
        call euler( MM(1:3), theta, phi, MM(0) )
       endif
-      write(spin%iout_SO,'(a,4f9.3,a,2f7.1,a)') trim(cindent)//
+C      write(spin%iout_SO,'(a,4f9.3,a,2f7.1,a)') trim(cindent)//
+C     &  '    : '//trim(cHDM)//' Total Magnetic Moment=',MM(0:3),
+C     &         ' [theta/phi=',theta*fac,phi*fac,']'
+      write(6,'(a,4f9.3,a,2f7.1,a)') trim(cindent)//
      &  '    : '//trim(cHDM)//' Total Magnetic Moment=',MM(0:3),
      &         ' [theta/phi=',theta*fac,phi*fac,']'
 
@@ -250,28 +259,12 @@ c-----------------------------------------------------------------------
       err_HDM = 0.0_dp
 
 !! CC RC
-      do i = 1, no_u
-       do js = 1, numh(i)
-        ij = listhptr(i)+js
-        j = listh(ij)
-        ji = listhptr(j)+i
-
-       if ( ji.lt.ij ) then
-        err_HDM(1) = max( err_HDM(1),
-     &                  cdabs(H_tmp(ij,1)-conjg(H_tmp(ji,1))) )
-        err_HDM(2) = max( err_HDM(2),
-     &                  cdabs(H_tmp(ij,2)-conjg(H_tmp(ji,2))) )
-       endif
-       err_HDM(3) = max( err_HDM(3),
-     &                cdabs(H_tmp(ij,3)-conjg(H_tmp(ji,4))) )
-       err_HDM(4) = max( err_HDM(4),
-     &                cdabs(H_tmp(ij,4)-conjg(H_tmp(ji,3))) )
-
-       enddo
-      enddo
-
-!      do ij = 1, maxnh
-!       ji = listht(ij)
+!      do i = 1, no_u
+!       do js = 1, numh(i)
+!        ij = listhptr(i)+js
+!        j = listh(ij)
+!        ji = listhptr(j)+i
+!
 !       if ( ji.lt.ij ) then
 !        err_HDM(1) = max( err_HDM(1),
 !     &                  cdabs(H_tmp(ij,1)-conjg(H_tmp(ji,1))) )
@@ -282,10 +275,27 @@ c-----------------------------------------------------------------------
 !     &                cdabs(H_tmp(ij,3)-conjg(H_tmp(ji,4))) )
 !       err_HDM(4) = max( err_HDM(4),
 !     &                cdabs(H_tmp(ij,4)-conjg(H_tmp(ji,3))) )
+!
+!       enddo
 !      enddo
 
+      do ij = 1, maxnh
+       ji = listht(ij)
+       if ( ji.lt.ij ) then
+        err_HDM(1) = max( err_HDM(1),
+     &                  cdabs(H_tmp(ij,1)-conjg(H_tmp(ji,1))) )
+        err_HDM(2) = max( err_HDM(2),
+     &                  cdabs(H_tmp(ij,2)-conjg(H_tmp(ji,2))) )
+       endif
+       err_HDM(3) = max( err_HDM(3),
+     &                cdabs(H_tmp(ij,3)-conjg(H_tmp(ji,4))) )
+       err_HDM(4) = max( err_HDM(4),
+     &                cdabs(H_tmp(ij,4)-conjg(H_tmp(ji,3))) )
+      enddo
+
 c---- Print errors
-      write(spin%iout_SO,'(4x,a,7f8.5)')
+!      write(spin%iout_SO,'(4x,a,7f8.5)')
+      write(6,'(4x,a,7f8.5)')
      &   trim(cHDM)//'  max/sym error  =',
      &   maxval(cdabs(H_tmp))/eV,err_HDM
       if ( maxval(err_HDM).gt.1.0d-4 ) then

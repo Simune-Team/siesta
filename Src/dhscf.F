@@ -697,8 +697,8 @@ C     Modules
                                         ! Sets a distribution of mesh
                                         ! points over parallel processors
 #endif /* BSC_CELLXC */
-      use m_vmat,  only  : vmat
-      use m_rhoofd, only: rhoofd
+      use m_vmat,  only  : vmat, vmat_SO
+      use m_rhoofd, only: rhoofd, rhoofd_SO
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -979,11 +979,23 @@ C             rhoatm and Drho are in sequential mode
           call rhoofdsp( norb, nmpl, maxnd, numd, listdptr, listd,
      &                   nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
      &                   iphorb, isa, qspiral )
+C        elseif( spin%SO_off ) then
+C          call rhoofd_SO( nuo, norb, nmpl, nspin, DRho_par, 
+C     &                     maxnd, numd, listdptr, listd, Dscf )
         else
           call rhoofd( norb, nmpl, maxnd, numd, listdptr, listd,
      &                 nspin, Dscf, DRho_par, 
      &                 nuo, nuotot, iaorb, iphorb, isa )
         endif
+
+CC RC
+       do ispin=1, nspin
+        write(6,'(a,i2,a,2f9.6)') 'DRho_1; spin ',ispin,
+     &   ' Max/Min=',minval(DRho_par(:,ispin)),
+     &               maxval(DRho_par(:,ispin))
+       enddo
+
+
         ! DRHO_par is here in QUADRATIC, clustered form
 
 C       Set the UNIFORM distribution again and copy DRho to it
@@ -1529,13 +1541,42 @@ C ----------------------------------------------------------------------
       call bsc_cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
      &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
      &             dummy_DVxcdn, stressl )
+
 #endif /* BSC_CELLXC */
 
 #ifndef BSC_CELLXC
+
+!CC RC
+      write(6,*) 'calling cellXC...'
+      do ispin=1, nspin
+        write(6,'(a,i2,a,2f9.6)') 'DRho_5; spin ',ispin,
+     &   ' Max/Min=',minval(DRho(:,ispin)),maxval(DRho(:,ispin))
+      enddo
+
       call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
      .                           myBox(1,2), myBox(2,2),
      .                           myBox(1,3), myBox(2,3), nspin,
      .             DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )
+
+       write(6,'(a,2f14.6)') 'Ex/c  =',Ex,Ec
+       write(6,'(a,2f9.6)')
+     &  'V(1):',minval(Vscf(:,1)),maxval(Vscf(:,1))
+       if ( nspin.ge.2 ) then
+        write(6,'(a,2f9.6)')
+     &  'V(2):',minval(Vscf(:,2)),maxval(Vscf(:,2))
+        write(6,'(a,2f9.6)')
+     &  'V(1)-V(2):',maxval(abs(Vscf(:,1)-Vscf(:,2)))
+       endif
+       if ( nspin.gt.2 ) then
+        write(6,'(a,2f9.6)')
+     &  'V(3):',minval(Vscf(:,3)),maxval(Vscf(:,3))
+        write(6,'(a,2f9.6)')
+     &  'V(4):',minval(Vscf(:,4)),maxval(Vscf(:,4))
+       endif
+
+
+
+
 #else /* BSC_CELLXC */
 
       if (nodes.gt.1) then
@@ -1593,6 +1634,15 @@ C ----------------------------------------------------------------------
         endif
       enddo
 !$OMP end parallel
+
+CC RC
+      do ispin= 1,nspin
+       write(6,'(a,i2,a,2f12.3)') 'VH+Vxc; ispin=',ispin,' Max/Min=',
+     &                     minval(Vscf(:,ispin)),maxval(Vscf(:,ispin))
+      enddo
+      write(6,'(a,f12.3)') 'Vscf ok; sum=',sum(Vscf)
+
+
 
 #ifndef BSC_CELLXC
       stress = stress + stressXC
@@ -1659,11 +1709,27 @@ C ----------------------------------------------------------------------
             call vmatsp( norb, nmpl, dvol, nspin, Vscf_par, maxnd,
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa, qspiral )
+C         elseif ( spin%SO_off ) then
+C            call vmat_SO( norb, nmpl, dVol, nspin, Vscf_par, maxnd,
+C     &                    numd, listdptr, listd, Hmat,
+C     &                    nuo, nuotot, iaorb, iphorb, isa )
          else
             call vmat( norb, nmpl, dvol, spin, Vscf_par, maxnd,
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa )
          endif
+
+CC RC
+         do ispin= 1, nspin
+C          write(6,*) ' Hmat; spin=', ispin, 
+C     &   ' Size(Hmat)=', size(Hmat,1)
+          write(6,'(a,i2,a,2f9.6)') 'Hmat; spin=',ispin,
+     &   ' Max/min=',maxval(Hmat(:,ispin)),minval(Hmat(:,ispin))
+          write(6,'(a,i2,a,2i9)') 'Hmat; spin=',ispin,
+     &   ' Max/min=',maxloc(Hmat(:,ispin)),minloc(Hmat(:,ispin))
+         enddo
+
+
 
          call de_alloc( Vscf_par,  'Vscf_par', 'dhscf' )
          if (nodes.gt.1) then

@@ -311,13 +311,13 @@ C           Only calculate if needed locally in our MPI process
      &                Ski(ikb,nno), grSki(1:3,ikb,nno) )
                  !  Maybe: Ski = epskb_sqrt * Ski
                  !         grSki = epskb_sqrt * grSki
-           if ( abs(Ski(ikb,nno)).gt. 1.0d-3 ) then
-            write(6,'(6(a,i4),2(a,f9.6))') 
-     &                    ' ikb = ', ikb,
-     &                    ' nno = ', nno, ' ioa = ', ioa,
-     &                    ' koa = ', koa, ' kg =', kg, ' ig = ', ig,
-     &        ' epskb=', epskb(ks,ikb), ' Ski(ikb,nno)=', Ski(ikb,nno)
-           endif
+!           if ( abs(Ski(ikb,nno)).gt. 1.0d-3 ) then
+!            write(6,'(6(a,i4),2(a,f9.6))') 
+!     &                    ' ikb = ', ikb,
+!     &                    ' nno = ', nno, ' ioa = ', ioa,
+!     &                    ' koa = ', koa, ' kg =', kg, ' ig = ', ig,
+!     &        ' epskb=', epskb(ks,ikb), ' Ski(ikb,nno)=', Ski(ikb,nno)
+!           endif
               enddo
 
            enddo ! loop over orbitals
@@ -530,6 +530,8 @@ C      use precision,     only : dp
       use sparse_matrices, only: Dscf, xijo
       use atomlist,        only: indxuo
      
+CC RC   OffSpOrb
+      use sparse_matrices, only: listht
       use m_spin,          only: spin
 
       integer, intent(in) ::
@@ -557,7 +559,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       integer, save ::  maxno = 2000
   
       integer
-     .  ia, ikb, ina, ind, ino, ! indt,
+     .  ia, ikb, ina, ind, ino, indt,
      .  io, iio, ioa, is, ispin, ix, ig, kg,
      .  j, jno, jo, jx, ka, ko, koa, ks, kua,
      .  nkb, nna, nno, no, nuo, nuotot, maxkba
@@ -589,9 +591,16 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
 
       real(dp), parameter :: Rydberg    = 13.6058d0 ! eV
 CC
-      integer :: nd, ndn, juo, ist, iind, iot
+      integer :: nd, ndn, juo, ist, iind, iot, indt_tmp
 
 C ------------------------------------------------------------
+
+CC
+      do is = 1, 8
+       write(6,'(a,i1,3f8.4)') 'Dscf_',is,sum(Dscf(:,is)),
+     &              maxval(Dscf(:,is)),minval(Dscf(:,is))
+      enddo
+
 
 C Start time counte
       call timer( 'nlefsm_SO', 1 )
@@ -714,6 +723,9 @@ C         Find if orbital is within range
            koa = iphKB(ko)
            if ( rki .lt. rcut(is,ioa)+rcut(ks,koa) ) 
      &            within = .true.
+C           write(spin%iout_SO,'(a,f12.8,2i3,2f12.8)') 
+C     &      ' rki/ioa/koa/rcut(is,ioa)/rcut(ks,koa) = ',
+C     &      rki, ioa, koa, rcut(is,ioa), rcut(ks,koa)
           enddo
 
 C         Find overlap between neighbour orbitals and KB projectors
@@ -748,18 +760,26 @@ CC
             endif
             kg = kbproj_gindex(ks,koa)
             ig = orb_gindex(is,ioa)
-            write(spin%SO_off,'(a,3i4)') ' ikb/ioa/koa=', ikb, ioa, koa
+C            write(spin%SO_off,'(a,3i4)') ' ikb/ioa/koa=', ikb, ioa, koa
 CC            write(6,*) ' nlefsm_SO: calling matel... '
             call new_MATEL( 'S', kg, ig, xki(1:3,ina),
      &                     Ski(ikb,nno), grSki(1:3,ikb,nno) )
 
-           if ( abs(Ski(ikb,nno)).gt. 1.0d-3 ) then
-            write(spin%iout_SO,'(7(a,i4),2(a,f9.6))') ' ko = ',ko,
-     &                    ' ikb = ', ikb,
-     &                    ' nno = ', nno, ' ioa = ', ioa,
-     &                    ' koa = ', koa, ' kg =', kg, ' ig = ', ig,
-     &        ' epskb=', epskb(ks,ikb),' Ski(ikb,nno)=', Ski(ikb,nno)
-           endif
+C           if ( abs(Ski(ikb,nno)).gt. 1.0d-5 ) then
+C            write(spin%iout_SO,'(7(a,i4),2(a,f9.6))') ' ko = ',ko,
+C     &                    ' ikb = ', ikb,
+C     &                    ' nno = ', nno, ' ioa = ', ioa,
+C     &                    ' koa = ', koa, ' kg =', kg, ' ig = ', ig,
+C     &        ' epskb=', epskb(ks,ikb),' Ski(ikb,nno)=', Ski(ikb,nno)
+C           endif
+
+CC 
+C           if ( abs(Ski(ikb,nno)).gt. 1.0d-3 ) then
+C            write(6,'(7(a,i4),2(a,f9.6))') 'ko=',ko,' ikb=',ikb,' nno=',
+C     &                      nno, ' ioa=', ioa,
+C     &                    ' koa=', koa, ' kg=', kg, ' ig=', ig,
+C     &        ' epskb=', epskb(ks,ikb), ' Ski(ikb,nno)=', Ski(ikb,nno)
+C           endif
 
 
 
@@ -771,7 +791,8 @@ CC-mpi
         enddo    ! neighbour AO
        enddo     ! neighbour atoms
 
-CC       write(6,*) ' nlefsm_SO: After matel loop...'
+C      write(6,*) ' nlefsm_SO: After matel loop... nno = ', nno
+C      stop 'Stopping after calling matel..'
 
 C----- Loop on neighbour orbitals
        do ino = 1,nno
@@ -790,15 +811,22 @@ C        Valid orbital
            Ds(1:2,1:2,1:no) = dcmplx(0.0d0,0.0d0) 
            do j = 1,numh(iio)
             ind = listhptr(iio)+j  ! jptr
+CC RC
+            indt= listht(ind)
+!            indt_tmp = listhptr(j)+iio  
             jo = listh(ind)       ! j
             Di(jo) = 0.0_dp
             do ispin = 1,min(2,nspin)
              Di(jo) = Di(jo) + Dscf(ind,ispin)
             enddo
-            Ds(1,1,jo) = dcmplx(Dscf(ind,1),-Dscf(ind,5))  ! D(ju,iu)
-            Ds(2,2,jo) = dcmplx(Dscf(ind,2),-Dscf(ind,6))  ! D(jd,id)
-            Ds(1,2,jo) = dcmplx(Dscf(ind,7),-Dscf(ind,8))  ! D(ju,id)
-            Ds(2,1,jo) = dcmplx(Dscf(ind,3),-Dscf(ind,4))  ! D(jd,iu)
+C            Ds(1,1,jo) = dcmplx(Dscf(ind,1),-Dscf(ind,5))  ! D(ju,iu)
+C            Ds(2,2,jo) = dcmplx(Dscf(ind,2),-Dscf(ind,6))  ! D(jd,id)
+C            Ds(1,2,jo) = dcmplx(Dscf(ind,7),-Dscf(ind,8))  ! D(ju,id)
+C            Ds(2,1,jo) = dcmplx(Dscf(ind,3),-Dscf(ind,4))  ! D(jd,iu)
+            Ds(1,1,jo) = dcmplx(Dscf(indt,1), Dscf(indt,5))  ! D(ju,iu)
+            Ds(2,2,jo) = dcmplx(Dscf(indt,2), Dscf(indt,6))  ! D(jd,id)
+            Ds(1,2,jo) = dcmplx(Dscf(indt,3), Dscf(indt,4))  ! D(ju,id)
+            Ds(2,1,jo) = dcmplx(Dscf(indt,7), Dscf(indt,8))  ! D(jd,iu)
            enddo
           endif
 
@@ -854,11 +882,24 @@ c----------- Compute Vion from j+/-1/2 and V_so
               koa2 = -iphKB(ko+2*(2*l+1))
               epsk(1) = epskb(ks,koa1)
               epsk(2) = epskb(ks,koa2)
+CC RC
+C              if ( l.eq.3 ) epsk(1) = -0.958076640624553
+C              if ( l.eq.3 ) epsk(2) = -0.918608573899253
+
               call calc_Vj_SO( l, epsk, Ski(koa1:koa2,ino), 
      &                       Ski(koa1:koa2,jno), grSki(:,koa1:koa2,ino),
      &                       grSki(:,koa1:koa2,jno), Vit, V_sot, F_so )
               Vi(jo) = Vi(jo) + Vit
               V_so(1:2,1:2,jo)= V_so(1:2,1:2,jo) + V_sot(1:2,1:2)
+CC
+             
+CC              if ( l.lt. 3 ) write(6,'(a,3i4,2f12.6,4e18.8)') 
+C              write(6,'(a,3i4,2f12.6,4e18.8)') 
+C     &         ' l/koa1/koa2/epsk1/epsk2/V_1/V_2=',
+C     &          l, koa1, koa2, epsk(1), epsk(2), V_sot(1,1),
+C     &          V_sot(2,2)
+
+C              write(6,*) ' jo, V_so = ', jo, V_so(1,1,jo) 
          
 c------------ Forces & SO contribution to E_NL
               if (.not. matrix_elements_only) then     
@@ -921,6 +962,14 @@ CC-mpi
      &     dreal(E_SO*13.6058d0)
        write(spin%iout_SO,'(a,6f10.4)') 'Imag[E_SO]=',
      &     dimag(E_SO*13.6058d0)
+       write(6,'(a,8f10.4)') 'Enl/E_SO[eV]=',Enl*Rydberg,
+     &                   Enl_SO*Rydberg, dreal(E_SO*Rydberg)
+       write(6,*) ' Enl_SO = ',  Enl_SO
+
+       write(6,'(a,6f10.4)') 'Real[E_SO]=',
+     &     dreal(E_SO*13.6058d0)
+       write(6,'(a,6f10.4)') 'Imag[E_SO]=',
+     &     dimag(E_SO*13.6058d0)
       endif
 
 
@@ -943,6 +992,10 @@ c      call de_alloc( Di, 'Di', 'nlefsm_SO' )
          call de_alloc( Di, 'Di', 'nlefsm_SO' )
          deallocate( Ds )
       endif
+
+CC
+      write(6,*) 'nd/ndn/nh=',nd,ndn,maxnh
+
 
       call timer( 'nlefsm_SO', 2 )
 
@@ -1097,6 +1150,10 @@ C      write(6,*) ' V_ion= ', V_ion
 
       V_so(1,1) = V_so(1,1) - cmplx(1.0d0,0.0d0)*V_ion
       V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0)*V_ion
+CC
+C      write(6,'(a,4e18.8)') ' V_so(1,1)/V_so(2,2)=', 
+C     &      V_so(1,1), V_so(2,2)
+
 
       return
       end subroutine calc_Vj_SO

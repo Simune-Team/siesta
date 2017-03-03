@@ -16,6 +16,11 @@
       use parallel,        only : Node, Nodes, BlockSize
       use parallelsubs,    only : LocalToGlobalOrb,GlobalToLocalOrb
       use m_fermid,        only : fermid, stepf
+
+! CC RC  Added for the offSpOrb
+      use m_spin, only : spin
+! CC RC  Added for the offSpOrb
+
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -159,16 +164,31 @@ C of referencing has been changed in several places to reflect this.
         do j = 1,numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-           Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-           Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-           Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
-           Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
-           Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-           Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
-        
-c           write(6,'(a,3i5,8f12.6)') 'io/jo/ind/H(ind,1:8) = ',
-c     .           io, jo, ind, H(ind,1:8)
+          if ( spin%SO .and. .not.spin%SO_off ) then
+            Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+            Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+            Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
+            Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
+            Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
+            Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+          else ! offSpOrb
+!            Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+!            Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+!            Haux(1,jo,1,io) = dcmplx(H(ind,1),-H(ind,5))
+!            Haux(2,jo,2,io) = dcmplx(H(ind,2),-H(ind,6))
+!            Haux(1,jo,2,io) = dcmplx(H(ind,7),-H(ind,8))
+!            Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
+            Saux(1,io,1,jo) = dcmplx(  S(ind),   0.0_dp)
+            Saux(2,io,2,jo) = dcmplx(  S(ind),   0.0_dp)
+            Haux(1,io,1,jo) = dcmplx(H(ind,1), H(ind,5))
+            Haux(2,io,2,jo) = dcmplx(H(ind,2), H(ind,6))
+            Haux(1,io,2,jo) = dcmplx(H(ind,3), H(ind,4))
+            Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
 
+!            write(6,'(a,3i5,8f12.6)') 'io/jo/ind/H(ind,1:8) = ',
+!     .           io, jo, ind, H(ind,1:8)
+
+          endif
         enddo
       enddo
       
@@ -187,12 +207,27 @@ c     .           io, jo, ind, H(ind,1:8)
           do j = 1,numh(io)
             ind = listhptr(io) + j
             jo = listh(ind)
-             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-             Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
-             Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
-             Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-             Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+            if ( spin%SO .and. .not.spin%SO_off ) then
+              Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+              Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+              Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
+              Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
+              Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
+              Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+            else ! offSpOrb
+!              Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+!              Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+!              Haux(1,jo,1,io) = dcmplx(H(ind,1),-H(ind,5))
+!              Haux(2,jo,2,io) = dcmplx(H(ind,2),-H(ind,6))
+!              Haux(1,jo,2,io) = dcmplx(H(ind,7),-H(ind,8))
+!              Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
+            Saux(1,io,1,jo) = dcmplx(  S(ind),   0.0_dp)
+            Saux(2,io,2,jo) = dcmplx(  S(ind),   0.0_dp)
+            Haux(1,io,1,jo) = dcmplx(H(ind,1), H(ind,5))
+            Haux(2,io,2,jo) = dcmplx(H(ind,2), H(ind,6))
+            Haux(1,io,2,jo) = dcmplx(H(ind,3), H(ind,4))
+            Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
+            endif
           enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
@@ -278,20 +313,39 @@ c     .           io, jo, ind, H(ind,1:8)
 !------- 2,1 -----------------------------------------------------------
               D21  = caux(2,iio) * dconjg(caux(1,jo))
       
-              Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
-              Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe
-              Dnew(ind,3) = Dnew(ind,3) + dreal(D12) * qe
-              Dnew(ind,4) = Dnew(ind,4) - dimag(D12) * qe
-              Dnew(ind,5) = Dnew(ind,5) + dimag(D11) * qe
-              Dnew(ind,6) = Dnew(ind,6) + dimag(D22) * qe
-              Dnew(ind,7) = Dnew(ind,7) + dreal(D21) * qe
-              Dnew(ind,8) = Dnew(ind,8) + dimag(D21) * qe
+              if ( spin%SO .and. .not.spin%SO_off ) then
+                Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
+                Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe
+                Dnew(ind,3) = Dnew(ind,3) + dreal(D12) * qe
+                Dnew(ind,4) = Dnew(ind,4) - dimag(D12) * qe
+                Dnew(ind,5) = Dnew(ind,5) + dimag(D11) * qe
+                Dnew(ind,6) = Dnew(ind,6) + dimag(D22) * qe
+                Dnew(ind,7) = Dnew(ind,7) + dreal(D21) * qe
+                Dnew(ind,8) = Dnew(ind,8) + dimag(D21) * qe
       
-              Enew(ind,1) = Enew(ind,1) + dreal(D11) * ee
-              Enew(ind,2) = Enew(ind,2) + dreal(D22) * ee
-              Enew(ind,3) = Enew(ind,3) + dreal(D12) * ee
-              Enew(ind,4) = Enew(ind,4) - dimag(D12) * ee
-      
+                Enew(ind,1) = Enew(ind,1) + dreal(D11) * ee
+                Enew(ind,2) = Enew(ind,2) + dreal(D22) * ee
+                Enew(ind,3) = Enew(ind,3) + dreal(D12) * ee
+                Enew(ind,4) = Enew(ind,4) - dimag(D12) * ee
+              else ! offSpOrb
+!------- D_new(u,u) = ( D(1), D(5) ) 
+                Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
+                Dnew(ind,5) = Dnew(ind,5) + dimag(D11) * qe
+!------- D_new(d,d) = ( D(2), D(6) ) 
+                Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe
+                Dnew(ind,6) = Dnew(ind,6) + dimag(D22) * qe
+!------- D_new(u,d) = ( D(3), D(4) ) 
+                Dnew(ind,3) = Dnew(ind,3) + dreal(D12) * qe
+                Dnew(ind,4) = Dnew(ind,4) + dimag(D12) * qe
+!------- D_new(d,u) = ( D(7), D(8) ) 
+                Dnew(ind,7) = Dnew(ind,7) + dreal(D21) * qe
+                Dnew(ind,8) = Dnew(ind,8) + dimag(D21) * qe
+
+                Enew(ind,1) = Enew(ind,1) + dreal(D11) * ee
+                Enew(ind,2) = Enew(ind,2) + dreal(D22) * ee
+                Enew(ind,3) = Enew(ind,3) + dreal(D12) * ee
+                Enew(ind,4) = Enew(ind,4) + dimag(D12) * ee
+              endif
             enddo
           enddo
         endif

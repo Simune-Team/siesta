@@ -330,6 +330,7 @@
      .     'siesta: Ekin    =', Ekin/eV,
      .     'siesta: Enl     =', Enl/eV,
      .     'siesta: Eso     =', Eso/eV,
+     .     'siesta: Enl_SO  =', Enl_SO/eV,
      .     'siesta: Eldau   =', Eldau/eV,
      .     'siesta: DEna    =', DEna/eV,
      .     'siesta: DUscf   =', DUscf/eV,
@@ -370,6 +371,9 @@
           call cmlAddProperty(xf=mainXML, value=Eso/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Eso', fmt='r6')
+          call cmlAddProperty(xf=mainXML, value=Enl_SO/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Enl_SO', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=DUscf/eV, 
      .         units='siestaUnits:eV',
      .         dictref='siesta:DUscf', fmt='r6')
@@ -497,6 +501,7 @@
      .    'siesta: ',      'Hartree =', Uscf/eV,
      .    'siesta: ',      'Eldau   =', Eldau/eV,
      .    'siesta: ',      'Eso     =', Eso/eV,
+     .    'siesta: ',      'Enl_SL  =', Enl_SO/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
      .    'siesta: ',  'Exch.-corr. =', Exc/eV,
      .    'siesta: ', 'Ion-electron =', (Enascf+Enl+DUscf-Uscf-Uatm)/eV,
@@ -528,6 +533,9 @@
           call cmlAddProperty(xf=mainXML, value=Eso/eV,
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Eso', fmt='r7')
+          call cmlAddProperty(xf=mainXML, value=Enl_SO/eV,
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Enl_SO', fmt='r7')
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r7')

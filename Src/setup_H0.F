@@ -21,11 +21,12 @@ C     and initializes data structures on the grid.
       use sparse_matrices, only: Dscf
 
 ! CC RC  Added for the offSpOrb
-      use sparse_matrices, only: H0_SO
+      use sparse_matrices, only: H0_SO, listhptr, numh, listht
       use m_nlefsm,        only: nlefsm_SO
       use m_energies,      only: Enl_SO, Enl, Ekin
       use m_spin,          only: spin
       use parallel,        only: IONode
+      use atomlist,        only: no_u
 ! CC RC  Added for the offSpOrb
 
       use sparse_matrices, only: listh, listhptr, numh, maxnh
@@ -61,8 +62,10 @@ C     and initializes data structures on the grid.
       integer  :: ia, is
 
 ! CC RC  Added for the offSpOrb
-      real(dp)    :: dummy_E_SO
-      integer     :: io, ispin
+      real(dp)    :: dummy_E_SO, err_H0_SO(6), err_H_vkb
+      real(dp) :: eV = 1._dp / 13.60580_dp
+      character(len=1) :: cindent = ' '
+      integer     :: io, ispin, i, j, ind, iot, ij, ji
       complex(dp) :: Hc, Dc
 #ifdef MPI
       real(dp)            :: buffer1
@@ -135,6 +138,60 @@ C     Add on force field contribution to energy
       H_val(:) = 0.0_dp
 !$OMP end parallel workshare
 
+!!      write(6,'(a,4f12.6)') '  Max/MinVal(D_1,D_5)',
+!     &                        maxval(Dscf(:,1)), maxval(Dscf(:,5)),
+!     &                        minval(Dscf(:,1)), minval(Dscf(:,5))
+!      write(6,'(a,4i12)') '  Max/MinVal(D_1,D_5)',
+!     &                        maxloc(Dscf(:,1)), maxloc(Dscf(:,5)),
+!     &                        minloc(Dscf(:,1)), minloc(Dscf(:,5))
+!      write(6,'(a,4f12.6)') '  Max/MinVal(D_2,D_6)',
+!     &                        maxval(Dscf(:,2)), maxval(Dscf(:,6)),
+!     &                        minval(Dscf(:,2)), minval(Dscf(:,6))
+!      write(6,'(a,4i12)') '  Max/MinVal(D_2,D_6)',
+!     &                        maxloc(Dscf(:,2)), maxloc(Dscf(:,6)),
+!     &                        minloc(Dscf(:,2)), minloc(Dscf(:,6))
+!      write(6,'(a,4f12.6)') '  Max/MinVal(D_3,D_4)',
+!     &                        maxval(Dscf(:,3)), maxval(Dscf(:,4)),
+!     &                        minval(Dscf(:,3)), minval(Dscf(:,4))
+!      write(6,'(a,4i12)') '  Max/MinVal(D_3,D_4)',
+!     &                        maxloc(Dscf(:,3)), maxloc(Dscf(:,4)),
+!     &                        minloc(Dscf(:,3)), minloc(Dscf(:,4))
+!      write(6,'(a,4f12.6)') '  Max/MinVal(D_7,D_8)',
+!     &                        maxval(Dscf(:,7)), maxval(Dscf(:,8)),
+!     &                        minval(Dscf(:,7)), minval(Dscf(:,8))
+!      write(6,'(a,4i12)') '  Max/MinVal(D_7,D_8)',
+!     &                        maxloc(Dscf(:,7)), maxloc(Dscf(:,8)),
+!     &                        minloc(Dscf(:,7)), minloc(Dscf(:,8))
+
+
+!      write(6,'(a)') ' '
+!      write(6,'(a)') ' setup_H0: Dscf(1)='
+!      write(6,'(15(/,15f12.6),/)') Dscf(:,1)
+!      write(6,'(a)') ' '
+!      write(6,'(a)') ' setup_H0: Dscf(5)='
+!      write(6,'(15(/,15f12.6),/)') Dscf(:,5)
+!      write(6,'(a)') ' '
+!      write(6,'(a)') ' setup_H0: Dscf(2)='
+!      write(6,'(15(/,15f12.6),/)') Dscf(:,2)
+!      write(6,'(a)') ' '
+!      write(6,'(a)') ' setup_H0: Dscf(6)='
+!      write(6,'(15(/,15f12.6),/)') Dscf(:,6)
+!      write(6,'(a)') ' '
+!      write(6,'(a)') ' setup_H0: Dscf(3)='
+!      write(6,'(15(/,15f12.6),/)') Dscf(:,3)
+!      write(6,'(a)') ' '
+!      write(6,'(a)') ' setup_H0: Dscf(4)='
+!      write(6,'(15(/,15f12.6),/)') Dscf(:,4)
+!      write(6,'(a)') ' '
+!      write(6,'(a)') ' setup_H0: Dscf(7)='
+!      write(6,'(15(/,15f12.6),/)') Dscf(:,7)
+!      write(6,'(a)') ' '
+!      write(6,'(a)') ' setup_H0: Dscf(8)='
+!      write(6,'(15(/,15f12.6),/)') Dscf(:,8)
+
+
+!      stop'Stopping in setup_H0 bafore call nlefsm_SO...'
+
       if ( .not.spin%SO_off ) then
        write(6,*) '     setup_H0: Calling nlefsm...'
        if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
@@ -157,29 +214,75 @@ C     Add on force field contribution to energy
      &                 dummy_E, dummy_E_SO, dummy_fa,
      &                 dummy_stress, H_val,
      &                 matrix_elements_only=.true.)
+!     &                 matrix_elements_only=.false.)
+
+
+
+!        Enl_SO = 0.0d0
+!       do io = 1, maxnh
+!-------- Enl_SO(u,u)
+!           Dc = cmplx(Dscf(io,1),-Dscf(io,5))
+!           Hc = H0_SO(io,1)
+!           Enl_SO = Enl_SO + real( Hc*Dc )
+!-------- Enl_SO(d,d)
+!           Dc = cmplx(Dscf(io,2),-Dscf(io,6))
+!           Hc = H0_SO(io,2)
+!           Enl_SO = Enl_SO + real( Hc*Dc )
+!-------- Enl_SO(u,d)
+!           Dc = cmplx(Dscf(io,7),-Dscf(io,8))
+!           Hc = H0_SO(io,4)
+!           Enl_SO = Enl_SO + real( Hc*Dc )
+!-------- Enl_SO(d,u)
+!           Dc = cmplx(Dscf(io,3),-Dscf(io,4))
+!           Hc = H0_SO(io,3)
+!           Enl_SO = Enl_SO + real( Hc*Dc )
+!       enddo
 
         Enl_SO = 0.0d0
+!        do i = 1, no_u
+!         do j = 1, numh(i)
         do io = 1, maxnh
+          iot = listht(io)
+
 !-------- Enl_SO(u,u)
-            Dc = cmplx(Dscf(io,1),-Dscf(io,5))
-            Hc = H0_SO(io,1)
-            Enl_SO = Enl_SO + real( Hc*Dc )
+          Dc = cmplx(Dscf(iot,1), Dscf(iot,5))
+          Hc = H0_SO(io,1)
+          Enl_SO = Enl_SO + real( Hc*Dc )
 !-------- Enl_SO(d,d)
-            Dc = cmplx(Dscf(io,2),-Dscf(io,6))
-            Hc = H0_SO(io,2)
-            Enl_SO = Enl_SO + real( Hc*Dc )
+          Dc = cmplx(Dscf(iot,2), Dscf(iot,6))
+          Hc = H0_SO(io,2)
+          Enl_SO = Enl_SO + real( Hc*Dc )
 !-------- Enl_SO(u,d)
-            Dc = cmplx(Dscf(io,7),-Dscf(io,8))
-            Hc = H0_SO(io,4)
-            Enl_SO = Enl_SO + real( Hc*Dc )
+          Dc = cmplx(Dscf(iot,3), Dscf(iot,4))
+          Hc = H0_SO(io,4)
+          Enl_SO = Enl_SO + real( Hc*Dc )
 !-------- Enl_SO(d,u)
-            Dc = cmplx(Dscf(io,3),-Dscf(io,4))
-            Hc = H0_SO(io,3)
-            Enl_SO = Enl_SO + real( Hc*Dc )
+          Dc = cmplx(Dscf(iot,7), Dscf(iot,8))
+          Hc = H0_SO(io,3)
+          Enl_SO = Enl_SO + real( Hc*Dc )
+
+!         enddo
         enddo
 
+!         write(6,*) ' setup_hamiltonian: H0_SO[1,2]'
+!          do i = 1, no_u
+!           do j = 1, numh(i)
+!            ind = listhptr(i)+j
+!           write(6,'(a,i4,4e18.8)')' ind/H0_SO=',ind,real(H0_SO(ind,1)),
+!     &         imag(H0_SO(ind,1)), real(H0_SO(ind,2)),imag(H0_SO(ind,2))
+!           enddo
+!          enddo
+!         write(6,*) ' setup_hamiltonian: H0_SO[3,4]'
+!          do i = 1, no_u
+!           do j = 1, numh(i)
+!            ind = listhptr(i)+j
+!           write(6,'(a,i4,4e18.8)')' ind/H0_SO=',ind,real(H0_SO(ind,3)),
+!     &         imag(H0_SO(ind,3)), real(H0_SO(ind,4)),imag(H0_SO(ind,4))
+!           enddo
+!          enddo
+
         if ( IONode .and. spin%deb_offSO ) 
-     &   write(spin%iout_SO,'(a,f12.8)')
+     &   write(spin%iout_SO,'(a,f14.10)')
      &   '    setup_H0: Enl_SO = ', Enl_SO
 
 #ifdef MPI
@@ -211,7 +314,7 @@ C     Add on force field contribution to energy
       else
          Eso = 0._dp
       end if
-      
+      write(spin%iout_SO,'(a)') ' setup_H0: Before dhscf_init'
 
 C     This will take care of possible changes to the mesh and atomic-related
 C     mesh structures for geometry changes
@@ -222,6 +325,8 @@ C     mesh structures for geometry changes
      &                 mscell, G2max, ntm,
      &                 maxnh, numh, listhptr, listh, datm,
      &                 dummy_fa, dummy_stress)
+
+      write(spin%iout_SO,'(a)') ' setup_H0: After dhscf_init'
   
       call timer('Setup_H0',2)
 

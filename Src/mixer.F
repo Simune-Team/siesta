@@ -30,7 +30,7 @@
       use m_mixing_scf, only: scf_mix
       use m_mixing, only: mixing
       
-      use m_spin,           only: h_spin_dim, SpOrb
+      use m_spin,           only: spin 
       use parallel,         only: IONode
 
       implicit none
@@ -61,7 +61,7 @@
 
 
       ! Create residual function to minimize
-      allocate(F(maxnh,h_spin_dim))
+      allocate(F(maxnh,spin%H))
 
 !$OMP parallel default(shared), private(dtmp,i)
 
@@ -104,15 +104,15 @@
       ! Upon exit Xout contains the mixed quantity
       select case ( mix_spin )
       case ( MIX_SPIN_ALL )
-         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout)
+         call mixing( scf_mix, maxnh, spin%H, Xin, F, Xout)
       case ( MIX_SPIN_SPINOR )
-         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+         call mixing( scf_mix, maxnh, spin%H, Xin, F, Xout,
      &        nsub=2)
       case ( MIX_SPIN_SUM )
-         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+         call mixing( scf_mix, maxnh, spin%H, Xin, F, Xout,
      &        nsub=1)
       case ( MIX_SPIN_SUM_DIFF )
-         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+         call mixing( scf_mix, maxnh, spin%H, Xin, F, Xout,
      &        nsub=2)
       end select
 
@@ -191,12 +191,12 @@
          if (IONode)
      &        write (6,"(/a)")
      &        'siesta: Mulliken populations after mixing'
-         if ( SpOrb ) then
+         if ( spin%SO .and. .not.spin%SO_off ) then
             call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
      .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .           indxuo )
          else
-            call mulliken( mullipop, h_spin_dim, na_u, no_u, maxnh,
+            call mulliken( mullipop, spin%H, na_u, no_u, maxnh,
      &           numh, listhptr, listh, S, Dscf, isa,
      &           lasto, iaorb, iphorb )
          endif

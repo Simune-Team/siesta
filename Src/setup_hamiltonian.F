@@ -37,11 +37,19 @@
       use m_dhscf,      only: dhscf
       use m_stress
       use m_energies
-      use parallel, only: Node
+      use parallel, only: Node, IONode ! CC RC
       use m_steps, only: istp
       use m_ntm
-      use m_spin,         only: nspin, SpOrb, NonCol
-      use m_spin,         only: h_spin_dim, e_spin_dim, spinor_dim
+
+! CC RC  modified for the offSpOrb
+      use m_spin,          only: spin 
+      use sparse_matrices, only: H0_SO
+      use sparse_matrices, only: listht
+      use sparse_matrices, only: MM_HDM, herm_HDM
+!      use m_spin,         only: nspin, SpOrb, NonCol
+!      use m_spin,         only: h_spin_dim, e_spin_dim, spinor_dim
+! CC RC  modified for the offSpOrb
+
       use m_dipol
       use alloc, only: re_alloc, de_alloc
       use m_gamma
@@ -71,6 +79,11 @@
 
       real(dp), pointer   :: H_vkb(:), H_kin(:), H_ldau(:,:), H_so(:,:)
 
+! CC RC  modified for the offSpOrb
+      complex(dp):: Hc, Dc
+      integer :: ind, i, j, indt, iot ! indt_tmp
+! CC RC  modified for the offSpOrb
+
 !------------------------------------------------------------------------- BEGIN
 
       call timer('setup_H',1)
@@ -82,7 +95,7 @@
 
 !     Save present H matrix
 !$OMP do collapse(2)
-      do ispin = 1,h_spin_dim
+      do ispin = 1,spin%H
          do io = 1,maxnh
             Hold(io,ispin) = H(io,ispin)
          enddo
@@ -92,38 +105,42 @@
 !$OMP single
       H_kin => val(H_kin_1D)
       H_vkb => val(H_vkb_1D)
-      if ( SpOrb ) then
+      if ( spin%SO .and. .not.spin%SO_off ) then
          ! Sadly some compilers (g95), does
          ! not allow bounds for pointer assignments :(
          H_so => val(H_so_2D)
       end if
 !$OMP end single ! keep wait
 
-      do ispin = 1, spinor_dim
-        if (ispin .le. 2) then
-!$OMP do
-          do io = 1,maxnh
-            H(io,ispin) = H_kin(io) + H_vkb(io)
-          end do
-!$OMP end do nowait
-        else
-!$OMP do
-          do io = 1,maxnh
-            H(io,ispin) = 0.0_dp
-          end do
-!$OMP end do nowait
-        end if
-      end do
 
-      if ( SpOrb ) then
+! CC RC  modified for the offSpOrb
+      if ( .not. spin%SO_off ) then
+       do ispin = 1, spin%spinor
+         if (ispin .le. 2) then
+!$OMP do
+           do io = 1,maxnh
+             H(io,ispin) = H_kin(io) + H_vkb(io)
+           end do
+!$OMP end do nowait
+         else
+!$OMP do
+           do io = 1,maxnh
+             H(io,ispin) = 0.0_dp
+           end do
+!$OMP end do nowait
+         end if
+       end do
+      end if
+
+      if ( spin%SO .and. .not.spin%SO_off ) then
 !$OMP do collapse(2)
-         do ispin = 3 , h_spin_dim
+         do ispin = 3 , spin%H
             do io = 1,maxnh
                H(io,ispin) = H_so(io,ispin-2)
             end do
          end do
 !$OMP end do nowait
-      else if ( NonCol ) then
+      else if ( spin%NCol ) then
 !$OMP do
          do io = 1,maxnh
             H(io,3) = 0._dp
@@ -131,6 +148,8 @@
          end do
 !$OMP end do nowait
       end if
+! CC RC  modified for the offSpOrb
+
          
 ! ..................
 
@@ -148,22 +167,73 @@
 !$OMP end single ! keep wait
       
 !$OMP do collapse(2), reduction(+:Ekin,Enl)
-      do ispin = 1, spinor_dim
+      do ispin = 1, spin%spinor
         do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
           Enl  = Enl  + H_vkb(io) * Dscf(io,ispin)
         enddo
       enddo
 !$OMP end do nowait
+!      do io = 1, maxnh
+!       write(6,'(a,i5,2f12.8)') 
+!     &     ' io/H_kin/H_vkb = ', io,H_kin(io),H_vkb(io)
+!      enddo
 
-      write(6,*) ' setup_hamiltonian: Ekin = ', Ekin
-      write(6,*) ' setup_hamiltonian:  Enl = ', Enl
+
+! CC RC  Added  for the offSpOrb
+      if( spin%SO_off ) then
+        Enl_SO = 0.0_dp
+
+        do io = 1, maxnh
+
+          iot = listht(io) 
+
+!-------- Enl_SO(u,u)
+            Dc = cmplx(Dscf(iot,1),Dscf(iot,5))
+            Hc = H0_SO(io,1)
+            Enl_SO = Enl_SO + real( Hc*Dc )
+!-------- Enl_SO(d,d)
+            Dc = cmplx(Dscf(iot,2),Dscf(iot,6))
+            Hc = H0_SO(io,2)
+            Enl_SO = Enl_SO + real( Hc*Dc )
+!-------- Enl_SO(u,d)
+            Dc = cmplx(Dscf(iot,3),Dscf(iot,4))
+            Hc = H0_SO(io,4)
+            Enl_SO = Enl_SO + real( Hc*Dc )
+!-------- Enl_SO(d,u)
+            Dc = cmplx(Dscf(iot,7),Dscf(iot,8))
+            Hc = H0_SO(io,3)
+            Enl_SO = Enl_SO + real( Hc*Dc )
+        enddo
+
+!         write(6,*) ' setup_hamiltonian: H0_SO[1,2]'
+!          do i = 1, no_u
+!           do j = 1, numh(i)
+!            ind = listhptr(i)+j
+!           write(6,'(a,i4,4e18.8)')'ind/H0_SO=',ind,real(H0_SO(ind,1)),
+!     .         imag(H0_SO(ind,1)),real(H0_SO(ind,2)),imag(H0_SO(ind,2))
+!           enddo
+!          enddo
+!         write(6,*) ' setup_hamiltonian: H0_SO[3,4]'
+!          do i = 1, no_u
+!           do j = 1, numh(i)
+!            ind = listhptr(i)+j
+!           write(6,'(a,i4,4e18.8)')'ind/H0_SO=',ind,real(H0_SO(ind,3)),
+!     .         imag(H0_SO(ind,3)),real(H0_SO(ind,4)),imag(H0_SO(ind,4))
+!           enddo
+!          enddo
+
+
+
+
+      endif
+! CC RC  Added  for the offSpOrb
 
 
 !$OMP single
       Eso = 0._dp
 !$OMP end single
-      if ( SpOrb ) then
+      if ( spin%SO .and. .not.spin%SO_off ) then
 !$OMP do reduction(+:Eso)
          do io = 1,maxnh
             Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8)
@@ -173,10 +243,19 @@
 !$OMP end do nowait
       end if
 
-      write(6,*) ' setup_hamiltonian:  Eso = ', Eso
-
-
 !$OMP end parallel
+
+!      if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
+!       write(spin%iout_SO,'(a,f12.6)') 
+!     .       ' setup_hamiltonian:    Ekin = ', Ekin
+!       write(spin%iout_SO,'(a,f12.6)') 
+!     .       ' setup_hamiltonian:     Enl = ', Enl
+!       write(spin%iout_SO,'(a,f12.6)') 
+!     .       ' setup_hamiltonian:  Enl_SO = ', Enl_SO
+!       write(spin%iout_SO,'(a,f12.6)') 
+!     .       ' setup_hamiltonian:     Eso = ', Eso
+!      endif
+
       
 #ifdef MPI
       ! Global reduction of Ekin, Enl
@@ -184,15 +263,21 @@
       Ekin = buffer1
       call globalize_sum(Enl,buffer1)
       Enl = buffer1
-      if ( SpOrb ) then
+      if ( spin%SO .and. .not.spin%SO_off ) then
          ! Global reduction of Eso 
          call globalize_sum(Eso,buffer1)
          Eso = buffer1
+      elseif( spin%SO_off ) then
+         ! Global reduction of Enl_SO 
+         call globalize_sum(Enl_SO,buffer1)
+         Enl_SO = buffer1
       end if
 #endif
 
 !     Non-SCF part of total energy
       call update_E0()
+
+!      stop' setup_hamiltonian: stopping after update E0...'
 
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
@@ -202,7 +287,7 @@
         call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
      .                    maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .                    numh, listhptr, listh, numh, listhptr, listh,
-     .                    spinor_dim, Dscf, Eldau, DEldau, H_ldau, 
+     .                    spin%spinor, Dscf, Eldau, DEldau, H_ldau, 
      .                    fal, stressl, H, iscf,
      .                    matrix_elements_only=.true.)
 
@@ -234,13 +319,165 @@
       endif
       use_rhog_in =  (mix_charge .and. iscf > 1)
   
-      call dhscf( nspin, no_s, iaorb, iphorb, no_l,
+!      stop'Stopping before calling to dhscf'
+      if ( spin%SO_off ) then
+       H(:,:) = 0.0_dp
+      endif
+      call dhscf( spin%grid, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
      .            ntm, ifa, istr, ihmat, filesOut,
      .            maxnh, numh, listhptr, listh, Dscf, Datm,
      .            maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .            Exc, Dxc, dipol, stress, fal, stressl,
      .            use_rhog_in)
+
+      write(6,*) ' setup-hamiltonian: after dhscf...'
+      if ( spin%SO_off ) then
+
+!        H(:,7) = H(:,3)
+!        H(:,8) =-H(:,4)
+
+         do i = 1, no_u
+          do j = 1, numh(i)
+           ind = listhptr(i)+j
+           indt= listht(ind)
+!           write(6,*) ' ind= ',ind,' indt= ',indt
+           H(indt,7) = H(ind,3)
+           H(indt,8) =-H(ind,4)
+          enddo
+         enddo
+         call herm_HDM( 'H' )
+!         stop' setup_hamiltonian: Stopping after dhscf...'
+
+CC
+!      do ind = 1, maxnh
+!       indt = listht(ind)
+!       if ( abs(H_kin(ind)-H_kin(indt)).gt.1.0d-4 ) then
+!        write(6,*) 'H_kin WRONG!',H_kin(ind),H_kin(indt)
+!        stop
+!       endif
+!       if ( abs(H_vkb(ind)-H_vkb(indt)).gt.1.0d-4 ) then
+!        write(6,*) 'H_vkb WRONG!',H_vkb(ind),H_vkb(indt)
+!        stop
+!       endif
+!       if ( abs(H(ind,1)-H(indt,1)).gt.1.0d-4 ) then
+!        write(6,*) 'H_dscf1 WRONG!',H(ind,1),H(indt,1)
+!        stop
+!       endif
+!       if ( abs(H(ind,2)-H(indt,2)).gt.1.0d-4 ) then
+!        write(6,*) 'H_dscf2 WRONG!',H(ind,2),H(indt,2)
+!        stop
+!       endif
+!      enddo
+
+
+
+
+
+!        write(6,*) ' setup_hamiltonian: After dhscf..'
+!          do i = 1, no_u
+!           do j = 1, numh(i)
+!            ind = listhptr(i)+j
+!            if(abs(H(ind,1)).gt.0.0d0.or.abs(H(ind,2)).gt.0.0d0
+!     &      .or.abs(H(ind,3)).gt.0.0d0.or.abs(H(ind,4)).gt.0.0d0)
+!     &         write(6,'(a,i4,8f14.10)') ' ind/H=',ind,H(ind,1),
+!     &          H(ind,5), H(ind,2),H(ind,6),H(ind,3),
+!     &          H(ind,4),H(ind,7),H(ind,8)
+!           enddo
+!          enddo
+!        write(6,*) ' setup_hamiltonian: '
+!        write(6,*) ' setup_hamiltonian: '
+!        write(6,*) ' setup_hamiltonian: '
+  
+        do is = 1 , spin%spinor
+          do io = 1, maxnh
+            H(io,is) = H(io,is) + H_kin(io) + H_vkb(io)
+          enddo
+!          do ind = 1, maxnh
+!           indt = listht(ind)
+!           if ( abs(H(ind,is)-H(indt,is)).gt.1.0d-4 ) then
+!            write(6,*) 'H_dscf WRONG!',is,H(ind,is),H(indt,is)
+!            stop
+!           endif
+!          end do
+        enddo
+!        write(6,*) ' setup_hamiltonian: H_kin..'
+!          do i = 1, no_u
+!           do j = 1, numh(i)
+!            ind = listhptr(i)+j
+!            write(6,'(a,i4,8f14.10)') ' ind/H_kin=',ind,H_kin(ind)
+!           enddo
+!          enddo
+!        write(6,*) ' setup_hamiltonian: H_vkb..'
+!          do i = 1, no_u
+!           do j = 1, numh(i)
+!            ind = listhptr(i)+j
+!            write(6,'(a,i4,8f14.10)') ' ind/H_vkb=',ind,H_vkb(ind)
+!           enddo
+!          enddo
+!        write(6,*) ' setup_hamiltonian: '
+!        write(6,*) ' setup_hamiltonian: '
+!        write(6,*) ' setup_hamiltonian: '
+
+C------- H(u,u)
+         H(:,1) = H(:,1) + real(H0_SO(:,1))
+         H(:,5) =          imag(H0_SO(:,1))
+C------- H(d,d)
+         H(:,2) = H(:,2) + real(H0_SO(:,2))
+         H(:,6) =          imag(H0_SO(:,2))
+C------- H(u,d)
+         H(:,3) = H(:,3) + real(H0_SO(:,3))
+         H(:,4) = H(:,4) + imag(H0_SO(:,3))
+C------- H(d,u)
+         H(:,7) = H(:,7) + real(H0_SO(:,4))
+         H(:,8) = H(:,8) + imag(H0_SO(:,4))
+
+C         write(6,*) ' setup_hamiltonian: H_SO'
+C          do i = 1, no_u
+C           do j = 1, numh(i)
+C            ind = listhptr(i)+j
+C           write(6,*) ' ind/H0_SO=',ind,H0_SO(ind,1),
+C     &         H0_SO(ind,2),H0_SO(ind,3),H0_SO(ind,4)
+C           enddo
+C          enddo
+
+      endif
+!         write(6,*) ' setup_hamiltonian: H[1,2]'
+!          do i = 1, no_u
+!           do j = 1, numh(i)
+!            ind = listhptr(i)+j
+!           write(6,'(a,i4,4e18.8)')' ind/H=',ind,H(ind,1),
+!     &         H(ind,5), H(ind,2),H(ind,6)
+!           enddo
+!          enddo
+!         write(6,*) ' setup_hamiltonian: H[3,4]'
+!          do i = 1, no_u
+!           do j = 1, numh(i)
+!            ind = listhptr(i)+j
+!           write(6,'(a,i4,4e18.8)')' ind/H=',ind,H(ind,3),
+!     &         H(ind,4), H(ind,7), H(ind,8)
+!           enddo
+!          enddo
+!
+
+!      stop' setup_hamiltonian: Stopping'
+
+      write(6,*) ' setup_hamiltonian: after loading H0_SO..'
+      call herm_HDM( 'H' )
+      call MM_HDM( 'H' )
+      call MM_HDM( 'DM' )
+
+! CC RC
+        if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
+         write(spin%iout_SO,'(a)')  
+     &     ' setup_hamiltonian: After add all the parts to H...'
+         write(spin%iout_SO,'(a)')  
+     &     ' setup_hamiltonian: MM from DM and from H... '
+        endif
+!      call MM_HDM( 'H' )
+!      call MM_HDM( 'DM' )
+
+C      stop'Stopping after calculate MM_DM/H...'
 
       ! This statement will apply to iscf = 1, for example, when
       ! we do not use rhog_in. Rhog here is always the charge used to
@@ -255,7 +492,7 @@
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
 
       if (savehs .or. write_coop) then
-         call write_hsx( gamma, no_u, no_s, h_spin_dim, indxuo,
+         call write_hsx( gamma, no_u, no_s, spin%H, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, qtot,
      &        temp, xijo)
       endif

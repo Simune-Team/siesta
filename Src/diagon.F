@@ -106,9 +106,12 @@ C
       use fdf
       use alloc
       use m_memory
+! CC RC  Added for the offSpOrb
+      use m_spin,       only: spin
       use m_spin,       only: Spiral, qSpiral
-      use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
-      use m_spin,       only: e_spin_dim
+!      use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
+!      use m_spin,       only: e_spin_dim
+! CC RC  Added for the offSpOrb
 #ifdef MPI
       use m_diagon_opt, only : paralleloverk
       use mpi_siesta
@@ -128,7 +131,7 @@ C
      .  listhptr(*), listdptr(*)
 
       real(dp)
-     .  Dnew(maxnd,size(H,2)), e1, e2, ef, Enew(maxnd,e_spin_dim), 
+     .  Dnew(maxnd,size(H,2)), e1, e2, ef, Enew(maxnd,spin%EDM), 
      .  Entropy, eo(maxo,nspin,nk),  
      .  kpoint(3,nk), 
      .  qo(maxo,nspin,nk), qtot, S(maxnh), temp, wk(nk), occtol,
@@ -172,7 +175,7 @@ C Start time counter ................................................
 
 C Check internal dimensions ..........................................
 CC RC Changed for SO
-      if (NoMagn .or. SPpol) then
+      if ( spin%none .or. spin%Col ) then
        if (gamma) then
         nhs  = nuotot * nuo
         npsi = nuotot * maxuo * nspin
@@ -188,7 +191,7 @@ CC RC Changed for SO
         endif
 #endif
        endif
-      elseif (NonCol .or. SpOrb) then
+      elseif ( spin%NCol .or. spin%SO ) then
         nhs  = 2 * (2*nuotot) * (2*nuo)
         npsi = 2 * (2*nuotot) * (2*maxuo)
         naux = (2*nuotot) * 5
@@ -200,8 +203,8 @@ CC RC Changed for SO
       
       ! Check when we should allocate the auxiliary
       ! arrays
-      if ( .not. (SpOrb .or.
-     &     (NonCol.and..not.Spiral) )) then
+      if ( .not. (spin%SO .or.
+     &     (spin%NCol.and..not.Spiral) )) then
          call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
          call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
       end if
@@ -244,7 +247,7 @@ C Call apropriate routine
       getPSI = .false.
 
 CC RC Changed for SO
-      if (NoMagn .or. SPpol) then
+      if (spin%none .or. spin%Col ) then
        if (gamma) then
         call diagg( h_spin_dim, nuo, maxuo, maxnh, maxnd, maxo,
      .              numh, listhptr, listh, numd, listdptr, listd, 
@@ -304,7 +307,7 @@ CC RC Changed for SO
 #endif
        endif
       
-      elseif (NonCol) then
+      elseif (spin%NCol) then
        if (gamma) then
         call diag2g( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
@@ -327,7 +330,7 @@ CC RC Changed for SO
      .               Enew, ef, Entropy, psi, 
      .               nuotot, occtol, iscf )
        endif
-      elseif (SpOrb) then
+      elseif ( spin%SO ) then
         if (gamma) then
           call diag3g( nuo, no, maxuo, maxnh, maxnd, maxo, numh,
      .                 listhptr, listh, numd, listdptr, listd,

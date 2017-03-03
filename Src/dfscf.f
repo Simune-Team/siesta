@@ -70,8 +70,13 @@ C  Modules
       use parallel,      only: Nodes, Node
       use sys,           only: die
       use parallelsubs,  only: GlobalToLocalOrb
-      use m_spin,        only: NonCol, SpOrb
-      use m_spin,        only: h_spin_dim, spinor_dim
+!      use m_spin,        only: NonCol, SpOrb
+!      use m_spin,        only: h_spin_dim, spinor_dim
+
+! CC RC  Added  for the offSpOrb
+      use m_spin,        only: spin
+      use sparse_matrices, only: listht
+! CC RC  Added  for the offSpOrb
 
       implicit none
 
@@ -108,6 +113,8 @@ C Internal variables
       ! Allocate
       real(dp), pointer :: V(:,:) => null()
 
+      integer :: indt
+
 !
       integer, pointer, save ::  ibc(:), iob(:)
       real(dp), pointer, save :: C(:,:), D(:,:,:),
@@ -115,7 +122,7 @@ C Internal variables
       logical ::           Parallel_Run, nullified=.false.
       type(allocDefaults) oldDefaults
   
-      if ( size(Dscf, 2) /= h_spin_dim ) then
+      if ( size(Dscf, 2) /= spin%H ) then
          call die('Spin components is not equal to options.')
       end if
 
@@ -138,7 +145,7 @@ C  Allocate buffers to store partial copies of Dscf and C
       maxb = maxc + minb
       maxb = min( maxb, no )
       call re_alloc( C, 1, nsp, 1, maxc, 'C', 'dfscf' )
-      call re_alloc( D, 0, maxb, 0, maxb, 1, h_spin_dim, 'D', 'dfscf' )
+      call re_alloc( D, 0, maxb, 0, maxb, 1, spin%H, 'D', 'dfscf' )
       call re_alloc( gC, 1, 3, 1, nsp, 1, maxc, 'gC', 'dfscf' )
       call re_alloc( ibc, 1, maxc, 'ibc', 'dfscf' )
       call re_alloc( iob, 0, maxb, 'iob', 'dfscf' )
@@ -159,11 +166,11 @@ C  If parallel, allocate temporary storage for Local Dscf
         else
           maxndl = 1
         endif
-        call re_alloc( DscfL, 1, maxndl, 1, h_spin_dim, 
+        call re_alloc( DscfL, 1, maxndl, 1, spin%H, 
      .                 'DscfL', 'dfscf' )
 C Redistribute Dscf to DscfL form
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo,
-     .                   h_spin_dim, Dscf, DscfL )
+     .                   spin%H, Dscf, DscfL )
 
       endif
 
@@ -254,13 +261,23 @@ C  Copy row i of Dscf into row last of D
                 D(ib,jb,:) = DscfL(ind,:)
 ! JFR           ! We cannot assume symmetry (ib,jb) -- (jb,ib)
                 ! We need to transpose the spin and conjugate
-                if ( SpOrb ) then
+                if ( spin%SO .and. .not.spin%SO_off ) then
                    D(jb,ib,1) = DscfL(ind,1)
                    D(jb,ib,2) = DscfL(ind,2)
                    D(jb,ib,3) = DscfL(ind,7)
                    D(jb,ib,4) = DscfL(ind,8)
                    D(jb,ib,5) = -DscfL(ind,5)
                    D(jb,ib,6) = -DscfL(ind,6)
+                   D(jb,ib,7) = DscfL(ind,3)
+                   D(jb,ib,8) = DscfL(ind,4)
+! CC RC  Added  for the offSpOrb
+                elseif( spin%SO_off ) then
+                   D(jb,ib,1) = DscfL(ind,1)
+                   D(jb,ib,2) = DscfL(ind,2)
+                   D(jb,ib,3) = DscfL(ind,7)
+                   D(jb,ib,4) = DscfL(ind,8)
+                   D(jb,ib,5) = DscfL(ind,5)
+                   D(jb,ib,6) = DscfL(ind,6)
                    D(jb,ib,7) = DscfL(ind,3)
                    D(jb,ib,8) = DscfL(ind,4)
                 else
@@ -276,13 +293,23 @@ C  Copy row i of Dscf into row last of D
                 jb = ibuff(j)
                 D(ib,jb,:) = Dscf(ind,:)
 ! JFR           ! We cannot assume symmetry (ib,jb) -- (jb,ib)
-                if ( SpOrb ) then
+                if ( spin%SO .and. .not.spin%SO_off ) then
+                   D(jb,ib,1) =  Dscf(ind,1)
+                   D(jb,ib,2) =  Dscf(ind,2)
+                   D(jb,ib,3) =  Dscf(ind,7)
+                   D(jb,ib,4) =  Dscf(ind,8)
+                   D(jb,ib,5) = -Dscf(ind,5)
+                   D(jb,ib,6) = -Dscf(ind,6)
+                   D(jb,ib,7) =  Dscf(ind,3)
+                   D(jb,ib,8) =  Dscf(ind,4)
+! CC RC  Added  for the offSpOrb
+                elseif( spin%SO_off ) then
                    D(jb,ib,1) = Dscf(ind,1)
                    D(jb,ib,2) = Dscf(ind,2)
                    D(jb,ib,3) = Dscf(ind,7)
                    D(jb,ib,4) = Dscf(ind,8)
-                   D(jb,ib,5) = -Dscf(ind,5)
-                   D(jb,ib,6) = -Dscf(ind,6)
+                   D(jb,ib,5) = Dscf(ind,5)
+                   D(jb,ib,6) = Dscf(ind,6)
                    D(jb,ib,7) = Dscf(ind,3)
                    D(jb,ib,8) = Dscf(ind,4)
                 else
@@ -355,11 +382,14 @@ C     Copy potential to a double precision array
         V(1:nsp,1:nspin) = Vscf(1:nsp,ip,1:nspin)
 
 C     Factor two for nondiagonal elements for non-collinear spin
-        if ( NonCol .or. SpOrb ) then
+        if ( spin%NCol .or. spin%SO .and. .not.spin%SO_off ) then
            V(1:nsp,3:4) = 2.0_dp * V(1:nsp,3:4)
-           if ( SpOrb ) then
+           if ( spin%SO .and. .not.spin%SO_off ) then
               V(1:nsp,7:8) = V(1:nsp,3:4)
            end if
+! CC RC  Added  for the offSpOrb
+        elseif( spin%SO_off ) then
+         V(1:nsp,3:nspin) = 2.0_dp * V(1:nsp,3:nspin)
         end if
 
 C     Loop on first orbital of mesh point
@@ -381,7 +411,7 @@ C  Some loops are not done using f90 form as this
 C  leads to much slower execution on machines with stupid f90
 C  compilers at the moment
           CDV(1:nsp) = 0.0_dp
-          do ispin = 1,h_spin_dim
+          do ispin = 1,spin%H
 
 C  Loop on second orbital of mesh point
             CD(1:nsp) = 0.0_dp

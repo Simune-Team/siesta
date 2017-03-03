@@ -579,14 +579,14 @@
       call re_alloc( qwid, 0, lmaxd, 1, nsemx, 1, nsp,
      &               'qwid', 'basis_types' )
       nullify( erefkb )
-      if( IONode .and. spin%deb_offSO ) then 
-        write(spin%iout_SO,'(a,i3)') 
-     $     '       basis_specs_transfer: nkbmx = ', nkbmx 
-        write(spin%iout_SO,'(a,i3)') 
-     $     '       basis_specs_transfer: lmaxd = ', lmaxd 
-        write(spin%iout_SO,'(a,i3)') 
-     $     '       basis_specs_transfer:   nsp = ', nsp 
-      endif
+C      if( IONode .and. spin%deb_offSO ) then 
+C        write(spin%iout_SO,'(a,i3)') 
+C     $     '       basis_specs_transfer: nkbmx = ', nkbmx 
+C        write(spin%iout_SO,'(a,i3)') 
+C     $     '       basis_specs_transfer: lmaxd = ', lmaxd 
+C        write(spin%iout_SO,'(a,i3)') 
+C     $     '       basis_specs_transfer:   nsp = ', nsp 
+C      endif
       call re_alloc( erefkb, 1, nkbmx, 0, lmaxd, 1, nsp,
      &               'erefkb', 'basis_types' )
       nullify( charge )
@@ -766,21 +766,21 @@
          end do
       end do
 
-      if( IONode .and. spin%deb_offSO ) then 
-        write(spin%iout_SO,'(a,i3)') 
-     $     '       write_basis_specs: Is lmxkb(is) > 0 ? ', lmxkb(is) 
-        write(spin%iout_SO,'(a,l2)') 
-     $     '       write_basis_specs: spin%SO_off = ', spin%SO_off
-        write(spin%iout_SO,'(a,i3)') 
-     $     '       write_basis_specs: size(erefkb,1) = ', 
-     $             size(erefkb,dim=1) 
-        write(spin%iout_SO,'(a,i3)') 
-     $     '       write_basis_specs: size(erefkb,2) = ', 
-     $             size(erefkb,dim=2) 
-        write(spin%iout_SO,'(a,i3)') 
-     $     '       write_basis_specs: size(erefkb,3) = ', 
-     $             size(erefkb,dim=3) 
-      endif
+C      if( IONode .and. spin%deb_offSO ) then 
+C        write(spin%iout_SO,'(a,i3)') 
+C     $     '       write_basis_specs: Is lmxkb(is) > 0 ? ', lmxkb(is) 
+C        write(spin%iout_SO,'(a,l2)') 
+C     $     '       write_basis_specs: spin%SO_off = ', spin%SO_off
+C        write(spin%iout_SO,'(a,i3)') 
+C     $     '       write_basis_specs: size(erefkb,1) = ', 
+C     $             size(erefkb,dim=1) 
+C        write(spin%iout_SO,'(a,i3)') 
+C     $     '       write_basis_specs: size(erefkb,2) = ', 
+C     $             size(erefkb,dim=2) 
+C        write(spin%iout_SO,'(a,i3)') 
+C     $     '       write_basis_specs: size(erefkb,3) = ', 
+C     $             size(erefkb,dim=3) 
+C      endif
       if ( lmxkb(is) > 0 ) then
          write(lun,'(79("-"))')
          nj_SO = 1 ! CC RC  Added for the offSpOrb
