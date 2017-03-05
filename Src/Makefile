@@ -160,7 +160,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	delk.o m_planewavematrix.o m_digest_nnkp.o broadcast_projections.o \
 	compute_pw_matrix.o m_writedelk.o mmn.o m_noccbands.o amn.o \
 	m_overkkneig.o write_inp_wannier.o diagonalizeHk.o m_orderbands.o\
-        m_check_walltime.o
+        m_check_walltime.o print_spin.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -721,6 +721,8 @@ post_scf_work.o: atomlist.o compute_dm.o final_H_f_stress.o kpoint_grid.o
 post_scf_work.o: m_dminim.o m_energies.o m_eo.o m_gamma.o m_spin.o m_steps.o
 post_scf_work.o: m_zminim.o mneighb.o parallel.o siesta_geom.o siesta_options.o
 post_scf_work.o: sparse_matrices.o
+print_spin.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
+print_spin.o: siesta_cml.o sparse_matrices.o
 printmatrix.o: alloc.o
 projected_DOS.o: alloc.o atomlist.o kpoint_grid.o kpoint_pdos.o m_eo.o
 projected_DOS.o: m_gamma.o m_spin.o parallel.o precision.o siesta_geom.o

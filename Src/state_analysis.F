@@ -40,7 +40,8 @@
       integer  :: ia, jx, ix
       real(dp) :: volume
       logical  :: eggbox_block=.true. ! Read eggbox info from data file?
-
+      real(dp) :: qspin
+      
       external :: eggbox, mulliken
       real(dp), external :: volcel
 
@@ -57,7 +58,7 @@
       FreeEHarris = Eharrs - Temp * Entropy
 
       if (cml_p) call cmlStartPropertyList(mainXML,
-     &                        title='Final scf energies')
+     &                        title='Energies and spin')
       if (IOnode) then
         if ( .not. harrisfun)
      &      write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV
@@ -89,6 +90,8 @@
      .         fmt='r6')
       endif
 
+      call print_spin(qspin)
+      
       if (cml_p) call cmlEndPropertyList( mainXML )
 
 !     Substract egg box effect from the forces 

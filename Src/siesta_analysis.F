@@ -69,8 +69,6 @@
       real(dp)          :: polxyz(3,nspin)  ! Autom., small
       real(dp)          :: polR(3,nspin)    ! Autom., small
       real(dp)          :: qaux
-      real(dp)          :: stot             ! Total spin polar.
-      real(dp)          :: svec(3)          ! Total spin vector
       real(dp), pointer :: ebk(:,:,:)       ! Band energies
 
       integer           :: j, ix, ind, ik, io, ispin
@@ -345,49 +343,7 @@
 !       DMs of the SCF run for the last geometry considered.
 !       This can be considered a feature or a bug.
 
-!     Print spin polarization
-      if (nspin .ge. 2) then
-        do ispin = 1,nspin
-          qspin(ispin) = 0.0_dp
-          do io = 1,no_l
-            do j = 1,numh(io)
-              ind = listhptr(io)+j
-              qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
-            enddo
-          enddo
-        enddo
-
-#ifdef MPI
-!       Global reduction of spin components
-        call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
-        qspin(1:nspin) = qtmp(1:nspin)
-#endif
-        if (nspin .eq. 2) then
-          if (IOnode) then
-            write(6,'(/,a,f12.6)')
-     &       'siesta: Total spin polarization (Qup-Qdown) =', 
-     &       qspin(1) - qspin(2)
-          endif
-          if (cml_p) call cmlAddProperty(xf=mainXML,
-     .         value=qspin(1)-qspin(2), dictref='siesta:qspin',
-     .         units='siestaUnits:spin')
-        elseif (nspin .eq. 4) then
-          call spnvec( nspin, qspin, qaux, stot, svec )
-          if (IOnode) then
-            write(6,'(/,a,f12.6)')
-     &       'siesta: Total spin polarization (Qup-Qdown) =', stot
-            write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
-            if (cml_p) then
-              call cmlAddProperty(xf=mainXML, value=stot,
-     .             dictref='siesta:stot',
-     .             units='siestaUnits:spin')
-              call cmlAddProperty(xf=mainXML, value=svec,
-     .             dictref='siesta:svec',
-     .             units='siestaUnits:spin')
-            endif !cml_p
-          endif
-        endif
-      endif
+      call print_spin(qspin)  ! qspin returned for use below
 
 !**   This uses the last computed dipole in dhscf during the scf cycle,
 !     which is in fact derived from the "in" DM.
