@@ -79,7 +79,20 @@
 #endif
       type(filesOut_t)  :: filesOut  ! blank output file names
 
-!----------------------------------------------------------------------- BEGIN
+!-----------------------------------------------------------------------BEGIN
+
+      ! Check that we are converged in geometry,
+      ! if strictly required,
+      ! before carrying out any analysis
+      
+      quenched_MD =  ( (iquench > 0) .and.
+     $     ((idyn .eq. 1) .or. (idyn .eq. 3)) )
+
+      if ((nmove .ne. 0) .or. quenched_MD) then
+         if (GeometryMustConverge .and. (.not. relaxd)) then
+            call die("Geometry relaxation not converged")
+         endif
+      endif
 
 !     All the comments below assume that this compatibility option
 !     is not used.
@@ -115,9 +128,6 @@
 
         ! This covers CG and MD-quench (verlet, pr), instances in which 
         ! "relaxd" is meaningful
-
-        quenched_MD =  ( (iquench > 0) .and.
-     $                   ((idyn .eq. 1) .or. (idyn .eq. 3)) )
 
         if ((nmove .ne. 0) .or. quenched_MD) then
 

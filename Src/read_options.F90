@@ -964,6 +964,8 @@ subroutine read_options( na, ns, nspin )
   ! Tolerance in the maximum residual stress (var cell) def = 1 GPa 
   strtol = fdf_get('MD.MaxStressTol', strtol_default, 'Ry/Bohr**3')
   strtol = abs(strtol)
+  
+  GeometryMustConverge = fdf_get('GeometryMustConverge', .false.)
 
   if (ionode) then
      select case (idyn)
