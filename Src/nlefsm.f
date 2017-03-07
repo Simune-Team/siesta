@@ -302,22 +302,8 @@ C           Only calculate if needed locally in our MPI process
                  ikb = ikb + 1
                  ! epsk_sqrt = sqrt(epskb(ks,koa))
                  kg = kbproj_gindex(ks,koa)
-!            write(6,'(7(a,i4),a,f9.6)') 
-!     &                    ' ikb = ', ikb, ' ko= ', ko,
-!     &                    ' nno = ', nno, ' ioa = ', ioa,
-!     &                    ' koa = ', koa, ' kg =', kg, ' ig = ', ig,
-!     &        ' epskb=', epskb(ks,ikb)
                  call new_MATEL( 'S', kg, ig, xki(1:3,ina),
      &                Ski(ikb,nno), grSki(1:3,ikb,nno) )
-                 !  Maybe: Ski = epskb_sqrt * Ski
-                 !         grSki = epskb_sqrt * grSki
-!           if ( abs(Ski(ikb,nno)).gt. 1.0d-3 ) then
-!            write(6,'(6(a,i4),2(a,f9.6))') 
-!     &                    ' ikb = ', ikb,
-!     &                    ' nno = ', nno, ' ioa = ', ioa,
-!     &                    ' koa = ', koa, ' kg =', kg, ' ig = ', ig,
-!     &        ' epskb=', epskb(ks,ikb), ' Ski(ikb,nno)=', Ski(ikb,nno)
-!           endif
               enddo
 
            enddo ! loop over orbitals
@@ -597,13 +583,6 @@ CC
 
 C ------------------------------------------------------------
 
-CC
-      do is = 1, 8
-       write(6,'(a,i1,3f8.4)') 'Dscf_',is,sum(Dscf(:,is)),
-     &              maxval(Dscf(:,is)),minval(Dscf(:,is))
-      enddo
-
-
 C Start time counte
       call timer( 'nlefsm_SO', 1 )
 
@@ -725,9 +704,6 @@ C         Find if orbital is within range
            koa = iphKB(ko)
            if ( rki .lt. rcut(is,ioa)+rcut(ks,koa) ) 
      &            within = .true.
-C           write(spin%iout_SO,'(a,f12.8,2i3,2f12.8)') 
-C     &      ' rki/ioa/koa/rcut(is,ioa)/rcut(ks,koa) = ',
-C     &      rki, ioa, koa, rcut(is,ioa), rcut(ks,koa)
           enddo
 
 C         Find overlap between neighbour orbitals and KB projectors
@@ -762,39 +738,14 @@ CC
             endif
             kg = kbproj_gindex(ks,koa)
             ig = orb_gindex(is,ioa)
-C            write(spin%SO_off,'(a,3i4)') ' ikb/ioa/koa=', ikb, ioa, koa
-CC            write(6,*) ' nlefsm_SO: calling matel... '
             call new_MATEL( 'S', kg, ig, xki(1:3,ina),
      &                     Ski(ikb,nno), grSki(1:3,ikb,nno) )
-
-C           if ( abs(Ski(ikb,nno)).gt. 1.0d-5 ) then
-C            write(spin%iout_SO,'(7(a,i4),2(a,f9.6))') ' ko = ',ko,
-C     &                    ' ikb = ', ikb,
-C     &                    ' nno = ', nno, ' ioa = ', ioa,
-C     &                    ' koa = ', koa, ' kg =', kg, ' ig = ', ig,
-C     &        ' epskb=', epskb(ks,ikb),' Ski(ikb,nno)=', Ski(ikb,nno)
-C           endif
-
-CC 
-C           if ( abs(Ski(ikb,nno)).gt. 1.0d-3 ) then
-C            write(6,'(7(a,i4),2(a,f9.6))') 'ko=',ko,' ikb=',ikb,' nno=',
-C     &                      nno, ' ioa=', ioa,
-C     &                    ' koa=', koa, ' kg=', kg, ' ig=', ig,
-C     &        ' epskb=', epskb(ks,ikb), ' Ski(ikb,nno)=', Ski(ikb,nno)
-C           endif
-
-
-
-CC            write(6,*) ' nlefsm_SO: leaving matel... '
            enddo
           endif  ! Within
 CC-mpi
          endif    
         enddo    ! neighbour AO
        enddo     ! neighbour atoms
-
-C      write(6,*) ' nlefsm_SO: After matel loop... nno = ', nno
-C      stop 'Stopping after calling matel..'
 
 C----- Loop on neighbour orbitals
        do ino = 1,nno
@@ -883,24 +834,12 @@ c----------- Compute Vion from j+/-1/2 and V_so
               koa2 = -iphKB(ko+2*(2*l+1))
               epsk(1) = epskb(ks,koa1)
               epsk(2) = epskb(ks,koa2)
-CC RC
-C              if ( l.eq.3 ) epsk(1) = -0.958076640624553
-C              if ( l.eq.3 ) epsk(2) = -0.918608573899253
 
               call calc_Vj_SO( l, epsk, Ski(koa1:koa2,ino), 
      &                       Ski(koa1:koa2,jno), grSki(:,koa1:koa2,ino),
      &                       grSki(:,koa1:koa2,jno), Vit, V_sot, F_so )
               Vi(jo) = Vi(jo) + Vit
               V_so(1:2,1:2,jo)= V_so(1:2,1:2,jo) + V_sot(1:2,1:2)
-CC
-             
-CC              if ( l.lt. 3 ) write(6,'(a,3i4,2f12.6,4e18.8)') 
-C              write(6,'(a,3i4,2f12.6,4e18.8)') 
-C     &         ' l/koa1/koa2/epsk1/epsk2/V_1/V_2=',
-C     &          l, koa1, koa2, epsk(1), epsk(2), V_sot(1,1),
-C     &          V_sot(2,2)
-
-C              write(6,*) ' jo, V_so = ', jo, V_so(1,1,jo) 
          
 c------------ Forces & SO contribution to E_NL
               if (.not. matrix_elements_only) then     
@@ -1143,10 +1082,6 @@ C      write(6,*) ' V_ion= ', V_ion
 
       V_so(1,1) = V_so(1,1) - cmplx(1.0d0,0.0d0)*V_ion
       V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0)*V_ion
-CC
-C      write(6,'(a,4e18.8)') ' V_so(1,1)/V_so(2,2)=', 
-C     &      V_so(1,1), V_so(2,2)
-
 
       return
       end subroutine calc_Vj_SO
