@@ -115,10 +115,10 @@ C Initialize auxiliary variables
               Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
               Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
             else ! offSpOrb
-             Saux(1,io,1,jo) = dcmplx(  S(ind),   0.0_dp)
-             Saux(2,io,2,jo) = dcmplx(  S(ind),   0.0_dp)
-             Haux(1,io,1,jo) = dcmplx(H(ind,1),   0.0_dp)
-             Haux(2,io,2,jo) = dcmplx(H(ind,2),   0.0_dp)
+             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+             Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
+             Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
              Haux(1,jo,2,io) = dcmplx(H(ind,7),-H(ind,8))
              Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
             endif
@@ -146,10 +146,10 @@ C Repeat diagonalisation with increased memory to handle clustering
               Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
               Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
             else ! offSpOrb
-             Saux(1,io,1,jo) = dcmplx(  S(ind),   0.0_dp)
-             Saux(2,io,2,jo) = dcmplx(  S(ind),   0.0_dp)
-             Haux(1,io,1,jo) = dcmplx(H(ind,1),   0.0_dp)
-             Haux(2,io,2,jo) = dcmplx(H(ind,2),   0.0_dp)
+             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+             Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
+             Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
              Haux(1,jo,2,io) = dcmplx(H(ind,7),-H(ind,8))
              Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
             endif
@@ -218,8 +218,13 @@ C Transfer data
                   rpipj = dreal(caux(1,io)*dconjg(caux(2,juo)))*gauss
                   dpr(ihist,juo,3)=dpr(ihist,juo,3)+rpipj*Sloc(io,jo)
 
-                  ipipj = dimag(caux(1,io)*dconjg(caux(2,juo)))*gauss
-                  dpr(ihist,juo,4)=dpr(ihist,juo,4)-ipipj*Sloc(io,jo)
+                  if ( spin%SO .and. .not.spin%SO_off ) then
+                   ipipj = dimag(caux(1,io)*dconjg(caux(2,juo)))*gauss
+                   dpr(ihist,juo,4)=dpr(ihist,juo,4)-ipipj*Sloc(io,jo)
+                  else
+                   ipipj = dimag(caux(1,io)*dconjg(caux(2,juo)))*gauss
+                   dpr(ihist,juo,4)=dpr(ihist,juo,4)+ipipj*Sloc(io,jo)
+                  endif
                 enddo
               enddo
             enddo
@@ -255,8 +260,13 @@ C Loop over all the energy range
                 rpipj = dreal(caux(1,io)*dconjg(caux(2,jo)))*gauss
                 dpr(ihist,jo,3)=dpr(ihist,jo,3)+rpipj*Spr(io,jo)
 
-                ipipj = dimag(caux(1,io)*dconjg(caux(2,jo)))*gauss
-                dpr(ihist,jo,4)=dpr(ihist,jo,4)-ipipj*Spr(io,jo)
+                if ( spin%SO .and. .not.spin%SO_off ) then
+                 ipipj = dimag(caux(1,io)*dconjg(caux(2,jo)))*gauss
+                 dpr(ihist,jo,4)=dpr(ihist,jo,4)-ipipj*Spr(io,jo)
+                else
+                 ipipj = dimag(caux(1,io)*dconjg(caux(2,jo)))*gauss
+                 dpr(ihist,jo,4)=dpr(ihist,jo,4)+ipipj*Spr(io,jo)
+                endif 
               enddo
             enddo
           enddo
