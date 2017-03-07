@@ -23,6 +23,7 @@ SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  debugmpi.F \
              class_OrbitalDistribution.F90 \
              m_timer.F90 timer_tree.F90 m_walltime.f90 parallel.F \
 	     precision.F pxf.F90 radfft.f m_fft_gpfa.F sorting.f sys.F timer.f90 die.F
+             
 
 SIESTA_OBJS:= $(SIESTA_SRCS:.f=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F=.o)
@@ -86,7 +87,7 @@ debugmpi.o: parallel.o
 fft1d.o: parallel.o precision.o sys.o
 fft3d.o: alloc.o debugxc.o fft1d.o m_timer.o mesh3d.o precision.o sys.o
 fftr.o: alloc.o fft3d.o mesh3d.o precision.o sys.o
-ggaxc.o: ldaxc.o precision.o sys.o am05.o
+ggaxc.o: ldaxc.o precision.o sys.o am05.o 
 interpolation.o: precision.o
 ldaxc.o: precision.o sys.o
 m_io.o: sys.o
@@ -99,7 +100,6 @@ parallel.o: class_OrbitalDistribution.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 sys.o: parallel.o
-siesta_options.o: parallel.o precision.o units.o
 timer.o: sys.o m_timer.o timer_tree.o extrae_module.o extrae_eventllist.o
 timer_tree.o: m_walltime.o
 vdwxc.o: alloc.o debugxc.o interpolation.o ggaxc.o ldaxc.o mesh1d.o

@@ -565,7 +565,6 @@ end subroutine rhoofd
         Dlocal(i,j,1:nspin) = Dscf(ind,1:nspin)
         lDlocal(i,j)= .true.
         indt = iabs(listht(ind))
-!        indt_tmp = iabs(listhptr(ii)+i)
         if ( ind.ne.indt ) &
         Dlocal(i,j,1:nspin)= Dlocal(i,j,1:nspin) + Dscf(indt,1:nspin)
        enddo

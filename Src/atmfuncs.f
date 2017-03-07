@@ -20,6 +20,8 @@ C     different chemical species in the calculation:
       use atm_types
       use radial, only: rad_get, rad_func
       use spher_harm, only: rlylm
+ 
+      use m_spin, only: spin 
 
       implicit none 
 !
@@ -384,7 +386,12 @@ C  Distances in Bohr
       else if (io.lt.0) then
          if (-io.gt.spp%nprojs)  call die("rcut: No such projector")
          pp => spp%pjnl(spp%pj_index(-io))
-         rcut = pp%cutoff_SO
+!         rcut = pp%cutoff_SO
+         if( .not.spin%SO_off ) then
+          rcut = pp%cutoff
+         else
+          rcut = pp%cutoff_SO
+         endif
 !         stop'atmfuncs: Check the rcut_SO for non off-site'
       else
          rcut = spp%vna%cutoff

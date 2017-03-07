@@ -114,11 +114,6 @@ contains
      write(spin%iout_SO,'(a,f16.10)') ' update_E0: Enl    = ', Enl
      write(spin%iout_SO,'(a,f16.10)') ' update_E0: Eso    = ', Eso
      write(spin%iout_SO,'(a,f16.10)') ' update_E0: Enl_SO = ', Enl_SO
-     write(6,'(a,f16.12)') ' update_E0: Ena    = ', Ena
-     write(6,'(a,f16.12)') ' update_E0: Ekin   = ', Ekin
-     write(6,'(a,f16.12)') ' update_E0: Enl    = ', Enl
-     write(6,'(a,f16.12)') ' update_E0: Eso    = ', Eso
-     write(6,'(a,f16.12)') ' update_E0: Enl_SO = ', Enl_SO
     endif
     
   end subroutine update_E0
@@ -132,7 +127,6 @@ contains
 
     if ( IONode .and. spin%deb_offSO ) then
      write(spin%iout_SO,'(a,f16.10)') ' update_Etot: Etot = ', Etot
-!     write(6,'(a,f16.10)') ' update_Etot: Etot = ', Etot
     endif
     
   end subroutine update_Etot

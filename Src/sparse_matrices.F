@@ -62,7 +62,8 @@
       CONTAINS
 
       subroutine resetSparseMatrices( )
-      use alloc, only : de_alloc
+      use alloc,  only : de_alloc
+      use m_spin, only : spin
 
       implicit none
 
@@ -84,8 +85,8 @@
       call delete( DM_history )
 
 ! CC RC  Added for the offSpOrb
-      deallocate( H0_SO )
-      call de_alloc( listht,'listht','sparseMat' ) ! CC RC 
+      if( spin%SO_off ) deallocate( H0_SO )
+!      call de_alloc( listht,'listht','sparseMat' ) ! CC RC 
 ! CC RC  Added for the offSpOrb
 
       

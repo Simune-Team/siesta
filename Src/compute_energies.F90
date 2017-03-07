@@ -78,7 +78,7 @@ CONTAINS
 
 ! CC RC  Added for the offSpOrb
       real(dp)    :: Ebs_tmp(4), DEharr_tmp(4)
-      integer     :: iot 
+!      integer     :: iot 
 
       complex(dp):: Hc, Dc, Ebs_Daux(2,2), Ebs_Haux(2,2)
       complex(dp):: DEharr_Daux(2,2), DEharr_Haux(2,2), DEharr_Daux_old(2,2)
@@ -115,7 +115,7 @@ CONTAINS
       else
          call compute_DEharr()
          Eharrs = Etot + DEharr
-         write(6,'(2(a,f14.8))') ' DEharr = ', DEharr
+!         write(6,'(2(a,f14.8))') ' DEharr = ', DEharr
       endif
 
 ! Possible correction to Etot if mixing the DM. This is purely
@@ -154,65 +154,28 @@ CONTAINS
 !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
 !       ispin=4 => Imag(D12)
 
-!         write(6,*) ' compute_energies: H[1,2]'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!           write(6,'(a,i4,4e18.8)')' ind/H=',ind,H(ind,1),&
-!               H(ind,5), H(ind,2), H(ind,6)
-!           enddo
-!          enddo
-!         write(6,*) ' compute_energies: H[3,4]'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!           write(6,'(a,i4,4e18.8)')' ind/H=',ind,H(ind,3),&
-!               H(ind,4), H(ind,7), H(ind,8)
-!           enddo
-!          enddo
-!
-!         write(6,*) ' compute_energies: DM[1,2]'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!           write(6,'(a,i4,4e18.8)')' ind/DM=',ind,Dscf(ind,1),&
-!               Dscf(ind,5), Dscf(ind,2), Dscf(ind,6)
-!           enddo
-!          enddo
-!         write(6,*) ' compute_energies: DM[3,4]'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!           write(6,'(a,i4,4e18.8)')' ind/DM=',ind,Dscf(ind,3),&
-!               Dscf(ind,4), Dscf(ind,7), Dscf(ind,8)
-!           enddo
-!          enddo
-
-      write(6,*) 'compute_EBS'
       if ( spin%SO_off ) then
 
         Ebs_Daux = dcmplx(0.0_dp, 0.0_dp)
         Ebs_Haux = dcmplx(0.0_dp, 0.0_dp)
 
-! Ponerlo todo con los sumatorios de indt_tmp
         do io = 1, maxnh
 
-         iot = listht(io)
+!         iot = listht(io)
 
          Ebs_Haux(1,1) = dcmplx(H(io,1), H(io,5))  ! Huu_ij
          Ebs_Haux(2,2) = dcmplx(H(io,2), H(io,6))  ! Hdd_ij
          Ebs_Haux(1,2) = dcmplx(H(io,3), H(io,4))  ! Hud_ij
-!         Ebs_Haux(2,1) = dcmplx(H(io,3),-H(io,4))  ! Hdu_ij
          Ebs_Haux(2,1) = dcmplx(H(io,3),-H(io,4))  ! Hdu_ij
 
-!         Ebs_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))  ! Duu_ji
-!         Ebs_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))  ! Ddd_ji
-!         Ebs_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))  ! Dud_ji
-!         Ebs_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))  ! Ddu_ji
-         Ebs_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5))  ! Duu_ji
-         Ebs_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6))  ! Ddd_ji
-         Ebs_Daux(1,2) = dcmplx(Dscf(iot,3), Dscf(iot,4))  ! Dud_ji
-         Ebs_Daux(2,1) = dcmplx(Dscf(iot,7), Dscf(iot,8))  ! Ddu_ji
+         Ebs_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))  ! Duu_ji
+         Ebs_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))  ! Ddd_ji
+         Ebs_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))  ! Dud_ji
+         Ebs_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))  ! Ddu_ji
+!         Ebs_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5))  ! Duu_ji
+!         Ebs_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6))  ! Ddd_ji
+!         Ebs_Daux(1,2) = dcmplx(Dscf(iot,3), Dscf(iot,4))  ! Dud_ji
+!         Ebs_Daux(2,1) = dcmplx(Dscf(iot,7), Dscf(iot,8))  ! Ddu_ji
 
          Ebs_tmp(1) = Ebs_tmp(1) + real( Ebs_Haux(1,1)*Ebs_Daux(1,1))
          Ebs_tmp(2) = Ebs_tmp(2) + real( Ebs_Haux(2,2)*Ebs_Daux(2,2))
@@ -226,9 +189,6 @@ CONTAINS
         if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
          write(spin%iout_SO,'(a,f16.10)') ' compute_Ebs: Ebs    = ', Ebs
         endif
-!!CC
-       write(6,'(a,5f12.3)') 'Ebs, Ebs_tmp=',Ebs, Ebs_tmp
-     
 
       elseif ( spin%SO .and. .not. spin%SO_off ) then
         do io = 1,maxnh
@@ -283,33 +243,32 @@ CONTAINS
 
         do io = 1, maxnh
 
-          iot = listht(io)
+!          iot = listht(io)
 
           DEharr_Haux(1,1) = dcmplx(H(io,1), H(io,5))
           DEharr_Haux(2,2) = dcmplx(H(io,2), H(io,6))
           DEharr_Haux(1,2) = dcmplx(H(io,3), H(io,4))
-!          DEharr_Haux(2,1) = dcmplx(H(io,3),-H(io,4))
           DEharr_Haux(2,1) = dcmplx(H(io,3),-H(io,4))
 
-          DEharr_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5))
-          DEharr_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6))
-          DEharr_Daux(1,2) = dcmplx(Dscf(iot,3), Dscf(iot,4))
-          DEharr_Daux(2,1) = dcmplx(Dscf(iot,7), Dscf(iot,8))
-
-          DEharr_Daux_old(1,1) = dcmplx(Dold(iot,1), Dold(iot,5))
-          DEharr_Daux_old(2,2) = dcmplx(Dold(iot,2), Dold(iot,6))
-          DEharr_Daux_old(1,2) = dcmplx(Dold(iot,3), Dold(iot,4))
-          DEharr_Daux_old(2,1) = dcmplx(Dold(iot,7), Dold(iot,8))
-
-!          DEharr_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))
-!          DEharr_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))
-!          DEharr_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
-!          DEharr_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))
+!          DEharr_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5))
+!          DEharr_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6))
+!          DEharr_Daux(1,2) = dcmplx(Dscf(iot,3), Dscf(iot,4))
+!          DEharr_Daux(2,1) = dcmplx(Dscf(iot,7), Dscf(iot,8))
 !
-!          DEharr_Daux_old(1,1) = dcmplx(Dold(io,1),-Dold(io,5))
-!          DEharr_Daux_old(2,2) = dcmplx(Dold(io,2),-Dold(io,6))
-!          DEharr_Daux_old(1,2) = dcmplx(Dold(io,7),-Dold(io,8))
-!          DEharr_Daux_old(2,1) = dcmplx(Dold(io,3),-Dold(io,4))
+!          DEharr_Daux_old(1,1) = dcmplx(Dold(iot,1), Dold(iot,5))
+!          DEharr_Daux_old(2,2) = dcmplx(Dold(iot,2), Dold(iot,6))
+!          DEharr_Daux_old(1,2) = dcmplx(Dold(iot,3), Dold(iot,4))
+!          DEharr_Daux_old(2,1) = dcmplx(Dold(iot,7), Dold(iot,8))
+
+          DEharr_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))
+          DEharr_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))
+          DEharr_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
+          DEharr_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))
+
+          DEharr_Daux_old(1,1) = dcmplx(Dold(io,1),-Dold(io,5))
+          DEharr_Daux_old(2,2) = dcmplx(Dold(io,2),-Dold(io,6))
+          DEharr_Daux_old(1,2) = dcmplx(Dold(io,7),-Dold(io,8))
+          DEharr_Daux_old(2,1) = dcmplx(Dold(io,3),-Dold(io,4))
 
           DEharr_tmp(1) = DEharr_tmp(1) &
              + real( DEharr_Haux(1,1)*(DEharr_Daux(1,1)-DEharr_Daux_old(1,1)))
@@ -424,22 +383,26 @@ CONTAINS
 
         do io = 1, maxnh
 
-          iot = listht(io)
+!          iot = listht(io)
 
 !-------- Enl_SO(u,u)
-          Dc = cmplx(Dscf(iot,1), Dscf(iot,5))
+!          Dc = cmplx(Dscf(iot,1), Dscf(iot,5))
+          Dc = cmplx(Dscf(io,1), -Dscf(io,5))
           Hc = H0_SO(io,1)
           Enl_SO = Enl_SO + real( Hc*Dc )
 !-------- Enl_SO(d,d)
-          Dc = cmplx(Dscf(iot,2), Dscf(iot,6))
+!          Dc = cmplx(Dscf(iot,2), Dscf(iot,6))
+          Dc = cmplx(Dscf(io,2), -Dscf(io,6))
           Hc = H0_SO(io,2)
           Enl_SO = Enl_SO + real( Hc*Dc )
 !-------- Enl_SO(u,d)
-          Dc = cmplx(Dscf(iot,3), Dscf(iot,4))
+!          Dc = cmplx(Dscf(iot,3), Dscf(iot,4))
+          Dc = cmplx(Dscf(io,7), -Dscf(io,8))
           Hc = H0_SO(io,4)
           Enl_SO = Enl_SO + real( Hc*Dc )
 !-------- Enl_SO(d,u)
-          Dc = cmplx(Dscf(iot,7), Dscf(iot,8))
+!          Dc = cmplx(Dscf(iot,7), Dscf(iot,8))
+          Dc = cmplx(Dscf(io,3), -Dscf(io,4))
           Hc = H0_SO(io,3)
           Enl_SO = Enl_SO + real( Hc*Dc )
 

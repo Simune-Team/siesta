@@ -28,8 +28,8 @@
 
 ! CC RC  Added for the offSpOrb
       use sparse_matrices, only: H0_SO
-      use sparse_matrices, only: listht
-      use sparse_matrices, only: MM_HDM, herm_HDM
+!      use sparse_matrices, only: listht
+!      use sparse_matrices, only: MM_HDM, herm_HDM
 ! CC RC  Added for the offSpOrb
 
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
@@ -344,43 +344,43 @@ CC RC  OffSpOrb
      $                 set_xijo=.true., folding=folding1)
 !
 CC RC  Loading transpose for OffSSO
-      if ( spin%SO_off ) then
-         call re_alloc(listht,1,maxnh,name='listht',
-     $        routine='sparseMat', shrink=.true.)
-         listht(:) = 0
-
-
-         write(6,*) 'loading listht...'
-
-         do i_orb = 1, no_u
-          do js = 1, numh(i_orb)
-           jptr = listhptr(i_orb)+js
-           j    = listh(jptr)
-           r1   = xijo(:,jptr)
-           j0   = indxuo(j)
-           t_loop: do ist = 1, numh(j0)
-            iptrt  = listhptr(j0)+ist
-            it     = listh(iptrt)
-            if ( indxuo(it) .eq. i_orb ) then
-             r2 = xijo(:,iptrt)
-             if ( maxval( abs(r1(:)+r2(:)) ) .lt. 1.0d-6 ) then
-              listht(jptr) = iptrt
-              exit t_loop
-             endif ! r1 = r2
-            endif ! it = i_orb
-           enddo t_loop
-           if ( listht(jptr) .eq.0 ) then
-             write(6,'(a,20i8)')
-     &       'siesta_coor: no transpose for i_orb,js,j,jptr=',
-     &               i_orb,js,j,jptr
-            write(6,'(a,3f9.4)')
-     &       '         : xijo=',xijo(:,jptr) / bohr
-            stop
-           endif
-          enddo ! js
-         enddo ! i
-
-      endif
+!      if ( spin%SO_off ) then
+!         call re_alloc(listht,1,maxnh,name='listht',
+!     $        routine='sparseMat', shrink=.true.)
+!         listht(:) = 0
+!
+!
+!         write(6,*) 'loading listht...'
+!
+!         do i_orb = 1, no_u
+!          do js = 1, numh(i_orb)
+!           jptr = listhptr(i_orb)+js
+!           j    = listh(jptr)
+!           r1   = xijo(:,jptr)
+!           j0   = indxuo(j)
+!           t_loop: do ist = 1, numh(j0)
+!            iptrt  = listhptr(j0)+ist
+!            it     = listh(iptrt)
+!            if ( indxuo(it) .eq. i_orb ) then
+!             r2 = xijo(:,iptrt)
+!             if ( maxval( abs(r1(:)+r2(:)) ) .lt. 1.0d-6 ) then
+!              listht(jptr) = iptrt
+!              exit t_loop
+!             endif ! r1 = r2
+!            endif ! it = i_orb
+!           enddo t_loop
+!           if ( listht(jptr) .eq.0 ) then
+!             write(6,'(a,20i8)')
+!     &       'siesta_coor: no transpose for i_orb,js,j,jptr=',
+!     &               i_orb,js,j,jptr
+!            write(6,'(a,3f9.4)')
+!     &       '         : xijo=',xijo(:,jptr) / bohr
+!            stop
+!           endif
+!          enddo ! js
+!         enddo ! i
+!
+!      endif
 CC RC  End loading transpose for OffSSO
 
 
@@ -575,7 +575,7 @@ CC RC  End loading transpose for OffSSO
 
 
 ! CC RC
-      if ( IONode .and. spin%SO ) call MM_HDM( 'DM' )
+! CC RC      if ( IONode .and. spin%SO ) call MM_HDM( 'DM' )
 !      if ( IONOde .and. spin%deb_offSO ) call herm_HDM( 'DM' )
 
       ! Initialize energy-density matrix to zero for first call to overfsm

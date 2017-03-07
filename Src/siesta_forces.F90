@@ -46,7 +46,7 @@ contains
     use m_steps
     use sys, only : die, bye
     use sparse_matrices, only: H, Hold, Dold, Dscf, Eold, Escf, maxnh
-    use sparse_matrices, only: MM_HDM, herm_HDM
+! CC RC    use sparse_matrices, only: MM_HDM, herm_HDM
     use sparse_matrices, only: numh, listhptr
     use m_convergence, only: converger_t
     use m_convergence, only: reset, set_tolerance

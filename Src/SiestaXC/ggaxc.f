@@ -125,7 +125,6 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
 
       logical , parameter :: old_scheme = .true.
 
-
       ! Handle non-collinear spin case
       if (nSpin==4) then
         NS = 2             ! Diagonal spin components

@@ -27,7 +27,6 @@ MODULE siesta_options
   ! -- pre 4.0 coordinate output logic -- to be implemented
   logical :: compat_pre_v4_dynamics      ! General switch
 
-  
   logical :: mix_scf_first ! Mix first SCF step?
   logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM
@@ -242,5 +241,5 @@ MODULE siesta_options
   ! LUA-handle
   type(luaState) :: LUA
 #endif
-  
+
 END MODULE siesta_options

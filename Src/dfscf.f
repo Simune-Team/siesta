@@ -112,9 +112,6 @@ C Internal variables
 
       ! Allocate
       real(dp), pointer :: V(:,:) => null()
-
-      integer :: indt
-
 !
       integer, pointer, save ::  ibc(:), iob(:)
       real(dp), pointer, save :: C(:,:), D(:,:,:),

@@ -989,11 +989,11 @@ C     &                     maxnd, numd, listdptr, listd, Dscf )
         endif
 
 CC RC
-       do ispin=1, nspin
-        write(6,'(a,i2,a,2f9.6)') 'DRho_1; spin ',ispin,
-     &   ' Max/Min=',minval(DRho_par(:,ispin)),
-     &               maxval(DRho_par(:,ispin))
-       enddo
+C       do ispin=1, nspin
+C        write(6,'(a,i2,a,2f9.6)') 'DRho_1; spin ',ispin,
+C     &   ' Max/Min=',minval(DRho_par(:,ispin)),
+C     &               maxval(DRho_par(:,ispin))
+C       enddo
 
 
         ! DRHO_par is here in QUADRATIC, clustered form
@@ -1547,32 +1547,32 @@ C ----------------------------------------------------------------------
 #ifndef BSC_CELLXC
 
 !CC RC
-      write(6,*) 'calling cellXC...'
-      do ispin=1, nspin
-        write(6,'(a,i2,a,2f9.6)') 'DRho_5; spin ',ispin,
-     &   ' Max/Min=',minval(DRho(:,ispin)),maxval(DRho(:,ispin))
-      enddo
+!      write(6,*) 'calling cellXC...'
+!      do ispin=1, nspin
+!        write(6,'(a,i2,a,2f9.6)') 'DRho_5; spin ',ispin,
+!     &   ' Max/Min=',minval(DRho(:,ispin)),maxval(DRho(:,ispin))
+!      enddo
 
       call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
      .                           myBox(1,2), myBox(2,2),
      .                           myBox(1,3), myBox(2,3), nspin,
      .             DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )
 
-       write(6,'(a,2f14.6)') 'Ex/c  =',Ex,Ec
-       write(6,'(a,2f9.6)')
-     &  'V(1):',minval(Vscf(:,1)),maxval(Vscf(:,1))
-       if ( nspin.ge.2 ) then
-        write(6,'(a,2f9.6)')
-     &  'V(2):',minval(Vscf(:,2)),maxval(Vscf(:,2))
-        write(6,'(a,2f9.6)')
-     &  'V(1)-V(2):',maxval(abs(Vscf(:,1)-Vscf(:,2)))
-       endif
-       if ( nspin.gt.2 ) then
-        write(6,'(a,2f9.6)')
-     &  'V(3):',minval(Vscf(:,3)),maxval(Vscf(:,3))
-        write(6,'(a,2f9.6)')
-     &  'V(4):',minval(Vscf(:,4)),maxval(Vscf(:,4))
-       endif
+!       write(6,'(a,2f14.6)') 'Ex/c  =',Ex,Ec
+!       write(6,'(a,2f9.6)')
+!     &  'V(1):',minval(Vscf(:,1)),maxval(Vscf(:,1))
+!       if ( nspin.ge.2 ) then
+!        write(6,'(a,2f9.6)')
+!     &  'V(2):',minval(Vscf(:,2)),maxval(Vscf(:,2))
+!        write(6,'(a,2f9.6)')
+!     &  'V(1)-V(2):',maxval(abs(Vscf(:,1)-Vscf(:,2)))
+!       endif
+!       if ( nspin.gt.2 ) then
+!        write(6,'(a,2f9.6)')
+!     &  'V(3):',minval(Vscf(:,3)),maxval(Vscf(:,3))
+!        write(6,'(a,2f9.6)')
+!     &  'V(4):',minval(Vscf(:,4)),maxval(Vscf(:,4))
+!       endif
 
 
 
@@ -1636,11 +1636,11 @@ C ----------------------------------------------------------------------
 !$OMP end parallel
 
 CC RC
-      do ispin= 1,nspin
-       write(6,'(a,i2,a,2f12.3)') 'VH+Vxc; ispin=',ispin,' Max/Min=',
-     &                     minval(Vscf(:,ispin)),maxval(Vscf(:,ispin))
-      enddo
-      write(6,'(a,f12.3)') 'Vscf ok; sum=',sum(Vscf)
+!      do ispin= 1,nspin
+!       write(6,'(a,i2,a,2f12.3)') 'VH+Vxc; ispin=',ispin,' Max/Min=',
+!     &                     minval(Vscf(:,ispin)),maxval(Vscf(:,ispin))
+!      enddo
+!      write(6,'(a,f12.3)') 'Vscf ok; sum=',sum(Vscf)
 
 
 
@@ -1720,14 +1720,12 @@ C     &                    nuo, nuotot, iaorb, iphorb, isa )
          endif
 
 CC RC
-         do ispin= 1, nspin
-C          write(6,*) ' Hmat; spin=', ispin, 
-C     &   ' Size(Hmat)=', size(Hmat,1)
-          write(6,'(a,i2,a,2f9.6)') 'Hmat; spin=',ispin,
-     &   ' Max/min=',maxval(Hmat(:,ispin)),minval(Hmat(:,ispin))
-          write(6,'(a,i2,a,2i9)') 'Hmat; spin=',ispin,
-     &   ' Max/min=',maxloc(Hmat(:,ispin)),minloc(Hmat(:,ispin))
-         enddo
+C         do ispin= 1, nspin
+C          write(6,'(a,i2,a,2f9.6)') 'Hmat; spin=',ispin,
+C     &   ' Max/min=',maxval(Hmat(:,ispin)),minval(Hmat(:,ispin))
+C          write(6,'(a,i2,a,2i9)') 'Hmat; spin=',ispin,
+C     &   ' Max/min=',maxloc(Hmat(:,ispin)),minloc(Hmat(:,ispin))
+C         enddo
 
 
 

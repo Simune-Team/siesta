@@ -170,10 +170,6 @@ c$$$     &           no_u, no_s, maxnh, numh, listhptr, listh,
 c$$$     &           S, 'S.matrix')
 
       elseif ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
-CC
-        write(6,*) ' compute_dm: before diagon...'
-C        call MM_HDM( 'DM' )
-
         call diagon(no_s, spin%spinor, 
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -181,9 +177,6 @@ C        call MM_HDM( 'DM' )
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
-CC
-        write(6,*) ' compute_dm: after diagon...'
-C        call MM_HDM( 'DM' )
 
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.

@@ -472,6 +472,8 @@ C Calculates non-local (NL) pseudopotential contribution to total
 C energy, atomic forces, stress and hamiltonian matrix elements.
 C Energies in Ry. Lengths in Bohr.
 C Writen by J.Soler and P.Ordejon, June 1997.
+C Modified by R. Cuadrado and J. I. Cerda for the 
+C off-site Spin-Orbit, January 2017.
 C **************************** INPUT **********************************
 C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
 C integer nua              : Number of atoms in unit cell
@@ -559,7 +561,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       integer, save ::  maxno = 2000
   
       integer
-     .  ia, ikb, ina, ind, ino, indt,
+     .  ia, ikb, ina, ind, ino, ! indt,
      .  io, iio, ioa, is, ispin, ix, ig, kg,
      .  j, jno, jo, jx, ka, ko, koa, ks, kua,
      .  nkb, nna, nno, no, nuo, nuotot, maxkba
@@ -591,7 +593,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
 
       real(dp), parameter :: Rydberg    = 13.6058d0 ! eV
 CC
-      integer :: nd, ndn, juo, ist, iind, iot, indt_tmp
+      integer :: nd, ndn, juo, ist, iind, iot
 
 C ------------------------------------------------------------
 
@@ -812,21 +814,20 @@ C        Valid orbital
            do j = 1,numh(iio)
             ind = listhptr(iio)+j  ! jptr
 CC RC
-            indt= listht(ind)
-!            indt_tmp = listhptr(j)+iio  
+!            indt= listht(ind)
             jo = listh(ind)       ! j
             Di(jo) = 0.0_dp
             do ispin = 1,min(2,nspin)
              Di(jo) = Di(jo) + Dscf(ind,ispin)
             enddo
-C            Ds(1,1,jo) = dcmplx(Dscf(ind,1),-Dscf(ind,5))  ! D(ju,iu)
-C            Ds(2,2,jo) = dcmplx(Dscf(ind,2),-Dscf(ind,6))  ! D(jd,id)
-C            Ds(1,2,jo) = dcmplx(Dscf(ind,7),-Dscf(ind,8))  ! D(ju,id)
-C            Ds(2,1,jo) = dcmplx(Dscf(ind,3),-Dscf(ind,4))  ! D(jd,iu)
-            Ds(1,1,jo) = dcmplx(Dscf(indt,1), Dscf(indt,5))  ! D(ju,iu)
-            Ds(2,2,jo) = dcmplx(Dscf(indt,2), Dscf(indt,6))  ! D(jd,id)
-            Ds(1,2,jo) = dcmplx(Dscf(indt,3), Dscf(indt,4))  ! D(ju,id)
-            Ds(2,1,jo) = dcmplx(Dscf(indt,7), Dscf(indt,8))  ! D(jd,iu)
+            Ds(1,1,jo) = dcmplx(Dscf(ind,1),-Dscf(ind,5))  ! D(ju,iu)
+            Ds(2,2,jo) = dcmplx(Dscf(ind,2),-Dscf(ind,6))  ! D(jd,id)
+            Ds(1,2,jo) = dcmplx(Dscf(ind,7),-Dscf(ind,8))  ! D(ju,id)
+            Ds(2,1,jo) = dcmplx(Dscf(ind,3),-Dscf(ind,4))  ! D(jd,iu)
+C            Ds(1,1,jo) = dcmplx(Dscf(indt,1), Dscf(indt,5))  ! D(ju,iu)
+C            Ds(2,2,jo) = dcmplx(Dscf(indt,2), Dscf(indt,6))  ! D(jd,id)
+C            Ds(1,2,jo) = dcmplx(Dscf(indt,3), Dscf(indt,4))  ! D(ju,id)
+C            Ds(2,1,jo) = dcmplx(Dscf(indt,7), Dscf(indt,8))  ! D(jd,iu)
            enddo
           endif
 
@@ -962,14 +963,6 @@ CC-mpi
      &     dreal(E_SO*13.6058d0)
        write(spin%iout_SO,'(a,6f10.4)') 'Imag[E_SO]=',
      &     dimag(E_SO*13.6058d0)
-       write(6,'(a,8f10.4)') 'Enl/E_SO[eV]=',Enl*Rydberg,
-     &                   Enl_SO*Rydberg, dreal(E_SO*Rydberg)
-       write(6,*) ' Enl_SO = ',  Enl_SO
-
-       write(6,'(a,6f10.4)') 'Real[E_SO]=',
-     &     dreal(E_SO*13.6058d0)
-       write(6,'(a,6f10.4)') 'Imag[E_SO]=',
-     &     dimag(E_SO*13.6058d0)
       endif
 
 
@@ -994,7 +987,7 @@ c      call de_alloc( Di, 'Di', 'nlefsm_SO' )
       endif
 
 CC
-      write(6,*) 'nd/ndn/nh=',nd,ndn,maxnh
+C      write(6,*) 'nd/ndn/nh=',nd,ndn,maxnh
 
 
       call timer( 'nlefsm_SO', 2 )

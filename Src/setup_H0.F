@@ -65,7 +65,7 @@ C     and initializes data structures on the grid.
       real(dp)    :: dummy_E_SO, err_H0_SO(6), err_H_vkb
       real(dp) :: eV = 1._dp / 13.60580_dp
       character(len=1) :: cindent = ' '
-      integer     :: io, ispin, i, j, ind, iot, ij, ji
+      integer     :: io, ispin, i, j, ind  !, iot
       complex(dp) :: Hc, Dc
 #ifdef MPI
       real(dp)            :: buffer1
@@ -138,62 +138,8 @@ C     Add on force field contribution to energy
       H_val(:) = 0.0_dp
 !$OMP end parallel workshare
 
-!!      write(6,'(a,4f12.6)') '  Max/MinVal(D_1,D_5)',
-!     &                        maxval(Dscf(:,1)), maxval(Dscf(:,5)),
-!     &                        minval(Dscf(:,1)), minval(Dscf(:,5))
-!      write(6,'(a,4i12)') '  Max/MinVal(D_1,D_5)',
-!     &                        maxloc(Dscf(:,1)), maxloc(Dscf(:,5)),
-!     &                        minloc(Dscf(:,1)), minloc(Dscf(:,5))
-!      write(6,'(a,4f12.6)') '  Max/MinVal(D_2,D_6)',
-!     &                        maxval(Dscf(:,2)), maxval(Dscf(:,6)),
-!     &                        minval(Dscf(:,2)), minval(Dscf(:,6))
-!      write(6,'(a,4i12)') '  Max/MinVal(D_2,D_6)',
-!     &                        maxloc(Dscf(:,2)), maxloc(Dscf(:,6)),
-!     &                        minloc(Dscf(:,2)), minloc(Dscf(:,6))
-!      write(6,'(a,4f12.6)') '  Max/MinVal(D_3,D_4)',
-!     &                        maxval(Dscf(:,3)), maxval(Dscf(:,4)),
-!     &                        minval(Dscf(:,3)), minval(Dscf(:,4))
-!      write(6,'(a,4i12)') '  Max/MinVal(D_3,D_4)',
-!     &                        maxloc(Dscf(:,3)), maxloc(Dscf(:,4)),
-!     &                        minloc(Dscf(:,3)), minloc(Dscf(:,4))
-!      write(6,'(a,4f12.6)') '  Max/MinVal(D_7,D_8)',
-!     &                        maxval(Dscf(:,7)), maxval(Dscf(:,8)),
-!     &                        minval(Dscf(:,7)), minval(Dscf(:,8))
-!      write(6,'(a,4i12)') '  Max/MinVal(D_7,D_8)',
-!     &                        maxloc(Dscf(:,7)), maxloc(Dscf(:,8)),
-!     &                        minloc(Dscf(:,7)), minloc(Dscf(:,8))
-
-
-!      write(6,'(a)') ' '
-!      write(6,'(a)') ' setup_H0: Dscf(1)='
-!      write(6,'(15(/,15f12.6),/)') Dscf(:,1)
-!      write(6,'(a)') ' '
-!      write(6,'(a)') ' setup_H0: Dscf(5)='
-!      write(6,'(15(/,15f12.6),/)') Dscf(:,5)
-!      write(6,'(a)') ' '
-!      write(6,'(a)') ' setup_H0: Dscf(2)='
-!      write(6,'(15(/,15f12.6),/)') Dscf(:,2)
-!      write(6,'(a)') ' '
-!      write(6,'(a)') ' setup_H0: Dscf(6)='
-!      write(6,'(15(/,15f12.6),/)') Dscf(:,6)
-!      write(6,'(a)') ' '
-!      write(6,'(a)') ' setup_H0: Dscf(3)='
-!      write(6,'(15(/,15f12.6),/)') Dscf(:,3)
-!      write(6,'(a)') ' '
-!      write(6,'(a)') ' setup_H0: Dscf(4)='
-!      write(6,'(15(/,15f12.6),/)') Dscf(:,4)
-!      write(6,'(a)') ' '
-!      write(6,'(a)') ' setup_H0: Dscf(7)='
-!      write(6,'(15(/,15f12.6),/)') Dscf(:,7)
-!      write(6,'(a)') ' '
-!      write(6,'(a)') ' setup_H0: Dscf(8)='
-!      write(6,'(15(/,15f12.6),/)') Dscf(:,8)
-
-
-!      stop'Stopping in setup_H0 bafore call nlefsm_SO...'
 
       if ( .not.spin%SO_off ) then
-       write(6,*) '     setup_H0: Calling nlefsm...'
        if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
      &  '    setup_H0: Calling nlefsm...'
        call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
@@ -214,54 +160,33 @@ C     Add on force field contribution to energy
      &                 dummy_E, dummy_E_SO, dummy_fa,
      &                 dummy_stress, H_val,
      &                 matrix_elements_only=.true.)
-!     &                 matrix_elements_only=.false.)
 
-
-
-!        Enl_SO = 0.0d0
-!       do io = 1, maxnh
-!-------- Enl_SO(u,u)
-!           Dc = cmplx(Dscf(io,1),-Dscf(io,5))
-!           Hc = H0_SO(io,1)
-!           Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(d,d)
-!           Dc = cmplx(Dscf(io,2),-Dscf(io,6))
-!           Hc = H0_SO(io,2)
-!           Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(u,d)
-!           Dc = cmplx(Dscf(io,7),-Dscf(io,8))
-!           Hc = H0_SO(io,4)
-!           Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(d,u)
-!           Dc = cmplx(Dscf(io,3),-Dscf(io,4))
-!           Hc = H0_SO(io,3)
-!           Enl_SO = Enl_SO + real( Hc*Dc )
-!       enddo
 
         Enl_SO = 0.0d0
-!        do i = 1, no_u
-!         do j = 1, numh(i)
         do io = 1, maxnh
-          iot = listht(io)
+!          iot = listht(io)
 
 !-------- Enl_SO(u,u)
-          Dc = cmplx(Dscf(iot,1), Dscf(iot,5))
+!          Dc = cmplx(Dscf(iot,1), Dscf(iot,5))
+          Dc = cmplx(Dscf(io,1), -Dscf(io,5))
           Hc = H0_SO(io,1)
           Enl_SO = Enl_SO + real( Hc*Dc )
 !-------- Enl_SO(d,d)
-          Dc = cmplx(Dscf(iot,2), Dscf(iot,6))
+!          Dc = cmplx(Dscf(iot,2), Dscf(iot,6))
+          Dc = cmplx(Dscf(io,2), -Dscf(io,6))
           Hc = H0_SO(io,2)
           Enl_SO = Enl_SO + real( Hc*Dc )
 !-------- Enl_SO(u,d)
-          Dc = cmplx(Dscf(iot,3), Dscf(iot,4))
+!          Dc = cmplx(Dscf(iot,3), Dscf(iot,4))
+          Dc = cmplx(Dscf(io,7), -Dscf(io,8))
           Hc = H0_SO(io,4)
           Enl_SO = Enl_SO + real( Hc*Dc )
 !-------- Enl_SO(d,u)
-          Dc = cmplx(Dscf(iot,7), Dscf(iot,8))
+!          Dc = cmplx(Dscf(iot,7), Dscf(iot,8))
+          Dc = cmplx(Dscf(io,3), -Dscf(io,4))
           Hc = H0_SO(io,3)
           Enl_SO = Enl_SO + real( Hc*Dc )
 
-!         enddo
         enddo
 
 !         write(6,*) ' setup_hamiltonian: H0_SO[1,2]'
@@ -281,15 +206,16 @@ C     Add on force field contribution to energy
 !           enddo
 !          enddo
 
-        if ( IONode .and. spin%deb_offSO ) 
-     &   write(spin%iout_SO,'(a,f14.10)')
-     &   '    setup_H0: Enl_SO = ', Enl_SO
-
 #ifdef MPI
 ! Global reduction of Ekin, Enl and Eso 
       call globalize_sum(Enl_SO,buffer1)
       Enl_SO = buffer1
 #endif
+
+        if ( IONode .and. spin%deb_offSO ) 
+     &   write(spin%iout_SO,'(a,f14.10)')
+     &   '    setup_H0: Enl_SO = ', Enl_SO
+
       endif
 
 ! ..................
@@ -314,7 +240,9 @@ C     Add on force field contribution to energy
       else
          Eso = 0._dp
       end if
-      write(spin%iout_SO,'(a)') ' setup_H0: Before dhscf_init'
+
+      if ( IONode .and. spin%deb_offSO ) 
+     &     write(spin%iout_SO,'(a)') ' setup_H0: Before dhscf_init'
 
 C     This will take care of possible changes to the mesh and atomic-related
 C     mesh structures for geometry changes
@@ -326,7 +254,8 @@ C     mesh structures for geometry changes
      &                 maxnh, numh, listhptr, listh, datm,
      &                 dummy_fa, dummy_stress)
 
-      write(spin%iout_SO,'(a)') ' setup_H0: After dhscf_init'
+      if ( IONode .and. spin%deb_offSO ) 
+     &   write(spin%iout_SO,'(a)') ' setup_H0: After dhscf_init'
   
       call timer('Setup_H0',2)
 
