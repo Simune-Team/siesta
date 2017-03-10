@@ -375,7 +375,7 @@
         call check_walltime(time_is_up)
         if (time_is_up) then
            ! Do any other bookeeping not done by "die"
-           call die("Time is up at end of geometry step. ")
+           call die("OUT_OF_TIME: Time is up at end of geometry step. ")
         endif
 
 !--------------------------------------------------------------------------- END

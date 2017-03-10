@@ -124,6 +124,14 @@
            endif
         endif
 
+        ! Check whether we are short of time to continue
+        call check_walltime(time_is_up)
+        if (time_is_up) then
+           ! Save DM/H if we were not saving it...
+           ! Do any other bookeeping not done by "die"
+           call die("OUT_OF_TIME: Time is up.")
+        endif
+        
         call timer( 'IterSCF', 1 )
         if (cml_p)
      &         call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
@@ -194,14 +202,6 @@
 
         if (cml_p) call cmlEndStep(mainXML)
 
-        ! Check whether we are short of time to continue
-        call check_walltime(time_is_up)
-        if (time_is_up) then
-           ! Save DM/H if we were not saving it...
-           ! Do any other bookeeping not done by "die"
-           call die("Time is up at end of SCF step. ")
-        endif
-        
         if (last_step) EXIT
 
       ENDDO
@@ -229,10 +229,10 @@
       else
 
         if (SCFMustConverge) then
-           call die('SCF did not converge' //
+           call die('SCF_NOT_CONV: SCF did not converge' //
      $          ' in maximum number of steps.')
         else
-           call message('WARNING','SCF did not converge' //
+           call message('WARNING','SCF_NOT_CONV: SCF did not converge' //
      $          ' in maximum number of steps.')
         endif
       endif
