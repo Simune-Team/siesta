@@ -21,7 +21,7 @@ C     and initializes data structures on the grid.
       use sparse_matrices, only: Dscf
 
 ! CC RC  Added for the offSpOrb
-      use sparse_matrices, only: H0_SO, listhptr, numh, listht
+      use sparse_matrices, only: H0_SO, listhptr, numh ! , listht
       use m_nlefsm,        only: nlefsm_SO
       use m_energies,      only: Enl_SO, Enl, Ekin
       use m_spin,          only: spin

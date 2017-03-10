@@ -68,7 +68,8 @@ tests = ag anneal-cont ar2_vdw \
 	sih sih_fire sih_op_broyden \
 	si-optical si_pdos_kgrid \
 	sinw sinw_2 \
-	SOC_Pt2_xx SOC_Pt2_xz SOC_Pt2_zy SOC_Pt2_zz \
+	offsite_SOC_Pt2_xx offsite_SOC_Pt2_xz offsite_SOC_Pt2_zy offsite_SOC_Pt2_zz \
+	onsite_SOC_Pt2_xx onsite_SOC_Pt2_xz onsite_SOC_Pt2_zy onsite_SOC_Pt2_zz \
 	var_cell \
 	wannier \
 	zmatrix TDDFT_h2o
@@ -76,7 +77,8 @@ tests = ag anneal-cont ar2_vdw \
 # These tests are extremely time consuming and
 # should only be runned sometimes
 # Currently they may be runned individually.
-#	SOC_FePt_xx SOC_FePt_xz SOC_FePt_zy SOC_FePt_zz
+#	offsite_SOC_FePt_xx offsite_SOC_FePt_xz offsite_SOC_FePt_zy offsite_SOC_FePt_zz
+#	onsite_SOC_FePt_xx onsite_SOC_FePt_xz onsite_SOC_FePt_zy onsite_SOC_FePt_zz
 
 default: all
 

@@ -50,7 +50,7 @@ module m_new_dm
 
 ! CC RC  Added for the offSpOrb
   use m_spin, only: spin
-  use sparse_matrices, only: listht
+!  use sparse_matrices, only: listht
 ! CC RC  Added for the offSpOrb
 
   implicit none

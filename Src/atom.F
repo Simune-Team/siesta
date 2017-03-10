@@ -1995,13 +1995,6 @@ C     .            ' rphi2/dnrm=', rphi2(ir,ikb,j_SO)
         dnrm=0.0d0
         avgv=0.0d0
 
-CC
-CC        write(99,'(a,i4)') ' KBproj: nrwf=', nrwf
-          write(99,'(a)') ' ' 
-          write(99,'(a)') ' ' 
-          write(99,'(a)') '# ' 
-          write(99,'(2(a,i23))') ' ikb = ', ikb, ' j_SO = ', j_SO 
-
         do 10 ir=2,nrwf
           r=rofi(ir)
           vl=(vps(ir)-vlocal(ir))
@@ -2012,8 +2005,8 @@ CC        write(99,'(a,i4)') ' KBproj: nrwf=', nrwf
 
 CC
 
-          write(99,'(8f12.6)') 
-     &    r, phi,vps(ir), vlocal(ir),drdi(ir),dnrm,avgv
+C          write(99,'(8f12.6)') 
+C     &    r, phi,vps(ir), vlocal(ir),drdi(ir),dnrm,avgv
 
 
 C          write(6,'(3(a,i4),7(a,f12.6))') ' ikb=', ikb, ' j_LS=', j_SO, 

@@ -519,7 +519,7 @@ C      use precision,     only : dp
       use atomlist,        only: indxuo
      
 CC RC   OffSpOrb
-      use sparse_matrices, only: listht
+!      use sparse_matrices, only: listht
       use m_spin,          only: spin
 
       integer, intent(in) ::
@@ -894,14 +894,14 @@ CC-mpi
 
       if (.not. matrix_elements_only) then
        Enl_SO = sum( dreal(E_SO(1:4)) )
-       write(spin%iout_SO,'(a,8f10.4)') 'Enl/E_SO[eV]=',Enl*Rydberg,
-     &                   Enl_SO*Rydberg, dreal(E_SO*Rydberg)
-       write(spin%iout_SO,*) ' Enl_SO = ',  Enl_SO
+!       write(spin%iout_SO,'(a,8f10.4)') 'Enl/E_SO[eV]=',Enl*Rydberg,
+!     &                   Enl_SO*Rydberg, dreal(E_SO*Rydberg)
+!       write(spin%iout_SO,*) ' Enl_SO = ',  Enl_SO
 
-       write(spin%iout_SO,'(a,6f10.4)') 'Real[E_SO]=',
-     &     dreal(E_SO*13.6058d0)
-       write(spin%iout_SO,'(a,6f10.4)') 'Imag[E_SO]=',
-     &     dimag(E_SO*13.6058d0)
+!       write(spin%iout_SO,'(a,6f10.4)') 'Real[E_SO]=',
+!     &     dreal(E_SO*13.6058d0)
+!       write(spin%iout_SO,'(a,6f10.4)') 'Imag[E_SO]=',
+!     &     dimag(E_SO*13.6058d0)
       endif
 
 

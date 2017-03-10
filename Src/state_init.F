@@ -326,6 +326,7 @@ CC RC  OffSpOrb
       ! be higher than 1, hence we need to create "fake"
       ! containers and let the new<class> delete the old
       ! sparsity pattern
+
       nullify(numh,listhptr,listh)
       allocate(numh(no_l),listhptr(no_l))
       ! We do not need to allocate listh

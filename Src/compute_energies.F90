@@ -51,7 +51,7 @@ CONTAINS
 ! CC RC  Added for the offSpOrb
       use m_spin,          only: spin 
       use sparse_matrices, only: H0_SO
-      use sparse_matrices, only: listht
+!      use sparse_matrices, only: listht
       use parallel,        only: IONode 
 !      use m_spin,          only: NoMagn, SPpol, NonCol, SpOrb 
 !      use m_spin,          only: nspin, h_spin_dim, spinor_dim

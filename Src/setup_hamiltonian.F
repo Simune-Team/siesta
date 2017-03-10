@@ -44,7 +44,7 @@
 ! CC RC  modified for the offSpOrb
       use m_spin,          only: spin 
       use sparse_matrices, only: H0_SO
-      use sparse_matrices, only: listht
+!      use sparse_matrices, only: listht
 ! CC RC      use sparse_matrices, only: MM_HDM, herm_HDM
 !      use m_spin,         only: nspin, SpOrb, NonCol
 !      use m_spin,         only: h_spin_dim, e_spin_dim, spinor_dim

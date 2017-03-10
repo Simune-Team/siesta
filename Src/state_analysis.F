@@ -22,7 +22,8 @@
      &                          CartesianForce_to_ZmatForce
       use atomlist,      only : iaorb, iphorb, amass, no_u, lasto
       use atomlist,      only : indxuo
-      use m_spin,        only : nspin, SpOrb
+!      use m_spin,        only : nspin, SpOrb
+      use m_spin,        only : spin
       use m_fixed,       only : fixed
       use sparse_matrices
       use siesta_geom
@@ -147,12 +148,14 @@
       endif
 
 !     Mulliken population analysis 
-      if ( SpOrb ) then
+      if ( spin%SO .and. .not.spin%SO_off ) then
           call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
      .                  listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .                  indxuo )
       else
-       call mulliken( mullipop, nspin, na_u, no_u, maxnh,
+       if( IONode .and. spin%SO_off ) write(6,'(/,a)') 
+     .  ' WARNING: <Lx,Ly,Lz> not yet supported by off-site SO'
+       call mulliken( mullipop, spin%Grid, na_u, no_u, maxnh,
      &                numh, listhptr, listh, S, Dscf, isa, 
      &                lasto, iaorb, iphorb )
       endif

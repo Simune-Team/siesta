@@ -10,7 +10,7 @@ module m_vmat
   implicit none
 
   private
-  public :: vmat, vmat_SO
+  public :: vmat   !, vmat_SO
 
 contains
 
@@ -582,9 +582,9 @@ contains
   end subroutine vmat
 
 
-      subroutine vmat_SO( no, np, dVol, nspin, V, nh,&
-                          numh, listhptr, listh, H,&
-                          nuo, nuotot, iaorb, iphorb, isa )
+!      subroutine vmat_SO( no, np, dVol, nspin, V, nh,&
+!                          numh, listhptr, listh, H,&
+!                          nuo, nuotot, iaorb, iphorb, isa )
 
 !C ********************************************************************
 !C Finds the matrix elements of the potential.
@@ -612,118 +612,118 @@ contains
 !C *********************************************************************
 
 !C  Modules
-      use precision,     only: dp, grid_p
-      use mesh     ,     only: nsp
-      use meshphi,       only: directphi, endpht, lstpht, listp2, phi
-      use listsc_module, only: ind1, ind2
-      use atomlist,      only: indxuo
+!      use precision,     only: dp, grid_p
+!      use mesh     ,     only: nsp
+!      use meshphi,       only: directphi, endpht, lstpht, listp2, phi
+!      use listsc_module, only: ind1, ind2
+!      use atomlist,      only: indxuo
 !      use sparse_matrices, only: listht
-
-      implicit none
-
-      integer , intent(in) :: nuo, no, np, nspin, nh
-      integer , intent(in) :: iaorb(*), iphorb(*), isa(*), nuotot
-      integer , intent(in) :: numh(nuo), listhptr(nuo), &
-                              listh(nh)
-      real(dp), intent(in) :: dVol
-      real(grid_p), intent(in)  :: V(nsp,np,nspin)
-      real(dp), intent(inout)   :: H(nh,nspin)
-
-!C Internal variables and arrays
-
-      integer :: i, j, k, jH, ic, jc, imp, jmp, ind, ip, ii,&
-                 isp, ispin, iu, nc, jj, sp
-      real(dp):: Vlocal, Dlocal(nsp)
-      logical :: lin
-
-      integer :: ilocal(nuo,no)
-
-!cc    real(dp):: err_H(2)
-!cc    integer :: indt
-
-!c-----------------------------------------------------------------------
-
-!C---- load ilocal
-      ilocal(:,:)= 0
-      do iu = 1, nuo
-       do ii = 1, numh(iu)
-        ind = listhptr(iu)+ii
-        j = listh(ind)
-        if ( j.gt.0 ) ilocal(iu,j)= ind
-       enddo
-      enddo
-
-      do ip = 1,np
-       nc = endpht(ip) - endpht(ip-1)
-
-       do ic = 1, nc
-        imp = endpht(ip-1) + ic
-        i = lstpht(imp)
-        iu = indxuo(i)
-        if ( numh(iu).gt.0 ) then
-         lin = (i.eq.iu)
-
-         do jc = 1, nc
-          jmp = endpht(ip-1) + jc
-          j = lstpht(jmp)
-          if ( lin ) then ! <iu|j>
-           jH = j  
-          else            ! <i|j> = <iu|jH>
-           jH = indxuo(j)
-           jj_loop: do
-            k = ind2(i) + ind2(jH) - ind2(iu)
-            if ( j.eq.ind1(k) ) exit jj_loop
-            jH = jH+nuo
-            if ( jH.gt.no ) stop 'vmat: jH too large!'
-           enddo jj_loop
-          endif
-
-          ind = ilocal(iu,jH)
-          if ( ind.gt.0 ) then
-           do isp = 1, nsp
-            Dlocal(isp) = phi(isp,imp)*phi(isp,jmp)
-           enddo
-           do ispin= 1, nspin
-            Vlocal = 0.0d0
-            do isp= 1, nsp
-             Vlocal = Vlocal + Dlocal(isp)*V(isp,ip,ispin)
-            enddo
-            H(ind,ispin)= H(ind,ispin) + Vlocal
-           enddo ! spin
-          endif ! ind > 0
-         enddo ! jc
-        endif ! numh(i) > 0
-       enddo ! ic
-
-      enddo ! mesh points
-
-!c---- multiply by volume & symmetrize
-      do iu = 1, nuo
-       do ii = 1, numh(iu)
-        ind = listhptr(iu)+ii
-        j = listh(ind)
-        if ( j.gt.0 ) then
-         H(ind,:)= H(ind,:) * dVol
-        endif
-       enddo
-      enddo
-
-!c---- check symmetric terms...
-!cc    err_H = 0.0_dp
-!cc    do i = 1, nuo
-!cc     do ii = 1, numh(i)
-!cc      ind = listhptr(i)+ii
-!cc      indt = listht(ind)
-!cc      do sp = 1, 2
-!cc       err_H(sp) = max( err_H(sp),abs(H(ind,sp)-H(indt,sp)) )
-!cc       H(ind,sp) = 0.5d0*(H(ind,sp)+H(indt,sp))
-!cc       H(indt,sp)= H(ind,sp)
-!cc      enddo
-!cc     enddo
-!cc    enddo
-!cc    write(6,'(a,4f14.7)') 'vmat: err_H=',err_H*13.6058d0
-
-      return
-      end subroutine vmat_SO
+!
+!      implicit none
+!
+!      integer , intent(in) :: nuo, no, np, nspin, nh
+!      integer , intent(in) :: iaorb(*), iphorb(*), isa(*), nuotot
+!      integer , intent(in) :: numh(nuo), listhptr(nuo), &
+!                              listh(nh)
+!      real(dp), intent(in) :: dVol
+!      real(grid_p), intent(in)  :: V(nsp,np,nspin)
+!      real(dp), intent(inout)   :: H(nh,nspin)
+!
+!!C Internal variables and arrays
+!
+!      integer :: i, j, k, jH, ic, jc, imp, jmp, ind, ip, ii,&
+!                 isp, ispin, iu, nc, jj, sp
+!      real(dp):: Vlocal, Dlocal(nsp)
+!      logical :: lin
+!
+!      integer :: ilocal(nuo,no)
+!
+!!cc    real(dp):: err_H(2)
+!!cc    integer :: indt
+!
+!!c-----------------------------------------------------------------------
+!
+!!C---- load ilocal
+!      ilocal(:,:)= 0
+!      do iu = 1, nuo
+!       do ii = 1, numh(iu)
+!        ind = listhptr(iu)+ii
+!        j = listh(ind)
+!        if ( j.gt.0 ) ilocal(iu,j)= ind
+!       enddo
+!      enddo
+!
+!      do ip = 1,np
+!       nc = endpht(ip) - endpht(ip-1)
+!
+!       do ic = 1, nc
+!        imp = endpht(ip-1) + ic
+!        i = lstpht(imp)
+!        iu = indxuo(i)
+!        if ( numh(iu).gt.0 ) then
+!         lin = (i.eq.iu)
+!
+!         do jc = 1, nc
+!          jmp = endpht(ip-1) + jc
+!          j = lstpht(jmp)
+!          if ( lin ) then ! <iu|j>
+!           jH = j  
+!          else            ! <i|j> = <iu|jH>
+!           jH = indxuo(j)
+!           jj_loop: do
+!            k = ind2(i) + ind2(jH) - ind2(iu)
+!            if ( j.eq.ind1(k) ) exit jj_loop
+!            jH = jH+nuo
+!            if ( jH.gt.no ) stop 'vmat: jH too large!'
+!           enddo jj_loop
+!          endif
+!
+!          ind = ilocal(iu,jH)
+!          if ( ind.gt.0 ) then
+!           do isp = 1, nsp
+!            Dlocal(isp) = phi(isp,imp)*phi(isp,jmp)
+!           enddo
+!           do ispin= 1, nspin
+!            Vlocal = 0.0d0
+!            do isp= 1, nsp
+!             Vlocal = Vlocal + Dlocal(isp)*V(isp,ip,ispin)
+!            enddo
+!            H(ind,ispin)= H(ind,ispin) + Vlocal
+!           enddo ! spin
+!          endif ! ind > 0
+!         enddo ! jc
+!        endif ! numh(i) > 0
+!       enddo ! ic
+!
+!      enddo ! mesh points
+!
+!!c---- multiply by volume & symmetrize
+!      do iu = 1, nuo
+!       do ii = 1, numh(iu)
+!        ind = listhptr(iu)+ii
+!        j = listh(ind)
+!        if ( j.gt.0 ) then
+!         H(ind,:)= H(ind,:) * dVol
+!        endif
+!       enddo
+!      enddo
+!
+!!c---- check symmetric terms...
+!!cc    err_H = 0.0_dp
+!!cc    do i = 1, nuo
+!!cc     do ii = 1, numh(i)
+!!cc      ind = listhptr(i)+ii
+!!cc      indt = listht(ind)
+!!cc      do sp = 1, 2
+!!cc       err_H(sp) = max( err_H(sp),abs(H(ind,sp)-H(indt,sp)) )
+!!cc       H(ind,sp) = 0.5d0*(H(ind,sp)+H(indt,sp))
+!!cc       H(indt,sp)= H(ind,sp)
+!!cc      enddo
+!!cc     enddo
+!!cc    enddo
+!!cc    write(6,'(a,4f14.7)') 'vmat: err_H=',err_H*13.6058d0
+!
+!      return
+!      end subroutine vmat_SO
 
 end module m_vmat

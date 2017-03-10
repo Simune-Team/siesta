@@ -697,8 +697,8 @@ C     Modules
                                         ! Sets a distribution of mesh
                                         ! points over parallel processors
 #endif /* BSC_CELLXC */
-      use m_vmat,  only  : vmat, vmat_SO
-      use m_rhoofd, only: rhoofd, rhoofd_SO
+      use m_vmat,  only  : vmat ! , vmat_SO
+      use m_rhoofd, only: rhoofd ! , rhoofd_SO
 #ifdef MPI
       use mpi_siesta
 #endif

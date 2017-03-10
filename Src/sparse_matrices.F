@@ -33,7 +33,7 @@
 
 ! CC RC  Added for the offSpOrb
       complex(dp), public, pointer :: H0_SO(:,:) => null()
-      integer, public, pointer :: listht(:)=>null()
+!      integer, public, pointer :: listht(:)=>null()
 ! CC RC  Added for the offSpOrb
 
       ! Pieces of H that do not depend on the SCF density matrix
@@ -56,7 +56,7 @@
       public :: resetSparseMatrices
 
 ! CC RC  Added for the offSpOrb
-      public :: MM_HDM, herm_HDM, euler
+      public :: MM_HDM, euler ! herm_HDM
 ! CC RC  Added for the offSpOrb
 
       CONTAINS
@@ -227,45 +227,61 @@ c-----------------------------------------------------------------------
 c-----------------------------------------------------------------------
 
 c-----------------------------------------------------------------------
-      subroutine herm_HDM( cHDM )
-
-      use units,     only: eV
-      use m_spin,    only: spin
-      USE atomlist,  only: no_u
-
-      implicit none
-
-      character(len=*), intent(in) :: cHDM
-
-      real(dp)  :: err_HDM(4)
-
-      complex(dp):: H_tmp(maxnh,4)
-
-      real(dp), pointer :: HDM(:,:)
-
-      integer :: ij, ji, i, j, js
-
-      select case( trim(cHDM) )
-      case( 'H' )
-       HDM => H
-      case( 'DM' )
-       HDM => Dscf
-      end select
-
-      H_tmp(:,1) = cmplx( HDM(:,1), HDM(:,5) )
-      H_tmp(:,2) = cmplx( HDM(:,2), HDM(:,6) )
-      H_tmp(:,3) = cmplx( HDM(:,3), HDM(:,4) )
-      H_tmp(:,4) = cmplx( HDM(:,7), HDM(:,8) )
-
-      err_HDM = 0.0_dp
-
-!! CC RC
-!      do i = 1, no_u
-!       do js = 1, numh(i)
-!        ij = listhptr(i)+js
-!        j = listh(ij)
-!        ji = listhptr(j)+i
+!      subroutine herm_HDM( cHDM )
 !
+!      use units,     only: eV
+!      use m_spin,    only: spin
+!      USE atomlist,  only: no_u
+!
+!      implicit none
+!
+!      character(len=*), intent(in) :: cHDM
+!
+!      real(dp)  :: err_HDM(4)
+!
+!      complex(dp):: H_tmp(maxnh,4)
+!
+!      real(dp), pointer :: HDM(:,:)
+!
+!      integer :: ij, ji, i, j, js
+!
+!      select case( trim(cHDM) )
+!      case( 'H' )
+!       HDM => H
+!      case( 'DM' )
+!       HDM => Dscf
+!      end select
+!
+!      H_tmp(:,1) = cmplx( HDM(:,1), HDM(:,5) )
+!      H_tmp(:,2) = cmplx( HDM(:,2), HDM(:,6) )
+!      H_tmp(:,3) = cmplx( HDM(:,3), HDM(:,4) )
+!      H_tmp(:,4) = cmplx( HDM(:,7), HDM(:,8) )
+!
+!      err_HDM = 0.0_dp
+!
+!!! CC RC
+!!      do i = 1, no_u
+!!       do js = 1, numh(i)
+!!        ij = listhptr(i)+js
+!!        j = listh(ij)
+!!        ji = listhptr(j)+i
+!!
+!!       if ( ji.lt.ij ) then
+!!        err_HDM(1) = max( err_HDM(1),
+!!     &                  cdabs(H_tmp(ij,1)-conjg(H_tmp(ji,1))) )
+!!        err_HDM(2) = max( err_HDM(2),
+!!     &                  cdabs(H_tmp(ij,2)-conjg(H_tmp(ji,2))) )
+!!       endif
+!!       err_HDM(3) = max( err_HDM(3),
+!!     &                cdabs(H_tmp(ij,3)-conjg(H_tmp(ji,4))) )
+!!       err_HDM(4) = max( err_HDM(4),
+!!     &                cdabs(H_tmp(ij,4)-conjg(H_tmp(ji,3))) )
+!!
+!!       enddo
+!!      enddo
+!
+!      do ij = 1, maxnh
+!       ji = listht(ij)
 !       if ( ji.lt.ij ) then
 !        err_HDM(1) = max( err_HDM(1),
 !     &                  cdabs(H_tmp(ij,1)-conjg(H_tmp(ji,1))) )
@@ -276,35 +292,19 @@ c-----------------------------------------------------------------------
 !     &                cdabs(H_tmp(ij,3)-conjg(H_tmp(ji,4))) )
 !       err_HDM(4) = max( err_HDM(4),
 !     &                cdabs(H_tmp(ij,4)-conjg(H_tmp(ji,3))) )
-!
-!       enddo
 !      enddo
-
-      do ij = 1, maxnh
-       ji = listht(ij)
-       if ( ji.lt.ij ) then
-        err_HDM(1) = max( err_HDM(1),
-     &                  cdabs(H_tmp(ij,1)-conjg(H_tmp(ji,1))) )
-        err_HDM(2) = max( err_HDM(2),
-     &                  cdabs(H_tmp(ij,2)-conjg(H_tmp(ji,2))) )
-       endif
-       err_HDM(3) = max( err_HDM(3),
-     &                cdabs(H_tmp(ij,3)-conjg(H_tmp(ji,4))) )
-       err_HDM(4) = max( err_HDM(4),
-     &                cdabs(H_tmp(ij,4)-conjg(H_tmp(ji,3))) )
-      enddo
-
-c---- Print errors
+!
+!c---- Print errors
 !      write(spin%iout_SO,'(4x,a,7f8.5)')
-      write(6,'(4x,a,7f8.5)')
-     &   trim(cHDM)//'  max/sym error  =',
-     &   maxval(cdabs(H_tmp))/eV,err_HDM
-      if ( maxval(err_HDM).gt.1.0d-4 ) then
-       write(6,*) 'ERROR, '//cHDM//' not hermitian'
-       stop
-      endif
-
-      end subroutine herm_HDM
+!      write(6,'(4x,a,7f8.5)')
+!     &   trim(cHDM)//'  max/sym error  =',
+!     &   maxval(cdabs(H_tmp))/eV,err_HDM
+!      if ( maxval(err_HDM).gt.1.0d-4 ) then
+!       write(6,*) 'ERROR, '//cHDM//' not hermitian'
+!       stop
+!      endif
+!
+!      end subroutine herm_HDM
 ! CC RC  Added for the offSpOrb
 
       END MODULE sparse_matrices
