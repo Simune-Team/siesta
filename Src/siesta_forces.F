@@ -229,10 +229,10 @@
       else
 
         if (SCFMustConverge) then
-           call die('SCF_NOT_CONV: SCF did not converge' //
+         call die('SCF_NOT_CONV: SCF did not converge' //
      $          ' in maximum number of steps.')
         else
-           call message('WARNING','SCF_NOT_CONV: SCF did not converge' //
+         call message('WARNING','SCF_NOT_CONV: SCF did not converge'//
      $          ' in maximum number of steps.')
         endif
       endif
