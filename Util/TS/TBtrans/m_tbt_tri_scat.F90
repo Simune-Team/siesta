@@ -1128,14 +1128,9 @@ contains
           if ( iind <= i_ptr(io) ) cycle
 
           ! H_ind == H_ij
-          ! Get H for the current index
-#ifdef TBT_ORB_CURRENT_NO_S
-          Hi = H(ind) * ph( (l_col(ind)-1)/no_u )
-#else
-          ! We may take the conjugate later as
-          ! E is a real quantity
-          Hi = (H(ind) - S(ind) * E) * ph( (l_col(ind)-1)/no_u )
-#endif
+
+          ! We may take the conjugate later as E is a real quantity
+          Hi = (H(ind) - E * S(ind)) * ph( (l_col(ind)-1)/no_u )
 
           ! J(iind) = J(io,jo)
           jo = ucorb(l_col(ind),no_u)
@@ -1145,7 +1140,7 @@ contains
           jo = index(A_tri,iu,ju) ! A_ij
           ju = index(A_tri,ju,iu) ! A_ji
 
-          ! We skip the pre-factors as the units are never used
+          ! We skip the pre-factors as the units are "never" used
           
           J(iind) = aimag( A(ju) * Hi - A(jo) * dconjg( Hi ) )
 

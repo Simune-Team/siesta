@@ -716,7 +716,7 @@ contains
 #endif
 
        call Sp_retain_region(fdit,sp,r_oDev,sp_dev_sc)
-       call Sp_sort(sp)
+       call Sp_sort(sp_dev_sc)
        call delete(fdit)
 
     end if
