@@ -71,7 +71,7 @@ OBJS_DENCHAR = atompla.o planed.o\
 	radfft.o m_fft_gpfa.o ranger.o \
         readwavesx.o rhoofr.o wavofr.o \
         redata_denchar.o  local_reinit.o denchar.o \
-	volcel.o wrout.o stsofr.o
+	volcel.o wrout.o stsofr.o local_sys.o
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -90,13 +90,13 @@ $(FDF):
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
-MOD_OBJS=precision.o parallel.o debugmpi.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
+MOD_OBJS=precision.o parallel.o debugmpi.o m_io.o alloc.o memoryinfo.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
          radial.o spher_harm.o  basis_io.o basis_types.o parallelsubs.o \
          schecomm.o sparse_matrices.o interpolation.o\
          files.o pseudopotential.o chemical.o xml.o \
          domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
-         spatial.o timer_local.o die.o
+         spatial.o timer_local.o 
 #
 COM_OBJS_DENCHAR=$(OBJS_DENCHAR) $(SYSOBJ)
 ALL_OBJS_DENCHAR=$(MOD_OBJS) $(COM_OBJS_DENCHAR)
@@ -125,42 +125,41 @@ clean:
 	rm -f denchar *.o  *.a
 	rm -f *.mod
 	rm -f _tmp_deps deps.list _deps.list* protomake*
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	rm -rf fdf
 
 # -- specially prepared dependency list -- do not remove this line!
 debugmpi.o: parallel.o
-sys.o: parallel.o
-m_io.o: sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
+m_io.o: local_sys.o
+alloc.o: debugmpi.o m_io.o parallel.o precision.o local_sys.o
 memoryinfo.o: precision.o
 listsc.o: alloc.o
-atom_options.o: sys.o
-atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
+atom_options.o: local_sys.o
+atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o local_sys.o
 atm_types.o: precision.o radial.o
 radial.o: alloc.o interpolation.o precision.o xml.o
-spher_harm.o: alloc.o precision.o sys.o
+spher_harm.o: alloc.o precision.o local_sys.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o pseudopotential.o radial.o sys.o xml.o
-basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o sys.o
-parallelsubs.o: domain_decom.o parallel.o spatial.o sys.o
+basis_io.o: precision.o pseudopotential.o radial.o local_sys.o xml.o
+basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o local_sys.o
+parallelsubs.o: domain_decom.o parallel.o spatial.o local_sys.o
 schecomm.o: alloc.o
 sparse_matrices.o: alloc.o precision.o
-pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
-chemical.o: parallel.o precision.o sys.o
+pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o local_sys.o
+chemical.o: parallel.o precision.o local_sys.o
 xml.o: precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
-domain_decom.o: sparse_matrices.o sys.o
+domain_decom.o: sparse_matrices.o local_sys.o
 printmatrix.o: alloc.o
 spatial.o: precision.o
 die.o: parallel.o
-atompla.o: precision.o sys.o
+atompla.o: precision.o local_sys.o
 planed.o: precision.o
-bessph.o: precision.o sys.o
-chkdim.o: sys.o
+bessph.o: precision.o local_sys.o
+chkdim.o: local_sys.o
 readpla.o: precision.o
 readsts.o: precision.o
-io.o: sys.o
-iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o sys.o
+io.o: local_sys.o
+iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o local_sys.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
 colinear.o: precision.o
 neighb.o: precision.o

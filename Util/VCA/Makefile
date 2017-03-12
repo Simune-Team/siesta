@@ -74,8 +74,8 @@ $(FDF):
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
 MIXPS_OBJS= f2kcli.o interpolation.o atom_options.o pseudopotential.o \
-            sys.o m_io.o io.o alloc.o pxf.o parallel.o periodic_table.o \
-            memory.o memoryinfo.o mixps.o die.o
+            local_sys.o  m_io.o io.o alloc.o pxf.o parallel.o periodic_table.o \
+            memory.o memoryinfo.o mixps.o
 
 mixps:  $(FDF) $(MIXPS_OBJS)
 	$(FC) -o mixps \
@@ -83,7 +83,7 @@ mixps:  $(FDF) $(MIXPS_OBJS)
 #----------------------------------------------------------------------------
 FRACTIONAL_OBJS= f2kcli.o m_io.o alloc.o interpolation.o fractional.o \
                  atom_options.o  memory.o memoryinfo.o pseudopotential.o  \
-                 io.o pxf.o parallel.o periodic_table.o die.o sys.o
+                 io.o pxf.o parallel.o periodic_table.o local_sys.o
 
 fractional: $(FDF) $(FRACTIONAL_OBJS)
 	$(FC) -o fractional \
@@ -111,26 +111,15 @@ dep:
 	@cat protomake00 deps.list >| Makefile
 #
 # -- specially prepared dependency list -- do not remove this line!
-atom_options.o: sys.o
-pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
-sys.o: parallel.o
-m_io.o: sys.o
-io.o: sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
-periodic_table.o: precision.o sys.o
-memory.o: alloc.o memoryinfo.o parallel.o precision.o
-memoryinfo.o: precision.o
+m_io.o: local_sys.o
+io.o: local_sys.o
+alloc.o: m_io.o parallel.o precision.o local_sys.o
+periodic_table.o: precision.o local_sys.o
 mixps.o: f2kcli.o interpolation.o periodic_table.o precision.o
 mixps.o: pseudopotential.o
-die.o: parallel.o
-m_io.o: sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
 fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o
-atom_options.o: sys.o
+atom_options.o: local_sys.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
 memoryinfo.o: precision.o
-pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
-io.o: sys.o
-periodic_table.o: precision.o sys.o
-die.o: parallel.o
-sys.o: parallel.o
+pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o local_sys.o
+

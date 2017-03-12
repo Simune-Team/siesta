@@ -26,7 +26,7 @@
 # You must set these symbols properly, either here or 
 # (better) in your top arch.make
 # 
-FFTW_ROOT=/usr/local/Cellar/fftw/3.3.4
+FFTW_ROOT=/usr/local
 FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
 FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3f -lfftw3
 #-----------------------------------------
@@ -80,7 +80,7 @@ OBJS_STM = atompla.o  \
 	 radfft.o ranger.o \
         readstm.o readwaves.o \
         redata.o  reinitstm.o stm.o \
-	vacpot.o volcel.o wrout.o handlers.o
+	vacpot.o volcel.o wrout.o handlers.o local_sys.o
 #
 INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
@@ -99,7 +99,7 @@ $(FDF):
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
-MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
+MOD_OBJS=precision.o parallel.o m_io.o alloc.o memoryinfo.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
          radial.o spher_harm.o  basis_io.o basis_types.o \
          domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
@@ -134,35 +134,34 @@ dep:
 	@cat protomake00 deps.list >| Makefile
 #
 # -- specially prepared dependency list -- do not remove this line!
-sys.o: parallel.o
-m_io.o: sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
+m_io.o: local_sys.o
+alloc.o: debugmpi.o m_io.o parallel.o precision.o local_sys.o
 memoryinfo.o: precision.o
 listsc.o: alloc.o
-atom_options.o: sys.o
-atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
+atom_options.o: local_sys.o
+atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o local_sys.o
 atm_types.o: precision.o radial.o
 radial.o: alloc.o interpolation.o precision.o xml.o
-spher_harm.o: alloc.o precision.o sys.o
+spher_harm.o: alloc.o precision.o local_sys.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o pseudopotential.o radial.o sys.o xml.o
-basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o sys.o
+basis_io.o: precision.o pseudopotential.o radial.o local_sys.o xml.o
+basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o local_sys.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
-domain_decom.o: sparse_matrices.o sys.o
+domain_decom.o: sparse_matrices.o local_sys.o
 schecomm.o: alloc.o
 printmatrix.o: alloc.o
 sparse_matrices.o: alloc.o precision.o
-pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
-chemical.o: parallel.o precision.o sys.o
+pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o local_sys.o
+chemical.o: parallel.o precision.o local_sys.o
 xml.o: precision.o
-parallelsubs.o: domain_decom.o parallel.o spatial.o sys.o
+parallelsubs.o: domain_decom.o parallel.o spatial.o local_sys.o
 spatial.o: precision.o
-atompla.o: precision.o sys.o
-bessph.o: precision.o sys.o
-chkdim.o: sys.o
+atompla.o: precision.o local_sys.o
+bessph.o: precision.o local_sys.o
+chkdim.o: local_sys.o
 extrapolate.o: fftw3_mymod.o precision.o
-io.o: sys.o
-iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o sys.o
+io.o: local_sys.o
+iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o local_sys.o
 mainstm.o: basis_io.o listsc.o parallel.o precision.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o

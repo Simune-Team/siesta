@@ -52,19 +52,19 @@ SYSOBJ=$(SYS).o
 # Tbtrans:
 MOD_TOBJS=  m_tbt_options.o m_tbt_kpoints.o m_tbt_out.o m_tbt_read_tshs.o m_lowdin.o
 
-SIESTA_OBJS= alloc.o cdiag.o cellsubs.o debugmpi.o die.o domain_decom.o \
+SIESTA_OBJS= alloc.o cdiag.o cellsubs.o debugmpi.o domain_decom.o \
 	files.o find_kgrid.o idiag.o io.o kpoint_convert.o m_fdf_global.o		\
 	m_hs_matrix.o m_io.o m_mpi_utils.o m_spin.o m_timer.o  \
 	m_ts_aux_rout.o m_ts_cctype.o m_ts_contour.o m_ts_electrode.o \
         m_ts_gf.o m_ts_io.o m_ts_scattering.o m_wallclock.o m_walltime.o memory.o\
         memoryinfo.o minvec.o moreParallelSubs.o parallel.o parallelsubs.o \
         paste.o precision.o printmatrix.o pxf.o reclat.o schecomm.o sorting.o sparse_matrices.o\
-        spatial.o sys.o timer.o timer_tree.o timestamp.o units.o zheevds.o\
+        spatial.o timer.o timer_tree.o timestamp.o units.o zheevds.o\
         siesta_options.o mmio.o pspltm1.o qsort.o lenstr.o
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o tbt_init.o tbt_reinit.o \
-	 coop.o tt_eig.o atompdos.o
+	 coop.o tt_eig.o atompdos.o local_sys.o
 
 
 # Interfaces to libraries
@@ -124,63 +124,63 @@ dep:
 $(TBTOBJS): $(FDF)
 #
 # -- specially prepared dependency list -- do not remove this line!
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
-cdiag.o: alloc.o m_spin.o memoryinfo.o parallel.o precision.o sys.o
+alloc.o: m_io.o parallel.o precision.o local_sys.o
+cdiag.o: alloc.o m_spin.o memoryinfo.o parallel.o precision.o local_sys.o
 cellsubs.o: precision.o
 debugmpi.o: parallel.o
 die.o: parallel.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
-domain_decom.o: sparse_matrices.o sys.o
+domain_decom.o: sparse_matrices.o local_sys.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
-idiag.o: parallel.o sys.o
-io.o: sys.o
-kpoint_convert.o: precision.o sys.o units.o
+idiag.o: parallel.o local_sys.o
+io.o: local_sys.o
+kpoint_convert.o: precision.o local_sys.o units.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
-m_hs_matrix.o: alloc.o precision.o sys.o
-m_io.o: sys.o
-m_mpi_utils.o: precision.o sys.o
+m_hs_matrix.o: alloc.o precision.o local_sys.o
+m_io.o: local_sys.o
+m_mpi_utils.o: precision.o local_sys.o
 m_spin.o: alloc.o parallel.o precision.o
-m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
-m_ts_aux_rout.o: precision.o sys.o
+m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o local_sys.o
+m_ts_aux_rout.o: precision.o local_sys.o
 m_ts_cctype.o: precision.o
-m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o sys.o
+m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o local_sys.o
 m_ts_contour.o: units.o
 m_ts_electrode.o: files.o m_hs_matrix.o m_tbt_kpoints.o m_ts_aux_rout.o
 m_ts_electrode.o: m_ts_cctype.o m_ts_io.o  parallel.o precision.o
-m_ts_electrode.o: sys.o units.o
-m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o parallel.o precision.o sys.o units.o
+m_ts_electrode.o: local_sys.o units.o
+m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o parallel.o precision.o local_sys.o units.o
 m_ts_io.o: files.o m_spin.o m_tbt_kpoints.o  parallel.o
-m_ts_io.o: parallelsubs.o precision.o sys.o
-m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
+m_ts_io.o: parallelsubs.o precision.o local_sys.o
+m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o local_sys.o units.o
 m_wallclock.o: m_walltime.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
 memoryinfo.o: precision.o
-minvec.o: cellsubs.o precision.o sorting.o sys.o
-moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
-parallelsubs.o: domain_decom.o parallel.o spatial.o sys.o
+minvec.o: cellsubs.o precision.o sorting.o local_sys.o
+moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o local_sys.o
+parallelsubs.o: domain_decom.o parallel.o spatial.o local_sys.o
 printmatrix.o: alloc.o
 schecomm.o: alloc.o
 sparse_matrices.o: alloc.o precision.o
 spatial.o: precision.o
-sys.o: parallel.o
-timer.o: m_timer.o parallel.o sys.o timer_tree.o
+local_sys.o: parallel.o
+timer.o: m_timer.o parallel.o local_sys.o timer_tree.o
 timer_tree.o: m_walltime.o
 units.o: precision.o
 m_tbt_options.o: files.o m_fdf_global.o m_ts_io.o memoryinfo.o parallel.o
-m_tbt_options.o: precision.o sys.o units.o
-m_tbt_kpoints.o: alloc.o minvec.o parallel.o precision.o sys.o units.o
+m_tbt_options.o: precision.o local_sys.o units.o
+m_tbt_kpoints.o: alloc.o minvec.o parallel.o precision.o local_sys.o units.o
 m_tbt_out.o: parallel.o precision.o units.o
 m_tbt_read_tshs.o: m_ts_io.o parallel.o precision.o
 m_lowdin.o: precision.o
 tbtrans.o: alloc.o files.o m_hs_matrix.o m_tbt_kpoints.o m_tbt_options.o
 tbtrans.o: m_tbt_out.o m_tbt_read_tshs.o m_ts_contour.o m_ts_electrode.o
 tbtrans.o: m_ts_gf.o m_ts_io.o m_ts_scattering.o m_wallclock.o parallel.o
-tbtrans.o: precision.o sys.o timestamp.o units.o
-transmission.o: m_ts_aux_rout.o precision.o sys.o
+tbtrans.o: precision.o local_sys.o timestamp.o units.o
+transmission.o: m_ts_aux_rout.o precision.o local_sys.o
 tbt_init.o: alloc.o files.o m_spin.o m_tbt_kpoints.o m_tbt_options.o m_timer.o
-tbt_init.o: m_ts_contour.o m_wallclock.o parallel.o precision.o sys.o
+tbt_init.o: m_ts_contour.o m_wallclock.o parallel.o precision.o local_sys.o
 tbt_init.o: timestamp.o
 tbt_reinit.o: files.o parallel.o
-coop.o: m_tbt_out.o parallel.o precision.o sys.o units.o
-tt_eig.o: precision.o sys.o
-atompdos.o: m_lowdin.o m_tbt_out.o parallel.o precision.o sys.o units.o
+coop.o: m_tbt_out.o parallel.o precision.o local_sys.o units.o
+tt_eig.o: precision.o local_sys.o
+atompdos.o: m_lowdin.o m_tbt_out.o parallel.o precision.o local_sys.o  units.o
