@@ -43,6 +43,7 @@ module t_spin
 !CC RC  Added for the offSpOrb
      integer :: iout_SO
      logical :: deb_offSO = .false.
+     logical :: L_offSO = .false.
      logical :: deb_P = .false. ! Spin Polarized debugging
 !CC RC  Added for the offSpOrb
 
@@ -155,6 +156,7 @@ contains
 
 !CC RC  Added for the offSpOrb
     spin%deb_offSO = .false.
+    spin%L_offSO = .false.
     spin%deb_P = .false.
 !CC RC  Added for the offSpOrb
     
@@ -215,6 +217,7 @@ contains
        
        spin%SO = .true.
        spin%SO_off = .true.
+       spin%L_offSO = .true.
 
 !CC RC  Added for the offSpOrb
     else if ( leqi(opt, 'spin-orbit+deb') .or. leqi(opt, 'S-O+deb') .or. &

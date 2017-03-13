@@ -13,5 +13,7 @@ log*
 *.Off.F
 Src/SiestaXC/*.604
 Src/SiestaXC/*old_scheme.f
+Src/angular_moment.save.F
 Src/angular_moment.F
+Src/angular_moment.new.F
 arch.make

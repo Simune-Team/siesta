@@ -12,7 +12,7 @@
 
       implicit none
 
-      public :: nlefsm, nlefsm_SO, calc_Vj_SO
+      public :: nlefsm, nlefsm_SO, calc_Vj_SO, calc_L_SO, av_L_SO
 
       private
 
@@ -1085,5 +1085,216 @@ C      write(6,*) ' V_ion= ', V_ion
 
       return
       end subroutine calc_Vj_SO
+
+c-----------------------------------------------------------------------
+c
+c  Calculate the angular momentum matrix <i|L|j> (stored as real)
+c
+c-----------------------------------------------------------------------
+      subroutine calc_L_SO( nua, na, no, scell, xa, indxua, rmaxo,
+     .                          nh, lasto, iphorb, isa,
+     .                          numh, listhptr, listh, L )
+
+      use precision,       only : dp
+      use atmfuncs,        only : rcut, orb_gindex 
+      use neighbour,       only : jna=>jan, r2ij, xij, mneighb
+      use alloc,           only : re_alloc, de_alloc
+      use m_new_matel,     only : new_matel
+      use sparse_matrices, only: L_SO
+C-mpi
+      use parallel,        only : Node, Nodes
+      use parallelsubs,    only : GlobalToLocalOrb
+
+
+      integer , intent(in) :: nh, na, no, nua
+      integer , intent(in) :: indxua(na), iphorb(no), isa(na),
+     &                        lasto(0:na), listh(nh), 
+     &                        numh(no), listhptr(no)
+      real(dp), intent(in) :: scell(3,3), rmaxo, xa(3,na)
+      real(dp), intent(out):: L(3,nh)
+
+      integer :: ia, ind, io, ioa, is, j, ja, jn, jo, joa, js, nnia
+      integer :: ig, jg, iio
+      real(dp):: rij, Sij, Lij(3,no), al(3,3)
+      real(dp) :: Lmat(1:3,no,no)
+
+C-----------------------------------------------------------------------
+
+      L(:,:)= 0.0d0
+
+C Initialize neighb subroutine
+      call mneighb( scell, 2.d0*rmaxo, na, xa, 0, 0, nnia )
+
+      Lmat(:,:,:) = 0.0d0
+
+      do ia = 1,nua
+       is = isa(ia)
+       call mneighb( scell, 2.d0*rmaxo, na, xa, ia, 0, nnia )
+       do io = lasto(ia-1)+1,lasto(ia)
+
+C-mpi
+C Is this orbital on this Node?
+        call GlobalToLocalOrb(io,Node,Nodes,iio)
+        if (iio.gt.0) then  ! Local orbital
+
+         ioa = iphorb(io)
+         ig = orb_gindex(is,ioa)
+         Lij(1:3,1:no) = 0.0d0
+         do jn = 1,nnia
+         ja = jna(jn)
+          js = isa(ja)
+          rij = sqrt( r2ij(jn) )
+          do jo = lasto(ja-1)+1,lasto(ja)
+           joa = iphorb(jo)
+           jg = orb_gindex(js,joa)
+           if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
+
+c          <i|x|dj/Rj>
+            call new_MATEL( 'X', ig, jg, xij(1:3,jn), Sij, al(:,1) )
+
+c          <i|y|dj/Rj>
+            call new_MATEL( 'Y', ig, jg, xij(1:3,jn), Sij, al(:,2) )
+
+c          <i|z|dj/Rj>
+            call new_MATEL( 'Z', ig, jg, xij(1:3,jn), Sij, al(:,3) )
+
+            Lij(1,jo) = al(3,2)-al(2,3)
+            Lij(2,jo) = al(1,3)-al(3,1)
+            Lij(3,jo) = al(2,1)-al(1,2)
+ 
+C-mpi
+!           Lmat(1:3,io,jo) = Lij(1:3,jo)
+           Lmat(1:3,iio,jo) = Lij(1:3,jo)
+           endif
+          enddo  ! jo
+         enddo ! jn
+
+c------- pick up contributions to L
+C-mpi
+!         do j = 1,numh(io)
+!          ind = listhptr(io)+j
+         do j = 1,numh(iio)
+          ind = listhptr(iio)+j
+          jo = listh(ind)
+          L(:,ind)  = Lij(:,jo)
+         enddo
+C-mpi
+        endif
+
+       enddo ! io
+      enddo
+
+C----- The following only works in serial mode
+C
+C      write(6,*) 'Lx matrix....'
+C      call write_Lmat( Lmat(1,:,:), no, no, no, 3 )
+C      write(6,*) 'Ly matrix....'
+C      call write_Lmar( Lmat(2,:,:), no, no, no, 3 )
+C      write(6,*) 'Lz matrix....'
+C      call write_Lmat( Lmat(3,:,:), no, no, no, 3 )
+
+      end subroutine calc_L_SO
+
+c-----------------------------------------------------------------------
+c
+c  Finds average value of the angular momenta: <Lx,Ly,Lz>
+c  via: <L>= Tr{rho*L}
+c
+c-----------------------------------------------------------------------
+      subroutine av_L_SO( nua, no, lasto, numh,
+     &                        listhptr, listh, 
+     &                        nh, nspinh, Dscf, L, L_av )
+
+C-mpi
+      use parallel,        only : Node, Nodes
+      use parallelsubs,    only : GlobalToLocalOrb
+
+      integer, intent(in) :: nua, no, nh, nspinh
+      integer, intent(in) :: lasto(0:nua), numh(no),
+     &                       listh(nh), listhptr(no)
+      real(dp),intent(in) :: Dscf(nh,nspinh), L(3,nh)
+      real(dp),intent(out):: L_av(3)
+
+      integer :: ia, ind, io, jo, js, iio
+      real(dp):: Dr, Di, L_at(3)
+
+      complex(dp) :: Ds
+      complex(dp) :: Lij(3)
+
+C-----------------------------------------------------------------------
+
+      L_av(1:3) = 0.0d0
+      do ia = 1,nua
+       L_at(1:3) = (0.0d0,0.0d0)
+       do io = lasto(ia-1)+1,lasto(ia)
+CC-mpi
+        call GlobalToLocalOrb(io,Node,Nodes,iio)
+        if (iio.gt.0) then
+
+!        do js = 1,numh(io)
+!         ind = listhptr(io)+js
+         do js = 1,numh(iio)
+          ind = listhptr(iio)+js
+!         indt= listht(ind)
+          jo = listh(ind)
+!          Dr = sum(Dscf(indt,1:2))
+!          Di = sum(Dscf(indt,5:6))
+          Dr = sum(Dscf(ind,1:2))
+          Di = sum(Dscf(ind,5:6))
+          Ds = cmplx(Dr,-Di)
+          Lij(1:3) = Ds*L(1:3,ind)
+          L_at(1:3) = L_at(1:3) - imag(Lij(1:3))
+         enddo
+C-mpi
+        endif
+       enddo  ! jo
+C       write(6,'(a,i3,a,3f8.4)') 'angular_moment: ',ia,' <L>=',L_at(1:3)
+       L_av(:)= L_av(:) + L_at(:)
+      enddo ! ia
+
+      end subroutine av_L_SO
+
+c-----------------------------------------------------------------------
+c
+!>    THIS subroutine OUTPUTS AN(NI,NJ) MATRIX
+c
+c-----------------------------------------------------------------------
+      subroutine write_Lmat( a , ni , nj , n1 , iformat )
+
+      implicit none
+
+      integer    , intent(in) :: ni , nj , n1 , iformat
+      real(dp)   , intent(in) :: a(n1,nj)
+
+      integer                 :: i , j , j1 , j2
+      character( len = 20 )   :: fmt
+
+c     choose format
+      select case(iformat)
+      case (1:)
+       fmt = '(i5,2x,14f8.3)'
+      case (:-1)
+       fmt = '(i5,2x,14e8.3)'
+      case default
+       write(6,'(a,/a,i3)')
+     &'write_mat: WARNING, current matrix cannot be printed out since ',
+     &'        IFORMAT=',iformat
+       return
+      end select
+
+      j1 = 1
+      j2 = min(14,nj)
+1     continue
+      write(6,'(9x,14(i4,4x))') (j,j=j1,j2)
+      do i=1,ni
+       write(6,fmt) i,a(i,j1:j2)
+      enddo
+      if (j2.lt.nj) then
+       j1 = j1+14
+       j2 = min(j2+14,nj)
+       goto 1
+      endif
+      return
+      end subroutine write_Lmat
 
       end module m_nlefsm

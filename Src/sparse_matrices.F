@@ -33,6 +33,7 @@
 
 ! CC RC  Added for the offSpOrb
       complex(dp), public, pointer :: H0_SO(:,:) => null()
+      real(dp), public, pointer :: L_SO(:,:) => null()
 !      integer, public, pointer :: listht(:)=>null()
 ! CC RC  Added for the offSpOrb
 
@@ -85,7 +86,10 @@
       call delete( DM_history )
 
 ! CC RC  Added for the offSpOrb
-      if( spin%SO_off ) deallocate( H0_SO )
+      if( spin%SO_off ) then 
+       deallocate( H0_SO )
+       deallocate( L_SO )
+      endif
 !      call de_alloc( listht,'listht','sparseMat' ) ! CC RC 
 ! CC RC  Added for the offSpOrb
 

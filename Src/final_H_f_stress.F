@@ -30,7 +30,7 @@
      &                    rmaxo, no_l, iza
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
-      use m_nlefsm,     only: nlefsm, nlefsm_SO
+      use m_nlefsm,     only: nlefsm, nlefsm_SO, av_L_SO
       use m_overfsm,    only: overfsm
       use m_kinefsm,    only: kinefsm
       use m_naefs,      only: naefs
@@ -46,8 +46,9 @@
       use m_energies
       use m_steps, only: istp
       use m_ntm
-      use m_spin,         only: spin
-      use spinorbit,      only: spinorb
+      use m_spin,          only: spin
+      use sparse_matrices, only: L_SO
+      use spinorbit,       only: spinorb
       use m_dipol
       use m_forces,          only: fa
       use alloc, only: re_alloc, de_alloc
@@ -57,6 +58,7 @@
       use fdf
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
+      use mpi_siesta
 #endif
       use parallel, only: IOnode
 #ifdef CDF
@@ -100,6 +102,8 @@
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
       real(dp)              :: buffer1
+      real(dp)              :: L_av_tmp(3) 
+      integer               :: MPIerror 
 #endif
 #ifdef TRANSIESTA
       character(len=label_length+13) :: fname
@@ -110,6 +114,9 @@
       type(dict) :: dic_save
 #endif
 #endif
+
+      real(dp) :: L_av_SO(3)
+
 !------------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
@@ -258,6 +265,28 @@
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              spin%spinor, Escf, fal, stressl, S_tmp ) 
+
+c---- Angular momentum
+      if ( spin%SO_off ) then
+       call av_L_SO( na_u, no_s, lasto, numh,
+     &               listhptr, listh, maxnh, 
+     &               spin%H, Dscf, L_SO, L_av_SO )
+
+#ifdef MPI
+      call MPI_AllReduce(L_av_SO,L_av_tmp,3,
+     &     MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
+      L_av_SO(1:3) = L_av_tmp(1:3)
+#endif
+
+        if ( IONode .and. spin%deb_offSO )
+     &   write(spin%iout_SO,'(a,3f14.10)')
+     &   '    Final_H: < L > = ', L_av_SO
+
+        if (IONode) write(6,'(a,3f14.10)')
+     &   '    Final_H: < L > = ', L_av_SO
+
+      endif
+
 
 !     Metadynamics forces
       if (lMetaForce) then
