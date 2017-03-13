@@ -278,9 +278,14 @@
       call update_E0()
 
 ! CC RC  Added  for the offSpOrb
-      if ( switch_ldau .and. spin%SO ) 
-     .  call die(' WARNING: LDAU+U not compatible with Spin-Orbit...')
+!      if ( switch_ldau .and. spin%SO ) 
+!     .  call die(' WARNING: LDAU+U not compatible with Spin-Orbit...')
+      if ( switch_ldau .and. spin%SO ) write(6,'(a)')
+     .   ' WARNING: LDA+U my not be compatible with Spin-Orbit...'
 
+      if ( spin%SO_off ) then
+       H(:,:) = 0.0_dp
+      endif
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
         call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'setup_hamiltonian' )
@@ -321,9 +326,9 @@
       endif
       use_rhog_in =  (mix_charge .and. iscf > 1)
   
-      if ( spin%SO_off ) then
-       H(:,:) = 0.0_dp
-      endif
+!      if ( spin%SO_off ) then
+!       H(:,:) = 0.0_dp
+!      endif
       call dhscf( spin%grid, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
      .            ntm, ifa, istr, ihmat, filesOut,

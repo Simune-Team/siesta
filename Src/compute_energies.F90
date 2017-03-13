@@ -408,6 +408,12 @@ CONTAINS
 
         enddo
 
+#ifdef MPI
+         ! Global reduction of Eso
+         call globalize_sum( Enl_SO, buffer1 )
+         Enl_SO = buffer1
+#endif
+
       elseif ( spin%SO .and. .not.spin%SO_off ) then
          ! Sadly some compilers (g95), does
          ! not allow bounds for pointer assignments :(
