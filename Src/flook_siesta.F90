@@ -32,7 +32,7 @@ module flook_siesta
   public :: slua_init, slua_call, slua_close
 
   ! Internal parameters
-  logical, save :: slua_run = .true.
+  logical, save :: slua_run = .false.
   character(len=512), save, public :: slua_file = ' '
   ! Debugging flag for both parallel and serial debugging
   logical, save, public :: slua_debug = .false.
@@ -91,6 +91,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     slua_file = fdf_get('LUA.Script',' ')
     ! Immediately return if the file is not specified...
     if ( len_trim(slua_file) == 0 ) return
+
     ! Default debugging only on the io-node.
     slua_debug = fdf_get('LUA.Debug',.false.)
     slua_debug = slua_debug .and. IONode 
