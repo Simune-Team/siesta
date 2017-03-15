@@ -10055,7 +10055,7 @@ function siesta_comm()
    get_tbl = {"geom.xa", "E.total"}
 
    -- Signal to SIESTA which variables we want to explore
-   siesta_get(get_tbl)
+   siesta.receive(get_tbl)
 
    -- Now we have the required variables,
    -- convert to a simpler variable name (not nested tables)
@@ -10072,7 +10072,7 @@ function siesta_comm()
    siesta.E.total = Etot
    ret_tbl = {"E.total"}
 
-   siesta_return(ret_tbl)
+   siesta.send(ret_tbl)
 
 end
 \end{codeexample}
@@ -10125,6 +10125,18 @@ end
   is recommended to start by using \program{flos}, see
   \url{https://github.com/siesta-project/flos} which contains several
   examples on how to start implementing your own scripts.
+  Currently \program{flos} implements a larger variety of relaxation
+  schemes, for instance:
+  \begin{codeexample}
+    local flos = require "flos"
+    LBFGS = flos.LBFGS()
+    function siesta_comm()
+       LBFGS:SIESTA(siesta)
+    end
+  \end{codeexample}
+  which is the most minimal example of using the L-BFGS algorithm for
+  geometry relaxation. Note that \program{flos} reads the parameters
+  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol}.
 
   \note The number of available variables continues to grow and to
   find which quantities are accessible in Lua you may add this small
