@@ -227,14 +227,14 @@ contains
        spin%SO_off = .true.
        spin%deb_offSO = .true.
 
-    else if ( leqi(opt, 'spin-orbit+off') .or. leqi(opt, 'S-O+off') .or. &
-         leqi(opt, 'SOC+off') .or. leqi(opt, 'SO+off') ) then
+    else if ( leqi(opt, 'spin-orbit+offsite') .or. leqi(opt, 'S-O+offsite') .or. &
+         leqi(opt, 'SOC+offsite') .or. leqi(opt, 'SO+offsite') ) then
        
        spin%SO = .true.
        spin%SO_off = .true.
 
-    else if ( leqi(opt, 'spin-orbit+on') .or. leqi(opt, 'S-O+on') .or. &
-         leqi(opt, 'SOC+on') .or. leqi(opt, 'SO+on') ) then
+    else if ( leqi(opt, 'spin-orbit+onsite') .or. leqi(opt, 'S-O+onsite') .or. &
+         leqi(opt, 'SOC+onsite') .or. leqi(opt, 'SO+onsite') ) then
        
        spin%SO = .true.
        spin%SO_off = .false.
@@ -403,9 +403,9 @@ contains
 
     if ( spin%SO ) then
        if ( spin%SO_off ) then
-          opt = 'spin-orbit+off'
+          opt = 'spin-orbit+offsite'
        else
-          opt = 'spin-orbit+on'
+          opt = 'spin-orbit+onsite'
        end if
     else if ( spin%NCol ) then
        opt = 'non-collinear'
