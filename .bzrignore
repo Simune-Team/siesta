@@ -16,4 +16,7 @@ Src/SiestaXC/*old_scheme.f
 Src/angular_moment.save.F
 Src/angular_moment.F
 Src/angular_moment.new.F
+Docs/siesta.save.tex
 arch.make
+Docs/siesta.idx
+Docs/siesta.log

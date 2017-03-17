@@ -66,10 +66,10 @@
            call register_in_rf_pool(func,l,m,"kbproj",(/is,io/),gindex)
            spp%pj_gindex(ko) = gindex
           endif
-!#ifdef DEBUG_PAO
-!          write(6,'(a20,a,3(tr1,i3))')'KB projectors ', &
-!               'is, ko, gindex = ', is, ko, gindex 
-!#endif
+#ifdef DEBUG_PAO
+          write(6,'(a20,a,3(tr1,i3))')'KB projectors ', &
+               'is, ko, gindex = ', is, ko, gindex 
+#endif
        enddo
     enddo
     
@@ -89,6 +89,7 @@
 #endif
        enddo
     enddo
+    
 
     ! Vna
     do is = 1, nspecies

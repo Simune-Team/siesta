@@ -277,12 +277,6 @@
 !     Non-SCF part of total energy
       call update_E0()
 
-! CC RC  Added  for the offSpOrb
-!      if ( switch_ldau .and. spin%SO ) 
-!     .  call die(' WARNING: LDAU+U not compatible with Spin-Orbit...')
-      if ( switch_ldau .and. spin%SO ) write(6,'(a)')
-     .   ' WARNING: LDA+U my not be compatible with Spin-Orbit...'
-
       if ( spin%SO_off ) then
        H(:,:) = 0.0_dp
       endif

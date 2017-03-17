@@ -51,6 +51,8 @@
       USE m_ldaxc, only: exchng  ! Local exchange
       USE m_ldaxc, only: pw92c   ! Perdew & Wang, PRB, 45, 13244 (1992) correl
 
+!      use m_spin, only: spin
+
       ! Used module parameters
       use precision, only : dp   ! Double precision real kind
 
@@ -131,6 +133,7 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
 
 CC
         if ( old_scheme ) then
+!        if ( spin%SO_off ) then
          NS = 2
          DTOT = D(1) + D(2)
          dpolz= D(1)-D(2)
@@ -320,9 +323,9 @@ CC
         ! dE/dD(i) = dE/dDup * dDup/dD(i) + dE/dDdn * dDdn/dD(i)
         !          + dE/dGDup * dGDup/dD(i) + dE/dGDdn * dGDdn/dD(i)
         ! dE/dGradD(i) = dE/dGDup * dGDup/dGD(i) + dE/dGDdn * dGDdn/dGD(i)
-CC
-!! JC: Seems old_scheme is more accurate for LS
+
         if ( old_scheme ) then
+!        if ( spin%SO_off ) then
          VPOL  = (dExdDD(1)-dExdDD(2)) * ct
          dExdD(1) = 0.5D0 * ( dExdDD(1) + dExdDD(2) + VPOL )
          dExdD(2) = 0.5D0 * ( dExdDD(1) + dExdDD(2) - VPOL )
@@ -346,7 +349,6 @@ C Gradient terms
          enddo
 
         else
-CC
 
         do is = 1,4
           dEXdD(is) = sum( dEXdDD(:) * dDDdD(:,is) )
@@ -367,7 +369,7 @@ CC
         dECdD(3:4) = dECdD(3:4) / 2
         dEXdGD(:,3:4) = dEXdGD(:,3:4) / 2
         dECdGD(:,3:4) = dECdGD(:,3:4) / 2
-CC
+
        endif
       else   ! Collinear spin => just copy derivatives to output arrays
         dEXdD(1:nSpin) = dEXdDD(1:nSpin)
