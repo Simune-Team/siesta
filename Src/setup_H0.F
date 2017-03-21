@@ -22,7 +22,7 @@ C     and initializes data structures on the grid.
 
 ! CC RC  Added for the offSpOrb
       use sparse_matrices, only: H0_SO, listhptr, numh, L_SO ! , listht
-      use m_nlefsm,        only: nlefsm_SO, calc_L_SO
+      use m_nlefsm,        only: nlefsm_SO
       use m_energies,      only: Enl_SO, Enl, Ekin
       use m_spin,          only: spin
       use parallel,        only: IONode
@@ -150,11 +150,6 @@ C     Add on force field contribution to energy
      &             H_val,
      &             matrix_elements_only=.true.) 
       elseif ( spin%SO_offsite ) then
-!       if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
-!     &  '    setup_H0: Calculating < L > matrix ...'
-!       call calc_L_SO( na_u,na_s,no_s,scell,xa,indxua,rmaxo,
-!     &            maxnh,lasto,iphorb,isa,numh,listhptr,listh,L_SO )
-
         H0_SO=dcmplx(0.0d0,0.0d0)
         if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
      &   '    setup_H0: Calling nlefsm_SO...'

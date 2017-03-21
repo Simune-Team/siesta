@@ -4174,13 +4174,9 @@ C
          endif
 
          write(6,'(/,a)')'KBgen: Kleinman-Bylander projectors: '
-         write(spin%iout_SO,'(/,a)')'KBgen: KB projectors: '
          do l=0,lmxkb
            do ikb=1, nkbl(l)
               write(6,'(3x,a,i2,4(3x,a,f10.6))')
-     .        'l=',l, 'rc=',rc(ikb,l), 'el=',erefkb(ikb,l), 
-     .        'Ekb=',ekb(ikb,l),'kbcos=',dkbcos(ikb,l)
-              write(spin%iout_SO,'(3x,a,i2,4(3x,a,f10.6))')
      .        'l=',l, 'rc=',rc(ikb,l), 'el=',erefkb(ikb,l), 
      .        'Ekb=',ekb(ikb,l),'kbcos=',dkbcos(ikb,l)
            enddo

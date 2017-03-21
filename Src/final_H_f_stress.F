@@ -30,7 +30,7 @@
      &                    rmaxo, no_l, iza
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
-      use m_nlefsm,     only: nlefsm, nlefsm_SO, av_L_SO
+      use m_nlefsm,     only: nlefsm, nlefsm_SO
       use m_overfsm,    only: overfsm
       use m_kinefsm,    only: kinefsm
       use m_naefs,      only: naefs
@@ -265,28 +265,6 @@
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              spin%spinor, Escf, fal, stressl, S_tmp ) 
-
-c---- Angular momentum
-      if ( spin%SO_offsite ) then
-       call av_L_SO( na_u, no_s, lasto, numh,
-     &               listhptr, listh, maxnh, 
-     &               spin%H, Dscf, L_SO, L_av_SO )
-
-#ifdef MPI
-      call MPI_AllReduce(L_av_SO,L_av_tmp,3,
-     &     MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-      L_av_SO(1:3) = L_av_tmp(1:3)
-#endif
-
-        if ( IONode .and. spin%deb_offSO )
-     &   write(spin%iout_SO,'(a,3f14.10)')
-     &   '    Final_H: < L > = ', L_av_SO
-
-        if (IONode) write(6,'(a,3f14.10)')
-     &   '    Final_H: < L > = ', L_av_SO
-
-      endif
-
 
 !     Metadynamics forces
       if (lMetaForce) then

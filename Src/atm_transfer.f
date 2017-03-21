@@ -13,6 +13,7 @@
       use radial
       use atmparams, only: NTBMAX
       use m_spin,    only: spin ! offS-SO
+      use parallel,  only : IONode
 !----------------------------------------------------------------
       use old_atmfuncs, only: nsmax
 !
@@ -249,10 +250,10 @@ CC     .                                ' m=', spp%pj_m(i)
           enddo
           spp%n_pjnl = n
           if (ntot .ne. spp%nprojs) call die('KB indexing...')
-          write(6,'(a)') '            '
-          write(6,'(a,i4)') ' spp%n_pjnl=', spp%n_pjnl
-          write(6,'(a,i4)') ' spp%nprojs=', spp%nprojs
-          write(6,'(a)') '            '
+!          write(6,'(a)') '            '
+!          write(6,'(a,i4)') ' spp%n_pjnl=', spp%n_pjnl
+!          write(6,'(a,i4)') ' spp%nprojs=', spp%nprojs
+!          write(6,'(a)') '            '
  
  
           allocate(spp%pjnl(spp%n_pjnl))
@@ -263,8 +264,10 @@ CC     .                                ' m=', spp%pj_m(i)
              pp%delta  =   table(1,-i,is)
              pp%f(1:)    = table(3:,-i,is)
              pp%d2(1:)   = tab2(1:,-i,is)
-             write(spin%iout_SO,'(a,i5,a,f12.6)') 'NTBMAX=',NTBMAX, 
-     .          ' delta=', pp%delta 
+             if ( spin%SO_offsite .and. IONode ) then
+              write(spin%iout_SO,'(a,i5,a,f12.6)') 'NTBMAX=',NTBMAX, 
+     .           ' delta=', pp%delta 
+             endif
           enddo
 !
 !         Fill in the KB energy array and the cutoffs
@@ -276,10 +279,12 @@ CC     .                                ' m=', spp%pj_m(i)
              spp%pjnl_ekb(indx) = epskb(is,io)
              pp => spp%pjnl(indx)
              pp%cutoff = rcut(is,io)
-             write(spin%iout_SO,'(2(a,i5),2(3x,a,f14.8))') 
-     .         ' indx=',spp%pj_index(i),
-     .         '   io=',io, ' ekb=',spp%pjnl_ekb(indx),
+             if ( spin%SO_offsite .and. IONode ) then
+              write(spin%iout_SO,'(2(a,i5),2(3x,a,f14.8))') 
+     .          ' indx=',spp%pj_index(i),
+     .          '   io=',io, ' ekb=',spp%pjnl_ekb(indx),
      .         ' rcut=',pp%cutoff
+             endif
           enddo
          else
           n = 1
