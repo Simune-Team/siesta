@@ -170,7 +170,7 @@
 
 ! Non-local-pseudop: energy, forces, stress and matrix elements .......
 ! CC RC  Added for the offSpOrb
-      if ( .not.spin%SO_off ) then
+      if ( .not.spin%SO_offsite ) then
        call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &              maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -205,7 +205,7 @@
 ! computing forces and stresses, calling it in the first iteration
 ! should be enough
 !
-      if ( spin%SO .and. .not.spin%SO_off ) then
+      if ( spin%SO .and. .not.spin%SO_offsite ) then
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
 #ifdef MPI
@@ -267,7 +267,7 @@
      &              spin%spinor, Escf, fal, stressl, S_tmp ) 
 
 c---- Angular momentum
-      if ( spin%SO_off ) then
+      if ( spin%SO_offsite ) then
        call av_L_SO( na_u, no_s, lasto, numh,
      &               listhptr, listh, maxnh, 
      &               spin%H, Dscf, L_SO, L_av_SO )

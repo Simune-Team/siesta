@@ -164,7 +164,7 @@ C of referencing has been changed in several places to reflect this.
         do j = 1,numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-          if ( spin%SO .and. .not.spin%SO_off ) then
+          if ( spin%SO .and. .not.spin%SO_offsite ) then
             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
             Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
@@ -184,10 +184,6 @@ C of referencing has been changed in several places to reflect this.
 !            Haux(2,io,2,jo) = dcmplx(H(ind,2), H(ind,6))
 !            Haux(1,io,2,jo) = dcmplx(H(ind,3), H(ind,4))
 !            Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
-
-!            write(6,'(a,3i5,8f12.6)') 'io/jo/ind/H(ind,1:8) = ',
-!     .           io, jo, ind, H(ind,1:8)
-
           endif
         enddo
       enddo
@@ -207,7 +203,7 @@ C of referencing has been changed in several places to reflect this.
           do j = 1,numh(io)
             ind = listhptr(io) + j
             jo = listh(ind)
-            if ( spin%SO .and. .not.spin%SO_off ) then
+            if ( spin%SO .and. .not.spin%SO_offsite ) then
               Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
               Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
               Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
@@ -313,7 +309,7 @@ C of referencing has been changed in several places to reflect this.
 !------- 2,1 -----------------------------------------------------------
               D21  = caux(2,iio) * dconjg(caux(1,jo))
       
-              if ( spin%SO .and. .not.spin%SO_off ) then
+              if ( spin%SO .and. .not.spin%SO_offsite ) then
                 Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
                 Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe
                 Dnew(ind,3) = Dnew(ind,3) + dreal(D12) * qe

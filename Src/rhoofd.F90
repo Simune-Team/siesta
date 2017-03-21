@@ -215,14 +215,14 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdlptr(iul) + ii
                     j   = listdl(ind)
                     ijl = idx_ijl(il,ilocal(j))
-                    if ( SpOrb .and. .not.spin%SO_off ) then
+                    if ( SpOrb .and. .not.spin%SO_offsite ) then
                        Dlocal(ijl,1) = DscfL(ind,1)
                        Dlocal(ijl,2) = DscfL(ind,2)
                        Dlocal(ijl,3) = 0.5*(DscfL(ind,3)+DscfL(ind,7))
                        Dlocal(ijl,4) = 0.5*(DscfL(ind,4)+DscfL(ind,8))
                     else
                        Dlocal(ijl,1:nspin) = DscfL(ind,1:nspin)
-                       if ( spin%SO_off .and. i /= j ) then
+                       if ( spin%SO_offsite .and. i /= j ) then
                           Dlocal(ijl,1) = Dlocal(ijl,1) + DscfL(ind,1)
                           Dlocal(ijl,2) = Dlocal(ijl,2) + DscfL(ind,2)
                           Dlocal(ijl,3) = Dlocal(ijl,3) + DscfL(ind,7)
@@ -235,14 +235,14 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdlptr(iul)+ii
                     j   = LISTSC( i, iu, listdl(ind) )
                     ijl = idx_ijl(il,ilocal(j))
-                    if ( SpOrb .and. .not.spin%SO_off ) then
+                    if ( SpOrb .and. .not.spin%SO_offsite ) then
                        Dlocal(ijl,1) = DscfL(ind,1)
                        Dlocal(ijl,2) = DscfL(ind,2)
                        Dlocal(ijl,3) = 0.5*(DscfL(ind,3)+DscfL(ind,7))
                        Dlocal(ijl,4) = 0.5*(DscfL(ind,4)+DscfL(ind,8))
                     else
                        Dlocal(ijl,1:nspin) = DscfL(ind,1:nspin)
-                       if ( spin%SO_off .and. i /= j ) then
+                       if ( spin%SO_offsite .and. i /= j ) then
                           Dlocal(ijl,1) = Dlocal(ijl,1) + DscfL(ind,1)
                           Dlocal(ijl,2) = Dlocal(ijl,2) + DscfL(ind,2)
                           Dlocal(ijl,3) = Dlocal(ijl,3) + DscfL(ind,7)
@@ -258,14 +258,14 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdptr(iul)+ii
                     j   = listd(ind)
                     ijl = idx_ijl(il,ilocal(j))
-                    if ( SpOrb .and. .not.spin%SO_off ) then
+                    if ( SpOrb .and. .not.spin%SO_offsite ) then
                        Dlocal(ijl,1) = Dscf(ind,1)
                        Dlocal(ijl,2) = Dscf(ind,2)
                        Dlocal(ijl,3) = 0.5*(Dscf(ind,3)+Dscf(ind,7))
                        Dlocal(ijl,4) = 0.5*(Dscf(ind,4)+Dscf(ind,8))
                     else
                        Dlocal(ijl,1:nspin) = Dscf(ind,1:nspin)
-                       if ( spin%SO_off .and. i /= j ) then
+                       if ( spin%SO_offsite .and. i /= j ) then
                           Dlocal(ijl,1) = Dlocal(ijl,1) + Dscf(ind,1)
                           Dlocal(ijl,2) = Dlocal(ijl,2) + Dscf(ind,2)
                           Dlocal(ijl,3) = Dlocal(ijl,3) + Dscf(ind,7)
@@ -278,14 +278,14 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdptr(iul)+ii
                     j   = LISTSC( i, iu, listd(ind) )
                     ijl = idx_ijl(il,ilocal(j))
-                    if ( SpOrb .and. .not.spin%SO_off ) then
+                    if ( SpOrb .and. .not.spin%SO_offsite ) then
                        Dlocal(ijl,1) = Dscf(ind,1)
                        Dlocal(ijl,2) = Dscf(ind,2)
                        Dlocal(ijl,3) = 0.5*(Dscf(ind,3)+Dscf(ind,7))
                        Dlocal(ijl,4) = 0.5*(Dscf(ind,4)+Dscf(ind,8))
                     else
                        Dlocal(ijl,1:nspin) = Dscf(ind,1:nspin)
-                       if ( spin%SO_off .and. i /= j ) then
+                       if ( spin%SO_offsite .and. i /= j ) then
                           Dlocal(ijl,1) = Dlocal(ijl,1) + Dscf(ind,1)
                           Dlocal(ijl,2) = Dlocal(ijl,2) + Dscf(ind,2)
                           Dlocal(ijl,3) = Dlocal(ijl,3) + Dscf(ind,7)
@@ -329,9 +329,9 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
            end if
            iphi = iphorb(i)
 
-           write(6,*) ' spin_off=', spin%SO_off
+           write(6,*) ' spin_off=', spin%SO_offsite
 !          Retrieve phi values
-           if ( spin%SO_off ) then 
+           if ( spin%SO_offsite ) then 
               Clocal(:,ic) = phia(iphi,:)
             if(ip.lt.10) then
              write(6,*) ' ip/nc/Clocal(1,:) = ', ip, nc, Clocal(1,:)   
@@ -360,7 +360,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 !          ilc(ic) == il
            ijl = idx_ijl(il,ilc(ic))
            
-           if ( spin%SO_off ) then 
+           if ( spin%SO_offsite ) then 
              do ispin = 1,nspin
 !               Loop over sub-points
                 do isp = 1,nsp
@@ -389,7 +389,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
            ilc(ic) = il
 
 !          Retrieve phi values
-           if ( spin%SO_off ) then 
+           if ( spin%SO_offsite ) then 
               Clocal(:,ic) = phi(:,imp)
 !            if(ip.lt.5) then
 !             write(6,*) ' ip/nc/Clocal(1,:) = ', ip, nc, Clocal(1,:)
@@ -419,7 +419,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 !          ilc(ic) == il
            ijl = idx_ijl(il,ilc(ic))
            
-           if ( spin%SO_off ) then 
+           if ( spin%SO_offsite ) then 
              do ispin = 1,nspin
 !               Loop over sub-points
                 do isp = 1,nsp

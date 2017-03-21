@@ -86,7 +86,7 @@
       call delete( DM_history )
 
 ! CC RC  Added for the offSpOrb
-      if( spin%SO_off ) then 
+      if( spin%SO_offsite ) then 
        deallocate( H0_SO )
        deallocate( L_SO )
       endif

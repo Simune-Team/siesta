@@ -38,7 +38,7 @@ module t_spin
      logical :: SO = .false.
 
      !> If .true. the spin-orbit is using the off-site implementation (else the on-site)
-     logical :: SO_off = .false.
+     logical :: SO_offsite = .false.
 
 !CC RC  Added for the offSpOrb
      integer :: iout_SO
@@ -152,7 +152,7 @@ contains
     spin%Col = .false.
     spin%NCol = .false.
     spin%SO = .false.
-    spin%SO_off = .false.
+    spin%SO_offsite = .false.
 
 !CC RC  Added for the offSpOrb
     spin%deb_offSO = .false.
@@ -216,7 +216,7 @@ contains
        ! Spin-orbit is the same as using the off-site implementation
        
        spin%SO = .true.
-       spin%SO_off = .true.
+       spin%SO_offsite = .true.
        spin%L_offSO = .true.
 
 !CC RC  Added for the offSpOrb
@@ -224,20 +224,20 @@ contains
          leqi(opt, 'SOC+deb') .or. leqi(opt, 'SO+deb') ) then
        
        spin%SO = .true.
-       spin%SO_off = .true.
+       spin%SO_offsite = .true.
        spin%deb_offSO = .true.
 
     else if ( leqi(opt, 'spin-orbit+offsite') .or. leqi(opt, 'S-O+offsite') .or. &
          leqi(opt, 'SOC+offsite') .or. leqi(opt, 'SO+offsite') ) then
        
        spin%SO = .true.
-       spin%SO_off = .true.
+       spin%SO_offsite = .true.
 
     else if ( leqi(opt, 'spin-orbit+onsite') .or. leqi(opt, 'S-O+onsite') .or. &
          leqi(opt, 'SOC+onsite') .or. leqi(opt, 'SO+onsite') ) then
        
        spin%SO = .true.
-       spin%SO_off = .false.
+       spin%SO_offsite = .false.
        spin%deb_P = .true.
 
     else
@@ -270,7 +270,7 @@ contains
     ! TODO once off-site is fully implemented
     ! this should be removed to enable the off-site code
     ! fully!
-    ! spin%SO_off = .false.
+    ! spin%SO_offsite = .false.
 
     ! Note that, in what follows,
     !   spinor_dim = min(h_spin_dim,2)
@@ -402,7 +402,7 @@ contains
     if ( .not. IONode ) return
 
     if ( spin%SO ) then
-       if ( spin%SO_off ) then
+       if ( spin%SO_offsite ) then
           opt = 'spin-orbit+offsite'
        else
           opt = 'spin-orbit+onsite'

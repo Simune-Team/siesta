@@ -697,7 +697,7 @@ C      endif
             nkbl(l,isp) = k%nkbl
 
 ! CC RC  Added for the offSpOrb
-            if ( spin%SO_off .and. l.gt.0 ) then
+            if ( spin%SO_offsite .and. l.gt.0 ) then
              erefkb(1:2*k%nkbl,l,isp) = k%erefkb(1:2*k%nkbl)
             else
              erefkb(1:k%nkbl,l,isp) = k%erefkb(1:k%nkbl)
@@ -770,7 +770,8 @@ C      if( IONode .and. spin%deb_offSO ) then
 C        write(spin%iout_SO,'(a,i3)') 
 C     $     '       write_basis_specs: Is lmxkb(is) > 0 ? ', lmxkb(is) 
 C        write(spin%iout_SO,'(a,l2)') 
-C     $     '       write_basis_specs: spin%SO_off = ', spin%SO_off
+C     $     '       write_basis_specs: spin%SO_offsite = ',
+C     spin%SO_offsite
 C        write(spin%iout_SO,'(a,i3)') 
 C     $     '       write_basis_specs: size(erefkb,1) = ', 
 C     $             size(erefkb,dim=1) 
@@ -785,7 +786,7 @@ C      endif
          write(lun,'(79("-"))')
          nj_SO = 1 ! CC RC  Added for the offSpOrb
          do l=0,lmxkb(is)
-          if ( spin%SO_off .and. l.gt.0 ) nj_SO = 2
+          if ( spin%SO_offsite .and. l.gt.0 ) nj_SO = 2
             write(lun,'(a2,i1,2x,a5,i1,2x,a6,4g14.5)')
      $           'L=', l, 'Nkbl=', nkbl(l,is),
      $           'erefs:  ', (erefkb(j_SO,l,is),j_SO=1,nj_SO)

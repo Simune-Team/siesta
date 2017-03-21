@@ -139,7 +139,7 @@ C     Add on force field contribution to energy
 !$OMP end parallel workshare
 
 
-      if ( .not.spin%SO_off ) then
+      if ( .not.spin%SO_offsite ) then
        if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
      &  '    setup_H0: Calling nlefsm...'
        call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
@@ -149,11 +149,11 @@ C     Add on force field contribution to energy
      &             dummy_dm, dummy_E, dummy_fa, dummy_stress,
      &             H_val,
      &             matrix_elements_only=.true.) 
-      elseif ( spin%SO_off ) then
-       if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
-     &  '    setup_H0: Calculating < L > matrix ...'
-       call calc_L_SO( na_u,na_s,no_s,scell,xa,indxua,rmaxo,
-     &            maxnh,lasto,iphorb,isa,numh,listhptr,listh,L_SO )
+      elseif ( spin%SO_offsite ) then
+!       if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
+!     &  '    setup_H0: Calculating < L > matrix ...'
+!       call calc_L_SO( na_u,na_s,no_s,scell,xa,indxua,rmaxo,
+!     &            maxnh,lasto,iphorb,isa,numh,listhptr,listh,L_SO )
 
         H0_SO=dcmplx(0.0d0,0.0d0)
         if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
@@ -194,23 +194,6 @@ C     Add on force field contribution to energy
 
         enddo
 
-!         write(6,*) ' setup_hamiltonian: H0_SO[1,2]'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!           write(6,'(a,i4,4e18.8)')' ind/H0_SO=',ind,real(H0_SO(ind,1)),
-!     &         imag(H0_SO(ind,1)), real(H0_SO(ind,2)),imag(H0_SO(ind,2))
-!           enddo
-!          enddo
-!         write(6,*) ' setup_hamiltonian: H0_SO[3,4]'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!           write(6,'(a,i4,4e18.8)')' ind/H0_SO=',ind,real(H0_SO(ind,3)),
-!     &         imag(H0_SO(ind,3)), real(H0_SO(ind,4)),imag(H0_SO(ind,4))
-!           enddo
-!          enddo
-
 #ifdef MPI
 ! Global reduction of Ekin, Enl and Eso 
       call globalize_sum(Enl_SO,buffer1)
@@ -230,7 +213,7 @@ C     Add on force field contribution to energy
 ! computing forces and stresses, calling it in the first iteration
 ! should be enough
 !
-      if ( spin%SO .and. .not.spin%SO_off ) then
+      if ( spin%SO .and. .not.spin%SO_offsite ) then
          H_so => val(H_so_2D)
 !$OMP parallel workshare default(shared)
          H_so = 0._dp

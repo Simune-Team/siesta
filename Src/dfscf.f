@@ -257,7 +257,7 @@ C  Copy row i of Dscf into row last of D
                 D(ib,jb,:) = DscfL(ind,:)
 ! JFR           ! We cannot assume symmetry (ib,jb) -- (jb,ib)
                 ! We need to transpose the spin and conjugate
-                if ( spin%SO .and. .not.spin%SO_off ) then
+                if ( spin%SO .and. .not.spin%SO_offsite ) then
                    D(jb,ib,1) = DscfL(ind,1)
                    D(jb,ib,2) = DscfL(ind,2)
                    D(jb,ib,3) = DscfL(ind,7)
@@ -267,7 +267,7 @@ C  Copy row i of Dscf into row last of D
                    D(jb,ib,7) = DscfL(ind,3)
                    D(jb,ib,8) = DscfL(ind,4)
 ! CC RC  Added  for the offSpOrb
-                elseif( spin%SO_off ) then
+                elseif( spin%SO_offsite ) then
                    D(jb,ib,1) = DscfL(ind,1)
                    D(jb,ib,2) = DscfL(ind,2)
                    D(jb,ib,3) = DscfL(ind,7)
@@ -289,7 +289,7 @@ C  Copy row i of Dscf into row last of D
                 jb = ibuff(j)
                 D(ib,jb,:) = Dscf(ind,:)
 ! JFR           ! We cannot assume symmetry (ib,jb) -- (jb,ib)
-                if ( spin%SO .and. .not.spin%SO_off ) then
+                if ( spin%SO .and. .not.spin%SO_offsite ) then
                    D(jb,ib,1) =  Dscf(ind,1)
                    D(jb,ib,2) =  Dscf(ind,2)
                    D(jb,ib,3) =  Dscf(ind,7)
@@ -299,7 +299,7 @@ C  Copy row i of Dscf into row last of D
                    D(jb,ib,7) =  Dscf(ind,3)
                    D(jb,ib,8) =  Dscf(ind,4)
 ! CC RC  Added  for the offSpOrb
-                elseif( spin%SO_off ) then
+                elseif( spin%SO_offsite ) then
                    D(jb,ib,1) = Dscf(ind,1)
                    D(jb,ib,2) = Dscf(ind,2)
                    D(jb,ib,3) = Dscf(ind,7)
@@ -378,13 +378,13 @@ C     Copy potential to a double precision array
         V(1:nsp,1:nspin) = Vscf(1:nsp,ip,1:nspin)
 
 C     Factor two for nondiagonal elements for non-collinear spin
-        if ( spin%NCol .or. spin%SO .and. .not.spin%SO_off ) then
+        if ( spin%NCol .or. spin%SO .and. .not.spin%SO_offsite ) then
            V(1:nsp,3:4) = 2.0_dp * V(1:nsp,3:4)
-           if ( spin%SO .and. .not.spin%SO_off ) then
+           if ( spin%SO .and. .not.spin%SO_offsite ) then
               V(1:nsp,7:8) = V(1:nsp,3:4)
            end if
 ! CC RC  Added  for the offSpOrb
-        elseif( spin%SO_off ) then
+        elseif( spin%SO_offsite ) then
          V(1:nsp,3:nspin) = 2.0_dp * V(1:nsp,3:nspin)
         end if
 

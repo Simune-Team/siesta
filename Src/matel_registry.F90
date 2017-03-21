@@ -273,7 +273,7 @@ CONTAINS
 ! CC RC  Added for the offSpOrb
        if (associated(matel_pool(gindex)%rf)) then
          if (matel_pool(gindex)%rf%id%func_type.eq."kbproj") then
-          if ( spin%SO_off ) then
+          if ( spin%SO_offsite ) then
            call evaluate_ext_radfunc_KB(matel_pool(gindex)%rf,jso(gindex),r,f,grad)
           else
            call evaluate_ext_radfunc(matel_pool(gindex)%rf,r,f,grad)

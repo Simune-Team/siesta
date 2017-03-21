@@ -1266,7 +1266,7 @@ contains
                       DM(ind,1) = qio + spio * costh
                       DM(ind,2) = qio - spio * costh
                       DM(ind,3) =       spio * sinth * cosph
-                      if ( spin%SO_off ) then
+                      if ( spin%SO_offsite ) then
                         DM(ind,4) = -spio * sinth * sinph 
                         DM(ind,5) = 0.0_dp
                         DM(ind,6) = 0.0_dp
@@ -1274,7 +1274,7 @@ contains
                         DM(ind,8)=-DM(ind,4)
 !                        DM(indt,7)= DM(ind,3)
 !                        DM(indt,8)=-DM(ind,4)
-                      elseif ( spin%DM == 8 .and. .not.spin%SO_off ) then
+                      elseif ( spin%DM == 8 .and. .not.spin%SO_offsite ) then
                         DM(ind,4) = spio * sinth * sinph 
                         DM(ind,5) = 0.0_dp
                         DM(ind,6) = 0.0_dp

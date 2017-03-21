@@ -148,12 +148,12 @@
       endif
 
 !     Mulliken population analysis 
-      if ( spin%SO .and. .not.spin%SO_off ) then
+      if ( spin%SO .and. .not.spin%SO_offsite ) then
           call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
      .                  listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .                  indxuo )
       else
-!       if( IONode .and. spin%SO_off ) write(6,'(/,a)') 
+!       if( IONode .and. spin%SO_offsite ) write(6,'(/,a)') 
 !     .  ' WARNING: <Lx,Ly,Lz> not yet supported by off-site SO'
        call mulliken( mullipop, spin%Grid, na_u, no_u, maxnh,
      &                numh, listhptr, listh, S, Dscf, isa, 

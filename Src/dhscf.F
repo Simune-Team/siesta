@@ -979,7 +979,7 @@ C             rhoatm and Drho are in sequential mode
           call rhoofdsp( norb, nmpl, maxnd, numd, listdptr, listd,
      &                   nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
      &                   iphorb, isa, qspiral )
-C        elseif( spin%SO_off ) then
+C        elseif( spin%SO_offsite ) then
 C          call rhoofd_SO( nuo, norb, nmpl, nspin, DRho_par, 
 C     &                     maxnd, numd, listdptr, listd, Dscf )
         else
@@ -1709,7 +1709,7 @@ C ----------------------------------------------------------------------
             call vmatsp( norb, nmpl, dvol, nspin, Vscf_par, maxnd,
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa, qspiral )
-C         elseif ( spin%SO_off ) then
+C         elseif ( spin%SO_offsite ) then
 C            call vmat_SO( norb, nmpl, dVol, nspin, Vscf_par, maxnd,
 C     &                    numd, listdptr, listd, Hmat,
 C     &                    nuo, nuotot, iaorb, iphorb, isa )

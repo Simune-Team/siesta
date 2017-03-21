@@ -345,7 +345,7 @@ CC RC  OffSpOrb
      $                 set_xijo=.true., folding=folding1)
 !
 CC RC  Loading transpose for OffSSO
-!      if ( spin%SO_off ) then
+!      if ( spin%SO_offsite ) then
 !         call re_alloc(listht,1,maxnh,name='listht',
 !     $        routine='sparseMat', shrink=.true.)
 !         listht(:) = 0
@@ -541,15 +541,15 @@ CC RC  End loading transpose for OffSSO
          end if
       end if
       
-      if ( spin%SO .and. .not.spin%SO_off  ) then
+      if ( spin%SO .and. .not.spin%SO_offsite  ) then
          write(oname,"(a,i0)") "H_so at geom step ", istep
          call newdSpData2D(sparse_pattern,spin%H - 2,
      &        block_dist,H_so_2D,name=oname)
       end if
 
 ! CC RC  Added for the offSpOrb
-      if ( spin%SO_off ) allocate ( H0_SO(maxnh,4) )
-      if ( spin%SO_off ) allocate ( L_SO(3,maxnh) )
+      if ( spin%SO_offsite ) allocate ( H0_SO(maxnh,4) )
+      if ( spin%SO_offsite ) allocate ( L_SO(3,maxnh) )
 ! CC RC  Added for the offSpOrb
 
       write(oname,"(a,i0)") "S at geom step ", istep

@@ -45,9 +45,7 @@
       use m_spin,          only: spin 
       use sparse_matrices, only: H0_SO
 !      use sparse_matrices, only: listht
-! CC RC      use sparse_matrices, only: MM_HDM, herm_HDM
-!      use m_spin,         only: nspin, SpOrb, NonCol
-!      use m_spin,         only: h_spin_dim, e_spin_dim, spinor_dim
+!      use sparse_matrices, only: MM_HDM, herm_HDM
 ! CC RC  modified for the offSpOrb
 
       use m_dipol
@@ -105,7 +103,7 @@
 !$OMP single
       H_kin => val(H_kin_1D)
       H_vkb => val(H_vkb_1D)
-      if ( spin%SO .and. .not.spin%SO_off ) then
+      if ( spin%SO .and. .not.spin%SO_offsite ) then
          ! Sadly some compilers (g95), does
          ! not allow bounds for pointer assignments :(
          H_so => val(H_so_2D)
@@ -114,7 +112,7 @@
 
 
 ! CC RC  modified for the offSpOrb
-      if ( .not. spin%SO_off ) then
+      if ( .not. spin%SO_offsite ) then
        do ispin = 1, spin%spinor
          if (ispin .le. 2) then
 !$OMP do
@@ -132,7 +130,7 @@
        end do
       end if
 
-      if ( spin%SO .and. .not.spin%SO_off ) then
+      if ( spin%SO .and. .not.spin%SO_offsite ) then
 !$OMP do collapse(2)
          do ispin = 3 , spin%H
             do io = 1,maxnh
@@ -177,7 +175,7 @@
 
 
 ! CC RC  Added  for the offSpOrb
-      if( spin%SO_off ) then
+      if( spin%SO_offsite ) then
         Enl_SO = 0.0_dp
 
         do io = 1, maxnh
@@ -206,26 +204,6 @@
             Enl_SO = Enl_SO + real( Hc*Dc )
         enddo
 
-!         write(6,*) ' setup_hamiltonian: H0_SO[1,2]'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!           write(6,'(a,i4,4e18.8)')'ind/H0_SO=',ind,real(H0_SO(ind,1)),
-!     .         imag(H0_SO(ind,1)),real(H0_SO(ind,2)),imag(H0_SO(ind,2))
-!           enddo
-!          enddo
-!         write(6,*) ' setup_hamiltonian: H0_SO[3,4]'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!           write(6,'(a,i4,4e18.8)')'ind/H0_SO=',ind,real(H0_SO(ind,3)),
-!     .         imag(H0_SO(ind,3)),real(H0_SO(ind,4)),imag(H0_SO(ind,4))
-!           enddo
-!          enddo
-
-
-
-
       endif
 ! CC RC  Added  for the offSpOrb
 
@@ -233,7 +211,7 @@
 !$OMP single
       Eso = 0._dp
 !$OMP end single
-      if ( spin%SO .and. .not.spin%SO_off ) then
+      if ( spin%SO .and. .not.spin%SO_offsite ) then
 !$OMP do reduction(+:Eso)
          do io = 1,maxnh
             Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8)
@@ -245,29 +223,17 @@
 
 !$OMP end parallel
 
-!      if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-!       write(spin%iout_SO,'(a,f12.6)') 
-!     .       ' setup_hamiltonian:    Ekin = ', Ekin
-!       write(spin%iout_SO,'(a,f12.6)') 
-!     .       ' setup_hamiltonian:     Enl = ', Enl
-!       write(spin%iout_SO,'(a,f12.6)') 
-!     .       ' setup_hamiltonian:  Enl_SO = ', Enl_SO
-!       write(spin%iout_SO,'(a,f12.6)') 
-!     .       ' setup_hamiltonian:     Eso = ', Eso
-!      endif
-
-      
 #ifdef MPI
       ! Global reduction of Ekin, Enl
       call globalize_sum(Ekin,buffer1)
       Ekin = buffer1
       call globalize_sum(Enl,buffer1)
       Enl = buffer1
-      if ( spin%SO .and. .not.spin%SO_off ) then
+      if ( spin%SO .and. .not.spin%SO_offsite ) then
          ! Global reduction of Eso 
          call globalize_sum(Eso,buffer1)
          Eso = buffer1
-      elseif( spin%SO_off ) then
+      elseif( spin%SO_offsite ) then
          ! Global reduction of Enl_SO 
          call globalize_sum(Enl_SO,buffer1)
          Enl_SO = buffer1
@@ -277,7 +243,7 @@
 !     Non-SCF part of total energy
       call update_E0()
 
-      if ( spin%SO_off ) then
+      if ( spin%SO_offsite ) then
        H(:,:) = 0.0_dp
       endif
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
@@ -320,7 +286,7 @@
       endif
       use_rhog_in =  (mix_charge .and. iscf > 1)
   
-!      if ( spin%SO_off ) then
+!      if ( spin%SO_offsite ) then
 !       H(:,:) = 0.0_dp
 !      endif
       call dhscf( spin%grid, no_s, iaorb, iphorb, no_l,
@@ -331,7 +297,7 @@
      .            Exc, Dxc, dipol, stress, fal, stressl,
      .            use_rhog_in)
 
-      if ( spin%SO_off ) then
+      if ( spin%SO_offsite ) then
 
         H(:,7) = H(:,3)
         H(:,8) =-H(:,4)
@@ -345,7 +311,6 @@
 !           H(indt,8) =-H(ind,4)
 !          enddo
 !         enddo
-CC RC         call herm_HDM( 'H' )
 
         do is = 1 , spin%spinor
           do io = 1, maxnh
@@ -367,23 +332,6 @@ C------- H(d,u)
          H(:,8) = H(:,8) + imag(H0_SO(:,4))
 
       endif
-!         write(6,*) ' setup_hamiltonian: H[1,2]'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!           write(6,'(a,i4,4e18.8)')' ind/H=',ind,H(ind,1),
-!     &         H(ind,5), H(ind,2),H(ind,6)
-!           enddo
-!          enddo
-!         write(6,*) ' setup_hamiltonian: H[3,4]'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!           write(6,'(a,i4,4e18.8)')' ind/H=',ind,H(ind,3),
-!     &         H(ind,4), H(ind,7), H(ind,8)
-!           enddo
-!          enddo
-!
 
 ! CC RC      call herm_HDM( 'H' )
 ! CC RC      call MM_HDM( 'H' )

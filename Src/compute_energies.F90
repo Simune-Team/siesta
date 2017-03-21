@@ -154,7 +154,7 @@ CONTAINS
 !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
 !       ispin=4 => Imag(D12)
 
-      if ( spin%SO_off ) then
+      if ( spin%SO_offsite ) then
 
         Ebs_Daux = dcmplx(0.0_dp, 0.0_dp)
         Ebs_Haux = dcmplx(0.0_dp, 0.0_dp)
@@ -190,7 +190,7 @@ CONTAINS
          write(spin%iout_SO,'(a,f16.10)') ' compute_Ebs: Ebs    = ', Ebs
         endif
 
-      elseif ( spin%SO .and. .not. spin%SO_off ) then
+      elseif ( spin%SO .and. .not. spin%SO_offsite ) then
         do io = 1,maxnh
           Ebs = Ebs      + H(io,1) * ( Dscf(io,1) )   &
                          + H(io,2) * ( Dscf(io,2) )   &
@@ -235,7 +235,7 @@ CONTAINS
              !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
              !       ispin=4 => Imag(D12)
 
-      if ( spin%SO_off ) then
+      if ( spin%SO_offsite ) then
 
         DEharr_Daux     = dcmplx(0.0_dp, 0.0_dp)
         DEharr_Daux_old = dcmplx(0.0_dp, 0.0_dp)
@@ -288,7 +288,7 @@ CONTAINS
             ' compute_DEharr: DEharr = ', DEharr
         endif
 
-      elseif ( spin%SO .and. .not.spin%SO_off ) then
+      elseif ( spin%SO .and. .not.spin%SO_offsite ) then
         do io = 1,maxnh
           DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
                           + H(io,2) * ( Dscf(io,2) - Dold(io,2) )  &
@@ -379,7 +379,7 @@ CONTAINS
 
       Eso = 0._dp
       Enl_SO = 0.0_dp
-      if ( spin%SO_off ) then
+      if ( spin%SO_offsite ) then
 
         do io = 1, maxnh
 
@@ -414,7 +414,7 @@ CONTAINS
          Enl_SO = buffer1
 #endif
 
-      elseif ( spin%SO .and. .not.spin%SO_off ) then
+      elseif ( spin%SO .and. .not.spin%SO_offsite ) then
          ! Sadly some compilers (g95), does
          ! not allow bounds for pointer assignments :(
          H_so => val(H_so_2D)

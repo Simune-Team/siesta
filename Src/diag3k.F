@@ -208,7 +208,7 @@ C *********************************************************************
      .             kpoint(3,ik) * xij(3,ind)
 
       
-            if ( spin%SO .and. .not.spin%SO_off ) then
+            if ( spin%SO .and. .not.spin%SO_offsite ) then
               kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -305,7 +305,7 @@ C *********************************************************************
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
 
-            if ( spin%SO .and. .not.spin%SO_off ) then
+            if ( spin%SO .and. .not.spin%SO_offsite ) then
               kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -364,7 +364,7 @@ C *********************************************************************
      .               kpoint(3,ik) * xij(3,ind)
 
 
-              if ( spin%SO .and. .not.spin%SO_off ) then
+              if ( spin%SO .and. .not.spin%SO_offsite ) then
        
                 kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
                 Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
@@ -499,7 +499,7 @@ C *********************************************************************
           D12 = Dkc(1,juo,2,iuo) * kphs
           D21 = Dkc(2,juo,1,iuo) * kphs
       
-          if ( spin%SO .and. .not.spin%SO_off ) then
+          if ( spin%SO .and. .not.spin%SO_offsite ) then
 
             Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
             Dnew(ind,2) = Dnew(ind,2) + dreal(D22)

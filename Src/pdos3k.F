@@ -132,7 +132,7 @@ C Initialize some variables
      .             kpoint(3,ik) * xij(3,ind)
             kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
 
-            if ( spin%SO .and. .not.spin%SO_off ) then
+            if ( spin%SO .and. .not.spin%SO_offsite ) then
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
               Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
@@ -174,7 +174,7 @@ C Diagonalize for each k point. Note duplication of problem size
      .               kpoint(3,ik) * xij(3,ind)
               kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
 
-              if ( spin%SO .and. .not.spin%SO_off ) then
+              if ( spin%SO .and. .not.spin%SO_offsite ) then
                 Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
                 Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
                 Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
@@ -268,7 +268,7 @@ C Loop over all the energy range
                  dpr(ihist,juo,1) = dpr(ihist,juo,1) + dreal(D11)
                  dpr(ihist,juo,2) = dpr(ihist,juo,2) + dreal(D22)
                  dpr(ihist,juo,3) = dpr(ihist,juo,3) + dreal(D12)
-                 if ( spin%SO .and. .not.spin%SO_off ) then
+                 if ( spin%SO .and. .not.spin%SO_offsite ) then
                    dpr(ihist,juo,4) = dpr(ihist,juo,4) - dimag(D12)
                  else ! offSpOrb
                    dpr(ihist,juo,4) = dpr(ihist,juo,4) + dimag(D12)
@@ -311,7 +311,7 @@ C Loop over all the energy range
                 dpr(ihist,jo,1) = dpr(ihist,jo,1) + dreal(D11)
                 dpr(ihist,jo,2) = dpr(ihist,jo,2) + dreal(D22)
                 dpr(ihist,jo,3) = dpr(ihist,jo,3) + dreal(D12)
-                if ( spin%SO .and. .not.spin%SO_off ) then
+                if ( spin%SO .and. .not.spin%SO_offsite ) then
                   dpr(ihist,jo,4) = dpr(ihist,jo,4) - dimag(D12)
                 else ! offSpOrb
                   dpr(ihist,jo,4) = dpr(ihist,jo,4) + dimag(D12)

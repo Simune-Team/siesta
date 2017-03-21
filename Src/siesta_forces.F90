@@ -64,7 +64,6 @@ contains
 ! CC RC  Added for the offSpOrb
 
     use atomlist,      only: no_s, no_l, no_u, qtot, indxuo
-!    use m_spin,        only: nspin
     use m_gamma
     use Kpoint_grid,    only: nkpnt, kpoint, kweight
     use m_eo
@@ -303,71 +302,16 @@ contains
                   write(spin%iout_SO,'(a,f16.10)') & 
                    ' siesta_forces: First call to setup_hamiltonian...'
                  endif
-!                  write(6,'(a,f16.10)') & 
-!                   ' siesta_forces: First call to setup_hamiltonian...'
                    call setup_hamiltonian( iscf )
-!                   stop' siesta_forces: First call to setup_hamiltonian'
-!                   call herm_HDM( 'H' )
                 end if
              end if
-
-! CC RC
-!             write(spin%iout_SO,*) ' Before compute_dm call in siesta_forces'
-!             do i = 1, no_u
-!              do j = 1, numh(i)
-!               ind = listhptr(i)+j
-!            if(abs(Dscf(ind,1)).gt.0.0d0.or.abs(Dscf(ind,2)).gt.0.0d0 &
-!            .or.abs(Dscf(ind,3)).gt.0.0d0.or.abs(Dscf(ind,4)).gt.0.0d0)&
-!               write(spin%iout_SO,'(a,i4,8f14.10)') ' ind/Dscf=',ind,&
-!                Dscf(ind,1), &
-!                Dscf(ind,5), Dscf(ind,2),Dscf(ind,6),Dscf(ind,3),&
-!                Dscf(ind,4),Dscf(ind,7),Dscf(ind,8)
-!              enddo
-!             enddo
-
-!             H_kin => val(H_kin_1D)
-!             H_vkb => val(H_vkb_1D)
-!             do ispin = 1, 2 ! spinor_dim 
-!              do io = 1,maxnh
-!               Ekin_tmp = Ekin_tmp + H_kin(io) * Dscf(io,ispin)
-!               Enl_tmp  = Enl_tmp  + H_vkb(io) * Dscf(io,ispin)
-!              enddo
-!             enddo
-!
-!             write(spin%iout_SO,*) ' Ekin/Enl = ', Ekin_tmp, Enl_tmp
-
-!             stop'Stopping before calling to compute_dm'
-
 
              if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
               write(spin%iout_SO,'(a,f16.10)') & 
                ' siesta_forces: Calling to compute_DM...'
              endif
 
- 
              call compute_DM( iscf )
-
-!             write(6,*) ' siesta_forces: Calling to MM_HDM...'
-!             call MM_HDM( 'DM' )
-
-!             stop'Stopping after calling 1st compute_dm...'
-!         write(spin%iout_SO,*) ' After compute_dm call in siesta_forces'
-!          do i = 1, no_u
-!           do j = 1, numh(i)
-!            ind = listhptr(i)+j
-!            if(abs(Dscf(ind,1)).gt.0.0d0.or.abs(Dscf(ind,2)).gt.0.0d0 &
-!            .or.abs(Dscf(ind,3)).gt.0.0d0.or.abs(Dscf(ind,4)).gt.0.0d0)&
-!               write(spin%iout_SO,'(a,i4,8f14.10)') ' ind/Dscf=',ind,&
-!                Dscf(ind,1),&
-!                Dscf(ind,5), Dscf(ind,2),Dscf(ind,6),Dscf(ind,3),&
-!                Dscf(ind,4),Dscf(ind,7),Dscf(ind,8)
-!           enddo
-!          enddo
-
-
-
-
-!             call herm_HDM( 'DM' )
 
              ! Maybe set Dold to zero if reading charge or H...
              call compute_max_diff(Dold, Dscf, dDmax)
@@ -378,12 +322,7 @@ contains
               write(spin%iout_SO,'(a,f16.10)') & 
                ' siesta_forces: Calling to setup_hamiltonian'
              endif
-!                  write(6,'(a,f16.10)') & 
-!                   ' siesta_forces: Second call to setup_hamiltonian...'
              call setup_hamiltonian( iscf )
-!             stop' siesta_forces: Stopping in 2nd call to setup_h'
-!             if ( IONode .and.  spin%SO ) call MM_HDM( 'H' )
-!             call herm_HDM( 'H' ) 
              call compute_max_diff(Hold, H, dHmax)
              
           else
@@ -402,8 +341,6 @@ contains
 
           call compute_energies( iscf )
 
-!         stop'Stopping after calling to compute_energies'
-
           if ( mix_charge ) then
              call compute_charge_diff( drhog )
           end if
@@ -421,7 +358,6 @@ contains
                dDmax, dHmax, dEmax, &
                conv_harris, conv_freeE, &
                SCFconverged )
-!          stop' siesta_forces: Stopping after first call to compute_ene' 
           
           ! ** Check this heuristic
           if ( mixH ) then

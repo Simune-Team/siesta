@@ -194,7 +194,7 @@
         enddo
 
 ! CC RC  Added for the offSpOrb
-        if ( spin%SO_off ) then
+        if ( spin%SO_offsite ) then
          ntot = 1
          do i=1,spp%n_pjnl
            func=>spp%pjnl(i)

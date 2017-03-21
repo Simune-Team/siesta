@@ -788,16 +788,16 @@ c
          nj_SO = 1
          do l = 0, spp%lmax_projs
           do i = 1, nkblsave(l,is)
-           if ( spin%SO_off .and. l.ne.0 ) nj_SO = 2
+           if ( spin%SO_offsite .and. l.ne.0 ) nj_SO = 2
            do j_SO = 1, nj_SO
 
-            if ( .not.spin%SO_off .or. l.eq.0 ) then
+            if ( .not.spin%SO_offsite .or. l.eq.0 ) then
 
              write(lun,'(2i3,f22.16,2x,a)')
      $           spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n),
      $           " #kb l, n (sequence number), Reference energy"
 
-             if ( spin%SO_off ) then
+             if ( spin%SO_offsite ) then
               call radial_dump_ascii_SO(j_SO,spp%pjnl(n),lun,
      $                                  header=.true.)
              else
@@ -815,7 +815,7 @@ c
      $              spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n)
               write(lun2,'(a)')
      $             "#kb l, n (sequence number), Reference energy"
-              if ( spin%SO_off ) then
+              if ( spin%SO_offsite ) then
                call radial_dump_ascii_SO(j_SO,spp%pjnl(n),
      $                                   lun2,header=.true.)
               else
@@ -825,7 +825,7 @@ c
               call io_close(lun2)
              endif ! (write_ion_plot_files)
 
-            elseif( spin%SO_off .and. l.ge.1 ) then
+            elseif( spin%SO_offsite .and. l.ge.1 ) then
 
              write(lun,'(2i3,f22.16,2x,a)')
      $           spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n),
@@ -1044,7 +1044,7 @@ c
       nj_SO = 1
       do l = 0, spp%lmax_projs
        do i = 1, nkblsave(l,is)
-        if ( spin%SO_off .and. l.ne.0 ) nj_SO = 2
+        if ( spin%SO_offsite .and. l.ne.0 ) nj_SO = 2
         do j_SO = 1, nj_SO
 
          write(lun,'(a)') "<projector "
@@ -1064,7 +1064,7 @@ c
 !         if (.not. offSpOrb .or. l.eq.0 ) then
 !          call radial_dump_xml_SO(j_SO,spp%pjnl(n),lun)
 !         elseif( offSpOrb .and. l.ge.1 ) then
-          if ( spin%SO_off ) then
+          if ( spin%SO_offsite ) then
            call radial_dump_xml_SO(j_SO,spp%pjnl(n),lun)
           else
            call radial_dump_xml(spp%pjnl(n),lun)

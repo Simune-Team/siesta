@@ -561,7 +561,7 @@ C   INTEGER LOFIO  : Quantum number L of orbital or KB projector
         nkb=0
         do 50 l=0,lmxkbsave(is)
           do 45 izeta=1,nkblsave(l,is)
-             if (spin%SO_off.and.l.ne.0) then
+             if (spin%SO_offsite.and.l.ne.0) then
               nkb=nkb-(2*l+1)*2
              else
               nkb=nkb-(2*l+1)
@@ -652,7 +652,7 @@ C   INTEGER MOFIO  : Quantum number M of orbital or KB projector
         nj_SO = 1
         do 35 l=0,lmxkbsave(is)
           do 25 ikb=1,nkblsave(l,is)
-            if ( spin%SO_off .and. l.ne.0) nj_SO = 2 
+            if ( spin%SO_offsite .and. l.ne.0) nj_SO = 2 
             do 55 j_SO = 1, nj_SO
              nkb=nkb-(2*l+1)
              if(nkb.le.ik) goto 50
@@ -820,10 +820,10 @@ C      call check_is('epskb',is)
          nj_SO = 1
          do 15  l=0,lmxkbsave(is)
              do 10 ikb=1,nkblsave(l,is)
-                 if ( spin%SO_off .and. l.ne.0) nj_SO = 2
+                 if ( spin%SO_offsite .and. l.ne.0) nj_SO = 2
                  indx=indx+1
                  do 5 j_SO = 1, nj_SO
-                    if ( .not.spin%SO_off .or. l.eq.0 ) then
+                    if ( .not.spin%SO_offsite .or. l.eq.0 ) then
                      aj=l
                     else
                      aj=dble(l)+(2*j_SO-3)*0.5d0
@@ -973,10 +973,10 @@ C
         nj_SO = 1
         do 50 l=0,lmxkbsave(is)
           do 45 izeta=1,nkblsave(l,is)
-            if ( spin%SO_off .and. l.ne.0) nj_SO = 2
+            if ( spin%SO_offsite .and. l.ne.0) nj_SO = 2
             indx=indx+1
              do 35 j_SO = 1, nj_SO
-              if ( .not.spin%SO_off .or. l.eq.0 ) then
+              if ( .not.spin%SO_offsite .or. l.eq.0 ) then
                aj=l
               else
                aj=dble(l)+(2*j_SO-3)*0.5d0

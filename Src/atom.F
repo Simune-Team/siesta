@@ -328,7 +328,7 @@
 ! Reading pseudopotentials
 ! 
 ! CC RC  Added for the offSpOrb
-         if ( spin%SO_off ) then
+         if ( spin%SO_offsite ) then
           if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
      &     '       atom: Calling read_vps_SO... '
           call read_vps_SO(lmxo, lmxkb, nrval,a,b,rofi,drdi,s,vps_u,
@@ -500,7 +500,7 @@ c    .          'atom: The above configuration will be used ',
 ! 
 
 ! CC RC  Updated for the offSpOrb
-            if ( spin%SO_off )then
+            if ( spin%SO_offsite )then
              call radii_ps(vps_d,rofi,Zval,nrval,lmxkb,
      .                     nrgauss, rgauss, rgauss2)
             else
@@ -532,7 +532,7 @@ c    .          'atom: The above configuration will be used ',
 ! s-potential here.
 !
 ! CC RC  Updated for the offSpOrb
-             if ( spin%SO_off )then
+             if ( spin%SO_offsite )then
                call vlocal2(Zval, nrval, a, rofi, drdi, s, vps_d(:,0),
      .                      nrgauss,vlocal,nchloc,chlocal)
              else
@@ -591,7 +591,7 @@ c    .          'atom: The above configuration will be used ',
 ! Calculation of the Kleinman-Bylander projector functions
 ! 
 ! CC RC  Updated for the offSpOrb
-            if ( spin%SO_off ) then
+            if ( spin%SO_offsite ) then
              if ( IONode .and. spin%deb_offSO ) 
      .           write(spin%iout_SO,'(a)') 
      &           '       atom: Calling KBgen_SO... '
@@ -660,7 +660,7 @@ c    .          'atom: The above configuration will be used ',
      .    'atom: for an anion of charge ',charge 
             endif
 
-            if ( spin%SO_off ) then
+            if ( spin%SO_offsite ) then
              call Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                      vps_d, ve, vePAO, nrval, lmxo,nsemic,
      .                      nzeta, rco, lambda, npolorb, basistype,
@@ -687,7 +687,7 @@ c    .          'atom: The above configuration will be used ',
      .  'atom: to generate the pseudopotential'
             endif
 
-            if ( spin%SO_off ) then
+            if ( spin%SO_offsite ) then
              call Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                      vps_d, vePAO, vePAO, nrval, lmxo,nsemic,
      .                      nzeta, rco, lambda, npolorb, basistype,
@@ -2952,9 +2952,9 @@ C
         do l=0,lmxkb
          nkblsave(l,is)=nkbl(l)
          do izeta = 1, nkblsave(l,is) 
-          if ( spin%SO_off .and. l.gt.0 ) nj_SO = 2
+          if ( spin%SO_offsite .and. l.gt.0 ) nj_SO = 2
           do j_SO = 1, nj_SO
-           if ( .not.spin%SO_off .or. l.eq.0 ) then
+           if ( .not.spin%SO_offsite .or. l.eq.0 ) then
             aj=l
            else
             aj=dble(l)+(2*j_SO-3)*0.5d0
@@ -3684,7 +3684,7 @@ C     &      ' new_kb_reference_orbitals=',new_kb_reference_orbitals
           nkb=nkb+1
           !LS: Double # of KB projectors
 !          write(6,*) ' KBgen: |___> l/ikb/nkb=', l, ikb, nkb
-          if ( spin%SO_off .and. l.gt.0 ) then
+          if ( spin%SO_offsite .and. l.gt.0 ) then
 !           nkb_deg=nkb+(2*l+1)
            nkb = nkb+1
 !           write(6,*) ' KBgen_SO: |___> l/ikb/nkb=', l, ikb, nkb
@@ -3742,7 +3742,7 @@ CC           enddo
         idx = 1  ! Global KB index
         do l = 0,lmxkb
 C         write(6,'(a,i5)') " KBgen:  L = ", l
-         if ( .not.spin%SO_off .or. l.eq.0 ) then
+         if ( .not.spin%SO_offsite .or. l.eq.0 ) then
           nj_SO = 1
           if ( nkbl(l) > 0 ) allocate( rphi(nrmax,1:nkbl(l)*nj_SO) )
          else
@@ -3770,9 +3770,9 @@ C  Obtaining for l V(l-j/2) and V(l+j/2) as follows
 C      V(l-j/2) = Vdn - (l+1)/2 Vup = Vion - (l+1)/2 Vso
 C      V(l+1/2) = Vdn + l/2 Vup = Vion + l/2 Vso
 C
-           if ( .not.spin%SO_off .or. (l.eq.0) ) then
+           if ( .not.spin%SO_offsite .or. (l.eq.0) ) then
             c = 1.0d0; d = 0.0d0 
-           elseif ( spin%SO_off .and. l_SO_test ) then
+           elseif ( spin%SO_offsite .and. l_SO_test ) then
             c = 1.0d0; d = 0.0d0 
            else
             if( j_SO.eq.1 ) then
@@ -3847,7 +3847,7 @@ CC-SC
 C If the energy is specified to be 1000 Ry, the energy derivative
 C of the previous wavefunction will be used
 C
-         if (spin%SO_off) 
+         if (spin%SO_offsite) 
      .      stop 'KBgen_SO: Check out LS for eref_kb<-1000!!'
 CC-SC
             call energ_deriv(a,rofi,rphi(1,ikb_SO-nj_SO),
@@ -3984,7 +3984,7 @@ C     .          'delta= ',table_SO(1,-ikb_sc,l,j_SO,is)
            ikbt=ikbt+1
           enddo ! nkbl(l)
          enddo ! j_SO
-         if ( spin%SO_off ) nj_SO = 2
+         if ( spin%SO_offsite ) nj_SO = 2
         enddo
 
 C
@@ -3994,7 +3994,7 @@ C
         do l=0,lmxkb
          do ikb=1,nkbl(l)
           nkb=nkb+(2*l+1) 
-          if ( spin%SO_off .and. l.gt.0 ) then
+          if ( spin%SO_offsite .and. l.gt.0 ) then
            nkb = nkb+(2*l+1)
           endif
          enddo 

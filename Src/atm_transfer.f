@@ -231,7 +231,7 @@ CC     .                                ' m=', spp%pj_m(i)
 !        This piece of code assumes that the projectors are ordered
 !        in their usual manner
 !
-         if ( .not.spin%SO_off ) then
+         if ( .not.spin%SO_offsite ) then
 !          write(spin%iout_SO,'(a)') ' passing by not offSPOrb..'
 
           n = 0
@@ -289,11 +289,11 @@ CC     .                                ' m=', spp%pj_m(i)
 !           if ( offSpOrb .and. l.ne.0) nj_SO = 2
 !           do j_SO = 1, nj_SO
            do i = 1, nkblsave(l,is)
-            if ( spin%SO_off .and. l.ne.0 ) nj_SO = 2
+            if ( spin%SO_offsite .and. l.ne.0 ) nj_SO = 2
             do j_SO = 1, nj_SO
              spp%pjnl_n(n) = i  ! n of pjnl
             spp%pjnl_l(n) = l  ! l of pjnl
-             if ( .not.spin%SO_off .or. l.eq.0 ) then 
+             if ( .not.spin%SO_offsite .or. l.eq.0 ) then 
               aj=l
              else
               aj=dble(l)+(2*j_SO-3)*0.5d0    
@@ -305,7 +305,7 @@ CC     .                                ' m=', spp%pj_m(i)
               spp%jso(ntot)=j_SO
               amj = -aj + dfloat(m-1)
  
-              if (.not.spin%SO_off) then
+              if (.not.spin%SO_offsite) then
                spp%pj_m(ntot) = int(amj)
                spp%pj_index(ntot) = n 
  
@@ -347,9 +347,9 @@ CC     .                                ' m=', spp%pj_m(i)
           nj_SO = 1
           do l = 0, spp%lmax_projs
            do i = 1, nkblsave(l,is)
-            if ( spin%SO_off .and. l.ne.0 ) nj_SO = 2
+            if ( spin%SO_offsite .and. l.ne.0 ) nj_SO = 2
             do j_SO = 1, nj_SO
-             if ( .not.spin%SO_off .or. l.eq.0 ) then 
+             if ( .not.spin%SO_offsite .or. l.eq.0 ) then 
               pp => spp%pjnl(n)
               call rad_alloc_SO(pp,NTBMAX)
               pp%delta_SO(j_SO)=table_SO(1,-spp%pjnl_n(n),l,j_SO,is)

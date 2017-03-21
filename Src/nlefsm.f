@@ -1078,8 +1078,6 @@ c---- substract out V_ion
        V_ion = V_ion + V_iont
       enddo
    
-C      write(6,*) ' V_ion= ', V_ion
-
       V_so(1,1) = V_so(1,1) - cmplx(1.0d0,0.0d0)*V_ion
       V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0)*V_ion
 

@@ -58,7 +58,7 @@
           m = spp%pj_m(ko)
           io = -ko
 ! CC RC  Added for the offSpOrb
-          if ( spin%SO_off ) then
+          if ( spin%SO_offsite ) then
            jso = spp%jso(ko)
            call register_in_rf_pool_KB(func,l,m,jso,"kbproj",(/is,io/),gindex)
            spp%pj_gindex(ko) = gindex

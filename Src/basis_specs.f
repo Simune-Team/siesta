@@ -439,7 +439,7 @@ C Sanity checks on values
       if (fdf_block('PS.KBprojectors',bfdf) ) then
 
 ! CC RC  Added for the offSpOrb
-       if ( spin%SO_off ) 
+       if ( spin%SO_offsite ) 
      . call die('read_basis_specs: PS.KBprojectors not supported by SO')
  
 ! First pass to find out about lmxkb and set any defaults.
@@ -519,7 +519,7 @@ C Sanity checks on values
             endif
 
 ! CC RC  Added for the offSpOrb
-            if ( spin%SO_off .and. l.gt.0 ) then
+            if ( spin%SO_offsite .and. l.gt.0 ) then
              allocate(k%erefkb(1:2*k%nkbl))
              k%erefkb(1:2*k%nkbl) = huge(1.d0)
             else
