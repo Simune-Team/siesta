@@ -2031,12 +2031,12 @@ C     .              ' 1.0d0/(sqrt(dnrm)+1.0d-20)= ',
 C     .                1.0d0/(sqrt(dnrm)+1.0d-20), 
 C     .                ' dknrm= ', dknrm
 
-        write(6,*) ' KBproj:      avgv= ', avgv 
-        write(6,*) '              dnrm= ', dnrm
-        write(6,*) '        sqrt(dnrm)= ', sqrt(dnrm)
-        write(6,*) '             dknrm= ', dknrm 
-        write(6,*) '            dkbcos= ', dknrm*avgv
-        write(6,*) '               ekb= ', ekb
+C        write(6,*) ' KBproj:      avgv= ', avgv 
+C        write(6,*) '              dnrm= ', dnrm
+C        write(6,*) '        sqrt(dnrm)= ', sqrt(dnrm)
+C        write(6,*) '             dknrm= ', dknrm 
+C        write(6,*) '            dkbcos= ', dknrm*avgv
+C        write(6,*) '               ekb= ', ekb
 
 
 C
