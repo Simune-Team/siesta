@@ -907,17 +907,21 @@ other. \tbtrans\ will stop if this is not enforced.
 Remark that the physical quantities such as DOS, spectral DOS, orbital
 currents may only be calculated in the selected device region. 
 
-\begin{fdfentry}{TBT.Atoms!Device}[block]%
+\begin{fdfentry}{TBT.Atoms!Device}[block/list]%
   <\nonvalue{all but electrodes}>
+
+  This flag may either be a block, or a list.
 
   A block with each line denoting the atoms that consists of the
   device region.
   %
   \begin{fdfexample}
-    %block TBT.Atoms.Device 
+    %block TBT.Atoms.Device
        atom [ 10 -- 20 ]
        atom [ 30 -- 40 ]
-    %endblock
+    % endblock
+    # Or equivalently as a list   
+    TBT.Atoms.Device [10 -- 20, 30 -- 40]
   \end{fdfexample}
   will limit the device region to atoms [10--20, 30--40].
   
@@ -933,7 +937,7 @@ currents may only be calculated in the selected device region.
 
 \end{fdflogicalF}
 
-\begin{fdfentry}{TBT.Atoms!Buffer}[block]%
+\begin{fdfentry}{TBT.Atoms!Buffer}[block/list]%
 
   A block with each line denoting the atoms that are disregarded in
   the Green function calculation.
@@ -946,6 +950,8 @@ currents may only be calculated in the selected device region.
     %block TBT.Atoms.Buffer
        atom [ 1 -- 5 ]
     %endblock
+    # Or equivalently as a list   
+    TBT.Atoms.Buffer [1 -- 5]
   \end{fdfexample}
   will remove atoms [1--5] from the calculation.
   

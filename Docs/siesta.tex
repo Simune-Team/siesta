@@ -10511,7 +10511,7 @@ information.
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!Atoms.Buffer}[block]
+\begin{fdfentry}{TS!Atoms.Buffer}[block/list]
   \fdfindex{TS.BufferAtomsLeft|see TS!Atoms.Buffer}%
   \fdfindex{TS.BufferAtomsRight|see TS!Atoms.Buffer}%
 
@@ -10523,7 +10523,16 @@ information.
   \note all lines are additive for the buffer atoms and the input
   method is similar to that of \fdf{Geometry!Constraints} for the
   \fdf*{atom} line(s).
-  
+
+  \begin{fdfexample}
+    %block TBT.Atoms.Buffer
+       atom [ 1 -- 5 ]
+    %endblock
+    # Or equivalently as a list   
+    TBT.Atoms.Buffer [1 -- 5]
+  \end{fdfexample}
+  will remove atoms [1--5] from the calculation.
+
 \end{fdfentry}
 
 \begin{fdfentry}{TS!ElectronicTemperature}[energy]<\fdfvalue{ElectronicTemperature}>
