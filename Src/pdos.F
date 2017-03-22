@@ -126,7 +126,8 @@ C Find the intervals between the subdivisions in the energy scale ------
       if (Nodes .eq. 1) then
         ParallelOverK = .false.
       else
-        ParallelOverK = fdf_boolean('Diag.ParallelOverK',.false.)
+        ParallelOverK = fdf_get('Diag.ParallelOverK',.false.)
+        if ( nspin > 2 ) ParallelOverK = .false.
       endif
 
 C Find number of orbitals per unit cell 

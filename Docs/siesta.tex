@@ -8363,26 +8363,32 @@ an alternative way to plot the charge density (and wavefunctions).
   post-processing by a Bader-analysis program.  This ``Bader
   charge'' is the sum of the electronic valence charge density and a
   set of ``model core charges'' placed at the atomic sites. For a
-  given atom, the model core charge has the same shape as the
-  ``local pseudopotential charge'' used elsewhere by \siesta\ (a
-  generalized Gaussian), but confined to a radius of 1.0 Bohr, and
-  integrating to the total core charge
-  ($Z$-$Z_{\mathrm{val}}$). These core charges are needed to provide
-  local maxima for the charge density at the atomic sites, which are
-  not guaranteed in a pseudopotential calculation. For hydrogen, an
-  artificial core of 1 electron is added, with a confinement radius
-  of 0.4 Bohr.  The Bader charge is projected on the grid points of
-  the mesh used by DHSCF, and saved in file
-  \sysfile{BADER}. This file can be post-processed by the
-  program \program{Util/grid2cube} to convert it to the ``cube''
-  format, accepted by several Bader-analysis programs (for example,
-  see \url{http://theory.cm.utexas.edu/bader/}).  Due to the need to
-  represent a localized core charge, it is advisable to use a
-  moderately high MeshCutoff when invoking this option (300-500
+  given atom, the model core charge is a generalized Gaussian, but
+  confined to a radius of 1.0 Bohr (by default), and integrating to
+  the total core charge ($Z$-$Z_{\mathrm{val}}$). These core charges are
+  needed to provide local maxima for the charge density at the atomic
+  sites, which are not guaranteed in a pseudopotential calculation.
+  For hydrogen, an artificial core of 1 electron is added,
+  with a confinement radius of 0.6 Bohr by default. The Bader
+  charge is projected on the grid points of the mesh used by DHSCF,
+  and saved in file \sysfile{BADER}. This file can be
+  post-processed by the program \program{Util/grid2cube} to convert it to
+  the ``cube'' format, accepted by several Bader-analysis programs
+  (for example, see \url{http://theory.cm.utexas.edu/bader/}).  Due to
+  the need to represent a localized core charge, it is advisable to
+  use a moderately high MeshCutoff when invoking this option (300-500
   Ry). The size of the ``basin of attraction'' around each atom in
-  the Bader analysis should be monitored to check that the model
-  core charge is contained in it.
+  the Bader analysis should be monitored to check that the model core
+  charge is contained in it.
 
+  The radii for the model core charges can be specified in the input
+  fdf file. For example:
+
+    \begin{fdfexample}
+       bader-core-radius-standard  1.3 Bohr
+       bader-core-radius-hydrogen  0.4 Bohr
+    \end{fdfexample}
+  
   The suggested way to run the Bader analysis with the Univ. of
   Texas code is to use both the RHO and BADER files (both in
   ``cube'' format), with the BADER file providing the ``reference''
@@ -8391,7 +8397,7 @@ an alternative way to plot the charge density (and wavefunctions).
   in the above web page.) For example, for the h2o-pop example:
 
   \begin{shellexample}
-    bader h2o-pop.RHO.cube -ref h2o-pop.BADER.cube}
+    bader h2o-pop.RHO.cube -ref h2o-pop.BADER.cube
   \end{shellexample}
 
   If netCDF support is compiled in, the file \file{BaderCharge.grid.nc}
@@ -8400,7 +8406,22 @@ an alternative way to plot the charge density (and wavefunctions).
 \end{fdflogicalF}
 
 
-\begin{fdflogicalF}{SaveInitialChargeDensity}
+\begin{fdflogicalF}{AnalyzeChargeDensityOnly}
+ \index{output!charge density}
+
+  If \fdftrue, the program optionally generates charge density files
+  and computes partial atomic charges (Hirshfeld, Voronoi, Bader) from
+  the information in the input density matrix, and stops.  This is
+  useful to analyze the properties of the charge density without a
+  diagonalization step, and with a user-selectable mesh cutoff.  Note
+  that the \fdf{DM.UseSaveDM} option should be active.  Note also that
+  if an initial density matrix (DM file) is used, it is not
+  normalized. All the relevant fdf options for charge-density file
+  production and partial charge calculation can be used with this option.
+
+  \end{fdflogicalF}
+
+  \begin{fdflogicalF}{SaveInitialChargeDensity}
   \index{output!charge density}
 
   If \fdftrue, the program generates a \sysfile{RHOINIT}
@@ -8412,9 +8433,9 @@ an alternative way to plot the charge density (and wavefunctions).
   created by progras such as \program{dm\_creator} and
   \program{dm\_filter}.
 
+  (This option is to be deprecated in favor of \fdf{AnalyzeChargeDensityOnly}).
 \end{fdflogicalF}
-
-
+  
 
 \subsection{Auxiliary Force field}
 \fdfindex{MM}
@@ -8571,8 +8592,8 @@ used for that.
   using parallelization over orbitals.
 
   \emph{Use:} Controls whether the diagonalisation is parallelised
-  with respect to orbitals or K points - not allowed for non-co-linear
-  spin case.
+  with respect to orbitals or K points -- not allowed for
+  non-co-linear spin case.
 
 \end{fdflogicalF}
 

@@ -852,8 +852,7 @@ C           Loop over sub-points
       subroutine ModelCoreChargeOnMesh( na, isa, ntpl,
      $                                  ModelCore, indxua )
 C
-C     Uses the "local charge" information to construct a model total
-C     core charge, useful for Bader analysis
+C     Constructs a model total core charge, useful for Bader analysis
 C
 C ----------------------------------------------------------------------
 C Input :
@@ -870,10 +869,11 @@ C real    ModelCore(ntpl)     : Sum of model core charge densities
 C ----------------------------------------------------------------------
 
       use precision,     only : dp, grid_p
-      use atmfuncs, only: rcut, psch, izofis, zvalfis
+      use atmfuncs, only: izofis, zvalfis
       use atm_types, only : species
-      use radial, only : rad_func
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
+      use fdf
+      use parallel, only: ionode
 
       implicit none
 
@@ -890,50 +890,59 @@ C
       integer
      .  ia, iop, ip, ip0, is, isp, iua
 
-      real(dp) dx(3), grpsch(3), r, ra, charge_ratio
-      real(dp) core_charge, beta, pschloc
+      real(dp) dx(3), ra, charge_ratio, r
+      real(dp) core_charge
+      real(dp), parameter :: pi = 3.141592653589793_dp
 
-      type(rad_func), pointer            :: func
+        ! We want a total core charge of (Z-Zval), localized in a
+        ! region of around 1.0 bohr.
+        ! Note that we put 1 electron (extra!) for Hydrogen atoms,
+        ! to provide the necessary "cuspy" behavior for the reference
+        ! file for Bader analysis. For H, the radius is 0.6 bohr
+       real(dp) :: radius_standard, radius_h
 
-C Initialise array to zero
-      ModelCore(1:ntpl) = 0.0_grid_p
+        ! The model function is N*f(r/ra), where 
+        !  f(x) = exp( - (sinh(2.0_dp*x)/sinh(1.0_dp))**2 )
+        !  f(1) is zero to within 10^-5
+        ! For normalization, we need \int_{0,1} { x*x*f(x) }, which is:
+        real(dp), parameter :: Integral = 0.0411548_dp
 
-      do ia = 1,na
-        if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
-        iua = indxua(ia)
-        is = isa(ia)
-        func => species(is)%chlocal
-        ra = func%cutoff
-
-        ! We will take advantage of the existing "local charge"
-        ! by rescaling.
-
-        ! The total local charge is Z_val
-        ! We want a total extra core charge of (Z-Zval),
-        ! and with the opposite sign, localized in a
-        ! region of around 1.0 bohr for "normal" atoms and
-        ! 0.4 bohr (= 0.21 Ang) for Hydrogen.
+        ! so that N above is Q/(4*pi*Integral*ra**3)
+        
         ! Note that this is quite a small confinement region, so
         ! you might need a high cutoff (of the order of 300-500 Ry)
         ! to represent it on the grid. It might be better to use
         ! Denchar for this, rather than performing a Siesta calculation
         ! (even if it reads the converged DM)
 
-        ! --- For Hydrogen, add an artificial core with 1 electron
-        ! Else choose the normal core charge
-        !
-        ! The cutoff for chlocal is divided by beta to obtain the
-        ! tighter localization radius. Note the factor of beta^3
-        ! for normalization of the new function.
 
+      ! Initialise array to zero
+      ModelCore(1:ntpl) = 0.0_grid_p
+        
+      radius_standard = fdf_get("bader-core-radius-standard",
+     $                      1.0_dp,"Bohr")
+      radius_h = fdf_get("bader-core-radius-hydrogen",
+     $                      0.6_dp,"Bohr")
+      
+      if (ionode) then
+         write(6,"(a,2f6.3)") "Bader Analysis core-charge setup. " //
+     $                        "Radii (standard, H): ",
+     $                        radius_standard, radius_h
+      endif
+      
+      do ia = 1,na
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
+        is = isa(ia)
         if (izofis(is) == 1) then
-           beta = ra / 0.4_dp
-           charge_ratio = -1.0_dp * beta**3
+           ra = radius_h
+           charge_ratio =  1.0_dp /
+     $             (4.0_dp*pi*Integral*ra**3.0_dp)
         else
-           beta = ra / 1.0_dp
-           charge_ratio = - beta**3 *
-     $              (izofis(is)-zvalfis(is))/zvalfis(is)
+           ra = radius_standard
+           charge_ratio =  (izofis(is)-zvalfis(is)) /
+     $             (4.0_dp*pi*Integral*ra**3.0_dp)
         endif
+
 
 C Loop over mesh points inside rmax
         do iop = 1,mop
@@ -946,9 +955,7 @@ C Loop over sub-points
               r = sqrt(dot_product(dx,dx))
               if (r .lt. ra) then
                 ip = isp + nsp * (ip0 - 1)
-                dx = beta*dx
-                call psch( is, dx, pschloc, grpsch )
-                core_charge = charge_ratio*pschloc
+                core_charge = charge_ratio*model(r/ra)
                 ModelCore(ip) = ModelCore(ip) + core_charge
               endif
             enddo
@@ -958,6 +965,15 @@ C Loop over sub-points
 
       enddo
 
+      CONTAINS
+
+      function model(x)
+      real(dp), intent(in) :: x
+      real(dp)             :: model
+      
+      model = exp( - (sinh(2.0_dp*x)/sinh(1.0_dp))**2 )
+      end function model
+      
       end subroutine ModelCoreChargeOnMesh
 !
       subroutine PhiOnMesh( nmpl, norb, iaorb, iphorb, isa, numphi )

@@ -360,7 +360,9 @@ contains
   subroutine ts_Sparsity_Global(dit,s_sp, &
        N_Elec, Elecs, ts_sp)
 
+#ifdef TRANSIESTA_DEBUG
     use parallel, only : IONode
+#endif
 #ifdef MPI
     use mpi_siesta
 #endif

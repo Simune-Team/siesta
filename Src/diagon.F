@@ -161,7 +161,7 @@ C
 
 C  ....................
 C     First call initialisation
-      call init_diagon_opt( Gamma )
+      call init_diagon_opt( Gamma, nspin )
 
 C Get Node number and calculate local orbital range
 #ifdef MPI

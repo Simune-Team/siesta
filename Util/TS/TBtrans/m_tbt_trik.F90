@@ -64,8 +64,6 @@ contains
     use mpi_siesta
 #endif
 
-    use alloc, only : re_alloc, de_alloc
-
     use class_OrbitalDistribution
     use class_Sparsity
     use class_zSpData1D
@@ -1417,7 +1415,7 @@ contains
     !***********************
     ! CLEAN UP
     !***********************
-    if ( allocated(Teig) ) deallocate(Teig)
+    deallocate(Teig)
 
     deallocate(nE%iE,nE%E)
 
@@ -1448,7 +1446,7 @@ contains
     if ( N_proj_ME > 0 ) then
        deallocate(El_p%Sigma)
        deallocate(bTk,pDOS)
-       if ( allocated(bTkeig) ) deallocate(bTkeig)
+       deallocate(bTkeig)
     end if
 
     call delete(orb_J)
@@ -1495,7 +1493,7 @@ contains
 #else
     call end_save(iounits)
     call end_save(iounits_El)
-    deallocate(iounits)
+    deallocate(iounits, iounits_El)
 #endif
 
   contains

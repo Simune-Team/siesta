@@ -118,7 +118,7 @@ contains
 
 
     integer :: iscf
-    logical :: first, SCFconverged
+    logical :: first_scf, SCFconverged
     real(dp) :: dDmax ! Max. change in DM elements
     real(dp) :: dHmax ! Max. change in H elements
     real(dp) :: dEmax ! Max. change in EDM elements
@@ -188,7 +188,7 @@ contains
     ! This call computes the non-scf part of H and initializes the
     ! real-space grid structures.  It might be better to split the two,
     ! putting the grid initialization into state_init and moving the
-    ! calculation of H_0 to the body of the loop, done if first=.true.  This
+    ! calculation of H_0 to the body of the loop, done if first_scf=.true.  This
     ! would suit "analysis" runs in which nscf = 0
     if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') & 
        ' siesta: Calling setup_H0...'
@@ -241,17 +241,16 @@ contains
     dHmax = -1._dp
     dEmax = -1._dp
     drhog = -1._dp
-    
+
+    ! Setup convergence criteria
     if ( SIESTA_worker ) then
-       if ( first ) then
-          if ( converge_Eharr ) then
-             call reset(conv_harris)
-             call set_tolerance(conv_harris,tolerance_Eharr)
-          end if
-          if ( converge_FreeE ) then
-             call reset(conv_FreeE)
-             call set_tolerance(conv_FreeE,tolerance_FreeE)
-          end if
+       if ( converge_Eharr ) then
+          call reset(conv_harris)
+          call set_tolerance(conv_harris,tolerance_Eharr)
+       end if
+       if ( converge_FreeE ) then
+          call reset(conv_FreeE)
+          call set_tolerance(conv_FreeE,tolerance_FreeE)
        end if
     end if
 
@@ -263,7 +262,7 @@ contains
     !    equal to the number specified (i.e., the "forces"
     !    phase is not counted as a final scf step)
     !
-    ! -- At the change to a TranSiesta GF run the variable "first"
+    ! -- At the change to a TranSiesta GF run the variable "first_scf"
     !    is implicitly reset to "true".
 
     if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') & 
@@ -283,7 +282,7 @@ contains
        ! inherited, however, this is required as the 
        ! if we have bias calculations as the electric
        ! field across the junction needs to be present.
-       first = (iscf == 1)
+       first_scf = (iscf == 1)
        
        if ( SIESTA_worker ) then
            
@@ -293,7 +292,7 @@ contains
           
           if ( mixH ) then
              
-             if ( first ) then
+             if ( first_scf ) then
                 if (fdf_get("Read-H-from-file",.false.)) then
                    call get_H_from_file()
                 else
@@ -354,7 +353,7 @@ contains
           !        Dscf=DM_out, Dold=DM_in, H=H_(DM_out), Hold=H_in(mixed)
           !        dDmax=maxdiff(DM_out,DM_in)
           !        dHmax=maxdiff(H(DM_out),H_in)
-          call scfconvergence_test( first, iscf, &
+          call scfconvergence_test( first_scf, iscf, &
                dDmax, dHmax, dEmax, &
                conv_harris, conv_freeE, &
                SCFconverged )
@@ -428,7 +427,7 @@ contains
           end if
 
           call timer( 'IterSCF', 2 )
-          call print_timings( first, istep == inicoor )
+          call print_timings( first_scf, istep == inicoor )
           if (cml_p) call cmlEndStep(mainXML)
 
 #ifdef SIESTA__FLOOK
@@ -578,17 +577,17 @@ contains
     end subroutine compute_forces
 
     ! Print out timings of the first SCF loop only
-    subroutine print_timings(first, first_md)
+    subroutine print_timings(first_scf, first_md)
 #ifdef TRANSIESTA
       use timer_options, only: use_tree_timer
       use m_ts_global_vars, only : TSrun
 #endif
-      logical, intent(in) :: first, first_md
+      logical, intent(in) :: first_scf, first_md
       character(len=20) :: routine
 
       ! If this is not the first iteration,
       ! we immediately return.
-      if ( .not. first ) return
+      if ( .not. first_scf ) return
       if ( .not. first_md ) return
 
       routine = 'IterSCF'
