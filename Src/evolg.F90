@@ -62,7 +62,7 @@
       use alloc
       use wavefunctions
       use MatrixSwitch
-      use siesta_options,        only: eigen_time, ntded
+      use siesta_options,        only: eigen_time, ntded, extrapol_H_tdks, ntded_sub
       use sparse_matrices,       only: H, S, numh, listh, listhptr, Dscf 
       use m_eo,                  only: eo
       use m_steps,               only: fincoor, final
@@ -130,7 +130,7 @@
         call timer( 'CntoCn1', 1 )
         !
         call evol1new(Hauxms, Sauxms, nuotot, nuo, nspin,ispin, ncounter,              &
-             delt,nstp)
+             delt,extrapol_H_tdks,ntded_sub)
         nocc=wavef_ms(1,ispin)%dim2
         !
         call timer( 'CntoCn1', 2 )
@@ -258,7 +258,7 @@
  END SUBROUTINE Uphi
  !------------------------------------------------------------------------------------!
  SUBROUTINE evol1new(Hauxms, Sauxms, no, nol, nspin, ispin,         & 
-            ncounter, delt, nstp)
+            ncounter, delt, extrapol, nstp)
 !*************************************************************************
 !Subroutine that calculates the new wavefunction, given the old 
 !wavefunction by using the formula for the time evolution. Gamma-point 
@@ -290,13 +290,13 @@
   type(matrix),allocatable,save   :: Hsve(:)
   character(5)                    :: m_storage
   character(3)                    :: m_operation
+  logical                         :: extrapol
   ! Internal variables ...
   integer                :: i, j , k, info, no2, nocc, l
   complex(dp)            ::  alpha,hh, sum
   logical, save          :: fsttim(2) = (/.true. , .true./)
   logical, save          :: frsttime = .true.
   logical, save          :: onlyelectrons  = .false.
-  logical, parameter     :: extrapol=.true.
   save                   ::  deltat
   !
 #ifdef MPI
@@ -316,7 +316,6 @@
     if (Node.eq.0) then
       write(6,*) 'evol1: time step (Ry**-1) ',deltat
     end if
-    onlyelectrons=fdf_boolean('MD.OnlyElectrons',.false.)
     allocate(Hsve(nspin))
     do i=1, nspin
       call m_allocate(Hsve(i),no,no,m_storage)

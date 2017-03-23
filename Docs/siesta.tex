@@ -10119,7 +10119,15 @@ the \fdf{MD.LengthTimeStep} becomes total simulation time.
 
 \end{fdfentry}
 
-\begin{fdfentry}{TDED.Nwrite}[integer]<100>
+\begin{fdflogicalF}{TDED.Hextrapol}
+  An extrapolated Hamiltonian is applied to evolve KSOs for \fdf{TDED.Nsubsteps} number of substeps within a sinlge electronic step. This extrapolation is limited to Crank-Nicolson integrator.
+\end{fdflogicalF}
+
+\begin{fdfentry}{TDED.Nsubsteps}[integer]<2>
+  Number of electronic substeps when an extrapolated Hamiltonian is applied
+  to propogate the KSOs. Effective only when \fdf{TDED.Hextrapol} set to be true.
+\end{fdfentry}
+  \begin{fdfentry}{TDED.Nwrite}[integer]<100>
 
 Fixes the number of steps of ion-electron dynamics after which the
 instanteneous wavefunctions are saved in file \sysfile{TDWF} for a

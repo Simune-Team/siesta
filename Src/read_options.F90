@@ -950,14 +950,17 @@ subroutine read_options( na, ns, nspin )
   if( IONode .and. writetdwf ) then
      write(6,1) 'redata: Write Initial TDWF' , writetdwf
   end if
-  tdsaverho  = fdf_get('TDED.Saverho', .false.)
-  ntdsaverho = fdf_get('TDED.Nsaverho', 50)
+  tdsaverho  =  fdf_get('TDED.Saverho', .false.)
+  ntdsaverho =  fdf_get('TDED.Nsaverho', 50)
   etot_time  =  fdf_get('WriteEtotvsTime',.true.)
   eigen_time =  fdf_get('WriteEigenvsTime',.false.)        
   dip_time   =  fdf_get('WriteDipolevsTime',.false.)
-  ntded  = fdf_get('TDED.Nsteps', 1)
+  extrapol_H_tdks = fdf_get('TDED.Hextrapol',.false.)
+  ntded      = fdf_get('TDED.Nsteps', 1)
+  ntded_sub  = fdf_get('TDED.Nsubsteps',2)
   if (ionode) then
      write(6,4) 'redata: Max. number of TDED Iter', ntded
+     write(6,4) 'redata: Number of TDED substeps', ntded_sub
   end if
     
   tdednwrite = fdf_get('TDED.Nwrite', 100)
