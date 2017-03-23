@@ -101,7 +101,13 @@
         call elec_corr_setup()
       else if (user_basis) then
        if ( spin%SO ) then  
-          write(6,'(a)') ' initatom: Spin configuration = spin-orbit'
+          if (.not. spin%SO_offsite) then 
+            write(6,'(a)')
+     &         ' initatom: Spin configuration = On-site Spin-Orbit'
+          else
+            write(6,'(a)') 
+     &         ' initatom: Spin configuration = Off-site Spin-Orbit'
+          endif
           call read_chemical_types()
           nsp = number_of_species()
           
