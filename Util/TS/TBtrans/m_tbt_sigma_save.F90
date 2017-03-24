@@ -46,7 +46,6 @@ contains
   subroutine init_Sigma_options(save_DATA)
 
     use dictionary
-    use parallel, only : Node
     use fdf
 
     type(dict), intent(inout) :: save_DATA
@@ -115,7 +114,7 @@ contains
        nkpt, kpt, wkpt, NE, &
        a_Dev, a_Buf)
 
-    use parallel, only : Node
+    use parallel, only : IONode
     use m_os, only : file_exist
 
     use netcdf_ncdf, ncdf_parallel => parallel
@@ -241,13 +240,13 @@ contains
             &we do not currently implement a continuation scheme.')
 
        ! We currently overwrite the Sigma-file
-       if ( Node == 0 ) then
+       if ( IONode ) then
           write(*,'(2a)')'tbtrans: Overwriting self-energy file: ',trim(fname)
        end if
 
     else
        
-       if ( Node == 0 ) then
+       if ( IONode ) then
           write(*,'(2a)')'tbtrans: Initializing self-energy file: ',trim(fname)
        end if
 
@@ -515,7 +514,7 @@ contains
 
   subroutine state_Sigma2mean(fname,N_Elec,Elecs)
 
-    use parallel, only : Node
+    use parallel, only : IONode
 
     use dictionary
     use netcdf_ncdf, ncdf_parallel => parallel
@@ -549,7 +548,7 @@ contains
     if ( .not. sigma_save ) return
     if ( .not. sigma_mean_save ) return
 
-    if ( Node /= 0 ) then
+    if ( .not. IONode ) then
 #ifdef MPI
        call MPI_Barrier(Mpi_comm_world,MPIerror)
 #endif

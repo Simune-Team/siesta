@@ -109,7 +109,7 @@ contains
     ! The supercell information
     integer, intent(in) :: nsc, isc_off(3,nsc)
 
-    integer :: iEl, na
+    integer :: iEl
 
     ! A temporary sparsity pattern
     type(Sparsity) :: sp_tmp
@@ -117,7 +117,7 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     character(len=50) :: g, csort
-    integer :: i, ia, ia1, ia2, no_u
+    integer :: i, ia1, ia2, no_u
     type(tRgn) :: r_tmp, r_tmp2, r_tmp3, r_Els, priority
     real(dp) :: tmp
 
@@ -166,8 +166,16 @@ contains
     ! Read in electrode down-folding regions
     call rgn_delete(r_Els)
        
-    ! Read in device region via the new block
-    if ( fdf_block('TBT.Atoms.Device',bfdf) ) then
+    ! Read in device region via the block or list
+    if ( fdf_islist('TBT.Atoms.Device') ) then
+       
+       ! Query size of list
+       i = -1
+       call fdf_list('TBT.Atoms.Device', i, r_aDev%r)
+       call rgn_init(r_aDev, i)
+       call fdf_list('TBT.Atoms.Device', r_aDev%n, r_aDev%r)
+       
+    else if ( fdf_block('TBT.Atoms.Device',bfdf) ) then
 
        ! read by line and set them to be buffer atoms
        do while ( fdf_bline(bfdf,pline) ) 
@@ -716,7 +724,7 @@ contains
 #endif
 
        call Sp_retain_region(fdit,sp,r_oDev,sp_dev_sc)
-       call Sp_sort(sp)
+       call Sp_sort(sp_dev_sc)
        call delete(fdit)
 
     end if

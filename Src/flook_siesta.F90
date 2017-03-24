@@ -32,7 +32,7 @@ module flook_siesta
   public :: slua_init, slua_call, slua_close
 
   ! Internal parameters
-  logical, save :: slua_run = .true.
+  logical, save :: slua_run = .false.
   character(len=512), save, public :: slua_file = ' '
   ! Debugging flag for both parallel and serial debugging
   logical, save, public :: slua_debug = .false.
@@ -58,17 +58,19 @@ siesta = { &
     MOVE = 5, &
     ANALYSIS = 6, &
     state = 0, &
-    print = function(self,msg) &
-       print("Lua-msg: " ..msg) &
+    IOprint = function(self, ...) &
+       if self.IONode then &
+          print(...) &
+       end &
+    end, &
+    print = function(self, ...) &
+       print(...) &
     end, &
 } &
 IOprint = function(...) &
-    if siesta.IONode then &
-        print(...) &
-    end &
+   siesta:IOprint(...) &
 end &
-_empty_tbl = {} &
-siesta_comm = function (_empty_tbl) end'
+siesta_comm = function(...) end'
 
     character(*), parameter :: unit_static_lua = '&
 siesta.Units = { &
@@ -87,6 +89,9 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     
     ! First retrieve lua file
     slua_file = fdf_get('LUA.Script',' ')
+    ! Immediately return if the file is not specified...
+    if ( len_trim(slua_file) == 0 ) return
+
     ! Default debugging only on the io-node.
     slua_debug = fdf_get('LUA.Debug',.false.)
     slua_debug = slua_debug .and. IONode 
@@ -118,6 +123,11 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
           write(*,'(a)') 'siesta-lua: siesta-lua CANNOT be runned on &
                &this file-system. Try running with only one node.'
           write(*,'(a)') 'siesta-lua: WARNING'
+       else if ( IONode ) then
+          write(*,'(a)') 'siesta-lua: WARNING'
+          write(*,'(3a)') 'siesta-lua: File ', trim(slua_file), &
+               ' could not be found!'
+          write(*,'(a)') 'siesta-lua: WARNING'
        end if
        return
     end if
@@ -131,8 +141,15 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     call lua_run(LUA, code = unit_static_lua )
 
     ! Register siesta calls to communicate to the lua layer
-    call lua_register(LUA,'siesta_get', slua_get_siesta)
-    call lua_register(LUA,'siesta_return', slua_return_siesta)
+    ! Old names for backwards compatibility
+    call lua_register(LUA,'siesta_get', slua_receive_siesta)
+    call lua_register(LUA,'siesta_return', slua_send_siesta)
+
+    call lua_register(LUA,'siesta_receive', slua_receive_siesta)
+    call lua_register(LUA,'siesta_send', slua_send_siesta)
+    ! Make local siesta.receive and siesta.send
+    call lua_run(LUA, code = 'siesta.receive = siesta_receive' )
+    call lua_run(LUA, code = 'siesta.send = siesta_send' )
 
     ! Only used for printing information about
     ! what can be retrieved
@@ -207,7 +224,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
   ! ! ! ! ! ! !
 
 
-  function slua_get_siesta(state) result(nret) bind(c)
+  function slua_receive_siesta(state) result(nret) bind(c)
     use, intrinsic :: iso_c_binding, only: c_ptr, c_int
 
     use dictionary
@@ -247,9 +264,9 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     ! this function returns nothing
     nret = 0
 
-  end function slua_get_siesta
+  end function slua_receive_siesta
 
-  function slua_return_siesta(state) result(nret) bind(c)
+  function slua_send_siesta(state) result(nret) bind(c)
     use, intrinsic :: iso_c_binding, only: c_ptr, c_int
 
     use dictionary
@@ -288,7 +305,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     ! this function returns nothing
     nret = 0
 
-  end function slua_return_siesta
+  end function slua_send_siesta
 
   subroutine slua_get_tbl_to_dict(lua,keys)
 

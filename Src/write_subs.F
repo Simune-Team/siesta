@@ -440,9 +440,15 @@
      .             units="siestaUnits:eV", 
      .             dictRef="siesta:FreeE", fmt="r7")
              if ( fixspin ) then
+                call cmlAddProperty(xf=mainXML, value=Efs(1)/eV, 
+     .               units="siestaUnits:eV", 
+     .               dictRef="siesta:Ef_UP", fmt="r7")
+                call cmlAddProperty(xf=mainXML, value=Efs(2)/eV, 
+     .               units="siestaUnits:eV", 
+     .               dictRef="siesta:Ef_DN", fmt="r7")
                 call cmlAddProperty(xf=mainXML, value=Efs(:)/eV, 
      .               units="siestaUnits:eV", 
-     .               dictRef="siesta:Efs", fmt="r7")
+     .               dictRef="siesta:Efs")
              else
                 call cmlAddProperty(xf=mainXML,value=Ef/eV, 
      .               units="siestaUnits:eV", 
