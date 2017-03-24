@@ -151,7 +151,7 @@ To compile \tbtrans\ simply go to the directory and type:
   $ make
 \end{shellexample}
 %$
-This will default to use the \shell{arch.make} file in the \shell{Obj}
+This will default to use the \file{arch.make} file in the \shell{Obj}
 directory. To use a different directory you may do:
 \begin{shellexample}
   $ make OBJDIR=AnotherObjDir
@@ -159,7 +159,9 @@ directory. To use a different directory you may do:
 %$
 
 \tbtrans\ is tightly intertwined with the \siesta\ source to reduce
-code duplication. 
+code duplication.
+
+Please see the \siesta\ manual for installing NetCDF easily.
 
 \subsection{The \texttt{arch.make}\ file}
 \label{sec:arch-make}
@@ -168,7 +170,7 @@ The compilation is done using a \shell{Makefile} that is provided with
 the code\index{Makefile}. This \shell{Makefile} will generate the
 executable for any of several architectures, with a minimum of tuning
 required from the user and encapsulated in a separate file called
-\texttt{arch.make}.
+\file{arch.make}.
 
 \tbtrans\ relies on the following libraries
 \begin{description}
@@ -183,14 +185,14 @@ required from the user and encapsulated in a separate file called
     performance libraries.
   \end{itemize}
 
-  To add BLAS to the \shell{arch.make} file you need to add the
+  To add BLAS to the \file{arch.make} file you need to add the
   required linker flags to the \shell{LIBS} variable in the
-  \shell{arch.make} file.
+  \file{arch.make} file.
 
   Example variables
 \begin{shellexample}
   # OpenBLAS:
-  LIBS += -L/opt/openblas/0.2.18/lib -lopenblas
+  LIBS += -L/opt/openblas/lib -lopenblas
   # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_blas95_lp64 ...
 \end{shellexample}
@@ -204,7 +206,7 @@ required from the user and encapsulated in a separate file called
   Example variables
 \begin{shellexample}
   # OpenBLAS (OpenBLAS will default to build in LAPACK 3.6)
-  LIBS += -L/opt/openblas/0.2.18/lib -lopenblas
+  LIBS += -L/opt/openblas/lib -lopenblas
   # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_lapack95_lp64 ...
 \end{shellexample}
@@ -215,14 +217,14 @@ The above are the minimally required libraries.
 
 Highly encouraged libraries
 \begin{description}
-  \item[NetCDF4] %
+  \item[\href{https://www.unidata.ucar.edu/software/netcdf}{NetCDF}] %
   Note that it should a NetCDF4 compliant compiled
   library\footnote{Remark that a NetCDF-3 compliant library is not
       sufficient for \tbtrans.}. This library is required for a
   multitude of advanced analysis methods such as orbital resolved DOS,
   bond-currents, $\delta \mathbf H$, eigenstate projections.
 
-  To use this library add these variables to your \shell{arch.make}
+  To use this library add these variables to your \file{arch.make}
   file
 \begin{shellexample}
   COMP_LIBS += libncdf.a
@@ -236,6 +238,8 @@ Highly encouraged libraries
   FPPFLAGS += -DNCDF_PARALLEL
 \end{shellexample}
 
+  To easily install \program{NetCDF} please see the installation file:
+  \shell{Docs/install\_netcdf4.bash}.
   
 \end{description}
 
@@ -243,13 +247,13 @@ Importantly, \tbtrans\ is compatible with hybrid parallelism using MPI
 and OpenMP or either of them alone. 
 
 \paragraph{MPI}
-To compile using MPI add this to your \shell{arch.make} file
+To compile using MPI add this to your \file{arch.make} file
 \begin{shellexample}
  FPPFLAGS += -DMPI
 \end{shellexample}
 
 \paragraph{OpenMP}
-To compile using OpenMP add this to your \shell{arch.make} file
+To compile using OpenMP add this to your \file{arch.make} file
 \begin{shellexample}
  FFLAGS += -fopenmp
  LIBS += -fopenmp
@@ -281,7 +285,7 @@ socket having \shell{OMP\_NUM\_THREADS} cores.
 Several modern BLAS implementations allow the use of GEMM3M kernels
 for complex linear algebra. They should provide a performance
 enhancement for large matrices. To use these routines add this to your
-\shell{arch.make} file:
+\file{arch.make} file:
 \begin{shellexample}
   FPPFLAGS += -DUSE_GEMM3M
 \end{shellexample}
