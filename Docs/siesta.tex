@@ -753,16 +753,6 @@ libraries
   \begin{shellexample}
     COMP_LIBS += libfdict.a
   \end{shellexample}
-  This library requires a fully C-compatible pre-processor. The C
-  pre-processor is controlled by the \shell{CPP} variable in
-  \file{arch.make}. 
-  %
-  On MacOS using clang 3.5 one may be required to use the \shell{gcc}
-  compiler for preprocessing:
-  \begin{shellexample}
-    CPP = gcc -E -P -x c
-  \end{shellexample}
-  \index{compile!pre-processor}
 
 
   \item[\href{https://www.unidata.ucar.edu/software/netcdf}{NetCDF}] %
