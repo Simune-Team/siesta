@@ -40,7 +40,7 @@ module m_tbt_proj
 #endif
   use m_tbt_save, only : local_save_DOS
   use m_tbt_save, only : tbt_cdf_precision
-  use nf_ncdf, only : NF90_MAX_NAME
+  use netcdf_ncdf, only : NF90_MAX_NAME
 #endif
 
   implicit none
@@ -1283,7 +1283,7 @@ contains
     use m_os, only : file_exist
 
     use dictionary, assign_int => assign
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
     use m_ncdf_io, only : cdf_w_Sp
     use m_timestamp, only : datestring
 #ifdef MPI
@@ -2301,7 +2301,7 @@ contains
     use parallel, only : Node, Nodes
 
     use dictionary
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Gather
     use mpi_siesta, only : MPI_Send, MPI_Recv, MPI_DOUBLE_COMPLEX
@@ -2477,7 +2477,7 @@ contains
     use class_dSpData1D
 
     use dictionary
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD
     use mpi_siesta, only : MPI_Send, MPI_Recv
@@ -2555,7 +2555,7 @@ contains
   ! Returns the projection state for the designated
   ! molecule projection.
   subroutine proj_update(ncdf,N_mol,mols,ikpt)
-    use nf_ncdf
+    use netcdf_ncdf
 #ifdef MPI
     use mpi_siesta, only: MPI_Bcast
     use mpi_siesta, only: MPI_Double_Complex, MPI_Comm_World
@@ -2620,7 +2620,7 @@ contains
 
     use parallel, only : Node, Nodes
 
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only: MPI_Send, MPI_Recv, MPI_Get_Count
     use mpi_siesta, only: MPI_STATUS_SIZE
@@ -2846,7 +2846,7 @@ contains
 
     use parallel, only : Node, Nodes
 
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only: MPI_Send, MPI_Recv, MPI_Get_Count
     use mpi_siesta, only: MPI_STATUS_SIZE, MPI_STATUSES_IGNORE
@@ -2998,7 +2998,7 @@ contains
     use dictionary
 
     use m_timestamp, only : datestring
-    use nf_ncdf
+    use netcdf_ncdf
     use m_ts_electype
 
     character(len=*), intent(in) :: fname

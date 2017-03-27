@@ -318,32 +318,36 @@ endif
 # Libraries used by transiesta and tbtrans
 # They are currently supplied by this distribution
 # All rights reserved for the author of these libraries.
-# Author: Nick Papior Andersen
+# Author: Nick R. Papior
 
 # This library can be found at:
 #  https://github.com/zerothi/fdict
 FDICT=libfdict.a
 $(FDICT): 
-	(cd fdict ; $(MAKE) -j 1 "VPATH=$(VPATH)/fdict" \
-	            "FC=$(FC_SERIAL)" \
-		    "ARCH_MAKE=$(PWD)/arch.make" \
-		    "FPPFLAGS=$(FPPFLAGS) -UMPI" \
-		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=) $(INCFLAGS)" lib)
-	@cp -p fdict/*.*d ./
-	cp fdict/$(FDICT) ./
+	(cd fdict ; rm -rf obj ; mkdir obj ; cd obj ; \
+	echo "TOP_DIR=$(VPATH)/fdict" > Makefile ; echo "include $(VPATH)/fdict/Makefile" >> Makefile ; \
+	echo "FC=$(FC_SERIAL)" > setup.make ; \
+	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
+	@cp -p fdict/obj/*.mod ./
+	cp fdict/obj/$(FDICT) ./
 
 # This library can be found at:
 #  https://github.com/zerothi/ncdf
 NCDF=libncdf.a
 $(NCDF): $(FDICT)
-	(cd NCDF ; $(MAKE) -j 1 "VPATH=$(VPATH)/NCDF" \
-		"LIBFDICT=$(FDICT)" \
-		"DIR_FDICT=$(VPATH)/fdict" \
-		"ARCH_MAKE=$(PWD)/arch.make" \
-		"FPPFLAGS=$(FPPFLAGS)" \
-		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../ $(INCFLAGS)" lib)
-	@cp -p NCDF/src/*.*d ./
-	cp NCDF/src/$(NCDF) ./
+	(cd ncdf ; rm -rf obj ; mkdir obj ; cd obj ; \
+	echo "TOP_DIR=$(VPATH)/ncdf" > Makefile ; echo "include $(VPATH)/ncdf/Makefile" >> Makefile ; \
+	echo "settings.bash: FORCE" >> Makefile ; \
+	echo "\t-cp ../../fdict/obj/settings.bash ." >> Makefile ; \
+	echo "FC=$(FC)" > setup.make ; \
+	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "FPPFLAGS = $(FPPFLAGS)" >> setup.make ; \
+	echo "INCLUDES = $(INCFLAGS) -I../../" >> setup.make ; \
+	echo "LIBS = $(LIBS) -lfdict" >> setup.make ; \
+	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
+	@cp -p ncdf/obj/*.mod ./
+	cp ncdf/obj/$(NCDF) ./
 
 #######################
 
@@ -514,8 +518,8 @@ clean:
 	(cd xmlparser ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
-	@if [ -d fdict ] ; then (cd fdict && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
-	@if [ -d NCDF ] ; then (cd NCDF && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
+	@if [ -d fdict ] ; then $(MAKE) -C fdict/obj clean ; fi
+	@if [ -d ncdf ] ; then $(MAKE) -C ncdf/obj clean ; fi
 	(cd Libs ; $(MAKE) clean )
 	(cd SiestaXC ; $(MAKE) clean )
 	(cd MatrixSwitch/src ; $(MAKE) clean )

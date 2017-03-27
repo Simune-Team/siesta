@@ -5,7 +5,7 @@ NumberOfSpecies     2
 
 # File name that should be
 # runned by the Lua interpreter
-LUA.Script siesta.lua
+LUA.Script ../siesta.lua
 # Debug (create loads of print-out)
 LUA.Debug T
 

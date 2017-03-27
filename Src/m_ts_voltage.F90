@@ -679,7 +679,7 @@ contains
     use mpi_siesta, only : MPI_Comm_World, MPI_Bcast, MPI_Grid_Real
 #endif
     use m_ncdf_io, only : cdf_r_grid
-    use nf_ncdf
+    use netcdf_ncdf
     
     character(len=*), intent(in) :: fname, V_name
     ! local number of mesh-divisions
@@ -732,7 +732,7 @@ contains
 
     use parallel, only : IONode
 
-    use nf_ncdf
+    use netcdf_ncdf
     use dictionary
     
     character(len=*), intent(in) :: fname

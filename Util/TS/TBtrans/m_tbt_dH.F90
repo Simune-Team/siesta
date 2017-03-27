@@ -153,7 +153,7 @@ contains
     use m_os, only : file_exist
 
 #ifdef NCDF_4
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #endif
     
 #ifdef MPI
@@ -506,7 +506,7 @@ contains
     use class_OrbitalDistribution
 
     use m_sparsity_handling, only : Sp_union
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
@@ -714,7 +714,7 @@ contains
 
       use class_Sparsity
       use class_OrbitalDistribution
-      use nf_ncdf, ncdf_parallel => parallel
+      use netcdf_ncdf, ncdf_parallel => parallel
       use m_ncdf_io, only : cdf_r_Sp
 
 #ifdef MPI
