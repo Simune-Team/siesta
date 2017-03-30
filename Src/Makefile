@@ -272,6 +272,7 @@ WXML=libwxml.a
 $(WXML):
 	(cd wxml ; $(MAKE) -j 1 "VPATH=$(VPATH)/wxml" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
+
 #--------------------------------------------------------------
 libmpi_f90.a: 
 	@(cd MPI ; $(MAKE) -j 1 \
@@ -288,15 +289,16 @@ $(FDF): $(MPI_INTERFACE)
 
 #--------------------------------------------------------------
 MS=MatrixSwitch.a
-$(MS): 
+$(MS): $(MPI_INTERFACE)
 	(cd MatrixSwitch/src ; \
-	 $(MAKE) -j 1\
+	 $(MAKE) -j 1 \
 	            "VPATH=$(VPATH)/MatrixSwitch/src" \
 		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" all)
-#
+
 m_initwf.o changebasis.o m_evolve.o evolg.o evolk.o: $(MS)
 wavefunctions.o m_matdiag.o m_matswinvers.o: $(MS)
+
 #--------------------------------------------------------------
 XC=libSiestaXC.a
 $(XC): $(FDF)
