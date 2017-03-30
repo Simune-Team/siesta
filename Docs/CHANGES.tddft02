@@ -1,3 +1,19 @@
+2017-03-30  19:00 PKT Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-02
+
+Simplied and changed name of the changebasis subroutine.
+
+* No change in functionality
+* Improved code readibilty
+* Prepared it for consistent future developements
+
+removed:
+  Src/changebasis.F90
+added:
+  Src/sankey_change_basis.F90
+modified:
+  Src/Makefile
+  Src/siesta_tddft.F90
+
 2017-03-23  21:00 PKT Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-01
 
 Added Hamiltonian extrapolation within Crank-Nicolson integrator.

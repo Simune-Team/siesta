@@ -171,7 +171,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	kpoint_convert.o \
 	m_target_stress.o compute_max_diff.o \
 	m_initwf.o wavefunctions.o \
-	m_evolve.o evolk.o evolg.o changebasis.o m_iotddft.o \
+	m_evolve.o evolk.o evolg.o sankey_change_basis.o m_iotddft.o \
 	m_matdiag.o m_matswinvers.o
 
 # Mixing algorithms
@@ -295,7 +295,7 @@ $(MS):
 		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" all)
 #
-m_initwf.o changebasis.o m_evolve.o evolg.o evolk.o: $(MS)
+m_initwf.o sankey_change_basis.o m_evolve.o evolg.o evolk.o: $(MS)
 wavefunctions.o m_matdiag.o m_matswinvers.o: $(MS)
 #--------------------------------------------------------------
 XC=libSiestaXC.a
@@ -360,7 +360,7 @@ ldau_specs.o: $(FDF)
 
 evolk.o: $(FDF)
 evolg.o: $(FDF)
-changebasis.o: $(FDF)
+sankey_change_basis.o: $(FDF)
 
 # Create all objects
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
@@ -576,8 +576,9 @@ cgvc.o: alloc.o conjgr_old.o m_mpi_utils.o parallel.o precision.o sys.o units.o
 cgvc_zmatrix.o: alloc.o conjgr.o m_mpi_utils.o parallel.o precision.o sys.o
 cgvc_zmatrix.o: units.o zmatrix.o
 cgwf.o: egandd.o onmod.o parallel.o precision.o sys.o
-changebasis.o: alloc.o m_matdiag.o parallel.o parallelsubs.o precision.o
-changebasis.o: sparse_matrices.o sys.o wavefunctions.o
+sankey_change_basis.o: alloc.o m_matdiag.o parallel.o parallelsubs.o precision.o
+sankey_change_basis.o: sparse_matrices.o sys.o wavefunctions.o kpoint_grid.o
+sankey_change_basis.o: m_gamma.o m_spin.o atomlist.o
 chemical.o: parallel.o precision.o sys.o
 chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
@@ -1275,6 +1276,7 @@ siesta_tddft.o: m_initwf.o m_iotddft.o m_mpi_utils.o m_spin.o m_steps.o
 siesta_tddft.o: overfsm.o parallel.o precision.o setup_H0.o setup_hamiltonian.o
 siesta_tddft.o: siesta_cml.o siesta_options.o sparse_matrices.o
 siesta_tddft.o: state_analysis.o state_init.o sys.o wavefunctions.o
+siesta_tddft.o: sankey_change_basis.o
 sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpData2D.o
 sparse_matrices.o: class_OrbitalDistribution.o class_SpData1D.o
 sparse_matrices.o: class_SpData2D.o class_Sparsity.o precision.o

@@ -46,8 +46,8 @@ contains
     use m_evolve,         only: evolve
     use m_iotddft,        only: write_tddft
     use m_overfsm,        only: overfsm
-    use m_final_H_f_stress, only: final_H_f_stress
-
+    use m_final_H_f_stress,    only: final_H_f_stress
+    use m_sankey_change_basis, only: sankey_change_basis
     use m_mpi_utils, only: broadcast
     use fdf
 
@@ -106,7 +106,7 @@ contains
 #endif
 
     ! The first call to change basis only calculates S^+1/2
-    call chgbasis(nspin, gamma, nkpnt, kpoint, kweight, no_u,istep)
+    call sankey_change_basis ( istep )
     
     ! Read the initial wavefunctions.
     ! In future reading wavefunctions can be moved before
