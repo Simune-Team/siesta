@@ -447,7 +447,7 @@ command:
   sh ../Src/obj_setup.sh
 \end{shellexample}
 to populate this directory with the minimal scaffolding of makefiles,
-and then make sure that you create or generate an appropriate \shell{arch.make}
+and then make sure that you create or generate an appropriate \file{arch.make}
 file (see below, in Sec.~\ref{sec:arch-make}). Then, type
 \begin{shellexample}
   make
@@ -488,27 +488,27 @@ The compilation of the program is done using a \shell{Makefile} that is
 provided with the code.\index{Makefile} This \shell{Makefile} will
 generate the executable for any of several architectures, with a
 minimum of tuning required from the user and encapsulated in a
-separate file called \shell{arch.make}.
+separate file called \file{arch.make}.
 
 You are strongly encouraged to look at
 \shell{Obj/DOCUMENTED-TEMPLATE.make} for information about the
-fine points of the \shell{arch.make} file. There are two sample make
+fine points of the \file{arch.make} file. There are two sample make
 files for compilation of \siesta\ with \shell{gfortran} and
 \shell{ifort} named \shell{Obj/gfortran.make} and
 \shell{Obj/intel.make}, respectively. Please use those as guidelines
-for creating the final \shell{arch.make}.
+for creating the final \file{arch.make}.
 
 % You can also get
-% inspiration by looking at the actual \shell{arch.make} examples in
+% inspiration by looking at the actual \file{arch.make} examples in
 % the \shell{Src/Sys} subdirectory. If you intend to create a parallel
 % version of \siesta, make sure you have all the extra support libraries
 % (\program{MPI}, \program{scalapack}, \program{blacs}\dots) (see Sec.~\ref{sec:parallel}).
   
 % Optionally, the command \shell{../Src/configure} will start an
-% automatic scan of your system and try to build an \shell{arch.make}
+% automatic scan of your system and try to build an \file{arch.make}
 % for you. Please note that the configure script might need some help in
 % order to find your Fortran compiler, and that the created
-% \shell{arch.make} may not be optimal, mostly in regard to compiler
+% \file{arch.make} may not be optimal, mostly in regard to compiler
 % switches and preprocessor definitions, but the process should provide
 % a reasonable first version. Type \shell{../Src/configure --help} to
 % see the flags understood by the script, and take a look at the
@@ -632,6 +632,24 @@ systems) and MPI$+$OpenMP (large$+$ systems).
 libraries and how each of them may be added to the compilation step
 (\file{arch.make}).
 
+\siesta\ is distributed with scripts that install the most useful
+libraries. These installation scripts may be located in the
+\shell{Docs/} folder with names: \shell{install\_*.bash}.
+Currently \siesta\ is shipped with these installation scripts:
+\begin{itemize}
+  \item \shell{install\_netcdf4.bash}; installs NetCDF with full CDF4
+  support. Thus it installs zlib, hdf5 \emph{and} NetCDF C and
+  Fortran.
+
+  \item \shell{install\_flook.bash}; installs \program{flook} which
+  enables interaction with Lua and \siesta.
+  
+\end{itemize}
+Note that these scripts are guidance scripts and users are encouraged
+to check the mailing list for or seek help there in non-standard. The
+installation scripts finishes by telling \emph{what} to add to the
+\file{arch.make} file to correctly link the just installed libraries.
+
 \begin{description}
 
   \item[BLAS] %
@@ -650,14 +668,14 @@ libraries and how each of them may be added to the compilation step
     \shell{libsiestaBLAS.a} to the \shell{COMP\_LIBS} variable.
   \end{itemize}
 
-  To add BLAS to the \shell{arch.make} file you need to add the
+  To add BLAS to the \file{arch.make} file you need to add the
   required linker flags to the \shell{LIBS} variable in the
-  \shell{arch.make} file.
+  \file{arch.make} file.
 
   Example variables
 \begin{shellexample}
   # OpenBLAS:
-  LIBS += -L/opt/openblas/0.2.18/lib -lopenblas
+  LIBS += -L/opt/openblas/lib -lopenblas
   # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_blas95_lp64 ...
 \end{shellexample}
@@ -666,7 +684,7 @@ libraries and how each of them may be added to the compilation step
   to
 \begin{shellexample}
   # OpenBLAS:
-  LIBS += -L/opt/openblas/0.2.18/lib -lopenblasp
+  LIBS += -L/opt/openblas/lib -lopenblasp
   # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_blas95_lp64
     -lmkl_<>_thread ...
@@ -687,7 +705,7 @@ libraries and how each of them may be added to the compilation step
   Example variables
 \begin{shellexample}
   # OpenBLAS (OpenBLAS will default to build in LAPACK 3.6)
-  LIBS += -L/opt/openblas/0.2.18/lib -lopenblas
+  LIBS += -L/opt/openblas/lib -lopenblas
   # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_lapack95_lp64 ...
 \end{shellexample}
@@ -696,7 +714,7 @@ libraries and how each of them may be added to the compilation step
   to
 \begin{shellexample}
   # OpenBLAS (OpenBLAS will default to build in LAPACK 3.6)
-  LIBS += -L/opt/openblas/0.2.18/lib -lopenblasp
+  LIBS += -L/opt/openblas/lib -lopenblasp
   # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_lapack95_lp64
     -lmkl_<>_thread ...
@@ -715,7 +733,7 @@ libraries and how each of them may be added to the compilation step
   Example variables
 \begin{shellexample}
   # ScaLAPACK
-  LIBS += -L/opt/scalapack/2.0.2/lib -lscalapack
+  LIBS += -L/opt/scalapack/lib -lscalapack
   # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_scalapack_lp64 
            -lmkl_blacs_<>_lp64 ...
@@ -730,61 +748,51 @@ Additionally \siesta\ may be compiled with support for several other
 libraries
 \begin{description}
 
-  \item[fdict] %
+  \item[\href{https://github.com/zerothi/fdict}{fdict}] %
   \index{External library!fdict}%
   This library is shipped with \siesta\ and its linking may be enabled
   by 
   \begin{shellexample}
     COMP_LIBS += libfdict.a
   \end{shellexample}
-  This library requires a fully C-compatible pre-processor. The C
-  pre-processor is controlled by the \shell{CPP} variable in
-  \file{arch.make}. 
-  %
-  On MacOS using clang 3.5 one may be required to use the \shell{gcc}
-  compiler for preprocessing:
-  \begin{shellexample}
-    CPP = gcc -E -P -x c
-  \end{shellexample}
-  \index{compile!pre-processor}
 
 
-  \item[NetCDF] %
+  \item[\href{https://www.unidata.ucar.edu/software/netcdf}{NetCDF}] %
   \index{NetCDF format}%
   \index{External library!NetCDF}%
   \index{compile!pre-processor!-DCDF}
-  It is adviced to compile NetCDF in NetCDF-4 compliant mode (thus
+  It is adviced to compile NetCDF in CDF4 compliant mode (thus
   also linking with HDF5) as this enables more advanced IO. If you
-  only link against a NetCDF-3 compliant library you will not get the
+  only link against a CDF3 compliant library you will not get the
   complete feature set of \siesta.
 
   \begin{description}
     \item[3]%
     \index{NetCDF format!3}%
-    If the NetCDF-3 compliant library is present one may add this to
+    If the CDF3 compliant library is present one may add this to
     your \file{arch.make}:
 \begin{shellexample}
-  LIBS += -L/opt/netcdf/4.4.0/lib -lnetcdff -lnetcdf
+  LIBS += -L/opt/netcdf/lib -lnetcdff -lnetcdf
   FPPFLAGS += -DCDF
 \end{shellexample}
 
     \item[4]%
     \index{NetCDF format!4}%
-    If the NetCDF-4 compliant library is present the HDF5 libraries
+    If the CDF4 compliant library is present the HDF5 libraries
     are also required at link time:
 \begin{shellexample}
-  LIBS += -L/opt/netcdf/4.4.0/lib -lnetcdff -lnetcdf \
+  LIBS += -L/opt/netcdf/lib -lnetcdff -lnetcdf \
             -lhdf5_fortran -lhdf5 -lz
 \end{shellexample}
 
   \end{description}
 
-
-  \item[ncdf] %
+  
+  \item[\href{https://github.com/zerothi/ncdf}{ncdf}] %
   \index{External library!ncdf}%
   This library is shipped with \siesta\ and its linking is required to
-  take advantage of the NetCDF-4 library functionalities. To use this
-  library, ensure that you can compile \siesta\ with NetCDF-4
+  take advantage of the CDF4 library functionalities. To use this
+  library, ensure that you can compile \siesta\ with CDF4
   support. Then proceed by adding the following to your \file{arch.make}
   \begin{shellexample}
     COMP_LIBS += libncdf.a libfdict.a
@@ -794,42 +802,45 @@ libraries
   \index{compile!pre-processor!-DNCDF\_4}
 
   
-  If the NetCDF-4 library is compiled with parallel support one may
+  If the NetCDF library is compiled with parallel support one may
   take advantage of parallel IO by adding this to the \file{arch.make} 
 \begin{shellexample}
   FPPFLAGS += -DNCDF_PARALLEL
 \end{shellexample}
   \index{compile!pre-processor!-DNCDF\_PARALLEL}
 
+  To easily install \program{NetCDF} please see the installation file:
+  \shell{Docs/install\_netcdf4.bash}.
 
-  \item[Metis]%
+
+  \item[\href{http://glaros.dtc.umn.edu/gkhome/metis/metis/overview}{Metis}]%
   \index{Metis}%
   \index{External library!Metis}%
   The Metis library may be used in the Order-\emph N code. 
 
   Add these flags to your \file{arch.make} file to enable Metis
 \begin{shellexample}
-  LIBS += -L/opt/metis/5.1.0/lib -lmetis
+  LIBS += -L/opt/metis/lib -lmetis
   FPPFLAGS += -DSIESTA__METIS
 \end{shellexample}
   \index{compile!pre-processor!-DSIESTA\_\_METIS}
 
 
-  \item[MUMPS]%
+  \item[\href{http://mumps.enseeiht.fr}{MUMPS}]%
   \index{MUMPS}%
   \index{External library!MUMPS}%
   The MUMPS library may currently be used with \tsiesta.
   
   Add these flags to your \file{arch.make} file to enable MUMPS
 \begin{shellexample}
-  LIBS += -L/opt/mumps/5.0.0/lib -lzmumps -lmumps_common <>
+  LIBS += -L/opt/mumps/lib -lzmumps -lmumps_common <>
   FPPFLAGS += -DSIESTA__MUMPS
 \end{shellexample}
   \index{compile!pre-processor!-DSIESTA\_\_MUMPS}
   where \shell{<>} are any libraries that MUMPS depend on.
 
 
-  \item[PEXSI]%
+  \item[\href{https://math.berkeley.edu/~linlin/pexsi}{PEXSI}]%
   \index{PEXSI}%
   \index{External library!PEXSI}%
   The PEXSI library may be used with \siesta\ for exa-scale
@@ -846,8 +857,8 @@ libraries
 
   Add these flags to your \file{arch.make} file to enable PEXSI
 \begin{shellexample}
-  INCFLAGS += -I/opt/pexsi/0.9.2/include
-  LIBS += -L/opt/pexsi/0.9.2/lib -lpexsi_linux <>
+  INCFLAGS += -I/opt/pexsi/include
+  LIBS += -L/opt/pexsi/lib -lpexsi_linux <>
   FPPFLAGS += -DSIESTA__PEXSI
 \end{shellexample}
   \index{compile!pre-processor!-DSIESTA\_\_PEXSI}
@@ -868,7 +879,8 @@ libraries
   LIBS += -Wl,--allow-multiple-definition -lpexsi_linux <>
 \end{shellexample}
 
-  \item[flook]%
+
+  \item[\href{https://github.com/electronicstructurelibrary/flook}{flook}]%
   \index{flook}%
   \index{External library!flook}%
   \siesta\ allows external control via the LUA scripting language.
@@ -878,11 +890,15 @@ libraries
   Add these flags to your \file{arch.make} file to enable \program{flook}
 \begin{shellexample}
   LIBS += -L/opt/flook/lib -lflookall -ldl
+  COMP_LIBS += libfdict.a
   FPPFLAGS += -DSIESTA__FLOOK
 \end{shellexample}
   \index{compile!pre-processor!-DSIESTA\_\_FLOOK}
   
   See \program{Tests/h2o\_lua} for an example on the LUA interface.
+
+  To easily install \program{flook} please see the installation file:
+  \shell{Docs/install\_flook.bash}.
 
 \end{description}
 
@@ -8783,10 +8799,10 @@ charge-density and wavefunction information in real space.
 \end{fdflogicalF}
 
 
-\subsection{NetCDF-4 output file}
+\subsection{NetCDF (CDF4) output file}
 \label{cdf-output}
 
-\note this requires \siesta\ compiled with NetCDF-4 support.
+\note this requires \siesta\ compiled with CDF4 support.
 
 To unify and construct a simple output file for an entire \siesta\
 calculation a generic NetCDF file will be created if \siesta\ is
@@ -8796,13 +8812,12 @@ compiled with \program{ncdf} support, see Sec.~\ref{sec:libs} and the
 Generally all output to NetCDF flags,
 \fdf{SaveElectrostaticPotential}, etc. apply to this file as well.
 
-
 One may control the output file with compressibility and parallel I/O,
 if needed.
 
 \begin{fdflogicalF}{CDF!Save}
 
-  Create the \sysfile{nc} file which is a NetCDF-4 file.
+  Create the \sysfile{nc} file which is a NetCDF file.
   
   This file will be created with a large set of \emph{groups} which
   make separating the quantities easily. Also it will inherently
@@ -10264,7 +10279,7 @@ function siesta_comm()
    get_tbl = {"geom.xa", "E.total"}
 
    -- Signal to SIESTA which variables we want to explore
-   siesta_get(get_tbl)
+   siesta.receive(get_tbl)
 
    -- Now we have the required variables,
    -- convert to a simpler variable name (not nested tables)
@@ -10281,7 +10296,7 @@ function siesta_comm()
    siesta.E.total = Etot
    ret_tbl = {"E.total"}
 
-   siesta_return(ret_tbl)
+   siesta.send(ret_tbl)
 
 end
 \end{codeexample}
@@ -10334,6 +10349,18 @@ end
   is recommended to start by using \program{flos}, see
   \url{https://github.com/siesta-project/flos} which contains several
   examples on how to start implementing your own scripts.
+  Currently \program{flos} implements a larger variety of relaxation
+  schemes, for instance:
+  \begin{codeexample}
+    local flos = require "flos"
+    LBFGS = flos.LBFGS()
+    function siesta_comm()
+       LBFGS:SIESTA(siesta)
+    end
+  \end{codeexample}
+  which is the most minimal example of using the L-BFGS algorithm for
+  geometry relaxation. Note that \program{flos} reads the parameters
+  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol}.
 
   \note The number of available variables continues to grow and to
   find which quantities are accessible in Lua you may add this small
@@ -10708,7 +10735,7 @@ information.
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!Atoms.Buffer}[block]
+\begin{fdfentry}{TS!Atoms.Buffer}[block/list]
   \fdfindex{TS.BufferAtomsLeft|see TS!Atoms.Buffer}%
   \fdfindex{TS.BufferAtomsRight|see TS!Atoms.Buffer}%
 
@@ -10720,7 +10747,16 @@ information.
   \note all lines are additive for the buffer atoms and the input
   method is similar to that of \fdf{Geometry!Constraints} for the
   \fdf*{atom} line(s).
-  
+
+  \begin{fdfexample}
+    %block TBT.Atoms.Buffer
+       atom [ 1 -- 5 ]
+    %endblock
+    # Or equivalently as a list   
+    TBT.Atoms.Buffer [1 -- 5]
+  \end{fdfexample}
+  will remove atoms [1--5] from the calculation.
+
 \end{fdfentry}
 
 \begin{fdfentry}{TS!ElectronicTemperature}[energy]<\fdfvalue{ElectronicTemperature}>
@@ -11139,7 +11175,8 @@ intricate and important detail.
   The grid information should conform to the grid size of the
   unit-cell in the simulation.
   % 
-  \note the file option is only applicable if compiled with NetCDF4.
+  \note the file option is only applicable if compiled with CDF4
+  compliance.
 
 \end{fdfentry}
 

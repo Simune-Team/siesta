@@ -1,22 +1,28 @@
 #!/bin/bash
 
+_vpath=.
+[ -n "$VPATH" ] && _vpath=$VPATH
+
 # Ensure that we get the default var_N by
 # first deleting any previous settings
-rm -f current_settings.sh
-source settings.sh
+_set_file=settings.bash
+source $_vpath/default_settings.bash
+[ -e $_set_file ] && source $_set_file
+
 
 function quick_setup {
     local n=$1 ; shift
     while [ $# -gt 0 ]; do
 	if [ $(var_N $1) -ne $n ]; then
 	    echo "Updating number of dimensions for: $(var_name $1) to $n"
-	    echo "# Updating number of dimensions for: $(var_name $1) to $n" >> current_settings.sh
+	    echo "# Updating number of dimensions for: $(var_name $1) to $n" >> $_set_file
 	fi
-	echo "$1) _ps $n ;;" >> current_settings.sh
+	echo "$1) printf '%b' $n ;;" >> $_set_file
 	shift
     done
 }
-	 	
+
+
 function _help {
     echo "Helper routine for compilation setup"
     echo " Call by:"
@@ -44,13 +50,16 @@ function _help {
     echo ""
 }
 
+
 [ $# -eq 0 ] && _help && exit
+
 
 {
 echo "function var_N {"
 echo "local var=\"\$1\""
 echo "case \$var in"
-} > current_settings.sh
+} > $_set_file
+
 
 while [ $# -gt 0 ]; do
     opt=$1 ; shift
@@ -97,12 +106,13 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-# In a 
+
+# Forcefully set all variables 
 for v in VAR V a s d c z b h i l ; do
     quick_setup $(var_N $v) $v
 done
 {
 echo "esac"
 echo "}"
-} >> current_settings.sh
+} >> $_set_file
 

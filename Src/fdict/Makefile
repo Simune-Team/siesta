@@ -1,72 +1,83 @@
-.SUFFIXES: .f90 .o .a
 
-# Sadly the preprocessor for fortran is a bit of a pain.
-# -C is needed to disregard C-comments (the operator // is a comment!?!)
-# -nostdinc is needed to not include standard includes (which are C comments)
-# -E only preprocess, do not try and compile
-# -P do not add line markers
-CPP = $(FC) -E -P -x c
+# Define VPATH
+VPATH ?= $(shell pwd)
 
-ARCH_MAKE_DEFAULT=arch.make
-ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
-include $(ARCH_MAKE)
-
-# Setup the default things, in case they haven't been set.
-AR      ?= ar
-ARFLAGS ?= cru
-RANLIB  ?= ranlib
-
-VPATH   ?= $(shell pwd)
-
-.PHONY: default
+# Define default target:
 default: lib
 
-# By compiling with 
-#  make PIPE_SILENT=
-# all the preprocessing will be shown on stdout.
-# This is handy for debugging.
-PIPE_SILENT ?= 2> /dev/null
+# SMEKASETTINGS (DO NOT DELETE)
+# DO NOT CHANGE CONTENT IN THIS BLOCK
+# IT MAY BE OVERWRITTEN WHEN REINSTALLING SMEKA
+#
+# This Makefile was created by smeka:
+#  github.com/zerothi/smeka
 
-# The different libraries
-OBJS = variable.o iso_var_str.o dictionary.o
+# Top-directory of Makefile/source tree
+# If need set, do so ABOVE this block!
+TOP_DIR ?= .
 
-LIB  = libfdict.a
+# Directory of smeka default Makefiles
+SMEKA_DIR = smeka
 
-.PHONY: lib
-lib: $(LIB)
+# Include the smeka settings!
+include $(TOP_DIR)/$(SMEKA_DIR)/Makefile.smeka
 
-$(LIB): $(OBJS)
-	$(AR) $(ARFLAGS) $(LIB) $(OBJS)
-	$(RANLIB) $(LIB)
+# SMEKAENDSETTINGS (DO NOT DELETE)
 
-.PHONY: test
-.PHONY: check
-check: test
-test: lib
-	$(MAKE) -C test
+# Include the makefile in the src directory
+include $(TOP_DIR)/src/Makefile.inc
 
-.PHONY: prep-var prep-dict
-prep-var:
-	$(VPATH)/var.sh
-	$(CPP) $(CPPFLAGS) $(FPPFLAGS) -I. -I$(VPATH) $(VPATH)/variable_pp.F90 \
-		| sed -f $(VPATH)/filter.sed > variable.f90 $(PIPE_SILENT)
+# Libraries depend on the objects
+$(LIBRARIES): $(OBJECTS)
 
-prep-dict:
-	$(VPATH)/dictionary.sh
-	$(CPP) $(CPPFLAGS) $(FPPFLAGS) -I. -I$(VPATH) $(VPATH)/dictionary_pp.F90 \
-		| sed -f $(VPATH)/filter.sed > dictionary.f90 $(PIPE_SILENT)
+# Create target
+lib: settings.bash $(LIBRARIES)
 
-.PHONY: clean
-clean:
-	-rm -f $(OBJS) $(LIB) *.s *.o *.mod tmp.F90 variable.f90 dictionary.f90
-	-rm -f dict_funcs.inc dict_interface.inc
-	-rm -f var_nullify.inc var_delete.inc var_content.inc var_funcs.inc var_interface.inc
-	-rm -f var_var_set.inc var_var_alloc.inc var_var_assoc.inc
-	-rm -f var_declarations.inc var_declarations2.inc
-	$(MAKE) -C test clean
 
-# Dependencies
-dictionary.f90: | prep-dict
-dictionary.o: variable.o | prep-dict
-variable.f90: | prep-var
-variable.o: iso_var_str.o | prep-var
+# Include the makefile in the test directory
+include $(TOP_DIR)/test/Makefile.inc
+
+
+##
+# This handy target copies from the SOURCES_DIR all sources
+# to the current directory
+# But ONLY if the current directory is not the top of the project
+.PHONY: copy
+ifeq ($(TOP_DIR),.)
+copy:
+	@echo ""
+	@echo "make copy does not work when executed from the top ncdf directory"
+	@echo "Please create an object directory with an appropriate Makefile"
+	@echo ""
+else
+copy:
+	cp $(SOURCES_DIR)/src/*.f90 .
+endif
+
+# Create source target for creating _only_ the sources.
+.PHONY: source
+source: source-src
+
+# Dependent on the option we can fake a VPATH to contain
+# any pre-created sources, if they exist we can simply use those
+SOURCES_DIR = $(TOP_DIR)/sources
+
+# Create target
+source: source-src
+
+##
+# Distribution targets for creating the distribution of flook
+# Create distribution for releases
+.PHONY: dist-fdict
+dist-fdict:
+	git archive --format=tar --prefix fdict-$(PROJECT_VERSION)/ HEAD > fdict-$(PROJECT_VERSION).tar
+# Force the creation of the 3 pre-defined source directories
+	$(MAKE) source
+# Clean up
+	-rm -f *.inc
+	tar --transform 's,^,fdict-$(PROJECT_VERSION)/,' -rf fdict-$(PROJECT_VERSION).tar sources*
+	-@rm -f fdict-$(PROJECT_VERSION).tar.gz
+	gzip fdict-$(PROJECT_VERSION).tar
+
+dist: dist-fdict
+

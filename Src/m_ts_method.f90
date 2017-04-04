@@ -105,7 +105,16 @@ contains
 
     ! Read in TS.Atoms.Buffer
     bName = trim(prefix)//'.Atoms.Buffer'
-    if ( fdf_block(bName,bfdf) ) then
+    ! Read in buffer region via the block or list
+    if ( fdf_islist(bName) ) then
+       
+       ! Query size of list
+       i = -1
+       call fdf_list(bName, i, r_aBuf%r)
+       call rgn_init(r_aBuf, i)
+       call fdf_list(bName, r_aBuf%n, r_aBuf%r)
+       
+    else if ( fdf_block(bName,bfdf) ) then
     
        ! read by line and set them to be buffer atoms
        do while ( fdf_bline(bfdf,pline) ) 

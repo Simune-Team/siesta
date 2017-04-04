@@ -166,8 +166,16 @@ contains
     ! Read in electrode down-folding regions
     call rgn_delete(r_Els)
        
-    ! Read in device region via the new block
-    if ( fdf_block('TBT.Atoms.Device',bfdf) ) then
+    ! Read in device region via the block or list
+    if ( fdf_islist('TBT.Atoms.Device') ) then
+       
+       ! Query size of list
+       i = -1
+       call fdf_list('TBT.Atoms.Device', i, r_aDev%r)
+       call rgn_init(r_aDev, i)
+       call fdf_list('TBT.Atoms.Device', r_aDev%n, r_aDev%r)
+       
+    else if ( fdf_block('TBT.Atoms.Device',bfdf) ) then
 
        ! read by line and set them to be buffer atoms
        do while ( fdf_bline(bfdf,pline) ) 

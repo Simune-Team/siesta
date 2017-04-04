@@ -18,7 +18,7 @@ function siesta_comm()
    local ret_tbl = {}
 
    -- Do the actual communication with fortran
-   siesta_get(get_tbl)
+   siesta.receive(get_tbl)
 
    ---[[
       -- You can even write to other files while running 
@@ -79,7 +79,7 @@ function siesta_comm()
       Needless to say, less communication, more
       speed, yet the overhead is minimal.
    --]]
-   siesta_return(ret_tbl)
+   siesta.send(ret_tbl)
 end
 
 function init_md(siesta)

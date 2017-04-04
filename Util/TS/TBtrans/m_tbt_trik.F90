@@ -74,7 +74,7 @@ contains
 
     use dictionary
 #ifdef NCDF_4
-    use nf_ncdf, only: hNCDF, ncdf_close
+    use netcdf_ncdf, only: hNCDF, ncdf_close
 #endif
 
     use m_ts_electype
