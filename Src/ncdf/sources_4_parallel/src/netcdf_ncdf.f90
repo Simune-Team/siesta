@@ -3059,7 +3059,6 @@ end subroutine get_var_i3_name
     call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
     write(0,"(a,i0)") 'ncdf-Node ',Node
     write(6,"(a,i0)") 'ncdf-Node ',Node
-    call backtrace()
     call MPI_Abort(MPI_Comm_World,1,MPIerror)
   end subroutine ncdf_die
 end module netcdf_ncdf

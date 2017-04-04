@@ -1,11 +1,11 @@
 import sisl
 
+# Read initial geometry
 init = sisl.Geometry.read('h2o_neb.fdf')
-fixed = init.sub([0,1,2])
-sub = init.sub([3,4,5])
 
-# Create images
-o = sub.xyz[0, :]
+# Create images (also initial and final [0, 180])
 for i, ang in enumerate([0, 30, 60, 90, 120, 150, 180]):
-    new = fixed.add(sub.translate(-o).rotatec(ang, 'xyz').translate(o))
+    # Rotate around atom 3 (Oxygen), and only rotate atoms
+    #  [4, 5] (rotating 3 is a no-op)
+    new = init.rotatec(ang, origo=3, atom=[4, 5], only='xyz')
     new.write('image_{}.xyz'.format(i))

@@ -1842,7 +1842,7 @@ electrodes band-structure and the energy levels for the scattering
 part. In for instance molecular electronics it is often useful to
 determine which molecular orbitals are responsible for the
 transmission as well as knowing their hybridization with the substrate
-(electrodes). 
+(electrodes).
 
 \tbtrans\ implements an advanced projection method which splits the
 transmission and DOS into eigenstate projectors.
@@ -1854,9 +1854,14 @@ One important aspect of projection is that the self-energies that are
 to be projected \emph{must} be fully located on the projection
 region. \tbtrans\ will die if this is not enforced.
 
-This method should \emph{not} be confused with projected DOS. The PDOS
-may be obtained if compiled with the NetCDF4 library and via the use
-of \sisl, see Sec.~\ref{sec:physical}.
+These projections should not be confused with local DOS which may be
+obtained if compiled with the NetCDF4 library and via the use of
+\sisl, see Sec.~\ref{sec:physical}.
+
+\note if the \fdf{TBT.Projs} block is defined, then the
+\fdf{TBT.Projs!T} block is required in the input unless
+\fdf{TBT.Projs!Init} is \fdftrue.
+
 
 \begin{fdfentry}{TBT.Projs}[block]
 
