@@ -2963,7 +2963,6 @@ end subroutine get_var_i3_name
     character(len=*), intent(in) :: str
     write(0,"(2a)") 'ncdf: ',trim(str)
     write(6,"(2a)") 'ncdf: ',trim(str)
-    call backtrace()
-    call abort()
+    stop
   end subroutine ncdf_die
 end module netcdf_ncdf
