@@ -307,13 +307,6 @@ $(XC): $(FDF)
 	            "INCFLAGS=-I../MPI" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 
-# In case the user requests compilation of flook
-# we force the compilation of the libfdict
-ifdef USE_FLOOK
-FPPFLAGS += -DFLOOK
-COMP_LIBS += libfdict.a
-endif
-
 #######################
 #  TS-TBT libs:
 #
