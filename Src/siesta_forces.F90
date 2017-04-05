@@ -105,7 +105,7 @@ contains
     use m_initwf, only: initwf
 
 !CC RC
-    use sparse_matrices, only: H_kin_1D, H_vkb_1D
+    use sparse_matrices, only: H_kin_1D, H_vkb_1D !, herm_HDM, MM_HDM
       use class_dSpData1D,  only: val
       use class_dSpData2D,  only: val
 
@@ -193,7 +193,6 @@ contains
     if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') & 
        ' siesta: Calling setup_H0...'
     if ( SIESTA_worker ) call setup_H0(G2max)
-!    stop ' siesta_force: Stopping after setup_H0'
     
 #ifdef SIESTA__PEXSI
     if (ionode) call memory_snapshot("after setup_H0")

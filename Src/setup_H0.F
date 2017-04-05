@@ -21,7 +21,7 @@ C     and initializes data structures on the grid.
       use sparse_matrices, only: Dscf
 
 ! CC RC  Added for the offSpOrb
-      use sparse_matrices, only: H0_SO, listhptr, numh, L_SO ! , listht
+      use sparse_matrices, only: H0_SO, listhptr, numh ! , listht
       use m_nlefsm,        only: nlefsm_SO
       use m_energies,      only: Enl_SO, Enl, Ekin
       use m_spin,          only: spin
@@ -62,10 +62,11 @@ C     and initializes data structures on the grid.
       integer  :: ia, is
 
 ! CC RC  Added for the offSpOrb
-      real(dp)    :: dummy_E_SO, err_H0_SO(6), err_H_vkb
+      real(dp)    :: dummy_E_SO
       real(dp) :: eV = 1._dp / 13.60580_dp
       character(len=1) :: cindent = ' '
-      integer     :: io, ispin, i, j, ind  !, iot
+      integer     :: io, ispin, i, j !, ind, iot
+!      integer     :: ij, ji, js
       complex(dp) :: Hc, Dc
 #ifdef MPI
       real(dp)            :: buffer1
@@ -73,6 +74,8 @@ C     and initializes data structures on the grid.
 ! CC RC  Added for the offSpOrb
 
       real(dp), pointer :: H_val(:), H_so(:,:)
+
+      real(dp) :: err_H0, err_H0_SO(6)
 
 #ifdef DEBUG
       call write_debug( '    PRE setup_H0' )
@@ -200,6 +203,55 @@ C     Add on force field contribution to energy
      &   '    setup_H0: Enl_SO = ', Enl_SO
 
       endif
+
+!CC RC
+c---- check symmetries for H0
+!      err_H0 = 0.0d0; err_H0_SO(1:6) = 0.0d0
+!      do i = 1, no_u
+!       do js = 1, numh(i)
+!        ij = listhptr(i)+js
+!        j = listh(ij)
+!        ji = listhptr(j)+i
+!        if ( ji.lt.ij ) then
+!         err_H0 = max( err_H0, abs(H_val(ij)-H_val(ji)) )
+!         H_val(ij) = 0.5d0*( H_val(ij) + H_val(ji) )
+!         H_val(ji) = H_val(ij)
+!        endif
+!        if ( spin%SO_offsite ) then
+!
+!c------- hermiticity
+!         if ( ji.lt.ij ) then
+!          err_H0_SO(1) = max( err_H0_SO(1),
+!     &                   cdabs(H0_SO(ij,1)-conjg(H0_SO(ji,1))) )
+!          err_H0_SO(2) = max( err_H0_SO(2),
+!     &                   cdabs(H0_SO(ij,2)-conjg(H0_SO(ji,2))) )
+!         endif
+!         err_H0_SO(3) = max( err_H0_SO(3),
+!     &                  cdabs(H0_SO(ij,3)-conjg(H0_SO(ji,4))) )
+!         err_H0_SO(4) = max( err_H0_SO(4),
+!     &                   cdabs(H0_SO(ij,4)-conjg(H0_SO(ji,3))) )
+!
+!c------- spin-box anti-hermitian 
+!         err_H0_SO(5) = max( err_H0_SO(5),
+!     &                  cdabs(H0_SO(ij,3)+conjg(H0_SO(ij,4))) )
+!         err_H0_SO(6) = max( err_H0_SO(6),
+!     &                  cdabs(H0_SO(ij,4)+conjg(H0_SO(ij,3))) )
+!        endif
+!       enddo
+!      enddo
+!
+!c---- Print errors
+!      write(6,'(a,f8.5)') trim(cindent)//
+!     & '    : H0 sym error [eV]=',err_H0/eV
+!      if ( spin%SO_offsite ) then
+!       write(6,'(4x,a,7f8.5)')trim(cindent)//
+!     & ': H0_SO max/sym error  =',maxval(cdabs(H0_SO))/eV,err_H0_SO/eV
+!       if ( (err_H0+maxval(err_H0_SO,1))/eV .gt. 1.0d-4 ) then
+!        write(6,'(a)') 'siesta_H0: ERROR, H0 seems not hermitian!'
+!        stop
+!       endif
+!      endif
+!CC RC
 
 ! ..................
 
