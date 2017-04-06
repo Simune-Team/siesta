@@ -8,11 +8,11 @@
       module m_nlefsm
 
       use precision,     only : dp
-      use sparse_matrices, only: H0_SO
+      use sparse_matrices, only: H0_offsiteSO
 
       implicit none
 
-      public :: nlefsm, nlefsm_SO, calc_Vj_SO
+      public :: nlefsm, nlefsm_offsiteSO, calc_Vj_offsiteSO
 
       private
 
@@ -444,12 +444,12 @@ C     Deallocate local memory
 
 ! CC RC  Added for the offSpOrb
 !
-C nlefsm_SO calculates the KB elements to the total Hamiltonian 
+C nlefsm_offsiteSO calculates the KB elements to the total Hamiltonian 
 C when Off-Site Spin Orbit is included in teh calculation 
-      subroutine nlefsm_SO( scell, nua, na, isa, xa, indxua,
+      subroutine nlefsm_offsiteSO( scell, nua, na, isa, xa, indxua,
      .                      maxnh, maxnd, lasto, lastkb, iphorb, 
      .                      iphKB, numd, listdptr, listd, numh, 
-     .                      listhptr, listh, nspin, Enl, Enl_SO, 
+     .                      listhptr, listh, nspin, Enl, Enl_offsiteSO, 
      .                      fa, stress, H0 , matrix_elements_only)
 
 
@@ -535,7 +535,7 @@ CC RC   OffSpOrb
       real(dp), intent(inout) :: fa(3,nua), stress(3,3)
       real(dp), intent(inout) :: H0(maxnh) 
                                            
-      real(dp), intent(out)   :: Enl, Enl_SO 
+      real(dp), intent(out)   :: Enl, Enl_offsiteSO 
       logical, intent(in)     :: matrix_elements_only
 
       real(dp) ::   volcel
@@ -573,7 +573,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       logical ::   within
       logical, dimension(:), pointer ::  listed, listedall
 
-      complex(dp) :: E_SO(4)
+      complex(dp) :: E_offsiteSO(4)
 
       type(species_info), pointer        :: spp
 
@@ -584,7 +584,7 @@ CC
 C ------------------------------------------------------------
 
 C Start time counte
-      call timer( 'nlefsm_SO', 1 )
+      call timer( 'nlefsm_offsiteSO', 1 )
 
 C Find unit cell volume
       volume = volcel( scell ) * nua / na
@@ -615,14 +615,14 @@ CC-mpi
 C Allocate local memory
 
       nullify( Vi ) ! This is Vion
-      call re_alloc( Vi, 1, no, 'Vi', 'nlefsm_SO' )
+      call re_alloc( Vi, 1, no, 'Vi', 'nlefsm_offsiteSO' )
       Vi(1:no) = 0.0_dp
 CC-mpi
       nullify( listed )
-      call re_alloc( listed, 1, no, 'listed', 'nlefsm_SO' )
+      call re_alloc( listed, 1, no, 'listed', 'nlefsm_offsiteSO' )
       listed(1:no) = .false.
       nullify( listedall )
-      call re_alloc( listedall, 1, no, 'listedall', 'nlefsm_SO' )
+      call re_alloc( listedall, 1, no, 'listedall', 'nlefsm_offsiteSO' )
       listedall(1:no) = .false.
 
 CC RC OffSite
@@ -630,7 +630,7 @@ CC RC OffSite
 
       if (.not. matrix_elements_only) then
        nullify( Di ) 
-       call re_alloc( Di, 1, no, 'Di', 'nlefsm_SO' )
+       call re_alloc( Di, 1, no, 'Di', 'nlefsm_offsiteSO' )
        Di(1:no) = 0.0_dp
 CC RC  OffSite
        allocate( Ds(2,2,no) )
@@ -656,23 +656,23 @@ C Find maximum number of KB projectors of one atom = maxkba
 
 C Allocate local arrays that depend on saved parameters
       nullify( iano )
-      call re_alloc( iano, 1, maxno, 'iano', 'nlefsm_SO' )
+      call re_alloc( iano, 1, maxno, 'iano', 'nlefsm_offsiteSO' )
       nullify( iono )
-      call re_alloc( iono, 1, maxno, 'iono', 'nlefsm_SO' )
+      call re_alloc( iono, 1, maxno, 'iono', 'nlefsm_offsiteSO' )
       nullify( xno )
-      call re_alloc( xno, 1, 3, 1, maxno, 'xno',  'nlefsm_SO' )
+      call re_alloc( xno, 1, 3, 1, maxno, 'xno',  'nlefsm_offsiteSO' )
       nullify( Ski )
-      call re_alloc( Ski, 1, maxkba, 1, maxno, 'Ski', 'nlefsm_SO' )
+      call re_alloc( Ski, 1, maxkba, 1, maxno, 'Ski','nlefsm_offsiteSO')
       nullify( grSki )
       call re_alloc( grSki, 1, 3, 1, maxkba, 1, maxno, 'grSki',
-     &               'nlefsm_SO' )
+     &               'nlefsm_offsiteSO' )
 
 C     Initialize neighb subroutine
       call mneighb( scell, rmax, na, xa, 0, 0, nna )
 
       nd= 0; ndn= 0
-      Enl = 0.0d0; E_SO(1:4)=dcmplx(0.0d0,0.0d0)
-      Enl_SO = 0.0d0
+      Enl = 0.0d0; E_offsiteSO(1:4)=dcmplx(0.0d0,0.0d0)
+      Enl_offsiteSO = 0.0d0
 C     Loop on atoms with KB projectors      
       do ka = 1,na      ! Supercell atoms
        kua = indxua(ka) ! Equivalent atom in the UC
@@ -711,16 +711,16 @@ C         Find overlap between neighbour orbitals and KB projectors
 C          Check maxno - if too small then increase array sizes
            if (nno.eq.maxno) then
             maxno = maxno + 100
-            call re_alloc( iano, 1, maxno, 'iano', 'nlefsm_SO',
+            call re_alloc( iano, 1, maxno, 'iano', 'nlefsm_offsiteSO',
      &                    .true. )
-            call re_alloc( iono, 1, maxno, 'iono', 'nlefsm_SO',
+            call re_alloc( iono, 1, maxno, 'iono', 'nlefsm_offsiteSO',
      &                    .true. )
-            call re_alloc( xno, 1, 3, 1, maxno,'xno', 'nlefsm_SO',
+            call re_alloc( xno, 1, 3, 1, maxno,'xno','nlefsm_offsiteSO',
      &                    .true. )
             call re_alloc( Ski, 1, maxkba, 1, maxno, 'Ski',
-     &                    'nlefsm_SO', .true. )
+     &                    'nlefsm_offsiteSO', .true. )
             call re_alloc( grSki, 1, 3, 1, maxkba, 1, maxno,
-     &                    'grSki', 'nlefsm_SO', .true. )
+     &                    'grSki', 'nlefsm_offsiteSO', .true. )
            endif
            nno = nno + 1  ! Number of neighbour orbitals
            iono(nno) = io ! io orbital of atom ina (neighbour to ka)
@@ -835,7 +835,7 @@ c----------- Compute Vion from j+/-1/2 and V_so
               epsk(1) = epskb(ks,koa1)
               epsk(2) = epskb(ks,koa2)
 
-              call calc_Vj_SO( l, epsk, Ski(koa1:koa2,ino), 
+              call calc_Vj_offsiteSO( l, epsk, Ski(koa1:koa2,ino), 
      &                       Ski(koa1:koa2,jno), grSki(:,koa1:koa2,ino),
      &                       grSki(:,koa1:koa2,jno), Vit, V_sot, F_so )
               Vi(jo) = Vi(jo) + Vit
@@ -845,10 +845,10 @@ c------------ Forces & SO contribution to E_NL
               if (.not. matrix_elements_only) then     
                Enl = Enl +  Di(jo) * Vit
 
-               E_SO(1) = E_SO(1) + V_sot(1,1)*Ds(1,1,jo) ! V(iu,ju)*D(ju,iu)
-               E_SO(2) = E_SO(2) + V_sot(2,2)*Ds(2,2,jo) ! V(id,jd)*D(jd,id)
-               E_SO(3) = E_SO(3) + V_sot(1,2)*Ds(2,1,jo) ! V(iu,jd)*D(jd,iu)
-               E_SO(4) = E_SO(4) + V_sot(2,1)*Ds(1,2,jo) ! V(id,ju)*D(ju,id)
+               E_offsiteSO(1) = E_offsiteSO(1) + V_sot(1,1)*Ds(1,1,jo) ! V(iu,ju)*D(ju,iu)
+               E_offsiteSO(2) = E_offsiteSO(2) + V_sot(2,2)*Ds(2,2,jo) ! V(id,jd)*D(jd,id)
+               E_offsiteSO(3) = E_offsiteSO(3) + V_sot(1,2)*Ds(2,1,jo) ! V(iu,jd)*D(jd,iu)
+               E_offsiteSO(4) = E_offsiteSO(4) + V_sot(2,1)*Ds(1,2,jo) ! V(id,ju)*D(ju,id)
 
                do ix = 1,3
                 fik = 2.0_dp*dreal(Ds(1,1,jo)*F_so(ix,1,1) +
@@ -876,10 +876,10 @@ C-------- Pick up contributions to H and restore Di and Vi
            ind = listhptr(iio)+j
            jo = listh(ind)
            H0(ind) = H0(ind) + Vi(jo)
-           H0_SO(ind,1) = H0_SO(ind,1) + V_so(1,1,jo)
-           H0_SO(ind,2) = H0_SO(ind,2) + V_so(2,2,jo)
-           H0_SO(ind,3) = H0_SO(ind,3) + V_so(1,2,jo)
-           H0_SO(ind,4) = H0_SO(ind,4) + V_so(2,1,jo)
+           H0_offsiteSO(ind,1) = H0_offsiteSO(ind,1) + V_so(1,1,jo)
+           H0_offsiteSO(ind,2) = H0_offsiteSO(ind,2) + V_so(2,2,jo)
+           H0_offsiteSO(ind,3) = H0_offsiteSO(ind,3) + V_so(1,2,jo)
+           H0_offsiteSO(ind,4) = H0_offsiteSO(ind,4) + V_so(2,1,jo)
 
 CC-mpi
 CC RC  Careful with this Vi()
@@ -893,35 +893,35 @@ CC-mpi
       enddo       ! atoms with KB projectors loop
 
       if (.not. matrix_elements_only) then
-       Enl_SO = sum( dreal(E_SO(1:4)) )
-!       write(spin%iout_SO,'(a,8f10.4)') 'Enl/E_SO[eV]=',Enl*Rydberg,
-!     &                   Enl_SO*Rydberg, dreal(E_SO*Rydberg)
-!       write(spin%iout_SO,*) ' Enl_SO = ',  Enl_SO
+       Enl_offsiteSO = sum( dreal(E_offsiteSO(1:4)) )
+!       write(spin%iout_offsiteSO,'(a,8f10.4)') 'Enl/E_offsiteSO[eV]=',Enl*Rydberg,
+!     &                   Enl_offsiteSO*Rydberg, dreal(E_offsiteSO*Rydberg)
+!       write(spin%iout_offsiteSO,*) ' Enl_offsiteSO = ',  Enl_offsiteSO
 
-!       write(spin%iout_SO,'(a,6f10.4)') 'Real[E_SO]=',
-!     &     dreal(E_SO*13.6058d0)
-!       write(spin%iout_SO,'(a,6f10.4)') 'Imag[E_SO]=',
-!     &     dimag(E_SO*13.6058d0)
+!       write(spin%iout_offsiteSO,'(a,6f10.4)') 'Real[E_offsiteSO]=',
+!     &     dreal(E_offsiteSO*13.6058d0)
+!       write(spin%iout_offsiteSO,'(a,6f10.4)') 'Imag[E_offsiteSO]=',
+!     &     dimag(E_offsiteSO*13.6058d0)
       endif
 
 
 C     Deallocate local memory
 !      call new_MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
       call reset_neighbour_arrays( )
-      call de_alloc( grSki, 'grSki', 'nlefsm_SO' )
-      call de_alloc( Ski, 'Ski', 'nlefsm_SO' )
-      call de_alloc( xno, 'xno', 'nlefsm_SO' )
-      call de_alloc( iono, 'iono', 'nlefsm_SO' )
-      call de_alloc( iano, 'iano', 'nlefsm_SO' )
+      call de_alloc( grSki, 'grSki', 'nlefsm_offsiteSO' )
+      call de_alloc( Ski, 'Ski', 'nlefsm_offsiteSO' )
+      call de_alloc( xno, 'xno', 'nlefsm_offsiteSO' )
+      call de_alloc( iono, 'iono', 'nlefsm_offsiteSO' )
+      call de_alloc( iano, 'iano', 'nlefsm_offsiteSO' )
 CC-mpi
-      call de_alloc( listedall, 'listedall', 'nlefsm_SO' )
-      call de_alloc( listed, 'listed', 'nlefsm_SO' )
-      call de_alloc( Vi, 'Vi', 'nlefsm_SO' )
-c      call de_alloc( Di, 'Di', 'nlefsm_SO' )
+      call de_alloc( listedall, 'listedall', 'nlefsm_offsiteSO' )
+      call de_alloc( listed, 'listed', 'nlefsm_offsiteSO' )
+      call de_alloc( Vi, 'Vi', 'nlefsm_offsiteSO' )
+c      call de_alloc( Di, 'Di', 'nlefsm_offsiteSO' )
       deallocate( V_so )
 
       if (.not. matrix_elements_only) then
-         call de_alloc( Di, 'Di', 'nlefsm_SO' )
+         call de_alloc( Di, 'Di', 'nlefsm_offsiteSO' )
          deallocate( Ds )
       endif
 
@@ -929,9 +929,9 @@ CC
 C      write(6,*) 'nd/ndn/nh=',nd,ndn,maxnh
 
 
-      call timer( 'nlefsm_SO', 2 )
+      call timer( 'nlefsm_offsiteSO', 2 )
 
-      end subroutine nlefsm_SO
+      end subroutine nlefsm_offsiteSO
 
 c-----------------------------------------------------------------------
 c
@@ -939,7 +939,7 @@ c
 !!   <i|V_NL|j>, where V_NL= Sum_{j,mj} |V,j,mj><V,j,mj|
 c
 c-----------------------------------------------------------------------
-      subroutine calc_Vj_SO( l, epskb, Ski, Skj, grSki, grSkj,
+      subroutine calc_Vj_offsiteSO( l, epskb, Ski, Skj, grSki, grSkj,
      &                       V_ion, V_so, F_so )
 
       implicit none
@@ -1082,6 +1082,6 @@ c---- substract out V_ion
       V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0)*V_ion
 
       return
-      end subroutine calc_Vj_SO
+      end subroutine calc_Vj_offsiteSO
 
       end module m_nlefsm

@@ -30,7 +30,7 @@
      &                    rmaxo, no_l, iza
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
-      use m_nlefsm,     only: nlefsm, nlefsm_SO
+      use m_nlefsm,     only: nlefsm, nlefsm_offsiteSO
       use m_overfsm,    only: overfsm
       use m_kinefsm,    only: kinefsm
       use m_naefs,      only: naefs
@@ -47,7 +47,6 @@
       use m_steps, only: istp
       use m_ntm
       use m_spin,          only: spin
-      use sparse_matrices, only: L_SO
       use spinorbit,       only: spinorb
       use m_dipol
       use m_forces,          only: fa
@@ -102,7 +101,6 @@
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
       real(dp)              :: buffer1
-      real(dp)              :: L_av_tmp(3) 
       integer               :: MPIerror 
 #endif
 #ifdef TRANSIESTA
@@ -115,7 +113,6 @@
 #endif
 #endif
 
-      real(dp) :: L_av_SO(3)
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -183,19 +180,19 @@
       Enl = buffer1
 #endif
       else ! OffSpOrb
-       call nlefsm_SO(scell, na_u, na_s, isa, xa, indxua,
+       call nlefsm_offsiteSO(scell, na_u, na_s, isa, xa, indxua,
      &                maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
      &                numh, listhptr, listh, numh, listhptr, listh,
      &                spin%Grid,
-     &                Enl, Enl_SO, fal,
+     &                Enl, Enl_offsiteSO, fal,
      &                stressl, H_tmp,
      &                matrix_elements_only=.false.)
 #ifdef MPI
 ! Global reduction of energy terms
       call globalize_sum(Enl,buffer1)
       Enl = buffer1
-      call globalize_sum(Enl_SO,buffer1)
-      Enl_SO = buffer1
+      call globalize_sum(Enl_offsiteSO,buffer1)
+      Enl_offsiteSO = buffer1
 #endif
       endif
 ! CC RC  Added for the offSpOrb

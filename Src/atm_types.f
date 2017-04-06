@@ -102,7 +102,7 @@
 !     For each j, pj_mj will have (2j+1) values and each one of them 
 !     will belong to a one projector.  
 !    
-         integer, dimension(maxnprojs) ::  jso ! J_SO=1,2 for each proj
+         integer, dimension(maxnprojs) ::  jso ! J_offsiteSO=1,2 for each proj
          real   , dimension(maxnprojs) ::  pj_j
          real   , dimension(maxnprojs) ::  pj_mj
 !

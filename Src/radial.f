@@ -19,8 +19,9 @@
       public :: radial_dump_xml, reset_rad_func
 
 ! CC RC  Added for the offSpOrb
-      public :: rad_alloc_SO, rad_get_KB, radial_dump_ascii_SO 
-      public :: radial_dump_xml_SO
+      public :: rad_alloc_offsiteSO, rad_get_KB,
+     &          radial_dump_ascii_offsiteSO 
+      public :: radial_dump_xml_offsiteSO
 ! CC RC  Added for the offSpOrb
 
       public :: rad_func
@@ -33,10 +34,10 @@
          real(dp), pointer :: d2(:)=>null()  ! 2nd derivative
 
 ! CC RC  Added for the offSpOrb
-         double precision  cutoff_SO
-         double precision, dimension(2) :: delta_SO
-         double precision, pointer      :: f_SO(:,:)=>null()   ! Actual data
-         double precision, pointer      :: d2_SO(:,:)=>null()  ! 2nd derivative
+         double precision  cutoff_offsiteSO
+         double precision, dimension(2) :: delta_offsiteSO
+         double precision, pointer      :: f_offsiteSO(:,:)=>null()   ! Actual data
+         double precision, pointer      :: d2_offsiteSO(:,:)=>null()  ! 2nd derivative
 
          integer, dimension(50)         :: jso    ! j = 1 or 2 for each KB proj. 
 ! CC RC  Added for the offSpOrb
@@ -72,7 +73,7 @@
       end subroutine rad_alloc
 !
 ! CC RC  Added for the offSpOrb
-      subroutine rad_alloc_SO(func,n)
+      subroutine rad_alloc_offsiteSO(func,n)
       use alloc, only: re_alloc
       implicit none
 !
@@ -81,10 +82,12 @@
       type(rad_func), intent(inout)    :: func
       integer, intent(in)        :: n
       func%n = n
-      nullify(func%f_SO,func%d2_SO)
-      call re_alloc( func%f_SO,1,n,1,2,'func%f_SO','rad_alloc_SO' )
-      call re_alloc( func%d2_SO,1,n,1,2,'func%d2_SO','rad_alloc_SO' )
-      end subroutine rad_alloc_SO
+      nullify(func%f_offsiteSO,func%d2_offsiteSO)
+      call re_alloc( func%f_offsiteSO,1,n,1,2,'func%f_offsiteSO',
+     &               'rad_alloc_offsiteSO' )
+      call re_alloc( func%d2_offsiteSO,1,n,1,2,'func%d2_offsiteSO',
+     &               'rad_alloc_offsiteSO' )
+      end subroutine rad_alloc_offsiteSO
 ! CC RC  Added for the offSpOrb
 !
       subroutine rad_get(func,r,fr,dfdr)
@@ -114,8 +117,9 @@
           fr = 0._dp
           dfdr = 0._dp
        else
-          call splint(func%delta_SO(abs(ik)),func%f_SO(:,abs(ik)),
-     &                func%d2_SO(:,abs(ik)),func%n,r,fr,dfdr)
+          call splint(func%delta_offsiteSO(abs(ik)),
+     &                func%f_offsiteSO(:,abs(ik)),
+     &                func%d2_offsiteSO(:,abs(ik)),func%n,r,fr,dfdr)
        endif
 
       end subroutine rad_get_KB
@@ -221,30 +225,33 @@
 !
 !--------------------------------------------------------------------
 ! CC RC  Added for the offSpOrb
-      subroutine radial_dump_xml_SO(j_SO,op,lun)
+      subroutine radial_dump_xml_offsiteSO(j_offsiteSO,op,lun)
 
       type(rad_func)    :: op
       integer lun
-      integer j_SO
+      integer j_offsiteSO
       integer j
 
       write(lun,'(a)') '<radfunc>'
       call xml_dump_element(lun,'npts',str(op%n))
-      call xml_dump_element(lun,'delta_SO',str(op%delta_SO(j_SO)))
-      call xml_dump_element(lun,'cutoff_SO',str(op%cutoff_SO))
+      call xml_dump_element(lun,'delta_offsiteSO',
+     &                      str(op%delta_offsiteSO(j_offsiteSO)))
+      call xml_dump_element(lun,'cutoff_offsiteSO',
+     &                      str(op%cutoff_offsiteSO))
       write(lun,'(a)') '<data>'
       do j=1,op%n
-        write(lun,'(2g22.12)') (j-1)*op%delta_SO(j_SO), op%f_SO(j,j_SO)
+        write(lun,'(2g22.12)') (j-1)*op%delta_offsiteSO(j_offsiteSO), 
+     &                         op%f_offsiteSO(j,j_offsiteSO)
       enddo
       write(lun,'(a)') '</data>'
       write(lun,'(a)') '</radfunc>'
-      end subroutine radial_dump_xml_SO
+      end subroutine radial_dump_xml_offsiteSO
 !
 !--------------------------------------------------------------------
-      subroutine radial_dump_ascii_SO(j_SO,op,lun,header)
+      subroutine radial_dump_ascii_offsiteSO(j_offsiteSO,op,lun,header)
       type(rad_func)      :: op
       integer             :: lun
-      integer             :: j_SO
+      integer             :: j_offsiteSO
       logical, intent(in), optional :: header
 
       integer :: j
@@ -259,15 +266,16 @@
       endif
 !
       if (print_header) then
-         write(lun,'(2i4,2g22.12,a)') op%n, j_SO,
-     $        op%delta_SO(j_SO), op%cutoff_SO,
-     $         " # npts, j_SO,  delta, cutoff"
+         write(lun,'(2i4,2g22.12,a)') op%n, j_offsiteSO,
+     $        op%delta_offsiteSO(j_offsiteSO), op%cutoff_offsiteSO,
+     $         " # npts, j_offsiteSO,  delta, cutoff"
       endif
       do j=1,op%n
-         write(lun,'(2g22.12)') (j-1)*op%delta_SO(j_SO), op%f_SO(j,j_SO)
+         write(lun,'(2g22.12)') (j-1)*op%delta_offsiteSO(j_offsiteSO), 
+     &                          op%f_offsiteSO(j,j_offsiteSO)
       enddo
 
-      end subroutine radial_dump_ascii_SO
+      end subroutine radial_dump_ascii_offsiteSO
 !
 ! CC RC  Added for the offSpOrb
 !

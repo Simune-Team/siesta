@@ -10,7 +10,7 @@ module m_rhoofd
   implicit none
 
   private
-  public :: rhoofd  ! , rhoofd_SO
+  public :: rhoofd  ! , rhoofd_offsiteSO
 
 contains
 
@@ -491,7 +491,7 @@ contains
 end subroutine rhoofd
 
 
-!      subroutine rhoofd_SO( nuo, no, np, nspin, rhoscf, &
+!      subroutine rhoofd_offsiteSO( nuo, no, np, nspin, rhoscf, &
 !                        nh, numh, listhptr, listh, Dscf )
 !C ********************************************************************
 !C Finds the SCF density at the mesh points from the density matrix.
@@ -632,6 +632,6 @@ end subroutine rhoofd
 !!C  Free local memory
 !      deallocate( Dlocal, lDlocal )
 !
-!      end subroutine rhoofd_SO
+!      end subroutine rhoofd_offsiteSO
 
 end module m_rhoofd

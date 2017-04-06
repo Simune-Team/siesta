@@ -41,7 +41,7 @@ module t_spin
      logical :: SO_offsite = .false.
 
 !CC RC  Added for the offSpOrb
-     integer :: iout_SO
+     integer :: iout_offsiteSO
      logical :: deb_offSO = .false.
      logical :: deb_P = .false. ! Spin Polarized debugging
 !CC RC  Added for the offSpOrb
@@ -125,7 +125,7 @@ contains
     use files, only: slabel
     use parallel, only: IONode
 
-    character(len=30) :: fname_SO
+    character(len=30) :: fname_offsiteSO
 ! CC RC   Added for the offSpOrb
 
     character(len=32) :: opt
@@ -244,22 +244,22 @@ contains
 
 !CC RC  Added for the offSpOrb
     if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-     fname_SO = trim(slabel)//'.offSO'
-     call io_assign(spin%iout_SO)
-     open(unit=spin%iout_SO,file=fname_SO,form='formatted',status='unknown')
-     write(spin%iout_SO,'(a)') '    ' 
-     write(spin%iout_SO,'(a)') & 
+     fname_offsiteSO = trim(slabel)//'.offSO'
+     call io_assign(spin%iout_offsiteSO)
+     open(unit=spin%iout_offsiteSO,file=fname_offsiteSO,form='formatted',status='unknown')
+     write(spin%iout_offsiteSO,'(a)') '    ' 
+     write(spin%iout_offsiteSO,'(a)') & 
          '       ############################################    '
-     write(spin%iout_SO,'(a)') &
+     write(spin%iout_offsiteSO,'(a)') &
          '       #    Off-Site Spin-Orbit debugging file    #    '
-     write(spin%iout_SO,'(a)') &
+     write(spin%iout_offsiteSO,'(a)') &
          '       ############################################    '
-     write(spin%iout_SO,'(a)') '    ' 
+     write(spin%iout_offsiteSO,'(a)') '    ' 
      if ( spin%deb_offSO ) &
-        write(spin%iout_SO,'(a)') ' m_spin: Spin-Orbit debugging' 
+        write(spin%iout_offsiteSO,'(a)') ' m_spin: Spin-Orbit debugging' 
      if ( spin%deb_P ) &
-        write(spin%iout_SO,'(a)') ' m_spin: Spin-Polarized debugging' 
-     write(spin%iout_SO,'(a)') '    ' 
+        write(spin%iout_offsiteSO,'(a)') ' m_spin: Spin-Polarized debugging' 
+     write(spin%iout_offsiteSO,'(a)') '    ' 
     endif
 !CC RC  Added for the offSpOrb
 

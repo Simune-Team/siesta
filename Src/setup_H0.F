@@ -21,9 +21,9 @@ C     and initializes data structures on the grid.
       use sparse_matrices, only: Dscf
 
 ! CC RC  Added for the offSpOrb
-      use sparse_matrices, only: H0_SO, listhptr, numh ! , listht
-      use m_nlefsm,        only: nlefsm_SO
-      use m_energies,      only: Enl_SO, Enl, Ekin
+      use sparse_matrices, only: H0_offsiteSO, listhptr, numh ! , listht
+      use m_nlefsm,        only: nlefsm_offsiteSO
+      use m_energies,      only: Enl_offsiteSO, Enl, Ekin
       use m_spin,          only: spin
       use parallel,        only: IONode
       use atomlist,        only: no_u
@@ -62,7 +62,7 @@ C     and initializes data structures on the grid.
       integer  :: ia, is
 
 ! CC RC  Added for the offSpOrb
-      real(dp)    :: dummy_E_SO
+      real(dp)    :: dummy_E_offsiteSO
       real(dp) :: eV = 1._dp / 13.60580_dp
       character(len=1) :: cindent = ' '
       integer     :: io, ispin, i, j !, ind, iot
@@ -75,7 +75,7 @@ C     and initializes data structures on the grid.
 
       real(dp), pointer :: H_val(:), H_so(:,:)
 
-      real(dp) :: err_H0, err_H0_SO(6)
+      real(dp) :: err_H0, err_H0_offsiteSO(6)
 
 #ifdef DEBUG
       call write_debug( '    PRE setup_H0' )
@@ -96,7 +96,7 @@ C     Self-energy of isolated ions
 
 !     Neutral-atom: energy
 
-      if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
+      if( IONode .and. spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)')
      &   '    setup_H0: Calling naefs & dnaefs...'
       call naefs(na_u, na_s, scell, xa, indxua, rmaxv,
      &           isa, Ena, dummy_fa, dummy_stress,
@@ -125,7 +125,7 @@ C     Add on force field contribution to energy
 !$OMP parallel workshare default(shared)
       H_val(:) = 0.0_dp
 !$OMP end parallel workshare
-      if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
+      if( IONode .and. spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)')
      &  '    setup_H0: Calling kinefsm...'
       call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, maxnh, lasto, iphorb, isa, 
@@ -143,7 +143,7 @@ C     Add on force field contribution to energy
 
 
       if ( .not.spin%SO_offsite ) then
-       if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
+       if(IONode .and. spin%deb_offSO) write(spin%iout_offsiteSO,'(a)')
      &  '    setup_H0: Calling nlefsm...'
        call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
      &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
@@ -153,60 +153,60 @@ C     Add on force field contribution to energy
      &             H_val,
      &             matrix_elements_only=.true.) 
       elseif ( spin%SO_offsite ) then
-        H0_SO=dcmplx(0.0d0,0.0d0)
-        if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)')  
-     &   '    setup_H0: Calling nlefsm_SO...'
-        call nlefsm_SO(scell, na_u, na_s, isa, xa, indxua,
+        H0_offsiteSO=dcmplx(0.0d0,0.0d0)
+        if(IONode .and. spin%deb_offSO) write(spin%iout_offsiteSO,'(a)')
+     &   '    setup_H0: Calling nlefsm_offsiteSO...'
+        call nlefsm_offsiteSO(scell, na_u, na_s, isa, xa, indxua,
      &                 maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
      &                 numh, listhptr, listh, numh, listhptr, listh,
      &                 spin%Grid,
-     &                 dummy_E, dummy_E_SO, dummy_fa,
+     &                 dummy_E, dummy_E_offsiteSO, dummy_fa,
      &                 dummy_stress, H_val,
      &                 matrix_elements_only=.true.)
 
 
-        Enl_SO = 0.0d0
+        Enl_offsiteSO = 0.0d0
         do io = 1, maxnh
 !          iot = listht(io)
 
-!-------- Enl_SO(u,u)
+!-------- Enl_offsiteSO(u,u)
 !          Dc = cmplx(Dscf(iot,1), Dscf(iot,5))
           Dc = cmplx(Dscf(io,1), -Dscf(io,5))
-          Hc = H0_SO(io,1)
-          Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(d,d)
+          Hc = H0_offsiteSO(io,1)
+          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+!-------- Enl_offsiteSO(d,d)
 !          Dc = cmplx(Dscf(iot,2), Dscf(iot,6))
           Dc = cmplx(Dscf(io,2), -Dscf(io,6))
-          Hc = H0_SO(io,2)
-          Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(u,d)
+          Hc = H0_offsiteSO(io,2)
+          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+!-------- Enl_offsiteSO(u,d)
 !          Dc = cmplx(Dscf(iot,3), Dscf(iot,4))
           Dc = cmplx(Dscf(io,7), -Dscf(io,8))
-          Hc = H0_SO(io,4)
-          Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(d,u)
+          Hc = H0_offsiteSO(io,4)
+          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+!-------- Enl_offsiteSO(d,u)
 !          Dc = cmplx(Dscf(iot,7), Dscf(iot,8))
           Dc = cmplx(Dscf(io,3), -Dscf(io,4))
-          Hc = H0_SO(io,3)
-          Enl_SO = Enl_SO + real( Hc*Dc )
+          Hc = H0_offsiteSO(io,3)
+          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 
         enddo
 
 #ifdef MPI
 ! Global reduction of Ekin, Enl and Eso 
-      call globalize_sum(Enl_SO,buffer1)
-      Enl_SO = buffer1
+      call globalize_sum(Enl_offsiteSO,buffer1)
+      Enl_offsiteSO = buffer1
 #endif
 
         if ( IONode .and. spin%deb_offSO ) 
-     &   write(spin%iout_SO,'(a,f14.10)')
-     &   '    setup_H0: Enl_SO = ', Enl_SO
+     &   write(spin%iout_offsiteSO,'(a,f14.10)')
+     &   '    setup_H0: Enl_offsiteSO = ', Enl_offsiteSO
 
       endif
 
 !CC RC
 c---- check symmetries for H0
-!      err_H0 = 0.0d0; err_H0_SO(1:6) = 0.0d0
+!      err_H0 = 0.0d0; err_H0_offsiteSO(1:6) = 0.0d0
 !      do i = 1, no_u
 !       do js = 1, numh(i)
 !        ij = listhptr(i)+js
@@ -221,21 +221,21 @@ c---- check symmetries for H0
 !
 !c------- hermiticity
 !         if ( ji.lt.ij ) then
-!          err_H0_SO(1) = max( err_H0_SO(1),
-!     &                   cdabs(H0_SO(ij,1)-conjg(H0_SO(ji,1))) )
-!          err_H0_SO(2) = max( err_H0_SO(2),
-!     &                   cdabs(H0_SO(ij,2)-conjg(H0_SO(ji,2))) )
+!          err_H0_offsiteSO(1) = max( err_H0_offsiteSO(1),
+!     &                   cdabs(H0_offsiteSO(ij,1)-conjg(H0_offsiteSO(ji,1))) )
+!          err_H0_offsiteSO(2) = max( err_H0_offsiteSO(2),
+!     &                   cdabs(H0_offsiteSO(ij,2)-conjg(H0_offsiteSO(ji,2))) )
 !         endif
-!         err_H0_SO(3) = max( err_H0_SO(3),
-!     &                  cdabs(H0_SO(ij,3)-conjg(H0_SO(ji,4))) )
-!         err_H0_SO(4) = max( err_H0_SO(4),
-!     &                   cdabs(H0_SO(ij,4)-conjg(H0_SO(ji,3))) )
+!         err_H0_offsiteSO(3) = max( err_H0_offsiteSO(3),
+!     &                  cdabs(H0_offsiteSO(ij,3)-conjg(H0_offsiteSO(ji,4))) )
+!         err_H0_offsiteSO(4) = max( err_H0_offsiteSO(4),
+!     &                   cdabs(H0_offsiteSO(ij,4)-conjg(H0_offsiteSO(ji,3))) )
 !
 !c------- spin-box anti-hermitian 
-!         err_H0_SO(5) = max( err_H0_SO(5),
-!     &                  cdabs(H0_SO(ij,3)+conjg(H0_SO(ij,4))) )
-!         err_H0_SO(6) = max( err_H0_SO(6),
-!     &                  cdabs(H0_SO(ij,4)+conjg(H0_SO(ij,3))) )
+!         err_H0_offsiteSO(5) = max( err_H0_offsiteSO(5),
+!     &                  cdabs(H0_offsiteSO(ij,3)+conjg(H0_offsiteSO(ij,4))) )
+!         err_H0_offsiteSO(6) = max( err_H0_offsiteSO(6),
+!     &                  cdabs(H0_offsiteSO(ij,4)+conjg(H0_offsiteSO(ij,3))) )
 !        endif
 !       enddo
 !      enddo
@@ -245,8 +245,8 @@ c---- check symmetries for H0
 !     & '    : H0 sym error [eV]=',err_H0/eV
 !      if ( spin%SO_offsite ) then
 !       write(6,'(4x,a,7f8.5)')trim(cindent)//
-!     & ': H0_SO max/sym error  =',maxval(cdabs(H0_SO))/eV,err_H0_SO/eV
-!       if ( (err_H0+maxval(err_H0_SO,1))/eV .gt. 1.0d-4 ) then
+!     & ': H0_offsiteSO max/sym error  =',maxval(cdabs(H0_offsiteSO))/eV,err_H0_offsiteSO/eV
+!       if ( (err_H0+maxval(err_H0_offsiteSO,1))/eV .gt. 1.0d-4 ) then
 !        write(6,'(a)') 'siesta_H0: ERROR, H0 seems not hermitian!'
 !        stop
 !       endif
@@ -277,7 +277,7 @@ c---- check symmetries for H0
       end if
 
       if ( IONode .and. spin%deb_offSO ) 
-     &     write(spin%iout_SO,'(a)') ' setup_H0: Before dhscf_init'
+     &  write(spin%iout_offsiteSO,'(a)') ' setup_H0: Before dhscf_init'
 
 C     This will take care of possible changes to the mesh and atomic-related
 C     mesh structures for geometry changes
@@ -290,7 +290,7 @@ C     mesh structures for geometry changes
      &                 dummy_fa, dummy_stress)
 
       if ( IONode .and. spin%deb_offSO ) 
-     &   write(spin%iout_SO,'(a)') ' setup_H0: After dhscf_init'
+     &   write(spin%iout_offsiteSO,'(a)') ' setup_H0: After dhscf_init'
   
       call timer('Setup_H0',2)
 

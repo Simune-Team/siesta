@@ -491,9 +491,9 @@ C Sanity checks on values
 
 ! CC RC  Added for the offSpOrb
             if ( IONode .and. spin%deb_offSO ) then 
-             write(spin%iout_SO,'(a)')
+             write(spin%iout_offsiteSO,'(a)')
      .        '       readkb: KBs not requested by user...' 
-             write(spin%iout_SO,'(a,i3)') 
+             write(spin%iout_offsiteSO,'(a,i3)') 
      .        '       readkb: Max number of KBs per specie = ', 
      .        basp%lmxkb
             endif
@@ -529,7 +529,7 @@ C Sanity checks on values
 
 ! CC RC  Added for the offSpOrb
             if ( IONode .and. spin%deb_offSO ) then 
-             write(spin%iout_SO,'(a,i3,2e22.10)') 
+             write(spin%iout_offsiteSO,'(a,i3,2e22.10)') 
      .        '       readkb: l, erefkb = ', l, k%erefkb
             endif
 ! CC RC  Added for the offSpOrb

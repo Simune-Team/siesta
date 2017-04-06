@@ -152,7 +152,7 @@ contains
 
     if ( SIESTA_worker )  then
        ! Initialization tasks for a given geometry
-       if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') & 
+       if ( IONode .and. spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)') & 
          ' siesta: Calling state_init before selfconsistency loop'
        call state_init( istep )
     end if
@@ -190,7 +190,7 @@ contains
     ! putting the grid initialization into state_init and moving the
     ! calculation of H_0 to the body of the loop, done if first_scf=.true.  This
     ! would suit "analysis" runs in which nscf = 0
-    if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') & 
+    if ( IONode .and. spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)') & 
        ' siesta: Calling setup_H0...'
     if ( SIESTA_worker ) call setup_H0(G2max)
     
@@ -264,7 +264,7 @@ contains
     ! -- At the change to a TranSiesta GF run the variable "first_scf"
     !    is implicitly reset to "true".
 
-    if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') & 
+    if ( IONode .and. spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)') & 
        ' siesta_forces: Starting the selfconsistency... '
     ! Start of SCF loop
     iscf = 0
@@ -297,7 +297,7 @@ contains
                 else
 ! CC RC
                  if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-                  write(spin%iout_SO,'(a,f16.10)') & 
+                  write(spin%iout_offsiteSO,'(a,f16.10)') & 
                    ' siesta_forces: First call to setup_hamiltonian...'
                  endif
                    call setup_hamiltonian( iscf )
@@ -305,7 +305,7 @@ contains
              end if
 
              if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-              write(spin%iout_SO,'(a,f16.10)') & 
+              write(spin%iout_offsiteSO,'(a,f16.10)') & 
                ' siesta_forces: Calling to compute_DM...'
              endif
 
@@ -317,7 +317,7 @@ contains
                   call compute_max_diff(Eold, Escf, dEmax)
 ! CC RC
              if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-              write(spin%iout_SO,'(a,f16.10)') & 
+              write(spin%iout_offsiteSO,'(a,f16.10)') & 
                ' siesta_forces: Calling to setup_hamiltonian'
              endif
              call setup_hamiltonian( iscf )

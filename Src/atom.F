@@ -27,8 +27,8 @@
 !
       use old_atmfuncs, only: tabpol, rcpoltb, table, tab2
 ! CC RC  Added for the offSpOrb
-      use old_atmfuncs, only: table_SO, tab2_SO
-      use old_atmfuncs, only: rctb_SO
+      use old_atmfuncs, only: table_offsiteSO, tab2_offsiteSO
+      use old_atmfuncs, only: rctb_offsiteSO
 ! CC RC  Added for the offSpOrb
       use old_atmfuncs, only: coretab, smasstb, tab2pol
       use old_atmfuncs, only: zvaltb, chargesave, nkbmax, nomax
@@ -313,7 +313,8 @@
 ! 
 ! 
            
-         if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(2a)') 
+         if ( IONode .and. spin%deb_offSO )
+     &       write(spin%iout_offsiteSO,'(2a)') 
      &     '       atom: Calling new_specie... ', atm_label
         call new_specie(iz,lmxkb, nkbl, lmxo,
      .                  nzeta, atm_label,
@@ -329,10 +330,12 @@
 ! 
 ! CC RC  Added for the offSpOrb
          if ( spin%SO_offsite ) then
-          if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
-     &     '       atom: Calling read_vps_SO... '
-          call read_vps_SO(lmxo, lmxkb, nrval,a,b,rofi,drdi,s,vps_u,
-     .       vps_d, rho, chcore, zval, chgvps, nicore, irel, icorr,basp)
+          if ( IONode .and. spin%deb_offSO ) 
+     &        write(spin%iout_offsiteSO,'(a)') 
+     &     '       atom: Calling read_vps_offsiteSO... '
+          call read_vps_offsiteSO(lmxo, lmxkb, nrval,a,b,rofi,drdi,s,
+     .       vps_u,vps_d, rho, chcore, zval, chgvps, nicore, irel, 
+     .       icorr,basp)
          else
           call read_vps(lmxo, lmxkb, nrval,a,b,rofi,drdi,s,vps,
      .        rho, chcore, zval, chgvps, nicore, irel, icorr,basp) 
@@ -593,9 +596,9 @@ c    .          'atom: The above configuration will be used ',
 ! CC RC  Updated for the offSpOrb
             if ( spin%SO_offsite ) then
              if ( IONode .and. spin%deb_offSO ) 
-     .           write(spin%iout_SO,'(a)') 
-     &           '       atom: Calling KBgen_SO... '
-             call KBgen_SO(is, a,b,rofi,drdi,s, vps_u, 
+     .           write(spin%iout_offsiteSO,'(a)') 
+     &           '       atom: Calling KBgen_offsiteSO... '
+             call KBgen_offsiteSO(is, a,b,rofi,drdi,s, vps_u, 
      .                     vps_d, vlocal, ve, nrval, Zval, 
      .                     lmxkb, nkbl, erefkb, nkb) 
             else
@@ -1902,8 +1905,8 @@ c     write(6,*) 'GHOST: First excited state for L=',l,elocal2
         end subroutine ghost
 !
 ! CC RC  Added for the offSpOrb
-      subroutine KBproj_SO(ikb,rofi,drdi,vps,j_SO,vlocal,nrwf,l,rphi,
-     .    dkbcos,ekb,proj,nrc)  
+      subroutine KBproj_offsiteSO(ikb,rofi,drdi,vps,j_offsiteSO,vlocal,
+     .    nrwf,l,rphi,dkbcos,ekb,proj,nrc)  
 C
 C  This routine calculates the Kleinman-Bylander projector
 C  with angular momentum l.
@@ -1914,7 +1917,7 @@ C
         implicit none
 
         ! ikb is the KB index for this l
-        integer, intent(in)   :: ikb, nrwf, l, j_SO ! offS-SO
+        integer, intent(in)   :: ikb, nrwf, l, j_offsiteSO ! offS-SO
         real(dp), intent(in)  :: rofi(*),vps(*),drdi(*),
      .                           rphi(*), vlocal(*)
         real(dp), intent(out) :: proj(*), dkbcos, ekb
@@ -1941,7 +1944,7 @@ C We need to orthogonalize to the previous projectors.
 C We follow the scheme proposed by Blochl, PRB 41, 5414 (1990)
         if (ikb.eq.1) then 
           do ir=1,nrwf
-            rphi2(ir,1,j_SO)=rphi(ir)
+            rphi2(ir,1,j_offsiteSO)=rphi(ir)
           enddo 
         else
           do jkb=1,ikb-1
@@ -1949,17 +1952,17 @@ C We follow the scheme proposed by Blochl, PRB 41, 5414 (1990)
             do ir=1,nrwf
               vl=vps(ir)-vlocal(ir)
               sum=sum+
-     .          rphi(ir)*vl*rphi2(ir,jkb,j_SO)*drdi(ir)
+     .          rphi(ir)*vl*rphi2(ir,jkb,j_offsiteSO)*drdi(ir)
             enddo
             vij(jkb)=sum
           enddo
           do ir=1,nrwf
             sum=0.0d0
             do jkb=1,ikb-1
-              sum=sum+
-     .          vij(jkb)*rphi2(ir,jkb,j_SO)/(vii(jkb,j_SO)+1.0d-20)
+              sum=sum+ vij(jkb)*
+     .         rphi2(ir,jkb,j_offsiteSO)/(vii(jkb,j_offsiteSO)+1.0d-20)
             enddo
-            rphi2(ir,ikb,j_SO)=rphi(ir)-sum
+            rphi2(ir,ikb,j_offsiteSO)=rphi(ir)-sum
           enddo
         endif
 
@@ -1967,26 +1970,26 @@ C Normalize the new function
         dnrm=0.0d0
         do ir=1,nrwf
           dnrm=dnrm
-     .      + drdi(ir)*(rphi2(ir,ikb,j_SO)**2)
+     .      + drdi(ir)*(rphi2(ir,ikb,j_offsiteSO)**2)
         enddo 
         dnrm=sqrt(dnrm)
 CC
         write(6,'(a,2f12.6)') ' dnrm/eps = ', dnrm, eps
         if (dnrm.lt.eps) then 
           do ir=1,nrwf
-            rphi2(ir,ikb,j_SO)=0.0d0
+            rphi2(ir,ikb,j_offsiteSO)=0.0d0
           enddo 
         else
-C          write(6,'(a,2i4)') ' ikb, j_LS=', ikb, j_SO
+C          write(6,'(a,2i4)') ' ikb, j_LS=', ikb, j_offsiteSO
           do ir=1,nrwf
                   
 C            write(6,'(a,i4,a,f12.6)') ' ir=', ir,  
-C     .            ' rphi2=', rphi2(ir,ikb,j_SO)     
+C     .            ' rphi2=', rphi2(ir,ikb,j_offsiteSO)     
 
-            rphi2(ir,ikb,j_SO)=rphi2(ir,ikb,j_SO)/dnrm
+            rphi2(ir,ikb,j_offsiteSO)=rphi2(ir,ikb,j_offsiteSO)/dnrm
 
 C            write(6,'(a,i4,a,f12.6)') ' ir=', ir,  
-C     .            ' rphi2/dnrm=', rphi2(ir,ikb,j_SO)
+C     .            ' rphi2/dnrm=', rphi2(ir,ikb,j_offsiteSO)
 
 
           enddo 
@@ -1998,7 +2001,7 @@ C     .            ' rphi2/dnrm=', rphi2(ir,ikb,j_SO)
         do 10 ir=2,nrwf
           r=rofi(ir)
           vl=(vps(ir)-vlocal(ir))
-          phi=rphi2(ir,ikb,j_SO)
+          phi=rphi2(ir,ikb,j_offsiteSO)
           vphi=vl*phi
           dnrm=dnrm+vphi*vphi*drdi(ir)
           avgv=avgv+vphi*phi*drdi(ir)
@@ -2009,7 +2012,7 @@ C          write(99,'(8f12.6)')
 C     &    r, phi,vps(ir), vlocal(ir),drdi(ir),dnrm,avgv
 
 
-C          write(6,'(3(a,i4),7(a,f12.6))') ' ikb=', ikb, ' j_LS=', j_SO, 
+C          write(6,'(3(a,i4),7(a,f12.6))') ' ikb=', ikb, ' j_LS=', j_offsiteSO, 
 CC     .         ' ir=', ir, ' r=', r, ' vl=', vl, 
 C     .         ' phi=', phi, ' vphi=', vphi, ' dnrm=', dnrm, 
 C     .         ' avgv=', avgv, ' drdi=', drdi(ir)
@@ -2017,10 +2020,10 @@ C     .         ' avgv=', avgv, ' drdi=', drdi(ir)
   10    continue
 CC
 C       write(6,'(2(a,i4),7(a,f12.6))')
-C     &          ' ikb=', ikb, ' j_LS=', j_SO,
+C     &          ' ikb=', ikb, ' j_LS=', j_offsiteSO,
 C     &          ' dnrm=', dnrm, ' avgv=', avgv
 
-        vii(ikb,j_SO)=avgv
+        vii(ikb,j_offsiteSO)=avgv
 
         ekb=dnrm/(avgv+1.0d-20)
         dknrm=1.0d0/(sqrt(dnrm)+1.0d-20)
@@ -2047,7 +2050,7 @@ C something is probably wrong in this part of the program.
 C It will display a warning if Rc>4.5 a.u.or Rc < 0.5a.u.!!!!!!!!!!!!
 C
         do 20 ir=nrwf,2,-1 
-          phi=(rphi2(ir,ikb,j_SO)/rofi(ir))*dknrm
+          phi=(rphi2(ir,ikb,j_offsiteSO)/rofi(ir))*dknrm
           dincv=abs((vps(ir)-vlocal(ir))*phi)
 
 c          write(6,'(4(a,f16.8))') ' dknrm=', dknrm, ' vps-vlocal=',
@@ -2059,10 +2062,10 @@ C          write(6,'(a,2f20.10)') ' dincv-eps > 0? =', phi, dincv
 
 c           write(6,'(a,2f20.10)') ' dincv-eps > 0? =', dincv, eps 
             if (ir.ge.nrwf-1) then
-              write(6,"(2a,/,2a)") 'KBproj_SO: WARNING: ',
+              write(6,"(2a,/,2a)") 'KBproj_offsiteSO: WARNING: ',
      .          'KB projector does not decay to zero',
-     .          'KBproj_SO: WARNING: ',       
-     .        'parameter Rmax in routine KBgen_SO should be increased'
+     .          'KBproj_offsiteSO: WARNING: ', 
+     .   'parameter Rmax in routine KBgen_offsiteSO should be increased'
             endif
             goto 21
           endif 
@@ -2076,22 +2079,25 @@ c           write(6,'(a,2f20.10)') ' dincv-eps > 0? =', dincv, eps
 c        write(6,*) ' KBproj: ir, nrc, rc = ', ir, nrc, rc
       
         if (rc.lt.0.5d0) then
-          write(6,"('KBproj_SO: WARNING: Rc(',i2,')=',f12.4)")l,rc
-          write(6,"(2a)") 'KBproj_SO: WARNING: ',
+          write(6,"('KBproj_offsiteSO: WARNING: Rc(',i2,')=',f12.4)")
+     .         l,rc
+          write(6,"(2a)") 'KBproj_offsiteSO: WARNING: ',
      .            'Cut of radius for the KB projector too small' 
         elseif(rc.gt.4.5d0) then
-          write(6,"('KBproj_SO: WARNING: Rc(',i2,')=',f12.4)")l,rc
-          write(6,"(2a)") 'KBproj_SO: WARNING: ',
+          write(6,"('KBproj_offsiteSO: WARNING: Rc(',i2,')=',f12.4)")
+     .         l,rc
+          write(6,"(2a)") 'KBproj_offsiteSO: WARNING: ',
      .            'Cut of radius for the KB projector too big'
-          write(6,"(2a)") 'KBproj_SO: WARNING: ',
+          write(6,"(2a)") 'KBproj_offsiteSO: WARNING: ',
      .            'Increasing the tolerance parameter eps'
-          write(6,"(a)") 'KBproj_SO: WARNING: might be a good idea'
+          write(6,"(a)") 
+     .            'KBproj_offsiteSO: WARNING: might be a good idea'
         endif
 
         do 30 ir=2,nrc
           r=rofi(ir)
           vl=(vps(ir)-vlocal(ir))
-          phi=rphi2(ir,ikb,j_SO)/r
+          phi=rphi2(ir,ikb,j_offsiteSO)/r
           vphi=vl*phi*dknrm
           proj(ir)=vphi/r**l
 30      continue
@@ -2099,7 +2105,7 @@ c        write(6,*) ' KBproj: ir, nrc, rc = ', ir, nrc, rc
         proj(1)= ( proj(2)*rofi(3)**2 - proj(3)*rofi(2)**2 ) /
      .                   ( rofi(3)**2 - rofi(2)**2 )
 
-        end subroutine KBproj_SO
+        end subroutine KBproj_offsiteSO
 ! CC RC  Added for the offSpOrb
 !
       subroutine KBproj(ikb,rofi,drdi,vps,vlocal,nrwf,l,rphi,
@@ -2852,7 +2858,7 @@ C
         integer  l, lmax, nzetamax, nkblmx,nsm, nsm_max
 
 ! CC RC  Added for the offSpOrb
-        integer j_SO, nj_SO, izeta
+        integer j_offsiteSO, nj_offsiteSO, izeta
         real aj
 ! CC RC  Added for the offSpOrb
 
@@ -2948,20 +2954,20 @@ C
 
 ! CC RC  Updated for the offSpOrb
         nkb=0
-        nj_SO = 1
+        nj_offsiteSO = 1
         do l=0,lmxkb
          nkblsave(l,is)=nkbl(l)
          do izeta = 1, nkblsave(l,is) 
-          if ( spin%SO_offsite .and. l.gt.0 ) nj_SO = 2
-          do j_SO = 1, nj_SO
+          if ( spin%SO_offsite .and. l.gt.0 ) nj_offsiteSO = 2
+          do j_offsiteSO = 1, nj_offsiteSO
            if ( .not.spin%SO_offsite .or. l.eq.0 ) then
             aj=l
            else
-            aj=dble(l)+(2*j_SO-3)*0.5d0
+            aj=dble(l)+(2*j_offsiteSO-3)*0.5d0
            endif
            nkb = nkb + (2*aj+1) 
            if ( IONode .and. spin%deb_offSO .or. spin%deb_P )
-     &      write(spin%iout_SO,'(a,5i3)')
+     &      write(spin%iout_offsiteSO,'(a,5i3)')
      & '          new_specie: is, l, nkblsave(l,is), nkb_l, nkb_tot = ',
      &      is, l, nkblsave(l,is), int(2*aj+1), nkb
           enddo
@@ -3174,7 +3180,7 @@ C potential
         end subroutine read_vps
 !
 ! CC RC  Added for the offSpOrb
-        subroutine read_vps_SO(lmxo, lmxkb,
+        subroutine read_vps_offsiteSO(lmxo, lmxkb,
      .             nrval,a,b,rofi,drdi,s,vps_u,
      .             vps_d, rho, chcore, zval, 
      .             chgvps, nicore, irel, icorr,
@@ -3241,9 +3247,9 @@ C
 
         if (lmax.lt.linput) then
           write(6,'(a)') 
-     .      'read_vps_SO: ERROR: You must generate a pseudopotential'
+     .  'read_vps_offsiteSO: ERROR: You must generate a pseudopotential'
           write(6,'(a,i4)') 
-     .      'read_vps_SO: ERROR: for each L up to ',linput
+     .      'read_vps_offsiteSO: ERROR: for each L up to ',linput
           call die
         endif
 
@@ -3262,15 +3268,16 @@ C
 
         if (nrval.gt.nrmax) then
           write(6,'(a,i4)')
-     .   'read_vps_SO: ERROR: Nrmax must be increased to at least',nrval
+     . 'read_vps_offsiteSO: ERROR: Nrmax must be increased to at least',
+     .       nrval
           call die
         endif
 
 !=======
         write(6,'(/,a)')
-     .    'read_vps_SO: Pseudopotential generation method:'
+     .    'read_vps_offsiteSO: Pseudopotential generation method:'
         write(6,'(7a)')   
-     .    'read_vps_SO: ',method(1),(method(i),i=3,6)
+     .    'read_vps_offsiteSO: ',method(1),(method(i),i=3,6)
           
 C We are going to find the charge configuration
 C used for the pseudopotential generation using the information given in
@@ -3282,21 +3289,23 @@ C the 'text' variable.
 
         if (nicore.ne.'nc  ') then
           write(6,'(/,a)')
-     .      'read_vps_SO: Pseudopotential includes a core correction:'
+     . 'read_vps_offsiteSO: Pseudopotential includes a core correction:'
 
           if (nicore.eq.'pcec') then
-            write(6,'(a)') 'read_vps_SO: Pseudo-core for xc-correction'
+            write(6,'(a)') 
+     .       'read_vps_offsiteSO: Pseudo-core for xc-correction'
           elseif(nicore.eq.'pche') then
             write(6,'(a)') 
-     .        'read_vps_SO: Pseudo-core for hartree and xc-correction'
+     .   'read_vps_offsiteSO: Pseudo-core for hartree and xc-correction'
             write(6,'(a)') 'Siesta cannot use this pseudopotential'
             write(6,'(a)') 'Use option pe instead of ph in ATOM program'
             call die()
           elseif(nicore.eq.'fcec') then
-            write(6,'(a)') 'read_vps_SO: Full-core for xc-correction'
+            write(6,'(a)') 
+     .        'read_vps_offsiteSO: Full-core for xc-correction'
           elseif(nicore.eq.'fche') then
             write(6,'(a)') 
-     .        'read_vps_SO: Full-core for hartree and xc-correction'
+     .     'read_vps_offsiteSO: Full-core for hartree and xc-correction'
             write(6,'(a)') 'Siesta cannot use this pseudopotential'
             write(6,'(a)') 'Use option pe instead of ph in ATOM program'
             call die()
@@ -3383,10 +3392,11 @@ C potential
      .      ' Siesta needs a newer version.'
         call die
           
-        end subroutine read_vps_SO
+        end subroutine read_vps_offsiteSO
 !
 !
-        subroutine comKB_SO(is,a,b,rofi,proj,j_SO,l,indx,ikb,rc,ekb,nrc)
+        subroutine comKB_offsiteSO(is,a,b,rofi,proj,j_offsiteSO,l,indx,
+     .                             ikb,rc,ekb,nrc)
 C
 C  Creates the common block with all the information about the 
 C  Kleinman-Bylander projectors.
@@ -3396,7 +3406,7 @@ C
               
         implicit none
 
-        integer l, nrc,is, ikb, j_SO ! offS-SO
+        integer l, nrc,is, ikb, j_offsiteSO ! offS-SO
 
         real(dp) rc, ekb, proj(nrmax), a, b,
      .    rofi(nrmax)  
@@ -3406,21 +3416,21 @@ C Internal variables
 C
         integer indx, itb, nr, nmax, nmin, nn, il
         real(dp) delt, r, vphi, dy, yp1, ypn
-        integer ir, nrckb, nj_SO ! offS-SO
+        integer ir, nrckb, nj_offsiteSO ! offS-SO
 C
 C Number of points used by polint for the interpolation
 C
-        integer npoint, nkbl_sc_SO
+        integer npoint, nkbl_sc_offsiteSO
         parameter(npoint=4)
         integer lun
 C
-        rctb_SO(ikb,l,j_SO,is)=rc 
+        rctb_offsiteSO(ikb,l,j_offsiteSO,is)=rc 
 
 C         write(6,'(a,3(a,i3),a,f12.8)') ' comKB: ',
 C     . ' l=', l,  
 C     . ' ikb=', ikb,  
-C     . ' j_SO=', j_SO,  
-C     . ' rctb=', rctb_SO(ikb,l,j_SO,is) 
+C     . ' j_offsiteSO=', j_offsiteSO,  
+C     . ' rctb=', rctb_offsiteSO(ikb,l,j_offsiteSO,is) 
 
 C Interpolation to generate tables with KB projectors
 C
@@ -3429,7 +3439,7 @@ C        write(6,'(a,i3)') ' comKB: indx=', indx
 
         if ( ikb.gt.nkblsave(l,is) ) then
           write(6,'(/,2a,i3,a,i3)')
-     .      'comKB_SO: ERROR: Maximum number of KB projectors',
+     .      'comKB_offsiteSO: ERROR: Maximum number of KB projectors',
      .      ' for l=',l,' must be', nkblsave(l,is)
           call die 
         endif 
@@ -3437,36 +3447,37 @@ C        write(6,'(a,i3)') ' comKB: indx=', indx
         delt=rc/(dble(ntbmax-1)+1.0d-20) 
         if (delt.gt.deltmax) then
           write(6,'(a)')
-     .    'comKB_SO: WARNING It might be a good idea to increase'
+     .    'comKB_offsiteSO: WARNING It might be a good idea to increase'
           write(6,'(a)')
-     .    'comKB_SO: WARNING parameter ntbmax (in file atmparams.f) '
+     .    'comKB_offsiteSO: '//
+     .    ' WARNING parameter ntbmax (in file atmparams.f) '
           write(6,'(a,i6)')
-     .    'comKB_SO: WARNING to at least ntbmax = ', 
+     .    'comKB_offsiteSO: WARNING to at least ntbmax = ', 
      .    nint(Rc/deltmax)+2
         endif
 
         write(6,*) ' rc/ntbmax/delta=', rc,ntbmax,delt
 
-C        table_SO(1,-indx,j_SO,is)=delt ! radial grid for kb's
-C        table_SO(2,-indx,j_SO,is)=ekb  ! kb energies
+C        table_offsiteSO(1,-indx,j_offsiteSO,is)=delt ! radial grid for kb's
+C        table_offsiteSO(2,-indx,j_offsiteSO,is)=ekb  ! kb energies
 CC
-        table_SO(1,-ikb,l,j_SO,is)=delt ! radial grid for kb's
-        table_SO(2,-ikb,l,j_SO,is)=ekb  ! kb energies
+        table_offsiteSO(1,-ikb,l,j_offsiteSO,is)=delt ! radial grid for kb's
+        table_offsiteSO(2,-ikb,l,j_offsiteSO,is)=ekb  ! kb energies
 
-C        write(6,'(2(a,i3),2(a,f10.6))') ' comKB: i=',indx,' j_SO=',j_SO,
-C     .        ' delta=',table_SO(1,-ikb,l,j_SO,is),
-C     .        '   ekb=',table_SO(2,-ikb,l,j_SO,is)
-C     .        ' delta=',table_SO(1,-indx,j_SO,is),
-C     .        '   ekb=',table_SO(2,-indx,j_SO,is)
+C        write(6,'(2(a,i3),2(a,f10.6))') ' comKB: i=',indx,' j_offsiteSO=',j_offsiteSO,
+C     .        ' delta=',table_offsiteSO(1,-ikb,l,j_offsiteSO,is),
+C     .        '   ekb=',table_offsiteSO(2,-ikb,l,j_offsiteSO,is)
+C     .        ' delta=',table_offsiteSO(1,-indx,j_offsiteSO,is),
+C     .        '   ekb=',table_offsiteSO(2,-indx,j_offsiteSO,is)
 CC
-C        write(6,'(2(a,i3),2(a,f10.6))') ' comKB: i=',indx,' j_SO=',j_SO,
-C     .        ' delta=',table_SO(1,ikb,l,j_SO,is),
-C     .        '   ekb=',table_SO(2,ikb,l,j_SO,is)
+C        write(6,'(2(a,i3),2(a,f10.6))') ' comKB: i=',indx,' j_offsiteSO=',j_offsiteSO,
+C     .        ' delta=',table_offsiteSO(1,ikb,l,j_offsiteSO,is),
+C     .        '   ekb=',table_offsiteSO(2,ikb,l,j_offsiteSO,is)
 
         if (debug_kb_generation) then
           nrckb = nint(log(rc/b+1.0d0)/a)+1
           write(filename,"(a,i1,a,i1)")
-     .          trim(global_label) // "-KBProj.", indx, '_', j_SO
+     .          trim(global_label) // "-KBProj.", indx, '_', j_offsiteSO
           call file_out(nrckb,rofi,proj,filename)
         endif
 !
@@ -3478,23 +3489,24 @@ C     .        '   ekb=',table_SO(2,ikb,l,j_SO,is)
           nmax=min(nrc,nr+npoint)
           nn=nmax-nmin+1
           call polint(rofi(nmin),proj(nmin),nn,r,vphi,dy)
-C          table_SO(itb+2,-indx,j_SO,is)=vphi
-          table_SO(itb+2,-ikb,l,j_SO,is)=vphi
+C          table_offsiteSO(itb+2,-indx,j_offsiteSO,is)=vphi
+          table_offsiteSO(itb+2,-ikb,l,j_offsiteSO,is)=vphi
         enddo 
-C        table_SO(ntbmax+2,-indx,j_SO,is)=0.0d0
-        table_SO(ntbmax+2,-ikb,l,j_SO,is)=0.0d0
+C        table_offsiteSO(ntbmax+2,-indx,j_offsiteSO,is)=0.0d0
+        table_offsiteSO(ntbmax+2,-ikb,l,j_offsiteSO,is)=0.0d0
 C
 C Table with the second derivative
 C
         yp1=0.0d0
         ypn=huge(1.d0)
 
-C        call spline(delt, table_SO(3:2+ntbmax,-indx,j_SO,is), ntbmax,
-C     &              yp1, ypn, tab2_SO(1:ntbmax,-indx,j_SO,is) )
-        call spline(delt, table_SO(3:2+ntbmax,-ikb,l,j_SO,is), ntbmax,
-     &              yp1, ypn, tab2_SO(1:ntbmax,-ikb,l,j_SO,is) )
+C        call spline(delt, table_offsiteSO(3:2+ntbmax,-indx,j_offsiteSO,is), ntbmax,
+C     &              yp1, ypn, tab2_offsiteSO(1:ntbmax,-indx,j_offsiteSO,is) )
+        call spline(delt,
+     &       table_offsiteSO(3:2+ntbmax,-ikb,l,j_offsiteSO,is), ntbmax,
+     &       yp1,ypn,tab2_offsiteSO(1:ntbmax,-ikb,l,j_offsiteSO,is) )
 
-        end subroutine comKB_SO
+        end subroutine comKB_offsiteSO
 !
 ! CC RC  Added for the offSpOrb
 !
@@ -3585,7 +3597,7 @@ C
         end subroutine comkb
 !
 ! CC RC  Added for the offSpOrb
-        subroutine KBgen_SO(is, a,b,rofi,drdi,s, vps_u,vps_d, 
+        subroutine KBgen_offsiteSO(is, a,b,rofi,drdi,s, vps_u,vps_d, 
      .                      vlocal, ve, nrval, Zval, lmxkb, 
      .                      nkbl, erefkb, nkb)
 
@@ -3612,14 +3624,14 @@ C
 C     .    Zval, erefkb(nkbmx,0:lmaxd)
 
         integer
-     .    nrval, lmxkb, nkb, is, nkbl(0:lmaxd), ikb_SO, 
+     .    nrval, lmxkb, nkb, is, nkbl(0:lmaxd), ikb_offsiteSO, 
      .    ikb_sc
 C
 C Internal variables
 C
         integer 
      .    l,nprin, nnodes, ighost, nrwf, ikb, ir,
-     .    nrc, nrlimit, nj_SO, j_SO, ikbt, idx, i, nkb_deg  ! offSO
+     .    nrc, nrlimit, nj_offsiteSO, j_offsiteSO, ikbt, idx, i, nkb_deg
         real(dp)
      .    vdown(nrmax,0:lmaxd) ! offSO
 
@@ -3636,8 +3648,8 @@ CC-SC
         real(dp), allocatable :: rphi(:,:), rc(:,:), dkbcos(:,:), 
      .                           ekb(:,:)
 
-C        logical :: l_SO_test = .true.
-        logical :: l_SO_test = .false.
+C        logical :: l_offsiteSO_test = .true.
+        logical :: l_offsiteSO_test = .false.
 
                  
 C  The atomic wavefunctions and/or its energy derivatives are
@@ -3687,7 +3699,7 @@ C     &      ' new_kb_reference_orbitals=',new_kb_reference_orbitals
           if ( spin%SO_offsite .and. l.gt.0 ) then
 !           nkb_deg=nkb+(2*l+1)
            nkb = nkb+1
-!           write(6,*) ' KBgen_SO: |___> l/ikb/nkb=', l, ikb, nkb
+!           write(6,*) ' KBgen_offsiteSO: |___> l/ikb/nkb=', l, ikb, nkb
           endif
          enddo
         enddo
@@ -3743,28 +3755,28 @@ CC           enddo
         do l = 0,lmxkb
 C         write(6,'(a,i5)') " KBgen:  L = ", l
          if ( .not.spin%SO_offsite .or. l.eq.0 ) then
-          nj_SO = 1
-          if ( nkbl(l) > 0 ) allocate( rphi(nrmax,1:nkbl(l)*nj_SO) )
+          nj_offsiteSO = 1
+          if (nkbl(l)>0) allocate( rphi(nrmax,1:nkbl(l)*nj_offsiteSO) )
          else
-          nj_SO = 2
-          if ( nkbl(l) > 0 ) allocate( rphi(nrmax,1:nkbl(l)*nj_SO) )
+          nj_offsiteSO = 2
+          if (nkbl(l)>0) allocate( rphi(nrmax,1:nkbl(l)*nj_offsiteSO) )
          endif
 
          do ir = 1, nrmax
-          do ikb = 1, nkbl(l) * nj_SO
+          do ikb = 1, nkbl(l) * nj_offsiteSO
            rphi(ir,ikb) = 0.0d0
           enddo 
           proj(ir) = 0.0d0
          enddo
 
 C------- LS: loop over J values to obtain V(l-j/2) and V(l+j/2)
-         ikb_SO = 0  
-         do j_SO = 1, nj_SO
+         ikb_offsiteSO = 0  
+         do j_offsiteSO = 1, nj_offsiteSO
 CC-SC
           do ikb_sc= 1, nkbl(l)  
-           ikb_SO = ikb_SO + 1
+           ikb_offsiteSO = ikb_offsiteSO + 1
 
-C           write(6,*) '    ikb_SO = ', ikb_SO 
+C           write(6,*) '    ikb_offsiteSO = ', ikb_offsiteSO 
 CC RC
 C  Obtaining for l V(l-j/2) and V(l+j/2) as follows
 C      V(l-j/2) = Vdn - (l+1)/2 Vup = Vion - (l+1)/2 Vso
@@ -3772,10 +3784,10 @@ C      V(l+1/2) = Vdn + l/2 Vup = Vion + l/2 Vso
 C
            if ( .not.spin%SO_offsite .or. (l.eq.0) ) then
             c = 1.0d0; d = 0.0d0 
-           elseif ( spin%SO_offsite .and. l_SO_test ) then
+           elseif ( spin%SO_offsite .and. l_offsiteSO_test ) then
             c = 1.0d0; d = 0.0d0 
            else
-            if( j_SO.eq.1 ) then
+            if( j_offsiteSO.eq.1 ) then
              c = 1.0d0; d = -0.5_dp*dble(l+1) 
             else
              c = 1.0d0; d = +0.5_dp*dble(l) 
@@ -3788,13 +3800,13 @@ C
 
            vdown(1,l) = vdown(2,l)
  
-CC           if(l.eq.1.and.j_SO.eq.1) 
+CC           if(l.eq.1.and.j_offsiteSO.eq.1) 
 CC     .       open(12,file='V_1-.dat',status='unknown',form='formatted')
-CC           if(l.eq.1.and.j_SO.eq.2) 
+CC           if(l.eq.1.and.j_offsiteSO.eq.2) 
 CC     .       open(12,file='V_1+.dat',status='unknown',form='formatted')
-CC           if(l.eq.2.and.j_SO.eq.1) 
+CC           if(l.eq.2.and.j_offsiteSO.eq.1) 
 CC     .       open(12,file='V_2-.dat',status='unknown',form='formatted')
-CC           if(l.eq.2.and.j_SO.eq.2) 
+CC           if(l.eq.2.and.j_offsiteSO.eq.2) 
 CC     .       open(12,file='V_2+.dat',status='unknown',form='formatted')
 
 CC           if (l.ne.0.and.l.ne.3) then
@@ -3804,25 +3816,25 @@ CC            enddo
 CC            close(12)
 CC           endif
 
-           if ( erefkb(ikb_SO,l).ge.1.0d3 ) then         
+           if ( erefkb(ikb_offsiteSO,l).ge.1.0d3 ) then         
 
 C            write(6,'(a,i3)') 
 C     .       " KBgen:          Projector kind: standard =", idx  
             nnodes = ikb_sc
             nprin  = l + 1
 
-C            if (IONode.and.spin%deb_offSO ) write(spin%iout_SO,'(a)') 
-C     .     '          KBgen_SO: Calling schro_eq... '
+C            if (IONode.and.spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)') 
+C     .     '          KBgen_offsiteSO: Calling schro_eq... '
             call schro_eq(Zval,rofi,vdown(1,l),ve,s,drdi,
      .                    nrlimit,l,a,b,nnodes,nprin,
-     .                    erefkb(ikb_SO,l),
-     .                    rphi(1,ikb_SO)) 
+     .                    erefkb(ikb_offsiteSO,l),
+     .                    rphi(1,ikb_offsiteSO)) 
 
 CC RC        
-C            write(6,'(3(a,i4),a,f16.8)') ' KBgen: ikb_SO=',
-C     .           ikb_SO,
-C     .        '  idx=', idx, ' j_SO=', j_SO,
-C     .        '  erefkb(ikb_SO,l) =',erefkb(ikb_SO,l)
+C            write(6,'(3(a,i4),a,f16.8)') ' KBgen: ikb_offsiteSO=',
+C     .           ikb_offsiteSO,
+C     .        '  idx=', idx, ' j_offsiteSO=', j_offsiteSO,
+C     .        '  erefkb(ikb_offsiteSO,l) =',erefkb(ikb_offsiteSO,l)
   
 
 C             open(12,file='rphi.dat',status='unknown',form='formatted')
@@ -3831,37 +3843,37 @@ C Normalization of the eigenstates inside a sphere of radius Rmax
             dnrm=0.0d0
             do ir=1,nrwf
 CC-SC
-             dnrm=dnrm+drdi(ir)*rphi(ir,ikb_SO)**2
+             dnrm=dnrm+drdi(ir)*rphi(ir,ikb_offsiteSO)**2
             enddo 
             dnrm=sqrt(dnrm)
             do ir=1,nrwf
 CC-SC
-             rphi(ir,ikb_SO)=
-     .                rphi(ir,ikb_SO)/dnrm
+             rphi(ir,ikb_offsiteSO)=
+     .                rphi(ir,ikb_offsiteSO)/dnrm
             enddo 
 C            close(12)
 
 CC-SC
-           elseif( (erefkb(ikb_SO,l).le.-1.0d3 ) .and.
+           elseif( (erefkb(ikb_offsiteSO,l).le.-1.0d3 ) .and.
      .             (ikb_sc.gt.1) ) then 
 C If the energy is specified to be 1000 Ry, the energy derivative
 C of the previous wavefunction will be used
 C
          if (spin%SO_offsite) 
-     .      stop 'KBgen_SO: Check out LS for eref_kb<-1000!!'
+     .      stop 'KBgen_offsiteSO: Check out LS for eref_kb<-1000!!'
 CC-SC
-            call energ_deriv(a,rofi,rphi(1,ikb_SO-nj_SO),
+            call energ_deriv(a,rofi,rphi(1,ikb_offsiteSO-nj_offsiteSO),
      .                       vdown(1,l),ve,drdi,nrwf,l,
-     .                       erefkb(ikb_SO-nj_SO,l),
-     .                       rphi(1,ikb_SO),nrval)
-            erefkb(ikb_SO,l) = 0.0d0
+     .                       erefkb(ikb_offsiteSO-nj_offsiteSO,l),
+     .                       rphi(1,ikb_offsiteSO),nrval)
+            erefkb(ikb_offsiteSO,l) = 0.0d0
 C
            else 
 C If the reference energies have been specified, we just use them
 CC-SC
             call rphi_vs_e(a,b,rofi,vdown(1,l),
-     .                     ve,nrval,l,erefkb(ikb_SO,l),
-     .                     rphi(1,ikb_SO),Rmax)
+     .                     ve,nrval,l,erefkb(ikb_offsiteSO,l),
+     .                     rphi(1,ikb_offsiteSO),Rmax)
            endif 
 
 C
@@ -3870,18 +3882,19 @@ C
            if ( nkbl(l).eq.1 ) then
             call ghost(Zval,rofi,vdown(:,l),vlocal,
      .                 ve,s,drdi,nrlimit,l,a,b,nrwf,
-     .                 erefkb(ikb_SO,l),
-     .                 rphi(:,ikb_SO),ighost)
+     .                 erefkb(ikb_offsiteSO,l),
+     .                 rphi(:,ikb_offsiteSO),ighost)
            else 
             if ( ikb_sc.eq.1 )
      .        write(6,'(a,i2,/a)') 
-     .        ' KBgen_SO: More than one KB projector for l = ', l,
-     .        ' KBgen_SO: ghost states analysis will be not performed'
+     .        ' KBgen_offsiteSO: More than one KB projector for l = ',l,
+     .        ' KBgen_offsiteSO: ghost states analysis will be '//
+     .        'not performed'
            endif
 
 C KB Projectors
 C
-C            if ( l.eq.2 .and. j_SO.eq.1 ) then 
+C            if ( l.eq.2 .and. j_offsiteSO.eq.1 ) then 
 C              open(12,file='V_2-.dat',status='unknown',form='formatted')
 C              do ir=1,1211
 C               write(12,'(2f14.8)') rofi(ir), vdown(ir,l) 
@@ -3890,11 +3903,11 @@ C              close(12)
 C            endif
 
 CC-SC
-C           if (IONode.and.spin%deb_offSO ) write(spin%iout_SO,'(a)') 
-C     .     '          KBgen_SO: Calling KBproj_SO... '
-           call KBproj_SO(ikb_sc,rofi,drdi,vdown(1,l),j_SO,
+C           if (IONode.and.spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)') 
+C     .     '          KBgen_offsiteSO: Calling KBproj_offsiteSO... '
+          call KBproj_offsiteSO(ikb_sc,rofi,drdi,vdown(1,l),j_offsiteSO,
      .                    vlocal,nrwf,l,
-     .                    rphi(1,ikb_SO),dkbcos(idx,l),
+     .                    rphi(1,ikb_offsiteSO),dkbcos(idx,l),
      .                    ekb(idx,l),
      .                    proj,nrc)
 
@@ -3904,87 +3917,92 @@ CC-SC
 C--------- Common block with the information about the  KB projectors
 C-SC
 C           write(6,'(a,4(a,i3),a,f10.6,3(3x,a,f10.6))') ' KBgen: ',
-C     .          'g_idx=',idx, '  L=',l, ' j_SO=', j_SO, 
+C     .          'g_idx=',idx, '  L=',l, ' j_offsiteSO=', j_offsiteSO, 
 C     .          ' ikb_sc=', ikb_sc,
 C     .          '  rc= ',rc(idx,l), 
-C     .          'el= ',erefkb(ikb_SO,l),
+C     .          'el= ',erefkb(ikb_offsiteSO,l),
 C     .          'Ekb= ',ekb(idx,l),'kbcos= ',dkbcos(idx,l)
 
 CC-SC
-C           if (IONode.and.spin%deb_offSO ) write(spin%iout_SO,'(a)') 
-C     .     '          KBgen_SO: Calling comKB_SO... '
-                call comKB_SO(is,a,b,rofi,proj,j_SO,l,idx,ikb_sc,
-     .                        rc(idx,l), ekb(idx,l),nrc)
+C           if (IONode.and.spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)') 
+C     .     '          KBgen_offsiteSO: Calling comKB_offsiteSO... '
+                call comKB_offsiteSO(is,a,b,rofi,proj,j_offsiteSO,l,idx,
+     .                               ikb_sc,rc(idx,l), ekb(idx,l),nrc)
 
 C           write(6,'(a,4(a,i3),a,f10.6,4(3x,a,f10.6))') ' KBgen: ',
-C     .          'g_idx=',idx, '  L=',l, ' j_SO=', j_SO, 
+C     .          'g_idx=',idx, '  L=',l, ' j_offsiteSO=', j_offsiteSO, 
 C     .          ' ikb_sc=', ikb_sc,
 C     .          '  rc= ',rc(idx,l), 
-C     .          'el= ',erefkb(ikb_SO,l),
+C     .          'el= ',erefkb(ikb_offsiteSO,l),
 C     .          'Ekb= ',ekb(idx,l),'kbcos= ',dkbcos(idx,l),
-C     .          'delta= ',table_SO(1,-ikb_sc,l,j_SO,is) 
+C     .          'delta= ',table_offsiteSO(1,-ikb_sc,l,j_offsiteSO,is) 
 
            idx = idx + 1  ! idx is the total number of kb 
             
           enddo  ! Loop on kb proj. per l
-         enddo  ! Loop on nj_SO
+         enddo  ! Loop on nj_offsiteSO
          deallocate(rphi)
         enddo  ! Loop on l  
 
 
 
         if ( ighost.eq.1 ) then
-         write(6,"(2a)")'KBgen_SO: WARNING: ',
+         write(6,"(2a)")'KBgen_offsiteSO: WARNING: ',
      .        'Ghost states have been detected'
-         write(6,"(2a)")'KBgen_SO: WARNING: ',
+         write(6,"(2a)")'KBgen_offsiteSO: WARNING: ',
      .        'Some parameter should be changed in the '
-         write(6,"(2a)")'KBgen_SO: WARNING: ',
+         write(6,"(2a)")'KBgen_offsiteSO: WARNING: ',
      .        'pseudopotential generation procedure.'
          if ( fdf_boolean('Atom.Ignore.Ghosts',.false.) ) then
-          write(6,"(a)") " KBgen_SO: *** Warning Ignored by User"
+          write(6,"(a)") " KBgen_offsiteSO: *** Warning Ignored by User"
           ighost = 0
          else
           call die
          endif
         endif
 
-        write(6,'(/,a)')'KBgen_SO: Kleinman-Bylander projectors: '
+        write(6,'(/,a)')
+     .       'KBgen_offsiteSO: Kleinman-Bylander projectors: '
 
-        ikbt=1; nj_SO=1
+        ikbt=1; nj_offsiteSO=1
         do l=0,lmxkb
-         ikb_SO = 0
-         do j_SO = 1, nj_SO
+         ikb_offsiteSO = 0
+         do j_offsiteSO = 1, nj_offsiteSO
           do i=1, nkbl(l)
-           ikb_SO = ikb_SO + 1
-           if ( nj_SO.eq.1 ) then
+           ikb_offsiteSO = ikb_offsiteSO + 1
+           if ( nj_offsiteSO.eq.1 ) then
             write(6,'(3(3x,a,i2),5(3x,a,f12.6))')
-     .      'l=',l, 'zeta=', i,'j_SO=',j_SO, 'rc=',rc(ikbt,l), 
-     .      'el=',erefkb(ikb_SO,l),
+     .      'l=',l, 'zeta=', i,'j_offsiteSO=',j_offsiteSO, 
+     .      'rc=',rc(ikbt,l), 
+     .      'el=',erefkb(ikb_offsiteSO,l),
      .      'Ekb=',ekb(ikbt,l),'kbcos=',dkbcos(ikbt,l), 
-     .     'delta= ',table_SO(1,-i,l,j_SO,is)
+     .     'delta= ',table_offsiteSO(1,-i,l,j_offsiteSO,is)
             if (IONode.and.spin%deb_offSO ) 
-     .       write(spin%iout_SO,'(3(3x,a,i2),5(3x,a,f12.6))')
-     .       'l=',l, 'zeta=', i,'j_SO=',j_SO, 'rc=',rc(ikbt,l), 
-     .       'el=',erefkb(ikb_SO,l),
+     .       write(spin%iout_offsiteSO,'(3(3x,a,i2),5(3x,a,f12.6))')
+     .       'l=',l, 'zeta=', i,'j_offsiteSO=',j_offsiteSO, 
+     .       'rc=',rc(ikbt,l), 
+     .       'el=',erefkb(ikb_offsiteSO,l),
      .       'Ekb=',ekb(ikbt,l),'kbcos=',dkbcos(ikbt,l), 
-     .       'delta= ',table_SO(1,-i,l,j_SO,is)
+     .       'delta= ',table_offsiteSO(1,-i,l,j_offsiteSO,is)
            else
              write(6,'(3(3x,a,i2),5(3x,a,f12.6))') 
-     .     'l=',l, 'zeta=', i,'j_SO=',j_SO, 'rc=',rc(ikbt,l),
-     .     'el=',erefkb(ikb_SO,l),
+     .     'l=',l, 'zeta=', i,'j_offsiteSO=',j_offsiteSO, 
+     .     'rc=',rc(ikbt,l),
+     .     'el=',erefkb(ikb_offsiteSO,l),
      .     'Ekb=',ekb(ikbt,l),'kbcos=',dkbcos(ikbt,l),
-     .     'delta= ',table_SO(1,-i,l,j_SO,is)
+     .     'delta= ',table_offsiteSO(1,-i,l,j_offsiteSO,is)
             if (IONode.and.spin%deb_offSO ) 
-     .       write(spin%iout_SO,'(3(3x,a,i2),5(3x,a,f12.6))') 
-     .     'l=',l, 'zeta=', i,'j_SO=',j_SO, 'rc=',rc(ikbt,l),
-     .     'el=',erefkb(ikb_SO,l),
+     .       write(spin%iout_offsiteSO,'(3(3x,a,i2),5(3x,a,f12.6))') 
+     .     'l=',l, 'zeta=', i,'j_offsiteSO=',j_offsiteSO, 
+     .     'rc=',rc(ikbt,l),
+     .     'el=',erefkb(ikb_offsiteSO,l),
      .     'Ekb=',ekb(ikbt,l),'kbcos=',dkbcos(ikbt,l),
-     .     'delta= ',table_SO(1,-i,l,j_SO,is)
+     .     'delta= ',table_offsiteSO(1,-i,l,j_offsiteSO,is)
            endif
            ikbt=ikbt+1
           enddo ! nkbl(l)
-         enddo ! j_SO
-         if ( spin%SO_offsite ) nj_SO = 2
+         enddo ! j_offsiteSO
+         if ( spin%SO_offsite ) nj_offsiteSO = 2
         enddo
 
 C
@@ -4000,12 +4018,14 @@ C
          enddo 
         enddo 
         write(6,'(/,a, i4)')
-     .'KBgen_SO: Total number of  Kleinman-Bylander projectors: ', nkb
+     .'KBgen_offsiteSO: Total number of Kleinman-Bylander projectors: ',
+     .      nkb
 
-        if (IONode.and.spin%deb_offSO ) write(spin%iout_SO,'(/,a, i4)')
-     .'KBgen_SO: Total number of  Kleinman-Bylander projectors: ', nkb
+        if (IONode.and.spin%deb_offSO ) 
+     .     write(spin%iout_offsiteSO,'(/,a, i4)') 'KBgen_offsiteSO: '//
+     .      'Total number of  Kleinman-Bylander projectors: ', nkb
 
-      end subroutine KBgen_SO
+      end subroutine KBgen_offsiteSO
 ! CC RC  Added for the offSpOrb
 !
         subroutine KBgen(is, a,b,rofi,drdi,s, 

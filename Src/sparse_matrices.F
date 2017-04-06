@@ -32,8 +32,7 @@
       real(dp), public, pointer :: xijo(:,:)=>null()
 
 ! CC RC  Added for the offSpOrb
-      complex(dp), public, pointer :: H0_SO(:,:) => null()
-      real(dp), public, pointer :: L_SO(:,:) => null()
+      complex(dp), public, pointer :: H0_offsiteSO(:,:) => null()
 !      integer, public, pointer :: listht(:)=>null()
 ! CC RC  Added for the offSpOrb
 
@@ -87,8 +86,7 @@
 
 ! CC RC  Added for the offSpOrb
       if( spin%SO_offsite ) then 
-       deallocate( H0_SO )
-       deallocate( L_SO )
+       deallocate( H0_offsiteSO )
       endif
 !      call de_alloc( listht,'listht','sparseMat' ) ! CC RC 
 ! CC RC  Added for the offSpOrb
@@ -150,7 +148,7 @@ c---- set pointers
       allocate( MM_at(0:3,na_u) )
 
 !c--- atom resolved
-c      write(spin%iout_SO,'(a)') trim(cindent)//
+c      write(spin%iout_offsiteSO,'(a)') trim(cindent)//
 c     & '    :  atom  MM_total   MM_x     MM_y     MM_z   THETA   PHI'
       write(6,'(a)') trim(cindent)//
      & '    :  atom  MM_total   MM_x     MM_y     MM_z   THETA   PHI'
@@ -175,7 +173,7 @@ c     & '    :  atom  MM_total   MM_x     MM_y     MM_z   THETA   PHI'
        endif
 
        ioff = ioff + nh
-c       write(spin%iout_SO,'(a,5x,i5,4f9.3,2f7.1)') trim(cindent),
+c       write(spin%iout_offsiteSO,'(a,5x,i5,4f9.3,2f7.1)') trim(cindent),
 c     &            ia,MM_at(0:3,ia), theta*fac, phi*fac
        write(6,'(a,5x,i5,4f9.3,2f7.1)') trim(cindent),
      &            ia,MM_at(0:3,ia), theta*fac, phi*fac
@@ -190,7 +188,7 @@ c---- total MMs
        MM(2)= sum(MM_at(2,:))
        call euler( MM(1:3), theta, phi, MM(0) )
       endif
-C      write(spin%iout_SO,'(a,4f9.3,a,2f7.1,a)') trim(cindent)//
+C      write(spin%iout_offsiteSO,'(a,4f9.3,a,2f7.1,a)') trim(cindent)//
 C     &  '    : '//trim(cHDM)//' Total Magnetic Moment=',MM(0:3),
 C     &         ' [theta/phi=',theta*fac,phi*fac,']'
       write(6,'(a,4f9.3,a,2f7.1,a)') trim(cindent)//
@@ -301,7 +299,7 @@ c-----------------------------------------------------------------------
 !      enddo
 
 c---- Print errors
-!      write(spin%iout_SO,'(4x,a,7f8.5)')
+!      write(spin%iout_offsiteSO,'(4x,a,7f8.5)')
       if (IONode) then
        write(6,'(4x,a,7f8.5)')
      &    trim(cHDM)//'  max/sym error  =',

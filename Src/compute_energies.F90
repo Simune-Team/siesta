@@ -50,7 +50,7 @@ CONTAINS
 
 ! CC RC  Added for the offSpOrb
       use m_spin,          only: spin 
-      use sparse_matrices, only: H0_SO
+      use sparse_matrices, only: H0_offsiteSO
 !      use sparse_matrices, only: listht
       use parallel,        only: IONode 
 !      use m_spin,          only: NoMagn, SPpol, NonCol, SpOrb 
@@ -187,7 +187,7 @@ CONTAINS
         Ebs = sum ( Ebs_tmp )
 
         if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-         write(spin%iout_SO,'(a,f16.10)') ' compute_Ebs: Ebs    = ', Ebs
+         write(spin%iout_offsiteSO,'(a,f16.10)') ' compute_Ebs: Ebs    = ', Ebs
         endif
 
       elseif ( spin%SO .and. .not. spin%SO_offsite ) then
@@ -284,7 +284,7 @@ CONTAINS
          DEharr = sum ( DEharr_tmp )
 
         if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-         write(spin%iout_SO,'(a,f16.10)') & 
+         write(spin%iout_offsiteSO,'(a,f16.10)') & 
             ' compute_DEharr: DEharr = ', DEharr
         endif
 
@@ -378,40 +378,40 @@ CONTAINS
 #endif
 
       Eso = 0._dp
-      Enl_SO = 0.0_dp
+      Enl_offsiteSO = 0.0_dp
       if ( spin%SO_offsite ) then
 
         do io = 1, maxnh
 
 !          iot = listht(io)
 
-!-------- Enl_SO(u,u)
+!-------- Enl_offsiteSO(u,u)
 !          Dc = cmplx(Dscf(iot,1), Dscf(iot,5))
           Dc = cmplx(Dscf(io,1), -Dscf(io,5))
-          Hc = H0_SO(io,1)
-          Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(d,d)
+          Hc = H0_offsiteSO(io,1)
+          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+!-------- Enl_offsiteSO(d,d)
 !          Dc = cmplx(Dscf(iot,2), Dscf(iot,6))
           Dc = cmplx(Dscf(io,2), -Dscf(io,6))
-          Hc = H0_SO(io,2)
-          Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(u,d)
+          Hc = H0_offsiteSO(io,2)
+          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+!-------- Enl_offsiteSO(u,d)
 !          Dc = cmplx(Dscf(iot,3), Dscf(iot,4))
           Dc = cmplx(Dscf(io,7), -Dscf(io,8))
-          Hc = H0_SO(io,4)
-          Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(d,u)
+          Hc = H0_offsiteSO(io,4)
+          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+!-------- Enl_offsiteSO(d,u)
 !          Dc = cmplx(Dscf(iot,7), Dscf(iot,8))
           Dc = cmplx(Dscf(io,3), -Dscf(io,4))
-          Hc = H0_SO(io,3)
-          Enl_SO = Enl_SO + real( Hc*Dc )
+          Hc = H0_offsiteSO(io,3)
+          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 
         enddo
 
 #ifdef MPI
          ! Global reduction of Eso
-         call globalize_sum( Enl_SO, buffer1 )
-         Enl_SO = buffer1
+         call globalize_sum( Enl_offsiteSO, buffer1 )
+         Enl_offsiteSO = buffer1
 #endif
 
       elseif ( spin%SO .and. .not.spin%SO_offsite ) then

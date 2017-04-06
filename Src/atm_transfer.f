@@ -20,7 +20,7 @@
 !     old_atmfuncs arrays
 !
       use old_atmfuncs, only: tabpol, table, tab2
-      use old_atmfuncs, only: table_SO, tab2_SO ! offS-SO
+      use old_atmfuncs, only: table_offsiteSO, tab2_offsiteSO ! offS-SO
       use old_atmfuncs, only: coretab, tab2pol
       use old_atmfuncs, only: qtb, slfe
       use old_atmfuncs, only: chloctab, vlocaltab
@@ -32,8 +32,8 @@
       use old_atmfuncs, only: labelfis, izofis, zvalfis
       use old_atmfuncs, only: massfis, lomaxfis, nofis
       use old_atmfuncs, only: cnfigfio, lofio, mofio, jofio
-      use old_atmfuncs, only: atmpopfio, epskb, rcut, rcut_SO
-      use old_atmfuncs, only: epskb_SO 
+      use old_atmfuncs, only: atmpopfio, epskb, rcut, rcut_offsiteSO
+      use old_atmfuncs, only: epskb_offsiteSO 
       use old_atmfuncs, only: lmxkbfis, nkbfis
 
 
@@ -50,10 +50,10 @@
       type(rad_func), pointer            :: pp
 
       integer is, io, i , n, ntot, l, m, max_npjnl
-      integer max_norbnl, nsm, izeta, j, nj_SO, ij
+      integer max_norbnl, nsm, izeta, j, nj_offsiteSO, ij
       integer norb, indx, ipol, num_normal, num_pol
-!      integer, allocatable :: j_SO(:)  ! OffS-SO
-      integer j_SO  ! OffS-SO
+!      integer, allocatable :: j_offsiteSO(:)  ! OffS-SO
+      integer j_offsiteSO  ! OffS-SO
 
       real :: aj, amj 
 
@@ -216,7 +216,7 @@
          spp%lmax_projs = lmxkbfis(is)
         
 CC         write(6,*) ' nprojs=',spp%nprojs
-!         allocate(j_SO(spp%nprojs))
+!         allocate(j_offsiteSO(spp%nprojs))
 
          do i = 1, spp%nprojs
           io = - i                        !! Old convention
@@ -233,7 +233,7 @@ CC     .                                ' m=', spp%pj_m(i)
 !        in their usual manner
 !
          if ( .not.spin%SO_offsite ) then
-!          write(spin%iout_SO,'(a)') ' passing by not offSPOrb..'
+!          write(spin%iout_offsiteSO,'(a)') ' passing by not offSPOrb..'
 
           n = 0
           ntot = 0
@@ -265,8 +265,8 @@ CC     .                                ' m=', spp%pj_m(i)
              pp%f(1:)    = table(3:,-i,is)
              pp%d2(1:)   = tab2(1:,-i,is)
              if ( spin%SO_offsite .and. IONode ) then
-              write(spin%iout_SO,'(a,i5,a,f12.6)') 'NTBMAX=',NTBMAX, 
-     .           ' delta=', pp%delta 
+              write(spin%iout_offsiteSO,'(a,i5,a,f12.6)') 'NTBMAX=',
+     .            NTBMAX, ' delta=', pp%delta 
              endif
           enddo
 !
@@ -280,7 +280,7 @@ CC     .                                ' m=', spp%pj_m(i)
              pp => spp%pjnl(indx)
              pp%cutoff = rcut(is,io)
              if ( spin%SO_offsite .and. IONode ) then
-              write(spin%iout_SO,'(2(a,i5),2(3x,a,f14.8))') 
+              write(spin%iout_offsiteSO,'(2(a,i5),2(3x,a,f14.8))') 
      .          ' indx=',spp%pj_index(i),
      .          '   io=',io, ' ekb=',spp%pjnl_ekb(indx),
      .         ' rcut=',pp%cutoff
@@ -289,25 +289,25 @@ CC     .                                ' m=', spp%pj_m(i)
          else
           n = 1
           ntot = 0
-          nj_SO = 1
+          nj_offsiteSO = 1
           do l = 0, spp%lmax_projs
-!           if ( offSpOrb .and. l.ne.0) nj_SO = 2
-!           do j_SO = 1, nj_SO
+!           if ( offSpOrb .and. l.ne.0) nj_offsiteSO = 2
+!           do j_offsiteSO = 1, nj_offsiteSO
            do i = 1, nkblsave(l,is)
-            if ( spin%SO_offsite .and. l.ne.0 ) nj_SO = 2
-            do j_SO = 1, nj_SO
+            if ( spin%SO_offsite .and. l.ne.0 ) nj_offsiteSO = 2
+            do j_offsiteSO = 1, nj_offsiteSO
              spp%pjnl_n(n) = i  ! n of pjnl
             spp%pjnl_l(n) = l  ! l of pjnl
              if ( .not.spin%SO_offsite .or. l.eq.0 ) then 
               aj=l
              else
-              aj=dble(l)+(2*j_SO-3)*0.5d0    
+              aj=dble(l)+(2*j_offsiteSO-3)*0.5d0    
               spp%pj_j(n) = aj
              endif
 !             do m = 1, 2*aj+1
              do m = 1, 2*l+1
               ntot = ntot + 1
-              spp%jso(ntot)=j_SO
+              spp%jso(ntot)=j_offsiteSO
               amj = -aj + dfloat(m-1)
  
               if (.not.spin%SO_offsite) then
@@ -349,29 +349,35 @@ CC     .                                ' m=', spp%pj_m(i)
 ! CC RC  
           allocate(spp%pjnl(spp%n_pjnl))
           n = 1
-          nj_SO = 1
+          nj_offsiteSO = 1
           do l = 0, spp%lmax_projs
            do i = 1, nkblsave(l,is)
-            if ( spin%SO_offsite .and. l.ne.0 ) nj_SO = 2
-            do j_SO = 1, nj_SO
+            if ( spin%SO_offsite .and. l.ne.0 ) nj_offsiteSO = 2
+            do j_offsiteSO = 1, nj_offsiteSO
              if ( .not.spin%SO_offsite .or. l.eq.0 ) then 
               pp => spp%pjnl(n)
-              call rad_alloc_SO(pp,NTBMAX)
-              pp%delta_SO(j_SO)=table_SO(1,-spp%pjnl_n(n),l,j_SO,is)
-              pp%f_SO(1:,j_SO)=table_SO(3:,-spp%pjnl_n(n),l,j_SO,is)
-              pp%d2_SO(1:,j_SO)=tab2_SO(1:,-spp%pjnl_n(n),l,j_SO,is)
-!              write(spin%iout_SO,'(4(a,i5),a,f12.6)') 'NTBMAX=',NTBMAX, 
+              call rad_alloc_offsiteSO(pp,NTBMAX)
+              pp%delta_offsiteSO(j_offsiteSO)=
+     .               table_offsiteSO(1,-spp%pjnl_n(n),l,j_offsiteSO,is)
+              pp%f_offsiteSO(1:,j_offsiteSO)=
+     .               table_offsiteSO(3:,-spp%pjnl_n(n),l,j_offsiteSO,is)
+              pp%d2_offsiteSO(1:,j_offsiteSO)=
+     .               tab2_offsiteSO(1:,-spp%pjnl_n(n),l,j_offsiteSO,is)
+!              write(spin%iout_offsiteSO,'(4(a,i5),a,f12.6)') 'NTBMAX=',NTBMAX, 
 !     .          ' n=', n, ' spp%pjnl_n(n)=', spp%pjnl_n(n),
-!     .          ' j_SO=', j_SO, ' delta=', pp%delta_SO(j_SO) 
+!     .          ' j_offsiteSO=', j_offsiteSO, ' delta=', pp%delta_offsiteSO(j_offsiteSO) 
              else
               pp => spp%pjnl(n)
-              call rad_alloc_SO(pp,NTBMAX)
-              pp%delta_SO(j_SO)= table_SO(1,-spp%pjnl_n(n),l,j_SO,is)
-              pp%f_SO(1:,j_SO) = table_SO(3:,-spp%pjnl_n(n),l,j_SO,is)
-              pp%d2_SO(1:,j_SO)= tab2_SO(1:,-spp%pjnl_n(n),l,j_SO,is)
-!              write(spin%iout_SO,'(4(a,i5),a,f12.6)') 'NTBMAX=',NTBMAX, 
+              call rad_alloc_offsiteSO(pp,NTBMAX)
+              pp%delta_offsiteSO(j_offsiteSO)= 
+     .               table_offsiteSO(1,-spp%pjnl_n(n),l,j_offsiteSO,is)
+              pp%f_offsiteSO(1:,j_offsiteSO) = 
+     .               table_offsiteSO(3:,-spp%pjnl_n(n),l,j_offsiteSO,is)
+              pp%d2_offsiteSO(1:,j_offsiteSO)= 
+     .               tab2_offsiteSO(1:,-spp%pjnl_n(n),l,j_offsiteSO,is)
+!              write(spin%iout_offsiteSO,'(4(a,i5),a,f12.6)') 'NTBMAX=',NTBMAX, 
 !     .          ' n=', n, ' spp%pjnl_n(n)=', spp%pjnl_n(n),
-!     .          ' j_SO=', j_SO, ' delta=', pp%delta_SO(j_SO) 
+!     .          ' j_offsiteSO=', j_offsiteSO, ' delta=', pp%delta_offsiteSO(j_offsiteSO) 
              endif
              n = n + 1
             enddo
@@ -383,7 +389,7 @@ CC     .                                ' m=', spp%pj_m(i)
 
 ! CC RC
 ! 
-!        In the following loop, the j_SO assigment is as it will be used
+!        In the following loop, the j_offsiteSO assigment is as it will be used
 !        in nlefsm, i.e., for each l it will be l +/- 1/2: 
 !        l=0 --> one proj
 !        l=1 --> First J_-, second J_+ and if we have semicore states 
@@ -394,13 +400,13 @@ CC     .                                ' m=', spp%pj_m(i)
              io = -i
              indx = spp%pj_index(i)
 !   This will be indexed as before: 1, 2 2, 3 3 3 3, etc, ...   
-             spp%pjnl_ekb(indx) = epskb_SO(is,io)
+             spp%pjnl_ekb(indx) = epskb_offsiteSO(is,io)
              pp => spp%pjnl(indx)
-             pp%cutoff_SO = rcut_SO(is,io)
-!             write(spin%iout_SO,'(2(a,i5),2(3x,a,f14.8))') 
+             pp%cutoff_offsiteSO = rcut_offsiteSO(is,io)
+!             write(spin%iout_offsiteSO,'(2(a,i5),2(3x,a,f14.8))') 
 !     .         ' indx=',spp%pj_index(i),
 !     .         '   io=',io, ' ekb=',spp%pjnl_ekb(indx),
-!     .         ' rcut=',pp%cutoff_SO
+!     .         ' rcut=',pp%cutoff_offsiteSO
           enddo
          endif
 

@@ -43,7 +43,7 @@
 
 ! CC RC  modified for the offSpOrb
       use m_spin,          only: spin 
-      use sparse_matrices, only: H0_SO
+      use sparse_matrices, only: H0_offsiteSO
 !      use sparse_matrices, only: listht
 !      use sparse_matrices, only: MM_HDM, herm_HDM
 ! CC RC  modified for the offSpOrb
@@ -176,32 +176,32 @@
 
 ! CC RC  Added  for the offSpOrb
       if( spin%SO_offsite ) then
-        Enl_SO = 0.0_dp
+        Enl_offsiteSO = 0.0_dp
 
         do io = 1, maxnh
 
 !          iot = listht(io) 
 
-!-------- Enl_SO(u,u)
+!-------- Enl_offsiteSO(u,u)
 !            Dc = cmplx(Dscf(iot,1),Dscf(iot,5))
             Dc = cmplx(Dscf(io,1),-Dscf(io,5))
-            Hc = H0_SO(io,1)
-            Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(d,d)
+            Hc = H0_offsiteSO(io,1)
+            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+!-------- Enl_offsiteSO(d,d)
 !            Dc = cmplx(Dscf(iot,2),Dscf(iot,6))
             Dc = cmplx(Dscf(io,2),-Dscf(io,6))
-            Hc = H0_SO(io,2)
-            Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(u,d)
+            Hc = H0_offsiteSO(io,2)
+            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+!-------- Enl_offsiteSO(u,d)
 !            Dc = cmplx(Dscf(iot,3),Dscf(iot,4))
             Dc = cmplx(Dscf(io,7),-Dscf(io,8))
-            Hc = H0_SO(io,4)
-            Enl_SO = Enl_SO + real( Hc*Dc )
-!-------- Enl_SO(d,u)
+            Hc = H0_offsiteSO(io,4)
+            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+!-------- Enl_offsiteSO(d,u)
 !            Dc = cmplx(Dscf(iot,7),Dscf(iot,8))
             Dc = cmplx(Dscf(io,3),-Dscf(io,4))
-            Hc = H0_SO(io,3)
-            Enl_SO = Enl_SO + real( Hc*Dc )
+            Hc = H0_offsiteSO(io,3)
+            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
         enddo
 
       endif
@@ -234,9 +234,9 @@
          call globalize_sum(Eso,buffer1)
          Eso = buffer1
       elseif( spin%SO_offsite ) then
-         ! Global reduction of Enl_SO 
-         call globalize_sum(Enl_SO,buffer1)
-         Enl_SO = buffer1
+         ! Global reduction of Enl_offsiteSO 
+         call globalize_sum(Enl_offsiteSO,buffer1)
+         Enl_offsiteSO = buffer1
       end if
 #endif
 
@@ -319,17 +319,17 @@
         enddo
 
 C------- H(u,u)
-         H(:,1) = H(:,1) + real(H0_SO(:,1))
-         H(:,5) =          imag(H0_SO(:,1))
+         H(:,1) = H(:,1) + real(H0_offsiteSO(:,1))
+         H(:,5) =          imag(H0_offsiteSO(:,1))
 C------- H(d,d)
-         H(:,2) = H(:,2) + real(H0_SO(:,2))
-         H(:,6) =          imag(H0_SO(:,2))
+         H(:,2) = H(:,2) + real(H0_offsiteSO(:,2))
+         H(:,6) =          imag(H0_offsiteSO(:,2))
 C------- H(u,d)
-         H(:,3) = H(:,3) + real(H0_SO(:,3))
-         H(:,4) = H(:,4) + imag(H0_SO(:,3))
+         H(:,3) = H(:,3) + real(H0_offsiteSO(:,3))
+         H(:,4) = H(:,4) + imag(H0_offsiteSO(:,3))
 C------- H(d,u)
-         H(:,7) = H(:,7) + real(H0_SO(:,4))
-         H(:,8) = H(:,8) + imag(H0_SO(:,4))
+         H(:,7) = H(:,7) + real(H0_offsiteSO(:,4))
+         H(:,8) = H(:,8) + imag(H0_offsiteSO(:,4))
 
       endif
 
@@ -348,9 +348,9 @@ C      call MM_HDM( 'H' )
 
 ! CC RC
         if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-         write(spin%iout_SO,'(a)')  
+         write(spin%iout_offsiteSO,'(a)')  
      &     ' setup_hamiltonian: After add all the parts to H...'
-         write(spin%iout_SO,'(a)')  
+         write(spin%iout_offsiteSO,'(a)')  
      &     ' setup_hamiltonian: MM from DM and from H... '
         endif
 

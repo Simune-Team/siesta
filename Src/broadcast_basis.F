@@ -43,7 +43,7 @@
       integer MPIerror
 
 ! CC RC  Added for the offSpOrb
-      integer j_SO, l, ntot 
+      integer j_offsiteSO, l, ntot 
 ! CC RC  Added for the offSpOrb
 
       integer is, i
@@ -200,8 +200,8 @@
            func=>spp%pjnl(i)
 CC-SC
            l = spp%pjnl_l(i)
-           j_SO = spp%jso(ntot)
-           call broadcast_radial_SO(func,i,l,j_SO,Node)
+           j_offsiteSO = spp%jso(ntot)
+           call broadcast_radial_offsiteSO(func,i,l,j_offsiteSO,Node)
            ntot = ntot + (2*l+1)
          enddo
         else
@@ -287,11 +287,11 @@ CC-SC
       endif
       end subroutine broadcast_radial
 
-      subroutine broadcast_radial_SO(func,ik,l,j__SO,Node)
+      subroutine broadcast_radial_offsiteSO(func,ik,l,j__offsiteSO,Node)
 
       type(rad_func), pointer     :: func
       integer, intent(in)         :: Node
-      integer, intent(in)         :: ik, l, j__SO
+      integer, intent(in)         :: ik, l, j__offsiteSO
 
       call MPI_Bcast(func%n,1,MPI_integer,
      $                  0,MPI_Comm_World,MPIerror)
@@ -300,18 +300,19 @@ CC-SC
          call rad_zero(func)
       else
 
-       if (Node.ne.0) call rad_alloc_SO(func,func%n)
+       if (Node.ne.0) call rad_alloc_offsiteSO(func,func%n)
 
-       call MPI_Bcast(func%cutoff_SO,1,MPI_double_precision,
+       call MPI_Bcast(func%cutoff_offsiteSO,1,MPI_double_precision,
      $      0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(func%delta_SO(j__SO),1,MPI_double_precision,
+       call MPI_Bcast(func%delta_offsiteSO(j__offsiteSO),1,
+     $      MPI_double_precision,
      $      0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(func%f_SO(:,j__SO),func%n,
+       call MPI_Bcast(func%f_offsiteSO(:,j__offsiteSO),func%n,
      $      MPI_double_precision,0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(func%d2_SO(:,j__SO),func%n,
+       call MPI_Bcast(func%d2_offsiteSO(:,j__offsiteSO),func%n,
      $      MPI_double_precision,0,MPI_Comm_World,MPIerror)
       endif
-      end subroutine broadcast_radial_SO
+      end subroutine broadcast_radial_offsiteSO
 
       end subroutine broadcast_basis
 

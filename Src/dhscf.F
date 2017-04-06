@@ -698,8 +698,8 @@ C     Modules
                                         ! Sets a distribution of mesh
                                         ! points over parallel processors
 #endif /* BSC_CELLXC */
-      use m_vmat,  only  : vmat ! , vmat_SO
-      use m_rhoofd, only: rhoofd ! , rhoofd_SO
+      use m_vmat,  only  : vmat ! , vmat_offsiteSO
+      use m_rhoofd, only: rhoofd ! , rhoofd_offsiteSO
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -988,7 +988,7 @@ C             rhoatm and Drho are in sequential mode
      &                   nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
      &                   iphorb, isa, qspiral )
 C        elseif( spin%SO_offsite ) then
-C          call rhoofd_SO( nuo, norb, nmpl, nspin, DRho_par, 
+C          call rhoofd_offsiteSO( nuo, norb, nmpl, nspin, DRho_par, 
 C     &                     maxnd, numd, listdptr, listd, Dscf )
         else
           call rhoofd( norb, nmpl, maxnd, numd, listdptr, listd,
@@ -1732,7 +1732,7 @@ C ----------------------------------------------------------------------
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa, qspiral )
 C         elseif ( spin%SO_offsite ) then
-C            call vmat_SO( norb, nmpl, dVol, nspin, Vscf_par, maxnd,
+C            call vmat_offsiteSO( norb, nmpl, dVol, nspin, Vscf_par, maxnd,
 C     &                    numd, listdptr, listd, Hmat,
 C     &                    nuo, nuotot, iaorb, iphorb, isa )
          else

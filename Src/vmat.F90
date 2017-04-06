@@ -10,7 +10,7 @@ module m_vmat
   implicit none
 
   private
-  public :: vmat   !, vmat_SO
+  public :: vmat   !, vmat_offsiteSO
 
 contains
 
@@ -582,7 +582,7 @@ contains
   end subroutine vmat
 
 
-!      subroutine vmat_SO( no, np, dVol, nspin, V, nh,&
+!      subroutine vmat_offsiteSO( no, np, dVol, nspin, V, nh,&
 !                          numh, listhptr, listh, H,&
 !                          nuo, nuotot, iaorb, iphorb, isa )
 
@@ -724,6 +724,6 @@ contains
 !!cc    write(6,'(a,4f14.7)') 'vmat: err_H=',err_H*13.6058d0
 !
 !      return
-!      end subroutine vmat_SO
+!      end subroutine vmat_offsiteSO
 
 end module m_vmat

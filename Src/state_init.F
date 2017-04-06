@@ -27,7 +27,7 @@
       use sparse_matrices, only: S   , S_1D
 
 ! CC RC  Added for the offSpOrb
-      use sparse_matrices, only: H0_SO
+      use sparse_matrices, only: H0_offsiteSO
 !      use sparse_matrices, only: listht
 !      use sparse_matrices, only: MM_HDM, herm_HDM
 ! CC RC  Added for the offSpOrb
@@ -548,7 +548,7 @@ CC RC  End loading transpose for OffSSO
       end if
 
 ! CC RC  Added for the offSpOrb
-      if ( spin%SO_offsite ) allocate ( H0_SO(maxnh,4) )
+      if ( spin%SO_offsite ) allocate ( H0_offsiteSO(maxnh,4) )
 ! CC RC  Added for the offSpOrb
 
       write(oname,"(a,i0)") "S at geom step ", istep
@@ -567,7 +567,8 @@ CC RC  End loading transpose for OffSSO
 !
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
-       if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
+       if ( IONode .and. spin%deb_offSO ) 
+     &    write(spin%iout_offsiteSO,'(a)') 
      &    ' state_init: Calling new_dm...'
       call new_DM(auxchanged, DM_history, DM_2D, EDM_2D)
 

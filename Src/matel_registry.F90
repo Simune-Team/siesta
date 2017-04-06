@@ -169,7 +169,7 @@ CONTAINS
 
     ! To speed up queries
     matel_pool(gindex)%lcut = l
-    matel_pool(gindex)%rcut = func%cutoff_SO
+    matel_pool(gindex)%rcut = func%cutoff_offsiteSO
     matel_pool(gindex)%jso  = jso
 
   end subroutine register_in_rf_pool_KB
@@ -432,7 +432,7 @@ CONTAINS
     !
     rmod = sqrt(sum(r*r)) + tiny
 
-    if(rmod > func%cutoff_SO) then
+    if(rmod > func%cutoff_offsiteSO) then
 
        phi = 0.0_dp
        grphi(1:3) = 0.0_dp

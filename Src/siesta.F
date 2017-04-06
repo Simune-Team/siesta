@@ -81,8 +81,9 @@ C     Begin of coordinate relaxation iteration
          if ( td_elec_dyn ) then
             call siesta_tddft( istep )
          else
-          if ( IONode .and. spin%deb_offSO ) write(spin%iout_SO,'(a)') 
-     &     ' siesta: Calling siesta_forces... '
+          if ( IONode .and. spin%deb_offSO ) 
+     &      write(spin%iout_offsiteSO,'(a)') 
+     &      ' siesta: Calling siesta_forces... '
             call siesta_forces( istep )
          end if
 

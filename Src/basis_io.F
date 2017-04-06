@@ -733,7 +733,7 @@ c
       integer lun_ldau
 
 ! CC RC  Added for the offSpOrb
-      integer j_SO, n, nj_SO, ntot
+      integer j_offsiteSO, n, nj_offsiteSO, ntot
 ! CC RC  Added for the offSpOrb
 
       spp => species(is)
@@ -785,11 +785,11 @@ c
 !
 ! CC RC  Added for the offSpOrb
          n = 1
-         nj_SO = 1
+         nj_offsiteSO = 1
          do l = 0, spp%lmax_projs
           do i = 1, nkblsave(l,is)
-           if ( spin%SO_offsite .and. l.ne.0 ) nj_SO = 2
-           do j_SO = 1, nj_SO
+           if ( spin%SO_offsite .and. l.ne.0 ) nj_offsiteSO = 2
+           do j_offsiteSO = 1, nj_offsiteSO
 
             if ( .not.spin%SO_offsite .or. l.eq.0 ) then
 
@@ -798,8 +798,8 @@ c
      $           " #kb l, n (sequence number), Reference energy"
 
              if ( spin%SO_offsite ) then
-              call radial_dump_ascii_SO(j_SO,spp%pjnl(n),lun,
-     $                                  header=.true.)
+              call radial_dump_ascii_offsiteSO(j_offsiteSO,spp%pjnl(n),
+     $                                         lun,header=.true.)
              else
               call radial_dump_ascii(spp%pjnl(n),lun,
      $                               header=.true.)
@@ -807,7 +807,7 @@ c
 
              if (write_ion_plot_files) then
               write(fileid,'(3(a,i1),2a)') "KB.L", l , ".",
-     $              i, ".J", j_SO, ".", trim(spp%label)
+     $              i, ".J", j_offsiteSO, ".", trim(spp%label)
               call io_assign(lun2)
               open(unit=lun2,file=fileid,status='replace',
      $                       form='formatted')
@@ -816,7 +816,7 @@ c
               write(lun2,'(a)')
      $             "#kb l, n (sequence number), Reference energy"
               if ( spin%SO_offsite ) then
-               call radial_dump_ascii_SO(j_SO,spp%pjnl(n),
+               call radial_dump_ascii_offsiteSO(j_offsiteSO,spp%pjnl(n),
      $                                   lun2,header=.true.)
               else
                call radial_dump_ascii(spp%pjnl(n),
@@ -831,13 +831,13 @@ c
      $           spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n),
      $           " #kb l, n (sequence number), Reference energy"
 
-             call radial_dump_ascii_SO(j_SO,spp%pjnl(n),lun,
-     $                                   header=.true.)
+             call radial_dump_ascii_offsiteSO(j_offsiteSO,spp%pjnl(n),
+     $                                        lun,header=.true.)
 
              if (write_ion_plot_files) then
               write(fileid,'(3(a,i1),2a)') "KB.L", l , ".",
      $              i, ".J",
-     $              j_SO, ".", trim(spp%label)
+     $              j_offsiteSO, ".", trim(spp%label)
               call io_assign(lun2)
               open(unit=lun2,file=fileid,status='replace',
      $                       form='formatted')
@@ -845,7 +845,7 @@ c
      $              spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n)
               write(lun2,'(a)')
      $             "#kb l, n (sequence number), Reference energy"
-              call radial_dump_ascii_SO(j_SO,spp%pjnl(n),
+              call radial_dump_ascii_offsiteSO(j_offsiteSO,spp%pjnl(n),
      $                                  lun2,header=.true.)
               call io_close(lun2)
              endif ! (write_ion_plot_files)
@@ -994,7 +994,7 @@ c
       integer i, ispol, lun
 
 ! CC RC  Added for the offSpOrb
-      integer j_SO, l, nj_SO, n
+      integer j_offsiteSO, l, nj_offsiteSO, n
 ! CC RC  Added for the offSpOrb
 
       spp => species(is)
@@ -1041,20 +1041,20 @@ c
          
       write(lun,'(a)') "<kbs>"
       n = 1
-      nj_SO = 1
+      nj_offsiteSO = 1
       do l = 0, spp%lmax_projs
        do i = 1, nkblsave(l,is)
-        if ( spin%SO_offsite .and. l.ne.0 ) nj_SO = 2
-        do j_SO = 1, nj_SO
+        if ( spin%SO_offsite .and. l.ne.0 ) nj_offsiteSO = 2
+        do j_offsiteSO = 1, nj_offsiteSO
 
          write(lun,'(a)') "<projector "
          call xml_dump_attribute(lun,'l',str(l))
 
 !         if ( l.eq.0 ) 
-!     $     call xml_dump_attribute(lun,'j',str(j_SO))
+!     $     call xml_dump_attribute(lun,'j',str(j_offsiteSO))
 !         if ( l.ne.0 ) 
-!     $     call xml_dump_attribute(lun,'j',str(j_SO))
-         call xml_dump_attribute(lun,'j',str(j_SO))
+!     $     call xml_dump_attribute(lun,'j',str(j_offsiteSO))
+         call xml_dump_attribute(lun,'j',str(j_offsiteSO))
 
          call xml_dump_attribute(lun,'n',str(i))
 
@@ -1062,10 +1062,10 @@ c
      $                                   str(spp%pjnl_ekb(n)))
          write(lun,'(a)') " >"
 !         if (.not. offSpOrb .or. l.eq.0 ) then
-!          call radial_dump_xml_SO(j_SO,spp%pjnl(n),lun)
+!          call radial_dump_xml_offsiteSO(j_offsiteSO,spp%pjnl(n),lun)
 !         elseif( offSpOrb .and. l.ge.1 ) then
           if ( spin%SO_offsite ) then
-           call radial_dump_xml_SO(j_SO,spp%pjnl(n),lun)
+           call radial_dump_xml_offsiteSO(j_offsiteSO,spp%pjnl(n),lun)
           else
            call radial_dump_xml(spp%pjnl(n),lun)
           endif
