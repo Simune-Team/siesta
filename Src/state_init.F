@@ -27,7 +27,7 @@
       use sparse_matrices, only: S   , S_1D
 
 ! CC RC  Added for the offSpOrb
-      use sparse_matrices, only: H0_SO, L_SO
+      use sparse_matrices, only: H0_SO
 !      use sparse_matrices, only: listht
 !      use sparse_matrices, only: MM_HDM, herm_HDM
 ! CC RC  Added for the offSpOrb
@@ -549,7 +549,6 @@ CC RC  End loading transpose for OffSSO
 
 ! CC RC  Added for the offSpOrb
       if ( spin%SO_offsite ) allocate ( H0_SO(maxnh,4) )
-      if ( spin%SO_offsite ) allocate ( L_SO(3,maxnh) )
 ! CC RC  Added for the offSpOrb
 
       write(oname,"(a,i0)") "S at geom step ", istep

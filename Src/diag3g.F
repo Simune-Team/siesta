@@ -124,6 +124,7 @@ C of referencing has been changed in several places to reflect this.
       allocate(caux(2,nuotot))
       call memory('A','Z',2*nuotot,'diag3g')
 
+! Notes for On-site SO implementation      
 !***********************************************************************
 ! BUILD HAMILTONIAN
 !***********************************************************************
@@ -157,6 +158,7 @@ C of referencing has been changed in several places to reflect this.
 ! Spin-box symmetrization of D:
 ! D_{i,j}(1,2) = 0.5 ( D_{i,j}(1,2) + D_{i,j}(2,1)^* )
 ! can not be enforced here.
+! End notes for On-site SO implementation      
 
       Saux = dcmplx(0.0_dp, 0.0_dp)
       Haux = dcmplx(0.0_dp, 0.0_dp)
@@ -248,7 +250,8 @@ C of referencing has been changed in several places to reflect this.
           qo(io) = ( stepf((eo(io)-e2)/t) - stepf((eo(io)-e1)/t))
         enddo
       endif
-      
+!
+! Notes for On-site SO implementation      
 !***********************************************************************
 ! BUILD NEW DENSITY MATRIX
 !***********************************************************************
@@ -269,6 +272,7 @@ C of referencing has been changed in several places to reflect this.
 !
 ! If H contains P or L operators, then spin-box "symetrization" of D leads to erroneous
 ! results for E
+! End notes for On-site SO implementation      
 
       Dnew(:,:) = 0.0_dp
       Enew(:,:) = 0.0_dp

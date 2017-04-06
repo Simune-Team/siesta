@@ -156,6 +156,7 @@ C *********************************************************************
       
       eo = 0.0_dp
 
+! Notes for On-site SO implementation      
 !****************************************************************************
 ! Build Hamiltonian      
 !****************************************************************************
@@ -190,6 +191,7 @@ C *********************************************************************
 !                               | H(ind,3) + i H(ind,4)   H(ind,2)              |
 !
 !
+! End notes for On-site SO implementation      
 
 !     Find eigenvalues at every k point
 
@@ -407,6 +409,7 @@ C *********************************************************************
      .               neigneeded,iscf,ierror, 2*BlockSize)
         endif
       
+! Notes for On-site SO implementation      
 !***********************************************************************
 ! BUILD NEW DENSITY MATRIX
 !***********************************************************************
@@ -428,6 +431,8 @@ C *********************************************************************
 ! Spin-box symmetrization of D:
 ! D_{i,j}(1,2) = 0.5 ( D_{i,j}(1,2) + D_{i,j}(2,1)^* )
 ! can not be enforced here.
+! End notes for On-site SO implementation      
+
 
         Dkc  = dcmplx(0.0_dp,0.0_dp)
         Ekc  = dcmplx(0.0_dp,0.0_dp)
