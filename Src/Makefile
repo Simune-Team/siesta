@@ -294,7 +294,7 @@ $(MS): $(MPI_INTERFACE)
 	 $(MAKE) -j 1 \
 	            "VPATH=$(VPATH)/MatrixSwitch/src" \
 		    "FPPFLAGS=$(FPPFLAGS)" \
-		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" all)
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module)
 
 m_initwf.o changebasis.o m_evolve.o evolg.o evolk.o: $(MS)
 wavefunctions.o m_matdiag.o m_matswinvers.o: $(MS)
