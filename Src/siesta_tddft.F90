@@ -153,9 +153,7 @@ contains
        
        call setup_hamiltonian( itded )
        
-       call evolve(no_s,nspin,nspin,no_l,maxnh,maxnh,no_u, &
-            gamma, indxuo,nkpnt,kpoint,kweight, &
-            Escf, no_u, dt_tded,istep,itded)
+       call evolve(  dt_tded )
        
        ! The total simulation time mainly for plotting
        totime = (istep*dt - dt) + (itded*dt_tded-dt_tded)

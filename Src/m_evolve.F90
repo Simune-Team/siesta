@@ -1,11 +1,22 @@
-      module m_evolve
-      
-      CONTAINS
-      subroutine evolve(no, nspin, maxspn, maxuo, maxnh, maxnd,        &
-                       maxo, gamma, indxuo, nk, kpoint, wk,            &
-                       Enew, nuotot, delt, istep, itded)         
+!
+! Copyright (C) 1996-2016 The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
+!
+MODULE m_evolve
+  
+  IMPLICIT NONE
+  PRIVATE
 
-! *********************************************************************
+  PUBLIC :: evolve
+
+  CONTAINS
+!*********************************************************************    
+      SUBROUTINE evolve ( dt_tded )         
+
+! ********************************************************************
 ! Subroutine to time-evolve the eigenvectors, calculate the density 
 ! and energy-density matrices, and occupation weights of each 
 ! eigenvector, for given Hamiltonian and Overlap matrices (including
@@ -16,144 +27,65 @@
 ! Modified by D. Sanchez-Portal, March 2008
 ! Modified by Rafi Ullah, October ,2015 making it parallel using 
 ! Matrix Swtich.
-! **************************** INPUT **********************************
-! integer no                  : Number of basis orbitals the supercell
-! integer nspin               : Spin polarization (1 or 2)
-! integer maxspn              : Maximum number of spin orentations 
-! integer maxuo               : Maximum number of orbitals stored in a 
-!                               given Node
-! integer maxnh               : Maximum number of orbitals interacting
-! integer maxnd               : Maximum number of nonzero elements of
-!                               each row of density matrix
-! integer maxo                : Maximum number of orbitals in the unit cell
-! integer numh(nuo)           : Number of nonzero elements of each row
-!                               of hamiltonian matrix
-! integer listhptr(nuo)       : Pointer to each row (-1) of the
-!                               hamiltonian matrix
-! integer listh(maxlh)        : Nonzero hamiltonian-matrix element
-!                               column indexes for each matrix row
-! integer numd(nuo)           : Number of nonzero elements of each row
-!                               of density matrix
-! integer listdptr(nuo)       : Pointer to each row (-1) of the
-!                               density matrix
-! integer listd(maxnh)        : Nonzero density-matrix element column
-!                               indexes for each matrix row
-! real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
-! real*8  S(maxnh)            : Overlap in sparse form
-! logical gamma               : Only gamma point?
-! real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
-!                               (not used if only gamma point)
-! integer indxuo(no)          : Index of equivalent orbital in unit cell
-!                               Unit cell orbitals must be the first in
-!                               orbital lists, i.e. indxuo.le.nuo, with
-!                               nuo the number of orbitals in unit cell
-! integer nk                  : Number of k points
-! real*8  kpoint(3,nk)        : k point vectors
-! real*8  wk(nk)              : k point weights (must sum one)
-! integer nuotot              : total number of orbitals in unit cell
-!                               over all processors
-! double precision delt       : time step in units of the inverse of 
-!                               the Hamiltonian
-! *************************** OUTPUT **********************************
-! real*8 Dnew(maxnd,nspin)    : Output Density Matrix
-! real*8 Enew(maxnd,nspin)    : Output Energy-Density Matrix
-! real*8 eo(maxo,maxspn,nk)   : Output instantaneous eigenvalues 
-!                              (only calculated if explicitly required 
-!                               by user and in the last MD step) 
-! *************************** UNITS ***********************************
-! xij and kpoint must be in reciprocal coordinates of each other.
-! Enew returned in the units of H.
-! delt in femtoseconds
-! *************************** Parallel ********************************
-! When running in parallel some of the dimensions are now the
-! maximum per node and the corresponding number passed in as
-! an argument is the number of locally stored values. The
-! variables for which this is the case are:
-! 
-! maxuo/no
-! 
-! *********************************************************************
-! 
-!  Modules
+! *******************************************************************
   
-      use precision
-      use parallel,          only : Node, Nodes, BlockSize
-      use parallelsubs,      only : GlobalToLocalOrb, GetNodeOrbs
-      use fdf
-      use alloc
-      use m_memory
-      use sys,               only : die
-      use MatrixSwitch
+  use precision
+  use parallel,          only : Node, Nodes, ParallelOverK
+  use parallelsubs,      only : GlobalToLocalOrb, GetNodeOrbs
+  use fdf
+  use alloc
+  use m_memory
+  use sys,               only : die
+  use MatrixSwitch
+  use atomlist,          only : no_s, no_l, no_u
+  use m_spin,            only : nspin
+  use m_gamma,           only : gamma
+  use sparse_matrices,   only : maxnh, Escf
+  use kpoint_grid,       only : nkpnt, kpoint
 #ifdef MPI
-      use mpi_siesta,        only : MPI_Bcast, MPI_Comm_World,MPI_logical
+  use mpi_siesta,        only : MPI_Bcast, MPI_Comm_World,MPI_logical
 #endif
-      !
-      implicit none
-      !
-      integer, intent(in)      ::  maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin 
-      integer                  ::  nuotot, istep, itded,  indxuo(no) 
-      real(dp)                 ::  Enew(maxnd,nspin) 
-      real(dp)                 ::  kpoint(3,nk), wk(nk), delt
-      logical                  ::  gamma
-      external                 ::  io_assign, io_close
-      !
+  !
+  implicit none
+  !
+  real(dp), intent(in)     ::   dt_tded
+  !
+  logical, save            ::  frstme  = .true.
+  integer                  ::   nuo
+  !
 #ifdef MPI
-      integer                  ::  MPIerror
-      external                 ::  diagkp
-#endif
-      logical, save            ::  frstme  = .true.
-      ! Internal variables ...
-      integer                  ::  io, iuo, iu, naux, nhs,  nuo,npsi
-      real(dp), pointer, save  :: Dk(:)
-      real(dp), pointer, save  :: Ek(:)
-      real(dp), dimension(:), allocatable, save :: aux,aux2
-#ifdef MPI
-      logical, save            :: ParallelOverK
-#endif
-     !
-#ifdef MPI
-      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
-      if (frstme) then
-        if (Node.eq.0) then
-          ParallelOverK = fdf_boolean( 'Diag.ParallelOverK', .false. )
-        endif
-        if (ParallelOverK) then
-          call MPI_Bcast(ParallelOverK,1,MPI_logical,0,MPI_Comm_World, MPIerror)
-        end if
-      endif
+  call GetNodeOrbs(no_u,Node,Nodes,nuo)
+  if (frstme) then
+    if (ParallelOverK) then
+      call die('TDDFT: Not prepared for running parallel over Kpoints.')
+    end if
+  endif
 #else
-      Node = 0
-      Nodes = 1
-      nuo = nuotot
+  Node = 0
+  Nodes = 1
+  nuo = no_u
 #endif
-      ! Start time counter ................................................
-      call timer( 'evolve', 1 )
-      nhs  =  2 * nuotot * 2* nuotot
-      naux = 2 * nuotot        
-      npsi=nuotot*maxuo*nspin
-#ifdef MPI
-      if (ParallelOverK) then
-        nhs  = 2 * nuotot * nuotot
-      endif
-#endif
-      !
-      ! Call apropriate routine .............................................
-      if (nspin.le.2 .and. gamma) then
-        call evolg( nspin, nuo, no, maxo, maxnh, maxnd,                   &
-                    Enew, nuotot, delt,istep,itded)
-      elseif (nspin.le.2 .and. .not.gamma) then
-      stop 'evolve: Error: kpoint for TDED is not implimented yet'
- !       call evolk( nspin, maxspn, nuo, no, maxo, maxnh, maxnd,           &
- !                   indxuo, nk, kpoint, wk, Dnew, Enew, Dk, Ek,           &
- !                   nuotot, delt,Haux,Saux,psi)
+  ! Start time counter ................................................
+  call timer( 'evolve', 1 )
+  !
+  ! Call apropriate routine .............................................
+  if (nspin.le.2 .and. gamma) then
+    call evolg( nspin, nuo, no_s, no_u, maxnh,                   &
+                Escf, no_u, dt_tded)
+  elseif (nspin.le.2 .and. .not.gamma) then
+    stop 'evolve: Error: kpoint for TDED is not implimented yet'
+  !       call evolk( nspin, maxspn, nuo, no, maxo, maxnh, maxnd,           &
+  !                   indxuo, nk, kpoint, wk, Dnew, Enew, Dk, Ek,           &
+  !                   no_u, dt_tded,Haux,Saux,psi)
 
-      elseif (nspin.eq.4 .and. gamma) then 
-        stop 'evolve: ERROR: non-collinear spin not yet implemented'
-      elseif (nspin.eq.4 .and. .not. gamma) then 
-        stop 'evolve: ERROR: non-collinear spin not yet implemented'
-      endif 
-      ! Stop time counter ...................................................
-      call timer( 'evolve', 2 )
-      !
-      end subroutine evolve
-      END module m_evolve
+  elseif (nspin.eq.4 .and. gamma) then 
+    stop 'evolve: ERROR: non-collinear spin not yet implemented'
+  elseif (nspin.eq.4 .and. .not. gamma) then 
+    stop 'evolve: ERROR: non-collinear spin not yet implemented'
+  endif 
+  ! Stop time counter ...................................................
+  call timer( 'evolve', 2 )
+  !
+  END SUBROUTINE  evolve
+  !
+  END module m_evolve

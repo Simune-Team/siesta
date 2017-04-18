@@ -1,5 +1,5 @@
-      subroutine evolg( nspin, nuo, no, maxo, maxnh, maxnd,           &
-                        Enew, nuotot, delt, ist,itd)
+      subroutine evolg( nspin, nuo, no, maxo, maxnh,            &
+                        Enew, nuotot, delt )
 ! ********************************************************************
 ! Subroutine to calculate the eigenvalues and eigenvectors, density
 ! and energy-density matrices, and occupation weights of each 
@@ -77,7 +77,7 @@
       !
       integer              :: itd, ist, maxnd, maxnh, nuo, no, nspin, nuotot
       integer              :: ncounter, maxo, asn,desch(9)
-      real(dp)             :: Enew(maxnd,nspin), delt
+      real(dp)             :: Enew(maxnh,nspin), delt
       !
       type(matrix)         :: Hauxms,Sauxms
       character(3)         :: m_operation

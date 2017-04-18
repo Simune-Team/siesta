@@ -804,6 +804,7 @@ m_efield.o: siesta_geom.o sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_evolve.o: alloc.o m_memory.o parallel.o parallelsubs.o precision.o sys.o
+m_evolve.o: atomlist.o m_spin.o m_gamma.o sparse_matrices.o kpoint_grid.o
 m_exp_coord.o: files.o m_os.o parallel.o precision.o units.o
 m_filter.o: bessph.o precision.o radfft.o sorting.o sys.o
 m_fire.o: parallel.o precision.o
