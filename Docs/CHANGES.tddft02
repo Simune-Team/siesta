@@ -1,3 +1,18 @@
+2017-04-20  16:15 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-04
+
+Modified evolg.F90 to improve messaging and delete redundencies
+
+* No change in functionality
+* evolg.F90 is changed to cn_evolg.F90 and placed in the module m_cn_evolg.F90
+
+removed:
+  Src/evolg.F90
+added:
+  Src/m_cn_evolg.F90
+modified:
+  Src/Makefile
+  Src/m_evolve.F90
+
 2017-04-18  17:30 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-03
 
 Modified m_evolve.F90 to improve code readability and deleted redundencies.
@@ -13,7 +28,7 @@ modified:
 
 2017-03-30  19:00 PKT Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-02
 
-Simplied and changed name of the changebasis subroutine.
+Simplified and changed name of the changebasis subroutine.
 
 * No change in functionality
 * Improved code readibilty

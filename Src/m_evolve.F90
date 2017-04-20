@@ -30,7 +30,7 @@ MODULE m_evolve
 ! *******************************************************************
   
   use precision
-  use parallel,          only : Node, Nodes, ParallelOverK
+  use parallel,          only :  ParallelOverK
   use parallelsubs,      only : GlobalToLocalOrb, GetNodeOrbs
   use fdf
   use alloc
@@ -42,6 +42,7 @@ MODULE m_evolve
   use m_gamma,           only : gamma
   use sparse_matrices,   only : maxnh, Escf
   use kpoint_grid,       only : nkpnt, kpoint
+  use m_cn_evolg,        only : cn_evolg
 #ifdef MPI
   use mpi_siesta,        only : MPI_Bcast, MPI_Comm_World,MPI_logical
 #endif
@@ -51,27 +52,24 @@ MODULE m_evolve
   real(dp), intent(in)     ::   dt_tded
   !
   logical, save            ::  frstme  = .true.
-  integer                  ::   nuo
   !
+#ifdef DEBUG
+  call write_debug( '    PRE evolve' )
+#endif
+!
 #ifdef MPI
-  call GetNodeOrbs(no_u,Node,Nodes,nuo)
   if (frstme) then
     if (ParallelOverK) then
       call die('TDDFT: Not prepared for running parallel over Kpoints.')
     end if
   endif
-#else
-  Node = 0
-  Nodes = 1
-  nuo = no_u
 #endif
   ! Start time counter ................................................
   call timer( 'evolve', 1 )
   !
   ! Call apropriate routine .............................................
   if (nspin.le.2 .and. gamma) then
-    call evolg( nspin, nuo, no_s, no_u, maxnh,                   &
-                Escf, no_u, dt_tded)
+    call cn_evolg ( dt_tded )
   elseif (nspin.le.2 .and. .not.gamma) then
     stop 'evolve: Error: kpoint for TDED is not implimented yet'
   !       call evolk( nspin, maxspn, nuo, no, maxo, maxnh, maxnd,           &
@@ -86,6 +84,10 @@ MODULE m_evolve
   ! Stop time counter ...................................................
   call timer( 'evolve', 2 )
   !
+#ifdef DEBUG
+  call write_debug( '    POS evolve' )
+#endif
+
   END SUBROUTINE  evolve
   !
   END module m_evolve
