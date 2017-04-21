@@ -55,7 +55,7 @@ SUBROUTINE cn_evolg ( delt )
       !
       real(dp)             :: delt
       !
-      type(matrix)         :: Hauxms,Sauxms
+      type(matrix)         :: Hauxms,Sauxms, wfaux1, wfaux2
       character(3)         :: m_operation
       character(5)         :: m_storage
       complex(dp)          :: varaux, varaux2,varaux3, pipj
@@ -81,6 +81,9 @@ SUBROUTINE cn_evolg ( delt )
       call m_allocate( Sauxms,no_u,no_u,m_storage)
       !
       do ispin = 1,nspin
+        nocc = wavef_ms(1,ispin)%dim2
+        call m_allocate(wfaux1,no_u,nocc,m_storage)
+        call m_allocate(wfaux2,nocc,nocc,m_storage)
         ! H, S from sparse to dense matrix swtich distribution
         do io = 1,no_l
           call LocalToGlobalOrb (io,Node, Nodes, i)
@@ -104,24 +107,17 @@ SUBROUTINE cn_evolg ( delt )
           WRITE(*,'(/a)') 'cn_evolg: Computing DM after evolving TDKS wavefunctions'
         END IF
         call compute_tddm(ispin, Dscf)
-        ! This needs to be fixes as it is not being properly done.
+        ! The following is now parallel and working as it should.
         if (eigen_time) then 
-          nocc=wavef_ms(1,ispin)%dim2
-          do ie = 1,nocc
-            eigv=0.0d0
-            do io = 1,no_u
-              do jo = 1,no_u
-                call m_get_element(wavef_ms(1,ispin),io,ie,varaux,m_operation)
-                call m_get_element(wavef_ms(1,ispin),jo,ie,varaux2,m_operation)
-                pipj = real(varaux)*real(varaux2) + aimag(varaux)*aimag(varaux2)
-                call m_get_element(Hauxms,jo,io,varaux3,m_operation)
-                eigv=eigv+real(varaux3)*pipj
-              enddo
-            enddo
-            eo(ie,ispin,1)=eigv
-          enddo
+          call mm_multiply(Hauxms,'n',wavef_ms(1,ispin),'n',wfaux1,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+          call mm_multiply(wavef_ms(1,ispin),'c',wfaux1,'n',wfaux2,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+          DO io=1,wavef_ms(1,ispin)%dim2
+            eo(io,ispin,1)= real(wfaux2%zval(io,io)) + aimag(wfaux2%zval(io,io))
+          END DO
         endif
         !
+        call m_deallocate(wfaux1)
+        call m_deallocate(wfaux2)
       enddo ! ispin
       call m_deallocate(Hauxms)
       call m_deallocate(Sauxms)

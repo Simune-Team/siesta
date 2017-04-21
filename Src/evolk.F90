@@ -464,13 +464,13 @@ call m_deallocate(Hauxms)
 
       if(fsttimk(ik,ispin).or..not.extrapol) then
         !call Uphi(H, S, wavef%phi(1,1,ncounter+1), no, nocc, deltat)
-         call Uphi(Hauxms, Sauxms,wavef_ms(ik,ispin), no, nocc, deltat)
+        ! call Uphi(Hauxms, Sauxms,wavef_ms(ik,ispin), no, nocc, deltat)
       else
              jk=ispin+nspin*(ik-1)
         varaux=(l-0.5d0)/dble(nstp)
         call m_add(Hauxms,'n',Hsave(jk),cmplx(1.0,0.0,dp),cmplx(-1.0,0.0,dp),m_operation)
         call m_add(Hauxms,'n',Hsave(jk),cmplx(1.0,0.0,dp),cmplx(varaux,0.0,dp),m_operation) 
-        call Uphi(Hsave(jk), Sauxms,wavef_ms(ik,ispin), no, nocc, deltat)
+       ! call Uphi(Hsave(jk), Sauxms,wavef_ms(ik,ispin), no, nocc, deltat)
       endif
       enddo
 

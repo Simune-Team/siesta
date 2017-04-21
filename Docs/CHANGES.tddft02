@@ -1,3 +1,15 @@
+2017-04-21  16:30 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-05
+
+Fixed and parallelized the calculation of <psi(t)|H(t)|psi(t)>.
+
+* The output is saved in <systemlabel>.eigen_vs_time
+
+modified:
+  Src/Makefile
+  Src/evolk.F90
+  Src/m_cn_evolg.F90
+  Src/m_iotddft.F90
+
 2017-04-20  16:15 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-04
 
 Modified evolg.F90 to improve messaging and delete redundencies
