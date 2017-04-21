@@ -194,7 +194,7 @@ $(NCDF): $(FDICT)
 	(cd ncdf ; \
 	echo "TOP_DIR=$(VPATH)/ncdf" > Makefile ; echo "include $(VPATH)/ncdf/Makefile" >> Makefile ; \
 	echo "settings.bash: FORCE" >> Makefile ; \
-	echo "\t-cp ../fdict/settings.bash ." >> Makefile ; \
+	printf '%s\n' "	-cp ../fdict/settings.bash ." >> Makefile ; \
 	echo "FC=$(FC)" > setup.make ; \
 	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
 	echo "FPPFLAGS = $(FPPFLAGS)" >> setup.make ; \
@@ -296,7 +296,7 @@ clean:
 	-rm -rf ./fdf
 	-rm -rf ./MPI
 	-rm -rf ./fdict
-	-rm -rf ./NCDF
+	-rm -rf ./ncdf
 	-rm -rf ./Libs
 
 # Dependencies
