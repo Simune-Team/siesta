@@ -42,7 +42,7 @@ MODULE m_evolve
   use m_gamma,           only : gamma
   use sparse_matrices,   only : maxnh, Escf
   use kpoint_grid,       only : nkpnt, kpoint
-  use m_cn_evolg,        only : cn_evolg
+  use cranknic_evolg,    only : cn_evolg
 #ifdef MPI
   use mpi_siesta,        only : MPI_Bcast, MPI_Comm_World,MPI_logical
 #endif

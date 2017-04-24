@@ -6,7 +6,7 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
 
-MODULE m_cn_evolg
+MODULE cranknic_evolg
   IMPLICIT NONE
   PRIVATE
 
@@ -129,7 +129,7 @@ SUBROUTINE cn_evolg ( delt )
 
 END SUBROUTINE cn_evolg
 !---------------------------------------------------------------------------------!
-    subroutine Uphi(H, S, phi, no, nocc, deltat)
+    subroutine Uphi(H, S, phi, no, deltat)
 !*************************************************************************
 !Subroutine that calculates the new wavefunction, given the old 
 !wavefunction by using for the time evolution. Gamma-point 
@@ -162,7 +162,7 @@ END SUBROUTINE cn_evolg
   
  implicit none 
  !     
- integer               :: no,  nocc
+ integer               :: no
  real(kind=dp)         :: deltat
  type(matrix)          :: H,S,phi
  ! Internal variables 
@@ -242,7 +242,7 @@ END SUBROUTINE cn_evolg
   character(3)                    :: m_operation
   logical                         :: extrapol
   ! Internal variables ...
-  integer                :: i, nocc, l
+  integer                :: i, l
   complex(dp)            ::  alpha
   logical, save          :: fsttim(2) = (/.true. , .true./)
   logical, save          :: frsttime = .true.
@@ -273,24 +273,21 @@ END SUBROUTINE cn_evolg
     end do 
     frsttime=.false.
   endif     ! frsttime
-  nocc=wavef_ms(1,ispin)%dim2
-  call timer('evol1.xtpl',1)
   !
   do l=1,nstp
     if(fsttim(ispin).or..not.extrapol) then
-      call Uphi(Hauxms, Sauxms, wavef_ms(1,ispin), no, nocc, deltat)
+      call Uphi(Hauxms, Sauxms, wavef_ms(1,ispin), no, deltat)
     else
       varaux=(l-0.5_dp)/dble(nstp)
       call m_add(Hauxms,'n',Hsve(ispin),cmplx(1.0,0.0,dp),cmplx(-1.0,0.0,dp),m_operation)
       call m_add(Hauxms,'n',Hsve(ispin),cmplx(1.0,0.0,dp),cmplx(varaux,0.0,dp),m_operation) 
-      call Uphi(Hsve(ispin), Sauxms, wavef_ms(1,ispin),no, nocc, deltat)
+      call Uphi(Hsve(ispin), Sauxms, wavef_ms(1,ispin),no, deltat)
     endif
   enddo 
   fsttim(ispin)=.false.
   !
   !Storing Hamitonian for extrapolation and later correction    
   call m_add(Hauxms,'n',Hsve(ispin),cmplx(1.0,0.0_dp,dp),cmplx(0.0,0.0,dp),m_operation)
-  call timer('evol1.xtpl',2)
   END SUBROUTINE evol1new
 !---------------------------------------------------------------------------------------!
       subroutine applyinverSH(S,H,no,nol,psi,psi2)
@@ -337,4 +334,4 @@ END SUBROUTINE cn_evolg
       call m_deallocate(aux1)
       end subroutine applyinverSH
 
-END MODULE m_cn_evolg
+END MODULE cranknic_evolg

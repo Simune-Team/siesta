@@ -1,3 +1,17 @@
+2017-04-24  20:00 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-06
+
+Some cosmetic changes.
+
+* No change in functionality
+
+removed:
+  Src/m_cn_evolg.F90
+added:
+  Src/cranknic_evolg.F90
+modified:
+  Src/Makefile
+  Src/m_evolve.F90
+
 2017-04-21  16:30 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-05
 
 Fixed and parallelized the calculation of <psi(t)|H(t)|psi(t)>.
