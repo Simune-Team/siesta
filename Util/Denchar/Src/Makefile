@@ -804,8 +804,8 @@ siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o units.o
 siesta_analysis.o: write_subs.o writewave.o zmatrix.o
 siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
 siesta_cmlsubs.o: 
-siesta_dicts.o: atomlist.o kpoint_grid.o m_energies.o m_forces.o m_steps.o
-siesta_dicts.o: m_stress.o precision.o siesta_geom.o siesta_options.o
+siesta_dicts.o: atomlist.o files.o kpoint_grid.o m_energies.o m_forces.o
+siesta_dicts.o: m_steps.o m_stress.o precision.o siesta_geom.o siesta_options.o
 siesta_end.o: alloc.o bands.o densematrix.o extrae_eventllist.o flook_siesta.o
 siesta_end.o: m_dscfcomm.o m_fixed.o m_io.o m_mixing_scf.o m_rhog.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
