@@ -630,7 +630,7 @@ contains
 
     call init_Sigma_options( save_DATA )
 
-    call init_dH_options( )
+    call init_dH_options( save_DATA )
 
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus )
@@ -731,7 +731,7 @@ contains
     
     call print_diag()
     call print_Sigma_options( save_DATA )
-    call print_dH_options()
+    call print_dH_options( save_DATA )
     call print_save_options()
 
     write(*,f11)'          >> Electrodes << '
