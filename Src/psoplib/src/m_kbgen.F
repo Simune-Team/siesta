@@ -184,11 +184,15 @@
         do ikb = 1, nkbl(l)
  
 !         If the reference energies have not been specifed, the eigenstates
-!         with the condition of being zero at r(nrwf) will be used.
-!         This is a change introduced by J. Junquera
-!         with respect to the original version, where 
-!         the condition of being zero at r(nrval) was imposed
-
+!         with the condition of being zero at 'nrlimit' will be used.
+!         If the 'new-convention' is used, 'nrlimit' will by default be moved
+!         closer to the origin (60 bohr vs 100 bohr or so), which might change
+!         a little bit the energy of nominally non-bound states.           
+!         The old convention was more reasonable in this respect. In fact,
+!         it is not obvious what the new convention achieves. As long as Rmax
+!         is large enough (larger than the maximum range of the non-local operators),
+!         there should be no difference.
+           
           if( erefkb(ikb,l) .ge. 1.0d3 ) then             
             nnodes = ikb
             nprin  = l+1
@@ -196,7 +200,11 @@
      .                     nrlimit, l, a, b, nnodes, nprin,
      .                     erefkb(ikb,l), rphi(1,ikb) ) 
 
-!           Normalization of the eigenstates inside a sphere of radius Rmax  
+!     Normalization of the eigenstates inside a sphere of radius Rmax
+!     This should be 'nrlimit', but really the sphere used for the
+!     KB calculations is arbitrary, as long as it is large enough.
+!     Below, in the call to 'kbproj', nrwf is used
+            
             dnrm = 0.0d0
             do ir = 1, nrwf
               dnrm =dnrm + drdi(ir) * rphi(ir,ikb)**2
@@ -205,15 +213,7 @@
             do ir = 1, nrwf
               rphi(ir,ikb) = rphi(ir,ikb)/dnrm
             enddo 
-!! For debugging
-!            write(6,'(a,i5)')' # l       = ', l
-!            write(6,'(a,i5)')' # ikb     = ', ikb
-!            write(6,'(a,i5)')' # nnodes  = ', nnodes
-!            write(6,'(a,i5)')' # nprin   = ', nprin
-!            do ir = 1, nrval
-!              write(6,'(3f20.12)')rofi(ir), rphi(ir,ikb)
-!            end do
-!! End debugging
+
 !           If the energy is specified to be 1000 Ry, the energy derivative
 !           of the previous wavefunction will be used
           elseif( (erefkb(ikb,l) .le. -1.0d3) .and. (ikb .gt. 1) ) then 
@@ -231,6 +231,8 @@
 !         Search for the existence of ghost states
 !         There is a change with respect to the original version,
 !         Here nrwf is introduced as a variable instead of nrval
+!         (only if using the 'new-style' KB generation)          
+
           if( nkbl(l) .eq. 1) then
             call ghost( Zval, rofi, vps(:,l), vlocal,
      .                  ve, s, drdi, nrlimit, l, a, b, nrwf,
