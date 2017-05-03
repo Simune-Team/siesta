@@ -21,7 +21,7 @@ DM.NumberPulay 3
 WriteInitialTDWF
 
 %block ExternalElectricField
-2.000  -2.000  0.000  V/Ang
+0.200  -0.200  0.000  V/Ang
 %endblock ExternalElectricField
 
 ###############################################################

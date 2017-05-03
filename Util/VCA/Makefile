@@ -119,37 +119,12 @@ dep:
 atom_options.o: sys.o
 atom_options.o: sys.o
 io.o: sys.o
-extrapolateSpData2D.o: class_SpData2D.o class_Sparsity.o restructSpData2D.o
-grdsam.o: alloc.o dhscf.o files.o m_mpi_utils.o m_partial_charges.o m_spin.o
-grdsam.o: parallel.o precision.o siesta_geom.o siesta_options.o sys.o units.o
 io.o: sys.o
 m_io.o: sys.o
 m_io.o: sys.o
-m_iodm.o: m_io_s.o m_os.o parallel.o
-m_new_dm.o: m_spin.o m_spin.o m_steps.o m_svd.o m_ts_electype.o
-m_new_dm.o: parallel.o parsing.o precision.o restructSpData2D.o siesta_geom.o
-m_ts_pivot.o: create_Sparsity_Union.o geom_helper.o intrinsic_missing.o
-m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
-m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
-nlefsm.o: alloc.o atm_types.o atmfuncs.o atomlist.o chemical.o mneighb.o
-nlefsm.o: new_matel.o parallel.o parallelsubs.o precision.o
 periodic_table.o: precision.o sys.o
 periodic_table.o: precision.o sys.o
 fractional.o: f2kcli.o periodic_table.o precision.o
 fractional.o: f2kcli.o periodic_table.o precision.o
 mixps.o: f2kcli.o interpolation.o periodic_table.o precision.o
-restructSpData2D.o: class_Sparsity.o
-siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
-siesta_cmlsubs.o: 
-siesta_forces.o: sparse_matrices.o state_analysis.o state_init.o sys.o timer.o
-siesta_forces.o: units.o wavefunctions.o write_subs.o
-state_init.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
-state_init.o: domain_decom.o files.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
-state_init.o: ioxv.o kpoint_grid.o ldau_specs.o m_energies.o m_eo.o m_gamma.o
-state_init.o: m_mixing.o m_mixing_scf.o m_mpi_utils.o m_new_dm.o m_os.o
-state_init.o: m_pivot_methods.o m_rmaxh.o m_sparse.o m_sparsity_handling.o
-state_init.o: m_spin.o m_steps.o m_supercell.o m_test_io.o m_ts_charge.o
-state_init.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_options.o
-state_init.o: m_ts_sparse.o m_ts_tri_init.o normalize_dm.o overlap.o parallel.o
 mixps.o: f2kcli.o interpolation.o periodic_table.o precision.o
-m_restruct_spdata2d.o: restructSpData2D.o

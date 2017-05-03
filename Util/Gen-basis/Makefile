@@ -151,11 +151,11 @@ atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: interpolation.o m_filter.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: sys.o hamann.o
+atom.o: hamann.o interpolation.o m_filter.o old_atmfuncs.o periodic_table.o
+atom.o: precision.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: interpolation.o m_filter.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: sys.o
+atom.o: hamann.o interpolation.o m_filter.o old_atmfuncs.o periodic_table.o
+atom.o: precision.o sys.o
 atom_options.o: sys.o
 atom_options.o: sys.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
@@ -218,6 +218,7 @@ ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 aux_proj.o: atom.o
 m_bessph.o: bessph.o
+m_hamann.o: hamann.o
 m_radfft.o: radfft.o
 m_semicore_info_froyen.o: semicore_info_froyen.o
 t_spin.o: m_spin.o

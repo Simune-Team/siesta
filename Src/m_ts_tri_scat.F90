@@ -231,6 +231,9 @@ contains
     integer, pointer :: crows(:)
 
     integer :: i_Elec, idx_Elec, no, nb
+#ifdef TBTRANS
+    integer :: i_diag
+#endif
     integer :: np
     integer :: in, n, i, off
     integer :: sPart, ePart, lPart
@@ -508,6 +511,10 @@ contains
     ! is encompassed by the scattering matrix
 #ifdef TBTRANS
     if ( present(TrGfG) ) TrGfG = 0._dp ! initialize
+    ! initialize diagonal counter.
+    ! Note that we know the columns are coinciding with
+    ! the electrode scattering matrix.
+    i_diag = 0
 #endif
     
     ! Calculate the "diagonal" triple-matrix-product
@@ -544,16 +551,26 @@ contains
 
 #ifdef TBTRANS
        if ( present(TrGfG) ) then
-          in = idx_Elec + (crows(sPart)-nrows_g(Gf_tri,sPart))
-          ! jump to the diagonal part
-          in = (in-1) * sNc
+          ! The idx_Elec counter tracks the row
+          ! in the BTD matrix.
+          ! But we need to figure out the diagonal
+          ! element.
+          ! Here we skip to the correct column, of
+          ! the first index in the currently calculated
+          ! Gf.G MM
+          in = i_diag * nb + 1
           do i = 0 , nb - 1
-            if ( in_rgn(El%o_inD,idx_Elec+i) ) then
-               ! get diagonal element
-               TrGfG = TrGfG + aimag(zwork(in))
-            end if
-            ! step
-            in = in + sNc + 1
+             ! This should be fast because inDpvt is sorted
+             if ( in_rgn(El%inDpvt,idx_Elec+i) ) then
+                ! we have hit a diagonal element
+                i_diag = i_diag + 1
+                ! add the contribution
+                TrGfG = TrGfG - aimag(ztmp(in))
+                ! step to next column
+                in = in + nb
+             end if
+             ! always step to the next row
+             in = in + 1
           end do
        end if
 #endif
@@ -583,6 +600,17 @@ contains
        
     end do
 
+#ifdef TBTRANS
+    if ( present(TrGfG) ) then
+       ! Now we have:
+       !   T = Tr[G \Gamma]
+       ! Multiply by two to get the Tr[G^\dagger Gamma]
+       ! contribution as well.
+       ! See e.g. the discussion for GF_Gamma in
+       ! m_tbt_tri_scat.F90
+       TrGfG = TrGfG * 2._dp
+    end if
+#endif
 
     ! Deallocate ztmp if allocated
     if ( tmp_allocated ) then

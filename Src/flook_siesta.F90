@@ -14,18 +14,25 @@ module flook_siesta
   private
 
   ! Signals to LUA
+  ! Right after reading initial options 
   integer, parameter, public :: LUA_INITIALIZE = 1
-  integer, parameter, public :: LUA_SCF_LOOP = 2
-  integer, parameter, public :: LUA_FORCES = 3
-  integer, parameter, public :: LUA_MOVE = 4
-  integer, parameter, public :: LUA_ANALYSIS = 5
+  ! Right before SCF step starts, but at each MD step
+  integer, parameter, public :: LUA_INIT_MD = 2
+  ! at the start of each SCF step
+  integer, parameter, public :: LUA_SCF_LOOP = 3
+  ! after each SCF has finished
+  integer, parameter, public :: LUA_FORCES = 4
+  ! when moving the atoms, right after the FORCES step
+  integer, parameter, public :: LUA_MOVE = 5
+  ! when SIESTA is complete, just before it exists
+  integer, parameter, public :: LUA_ANALYSIS = 6
 
 #ifdef SIESTA__FLOOK
 
   public :: slua_init, slua_call, slua_close
 
   ! Internal parameters
-  logical, save :: slua_run = .true.
+  logical, save :: slua_run = .false.
   character(len=512), save, public :: slua_file = ' '
   ! Debugging flag for both parallel and serial debugging
   logical, save, public :: slua_debug = .false.
@@ -45,20 +52,46 @@ contains
 siesta = { &
     Node = 1, &
     INITIALIZE = 1, &
-    SCF_LOOP = 2, &
-    FORCES = 3, &
-    MOVE = 4, &
-    ANALYSIS = 5, &
+    INIT_MD = 2, &
+    SCF_LOOP = 3, &
+    FORCES = 4, &
+    MOVE = 5, &
+    ANALYSIS = 6, &
     state = 0, &
-    print = function(self,msg) &
-       print("Lua-msg: " ..msg) &
+    IOprint = function(self, ...) &
+       if self.IONode then &
+          print(...) &
+       end &
+    end, &
+    print = function(self, ...) &
+       print(...) &
     end, &
 } &
-_empty_tbl = {} &
-siesta_comm = function (_empty_tbl) end'
+IOprint = function(...) &
+   siesta:IOprint(...) &
+end &
+siesta_comm = function(...) end'
 
+    character(*), parameter :: unit_static_lua = '&
+siesta.Units = { &
+    Ang    = 1. / 0.529177, &
+    eV     = 1. / 13.60580, &
+    kBar   = 1. / 1.47108e5, &
+    Debye  = 0.393430, &
+    amu    = 2.133107, &
+} &
+siesta.Units.GPa = siesta.Units.kBar * 10 &
+siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
+
+    ! For error-handling with lua
+    integer :: err
+    character(len=2048) :: err_msg
+    
     ! First retrieve lua file
     slua_file = fdf_get('LUA.Script',' ')
+    ! Immediately return if the file is not specified...
+    if ( len_trim(slua_file) == 0 ) return
+
     ! Default debugging only on the io-node.
     slua_debug = fdf_get('LUA.Debug',.false.)
     slua_debug = slua_debug .and. IONode 
@@ -90,19 +123,33 @@ siesta_comm = function (_empty_tbl) end'
           write(*,'(a)') 'siesta-lua: siesta-lua CANNOT be runned on &
                &this file-system. Try running with only one node.'
           write(*,'(a)') 'siesta-lua: WARNING'
+       else if ( IONode ) then
+          write(*,'(a)') 'siesta-lua: WARNING'
+          write(*,'(3a)') 'siesta-lua: File ', trim(slua_file), &
+               ' could not be found!'
+          write(*,'(a)') 'siesta-lua: WARNING'
        end if
        return
     end if
     
-    ! Initialize 
+    ! Initialize the Lua state
     call lua_init(LUA)
 
     ! Create LUA table for data container
     call lua_run(LUA, code = fortran_static_lua )
+    ! Append the unit table for SIESTA unit conversion
+    call lua_run(LUA, code = unit_static_lua )
 
     ! Register siesta calls to communicate to the lua layer
-    call lua_register(LUA,'siesta_get', slua_get_siesta)
-    call lua_register(LUA,'siesta_return', slua_return_siesta)
+    ! Old names for backwards compatibility
+    call lua_register(LUA,'siesta_get', slua_receive_siesta)
+    call lua_register(LUA,'siesta_return', slua_send_siesta)
+
+    call lua_register(LUA,'siesta_receive', slua_receive_siesta)
+    call lua_register(LUA,'siesta_send', slua_send_siesta)
+    ! Make local siesta.receive and siesta.send
+    call lua_run(LUA, code = 'siesta.receive = siesta_receive' )
+    call lua_run(LUA, code = 'siesta.send = siesta_send' )
 
     ! Only used for printing information about
     ! what can be retrieved
@@ -111,9 +158,6 @@ siesta_comm = function (_empty_tbl) end'
     call lua_register(LUA,'_internal_print_allowed', slua_siesta_print_objects)
     call lua_run(LUA, code = 'siesta.print_allowed = _internal_print_allowed' )
 
-    ! transfer the node info (from 1 to Nodes)
-    ! fortran/lua is 1-based, so why complicate matter for
-    ! non-experienced users in siesta internals... 
     write(fortran_msg,'(a,i0)') 'siesta.Node = ',Node + 1
     call lua_run(LUA, code = fortran_msg )
     write(fortran_msg,'(a,i0)') 'siesta.Nodes = ',Nodes
@@ -125,7 +169,12 @@ siesta_comm = function (_empty_tbl) end'
     end if
 
     ! Run the requested lua-script
-    call lua_run(LUA, slua_file)
+    err_msg = " "
+    call lua_run(LUA, slua_file, error = err, message=err_msg)
+    if ( err /= 0 ) then
+       write(*,'(a)') trim(err_msg)
+       call die('LUA initialization failed, please check your Lua script!!!')
+    end if
     
   end subroutine slua_init
 
@@ -133,6 +182,10 @@ siesta_comm = function (_empty_tbl) end'
     type(luaState), intent(inout) :: LUA
     integer, intent(in) :: state
     character(len=30) :: tmp
+
+    ! For error-handling with lua
+    integer :: err
+    character(len=2048) :: err_msg
 
     ! Return immediately if we should not run
     if ( .not. slua_run ) return
@@ -148,7 +201,12 @@ siesta_comm = function (_empty_tbl) end'
     end if
 
     ! Call communicator
-    call lua_run(LUA, code = 'siesta_comm()' )
+    call lua_run(LUA, code = 'siesta_comm()', error = err, message=err_msg )
+    if ( err /= 0 ) then
+       write(*,'(a)') trim(err_msg)
+       call die('LUA could not run siesta_comm() without an error, please &
+            &check your Lua script')
+    end if
 
   end subroutine slua_call
 
@@ -166,7 +224,7 @@ siesta_comm = function (_empty_tbl) end'
   ! ! ! ! ! ! !
 
 
-  function slua_get_siesta(state) result(nret) bind(c)
+  function slua_receive_siesta(state) result(nret) bind(c)
     use, intrinsic :: iso_c_binding, only: c_ptr, c_int
 
     use dictionary
@@ -206,9 +264,9 @@ siesta_comm = function (_empty_tbl) end'
     ! this function returns nothing
     nret = 0
 
-  end function slua_get_siesta
+  end function slua_receive_siesta
 
-  function slua_return_siesta(state) result(nret) bind(c)
+  function slua_send_siesta(state) result(nret) bind(c)
     use, intrinsic :: iso_c_binding, only: c_ptr, c_int
 
     use dictionary
@@ -247,7 +305,7 @@ siesta_comm = function (_empty_tbl) end'
     ! this function returns nothing
     nret = 0
 
-  end function slua_return_siesta
+  end function slua_send_siesta
 
   subroutine slua_get_tbl_to_dict(lua,keys)
 
@@ -343,7 +401,7 @@ siesta_comm = function (_empty_tbl) end'
       end if
 !      print *,'Attempt storing: ',trim(key), ' type= ',t
       select case ( t )
-      case ( 'b0' , 'i0', 's0', 'd0' )
+      case ( 'V0', 'b0' , 'i0', 's0', 'd0' )
          ! We need to handle the variables secondly
          call key_split(key,lkey,rkey)
          if ( len_trim(rkey) == 0 ) then
@@ -354,10 +412,13 @@ siesta_comm = function (_empty_tbl) end'
          end if
       end select
       select case ( t )
-      case ( 'b0' ) 
+      case ( 'V0' )
+         call assign(lkey,v)
+         call lua_set(tbl,rkey,lkey(1:len_trim(lkey)))
+      case ( 'b0' )
          call associate(b0,v)
          call lua_set(tbl,rkey,b0)
-      case ( 'b1' ) 
+      case ( 'b1' )
          call associate(b1,v)
          call lua_set(tbl,key,b1)
       case ( 'b2' ) 

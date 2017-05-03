@@ -470,7 +470,34 @@ C ----------------------------------------------------------------------
      &           'I hope you know what you are doing!'
          end if
 
-         if ( dipole_correction .and. ts_tidx > 0 ) then
+         ! In case we have 1 electrode, we will force the
+         ! dipole correction along the transport direction,
+         ! Else, should the dipole correction be perpendicular
+         ! to the transport direction
+         if ( dipole_correction ) then
+          if ( N_Elec == 1 .and. ts_tidx > 0 ) then
+            if ( shape .eq. 'chain' ) then
+               field  = cell(1:3,ts_tidx)
+               ortho  = ddot(3,field,1,field,1)
+               field  = field / ortho
+               ortho  = ddot(3,bcell,1,bcell,1)
+               field2 = bcell(1:3,1) / ortho
+               ! the transport direction must
+               ! be the periodic direction
+               if ( sum(abs(field-field2)) < 1.e-7_dp ) then
+                  call die('Dipole correction is not parallel 
+     &to transport direction. Requirement for 1 electrode.') 
+               end if
+            else if ( shape .eq. 'slab' ) then
+               ! get the dipole-correction field
+               call cross( bcell(1,1), bcell(1,2), field )
+               ortho = ddot(3,cell(1,ts_tidx),1,field,1) 
+               if ( ortho < 1.e-7_dp ) then
+                  call die('Dipole-correction must be parallel
+     &to transport direction. Requirement for 1 electrode.')
+               end if
+            end if
+          else if ( ts_tidx > 0 ) then
             ! Now we can check the directions of the chain/slab
             if ( shape .eq. 'chain' ) then
                field  = cell(1:3,ts_tidx)
@@ -481,32 +508,36 @@ C ----------------------------------------------------------------------
                ! the transport direction must
                ! be the periodic direction
                if ( sum(abs(field-field2)) > 1.e-9_dp ) then
-                  call die('Dipole correction is not &
-     &perpendicular to transport direction')
+                  call die('Dipole correction is not
+     &perpendicular to transport direction.')
                end if
             else if ( shape .eq. 'slab' ) then
-               ! get the field-direction
+               ! get the dipole-correction field
                call cross( bcell(1,1), bcell(1,2), field )
                ortho = ddot(3,cell(1,ts_tidx),1,field,1) 
                if ( ortho > 1.e-9_dp ) then
-                  call die('Dipole-correction must be &
-     &perpendicular to transport direction')
+                  call die('Dipole-correction must be
+     &perpendicular to transport direction.')
                end if
             end if
-         else if ( dipole_correction ) then
-            ! We will always allow dipole-correction
-            ! for mis-aligned electrodes...
-            ! However, it *MUST* be the users responsibility
+          else 
+             ! the ts_tidx < 0 which means the electrodes are individual
+             ! in this case it is the complete responsibility of the
+             ! user that the dipole correction is aligned correctly
+          end if
          end if
 
-         if ( .not. dipole_correction ) then
-            ! We have a user-defined electric-field
+         ! If there is an efield, check that it is perpendicular
+         ! to the transport directions
+         if ( acting_efield ) then
+            ! This is either dipole or user or both, for the first
+            ! user_specified_field is 0 anyway.
             field(:) = user_specified_field(:)
             do iE = 1 , N_Elec
                field2 = cell(:,Elecs(iE)%pvt(Elecs(iE)%t_dir))
                ortho = ddot(3,field2,1,field,1)
                if ( ortho > 1.e-9_dp ) then
-                  call die('User defined E-field must be &
+                  call die('User defined E-field must be
      &perpendicular to semi-infinite directions')
                end if
             end do
@@ -649,6 +680,7 @@ C     Modules
       use files,         only  : slabel
       use files,         only  : filesOut_t ! derived type for output file names
       use siesta_options, only : harrisfun, save_initial_charge_density
+      use siesta_options, only : analyze_charge_density_only
       use meshsubs,       only : LocalChargeOnMesh
       use meshsubs,       only : PartialCoreOnMesh
       use meshsubs,       only : NeutralAtomOnMesh
@@ -876,6 +908,13 @@ C ----------------------------------------------------------------------
       volume = volcel(cell)
 
 C-------------------------------------------------------------------------
+      
+      if (analyze_charge_density_only) then
+         !! Use the functionality in the first block
+         !! of the routine to get charge files and partial charges
+         call setup_analysis_options()
+      endif
+      
       if (filesOut%vna .ne. ' ') then
         ! Uniform dist, sequential form
 #ifdef NCDF_4
@@ -975,7 +1014,10 @@ C       Set the UNIFORM distribution again and copy DRho to it
      &          (sqrt(sum(DRho(:,ispin)**2)),ispin=1,nspin)
         end if
 
-        if (save_initial_charge_density) then 
+        if (save_initial_charge_density) then
+           ! This section is to be deprecated in favor
+           ! of "analyze_charge_density_only"
+           ! (except for the special name for the .nc file)
 #ifdef NCDF_4
           if ( write_cdf ) then
              call cdf_save_grid(trim(slabel)//'.nc','RhoInit',nspin,
@@ -1153,7 +1195,8 @@ C       Save total (ionic+electronic) charge
 C ----------------------------------------------------------------------
 C Save the total charge (model core + valence) for Bader analysis
 C ----------------------------------------------------------------------
-
+      
+      ! The test for toch guarantees that we are in "analysis mode"
       if (filesOut%toch .ne. ' ' .and. savebader) then
         call save_bader_charge()
       endif
@@ -1201,6 +1244,16 @@ C ----------------------------------------------------------------------
          endif
       endif
 
+! End of analysis section
+! Can exit now, if requested
+      
+        if (analyze_charge_density_only) then 
+            call timer('DHSCF3',2)
+            call timer('DHSCF',2)
+           call bye("STOP after analyzing charge from input DM")
+        endif
+
+!-------------------------------------------------------------
 C     Transform spin density into sum and difference
 
       ! TODO Check for NC/SO:
@@ -1656,6 +1709,8 @@ C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
 #ifdef BSC_CELLXC
       sbuffer(6) = Exc
       sbuffer(7) = Dxc
+#else
+      sbuffer(6:7) = 0._dp
 #endif /* BSC_CELLXC */
       call MPI_AllReduce( sbuffer, rbuffer, 7, MPI_double_precision,
      &                     MPI_Sum, MPI_Comm_World, MPIerror )
@@ -1855,6 +1910,28 @@ C ----------------------------------------------------------------------
       call de_alloc( BaderCharge, name='BaderCharge' )
       end subroutine save_bader_charge
 
+      subroutine setup_analysis_options()
+      !! For the analyze-charge-density-only case,
+      !! avoiding any diagonalization
+      
+      use siesta_options, only: hirshpop, voropop
+      use siesta_options, only: saverho, savedrho, saverhoxc
+      use siesta_options, only: savevh, savevt, savevna
+      use siesta_options, only: savepsch, savetoch
+      
+      want_partial_charges = (hirshpop .or. voropop) 
+
+        if (saverho)   filesOut%rho   = trim(slabel)//'.RHO' 
+        if (savedrho)  filesOut%drho  = trim(slabel)//'.DRHO'
+        if (saverhoxc) filesOut%rhoxc = trim(slabel)//'.RHOXC'
+        if (savevh)    filesOut%vh    = trim(slabel)//'.VH'  
+        if (savevt)    filesOut%vt    = trim(slabel)//'.VT'  
+        if (savevna)   filesOut%vna   = trim(slabel)//'.VNA' 
+        if (savepsch)  filesOut%psch  = trim(slabel)//'.IOCH'
+        if (savetoch)  filesOut%toch  = trim(slabel)//'.TOCH'
+        
+        end subroutine setup_analysis_options
+      
       end subroutine dhscf
 
       subroutine delk_wrapper(isigneikr, norb, maxnd,

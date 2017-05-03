@@ -26,7 +26,7 @@ subroutine tbt_init()
   use m_wallclock, only : wallclock
   use m_spin
 #ifdef NCDF_4
-  use nf_ncdf, only : ncdf_IOnode
+  use netcdf_ncdf, only : ncdf_IOnode
 #endif
 #ifdef MPI
   use mpi_siesta, only : MPI_Barrier, MPI_Comm_World

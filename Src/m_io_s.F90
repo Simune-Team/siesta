@@ -1024,6 +1024,7 @@ contains
 #endif
        call newdSpData2D(sp,dim2,fdit,dSp2D,name=trim(tag), &
             sparsity_dim=sp_dim)
+       call delete(fdit)
     end if
 
     a => val(dSp2D)

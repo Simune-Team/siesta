@@ -5,20 +5,52 @@
 # Script-author:
 #  Nick R. Papior, 2016
 #
-# We encourage the use such as this:
-# To create the 4.0 release, we would advocate performing
-# this command:
-#   ./release.sh --prev-tag siesta-3.2 --tag 4.0-release \
+# We encourage the use such as this script to ease and unify
+# the release mechanism for SIESTA.
+#
+# To create the 4.0 release, this command should be used:
+#   ./release.sh --prev-tag v3.2 --tag v4.0 \
 #      --out siesta-4.0
 # which creates the file:
 #   siesta-releases/siesta-4.0.tar.gz
+#
 # We encourage that the prev-tag is ALWAYS the previous
-# stable release tag.
-# This ensures a consistent changes file shipped with
+# stable release tag (also for beta releases!).
+# This ensures a consistent CHANGES file shipped with
 # the tar-file.
-# I.e. for the 4.1 release, the command would be:
-#   ./release.sh --prev-tag 4.0-release --tag 4.1-release \
+# To clarify the different cases here we show a few
+# release steps.
+#
+# Release a new version of siesta.
+#
+# In this case the previous stable release was: 4.0
+# The new release is: 4.1
+# The command would be:
+#   ./release.sh --prev-tag v4.0 --tag v4.1 \
 #      --out siesta-4.1
+#
+# Release a second beta release of siesta.
+#
+# In this case the previous stable release was: 4.0
+# The new release is: 4.1-b2
+# The command would be:
+#   ./release.sh --prev-tag v4.0 --tag v4.1-b2 \
+#      --out siesta-4.1-b2
+# A subsequent beta release would be:
+#   ./release.sh --prev-tag v4.0 --tag v4.1-b3 \
+#      --out siesta-4.1-b3
+
+echo ""
+echo "Welcome to the SIESTA release script"
+echo ""
+
+# Create wrapper for pushd/popd to remove output
+function pushd {
+    command pushd "$@" > /dev/null
+}
+function popd {
+    command popd "$@" > /dev/null
+}
 
 
 # This may actually not be changed, but is useful
@@ -44,7 +76,7 @@ _tag=`bzr tags --sort=time | grep -e '^v' | tail -1 | awk '{print $1}'`
 _out=
 
 
-function _has_tag {
+function has_tag {
     local tag=$1
     shift
     local ret=1
@@ -57,7 +89,7 @@ function _has_tag {
     printf "%d" "$ret"
 }
 
-function _help {
+function help {
     local ret=$1
     shift
 
@@ -70,29 +102,33 @@ function _help {
     echo "  --tag      instead of selecting the latest tag, choose this tag as the"
     echo "             reference tag for creating a release archive [bzr tags --sort=time]"
     echo "  --out      the default output file is siesta-<tag>.tar.gz."
+    echo "  --no-sign  do not sign the output files (useful for test-runs)"
     echo "  --help|-h  show this help."
     exit $ret
 }
 
 
 # Function for signing a specific file
-function _sign {
+function sign {
     local file=$1
+    shift
     if [ -e $file ]; then
 	if [ $_sign -eq 1 ]; then
+	    echo "Sign file: gpg --armor --sign --detach-sig $file"
 	    gpg --armor --sign --detach-sig $file
 	fi
-	_store $file
+	store $file
 	if [ $_sign -eq 1 ]; then
-	    _store $file.asc
+	    store $file.asc
 	    rm -f $file.asc
 	fi
     fi
 }
 
 # Save file in the $_tag-files folder
-function _store {
+function store {
     local file=$1
+    shift
     if [ -e $file ]; then
 	cp $file $_reldir/$_tag-files/
     fi
@@ -109,8 +145,11 @@ while [ $# -gt 0 ]; do
 	--tag)
 	    _tag=$1
 	    # Check that the tag exists
-	    if [ $(_has_tag $_tag) -eq 1 ]; then
+	    if [ $(has_tag $_tag) -eq 1 ]; then
+		echo ""
 		echo "$0 could not find tag: '$_tag' in the tags list."
+		echo "A release tag *MUST* exist before a release can be created"
+		echo ""
 		echo "The available tags are:"
 		bzr tags | awk '{print " ",$1}'
 		exit 1
@@ -120,8 +159,10 @@ while [ $# -gt 0 ]; do
 	--prev-tag)
 	    _prev_tag=$1
 	    # Check that the tag exists
-	    if [ $(_has_tag $_prev_tag) -eq 1 ]; then
+	    if [ $(has_tag $_prev_tag) -eq 1 ]; then
+		echo ""
 		echo "$0 could not find tag: '$_prev_tag' in the tags list."
+		echo ""
 		echo "The available tags are:"
 		bzr tags | awk '{print " ",$1}'
 		exit 1
@@ -139,7 +180,7 @@ while [ $# -gt 0 ]; do
 	    ;;
 	
 	--help|-h)
-	    _help 0
+	    help 0
 	    ;;
 	
     esac
@@ -157,9 +198,11 @@ fi
 
 echo "Chosen tags are:"
 echo "  previous tag: $_prev_tag"
-echo "  current tag : $_tag"
+echo "  release tag : $_tag"
 echo "Creating out file:"
 echo "  $_out.tar.gz"
+echo ""
+echo "Waiting 1 second before creating release... (Ctrl^C kills the sequence)"
 sleep 1
 	    
 # The current procedure of releasing a SIESTA
@@ -237,7 +280,7 @@ rm release.sh
 
 # Create signatures and move files
 for f in *.pdf ; do
-    _sign $f
+    sign $f
 done
 
 # Go out of the documentation directory...
@@ -254,7 +297,7 @@ popd
 
 # Create the archive... (without any .bzr files)
 tar -czf $_out.tar.gz $_out
-_sign $_out.tar.gz
+sign $_out.tar.gz
 rm $_out.tar.gz
 
 popd

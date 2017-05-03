@@ -64,8 +64,6 @@ contains
     use mpi_siesta
 #endif
 
-    use alloc, only : re_alloc, de_alloc
-
     use class_OrbitalDistribution
     use class_Sparsity
     use class_zSpData1D
@@ -76,7 +74,7 @@ contains
 
     use dictionary
 #ifdef NCDF_4
-    use nf_ncdf, only: hNCDF, ncdf_close
+    use netcdf_ncdf, only: hNCDF, ncdf_close
 #endif
 
     use m_ts_electype
@@ -121,7 +119,7 @@ contains
     use m_tbt_proj, only : proj_Mt_mix, proj_cdf_save
     use m_tbt_proj, only : proj_cdf_save_J
 
-    use m_tbt_dH, only : read_next_dH, clean_dH
+    use m_tbt_dH, only : read_next_dH, clean_dH, dH
 #endif
 
     use m_tbt_sparse_helper, only : create_region_HS
@@ -882,14 +880,16 @@ contains
              ! Down-fold immediately :)
 #ifdef TBT_PHONON
              call downfold_SE(cOmega,Elecs(iEl), spH, spS, &
-                  r_oElpD(iEl), ElTri(iEl)%n, ElTri(iEl)%r, nzwork,zwork)
+                  r_oElpD(iEl), ElTri(iEl)%n, ElTri(iEl)%r, TSHS%sc_off, kpt, &
+                  nzwork,zwork)
 #else
              call downfold_SE(cE,Elecs(iEl), spH, spS, &
-                  r_oElpD(iEl), ElTri(iEl)%n, ElTri(iEl)%r, nzwork,zwork)
+                  r_oElpD(iEl), ElTri(iEl)%n, ElTri(iEl)%r, TSHS%sc_off, kpt, &
+                  nzwork,zwork)
 #ifdef NOT_WORKING
              call downfold_SE_life(cE,Elecs(iEl), spH, spS, &
                   r_oElpD(iEl), ElTri(iEl)%n, ElTri(iEl)%r, life(iEl)%life, &
-                  nzwork,zwork)
+                  TSHS%sc_off, kpt, nzwork,zwork)
              print *,sum(life(iEl)%life)
 #endif
 #endif
@@ -939,10 +939,10 @@ contains
           ! *******************
 #ifdef TBT_PHONON
           call prepare_invGF(cOmega, zwork_tri, r_oDev, pvt, &
-               N_Elec, Elecs, spH , spS)
+               N_Elec, Elecs, spH , spS, TSHS%sc_off, kpt)
 #else
           call prepare_invGF(cE, zwork_tri, r_oDev, pvt, &
-               N_Elec, Elecs, spH , spS)
+               N_Elec, Elecs, spH , spS, TSHS%sc_off, kpt)
 #endif
 
           ! ********************
@@ -1084,7 +1084,12 @@ contains
                         kpt, &
                         cE,zwork_tri,r_oDev,orb_J,pvt)
 #endif
-                   
+                   if ( dH%lvl > 0 ) then
+                      if ( 'orb-current-dH' .in. save_DATA ) then
+                         call orb_current_add_dH(dH%dH, TSHS%sc_off, &
+                              kpt, zwork_tri, r_oDev, orb_J, pvt)
+                      end if
+                   end if
                 end if
 #endif
              end if
@@ -1286,7 +1291,13 @@ contains
                        kpt, &
                        cE,zwork_tri,r_oDev,orb_J,pvt)
 #endif
-
+                  if ( dH%lvl > 0 ) then
+                     if ( 'orb-current-dH' .in. save_DATA ) then
+                        call orb_current_add_dH(dH%dH, TSHS%sc_off, &
+                             kpt, zwork_tri, r_oDev, orb_J, pvt)
+                     end if
+                  end if
+                     
                   ! We need to save it immediately, we
                   ! do not want to have several arrays in the
                   ! memory
@@ -1417,7 +1428,7 @@ contains
     !***********************
     ! CLEAN UP
     !***********************
-    if ( allocated(Teig) ) deallocate(Teig)
+    deallocate(Teig)
 
     deallocate(nE%iE,nE%E)
 
@@ -1448,7 +1459,7 @@ contains
     if ( N_proj_ME > 0 ) then
        deallocate(El_p%Sigma)
        deallocate(bTk,pDOS)
-       if ( allocated(bTkeig) ) deallocate(bTkeig)
+       deallocate(bTkeig)
     end if
 
     call delete(orb_J)
@@ -1495,7 +1506,7 @@ contains
 #else
     call end_save(iounits)
     call end_save(iounits_El)
-    deallocate(iounits)
+    deallocate(iounits, iounits_El)
 #endif
 
   contains
@@ -1527,7 +1538,7 @@ contains
   ! creation of the GF^{-1} for a certain region
   ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
   subroutine prepare_invGF(cE, GFinv_tri, r, pvt, &
-       N_Elec, Elecs, spH, spS)
+       N_Elec, Elecs, spH, spS, sc_off, kpt)
 
     use class_Sparsity
     use class_zSpData1D
@@ -1547,6 +1558,7 @@ contains
     type(Elec), intent(inout) :: Elecs(N_Elec)
     ! The Hamiltonian and overlap sparse matrices
     type(zSpData1D), intent(inout) :: spH,  spS
+    real(dp), intent(in) :: sc_off(:,:), kpt(3)
 
     ! Local variables
     complex(dp) :: Z
@@ -1612,7 +1624,7 @@ contains
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
        ! Add dH
-       call add_zdH_TriMat(dH%dH, Gfinv_tri, r)
+       call add_zdH_TriMat(dH%dH, Gfinv_tri, r, sc_off, kpt)
     end if
 #endif
 
@@ -1719,7 +1731,7 @@ contains
   end subroutine prep_Gfinv_algo
 #endif
 
-  subroutine downfold_SE(cE, El, spH, spS,r,np,p,nwork,work)
+  subroutine downfold_SE(cE, El, spH, spS,r,np,p, sc_off, kpt, nwork,work)
 
     use class_Sparsity
     use class_zSpData1D
@@ -1739,6 +1751,8 @@ contains
     integer, intent(in) :: np
     ! parts associated
     integer, intent(in) :: p(np)
+    ! super-cell offsets and k-point
+    real(dp), intent(in) :: sc_off(:,:), kpt(3)
     ! Work-arrays...
     integer, intent(in) :: nwork
     complex(dp), intent(inout), target :: work(nwork)
@@ -1793,7 +1807,8 @@ contains
        i = i + p(ip)*p(ip-1)
        C => work(i:i-1+p(ip)*p(ip-1))
 
-       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A)
+       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A, &
+            sc_off, kpt)
 
        if ( ip > 2 ) then
           ii = p(ip-1) ** 2
@@ -1806,8 +1821,10 @@ contains
 
        ! Ensures that Y is not overwritten
        i = off + p(ip-1)
-       call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B)
-       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),C)
+       call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
+            sc_off, kpt)
+       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),C, &
+            sc_off, kpt)
 
        ! increment offset
        off = off + p(ip-1)
@@ -1944,7 +1961,8 @@ contains
        i = 1
        A => work(i:i-1+p(ip-1)**2)
 
-       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A)
+       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A, &
+            sc_off, kpt)
 
        ! Now we can calculate the life-time of the electrons
        ! The life-time is the g_ii (local Green function)
@@ -2020,7 +2038,8 @@ contains
 
        ! Ensures that Y is not overwritten
        i = off + p(ip-1)
-       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),B)
+       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),B, &
+            sc_off, kpt)
 
        ! increment offset
        off = off + p(ip-1)
@@ -2043,7 +2062,8 @@ contains
             'N','N',p(ip-1),p(ip),p(ip-1),dcmplx(1._dp,0._dp), &
             A,p(ip-1),B,p(ip-1),dcmplx(0._dp,0._dp),C,p(ip))
 
-       call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B)
+       call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
+            sc_off, kpt)
 
        ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
 #ifdef USE_GEMM3M
@@ -2090,7 +2110,7 @@ contains
   ! creation of the GF^{-1} for a certain region
   ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
   subroutine prep_HS(Z, El, spH, spS, &
-       r,off1,n1,off2,n2,M)
+       r,off1,n1,off2,n2,M, sc_off, kpt)
 
     use class_Sparsity
     use class_zSpData1D
@@ -2112,6 +2132,7 @@ contains
     ! The sizes and offsets of the matrix
     integer, intent(in) :: off1, n1, off2, n2
     complex(dp), intent(out) :: M(n1,n2)
+    real(dp), intent(in) :: sc_off(:,:), kpt(3)
 
     ! Local variables
     type(Sparsity), pointer :: sp
@@ -2158,7 +2179,7 @@ contains
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
        ! Add dH
-       call add_zdH_Mat(dH%dH, r, off1,n1,off2,n2, M)
+       call add_zdH_Mat(dH%dH, r, off1,n1,off2,n2, M, sc_off, kpt)
     end if
 #endif
 

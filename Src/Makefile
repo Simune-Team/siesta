@@ -128,6 +128,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	scfconvergence_test.o post_scf_work.o state_analysis.o write_subs.o \
 	siesta_init.o struct_init.o siesta_options.o read_options.o siesta_geom.o \
         siesta_analysis.o siesta_end.o siesta_forces.o \
+	siesta_tddft.o \
         io.o sparse_matrices.o \
         coor.o atm_transfer.o \
         broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
@@ -293,6 +294,7 @@ $(PSOP):
 	(cd psoplib/src ; $(MAKE) -j 1 VPATH="$(VPATH)/psoplib/src" \
 	ARCH_MAKE=$(ARCH_MAKE) \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
+
 #--------------------------------------------------------------
 libmpi_f90.a: 
 	@(cd MPI ; $(MAKE) -j 1 \
@@ -310,23 +312,17 @@ $(FDF): $(MPI_INTERFACE)
 
 #--------------------------------------------------------------
 MS=MatrixSwitch.a
-$(MS): 
+$(MS): $(MPI_INTERFACE)
 	(cd MatrixSwitch/src ; \
-	 $(MAKE) -j 1\
+	 $(MAKE) -j 1 \
 	            "VPATH=$(VPATH)/MatrixSwitch/src" \
 		    "FPPFLAGS=$(FPPFLAGS)" \
-		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" all)
-#
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module)
+
 m_initwf.o changebasis.o m_evolve.o evolg.o evolk.o: $(MS)
 wavefunctions.o m_matdiag.o m_matswinvers.o: $(MS)
-#--------------------------------------------------------------
 
-# In case the user requests compilation of flook
-# we force the compilation of the libfdict
-ifdef USE_FLOOK
-FPPFLAGS += -DFLOOK
-COMP_LIBS += libfdict.a
-endif
+#--------------------------------------------------------------
 
 #######################
 #  TS-TBT libs:
@@ -334,32 +330,36 @@ endif
 # Libraries used by transiesta and tbtrans
 # They are currently supplied by this distribution
 # All rights reserved for the author of these libraries.
-# Author: Nick Papior Andersen
+# Author: Nick R. Papior
 
 # This library can be found at:
 #  https://github.com/zerothi/fdict
 FDICT=libfdict.a
 $(FDICT): 
-	(cd fdict ; $(MAKE) -j 1 "VPATH=$(VPATH)/fdict" \
-	            "FC=$(FC_SERIAL)" \
-		    "ARCH_MAKE=$(PWD)/arch.make" \
-		    "FPPFLAGS=$(FPPFLAGS) -UMPI" \
-		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=) $(INCFLAGS)" lib)
-	@cp -p fdict/*.*d ./
-	cp fdict/$(FDICT) ./
+	(cd fdict ; rm -rf obj ; mkdir obj ; cd obj ; \
+	echo "TOP_DIR=$(VPATH)/fdict" > Makefile ; echo "include $(VPATH)/fdict/Makefile" >> Makefile ; \
+	echo "FC=$(FC_SERIAL)" > setup.make ; \
+	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
+	@cp -p fdict/obj/*.mod ./
+	cp fdict/obj/$(FDICT) ./
 
 # This library can be found at:
 #  https://github.com/zerothi/ncdf
 NCDF=libncdf.a
 $(NCDF): $(FDICT)
-	(cd NCDF ; $(MAKE) -j 1 "VPATH=$(VPATH)/NCDF" \
-		"LIBFDICT=$(FDICT)" \
-		"DIR_FDICT=$(VPATH)/fdict" \
-		"ARCH_MAKE=$(PWD)/arch.make" \
-		"FPPFLAGS=$(FPPFLAGS)" \
-		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../ $(INCFLAGS)" lib)
-	@cp -p NCDF/src/*.*d ./
-	cp NCDF/src/$(NCDF) ./
+	(cd ncdf ; rm -rf obj ; mkdir obj ; cd obj ; \
+	echo "TOP_DIR=$(VPATH)/ncdf" > Makefile ; echo "include $(VPATH)/ncdf/Makefile" >> Makefile ; \
+	echo "settings.bash: FORCE" >> Makefile ; \
+	printf '%s\n' "	-cp ../../fdict/obj/settings.bash ." >> Makefile ; \
+	echo "FC=$(FC)" > setup.make ; \
+	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "FPPFLAGS = $(FPPFLAGS)" >> setup.make ; \
+	echo "INCLUDES = $(INCFLAGS) -I../../" >> setup.make ; \
+	echo "LIBS = $(LIBS) -lfdict" >> setup.make ; \
+	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
+	@cp -p ncdf/obj/*.mod ./
+	cp ncdf/obj/$(NCDF) ./
 
 #######################
 # Create all objects
@@ -521,8 +521,8 @@ clean:
 	(cd ncps/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	(cd psoplib/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
-	@if [ -d fdict ] ; then (cd fdict && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
-	@if [ -d NCDF ] ; then (cd NCDF && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
+	@if [ -d fdict/obj ] ; then $(MAKE) -C fdict/obj clean ; fi
+	@if [ -d ncdf/obj ] ; then $(MAKE) -C ncdf/obj clean ; fi
 	(cd Libs ; $(MAKE) clean )
 	(cd MatrixSwitch/src ; $(MAKE) clean )
 
@@ -1220,7 +1220,7 @@ shaper.o: atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
 siesta.o: alloc.o extrae_module.o m_mpi_utils.o m_steps.o parallel.o
 siesta.o: siesta_analysis.o siesta_end.o siesta_forces.o siesta_init.o
-siesta.o: siesta_move.o
+siesta.o: siesta_move.o siesta_options.o siesta_tddft.o
 siesta2wannier90.o: files.o m_digest_nnkp.o m_spin.o m_trialorbitalclass.o
 siesta2wannier90.o: parallel.o precision.o siesta_options.o sys.o
 siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
@@ -1233,28 +1233,26 @@ siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o units.o
 siesta_analysis.o: write_subs.o writewave.o zmatrix.o
 siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
 siesta_cmlsubs.o: version.o
-siesta_dicts.o: atomlist.o m_energies.o m_forces.o m_stress.o precision.o
-siesta_dicts.o: siesta_geom.o siesta_options.o
+siesta_dicts.o: atomlist.o files.o kpoint_grid.o m_energies.o m_forces.o
+siesta_dicts.o: m_steps.o m_stress.o precision.o siesta_geom.o siesta_options.o
 siesta_end.o: bands.o densematrix.o extrae_eventllist.o flook_siesta.o
-siesta_end.o: m_dscfcomm.o m_fixed.o m_mixing_scf.o m_rhog.o m_wallclock.o
-siesta_end.o: memory_log.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
-siesta_end.o: siesta_cml.o siesta_cmlsubs.o siesta_master.o siesta_options.o
-siesta_end.o: sparse_matrices.o timestamp.o
-siesta_forces.o: alloc.o atomlist.o class_Fstack_Data1D.o class_SpData2D.o
-siesta_forces.o: compute_dm.o compute_energies.o compute_max_diff.o
-siesta_forces.o: densematrix.o files.o final_H_f_stress.o flook_siesta.o
-siesta_forces.o: kpoint_grid.o m_convergence.o m_energies.o m_eo.o m_evolve.o
-siesta_forces.o: m_forces.o m_gamma.o m_initwf.o m_iodm.o m_iodm_old.o
-siesta_forces.o: m_iotddft.o m_mixing.o m_mixing_scf.o m_mpi_utils.o
-siesta_forces.o: m_ncdf_siesta.o m_pexsi.o m_pexsi_driver.o m_rhog.o m_spin.o
-siesta_forces.o: m_steps.o m_stress.o m_transiesta.o m_ts_charge.o
-siesta_forces.o: m_ts_electype.o m_ts_global_vars.o m_ts_method.o
-siesta_forces.o: m_ts_options.o mixer.o overfsm.o parallel.o post_scf_work.o
-siesta_forces.o: precision.o save_density_matrix.o scfconvergence_test.o
-siesta_forces.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_dicts.o
-siesta_forces.o: siesta_geom.o siesta_master.o siesta_options.o
-siesta_forces.o: sparse_matrices.o state_analysis.o state_init.o timer.o
-siesta_forces.o: units.o wavefunctions.o write_subs.o
+siesta_end.o: m_dscfcomm.o m_fixed.o m_io.o m_mixing_scf.o m_rhog.o
+siesta_end.o: m_wallclock.o memory_log.o meshdscf.o meshphi.o moremeshsubs.o
+siesta_end.o: parallel.o siesta_cml.o siesta_cmlsubs.o siesta_master.o
+siesta_end.o: siesta_options.o sparse_matrices.o timestamp.o
+siesta_forces.o: atomlist.o class_Fstack_Data1D.o class_SpData2D.o compute_dm.o
+siesta_forces.o: compute_energies.o compute_max_diff.o files.o
+siesta_forces.o: final_H_f_stress.o flook_siesta.o kpoint_grid.o
+siesta_forces.o: m_convergence.o m_energies.o m_eo.o m_forces.o m_gamma.o
+siesta_forces.o: m_initwf.o m_iodm_old.o m_mixing.o m_mixing_scf.o
+siesta_forces.o: m_mpi_utils.o m_ncdf_siesta.o m_pexsi.o m_pexsi_driver.o
+siesta_forces.o: m_rhog.o m_spin.o m_steps.o m_stress.o m_transiesta.o
+siesta_forces.o: m_ts_charge.o m_ts_electype.o m_ts_global_vars.o m_ts_method.o
+siesta_forces.o: m_ts_options.o mixer.o parallel.o post_scf_work.o precision.o
+siesta_forces.o: save_density_matrix.o scfconvergence_test.o setup_H0.o
+siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_dicts.o siesta_geom.o
+siesta_forces.o: siesta_master.o siesta_options.o sparse_matrices.o
+siesta_forces.o: state_analysis.o state_init.o timer.o units.o write_subs.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o
 siesta_init.o: class_Fstack_Pair_Geometry_SpData2D.o densematrix.o files.o
@@ -1274,6 +1272,12 @@ siesta_move.o: m_stress.o m_target_stress.o parallel.o siesta_cml.o
 siesta_move.o: siesta_dicts.o siesta_geom.o siesta_master.o siesta_options.o
 siesta_move.o: sys.o units.o write_subs.o zm_broyden_optim.o zm_fire_optim.o
 siesta_move.o: zmatrix.o
+siesta_tddft.o: alloc.o atomlist.o compute_energies.o final_H_f_stress.o
+siesta_tddft.o: kpoint_grid.o m_energies.o m_eo.o m_evolve.o m_gamma.o
+siesta_tddft.o: m_initwf.o m_iotddft.o m_mpi_utils.o m_spin.o m_steps.o
+siesta_tddft.o: overfsm.o parallel.o precision.o setup_H0.o setup_hamiltonian.o
+siesta_tddft.o: siesta_cml.o siesta_options.o sparse_matrices.o
+siesta_tddft.o: state_analysis.o state_init.o wavefunctions.o
 sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpData2D.o
 sparse_matrices.o: class_OrbitalDistribution.o class_SpData1D.o
 sparse_matrices.o: class_SpData2D.o class_Sparsity.o precision.o
@@ -1319,7 +1323,8 @@ vmat.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 vmatsp.o: meshphi.o precision.o
 vmb.o: m_fixed.o parallel.o precision.o sys.o
-wavefunctions.o: parallel.o precision.o
+wavefunctions.o: atomlist.o kpoint_grid.o m_spin.o parallel.o precision.o
+wavefunctions.o: sparse_matrices.o
 write_inp_wannier.o: alloc.o atmfuncs.o atomlist.o m_ntm.o m_orderbands.o
 write_inp_wannier.o: mneighb.o parallel.o parallelsubs.o precision.o
 write_inp_wannier.o: siesta2wannier90.o siesta_geom.o
@@ -1476,6 +1481,7 @@ m_siesta_end.o: siesta_end.o
 m_siesta_forces.o: siesta_forces.o
 m_siesta_init.o: siesta_init.o
 m_siesta_move.o: siesta_move.o
+m_siesta_tddft.o: siesta_tddft.o
 m_state_analysis.o: state_analysis.o
 m_state_init.o: state_init.o
 m_struct_init.o: struct_init.o

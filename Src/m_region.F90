@@ -1308,8 +1308,8 @@ contains
     type(tRgn), intent(inout) :: r
     ! list to copy over
     integer, intent(in) :: n, list(n)
-    integer :: i
     character(len=*), intent(in), optional :: name
+    integer :: i
 
     call rgn_delete(r)
     r%n = n

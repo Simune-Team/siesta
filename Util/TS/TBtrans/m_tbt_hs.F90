@@ -234,14 +234,14 @@ contains
     ! Start by creating the Hamiltonian!
     ! just prepare the next ispin..
     if ( spin_idx == 0 ) then
-       call prep_next_HS(1,Volt)
+       call prep_next_HS(1, Volt)
     else
-       call prep_next_HS(spin_idx,Volt)
+       call prep_next_HS(spin_idx, Volt)
     end if
 
   end subroutine tbt_init_HSfile
                                 
-  subroutine prep_next_HS(ispin,Volt)
+  subroutine prep_next_HS(ispin, Volt)
 
     use parallel, only : IONode
     use units, only : eV
@@ -266,7 +266,7 @@ contains
     ! In case we are only having one TSHS file...
     if ( N_HS == 1 ) then
 
-       call read_HS(ispin,tHS(1),TSHS)
+       call read_HS(ispin, tHS(1), TSHS)
        dit => dist(TSHS%S_1D)
        TSHS%dit = dit
 
@@ -375,7 +375,7 @@ contains
 
   contains
 
-    subroutine read_HS(ispin,tHS,file)
+    subroutine read_HS(ispin, tHS, file)
       integer, intent(in) :: ispin
       type(tHSfile), intent(in) :: tHS
       type(tTSHS), intent(inout) :: file

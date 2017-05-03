@@ -426,23 +426,31 @@ contains
        i = ha_idx - offset_i(ts_tidx)
        if ( ts_tidx == 1 .and. &
             0 < i .and. i <= nmeshl(1) ) then
+          ! jump to correct X
           imesh = i
           do i3 = 1 , nmeshl(3)
              do i2 = 1 , nmeshl(2)
                 nlp  = nlp + 1
                 Vtot = Vtot + Vscf(imesh)
+                ! skip X box
                 imesh = imesh + nmeshl(1)
              end do
           end do
        else if ( ts_tidx == 2 .and. &
             0 < i .and. i <= nmeshl(2) ) then
+          ! offset to first Y index
+          imesh = (i-1)*nmeshl(1)
           do i3 = 1 , nmeshl(3)
-             imesh = imesh + (i-1)*nmeshl(1)
              do i1 = 1 , nmeshl(1)
                 nlp  = nlp + 1
                 imesh = imesh + 1
                 Vtot = Vtot + Vscf(imesh)
              end do
+             ! jump entire X and Y box to get the next Z
+             ! position with the correct Y offset
+             ! Note -1 because we already have passed one Y
+             ! block
+             imesh = imesh + (nmeshl(2)-1)*nmeshl(1)
           end do
        else if ( ts_tidx == 3 .and. &
             0 < i .and. i <= nmeshl(3) ) then

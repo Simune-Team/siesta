@@ -263,7 +263,7 @@ C Set up fdf ...
 
 
 C Define Name of the system ...
-      sname = fdf_string('SystemName',' ')
+      sname = fdf_string('SystemName', ' ')
       if (Node.eq.0) then
         write(6,'(/a,71("-"))') 'reinit: '
         write(6,'(a,a)') 'reinit: System Name: ',trim(sname)
@@ -272,7 +272,17 @@ C Define Name of the system ...
 C ...
 
 C Define System Label (short name to label files) ...
-      slabel = fdf_string('SystemLabel','siesta')
+      slabel = fdf_string('SystemLabel', 'siesta')
+      slabel = trim(slabel)
+      count = len_trim(slabel)
+      if ( count == 0 ) then
+         call die('SystemLabel must be at least 1 character!')
+      end if
+      ! Check that there are no spaces in the SystemLabel
+      length = index(slabel, ' ')
+      if ( length > 0 .and. length < count ) then
+         call die('SystemLabel must *NOT* contain any spaces!')
+      end if
       if (Node.eq.0) then
         write(6,'(a,a)') 'reinit: System Label: ',trim(slabel)
         write(6,'(a,71("-"))') 'reinit: '

@@ -44,7 +44,6 @@ contains
     use m_ts_tri_common, only: ts_pivot_tri_sort_El
     use m_ts_rgn2trimat
     use m_ts_electype
-    use m_ts_method, only: ts_A_method
     use m_ts_method, only: TS_BTD_A_COLUMN, TS_BTD_A_PROPAGATION
 
 #ifdef MPI
@@ -63,10 +62,6 @@ contains
 
     type(Sparsity) :: tmpSp1, tmpSp2
     integer :: i, iEl
-
-#ifdef MPI
-    integer :: MPIerror
-#endif
 
     call timer('tri-init-elec',1)
 
@@ -229,7 +224,7 @@ contains
        ! Sort the region according to the device
        ! (this ensures that the Gamma function
        !  is laid out according to the device region)
-       call rgn_copy(Elecs(iEl)%o_inD,r_tmp)
+       call rgn_copy(Elecs(iEl)%o_inD, r_tmp)
        call rgn_sort(r_tmp)
 
        ! Loop on the device region and copy
@@ -249,6 +244,9 @@ contains
           end if
        end do
 
+       ! It is clear that the inDpvt array is a sorted array
+       Elecs(iEl)%inDpvt%sorted = .true.
+       
        ! Copy this information to the ElpD
        if ( n /= Elecs(iEl)%o_inD%n ) &
             call die('Error programming, n')

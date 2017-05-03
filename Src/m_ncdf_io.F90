@@ -17,7 +17,7 @@ module m_ncdf_io
 #ifdef NCDF_4
   use variable
   use dictionary
-  use nf_ncdf, ncdf_parallel => parallel
+  use netcdf_ncdf, ncdf_parallel => parallel
 #endif
 #ifdef MPI
   use mpi_siesta

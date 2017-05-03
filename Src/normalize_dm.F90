@@ -21,6 +21,7 @@ contains
     use sparse_matrices, only: Dscf, Escf, maxnh, S
     use siesta_options,  only: dm_normalization_tol
     use siesta_options,  only: normalize_dm_during_scf
+    use siesta_options,  only: mix_scf_first
     use atomlist, only: qtot
     use parallel, only: IOnode
     use sys,      only: die
@@ -77,6 +78,13 @@ contains
              write(6,'(a,2f20.8)') &
                   'Note: For starting DM, Qtot, Tr[D*S] =', qtot, qsol
           end if
+       end if
+       ! We change whether one may mix the first SCF step
+       ! in case there is missing some initial charge
+       !   10e-4 electrons
+       if ( abs(qsol - qtot) > 0.0001_dp ) then
+          ! See discussion in m_new_dm.F90 (end of new_DM)
+          mix_scf_first = .false.
        end if
     else
        ! In later steps, the lack of normalization is more serious

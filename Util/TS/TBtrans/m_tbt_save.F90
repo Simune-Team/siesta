@@ -107,7 +107,7 @@ contains
   ! Opens the save file accordingly to the setup parameters
   subroutine open_cdf_save(fname,ncdf)
 
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
     
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD
@@ -116,9 +116,6 @@ contains
     ! The file-name to be opened
     character(len=*), intent(in) :: fname
     type(hNCDF), intent(inout) :: ncdf
-#ifdef MPI
-    integer :: MPIerror
-#endif
 
 #ifdef MPI
     ! Open the netcdf file
@@ -139,9 +136,6 @@ contains
   subroutine init_save_options()
     use m_verbosity, only: verbosity
     use parallel, only : IONode
-#ifdef NCDF_4
-    use parallel, only : Node
-#endif
 #ifdef NCDF_PARALLEL
     use parallel, only : Nodes
 #endif
@@ -214,7 +208,7 @@ contains
 
     use parallel, only: IONode
 #ifdef NCDF_4
-    use nf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
+    use netcdf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
 #endif
 
     character(len=*), parameter :: f1 ='(''tbt: '',a,t53,''='',tr4,l1)'
@@ -259,7 +253,7 @@ contains
 
     use fdf, only : fdf_get, leqi
     use parallel, only : IONode
-    use nf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
+    use netcdf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
 
     character(len=*), intent(in) :: name, default
     integer, intent(out) :: prec
@@ -294,9 +288,8 @@ contains
 
   subroutine cdf_precision_cmplx(name,default,prec)
 
-    use parallel, only : IONode
-    use nf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
-    use nf_ncdf, only : NF90_FLOAT_COMPLEX, NF90_DOUBLE_COMPLEX
+    use netcdf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
+    use netcdf_ncdf, only : NF90_FLOAT_COMPLEX, NF90_DOUBLE_COMPLEX
 
     character(len=*), intent(in) :: name, default
     logical, intent(out) :: prec
@@ -326,7 +319,7 @@ contains
     use m_os, only : file_exist
 
     use dictionary, assign_int => assign
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
     use m_ncdf_io, only : cdf_w_Sp
     use m_timestamp, only : datestring
 #ifdef MPI
@@ -560,7 +553,7 @@ contains
     dic = ('info'.kv.'Supercell offsets')
     call ncdf_def_var(ncdf,'isc_off',NF90_INT,(/'xyz', 'n_s'/), &
          atts = dic)
-    dic = ('info'.kv.'Number of supercells in each direction')
+    dic = dic // ('info'.kv.'Number of supercells in each direction')
     call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
          atts = dic)
 
@@ -568,25 +561,25 @@ contains
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
 
-    dic = dic//('info'.kv.'Index of device atoms')
+    dic = dic // ('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
          atts = dic)
 
     if ( a_Buf%n > 0 ) then
-       dic = dic//('info'.kv.'Index of buffer atoms')
+       dic = dic // ('info'.kv.'Index of buffer atoms')
        call ncdf_def_var(ncdf,'a_buf',NF90_INT,(/'na_b'/), &
             atts = dic)
     end if
 
     if ( 'DOS-Gf' .in. save_DATA ) then
-       dic = dic//('info'.kv.'Density of states')//('unit'.kv.'1/Ry')
+       dic = dic // ('info'.kv.'Density of states')//('unit'.kv.'1/Ry')
        call ncdf_def_var(ncdf,'DOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
             atts = dic , chunks = (/r%n,1,1/) , compress_lvl = cmp_lvl )
     end if
 
     if ( .not. isGamma ) then
 
-       dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
+       dic = dic // ('info'.kv.'k point')//('unit'.kv.'b')
        call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
             atts = dic)
        call delete(dic)
@@ -796,9 +789,7 @@ contains
 
   subroutine init_cdf_E_check(fname,E,NE)
 
-    use parallel, only : Node
-
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast
     use mpi_siesta, only : MPI_Integer
@@ -879,7 +870,7 @@ contains
   subroutine cdf_get_kpt_idx(fname,bkpt,ikpt)
 
     use parallel, only : Node
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast
     use mpi_siesta, only : MPI_Integer
@@ -959,10 +950,7 @@ contains
 
   subroutine cdf_save_E(ncdf,nE)
     use parallel, only : Node, Nodes
-    use nf_ncdf, ncdf_parallel => parallel
-#ifdef MPI
-    use mpi_siesta, only : MPI_COMM_WORLD
-#endif
+    use netcdf_ncdf, ncdf_parallel => parallel
 
     type(hNCDF), intent(inout) :: ncdf
     type(tNodeE), intent(in) :: nE
@@ -1006,7 +994,7 @@ contains
     use parallel, only : Node, Nodes
 
     use dictionary
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Gather
     use mpi_siesta, only : MPI_Send, MPI_Recv, MPI_DOUBLE_COMPLEX
@@ -1195,7 +1183,7 @@ contains
     use parallel, only : Node, Nodes
 
     use dictionary
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Double_Precision
 #endif
@@ -1287,7 +1275,7 @@ contains
     use mpi_siesta, only : Mpi_double_precision
 #endif
 
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 
     type(hNCDF), intent(inout) :: grp
     character(len=*), intent(in) :: var
@@ -1346,7 +1334,7 @@ contains
     use class_dSpData1D
 
     use dictionary
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD
     use mpi_siesta, only : MPI_Send, MPI_Recv
@@ -1418,7 +1406,7 @@ contains
 
     use variable
     use dictionary
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 
     use m_interpolate, only : crt_pivot
 

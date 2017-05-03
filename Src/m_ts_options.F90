@@ -947,7 +947,7 @@ contains
 #endif
     end if
     write(*,f9) 'SCF.TS DM tolerance',ts_Dtol
-    write(*,f9) 'SCF.TS Hamiltonian tolerance',ts_Htol
+    write(*,f7) 'SCF.TS Hamiltonian tolerance',ts_Htol/eV, 'eV'
 
     select case ( TS_scf_mode )
     case ( 0 )

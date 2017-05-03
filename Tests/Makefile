@@ -35,6 +35,9 @@
 # See also test.mk for details, and the scripts in Scripts for 
 # examples of other options for batch processing.
 
+# Default target
+default: all
+
 label=work
 
 
@@ -68,7 +71,6 @@ tests = ag anneal-cont ar2_vdw \
 	sih sih_fire sih_op_broyden \
 	si-optical si_pdos_kgrid \
 	sinw sinw_2 \
-	SOC_Pt2_xx SOC_Pt2_xz SOC_Pt2_zy SOC_Pt2_zz \
 	var_cell \
 	wannier \
 	zmatrix TDDFT_h2o
@@ -77,22 +79,30 @@ tests = ag anneal-cont ar2_vdw \
 # should only be runned sometimes
 # Currently they may be runned individually.
 #	SOC_FePt_xx SOC_FePt_xz SOC_FePt_zy SOC_FePt_zz
+tests_soc  = SOC_Pt2_xx SOC_Pt2_xz SOC_Pt2_zy SOC_Pt2_zz
+tests_soc += SOC_FePt_xx SOC_FePt_xz SOC_FePt_zy SOC_FePt_zz
 
-default: all
+# Tests only applicable for FLOS
+tests_flos  = flos_h2o_lbfgs flos_h2o_fire flos_h2o_meshcutoff flos_h2o_neb
 
-all:
-	@for dir in $(tests) ; do\
-	 $(MAKE) -C $$dir completed; \
-	done
+# Accumulated variable for ALL tests
+tests_all = $(tests) $(tests_soc) $(tests_flos)
+
+all: $(tests)
+
+# Define test specific targets:
+tests: $(tests)
+tests-soc: $(tests_soc)
+tests-flos: $(tests_flos)
 
 # Ensure that tests may be called individually
 # (and that they are run, PHONY is required)
 # This ensures one can call:
 #   make h2o
 # and the h2o test will be runned.
-.NOTPARALLEL: $(tests)
-.PHONY: $(tests)
-$(tests):
+.NOTPARALLEL: $(tests_all)
+.PHONY: $(tests_all)
+$(tests_all):
 	$(MAKE) -C $@ completed
 
 .PHONY: check
@@ -111,6 +121,6 @@ show:
 	@echo $(tests)
 
 clean:
-	@for i in $(tests) ; do \
+	@for i in $(tests_all) ; do \
 		(cd $$i ; make clean) ; \
 	done
