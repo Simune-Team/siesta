@@ -536,8 +536,14 @@ To use this feature at $k$ points it is important to know that phases
 in \tbtrans\ are defined using the lattice vectors (and \emph{not}
 inter-atomic distances)
 \begin{equation}
-  \mathbf H_k = \mathbf H \cdot e^{-i k \cdot \mathbf R}.
+  \mathbf H_k = \mathbf H \cdot e^{i k \cdot \mathbf R}.
+  \label{eq:hk-phase}
 \end{equation}
+\tbtrans\ will add the phases on \emph{all} elements of $\delta\mathbf
+H$ via Eq.~\eqref{eq:hk-phase}. To counter these phases one may simply
+multiply $\delta\mathbf H$ with the negative phase ($-i$). Note that
+phases are only added on super cell elements, \emph{not} unit cell
+elements. 
 
 \begin{fdfentry}{TBT.dH}[file]
 
@@ -649,33 +655,22 @@ set.
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{TBT.dH!Algorithm}[string]<sparse|block>
+\begin{fdflogicalT}{TBT.dH!Current.Orb}
+  \fdfdepend{TBT.Current!Orb}
 
-  Define the algorithm for inserting the matrix elements in the
-  Hamiltonian.
+  Whether the orbital currents will also contain the $\delta \mathbf
+  H$ contributions.
 
-  \begin{fdfoptions}
+  If \fdffalse\ the bond-currents will be calculated with-out the
+  additional term arising from the $\delta \mathbf H$. This may be
+  useful in cases where the additional term arises due to self-energy
+  corrections.
 
-    \option[sparse]%
-    \fdfindex{TBT.dH!Algorithm!sparse}%
-    The inner loop is across the sparsity pattern of $\delta\mathbf
-    H$, thus searching in the local matrix block sparsity pattern.  
-    
-    This should generally perform better when the matrix blocks to
-    insert in are relatively small. 
+  \note this functionality will only work correctly with a sorted
+  sparse $\delta \mathbf H$ entry. For every row the column indices
+  must be sorted.
 
-    \option[block]%
-    \fdfindex{TBT.dH!Algorithm!block}%
-    The inner loop is across the local matrix block size, thus
-    searching in the $\delta\mathbf H$ sparsity pattern.
-
-    This should generally perform better when the $\delta\mathbf H$
-    sparsity pattern is nearly the same size as the original
-    Hamiltonian sparsity pattern.
-
-  \end{fdfoptions}
-  
-\end{fdfentry}
+\end{fdflogicalT}
 
 
 \subsection{Determine calculated physical quantities}
@@ -858,12 +853,23 @@ $\rho_{\mathrm{bound-states}}=0$.
 \begin{fdflogicalF}{TBT.Current!Orb}
   \fdfdepend{TBT.Atoms!Device,TBT.DOS!A}
 
+
   Whether the orbital currents will be calculated and stored.  These
   will be stored in a sparse matrix format corresponding to the
-  \siesta\ sparse format.
-  %
-  One may use \sisl\ to analyze this output and change into
-  bond-currents etc.
+  \siesta\ sparse format with only the device atoms in the sparse
+  pattern.
+  
+  Orbital currents are implemented as:
+  \begin{equation}
+    J_{\alpha \beta} = i [
+    \mathbf H_{\beta\alpha} \mathbf A_{\alpha\beta}
+    - 
+    \mathbf H_{\alpha\beta} \mathbf A_{\beta\alpha}],
+  \end{equation}
+  where we have left out the pre-factor ($e/\hbar$)
+  intentionally. \sisl\ may be used to analyze the orbital currents
+  and enables easy transformation of orbital currents to
+  bond currents and activity currents.
 
   \note this requires \tbtrans\ to be compiled with NetCDF-4 support,
   see Sec.~\ref{sec:arch-make}.

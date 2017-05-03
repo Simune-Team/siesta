@@ -76,6 +76,7 @@ module m_tbt_dH
      ! speed things up as we do not need to read the 
      ! sparse matrices always.
      real(dp) :: bkpt(3) = 2.12345_dp
+
      ! To ease the handling of different elements
      ! we only keep the complex quantity
      ! YES, we could limit this to only the real
@@ -84,6 +85,7 @@ module m_tbt_dH
      ! will use this to change extreme amounts
      ! of elements. (200.000 elements take up 3 MB)
      type(zSpData1D) :: dH
+
   end type tTBTdH
 
   ! The dH global variable
@@ -123,14 +125,6 @@ module m_tbt_dH
 
 #endif
 
-  ! The algorithm for insertion
-  ! If it is 0 it will be assumed that the user
-  ! has few dH elements compared to the full structure
-  ! If it is 1 it will be assumed that the user
-  ! has many dH elements, on the same order of the full
-  ! structure.
-  integer, save :: insert_algo = 0
-
   ! Whether this is used or not
   logical :: use_dH = .false.
 
@@ -146,11 +140,13 @@ module m_tbt_dH
 
 contains
 
-  subroutine init_dH_options( )
+  subroutine init_dH_options( save_DATA )
 
     use parallel, only : Node, Nodes
     use fdf
     use m_os, only : file_exist
+
+    use dictionary
 
 #ifdef NCDF_4
     use netcdf_ncdf, ncdf_parallel => parallel
@@ -162,6 +158,8 @@ contains
     use mpi_siesta, only : MPI_Double_Precision
 #endif
 
+    type(dict), intent(inout) :: save_DATA
+    
 #ifdef NCDF_4
     type(hNCDF) :: ndH, grp
 #endif
@@ -190,6 +188,16 @@ contains
     ! Tell tbtrans to use it
     use_dH = .true.
 
+    ! Check whether the orbital currents should also add the
+    ! dH elements, i.e.
+    !  J_ij = J_ij +  dH_ij * A_ji - dH_ji * A_ij
+    if ( ('orb-current' .in. save_DATA) .or. &
+         ('proj-orb-current' .in. save_DATA) ) then
+       if ( fdf_get('TBT.dH.Current.Orb', .true.) ) then
+          save_DATA = save_DATA // ('orb-current-dH'.kv.1)
+       end if
+    end if
+
     ! Ok, the file exists, lets see if all can see the file...
     cdf_r_parallel = .false.
     if ( file_exist(fname_dH, all = .true.) ) then
@@ -198,17 +206,6 @@ contains
        ! We default it to read parallelly
        cdf_r_parallel = fdf_get('TBT.dH.Parallel',.true.)
 
-    end if
-
-    ! Insertion algorithm (we default to the user having
-    ! very few elements to change)
-    insert_algo = 0
-    char = fdf_get('TBT.dH.Algorithm','sparse')
-    if ( leqi(char,'sparse') ) then
-       ! Will loop on the sparsity pattern
-       insert_algo = 0
-    else if ( leqi(char,'block') .or. leqi(char,'region') ) then
-       insert_algo = 1
     end if
 
     ! The user cannot decide if only one core
@@ -462,9 +459,12 @@ contains
 
   end subroutine init_dH_options
 
-  subroutine print_dH_options( )
+  subroutine print_dH_options( save_DATA )
 
     use parallel, only : IONode
+    use dictionary
+
+    type(dict), intent(in) :: save_DATA
 
     character(len=*), parameter :: f10='(''tbt: '',a,t53,''='',tr4,a)'
     character(len=*), parameter :: f11='(''tbt: '',a)'
@@ -479,11 +479,12 @@ contains
     end if
     
     write(*,f10)'User selected dH file', trim(fname_dH)
-    write(*,f1) 'Reading in parallel', cdf_r_parallel
-    if ( insert_algo == 0 ) then
-       write(*,f10)'Inner loop algorithm', 'sparse'
-    else if ( insert_algo == 1 ) then
-       write(*,f10)'Inner loop algorithm', 'region'
+    write(*,f1) 'Reading dH in parallel', cdf_r_parallel
+
+    if ( 'orb-current-dH' .in. save_DATA ) then
+       write(*,f11)'Orbital currents add dH contribution'
+       write(*,'(a)')'tbtrans: WARNING --- Ensure that column indices for each &
+            &sparse row is sorted ascending!'
     end if
 
     if ( .not. cdf_r_parallel .and. n_E3+n_k4+n_E4 > 0 ) then
@@ -916,7 +917,7 @@ contains
 #endif
 
   ! Add the dH to the tri-diagonal matrix
-  subroutine add_zdH_TriMat( zdH, GFinv_tri , r )
+  subroutine add_zdH_TriMat( zdH, GFinv_tri , r, sc_off, k)
 
     use class_zTriMat
     use class_Sparsity
@@ -927,9 +928,12 @@ contains
     type(zSpData1D), intent(inout) :: zdH
     type(zTriMat), intent(inout) :: GFinv_tri
     type(tRgn), intent(in) :: r
+    ! Super-cell offset and k-point
+    real(dp), intent(in) :: sc_off(:,:), k(3)
 
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: dH(:), GFinv(:)
 
     integer :: idx, iu, ju, ind, jo, no
@@ -940,65 +944,48 @@ contains
     call attach(sp, nrows_g=no, &
          n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do iu = 1 , size(sc_off, dim=2)
+       ph(iu-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,iu) + &
+            k(2) * sc_off(2,iu) + &
+            k(3) * sc_off(3,iu)))
+    end do
+
     Gfinv => val(Gfinv_tri)
 
-    if ( insert_algo == 0 ) then
-
 !$OMP parallel do default(shared), private(iu,jo,ind,ju,idx)
-       do ju = 1, r%n
-          jo = r%r(ju) ! get the orbital in the big sparsity pattern
-          if ( l_ncol(jo) /= 0 ) then
-
+    do ju = 1, r%n
+       jo = r%r(ju) ! get the orbital in the big sparsity pattern
+       if ( l_ncol(jo) /= 0 ) then
+          
           ! Loop on entries here...
           do ind = l_ptr(jo) + 1 , l_ptr(jo) + l_ncol(jo)
-             iu = rgn_pivot(r,modp(l_col(ind),no))
+             iu = rgn_pivot(r, MODP(l_col(ind), no))
              ! Check whether this element should be added
              if ( iu == 0 ) cycle
-
-             idx = index(Gfinv_tri,ju,iu)
-          
-             GFinv(idx) = GFinv(idx) - dH(ind)
-          end do
-
-          end if
-       end do
-!$OMP end parallel do
-
-    else if ( insert_algo == 1 ) then
-
-!$OMP parallel do default(shared), private(iu,jo,ind,ju,idx)
-       do ju = 1, r%n
-          jo = r%r(ju) ! get the orbital in the big sparsity pattern
-          if ( l_ncol(jo) /= 0 ) then
-
-          ! Loop on entries here...
-          do iu = 1 , r%n
-
-             ! Check if the orbital exists in the region
-             ! We are dealing with a UC sparsity pattern.
-             ind = SFIND(l_col(l_ptr(jo)+1:l_ptr(jo) + l_ncol(jo)),r%r(iu))
-             if ( ind == 0 ) cycle
-             ind = l_ptr(jo) + ind
              
              idx = index(Gfinv_tri,ju,iu)
              
-             GFinv(idx) = GFinv(idx) - dH(ind)
+             GFinv(idx) = GFinv(idx) - dH(ind) * ph( (l_col(ind)-1)/no )
           end do
           
-          end if
-       end do
+       end if
+    end do
 !$OMP end parallel do
-       
-    end if
 
+    deallocate(ph)
+    
   end subroutine add_zdH_TriMat
 
   ! Add the dH to the tri-diagonal matrix
-  subroutine add_zdH_Mat( zdH , r, off1,n1,off2,n2, M)
+  subroutine add_zdH_Mat( zdH , r, off1, n1, off2, n2, M, &
+       sc_off, k)
 
     use class_Sparsity
     use m_region
-    use intrinsic_missing, only : SFIND
+    use intrinsic_missing, only : SFIND, MODP
 
     type(zSpData1D), intent(inout) :: zdH
     ! the region which describes the current segment of insertion
@@ -1006,67 +993,52 @@ contains
     ! The sizes and offsets of the matrix
     integer, intent(in) :: off1, n1, off2, n2
     complex(dp), intent(inout) :: M(n1,n2)
+    ! Super-cell offset and k-point
+    real(dp), intent(in) :: sc_off(:,:), k(3)
 
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: dH(:)
 
-    integer :: iu, ju, ind, jo
+    integer :: iu, ju, ind, jo, no
 
     sp => spar(zdH)
     dH => val(zdH)
 
-    call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
+    call attach(sp, nrows_g=no, &
+         n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
-    if ( insert_algo == 0 ) then
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do iu = 1 , size(sc_off, dim=2)
+       ph(iu-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,iu) + &
+            k(2) * sc_off(2,iu) + &
+            k(3) * sc_off(3,iu)))
+    end do
 
+    
 !$OMP parallel do default(shared), private(iu,jo,ind,ju)
-       do ju = 1 , n1
-          jo = r%r(off1+ju) ! get the orbital in the sparsity pattern
+    do ju = 1 , n1
+       jo = r%r(off1+ju) ! get the orbital in the sparsity pattern
+       
+       if ( l_ncol(jo) /= 0 ) then
           
-          if ( l_ncol(jo) /= 0 ) then
-
           do ind = l_ptr(jo) + 1 , l_ptr(jo) + l_ncol(jo)
-             iu = rgn_pivot(r,l_col(ind)) - off2
+             iu = rgn_pivot(r, MODP(l_col(ind), no)) - off2
              if ( iu < 1 .or. n2 < iu ) cycle
              
-             M(ju,iu) = M(ju,iu) - dH(ind)
+             M(ju,iu) = M(ju,iu) - dH(ind) * ph( (l_col(ind)-1)/no )
           end do
-
-          end if
-
-       end do
-!$OMP end parallel do
-
-    else if ( insert_algo == 1 ) then
-
-
-!$OMP parallel do default(shared), private(iu,jo,ind,ju)
-       do ju = 1 , n1
-          jo = r%r(off1+ju) ! get the orbital in the sparsity pattern
           
-          if ( l_ncol(jo) /= 0 ) then
+       end if
 
-          ! Loop on entries here...
-          do iu = 1 , n2
-
-             ! Check if the orbital exists in the region
-             ! We are dealing with a UC sparsity pattern.
-             ind = SFIND(l_col(l_ptr(jo)+1:l_ptr(jo) + l_ncol(jo)),r%r(off2+iu))
-             if ( ind == 0 ) cycle
-             ind = l_ptr(jo) + ind
-             
-             M(ju,iu) = M(ju,iu) - dH(ind)
-
-          end do
-
-          end if
-
-       end do
+    end do
 !$OMP end parallel do
 
-    end if
-
+    deallocate(ph)
+    
   end subroutine add_zdH_Mat
   
 end module m_tbt_dH
