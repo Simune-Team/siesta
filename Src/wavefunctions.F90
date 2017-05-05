@@ -4,7 +4,9 @@ MODULE  wavefunctions
   !
   implicit none 
   !    
-  type(matrix), allocatable, save :: wavef_ms(:,:)
+  PRIVATE
+  PUBLIC       :: iowavef, compute_tddm 
+  type(matrix), allocatable, save, public :: wavef_ms(:,:)
   ! 
 
 CONTAINS
@@ -161,7 +163,7 @@ CONTAINS
     !
   end subroutine iowavef
   !
-  subroutine  compute_tddm(ispin,Dnew)
+  subroutine  compute_tddm (Dnew)
   
     ! To calculate the time-dependent density matrix from time-dependent
     ! wavefunctions. 
@@ -169,12 +171,12 @@ CONTAINS
     !***********************************
     use sparse_matrices,      only: numh, maxnh, listh, listhptr,     &
                                     xijo   
-    use Kpoint_grid,          only: nkpnt, kpoint, gamma_scf
-    use atomlist,             only: no_l, no_u
+    use Kpoint_grid,          only: nkpnt, kpoint, gamma_scf, kweight
+    use atomlist,             only: no_l, no_u, indxuo
     use m_spin,               only: nspin
     integer                      :: ispin, nuo, nuotot
-    integer                      :: io,jo, j, ind, ik
-    real(dp)                     :: Dnew (maxnh, nspin), spfa, kxij
+    integer                      :: io,jo, juo, j, ind, ik
+    real(dp)                     :: Dnew (maxnh, nspin), wk, kxij
     real(dp)                     :: ckxij, skxij
     complex(dp)                  :: varaux
     type(matrix)                 :: Daux    
@@ -186,18 +188,20 @@ CONTAINS
     m_storage='szden'
     m_operation = 'lap'
 #endif
-    spfa = dble(3-nspin)
-    Dnew(:,ispin) = 0.0_dp
+    Dnew(1:maxnh,1:nspin) = 0.0_dp
     call m_allocate(Daux,no_u,no_u,m_storage)
-    DO ik=1,nkpnt
+    Do ik = 1, nkpnt
+      Do ispin =1, nspin
+      wk = 2.00_dp*kweight(ik)/dble(nspin)
       ! Calculating density matrix using MatrixSwitch.
       call mm_multiply(wavef_ms(ik,ispin),'n',wavef_ms(ik,ispin),'c',Daux,           & 
-                    cmplx(spfa,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+                    cmplx(wk,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
       ! Passing DM from dense to sparse form.  
       DO io=1,no_l
         DO j=1,numh(io)
           ind=listhptr(io) + j
-          jo = listh(ind)
+          juo = listh(ind)
+          jo  = indxuo(juo)
           IF (.NOT. gamma_scf) THEN
             kxij = kpoint(1,ik) * xijo(1,ind) + &
             kpoint(2,ik) * xijo(2,ind) +        &
@@ -210,10 +214,11 @@ CONTAINS
           END IF
           varaux = real(Daux%zval(jo,io))*ckxij +     &
                    aimag(Daux%zval(jo,io))*skxij
-          Dnew(ind,ispin)  = Dnew(ind, ispin) + varaux
+          Dnew(ind,ispin)  = Dnew(ind,ispin) + varaux
         END DO
       END DO
     END DO
+  END DO
     call m_deallocate (Daux)
   end subroutine compute_tddm
   !

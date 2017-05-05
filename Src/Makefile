@@ -171,7 +171,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	kpoint_convert.o \
 	m_target_stress.o compute_max_diff.o \
 	m_initwf.o wavefunctions.o \
-	m_evolve.o evolk.o cranknic_evolg.o sankey_change_basis.o m_iotddft.o \
+	m_evolve.o cranknic_evolk.o cranknic_evolg.o sankey_change_basis.o m_iotddft.o \
 	m_matdiag.o m_matswinvers.o
 
 # Mixing algorithms
@@ -295,7 +295,7 @@ $(MS):
 		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" all)
 #
-m_initwf.o sankey_change_basis.o m_evolve.o cranknic_evolg.o evolk.o: $(MS)
+m_initwf.o sankey_change_basis.o m_evolve.o cranknic_evolg.o cranknic_evolk.o: $(MS)
 wavefunctions.o m_matdiag.o m_matswinvers.o: $(MS)
 #--------------------------------------------------------------
 XC=libSiestaXC.a
@@ -358,7 +358,7 @@ readsp.o eggbox.o iopipes.o : $(FDF)
 atom.o basis_io.o basis_specs.o: $(FDF)
 ldau_specs.o: $(FDF)
 
-evolk.o: $(FDF)
+cranknic_evolk.o: $(FDF)
 cranknic_evolg.o: $(FDF)
 sankey_change_basis.o: $(FDF)
 
@@ -701,8 +701,9 @@ ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 cranknic_evolg.o: alloc.o m_eo.o m_matswinvers.o m_steps.o parallel.o parallelsubs.o
 cranknic_evolg.o: precision.o siesta_options.o sparse_matrices.o sys.o wavefunctions.o
 cranknic_evolg.o: m_spin.o atomlist.o m_energies.o units.o
-evolk.o: m_diagon_opt.o m_matswinvers.o parallel.o precision.o siesta_options.o
-evolk.o: sys.o wavefunctions.o
+cranknic_evolk.o: parallel.o parallelsubs.o precision.o siesta_options.o m_spin.o
+cranknic_evolk.o: wavefunctions.o sparse_matrices.o atomlist.o kpoint_grid.o
+cranknic_evolk.o: units.o m_energies.o m_eo.o cranknic_evolg.o
 extrapolateSpData2D.o: class_Data2D.o class_OrbitalDistribution.o
 extrapolateSpData2D.o: class_SpData2D.o class_Sparsity.o restructSpData2D.o
 extrapolon.o: parallel.o precision.o sys.o
@@ -806,7 +807,7 @@ m_energies.o: precision.o
 m_eo.o: precision.o
 m_evolve.o: alloc.o m_memory.o parallel.o parallelsubs.o precision.o sys.o
 m_evolve.o: atomlist.o m_spin.o m_gamma.o sparse_matrices.o kpoint_grid.o
-m_evolve.o: cranknic_evolg.o
+m_evolve.o: cranknic_evolg.o cranknic_evolk.o
 m_exp_coord.o: files.o m_os.o parallel.o precision.o units.o
 m_filter.o: bessph.o precision.o radfft.o sorting.o sys.o
 m_fire.o: parallel.o precision.o

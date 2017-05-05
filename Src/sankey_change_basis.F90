@@ -46,7 +46,7 @@ MODULE m_sankey_change_basis
   use m_spin,              only: nspin
   use m_gamma,             only: gamma
   use Kpoint_grid,         only: nkpnt, kpoint, kweight
-  use atomlist,            only: no_u
+  use atomlist,            only: no_u, indxuo
   use wavefunctions
   use sparse_matrices,     only : numh, listhptr, listh, S, xijo, Dscf
   use MatrixSwitch
@@ -63,10 +63,10 @@ MODULE m_sankey_change_basis
 #endif
   !
   logical, save           :: frstme = .true.
-  integer                 :: io, iuo, nuo, jo, ind, ispin
+  integer                 :: io, iuo, juo, nuo, jo, ind, ispin
   integer                 :: ik, j,ierror
   real(dp)                :: skxij,ckxij, kxij, qe 
-  complex(dp)             :: varaux
+  complex(dp)             :: cvar1, cvar2
   !
   type(matrix)                     :: Maux,invsqS,phi
   type(matrix)                     :: Sauxms
@@ -110,7 +110,6 @@ MODULE m_sankey_change_basis
     call die ('chgbasis: ERROR: EID not yet prepared for non-collinear spin')
   END IF
     ! Allocate local arrays
-  call m_allocate(Sauxms,no_u,no_u,m_storage)
   call m_allocate(Maux,no_u,no_u,m_storage)
   call m_allocate(invsqS,no_u,no_u,m_storage)
   if(frstme) then
@@ -122,11 +121,13 @@ MODULE m_sankey_change_basis
   endif
   ! 
   do ik = 1,nkpnt
+    call m_allocate(Sauxms,no_u,no_u,m_storage)
     do iuo = 1,nuo
       call LocalToGlobalOrb(iuo, Node, Nodes, io)
       do j = 1,numh(iuo)
         ind = listhptr(iuo) + j
-        jo = listh(ind)
+        juo = listh(ind)
+        jo  = indxuo (juo)
         if(.not.gamma) then 
           kxij = kpoint(1,ik) * xijo(1,ind) +&
           kpoint(2,ik) * xijo(2,ind) +&
@@ -137,8 +138,9 @@ MODULE m_sankey_change_basis
           ckxij=1.0_dp
           skxij=0.0_dp
         endif
-        varaux = cmplx(S(ind)*ckxij,S(ind)*skxij)
-        call m_set_element(Sauxms, jo, io, varaux, m_operation)
+        cvar1 = cmplx(S(ind)*ckxij,S(ind)*skxij)
+        call m_get_element(Sauxms, jo, io, cvar2, m_operation)
+        call m_set_element(Sauxms, jo, io, cvar1+cvar2, m_operation)
       enddo
     enddo
     !
@@ -168,17 +170,15 @@ MODULE m_sankey_change_basis
         call m_deallocate(phi)
       enddo  
     endif   !istpmove 
+    call m_deallocate(Sauxms)
   enddo          ! ik 
   !
   IF(istpmove.gt.1) THEN   ! istpmove 
     IF (IONode) THEN
       WRITE(*,'(a)') 'chgbasis: Computing DM in new basis'
     END IF
-    DO ispin=1,nspin
-      call compute_tddm(ispin, Dscf)
-    END DO 
+      call compute_tddm (Dscf)
   END IF
-  call m_deallocate(Sauxms)
   call m_deallocate(Maux)
   call m_deallocate(invsqS)
 

@@ -1,3 +1,26 @@
+2017-05-05  17:40 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-07
+
+Added k-point sampling for tddft calculations
+
+* Previous version was limited to gamma point calculations. 
+
+removed:
+
+  Src/evolk.F90
+
+added:
+
+  Src/cranknic_evolk.F90
+
+modified:
+
+  Src/Makefile
+  Src/cranknic_evolg.F90
+  Src/m_evolve.F90
+  Src/sankey_change_basis.F90
+  Src/siesta_tddft.F90
+  Src/wavefunctions.F90
+
 2017-04-24  20:00 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-06
 
 Some cosmetic changes.

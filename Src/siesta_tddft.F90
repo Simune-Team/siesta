@@ -53,7 +53,7 @@ contains
 
     integer, intent(inout)  :: istep
     
-    integer :: mod_tded, mod_md
+    integer :: mod_tded, mod_md, ik
     integer :: istpp, ispin
     real(dp) :: dt_tded, G2max
 #ifdef DEBUG
@@ -120,10 +120,8 @@ contains
             rstart_time)
        IF (IONode) THEN
        write(6,'(a)') 'Computing DM from initial KS wavefunctions'
-       END IF 
-       DO ispin=1,nspin
-         call compute_tddm(ispin, Dscf)
-       END DO
+       END IF
+         call compute_tddm(Dscf)
        istep = istpp + 1
     end if
     ! To save the TD-wavefunctions for a restart.
@@ -156,7 +154,7 @@ contains
        call evolve(  dt_tded )
        
        ! The total simulation time mainly for plotting
-       totime = (istep*dt - dt) + (itded*dt_tded-dt_tded)
+       totime = (istep*dt - dt) + (itded*dt_tded)
        
        call compute_energies (itded)
        call write_tddft(totime, istep, itded, ntded, rstart_time, &

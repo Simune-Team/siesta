@@ -10,7 +10,7 @@ MODULE cranknic_evolg
   IMPLICIT NONE
   PRIVATE
 
-  PUBLIC :: cn_evolg
+  PUBLIC :: cn_evolg, Uphi
 
 CONTAINS
 
@@ -58,7 +58,7 @@ SUBROUTINE cn_evolg ( delt )
       type(matrix)         :: Hauxms,Sauxms, wfaux1, wfaux2
       character(3)         :: m_operation
       character(5)         :: m_storage
-      complex(dp)          :: varaux, varaux2,varaux3, pipj
+      complex(dp)          :: cvar1, cvar2, cvar3, cvar4, pipj
       ! 
       integer              :: i, j, io, jo, ie, ispin, ind, nocc 
       !
@@ -77,36 +77,32 @@ SUBROUTINE cn_evolg ( delt )
       !
       call timer( 'cn_evolg', 1 )
       !
-      call m_allocate( Hauxms,no_u,no_u,m_storage)
       call m_allocate( Sauxms,no_u,no_u,m_storage)
       !
       do ispin = 1,nspin
         nocc = wavef_ms(1,ispin)%dim2
         call m_allocate(wfaux1,no_u,nocc,m_storage)
         call m_allocate(wfaux2,nocc,nocc,m_storage)
+        call m_allocate( Hauxms,no_u,no_u,m_storage)
         ! H, S from sparse to dense matrix swtich distribution
-        do io = 1,no_l
-          call LocalToGlobalOrb (io,Node, Nodes, i)
-          do j = 1,numh(io)
-            ind = listhptr(io) + j
+        do i = 1,no_l
+          call LocalToGlobalOrb (i,Node, Nodes, io)
+          do j = 1,numh(i)
+            ind = listhptr(i) + j
             jo = listh(ind)
-             call m_set_element(Hauxms, jo, i, H(ind,ispin), m_operation)
-             call m_set_element(Sauxms, jo, i, S(ind), m_operation)
+             call m_get_element(Hauxms, jo, io, cvar1, m_operation)
+             cvar3 = cvar1 + cmplx(H(ind,ispin),0.0_dp)
+             call m_set_element(Hauxms, jo, io, cvar3, m_operation)
+             if (ispin .eq. 1 ) then
+               call m_get_element(Sauxms, jo, io, cvar2, m_operation)
+               cvar4 = cvar2 + cmplx(S(ind),0.0_dp)
+               call m_set_element(Sauxms, jo, io, cvar4, m_operation)
+             end if
           enddo
         enddo
         ! Evolve wavefunctions.............................................
         call evol1new(Hauxms, Sauxms, no_u, ispin,              &
                       delt,extrapol_H_tdks,ntded_sub)
-        ! Calculating denisty matrix.
-        IF (IONode .and. ispin .eq. 1) THEN
-          IF (firsttime) THEN
-            firsttime = .false.
-          ELSE
-            write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV 
-          END IF
-          WRITE(*,'(/a)') 'cn_evolg: Computing DM after evolving TDKS wavefunctions'
-        END IF
-        call compute_tddm(ispin, Dscf)
         ! The following is now parallel and working as it should.
         if (eigen_time) then 
           call mm_multiply(Hauxms,'n',wavef_ms(1,ispin),'n',wfaux1,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
@@ -116,10 +112,19 @@ SUBROUTINE cn_evolg ( delt )
           END DO
         endif
         !
+        call m_deallocate(Hauxms)
         call m_deallocate(wfaux1)
         call m_deallocate(wfaux2)
       enddo ! ispin
-      call m_deallocate(Hauxms)
+
+      IF (firsttime) THEN
+        firsttime = .false.
+      ELSE
+      IF (IOnode)  write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV 
+      END IF
+      ! Calculating denisty matrix.
+      IF (IOnode) WRITE(*,'(/a)') 'cn_evolg: Computing DM after evolving TDKS wavefunctions'
+      call compute_tddm(Dscf)
       call m_deallocate(Sauxms)
       !
       call timer( 'cn_evolg', 2 )
