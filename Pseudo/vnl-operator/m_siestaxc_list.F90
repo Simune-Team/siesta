@@ -45,7 +45,7 @@ type(siestaxc_t), public, parameter  ::                  &
 type(siestaxc_t), public, parameter  ::                  &
          SXC_VDW_DRSLL   = siestaxc_t("VDW", "DRSLL"), &
          SXC_VDW_LMKLL    = siestaxc_t("VDW", "LMKLL"),  &
-         SXC_VDW_KKBM    = siestaxc_t("VDW", "KKBM"),  &
+         SXC_VDW_KBM    = siestaxc_t("VDW", "KBM"),  &
          SXC_VDW_C09    = siestaxc_t("VDW", "C09"),  &
          SXC_VDW_BH    = siestaxc_t("VDW", "BH"),  &
          SXC_VDW_VV    = siestaxc_t("VDW", "VV")

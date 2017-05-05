@@ -72,7 +72,7 @@ xc_id_t(SXC_GGA_PBEGcGxHEG, (/XC_GGA_X_PBE_XXX, XC_GGA_C_PBE_XXX/), "gh"), &
 xc_id_t(SXC_VDW_DRSLL, (/XC_GGA_X_OPTB88_VDW, XC_VDW_C_DF1/), "vw"), &
 xc_id_t(SXC_VDW_DRSLL, (/XC_GGA_X_OPTB88_VDW, XC_VDW_C_DF1/), "vf"), & !alias
 xc_id_t(SXC_VDW_LMKLL, (/XC_GGA_X_OPTB88_VDW, XC_VDW_C_DF2/), "vl"), &
-xc_id_t(SXC_VDW_KKBM,  (/XC_GGA_X_OPTB88_VDW, XC_VDW_C_DF1/), "vk"), &
+xc_id_t(SXC_VDW_KBM,  (/XC_GGA_X_OPTB88_VDW, XC_VDW_C_DF1/), "vk"), &
 xc_id_t(SXC_VDW_C09,   (/XC_GGA_X_OPTB88_VDW, XC_VDW_C_DF1/), "vc"), &
 xc_id_t(SXC_VDW_BH,    (/XC_GGA_X_CX_VDW, XC_VDW_C_DF1/), "vb"), &
 xc_id_t(SXC_VDW_VV,    (/XC_GGA_X_OPTB88_VDW, XC_VDW_C_VV10/), "vv") &
