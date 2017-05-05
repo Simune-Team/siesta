@@ -2835,6 +2835,11 @@ C potential
        do l = 0, lmxkb
           call ps_Get_Projector_Indexes_byL(ps,l,idx,idxl)
           nkbl = size(idxl)
+          if (nkbl > nkbmx) then
+             write(6,'(i2,a,i2,a,i2)') nkbl,' KB projs for l=',l,
+     $            ' overflow nkbmx:',nkbmx
+             call die("Need to increase nkbmx parameter")
+          endif
           nkblsave(l,is) = nkbl  ! propagate to structures
           do ikb = 1, nkbl
              ekb = 2.0_dp * ps_Projector_Ekb(ps,idxl(ikb))

@@ -12,6 +12,7 @@
 
       use radial
       use atmparams, only:NTBMAX
+      use atm_types, only: maxnprojs, maxn_pjnl
 !----------------------------------------------------------------
       use old_atmfuncs, only: nsmax
 !
@@ -222,10 +223,12 @@
          do l = 0, spp%lmax_projs
             do i = 1, nkblsave(l,is)
                n = n + 1
+               if (n>maxn_pjnl) call die("Increase maxn_pjnl")
                spp%pjnl_n(n) = i
                spp%pjnl_l(n) = l
                do m = 1, 2*l+1
                   ntot = ntot + 1
+                  if (n>maxnprojs) call die("Increase maxnprojs")
                   spp%pj_index(ntot) = n
                enddo
             enddo
