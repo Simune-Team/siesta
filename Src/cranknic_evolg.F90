@@ -107,7 +107,7 @@ SUBROUTINE cn_evolg ( delt )
         if (eigen_time) then 
           call mm_multiply(Hauxms,'n',wavef_ms(1,ispin),'n',wfaux1,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
           call mm_multiply(wavef_ms(1,ispin),'c',wfaux1,'n',wfaux2,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
-          DO io=1,wavef_ms(1,ispin)%dim2
+          DO io=1,nocc
             eo(io,ispin,1)= real(wfaux2%zval(io,io)) + aimag(wfaux2%zval(io,io))
           END DO
         endif

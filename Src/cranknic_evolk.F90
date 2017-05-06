@@ -35,13 +35,13 @@ CONTAINS
   USE wavefunctions,         ONLY: compute_tddm, wavef_ms
   USE units,                 ONLY: eV
   USE m_energies,            ONLY: etot 
-  USE m_eo,                  ONLY: qo
+  USE m_eo,                  ONLY: qo, eo
 
   IMPLICIT NONE
 
   REAL(dp)                 :: delt
 
-  TYPE(matrix)             :: Hauxms, Sauxms
+  TYPE(matrix)             :: Hauxms, Sauxms, wfaux1, wfaux2
 
   CHARACTER(LEN=3)         :: m_operation
   CHARACTER(LEN=5)         :: m_storage
@@ -49,7 +49,7 @@ CONTAINS
   COMPLEX(dp)              :: cvar1, cvar2, cvar3, cvar4
 
   REAL(dp)                 :: kxij, ckxij, skxij
-  INTEGER                  :: ik, ispin, i, j, io, jo, ind, juo
+  INTEGER                  :: ik, ispin, i, j, io, jo, ind, juo, nocc
   LOGICAL, SAVE            :: firstime = .true.
 #ifdef MPI
   m_storage    = 'pzdbc'
@@ -69,6 +69,9 @@ CONTAINS
     DO ispin =1,nspin
       call m_allocate ( Hauxms, no_u, no_u, m_storage)
       call m_allocate ( Sauxms, no_u, no_u, m_storage)
+      nocc = wavef_ms(ik,ispin)%dim2
+      call m_allocate(wfaux1,no_u, nocc, m_storage)
+      call m_allocate(wfaux2,nocc,nocc,m_storage)
       ! H, S from sparse to dense matrix switch distribution
       DO i = 1, no_l
         call LocalToGlobalOrb(i,Node,Nodes,io)
@@ -88,7 +91,19 @@ CONTAINS
          call m_set_element(Sauxms, jo, io, cvar2+cvar4, m_operation)
         END DO
       END DO
+      !
       call evol2new ( Hauxms, Sauxms, ik, ispin, delt )
+      !
+      IF (eigen_time) THEN
+        call mm_multiply (Hauxms,'n',wavef_ms(ik,ispin),'n',wfaux1,        &
+                          cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+        call mm_multiply (wavef_ms(ik,ispin),'c',wfaux1,'n',wfaux2,        &
+                          cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+        Do io =1, nocc
+          eo(io,ispin,ik) = real(wfaux2%zval(io,io)) + aimag(wfaux2%zval(io,io))
+        END DO
+      END IF
+      !
       call m_deallocate(Hauxms)
       call m_deallocate(Sauxms)
     END DO

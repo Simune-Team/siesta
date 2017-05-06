@@ -150,14 +150,15 @@ SUBROUTINE ioeigenvalues (totime, eigen, lastistp, rstart_time, &
      frstme = .false.
    END IF
    IF (totime .gt. rstart_time) THEN
+     WRITE(iuu,"(f12.8,/)") totime
      DO ik = 1, nk
-       WRITE(iuu,"(f11.6,/,i5,10f12.5,/,(5x,10f12.5))") totime,               &
+       WRITE(iuu,"(i5,10f12.5,/,(5x,10f12.5))")               &
             ik, ((eigen(ie,ispin,ik)/eV,ie=1,(wavef_ms(ik,ispin)%dim2)),      &
             ispin=1,nspin)
-        END DO
-      END IF
-      IF (lastistp) CLOSE (iuu)
-    END IF ! IONode
+     END DO
+   END IF
+   IF (lastistp) CLOSE (iuu)
+  END IF ! IONode
 END SUBROUTINE ioeigenvalues 
 
 
