@@ -832,7 +832,7 @@ m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
 m_initwf.o: alloc.o densematrix.o fermid.o m_diagon_opt.o m_eo.o m_memory.o
 m_initwf.o: parallel.o parallelsubs.o precision.o sparse_matrices.o sys.o
-m_initwf.o: wavefunctions.o
+m_initwf.o: wavefunctions.o kpoint_grid.o atomlist.o m_spin.o m_gamma.o
 m_integrate.o: precision.o
 m_io.o: sys.o
 m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o

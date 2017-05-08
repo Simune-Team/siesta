@@ -11,13 +11,9 @@ module m_initwf
   !
   public :: initwf
   !
-  !type(matrix), allocatable, save :: wavef_ms(:,:)
 CONTAINS
   !
-  subroutine initwf(no,nspin,maxspn,maxuo,maxnh,         &
-                    maxo, qtot,gamma,indxuo,             &
-                    nk,kpoint,wk,nuotot,ef,        &
-                    istpp,totime)
+  subroutine initwf( istpp,totime)
 ! *********************************************************************
 ! Subroutine to calculate the eigenvalues and eigenvectors,
 ! for given Hamiltonian and Overlap matrices (including
@@ -69,25 +65,22 @@ CONTAINS
 ! temp and H must be in the same energy units.
 ! eo, Enew and ef returned in the units of H.
 ! *************************** Parallel ********************************
-! When running in parallel some of the dimensions are now the 
-! maximum per node and the corresponding number passed in as
-! an argument is the number of locally stored values. The
-! variables for which this is the case are:
-!
-! maxuo/no
-!
-! *********************************************************************
 !
 !  Modules
 !
-      use parallel,     only : Node, Nodes, BlockSize
-      use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
+      use parallel,        only : Node, Nodes, BlockSize
+      use parallelsubs,    only : GlobalToLocalOrb, GetNodeOrbs
       use fdf
-      use densematrix,  only : Haux, Saux, psi
+      use densematrix,     only : Haux, Saux, psi
+      use sparse_matrices, only : maxnh
+      use Kpoint_grid,     only : nkpnt, kpoint, kweight
+      use atomlist,        only : no_s, no_l, no_u, qtot, indxuo
+      use m_spin,          only : nspin
+      use m_gamma,         only : gamma
       use alloc
       use m_memory
       use m_fermid,      only : fermid
-      use sys, only: die
+      use sys,           only : die
 #ifdef MPI
       use mpi_siesta,   only : mpi_bcast, mpi_comm_world, &
                                mpi_logical, mpi_double_precision
@@ -95,14 +88,9 @@ CONTAINS
       !
       implicit none
       !
-      !
-      integer, intent (in) :: no, nspin, maxspn, maxuo, maxnh, maxo, nk,       &
-                              nuotot, indxuo(no)
       integer, intent (inout) :: istpp
       !
-      real(dp), intent (in)    :: kpoint(3,nk), wk(nk), qtot
       real(dp), intent (inout) :: totime
-      logical, intent (in)     :: gamma
       ! 
       external           :: io_assign, io_close, readsp
       !
@@ -117,7 +105,6 @@ CONTAINS
                             i, j, sumqo,ikmax,iomax,ioi,iof,ispinmax
 
       real(dp)           :: qspiral(3), ef, temp,nelect, entrp,qomax,qtol
-      complex(dp)        :: varaux,varaux2,varaux3,varaux4
 #ifdef MPI
       integer            :: MPIerror
       logical, save      :: ParallelOverK
@@ -133,9 +120,8 @@ CONTAINS
           ParallelOverK = fdf_boolean( 'Diag.ParallelOverK', .false. )
         end if
         if(ParallelOverk) then
-          stop "initwf: is not parallelized over k-points."
+          call die ('initwf: TDDFT is not parallelized over k-points.')
         end if
-        call MPI_Bcast(ParallelOverK,1,MPI_logical,0,MPI_Comm_World, MPIerror)
 #endif
 !       Read spin-spiral wavevector (if defined)
         call readsp( qspiral, spiral )
@@ -149,32 +135,22 @@ CONTAINS
       end if
 !     Get Node number and calculate local orbital range
 #ifdef MPI
-      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
+      call GetNodeOrbs(no_u,Node,Nodes,nuo)
 #else
-      nuo = nuotot
+      nuo = no_u
 #endif
 !     Start time counter ................................................
       call timer( 'initwf', 1 )
 !     Check internal dimensions ..........................................
       if (nspin.le.2 .and. gamma) then
-        nhs  = nuotot * nuo
-        npsi = nuotot * maxuo * nspin
+        nhs  = no_u * nuo
+        npsi = no_u * no_l * nspin
       else if (nspin.le.2 .and. .not.gamma) then
-        nhs  = 2 * nuotot * nuo
-        npsi = 2 * nuotot * nuo
-#ifdef MPI
-        if (ParallelOverK) then
-          nhs  = 2 * nuotot * nuotot
-          npsi = 2 * nuotot * nuotot
-        end if
-#endif
+        nhs  = 2 * no_u * nuo
+        npsi = 2 * no_u * nuo
       else if (nspin.eq.4) then 
-        if(Node.eq.0 ) write(6,'(a,/,a)') &
-          'initwf: Electron-Ion dynamics not yet', &
-          'initwf: implemented for non-collinear spin'  
-        stop
-        nhs  = 2 * (2*nuotot) * (2*nuo)
-        npsi = 2 * (2*nuotot) * (2*maxuo)
+          call die ('initwf: TDDFT not yet      &
+                      &implemented for non-collinear spin' ) 
       else
         call die('diagon: ERROR: incorrect value of nspin')
       end if
@@ -184,23 +160,21 @@ CONTAINS
       call re_alloc(psi,1,npsi,name='psi',routine='initwf')
       allocate(muo(nuo),stat=mem_stat)
       call memory('A','I',nuo,'initwf',stat=mem_stat)
-      allocate(nocck(nk,nspin),stat=mem_stat)
-      call memory('A','I',nk*nspin,'initwf',stat=mem_stat)
-      allocate(occup(nuotot,nspin,nk),stat=mem_stat)
-      call memory('A','L',nuo*nk*nspin,'initwf',stat=mem_stat)
+      allocate(nocck(nkpnt,nspin),stat=mem_stat)
+      call memory('A','I',nkpnt*nspin,'initwf',stat=mem_stat)
+      allocate(occup(no_u,nspin,nkpnt),stat=mem_stat)
+      call memory('A','L',nuo*nkpnt*nspin,'initwf',stat=mem_stat)
 !     Check indxuo .......................................................
       do iuo = 1,nuo
         muo(iuo) = 0
       end do
-      do io = 1,no
+      do io = 1,no_s
         iuo = indxuo(io)
-        if (iuo.le.0 .or. iuo.gt.nuotot) then
+        if (iuo.le.0 .or. iuo.gt.no_u) then
           if (Node.eq.0) then
             write(6,*) 'initwf: ERROR: invalid index: io, indxuo =',io, indxuo(io)
-            stop 'initwf: ERROR: invalid indxuo'
-          else
-            stop
           end if
+            call die('initwf: ERROR: invalid indxuo')
         end if
         call GlobalToLocalOrb(indxuo(io),Node,Nodes,iuo)
         if (iuo.gt.0) then
@@ -212,10 +186,8 @@ CONTAINS
           if (Node.eq.0) then
             write(6,'(/,2a,3i6)') 'initwf: ERROR: inconsistent indxuo', &
              '. iuo, muo(iuo), muo(1) =', iuo, muo(iuo), muo(1)
-            stop 'initwf: ERROR: inconsistent indxuo.'
-          else
-            stop
           end if
+            call die ( 'initwf: ERROR: inconsistent indxuo.')
         end if
       end do
 ! ............................................................................!
@@ -224,34 +196,35 @@ CONTAINS
 !     evolved by integrating TDKS equations.                                  !
 ! ............................................................................!
       temp=1.0d-6
-      call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, &
+      call fermid( nspin, nspin, nkpnt, kweight, no_u, no_u, eo, &
                    temp, qtot, qo, ef, entrp )
       nocc(1) = 0
       nocc(2) = 0
       nelect=0.0d0
       degen= .false.
       !
-      if (Node .eq. 0) then
-      write(6,fmt="(a,tr3,a,tr3,a,tr3,a)") "initwf:","ik", "occupancy","maximum occupancy"
-      end if
       !
-      do ik=1,nk
+      do ik=1,nkpnt
         do ispin=1,nspin
           nocck(ik,ispin)=0
-          do io=1,nuotot
+          do io=1,no_u
             occup(io,ispin,ik)=.false.
-            if(dabs(qo(io,ispin,ik)-2.0d0*wk(ik)/nspin).le.    &
-               1.0d-2*dabs(2.0d0*wk(ik)/nspin))  then
+            if(dabs(qo(io,ispin,ik)-2.0d0*kweight(ik)/nspin).le.    &
+               1.0d-2*dabs(2.0d0*kweight(ik)/nspin))  then
               nocc(ispin)=nocc(ispin)+1
               nocck(ik,ispin)=nocck(ik,ispin)+1
 !             Accounting the number of electrons corresponding the states being marked
 !             as occupied.
-              nelect=nelect+dabs(2.0d0*wk(ik)/nspin)
+              nelect=nelect+dabs(2.0d0*kweight(ik)/nspin)
               occup(io,ispin,ik)=.true.
             else
-              if ( dabs( qo(io,ispin,ik)) .gt.1.0d-2*dabs(2.0d0*wk(ik)/nspin)) then
-                write(6,"(tr2,I10,tr3,f8.6,tr4,f8.6)") ik, qo(io,ispin,ik), &
-                  2.0d0*wk(ik)/nspin
+              if ( dabs( qo(io,ispin,ik)) .gt.1.0d-2*dabs(2.0d0*kweight(ik)/nspin)) then
+                IF (Node .eq. 0) THEN
+                  IF(.not. degen) write(6,fmt="(a,tr3,a,tr3,a,tr3,a)") "initwf:","ik", &
+                         "occupancy","maximum occupancy"
+                  write(6,"(tr2,I10,tr3,f8.6,tr4,f8.6)") ik, qo(io,ispin,ik), &
+                         2.0d0*kweight(ik)/nspin
+                END IF
                 degen = .true.  
               end if
             end if
@@ -260,89 +233,50 @@ CONTAINS
       end do
 !-------------------------------------------------------------------------------!
 ! Systems with odd number of electrons in spin-unpolarized calctions            !
-! may encounter situations with partial occupations. In such case we            !
-! try to print the occupation map around Fermi level to have a clear picture.   !
-! However the program will stop after printing this information in case of      !
-! partial occupations.                                                          !
+! may encounter situations with partial occupations. In such case the           !
+! program will stop.                                                            !
 !-------------------------------------------------------------------------------!
-      if(Node .eq. 0) then
-        write(6,*) "initwf: No. of electrons corresponding occupied states =  ", nelect
-        write(6,*) "initwf: (Total charge - charge in selected states) =  ",qtot-nelect
-      end if
-!     Tolrance for charge discrepacy 
-      qtol = 1.0d-2
-      if(nelect .gt. 0.d0 .and. (qtot-nelect) .gt. qtol) then
-!       Find the partially filled orbitals
-        ioifound=  .false.
-        do ispin=1,nspin
-          do io=1,nuo
-            sumqo   =  0 ! integer
-            do ik=1,nk
-              if (occup(io,ispin,ik) ) sumqo=sumqo+1
-           end do
-           if (sumqo .lt. nk ) then ! Unoccupied orbitals at some k-points.
-    	        if (Node .eq. 0)   write(6,*)                                          &
-                   "initwf: k-points with occupied orbital ,total k-points = ",sumqo,nk
-			        if(.not. ioifound .and. sumqo .gt. 0) then
-			          ioi=io
-			          ioifound=.true.
-		            if(Node .eq. 0) write(6,*) "initwf: First partially filled orbital = ",ioi
-			        end if
-			        if (sumqo .eq. 0) then
-			          iof=io
-		            if(Node .eq. 0)  write(6,*) "initwf: First completely unoccupied orbital = ",iof
-			          exit ! exit the loop on io becaseu occupations have been found
-			        end if
-		        end if ! sumqo .lt. nk 	
-		      end do  ! io
-          if(sumqo .eq. 0) exit 
-		    end do  !ispin
-        !..............
-		    if(Node.eq.0) then  
-		      if(nspin.eq.2) then
-            write(6,*) 'initwf: number of occupied wave functions'
-            write(6,*) 'initwf: spin up    ',nocc(1)
-            write(6,*) 'initwf: spin down  ',nocc(2)
-		      else
-            write(6,*) 'initwf: number of occupied wave functions ',               &
-               nocc(1)
-		      end if
-		    end if
-      end if  ! qtol
-!--------------------------------------------------------------------------------------!
 !     Stop if the system has degenracy.
-      if (degen) then
-        STOP "initwf: System has degeneracy. " // &
-             "Change spin polarization or Fermi " // &
-             "temperature to avoid it"
-      end if
-      !..............
+   if(Node .eq. 0) then
+     write(6,'(/,(a,F18.6))') "initwf: No. of electrons corresponding occupied states =  ",nelect, &
+                              "initwf: (Total charge - charge in selected states)     =  ",qtot-nelect
+   end if
+   !
+   if (degen) then
+     IF(Node .eq. 0) THEN
+       Write(6,'(a,/,a,/)') "initwf: ERROR: System has degeneracy.", &
+            "Change spin polarization or Fermi temperature to avoid it"
+     END IF
+     call die ('initwf: TDDFT doesnot allow degeneracy')
+   end if
+!..............
 #ifdef MPI
       call ms_scalapack_setup(Nodes,1,'c',BlockSize)
       m_storage='pzdbc'
 #else
       m_storage='szden'
 #endif
-      allocate(wavef_ms(1:nk,1:nspin)) ! allocate (nk*npsin) matrices inside wavef_ms
-      do i=1,nk !for every value of nk and nspin, allocate a matrix of size (nuotot x nocck(i,j))
+      allocate(wavef_ms(1:nkpnt,1:nspin)) ! allocate (nkpnt*npsin) matrices inside wavef_ms
+      do i=1,nkpnt !for every value of nkpnt and nspin, allocate a matrix of size (no_u x nocck(i,j))
         do j=1,nspin
-          call m_allocate(wavef_ms(i,j),nuotot,nocck(i,j),m_storage)
+          call m_allocate(wavef_ms(i,j),no_u,nocck(i,j),m_storage)
         end do
       end do
 !     Call apropriate routine .............................................
       if (nspin.le.2 .and. gamma) then
-        call diaggiwf( nspin, nuo, maxuo, maxnh, maxo,                     &
-                    Haux, Saux, psi, nuotot, occup)
+        call diaggiwf( nspin, nuo, no_l, maxnh, no_u,                     &
+                    Haux, Saux, psi, no_u, occup)
       else if (nspin.le.2 .and. .not.gamma) then
-          call diagkiwf( nspin, nuo, no, maxspn, maxuo, maxnh,                 &
-                         maxo, indxuo, nk, kpoint, Haux, Saux,                 &
-                         psi, nuotot, occup)
+          call diagkiwf( nspin, nuo, no_s, nspin, no_l, maxnh,                 &
+                         no_u, indxuo, nkpnt, kpoint, Haux, Saux,                 &
+                         psi, no_u, occup)
       else 
-         stop                                                                  &
-         'initwf: ERROR: non-collinear spin options for TDDFT not yet implemented'
+         call die('initwf: ERROR: non-collinear spin options for TDDFT not yet implemented')
       end if
 !     Write/save wavefunction in .TDWF file to use for TDDFT calculation.
-      call  iowavef('write',wavef_ms,nuotot,nk,nspin,istpp,totime)
+      IF (Node .eq. 0) WRITE(6,'(a)') 'initwf: Saving wavefunctions & 
+                  &in <systemlabel>.TDWF file.'
+      call  iowavef('write',wavef_ms,no_u,nkpnt,nspin,istpp,totime)
 !     Free local arrays
       call memory('D','I',size(muo),'initwf',stat=mem_stat)
       deallocate(muo,stat=mem_stat)

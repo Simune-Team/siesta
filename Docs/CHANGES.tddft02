@@ -1,3 +1,15 @@
+2017-05-08  13:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-09
+
+Modified m_initwf to improve messaging and readability.
+
+* No change in functionality
+
+modified:
+
+  Src/Makefile
+  Src/m_initwf.F90
+  Src/siesta_forces.F90
+
 2017-05-06  17:00 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-08
 
 Added the calculation of <psi(t)|H(t)|psi(t)>.
