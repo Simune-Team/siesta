@@ -259,6 +259,19 @@
 !     End of the loop over angular momenta shell
       enddo   
         
+
+!
+!     Write in the output information regarding the KB projector
+!
+      write(6,'(/,a)')'KBgen: Kleinman-Bylander projectors: '
+      do l = 0, lmxkb
+        do ikb = 1, nkbl(l)
+          write(6,'(3x,a,i2,4(3x,a,f10.6))')
+     .      'l=',l, 'rc=',rc(ikb,l), 'el=',erefkb(ikb,l), 
+     .      'Ekb=',ekb(ikb,l),'kbcos=',dkbcos(ikb,l)
+        enddo
+      enddo
+
       if ( ighost .eq. 1 ) then
          write(6,"(2a)")'KBgen: WARNING: ',
      .     'Ghost states have been detected'
@@ -273,19 +286,6 @@
            call die("Found ghost states")
          endif
       endif
-
-!
-!     Write in the output information regarding the KB projector
-!
-      write(6,'(/,a)')'KBgen: Kleinman-Bylander projectors: '
-      do l = 0, lmxkb
-        do ikb = 1, nkbl(l)
-          write(6,'(3x,a,i2,4(3x,a,f10.6))')
-     .      'l=',l, 'rc=',rc(ikb,l), 'el=',erefkb(ikb,l), 
-     .      'Ekb=',ekb(ikb,l),'kbcos=',dkbcos(ikb,l)
-        enddo
-      enddo
-
 !
 !     Compute the total number of Kleinman-Bylander projectors     
 !
