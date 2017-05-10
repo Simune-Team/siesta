@@ -384,7 +384,7 @@ contains
        Gamma,Gamma_TS,kscell,kdispl,onlyS,lasto, &
        Bcast)
 
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -1028,7 +1028,7 @@ contains
 
     use m_ncdf_io, only : cdf_r_Sp, cdf_r_d1D, cdf_r_d2D
 
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
     use sys,          only : die
 #ifdef MPI
     use mpi_siesta

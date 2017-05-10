@@ -44,7 +44,7 @@ module m_exp_coord
 contains
 
   subroutine exp_coord_init(slabel,na_u,inicoor,fincoor)
-    use nf_ncdf, ncdf_parallel => parallel
+    use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -110,7 +110,7 @@ contains
   subroutine exp_coord_next(istep,na_u,xa)
     use fdf, only : fdf_convfac
     use files, only : slabel
-    use nf_ncdf
+    use netcdf_ncdf
     use units, only : Ang
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World, MPI_Double_Precision
@@ -163,7 +163,7 @@ contains
 ! *   Routine for reading the next step of coordinates      *
 ! ***********************************************************
   real(dp) function exp_coord_weight(istep)
-    use nf_ncdf
+    use netcdf_ncdf
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World, MPI_Double_Precision
 #endif
