@@ -67,7 +67,8 @@ MODULE m_sankey_change_basis
   integer                 :: ik, j,ierror
   real(dp)                :: skxij,ckxij, kxij, qe 
   complex(dp)             :: cvar1, cvar2
-  !
+
+  complex(dp), allocatable         :: Saux(:,:)
   type(matrix)                     :: Maux,invsqS,phi
   type(matrix)                     :: Sauxms
   type(matrix),allocatable,save    :: sqrtS(:)
@@ -110,8 +111,6 @@ MODULE m_sankey_change_basis
     call die ('chgbasis: ERROR: EID not yet prepared for non-collinear spin')
   END IF
     ! Allocate local arrays
-  call m_allocate(Maux,no_u,no_u,m_storage)
-  call m_allocate(invsqS,no_u,no_u,m_storage)
   if(frstme) then
     allocate(sqrtS(nkpnt))
     do ik=1,nkpnt
@@ -119,9 +118,13 @@ MODULE m_sankey_change_basis
     end do
     frstme=.false.
   endif
-  ! 
+  allocate(Saux(no_u,nuo))
+  call m_allocate(Maux,no_u,no_u,m_storage)
+  call m_allocate(invsqS,no_u,no_u,m_storage)
+  call m_allocate(Sauxms,no_u,no_u,m_storage)
+  !
+  Saux = (0.0_dp, 0.0_dp)
   do ik = 1,nkpnt
-    call m_allocate(Sauxms,no_u,no_u,m_storage)
     do iuo = 1,nuo
       call LocalToGlobalOrb(iuo, Node, Nodes, io)
       do j = 1,numh(iuo)
@@ -138,8 +141,8 @@ MODULE m_sankey_change_basis
           ckxij=1.0_dp
           skxij=0.0_dp
         endif
-        cvar1 = cmplx(S(ind)*ckxij,S(ind)*skxij)
-        call m_set_element(Sauxms, jo, io, cvar1, m_operation)
+        Saux(jo,iuo) = Saux(jo,iuo) + cmplx(S(ind)*ckxij,S(ind)*skxij)
+        call m_set_element(Sauxms, jo, io, Saux(jo,iuo), m_operation)
       enddo
     enddo
     !
@@ -169,7 +172,6 @@ MODULE m_sankey_change_basis
         call m_deallocate(phi)
       enddo  
     endif   !istpmove 
-    call m_deallocate(Sauxms)
   enddo          ! ik 
   !
   IF(istpmove.gt.1) THEN   ! istpmove 
@@ -178,6 +180,8 @@ MODULE m_sankey_change_basis
     END IF
       call compute_tddm (Dscf)
   END IF
+  deallocate(Saux)
+  call m_deallocate(Sauxms)
   call m_deallocate(Maux)
   call m_deallocate(invsqS)
 

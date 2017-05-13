@@ -42,6 +42,7 @@ CONTAINS
   REAL(dp)                 :: delt
 
   TYPE(matrix)             :: Hauxms, Sauxms, wfaux1, wfaux2
+  COMPLEX(dp), ALLOCATABLE :: Haux(:,:), Saux(:,:)
 
   CHARACTER(LEN=3)         :: m_operation
   CHARACTER(LEN=5)         :: m_storage
@@ -65,13 +66,15 @@ CONTAINS
   call timer( 'cn_evolk', 1)
   ! 
   !
+  call m_allocate ( Hauxms, no_u, no_u, m_storage)
+  call m_allocate ( Sauxms, no_u, no_u, m_storage)
+  ALLOCATE(Haux(no_u,no_l))
+  ALLOCATE(Saux(no_u,no_l))
+  Haux = (0.0_dp, 0.0_dp)
+  Saux = (0.0_dp, 0.0_dp)
   DO ik = 1,nkpnt
     DO ispin =1,nspin
-      call m_allocate ( Hauxms, no_u, no_u, m_storage)
-      call m_allocate ( Sauxms, no_u, no_u, m_storage)
       nocc = wavef_ms(ik,ispin)%dim2
-      call m_allocate(wfaux1,no_u, nocc, m_storage)
-      call m_allocate(wfaux2,nocc,nocc,m_storage)
       ! H, S from sparse to dense matrix switch distribution
       DO i = 1, no_l
         call LocalToGlobalOrb(i,Node,Nodes,io)
@@ -83,32 +86,36 @@ CONTAINS
                  kpoint(3,ik)*xijo(3,ind)
          ckxij =  cos(kxij)
          skxij = -sin(kxij)
-         cvar1 = cmplx(H(ind,ispin)*ckxij,H(ind,ispin)*skxij)
-         cvar2 = cmplx(S(ind)*ckxij,S(ind)*skxij)
-         call m_get_element (Hauxms, jo, io, cvar3, m_operation) 
-         call m_get_element (Sauxms, jo, io, cvar4, m_operation) 
-         call m_set_element(Hauxms, jo, io, cvar1+cvar3, m_operation)
-         call m_set_element(Sauxms, jo, io, cvar2+cvar4, m_operation)
+         Haux(jo,i) = Haux(jo,i) + cmplx(H(ind,ispin)*ckxij,H(ind,ispin)*skxij)
+         Saux(jo,i) = Saux(jo,i) + cmplx(S(ind)*ckxij,S(ind)*skxij)
+         call m_set_element(Hauxms, jo, io, Haux(jo,i), m_operation)
+         call m_set_element(Sauxms, jo, io, Saux(jo,i), m_operation)
         END DO
       END DO
       !
       call evol2new ( Hauxms, Sauxms, ik, ispin, delt )
       !
       IF (eigen_time) THEN
+        call m_allocate(wfaux1,no_u, nocc, m_storage)
+        call m_allocate(wfaux2,nocc,nocc,m_storage)
         call mm_multiply (Hauxms,'n',wavef_ms(ik,ispin),'n',wfaux1,        &
                           cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
         call mm_multiply (wavef_ms(ik,ispin),'c',wfaux1,'n',wfaux2,        &
                           cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
-        Do io =1, nocc
+        DO io =1, nocc
           eo(io,ispin,ik) = real(wfaux2%zval(io,io)) + aimag(wfaux2%zval(io,io))
         END DO
+        call m_deallocate(wfaux1)
+        call m_deallocate(wfaux2)
       END IF
       !
-      call m_deallocate(Hauxms)
-      call m_deallocate(Sauxms)
     END DO
   END DO
   !
+  DEALLOCATE(Haux)
+  DEALLOCATE(Saux)
+  call m_deallocate(Hauxms)
+  call m_deallocate(Sauxms)
   IF (firstime) THEN
     firstime = .false.
   ELSE
