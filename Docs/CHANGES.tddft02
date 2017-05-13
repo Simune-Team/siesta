@@ -1,3 +1,11 @@
+2017-05-13  15:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-11
+
+A smalle bug fixed.
+
+modified:
+  Src/cranknic_evolg.F90
+  Src/sankey_change_basis.F90
+
 2017-05-10  18:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-10
 
 Merged with trunk-619

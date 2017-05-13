@@ -90,12 +90,10 @@ SUBROUTINE cn_evolg ( delt )
           do j = 1,numh(i)
             ind = listhptr(i) + j
             jo = listh(ind)
-             call m_get_element(Hauxms, jo, io, cvar1, m_operation)
-             cvar3 = cvar1 + cmplx(H(ind,ispin),0.0_dp)
+             cvar3 = cmplx(H(ind,ispin),0.0_dp)
              call m_set_element(Hauxms, jo, io, cvar3, m_operation)
              if (ispin .eq. 1 ) then
-               call m_get_element(Sauxms, jo, io, cvar2, m_operation)
-               cvar4 = cvar2 + cmplx(S(ind),0.0_dp)
+               cvar4 = cmplx(S(ind),0.0_dp)
                call m_set_element(Sauxms, jo, io, cvar4, m_operation)
              end if
           enddo
@@ -107,7 +105,7 @@ SUBROUTINE cn_evolg ( delt )
         if (eigen_time) then 
           call mm_multiply(Hauxms,'n',wavef_ms(1,ispin),'n',wfaux1,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
           call mm_multiply(wavef_ms(1,ispin),'c',wfaux1,'n',wfaux2,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
-          DO io=1,nocc
+          DO io=1,wavef_ms(1,ispin)%dim2
             eo(io,ispin,1)= real(wfaux2%zval(io,io)) + aimag(wfaux2%zval(io,io))
           END DO
         endif

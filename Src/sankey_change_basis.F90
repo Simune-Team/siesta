@@ -139,8 +139,7 @@ MODULE m_sankey_change_basis
           skxij=0.0_dp
         endif
         cvar1 = cmplx(S(ind)*ckxij,S(ind)*skxij)
-        call m_get_element(Sauxms, jo, io, cvar2, m_operation)
-        call m_set_element(Sauxms, jo, io, cvar1+cvar2, m_operation)
+        call m_set_element(Sauxms, jo, io, cvar1, m_operation)
       enddo
     enddo
     !
