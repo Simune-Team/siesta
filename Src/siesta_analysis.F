@@ -90,7 +90,9 @@
 
       if ((nmove .ne. 0) .or. quenched_MD) then
          if (GeometryMustConverge .and. (.not. relaxd)) then
-            call die("Geometry relaxation not converged")
+            call message("FATAL",
+     $           "GEOM_NOT_CONV: Geometry relaxation not converged")
+            call die("ABNORMAL_TERMINATION")
          endif
       endif
 

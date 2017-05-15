@@ -73,6 +73,7 @@
       logical               :: foundzm  ! dummy for call to iozm
 
       logical               :: time_is_up
+      character(len=40)     :: tmp_str
       
       real(dp), external :: volcel
 
@@ -375,6 +376,12 @@
         call check_walltime(time_is_up)
         if (time_is_up) then
            ! Do any other bookeeping not done by "die"
+           if (.not. relaxd) then
+              call message('WARNING','GEOM_NOT_CONV: '//
+     $             'Geometry relaxation not converged')
+              write(tmp_str,"(a,i3)") 'Geometry step: ', istep
+              call message(' (info)', trim(tmp_str))
+           endif
            call die("OUT_OF_TIME: Time is up at end of geometry step. ")
         endif
 

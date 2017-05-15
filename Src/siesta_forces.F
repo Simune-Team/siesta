@@ -60,7 +60,8 @@
       type(converger_t)  ::  conv_harris, conv_freeE
 
       logical               :: time_is_up
-
+      character(len=40)     :: tmp_str
+      
       external :: die, message
 
 #ifdef TRANSIESTA
@@ -114,6 +115,7 @@
 #endif
 
         if (first) then
+           SCFConverged = .false.
            if (require_harris_convergence) then
               call reset(conv_harris)
               call set_tolerance(conv_harris,harris_tolerance)
@@ -128,7 +130,15 @@
         call check_walltime(time_is_up)
         if (time_is_up) then
            ! Save DM/H if we were not saving it...
-           ! Do any other bookeeping not done by "die"
+           !     Do any other bookeeping not done by "die"
+           if (.not. SCFConverged) then
+              call message('WARNING',
+     $             'SCF_NOT_CONV: SCF did not converge'//
+     $             ' before wall time exhaustion')
+              write(tmp_str,"(i4,i3,f12.6)") istep, iscf, dmax
+              call message(' (info)',"Geom step, scf iteration, dmax:"
+     $                            //trim(tmp_str))
+           endif
            call die("OUT_OF_TIME: Time is up.")
         endif
         
@@ -228,13 +238,21 @@
 
       else
 
-        if (SCFMustConverge) then
-         call die('SCF_NOT_CONV: SCF did not converge' //
-     $          ' in maximum number of steps.')
-        else
-         call message('WARNING','SCF_NOT_CONV: SCF did not converge'//
-     $          ' in maximum number of steps.')
-        endif
+         if (SCFMustConverge) then
+            call message('FATAL','SCF_NOT_CONV: SCF did not converge' //
+     $           ' in maximum number of steps (required).')
+            write(tmp_str,"(i4,i3,f12.6)") istep, iscf, dmax
+            call message(' (info)',"Geom step, scf iteration, dmax:"
+     $           //trim(tmp_str))
+            call die('ABNORMAL_TERMINATION')
+         else
+            call message('WARNING',
+     $           'SCF_NOT_CONV: SCF did not converge'//
+     $           ' in maximum number of steps.')
+            write(tmp_str,"(i4,i3,f12.6)") istep, iscf, dmax
+            call message(' (info)',"Geom step, scf iteration, dmax:"
+     $                            //trim(tmp_str))
+         endif
       endif
 
 
