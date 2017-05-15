@@ -231,9 +231,9 @@
 
 !     Walltime control (numbers in seconds)
       walltime_max = fdf_get("max-walltime",huge(1))
-      ! Allow a minute per 100 atoms, with minimum slack 10 seconds
-      walltime_slack = fdf_get("max-walltime-slack",
-     $      max(10,int(1+0.6*na_u)))
+      ! Period for clean-up operations
+      walltime_slack = fdf_get("max-walltime-slack",5)
+      ! Note that the slack detracts from net available time
       walltime_warning = walltime_max - walltime_slack
       
 !     End of Initial Structure Processing
