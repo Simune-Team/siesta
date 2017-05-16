@@ -5663,16 +5663,17 @@ the issue (see Sec.~\ref{sec:filtering}).
   
   These files are created
   \begin{itemize}
-    \item \file{H_MIXED}; the Hamiltonian after
+  
+    \item \file{H\_MIXED}; the Hamiltonian after
     mixing
     
-    \item \file{DM_OUT}; the density matrix as calculated by the
+    \item \file{DM\_OUT}; the density matrix as calculated by the
     current iteration
 
-    \item \file{H_DMGEN}; the Hamiltonian used to calculate the
+    \item \file{H\_DMGEN}; the Hamiltonian used to calculate the
     density matrix
     
-    \item \file{DM_MIXED}; the density matrix after mixing
+    \item \file{DM\_MIXED}; the density matrix after mixing
 
   \end{itemize}
   
@@ -10085,12 +10086,12 @@ ignorable limit.
 
 The general working scheme is as following. First, the system is
 allowed to reach a self-consistent solution for some initial
-conditions (for example an initial ionic configuration or with applied
-external field). This is achieved using standard
-diagonalization \footnote{Caution! we need the Kohn-Sham
-  orbitals.}. The occupied Kohn-Sham orbitals (KSOs) are then selected
+conditions (for example an initial ionic configuration or an applied
+external field). The occupied Kohn-Sham orbitals (KSOs) are then selected
 and stored in memory.  The occupied KSOs are then made to evolve in
 time, and the Hamiltonian is recalculated for each time step.
+\subsection{Partial Occupations}
+This is a note of caution. This implementation of RT-TDDFT can not propagate partially occupied orbitals. While partial occupation of states is a common occurrence, they must be avoided. The issue of partially occupied states becomes, particularly,  tricky when dealing with metals and k-point sampling at the same time. The code tries to detect partial occupations and stops during the first run but it is not guarantied. Consequently, it can lead to additional or missing charge. Ultimately it is user's responsibility to make sure that the system has no partial occupations and missing or added charge. There are different ways to avoid partial occupations depending on the system and simulation parameters; for example changing spin-polarisation and/or adding some k-point shift to k-points.
 
 \subsection{Input options for RT-TDDFT}
 
@@ -10102,7 +10103,7 @@ KSOs.
 
 \begin{fdflogicalF}{ WriteInitialTDWF}
 
-If set to .true. in a standard self-consistent \siesta calculation, it
+If set to .true. in a standard self-consistent \siesta\ calculation, it
 makes the program save the KSOs after reaching
 self-consistency. This constitutes the first run.
 
@@ -10167,9 +10168,9 @@ further processed to calculate polarizability.
 
  \begin{fdflogicalF}{WriteEigenvsTime}
 
-If .true. the quantities $\langle \phi(t)|H|\phi(t)\rangle$ in every
+If .true. the quantities $\langle \phi(t)|H(t)|\phi(t)\rangle$ in every
 time step are calculated and stored in the file
-\sysfile{eigenvalues\_vs\_time} (not fully implemented yet!)
+\sysfile{eigenvalues\_vs\_time}.
 
 \end{fdflogicalF}
 

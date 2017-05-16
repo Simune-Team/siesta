@@ -1,3 +1,11 @@
+2017-05-16  18:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-15
+
+Updated RT-TDDFT section of the manual.
+
+modified:
+
+  Docs/siesta.tex
+
 2017-05-16  16:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-14
 
 Added tests for k-point run and updated gamma-point tests
