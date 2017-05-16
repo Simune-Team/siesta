@@ -220,7 +220,7 @@ CONTAINS
             else
               if ( dabs( qo(io,ispin,ik)) .gt.1.0d-2*dabs(2.0d0*kweight(ik)/nspin)) then
                 IF (Node .eq. 0) THEN
-                  IF(.not. degen) write(6,fmt="(a,tr3,a,tr3,a,tr3,a)") "initwf:","ik", &
+                  IF(.not. degen) write(6,fmt="(/,a,tr3,a,tr3,a,tr3,a)") "initwf:","ik", &
                          "occupancy","maximum occupancy"
                   write(6,"(tr2,I10,tr3,f8.6,tr4,f8.6)") ik, qo(io,ispin,ik), &
                          2.0d0*kweight(ik)/nspin
@@ -244,8 +244,8 @@ CONTAINS
    !
    if (degen) then
      IF(Node .eq. 0) THEN
-       Write(6,'(a,/,a,/)') "initwf: ERROR: System has degeneracy.", &
-            "Change spin polarization or Fermi temperature to avoid it"
+       Write(6,'(/,a,/,a)') "initwf: ERROR: System has degeneracy.", &
+            "Change spin polarization, k-point sampling or shift to avoid it"
      END IF
      call die ('initwf: TDDFT doesnot allow degeneracy')
    end if

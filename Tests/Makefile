@@ -73,7 +73,8 @@ tests = ag anneal-cont ar2_vdw \
 	sinw sinw_2 \
 	var_cell \
 	wannier \
-	zmatrix TDDFT_h2o
+	zmatrix \
+	TDDFT_h2o TDDFT_Ge
 
 # These tests are extremely time consuming and
 # should only be runned sometimes
