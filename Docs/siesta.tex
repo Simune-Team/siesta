@@ -867,6 +867,26 @@ libraries
   LIBS += -Wl,--allow-multiple-definition -lpexsi_linux <>
 \end{shellexample}
 
+
+  \item[CheSS]%
+  \index{CheSS}%
+  \index{External library!CheSS}%
+  \siesta\ allows calculation of the electronic structure through the
+  use of the Order-N method \program{CheSS}\footnote{See
+      \url{https://launchpad.net/chess}.}. To enable this solver (see
+  \fdf{SolutionMethod}) one needs to first compile the
+  \program{CheSS}-suite and subsequently to add the following to the
+  \file{arch.make}. Here \program{<build-dir>} is the build-directory
+  of the \program{CheSS} suite:  
+
+\begin{shellexample}
+  LIBS += -L<build-dir> -lCheSS-1 -lfutile-1 -lyaml
+  INCFLAGS += -I<build-dir>/install/include
+  FPPFLAGS += -DSIESTA__CHESS
+\end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_CHESS}
+
+  
   \item[flook]%
   \index{flook}%
   \index{External library!flook}%
@@ -6340,6 +6360,33 @@ necessary.
 
 \end{fdflogicalF}
 
+
+\subsection{The CheSS solver}
+\label{SolverCheSS}
+\index{CheSS solver}
+
+The CheSS solver uses an expansion based on Chebyshev polynomials to calculate
+the density matrix, thereby exploiting the sparsity of the overlap
+and Hamiltonian matrices.
+It works best for systems exhibiting a finite HOMO-LUMO gap and a small spectral width.
+
+CheSS exhibits a two level parallelization using MPI and OpenMP and can scale
+to many thousand cores.
+It can be downloaded and installed freely from \url{https://launchpad.net/chess}.
+
+\subsubsection{Input parameters}
+Usually CheSS only requires little user input, as the default values for the input parameters
+work in general quite well. Moreover CheSS has the capability to determine certain optimal values
+on its own. The only input parameters which usually require some human action are the values 
+of the buffers required for the matrix multiplications to calculate the Chebyshev polynomials.
+
+\begin{fdfentry}{CheSS!Buffer!Kernel}[real]<4.0>
+  Buffer for the density kernel within the CheSS calculation.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!Buffer!Kernel}[real]<6.0>
+  Buffer for the matrix vector multiplication within the CheSS calculation.
+\end{fdfentry}
 
 \subsection{The PEXSI solver}
 \label{SolverPEXSI}

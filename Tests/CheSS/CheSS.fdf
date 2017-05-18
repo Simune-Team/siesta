@@ -1,5 +1,5 @@
-SystemName          Water molecule
-SystemLabel         CheSS H2O
+SystemName          h2o_chess
+SystemLabel         h2o
 NumberOfAtoms       150
 NumberOfSpecies     2
 
