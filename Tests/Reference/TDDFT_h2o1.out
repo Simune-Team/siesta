@@ -4,7 +4,7 @@
                            ***********************       
 
 reinit: Reading from standard input
-reinit: Dumped input in INPUT_TMP.86035
+reinit: Dumped input in INPUT_TMP.87243
 ************************** Dump of input data file ****************************
 SystemName TDDFT_h2o
 SystemLabel TDDFT_h2o
@@ -18,7 +18,7 @@ ElectronicTemperature 5 meV
 DM.MixingWeight 0.2
 DM.NumberPulay 3
 ################################################################
-WriteInitialTDWF
+TDED.WF.Initialize
 %block ExternalElectricField
 0.200  -0.200  0.000  V/Ang
 %endblock ExternalElectricField
@@ -67,7 +67,7 @@ reinit: System Name: TDDFT_h2o
 reinit: -----------------------------------------------------------------------
 reinit: System Label: TDDFT_h2o
 reinit: -----------------------------------------------------------------------
-Siesta Version: trunk-611-tddft02-12
+Siesta Version: trunk-611-tddft02-15
 Architecture  : x86_64-unknown-linux-gnu--Gfortran
 Compiler flags: /usr/local/bin/mpif90 -O2
 PP flags      : -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT
@@ -75,7 +75,7 @@ Libraries     : /software/scalapack-2.0.2_gfortran/lib/libscalapack.a /software/
 PARALLEL version
 
 * Running in serial mode with MPI
->> Start of run:  16-MAY-2017  15:15:41
+>> Start of run:  18-MAY-2017  15:04:03
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:    8 Label: O
@@ -450,8 +450,8 @@ redata: Electronic Temperature                      =    58.0222 K
 redata: Fix the spin of the system                  =   F
 redata: Write Initial TDWF                          =   T
 redata: Max. number of TDED Iter                    =        1
-redata: Number of TDED substeps                     =        2
-redata: Write .TDWF and .DM after time steps        =      100
+redata: Number of TDED substeps                     =        3
+redata: Write .TDWF after time steps                =      100
 redata: Dynamics option                             = Single-point calculation
 mix.SCF: Pulay mixing                            = Pulay
 mix.SCF:    Variant                              = stable
@@ -560,7 +560,7 @@ siesta: FreeEng =      -462.922032
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
    scf:    1     -451.916140     -462.922032     -462.922032  0.899664 -4.918151 18.101377
-timer: Routine,Calls,Time,% = IterSCF        1       0.964  29.25
+timer: Routine,Calls,Time,% = IterSCF        1       0.976  29.36
    scf:    2     -471.610844     -467.747548     -467.747548  0.267844 -2.559585  9.090926
    scf:    3     -469.931860     -469.445687     -469.445687  0.319922 -0.296790  0.785430
    scf:    4     -469.267364     -469.395861     -469.395861  0.112816 -0.931024  1.854930
@@ -660,60 +660,60 @@ siesta:          -0.51247734         -0.08720555  kBar
 siesta: Electric dipole (a.u.)  =   -0.530658   -0.623550    0.000014
 siesta: Electric dipole (Debye) =   -1.348799   -1.584906    0.000036
 
-timer: Elapsed wall time (sec) =       8.458
+timer: Elapsed wall time (sec) =       8.388
 timer: CPU execution times (sec):
 
 Routine            Calls   Time/call    Tot.time        %
-siesta                 1       8.456       8.456   100.00
-Setup                  1       0.552       0.552     6.53
+siesta                 1       8.388       8.388   100.00
+Setup                  1       0.552       0.552     6.58
 bands                  1       0.000       0.000     0.00
 KSV_init               1       0.000       0.000     0.00
-IterGeom               1       7.904       7.904    93.47
-state_init             1       0.284       0.284     3.36
-hsparse                1       0.000       0.000     0.00
-overlap                1       0.284       0.284     3.36
-Setup_H0               1       1.496       1.496    17.69
+IterGeom               1       7.836       7.836    93.42
+state_init             1       0.296       0.296     3.53
+hsparse                1       0.004       0.004     0.05
+overlap                1       0.292       0.292     3.48
+Setup_H0               1       1.496       1.496    17.84
 naefs                  2       0.000       0.000     0.00
 MolMec                 2       0.000       0.000     0.00
-kinefsm                2       0.120       0.240     2.84
-nlefsm                 2       0.436       0.872    10.31
-DHSCF_Init             1       0.388       0.388     4.59
-DHSCF1                 1       0.056       0.056     0.66
+kinefsm                2       0.120       0.240     2.86
+nlefsm                 2       0.436       0.872    10.40
+DHSCF_Init             1       0.388       0.388     4.63
+DHSCF1                 1       0.056       0.056     0.67
 INITMESH               1       0.000       0.000     0.00
-DHSCF2                 1       0.328       0.328     3.88
-REMESH                 1       0.024       0.024     0.28
-REORD                 32       0.002       0.056     0.66
-PHION                  1       0.124       0.124     1.47
-COMM_BSC              27       0.002       0.052     0.61
-POISON                13       0.138       1.796    21.24
-fft                   26       0.059       1.536    18.16
-IterSCF               10       0.545       5.448    64.43
-setup_H               11       0.494       5.436    64.29
-DHSCF                 12       0.509       6.108    72.23
-DHSCF3                12       0.493       5.916    69.96
-rhoofd                12       0.010       0.124     1.47
-CellXC                12       0.312       3.740    44.23
-cellXC                12       0.312       3.740    44.23
-vmat                  12       0.008       0.100     1.18
-compute_dm            10       0.001       0.008     0.09
-diagon                10       0.001       0.008     0.09
-r-eigvec              10       0.001       0.008     0.09
+DHSCF2                 1       0.332       0.332     3.96
+REMESH                 1       0.024       0.024     0.29
+REORD                 32       0.002       0.052     0.62
+PHION                  1       0.124       0.124     1.48
+COMM_BSC              27       0.002       0.044     0.52
+POISON                13       0.135       1.752    20.89
+fft                   26       0.059       1.524    18.17
+IterSCF               10       0.536       5.356    63.85
+setup_H               11       0.486       5.348    63.76
+DHSCF                 12       0.502       6.028    71.86
+DHSCF3                12       0.486       5.832    69.53
+rhoofd                12       0.011       0.128     1.53
+CellXC                12       0.308       3.700    44.11
+cellXC                12       0.308       3.700    44.11
+vmat                  12       0.008       0.100     1.19
+compute_dm            10       0.000       0.004     0.05
+diagon                10       0.000       0.004     0.05
+r-eigvec              10       0.000       0.004     0.05
 r-buildHS             10       0.000       0.000     0.00
-rdiag                 11       0.001       0.008     0.09
+rdiag                 11       0.000       0.004     0.05
 rdiag1                11       0.000       0.000     0.00
-rdiag2                11       0.000       0.000     0.00
-rdiag3                11       0.001       0.008     0.09
+rdiag2                11       0.000       0.004     0.05
+rdiag3                11       0.000       0.000     0.00
 rdiag4                11       0.000       0.000     0.00
 r-buildD              10       0.000       0.000     0.00
 MIXER                  9       0.000       0.000     0.00
 initwf                 1       0.000       0.000     0.00
-PostSCF                1       0.676       0.676     7.99
-DHSCF4                 1       0.192       0.192     2.27
-dfscf                  1       0.144       0.144     1.70
+PostSCF                1       0.684       0.684     8.15
+DHSCF4                 1       0.196       0.196     2.34
+dfscf                  1       0.148       0.148     1.76
 overfsm                1       0.000       0.000     0.00
 state_analysis         1       0.000       0.000     0.00
 siesta_move            1       0.000       0.000     0.00
 Analysis               1       0.000       0.000     0.00
 optical                1       0.000       0.000     0.00
   
->> End of run:  16-MAY-2017  15:15:49
+>> End of run:  18-MAY-2017  15:04:11

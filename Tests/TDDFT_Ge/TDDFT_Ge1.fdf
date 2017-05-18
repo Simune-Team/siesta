@@ -17,7 +17,7 @@ MeshCutoff           100.0  Ry
 SolutionMethod       Diagon
 
 #SpinPolarized
-WriteInitialTDWF
+TDED.WF.Initialize
 
 PAO.BasisSize SZ
 

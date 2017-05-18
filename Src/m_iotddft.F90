@@ -84,7 +84,7 @@
        IF(IONode) THEN
 
        IF (frstme) THEN
-         dipolefile = trim(slabel) // '.dipol_vs_time'
+         dipolefile = trim(slabel) // '.TDDIPOL'
          call io_assign( iu )
          fform='formatted'
          OPEN( iu, FILE=dipolefile, FORM=fform, STATUS='unknown' )
@@ -113,7 +113,7 @@
         IF(IONode) THEN
 
         IF (frstme) THEN
-          etotfile = trim(slabel) // '.etot_vs_time'
+          etotfile = trim(slabel) // '.TDETOT'
           CALL io_assign ( iu )
           fform = 'formatted'
           OPEN (iu, FILE=etotfile, FORM=fform, POSITION='APPEND',      &
@@ -142,7 +142,7 @@ SUBROUTINE ioeigenvalues (totime, eigen, lastistp, rstart_time, &
 
  IF (IONode) THEN 
    IF (frstme) THEN
-     eigenfile = trim(slabel) // '.eigen_vs_time'
+     eigenfile = trim(slabel) // '.TDEIG'
      fform = 'formatted'
      OPEN (NEWUNIT=iuu, FILE=eigenfile, FORM=fform, POSITION='APPEND',      &
           STATUS='UNKNOWN')

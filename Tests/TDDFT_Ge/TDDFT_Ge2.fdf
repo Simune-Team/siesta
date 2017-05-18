@@ -18,7 +18,7 @@ SolutionMethod       Diagon
 
 #SpinPolarized
 
-MD.TypeOfRun               ElectronDynamics
+MD.TypeOfRun               TDED 
 MD.FinalTimeStep           10
 MD.LengthTimeStep           1.0000000000E-03 fs
 TDED.Nsteps                 1

@@ -19,7 +19,7 @@ DM.NumberPulay 3
 ################################################################
 
 
-MD.TypeOfRun     ElectronDynamics
+MD.TypeOfRun         TDED 
 MD.FinalTimeStep 1
 MD.LengthTimeStep   5.00000000E-03 fs
 TDED.Nsteps 5

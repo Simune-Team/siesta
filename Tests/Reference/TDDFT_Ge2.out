@@ -4,7 +4,7 @@
                            ***********************       
 
 reinit: Reading from standard input
-reinit: Dumped input in INPUT_TMP.73162
+reinit: Dumped input in INPUT_TMP.42224
 ************************** Dump of input data file ****************************
 SystemName         Germanium
 SystemType         Bulk
@@ -22,7 +22,7 @@ DM.Tolerance         1.d-4
 MeshCutoff           100.0  Ry
 SolutionMethod       Diagon
 #SpinPolarized
-MD.TypeOfRun               ElectronDynamics
+MD.TypeOfRun               TDED
 MD.FinalTimeStep           10
 MD.LengthTimeStep           1.0000000000E-03 fs
 TDED.Nsteps                 1
@@ -63,7 +63,7 @@ reinit: System Name: Germanium
 reinit: -----------------------------------------------------------------------
 reinit: System Label: Ge
 reinit: -----------------------------------------------------------------------
-Siesta Version: trunk-611-tddft02-12
+Siesta Version: trunk-611-tddft02-15
 Architecture  : x86_64-unknown-linux-gnu--Gfortran
 Compiler flags: /usr/local/bin/mpif90 -O2
 PP flags      : -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT
@@ -71,7 +71,7 @@ Libraries     : /software/scalapack-2.0.2_gfortran/lib/libscalapack.a /software/
 PARALLEL version
 
 * Running in serial mode with MPI
->> Start of run:  16-MAY-2017  15:12:08
+>> Start of run:  18-MAY-2017  15:01:38
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:   32 Label: Ge
@@ -377,8 +377,8 @@ redata: Divide and Conquer                          =   T
 redata: Electronic Temperature                      =   299.9869 K
 redata: Fix the spin of the system                  =   F
 redata: Max. number of TDED Iter                    =        1
-redata: Number of TDED substeps                     =        2
-redata: Write .TDWF and .DM after time steps        =      100
+redata: Number of TDED substeps                     =        3
+redata: Write .TDWF after time steps                =      100
 redata: Dynamics option                             = Verlet MD run
 redata: Initial MD time step                        =        1
 redata:   Final MD time step                        =       10
@@ -508,14 +508,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.000063   -0.361255    0.000060
         -0.076951    0.000033    0.189926
 
-siesta: Pressure (static):         62.74808928  kBar
+siesta: Pressure (static):         62.74808938  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.053837   -0.000002   -0.076709
          0.000063   -0.361255    0.000060
         -0.076951    0.000033 -103.021086
 
-siesta: Pressure (total):      55184.10102225  kBar
+siesta: Pressure (total):      55184.10102236  kBar
 
 siesta: Temp_ion =************ K
 
@@ -589,14 +589,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000043   -0.361108   -0.008919
         -0.076970   -0.006037    0.189728
 
-siesta: Pressure (static):         62.81535365  kBar
+siesta: Pressure (static):         62.81535374  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.053762   -0.000122   -0.076719
         -0.000043   -0.361108   -0.008919
         -0.076970   -0.006037 -103.021283
 
-siesta: Pressure (total):      55184.16828663  kBar
+siesta: Pressure (total):      55184.16828672  kBar
 
 siesta: Temp_ion =************ K
 
@@ -657,7 +657,7 @@ siesta: Atomic forces (eV/Ang):
    Tot    0.001750    0.011152    0.003406
 ----------------------------------------
    Max  118.863127
-   Res   31.805601    sqrt( Sum f_i^2 / 3N )
+   Res   31.805600    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
@@ -670,14 +670,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000100   -0.360291   -0.017885
         -0.077025   -0.012095    0.189408
 
-siesta: Pressure (static):         62.58642942  kBar
+siesta: Pressure (static):         62.58642950  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.053694   -0.000195   -0.076741
         -0.000100   -0.360291   -0.017885
         -0.077025   -0.012095 -103.021603
 
-siesta: Pressure (total):      55183.93936240  kBar
+siesta: Pressure (total):      55183.93936247  kBar
 
 siesta: Temp_ion =************ K
 
@@ -751,14 +751,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000216   -0.359053   -0.026785
         -0.077115   -0.018094    0.188754
 
-siesta: Pressure (static):         62.36256328  kBar
+siesta: Pressure (static):         62.36256334  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.053530   -0.000326   -0.076776
         -0.000216   -0.359053   -0.026785
         -0.077115   -0.018094 -103.022258
 
-siesta: Pressure (total):      55183.71549625  kBar
+siesta: Pressure (total):      55183.71549632  kBar
 
 siesta: Temp_ion =************ K
 
@@ -832,14 +832,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000323   -0.357288   -0.035638
         -0.077234   -0.024051    0.187981
 
-siesta: Pressure (static):         61.92769777  kBar
+siesta: Pressure (static):         61.92769782  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.053351   -0.000448   -0.076817
         -0.000323   -0.357288   -0.035638
         -0.077234   -0.024051 -103.023031
 
-siesta: Pressure (total):      55183.28063075  kBar
+siesta: Pressure (total):      55183.28063080  kBar
 
 siesta: Temp_ion =************ K
 
@@ -913,14 +913,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000417   -0.355038   -0.044346
         -0.077368   -0.029872    0.186922
 
-siesta: Pressure (static):         61.39205321  kBar
+siesta: Pressure (static):         61.39205326  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.053164   -0.000558   -0.076851
         -0.000417   -0.355038   -0.044346
         -0.077368   -0.029872 -103.024090
 
-siesta: Pressure (total):      55182.74498619  kBar
+siesta: Pressure (total):      55182.74498623  kBar
 
 siesta: Temp_ion =************ K
 
@@ -981,7 +981,7 @@ siesta: Atomic forces (eV/Ang):
    Tot   -0.000642    0.014004    0.005514
 ----------------------------------------
    Max  116.784435
-   Res   31.313427    sqrt( Sum f_i^2 / 3N )
+   Res   31.313426    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
@@ -994,14 +994,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000481   -0.352272   -0.052902
         -0.077553   -0.035555    0.185680
 
-siesta: Pressure (static):         60.68457122  kBar
+siesta: Pressure (static):         60.68457125  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.052964   -0.000638   -0.076913
         -0.000481   -0.352272   -0.052902
         -0.077553   -0.035555 -103.025332
 
-siesta: Pressure (total):      55182.03750419  kBar
+siesta: Pressure (total):      55182.03750423  kBar
 
 siesta: Temp_ion =************ K
 
@@ -1075,14 +1075,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000568   -0.349016   -0.061287
         -0.077761   -0.041081    0.184273
 
-siesta: Pressure (static):         59.82356289  kBar
+siesta: Pressure (static):         59.82356291  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.052728   -0.000742   -0.076976
         -0.000568   -0.349016   -0.061287
         -0.077761   -0.041081 -103.026739
 
-siesta: Pressure (total):      55181.17649587  kBar
+siesta: Pressure (total):      55181.17649589  kBar
 
 siesta: Temp_ion =************ K
 
@@ -1156,14 +1156,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.000690   -0.345302   -0.069500
         -0.078021   -0.046450    0.182675
 
-siesta: Pressure (static):         58.85653728  kBar
+siesta: Pressure (static):         58.85653729  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.052423   -0.000880   -0.077069
         -0.000690   -0.345302   -0.069500
         -0.078021   -0.046450 -103.028337
 
-siesta: Pressure (total):      55180.20947026  kBar
+siesta: Pressure (total):      55180.20947027  kBar
 
 siesta: Temp_ion =************ K
 
@@ -1284,7 +1284,7 @@ siesta:         Total =    7911.323469
 siesta:         Fermi =       0.000000
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.796291 -113.942001  -12.337559
+siesta:      1    0.796291 -113.942001  -12.337560
 siesta:      2    5.849034    2.867350    5.289642
 siesta:      3   -0.017503   -0.033991    0.016318
 siesta:      4   -0.022593    0.661428   -0.033635
@@ -1307,52 +1307,52 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00039307         -0.00071344  Ry/Bohr**3
 siesta:           0.03609049         -0.06550527  eV/Ang**3
-siesta:          57.82395921       -104.95215071  kBar
+siesta:          57.82395921       -104.95214689  kBar
 (Free)E+ p_basis*V_orbitals  =       -1166.117948
 (Free)Eharris+ p_basis*V_orbitals  =       -1482.737285
 
-timer: Elapsed wall time (sec) =      16.521
+timer: Elapsed wall time (sec) =      16.377
 timer: CPU execution times (sec):
 
 Routine            Calls   Time/call    Tot.time        %
-siesta                 1      16.512      16.512   100.00
-Setup                  1       0.496       0.496     3.00
+siesta                 1      16.376      16.376   100.00
+Setup                  1       0.376       0.376     2.30
 bands                  1       0.000       0.000     0.00
 KSV_init               1       0.000       0.000     0.00
-IterGeom              10       1.602      16.016    97.00
-state_init            10       0.062       0.616     3.73
-hsparse               10       0.022       0.224     1.36
+IterGeom              10       1.600      16.000    97.70
+state_init            10       0.063       0.632     3.86
+hsparse               10       0.022       0.216     1.32
 overlap               10       0.005       0.048     0.29
-Setup_H0              10       0.569       5.688    34.45
-naefs                 20       0.000       0.004     0.02
+Setup_H0              10       0.527       5.272    32.19
+naefs                 20       0.001       0.020     0.12
 MolMec                20       0.000       0.000     0.00
-kinefsm               20       0.005       0.092     0.56
-nlefsm                20       0.112       2.244    13.59
-DHSCF_Init            10       0.470       4.700    28.46
-DHSCF1                10       0.024       0.244     1.48
+kinefsm               20       0.003       0.068     0.42
+nlefsm                20       0.110       2.196    13.41
+DHSCF_Init            10       0.432       4.320    26.38
+DHSCF1                10       0.023       0.228     1.39
 INITMESH              10       0.000       0.000     0.00
-DHSCF2                10       0.446       4.456    26.99
-REMESH                10       0.043       0.428     2.59
+DHSCF2                10       0.409       4.092    24.99
+REMESH                10       0.038       0.384     2.34
 REORD                190       0.000       0.016     0.10
-PHION                 10       0.280       2.796    16.93
-COMM_BSC              70       0.000       0.000     0.00
-POISON                30       0.009       0.284     1.72
-fft                   60       0.004       0.220     1.33
-sankey_change_b       10       0.014       0.136     0.82
-setup_H               10       0.117       1.168     7.07
-DHSCF                 20       0.379       7.576    45.88
-DHSCF3                20       0.116       2.328    14.10
-rhoofd                20       0.049       0.976     5.91
-CellXC                20       0.018       0.360     2.18
-cellXC                20       0.018       0.360     2.18
-vmat                  20       0.040       0.796     4.82
-cn_evolk              10       0.060       0.600     3.63
-DHSCF4                10       0.525       5.248    31.78
-dfscf                 10       0.388       3.884    23.52
+PHION                 10       0.260       2.604    15.90
+COMM_BSC              70       0.000       0.008     0.05
+POISON                30       0.009       0.268     1.64
+fft                   60       0.004       0.228     1.39
+sankey_change_b       10       0.013       0.128     0.78
+setup_H               10       0.117       1.168     7.13
+DHSCF                 20       0.387       7.736    47.24
+DHSCF3                20       0.116       2.320    14.17
+rhoofd                20       0.049       0.980     5.98
+CellXC                20       0.017       0.344     2.10
+cellXC                20       0.017       0.344     2.10
+vmat                  20       0.039       0.788     4.81
+cn_evolk              10       0.085       0.848     5.18
+DHSCF4                10       0.542       5.416    33.07
+dfscf                 10       0.389       3.888    23.74
 overfsm               10       0.002       0.024     0.15
-state_analysis        10       0.000       0.004     0.02
-siesta_move           10       0.001       0.012     0.07
+state_analysis        10       0.001       0.008     0.05
+siesta_move           10       0.000       0.000     0.00
 Analysis               1       0.000       0.000     0.00
 optical                1       0.000       0.000     0.00
   
->> End of run:  16-MAY-2017  15:12:25
+>> End of run:  18-MAY-2017  15:01:54

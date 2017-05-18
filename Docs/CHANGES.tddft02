@@ -1,3 +1,25 @@
+2017-05-18  15:20 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-17
+
+Semantic changes in the RT-TDDFT options.
+
+* Updated the tests accordinlgy
+
+modified:
+
+  Docs/siesta.tex
+
+  Src/m_iotddft.F90
+  Src/read_options.F90
+
+  Tests/Reference/TDDFT_Ge1.out
+  Tests/Reference/TDDFT_Ge2.out
+  Tests/Reference/TDDFT_h2o1.out
+  Tests/Reference/TDDFT_h2o2.out
+  Tests/TDDFT_Ge/TDDFT_Ge1.fdf
+  Tests/TDDFT_Ge/TDDFT_Ge2.fdf
+  Tests/TDDFT_h2o/TDDFT_h2o1.fdf
+  Tests/TDDFT_h2o/TDDFT_h2o2.fdf
+
 2017-05-16  18:20 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-16
 
 Updated the development notes.

@@ -946,26 +946,26 @@ subroutine read_options( na, ns, nspin )
 
 !TD-DFT options
   td_elec_dyn = .false. 
-  writetdwf = fdf_get('WriteInitialTDWF',.false.)
+  writetdwf = fdf_get('TDED.WF.Initialize',.false.)
   if( IONode .and. writetdwf ) then
      write(6,1) 'redata: Write Initial TDWF' , writetdwf
   end if
   tdsaverho  =  fdf_get('TDED.Saverho', .false.)
-  ntdsaverho =  fdf_get('TDED.Nsaverho', 50)
-  etot_time  =  fdf_get('WriteEtotvsTime',.true.)
-  eigen_time =  fdf_get('WriteEigenvsTime',.false.)        
-  dip_time   =  fdf_get('WriteDipolevsTime',.false.)
-  extrapol_H_tdks = fdf_get('TDED.Hextrapol',.false.)
+  ntdsaverho =  fdf_get('TDED.Nsaverho', 100)
+  etot_time  =  fdf_get('TDED.Write.Etot',.true.)
+  eigen_time =  fdf_get('TDED.Write.Eig',.false.)        
+  dip_time   =  fdf_get('TDED.Write.Dipole',.false.)
+  extrapol_H_tdks = fdf_get('TDED.Extrapolate',.false.)
   ntded      = fdf_get('TDED.Nsteps', 1)
-  ntded_sub  = fdf_get('TDED.Nsubsteps',2)
+  ntded_sub  = fdf_get('TDED.Extrapolate.Substeps',3)
   if (ionode) then
      write(6,4) 'redata: Max. number of TDED Iter', ntded
      write(6,4) 'redata: Number of TDED substeps', ntded_sub
   end if
     
-  tdednwrite = fdf_get('TDED.Nwrite', 100)
+  tdednwrite = fdf_get('TDED.WF.Nwrite', 100)
   if (ionode) then
-     write(6,4) 'redata: Write .TDWF and .DM after time steps', tdednwrite
+     write(6,4) 'redata: Write .TDWF after time steps', tdednwrite
   end if
 
   
@@ -997,7 +997,7 @@ subroutine read_options( na, ns, nspin )
      fire_optim = .true.
   else if (leqi(dyntyp,'verlet')) then
      idyn = 1
-  else if (leqi(dyntyp,'electrondynamics')) then
+  else if (leqi(dyntyp,'TDED')) then
      idyn = 1    ! For the time being verlet is used 
                  ! for TDDFT calculations.
      td_elec_dyn = .true.
