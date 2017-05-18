@@ -10161,21 +10161,21 @@ writing too often can affect efficiency.
 
  \begin{fdflogicalT}{ TDED.Write.Etot}
 
-If .true. the total energy for every time step is stored in the file
+If \fdftrue\ the total energy for every time step is stored in the file
 \sysfile{TDETOT}.
 
 \end{fdflogicalT}
 
  \begin{fdflogicalF}{TDED.Write.Dipole}
 
-If .true. a file \sysfile{TDDIPOL} is created that can be
+If \fdftrue\ a file \sysfile{TDDIPOL} is created that can be
 further processed to calculate polarizability.
 
 \end{fdflogicalF}
 
  \begin{fdflogicalF}{TDED.Write.Eig}
 
-If .true. the quantities $\langle \phi(t)|H(t)|\phi(t)\rangle$ in every
+If \fdftrue\ the quantities $\langle \phi(t)|H(t)|\phi(t)\rangle$ in every
 time step are calculated and stored in the file
 \sysfile{TDEIG}.
 
@@ -10183,7 +10183,7 @@ time step are calculated and stored in the file
 
 \begin{fdflogicalF}{TDED.Saverho}
 
-If .true. the instantaneous time-dependent density is saved to
+If \fdftrue\ the instantaneous time-dependent density is saved to
 \texttt{ <istep>}.\texttt{TDRho}\index{TDRho@{\bf TDRho}} after every
 \fdf{TDED.Nsaverho} number of steps.
 

@@ -1,3 +1,11 @@
+2017-05-18  17:20 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-18
+
+Fixed some formatting in the manual.
+
+modified:
+
+  Docs/siesta.tex
+
 2017-05-18  15:20 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-17
 
 Semantic changes in the RT-TDDFT options.
