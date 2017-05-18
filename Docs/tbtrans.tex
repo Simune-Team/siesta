@@ -151,7 +151,7 @@ To compile \tbtrans\ simply go to the directory and type:
   $ make
 \end{shellexample}
 %$
-This will default to use the \shell{arch.make} file in the \shell{Obj}
+This will default to use the \file{arch.make} file in the \shell{Obj}
 directory. To use a different directory you may do:
 \begin{shellexample}
   $ make OBJDIR=AnotherObjDir
@@ -159,7 +159,9 @@ directory. To use a different directory you may do:
 %$
 
 \tbtrans\ is tightly intertwined with the \siesta\ source to reduce
-code duplication. 
+code duplication.
+
+Please see the \siesta\ manual for installing NetCDF easily.
 
 \subsection{The \texttt{arch.make}\ file}
 \label{sec:arch-make}
@@ -168,7 +170,7 @@ The compilation is done using a \shell{Makefile} that is provided with
 the code\index{Makefile}. This \shell{Makefile} will generate the
 executable for any of several architectures, with a minimum of tuning
 required from the user and encapsulated in a separate file called
-\texttt{arch.make}.
+\file{arch.make}.
 
 \tbtrans\ relies on the following libraries
 \begin{description}
@@ -183,14 +185,14 @@ required from the user and encapsulated in a separate file called
     performance libraries.
   \end{itemize}
 
-  To add BLAS to the \shell{arch.make} file you need to add the
+  To add BLAS to the \file{arch.make} file you need to add the
   required linker flags to the \shell{LIBS} variable in the
-  \shell{arch.make} file.
+  \file{arch.make} file.
 
   Example variables
 \begin{shellexample}
   # OpenBLAS:
-  LIBS += -L/opt/openblas/0.2.18/lib -lopenblas
+  LIBS += -L/opt/openblas/lib -lopenblas
   # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_blas95_lp64 ...
 \end{shellexample}
@@ -204,7 +206,7 @@ required from the user and encapsulated in a separate file called
   Example variables
 \begin{shellexample}
   # OpenBLAS (OpenBLAS will default to build in LAPACK 3.6)
-  LIBS += -L/opt/openblas/0.2.18/lib -lopenblas
+  LIBS += -L/opt/openblas/lib -lopenblas
   # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_lapack95_lp64 ...
 \end{shellexample}
@@ -215,14 +217,14 @@ The above are the minimally required libraries.
 
 Highly encouraged libraries
 \begin{description}
-  \item[NetCDF4] %
+  \item[\href{https://www.unidata.ucar.edu/software/netcdf}{NetCDF}] %
   Note that it should a NetCDF4 compliant compiled
   library\footnote{Remark that a NetCDF-3 compliant library is not
       sufficient for \tbtrans.}. This library is required for a
   multitude of advanced analysis methods such as orbital resolved DOS,
-  bond-currents, $\delta \mathbf H$, eigenstate projections.
+  bond-currents, $\delta \mathbf H$, eigenstate projections, etc.
 
-  To use this library add these variables to your \shell{arch.make}
+  To use this library add these variables to your \file{arch.make}
   file
 \begin{shellexample}
   COMP_LIBS += libncdf.a
@@ -236,6 +238,8 @@ Highly encouraged libraries
   FPPFLAGS += -DNCDF_PARALLEL
 \end{shellexample}
 
+  To easily install \program{NetCDF} please see the installation file:
+  \shell{Docs/install\_netcdf4.bash}.
   
 \end{description}
 
@@ -243,13 +247,13 @@ Importantly, \tbtrans\ is compatible with hybrid parallelism using MPI
 and OpenMP or either of them alone. 
 
 \paragraph{MPI}
-To compile using MPI add this to your \shell{arch.make} file
+To compile using MPI add this to your \file{arch.make} file
 \begin{shellexample}
  FPPFLAGS += -DMPI
 \end{shellexample}
 
 \paragraph{OpenMP}
-To compile using OpenMP add this to your \shell{arch.make} file
+To compile using OpenMP add this to your \file{arch.make} file
 \begin{shellexample}
  FFLAGS += -fopenmp
  LIBS += -fopenmp
@@ -281,10 +285,12 @@ socket having \shell{OMP\_NUM\_THREADS} cores.
 Several modern BLAS implementations allow the use of GEMM3M kernels
 for complex linear algebra. They should provide a performance
 enhancement for large matrices. To use these routines add this to your
-\shell{arch.make} file:
+\file{arch.make} file:
 \begin{shellexample}
   FPPFLAGS += -DUSE_GEMM3M
 \end{shellexample}
+Note that OpenMP threaded BLAS libraries are known to fail with the
+GEMM3M kernels. 
 
 
 \subsubsection{Intel MKL libraries}
@@ -530,8 +536,14 @@ To use this feature at $k$ points it is important to know that phases
 in \tbtrans\ are defined using the lattice vectors (and \emph{not}
 inter-atomic distances)
 \begin{equation}
-  \mathbf H_k = \mathbf H \cdot e^{-i k \cdot \mathbf R}.
+  \mathbf H_k = \mathbf H \cdot e^{i k \cdot \mathbf R}.
+  \label{eq:hk-phase}
 \end{equation}
+\tbtrans\ will add the phases on \emph{all} elements of $\delta\mathbf
+H$ via Eq.~\eqref{eq:hk-phase}. To counter these phases one may simply
+multiply $\delta\mathbf H$ with the negative phase ($-i$). Note that
+phases are only added on super cell elements, \emph{not} unit cell
+elements. 
 
 \begin{fdfentry}{TBT.dH}[file]
 
@@ -643,33 +655,22 @@ set.
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{TBT.dH!Algorithm}[string]<sparse|block>
+\begin{fdflogicalT}{TBT.dH!Current.Orb}
+  \fdfdepend{TBT.Current!Orb}
 
-  Define the algorithm for inserting the matrix elements in the
-  Hamiltonian.
+  Whether the orbital currents will also contain the $\delta \mathbf
+  H$ contributions.
 
-  \begin{fdfoptions}
+  If \fdffalse\ the bond-currents will be calculated with-out the
+  additional term arising from the $\delta \mathbf H$. This may be
+  useful in cases where the additional term arises due to self-energy
+  corrections.
 
-    \option[sparse]%
-    \fdfindex{TBT.dH!Algorithm!sparse}%
-    The inner loop is across the sparsity pattern of $\delta\mathbf
-    H$, thus searching in the local matrix block sparsity pattern.  
-    
-    This should generally perform better when the matrix blocks to
-    insert in are relatively small. 
+  \note this functionality will only work correctly with a sorted
+  sparse $\delta \mathbf H$ entry. For every row the column indices
+  must be sorted.
 
-    \option[block]%
-    \fdfindex{TBT.dH!Algorithm!block}%
-    The inner loop is across the local matrix block size, thus
-    searching in the $\delta\mathbf H$ sparsity pattern.
-
-    This should generally perform better when the $\delta\mathbf H$
-    sparsity pattern is nearly the same size as the original
-    Hamiltonian sparsity pattern.
-
-  \end{fdfoptions}
-  
-\end{fdfentry}
+\end{fdflogicalT}
 
 
 \subsection{Determine calculated physical quantities}
@@ -710,7 +711,9 @@ calculation has completed.
 \begin{fdflogicalF}{TBT.T!Bulk}
 
   Calculate the bulk (pristine) electrode transmission if
-  \fdftrue. 
+  \fdftrue.
+
+  This generates \sysfile{BTRANS\_<>} and \sysfile{AVBTRANS\_<>}.
   
   \note implicitly enables \fdf{TBT.DOS!Elecs} if \fdftrue.
 
@@ -720,6 +723,8 @@ calculation has completed.
 
   Calculate the bulk (pristine) electrode DOS if
   \fdftrue. 
+
+  This generates \sysfile{BDOS\_<>} and \sysfile{AVBDOS\_<>}.
 
   \note implicitly enables \fdf{TBT.T!Bulk} if \fdftrue.
 
@@ -738,6 +743,8 @@ calculation has completed.
   is computationally more demanding than using \fdf{TBT.DOS!A} an
   \fdf{TBT.DOS!A.All}.
 
+  This generates \sysfile{DOS} and \sysfile{AVDOS}.
+
   See \fdf{TBT.Atoms!Device.Connect}.
 
 \end{fdflogicalF}
@@ -749,6 +756,8 @@ calculation has completed.
   calculate the DOS from the last electrode (last in the list
   \fdf{TBT.Elecs}), see \fdf{TBT.DOS!A.All}. 
 
+  This generates \sysfile{ADOS\_<>} and \sysfile{AVADOS\_<>}.
+
   See \fdf{TBT.Atoms!Device.Connect}.
 
 \end{fdflogicalF}
@@ -758,6 +767,9 @@ calculation has completed.
 
   Calculate the DOS from the spectral function and do so with
   \emph{all} electrodes.
+
+  This additionally generates \sysfile{ADOS\_<>} and
+  \sysfile{AVADOS\_<>} for the last electrode in \fdf{TBT.Elecs}.
 
   \note if \fdftrue, this implicitly sets \fdf{TBT.DOS!A} to \fdftrue.
 
@@ -779,6 +791,11 @@ $\rho_{\mathrm{bound-states}}=0$.
   Specify how many of the transmission eigenvalues will be
   calculated. 
 
+  This generates \sysfile{TEIG\_<1>\_<2>} and
+  \sysfile{AVTEIG\_<1>\_<2>}, however, only for the non-equivalent
+  electrode combinations (\tbtrans\ intrinsically assumes
+  time-reversal symmetry).
+
   \note if you specify a number of eigenvalues above the available
   number of eigenvalues, \tbtrans\ will automatically truncate it to a
   reasonable number.
@@ -793,40 +810,69 @@ $\rho_{\mathrm{bound-states}}=0$.
   apply for your system, one may set this to \fdftrue\ to explicitly
   calculate all transmissions.
 
+  This additionally generates \sysfile{TRANS\_<1>\_<2>} and
+  \sysfile{AVTRANS\_<1>\_<2>} for all electrode combinations (and the
+  equivalent eigenvalue files if \fdf{TBT.T!Eig} is \fdftrue.
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.T!Out}
   
-  The total transmission out of any electrode may easily be calculated
-  using only the scattering matrix of the origin electrode and the
-  scattering region Green function. 
+  The total transmission out of any electrode\footnote{In
+      $N>2$-electrode calculations one \emph{cannot} use this quantity
+      to calculate the total current out of an electrode.} may easily
+  be calculated using only the scattering matrix of the origin
+  electrode and the scattering region Green function.
   %
   This enables the calculation of these equations
   \begin{align}
-    \Tr[(\mathbf G - \mathbf G^\dagger)\boldsymbol \Gamma_j],
+    i\Tr[(\mathbf G - \mathbf G^\dagger)\boldsymbol \Gamma_j],
+    \label{eq:G.Gamma}
     \\
     \Tr[\mathbf G \boldsymbol \Gamma_j \mathbf G^\dagger\boldsymbol
     \Gamma_j].
+    \label{eq:G.Gamma.G.Gamma}
   \end{align}
   The total transmission out of electrode $j$ may then be calculated
   as
   \begin{equation}
+    \label{eq:T-out}
     T_j = i\Tr[(\mathbf G - \mathbf G^\dagger)\boldsymbol \Gamma_j] 
     -
     \Tr[\mathbf G \boldsymbol \Gamma_j \mathbf G^\dagger\boldsymbol \Gamma_j].
   \end{equation}
+
+  This generates two sets of files: \sysfile{CORR\_<>} and
+  \sysfile{TRANS\_<1>\_<1>} which corresponds to equations
+  Eqs.~\eqref{eq:G.Gamma} and \eqref{eq:G.Gamma.G.Gamma},
+  respectively. To calculate $T_j$ subtract the two files
+  according to Eq.~\eqref{eq:T-out}.
   
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.Current!Orb}
   \fdfdepend{TBT.Atoms!Device,TBT.DOS!A}
 
+
   Whether the orbital currents will be calculated and stored.  These
   will be stored in a sparse matrix format corresponding to the
-  \siesta\ sparse format.
-  %
-  One may use \sisl\ to analyze this output and change into
-  bond-currents etc.
+  \siesta\ sparse format with only the device atoms in the sparse
+  pattern.
+  
+  Orbital currents are implemented as:
+  \begin{equation}
+    J_{\alpha \beta} = i [
+    \mathbf H_{\beta\alpha} \mathbf A_{\alpha\beta}
+    - 
+    \mathbf H_{\alpha\beta} \mathbf A_{\beta\alpha}],
+  \end{equation}
+  where we have left out the pre-factor ($e/\hbar$)
+  intentionally. \sisl\ may be used to analyze the orbital currents
+  and enables easy transformation of orbital currents to
+  bond currents and activity currents.
+
+  \note this requires \tbtrans\ to be compiled with NetCDF-4 support,
+  see Sec.~\ref{sec:arch-make}.
   
 \end{fdflogicalF}
 
@@ -841,6 +887,8 @@ $\rho_{\mathrm{bound-states}}=0$.
   $ tbtrans -fdf TBT.Spin:1 -D UP RUN.fdf &
   $ tbtrans -fdf TBT.Spin:2 -D DOWN RUN.fdf &
 \end{shellexample}
+  which will create two folders \program{UP} and \program{DOWN} and
+  output the relevant physical quantities in the respective folders.
   
 \end{fdfentry}
 
@@ -871,17 +919,21 @@ other. \tbtrans\ will stop if this is not enforced.
 Remark that the physical quantities such as DOS, spectral DOS, orbital
 currents may only be calculated in the selected device region. 
 
-\begin{fdfentry}{TBT.Atoms!Device}[block]%
+\begin{fdfentry}{TBT.Atoms!Device}[block/list]%
   <\nonvalue{all but electrodes}>
+
+  This flag may either be a block, or a list.
 
   A block with each line denoting the atoms that consists of the
   device region.
   %
   \begin{fdfexample}
-    %block TBT.Atoms.Device 
+    %block TBT.Atoms.Device
        atom [ 10 -- 20 ]
        atom [ 30 -- 40 ]
-    %endblock
+    % endblock
+    # Or equivalently as a list   
+    TBT.Atoms.Device [10 -- 20, 30 -- 40]
   \end{fdfexample}
   will limit the device region to atoms [10--20, 30--40].
   
@@ -897,7 +949,7 @@ currents may only be calculated in the selected device region.
 
 \end{fdflogicalF}
 
-\begin{fdfentry}{TBT.Atoms!Buffer}[block]%
+\begin{fdfentry}{TBT.Atoms!Buffer}[block/list]%
 
   A block with each line denoting the atoms that are disregarded in
   the Green function calculation.
@@ -910,6 +962,8 @@ currents may only be calculated in the selected device region.
     %block TBT.Atoms.Buffer
        atom [ 1 -- 5 ]
     %endblock
+    # Or equivalently as a list   
+    TBT.Atoms.Buffer [1 -- 5]
   \end{fdfexample}
   will remove atoms [1--5] from the calculation.
   
@@ -1794,7 +1848,7 @@ electrodes band-structure and the energy levels for the scattering
 part. In for instance molecular electronics it is often useful to
 determine which molecular orbitals are responsible for the
 transmission as well as knowing their hybridization with the substrate
-(electrodes). 
+(electrodes).
 
 \tbtrans\ implements an advanced projection method which splits the
 transmission and DOS into eigenstate projectors.
@@ -1806,9 +1860,14 @@ One important aspect of projection is that the self-energies that are
 to be projected \emph{must} be fully located on the projection
 region. \tbtrans\ will die if this is not enforced.
 
-This method should \emph{not} be confused with projected DOS. The PDOS
-may be obtained if compiled with the NetCDF4 library and via the use
-of \sisl, see Sec.~\ref{sec:physical}.
+These projections should not be confused with local DOS which may be
+obtained if compiled with the NetCDF4 library and via the use of
+\sisl, see Sec.~\ref{sec:physical}.
+
+\note if the \fdf{TBT.Projs} block is defined, then the
+\fdf{TBT.Projs!T} block is required in the input unless
+\fdf{TBT.Projs!Init} is \fdftrue.
+
 
 \begin{fdfentry}{TBT.Projs}[block]
 
@@ -2064,9 +2123,11 @@ of \sisl, see Sec.~\ref{sec:physical}.
   calculated. This block will let the user decide which to calculate
   and which to not.
 
-  In the following L/R corresponds to
+  In the following \fdf*{Left}(L)/\fdf*{Right}(R) corresponds to
   $T=\Tr[\mathbf G\boldsymbol\Gamma_L\mathbf
-  G^\dagger\boldsymbol\Gamma_R]$.
+  G^\dagger\boldsymbol\Gamma_R]$
+  where \fdf*{Left}, \fdf*{Right} are found in the \fdf{TBT!Elecs}
+  block.
 
   \begin{fdfoptions}
 
@@ -2106,26 +2167,26 @@ of \sisl, see Sec.~\ref{sec:physical}.
   An example input for projection two molecules could be:
   \begin{fdfexample}
  %block TBT.Projs.T
-   from L.M-L.HOMO to
-     R.M-R
+   from Left.M-L.HOMO to
+     Right.M-R
      Right
    end
-   from L.M-L.LUMO to
-     R.M-R.LUMO
+   from Left.M-L.LUMO to
+     Right.M-R.LUMO
    end
  %endblock
   \end{fdfexample}
   which will be equivalent to the more verbose
   \begin{fdfexample}
  %block TBT.Projs.T
-   from L.M-L.HOMO to
-     R.M-R.HOMO
-     R.M-R.LUMO
-     R.M-R.H-plus-L
+   from Left.M-L.HOMO to
+     Right.M-R.HOMO
+     Right.M-R.LUMO
+     Right.M-R.H-plus-L
      Right
    end
-   from L.M-L.LUMO to
-     R.M-R.LUMO
+   from Left.M-L.LUMO to
+     Right.M-R.LUMO
    end
  %endblock
   \end{fdfexample}
@@ -2262,6 +2323,14 @@ These files are created if NetCDF4 support is enabled
 
   The $k$ averaged transmission from \fdf*{<1>} to \fdf*{<2>}. 
 
+  \item[\sysfile{CORR\_<1>}] \fillsee{TBT.T!Out}%
+
+  The $k$ resolved correction to the transmission for \fdf*{<1>}.
+
+  \item[\sysfile{AVCORR\_<1>}] \fillsee{TBT.T!Out}%
+
+  The $k$ averaged correction to the transmission for \fdf*{<1>}.
+
   \item[\sysfile{TEIG\_<1>\_<2>}] \fillsee{TBT.T!Eig}%
 
   The $k$ resolved transmission eigenvalues from \fdf*{<1>} to
@@ -2271,6 +2340,14 @@ These files are created if NetCDF4 support is enabled
 
   The $k$ averaged transmission eigenvalues from \fdf*{<1>} to
   \fdf*{<2>}. 
+
+  \item[\sysfile{CEIG\_<1>}] \fillsee{TBT.T!Out}%
+
+  The $k$ resolved correction eigenvalues for \fdf*{<1>}.
+
+  \item[\sysfile{AVCEIG\_<1>}] \fillsee{TBT.T!Out}%
+
+  The $k$ averaged correction eigenvalues for \fdf*{<1>}.
 
   \item[\sysfile{BDOS\_<>}] \fillsee{TBT.DOS!Elecs}/\fdf{TBT.T!Bulk}%
 

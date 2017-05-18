@@ -18,7 +18,7 @@ function siesta_comm()
    local ret_tbl = {}
 
    -- Do the actual communication with fortran
-   siesta_get(get_tbl)
+   siesta.receive(get_tbl)
 
    ---[[
       -- You can even write to other files while running 
@@ -35,6 +35,12 @@ function siesta_comm()
       siesta:print("...After initialization...")
    end
 
+   if siesta.state == siesta.INIT_MD then
+      siesta:print("...Right before entering the SCF loop...")
+      ret_tbl = init_md(siesta)
+   end
+
+   
    if siesta.state == siesta.SCF_LOOP then
       siesta:print("...At start of SCF...")
       ret_tbl = scf(siesta)
@@ -69,11 +75,18 @@ function siesta_comm()
       forces and coordinates to _only_ update
       the coordinates, thus only sending back
       the coordinates.
-
+      
       Needless to say, less communication, more
       speed, yet the overhead is minimal.
    --]]
-   siesta_return(ret_tbl)
+   siesta.send(ret_tbl)
+end
+
+function init_md(siesta)
+   
+   -- One can check what the meshcutoff is etc.
+   return {}
+   
 end
 
 function scf(siesta)

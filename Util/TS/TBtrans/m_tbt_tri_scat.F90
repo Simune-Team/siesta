@@ -44,6 +44,7 @@ module m_tbt_tri_scat
   public :: GFGGF_needed_worksize
 #ifdef NCDF_4
   public :: orb_current
+  public :: orb_current_add_dH
 #endif
 
   ! Used for BLAS calls (local variables)
@@ -808,6 +809,9 @@ contains
        !    Tr[(G \Gamma)^\dagger]
        ! Hence we only calculate one of the contributions and double
        ! it after
+       ! Indeed we actually need to calculate:
+       !    i Tr[G \Gamma] and since Gamma is not having the i factor
+       ! we may take the negative real part.
        ii = 1
        do i = 1 , no
           T = T - zdotu(nb,Gf(ii),1,El%Gamma(i_Elec+(i-1)*no),1) ! G \Gamma
@@ -821,7 +825,7 @@ contains
     end do
 
     ! Now we have:
-    !   T = G \Gamma - G^\dagger \Gamma
+    !   T = Tr[G \Gamma - G^\dagger \Gamma]
 #ifndef TBT_T_G_GAMMA_OLD
     T = T * 2._dp
 #endif
@@ -1125,14 +1129,9 @@ contains
           if ( iind <= i_ptr(io) ) cycle
 
           ! H_ind == H_ij
-          ! Get H for the current index
-#ifdef TBT_ORB_CURRENT_NO_S
-          Hi = H(ind) * ph( (l_col(ind)-1)/no_u )
-#else
-          ! We may take the conjugate later as
-          ! E is a real quantity
-          Hi = (H(ind) - S(ind) * E) * ph( (l_col(ind)-1)/no_u )
-#endif
+
+          ! We may take the conjugate later as E is a real quantity
+          Hi = (H(ind) - E * S(ind)) * ph( (l_col(ind)-1)/no_u )
 
           ! J(iind) = J(io,jo)
           jo = ucorb(l_col(ind),no_u)
@@ -1142,9 +1141,10 @@ contains
           jo = index(A_tri,iu,ju) ! A_ij
           ju = index(A_tri,ju,iu) ! A_ji
 
-          ! We skip the pre-factors as the units are never used
+          ! We skip the pre-factors as the units are "never" used
           
-          J(iind) = aimag( A(ju) * Hi - A(jo) * dconjg( Hi ) )
+          !               Hij * Aji         Hji    * Aij
+          J(iind) = aimag( Hi * A(ju) - dconjg(Hi) * A(jo) )
 
        end do
     end do
@@ -1157,6 +1157,159 @@ contains
 #endif
 
   end subroutine orb_current
+  
+  subroutine orb_current_add_dH(dH_1D,sc_off,k,A_tri,r,orb_J,pvt)
+
+    use class_Sparsity
+    use class_zSpData1D
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(zSpData1D), intent(in) :: dH_1D
+    real(dp), intent(in) :: sc_off(:,:), k(3)
+    type(zTriMat), intent(inout) :: A_tri
+    ! The region that specifies the size of orb_J
+    type(tRgn), intent(in) :: r
+    type(dSpData1D), intent(inout) :: orb_J
+    ! The pivoting region that transfers r%r(iu) to io
+    type(tRgn), intent(in) :: pvt
+
+    type(Sparsity), pointer :: sp
+    complex(dp), pointer :: dH(:)
+    type(Sparsity), pointer :: i_sp
+    integer, pointer :: i_ncol(:), i_ptr(:), i_col(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
+
+    complex(dp), allocatable :: ph(:)
+    complex(dp), pointer :: A(:)
+    real(dp), pointer :: J(:)
+    real(dp) :: E
+    integer :: no_u, iu, io, i, ind, iind, ju, jo, jj
+
+#ifdef TBTRANS_TIMING
+    call timer('orb-current-dH',1)
+#endif
+
+    ! Retrieve dH
+    sp => spar(dH_1D)
+    dH => val (dH_1D)
+    call attach(sp, nrows_g=no_u, &
+         n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
+
+    i_sp => spar(orb_J)
+    J    => val (orb_J)
+    call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do i = 1 , size(sc_off, dim=2)
+       ph(i-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,i) + &
+            k(2) * sc_off(2,i) + &
+            k(3) * sc_off(3,i)))
+    end do
+
+    A => val(A_tri)
+!$OMP parallel do default(shared), &
+!$OMP&private(iu,io,iind,i,jo,ju,ind,col,jj)
+    do iu = 1, r%n
+       io = r%r(iu)
+
+       ! Starting index of the orbital current
+       iind = i_ptr(io)
+       
+       ! Loop on the orbital current indices
+       do i = 1, i_ncol(io)
+
+          ! Index in orbital current sparsity pattern
+          iind = iind + 1
+
+          ! Here we will calculate the orbital current from dH
+          ! onto orbital:
+          !  J(iind) == J(io, jo)
+
+          ! Get jo orbital
+          jo = ucorb(i_col(iind), no_u)
+          ju = pvt%r(jo) ! pivoted orbital index in tri-diagonal matrix
+
+          ! Check if the io, jo orbital exists in dH
+          if ( l_ncol(io) < 1 ) then
+             ind = -1
+          else
+             col => l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))
+             ind = l_ptr(io) + SFIND(col, i_col(iind))
+          end if
+          
+          if ( ind > l_ptr(io) ) then
+
+             ! Add orbital current from ij
+
+             ! Check for the Hamiltonian element H_ij
+             jj = index(A_tri,ju,iu) ! A_ji
+
+             J(iind) = J(iind) + aimag( dH(ind) * ph( (l_col(ind)-1)/no_u ) * A(jj) )
+
+          end if
+
+          ! Check if the jo, io orbital exists in dH
+          if ( l_ncol(jo) < 1 ) then
+             ind = -1
+          else
+             col => l_col(l_ptr(jo)+1:l_ptr(jo)+l_ncol(jo))
+             ! Get transpose element
+             jj = TO(i_col(iind)) + io
+             ind = l_ptr(jo) + SFIND(col, jj)
+          end if
+          
+          if ( ind > l_ptr(jo) ) then
+
+             ! Add orbital current from ji
+             
+             ! Check for the Hamiltonian element H_ji
+             jj = index(A_tri,iu,ju) ! A_ij
+
+             J(iind) = J(iind) + aimag( - dH(ind) * ph( (l_col(ind)-1)/no_u ) * A(jj) )
+
+          end if
+
+       end do
+    end do
+!$OMP end parallel do
+
+    deallocate(ph)
+
+#ifdef TBTRANS_TIMING
+    call timer('orb-current-dH',2)
+#endif
+
+  contains
+
+    function TO(io) result(jo)
+      integer, intent(in) :: io
+      integer :: jo, isc, i
+
+      ! Get the current supercell index
+      isc = (io-1)/no_u + 1
+      
+      do i = 1, size(sc_off, dim=2)
+
+         ! We have to check for the opposite super-cell to get the
+         ! transpose element.
+         ! 0.001 Bohr seems like a more than accurate difference for
+         ! unit-cells.
+         if ( all( abs(sc_off(:,i) + sc_off(:, isc)) < 0.001_dp) ) then
+            jo = (i - 1) * no_u
+            return
+         end if
+         
+      end do
+
+      call die('orb_current_add_dH: could not find transpose supercell index')
+
+    end function TO
+    
+  end subroutine orb_current_add_dH
 #endif
 
   subroutine insert_Self_energy(n1,n2,M,r,El,off1,off2)

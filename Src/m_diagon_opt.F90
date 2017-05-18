@@ -34,10 +34,11 @@ module m_diagon_opt
 
 contains
 
-  subroutine init_diagon_opt(Gamma)
+  subroutine init_diagon_opt(Gamma, nspin)
     use parallel, only: Nodes
     use fdf, only: fdf_get
     logical, intent(in) :: Gamma
+    integer, intent(in) :: nspin
 
     ! if already read, return immediately
     if ( called ) return
@@ -45,6 +46,7 @@ contains
 #ifdef MPI
     if ( .not. Gamma ) then
        ParallelOverK = fdf_get( 'Diag.ParallelOverK', .false. )
+       if ( nspin > 2 ) ParallelOverK = .false.
     end if
 #endif
 

@@ -195,6 +195,11 @@ contains
        if ( fdf_bnnames(pline) == 0 ) cycle
        n = n + 1 
     end do
+    
+    ! If there are no electrodes, return immediately
+    ! This will signal a new read, or default values of the
+    ! electrodes
+    if ( n == 0 ) return
 
     allocate(this_n(n))
 
@@ -390,7 +395,7 @@ contains
           end do
           if ( .not. associated(this%mu) ) then
              call die('Could not find the chemical potential "'//trim(ln)//&
-                  '" for the electrode: "'//trim(name)//'". '//&
+                  '" for the electrode: "'//trim(this%name)//'". '//&
                   'Please supply an existing name.')
           end if
           info(3) = .true.
@@ -628,14 +633,14 @@ contains
           ! is passed, if that is the case, the chances are that the
           ! user has made a typo is high
           call die('Unrecognized option "'//trim(ln)//'" &
-               &for electrode: '//trim(name))
+               &for electrode: '//trim(this%name))
 
        end if
 
     end do
     
     if ( any(this%Bloch(:) < 1) ) then
-       call die("Bloch expansion in "//trim(name)//" electrode must be >= 1.")
+       call die("Bloch expansion in "//trim(this%name)//" electrode must be >= 1.")
     end if
 
     if ( .not. all(info(1:4)) ) then
@@ -791,7 +796,7 @@ contains
 
     use units, only : Pi
     use intrinsic_missing, only : VNORM, SPC_PROJ, IDX_SPC_PROJ
-    use intrinsic_missing, only : VEC_PROJ, VEC_PROJ_SCA
+    use intrinsic_missing, only : VEC_PROJ_SCA
 
     ! The electrode that needs to be processed
     type(Elec), intent(inout) :: this
@@ -933,8 +938,7 @@ contains
 
     use parallel, only : IONode
     use units, only : Pi, Ang
-    use intrinsic_missing, only : VNORM, SPC_PROJ, IDX_SPC_PROJ
-    use intrinsic_missing, only : VEC_PROJ, VEC_PROJ_SCA
+    use intrinsic_missing, only : VNORM
 
     use m_ts_io, only: ts_read_TSHS_opt
 
@@ -1150,16 +1154,26 @@ contains
           write(*,'(a)') 'Incompatible k-grids...'
           write(*,'(a)') 'Electrode file k-grid:'
           do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),this_kdispl(j)
+             write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), this_kdispl(j)
           end do
           write(*,'(a)') 'System k-grid:'
           do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (kcell(i,j),i=1,3),kdispl(j)
+             write(*,'(3(i4,tr1),f8.4)') kcell(:,j), kdispl(j)
           end do
-          write(*,'(a)') 'Electrode file k-grid should be:'
+          write(*,'(a)') 'Electrode file k-grid should probably be:'
+          ! Loop the electrode directions
           do j = 1 , 3
-             this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch(j)
-             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(pvt(j))
+             if ( j == this%t_dir ) then
+                ! ensure that we retain the semi-infinite
+                ! direction k-sampling, and suggest more k-points
+                ! if necessary
+                if ( this_kcell(j,j) < 20 ) then
+                   this_kcell(j,j) = 50
+                end if
+             else
+                this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch(j)
+             end if
+             write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), kdispl(pvt(j))
           end do
           
        end if
@@ -1647,23 +1661,39 @@ contains
        call print_type(this%sp01)
     end if
 
+    ! Check that there is a transfer matrix!
+    if ( nnzs(this%sp01) == 0 ) then
+       write(*,'(a)') 'Electrode '//trim(this%name)//' has no transfer matrix.'
+       write(*,'(a)') 'The self-energy cannot be calculated with a zero transfer matrix!'
+       call die('Elec: transfer matrix has 0 elements. The self-&
+            &energy cannot be calculated. Please check your electrode &
+            &electronic structure.')
+    end if
+
   end subroutine create_sp2sp01
 
   subroutine delete_(this)
     type(Elec), intent(inout) :: this
 
+    ! Full matrices
     call delete(this%H)
     call delete(this%S)
-    call delete(this%H00)
-    call delete(this%H01)
-    call delete(this%S00)
-    call delete(this%S01)
-    call delete(this%sp00)
-    call delete(this%sp01)
     call delete(this%sp)
+
+    ! 00 matrices
+    call delete(this%H00)
+    call delete(this%S00)
+    call delete(this%sp00)
+
+    ! 01 matrices
+    call delete(this%H01)
+    call delete(this%S01)
+    call delete(this%sp01)
+
     if ( associated(this%xa) ) deallocate(this%xa)
     if ( associated(this%lasto) ) deallocate(this%lasto)
     nullify(this%xa,this%lasto)
+    if ( associated(this%isc_off) ) deallocate(this%isc_off)
     !if ( associated(this%xa_used) ) deallocate(this%xa_used)
     !if ( associated(this%lasto_used) ) deallocate(this%lasto_used)
     !nullify(this%xa_used,this%lasto_used)

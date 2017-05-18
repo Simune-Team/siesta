@@ -52,11 +52,6 @@ subroutine read_options( na, ns, nspin )
 
   ! This routine sets variables in the 'siesta_options' module
 
-  !tddft  
-  integer,  parameter :: ntded_default  = 1
-  integer,  parameter :: ntdsaverho_default = 50
-  integer,  parameter :: tdednwrite_default = 100
-  !end tddft
 #ifdef SIESTA__CHESS
   real(dp) :: chess_value
 #endif
@@ -173,7 +168,7 @@ subroutine read_options( na, ns, nspin )
   character(len=30) :: ctmp
   character(len=6) :: method
 
-  logical :: DaC, qnch, qnch2, usesaveddata
+  logical :: DaC, qnch, qnch2
   logical :: tBool
 
   !--------------------------------------------------------------------- BEGIN
@@ -995,28 +990,28 @@ subroutine read_options( na, ns, nspin )
      endif
   endif
 
-!TD-DFT options      
-           td_elec_dyn = .false. 
-           writetdwf = fdf_get('WriteInitialTDWF',.false.)
-           if(writetdwf) then
-             if (ionode) then
-              write(6,1) 'redata: Write Initial TDWF' , writetdwf
-             endif
-           endif
-           tdsaverho  = fdf_get('TDED.Saverho', .false.)
-           ntdsaverho = fdf_get('TDED.Nsaverho', ntdsaverho_default)
-           etot_time  =  fdf_get('WriteEtotvsTime',.true.)
-           eigen_time =  fdf_get('WriteEigenvsTime',.false.)        
-           dip_time   =  fdf_get('WriteDipolevsTime',.false.)
-           ntded  = fdf_get('TDED.Nsteps',ntded_default)
-          if (ionode) then
-            write(6,4) 'redata: Max. number of TDED Iter         = ',ntded
-          end if
+!TD-DFT options
+  td_elec_dyn = .false. 
+  writetdwf = fdf_get('WriteInitialTDWF',.false.)
+  if( IONode .and. writetdwf ) then
+     write(6,1) 'redata: Write Initial TDWF' , writetdwf
+  end if
+  tdsaverho  = fdf_get('TDED.Saverho', .false.)
+  ntdsaverho = fdf_get('TDED.Nsaverho', 50)
+  etot_time  =  fdf_get('WriteEtotvsTime',.true.)
+  eigen_time =  fdf_get('WriteEigenvsTime',.false.)        
+  dip_time   =  fdf_get('WriteDipolevsTime',.false.)
+  ntded  = fdf_get('TDED.Nsteps', 1)
+  if (ionode) then
+     write(6,4) 'redata: Max. number of TDED Iter', ntded
+  end if
     
-          tdednwrite = fdf_get('TDED.Nwrite',tdednwrite_default)
-          if (ionode) then
-            write(6,4) 'redata: Write .TDWF and .DM after time steps= ',tdednwrite
-          end if
+  tdednwrite = fdf_get('TDED.Nwrite', 100)
+  if (ionode) then
+     write(6,4) 'redata: Write .TDWF and .DM after time steps', tdednwrite
+  end if
+
+  
   ! Dynamics parameters ...
   varcel = fdf_get('MD.VariableCell', .false. )
 
@@ -1553,15 +1548,15 @@ subroutine read_options( na, ns, nspin )
 
 
   ! Find some switches 
-  writek                = fdf_get( 'WriteKpoints', outlng )
-  writef                = fdf_get( 'WriteForces', outlng )
+  writek                = fdf_get( 'Write.Kpoints', outlng )
+  writeF                = fdf_get( 'Write.Forces', outlng )
 
-  writedm               = fdf_get( 'WriteDM', .true. )
-  write_dm_at_end_of_cycle = fdf_get( 'WriteDM.End.Of.Cycle', writedm )
-  writeH                = fdf_get( 'WriteH', .true. )
-  write_H_at_end_of_cycle  = fdf_get( 'WriteH.End.Of.Cycle', writeH )
+  writeDM               = fdf_get( 'Write.DM', .true. )
+  write_dm_at_end_of_cycle = fdf_get( 'Write.DM.End.Of.Cycle', writeDM )
+  writeH                = fdf_get( 'Write.H', .false. )
+  write_H_at_end_of_cycle  = fdf_get( 'Write.H.End.Of.Cycle', writeH )
 
-  writedm_cdf           = fdf_get('WriteDM.NetCDF', .false. )
+  writeDM_cdf           = fdf_get('Write.DM.NetCDF', .false. )
 #ifdef NCDF_4
   write_cdf             = fdf_get('CDF.Save', .false. )
   ! No compression is by far the fastest
@@ -1625,6 +1620,9 @@ subroutine read_options( na, ns, nspin )
   save_initial_charge_density = fdf_get(    &
        'SaveInitialChargeDensity' , .false.)
 
+  analyze_charge_density_only = fdf_get(    &
+       'AnalyzeChargeDensityOnly' , .false.)
+
   new_diagk              = fdf_get( 'UseNewDiagk', .false. )
   writb                  = fdf_get( 'WriteBands', outlng )
   writbk                 = fdf_get( 'WriteKbands', outlng )
@@ -1664,7 +1662,6 @@ subroutine read_options( na, ns, nspin )
   end if
 
   writec                 = fdf_get( 'WriteCoorStep', outlng )
-  default                = fdf_get( 'UseSaveData', .false. )
   savehs                 = fdf_get( 'SaveHS', .false. )
   fixauxcell             = fdf_get( 'FixAuxiliaryCell', .false. )
   naiveauxcell           = fdf_get( 'NaiveAuxiliaryCell', .false. )
@@ -1685,6 +1682,8 @@ subroutine read_options( na, ns, nspin )
   endif
   change_kgrid_in_md           = fdf_get('ChangeKgridInMD', .false.)
   ParallelOverK                = fdf_get('Diag.ParallelOverK', .false.)
+  ! If non-collinear spin, it *MUST* be false.
+  if ( nspin > 2 ) ParallelOverK = .false.
   RelaxCellOnly                = fdf_get('MD.RelaxCellOnly', .false.)
   RemoveIntraMolecularPressure = fdf_get( &
        'MD.RemoveIntraMolecularPressure', .false.)

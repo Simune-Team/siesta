@@ -10,7 +10,7 @@
       public :: setup_H0
       CONTAINS
 
-      subroutine setup_H0()
+      subroutine setup_H0(G2max)
       
 C     Computes non-self-consistent part of the Hamiltonian
 C     and initializes data structures on the grid.
@@ -46,10 +46,11 @@ C     and initializes data structures on the grid.
 #endif
 
       implicit none
+      real(dp), intent(inout) :: g2max
+      
       real(dp) :: dummy_stress(3,3), dummy_fa(1,1), dummy_dm(1,1)
       real(dp) :: dummy_E
       integer  :: ia, is
-      real(dp) :: g2max
 
       real(dp), pointer :: H_val(:), H_so(:,:)
 

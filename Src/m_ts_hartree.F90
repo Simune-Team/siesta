@@ -117,6 +117,15 @@ contains
 
     if ( TS_HA == TS_HA_PLANE ) then
 
+       ! The hartree plane can only be used for 1 and 2
+       ! electrodes
+       if ( N_Elec == 1 ) then
+          
+          El => Elecs(1)
+          return
+          
+       end if
+
        ! The plane can only be chosen with
        ! 2 electrodes
        if ( N_Elec /= 2 ) then
@@ -175,7 +184,7 @@ contains
   
   subroutine ts_init_hartree_fix(cell, na_u, xa, nmesh, nmeshl)
 
-    use intrinsic_missing, only: VNORM
+    use intrinsic_missing, only: VNORM, VEC_PROJ
     use units, only : Ang
     use m_mesh_node, only : offset_r, dMesh, dL
     use parallel, only : IONode
@@ -310,7 +319,8 @@ contains
                &unit cell.'
           write(*,'(a)') 'ts: Please move structure so this point is &
                &inside unit cell (Ang):'
-          write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', El%p%c/Ang
+          write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', &
+               VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
           write(*,'(a)') 'ts: You can use %block AtomicCoordinatesOrigin'
           write(*,'(a)') 'ts: to easily move the entire structure.'
        end if
@@ -416,23 +426,31 @@ contains
        i = ha_idx - offset_i(ts_tidx)
        if ( ts_tidx == 1 .and. &
             0 < i .and. i <= nmeshl(1) ) then
+          ! jump to correct X
           imesh = i
           do i3 = 1 , nmeshl(3)
              do i2 = 1 , nmeshl(2)
                 nlp  = nlp + 1
                 Vtot = Vtot + Vscf(imesh)
+                ! skip X box
                 imesh = imesh + nmeshl(1)
              end do
           end do
        else if ( ts_tidx == 2 .and. &
             0 < i .and. i <= nmeshl(2) ) then
+          ! offset to first Y index
+          imesh = (i-1)*nmeshl(1)
           do i3 = 1 , nmeshl(3)
-             imesh = imesh + (i-1)*nmeshl(1)
              do i1 = 1 , nmeshl(1)
                 nlp  = nlp + 1
                 imesh = imesh + 1
                 Vtot = Vtot + Vscf(imesh)
              end do
+             ! jump entire X and Y box to get the next Z
+             ! position with the correct Y offset
+             ! Note -1 because we already have passed one Y
+             ! block
+             imesh = imesh + (nmeshl(2)-1)*nmeshl(1)
           end do
        else if ( ts_tidx == 3 .and. &
             0 < i .and. i <= nmeshl(3) ) then

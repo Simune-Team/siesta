@@ -50,9 +50,11 @@
 #ifdef TRACING
       use extrae_eventllist, only : writeList, deleteList, eventlist
 #endif
+      use m_io,            only : io_assign, io_close
 
       implicit none
 
+      integer :: iu
 #ifdef MPI
       integer MPIerror
 #endif
@@ -120,11 +122,20 @@
 
 ! Finalize MPI, unless siesta is running as a subroutine
 #ifdef MPI
+      MPIerror = MPI_SUCCESS
       if (.not.siesta_subroutine) call MPI_Finalize( MPIerror )
 #endif
 
       if (IOnode) then
-         call system("/usr/bin/touch 0_NORMAL_EXIT")
+         call io_assign(iu)
+         open(iu, file='0_NORMAL_EXIT', form='FORMATTED')
+#ifdef MPI
+         write(iu,'(a,i0)') 'SIESTA completed, MPI exit: ',
+     &        MPIerror
+#else
+         write(iu,'(a)') 'SIESTA completed successfully'
+#endif
+         call io_close(iu)
       endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_end

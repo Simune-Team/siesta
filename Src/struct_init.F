@@ -78,9 +78,8 @@
       call re_alloc( va, 1, 3, 1, na_u, 'va', 'struct_init' )
 
       ! Options read here instead of in siesta_options
-      default   = fdf_get('UseSaveData', .false.)
-      usesavexv = fdf_get('MD.UseSaveXV', default)
-      usesavezm = fdf_get('MD.UseSaveZM', default)
+      usesavexv = fdf_get('MD.UseSaveXV', usesaveddata)
+      usesavezm = fdf_get('MD.UseSaveZM', usesaveddata)
       writic    = fdf_get('WriteCoorInitial', .true.)
 
       ! Read Z-matrix coordinates and forces from file

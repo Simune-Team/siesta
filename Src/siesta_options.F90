@@ -33,7 +33,6 @@ MODULE siesta_options
   logical :: mixH          ! Mix H instead of DM
   logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
-  logical :: default       ! Temporary used to pass default values in fdf reads
   logical :: dumpcharge    ! Write electron density?
   logical :: fire_mix      ! SCF mixing with FIRE method
   logical :: fixauxcell    ! Keep the auxiliary supercell fixed?
@@ -61,6 +60,7 @@ MODULE siesta_options
   logical :: savepsch      ! Write file with ionic (local pseudopotential) charge?
   logical :: savetoch      ! Write file with total charge?
   logical :: savebader     ! Write file with charge for Bader analysis?
+  logical :: usesaveddata  ! Default for UseSavedData flag
   logical :: usesavecg     ! Use continuation file for CG geometry relaxation?
   logical :: usesavelwf    ! Use continuation file for Wannier functions?
   logical :: usesavedm     ! Use cont. file for density matrix?
@@ -124,6 +124,7 @@ MODULE siesta_options
   logical :: read_deformation_charge_cdf   ! Read deformation charge density from file in netCDF form?
 !
   logical :: save_initial_charge_density ! Just save the initial charge density used
+  logical :: analyze_charge_density_only ! Exit dhscf after processing charge
 
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?

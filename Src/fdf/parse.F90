@@ -601,7 +601,7 @@ MODULE parse
     END FUNCTION reals
 
 !
-!   Return a given real token, specifying it by its sequence
+!   Return a given list token, specifying it by its sequence
 !   number. It is also possible to make the sequence start after
 !   a given token number in the line.
 !
@@ -648,7 +648,6 @@ MODULE parse
 
            ! Parse token list
            llist = tokens(pline,i)
-           NULLIFY(lpline)
            ! The list does have the markers attached (remove them)
            li = len_trim(llist)-1
            llist = trim(llist(2:li))
@@ -743,6 +742,9 @@ MODULE parse
               end if
            end do
 
+           ! Clean-up parsed list-line
+           call destroy(lpline)
+           
            if ( count ) ni = li
 
         endif

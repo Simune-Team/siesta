@@ -31,14 +31,15 @@ endif
 #
 ALLOBJ = MatrixSwitch.o
 
-#
+module: $(LIBNAME)
+	cp $(LIBNAME) ../..
+	@cp -p *.mod ../..
+
 $(LIBNAME) : $(ALLOBJ)
 	@echo "Incoming FPPFLAGS: " $(EXTFLAGS)
 	@echo "Current FPPFLAGS: " $(FPPFLAGS)
 	$(AR) $(ARFLAGS_EXTRA) cru $@ $(ALLOBJ)
 	-$(RANLIB) $@
-	cp $(LIBNAME) ../..
-	@cp -p *.mod ../..
 
 # Make sure that you include this in the "clean" rule
 # in the top makefile. Otherwise these files will

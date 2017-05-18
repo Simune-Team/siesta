@@ -245,7 +245,7 @@ contains
     ! * LOCAL variables *
     ! *******************
     integer :: i, j
-    real(dp) :: tmp33(3,3), rtmp
+    real(dp) :: rtmp
     logical :: err, bool
     character(len=200) :: chars
 
@@ -256,8 +256,8 @@ contains
     Elecs_xa_EPS = fdf_get('TBT.Elecs.Coord.Eps',Elecs_xa_EPS,'Bohr')
 
     ! detect how many electrodes we have
-    N_Elec = fdf_nElec('TBT',Elecs)
-    if ( N_Elec < 1 ) N_Elec = fdf_nElec('TS',Elecs)
+    N_Elec = fdf_nElec('TBT', Elecs)
+    if ( N_Elec < 1 ) N_Elec = fdf_nElec('TS', Elecs)
     if ( N_Elec < 1 ) then
        ! We initialize to 2 electrodes (Left/Right)
        N_Elec = 2
@@ -630,7 +630,7 @@ contains
 
     call init_Sigma_options( save_DATA )
 
-    call init_dH_options( )
+    call init_dH_options( save_DATA )
 
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus )
@@ -731,7 +731,7 @@ contains
     
     call print_diag()
     call print_Sigma_options( save_DATA )
-    call print_dH_options()
+    call print_dH_options( save_DATA )
     call print_save_options()
 
     write(*,f11)'          >> Electrodes << '

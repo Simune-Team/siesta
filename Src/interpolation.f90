@@ -244,7 +244,7 @@ else
       dx = x(2)-x(1)
     else  ! try x(k) = x(1) + b*[exp(a*(k-1))-1]
       meshType = 'log'
-      b = (x(2)-x(1)) / (exp(a)-1)
+      b = (x(2)-x(1)) / (exp(a)-1._dp)
     endif
   else
     meshType = 'gen'
@@ -258,8 +258,8 @@ if (present(dydx1)) then
     v(1) = -0.5_dp
     u(1) = (3.0_dp/dx1)*(dy1/dx1-dydx1)
 else
-    v(1) = 0
-    u(1) = 0
+    v(1) = 0._dp
+    u(1) = 0._dp
 endif
 if (present(dydxn)) then
     dxn = x(n)-x(n-1)
@@ -427,10 +427,10 @@ y = A*yl + B*yh + ( (A**3-A)*d2ydx2l + (B**3-B)*d2ydx2h ) * (dx**2)/6.0_dp
 
 ! Find interpolated derivative
 if (present(dydx)) then
-  dAdx = -1/dx
-  dBdx = +1/dx
-  dydx = dAdx*yl + dBdx*yh + ( dAdx*(3*A**2-1)*d2ydx2l + & 
-                               dBdx*(3*B**2-1)*d2ydx2h ) * (dx**2)/6.0_dp
+  dAdx = -1._dp/dx
+  dBdx = +1._dp/dx
+  dydx = dAdx*yl + dBdx*yh + ( dAdx*(3*A**2-1._dp)*d2ydx2l + & 
+                               dBdx*(3*B**2-1._dp)*d2ydx2h ) * (dx**2)/6.0_dp
 endif
 
 END SUBROUTINE interpolate_interval
@@ -568,7 +568,7 @@ real(dp):: xh, xl, xmax, xtol
 
 ! Check that point is within interpolation range
 xmax = (n-1)*dx
-xtol = dx*tol;
+xtol = dx*tol
 if (x<-xtol .or. x>xmax+xtol) &
   call die('evaluate_spline ERROR: x out of range')
 
@@ -603,8 +603,9 @@ SUBROUTINE polint( xi, yi, n, x, y, dydx )  ! Lagrange interpolation
 ! Neville's algorithm, as described in NR
   c = yi(1:n)
   d = yi(1:n)
-  dcdx = 0
-  dddx = 0
+  dcdx = 0._dp
+  dddx = 0._dp
+  dydx = 0._dp
   i0 = n/2
   y = yi(i0)
   do m = 1,n-1               ! loop on increasing polynomial order

@@ -3,7 +3,7 @@
       CONTAINS
       subroutine evolve(no, nspin, maxspn, maxuo, maxnh, maxnd,        &
                        maxo, gamma, indxuo, nk, kpoint, wk,            &
-                       Dnew, Enew, nuotot, delt, istep, itded)         
+                       Enew, nuotot, delt, istep, itded)         
 
 ! *********************************************************************
 ! Subroutine to time-evolve the eigenvectors, calculate the density 
@@ -92,8 +92,8 @@
       !
       integer, intent(in)      ::  maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin 
       integer                  ::  nuotot, istep, itded,  indxuo(no) 
-      double precision         ::  Dnew(maxnd,nspin), Enew(maxnd,nspin) 
-      double precision         ::  kpoint(3,nk), wk(nk), delt
+      real(dp)                 ::  Enew(maxnd,nspin) 
+      real(dp)                 ::  kpoint(3,nk), wk(nk), delt
       logical                  ::  gamma
       external                 ::  io_assign, io_close
       !
@@ -140,7 +140,7 @@
       ! Call apropriate routine .............................................
       if (nspin.le.2 .and. gamma) then
         call evolg( nspin, nuo, no, maxo, maxnh, maxnd,                   &
-                    Dnew, Enew, nuotot, delt,istep,itded)
+                    Enew, nuotot, delt,istep,itded)
       elseif (nspin.le.2 .and. .not.gamma) then
       stop 'evolve: Error: kpoint for TDED is not implimented yet'
  !       call evolk( nspin, maxspn, nuo, no, maxo, maxnh, maxnd,           &

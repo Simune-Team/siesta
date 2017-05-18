@@ -1314,6 +1314,11 @@ contains
 
       ! Reduce to # history of linear
       nhl = mix%n_hist
+      ! if the number of fake-history steps saved is
+      ! zero we immediately return.
+      ! Only if mix%n_hist > 0 will the below
+      ! occur.
+      if ( nhl == 0 ) return
 
       ! Check for the type of following method
       select case ( next%m )

@@ -230,7 +230,7 @@
      &             ucell, ntm, ifa, istr, maxnh,
      &             maxnh, numh, listhptr, listh, Dscf, Datm, H_tmp,
      &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     &             Exc, Dxc, dipol, fa, stress, fal, stressl )
+     &             Exc, Dxc, dipol, stress, fal, stressl )
 
 !     Orthonormalization forces ...........................................
 !     **Note that this will re-calculate S also, but should get 

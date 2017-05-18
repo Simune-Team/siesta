@@ -82,7 +82,7 @@
 #endif
 
 #ifdef NCDF_4
-      use nf_ncdf
+      use netcdf_ncdf
 #endif
 #ifdef _OPENMP
       use omp_lib, only : omp_get_num_threads, omp_get_schedule
@@ -586,6 +586,12 @@ C     Initialise MPI and set processor number
      &           fincoor
             write(*,'(a,/)')'expcoord: '//repeat('*',69)
          end if
+#endif
+#ifdef SIESTA__FLOOK
+      else if (idyn == 10) then
+         inicoor = 0
+         ! Controlled in external LUA machine
+         fincoor = huge(1)
 #endif
       else
         call die( 'siesta: wrong idyn' )
