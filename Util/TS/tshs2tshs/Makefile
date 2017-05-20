@@ -77,8 +77,11 @@ $(FDICT):
 	-mkdir -p fdict
 	(cd fdict ; \
 	echo "TOP_DIR=$(VPATH)/fdict" > Makefile ; echo "include $(VPATH)/fdict/Makefile" >> Makefile ; \
-	echo "FC=$(FC_SERIAL)" > setup.make ; \
+	echo "AR=$(AR)" > setup.make ; \
+	echo "RANLIB=$(RANLIB)" >> setup.make ; \
+	echo "FC=$(FC_SERIAL)" >> setup.make ; \
 	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "LINK_FLAGS=$(FFLAGS)" >> setup.make ; \
 	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
 	@cp -p fdict/*.mod ./
 	cp fdict/$(FDICT) ./
@@ -94,8 +97,11 @@ $(NCDF): $(FDICT)
 	echo "TOP_DIR=$(VPATH)/ncdf" > Makefile ; echo "include $(VPATH)/ncdf/Makefile" >> Makefile ; \
 	echo "settings.bash: FORCE" >> Makefile ; \
 	printf '%s\n' "	-cp ../fdict/settings.bash ." >> Makefile ; \
-	echo "FC=$(FC)" > setup.make ; \
+	echo "AR=$(AR)" > setup.make ; \
+	echo "RANLIB=$(RANLIB)" >> setup.make ; \
+	echo "FC=$(FC)" >> setup.make ; \
 	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "LINK_FLAGS=$(FFLAGS)" >> setup.make ; \
 	echo "FPPFLAGS = $(FPPFLAGS)" >> setup.make ; \
 	echo "INCLUDES = $(INCFLAGS) -I../" >> setup.make ; \
 	echo "LIBS = $(LIBS) -lfdict" >> setup.make ; \
