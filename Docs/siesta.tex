@@ -74,7 +74,7 @@
 %  \end{fdfentry}
 % 
 % Additionally one may create dependency flags to make it
-% easy to see dependencies on the flags
+% easy to see dependencies between flags
 %  \begin{fdfentry}{FDF.Flag}[integer]<0>
 %    \fdfdepend{FDF.First, FDF.Second}
 %
@@ -8800,6 +8800,11 @@ geometry loop: it computes the electronic structure (and
 thus the forces and stresses) for a given geometry, updates the
 atomic positions (and maybe the cell vectors) accordingly and moves on
 to the next cycle.
+%
+If there are molecular dynamics options missing you are highly
+recommend to look into \fdf{MD.TypeOfRun!Lua} or
+\fdf{MD.TypeOfRun!Master}. 
+
 
 Several options for MD and structural optimizations are
 implemented, selected by
@@ -8808,58 +8813,69 @@ implemented, selected by
   \begin{fdfoptions}
     
     \option[CG]%
+    \fdfindex{MD.TypeOfRun!CG}%
     Coordinate optimization by conjugate gradients). Optionally (see
     variable \fdf{MD.VariableCell} below), the optimization can include the
     cell vectors.
 
     \option[Broyden]%
+    \fdfindex{MD.TypeOfRun!Broyden}%
     Coordinate optimization by a modified Broyden scheme). Optionally,
     (see variable \fdf{MD.VariableCell} below), the optimization can
     include the cell vectors.
 
     \option[FIRE]%
+    \fdfindex{MD.TypeOfRun!FIRE}%
     Coordinate optimization by Fast Inertial Relaxation Engine (FIRE)
     (E. Bitzek et al, PRL 97, 170201, (2006)).  Optionally, (see
     variable \fdf{MD.VariableCell} below), the optimization can
     include the cell vectors.
 
     \option[Verlet]%
+    \fdfindex{MD.TypeOfRun!Verlet}%
     Standard Verlet algorithm MD
 
     \option[Nose]%
+    \fdfindex{MD.TypeOfRun!Nose}%
     MD with temperature controlled  by means of a Nos\'e
     thermostat
 
     \option[ParrinelloRahman]%
+    \fdfindex{MD.TypeOfRun!ParrinelloRahman}%
     MD with pressure controlled by the Parrinello-Rahman method
 
     \option[NoseParrinelloRahman]%
+    \fdfindex{MD.TypeOfRun!NoseParrinelloRahman}%
     MD with temperature controlled by means of a Nos\'e thermostat and
     pressure controlled by the Parrinello-Rahman method
 
     \option[Anneal]%
+    \fdfindex{MD.TypeOfRun!Anneal}%
     MD with annealing to a desired temperature and/or pressure (see
     variable \fdf{MD.AnnealOption} below)
 
     \option[FC]%
+    \fdfindex{MD.TypeOfRun!FC}%
     Compute force constants matrix\index{Force Constants Matrix} for
     phonon calculations.
 
-
-    \option[Forces]%
-    (Receive coordinates from, and return forces to, an external
+    \option[Master|Forces]%
+    \fdfindex{MD.TypeOfRun!Master}%
+    \fdfindex{MD.TypeOfRun!Forces}%
+    Receive coordinates from, and return forces to, an external
     driver program, using MPI, Unix pipes, or Inet sockets for
-    communication.  The routines in module fsiesta allow the user's
-    program to perform this communication transparently, as if siesta
-    were a conventional force-field subroutine. See
-    \shell{Util/SiestaSubroutine/README} for details. WARNING: if
-    this option is specified without a driver program sending data,
-    siesta may hang without any notice).
+    communication. The routines in module \program{fsiesta} allow the
+    user's program to perform this communication transparently, as if
+    \siesta\ were a conventional force-field subroutine. See
+    \shell{Util/SiestaSubroutine/README} for details. WARNING: if this
+    option is specified without a driver program sending data, siesta
+    may hang without any notice.
     
     See directory Util/Scripting \index{Scripting} for other driving
     options.
 
     \option[Lua]%
+    \fdfindex{MD.TypeOfRun!Lua}%
     Fully control the MD cycle and convergence path using an external
     Lua script. 
 
@@ -8880,7 +8896,8 @@ implemented, selected by
       set optimizations cannot be performed in the Lua script).
 
     \end{itemize}
-    For more details see Sec.~\ref{sec:lua}.
+    Sec.~\ref{sec:lua} for additional details (and a description of
+    \program{flos} which implements some of the above mentioned items).
 
     Using this option requires the compilation of \siesta\ with the
     \program{flook} library.%
@@ -10063,7 +10080,7 @@ faster convergence of the relaxation.
 
   An example file could be this (note this is Lua code):
   \begin{codeexample}
--- This function is REQUIRED
+-- This function (siesta_comm) is REQUIRED
 function siesta_comm()
    
    -- Define which variables we want to retrieve from SIESTA
@@ -10151,7 +10168,7 @@ end
   \end{codeexample}
   which is the most minimal example of using the L-BFGS algorithm for
   geometry relaxation. Note that \program{flos} reads the parameters
-  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol}.
+  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol} through \siesta.
 
   \note The number of available variables continues to grow and to
   find which quantities are accessible in Lua you may add this small
@@ -10161,6 +10178,9 @@ end
   \end{codeexample}
   which prints out a list of all accessible variables (note they are
   not sorted).
+  
+  If there are any variables you require which are not in the list,
+  please contact the developers.
   
 \end{fdfentry}
 

@@ -244,7 +244,7 @@ contains
     variables = variables // &
          ('geom.z'.kvp.iza)
     variables = variables // &
-         ('geom.last_orbital'.kvp.lasto)
+         ('geom.last_orbital'.kvp.lasto(1:))
     variables = variables // &
          ('geom.mass'.kvp.amass)
     variables = variables // &
