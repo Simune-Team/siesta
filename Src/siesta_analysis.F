@@ -418,7 +418,7 @@
           if (IONode) then
              write(6,'(a,3f12.6)')
      &            'siesta: Total spin polarization (x,y,z) = ',
-     &            qspin(3)*2, qspin(4)*2, qspin(1)-qspin(2)
+     &            qspin(3)*2,-qspin(4)*2, qspin(1)-qspin(2)
              write(6,'(a,4f12.6)')
      &            'siesta: S , {S} = ', Stot, Svec
             if (cml_p) then
