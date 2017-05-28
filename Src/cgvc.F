@@ -350,12 +350,6 @@ C Fixed cell ----------------------------------------------------------------
 !!            do i=1,ndeg 
 !!               print *, "gxa, gfa ", i, gxa(i), gfa(i)
 !!            enddo
-CC RC
-            write(6,*) ' cgvc:    na = ', na    
-            write(6,*) ' cgvc:    xa = ', xa   
-            write(6,*) ' cgvc:    fa = ', fa   
-            write(6,*) ' cgvc: dxmax = ', dxmax    
-            write(6,*) ' cgvc:  ftol = ', ftol    
             call conjgr( 3*na, xa, fa, dxmax, ftol, cgcntr, cgaux )
             relaxd = (int(cgcntr(0)) .eq. 0)           !! ???
          endif

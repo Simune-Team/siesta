@@ -258,24 +258,24 @@ C  Copy row i of Dscf into row last of D
 ! JFR           ! We cannot assume symmetry (ib,jb) -- (jb,ib)
                 ! We need to transpose the spin and conjugate
                 if ( spin%SO .and. .not.spin%SO_offsite ) then
-                   D(jb,ib,1) = DscfL(ind,1)
-                   D(jb,ib,2) = DscfL(ind,2)
-                   D(jb,ib,3) = DscfL(ind,7)
-                   D(jb,ib,4) = DscfL(ind,8)
+                   D(jb,ib,1) =  DscfL(ind,1)
+                   D(jb,ib,2) =  DscfL(ind,2)
+                   D(jb,ib,3) =  DscfL(ind,7)
+                   D(jb,ib,4) =  DscfL(ind,8)
                    D(jb,ib,5) = -DscfL(ind,5)
                    D(jb,ib,6) = -DscfL(ind,6)
-                   D(jb,ib,7) = DscfL(ind,3)
-                   D(jb,ib,8) = DscfL(ind,4)
+                   D(jb,ib,7) =  DscfL(ind,3)
+                   D(jb,ib,8) =  DscfL(ind,4)
 ! CC RC  Added  for the offSpOrb
                 elseif( spin%SO_offsite ) then
-                   D(jb,ib,1) = DscfL(ind,1)
-                   D(jb,ib,2) = DscfL(ind,2)
-                   D(jb,ib,3) = DscfL(ind,7)
-                   D(jb,ib,4) = DscfL(ind,8)
-                   D(jb,ib,5) = DscfL(ind,5)
-                   D(jb,ib,6) = DscfL(ind,6)
-                   D(jb,ib,7) = DscfL(ind,3)
-                   D(jb,ib,8) = DscfL(ind,4)
+                   D(jb,ib,1) =  DscfL(ind,1)
+                   D(jb,ib,2) =  DscfL(ind,2)
+                   D(jb,ib,3) =  DscfL(ind,7)
+                   D(jb,ib,4) = -DscfL(ind,8)
+                   D(jb,ib,5) = -DscfL(ind,5)
+                   D(jb,ib,6) = -DscfL(ind,6)
+                   D(jb,ib,7) =  DscfL(ind,3)
+                   D(jb,ib,8) = -DscfL(ind,4)
                 else
                    D(jb,ib,:) = DscfL(ind,:)
                 endif
@@ -300,14 +300,14 @@ C  Copy row i of Dscf into row last of D
                    D(jb,ib,8) =  Dscf(ind,4)
 ! CC RC  Added  for the offSpOrb
                 elseif( spin%SO_offsite ) then
-                   D(jb,ib,1) = Dscf(ind,1)
-                   D(jb,ib,2) = Dscf(ind,2)
-                   D(jb,ib,3) = Dscf(ind,7)
-                   D(jb,ib,4) = Dscf(ind,8)
-                   D(jb,ib,5) = Dscf(ind,5)
-                   D(jb,ib,6) = Dscf(ind,6)
-                   D(jb,ib,7) = Dscf(ind,3)
-                   D(jb,ib,8) = Dscf(ind,4)
+                   D(jb,ib,1) =  Dscf(ind,1)
+                   D(jb,ib,2) =  Dscf(ind,2)
+                   D(jb,ib,3) =  Dscf(ind,7)
+                   D(jb,ib,4) = -Dscf(ind,8)
+                   D(jb,ib,5) = -Dscf(ind,5)
+                   D(jb,ib,6) = -Dscf(ind,6)
+                   D(jb,ib,7) =  Dscf(ind,3)
+                   D(jb,ib,8) = -Dscf(ind,4)
                 else
                    D(jb,ib,:) = Dscf(ind,:)
                 endif                
@@ -362,7 +362,7 @@ C  If stress required. Generate stress derivatives
               do ix = 1,3
                 do iy = 1,3
                   ii = ii + 1
-                  xgC(ii,isp,ic) = dxsp(iy,isp) * gC(ix,isp,ic) *r vol
+                  xgC(ii,isp,ic) = dxsp(iy,isp) * gC(ix,isp,ic) *rvol
                 enddo
               enddo
             enddo
@@ -386,6 +386,8 @@ C     Factor two for nondiagonal elements for non-collinear spin
 ! CC RC  Added  for the offSpOrb
         elseif( spin%SO_offsite ) then
          V(1:nsp,3:nspin) = 2.0_dp * V(1:nsp,3:nspin)
+         V(1:nsp,7) =  V(1:nsp,3)
+         V(1:nsp,8) = -V(1:nsp,4)
         end if
 
 C     Loop on first orbital of mesh point
