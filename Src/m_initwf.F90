@@ -332,7 +332,7 @@ CONTAINS
               Haux(jo,io)=Haux(jo,io)+H(ind,ispin)
             end do
           end do
-          call rdiag(Haux,Saux,nuotot,nuo,nuotot,eo,psi(1,1,ispin),nuotot,1,ierror)
+          call rdiag(Haux,Saux,nuotot,nuo,nuotot,eo,psi(1,1,ispin),nuotot,1,ierror, BlockSize)
           if (ierror .eq. 0) then
             exit
           else if ((ierror .ne. -1) .or. (ie .eq. 10)) then
@@ -408,7 +408,7 @@ CONTAINS
             end do
           end do
           !
-          call cdiag(Haux,Saux,nuotot,nuo,nuotot,eo(1,ispin,ik),psi,nuotot,1,ierror)
+          call cdiag(Haux,Saux,nuotot,nuo,nuotot,eo(1,ispin,ik),psi,nuotot,1,ierror,BlockSize)
           if (ierror .ne. 0) then
           call die('Terminating due to failed diagonalisation')
           end if
