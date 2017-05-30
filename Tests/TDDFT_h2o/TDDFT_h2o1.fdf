@@ -4,8 +4,8 @@ SystemLabel TDDFT_h2o
 
 ################################################################
 
-xc.functional GGA
-xc.authors PBE
+xc.functional LDA
+xc.authors CA
 Atom.Ignore.Ghosts
 
 MeshCutoff 150.0 Ry

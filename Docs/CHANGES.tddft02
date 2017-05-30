@@ -1,3 +1,12 @@
+2017-05-30  15:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-20
+
+Fixed the inconsistency in the use of XC functionals.
+
+modified:
+
+  Tests/TDDFT_h2o/TDDFT_h2o1.fdf
+  Tests/TDDFT_h2o/TDDFT_h2o2.fdf
+
 2017-05-30  14:40 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-19
 
 Bug fix in call to cdiag and rdiag subroutines.
