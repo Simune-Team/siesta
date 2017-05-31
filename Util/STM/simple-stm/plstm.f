@@ -315,7 +315,8 @@ C Linear interpolation to find z-coordinate of surface
      .      DXDM(IX,3) * ZK3 , IX=1,3)
        ZERO = .TRUE.
 
-  10   ENDDO
+ 10    ENDDO
+       write(2,*) " "
        ENDDO
 
        CLOSE(2)
@@ -425,6 +426,7 @@ C Linear interpolation to find the value of F at ZVALUE
        STOP
 
   10   ENDDO
+       write(2,*)
        ENDDO
 
        CLOSE(2)
