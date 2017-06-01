@@ -224,6 +224,9 @@ C allocate space for eigenenergies and (complex) eigenfunctions
         CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'mainstm')
 
 !     call readwaves again to actually read wavefunctions
+! This could be inlined in routine stm below to
+! save memory
+        
         rewind(wf_unit)
         CALL read_wfsx(wf_unit,NSPIN,NO_U,NWF,NUMWF,NK,
      $       RPSI,IPSI,E,K,INDW)

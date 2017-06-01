@@ -74,13 +74,13 @@ SYSOBJ=$(SYS).o
 OBJS_STM = atompla.o  \
         bessph.o chkdim.o dismin.o \
 	dot.o fftw3_mymod.o extrapolate.o \
-        io.o iodm.o itochar.o length.o \
+        io.o iodm.o length.o \
         mainstm.o matvect.o memory.o \
 	neighb.o paste.o pxf.o \
 	 radfft.o ranger.o \
         readstm.o m_wfsx.o \
         redata.o  reinitstm.o stm.o \
-	vacpot.o volcel.o wrout.o handlers.o
+	vacpot.o volcel.o handlers.o
 #
 INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
