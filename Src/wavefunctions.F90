@@ -5,9 +5,12 @@ MODULE  wavefunctions
   implicit none 
   !    
   PRIVATE
-  PUBLIC       :: iowavef, compute_tddm 
+  PUBLIC       :: iowavef, compute_tddm
   type(matrix), allocatable, save, public :: wavef_ms(:,:)
+  TYPE(matrix), ALLOCATABLE, SAVE, public :: Hsave(:,:)
   ! 
+  complex(kind=dp), parameter, public :: complx_1 = cmplx(1.0,0.0,dp)
+  complex(kind=dp), parameter, public :: complx_0 = cmplx(0.0,0.0,dp)
 
 CONTAINS
   !
@@ -122,7 +125,7 @@ CONTAINS
 #ifdef MPI 
               call MPI_Bcast(varaux,1,MPI_double_complex,0,MPI_Comm_World,MPIerror)
 #endif
-              call m_set_element(wavef_rw(ik,ispin),i,j,varaux,'lap')
+              call m_set_element(wavef_rw(ik,ispin),i,j,varaux,complx_0,'lap')
             end do
           end do
         enddo

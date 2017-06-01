@@ -23,13 +23,15 @@ EXTFLAGS=$(FPPFLAGS)
 #
 MPI_STRING=$(findstring -DMPI,$(EXTFLAGS))
 ifneq (,$(MPI_STRING))
-override FPPFLAGS += -DLAP -DSLAP -DCONV
+override FPPFLAGS += -DLAP -DHAVE_SCALAPACK -DCONV -DHAVE_MPI
 else
 override FPPFLAGS += -DLAP -DCONV
 endif
 #
 #
-ALLOBJ = MatrixSwitch.o
+ALLOBJ = MatrixSwitch_ops.o MatrixSwitch_mm_multiply.o MatrixSwitch_m_add.o \
+         MatrixSwitch_m_set.o MatrixSwitch_m_copy.o MatrixSwitch_m_register.o \
+         MatrixSwitch.o MatrixSwitch_wrapper_params.o MatrixSwitch_wrapper.o
 
 module: $(LIBNAME)
 	cp $(LIBNAME) ../..
@@ -48,4 +50,5 @@ $(LIBNAME) : $(ALLOBJ)
 #
 clean : 
 	rm -f *.a *.o *.mod
-
+MatrixSwitch.o: MatrixSwitch_ops.o MatrixSwitch_mm_multiply.o MatrixSwitch_m_add.o
+MatrixSwitch.o: MatrixSwitch_m_set.o MatrixSwitch_m_copy.o MatrixSwitch_m_register.o

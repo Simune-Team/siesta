@@ -1,5 +1,9 @@
+#if defined HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 !==================================================================================================!
-! example2 : serial program with complex matrices                                                  !
+! example : serial program with wrapped complex matrices in simple dense format                    !
 !                                                                                                  !
 ! This example demonstrates how to calculate:                                                      !
 !   alpha = tr(A^H*B)                                                                              !
@@ -27,8 +31,8 @@
 ! E_11 :     4.521085405229188 ,    -0.360428156738057                                             !
 !--------------------------------------------------------------------------------------------------!
 !==================================================================================================!
-program example2
-  use MatrixSwitch
+program example_szden_wrapper
+  use MatrixSwitch_wrapper
 
   implicit none
 
@@ -39,20 +43,22 @@ program example2
   complex(dp), parameter :: cmplx_1=(1.0_dp,0.0_dp)
   complex(dp), parameter :: cmplx_i=(0.0_dp,1.0_dp)
   complex(dp), parameter :: cmplx_0=(0.0_dp,0.0_dp)
+  complex(dp), parameter :: res_check=(58.765528072720876_dp,5.629639202296625_dp)
+  complex(dp), parameter :: el_check=(4.521085405229188_dp,-0.360428156738057_dp)
 
   !**** VARIABLES *******************************!
 
   character(5) :: m_storage
   character(3) :: m_operation
+  character(1), allocatable :: keys(:)
 
+  integer :: num_matrices
   integer :: N, M, i, j
 
   real(dp) :: rn, rn2
 
   complex(dp) :: res1, res2, res3, res4, res5, el
   complex(dp), allocatable :: MyMatrix(:,:)
-
-  type(matrix) :: A, B, C, D, E
 
   !**********************************************!
 
@@ -62,13 +68,18 @@ program example2
   N=15
   M=8
 
-  call m_allocate(A,N,M,m_storage)
+  num_matrices=5
+  allocate(keys(num_matrices))
+  keys=(/'A','B','C','D','E'/)
+  call ms_wrapper_open(num_matrices,keys)
+
+  call m_allocate('A',N,M,m_storage)
 
   allocate(MyMatrix(N,M))
 
-  call m_allocate(C,M,N,m_storage)
-  call m_allocate(D,M,M,m_storage)
-  call m_allocate(E,N,N,m_storage)
+  call m_allocate('C',M,N,m_storage)
+  call m_allocate('D',M,M,m_storage)
+  call m_allocate('E',N,N,m_storage)
 
   rn2=0.1_dp
   do i=1,N
@@ -76,7 +87,7 @@ program example2
     rn=mod(4.2_dp*rn2,1.0_dp)
     rn2=mod(4.2_dp*rn,1.0_dp)
     el=cmplx(rn,rn2)
-    call m_set_element(A,i,j,el)
+    call m_set_element('A',i,j,el,cmplx_0)
     rn=mod(4.2_dp*rn2,1.0_dp)
     rn2=mod(4.2_dp*rn,1.0_dp)
     el=cmplx(rn,rn2)
@@ -84,50 +95,74 @@ program example2
   end do
   end do
 
-  call m_register_sden(B,MyMatrix)
+  call m_register_sden('B',MyMatrix)
 
-  call mm_trace(A,B,res1,m_operation)
+  call mm_trace('A','B',res1,m_operation)
 
   print('(2(a,f21.15))'), 'res1 : ', real(res1,dp), ' , ', aimag(res1)
+  call assert_equal_dp(res1, res_check)
 
-  call mm_multiply(A,'c',B,'n',D,cmplx_1,cmplx_0,m_operation)
+  call mm_multiply('A','c','B','n','D',cmplx_1,cmplx_0,m_operation)
 
-  call m_trace(D,res2,m_operation)
+  call m_trace('D',res2,m_operation)
 
   print('(2(a,f21.15))'), 'res2 : ', real(res2,dp), ' , ', aimag(res2)
+  call assert_equal_dp(res2, res_check)
 
-  call mm_multiply(B,'n',A,'c',E,cmplx_1,cmplx_0,m_operation)
+  call mm_multiply('B','n','A','c','E',cmplx_1,cmplx_0,m_operation)
 
-  call m_trace(E,res3,m_operation)
+  call m_trace('E',res3,m_operation)
 
   print('(2(a,f21.15))'), 'res3 : ', real(res3,dp), ' , ', aimag(res3)
+  call assert_equal_dp(res3, res_check)
 
-  call m_add(A,'c',C,cmplx_1,cmplx_0,m_operation)
+  call m_add('A','c','C',cmplx_1,cmplx_0,m_operation)
 
-  call mm_multiply(C,'n',B,'n',D,cmplx_1,cmplx_0,m_operation)
+  call mm_multiply('C','n','B','n','D',cmplx_1,cmplx_0,m_operation)
 
-  call m_trace(D,res4,m_operation)
+  call m_trace('D',res4,m_operation)
 
   print('(2(a,f21.15))'), 'res4 : ', real(res4,dp), ' , ', aimag(res4)
+  call assert_equal_dp(res4, res_check)
 
-  call m_add(A,'c',C,cmplx_1,cmplx_0,m_operation)
+  call m_add('A','c','C',cmplx_1,cmplx_0,m_operation)
 
-  call mm_multiply(B,'n',C,'n',E,cmplx_1,cmplx_0,m_operation)
+  call mm_multiply('B','n','C','n','E',cmplx_1,cmplx_0,m_operation)
 
-  call m_trace(E,res5,m_operation)
+  call m_trace('E',res5,m_operation)
 
   print('(2(a,f21.15))'), 'res5 : ', real(res5,dp), ' , ', aimag(res5)
+  call assert_equal_dp(res5, res_check)
 
-  call m_get_element(E,1,1,el)
+  call m_get_element('E',1,1,el)
 
   print('(2(a,f21.15))'), 'E_11 : ', real(el,dp), ' , ', aimag(el)
+  call assert_equal_dp(el, el_check)
 
-  call m_deallocate(E)
-  call m_deallocate(D)
-  call m_deallocate(C)
-  call m_deallocate(B)
-  call m_deallocate(A)
+  call ms_wrapper_close()
 
   deallocate(MyMatrix)
 
-end program example2
+  deallocate(keys)
+
+  contains
+
+  subroutine assert_equal_dp(value1, value2)
+    implicit none
+
+    !**** PARAMS **********************************!
+
+    real(dp), parameter :: tolerance=1.0d-10
+
+    !**** INPUT ***********************************!
+
+    complex(dp), intent(in) :: value1
+    complex(dp), intent(in) :: value2
+
+    !**********************************************!
+
+    if (abs(value1-value2)>tolerance) stop 1
+
+  end subroutine assert_equal_dp
+
+end program example_szden_wrapper

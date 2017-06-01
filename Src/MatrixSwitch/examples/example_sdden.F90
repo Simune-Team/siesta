@@ -1,5 +1,9 @@
+#if defined HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 !==================================================================================================!
-! example3 : parallel program with real matrices                                                   !
+! example : serial program with real matrices in simple dense format                               !
 !                                                                                                  !
 ! This example demonstrates how to calculate:                                                      !
 !   alpha = tr(A^T*B)                                                                              !
@@ -20,23 +24,24 @@
 ! Sample output:                                                                                   !
 !--------------------------------------------------------------------------------------------------!
 ! res1 :    31.194861937321843                                                                     !
-! res2 :    31.194861937321850                                                                     !
+! res2 :    31.194861937321846                                                                     !
 ! res3 :    31.194861937321846                                                                     !
 ! res4 :    31.194861937321846                                                                     !
 ! res5 :    31.194861937321846                                                                     !
 ! E_11 :     2.779421970931733                                                                     !
 !--------------------------------------------------------------------------------------------------!
 !==================================================================================================!
-program example3
+program example_sdden
   use MatrixSwitch
 
   implicit none
-#if defined(MPI) && defined(SLAP)
-  include 'mpif.h'
 
   !**** PARAMS **********************************!
 
   integer, parameter :: dp=selected_real_kind(15,300)
+
+  real(dp), parameter :: res_check=31.194861937321846_dp
+  real(dp), parameter :: el_check=2.779421970931733_dp
 
   complex(dp), parameter :: cmplx_1=(1.0_dp,0.0_dp)
   complex(dp), parameter :: cmplx_i=(0.0_dp,1.0_dp)
@@ -47,46 +52,24 @@ program example3
   character(5) :: m_storage
   character(3) :: m_operation
 
-  integer :: mpi_err, mpi_size, mpi_rank
-  integer :: icontxt, N_loc, M_loc, MyDesc(9), info
-  integer :: N, M, i, j, k, l
-  integer, allocatable :: bs_list(:)
+  integer :: N, M, i, j
 
   real(dp) :: rn, res1, res2, res3, res4, res5, el
   real(dp), allocatable :: MyMatrix(:,:)
 
   type(matrix) :: A, B, C, D, E
 
-  !**** EXTERNAL ********************************!
-
-  integer, external :: numroc
-
   !**********************************************!
 
-  call mpi_init(mpi_err)
-  call mpi_comm_size(mpi_comm_world,mpi_size,mpi_err)
-  call mpi_comm_rank(mpi_comm_world,mpi_rank,mpi_err)
-
-  call blacs_get(-1,0,icontxt)
-  call blacs_gridinit(icontxt,'c',1,mpi_size)
-
-  allocate(bs_list(4))
-  bs_list(:)=(/8,3,15,4/)
-  call ms_scalapack_setup(mpi_size,1,'c',1,bs_list,icontxt)
-
-  m_storage='pddbc'
-  m_operation='lap'
+  m_storage='sdden'
+  m_operation='ref' ! try changing to 'lap'
 
   N=15
   M=8
 
   call m_allocate(A,N,M,m_storage)
 
-  call blacs_gridinfo(icontxt,i,j,k,l)
-  N_loc=numroc(N,4,k,0,1)
-  M_loc=numroc(M,3,l,0,mpi_size)
-  call descinit(MyDesc,N,M,4,3,0,0,icontxt,N_loc,info)
-  allocate(MyMatrix(N_loc,M_loc))
+  allocate(MyMatrix(N,M))
 
   call m_allocate(C,M,N,m_storage)
   call m_allocate(D,M,M,m_storage)
@@ -96,29 +79,32 @@ program example3
   do i=1,N
   do j=1,M
     rn=mod(4.2_dp*rn,1.0_dp)
-    call m_set_element(A,i,j,rn)
+    call m_set_element(A,i,j,rn,0.0_dp)
     rn=mod(4.2_dp*rn,1.0_dp)
-    call pdelset(MyMatrix,i,j,MyDesc,rn)
+    MyMatrix(i,j)=rn
   end do
   end do
 
-  call m_register_pdbc(B,MyMatrix,MyDesc)
+  call m_register_sden(B,MyMatrix)
 
   call mm_trace(A,B,res1,m_operation)
 
-  if (mpi_rank==0) print('(a,f21.15)'), 'res1 : ', res1
+  print('(a,f21.15)'), 'res1 : ', res1
+  call assert_equal_dp(res1, res_check)
 
   call mm_multiply(A,'t',B,'n',D,1.0_dp,0.0_dp,m_operation)
 
   call m_trace(D,res2,m_operation)
 
-  if (mpi_rank==0) print('(a,f21.15)'), 'res2 : ', res2
+  print('(a,f21.15)'), 'res2 : ', res2
+  call assert_equal_dp(res2, res_check)
 
   call mm_multiply(B,'n',A,'t',E,1.0_dp,0.0_dp,m_operation)
 
   call m_trace(E,res3,m_operation)
 
-  if (mpi_rank==0) print('(a,f21.15)'), 'res3 : ', res3
+  print('(a,f21.15)'), 'res3 : ', res3
+  call assert_equal_dp(res3, res_check)
 
   call m_add(A,'t',C,1.0_dp,0.0_dp,m_operation)
 
@@ -126,7 +112,8 @@ program example3
 
   call m_trace(D,res4,m_operation)
 
-  if (mpi_rank==0) print('(a,f21.15)'), 'res4 : ', res4
+  print('(a,f21.15)'), 'res4 : ', res4
+  call assert_equal_dp(res4, res_check)
 
   call m_add(A,'t',C,1.0_dp,0.0_dp,m_operation)
 
@@ -134,11 +121,13 @@ program example3
 
   call m_trace(E,res5,m_operation)
 
-  if (mpi_rank==0) print('(a,f21.15)'), 'res5 : ', res5
+  print('(a,f21.15)'), 'res5 : ', res5
+  call assert_equal_dp(res5, res_check)
 
   call m_get_element(E,1,1,el)
 
-  if (mpi_rank==0) print('(a,f21.15)'), 'E_11 : ', el
+  print('(a,f21.15)'), 'E_11 : ', el
+  call assert_equal_dp(el, el_check)
 
   call m_deallocate(E)
   call m_deallocate(D)
@@ -146,11 +135,26 @@ program example3
   call m_deallocate(B)
   call m_deallocate(A)
 
-  call blacs_gridexit(icontxt)
-  call blacs_exit(1)
-  call mpi_finalize(mpi_err)
-#else
-  print('(a,f21.15)'), 'To run this example, compile with ScaLAPACK.'
-#endif
+  deallocate(MyMatrix)
 
-end program example3
+  contains
+
+  subroutine assert_equal_dp(value1, value2)
+    implicit none
+
+    !**** PARAMS **********************************!
+
+    real(dp), parameter :: tolerance=1.0d-10
+
+    !**** INPUT ***********************************!
+
+    real(dp), intent(in) :: value1
+    real(dp), intent(in) :: value2
+
+    !**********************************************!
+
+    if (abs(value1-value2)>tolerance) stop 1
+
+  end subroutine assert_equal_dp
+
+end program example_sdden

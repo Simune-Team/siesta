@@ -34,7 +34,7 @@ MODULE m_sankey_change_basis
 !********************************************************************************
 
   use precision
-  use parallel,            only : Node, Nodes,BlockSize, IONode
+  use parallel,            only : Node, Nodes,BlockSize, IONode, ParallelOverK
   use parallelsubs,        only : GlobalToLocalOrb, GetNodeOrbs,               &
                                   LocalToGlobalOrb
   use fdf
@@ -58,7 +58,6 @@ MODULE m_sankey_change_basis
   !
 #ifdef MPI
   integer                 :: MPIerror,desch(9)
-  logical, save           :: ParallelOverK
   external                :: diagkp
 #endif
   !
@@ -66,9 +65,8 @@ MODULE m_sankey_change_basis
   integer                 :: io, iuo, juo, nuo, jo, ind, ispin
   integer                 :: ik, j,ierror
   real(dp)                :: skxij,ckxij, kxij, qe 
-  complex(dp)             :: cvar1, cvar2
+  complex(dp)             :: cvar1
 
-  complex(dp), allocatable         :: Saux(:,:)
   type(matrix)                     :: Maux,invsqS,phi
   type(matrix)                     :: Sauxms
   type(matrix),allocatable,save    :: sqrtS(:)
@@ -82,15 +80,10 @@ MODULE m_sankey_change_basis
 #ifdef MPI
   call GetNodeOrbs(no_u,Node,Nodes,nuo)
   if (frstme) then
-    if (Node.eq.0) then
-      ParallelOverK = fdf_boolean( 'Diag.ParallelOverK', .false. )
-    endif
     if(ParallelOverK) then
-      stop "chgbasis: tddft-siesta not parallelized over k-points."
-    else
-      call MPI_Bcast(ParallelOverK,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+      call die ( "chgbasis: tddft-siesta not parallelized over k-points." )
     endif
-      call ms_scalapack_setup(Nodes,1,'c',BlockSize)
+      call ms_scalapack_setup(mpi_comm_world,1,'c',BlockSize)
   endif
 #else
   Node = 0
@@ -118,13 +111,11 @@ MODULE m_sankey_change_basis
     end do
     frstme=.false.
   endif
-  allocate(Saux(no_u,nuo))
   call m_allocate(Maux,no_u,no_u,m_storage)
   call m_allocate(invsqS,no_u,no_u,m_storage)
-  call m_allocate(Sauxms,no_u,no_u,m_storage)
   !
-  Saux = (0.0_dp, 0.0_dp)
   do ik = 1,nkpnt
+  call m_allocate(Sauxms,no_u,no_u,m_storage)
     do iuo = 1,nuo
       call LocalToGlobalOrb(iuo, Node, Nodes, io)
       do j = 1,numh(iuo)
@@ -141,8 +132,8 @@ MODULE m_sankey_change_basis
           ckxij=1.0_dp
           skxij=0.0_dp
         endif
-        Saux(jo,iuo) = Saux(jo,iuo) + cmplx(S(ind)*ckxij,S(ind)*skxij)
-        call m_set_element(Sauxms, jo, io, Saux(jo,iuo), m_operation)
+        cvar1 =  cmplx(S(ind)*ckxij,S(ind)*skxij,dp)
+        call m_set_element(Sauxms, jo, io, cvar1, complx_1, m_operation)
       enddo
     enddo
     !
@@ -172,6 +163,7 @@ MODULE m_sankey_change_basis
         call m_deallocate(phi)
       enddo  
     endif   !istpmove 
+  call m_deallocate(Sauxms)
   enddo          ! ik 
   !
   IF(istpmove.gt.1) THEN   ! istpmove 
@@ -180,8 +172,6 @@ MODULE m_sankey_change_basis
     END IF
       call compute_tddm (Dscf)
   END IF
-  deallocate(Saux)
-  call m_deallocate(Sauxms)
   call m_deallocate(Maux)
   call m_deallocate(invsqS)
 
@@ -198,6 +188,7 @@ MODULE m_sankey_change_basis
     use MatrixSwitch
     use parallelsubs,          only: LocalToGlobalOrb
     use parallel,              only: Node, Nodes
+    use wavefunctions,         only: complx_0
     ! 
     implicit none
     ! 
@@ -226,8 +217,8 @@ MODULE m_sankey_change_basis
       eig02=1.0d0/(eig01+tiny)
       do i=1,no
         varaux = S%zval(i,j)
-        call m_set_element(SD01,i,jo,eig01*varaux,m_operation)
-        call m_set_element(SD02,i,jo,eig02*varaux,m_operation)
+        call m_set_element(SD01,i,jo,eig01*varaux,complx_0,m_operation)
+        call m_set_element(SD02,i,jo,eig02*varaux,complx_0,m_operation)
       enddo
     enddo 
     !

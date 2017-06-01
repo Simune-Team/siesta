@@ -32,7 +32,7 @@ CONTAINS
   USE atomlist,              ONLY: no_u, no_l, indxuo
   USE m_spin,                ONLY: nspin
   USE Kpoint_grid,           ONLY: kpoint, nkpnt
-  USE wavefunctions,         ONLY: compute_tddm, wavef_ms
+  USE wavefunctions,         ONLY: compute_tddm, wavef_ms, complx_0, complx_1
   USE units,                 ONLY: eV
   USE m_energies,            ONLY: etot 
   USE m_eo,                  ONLY: qo, eo
@@ -42,12 +42,11 @@ CONTAINS
   REAL(dp)                 :: delt
 
   TYPE(matrix)             :: Hauxms, Sauxms, wfaux1, wfaux2
-  COMPLEX(dp), ALLOCATABLE :: Haux(:,:), Saux(:,:)
 
   CHARACTER(LEN=3)         :: m_operation
   CHARACTER(LEN=5)         :: m_storage
 
-  COMPLEX(dp)              :: cvar1, cvar2, cvar3, cvar4
+  COMPLEX(dp)              :: cvar1, cvar2
 
   REAL(dp)                 :: kxij, ckxij, skxij
   INTEGER                  :: ik, ispin, i, j, io, jo, ind, juo, nocc
@@ -66,14 +65,10 @@ CONTAINS
   call timer( 'cn_evolk', 1)
   ! 
   !
-  call m_allocate ( Hauxms, no_u, no_u, m_storage)
-  call m_allocate ( Sauxms, no_u, no_u, m_storage)
-  ALLOCATE(Haux(no_u,no_l))
-  ALLOCATE(Saux(no_u,no_l))
-  Haux = (0.0_dp, 0.0_dp)
-  Saux = (0.0_dp, 0.0_dp)
   DO ik = 1,nkpnt
     DO ispin =1,nspin
+      call m_allocate ( Hauxms, no_u, no_u, m_storage)
+      call m_allocate ( Sauxms, no_u, no_u, m_storage)
       nocc = wavef_ms(ik,ispin)%dim2
       ! H, S from sparse to dense matrix switch distribution
       DO i = 1, no_l
@@ -86,10 +81,10 @@ CONTAINS
                  kpoint(3,ik)*xijo(3,ind)
          ckxij =  cos(kxij)
          skxij = -sin(kxij)
-         Haux(jo,i) = Haux(jo,i) + cmplx(H(ind,ispin)*ckxij,H(ind,ispin)*skxij)
-         Saux(jo,i) = Saux(jo,i) + cmplx(S(ind)*ckxij,S(ind)*skxij)
-         call m_set_element(Hauxms, jo, io, Haux(jo,i), m_operation)
-         call m_set_element(Sauxms, jo, io, Saux(jo,i), m_operation)
+         cvar1 = cmplx(H(ind,ispin)*ckxij,H(ind,ispin)*skxij,dp)
+         cvar2 = cmplx(S(ind)*ckxij,S(ind)*skxij,dp)
+         call m_set_element(Hauxms, jo, io, cvar1, complx_1, m_operation)
+         call m_set_element(Sauxms, jo, io, cvar2, complx_1, m_operation)
         END DO
       END DO
       !
@@ -109,13 +104,11 @@ CONTAINS
         call m_deallocate(wfaux2)
       END IF
       !
+      call m_deallocate(Hauxms)
+      call m_deallocate(Sauxms)
     END DO
   END DO
   !
-  DEALLOCATE(Haux)
-  DEALLOCATE(Saux)
-  call m_deallocate(Hauxms)
-  call m_deallocate(Sauxms)
   IF (firstime) THEN
     firstime = .false.
   ELSE
@@ -138,7 +131,7 @@ CONTAINS
 !********************************************************************************!
 
 
- USE wavefunctions,         ONLY: wavef_ms
+ USE wavefunctions,         ONLY: wavef_ms, Hsave
  USE m_spin,                ONLY: nspin
  USE Kpoint_grid,           ONLY: nkpnt
  USE cranknic_evolg,        ONLY: Uphi
@@ -157,7 +150,6 @@ CONTAINS
 
  LOGICAL, SAVE                                  :: firsttime  = .true.
  LOGICAL, DIMENSION (:,:), ALLOCATABLE, SAVE    :: firstimeK
- TYPE(matrix), ALLOCATABLE, SAVE                :: Hsave(:)
 #ifdef MPI
  m_storage   = 'pzdbc'
  m_operation = 'lap'
@@ -175,29 +167,26 @@ CONTAINS
      END IF
    ENDIF
    ALLOCATE(firstimeK(nkpnt, nspin))
+   ALLOCATE(Hsave(nkpnt, nspin))
    firstimeK(1:nkpnt,1:nspin) = .true.
-
-   ALLOCATE(Hsave(nspin))
-   DO i= 1, nspin
-     call m_allocate(Hsave(i),no_u, no_u, m_storage)
-   END DO
    firsttime = .false.
  END IF
  !
+ call m_allocate (Hsave(ik,ispin),no_u, no_u, m_storage) 
  DO l=1,ntded_sub
    IF (firstimeK(ik,ispin) .OR. .NOT. extrapol_H_tdks) THEN
      call Uphi (Hauxms, Sauxms, wavef_ms(ik,ispin), no_u, deltat)
    ELSE 
      rvar1 = (l -0.5_dp)/dble(ntded_sub)
-     call m_add(Hauxms,'n',Hsave(ispin),cmplx(1.0,0.0,dp),cmplx(-1.0,0.0,dp), m_operation)
-     call m_add(Hauxms,'n',Hsave(ispin),cmplx(1.0,0.0,dp),cmplx(rvar1,0.0,dp),m_operation)
-     call Uphi(Hsave(ispin), Sauxms, wavef_ms(ik,ispin), no_u, deltat)
+     call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(-1.0,0.0,dp), m_operation)
+     call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(rvar1,0.0,dp),m_operation)
+     call Uphi(Hsave(ik,ispin), Sauxms, wavef_ms(ik,ispin), no_u, deltat)
    END IF
  END DO
  firstimeK(ik,ispin) = .false.
  !
  ! Storing Hamiltonian for extrapolation and later correction.
- call m_add(Hauxms,'n',Hsave(ispin),cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+ call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
  END SUBROUTINE evol2new
  !
 END MODULE cranknic_evolk

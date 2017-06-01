@@ -1,3 +1,87 @@
+2017-06-01  15:20 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-21
+
+Updated the MatrixSwitch to latest version.
+
+* No change in functionality
+
+removed:
+  Src/MatrixSwitch/README.md
+  Src/MatrixSwitch/examples/Makefile
+  Src/MatrixSwitch/examples/example1.F90
+  Src/MatrixSwitch/examples/example2.F90
+  Src/MatrixSwitch/examples/example3.F90
+  Src/MatrixSwitch/examples/example4.F90
+
+added:
+  Src/MatrixSwitch/.gitignore
+  Src/MatrixSwitch/AUTHORS
+  Src/MatrixSwitch/COPYING
+  Src/MatrixSwitch/ChangeLog
+  Src/MatrixSwitch/INSTALL
+  Src/MatrixSwitch/Makefile.am
+  Src/MatrixSwitch/NEWS
+  Src/MatrixSwitch/README
+  Src/MatrixSwitch/autogen.sh
+  Src/MatrixSwitch/config/
+  Src/MatrixSwitch/config/data/
+  Src/MatrixSwitch/config/data/MatrixSwitch-config.yaml.in
+  Src/MatrixSwitch/config/data/MatrixSwitch.pc.in
+  Src/MatrixSwitch/config/m4/
+  Src/MatrixSwitch/config/m4/acx_mpi.m4
+  Src/MatrixSwitch/config/m4/fortran.m4
+  Src/MatrixSwitch/config/m4/linalg.m4
+  Src/MatrixSwitch/config/m4/mpi.m4
+  Src/MatrixSwitch/config/m4/pspBLAS.m4
+  Src/MatrixSwitch/config/scripts/
+  Src/MatrixSwitch/config/scripts/markdown
+  Src/MatrixSwitch/configure.ac
+  Src/MatrixSwitch/doc/
+  Src/MatrixSwitch/doc/Doxyfile
+  Src/MatrixSwitch/doc/Makefile.am
+  Src/MatrixSwitch/doc/configuring-MatrixSwitch.md
+  Src/MatrixSwitch/doc/contributing-to-MatrixSwitch.md
+  Src/MatrixSwitch/doc/data/
+  Src/MatrixSwitch/doc/data/msw_footer.html
+  Src/MatrixSwitch/doc/data/msw_header.html
+  Src/MatrixSwitch/doc/hacking-the-build-system.md
+  Src/MatrixSwitch/examples/Makefile.am
+  Src/MatrixSwitch/examples/Makefile.manual
+  Src/MatrixSwitch/examples/example_pddbc.F90
+  Src/MatrixSwitch/examples/example_pddbc_wrapper.F90
+  Src/MatrixSwitch/examples/example_pzdbc.F90
+  Src/MatrixSwitch/examples/example_pzdbc_wrapper.F90
+  Src/MatrixSwitch/examples/example_sdden.F90
+  Src/MatrixSwitch/examples/example_sdden_wrapper.F90
+  Src/MatrixSwitch/examples/example_szden.F90
+  Src/MatrixSwitch/examples/example_szden_wrapper.F90
+  Src/MatrixSwitch/examples/make.inc
+  Src/MatrixSwitch/quickcheck.sh
+  Src/MatrixSwitch/src/Makefile.am
+  Src/MatrixSwitch/src/Makefile.manual
+  Src/MatrixSwitch/src/MatrixSwitch_m_add.F90
+  Src/MatrixSwitch/src/MatrixSwitch_m_copy.F90
+  Src/MatrixSwitch/src/MatrixSwitch_m_register.F90
+  Src/MatrixSwitch/src/MatrixSwitch_m_set.F90
+  Src/MatrixSwitch/src/MatrixSwitch_mm_multiply.F90
+  Src/MatrixSwitch/src/MatrixSwitch_ops.F90
+  Src/MatrixSwitch/src/MatrixSwitch_wrapper.F90
+  Src/MatrixSwitch/src/MatrixSwitch_wrapper_params.F90
+  Src/MatrixSwitch/src/dependencies.mf
+  Src/MatrixSwitch/src/make.inc
+  Src/MatrixSwitch/wipeout.sh
+
+modified:
+  Src/MatrixSwitch/examples/make.inc.example
+  Src/MatrixSwitch/src/Makefile
+  Src/MatrixSwitch/src/MatrixSwitch.F90
+  Src/MatrixSwitch/src/make.inc.example
+  Src/cranknic_evolg.F90
+  Src/cranknic_evolk.F90
+  Src/m_initwf.F90
+  Src/sankey_change_basis.F90
+  Src/siesta_tddft.F90
+  Src/wavefunctions.F90
+
 2017-05-30  15:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-20
 
 Fixed the inconsistency in the use of XC functionals.

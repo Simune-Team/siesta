@@ -106,8 +106,9 @@ contains
 #endif
 
     ! The first call to change basis only calculates S^+1/2
+    IF(IOnode) WRITE(6,*) 'Before change basis ......' 
     call sankey_change_basis ( istep )
-    
+    IF(IOnode) WRITE(6,*) 'After change basis .......'
     ! Read the initial wavefunctions.
     ! In future reading wavefunctions can be moved before
     ! changebasis and then the first DM can be computed within

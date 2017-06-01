@@ -1,6 +1,6 @@
 module m_initwf
   use precision
-  use wavefunctions, only:iowavef, wavef_ms
+  use wavefunctions, only:iowavef, wavef_ms, complx_0
   use MatrixSwitch
   use sparse_matrices, only: numh, listhptr, listh, H, S, xijo
   use m_eo,            only: eo, qo
@@ -251,7 +251,7 @@ CONTAINS
    end if
 !..............
 #ifdef MPI
-      call ms_scalapack_setup(Nodes,1,'c',BlockSize)
+      call ms_scalapack_setup(mpi_comm_world,1,'c',BlockSize)
       m_storage='pzdbc'
 #else
       m_storage='szden'
@@ -351,7 +351,7 @@ CONTAINS
 #else
               element=psi(j,ie,ispin)
 #endif
-              call m_set_element(wavef_ms(1,ispin),j,ioc,element,'lap')
+              call m_set_element(wavef_ms(1,ispin),j,ioc,cmplx(element,0.0,dp),complx_0,'lap')
             end do          ! j=1,nuotot
           end if            ! occup
         end do              ! ie=1,nuotot
@@ -427,7 +427,7 @@ CONTAINS
 #else
                 element=cmplx(psi(1,j,ie),psi(2,j,ie),dp)
 #endif
-                call m_set_element(wavef_ms(ik,ispin),j,ioc,element,'lap')
+                call m_set_element(wavef_ms(ik,ispin),j,ioc,element,complx_0,'lap')
               end do ! j
             end if
           end do ! ie

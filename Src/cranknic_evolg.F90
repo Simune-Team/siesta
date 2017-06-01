@@ -58,7 +58,7 @@ SUBROUTINE cn_evolg ( delt )
       type(matrix)         :: Hauxms,Sauxms, wfaux1, wfaux2
       character(3)         :: m_operation
       character(5)         :: m_storage
-      complex(dp)          :: cvar1, cvar2, cvar3, cvar4, pipj
+      complex(dp)          :: cvar1, cvar2
       ! 
       integer              :: i, j, io, jo, ie, ispin, ind, nocc 
       !
@@ -90,11 +90,11 @@ SUBROUTINE cn_evolg ( delt )
           do j = 1,numh(i)
             ind = listhptr(i) + j
             jo = listh(ind)
-             cvar3 = cmplx(H(ind,ispin),0.0_dp)
-             call m_set_element(Hauxms, jo, io, cvar3, m_operation)
+            cvar1 = cmplx(H(ind,ispin),0.0,dp)
+             call m_set_element(Hauxms, jo, io, cvar1,complx_0, m_operation)
              if (ispin .eq. 1 ) then
-               cvar4 = cmplx(S(ind),0.0_dp)
-               call m_set_element(Sauxms, jo, io, cvar4, m_operation)
+               cvar2 = cmplx(S(ind),0.0, dp)
+               call m_set_element(Sauxms, jo, io, cvar2, complx_0,m_operation)
              end if
           enddo
         enddo
