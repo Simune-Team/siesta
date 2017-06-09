@@ -5,7 +5,7 @@ MODULE  wavefunctions
   implicit none 
   !    
   PRIVATE
-  PUBLIC       :: iowavef, compute_tddm
+  PUBLIC       :: iowavef, compute_tddm, compute_tdEdm
   type(matrix), allocatable, save, public :: wavef_ms(:,:)
   TYPE(matrix), ALLOCATABLE, SAVE, public :: Hsave(:,:)
   ! 
@@ -224,5 +224,118 @@ CONTAINS
   END DO
     call m_deallocate (Daux)
   end subroutine compute_tddm
+!----------------------------------------------------------------------------------!
+
+
+!----------------------------------------------------------------------------------!
+      subroutine compute_tdEdm(Enew)
+!**********************************************************************************!
+! Re-written by Rafi Ullah in June 2017.                                           !
+! In this subroutine we calculate the energy density matrix in parallel using      !
+! MatrixSwitch.                                                                    !
+!**********************************************************************************!
+      use parallel
+      use precision
+      use parallelsubs,     only: LocalToGlobalOrb
+      use sparse_matrices,  only: numh, maxnh, listh, listhptr, xijo
+      use sparse_matrices,  only: H, S
+      use Kpoint_grid,      only: nkpnt, kpoint, kweight
+      use m_gamma,          only: gamma
+      use atomlist,         only: no_l, no_u, indxuo
+      use m_spin,           only: nspin
+      use MatrixSwitch
+      use matswinversion,   only: getinverse
+      !
+      implicit none
+      !
+      real(dp)               :: Enew(maxnh, nspin)
+      real(dp)               :: wk, kxij, ckxij, skxij
+      integer                :: ik, ispin, i, j, io, jo, ind, juo, nocc
+      logical, save          :: frstime = .true.
+      character              :: m_storage*5, m_operation*3
+      complex(dp)            :: cvar1, cvar2
+      !
+      type(matrix)           :: Sauxms, Hauxms,psi,Eaux
+      type(matrix),save      :: S_1
+      !
+#ifdef MPI
+      m_storage='pzdbc'
+      m_operation='lap'
+#else
+      m_storage='szden'
+      m_operation='lap'
+#endif
+      Enew(1:maxnh,1:nspin) = 0.0_dp
+      call m_allocate(S_1,no_u,no_u,m_storage)
+      call m_allocate(Eaux,no_u,no_u,m_storage)
+      Do ik=1,nkpnt
+        Do ispin=1,nspin
+          wk = 2.00_dp*kweight(ik)/dble(nspin)
+          nocc = wavef_ms(ik,ispin)%dim2
+          call m_allocate(psi,nocc,no_u,m_storage)
+          call m_allocate (Hauxms,no_u, no_u, m_storage)
+          call m_allocate (Sauxms,no_u, no_u, m_storage)
+          Do i = 1, no_l
+            call LocalToGlobalOrb(i, Node, Nodes, io)
+            Do j = 1, numh(i)
+              ind = listhptr(i) + j
+              juo = listh(ind)
+              jo  = indxuo(juo)
+              if( .not. gamma ) then
+                kxij = kpoint(1,ik)*xijo(1,ind) + kpoint(2,ik)*xijo(2,ind) +         &
+                       kpoint(3,ik)*xijo(3,ind)
+                ckxij =  cos(kxij)
+                skxij = -sin(kxij)
+              else
+                ckxij = 1.0_dp
+                skxij = 0.0_dp
+              end if
+              cvar1 = cmplx(H(ind,ispin)*ckxij,H(ind,ispin)*skxij,dp)
+              cvar2 = cmplx(S(ind)*ckxij,S(ind)*skxij,dp)
+              call m_set_element(Hauxms,jo,io,cvar1,complx_1,m_operation)
+              call m_set_element(Sauxms,jo,io,cvar2,complx_1,m_operation)
+            end do
+          end do
+          !
+          if (ispin .eq. 1) then
+            ! copy Sauxms to S_1
+            call m_add (Sauxms,'n',S_1,complx_1,complx_0,m_operation)
+            ! Invert the overlap matrix.
+            call getinverse(S_1,m_operation)
+          end if
+          call mm_multiply(Hauxms,'n',S_1,'n',Eaux,complx_1,complx_0,m_operation)
+          call mm_multiply(wavef_ms(ik,ispin),'t',Eaux,'n',psi,complx_1,            &
+                           complx_0,m_operation)
+          call mm_multiply(wavef_ms(ik,ispin),'n',psi,'n',Eaux,cmplx(wk,0.0,dp),    &
+                           complx_0,m_operation)
+          ! Passing Energy-DM from dense to sparse form.  
+          DO io=1,no_l
+            DO j=1,numh(io)
+              ind=listhptr(io) + j
+              juo = listh(ind)
+              jo  = indxuo(juo)
+              IF (.NOT. gamma) THEN
+                kxij = kpoint(1,ik) * xijo(1,ind) + &
+                kpoint(2,ik) * xijo(2,ind) +        &
+                kpoint(3,ik) * xijo(3,ind) 
+                ckxij =  cos(kxij)
+                skxij = -sin(kxij)
+              ELSE
+                ckxij = 1.0_dp
+                skxij = 0.0_dp
+              END IF
+              cvar1 =  real(Eaux%zval(jo,io))*ckxij +     &
+                       aimag(Eaux%zval(jo,io))*skxij
+              Enew(ind,ispin)  = Enew(ind,ispin) + cvar1
+            END DO
+          END DO
+          call m_deallocate(Sauxms)
+          call m_deallocate(Hauxms)
+          call m_deallocate(psi)
+        end do
+      end do
+      call m_deallocate(S_1)
+      call m_deallocate(Eaux)
+      end subroutine compute_tdEdm 
   !
 end module wavefunctions       

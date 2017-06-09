@@ -293,48 +293,5 @@ END SUBROUTINE cn_evolg
   call m_add(Hauxms,'n',Hsve(ispin),cmplx(1.0,0.0_dp,dp),cmplx(0.0,0.0,dp),m_operation)
   END SUBROUTINE evol1new
 !---------------------------------------------------------------------------------------!
-      subroutine applyinverSH(S,H,no,nol,psi,psi2)
-!**********************************************************************************!
-! Re-written by Rafi Ullah and Adiran Garaizar June-October 2015                   !
-! to make it parallel using Matrix Switch.                                         !
-!**********************************************************************************!
-! This subroutine in the old implimentation was used in calculate 
-! energy density matrix. I think this is not needed anymore. I am 
-! leaving it for the time being but should be removed consequently.
-! Rafi Ullah, April 2017. 
-      use parallel
-      use precision
-      use MatrixSwitch
-      use matswinversion,   only: getinverse
-      !
-      implicit none
-      !
-      integer                :: i, j , k, info, no2,no, nol
-      logical, save          :: frstime = .true.
-      character              :: m_storage*5, m_operation*3
-      !
-      type(matrix)           :: S, H,psi,psi2
-      type(matrix)           ::  aux1, S_1
-      !
-#ifdef MPI
-      m_storage='pzdbc'
-      m_operation='lap'
-#else
-      m_storage='szden'
-      m_operation='lap'
-#endif
-      no2=no*no
-        call m_allocate(aux1,no,no,m_storage)
-        call m_allocate(S_1,no,no,m_storage)
-      ! Invert the overlap matrix.
-      call m_add (S,'n',S_1,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
-      call getinverse(S_1,m_operation)
-      call mm_multiply(H,'n',S_1,'n',aux1,cmplx(1.0_dp,0.0_dp,dp),                         &
-           cmplx(0.0_dp,0.0_dp,dp),m_operation)
-      call mm_multiply(aux1,'n',psi,'t',psi2,cmplx(1.0_dp,0.0_dp,dp),                      &
-           cmplx(0.0_dp,0.0_dp,dp),m_operation)
-      call m_deallocate(S_1)
-      call m_deallocate(aux1)
-      end subroutine applyinverSH
 
 END MODULE cranknic_evolg

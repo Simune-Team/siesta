@@ -42,7 +42,7 @@ contains
 
     use alloc
     use m_initwf,         only: initwf
-    use wavefunctions,    only: wavef_ms, iowavef, compute_tddm
+    use wavefunctions,    only: wavef_ms, iowavef, compute_tddm, compute_tdEdm
     use m_evolve,         only: evolve
     use m_iotddft,        only: write_tddft
     use m_overfsm,        only: overfsm
@@ -162,7 +162,7 @@ contains
             etot, eo, no_u,nspin,nkpnt)
        
     end do ! TDED loop
-
+    call compute_tdEdm (Escf)
     call final_H_f_stress(istep, 1, .false.)
     call state_analysis( istep )
     
