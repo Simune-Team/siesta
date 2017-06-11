@@ -3477,15 +3477,15 @@ are always stored in the file \sysfile{KP}.
 
 \end{fdflogicalF}
 
-Apart from the built-in functionals, \siesta\ can use the functionals
-provided by the LibXC library, if support for it is compiled-in in the
-libGridXC library. See the description of the \fdf{XC.cocktail} block
-below for the appropriate syntax. \index{LibXC library}
-
 
 
 \subsection{Exchange-correlation functionals}
 
+
+(Apart from the built-in functionals, \siesta\ can use the functionals
+provided by the LibXC library, if support for it is compiled-in in the
+libGridXC library. See the description of the \fdf{XC.cocktail} block
+below for the appropriate syntax. \index{LibXC library})
 
 \begin{fdfentry}{XC!Functional}[string]<LDA>
   
@@ -5731,16 +5731,16 @@ the issue (see Sec.~\ref{sec:filtering}).
   
   These files are created
   \begin{itemize}
-    \item \file{H_MIXED}; the Hamiltonian after
+    \item \file{H\_MIXED}; the Hamiltonian after
     mixing
     
-    \item \file{DM_OUT}; the density matrix as calculated by the
+    \item \file{DM\_OUT}; the density matrix as calculated by the
     current iteration
 
-    \item \file{H_DMGEN}; the Hamiltonian used to calculate the
+    \item \file{H\_DMGEN}; the Hamiltonian used to calculate the
     density matrix
     
-    \item \file{DM_MIXED}; the density matrix after mixing
+    \item \file{DM\_MIXED}; the density matrix after mixing
 
   \end{itemize}
   
