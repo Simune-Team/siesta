@@ -23,7 +23,11 @@
 #ifdef SIESTA__FLOOK
       use flook_siesta, only : slua_call
       use flook_siesta, only : LUA_INIT_MD, LUA_SCF_LOOP
-      use siesta_dicts
+      use siesta_dicts, only : dict_variable_add
+      use m_ts_options, only : ts_scf_mixs
+      use variable, only: cunpack
+      use dictionary, only: assign
+      use m_mixing, only: mixers_history_init
 #endif
       use m_state_init
       use m_setup_hamiltonian
@@ -35,6 +39,7 @@
       use m_mixer, only: mixer
       use m_mixing_scf, only: mixing_scf_converged
       use m_mixing_scf, only: mixers_scf_history_init
+      use m_mixing_scf, only: scf_mixs, scf_mix
 
       use m_rhog,                only: mix_rhog, compute_charge_diff
       use siesta_options
@@ -109,6 +114,12 @@
 #ifdef NCDF_4
       type(dict) :: d_sav
 #endif
+#ifdef SIESTA__FLOOK
+      ! len=24 from m_mixing.F90
+      character(len=1), target :: next_mixer(24)
+      character(len=24) :: nnext_mixer
+      integer :: imix
+#endif
 #ifdef MPI
       integer :: MPIerror
 #endif
@@ -154,6 +165,15 @@
       ! necessarily the same
       call dict_variable_add('Mesh.Cutoff.Minimum',G2cut)
       call dict_variable_add('Mesh.Cutoff.Used',G2max)
+
+      call dict_variable_add('SCF.Mixer.Weight',scf_mix%w)
+      call dict_variable_add('SCF.Mixer.Restart',scf_mix%restart)
+      call dict_variable_add('SCF.Mixer.Iterations',scf_mix%n_itt)
+
+      ! Just to populate the table in the dictionary
+      call dict_variable_add('SCF.Mixer.Switch',next_mixer)
+      ! Initialize to no switch
+      next_mixer = ' '
 #endif
 
 !     The current structure of the loop tries to reproduce the
@@ -380,6 +400,51 @@
 #ifdef SIESTA__FLOOK
         ! Communicate with lua
         call slua_call(LUA, LUA_SCF_LOOP)
+
+        ! Retrieve an easy character string
+        nnext_mixer = cunpack(next_mixer)
+        if ( len_trim(nnext_mixer) > 0 ) then
+#ifdef TRANSIESTA
+           if ( TSrun ) then
+              do imix = 1 , size(ts_scf_mixs)
+                 if ( ts_scf_mixs(imix)%name == nnext_mixer ) then
+                    call mixers_history_init(ts_scf_mixs)
+                    scf_mix => ts_scf_mixs(imix)
+                    exit
+                 end if
+              end do
+           else 
+#endif
+              do imix = 1 , size(scf_mixs)
+                 if ( scf_mixs(imix)%name == nnext_mixer ) then
+                    call mixers_history_init(scf_mixs)
+                    scf_mix => scf_mixs(imix)
+                    exit
+                 end if
+              end do
+#ifdef TRANSIESTA
+           end if
+#endif
+
+           ! Check that we indeed have changed the mixer
+           if ( IONode .and. scf_mix%name /= nnext_mixer ) then
+              write(*,'(2a)') 'siesta-lua: WARNING: trying to change ',
+     &             'to a non-existing mixer! Not changing anything!'
+              
+           else if ( IONode ) then
+              write(*,'(2a)') 'siesta-lua: Switching mixer method to: ',
+     &             trim(nnext_mixer)
+
+           end if
+           ! Reset for next loop
+           next_mixer = ' '
+
+           ! Update the references
+           call dict_variable_add('SCF.Mixer.Weight',scf_mix%w)
+           call dict_variable_add('SCF.Mixer.Restart',scf_mix%restart)
+           call dict_variable_add('SCF.Mixer.Iterations',scf_mix%n_itt)
+           
+        end if
 #endif
         
         ! This should be the last step if we have converged...
@@ -599,7 +664,6 @@
       use atomlist, only: lasto
       use siesta_geom, only: nsc, isc_off, na_u, xa, ucell
       use m_energies, only : Ef
-      use m_mixing_scf, only: scf_mixs, scf_mix
       use m_mixing, only: mixers_history_init
 
       use m_ts_global_vars,      only: TSinit, TSrun
@@ -608,7 +672,6 @@
       use m_ts_options,          only: N_Elec, Elecs
       use m_ts_options,          only: DM_bulk
       use m_ts_options,          only: val_swap
-      use m_ts_options,          only: ts_scf_mixs
       use m_ts_options,          only: ts_Dtol, ts_Htol
       use m_ts_options,          only: ts_hist_keep
       use m_ts_options,          only: ts_siesta_stop
@@ -663,6 +726,13 @@
       end if
       ! Transfer scf_mixing to the transiesta mixing routine
       scf_mix => ts_scf_mixs(1)
+#ifdef SIESTA__FLOOK
+      if ( .not. mix_charge ) then
+         call dict_variable_add('SCF.Mixer.Weight',scf_mix%w)
+         call dict_variable_add('SCF.Mixer.Restart',scf_mix%restart)
+         call dict_variable_add('SCF.Mixer.Iterations',scf_mix%n_itt)
+      end if
+#endif
       
       call ts_print_transiesta()
 

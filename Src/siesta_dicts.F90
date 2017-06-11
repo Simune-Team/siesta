@@ -22,6 +22,7 @@ module siesta_dicts
   type(dict) :: variables
 
   private :: dict_variable_add_v_0d
+  private :: dict_variable_add_a_1d
   private :: dict_variable_add_b_0d
   private :: dict_variable_add_i_0d
   private :: dict_variable_add_d_0d
@@ -29,6 +30,7 @@ module siesta_dicts
   private :: dict_variable_add_d_2d
   interface dict_variable_add
      module procedure dict_variable_add_v_0d
+     module procedure dict_variable_add_a_1d
      module procedure dict_variable_add_b_0d
      module procedure dict_variable_add_i_0d
      module procedure dict_variable_add_d_0d
@@ -53,6 +55,7 @@ contains
   subroutine dict_populate_options()
     use files, only: slabel
     use siesta_options
+    use m_mixing_scf, only: scf_mixs
     use m_steps, only: inicoor, fincoor
 
     integer :: slabel_len
@@ -91,6 +94,8 @@ contains
          ('SCF.MixHamiltonian'.kvp.mixH)
     options = options // &
          ('SCF.MixCharge'.kvp.mix_charge)
+
+    ! Old-style options, not really used anymore
     options = options // &
          ('SCF.NumberPulay'.kvp.maxsav)
     options = options // &
@@ -101,6 +106,16 @@ contains
          ('SCF.NumberKick'.kvp.nkick)
     options = options // &
          ('SCF.KickMixingWeight'.kvp.wmixkick)
+
+    ! New mixing options
+    ! The first mixer is the mixing 1.
+    options = options // &
+         ('SCF.Mixer.Weight'.kvp.scf_mixs(1)%w)
+    options = options // &
+         ('SCF.Mixer.Restart'.kvp.scf_mixs(1)%restart)
+    options = options // &
+         ('SCF.Mixer.Iterations'.kvp.scf_mixs(1)%n_itt)
+
     options = options // &
          ('SCF.MonitorForces'.kvp.monitor_forces_in_scf)
 
@@ -320,6 +335,12 @@ contains
     if ( name.in.variables ) call delete(variables,name,dealloc=.true.)
     variables = variables // (name.kv.trim(val))
   end subroutine dict_variable_add_v_0d
+  subroutine dict_variable_add_a_1d(name,val)
+    character(len=*), intent(in) :: name
+    character(len=1), intent(inout), target :: val(:)
+    if ( name.in.variables ) call delete(variables,name,dealloc=.false.)
+    variables = variables // (name.kvp.val)
+  end subroutine dict_variable_add_a_1d
   subroutine dict_variable_add_b_0d(name,val)
     character(len=*), intent(in) :: name
     logical, intent(inout), target :: val

@@ -10198,6 +10198,25 @@ end
 \end{fdflogicalF}
 
 
+\subsection{Examples of Lua programs}
+
+Please look in the \program{Tests/lua\_*} folders where examples of
+basic Lua scripts are found. Below is a description of the \program{*}
+examples.
+
+
+\begin{description}
+  \item[h2o] Changes the mixing weight continuously in
+  the SCF loop. This will effectively speed up convergence time if one
+  can attain the best mixing weight per SCF-step.
+
+  \item[si111] Change the mixing method based on certain convergence
+  criteria. I.e. after a certain convergence one can switch to a more
+  aggressive mixing method.
+  
+\end{description}
+
+
 \section{TRANSIESTA}
 
 \siesta\ includes the possibility of performing calculations of

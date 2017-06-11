@@ -773,11 +773,11 @@ contains
     ! Removal of keys
     rem_DOS_Elecs = 'DOS-Elecs' .in. save_DATA
     if ( any(Elecs(:)%out_of_core) ) then
-       call remove(save_DATA,'DOS-Elecs')
+       call delete(save_DATA,'DOS-Elecs')
     end if
     rem_T_Gf = 'T-Gf' .in. save_DATA
     if ( N_Elec > 3 ) then
-       call remove(save_DATA,'T-Gf')
+       call delete(save_DATA,'T-Gf')
     end if
 
     if ( .not. IONode ) return
