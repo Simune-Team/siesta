@@ -45,17 +45,23 @@
       use psop_options
       use m_getopts
 
-      use local_xml, only: xf
-      use local_xml, only: use_linear_grid
-      use local_xml, only: nrl, drl, rl, fval
       use xmlf90_wxml
+      use m_kb, only: kb_t, nprojs, kbprojs
 
       implicit none
 
       character(len=*), parameter :: PSML_VERSION = "1.0"
-      character(len=*), parameter :: PSML_CREATOR = "psop-1.01"
+      character(len=*), parameter :: PSML_CREATOR = "psop-1.1"
+
       
       integer, parameter :: dp = selected_real_kind(10,100)
+
+      integer, parameter :: POLY_ORDER_EXTRAPOL = 7
+      real(dp), parameter :: ryd_to_hartree = 0.5_dp
+      
+      type(xmlf_t)       :: xf
+      type(kb_t), pointer :: kb
+      character(len=1), dimension(0:4) ::  lsymb = (/'s','p','d','f','g'/)
 
 !
 !     INPUT VARIABLES REQUIRED TO GENERATE THE LOCAL PART AND KB PROJECTORS
@@ -233,8 +239,14 @@
       real(dp) :: rlmax
       character(len=10)     :: datestr
       integer               :: dtime(8)
-      
-      external :: write_proj_psml, dpnint, check_grid
+
+      integer  :: nrl
+      real(dp) :: rmax, delta
+      integer, allocatable  :: isample(:)
+      real(dp), allocatable :: r0(:), f0(:)
+      real(dp), pointer :: r(:) => null()
+
+      external :: store_proj_psml, check_grid
 !
 !     Process options
 !
@@ -251,7 +263,6 @@
       use_charge_cutoff = .false.
 
       write_ion_plot_files = .false.
-      use_linear_grid = .false.
       rmax_ps_check = 0.0_dp
 
       do
@@ -262,8 +273,6 @@
               debug_kb_generation = .true.
            case ('g')
               restricted_grid = .false.
-           case ('l')
-              use_linear_grid = .true.
            case ('p')
               write_ion_plot_files = .true.
            case ('K')
@@ -472,18 +481,6 @@
 
       rchloc = rofi(nchloc)
 
-      if (use_linear_grid) then
-         ! Choose a range large enough to have Vlocal behave
-         ! as the coulomb potential for Zval
-         rlmax = rchloc + 1.0_dp
-         drl = 0.01_dp           ! Is this fine enough?
-         nrl = rlmax/drl + 1
-         allocate(rl(nrl),fval(nrl))
-         do ir = 1, nrl
-            rl(ir) = drl*(ir-1)
-         enddo
-      endif
-!
 !
 !     COMPUTE THE NON-LOCAL KLEINMAN-BYLANDER PROJECTORS
 !
@@ -555,6 +552,12 @@
 !     Calculation of the Kleinman-Bylander projector functions
 !
 
+!        call get_rmax(mmax,rr,nv,uua,rmax)
+        delta = 0.005d0
+        rmax = 12.0d0  ! For now
+        call get_sampled_grid(nrval,rofi,rmax,delta,nrl,isample,r0)
+        allocate(f0(nrl))
+
       call xml_OpenFile("VNL",xf, indent=.false.)
 !
 !     Generate xml snippet
@@ -565,61 +568,38 @@
         call xml_NewElement(xf,"annotation")
            call my_add_attribute(xf,"chlocal-cutoff",str(rchloc))
         call xml_EndElement(xf,"annotation")
+
         call xml_NewElement(xf,"grid")
-
-        if (use_linear_grid) then
-
-           call my_add_attribute(xf,"npts",str(nrl))
-           call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","linear")
-           call my_add_attribute(xf,"drl",str(drl))
-           call xml_EndElement(xf,"annotation")
-           call xml_NewElement(xf,"grid-data")
-             call xml_AddArray(xf,rl(1:nrl))
-           call xml_EndElement(xf,"grid-data")
-
-       else
-          call my_add_attribute(xf,"npts",str(nrval))
+          call my_add_attribute(xf,"npts",str(nrl))
           call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","log-atom")
-           call my_add_attribute(xf,"nrval",str(nrval))
-           !   r(i) = a*(exp(b*(i-1))-1)
+           call my_add_attribute(xf,"type","sampled-log-atom")
+           !   Note interchanged a, b
+           !   r(i) = b*(exp(a*(i-1))-1)
            call my_add_attribute(xf,"scale",str(b))
            call my_add_attribute(xf,"step",str(a))
+           call my_add_attribute(xf,"delta",str(delta))
+           call my_add_attribute(xf,"rmax",str(rmax))
           call xml_EndElement(xf,"annotation")
 
-
           call xml_NewElement(xf,"grid-data")
-           call xml_AddArray(xf,rofi(1:nrval))
+           call xml_AddArray(xf,r0(1:nrl))
           call xml_EndElement(xf,"grid-data")
 
-       endif
        call xml_EndElement(xf,"grid")
 
        call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
-               if (use_linear_grid) then
-                  call dpnint(rofi,vlocal,nrval,rl,fval,nrl)
-                  call check_grid(rofi,vlocal,nrval,rl,fval,nrl,"vlocal.check")
-                  call xml_AddArray(xf, 0.5_dp * fval(1:nrl))
-               else
-                  call xml_AddArray(xf, 0.5_dp * vlocal(1:nrval))
-               endif
+               call resample(rofi,vlocal,nrval,r0,isample,f0,nrl)
+               call xml_AddArray(xf, ryd_to_hartree * f0(1:nrl))
                call xml_EndElement(xf,"data")
             call xml_EndElement(xf,"radfunc")
 
             call xml_NewElement(xf,"local-charge")
             call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
-               if (use_linear_grid) then
-                  call dpnint(rofi,chlocal,nrval,rl,fval,nrl)
-                  call check_grid(rofi,chlocal,nrval,rl,fval,nrl,"chlocal.check")
-                  where (abs(fval) < 1.0e-98_dp) fval = 0.0_dp
-                  call xml_AddArray(xf, fval(1:nrl))
-               else
-                  where (abs(chlocal) < 1.0e-98_dp) chlocal = 0.0_dp
-                  call xml_AddArray(xf, chlocal(1:nrval))
-               endif
+               call resample(rofi,chlocal,nrval,r0,isample,f0,nrl)
+               where (abs(f0) < 1.0e-98_dp) f0 = 0.0_dp
+               call xml_AddArray(xf, f0(1:nrl))
                call xml_EndElement(xf,"data")
             call xml_EndElement(xf,"radfunc")
             call xml_EndElement(xf,"local-charge")
@@ -633,35 +613,22 @@
       call xml_NewElement(xf,"nonlocal-projectors")
       call my_add_attribute(xf,"set",trim(set))
 
-              call xml_NewElement(xf,"grid")
-
-        if (use_linear_grid) then
-
-           call my_add_attribute(xf,"npts",str(nrl))
-           call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","linear")
-           call my_add_attribute(xf,"drl",str(drl))
-           call xml_EndElement(xf,"annotation")
-           call xml_NewElement(xf,"grid-data")
-             call xml_AddArray(xf,rl(1:nrl))
-           call xml_EndElement(xf,"grid-data")
-
-       else
-          call my_add_attribute(xf,"npts",str(nrval))
+        call xml_NewElement(xf,"grid")
+          call my_add_attribute(xf,"npts",str(nrl))
           call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","log-atom")
-           call my_add_attribute(xf,"nrval",str(nrval))
-           !   r(i) = a*(exp(b*(i-1))-1)
+           call my_add_attribute(xf,"type","sampled-log-atom")
+           !   Note interchanged a, b
+           !   r(i) = b*(exp(a*(i-1))-1)
            call my_add_attribute(xf,"scale",str(b))
            call my_add_attribute(xf,"step",str(a))
+           call my_add_attribute(xf,"delta",str(delta))
+           call my_add_attribute(xf,"rmax",str(rmax))
           call xml_EndElement(xf,"annotation")
 
-
           call xml_NewElement(xf,"grid-data")
-           call xml_AddArray(xf,rofi(1:nrval))
+           call xml_AddArray(xf,r0(1:nrl))
           call xml_EndElement(xf,"grid-data")
 
-       endif
        call xml_EndElement(xf,"grid")
 
       call KBgen( is, a, b, rofi, drdi, s, &
@@ -672,7 +639,24 @@
                  debug_kb_generation, &
                  ignore_ghosts,       &
                  kb_rmax,             &
-                 process_proj=write_proj_psml)
+                 process_proj=store_proj_psml)
+
+      do i = 1, nprojs
+         kb => kbprojs(i)
+         call xml_NewElement(xf,"proj")
+         call my_add_attribute(xf,"l",lsymb(kb%l))
+         call my_add_attribute(xf,"seq",str(kb%seq))
+         call my_add_attribute(xf,"ekb",str(ryd_to_hartree*kb%ekb))
+         call my_add_attribute(xf,"type","KB")
+         call xml_NewElement(xf,"radfunc")
+         call xml_NewElement(xf,"data")
+         call resample(kb%r,kb%proj,kb%nrval,r0,isample,f0,nrl)
+         if (l /= 0)  f0(1) = 0.0_dp
+         call xml_AddArray(xf, f0(1:nrl))
+         call xml_EndElement(xf,"data")
+         call xml_EndElement(xf,"radfunc")
+         call xml_EndElement(xf,"proj")
+      enddo
 
       call xml_EndElement(xf,"nonlocal-projectors")
       call xml_EndElement(xf,"tmp-wrapper")
@@ -691,10 +675,8 @@
       deallocate( auxrho  )
       deallocate( erefkb  )
       deallocate( nkbl    )
-
-      if (use_linear_grid) then
-         deallocate(rl,fval)
-      endif
+      
+      deallocate(r0,f0,isample)
 
 CONTAINS
   
@@ -732,6 +714,159 @@ end subroutine get_label
 
        call xml_AddAttribute(xf,name,trim(value))
       end subroutine my_add_attribute
+
+  subroutine get_sampled_grid(mmax,rr,rmax,delta,nrl,isample,r0)
+   integer, intent(in)   :: mmax
+   real(dp), intent(in)  :: rr(:)
+   real(dp), intent(in)  :: rmax
+   real(dp), intent(in)  :: delta
+   integer, intent(out)  :: nrl
+   integer, allocatable, intent(out) :: isample(:)
+   real(dp), allocatable, intent(out) :: r0(:)
+
+   integer  :: is, j
+   real(dp) :: rs
+
+   ! First scan to get size of sampled grid
+   is = 1
+   rs = 0.0_dp
+   do j = 1, mmax
+      if (rr(j) > rmax) exit
+      if ((rr(j)-rs) < delta) cycle
+      is = is + 1
+      rs = rr(j)
+   enddo
+   
+   nrl = is
+   allocate(isample(nrl),r0(nrl))
+
+   is = 1
+   r0(is) = 0.0_dp
+   isample(is) = 0
+   do j = 1, mmax
+      if (rr(j) > rmax) exit
+      if ((rr(j)-r0(is)) < delta) cycle
+      is = is + 1
+      r0(is) = rr(j)
+      isample(is) = j
+   enddo
+ end subroutine get_sampled_grid
+
+  subroutine resample(rr,ff,mmax,r0,isample,f0,nrl)
+   integer, intent(in)   :: mmax
+   real(dp), intent(in)  :: rr(:)
+   real(dp), intent(in)  :: ff(:)
+   integer, intent(in)   :: nrl
+   real(dp), intent(in)  :: r0(:)
+   integer, intent(in)   :: isample(:)
+   real(dp), intent(out) :: f0(:)
+
+   integer  :: is
+   real(dp) :: val
+   
+   do is = 2, nrl
+      f0(is) = ff(isample(is))
+   enddo
+   ! Choice of treatments of point at r=0
+   ! Polynomial extrapolation with sampled points
+   call dpnint1(POLY_ORDER_EXTRAPOL,r0(2:),f0(2:),nrl-1,0.0_dp,val,.false.)
+   f0(1) = val
+   ! Simply set f0(r=0) = ff(r=r1)
+   !...
+   ! Others
+   ! ...
+   
+ end subroutine resample
+
+!
+! Copyright (c) 1989-2014 by D. R. Hamann, Mat-Sim Research LLC and Rutgers
+! University
+! 
+! Modified by Alberto Garcia, March 2015
+! This routine is included in this module with permission from D.R. Hamann.
+!
+ subroutine dpnint1(npoly, xx, yy, nn, r, val, debug)
+
+! Modified by Alberto Garcia, March 2015 from routine
+! dpnint by D.R. Hamann. 
+! Changes:
+!   -- A single value is returned
+!   -- It can extrapolate, instead of stopping,
+!      when called with an abscissa outside the
+!      data range.
+!   -- If the number of data points is less than
+!      npoly+1, npoly is implicitly reduced, without
+!      error, and without warning.
+!   -- Debug interface 
+!
+! local polynomial interpolation of data yy on nn points xx
+! giving value val on point r
+! npoly sets order of polynomial
+! xx must be ordered in ascending order
+! output interpolated value val on point r
+
+ implicit none
+
+ integer, parameter :: dp=kind(1.0d0)
+
+!Input variables
+ real(dp), intent(in) :: xx(*),yy(*)
+ real(dp), intent(in) :: r
+ real(dp), intent(out) :: val
+ integer, intent(in)   ::  nn,npoly
+ logical, intent(in)   ::  debug
+
+!Local variables
+ real(dp) :: sum,term,zz
+ integer ii,imin,imax,iprod,iy,istart,kk,iend
+
+! interval halving search for xx(ii) points bracketing r
+
+   imin = 1
+   imax = nn
+   do kk = 1, nn
+     ii = (imin + imax) / 2
+     if(r>xx(ii)) then
+       imin = ii
+     else
+       imax = ii
+     end if
+     if(imax - imin .eq. 1) then
+       exit
+     end if
+   end do
+
+
+   zz=r
+
+!   if (debug) print *, "imin, imax: ", imin, imax
+
+   if(mod(npoly,2)==1) then
+    istart=imin-npoly/2
+   else if(zz-xx(imin) < xx(imax)-zz) then
+     istart=imin-npoly/2
+   else
+     istart=imax-npoly/2
+   end if
+
+   istart = min(istart, nn - npoly)
+   istart = max(istart, 1)
+   iend = min(istart+npoly,nn)
+
+ !  if (debug) print *, "istart, iend: ", istart, iend
+   sum=0.0d0
+   do iy=istart,iend
+    if(yy(iy)==0.0d0) cycle
+    term=yy(iy)
+    do iprod=istart, iend
+     if(iprod==iy) cycle
+     term=term*(zz-xx(iprod))/(xx(iy)-xx(iprod))
+    end do
+    sum=sum+term
+   end do
+   val=sum
+
+ end subroutine dpnint1
 
 subroutine manual()
   write(0,*) "Usage: psop FILE [ options ]"
