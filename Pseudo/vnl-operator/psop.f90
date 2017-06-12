@@ -647,6 +647,7 @@
          call my_add_attribute(xf,"l",lsymb(kb%l))
          call my_add_attribute(xf,"seq",str(kb%seq))
          call my_add_attribute(xf,"ekb",str(ryd_to_hartree*kb%ekb))
+         call my_add_attribute(xf,"erefkb",str(ryd_to_hartree*kb%erefkb))
          call my_add_attribute(xf,"type","KB")
          call xml_NewElement(xf,"radfunc")
          call xml_NewElement(xf,"data")
