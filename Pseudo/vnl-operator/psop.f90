@@ -250,8 +250,10 @@
       real(dp), pointer :: r(:) => null()
 
       real(dp) :: delta_e
-      integer  :: nkb_l   
-      character(len=200) proj_filename
+      integer  :: nkb_l, nlines
+      character(len=200) proj_filename, output_filename
+      character(len=40) keyname, line
+      
 
       external :: store_proj_psml, check_grid
 !
@@ -273,9 +275,10 @@
       rmax_ps_check = 0.0_dp
 
       proj_file_exists = .false.
+      output_filename = "PSOP_PSML"
 
       do
-         call getopts('hdglpKF:R:C:3fcv',opt_name,opt_arg,n_opts,iostat)
+         call getopts('hdgpKF:R:C:3fcvo:',opt_name,opt_arg,n_opts,iostat)
          if (iostat /= 0) exit
          select case(opt_name)
            case ('d')
@@ -299,6 +302,8 @@
               force_chlocal_method = .true.
            case ('c')
               use_charge_cutoff = .true.
+           case ('o')
+              read(opt_arg,*) output_filename
            case ('v')
               write(6,"(a)") "Version: " // PSML_CREATOR
               STOP
@@ -306,7 +311,7 @@
             call manual()
            case ('?',':')
              write(0,*) "Invalid option: ", opt_arg(1:1)
-             write(0,*) "Usage: psop FILE [ options ]"
+             write(0,*) "Usage: psop [ options ] FILE"
              write(0,*) "Use -h option for manual"
              STOP
           end select
@@ -315,7 +320,7 @@
        nargs = command_argument_count()
        nlabels = nargs - n_opts + 1
        if (nlabels /= 1)  then
-          write(0,*) "Usage: psop FILE [ options ]"
+          write(0,*) "Usage: psop [ options ] FILE"
           write(0,*) "Use -h option for manual"
           STOP
        endif
@@ -400,6 +405,7 @@
       erefkb(:,:) = huge(1.0_dp)   ! defaults 'a la Siesta'
       shifted_erefkb(:,:) = .false.
 
+      nlines = 0
       if (proj_file_exists) then
          ! Specify number of projectors for each l, and energy shifts
          ! Maximum 2 projectors...
@@ -409,6 +415,7 @@
          do
             read(1,fmt=*,iostat=status) l, nkb_l, delta_e
             if (status < 0) exit
+            nlines = nlines + 1
             if (l > lmxkb) call die("l> lmxkb in projs spec file")
             nkbl(l) = nkb_l
             if (nkbl(l) > 2) call die("More than 2 projectors requested")
@@ -423,6 +430,7 @@
                shifted_erefkb(2,l) = .true.
             endif
          enddo
+         close(1)
       else
          ! Just generate multiple projectors for channels with semicore
          nkbl(0:lmxkb) =  1 + nsemic(0:lmxkb)
@@ -669,7 +677,7 @@
       call xml_Close(xf)
 
       !
-         call init_annotation(ann,4,status)
+         call init_annotation(ann,4+nlines,status)
          if (status /= 0) call die("Cannot init annotation")
          id = ps_GetUUID(psml_handle)
          call insert_annotation_pair(ann,"source-uuid",id,status)
@@ -677,7 +685,19 @@
          call get_command(cmd_line)
          call insert_annotation_pair(ann,"command-line",trim(cmd_line),status)
          if (status /= 0) call die("Cannot insert options")
-
+         if (proj_file_exists) then
+            i = 0
+            open(unit=1,file=trim(proj_filename),position="rewind")
+            do
+               read(1,fmt="(a)",iostat=status) line
+               if (status < 0) exit
+               i = i + 1
+               write(keyname,"(a,i1)") "proj-spec-file-",i
+               call insert_annotation_pair(ann,trim(keyname),trim(line),status)
+               if (status /= 0) call die("Cannot insert proj-spec-file line")
+            enddo
+            close(1)
+         endif
          !
          if (ps_HasLocalPotential(psml_handle)) then
             call ps_Delete_LocalPotential(psml_handle)
@@ -736,8 +756,8 @@
          call ps_AddNonLocalProjectors(psml_handle,grid=r0(1:nrl), &
               grid_annotation=ann, annotation=EMPTY_ANNOTATION, set=SET_SREL, &
               nprojs=nprojs,kbprojs=kbprojs)
-         
-         call ps_DumpToPSMLFile(psml_handle,"PSML_BASE")
+
+         call ps_DumpToPSMLFile(psml_handle,trim(output_filename))
 
       deallocate( rofi    )
       deallocate( drdi    )
@@ -1059,19 +1079,22 @@ end subroutine get_label
  end subroutine dpnint1
 
 subroutine manual()
-  write(0,*) "Usage: psop FILE [ options ]"
-  write(0,*) " FILE:       Any of .vps, .psf, or .psml"
+  write(0,*) "Usage: psop [ options ] FILE"
+  write(0,*) " FILE: A PSML file"
   write(0,*) " Options: "
   write(0,*) " -d                                debug"
   write(0,*) " -p                 write_ion_plot_files"
+  write(0,*) " -F  PROJ_SPEC"
+  write(0,*) "     Read number of projectors and      "
+  write(0,*) "     reference energies from PROJ_SPEC  "
   write(0,*) " -K  use NEW-style KB reference orbitals"
-  write(0,*) " -g            use unrestricted log grid"
-  write(0,*) " -l      use linear grid for PSML output"
+  write(0,*) " -g  use unrestricted log grid"
   write(0,*) " -R  Rmax_kb (bohr)    for KB generation"
   write(0,*) " -C rmax_ps_Check (bohr) for tail checks"
   write(0,*) " -3  fit Vlocal with continuous 3rd derivative"
   write(0,*) " -f  force 'gaussian charge' method for Vlocal"
   write(0,*) " -c  force the use of 'charge cutoff' for chlocal"
+  write(0,*) " -o OUTPUT_FILENAME (default PSOP_PSML)"
 
 end subroutine manual
 
