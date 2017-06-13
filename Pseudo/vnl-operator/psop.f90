@@ -244,6 +244,7 @@
       real(dp) :: rmax, delta
       integer, allocatable  :: isample(:)
       real(dp), allocatable :: r0(:), f0(:)
+      real(dp), allocatable :: fvlocal0(:), fchlocal0(:)
       real(dp), pointer :: r(:) => null()
 
       external :: store_proj_psml, check_grid
@@ -333,47 +334,10 @@
          file_version =  ps_GetPSMLVersion(psml_handle)
          write(6,"(a)") "Processing a " // trim(file_version) // "PSML file"
          write(6,"(a)") ps_Creator(psml_handle)
-         !
-         call init_annotation(ann,4,status)
-         if (status /= 0) call die("Cannot init annotation")
-         id = ps_GetUUID(psml_handle)
-         call insert_annotation_pair(ann,"source-uuid",id,status)
-         if (status /= 0) call die("Cannot insert source-uuid")
-         call get_command(cmd_line)
-         call insert_annotation_pair(ann,"command-line",trim(cmd_line),status)
-         if (status /= 0) call die("Cannot insert options")
-
-         !
-         if (ps_HasLocalPotential(psml_handle)) then
-            call ps_Delete_LocalPotential(psml_handle)
-            call insert_annotation_pair(ann,"local-potential","replaced",status)
-            if (status /= 0) call die("Cannot insert lpot record")
-         else
-            call insert_annotation_pair(ann,"local-potential","inserted",status)
-            if (status /= 0) call die("Cannot insert lpot record")
-         endif
-         
-         if (ps_HasProjectors(psml_handle)) then
-            call ps_Delete_NonLocalProjectors(psml_handle)
-            call insert_annotation_pair(ann,"nonlocal-projectors","replaced",status)
-            if (status /= 0) call die("Cannot insert nl record")
-         else
-            call insert_annotation_pair(ann,"nonlocal-projectors","inserted",status)
-            if (status /= 0) call die("Cannot insert nl record")
-         endif
-
-         call get_uuid(id)
-         call ps_SetUUID(psml_handle,id)
-         call ps_SetPSMLVersion(psml_handle,PSML_VERSION)
-         call date_and_time(VALUES=dtime)
-         write(datestr,"(i4,'-',i2.2,'-',i2.2)") dtime(1:3)
-         call ps_AddProvenanceRecord(psml_handle,creator=PSML_CREATOR, &
-              date=trim(datestr), annotation=ann)
-         
-         call ps_DumpToPSMLFile(psml_handle,"PSML_BASE")
       else
          call die("This version can only work with PSML files")
       endif
+
 !
 !     STORE IN LOCAL VARIABLES SOME OF THE PARAMETERS READ IN THE 
 !     PSEUDOPOTENTIAL, AND DEFINITION OF THE RADIAL LOGARITHMIC GRID
@@ -664,6 +628,55 @@
 
       call xml_Close(xf)
 
+      !
+         call init_annotation(ann,4,status)
+         if (status /= 0) call die("Cannot init annotation")
+         id = ps_GetUUID(psml_handle)
+         call insert_annotation_pair(ann,"source-uuid",id,status)
+         if (status /= 0) call die("Cannot insert source-uuid")
+         call get_command(cmd_line)
+         call insert_annotation_pair(ann,"command-line",trim(cmd_line),status)
+         if (status /= 0) call die("Cannot insert options")
+
+         !
+         if (ps_HasLocalPotential(psml_handle)) then
+            call ps_Delete_LocalPotential(psml_handle)
+            call insert_annotation_pair(ann,"local-potential","replaced",status)
+            if (status /= 0) call die("Cannot insert lpot record")
+         else
+            call insert_annotation_pair(ann,"local-potential","inserted",status)
+            if (status /= 0) call die("Cannot insert lpot record")
+         endif
+         
+         if (ps_HasProjectors(psml_handle)) then
+            call ps_Delete_NonLocalProjectors(psml_handle)
+            call insert_annotation_pair(ann,"nonlocal-projectors","replaced",status)
+            if (status /= 0) call die("Cannot insert nl record")
+         else
+            call insert_annotation_pair(ann,"nonlocal-projectors","inserted",status)
+            if (status /= 0) call die("Cannot insert nl record")
+         endif
+
+         call get_uuid(id)
+         call ps_SetUUID(psml_handle,id)
+         call ps_SetPSMLVersion(psml_handle,PSML_VERSION)
+         call date_and_time(VALUES=dtime)
+         write(datestr,"(i4,'-',i2.2,'-',i2.2)") dtime(1:3)
+         call ps_AddProvenanceRecord(psml_handle,creator=PSML_CREATOR, &
+              date=trim(datestr), annotation=ann)
+
+         allocate(fvlocal0(nrl), fchlocal0(nrl))
+         call resample(rofi,vlocal,nrval,r0,isample,fvlocal0,nrl)
+         fvlocal0 = ryd_to_hartree*fvlocal0
+         call resample(rofi,chlocal,nrval,r0,isample,fchlocal0,nrl)
+         where (abs(fchlocal0) < 1.0e-98_dp) fchlocal0 = 0.0_dp
+
+         call ps_AddLocalPotential(psml_handle,grid=r0(1:nrl), &
+              vlocal=fvlocal0,vlocal_type="siesta-fit", &
+              chlocal = fchlocal0, chlocal_cutoff=rchloc)
+         
+         call ps_DumpToPSMLFile(psml_handle,"PSML_BASE")
+
       deallocate( rofi    )
       deallocate( drdi    )
       deallocate( s       )
@@ -680,6 +693,38 @@
       deallocate(r0,f0,isample)
 
 CONTAINS
+
+  subroutine ps_AddLocalPotential(ps,grid,vlocal,vlocal_type,chlocal,chlocal_cutoff)
+    type(psml_t), intent(inout) :: ps
+    real(dp), intent(in) :: grid(:)
+    real(dp), intent(in) :: vlocal(:)
+    real(dp), intent(in) :: chlocal(:)
+    character(len=*), intent(in) :: vlocal_type
+    real(dp), intent(in) :: chlocal_cutoff
+
+    type(ps_annotation_t)   :: ann
+    integer :: npts, status
+    real(dp), pointer :: gdata(:) 
+
+    call init_annotation(ann,1,status)
+    if (status /= 0) call die("Cannot init annotation")
+    call insert_annotation_pair(ann,"chlocal-cutoff",str(chlocal_cutoff),status)
+    if (status /= 0) call die("Cannot insert chlocal-cutoff")
+
+    npts = size(grid)
+    call newGrid(ps%local%grid,npts)
+    gdata => valGrid(ps%local%grid)
+    gdata(1:npts) = grid(1:npts)
+
+    ps%local%vlocal_type = trim(vlocal_type)
+    ps%local%annotation = ann
+    allocate(ps%local%Vlocal%data(npts))
+    ps%local%Vlocal%grid = ps%local%grid
+    allocate(ps%local%Chlocal%data(npts))
+    ps%local%Chlocal%grid = ps%local%grid
+    ps%local%Vlocal%data(1:npts) = vlocal(1:npts)
+    ps%local%Chlocal%data(1:npts) = chlocal(1:npts)
+  end subroutine ps_AddLocalPotential
   
 subroutine get_label(str,label,stat)
  character(len=*), intent(in)   :: str
