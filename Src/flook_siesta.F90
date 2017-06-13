@@ -241,7 +241,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     type(dict) :: keys
 
     if ( slua_debug ) then
-       write(*,'(a,i0)') '  lua: siesta_get, Node = ',Node + 1
+       write(*,'(a,i0)') '  lua: siesta_receive, Node = ',Node + 1
     end if
 
     call lua_init(LUA,state)
@@ -282,7 +282,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     type(dict) :: keys
 
     if ( slua_debug ) then
-       write(*,'(a,i0)') '  lua: siesta_return, Node = ',Node + 1
+       write(*,'(a,i0)') '  lua: siesta_send, Node = ',Node + 1
     end if
 
     call lua_init(LUA,state)
@@ -387,11 +387,12 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
 
     subroutine slua_put_var(key)
       character(len=*), intent(in) :: key
+      character(len=1), pointer :: a1(:)
       logical, pointer :: b0, b1(:), b2(:,:)
       integer, pointer :: i0, i1(:), i2(:,:)
       real(sp), pointer :: s0, s1(:), s2(:,:)
       real(dp), pointer :: d0, d1(:), d2(:,:)
-      character(len=2) :: t
+      character(len=4) :: t
       character(len=255) :: lkey, rkey
       integer :: lvls
       lvls = 0
@@ -401,7 +402,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
       end if
 !      print *,'Attempt storing: ',trim(key), ' type= ',t
       select case ( t )
-      case ( 'V0', 'b0' , 'i0', 's0', 'd0' )
+      case ( 'a1', 'b0' , 'i0', 's0', 'd0' )
          ! We need to handle the variables secondly
          call key_split(key,lkey,rkey)
          if ( len_trim(rkey) == 0 ) then
@@ -412,8 +413,9 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
          end if
       end select
       select case ( t )
-      case ( 'V0' )
-         call assign(lkey,v)
+      case ( 'a1' )
+         call associate(a1,v)
+         lkey = cunpack(a1)
          call lua_set(tbl,rkey,lkey(1:len_trim(lkey)))
       case ( 'b0' )
          call associate(b0,v)
@@ -507,12 +509,15 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
 
     subroutine slua_get_var(key)
       character(len=*), intent(in) :: key
+      character(len=256) :: V0
+      character(len=1), pointer :: a1(:)
       logical, pointer :: b0, b1(:), b2(:,:)
       integer, pointer :: i0, i1(:), i2(:,:)
       real(sp), pointer :: s0, s1(:), s2(:,:)
       real(dp), pointer :: d0, d1(:), d2(:,:)
-      character(len=2) :: t
+      character(len=4) :: t
       character(len=255) :: lkey, rkey
+      integer :: na1
       integer :: lvls
       lvls = 0
       t = which(v)
@@ -520,7 +525,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
          write(*,'(4a)') '    lua2siesta; dtype = ',t,', var = ',trim(key)
       end if
       select case ( t )
-      case ( 'b0' , 'i0', 's0', 'd0' )
+      case ( 'a1', 'b0' , 'i0', 's0', 'd0' )
          ! We need to handle the variables secondly
          call key_split(key,lkey,rkey)
          if ( len_trim(rkey) == 0 ) then
@@ -532,6 +537,12 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
       end select
 !      print *,'Attempt retrieving: ',trim(key), ' type= ',t
       select case ( t )
+      case ( 'a1' )
+         call associate(a1,v)
+         call lua_get(tbl,rkey,V0)
+         na1 = len_trim(V0)
+         a1 = ' '
+         a1(1:na1) = cpack(V0(1:na1))
       case ( 'b0' ) 
          call associate(b0,v)
          call lua_get(tbl,rkey,b0)

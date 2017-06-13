@@ -1,5 +1,5 @@
 SystemName          Water molecule
-SystemLabel         h2o
+SystemLabel         lua_h2o
 NumberOfAtoms       3
 NumberOfSpecies     2
 

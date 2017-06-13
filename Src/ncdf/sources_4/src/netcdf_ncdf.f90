@@ -487,7 +487,7 @@ contains
           ! 0. in case 'name' exists, it must be the name
           if ( 'name'.in.d_var ) then
              call associate(v,d_var,'name')
-             if ( which(v) /= 'V0' ) then
+             if ( which(v) /= 'a1' ) then
                 call ncdf_err(-200, &
                      'Name of variable is not a character variable.')
              end if
@@ -504,7 +504,7 @@ contains
           !print *,'Retrieve dims (1): ',trim(key)
           call associate(v,d_var,'dims')
           ! The dimensions has to be given in a comma separated list
-          if ( which(v) /= 'V0' ) then
+          if ( which(v) /= 'a1' ) then
              call ncdf_err(-200, &
                   'Dimension variable is not a character variable.')
           end if
@@ -985,7 +985,6 @@ contains
 ! (however, as it is a local routine the burden is ours, not the programmers)
   subroutine ncdf_def_var_generic(this,name,type,dims,id,atts, &
        compress_lvl,shuffle, access, chunks)
-    use iso_var_str
     use variable
     use dictionary
     type(hNCDF), intent(inout) :: this
@@ -1327,7 +1326,6 @@ contains
     end if
   end subroutine get_att
   subroutine put_atts_id(this,id,atts)
-    use iso_var_str
     use dictionary
     use variable
     type(hNCDF), intent(inout) :: this
@@ -1359,7 +1357,6 @@ contains
     end if
   end subroutine put_atts_id
   subroutine put_att_id(this,id,name,att)
-    use iso_var_str
     use variable
     type(hNCDF), intent(inout) :: this
     integer, intent(in) :: ID
@@ -1373,7 +1370,7 @@ contains
     real(dp), pointer :: d0, d1(:)
     call ncdf_redef(this)
     select case ( which(att) )
-    case ( 'V0' )
+    case ( 'a1' ) ! character array
        call assign(tmp,att)
        iret = nf90_put_att(this%id, id, trim(name), tmp)
     case ( 'h0' )
@@ -1408,7 +1405,6 @@ contains
          " in file: "//this)
   end subroutine put_att_id
   subroutine get_atts_id(this,id,atts)
-    use iso_var_str
     use dictionary
     use variable
     type(hNCDF), intent(inout) :: this
@@ -1434,7 +1430,6 @@ contains
     call delete(att)
   end subroutine get_atts_id
   subroutine get_att_id(this,ID,name,att)
-    use iso_var_str
     use dictionary
     use variable
     type(hNCDF), intent(inout) :: this
