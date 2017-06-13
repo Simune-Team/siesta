@@ -671,7 +671,25 @@
          call resample(rofi,chlocal,nrval,r0,isample,fchlocal0,nrl)
          where (abs(fchlocal0) < 1.0e-98_dp) fchlocal0 = 0.0_dp
 
+         ! Grid annotation
+         call init_annotation(ann,5,status)
+           !   Note interchanged a, b
+           !   r(i) = b*(exp(a*(i-1))-1)
+         if (status /= 0) call die("Cannot init annotation")
+         call insert_annotation_pair(ann,"type","sampled-log-atom",status)
+         if (status /= 0) call die("Cannot insert grid type")
+         call insert_annotation_pair(ann,"scale",str(b),status)
+         if (status /= 0) call die("Cannot insert grid scale")
+         call insert_annotation_pair(ann,"step",str(a),status)
+         if (status /= 0) call die("Cannot insert grid step")
+         call insert_annotation_pair(ann,"delta",str(delta),status)
+         if (status /= 0) call die("Cannot insert delta of sampled grid")
+         call insert_annotation_pair(ann,"rmax",str(rmax),status)
+         if (status /= 0) call die("Cannot insert rmax of sampled grid")
+
+
          call ps_AddLocalPotential(psml_handle,grid=r0(1:nrl), &
+              grid_annotation=ann, &
               vlocal=fvlocal0,vlocal_type="siesta-fit", &
               chlocal = fchlocal0, chlocal_cutoff=rchloc)
          
@@ -694,9 +712,10 @@
 
 CONTAINS
 
-  subroutine ps_AddLocalPotential(ps,grid,vlocal,vlocal_type,chlocal,chlocal_cutoff)
+  subroutine ps_AddLocalPotential(ps,grid,grid_annotation,vlocal,vlocal_type,chlocal,chlocal_cutoff)
     type(psml_t), intent(inout) :: ps
     real(dp), intent(in) :: grid(:)
+    type(ps_annotation_t), intent(in)   :: grid_annotation
     real(dp), intent(in) :: vlocal(:)
     real(dp), intent(in) :: chlocal(:)
     character(len=*), intent(in) :: vlocal_type
@@ -705,6 +724,7 @@ CONTAINS
     type(ps_annotation_t)   :: ann
     integer :: npts, status
     real(dp), pointer :: gdata(:) 
+    type(ps_annotation_t), pointer   :: gannot
 
     call init_annotation(ann,1,status)
     if (status /= 0) call die("Cannot init annotation")
@@ -715,6 +735,8 @@ CONTAINS
     call newGrid(ps%local%grid,npts)
     gdata => valGrid(ps%local%grid)
     gdata(1:npts) = grid(1:npts)
+    gannot => annotationGrid(ps%local%grid)
+    gannot = grid_annotation
 
     ps%local%vlocal_type = trim(vlocal_type)
     ps%local%annotation = ann
