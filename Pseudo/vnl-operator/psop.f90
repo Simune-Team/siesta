@@ -45,7 +45,7 @@
       use psop_options
       use m_getopts
 
-      use xmlf90_wxml
+      use xmlf90_wxml, only: str
       use m_kb, only: kb_t, nprojs, kbprojs
 
       implicit none
@@ -59,7 +59,6 @@
       integer, parameter :: POLY_ORDER_EXTRAPOL = 7
       real(dp), parameter :: ryd_to_hartree = 0.5_dp
       
-      type(xmlf_t)       :: xf
       type(kb_t), pointer :: kb
       character(len=1), dimension(0:4) ::  lsymb = (/'s','p','d','f','g'/)
 
@@ -569,78 +568,11 @@
         call get_sampled_grid(nrval,rofi,rmax,delta,nrl,isample,r0)
         allocate(f0(nrl))
 
-      call xml_OpenFile("VNL",xf, indent=.false.)
-!
-!     Generate xml snippet
-!
-        call xml_NewElement(xf,"tmp-wrapper")
-        call xml_NewElement(xf,"local-potential")
-            call my_add_attribute(xf,"type",trim(method_used))
-        call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"chlocal-cutoff",str(rchloc))
-        call xml_EndElement(xf,"annotation")
-
-        call xml_NewElement(xf,"grid")
-          call my_add_attribute(xf,"npts",str(nrl))
-          call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","sampled-log-atom")
-           !   Note interchanged a, b
-           !   r(i) = b*(exp(a*(i-1))-1)
-           call my_add_attribute(xf,"scale",str(b))
-           call my_add_attribute(xf,"step",str(a))
-           call my_add_attribute(xf,"delta",str(delta))
-           call my_add_attribute(xf,"rmax",str(rmax))
-          call xml_EndElement(xf,"annotation")
-
-          call xml_NewElement(xf,"grid-data")
-           call xml_AddArray(xf,r0(1:nrl))
-          call xml_EndElement(xf,"grid-data")
-
-       call xml_EndElement(xf,"grid")
-
-       call xml_NewElement(xf,"radfunc")
-               call xml_NewElement(xf,"data")
-               call resample(rofi,vlocal,nrval,r0,isample,f0,nrl)
-               call xml_AddArray(xf, ryd_to_hartree * f0(1:nrl))
-               call xml_EndElement(xf,"data")
-            call xml_EndElement(xf,"radfunc")
-
-            call xml_NewElement(xf,"local-charge")
-            call xml_NewElement(xf,"radfunc")
-               call xml_NewElement(xf,"data")
-               call resample(rofi,chlocal,nrval,r0,isample,f0,nrl)
-               where (abs(f0) < 1.0e-98_dp) f0 = 0.0_dp
-               call xml_AddArray(xf, f0(1:nrl))
-               call xml_EndElement(xf,"data")
-            call xml_EndElement(xf,"radfunc")
-            call xml_EndElement(xf,"local-charge")
-        call xml_EndElement(xf,"local-potential")
-
       if (irelt == 1) then
          set = "scalar_relativistic"
       else
          set = "non_relativistic"
       endif
-      call xml_NewElement(xf,"nonlocal-projectors")
-      call my_add_attribute(xf,"set",trim(set))
-
-        call xml_NewElement(xf,"grid")
-          call my_add_attribute(xf,"npts",str(nrl))
-          call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","sampled-log-atom")
-           !   Note interchanged a, b
-           !   r(i) = b*(exp(a*(i-1))-1)
-           call my_add_attribute(xf,"scale",str(b))
-           call my_add_attribute(xf,"step",str(a))
-           call my_add_attribute(xf,"delta",str(delta))
-           call my_add_attribute(xf,"rmax",str(rmax))
-          call xml_EndElement(xf,"annotation")
-
-          call xml_NewElement(xf,"grid-data")
-           call xml_AddArray(xf,r0(1:nrl))
-          call xml_EndElement(xf,"grid-data")
-
-       call xml_EndElement(xf,"grid")
 
       call KBgen( is, a, b, rofi, drdi, s, &
                  vps, vlocal, ve, nrval, Zval, lmxkb, &
@@ -652,29 +584,6 @@
                  kb_rmax,             &
                  process_proj=store_proj_psml,&
                  shifted_erefkb=shifted_erefkb)
-
-      do i = 1, nprojs
-         kb => kbprojs(i)
-         call xml_NewElement(xf,"proj")
-         call my_add_attribute(xf,"l",lsymb(kb%l))
-         call my_add_attribute(xf,"seq",str(kb%seq))
-         call my_add_attribute(xf,"ekb",str(ryd_to_hartree*kb%ekb))
-         call my_add_attribute(xf,"erefkb",str(ryd_to_hartree*kb%erefkb))
-         call my_add_attribute(xf,"type","KB")
-         call xml_NewElement(xf,"radfunc")
-         call xml_NewElement(xf,"data")
-         call resample(kb%r,kb%proj,kb%nrval,r0,isample,f0,nrl)
-         if (l /= 0)  f0(1) = 0.0_dp
-         call xml_AddArray(xf, f0(1:nrl))
-         call xml_EndElement(xf,"data")
-         call xml_EndElement(xf,"radfunc")
-         call xml_EndElement(xf,"proj")
-      enddo
-
-      call xml_EndElement(xf,"nonlocal-projectors")
-      call xml_EndElement(xf,"tmp-wrapper")
-
-      call xml_Close(xf)
 
       !
          call init_annotation(ann,4+nlines,status)
@@ -916,14 +825,6 @@ subroutine get_label(str,label,stat)
  endif
 
 end subroutine get_label
-
-      subroutine my_add_attribute(xf,name,value)
-      type(xmlf_t), intent(inout)   :: xf
-      character(len=*), intent(in)  :: name
-      character(len=*), intent(in)  :: value
-
-       call xml_AddAttribute(xf,name,trim(value))
-      end subroutine my_add_attribute
 
   subroutine get_sampled_grid(mmax,rr,rmax,delta,nrl,isample,r0)
    integer, intent(in)   :: mmax
