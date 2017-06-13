@@ -3,6 +3,7 @@ module m_kb
   
 type, public :: kb_t
   integer  :: l
+  integer  :: j
   integer  :: seq
   real(dp) :: ekb
   real(dp) :: erefkb

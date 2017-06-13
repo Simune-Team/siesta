@@ -692,6 +692,10 @@
               grid_annotation=ann, &
               vlocal=fvlocal0,vlocal_type="siesta-fit", &
               chlocal = fchlocal0, chlocal_cutoff=rchloc)
+
+         call ps_AddNonLocalProjectors(psml_handle,grid=r0(1:nrl), &
+              grid_annotation=ann, annotation=EMPTY_ANNOTATION, set=SET_SREL, &
+              nprojs=nprojs,kbprojs=kbprojs)
          
          call ps_DumpToPSMLFile(psml_handle,"PSML_BASE")
 
@@ -747,6 +751,84 @@ CONTAINS
     ps%local%Vlocal%data(1:npts) = vlocal(1:npts)
     ps%local%Chlocal%data(1:npts) = chlocal(1:npts)
   end subroutine ps_AddLocalPotential
+  
+  subroutine ps_AddNonLocalProjectors(ps,grid,grid_annotation,annotation,set,nprojs,kbprojs)
+    type(psml_t), intent(inout) :: ps
+    real(dp), intent(in) :: grid(:)
+    type(ps_annotation_t), intent(in)   :: grid_annotation
+    type(ps_annotation_t), intent(in)   :: annotation
+    integer, intent(in)   :: set
+    integer, intent(in)   :: nprojs
+    type(kb_t), intent(in), target :: kbprojs(:)
+
+    type(nonlocal_t), pointer :: nlp, qnlp
+    type(nlpj_t), pointer :: nlpp, qnlpp
+    type(kb_t), pointer   :: kb
+    
+    integer :: npts, status, i
+    real(dp), pointer :: gdata(:) 
+    type(ps_annotation_t), pointer   :: gannot
+
+    ! Allocate new node and add to the end of the linked list
+    allocate(nlp)
+
+    if (associated(ps%nonlocal)) then
+       qnlp => ps%nonlocal
+       do while (associated(qnlp%next))
+          qnlp => qnlp%next
+       enddo
+       qnlp%next => nlp
+    else
+       ps%nonlocal => nlp
+    endif
+
+    nlp%set = set
+    
+    npts = size(grid)
+    call newGrid(nlp%grid,npts)
+    gdata => valGrid(nlp%grid)
+    gdata(1:npts) = grid(1:npts)
+    gannot => annotationGrid(nlp%grid)
+    gannot = grid_annotation
+
+    nlp%annotation = annotation
+
+    do i = 1, nprojs
+       kb => kbprojs(i)
+       allocate(nlpp)
+
+       ! Append to end of list  !! call append(nlp%proj,nlpp)
+       if (associated(nlp%proj)) then
+          qnlpp => nlp%proj
+          do while (associated(qnlpp%next))
+             qnlpp => qnlpp%next
+          enddo
+          qnlpp%next => nlpp
+       else
+          !First link
+          nlp%proj => nlpp
+       endif
+
+       nlpp%parent_group => nlp   ! current nonlocal-projectors element
+
+       nlpp%l = lsymb(kb%l)
+       nlpp%j = kb%j
+       nlpp%seq = kb%seq
+       nlpp%ekb = ryd_to_hartree*kb%ekb
+!       nlpp%erefkb = ryd_to_hartree*kb%erefkb
+       nlpp%type  = "KB"
+
+       ! radfunc 'proj'
+       
+       allocate(nlpp%proj%data(npts))
+       nlpp%proj%grid = nlp%grid
+       call resample(kb%r,kb%proj,kb%nrval,r0,isample,f0,nrl)
+       if (kb%l /= 0)  f0(1) = 0.0_dp
+       nlpp%proj%data = f0
+
+    enddo
+
+  end subroutine ps_AddNonLocalProjectors
   
 subroutine get_label(str,label,stat)
  character(len=*), intent(in)   :: str
