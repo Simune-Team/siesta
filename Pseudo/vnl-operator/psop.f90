@@ -84,6 +84,8 @@
       real(dp), allocatable    :: erefkb(:,:)! Reference energies (in Ry) for
                                              !   the calculation of the KB
                                              !   projectors
+      logical, allocatable     :: shifted_erefkb(:,:)
+      
       integer                 :: is          ! Species index               
 
 !
@@ -91,7 +93,7 @@
 !
       type(pseudopotential_t) :: psr
       type(psml_t), target    :: psml_handle
-      logical                 :: has_psml
+      logical                 :: has_psml, proj_file_exists
       type(xc_id_t)           :: xc_id
       integer                 :: status
       type(ps_annotation_t)   :: ann
@@ -247,6 +249,10 @@
       real(dp), allocatable :: fvlocal0(:), fchlocal0(:)
       real(dp), pointer :: r(:) => null()
 
+      real(dp) :: delta_e
+      integer  :: nkb_l   
+      character(len=200) proj_filename
+
       external :: store_proj_psml, check_grid
 !
 !     Process options
@@ -266,8 +272,10 @@
       write_ion_plot_files = .false.
       rmax_ps_check = 0.0_dp
 
+      proj_file_exists = .false.
+
       do
-         call getopts('hdglpKR:C:3fcv',opt_name,opt_arg,n_opts,iostat)
+         call getopts('hdglpKF:R:C:3fcv',opt_name,opt_arg,n_opts,iostat)
          if (iostat /= 0) exit
          select case(opt_name)
            case ('d')
@@ -278,6 +286,9 @@
               write_ion_plot_files = .true.
            case ('K')
               new_kb_reference_orbitals = .true.
+           case ('F')
+              proj_file_exists = .true.
+              read(opt_arg,*) proj_filename
            case ('R')
               read(opt_arg,*) kb_rmax
            case ('C')
@@ -380,15 +391,43 @@
       lmxkb    = max_l_ps
 
 !     Define the number of KB projectors for each angular momentum
-!AG:  This should allow semicore-handling
-
       allocate( nkbl(0:lmxkb) )
-      call get_n_semicore_shells(psr,nsemic)
-      nkbl(0:lmxkb) = 1 + nsemic(0:lmxkb)
-
 !     Define the reference energies (in Ry) for the calculation of the KB proj.
       allocate( erefkb(nkbmx,0:lmxkb) )
+      allocate( shifted_erefkb(nkbmx,0:lmxkb) )
+      call get_n_semicore_shells(psr,nsemic)
+      nkbl(:) = 1
       erefkb(:,:) = huge(1.0_dp)   ! defaults 'a la Siesta'
+      shifted_erefkb(:,:) = .false.
+
+      if (proj_file_exists) then
+         ! Specify number of projectors for each l, and energy shifts
+         ! Maximum 2 projectors...
+
+         nkbl(:) = 0
+         open(unit=1,file=trim(proj_filename),position="rewind")
+         do
+            read(1,fmt=*,iostat=status) l, nkb_l, delta_e
+            if (status < 0) exit
+            if (l > lmxkb) call die("l> lmxkb in projs spec file")
+            nkbl(l) = nkb_l
+            if (nkbl(l) > 2) call die("More than 2 projectors requested")
+            ! For semicore states, make sure that we get at least two
+            if (nkbl(l) < (nsemic(l)+1)) then
+               nkbl(l) = (nsemic(l)+1)
+               print *, "Number of projectors for l=",l," increased to", nkbl(l), " (semicore states)"
+            endif
+            ! For non-semicore states, honor the energy shift specified
+            if (nsemic(l)==0) then
+               erefkb(2,l) = delta_e
+               shifted_erefkb(2,l) = .true.
+            endif
+         enddo
+      else
+         ! Just generate multiple projectors for channels with semicore
+         nkbl(0:lmxkb) =  1 + nsemic(0:lmxkb)
+      endif
+         
 ! 
 !     STORE THE IONIC PSEUDOPOTENTIALS IN A LOCAL VARIABLE 
 !     Only the 'down'/major component is used
@@ -603,7 +642,8 @@
                  debug_kb_generation, &
                  ignore_ghosts,       &
                  kb_rmax,             &
-                 process_proj=store_proj_psml)
+                 process_proj=store_proj_psml,&
+                 shifted_erefkb=shifted_erefkb)
 
       do i = 1, nprojs
          kb => kbprojs(i)

@@ -24,7 +24,8 @@
      $                  debug_kb_generation,
      $                  ignore_ghosts,
      $                  kb_rmax,
-     $                  process_proj)
+     $                  process_proj,
+     $                  shifted_erefkb)
 
 
 ! Call routines for:
@@ -74,7 +75,8 @@
       logical, intent(in)  :: debug_kb_generation
       logical, intent(in)  :: ignore_ghosts
       real(dp), intent(in) :: kb_rmax
-
+      logical, intent(in), optional :: shifted_erefkb(nkbmx,0:lmaxd)
+      
       interface
          subroutine process_proj(l,ikb,ekb,nrc,erefkb,dkbcos,
      $                           nrval,rofi,proj)
@@ -223,7 +225,14 @@
             erefkb(ikb,l) = 0.0d0
 !         If the reference energies have been specified, we just use them
           else 
-            call rphi_vs_e( a, b, rofi, vps(1,l),
+             if (present(shifted_erefkb)) then
+                if (shifted_erefkb(ikb,l)) then
+                   ! Reference energies are given as deltas with respect to
+                   ! the first shell
+                   erefkb(ikb,l) = erefkb(1,l) + erefkb(ikb,l)
+                endif
+             endif
+             call rphi_vs_e( a, b, rofi, vps(1,l),
      .                      ve, nrval, l, erefkb(ikb,l),
      .                      rphi(1,ikb), Rmax )
           endif 
