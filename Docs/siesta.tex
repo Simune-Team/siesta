@@ -10091,6 +10091,7 @@ function siesta_comm()
 
    -- Now we have the required variables,
    -- convert to a simpler variable name (not nested tables)
+   -- (note the returned quantities are in SIESTA units (Bohr, Ry)
    xa = siesta.geom.xa
    Etot = siesta.E.total
 
@@ -10141,8 +10142,10 @@ end
 
     \option[Move]%
     This state will \emph{only} be reached if \fdf{MD!TypeOfRun} is
-    \fdf*{lua}. If one does not return updated atomic coordinates
-    \siesta\ will reuse the same geometry as just analyzed.
+    \fdf*{lua}.
+
+    If one does not return updated atomic coordinates \siesta\ will
+    reuse the same geometry as just analyzed.
 
     \note \program{siesta.state == siesta.MOVE}.
     
@@ -10168,7 +10171,8 @@ end
   \end{codeexample}
   which is the most minimal example of using the L-BFGS algorithm for
   geometry relaxation. Note that \program{flos} reads the parameters
-  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol} through \siesta.
+  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol} through \siesta\
+  automatically. 
 
   \note The number of available variables continues to grow and to
   find which quantities are accessible in Lua you may add this small
@@ -10181,6 +10185,13 @@ end
   
   If there are any variables you require which are not in the list,
   please contact the developers.
+
+
+  Remark that since \emph{anything} may be changed via Lua one may
+  easily make \siesta\ crash due to inconsistencies in the internal
+  logic. This is because \siesta\ does not check what has changed, it
+  accepts everything \emph{as is} and continues. Hence, one should be
+  careful what is changed.
   
 \end{fdfentry}
 
@@ -10215,6 +10226,12 @@ examples.
   aggressive mixing method.
   
 \end{description}
+
+A combination of the above two examples may greatly improve
+convergence, however, creating a generic method to adaptively change
+the mixing parameters may be very difficult to implement. If you do
+create such a Lua script, please share it on the mailing list.
+
 
 
 \section{TRANSIESTA}
