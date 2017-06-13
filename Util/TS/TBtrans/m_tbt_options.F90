@@ -790,13 +790,15 @@ contains
             &zero or positive.')
     end if
 
-    if ( ('orb-current' .in.save_DATA) ) then
-       ltmp = .not. fdf_get('SpinSpiral',.false.)
-       ltmp = fdf_get('TBT.Symmetry.TimeReversal',ltmp)
-       if ( .not. Gamma ) then
-          write(*,'(a,/,a)') 'WARNING: k-averaging orbital currents with &
-               &time-reversal symmetry will not reproduce','the correct &
-               &orbital current. Set TBT.Symmetry.TimeReversal F'
+    if ( .not. Gamma ) then
+       if ( ('orb-current' .in.save_DATA) ) then
+          ltmp = .not. fdf_get('SpinSpiral',.false.)
+          ltmp = fdf_get('TBT.Symmetry.TimeReversal',ltmp)
+          if ( IONode .and. ltmp ) then
+             write(*,'(a,/,a)') 'WARNING: k-averaging orbital currents with &
+                  &time-reversal symmetry will not reproduce','the correct &
+                  &orbital current. Set TBT.Symmetry.TimeReversal F'
+          end if
        end if
     end if
 
