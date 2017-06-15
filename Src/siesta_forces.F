@@ -665,6 +665,7 @@
       use siesta_geom, only: nsc, isc_off, na_u, xa, ucell
       use m_energies, only : Ef
       use m_mixing, only: mixers_history_init
+      use m_mixing_scf, only: scf_mix, scf_mixs
 
       use m_ts_global_vars,      only: TSinit, TSrun
       use m_ts_global_vars,      only: ts_print_transiesta
@@ -675,6 +676,7 @@
       use m_ts_options,          only: ts_Dtol, ts_Htol
       use m_ts_options,          only: ts_hist_keep
       use m_ts_options,          only: ts_siesta_stop
+      use m_ts_options,          only: ts_scf_mixs
       use m_ts_electype
 
       integer :: iEl, na_a
