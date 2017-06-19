@@ -2803,7 +2803,11 @@ C potential
       real(dp), allocatable :: proj(:)
       real(dp)   :: ekb, rc
       
-      real(dp), parameter  :: eps_kb=1.0d-6  ! From kbproj
+      real(dp), parameter  :: eps_kb=1.0d-6 ! From kbproj
+
+      real(dp) :: zpseudo
+      character(len=10) :: relativity
+      logical :: spin_polarized
 
 !      call ps_destroy(ps)
 !      call psml_reader(trim(atm_label)//".psml",ps)
@@ -2811,27 +2815,33 @@ C potential
       write(6,"(a)") "Reading KB projs from "
      $                    // trim(atm_label)// " psml data"
 
-      if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
+      call ps_Header_Get(ps,z_pseudo=zpseudo,relativity=relativity,
+     $                 spin_polarized=spin_polarized)
+      if (abs(zpseudo-Zval) > 1.e-8_dp) then
          call die("Zval mismatch in psml file")
       endif
 
-      select case (trim(ps_Relativity(ps)))
+      select case (trim(relativity))
        case ("dirac","scalar")
-          nscalar = ps_Number_Of_Projectors(ps,SET_SREL)
+          call ps_Projector_Filter(ps,set=SET_SREL,number=nscalar,
+     $                                indexes=idx)
+!          nscalar = ps_Number_Of_Projectors(ps,SET_SREL)
           if (nscalar == 0)
      $         call die("Cannot find scalar-relativistic projectors")
-          call ps_Get_Projector_Indexes(ps,SET_SREL,idx)
+!          call ps_Get_Projector_Indexes(ps,SET_SREL,idx)
        case ("no")
-          if (ps_IsSpinPolarized(ps)) then
-             nscalar = ps_Number_Of_Projectors(ps,SET_SPINAVE)
+          if (spin_polarized) then
+             call ps_Projector_Filter(ps,set=SET_SPINAVE,
+     $                                indexes=idx,number=nscalar)
              if (nscalar == 0)
      $         call die("Cannot find spin-averaged projectors")
-             call ps_Get_Projector_Indexes(ps,SET_SPINAVE,idx)
+!             call ps_Get_Projector_Indexes(ps,SET_SPINAVE,idx)
           else
-             nscalar = ps_Number_Of_Projectors(ps,SET_NONREL)
+             call ps_Projector_Filter(ps,set=SET_NONREL,
+     $                                indexes=idx,number=nscalar)
              if (nscalar == 0)
      $            call die("Cannot find non-relativistic projectors")
-             call ps_Get_Projector_Indexes(ps,SET_NONREL,idx)
+!             call ps_Get_Projector_Indexes(ps,SET_NONREL,idx)
           endif
        end select
           
@@ -2842,8 +2852,10 @@ C potential
 
        lmxkb = lmxkb_true  ! set to 'in' value
        do l = 0, lmxkb
-          call ps_Get_Projector_Indexes_byL(ps,l,idx,idxl)
-          nkbl = size(idxl)
+          call ps_Projector_Filter(ps,indexes_in=idx,l=l,
+     $                             indexes=idxl,number=nkbl)
+!          call ps_Get_Projector_Indexes_byL(ps,l,idx,idxl)
+!          nkbl = size(idxl)
           if (nkbl > nkbmx) then
              write(6,'(i2,a,i2,a,i2)') nkbl,' KB projs for l=',l,
      $            ' overflow nkbmx:',nkbmx
@@ -2851,7 +2863,9 @@ C potential
           endif
           nkblsave(l,is) = nkbl  ! propagate to structures
           do ikb = 1, nkbl
-             ekb = 2.0_dp * ps_Projector_Ekb(ps,idxl(ikb))
+             call ps_Projector_Get(ps,idxl(ikb),ekb=ekb)
+             ekb = 2.0_dp * ekb
+!             ekb = 2.0_dp * ps_Projector_Ekb(ps,idxl(ikb))
              ! Projs are stored as P/r**l in the tables
              do ir = 2, nrval
                 proj(ir) = ps_Projector_Value(ps,idxl(ikb),rofi(ir))

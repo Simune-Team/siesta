@@ -89,7 +89,7 @@ CONTAINS
         write(6,"(a)") "PSML file version: " // &
                         trim(psml_version)
         call ps_Header_Get(ps,atomic_symbol=p%name,z_pseudo=p%zval,&
-             atomic_number=znuc, &
+             atomic_number=znuc, pseudo_flavor=method_string,&
              relativity=relativity,spin_polarized=spin_polarized,&
              core_corrections=core_corrections)
         
@@ -224,9 +224,13 @@ CONTAINS
               p%nrval = p%nr + 1  ! Count also r=0
         endif
 
-        p%method(1)    = ps_Creator(ps)
-        p%method(2)    = ps_Date(ps)
-        method_string = ps_PseudoFlavor(ps)
+        !        ndepth =  ps_Provenance_Depth(ps)
+        ! Assume first action is ps generation...
+        call ps_Provenance_Get(ps,level=1,creator=p%method(1),&
+                               date=p%method(2))
+!        p%method(1)    = ps_Creator(ps)
+!        p%method(2)    = ps_Date(ps)
+!        method_string = ps_PseudoFlavor(ps)
         read(method_string,'(4a10)') (p%method(i),i=3,6) 
 
         has_nonrel = .false.
