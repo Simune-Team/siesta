@@ -2464,13 +2464,15 @@ C potential
 
       integer  :: ir, status
       character(len=40) :: vlocal_type
-      logical :: got_chlocal
+      logical :: got_chlocal, psml_chlocal
       character(len=50) :: value
-      real(dp)          :: rchloc
+      real(dp)          :: rchloc, zpseudo
 
-      type(ps_annotation_t)                :: annotation
-      
-      if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
+      type(ps_annotation_t)                :: annot
+      type(ps_radfunc_t)                   :: rfunc_chlocal
+
+      call ps_Header_Get(ps,z_pseudo=zpseudo)
+      if (abs(zpseudo-Zval) > 1.e-8_dp) then
          call die("Zval mismatch in psml file")
       endif
 
@@ -2483,7 +2485,12 @@ C potential
          vlocal(ir) = 2.0_dp * ps_LocalPotential_Value(ps,rofi(ir))
       enddo
 
-      vlocal_type = ps_LocalPotential_Type(ps)
+      call ps_LocalPotential_Get(ps,type_spec=vlocal_type,
+     $     annotation=annot,
+     $     has_local_charge=psml_chlocal,
+     $     func_local_charge=rfunc_chlocal)
+      
+!      vlocal_type = ps_LocalPotential_Type(ps)
       write(6,"(a)") "Got Vlocal (" // trim(vlocal_type)
      $               // ") from psml data"
 
@@ -2492,10 +2499,9 @@ C potential
       ! Try to get chlocal from the PSML file
       
       got_chlocal = .false.
-      if (ps_HasLocalCharge(ps)) then
+      if (psml_chlocal) then
 
-         annotation = ps_GetAnnotation(ps,"local-potential")
-         call get_annotation_value(annotation,"chlocal-cutoff",
+         call get_annotation_value(annot,"chlocal-cutoff",
      $                             value,status)
 
          if (status == 0) then
@@ -2504,7 +2510,8 @@ C potential
      $           " psml data"
          
             do ir = 1, nrval
-               chlocal(ir) = ps_LocalCharge_Value(ps,rofi(ir))
+!               chlocal(ir) = ps_LocalCharge_Value(ps,rofi(ir))
+               chlocal(ir) = ps_GetValue(rfunc_chlocal,rofi(ir))
             enddo
             ! Get the chlocal cutoff from PSML file
             read(value,*) rchloc
@@ -2527,8 +2534,10 @@ C potential
 
             ! Possibly use a lower order of interpolation here,
             ! at least near the tail (to be implemented)
+            ! (shape-preserving ; pchip?)
             do ir = 1, nrval
-               chlocal(ir) = ps_LocalCharge_Value(ps,rofi(ir))
+!               chlocal(ir) = ps_LocalCharge_Value(ps,rofi(ir))
+               chlocal(ir) = ps_GetValue(rfunc_chlocal,rofi(ir))
             enddo
             do ir = nrval, 1, -1
                if (abs(chlocal(ir)) > 0.0_dp) exit 
