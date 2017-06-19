@@ -610,19 +610,19 @@
          !
          if (ps_HasLocalPotential(psml_handle)) then
             call ps_Delete_LocalPotential(psml_handle)
-            call insert_annotation_pair(ann,"local-potential","replaced",status)
+            call insert_annotation_pair(ann,"action","replaced-local-potential",status)
             if (status /= 0) call die("Cannot insert lpot record")
          else
-            call insert_annotation_pair(ann,"local-potential","inserted",status)
+            call insert_annotation_pair(ann,"action","inserted-local-potential",status)
             if (status /= 0) call die("Cannot insert lpot record")
          endif
          
          if (ps_HasProjectors(psml_handle)) then
             call ps_Delete_NonLocalProjectors(psml_handle)
-            call insert_annotation_pair(ann,"nonlocal-projectors","replaced",status)
+            call insert_annotation_pair(ann,"action","replaced-nonlocal-projectors",status)
             if (status /= 0) call die("Cannot insert nl record")
          else
-            call insert_annotation_pair(ann,"nonlocal-projectors","inserted",status)
+            call insert_annotation_pair(ann,"action","inserted-nonlocal-projectors",status)
             if (status /= 0) call die("Cannot insert nl record")
          endif
 
