@@ -2602,7 +2602,8 @@ C potential
 
       ! Heuristics for parameters
 
-      vlocal_type = ps_LocalPotential_Type(ps)
+      call ps_LocalPotential_Get(ps,type_spec=vlocal_type)
+!      vlocal_type = ps_LocalPotential_Type(ps)
       select case (trim(vlocal_type))
         case ("siesta-fit")
            use_charge_cutoff = fdf_boolean(

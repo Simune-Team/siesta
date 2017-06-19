@@ -487,7 +487,7 @@ CONTAINS
                  if (li /= l) cycle
 
                  ! Process the two (except for l=0) j channels for this l
-                 jval = ps_Potential_J(ps,idxlj(i))
+!                 jval = ps_Potential_J(ps,idxlj(i))
 
                  if ((l==0) .or. jval > l) then  ! j=l+1/2 or l=0,j=0
                     !print *, "l,j+, i, id, iu ", l, jval, i, id, iu
