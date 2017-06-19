@@ -66,35 +66,53 @@ CONTAINS
         real(dp), parameter :: rmax_def = 120.0_dp ! UCB_COMPAT: 80.0
 
         type(xc_id_t)                        :: xc_id
-        type(ps_annotation_t)                :: grid_annotation
+        type(ps_annotation_t)                :: grid_annotation, annot
         character(len=40)                    :: strvalue
         logical                              :: log_grid_in_file
 
         integer, allocatable, dimension(:)   :: idxd, idxu, idxlj
         integer, allocatable, dimension(:)   :: nn, ll
         real(dp), allocatable, dimension(:)  :: rrc
+
+        character(len=10) :: psml_version
+        character(len=10) :: relativity
+        logical           :: spin_polarized, core_corrections
+        integer           :: l_shell
+        real(dp)          :: zup_shell, zdown_shell, occ_shell
         
         integer :: iu, id, li, npotd, npotu, nscalar, nlj, lmax
         logical :: has_lj, has_sr, has_sr_so, has_nonrel
         logical :: has_up_down, has_spin_ave
         real(dp) :: v
 
+        call ps_Root_Get(ps,version=psml_version)
         write(6,"(a)") "PSML file version: " // &
-                       trim(ps_GetPSMLVersion(ps))
-        p%name = ps_AtomicSymbol(ps)
-        p%zval         = ps_ZPseudo(ps)
-        znuc           = ps_AtomicNumber(ps)
-        ! This needs to be generalized
-        p%gen_zval     = ps_GenerationZval(ps)
+                        trim(psml_version)
+        call ps_Header_Get(ps,atomic_symbol=p%name,z_pseudo=p%zval,&
+             atomic_number=znuc, &
+             relativity=relativity,spin_polarized=spin_polarized,&
+             core_corrections=core_corrections)
         
-!
+        call ps_ValenceConfiguration_Get(ps,nshells=nval_shells,charge=p%gen_zval)
+
+!        p%name = ps_AtomicSymbol(ps)
+!        p%zval         = ps_ZPseudo(ps)
+!        znuc           = ps_AtomicNumber(ps)
+       ! This needs to be generalized
+!        p%gen_zval     = ps_GenerationZval(ps)
+        
+        !
+        call ps_ExchangeCorrelation_Get(ps,annotation=annot,&
+                                           n_libxc_functionals=n_xcfuncs)
+        
 !       Partial support for libxc functionals
 !       (no single-functional cases, no 'cocktails')
 !
-        n_xcfuncs = ps_NLibXCFunctionals(ps)
+!!        n_xcfuncs = ps_NLibXCFunctionals(ps)
         if (n_xcfuncs == 2) then
            do i = 1, n_xcfuncs
-              libxc_ids(i) = ps_LibxcId(ps,i)
+              call ps_LibxcFunctional_Get(ps,i,code=libxc_ids(i))
+!              libxc_ids(i) = ps_LibxcId(ps,i)
            enddo
            call get_xc_id_from_libxc(libxc_ids,xc_id,status)
         else
@@ -108,7 +126,7 @@ CONTAINS
               p%icorr = xc_id%atom_id
         else
            ! Fall back to querying a possible XC annotation
-           call get_annotation_value(ps_XCAnnotation(ps),  &
+           call get_annotation_value(annot,  &
                                       "atom-xc-code",p%icorr,status)
            if (status == 0) then
               write(6,"(a)") "Atom-xc-code from annotation: " // p%icorr
@@ -122,12 +140,12 @@ CONTAINS
 !       This is a shortcoming of the "Froyen" format: there is no support
 !       for "scalar_relativistic" calculations in the "irel" label.
 
-        if (trim(ps_Relativity(ps)) == "dirac" ) then
+        if (trim(relativity) == "dirac" ) then
            p%irel    = 'rel'
            ispp      = 'r'
            polarized = .false.
         else
-           if (ps_IsSpinPolarized(ps)) then
+           if (spin_polarized) then
               p%irel    = 'isp'
               ispp      = 's'
               polarized = .true.
@@ -138,7 +156,7 @@ CONTAINS
            end if
         endif
 
-        if (ps_HasCoreCorrections(ps)) then
+        if (core_corrections) then
             p%nicore = 'pcec'
          else
             p%nicore = 'nc'
@@ -150,7 +168,7 @@ CONTAINS
            ! We want to check for grid annotations, in case
            ! the grid is already of the "atom" type
 
-         grid_annotation = ps_GetAnnotation(ps,"grid")
+         grid_annotation = ps_GridAnnotation(ps)
          call get_annotation_value(grid_annotation,  &
               "type",strvalue,status)
 
@@ -218,25 +236,28 @@ CONTAINS
         has_spin_ave = .false.
         has_lj = .false.
 
-        select case (trim(ps_Relativity(ps)))
+        select case (trim(relativity))
         case ("dirac")
 
-           nscalar = ps_Number_Of_Potentials(ps,SET_SREL)
+           call ps_Potential_Filter(ps,set=SET_SREL,number=nscalar,indexes=idxd)
+!           nscalar = ps_Number_Of_Potentials(ps,SET_SREL)
 
            if (nscalar == 0) then
 
               ! Will get the scalar-relativistic SL potentials
               ! from the lj set
 
-              nlj = ps_Number_Of_Potentials(ps,SET_LJ)
+              call ps_Potential_Filter(ps,set=SET_LJ,number=nlj,indexes=idxlj)
+!              nlj = ps_Number_Of_Potentials(ps,SET_LJ)
               if (nlj == 0) call die("Cannot find srel SL potentials for dirac case")
               has_lj = .true.
-              call ps_Get_Potential_Indexes(ps,SET_LJ,idxlj)
+!              call ps_Get_Potential_Indexes(ps,SET_LJ,idxlj)
               npotd = 0
               npotu = 0
               do i = 1, nlj
-                 l = ps_Potential_L(ps,idxlj(i))
-                 jval = ps_Potential_J(ps,idxlj(i))
+                 call ps_Potential_Get(ps,idxlj(i),l=l,j=jval)
+!                 l = ps_Potential_L(ps,idxlj(i))
+!                 jval = ps_Potential_J(ps,idxlj(i))
                  if ( (l==0) .or. (jval>l)) then
                     npotd = npotd + 1
                  else
@@ -248,54 +269,49 @@ CONTAINS
 
               ! We have a scalar-relativistic set
               npotd = nscalar
-              call ps_Get_Potential_Indexes(ps,SET_SREL,idxd)
-              npotu = ps_Number_Of_Potentials(ps,SET_SO)
-              if (npotu /= 0) call ps_Get_Potential_Indexes(ps,SET_SO,idxu)
+!              call ps_Get_Potential_Indexes(ps,SET_SREL,idxd)
+!              npotu = ps_Number_Of_Potentials(ps,SET_SO)
+              if (npotu /= 0) call ps_Potential_Filter(ps,set=SET_SO,number=npotu,indexes=idxu)
+!              call ps_Get_Potential_Indexes(ps,SET_SO,idxu)
               has_sr_so = .true.
 
            endif
 
         case ("scalar")
 
-           nscalar = ps_Number_Of_Potentials(ps,SET_SREL)
-           if (nscalar == 0) call die("Cannot find srel SL potentials for srel case")
-           npotd = nscalar
-           call ps_Get_Potential_Indexes(ps,SET_SREL,idxd)
+           call ps_Potential_Filter(ps,set=SET_SREL,number=npotd,indexes=idxd)
+!           nscalar = ps_Number_Of_Potentials(ps,SET_SREL)
+           if (npotd == 0) call die("Cannot find srel SL potentials for srel case")
+!           npotd = nscalar
+!           call ps_Get_Potential_Indexes(ps,SET_SREL,idxd)
            npotu = 0
            has_sr = .true.
 
            ! We assume that srel calculations are not polarized...
         case ("no")
 
-           if (ps_IsSpinPolarized(ps)) then
-              if (     (ps_Number_Of_Potentials(ps,SET_UP) > 0)   &
-                  .and.(ps_Number_Of_Potentials(ps,SET_DOWN) > 0) &
-                 ) then
+           if (spin_polarized) then
+              call ps_Potential_Filter(ps,set=SET_UP,number=npotu,indexes=idxu)
+              call ps_Potential_Filter(ps,set=SET_DOWN,number=npotd,indexes=idxd)
+              if (  (npotu > 0) .and. (npotd > 0) ) then
 
                  ! We have spin_up and spin_down potentials
                  ! Will get the average later
 
-                 call ps_Get_Potential_Indexes(ps,SET_DOWN,idxd)
-                 call ps_Get_Potential_Indexes(ps,SET_UP,idxu)
-                 npotd = size(idxd)
-                 npotu = size(idxu)
                  has_up_down = .true.
 
               else
                  ! We must have (at least) the spin_average
-                 npotd = ps_Number_Of_Potentials(ps,SET_SPINAVE)
+                 call ps_Potential_Filter(ps,set=SET_SPINAVE,number=npotd,indexes=idxd)
+                 call ps_Potential_Filter(ps,set=SET_SPINDIFF,number=npotu,indexes=idxu)
                  if (npotd == 0) call die("Cannot get spin-averaged SL potentials")
-                 call ps_Get_Potential_Indexes(ps,SET_SPINAVE,idxd)
-                 call ps_Get_Potential_Indexes(ps,SET_SPINDIFF,idxu)
-                 npotu = size(idxu)  ! might be zero
                  has_spin_ave = .true.
               endif
 
            else ! not polarized
 
-              npotd = ps_Number_Of_Potentials(ps,SET_NONREL)
+              call ps_Potential_Filter(ps,set=SET_NONREL,number=npotd,indexes=idxd)
               if (npotd == 0) call die("Cannot get non-relativistic SL potentials")
-              call ps_Get_Potential_Indexes(ps,SET_NONREL,idxd)
               npotu = 0
               has_nonrel = .true.
 
@@ -338,7 +354,7 @@ CONTAINS
 
 ! Translate the valence charge density and the pseudo-core charge density,
 ! and define the value at the first point of the logarithmic grid
-        if (ps_HasCoreCorrections(ps)) then
+        if (core_corrections) then
            do ir = 2, p%nrval
               p%chcore(ir) = ps_CoreCharge_Value(ps,p%r(ir))
               p%chcore(ir) = p%chcore(ir) * (p%r(ir))**2
@@ -376,10 +392,15 @@ CONTAINS
              (has_sr)   ) then
          ! No need for any extra computations
          do il = 1, p%npotd
-          p%ldown(il) = ps_Potential_L(ps,idxd(il))
-          nn(il)  =  ps_Potential_N(ps,idxd(il))
-          ll(il)  =  ps_Potential_L(ps,idxd(il))
-          rrc(il) =  ps_Potential_Rc(ps,idxd(il))
+            call ps_Potential_Get(ps,idxd(il),&
+                     l=p%ldown(il),n=nn(il),rc=rrc(il))
+            ll(il) = p%ldown(il)
+                     
+!          p%ldown(il) = ps_Potential_L(ps,idxd(il))
+!          nn(il)  =  ps_Potential_N(ps,idxd(il))
+!          ll(il)  =  ps_Potential_L(ps,idxd(il))
+!          rrc(il) =  ps_Potential_Rc(ps,idxd(il))
+            
           do ir = 2, p%nrval
              p%vdown(il,ir) = p%r(ir) * &
                            ps_Potential_Value(ps,idxd(il),p%r(ir))
@@ -390,7 +411,8 @@ CONTAINS
          enddo
 
          do il = 1, p%npotu
-           p%lup(il) = ps_Potential_L(ps,idxu(il))
+            call ps_Potential_Get(ps,idxu(il),l=p%lup(il))
+!           p%lup(il) = ps_Potential_L(ps,idxu(il))
            do ir = 2, p%nrval
               p%vup(il,ir) = p%r(ir) * &
                            ps_Potential_Value(ps,idxu(il),p%r(ir))
@@ -405,8 +427,9 @@ CONTAINS
            id = 0
            iu = 0
            do i = 1, nlj
-              l = ps_Potential_L(ps,idxlj(i))
-              jval = ps_Potential_J(ps,idxlj(i))
+              call ps_Potential_Get(ps,idxlj(i),l=l,j=jval)
+!              l = ps_Potential_L(ps,idxlj(i))
+!              jval = ps_Potential_J(ps,idxlj(i))
               if ( (l==0) .or. (jval>l)) then
                  id = id + 1
                  ! If the lj slpots are not ordered by l in the psml
@@ -414,8 +437,9 @@ CONTAINS
                  p%ldown(id) = l
                  ! get some extra info needed later
                  ll(id) = l
-                 nn(id) = ps_Potential_N(ps,idxlj(i))
-                 rrc(id) = ps_Potential_Rc(ps,idxlj(i))
+                 call ps_Potential_Get(ps,idxlj(i),n=nn(id),rc=rrc(id))
+!                 nn(id) = ps_Potential_N(ps,idxlj(i))
+!                 rrc(id) = ps_Potential_Rc(ps,idxlj(i))
               else
                  iu = iu + 1   
                  p%lup(iu) = l
@@ -454,7 +478,8 @@ CONTAINS
               enddo
 
               do i = 1, nlj
-                 li = ps_Potential_L(ps,idxlj(i))
+                 call ps_Potential_Get(ps,idxlj(i),l=li,j=jval)
+!                 li = ps_Potential_L(ps,idxlj(i))
                  if (li /= l) cycle
 
                  ! Process the two (except for l=0) j channels for this l
@@ -498,7 +523,7 @@ CONTAINS
 
         ! Encode generation configuration and cutoffs
 
-        nval_shells = ps_NValenceShells(ps)
+!        nval_shells = ps_NValenceShells(ps)
         p%text = ' '
         position = 1
         ! We deal with "down" potentials only, as they are enough
@@ -511,8 +536,9 @@ CONTAINS
            if ( .not. polarized) then
               occupation = 0.0_dp
               do i = 1, nval_shells
-                 if (ps_ValenceShellL(ps,i) == l) then
-                    occupation = ps_ValenceShellOccupation(ps,i)
+                 call ps_ValenceShell_Get(ps,i,l=l_shell,occupation=occ_shell)
+                 if (l_shell == l) then
+                    occupation = occ_shell
                     exit
                  endif
               enddo
@@ -524,9 +550,10 @@ CONTAINS
               zeld = 0.0_dp
               zelu = 0.0_dp
               do i = 1, nval_shells
-                 if (ps_ValenceShellL(ps,i) == l) then
-                    zeld = ps_ValenceShellOccupation(ps,i,channel="d")
-                    zelu = ps_ValenceShellOccupation(ps,i,channel="u")
+                 call ps_ValenceShell_Get(ps,i,l=l_shell,occ_up=zup_shell,occ_down=zdown_shell)
+                 if (l_shell == l) then
+                    zeld = zdown_shell
+                    zelu = zup_shell
                     exit
                  endif
               enddo
