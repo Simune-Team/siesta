@@ -256,7 +256,7 @@ CONTAINS
       complex(dp)            :: cvar1, cvar2
       !
       type(matrix)           :: Sauxms, Hauxms,psi,Eaux
-      type(matrix),save      :: S_1
+      type(matrix)           :: S_1
       !
 #ifdef MPI
       m_storage='pzdbc'
@@ -304,7 +304,7 @@ CONTAINS
             call getinverse(S_1,m_operation)
           end if
           call mm_multiply(Hauxms,'n',S_1,'n',Eaux,complx_1,complx_0,m_operation)
-          call mm_multiply(wavef_ms(ik,ispin),'t',Eaux,'n',psi,complx_1,            &
+          call mm_multiply(wavef_ms(ik,ispin),'c',Eaux,'n',psi,complx_1,            &
                            complx_0,m_operation)
           call mm_multiply(wavef_ms(ik,ispin),'n',psi,'n',Eaux,cmplx(wk,0.0,dp),    &
                            complx_0,m_operation)

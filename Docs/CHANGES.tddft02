@@ -1,3 +1,11 @@
+2017-06-21  16:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-25
+
+Fixed a small bug in calculations of TD energy density matrix.
+
+modified:
+
+  Src/wavefunctions.F90
+
 2017-06-12  13:45 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-24
 
 Fixed a small compilation bug.
