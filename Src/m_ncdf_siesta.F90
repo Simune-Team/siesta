@@ -141,6 +141,11 @@ contains
 
     call ncdf_def_dim(grp,'nnzs',n_nzs)
 
+    ! EDM is required to have its own spin (because of spin-orbit coupling
+    ! where the spin == 4, and not 8)
+    call ncdf_def_dim(grp,'spin_EDM',spin%EDM)
+
+
     dic = dic//('info'.kv.'Index of supercell coordinates')
     call ncdf_def_var(grp,'isc_off',NF90_INT,(/'xyz','n_s'/), &
          compress_lvl=0, atts=dic)
@@ -162,12 +167,12 @@ contains
          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     
     dic = dic//('info'.kv.'Density matrix')
-    call ncdf_def_var(grp,'DM',NF90_DOUBLE,(/'nnzs','spin'/), &
+    call ncdf_def_var(grp,'DM',NF90_DOUBLE,(/'nnzs   ','spin'/), &
          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
        
     dic = dic//('info'.kv.'Energy density matrix')
     dic = dic//('unit'.kv.'Ry')
-    call ncdf_def_var(grp,'EDM',NF90_DOUBLE,(/'nnzs','spin'/), &
+    call ncdf_def_var(grp,'EDM',NF90_DOUBLE,(/'nnzs    ','spin_EDM'/), &
          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
 
 #ifdef TRANSIESTA
@@ -175,6 +180,7 @@ contains
 #else
     if ( savehs ) then
 #endif
+       ! Unit is already present in dictionary
        dic = dic//('info'.kv.'Hamiltonian')
        call ncdf_def_var(grp,'H',NF90_DOUBLE,(/'nnzs','spin'/), &
             compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
