@@ -2,6 +2,39 @@
 B                             B
 E            SIESTA           E
 #             4.1             #
+T             b-3             T
+A                             A
+#BETA#BETA#BETA#BETA#BETA#BETA#
+
+Release notes for siesta 4.1-b3 beta version
+
+--- Manual greatly overhauled and updated in various parts
+
+--- Fixed DOS and PDOS for non-colinear and spin-orbit
+
+--- Fixed bug when printing initial spin-configuration
+
+--- Enabled restarting calculations with different spin-configurations,
+    i.e. one may go from an unpolarized calculation to a polarized, or
+    from a polarized to an unpolarized (also non-colinear and spin-orbit).
+
+--- Lots of bug-fixes for transiesta and tbtrans
+
+--- Bug-fix for spin-orbit coupling normalization
+
+--- Fixed minor memory leaks
+
+--- Many improvements for Lua enabled runs
+
+--- Added installation scripts of
+    netcdf/hdf5/zlib/flook
+
+--- Fixes to the <>.nc file for high spin configuration >= non-colinear
+
+#BETA#BETA#BETA#BETA#BETA#BETA#
+B                             B
+E            SIESTA           E
+#             4.1             #
 T             b-2             T
 A                             A
 #BETA#BETA#BETA#BETA#BETA#BETA#

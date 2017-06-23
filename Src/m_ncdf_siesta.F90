@@ -167,7 +167,7 @@ contains
          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     
     dic = dic//('info'.kv.'Density matrix')
-    call ncdf_def_var(grp,'DM',NF90_DOUBLE,(/'nnzs   ','spin'/), &
+    call ncdf_def_var(grp,'DM',NF90_DOUBLE,(/'nnzs','spin'/), &
          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
        
     dic = dic//('info'.kv.'Energy density matrix')
