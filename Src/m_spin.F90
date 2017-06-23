@@ -32,7 +32,7 @@ module t_spin
      logical :: none = .true.
      !> Collinear spin
      logical :: Col = .false.
-     !> Non-collinear spin
+     !> Non-colinear spin
      logical :: NCol = .false.
      !> Spin-orbit coupling
      logical :: SO = .false.

@@ -40,8 +40,7 @@
       use parallel, only: Node
       use m_steps, only: istp
       use m_ntm
-      use m_spin,         only: nspin, SpOrb, NonCol
-      use m_spin,         only: h_spin_dim, e_spin_dim, spinor_dim
+      use m_spin,         only: spin
       use m_dipol
       use alloc, only: re_alloc, de_alloc
       use m_gamma
@@ -82,7 +81,7 @@
 
 !     Save present H matrix
 !$OMP do collapse(2)
-      do ispin = 1,h_spin_dim
+      do ispin = 1, spin%H
          do io = 1,maxnh
             Hold(io,ispin) = H(io,ispin)
          enddo
@@ -92,44 +91,46 @@
 !$OMP single
       H_kin => val(H_kin_1D)
       H_vkb => val(H_vkb_1D)
-      if ( SpOrb ) then
+      if ( spin%SO ) then
          ! Sadly some compilers (g95), does
          ! not allow bounds for pointer assignments :(
          H_so => val(H_so_2D)
       end if
 !$OMP end single ! keep wait
 
-      do ispin = 1, spinor_dim
-        if (ispin .le. 2) then
+      ! We do not need to set the non-spinor components
+      ! For non-colinear they are set down below,
+      ! while for spin-orbit they are set to the H_so initial
+      ! spin-orbit.
+      
+      do ispin = 1, spin%spinor
 !$OMP do
           do io = 1,maxnh
             H(io,ispin) = H_kin(io) + H_vkb(io)
           end do
 !$OMP end do nowait
-        else
-!$OMP do
-          do io = 1,maxnh
-            H(io,ispin) = 0.0_dp
-          end do
-!$OMP end do nowait
-        end if
       end do
 
-      if ( SpOrb ) then
+      if ( spin%NCol ) then
+
 !$OMP do collapse(2)
-         do ispin = 3 , h_spin_dim
-            do io = 1,maxnh
+         do ispin = 3 , spin%H
+            do io = 1, maxnh
+               H(io,ispin) = 0._dp
+            end do
+         end do
+!$OMP end do nowait
+         
+      else if ( spin%SO ) then
+
+!$OMP do collapse(2)
+         do ispin = 3 , spin%H
+            do io = 1, maxnh
                H(io,ispin) = H_so(io,ispin-2)
             end do
          end do
 !$OMP end do nowait
-      else if ( NonCol ) then
-!$OMP do
-         do io = 1,maxnh
-            H(io,3) = 0._dp
-            H(io,4) = 0._dp
-         end do
-!$OMP end do nowait
+
       end if
          
 ! ..................
@@ -148,20 +149,20 @@
 !$OMP end single ! keep wait
       
 !$OMP do collapse(2), reduction(+:Ekin,Enl)
-      do ispin = 1, spinor_dim
+      do ispin = 1, spin%spinor
         do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
           Enl  = Enl  + H_vkb(io) * Dscf(io,ispin)
-        enddo
-      enddo
+        end do
+      end do
 !$OMP end do nowait
 
 !$OMP single
       Eso = 0._dp
 !$OMP end single
-      if ( SpOrb ) then
+      if ( spin%SO ) then
 !$OMP do reduction(+:Eso)
-         do io = 1,maxnh
+         do io = 1, maxnh
             Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8)
      .           + H_so(io,5)*Dscf(io,3) + H_so(io,6)*Dscf(io,4)
      .           - H_so(io,3)*Dscf(io,5) - H_so(io,4)*Dscf(io,6)
@@ -177,7 +178,7 @@
       Ekin = buffer1
       call globalize_sum(Enl,buffer1)
       Enl = buffer1
-      if ( SpOrb ) then
+      if ( spin%SO ) then
          ! Global reduction of Eso 
          call globalize_sum(Eso,buffer1)
          Eso = buffer1
@@ -189,13 +190,20 @@
 
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
+        if ( spin%NCol ) then
+         call die('LDA+U cannot be used with non-colinear spin.')
+        end if
+        if ( spin%SO ) then
+         call die('LDA+U cannot be used with spin-orbit coupling.')
+        end if
+
         call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'setup_hamiltonian' )
 
         H_ldau => val(H_ldau_2D)
         call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
      .                    maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .                    numh, listhptr, listh, numh, listhptr, listh,
-     .                    spinor_dim, Dscf, Eldau, DEldau, H_ldau, 
+     .                    spin%spinor, Dscf, Eldau, DEldau, H_ldau, 
      .                    fal, stressl, H, iscf,
      .                    matrix_elements_only=.true.)
 
@@ -227,7 +235,7 @@
       endif
       use_rhog_in =  (mix_charge .and. iscf > 1)
   
-      call dhscf( nspin, no_s, iaorb, iphorb, no_l,
+      call dhscf( spin%Grid, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
      .            ntm, ifa, istr, ihmat, filesOut,
      .            maxnh, numh, listhptr, listh, Dscf, Datm,
@@ -248,7 +256,7 @@
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
 
       if (savehs .or. write_coop) then
-         call write_hsx( gamma, no_u, no_s, h_spin_dim, indxuo,
+         call write_hsx( gamma, no_u, no_s, spin%H, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, qtot,
      &        temp, xijo)
       endif
