@@ -5806,19 +5806,19 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 \begin{fdflogicalF}{Diag!MRRR}
 
-  For parallel gamma-point calculations without spin orbit only.
+  For parallel $\Gamma$-point calculations without spin orbit only.
 
-  Use the MRRR method in Scalapack for diagonalization. Specifying a
+  Use the MRRR method in ScaLAPACK for diagonalization. Specifying a
   number of eigenvectors to store is possible through the symbol
   \fdf{NumberOfEigenStates} (see above).
 
   \note it is not compatible with the \fdf{Diag!ParallelOverK}
   option.
 
-  \note The MRRR method is defaulted to be compiled in, however, if
-  your ScaLAPACK library does not contain the relevant sources one
-  should add this pre-processor flag \texttt{-DSIESTA\_\_NO\_MRRR}.
-  \index{compile!pre-processor!-DSIESTA\_\_NO\_MRRR}
+  \note The MRRR method is defaulted not to be compiled in, however,
+  if your ScaLAPACK library does contain the relevant sources one
+  may add this pre-processor flag \texttt{-DSIESTA\_\_MRRR}.
+  \index{compile!pre-processor!-DSIESTA\_\_MRRR}
 \end{fdflogicalF}
 
 
