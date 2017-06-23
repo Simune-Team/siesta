@@ -332,7 +332,7 @@ CONTAINS
               Haux(jo,io)=Haux(jo,io)+H(ind,ispin)
             end do
           end do
-          call rdiag(Haux,Saux,nuotot,nuo,nuotot,eo,psi(1,1,ispin),nuotot,1,ierror, BlockSize)
+          call rdiag(Haux,Saux,nuotot,nuo,nuotot,eo,psi(1,1,ispin),nuotot,1,ierror)
           if (ierror .eq. 0) then
             exit
           else if ((ierror .ne. -1) .or. (ie .eq. 10)) then
