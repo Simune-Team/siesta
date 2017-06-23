@@ -162,6 +162,7 @@ C **************************** INPUT / OUTPUT *********************************
 C real*8 H(maxnh,3:8)      : Spin-Orbit H matrix elements
 C *********************************************************************
 C
+      use m_mpi_utils, only: globalize_sum
       implicit none
 
 C Arguments
@@ -181,7 +182,7 @@ C Internal variables
      .             li, lj, mi, mj
       integer  ::  io_l, io_u, jo_s, jo_u, ih
 
-      real(dp) :: int_rad, int_ang(1:3)
+      real(dp) :: int_rad, int_ang(1:3), buffer
       real(dp) :: Hso_ji(3)
 
 !------------------------------------------- BEGIN
@@ -242,6 +243,10 @@ C Internal variables
          enddo
       enddo
 
+      ! Globalzie Eso
+      call globalize_sum(Eso, buffer)
+      Eso = buffer
+      
       call timer( 'spinorb', 2 )
       end subroutine spinorb
 
