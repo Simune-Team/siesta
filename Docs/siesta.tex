@@ -6430,12 +6430,24 @@ work in general quite well. Moreover CheSS has the capability to determine certa
 on its own. The only input parameters which usually require some human action are the values 
 of the buffers required for the matrix multiplications to calculate the Chebyshev polynomials.
 
-\begin{fdfentry}{CheSS!Buffer!Kernel}[real]<4.0>
+\begin{fdfentry}{CheSS!Buffer!Kernel}[length]<$4.0\,\mathrm{Bohr}$>
   Buffer for the density kernel within the CheSS calculation.
 \end{fdfentry}
 
-\begin{fdfentry}{CheSS!Buffer!Kernel}[real]<6.0>
+\begin{fdfentry}{CheSS!Buffer!Kernel}[length]<$6.0\,\mathrm{Bohr}$>
   Buffer for the matrix vector multiplication within the CheSS calculation.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!Fscale}[energy]<$5 \cdot 10^{-3}\,\mathrm{Hartree}$>
+	Initial guess for the error function decay length (will be adjusted automatically).
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!Fscale\_lowerbound}[energy]<$5 \cdot 10^{-3}\,\mathrm{Hartree}$>
+	Lower bound for the error function decay length.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!Fscale\_upperbound}[energy]<$5 \cdot 10^{-2}\,\mathrm{Hartree}$>
+	Upper bound for the error function decay length.
 \end{fdfentry}
 
 \subsection{The PEXSI solver}

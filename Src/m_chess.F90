@@ -38,7 +38,7 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
 
   ! Global variables, private to this module
   integer :: nvctr, nvctr_kernel, nvctr_mult
-  type(sparse_matrix) :: smat, smat_k
+  type(sparse_matrix),dimension(2) :: smat
   type(matrices) :: mat_h, mat_s, mat_k, mat_ek
   type(matrices),dimension(1) :: mat_ovrlpminusonehalf
   integer,dimension(:),allocatable :: numh_global, conversion_lookup
@@ -46,6 +46,8 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
   integer,dimension(:),allocatable :: numh_global_mult, conversion_lookup_mult
   type(foe_data) :: foe_obj, ice_obj
   real(mp) :: chess_buffer_kernel, chess_buffer_mult, chess_betax
+  real(mp) :: chess_fscale, chess_fscale_lowerbound, chess_fscale_upperbound
+  real(mp) :: chess_evlow_h, chess_evhigh_h, chess_evlow_s, chess_evhigh_s
   type(dictionary),pointer :: dict_timing_info
   external :: gather_timings
 
@@ -58,7 +60,7 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
                listh, listh_kernel, listh_mult, numh, numh_kernel, numh_mult)
       use sparsematrix_base
       use sparsematrix_highlevel, only: sparse_matrix_init_from_data_ccs, matrices_init
-      use sparsematrix_init, only: write_sparsematrix_info
+      use sparsematrix_init, only: write_sparsematrix_info, init_matrix_taskgroups_wrapper
       use foe_common, only: init_foe
       implicit none
 
@@ -142,24 +144,35 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
       call get_gol_ptr_global(h_dim, numh_global_mult, col_ptr_global_mult)
 
       call sparse_matrix_init_from_data_ccs(node, nodes, mpi_comm_world, &
-           h_dim, nvctr, row_ind_global, col_ptr_global, smat, &
+           h_dim, nvctr, row_ind_global, col_ptr_global, smat(1), &
            init_matmul=.false.)
 
       call sparse_matrix_init_from_data_ccs(node, nodes, mpi_comm_world, &
-           h_dim, nvctr_kernel, row_ind_global_kernel, col_ptr_global_kernel, smat_k, &
+           h_dim, nvctr_kernel, row_ind_global_kernel, col_ptr_global_kernel, smat(2), &
            init_matmul=.true., nvctr_mult=nvctr_mult, row_ind_mult=row_ind_global_mult, col_ptr_mult=col_ptr_global_mult)
+
+      call init_matrix_taskgroups_wrapper(node, nodes, mpi_comm_world, .false., 2, smat)
 
       if (IOnode) then
           call yaml_mapping_open('Sparse matrices')
-          call write_sparsematrix_info(smat, 'Overlap and hamiltonian matrix')
-          call write_sparsematrix_info(smat_k, 'Density kernel matrix')
+          call write_sparsematrix_info(smat(1), 'Overlap and hamiltonian matrix')
+          call write_sparsematrix_info(smat(2), 'Density kernel matrix')
           call yaml_mapping_close()
       end if
 
       ! Initialize the object holding some parameters for FOE.
-      call init_foe(node, nodes, nspin, qs, foe_obj)
+      call init_foe(node, nodes, nspin, qs, foe_obj, &
+           fscale=chess_fscale, &
+           fscale_lowerbound=chess_fscale_lowerbound, &
+           fscale_upperbound=chess_fscale_upperbound, &
+           evlow=chess_evlow_h, &
+           evhigh=chess_evhigh_h, &
+           betax=chess_betax)
       ! Initialize the same object for the calculation of the inverse. Charge does not really make sense here...
-      call init_foe(node, nodes, nspin, qs, ice_obj, evlow=0.5_mp, evhigh=1.5_mp, betax=chess_betax)
+      call init_foe(node, nodes, nspin, qs, ice_obj, &
+           evlow=chess_evlow_s, &
+           evhigh=chess_evhigh_s, &
+           betax=chess_betax)
 
       call f_free(row_ind_global)
       call f_free(col_ptr_global)
@@ -169,11 +182,11 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
       call f_free(col_ptr_global_mult)
 
       ! Allocate the matrices
-      call matrices_init(smat, mat_h)
-      call matrices_init(smat, mat_s)
-      call matrices_init(smat_k, mat_k)
-      call matrices_init(smat_k, mat_ek)
-      call matrices_init(smat_k, mat_ovrlpminusonehalf(1))
+      call matrices_init(smat(1), mat_h, matsize=SPARSE_TASKGROUP)
+      call matrices_init(smat(1), mat_s, matsize=SPARSE_TASKGROUP)
+      call matrices_init(smat(2), mat_k, matsize=SPARSE_TASKGROUP)
+      call matrices_init(smat(2), mat_ek, matsize=SPARSE_TASKGROUP)
+      call matrices_init(smat(2), mat_ovrlpminusonehalf(1), matsize=SPARSE_TASKGROUP)
 
       call f_timing_checkpoint(ctr_name='INIT',mpi_comm=mpiworld(),nproc=mpisize(), &
            gather_routine=gather_timings)
@@ -195,8 +208,8 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
       call f_free(conversion_lookup_kernel)
       call f_free(numh_global_mult)
       call f_free(conversion_lookup_mult)
-      call deallocate_sparse_matrix(smat)
-      call deallocate_sparse_matrix(smat_k)
+      call deallocate_sparse_matrix(smat(1))
+      call deallocate_sparse_matrix(smat(2))
       call foe_data_deallocate(ice_obj)
       call foe_data_deallocate(foe_obj)
 
@@ -285,12 +298,12 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
            s_work, h_work, mat_s%matrix_compr, mat_h%matrix_compr)
 
 
-      !!call get_minmax_eigenvalues(node, smat, mat_s, eval_min, eval_max)
-      !!call get_minmax_eigenvalues(node, smat, mat_h, eval_min, eval_max)
+      !!call get_minmax_eigenvalues(node, smat(1), mat_s, eval_min, eval_max)
+      !!call get_minmax_eigenvalues(node, smat(1), mat_h, eval_min, eval_max)
 
       ! Only calculate S^-1/2 in the very first iteration, as later it does not change any more
       call matrix_fermi_operator_expansion(node, nodes, mpi_comm_world, &
-           foe_obj, ice_obj, smat, smat, smat_k, &
+           foe_obj, ice_obj, smat(1), smat(1), smat(2), &
            mat_s, mat_h, mat_ovrlpminusonehalf, mat_k, energy, &
            calculate_minusonehalf=(iscf==1), foe_verbosity=1, symmetrize_kernel=.true., &
            calculate_energy_density_kernel=.true., energy_kernel=mat_ek)
@@ -298,12 +311,12 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
       Ef = foe_data_get_real(foe_obj,"ef",1)
 
       ! Transform the density kernel to the small SIESTA sparsity format
-      call transform_sparse_matrix(node, smat, smat_k, SPARSE_FULL, 'large_to_small', &
+      call transform_sparse_matrix(node, smat(1), smat(2), SPARSE_FULL, 'large_to_small', &
            lmat_in=mat_k%matrix_compr, smat_out=k_small)
       call set_matrices(node, nodes, h_dim, BlockSize, nhmax, nvctr, numh_global, k_small, k_work)
       call unorder_matrices(nhmax, conversion_lookup, k_work, d_sparse)
 
-      call transform_sparse_matrix(node, smat, smat_k, SPARSE_FULL, 'large_to_small', &
+      call transform_sparse_matrix(node, smat(1), smat(2), SPARSE_FULL, 'large_to_small', &
            lmat_in=mat_ek%matrix_compr, smat_out=k_small)
       call set_matrices(node, nodes, h_dim, BlockSize, nhmax, nvctr, numh_global, k_small, k_work)
       call unorder_matrices(nhmax, conversion_lookup, k_work, ed_sparse)
@@ -534,6 +547,20 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
           chess_buffer_mult = val
       case ('chess_betax')
           chess_betax = val
+      case ('chess_fscale')
+          chess_fscale = val
+      case ('chess_fscale_lowerbound')
+          chess_fscale_lowerbound = val
+      case ('chess_fscale_upperbound')
+          chess_fscale_upperbound = val
+      case ('chess_evlow_h')
+          chess_evlow_h = val
+      case ('chess_evhigh_h')
+          chess_evhigh_h = val
+      case ('chess_evlow_s')
+          chess_evlow_s = val
+      case ('chess_evhigh_s')
+          chess_evhigh_s = val
       case default
           call f_err_throw('wrong key in set_CheSS_parameter')
       end select
@@ -555,6 +582,20 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
           val = chess_buffer_mult
       case ('chess_betax')
           val = chess_betax
+      case ('chess_fscale')
+          val = chess_fscale
+      case ('chess_fscale_lowerbound')
+          val = chess_fscale_lowerbound
+      case ('chess_fscale_upperbound')
+          val = chess_fscale_upperbound
+      case ('chess_evlow_h')
+          val = chess_evlow_h
+      case ('chess_evhigh_h')
+          val = chess_evhigh_h
+      case ('chess_evlow_s')
+          val = chess_evlow_s
+      case ('chess_evhigh_s')
+          val = chess_evhigh_s
       case default
           call f_err_throw('wrong key in set_CheSS_parameter')
       end select

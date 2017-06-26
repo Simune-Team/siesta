@@ -744,24 +744,61 @@ subroutine read_options( na, ns, nspin )
   call set_CheSS_parameter('chess_buffer_kernel', chess_value)
   if (ionode)  write(6,7), &
       'redata: CheSS.Buffer.Kernel   = ',chess_value
-  !if (cml_p) call cmlAddParameter(xf=mainXML, name='CheSS.Buffer.Kernel', &
-  !                 value=chess_value, dictref='siesta:CheSS.Buffer.Kernel')
 
   ! Buffer for the matrix vector multiplication within the CheSS calculation
   chess_value = fdf_get('CheSS.Buffer.Mult', 6.0_dp, 'Bohr')
   call set_CheSS_parameter('chess_buffer_mult', chess_value)
   if (ionode)  write(6,7), &
       'redata: CheSS.Buffer.Mult     = ',chess_value
-  !if (cml_p) call cmlAddParameter(xf=mainXML, name='CheSS.Buffer.Mult', &
-  !                 value=chess_value, dictref='siesta:CheSS.Buffer.Mult')
 
   ! Parameters for the penalty function used to determine the eigenvalue bounds
   chess_value = fdf_get('CheSS.Betax', -1000.0_dp)
   call set_CheSS_parameter('chess_betax', chess_value)
   if (ionode)  write(6,7), &
       'redata: CheSS.Betax          = ',chess_value
-  !if (cml_p) call cmlAddParameter(xf=mainXML, name='CheSS.Betax', &
-  !                 value=chess_value, dictref='siesta:CheSS.Betax')
+
+  ! Initial guess for the error function decay length
+  chess_value = fdf_get('CheSS.Fscale', 5.e-2_dp, 'Hartree')
+  call set_CheSS_parameter('chess_fscale', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Fscale          = ',chess_value
+
+  ! Lower bound for the error function decay length
+  chess_value = fdf_get('CheSS.Fscale_lowerbound', 5.e-3_dp, 'Hartree')
+  call set_CheSS_parameter('chess_fscale_lowerbound', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Fscale_lowerbound= ',chess_value
+
+  ! Upper bound for the error function decay length
+  chess_value = fdf_get('CheSS.Fscale_upperbound', 5.e-2_dp, 'Hartree')
+  call set_CheSS_parameter('chess_fscale_upperbound', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Fscale_upperbound= ',chess_value
+
+  ! Initial guess for the lowest eigenvalue bound of the Hamiltonian
+  chess_value = fdf_get('CheSS.evlow_H', -1.0_dp, 'Hartree')
+  call set_CheSS_parameter('chess_evlow_h', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evlow_H= ',chess_value
+
+  ! Initial guess for the highest eigenvalue bound of the Hamiltonian
+  chess_value = fdf_get('CheSS.evhigh_H', 1.0_dp, 'Hartree')
+  call set_CheSS_parameter('chess_evhigh_h', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evhigh_H= ',chess_value
+
+  ! Initial guess for the lowest eigenvalue bound of the overlap matrix
+  chess_value = fdf_get('CheSS.evlow_S', 0.5_dp)
+  call set_CheSS_parameter('chess_evlow_s', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evlow_S= ',chess_value
+
+  ! Initial guess for the highest eigenvalue bound of the overlap matrix
+  chess_value = fdf_get('CheSS.evhigh_S', 1.5_dp)
+  call set_CheSS_parameter('chess_evhigh_s', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evhigh_S= ',chess_value
+
 #endif
 
   if (cml_p) then
