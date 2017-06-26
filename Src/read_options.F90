@@ -740,7 +740,7 @@ subroutine read_options( na, ns, nspin )
 
 #ifdef SIESTA__CHESS
   ! Buffer for the density kernel within the CheSS calculation
-  chess_value = fdf_get('CheSS.Buffer.Kernel', 4.0_dp)
+  chess_value = fdf_get('CheSS.Buffer.Kernel', 4.0_dp, 'Bohr')
   call set_CheSS_parameter('chess_buffer_kernel', chess_value)
   if (ionode)  write(6,7), &
       'redata: CheSS.Buffer.Kernel   = ',chess_value
@@ -748,7 +748,7 @@ subroutine read_options( na, ns, nspin )
   !                 value=chess_value, dictref='siesta:CheSS.Buffer.Kernel')
 
   ! Buffer for the matrix vector multiplication within the CheSS calculation
-  chess_value = fdf_get('CheSS.Buffer.Mult', 6.0_dp)
+  chess_value = fdf_get('CheSS.Buffer.Mult', 6.0_dp, 'Bohr')
   call set_CheSS_parameter('chess_buffer_mult', chess_value)
   if (ionode)  write(6,7), &
       'redata: CheSS.Buffer.Mult     = ',chess_value
