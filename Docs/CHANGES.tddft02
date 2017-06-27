@@ -1,3 +1,20 @@
+2017-06-27  18:00 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-28
+
+Changed the logic of TDED and MD time steps.
+
+* MD time step is now TDED time step multiplied by number of TDED steps.
+* Wavefunctions can be saved, optionally, at the end of a simulation.
+* Updated the manual to reflect above changes.
+
+modified:
+
+  Docs/siesta.tex
+  Src/dynamics.f
+  Src/m_initwf.F90
+  Src/read_options.F90
+  Src/siesta_options.F90
+  Src/siesta_tddft.F90
+
 2017-06-23  15:45 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-27
 
 A small bug fix in MatrixSwitch compilation. 

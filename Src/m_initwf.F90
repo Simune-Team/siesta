@@ -113,6 +113,9 @@ CONTAINS
       integer, dimension(:),     allocatable, save :: muo
       integer, dimension(:,:),   allocatable, save :: nocck
       logical, dimension(:,:,:), allocatable, save :: occup
+#ifdef DEBUG
+      call write_debug('    PRE initwf')
+#endif
 !     First call initialisation
       if (frstme) then
 #ifdef MPI
@@ -434,4 +437,9 @@ CONTAINS
         end do  ! do ispin
       end do    ! do ikmax
   end subroutine diagkiwf
+
+#ifdef DEBUG
+      call write_debug('    POS initwf')
+#endif
+
 end module m_initwf

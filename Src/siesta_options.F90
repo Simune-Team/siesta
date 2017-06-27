@@ -167,14 +167,16 @@ MODULE siesta_options
   logical :: etot_time     ! Write Etot vs time during TDDFT
   logical :: eigen_time    ! Write instataneous energy of the electronic states in TDDFT
   logical :: dip_time      ! Write dipol moment againstan time in TDDFT
+  logical :: tdsavewf      ! To save the wavefunctions at the end of a calculation for restart./
   logical :: tdsaverho      ! To save TD-Rho after a given number of time steps
   integer :: ntdsaverho     ! Each number of steps TD-Rho is saved.
   integer :: itded          ! a TDDFT counterpart of iscf
   integer :: ntded          ! Number of TDED steps in each MD iteration. 
                             ! Or total number of TDED steps in an only electron calcuation
-                            ! (MD.FinalTimeStep = 1) 
+                            ! (MD.FinalTimeStep = 1)
   integer  :: ntded_sub     ! Number of TDED sub-steps extrapolate H is applied to TDKS states.
-  integer  :: tdednwrite    ! Number steps after which .TDWF and .DM are saved for restarting.
+  real(dp) :: td_dt         ! Time step in electron dynamics. In case of doing electron dyanmics 
+                            ! with MD, the dt in MD would be dt = td_dt x ntded
   real(dp) :: rstart_time   ! Restart time
   real(dp) :: totime        ! Total time including the restart time mainly for plotting 
 

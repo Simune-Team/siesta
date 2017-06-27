@@ -10127,18 +10127,21 @@ calculations in each step.  Choose this option even if you intend to
 do only-electron dynamics. If you want to do an electron dynamics-only
 calculation set \fdf{MD.FinalTimeStep} equal to $1$. For optical
 response calculations switch off the external field during the second
-run. The \fdf{MD.LengthTimeStep} is, as in the standard MD simulation,
-used to set the time step for each MD step.
+run. The \fdf{MD.LengthTimeStep}, unlike in the standard MD simulation,
+is defined by mulitpilication of \fdf{TDED.TimeStep} and \fdf{TDED.Nsteps}.
+In TDDFT calculations, the user defined \fdf{MD.LengthTimeStep} is ignored.
 
 \end{fdfentry}
 
 \begin{fdfentry}{TDED.Nsteps}[integer]<1>
 
-Number of electronic time steps between each atomic movement. The time
-step for each electronic step is determined by dividing the MD time
-step (\fdf{MD.LengthTimeStep}) over number of electronic steps
-(\fdf{TDED.Nsteps}). In case of an only electron dynamics simulation
-the \fdf{MD.LengthTimeStep} becomes total simulation time.
+Number of electronic time steps between each atomic movement. It can not be less
+than $1$.
+
+\end{fdfentry}
+\begin{fdfentry}{TDED.TimeStep}[time]<$0.001\,\mathrm{fs}$>
+Length of time for each electronic step. The default value is only suggestive. Users must
+determine an appropriate value for the electronic time step. 
 
 \end{fdfentry}
 
@@ -10150,14 +10153,11 @@ the \fdf{MD.LengthTimeStep} becomes total simulation time.
   Number of electronic substeps when an extrapolated Hamiltonian is applied
   to propogate the KSOs. Effective only when \fdf{TDED.Extrapolate} set to be true.
 \end{fdfentry}
-  \begin{fdfentry}{TDED.WF.Nwrite}[integer]<100>
+  \begin{fdflogicalF}{TDED.WF.Save}
 
-Fixes the number of steps of ion-electron dynamics after which the
-instanteneous wavefunctions are saved in file \sysfile{TDWF} for a
-possible restart. The writing of wavefunctions is not parallel, hence
-writing too often can affect efficiency.
+Option to save wavefunctions at the end of a simulation for a possible restart or analysis. Wavefunctions are saved in file \sysfile{TDWF}.
 
-\end{fdfentry}
+\end{fdflogicalF}
 
  \begin{fdflogicalT}{ TDED.Write.Etot}
 
@@ -10177,7 +10177,7 @@ further processed to calculate polarizability.
 
 If \fdftrue\ the quantities $\langle \phi(t)|H(t)|\phi(t)\rangle$ in every
 time step are calculated and stored in the file
-\sysfile{TDEIG}.
+\sysfile{TDEIG}. This is not trivial, hence can increase computational time. 
 
 \end{fdflogicalF}
 

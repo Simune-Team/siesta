@@ -956,6 +956,7 @@ subroutine read_options( na, ns, nspin )
   eigen_time =  fdf_get('TDED.Write.Eig',.false.)        
   dip_time   =  fdf_get('TDED.Write.Dipole',.false.)
   extrapol_H_tdks = fdf_get('TDED.Extrapolate',.false.)
+  td_dt      = fdf_get ('TDED.TimeStep',1.0d-03,'fs')
   ntded      = fdf_get('TDED.Nsteps', 1)
   ntded_sub  = fdf_get('TDED.Extrapolate.Substeps',3)
   if (ionode) then
@@ -963,11 +964,7 @@ subroutine read_options( na, ns, nspin )
      write(6,4) 'redata: Number of TDED substeps', ntded_sub
   end if
     
-  tdednwrite = fdf_get('TDED.WF.Nwrite', 100)
-  if (ionode) then
-     write(6,4) 'redata: Write .TDWF after time steps', tdednwrite
-  end if
-
+  tdsavewf   = fdf_get('TDED.WF.Save',.false.)
   
   ! Dynamics parameters ...
   varcel = fdf_get('MD.VariableCell', .false. )
@@ -1195,6 +1192,9 @@ subroutine read_options( na, ns, nspin )
 
   ! Length of time step for MD
   dt = fdf_get('MD.LengthTimeStep',1._dp,'fs')
+  
+  ! In case of TDDFT, dt is determined from electronic time step. 
+  if(td_elec_dyn) dt = td_dt*ntded
 
   ! Quench Option
   qnch  = fdf_get('MD.Quench',.false.)
@@ -1222,6 +1222,7 @@ subroutine read_options( na, ns, nspin )
         write(6,4) 'redata: Initial MD time step',istart
         write(6,4) 'redata:   Final MD time step',ifinal
         write(6,6) 'redata: Length of MD time step',dt,' fs'
+        if(td_elec_dyn) write(6,6) 'redata: Length of TDED time step',td_dt,' fs'
         write(6,6) 'redata: Initial Temperature of MD run',tempinit,' K'
         if (idyn .ne. 5) then 
            if (qnch2) then

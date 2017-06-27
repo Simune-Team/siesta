@@ -53,9 +53,9 @@ contains
 
     integer, intent(inout)  :: istep
     
-    integer :: mod_tded, mod_md, ik
+    integer :: ik
     integer :: istpp, ispin
-    real(dp) :: dt_tded, G2max
+    real(dp) :: G2max
 #ifdef DEBUG
     call write_debug( '    PRE siesta_tddft' )
 #endif
@@ -123,16 +123,9 @@ contains
          call compute_tddm(Dscf)
        istep = istpp + 1
     end if
-    ! To save the TD-wavefunctions for a restart.
-    mod_md = mod(istep, tdednwrite)
-
-    if( mod_md == 0 .or. istep == fincoor ) then
-       call iowavef('write',wavef_ms,no_u,nkpnt,nspin, istep,totime)
-    end if
 
     do itded = 1 , ntded ! TDED loop
        
-       dt_tded = dt/ntded
        if(IONode) then
           write(*,'(/a)') &
                '                     ************************       '
@@ -141,19 +134,12 @@ contains
                '                     ************************       '
        end if
        
-       ! To save the TD-wavefunctions to restart
-       mod_tded = mod(itded, tdednwrite)
-       
-       if ( mod_tded == 0 ) then
-          call iowavef('write',wavef_ms,no_u,nkpnt,nspin, istep, totime)
-       end if
-       
        call setup_hamiltonian( itded )
        
-       call evolve(  dt_tded )
+       call evolve(  td_dt )
        
        ! The total simulation time mainly for plotting
-       totime = (istep*dt - dt) + (itded*dt_tded)
+       totime = (istep*dt - dt) + (itded*td_dt)
        
        call compute_energies (itded)
        call write_tddft(totime, istep, itded, ntded, rstart_time, &
@@ -163,7 +149,16 @@ contains
     call compute_tdEdm (Escf)
     call final_H_f_stress(istep, 1, .false.)
     call state_analysis( istep )
-    
+    ! Save the final wavefunctions for restart or analysis. 
+    if(tdsavewf) then
+      ! Since the atomic position are updated after the wavefunctions
+      ! for consistency in restart we transform the wavefunctions 
+      ! into new basis set before saving them. This keeps the wavefunctions
+      ! concurrent with atomic position.
+      call sankey_change_basis ( istep )
+      call iowavef('write',wavef_ms,no_u,nkpnt,nspin, istep,totime)
+    end if
+
 #ifdef DEBUG
     call write_debug( '    POS siesta_tddft' )
 #endif
