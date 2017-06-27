@@ -15,15 +15,17 @@
 #
 #          By default, the version of SIESTA used is the one in the
 #          parent directory (Obj or custom OBJDIR), and is executed
-#          in serial mode.
+#          in parallel mode with 2 cores.
 #
-#          To use another one, or a parallel version
+#          To change the MPI run command simply do:
 #
-#          make SIESTA=/some/path/to/siesta-program ....
+#          make MPI="mpirun -np 4"
 #
-#           or
+#          for 4 cores. Or
 #
-#          make SIESTA="mpiexec -np 4 /path/to/parallel-siesta-program" ....
+#          make MPI=
+#
+#          for a serial run.
 #
 #          It is also possible to have separate working directories,
 #          by using the a "label". For example:
@@ -83,17 +85,21 @@ tests = ag anneal-cont ar2_vdw \
 tests_soc  = SOC_Pt2_xx SOC_Pt2_xz SOC_Pt2_zy SOC_Pt2_zz
 tests_soc += SOC_FePt_xx SOC_FePt_xz SOC_FePt_zy SOC_FePt_zz
 
+# Tests only applicable for LUA
+tests_lua  = lua_si111 lua_h2o
+
 # Tests only applicable for FLOS
 tests_flos  = flos_h2o_lbfgs flos_h2o_fire flos_h2o_meshcutoff flos_h2o_neb
 
 # Accumulated variable for ALL tests
-tests_all = $(tests) $(tests_soc) $(tests_flos)
+tests_all = $(tests) $(tests_soc) $(tests_lua) $(tests_flos)
 
 all: $(tests)
 
 # Define test specific targets:
 tests: $(tests)
 tests-soc: $(tests_soc)
+tests-lua: $(tests_lua)
 tests-flos: $(tests_flos)
 
 # Ensure that tests may be called individually

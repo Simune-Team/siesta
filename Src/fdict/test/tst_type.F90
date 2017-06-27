@@ -1,7 +1,6 @@
 program tst_type
 
   use tst_utils
-  use iso_var_str
   use variable
 
   implicit none
@@ -58,5 +57,8 @@ program tst_type
        'Copying type did not work, i')
   call assert(associated(b%pa,a%pa), &
        'Copying type did not work, target')
+
+  call delete(va)
+  deallocate(a%pa)
 
 end program tst_type

@@ -10,7 +10,7 @@ reinit: System Name: Water molecule
 reinit: -----------------------------------------------------------------------
 reinit: System Label: h2o_lbfgs
 reinit: -----------------------------------------------------------------------
-Siesta Version: siesta-4.1--697
+Siesta Version: siesta-4.1--712
 Architecture  : x86_64-linux-gcc
 Compiler flags: mpifort -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore
 PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DSIESTA__FFTW -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
@@ -22,7 +22,7 @@ NetCDF-4 MPI-IO support
 METIS ordering support
 
 * Running on 2 nodes in parallel
->> Start of run:  28-MAR-2017  14:41:09
+>> Start of run:  11-JUN-2017  12:29:15
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:    8 Label: O
@@ -502,7 +502,7 @@ siesta: FreeEng =      -464.585041
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
    scf:    1     -466.175311     -464.585041     -464.585041  1.408731 -4.570848  7.541758
-timer: Routine,Calls,Time,% = IterSCF        1       0.036   4.04
+timer: Routine,Calls,Time,% = IterSCF        1       0.048   4.18
    scf:    2     -465.906476     -465.369028     -465.369028  0.063444 -3.305463  2.912686
    scf:    3     -465.489548     -465.471282     -465.471282  0.028883 -2.461303  0.339554
    scf:    4     -465.477086     -465.474387     -465.474387  0.009847 -2.384576  0.264699
@@ -1151,4 +1151,4 @@ siesta:           0.51558110          0.43255096  kBar
 
 siesta: Electric dipole (a.u.)  =   -0.035724    0.554399    0.000000
 siesta: Electric dipole (Debye) =   -0.090801    1.409143    0.000000
->> End of run:  28-MAR-2017  14:41:11
+>> End of run:  11-JUN-2017  12:29:18

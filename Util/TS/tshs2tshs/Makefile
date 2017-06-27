@@ -75,13 +75,15 @@ FDICT=libfdict.a
 FDICT_MAKEFILE=$(VPATH)/fdict/Makefile
 $(FDICT): 
 	-mkdir -p fdict
-	(cd fdict ; $(MAKE) -f $(FDICT_MAKEFILE) \
-		"VPATH=$(VPATH)/fdict" \
-		"FC=$(FC_SERIAL)" \
-		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
-		"FPPFLAGS=$(FPPFLAGS)" \
-		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
-	@cp -p fdict/*.*d ./
+	(cd fdict ; \
+	echo "TOP_DIR=$(VPATH)/fdict" > Makefile ; echo "include $(VPATH)/fdict/Makefile" >> Makefile ; \
+	echo "FC=$(FC_SERIAL)" > setup.make ; \
+	echo "AR=$(AR)" >> setup.make ; \
+	echo "RANLIB=$(RANLIB)" >> setup.make ; \
+	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "LINK_FLAGS=$(FFLAGS)" >> setup.make ; \
+	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
+	@cp -p fdict/*.mod ./
 	cp fdict/$(FDICT) ./
 
 # This library can be found at:
@@ -90,15 +92,22 @@ NCDF=libncdf.a
 NCDF_MAKEFILE=$(VPATH)/NCDF/src/Makefile
 $(NCDF): COMP_LIBS += $(FDICT)
 $(NCDF): $(FDICT)
-	-mkdir -p NCDF/src
-	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) \
-		"VPATH=$(VPATH)/NCDF/src" "LIBFDICT=$(FDICT)" \
-		"DIR_FDICT=$(VPATH)/fdict" \
-		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
-		"FPPFLAGS=$(FPPFLAGS)" \
-		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
-	@cp -p NCDF/src/*.*d ./
-	cp NCDF/src/$(NCDF) ./
+	-mkdir -p ncdf
+	(cd ncdf ; \
+	echo "TOP_DIR=$(VPATH)/ncdf" > Makefile ; echo "include $(VPATH)/ncdf/Makefile" >> Makefile ; \
+	echo "settings.bash: FORCE" >> Makefile ; \
+	printf '%s\n' "	-cp ../fdict/settings.bash ." >> Makefile ; \
+	echo "FC=$(FC)" > setup.make ; \
+	echo "AR=$(AR)" >> setup.make ; \
+	echo "RANLIB=$(RANLIB)" >> setup.make ; \
+	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "LINK_FLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "FPPFLAGS = $(FPPFLAGS)" >> setup.make ; \
+	echo "INCLUDES = $(INCFLAGS) -I../" >> setup.make ; \
+	echo "LIBS = $(LIBS) -lfdict" >> setup.make ; \
+	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
+	@cp -p ncdf/*.mod ./
+	cp ncdf/$(NCDF) ./
 
 #######################
 
@@ -819,7 +828,8 @@ siesta_analysis.o: write_subs.o writewave.o zmatrix.o
 siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
 siesta_cmlsubs.o: version.o
 siesta_dicts.o: atomlist.o files.o kpoint_grid.o m_energies.o m_forces.o
-siesta_dicts.o: m_steps.o m_stress.o precision.o siesta_geom.o siesta_options.o
+siesta_dicts.o: m_mixing_scf.o m_steps.o m_stress.o precision.o siesta_geom.o
+siesta_dicts.o: siesta_options.o
 siesta_end.o: alloc.o bands.o densematrix.o extrae_eventllist.o flook_siesta.o
 siesta_end.o: m_dscfcomm.o m_fixed.o m_io.o m_mixing_scf.o m_rhog.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
@@ -910,7 +920,8 @@ vmat.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 vmatsp.o: meshphi.o precision.o
 vmb.o: m_fixed.o parallel.o precision.o sys.o
-wavefunctions.o: parallel.o precision.o
+wavefunctions.o: atomlist.o kpoint_grid.o m_spin.o parallel.o precision.o
+wavefunctions.o: sparse_matrices.o
 write_inp_wannier.o: alloc.o atmfuncs.o atomlist.o m_ntm.o m_orderbands.o
 write_inp_wannier.o: mneighb.o parallel.o parallelsubs.o precision.o
 write_inp_wannier.o: siesta2wannier90.o siesta_geom.o

@@ -493,6 +493,7 @@ contains
        r_aEl(iEl)%name   = '[A]-'//trim(Elecs(iEl)%name)//' folding region'
        r_oElpD(iEl)%name = '[O]-'//trim(Elecs(iEl)%name)//' folding El + D'
        r_aElpD(iEl)%name = '[A]-'//trim(Elecs(iEl)%name)//' folding El + D'
+       Elecs(iEl)%o_inD%name = '[O]-'//trim(Elecs(iEl)%name)//' in D'
 
        ! Prepare the inDpvt array (will be filled in tri_init
        ! as we sort each block individually)

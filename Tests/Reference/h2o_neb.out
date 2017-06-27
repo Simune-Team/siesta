@@ -10,7 +10,7 @@ reinit: System Name: Water molecule
 reinit: -----------------------------------------------------------------------
 reinit: System Label: h2o_neb
 reinit: -----------------------------------------------------------------------
-Siesta Version: siesta-4.1--697
+Siesta Version: siesta-4.1--712
 Architecture  : x86_64-linux-gcc
 Compiler flags: mpifort -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore
 PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DSIESTA__FFTW -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
@@ -22,7 +22,7 @@ NetCDF-4 MPI-IO support
 METIS ordering support
 
 * Running on 2 nodes in parallel
->> Start of run:  29-MAR-2017   8:44:17
+>> Start of run:  11-JUN-2017  12:29:38
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:    8 Label: O
@@ -499,7 +499,7 @@ siesta: FreeEng =      -930.025949
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
    scf:    1     -933.511141     -930.025949     -930.025949  1.439238 -4.246063  6.784432
-timer: Routine,Calls,Time,% = IterSCF        1       1.628  47.60
+timer: Routine,Calls,Time,% = IterSCF        1       1.780  46.11
    scf:    2     -930.356151     -930.192471     -930.192471  0.004636 -4.160634  6.449928
    scf:    3     -931.874377     -931.641808     -931.641808  0.080979 -2.510796  0.533979
    scf:    4     -931.668222     -931.655812     -931.655812  0.003119 -2.558052  0.310250
@@ -1486,7 +1486,7 @@ siesta: E_KS(eV) =             -931.7211
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000673    0.023993   -0.000000
+   Tot   -0.000673    0.023993    0.000000
 ----------------------------------------
    Max    0.900723
    Res    0.408990    sqrt( Sum f_i^2 / 3N )
@@ -1582,7 +1582,7 @@ PhiOnMesh: nlist on node 0 =               125793
 
 SCF Convergence by DM+H criterion
 max |DM_out - DM_in|         :     0.0000111099
-max |H_out - H_in|      (eV) :     0.0009386751
+max |H_out - H_in|      (eV) :     0.0009386753
 SCF cycle converged after 27 iterations
 
 Using DM_out to compute the final energy and forces
@@ -2037,7 +2037,7 @@ PhiOnMesh: nlist on node 0 =               125782
    scf:    7     -931.693456     -931.693456     -931.693456  0.000054 -2.117026  0.000946
 
 SCF Convergence by DM+H criterion
-max |DM_out - DM_in|         :     0.0000538588
+max |DM_out - DM_in|         :     0.0000538587
 max |H_out - H_in|      (eV) :     0.0009464103
 SCF cycle converged after 7 iterations
 
@@ -2133,7 +2133,7 @@ siesta: E_KS(eV) =             -931.7139
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.002519   -0.007321   -0.000000
+   Tot   -0.002519   -0.007321    0.000000
 ----------------------------------------
    Max    0.746395
    Res    0.348162    sqrt( Sum f_i^2 / 3N )
@@ -2315,7 +2315,7 @@ siesta: E_KS(eV) =             -931.7192
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.003776   -0.016573   -0.000000
+   Tot    0.003776   -0.016573    0.000000
 ----------------------------------------
    Max    0.847661
    Res    0.339883    sqrt( Sum f_i^2 / 3N )
@@ -2675,7 +2675,7 @@ siesta: E_KS(eV) =             -931.7763
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.003396   -0.002094    0.000000
+   Tot    0.003396   -0.002094   -0.000000
 ----------------------------------------
    Max    0.786126
    Res    0.344478    sqrt( Sum f_i^2 / 3N )
@@ -2917,7 +2917,7 @@ PhiOnMesh: nlist on node 0 =               125782
 
 SCF Convergence by DM+H criterion
 max |DM_out - DM_in|         :     0.0000006482
-max |H_out - H_in|      (eV) :     0.0006893481
+max |H_out - H_in|      (eV) :     0.0006893482
 SCF cycle converged after 4 iterations
 
 Using DM_out to compute the final energy and forces
@@ -3765,7 +3765,7 @@ siesta: E_KS(eV) =             -931.6955
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.006092   -0.003287   -0.000000
+   Tot   -0.006092   -0.003287    0.000000
 ----------------------------------------
    Max    0.822770
    Res    0.334904    sqrt( Sum f_i^2 / 3N )
@@ -4020,7 +4020,7 @@ siesta: E_KS(eV) =             -931.7194
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.003461   -0.016610    0.000000
+   Tot    0.003461   -0.016610   -0.000000
 ----------------------------------------
    Max    0.847393
    Res    0.340467    sqrt( Sum f_i^2 / 3N )
@@ -4352,7 +4352,7 @@ siesta: E_KS(eV) =             -931.7767
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.002650   -0.002189   -0.000000
+   Tot    0.002650   -0.002189    0.000000
 ----------------------------------------
    Max    0.785754
    Res    0.337311    sqrt( Sum f_i^2 / 3N )
@@ -6047,7 +6047,7 @@ siesta: E_KS(eV) =             -931.7767
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.002675   -0.002105    0.000000
+   Tot    0.002675   -0.002105   -0.000000
 ----------------------------------------
    Max    0.786235
    Res    0.337705    sqrt( Sum f_i^2 / 3N )
@@ -7893,7 +7893,7 @@ siesta: E_KS(eV) =             -931.7264
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.002184    0.023177   -0.000000
+   Tot   -0.002184    0.023177    0.000000
 ----------------------------------------
    Max    0.898145
    Res    0.344910    sqrt( Sum f_i^2 / 3N )
@@ -8973,7 +8973,7 @@ siesta: E_KS(eV) =             -931.7769
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.002703   -0.001758    0.000000
+   Tot    0.002703   -0.001758   -0.000000
 ----------------------------------------
    Max    0.786508
    Res    0.339879    sqrt( Sum f_i^2 / 3N )
@@ -9481,4 +9481,4 @@ siesta:           0.10048955         -0.00441034  kBar
 
 siesta: Electric dipole (a.u.)  =    0.266272    1.114298    0.000000
 siesta: Electric dipole (Debye) =    0.676795    2.832265    0.000000
->> End of run:  29-MAR-2017   9:01:30
+>> End of run:  11-JUN-2017  12:47:04

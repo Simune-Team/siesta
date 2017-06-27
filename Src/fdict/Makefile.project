@@ -4,7 +4,7 @@ _SMEKA_project = 1
 
 # Step this version upon new versions
 PROJECT_MAJOR = 0
-PROJECT_MINOR = 5
+PROJECT_MINOR = 6
 PROJECT_MICRO = 0
 PROJECT_VERSION = $(PROJECT_MAJOR).$(PROJECT_MINOR).$(PROJECT_MICRO)
 
@@ -58,6 +58,10 @@ clean:
 
 settings.bash:
 	VPATH="$(TOP_DIR)" $(TOP_DIR)/setup.sh --default
+
+.PHONY: doc
+doc: source
+	ford ford_doc.md
 
 
 # Local Variables:

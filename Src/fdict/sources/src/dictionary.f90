@@ -1,10 +1,7 @@
 ! @LICENSE@, see README.md
-!> A dictionary module for the usage of complex data structures
-!! in fortran.
-!!
-!> \author Nick Papior Andersen, Copyright 2015
+! Generic purpose dictionary as in any scripting language
+! It has the power to contain any data by using the variable type.
 module dictionary
-  use iso_var_str
   use variable
   implicit none
   private
@@ -31,7 +28,6 @@ module dictionary
   type :: dict
      ! We will keep the dictionary private so that any coding
      ! has to use .KEY. and .VAL. etc.
-     private
      type(d_entry), pointer :: first => null()
      integer :: len = 0
   end type
@@ -129,10 +125,6 @@ module dictionary
      module procedure delete_
   end interface
   public :: delete
-  interface remove
-     module procedure remove_
-  end interface
-  public :: remove
   interface pop
      module procedure pop_
   end interface
@@ -143,6 +135,7 @@ module dictionary
   public :: copy
   interface nullify
      module procedure nullify_
+     module procedure nullify_key_
   end interface
   public :: nullify
   interface extend
@@ -156,163 +149,218 @@ module dictionary
   public :: assign, associate
   ! Create a dictionary type from
 interface operator(.KV.)
-module procedure dict_kv_char0
+module procedure dict_kv_a0_0
 module procedure dict_kv_var
+module procedure dict_kv_a1
 module procedure dict_kv_s0
 module procedure dict_kv_s1
 module procedure dict_kv_s2
+module procedure dict_kv_s3
 module procedure dict_kv_d0
 module procedure dict_kv_d1
 module procedure dict_kv_d2
+module procedure dict_kv_d3
 module procedure dict_kv_c0
 module procedure dict_kv_c1
 module procedure dict_kv_c2
+module procedure dict_kv_c3
 module procedure dict_kv_z0
 module procedure dict_kv_z1
 module procedure dict_kv_z2
+module procedure dict_kv_z3
 module procedure dict_kv_b0
 module procedure dict_kv_b1
 module procedure dict_kv_b2
+module procedure dict_kv_b3
 module procedure dict_kv_h0
 module procedure dict_kv_h1
 module procedure dict_kv_h2
+module procedure dict_kv_h3
 module procedure dict_kv_i0
 module procedure dict_kv_i1
 module procedure dict_kv_i2
+module procedure dict_kv_i3
 module procedure dict_kv_l0
 module procedure dict_kv_l1
 module procedure dict_kv_l2
+module procedure dict_kv_l3
 end interface
 interface operator(.KVP.)
 module procedure dict_kvp_var
 module procedure dict_kvp_dict
+module procedure dict_kvp_a1
 module procedure dict_kvp_s0
 module procedure dict_kvp_s1
 module procedure dict_kvp_s2
+module procedure dict_kvp_s3
 module procedure dict_kvp_d0
 module procedure dict_kvp_d1
 module procedure dict_kvp_d2
+module procedure dict_kvp_d3
 module procedure dict_kvp_c0
 module procedure dict_kvp_c1
 module procedure dict_kvp_c2
+module procedure dict_kvp_c3
 module procedure dict_kvp_z0
 module procedure dict_kvp_z1
 module procedure dict_kvp_z2
+module procedure dict_kvp_z3
 module procedure dict_kvp_b0
 module procedure dict_kvp_b1
 module procedure dict_kvp_b2
+module procedure dict_kvp_b3
 module procedure dict_kvp_h0
 module procedure dict_kvp_h1
 module procedure dict_kvp_h2
+module procedure dict_kvp_h3
 module procedure dict_kvp_i0
 module procedure dict_kvp_i1
 module procedure dict_kvp_i2
+module procedure dict_kvp_i3
 module procedure dict_kvp_l0
 module procedure dict_kvp_l1
 module procedure dict_kvp_l2
+module procedure dict_kvp_l3
 end interface
 interface assign
-module procedure dict_key2val
+module procedure dict_get_val
+module procedure dict_get_val_a_
+module procedure dict_get_val_a1
+module procedure dict_get_val_first_a1
 module procedure dict_get_val_s0
 module procedure dict_get_val_first_s0
 module procedure dict_get_val_s1
 module procedure dict_get_val_first_s1
 module procedure dict_get_val_s2
 module procedure dict_get_val_first_s2
+module procedure dict_get_val_s3
+module procedure dict_get_val_first_s3
 module procedure dict_get_val_d0
 module procedure dict_get_val_first_d0
 module procedure dict_get_val_d1
 module procedure dict_get_val_first_d1
 module procedure dict_get_val_d2
 module procedure dict_get_val_first_d2
+module procedure dict_get_val_d3
+module procedure dict_get_val_first_d3
 module procedure dict_get_val_c0
 module procedure dict_get_val_first_c0
 module procedure dict_get_val_c1
 module procedure dict_get_val_first_c1
 module procedure dict_get_val_c2
 module procedure dict_get_val_first_c2
+module procedure dict_get_val_c3
+module procedure dict_get_val_first_c3
 module procedure dict_get_val_z0
 module procedure dict_get_val_first_z0
 module procedure dict_get_val_z1
 module procedure dict_get_val_first_z1
 module procedure dict_get_val_z2
 module procedure dict_get_val_first_z2
+module procedure dict_get_val_z3
+module procedure dict_get_val_first_z3
 module procedure dict_get_val_b0
 module procedure dict_get_val_first_b0
 module procedure dict_get_val_b1
 module procedure dict_get_val_first_b1
 module procedure dict_get_val_b2
 module procedure dict_get_val_first_b2
+module procedure dict_get_val_b3
+module procedure dict_get_val_first_b3
 module procedure dict_get_val_h0
 module procedure dict_get_val_first_h0
 module procedure dict_get_val_h1
 module procedure dict_get_val_first_h1
 module procedure dict_get_val_h2
 module procedure dict_get_val_first_h2
+module procedure dict_get_val_h3
+module procedure dict_get_val_first_h3
 module procedure dict_get_val_i0
 module procedure dict_get_val_first_i0
 module procedure dict_get_val_i1
 module procedure dict_get_val_first_i1
 module procedure dict_get_val_i2
 module procedure dict_get_val_first_i2
+module procedure dict_get_val_i3
+module procedure dict_get_val_first_i3
 module procedure dict_get_val_l0
 module procedure dict_get_val_first_l0
 module procedure dict_get_val_l1
 module procedure dict_get_val_first_l1
 module procedure dict_get_val_l2
 module procedure dict_get_val_first_l2
+module procedure dict_get_val_l3
+module procedure dict_get_val_first_l3
 end interface
 interface associate
-module procedure dict_key_p_val
-module procedure dict_key_p_dict
+module procedure dict_get_p_val
+module procedure dict_get_p_dict
+module procedure dict_get_p_a1
+module procedure dict_get_p_first_a1
 module procedure dict_get_p_s0
 module procedure dict_get_p_first_s0
 module procedure dict_get_p_s1
 module procedure dict_get_p_first_s1
 module procedure dict_get_p_s2
 module procedure dict_get_p_first_s2
+module procedure dict_get_p_s3
+module procedure dict_get_p_first_s3
 module procedure dict_get_p_d0
 module procedure dict_get_p_first_d0
 module procedure dict_get_p_d1
 module procedure dict_get_p_first_d1
 module procedure dict_get_p_d2
 module procedure dict_get_p_first_d2
+module procedure dict_get_p_d3
+module procedure dict_get_p_first_d3
 module procedure dict_get_p_c0
 module procedure dict_get_p_first_c0
 module procedure dict_get_p_c1
 module procedure dict_get_p_first_c1
 module procedure dict_get_p_c2
 module procedure dict_get_p_first_c2
+module procedure dict_get_p_c3
+module procedure dict_get_p_first_c3
 module procedure dict_get_p_z0
 module procedure dict_get_p_first_z0
 module procedure dict_get_p_z1
 module procedure dict_get_p_first_z1
 module procedure dict_get_p_z2
 module procedure dict_get_p_first_z2
+module procedure dict_get_p_z3
+module procedure dict_get_p_first_z3
 module procedure dict_get_p_b0
 module procedure dict_get_p_first_b0
 module procedure dict_get_p_b1
 module procedure dict_get_p_first_b1
 module procedure dict_get_p_b2
 module procedure dict_get_p_first_b2
+module procedure dict_get_p_b3
+module procedure dict_get_p_first_b3
 module procedure dict_get_p_h0
 module procedure dict_get_p_first_h0
 module procedure dict_get_p_h1
 module procedure dict_get_p_first_h1
 module procedure dict_get_p_h2
 module procedure dict_get_p_first_h2
+module procedure dict_get_p_h3
+module procedure dict_get_p_first_h3
 module procedure dict_get_p_i0
 module procedure dict_get_p_first_i0
 module procedure dict_get_p_i1
 module procedure dict_get_p_first_i1
 module procedure dict_get_p_i2
 module procedure dict_get_p_first_i2
+module procedure dict_get_p_i3
+module procedure dict_get_p_first_i3
 module procedure dict_get_p_l0
 module procedure dict_get_p_first_l0
 module procedure dict_get_p_l1
 module procedure dict_get_p_first_l1
 module procedure dict_get_p_l2
 module procedure dict_get_p_first_l2
+module procedure dict_get_p_l3
+module procedure dict_get_p_first_l3
 end interface
   ! Create a dict type: 'key' .KV. 'val'
   public :: operator(.KV.)
@@ -321,7 +369,6 @@ end interface
   ! We need to create a linked list to create arbitrarily long dictionaries...
   ! The dictionary entry is not visible outside.
   type :: d_entry
-     private
      character(len=DICT_KEY_LENGTH) :: key = ' '
      ! in order to extend the dictionary to contain a dictionary
      ! we simply need to add the dictionary type to the variable
@@ -422,40 +469,6 @@ contains
     end if
     ! return col
   end function hash_coll_
-  subroutine dict_key2val(val,d,key,dealloc)
-    type(var), intent(inout) :: val
-    type(dict), intent(inout) :: d
-    character(len=*), intent(in), optional :: key
-    logical, intent(in), optional :: dealloc
-    type(dict) :: ld
-    integer :: hash, lhash
-    if ( .not. present(key) ) then
-       if ( .not. (.empty. d) ) then
-          call assign(val,d%first%value,dealloc=dealloc)
-       else
-          call val_delete_request(val,dealloc=dealloc)
-       end if
-       return
-    end if
-    hash = hash_val(key)
-    ld = .first. d
-    search: do while ( .not. (.empty. ld) )
-       lhash = .hash. ld
-       if ( hash > lhash ) then
-          ! skip to next search
-       else if ( hash < lhash ) then
-          ! the key does not exist, delete if requested, else clean it
-          call val_delete_request(val,dealloc=dealloc)
-          exit search
-       else if ( hash == lhash ) then
-          if ( key .eq. .KEY. ld ) then
-             call assign(val,ld%first%value,dealloc=dealloc)
-             return
-          end if
-       end if
-       ld = .next. ld
-    end do search
-  end subroutine dict_key2val
   function in(key,d)
     character(len=*), intent(in) :: key
     type(dict), intent(in) :: d
@@ -486,39 +499,6 @@ contains
     logical :: nin
     nin = .not. in(key,d)
   end function nin
-  subroutine dict_key_p_val(val,d,key,dealloc)
-    type(var), intent(inout) :: val
-    type(dict), intent(inout) :: d
-    character(len=*), intent(in), optional :: key
-    logical, intent(in), optional :: dealloc
-    type(dict) :: ld
-    integer :: hash, lhash
-    if ( .not. present(key) ) then
-       if ( .not. (.empty. d) ) then
-          call associate(val,d%first%value,dealloc=dealloc)
-       else
-          call val_delete_request(val,dealloc=dealloc)
-       end if
-       return
-    end if
-    hash = hash_val(key)
-    ld = .first. d
-    search: do while ( .not. (.empty. ld) )
-       lhash = .hash. ld
-       if ( hash > lhash ) then
-          ! skip to next search
-       else if ( hash < lhash ) then
-          call val_delete_request(val,dealloc=dealloc)
-          exit search
-       else if ( hash == lhash ) then
-          if ( key .eq. .KEY. ld ) then
-             call associate(val,ld%first%value,dealloc=dealloc)
-             return
-          end if
-       end if
-       ld = .next. ld
-    end do search
-  end subroutine dict_key_p_val
   ! Compares two dict types against each other
   ! Will do comparison by hash.
   function d_eq_d(d1,d2) result(bool)
@@ -864,7 +844,7 @@ contains
        de => de%next
     end do
   end subroutine pop_
-  elemental subroutine remove_(this,key)
+  elemental subroutine nullify_key_(this,key)
     type(dict), intent(inout) :: this
     character(len=*), intent(in) :: key
     type(d_entry), pointer :: de, pr
@@ -901,7 +881,7 @@ contains
        pr => de
        de => de%next
     end do
-  end subroutine remove_
+  end subroutine nullify_key_
   elemental subroutine nullify_(this)
     type(dict), intent(inout) :: this
     ! This will simply nullify the dictionary, thereby
@@ -909,16 +889,113 @@ contains
     nullify(this%first)
     this%len = 0
   end subroutine nullify_
-  function dict_kv_char0(key,val) result(this)
+  subroutine dict_get_val(val,d,key,dealloc)
+    type(var), intent(inout) :: val
+    type(dict), intent(inout) :: d
+    character(len=*), intent(in), optional :: key
+    logical, intent(in), optional :: dealloc
+    type(dict) :: ld
+    integer :: hash, lhash
+    if ( .not. present(key) ) then
+       if ( .not. (.empty. d) ) then
+          call assign(val,d%first%value,dealloc=dealloc)
+       else
+          call val_delete_request(val,dealloc=dealloc)
+       end if
+       return
+    end if
+    hash = hash_val(key)
+    ld = .first. d
+    search: do while ( .not. (.empty. ld) )
+       lhash = .hash. ld
+       if ( hash > lhash ) then
+          ! skip to next search
+       else if ( hash < lhash ) then
+          ! the key does not exist, delete if requested, else clean it
+          call val_delete_request(val,dealloc=dealloc)
+          exit search
+       else if ( hash == lhash ) then
+          if ( key .eq. .KEY. ld ) then
+             call assign(val,ld%first%value,dealloc=dealloc)
+             return
+          end if
+       end if
+       ld = .next. ld
+    end do search
+  end subroutine dict_get_val
+  subroutine dict_get_p_val(val,d,key,dealloc)
+    type(var), intent(inout) :: val
+    type(dict), intent(inout) :: d
+    character(len=*), intent(in), optional :: key
+    logical, intent(in), optional :: dealloc
+    type(dict) :: ld
+    integer :: hash, lhash
+    if ( .not. present(key) ) then
+       if ( .not. (.empty. d) ) then
+          call associate(val,d%first%value,dealloc=dealloc)
+       else
+          call val_delete_request(val,dealloc=dealloc)
+       end if
+       return
+    end if
+    hash = hash_val(key)
+    ld = .first. d
+    search: do while ( .not. (.empty. ld) )
+       lhash = .hash. ld
+       if ( hash > lhash ) then
+          ! skip to next search
+       else if ( hash < lhash ) then
+          ! the key does not exist, delete if requested, else clean it
+          call val_delete_request(val,dealloc=dealloc)
+          exit search
+       else if ( hash == lhash ) then
+          if ( key .eq. .KEY. ld ) then
+             call associate(val,ld%first%value,dealloc=dealloc)
+             return
+          end if
+       end if
+       ld = .next. ld
+    end do search
+  end subroutine dict_get_p_val
+  subroutine dict_get_val_a_(val,d,key,dealloc)
+    character(len=*), intent(out) :: val
+    type(dict), intent(inout) :: d
+    character(len=*), intent(in), optional :: key
+    logical, intent(in), optional :: dealloc
+    type(var) :: v
+    type(dict) :: ld
+    integer :: hash, lhash
+    val = ' '
+    if ( .not. present(key) ) then
+       if ( .not. (.empty. d) ) then
+          call associate(v,d%first%value)
+       end if
+       return
+    end if
+    hash = hash_val(key)
+    ld = .first. d
+    search: do while ( .not. (.empty. ld) )
+       lhash = .hash. ld
+       if ( hash > lhash ) then
+          ! skip to next search
+       else if ( hash < lhash ) then
+          exit search
+       else if ( hash == lhash ) then
+          if ( key .eq. .KEY. ld ) then
+             call assign(val, ld%first%value)
+             return
+          end if
+       end if
+       ld = .next. ld
+    end do search
+  end subroutine dict_get_val_a_
+  function dict_kv_a0_0(key,val) result(this)
     character(len=*), intent(in) :: key
     character(len=*), intent(in) :: val
     type(dict) :: this
-    type(var_str) :: str
     this = new_d_key(key)
-    str = val
-    call assign(this%first%value,str)
-    str = "" ! deallocation
-  end function dict_kv_char0
+    call assign(this%first%value,val)
+  end function dict_kv_a0_0
   function dict_kv_var(key,val) result(this)
     character(len=*), intent(in) :: key
     type(var), intent(in) :: val
@@ -961,6 +1038,48 @@ contains
        t = which(this%first%value)
     end if
   end function dict_key_which
+function dict_kv_a1(key,val) result(this)
+character(len=*), intent(in) :: key
+character(len=1), intent(in), dimension(:) :: val
+type(dict) :: this
+this = new_d_key(key)
+call assign(this%first%value,val)
+end function dict_kv_a1
+function dict_kvp_a1(key, val) result(this)
+character(len=*), intent(in) :: key
+character(len=1), intent(in), dimension(:), target :: val
+type(dict) :: this
+this = new_d_key(key)
+call associate(this%first%value,val)
+end function dict_kvp_a1
+subroutine dict_get_val_a1(val,this,key)
+character(len=1), intent(out), dimension(:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call assign(val,v)
+call nullify(v)
+end subroutine dict_get_val_a1
+subroutine dict_get_val_first_a1(val,this)
+character(len=1), intent(out), dimension(:) :: val
+type(dict), intent(inout) :: this
+call assign(val,this%first%value)
+end subroutine dict_get_val_first_a1
+subroutine dict_get_p_a1(val,this,key)
+character(len=1), pointer , dimension(:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call associate(val,v)
+call nullify(v)
+end subroutine dict_get_p_a1
+subroutine dict_get_p_first_a1(val,this)
+character(len=1), pointer , dimension(:) :: val
+type(dict), intent(inout) :: this
+call associate(val,this%first%value)
+end subroutine dict_get_p_first_a1
 function dict_kv_s0(key,val) result(this)
 character(len=*), intent(in) :: key
 real(sp), intent(in) :: val
@@ -1087,6 +1206,48 @@ real(sp), pointer , dimension(:,:) :: val
 type(dict), intent(inout) :: this
 call associate(val,this%first%value)
 end subroutine dict_get_p_first_s2
+function dict_kv_s3(key,val) result(this)
+character(len=*), intent(in) :: key
+real(sp), intent(in), dimension(:,:,:) :: val
+type(dict) :: this
+this = new_d_key(key)
+call assign(this%first%value,val)
+end function dict_kv_s3
+function dict_kvp_s3(key, val) result(this)
+character(len=*), intent(in) :: key
+real(sp), intent(in), dimension(:,:,:), target :: val
+type(dict) :: this
+this = new_d_key(key)
+call associate(this%first%value,val)
+end function dict_kvp_s3
+subroutine dict_get_val_s3(val,this,key)
+real(sp), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call assign(val,v)
+call nullify(v)
+end subroutine dict_get_val_s3
+subroutine dict_get_val_first_s3(val,this)
+real(sp), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call assign(val,this%first%value)
+end subroutine dict_get_val_first_s3
+subroutine dict_get_p_s3(val,this,key)
+real(sp), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call associate(val,v)
+call nullify(v)
+end subroutine dict_get_p_s3
+subroutine dict_get_p_first_s3(val,this)
+real(sp), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call associate(val,this%first%value)
+end subroutine dict_get_p_first_s3
 function dict_kv_d0(key,val) result(this)
 character(len=*), intent(in) :: key
 real(dp), intent(in) :: val
@@ -1213,6 +1374,48 @@ real(dp), pointer , dimension(:,:) :: val
 type(dict), intent(inout) :: this
 call associate(val,this%first%value)
 end subroutine dict_get_p_first_d2
+function dict_kv_d3(key,val) result(this)
+character(len=*), intent(in) :: key
+real(dp), intent(in), dimension(:,:,:) :: val
+type(dict) :: this
+this = new_d_key(key)
+call assign(this%first%value,val)
+end function dict_kv_d3
+function dict_kvp_d3(key, val) result(this)
+character(len=*), intent(in) :: key
+real(dp), intent(in), dimension(:,:,:), target :: val
+type(dict) :: this
+this = new_d_key(key)
+call associate(this%first%value,val)
+end function dict_kvp_d3
+subroutine dict_get_val_d3(val,this,key)
+real(dp), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call assign(val,v)
+call nullify(v)
+end subroutine dict_get_val_d3
+subroutine dict_get_val_first_d3(val,this)
+real(dp), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call assign(val,this%first%value)
+end subroutine dict_get_val_first_d3
+subroutine dict_get_p_d3(val,this,key)
+real(dp), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call associate(val,v)
+call nullify(v)
+end subroutine dict_get_p_d3
+subroutine dict_get_p_first_d3(val,this)
+real(dp), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call associate(val,this%first%value)
+end subroutine dict_get_p_first_d3
 function dict_kv_c0(key,val) result(this)
 character(len=*), intent(in) :: key
 complex(sp), intent(in) :: val
@@ -1339,6 +1542,48 @@ complex(sp), pointer , dimension(:,:) :: val
 type(dict), intent(inout) :: this
 call associate(val,this%first%value)
 end subroutine dict_get_p_first_c2
+function dict_kv_c3(key,val) result(this)
+character(len=*), intent(in) :: key
+complex(sp), intent(in), dimension(:,:,:) :: val
+type(dict) :: this
+this = new_d_key(key)
+call assign(this%first%value,val)
+end function dict_kv_c3
+function dict_kvp_c3(key, val) result(this)
+character(len=*), intent(in) :: key
+complex(sp), intent(in), dimension(:,:,:), target :: val
+type(dict) :: this
+this = new_d_key(key)
+call associate(this%first%value,val)
+end function dict_kvp_c3
+subroutine dict_get_val_c3(val,this,key)
+complex(sp), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call assign(val,v)
+call nullify(v)
+end subroutine dict_get_val_c3
+subroutine dict_get_val_first_c3(val,this)
+complex(sp), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call assign(val,this%first%value)
+end subroutine dict_get_val_first_c3
+subroutine dict_get_p_c3(val,this,key)
+complex(sp), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call associate(val,v)
+call nullify(v)
+end subroutine dict_get_p_c3
+subroutine dict_get_p_first_c3(val,this)
+complex(sp), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call associate(val,this%first%value)
+end subroutine dict_get_p_first_c3
 function dict_kv_z0(key,val) result(this)
 character(len=*), intent(in) :: key
 complex(dp), intent(in) :: val
@@ -1465,6 +1710,48 @@ complex(dp), pointer , dimension(:,:) :: val
 type(dict), intent(inout) :: this
 call associate(val,this%first%value)
 end subroutine dict_get_p_first_z2
+function dict_kv_z3(key,val) result(this)
+character(len=*), intent(in) :: key
+complex(dp), intent(in), dimension(:,:,:) :: val
+type(dict) :: this
+this = new_d_key(key)
+call assign(this%first%value,val)
+end function dict_kv_z3
+function dict_kvp_z3(key, val) result(this)
+character(len=*), intent(in) :: key
+complex(dp), intent(in), dimension(:,:,:), target :: val
+type(dict) :: this
+this = new_d_key(key)
+call associate(this%first%value,val)
+end function dict_kvp_z3
+subroutine dict_get_val_z3(val,this,key)
+complex(dp), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call assign(val,v)
+call nullify(v)
+end subroutine dict_get_val_z3
+subroutine dict_get_val_first_z3(val,this)
+complex(dp), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call assign(val,this%first%value)
+end subroutine dict_get_val_first_z3
+subroutine dict_get_p_z3(val,this,key)
+complex(dp), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call associate(val,v)
+call nullify(v)
+end subroutine dict_get_p_z3
+subroutine dict_get_p_first_z3(val,this)
+complex(dp), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call associate(val,this%first%value)
+end subroutine dict_get_p_first_z3
 function dict_kv_b0(key,val) result(this)
 character(len=*), intent(in) :: key
 logical, intent(in) :: val
@@ -1591,6 +1878,48 @@ logical, pointer , dimension(:,:) :: val
 type(dict), intent(inout) :: this
 call associate(val,this%first%value)
 end subroutine dict_get_p_first_b2
+function dict_kv_b3(key,val) result(this)
+character(len=*), intent(in) :: key
+logical, intent(in), dimension(:,:,:) :: val
+type(dict) :: this
+this = new_d_key(key)
+call assign(this%first%value,val)
+end function dict_kv_b3
+function dict_kvp_b3(key, val) result(this)
+character(len=*), intent(in) :: key
+logical, intent(in), dimension(:,:,:), target :: val
+type(dict) :: this
+this = new_d_key(key)
+call associate(this%first%value,val)
+end function dict_kvp_b3
+subroutine dict_get_val_b3(val,this,key)
+logical, intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call assign(val,v)
+call nullify(v)
+end subroutine dict_get_val_b3
+subroutine dict_get_val_first_b3(val,this)
+logical, intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call assign(val,this%first%value)
+end subroutine dict_get_val_first_b3
+subroutine dict_get_p_b3(val,this,key)
+logical, pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call associate(val,v)
+call nullify(v)
+end subroutine dict_get_p_b3
+subroutine dict_get_p_first_b3(val,this)
+logical, pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call associate(val,this%first%value)
+end subroutine dict_get_p_first_b3
 function dict_kv_h0(key,val) result(this)
 character(len=*), intent(in) :: key
 integer(ih), intent(in) :: val
@@ -1717,6 +2046,48 @@ integer(ih), pointer , dimension(:,:) :: val
 type(dict), intent(inout) :: this
 call associate(val,this%first%value)
 end subroutine dict_get_p_first_h2
+function dict_kv_h3(key,val) result(this)
+character(len=*), intent(in) :: key
+integer(ih), intent(in), dimension(:,:,:) :: val
+type(dict) :: this
+this = new_d_key(key)
+call assign(this%first%value,val)
+end function dict_kv_h3
+function dict_kvp_h3(key, val) result(this)
+character(len=*), intent(in) :: key
+integer(ih), intent(in), dimension(:,:,:), target :: val
+type(dict) :: this
+this = new_d_key(key)
+call associate(this%first%value,val)
+end function dict_kvp_h3
+subroutine dict_get_val_h3(val,this,key)
+integer(ih), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call assign(val,v)
+call nullify(v)
+end subroutine dict_get_val_h3
+subroutine dict_get_val_first_h3(val,this)
+integer(ih), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call assign(val,this%first%value)
+end subroutine dict_get_val_first_h3
+subroutine dict_get_p_h3(val,this,key)
+integer(ih), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call associate(val,v)
+call nullify(v)
+end subroutine dict_get_p_h3
+subroutine dict_get_p_first_h3(val,this)
+integer(ih), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call associate(val,this%first%value)
+end subroutine dict_get_p_first_h3
 function dict_kv_i0(key,val) result(this)
 character(len=*), intent(in) :: key
 integer(is), intent(in) :: val
@@ -1843,6 +2214,48 @@ integer(is), pointer , dimension(:,:) :: val
 type(dict), intent(inout) :: this
 call associate(val,this%first%value)
 end subroutine dict_get_p_first_i2
+function dict_kv_i3(key,val) result(this)
+character(len=*), intent(in) :: key
+integer(is), intent(in), dimension(:,:,:) :: val
+type(dict) :: this
+this = new_d_key(key)
+call assign(this%first%value,val)
+end function dict_kv_i3
+function dict_kvp_i3(key, val) result(this)
+character(len=*), intent(in) :: key
+integer(is), intent(in), dimension(:,:,:), target :: val
+type(dict) :: this
+this = new_d_key(key)
+call associate(this%first%value,val)
+end function dict_kvp_i3
+subroutine dict_get_val_i3(val,this,key)
+integer(is), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call assign(val,v)
+call nullify(v)
+end subroutine dict_get_val_i3
+subroutine dict_get_val_first_i3(val,this)
+integer(is), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call assign(val,this%first%value)
+end subroutine dict_get_val_first_i3
+subroutine dict_get_p_i3(val,this,key)
+integer(is), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call associate(val,v)
+call nullify(v)
+end subroutine dict_get_p_i3
+subroutine dict_get_p_first_i3(val,this)
+integer(is), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call associate(val,this%first%value)
+end subroutine dict_get_p_first_i3
 function dict_kv_l0(key,val) result(this)
 character(len=*), intent(in) :: key
 integer(il), intent(in) :: val
@@ -1969,6 +2382,48 @@ integer(il), pointer , dimension(:,:) :: val
 type(dict), intent(inout) :: this
 call associate(val,this%first%value)
 end subroutine dict_get_p_first_l2
+function dict_kv_l3(key,val) result(this)
+character(len=*), intent(in) :: key
+integer(il), intent(in), dimension(:,:,:) :: val
+type(dict) :: this
+this = new_d_key(key)
+call assign(this%first%value,val)
+end function dict_kv_l3
+function dict_kvp_l3(key, val) result(this)
+character(len=*), intent(in) :: key
+integer(il), intent(in), dimension(:,:,:), target :: val
+type(dict) :: this
+this = new_d_key(key)
+call associate(this%first%value,val)
+end function dict_kvp_l3
+subroutine dict_get_val_l3(val,this,key)
+integer(il), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call assign(val,v)
+call nullify(v)
+end subroutine dict_get_val_l3
+subroutine dict_get_val_first_l3(val,this)
+integer(il), intent(out), dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call assign(val,this%first%value)
+end subroutine dict_get_val_first_l3
+subroutine dict_get_p_l3(val,this,key)
+integer(il), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+character(len=*), intent(in) :: key
+type(var) :: v
+call associate(v,this,key=key)
+call associate(val,v)
+call nullify(v)
+end subroutine dict_get_p_l3
+subroutine dict_get_p_first_l3(val,this)
+integer(il), pointer , dimension(:,:,:) :: val
+type(dict), intent(inout) :: this
+call associate(val,this%first%value)
+end subroutine dict_get_p_first_l3
   ! helper routines for often used stuff
   subroutine val_delete_request(val,dealloc)
     type(var), intent(inout) :: val
@@ -2004,9 +2459,9 @@ end subroutine dict_get_p_first_l2
     logical, intent(in), optional :: dealloc
     ! Retrieving a dictionary will NEVER
     ! be copying the entire dictionary.
-    call dict_key_p_dict(dic,d,key=key,dealloc=dealloc)
+    call dict_get_p_dict(dic,d,key=key,dealloc=dealloc)
   end subroutine dict_key2dict
-  subroutine dict_key_p_dict(dic,d,key,dealloc)
+  subroutine dict_get_p_dict(dic,d,key,dealloc)
     type(dict), intent(inout) :: dic
     type(dict), intent(inout) :: d
     character(len=*), intent(in), optional :: key
@@ -2071,5 +2526,5 @@ end subroutine dict_get_p_first_l2
        dic%len = dic%len + 1
        ld = .next. ld
     end do
-  end subroutine dict_key_p_dict
+  end subroutine dict_get_p_dict
 end module dictionary
