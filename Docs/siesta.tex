@@ -6442,12 +6442,28 @@ of the buffers required for the matrix multiplications to calculate the Chebyshe
 	Initial guess for the error function decay length (will be adjusted automatically).
 \end{fdfentry}
 
-\begin{fdfentry}{CheSS!Fscale\_lowerbound}[energy]<$5 \cdot 10^{-3}\,\mathrm{Hartree}$>
+\begin{fdfentry}{CheSS!FscaleLowerbound}[energy]<$5 \cdot 10^{-3}\,\mathrm{Hartree}$>
 	Lower bound for the error function decay length.
 \end{fdfentry}
 
-\begin{fdfentry}{CheSS!Fscale\_upperbound}[energy]<$5 \cdot 10^{-2}\,\mathrm{Hartree}$>
+\begin{fdfentry}{CheSS!FscaleLupperbound}[energy]<$5 \cdot 10^{-2}\,\mathrm{Hartree}$>
 	Upper bound for the error function decay length.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!evlowH}[energy]<$-1.0\,\mathrm{Hartree}$>
+	Initial guess for the lower bound of the eigenvalue spectrum of the Hamiltonian matrix, will be adjusted automatically if chosen unproperly.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!evhighH}[energy]<$-1.0\,\mathrm{Hartree}$>
+	Initial guess for the upper bound of the eigenvalue spectrum of the Hamiltonian matrix, will be adjusted automatically if chosen unproperly.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!evlowS}[real]<$0.5$>
+	Initial guess for the lower bound of the eigenvalue spectrum of the overlap matrix, will be adjusted automatically if chosen unproperly.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!evhighS}[real]<$1.5$>
+	Initial guess for the upper bound of the eigenvalue spectrum of the overlap matrix, will be adjusted automatically if chosen unproperly.
 \end{fdfentry}
 
 \subsection{The PEXSI solver}
