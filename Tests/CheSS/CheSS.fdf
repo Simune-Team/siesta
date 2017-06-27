@@ -5,8 +5,13 @@ NumberOfSpecies     2
 
 SolutionMethod CheSS
 MaxSCFIterations 10
-CheSS.Buffer.Kernel 2.0
-CheSS.Buffer.Mult 4.0
+CheSS.Buffer.Kernel  2.0 Bohr
+CheSS.Buffer.Mult    4.0 Bohr
+CheSS.Fscale         4.d-2 Ry
+CheSS.evlowH        -2.0 Ry
+CheSS.evhighH        0.5 Ry
+CheSS.evlowS         0.3
+CheSS.evhighS        3.0
 
 PAO.BasisSize SZ
 

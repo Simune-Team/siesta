@@ -758,31 +758,31 @@ subroutine read_options( na, ns, nspin )
       'redata: CheSS.Betax',chess_value
 
   ! Initial guess for the error function decay length
-  chess_value = fdf_get('CheSS.Fscale', 5.e-2_dp, 'Hartree')
+  chess_value = fdf_get('CheSS.Fscale', 1.e-1_dp, 'Ry')
   call set_CheSS_parameter('chess_fscale', chess_value)
   if (ionode)  write(6,7), &
       'redata: CheSS.Fscale',chess_value
 
   ! Lower bound for the error function decay length
-  chess_value = fdf_get('CheSS.FscaleLowerbound', 5.e-3_dp, 'Hartree')
+  chess_value = fdf_get('CheSS.FscaleLowerbound', 1.e-2_dp, 'Ry')
   call set_CheSS_parameter('chess_fscale_lowerbound', chess_value)
   if (ionode)  write(6,7), &
       'redata: CheSS.FscaleLowerbound',chess_value
 
   ! Upper bound for the error function decay length
-  chess_value = fdf_get('CheSS.FscaleUpperbound', 5.e-2_dp, 'Hartree')
+  chess_value = fdf_get('CheSS.FscaleUpperbound', 1.e-1_dp, 'Ry')
   call set_CheSS_parameter('chess_fscale_upperbound', chess_value)
   if (ionode)  write(6,7), &
       'redata: CheSS.FscaleUpperbound',chess_value
 
   ! Initial guess for the lowest eigenvalue bound of the Hamiltonian
-  chess_value = fdf_get('CheSS.evlowH', -1.0_dp, 'Hartree')
+  chess_value = fdf_get('CheSS.evlowH', -2.0_dp, 'Ry')
   call set_CheSS_parameter('chess_evlow_h', chess_value)
   if (ionode)  write(6,7), &
       'redata: CheSS.evlowH',chess_value
 
   ! Initial guess for the highest eigenvalue bound of the Hamiltonian
-  chess_value = fdf_get('CheSS.evhighH', 1.0_dp, 'Hartree')
+  chess_value = fdf_get('CheSS.evhighH', 2.0_dp, 'Ry')
   call set_CheSS_parameter('chess_evhigh_h', chess_value)
   if (ionode)  write(6,7), &
       'redata: CheSS.evhighH',chess_value
