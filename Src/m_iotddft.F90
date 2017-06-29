@@ -37,7 +37,7 @@
       DOUBLE PRECISION, INTENT(IN)  :: eigen(maxo,nspin,nk) 
       LOGICAL, SAVE                 :: laststp = .false.
       
-      IF (istp .gt. fincoor .AND. itd .gt. ntd) THEN
+      IF (istp .ge. fincoor .AND. itd .ge. ntd) THEN
          laststp = .true.
       END IF
       
@@ -87,15 +87,13 @@
          dipolefile = trim(slabel) // '.TDDIPOL'
          call io_assign( iu )
          fform='formatted'
-         OPEN( iu, FILE=dipolefile, FORM=fform, STATUS='unknown' )
+         OPEN( iu, FILE=dipolefile, FORM=fform,POSITION='APPEND', STATUS='REPLACE' )
 !        write(iu,'(a,3f15.6)') '#',extfield(1), extfield(2), extfield(3)
          frstme = .false.
        END IF
-       IF (totime .gt. rstart_time) THEN
           WRITE(iu,'(4f15.6)')                                         &
           totime,                                                      &
           dipole(1),dipole(2), dipole(3)
-       END IF
        IF (lastistp) call io_close(iu)
         
        END IF ! IONode
@@ -116,13 +114,10 @@
           etotfile = trim(slabel) // '.TDETOT'
           CALL io_assign ( iu )
           fform = 'formatted'
-          OPEN (iu, FILE=etotfile, FORM=fform, POSITION='APPEND',      &
-                STATUS='UNKNOWN')
+          OPEN (iu, FILE=etotfile, FORM=fform,POSITION='APPEND',STATUS='REPLACE')
           frstme = .false.
         END IF
-        IF (totime .gt. rstart_time) THEN ! To avoid rewriting the already written data in case of restart.
            WRITE (iu, '(2f15.6)') totime, etot/eV
-        END IF
         IF (lastistp) CALL io_close(iu)
         END IF ! IONode
       END SUBROUTINE ioetot
@@ -145,18 +140,16 @@ SUBROUTINE ioeigenvalues (totime, eigen, lastistp, rstart_time, &
      eigenfile = trim(slabel) // '.TDEIG'
      fform = 'formatted'
      OPEN (NEWUNIT=iuu, FILE=eigenfile, FORM=fform, POSITION='APPEND',      &
-          STATUS='UNKNOWN')
+          STATUS='REPLACE')
      WRITE(iuu,*) '#  ', nspin, nk
      frstme = .false.
    END IF
-   IF (totime .gt. rstart_time) THEN
      WRITE(iuu,"(f12.8,/)") totime
      DO ik = 1, nk
        WRITE(iuu,"(i5,10f12.5,/,(5x,10f12.5))")               &
             ik, ((eigen(ie,ispin,ik)/eV,ie=1,(wavef_ms(ik,ispin)%dim2)),      &
             ispin=1,nspin)
      END DO
-   END IF
    IF (lastistp) CLOSE (iuu)
   END IF ! IONode
 END SUBROUTINE ioeigenvalues 

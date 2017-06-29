@@ -1,3 +1,15 @@
+2017-06-29  14:10 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-30
+
+Smooth restart from saved wavefunctions.
+
+* TDDFT calculation can be restarted from a previous completed simulation.
+
+modified:
+  Src/m_initwf.F90
+  Src/m_iotddft.F90
+  Src/siesta_tddft.F90
+  Src/wavefunctions.F90
+
 2017-06-29  12:40 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-29
 
 Small bug fix while saving wavefunctions.

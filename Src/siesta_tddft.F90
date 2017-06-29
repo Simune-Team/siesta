@@ -53,8 +53,7 @@ contains
 
     integer, intent(inout)  :: istep
     
-    integer :: ik
-    integer :: istpp, ispin
+    integer :: ik, ispin
     real(dp) :: G2max
 #ifdef DEBUG
     call write_debug( '    PRE siesta_tddft' )
@@ -115,13 +114,11 @@ contains
 
     if ( istep == 1 ) then
        allocate(wavef_ms(nkpnt,nspin))
-       call iowavef('read',wavef_ms,no_u,nkpnt,nspin, istpp, &
-            rstart_time)
+       call iowavef('read',wavef_ms,no_u,nkpnt,nspin)
        IF (IONode) THEN
        write(6,'(a)') 'Computing DM from initial KS wavefunctions'
        END IF
          call compute_tddm(Dscf)
-       istep = istpp + 1
     end if
 
     do itded = 1 , ntded ! TDED loop
@@ -156,7 +153,7 @@ contains
       ! into new basis set before saving them. This keeps the wavefunctions
       ! concurrent with atomic position.
       call sankey_change_basis ( istep )
-      call iowavef('write',wavef_ms,no_u,nkpnt,nspin, istep,totime)
+      call iowavef('write',wavef_ms,no_u,nkpnt,nspin)
     end if
 
 #ifdef DEBUG

@@ -279,7 +279,7 @@ CONTAINS
 !     Write/save wavefunction in .TDWF file to use for TDDFT calculation.
       IF (Node .eq. 0) WRITE(6,'(a)') 'initwf: Saving wavefunctions & 
                   &in <systemlabel>.TDWF file.'
-      call  iowavef('write',wavef_ms,no_u,nkpnt,nspin,istpp,totime)
+      call  iowavef('write',wavef_ms,no_u,nkpnt,nspin)
 !     Free local arrays
       call memory('D','I',size(muo),'initwf',stat=mem_stat)
       deallocate(muo,stat=mem_stat)

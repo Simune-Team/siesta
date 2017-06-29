@@ -14,7 +14,7 @@ MODULE  wavefunctions
 
 CONTAINS
   !
-  subroutine iowavef(task,wavef_rw,nuotot,nk,nspin,istpp,totime)
+  subroutine iowavef(task,wavef_rw,nuotot,nk,nspin)
  
     ! To read and write the TDKS orbitals
     ! 
@@ -35,8 +35,6 @@ CONTAINS
     implicit none
     !
     integer, intent(in)             :: nuotot, nk, nspin
-    integer, intent(inout)          :: istpp
-    real(dp), intent(inout)         :: totime
     character*(*), intent(in)       :: task
     type(matrix), intent(inout)     :: wavef_rw(nk,nspin)
     ! Internal variables and arrays
@@ -94,12 +92,7 @@ CONTAINS
         call io_assign(unit1)
         open( unit1, file=fname, form='unformatted',                 &
         status='old' )
-        read(unit1) istpp, totime
       endif
-#ifdef MPI 
-      call MPI_Bcast(istpp,1,MPI_double_complex,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(totime,1,MPI_double_complex,0,MPI_Comm_World,MPIerror)
-#endif
       if (Node.eq.0) then
         read(unit1) nuototread, nkread, nspinread
         if(nkread.ne.nk) stop 'iowavef: Nunber of K-points inconsistent '
@@ -137,7 +130,6 @@ CONTAINS
         call io_assign(unit1)
         open( unit1, file=fname, form='unformatted',status='replace' )
         rewind(unit1)
-        write(unit1) istpp, totime
         write(unit1) nuotot,nk,nspin
         !
         do ispin=1,nspin
