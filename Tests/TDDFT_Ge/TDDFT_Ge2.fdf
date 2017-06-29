@@ -20,7 +20,7 @@ SolutionMethod       Diagon
 
 MD.TypeOfRun               TDED 
 MD.FinalTimeStep           10
-MD.LengthTimeStep           1.0000000000E-03 fs
+TDED.TimeStep               1.0000000000E-03 fs
 TDED.Nsteps                 1
 
 PAO.BasisSize SZ
