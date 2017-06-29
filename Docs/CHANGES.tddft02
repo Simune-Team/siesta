@@ -1,3 +1,10 @@
+2017-06-29  12:40 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-29
+
+Small bug fix while saving wavefunctions.
+
+modified:
+  Src/siesta_tddft.F90
+
 2017-06-27  18:00 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-28
 
 Changed the logic of TDED and MD time steps.

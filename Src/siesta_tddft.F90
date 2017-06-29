@@ -28,7 +28,7 @@ contains
     use m_state_init
     use m_setup_hamiltonian
     use m_setup_H0
-    use m_steps
+    use m_steps,         only: fincoor
     use sparse_matrices, only:H, Dscf, Escf, maxnh, numh, listhptr
     use m_eo,          only: eo
     use m_energies,    only: Etot           ! Total energy
@@ -150,7 +150,7 @@ contains
     call final_H_f_stress(istep, 1, .false.)
     call state_analysis( istep )
     ! Save the final wavefunctions for restart or analysis. 
-    if(tdsavewf) then
+    if(tdsavewf .and. istep .ge. fincoor) then
       ! Since the atomic position are updated after the wavefunctions
       ! for consistency in restart we transform the wavefunctions 
       ! into new basis set before saving them. This keeps the wavefunctions
