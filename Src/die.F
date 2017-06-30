@@ -101,3 +101,19 @@
       endif
 
       end subroutine message
+
+      subroutine reset_messages_file()
+      use parallel, only : Node
+
+      integer :: lun
+      external ::  io_assign, io_close
+      
+      if (Node .eq. 0) then
+         call io_assign(lun)
+         ! Open with 'replace' to clear content
+         open(lun,file="MESSAGES",status="replace",
+     $        position="rewind",action="write")
+         call io_close(lun)
+      endif
+      end subroutine reset_messages_file
+      

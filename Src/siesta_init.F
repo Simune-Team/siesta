@@ -82,6 +82,7 @@
       integer :: walltime_slack
 
       external :: read_options
+      external :: reset_messages_file
       
 !------------------------------------------------------------------------- BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
@@ -96,10 +97,15 @@
       endif ! (.not.initialized)
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+
+      call reset_messages_file()
+      
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
      &           'doesn''t have parallel support')
       endif
+#else
+      call reset_messages_file()
 #endif
       if (Node==0) then
          call system("rm -f 0_NORMAL_EXIT")
