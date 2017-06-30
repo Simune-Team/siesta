@@ -13,7 +13,7 @@
 !
       Module write_subs_positions
 
-      use m_steps
+      use m_steps, only: final
 
       private
       public :: siesta_write_positions
@@ -64,7 +64,7 @@
       END MODULE write_subs_positions
       Module write_subs_pressure
 
-      use m_steps
+      use m_steps, only: final
 
       private
       public :: siesta_write_stress_pressure
@@ -130,9 +130,17 @@
             write(6,"(a,f14.4)") "Target enthalpy (eV/cell)",
      $           (FreeE + tp*volume_of_some_cell)/eV
 
+      ! Write stress to CML file always
+        if (cml_p) then
+           call cmlAddProperty(xf=mainXML, value=stress*Ang**3, 
+     .             dictref='siesta:stress', title='Stress',
+     .             units='siestaUnits:evpa3')
+        endif         !cml_p
+        
       ! Output depends on dynamics option
         select case (idyn)
         case(0:5,8)
+           
           if (idyn==0 .and. (.not.varcel)) then
             continue
           else
@@ -142,15 +150,13 @@
             Psol = - ((stress(1,1) + stress(2,2) + stress(3,3))/3.0_dp)
             write(6,'(/,a,f20.8,a)')
      .           'siesta: Pressure (static):', Psol/kBar, '  kBar'
+!
             if (cml_p) then
-              call cmlAddProperty(xf=mainXML, value=stress*Ang**3, 
-     .             dictref='siesta:stress', title='Stress',
-     .             units='siestaUnits:evpa3')
+              ! stress written above
               call cmlAddProperty(xf=mainXML, value=Psol, 
      .             dictref='siesta:psol', title='Pressure (Static)',
      .             units='siestaUnits:kBar')
-            endif !cml_p
-!
+            endif                !cml_p
             write(6,'(/,a,3(/,a,3f12.6))')
      .           'siesta: Stress tensor (total) (eV/Ang**3):',
      .           ('     ',(tstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
@@ -271,7 +277,7 @@
 
       Module write_subs_energies
 
-      use m_steps
+      use m_steps, only: final, istp
 
       private
       public :: siesta_write_energies
@@ -580,7 +586,6 @@
 !
       Module write_subs
 
-      use m_steps
       use write_subs_pressure,  only : siesta_write_stress_pressure
       use write_subs_energies,  only : siesta_write_energies
       use write_subs_positions, only : siesta_write_positions
@@ -597,6 +602,7 @@
       use siesta_cml
       use units,      only : Ang, eV
       use m_forces
+      use m_steps, only: final, inicoor
       use alloc,      only : re_alloc, de_alloc
       implicit none
       integer, intent(in) :: istep

@@ -6,7 +6,7 @@
 # See Docs/Contributors.txt for a list of contributors.
 #
 .SUFFIXES:
-.SUFFIXES: .f .F .o .a .f90 .F90
+.SUFFIXES: .f .F .o .a .f90 .F90 .c
 
 SIESTA_ARCH=@SIESTA_ARCH@
 

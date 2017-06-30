@@ -1,0 +1,10 @@
+This directory can be used to build Siesta.
+
+- Create an arch.make file
+
+- Type:
+    'sh ../Src/obj_setup.sh'
+  to create the scaffolding of makefiles here.
+
+- Type 'make'
+  

@@ -6602,6 +6602,27 @@ node and is aware of the tree-structure of the timed sections.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf MaxWalltime}] ({\it integer}): 
+\index{MaxWalltime@{\bf MaxWalltime}}
+
+Set an internal limit in seconds to the wall time allotted to the
+program's execution. Typically this is related to the external limit
+imposed by queuing systems. The code checks its wall time periodically
+and will abort if nearing the limit, with some slack left for clean-up
+operations (proper closing of files, emergency output...), as determined
+by {\bf MaxWalltimeSlack}. 
+
+{\it Default value:} {\tt Infinity}
+
+\item[{\bf MaxWalltimeSlack}] ({\it integer}): 
+\index{MaxWalltimeSlack@{\bf MaxWalltimeSlack}}
+
+The code checks its wall time $T_{\rm wall}$ periodically and will
+abort if $T_{\rm wall} > T_{\rm max} - T_{\rm slack}$, so that
+some slack is left for any clean-up operations.
+
+{\it Default value:} {\tt 5 (implicit unit of seconds)}
+
 
 \end{description}
 
@@ -6652,7 +6673,7 @@ charge-density and wavefunction information in real space.
 To run DENCHAR you will need, apart from the PLD and DIM files,
 the Density-Matrix (DM) file and/or a wavefunction (WFSX)
 file, and the .ion files containing the information about the basis
-orbitals.
+orbital.s
 
 {\it Default value:} {\tt .false.}
 

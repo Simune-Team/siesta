@@ -82,7 +82,7 @@ C General initialisation
 C ----------------------------------------------------------------------
 
       if (nspin .eq. 4) then
-        call message("Hirshfeld and Voronoi populations" //
+        call message("WARNING","Hirshfeld and Voronoi populations" //
      $               " not implemented for non-collinear spin")
         return
       endif

@@ -44,15 +44,15 @@ SYSOBJ=$(SYS).o
 # Tbtrans:
 MOD_TOBJS=  m_tbt_options.o m_tbt_gf.o m_tbt_kpts.o hamil2.o tsread2.o
 
-SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
+SIESTA_OBJS= precision.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
              moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
              m_fdf_global.o paste.o timer_tree.o \
-             parallel.o  io.o files.o  zheevds.o debugmpi.o die.o
+             parallel.o  io.o files.o  zheevds.o debugmpi.o 
 
 TBTOBJS= tbtrans.o transmission.o   \
          calc_green.o cdiag_local.o getsfe.o \
          mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o \
-         csolve.o teigchana.o helpers.o \
+         csolve.o teigchana.o helpers.o local_sys.o \
          $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA)
 
 
@@ -113,31 +113,31 @@ dep:
 $(TBTOBJS)      : $(FDF)
 
 reinit.o        : $(MPI_INTERFACE)
-sys.o           : $(MPI_INTERFACE) parallel.o
+local_sys.o           : $(MPI_INTERFACE) parallel.o
 #
 # -- specially prepared dependency list -- do not remove this line!
 tbtrans.o: files.o hamil2.o m_mpi_utils.o m_tbt_gf.o m_tbt_kpts.o
-tbtrans.o: m_tbt_options.o parallel.o sys.o
+tbtrans.o: m_tbt_options.o parallel.o local_sys.o
 calc_green.o: m_tbt_gf.o
 getsfe.o: m_tbt_gf.o
 mkRealContour.o: parallel.o
 reinit_tb.o: files.o parallel.o
 setupkham2.o: m_tbt_kpts.o tsread2.o
-TSiohs.o: m_mpi_utils.o parallel.o sys.o
-sys.o: parallel.o
-m_io.o: sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
+TSiohs.o: m_mpi_utils.o parallel.o local_sys.o
+local_sys.o: parallel.o
+m_io.o: local_sys.o
+alloc.o: m_io.o parallel.o precision.o local_sys.o
 memoryinfo.o: precision.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
-moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
-m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
-timer.o: m_timer.o parallel.o sys.o timer_tree.o
-m_mpi_utils.o: precision.o sys.o
+moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o local_sys.o
+m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o local_sys.o
+timer.o: m_timer.o parallel.o local_sys.o timer_tree.o
+m_mpi_utils.o: precision.o local_sys.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 timer_tree.o: m_walltime.o
-io.o: sys.o
+io.o: local_sys.o
 debugmpi.o: parallel.o
 die.o: parallel.o
 m_tbt_options.o: files.o parallel.o precision.o
-m_tbt_gf.o: m_tbt_kpts.o m_tbt_options.o parallel.o sys.o tsread2.o
-m_tbt_kpts.o: m_mpi_utils.o m_tbt_options.o parallel.o sys.o
+m_tbt_gf.o: m_tbt_kpts.o m_tbt_options.o parallel.o local_sys.o tsread2.o
+m_tbt_kpts.o: m_mpi_utils.o m_tbt_options.o parallel.o local_sys.o

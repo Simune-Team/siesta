@@ -30,7 +30,7 @@
       use parallel,     only : IOnode
       use m_state_analysis
       use m_steps
-      use sys, only : die, bye
+      use sys, only : bye
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
       use siesta_geom,   only: na_u           ! Number of atoms in unit cell
@@ -44,6 +44,8 @@
       use sparse_matrices, only: H, Hold, Dold, Dscf
       use m_save_density_matrix, only: save_density_matrix
       use m_compute_energies, only: compute_energies
+      use m_check_walltime
+      
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
@@ -56,6 +58,11 @@
       real(dp) :: dmax      ! Max. change in DM or H elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
+
+      logical               :: time_is_up
+      character(len=40)     :: tmp_str
+      
+      external :: die, message
 
 #ifdef TRANSIESTA
 ! Used in force constant runs
@@ -108,6 +115,7 @@
 #endif
 
         if (first) then
+           SCFConverged = .false.
            if (require_harris_convergence) then
               call reset(conv_harris)
               call set_tolerance(conv_harris,harris_tolerance)
@@ -118,6 +126,22 @@
            endif
         endif
 
+        ! Check whether we are short of time to continue
+        call check_walltime(time_is_up)
+        if (time_is_up) then
+           ! Save DM/H if we were not saving it...
+           !     Do any other bookeeping not done by "die"
+           if (.not. SCFConverged) then
+              call message('WARNING',
+     $             'SCF_NOT_CONV: SCF did not converge'//
+     $             ' before wall time exhaustion')
+              write(tmp_str,"(i4,i3,f12.6)") istep, iscf, dmax
+              call message(' (info)',"Geom step, scf iteration, dmax:"
+     $                            //trim(tmp_str))
+           endif
+           call die("OUT_OF_TIME: Time is up.")
+        endif
+        
         call timer( 'IterSCF', 1 )
         if (cml_p)
      &         call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
@@ -214,10 +238,21 @@
 
       else
 
-        if (ionode) write(6,"(a)") ':!: SCF did not converge'//
-     $                              ' in maximum number of steps.'
-        if (SCFMustConverge) call die('SCF did not converge' //
-     $                              ' in maximum number of steps.')
+         if (SCFMustConverge) then
+            call message('FATAL','SCF_NOT_CONV: SCF did not converge' //
+     $           ' in maximum number of steps (required).')
+            write(tmp_str,"(i4,i3,f12.6)") istep, iscf, dmax
+            call message(' (info)',"Geom step, scf iteration, dmax:"
+     $           //trim(tmp_str))
+            call die('ABNORMAL_TERMINATION')
+         else
+            call message('WARNING',
+     $           'SCF_NOT_CONV: SCF did not converge'//
+     $           ' in maximum number of steps.')
+            write(tmp_str,"(i4,i3,f12.6)") istep, iscf, dmax
+            call message(' (info)',"Geom step, scf iteration, dmax:"
+     $                            //trim(tmp_str))
+         endif
       endif
 
 

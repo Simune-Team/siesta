@@ -89,6 +89,10 @@
 #ifdef DEBUG
       call write_debug( 'POS SIESTA_END' )
 #endif
+      !
+      ! Add stamp to MESSAGES file
+      call message('INFO','Job completed')
+      
 #ifdef MPI
       MPIerror = MPI_SUCCESS
       if (.not.siesta_subroutine) call MPI_Finalize( MPIerror )

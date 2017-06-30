@@ -99,7 +99,7 @@
          call die("WFS.BandMax > number of orbitals")
       endif
       if (wfs_band_max < wfs_band_min) then
-         call message("WFS.BandMax < WFS.BandMin." //
+         call message("WARNING","WFS.BandMax < WFS.BandMin." //
      $        " Nothing written to file")
       endif
 

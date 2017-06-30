@@ -1,3 +1,17 @@
+      module sys
+      public :: die
+      contains
+       subroutine die(str)
+       character(len=*), intent(in), optional :: str
+       if (present(str)) then
+          call local_die(str)
+       else
+          call local_die('')
+       endif
+       end subroutine die
+      end module sys
+     
+         
 ! ---
 ! Copyright (C) 1996-2016	The SIESTA group
 !  This file is distributed under the terms of the
@@ -29,10 +43,9 @@
 !
 !------------------------------------------------------
 
-      subroutine die(str)
+      subroutine local_die(str)
 
       use parallel, only : Node
-      use siesta_cml
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -63,9 +76,6 @@
          call io_close(lun)
          call pxfflush(6)
          call pxfflush(0)
-         If (cml_p) Then
-            Call cmlFinishFile(mainXML)
-         Endif                  !cml_p
       endif
 
 #ifdef MPI
@@ -74,7 +84,7 @@
 #else
       call pxfabort()
 #endif
-      end subroutine die
+      end subroutine local_die
       
       subroutine message(level,str)
 
@@ -102,18 +112,7 @@
 
       end subroutine message
 
-      subroutine reset_messages_file()
-      use parallel, only : Node
-
-      integer :: lun
-      external ::  io_assign, io_close
-      
-      if (Node .eq. 0) then
-         call io_assign(lun)
-         ! Open with 'replace' to clear content
-         open(lun,file="MESSAGES",status="replace",
-     $        position="rewind",action="write")
-         call io_close(lun)
-      endif
-      end subroutine reset_messages_file
-      
+      subroutine die(str)
+      character(len=*), intent(in)  :: str
+      call local_die(str)
+      end subroutine die

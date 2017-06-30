@@ -59,7 +59,8 @@
 #ifdef DEBUG_XC
       USE siestaXC, only: setDebugOutputUnit
 #endif /* DEBUG_XC */
-      USE m_timer, only: timer_report  ! Sets options for report of CPU times
+      USE m_timer, only: timer_report ! Sets options for report of CPU times
+      use m_check_walltime
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -78,8 +79,10 @@
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
+      integer :: walltime_slack
 
       external :: read_options
+      external :: reset_messages_file
       
 !------------------------------------------------------------------------- BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
@@ -94,10 +97,15 @@
       endif ! (.not.initialized)
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+
+      call reset_messages_file()
+      
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
      &           'doesn''t have parallel support')
       endif
+#else
+      call reset_messages_file()
 #endif
       if (Node==0) then
          call system("rm -f 0_NORMAL_EXIT")
@@ -226,6 +234,13 @@
       if (struct_only) then
          call bye('End of structure processing')
       endif
+
+!     Walltime control (numbers in seconds)
+      walltime_max = fdf_get("max-walltime",huge(1))
+      ! Period for clean-up operations
+      walltime_slack = fdf_get("max-walltime-slack",5)
+      ! Note that the slack detracts from net available time
+      walltime_warning = walltime_max - walltime_slack
       
 !     End of Initial Structure Processing
       if (Node.eq.0) then
