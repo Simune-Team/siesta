@@ -74,13 +74,13 @@ SYSOBJ=$(SYS).o
 OBJS_STM = atompla.o  \
         bessph.o chkdim.o dismin.o \
 	dot.o fftw3_mymod.o extrapolate.o \
-        io.o iodm.o itochar.o length.o \
+        io.o iodm.o length.o \
         mainstm.o matvect.o memory.o \
 	neighb.o paste.o pxf.o \
 	 radfft.o ranger.o \
-        readstm.o readwaves.o \
+        readstm.o m_wfsx.o \
         redata.o  reinitstm.o stm.o \
-	vacpot.o volcel.o wrout.o handlers.o local_sys.o
+	vacpot.o volcel.o handlers.o local_sys.o
 #
 INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
@@ -162,7 +162,7 @@ chkdim.o: local_sys.o
 extrapolate.o: fftw3_mymod.o precision.o
 io.o: local_sys.o
 iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o local_sys.o
-mainstm.o: basis_io.o listsc.o parallel.o precision.o
+mainstm.o: basis_io.o listsc.o parallel.o precision.o m_wfsx.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 ranger.o: precision.o

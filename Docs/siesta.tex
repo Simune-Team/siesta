@@ -5027,9 +5027,8 @@ descriptor above for more information.
 The user can optionally request that the wavefunctions corresponding
 to the computed bands be written to file. 
 They are written to the {\it SystemLabel}.bands.WFSX file
-\index{WFSX file!bands.WFSX@\texttt{bands.WFSX}} 
-(see section below for the
-format). The relevant options are:
+\index{WFSX file!bands.WFSX@\texttt{bands.WFSX}}.
+The relevant options are:
 
 \begin{description}
 
@@ -5078,7 +5077,7 @@ written to file. These wavefunctions are re-computed after the
 geometry loop (if any) finishes, using the last (presumably converged)
 density matrix produced during the last self-consistent field loop
 (after a final mixing). They are written to the
-SystemLabel.selected.WFSX file (see below for the format).
+SystemLabel.selected.WFSX file.
 \index{WFSX file!selected.WFSX@\texttt{selected.WFSX}} 
 
 Note that the complete set of wavefunctions obtained during the last
@@ -5128,8 +5127,6 @@ The user can also narrow the energy-range used with the {\bf
 energy (with units) as extra argument -- see
 section~\ref{sec:coop}). Care should be taken to make sure that the
 actual values of the options make sense.
-
-The output of the wavefunctions in described in Section \ref{subsec:wf}
 
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
 These k points are unrelated and compatible with any k-grid used
