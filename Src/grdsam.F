@@ -13,7 +13,7 @@
      &                  cell, ntm, ifa, istr, maxnd,
      &                  maxnh, numh, listhptr, listh, Dscf, Datm, Hmat,
      &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     &                  Exc, Dxc, dipol, fa, stress, fal, stressl )
+     &                  Exc, Dxc, dipol, stress, fal, stressl )
 
 c ***************************************************************************
 c Final call to dhscf of the scf cycle + grid-cell sampling
@@ -74,7 +74,6 @@ c real*8  exc    : scf XC energy
 c real*8  dxc    : scf double-counting correction to exc
 c real*8  dipol(3): electric dipole (in a.u.)
 c *********************** DHSCF INPUT AND OUTPUT ****************************
-c real*8  fa(3,na)    : atomic forces
 c real*8  stress(3,3) : stress tensor
 c real*8  fal(3,na)   : atomic forces (local to Node)
 c real*8  stressl(3,3): stress tensor (local to Node)
@@ -108,25 +107,33 @@ C
      &                  iphorb(norb), isa(na), istr, listh(maxnh),
      &                  listhptr(nuo), numh(nuo), ntm(3)
 
-      real(dp)          cell(3,3), datm(norb), dipol(3), 
-     &                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
-     &                  enaatm, enascf, exc, fa(3,nua),
-     &                  Hmat(maxnh,nspin), stress(3,3),
-     &                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
+      real(dp)          cell(3,3), Datm(norb), dipol(3),
+     &                  Dscf(maxnd,nspin),
+     &                  Hmat(maxnh,nspin), stress(3,3), stressl(3,3),
+     &                  xa(3,na), fal(3,nua)
+
+      ! In/out energies
+      real(dp) :: DUscf, DUext, Dxc, Enaatm, Enascf, Exc, Uatm, Uscf
 
 C Internal variables and arrays
  
       logical           samesh
       integer           nr, ipt, ia,
      &                  iv
-      real(dp)          avexc, strold(3,3,2), avdipo(3),
-     &                  avdxc, avenaa, avenas, avuatm, avuscf, avdusc,
-     &                  anpt
-      real(dp)          G2max
+      real(dp) :: strold(3,3,2)
+      ! Average quantities
+      real(dp) :: avdipol(3)
+      real(dp) :: avDUscf, avDUext, avDxc
+      real(dp) :: avEnaatm, avEnascf, avExc
+      real(dp) :: avUatm, avUscf
+      real(dp) :: anpt
 
-      real(dp), pointer :: allfa(:,:,:,:) => null()
+      ! Used grid-cutoff
+      real(dp) :: G2max
+
+      real(dp), pointer :: allfa(:,:,:) => null()
       real(dp), pointer :: allstr(:,:,:,:) => null()
-      real(dp), pointer :: faold(:,:,:) => null()
+      real(dp), pointer :: faold(:,:) => null()
       real(dp), pointer :: xanew(:,:) => null()
 
       type(block_fdf)            :: bfdf
@@ -163,7 +170,6 @@ C Check whether GridCellSampling block has been looked for ------------------
         ! fashion such that one can do a "MP" style
         ! sampling.
 
-        
         if ( fdf_islist('Grid.CellSampling') ) then
            samgrd = .true.
            
@@ -171,6 +177,7 @@ C Check whether GridCellSampling block has been looked for ------------------
            ! Cell sampling, the diagonal one (via a list)
 
            call fdf_list('Grid.CellSampling', 3, nABC)
+           ! all zeros are equivalent to 1
            if ( nABC(1) < 1 ) nABC(1) = 1
            if ( nABC(2) < 1 ) nABC(2) = 1
            if ( nABC(3) < 1 ) nABC(3) = 1
@@ -180,7 +187,7 @@ C Check whether GridCellSampling block has been looked for ------------------
 
            if ( npt == 0 ) then
               ! This is the special case where the user
-              ! says [1 1 1]
+              ! says [1 1 1] / [0 0 0]
               ! in that case we sample the half diagonal
               ! voxel
               npt = 1
@@ -221,6 +228,7 @@ C Check whether GridCellSampling block has been looked for ------------------
            
         else if ( fdf_block('Grid.CellSampling', bfdf) ) then
            samgrd = .true.
+           
            ! The user-defined one
            
            ! First read the number of sampled points
@@ -255,18 +263,21 @@ C Check whether GridCellSampling block has been looked for ------------------
      &             trim(fdf_getline(bfdf%mark))
              end if
           end do
+          
         end if
+       
         blread = .true.
+       
       endif
 
 c if sampling, store the forces and stresses prior to dhscf -----------------
 
       if ( samgrd ) then
 
-        ! Allocate the old forces (to be summed for the averaged stuff)
-        call re_alloc( faold, 1, 3, 1, nua, 1, 2, 'faold', 'grdsam' )
-        faold(:,:,1) = fa(:,:)
-        faold(:,:,2) = fal(:,:)
+        ! Allocate the old forces which contain the pre-mesh local forces
+        call re_alloc( faold, 1, 3, 1, nua, 'faold', 'grdsam' )
+        faold(:,:) = fal(:,:)
+        ! also store the pre-mesh global and local stress
         strold(:,:,1) = stress(:,:)
         strold(:,:,2) = stressl(:,:)
         if ( IONode ) then
@@ -322,30 +333,30 @@ c initialize averages with output of regular DHSCF run -----------------------
 
         ! Allocate the used sampling arrays
         call re_alloc( xanew, 1, 3, 1, na, 'xanew', 'grdsam' )
-        call re_alloc( allfa, 1, 3, 1, nua, 1, 2, 0, npt, 
-     &       'allfa', 'grdsam')
+        call re_alloc( allfa, 1, 3, 1, nua, 0, npt, 'allfa', 'grdsam')
         call re_alloc( allstr, 1, 3, 1, 3, 1, 2, 0, npt, 
      &       'allstr', 'grdsam')
 
-        ! Instead of doing the consecutive average
         ! It is rather instructive to save them all 
         ! and get the difference between the consecutive
         ! runs to get a magnitude of the difference.
-        allfa(:,:,1,0) = fa(:,:) - faold(:,:,1)
-        allfa(:,:,2,0) = fal(:,:) - faold(:,:,2)
+        ! I.e. the stored forces are now _only_ the grid-cell
+        ! sampled differences
+        allfa(:,:,0) = fal(:,:) - faold(:,:)
         allstr(:,:,1,0) = stress(:,:) - strold(:,:,1)
         allstr(:,:,2,0) = stressl(:,:) - strold(:,:,2)
 
         ! We do not print out anything related to the
         ! energies and dipoles...
-        avdipo(:) = dipol(:) / anpt
-        avenaa = enaatm / anpt
-        avenas = enascf / anpt
-        avuatm = uatm / anpt
-        avuscf = uscf / anpt
-        avdusc = duscf / anpt
-        avexc  = exc / anpt
-        avdxc  = dxc / anpt
+        avdipol(:) = dipol(:) / anpt
+        avDUscf = DUscf / anpt
+        avDUext = DUext / anpt
+        avDxc = Dxc / anpt
+        avEnaatm = Enaatm / anpt
+        avEnascf = Enascf / anpt
+        avExc = Exc / anpt
+        avUatm = Uatm / anpt
+        avUscf = Uscf / anpt
 
 c loop sampling on displacements making averages ----------------------------
 
@@ -364,10 +375,9 @@ c loop sampling on displacements making averages ----------------------------
              xanew(:,ia) = xa(:,ia) + dx(:)
           enddo
 
-          ! Copy back the initial forces so we may
-          ! Correctly calculate the averaged forces
-          fa(:,:) = faold(:,:,1)
-          fal(:,:) = faold(:,:,2)
+          ! Copy back the initial (pre-mesh) forces so we may
+          ! correctly calculate the averaged forces
+          fal(:,:) = faold(:,:)
           stress(:,:) = strold(:,:,1)
           stressl(:,:) = strold(:,:,2)
         
@@ -394,46 +404,44 @@ c loop sampling on displacements making averages ----------------------------
      &                DUext, Exc, Dxc, dipol, stress, fal, stressl)
 
           ! Collect the differences
-          allfa(:,:,1,ipt) = fa(:,:) - faold(:,:,1)
-          allfa(:,:,2,ipt) = fal(:,:) - faold(:,:,2)
+          allfa(:,:,ipt) = fal(:,:) - faold(:,:)
           allstr(:,:,1,ipt) = stress(:,:) - strold(:,:,1)
           allstr(:,:,2,ipt) = stressl(:,:) - strold(:,:,2)
 
           ! Perform the average of the energies
-          avdipo(:) = avdipo(:) + dipol(:) / anpt
-          avenaa = avenaa + enaatm / anpt
-          avenas = avenas + enascf / anpt
-          avuatm = avuatm + uatm / anpt
-          avuscf = avuscf + uscf / anpt
-          avdusc = avdusc + duscf / anpt
-          avexc  = avexc  + exc / anpt
-          avdxc  = avdxc  + dxc / anpt
-          
-        enddo
+          avdipol(:) = avdipol(:) + dipol(:) / anpt
+          avDUscf = avDUscf + DUscf / anpt
+          avDUext = avDUext + DUext / anpt
+          avDxc = avDxc + Dxc / anpt
+          avEnaatm = avEnaatm + Enaatm / anpt
+          avEnascf = avEnascf + Enascf / anpt
+          avExc = avExc + Exc / anpt
+          avUatm = avUatm + Uatm / anpt
+          avUscf = avUscf + Uscf / anpt
+
+        end do
 
         ! Calculate the averaged forces
 
         ! Reduce the forces, local-node forces
         ! and stress so that we only compare a single part of the
         ! forces.
-        fa(:,:) = 0._dp
-        fal(:,:) = 0._dp
-        stress(:,:) = 0._dp
-        stressl(:,:) = 0._dp
-        do ipt = 0 , npt
-           ! globalized forces
-           fa(:,:) = fa(:,:) + allfa(:,:,1,ipt) / anpt
+        fal(:,:) = allfa(:,:,0) / anpt
+        stress(:,:) = allstr(:,:,1,0) / anpt
+        stressl(:,:) = allstr(:,:,2,0) / anpt
+        do ipt = 1 , npt
            ! node-local forces
-           fal(:,:) = fal(:,:) + allfa(:,:,2,ipt) / anpt
+           fal(:,:) = fal(:,:) + allfa(:,:,ipt) / anpt
+           ! global stress
            stress(:,:) = stress(:,:) + allstr(:,:,1,ipt) / anpt
+           ! local stress
            stressl(:,:) = stressl(:,:) + allstr(:,:,2,ipt) / anpt
         end do
 
         ! Add the original forces...
-        fa(:,:) = fa + faold(:,:,1)
-        fal(:,:) = fal + faold(:,:,2)
-        stress(:,:) = stress + strold(:,:,1)
-        stressl(:,:) = stressl + strold(:,:,2)
+        fal(:,:) = fal(:,:) + faold(:,:)
+        stress(:,:) = stress(:,:) + strold(:,:,1)
+        stressl(:,:) = stressl(:,:) + strold(:,:,2)
         ! In fact we are now done... But we calculate
         ! the differences for informing the user.
 
@@ -442,49 +450,52 @@ c loop sampling on displacements making averages ----------------------------
         ! differences.
 #ifdef MPI
         do ipt = 0 , npt
-           call globalize_sum(allfa(:,:,2,ipt), faold(:,:,1))
-           ! After this, allfa(:,:,1,ipt) is the globalized forces
-           ! for the ipt mesh-sampled
-           allfa(:,:,1,ipt) = allfa(:,:,1,ipt) + faold(:,:,1)
+           call globalize_sum(allfa(:,:,ipt), faold(:,:))
+           ! After this, allfa(:,:,ipt) are the globalized
+           ! mesh-dependent forces for the ipt mesh-sample
+           allfa(:,:,ipt) = faold(:,:)
+           ! After this, allstr(:,:,1,ipt) is the globalized
+           ! mesh-dependent stress for the ipt mesh-sample
            call globalize_sum(allstr(:,:,2,ipt), strold(:,:,1))
            allstr(:,:,1,ipt) = allstr(:,:,1,ipt) + strold(:,:,1)
         end do
 #else
         do ipt = 0 , npt
-           ! After this, allfa(:,:,1,ipt) is the globalized forces
-           ! for the ipt mesh-sampled
-           allfa(:,:,1,ipt) = allfa(:,:,1,ipt) + allfa(:,:,2,ipt)
+           ! After this, allstr(:,:,1,ipt) is the globalized
+           ! mesh-dependent stress for the ipt mesh-sample
            allstr(:,:,1,ipt) = allstr(:,:,1,ipt) + allstr(:,:,2,ipt)
         end do
 #endif
 
         ! First we need to calculate the average sampled forces
-        faold(:,:,1) = 0._dp
-        strold(:,:,1) = 0._dp
-        do ipt = 0 , npt
-           faold(:,:,1) = faold(:,:,1) + allfa(:,:,1,ipt) / anpt
+        faold(:,:) = allfa(:,:,0) / anpt
+        strold(:,:,1) = allstr(:,:,1,0) / anpt
+        do ipt = 1 , npt
+           faold(:,:) = faold(:,:) + allfa(:,:,ipt) / anpt
            strold(:,:,1) = strold(:,:,1) + allstr(:,:,1,ipt) / anpt
         end do
 
         ! Calculate the maximum relative change in
         ! the sampling
         famax = 0._dp
-        fastd = 0._dp
+        fastd(:) = 0._dp
         strmax = 0._dp
         do ipt = 0 , npt
          do ia = 1 , nua
           do ix = 1, 3
-           d = allfa(ix,ia,1,ipt) - faold(ix,ia,1)
+           d = allfa(ix,ia,ipt) - faold(ix,ia)
            if ( abs(d) > abs(famax(ix)) ) then
+             ! updated maximum difference from the average
              famax(ix) = d
            end if
-           fastd(ix) = fastd(ix) + d ** 2 / anpt / nua
+           ! update standard deviation calculation
+           fastd(ix) = fastd(ix) + d ** 2 / (anpt * nua)
           end do
          end do
          do iv = 1 , 3
           do ix = 1, 3
-             d = allstr(ix,iv,1,ipt) - strold(ix,iv,1)
-             if ( abs(d) > abs(strmax) ) then
+           d = allstr(ix,iv,1,ipt) - strold(ix,iv,1)
+           if ( abs(d) > abs(strmax) ) then
               strmax = d
            end if
           end do
@@ -508,14 +519,15 @@ c loop sampling on displacements making averages ----------------------------
       
         ! Copy back the resulting averaged energies
         ! and dipole moments
-        dipol(:) = avdipo(:)
-        enaatm = avenaa
-        enascf = avenas
-        uatm   = avuatm
-        uscf   = avuscf
-        duscf  = avdusc
-        exc    = avexc
-        dxc    = avdxc
+        dipol(:) = avdipol(:)
+        DUscf = avDUscf
+        DUext = avDUext
+        Dxc = avDxc
+        Enaatm = avEnaatm
+        Enascf = avEnascf
+        Exc = avExc
+        Uatm = avUatm
+        Uscf = avUscf
         
         ! Deallocate local memory
         call de_alloc( faold, 'faold', 'grdsam' )

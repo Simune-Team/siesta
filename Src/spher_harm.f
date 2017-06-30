@@ -12,8 +12,8 @@
 
       implicit none
 
-      real(dp), pointer, private :: Y(:)
-      real(dp), pointer, private :: DYDR(:,:)
+      real(dp), pointer, private :: Y(:) => null()
+      real(dp), pointer, private :: DYDR(:,:) => null()
       INTEGER,           private :: MAX_LM=-1
 
       public :: rlylm, ylmexp, ylmylm, lofilm
@@ -259,7 +259,6 @@ C *********************************************************************
       if (LM.gt.MAX_LM) then
 
         MAX_LM = LM
-        nullify( Y, DYDR )
         call re_alloc( Y, 0, MAX_LM, 'Y', 'spher_harm' )
         call re_alloc( DYDR, 1, 3, 0, MAX_LM, 'DYDR', 'spher_harm' )
       endif
