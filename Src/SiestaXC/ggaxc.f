@@ -130,11 +130,9 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
       if (nSpin==4) then
         NS = 2             ! Diagonal spin components
 
-CC
         if ( old_scheme ) then
-         NS = 2
          DTOT = D(1) + D(2)
-         dpolz= D(1)-D(2)
+         dpolz= D(1) - D(2)
          dpolxy= 2.0d0*sqrt(d(3)**2+d(4)**2)
          dpol  = sqrt( dpolz**2 + dpolxy**2 )
          if ( dpol.gt.1.0d-12 ) then
@@ -158,7 +156,7 @@ CC
           GDD(IX,2) = GD(IX,1)*S2**2 + GD(IX,2)*C2**2 -
      .                2.d0*C2*S2*(GD(IX,3)*CP - GD(IX,4)*SP)
          ENDDO
-CC
+
         else
 
         ! Find eigenvalues of density matrix Dij (diagonal densities DD, i.e.
@@ -215,7 +213,6 @@ CC
      .                 + dGDPOLdGD(:) ) / 2
         dGDDdGD(2,:) = ( dGDTOTdGD(:)                ! dGradDensDn/dGradD(i)
      .                 - dGDPOLdGD(:) ) / 2
-CC
        endif
         
       else if (nSpin==1 .or. nSpin==2) then ! Normal (collinear) spin
