@@ -98,7 +98,7 @@ module m_spin
 
   public :: init_spin
 
-  public :: print_spin
+  public :: print_spin_options
   public :: init_spiral
 
   public :: fname_spin
@@ -310,7 +310,7 @@ contains
 
 
   ! Print out spin-configuration options
-  subroutine print_spin( )
+  subroutine print_spin_options( )
     use parallel, only: IONode
 
     character(len=32) :: opt
@@ -342,7 +342,7 @@ contains
        write(*,'(a)') repeat('#',60)
     end if
 
-  end subroutine print_spin
+  end subroutine print_spin_options
   
 
   subroutine init_spiral( ucell )

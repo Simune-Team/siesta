@@ -122,7 +122,7 @@ n = br%n
 !  positions), restart
 !
 if (br%it == -1 .or. br%it > br%maxit) then
-    if (br%debug) call message("(Re)starting the Broyden process.")
+    if (br%debug .and. ionode) print *,"(Re)starting the Broyden process."
     br%it = 0
     br%dF(1:n,0) = F(1:n)
     newx(1:n) = x(1:n) + br%jinv0*F(1:n)
@@ -272,7 +272,7 @@ br%it = br%it + 1
 if (br%it > br%maxit) then
    
    if (br%cycle_on_maxit) then
-         call message("Cycling the Broyden process...")
+         !call message("Cycling the Broyden process...")
          br%dFdF(0:maxit-1,0:maxit-1) = br%dFdF(1:maxit,1:maxit)
          br%w(0:maxit-1) = br%w(1:maxit)
          br%u(1:n,0:maxit-1) = br%u(1:n,1:maxit)
