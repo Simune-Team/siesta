@@ -6602,26 +6602,27 @@ node and is aware of the tree-structure of the timed sections.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf MaxWalltime}] ({\it integer}): 
+\item[{\bf MaxWalltime}] ({\it real time}): 
 \index{MaxWalltime@{\bf MaxWalltime}}
 
-Set an internal limit in seconds to the wall time allotted to the
+Set an internal limit to the wall time allotted to the
 program's execution. Typically this is related to the external limit
 imposed by queuing systems. The code checks its wall time periodically
 and will abort if nearing the limit, with some slack left for clean-up
 operations (proper closing of files, emergency output...), as determined
-by {\bf MaxWalltimeSlack}. 
+by {\bf MaxWalltimeSlack}. See Sec.~\ref{sec:fdf-units} for available
+units of time (\textbf{s}, \textbf{mins}, \textbf{hours}, \textbf{days}).
 
 {\it Default value:} {\tt Infinity}
 
-\item[{\bf MaxWalltimeSlack}] ({\it integer}): 
+\item[{\bf MaxWalltimeSlack}] ({\it real time}): 
 \index{MaxWalltimeSlack@{\bf MaxWalltimeSlack}}
 
-The code checks its wall time $T_{\rm wall}$ periodically and will
-abort if $T_{\rm wall} > T_{\rm max} - T_{\rm slack}$, so that
+The code checks its wall time $T_{\mathrm{wall}}$ periodically and will
+abort if $T_{\mathrm{wall}} > T_{\mathrm{max}} - T_{\mathrm{slack}}$, so that
 some slack is left for any clean-up operations.
 
-{\it Default value:} {\tt 5 (implicit unit of seconds)}
+{\it Default value:} {\tt 5 seconds}
 
 
 \end{description}
@@ -8680,6 +8681,7 @@ Ram\'on Areces.
 
 
 \section{APPENDIX: Physical unit names recognized by FDF}
+\label{sec:fdf-units}
 
 \begin{center}
 \begin{tabular}{llr}
