@@ -371,9 +371,17 @@ C     Initialise MPI and set processor number
       endif
 
 !     Walltime control (numbers in seconds)
-      walltime_max = fdf_get("max-walltime",huge(1))
+      if ( fdf_isphysical("max-walltime") ) then
+         walltime_max = fdf_get("max-walltime",huge(1._dp), 's')
+      else
+         walltime_max = fdf_get("max-walltime",huge(1._dp))
+      end if
       ! Period for clean-up operations
-      walltime_slack = fdf_get("max-walltime-slack",5)
+      if ( fdf_isphysical("max-walltime-slack") ) then
+         walltime_slack = fdf_get("max-walltime-slack",5._dp, 's')
+      else
+         walltime_slack = fdf_get("max-walltime-slack",5._dp)
+      end if
       ! Note that the slack detracts from net available time
       walltime_warning = walltime_max - walltime_slack
 

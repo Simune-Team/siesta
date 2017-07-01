@@ -138,7 +138,7 @@ MODULE fdf
   public :: fdf_get
   public :: fdf_integer, fdf_single, fdf_double
   public :: fdf_string, fdf_boolean
-  public :: fdf_physical, fdf_convfac
+  public :: fdf_physical, fdf_isphysical, fdf_convfac
   public :: fdf_islist, fdf_list
 
 ! Returns the string associated with a mark line
@@ -1896,6 +1896,40 @@ MODULE fdf
 
 !
 !   Returns true or false whether or not the label 'label' is
+!   a value with units or not.
+!   I.e. it returns true if the line has the form lvn
+!
+    FUNCTION fdf_isphysical(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+
+!-------------------------------------------------------------- Output Variables
+      logical                             :: fdf_isphysical
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+         call die('FDF module: fdf_isphysical', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+         fdf_isphysical = match(mark%pline, 'lvn')
+      else
+         fdf_isphysical = .false.
+      endif
+      if (fdf_output) write(fdf_out,'(a,5x,l10)') "#:physical? " // label, fdf_isphysical
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_isphysical
+    
+!
+!   Returns true or false whether or not the label 'label' is
 !   a list or not, you cannot get the line out from this routine
 !
     FUNCTION fdf_islist(label)
@@ -1919,11 +1953,10 @@ MODULE fdf
       if (fdf_locate(label, mark)) then
          ! if it is a list:
          fdf_islist = match(mark%pline, 'la')
-         if (fdf_output) write(fdf_out,'(a,5x,l10)') label, fdf_islist
       else
          fdf_islist = .false.
-         if (fdf_output) write(fdf_out,'(a,5x,a)') label, '# not found as list'
       endif
+      if (fdf_output) write(fdf_out,'(a,5x,l10)') "#:list? " // label, fdf_islist
 
       RETURN
 !--------------------------------------------------------------------------- END
