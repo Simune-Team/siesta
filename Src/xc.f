@@ -406,7 +406,6 @@ C Modified by V.M.Garcia-Suarez to include non-collinear spin. June 2002
      .                  VPOL, DECDGN(3,2), DEXDGN(3,2),
      .                  C2, S2, ST, CT, CP, SP, dpolz, dpolxy
 
-CC RC  Added: CT, dpolz, dpolxy
 
       PARAMETER ( TINY = 1.D-12 )
 
@@ -428,12 +427,11 @@ C Note: D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
         else
          THETA = 0.0_dp
         endif
-CC RC----------------
         C2 = COS(THETA/2)
         S2 = SIN(THETA/2)
         ST = SIN(THETA)
-        CT = COS(THETA)          ! CC RC Added
-        PHI = ATAN2(-D(4),D(3)) ! CC RC Modified       
+        CT = COS(THETA)
+        PHI = ATAN2(-D(4),D(3))
         CP = COS(PHI)
         SP = SIN(PHI)
 
@@ -494,21 +492,21 @@ cjdg
       IF (nspin .EQ. 4) THEN
 C Find dE/dD(ispin) = dE/dDup * dDup/dD(ispin) +
 C                     dE/dDdown * dDown/dD(ispin)
-CC RC  Note convention: 
+C Note convention: 
 C       DEDD(1)=dE/dD11, DEDD(2)=dE/dD22,
 C       DEDD(3)=Re(dE/dD12)=Re(dE/dD21), 
 C       DEDD(4)=Im(dE/dD12)=-Im(dE/D21)
-CC RC
-        VPOL  = (DEXDN(1)-DEXDN(2)) * CT                  ! RC Modified
+C
+        VPOL  = (DEXDN(1)-DEXDN(2)) * CT
         DEXDD(1) = 0.5D0 * ( DEXDN(1) + DEXDN(2) + VPOL )
         DEXDD(2) = 0.5D0 * ( DEXDN(1) + DEXDN(2) - VPOL )
-        DEXDD(3) = 0.5d0 * (DEXDN(1)-DEXDN(2)) * ST * CP  ! RC Modified
-        DEXDD(4) =-0.5d0 * (DEXDN(1)-DEXDN(2)) * ST * SP  ! RC Modified
-        VPOL  = (DECDN(1)-DECDN(2)) * CT                  ! RC Modified
+        DEXDD(3) = 0.5d0 * (DEXDN(1)-DEXDN(2)) * ST * CP
+        DEXDD(4) =-0.5d0 * (DEXDN(1)-DEXDN(2)) * ST * SP
+        VPOL  = (DECDN(1)-DECDN(2)) * CT
         DECDD(1) = 0.5D0 * ( DECDN(1) + DECDN(2) + VPOL )
         DECDD(2) = 0.5D0 * ( DECDN(1) + DECDN(2) - VPOL )
-        DECDD(3) = 0.5d0 * (DECDN(1)-DECDN(2)) * ST * CP  ! RC Modified
-        DECDD(4) =-0.5d0 * (DECDN(1)-DECDN(2)) * ST * SP  ! RC Modified
+        DECDD(3) = 0.5d0 * (DECDN(1)-DECDN(2)) * ST * CP
+        DECDD(4) =-0.5d0 * (DECDN(1)-DECDN(2)) * ST * SP
 C Gradient terms
         DO 40 IX = 1,3
           DEXDGD(IX,1) = DEXDGN(IX,1)*C2**2 + DEXDGN(IX,2)*S2**2
