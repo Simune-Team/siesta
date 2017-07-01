@@ -15,7 +15,7 @@ C
      &                         nOrbPerNode
       use domain_decom, only : use_dd, use_dd_perm, dd_nuo, dd_perm,
      &                         ulimit, llimit, dd_invp, dd_nnode
-      use sys,          only : die, message
+      use sys,          only : die
       implicit none
 
       logical, public, save :: pexsi_dist 

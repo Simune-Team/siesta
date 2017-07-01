@@ -1,3 +1,17 @@
+      module sys
+      public :: die, bye
+      contains
+       subroutine die(str)
+         character(len=*), intent(in) :: str
+         call local_die(str)
+       end subroutine die
+       subroutine bye(str)
+         character(len=*), intent(in) :: str
+         call local_bye(str)
+       end subroutine bye
+      end module sys
+     
+         
 ! ---
 ! Copyright (C) 1996-2016	The SIESTA group
 !  This file is distributed under the terms of the
@@ -29,10 +43,9 @@
 !
 !------------------------------------------------------
 
-      subroutine die(str)
+      subroutine local_die(str)
 
       use parallel, only : Node
-      use siesta_cml
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -63,9 +76,6 @@
          call io_close(lun)
          call pxfflush(6)
          call pxfflush(0)
-         If (cml_p) Then
-            Call cmlFinishFile(mainXML)
-         Endif                  !cml_p
       endif
 
 #ifdef MPI
@@ -74,7 +84,7 @@
 #else
       call pxfabort()
 #endif
-      end subroutine die
+      end subroutine local_die
       
       subroutine message(level,str)
 
@@ -102,18 +112,35 @@
 
       end subroutine message
 
-      subroutine reset_messages_file()
-      use parallel, only : Node
+      subroutine die(str)
+      character(len=*), intent(in)  :: str
+      call local_die(str)
+      end subroutine die
 
-      integer :: lun
-      external ::  io_assign, io_close
-      
-      if (Node .eq. 0) then
-         call io_assign(lun)
-         ! Open with 'replace' to clear content
-         open(lun,file="MESSAGES",status="replace",
-     $        position="rewind",action="write")
-         call io_close(lun)
+      subroutine local_bye(str)
+
+      use parallel, only : Node
+#ifdef MPI
+      use mpi_siesta
+#endif
+
+      character(len=*), intent(in)  :: str
+
+#ifdef MPI
+      integer rc
+#endif
+
+      if (Node.eq.0) then
+         write(6,'(a)') trim(str)
+         write(6,'(a)') 'Requested End of Run. Bye!!'
+         call pxfflush(6)
       endif
-      end subroutine reset_messages_file
-      
+
+#ifdef MPI
+      call MPI_Finalize(rc)
+      stop
+#else
+      stop
+#endif
+      end subroutine local_bye
+

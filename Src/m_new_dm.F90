@@ -1581,8 +1581,8 @@ contains
     if (ierr/=0) then
        c(:) = 0.0_dp
        c(n) = 1.0_dp
-       call message('extrapolate: matrix inversion failed')
-       call message('extrapolate: using last item in history')
+       call message('WARNING','extrapolate: matrix inversion failed')
+       call message('WARNING','extrapolate: using last item in history')
        return
     endif
 
