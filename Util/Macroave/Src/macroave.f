@@ -64,7 +64,9 @@ C ********* VARIABLES **************************************************
 
       LOGICAL
      .  SIESTA, ABINIT, POTENTIAL, CHARGE, TOTALCHARGE,
-     .  FOUND, LINEAR, SPLIN
+     .  FOUND
+
+      logical :: linear =.false., splin=.false., poly=.false.
 
       INTEGER
      .   NATOMS, NSPIN, NSM, MESH(3), NCONV, NPOINTS, NPT, 
@@ -230,14 +232,18 @@ C from the electrostatic potential? ------------------------------------
 
 C What kind of interpolation will we use to get the charge density/
 C potential in a FFT grid? ---------------------------------------------
+          
       IF ( INTERP .EQ. 'linear' .OR. INTERP .EQ. 'Linear' .OR.
      .     INTERP .EQ. 'LINEAR' ) THEN
-             LINEAR = .TRUE.
-             SPLIN  = .FALSE.
+         LINEAR = .true.
       ELSE IF ( INTERP .EQ. 'spline' .OR. INTERP .EQ. 'Spline' .OR.
      .          INTERP .EQ. 'SPLINE' ) THEN
-             LINEAR = .FALSE.
-             SPLIN  = .TRUE.
+         SPLIN = .true.
+      ! New option 'poly' with a cleaner implmentation
+      ! It can replace 'linear' below, or provide a new order
+      ! (interface to be decided)
+      ELSE IF ( INTERP .EQ. 'poly') THEN
+         POLY = .true.
       ENDIF
 
 C Reading charge density from a file -----------------------------------
@@ -394,13 +400,26 @@ C in fft grid, interpolating the planar average calculated before ------
                 DATA(II+1) = 0.D0
                 GOTO 20
              ENDIF
-          ENDDO         
+          ENDDO
+          ! X > Z(NPOINTS)
           DATA(II)=RHOZ(NPOINTS) +
      .             (X-Z(NPOINTS))*(RHOZ(1)-RHOZ(NPOINTS))/
      .             (Z(NPOINTS)-Z(NPOINTS-1))
           DATA(II+1) = 0.D0
  20       CONTINUE
         ENDDO
+      ELSE IF (POLY) THEN
+        Z(NPOINTS+1)    = L
+        RHOZ(NPOINTS+1) = RHOZ(1)
+        I = 0
+        do II = 1,2*N-1,2
+           I = I + 1
+           X = (I-1)*L/DBLE(N)
+           ! quadratic polynomial for now
+           ! interface to be decided
+           call dpnint1(2,z,rhoz,npoints+1,x,data(ii),.true.)
+           data(ii+1) = 0.d0
+        enddo
       ENDIF
 
 C  Renormalize the charge density ---------------------------------------
