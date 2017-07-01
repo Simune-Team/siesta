@@ -37,6 +37,7 @@ include $(ARCH_MAKE)
 SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
 XMLPARSER=libxmlparser.a
+WXML=libwxml.a
 XC=libSiestaXC.a
 ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
 	$(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
