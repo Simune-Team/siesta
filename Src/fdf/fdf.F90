@@ -1786,7 +1786,8 @@ MODULE fdf
 !
 !   Returns true or false whether or not the label 'label' is
 !   a value with units or not.
-!   I.e. it returns true if the line has the form lvn
+!   I.e. it returns true if the line has the form lvn, if not found, or not lvn,
+!   it returns false.
 !
     FUNCTION fdf_isphysical(label)
       implicit none

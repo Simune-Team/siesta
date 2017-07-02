@@ -6607,13 +6607,13 @@ program's execution. Typically this is related to the external limit
 imposed by queuing systems. The code checks its wall time periodically
 and will abort if nearing the limit, with some slack left for clean-up
 operations (proper closing of files, emergency output...), as determined
-by {\bf MaxWalltimeSlack}. See Sec.~\ref{sec:fdf-units} for available
+by {\bf MaxWalltime.Slack}. See Sec.~\ref{sec:fdf-units} for available
 units of time (\textbf{s}, \textbf{mins}, \textbf{hours}, \textbf{days}).
 
 {\it Default value:} {\tt Infinity}
 
-\item[{\bf MaxWalltimeSlack}] ({\it real time}): 
-\index{MaxWalltimeSlack@{\bf MaxWalltimeSlack}}
+\item[{\bf MaxWalltime.Slack}] ({\it real time}): 
+\index{MaxWalltime.Slack@{\bf MaxWalltime.Slack}}
 
 The code checks its wall time $T_{\mathrm{wall}}$ periodically and will
 abort if $T_{\mathrm{wall}} > T_{\mathrm{max}} - T_{\mathrm{slack}}$, so that
