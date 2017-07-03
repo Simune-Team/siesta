@@ -586,8 +586,7 @@
                  shifted_erefkb=shifted_erefkb)
 
       !
-         call init_annotation(ann,4+nlines,status)
-         if (status /= 0) call die("Cannot init annotation")
+         call reset_annotation(ann)
          id = ps_GetUUID(psml_handle)
          call insert_annotation_pair(ann,"source-uuid",id,status)
          if (status /= 0) call die("Cannot insert source-uuid")
@@ -641,10 +640,9 @@
          where (abs(fchlocal0) < 1.0e-98_dp) fchlocal0 = 0.0_dp
 
          ! Grid annotation
-         call init_annotation(ann,5,status)
+         call reset_annotation(ann)
            !   Note interchanged a, b
            !   r(i) = b*(exp(a*(i-1))-1)
-         if (status /= 0) call die("Cannot init annotation")
          call insert_annotation_pair(ann,"type","sampled-log-atom",status)
          if (status /= 0) call die("Cannot insert grid type")
          call insert_annotation_pair(ann,"scale",str(b),status)
@@ -699,8 +697,7 @@ CONTAINS
     real(dp), pointer :: gdata(:) 
     type(ps_annotation_t), pointer   :: gannot
 
-    call init_annotation(ann,1,status)
-    if (status /= 0) call die("Cannot init annotation")
+    call reset_annotation(ann)
     call insert_annotation_pair(ann,"chlocal-cutoff",str(chlocal_cutoff),status)
     if (status /= 0) call die("Cannot insert chlocal-cutoff")
 
