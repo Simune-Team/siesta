@@ -64,8 +64,8 @@ $(EXE): $(FDF) $(OBJS)
 
 clean:
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f $(EXE) *.o  *.a *.mod
-	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	rm -f $(EXE) *.o *.a *.mod
+	-rm -rf fdf
 
 
 # DO NOT DELETE THIS LINE - used by make depend

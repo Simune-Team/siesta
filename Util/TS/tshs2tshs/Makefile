@@ -129,8 +129,9 @@ $(EXE): $(FDF) $(COMP_LIBS) $(TSHS_COMP_LIBS) $(OBJS)
 clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f $(EXE) *.o *.a *.mod
+	-rm -rf ./fdf
 	-rm -rf ./fdict
-	-rm -rf ./NCDF
+	-rm -rf ./ncdf
 
 
 # DO NOT DELETE THIS LINE - used by make depend
