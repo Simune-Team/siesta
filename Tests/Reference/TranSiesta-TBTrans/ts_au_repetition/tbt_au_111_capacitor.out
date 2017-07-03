@@ -10,7 +10,7 @@ NetCDF-4 MPI-IO support
 METIS ordering support
 
 * Running on 8 nodes in parallel
->> Start of run:   2-JUL-2017  22:23:21
+>> Start of run:   2-JUL-2017  23:32:52
 
                            ************************ 
                            *  WELCOME TO TBtrans  * 
@@ -18,8 +18,8 @@ METIS ordering support
 
 reinit: Reading from standard input
 ************************** Dump of input data file ****************************
-SystemName  bulk_au_111
-SystemLabel bulk_au_111
+SystemName  au_111_capacitor
+SystemLabel au_111_capacitor
 ==================================================
 ==================================================
 # SPECIES AND BASIS
@@ -34,33 +34,44 @@ PAO.EnergyShift  0.005 Ry
 ==================================================
 # K-points
 %block kgrid_Monkhorst_Pack
-8   0   0   0.0
+4   0   0   0.0
 0   8   0   0.0
-0   0   60  0.5
+0   0   30  0.5
 %endblock kgrid_Monkhorst_Pack
 ==================================================
 ==================================================
-# UNIT CELL AND ATOMIC POSITIONS
 # UNIT CELL
 LatticeConstant       2.92311 Ang
 %block LatticeVectors
-1.000000000   0.00000000000   0.0000000000
+2.000000000   0.00000000000   0.0000000000
 0.500000000   0.86602540378   0.0000000000
-0.000000000   0.00000000000   2.4494897428
+0.000000000   0.00000000000  10.6144555530
 %endblock LatticeVectors
 # Atomic coordinates
-NumberOfAtoms 3
+NumberOfAtoms 20
 AtomicCoordinatesFormat ScaledCartesian
 %block AtomicCoordinatesAndAtomicSpecies
-       0.000000000       0.000000000       0.000000000    1
-       0.500000000       0.288675135       0.816496581    1
-       0.500000000      -0.288675135       1.632993162    1
+       0.000000000       0.000000000       0.000000000    1  # A
+       1.000000000       0.000000000       0.000000000    1  # A
+       0.500000000       0.288675135       0.816496581    1  # B
+       1.500000000       0.288675135       0.816496581    1  # B
+       0.500000000      -0.288675135       1.632993162    1  # C
+       1.500000000      -0.288675135       1.632993162    1  # C
+       0.000000000       0.000000000       2.449489743    1  # A
+       1.000000000       0.000000000       2.449489743    1  # A
+       0.500000000       0.288675135       3.265986324    1  # B
+       1.500000000       0.288675135       3.265986324    1  # B
+       0.500000000       0.288675135       6.531972648    1  # B
+       1.500000000       0.288675135       6.531972648    1  # B
+       0.500000000      -0.288675135       7.348469229    1  # C
+       1.500000000      -0.288675135       7.348469229    1  # C
+       0.000000000       0.000000000       8.164965810    1  # A
+       1.000000000       0.000000000       8.164965810    1  # A
+       0.500000000       0.288675135       8.981462391    1  # B
+       1.500000000       0.288675135       8.981462391    1  # B
+       0.500000000      -0.288675135       9.797958972    1  # C
+       1.500000000      -0.288675135       9.797958972    1  # C
 %endblock AtomicCoordinatesAndAtomicSpecies
-%block SuperCell
-1 0 0
-0 1 0
-0 0 3
-%endblock SuperCell
 ==================================================
 ==================================================
 # General variables
@@ -79,8 +90,8 @@ DM.MixingWeight       0.03          # New DM amount for next SCF cycle
 DM.Tolerance          1.d-4         # Tolerance in maximum difference
 DM.UseSaveDM          true          # to use continuation files
 DM.NumberPulay         5
-Diag.DivideAndConquer  no
-Diag.ParallelOverK     yes
+Diag.DivideAndConquer     no
+TS.MixH                  yes
 ==================================================
 ==================================================
 # MD variables
@@ -104,7 +115,12 @@ WriteMDhistory                  .false.
 WriteEigenvalues                yes
 ==================================================
 ==================================================
-TS.Voltage    0.00000 eV
+# Parallel variables
+Diag.ParallelOverK      no # Messes with the diagonalization...
+==================================================
+==================================================
+# TS OPTIONS
+TS.Voltage 1.000000 eV
 %block TS.ChemPots
   Left
   Right
@@ -130,7 +146,7 @@ TS.Elecs.DM.Update none
 # This is for testing purposes!
 # DO NOT USE IF YOU DO NOT UNDERSTAND!
 TS.Elecs.Neglect.Principal true
-TS.Elecs.GF.ReUse true
+TS.Elecs.GF.ReUse false
 %block TS.Elecs
   Left
   Right
@@ -140,14 +156,20 @@ TS.Elecs.GF.ReUse true
   chem-pot Left
   semi-inf-dir -a3
   elec-pos begin 1
+  used-atoms 3
+  bloch-a1 2
+  bloch-a2 1
 %endblock TS.Elec.Left
 %block TS.Elec.Right
   TSHS ./elec_au_111_abc.TSHS
   chem-pot Right
   semi-inf-dir +a3
   elec-pos end -1
+  used-atoms 3
+  bloch-a1 2
+  bloch-a2 1
 %endblock TS.Elec.Right
-TS.Contours.Eq.Pole    2.50000 eV
+TS.Contours.Eq.Pole 2.5 eV
 %block TS.Contour.c-Left
   part circle
    from  -40.00000 eV + V/2 to -10. kT + V/2
@@ -172,48 +194,37 @@ TS.Contours.Eq.Pole    2.50000 eV
     points 10
      method g-fermi
 %endblock TS.Contour.t-Right
-TS.Elecs.Eta    0.0001000000 eV
+TS.Contours.nEq.Eta    0.0001 eV
 %block TS.Contours.nEq
   neq
 %endblock TS.Contours.nEq
 %block TS.Contour.nEq.neq
   part line
    from -|V|/2 - 5 kT to |V|/2 + 5 kT
-    delta 0.01 eV
+    delta    0.01 eV
      method mid-rule
 %endblock TS.Contour.nEq.neq
-# TBtrans options
-TBT.Elecs.Eta    0.0001 eV
-%block TBT.Contours
-  neq
-%endblock TBT.Contours
-%block TBT.Contour.neq
-  part line
-   from   -0.50000 eV to    0.50000 eV
-    delta    0.01000 eV
-     method mid-rule
-%endblock TBT.Contour.neq
 ************************** End of input data file *****************************
 
 reinit: -----------------------------------------------------------------------
-reinit: System Name: bulk_au_111
+reinit: System Name: au_111_capacitor
 reinit: -----------------------------------------------------------------------
-reinit: System Label: bulk_au_111
+reinit: System Label: au_111_capacitor
 reinit: -----------------------------------------------------------------------
 
 k-point displ. along   1 input, could be:     0.00    0.50
 k-point displ. along   2 input, could be:     0.00    0.50
- Kpoints in:           40 . Kpoints trimmed:           34
-tbt: Number of transport k-points = 34
+ Kpoints in:           20 . Kpoints trimmed:           18
+tbt: Number of transport k-points = 18
 tbt: Method = Monkhorst-Pack grid.
 tbt: k-grid: Supercell and displacements
-tbt:            8   0   0      0.000
+tbt:            4   0   0      0.000
 tbt:            0   8   0      0.000
 tbt:            0   0   1      0.000
 
 tbt: **************************************************************
 tbt: Electronic temperature (reference)             =   99.9993 K
-tbt: No applied bias
+tbt: Voltage                                        =    1.0000 Volts
 tbt: Calculate transmission only using diag(Gf)     =    F
 tbt: Saving bulk transmission for electrodes        =    F
 tbt: Saving DOS from bulk electrodes                =    F
@@ -240,12 +251,13 @@ tbt:   Electrode cell pivoting: E1, E2, E3          = A1, A2, A3
 tbt:   In-core GF
 tbt:   Electrode TSHS file                          = ./elec_au_111_abc.TSHS
 tbt:   # atoms used in electrode                    =    3
-tbt:   Electrode Bloch expansion [E1 x E2 x E3]     = 1 x 1 x 1
-tbt:   Position in geometry                         = 1 -- 3
+tbt:   Electrode Bloch expansion [E1 x E2 x E3]     = 2 x 1 x 1
+tbt:   Position in geometry                         = 1 -- 6
 tbt:   Semi-infinite direction for electrode        = negative wrt. E3
-tbt:   Chemical shift                               =    0.000000 eV
+tbt:   Chemical shift                               =    0.499999 eV
 tbt:   Electronic temperature                       =   99.999269 K
 tbt:   Bulk values in electrode                     =    T
+tbt:   Hamiltonian E-C Ef fractional shift          =    0.0000
 tbt:   Electrode self-energy imaginary Eta          =  0.1000E-03  eV
 tbt:   Electrode self-energy accuracy               =  0.1000E-13  eV
 tbt:   Electrode inter-layer distance (semi-inf)    =    2.3867  Ang
@@ -254,34 +266,36 @@ tbt:   Electrode cell pivoting: E1, E2, E3          = A1, A2, A3
 tbt:   In-core GF
 tbt:   Electrode TSHS file                          = ./elec_au_111_abc.TSHS
 tbt:   # atoms used in electrode                    =    3
-tbt:   Electrode Bloch expansion [E1 x E2 x E3]     = 1 x 1 x 1
-tbt:   Position in geometry                         = 7 -- 9
+tbt:   Electrode Bloch expansion [E1 x E2 x E3]     = 2 x 1 x 1
+tbt:   Position in geometry                         = 15 -- 20
 tbt:   Semi-infinite direction for electrode        = positive wrt. E3
-tbt:   Chemical shift                               =    0.000000 eV
+tbt:   Chemical shift                               =   -0.499999 eV
 tbt:   Electronic temperature                       =   99.999269 K
 tbt:   Bulk values in electrode                     =    T
+tbt:   Hamiltonian E-C Ef fractional shift          =    0.0000
 tbt:   Electrode self-energy imaginary Eta          =  0.1000E-03  eV
 tbt:   Electrode self-energy accuracy               =  0.1000E-13  eV
 tbt:   Electrode inter-layer distance (semi-inf)    =    2.3867  Ang
 ts:              >> TBtrans contour << 
 ts: Device Green function imaginary Eta             =  0.000     eV
-ts: Contour name                                    =    TBT.Contour.neq
-ts:   line contour E_min                            =   -0.5000 eV
-ts:   line contour E_max                            =    0.5000 eV
-ts:   line contour points                           =  100
+ts: Contour name                                    =    TBT.Contour.line
+ts:   line contour E_min                            =   -2.0000 eV
+ts:   line contour E_max                            =    2.0000 eV
+ts:   line contour points                           =  400
 ts:   line contour method                           =    Mid-rule
 tbt: **************************************************************
 
 tbt: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 %block TBT.Contours
-    neq
+    line
 %endblock TBT.Contours
 
-%block TBT.Contour.neq
-     from -0.50000 eV to 0.50000 eV
-      delta 0.01000 eV
+%block TBT.Contour.line
+  part line
+     from -2. eV to 2. eV
+      delta 0.01 eV
         method mid-rule
-%endblock TBT.Contour.neq
+%endblock TBT.Contour.line
 tbt: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 ************************ Begin: TBT CHECKS AND WARNINGS ************************
@@ -291,8 +305,8 @@ tbt: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ************************ End: TBT CHECKS AND WARNINGS **************************
 
 Device information (full):
-  <sparsity:bulk_au_111.TSHS
-    nrows_g=81 nrows=81 sparsity=14.7586 nnzs=96831, refcount: 3>
+  <sparsity:au_111_capacitor.TSHS
+    nrows_g=180 nrows=180 sparsity=5.7673 nnzs=186860, refcount: 3>
 
 Electrode information:
 
@@ -325,88 +339,91 @@ tbtrans: Analyzing electrode sparsity pattern to create optimal tri-diagonal blo
 tbtrans: BTD pivoting scheme for electrode (Left): atom+Left
 
 tbtrans: Analyzing device sparsity pattern to create optimal tri-diagonal blocks
+
+WARNING: Random atom 11 has been added due to non-completeness of the connectivity graph.
+WARNING: Expect sub-optimal BTD format.
 tbtrans: BTD pivoting scheme in device: atom+Left
 tbtrans: Done analyzing sparsity pattern
 
-tbtrans: Reducing matrix (H, S) sparsity patterns by: 14352
+tbtrans: Reducing matrix (H, S) sparsity patterns by: 28320
 
-tbtrans: # of device region orbitals: 27
-Region (3): [A]-device
-  [ 4 -- 6 ]
+tbtrans: # of device region orbitals: 72
+Region (8): [A]-device
+  [ 7 -- 14 ]
 
-tbtrans: # of Left scattering orbitals: 27
-tbtrans: # of Left down-folding orbitals: 54
-Region (3): [A]-Left folding region
-  [ 1 -- 3 ]
-Region (3): [A]-Left folding in D
-  [ 4 -- 6 ]
+tbtrans: # of Left scattering orbitals: 36
+tbtrans: # of Left down-folding orbitals: 90
+Region (6): [A]-Left folding region
+  [ 1 -- 6 ]
+Region (4): [A]-Left folding in D
+  [ 7 -- 10 ]
 
-tbtrans: # of Right scattering orbitals: 27
-tbtrans: # of Right down-folding orbitals: 54
-Region (3): [A]-Right folding region
-  [ 7 -- 9 ]
-Region (3): [A]-Right folding in D
-  [ 4 -- 6 ]
+tbtrans: # of Right scattering orbitals: 36
+tbtrans: # of Right down-folding orbitals: 90
+Region (6): [A]-Right folding region
+  [ 15 -- 20 ]
+Region (4): [A]-Right folding in D
+  [ 11 -- 14 ]
 
 tbtrans: Creating electrode tri-diagonal matrix blocks
 tbtrans: Creating device tri-diagonal matrix blocks
 Region (2): [TRI] device region
-  [ 13, 14 ]
-tbtrans: Matrix elements in BTD: 729
+  [ 36, 36 ]
+tbtrans: Matrix elements in BTD: 5184
 
 tbtrans: Electrodes tri-diagonal matrices
 Region (2): [TRI] Left
-  [ 27, 27 ]
+  [ 54, 36 ]
 Region (2): [TRI] Right
-  [ 27, 27 ]
+  [ 54, 36 ]
 
-tbtrans: Electrode memory:    0.791 MB
-tbtrans: Sparse Hamiltonian and overlap memory:    0.706 MB
-tbtrans: Sum of electrode and sparse memory:    1.497 MB
+tbtrans: Electrode memory:    0.813 MB
+tbtrans: Sparse Hamiltonian and overlap memory:    1.470 MB
+tbtrans: Sum of electrode and sparse memory:    2.283 MB
 
-tbtrans: Initializing data file: bulk_au_111.TBT.nc
-tbtrans: LHS Green function size / memory: 8748 /     0.13 MB
-tbtrans: RHS Green function size / memory: 1458 /     0.02 MB
-tbt: Initial ETA in               14.414 s
-tbt: Calculated   5.059 %, ETA in                4.729 s
-tbt: Calculated  10.235 %, ETA in                4.042 s
-tbt: Calculated  15.412 %, ETA in                3.545 s
-tbt: Calculated  20.471 %, ETA in                3.364 s
-tbt: Calculated  25.647 %, ETA in                3.206 s
-tbt: Calculated  30.824 %, ETA in                3.023 s
-tbt: Calculated  36.000 %, ETA in                2.805 s
-tbt: Calculated  41.059 %, ETA in                2.477 s
-tbt: Calculated  46.235 %, ETA in                2.258 s
-tbt: Calculated  51.412 %, ETA in                2.063 s
-tbt: Calculated  56.588 %, ETA in                1.859 s
-tbt: Calculated  61.647 %, ETA in                1.636 s
-tbt: Calculated  66.824 %, ETA in                1.360 s
-tbt: Calculated  72.000 %, ETA in                1.142 s
-tbt: Calculated  77.176 %, ETA in                0.940 s
-tbt: Calculated  82.235 %, ETA in                0.736 s
-tbt: Calculated  87.412 %, ETA in                0.520 s
-tbt: Calculated  92.588 %, ETA in                0.306 s
-tbt: Calculated  97.765 %, ETA in                0.092 s
-tbt: Completed in                4.138 s
+tbtrans: Initializing data file: au_111_capacitor.TBT.nc
+tbtrans: LHS Green function size / memory: 11016 /     0.17 MB
+tbtrans: RHS Green function size / memory: 5832 /     0.09 MB
+tbt: Initial ETA in               42.247 s
+tbt: Calculated   5.000 %, ETA in               17.743 s
+tbt: Calculated  10.000 %, ETA in               14.893 s
+tbt: Calculated  15.000 %, ETA in               14.250 s
+tbt: Calculated  20.000 %, ETA in               13.826 s
+tbt: Calculated  25.000 %, ETA in               12.958 s
+tbt: Calculated  30.000 %, ETA in               11.980 s
+tbt: Calculated  35.000 %, ETA in               11.143 s
+tbt: Calculated  40.000 %, ETA in               10.413 s
+tbt: Calculated  45.000 %, ETA in                9.628 s
+tbt: Calculated  50.000 %, ETA in                8.740 s
+tbt: Calculated  55.000 %, ETA in                7.726 s
+tbt: Calculated  60.000 %, ETA in                6.852 s
+tbt: Calculated  65.000 %, ETA in                5.993 s
+tbt: Calculated  70.000 %, ETA in                5.137 s
+tbt: Calculated  75.000 %, ETA in                4.268 s
+tbt: Calculated  80.000 %, ETA in                3.382 s
+tbt: Calculated  85.000 %, ETA in                2.509 s
+tbt: Calculated  90.000 %, ETA in                1.670 s
+tbt: Calculated  95.000 %, ETA in                0.830 s
+tbt: Completed in               16.533 s
 
 Currents (ensure entire Fermi function window):
-Left -> Right, V [V] / I [A]:  0.00000     V /  0.00000     A
-Left -> Right, V [V] / P [W]:  0.00000     V /  0.00000     W
+Left -> Right, V [V] / I [A]: 0.999999     V /  0.00000     A
+Left -> Right, V [V] / P [W]: 0.999999     V /  0.00000     W
 
 
              Section          Calls    Walltime       %
- global_section                   1       4.695  100.00
-  tbtrans                         1       4.695  100.00
-   tri-init                       1       0.033    0.70
-    tri-init-elec                 1       0.002    0.05
-     TS-rgn2tri                   1       0.000    0.01
-    TS-rgn2tri                    1       0.027    0.58
-   TBT                            1       4.233   90.16
-    read-GS                     442       3.603   76.74
-    SE-dwn                      442       0.106    2.25
-     ts_expand                  816       0.002    0.05
-    Gf-prep                     442       0.047    1.01
-     V_TM_Pinv                  408       0.029    0.61
-    DOS-Gf-A-T                  442       0.030    0.64
-    cdf2ascii                     1       0.017    0.37
->> End of run:   2-JUL-2017  22:23:26
+ global_section                   1      17.084  100.00
+  tbtrans                         1      17.084  100.00
+   tri-init                       1       0.046    0.27
+    tri-init-elec                 1       0.003    0.02
+     TS-rgn2tri                   1       0.001    0.00
+    TS-rgn2tri                    1       0.037    0.22
+   TBT                            1      16.669   97.57
+    read-GS                     900      14.194   83.08
+    SE-dwn                      900       1.022    5.98
+     ts_expand                 1800       0.215    1.26
+    Gf-prep                     900       0.457    2.68
+     V_TM_Pinv                  900       0.353    2.07
+    DOS-Gf-A-T                  900       0.240    1.40
+    cdf2ascii                     1       0.040    0.23
+>> End of run:   2-JUL-2017  23:33:09
