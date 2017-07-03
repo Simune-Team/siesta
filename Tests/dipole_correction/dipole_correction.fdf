@@ -1,5 +1,5 @@
 SystemName          Water molecule layer with dipole -- automatic correction
-SystemLabel         h2o
+SystemLabel         dipole_correction
 NumberOfAtoms       3
 NumberOfSpecies     2
 
