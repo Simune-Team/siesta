@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:41:36
+* Running on    8 nodes in parallel
+>> Start of run:   2-JUL-2017  11:57:31
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -57,7 +57,7 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 
 <basis_specs>
 ===============================================================================
-ON-0.34560           Z= 201    Mass=-1.00000        Charge= 0.17977+309
+ON-0.34560           Z= 201    Mass= -1.0000        Charge= 0.17977+309
 Lmxo=1 Lmxkb= 3    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=0
@@ -68,7 +68,7 @@ L=0  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=1
             splnorm:   0.15000    
@@ -78,7 +78,7 @@ L=1  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -282,10 +282,10 @@ redata: ***********************************************************************
 Total number of electrons:    10.691200
 Total ionic charge:    10.691200
 
-* ProcessorY, Blocksize:    2   7
+* ProcessorY, Blocksize:    2   3
 
 
-* Orbital distribution balance (max,min):     7     5
+* Orbital distribution balance (max,min):     5     3
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -313,29 +313,41 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    5.308800
 New grid distribution:   1
-           1       1:   24    1:   12    1:   14
-           2       1:   24    1:   12   15:   27
-           3       1:   24   13:   24    1:   14
-           4       1:   24   13:   24   15:   27
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
 
 InitMesh: MESH =    48 x    48 x    54 =      124416
 InitMesh: (bp) =    24 x    24 x    27 =       15552
 InitMesh: Mesh cutoff (required, used) =   200.000   213.862 Ry
-ExtMesh (bp) on 0 =    68 x    56 x    54 =      205632
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
 New grid distribution:   2
-           1       1:   24    1:    9    1:    6
-           2       1:   24    1:    9    7:   27
-           3       1:   24   10:   24    1:    6
-           4       1:   24   10:   24    7:   27
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
 New grid distribution:   3
-           1       1:   24    1:   10    1:   10
-           2       1:   24    1:   10   11:   27
-           3       1:   24   11:   24    1:   10
-           4       1:   24   11:   24   11:   27
+           1      11:   24   11:   24    1:   10
+           2       1:   10    1:   10    1:   10
+           3      11:   24    1:   10   11:   27
+           4       1:   10    1:   10   11:   27
+           5      11:   24    1:   10    1:   10
+           6       1:   10   11:   24    1:   10
+           7      11:   24   11:   24   11:   27
+           8       1:   10   11:   24   11:   27
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    68 x    53 x    46 =      165784
-PhiOnMesh: Number of (b)points on node 0 =                 1296
-PhiOnMesh: nlist on node 0 =                21456
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                11220
 
 stepf: Fermi-Dirac step function
 
@@ -360,7 +372,7 @@ siesta: FreeEng =      -640.290516
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -634.3947     -640.2572     -640.2905  0.60807 -4.2113
-timer: Routine,Calls,Time,% =    IterSCF     1       0.071   4.08
+timer: Routine,Calls,Time,% =    IterSCF     1       0.046   6.13
    scf:    2     -638.4898     -638.1687     -638.2020  0.10542 -3.6547
    scf:    3     -638.4027     -638.1448     -638.1781  0.06516 -3.5000
    scf:    4     -638.4177     -638.3448     -638.3781  0.02473 -3.0637
@@ -382,9 +394,11 @@ siesta: E_KS(eV) =             -638.4182
 
 siesta: E_KS - E_eggbox =      -638.4182
 
+siesta: Total spin polarization (Qup-Qdown) =    0.691200
+
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.015742
+   Tot    0.000000    0.000000   -0.015742
 ----------------------------------------
    Max    6.279849
    Res    3.621131    sqrt( Sum f_i^2 / 3N )
@@ -394,11 +408,11 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):       -0.01       -0.01       84.46        0.00       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -640.9560
 Target enthalpy (eV/cell)     -638.4516
- 
+
 Broyden_optim: max_history for broyden:   5
 Broyden_optim: cycle on maxit: T
 Broyden_optim: initial inverse jacobian:   1.0000
- 
+
 Broyden_optim: No of elements:      6
 
                      ====================================
@@ -418,29 +432,41 @@ Re-using DM from previous geometry...
 Re-using DM without extrapolation (not allowed)
 Note: For starting DM, Qtot, Tr[D*S] =         10.69120000         11.16744152
 New grid distribution:   1
-           1       1:   24    1:   12    1:   14
-           2       1:   24    1:   12   15:   27
-           3       1:   24   13:   24    1:   14
-           4       1:   24   13:   24   15:   27
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
 
 InitMesh: MESH =    48 x    48 x    54 =      124416
 InitMesh: (bp) =    24 x    24 x    27 =       15552
 InitMesh: Mesh cutoff (required, used) =   200.000   213.862 Ry
-ExtMesh (bp) on 0 =    68 x    56 x    54 =      205632
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
 New grid distribution:   2
-           1       1:   24    1:   10    1:    6
-           2       1:   24    1:    8    7:   27
-           3       1:   24   11:   24    1:    6
-           4       1:   24    9:   24    7:   27
+           1      11:   24   11:   24    1:    6
+           2       1:    8    9:   24    7:   27
+           3      10:   24    1:    8    7:   27
+           4       1:   10   11:   24    1:    6
+           5       1:    9    1:    8    7:   27
+           6       9:   24    9:   24    7:   27
+           7      11:   24    1:   10    1:    6
+           8       1:   10    1:   10    1:    6
 New grid distribution:   3
-           1       1:   24    1:   10    1:    9
-           2       1:   24    1:    9   10:   27
-           3       1:   24   11:   24    1:    9
-           4       1:   24   10:   24   10:   27
+           1      11:   24   11:   24    1:    9
+           2       1:   10    1:   10    1:    9
+           3      10:   24    1:    9   10:   27
+           4       1:    9    1:    9   10:   27
+           5      11:   24    1:   10    1:    9
+           6       1:   10   11:   24    1:    9
+           7      10:   24   10:   24   10:   27
+           8       1:    9   10:   24   10:   27
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    68 x    54 x    46 =      168912
-PhiOnMesh: Number of (b)points on node 0 =                 1440
-PhiOnMesh: nlist on node 0 =                23218
+ExtMesh (bp) on 0 =    58 x    58 x    46 =      154744
+PhiOnMesh: Number of (b)points on node 0 =                 1176
+PhiOnMesh: nlist on node 0 =                11464
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -635.0159     -639.1393     -639.1727  0.22615 -0.7289
@@ -460,16 +486,18 @@ Using DM_out to compute the final energy and forces
 
 siesta: E_KS(eV) =             -634.6844
 
+siesta: Total spin polarization (Qup-Qdown) =    0.691200
+
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.000000    0.016540
+   Tot   -0.000000   -0.000000    0.016540
 ----------------------------------------
    Max   51.132691
    Res   29.516699    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max   51.132691    constrained
 
-Stress-tensor-Voigt (kbar):       -0.04       -0.04     -541.10        0.00       -0.00       -0.00
+Stress-tensor-Voigt (kbar):       -0.04       -0.04     -541.10       -0.00       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -618.6688
 Target enthalpy (eV/cell)     -634.7177
 
@@ -490,29 +518,41 @@ Re-using DM from previous geometry...
 Re-using DM without extrapolation (not allowed)
 Note: For starting DM, Qtot, Tr[D*S] =         10.69120000         10.23089971
 New grid distribution:   1
-           1       1:   24    1:   12    1:   14
-           2       1:   24    1:   12   15:   27
-           3       1:   24   13:   24    1:   14
-           4       1:   24   13:   24   15:   27
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
 
 InitMesh: MESH =    48 x    48 x    54 =      124416
 InitMesh: (bp) =    24 x    24 x    27 =       15552
 InitMesh: Mesh cutoff (required, used) =   200.000   213.862 Ry
-ExtMesh (bp) on 0 =    68 x    56 x    54 =      205632
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
 New grid distribution:   2
-           1       1:   24    1:    9    1:    6
-           2       1:   24    1:    9    7:   27
-           3       1:   24   10:   24    1:    6
-           4       1:   24   10:   24    7:   27
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
 New grid distribution:   3
-           1       1:   24    1:   10    1:   10
-           2       1:   24    1:   10   11:   27
-           3       1:   24   11:   24    1:   10
-           4       1:   24   11:   24   11:   27
+           1      11:   24   11:   24    1:   10
+           2       1:   10    1:   10    1:   10
+           3      10:   24    1:   10   11:   27
+           4       1:    9    1:   10   11:   27
+           5      11:   24    1:   10    1:   10
+           6       1:   10   11:   24    1:   10
+           7      11:   24   11:   24   11:   27
+           8       1:   10   11:   24   11:   27
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    68 x    53 x    46 =      165784
-PhiOnMesh: Number of (b)points on node 0 =                 1296
-PhiOnMesh: nlist on node 0 =                21498
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                11260
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -638.7991     -633.2133     -633.2466  0.23562 -2.2217
@@ -533,6 +573,8 @@ Using DM_out to compute the final energy and forces
 
 siesta: E_KS(eV) =             -638.5640
 
+siesta: Total spin polarization (Qup-Qdown) =    0.691200
+
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Tot   -0.000000    0.000000    0.036875
@@ -542,7 +584,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    3.999395    constrained
 
-Stress-tensor-Voigt (kbar):        0.01        0.01       52.74       -0.00       -0.00        0.00
+Stress-tensor-Voigt (kbar):        0.01        0.01       52.74        0.00       -0.00        0.00
 (Free)E + p*V (eV/cell)     -640.1620
 Target enthalpy (eV/cell)     -638.5974
 
@@ -563,29 +605,41 @@ Re-using DM from previous geometry...
 Re-using DM without extrapolation (not allowed)
 Note: For starting DM, Qtot, Tr[D*S] =         10.69120000         10.65375428
 New grid distribution:   1
-           1       1:   24    1:   12    1:   14
-           2       1:   24    1:   12   15:   27
-           3       1:   24   13:   24    1:   14
-           4       1:   24   13:   24   15:   27
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
 
 InitMesh: MESH =    48 x    48 x    54 =      124416
 InitMesh: (bp) =    24 x    24 x    27 =       15552
 InitMesh: Mesh cutoff (required, used) =   200.000   213.862 Ry
-ExtMesh (bp) on 0 =    68 x    56 x    54 =      205632
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
 New grid distribution:   2
-           1       1:   24    1:    9    1:    6
-           2       1:   24    1:    9    7:   27
-           3       1:   24   10:   24    1:    6
-           4       1:   24   10:   24    7:   27
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
 New grid distribution:   3
-           1       1:   24    1:   10    1:   10
-           2       1:   24    1:   10   11:   27
-           3       1:   24   11:   24    1:   10
-           4       1:   24   11:   24   11:   27
+           1      11:   24   11:   24    1:   10
+           2       1:   10    1:   10    1:   10
+           3      11:   24    1:   10   11:   27
+           4       1:   10    1:   10   11:   27
+           5      11:   24    1:   10    1:   10
+           6       1:   10   11:   24    1:   10
+           7      11:   24   11:   24   11:   27
+           8       1:   10   11:   24   11:   27
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    68 x    53 x    46 =      165784
-PhiOnMesh: Number of (b)points on node 0 =                 1296
-PhiOnMesh: nlist on node 0 =                21462
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                11226
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -638.4771     -638.1651     -638.1985  0.01382 -2.9975
@@ -594,21 +648,23 @@ PhiOnMesh: nlist on node 0 =                21462
    scf:    4     -638.4754     -638.4757     -638.5090  0.00006 -3.0307
 
 SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00005830
+max |DM_out - DM_in|:     0.00005831
 SCF cycle converged after    4 iterations
 
 Using DM_out to compute the final energy and forces
 
 siesta: E_KS(eV) =             -638.4754
 
+siesta: Total spin polarization (Qup-Qdown) =    0.691200
+
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.013711
+   Tot    0.000000    0.000000    0.013711
 ----------------------------------------
-   Max    5.602797
+   Max    5.602798
    Res    3.230821    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    5.602797    constrained
+   Max    5.602798    constrained
 
 Stress-tensor-Voigt (kbar):        0.02        0.02       75.01        0.00       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -640.7340
@@ -629,38 +685,49 @@ outcell: Cell volume (Ang**3)        :    142.5416
 New_DM. Step:     5
 Re-using DM from previous geometry...
 Re-using DM without extrapolation (not allowed)
-Density Matrix sparsity pattern changed.
-Note: For starting DM, Qtot, Tr[D*S] =         10.69120000         10.64894633
+Note: For starting DM, Qtot, Tr[D*S] =         10.69120000         10.64894612
 New grid distribution:   1
-           1       1:   24    1:   12    1:   14
-           2       1:   24    1:   12   15:   27
-           3       1:   24   13:   24    1:   14
-           4       1:   24   13:   24   15:   27
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
 
 InitMesh: MESH =    48 x    48 x    54 =      124416
 InitMesh: (bp) =    24 x    24 x    27 =       15552
 InitMesh: Mesh cutoff (required, used) =   200.000   213.862 Ry
-ExtMesh (bp) on 0 =    68 x    56 x    54 =      205632
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
 New grid distribution:   2
-           1       1:   24    1:    9    1:    6
-           2       1:   24    1:    9    7:   27
-           3       1:   24   10:   24    1:    6
-           4       1:   24   10:   24    7:   27
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
 New grid distribution:   3
-           1       1:   24    1:   10    1:   10
-           2       1:   24    1:   10   11:   27
-           3       1:   24   11:   24    1:   10
-           4       1:   24   11:   24   11:   27
+           1      11:   24   11:   24    1:   10
+           2       1:   10    1:   10    1:   10
+           3      11:   24    1:   10   11:   27
+           4       1:   10    1:   10   11:   27
+           5      11:   24    1:   10    1:   10
+           6       1:   10   11:   24    1:   10
+           7      11:   24   11:   24   11:   27
+           8       1:   10   11:   24   11:   27
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    68 x    53 x    46 =      165784
-PhiOnMesh: Number of (b)points on node 0 =                 1296
-PhiOnMesh: nlist on node 0 =                21435
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                11199
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -638.3446     -638.0012     -638.0345  0.01519 -3.1912
-   scf:    2     -638.3429     -638.3412     -638.3746  0.00732 -3.2514
+   scf:    2     -638.3428     -638.3412     -638.3746  0.00732 -3.2514
    scf:    3     -638.3424     -638.3063     -638.3397  0.00390 -3.2367
-   scf:    4     -638.3423     -638.3422     -638.3755  0.00019 -3.2257
+   scf:    4     -638.3423     -638.3421     -638.3755  0.00019 -3.2257
    scf:    5     -638.3423     -638.3422     -638.3755  0.00005 -3.2257
 
 SCF Convergence by dMax criterion
@@ -671,58 +738,60 @@ Using DM_out to compute the final energy and forces
 
 siesta: E_KS(eV) =             -638.3423
 
+siesta: Total spin polarization (Qup-Qdown) =    0.691200
+
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.026758
+   Tot   -0.000000   -0.000000   -0.026758
 ----------------------------------------
-   Max    7.051200
-   Res    4.063295    sqrt( Sum f_i^2 / 3N )
+   Max    7.051209
+   Res    4.063300    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    7.051200    constrained
+   Max    7.051209    constrained
 
 Stress-tensor-Voigt (kbar):       -0.00       -0.00       95.72       -0.00        0.00        0.00
 (Free)E + p*V (eV/cell)     -641.2143
-Target enthalpy (eV/cell)     -638.3757
+Target enthalpy (eV/cell)     -638.3756
 
 outcoor: Final (unrelaxed) atomic coordinates (Ang):        
-    0.00000000    0.00000000   -0.00542968   1       1  ON-0.34560
-   -0.00000000   -0.00000000    1.20597970   1       2  ON-0.34560
+    0.00000000    0.00000000   -0.00542973   1       1  ON-0.34560
+   -0.00000000   -0.00000000    1.20597976   1       2  ON-0.34560
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -146.827864
+siesta: Ebs     =      -146.827855
 siesta: Eions   =      1232.617191
-siesta: Ena     =       321.948492
-siesta: Ekin    =       451.109387
-siesta: Enl     =       -37.527328
-siesta: DEna    =         5.307822
+siesta: Ena     =       321.948494
+siesta: Ekin    =       451.109382
+siesta: Enl     =       -37.527327
+siesta: DEna    =         5.307823
 siesta: DUscf   =         0.283504
 siesta: DUext   =         0.000000
-siesta: Exc     =      -146.847005
+siesta: Exc     =      -146.847003
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
 siesta: Eharris =      -638.342319
-siesta: Etot    =      -638.342319
+siesta: Etot    =      -638.342318
 siesta: FreeEng =      -638.375650
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -146.827864
-siesta:       Kinetic =     451.109387
-siesta:       Hartree =     455.546412
+siesta:  Band Struct. =    -146.827855
+siesta:       Kinetic =     451.109382
+siesta:       Hartree =     455.546390
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -146.847005
-siesta:  Ion-electron =   -1316.703876
-siesta:       Ion-ion =     -81.447237
+siesta:   Exch.-corr. =    -146.847003
+siesta:  Ion-electron =   -1316.703820
+siesta:       Ion-ion =     -81.447268
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -638.342319
+siesta:         Total =    -638.342318
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1   -0.000000   -0.000000    7.024442
-siesta:      2    0.000000    0.000000   -7.051200
+siesta:      1   -0.000000   -0.000000    7.024451
+siesta:      2    0.000000    0.000000   -7.051209
 siesta: ----------------------------------------
-siesta:    Tot    0.000000    0.000000   -0.026758
+siesta:    Tot   -0.000000   -0.000000   -0.026758
 
 siesta: Stress tensor (static) (eV/Ang**3):
 siesta:    -0.000002   -0.000000   -0.000000
@@ -734,13 +803,14 @@ siesta: Cell volume =        142.541589 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00021689          0.00000025  Ry/Bohr**3
-siesta:          -0.01991425          0.00002305  eV/Ang**3
-siesta:         -31.90648997          0.03692939  kBar
+siesta:          -0.01991427          0.00002305  eV/Ang**3
+siesta:         -31.90653022          0.03692958  kBar
 (Free)E+ p_basis*V_orbitals  =        -638.019612
 (Free)Eharris+ p_basis*V_orbitals  =        -638.019612
 
 siesta: Total spin polarization (Qup-Qdown) =    0.691200
 
-siesta: Electric dipole (a.u.)  =    0.000000    0.000000    0.000087
-siesta: Electric dipole (Debye) =    0.000000    0.000000    0.000220
->> End of run:  29-SEP-2015  15:41:41
+siesta: Electric dipole (a.u.)  =   -0.000000   -0.000000    0.000087
+siesta: Electric dipole (Debye) =   -0.000000   -0.000000    0.000221
+>> End of run:   2-JUL-2017  11:57:33
+Job completed

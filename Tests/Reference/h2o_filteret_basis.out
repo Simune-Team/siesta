@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:38:25
+* Running on    8 nodes in parallel
+>> Start of run:   3-JUL-2017   9:18:44
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -80,23 +80,23 @@ Lmxo=1 Lmxkb= 3    BasisType=filteret   Semic=F
 L=0  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=0
             fcutoff:    0.0000    
-               vcte:   100.000    
+               vcte:    100.00    
                rinn:  -0.95000    
                qcoe:    0.0000    
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=1
             fcutoff:    0.0000    
-               vcte:   100.000    
+               vcte:    100.00    
                rinn:  -0.95000    
                qcoe:    0.0000    
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -311,13 +311,13 @@ Lmxo=0 Lmxkb= 2    BasisType=filteret   Semic=F
 L=0  Nsemic=0  Cnfigmx=1
           n=1  nzeta=2  polorb=1
             fcutoff:    0.0000    
-               vcte:   100.000    
+               vcte:    100.00    
                rinn:  -0.95000    
                qcoe:    0.0000    
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -587,10 +587,10 @@ redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    2  24
+* ProcessorY, Blocksize:    2  12
 
 
-* Orbital distribution balance (max,min):    24    21
+* Orbital distribution balance (max,min):    12     9
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -624,29 +624,41 @@ outcell: Cell volume (Ang**3)        :    235.3780
 New_DM. Step:     1
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   27    1:   12    1:   12
-           2       1:   27    1:   12   13:   24
-           3       1:   27   13:   24    1:   12
-           4       1:   27   13:   24   13:   24
+           1       1:   27    1:   12    1:    6
+           2       1:   27    1:   12    7:   12
+           3       1:   27    1:   12   13:   18
+           4       1:   27    1:   12   19:   24
+           5       1:   27   13:   24    1:    6
+           6       1:   27   13:   24    7:   12
+           7       1:   27   13:   24   13:   18
+           8       1:   27   13:   24   19:   24
 
 InitMesh: MESH =    54 x    48 x    48 =      124416
 InitMesh: (bp) =    27 x    24 x    24 =       15552
 InitMesh: Mesh cutoff (required, used) =   150.000   151.796 Ry
-ExtMesh (bp) on 0 =    67 x    56 x    56 =      210112
+ExtMesh (bp) on 0 =    67 x    56 x    50 =      187600
 New grid distribution:   2
-           1       9:   27    1:   24    1:    9
-           2       9:   27    1:   24   10:   24
-           3       1:    8    1:   24    1:    9
-           4       1:    8    1:   24   10:   24
+           1       9:   27    8:   24    1:    9
+           2       9:   27    1:    7    1:    9
+           3       9:   27    1:    7   10:   24
+           4       1:    8    1:    7   10:   24
+           5       1:    8    9:   24    1:    9
+           6       1:    8    1:    8    1:    9
+           7       9:   27    8:   24   10:   24
+           8       1:    8    8:   24   10:   24
 New grid distribution:   3
-           1      12:   27    1:   24    1:   10
-           2      12:   27    1:   24   11:   24
-           3       1:   11    1:   24    1:   10
-           4       1:   11    1:   24   11:   24
+           1      12:   27    9:   24    1:   10
+           2      12:   27    1:    8    1:   10
+           3      12:   27    1:    8   11:   24
+           4       1:   11    1:    8   11:   24
+           5       1:   11   10:   24    1:   10
+           6       1:   11    1:    9    1:   10
+           7      12:   27    9:   24   11:   24
+           8       1:   11    9:   24   11:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    59 x    68 x    53 =      212636
-PhiOnMesh: Number of (b)points on node 0 =                 4104
-PhiOnMesh: nlist on node 0 =                99331
+ExtMesh (bp) on 0 =    59 x    61 x    53 =      190747
+PhiOnMesh: Number of (b)points on node 0 =                 2907
+PhiOnMesh: nlist on node 0 =                53630
 
 stepf: Fermi-Dirac step function
 
@@ -671,7 +683,7 @@ siesta: FreeEng =      -461.285848
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -466.6905     -461.2858     -461.2858  0.79650 -4.7175
-timer: Routine,Calls,Time,% =    IterSCF     1       0.214   1.35
+timer: Routine,Calls,Time,% =    IterSCF     1       0.105   1.31
    scf:    2     -466.9445     -465.7115     -465.7115  0.26416 -0.9671
    scf:    3     -466.2277     -465.8786     -465.8786  0.06417 -2.3152
    scf:    4     -466.1726     -465.9552     -465.9552  0.01393 -2.6813
@@ -703,21 +715,21 @@ siesta: E_KS(eV) =             -466.1668
 siesta: E_KS - E_eggbox =      -466.1668
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000000   -0.207121    0.000000
+     1    0.000000   -0.207121    0.000000
      2    0.318484    0.098857   -0.000000
      3   -0.318484    0.098857   -0.000000
 ----------------------------------------
-   Tot    0.000000   -0.009407    0.000000
+   Tot    0.000000   -0.009407   -0.000000
 ----------------------------------------
    Max    0.318484
    Res    0.171694    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.318484    constrained
 
-Stress-tensor-Voigt (kbar):       -3.34       -0.46       -0.16       -0.00        0.00       -0.00
+Stress-tensor-Voigt (kbar):       -3.34       -0.46       -0.16       -0.00        0.00        0.00
 (Free)E + p*V (eV/cell)     -465.9729
 Target enthalpy (eV/cell)     -466.1668
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: O                   
@@ -805,16 +817,16 @@ siesta:       Ekinion =       0.000000
 siesta:         Total =    -466.166772
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1   -0.000000   -0.207121    0.000000
+siesta:      1    0.000000   -0.207121    0.000000
 siesta:      2    0.318484    0.098857   -0.000000
 siesta:      3   -0.318484    0.098857   -0.000000
 siesta: ----------------------------------------
-siesta:    Tot    0.000000   -0.009407    0.000000
+siesta:    Tot    0.000000   -0.009407   -0.000000
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.002085   -0.000000    0.000000
+siesta:    -0.002085   -0.000000   -0.000000
 siesta:    -0.000000   -0.000288   -0.000000
-siesta:    -0.000000    0.000000   -0.000097
+siesta:     0.000000    0.000000   -0.000097
 
 siesta: Cell volume =        235.378012 Ang**3
 
@@ -828,4 +840,5 @@ siesta:           1.31935116         -0.04593223  kBar
 
 siesta: Electric dipole (a.u.)  =   -0.000000    0.597466    0.000000
 siesta: Electric dipole (Debye) =   -0.000000    1.518607    0.000000
->> End of run:  29-SEP-2015  15:38:46
+>> End of run:   3-JUL-2017   9:18:54
+Job completed

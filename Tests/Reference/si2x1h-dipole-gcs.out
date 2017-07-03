@@ -1,12 +1,12 @@
-Siesta Version: siesta-4.0--517
-Architecture  : x86_64-linux-gcc
-Compiler flags: mpifort -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DSIESTA__FFTW -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running in serial mode with MPI
->> Start of run:  20-FEB-2017  15:27:10
+* Running on    8 nodes in parallel
+>> Start of run:   3-JUL-2017   9:18:55
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -388,10 +388,10 @@ redata: ***********************************************************************
 Total number of electrons:    28.000000
 Total ionic charge:    28.000000
 
-* ProcessorY, Blocksize:    1  24
+* ProcessorY, Blocksize:    2   3
 
 
-* Orbital distribution balance (max,min):    28    28
+* Orbital distribution balance (max,min):     6     3
 
  Kpoints in:            3 . Kpoints trimmed:            3
 
@@ -436,14 +436,41 @@ outcell: Cell volume (Ang**3)        :    334.0377
 New_DM. Step:     1
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53896
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6477
 
 efield: SlabDipoleCorrection enabled.
 efield: A dipole layer will be introduced in the vacuum
@@ -454,7 +481,7 @@ Electric field for dipole correction =    0.000000   -0.000000    0.000000 Ry/Bo
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -277.737789
+siesta: Ebs     =      -277.737790
 siesta: Eions   =      1221.235657
 siesta: Ena     =       369.290948
 siesta: Ekin    =       281.018022
@@ -469,12 +496,12 @@ siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
 siesta: Eharris =      -697.403486
-siesta: Etot    =      -702.009612
-siesta: FreeEng =      -702.009612
+siesta: Etot    =      -702.009613
+siesta: FreeEng =      -702.009613
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -697.4035     -702.0096     -702.0096  1.14849 -4.1241
-timer: Routine,Calls,Time,% =    IterSCF     1       0.044  10.48
+timer: Routine,Calls,Time,% =    IterSCF     1       0.068  14.32
 Dipole moment in unit cell   =     -0.0000      0.0000     -1.5872 D
 Electric field for dipole correction =    0.000000   -0.000000    0.006962 Ry/Bohr/e
    scf:    2     -700.9596     -694.5448     -694.5448  1.34755 -5.8434
@@ -578,152 +605,476 @@ Dipole moment in unit cell   =     -0.0000      0.0000     -0.4396 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001928 Ry/Bohr/e
 grdsam: Grid-cell sampling: 1 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53976
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6486
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4398 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001929 Ry/Bohr/e
 grdsam: Grid-cell sampling: 2 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53982
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6484
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4399 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001930 Ry/Bohr/e
 grdsam: Grid-cell sampling: 3 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53973
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6486
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4398 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001929 Ry/Bohr/e
 grdsam: Grid-cell sampling: 4 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53827
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6434
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4402 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001931 Ry/Bohr/e
 grdsam: Grid-cell sampling: 5 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53952
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6438
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4401 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001930 Ry/Bohr/e
 grdsam: Grid-cell sampling: 6 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53824
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6434
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4402 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001931 Ry/Bohr/e
 grdsam: Grid-cell sampling: 7 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53931
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6455
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4405 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001932 Ry/Bohr/e
 grdsam: Grid-cell sampling: 8 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53968
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6441
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4408 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001934 Ry/Bohr/e
 grdsam: Grid-cell sampling: 9 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53924
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6452
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4405 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001932 Ry/Bohr/e
 grdsam: Grid-cell sampling: 10 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53796
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6455
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4403 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001931 Ry/Bohr/e
 grdsam: Grid-cell sampling: 11 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53927
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6465
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4405 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001932 Ry/Bohr/e
 grdsam: Grid-cell sampling: 12 / 12
 New grid distribution:   1
-           1       1:    9    1:   18    1:   25
+           1       1:    9    1:    9    1:    7
+           2       1:    9    1:    9    8:   13
+           3       1:    9    1:    9   14:   19
+           4       1:    9    1:    9   20:   25
+           5       1:    9   10:   18    1:    7
+           6       1:    9   10:   18    8:   13
+           7       1:    9   10:   18   14:   19
+           8       1:    9   10:   18   20:   25
 
 InitMesh: MESH =    18 x    36 x    50 =       32400
 InitMesh: (bp) =     9 x    18 x    25 =        4050
 InitMesh: Mesh cutoff (required, used) =    50.000    52.655 Ry
-ExtMesh (bp) on 0 =    45 x    54 x    57 =      138510
-PhiOnMesh: Number of (b)points on node 0 =                 4050
-PhiOnMesh: nlist on node 0 =                53796
+ExtMesh (bp) on 0 =    45 x    45 x    39 =       78975
+New grid distribution:   2
+           1       1:    9    9:   18    6:    8
+           2       1:    9    1:    8    6:    8
+           3       1:    9    1:    8    9:   25
+           4       1:    9    9:   18    4:    5
+           5       1:    9    9:   18    1:    3
+           6       1:    9    1:    8    1:    3
+           7       1:    9    9:   18    9:   25
+           8       1:    9    1:    8    4:    5
+New grid distribution:   3
+           1       1:    9   10:   18    1:    5
+           2       1:    9    1:    9    6:   10
+           3       1:    9    1:    9   11:   20
+           4       1:    9    1:    9   21:   25
+           5       1:    9    1:    9    1:    5
+           6       1:    9   10:   18    6:   10
+           7       1:    9   10:   18   11:   20
+           8       1:    9   10:   18   21:   25
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    45 x    46 x    35 =       72450
+PhiOnMesh: Number of (b)points on node 0 =                  270
+PhiOnMesh: nlist on node 0 =                 6458
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.4403 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001931 Ry/Bohr/e
 
 grdsam: Max (sampled force - avg. force):   0.050157  -0.058938  -0.033521 eV/Ang
 grdsam: Standard deviation of sampled force:   0.021230   0.015275   0.008340 eV/Ang
-grdsam: Max (sampled stress - avg. stress):   7.252125 kbar
+grdsam: Max (sampled stress - avg. stress):   7.252124 kbar
 
 
 siesta: E_KS(eV) =             -696.2245
@@ -732,8 +1083,8 @@ siesta: E_KS - E_eggbox =      -696.2245
 
 siesta: Atomic forces (eV/Ang):
      1    0.000311   -1.014545   -1.087659
-     2   -0.000065    1.002233   -1.793804
-     3    0.000463   -0.965017   -0.068887
+     2   -0.000065    1.002233   -1.793805
+     3    0.000463   -0.965018   -0.068887
      4    0.000218    1.445459    0.555037
      5   -0.000111    0.035419    0.117329
      6   -0.000010   -0.565027   -2.657475
@@ -747,7 +1098,7 @@ siesta: Atomic forces (eV/Ang):
    Max    2.657475
    Res    1.065268    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.793804    constrained
+   Max    1.793805    constrained
 
 Stress-tensor-Voigt (kbar):     -128.42      -28.15      -52.14        0.00        5.54       -0.00
 (Free)E + p*V (eV/cell)     -681.7197
@@ -776,7 +1127,7 @@ Atom  Qatom  Qorb
 mulliken: Qtot =       28.000
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -300.749115
+siesta: Ebs     =      -300.749117
 siesta: Eions   =      1221.235657
 siesta: Ena     =       369.290948
 siesta: Ekin    =       284.212603
@@ -795,20 +1146,20 @@ siesta: Etot    =      -696.224536
 siesta: FreeEng =      -696.224536
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -300.749115
+siesta:  Band Struct. =    -300.749117
 siesta:       Kinetic =     284.212603
-siesta:       Hartree =     854.385155
+siesta:       Hartree =     854.385154
 siesta:    Ext. field =       0.002275
 siesta:   Exch.-corr. =    -223.123286
 siesta:  Ion-electron =   -2003.059064
-siesta:       Ion-ion =     391.357781
+siesta:       Ion-ion =     391.357782
 siesta:       Ekinion =       0.000000
 siesta:         Total =    -696.224536
 
 siesta: Atomic forces (eV/Ang):
 siesta:      1    0.000311   -1.014545   -1.087659
-siesta:      2   -0.000065    1.002233   -1.793804
-siesta:      3    0.000463   -0.965017   -0.068887
+siesta:      2   -0.000065    1.002233   -1.793805
+siesta:      3    0.000463   -0.965018   -0.068887
 siesta:      4    0.000218    1.445459    0.555037
 siesta:      5   -0.000111    0.035419    0.117329
 siesta:      6   -0.000010   -0.565027   -2.657475
@@ -821,8 +1172,8 @@ siesta:    Tot    0.000826    0.005210    0.013079
 
 siesta: Constrained forces (eV/Ang):
 siesta:      1    0.000311   -1.014545   -1.087659
-siesta:      2   -0.000065    1.002233   -1.793804
-siesta:      3    0.000463   -0.965017   -0.068887
+siesta:      2   -0.000065    1.002233   -1.793805
+siesta:      3    0.000463   -0.965018   -0.068887
 siesta:      4    0.000218    1.445459    0.555037
 siesta:      5    0.000000    0.000000    0.000000
 siesta:      6    0.000000    0.000000    0.000000
@@ -844,9 +1195,9 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00047293          0.00021798  Ry/Bohr**3
 siesta:           0.04342280          0.02001374  eV/Ang**3
-siesta:          69.57174865         32.06589169  kBar
+siesta:          69.57174887         32.06589200  kBar
 (Free)E+ p_basis*V_orbitals  =        -693.905344
-(Free)Eharris+ p_basis*V_orbitals  =        -693.920229
+(Free)Eharris+ p_basis*V_orbitals  =        -693.920230
 
 siesta: Electric dipole (a.u.)  =   -0.000000    0.000000   -0.173182
 siesta: Electric dipole (Debye) =   -0.000000    0.000000   -0.440185
@@ -854,67 +1205,5 @@ Dipole moment in unit cell   =     -0.0000      0.0000     -0.4403 D
 Electric field for dipole correction =    0.000000   -0.000000    0.001931 Ry/Bohr/e
 
 dhscf: Vacuum level (max, mean) =    0.981109    0.506583 eV
-
-timer: Elapsed wall time (sec) =       4.473
-timer: CPU execution times (sec):
-
-Routine            Calls   Time/call    Tot.time        %
-siesta                 1       4.432       4.432   100.00
-Setup                  1       0.228       0.228     5.14
-MPI_BCAST           1319       0.000       0.000     0.00
-MPI_COMM_RANK          3       0.000       0.000     0.00
-bands                  1       0.000       0.000     0.00
-KSV_init               1       0.000       0.000     0.00
-IterGeom               1       4.164       4.164    93.95
-state_init             1       0.012       0.012     0.27
-hsparse                1       0.000       0.000     0.00
-MPI_ALLREDUCE        455       0.000       0.000     0.00
-overlap                1       0.008       0.008     0.18
-Setup_H0               1       0.136       0.136     3.07
-naefs                  2       0.002       0.004     0.09
-MolMec                 2       0.000       0.000     0.00
-kinefsm                2       0.002       0.004     0.09
-nlefsm                 2       0.036       0.072     1.62
-DHSCF_Init            13       0.081       1.056    23.83
-DHSCF1                13       0.005       0.068     1.53
-INITMESH              13       0.000       0.000     0.00
-DHSCF2                13       0.076       0.988    22.29
-REMESH                13       0.006       0.072     1.62
-REORD                182       0.000       0.008     0.18
-PHION                 13       0.049       0.632    14.26
-COMM_BSC             116       0.000       0.008     0.18
-POISON                58       0.004       0.248     5.60
-fft                  116       0.002       0.220     4.96
-MPI_COMM_SPLIT         2       0.000       0.000     0.00
-MPI_COMM_SIZE          2       0.000       0.000     0.00
-IterSCF               31       0.044       1.352    30.51
-setup_H               31       0.039       1.204    27.17
-DHSCF                 45       0.064       2.900    65.43
-DHSCF3                45       0.036       1.632    36.82
-rhoofd                45       0.017       0.780    17.60
-cellXC                45       0.007       0.320     7.22
-vmat                  32       0.009       0.296     6.68
-compute_dm            31       0.004       0.132     2.98
-diagon                31       0.004       0.124     2.80
-c-eigval              93       0.000       0.024     0.54
-c-buildHS             93       0.000       0.016     0.36
-cdiag                186       0.000       0.036     0.81
-cdiag1               186       0.000       0.004     0.09
-cdiag2               186       0.000       0.004     0.09
-cdiag3               186       0.000       0.028     0.63
-cdiag4               186       0.000       0.000     0.00
-c-eigvec              93       0.001       0.052     1.17
-c-buildD              93       0.000       0.036     0.81
-MIXER                 30       0.000       0.000     0.00
-WriteDM               31       0.000       0.008     0.18
-PostSCF                1       2.664       2.664    60.11
-DHSCF4                13       0.098       1.268    28.61
-dfscf                 13       0.075       0.976    22.02
-overfsm                1       0.004       0.004     0.09
-state_analysis         1       0.000       0.000     0.00
-MPI_REDUCE            21       0.000       0.000     0.00
-siesta_move            1       0.000       0.000     0.00
-optical                1       0.000       0.000     0.00
-MPI_BARRIER            1       0.000       0.000     0.00
-  
->> End of run:  20-FEB-2017  15:27:14
+>> End of run:   3-JUL-2017   9:18:57
+Job completed

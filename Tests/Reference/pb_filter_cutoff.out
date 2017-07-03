@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:41:54
+* Running on    8 nodes in parallel
+>> Start of run:   2-JUL-2017  11:57:55
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -93,7 +93,7 @@ L=0  Nsemic=0  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.4151      4.8994    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=6
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
@@ -103,7 +103,7 @@ L=1  Nsemic=0  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    6.1261      5.6233    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=2  Nsemic=0  Cnfigmx=6
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -113,7 +113,7 @@ L=2  Nsemic=0  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.1407    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -344,10 +344,10 @@ redata: ***********************************************************************
 Total number of electrons:     4.000000
 Total ionic charge:     4.000000
 
-* ProcessorY, Blocksize:    2   3
+* ProcessorY, Blocksize:    2   1
 
 
-* Orbital distribution balance (max,min):     4     3
+* Orbital distribution balance (max,min):     2     1
 
 k-point displ. along   1 input, could be:     0.50    0.00
 k-point displ. along   2 input, could be:     0.50    0.00
@@ -383,29 +383,41 @@ outcell: Cell volume (Ang**3)        :     29.2325
 New_DM. Step:     1
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   15    1:    8    1:    8
-           2       1:   15    1:    8    9:   15
-           3       1:   15    9:   15    1:    8
-           4       1:   15    9:   15    9:   15
+           1       1:   15    1:    8    1:    4
+           2       1:   15    1:    8    5:    8
+           3       1:   15    1:    8    9:   12
+           4       1:   15    1:    8   13:   15
+           5       1:   15    9:   15    1:    4
+           6       1:   15    9:   15    5:    8
+           7       1:   15    9:   15    9:   12
+           8       1:   15    9:   15   13:   15
 
 InitMesh: MESH =    30 x    30 x    30 =       27000
 InitMesh: (bp) =    15 x    15 x    15 =        3375
 InitMesh: Mesh cutoff (required, used) =   200.000   312.067 Ry
-ExtMesh (bp) on 0 =    87 x    80 x    80 =      556800
+ExtMesh (bp) on 0 =    87 x    80 x    76 =      528960
 New grid distribution:   2
-           1       1:   15    1:    8    1:    8
-           2       1:   15    1:    8    9:   15
-           3       1:   15    9:   15    1:    8
-           4       1:   15    9:   15    9:   15
+           1       1:    8    1:    8    1:    8
+           2       9:   15    9:   15    1:    8
+           3       1:    8    1:    8    9:   15
+           4       9:   15    1:    8    9:   15
+           5       1:    8    9:   15    1:    8
+           6       9:   15    1:    8    1:    8
+           7       1:    8    9:   15    9:   15
+           8       9:   15    9:   15    9:   15
 New grid distribution:   3
-           1       1:   15    1:    8    1:    8
-           2       1:   15    1:    8    9:   15
-           3       1:   15    9:   15    1:    8
-           4       1:   15    9:   15    9:   15
+           1       1:    8    1:    8    1:    8
+           2       9:   15    9:   15    1:    8
+           3       1:    8    1:    8    9:   15
+           4       9:   15    1:    8    9:   15
+           5       1:    8    9:   15    1:    8
+           6       9:   15    1:    8    1:    8
+           7       1:    8    9:   15    9:   15
+           8       9:   15    9:   15    9:   15
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    87 x    80 x    80 =      556800
-PhiOnMesh: Number of (b)points on node 0 =                  960
-PhiOnMesh: nlist on node 0 =                49381
+ExtMesh (bp) on 0 =    80 x    80 x    80 =      512000
+PhiOnMesh: Number of (b)points on node 0 =                  512
+PhiOnMesh: nlist on node 0 =                26283
 
 stepf: Fermi-Dirac step function
 
@@ -430,7 +442,7 @@ siesta: FreeEng =      -346.177032
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -349.8507     -346.1757     -346.1770  0.26885 -2.1284
-timer: Routine,Calls,Time,% =    IterSCF     1       0.878  29.04
+timer: Routine,Calls,Time,% =    IterSCF     1       1.393  56.17
    scf:    2     -349.8061     -349.8022     -349.8038  0.04139 -2.2835
    scf:    3     -349.8058     -349.6147     -349.6163  0.04771 -2.2747
    scf:    4     -349.8058     -349.8136     -349.8152  0.00124 -2.2727
@@ -502,7 +514,8 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00013127         -0.00013127  Ry/Bohr**3
 siesta:          -0.01205309         -0.01205309  eV/Ang**3
-siesta:         -19.31138977        -19.31138977  kBar
+siesta:         -19.31138976        -19.31138976  kBar
 (Free)E+ p_basis*V_orbitals  =        -349.157392
 (Free)Eharris+ p_basis*V_orbitals  =        -349.157392
->> End of run:  29-SEP-2015  15:42:03
+>> End of run:   2-JUL-2017  11:58:06
+Job completed

@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:23:32
+* Running on    8 nodes in parallel
+>> Start of run:   3-JUL-2017   9:18:20
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -109,17 +109,17 @@ L=0  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    8.0000      3.5000      2.0000    
-            lambdas:   1.00000     1.00000     1.00000    
+            lambdas:    1.0000      1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=3  polorb=0
             splnorm:   0.15000    
-               vcte:   10.0000    
+               vcte:    10.000    
                rinn:    8.0000    
                qcoe:    0.0000    
                qyuk:    0.0000    
-               qwid:   0.10000E+00
+               qwid:   0.10000    
                 rcs:    8.0000      3.5000      2.0000    
-            lambdas:   1.00000     1.00000     1.00000    
+            lambdas:    1.0000      1.0000      1.0000    
 L=2  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -129,7 +129,7 @@ L=2  Nsemic=0  Cnfigmx=3
                qyuk:   0.40000    
                qwid:   0.10000E-01
                 rcs:    8.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -270,7 +270,7 @@ L=0  Nsemic=0  Cnfigmx=1
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    8.0000      3.5000      2.0000    
-            lambdas:   1.00000     1.00000     1.00000    
+            lambdas:    1.0000      1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -280,7 +280,7 @@ L=1  Nsemic=0  Cnfigmx=2
                qyuk:   0.50000    
                qwid:   0.10000E-01
                 rcs:    8.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -463,10 +463,10 @@ redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    2   8
+* ProcessorY, Blocksize:    2   3
 
 
-* Orbital distribution balance (max,min):     8     5
+* Orbital distribution balance (max,min):     6     3
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -492,29 +492,41 @@ outcell: Cell volume (Ang**3)        :   8000.0000
 New_DM. Step:     1
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   90    1:   45    1:   45
-           2       1:   90    1:   45   46:   90
-           3       1:   90   46:   90    1:   45
-           4       1:   90   46:   90   46:   90
+           1       1:   90    1:   45    1:   23
+           2       1:   90    1:   45   24:   46
+           3       1:   90    1:   45   47:   68
+           4       1:   90    1:   45   69:   90
+           5       1:   90   46:   90    1:   23
+           6       1:   90   46:   90   24:   46
+           7       1:   90   46:   90   47:   68
+           8       1:   90   46:   90   69:   90
 
 InitMesh: MESH =   180 x   180 x   180 =     5832000
 InitMesh: (bp) =    90 x    90 x    90 =      729000
 InitMesh: Mesh cutoff (required, used) =   200.000   223.865 Ry
-ExtMesh (bp) on 0 =   170 x   125 x   125 =     2656250
+ExtMesh (bp) on 0 =   170 x   125 x   103 =     2188750
 New grid distribution:   2
-           1       1:   90    1:   16    1:   13
-           2       1:   90    1:   16   14:   90
-           3       1:   90   17:   90    1:   13
-           4       1:   90   17:   90   14:   90
+           1       1:   16   17:   90    1:   13
+           2       1:   23   17:   90   14:   90
+           3      16:   90    1:   16   14:   90
+           4       1:   15    1:   16   14:   90
+           5      17:   90   17:   90    1:   13
+           6      24:   90   17:   90   14:   90
+           7      17:   90    1:   16    1:   13
+           8       1:   16    1:   16    1:   13
 New grid distribution:   3
-           1       1:   90    1:   18    1:   17
-           2       1:   90    1:   20   18:   90
-           3       1:   90   19:   90    1:   17
-           4       1:   90   21:   90   18:   90
+           1       1:   18   19:   90    1:   17
+           2       1:   35   21:   90   18:   90
+           3      18:   90    1:   20   18:   90
+           4       1:   17    1:   20   18:   90
+           5      19:   90   19:   90    1:   17
+           6      36:   90   21:   90   18:   90
+           7      19:   90    1:   18    1:   17
+           8       1:   18    1:   18    1:   17
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =   170 x    96 x    93 =     1517760
-PhiOnMesh: Number of (b)points on node 0 =                18720
-PhiOnMesh: nlist on node 0 =               128759
+ExtMesh (bp) on 0 =    96 x   154 x    93 =     1374912
+PhiOnMesh: Number of (b)points on node 0 =                15392
+PhiOnMesh: nlist on node 0 =                67146
 
 stepf: Fermi-Dirac step function
 
@@ -539,7 +551,7 @@ siesta: FreeEng =      -465.207390
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -471.3548     -465.2074     -465.2074  0.95847 -8.3284
-timer: Routine,Calls,Time,% =    IterSCF     1       2.880  37.07
+timer: Routine,Calls,Time,% =    IterSCF     1       0.936  30.08
    scf:    2     -474.4090     -467.2732     -467.2732  5.85008  0.4007
    scf:    3     -469.8324     -466.7241     -466.7241  0.79570 -5.5767
    scf:    4     -469.7150     -468.5405     -468.5405  0.87063 -4.3248
@@ -636,4 +648,5 @@ siesta:          -0.04994061         -0.00385140  kBar
 
 siesta: Electric dipole (a.u.)  =   -0.515086   -0.573439    0.000106
 siesta: Electric dipole (Debye) =   -1.309218   -1.457537    0.000270
->> End of run:  29-SEP-2015  15:24:29
+>> End of run:   3-JUL-2017   9:18:37
+Job completed

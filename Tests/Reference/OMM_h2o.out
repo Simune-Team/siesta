@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:40:54
+* Running on    8 nodes in parallel
+>> Start of run:   2-JUL-2017  12:02:34
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -195,7 +195,7 @@ L=0  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    4.5077      2.6407    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
@@ -205,7 +205,7 @@ L=1  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    6.1500      2.5936    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=2  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -215,7 +215,7 @@ L=2  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    3.5440    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -341,7 +341,7 @@ L=0  Nsemic=0  Cnfigmx=1
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    4.2036      1.8446    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -351,7 +351,7 @@ L=1  Nsemic=0  Cnfigmx=2
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    3.5282    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -606,7 +606,7 @@ Total ionic charge:   200.000000
 * ProcessorY, Blocksize:    2  24
 
 
-* Orbital distribution balance (max,min):   144   143
+* Orbital distribution balance (max,min):    72    71
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -633,29 +633,41 @@ outcell: Cell volume (Ang**3)        :    831.9300
 New_DM. Step:     1
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:   36    1:   18    1:   18
-           2       1:   36    1:   18   19:   36
-           3       1:   36   19:   36    1:   18
-           4       1:   36   19:   36   19:   36
+           1       1:   36    1:   18    1:    9
+           2       1:   36    1:   18   10:   18
+           3       1:   36    1:   18   19:   27
+           4       1:   36    1:   18   28:   36
+           5       1:   36   19:   36    1:    9
+           6       1:   36   19:   36   10:   18
+           7       1:   36   19:   36   19:   27
+           8       1:   36   19:   36   28:   36
 
 InitMesh: MESH =    72 x    72 x    72 =      373248
 InitMesh: (bp) =    36 x    36 x    36 =       46656
 InitMesh: Mesh cutoff (required, used) =   150.000   161.973 Ry
-ExtMesh (bp) on 0 =    88 x    70 x    70 =      431200
+ExtMesh (bp) on 0 =    88 x    70 x    61 =      375760
 New grid distribution:   2
-           1       1:   36    1:   16    1:   19
-           2       1:   36    1:   15   20:   36
-           3       1:   36   17:   36    1:   19
-           4       1:   36   16:   36   20:   36
+           1       1:   18   17:   36    1:   19
+           2      18:   36    1:   16    1:   19
+           3       1:   17    1:   16    1:   19
+           4      21:   36    1:   15   20:   36
+           5      19:   36   17:   36    1:   19
+           6       1:   20    1:   15   20:   36
+           7      23:   36   16:   36   20:   36
+           8       1:   22   16:   36   20:   36
 New grid distribution:   3
-           1       1:   36    1:   18    1:   18
-           2       1:   36    1:   18   19:   36
-           3       1:   36   19:   36    1:   18
-           4       1:   36   19:   36   19:   36
+           1       1:   18   19:   36   19:   36
+           2      19:   36    1:   18    1:   18
+           3      19:   36    1:   18   19:   36
+           4      19:   36   19:   36    1:   18
+           5       1:   18    1:   18   19:   36
+           6       1:   18    1:   18    1:   18
+           7      19:   36   19:   36   19:   36
+           8       1:   18   19:   36    1:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    88 x    68 x    71 =      424864
-PhiOnMesh: Number of (b)points on node 0 =                10944
-PhiOnMesh: nlist on node 0 =               375250
+ExtMesh (bp) on 0 =    70 x    72 x    71 =      357840
+PhiOnMesh: Number of (b)points on node 0 =                 6840
+PhiOnMesh: nlist on node 0 =               202498
 
 stepf: Fermi-Dirac step function
 
@@ -681,7 +693,7 @@ siesta: FreeEng =    -11587.659089
 siesta: iscf =    1
 Eharris(eV) =     -11848.5200  E_KS(eV) =     -11587.6591  dDmax =  0.9522
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.985  20.01
+timer: Routine,Calls,Time,% =    IterSCF     1       0.525  21.00
 
 siesta: iscf =    2
 Eharris(eV) =     -11991.7930  E_KS(eV) =     -11596.8913  dDmax =  2.2194
@@ -703,9 +715,9 @@ Eharris(eV) =     -11991.7930  E_KS(eV) =     -11596.8913  dDmax =  2.2194
 |     1    11 -1.1518918E+002  1.5137129E-007 |
 |     1    12 -1.1518919E+002  5.7782164E-008 |
 |     1    13 -1.1518919E+002  1.6445671E-008 |
-|     1    14 -1.1518919E+002  5.6769044E-009 |
-|     1    15 -1.1518919E+002  2.0250936E-009 |
-|     1    16 -1.1518919E+002  7.0243693E-010 |
+|     1    14 -1.1518919E+002  5.6769047E-009 |
+|     1    15 -1.1518919E+002  2.0250934E-009 |
+|     1    16 -1.1518919E+002  7.0243804E-010 |
 +---------------------------------------------+
 | minim: icg             =    16              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -725,10 +737,10 @@ Eharris(eV) =     -11746.7822  E_KS(eV) =     -11648.6508  dDmax =  0.4652
 |     1     5 -1.1077181E+002  1.1364201E-006 |
 |     1     6 -1.1077186E+002  3.9955235E-007 |
 |     1     7 -1.1077187E+002  1.6841861E-007 |
-|     1     8 -1.1077188E+002  4.9045900E-008 |
+|     1     8 -1.1077188E+002  4.9045899E-008 |
 |     1     9 -1.1077188E+002  1.5023023E-008 |
-|     1    10 -1.1077188E+002  4.7469711E-009 |
-|     1    11 -1.1077188E+002  2.2746254E-009 |
+|     1    10 -1.1077188E+002  4.7469716E-009 |
+|     1    11 -1.1077188E+002  2.2746250E-009 |
 |     1    12 -1.1077188E+002  7.6937841E-010 |
 +---------------------------------------------+
 | minim: icg             =    12              |
@@ -745,13 +757,13 @@ Eharris(eV) =     -11745.7489  E_KS(eV) =     -11700.1359  dDmax =  0.2526
 |     1     1 -1.1192715E+002  4.2807430E-005 |
 |     1     2 -1.1192821E+002  9.4835618E-006 |
 |     1     3 -1.1192852E+002  2.8231718E-006 |
-|     1     4 -1.1192862E+002  8.3873412E-007 |
+|     1     4 -1.1192862E+002  8.3873413E-007 |
 |     1     5 -1.1192864E+002  1.7420887E-007 |
-|     1     6 -1.1192864E+002  4.5040453E-008 |
-|     1     7 -1.1192864E+002  1.6858703E-008 |
-|     1     8 -1.1192864E+002  6.7098894E-009 |
-|     1     9 -1.1192864E+002  1.3970486E-009 |
-|     1    10 -1.1192864E+002  4.7199857E-010 |
+|     1     6 -1.1192864E+002  4.5040452E-008 |
+|     1     7 -1.1192864E+002  1.6858704E-008 |
+|     1     8 -1.1192864E+002  6.7098890E-009 |
+|     1     9 -1.1192864E+002  1.3970491E-009 |
+|     1    10 -1.1192864E+002  4.7199793E-010 |
 +---------------------------------------------+
 | minim: icg             =    10              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -769,9 +781,9 @@ Eharris(eV) =     -11745.4257  E_KS(eV) =     -11750.2347  dDmax =  0.0303
 |     1     3 -1.1220627E+002  9.3134677E-008 |
 |     1     4 -1.1220628E+002  3.8660686E-008 |
 |     1     5 -1.1220628E+002  8.1570951E-009 |
-|     1     6 -1.1220628E+002  2.8541463E-009 |
-|     1     7 -1.1220628E+002  1.0987726E-009 |
-|     1     8 -1.1220628E+002  4.4206178E-010 |
+|     1     6 -1.1220628E+002  2.8541464E-009 |
+|     1     7 -1.1220628E+002  1.0987725E-009 |
+|     1     8 -1.1220628E+002  4.4206229E-010 |
 +---------------------------------------------+
 | minim: icg             =     8              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -785,10 +797,10 @@ Eharris(eV) =     -11745.3970  E_KS(eV) =     -11746.8889  dDmax =  0.0237
 +---------------------------------------------+
 |             E_OMM            E_diff         |
 |     1     1 -1.1219671E+002  2.6353553E-007 |
-|     1     2 -1.1219672E+002  3.6173708E-008 |
-|     1     3 -1.1219672E+002  5.7211707E-009 |
-|     1     4 -1.1219672E+002  2.6126647E-009 |
-|     1     5 -1.1219672E+002  9.6068542E-010 |
+|     1     2 -1.1219672E+002  3.6173709E-008 |
+|     1     3 -1.1219672E+002  5.7211706E-009 |
+|     1     4 -1.1219672E+002  2.6126648E-009 |
+|     1     5 -1.1219672E+002  9.6068530E-010 |
 +---------------------------------------------+
 | minim: icg             =     5              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -803,9 +815,9 @@ Eharris(eV) =     -11745.3937  E_KS(eV) =     -11745.9382  dDmax =  0.0135
 |             E_OMM            E_diff         |
 |     1     1 -1.1211882E+002  1.0457279E-007 |
 |     1     2 -1.1211882E+002  1.7010778E-008 |
-|     1     3 -1.1211882E+002  4.9704484E-009 |
-|     1     4 -1.1211882E+002  1.7615338E-009 |
-|     1     5 -1.1211882E+002  4.5984169E-010 |
+|     1     3 -1.1211882E+002  4.9704488E-009 |
+|     1     4 -1.1211882E+002  1.7615339E-009 |
+|     1     5 -1.1211882E+002  4.5984195E-010 |
 +---------------------------------------------+
 | minim: icg             =     5              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -819,7 +831,7 @@ Eharris(eV) =     -11745.3936  E_KS(eV) =     -11745.7036  dDmax =  0.0037
 +---------------------------------------------+
 |             E_OMM            E_diff         |
 |     1     1 -1.1212185E+002  6.9355146E-009 |
-|     1     2 -1.1212185E+002  6.2779850E-010 |
+|     1     2 -1.1212185E+002  6.2779825E-010 |
 +---------------------------------------------+
 | minim: icg             =     2              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -833,7 +845,7 @@ Eharris(eV) =     -11745.3934  E_KS(eV) =     -11745.6871  dDmax =  0.0016
 +---------------------------------------------+
 |             E_OMM            E_diff         |
 |     1     1 -1.1213289E+002  5.1567989E-009 |
-|     1     2 -1.1213289E+002  7.6721870E-010 |
+|     1     2 -1.1213289E+002  7.6721883E-010 |
 +---------------------------------------------+
 | minim: icg             =     2              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -952,29 +964,41 @@ Re-using DM from previous geometry...
 Re-using DM without extrapolation for lack of history
 Density Matrix sparsity pattern changed.
 New grid distribution:   1
-           1       1:   36    1:   18    1:   18
-           2       1:   36    1:   18   19:   36
-           3       1:   36   19:   36    1:   18
-           4       1:   36   19:   36   19:   36
+           1       1:   36    1:   18    1:    9
+           2       1:   36    1:   18   10:   18
+           3       1:   36    1:   18   19:   27
+           4       1:   36    1:   18   28:   36
+           5       1:   36   19:   36    1:    9
+           6       1:   36   19:   36   10:   18
+           7       1:   36   19:   36   19:   27
+           8       1:   36   19:   36   28:   36
 
 InitMesh: MESH =    72 x    72 x    72 =      373248
 InitMesh: (bp) =    36 x    36 x    36 =       46656
 InitMesh: Mesh cutoff (required, used) =   150.000   161.973 Ry
-ExtMesh (bp) on 0 =    88 x    70 x    70 =      431200
+ExtMesh (bp) on 0 =    88 x    70 x    61 =      375760
 New grid distribution:   2
-           1       1:   36    1:   16    1:   19
-           2       1:   36    1:   15   20:   36
-           3       1:   36   17:   36    1:   19
-           4       1:   36   16:   36   20:   36
+           1       1:   18   17:   36    1:   19
+           2      18:   36    1:   16    1:   19
+           3       1:   17    1:   16    1:   19
+           4      21:   36    1:   15   20:   36
+           5      19:   36   17:   36    1:   19
+           6       1:   20    1:   15   20:   36
+           7      23:   36   16:   36   20:   36
+           8       1:   22   16:   36   20:   36
 New grid distribution:   3
-           1       1:   36    1:   18    1:   18
-           2       1:   36    1:   18   19:   36
-           3       1:   36   19:   36    1:   18
-           4       1:   36   19:   36   19:   36
+           1       1:   18   19:   36   19:   36
+           2      19:   36    1:   18    1:   18
+           3      19:   36    1:   18   19:   36
+           4      19:   36   19:   36    1:   18
+           5       1:   18    1:   18   19:   36
+           6       1:   18    1:   18    1:   18
+           7      19:   36   19:   36   19:   36
+           8       1:   18   19:   36    1:   18
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    88 x    68 x    71 =      424864
-PhiOnMesh: Number of (b)points on node 0 =                10944
-PhiOnMesh: nlist on node 0 =               375260
+ExtMesh (bp) on 0 =    70 x    72 x    71 =      357840
+PhiOnMesh: Number of (b)points on node 0 =                 6840
+PhiOnMesh: nlist on node 0 =               202498
 
 siesta: iscf =    1
 Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4232  dDmax =  0.0067
@@ -983,9 +1007,9 @@ Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4232  dDmax =  0.0067
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1212780E+002  1.2654206E-008 |
-|     1     2 -1.1212780E+002  2.3665368E-009 |
-|     1     3 -1.1212780E+002  7.1999078E-010 |
+|     1     1 -1.1212780E+002  1.2654207E-008 |
+|     1     2 -1.1212780E+002  2.3665367E-009 |
+|     1     3 -1.1212780E+002  7.1999091E-010 |
 +---------------------------------------------+
 | minim: icg             =     3              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -999,7 +1023,7 @@ Eharris(eV) =     -11745.4069  E_KS(eV) =     -11745.4069  dDmax =  0.0013
 +---------------------------------------------+
 |             E_OMM            E_diff         |
 |     1     1 -1.1213855E+002  3.3251792E-009 |
-|     1     2 -1.1213855E+002  5.4224895E-010 |
+|     1     2 -1.1213855E+002  5.4224920E-010 |
 +---------------------------------------------+
 | minim: icg             =     2              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -1192,7 +1216,8 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00006946         -0.00006325  Ry/Bohr**3
 siesta:          -0.00637726         -0.00580719  eV/Ang**3
-siesta:         -10.21761144         -9.30424428  kBar
+siesta:         -10.21761144         -9.30424429  kBar
 (Free)E+ p_basis*V_orbitals  =      -11732.383777
 (Free)Eharris+ p_basis*V_orbitals  =      -11732.383777
->> End of run:  29-SEP-2015  15:41:21
+>> End of run:   2-JUL-2017  12:02:49
+Job completed

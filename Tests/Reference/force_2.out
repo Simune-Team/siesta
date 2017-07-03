@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:37:46
+* Running on    8 nodes in parallel
+>> Start of run:   2-JUL-2017  11:47:35
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -65,7 +65,7 @@ L=0  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -75,7 +75,7 @@ L=1  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -236,10 +236,10 @@ redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    2   2
+* ProcessorY, Blocksize:    2   1
 
 
-* Orbital distribution balance (max,min):     2     2
+* Orbital distribution balance (max,min):     1     1
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -268,29 +268,41 @@ New_DM. Step:     1
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11951
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6710
 
 stepf: Fermi-Dirac step function
 
@@ -318,8 +330,9 @@ siesta: Eharris(eV) =    -194.939313
 
 siesta: Eharris(eV) =    -194.939313
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.042   6.52
-:!: SCF did not converge in maximum number of steps.
+timer: Routine,Calls,Time,% =    IterSCF     1       0.015   4.85
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   0  1    1.787167
 
 Using DM_out to compute the final energy and forces
 
@@ -327,15 +340,15 @@ siesta: E_KS - E_eggbox =      -194.6964
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot    0.530332    0.006024    0.343650
 ----------------------------------------
-   Max    0.000000
-   Res    0.000000    sqrt( Sum f_i^2 / 3N )
+   Max    0.486297
+   Res    0.242568    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.000000    constrained
+   Max    0.486297    constrained
 
-Stress-tensor-Voigt (kbar):     -476.61     -476.61     -476.61       -0.00       -0.00       -0.00
-(Free)E + p*V (eV/cell)     -182.7899
+Stress-tensor-Voigt (kbar):     -477.59     -481.24     -482.22       -5.53       17.24       -9.76
+(Free)E + p*V (eV/cell)     -182.6964
 Target enthalpy (eV/cell)     -194.6964
 
                      ====================================
@@ -357,51 +370,64 @@ New_DM. Step:     2
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11963
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6708
 
-siesta: Eharris(eV) =    -194.932994
+siesta: Eharris(eV) =    -194.930730
 
 
-siesta: Eharris(eV) =    -194.932994
+siesta: Eharris(eV) =    -194.930730
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   1  1    1.787306
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.010143    0.000000    0.000000
+   Tot    0.513418    0.008983    0.344785
 ----------------------------------------
-   Max    0.782343
-   Res    0.448767    sqrt( Sum f_i^2 / 3N )
+   Max    1.235044
+   Res    0.601092    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.782343    constrained
+   Max    1.235044    constrained
 
-Stress-tensor-Voigt (kbar):     -479.67     -479.81     -479.81       -0.00       22.98       -0.00
-(Free)E + p*V (eV/cell)     -182.7041
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -478.78     -484.65     -485.18       -5.58       40.37       -9.95
+(Free)E + p*V (eV/cell)     -182.6226
+Target enthalpy (eV/cell)     -194.6856
 
                      ====================================
                         Begin FC step =      2
@@ -422,51 +448,64 @@ New_DM. Step:     3
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11937
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6724
 
-siesta: Eharris(eV) =    -194.932994
+siesta: Eharris(eV) =    -194.938708
 
 
-siesta: Eharris(eV) =    -194.932994
+siesta: Eharris(eV) =    -194.938708
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   2  1    1.787361
 
 Using DM_out to compute the final energy and forces
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.010143    0.000000    0.000000
+   Tot    0.010573   -0.000272   -0.000268
 ----------------------------------------
-   Max    0.782343
-   Res    0.448767    sqrt( Sum f_i^2 / 3N )
+   Max    0.790987
+   Res    0.453691    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.782343    constrained
+   Max    0.790987    constrained
 
-Stress-tensor-Voigt (kbar):     -479.67     -479.81     -479.81       -0.00      -22.98       -0.00
-(Free)E + p*V (eV/cell)     -182.7041
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -478.58     -480.17     -479.61       -0.16      -22.88        0.09
+(Free)E + p*V (eV/cell)     -182.7089
+Target enthalpy (eV/cell)     -194.6864
 
                      ====================================
                         Begin FC step =      3
@@ -487,36 +526,49 @@ New_DM. Step:     4
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11939
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6713
 
 siesta: Eharris(eV) =    -194.932994
 
 
 siesta: Eharris(eV) =    -194.932994
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   3  1    1.787187
 
 Using DM_out to compute the final energy and forces
 
@@ -552,36 +604,49 @@ New_DM. Step:     5
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11967
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6720
 
 siesta: Eharris(eV) =    -194.932994
 
 
 siesta: Eharris(eV) =    -194.932994
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   4  1    1.787187
 
 Using DM_out to compute the final energy and forces
 
@@ -617,36 +682,49 @@ New_DM. Step:     6
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11939
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6713
 
 siesta: Eharris(eV) =    -194.932994
 
 
 siesta: Eharris(eV) =    -194.932994
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   5  1    1.787187
 
 Using DM_out to compute the final energy and forces
 
@@ -682,36 +760,49 @@ New_DM. Step:     7
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11967
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6720
 
 siesta: Eharris(eV) =    -194.932994
 
 
 siesta: Eharris(eV) =    -194.932994
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   6  1    1.787187
 
 Using DM_out to compute the final energy and forces
 
@@ -747,36 +838,49 @@ New_DM. Step:     8
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11944
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6721
 
 siesta: Eharris(eV) =    -194.932994
 
 
 siesta: Eharris(eV) =    -194.932994
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   7  1    1.787187
 
 Using DM_out to compute the final energy and forces
 
@@ -812,36 +916,49 @@ New_DM. Step:     9
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11968
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6724
 
 siesta: Eharris(eV) =    -194.932994
 
 
 siesta: Eharris(eV) =    -194.932994
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   8  1    1.787187
 
 Using DM_out to compute the final energy and forces
 
@@ -877,36 +994,49 @@ New_DM. Step:    10
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11954
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6717
 
 siesta: Eharris(eV) =    -194.932994
 
 
 siesta: Eharris(eV) =    -194.932994
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   9  1    1.787187
 
 Using DM_out to compute the final energy and forces
 
@@ -942,36 +1072,49 @@ New_DM. Step:    11
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11958
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6716
 
 siesta: Eharris(eV) =    -194.932994
 
 
 siesta: Eharris(eV) =    -194.932994
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:  10  1    1.787187
 
 Using DM_out to compute the final energy and forces
 
@@ -1007,36 +1150,49 @@ New_DM. Step:    12
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11954
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6717
 
 siesta: Eharris(eV) =    -194.932994
 
 
 siesta: Eharris(eV) =    -194.932994
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:  11  1    1.787187
 
 Using DM_out to compute the final energy and forces
 
@@ -1072,36 +1228,49 @@ New_DM. Step:    13
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          6.85278698
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11958
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6716
 
 siesta: Eharris(eV) =    -194.932994
 
 
 siesta: Eharris(eV) =    -194.932994
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:  12  1    1.787187
 
 Using DM_out to compute the final energy and forces
 
@@ -1168,4 +1337,5 @@ siesta:           0.29943950          0.30836374  eV/Ang**3
 siesta:         479.76015890        494.05852160  kBar
 (Free)E+ p_basis*V_orbitals  =        -194.112732
 (Free)Eharris+ p_basis*V_orbitals  =        -194.356294
->> End of run:  29-SEP-2015  15:37:51
+>> End of run:   2-JUL-2017  11:47:37
+Job completed

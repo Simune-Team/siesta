@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:26:57
+* Running on    8 nodes in parallel
+>> Start of run:   2-JUL-2017  11:57:38
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -83,7 +83,7 @@ Valence configuration for pseudopotential generation:
 5p( 0.00) rc: 2.97
 4d(10.00) rc: 1.80
 4f( 0.00) rc: 2.25
- Reparametrization. rmax:    119.983227086000     
+ Reparametrization. rmax:    119.98322708600000     
  Reparametrization. New nrval:         9393
 Writing pseudopotential information in formatted form to Ag.Reparam.psf
 For Ag, standard SIESTA heuristics set lmxkb to 3
@@ -103,7 +103,7 @@ L=0  Nsemic=0  Cnfigmx=5
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    4.9700      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=5
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -113,7 +113,7 @@ L=1  Nsemic=0  Cnfigmx=5
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.0100    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 L=2  Nsemic=0  Cnfigmx=4
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
@@ -123,7 +123,7 @@ L=2  Nsemic=0  Cnfigmx=4
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    5.1200      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -318,10 +318,10 @@ redata: ***********************************************************************
 Total number of electrons:    11.000000
 Total ionic charge:    11.000000
 
-* ProcessorY, Blocksize:    2   4
+* ProcessorY, Blocksize:    2   2
 
 
-* Orbital distribution balance (max,min):     4     3
+* Orbital distribution balance (max,min):     2     1
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -349,29 +349,41 @@ New_DM. Step:     1
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =         11.00000000         12.88354914
 New grid distribution:   1
-           1       1:    8    1:    4    1:    4
-           2       1:    8    1:    4    5:    8
-           3       1:    8    5:    8    1:    4
-           4       1:    8    5:    8    5:    8
+           1       1:    8    1:    4    1:    2
+           2       1:    8    1:    4    3:    4
+           3       1:    8    1:    4    5:    6
+           4       1:    8    1:    4    7:    8
+           5       1:    8    5:    8    1:    2
+           6       1:    8    5:    8    3:    4
+           7       1:    8    5:    8    5:    6
+           8       1:    8    5:    8    7:    8
 
 InitMesh: MESH =    16 x    16 x    16 =        4096
 InitMesh: (bp) =     8 x     8 x     8 =         512
 InitMesh: Mesh cutoff (required, used) =   100.000   126.887 Ry
-ExtMesh (bp) on 0 =    48 x    44 x    44 =       92928
+ExtMesh (bp) on 0 =    48 x    44 x    42 =       88704
 New grid distribution:   2
-           1       1:    8    1:    4    1:    4
-           2       1:    8    1:    4    5:    8
-           3       1:    8    5:    8    1:    4
-           4       1:    8    5:    8    5:    8
+           1       1:    5    1:    4    1:    4
+           2       5:    8    5:    8    1:    4
+           3       1:    4    1:    4    5:    8
+           4       6:    8    1:    4    1:    4
+           5       5:    8    1:    4    5:    8
+           6       1:    4    5:    8    1:    4
+           7       4:    8    5:    8    5:    8
+           8       1:    3    5:    8    5:    8
 New grid distribution:   3
-           1       1:    8    1:    4    1:    4
-           2       1:    8    1:    4    5:    8
-           3       1:    8    5:    8    1:    4
-           4       1:    8    5:    8    5:    8
+           1       1:    4    5:    8    5:    8
+           2       5:    8    1:    4    1:    4
+           3       5:    8    1:    4    5:    8
+           4       5:    8    5:    8    1:    4
+           5       1:    4    1:    4    5:    8
+           6       1:    4    1:    4    1:    4
+           7       5:    8    5:    8    5:    8
+           8       1:    4    5:    8    1:    4
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    48 x    44 x    44 =       92928
-PhiOnMesh: Number of (b)points on node 0 =                  128
-PhiOnMesh: nlist on node 0 =                 7079
+ExtMesh (bp) on 0 =    45 x    44 x    44 =       87120
+PhiOnMesh: Number of (b)points on node 0 =                   80
+PhiOnMesh: nlist on node 0 =                 4130
 
 stepf: Fermi-Dirac step function
 
@@ -390,13 +402,13 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -1084.975735
+siesta: Eharris =     -1084.975734
 siesta: Etot    =     -1083.063771
 siesta: FreeEng =     -1083.100832
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1    -1084.9757    -1083.0638    -1083.1008  0.62740 -9.1193
-timer: Routine,Calls,Time,% =    IterSCF     1       0.023   1.01
+timer: Routine,Calls,Time,% =    IterSCF     1       0.017   1.29
    scf:    2    -1091.0367    -1077.2741    -1077.3322  1.20375 -0.7654
    scf:    3    -1086.1550    -1079.9283    -1079.9865  0.45883 -3.3910
    scf:    4    -1084.6411    -1081.2429    -1081.3010  0.12090 -4.8895
@@ -446,7 +458,8 @@ timer: Routine,Calls,Time,% =    IterSCF     1       0.023   1.01
    scf:   48    -1084.0089    -1083.9115    -1083.9480  0.47385 -6.9178
    scf:   49    -1083.9997    -1083.9129    -1083.9497  0.47385 -6.9256
    scf:   50    -1084.0089    -1083.9115    -1083.9480  0.47385 -6.9178
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   0 50    0.473849
 
 Using DM_out to compute the final energy and forces
 
@@ -456,7 +469,7 @@ siesta: E_KS - E_eggbox =     -1083.9129
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.000000
+   Tot   -0.000000   -0.000000    0.000000
 ----------------------------------------
    Max    0.000000
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
@@ -508,7 +521,8 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00496853         -0.00496853  Ry/Bohr**3
 siesta:          -0.45619354         -0.45619354  eV/Ang**3
-siesta:        -730.91053703       -730.91053703  kBar
+siesta:        -730.91053706       -730.91053706  kBar
 (Free)E+ p_basis*V_orbitals  =       -1083.909157
 (Free)Eharris+ p_basis*V_orbitals  =       -1084.005109
->> End of run:  29-SEP-2015  15:27:01
+>> End of run:   2-JUL-2017  11:57:40
+Job completed

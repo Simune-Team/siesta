@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:30:17
+* Running on    8 nodes in parallel
+>> Start of run:   2-JUL-2017  11:47:42
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -73,7 +73,7 @@ L=0  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -83,7 +83,7 @@ L=1  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -245,10 +245,10 @@ redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    2   2
+* ProcessorY, Blocksize:    2   1
 
 
-* Orbital distribution balance (max,min):     2     2
+* Orbital distribution balance (max,min):     1     1
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -291,29 +291,41 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11951
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6710
 
 stepf: Fermi-Dirac step function
 
@@ -341,16 +353,19 @@ siesta: Eharris(eV) =    -193.422392
 
 siesta: Eharris(eV) =    -193.422392
 
-timer: Routine,Calls,Time,% =    IterSCF     1       0.056   7.59
-:!: SCF did not converge in maximum number of steps.
+timer: Routine,Calls,Time,% =    IterSCF     1       0.037   9.34
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   0  1    0.726175
 
 Using DM_out to compute the final energy and forces
 
 siesta: E_KS - E_eggbox =      -194.6964
 
+siesta: Total spin polarization (Qup-Qdown) =    0.000001
+
 siesta: Atomic forces (eV/Ang):
      1   -0.000000   -0.000000    0.000000
-     2    0.000000    0.000000    0.000000
+     2   -0.000000    0.000000    0.000000
 ----------------------------------------
    Tot   -0.000000   -0.000000    0.000000
 ----------------------------------------
@@ -362,7 +377,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -422.60     -422.60     -422.60       -0.00       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -184.1390
 Target enthalpy (eV/cell)     -194.6964
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -400,18 +415,18 @@ siesta: Along cartesian directions    39.122145   39.122145   39.122145
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627888   10.883664   10.883664
-siesta: Along cartesian directions    15.391825   10.261217   10.261217
+siesta: Along the lattice vectors      3.627888    3.627888    3.627888
+siesta: Along cartesian directions     5.130608    5.130608    5.130608
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors      9.221178   27.663534   27.663534
-siesta: Along cartesian directions    39.122145   26.081430   26.081430
+siesta: Along the lattice vectors      9.221178    9.221178    9.221178
+siesta: Along cartesian directions    13.040715   13.040715   13.040715
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    30.783651   25.653042   25.653042
+siesta:    20.522434   20.522434   20.522434
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    78.244289   65.203575   65.203575
+siesta:    52.162860   52.162860   52.162860
 
 obc: Macroscopic polarization for spin Up:
 
@@ -421,7 +436,7 @@ obc:   10.883664   10.883664   10.883664
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627888   10.883664   10.883664
+obc:    3.627888    3.627888    3.627888
 
                      ====================================
                         Begin FC step =      1
@@ -449,38 +464,53 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11963
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6708
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   1  1    0.726190
 
 Using DM_out to compute the final energy and forces
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1    0.831804    0.000000    0.000000
@@ -496,7 +526,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00       21.92       -0.00
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -545,38 +575,53 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11937
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6724
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   2  1    0.726190
 
 Using DM_out to compute the final energy and forces
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1   -0.831804   -0.000000    0.000000
@@ -592,7 +637,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00      -21.92       -0.00
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -679,38 +724,53 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11939
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6713
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   3  1    0.726190
 
 Using DM_out to compute the final energy and forces
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000    0.831804    0.000000
@@ -726,7 +786,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00       21.92
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -775,38 +835,53 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11967
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6720
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   4  1    0.726190
 
 Using DM_out to compute the final energy and forces
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1   -0.000000   -0.831804    0.000000
@@ -822,7 +897,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00      -21.92
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -909,44 +984,59 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11939
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6713
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   5  1    0.726190
 
 Using DM_out to compute the final energy and forces
 
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
 siesta: Atomic forces (eV/Ang):
      1    0.000000    0.000000    0.831804
-     2    0.000000   -0.000000   -0.841812
+     2   -0.000000   -0.000000   -0.841812
 ----------------------------------------
-   Tot    0.000000   -0.000000   -0.010008
+   Tot    0.000000    0.000000   -0.010008
 ----------------------------------------
    Max    0.841812
    Res    0.483140    sqrt( Sum f_i^2 / 3N )
@@ -956,7 +1046,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66       21.92       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1005,42 +1095,57 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11967
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6720
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   6  1    0.726190
 
 Using DM_out to compute the final energy and forces
 
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
 siesta: Atomic forces (eV/Ang):
      1    0.000000    0.000000   -0.831804
-     2   -0.000000    0.000000    0.841812
+     2   -0.000000   -0.000000    0.841812
 ----------------------------------------
    Tot    0.000000    0.000000    0.010008
 ----------------------------------------
@@ -1052,7 +1157,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66      -21.92       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1139,38 +1244,53 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11944
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6721
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   7  1    0.726190
 
 Using DM_out to compute the final energy and forces
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1   -0.841812   -0.000000    0.000000
@@ -1186,7 +1306,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00      -21.92       -0.00
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1235,38 +1355,53 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11968
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6724
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   8  1    0.726190
 
 Using DM_out to compute the final energy and forces
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1    0.841812    0.000000    0.000000
@@ -1282,7 +1417,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00       21.92       -0.00
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1310,7 +1445,7 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627936   10.883599   10.883599
+siesta: Along the lattice vectors      3.627935   10.883599   10.883599
 siesta: Along cartesian directions    15.391733   10.261204   10.261204
 
 siesta: Macroscopic polarization per unit cell (Debye):
@@ -1336,7 +1471,7 @@ siesta:    78.243824   52.162796   52.162796
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627936   10.883599   10.883599
+obc:    3.627935   10.883599   10.883599
 
 obc: Macroscopic polarization for spin Down:
 
@@ -1369,38 +1504,53 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11954
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6717
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   9  1    0.726190
 
 Using DM_out to compute the final energy and forces
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1   -0.000000   -0.841812    0.000000
@@ -1416,7 +1566,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00      -21.92
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1465,38 +1615,53 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11958
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6716
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:  10  1    0.726190
 
 Using DM_out to compute the final energy and forces
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000    0.841812    0.000000
@@ -1512,7 +1677,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00       21.92
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1599,44 +1764,59 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11954
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6717
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:  11  1    0.726190
 
 Using DM_out to compute the final energy and forces
 
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000   -0.841812
-     2   -0.000000    0.000000    0.831804
+     1   -0.000000   -0.000000   -0.841812
+     2    0.000000   -0.000000    0.831804
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.010008
+   Tot   -0.000000   -0.000000   -0.010008
 ----------------------------------------
    Max    0.841812
    Res    0.483140    sqrt( Sum f_i^2 / 3N )
@@ -1646,7 +1826,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66      -21.92       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1695,44 +1875,59 @@ Initializing Density Matrix...
 
 initdm: Initial spin polarization (Qup-Qdown) =    4.000000
 New grid distribution:   1
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
 New grid distribution:   2
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
 New grid distribution:   3
-           1       1:   12    1:    6    1:    6
-           2       1:   12    1:    6    7:   12
-           3       1:   12    7:   12    1:    6
-           4       1:   12    7:   12    7:   12
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    64 x    58 x    58 =      215296
-PhiOnMesh: Number of (b)points on node 0 =                  432
-PhiOnMesh: nlist on node 0 =                11958
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6716
 
 siesta: Eharris(eV) =    -193.415802
 
 
 siesta: Eharris(eV) =    -193.415802
 
-:!: SCF did not converge in maximum number of steps.
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:  12  1    0.726190
 
 Using DM_out to compute the final energy and forces
 
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
 siesta: Atomic forces (eV/Ang):
-     1   -0.000000    0.000000    0.841812
-     2    0.000000   -0.000000   -0.831804
+     1    0.000000   -0.000000    0.841812
+     2   -0.000000   -0.000000   -0.831804
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.010008
+   Tot   -0.000000   -0.000000    0.010008
 ----------------------------------------
    Max    0.841812
    Res    0.483140    sqrt( Sum f_i^2 / 3N )
@@ -1742,7 +1937,7 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66       21.92       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1840,10 +2035,10 @@ siesta:       Ekinion =       0.000000
 siesta:         Total =    -194.689419
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1   -0.000000    0.000000    0.841812
-siesta:      2    0.000000   -0.000000   -0.831804
+siesta:      1    0.000000   -0.000000    0.841812
+siesta:      2   -0.000000   -0.000000   -0.831804
 siesta: ----------------------------------------
-siesta:    Tot    0.000000   -0.000000    0.010008
+siesta:    Tot   -0.000000   -0.000000    0.010008
 
 siesta: Stress tensor (static) (eV/Ang**3):
 siesta:    -0.265754    0.013680   -0.000000
@@ -1861,4 +2056,5 @@ siesta:         425.74672658        441.14030693  kBar
 (Free)Eharris+ p_basis*V_orbitals  =        -192.839106
 
 siesta: Total spin polarization (Qup-Qdown) =    0.000011
->> End of run:  29-SEP-2015  15:30:25
+>> End of run:   2-JUL-2017  11:47:48
+Job completed

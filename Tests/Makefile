@@ -36,17 +36,19 @@
 #
 label=work
 #
-tests=  h2o h2o_reparam h2o_basis h2o_dos h2o-pop		\
-       floating benzene bessel mgc-force mgco3 si2x1h force_2 born born_spin	\
+tests=  h2o h2o_reparam h2o_basis h2o_dos h2o-pop chargeconf-h2o	\
+       floating benzene bessel mgc-force mgco3 si2x1h force_2 born	\
+       born_spin							\
        var_cell constant_volume batio3 fe fe_broyden sih si64		\
        h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr		\
        md_anneal md_verlet md_nose si_bandpoints sih_fire		\
-       graphite_c6 oxyn h2o_findp_bug h2o_radialgrid ag ch4	\
+       graphite_c6 oxyn h2o_am05 h2o_filteret_basis h2o_findp_bug	\
+       h2o_radialgrid ag ch4						\
+       si2x1h-dipole-gcs si_fatbands					\
        si_coop born pb_filter_cutoff pb_filter_tol fire_benzene		\
        fe_clust_noncollinear h_chain n_chain si64_coop si_pdos_kgrid    \
        si2x1h-dipole ar2_vdw graphite_vdw_df sic-slab si-optical OMM_si \
-       OMM_h2o h2o_dipole h2o_dipole2 \
-       h2_bessel
+       OMM_h2o h2o_dipole h2o_dipole2 h2_bessel
 #
 default: all
 #

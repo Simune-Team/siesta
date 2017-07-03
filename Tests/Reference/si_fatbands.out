@@ -1,12 +1,12 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2015  15:46:19
+* Running on    8 nodes in parallel
+>> Start of run:   3-JUL-2017   9:18:58
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -99,7 +99,7 @@ L=0  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=3
           n=1  nzeta=2  polorb=1
             splnorm:   0.15000    
@@ -109,7 +109,7 @@ L=1  Nsemic=0  Cnfigmx=3
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:   1.00000     1.00000    
+            lambdas:    1.0000      1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -299,10 +299,10 @@ redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    2   7
+* ProcessorY, Blocksize:    2   3
 
 
-* Orbital distribution balance (max,min):     7     5
+* Orbital distribution balance (max,min):     5     3
 
  Kpoints in:           32 . Kpoints trimmed:           32
 
@@ -312,6 +312,12 @@ siesta: k-grid: Supercell and displacements
 siesta: k-grid:    0   4   0      0.500
 siesta: k-grid:    0   0   4      0.500
 siesta: k-grid:    4   0   0      0.500
+Using LatticeConstant from fdf file for BandLinesScale:   10.261217 Bohr
+Beware any cell changes by the end of the run
+Using LatticeConstant from fdf file for BandLinesScale:   10.261217 Bohr
+Beware any cell changes by the end of the run
+Using LatticeConstant from fdf file for WaveFuncKPointsScale:   10.261217 Bohr
+Beware any cell changes by the end of the run
 Naive supercell factors:     5    5    5
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
@@ -335,29 +341,41 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     1
 Initializing Density Matrix...
 New grid distribution:   1
-           1       1:    9    1:    5    1:    5
-           2       1:    9    1:    5    6:    9
-           3       1:    9    6:    9    1:    5
-           4       1:    9    6:    9    6:    9
+           1       1:    9    1:    5    1:    3
+           2       1:    9    1:    5    4:    5
+           3       1:    9    1:    5    6:    7
+           4       1:    9    1:    5    8:    9
+           5       1:    9    6:    9    1:    3
+           6       1:    9    6:    9    4:    5
+           7       1:    9    6:    9    6:    7
+           8       1:    9    6:    9    8:    9
 
 InitMesh: MESH =    18 x    18 x    18 =        5832
 InitMesh: (bp) =     9 x     9 x     9 =         729
 InitMesh: Mesh cutoff (required, used) =    90.000    91.110 Ry
-ExtMesh (bp) on 0 =    49 x    45 x    45 =       99225
+ExtMesh (bp) on 0 =    49 x    45 x    43 =       94815
 New grid distribution:   2
-           1       1:    9    1:    5    1:    5
-           2       1:    9    1:    5    6:    9
-           3       1:    9    6:    9    1:    5
-           4       1:    9    6:    9    6:    9
+           1       1:    5    1:    5    1:    5
+           2       6:    9    6:    9    1:    5
+           3       1:    5    1:    5    6:    9
+           4       6:    9    1:    5    6:    9
+           5       1:    5    6:    9    1:    5
+           6       6:    9    1:    5    1:    5
+           7       1:    5    6:    9    6:    9
+           8       6:    9    6:    9    6:    9
 New grid distribution:   3
-           1       1:    9    1:    5    1:    5
-           2       1:    9    1:    5    6:    9
-           3       1:    9    6:    9    1:    5
-           4       1:    9    6:    9    6:    9
+           1       1:    5    1:    5    1:    5
+           2       6:    9    6:    9    1:    5
+           3       1:    5    1:    5    6:    9
+           4       6:    9    1:    5    6:    9
+           5       1:    5    6:    9    1:    5
+           6       6:    9    1:    5    1:    5
+           7       1:    5    6:    9    6:    9
+           8       6:    9    6:    9    6:    9
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    49 x    45 x    45 =       99225
-PhiOnMesh: Number of (b)points on node 0 =                  225
-PhiOnMesh: nlist on node 0 =                18321
+ExtMesh (bp) on 0 =    45 x    45 x    45 =       91125
+PhiOnMesh: Number of (b)points on node 0 =                  125
+PhiOnMesh: nlist on node 0 =                 9760
 
 stepf: Fermi-Dirac step function
 
@@ -382,7 +400,7 @@ siesta: FreeEng =      -214.209336
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -215.4707     -214.2093     -214.2093  1.81760 -3.8996
-timer: Routine,Calls,Time,% =    IterSCF     1       0.256  10.83
+timer: Routine,Calls,Time,% =    IterSCF     1       0.327  19.69
    scf:    2     -215.4379     -215.4358     -215.4358  0.00974 -3.8091
    scf:    3     -215.4376     -215.4313     -215.4313  0.00480 -3.8162
    scf:    4     -215.4375     -215.4375     -215.4375  0.00037 -3.8267
@@ -458,7 +476,8 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00009436         -0.00010216  Ry/Bohr**3
 siesta:          -0.00866344         -0.00938007  eV/Ang**3
-siesta:         -13.88051217        -15.02869848  kBar
+siesta:         -13.88051190        -15.02869821  kBar
 (Free)E+ p_basis*V_orbitals  =        -214.226785
 (Free)Eharris+ p_basis*V_orbitals  =        -214.226785
->> End of run:  29-SEP-2015  15:46:24
+>> End of run:   3-JUL-2017   9:19:03
+Job completed

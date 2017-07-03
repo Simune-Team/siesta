@@ -1,12 +1,12 @@
-Siesta Version: siesta-4.0b-498
-Architecture  : x86_64-linux-gcc
-Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG 
+Siesta Version: siesta-4.0--527
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
 PARALLEL version
 NetCDF support
 
-* Running on    2 nodes in parallel
->> Start of run:  21-JUN-2016  16:10:52
+* Running on    8 nodes in parallel
+>> Start of run:   2-JUL-2017  12:02:49
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -14,6 +14,10 @@ NetCDF support
 
 reinit: Reading from standard input
 ************************** Dump of input data file ****************************
+# This test is based on the dipole correction
+# paper by:
+# Bengtsson, PRB, 1999
+# DOI: 10.1103/PhysRevB.59.12301
 SystemName          Water molecule
 SystemLabel         h2o_dipole
 NumberOfAtoms       3
@@ -390,10 +394,10 @@ redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    1  12
+* ProcessorY, Blocksize:    2   3
 
 
-* Orbital distribution balance (max,min):    12    11
+* Orbital distribution balance (max,min):     3     2
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -421,25 +425,43 @@ New_DM. Step:     1
 Initializing Density Matrix...
 Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          8.09176909
 New grid distribution:   1
-           1       1:   15    1:   27    1:   12
-           2       1:   15    1:   27   13:   24
+           1       1:   15    1:   14    1:    6
+           2       1:   15    1:   14    7:   12
+           3       1:   15    1:   14   13:   18
+           4       1:   15    1:   14   19:   24
+           5       1:   15   15:   27    1:    6
+           6       1:   15   15:   27    7:   12
+           7       1:   15   15:   27   13:   18
+           8       1:   15   15:   27   19:   24
 
 InitMesh: MESH =    30 x    54 x    48 =       77760
 InitMesh: (bp) =    15 x    27 x    24 =        9720
 InitMesh: Mesh cutoff (required, used) =   200.000   223.865 Ry
-ExtMesh (bp) on 0 =    67 x    75 x    64 =      321600
+ExtMesh (bp) on 0 =    67 x    62 x    58 =      240932
 New grid distribution:   2
-           1       1:   15    8:   27    1:   24
-           2       1:   15    1:    7    1:   24
+           1       9:   15    8:   27    1:    9
+           2       1:    8    1:    7    1:   10
+           3       1:    7    8:   27   10:   24
+           4       8:   15    1:    7   11:   24
+           5       1:    8    8:   27    1:    9
+           6       1:    7    1:    7   11:   24
+           7       8:   15    8:   27   10:   24
+           8       9:   15    1:    7    1:   10
 New grid distribution:   3
-           1       1:   15   11:   27    1:   24
-           2       1:   15    1:   10    1:   24
+           1       1:    7   11:   27    1:   11
+           2       9:   15    1:   10    1:   12
+           3       9:   15   11:   27   12:   24
+           4       1:    8    1:   10   13:   24
+           5       8:   15   11:   27    1:   11
+           6       1:    8    1:   10    1:   12
+           7       1:    8   11:   27   12:   24
+           8       9:   15    1:   10   13:   24
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    67 x    68 x    76 =      346256
-PhiOnMesh: Number of (b)points on node 0 =                 7200
-PhiOnMesh: nlist on node 0 =                65747
+ExtMesh (bp) on 0 =    59 x    68 x    61 =      244732
+PhiOnMesh: Number of (b)points on node 0 =                 1260
+PhiOnMesh: nlist on node 0 =                15058
 
-efield: SlabDipoleCorrection = .true. in input file
+efield: SlabDipoleCorrection enabled.
 efield: A dipole layer will be introduced in the vacuum
 efield: region to compensate the system dipole
 Dipole moment in unit cell   =      0.0000     -0.2411      0.0000 D
@@ -448,7 +470,7 @@ Electric field for dipole correction =   -0.000000    0.003926   -0.000000 Ry/Bo
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -127.557645
+siesta: Ebs     =      -127.557644
 siesta: Eions   =       815.854478
 siesta: Ena     =       174.863801
 siesta: Ekin    =       336.945867
@@ -468,7 +490,7 @@ siesta: FreeEng =      -464.240522
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -465.8553     -464.2405     -464.2405  1.42648 -3.2286
-timer: Routine,Calls,Time,% =    IterSCF     1       0.284  10.41
+timer: Routine,Calls,Time,% =    IterSCF     1       0.030   2.77
 Dipole moment in unit cell   =     -0.0000      2.3284     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.037907    0.000000 Ry/Bohr/e
    scf:    2     -468.4327     -462.9286     -462.9286  0.29442 -2.3058
@@ -547,14 +569,14 @@ siesta: E_KS - E_eggbox =      -464.6466
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.007279    0.000000
+   Tot   -0.000000   -0.007278   -0.000000
 ----------------------------------------
    Max    1.049864
    Res    0.603525    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    1.049864    constrained
 
-Stress-tensor-Voigt (kbar):      -79.92        6.54       -2.02        0.00        0.00        0.00
+Stress-tensor-Voigt (kbar):      -79.92        6.54       -2.02        0.00        0.00       -0.00
 (Free)E + p*V (eV/cell)     -463.2346
 Target enthalpy (eV/cell)     -464.6466
 
@@ -562,9 +584,9 @@ siesta: Program's energy decomposition (eV):
 siesta: Ebs     =      -107.862573
 siesta: Eions   =       815.854478
 siesta: Ena     =       174.863801
-siesta: Ekin    =       355.661106
-siesta: Enl     =       -63.544594
-siesta: DEna    =        -3.114065
+siesta: Ekin    =       355.661105
+siesta: Enl     =       -63.544593
+siesta: DEna    =        -3.114064
 siesta: DUscf   =         0.780166
 siesta: DUext   =         0.043443
 siesta: Exc     =      -113.481932
@@ -579,34 +601,34 @@ siesta: FreeEng =      -464.646553
 
 siesta: Final energy (eV):
 siesta:  Band Struct. =    -107.862573
-siesta:       Kinetic =     355.661106
-siesta:       Hartree =     353.844675
+siesta:       Kinetic =     355.661105
+siesta:       Hartree =     353.844673
 siesta:    Ext. field =       0.043443
 siesta:   Exch.-corr. =    -113.481932
-siesta:  Ion-electron =   -1023.975464
-siesta:       Ion-ion =     -36.738381
+siesta:  Ion-electron =   -1023.975459
+siesta:       Ion-ion =     -36.738383
 siesta:       Ekinion =       0.000000
 siesta:         Total =    -464.646553
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.000000    0.843637    0.000000
+siesta:      1    0.000000    0.843638    0.000000
 siesta:      2   -1.049864   -0.425458   -0.000000
 siesta:      3    1.049864   -0.425458   -0.000000
 siesta: ----------------------------------------
-siesta:    Tot   -0.000000   -0.007279    0.000000
+siesta:    Tot   -0.000000   -0.007278   -0.000000
 
 siesta: Stress tensor (static) (eV/Ang**3):
 siesta:    -0.049884    0.000000   -0.000000
 siesta:     0.000000    0.004079   -0.000000
-siesta:     0.000000    0.000000   -0.001261
+siesta:    -0.000000    0.000000   -0.001261
 
 siesta: Cell volume =         90.000000 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00017087          0.00025499  Ry/Bohr**3
-siesta:           0.01568876          0.02341205  eV/Ang**3
-siesta:          25.13643642         37.51064013  kBar
+siesta:           0.01568876          0.02341204  eV/Ang**3
+siesta:          25.13643145         37.51063653  kBar
 (Free)E+ p_basis*V_orbitals  =        -464.061386
 (Free)Eharris+ p_basis*V_orbitals  =        -464.061386
 
@@ -615,15 +637,6 @@ siesta: Electric dipole (Debye) =   -0.000000    0.998492   -0.000000
 Dipole moment in unit cell   =     -0.0000      0.9985     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.016256    0.000000 Ry/Bohr/e
 
-dhscf: Vacuum level (max, mean) =    1.318912    0.061190 eV
--------------------------------------------------------
-Primary job  terminated normally, but 1 process returned
-a non-zero exit code.. Per user-direction, the job has been aborted.
--------------------------------------------------------
---------------------------------------------------------------------------
-mpirun detected that one or more processes exited with non-zero status, thus causing
-the job to be terminated. The first process to do so was:
-
-  Process name: [[11181,1],1]
-  Exit code:    2
---------------------------------------------------------------------------
+dhscf: Vacuum level (max, mean) =    1.318911    0.061190 eV
+>> End of run:   2-JUL-2017  12:02:51
+Job completed
