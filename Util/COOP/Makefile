@@ -57,7 +57,7 @@ dm_creator: $(DM_OBJS) dm_creator.o
 	$(FC) -o $@ $(LDFLAGS) $(DM_OBJS) dm_creator.o $(NETCDF_LIBS)
 #
 clean:
-	rm -f *.o *.mod mprop  dm_creator
+	rm -f *.o *.mod mprop dm_creator fat
 
 # DO NOT DELETE THIS LINE - used by make depend
 dm_creator.o: io_hs.o iodm_netcdf.o main_vars.o
