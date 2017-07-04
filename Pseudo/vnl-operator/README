@@ -3,11 +3,7 @@ pseudopotential file holding semilocal-potential information, a full Vnl
 operator in the classic Siesta style (special Vlocal, plus KB projectors).
 The information is produced in XML, in a form compatible with the PSML format.
 
-The program can read .psf, .vps, and .psml files. It generates a VNL
-file with the information. If the source is a .psml file, the script
-'add-siesta-vnl.sh' can be used to generate a complete PSML file in
-which the VNL section is added, possibly replacing an existing
-<pseudopotential-operator> element.
+The program can only read .psml files. 
 
 Note that psop can produce Vlocal and KB information starting from the
 output of any program that produces semilocal potentials in .psml
@@ -60,6 +56,27 @@ of integration for the orbitals used in the construction). This can
 be changed by using the -K option, possibly joined by the '-R rmax'
 option to specify an alternate rmax.
 
+To tell the program to build several projectors for a given l channel,
+use the option '-F proj_spec_filename'.  The file should be of the
+form
+
+  0  2   0.5
+  1  1   1.0
+  2  2   0.7
+  3  1   0.55
+
+with columns: angular momentum, number of KB for that l channel
+(maximum 2), and energy shift with respect to the first projector in
+the l channel.
+
+The energy shifts are not honored when semicore shells are present. In
+this case the program will automatically add one projector per
+semicore shell, with the appropriate energy levels as reference energies.
+
+If the file is not present, the default is to generate multiple
+projectors for semicore shells, and just one for normal shells, with
+the default reference energies used in Siesta.
+
 * Other options
 
 Some programs (notably oncvpsp) produce semi-local potentials with
@@ -68,14 +85,6 @@ might be difficult to check properly for the place at which they adopt
 the coulomb form.  The '-C Rmax_ps_check' option forces the use of
 a (smaller, typically 10 Bohr) radius to start the inward check.
 
-Known limitations:
-
- -- There is currently no way to tell the program to build several
-    projectors for a given l channel. It will build just one, except
-    when semicore shells are present. In that case it will add one
-    projector per semicore shell.
-
- -- The reference energies are those used by default by Siesta.
 
 
 

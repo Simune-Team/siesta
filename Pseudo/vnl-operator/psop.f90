@@ -45,17 +45,22 @@
       use psop_options
       use m_getopts
 
-      use local_xml, only: xf
-      use local_xml, only: use_linear_grid
-      use local_xml, only: nrl, drl, rl, fval
-      use xmlf90_wxml
+      use xmlf90_wxml, only: str
+      use m_kb, only: kb_t, nprojs, kbprojs
 
       implicit none
 
       character(len=*), parameter :: PSML_VERSION = "1.0"
-      character(len=*), parameter :: PSML_CREATOR = "psop-1.01"
+      character(len=*), parameter :: PSML_CREATOR = "psop-1.1"
+
       
       integer, parameter :: dp = selected_real_kind(10,100)
+
+      integer, parameter :: POLY_ORDER_EXTRAPOL = 7
+      real(dp), parameter :: ryd_to_hartree = 0.5_dp
+      
+      type(kb_t), pointer :: kb
+      character(len=1), dimension(0:4) ::  lsymb = (/'s','p','d','f','g'/)
 
 !
 !     INPUT VARIABLES REQUIRED TO GENERATE THE LOCAL PART AND KB PROJECTORS
@@ -78,6 +83,8 @@
       real(dp), allocatable    :: erefkb(:,:)! Reference energies (in Ry) for
                                              !   the calculation of the KB
                                              !   projectors
+      logical, allocatable     :: shifted_erefkb(:,:)
+      
       integer                 :: is          ! Species index               
 
 !
@@ -85,7 +92,7 @@
 !
       type(pseudopotential_t) :: psr
       type(psml_t), target    :: psml_handle
-      logical                 :: has_psml
+      logical                 :: has_psml, proj_file_exists
       type(xc_id_t)           :: xc_id
       integer                 :: status
       type(ps_annotation_t)   :: ann
@@ -233,8 +240,21 @@
       real(dp) :: rlmax
       character(len=10)     :: datestr
       integer               :: dtime(8)
+
+      integer  :: nrl
+      real(dp) :: rmax, delta
+      integer, allocatable  :: isample(:)
+      real(dp), allocatable :: r0(:), f0(:)
+      real(dp), allocatable :: fvlocal0(:), fchlocal0(:)
+      real(dp), pointer :: r(:) => null()
+
+      real(dp) :: delta_e
+      integer  :: nkb_l, nlines
+      character(len=200) proj_filename, output_filename
+      character(len=40) keyname, line
       
-      external :: write_proj_psml, dpnint, check_grid
+
+      external :: store_proj_psml, check_grid
 !
 !     Process options
 !
@@ -251,23 +271,26 @@
       use_charge_cutoff = .false.
 
       write_ion_plot_files = .false.
-      use_linear_grid = .false.
       rmax_ps_check = 0.0_dp
 
+      proj_file_exists = .false.
+      output_filename = "PSOP_PSML"
+
       do
-         call getopts('hdglpKR:C:3fcv',opt_name,opt_arg,n_opts,iostat)
+         call getopts('hdgpKF:R:C:3fcvo:',opt_name,opt_arg,n_opts,iostat)
          if (iostat /= 0) exit
          select case(opt_name)
            case ('d')
               debug_kb_generation = .true.
            case ('g')
               restricted_grid = .false.
-           case ('l')
-              use_linear_grid = .true.
            case ('p')
               write_ion_plot_files = .true.
            case ('K')
               new_kb_reference_orbitals = .true.
+           case ('F')
+              proj_file_exists = .true.
+              read(opt_arg,*) proj_filename
            case ('R')
               read(opt_arg,*) kb_rmax
            case ('C')
@@ -278,6 +301,8 @@
               force_chlocal_method = .true.
            case ('c')
               use_charge_cutoff = .true.
+           case ('o')
+              read(opt_arg,*) output_filename
            case ('v')
               write(6,"(a)") "Version: " // PSML_CREATOR
               STOP
@@ -285,7 +310,7 @@
             call manual()
            case ('?',':')
              write(0,*) "Invalid option: ", opt_arg(1:1)
-             write(0,*) "Usage: psop FILE [ options ]"
+             write(0,*) "Usage: psop [ options ] FILE"
              write(0,*) "Use -h option for manual"
              STOP
           end select
@@ -294,7 +319,7 @@
        nargs = command_argument_count()
        nlabels = nargs - n_opts + 1
        if (nlabels /= 1)  then
-          write(0,*) "Usage: psop FILE [ options ]"
+          write(0,*) "Usage: psop [ options ] FILE"
           write(0,*) "Use -h option for manual"
           STOP
        endif
@@ -324,47 +349,10 @@
          file_version =  ps_GetPSMLVersion(psml_handle)
          write(6,"(a)") "Processing a " // trim(file_version) // "PSML file"
          write(6,"(a)") ps_Creator(psml_handle)
-         !
-         call init_annotation(ann,4,status)
-         if (status /= 0) call die("Cannot init annotation")
-         id = ps_GetUUID(psml_handle)
-         call insert_annotation_pair(ann,"source-uuid",id,status)
-         if (status /= 0) call die("Cannot insert source-uuid")
-         call get_command(cmd_line)
-         call insert_annotation_pair(ann,"command-line",trim(cmd_line),status)
-         if (status /= 0) call die("Cannot insert options")
-
-         !
-         if (ps_HasLocalPotential(psml_handle)) then
-            call ps_Delete_LocalPotential(psml_handle)
-            call insert_annotation_pair(ann,"local-potential","replaced",status)
-            if (status /= 0) call die("Cannot insert lpot record")
-         else
-            call insert_annotation_pair(ann,"local-potential","inserted",status)
-            if (status /= 0) call die("Cannot insert lpot record")
-         endif
-         
-         if (ps_HasProjectors(psml_handle)) then
-            call ps_Delete_NonLocalProjectors(psml_handle)
-            call insert_annotation_pair(ann,"nonlocal-projectors","replaced",status)
-            if (status /= 0) call die("Cannot insert nl record")
-         else
-            call insert_annotation_pair(ann,"nonlocal-projectors","inserted",status)
-            if (status /= 0) call die("Cannot insert nl record")
-         endif
-
-         call get_uuid(id)
-         call ps_SetUUID(psml_handle,id)
-         call ps_SetPSMLVersion(psml_handle,PSML_VERSION)
-         call date_and_time(VALUES=dtime)
-         write(datestr,"(i4,'-',i2.2,'-',i2.2)") dtime(1:3)
-         call ps_AddProvenanceRecord(psml_handle,creator=PSML_CREATOR, &
-              date=trim(datestr), annotation=ann)
-         
-         call ps_DumpToPSMLFile(psml_handle,"PSML_BASE")
       else
          call die("This version can only work with PSML files")
       endif
+
 !
 !     STORE IN LOCAL VARIABLES SOME OF THE PARAMETERS READ IN THE 
 !     PSEUDOPOTENTIAL, AND DEFINITION OF THE RADIAL LOGARITHMIC GRID
@@ -407,15 +395,46 @@
       lmxkb    = max_l_ps
 
 !     Define the number of KB projectors for each angular momentum
-!AG:  This should allow semicore-handling
-
       allocate( nkbl(0:lmxkb) )
-      call get_n_semicore_shells(psr,nsemic)
-      nkbl(0:lmxkb) = 1 + nsemic(0:lmxkb)
-
 !     Define the reference energies (in Ry) for the calculation of the KB proj.
       allocate( erefkb(nkbmx,0:lmxkb) )
+      allocate( shifted_erefkb(nkbmx,0:lmxkb) )
+      call get_n_semicore_shells(psr,nsemic)
+      nkbl(:) = 1
       erefkb(:,:) = huge(1.0_dp)   ! defaults 'a la Siesta'
+      shifted_erefkb(:,:) = .false.
+
+      nlines = 0
+      if (proj_file_exists) then
+         ! Specify number of projectors for each l, and energy shifts
+         ! Maximum 2 projectors...
+
+         nkbl(:) = 0
+         open(unit=1,file=trim(proj_filename),position="rewind")
+         do
+            read(1,fmt=*,iostat=status) l, nkb_l, delta_e
+            if (status < 0) exit
+            nlines = nlines + 1
+            if (l > lmxkb) call die("l> lmxkb in projs spec file")
+            nkbl(l) = nkb_l
+            if (nkbl(l) > 2) call die("More than 2 projectors requested")
+            ! For semicore states, make sure that we get at least two
+            if (nkbl(l) < (nsemic(l)+1)) then
+               nkbl(l) = (nsemic(l)+1)
+               print *, "Number of projectors for l=",l," increased to", nkbl(l), " (semicore states)"
+            endif
+            ! For non-semicore states, honor the energy shift specified
+            if (nsemic(l)==0) then
+               erefkb(2,l) = delta_e
+               shifted_erefkb(2,l) = .true.
+            endif
+         enddo
+         close(1)
+      else
+         ! Just generate multiple projectors for channels with semicore
+         nkbl(0:lmxkb) =  1 + nsemic(0:lmxkb)
+      endif
+         
 ! 
 !     STORE THE IONIC PSEUDOPOTENTIALS IN A LOCAL VARIABLE 
 !     Only the 'down'/major component is used
@@ -472,18 +491,6 @@
 
       rchloc = rofi(nchloc)
 
-      if (use_linear_grid) then
-         ! Choose a range large enough to have Vlocal behave
-         ! as the coulomb potential for Zval
-         rlmax = rchloc + 1.0_dp
-         drl = 0.01_dp           ! Is this fine enough?
-         nrl = rlmax/drl + 1
-         allocate(rl(nrl),fval(nrl))
-         do ir = 1, nrl
-            rl(ir) = drl*(ir-1)
-         enddo
-      endif
-!
 !
 !     COMPUTE THE NON-LOCAL KLEINMAN-BYLANDER PROJECTORS
 !
@@ -555,114 +562,17 @@
 !     Calculation of the Kleinman-Bylander projector functions
 !
 
-      call xml_OpenFile("VNL",xf, indent=.false.)
-!
-!     Generate xml snippet
-!
-        call xml_NewElement(xf,"tmp-wrapper")
-        call xml_NewElement(xf,"local-potential")
-            call my_add_attribute(xf,"type",trim(method_used))
-        call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"chlocal-cutoff",str(rchloc))
-        call xml_EndElement(xf,"annotation")
-        call xml_NewElement(xf,"grid")
-
-        if (use_linear_grid) then
-
-           call my_add_attribute(xf,"npts",str(nrl))
-           call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","linear")
-           call my_add_attribute(xf,"drl",str(drl))
-           call xml_EndElement(xf,"annotation")
-           call xml_NewElement(xf,"grid-data")
-             call xml_AddArray(xf,rl(1:nrl))
-           call xml_EndElement(xf,"grid-data")
-
-       else
-          call my_add_attribute(xf,"npts",str(nrval))
-          call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","log-atom")
-           call my_add_attribute(xf,"nrval",str(nrval))
-           !   r(i) = a*(exp(b*(i-1))-1)
-           call my_add_attribute(xf,"scale",str(b))
-           call my_add_attribute(xf,"step",str(a))
-          call xml_EndElement(xf,"annotation")
-
-
-          call xml_NewElement(xf,"grid-data")
-           call xml_AddArray(xf,rofi(1:nrval))
-          call xml_EndElement(xf,"grid-data")
-
-       endif
-       call xml_EndElement(xf,"grid")
-
-       call xml_NewElement(xf,"radfunc")
-               call xml_NewElement(xf,"data")
-               if (use_linear_grid) then
-                  call dpnint(rofi,vlocal,nrval,rl,fval,nrl)
-                  call check_grid(rofi,vlocal,nrval,rl,fval,nrl,"vlocal.check")
-                  call xml_AddArray(xf, 0.5_dp * fval(1:nrl))
-               else
-                  call xml_AddArray(xf, 0.5_dp * vlocal(1:nrval))
-               endif
-               call xml_EndElement(xf,"data")
-            call xml_EndElement(xf,"radfunc")
-
-            call xml_NewElement(xf,"local-charge")
-            call xml_NewElement(xf,"radfunc")
-               call xml_NewElement(xf,"data")
-               if (use_linear_grid) then
-                  call dpnint(rofi,chlocal,nrval,rl,fval,nrl)
-                  call check_grid(rofi,chlocal,nrval,rl,fval,nrl,"chlocal.check")
-                  where (abs(fval) < 1.0e-98_dp) fval = 0.0_dp
-                  call xml_AddArray(xf, fval(1:nrl))
-               else
-                  where (abs(chlocal) < 1.0e-98_dp) chlocal = 0.0_dp
-                  call xml_AddArray(xf, chlocal(1:nrval))
-               endif
-               call xml_EndElement(xf,"data")
-            call xml_EndElement(xf,"radfunc")
-            call xml_EndElement(xf,"local-charge")
-        call xml_EndElement(xf,"local-potential")
+!        call get_rmax(mmax,rr,nv,uua,rmax)
+        delta = 0.005d0
+        rmax = 12.0d0  ! For now
+        call get_sampled_grid(nrval,rofi,rmax,delta,nrl,isample,r0)
+        allocate(f0(nrl))
 
       if (irelt == 1) then
          set = "scalar_relativistic"
       else
          set = "non_relativistic"
       endif
-      call xml_NewElement(xf,"nonlocal-projectors")
-      call my_add_attribute(xf,"set",trim(set))
-
-              call xml_NewElement(xf,"grid")
-
-        if (use_linear_grid) then
-
-           call my_add_attribute(xf,"npts",str(nrl))
-           call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","linear")
-           call my_add_attribute(xf,"drl",str(drl))
-           call xml_EndElement(xf,"annotation")
-           call xml_NewElement(xf,"grid-data")
-             call xml_AddArray(xf,rl(1:nrl))
-           call xml_EndElement(xf,"grid-data")
-
-       else
-          call my_add_attribute(xf,"npts",str(nrval))
-          call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","log-atom")
-           call my_add_attribute(xf,"nrval",str(nrval))
-           !   r(i) = a*(exp(b*(i-1))-1)
-           call my_add_attribute(xf,"scale",str(b))
-           call my_add_attribute(xf,"step",str(a))
-          call xml_EndElement(xf,"annotation")
-
-
-          call xml_NewElement(xf,"grid-data")
-           call xml_AddArray(xf,rofi(1:nrval))
-          call xml_EndElement(xf,"grid-data")
-
-       endif
-       call xml_EndElement(xf,"grid")
 
       call KBgen( is, a, b, rofi, drdi, s, &
                  vps, vlocal, ve, nrval, Zval, lmxkb, &
@@ -672,12 +582,89 @@
                  debug_kb_generation, &
                  ignore_ghosts,       &
                  kb_rmax,             &
-                 process_proj=write_proj_psml)
+                 process_proj=store_proj_psml,&
+                 shifted_erefkb=shifted_erefkb)
 
-      call xml_EndElement(xf,"nonlocal-projectors")
-      call xml_EndElement(xf,"tmp-wrapper")
+      !
+         call reset_annotation(ann)
+         id = ps_GetUUID(psml_handle)
+         call insert_annotation_pair(ann,"source-uuid",id,status)
+         if (status /= 0) call die("Cannot insert source-uuid")
+         call get_command(cmd_line)
+         call insert_annotation_pair(ann,"command-line",trim(cmd_line),status)
+         if (status /= 0) call die("Cannot insert options")
+         if (proj_file_exists) then
+            i = 0
+            open(unit=1,file=trim(proj_filename),position="rewind")
+            do
+               read(1,fmt="(a)",iostat=status) line
+               if (status < 0) exit
+               i = i + 1
+               write(keyname,"(a,i1)") "proj-spec-file-",i
+               call insert_annotation_pair(ann,trim(keyname),trim(line),status)
+               if (status /= 0) call die("Cannot insert proj-spec-file line")
+            enddo
+            close(1)
+         endif
+         !
+         if (ps_HasLocalPotential(psml_handle)) then
+            call ps_Delete_LocalPotential(psml_handle)
+            call insert_annotation_pair(ann,"action","replaced-local-potential",status)
+            if (status /= 0) call die("Cannot insert lpot record")
+         else
+            call insert_annotation_pair(ann,"action","inserted-local-potential",status)
+            if (status /= 0) call die("Cannot insert lpot record")
+         endif
+         
+         if (ps_HasProjectors(psml_handle)) then
+            call ps_Delete_NonLocalProjectors(psml_handle)
+            call insert_annotation_pair(ann,"action","replaced-nonlocal-projectors",status)
+            if (status /= 0) call die("Cannot insert nl record")
+         else
+            call insert_annotation_pair(ann,"action","inserted-nonlocal-projectors",status)
+            if (status /= 0) call die("Cannot insert nl record")
+         endif
 
-      call xml_Close(xf)
+         call get_uuid(id)
+         call ps_SetUUID(psml_handle,id)
+         call ps_SetPSMLVersion(psml_handle,PSML_VERSION)
+         call date_and_time(VALUES=dtime)
+         write(datestr,"(i4,'-',i2.2,'-',i2.2)") dtime(1:3)
+         call ps_AddProvenanceRecord(psml_handle,creator=PSML_CREATOR, &
+              date=trim(datestr), annotation=ann)
+
+         allocate(fvlocal0(nrl), fchlocal0(nrl))
+         call resample(rofi,vlocal,nrval,r0,isample,fvlocal0,nrl)
+         fvlocal0 = ryd_to_hartree*fvlocal0
+         call resample(rofi,chlocal,nrval,r0,isample,fchlocal0,nrl)
+         where (abs(fchlocal0) < 1.0e-98_dp) fchlocal0 = 0.0_dp
+
+         ! Grid annotation
+         call reset_annotation(ann)
+           !   Note interchanged a, b
+           !   r(i) = b*(exp(a*(i-1))-1)
+         call insert_annotation_pair(ann,"type","sampled-log-atom",status)
+         if (status /= 0) call die("Cannot insert grid type")
+         call insert_annotation_pair(ann,"scale",str(b),status)
+         if (status /= 0) call die("Cannot insert grid scale")
+         call insert_annotation_pair(ann,"step",str(a),status)
+         if (status /= 0) call die("Cannot insert grid step")
+         call insert_annotation_pair(ann,"delta",str(delta),status)
+         if (status /= 0) call die("Cannot insert delta of sampled grid")
+         call insert_annotation_pair(ann,"rmax",str(rmax),status)
+         if (status /= 0) call die("Cannot insert rmax of sampled grid")
+
+
+         call ps_AddLocalPotential(psml_handle,grid=r0(1:nrl), &
+              grid_annotation=ann, &
+              vlocal=fvlocal0,vlocal_type="siesta-fit", &
+              chlocal = fchlocal0, chlocal_cutoff=rchloc)
+
+         call ps_AddNonLocalProjectors(psml_handle,grid=r0(1:nrl), &
+              grid_annotation=ann, annotation=EMPTY_ANNOTATION, set=SET_SREL, &
+              nprojs=nprojs,kbprojs=kbprojs)
+
+         call ps_DumpToPSMLFile(psml_handle,trim(output_filename))
 
       deallocate( rofi    )
       deallocate( drdi    )
@@ -691,12 +678,123 @@
       deallocate( auxrho  )
       deallocate( erefkb  )
       deallocate( nkbl    )
-
-      if (use_linear_grid) then
-         deallocate(rl,fval)
-      endif
+      
+      deallocate(r0,f0,isample)
 
 CONTAINS
+
+  subroutine ps_AddLocalPotential(ps,grid,grid_annotation,vlocal,vlocal_type,chlocal,chlocal_cutoff)
+    type(psml_t), intent(inout) :: ps
+    real(dp), intent(in) :: grid(:)
+    type(ps_annotation_t), intent(in)   :: grid_annotation
+    real(dp), intent(in) :: vlocal(:)
+    real(dp), intent(in) :: chlocal(:)
+    character(len=*), intent(in) :: vlocal_type
+    real(dp), intent(in) :: chlocal_cutoff
+
+    type(ps_annotation_t)   :: ann
+    integer :: npts, status
+    real(dp), pointer :: gdata(:) 
+    type(ps_annotation_t), pointer   :: gannot
+
+    call reset_annotation(ann)
+    call insert_annotation_pair(ann,"chlocal-cutoff",str(chlocal_cutoff),status)
+    if (status /= 0) call die("Cannot insert chlocal-cutoff")
+
+    npts = size(grid)
+    call newGrid(ps%local%grid,npts)
+    gdata => valGrid(ps%local%grid)
+    gdata(1:npts) = grid(1:npts)
+    gannot => annotationGrid(ps%local%grid)
+    gannot = grid_annotation
+
+    ps%local%vlocal_type = trim(vlocal_type)
+    ps%local%annotation = ann
+    allocate(ps%local%Vlocal%data(npts))
+    ps%local%Vlocal%grid = ps%local%grid
+    allocate(ps%local%Chlocal%data(npts))
+    ps%local%Chlocal%grid = ps%local%grid
+    ps%local%Vlocal%data(1:npts) = vlocal(1:npts)
+    ps%local%Chlocal%data(1:npts) = chlocal(1:npts)
+  end subroutine ps_AddLocalPotential
+  
+  subroutine ps_AddNonLocalProjectors(ps,grid,grid_annotation,annotation,set,nprojs,kbprojs)
+    type(psml_t), intent(inout) :: ps
+    real(dp), intent(in) :: grid(:)
+    type(ps_annotation_t), intent(in)   :: grid_annotation
+    type(ps_annotation_t), intent(in)   :: annotation
+    integer, intent(in)   :: set
+    integer, intent(in)   :: nprojs
+    type(kb_t), intent(in), target :: kbprojs(:)
+
+    type(nonlocal_t), pointer :: nlp, qnlp
+    type(nlpj_t), pointer :: nlpp, qnlpp
+    type(kb_t), pointer   :: kb
+    
+    integer :: npts, status, i
+    real(dp), pointer :: gdata(:) 
+    type(ps_annotation_t), pointer   :: gannot
+
+    ! Allocate new node and add to the end of the linked list
+    allocate(nlp)
+
+    if (associated(ps%nonlocal)) then
+       qnlp => ps%nonlocal
+       do while (associated(qnlp%next))
+          qnlp => qnlp%next
+       enddo
+       qnlp%next => nlp
+    else
+       ps%nonlocal => nlp
+    endif
+
+    nlp%set = set
+    
+    npts = size(grid)
+    call newGrid(nlp%grid,npts)
+    gdata => valGrid(nlp%grid)
+    gdata(1:npts) = grid(1:npts)
+    gannot => annotationGrid(nlp%grid)
+    gannot = grid_annotation
+
+    nlp%annotation = annotation
+
+    do i = 1, nprojs
+       kb => kbprojs(i)
+       allocate(nlpp)
+
+       ! Append to end of list  !! call append(nlp%proj,nlpp)
+       if (associated(nlp%proj)) then
+          qnlpp => nlp%proj
+          do while (associated(qnlpp%next))
+             qnlpp => qnlpp%next
+          enddo
+          qnlpp%next => nlpp
+       else
+          !First link
+          nlp%proj => nlpp
+       endif
+
+       nlpp%parent_group => nlp   ! current nonlocal-projectors element
+
+       nlpp%l = lsymb(kb%l)
+       nlpp%j = kb%j
+       nlpp%seq = kb%seq
+       nlpp%ekb = ryd_to_hartree*kb%ekb
+!       nlpp%erefkb = ryd_to_hartree*kb%erefkb
+       nlpp%type  = "KB"
+
+       ! radfunc 'proj'
+       
+       allocate(nlpp%proj%data(npts))
+       nlpp%proj%grid = nlp%grid
+       call resample(kb%r,kb%proj,kb%nrval,r0,isample,f0,nrl)
+       if (kb%l /= 0)  f0(1) = 0.0_dp
+       nlpp%proj%data = f0
+
+    enddo
+
+  end subroutine ps_AddNonLocalProjectors
   
 subroutine get_label(str,label,stat)
  character(len=*), intent(in)   :: str
@@ -725,28 +823,176 @@ subroutine get_label(str,label,stat)
 
 end subroutine get_label
 
-      subroutine my_add_attribute(xf,name,value)
-      type(xmlf_t), intent(inout)   :: xf
-      character(len=*), intent(in)  :: name
-      character(len=*), intent(in)  :: value
+  subroutine get_sampled_grid(mmax,rr,rmax,delta,nrl,isample,r0)
+   integer, intent(in)   :: mmax
+   real(dp), intent(in)  :: rr(:)
+   real(dp), intent(in)  :: rmax
+   real(dp), intent(in)  :: delta
+   integer, intent(out)  :: nrl
+   integer, allocatable, intent(out) :: isample(:)
+   real(dp), allocatable, intent(out) :: r0(:)
 
-       call xml_AddAttribute(xf,name,trim(value))
-      end subroutine my_add_attribute
+   integer  :: is, j
+   real(dp) :: rs
+
+   ! First scan to get size of sampled grid
+   is = 1
+   rs = 0.0_dp
+   do j = 1, mmax
+      if (rr(j) > rmax) exit
+      if ((rr(j)-rs) < delta) cycle
+      is = is + 1
+      rs = rr(j)
+   enddo
+   
+   nrl = is
+   allocate(isample(nrl),r0(nrl))
+
+   is = 1
+   r0(is) = 0.0_dp
+   isample(is) = 0
+   do j = 1, mmax
+      if (rr(j) > rmax) exit
+      if ((rr(j)-r0(is)) < delta) cycle
+      is = is + 1
+      r0(is) = rr(j)
+      isample(is) = j
+   enddo
+ end subroutine get_sampled_grid
+
+  subroutine resample(rr,ff,mmax,r0,isample,f0,nrl)
+   integer, intent(in)   :: mmax
+   real(dp), intent(in)  :: rr(:)
+   real(dp), intent(in)  :: ff(:)
+   integer, intent(in)   :: nrl
+   real(dp), intent(in)  :: r0(:)
+   integer, intent(in)   :: isample(:)
+   real(dp), intent(out) :: f0(:)
+
+   integer  :: is
+   real(dp) :: val
+   
+   do is = 2, nrl
+      f0(is) = ff(isample(is))
+   enddo
+   ! Choice of treatments of point at r=0
+   ! Polynomial extrapolation with sampled points
+   call dpnint1(POLY_ORDER_EXTRAPOL,r0(2:),f0(2:),nrl-1,0.0_dp,val,.false.)
+   f0(1) = val
+   ! Simply set f0(r=0) = ff(r=r1)
+   !...
+   ! Others
+   ! ...
+   
+ end subroutine resample
+
+!
+! Copyright (c) 1989-2014 by D. R. Hamann, Mat-Sim Research LLC and Rutgers
+! University
+! 
+! Modified by Alberto Garcia, March 2015
+! This routine is included in this module with permission from D.R. Hamann.
+!
+ subroutine dpnint1(npoly, xx, yy, nn, r, val, debug)
+
+! Modified by Alberto Garcia, March 2015 from routine
+! dpnint by D.R. Hamann. 
+! Changes:
+!   -- A single value is returned
+!   -- It can extrapolate, instead of stopping,
+!      when called with an abscissa outside the
+!      data range.
+!   -- If the number of data points is less than
+!      npoly+1, npoly is implicitly reduced, without
+!      error, and without warning.
+!   -- Debug interface 
+!
+! local polynomial interpolation of data yy on nn points xx
+! giving value val on point r
+! npoly sets order of polynomial
+! xx must be ordered in ascending order
+! output interpolated value val on point r
+
+ implicit none
+
+ integer, parameter :: dp=kind(1.0d0)
+
+!Input variables
+ real(dp), intent(in) :: xx(*),yy(*)
+ real(dp), intent(in) :: r
+ real(dp), intent(out) :: val
+ integer, intent(in)   ::  nn,npoly
+ logical, intent(in)   ::  debug
+
+!Local variables
+ real(dp) :: sum,term,zz
+ integer ii,imin,imax,iprod,iy,istart,kk,iend
+
+! interval halving search for xx(ii) points bracketing r
+
+   imin = 1
+   imax = nn
+   do kk = 1, nn
+     ii = (imin + imax) / 2
+     if(r>xx(ii)) then
+       imin = ii
+     else
+       imax = ii
+     end if
+     if(imax - imin .eq. 1) then
+       exit
+     end if
+   end do
+
+
+   zz=r
+
+!   if (debug) print *, "imin, imax: ", imin, imax
+
+   if(mod(npoly,2)==1) then
+    istart=imin-npoly/2
+   else if(zz-xx(imin) < xx(imax)-zz) then
+     istart=imin-npoly/2
+   else
+     istart=imax-npoly/2
+   end if
+
+   istart = min(istart, nn - npoly)
+   istart = max(istart, 1)
+   iend = min(istart+npoly,nn)
+
+ !  if (debug) print *, "istart, iend: ", istart, iend
+   sum=0.0d0
+   do iy=istart,iend
+    if(yy(iy)==0.0d0) cycle
+    term=yy(iy)
+    do iprod=istart, iend
+     if(iprod==iy) cycle
+     term=term*(zz-xx(iprod))/(xx(iy)-xx(iprod))
+    end do
+    sum=sum+term
+   end do
+   val=sum
+
+ end subroutine dpnint1
 
 subroutine manual()
-  write(0,*) "Usage: psop FILE [ options ]"
-  write(0,*) " FILE:       Any of .vps, .psf, or .psml"
+  write(0,*) "Usage: psop [ options ] FILE"
+  write(0,*) " FILE: A PSML file"
   write(0,*) " Options: "
   write(0,*) " -d                                debug"
   write(0,*) " -p                 write_ion_plot_files"
+  write(0,*) " -F  PROJ_SPEC"
+  write(0,*) "     Read number of projectors and      "
+  write(0,*) "     reference energies from PROJ_SPEC  "
   write(0,*) " -K  use NEW-style KB reference orbitals"
-  write(0,*) " -g            use unrestricted log grid"
-  write(0,*) " -l      use linear grid for PSML output"
+  write(0,*) " -g  use unrestricted log grid"
   write(0,*) " -R  Rmax_kb (bohr)    for KB generation"
   write(0,*) " -C rmax_ps_Check (bohr) for tail checks"
   write(0,*) " -3  fit Vlocal with continuous 3rd derivative"
   write(0,*) " -f  force 'gaussian charge' method for Vlocal"
   write(0,*) " -c  force the use of 'charge cutoff' for chlocal"
+  write(0,*) " -o OUTPUT_FILENAME (default PSOP_PSML)"
 
 end subroutine manual
 
