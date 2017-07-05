@@ -28,7 +28,7 @@ subroutine read_options( na, ns, nspin )
   use diagmemory,   only: memoryfactor
   use siesta_cml
   use m_target_stress, only: set_target_stress
-  use m_spin, only: print_spin
+  use m_spin, only: print_spin_options
 
   use m_charge_add, only : read_charge_add
   use m_hartree_add, only : read_hartree_add
@@ -191,7 +191,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Start by printing out spin-configuration
-  call print_spin()
+  call print_spin_options()
 
   ! H setup only
   h_setup_only = fdf_get('HSetupOnly', .false.)
@@ -1038,6 +1038,8 @@ subroutine read_options( na, ns, nspin )
   ! Tolerance in the maximum residual stress (var cell) [1 GPa]
   strtol = fdf_get('MD.MaxStressTol', 6.79773e-5_dp, 'Ry/Bohr**3')
   strtol = abs(strtol)
+  
+  GeometryMustConverge = fdf_get('GeometryMustConverge', .false.)
 
   if (ionode) then
      select case (idyn)

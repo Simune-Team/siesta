@@ -42,7 +42,6 @@ default: all
 
 label=work
 
-
 tests = ag anneal-cont ar2_vdw \
 	batio3 benzene bessel \
 	born born_spin \
@@ -52,12 +51,13 @@ tests = ag anneal-cont ar2_vdw \
 	fe fe_broyden fe_clust_noncollinear fe_clust_noncollinear-gga \
 	fe_cohp fen fe_noncol_kp \
 	fire_benzene floating force_2 force_constants \
-    gate_G_charge gate_G_hartree \
+	gate_G_charge gate_G_hartree \
 	ge111 graphite_c6 graphite_vdw_df \
 	h2_bessel \
 	h2o h2o_2 h2o_basis h2o_dipole h2o_dipole2 h2o_dos \
 	h2o_findp_bug h2o_op_broyden h2o-pop h2o_radialgrid \
 	h2o_reparam h2o-rhog-mixing h2oZ \
+	h2o_filteret_basis h2o_am05 \
 	h_chain \
 	md_anneal md_nose md_npr md_pr md_verlet \
 	mgc-force mgco3 \
@@ -66,9 +66,10 @@ tests = ag anneal-cont ar2_vdw \
 	oxyn \
 	pb_bulk pb_filter_cutoff pb_filter_tol \
 	scfmix \
-	si001 si111-spinpol si2x1h si2x1h-dipole \
+	si001 si111-spinpol \
+	si2x1h si2x1h-dipole si2x1h-dipole-gcs \
 	si64 si64_coop \
-	si_bandpoints si_coop \
+	si_bandpoints si_coop si_fatbands \
 	sic-slab \
 	sih sih_fire sih_op_broyden \
 	si-optical si_pdos_kgrid \

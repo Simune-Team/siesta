@@ -8,7 +8,15 @@
       module m_rdiag_mrrr
       implicit none
 
-#ifndef SIESTA__NO_MRRR
+#ifdef SIESTA__NO_MRRR
+  ! Make sure if the user-specifies the NO_MRRR pre-processor
+  ! we disable MRRR
+# ifdef SIESTA__MRRR
+#  undef SIESTA__MRRR
+# endif
+#endif
+
+#ifdef SIESTA__MRRR
       public :: rdiag_mrrr
 
       CONTAINS

@@ -148,6 +148,7 @@ MODULE siesta_options
   logical :: use_struct_file ! Read structural information from a special file?
   logical :: bornz          ! Calculate Born polarization charges?
   logical :: SCFMustConverge ! Do we have to converge for each SCF calculation?
+  logical :: GeometryMustConverge ! Do we *have to* converge the relaxation?
   logical :: want_domain_decomposition ! Use domain decomposition for orbitals 
   logical :: want_spatial_decomposition ! Use spatial decomposition for orbitals
   logical :: hirshpop        ! Perform Hirshfeld population analysis?

@@ -20,6 +20,7 @@ contains
 #endif
     use units, only: eV, Ang
     use precision, only: dp
+    use sys, only: bye
     
     use files, only: slabel
     use siesta_cml
@@ -49,7 +50,6 @@ contains
     use parallel,     only : IOnode, SIESTA_worker
     use m_state_analysis
     use m_steps
-    use sys, only : die, bye
     use sparse_matrices, only: H, Hold, Dold, Dscf, Eold, Escf, maxnh
     use m_convergence, only: converger_t
     use m_convergence, only: reset, set_tolerance
@@ -71,6 +71,7 @@ contains
     use m_pexsi_solver,        only: prevDmax
     use write_subs,            only: siesta_write_forces
     use write_subs,            only: siesta_write_stress_pressure
+
 #ifdef NCDF_4
     use dictionary
     use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
@@ -83,6 +84,7 @@ contains
 #ifdef SIESTA__PEXSI
     use m_pexsi, only: pexsi_finalize_scfloop
 #endif
+    use m_check_walltime
 
 #ifdef TRANSIESTA
     use m_ts_options, only : N_Elec
@@ -100,7 +102,7 @@ contains
     use m_transiesta,          only: transiesta
     use kpoint_grid, only : gamma_scf
     use m_energies, only : Ef
-#endif /* TRANSIESTA */
+#endif
 
     use m_initwf, only: initwf
 
@@ -112,7 +114,7 @@ contains
     real(dp) :: dHmax ! Max. change in H elements
     real(dp) :: dEmax ! Max. change in EDM elements
     real(dp) :: drhog ! Max. change in rho(G) (experimental)
-    real(dp) :: G2max ! actually used meshcutoff
+    real(dp), target :: G2max ! actually used meshcutoff
     type(converger_t) ::  conv_harris, conv_freeE
 
     ! For initwf
@@ -126,6 +128,9 @@ contains
     integer :: imix
 #endif
 
+    logical               :: time_is_up
+    character(len=40)     :: tmp_str
+
 #ifdef TRANSIESTA
     real(dp) :: Qcur
 #endif
@@ -135,6 +140,8 @@ contains
 #ifdef MPI
     integer :: MPIerror
 #endif
+
+    external :: die, message
 
 #ifdef DEBUG
     call write_debug( '    PRE siesta_forces' )
@@ -283,7 +290,22 @@ contains
        first_scf = (iscf == 1)
        
        if ( SIESTA_worker ) then
-           
+          
+          ! Check whether we are short of time to continue
+          call check_walltime(time_is_up)
+          if ( time_is_up ) then
+             ! Save DM/H if we were not saving it...
+             !   Do any other bookeeping not done by "die"
+             call message('WARNING', &
+                  'SCF_NOT_CONV: SCF did not converge'// &
+                  ' before wall time exhaustion')
+             write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
+             call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
+             
+             call die("OUT_OF_TIME: Time is up.")
+             
+          end if
+        
           call timer( 'IterSCF', 1 )
           if (cml_p) &
                call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
@@ -317,6 +339,7 @@ contains
              call compute_max_diff(Dold, Dscf, dDmax)
              if ( converge_EDM ) &
                   call compute_max_diff(Eold, Escf, dEmax)
+             
           end if
 
           ! This iteration has completed calculating the new DM
@@ -484,7 +507,7 @@ contains
 
        ! Exit if converged
        if ( SCFconverged ) exit
-       
+
     end do ! end of SCF cycle
     
 #ifdef SIESTA__PEXSI
@@ -492,20 +515,26 @@ contains
        call pexsi_finalize_scfloop()
     end if
 #endif
-    
+
     if ( .not. SIESTA_worker ) return
-    
+
     call end_of_cycle_save_operations()
-    
-    if ( .not. SCFconverged) then
-       if ( IONode .and. .not.harrisfun ) &
-            write(6,"(a)") ':!: SCF did not converge'// &
-            ' in maximum number of steps.'
-       if ( SCFMustConverge ) &
-            call die('SCF did not converge in maximum number of steps.')
-       
+
+    if ( .not. SCFconverged ) then
+       if ( SCFMustConverge ) then
+          call message('FATAL','SCF_NOT_CONV: SCF did not converge' // &
+               ' in maximum number of steps (required).')
+          write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
+          call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
+          call die('ABNORMAL_TERMINATION')
+       else if ( .not. harrisfun ) then
+          call message('WARNING', &
+               'SCF_NOT_CONV: SCF did not converge  in maximum number of steps.')
+          write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
+          call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
+       end if
     end if
-    
+
     ! To write the initial wavefunctions to be used in a
     ! consequent TDDFT run.
     if ( writetdwf ) then
@@ -517,8 +546,9 @@ contains
     
 #ifdef TRANSIESTA
     if ( TSmode.and.TSinit.and.(.not. SCFConverged) ) then
-       call die('SCF did not converge before proceeding to transiesta&
-            &calculation')
+       ! Signal that the DM hasn't converged, so we cannot
+       ! continue to the transiesta routines
+       call die('ABNORMAL_TERMINATION')
     end if
 #endif
     
@@ -537,11 +567,11 @@ contains
        if (ionode) call memory_snapshot("after post_scf_work")
 #endif
     end if
-
+    
     ! ... so H at this point is the latest generator of the DM, except
     ! if mixing H beyond self-consistency or terminating the scf loop
     ! without convergence while mixing H
-
+    
     call state_analysis( istep )
 #ifdef SIESTA__PEXSI
     if (ionode) call memory_snapshot("after state_analysis")
@@ -551,7 +581,6 @@ contains
     if (siesta_server) &
          call forcesToMaster( na_u, Etot, cfa, cstress )
 
-    !------------------------------------------------------------------------ END
 #ifdef DEBUG
     call write_debug( '    POS siesta_forces' )
 #endif
