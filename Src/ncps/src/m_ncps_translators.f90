@@ -8,15 +8,11 @@
 !
 module m_ncps_translators
 
-  public :: ncps_xml2froyen_new
-  public :: ncps_xml2froyen
-  interface ncps_xml2froyen
-     module procedure ncps_xml2froyen_new
-  end interface
+  public :: ncps_psml2froyen
 
 CONTAINS
 
-  subroutine ncps_xml2froyen_new( ps, p, new_grid, a, b, rmax )
+  subroutine ncps_psml2froyen( ps, p, new_grid, a, b, rmax )
 
 ! Translate the more complete xml-adapted data structure 
 ! into the 'Froyen' ps type used in Atom and Siesta.
@@ -568,7 +564,7 @@ CONTAINS
            end if
         enddo
 
-      end subroutine ncps_xml2froyen_new
+      end subroutine ncps_psml2froyen
 
       subroutine assert(cond,message)
         logical, intent(in) :: cond

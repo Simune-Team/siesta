@@ -161,7 +161,7 @@
      $                              reparametrize,a,b,rmax)
 
         use m_psml, only: ps_t, ps_destroy, psml_reader
-        use m_ncps_translators, only: ncps_xml2froyen_new
+        use m_ncps_translators, only: ncps_psml2froyen
 
         character(len=*), intent(in)              :: fname
         type(pseudopotential_t), intent(out)      :: p
@@ -178,12 +178,12 @@
         if (present(psml_handle)) then
            ! We pass the actual handle to the caller
            call psml_reader(fname,psml_handle)
-           call ncps_xml2froyen_new(psml_handle,p,
+           call ncps_psml2froyen(psml_handle,p,
      $                              reparametrize,a,b,rmax)
         else
            ! We just convert to Froyen form and destroy ps
            call psml_reader(fname,ps)
-           call ncps_xml2froyen_new(ps,p,reparametrize,a,b,rmax)
+           call ncps_psml2froyen(ps,p,reparametrize,a,b,rmax)
            call ps_destroy(ps)
         endif
 
