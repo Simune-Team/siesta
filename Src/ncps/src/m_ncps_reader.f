@@ -21,7 +21,7 @@
         use m_ncps_froyen_reader,  only: pseudo_reparametrize
         use m_ncps_writers,  only: pseudo_write_formatted
         use m_psml,                only: psml_t => ps_t
-        use m_psml,                only: ps_GetUUID
+        use m_psml,                only: ps_RootAttributes_Get
 
         character(len=*), intent(in)   :: label
         type(pseudopotential_t)        :: p
@@ -38,6 +38,7 @@
 !       or in a .psml file 
 
         character(len=200) fname, prefix
+        character(len=36) uuid
         logical found, reparametrize
 
         has_psml_ps = .false.
@@ -83,7 +84,8 @@
      .                'Reading pseudopotential from: ', trim(fname)
                  call pseudo_read_psml(fname,p,psml_handle,
      $                                 reparametrize,a,b,rmax)
-                 write(6,"(a)") "PSML uuid: " // ps_GetUUID(psml_handle)
+                 call ps_RootAttributes_Get(psml_handle,uuid=uuid)
+                 write(6,"(a)") "PSML uuid: " // uuid
                  has_psml_ps = .true.
               else
                  write(6,'(2a,a)') 'pseudo_read: ERROR: ',
@@ -159,7 +161,7 @@
      $                              reparametrize,a,b,rmax)
 
         use m_psml, only: ps_t, ps_destroy, psml_reader
-        use m_ncps_translators, only: ncps_xml2froyen_new
+        use m_ncps_translators, only: ncps_psml2froyen
 
         character(len=*), intent(in)              :: fname
         type(pseudopotential_t), intent(out)      :: p
@@ -176,12 +178,12 @@
         if (present(psml_handle)) then
            ! We pass the actual handle to the caller
            call psml_reader(fname,psml_handle)
-           call ncps_xml2froyen_new(psml_handle,p,
+           call ncps_psml2froyen(psml_handle,p,
      $                              reparametrize,a,b,rmax)
         else
            ! We just convert to Froyen form and destroy ps
            call psml_reader(fname,ps)
-           call ncps_xml2froyen_new(ps,p,reparametrize,a,b,rmax)
+           call ncps_psml2froyen(ps,p,reparametrize,a,b,rmax)
            call ps_destroy(ps)
         endif
 

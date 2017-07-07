@@ -13,9 +13,11 @@ CONTAINS
     logical                :: p
 
     integer :: nso, nlj
-    
-    nso = ps_Number_Of_Potentials(ps,SET_SO)
-    nlj = ps_Number_Of_Potentials(ps,SET_LJ)
+
+    call ps_Potential_Filter(ps,set=SET_SO,number=nso)
+    call ps_Potential_Filter(ps,set=SET_LJ,number=nlj)
+!    nso = ps_Number_Of_Potentials(ps,SET_SO)
+!    nlj = ps_Number_Of_Potentials(ps,SET_LJ)
 
     ! Crude test for now
     
