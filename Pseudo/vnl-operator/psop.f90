@@ -30,6 +30,7 @@
 !     Eventually, support for .psf and .vps files might be discontinued.
 
       use m_ncps, only: pseudopotential_t => froyen_ps_t, pseudo_read
+      use m_ncps, only: ncps_psml2froyen
       use m_psml, psml_t => ps_t
       use m_uuid
 
@@ -50,7 +51,7 @@
 
       implicit none
 
-      character(len=*), parameter :: PSML_VERSION = "1.0"
+      character(len=*), parameter :: PSML_VERSION = "1.1"
       character(len=*), parameter :: PSML_CREATOR = "psop-1.1"
 
       
@@ -69,10 +70,8 @@
       character(len=200)      :: work_string
       character(len=200)      :: filename
       character(len=20)       :: file_version
+      character(len=100)      :: creator
 
-      character(len=30)       :: systemlabel ! System label, used to identify
-                                             !   the file where the pseudo is
-                                             !   stored
       character*10            :: functl      ! Exchange and correlation function
       character*10            :: author      ! Exchange and correlation parametr
       integer                 :: lmxkb       ! Angular momentum cutoff for 
@@ -232,7 +231,7 @@
       character(len=40)        :: method_used  !  "siesta-fit" or "-charge"
 
       character(len=512) :: cmd_line
-      character(len=36)  :: id
+      character(len=36)  :: uuid
       character(len=200) :: opt_arg, mflnm, ref_line
       character(len=10)  :: opt_name 
       integer :: nargs, iostat, n_opts, nlabels, iorb, ikb, i
@@ -329,11 +328,6 @@
           STOP "Cannot get filename"
        endif
 
-!       write(0,*) "Filename: ", trim(filename)
-       call get_label(filename,systemlabel,status)
-       if (status /= 0) call die("Cannot get file extension")
-!       write(0,*) "Filename, label: ", trim(filename), trim(systemlabel)
-
       pi = dacos(-1.0_dp)
 !
 !     DEFINE THE INPUT VARIABLES:
@@ -342,16 +336,15 @@
       is          = 1
 
 !
-!     READ THE PSEUDOPOTENTIAL FILE
+!     READ THE PSML FILE
 !
-      call pseudo_read( systemlabel, psr, psml_handle, has_psml)
-      if (has_psml) then
-         file_version =  ps_GetPSMLVersion(psml_handle)
-         write(6,"(a)") "Processing a " // trim(file_version) // "PSML file"
-         write(6,"(a)") ps_Creator(psml_handle)
-      else
-         call die("This version can only work with PSML files")
-      endif
+      call psml_reader(filename,psml_handle)
+      call ncps_psml2froyen(psml_handle,psr)
+
+      call ps_RootAttributes_Get(psml_handle,version=file_version,uuid=uuid)
+      call ps_Provenance_Get(psml_handle,level=1,creator=creator)
+      write(6,"(a)") "Processing a PSML-" // trim(file_version) // " file"
+      write(6,"(a)") "Last processed by: " // trim(creator)
 
 !
 !     STORE IN LOCAL VARIABLES SOME OF THE PARAMETERS READ IN THE 
@@ -587,8 +580,7 @@
 
       !
          call reset_annotation(ann)
-         id = ps_GetUUID(psml_handle)
-         call insert_annotation_pair(ann,"source-uuid",id,status)
+         call insert_annotation_pair(ann,"source-uuid",uuid,status)
          if (status /= 0) call die("Cannot insert source-uuid")
          call get_command(cmd_line)
          call insert_annotation_pair(ann,"command-line",trim(cmd_line),status)
@@ -625,8 +617,8 @@
             if (status /= 0) call die("Cannot insert nl record")
          endif
 
-         call get_uuid(id)
-         call ps_SetUUID(psml_handle,id)
+         call get_uuid(uuid)
+         call ps_SetUUID(psml_handle,uuid)
          call ps_SetPSMLVersion(psml_handle,PSML_VERSION)
          call date_and_time(VALUES=dtime)
          write(datestr,"(i4,'-',i2.2,'-',i2.2)") dtime(1:3)
@@ -781,7 +773,7 @@ CONTAINS
        nlpp%j = kb%j
        nlpp%seq = kb%seq
        nlpp%ekb = ryd_to_hartree*kb%ekb
-!       nlpp%erefkb = ryd_to_hartree*kb%erefkb
+       nlpp%eref = ryd_to_hartree*kb%erefkb
        nlpp%type  = "KB"
 
        ! radfunc 'proj'
