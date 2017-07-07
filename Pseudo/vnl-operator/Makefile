@@ -33,9 +33,9 @@ INCFLAGS:=$(INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS) $(PSOP_INCFLAGS)
 INCFLAGS:=$(INCFLAGS) $(XMLF90_INCFLAGS) $(GRIDXC_INCFLAGS)
 #
 OBJS = 	psop_options.o\
-	psop.o local_xml.o write_proj_psml.o \
+	psop.o m_kb.o store_proj_psml.o \
         local_die.o psml_die.o handlers.o semicore_info_froyen.o\
-        dpnint.o check_grid.o m_uuid.o \
+        check_grid.o m_uuid.o \
         m_libxc_list.o m_libxc_sxc_translation.o \
         m_siestaxc_list.o
 
@@ -56,11 +56,11 @@ psop:   $(NCPS) $(PSOP) $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o psop $(ALL_OBJS) \
         $(NCPS) $(PSOP) $(PSML_LIBS) $(XC) $(XMLF90_LIBS)
 #
-psop.o: psop_options.o local_xml.o write_proj_psml.o m_uuid.o
+psop.o: psop_options.o store_proj_psml.o m_uuid.o m_kb.o
 psop.o: m_getopts.o semicore_info_froyen.o
 psop.o: m_libxc_sxc_translation.o 
+store_proj_psml.o: m_kb.o
 m_libxc_sxc_translation.o: m_libxc_list.o  m_siestaxc_list.o
-write_proj_psml.o: local_xml.o
 m_getopts.o: f2kcli.o
 #
 clean: 

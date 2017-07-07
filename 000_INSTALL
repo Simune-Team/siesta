@@ -8,13 +8,13 @@ libGridXC
 These can be downloaded from Launchpad. The direct links to current
 tarballs are
 
-wget https://launchpad.net/libpsml/trunk/1.0-freeze/+download/libpsml-1.0.0.tgz
+wget https://launchpad.net/libpsml/trunk/1.0-freeze/+download/libpsml-1.0.5.tgz
 wget https://launchpad.net/xmlf90/trunk/1.5/+download/xmlf90-1.5.0.tgz
 wget https://launchpad.net/libgridxc/trunk/0.7/+download/libgridxc-0.7.0.tgz
 
 NOTE: You need at least version 1.5.0 of the xmlf90 library,
-      at least version 0.7.0 of the libgridxc library, and
-      at least version 1.0.0 of the libpsml library.
+      at least version 0.7.1 of the libgridxc library, and
+      at least version 1.0.5 of the libpsml library.
 
 ** Steps in detail
 
