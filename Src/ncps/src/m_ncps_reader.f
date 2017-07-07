@@ -21,7 +21,7 @@
         use m_ncps_froyen_reader,  only: pseudo_reparametrize
         use m_ncps_writers,  only: pseudo_write_formatted
         use m_psml,                only: psml_t => ps_t
-        use m_psml,                only: ps_Root_Get
+        use m_psml,                only: ps_RootAttributes_Get
 
         character(len=*), intent(in)   :: label
         type(pseudopotential_t)        :: p
@@ -84,7 +84,7 @@
      .                'Reading pseudopotential from: ', trim(fname)
                  call pseudo_read_psml(fname,p,psml_handle,
      $                                 reparametrize,a,b,rmax)
-                 call ps_Root_Get(psml_handle,uuid=uuid)
+                 call ps_RootAttributes_Get(psml_handle,uuid=uuid)
                  write(6,"(a)") "PSML uuid: " // uuid
                  has_psml_ps = .true.
               else

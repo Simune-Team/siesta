@@ -2471,7 +2471,7 @@ C potential
       type(ps_annotation_t)                :: annot
       type(ps_radfunc_t)                   :: rfunc_chlocal
 
-      call ps_Header_Get(ps,z_pseudo=zpseudo)
+      call ps_PseudoAtomSpec_Get(ps,z_pseudo=zpseudo)
       if (abs(zpseudo-Zval) > 1.e-8_dp) then
          call die("Zval mismatch in psml file")
       endif
@@ -2485,7 +2485,7 @@ C potential
          vlocal(ir) = 2.0_dp * ps_LocalPotential_Value(ps,rofi(ir))
       enddo
 
-      call ps_LocalPotential_Get(ps,type_spec=vlocal_type,
+      call ps_LocalPotential_Get(ps,type=vlocal_type,
      $     annotation=annot,
      $     has_local_charge=psml_chlocal,
      $     func_local_charge=rfunc_chlocal)
@@ -2602,7 +2602,7 @@ C potential
 
       ! Heuristics for parameters
 
-      call ps_LocalPotential_Get(ps,type_spec=vlocal_type)
+      call ps_LocalPotential_Get(ps,type=vlocal_type)
 !      vlocal_type = ps_LocalPotential_Type(ps)
       select case (trim(vlocal_type))
         case ("siesta-fit")
@@ -2816,8 +2816,9 @@ C potential
       write(6,"(a)") "Reading KB projs from "
      $                    // trim(atm_label)// " psml data"
 
-      call ps_Header_Get(ps,z_pseudo=zpseudo,relativity=relativity,
-     $                 spin_polarized=spin_polarized)
+      call ps_PseudoAtomSpec_Get(ps,z_pseudo=zpseudo,
+     $                 relativity=relativity,
+     $                 spin_dft=spin_polarized)
       if (abs(zpseudo-Zval) > 1.e-8_dp) then
          call die("Zval mismatch in psml file")
       endif

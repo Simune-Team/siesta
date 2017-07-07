@@ -85,12 +85,12 @@ CONTAINS
         logical :: has_up_down, has_spin_ave
         real(dp) :: v
 
-        call ps_Root_Get(ps,version=psml_version)
+        call ps_RootAttributes_Get(ps,version=psml_version)
         write(6,"(a)") "PSML file version: " // &
                         trim(psml_version)
-        call ps_Header_Get(ps,atomic_symbol=p%name,z_pseudo=p%zval,&
+        call ps_PseudoAtomSpec_Get(ps,atomic_symbol=p%name,z_pseudo=p%zval,&
              atomic_number=znuc, pseudo_flavor=method_string,&
-             relativity=relativity,spin_polarized=spin_polarized,&
+             relativity=relativity,spin_dft=spin_polarized,&
              core_corrections=core_corrections)
         
         call ps_ValenceConfiguration_Get(ps,nshells=nval_shells,charge=p%gen_zval)
