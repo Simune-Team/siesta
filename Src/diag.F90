@@ -162,6 +162,7 @@ contains
        else
           range = 'I'
        end if
+       
     else if ( neig < 0 ) then
        ! Query a subset of the eigenvalues
        jobz = 'N'
@@ -171,9 +172,11 @@ contains
        else
           range = 'I'
        end if
+       
     else ! neig == 0
        neig = n
        range = 'A'
+       
     end if
 
     ! Correct for special routines
@@ -403,7 +406,7 @@ contains
 
        ! Set up blacs descriptors for parallel case
        call descinit( desch, n, n, BlockSize, BlockSize, 0, 0, &
-            iCTXT, n, info )
+            iCTXT, n, info)
        if ( info /= 0 ) then
           call die('cdiag: Blacs setup has failed!')
        end if
@@ -678,7 +681,7 @@ contains
                vl,vu,il,iu,neigok,nz,w, &
                Zp,1,1,desc, &
                work,lwork,rwork,lrwork,iwork,liwork, &
-               info )
+               info)
 #endif
 
        case ( Expert ) 
@@ -957,7 +960,7 @@ contains
                  w, &
                  Zp, 1, 1, desc, &
                  work, lwork, rwork, lrwork, iwork, liwork, &
-                 info )
+                 info)
             
 # ifdef SIESTA__MRRR
          case ( MRRR )
@@ -965,7 +968,7 @@ contains
                  vl, vu, il, iu, neigok, nz, w, &
                  Zp, 1, 1, desc, &
                  work, lwork, rwork, lrwork, iwork, liwork, &
-                 info )
+                 info)
 # endif
             
          case ( Expert ) 
@@ -975,13 +978,13 @@ contains
                  Zp, 1, 1, desc, &
                  work, lwork, rwork, lrwork, iwork, liwork, &
                  ifail, iclustr, gap, &
-                 info )
+                 info)
 
          case ( NoExpert )
             call pzheev(jobz, uplo, n, Hp, 1, 1, desc, &
                  w, Zp, 1, 1, desc, &
                  work, lwork, rwork, lrwork, &
-                 info )
+                 info)
             ! Possible bug in scalapack
             ! At least this makes it work!
 #ifdef _DIAG_WORK
@@ -1206,7 +1209,7 @@ contains
 
        ! Set up blacs descriptors for parallel case
        call descinit( desch, n, n, BlockSize, BlockSize, 0, 0, &
-            iCTXT, n, info )
+            iCTXT, n, info)
        if ( info /= 0 ) then
           call die('rdiag: Blacs setup has failed!')
        end if
@@ -1241,8 +1244,8 @@ contains
 
     algo = algorithm
     call diag_correct_input(algo, jobz, range, uplo, trans, iu, n)
-    
 
+    
     ! Initialize the variables for the different routines
     if ( Serial ) then
 
@@ -1477,7 +1480,7 @@ contains
                vl,vu,il,iu,neigok,nz,w, &
                Zp,1,1,desc, &
                work,lwork,iwork,liwork, &
-               info )
+               info)
 #endif
 
        case ( Expert ) 
@@ -1743,7 +1746,7 @@ contains
                  w, &
                  Zp, 1, 1, desc, &
                  work, lwork, iwork, liwork, &
-                 info )
+                 info)
             
 # ifdef SIESTA__MRRR
          case ( MRRR )
@@ -1751,7 +1754,7 @@ contains
                  vl, vu, il, iu, neigok, nz, w, &
                  Zp, 1, 1, desc, &
                  work, lwork, iwork, liwork, &
-                 info )
+                 info)
 # endif
             
          case ( Expert ) 
@@ -1761,13 +1764,13 @@ contains
                  Zp, 1, 1, desc, &
                  work, lwork, iwork, liwork, &
                  ifail, iclustr, gap, &
-                 info )
+                 info)
 
          case ( NoExpert )
             call pdsyev(jobz, uplo, n, Hp, 1, 1, desc, &
                  w, Zp, 1, 1, desc, &
                  work, lwork, &
-                 info )
+                 info)
 
          case default
 
@@ -1777,7 +1780,7 @@ contains
 #endif         
       end if
 
-      lwork = nint(max(nint(real(work(1), dp)), l_lwork) * mem_factor)
+      lwork = nint(max(nint(work(1)), l_lwork) * mem_factor)
       liwork = iwork(1)
 
     end subroutine work_query

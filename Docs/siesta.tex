@@ -5784,6 +5784,17 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   specified must be greater than the number of occupied states and less
   than the number of basis functions.
 
+  If a \emph{negative} number is passed it corresponds to the number
+  of orbitals above the total charge of the system. In effect it
+  corresponds to the number of orbitals above the Fermi level for zero
+  temperature. I.e. if this option is $-2$ for a system of 20 orbitals
+  with 10 electrons it corresponds to passing $12$ as the
+  option.
+
+  \note if for $\Gamma$ calculations and \fdf*{MRRR} you experience
+  \shell{PDORMTR} errors it is because of a buggy ScaLAPACK
+  implementation.
+
   \note this only affects the following \fdf*{MRRR} and \fdf*{Expert}
   diagonalization routines.
   

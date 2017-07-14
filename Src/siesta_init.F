@@ -443,11 +443,10 @@ C     Initialise MPI and set processor number
         qs(1) = (qtot + ts) / 2.0_dp
         qs(2) = (qtot - ts) / 2.0_dp
       else
-        qs(1:spin%spinor) = 0.0_dp
         do ispin = 1,spin%spinor
            qs(ispin) = qtot/spin%spinor
         end do
-      endif
+      end if
 
 !     Find maximum interaction range
       if ( negl ) then
@@ -475,18 +474,41 @@ C     Initialise MPI and set processor number
       listhptr    = 0
       numh        = 0
 
-!     Get number of eigenstates that need to be calculated
+      ! Get number of eigenstates that need to be calculated
       neigwanted = fdf_get('NumberOfEigenStates',no_u)
+      
+      ! Correct the number of calculated eigenstates
+      if ( neigwanted < 0 ) then
+         
+         ! If this number is negative it corresponds to the
+         ! number of orbitals ABOVE the charge neutrality point
+         ! to be included.
+         ! For very high temperatures this may be difficult to 
+         ! choose, however, for moderate temperatures this
+         ! need not be somewhat more than say 10
 
-!     Check number of eigenstates - cannot be larger than number of
-!     basis functions or smaller than number of occupied states + 1
-!     so that the Fermi level can be estimated
+         ! Calculate the number of additional eigenstates
+         ! dependent on the # of spin-components
+         ! For spin-polarized calculations this is equivalent to
+         ! only half of the wanted eigenstates per spin-channel.
+         neigmin = ceiling(real(abs(neigwanted)) / spin%spinor)
+
+         do is = 1 , spin%spinor
+            neigwanted = max(neigwanted, ceiling(qs(is)) + neigmin)
+         end do
+
+      end if
+
+      ! Check number of eigenstates - cannot be larger than number of
+      ! basis functions or smaller than number of occupied states + 1
+      ! so that the Fermi level can be estimated
       do is = 1 , spin%spinor
-         neigmin = nint(qs(is)/real(3 - spin%spinor, dp)) + 1
-         neigwanted = max(neigwanted,neigmin)
-      enddo
+         neigmin = ceiling(qs(is)) + 1
+         neigwanted = max(neigwanted, neigmin)
+      end do
+      ! Truncate value
       neigwanted = min(neigwanted,no_u)
-
+      
 !     Find k-grid for Brillouin zone integration 
 !     NOTE: We need to know whether gamma is .true. or
 !     not early, in order to decide whether to use an 

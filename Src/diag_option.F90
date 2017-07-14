@@ -226,11 +226,6 @@ contains
     ! Currently this is not used (it shouldn't be needed)
     mem_factor = fdf_get('Diag.Memory', 1.0_dp)
     mem_factor = max(mem_factor, 1.0_dp)
-    mem_factor = 1._dp
-
-    if ( Serial ) then
-       Use2D = .false.
-    end if
 
   end subroutine read_diag
 
