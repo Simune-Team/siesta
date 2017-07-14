@@ -189,7 +189,8 @@ C Solve eigenvalue problem
         else
            call rdiag( Haux, Saux, nuotot, nuo, nuotot,
      $              eo(1,ispin), 
-     .              psi(1,1,ispin), neigwanted, iscf, ierror )
+     .              psi(1,1,ispin), neigwanted, iscf, ierror,
+     .              BlockSize)
         endif
         call timer( 'r-eigvec', 2 )
 
@@ -215,7 +216,7 @@ C Repeat diagonalisation with increased memory to handle clustering
           enddo
 !$OMP end parallel do
           call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
-     &                psi(1,1,ispin), nuotot, iscf, ierror )
+     &                psi(1,1,ispin), nuotot, iscf, ierror, BlockSize )
         endif
 
         if (getPSI) then

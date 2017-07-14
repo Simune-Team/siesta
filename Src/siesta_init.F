@@ -77,6 +77,8 @@
       use m_ts_init, only : ts_init
 #endif
 
+      use m_diag_option, only: read_diag, print_diag
+      
 #ifdef SIESTA__FLOOK
       use siesta_dicts, only : dict_populate
       use flook_siesta, only : slua_init, slua_call, LUA_INITIALIZE
@@ -406,7 +408,7 @@ C     Initialise MPI and set processor number
       call re_alloc( cfa, 1, 3, 1, na_u, 'cfa', 'siesta_init' )
 
 !     Read simulation data
-      call read_options( na_u, ns, spin%Grid )
+      call read_options( Gamma, na_u, ns, spin%H )
 
       call get_allowed_history_depth(n_dm_items)
       call new(DM_history,n_dm_items,"(DM history stack)")

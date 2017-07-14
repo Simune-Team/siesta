@@ -5,7 +5,7 @@
 !  or http://www.gnu.org/copyleft/gpl.txt .
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
-subroutine read_options( na, ns, nspin )
+subroutine read_options( Gamma, na, ns, nspin )
 
   ! Subroutine to read the options for the SIESTA program
   !
@@ -25,7 +25,6 @@ subroutine read_options( na, ns, nspin )
   use files,     only : filesOut_t   ! derived type for output file names
   use sys
   use units,     only : eV, Ang, Kelvin
-  use diagmemory,   only: memoryfactor
   use siesta_cml
   use m_target_stress, only: set_target_stress
   use m_spin, only: print_spin_options
@@ -36,15 +35,20 @@ subroutine read_options( na, ns, nspin )
   use m_mixing_scf, only: mixers_scf_init
   use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
+  use m_diag_option, only: read_diag, print_diag
+
   use m_cite, only: add_citation
   
   implicit none
   !----------------------------------------------------------- Input Variables
+  ! logical Gamma            : Gamma-calculation or not
   ! integer na               : Number of atoms
   ! integer ns               : Number of species
   ! integer nspin            : Number of spin-components
-  !                            1=non-polarized, 2=polarized, 4=non-collinear
+  !                            1=non-polarized, 2=polarized, 4=non-collinear,
+  !                            8=spin-orbit
 
+  logical, intent(in)  :: Gamma
   integer, intent(in)  :: na, ns, nspin
 
   ! This routine sets variables in the 'siesta_options' module
@@ -723,15 +727,9 @@ subroutine read_options( na, ns, nspin )
           value=DaC, dictRef='siesta:DaC' )
   endif
 
-  ! Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
-  MemoryFactor = fdf_get('Diag.Memory', 1.0_dp )
-  MemoryFactor = max(MemoryFactor,1.0_dp)
-  if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='Diag.Memory', &
-          value=MemoryFactor,             &
-          dictRef='siesta:MemoryFactor',  &
-          units="cmlUnits:dimensionless" )
-  endif
+  ! Read in diagonalization routines
+  call read_diag(Gamma, nspin)
+  call print_diag()
 
   ! Electronic temperature for Fermi Smearing ...
   temp = fdf_get('ElectronicTemperature',1.9e-3_dp,'Ry')
