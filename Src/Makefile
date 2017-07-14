@@ -360,7 +360,11 @@ libsiestaBLAS.a: Libs/blas.F
 	@echo "==> Compiling libsiestaBLAS.a in Libs..."
 	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaBLAS.a)
 	@cp Libs/libsiestaBLAS.a .
-libsiestaLAPACK.a: FPPFLAGS += -DSIESTA__DIAG_2STAGE
+
+ifneq (,$(findstring libsiestaLAPACK.a,$(COMP_LIBS)))
+ # Automatically add the DIAG_2STAGE solvers.
+ FPPFLAGS += -DSIESTA__DIAG_2STAGE
+endif
 libsiestaLAPACK.a: Libs/lapack.F
 	@echo "==> Compiling libsiestaLAPACK.a in Libs..."
 	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libsiestaLAPACK.a)

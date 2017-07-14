@@ -348,9 +348,7 @@ contains
     
     ! Work sizes
     integer :: liwork, lrwork, lwork
-#ifdef MPI
     integer, save :: lrwork_add = 0
-#endif
 
     complex(dp), pointer :: work(:) => null()
     real(dp), pointer :: rwork(:) => null()
@@ -1124,8 +1122,6 @@ contains
     integer,  pointer :: iclustr(:) => null()
     real(dp), pointer :: gap(:) => null()
 
-    integer, save :: lwork_add = 0
-
     ! 1D proc grid
     integer, target :: desch(9)
 
@@ -1155,6 +1151,7 @@ contains
     
     ! Work sizes
     integer :: liwork, lwork
+    integer, save :: lwork_add = 0
 
     real(dp), pointer :: work(:) => null()
     integer, pointer :: iwork(:) => null()
