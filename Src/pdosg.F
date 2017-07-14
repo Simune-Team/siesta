@@ -51,7 +51,7 @@ C real*8  dpr(nhist,nuo,2): Proyected density of states
 C **********************************************************************
 
       use precision
-      use parallel,     only : Node, Nodes
+      use parallel,     only : Node, Nodes, BlockSize
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use units,        only : pi
       use alloc,        only : re_alloc, de_alloc
@@ -119,7 +119,7 @@ C Build the full Hamiltonian and overlap matrix
 
 C Diagonalize at the Gamma point
         call rdiag( haux, saux, nuotot, nuo, nuotot, eo(1,ispin), 
-     .              psi, nuotot, 1, ierror )
+     .              psi, nuotot, 1, ierror, BlockSize)
 
 C Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -142,7 +142,7 @@ C Repeat diagonalisation with increased memory to handle clustering
             enddo
           enddo
           call rdiag( haux, saux, nuotot, nuo, nuotot, eo(1,ispin),
-     .                psi, nuotot, 1, ierror )
+     .                psi, nuotot, 1, ierror, BlockSize)
         endif
 
 C Rebuild the full overlap matrix

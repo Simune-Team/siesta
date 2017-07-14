@@ -101,7 +101,6 @@ C
       use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
       use densematrix,  only : Haux, Saux, psi
       use sys,          only : die
-      use m_diagon_opt, only : init_diagon_opt
 
       use fdf
       use alloc
@@ -110,7 +109,7 @@ C
       use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
       use m_spin,       only: e_spin_dim
 #ifdef MPI
-      use m_diagon_opt, only : paralleloverk
+      use m_diag_option, only: ParallelOverK
       use mpi_siesta
 #endif
       use siesta_options, only: new_diagk
@@ -157,8 +156,6 @@ C
 #endif
 
 C  ....................
-C     First call initialisation
-      call init_diagon_opt( Gamma, nspin )
 
 C Get Node number and calculate local orbital range
 #ifdef MPI

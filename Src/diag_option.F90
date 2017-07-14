@@ -75,6 +75,8 @@ contains
     logical, intent(in) :: Gamma
     integer, intent(in) :: nspin
 
+    logical :: dc_default
+
     character(len=32) :: algo
 
     ! No matter what we always re-read them.
@@ -110,13 +112,19 @@ contains
     else
        call die('diag: Unknown argument to Diag.UpperLower')
     end if
-           
+
+#ifdef SIESTA__MRRR
+    dc_default = .false.
+#else
+    dc_default = .true.
+#endif
+    
     ! Decide the algorithm
-    if ( fdf_get('Diag.DivideAndConquer',.true.) ) then
+    if ( fdf_get('Diag.DivideAndConquer',dc_default) ) then
        algorithm = DivideConquer
     end if
 #ifdef SIESTA__MRRR
-    if ( fdf_get('Diag.MRRR',.false.) ) then
+    if ( fdf_get('Diag.MRRR',.not. dc_default) ) then
        algorithm = MRRR
     end if
 #endif
@@ -233,6 +241,8 @@ contains
 
     if ( .not. IONode ) return
 
+    write(*,*) ! new-line
+    
     select case ( algorithm )
     case ( DivideConquer ) 
        write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'D&C'
@@ -254,7 +264,7 @@ contains
 
 
 #ifdef MPI
-    write(*,'(a,t53,''= '',tr2,l1)') 'diag: Parallel 2D distribution', Use2D
+    write(*,'(a,t53,''= '',tr2,l1)') 'diag: Use parallel 2D distribution', Use2D
     write(*,'(a,t53,''= '',i4,'' x '',i4)') 'diag: Parallel 2D distribution', &
          max(1,Nodes / ProcessorY), ProcessorY
     write(*,'(a,t53,''= '',tr2,l1)') 'diag: Parallel over k', ParallelOverK

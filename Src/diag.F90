@@ -70,13 +70,16 @@ contains
 
   subroutine diag_init()
 
+    use m_diag_option, only: Serial, ParallelOverK
+
 #ifdef MPI
-    use m_diag_option, only: Use2D
-    use parallel, only: ProcessorY
+    use m_diag_option, only: Use2D, ProcessorY
     use mpi_siesta, only: MPI_Comm_World
 #endif
-    
+
+#ifdef MPI
     integer :: nr, nc
+#endif
 
     call diag_exit()
 
@@ -84,6 +87,9 @@ contains
     diag_work_r = .true.
     diag_work_c = .true.
 #endif
+
+    if ( Serial ) return
+    if ( ParallelOverK ) return
 
 #ifdef MPI
     
@@ -342,7 +348,7 @@ contains
     call timer('cdiag',1)
 
     ! Only re-initialize if the routine hasn't been setup.
-    if ( iCTXT < 0 ) call diag_init()
+    if ( iCTXT < 0 .and. .not. Serial ) call diag_init()
 
 !*******************************************************************************
 ! Setup                                                                        *
@@ -1144,7 +1150,7 @@ contains
     call timer('rdiag',1)
 
     ! Only re-initialize if the routine hasn't been setup.
-    if ( iCTXT < 0 ) call diag_init()
+    if ( iCTXT < 0 .and. .not. Serial ) call diag_init()
 
 !*******************************************************************************
 ! Setup                                                                        *

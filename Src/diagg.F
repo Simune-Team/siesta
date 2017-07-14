@@ -92,9 +92,6 @@ C
       use alloc
       use fdf,           only : fdf_get
       use m_rdiag_elpa,  only : rdiag_elpa
-#ifdef SIESTA__MRRR
-      use m_rdiag_mrrr,  only : rdiag_mrrr
-#endif
 
 #ifdef MPI
       use mpi_siesta
@@ -129,7 +126,7 @@ C
       integer, parameter                :: nk = 1
 
       logical
-     .  getD, getPSI, fixspin, use_elpa, use_mrrr
+     .  getD, getPSI, fixspin, use_elpa
 
       external rdiag
 
@@ -153,8 +150,6 @@ C Solve eigenvalue problem
       
       use_elpa = fdf_get("Diag.ELPA",.false.)
       if (Nodes == 1) use_elpa = .false.
-      use_mrrr = fdf_get("Diag.MRRR",.false.)
-      if (Nodes == 1) use_mrrr = .false.
 
       do ispin = 1,spinor_dim
 
@@ -177,15 +172,6 @@ C Solve eigenvalue problem
            call rdiag_elpa( Haux, Saux, nuotot,
      $              nuo, nuotot, eo(1,ispin), 
      .              psi(1,1,ispin), neigwanted, ierror )
-        else if (use_mrrr) then
-#ifdef SIESTA__MRRR
-           call rdiag_mrrr( Haux, Saux, nuotot,
-     &              nuo, nuotot, eo(1,ispin), 
-     &              psi(1,1,ispin), neigwanted, ierror )
-#else
-           call die("MRRR method not compiled-in. " //
-     $              "Add -DSIESTA__MRRR")
-#endif
         else
            call rdiag( Haux, Saux, nuotot, nuo, nuotot,
      $              eo(1,ispin), 

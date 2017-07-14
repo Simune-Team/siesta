@@ -356,7 +356,6 @@ C  Modules
 C
       use precision,    only : dp
       use parallel,     only : Node, Nodes
-      use parallel,     only : ParallelOverK, ResetFirstCall
       use parallelsubs, only : GetNodeOrbs
       use densematrix,  only : Haux, Saux, psi
       use alloc,        only : re_alloc, de_alloc
@@ -368,6 +367,9 @@ C
       use writewave,    only : wfs_filename
 
       use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
+
+      use m_diag_option, only: ParallelOverK, Serial
+      use m_diag, only: diag_init
 
 
       implicit          none
@@ -394,7 +396,7 @@ C
 
       integer ::   ik, il, io, ispin, iu, iu_wfs, iuo, naux, nhs, j
 
-      logical ::   SaveParallelOverK
+      logical :: SaveParallelOverK
 
       real(dp)
      .  Dnew, qs(2), e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot,
@@ -470,13 +472,15 @@ C fixspin and qs are not used in diagk, since getD=.false. ...
 
 C Handle parallel over K points option which is not allowed for here
         SaveParallelOverK = ParallelOverK
-        if ((Node .eq. 0) .and. ParallelOverK) then
-           write(6,"(a)")
-     $          "*** Note: ParallelOverK option not used for Bands"
-        endif
-
-        ParallelOverK = .false.
-        ResetFirstCall = .true.
+        if ( ParallelOverK ) then
+           if ( Node .eq. 0 ) then
+              write(*,"(a)")
+     $             "*** Note: ParallelOverK option not used for Bands"
+           end if
+           ParallelOverK = .false.
+           Serial = Nodes == 1
+           call diag_init()
+        end if
 
         call diagk( nspin, no_l, no_s, maxspn, 
      .              maxnh, maxnh, 
@@ -488,7 +492,7 @@ C Handle parallel over K points option which is not allowed for here
      .              no_u, occtol, 1 )
 
         ParallelOverK = SaveParallelOverK
-        ResetFirstCall = .false.
+        if ( ParallelOverK ) Serial = .true.
 
       elseif ( NonCol ) then
          if (getPSI) then

@@ -408,7 +408,7 @@ C     Initialise MPI and set processor number
       call re_alloc( cfa, 1, 3, 1, na_u, 'cfa', 'siesta_init' )
 
 !     Read simulation data
-      call read_options( Gamma, na_u, ns, spin%H )
+      call read_options( na_u, ns, spin%H )
 
       call get_allowed_history_depth(n_dm_items)
       call new(DM_history,n_dm_items,"(DM history stack)")
@@ -493,6 +493,13 @@ C     Initialise MPI and set processor number
 !     auxiliary supercell for the calculation of matrix elements.
       call setup_Kpoint_grid( ucell )
       gamma = gamma_scf
+
+      ! Read in diagonalization routines
+      ! Note that only the sampled BZ is responsible for
+      ! ParallelOverK option, the remaning options are
+      ! taking care of this option
+      call read_diag(Gamma_scf, spin%H)
+      call print_diag()
 
 !     Call initialisation of PDOS here since we need to check if 
 !     the auxiliary supercell is needed for a non-gamma calculation

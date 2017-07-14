@@ -426,7 +426,6 @@ C  Modules
 C
       use precision
       use parallel,    only : Node, Nodes
-      use parallel,    only : ParallelOverK, ResetFirstCall
       use fdf
       use densematrix, only : Haux, Saux, psi
       use alloc
@@ -435,10 +434,11 @@ C
       use siesta_geom,  only : isa
       use m_spin,       only : NoMagn, SPpol, NonCol, SpOrb
 
-
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
 #endif
+      use m_diag_option, only: Serial, ParallelOverK
+      use m_diag, only: diag_init
 
       implicit          none
 
@@ -474,7 +474,7 @@ C Dynamic arrays
       save Dnew, Enew, e1, e2, qk, qtot, temp, wk
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
-      logical  SaveParallelOverK
+      logical :: SaveParallelOverK
 
       h_spin_dim=size(H,dim=2)
 
@@ -612,15 +612,18 @@ CC RC Added for on-site SO
      .               Haux, Saux, psi, nuotot, occtol, 1, nuotot )
        else
 C Handle parallel over K points option which is not allowed for here
-         SaveParallelOverK = ParallelOverK
-         if ((Node .eq. 0) .and. ParallelOverK) then
-            write(6,"(a)")
-     $           "*** Note: ParallelOverK option " //
-     $           "not used for WF info generation"
-         endif
-         ParallelOverK = .false.
-         ResetFirstCall = .true.
-            
+          SaveParallelOverK = ParallelOverK
+          if ( ParallelOverK ) then
+             if ( Node .eq. 0 ) then
+                write(*,"(a)")
+     $               "*** Note: ParallelOverK option not used for "//
+     &               "WF info generation"
+             end if
+             ParallelOverK = .false.
+             Serial = Nodes == 1
+             call diag_init()
+          end if
+
          call diagk( h_spin_dim, nuo, no, maxspn, maxnh, maxnh,
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
@@ -629,8 +632,10 @@ C Handle parallel over K points option which is not allowed for here
      .               ek, qk, Dnew, Enew, ef, efs, Entropy,
      .               Haux, Saux, psi, Haux, Saux, aux, nuotot,
      .               occtol, 1 )
+
          ParallelOverK = SaveParallelOverK
-         ResetFirstCall = .false.
+         if ( ParallelOverK ) Serial = .true.
+         
        endif
 CC RC Added for on-site SO
       elseif (NonCol) then

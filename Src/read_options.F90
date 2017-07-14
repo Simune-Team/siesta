@@ -5,7 +5,7 @@
 !  or http://www.gnu.org/copyleft/gpl.txt .
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
-subroutine read_options( Gamma, na, ns, nspin )
+subroutine read_options( na, ns, nspin )
 
   ! Subroutine to read the options for the SIESTA program
   !
@@ -19,7 +19,7 @@ subroutine read_options( Gamma, na, ns, nspin )
 
   use siesta_options
   use precision, only : dp, grid_p
-  use parallel,  only : IOnode, Nodes, ParallelOverK
+  use parallel,  only : IOnode, Nodes
   use fdf
   use files,     only : slabel
   use files,     only : filesOut_t   ! derived type for output file names
@@ -35,20 +35,16 @@ subroutine read_options( Gamma, na, ns, nspin )
   use m_mixing_scf, only: mixers_scf_init
   use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
-  use m_diag_option, only: read_diag, print_diag
-
   use m_cite, only: add_citation
   
   implicit none
   !----------------------------------------------------------- Input Variables
-  ! logical Gamma            : Gamma-calculation or not
   ! integer na               : Number of atoms
   ! integer ns               : Number of species
   ! integer nspin            : Number of spin-components
   !                            1=non-polarized, 2=polarized, 4=non-collinear,
   !                            8=spin-orbit
 
-  logical, intent(in)  :: Gamma
   integer, intent(in)  :: na, ns, nspin
 
   ! This routine sets variables in the 'siesta_options' module
@@ -165,7 +161,7 @@ subroutine read_options( Gamma, na, ns, nspin )
   character(len=30) :: ctmp
   character(len=6) :: method
 
-  logical :: DaC, qnch, qnch2
+  logical :: qnch, qnch2
   logical :: tBool
 
   !--------------------------------------------------------------------- BEGIN
@@ -658,16 +654,12 @@ subroutine read_options( Gamma, na, ns, nspin )
      
   else if (leqi(method,'diagon')) then
      isolve = SOLVE_DIAGON
-     ! DivideAndConquer is now the default
-     DaC = fdf_get('Diag.DivideAndConquer',.true.)
      if (ionode)  then
         write(*,3) 'redata: Method of Calculation', 'Diagonalization'
-        write(*,1) 'redata: Divide and Conquer', DaC
      endif
      
   else if (leqi(method,'ordern')) then
      isolve = SOLVE_ORDERN
-     DaC    = .false.
      if (ionode) then
         write(*,3) 'redata: Method of Calculation','Order-N'
      endif
@@ -679,7 +671,6 @@ subroutine read_options( Gamma, na, ns, nspin )
      
   else if (leqi(method,'omm')) then
      isolve = SOLVE_MINIM
-     DaC    = .false.
      call_diagon_default=fdf_integer('OMM.Diagon',0)
      call_diagon_first_step=fdf_integer('OMM.DiagonFirstStep',call_diagon_default)
      minim_calc_eigenvalues=fdf_boolean('OMM.Eigenvalues',.false.)
@@ -721,15 +712,6 @@ subroutine read_options( Gamma, na, ns, nspin )
 #ifdef DEBUG
   call write_debug( '    Solution Method: ' // method )
 #endif
-
-  if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='Diag.DivideAndConquer', &
-          value=DaC, dictRef='siesta:DaC' )
-  endif
-
-  ! Read in diagonalization routines
-  call read_diag(Gamma, nspin)
-  call print_diag()
 
   ! Electronic temperature for Fermi Smearing ...
   temp = fdf_get('ElectronicTemperature',1.9e-3_dp,'Ry')
@@ -1607,9 +1589,6 @@ subroutine read_options( Gamma, na, ns, nspin )
      bornz = .false.
   endif
   change_kgrid_in_md           = fdf_get('ChangeKgridInMD', .false.)
-  ParallelOverK                = fdf_get('Diag.ParallelOverK', .false.)
-  ! If non-collinear spin, it *MUST* be false.
-  if ( nspin > 2 ) ParallelOverK = .false.
   RelaxCellOnly                = fdf_get('MD.RelaxCellOnly', .false.)
   RemoveIntraMolecularPressure = fdf_get( &
        'MD.RemoveIntraMolecularPressure', .false.)
