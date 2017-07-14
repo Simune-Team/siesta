@@ -498,14 +498,14 @@ contains
 #ifdef _DIAG_WORK
     if ( jobz == 'N' ) then
        if ( diag_work_c(1) ) then
-          write(*,'(3a,i2,a,i3,3(a,i12))') &
+          write(*,'(3a,i2,a,i5,3(a,i12))') &
                'cdiag-debug: jobz=',jobz,', algo=', algo, ', Node=',Node, &
                ', work=', lwork, ', rwork=', lrwork, ', iwork=', liwork
           diag_work_c(1) = .false.
        end if
     else
        if ( diag_work_c(2) ) then
-          write(*,'(3a,i2,a,i3,3(a,i12))') &
+          write(*,'(3a,i2,a,i5,3(a,i12))') &
                'cdiag-debug: jobz=',jobz,', algo=', algo, ', Node=',Node, &
                ', work=', lwork, ', rwork=', lrwork, ', iwork=', liwork
           diag_work_c(2) = .false.
@@ -860,6 +860,8 @@ contains
                  neigok,w,Z,n, &
                  work,lwork,rwork,iwork,ifail, &
                  info)
+            ! The API does not state that it writes the work-query in
+            ! rwork or iwork
             rwork(1) = max(nint(rwork(1)), 7*n)
             iwork(1) = max(iwork(1), 5*n)
 
@@ -867,7 +869,9 @@ contains
             call zheev(jobz,uplo,n,H,n,w, &
                  work,lwork,rwork, &
                  info)
-            rwork(1) = max(nint(rwork(1)), 4*n)
+            ! The API does not state that it writes the work-query in
+            ! rwork
+            rwork(1) = max(nint(rwork(1)), 3*n)
 
 #ifdef SIESTA__DIAG_2STAGE
          case ( DivideConquer_2stage ) 
@@ -890,6 +894,8 @@ contains
                  neigok,w,Z,n, &
                  work,lwork,rwork,iwork,ifail, &
                  info)
+            ! The API does not state that it writes the work-query in
+            ! rwork or iwork
             rwork(1) = max(nint(rwork(1)), 7*n)
             iwork(1) = max(iwork(1), 5*n)
 
@@ -897,7 +903,9 @@ contains
             call zheev_2stage(jobz,uplo,n,H,n,w, &
                  work,lwork,rwork, &
                  info)
-            rwork(1) = max(nint(rwork(1)), 4*n)
+            ! The API does not state that it writes the work-query in
+            ! rwork
+            rwork(1) = max(nint(rwork(1)), 3*n)
 #endif
 
          case default
@@ -953,7 +961,30 @@ contains
                  info )
             ! Possible bug in scalapack
             ! At least this makes it work!
-            rwork(1) = max(nint(rwork(1)), 4*n)
+#ifdef _DIAG_WORK
+            if ( jobz == 'N' ) then
+               if ( diag_work_c(1) ) then
+                  if ( nint(rwork(1)) < 2*n ) then
+                     write(*,'(3a,i2,a,i5,a)') &
+                          'cdiag-debug: jobz=',jobz,', algo=', algo, ', Node=',Node, &
+                          ' BUG in ScaLAPACK work-query'
+                  end if
+               end if
+            else
+               if ( diag_work_c(2) ) then
+                  if ( nint(rwork(1)) < 4*n-2 ) then
+                     write(*,'(3a,i2,a,i5,a)') &
+                          'cdiag-debug: jobz=',jobz,', algo=', algo, ', Node=',Node, &
+                          ' BUG in ScaLAPACK work-query'
+                  end if
+               end if
+            end if
+#endif
+            if ( jobz == 'N' ) then
+               rwork(1) = max(nint(rwork(1)), 2*n)
+            else
+               rwork(1) = max(nint(rwork(1)), 4*n-2)
+            end if
 
          case default
 
@@ -963,8 +994,8 @@ contains
 #endif         
       end if
 
-      lwork = max(nint(real(work(1), dp)), l_lwork)
-      lrwork = nint(rwork(1))
+      lwork = nint(max(nint(real(work(1), dp)), l_lwork) * mem_factor)
+      lrwork = nint(rwork(1) * mem_factor)
       liwork = iwork(1)
 
     end subroutine work_query
@@ -1266,14 +1297,14 @@ contains
 #ifdef _DIAG_WORK
     if ( jobz == 'N' ) then
        if ( diag_work_r(1) ) then
-          write(*,'(3a,i2,a,i3,2(a,i12))') &
+          write(*,'(3a,i2,a,i5,2(a,i12))') &
                'rdiag-debug: jobz=',jobz,', algo=', algo, ', Node=',Node, &
                ', work=', lwork, ', iwork=', liwork
           diag_work_r(1) = .false.
        end if
     else
        if ( diag_work_r(2) ) then
-          write(*,'(3a,i2,a,i3,2(a,i12))') &
+          write(*,'(3a,i2,a,i5,2(a,i12))') &
                'rdiag-debug: jobz=',jobz,', algo=', algo, ', Node=',Node, &
                ', work=', lwork, ', iwork=', liwork
           diag_work_r(2) = .false.
@@ -1623,6 +1654,8 @@ contains
                  neigok,w,Z,n, &
                  work,lwork,iwork,ifail, &
                  info)
+            ! The API does not state that it writes the work-query in
+            ! iwork
             iwork(1) = max(iwork(1), 5*n)
 
          case ( NoExpert )
@@ -1651,6 +1684,8 @@ contains
                  neigok,w,Z,n, &
                  work,lwork,iwork,ifail, &
                  info)
+            ! The API does not state that it writes the work-query in
+            ! iwork
             iwork(1) = max(iwork(1), 5*n)
 
          case ( NoExpert_2stage )
@@ -1719,7 +1754,7 @@ contains
 #endif         
       end if
 
-      lwork = max(nint(real(work(1), dp)), l_lwork)
+      lwork = nint(max(nint(real(work(1), dp)), l_lwork) * mem_factor)
       liwork = iwork(1)
 
     end subroutine work_query

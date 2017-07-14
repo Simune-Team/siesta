@@ -70,7 +70,6 @@ contains
   subroutine read_diag(Gamma, nspin)
 
     use parallel, only: Nodes
-    use parallel, only: pProcessorY => ProcessorY
     use fdf, only: fdf_get, leqi
 
     logical, intent(in) :: Gamma
@@ -101,7 +100,7 @@ contains
 
     
     Use2D = fdf_get('Diag.Use2D',.true.)
-    ProcessorY = fdf_get('Diag.ProcessorY', pProcessorY)
+    ProcessorY = fdf_get('Diag.ProcessorY', max(1, Nodes / 4))
 
     algo = fdf_get('Diag.UpperLower', 'lower')
     if ( leqi(algo, 'lower') .or. leqi(algo, 'l') ) then
@@ -143,7 +142,8 @@ contains
          leqi(algo, 'DandC') .or. leqi(algo, 'vd') ) then
        algorithm = DivideConquer
 
-    else if ( leqi(algo, 'D&C-2') .or. leqi(algo, 'divide-and-conquer-2stage') .or. &
+    else if ( leqi(algo, 'D&C-2') .or. leqi(algo, 'D&C-2stage') .or. &
+         leqi(algo, 'divide-and-conquer-2stage') .or. leqi(algo, 'DandC-2stage') .or. &
          leqi(algo, 'DandC-2') .or. leqi(algo, 'vd_2stage') ) then
 #ifdef SIESTA__DIAG_2STAGE
        if ( Serial ) then
@@ -229,7 +229,7 @@ contains
   end subroutine read_diag
 
   subroutine print_diag()
-    use parallel, only: IONode
+    use parallel, only: IONode, Nodes
 
     if ( .not. IONode ) return
 
@@ -252,11 +252,13 @@ contains
        write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'noexpert-2stage'
     end select
 
-    if ( .not. Serial ) then
-       write(*,'(a,t53,''= '',tr2,l1)') 'diag: Parallel 2D distribution', Use2D
-    else
-       write(*,'(a,t53,''= '',tr2,l1)') 'diag: Parallel over k', ParallelOverK
-    end if
+
+#ifdef MPI
+    write(*,'(a,t53,''= '',tr2,l1)') 'diag: Parallel 2D distribution', Use2D
+    write(*,'(a,t53,''= '',i4,'' x '',i4)') 'diag: Parallel 2D distribution', &
+         max(1,Nodes / ProcessorY), ProcessorY
+    write(*,'(a,t53,''= '',tr2,l1)') 'diag: Parallel over k', ParallelOverK
+#endif
 
     if ( UpperLower == 'L' ) then
        write(*,'(a,t53,''= '',a)') 'diag: Used triangular part', 'Lower'
