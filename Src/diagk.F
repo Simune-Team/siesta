@@ -11,7 +11,7 @@
      .                  temp, e1, e2, xij, indxuo, nk, kpoint, wk,
      .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
      .                  Haux, Saux, psi, Dk, Ek, aux, nuotot, occtol,
-     .                  iscf )
+     .                  iscf, neigwanted )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -60,6 +60,7 @@ C real*8  wk(nk)              : k point weights (must sum one)
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
 C real*8  occtol              : Occupancy threshold for DM build
+C integer neigwanted          : maximum number of eigenvalues wanted
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo,spinor_dim,nk)   : Eigenvalues
 C ******************** OUTPUT (only if getD=.true.) *******************
@@ -114,8 +115,8 @@ C
 #endif
 
       integer           maxnd, maxnh, maxspn, maxo, nk, no,
-     .                  nuo, nuotot, iscf
-      integer           h_spin_dim ! CC RC Added
+     .                  nuo, nuotot, iscf, neigwanted
+      integer           h_spin_dim
       integer           indxuo(no), listh(maxnh), numh(nuo),
      .                  listd(maxnd), numd(nuo), listhptr(nuo),
      .                  listdptr(nuo)
@@ -189,7 +190,7 @@ C Note : sign of complex part changed to match change in order of iuo/juo
 !$OMP end parallel do
           call timer( 'c-buildHS', 2 )
           call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin,ik),
-     &                psi, 0, iscf, ierror, BlockSize )
+     &                psi, -neigwanted, iscf, ierror, BlockSize )
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif
@@ -207,11 +208,11 @@ C Check if we are done ................................................
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
-        call fermispin( spinor_dim, spinor_dim, nk, wk, maxo, nuotot, 
-     .                  eo, temp, qs, qo, efs, Entropy )
+         call fermispin( spinor_dim, spinor_dim, nk, wk, maxo,
+     &        neigwanted, eo, temp, qs, qo, efs, Entropy )
       else
-        call fermid( spinor_dim, spinor_dim, nk, wk, maxo, nuotot, eo, 
-     .             temp, qtot, qo, ef, Entropy )
+         call fermid( spinor_dim, spinor_dim, nk, wk, maxo,
+     &        neigwanted, eo, temp, qtot, qo, ef, Entropy )
       endif
 
       nd = listdptr(nuo) + numd(nuo)
@@ -259,7 +260,7 @@ C Compute all eigenvectors if getPSI = .true.
 
           if (getPSI) then
             ! We do not have info about occupation
-            neigneeded = nuotot
+            neigneeded = neigwanted
           else
             neigneeded = 0
             ie = nuotot
@@ -268,7 +269,7 @@ C Compute all eigenvectors if getPSI = .true.
               if (abs(qe).gt.occtol) neigneeded = ie
               ie = ie - 1
             enddo
-          endif
+         endif
 
           call timer( 'c-eigvec', 1 )
 C Build dense H and S - note that only eigenvectors required are now

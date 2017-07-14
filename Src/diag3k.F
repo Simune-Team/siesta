@@ -10,7 +10,7 @@
      .                   listd, H, S, getD, getPSI, qtot, temp, e1, e2,
      .                   xij, indxuo, nk, kpoint, wk,
      .                   eo, qo, Dnew, Enew, ef, Entropy,
-     .                   psi, nuotot, occtol, iscf)
+     .                   psi, nuotot, occtol, iscf, neigwanted)
 
 !
       use precision
@@ -73,6 +73,7 @@ C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
 C real*8  occtol              : Occupancy threshold for DM build
 C integer iscf                : SCF cycle number
+C integer neigwanted          : Number of eigenvalues wanted
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo*2,nk)        : Eigenvalues
 C real*8 qo(maxo*2,nk)        : Occupations of eigenstates
@@ -107,6 +108,7 @@ C *********************************************************************
       real(dp) kpoint(3,nk), wk(nk), xij(3,maxnh)
       real(dp) e1, e2, ef, eo(maxo*2,nk), qo(maxo*2,nk)
       real(dp) occtol, qtot, temp, Entropy
+      integer :: neigwanted
       
       logical               getD, getPSI
       
@@ -219,7 +221,7 @@ C *********************************************************************
 !       Find eigenvalues
 !       Note duplication since the spins are mixed
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo(1,ik),psi,
-     .             0,iscf,ierror, 2*BlockSize)
+     .             -2*neigwanted,iscf,ierror, 2*BlockSize)
       
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
@@ -233,7 +235,7 @@ C *********************************************************************
 !-----------------------------------------------------------------------
       
 !     Find new Fermi energy and occupation weights
-      call fermid(2,2,nk,wk,maxo,nuotot,eo,temp,qtot,qo,ef,Entropy)
+      call fermid(2,2,nk,wk,maxo,neigwanted,eo,temp,qtot,qo,ef,Entropy)
       
 !     Find weights for local density of states
       if (e1 .lt. e2) then

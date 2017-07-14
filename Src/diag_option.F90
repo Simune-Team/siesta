@@ -61,9 +61,7 @@ module m_diag_option
   !> Memory factor for the real work arrays
   real(dp) :: mem_factor = 1._dp
 
-#ifdef MPI
   logical :: ParallelOverK = .false.
-#endif
 
 contains
 

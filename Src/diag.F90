@@ -38,7 +38,15 @@
 !     - MRRR
 !     - 2stage solvers (only in LAPACK, and currently only for jobz='N')
 !     - no-expert drivers (regular ones)
-
+!  6. Allowed only calculating a subset of the eigenvalues.
+!     There are 3 options for neig:
+!      neig < 0:
+!       calculate -neig eigenvalues (jobz == 'N')
+!      neig > 0:
+!       calculate neig eigenvalues and eigenvectors (jobz == 'V')
+!      neig == 0:
+!       same as calculating all eigenvalues (jobz == 'N')
+!      
 module m_diag
 
   use precision
@@ -128,13 +136,14 @@ contains
 
   end subroutine diag_exit
 
-  subroutine diag_correct_input(algo, jobz, range, uplo, trans, n, neigvec)
+  subroutine diag_correct_input(algo, jobz, range, uplo, trans, neig, n)
 
     use m_diag_option
     
     integer, intent(inout) :: algo
     character, intent(inout) :: jobz, range, uplo, trans
-    integer, intent(in) :: n, neigvec
+    integer, intent(inout) :: neig
+    integer, intent(in) :: n
 
     ! Use lower part
     uplo = UpperLower
@@ -146,24 +155,31 @@ contains
     end if
 
     ! Set general Lapack/Scalapack parameters
-    if ( neigvec > 0 ) then
+    if ( neig > 0 ) then
        jobz = 'V'
-       if ( neigvec == n ) then
+       if ( neig == n ) then
           range = 'A'
        else
           range = 'I'
        end if
-    else
-       ! Note that we will query whether the routines allow
-       ! retrieving the eigenvalues only
+    else if ( neig < 0 ) then
+       ! Query a subset of the eigenvalues
        jobz = 'N'
+       neig = -neig
+       if ( neig == n ) then
+          range = 'A'
+       else
+          range = 'I'
+       end if
+    else ! neig == 0
+       neig = n
        range = 'A'
     end if
 
     ! Correct for special routines
     if ( Serial ) then
 
-       if ( neigvec > 0 ) then
+       if ( jobz == 'V' ) then
           select case ( algo )
           case ( DivideConquer_2stage )
              algo = DivideConquer
@@ -193,7 +209,7 @@ contains
        end select
 
        if ( algo == DivideConquer ) then
-          ! regardless of neigvec
+          ! regardless of neig
           jobz = 'V'
           range = 'A'
        end if
@@ -202,7 +218,7 @@ contains
 
   end subroutine diag_correct_input
 
-  subroutine diag_c( H, S, n, nm, nml, w, Z, neigvec, iscf, ierror, BlockSize)
+  subroutine diag_c( H, S, n, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
 ! ***************************************************************************
 ! Subroutine to solve all eigenvalues and eigenvectors of the
 ! complex general eigenvalue problem  H z = w S z,  with H and S
@@ -217,7 +233,7 @@ contains
 ! integer nm                       : Right hand dimension of H and S matrices
 ! integer nml                      : Left hand dimension of H and S matrices
 !                                    which is greater than or equal to nm
-! integer neigvec                  : No. of eigenvectors to calculate
+! integer neig                     : No. of eigenvalues(<0)/vectors(>0) to calculate
 ! integer iscf                     : SCF cycle
 ! integer BlockSize                : Effective parallel block size
 ! ************************** OUTPUT *****************************************
@@ -277,7 +293,7 @@ contains
     integer :: ierror
     integer :: iscf
     integer :: n
-    integer :: neigvec
+    integer :: neig
     integer :: nm
     integer :: nml
     integer :: BlockSize
@@ -380,7 +396,7 @@ contains
     vl = -huge(0._dp)
     vu = huge(0._dp)
     il = 1
-    iu = neigvec
+    iu = neig
 
 #ifdef MPI
     if ( .not. Serial) then
@@ -422,7 +438,7 @@ contains
 
 
     algo = algorithm
-    call diag_correct_input(algo, jobz, range, uplo, trans, n, neigvec)
+    call diag_correct_input(algo, jobz, range, uplo, trans, iu, n)
     
 
     ! Initialize the variables for the different routines
@@ -524,7 +540,7 @@ contains
     call re_alloc(iwork, 1, liwork, name='iwork')
 
     ! Begin calculation
-    neigok = n ! default to all (will only be overwritten for expert drivers)
+    neigok = iu ! default to all queried (will only be overwritten for expert drivers)
 
 
 #ifdef MPI
@@ -582,8 +598,8 @@ contains
           call zheevd(jobz,uplo,n,H,n,&
                w,work,lwork,rwork,lrwork,iwork,liwork, &
                info)
-          if ( neigvec > 0 ) then
-             call zcopy(n*neigvec,H,1,Z,1)
+          if ( neig > 0 ) then
+             call zcopy(n*neig,H,1,Z,1)
           end if
           
 #ifdef SIESTA__MRRR
@@ -606,8 +622,8 @@ contains
           call zheev(jobz,uplo,n,H,n,w, &
                work,lwork,rwork, &
                info)
-          if ( neigvec > 0 ) then
-             call zcopy(n*neigvec,H,1,Z,1)
+          if ( neig > 0 ) then
+             call zcopy(n*neig,H,1,Z,1)
           end if
           
 #ifdef SIESTA__DIAG_2STAGE
@@ -615,8 +631,8 @@ contains
           call zheevd_2stage(jobz,uplo,n,H,n,&
                w,work,lwork,rwork,lrwork,iwork,liwork, &
                info)
-          if ( neigvec > 0 ) then
-             call zcopy(n*neigvec,H,1,Z,1)
+          if ( neig > 0 ) then
+             call zcopy(n*neig,H,1,Z,1)
           end if
           
 # ifdef SIESTA__MRRR
@@ -639,8 +655,8 @@ contains
           call zheev_2stage(jobz,uplo,n,H,n,w, &
                work,lwork,rwork, &
                info)
-          if ( neigvec > 0 ) then
-             call zcopy(n*neigvec,H,1,Z,1)
+          if ( neig > 0 ) then
+             call zcopy(n*neig,H,1,Z,1)
           end if
 #endif
 
@@ -735,12 +751,13 @@ contains
        else
           call die('cdiag: Failure to converge standard eigenproblem')
        end if
-       if ( neigok < neigvec ) then
+       if ( neigok < iu ) then
           call die('cdiag: Insufficient eigenvalues converged')
        end if
     end if
     ! Ensure that the eigenvalues that haven't been calculated
     ! are "extreme" and hence not applicable
+    ! This is merely a precaution
     if ( neigok < n ) then
        do i = neigok + 1 , n
           w(i) = huge(1._dp)
@@ -750,16 +767,16 @@ contains
 
     
 !*******************************************************************************
-! Back transformation                                                          *
+! Back transformation of eigenvectors                                          *
 !*******************************************************************************
-    if ( neigvec > 0 ) then
+    if ( neig > 0 ) then
        call timer('cdiag4',1)
        if ( Serial ) then
           call ztrsm('L',uplo,trans,'N', &
-               n, neigvec, dcmplx(1._dp, 0._dp), S, n, Z, n)
+               n, neig, dcmplx(1._dp, 0._dp), S, n, Z, n)
 #ifdef MPI
        else
-          call pztrsm('L',uplo,trans,'N',n,neigvec, &
+          call pztrsm('L',uplo,trans,'N',n,neig, &
                dcmplx(1._dp, 0._dp),Sp,1,1,desc,Zp,1,1,desc)
           if ( Use2D ) then
              call pzgemr2d(n,n,Zp,1,1,desc,Z,1,1,desc,iCTXT)
@@ -1008,7 +1025,7 @@ contains
     
   end subroutine diag_c
 
-  subroutine diag_r( H, S, n, nm, nml, w, Z, neigvec, iscf, ierror, BlockSize)
+  subroutine diag_r( H, S, n, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
 ! ***************************************************************************
 ! Subroutine to solve all eigenvalues and eigenvectors of the
 ! real general eigenvalue problem  H z = w S z,  with H and S
@@ -1023,7 +1040,7 @@ contains
 ! integer nm                       : Right hand dimension of H and S matrices
 ! integer nml                      : Left hand dimension of H and S matrices
 !                                    which is greater than or equal to nm
-! integer neigvec                  : No. of eigenvectors to calculate
+! integer neig                     : No. of eigenvalues(<0)/vectors(>0) to calculate
 ! integer iscf                     : SCF cycle
 ! integer BlockSize                : Effective parallel block size
 ! ************************** OUTPUT *****************************************
@@ -1082,7 +1099,7 @@ contains
     integer :: ierror
     integer :: iscf
     integer :: n
-    integer :: neigvec
+    integer :: neig
     integer :: nm
     integer :: nml
     integer :: BlockSize
@@ -1182,7 +1199,7 @@ contains
     vl = -huge(0._dp)
     vu = huge(0._dp)
     il = 1
-    iu = neigvec
+    iu = neig
 
 #ifdef MPI
     if ( .not. Serial) then
@@ -1223,7 +1240,7 @@ contains
 #endif
 
     algo = algorithm
-    call diag_correct_input(algo, jobz, range, uplo, trans, n, neigvec)
+    call diag_correct_input(algo, jobz, range, uplo, trans, iu, n)
     
 
     ! Initialize the variables for the different routines
@@ -1322,7 +1339,7 @@ contains
     call re_alloc(iwork, 1, liwork, name='iwork')
 
     ! Begin calculation
-    neigok = n ! default to all (will only be overwritten for expert drivers)
+    neigok = iu ! default to all (will only be overwritten for expert drivers)
 
 
 #ifdef MPI
@@ -1380,8 +1397,8 @@ contains
           call dsyevd(jobz,uplo,n,H,n,&
                w,work,lwork,iwork,liwork, &
                info)
-          if ( neigvec > 0 ) then
-             call dcopy(n*neigvec,H,1,Z,1)
+          if ( neig > 0 ) then
+             call dcopy(n*neig,H,1,Z,1)
           end if
           
 #ifdef SIESTA__MRRR
@@ -1404,8 +1421,8 @@ contains
           call dsyev(jobz,uplo,n,H,n,w, &
                work,lwork, &
                info)
-          if ( neigvec > 0 ) then
-             call dcopy(n*neigvec,H,1,Z,1)
+          if ( neig > 0 ) then
+             call dcopy(n*neig,H,1,Z,1)
           end if
           
 #ifdef SIESTA__DIAG_2STAGE
@@ -1413,8 +1430,8 @@ contains
           call dsyevd_2stage(jobz,uplo,n,H,n,&
                w,work,lwork,iwork,liwork, &
                info)
-          if ( neigvec > 0 ) then
-             call dcopy(n*neigvec,H,1,Z,1)
+          if ( neig > 0 ) then
+             call dcopy(n*neig,H,1,Z,1)
           end if
           
 # ifdef SIESTA__MRRR
@@ -1437,8 +1454,8 @@ contains
           call dsyev_2stage(jobz,uplo,n,H,n,w, &
                work,lwork, &
                info)
-          if ( neigvec > 0 ) then
-             call dcopy(n*neigvec,H,1,Z,1)
+          if ( neig > 0 ) then
+             call dcopy(n*neig,H,1,Z,1)
           end if
 #endif
 
@@ -1532,7 +1549,7 @@ contains
        else
           call die('rdiag: Failure to converge standard eigenproblem')
        end if
-       if ( neigok < neigvec ) then
+       if ( neigok < iu ) then
           call die('rdiag: Insufficient eigenvalues converged')
        end if
     end if
@@ -1547,16 +1564,16 @@ contains
 
     
 !*******************************************************************************
-! Back transformation                                                          *
+! Back transformation of eigenvectors                                          *
 !*******************************************************************************
-    if ( neigvec > 0 ) then
+    if ( neig > 0 ) then
        call timer('rdiag4',1)
        if ( Serial ) then
           call dtrsm('L',uplo,trans,'N', &
-               n, neigvec, 1._dp, S, n, Z, n)
+               n, neig, 1._dp, S, n, Z, n)
 #ifdef MPI
        else
-          call pdtrsm('L',uplo,trans,'N',n,neigvec, &
+          call pdtrsm('L',uplo,trans,'N',n,neig, &
                1._dp,Sp,1,1,desc,Zp,1,1,desc)
           if ( Use2D ) then
              call pdgemr2d(n,n,Zp,1,1,desc,Z,1,1,desc,iCTXT)
@@ -1770,7 +1787,7 @@ contains
 end module m_diag
 
 
-subroutine cdiag( H, S, n, nm, nml, w, Z, neigvec, iscf, ierror, BlockSize)
+subroutine cdiag( H, S, n, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
   use precision, only: dp
   use m_diag, only: diag_c
   integer :: nml, nm
@@ -1779,16 +1796,16 @@ subroutine cdiag( H, S, n, nm, nml, w, Z, neigvec, iscf, ierror, BlockSize)
   real(dp) :: w(nml)
   complex(dp), target :: Z(nml,nm)
   integer :: n
-  integer :: neigvec
+  integer :: neig
   integer :: iscf
   integer :: ierror
   integer :: BlockSize
   
-  call diag_c(H, S, N, nm, nml, w, Z, neigvec, iscf, ierror, BlockSize)
+  call diag_c(H, S, N, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
   
 end subroutine cdiag
 
-subroutine rdiag( H, S, n, nm, nml, w, Z, neigvec, iscf, ierror, BlockSize)
+subroutine rdiag( H, S, n, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
   use precision, only: dp
   use m_diag, only: diag_r
   integer :: nml, nm
@@ -1797,11 +1814,11 @@ subroutine rdiag( H, S, n, nm, nml, w, Z, neigvec, iscf, ierror, BlockSize)
   real(dp) :: w(nml)
   real(dp), target :: Z(nml,nm)
   integer :: n
-  integer :: neigvec
+  integer :: neig
   integer :: iscf
   integer :: ierror
   integer :: BlockSize
   
-  call diag_r(H, S, N, nm, nml, w, Z, neigvec, iscf, ierror, BlockSize)
+  call diag_r(H, S, N, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
   
 end subroutine rdiag

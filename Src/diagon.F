@@ -258,7 +258,7 @@ CC RC Changed for SO
      .              temp, e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
-     .              nuotot, occtol, iscf )
+     .              nuotot, occtol, iscf, neigwanted )
         else
 #endif
 #ifndef CDF
@@ -292,7 +292,7 @@ CC RC Changed for SO
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
-     .              nuotot, occtol, iscf )
+     .              nuotot, occtol, iscf, neigwanted )
 
            endif
            call output_kpoint_occupation()
@@ -322,7 +322,7 @@ CC RC Changed for SO
      .               H, S, getD, qtot, temp, e1, e2, xij,
      .               indxuo, nk, kpoint, wk, eo, qo, Dnew,
      .               Enew, ef, Entropy, psi, 
-     .               nuotot, occtol, iscf )
+     .               nuotot, occtol, iscf, neigwanted )
        endif
       elseif (SpOrb) then
         if (gamma) then
@@ -337,7 +337,7 @@ CC RC Changed for SO
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .                 indxuo, nk, kpoint, wk, eo, qo, Dnew,
      .                 Enew, ef, Entropy, psi,
-     .                 nuotot, occtol, iscf )
+     .                 nuotot, occtol, iscf, neigwanted )
         endif
       endif      
 

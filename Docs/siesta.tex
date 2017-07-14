@@ -5771,17 +5771,21 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 \subsubsection{Diagonalization options}
 
 \begin{fdfentry}{NumberOfEigenStates}[integer]<\nonvalue{all orbitals}>
-
+  \fdfdepend{Diag!Algorithm}
+  
   This parameter allows the user to reduce the number of eigenstates
   that are calculated from the maximum possible. The benefit is that,
-  for a gamma point calculation, the cost of the diagonalisation is
+  for any calculation, the cost of the diagonalization is
   reduced by finding fewer eigenvectors. For example, during a
   geometry optimisation, only the occupied states are required rather
   than the full set of virtual orbitals. Note, that if the electronic
   temperature is greater than zero then the number of partially
   occupied states increases, depending on the band gap.  The value
-  specified must greater than the number of occupied states and less
+  specified must be greater than the number of occupied states and less
   than the number of basis functions.
+
+  \note this only affects the following \fdf*{MRRR} and \fdf*{Expert}
+  diagonalization routines.
   
 \end{fdfentry}
 
@@ -5979,11 +5983,11 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 \begin{fdfentry}{Diag!Memory}[real]<$1$>
   
-  Whether the parallel diagonalisation of a matrix is successful or
+  Whether the parallel diagonalization of a matrix is successful or
   not can depend on how much workspace is available to the routine
   when there are clusters of eigenvalues. \fdf{Diag!Memory} allows
   the user to increase the memory available, when necessary, to
-  achieve successful diagonalisation and is a scale factor relative to
+  achieve successful diagonalization and is a scale factor relative to
   the minimum amount of memory that ScaLAPACK might need.
 
   \note this has been disabled since 4.1.
@@ -6018,16 +6022,16 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   may add this pre-processor flag \texttt{-DSIESTA\_\_MRRR}.
   \index{compile!pre-processor!-DSIESTA\_\_MRRR}
 
-  \note use \fdf{Diag!Algorithm} instead
+  \note use \fdf{Diag!Algorithm} instead.
   
 \end{fdflogicalF}
 
 \begin{fdflogicalT}{Diag!DivideAndConquer}
 
   Logical to select whether the normal or Divide and Conquer
-  algorithms are used within the Lapack diagonalisation routines.
+  algorithms are used within the Lapack diagonalization routines.
 
-  \note use \fdf{Diag!Algorithm} instead
+  \note use \fdf{Diag!Algorithm} instead.
 
 \end{fdflogicalT}
 
@@ -6037,7 +6041,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   lapack/ scalapack routines are used. Usually the expert routines are
   faster, but may require slightly more memory.
 
-  \note use \fdf{Diag!Algorithm} instead
+  \note use \fdf{Diag!Algorithm} instead.
 
 \end{fdflogicalF}
 
