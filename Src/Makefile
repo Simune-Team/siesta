@@ -115,7 +115,7 @@ OBJS =  automatic_cell.o atom_options.o \
         siesta_analysis.o siesta_end.o siesta_forces.o \
         io.o sparse_matrices.o \
         coor.o atm_transfer.o \
-        broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
+        broadcast_basis.o eggbox.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
         initparallel.o show_distribution.o setspatial.o setatomnodes.o uncell.o \
         cart2frac.o obc.o \
