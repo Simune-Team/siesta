@@ -49,9 +49,14 @@
 !      
 module m_diag
 
+#ifndef MPI
+! Make sure ELPA is only used for MPI
+# undef SIESTA__ELPA
+#endif
+
   use precision
   use parallel, only : Node, Nodes, IONode
-
+  
   implicit none
 
   private
@@ -61,7 +66,7 @@ module m_diag
   ! The BLACS context
   integer :: iCTXT = -1
   integer :: iCTXT2D = -1
-
+  
 #ifdef _DIAG_WORK
   logical :: diag_work_r(2) = .true.
   logical :: diag_work_c(2) = .true.
@@ -79,10 +84,14 @@ contains
   subroutine diag_init()
 
     use m_diag_option, only: Serial, ParallelOverK
+    use m_diag_option, only: algorithm, ELPA_1stage, ELPA_2stage
 
 #ifdef MPI
     use m_diag_option, only: Use2D, ProcessorY
     use mpi_siesta, only: MPI_Comm_World
+# ifdef SIESTA__ELPA
+    use elpa, only: elpa_initialized, elpa_init, ELPA_OK
+# endif
 #endif
 
 #ifdef MPI
@@ -98,7 +107,7 @@ contains
 
     if ( Serial ) return
     if ( ParallelOverK ) return
-
+    
 #ifdef MPI
     
     ! Create a new context
@@ -111,16 +120,40 @@ contains
 
        ! Setup secondary grid for the 2D distribution
        nr = ProcessorY
-       nc = Nodes/ProcessorY
+       nc = max(1, Nodes/ProcessorY)
        call blacs_get(iCTXT, 10, iCTXT2D)
        call blacs_gridinit(iCTXT2D, 'R', nr, nc)
 
     end if
 #endif
 
+#ifdef SIESTA__ELPA
+    if ( algorithm == ELPA_1stage .or. &
+         algorithm == ELPA_2stage ) then
+
+       ! Check whether ELPA is initialized
+       if ( elpa_initialized() /= ELPA_OK ) then
+          if ( elpa_init(20170403) /= ELPA_OK ) then
+             call die('diag: ELPA initialization could not use API 20170403')
+          end if
+       end if
+
+    end if
+#endif
+    
   end subroutine diag_init
 
   subroutine diag_exit()
+#ifdef SIESTA__ELPA
+    use elpa, only: elpa_initialized, elpa_uninit, ELPA_OK
+#endif
+
+#ifdef SIESTA__ELPA
+    ! Check whether ELPA is initialized, uninitialize it if it is.
+    if ( elpa_initialized() == ELPA_OK ) then
+       call elpa_uninit()
+    end if
+#endif
 
 #ifdef MPI
     if ( iCTXT >= 0 ) then
@@ -291,6 +324,10 @@ contains
     
     use alloc
     use sys, only : die
+#ifdef SIESTA__ELPA
+    use mpi_siesta, only: MPI_Comm_World
+    use elpa
+#endif
 
     ! Passed variables
     integer :: ierror
@@ -329,6 +366,10 @@ contains
     complex(dp), pointer :: Hp(:,:) => null()
     complex(dp), pointer :: Sp(:,:) => null()
     complex(dp), pointer :: Zp(:,:) => null()
+
+# ifdef SIESTA__ELPA
+    class(elpa_t), pointer :: ELPAt => null()
+# endif
 
 #endif
 
@@ -399,6 +440,11 @@ contains
     il = 1
     iu = neig
 
+    
+    algo = algorithm
+    call diag_correct_input(algo, jobz, range, uplo, trans, iu, n)
+
+    
 #ifdef MPI
     if ( .not. Serial) then
 
@@ -433,14 +479,56 @@ contains
           desc => desch(:)
           
        end if
+       
+# ifdef SIESTA__ELPA
+       ! Initialize the elpa type
+       if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
 
+          if ( .not. Use2D ) call die('Error in coding, diag')
+          
+          ! ELPA setup
+          ELPAt => elpa_allocate()
+          call ELPAt%set('mpi_comm_parent', MPI_Comm_World, info)
+          call elpa_check(info, 'mpi_comm_parent')
+          
+          call ELPAt%set('process_row', my2d(1), info)
+          call elpa_check(info, 'process_row')
+          call ELPAt%set('process_col', my2d(2), info)
+          call elpa_check(info, 'process_col')
+                    
+          if ( algorithm == ELPA_1stage ) then
+             call ELPAt%set('solver', ELPA_SOLVER_1STAGE, info)
+          else if ( algorithm == ELPA_2stage ) then
+             call ELPAt%set('solver', ELPA_SOLVER_2STAGE, info)
+          end if
+          call elpa_check(info, 'solver')
+          
+          call ELPAt%set('na', n, info)
+          call elpa_check(info, 'na')
+          call ELPAt%set('local_nrows', mat_2d(1), info)
+          call elpa_check(info, 'local_nrows')
+          call ELPAt%set('local_ncols', mat_2d(2), info)
+          call elpa_check(info, 'local_ncols')
+          call ELPAt%set('nblk', BlockSize, info)
+          call elpa_check(info, 'nblk')
+          ! Set the number of calculated eigenvalues/vectors
+          call ELPAt%set('nev', iu, info)
+          call elpa_check(info, 'nev')
+
+          ! Now ELPA should be ready to be setup
+          info = ELPAt%setup()
+          call elpa_check(info, 'setup')
+
+          ! There is no need to check the info parameter
+          ! because ELPA will fail if one sets a value that
+          ! has already been set.
+          info = 0
+
+       end if
+# endif
+       
     end if
 #endif
-
-
-    algo = algorithm
-    call diag_correct_input(algo, jobz, range, uplo, trans, iu, n)
-    
 
     ! Initialize the variables for the different routines
     if ( Serial ) then
@@ -477,7 +565,9 @@ contains
              call re_alloc(Zp, 1, mat_2d(1), 1, mat_2d(2), name='Z2D')
 
           else
-             
+
+             ! This order means that nothing gets overwritten
+             ! when we distribute to the 2D distribution.
              Hp => S
              Sp => Z
              Zp => H
@@ -561,7 +651,19 @@ contains
        call zpotrf(uplo,n,S,n,info)
 #ifdef MPI
     else
+# ifdef SIESTA__ELPA
+       if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
+          ! Cholesky on the full matrix (in ScaLAPACK only half of
+          ! the matrix is needed, not here!)
+          call ELPAt%cholesky(Sp, info)
+          call elpa_check(info, 'cdiag: Cholesky factorisation')
+          info = 0
+       else
+          call pzpotrf(uplo,n,Sp,1,1,desc,info)
+       end if
+# else
        call pzpotrf(uplo,n,Sp,1,1,desc,info)
+# endif
 #endif
     end if
     if ( info /= 0 ) then
@@ -578,8 +680,43 @@ contains
        call zhegst(1,uplo,n,H,n,S,n,info)
 #ifdef MPI
     else
+# ifdef SIESTA__ELPA
+       if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
+
+          ! Define the scale to be 1.
+          scale = 1._dp
+
+          ! The following routine requires the use of the upper
+          ! routines, due to the hermitian multiply function
+          ! of ELPA.
+
+          ! Cholesky on the full matrix (in ScaLAPACK only half of
+          ! the matrix is needed, not here!)
+          call ELPAt%invert_triangular(Sp, info)
+          call elpa_check(info, 'cdiag: Triangular inversion')
+          
+          ! Left hand of the inverse
+          ! We do require the full matrix calculated
+          ! due to the ELPA solver.
+          call ELPAt%hermitian_multiply('U','F',n, &
+               Sp,Hp,mat_2d(1),mat_2d(2), &
+               Zp,mat_2d(1),mat_2d(2),info)
+          call elpa_check(info, 'cdiag: Hermitian multiply Left')
+
+          ! Right hand of the inverse.
+          ! Note the ELPA Hermitian multiply always takes the Hermitian
+          ! conjugate of the left operator, hence we cannot use it
+          call pztrmm('R','U','N','N',n,n,dcmplx(1._dp,0._dp), &
+               Sp,1,1,desc,Zp,1,1,desc)
+          info = 0
+       else
+          call pzhengst(1,uplo,n,Hp,1,1,desc,Sp,1,1, &
+               desc,scale,work,lwork,info)
+       end if
+# else
        call pzhengst(1,uplo,n,Hp,1,1,desc,Sp,1,1, &
             desc,scale,work,lwork,info)
+# endif
 #endif
     end if
     if ( info /= 0 ) then
@@ -682,6 +819,19 @@ contains
                info)
 #endif
 
+#ifdef SIESTA__ELPA
+       case ( ELPA_1stage, ELPA_2stage )
+
+          ! Calculate the eigenvector or eigenvalues
+          if ( neig > 0 ) then
+             call ELPAt%eigenvectors(Zp, w, Hp, info)
+          else
+             call ELPAt%eigenvalues(Zp, w, info)
+          end if
+          call elpa_check(info, 'cdiag: Solver')
+          info = 0
+#endif
+
        case ( Expert ) 
           call pzheevx(jobz,range,uplo,n,Hp,1,1,desc,vl,vu,il,iu, &
                abstol,neigok,nz,w,orfac,Zp,1,1,desc, &
@@ -773,15 +923,31 @@ contains
     if ( neig > 0 ) then
        call timer('cdiag4',1)
        if ( Serial ) then
-          call ztrsm('L',uplo,trans,'N', &
-               n, neig, dcmplx(1._dp, 0._dp), S, n, Z, n)
+          call ztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp),S,n,Z,n)
 #ifdef MPI
        else
-          call pztrsm('L',uplo,trans,'N',n,neig, &
-               dcmplx(1._dp, 0._dp),Sp,1,1,desc,Zp,1,1,desc)
-          if ( Use2D ) then
-             call pzgemr2d(n,n,Zp,1,1,desc,Z,1,1,desc,iCTXT)
+# ifdef SIESTA__ELPA
+          if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
+             ! Back-transform the eigenvectors
+             ! Note the ELPA Hermitian multiply always takes the Hermitian
+             ! conjugate of the left operator
+             call pztrmm('L','U','N','N',n,neig,dcmplx(1._dp,0._dp), &
+                  Sp,1,1,desc,Hp,1,1,desc)
+             call pzgemr2d(n,neig,Hp,1,1,desc,Z,1,1,desc,iCTXT)
+          else
+             call pztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp), &
+                  Sp,1,1,desc,Zp,1,1,desc)
+             if ( Use2D ) then
+                call pzgemr2d(n,neig,Zp,1,1,desc,Z,1,1,desc,iCTXT)
+             end if
           end if
+# else
+          call pztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp), &
+               Sp,1,1,desc,Zp,1,1,desc)
+          if ( Use2D ) then
+             call pzgemr2d(n,neig,Zp,1,1,desc,Z,1,1,desc,iCTXT)
+          end if
+# endif
 #endif
        end if
        call timer('cdiag4',2)
@@ -828,6 +994,13 @@ contains
             call de_alloc(Sp, name='S2D')
             call de_alloc(Zp, name='Z2D')
          end if
+
+# ifdef SIESTA__ELPA
+         if ( associated(ELPAt) ) then
+            call elpa_deallocate(ELPAt)
+            nullify(ELPAt)
+         end if
+# endif
 #endif
       end if
 
@@ -950,6 +1123,7 @@ contains
               work, lwork, &
               info)
          l_lwork = work(1)
+         work(1) = 1
          lwork = -1
 
          select case ( algo )
@@ -968,8 +1142,14 @@ contains
                  work, lwork, rwork, lrwork, iwork, liwork, &
                  info)
 # endif
+
+# ifdef SIESTA__ELPA
+         case ( ELPA_1stage, ELPA_2stage )
+            ! skip the l_lwork for pzhengst routine.
+            l_lwork = 1
+# endif
             
-         case ( Expert ) 
+         case ( Expert )
             call pzheevx(jobz, range, uplo, n, Hp, 1, 1, desc, &
                  vl, vu, il, iu, abstol, neigok, nz, w, &
                  orfac, &
@@ -1096,6 +1276,11 @@ contains
     use alloc
     use sys, only : die
 
+#ifdef SIESTA__ELPA
+    use mpi_siesta, only: MPI_Comm_World
+    use elpa
+#endif
+
     ! Passed variables
     integer :: ierror
     integer :: iscf
@@ -1133,6 +1318,10 @@ contains
     real(dp), pointer :: Hp(:,:) => null()
     real(dp), pointer :: Sp(:,:) => null()
     real(dp), pointer :: Zp(:,:) => null()
+
+# ifdef SIESTA__ELPA
+    class(elpa_t), pointer :: ELPAt => null()
+# endif
 
 #endif
     ! Arguments to routines
@@ -1200,7 +1389,12 @@ contains
     vu = huge(0._dp)
     il = 1
     iu = neig
+    
+    
+    algo = algorithm
+    call diag_correct_input(algo, jobz, range, uplo, trans, iu, n)
 
+    
 #ifdef MPI
     if ( .not. Serial) then
 
@@ -1236,11 +1430,55 @@ contains
           
        end if
 
+# ifdef SIESTA__ELPA
+       ! Initialize the elpa type
+       if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
+          
+          if ( .not. Use2D ) call die('Error in coding, diag')
+          
+          ! ELPA setup
+          ELPAt => elpa_allocate()
+          call ELPAt%set('mpi_comm_parent', MPI_Comm_World, info)
+          call elpa_check(info, 'mpi_comm_parent')
+          
+          call ELPAt%set('process_row', my2d(1), info)
+          call elpa_check(info, 'process_row')
+          call ELPAt%set('process_col', my2d(2), info)
+          call elpa_check(info, 'process_col')
+                    
+          if ( algorithm == ELPA_1stage ) then
+             call ELPAt%set('solver', ELPA_SOLVER_1STAGE, info)
+          else if ( algorithm == ELPA_2stage ) then
+             call ELPAt%set('solver', ELPA_SOLVER_2STAGE, info)
+          end if
+          call elpa_check(info, 'solver')
+          
+          call ELPAt%set('na', n, info)
+          call elpa_check(info, 'na')
+          call ELPAt%set('local_nrows', mat_2d(1), info)
+          call elpa_check(info, 'local_nrows')
+          call ELPAt%set('local_ncols', mat_2d(2), info)
+          call elpa_check(info, 'local_ncols')
+          call ELPAt%set('nblk', BlockSize, info)
+          call elpa_check(info, 'nblk')
+          ! Set the number of calculated eigenvalues/vectors
+          call ELPAt%set('nev', iu, info)
+          call elpa_check(info, 'nev')
+
+          ! Now ELPA should be ready to be setup
+          info = ELPAt%setup()
+          call elpa_check(info, 'setup')
+
+          ! There is no need to check the info parameter
+          ! because ELPA will fail if one sets a value that
+          ! has already been set.
+          info = 0
+
+       end if
+# endif
+
     end if
 #endif
-
-    algo = algorithm
-    call diag_correct_input(algo, jobz, range, uplo, trans, iu, n)
 
     
     ! Initialize the variables for the different routines
@@ -1359,7 +1597,19 @@ contains
        call dpotrf(uplo,n,S,n,info)
 #ifdef MPI
     else
+# ifdef SIESTA__ELPA
+       if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
+          ! Cholesky on the full matrix (in ScaLAPACK only half of
+          ! the matrix is needed, not here!)
+          call ELPAt%cholesky(Sp, info)
+          call elpa_check(info, 'rdiag: Cholesky factorisation')
+          info = 0
+       else
+          call pdpotrf(uplo,n,Sp,1,1,desc,info)
+       end if
+# else
        call pdpotrf(uplo,n,Sp,1,1,desc,info)
+# endif
 #endif
     end if
     if ( info /= 0 ) then
@@ -1376,8 +1626,43 @@ contains
        call dsygst(1,uplo,n,H,n,S,n,info)
 #ifdef MPI
     else
+# ifdef SIESTA__ELPA
+       if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
+
+          ! Define the scale to be 1.
+          scale = 1._dp
+
+          ! The following routine requires the use of the upper
+          ! routines, due to the hermitian multiply function
+          ! of ELPA.
+
+          ! Cholesky on the full matrix (in ScaLAPACK only half of
+          ! the matrix is needed, not here!)
+          call ELPAt%invert_triangular(Sp, info)
+          call elpa_check(info, 'rdiag: Triangular inversion')
+          
+          ! Left hand of the inverse
+          ! We do require the full matrix calculated
+          ! due to the ELPA solver.
+          call ELPAt%hermitian_multiply('U','F',n, &
+               Sp,Hp,mat_2d(1),mat_2d(2), &
+               Zp,mat_2d(1),mat_2d(2),info)
+          call elpa_check(info, 'rdiag: Hermitian multiply Left')
+
+          ! Right hand of the inverse.
+          ! Note the ELPA Hermitian multiply always takes the Hermitian
+          ! conjugate of the left operator, hence we cannot use it
+          call pdtrmm('R','U','N','N',n,n,1._dp, &
+               Sp,1,1,desc,Zp,1,1,desc)
+          info = 0
+       else
+          call pdsyngst(1,uplo,n,Hp,1,1,desc,Sp,1,1, &
+               desc,scale,work,lwork,info)
+       end if
+# else
        call pdsyngst(1,uplo,n,Hp,1,1,desc,Sp,1,1, &
             desc,scale,work,lwork,info)
+# endif
 #endif
     end if
     if ( info /= 0 ) then
@@ -1480,6 +1765,19 @@ contains
                info)
 #endif
 
+#ifdef SIESTA__ELPA
+       case ( ELPA_1stage, ELPA_2stage )
+
+          ! Calculate the eigenvector or eigenvalues
+          if ( neig > 0 ) then
+             call ELPAt%eigenvectors(Zp, w, Hp, info)
+          else
+             call ELPAt%eigenvalues(Zp, w, info)
+          end if
+          call elpa_check(info, 'rdiag: Solver')
+          info = 0
+#endif
+
        case ( Expert ) 
           call pdsyevx(jobz,range,uplo,n,Hp,1,1,desc,vl,vu,il,iu, &
                abstol,neigok,nz,w,orfac,Zp,1,1,desc, &
@@ -1569,15 +1867,31 @@ contains
     if ( neig > 0 ) then
        call timer('rdiag4',1)
        if ( Serial ) then
-          call dtrsm('L',uplo,trans,'N', &
-               n, neig, 1._dp, S, n, Z, n)
+          call dtrsm('L',uplo,trans,'N',n,neig,1._dp,S,n,Z,n)
 #ifdef MPI
        else
-          call pdtrsm('L',uplo,trans,'N',n,neig, &
-               1._dp,Sp,1,1,desc,Zp,1,1,desc)
-          if ( Use2D ) then
-             call pdgemr2d(n,n,Zp,1,1,desc,Z,1,1,desc,iCTXT)
+# ifdef SIESTA__ELPA
+          if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
+             ! Back-transform the eigenvectors
+             ! Note the ELPA Hermitian multiply always takes the Hermitian
+             ! conjugate of the left operator
+             call pdtrmm('L','U','N','N',n,neig,1._dp, &
+                  Sp,1,1,desc,Hp,1,1,desc)
+             call pdgemr2d(n,neig,Hp,1,1,desc,Z,1,1,desc,iCTXT)
+          else
+             call pdtrsm('L',uplo,trans,'N',n,neig,1._dp, &
+                  Sp,1,1,desc,Zp,1,1,desc)
+             if ( Use2D ) then
+                call pdgemr2d(n,neig,Zp,1,1,desc,Z,1,1,desc,iCTXT)
+             end if
           end if
+# else
+          call pdtrsm('L',uplo,trans,'N',n,neig,1._dp, &
+               Sp,1,1,desc,Zp,1,1,desc)
+          if ( Use2D ) then
+             call pdgemr2d(n,neig,Zp,1,1,desc,Z,1,1,desc,iCTXT)
+          end if
+# endif
 #endif
        end if
        call timer('rdiag4',2)
@@ -1624,6 +1938,13 @@ contains
             call de_alloc(Sp, name='S2D')
             call de_alloc(Zp, name='Z2D')
          end if
+
+# ifdef SIESTA__ELPA
+         if ( associated(ELPAt) ) then
+            call elpa_deallocate(ELPAt)
+            nullify(ELPAt)
+         end if
+# endif
 #endif
       end if
 
@@ -1726,8 +2047,8 @@ contains
 #ifdef MPI
       else
 
-         ! They all require pzhengst
-         ! Well pzheevx exists in the generalized form, but
+         ! They all require pdsyngst
+         ! Well pdsyngst exists in the generalized form, but
          ! we currently do not use it
          call pdsyngst(1, uplo, &
               n, Hp, 1, 1, desc, Sp, 1, 1, desc, &
@@ -1735,6 +2056,7 @@ contains
               work, lwork, &
               info)
          l_lwork = work(1)
+         work(1) = 1
          lwork = -1
 
          select case ( algo )
@@ -1752,6 +2074,11 @@ contains
                  Zp, 1, 1, desc, &
                  work, lwork, iwork, liwork, &
                  info)
+# endif
+
+# ifdef SIESTA__ELPA
+         case ( ELPA_1stage, ELPA_2stage )
+            l_lwork = 1
 # endif
             
          case ( Expert ) 
@@ -1783,6 +2110,22 @@ contains
     end subroutine work_query
     
   end subroutine diag_r
+
+
+#ifdef SIESTA__ELPA
+  subroutine elpa_check(err, name)
+    use elpa, only: elpa_strerr, ELPA_OK
+    integer, intent(in) :: err
+    character(len=*), intent(in) :: name
+    
+    if ( err == ELPA_OK ) return
+    
+    write(*,'(a)') 'diag: ELPA error on ' //trim(name)
+    write(*,'(a)') elpa_strerr(err)
+    call die('diag: ELPA error, see output')
+    
+  end subroutine elpa_check
+#endif
   
 end module m_diag
 

@@ -830,6 +830,24 @@ libraries
 \end{shellexample}
   \index{compile!pre-processor!-DSIESTA\_\_METIS}
 
+  
+\ifdeveloper
+  \item[\href{http://elpa.mpcdf.mpg.de}{ELPA}]%
+  \index{ELPA}%
+  \index{External library!ELPA}%
+  The ELPA library provides faster diagonalization routines.
+
+  The required version of ELPA \emph{must} be later than 2017.05.
+  Add these flags to your \file{arch.make} file to enable ELPA
+\begin{shellexample}
+  LIBS += -L/opt/elpa/lib -lelpa <>
+  FPPFLAGS += -DSIESTA__ELPA
+\end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_ELPA}
+  where \shell{<>} are any libraries that ELPA depend on.
+
+  \note that ELPA can only be used in the parallel version of \siesta.
+\fi
 
   \item[\href{http://mumps.enseeiht.fr}{MUMPS}]%
   \index{MUMPS}%
@@ -5884,17 +5902,20 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   \begin{fdfoptions}
 
     \option[divide-and-Conquer]%
+    \fdfindex{Diag!Algorithm!Divide-and-Conquer}
     
     Use the divide-and-conquer algorithm.
 
     
     \option[divide-and-Conquer-2stage]%
+    \fdfindex{Diag!Algorithm!Divide-and-Conquer-2stage}
     
     Use the divide-and-conquer 2stage algorithm (fall-back to the
     divide-and-conquer if not available).
 
     
     \option[MRRR]%
+    \fdfindex{Diag!Algorithm!MRRR}%
     \fdfdepend{NumberOfEigenStates}
     
     Use the multiple relatively robust algorithm.
@@ -5906,12 +5927,14 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 
     \option[MRRR-2stage]%
+    \fdfindex{Diag!Algorithm!MRRR-2stage}%
     \fdfdepend{NumberOfEigenStates}
     
     Use the 2-stage multiple relatively robust algorithm.
 
 
     \option[expert]%
+    \fdfindex{Diag!Algorithm!Expert}%
     \fdfdepend{NumberOfEigenStates}
     
     Use the expert algorithm which allows calculating a subset of the
@@ -5919,6 +5942,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 
     \option[expert-2stage]%
+    \fdfindex{Diag!Algorithm!Expert-2stage}%
     \fdfdepend{NumberOfEigenStates}
 
     Use the 2-stage expert algorithm which allows calculating a subset
@@ -5926,13 +5950,28 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
     
     \option[noexpert]%
-    
+    \fdfindex{Diag!Algorithm!NoExpert}%
+
     Use the regular algorithm.
 
     \option[noexpert-2stage]%
-    
+    \fdfindex{Diag!Algorithm!NoExpert-2stage}%
+
     Use the 2-stage regular algorithm.
+
+\ifdeveloper
+    \option[ELPA]%
+    \fdfindex{Diag!Algorithm!ELPA}%
+    \fdfdepend{NumberOfEigenStates}
     
+    Use the ELPA 1-stage solver.
+
+    \option[ELPA-2stage]%
+    \fdfindex{Diag!Algorithm!ELPA-2stage}%
+    \fdfdepend{NumberOfEigenStates}
+    
+    Use the ELPA 2-stage solver.
+\fi
   \end{fdfoptions}
 
   \note that all the 2-stage solvers are (as of July 2017) only

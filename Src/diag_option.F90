@@ -5,6 +5,10 @@
 !  or http://www.gnu.org/copyleft/gpl.txt .
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
+#ifndef MPI
+! Make sure ELPA is only used for MPI
+# undef SIESTA__ELPA
+#endif
 module m_diag_option
 
   use precision, only: dp
@@ -46,10 +50,14 @@ module m_diag_option
   integer, parameter :: Expert = 5
   !> Use the 2-stage expert driver (only LAPACK ;\)
   integer, parameter :: Expert_2stage = 6
-  !> Use the 2-stage regular driver (only LAPACK)
+  !> Use the regular driver
   integer, parameter :: NoExpert = 7
   !> Use the 2-stage regular driver (only LAPACK)
   integer, parameter :: NoExpert_2stage = 8
+  !> Use the ELPA driver
+  integer, parameter :: ELPA_1stage = 9
+  !> Use the 2-stage ELPA driver
+  integer, parameter :: ELPA_2stage = 10
 
   integer :: algorithm = DivideConquer
 
@@ -101,6 +109,7 @@ contains
     
     Use2D = fdf_get('Diag.Use2D',.true.)
     ProcessorY = fdf_get('Diag.ProcessorY', max(1, Nodes / 4))
+    ProcessorY = max(1, ProcessorY)
 
     algo = fdf_get('Diag.UpperLower', 'lower')
     if ( leqi(algo, 'lower') .or. leqi(algo, 'l') ) then
@@ -126,6 +135,11 @@ contains
        algorithm = MRRR
     end if
 #endif
+#ifdef SIESTA__ELPA
+    if ( fdf_get('Diag.ELPA',.false.) ) then
+       algorithm = ELPA_1stage
+    end if
+#endif
     if ( fdf_get('Diag.NoExpert',.false.) ) then
        algorithm = NoExpert
     end if
@@ -135,6 +149,10 @@ contains
 #ifdef SIESTA__MRRR
     else if ( algorithm == MRRR ) then
        algo = fdf_get('Diag.Algorithm', 'MRRR')
+#endif
+#ifdef SIESTA__ELPA
+    else if ( algorithm == ELPA_1stage ) then
+       algo = fdf_get('Diag.Algorithm', 'ELPA')
 #endif
     else if ( algorithm == Expert ) then
        algo = fdf_get('Diag.Algorithm', 'expert')
@@ -161,6 +179,24 @@ contains
        algorithm = DivideConquer
 #endif
 
+#ifdef SIESTA__ELPA
+    else if ( leqi(algo, 'elpa') .or. leqi(algo, 'elpa-1stage') ) then
+       algorithm = ELPA_1stage
+       
+       ! ELPA requires 2D and non-serial
+       Serial = .false.
+       ParallelOverK = .false.
+       Use2D = .true.
+
+    else if ( leqi(algo, 'elpa-2stage') .or. leqi(algo, 'elpa-2') ) then
+       algorithm = ELPA_2stage
+
+       ! ELPA requires 2D distribution and non-serial
+       Serial = .false.
+       ParallelOverK = .false.
+       Use2D = .true.
+#endif
+       
 #ifdef SIESTA__MRRR
     else if ( leqi(algo, 'MRRR') .or. leqi(algo, 'RRR') .or. &
          leqi(algo, 'vr') ) then
@@ -245,6 +281,10 @@ contains
        write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'MRRR'
     case ( MRRR_2stage )
        write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'MRRR-2stage'
+    case ( ELPA_1stage )
+       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'ELPA'
+    case ( ELPA_2stage )
+       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'ELPA-2stage'
     case ( Expert )
        write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'expert'
     case ( Expert_2stage )
