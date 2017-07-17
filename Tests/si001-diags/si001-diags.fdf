@@ -1,5 +1,7 @@
 SystemLabel si001
 
+Diag.ProcessorY 2
+
 NumberOfAtoms		10
 NumberOfSpecies	2
 %block ChemicalSpeciesLabel

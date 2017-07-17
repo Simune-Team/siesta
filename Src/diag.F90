@@ -174,44 +174,43 @@ contains
     use m_diag_option
     
     integer, intent(inout) :: algo
-    character, intent(inout) :: jobz, range, uplo, trans
+    character, intent(out) :: jobz, range, uplo, trans
     integer, intent(inout) :: neig
     integer, intent(in) :: n
 
-    ! Use lower part
-    uplo = UpperLower
+    ! Set general LAPACK/ScaLAPACK parameters
+    if ( neig > 0 ) then
+       ! both eigenvalues and eigenvectors
+       jobz = 'V'
+       
+    else if ( neig < 0 ) then
+       jobz = 'N'
+       ! only a subset of eigenvalues
+       neig = -neig
+       
+    else if ( neig == 0 ) then
+       jobz = 'N'
+       ! correct to all eigenvalues
+       neig = n
+       
+    end if
 
+    ! Set range to 'A' for all values
+    if ( neig == n ) then
+       range = 'A'
+    else
+       range = 'I'
+    end if
+
+    ! Use user option
+    uplo = UpperLower
     if ( uplo == 'U' ) then
        trans = 'N'
     else
        trans = 'C'
     end if
 
-    ! Set general Lapack/Scalapack parameters
-    if ( neig > 0 ) then
-       jobz = 'V'
-       if ( neig == n ) then
-          range = 'A'
-       else
-          range = 'I'
-       end if
-       
-    else if ( neig < 0 ) then
-       ! Query a subset of the eigenvalues
-       jobz = 'N'
-       neig = -neig
-       if ( neig == n ) then
-          range = 'A'
-       else
-          range = 'I'
-       end if
-       
-    else ! neig == 0
-       neig = n
-       range = 'A'
-       
-    end if
-
+    
     ! Correct for special routines
     if ( Serial ) then
 
@@ -231,7 +230,7 @@ contains
 #ifdef MPI
     else
 
-       ! This is only in the case where it starts serial
+       ! These checks will only happen where it starts serial
        ! but then goes to parallel
        select case ( algo )
        case ( DivideConquer_2stage )
@@ -248,7 +247,9 @@ contains
           ! regardless of neig
           jobz = 'V'
           range = 'A'
+          neig = n
        end if
+       
 #endif
     end if
 
@@ -355,12 +356,12 @@ contains
     integer,  pointer :: iclustr(:) => null()
     real(dp), pointer :: gap(:) => null()
 
-    ! 1D proc grid
-    integer, target :: desch(9)
+    ! BLACS descriptors
+    integer, target :: desc_1d(9), desc_2d(9)
+    integer, pointer :: desc(:)
 
-    ! Additional variables for a 2D proc grid
+    ! Additional variables for a 2D parallel grid
     integer :: np2d(2), my2d(2), mat_2d(2)
-    integer, target :: desc_h2d(9)
 
     ! Pointers of H, S and Z
     complex(dp), pointer :: Hp(:,:) => null()
@@ -394,8 +395,6 @@ contains
     complex(dp), pointer :: work(:) => null()
     real(dp), pointer :: rwork(:) => null()
     integer, pointer :: iwork(:) => null()
-
-    integer, pointer :: desc(:)
 
     ! Local variables for loops etc.
     integer :: i, nprc, mclustr
@@ -434,13 +433,16 @@ contains
          copy=.false., shrink=.true., &
          imin=1, routine='cdiag' )
 
-    ! vl/il and vu/iu are not currently used, but they must be initialized
+    ! vl/il and vu/iu are not currently used, set them to not
+    ! confuse a new programmer
     vl = -huge(0._dp)
     vu = huge(0._dp)
     il = 1
     iu = neig
 
     
+    ! Correct the input according to the diagonalization
+    ! routines and queries
     algo = algorithm
     call diag_correct_input(algo, jobz, range, uplo, trans, iu, n)
 
@@ -448,8 +450,8 @@ contains
 #ifdef MPI
     if ( .not. Serial) then
 
-       ! Set up blacs descriptors for parallel case
-       call descinit( desch, n, n, BlockSize, BlockSize, 0, 0, &
+       ! Set up blacs descriptors for 1D case
+       call descinit( desc_1d, n, n, BlockSize, BlockSize, 0, 0, &
             iCTXT, n, info)
        if ( info /= 0 ) then
           call die('cdiag: Blacs setup has failed!')
@@ -466,17 +468,17 @@ contains
           mat_2d(2) = numroc(n, BlockSize, my2d(2), 0, np2d(2))
 
           ! Set up blacs descriptors for 2D case
-          call descinit(desc_h2d, n, n, Blocksize, BlockSize, 0, 0, &
+          call descinit(desc_2d, n, n, Blocksize, BlockSize, 0, 0, &
                iCTXT2D, mat_2d(1), info)
           if ( info /= 0 ) then
              call die('cdiag: Blacs setup has failed!')
           end if
 
-          desc => desc_h2d(:)
+          desc => desc_2d(:)
 
        else
           
-          desc => desch(:)
+          desc => desc_1d(:)
           
        end if
        
@@ -638,8 +640,8 @@ contains
     if ( Use2D .and. .not. Serial ) then
        ! (re)-Distribute to new 2D layout
        ! Note that it has to be in this order
-       call pzgemr2d(n, n, S, 1, 1, desch, Sp, 1, 1, desc_h2d, iCTXT)
-       call pzgemr2d(n, n, H, 1, 1, desch, Hp, 1, 1, desc_h2d, iCTXT)
+       call pzgemr2d(n, n, S, 1, 1, desc_1d, Sp, 1, 1, desc_2d, iCTXT)
+       call pzgemr2d(n, n, H, 1, 1, desc_1d, Hp, 1, 1, desc_2d, iCTXT)
     end if
 #endif
     
@@ -653,8 +655,8 @@ contains
     else
 # ifdef SIESTA__ELPA
        if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
-          ! Cholesky on the full matrix (in ScaLAPACK only half of
-          ! the matrix is needed, not here!)
+          ! ELPA only calculates the Cholesky on the upper
+          ! half of the matrix.
           call ELPAt%cholesky(Sp, info)
           call elpa_check(info, 'cdiag: Cholesky factorisation')
           info = 0
@@ -683,15 +685,14 @@ contains
 # ifdef SIESTA__ELPA
        if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
 
-          ! Define the scale to be 1.
+          ! Set the scale to be 1 (ELPA does not use the scale)
           scale = 1._dp
 
           ! The following routine requires the use of the upper
           ! routines, due to the hermitian multiply function
           ! of ELPA.
 
-          ! Cholesky on the full matrix (in ScaLAPACK only half of
-          ! the matrix is needed, not here!)
+          ! Invert the upper triangular Cholesky decomposition.
           call ELPAt%invert_triangular(Sp, info)
           call elpa_check(info, 'cdiag: Triangular inversion')
           
@@ -702,12 +703,15 @@ contains
                Sp,Hp,mat_2d(1),mat_2d(2), &
                Zp,mat_2d(1),mat_2d(2),info)
           call elpa_check(info, 'cdiag: Hermitian multiply Left')
-
+          
           ! Right hand of the inverse.
           ! Note the ELPA Hermitian multiply always takes the Hermitian
-          ! conjugate of the left operator, hence we cannot use it
+          ! conjugate of the left operator, hence we cannot use it here
+          ! We could, possibly use pztranc
+          ! and then use hermitian_multiply... (?)
           call pztrmm('R','U','N','N',n,n,dcmplx(1._dp,0._dp), &
                Sp,1,1,desc,Zp,1,1,desc)
+          
           info = 0
        else
           call pzhengst(1,uplo,n,Hp,1,1,desc,Sp,1,1, &
@@ -933,19 +937,19 @@ contains
              ! conjugate of the left operator
              call pztrmm('L','U','N','N',n,neig,dcmplx(1._dp,0._dp), &
                   Sp,1,1,desc,Hp,1,1,desc)
-             call pzgemr2d(n,neig,Hp,1,1,desc,Z,1,1,desc,iCTXT)
+             call pzgemr2d(n,neig,Hp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
           else
              call pztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp), &
                   Sp,1,1,desc,Zp,1,1,desc)
              if ( Use2D ) then
-                call pzgemr2d(n,neig,Zp,1,1,desc,Z,1,1,desc,iCTXT)
+                call pzgemr2d(n,neig,Zp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
              end if
           end if
 # else
           call pztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp), &
                Sp,1,1,desc,Zp,1,1,desc)
           if ( Use2D ) then
-             call pzgemr2d(n,neig,Zp,1,1,desc,Z,1,1,desc,iCTXT)
+             call pzgemr2d(n,neig,Zp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
           end if
 # endif
 #endif
@@ -1307,12 +1311,12 @@ contains
     integer,  pointer :: iclustr(:) => null()
     real(dp), pointer :: gap(:) => null()
 
-    ! 1D proc grid
-    integer, target :: desch(9)
+    ! BLACS descriptors
+    integer, target :: desc_1d(9), desc_2d(9)
+    integer, pointer :: desc(:)
 
-    ! Additional variables for a 2D proc grid
+    ! Additional variables for a 2D parallel grid
     integer :: np2d(2), my2d(2), mat_2d(2)
-    integer, target :: desc_h2d(9)
 
     ! Pointers of H, S and Z
     real(dp), pointer :: Hp(:,:) => null()
@@ -1344,8 +1348,6 @@ contains
 
     real(dp), pointer :: work(:) => null()
     integer, pointer :: iwork(:) => null()
-
-    integer, pointer :: desc(:)
 
     ! Local variables for loops etc.
     integer :: i, nprc, mclustr
@@ -1384,13 +1386,16 @@ contains
          copy=.false., shrink=.true., &
          imin=1, routine='rdiag' )
 
-    ! vl/il and vu/iu are not currently used, but they must be initialized
+    ! vl/il and vu/iu are not currently used, set them to not
+    ! confuse a new programmer
     vl = -huge(0._dp)
     vu = huge(0._dp)
     il = 1
     iu = neig
     
-    
+
+    ! Correct the input according to the diagonalization
+    ! routines and queries
     algo = algorithm
     call diag_correct_input(algo, jobz, range, uplo, trans, iu, n)
 
@@ -1398,8 +1403,8 @@ contains
 #ifdef MPI
     if ( .not. Serial) then
 
-       ! Set up blacs descriptors for parallel case
-       call descinit( desch, n, n, BlockSize, BlockSize, 0, 0, &
+       ! Set up blacs descriptors for 1D case
+       call descinit( desc_1d, n, n, BlockSize, BlockSize, 0, 0, &
             iCTXT, n, info)
        if ( info /= 0 ) then
           call die('rdiag: Blacs setup has failed!')
@@ -1416,17 +1421,17 @@ contains
           mat_2d(2) = numroc(n, BlockSize, my2d(2), 0, np2d(2))
 
           ! Set up blacs descriptors for 2D case
-          call descinit(desc_h2d, n, n, Blocksize, BlockSize, 0, 0, &
+          call descinit(desc_2d, n, n, Blocksize, BlockSize, 0, 0, &
                iCTXT2D, mat_2d(1), info)
           if ( info /= 0 ) then
              call die('rdiag: Blacs setup has failed!')
           end if
 
-          desc => desc_h2d(:)
+          desc => desc_2d(:)
 
        else
           
-          desc => desch(:)
+          desc => desc_1d(:)
           
        end if
 
@@ -1584,8 +1589,8 @@ contains
     if ( Use2D .and. .not. Serial ) then
        ! (re)-Distribute to new 2D layout
        ! Note that it has to be in this order
-       call pdgemr2d(n, n, S, 1, 1, desch, Sp, 1, 1, desc_h2d, iCTXT)
-       call pdgemr2d(n, n, H, 1, 1, desch, Hp, 1, 1, desc_h2d, iCTXT)
+       call pdgemr2d(n, n, S, 1, 1, desc_1d, Sp, 1, 1, desc_2d, iCTXT)
+       call pdgemr2d(n, n, H, 1, 1, desc_1d, Hp, 1, 1, desc_2d, iCTXT)
     end if
 #endif
     
@@ -1877,19 +1882,19 @@ contains
              ! conjugate of the left operator
              call pdtrmm('L','U','N','N',n,neig,1._dp, &
                   Sp,1,1,desc,Hp,1,1,desc)
-             call pdgemr2d(n,neig,Hp,1,1,desc,Z,1,1,desc,iCTXT)
+             call pdgemr2d(n,neig,Hp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
           else
              call pdtrsm('L',uplo,trans,'N',n,neig,1._dp, &
                   Sp,1,1,desc,Zp,1,1,desc)
              if ( Use2D ) then
-                call pdgemr2d(n,neig,Zp,1,1,desc,Z,1,1,desc,iCTXT)
+                call pdgemr2d(n,neig,Zp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
              end if
           end if
 # else
           call pdtrsm('L',uplo,trans,'N',n,neig,1._dp, &
                Sp,1,1,desc,Zp,1,1,desc)
           if ( Use2D ) then
-             call pdgemr2d(n,neig,Zp,1,1,desc,Z,1,1,desc,iCTXT)
+             call pdgemr2d(n,neig,Zp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
           end if
 # endif
 #endif
