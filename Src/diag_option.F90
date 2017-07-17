@@ -92,7 +92,7 @@ contains
 
 #ifdef MPI
     if ( Nodes > 1 .and. .not. Gamma ) then
-       ParallelOverK = fdf_get( 'Diag.ParallelOverK', .false. )
+       ParallelOverK = fdf_get( 'Diag.ParallelOverK', .false.)
        if ( nspin > 2 ) ParallelOverK = .false.
     end if
 
@@ -108,8 +108,10 @@ contains
 
     
     Use2D = fdf_get('Diag.Use2D',.true.)
-    ProcessorY = fdf_get('Diag.ProcessorY', max(1, Nodes / 4))
+    ProcessorY = max(1, Nodes / 4)
+    ProcessorY = fdf_get('Diag.ProcessorY', ProcessorY)
     ProcessorY = max(1, ProcessorY)
+
 
     algo = fdf_get('Diag.UpperLower', 'lower')
     if ( leqi(algo, 'lower') .or. leqi(algo, 'l') ) then
@@ -126,41 +128,41 @@ contains
     dc_default = .true.
 #endif
     
-    ! Decide the algorithm
-    if ( fdf_get('Diag.DivideAndConquer',dc_default) ) then
-       algorithm = DivideConquer
+    ! Decide the default algorithm
+    algo = ' '
+    
+    if ( fdf_get('Diag.DivideAndConquer', dc_default) ) then
+       algo = 'Divide-and-Conquer'
     end if
+    
 #ifdef SIESTA__MRRR
     if ( fdf_get('Diag.MRRR',.not. dc_default) ) then
-       algorithm = MRRR
+       algo = 'MRRR'
     end if
 #endif
+    
 #ifdef SIESTA__ELPA
     if ( fdf_get('Diag.ELPA',.false.) ) then
-       algorithm = ELPA_1stage
+       algo = 'ELPA'
     end if
 #endif
+    
     if ( fdf_get('Diag.NoExpert',.false.) ) then
-       algorithm = NoExpert
+       algo = 'NoExpert'
     end if
 
-    if ( algorithm == DivideConquer ) then
-       algo = fdf_get('Diag.Algorithm', 'D&C')
-#ifdef SIESTA__MRRR
-    else if ( algorithm == MRRR ) then
-       algo = fdf_get('Diag.Algorithm', 'MRRR')
-#endif
-#ifdef SIESTA__ELPA
-    else if ( algorithm == ELPA_1stage ) then
-       algo = fdf_get('Diag.Algorithm', 'ELPA')
-#endif
-    else if ( algorithm == Expert ) then
-       algo = fdf_get('Diag.Algorithm', 'expert')
-    else
-       algo = fdf_get('Diag.Algorithm', 'noexpert')
+    
+    ! Assert that it has been set, or default to the
+    ! expert driver
+    if ( len_trim(algo) == 0 ) then
+       algo = 'Expert'
     end if
 
 
+    ! Get the requested algorithm by using the above default
+    algo = fdf_get('Diag.Algorithm', trim(algo))
+    
+    
     ! Determine the global method
     if ( leqi(algo, 'D&C') .or. leqi(algo, 'divide-and-conquer') .or. &
          leqi(algo, 'DandC') .or. leqi(algo, 'vd') ) then
@@ -180,7 +182,7 @@ contains
 #endif
 
 #ifdef SIESTA__ELPA
-    else if ( leqi(algo, 'elpa') .or. leqi(algo, 'elpa-1stage') ) then
+    else if ( leqi(algo, 'elpa-1') .or. leqi(algo, 'elpa-1stage') ) then
        algorithm = ELPA_1stage
        
        ! ELPA requires 2D and non-serial
@@ -188,7 +190,8 @@ contains
        ParallelOverK = .false.
        Use2D = .true.
 
-    else if ( leqi(algo, 'elpa-2stage') .or. leqi(algo, 'elpa-2') ) then
+    else if ( leqi(algo, 'elpa') .or. &
+         leqi(algo, 'elpa-2stage') .or. leqi(algo, 'elpa-2') ) then
        algorithm = ELPA_2stage
 
        ! ELPA requires 2D distribution and non-serial
@@ -282,7 +285,7 @@ contains
     case ( MRRR_2stage )
        write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'MRRR-2stage'
     case ( ELPA_1stage )
-       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'ELPA'
+       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'ELPA-1stage'
     case ( ELPA_2stage )
        write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'ELPA-2stage'
     case ( Expert )

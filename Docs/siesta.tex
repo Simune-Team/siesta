@@ -5790,7 +5790,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 \begin{fdfentry}{NumberOfEigenStates}[integer]<\nonvalue{all orbitals}>
   \fdfdepend{Diag!Algorithm}
-  
+
   This parameter allows the user to reduce the number of eigenstates
   that are calculated from the maximum possible. The benefit is that,
   for any calculation, the cost of the diagonalization is
@@ -5813,17 +5813,21 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   \shell{PDORMTR} errors it is because of a buggy ScaLAPACK
   implementation.
 
-  \note this only affects the following \fdf*{MRRR} and \fdf*{Expert}
-  diagonalization routines.
+  \note this only affects the following \fdf*{MRRR}\ifdeveloper,
+  \fdf*{ELPA}\fi\ and \fdf*{Expert} diagonalization routines.
   
 \end{fdfentry}
 
 \begin{fdflogicalF}{Diag!ELPA}
+  \fdfdepend{NumberOfEigenStates}
 
+  \ifdeveloper
+  \else
   (For parallel gamma-point calculations without spin orbit only) Use
-  the ELPA routines for diagonalization.  Specifying a number of
+  the ELPA routines for diagonalization. Specifying a number of
   eigenvectors to store is possible through the symbol
   \fdf{NumberOfEigenStates} (see above).
+  \fi
 
   A description of some algorithms present in ELPA can be found in:
 
@@ -5960,13 +5964,13 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     Use the 2-stage regular algorithm.
 
 \ifdeveloper
-    \option[ELPA]%
-    \fdfindex{Diag!Algorithm!ELPA}%
+    \option[ELPA-1stage]%
+    \fdfindex{Diag!Algorithm!ELPA-1stage}%
     \fdfdepend{NumberOfEigenStates}
     
     Use the ELPA 1-stage solver.
 
-    \option[ELPA-2stage]%
+    \option[ELPA|ELPA-2stage]%
     \fdfindex{Diag!Algorithm!ELPA-2stage}%
     \fdfdepend{NumberOfEigenStates}
     
@@ -5986,6 +5990,12 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
   If one uses the shipped LAPACK library the 2-stage solvers are added
   automatically.
+
+
+  \note this flag has precedence over the deprecated flags:
+  \fdf{Diag!DivideAndConquer}, \fdf{Diag!MRRR}, \fdf{Diag!ELPA} and
+  \fdf{Diag!NoExpert}. However, the default is taking from the
+  deprecated flags.
   
 \end{fdfentry}
 
@@ -6060,8 +6070,6 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 \begin{fdflogicalF}{Diag!MRRR}
   \fdfdepend{NumberOfEigenStates}
-
-  For parallel $\Gamma$-point calculations without spin orbit only.
 
   Use the MRRR method in ScaLAPACK for diagonalization. Specifying a
   number of eigenvectors to store is possible through the symbol
