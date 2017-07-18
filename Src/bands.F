@@ -489,7 +489,7 @@ C Handle parallel over K points option which is not allowed for here
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
-     .              no_u, occtol, 1 )
+     .              no_u, occtol, 1, no_u )
 
         ParallelOverK = SaveParallelOverK
         if ( ParallelOverK ) Serial = .true.
@@ -506,7 +506,7 @@ C Handle parallel over K points option which is not allowed for here
      .              listh, H, S, getD, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, Entropy,
-     .              psi, no_u, occtol, 1 )
+     .              psi, no_u, occtol, 1, no_u )
 
       elseif ( SpOrb ) then
         call diag3k(nuo, no_s, maxnh, maxnh, no_u, numh,
@@ -514,7 +514,7 @@ C Handle parallel over K points option which is not allowed for here
      .              H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .              indxuo, nk, kpoint, wk, ek, qk, Dnew,
      .              Enew, ef, Entropy, psi,
-     .              no_u, occtol, 1 )
+     .              no_u, occtol, 1, no_u )
       else
         call die( 'bands: ERROR: incorrect value of nspin')
       endif

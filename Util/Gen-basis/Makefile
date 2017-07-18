@@ -255,7 +255,7 @@ diag3g.o: fermid.o local_sys.o parallel.o parallelsubs.o precision.o
 diag3k.o: fermid.o local_sys.o parallel.o parallelsubs.o precision.o
 diag_option.o: parallel.o precision.o
 diagg.o: alloc.o fermid.o local_sys.o m_spin.o parallel.o parallelsubs.o
-diagg.o: precision.o rdiag_elpa.o writewave.o
+diagg.o: precision.o writewave.o
 diagk.o: compute_norm.o fermid.o local_sys.o m_spin.o parallel.o parallelsubs.o
 diagk.o: precision.o writewave.o
 diagk_file.o: fermid.o iowfs_netcdf.o local_sys.o parallel.o parallelsubs.o
@@ -283,7 +283,6 @@ egandd.o: onmod.o onmod.o precision.o
 eggbox.o: parallel.o precision.o
 electrostatic.o: atm_types.o atmfuncs.o atmparams.o bessph.o interpolation.o
 electrostatic.o: local_sys.o precision.o radfft.o radial.o
-elpa2.o: elpa1.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolateSpData2D.o: class_Data2D.o class_OrbitalDistribution.o
@@ -752,7 +751,6 @@ pseudopotential.o: alloc.o atom_options.o interpolation.o local_sys.o
 pseudopotential.o: precision.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 radial.o: alloc.o interpolation.o precision.o xml.o
-rdiag_elpa.o: alloc.o elpa1.o elpa2.o local_sys.o parallel.o precision.o
 read_options.o: files.o local_sys.o m_charge_add.o m_cite.o m_hartree_add.o
 read_options.o: m_mixing_scf.o m_spin.o m_target_stress.o parallel.o
 read_options.o: precision.o siesta_cml.o siesta_options.o units.o
@@ -1052,7 +1050,6 @@ m_post_scf_work.o: post_scf_work.o
 m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
-m_rdiag_elpa.o: rdiag_elpa.o
 m_restruct_spdata2d.o: restructSpData2D.o
 m_rhofft.o: rhofft.o
 m_rhoofd.o: rhoofd.o

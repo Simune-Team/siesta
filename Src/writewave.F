@@ -631,7 +631,7 @@ C Handle parallel over K points option which is not allowed for here
      .               e1, e2, xij, indxuo, nk, kpoint, wk,
      .               ek, qk, Dnew, Enew, ef, efs, Entropy,
      .               Haux, Saux, psi, Haux, Saux, aux, nuotot,
-     .               occtol, 1 )
+     .               occtol, 1, nuotot )
 
          ParallelOverK = SaveParallelOverK
          if ( ParallelOverK ) Serial = .true.
@@ -651,7 +651,7 @@ CC RC Added for on-site SO
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .                 indxuo, nk, kpoint, wk, ek, qk, Dnew,
      .                 Enew, ef, Entropy, psi,
-     .                 nuotot, occtol, 1 )
+     .                 nuotot, occtol, 1, nuotot )
         endif
       elseif (SpOrb) then
         if (gamma) then
@@ -666,7 +666,7 @@ CC RC Added for on-site SO
      .                 H, S, getD, qtot, temp, e1, e2, xij,
      .                 indxuo, nk, kpoint, wk, ek, qk, Dnew,
      .                 Enew, ef, Entropy, psi,
-     .                 nuotot, occtol, 1 )
+     .                 nuotot, occtol, 1, nuotot )
         endif
       endif
 

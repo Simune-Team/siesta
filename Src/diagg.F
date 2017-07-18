@@ -90,8 +90,6 @@ C
       use m_fermid,      only : fermid, fermispin, stepf
       use m_spin,        only : spinor_dim, e_spin_dim
       use alloc
-      use fdf,           only : fdf_get
-      use m_rdiag_elpa,  only : rdiag_elpa
 
 #ifdef MPI
       use mpi_siesta
@@ -126,7 +124,7 @@ C
       integer, parameter                :: nk = 1
 
       logical
-     .  getD, getPSI, fixspin, use_elpa
+     .  getD, getPSI, fixspin
 
       external rdiag
 
@@ -148,9 +146,6 @@ C  Internal variables .............................................
 
 C Solve eigenvalue problem
       
-      use_elpa = fdf_get("Diag.ELPA",.false.)
-      if (Nodes == 1) use_elpa = .false.
-
       do ispin = 1,spinor_dim
 
          call timer( 'r-eigvec', 1 )
@@ -168,16 +163,10 @@ C Solve eigenvalue problem
         enddo
 !$OMP end parallel do
         call timer( 'r-buildHS', 2 )
-        if (use_elpa) then
-           call rdiag_elpa( Haux, Saux, nuotot,
-     $              nuo, nuotot, eo(1,ispin), 
-     .              psi(1,1,ispin), neigwanted, ierror )
-        else
-           call rdiag( Haux, Saux, nuotot, nuo, nuotot,
-     $              eo(1,ispin), 
-     .              psi(1,1,ispin), neigwanted, iscf, ierror,
-     .              BlockSize)
-        endif
+        call rdiag( Haux, Saux, nuotot, nuo, nuotot,
+     $       eo(1,ispin), 
+     .       psi(1,1,ispin), neigwanted, iscf, ierror,
+     .       BlockSize)
         call timer( 'r-eigvec', 2 )
 
 
@@ -185,9 +174,6 @@ C Check error flag and take appropriate action
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.lt.0) then
-           if (use_elpa) then
-              call die('Terminating due to failed diagonalisation')
-           endif
 C Repeat diagonalisation with increased memory to handle clustering
 !$OMP parallel do default(shared), private(io,j,ind,jo)
           do io = 1,nuo
