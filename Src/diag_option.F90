@@ -82,7 +82,6 @@ contains
     integer, intent(in) :: nspin
 
     integer :: nr
-    logical :: dc_default
 
     character(len=32) :: algo
 
@@ -151,21 +150,16 @@ contains
        call die('diag: Unknown argument to Diag.UpperLower')
     end if
 
-#ifdef SIESTA__MRRR
-    dc_default = .false.
-#else
-    dc_default = .true.
-#endif
     
     ! Decide the default algorithm
     algo = ' '
     
-    if ( fdf_get('Diag.DivideAndConquer', dc_default) ) then
+    if ( fdf_get('Diag.DivideAndConquer',.true.) ) then
        algo = 'Divide-and-Conquer'
     end if
     
 #ifdef SIESTA__MRRR
-    if ( fdf_get('Diag.MRRR',.not. dc_default) ) then
+    if ( fdf_get('Diag.MRRR',.false.) ) then
        algo = 'MRRR'
     end if
 #endif
@@ -295,9 +289,9 @@ contains
     end if
 
 
-    ! Retrieve tolerance
+    ! Retrieve tolerances for the expert drivers
     abstol = fdf_get('Diag.AbsTol', 1.e-16_dp)
-    orfac = fdf_get('Diag.OrFac', 1.e-3_dp)
+    orfac = fdf_get('Diag.OrFac', 1.e-6_dp)
 
     ! Currently this is not used (it shouldn't be needed)
     mem_factor = fdf_get('Diag.Memory', 1.0_dp)

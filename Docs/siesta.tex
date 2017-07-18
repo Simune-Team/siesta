@@ -5879,7 +5879,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 \end{fdfentry}
 
 
-\begin{fdfentry}{Diag!Algorithm}[string]<...>
+\begin{fdfentry}{Diag!Algorithm}[string]<Divide-and-Conquer|...>
 
   Select the algorithm when calculating the eigenvalues and/or
   eigenvectors.
@@ -5892,9 +5892,6 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     \fdfindex{Diag!Algorithm!Divide-and-Conquer}
     
     Use the divide-and-conquer algorithm.
-
-    \note This is the default algorithm if the MRRR method is not
-    enabled in \siesta.
 
     \option[divide-and-Conquer-2stage]%
     \fdfindex{Diag!Algorithm!Divide-and-Conquer-2stage}
@@ -5913,10 +5910,6 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     if your ScaLAPACK library does contain the relevant sources one
     may add this pre-processor flag \texttt{-DSIESTA\_\_MRRR}.
     \index{compile!pre-processor!-DSIESTA\_\_MRRR}
-
-    \note This is the default algorithm if the MRRR method is enabled
-    in \siesta.
-
 
     \option[MRRR-2stage]%
     \fdfindex{Diag!Algorithm!MRRR-2stage}%
