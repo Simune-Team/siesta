@@ -337,7 +337,7 @@ C     Create extended mesh arrays for the first data distribution
         RealCutoff = huge(1.0_dp)
         call chkgmx( k0, rcell, ntm, RealCutoff )
         if (RealCutoff < G2max) then
-           call message("Read mesh sizes give a smaller"
+           call message("WARNING","Read mesh sizes give a smaller"
      $                   // " cutoff than requested")
         endif
         if (any(mod(ntm,nsm) /= 0)) then

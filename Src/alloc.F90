@@ -2296,9 +2296,7 @@ END SUBROUTINE print_report
 ! ==================================================================
 
 SUBROUTINE alloc_err( ierr, name, routine, bounds )
-#ifdef DEBUG
-      use debugMpi, only : mpiUnit
-#endif
+
 implicit none
 
 integer,                    intent(in) :: ierr
@@ -2324,20 +2322,6 @@ if (ierr/=0) then
     print '(a,i3,2i10)', ('alloc_err: dim, lbound, ubound:',  &
           i,bounds(1,i),bounds(2,i),                         &
           i=1,size(bounds,dim=2))            
-#ifdef DEBUG
-  write(mpiUnit,*) 'alloc_err: allocate status error', ierr
-  if (present(name).and.present(routine)) then
-    write(mpiUnit,*) 'alloc_err: array ', name, ' requested by ', routine
-  elseif (present(name)) then
-    write(mpiUnit,*) 'alloc_err: array ', name, ' requested by unknown'
-  elseif (present(routine)) then
-    write(mpiUnit,*) 'alloc_err: array unknown requested by ', routine
-  endif
-  write(mpiUnit,'(a,i3,2i10)') ('alloc_err: dim, lbound, ubound:', &
-                      i,bounds(1,i),bounds(2,i),         &
-                      i=1,size(bounds,dim=2))
-  call pxfflush(mpiUnit)
-#endif
 
   call die('alloc_err: allocate error')
 end if

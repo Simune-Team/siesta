@@ -671,9 +671,11 @@ contains
 
 #ifdef NCDF_4
     ! Open the NetCDF handles
-
-    ! *.TBT.nc file
-    call open_cdf_save(cdf_fname, TBTcdf)
+    
+    if ('proj-only'.nin.save_DATA ) then
+       ! *.TBT.nc file
+       call open_cdf_save(cdf_fname, TBTcdf)
+    end if
     if ( N_proj_ME > 0 ) then
 
        ! *.TBT.Proj.nc file
@@ -1447,8 +1449,10 @@ contains
 
 #ifdef NCDF_4
 
-    ! Close the netcdf file
-    call ncdf_close(TBTcdf)
+    if ( 'proj-only'.nin.save_DATA ) then
+       ! Close the netcdf file
+       call ncdf_close(TBTcdf)
+    end if
     if ( N_proj_ME > 0 ) then
        call ncdf_close(PROJcdf)
        deallocate(proj_parts)

@@ -149,7 +149,7 @@
 \section*{Contributors to \siesta}
 \addcontentsline{toc}{section}{Contributors to \siesta}
 
-\siesta\ is Copyright \copyright\  1996-2016 by The Siesta Group:
+\siesta\ is Copyright \copyright\  1996-2017 by The Siesta Group:
 \vspace{0.5cm}
 
 \hbox{ \hskip 0.1cm
@@ -5682,16 +5682,16 @@ the issue (see Sec.~\ref{sec:filtering}).
   
   These files are created
   \begin{itemize}
-    \item \file{H_MIXED}; the Hamiltonian after
+    \item \file{H\_MIXED}; the Hamiltonian after
     mixing
     
-    \item \file{DM_OUT}; the density matrix as calculated by the
+    \item \file{DM\_OUT}; the density matrix as calculated by the
     current iteration
 
-    \item \file{H_DMGEN}; the Hamiltonian used to calculate the
+    \item \file{H\_DMGEN}; the Hamiltonian used to calculate the
     density matrix
     
-    \item \file{DM_MIXED}; the density matrix after mixing
+    \item \file{DM\_MIXED}; the density matrix after mixing
 
   \end{itemize}
   
@@ -5853,19 +5853,19 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 \begin{fdflogicalF}{Diag!MRRR}
 
-  For parallel gamma-point calculations without spin orbit only.
+  For parallel $\Gamma$-point calculations without spin orbit only.
 
-  Use the MRRR method in Scalapack for diagonalization. Specifying a
+  Use the MRRR method in ScaLAPACK for diagonalization. Specifying a
   number of eigenvectors to store is possible through the symbol
   \fdf{NumberOfEigenStates} (see above).
 
   \note it is not compatible with the \fdf{Diag!ParallelOverK}
   option.
 
-  \note The MRRR method is defaulted to be compiled in, however, if
-  your ScaLAPACK library does not contain the relevant sources one
-  should add this pre-processor flag \texttt{-DSIESTA\_\_NO\_MRRR}.
-  \index{compile!pre-processor!-DSIESTA\_\_NO\_MRRR}
+  \note The MRRR method is defaulted not to be compiled in, however,
+  if your ScaLAPACK library does contain the relevant sources one
+  may add this pre-processor flag \texttt{-DSIESTA\_\_MRRR}.
+  \index{compile!pre-processor!-DSIESTA\_\_MRRR}
 \end{fdflogicalF}
 
 
@@ -7119,8 +7119,8 @@ descriptor above for more information.
 
 The user can optionally request that the wavefunctions corresponding
 to the computed bands be written to file.  They are written to the
-\sysfile{bands.WFSX} file (see section below for the format). The
-relevant options are:
+\sysfile{bands.WFSX} file.
+The relevant options are:
 
 \begin{fdflogicalF}{WFS.Write.For.Bands}
   \index{output of wave functions for bands}
@@ -7163,7 +7163,7 @@ written to file. These wavefunctions are re-computed after the
 geometry loop (if any) finishes, using the last (presumably converged)
 density matrix produced during the last self-consistent field loop
 (after a final mixing). They are written to the
-\sysfile{selected.WFSX} file (see below for the format).
+\sysfile{selected.WFSX} file.
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
@@ -8773,6 +8773,7 @@ always include all arrays.
   
 \end{fdflogicalF}
 
+
 \begin{fdflogicalT}{UseParallelTimer}
 
   Determine whether timings are performed in parallel. This may
@@ -8783,6 +8784,26 @@ always include all arrays.
   
 \end{fdflogicalT}
 
+\begin{fdfentry}{MaxWalltime}[real time]<Infinity>
+
+  Set an internal limit to the wall time allotted to the
+  program's execution. Typically this is related to the external limit
+  imposed by queuing systems. The code checks its wall time periodically
+  and will abort if nearing the limit, with some slack left for clean-up
+  operations (proper closing of files, emergency output...), as determined
+  by \fdf{MaxWalltime!Slack}. See Sec.~\ref{sec:fdf-units} for available
+  units of time (\textbf{s}, \textbf{mins}, \textbf{hours}, \textbf{days}).
+
+\end{fdfentry}
+
+
+\begin{fdfentry}{MaxWalltime!Slack}[real time]<5 s>
+
+  The code checks its wall time $T_{\mathrm{wall}}$ periodically and will
+  abort if $T_{\mathrm{wall}} > T_{\mathrm{max}} - T_{\mathrm{slack}}$, so that
+  some slack is left for any clean-up operations.
+
+\end{fdfentry}
 
 
 \subsection{The catch-all option UseSaveData}
@@ -9998,6 +10019,9 @@ For large or intermediate values of $U_{\mathrm{eff}}$ the convergence
 is sometimes difficult. A step-by-step increase of the
 value of $U_{\mathrm{eff}}$ can be advisable in such cases.
 
+Currently, the LDA+U implementation does not support non-colinear, nor
+spin-orbit coupling.
+
 \begin{fdfentry}{LDAU.ProjectorGenerationMethod}[integer]<2>
   
   Generation method of the LDA+U projectors. The LDA+U projectors are
@@ -10545,65 +10569,16 @@ type:
 $ make transiesta
 \end{verbatim}
 
-using the appropriate arch.make file for your system (note that you do
-not need to make any modification on your arch.make file: you can use
-the same one that you have used to make a standard \siesta\
+using the appropriate \file{arch.make} file for your system (note that
+you do not need to make any modification on your arch.make file: you
+can use the same one that you have used to make a standard \siesta\
 compilation in your system).  The Makefile takes care of defining the
-appropriate preprocessor flag \texttt{-DTRANSIESTA} so that the \tsiesta\ 
-modules and modifications are compiled and incorporated
-into the binary. Upon successful compilation, the binary file 
-\program{transiesta} will be generated, containing an executable version of
-\siesta\ with \tsiesta\ capabilities.
+appropriate preprocessor flag \texttt{-DTRANSIESTA} so that the
+\tsiesta\ modules and modifications are compiled and incorporated into
+the binary. Upon successful compilation, the binary file
+\program{transiesta} will be generated, containing an executable
+version of \siesta\ with \tsiesta\ capabilities.
 
-\subsection{Running a fast example}
-
-Before giving more detailed explanations about \tsiesta, let
-us start with an example to show the basic operations of a transport
-calculation.  Starting from the top \siesta\ directory:
-
-\begin{verbatim}
-$ cd Examples/TranSiesta
-\end{verbatim}
-
-First it is necessary to do the electrode calculation (see below for
-details),
-
-\begin{verbatim}
-$ cd Elec
-$ mkdir OUT_Test
-$ cd OUT_Test
-$ cp ../* .
-$ transiesta < elec.fast.fdf > elec.fast.out
-\end{verbatim}
-
-Note that apart from the usual files generated by \siesta, now you will 
-find the \texttt{elec.fast.TSHS} file (in general \sysfile{TSHS}). 
-This file contains the real-space Hamiltonian and Overlap matrices, together 
-with some other information, that will be used, in the case of electrodes, to 
-calculate the surface Greens functions. 
-
-Once the electrode file has been generated, we can perform the \tsiesta\ 
-calculation (where the \fdf{SolutionMethod} flag is set
-to \program{transiesta}).
-
-\begin{verbatim}
-$ cd ../../Scat
-$ mkdir OUT_TS_Test
-$ cd OUT_TS_Test
-$ cp ../* .
-$ cp ../../Elec/OUT_Test/elec.fast.TSHS .
-$ transiesta < scat.fast.fdf > scat.fast.out
-\end{verbatim}
-
-Now the two following files should have been generated, \texttt{scat.fast.TSHS} 
-and \texttt{scat.fast.TSDE}. The first one contains, as previously mentioned, 
-essentially the Hamiltonian and Overlap matrices, and the \texttt{.TSDE} file 
-has the \tsiesta\ density matrix, the equivalent to the \texttt{.DM} 
-file of \siesta. The transmission function and the current are calculated 
-using the \texttt{tbtrans} postprocessing tool (below).
-
-Other automated TranSiesta-TBTrans examples can be found in
-\texttt{Tests/TranSiesta-TBTrans}.
 
 \subsection{Brief explanation}
 
@@ -12135,6 +12110,7 @@ Ram\'on Areces.
 
 
 \section{APPENDIX: Physical unit names recognized by FDF}
+\label{sec:fdf-units}
 
 \begin{center}
 \begin{tabular}{llr}

@@ -121,6 +121,10 @@
       endif  ! SIESTA_worker
 
 ! Finalize MPI, unless siesta is running as a subroutine
+      !
+      ! Add stamp to MESSAGES file
+      call message('INFO','Job completed')
+      
 #ifdef MPI
       MPIerror = MPI_SUCCESS
       if (.not.siesta_subroutine) call MPI_Finalize( MPIerror )

@@ -23,7 +23,7 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 OBJS = io.o iorho.o macroave.o thetaft.o \
 	surpla.o volcel.o hdr_io.o\
-        local_die.o interpolation.o m_fft_gpfa.o
+        local_die.o interpolation.o dpnint1.o m_fft_gpfa.o
 #
 #
 # This is crude but will have to do for now.

@@ -54,6 +54,8 @@
       use siesta_master,   only: coordsFromMaster ! Get coords from master prog
       use m_target_stress, only: subtract_target_stress
 
+      use m_check_walltime
+      
 #ifdef NCDF_4
       use m_exp_coord, only : exp_coord_next
 #endif
@@ -78,6 +80,9 @@
       logical               :: foundxv  ! dummy for call to ioxv
       logical               :: foundzm  ! dummy for call to iozm
 
+      logical               :: time_is_up
+      character(len=40)     :: tmp_str
+      
       real(dp), external :: volcel
 
 #ifdef DEBUG
@@ -437,6 +442,19 @@
       call timer( 'IterGeom', 2 )
 ! End of one MD step - flush stdout
       if (ionode) call pxfflush(6)
+
+        ! Check whether we are short of time to continue
+        call check_walltime(time_is_up)
+        if (time_is_up) then
+           ! Do any other bookeeping not done by "die"
+           if (.not. relaxd) then
+              call message('WARNING','GEOM_NOT_CONV: '//
+     $             'Geometry relaxation not converged')
+              write(tmp_str,"(a,i3)") 'Geometry step: ', istep
+              call message(' (info)', trim(tmp_str))
+           endif
+           call die("OUT_OF_TIME: Time is up at end of geometry step. ")
+        endif
 
 !--------------------------------------------------------------------------- END
 

@@ -1,16 +1,16 @@
-TBtrans Version: trunk-557
-Architecture  : x86_64-linux-gcc
-Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG -DTBTRANS
-Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+TBtrans Version: siesta-4.1--731
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto -fuse-linker-plugin
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__FLOOK  -DTBTRANS
+Libraries     : -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmumps -lmumps_common -llpord -lparmetis -lmetis -lscalapack -lopenblas  -lmetis -flto -fuse-linker-plugin  -L/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -lflookall -ldl
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
 
-* Running on 2 nodes in parallel
->> Start of run:  18-AUG-2016  22:05:54
+* Running on 8 nodes in parallel
+>> Start of run:   2-JUL-2017  22:23:21
 
                            ************************ 
                            *  WELCOME TO TBtrans  * 
@@ -127,6 +127,8 @@ TS.Voltage    0.00000 eV
 %endblock TS.ChemPot.Right
 TS.Elecs.Bulk true
 TS.Elecs.DM.Update none
+# This is for testing purposes!
+# DO NOT USE IF YOU DO NOT UNDERSTAND!
 TS.Elecs.Neglect.Principal true
 TS.Elecs.GF.ReUse true
 %block TS.Elecs
@@ -296,35 +298,37 @@ Electrode information:
 
   <sparsity:./elec_au_111_abc.TSHS
     nrows_g=27 nrows=27 sparsity=44.2757 nnzs=32277, refcount: 3>
+  <sparsity:(TM [--,--, 0] of: ./elec_au_111_abc.TSHS)
+    nrows_g=27 nrows=27 sparsity=25.1152 nnzs=18309, refcount: 3>
+  <sparsity:(TM [--,--,-1] of: ./elec_au_111_abc.TSHS)
+    nrows_g=27 nrows=27 sparsity=9.4486 nnzs=6888, refcount: 3>
  Left principal cell is extending out with 96 elements:
     Atom 1 connects with atom 3
     Orbital 8 connects with orbital 26
     Hamiltonian value: |H(8,6587)|@R=-2 =  0.651E-13 eV
     Overlap          :  S(8,6587)|@R=-2 =   0.00    
-  <sparsity:(TM [--,--, 0] of: ./elec_au_111_abc.TSHS)
-    nrows_g=27 nrows=27 sparsity=25.1152 nnzs=18309, refcount: 3>
-  <sparsity:(TM [--,--,-1] of: ./elec_au_111_abc.TSHS)
-    nrows_g=27 nrows=27 sparsity=9.4486 nnzs=6888, refcount: 3>
 
   <sparsity:./elec_au_111_abc.TSHS
     nrows_g=27 nrows=27 sparsity=44.2757 nnzs=32277, refcount: 3>
+  <sparsity:(TM [--,--, 0] of: ./elec_au_111_abc.TSHS)
+    nrows_g=27 nrows=27 sparsity=25.1152 nnzs=18309, refcount: 3>
+  <sparsity:(TM [--,--, 1] of: ./elec_au_111_abc.TSHS)
+    nrows_g=27 nrows=27 sparsity=9.4486 nnzs=6888, refcount: 3>
  Right principal cell is extending out with 96 elements:
     Atom 3 connects with atom 1
     Orbital 26 connects with orbital 8
     Hamiltonian value: |H(26,4382)|@R=2 =  0.651E-13 eV
     Overlap          :  S(26,4382)|@R=2 =   0.00    
-  <sparsity:(TM [--,--, 0] of: ./elec_au_111_abc.TSHS)
-    nrows_g=27 nrows=27 sparsity=25.1152 nnzs=18309, refcount: 3>
-  <sparsity:(TM [--,--, 1] of: ./elec_au_111_abc.TSHS)
-    nrows_g=27 nrows=27 sparsity=9.4486 nnzs=6888, refcount: 3>
 
 
-tbtrans: Analyzing electrode sparsity pattern to create optimal tri-diagonal blocks...
-tbtrans: Analyzing device sparsity pattern to create optimal tri-diagonal blocks...
+tbtrans: Analyzing electrode sparsity pattern to create optimal tri-diagonal blocks
+tbtrans: BTD pivoting scheme for electrode (Left): atom+Left
+
+tbtrans: Analyzing device sparsity pattern to create optimal tri-diagonal blocks
 tbtrans: BTD pivoting scheme in device: atom+Left
-tbtrans: Done analyzing sparsity pattern...
+tbtrans: Done analyzing sparsity pattern
 
-tbtrans: Reducing sparsity pattern...
+tbtrans: Reducing matrix (H, S) sparsity patterns by: 14352
 
 tbtrans: # of device region orbitals: 27
 Region (3): [A]-device
@@ -363,27 +367,27 @@ tbtrans: Sum of electrode and sparse memory:    1.497 MB
 tbtrans: Initializing data file: bulk_au_111.TBT.nc
 tbtrans: LHS Green function size / memory: 8748 /     0.13 MB
 tbtrans: RHS Green function size / memory: 1458 /     0.02 MB
-tbt: Initial ETA in               13.592 s
-tbt: Calculated   5.000 %, ETA in               12.464 s
-tbt: Calculated  10.000 %, ETA in               11.160 s
-tbt: Calculated  15.000 %, ETA in                9.792 s
-tbt: Calculated  20.000 %, ETA in                9.392 s
-tbt: Calculated  25.000 %, ETA in                9.072 s
-tbt: Calculated  30.000 %, ETA in                8.587 s
-tbt: Calculated  35.000 %, ETA in                8.053 s
-tbt: Calculated  40.000 %, ETA in                7.182 s
-tbt: Calculated  45.000 %, ETA in                6.463 s
-tbt: Calculated  50.000 %, ETA in                5.956 s
-tbt: Calculated  55.000 %, ETA in                5.416 s
-tbt: Calculated  60.000 %, ETA in                4.827 s
-tbt: Calculated  65.000 %, ETA in                4.103 s
-tbt: Calculated  70.000 %, ETA in                3.427 s
-tbt: Calculated  75.000 %, ETA in                2.883 s
-tbt: Calculated  80.000 %, ETA in                2.329 s
-tbt: Calculated  85.000 %, ETA in                1.748 s
-tbt: Calculated  90.000 %, ETA in                1.160 s
-tbt: Calculated  95.000 %, ETA in                0.581 s
-tbt: Completed in               11.664 s
+tbt: Initial ETA in               14.414 s
+tbt: Calculated   5.059 %, ETA in                4.729 s
+tbt: Calculated  10.235 %, ETA in                4.042 s
+tbt: Calculated  15.412 %, ETA in                3.545 s
+tbt: Calculated  20.471 %, ETA in                3.364 s
+tbt: Calculated  25.647 %, ETA in                3.206 s
+tbt: Calculated  30.824 %, ETA in                3.023 s
+tbt: Calculated  36.000 %, ETA in                2.805 s
+tbt: Calculated  41.059 %, ETA in                2.477 s
+tbt: Calculated  46.235 %, ETA in                2.258 s
+tbt: Calculated  51.412 %, ETA in                2.063 s
+tbt: Calculated  56.588 %, ETA in                1.859 s
+tbt: Calculated  61.647 %, ETA in                1.636 s
+tbt: Calculated  66.824 %, ETA in                1.360 s
+tbt: Calculated  72.000 %, ETA in                1.142 s
+tbt: Calculated  77.176 %, ETA in                0.940 s
+tbt: Calculated  82.235 %, ETA in                0.736 s
+tbt: Calculated  87.412 %, ETA in                0.520 s
+tbt: Calculated  92.588 %, ETA in                0.306 s
+tbt: Calculated  97.765 %, ETA in                0.092 s
+tbt: Completed in                4.138 s
 
 Currents (ensure entire Fermi function window):
 Left -> Right, V [V] / I [A]:  0.00000     V /  0.00000     A
@@ -391,35 +395,18 @@ Left -> Right, V [V] / P [W]:  0.00000     V /  0.00000     W
 
 
              Section          Calls    Walltime       %
- global_section                   1      11.846  100.00
-  tbtrans                         1      11.846  100.00
-   MPI_COMM_RANK                  1       0.000    0.00
-   MPI_COMM_SIZE                  1       0.000    0.00
-   MPI_BCAST                    110       0.002    0.01
-   MPI_BARRIER                    3       0.001    0.01
-   tri-init                       1       0.005    0.04
-    tri-init-elec                 1       0.002    0.02
-     TS-rgn2tri                   1       0.000    0.00
-     MPI_BCAST                    6       0.000    0.00
-    TS-rgn2tri                    1       0.000    0.00
-     MPI_BCAST                    4       0.000    0.00
-   TBT                            1      11.712   98.87
-    MPI_BCAST                    39       0.000    0.00
-    setup-HS                     34       0.135    1.14
-    MPI_ALLGATHER              3400       0.008    0.07
-    read-GS                    1700      10.649   89.90
-     MPI_ALLREDUCE             1700       0.003    0.03
-    SE-dwn                     1700       0.385    3.25
-     ts_expand                 3400       0.006    0.05
-     insert-SE                10200       0.010    0.09
-    Gf-prep                    1700       0.177    1.49
-     insert-SED                3400       0.043    0.36
-     V_TM_Pinv                 1700       0.098    0.83
-    DOS-Gf-A-T                 1700       0.103    0.87
-     dGFGGF                    1700       0.095    0.80
-     A-Gamma                   1700       0.006    0.05
-    cdf-w-T                    1700       0.204    1.72
-     MPI_RECV                  1700       0.012    0.10
-    MPI_BARRIER                   1       0.000    0.00
-    cdf2ascii                     1       0.010    0.09
->> End of run:  18-AUG-2016  22:06:06
+ global_section                   1       4.695  100.00
+  tbtrans                         1       4.695  100.00
+   tri-init                       1       0.033    0.70
+    tri-init-elec                 1       0.002    0.05
+     TS-rgn2tri                   1       0.000    0.01
+    TS-rgn2tri                    1       0.027    0.58
+   TBT                            1       4.233   90.16
+    read-GS                     442       3.603   76.74
+    SE-dwn                      442       0.106    2.25
+     ts_expand                  816       0.002    0.05
+    Gf-prep                     442       0.047    1.01
+     V_TM_Pinv                  408       0.029    0.61
+    DOS-Gf-A-T                  442       0.030    0.64
+    cdf2ascii                     1       0.017    0.37
+>> End of run:   2-JUL-2017  22:23:26

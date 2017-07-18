@@ -1,5 +1,5 @@
 SystemName          Water molecule layer with dipole AND compensating field
-SystemLabel         h2o
+SystemLabel         h2o_dipole_layer_field
 NumberOfAtoms       3
 NumberOfSpecies     2
 

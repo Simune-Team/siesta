@@ -10,19 +10,19 @@ reinit: System Name: Water molecule
 reinit: -----------------------------------------------------------------------
 reinit: System Label: h2o_dipole2
 reinit: -----------------------------------------------------------------------
-Siesta Version: trunk-554
-Architecture  : x86_64-linux-gcc
-Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
-Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+Siesta Version: siesta-4.1--731
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto -fuse-linker-plugin
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__FLOOK
+Libraries     : -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmumps -lmumps_common -llpord -lparmetis -lmetis -lscalapack -lopenblas  -lmetis -flto -fuse-linker-plugin  -L/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -lflookall -ldl
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
 
-* Running on 4 nodes in parallel
->> Start of run:  18-AUG-2016   8:42:15
+* Running on 8 nodes in parallel
+>> Start of run:   2-JUL-2017  11:40:41
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:    8 Label: O
@@ -350,7 +350,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: Discard 1st Pulay DM after kick             =   F
 redata: New DM Mixing Weight                        =     0.2500
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
@@ -358,7 +357,9 @@ redata: DM Mixing Weight for Kicks                  =     0.5000
 redata: Require Harris convergence for SCF          =   F
 redata: Harris energy tolerance for SCF             =     0.000100 eV
 redata: Require DM convergence for SCF              =   T
-redata: DM tolerance for SCF                        =     0.000100
+redata: DM tolerance for SCF                        =     0.0001
+redata: Require EDM convergence for SCF             =   F
+redata: EDM tolerance for SCF                       =     0.001000 eV
 redata: Require H convergence for SCF               =   T
 redata: Hamiltonian tolerance for SCF               =     0.001000 eV
 redata: Require (free) Energy convergence for SCF   =   F
@@ -377,11 +378,11 @@ mix.SCF:    History steps                        = 2
 mix.SCF:    Linear mixing weight                 =     0.250000
 mix.SCF:    Mixing weight                        =     0.250000
 mix.SCF:    SVD condition                        = 0.1000E-07
-redata: Save data in SIESTA.nc                      =   F
+redata: Save all siesta data in one NC              =   F
 redata: ***********************************************************************
 
 %block SCF.Mixers
-  Pulay                   
+  Pulay
 %endblock SCF.Mixers
 
 %block SCF.Mixer.Pulay
@@ -393,10 +394,6 @@ redata: ***********************************************************************
   weight 0.2500
   weight.linear 0.2500
   history 2
-  restart 0
-  restart.save 1
-
-  # Continuation options
 %endblock SCF.Mixer.Pulay
 
 DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
@@ -404,10 +401,10 @@ Size of DM history Fstack: 1
 Total number of electrons:    16.000000
 Total ionic charge:    16.000000
 
-* ProcessorY, Blocksize:    2  12
+* ProcessorY, Blocksize:    2   6
 
 
-* Orbital distribution balance (max,min):    12    10
+* Orbital distribution balance (max,min):     6     4
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -434,124 +431,138 @@ outcell: Cell volume (Ang**3)        :    180.0000
  Folding of H and S is implicitly performed
 <dSpData1D:S at geom step 0
   <sparsity:sparsity for geom step 0
-    nrows_g=46 nrows=12 sparsity=.1304 nnzs=276, refcount: 7>
-  <dData1D:(new from dSpData1D) n=276, refcount: 1>
+    nrows_g=46 nrows=6 sparsity=.0652 nnzs=138, refcount: 7>
+  <dData1D:(new from dSpData1D) n=138, refcount: 1>
 refcount: 1>
-New_DM. Step:     1
+new_DM -- step:     1
 Initializing Density Matrix...
-DM after filling with atomic data:
-<dSpData2D:(DM initialized from atoms)
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
   <sparsity:sparsity for geom step 0
-    nrows_g=46 nrows=12 sparsity=.1304 nnzs=276, refcount: 8>
-  <dData2D:(DMatomic) n=276 m=1, refcount: 1>
+    nrows_g=46 nrows=6 sparsity=.0652 nnzs=138, refcount: 8>
+  <dData2D:DM n=138 m=1, refcount: 1>
 refcount: 1>
+
 Note: For starting DM, Qtot, Tr[D*S] =         16.00000000         16.18353818
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       3      45
 New grid distribution:   1
-           1       1:   15    1:   27    1:   12
-           2       1:   15    1:   27   13:   24
-           3       1:   15   28:   54    1:   12
-           4       1:   15   28:   54   13:   24
+           1       1:   15    1:   27    1:    6
+           2       1:   15    1:   27    7:   12
+           3       1:   15    1:   27   13:   18
+           4       1:   15    1:   27   19:   24
+           5       1:   15   28:   54    1:    6
+           6       1:   15   28:   54    7:   12
+           7       1:   15   28:   54   13:   18
+           8       1:   15   28:   54   19:   24
 
 InitMesh: MESH =    30 x   108 x    48 =      155520
 InitMesh: (bp) =    15 x    54 x    24 =       19440
 InitMesh: Mesh cutoff (required, used) =   200.000   223.865 Ry
-ExtMesh (bp) on 0 =    67 x    75 x    64 =      321600
+ExtMesh (bp) on 0 =    67 x    75 x    58 =      291450
 New grid distribution:   2
-           1       1:   15    8:   25    1:   24
-           2       1:   15    1:    7    1:   24
-           3       1:   15   33:   54    1:   24
-           4       1:   15   26:   32    1:   24
+           1       1:   15    8:   25    1:    9
+           2       1:   15    1:    7    1:   10
+           3       1:   15    8:   25   10:   24
+           4       1:   15    1:    7   11:   24
+           5       1:   15   33:   54    1:    8
+           6       1:   15   26:   32    1:    9
+           7       1:   15   33:   54    9:   24
+           8       1:   15   26:   32   10:   24
 New grid distribution:   3
-           1       1:   15   11:   22    1:   24
-           2       1:   15   23:   32    1:   24
-           3       1:   15   33:   54    1:   24
-           4       1:   15    1:   10    1:   24
+           1       1:   15   33:   54    1:   11
+           2       1:   15    1:   10    1:   12
+           3       1:   15   11:   22   12:   24
+           4       1:   15   23:   32   13:   24
+           5       1:   15   11:   22    1:   11
+           6       1:   15    1:   10   13:   24
+           7       1:   15   33:   54   12:   24
+           8       1:   15   23:   32    1:   12
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    67 x    66 x    76 =      336072
-PhiOnMesh: Number of (b)points on node 0 =                 6480
-PhiOnMesh: nlist on node 0 =                74039
+ExtMesh (bp) on 0 =    67 x    66 x    61 =      269742
+PhiOnMesh: Number of (b)points on node 0 =                 2430
+PhiOnMesh: nlist on node 0 =                35250
 
 efield: SlabDipoleCorrection enabled.
 efield: A dipole layer will be introduced in the vacuum
 efield: region to compensate the system dipole
-Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
-Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-rdiag-debug: Node=1, lwork=      1425>= lworkq=      1425, liwork=       356>= liworkq=       340
-rdiag-debug: Node=2, lwork=      1425>= lworkq=      1425, liwork=       356>= liworkq=       340
-rdiag-debug: Node=3, lwork=      1337>= lworkq=      1337, liwork=       356>= liworkq=       340
-rdiag-debug: Node=0, lwork=      1521>= lworkq=      1521, liwork=       356>= liworkq=       340
+Dipole moment in unit cell   =      0.0000     -0.0000      0.0000 D
+Electric field for dipole correction =   -0.000000    0.000000   -0.000000 eV/Ang/e
 
 stepf: Fermi-Dirac step function
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -162.566205
+siesta: Ebs     =      -162.566207
 siesta: Eions   =      1631.708957
 siesta: Ena     =       349.727602
-siesta: Ekin    =       775.005219
-siesta: Enl     =      -144.531528
+siesta: Ekin    =       775.005215
+siesta: Enl     =      -144.531527
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =       -43.526451
+siesta: DEna    =       -43.526448
 siesta: DUscf   =         6.468271
 siesta: DUext   =         0.000000
-siesta: Exc     =      -237.279294
+siesta: Exc     =      -237.279293
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -917.542513
+siesta: Eharris =      -917.542515
 siesta: Etot    =      -925.845138
 siesta: FreeEng =      -925.845138
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
-   scf:    1     -917.542513     -925.845138     -925.845138  1.426480 -3.165748  8.445312
-timer: Routine,Calls,Time,% =    IterSCF     1       0.228  10.20
+   scf:    1     -917.542515     -925.845138     -925.845138  1.426479 -3.165748  8.445312
+timer: Routine,Calls,Time,% = IterSCF        1       0.079   5.74
+Dipole moment in unit cell   =      0.0000     -0.0000      0.0000 D
+Electric field for dipole correction =   -0.000000    0.000000   -0.000000 eV/Ang/e
+   scf:    2     -863.633215     -908.882108     -908.882108  0.299113 -2.847056 18.264538
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:    2     -930.960098     -928.945957     -928.945957  0.060912 -1.977399  2.623845
+   scf:    3     -933.417105     -929.208963     -929.208963  0.296710 -5.728868  1.167038
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:    3     -929.347037     -929.278753     -929.278753  0.021239 -5.519297  0.263915
+   scf:    4     -929.321121     -929.282340     -929.282340  0.011650 -5.530886  0.272993
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:    4     -929.292939     -929.286736     -929.286736  0.010477 -5.525230  0.192094
+   scf:    5     -929.292844     -929.288281     -929.288281  0.012652 -5.479732  0.127470
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:    5     -929.289860     -929.288327     -929.288327  0.004654 -5.511884  0.167939
+   scf:    6     -929.292279     -929.290368     -929.290368  0.009946 -5.456889  0.072816
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:    6     -929.293195     -929.291010     -929.291010  0.018234 -5.436898  0.047449
+   scf:    7     -929.291606     -929.291035     -929.291035  0.008408 -5.430449  0.024878
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:    7     -929.291057     -929.291037     -929.291037  0.002818 -5.412948  0.019098
+   scf:    8     -929.291112     -929.291075     -929.291075  0.002163 -5.416896  0.011514
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:    8     -929.291102     -929.291072     -929.291072  0.000352 -5.407520  0.012217
+   scf:    9     -929.291091     -929.291084     -929.291084  0.000711 -5.407729  0.007066
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:    9     -929.291105     -929.291090     -929.291090  0.000539 -5.406205  0.007816
+   scf:   10     -929.291099     -929.291092     -929.291092  0.000388 -5.407718  0.005467
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:   10     -929.291100     -929.291095     -929.291095  0.000398 -5.406804  0.005594
+   scf:   11     -929.291101     -929.291097     -929.291097  0.000545 -5.408396  0.002918
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:   11     -929.291099     -929.291097     -929.291097  0.000337 -5.408153  0.002911
+   scf:   12     -929.291097     -929.291097     -929.291097  0.000138 -5.409054  0.001783
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:   12     -929.291097     -929.291097     -929.291097  0.000192 -5.409564  0.001257
+   scf:   13     -929.291097     -929.291097     -929.291097  0.000175 -5.410233  0.000518
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
-   scf:   13     -929.291097     -929.291097     -929.291097  0.000054 -5.410442  0.000748
+   scf:   14     -929.291097     -929.291097     -929.291097  0.000010 -5.410468  0.000324
 
 SCF Convergence by DM+H criterion
-max |DM_out - DM_in|   :     0.0000543884
-max |H_out - H_in| (eV):     0.0007479613
-SCF cycle converged after 13 iterations
+max |DM_out - DM_in|         :     0.0000095834
+max |H_out - H_in|      (eV) :     0.0003244212
+SCF cycle converged after 14 iterations
 
 Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       3      45
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
 
@@ -561,29 +572,29 @@ siesta: E_KS - E_eggbox =      -929.2911
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot   -0.000000    0.000000   -0.000000
 ----------------------------------------
-   Max    1.048841
-   Res    0.603550    sqrt( Sum f_i^2 / 3N )
+   Max    1.048693
+   Res    0.603481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.048841    constrained
+   Max    1.048693    constrained
 
-Stress-tensor-Voigt (kbar):      -79.18        8.75       -1.16        0.00       -0.00        0.00
-(Free)E + p*V (eV/cell)     -926.6106
+Stress-tensor-Voigt (kbar):      -79.18        8.75       -1.16        0.00        0.00       -0.00
+(Free)E + p*V (eV/cell)     -926.6104
 Target enthalpy (eV/cell)     -929.2911
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -219.476489
+siesta: Ebs     =      -219.474983
 siesta: Eions   =      1631.708957
 siesta: Ena     =       349.727602
-siesta: Ekin    =       711.298463
-siesta: Enl     =      -127.077918
+siesta: Ekin    =       711.300185
+siesta: Enl     =      -127.077889
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =        -6.217819
-siesta: DUscf   =         1.647363
+siesta: DEna    =        -6.219236
+siesta: DUscf   =         1.647317
 siesta: DUext   =         0.000000
-siesta: Exc     =      -226.959832
+siesta: Exc     =      -226.960120
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
@@ -594,41 +605,41 @@ siesta: Etot    =      -929.291097
 siesta: FreeEng =      -929.291097
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -219.476489
-siesta:       Kinetic =     711.298463
-siesta:       Hartree =     709.566779
+siesta:  Band Struct. =    -219.474983
+siesta:       Kinetic =     711.300185
+siesta:       Hartree =     709.568373
 siesta:       Eldau   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -226.959832
-siesta:  Ion-electron =   -2052.534417
-siesta:       Ion-ion =     -70.662090
+siesta:   Exch.-corr. =    -226.960120
+siesta:  Ion-electron =   -2052.537441
+siesta:       Ion-ion =     -70.662094
 siesta:       Ekinion =       0.000000
 siesta:         Total =    -929.291097
-siesta:         Fermi =      -5.410442
+siesta:         Fermi =      -5.410468
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1   -0.000000    0.844849    0.000000
-siesta:      2   -1.048841   -0.426936   -0.000000
-siesta:      3    1.048841   -0.426936   -0.000000
-siesta:      4   -0.000000   -0.844849    0.000000
-siesta:      5   -1.048841    0.426936   -0.000000
-siesta:      6    1.048841    0.426936   -0.000000
+siesta:      1    0.000000    0.844799    0.000000
+siesta:      2   -1.048693   -0.426910   -0.000000
+siesta:      3    1.048693   -0.426910   -0.000000
+siesta:      4   -0.000000   -0.844799    0.000000
+siesta:      5   -1.048693    0.426910   -0.000000
+siesta:      6    1.048693    0.426910   -0.000000
 siesta: ----------------------------------------
-siesta:    Tot   -0.000000   -0.000000    0.000000
+siesta:    Tot   -0.000000    0.000000   -0.000000
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.049417    0.000000    0.000000
-siesta:     0.000000    0.005463   -0.000000
-siesta:     0.000000   -0.000000   -0.000722
+siesta:    -0.049420    0.000000    0.000000
+siesta:     0.000000    0.005463    0.000000
+siesta:    -0.000000    0.000000   -0.000721
 
 siesta: Cell volume =        180.000000 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00016219          0.00024534  Ry/Bohr**3
-siesta:           0.01489180          0.02252604  eV/Ang**3
-siesta:          23.85955008         36.09109095  kBar
+siesta:           0.00016220          0.00024534  Ry/Bohr**3
+siesta:           0.01489263          0.02252596  eV/Ang**3
+siesta:          23.86087381         36.09095324  kBar
 (Free)E+ p_basis*V_orbitals  =        -928.120763
 (Free)Eharris+ p_basis*V_orbitals  =        -928.120763
 
@@ -637,5 +648,6 @@ siesta: Electric dipole (Debye) =   -0.000000    0.000000   -0.000000
 Dipole moment in unit cell   =     -0.0000      0.0000     -0.0000 D
 Electric field for dipole correction =    0.000000   -0.000000    0.000000 eV/Ang/e
 
-dhscf: Vacuum level (max, mean) =    1.118319    0.439818 eV
->> End of run:  18-AUG-2016   8:42:19
+dhscf: Vacuum level (max, mean) =    1.118146    0.439745 eV
+>> End of run:   2-JUL-2017  11:40:43
+Job completed
