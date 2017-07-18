@@ -5802,8 +5802,8 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
   Character string to choose among diagonalization (\fdf*{diagon}),
   cubic-scaling minimization (\fdf*{OMM}), Order-N (\fdf*{OrderN})
-  solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, or the
-  PEXSI method (\fdf*{PEXSI}).
+  solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, the
+  PEXSI method (\fdf*{PEXSI}) or the \fdf*{CheSS} solver.
   
 \end{fdfentry}
 
@@ -6422,7 +6422,10 @@ It works best for systems exhibiting a finite HOMO-LUMO gap and a small spectral
 
 CheSS exhibits a two level parallelization using MPI and OpenMP and can scale
 to many thousand cores.
-It can be downloaded and installed freely from \url{https://launchpad.net/chess}.
+It can be downloaded and installed freely from
+\url{https://launchpad.net/chess}.
+
+See Sec.~\ref{sec:libs} for details on installing \siesta\ with CheSS.
 
 \subsubsection{Input parameters}
 Usually CheSS only requires little user input, as the default values for the input parameters
@@ -6434,19 +6437,19 @@ of the buffers required for the matrix multiplications to calculate the Chebyshe
   Buffer for the density kernel within the CheSS calculation.
 \end{fdfentry}
 
-\begin{fdfentry}{CheSS!Buffer!Kernel}[length]<$6.0\,\mathrm{Bohr}$>
+\begin{fdfentry}{CheSS!Buffer!Mult}[length]<$6.0\,\mathrm{Bohr}$>
   Buffer for the matrix vector multiplication within the CheSS calculation.
 \end{fdfentry}
 
-\begin{fdfentry}{CheSS!Fscale}[energy]<$1 \cdot 10^{-1}\,\mathrm{Ry}$>
+\begin{fdfentry}{CheSS!Fscale}[energy]<$10^{-1}\,\mathrm{Ry}$>
 	Initial guess for the error function decay length (will be adjusted automatically).
 \end{fdfentry}
 
-\begin{fdfentry}{CheSS!FscaleLowerbound}[energy]<$1 \cdot 10^{-2}\,\mathrm{Ry}$>
+\begin{fdfentry}{CheSS!FscaleLowerbound}[energy]<$10^{-2}\,\mathrm{Ry}$>
 	Lower bound for the error function decay length.
 \end{fdfentry}
 
-\begin{fdfentry}{CheSS!FscaleUpperbound}[energy]<$1 \cdot 10^{-1}\,\mathrm{Ry}$>
+\begin{fdfentry}{CheSS!FscaleUpperbound}[energy]<$10^{-1}\,\mathrm{Ry}$>
 	Upper bound for the error function decay length.
 \end{fdfentry}
 
@@ -6454,7 +6457,7 @@ of the buffers required for the matrix multiplications to calculate the Chebyshe
 	Initial guess for the lower bound of the eigenvalue spectrum of the Hamiltonian matrix, will be adjusted automatically if chosen unproperly.
 \end{fdfentry}
 
-\begin{fdfentry}{CheSS!evhighH}[energy]<$-2.0\,\mathrm{Ry}$>
+\begin{fdfentry}{CheSS!evhighH}[energy]<$2.0\,\mathrm{Ry}$>
 	Initial guess for the upper bound of the eigenvalue spectrum of the Hamiltonian matrix, will be adjusted automatically if chosen unproperly.
 \end{fdfentry}
 
