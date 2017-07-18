@@ -81,6 +81,7 @@ contains
     logical, intent(in) :: Gamma
     integer, intent(in) :: nspin
 
+    integer :: nr
     logical :: dc_default
 
     character(len=32) :: algo
@@ -106,11 +107,39 @@ contains
     end if
 #endif
 
-    
-    Use2D = fdf_get('Diag.Use2D',.true.)
-    ProcessorY = max(1, Nodes / 4)
-    ProcessorY = fdf_get('Diag.ProcessorY', ProcessorY)
+    ! Determine whether we should default a 2D block-cyclic
+    ! A 2D block-cyclic for small # of nodes may not be the best
+    ! choice, say if it a 1 x Y distribution, it makes no sense
+    ! to use a 2D block-cyclic one.
+
+    ! The first step is to calculate the number
+    ! of processors in the row
+    !  row X col
+    do nr = nint(sqrt(real(Nodes))), 1, -1
+       if ( mod(Nodes, nr) == 0 ) exit
+    end do
+    ! Ensure it is minimally 1
+    nr = max(1, nr)
+
+    ! Query the requested number of processors in the
+    ! rows
+    ProcessorY = fdf_get('Diag.ProcessorY', nr)
     ProcessorY = max(1, ProcessorY)
+    ! Assert that it is a valid distribution
+    ! If not, correct it by reducing it until a common
+    ! multiple is reached. This will prevent
+    ! SIESTA from crashing if a wrong input is provided.
+    if ( mod(Nodes, ProcessorY) /= 0 ) then
+       nr = ProcessorY
+       do ProcessorY = nr, 1, -1
+          if ( mod(Nodes, ProcessorY) == 0 ) exit
+       end do
+       ProcessorY = max(1, ProcessorY)
+    end if
+
+    ! If there are very few processors, it makes
+    ! no sense to make them 2D distributed
+    Use2D = fdf_get('Diag.Use2D', ProcessorY > 1 .and. Nodes / ProcessorY > 1)
 
 
     algo = fdf_get('Diag.UpperLower', 'lower')
@@ -185,19 +214,27 @@ contains
     else if ( leqi(algo, 'elpa-1') .or. leqi(algo, 'elpa-1stage') ) then
        algorithm = ELPA_1stage
        
-       ! ELPA requires 2D and non-serial
+       ! ELPA requires non-serial
        Serial = .false.
        ParallelOverK = .false.
+
+       ! Currently I can only get ELPA to work correctly
+       ! with this setup:
        Use2D = .true.
+       ProcessorY = Nodes
 
     else if ( leqi(algo, 'elpa') .or. &
          leqi(algo, 'elpa-2stage') .or. leqi(algo, 'elpa-2') ) then
        algorithm = ELPA_2stage
 
-       ! ELPA requires 2D distribution and non-serial
+       ! ELPA requires non-serial
        Serial = .false.
        ParallelOverK = .false.
+
+       ! Currently I can only get ELPA to work correctly
+       ! with this setup:
        Use2D = .true.
+       ProcessorY = Nodes
 #endif
        
 #ifdef SIESTA__MRRR
@@ -289,21 +326,26 @@ contains
     case ( ELPA_2stage )
        write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'ELPA-2stage'
     case ( Expert )
-       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'expert'
+       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'Expert'
     case ( Expert_2stage )
-       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'expert-2stage'
+       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'Expert-2stage'
     case ( NoExpert )
-       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'noexpert'
+       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'NoExpert'
     case ( NoExpert_2stage )
-       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'noexpert-2stage'
+       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'NoExpert-2stage'
     end select
 
 
 #ifdef MPI
-    write(*,'(a,t53,''= '',tr2,l1)') 'diag: Use parallel 2D distribution', Use2D
-    write(*,'(a,t53,''= '',i4,'' x '',i4)') 'diag: Parallel 2D distribution', &
-         max(1,Nodes / ProcessorY), ProcessorY
     write(*,'(a,t53,''= '',tr2,l1)') 'diag: Parallel over k', ParallelOverK
+    write(*,'(a,t53,''= '',tr2,l1)') 'diag: Use parallel 2D distribution', Use2D
+    if ( Use2D ) then
+       write(*,'(a,t53,''= '',i5,'' x '',i5)') 'diag: Parallel distribution', &
+            ProcessorY, max(1,Nodes / ProcessorY)
+    else
+       write(*,'(a,t53,''= '',i5,'' x '',i5)') 'diag: Parallel distribution', &
+            1, Nodes
+    end if
 #endif
 
     if ( UpperLower == 'L' ) then

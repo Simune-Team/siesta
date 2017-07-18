@@ -8,6 +8,9 @@
 ! Module for performing diagonalization of both real symmetric
 ! and complex hermitian matrices.
 !
+! Its current implementation has been developed by:
+!   Nick R. Papior, 2017.
+!
 ! Its current structure is heavily based on the original
 !   rdiag and cdiag
 ! routines and has been optimized and shortened.
@@ -29,7 +32,7 @@
 !     However, when the node's distributed 2D number of elements
 !     is <= size(H) then we do not need to allocate room for these
 !     nodes. I.e. we can save 3 * size(H2D) elements in memory!
-!     This will typically be so, and it may even happen that only a few
+!     This will typically be so, and it may even happen that only a subset
 !     of the nodes actually require to allocate additional memory.
 !  4. Change the default symmetric part from 'Upper' to 'Lower'.
 !     This is because the pzhengst (in ScaLAPACK) performs better
@@ -63,9 +66,11 @@ module m_diag
 
   save
 
+#ifdef MPI
   ! The BLACS context
   integer :: iCTXT = -1
   integer :: iCTXT2D = -1
+#endif
   
 #ifdef _DIAG_WORK
   logical :: diag_work_r(2) = .true.
@@ -84,12 +89,12 @@ contains
   subroutine diag_init()
 
     use m_diag_option, only: Serial, ParallelOverK
-    use m_diag_option, only: algorithm, ELPA_1stage, ELPA_2stage
 
 #ifdef MPI
     use m_diag_option, only: Use2D, ProcessorY
     use mpi_siesta, only: MPI_Comm_World
 # ifdef SIESTA__ELPA
+    use m_diag_option, only: algorithm, ELPA_1stage, ELPA_2stage
     use elpa, only: elpa_initialized, elpa_init, ELPA_OK
 # endif
 #endif
@@ -255,6 +260,7 @@ contains
 
   end subroutine diag_correct_input
 
+
   subroutine diag_c( H, S, n, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
 ! ***************************************************************************
 ! Subroutine to solve all eigenvalues and eigenvectors of the
@@ -352,13 +358,13 @@ contains
     real(dp) :: scale
 
     ! Expert and MRRR drivers
-    integer :: nz
+    integer :: nz, mclustr
     integer,  pointer :: iclustr(:) => null()
     real(dp), pointer :: gap(:) => null()
 
     ! BLACS descriptors
     integer, target :: desc_1d(9), desc_2d(9)
-    integer, pointer :: desc(:)
+    integer, pointer :: desc(:) => null()
 
     ! Additional variables for a 2D parallel grid
     integer :: np2d(2), my2d(2), mat_2d(2)
@@ -397,15 +403,17 @@ contains
     integer, pointer :: iwork(:) => null()
 
     ! Local variables for loops etc.
-    integer :: i, nprc, mclustr
+    integer :: i
 
     integer, external :: numroc
 
     ! Start time count
     call timer('cdiag',1)
 
+#ifdef MPI
     ! Only re-initialize if the routine hasn't been setup.
     if ( iCTXT < 0 .and. .not. Serial ) call diag_init()
+#endif
 
 !*******************************************************************************
 ! Setup                                                                        *
@@ -459,7 +467,7 @@ contains
 
        if ( Use2D ) then
 
-          ! retrieve secondary grid
+          ! Retrieve information about the BLACS 2D distribution
           call blacs_gridinfo(iCTXT2D, &
                np2d(1), np2d(2), my2d(1), my2d(2))
           
@@ -477,7 +485,15 @@ contains
           desc => desc_2d(:)
 
        else
+
+          ! Retrieve information about the BLACS 1D distribution
+          call blacs_gridinfo(iCTXT, &
+               np2d(1), np2d(2), my2d(1), my2d(2))
           
+          ! Enquire size of local part of the 1D matrices
+          mat_2d(1) = numroc(n, BlockSize, my2d(1), 0, np2d(1))
+          mat_2d(2) = numroc(n, BlockSize, my2d(2), 0, np2d(2))
+
           desc => desc_1d(:)
           
        end if
@@ -486,8 +502,6 @@ contains
        ! Initialize the elpa type
        if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
 
-          if ( .not. Use2D ) call die('Error in coding, diag')
-          
           ! ELPA setup
           ELPAt => elpa_allocate()
           call ELPAt%set('mpi_comm_parent', MPI_Comm_World, info)
@@ -552,9 +566,8 @@ contains
           ! lrwork array
           lrwork_add = max(lrwork_add, (12-1) * n)
 
-          nprc = max(product(np2d), Nodes)
-          call re_alloc(gap, 1, nprc, name='gap')
-          call re_alloc(iclustr, 1, 2*nprc, name='iclustr')
+          call re_alloc(gap, 1, Nodes, name='gap')
+          call re_alloc(iclustr, 1, 2*Nodes, name='iclustr')
 
        end if
 
@@ -638,8 +651,9 @@ contains
 
 #ifdef MPI
     if ( Use2D .and. .not. Serial ) then
-       ! (re)-Distribute to new 2D layout
-       ! Note that it has to be in this order
+       ! Redistribute to 2D layout
+       ! Note that the call sequence HAS to be in this order (see pointers
+       ! above).
        call pzgemr2d(n, n, S, 1, 1, desc_1d, Sp, 1, 1, desc_2d, iCTXT)
        call pzgemr2d(n, n, H, 1, 1, desc_1d, Hp, 1, 1, desc_2d, iCTXT)
     end if
@@ -699,9 +713,10 @@ contains
           ! Left hand of the inverse
           ! We do require the full matrix calculated
           ! due to the ELPA solver.
+          call zcopy(size(Hp),Hp,1,Zp,1)
           call ELPAt%hermitian_multiply('U','F',n, &
-               Sp,Hp,mat_2d(1),mat_2d(2), &
-               Zp,mat_2d(1),mat_2d(2),info)
+               Sp,Zp,mat_2d(1),mat_2d(2), &
+               Hp,mat_2d(1),mat_2d(2),info)
           call elpa_check(info, 'cdiag: Hermitian multiply Left')
           
           ! Right hand of the inverse.
@@ -710,7 +725,7 @@ contains
           ! We could, possibly use pztranc
           ! and then use hermitian_multiply... (?)
           call pztrmm('R','U','N','N',n,n,dcmplx(1._dp,0._dp), &
-               Sp,1,1,desc,Zp,1,1,desc)
+               Sp,1,1,desc,Hp,1,1,desc)
           
           info = 0
        else
@@ -828,9 +843,9 @@ contains
 
           ! Calculate the eigenvector or eigenvalues
           if ( neig > 0 ) then
-             call ELPAt%eigenvectors(Zp, w, Hp, info)
+             call ELPAt%eigenvectors(Hp, w, Zp, info)
           else
-             call ELPAt%eigenvalues(Zp, w, info)
+             call ELPAt%eigenvalues(Hp, w, info)
           end if
           call elpa_check(info, 'cdiag: Solver')
           info = 0
@@ -844,7 +859,7 @@ contains
                info)
 
           mclustr = 0
-          do i = 1, nprc
+          do i = 1, Nodes
              mclustr = max(iclustr(2*i) - iclustr(2*i-1), mclustr)
           end do
 
@@ -934,24 +949,23 @@ contains
           if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
              ! Back-transform the eigenvectors
              ! Note the ELPA Hermitian multiply always takes the Hermitian
-             ! conjugate of the left operator
+             ! conjugate of the left operator, so we cannot use it.
+             ! Also, the ELPA routines have already calculated
+             ! the inverse of Cholesky(S), hence we only need
+             ! a matrix-multiplication
              call pztrmm('L','U','N','N',n,neig,dcmplx(1._dp,0._dp), &
-                  Sp,1,1,desc,Hp,1,1,desc)
-             call pzgemr2d(n,neig,Hp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
+                  Sp,1,1,desc,Zp,1,1,desc)
           else
              call pztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp), &
                   Sp,1,1,desc,Zp,1,1,desc)
-             if ( Use2D ) then
-                call pzgemr2d(n,neig,Zp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
-             end if
           end if
 # else
           call pztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp), &
                Sp,1,1,desc,Zp,1,1,desc)
+# endif
           if ( Use2D ) then
              call pzgemr2d(n,neig,Zp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
           end if
-# endif
 #endif
        end if
        call timer('cdiag4',2)
@@ -982,7 +996,10 @@ contains
       ! Deallocate workspace arrays
       if ( Serial ) then
 #ifdef SIESTA__MRRR
-         call de_alloc(isuppz, name='isuppz')
+         if ( algo == MRRR .or. &
+              algo == MRRR_2stage ) then
+            call de_alloc(isuppz, name='isuppz')
+         end if
 #endif
 #ifdef MPI
       else
@@ -1206,10 +1223,15 @@ contains
       lrwork = nint(rwork(1) * mem_factor)
       liwork = iwork(1)
 
+      lwork = max(1, lwork)
+      lrwork = max(1, lrwork)
+      liwork = max(1, liwork)
+
     end subroutine work_query
     
   end subroutine diag_c
 
+  
   subroutine diag_r( H, S, n, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
 ! ***************************************************************************
 ! Subroutine to solve all eigenvalues and eigenvectors of the
@@ -1307,7 +1329,7 @@ contains
     real(dp) :: scale
 
     ! Expert and MRRR drivers
-    integer :: nz
+    integer :: nz, mclustr
     integer,  pointer :: iclustr(:) => null()
     real(dp), pointer :: gap(:) => null()
 
@@ -1350,15 +1372,17 @@ contains
     integer, pointer :: iwork(:) => null()
 
     ! Local variables for loops etc.
-    integer :: i, nprc, mclustr
+    integer :: i
 
     integer, external :: numroc
 
     ! Start time count
     call timer('rdiag',1)
 
+#ifdef MPI
     ! Only re-initialize if the routine hasn't been setup.
     if ( iCTXT < 0 .and. .not. Serial ) call diag_init()
+#endif
 
 !*******************************************************************************
 ! Setup                                                                        *
@@ -1439,7 +1463,17 @@ contains
        ! Initialize the elpa type
        if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
           
-          if ( .not. Use2D ) call die('Error in coding, diag')
+          if ( .not. Use2D ) then
+             
+             ! retrieve information from 1D grid
+             call blacs_gridinfo(iCTXT, &
+                  np2d(1), np2d(2), my2d(1), my2d(2))
+             
+             ! Enquire size of local part of the 1D matrices
+             mat_2d(1) = numroc(n, BlockSize, my2d(1), 0, np2d(1))
+             mat_2d(2) = numroc(n, BlockSize, my2d(2), 0, np2d(2))
+             
+          end if
           
           ! ELPA setup
           ELPAt => elpa_allocate()
@@ -1506,9 +1540,8 @@ contains
           ! lwork array
           lwork_add = max(lwork_add, (12-1) * n)
 
-          nprc = max(product(np2d), Nodes)
-          call re_alloc(gap, 1, nprc, name='gap')
-          call re_alloc(iclustr, 1, 2*nprc, name='iclustr')
+          call re_alloc(gap, 1, Nodes, name='gap')
+          call re_alloc(iclustr, 1, 2*Nodes, name='iclustr')
 
        end if
 
@@ -1587,8 +1620,9 @@ contains
 
 #ifdef MPI
     if ( Use2D .and. .not. Serial ) then
-       ! (re)-Distribute to new 2D layout
-       ! Note that it has to be in this order
+       ! Redistribute to 2D layout
+       ! Note that the call sequence HAS to be in this order (see pointers
+       ! above).
        call pdgemr2d(n, n, S, 1, 1, desc_1d, Sp, 1, 1, desc_2d, iCTXT)
        call pdgemr2d(n, n, H, 1, 1, desc_1d, Hp, 1, 1, desc_2d, iCTXT)
     end if
@@ -1634,7 +1668,7 @@ contains
 # ifdef SIESTA__ELPA
        if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
 
-          ! Define the scale to be 1.
+          ! Set the scale to be 1 (ELPA does not use the scale)
           scale = 1._dp
 
           ! The following routine requires the use of the upper
@@ -1649,16 +1683,18 @@ contains
           ! Left hand of the inverse
           ! We do require the full matrix calculated
           ! due to the ELPA solver.
+          call dcopy(size(Hp),Hp,1,Zp,1)
           call ELPAt%hermitian_multiply('U','F',n, &
-               Sp,Hp,mat_2d(1),mat_2d(2), &
-               Zp,mat_2d(1),mat_2d(2),info)
+               Sp,Zp,mat_2d(1),mat_2d(2), &
+               Hp,mat_2d(1),mat_2d(2),info)
           call elpa_check(info, 'rdiag: Hermitian multiply Left')
 
           ! Right hand of the inverse.
           ! Note the ELPA Hermitian multiply always takes the Hermitian
           ! conjugate of the left operator, hence we cannot use it
           call pdtrmm('R','U','N','N',n,n,1._dp, &
-               Sp,1,1,desc,Zp,1,1,desc)
+               Sp,1,1,desc,Hp,1,1,desc)
+          
           info = 0
        else
           call pdsyngst(1,uplo,n,Hp,1,1,desc,Sp,1,1, &
@@ -1775,9 +1811,9 @@ contains
 
           ! Calculate the eigenvector or eigenvalues
           if ( neig > 0 ) then
-             call ELPAt%eigenvectors(Zp, w, Hp, info)
+             call ELPAt%eigenvectors(Hp, w, Zp, info)
           else
-             call ELPAt%eigenvalues(Zp, w, info)
+             call ELPAt%eigenvalues(Hp, w, info)
           end if
           call elpa_check(info, 'rdiag: Solver')
           info = 0
@@ -1791,7 +1827,7 @@ contains
                info)
 
           mclustr = 0
-          do i = 1, nprc
+          do i = 1, Nodes
              mclustr = max(iclustr(2*i) - iclustr(2*i-1), mclustr)
           end do
 
@@ -1881,22 +1917,18 @@ contains
              ! Note the ELPA Hermitian multiply always takes the Hermitian
              ! conjugate of the left operator
              call pdtrmm('L','U','N','N',n,neig,1._dp, &
-                  Sp,1,1,desc,Hp,1,1,desc)
-             call pdgemr2d(n,neig,Hp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
+                  Sp,1,1,desc,Zp,1,1,desc)
           else
              call pdtrsm('L',uplo,trans,'N',n,neig,1._dp, &
                   Sp,1,1,desc,Zp,1,1,desc)
-             if ( Use2D ) then
-                call pdgemr2d(n,neig,Zp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
-             end if
           end if
 # else
           call pdtrsm('L',uplo,trans,'N',n,neig,1._dp, &
                Sp,1,1,desc,Zp,1,1,desc)
+# endif
           if ( Use2D ) then
              call pdgemr2d(n,neig,Zp,1,1,desc_2d,Z,1,1,desc_1d,iCTXT)
           end if
-# endif
 #endif
        end if
        call timer('rdiag4',2)
@@ -1927,7 +1959,10 @@ contains
       ! Deallocate workspace arrays
       if ( Serial ) then
 #ifdef SIESTA__MRRR
-         call de_alloc(isuppz, name='isuppz')
+         if ( algo == MRRR .or. &
+              algo == MRRR_2stage ) then
+            call de_alloc(isuppz, name='isuppz')
+         end if
 #endif
 #ifdef MPI
       else
@@ -2112,6 +2147,9 @@ contains
       lwork = nint(max(nint(work(1)), l_lwork) * mem_factor)
       liwork = iwork(1)
 
+      lwork = max(1, lwork)
+      liwork = max(1, liwork)
+
     end subroutine work_query
     
   end subroutine diag_r
@@ -2138,6 +2176,9 @@ end module m_diag
 subroutine cdiag( H, S, n, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
   use precision, only: dp
   use m_diag, only: diag_c
+
+  implicit none
+  
   integer :: nml, nm
   complex(dp), target :: H(nml,nm)
   complex(dp), target :: S(nml,nm)
@@ -2156,6 +2197,9 @@ end subroutine cdiag
 subroutine rdiag( H, S, n, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
   use precision, only: dp
   use m_diag, only: diag_r
+  
+  implicit none
+  
   integer :: nml, nm
   real(dp), target :: H(nml,nm)
   real(dp), target :: S(nml,nm)

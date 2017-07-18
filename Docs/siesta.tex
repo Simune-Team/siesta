@@ -507,7 +507,7 @@ for creating the final \file{arch.make}.
 % inspiration by looking at the actual \file{arch.make} examples in
 % the \shell{Src/Sys} subdirectory. If you intend to create a parallel
 % version of \siesta, make sure you have all the extra support libraries
-% (\program{MPI}, \program{scalapack}, \program{blacs}\dots) (see Sec.~\ref{sec:parallel}).
+% (\program{MPI}, \program{ScaLAPACK}, \program{blacs}\dots) (see Sec.~\ref{sec:parallel}).
   
 % Optionally, the command \shell{../Src/configure} will start an
 % automatic scan of your system and try to build an \file{arch.make}
@@ -831,11 +831,10 @@ libraries
   \index{compile!pre-processor!-DSIESTA\_\_METIS}
 
   
-\ifdeveloper
   \item[\href{http://elpa.mpcdf.mpg.de}{ELPA}]%
   \index{ELPA}%
   \index{External library!ELPA}%
-  The ELPA library provides faster diagonalization routines.
+  The ELPA\cite{ELPA,ELPA-1} library provides faster diagonalization routines.
 
   The required version of ELPA \emph{must} be later than 2017.05.
   Add these flags to your \file{arch.make} file to enable ELPA
@@ -846,9 +845,9 @@ libraries
   \index{compile!pre-processor!-DSIESTA\_\_ELPA}
   where \shell{<>} are any libraries that ELPA depend on.
 
-  \note that ELPA can only be used in the parallel version of \siesta.
-\fi
+  \note ELPA can only be used in the parallel version of \siesta.
 
+  
   \item[\href{http://mumps.enseeiht.fr}{MUMPS}]%
   \index{MUMPS}%
   \index{External library!MUMPS}%
@@ -1351,7 +1350,7 @@ default if a given tag is not found when needed (see \shell{fdf.log}).
   same species, but with a different pseudopotential or basis set are
   counted as different species.
 
-  \note is not required to be set.
+  \note This is not required to be set.
   
 \end{fdfentry}
 
@@ -1359,7 +1358,7 @@ default if a given tag is not found when needed (see \shell{fdf.log}).
 
   Number of atoms in the simulation.
 
-  \note is not required to be set.
+  \note This is not required to be set.
 
 \end{fdfentry}
 
@@ -1391,7 +1390,7 @@ default if a given tag is not found when needed (see \shell{fdf.log}).
 
   For atomic numbers over $200$ or below $-200$ you should read \fdf{SyntheticAtoms}.
 
-  \note this block is mandatory.
+  \note This block is mandatory.
   
 \end{fdfentry}
 
@@ -1891,7 +1890,7 @@ set to their problem under consideration.
     valence shell of the ground-state atomic configuration. They
     polarize the corresponding $l-1$ shell.
 
-    \note the ground-state atomic configuration used internally by
+    \note The ground-state atomic configuration used internally by
     \siesta\ is defined in the source file
     \shell{Src/periodic\_table.f}.  For some elements (e.g., Pd), the
     configuration might not be the standard one\index{Ground-state
@@ -2859,7 +2858,7 @@ modified xyz format) which must be described within a
   \fdf{AtomicCoordinatesFormat}, and \shell{isa(ia)} is the species
   index of atom \shell{ia}.
 
-  \note this block \emph{must} be present in the fdf file. If
+  \note This block \emph{must} be present in the fdf file. If
   \fdf{NumberOfAtoms} is not specified, \fdf{NumberOfAtoms} will be
   defaulted to the number of atoms in this block.
 
@@ -3653,8 +3652,8 @@ are always stored in the file \sysfile{KP}.
 
   Choose the spin-components in the simulation.
 
-  \note this flag has precedence over \fdf*{SpinOrbit}, \fdf*{NonCollinearSpin} and
-  \fdf*{SpinPolarized} while these older flags may still be used.
+  \note This flag has precedence over \fdf*{SpinOrbit}, \fdf*{NonCollinearSpin} and
+  \fdf*{SpinPolarized} while these deprecated flags may still be used.
   \begin{fdfoptions}
 
     \option[non-polarized]%
@@ -3986,7 +3985,7 @@ by potentially saving many self-consistency steps in production runs.
     difference between the spinor components 
   \end{fdfoptions}
 
-  \note this option only influences density-matrix ($\DM$) or
+  \note This option only influences density-matrix ($\DM$) or
   Hamiltonian ($\Ham$) mixing when using anything but the
   \fdf*{linear} mixing scheme. And it does not influence not charge
   ($\rho$) mixing.
@@ -4279,7 +4278,7 @@ control commands. This can greatly speed up convergence.
     Define the maximum number of iterations this mixer should run
     before changing to another mixing method.
 
-    \note this \emph{must} be used in conjunction with the \fdf*{next} setting.
+    \note This \emph{must} be used in conjunction with the \fdf*{next} setting.
 
     \option[next \fdf*{<>}]%
     \fdfindex*{SCF.Mixer.<>!next}%
@@ -4414,7 +4413,7 @@ should be performed.
   improves the quality of the final Kohn-Sham energy and of the forces
   when mixing the DM.
 
-  \note see \fdf{Compat!Pre-v4-DM-H}.
+  \note See \fdf{Compat!Pre-v4-DM-H}.
 
 \end{fdflogicalF}
 
@@ -4427,7 +4426,7 @@ should be performed.
   of band structures) more consistent, as they will be able to use the
   same H used to generate the last density matrix.
   
-  \note see \fdf{Compat!Pre-v4-DM-H}.
+  \note See \fdf{Compat!Pre-v4-DM-H}.
 
 \end{fdflogicalF}
 
@@ -4940,7 +4939,7 @@ The Density matrix can be:
   
   \siesta\ will continue even if \sysfile*{DM} is not found.
 
-  \note that if the spin settings has changed \siesta\ allows reading
+  \note That if the spin settings has changed \siesta\ allows reading
   a \sysfile*{DM} from a similar calculation with different \fdf{Spin}
   option. This may be advantageous when going from non-polarized
   calculations to polarized, and beyond, see \fdf{Spin} for details. 
@@ -5076,7 +5075,7 @@ The Density matrix can be:
   necessary that the basis sets are ``similar'' (a requirement if
   density-matrices are to be read in).
 
-  \note this is an experimental feature. Until robust checks are
+  \note This is an experimental feature. Until robust checks are
   implemented, care must be taken to make sure that the FFT grids in
   the \sysfile*{grid.nc} file and in \siesta\ are the same.
 
@@ -5094,7 +5093,7 @@ The Density matrix can be:
   charge is particularly useful to give a good starting point for
   slightly different geometries.
 
-  \note this is an experimental feature. Until robust checks are
+  \note This is an experimental feature. Until robust checks are
   implemented, care must be taken to make sure that the FFT grids in
   the \sysfile*{grid.nc} file and in Siesta are the same.
 
@@ -5156,7 +5155,7 @@ analysis of data and to increase the efficiency.
   Equivalent to \fdf{Write!DM}, but will only write at the end of each
   SCF loop.
 
-  \note the file generated depends on \fdf{SCF.MixAfterConvergence}.
+  \note The file generated depends on \fdf{SCF.MixAfterConvergence}.
 
 \end{fdfentry}  
 
@@ -5178,7 +5177,7 @@ analysis of data and to increase the efficiency.
   Equivalent to \fdf{Write!H}, but will only write at the end of each
   SCF loop.
 
-  \note the file generated depends on \fdf{SCF.MixAfterConvergence}.
+  \note The file generated depends on \fdf{SCF.MixAfterConvergence}.
 
 \end{fdfentry}  
 
@@ -5390,7 +5389,7 @@ simultaneously for complete control.
   information as \file{BASIS\_ENTHALPY} but using the Harris energy
   instead of the Kohn-Sham energy.
 
-  \note setting this to \fdftrue\ makes \fdf{SCF.DM!Converge}
+  \note Setting this to \fdftrue\ makes \fdf{SCF.DM!Converge}
   \fdf{SCF.H!Converge} default to \fdffalse.
 
 \end{fdflogicalF}
@@ -5471,7 +5470,7 @@ the issue (see Sec.~\ref{sec:filtering}).
   to save index storage on the mesh. It affects the memory
   requirements and the CPU time, but not the results. 
 
-  \note the default value might be a bit conservative. Users might
+  \note The default value might be a bit conservative. Users might
   experiment with higher values, 4 or 6, to lower the memory and
   cputime usage.
 
@@ -5642,7 +5641,7 @@ the issue (see Sec.~\ref{sec:filtering}).
   It will be particularly helpful in atoms with substantial partial
   core or semicore electrons.
 
-  \note this should only be used for fixed cell calculations, i.e. not
+  \note This should only be used for fixed cell calculations, i.e. not
   with \fdf{MD.VariableCell}.
 
   For the time being, it is up to the user to obtain the Fourier
@@ -5672,7 +5671,7 @@ the issue (see Sec.~\ref{sec:filtering}).
   which do not overlap. These come from the KB projectors.  Neglecting
   them makes the Hamiltonian more sparse, and the calculation faster.
   
-  \note use with care!
+  \note Use with care!
 
 \end{fdflogicalF}
 
@@ -5806,47 +5805,16 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   of orbitals above the total charge of the system. In effect it
   corresponds to the number of orbitals above the Fermi level for zero
   temperature. I.e. if this option is $-2$ for a system of 20 orbitals
-  with 10 electrons it corresponds to passing $12$ as the
-  option.
+  with 10 electrons it is equivalent to $12$.
 
-  \note if for $\Gamma$ calculations and \fdf*{MRRR} you experience
-  \shell{PDORMTR} errors it is because of a buggy ScaLAPACK
-  implementation.
+  \note If experiencing \shell{PDORMTR} errors in $\Gamma$
+  calculations with \fdf*{MRRR} algorithm, it is because of a buggy
+  ScaLAPACK implementation, simply use another algorithm.
 
-  \note this only affects the following \fdf*{MRRR}\ifdeveloper,
-  \fdf*{ELPA}\fi\ and \fdf*{Expert} diagonalization routines.
+  \note This only affects the \fdf*{MRRR}, \fdf*{ELPA} and
+  \fdf*{Expert} diagonalization routines.
   
 \end{fdfentry}
-
-\begin{fdflogicalF}{Diag!ELPA}
-  \fdfdepend{NumberOfEigenStates}
-
-  \ifdeveloper
-  \else
-  (For parallel gamma-point calculations without spin orbit only) Use
-  the ELPA routines for diagonalization. Specifying a number of
-  eigenvectors to store is possible through the symbol
-  \fdf{NumberOfEigenStates} (see above).
-  \fi
-
-  A description of some algorithms present in ELPA can be found in:
-
-  T. Auckenthaler, V. Blum, H.-J. Bungartz, T. Huckle, R. Johanni,
-  L. Kr\"amer, B. Lang, H. Lederer, and P. R. Willems, ``Parallel
-  solution of partial symmetric eigenvalue problems from electronic
-  structure calculations'', Parallel Computing 37, 783-794 (2011).
-  doi:10.1016/j.parco.2011.05.002.
-
-  Marek, A.; Blum, V.; Johanni, R.; Havu, V.; Lang, B.; Auckenthaler,
-  T.; Heinecke, A.; Bungartz, H.-J.; Lederer, H.  ``The ELPA library:
-  scalable parallel eigenvalue solutions for electronic structure
-  theory and computational science'', Journal of Physics Condensed
-  Matter, 26 (2014) doi:10.1088/0953-8984/26/21/213201
-
-  \note It is not compatible with the \fdf{Diag!ParallelOverK}
-  option.
-  
-\end{fdflogicalF}
 
 
 \begin{fdflogicalF}{Diag!UseNewDiagk}
@@ -5878,25 +5846,40 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 
 \begin{fdflogicalT}{Diag!Use2D}
+  \fdfdepend{Diag!ProcessorY}
 
-  Logical to select whether a 1-D or 2-D data decomposition should be
-  used when calling scalapack. The use of 2-D leads to superior
-  scaling to large numbers of processors and is therefore the
-  default. This option only influences the parallel performance.
-  
+  Determine whether a 1D or 2D data decomposition should be used when
+  calling ScaLAPACK. The use of 2D leads to superior scaling on large
+  numbers of processors and is therefore the default. This option only
+  influences the parallel performance.
+
+  \note If \fdf{Diag!ProcessorY} is $1$ or the total number of
+  processors, then this flag will default to \fdffalse.
+
 \end{fdflogicalT}
 
-\begin{fdfentry}{Diag!ProcessorY}[integer]<$\mathrm N / 4$>
-  \fdfdepend{Diag!Use2D}
+\begin{fdfentry}{Diag!ProcessorY}[integer]<$\sim \mathrm N^2$>
 
-  The number of processors in the Y direction of the 2D processor
-  grid.
+  Set the number of processors in the 2D distribution along the rows.
+  Its default is equal to the lowest multiple of $\mathrm N$ (number
+  of MPI cores) below $\mathrm N^2$ such that, ideally, the
+  distribution will be a square grid.
 
-  Defaults to $1/4$ of the total number of processors.
+  The input is required to be a multiple of the total number of MPI
+  cores but \siesta\ will reduce the input value such that it
+  coincides with this.
+
+  Once the lowest multiple closest to $\mathrm N^2$, or the input, is
+  determined the 2D distribution will be $\mathrm{ProcessorY}
+  \times\mathrm{N}/\mathrm{ProcessorY}$, rows $\times$ columns.
+
+  \note If the automatic correction (lowest multiple of MPI cores) is
+  $1$ the default of \fdf{Diag!Use2D} will be \fdffalse.
 
 \end{fdfentry}
 
-\begin{fdfentry}{Diag!Algorithm}[string]<divide-and-conquer>
+
+\begin{fdfentry}{Diag!Algorithm}[string]<...>
 
   Select the algorithm when calculating the eigenvalues and/or
   eigenvectors.
@@ -5910,7 +5893,9 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     
     Use the divide-and-conquer algorithm.
 
-    
+    \note This is the default algorithm if the MRRR method is not
+    enabled in \siesta.
+
     \option[divide-and-Conquer-2stage]%
     \fdfindex{Diag!Algorithm!Divide-and-Conquer-2stage}
     
@@ -5928,6 +5913,9 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     if your ScaLAPACK library does contain the relevant sources one
     may add this pre-processor flag \texttt{-DSIESTA\_\_MRRR}.
     \index{compile!pre-processor!-DSIESTA\_\_MRRR}
+
+    \note This is the default algorithm if the MRRR method is enabled
+    in \siesta.
 
 
     \option[MRRR-2stage]%
@@ -5963,22 +5951,22 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
     Use the 2-stage regular algorithm.
 
-\ifdeveloper
+    
     \option[ELPA-1stage]%
     \fdfindex{Diag!Algorithm!ELPA-1stage}%
     \fdfdepend{NumberOfEigenStates}
     
-    Use the ELPA 1-stage solver.
+    Use the ELPA\cite{ELPA,ELPA-1} 1-stage solver.
 
     \option[ELPA|ELPA-2stage]%
     \fdfindex{Diag!Algorithm!ELPA-2stage}%
     \fdfdepend{NumberOfEigenStates}
     
-    Use the ELPA 2-stage solver.
-\fi
+    Use the ELPA\cite{ELPA,ELPA-1} 2-stage solver.
+
   \end{fdfoptions}
 
-  \note that all the 2-stage solvers are (as of July 2017) only
+  \note All the 2-stage solvers are (as of July 2017) only
   implemented in the LAPACK library, so they will only be usable in
   serial or when using \fdf{Diag!ParallelOverK}.
 
@@ -5992,12 +5980,13 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   automatically.
 
 
-  \note this flag has precedence over the deprecated flags:
+  \note This flag has precedence over the deprecated flags:
   \fdf{Diag!DivideAndConquer}, \fdf{Diag!MRRR}, \fdf{Diag!ELPA} and
   \fdf{Diag!NoExpert}. However, the default is taking from the
   deprecated flags.
   
 \end{fdfentry}
+
 
 \begin{fdflogicalF}{Diag!ParallelOverK}
   
@@ -6050,8 +6039,6 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   achieve successful diagonalization and is a scale factor relative to
   the minimum amount of memory that ScaLAPACK might need.
 
-  \note this has been disabled since 4.1.
-
 \end{fdfentry}
 
 
@@ -6060,7 +6047,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   Which part of the symmetric triangular part should be used in the
   solvers.
 
-  \note do not change this variable unless you are performing
+  \note Do not change this variable unless you are performing
   benchmarks. It should be fastest with the \fdf*{lower} part.
 
 \end{fdfentry}
@@ -6080,26 +6067,40 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   may add this pre-processor flag \texttt{-DSIESTA\_\_MRRR}.
   \index{compile!pre-processor!-DSIESTA\_\_MRRR}
 
-  \note use \fdf{Diag!Algorithm} instead.
+  \note Use \fdf{Diag!Algorithm} instead.
   
 \end{fdflogicalF}
 
 \begin{fdflogicalT}{Diag!DivideAndConquer}
 
   Logical to select whether the normal or Divide and Conquer
-  algorithms are used within the Lapack diagonalization routines.
+  algorithms are used within the ScaLAPACK/LAPACK diagonalization
+  routines.
 
-  \note use \fdf{Diag!Algorithm} instead.
+  \note Use \fdf{Diag!Algorithm} instead.
 
 \end{fdflogicalT}
+
+\begin{fdflogicalF}{Diag!ELPA}
+  \fdfdepend{NumberOfEigenStates}
+
+  See the ELPA articles\cite{ELPA,ELPA-1} for additional information. 
+
+  \note It is not compatible with the \fdf{Diag!ParallelOverK}
+  option.
+
+  \note Use \fdf{Diag!Algorithm} instead.
+
+\end{fdflogicalF}
+
 
 \begin{fdflogicalF}{Diag!NoExpert}
 
   Logical to select whether the simple or expert versions of the
-  lapack/ scalapack routines are used. Usually the expert routines are
+  ScaLAPACK/LAPACK routines are used. Usually the expert routines are
   faster, but may require slightly more memory.
 
-  \note use \fdf{Diag!Algorithm} instead.
+  \note Use \fdf{Diag!Algorithm} instead.
 
 \end{fdflogicalF}
 
@@ -11869,7 +11870,7 @@ the atoms which may be outlined as in the following loop:
 \end{fdfexample}
 As a help, \tsiesta\ prints out the expected coordinates as though the
 first device atom coincides with the first electrode atom. Another
-means to create this is using the \sisl\ program and this command
+means to create this is using the \sisl\cite{sisl} program and this command
 line:
 \begin{fdfexample}
   sgeom -rx 1 -ry 3 -rz 1 ELEC.fdf DEVICE_ELEC.fdf
