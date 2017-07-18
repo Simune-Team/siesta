@@ -337,17 +337,16 @@ contains
 #endif
 
     ! Passed variables
-    integer :: ierror
-    integer :: iscf
-    integer :: n
-    integer :: neig
-    integer :: nm
-    integer :: nml
-    integer :: BlockSize
-    real(dp) :: w(nml)
-    complex(dp), target :: H(nml,nm)
-    complex(dp), target :: S(nml,nm)
-    complex(dp), target :: Z(nml,nm)
+    integer, intent(out) :: ierror
+    integer, intent(in) :: iscf
+    integer, intent(in) :: n
+    integer, intent(in) :: neig
+    integer, intent(in) :: nm, nml
+    integer, intent(in) :: BlockSize
+    real(dp), intent(inout) :: w(nml)
+    complex(dp), intent(inout), target :: H(nml,nm)
+    complex(dp), intent(inout), target :: S(nml,nm)
+    complex(dp), intent(inout), target :: Z(nml,nm)
 
     ! Local variables
     type(allocDefaults) :: oldDefaults
@@ -1308,17 +1307,16 @@ contains
 #endif
 
     ! Passed variables
-    integer :: ierror
-    integer :: iscf
-    integer :: n
-    integer :: neig
-    integer :: nm
-    integer :: nml
-    integer :: BlockSize
-    real(dp) :: w(nml)
-    real(dp), target :: H(nml,nm)
-    real(dp), target :: S(nml,nm)
-    real(dp), target :: Z(nml,nm)
+    integer, intent(out) :: ierror
+    integer, intent(in) :: iscf
+    integer, intent(in) :: n
+    integer, intent(in) :: neig
+    integer, intent(in) :: nm, nml
+    integer, intent(in) :: BlockSize
+    real(dp), intent(inout) :: w(nml)
+    real(dp), intent(inout), target :: H(nml,nm)
+    real(dp), intent(inout), target :: S(nml,nm)
+    real(dp), intent(inout), target :: Z(nml,nm)
 
     ! Local variables
     type(allocDefaults) :: oldDefaults
@@ -2179,16 +2177,16 @@ subroutine cdiag( H, S, n, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
 
   implicit none
   
-  integer :: nml, nm
-  complex(dp), target :: H(nml,nm)
-  complex(dp), target :: S(nml,nm)
-  real(dp) :: w(nml)
-  complex(dp), target :: Z(nml,nm)
-  integer :: n
-  integer :: neig
-  integer :: iscf
-  integer :: ierror
-  integer :: BlockSize
+  integer, intent(in) :: nml, nm
+  complex(dp), intent(inout), target :: H(nml,nm)
+  complex(dp), intent(inout), target :: S(nml,nm)
+  real(dp), intent(inout) :: w(nml)
+  complex(dp), intent(inout), target :: Z(nml,nm)
+  integer, intent(in) :: n
+  integer, intent(in) :: neig
+  integer, intent(in) :: iscf
+  integer, intent(out) :: ierror
+  integer, intent(in) :: BlockSize
   
   call diag_c(H, S, N, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
   
@@ -2200,16 +2198,16 @@ subroutine rdiag( H, S, n, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
   
   implicit none
   
-  integer :: nml, nm
-  real(dp), target :: H(nml,nm)
-  real(dp), target :: S(nml,nm)
-  real(dp) :: w(nml)
-  real(dp), target :: Z(nml,nm)
-  integer :: n
-  integer :: neig
-  integer :: iscf
-  integer :: ierror
-  integer :: BlockSize
+  integer, intent(in) :: nml, nm
+  real(dp), intent(inout), target :: H(nml,nm)
+  real(dp), intent(inout), target :: S(nml,nm)
+  real(dp), intent(inout) :: w(nml)
+  real(dp), intent(inout), target :: Z(nml,nm)
+  integer, intent(in) :: n
+  integer, intent(in) :: neig
+  integer, intent(in) :: iscf
+  integer, intent(out) :: ierror
+  integer, intent(in) :: BlockSize
   
   call diag_r(H, S, N, nm, nml, w, Z, neig, iscf, ierror, BlockSize)
   
