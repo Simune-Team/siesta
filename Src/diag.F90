@@ -227,8 +227,8 @@ contains
              algo = MRRR
           case ( Expert_2stage )
              algo = Expert
-          case ( NoExpert_2stage )
-             algo = NoExpert
+          case ( QR_2stage )
+             algo = QR
           end select
        end if
 
@@ -244,8 +244,8 @@ contains
           algo = MRRR
        case ( Expert_2stage )
           algo = Expert
-       case ( NoExpert_2stage )
-          algo = NoExpert
+       case ( QR_2stage )
+          algo = QR
        end select
 
        if ( algo == DivideConquer ) then
@@ -470,12 +470,12 @@ contains
           call blacs_gridinfo(iCTXT2D, &
                np2d(1), np2d(2), my2d(1), my2d(2))
           
-          ! Enquire size of local part of 2D matices
-          mat_2d(1) = numroc(n, BlockSize, my2d(1), 0, np2d(1))
-          mat_2d(2) = numroc(n, BlockSize, my2d(2), 0, np2d(2))
+          ! Enquire size of local part of 2D matrices
+          mat_2d(1) = numroc(n, diag_BlockSize, my2d(1), 0, np2d(1))
+          mat_2d(2) = numroc(n, diag_BlockSize, my2d(2), 0, np2d(2))
 
           ! Set up blacs descriptors for 2D case
-          call descinit(desc_2d, n, n, Blocksize, BlockSize, 0, 0, &
+          call descinit(desc_2d, n, n, diag_BlockSize, diag_BlockSize, 0, 0, &
                iCTXT2D, mat_2d(1), info)
           if ( info /= 0 ) then
              call die('cdiag: Blacs setup has failed!')
@@ -524,7 +524,11 @@ contains
           call elpa_check(info, 'local_nrows')
           call ELPAt%set('local_ncols', mat_2d(2), info)
           call elpa_check(info, 'local_ncols')
-          call ELPAt%set('nblk', BlockSize, info)
+          if ( Use2D ) then
+             call ELPAt%set('nblk', diag_BlockSize, info)
+          else
+             call ELPAt%set('nblk', BlockSize, info)
+          end if
           call elpa_check(info, 'nblk')
           ! Set the number of calculated eigenvalues/vectors
           call ELPAt%set('nev', iu, info)
@@ -645,7 +649,8 @@ contains
     call re_alloc(iwork, 1, liwork, name='iwork')
 
     ! Begin calculation
-    neigok = iu ! default to all queried (will only be overwritten for expert drivers)
+    ! Default OK eigenvalues to the queried entries
+    neigok = iu
 
 
 #ifdef MPI
@@ -774,7 +779,7 @@ contains
                work,lwork,rwork,iwork,ifail, &
                info)
           
-       case ( NoExpert )
+       case ( QR )
           call zheev(jobz,uplo,n,H,n,w, &
                work,lwork,rwork, &
                info)
@@ -807,7 +812,7 @@ contains
                work,lwork,rwork,iwork,ifail, &
                info)
 
-       case ( NoExpert_2stage )
+       case ( QR_2stage )
           call zheev_2stage(jobz,uplo,n,H,n,w, &
                work,lwork,rwork, &
                info)
@@ -901,7 +906,7 @@ contains
              
           end if
 
-       case ( NoExpert )
+       case ( QR )
           call pzheev(jobz,uplo,n,Hp,1,1,desc, &
                w,Zp,1,1,desc, &
                work,lwork,rwork,lrwork, &
@@ -1082,7 +1087,7 @@ contains
             rwork(1) = max(nint(rwork(1)), 7*n)
             iwork(1) = max(iwork(1), 5*n)
 
-         case ( NoExpert )
+         case ( QR )
             call zheev(jobz,uplo,n,H,n,w, &
                  work,lwork,rwork, &
                  info)
@@ -1116,7 +1121,7 @@ contains
             rwork(1) = max(nint(rwork(1)), 7*n)
             iwork(1) = max(iwork(1), 5*n)
 
-         case ( NoExpert_2stage )
+         case ( QR_2stage )
             call zheev_2stage(jobz,uplo,n,H,n,w, &
                  work,lwork,rwork, &
                  info)
@@ -1178,7 +1183,7 @@ contains
                  ifail, iclustr, gap, &
                  info)
 
-         case ( NoExpert )
+         case ( QR )
             call pzheev(jobz, uplo, n, Hp, 1, 1, desc, &
                  w, Zp, 1, 1, desc, &
                  work, lwork, rwork, lrwork, &
@@ -1333,7 +1338,7 @@ contains
 
     ! BLACS descriptors
     integer, target :: desc_1d(9), desc_2d(9)
-    integer, pointer :: desc(:)
+    integer, pointer :: desc(:) => null()
 
     ! Additional variables for a 2D parallel grid
     integer :: np2d(2), my2d(2), mat_2d(2)
@@ -1434,16 +1439,16 @@ contains
 
        if ( Use2D ) then
 
-          ! retrieve secondary grid
+          ! Retrieve information about the BLACS 2D distribution
           call blacs_gridinfo(iCTXT2D, &
                np2d(1), np2d(2), my2d(1), my2d(2))
           
-          ! Enquire size of local part of 2D matices
-          mat_2d(1) = numroc(n, BlockSize, my2d(1), 0, np2d(1))
-          mat_2d(2) = numroc(n, BlockSize, my2d(2), 0, np2d(2))
+          ! Enquire size of local part of 2D matrices
+          mat_2d(1) = numroc(n, diag_BlockSize, my2d(1), 0, np2d(1))
+          mat_2d(2) = numroc(n, diag_BlockSize, my2d(2), 0, np2d(2))
 
           ! Set up blacs descriptors for 2D case
-          call descinit(desc_2d, n, n, Blocksize, BlockSize, 0, 0, &
+          call descinit(desc_2d, n, n, diag_BlockSize, diag_BlockSize, 0, 0, &
                iCTXT2D, mat_2d(1), info)
           if ( info /= 0 ) then
              call die('rdiag: Blacs setup has failed!')
@@ -1452,7 +1457,15 @@ contains
           desc => desc_2d(:)
 
        else
+
+          ! Retrieve information about the BLACS 1D distribution
+          call blacs_gridinfo(iCTXT, &
+               np2d(1), np2d(2), my2d(1), my2d(2))
           
+          ! Enquire size of local part of the 1D matrices
+          mat_2d(1) = numroc(n, BlockSize, my2d(1), 0, np2d(1))
+          mat_2d(2) = numroc(n, BlockSize, my2d(2), 0, np2d(2))
+
           desc => desc_1d(:)
           
        end if
@@ -1460,18 +1473,6 @@ contains
 # ifdef SIESTA__ELPA
        ! Initialize the elpa type
        if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
-          
-          if ( .not. Use2D ) then
-             
-             ! retrieve information from 1D grid
-             call blacs_gridinfo(iCTXT, &
-                  np2d(1), np2d(2), my2d(1), my2d(2))
-             
-             ! Enquire size of local part of the 1D matrices
-             mat_2d(1) = numroc(n, BlockSize, my2d(1), 0, np2d(1))
-             mat_2d(2) = numroc(n, BlockSize, my2d(2), 0, np2d(2))
-             
-          end if
           
           ! ELPA setup
           ELPAt => elpa_allocate()
@@ -1496,7 +1497,11 @@ contains
           call elpa_check(info, 'local_nrows')
           call ELPAt%set('local_ncols', mat_2d(2), info)
           call elpa_check(info, 'local_ncols')
-          call ELPAt%set('nblk', BlockSize, info)
+          if ( Use2D ) then
+             call ELPAt%set('nblk', diag_BlockSize, info)
+          else
+             call ELPAt%set('nblk', BlockSize, info)
+          end if
           call elpa_check(info, 'nblk')
           ! Set the number of calculated eigenvalues/vectors
           call ELPAt%set('nev', iu, info)
@@ -1613,7 +1618,8 @@ contains
     call re_alloc(iwork, 1, liwork, name='iwork')
 
     ! Begin calculation
-    neigok = iu ! default to all (will only be overwritten for expert drivers)
+    ! Default OK eigenvalues to the queried entries
+    neigok = iu
 
 
 #ifdef MPI
@@ -1636,8 +1642,8 @@ contains
     else
 # ifdef SIESTA__ELPA
        if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
-          ! Cholesky on the full matrix (in ScaLAPACK only half of
-          ! the matrix is needed, not here!)
+          ! ELPA only calculates the Cholesky on the upper
+          ! half of the matrix.
           call ELPAt%cholesky(Sp, info)
           call elpa_check(info, 'rdiag: Cholesky factorisation')
           info = 0
@@ -1673,8 +1679,7 @@ contains
           ! routines, due to the hermitian multiply function
           ! of ELPA.
 
-          ! Cholesky on the full matrix (in ScaLAPACK only half of
-          ! the matrix is needed, not here!)
+          ! Invert the upper triangular Cholesky decomposition.
           call ELPAt%invert_triangular(Sp, info)
           call elpa_check(info, 'rdiag: Triangular inversion')
           
@@ -1689,7 +1694,9 @@ contains
 
           ! Right hand of the inverse.
           ! Note the ELPA Hermitian multiply always takes the Hermitian
-          ! conjugate of the left operator, hence we cannot use it
+          ! conjugate of the left operator, hence we cannot use it here
+          ! We could, possibly use pdtran
+          ! and then use hermitian_multiply... (?)
           call pdtrmm('R','U','N','N',n,n,1._dp, &
                Sp,1,1,desc,Hp,1,1,desc)
           
@@ -1741,7 +1748,7 @@ contains
                work,lwork,iwork,ifail, &
                info)
           
-       case ( NoExpert )
+       case ( QR )
           call dsyev(jobz,uplo,n,H,n,w, &
                work,lwork, &
                info)
@@ -1774,7 +1781,7 @@ contains
                work,lwork,iwork,ifail, &
                info)
 
-       case ( NoExpert_2stage )
+       case ( QR_2stage )
           call dsyev_2stage(jobz,uplo,n,H,n,w, &
                work,lwork, &
                info)
@@ -1867,7 +1874,7 @@ contains
              
           end if
 
-       case ( NoExpert )
+       case ( QR )
           call pdsyev(jobz,uplo,n,Hp,1,1,desc, &
                w,Zp,1,1,desc, &
                work,lwork, &
@@ -2040,7 +2047,7 @@ contains
             ! iwork
             iwork(1) = max(iwork(1), 5*n)
 
-         case ( NoExpert )
+         case ( QR )
             call dsyev(jobz,uplo,n,H,n,w, &
                  work,lwork, &
                  info)
@@ -2070,7 +2077,7 @@ contains
             ! iwork
             iwork(1) = max(iwork(1), 5*n)
 
-         case ( NoExpert_2stage )
+         case ( QR_2stage )
             call dsyev_2stage(jobz,uplo,n,H,n,w, &
                  work,lwork, &
                  info)
@@ -2128,7 +2135,7 @@ contains
                  ifail, iclustr, gap, &
                  info)
 
-         case ( NoExpert )
+         case ( QR )
             call pdsyev(jobz, uplo, n, Hp, 1, 1, desc, &
                  w, Zp, 1, 1, desc, &
                  work, lwork, &

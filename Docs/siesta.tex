@@ -5846,7 +5846,6 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 
 \begin{fdflogicalT}{Diag!Use2D}
-  \fdfdepend{Diag!ProcessorY}
 
   Determine whether a 1D or 2D data decomposition should be used when
   calling ScaLAPACK. The use of 2D leads to superior scaling on large
@@ -5859,6 +5858,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 \end{fdflogicalT}
 
 \begin{fdfentry}{Diag!ProcessorY}[integer]<$\sim \mathrm N^2$>
+  \fdfdepend{Diag!Use2D}
 
   Set the number of processors in the 2D distribution along the rows.
   Its default is equal to the lowest multiple of $\mathrm N$ (number
@@ -5875,6 +5875,17 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
   \note If the automatic correction (lowest multiple of MPI cores) is
   $1$ the default of \fdf{Diag!Use2D} will be \fdffalse.
+
+\end{fdfentry}
+
+\begin{fdfentry}{Diag!BlockSize}[integer]<\fdfvalue{BlockSize}>
+  \fdfdepend{Diag!Use2D}
+  
+  The block-size used for the 2D distribution in the ScaLAPACK calls.
+  This number greatly affects the performance of ScaLAPACK.
+
+  \note If \fdf{Diag!Use2D} is set to \fdffalse\ this flag is not
+  used. 
 
 \end{fdfentry}
 
@@ -5934,28 +5945,31 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     of the eigenvalues/eigenvectors.
 
     
-    \option[noexpert]%
+    \option[noexpert|QR]%
     \fdfindex{Diag!Algorithm!NoExpert}%
+    \fdfindex{Diag!Algorithm!QR}%
 
-    Use the regular algorithm.
+    Use the QR algorithm.
 
-    \option[noexpert-2stage]%
+    \option[noexpert-2stage|QR-2stage]%
     \fdfindex{Diag!Algorithm!NoExpert-2stage}%
 
-    Use the 2-stage regular algorithm.
+    Use the 2-stage QR algorithm.
 
     
     \option[ELPA-1stage]%
     \fdfindex{Diag!Algorithm!ELPA-1stage}%
     \fdfdepend{NumberOfEigenStates}
     
-    Use the ELPA\cite{ELPA,ELPA-1} 1-stage solver.
+    Use the ELPA\cite{ELPA,ELPA-1} 1-stage solver. Requires the
+    compilation of \siesta\ with ELPA, see Sec.~\ref{sec:libs}.
 
     \option[ELPA|ELPA-2stage]%
     \fdfindex{Diag!Algorithm!ELPA-2stage}%
     \fdfdepend{NumberOfEigenStates}
     
-    Use the ELPA\cite{ELPA,ELPA-1} 2-stage solver.
+    Use the ELPA\cite{ELPA,ELPA-1} 2-stage solver. Requires the
+    compilation of \siesta\ with ELPA, see Sec.~\ref{sec:libs}.
 
   \end{fdfoptions}
 
@@ -8684,7 +8698,7 @@ used for that.
   the number of consecutive orbitals which are located on a given
   processor before moving to the next one. Large values of this
   parameter lead to poor load balancing, while small values can lead
-  to inefficient execution.  The performance of the parallel code can
+  to inefficient execution. The performance of the parallel code can
   be optimised by varying this parameter until a suitable value is
   found.
 

@@ -26,6 +26,9 @@ module m_diag_option
   logical :: Use2D = .true.
   !> Number of processors on the columns for the 2D distribution
   integer :: ProcessorY = 1
+  !> The block-size
+  integer :: diag_BlockSize = 24
+  
   !> Whether we should use the upper or lower part of the Hermitian/symmetric matrices
   character :: UpperLower = 'L'
 
@@ -50,10 +53,10 @@ module m_diag_option
   integer, parameter :: Expert = 5
   !> Use the 2-stage expert driver (only LAPACK ;\)
   integer, parameter :: Expert_2stage = 6
-  !> Use the regular driver
-  integer, parameter :: NoExpert = 7
-  !> Use the 2-stage regular driver (only LAPACK)
-  integer, parameter :: NoExpert_2stage = 8
+  !> Use the QR driver
+  integer, parameter :: QR = 7
+  !> Use the 2-stage QR driver (only LAPACK)
+  integer, parameter :: QR_2stage = 8
   !> Use the ELPA driver
   integer, parameter :: ELPA_1stage = 9
   !> Use the 2-stage ELPA driver
@@ -75,7 +78,7 @@ contains
 
   subroutine read_diag(Gamma, nspin)
 
-    use parallel, only: Nodes
+    use parallel, only: IONode, Nodes, BlockSize
     use fdf, only: fdf_get, leqi
 
     logical, intent(in) :: Gamma
@@ -120,8 +123,7 @@ contains
     ! Ensure it is minimally 1
     nr = max(1, nr)
 
-    ! Query the requested number of processors in the
-    ! rows
+    ! Query the requested number of processors in the rows
     ProcessorY = fdf_get('Diag.ProcessorY', nr)
     ProcessorY = max(1, ProcessorY)
     ! Assert that it is a valid distribution
@@ -136,9 +138,14 @@ contains
        ProcessorY = max(1, ProcessorY)
     end if
 
+    ! Retrieve the blocksize
+    diag_BlockSize = fdf_get('Diag.BlockSize', BlockSize)
+
     ! If there are very few processors, it makes
     ! no sense to make them 2D distributed
-    Use2D = fdf_get('Diag.Use2D', ProcessorY > 1 .and. Nodes / ProcessorY > 1)
+    Use2D = (ProcessorY > 1) .and. (Nodes / ProcessorY > 1)
+    Use2D = Use2D .or. (BlockSize /= diag_BlockSize)
+    Use2D = fdf_get('Diag.Use2D', Use2D)
 
 
     algo = fdf_get('Diag.UpperLower', 'lower')
@@ -147,7 +154,7 @@ contains
     else if ( leqi(algo, 'upper') .or. leqi(algo, 'u') ) then
        UpperLower = 'U'
     else
-       call die('diag: Unknown argument to Diag.UpperLower')
+       call die('diag: Unknown argument to Diag.UpperLower U|L')
     end if
 
     
@@ -171,7 +178,7 @@ contains
 #endif
     
     if ( fdf_get('Diag.NoExpert',.false.) ) then
-       algo = 'NoExpert'
+       algo = 'QR'
     end if
 
     
@@ -265,24 +272,35 @@ contains
        algorithm = Expert
 #endif
        
-    else if ( leqi(algo, 'noexpert') .or. leqi(algo, 'regular') .or. &
+    else if ( leqi(algo, 'noexpert') .or. leqi(algo, 'qr') .or. &
          leqi(algo, 'v') ) then
-       algorithm = NoExpert
+       algorithm = QR
 
     else if ( leqi(algo, 'noexpert-2stage') .or. leqi(algo, 'noexpert-2') .or. &
-         leqi(algo, 'regular-2stage') .or. leqi(algo, 'regular-2') .or. &
+         leqi(algo, 'qr-2stage') .or. leqi(algo, 'qr-2') .or. &
          leqi(algo, 'v_2stage') ) then
 #ifdef SIESTA__DIAG_2STAGE
        if ( Serial ) then
-          algorithm = NoExpert_2stage
+          algorithm = QR_2stage
        else
-          algorithm = NoExpert
+          algorithm = QR
        end if
 #else
-       algorithm = NoExpert
+       algorithm = QR
 #endif
 
     else
+
+       write(*,'(a)') 'diag: Queried algorithm: '//trim(algo)
+      
+#ifndef SIESTA__MRRR
+       write(*,'(a)') 'diag: Algorithm cannot be MRRR '// &
+            '(not compiled with -DSIESTA__MRRR)'
+#endif
+#ifndef SIESTA__ELPA
+       write(*,'(a)') 'diag: Algorithm cannot be ELPA '// &
+            '(not compiled with -DSIESTA__ELPA)'
+#endif
 
        call die('diag: Unknown routine requested for the diagonalization')
 
@@ -323,16 +341,17 @@ contains
        write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'Expert'
     case ( Expert_2stage )
        write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'Expert-2stage'
-    case ( NoExpert )
-       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'NoExpert'
-    case ( NoExpert_2stage )
-       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'NoExpert-2stage'
+    case ( QR )
+       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'QR'
+    case ( QR_2stage )
+       write(*,'(a,t53,''= '',a)') 'diag: Algorithm', 'QR-2stage'
     end select
 
 
 #ifdef MPI
     write(*,'(a,t53,''= '',tr2,l1)') 'diag: Parallel over k', ParallelOverK
     write(*,'(a,t53,''= '',tr2,l1)') 'diag: Use parallel 2D distribution', Use2D
+    write(*,'(a,t53,''= '',i0)') 'diag: Parallel block-size', diag_BlockSize
     if ( Use2D ) then
        write(*,'(a,t53,''= '',i5,'' x '',i5)') 'diag: Parallel distribution', &
             ProcessorY, max(1,Nodes / ProcessorY)
