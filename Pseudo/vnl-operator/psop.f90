@@ -94,7 +94,7 @@
       logical                 :: has_psml, proj_file_exists
       type(xc_id_t)           :: xc_id
       integer                 :: status
-      type(ps_annotation_t)   :: ann
+      type(ps_annotation_t)   :: ann, vlocal_ann
 
       integer  :: max_l_ps
       integer  :: nsemic(0:3)
@@ -227,7 +227,7 @@
       real(dp)                 :: r2         ! Local variables
       integer                  :: nkb        ! Number of KB projectors
 
-      character(len=60)        :: set
+      integer                  :: set
       character(len=40)        :: method_used  !  "siesta-fit" or "-charge"
 
       character(len=512) :: cmd_line
@@ -430,7 +430,8 @@
          
 ! 
 !     STORE THE IONIC PSEUDOPOTENTIALS IN A LOCAL VARIABLE 
-!     Only the 'down'/major component is used
+!     Only the 'down'/major component is used in this version
+!     (This will change when we implement "lj" operation)
 !
       allocate( vps(nrmax,0:lmxkb) )
 
@@ -456,6 +457,10 @@
       nicore = psr%nicore
       irel   = psr%irel
 
+      ! This is not sufficiently general. If a libxc functional
+      ! is used, psr%icorr will not record the actual id's
+      ! We have to rewrite psop forsaking the Froyen data structure
+      
       call get_xc_id_from_atom_id(psr%icorr,xc_id,status)
       if (status == 0) then
          functl = xc_id%siestaxc_id%family
@@ -499,8 +504,10 @@
 !     and scale it if the ionic charge of the reference configuration
 !     is not the same as the nominal valence charge of the atom
 
-!     AG: What are we trying to achieve here?
-
+!     This will set rho to the actual "descreening charge" of the
+!     pseudopotential generation run (total charge will be less than       
+!     zval if an ionic configuration was used)
+      
       do ir = 1, nrval
         rho(ir) = psr%gen_zval * psr%chval(ir)/zval
       enddo
@@ -530,8 +537,11 @@
 
 !     Determine whether the atomic calculation to generate the pseudopotential
 !     is relativistic or not
-      if (irel.eq.'rel') irelt=1
-      if (irel.ne.'rel') irelt=0
+      if (irel.eq.'rel') then
+         irelt=1
+      else
+         irelt=0
+      endif
 
       call atomxc( irelt, nrval, nrmax, rofi, &
                    1, auxrho, ex, ec, dx, dc, vxc )
@@ -539,12 +549,6 @@
 !     Add the exchange and correlation potential to the Hartree potential
       ve(1:nrval) = ve(1:nrval) + vxc(1:nrval)
       
-!!     For debugging
-!      do ir = 1, nrval
-!        write(6,'(3f20.12)') rofi(ir), auxrho(ir), ve(ir)
-!      enddo
-!!     End debugging
-
 !
 !     Redefine the array s for the Schrodinger equation integration 
 !
@@ -556,15 +560,25 @@
 !
 
 !        call get_rmax(mmax,rr,nv,uua,rmax)
+        ! Choose a maximum range which is large enough for Vlocal to
+        ! go to the Coulomb form
+
         delta = 0.005d0
         rmax = 12.0d0  ! For now
         call get_sampled_grid(nrval,rofi,rmax,delta,nrl,isample,r0)
         allocate(f0(nrl))
 
-      if (irelt == 1) then
-         set = "scalar_relativistic"
+      ! This is also not sufficiently general. The Froyen format cannot
+      ! tell apart a scalar-relativistic calculation from a fully-relativistic one.
+        
+      if (psr%irel == "rel") then
+         ! For now, psop will generate only the scalar-relativistic set 
+         set = SET_SREL
+      else if (psr%irel == "isp") then
+         ! Use the spin-averaged pseudos
+         set = SET_SPINAVE
       else
-         set = "non_relativistic"
+         set = SET_NONREL
       endif
 
       call KBgen( is, a, b, rofi, drdi, s, &
@@ -610,10 +624,10 @@
          
          if (ps_HasProjectors(psml_handle)) then
             call ps_Delete_NonLocalProjectors(psml_handle)
-            call insert_annotation_pair(ann,"action","replaced-nonlocal-projectors",status)
+            call insert_annotation_pair(ann,"action-cont","replaced-nonlocal-projectors",status)
             if (status /= 0) call die("Cannot insert nl record")
          else
-            call insert_annotation_pair(ann,"action","inserted-nonlocal-projectors",status)
+            call insert_annotation_pair(ann,"action-cont","inserted-nonlocal-projectors",status)
             if (status /= 0) call die("Cannot insert nl record")
          endif
 
@@ -646,14 +660,17 @@
          call insert_annotation_pair(ann,"rmax",str(rmax),status)
          if (status /= 0) call die("Cannot insert rmax of sampled grid")
 
+         call reset_annotation(vlocal_ann)
+         call insert_annotation_pair(vlocal_ann,"chlocal-cutoff",str(rchloc),status)
+         if (status /= 0) call die("Cannot insert chocal-cutoff in vlocal annotation")
 
          call ps_AddLocalPotential(psml_handle,grid=r0(1:nrl), &
               grid_annotation=ann, &
-              vlocal=fvlocal0,vlocal_type="siesta-fit", &
-              chlocal = fchlocal0, chlocal_cutoff=rchloc)
+              vlocal=fvlocal0,vlocal_type=trim(method_used), &
+              chlocal = fchlocal0, annotation=vlocal_ann)
 
          call ps_AddNonLocalProjectors(psml_handle,grid=r0(1:nrl), &
-              grid_annotation=ann, annotation=EMPTY_ANNOTATION, set=SET_SREL, &
+              grid_annotation=ann, annotation=EMPTY_ANNOTATION, set=set, &
               nprojs=nprojs,kbprojs=kbprojs)
 
          call ps_DumpToPSMLFile(psml_handle,trim(output_filename))
@@ -675,23 +692,18 @@
 
 CONTAINS
 
-  subroutine ps_AddLocalPotential(ps,grid,grid_annotation,vlocal,vlocal_type,chlocal,chlocal_cutoff)
+  subroutine ps_AddLocalPotential(ps,grid,grid_annotation,vlocal,vlocal_type,chlocal,annotation)
     type(psml_t), intent(inout) :: ps
     real(dp), intent(in) :: grid(:)
     type(ps_annotation_t), intent(in)   :: grid_annotation
     real(dp), intent(in) :: vlocal(:)
     real(dp), intent(in) :: chlocal(:)
     character(len=*), intent(in) :: vlocal_type
-    real(dp), intent(in) :: chlocal_cutoff
+    type(ps_annotation_t), intent(in)   :: annotation
 
-    type(ps_annotation_t)   :: ann
-    integer :: npts, status
+    integer :: npts
     real(dp), pointer :: gdata(:) 
     type(ps_annotation_t), pointer   :: gannot
-
-    call reset_annotation(ann)
-    call insert_annotation_pair(ann,"chlocal-cutoff",str(chlocal_cutoff),status)
-    if (status /= 0) call die("Cannot insert chlocal-cutoff")
 
     npts = size(grid)
     call newGrid(ps%local%grid,npts)
@@ -701,7 +713,7 @@ CONTAINS
     gannot = grid_annotation
 
     ps%local%vlocal_type = trim(vlocal_type)
-    ps%local%annotation = ann
+    ps%local%annotation = annotation
     allocate(ps%local%Vlocal%data(npts))
     ps%local%Vlocal%grid = ps%local%grid
     allocate(ps%local%Chlocal%data(npts))
