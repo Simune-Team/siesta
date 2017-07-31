@@ -575,7 +575,8 @@ contains
     use m_ts_electype
 
     use m_ts_tri_init, only : c_Tri
-    use m_ts_tri_common, only : GFGGF_needed_worksize, nnzs_tri
+    use m_ts_tri_common, only : GFGGF_needed_worksize
+    use m_ts_tri_common, only : nnzs_tri, nnzs_tri_dp
     use m_ts_method, only : no_Buf
 
     logical, intent(in) :: ts_Gamma ! transiesta Gamma
@@ -687,6 +688,9 @@ contains
        end if
 
        zmem = nnzs_tri(c_Tri%n,c_Tri%r)
+       if ( zmem < int(nnzs_tri_dp(c_Tri%n, c_Tri%r)) ) then
+          call die('transiesta: Memory consumption is too large')
+       end if
        zmem = (zmem * 2 + padding + worksize ) * 16._dp / 1024._dp ** 2
        if ( IONode ) &
             write(*,'(a,t55,f10.2,a)') &

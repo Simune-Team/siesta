@@ -118,6 +118,7 @@ contains
     type(parsed_line), pointer :: pline => null()
     character(len=50) :: g, csort
     integer :: i, ia1, ia2, no_u
+    integer :: init_nz
     type(tRgn) :: r_tmp, r_tmp2, r_tmp3, r_Els, priority
     real(dp) :: tmp
 
@@ -213,6 +214,8 @@ contains
        ! populate the device region with all atoms
        call rgn_range(r_aDev, 1, na_u)
     end if
+    ! Just to speed up the following stuff
+    call rgn_sort(r_aDev)
     
     ! remove the buffer and electrode atoms
     if ( r_aBuf%n > 0 ) then
@@ -318,6 +321,13 @@ contains
 
     end do
 
+
+    ! Retrieve initial number of non-zero elements
+    ! Note that this number of non-zero elements is _after_
+    ! we have removed those terms that connect across
+    ! the cell boundaries.
+    init_nz = nnzs(sp)
+    
     do iEl = 1 , N_Elec - 1
 
        ! in order to get the correct connections
@@ -340,6 +350,17 @@ contains
        call delete(sp_tmp)
 
     end do
+
+    ! Issue a warning if there are any removed elements
+    ! from the above loop
+    ! That would mean that there are connections across the device region
+    ! which would mean a leak in the transmission.
+    i = nnzs(sp)
+    if ( i < init_nz .and. IONode ) then
+       write(*,'(/a,i0,a/)')'*** WARNING! Removed ',init_nz - i, ' elements &
+            &which connect electrodes across the device region!'
+    end if
+       
 
 #ifdef TRANSIESTA_DEBUG
     open(file='NO_ELECTRODE_CONNECTIONS_SP',unit=1400,form='formatted')
@@ -538,8 +559,18 @@ contains
     ! at TB models where number of connections is the same
 
     ! Prepare the check-regions
-
-    csort = 'atom+'//trim(Elecs(1)%name)
+    ! Default the device region pivoting to start from the electrode
+    ! which has the largest overlap in the device region.
+    ! This seems like the option that will provide the best BTD
+    ! due to the larger initial base.
+    iEl = 1
+    do i = 2, N_Elec
+       if ( rgn_size(Elecs(iEl)%o_inD) < rgn_size(Elecs(i)%o_inD) ) then
+          iEl = i
+       end if
+    end do
+    
+    csort = 'atom+'//trim(Elecs(iEl)%name)
     csort = fdf_get('TS.BTD.Pivot',trim(csort))
     csort = fdf_get('TBT.BTD.Pivot',trim(csort))
     csort = fdf_get('TBT.BTD.Pivot.Device',trim(csort))

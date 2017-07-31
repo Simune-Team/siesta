@@ -83,6 +83,8 @@ module m_region
   end interface sum
   public :: rgn_sum, sum
 
+  public :: rgn_size
+
   ! Sorting methods for the regions
   ! We sort by the number of connections forward
   ! the maximum number of connections to elements
@@ -1535,20 +1537,22 @@ contains
 
   end function rgn_overlaps
 
-  subroutine rgn_print(r, name, seq_max, indent, collapse)
+  subroutine rgn_print(r, name, seq_max, indent, collapse, repeat)
     type(tRgn), intent(in) :: r
     character(len=*), intent(in), optional :: name
     integer, intent(in), optional :: seq_max, indent
-    logical, intent(in), optional :: collapse
+    logical, intent(in), optional :: collapse, repeat
  
     character(len=5) :: fmt
     integer :: i, j, k, c, lseq_max
-    logical :: lcollapse
+    logical :: lcollapse, lrepeat
 
     lseq_max = 7
     if ( present(seq_max) ) lseq_max = seq_max
     lcollapse = .true.
     if ( present(collapse) ) lcollapse = collapse
+    lrepeat = .false.
+    if ( present(repeat) ) lrepeat = repeat
 
     fmt = ' '
     if ( present(indent) ) write(fmt,'(a,i0,a)')'tr',indent,','
@@ -1558,14 +1562,60 @@ contains
     else
        write(*,'('//fmt//'a,i0,2a)') 'Region (',r%n,'): ',trim(r%name)
     end if
+    if ( r%n == 0 ) then
+       ! Quick return, if able
+       write(*,'('//fmt//'tr2,a)') '[ ]'
+       return
+    end if
+
     write(*,'('//fmt//'tr2,a)',advance='no') '['
-    if ( .not. lcollapse ) then
+    if ( lrepeat ) then
+       
+       ! We show the repeated sequence of items
+       ! Such that the same entries will be shown:
+       !   k * [i]
+       c = r%r(1)
+       k = 1
+       j = 1
+       do i = 2 , r%n
+          if ( r%r(i) == c ) then
+             k = k + 1
+             cycle
+          end if
+          
+          ! Now we have gathered a list of continuations
+          if ( k == 1 ) then
+             write(*,'(tr1,i0,a)',advance='no') c,','
+          else
+             write(*,'(tr1,2(a,i0),a)',advance='no') '[',c,'] * ',k,','
+          end if
+          
+          ! Reset
+          k = 1
+          c = r%r(i)
+          if ( mod(j,lseq_max) == 0 ) then
+             write(*,'(/,'//fmt//'tr3)',advance='no')
+          end if
+          j = j + 1
+          
+       end do
+
+       if ( k == 1 ) then
+          write(*,'(tr1,i0,a)') c,' ]'
+       else
+          write(*,'(tr1,2(a,i0),a)') '[',c,'] * ',k,' ]'
+       end if
+
+       return
+       
+    else if ( .not. lcollapse ) then
        do i = 1 , r%n - 1
           write(*,'(tr1,i0,a)',advance='no') r%r(i),','
           if ( mod(i,lseq_max) == 0 ) then
              write(*,'(/,'//fmt//'tr3)',advance='no')
           end if
        end do
+       
     else
 
        j = 1
@@ -1677,6 +1727,12 @@ contains
     end if
     
   end function rgn_sum
+  
+  pure function rgn_size(r) result(n)
+    type(tRgn), intent(in) :: r
+    integer :: n
+    n = r%n
+  end function rgn_size
 
 
   ! Popping of an index of a region

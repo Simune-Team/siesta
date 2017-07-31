@@ -76,8 +76,10 @@ module m_ts_electype
      integer :: no_used = 0
      ! Bloch expansions (repetitions)
      integer :: Bloch(3) = 1
-     ! Pre-expand before saving Gf (we default to all)
-     ! In this way will the user 
+     ! Pre-expand before saving Gf
+     !   == 0 do no pre-expansion
+     !   == 1 pre-expand only the surface Green function
+     !   == 2 pre-expand surface Green function, H and S
      integer :: pre_expand = 2
      ! chemical potential of the electrode
      type(ts_mu), pointer :: mu => null()
@@ -2097,7 +2099,7 @@ contains
        write(*,f10) '  GF file', trim(this%GFfile)
        write(*,f1)  '  Reuse existing GF-file', this%ReUseGF
     else
-       write(*,f11)  '  In-core GF'
+       write(*,f11)  '  In-core self-energy calculation'
     end if
     write(*,f10) '  Electrode TSHS file', trim(this%HSfile)
     write(*,f5)  '  # atoms used in electrode', this%na_used
