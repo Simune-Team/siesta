@@ -46,7 +46,7 @@ contains
     use atomlist, only: no_u, no_s, lasto, Qtot
     use siesta_geom, only: na_u, nsc
     use sparse_matrices, only: sparse_pattern
-    use m_spin, only : nspin
+    use m_spin, only : spin
     use m_ntm, only : ntm
     use siesta_options, only: sname, isolve
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN
@@ -94,7 +94,7 @@ contains
     ! First we create all the dimensions
     ! necessary
     d = ('DIMna_u'.kv.na_u)//('DIMno_u'.kv.no_u)
-    d = d//('DIMno_s'.kv.no_s)//('DIMspin'.kv.nspin)
+    d = d//('DIMno_s'.kv.no_s)//('DIMspin'.kv.spin%H)
     d = d//('DIMxyz'.kv. 3) // ('DIMn_s'.kv. product(nsc))
     d = d// ('DIMone'.kv. 1)
     call ncdf_crt(ncdf,d)
@@ -141,6 +141,11 @@ contains
 
     call ncdf_def_dim(grp,'nnzs',n_nzs)
 
+    ! EDM is required to have its own spin (because of spin-orbit coupling
+    ! where the spin == 4, and not 8)
+    call ncdf_def_dim(grp,'spin_EDM',spin%EDM)
+
+
     dic = dic//('info'.kv.'Index of supercell coordinates')
     call ncdf_def_var(grp,'isc_off',NF90_INT,(/'xyz','n_s'/), &
          compress_lvl=0, atts=dic)
@@ -167,7 +172,7 @@ contains
        
     dic = dic//('info'.kv.'Energy density matrix')
     dic = dic//('unit'.kv.'Ry')
-    call ncdf_def_var(grp,'EDM',NF90_DOUBLE,(/'nnzs','spin'/), &
+    call ncdf_def_var(grp,'EDM',NF90_DOUBLE,(/'nnzs    ','spin_EDM'/), &
          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
 
 #ifdef TRANSIESTA
@@ -175,6 +180,7 @@ contains
 #else
     if ( savehs ) then
 #endif
+       ! Unit is already present in dictionary
        dic = dic//('info'.kv.'Hamiltonian')
        call ncdf_def_var(grp,'H',NF90_DOUBLE,(/'nnzs','spin'/), &
             compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
@@ -200,6 +206,11 @@ contains
     call ncdf_def_grp(ncdf,'GRID',grp)
 
     d = ('DIMnx'.kv.ntm(1))//('DIMny'.kv.ntm(2))//('DIMnz'.kv.ntm(3))
+    ! Note that there are now 2 spin dimensions
+    ! 1. in the top level NC file and one in the GRID group
+    ! This is because for spin-orbit coupling the grid and
+    ! matrix dimensions are not the same (4 vs 8, respectively)
+    d = d//('DIMspin'.kv.spin%Grid)
     call ncdf_crt(grp,d)
 
     ! Create the grid functions...

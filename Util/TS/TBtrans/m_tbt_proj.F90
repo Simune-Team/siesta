@@ -243,7 +243,7 @@ contains
        im = im + 1
        mols(im)%name = fdf_bnames(pline,1)
        if ( index(mols(im)%name,'.') > 0 ) then
-          call die('Molecules cannot be named with .!')
+          call die('Projections cannot be named with .!')
        end if
     end do
     
@@ -323,14 +323,14 @@ contains
        ! eigenstates does not really make sense...
        call rgn_union(a_Dev,mols(im)%atom,r_tmp)
        if ( r_tmp%n /= a_Dev%n ) then
-          call die('Molecule not fully contained in the device &
+          call die('Projection not fully contained in the device &
                &region, please correct input')
        end if
        call rgn_delete(r_tmp)
 
        call rgn_Atom2Orb(mols(im)%atom,na_u,lasto,mols(im)%orb)
        mols(im)%orb%sorted = .false.
-       mols(im)%orb%name = 'Orbitals'
+       mols(im)%orb%name = '[O] projection: '//trim(mols(im)%name)
 
        ! Retain the number of orbitals
        n_orb = mols(im)%orb%n
@@ -477,7 +477,7 @@ contains
 
     ! Lets first print out the projections
 
-    write(*,'(/,a)')'tbtrans: Projection molecules:'
+    write(*,'(/,a)')'tbtrans: Projection regions:'
 
     do im = 1 , N_mol
 
@@ -485,12 +485,12 @@ contains
        ! as an electrode!
        do iE = 1 , N_Elec
           if ( leqi(mols(im)%name,Elecs(iE)%name) ) then
-             call die('Molecules and electrodes &
+             call die('Projections and electrodes &
                   &must NOT be named the same. Please differ names!')
           end if
        end do
        
-       write(*,'(2a)')' - Molecule ',trim(mols(im)%name)
+       write(*,'(2a)')' - Projection ',trim(mols(im)%name)
        if ( mols(im)%Gamma ) then
           write(*,'(a)')'   Gamma projection: True'
        else
@@ -517,7 +517,7 @@ contains
 
           do iE = 1 , N_Elec
              if ( leqi(mols(im)%proj(ip)%name,Elecs(iE)%name) ) then
-                call die('Molecule projections and electrodes &
+                call die('Projections and electrodes &
                      &must NOT be named the same. Please differ names!')
              end if
           end do
@@ -626,8 +626,13 @@ contains
                    call print_proj(proj_T(it)%L)
                    call rgn_print(mols(im)%orb)
                    call rgn_print(Elecs(iE)%o_inD)
+                   write(*, '(a)') 'The selected projection region does not encapsulate &
+                        &the electrodes device region.'
+                   write(*, '(a)') 'Please select a TBT.Atoms.Device region such that &
+                        &the second region is fully encapsulated in the first region.'
                    call die('The scattering states are not fully &
-                        &encapsulated on a left projection. This is not allowed.')
+                        &encapsulated on a LEFT projection, please change &
+                        &TBT.Atoms.Device accordingly. This is not allowed.')
                 end if
                 checked(im,iE) = .true.
              end if
@@ -646,8 +651,13 @@ contains
                       call print_proj(proj_T(it)%R(ip))
                       call rgn_print(mols(im)%orb)
                       call rgn_print(Elecs(iE)%o_inD)
+                      write(*, '(a)') 'The selected projection region does not encapsulate &
+                           &the electrodes device region.'
+                      write(*, '(a)') 'Please select a TBT.Atoms.Device region such that &
+                           &the second region is fully encapsulated in the first region.'
                       call die('The scattering states are not fully &
-                           &encapsulated on a right projection. This is not allowed.')
+                           &encapsulated on a RIGHT projection, please change &
+                           &TBT.Atoms.Device accordingly. This is not allowed.')
                    end if
                 end if
                 checked(im,iE) = .true.
@@ -1162,7 +1172,7 @@ contains
       end if
 
       call die('Could not parse input: '//trim(EMP)//' some &
-           &molecules/projections does not exist.')
+           &projections does not exist.')
       
     end subroutine parse_T
 
@@ -1720,7 +1730,7 @@ contains
        end if
 
        if ( Node == 0 ) then
-          write(*,'(2a)') 'tbtrans: Calculating eigenvalues and |> of molecule: ', &
+          write(*,'(2a)') 'tbtrans: Calculating eigenvalues and |> of projection: ', &
                trim(mols(im)%name)
        end if
 
@@ -1754,10 +1764,10 @@ contains
        end if
 
        ! Define variables to contain the molecule
-       dic = ('info'.kv.'Molecule atoms')
+       dic = ('info'.kv.'Projection atoms')
        call ncdf_def_var(grp,'atom',NF90_INT,(/'na'/),atts=dic)
        call ncdf_put_var(grp,'atom',mols(im)%atom%r)
-       dic = dic//('info'.kv.'Molecule orbitals')
+       dic = dic//('info'.kv.'Projection orbitals')
        call ncdf_def_var(grp,'orb',NF90_INT,(/'no'/),atts=dic)
        call ncdf_put_var(grp,'orb',mols(im)%orb%r)
        if ( save_state ) then
@@ -2127,7 +2137,7 @@ contains
           end if
           ! Check that the state actually exists
           if ( i < 1 .or. no < i ) then
-             write(*,'(a)')'tbtrans: Molecule projection eigenvalues [eV]:'
+             write(*,'(a)')'tbtrans: Projection eigenvalues [eV]:'
              do i = 1 , no
                 if ( i < iLUMO ) then
                    write(*,'(a,tr1,i4,tr1,e12.5)')'Eigenvalue: ', &

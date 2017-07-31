@@ -35,7 +35,7 @@ C     and initializes data structures on the grid.
       use m_dhscf,      only: dhscf_init
       use m_energies,   only: Eions, Ena, DEna, Emm, Emeta, Eso
       use m_ntm
-      use m_spin,       only: nspin, SpOrb
+      use m_spin,       only: spin
       use spinorbit,    only: spinorb
       use alloc, only: re_alloc, de_alloc
       use class_dSpData1D, only: val
@@ -129,18 +129,13 @@ C     Add on force field contribution to energy
 ! computing forces and stresses, calling it in the first iteration
 ! should be enough
 !
-      if ( SpOrb ) then
+      if ( spin%SO ) then
          H_so => val(H_so_2D)
 !$OMP parallel workshare default(shared)
          H_so = 0._dp
 !$OMP end parallel workshare
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_so,Eso)
-#ifdef MPI
-!     Global reduction of energy terms
-         call globalize_sum(Eso,dummy_E)
-         Eso = dummy_E
-#endif
       else
          Eso = 0._dp
       end if
@@ -149,7 +144,7 @@ C     Add on force field contribution to energy
 C     This will take care of possible changes to the mesh and atomic-related
 C     mesh structures for geometry changes
       g2max = g2cut
-      call dhscf_init( nspin, no_s, iaorb, iphorb,
+      call dhscf_init( spin%Grid, no_s, iaorb, iphorb,
      &                 no_l, no_u, na_u, na_s,
      &                 isa, xa, indxua, ucell,
      &                 mscell, G2max, ntm,

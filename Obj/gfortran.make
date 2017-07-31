@@ -48,7 +48,7 @@ COMP_LIBS = libsiestaLAPACK.a libsiestaBLAS.a
 FPPFLAGS := $(DEFS_PREFIX)-DFC_HAVE_ABORT $(FPPFLAGS)
 FPPFLAGS := $(DEFS_PREFIX)-D__NO_PROC_POINTERS__ $(FPPFLAGS)
 
-LIBS = $(COMP_LIBS)
+LIBS =
 
 # Dependency rules ---------
 

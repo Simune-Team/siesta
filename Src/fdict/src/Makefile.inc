@@ -4,22 +4,21 @@ VPATH := $(VPATH):$(src_DIR)
 
 
 # Define sources in this src directory
-src_OBJECTS = variable.o dictionary.o iso_var_str.o
+src_OBJECTS = variable.o dictionary.o
 src_SOURCES = $(patsubst %.o, %.f90, $(src_OBJECTS))
 src_FPP_SOURCES = variable.f90 dictionary.f90
 src_MODS = $(patsubst %.f90, %.mod, $(src_SOURCES))
 
 
 # Create dependency tree such that we may bypass phony targets
-variable.o: iso_var_str.o
 variable.f90: variable_pp.F90 variable.sh settings.inc var_funcs_inc.inc
 	VPATH="$(TOP_DIR)" $(src_DIR)/variable.sh
-	$(FPP) $(FPPFLAGS) $(INCLUDES) -I$(src_DIR) $< | sed -f $(src_DIR)/filter.sed > $@
+	$(FPP) $(FPPFLAGS) $(INCLUDES) -I$(src_DIR) -I. $< | sed -f $(src_DIR)/filter.sed > $@
 
 dictionary.o: variable.o
 dictionary.f90: dictionary_pp.F90 dictionary.sh settings.inc dict_funcs_inc.inc
 	VPATH="$(TOP_DIR)" $(src_DIR)/dictionary.sh
-	$(FPP) $(FPPFLAGS) $(INCLUDES) -I$(src_DIR) $< | sed -f $(src_DIR)/filter.sed > $@
+	$(FPP) $(FPPFLAGS) $(INCLUDES) -I$(src_DIR) -I. $< | sed -f $(src_DIR)/filter.sed > $@
 
 
 # Define objects that needs compilation

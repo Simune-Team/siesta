@@ -74,7 +74,7 @@
 %  \end{fdfentry}
 % 
 % Additionally one may create dependency flags to make it
-% easy to see dependencies on the flags
+% easy to see dependencies between flags
 %  \begin{fdfentry}{FDF.Flag}[integer]<0>
 %    \fdfdepend{FDF.First, FDF.Second}
 %
@@ -5902,19 +5902,19 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 \begin{fdflogicalF}{Diag!MRRR}
 
-  For parallel gamma-point calculations without spin orbit only.
+  For parallel $\Gamma$-point calculations without spin orbit only.
 
-  Use the MRRR method in Scalapack for diagonalization. Specifying a
+  Use the MRRR method in ScaLAPACK for diagonalization. Specifying a
   number of eigenvectors to store is possible through the symbol
   \fdf{NumberOfEigenStates} (see above).
 
   \note it is not compatible with the \fdf{Diag!ParallelOverK}
   option.
 
-  \note The MRRR method is defaulted to be compiled in, however, if
-  your ScaLAPACK library does not contain the relevant sources one
-  should add this pre-processor flag \texttt{-DSIESTA\_\_NO\_MRRR}
-  \index{compile!pre-processor!-DSIESTA\_\_NO\_MRRR}
+  \note The MRRR method is defaulted not to be compiled in, however,
+  if your ScaLAPACK library does contain the relevant sources one
+  may add this pre-processor flag \texttt{-DSIESTA\_\_MRRR}.
+  \index{compile!pre-processor!-DSIESTA\_\_MRRR}
 \end{fdflogicalF}
 
 
@@ -7110,8 +7110,8 @@ descriptor above for more information.
 
 The user can optionally request that the wavefunctions corresponding
 to the computed bands be written to file.  They are written to the
-\sysfile{bands.WFSX} file (see section below for the format). The
-relevant options are:
+\sysfile{bands.WFSX} file.
+The relevant options are:
 
 \begin{fdflogicalF}{WFS.Write.For.Bands}
   \index{output of wave functions for bands}
@@ -7154,7 +7154,7 @@ written to file. These wavefunctions are re-computed after the
 geometry loop (if any) finishes, using the last (presumably converged)
 density matrix produced during the last self-consistent field loop
 (after a final mixing). They are written to the
-\sysfile{selected.WFSX} file (see below for the format).
+\sysfile{selected.WFSX} file.
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
@@ -8764,6 +8764,7 @@ always include all arrays.
   
 \end{fdflogicalF}
 
+
 \begin{fdflogicalT}{UseParallelTimer}
 
   Determine whether timings are performed in parallel. This may
@@ -8774,6 +8775,26 @@ always include all arrays.
   
 \end{fdflogicalT}
 
+\begin{fdfentry}{MaxWalltime}[real time]<Infinity>
+
+  Set an internal limit to the wall time allotted to the
+  program's execution. Typically this is related to the external limit
+  imposed by queuing systems. The code checks its wall time periodically
+  and will abort if nearing the limit, with some slack left for clean-up
+  operations (proper closing of files, emergency output...), as determined
+  by \fdf{MaxWalltime!Slack}. See Sec.~\ref{sec:fdf-units} for available
+  units of time (\textbf{s}, \textbf{mins}, \textbf{hours}, \textbf{days}).
+
+\end{fdfentry}
+
+
+\begin{fdfentry}{MaxWalltime!Slack}[real time]<5 s>
+
+  The code checks its wall time $T_{\mathrm{wall}}$ periodically and will
+  abort if $T_{\mathrm{wall}} > T_{\mathrm{max}} - T_{\mathrm{slack}}$, so that
+  some slack is left for any clean-up operations.
+
+\end{fdfentry}
 
 
 \subsection{The catch-all option UseSaveData}
@@ -8896,6 +8917,11 @@ geometry loop: it computes the electronic structure (and
 thus the forces and stresses) for a given geometry, updates the
 atomic positions (and maybe the cell vectors) accordingly and moves on
 to the next cycle.
+%
+If there are molecular dynamics options missing you are highly
+recommend to look into \fdf{MD.TypeOfRun!Lua} or
+\fdf{MD.TypeOfRun!Master}. 
+
 
 Several options for MD and structural optimizations are
 implemented, selected by
@@ -8904,58 +8930,69 @@ implemented, selected by
   \begin{fdfoptions}
     
     \option[CG]%
+    \fdfindex{MD.TypeOfRun!CG}%
     Coordinate optimization by conjugate gradients). Optionally (see
     variable \fdf{MD.VariableCell} below), the optimization can include the
     cell vectors.
 
     \option[Broyden]%
+    \fdfindex{MD.TypeOfRun!Broyden}%
     Coordinate optimization by a modified Broyden scheme). Optionally,
     (see variable \fdf{MD.VariableCell} below), the optimization can
     include the cell vectors.
 
     \option[FIRE]%
+    \fdfindex{MD.TypeOfRun!FIRE}%
     Coordinate optimization by Fast Inertial Relaxation Engine (FIRE)
     (E. Bitzek et al, PRL 97, 170201, (2006)).  Optionally, (see
     variable \fdf{MD.VariableCell} below), the optimization can
     include the cell vectors.
 
     \option[Verlet]%
+    \fdfindex{MD.TypeOfRun!Verlet}%
     Standard Verlet algorithm MD
 
     \option[Nose]%
+    \fdfindex{MD.TypeOfRun!Nose}%
     MD with temperature controlled  by means of a Nos\'e
     thermostat
 
     \option[ParrinelloRahman]%
+    \fdfindex{MD.TypeOfRun!ParrinelloRahman}%
     MD with pressure controlled by the Parrinello-Rahman method
 
     \option[NoseParrinelloRahman]%
+    \fdfindex{MD.TypeOfRun!NoseParrinelloRahman}%
     MD with temperature controlled by means of a Nos\'e thermostat and
     pressure controlled by the Parrinello-Rahman method
 
     \option[Anneal]%
+    \fdfindex{MD.TypeOfRun!Anneal}%
     MD with annealing to a desired temperature and/or pressure (see
     variable \fdf{MD.AnnealOption} below)
 
     \option[FC]%
+    \fdfindex{MD.TypeOfRun!FC}%
     Compute force constants matrix\index{Force Constants Matrix} for
     phonon calculations.
 
-
-    \option[Forces]%
-    (Receive coordinates from, and return forces to, an external
+    \option[Master|Forces]%
+    \fdfindex{MD.TypeOfRun!Master}%
+    \fdfindex{MD.TypeOfRun!Forces}%
+    Receive coordinates from, and return forces to, an external
     driver program, using MPI, Unix pipes, or Inet sockets for
-    communication.  The routines in module fsiesta allow the user's
-    program to perform this communication transparently, as if siesta
-    were a conventional force-field subroutine. See
-    \shell{Util/SiestaSubroutine/README} for details. WARNING: if
-    this option is specified without a driver program sending data,
-    siesta may hang without any notice).
+    communication. The routines in module \program{fsiesta} allow the
+    user's program to perform this communication transparently, as if
+    \siesta\ were a conventional force-field subroutine. See
+    \shell{Util/SiestaSubroutine/README} for details. WARNING: if this
+    option is specified without a driver program sending data, siesta
+    may hang without any notice.
     
     See directory Util/Scripting \index{Scripting} for other driving
     options.
 
     \option[Lua]%
+    \fdfindex{MD.TypeOfRun!Lua}%
     Fully control the MD cycle and convergence path using an external
     Lua script. 
 
@@ -8976,7 +9013,8 @@ implemented, selected by
       set optimizations cannot be performed in the Lua script).
 
     \end{itemize}
-    For more details see Sec.~\ref{sec:lua}.
+    Sec.~\ref{sec:lua} for additional details (and a description of
+    \program{flos} which implements some of the above mentioned items).
 
     Using this option requires the compilation of \siesta\ with the
     \program{flook} library.%
@@ -9972,6 +10010,9 @@ For large or intermediate values of $U_{\mathrm{eff}}$ the convergence
 is sometimes difficult. A step-by-step increase of the
 value of $U_{\mathrm{eff}}$ can be advisable in such cases.
 
+Currently, the LDA+U implementation does not support non-colinear, nor
+spin-orbit coupling.
+
 \begin{fdfentry}{LDAU.ProjectorGenerationMethod}[integer]<2>
   
   Generation method of the LDA+U projectors. The LDA+U projectors are
@@ -10292,7 +10333,7 @@ faster convergence of the relaxation.
 
   An example file could be this (note this is Lua code):
   \begin{codeexample}
--- This function is REQUIRED
+-- This function (siesta_comm) is REQUIRED
 function siesta_comm()
    
    -- Define which variables we want to retrieve from SIESTA
@@ -10303,6 +10344,7 @@ function siesta_comm()
 
    -- Now we have the required variables,
    -- convert to a simpler variable name (not nested tables)
+   -- (note the returned quantities are in SIESTA units (Bohr, Ry)
    xa = siesta.geom.xa
    Etot = siesta.E.total
 
@@ -10353,8 +10395,10 @@ end
 
     \option[Move]%
     This state will \emph{only} be reached if \fdf{MD!TypeOfRun} is
-    \fdf*{lua}. If one does not return updated atomic coordinates
-    \siesta\ will reuse the same geometry as just analyzed.
+    \fdf*{lua}.
+
+    If one does not return updated atomic coordinates \siesta\ will
+    reuse the same geometry as just analyzed.
 
     \note \program{siesta.state == siesta.MOVE}.
     
@@ -10380,7 +10424,8 @@ end
   \end{codeexample}
   which is the most minimal example of using the L-BFGS algorithm for
   geometry relaxation. Note that \program{flos} reads the parameters
-  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol}.
+  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol} through \siesta\
+  automatically. 
 
   \note The number of available variables continues to grow and to
   find which quantities are accessible in Lua you may add this small
@@ -10390,6 +10435,16 @@ end
   \end{codeexample}
   which prints out a list of all accessible variables (note they are
   not sorted).
+  
+  If there are any variables you require which are not in the list,
+  please contact the developers.
+
+
+  Remark that since \emph{anything} may be changed via Lua one may
+  easily make \siesta\ crash due to inconsistencies in the internal
+  logic. This is because \siesta\ does not check what has changed, it
+  accepts everything \emph{as is} and continues. Hence, one should be
+  careful what is changed.
   
 \end{fdfentry}
 
@@ -10405,6 +10460,31 @@ end
   Debug all nodes (if in a parallel run).
   
 \end{fdflogicalF}
+
+
+\subsection{Examples of Lua programs}
+
+Please look in the \program{Tests/lua\_*} folders where examples of
+basic Lua scripts are found. Below is a description of the \program{*}
+examples.
+
+
+\begin{description}
+  \item[h2o] Changes the mixing weight continuously in
+  the SCF loop. This will effectively speed up convergence time if one
+  can attain the best mixing weight per SCF-step.
+
+  \item[si111] Change the mixing method based on certain convergence
+  criteria. I.e. after a certain convergence one can switch to a more
+  aggressive mixing method.
+  
+\end{description}
+
+A combination of the above two examples may greatly improve
+convergence, however, creating a generic method to adaptively change
+the mixing parameters may be very difficult to implement. If you do
+create such a Lua script, please share it on the mailing list.
+
 
 
 \section{TRANSIESTA}
@@ -10480,65 +10560,16 @@ type:
 $ make transiesta
 \end{verbatim}
 
-using the appropriate arch.make file for your system (note that you do
-not need to make any modification on your arch.make file: you can use
-the same one that you have used to make a standard \siesta\
+using the appropriate \file{arch.make} file for your system (note that
+you do not need to make any modification on your arch.make file: you
+can use the same one that you have used to make a standard \siesta\
 compilation in your system).  The Makefile takes care of defining the
-appropriate preprocessor flag \texttt{-DTRANSIESTA} so that the \tsiesta\ 
-modules and modifications are compiled and incorporated
-into the binary. Upon successful compilation, the binary file 
-\program{transiesta} will be generated, containing an executable version of
-\siesta\ with \tsiesta\ capabilities.
+appropriate preprocessor flag \texttt{-DTRANSIESTA} so that the
+\tsiesta\ modules and modifications are compiled and incorporated into
+the binary. Upon successful compilation, the binary file
+\program{transiesta} will be generated, containing an executable
+version of \siesta\ with \tsiesta\ capabilities.
 
-\subsection{Running a fast example}
-
-Before giving more detailed explanations about \tsiesta, let
-us start with an example to show the basic operations of a transport
-calculation.  Starting from the top \siesta\ directory:
-
-\begin{verbatim}
-$ cd Examples/TranSiesta
-\end{verbatim}
-
-First it is necessary to do the electrode calculation (see below for
-details),
-
-\begin{verbatim}
-$ cd Elec
-$ mkdir OUT_Test
-$ cd OUT_Test
-$ cp ../* .
-$ transiesta < elec.fast.fdf > elec.fast.out
-\end{verbatim}
-
-Note that apart from the usual files generated by \siesta, now you will 
-find the \texttt{elec.fast.TSHS} file (in general \sysfile{TSHS}). 
-This file contains the real-space Hamiltonian and Overlap matrices, together 
-with some other information, that will be used, in the case of electrodes, to 
-calculate the surface Greens functions. 
-
-Once the electrode file has been generated, we can perform the \tsiesta\ 
-calculation (where the \fdf{SolutionMethod} flag is set
-to \program{transiesta}).
-
-\begin{verbatim}
-$ cd ../../Scat
-$ mkdir OUT_TS_Test
-$ cd OUT_TS_Test
-$ cp ../* .
-$ cp ../../Elec/OUT_Test/elec.fast.TSHS .
-$ transiesta < scat.fast.fdf > scat.fast.out
-\end{verbatim}
-
-Now the two following files should have been generated, \texttt{scat.fast.TSHS} 
-and \texttt{scat.fast.TSDE}. The first one contains, as previously mentioned, 
-essentially the Hamiltonian and Overlap matrices, and the \texttt{.TSDE} file 
-has the \tsiesta\ density matrix, the equivalent to the \texttt{.DM} 
-file of \siesta. The transmission function and the current are calculated 
-using the \texttt{tbtrans} postprocessing tool (below).
-
-Other automated TranSiesta-TBTrans examples can be found in
-\texttt{Tests/TranSiesta-TBTrans}.
 
 \subsection{Brief explanation}
 
@@ -12070,6 +12101,7 @@ Ram\'on Areces.
 
 
 \section{APPENDIX: Physical unit names recognized by FDF}
+\label{sec:fdf-units}
 
 \begin{center}
 \begin{tabular}{llr}

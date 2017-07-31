@@ -36,9 +36,9 @@ SYSOBJ=$(SYS).o
 DEP_OBJS = precision.o f2kcli.o parallel.o \
           chemical.o io.o m_io.o  \
           periodic_table.o \
-          atom_options.o sys.o $(SYSOBJ)
+          atom_options.o $(SYSOBJ)
 
-LOCAL_OBJS= grimme.o handlers.o
+LOCAL_OBJS= grimme.o handlers.o local_sys.o
 OBJS=$(LOCAL_OBJS) $(DEP_OBJS)
 
 # Use the makefile in Src/fdf and all the sources there.
@@ -71,15 +71,14 @@ clean:
 
 
 # DO NOT DELETE THIS LINE - used by make depend
-atom_options.o: sys.o
-atom_options.o: sys.o
-chemical.o: parallel.o precision.o sys.o
-chemical.o: parallel.o precision.o sys.o
-io.o: sys.o
-io.o: sys.o
-m_io.o: sys.o
-m_io.o: sys.o
-periodic_table.o: precision.o sys.o
-periodic_table.o: precision.o sys.o
+atom_options.o: local_sys.o
+atom_options.o: local_sys.o
+chemical.o: local_sys.o parallel.o precision.o
+chemical.o: local_sys.o parallel.o precision.o
+io.o: local_sys.o
+io.o: local_sys.o
+periodic_table.o: local_sys.o precision.o
+periodic_table.o: local_sys.o precision.o
 grimme.o: chemical.o f2kcli.o periodic_table.o precision.o
 grimme.o: chemical.o f2kcli.o periodic_table.o precision.o
+sys.o: local_sys.o

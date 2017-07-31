@@ -253,8 +253,11 @@ bzr export -r $_tag $_reldir/$_out $main_dir
 # Go into the release directory where all work will be done
 pushd $_reldir
 
+# Go into the source directory
 pushd $_out
 
+# Update the version.info file
+printf "%s" "$_tag" > version.info
 
 # Create documentation
 pushd Docs

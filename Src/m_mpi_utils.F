@@ -8,7 +8,6 @@
       module m_mpi_utils
 
       use precision, only: dp, sp
-      use sys, only: die
 #ifdef MPI
       use mpi_siesta
       implicit none
@@ -19,6 +18,8 @@
       public :: globalize_max, globalize_sum, broadcast
       public :: globalize_or, globalize_min
       private
+      
+      external :: die
       
       interface globalize_max
        module procedure globalize_max_dp, globalize_max_int

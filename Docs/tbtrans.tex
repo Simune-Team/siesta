@@ -57,7 +57,7 @@
 \section*{Contributors to \tbtrans}
 \addcontentsline{toc}{section}{Contributors to \siesta}
 
-\tbtrans\ is Copyright \copyright\ 2016-2016 by Nick R. Papior. The
+\tbtrans\ is Copyright \copyright\ 2016-2017 by Nick R. Papior. The
 original \tbtrans\ code was implemented by Mads Brandbyge, Jose
 L. Mozos, Jeremy Taylor, Pablo Ordejon and Kurt Stokbro. The current
 \tbtrans\ is implemented by the following contributors:
@@ -1179,7 +1179,7 @@ and transmission.
   
 \end{fdfentry}
 
-\begin{fdfentry}{TBT.Contours}[block]
+\begin{fdfentry}{TBT.Contours}[block]<\emph{see note further down}>
 
   Each line in this block corresponds to a specific contour.
   Enabling several lines of input allows to create regions of the
@@ -1859,6 +1859,14 @@ be used for $N$ electrode calculations.
 One important aspect of projection is that the self-energies that are
 to be projected \emph{must} be fully located on the projection
 region. \tbtrans\ will die if this is not enforced.
+%
+A projection can \emph{only} be performed if the down-folding of the
+self-energies for the projected electrode is fully encapsulated in the
+device region (\fdf{TBT.Atoms!Device}). I.e. one should reduce the
+device region such that any couplings from the electrodes only couple
+into the projection region. Generally for the most simple projections
+the device region should be equivalent to the projection region in
+case there is only one projection region.
 
 These projections should not be confused with local DOS which may be
 obtained if compiled with the NetCDF4 library and via the use of

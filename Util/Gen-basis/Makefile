@@ -62,10 +62,10 @@ DEPS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
 	  bessph.o radfft.o  sorting.o m_filter.o m_spin.o \
           basis_specs.o ldau_specs.o atom.o periodic_table.o\
           pxf.o dot.o  atom_options.o arw.o  m_spin_orbit_potentials.o \
-          sys.o xml.o m_walltime.o read_xc_info.o  $(SYSOBJ) \
+          xml.o m_walltime.o read_xc_info.o  $(SYSOBJ) \
           xc.o bsc_xcmod.o  m_fft_gpfa.o m_cite.o reclat.o units.o \
           semicore_info_froyen.o hamann.o
-GEN-BASIS_LOCAL_OBJS=gen-basis.o handlers.o
+GEN-BASIS_LOCAL_OBJS=gen-basis.o handlers.o local_sys.o
 OBJS_GEN-BASIS=$(DEPS_GEN-BASIS) $(GEN-BASIS_LOCAL_OBJS)
 
 DEPS_IONCAT=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
@@ -74,9 +74,9 @@ DEPS_IONCAT=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
 	  chemical.o m_spin.o m_spin_orbit_potentials.o reclat.o \
           basis_specs.o periodic_table.o pxf.o semicore_info_froyen.o \
           atom.o atmfuncs.o spher_harm.o interpolation.o old_atmfuncs.o arw.o \
-          sys.o xc.o bsc_xcmod.o xml.o m_walltime.o ldau_specs.o\
+          xc.o bsc_xcmod.o xml.o m_walltime.o ldau_specs.o\
           hamann.o m_cite.o  units.o $(SYSOBJ)
-IONCAT_LOCAL_OBJS=ioncat.o handlers.o
+IONCAT_LOCAL_OBJS=ioncat.o handlers.o local_sys.o
 OBJS_IONCAT=$(DEPS_IONCAT) $(IONCAT_LOCAL_OBJS)
 
 
@@ -140,80 +140,82 @@ dep:
                 || true
 
 # DO NOT DELETE THIS LINE - used by make depend
-arw.o: alloc.o parallel.o precision.o sys.o
-arw.o: alloc.o parallel.o precision.o sys.o
-atm_transfer.o: atm_types.o atmparams.o ldau_specs.o old_atmfuncs.o
-atm_transfer.o: periodic_table.o radial.o sys.o
-atm_transfer.o: atm_types.o atmparams.o ldau_specs.o old_atmfuncs.o
-atm_transfer.o: periodic_table.o radial.o sys.o
+arw.o: alloc.o local_sys.o parallel.o precision.o
+arw.o: alloc.o local_sys.o parallel.o precision.o
+atm_transfer.o: atm_types.o atmparams.o ldau_specs.o local_sys.o old_atmfuncs.o
+atm_transfer.o: periodic_table.o radial.o
+atm_transfer.o: atm_types.o atmparams.o ldau_specs.o local_sys.o old_atmfuncs.o
+atm_transfer.o: periodic_table.o radial.o
 atm_types.o: precision.o radial.o
 atm_types.o: precision.o radial.o
-atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
-atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
+atmfuncs.o: atm_types.o local_sys.o precision.o radial.o spher_harm.o
+atmfuncs.o: atm_types.o local_sys.o precision.o radial.o spher_harm.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: hamann.o interpolation.o m_filter.o old_atmfuncs.o periodic_table.o
-atom.o: precision.o sys.o
+atom.o: hamann.o interpolation.o local_sys.o m_filter.o old_atmfuncs.o
+atom.o: periodic_table.o precision.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: hamann.o interpolation.o m_filter.o old_atmfuncs.o periodic_table.o
-atom.o: precision.o sys.o
-atom_options.o: sys.o
-atom_options.o: sys.o
+atom.o: hamann.o interpolation.o local_sys.o m_filter.o old_atmfuncs.o
+atom.o: periodic_table.o precision.o
+atom_options.o: local_sys.o
+atom_options.o: local_sys.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o radial.o sys.o xml.o
+basis_io.o: local_sys.o precision.o radial.o xml.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o radial.o sys.o xml.o
-basis_specs.o: basis_types.o chemical.o m_spin.o m_spin_orbit_potentials.o
-basis_specs.o: periodic_table.o precision.o semicore_info_froyen.o sys.o
-basis_specs.o: basis_types.o chemical.o m_spin.o m_spin_orbit_potentials.o
-basis_specs.o: periodic_table.o precision.o semicore_info_froyen.o sys.o
-basis_types.o: alloc.o atmparams.o precision.o sys.o
-basis_types.o: alloc.o atmparams.o precision.o sys.o
-bessph.o: precision.o sys.o
-bessph.o: precision.o sys.o
-bsc_xcmod.o: parallel.o precision.o sys.o
-bsc_xcmod.o: parallel.o precision.o sys.o
-chemical.o: parallel.o precision.o sys.o
-chemical.o: parallel.o precision.o sys.o
-chkdim.o: sys.o
-chkdim.o: sys.o
-io.o: sys.o
-io.o: sys.o
+basis_io.o: local_sys.o precision.o radial.o xml.o
+basis_specs.o: basis_types.o chemical.o local_sys.o m_spin.o
+basis_specs.o: m_spin_orbit_potentials.o periodic_table.o precision.o
+basis_specs.o: semicore_info_froyen.o
+basis_specs.o: basis_types.o chemical.o local_sys.o m_spin.o
+basis_specs.o: m_spin_orbit_potentials.o periodic_table.o precision.o
+basis_specs.o: semicore_info_froyen.o
+basis_types.o: alloc.o atmparams.o local_sys.o precision.o
+basis_types.o: alloc.o atmparams.o local_sys.o precision.o
+bessph.o: local_sys.o precision.o
+bessph.o: local_sys.o precision.o
+bsc_xcmod.o: local_sys.o parallel.o precision.o
+bsc_xcmod.o: local_sys.o parallel.o precision.o
+chemical.o: local_sys.o parallel.o precision.o
+chemical.o: local_sys.o parallel.o precision.o
+chkdim.o: local_sys.o
+chkdim.o: local_sys.o
+io.o: local_sys.o
+io.o: local_sys.o
 ldau_specs.o: alloc.o atm_types.o atmparams.o atom.o atom_options.o
-ldau_specs.o: basis_specs.o basis_types.o interpolation.o m_cite.o parallel.o
-ldau_specs.o: precision.o radial.o sys.o units.o
+ldau_specs.o: basis_specs.o basis_types.o interpolation.o local_sys.o m_cite.o
+ldau_specs.o: parallel.o precision.o radial.o units.o
 ldau_specs.o: alloc.o atm_types.o atmparams.o atom.o atom_options.o
-ldau_specs.o: basis_specs.o basis_types.o interpolation.o m_cite.o parallel.o
-ldau_specs.o: precision.o radial.o sys.o units.o
-m_filter.o: bessph.o precision.o radfft.o sorting.o sys.o
-m_filter.o: bessph.o precision.o radfft.o sorting.o sys.o
+ldau_specs.o: basis_specs.o basis_types.o interpolation.o local_sys.o m_cite.o
+ldau_specs.o: parallel.o precision.o radial.o units.o
+m_filter.o: bessph.o local_sys.o precision.o radfft.o sorting.o
+m_filter.o: bessph.o local_sys.o precision.o radfft.o sorting.o
 m_getopts.o: f2kcli.o
 m_getopts.o: f2kcli.o
-m_io.o: sys.o
-m_io.o: sys.o
-m_spin.o: alloc.o parallel.o precision.o sys.o units.o
-m_spin.o: alloc.o parallel.o precision.o sys.o units.o
-old_atmfuncs.o: alloc.o atmparams.o precision.o sys.o
-old_atmfuncs.o: alloc.o atmparams.o precision.o sys.o
-periodic_table.o: precision.o sys.o
-periodic_table.o: precision.o sys.o
+m_io.o: local_sys.o
+m_io.o: local_sys.o
+m_spin.o: alloc.o local_sys.o parallel.o precision.o units.o
+m_spin.o: alloc.o local_sys.o parallel.o precision.o units.o
+old_atmfuncs.o: alloc.o atmparams.o local_sys.o precision.o
+old_atmfuncs.o: alloc.o atmparams.o local_sys.o precision.o
+periodic_table.o: local_sys.o precision.o
+periodic_table.o: local_sys.o precision.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 radial.o: alloc.o interpolation.o precision.o xml.o
 radial.o: alloc.o interpolation.o precision.o xml.o
-read_xc_info.o: parallel.o precision.o sys.o
-read_xc_info.o: parallel.o precision.o sys.o
-spher_harm.o: alloc.o precision.o sys.o
-spher_harm.o: alloc.o precision.o sys.o
+read_xc_info.o: local_sys.o parallel.o precision.o
+read_xc_info.o: local_sys.o parallel.o precision.o
+spher_harm.o: alloc.o local_sys.o precision.o
+spher_harm.o: alloc.o local_sys.o precision.o
 units.o: precision.o
 units.o: precision.o
-xc.o: alloc.o bsc_xcmod.o precision.o sys.o
-xc.o: alloc.o bsc_xcmod.o precision.o sys.o
+xc.o: alloc.o bsc_xcmod.o local_sys.o precision.o
+xc.o: alloc.o bsc_xcmod.o local_sys.o precision.o
 xml.o: precision.o
 xml.o: precision.o
 gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
-gen-basis.o: old_atmfuncs.o sys.o
+gen-basis.o: local_sys.o old_atmfuncs.o
 gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
-gen-basis.o: old_atmfuncs.o sys.o
+gen-basis.o: local_sys.o old_atmfuncs.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 aux_proj.o: atom.o
@@ -221,4 +223,5 @@ m_bessph.o: bessph.o
 m_hamann.o: hamann.o
 m_radfft.o: radfft.o
 m_semicore_info_froyen.o: semicore_info_froyen.o
+sys.o: local_sys.o
 t_spin.o: m_spin.o

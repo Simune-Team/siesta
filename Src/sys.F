@@ -15,39 +15,33 @@
       
       implicit none
 
-      public :: die      ! Prints an error message and calls MPI_Abort
+      public :: die      ! Prints an error message and terminates the program
       public :: message  ! Prints a message string if node==0
 
       private
 
       CONTAINS
 
-      subroutine message(str)
-
-#ifdef MPI
-      use mpi_siesta
-#endif
+      subroutine message(level,str)
       
-      character(len=*), intent(in), optional   :: str
+      character(len=*), intent(in)  :: level
+      ! One of INFO, WARNING, FATAL
+      character(len=*), intent(in)  :: str
 
-      integer :: Node
-#ifdef MPI
-      integer :: MPIerror
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
+      interface
+         subroutine message_external(level,str)
+         character(len=*), intent(in) :: level
+         character(len=*), intent(in) :: str
+         end subroutine message_external
+      end interface
 
-      if (Node.eq.0) then
-         if (present(str)) then
-            write(6,'(a)') trim(str)
-         endif
-      endif
+      call die_external(level,str)
 
       end subroutine message
 !
 !--------------------------------------------------
       subroutine die(str)
+      use siesta_cml
       character(len=*), intent(in), optional   :: str
       interface
          subroutine die_external(str)
@@ -65,11 +59,18 @@
       end module sys
 
 !
-!     Special version for use in sys.F
+!     Special versions for use in sys.F
 !      
       subroutine die_external(str)
       character(len=*), intent(in)  :: str
       external :: die
       call die(str)
       end subroutine die_external
+
+      subroutine message_external(level,str)
+      character(len=*), intent(in)  :: level
+      character(len=*), intent(in)  :: str
+      external :: message
+      call message(level,str)
+      end subroutine message_external
 

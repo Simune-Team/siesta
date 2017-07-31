@@ -1,6 +1,8 @@
-Use the siesta.fdf file to run Siesta (you can find the pseudopotentials needed in Tests/Pseudos).
+Use the siesta.fdf file to run Siesta (you can find the
+pseudopotentials needed in Tests/Pseudos).
 
-Then, use the Util/wfsx2wfs.f  program to convert the si2x1h.WFSX file to si2x1h.WFS.
+The wavefunctions will come out in the si2x1h.selected.WFSX file. You have
+to rename it (or make a symbolic link) to si2x1h.WFSX before proceeding.
 
 Finally, run the STM program:
 

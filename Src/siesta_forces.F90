@@ -26,7 +26,11 @@ contains
 #ifdef SIESTA__FLOOK
     use flook_siesta, only : slua_call
     use flook_siesta, only : LUA_INIT_MD, LUA_SCF_LOOP
-    use siesta_dicts
+    use siesta_dicts, only : dict_variable_add
+    use m_ts_options, only : ts_scf_mixs
+    use variable, only : cunpack
+    use dictionary, only : assign
+    use m_mixing, only : mixers_history_init
 #endif
     use m_state_init
     use m_setup_hamiltonian
@@ -38,6 +42,7 @@ contains
     use m_mixer, only: mixer
     use m_mixing_scf, only: mixing_scf_converged
     use m_mixing_scf, only: mixers_scf_history_init
+    use m_mixing_scf, only: scf_mixs, scf_mix
 
     use m_rhog,                only: mix_rhog, compute_charge_diff
     use siesta_options
@@ -65,6 +70,7 @@ contains
     use m_pexsi_solver,        only: prevDmax
     use write_subs,            only: siesta_write_forces
     use write_subs,            only: siesta_write_stress_pressure
+
 #ifdef NCDF_4
     use dictionary
     use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
@@ -77,6 +83,7 @@ contains
 #ifdef SIESTA__PEXSI
     use m_pexsi, only: pexsi_finalize_scfloop
 #endif
+    use m_check_walltime
 
 #ifdef TRANSIESTA
     use m_ts_options, only : N_Elec
@@ -94,7 +101,7 @@ contains
     use m_transiesta,          only: transiesta
     use kpoint_grid, only : gamma_scf
     use m_energies, only : Ef
-#endif /* TRANSIESTA */
+#endif
 
     use m_initwf, only: initwf
 
@@ -106,12 +113,22 @@ contains
     real(dp) :: dHmax ! Max. change in H elements
     real(dp) :: dEmax ! Max. change in EDM elements
     real(dp) :: drhog ! Max. change in rho(G) (experimental)
-    real(dp) :: G2max ! actually used meshcutoff
+    real(dp), target :: G2max ! actually used meshcutoff
     type(converger_t) ::  conv_harris, conv_freeE
 
     ! For initwf
     integer :: istpp
     real(dp) :: EF7
+
+#ifdef SIESTA__FLOOK
+    ! len=24 from m_mixing.F90
+    character(len=1), target :: next_mixer(24)
+    character(len=24) :: nnext_mixer
+    integer :: imix
+#endif
+
+    logical               :: time_is_up
+    character(len=40)     :: tmp_str
 
 #ifdef TRANSIESTA
     real(dp) :: Qcur
@@ -122,7 +139,8 @@ contains
 #ifdef MPI
     integer :: MPIerror
 #endif
-      external :: die, bye
+    external :: die, bye, message
+
 #ifdef DEBUG
     call write_debug( '    PRE siesta_forces' )
 #endif
@@ -164,6 +182,15 @@ contains
     ! necessarily the same
     call dict_variable_add('Mesh.Cutoff.Minimum',G2cut)
     call dict_variable_add('Mesh.Cutoff.Used',G2max)
+
+    call dict_variable_add('SCF.Mixer.Weight',scf_mix%w)
+    call dict_variable_add('SCF.Mixer.Restart',scf_mix%restart)
+    call dict_variable_add('SCF.Mixer.Iterations',scf_mix%n_itt)
+    
+    ! Just to populate the table in the dictionary
+    call dict_variable_add('SCF.Mixer.Switch',next_mixer)
+    ! Initialize to no switch
+    next_mixer = ' '
 #endif
         
     ! This call computes the non-scf part of H and initializes the
@@ -261,7 +288,22 @@ contains
        first_scf = (iscf == 1)
        
        if ( SIESTA_worker ) then
-           
+          
+          ! Check whether we are short of time to continue
+          call check_walltime(time_is_up)
+          if ( time_is_up ) then
+             ! Save DM/H if we were not saving it...
+             !   Do any other bookeeping not done by "die"
+             call message('WARNING', &
+                  'SCF_NOT_CONV: SCF did not converge'// &
+                  ' before wall time exhaustion')
+             write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
+             call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
+             
+             call die("OUT_OF_TIME: Time is up.")
+             
+          end if
+        
           call timer( 'IterSCF', 1 )
           if (cml_p) &
                call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
@@ -295,6 +337,7 @@ contains
              call compute_max_diff(Dold, Dscf, dDmax)
              if ( converge_EDM ) &
                   call compute_max_diff(Eold, Escf, dEmax)
+             
           end if
 
           ! This iteration has completed calculating the new DM
@@ -393,6 +436,51 @@ contains
 #ifdef SIESTA__FLOOK
           ! Communicate with lua
           call slua_call(LUA, LUA_SCF_LOOP)
+          
+          ! Retrieve an easy character string
+          nnext_mixer = cunpack(next_mixer)
+          if ( len_trim(nnext_mixer) > 0 ) then
+#ifdef TRANSIESTA
+             if ( TSrun ) then
+                do imix = 1 , size(ts_scf_mixs)
+                   if ( ts_scf_mixs(imix)%name == nnext_mixer ) then
+                      call mixers_history_init(ts_scf_mixs)
+                      scf_mix => ts_scf_mixs(imix)
+                      exit
+                   end if
+                end do
+             else 
+#endif
+                do imix = 1 , size(scf_mixs)
+                   if ( scf_mixs(imix)%name == nnext_mixer ) then
+                      call mixers_history_init(scf_mixs)
+                      scf_mix => scf_mixs(imix)
+                      exit
+                   end if
+                end do
+#ifdef TRANSIESTA
+             end if
+#endif
+             
+             ! Check that we indeed have changed the mixer
+             if ( IONode .and. scf_mix%name /= nnext_mixer ) then
+                write(*,'(2a)') 'siesta-lua: WARNING: trying to change ', &
+                     'to a non-existing mixer! Not changing anything!'
+                
+             else if ( IONode ) then
+                write(*,'(2a)') 'siesta-lua: Switching mixer method to: ', &
+                     trim(nnext_mixer)
+                
+             end if
+             ! Reset for next loop
+             next_mixer = ' '
+             
+             ! Update the references
+             call dict_variable_add('SCF.Mixer.Weight',scf_mix%w)
+             call dict_variable_add('SCF.Mixer.Restart',scf_mix%restart)
+             call dict_variable_add('SCF.Mixer.Iterations',scf_mix%n_itt)
+             
+          end if
 #endif
 
 #ifdef TRANSIESTA
@@ -417,7 +505,7 @@ contains
 
        ! Exit if converged
        if ( SCFconverged ) exit
-       
+
     end do ! end of SCF cycle
     
 #ifdef SIESTA__PEXSI
@@ -425,20 +513,26 @@ contains
        call pexsi_finalize_scfloop()
     end if
 #endif
-    
+
     if ( .not. SIESTA_worker ) return
-    
+
     call end_of_cycle_save_operations()
-    
-    if ( .not. SCFconverged) then
-       if ( IONode .and. .not.harrisfun ) &
-            write(6,"(a)") ':!: SCF did not converge'// &
-            ' in maximum number of steps.'
-       if ( SCFMustConverge ) &
-            call die('SCF did not converge in maximum number of steps.')
-       
+
+    if ( .not. SCFconverged ) then
+       if ( SCFMustConverge ) then
+          call message('FATAL','SCF_NOT_CONV: SCF did not converge' // &
+               ' in maximum number of steps (required).')
+          write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
+          call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
+          call die('ABNORMAL_TERMINATION')
+       else if ( .not. harrisfun ) then
+          call message('WARNING', &
+               'SCF_NOT_CONV: SCF did not converge  in maximum number of steps.')
+          write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
+          call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
+       end if
     end if
-    
+
     ! To write the initial wavefunctions to be used in a
     ! consequent TDDFT run.
     if ( writetdwf ) then
@@ -450,8 +544,9 @@ contains
     
 #ifdef TRANSIESTA
     if ( TSmode.and.TSinit.and.(.not. SCFConverged) ) then
-       call die('SCF did not converge before proceeding to transiesta&
-            &calculation')
+       ! Signal that the DM hasn't converged, so we cannot
+       ! continue to the transiesta routines
+       call die('ABNORMAL_TERMINATION')
     end if
 #endif
     
@@ -470,11 +565,11 @@ contains
        if (ionode) call memory_snapshot("after post_scf_work")
 #endif
     end if
-
+    
     ! ... so H at this point is the latest generator of the DM, except
     ! if mixing H beyond self-consistency or terminating the scf loop
     ! without convergence while mixing H
-
+    
     call state_analysis( istep )
 #ifdef SIESTA__PEXSI
     if (ionode) call memory_snapshot("after state_analysis")
@@ -484,7 +579,6 @@ contains
     if (siesta_server) &
          call forcesToMaster( na_u, Etot, cfa, cstress )
 
-    !------------------------------------------------------------------------ END
 #ifdef DEBUG
     call write_debug( '    POS siesta_forces' )
 #endif
@@ -624,8 +718,8 @@ contains
       use atomlist, only: lasto
       use siesta_geom, only: nsc, isc_off, na_u, xa, ucell
       use m_energies, only : Ef
-      use m_mixing_scf, only: scf_mixs, scf_mix
       use m_mixing, only: mixers_history_init
+      use m_mixing_scf, only: scf_mix, scf_mixs
 
       use m_ts_global_vars,      only: TSinit, TSrun
       use m_ts_global_vars,      only: ts_print_transiesta
@@ -633,10 +727,10 @@ contains
       use m_ts_options,          only: N_Elec, Elecs
       use m_ts_options,          only: DM_bulk
       use m_ts_options,          only: val_swap
-      use m_ts_options,          only: ts_scf_mixs
       use m_ts_options,          only: ts_Dtol, ts_Htol
       use m_ts_options,          only: ts_hist_keep
       use m_ts_options,          only: ts_siesta_stop
+      use m_ts_options,          only: ts_scf_mixs
       use m_ts_electype
 
       integer :: iEl, na_a
@@ -690,6 +784,13 @@ contains
       end if
       ! Transfer scf_mixing to the transiesta mixing routine
       scf_mix => ts_scf_mixs(1)
+#ifdef SIESTA__FLOOK
+      if ( .not. mix_charge ) then
+         call dict_variable_add('SCF.Mixer.Weight',scf_mix%w)
+         call dict_variable_add('SCF.Mixer.Restart',scf_mix%restart)
+         call dict_variable_add('SCF.Mixer.Iterations',scf_mix%n_itt)
+      end if
+#endif
 
       call ts_print_transiesta()
 
