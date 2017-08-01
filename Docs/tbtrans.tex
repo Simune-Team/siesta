@@ -1158,6 +1158,17 @@ Brillouin zone.
 
 \subsubsection{Energy grid}
 
+\tbtrans\ uses a default energy reference as the Fermi level in the
+corresponding \tsiesta\ calculation. I.e. the equilibrium Fermi
+level. Thus one should be aware when using a shifted bias window that
+the calculated properties shifts according to the applied bias. For
+example; if one performs two equivalent 2-terminal calculations A)
+with $\mu_L=V$, $\mu_R=0$ and the other B) with $\mu_L=V/2$,
+$\mu_R=-V/2$ then the calculated properties are equivalent if one
+shifts the energy spectrum of A) by $E \to E - V/2$. Any 2-terminal
+calculation is recommended to be setup with $\mu_L=V/2$ and
+$\mu_R=-V/2$ due to the fixed energy reference, $E_R = 0$.
+
 The Green function is calculated at explicit energies and does not
 rely on diagonalization routines to retrieve the eigenspectrum. This
 is due to the smearing of states from the coupling with the
@@ -1257,6 +1268,7 @@ and transmission.
 
 By default the \tbtrans\ energy grid is defined as
 \begin{fdfexample}
+  TBT.Contours.Eta 0. eV
   %block TBT.Contours
     line
   %endblock TBT.Contours
