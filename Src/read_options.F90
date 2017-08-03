@@ -508,7 +508,7 @@ subroutine read_options( na, ns, nspin )
   dDtol = fdf_get('SCF.DM.Tolerance',dDtol)
   if ( IONode ) then
      write(6,1) 'redata: Require DM convergence for SCF', converge_DM
-     write(6,9) 'redata: DM tolerance for SCF',dDtol
+     write(6,11) 'redata: DM tolerance for SCF',dDtol
   end if
   if (cml_p) then
      call cmlAddParameter( xf=mainXML, name='SCF.DM.Converge', &
@@ -1672,6 +1672,7 @@ subroutine read_options( na, ns, nspin )
 8  format(a,t53,'= ',f14.12)
 9  format(a,t53,'= ',f10.4)
 10 format(t55,a)
+11 format(a,t53,'= ',f12.6)
 
 CONTAINS
   subroutine deprecated( str )
