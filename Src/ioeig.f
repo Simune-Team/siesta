@@ -51,7 +51,11 @@ c -------------------------------------------------------------------
       open( iu, file=fname, form='formatted', status='unknown' )      
 
       write(iu,"(f14.4)") ef/eV
-      write(iu,"(3i6)")   no, min(ns,2), nk
+      if ( ns > 2 ) then
+         write(iu,"(3i6)")   no*2, 1, nk
+      else
+         write(iu,"(3i6)")   no, min(ns,2), nk
+      end if
       do ik = 1,nk
         write(iu,"(i5,10f12.5,/,(5x,10f12.5))")
      .          ik, ((eo(io,is,ik)/eV,io=1,no),is=1,nspin)
@@ -67,9 +71,21 @@ c -------------------------------------------------------------------
         call cmlAddProperty(xf=mainXML, value=nk, 
      .       title='Number of k-points', dictRef='siesta:nkpoints',
      .       units='cmlUnits:countable')
-        do is = 1,nspin
-          call cmlStartPropertyList(mainXML, dictRef='siesta:kpt_band')
-          if (nspin.eq.2) then
+        if ( ns > 2 ) then
+           call cmlStartPropertyList(mainXML, dictRef='siesta:kpt_band')
+           do ik = 1, nk
+              call cmlAddKPoint(xf=mainXML, coords=kpoints(:, ik), 
+     .             weight=kweights(ik))
+              call cmlAddProperty(xf=mainXML,
+     .             value=reshape(eo(1:no,1:2,ik)/eV, (/no*2/)),
+     .             dictRef='siesta:eigenenergies',
+     .             units='siestaUnits:ev')
+           end do
+           call cmlEndPropertyList(mainXML)
+        else
+         do is = 1,nspin
+           call cmlStartPropertyList(mainXML, dictRef='siesta:kpt_band')
+           if (nspin.eq.2) then
             if (is.eq.1) then
               call cmlAddProperty(xf=mainXML, value="up", 
      .                            dictRef="siesta:spin")
@@ -77,19 +93,17 @@ c -------------------------------------------------------------------
               call cmlAddProperty(xf=mainXML, value="down", 
      .                            dictRef="siesta:spin")
             endif
-          endif
-          do ik = 1, nk
-            call cmlAddKPoint(xf=mainXML, coords=kpoints(:, ik), 
-     .                        weight=kweights(ik))
-            call cmlAddProperty(xf=mainXML, value=eo(1:no,is,ik)/eV, 
+           endif
+           do ik = 1, nk
+              call cmlAddKPoint(xf=mainXML, coords=kpoints(:, ik), 
+     .                          weight=kweights(ik))
+              call cmlAddProperty(xf=mainXML, value=eo(1:no,is,ik)/eV, 
      .                          dictRef='siesta:eigenenergies',
      .                          units='siestaUnits:ev')
-!            call cmlAddBand(xf=mainXML, 
-!     .           kpoint=kpoints(:, ik), kweight=kweights(ik), 
-!     .           bands=eo(1:no,is,ik))
-          enddo
-          call cmlEndPropertyList(mainXML)
-        enddo
+           end do
+           call cmlEndPropertyList(mainXML)
+         end do
+        end if
         call cmlEndPropertyList(mainXML)
       endif
 
