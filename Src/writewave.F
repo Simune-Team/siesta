@@ -511,18 +511,14 @@ C Check spin
       endif
 
 C Allocate local arrays - only aux is relevant here
-C     C RC  Changed for on-site SO
-      if (h_spin_dim >= 4) then
+      if ( h_spin_dim >= 4 ) then
          nhs = 2 * (2*nuotot) * (2*nuo)
       else
          nhs = 2 * nuotot * nuo
       endif
-      call re_alloc(Haux,1,nhs,name='Haux',routine='writewave')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='writewave')
-      call re_alloc(psi,1,nhs,name='psi',routine='writewave')
-C      call re_alloc(Haux,1,2*nuotot*nuo,name='Haux',routine='writewave')
-C      call re_alloc(Saux,1,2*nuotot*nuo,name='Saux',routine='writewave')
-C      call re_alloc(psi,1,2*nuotot*nuo,name='psi',routine='writewave')
+      call re_alloc(Haux,1,nhs,name='Haux',routine='densematrix')
+      call re_alloc(Saux,1,nhs,name='Saux',routine='densematrix')
+      call re_alloc(psi,1,nhs,name='psi',routine='densematrix')
 
 CC RC  ek has different arguments here than in 3.1.1 version that it is:
 C      allocate(ek(maxspn,nuo,nuotot)) and the next call to memory
@@ -643,14 +639,16 @@ CC RC Added for on-site SO
           call diag2g( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, ek, qk,
-     .                 Dnew, Enew, ef, Entropy, psi,
+     .                 Dnew, Enew, ef, Entropy,
+     .                 Haux, Saux, psi, aux,
      .                 nuotot, occtol, 1, nuotot )
         elseif (.not.gamma) then
           call diag2k( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .                 indxuo, nk, kpoint, wk, ek, qk, Dnew,
-     .                 Enew, ef, Entropy, psi,
+     .                 Enew, ef, Entropy,
+     .                 Haux, Saux, psi, Haux, Saux, aux,
      .                 nuotot, occtol, 1, nuotot )
         endif
       elseif (SpOrb) then

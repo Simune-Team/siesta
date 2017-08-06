@@ -8,7 +8,8 @@
       subroutine diag2g( nuo, no, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr,
      .                   listd, H, S, getD, qtot, temp, e1, e2,
-     .                   eo, qo, Dnew, Enew, ef, Entropy, psi, 
+     .                   eo, qo, Dnew, Enew, ef, Entropy, 
+     .                   Haux, Saux, psi, caux, 
      .                   nuotot, occtol, iscf, neigwanted)
 
 !
@@ -30,6 +31,7 @@ C and energy-density matrices, and occupation weights of each
 C eigenvector, for given Hamiltonian and Overlap matrices.
 C This version is for non-collinear spin at gamma point.
 C Writen by J.Soler, May and August 1998.
+C Reduced memory requirements, Nick, Aug. 2017
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals on local node
 C integer no                  : Number of basis orbitals
@@ -69,10 +71,10 @@ C real*8 Enew(maxnd,4)        : Output Energy-Density Matrix
 C real*8 ef                   : Fermi energy
 C real*8 Entropy              : Electronic entropy
 C *************************** AUXILIARY *******************************
-C real*8 Haux(2,2,nuotot,2,nuo): Auxiliary space for the hamiltonian matrix
-C real*8 Saux(2,2,nuotot,2,nuo): Auxiliary space for the overlap matrix
-C real*8 psi(2,2,nuotot,2*no) : Auxiliary space for the eigenvectors
-C real*8 aux(5,2*nuotot)      : Extra auxiliary space
+C complex*16 Haux(2,nuotot,2,nuo): Auxiliary space for the hamiltonian matrix
+C complex*16 Saux(2,nuotot,2,nuo): Auxiliary space for the overlap matrix
+C complex*16 psi(2,nuotot,2*nuo) : Auxiliary space for the eigenvectors
+C complex*16 caux(2,nuotot)      : Extra auxiliary space
 C *************************** UNITS ***********************************
 C xij and kpoint must be in reciprocal coordinates of each other.
 C temp and H must be in the same energy units.
@@ -98,10 +100,10 @@ C of referencing has been changed in several places to reflect this.
       logical               getD
       
 !     Internal variables .............................................
-      real(dp)                       psi(2,2,nuotot,2*nuo)
-      complex(dp),dimension(:,:,:,:), allocatable :: Haux, Saux
-      complex(dp),dimension(:,:),     allocatable :: caux
-      
+      complex(dp), dimension(2,nuotot,2*nuo) :: psi
+      complex(dp), dimension(2,nuotot,2,nuo) :: Haux, Saux
+      complex(dp), dimension(2,nuotot) :: caux
+
       integer           BNode, BTest, ie, ierror, iie, iio
       integer           ind, io, j, jo, nd, iuo, juo
       real(dp)          ee, pipj, qe, t
@@ -116,13 +118,6 @@ C of referencing has been changed in several places to reflect this.
 !***********************************************************************
 !     B E G I N
 !***********************************************************************
-!     define the arrays
-      allocate(Haux(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag2g')
-      allocate(Saux(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag2g')
-      allocate(caux(2,nuotot))
-      call memory('A','Z',2*nuotot,'diag2g')
 
 !***********************************************************************
 ! BUILD HAMILTONIAN
@@ -259,8 +254,8 @@ C of referencing has been changed in several places to reflect this.
         if (abs(qe).gt.occtol) then
           if (Node.eq.BNode) then
             do j = 1,nuotot
-              caux(1,j)=dcmplx( psi(1,1,j,iie), psi(2,1,j,iie)) ! c_{i,up}
-              caux(2,j)=dcmplx( psi(1,2,j,iie), psi(2,2,j,iie)) ! c_{i,dn}
+              caux(1,j)= psi(1,j,iie) ! c_{i,up}
+              caux(2,j)= psi(2,j,iie) ! c_{i,dn}
             enddo
           endif
 #ifdef MPI
@@ -326,13 +321,6 @@ C of referencing has been changed in several places to reflect this.
 
  1001 continue
       
-!     deallocate the arrays
-      call memory('D','Z',2*nuotot*2*nuo,'diag2g')
-      deallocate(Haux)
-      call memory('D','Z',2*nuotot*2*nuo,'diag2g')
-      deallocate(Saux)
-      call memory('D','Z',2*nuotot,'diag2g')
-      deallocate(caux)
 #ifdef DEBUG
       call write_debug( '    POS diag2k' )
 #endif

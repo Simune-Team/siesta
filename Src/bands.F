@@ -403,7 +403,7 @@ C
      .  path, temp, wk, Entropy
 
 C Dynamic arrays
-      real(dp), dimension(:), pointer :: aux
+      real(dp), dimension(:), pointer :: aux => null()
 
       parameter ( eV = 1.d0 / 13.60580d0 )
       save getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
@@ -432,16 +432,14 @@ C Check parameter maxk
       endif
 
 C     Allocate local arrays - only aux is relevant here
-      if (nspin >=4 ) then
-         nhs  = 2 * (2*no_u) * (2*nuo) 
+      if ( nspin >=4 ) then
+         nhs  = 2 * (2*no_u) * (2*no_l)
       else
-         nhs = 2*no_u*no_l
+         nhs = 2 * no_u*no_l
       endif
       naux  = 2*no_u*5
       call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
       call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
-
-      nullify( aux )
       call re_alloc( aux, 1, naux, 'aux', 'bands' )
 
       if (getPSI .AND. (Node.eq.0)) then
@@ -505,7 +503,8 @@ C Handle parallel over K points option which is not allowed for here
      .              listh, H, S, getD, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, Entropy,
-     .              psi, no_u, occtol, 1, no_u )
+     .              Haux, Saux, psi, Haux, Saux, aux,
+     .              no_u, occtol, 1, no_u )
 
       elseif ( SpOrb ) then
         if (getPSI) then
