@@ -170,7 +170,7 @@ C Check internal dimensions ..........................................
         nhs  = nuotot * nuo
         npsi = nuotot * maxuo * nspin
         naux = nuotot * 5
-       elseif (.not.gamma) then
+       else
         nhs  = 2 * nuotot * nuo
         npsi = 2 * nuotot * nuo
         naux = 2 * nuotot * 5            !!!! AG: Put factor 2 !!
@@ -189,18 +189,12 @@ C Check internal dimensions ..........................................
          call die('diagon: ERROR: incorrect value of nspin')
       endif
 
-      call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
-      
-      ! Check when we should allocate the auxiliary arrays
-      if ( spin%SO ) then
-         ! do not allocate
-      else
-         call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
-         call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
-      end if
+      call re_alloc( psi,  1, npsi, 'psi', 'densematrix' )
+      call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
+      call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
 
 
-C Allocate local arrays ! TODO conditional allocation...
+C Allocate local arrays
       nullify(aux,muo)
       call re_alloc( aux,  1, naux, 'aux',  'diagon' )
       call re_alloc( muo,  1, nuo,  'muo',  'diagon' )
@@ -244,7 +238,7 @@ C Call apropriate routine
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, nuotot, occtol, iscf,
      .              neigwanted )
-       elseif (.not.gamma) then 
+       else
 #ifdef MPI
         if (ParallelOverK) then
           call diagkp( spin%H, nuo, no, nspin, maxnh,
@@ -312,7 +306,7 @@ C Call apropriate routine
      .               Dnew, Enew, ef, Entropy, qspiral, Haux,
      .               Saux, psi, Haux, Saux, aux, nuotot, occtol,
      .               iscf )
-       elseif (.not.gamma) then
+       else
         call diag2k( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
      .               H, S, getD, qtot, temp, e1, e2, xij,
@@ -326,14 +320,16 @@ C Call apropriate routine
           call diag3g( nuo, no, maxuo, maxnh, maxnd, maxo, numh,
      .                 listhptr, listh, numd, listdptr, listd,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, eo, qo,
-     .                 Dnew, Enew, ef, Entropy, psi,
+     .                 Dnew, Enew, ef, Entropy, 
+     .                 Haux, Saux, psi, aux,
      .                 nuotot, occtol, iscf, neigwanted )
-        elseif (.not.gamma) then
+        else
           call diag3k( nuo, no, maxnh, maxnd, maxo, numh,
      .                 listhptr, listh, numd, listdptr, listd,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .                 indxuo, nk, kpoint, wk, eo, qo, Dnew,
-     .                 Enew, ef, Entropy, psi,
+     .                 Enew, ef, Entropy,
+     .                 Haux, Saux, psi, Haux, Saux, aux,
      .                 nuotot, occtol, iscf, neigwanted )
         endif
       endif      

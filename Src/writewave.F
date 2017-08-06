@@ -642,7 +642,7 @@ CC RC Added for on-site SO
      .                 Dnew, Enew, ef, Entropy,
      .                 Haux, Saux, psi, aux,
      .                 nuotot, occtol, 1, nuotot )
-        elseif (.not.gamma) then
+        else
           call diag2k( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, xij,
@@ -656,14 +656,16 @@ CC RC Added for on-site SO
           call diag3g( nuo, no, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, qtot, temp, e1, e2, ek, qk,
-     .                 Dnew, Enew, ef, Entropy, psi,
+     .                 Dnew, Enew, ef, Entropy,
+     .                 Haux, Saux, psi, aux,
      .                 nuotot, occtol, 1, nuotot )
-        elseif (.not.gamma) then
+        else
           call diag3k( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, qtot, temp, e1, e2, xij,
      .                 indxuo, nk, kpoint, wk, ek, qk, Dnew,
-     .                 Enew, ef, Entropy, psi,
+     .                 Enew, ef, Entropy,
+     .                 Haux, Saux, psi, Haux, Saux, aux,
      .                 nuotot, occtol, 1, nuotot )
         endif
       endif
@@ -674,7 +676,7 @@ C Free local arrays
       deallocate(muo)
       call memory('D','D',size(aux),'writewave')
       deallocate(aux)
-      call memory('D','I',size(ek),'writewave')
+      call memory('D','D',size(ek),'writewave')
       deallocate(ek)
 
 C This is the only exit point 

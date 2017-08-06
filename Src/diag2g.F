@@ -97,12 +97,12 @@ C of referencing has been changed in several places to reflect this.
       real(dp) Entropy, eo(maxo*2), H(maxnh,4), qo(maxo*2)
       real(dp) qtot, S(maxnh), temp, occtol
       
-      logical               getD
-      
-!     Internal variables .............................................
       complex(dp), dimension(2,nuotot,2*nuo) :: psi
       complex(dp), dimension(2,nuotot,2,nuo) :: Haux, Saux
       complex(dp), dimension(2,nuotot) :: caux
+      logical               getD
+      
+!     Internal variables .............................................
 
       integer           BNode, BTest, ie, ierror, iie, iio
       integer           ind, io, j, jo, nd, iuo, juo

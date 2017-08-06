@@ -392,9 +392,10 @@ C
       character(len=label_length+6) :: fname
       character(len=10)             :: string
 
-      logical ::   getD, fixspin
+      logical, parameter :: getD = .false.
+      logical, parameter :: fixspin = .false.
 
-      integer ::   ik, il, io, ispin, iu, iu_wfs, iuo, naux, nhs, j
+      integer :: ik, il, io, ispin, iu, iu_wfs, iuo, naux, nhs, j
 
       logical :: SaveParallelOverK
 
@@ -406,8 +407,7 @@ C Dynamic arrays
       real(dp), dimension(:), pointer :: aux => null()
 
       parameter ( eV = 1.d0 / 13.60580d0 )
-      save getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
-      data getD /.false./
+      save Dnew, Enew, e1, e2, qk, qtot, temp, wk
 
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
@@ -463,7 +463,6 @@ C     Allocate local arrays - only aux is relevant here
 C Find the band energies
       if (NoMagn .or. SPpol) then
 C fixspin and qs are not used in diagk, since getD=.false. ...
-        fixspin = .false.
         qs(1) = 0.0_dp
         qs(2) = 0.0_dp
 
@@ -517,7 +516,8 @@ C Handle parallel over K points option which is not allowed for here
      .              listhptr, listh, numh, listhptr, listh,
      .              H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .              indxuo, nk, kpoint, wk, ek, qk, Dnew,
-     .              Enew, ef, Entropy, psi,
+     .              Enew, ef, Entropy,
+     .              Haux, Saux, psi, Haux, Saux, aux,
      .              no_u, occtol, 1, no_u )
       else
         call die( 'bands: ERROR: incorrect value of nspin')

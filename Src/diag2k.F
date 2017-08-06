@@ -117,9 +117,6 @@ C *********************************************************************
       complex(dp), dimension(2,nuotot,2,nuo) :: Haux, Saux, Dk, Ek
       complex(dp), dimension(2,nuotot,2*nuo) :: psi
       complex(dp), dimension(2,nuotot) :: caux
-
-      
-
       logical               getD
       
 !     TEMPOS, INTERNAL VARIABLES etc.
@@ -139,7 +136,7 @@ C *********************************************************************
       integer            :: MPIerror
 #endif
 
-      external              cdiag, memory
+      external              cdiag
 
 #ifdef DEBUG
       call write_debug( '    PRE diag2k' )
