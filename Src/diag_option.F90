@@ -146,7 +146,13 @@ contains
     Use2D = (ProcessorY > 1) .and. (Nodes / ProcessorY > 1)
     Use2D = Use2D .or. (BlockSize /= diag_BlockSize)
     Use2D = fdf_get('Diag.Use2D', Use2D)
-
+    
+    ! Fall back to original BlockSize when not requesting 2D
+    ! distribution (the 1D distribution is not implemented
+    ! for different blocksize)
+    if ( .not. Use2D ) then
+       diag_BlockSize = BlockSize
+    end if
 
     algo = fdf_get('Diag.UpperLower', 'lower')
     if ( leqi(algo, 'lower') .or. leqi(algo, 'l') ) then

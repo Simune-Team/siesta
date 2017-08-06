@@ -289,7 +289,8 @@ C *********************************************************************
      .                        + dcmplx(H(ind,7), + H(ind,8)) * kphs
           enddo
         enddo
-      
+
+        ! Note that neigneeded is explicitly calculated
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
      .             neigneeded,iscf,ierror, 2*BlockSize)
       

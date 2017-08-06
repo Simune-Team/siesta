@@ -576,13 +576,23 @@ contains
 
        if ( Use2D ) then
 
+          ! When requesting a 2D redistribution of data
+          ! we can in some cases re-use the data-arrays to
+          ! limit the required used memory.
+          ! This may be so IFF the 2D distributed # of matrix elements
+          ! is less than or equal to the 1D (intrinsic Siesta)
+          ! distributed # of matrix elements.
+
           if ( product(mat_2d) > nml*nm ) then
+             ! I.e, here we allocate more memory
 
              call re_alloc(Hp, 1, mat_2d(1), 1, mat_2d(2), name='H2D')
              call re_alloc(Sp, 1, mat_2d(1), 1, mat_2d(2), name='S2D')
              call re_alloc(Zp, 1, mat_2d(1), 1, mat_2d(2), name='Z2D')
 
           else
+             ! I.e, here we re-use memory to substantially reduce the
+             ! required memory of Siesta
 
              ! This order means that nothing gets overwritten
              ! when we distribute to the 2D distribution.
@@ -1550,14 +1560,26 @@ contains
 
        if ( Use2D ) then
 
+          ! When requesting a 2D redistribution of data
+          ! we can in some cases re-use the data-arrays to
+          ! limit the required used memory.
+          ! This may be so IFF the 2D distributed # of matrix elements
+          ! is less than or equal to the 1D (intrinsic Siesta)
+          ! distributed # of matrix elements.
+
           if ( product(mat_2d) > nml*nm ) then
+             ! I.e, here we allocate more memory
 
              call re_alloc(Hp, 1, mat_2d(1), 1, mat_2d(2), name='H2D')
              call re_alloc(Sp, 1, mat_2d(1), 1, mat_2d(2), name='S2D')
              call re_alloc(Zp, 1, mat_2d(1), 1, mat_2d(2), name='Z2D')
 
           else
-             
+             ! I.e, here we re-use memory to substantially reduce the
+             ! required memory of Siesta
+
+             ! This order means that nothing gets overwritten
+             ! when we distribute to the 2D distribution.
              Hp => S
              Sp => Z
              Zp => H

@@ -463,7 +463,6 @@ C     Allocate local arrays - only aux is relevant here
       endif
 
 C Find the band energies
-CC RC      if (nspin.le.2) then
       if (NoMagn .or. SPpol) then
 C fixspin and qs are not used in diagk, since getD=.false. ...
         fixspin = .false.
@@ -497,7 +496,7 @@ C Handle parallel over K points option which is not allowed for here
       elseif ( NonCol ) then
          if (getPSI) then
             if (node==0) then
-               write(6,*) "No WFS for nspin=4 yet..."
+               write(6,*) "No WFS for non-colinear spin, yet..."
             endif
             RETURN
          endif
@@ -509,6 +508,12 @@ C Handle parallel over K points option which is not allowed for here
      .              psi, no_u, occtol, 1, no_u )
 
       elseif ( SpOrb ) then
+        if (getPSI) then
+           if (node==0) then
+              write(6,*) "No WFS for spin-orbit, yet..."
+           endif
+           return
+        end if
         call diag3k(nuo, no_s, maxnh, maxnh, no_u, numh,
      .              listhptr, listh, numh, listhptr, listh,
      .              H, S, getD, getPSI, qtot, temp, e1, e2, xij,

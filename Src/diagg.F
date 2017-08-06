@@ -188,10 +188,15 @@ C Repeat diagonalisation with increased memory to handle clustering
           enddo
 !$OMP end parallel do
           call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
-     &                psi(1,1,ispin), nuotot, iscf, ierror, BlockSize )
+     &         psi(1,1,ispin), neigwanted, iscf, ierror,
+     .         BlockSize )
         endif
 
         if (getPSI) then
+          ! We do not have info about occupation
+          ! In the current implementation, neigneeded
+          ! is ALWAYS nuotot.
+          ! This is because writewave expects the full spectrum
           do ix = 1,3
             k(ix) = 0.0d0
           enddo

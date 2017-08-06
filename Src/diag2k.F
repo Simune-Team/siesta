@@ -306,6 +306,7 @@ C *********************************************************************
           enddo
         enddo
 
+        ! Note neigneeded is explicitly calculated
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
      .             neigneeded,iscf,ierror, 2*BlockSize)
       

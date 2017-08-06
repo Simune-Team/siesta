@@ -259,8 +259,11 @@ C Find maximum eigenvector that is required for this k point and spin
 C Compute all eigenvectors if getPSI = .true.
 
           if (getPSI) then
-            ! We do not have info about occupation
-            neigneeded = neigwanted
+             ! We do not have info about occupation
+             ! In the current implementation, neigneeded
+             ! is ALWAYS nuotot.
+             ! This is because writewave expects the full spectrum
+             neigneeded = neigwanted
           else
             neigneeded = 0
             ie = nuotot
@@ -335,6 +338,10 @@ C Repeat diagonalisation with increased memory to handle clustering
           call timer( 'c-eigvec', 2 )
 
           if (getPSI) then
+             ! We do not have info about occupation
+             ! In the current implementation, neigneeded
+             ! is ALWAYS nuotot.
+             ! This is because writewave expects the full spectrum
              if (.not. getD) then
                 ! Fill in the missing eigenvalue information
                 ! This is useful if we are requesting WFS in a "bands" setting
