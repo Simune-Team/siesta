@@ -797,7 +797,6 @@ m_cell.o: precision.o siesta_geom.o units.o
 m_charge_add.o: intrinsic_missing.o m_cite.o m_geom_objects.o m_mesh_node.o
 m_charge_add.o: parallel.o precision.o units.o
 m_check_walltime.o: m_walltime.o
-m_diagon_opt.o: parallel.o
 m_digest_nnkp.o: alloc.o atomlist.o files.o m_mpi_utils.o m_noccbands.o
 m_digest_nnkp.o: m_spin.o m_trialorbitalclass.o parallel.o precision.o
 m_digest_nnkp.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
