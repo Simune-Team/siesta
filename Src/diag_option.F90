@@ -221,27 +221,18 @@ contains
     else if ( leqi(algo, 'elpa-1') .or. leqi(algo, 'elpa-1stage') ) then
        algorithm = ELPA_1stage
        
-       ! ELPA requires non-serial
+       ! The current ELPA implementation requires non-serial
        Serial = .false.
        ParallelOverK = .false.
-
-       ! Currently I can only get ELPA to work correctly
-       ! with this setup:
-       Use2D = .true.
-       ProcessorY = Nodes
 
     else if ( leqi(algo, 'elpa') .or. &
          leqi(algo, 'elpa-2stage') .or. leqi(algo, 'elpa-2') ) then
        algorithm = ELPA_2stage
 
-       ! ELPA requires non-serial
+       ! The current ELPA implementation requires non-serial
        Serial = .false.
        ParallelOverK = .false.
 
-       ! Currently I can only get ELPA to work correctly
-       ! with this setup:
-       Use2D = .true.
-       ProcessorY = Nodes
 #endif
        
 #ifdef SIESTA__MRRR

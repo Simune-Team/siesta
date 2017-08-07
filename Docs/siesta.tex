@@ -840,7 +840,7 @@ libraries
   Add these flags to your \file{arch.make} file to enable ELPA
 \begin{shellexample}
   LIBS += -L/opt/elpa/lib -lelpa <>
-  FPPFLAGS += -DSIESTA__ELPA
+  FPPFLAGS += -DSIESTA__ELPA -I/opt/elpa/include/elpa-<>/modules
 \end{shellexample}
   \index{compile!pre-processor!-DSIESTA\_\_ELPA}
   where \shell{<>} are any libraries that ELPA depend on.
@@ -5964,12 +5964,16 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     Use the ELPA\cite{ELPA,ELPA-1} 1-stage solver. Requires the
     compilation of \siesta\ with ELPA, see Sec.~\ref{sec:libs}.
 
+    Not compatible with \fdf{Diag!ParallelOverK}.
+
     \option[ELPA|ELPA-2stage]%
     \fdfindex{Diag!Algorithm!ELPA-2stage}%
     \fdfdepend{NumberOfEigenStates}
     
     Use the ELPA\cite{ELPA,ELPA-1} 2-stage solver. Requires the
     compilation of \siesta\ with ELPA, see Sec.~\ref{sec:libs}.
+
+    Not compatible with \fdf{Diag!ParallelOverK}.
 
   \end{fdfoptions}
 
