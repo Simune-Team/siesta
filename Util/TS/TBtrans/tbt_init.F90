@@ -18,7 +18,6 @@ subroutine tbt_init()
   use sys, only : die
   use precision, only : dp
   use parallel, only : parallel_init, Node, Nodes, IONode
-  use parallel, only : ResetFirstCall, ParallelOverK
   use m_timer, only : timer_report
   use alloc, only   : alloc_report
   use files, only   : slabel
@@ -99,8 +98,6 @@ subroutine tbt_init()
   
   call parallel_init()
 
-  ResetFirstCall =.true.
-  ParallelOverK = .true.
 #ifdef MPI
   if (.not. fdf_parallel()) then
      call die('tbt_init: ERROR: FDF module doesn''t have parallel support')

@@ -334,7 +334,7 @@ iocg.o: files.o local_sys.o precision.o
 iodm.o: alloc.o files.o local_sys.o parallel.o parallelsubs.o precision.o
 iodm_netcdf.o: alloc.o local_sys.o parallel.o parallelsubs.o precision.o
 iodmhs_netcdf.o: alloc.o local_sys.o parallel.o parallelsubs.o precision.o
-ioeig.o: files.o m_spin.o precision.o siesta_cml.o units.o
+ioeig.o: files.o precision.o siesta_cml.o units.o
 iofa.o: files.o precision.o units.o
 iogrid_netcdf.o: alloc.o local_sys.o parallel.o precision.o
 iokp.o: files.o precision.o

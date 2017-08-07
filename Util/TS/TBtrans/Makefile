@@ -48,8 +48,8 @@ SIESTA_OBJS= precision.o local_sys.o m_io.o alloc.o memoryinfo.o memory.o pxf.o 
              reclat.o idiag.o minvec.o \
              parallel.o io.o files.o cellsubs.o sorting.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o m_spin.o \
-             cdiag.o m_diagon_opt.o \
-	     zheevds.o debugmpi.o find_kgrid.o
+             diag.o diag_option.o \
+	     debugmpi.o find_kgrid.o
 
 # Siesta timings
 SIESTA_OBJS += m_walltime.o timer_tree.o m_timer.o timer.o
@@ -520,7 +520,7 @@ iocg.o: files.o local_sys.o precision.o
 iodm.o: alloc.o files.o local_sys.o parallel.o parallelsubs.o precision.o
 iodm_netcdf.o: alloc.o local_sys.o parallel.o parallelsubs.o precision.o
 iodmhs_netcdf.o: alloc.o local_sys.o parallel.o parallelsubs.o precision.o
-ioeig.o: files.o m_spin.o precision.o siesta_cml.o units.o
+ioeig.o: files.o precision.o siesta_cml.o units.o
 iofa.o: files.o precision.o units.o
 iogrid_netcdf.o: alloc.o local_sys.o parallel.o precision.o
 iokp.o: files.o precision.o
