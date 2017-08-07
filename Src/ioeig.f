@@ -16,18 +16,17 @@ c Emilio Artacho, Feb. 1999
       use siesta_cml
       use units, only : eV
       use files, only : slabel, label_length
-      use m_spin, only : SPpol
 
       implicit          none
 
-      integer,  intent(in) :: maxo
-      integer,  intent(in) :: nspinS
-      integer,  intent(in) :: maxk
-      real(dp), intent(in) :: eo(maxo, nspinS, maxk)
-      real(dp), intent(in) :: ef
       integer,  intent(in) :: no
       integer,  intent(in) :: ns
       integer,  intent(in) :: nk
+      integer,  intent(in) :: maxo
+      integer,  intent(in) :: nspinS
+      integer,  intent(in) :: maxk
+      real(dp), intent(in) :: ef
+      real(dp), intent(in) :: eo(maxo, nspinS, maxk)
       real(dp), intent(in) :: kpoints(3,nk)
       real(dp), intent(in) :: kweights(nk)
       
@@ -39,14 +38,17 @@ c Internal
       character(len=label_length+4) :: fname
 c -------------------------------------------------------------------
 
-      fname = slabel
-      fname = trim(fname) // '.EIG'
+      fname = trim(slabel) // '.EIG'
       
       call io_assign( iu )
       open( iu, file=fname, form='formatted', status='unknown' )      
 
       write(iu,"(f14.4)") ef/eV
-      write(iu,"(3i6)")   no, nspinS, nk
+      if ( ns > nspinS ) then ! non-colinear or spin-orbit
+         write(iu,"(3i6)")   no*2, 1, nk
+      else
+         write(iu,"(3i6)")   no, nspinS, nk
+      end if
       do ik = 1,nk
         write(iu,"(i5,10f12.5,/,(5x,10f12.5))")
      .          ik, ((eo(io,is,ik)/eV,io=1,no),is=1,nspinS)
@@ -62,7 +64,19 @@ c -------------------------------------------------------------------
          call cmlAddProperty(xf=mainXML, value=nk, 
      .        title='Number of k-points', dictRef='siesta:nkpoints',
      .        units='cmlUnits:countable')
-         do is = 1 , nspinS
+         if ( ns > nspinS ) then
+           call cmlStartPropertyList(mainXML, dictRef='siesta:kpt_band')
+           do ik = 1, nk
+             call cmlAddKPoint(xf=mainXML, coords=kpoints(:, ik), 
+     .             weight=kweights(ik))
+             call cmlAddProperty(xf=mainXML,
+     .            value=reshape(eo(1:no,1:nspinS,ik)/eV, (/no*nspinS/)),
+     .            dictRef='siesta:eigenenergies',
+     .            units='siestaUnits:ev')
+           end do
+           call cmlEndPropertyList(mainXML)
+         else
+          do is = 1 , nspinS
             call cmlStartPropertyList(mainXML,
      .           dictRef='siesta:kpt_band')
             if ( is == 1 .and. nspinS > 1 ) then
@@ -78,12 +92,10 @@ c -------------------------------------------------------------------
                call cmlAddProperty(xf=mainXML, value=eo(1:no,is,ik)/eV, 
      .              dictRef='siesta:eigenenergies',
      .              units='siestaUnits:ev')
-!     call cmlAddBand(xf=mainXML, 
-!     .           kpoint=kpoints(:, ik), kweight=kweights(ik), 
-!     .           bands=eo(1:no,is,ik))
             enddo
             call cmlEndPropertyList(mainXML)
-         enddo
+          end do
+         end if
          call cmlEndPropertyList(mainXML)
       endif
       

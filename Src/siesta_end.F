@@ -42,6 +42,7 @@
       use siesta_options,  only : LUA
 #endif
 
+      use m_diag, only: diag_exit
 
 #ifdef TRACING
       use extrae_eventllist, only : writeList, deleteList, eventlist
@@ -74,6 +75,9 @@
       call resetDscfPointers( )
       call resetRhog()
       call mixers_scf_reset()
+
+      ! Clean diagonalization
+      call diag_exit()
       
 !     Output memory use up to the end of the program
 !!      call printmemory( 6, 1 )

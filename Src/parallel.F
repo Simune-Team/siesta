@@ -40,8 +40,6 @@ C
       integer, save :: ProcessorY = 1
       
       logical, save :: IOnode = .true.
-      logical, save :: ParallelOverK = .false.
-      logical, save :: ResetFirstCall = .false.
 
       public
 

@@ -75,7 +75,7 @@
       use wavefunctions
       use MatrixSwitch
       use siesta_options,    only: eigen_time
-      use m_diagon_opt, only : ictxt
+      use m_diag, only: diag_descinit
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -112,7 +112,7 @@
 
 
 #ifdef MPI
-    call descinit(desch,nuotot,nuotot,BlockSize,BlockSize,0,0,ictxt,nuotot,ierror)
+ call diag_descinit(nuotot, nuotot, BlockSize, desch)
 #endif
  
 

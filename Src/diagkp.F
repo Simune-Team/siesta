@@ -18,7 +18,7 @@ c
      &                   fixspin, qtot, qs, temp, e1, e2, xij, indxuo,
      &                   nk, kpoint, wk, eo, qo, Dnew, Enew, ef, efs,
      &                   Entropy, Haux, Saux, psi, Dk, Ek, aux, nuotot,
-     &                   occtol, iscf )
+     &                   occtol, iscf, neigwanted)
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -63,6 +63,7 @@ C real*8  wk(nk)              : k point weights (must sum one)
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
 C real*8  occtol              : Occupancy threshold for DM build
+C integer neigwanted          : maximum number of eigenvalues wanted
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo,maxspn,nk)   : Eigenvalues
 C ******************** OUTPUT (only if getD=.true.) *******************
@@ -106,7 +107,7 @@ C
      &  MPIerror
 
       integer           maxnd, maxnh, maxspn, maxo, nk, no,
-     &                  nspin, nuo, nuotot, iscf
+     &                  nspin, nuo, nuotot, iscf, neigwanted
       integer           indxuo(no), listh(maxnh), numh(nuo),
      &                  listhptr(nuo)
       real(dp)          Dnew(maxnd,nspin), 
@@ -266,7 +267,7 @@ C Note : sign of complex part changed to match change in order of iuo/juo
 !$OMP end do nowait
 !$OMP end parallel
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,eo(1,ispin,ik),psi,
-     &               0,iscf,ierror, -1) ! dummy blocksize
+     &               -neigwanted,iscf,ierror, -1) ! dummy blocksize
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif
@@ -294,11 +295,11 @@ C Allocate local copies of Dk and Ek for building matrices
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
-        call fermispin( nspin, nspin, nk, wk, maxo, nuotot, eo,
-     &               temp, qs, qo, efs, Entropy )
+         call fermispin( nspin, nspin, nk, wk, maxo,
+     &        neigwanted, eo, temp, qs, qo, efs, Entropy )
       else
-        call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, 
-     &             temp, qtot, qo, ef, Entropy )
+         call fermid( nspin, maxspn, nk, wk, maxo,
+     &        neigwanted, eo, temp, qtot, qo, ef, Entropy )
       endif
 
 !$OMP parallel default(shared), private(t,ik,ispin,io)

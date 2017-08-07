@@ -19,13 +19,12 @@ subroutine read_options( na, ns, nspin )
 
   use siesta_options
   use precision, only : dp, grid_p
-  use parallel,  only : IOnode, Nodes, ParallelOverK
+  use parallel,  only : IOnode, Nodes
   use fdf
   use files,     only : slabel
   use files,     only : filesOut_t   ! derived type for output file names
   use sys
   use units,     only : eV, Ang, Kelvin
-  use diagmemory,   only: memoryfactor
   use siesta_cml
   use m_target_stress, only: set_target_stress
   use m_spin, only: print_spin_options
@@ -43,7 +42,8 @@ subroutine read_options( na, ns, nspin )
   ! integer na               : Number of atoms
   ! integer ns               : Number of species
   ! integer nspin            : Number of spin-components
-  !                            1=non-polarized, 2=polarized, 4=non-collinear
+  !                            1=non-polarized, 2=polarized, 4=non-collinear,
+  !                            8=spin-orbit
 
   integer, intent(in)  :: na, ns, nspin
 
@@ -161,7 +161,7 @@ subroutine read_options( na, ns, nspin )
   character(len=30) :: ctmp
   character(len=6) :: method
 
-  logical :: DaC, qnch, qnch2
+  logical :: qnch, qnch2
   logical :: tBool
 
   !--------------------------------------------------------------------- BEGIN
@@ -508,7 +508,7 @@ subroutine read_options( na, ns, nspin )
   dDtol = fdf_get('SCF.DM.Tolerance',dDtol)
   if ( IONode ) then
      write(6,1) 'redata: Require DM convergence for SCF', converge_DM
-     write(6,9) 'redata: DM tolerance for SCF',dDtol
+     write(6,11) 'redata: DM tolerance for SCF',dDtol
   end if
   if (cml_p) then
      call cmlAddParameter( xf=mainXML, name='SCF.DM.Converge', &
@@ -654,16 +654,12 @@ subroutine read_options( na, ns, nspin )
      
   else if (leqi(method,'diagon')) then
      isolve = SOLVE_DIAGON
-     ! DivideAndConquer is now the default
-     DaC = fdf_get('Diag.DivideAndConquer',.true.)
      if (ionode)  then
         write(*,3) 'redata: Method of Calculation', 'Diagonalization'
-        write(*,1) 'redata: Divide and Conquer', DaC
      endif
      
   else if (leqi(method,'ordern')) then
      isolve = SOLVE_ORDERN
-     DaC    = .false.
      if (ionode) then
         write(*,3) 'redata: Method of Calculation','Order-N'
      endif
@@ -675,7 +671,6 @@ subroutine read_options( na, ns, nspin )
      
   else if (leqi(method,'omm')) then
      isolve = SOLVE_MINIM
-     DaC    = .false.
      call_diagon_default=fdf_integer('OMM.Diagon',0)
      call_diagon_first_step=fdf_integer('OMM.DiagonFirstStep',call_diagon_default)
      minim_calc_eigenvalues=fdf_boolean('OMM.Eigenvalues',.false.)
@@ -717,21 +712,6 @@ subroutine read_options( na, ns, nspin )
 #ifdef DEBUG
   call write_debug( '    Solution Method: ' // method )
 #endif
-
-  if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='Diag.DivideAndConquer', &
-          value=DaC, dictRef='siesta:DaC' )
-  endif
-
-  ! Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
-  MemoryFactor = fdf_get('Diag.Memory', 1.0_dp )
-  MemoryFactor = max(MemoryFactor,1.0_dp)
-  if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='Diag.Memory', &
-          value=MemoryFactor,             &
-          dictRef='siesta:MemoryFactor',  &
-          units="cmlUnits:dimensionless" )
-  endif
 
   ! Electronic temperature for Fermi Smearing ...
   temp = fdf_get('ElectronicTemperature',1.9e-3_dp,'Ry')
@@ -1637,9 +1617,6 @@ subroutine read_options( na, ns, nspin )
      bornz = .false.
   endif
   change_kgrid_in_md           = fdf_get('ChangeKgridInMD', .false.)
-  ParallelOverK                = fdf_get('Diag.ParallelOverK', .false.)
-  ! If non-collinear spin, it *MUST* be false.
-  if ( nspin > 2 ) ParallelOverK = .false.
   RelaxCellOnly                = fdf_get('MD.RelaxCellOnly', .false.)
   RemoveIntraMolecularPressure = fdf_get( &
        'MD.RemoveIntraMolecularPressure', .false.)
@@ -1700,6 +1677,7 @@ subroutine read_options( na, ns, nspin )
 8  format(a,t53,'= ',f14.12)
 9  format(a,t53,'= ',f10.4)
 10 format(t55,a)
+11 format(a,t53,'= ',f12.6)
 
 CONTAINS
   subroutine deprecated( str )

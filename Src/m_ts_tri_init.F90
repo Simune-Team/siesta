@@ -227,16 +227,21 @@ contains
     end do
     call rgn_delete(r_tmp)
 
-
+    
     ! Calculate size of the tri-diagonal matrix
     els = nnzs_tri(c_Tri%n,c_Tri%r)
+    ! check if there are overflows
+    if ( els < int(nnzs_tri_dp(c_Tri%n, c_Tri%r)) ) then
+       call die('transiesta: Memory consumption is too large')
+    end if
+
     
     if ( IONode ) then
        write(*,'(a)') 'transiesta: Established a near-optimal partition &
             &for the tri-diagonal matrix.'
 
        call rgn_print(c_Tri, name = 'BTD partitions' , &
-            seq_max = 10 , collapse = .false. )
+            seq_max = 10 , repeat = .true. )
 
        write(*,'(a,i0,a,i0)') 'transiesta: Matrix elements in tri / full: ', &
             els,' / ',no_u_TS**2
@@ -715,10 +720,15 @@ contains
       
       ! Calculate size of the tri-diagonal matrix
       els = nnzs_tri(ctri%n,ctri%r)
-    
+      ! check if there are overflows
+      if ( els < int(nnzs_tri_dp(ctri%n, ctri%r)) ) then
+         call die('transiesta: Memory consumption is too large, &
+              &try another pivoting scheme.')
+      end if
+      
       if ( IONode ) then
          call rgn_print(ctri, name = 'BTD partitions' , &
-              seq_max = 10 , indent = 3 , collapse = .false. )
+              seq_max = 8 , indent = 3 , repeat = .true. )
          
          pad = no_u_TS ** 2
          write(*,'(tr3,a,i0,'' / '',f9.5)') &
