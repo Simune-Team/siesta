@@ -13,9 +13,9 @@ C
 
       implicit none
 
-      real(dp), pointer :: Haux(:)
-      real(dp), pointer :: Saux(:)
-      real(dp), pointer :: psi(:)
+      real(dp), pointer :: Haux(:) => null()
+      real(dp), pointer :: Saux(:) => null()
+      real(dp), pointer :: psi(:) => null()
 
       CONTAINS
 

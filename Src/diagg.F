@@ -90,11 +90,6 @@ C
       use m_fermid,      only : fermid, fermispin, stepf
       use m_spin,        only : spinor_dim, e_spin_dim
       use alloc
-      use fdf,           only : fdf_get
-      use m_rdiag_elpa,  only : rdiag_elpa
-#ifdef SIESTA__MRRR
-      use m_rdiag_mrrr,  only : rdiag_mrrr
-#endif
 
 #ifdef MPI
       use mpi_siesta
@@ -129,7 +124,7 @@ C
       integer, parameter                :: nk = 1
 
       logical
-     .  getD, getPSI, fixspin, use_elpa, use_mrrr
+     .  getD, getPSI, fixspin
 
       external rdiag
 
@@ -151,11 +146,6 @@ C  Internal variables .............................................
 
 C Solve eigenvalue problem
       
-      use_elpa = fdf_get("Diag.ELPA",.false.)
-      if (Nodes == 1) use_elpa = .false.
-      use_mrrr = fdf_get("Diag.MRRR",.false.)
-      if (Nodes == 1) use_mrrr = .false.
-
       do ispin = 1,spinor_dim
 
          call timer( 'r-eigvec', 1 )
@@ -173,24 +163,10 @@ C Solve eigenvalue problem
         enddo
 !$OMP end parallel do
         call timer( 'r-buildHS', 2 )
-        if (use_elpa) then
-           call rdiag_elpa( Haux, Saux, nuotot,
-     $              nuo, nuotot, eo(1,ispin), 
-     .              psi(1,1,ispin), neigwanted, ierror )
-        else if (use_mrrr) then
-#ifdef SIESTA__MRRR
-           call rdiag_mrrr( Haux, Saux, nuotot,
-     &              nuo, nuotot, eo(1,ispin), 
-     &              psi(1,1,ispin), neigwanted, ierror )
-#else
-           call die("MRRR method not compiled-in. " //
-     $              "Add -DSIESTA__MRRR")
-#endif
-        else
-           call rdiag( Haux, Saux, nuotot, nuo, nuotot,
-     $              eo(1,ispin), 
-     .              psi(1,1,ispin), neigwanted, iscf, ierror )
-        endif
+        call rdiag( Haux, Saux, nuotot, nuo, nuotot,
+     $       eo(1,ispin), 
+     .       psi(1,1,ispin), neigwanted, iscf, ierror,
+     .       BlockSize)
         call timer( 'r-eigvec', 2 )
 
 
@@ -198,9 +174,6 @@ C Check error flag and take appropriate action
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.lt.0) then
-           if (use_elpa) then
-              call die('Terminating due to failed diagonalisation')
-           endif
 C Repeat diagonalisation with increased memory to handle clustering
 !$OMP parallel do default(shared), private(io,j,ind,jo)
           do io = 1,nuo
@@ -215,10 +188,15 @@ C Repeat diagonalisation with increased memory to handle clustering
           enddo
 !$OMP end parallel do
           call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
-     &                psi(1,1,ispin), nuotot, iscf, ierror )
+     &         psi(1,1,ispin), neigwanted, iscf, ierror,
+     .         BlockSize )
         endif
 
         if (getPSI) then
+          ! We do not have info about occupation
+          ! In the current implementation, neigneeded
+          ! is ALWAYS nuotot.
+          ! This is because writewave expects the full spectrum
           do ix = 1,3
             k(ix) = 0.0d0
           enddo

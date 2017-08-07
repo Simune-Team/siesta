@@ -62,7 +62,7 @@ C *********************************************************************
      .  eo(nuotot), H(maxnh,nspin), kpoint(3), S(maxnh), 
      .  xij(3,*), psi(ng,nuotot,nuo), Haux(ng,nuotot,nuo),
      .  Saux(ng,nuotot,nuo)
-      external          cdiag
+      external          rdiag, cdiag
 
 C  Internal variables .............................................
       integer
@@ -99,7 +99,7 @@ C Solve eigenvalue problem .........................................
      .            nuotot, 1, ierror, BlockSize)
       else
        call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
+     .            nuotot, 1, ierror, BlockSize)
       endif
 C Check error flag and take appropriate action
       if (ierror.gt.0) then
@@ -134,7 +134,7 @@ C Repeat diagonalisation with increased memory to handle clustering
      .            nuotot, 1, ierror, BlockSize)
       else
        call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
+     .            nuotot, 1, ierror, BlockSize)
       endif
 
       endif

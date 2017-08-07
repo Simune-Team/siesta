@@ -2,6 +2,20 @@
 B                             B
 E            SIESTA           E
 #             4.1             #
+T             b-4             T
+A                             A
+#BETA#BETA#BETA#BETA#BETA#BETA#
+
+Release notes for siesta 4.1-b4 beta version
+
+--- Updated all diagonalization routines
+    - ELPA and MRRR for k-point sampling.
+    - Less memory usage
+
+#BETA#BETA#BETA#BETA#BETA#BETA#
+B                             B
+E            SIESTA           E
+#             4.1             #
 T             b-3             T
 A                             A
 #BETA#BETA#BETA#BETA#BETA#BETA#

@@ -356,7 +356,6 @@ C  Modules
 C
       use precision,    only : dp
       use parallel,     only : Node, Nodes
-      use parallel,     only : ParallelOverK, ResetFirstCall
       use parallelsubs, only : GetNodeOrbs
       use densematrix,  only : Haux, Saux, psi
       use alloc,        only : re_alloc, de_alloc
@@ -368,6 +367,9 @@ C
       use writewave,    only : wfs_filename
 
       use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
+
+      use m_diag_option, only: ParallelOverK, Serial
+      use m_diag, only: diag_init
 
 
       implicit          none
@@ -390,22 +392,22 @@ C
       character(len=label_length+6) :: fname
       character(len=10)             :: string
 
-      logical ::   getD, fixspin
+      logical, parameter :: getD = .false.
+      logical, parameter :: fixspin = .false.
 
-      integer ::   ik, il, io, ispin, iu, iu_wfs, iuo, naux, nhs, j
+      integer :: ik, il, io, ispin, iu, iu_wfs, iuo, naux, nhs, j
 
-      logical ::   SaveParallelOverK
+      logical :: SaveParallelOverK
 
       real(dp)
      .  Dnew, qs(2), e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot,
      .  path, temp, wk, Entropy
 
 C Dynamic arrays
-      real(dp), dimension(:), pointer :: aux
+      real(dp), dimension(:), pointer :: aux => null()
 
       parameter ( eV = 1.d0 / 13.60580d0 )
-      save getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
-      data getD /.false./
+      save Dnew, Enew, e1, e2, qk, qtot, temp, wk
 
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
@@ -430,16 +432,14 @@ C Check parameter maxk
       endif
 
 C     Allocate local arrays - only aux is relevant here
-      if (nspin >=4 ) then
-         nhs  = 2 * (2*no_u) * (2*nuo) 
+      if ( nspin >=4 ) then
+         nhs  = 2 * (2*no_u) * (2*no_l)
       else
-         nhs = 2*no_u*no_l
+         nhs = 2 * no_u*no_l
       endif
       naux  = 2*no_u*5
       call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
       call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
-
-      nullify( aux )
       call re_alloc( aux, 1, naux, 'aux', 'bands' )
 
       if (getPSI .AND. (Node.eq.0)) then
@@ -461,22 +461,22 @@ C     Allocate local arrays - only aux is relevant here
       endif
 
 C Find the band energies
-CC RC      if (nspin.le.2) then
       if (NoMagn .or. SPpol) then
 C fixspin and qs are not used in diagk, since getD=.false. ...
-        fixspin = .false.
         qs(1) = 0.0_dp
         qs(2) = 0.0_dp
 
 C Handle parallel over K points option which is not allowed for here
         SaveParallelOverK = ParallelOverK
-        if ((Node .eq. 0) .and. ParallelOverK) then
-           write(6,"(a)")
-     $          "*** Note: ParallelOverK option not used for Bands"
-        endif
-
-        ParallelOverK = .false.
-        ResetFirstCall = .true.
+        if ( ParallelOverK ) then
+           if ( Node .eq. 0 ) then
+              write(*,"(a)")
+     $             "*** Note: ParallelOverK option not used for Bands"
+           end if
+           ParallelOverK = .false.
+           Serial = Nodes == 1
+           call diag_init()
+        end if
 
         call diagk( nspin, no_l, no_s, maxspn, 
      .              maxnh, maxnh, 
@@ -485,15 +485,15 @@ C Handle parallel over K points option which is not allowed for here
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
-     .              no_u, occtol, 1 )
+     .              no_u, occtol, 1, no_u )
 
         ParallelOverK = SaveParallelOverK
-        ResetFirstCall = .false.
+        if ( ParallelOverK ) Serial = .true.
 
       elseif ( NonCol ) then
          if (getPSI) then
             if (node==0) then
-               write(6,*) "No WFS for nspin=4 yet..."
+               write(6,*) "No WFS for non-colinear spin, yet..."
             endif
             RETURN
          endif
@@ -502,15 +502,23 @@ C Handle parallel over K points option which is not allowed for here
      .              listh, H, S, getD, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, Entropy,
-     .              psi, no_u, occtol, 1 )
+     .              Haux, Saux, psi, Haux, Saux, aux,
+     .              no_u, occtol, 1, no_u )
 
       elseif ( SpOrb ) then
+        if (getPSI) then
+           if (node==0) then
+              write(6,*) "No WFS for spin-orbit, yet..."
+           endif
+           return
+        end if
         call diag3k(nuo, no_s, maxnh, maxnh, no_u, numh,
      .              listhptr, listh, numh, listhptr, listh,
      .              H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .              indxuo, nk, kpoint, wk, ek, qk, Dnew,
-     .              Enew, ef, Entropy, psi,
-     .              no_u, occtol, 1 )
+     .              Enew, ef, Entropy,
+     .              Haux, Saux, psi, Haux, Saux, aux,
+     .              no_u, occtol, 1, no_u )
       else
         call die( 'bands: ERROR: incorrect value of nspin')
       endif

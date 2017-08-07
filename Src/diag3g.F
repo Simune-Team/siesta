@@ -8,7 +8,8 @@
       subroutine diag3g( nuo, no, maxuo, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr,
      .                   listd, H, S, getD, getPSI, qtot, temp, e1, e2,
-     .                   eo, qo, Dnew, Enew, ef, Entropy, psi, 
+     .                   eo, qo, Dnew, Enew, ef, Entropy,
+     .                   Haux, Saux, psi, caux, 
      .                   nuotot, occtol, iscf, neigwanted)
 
       use precision
@@ -27,6 +28,7 @@ C and energy-density matrices, and occupation weights of each
 C eigenvector, for given Hamiltonian and Overlap matrices.
 C This version is for spin-orbit at gamma point.
 C Writen by J.Soler, May and August 1998.
+C Reduced memory requirements, Nick, Aug. 2017
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals on local node
 C integer no                  : Number of basis orbitals
@@ -67,10 +69,10 @@ C real*8 Enew(maxnd,4)        : Output Energy-Density Matrix
 C real*8 ef                   : Fermi energy
 C real*8 Entropy              : Electronic entropy
 C *************************** AUXILIARY *******************************
-C real*8 Haux(2,2,nuotot,2,nuo): Auxiliary space for the hamiltonian matrix
-C real*8 Saux(2,2,nuotot,2,nuo): Auxiliary space for the overlap matrix
-C real*8 psi(2,2,nuotot,2*no) : Auxiliary space for the eigenvectors
-C real*8 aux(5,2*nuotot)      : Extra auxiliary space
+C complex*16 Haux(2,nuotot,2,nuo): Auxiliary space for the hamiltonian matrix
+C complex*16 Saux(2,nuotot,2,nuo): Auxiliary space for the overlap matrix
+C complex*16 psi(2,nuotot,2*nuo) : Auxiliary space for the eigenvectors
+C complex*16 caux(2,nuotot)      : Extra auxiliary space
 C *************************** UNITS ***********************************
 C xij and kpoint must be in reciprocal coordinates of each other.
 C temp and H must be in the same energy units.
@@ -93,12 +95,12 @@ C of referencing has been changed in several places to reflect this.
       real(dp) Entropy, eo(maxo*2), H(maxnh,8), qo(maxo*2)
       real(dp) qtot, S(maxnh), temp, occtol
       
+      complex(dp), dimension(2,nuotot,2*nuo) :: psi
+      complex(dp), dimension(2,nuotot,2,nuo) :: Haux, Saux
+      complex(dp), dimension(2,nuotot) :: caux
       logical               getD, getPSI
       
 !     Internal variables .............................................
-      real(dp)                       psi(2,2,nuotot,2*nuo)
-      complex(dp),dimension(:,:,:,:), allocatable :: Haux, Saux
-      complex(dp),dimension(:,:),     allocatable :: caux
       
       integer           BNode, BTest, ie, ierror, iie, iio
       integer           ind, io, j, jo, nd, iuo, juo
@@ -111,13 +113,6 @@ C of referencing has been changed in several places to reflect this.
 !***********************************************************************
 !     B E G I N
 !***********************************************************************
-!     define the arrays
-      allocate(Haux(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag3g')
-      allocate(Saux(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag3g')
-      allocate(caux(2,nuotot))
-      call memory('A','Z',2*nuotot,'diag3g')
 
 !***********************************************************************
 ! BUILD HAMILTONIAN
@@ -174,7 +169,7 @@ c     .           io, jo, ind, H(ind,1:8)
       
 !     Solve the eigenvalue problem
       call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
-     .                       2*neigwanted,iscf,ierror,2*BlockSize)
+     .           2*neigwanted,iscf,ierror,2*BlockSize)
       
 !     Check error flag and take appropriate action
       if (ierror.gt.0) then
@@ -196,7 +191,7 @@ c     .           io, jo, ind, H(ind,1:8)
           enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
-     .                         2*neigwanted,iscf,ierror,2*BlockSize)
+     .             2*neigwanted,iscf,ierror,2*BlockSize)
       endif
       
 !     Check if we are done
@@ -255,8 +250,8 @@ c     .           io, jo, ind, H(ind,1:8)
         if (abs(qe).gt.occtol) then
           if (Node.eq.BNode) then
             do j = 1,nuotot
-              caux(1,j)=dcmplx( psi(1,1,j,iie), psi(2,1,j,iie)) ! c_{i,up}
-              caux(2,j)=dcmplx( psi(1,2,j,iie), psi(2,2,j,iie)) ! c_{i,dn}
+              caux(1,j) = psi(1,j,iie) ! c_{i,up}
+              caux(2,j) = psi(2,j,iie) ! c_{i,dn}
             enddo
           endif
 #ifdef MPI
@@ -302,13 +297,6 @@ c     .           io, jo, ind, H(ind,1:8)
         endif
       enddo
 
-!     deallocate the arrays
-      call memory('D','Z',2*nuotot*2*nuo,'diag3g')
-      deallocate(Haux)
-      call memory('D','Z',2*nuotot*2*nuo,'diag3g')
-      deallocate(Saux)
-      call memory('D','Z',2*nuotot,'diag3g')
-      deallocate(caux)
 !***********************************************************************
       return
       end
