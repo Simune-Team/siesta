@@ -365,9 +365,9 @@ CONTAINS
   subroutine diagkiwf(nspin,nuo,no,maxspn,maxuo,maxnh, maxo, indxuo,nk,        &
                       kpoint, Haux,Saux,psi,nuotot,occup)
 #ifdef MPI
-      use parallel, only : BlockSize
       use m_diagon_opt, only : ictxt
 #endif
+      use parallel, only : BlockSize
       !
       implicit none
       !

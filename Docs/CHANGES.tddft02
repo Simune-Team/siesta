@@ -1,3 +1,12 @@
+2017-08-18  20:40 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-33
+
+Fixed a small bug causing memory leak.
+
+modified:
+
+  Src/cranknic_evolk.F90
+  Src/m_initwf.F90
+
 2017-08-18  17:40 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-32
 
 Fixed a small bug causing memory leak.
