@@ -5857,19 +5857,19 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 \end{fdflogicalT}
 
-\begin{fdfentry}{Diag!ProcessorY}[integer]<$\sim \mathrm N^2$>
+\begin{fdfentry}{Diag!ProcessorY}[integer]<$\sim \sqrt{\mathrm N}$>
   \fdfdepend{Diag!Use2D}
 
   Set the number of processors in the 2D distribution along the rows.
   Its default is equal to the lowest multiple of $\mathrm N$ (number
-  of MPI cores) below $\mathrm N^2$ such that, ideally, the
+  of MPI cores) below $\sqrt{\mathrm N}$ such that, ideally, the
   distribution will be a square grid.
 
   The input is required to be a multiple of the total number of MPI
   cores but \siesta\ will reduce the input value such that it
   coincides with this.
 
-  Once the lowest multiple closest to $\mathrm N^2$, or the input, is
+  Once the lowest multiple closest to $\sqrt{\mathrm N}$, or the input, is
   determined the 2D distribution will be $\mathrm{ProcessorY}
   \times\mathrm{N}/\mathrm{ProcessorY}$, rows $\times$ columns.
 
