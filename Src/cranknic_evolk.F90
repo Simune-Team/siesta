@@ -172,21 +172,24 @@ CONTAINS
    firsttime = .false.
  END IF
  !
- call m_allocate (Hsave(ik,ispin),no_u, no_u, m_storage) 
- DO l=1,ntded_sub
    IF (firstimeK(ik,ispin) .OR. .NOT. extrapol_H_tdks) THEN
-     call Uphi (Hauxms, Sauxms, wavef_ms(ik,ispin), no_u, deltat)
-   ELSE 
-     rvar1 = (l -0.5_dp)/dble(ntded_sub)
-     call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(-1.0,0.0,dp), m_operation)
-     call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(rvar1,0.0,dp),m_operation)
-     call Uphi(Hsave(ik,ispin), Sauxms, wavef_ms(ik,ispin), no_u, deltat)
+     call Uphi (Hauxms, Sauxms, wavef_ms(ik,ispin), no_u, delt/0.04837769d0)
+   ELSE
+          DO l=1,ntded_sub
+             rvar1 = (l -0.5_dp)/dble(ntded_sub)
+             call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(-1.0,0.0,dp), m_operation)
+             call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(rvar1,0.0,dp),m_operation)
+             call Uphi(Hsave(ik,ispin), Sauxms, wavef_ms(ik,ispin), no_u, deltat)
+          END DO
+          call m_deallocate(Hsave(ik,ispin))
    END IF
- END DO
+   IF (extrapol_H_tdks) THEN
+           ! Storing Hamiltonian for extrapolation and later correction.
+           call m_allocate (Hsave(ik,ispin),no_u, no_u, m_storage) 
+           call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+   END IF
  firstimeK(ik,ispin) = .false.
  !
- ! Storing Hamiltonian for extrapolation and later correction.
- call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
  END SUBROUTINE evol2new
  !
 END MODULE cranknic_evolk
