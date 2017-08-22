@@ -3,9 +3,9 @@
 #
 # Usage:
 #
-#          make                      --- Run all tests
-#          make  check               --- Run all tests and check with reference file
-#          make  list                --- Show the list of tests
+#          make                     --- Run all tests
+#          make check               --- Run all tests and check with reference file
+#          make show                --- Show the list of tests
 #
 #          make tests=fe_broyden { check | }     --- Run a single test
 #          (Not implemented) make batch                --- Dispatch to batch system
