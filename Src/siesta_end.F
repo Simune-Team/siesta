@@ -36,6 +36,10 @@
       use m_rhog,          only : resetRhog
       ! NP, new mixing
       use m_mixing_scf,    only : mixers_scf_reset
+      USE siesta_options,  only : isolve, SOLVE_CHESS
+#ifdef SIESTA__CHESS
+      use m_chess, only: CheSS_finalize
+#endif
 
 #ifdef SIESTA__FLOOK
       use flook_siesta,    only : slua_close
@@ -78,6 +82,12 @@
 
       ! Clean diagonalization
       call diag_exit()
+
+#ifdef SIESTA__CHESS
+      if (isolve == SOLVE_CHESS) then
+          call CheSS_finalize()
+      end if
+#endif
       
 !     Output memory use up to the end of the program
 !!      call printmemory( 6, 1 )
