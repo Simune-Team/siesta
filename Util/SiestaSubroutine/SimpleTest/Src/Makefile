@@ -30,10 +30,11 @@ VPATH=$(SRC_DIR)
 #
 # default: simple_pipes_serial simple_sockets_serial clean
 
+all: default
 default: simple_pipes_serial simple_pipes_parallel \
 	simple_sockets_serial simple_sockets_parallel \
-	simple_mpi_serial simple_mpi_parallel clean 
-#
+	simple_mpi_serial simple_mpi_parallel
+
 ARCH_MAKE=$(OBJ_DIR)/arch.make
 include $(ARCH_MAKE)
 #

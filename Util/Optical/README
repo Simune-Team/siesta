@@ -11,7 +11,7 @@ input file of SIESTA.
 
 There are two small programs:
 
-input.f 
+optical_input.f 
 
 and
 
@@ -20,10 +20,9 @@ optical.f
 
 Both can be compile independently:
 
-     f77 input.f -o input
-     
-     f77  optical.f -o optical
-
+     make all # or
+     make optical_input
+     make optical
 
 The first program creates the input file for optical, containing the 
 imaginary part of the dielectric function, from the file
@@ -32,7 +31,7 @@ imaginary part of the dielectric function, from the file
 
 To do so, you just need to type:
 
-       input < Systemlabel.EPSIMG
+       optical_input < Systemlabel.EPSIMG
 
 The program will create the file 'e2.dat' if there is not spin polarization,
 or the files 'e2.dat.spin1' and 'e2.dat.spin2' for the spin polarized case.
@@ -72,12 +71,3 @@ Also creates the files:
 'absorp_coef.out'    containing the absorption coefficient in cm**-1
 'reflectance.out'     containing the reflectance
 'conductivity.out'     containing the optical conductivity in (ohm*m)**-1
-
-
-
-                 
-
-
-
-
-

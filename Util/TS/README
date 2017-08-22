@@ -45,29 +45,10 @@ by:
    1 : new TSHS format (not compatible with all programs), but 
        have a drastic memory decrease  
 
-- TB
-  *DEPRECATED* Use github.com/zerothi/sids instead
-  This directory contains two modules:
+- Tight-binding
+  To use tight-binding parameters compatible with TBtrans
+  you can use the utility created here:
+     github.com/zerothi/sisl
 
-  * tbt_data.py
-    Allows easy extraction of TBtrans data from the NetCDF files.
-
-    Notice that one should import this file in to their projects
-    to easily get data from the NetCDF files in a consistent manner.
-    
-  * tbt_tb.py
-    Allows creation of tight-binding models in Python to make them
-    interfaced to TBtrans.
-    If you run tbt_tb.py it will produce a few examples as given in
-    the Examples folder.
-
-    Notice that one should import this file in to their projects
-    and do other fancy things outside of that file.
-
-  * pht_tb.py
-    Creation of PHtrans files to calculate phonon transport.
-
-    This is an extension of tbt_tb.py
-
-    It currently can convert GULP output to input for 
-    phtrans.    
+  For an older implementation (roughly equivalent, see TB
+  directory).

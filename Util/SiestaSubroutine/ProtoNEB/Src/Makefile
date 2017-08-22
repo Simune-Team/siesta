@@ -20,9 +20,10 @@ OBJ_DIR=$(SIESTA_DIR)/$(OBJDIR)
 .SUFFIXES: .f .F .o .a .f90 .F90
 #
 VPATH=$(SRC_DIR)
-#
-default: protoNEB clean 
-#
+
+all: default
+default: protoNEB
+
 ARCH_MAKE=$(OBJ_DIR)/arch.make
 include $(ARCH_MAKE)
 #
