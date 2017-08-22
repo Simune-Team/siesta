@@ -49,6 +49,7 @@
       use m_steps,         only : istp
       use m_normalize_dm,  only : normalize_dm
 #ifdef TRANSIESTA
+      use m_energies,   only: DE_NEGF
       use m_ts_global_vars, only : TSmode, TSinit, TSrun
       use m_transiesta,     only : transiesta
 #endif /* TRANSIESTA */
@@ -223,7 +224,7 @@ c$$$     &           S, 'S.matrix')
 
          call transiesta(iscf,spin%H, block_dist, sparse_pattern,
      &        Gamma, ucell, nsc, isc_off, no_u, na_u, lasto, xa, maxnh,
-     &        H, S, Dscf, Escf, Ef, Qtot, .false. )
+     &        H, S, Dscf, Escf, Ef, Qtot, .false., DE_NEGF )
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp

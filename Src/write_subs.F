@@ -337,6 +337,9 @@
      .     'siesta: DEna    =', DEna/eV,
      .     'siesta: DUscf   =', DUscf/eV,
      .     'siesta: DUext   =', DUext/eV,
+#ifdef TRANSIESTA
+     .     'siesta: Enon-eq =', DE_NEGF/eV,
+#endif
      .     'siesta: Exc     =', Exc/eV,
      .     'siesta: eta*DQ  =', Ecorrec/eV,
      .     'siesta: Emadel  =', Emad/eV,
@@ -379,6 +382,11 @@
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r6')
+#ifdef TRANSIESTA
+          call cmlAddProperty(xf=mainXML, value=DE_NEGF/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Enoneq', fmt='r6')
+#endif
           call cmlAddProperty(xf=mainXML, value=Exc/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Exc', fmt='r6')
@@ -507,6 +515,9 @@
      .    'siesta: ',      'Eldau   =', Eldau/eV,
      .    'siesta: ',      'Eso     =', Eso/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
+#ifdef TRANSIESTA
+     .    'siesta: ',      'Enon-eq =', DE_NEGF/eV,
+#endif
      .    'siesta: ',  'Exch.-corr. =', Exc/eV,
      .    'siesta: ', 'Ion-electron =', (Enascf+Enl+DUscf-Uscf-Uatm)/eV,
      .    'siesta: ',      'Ion-ion =', (Ena+Uatm-Enaatm-Eions)/eV,
@@ -540,6 +551,11 @@
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r7')
+#ifdef TRANSIESTA
+          call cmlAddProperty(xf=mainXML, value=DE_NEGF/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Enoneq', fmt='r7')
+#endif
           call cmlAddProperty(xf=mainXML, value=Exc/eV,   
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Exc', fmt='r7')
