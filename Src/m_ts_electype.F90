@@ -144,8 +144,9 @@ module m_ts_electype
 
      ! Arrays needed to partition the scattering matrix and self-energies
 
-     ! Gamma stored is actually this: (Sigma - Sigma^\dagger) ^ T
+     ! Gamma stored is actually this: i (Sigma - Sigma^\dagger) ^ T
      ! and NOT: i (Sigma - Sigma^\dagger)
+     ! Using the transposed Gamma allows certain optimizations
      complex(dp), pointer :: Gamma(:), Sigma(:)
 
      ! The accuracy required for the self-energy

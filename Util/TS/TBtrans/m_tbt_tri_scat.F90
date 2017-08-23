@@ -520,7 +520,7 @@ contains
           ! if the entire electrode sits in one block
           A => val(A_tri,in,in)
           do o = 0 , no - 1
-             T = T - aimag(zdotu(no,A((A_i+o)*isN+A_i+1),1,El%Gamma(o*no+1),1))
+             T = T + zdotu(no,A((A_i+o)*isN+A_i+1),1,El%Gamma(o*no+1),1)
           end do
           
           ! Quick break of loop
@@ -546,8 +546,8 @@ contains
           end if
 
           do o = 0 , ii - 1
-             T = T - aimag(zdotu(jj,A((A_i+o)*jsN+A_j),1, &
-                  El%Gamma((i_Elec-1+o)*no+j_Elec),1))
+             T = T + zdotu(jj,A((A_i+o)*jsN+A_j),1, &
+                  El%Gamma((i_Elec-1+o)*no+j_Elec),1)
           end do
 
           j_Elec = j_Elec + jj
@@ -629,13 +629,13 @@ contains
           ! The easy calculation, note that ii == no, only
           ! if the entire electrode sits in one block
           A => val(A_tri,in,in)
-          
+
 #ifdef USE_GEMM3M
           call zgemm3m( &
 #else
           call zgemm( &
 #endif
-              'N','N',no,no,no, zi, A(A_i*(isN+1)+1), isN, &
+              'N','N',no,no,no, z1, A(A_i*(isN+1)+1), isN, &
               El%Gamma(1), no, z0, work(1), no)
 
           ! Quick break of loop
@@ -665,7 +665,7 @@ contains
 #else
           call zgemm( &
 #endif
-              'N','N',jj,no,ii, zi, A(A_i*jsN + A_j), jsN, &
+              'N','N',jj,no,ii, z1, A(A_i*jsN + A_j), jsN, &
               El%Gamma(i_Elec), no, z, work(j_Elec), no)
 
           j_Elec = j_Elec + jj
@@ -791,7 +791,7 @@ contains
        ! Number of columns that we want to do product of
        ii = 1
        do i = 1 , no
-          T = T - zdotu(nb,Gf(ii),1,El%Gamma(i_Elec+(i-1)*no),1) ! G \Gamma
+          T = T - aimag( zdotu(nb,Gf(ii),1,El%Gamma(i_Elec+(i-1)*no),1) ) ! G \Gamma
           ii = ii + sN
        end do
        ! Note that Tr[G^\dagger \Gamma] = Tr[ \Gamma G^\dagger ] =
@@ -799,7 +799,7 @@ contains
        ! Hence the below calculation shouldn't be necessary
        ii = (i_Elec - 1) * no + 1
        do i = 1 , nb
-          T = T + zdotc(no,Gf(i),sN,El%Gamma(ii),1) ! G^\dagger \Gamma
+          T = T + aimag( zdotc(no,Gf(i),sN,El%Gamma(ii),1) )! G^\dagger \Gamma
           ii = ii + no
        end do
 
@@ -814,7 +814,7 @@ contains
        ! we may take the negative real part.
        ii = 1
        do i = 1 , no
-          T = T - zdotu(nb,Gf(ii),1,El%Gamma(i_Elec+(i-1)*no),1) ! G \Gamma
+          T = T - aimag( zdotu(nb,Gf(ii),1,El%Gamma(i_Elec+(i-1)*no),1) )! G \Gamma
           ii = ii + sN
        end do
        
@@ -914,7 +914,7 @@ contains
     !    Tr[(G \Gamma)^\dagger]
     ! Now we have:
     !    = G \Gamma
-    T_Gf = - real( TRACE(no,zwork) ,dp) * 2._dp
+    T_Gf = - aimag( TRACE(no,zwork) ) * 2._dp
 
 
     ! Now we need to correct for the current electrode
@@ -949,7 +949,7 @@ contains
 
     ! The remaining calculation is very easy as we simply
     ! need to do the sum of the trace
-    T_self = - real( zdotu(no*no,z(1),1,El%Gamma(1),1) , dp)
+    T_self = - aimag( zdotu(no*no,z(1),1,El%Gamma(1),1) )
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-T',2)

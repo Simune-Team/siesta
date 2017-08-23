@@ -129,7 +129,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'T','C',no,sN,no, zi, El%Gamma, no, &
+            'T','C',no,sN,no, z1, El%Gamma, no, &
             Gf, sN, z0, work, no)
        
        ! Now we are ready to perform the multiplication
@@ -546,7 +546,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'N','T',nb,no,no, zi, zwork(i_Elec), sNc, &
+            'N','T',nb,no,no, z1, zwork(i_Elec), sNc, &
             El%Gamma, no, z0, ztmp(1), nb)
 
 #ifdef TBTRANS

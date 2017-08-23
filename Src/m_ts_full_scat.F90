@@ -93,7 +93,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'T','T',no,no,no,zi, &
+            'T','T',no,no,no,z1, &
             El%Gamma, no, &
             GGG(ind), no, &
             z0, work,no)
@@ -132,7 +132,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'T','T',no,iB,no,zi, &
+            'T','T',no,iB,no,z1, &
             El%Gamma, no, &
             GGG(ind), iB, &
             z0, work,no)
