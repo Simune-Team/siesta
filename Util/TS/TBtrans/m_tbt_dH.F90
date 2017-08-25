@@ -185,6 +185,11 @@ contains
        return
     end if
 
+    ! Prepare to write out details
+    if ( Node == 0 ) then
+       write(*,*)
+    end if
+
     ! Tell tbtrans to use it
     use_dH = .true.
 
@@ -238,7 +243,7 @@ contains
 
           ! do nothing, we just skip dH for level 4
           if ( Node == 0 ) then
-             write(*,'(a)')'tbtrans: Level 4 exists, but has no E or k points. &
+             write(*,'(a)')'tbt: Level 4 exists, but has no E or k points. &
                   &It has been discarded.'
           end if
 
@@ -249,7 +254,7 @@ contains
 
           ! Write out that we are using level 4
           if ( Node == 0 ) then
-             write(*,'(a,2(i0,a))')'tbtrans: Level 4 will be used, and has ', &
+             write(*,'(a,2(i0,a))')'tbt: Level 4 will be used, and has ', &
                   n_k4,' k-points and ',n_E4,' energy points.'
           end if
 
@@ -309,7 +314,7 @@ contains
 
           ! do nothing, we just skip dH for level 3
           if ( Node == 0 ) then
-             write(*,'(a)')'tbtrans: Level 3 exists, but has no E points. &
+             write(*,'(a)')'tbt: Level 3 exists, but has no E points. &
                   &It has been discarded.'
           end if
 
@@ -319,7 +324,7 @@ contains
 
           ! Write out that we are using level 3
           if ( Node == 0 ) then
-             write(*,'(a,i0,a)')'tbtrans: Level 3 will be used, and has ', &
+             write(*,'(a,i0,a)')'tbt: Level 3 will be used, and has ', &
                   n_E3,' energy points.'
           end if
 
@@ -372,7 +377,7 @@ contains
 
           ! do nothing, we just skip dH for level 2
           if ( Node == 0 ) then
-             write(*,'(a)')'tbtrans: Level 2 exists, but has no points. &
+             write(*,'(a)')'tbt: Level 2 exists, but has no points. &
                   &It has been discarded.'
           end if
 
@@ -382,7 +387,7 @@ contains
 
           ! Write out that we are using level 2
           if ( Node == 0 ) then
-             write(*,'(a,i0,a)')'tbtrans: Level 2 will be used, and has ', &
+             write(*,'(a,i0,a)')'tbt: Level 2 will be used, and has ', &
                   n_k2,' k-points.'
           end if
 
@@ -431,7 +436,7 @@ contains
 
        ! Write out that we are using level 1
        if ( Node == 0 ) then
-          write(*,'(a)')'tbtrans: Level 1 will be used.'
+          write(*,'(a)')'tbt: Level 1 will be used.'
        end if
 
     end if
@@ -483,14 +488,14 @@ contains
 
     if ( 'orb-current-dH' .in. save_DATA ) then
        write(*,f11)'Orbital currents add dH contribution'
-       write(*,'(a)')'tbtrans: WARNING --- Ensure that column indices for each &
+       write(*,'(a)')'tbt: WARNING --- Ensure that column indices for each &
             &sparse row is sorted ascending!'
     end if
 
     if ( .not. cdf_r_parallel .and. n_E3+n_k4+n_E4 > 0 ) then
-       write(*,'(a)')'tbtrans: WARNING --- Using level 3 or 4 you must, at least, &
+       write(*,'(a)')'tbt: WARNING --- Using level 3 or 4 you must, at least, &
             &have all energy-points in the dH file.'
-       write(*,'(a)')'tbtrans: WARNING --- This restriction can be circumventet &
+       write(*,'(a)')'tbt: WARNING --- This restriction can be circumventet &
             &if you can use a parallel read (this is highly advised).'
     end if
 #else
