@@ -1184,7 +1184,6 @@ contains
     complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: J(:)
-    real(dp) :: E
     integer :: no_u, iu, io, i, ind, iind, ju, jo, jj
 
 #ifdef TBTRANS_TIMING
@@ -1305,6 +1304,7 @@ contains
          
       end do
 
+      jo = 0
       call die('orb_current_add_dH: could not find transpose supercell index')
 
     end function TO

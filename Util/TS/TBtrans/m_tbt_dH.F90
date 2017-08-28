@@ -163,7 +163,6 @@ contains
 #ifdef NCDF_4
     type(hNCDF) :: ndH, grp
 #endif
-    character(len=20) :: char
     logical :: exists
 #ifdef MPI
     integer :: MPIerror
