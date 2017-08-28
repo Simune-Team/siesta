@@ -972,9 +972,6 @@ contains
     logical :: ldie, er, Gamma
     
     na = TotUsedAtoms(this)
-    if ( na == 1 ) then
-       call die('One atom electrodes are not allowed')
-    end if
 
     ldie = .false.
 
