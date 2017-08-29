@@ -1052,6 +1052,7 @@ contains
     use m_ts_cctype, only: ts_c_idx
 
     type(Sparsity), intent(inout) :: sp
+    ! We require that the input Hamiltonian is Hermitian
     real(dp), intent(in) :: H(:), S(:), sc_off(:,:)
     real(dp), intent(in) :: k(3)
     type(ts_c_idx) :: cE
@@ -1143,8 +1144,8 @@ contains
 
           ! We skip the pre-factors as the units are "never" used
           
-          !               Hij * Aji         Hji    * Aij
-          J(iind) = aimag( Hi * A(ju) - dconjg(Hi) * A(jo) )
+          ! Jij                Hji    * Aij    Hij * Aji
+          J(iind) = aimag( dconjg(Hi) * A(jo) - Hi * A(ju) )
 
        end do
     end do
@@ -1182,6 +1183,7 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
 
     complex(dp), allocatable :: ph(:)
+    complex(dp) :: p
     complex(dp), pointer :: A(:)
     real(dp), pointer :: J(:)
     integer :: no_u, iu, io, i, ind, iind, ju, jo, jj
@@ -1211,7 +1213,7 @@ contains
 
     A => val(A_tri)
 !$OMP parallel do default(shared), &
-!$OMP&private(iu,io,iind,i,jo,ju,ind,col,jj)
+!$OMP&private(iu,io,iind,i,jo,ju,ind,col,jj,p)
     do iu = 1, r%n
        io = r%r(iu)
 
@@ -1232,25 +1234,7 @@ contains
           jo = ucorb(i_col(iind), no_u)
           ju = pvt%r(jo) ! pivoted orbital index in tri-diagonal matrix
 
-          ! Check if the io, jo orbital exists in dH
-          if ( l_ncol(io) < 1 ) then
-             ind = -1
-          else
-             col => l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))
-             ind = l_ptr(io) + SFIND(col, i_col(iind))
-          end if
           
-          if ( ind > l_ptr(io) ) then
-
-             ! Add orbital current from ij
-
-             ! Check for the Hamiltonian element H_ij
-             jj = index(A_tri,ju,iu) ! A_ji
-
-             J(iind) = J(iind) + aimag( dH(ind) * ph( (l_col(ind)-1)/no_u ) * A(jj) )
-
-          end if
-
           ! Check if the jo, io orbital exists in dH
           if ( l_ncol(jo) < 1 ) then
              ind = -1
@@ -1264,12 +1248,35 @@ contains
           if ( ind > l_ptr(jo) ) then
 
              ! Add orbital current from ji
+             p = ph( (l_col(ind)-1)/no_u )
              
              ! Check for the Hamiltonian element H_ji
              jj = index(A_tri,iu,ju) ! A_ij
 
-             J(iind) = J(iind) + aimag( - dH(ind) * ph( (l_col(ind)-1)/no_u ) * A(jj) )
+             ! Jij                         Hji      * Aij
+             J(iind) = J(iind) + aimag( dH(ind) * p * A(jj) )
 
+          end if
+
+          ! Check if the io, jo orbital exists in dH
+          if ( l_ncol(io) < 1 ) then
+             ind = -1
+          else
+             col => l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))
+             ind = l_ptr(io) + SFIND(col, i_col(iind))
+          end if
+          
+          if ( ind > l_ptr(io) ) then
+
+             ! Add orbital current from ij
+             p = ph( (l_col(ind)-1)/no_u )
+
+             ! Check for the Hamiltonian element H_ij
+             jj = index(A_tri,ju,iu) ! A_ji
+
+             ! Jij                         Hij      * Aji
+             J(iind) = J(iind) - aimag( dH(ind) * p * A(jj) )
+            
           end if
 
        end do
