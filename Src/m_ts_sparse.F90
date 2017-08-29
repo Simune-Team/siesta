@@ -46,6 +46,7 @@ module m_ts_sparse
   ! After using this sparsity pattern, we do not need the listud[g] arrays
   ! as this sparsity pattern is a reflection of the mask used by listud[g]
   ! This reflects the local sparsity pattern updated elements.
+  ! This is a *SORTED* sparse matrix
   type(Sparsity), save :: ltsup_sp_sc ! TS-update-local (SC)
 
   ! This is an index array which points from ltsup_sp_sc to the local siesta

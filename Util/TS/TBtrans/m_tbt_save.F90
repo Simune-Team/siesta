@@ -1640,7 +1640,7 @@ contains
                         '# Out transmission correction eigenvalues, k-resolved')
                 end if
                 call name_save(ispin,nspin,ascii_file,end='AVCEIG', El1=Elecs(iEl) )
-                call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
                      '# Out transmission correction eigenvalues, k-averaged')
              end if
 
@@ -1840,6 +1840,7 @@ contains
             write(iu,'(f10.5,tr1,e16.8)') E(ipiv(i)),sum(DAT(:,ipiv(i),ik)) * rno
          end do
          if ( nkpt > 1 ) then
+            ! Update the average values in the first entry
             if ( ik == 1 ) then
 !$OMP parallel workshare default(shared)
                DAT(:,:,1) = DAT(:,:,1) * wkpt(ik)
@@ -1888,6 +1889,7 @@ contains
             write(iu,fmt) E(ipiv(i)),EIG(:,ipiv(i),ik)
          end do
          if ( nkpt > 1 ) then
+            ! Update the average values in the first entry
             if ( ik == 1 ) then
 !$OMP parallel workshare default(shared)
                EIG(:,:,1) = EIG(:,:,1) * wkpt(ik)

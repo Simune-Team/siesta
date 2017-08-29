@@ -44,7 +44,7 @@ contains
        ucell, nspin, na_u, lasto, &
        sp_dist, sparse_pattern, &
        no_u, n_nzs, &
-       Hs, Ss, DM, EDM, Ef)
+       Hs, Ss, DM, EDM, Ef, DE_NEGF)
 
     use units, only : Pi, eV
     use parallel, only : Node, Nodes
@@ -108,6 +108,7 @@ contains
     real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs)
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
     real(dp), intent(in) :: Ef
+    real(dp), intent(inout) :: DE_NEGF
 
 ! ******************* Computational arrays *******************
     integer :: nzwork, n_s
@@ -523,14 +524,16 @@ contains
 
        if ( TS_W_K_METHOD == TS_W_K_UNCORRELATED ) then
           call weight_DM( N_Elec, Elecs, N_mu, mus, na_u, lasto, &
-               spDM, spDMneq, spEDM, n_s, sc_off)
+               sp_dist, sparse_pattern, Ss, &
+               spDM, spDMneq, spEDM, n_s, sc_off, DE_NEGF)
           
           call update_DM(sp_dist,sparse_pattern, n_nzs, &
                DM(:,ispin), spDM, Ef=Ef, &
                EDM=EDM(:,ispin), spEDM=spEDM, ipnt=ltsup_sc_pnt)
        else if ( itt_last(SpKp,2) ) then ! TS_W_K_METHOD == TS_W_K_CORRELATED
           call weight_DM( N_Elec, Elecs, N_mu, mus, na_u, lasto, &
-               spDM, spDMneq, spEDM, n_s, sc_off)
+               sp_dist, sparse_pattern, Ss, &
+               spDM, spDMneq, spEDM, n_s, sc_off, DE_NEGF)
           
           call update_DM(sp_dist,sparse_pattern, n_nzs, &
                DM(:,ispin), spDM, Ef=Ef, &
