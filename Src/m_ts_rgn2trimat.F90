@@ -106,6 +106,20 @@ contains
     ! This is the size of the regional 3-diagonal matrix
     no = r%n
 
+    if ( no == 1 ) then
+       
+       ! Simple case, return immediately with default block-size
+       
+       call re_alloc(n_part , 1, 1, &
+            routine='tsR2TM', name='n_part')
+       n_part(1) = 1
+       parts = 1
+
+       call timer('TS-rgn2tri', 2)
+       return
+       
+    end if
+
     ! Establish a guess on the partition of the tri-diagonal 
     ! matrix...
     call re_alloc(guess_part, 1, no, &
