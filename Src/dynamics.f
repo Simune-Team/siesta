@@ -16,16 +16,19 @@
       use m_mpi_utils, only : broadcast
       use files,       only : slabel
       use alloc,       only : re_alloc, de_alloc
+      use siesta_options, only: verlet_future
       implicit none
 
 
-      public :: npr, nose, verlet2, pr, anneal
+      public :: npr, nose, verlet2, pr, anneal, xa_old
       private
 
       real(dp), parameter  :: tol = 1.0e-12_dp
       logical, parameter   :: debug = .false.
       character(len=60)    :: restart_file
       logical              :: first_time = .true.
+
+      real(dp), pointer, save :: xa_old(:,:)=>null()
 
       CONTAINS
 
@@ -2009,6 +2012,9 @@ C result the memory is not deallocated at the end of the routine.
       if (.not.associated(vold)) then
         call re_alloc( vold, 1, 3, 1, natoms, 'vold', 'verlet2' )
       endif
+      if (.not.associated(xa_old) .and. .not.verlet_future) then
+        call re_alloc( xa_old, 1, 3, 1, natoms, 'xa_old', 'verlet2' )
+      endif
 
 C Define constants and conversion factors .....................................
       dt2   = dt**2
@@ -2200,6 +2206,14 @@ C ................
 !      call add_to_md_file(xa,va,cell=h,vcell=hdot)
 
 
+C Save current positions as old ones for TDDFT restart....................
+      if (.not.verlet_future) then
+        do i = 1,3
+          do ia = 1,natoms
+            xa_old(i,ia) = xa(i,ia)
+          enddo
+        enddo
+      end if 
 C Compute positions at next time step.....................................
       do ia = 1,natoms
         do i = 1,3

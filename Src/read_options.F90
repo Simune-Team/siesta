@@ -945,7 +945,8 @@ subroutine read_options( na, ns, nspin )
   endif
 
 !TD-DFT options
-  td_elec_dyn = .false. 
+  td_elec_dyn = .false.
+  verlet_future = .true. 
   writetdwf = fdf_get('TDED.WF.Initialize',.false.)
   if( IONode .and. writetdwf ) then
      write(6,1) 'redata: Write Initial TDWF' , writetdwf
@@ -998,6 +999,9 @@ subroutine read_options( na, ns, nspin )
      idyn = 1    ! For the time being verlet is used 
                  ! for TDDFT calculations.
      td_elec_dyn = .true.
+     verlet_future = .false. ! For tddft restart current positions are needed 
+                             ! instead of future positions which is verlet
+                             ! defatault behaviour.
      rstart_time = 0.00_dp
      totime      = 0.00_dp
   else if (leqi(dyntyp,'nose')) then

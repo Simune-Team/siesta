@@ -1,3 +1,16 @@
+2017-08-29  16:00 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-34
+
+Fixed the inconsistency in restart.
+
+modified:
+
+  Docs/siesta.tex
+  Src/dynamics.f
+  Src/read_options.F90
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/siesta_tddft.F90
+
 2017-08-18  20:40 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-33
 
 Fixed a small bug causing memory leak.

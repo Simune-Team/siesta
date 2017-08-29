@@ -31,7 +31,7 @@
       use m_cell_broyden_optim,      only: cell_broyden_optimizer
       use m_cell_fire_optim,      only: cell_fire_optimizer
 
-      use m_dynamics,      only: nose, verlet2, npr, anneal, pr
+      use m_dynamics,      only: nose, verlet2, npr, anneal, pr, xa_old
 
       use m_energies,      only: Ekinion
       use write_subs
@@ -226,8 +226,15 @@
                write(6,'(/,a,f12.3,a)')
      $              'siesta: Temp_ion =', tempion, ' K'
             endif
-            call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+            ! verlet_future is always true except when doing TDDFT. 
+            if (verlet_future) then
+              call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)
+            else
+              call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa_old, 
+     &                   va,foundxv)
+            endif 
+
             call siesta_write_positions(moved=.true.)
             call write_md_record( istep )
             call superx_if_compat( ucell, nsc, na_u, na_s, xa, scell )

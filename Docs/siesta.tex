@@ -10155,8 +10155,7 @@ determine an appropriate value for the electronic time step.
 \end{fdfentry}
   \begin{fdflogicalF}{TDED.WF.Save}
 
-Option to save wavefunctions at the end of a simulation for a possible restart or analysis. Wavefunctions are saved in file \sysfile{TDWF}.
-
+Option to save wavefunctions at the end of a simulation for a possible restart or analysis. Wavefunctions are saved in file \sysfile{TDWF}. A TDED restart requires \sysfile{TDWF}, \sysfile{XV}, and \sysfile{VERLET_RESTART} from the previous run. The first step of the restart is same as the last of the previous run.
 \end{fdflogicalF}
 
  \begin{fdflogicalT}{ TDED.Write.Etot}

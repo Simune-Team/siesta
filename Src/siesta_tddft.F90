@@ -106,6 +106,7 @@ contains
 
     ! The first call to change basis only calculates S^+1/2
     call sankey_change_basis ( istep )
+
     ! Read the initial wavefunctions.
     ! In future reading wavefunctions can be moved before
     ! changebasis and then the first DM can be computed within
@@ -121,6 +122,14 @@ contains
          call compute_tddm(Dscf)
     end if
 
+    ! Save the final wavefunctions for restart or analysis. 
+    if(tdsavewf .and. istep .ge. fincoor) then
+      ! The wavefunctions are saved after transforming into the current basis
+      ! but before evolving them to future.This keeps the wavefunctions
+      ! concurrent with atomic position.
+      if(fincoor .gt. 1) call iowavef('write',wavef_ms,no_u,nkpnt,nspin)
+    end if
+
     do itded = 1 , ntded ! TDED loop
        
        if(IONode) then
@@ -130,7 +139,13 @@ contains
           write(*,'(a)') &
                '                     ************************       '
        end if
-       
+
+       if (tdsavewf) then
+         if (fincoor .eq. 1 .and. itded .eq. ntded) then
+           call iowavef('write',wavef_ms,no_u,nkpnt,nspin)
+         endif
+       end if
+
        call setup_hamiltonian( itded )
        
        call evolve(  td_dt )
@@ -146,16 +161,6 @@ contains
     call compute_tdEdm (Escf)
     call final_H_f_stress(istep, 1, .false.)
     call state_analysis( istep )
-    ! Save the final wavefunctions for restart or analysis. 
-    if(tdsavewf .and. istep .ge. fincoor) then
-      ! Since the atomic position are updated after the wavefunctions
-      ! for consistency in restart we transform the wavefunctions 
-      ! into new basis set before saving them. This keeps the wavefunctions
-      ! concurrent with atomic position.
-      call sankey_change_basis ( istep )
-      call iowavef('write',wavef_ms,no_u,nkpnt,nspin)
-    end if
-
 #ifdef DEBUG
     call write_debug( '    POS siesta_tddft' )
 #endif
