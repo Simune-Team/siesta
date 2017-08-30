@@ -19,16 +19,15 @@ subroutine read_options( na, ns, nspin )
 
   use siesta_options
   use precision, only : dp, grid_p
-  use parallel,  only : IOnode, Nodes, ParallelOverK
+  use parallel,  only : IOnode, Nodes
   use fdf
   use files,     only : slabel
   use files,     only : filesOut_t   ! derived type for output file names
   use sys
   use units,     only : eV, Ang, Kelvin
-  use diagmemory,   only: memoryfactor
   use siesta_cml
   use m_target_stress, only: set_target_stress
-  use m_spin, only: print_spin
+  use m_spin, only: print_spin_options
 
   use m_charge_add, only : read_charge_add
   use m_hartree_add, only : read_hartree_add
@@ -37,18 +36,25 @@ subroutine read_options( na, ns, nspin )
   use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
   use m_cite, only: add_citation
+#ifdef SIESTA__CHESS
+  use m_chess, only: set_CheSS_parameter
+#endif
   
   implicit none
   !----------------------------------------------------------- Input Variables
   ! integer na               : Number of atoms
   ! integer ns               : Number of species
   ! integer nspin            : Number of spin-components
-  !                            1=non-polarized, 2=polarized, 4=non-collinear
+  !                            1=non-polarized, 2=polarized, 4=non-collinear,
+  !                            8=spin-orbit
 
   integer, intent(in)  :: na, ns, nspin
 
   ! This routine sets variables in the 'siesta_options' module
 
+#ifdef SIESTA__CHESS
+  real(dp) :: chess_value
+#endif
   ! The following are comment lines that should be merged into 'siesta_options'.
 
   ! real*8 charnet           : Net charge (in units of |e|)
@@ -69,6 +75,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 3   = OMM
   !                                                 4   = PEXSI
   !                                                 5   = (Matrix write)
+  !                                                 6   = CheSS
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
   ! real*8  ts               : Total spin of the system
@@ -161,7 +168,7 @@ subroutine read_options( na, ns, nspin )
   character(len=30) :: ctmp
   character(len=6) :: method
 
-  logical :: DaC, qnch, qnch2
+  logical :: qnch, qnch2
   logical :: tBool
 
   !--------------------------------------------------------------------- BEGIN
@@ -191,7 +198,7 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Start by printing out spin-configuration
-  call print_spin()
+  call print_spin_options()
 
   ! H setup only
   h_setup_only = fdf_get('HSetupOnly', .false.)
@@ -508,7 +515,7 @@ subroutine read_options( na, ns, nspin )
   dDtol = fdf_get('SCF.DM.Tolerance',dDtol)
   if ( IONode ) then
      write(6,1) 'redata: Require DM convergence for SCF', converge_DM
-     write(6,9) 'redata: DM tolerance for SCF',dDtol
+     write(6,11) 'redata: DM tolerance for SCF',dDtol
   end if
   if (cml_p) then
      call cmlAddParameter( xf=mainXML, name='SCF.DM.Converge', &
@@ -654,16 +661,12 @@ subroutine read_options( na, ns, nspin )
      
   else if (leqi(method,'diagon')) then
      isolve = SOLVE_DIAGON
-     ! DivideAndConquer is now the default
-     DaC = fdf_get('Diag.DivideAndConquer',.true.)
      if (ionode)  then
         write(*,3) 'redata: Method of Calculation', 'Diagonalization'
-        write(*,1) 'redata: Divide and Conquer', DaC
      endif
      
   else if (leqi(method,'ordern')) then
      isolve = SOLVE_ORDERN
-     DaC    = .false.
      if (ionode) then
         write(*,3) 'redata: Method of Calculation','Order-N'
      endif
@@ -675,7 +678,6 @@ subroutine read_options( na, ns, nspin )
      
   else if (leqi(method,'omm')) then
      isolve = SOLVE_MINIM
-     DaC    = .false.
      call_diagon_default=fdf_integer('OMM.Diagon',0)
      call_diagon_first_step=fdf_integer('OMM.DiagonFirstStep',call_diagon_default)
      minim_calc_eigenvalues=fdf_boolean('OMM.Eigenvalues',.false.)
@@ -692,6 +694,16 @@ subroutine read_options( na, ns, nspin )
 #else
      call die("PEXSI solver is not compiled in. Use -DSIESTA__PEXSI")
 #endif
+
+#ifdef SIESTA__CHESS
+  else if (leqi(method,'chess')) then
+     isolve = SOLVE_CHESS
+     if (ionode) then
+        write(*,'(a,4x,a)')                                &
+             'redata: Method of Calculation            = ',  &
+             '    CheSS'
+     endif
+#endif /* CHESS */
      
 #ifdef TRANSIESTA
   else if (leqi(method,'transi') .or. leqi(method,'transiesta') &
@@ -705,6 +717,9 @@ subroutine read_options( na, ns, nspin )
 #endif /* TRANSIESTA */
   else
      call die( 'redata: The method of solution must be either '//&
+#ifdef SIESTA__CHESS
+          'CheSS, '//&
+#endif
 #ifdef TRANSIESTA
           'Transiesta, '//&
 #endif
@@ -718,20 +733,68 @@ subroutine read_options( na, ns, nspin )
   call write_debug( '    Solution Method: ' // method )
 #endif
 
-  if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='Diag.DivideAndConquer', &
-          value=DaC, dictRef='siesta:DaC' )
-  endif
+#ifdef SIESTA__CHESS
+  ! Buffer for the density kernel within the CheSS calculation
+  chess_value = fdf_get('CheSS.Buffer.Kernel', 4.0_dp, 'Bohr')
+  call set_CheSS_parameter('chess_buffer_kernel', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Buffer.Kernel',chess_value
 
-  ! Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
-  MemoryFactor = fdf_get('Diag.Memory', 1.0_dp )
-  MemoryFactor = max(MemoryFactor,1.0_dp)
-  if (cml_p) then
-     call cmlAddParameter( xf=mainXML, name='Diag.Memory', &
-          value=MemoryFactor,             &
-          dictRef='siesta:MemoryFactor',  &
-          units="cmlUnits:dimensionless" )
-  endif
+  ! Buffer for the matrix vector multiplication within the CheSS calculation
+  chess_value = fdf_get('CheSS.Buffer.Mult', 6.0_dp, 'Bohr')
+  call set_CheSS_parameter('chess_buffer_mult', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Buffer.Mult',chess_value
+
+  ! Parameters for the penalty function used to determine the eigenvalue bounds
+  chess_value = fdf_get('CheSS.Betax', -1000.0_dp)
+  call set_CheSS_parameter('chess_betax', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Betax',chess_value
+
+  ! Initial guess for the error function decay length
+  chess_value = fdf_get('CheSS.Fscale', 1.e-1_dp, 'Ry')
+  call set_CheSS_parameter('chess_fscale', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Fscale',chess_value
+
+  ! Lower bound for the error function decay length
+  chess_value = fdf_get('CheSS.FscaleLowerbound', 1.e-2_dp, 'Ry')
+  call set_CheSS_parameter('chess_fscale_lowerbound', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.FscaleLowerbound',chess_value
+
+  ! Upper bound for the error function decay length
+  chess_value = fdf_get('CheSS.FscaleUpperbound', 1.e-1_dp, 'Ry')
+  call set_CheSS_parameter('chess_fscale_upperbound', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.FscaleUpperbound',chess_value
+
+  ! Initial guess for the lowest eigenvalue bound of the Hamiltonian
+  chess_value = fdf_get('CheSS.evlowH', -2.0_dp, 'Ry')
+  call set_CheSS_parameter('chess_evlow_h', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evlowH',chess_value
+
+  ! Initial guess for the highest eigenvalue bound of the Hamiltonian
+  chess_value = fdf_get('CheSS.evhighH', 2.0_dp, 'Ry')
+  call set_CheSS_parameter('chess_evhigh_h', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evhighH',chess_value
+
+  ! Initial guess for the lowest eigenvalue bound of the overlap matrix
+  chess_value = fdf_get('CheSS.evlowS', 0.5_dp)
+  call set_CheSS_parameter('chess_evlow_s', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evlowS',chess_value
+
+  ! Initial guess for the highest eigenvalue bound of the overlap matrix
+  chess_value = fdf_get('CheSS.evhighS', 1.5_dp)
+  call set_CheSS_parameter('chess_evhigh_s', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evhighS',chess_value
+
+#endif
 
   ! Electronic temperature for Fermi Smearing ...
   temp = fdf_get('ElectronicTemperature',1.9e-3_dp,'Ry')
@@ -1042,6 +1105,8 @@ subroutine read_options( na, ns, nspin )
   ! Tolerance in the maximum residual stress (var cell) [1 GPa]
   strtol = fdf_get('MD.MaxStressTol', 6.79773e-5_dp, 'Ry/Bohr**3')
   strtol = abs(strtol)
+  
+  GeometryMustConverge = fdf_get('GeometryMustConverge', .false.)
 
   if (ionode) then
      select case (idyn)
@@ -1643,9 +1708,6 @@ subroutine read_options( na, ns, nspin )
      bornz = .false.
   endif
   change_kgrid_in_md           = fdf_get('ChangeKgridInMD', .false.)
-  ParallelOverK                = fdf_get('Diag.ParallelOverK', .false.)
-  ! If non-collinear spin, it *MUST* be false.
-  if ( nspin > 2 ) ParallelOverK = .false.
   RelaxCellOnly                = fdf_get('MD.RelaxCellOnly', .false.)
   RemoveIntraMolecularPressure = fdf_get( &
        'MD.RemoveIntraMolecularPressure', .false.)
@@ -1706,6 +1768,7 @@ subroutine read_options( na, ns, nspin )
 8  format(a,t53,'= ',f14.12)
 9  format(a,t53,'= ',f10.4)
 10 format(t55,a)
+11 format(a,t53,'= ',f12.6)
 
 CONTAINS
   subroutine deprecated( str )

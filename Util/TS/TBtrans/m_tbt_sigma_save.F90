@@ -279,9 +279,9 @@ contains
     end if
 
 #ifdef TBT_PHONON
-    dic = ('source'.kv.'PHtrans')
+    dic = ('source'.kv.'PHtrans-SE')
 #else
-    dic = ('source'.kv.'TBtrans')
+    dic = ('source'.kv.'TBtrans-SE')
 #endif
 
     char = datestring()

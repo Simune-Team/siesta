@@ -3,10 +3,10 @@
 #
 # Usage:
 #
-#          make                      --- Run all tests
-#          make  check               --- Run all tests and check with reference file
-#          make  check-only          --- Run all checks with reference file (run make before)
-#          make  list                --- Show the list of tests
+#          make                     --- Run all tests
+#          make check               --- Run all tests and check with reference file
+#          make check-only          --- Run all checks with reference file (run make before)
+#          make show                --- Show the list of tests
 #
 #          make tests=fe_broyden { check | }     --- Run a single test
 #          (Not implemented) make batch                --- Dispatch to batch system
@@ -15,15 +15,17 @@
 #
 #          By default, the version of SIESTA used is the one in the
 #          parent directory (Obj or custom OBJDIR), and is executed
-#          in serial mode.
+#          in parallel mode with 2 cores.
 #
-#          To use another one, or a parallel version
+#          To change the MPI run command simply do:
 #
-#          make SIESTA=/some/path/to/siesta-program ....
+#          make MPI="mpirun -np 4"
 #
-#           or
+#          for 4 cores. Or
 #
-#          make SIESTA="mpiexec -np 4 /path/to/parallel-siesta-program" ....
+#          make MPI=
+#
+#          for a serial run.
 #
 #          It is also possible to have separate working directories,
 #          by using the a "label". For example:
@@ -40,22 +42,23 @@ default: all
 
 label=work
 
-
 tests = ag anneal-cont ar2_vdw \
 	batio3 benzene bessel \
 	born born_spin \
 	carbon_nanoscroll \
 	ch4 chargeconf-h2o constant_volume \
+	chess \
 	dipole_correction \
 	fe fe_broyden fe_clust_noncollinear fe_clust_noncollinear-gga \
 	fe_cohp fen fe_noncol_kp \
 	fire_benzene floating force_2 force_constants \
-    gate_G_charge gate_G_hartree \
+	gate_G_charge gate_G_hartree \
 	ge111 graphite_c6 graphite_vdw_df \
 	h2_bessel \
 	h2o h2o_2 h2o_basis h2o_dipole h2o_dipole2 h2o_dos \
 	h2o_findp_bug h2o_op_broyden h2o-pop h2o_radialgrid \
 	h2o_reparam h2o-rhog-mixing h2oZ \
+	h2o_filteret_basis h2o_am05 \
 	h_chain \
 	md_anneal md_nose md_npr md_pr md_verlet \
 	mgc-force mgco3 \
@@ -64,9 +67,10 @@ tests = ag anneal-cont ar2_vdw \
 	oxyn \
 	pb_bulk pb_filter_cutoff pb_filter_tol \
 	scfmix \
-	si001 si111-spinpol si2x1h si2x1h-dipole \
+	si001 si111-spinpol \
+	si2x1h si2x1h-dipole si2x1h-dipole-gcs \
 	si64 si64_coop \
-	si_bandpoints si_coop \
+	si_bandpoints si_coop si_fatbands \
 	sic-slab \
 	sih sih_fire sih_op_broyden \
 	si-optical si_pdos_kgrid \
@@ -83,17 +87,21 @@ tests = ag anneal-cont ar2_vdw \
 tests_soc  = SOC_Pt2_xx SOC_Pt2_xz SOC_Pt2_zy SOC_Pt2_zz
 tests_soc += SOC_FePt_xx SOC_FePt_xz SOC_FePt_zy SOC_FePt_zz
 
+# Tests only applicable for LUA
+tests_lua  = lua_si111 lua_h2o
+
 # Tests only applicable for FLOS
 tests_flos  = flos_h2o_lbfgs flos_h2o_fire flos_h2o_meshcutoff flos_h2o_neb
 
 # Accumulated variable for ALL tests
-tests_all = $(tests) $(tests_soc) $(tests_flos)
+tests_all = $(tests) $(tests_soc) $(tests_lua) $(tests_flos)
 
 all: $(tests)
 
 # Define test specific targets:
 tests: $(tests)
 tests-soc: $(tests_soc)
+tests-lua: $(tests_lua)
 tests-flos: $(tests_flos)
 
 # Ensure that tests may be called individually

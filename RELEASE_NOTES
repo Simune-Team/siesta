@@ -14,6 +14,13 @@ Release notes for next Siesta
 
 *** New features
 
+ - Added the CheSS solver as a new solution method. This is
+   a linear scaling solver which calculates the density matrix and the
+   energy density matrix.
+
+ - Added the Cold-smearing method for zero-temperature limit
+   with smearing.
+
  - TDDFT implemented by R. Ullah via older code from
    D. Sanchez-Portal.
    

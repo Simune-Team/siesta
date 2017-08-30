@@ -105,8 +105,19 @@ contains
 
     ! This is the size of the regional 3-diagonal matrix
     no = r%n
-    if ( no <= 3 ) then
-       call die('Erroneous sparsity pattern, only 3 orbitals')
+
+    if ( no == 1 ) then
+       
+       ! Simple case, return immediately with default block-size
+       
+       call re_alloc(n_part , 1, 1, &
+            routine='tsR2TM', name='n_part')
+       n_part(1) = 1
+       parts = 1
+
+       call timer('TS-rgn2tri', 2)
+       return
+       
     end if
 
     ! Establish a guess on the partition of the tri-diagonal 
@@ -160,7 +171,7 @@ contains
     ! the maximum size must be the maximum size of the connections
     ! of the first one
     i = maxval(mm_col(2,1:i) - mm_col(1,1:i),dim=1)
-    max_block = min( no / 4 , i )
+    max_block = max(min( no / 4 , i ), 1)
     max_block = fdf_get('TS.BTD.Block.Max',max_block)
 #ifdef TBTRANS
     max_block = fdf_get('TBT.BTD.Block.Max',max_block)
@@ -169,10 +180,10 @@ contains
     ! max-block, then use the half 'no'
     max_block = max(max_block , guess_start + guess_step)
     max_block = min(max_block , no / 2)
-    guess_start = min(guess_start,max_block)
+    guess_start = max(min(guess_start,max_block), 1)
 
     ! Correct starting guess for the node
-    if ( lpar ) guess_start = guess_start + Node
+    if ( lpar ) guess_start = min(guess_start + Node, max_block)
 
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 
@@ -820,12 +831,6 @@ contains
     ! does not sum up to the total number of rows.
     ! Then it must be invalid...
     if ( N /= no ) then
-       val = NONVALID_SIZE
-       return
-    end if
-
-    ! check that all parts are at least size 2
-    if ( any(n_part < 2 ) ) then
        val = NONVALID_SIZE
        return
     end if

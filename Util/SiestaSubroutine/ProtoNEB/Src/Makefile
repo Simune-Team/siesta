@@ -20,9 +20,10 @@ OBJ_DIR=$(SIESTA_DIR)/$(OBJDIR)
 .SUFFIXES: .f .F .o .a .f90 .F90
 #
 VPATH=$(SRC_DIR)
-#
-default: protoNEB clean 
-#
+
+all: default
+default: protoNEB
+
 ARCH_MAKE=$(OBJ_DIR)/arch.make
 include $(ARCH_MAKE)
 #
@@ -53,12 +54,13 @@ protoNEB: libs_collected protoNEB.o
 	$(FC) $(LDFLAGS) -o protoNEB \
 	      protoNEB.o $(ALL_LIBS)
 #
-clean: 
+intermediate: 
 	@echo "==> Cleaning intermediate files ONLY"
-	@echo "==> Use make pristine to remove executable files"
+	@echo "==> Use make clean to remove executable files"
 	rm -f *.a *.o *.mod libs_collected
 #
-pristine: 
+pristine: clean
+clean:
 	@echo "==> Cleaning all intermediate and executable files"
 	rm -f protoNEB
 	rm -f *.a *.o *.mod libs_collected

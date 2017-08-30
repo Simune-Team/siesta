@@ -4,6 +4,9 @@ module m_initwf
   use MatrixSwitch
   use sparse_matrices, only: numh, listhptr, listh, H, S, xijo
   use m_eo,            only: eo, qo
+#ifdef MPI
+  use mpi_siesta, only: MPI_Comm_World
+#endif
   !
   implicit none
   !
@@ -11,7 +14,9 @@ module m_initwf
   !
   public :: initwf
   !
-CONTAINS
+  integer :: ictxt
+
+  CONTAINS
   !
   subroutine initwf( istpp,totime)
 ! *********************************************************************
@@ -70,6 +75,7 @@ CONTAINS
 !
       use parallel,        only : Node, Nodes, BlockSize
       use parallelsubs,    only : GlobalToLocalOrb, GetNodeOrbs
+      use m_diag_option,   only : ParallelOverK
       use fdf
       use densematrix,     only : Haux, Saux, psi
       use sparse_matrices, only : maxnh
@@ -107,7 +113,6 @@ CONTAINS
       real(dp)           :: qspiral(3), ef, temp,nelect, entrp,qomax,qtol
 #ifdef MPI
       integer            :: MPIerror
-      logical, save      :: ParallelOverK
 #endif
 !     Dynamic arrays
       integer, dimension(:),     allocatable, save :: muo
@@ -119,12 +124,10 @@ CONTAINS
 !     First call initialisation
       if (frstme) then
 #ifdef MPI
-        if (Node.eq.0) then
-          ParallelOverK = fdf_boolean( 'Diag.ParallelOverK', .false. )
-        end if
         if(ParallelOverk) then
           call die ('initwf: TDDFT is not parallelized over k-points.')
         end if
+        ictxt = MPI_Comm_World
 #endif
 !       Read spin-spiral wavevector (if defined)
         call readsp( qspiral, spiral )
@@ -301,7 +304,7 @@ CONTAINS
                       nuotot,occup)
 #ifdef MPI
       use parallel, only : BlockSize,Node
-      use m_diagon_opt, only : ictxt
+      use m_diag, only: diag_descinit
 #endif
       !
       implicit none
@@ -319,7 +322,7 @@ CONTAINS
 #endif
       !
 #ifdef MPI
-        call descinit(desch,nuotot,nuotot,BlockSize,BlockSize,0,0,ictxt,nuotot,ierror)
+      call diag_descinit(nuotot,nuotot,BlockSize,desch,ictxt)
 #endif
       !
       indwf=0
@@ -365,7 +368,7 @@ CONTAINS
   subroutine diagkiwf(nspin,nuo,no,maxspn,maxuo,maxnh, maxo, indxuo,nk,        &
                       kpoint, Haux,Saux,psi,nuotot,occup)
 #ifdef MPI
-      use m_diagon_opt, only : ictxt
+      use m_diag, only: diag_descinit
 #endif
       use parallel, only : BlockSize
       !
@@ -385,7 +388,7 @@ CONTAINS
 #endif
       !
 #ifdef MPI
-      call descinit(desch,nuotot,nuotot,BlockSize,BlockSize,0,0,ictxt,nuotot,ierror)
+      call diag_descinit(nuotot,nuotot,BlockSize,desch,ictxt)
 #endif
       !
       indwf=0

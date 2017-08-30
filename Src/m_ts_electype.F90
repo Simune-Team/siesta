@@ -76,8 +76,10 @@ module m_ts_electype
      integer :: no_used = 0
      ! Bloch expansions (repetitions)
      integer :: Bloch(3) = 1
-     ! Pre-expand before saving Gf (we default to all)
-     ! In this way will the user 
+     ! Pre-expand before saving Gf
+     !   == 0 do no pre-expansion
+     !   == 1 pre-expand only the surface Green function
+     !   == 2 pre-expand surface Green function, H and S
      integer :: pre_expand = 2
      ! chemical potential of the electrode
      type(ts_mu), pointer :: mu => null()
@@ -142,8 +144,9 @@ module m_ts_electype
 
      ! Arrays needed to partition the scattering matrix and self-energies
 
-     ! Gamma stored is actually this: (Sigma - Sigma^\dagger) ^ T
+     ! Gamma stored is actually this: i (Sigma - Sigma^\dagger) ^ T
      ! and NOT: i (Sigma - Sigma^\dagger)
+     ! Using the transposed Gamma allows certain optimizations
      complex(dp), pointer :: Gamma(:), Sigma(:)
 
      ! The accuracy required for the self-energy
@@ -969,9 +972,6 @@ contains
     logical :: ldie, er, Gamma
     
     na = TotUsedAtoms(this)
-    if ( na == 1 ) then
-       call die('One atom electrodes are not allowed')
-    end if
 
     ldie = .false.
 
@@ -2097,7 +2097,7 @@ contains
        write(*,f10) '  GF file', trim(this%GFfile)
        write(*,f1)  '  Reuse existing GF-file', this%ReUseGF
     else
-       write(*,f11)  '  In-core GF'
+       write(*,f11)  '  In-core self-energy calculation'
     end if
     write(*,f10) '  Electrode TSHS file', trim(this%HSfile)
     write(*,f5)  '  # atoms used in electrode', this%na_used

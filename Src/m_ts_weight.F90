@@ -129,7 +129,8 @@ contains
   end subroutine read_ts_weight
 
   subroutine weight_DM(N_Elec,Elecs,N_mu, mus, na_u, lasto, &
-       spDM, spDMneq, spEDM, n_s, sc_off)
+       sp_dist, sparse_pattern, S, &
+       spDM, spDMneq, spEDM, n_s, sc_off, DE_NEGF)
 
     use units, only: eV
 #ifdef MPI
@@ -147,6 +148,8 @@ contains
     use m_ts_contour_neq, only : nEq_ID
 #endif
     use geom_helper, only : iaorb, ucorb
+
+    use intrinsic_missing, only: SFIND
     
     implicit none
 
@@ -159,6 +162,9 @@ contains
     type(ts_mu),        intent(in) :: mus(N_mu)
     ! The last-orbital of each atom
     integer, intent(in) :: na_u, lasto(0:na_u)
+    type(OrbitalDistribution), intent(inout) :: sp_dist
+    type(Sparsity), intent(inout) :: sparse_pattern
+    real(dp), intent(in) :: S(:)
     ! Contour part of DM integration
     type(dSpData2D), intent(inout) :: spDM
     ! Real-axis part of DM integration
@@ -169,14 +175,20 @@ contains
     integer, intent(in) :: n_s
     ! the offsets
     real(dp), intent(in) :: sc_off(3,0:n_s-1)
+    ! The correction to the total energy
+    real(dp), intent(inout) :: DE_NEGF
 
 ! *********************
 ! * LOCAL variables   *
 ! *********************
     real(dp) :: w(N_mu), neq(N_mu)
+    ! The total charge per chemical potential.
+    real(dp) :: q(N_mu)
     real(dp), parameter :: EPS = 1.e-4_dp
     
     ! arrays for looping in the sparsity pattern
+    integer,  pointer :: s_ncol(:), s_ptr(:), s_col(:)
+    integer :: snr, sj, sind
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
     real(dp), pointer :: DM(:,:), DMneq(:,:), EDM(:,:)
@@ -210,6 +222,7 @@ contains
     call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=nr,nrows_g=ng,nnzs=n_nzs)
 
+
     ! Obtain the values in the arrays...
     DM     => val(spDM)
     DMneq  => val(spDMneq)
@@ -218,6 +231,17 @@ contains
 
     ! point to the orbital-distribution
     dit => dist(spDM)
+
+    ! Retrieve information about the overlap matrix sparse pattern.
+    call attach(sparse_pattern,n_col=s_ncol,list_ptr=s_ptr,list_col=s_col, &
+         nrows=snr)
+
+    if ( nr /= snr ) then
+       call die('Error in weight_DM, non-equivalent sparse patterns.')
+    end if
+    if ( .not. same(sp_dist, dit) ) then
+       call die('Currently weight_DM requires the same S and spDM distribution')
+    end if
 
     allocate(cor(N_nEq_ID))
     allocate(ID_mu(N_nEq_ID))
@@ -402,13 +426,25 @@ contains
        ! The weight will always be divided
        w(:) = 1._dp / real(N_mu,dp)
     end if
-    
+
+    ! Initialize the charges
+    q = 0._dp
+
+    ! Now we need to loop the overlap matrix to perform the calculation
+    ! of the charges originating from each of the chemical potentials
+    ! It should be noted that even though the formalism specifies a
+    ! contribution from each of the electrodes it is superfluous due
+    ! to two electrodes having the same chemical potential will have:
+    !    (N_1 + N_2) * \mu_{1,2}
+    ! which is easily seen to be valid for the full write out.
+
 ! DM is accessed individually, so we will never have a data race
 !$OMP parallel do default(shared), &
 !$OMP&private(lio,io,ia1,ia2,j,ind,jo,neq,cor), &
+!$OMP&private(sj,sind), &
 !$OMP&private(ee,e_f,mu_i,mu_j,tmp), &
 !$OMP&private(Eee,Ee_f), &
-!$OMP&firstprivate(w), reduction(+:m_err,Em_err)
+!$OMP&firstprivate(w), reduction(+:m_err,Em_err,q)
     do lio = 1 , nr
        ! We are in a buffer region...
        if ( l_ncol(lio) /= 0 ) then
@@ -418,10 +454,19 @@ contains
        
        ! Update the weight of the row-atom
        ia1 = iaorb(io,lasto)
-       
-       do j = 1 , l_ncol(lio)
-          
-          ind = l_ptr(lio) + j
+
+       ! Here we will loop the overlap matrix
+       ! because the spDM sparse patterns are sorted
+       ! we can more easily search them.
+       do sj = 1, s_ncol(lio)
+
+          sind = s_ptr(lio) + sj
+
+          ! Find the equivalent orbital, or skip
+          ind = l_ptr(lio) + &
+               SFIND(l_col(l_ptr(lio)+1:l_ptr(lio)+l_ncol(lio)), s_col(sind))
+          if ( ind <= l_ptr(lio) ) cycle ! The element does not exist
+
           ! Retrieve the connecting orbital
           jo = l_col(ind)
           cor(:) = DMneq(ind,:)
@@ -532,11 +577,14 @@ contains
           ! Store for later estimation of the "final" error
           e_f  = DM(ind,1)
           if ( hasEDM ) Ee_f = EDM(ind,1)
-          
+
           DM(ind,1) = w(1) * DM(ind,1)
+          ! Also calculate the charge after weighting
+          q(1) = q(1) + DM(ind,1) * S(sind)
           if ( hasEDM ) EDM(ind,1) = w(1) * EDM(ind,1)
           do mu_i = 2 , N_mu
              DM(ind,1) = DM(ind,1) + w(mu_i) * DM(ind,mu_i)
+             q(mu_i) = q(mu_i) + w(mu_i) * DM(ind,mu_i) * S(sind)
              if ( hasEDM ) &
                   EDM(ind,1) = EDM(ind,1) + w(mu_i) * EDM(ind,mu_i)
           end do
@@ -717,6 +765,11 @@ contains
     deallocate(DM)
 
     end if
+
+    ! AllReduce the charges for calculating the DE_NEGF
+    call MPI_AllReduce(q,w,N_mu,MPI_Double_Precision, &
+         MPI_SUM, MPI_Comm_World, MPIerror)
+    q = w
 #endif
 
     ! Calculate mean
@@ -734,6 +787,14 @@ contains
             EeM,Eew,EeM_i,EeM_j,EDMe,Em_err)
     end if
 
+    ! Calculate the energy contribution to the total energy due
+    ! to the electrons from the baths
+    !   Etot = Etot - e \sum_i N_i \mu_i
+    call print_charge_weight(IONode, 'ts-w-q:', q)
+    do mu_i = 1, N_mu
+       DE_NEGF = DE_NEGF + q(mu_i) * mus(mu_i)%mu
+    end do
+
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDM' )
 #endif
@@ -741,6 +802,24 @@ contains
   end subroutine weight_DM
 
   ! ************* Commonly used modules ****************
+
+  ! Write out the charge contributions from each of the chemical potentials
+  subroutine print_charge_weight(IONode,a,q)
+    logical, intent(in)  :: IONode
+    character(len=*), intent(in) :: a
+    real(dp), intent(in) :: q(:)
+    integer :: i
+
+    if ( IONode ) then
+       write(*,'(a,tr8)',advance='no') trim(a)
+       do i = 1 , size(q)
+          write(*,'(tr1,a8,i0)',advance='no') 'P',i
+       end do
+       ! Ensure there is a new-line
+       write(*,'(/a,tr8,1000(tr1,f9.3))') trim(a), q
+    end if
+
+  end subroutine print_charge_weight
 
   ! Write out the error-estimate for the current iteration (or, k-point)
   subroutine print_error_estimate(IONode,a,eM,ew,eM_i,eM_j,DM,m_err)

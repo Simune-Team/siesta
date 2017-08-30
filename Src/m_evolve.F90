@@ -30,7 +30,6 @@ MODULE m_evolve
 ! *******************************************************************
   
   use precision
-  use parallel,          only :  ParallelOverK
   use sys,               only : die
   use m_spin,            only : nspin
   use m_gamma,           only : gamma
@@ -45,11 +44,6 @@ MODULE m_evolve
   call write_debug( '    PRE evolve' )
 #endif
 !
-#ifdef MPI
-    if (ParallelOverK) then
-      call die('evolve: TDDFT: Not prepared for running parallel over Kpoints.')
-    end if
-#endif
   !
   ! Call apropriate routine .............................................
   if (nspin.le.2 .and. gamma) then

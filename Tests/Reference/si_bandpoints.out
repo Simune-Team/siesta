@@ -10,19 +10,19 @@ reinit: System Name: bulk silicon  with test of BandPoints
 reinit: -----------------------------------------------------------------------
 reinit: System Label: si_bandpoints
 reinit: -----------------------------------------------------------------------
-Siesta Version: trunk-554
-Architecture  : x86_64-linux-gcc
-Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
-Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+Siesta Version: siesta-4.1--731
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto -fuse-linker-plugin
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__FLOOK
+Libraries     : -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmumps -lmumps_common -llpord -lparmetis -lmetis -lscalapack -lopenblas  -lmetis -flto -fuse-linker-plugin  -L/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -lflookall -ldl
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
 
-* Running on 4 nodes in parallel
->> Start of run:  18-AUG-2016   8:48:52
+* Running on 8 nodes in parallel
+>> Start of run:   2-JUL-2017  11:59:11
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:   14 Label: Si
@@ -231,7 +231,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: Discard 1st Pulay DM after kick             =   F
 redata: New DM Mixing Weight                        =     0.3000
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
@@ -239,7 +238,9 @@ redata: DM Mixing Weight for Kicks                  =     0.5000
 redata: Require Harris convergence for SCF          =   F
 redata: Harris energy tolerance for SCF             =     0.000100 eV
 redata: Require DM convergence for SCF              =   T
-redata: DM tolerance for SCF                        =     0.000100
+redata: DM tolerance for SCF                        =     0.0001
+redata: Require EDM convergence for SCF             =   F
+redata: EDM tolerance for SCF                       =     0.001000 eV
 redata: Require H convergence for SCF               =   T
 redata: Hamiltonian tolerance for SCF               =     0.001000 eV
 redata: Require (free) Energy convergence for SCF   =   F
@@ -258,11 +259,11 @@ mix.SCF:    History steps                        = 3
 mix.SCF:    Linear mixing weight                 =     0.300000
 mix.SCF:    Mixing weight                        =     0.300000
 mix.SCF:    SVD condition                        = 0.1000E-07
-redata: Save data in SIESTA.nc                      =   F
+redata: Save all siesta data in one NC              =   F
 redata: ***********************************************************************
 
 %block SCF.Mixers
-  Pulay                   
+  Pulay
 %endblock SCF.Mixers
 
 %block SCF.Mixer.Pulay
@@ -274,10 +275,6 @@ redata: ***********************************************************************
   weight 0.3000
   weight.linear 0.3000
   history 3
-  restart 0
-  restart.save 1
-
-  # Continuation options
 %endblock SCF.Mixer.Pulay
 
 DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
@@ -285,10 +282,10 @@ Size of DM history Fstack: 1
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    2   7
+* ProcessorY, Blocksize:    2   3
 
 
-* Orbital distribution balance (max,min):     7     5
+* Orbital distribution balance (max,min):     5     3
 
  Kpoints in:           32 . Kpoints trimmed:           32
 
@@ -326,57 +323,67 @@ outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 <dSpData1D:S at geom step 0
   <sparsity:sparsity for geom step 0
-    nrows_g=26 nrows=7 sparsity=7.0725 nnzs=4781, refcount: 7>
-  <dData1D:(new from dSpData1D) n=4781, refcount: 1>
+    nrows_g=26 nrows=5 sparsity=5.5311 nnzs=3739, refcount: 7>
+  <dData1D:(new from dSpData1D) n=3739, refcount: 1>
 refcount: 1>
-New_DM. Step:     1
+new_DM -- step:     1
 Initializing Density Matrix...
-DM after filling with atomic data:
-<dSpData2D:(DM initialized from atoms)
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
   <sparsity:sparsity for geom step 0
-    nrows_g=26 nrows=7 sparsity=7.0725 nnzs=4781, refcount: 8>
-  <dData2D:(DMatomic) n=4781 m=1, refcount: 1>
+    nrows_g=26 nrows=5 sparsity=5.5311 nnzs=3739, refcount: 8>
+  <dData2D:DM n=3739 m=1, refcount: 1>
 refcount: 1>
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      26     161
 New grid distribution:   1
-           1       1:    9    1:    5    1:    5
-           2       1:    9    1:    5    6:    9
-           3       1:    9    6:    9    1:    5
-           4       1:    9    6:    9    6:    9
+           1       1:    9    1:    5    1:    3
+           2       1:    9    1:    5    4:    5
+           3       1:    9    1:    5    6:    7
+           4       1:    9    1:    5    8:    9
+           5       1:    9    6:    9    1:    3
+           6       1:    9    6:    9    4:    5
+           7       1:    9    6:    9    6:    7
+           8       1:    9    6:    9    8:    9
 
 InitMesh: MESH =    18 x    18 x    18 =        5832
 InitMesh: (bp) =     9 x     9 x     9 =         729
 InitMesh: Mesh cutoff (required, used) =    90.000    91.110 Ry
-ExtMesh (bp) on 0 =    49 x    45 x    45 =       99225
+ExtMesh (bp) on 0 =    49 x    45 x    43 =       94815
 New grid distribution:   2
-           1       1:    9    1:    5    1:    5
-           2       1:    9    1:    5    6:    9
-           3       1:    9    6:    9    1:    5
-           4       1:    9    6:    9    6:    9
+           1       1:    5    1:    5    1:    5
+           2       6:    9    6:    9    1:    5
+           3       1:    5    1:    5    6:    9
+           4       6:    9    1:    5    6:    9
+           5       1:    5    6:    9    1:    5
+           6       6:    9    1:    5    1:    5
+           7       1:    5    6:    9    6:    9
+           8       6:    9    6:    9    6:    9
 New grid distribution:   3
-           1       1:    9    1:    5    1:    5
-           2       1:    9    1:    5    6:    9
-           3       1:    9    6:    9    1:    5
-           4       1:    9    6:    9    6:    9
+           1       1:    5    1:    5    1:    5
+           2       6:    9    6:    9    1:    5
+           3       1:    5    1:    5    6:    9
+           4       6:    9    1:    5    6:    9
+           5       1:    5    6:    9    1:    5
+           6       6:    9    1:    5    1:    5
+           7       1:    5    6:    9    6:    9
+           8       6:    9    6:    9    6:    9
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    49 x    45 x    45 =       99225
-PhiOnMesh: Number of (b)points on node 0 =                  225
-PhiOnMesh: nlist on node 0 =                18321
-cdiag-debug: Node=3, lwork=       301>= lworkq=       257, lrwork=       693>= lrworkq=       667, liwork=       216>= liworkq=       200
-cdiag-debug: Node=0, lwork=       343>= lworkq=       271, lrwork=       849>= lrworkq=       823, liwork=       216>= liworkq=       200
-cdiag-debug: Node=1, lwork=       329>= lworkq=       271, lrwork=       765>= lrworkq=       739, liwork=       216>= liworkq=       200
-cdiag-debug: Node=2, lwork=       315>= lworkq=       257, lrwork=       765>= lrworkq=       739, liwork=       216>= liworkq=       200
+ExtMesh (bp) on 0 =    45 x    45 x    45 =       91125
+PhiOnMesh: Number of (b)points on node 0 =                  125
+PhiOnMesh: nlist on node 0 =                 9760
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -73.640324
+siesta: Ebs     =       -73.640323
 siesta: Eions   =       380.802124
 siesta: Ena     =       114.848182
 siesta: Ekin    =        81.892891
 siesta: Enl     =        29.332541
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =         4.187722
+siesta: DEna    =         4.187721
 siesta: DUscf   =         0.264537
 siesta: DUext   =         0.000000
 siesta: Exc     =       -65.159541
@@ -385,24 +392,25 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -216.624945
-siesta: Etot    =      -215.435792
-siesta: FreeEng =      -215.435792
+siesta: Eharris =      -216.624946
+siesta: Etot    =      -215.435793
+siesta: FreeEng =      -215.435793
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
-   scf:    1     -216.624945     -215.435792     -215.435792  1.817601 -3.899633  0.120720
-timer: Routine,Calls,Time,% =    IterSCF     1       0.500  22.81
-   scf:    2     -215.437757     -215.436798     -215.436798  0.002943 -3.872447  0.074715
-   scf:    3     -215.437982     -215.437454     -215.437454  0.004798 -3.826408  0.002658
-   scf:    4     -215.437463     -215.437458     -215.437458  0.000457 -3.826558  0.000508
+   scf:    1     -216.624946     -215.435793     -215.435793  1.817601 -3.899633  0.120720
+timer: Routine,Calls,Time,% = IterSCF        1       0.271  27.26
+   scf:    2     -215.437758     -215.436798     -215.436798  0.002943 -3.872447  0.074715
+   scf:    3     -215.437983     -215.437454     -215.437454  0.004798 -3.826408  0.002658
+   scf:    4     -215.437463     -215.437459     -215.437459  0.000457 -3.826559  0.000508
    scf:    5     -215.437459     -215.437459     -215.437459  0.000040 -3.826548  0.000312
 
 SCF Convergence by DM+H criterion
-max |DM_out - DM_in|   :     0.0000404023
-max |H_out - H_in| (eV):     0.0003121996
+max |DM_out - DM_in|         :     0.0000404023
+max |H_out - H_in|      (eV) :     0.0003121963
 SCF cycle converged after 5 iterations
 
 Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      26     161
 
 siesta: E_KS(eV) =             -215.4375
 
@@ -424,15 +432,15 @@ Writing WFSX for selected k-points in si_bandpoints.selected.WFSX
 Computing bands...
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -73.797266
+siesta: Ebs     =       -73.797265
 siesta: Eions   =       380.802124
 siesta: Ena     =       114.848182
 siesta: Ekin    =        81.648263
 siesta: Enl     =        29.318578
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =         4.387283
-siesta: DUscf   =         0.252751
+siesta: DEna    =         4.387282
+siesta: DUscf   =         0.252752
 siesta: DUext   =         0.000000
 siesta: Exc     =       -65.090392
 siesta: eta*DQ  =         0.000000
@@ -445,7 +453,7 @@ siesta: Etot    =      -215.437459
 siesta: FreeEng =      -215.437459
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =     -73.797266
+siesta:  Band Struct. =     -73.797265
 siesta:       Kinetic =      81.648263
 siesta:       Hartree =      14.748477
 siesta:       Eldau   =       0.000000
@@ -453,7 +461,7 @@ siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =     -65.090392
 siesta:  Ion-electron =    -100.070879
-siesta:       Ion-ion =    -146.672927
+siesta:       Ion-ion =    -146.672928
 siesta:       Ekinion =       0.000000
 siesta:         Total =    -215.437459
 siesta:         Fermi =      -3.826548
@@ -468,8 +476,9 @@ siesta: Cell volume =         40.025752 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00009442         -0.00010226  Ry/Bohr**3
-siesta:          -0.00866964         -0.00938882  eV/Ang**3
-siesta:         -13.89045180        -15.04270477  kBar
-(Free)E+ p_basis*V_orbitals  =        -214.226784
+siesta:          -0.00866966         -0.00938884  eV/Ang**3
+siesta:         -13.89048233        -15.04273509  kBar
+(Free)E+ p_basis*V_orbitals  =        -214.226785
 (Free)Eharris+ p_basis*V_orbitals  =        -214.226785
->> End of run:  18-AUG-2016   8:48:56
+>> End of run:   2-JUL-2017  11:59:13
+Job completed

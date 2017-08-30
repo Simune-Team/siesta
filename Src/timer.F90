@@ -57,7 +57,7 @@ recursive subroutine timer( prog, iOpt )
   integer,         intent(in):: iOpt   ! Action option
 
 #ifdef TRACING
-  integer*8                           :: extrae_eventnumber
+  integer*8                           :: extrae_eventnumber, zero8
 
   if (iOpt==0) then
     extrae_maxEventNumber = 0
@@ -71,7 +71,7 @@ recursive subroutine timer( prog, iOpt )
     call extrae_eventandcounters(1000, extrae_eventnumber)
 
   else if (iOpt==2) then
-    call extrae_eventandcounters(1000, 0)
+    call extrae_eventandcounters(1000, zero8)
 
   else if (iOpt==3) then
     ! write file with eventnumber-map

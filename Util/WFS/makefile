@@ -60,8 +60,7 @@ wfsnc2wfsx: wfsnc2wfsx.o
 	$(FC) $(LDFLAGS) -o $@ $< $(NETCDF_LIBS)
 
 clean: 
-	rm -f *.o  *.*d readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx
-
+	rm -f *.o  *.*d readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx info_wfsx
 
 
 

@@ -21,20 +21,27 @@
 
       CONTAINS
 
-      subroutine message(str)
+      subroutine message(level,str)
 
       use parallel, only : Node
-#ifdef MPI
-      use mpi_siesta
-#endif
 
-      character(len=*), intent(in), optional   :: str
+      character(len=*), intent(in)  :: level
+      ! One of INFO, WARNING, FATAL
+      character(len=*), intent(in)  :: str
 
+      external ::  io_assign, io_close
+      integer  ::  lun
 
-      if (Node.eq.0) then
-         if (present(str)) then
-            write(6,'(a)') trim(str)
-         endif
+      if (Node .eq. 0) then
+         write(6,'(a)') trim(str)
+         write(0,'(a)') trim(str)
+         call io_assign(lun)
+         open(lun,file="MESSAGES",status="unknown",
+     $        position="append",action="write")
+         write(lun,"(a)") trim(level) // ": " // trim(str)
+         call io_close(lun)
+         call pxfflush(6)
+         call pxfflush(0)
       endif
 
       end subroutine message
@@ -43,12 +50,15 @@
       subroutine die(str)
 
       use parallel, only : Node
+      use siesta_cml
 #ifdef MPI
       use mpi_siesta
 #endif
 
       character(len=*), intent(in), optional   :: str
 
+      external ::  io_assign, io_close
+      integer  ::  lun
 #ifdef MPI
       integer MPIerror
 #endif
@@ -58,17 +68,25 @@
 ! node state its complaint can be useful.
 
 !!                                       if (Node.eq.0) then
-         if (present(str)) then
-            write(6,'(a)') trim(str)
-            write(0,'(a)') trim(str)
-         endif
-         write(6,'(a,i4)') 'Stopping Program from Node: ', Node
-         write(0,'(a,i4)') 'Stopping Program from Node: ', Node
+      if (present(str)) then
+         write(6,'(a)') trim(str)
+         write(0,'(a)') trim(str)
+      endif
+      write(6,'(a,i4)') 'Stopping Program from Node: ', Node
+      write(0,'(a,i4)') 'Stopping Program from Node: ', Node
 !!                                       endif
-         if (Node .eq. 0) then
-            call pxfflush(6)
-            call pxfflush(0)
-         endif
+      if (Node .eq. 0) then
+         call io_assign( lun )
+         open(lun,file="MESSAGES",status="unknown",
+     $        position="append",action="write")
+         write(lun,"(a)") 'FATAL: ' // trim(str)
+         call io_close(lun)
+         call pxfflush(6)
+         call pxfflush(0)
+         If (cml_p) Then
+            Call cmlFinishFile(mainXML)
+         Endif                  !cml_p
+      endif
 
 #ifdef MPI
       call MPI_Abort(MPI_Comm_World,1,MPIerror)
@@ -82,6 +100,7 @@
       subroutine bye(str)
 
       use parallel, only : Node
+      use siesta_cml
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -97,9 +116,11 @@
             write(6,'(a)') trim(str)
          endif
          write(6,'(a)') 'Requested End of Run. Bye!!'
+         call pxfflush(6)
+         If (cml_p) Then
+            Call cmlFinishFile(mainXML)
+         Endif                  !cml_p
       endif
-
-      if (Node .eq. 0) call pxfflush(6)
 
 #ifdef MPI
       call MPI_Finalize(rc)

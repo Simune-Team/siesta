@@ -4,7 +4,7 @@
                            ***********************       
 
 reinit: Reading from standard input
-reinit: Dumped input in INPUT_TMP.00755
+reinit: Dumped input in INPUT_TMP.11634
 ************************** Dump of input data file ****************************
 SystemName  au_111_capacitor
 SystemLabel au_111_capacitor
@@ -121,6 +121,8 @@ TS.Voltage    1.00000 eV
 %endblock TS.ChemPot.Right
 TS.Elecs.Bulk true
 TS.Elecs.DM.Update none
+# This is for testing purposes!
+# DO NOT USE IF YOU DO NOT UNDERSTAND!
 TS.Elecs.Neglect.Principal true
 TS.Elecs.GF.ReUse true
 %block TS.Elecs
@@ -193,11 +195,11 @@ reinit: System Name: au_111_capacitor
 reinit: -----------------------------------------------------------------------
 reinit: System Label: au_111_capacitor
 reinit: -----------------------------------------------------------------------
-Siesta Version: trunk-557
-Architecture  : x86_64-linux-gcc
-Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG -DTRANSIESTA
-Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+Siesta Version: siesta-4.1--731
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto -fuse-linker-plugin
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__FLOOK  -DTRANSIESTA
+Libraries     : -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmumps -lmumps_common -llpord -lparmetis -lmetis -lscalapack -lopenblas  -lmetis -flto -fuse-linker-plugin  -L/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -lflookall -ldl
 PARALLEL version
 TRANSIESTA support
 NetCDF support
@@ -205,8 +207,8 @@ NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
 
-* Running on 2 nodes in parallel
->> Start of run:  18-AUG-2016  22:06:06
+* Running on 8 nodes in parallel
+>> Start of run:   2-JUL-2017  22:23:26
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:   79 Label: Au
@@ -417,7 +419,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: Discard 1st Pulay DM after kick             =   F
 redata: New DM Mixing Weight                        =     0.0300
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
@@ -444,11 +445,11 @@ mix.SCF:    History steps                        = 5
 mix.SCF:    Linear mixing weight                 =     0.030000
 mix.SCF:    Mixing weight                        =     0.030000
 mix.SCF:    SVD condition                        = 0.1000E-07
-redata: Save data in SIESTA.nc                      =   F
+redata: Save all siesta data in one NC              =   F
 redata: ***********************************************************************
 
 %block SCF.Mixers
-  Pulay                   
+  Pulay
 %endblock SCF.Mixers
 
 %block SCF.Mixer.Pulay
@@ -460,10 +461,6 @@ redata: ***********************************************************************
   weight 0.0300
   weight.linear 0.0300
   history 5
-  restart 0
-  restart.save 1
-
-  # Continuation options
 %endblock SCF.Mixer.Pulay
 
 DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
@@ -471,10 +468,10 @@ Size of DM history Fstack: 1
 Total number of electrons:   110.000000
 Total ionic charge:   110.000000
 
-* ProcessorY, Blocksize:    1  24
+* ProcessorY, Blocksize:    2  12
 
 
-* Orbital distribution balance (max,min):    48    42
+* Orbital distribution balance (max,min):    12     6
 
 k-point displ. along   1 input, could be:     0.00    0.50
 k-point displ. along   2 input, could be:     0.00    0.50
@@ -513,12 +510,12 @@ ts: BTD pivoting method                             =    atom+Left
 ts: BTD creation algorithm                          =    speed
 ts: BTD spectral function algorithm                 =    propagation
 ts: SCF.TS DM tolerance                             = 0.100E-03
-ts: SCF.TS Hamiltonian tolerance                    = 0.735E-04
+ts: SCF.TS Hamiltonian tolerance                    =    0.001000 eV
 ts: Initialize DM by                                =    diagon
 ts: Initial DM for electrodes                       =    this
 ts: Hartree potential as linear ramp
 ts: Hartree potential ramp across entire cell
-ts: Thermal non-equilibrium in electrode distributio=s   F
+ts: Thermal non-equilibrium in distributions        =    F
 ts: Non-equilibrium contour weight method           =    orb-orb
 ts: Non-equilibrium contour weight k-method         =    Correlated k-points
 ts: Will not correct charge fluctuations
@@ -600,8 +597,11 @@ ts:   line contour method                           =    Mid-rule
 ts: **************************************************************
 
 ************************ Begin: TS CHECKS AND WARNINGS ************************
+Without loosing performance you can increase the equilibrium integration precision.
+You can add 2 more energy points in the equilibrium contours, for FREE!
+This is 1 more energy points per chemical potential.
 Without loosing performance you can increase the non-equilibrium integration precision.
-You can add 1 more energy points in the non-equilibrium contours, for FREE!
+You can add 3 more energy points in the non-equilibrium contours, for FREE!
 Electrode Left will not update cross-terms or local region.
 Electrode Right will not update cross-terms or local region.
 ************************ End: TS CHECKS AND WARNINGS **************************
@@ -681,15 +681,15 @@ transiesta: Regions of atoms:
 
   <sparsity:./elec_au_111_abc.TSHS
     nrows_g=27 nrows=27 sparsity=44.2757 nnzs=32277, refcount: 3>
+  <sparsity:(TM [--,--, 0] of: ./elec_au_111_abc.TSHS)
+    nrows_g=27 nrows=27 sparsity=25.1152 nnzs=18309, refcount: 3>
+  <sparsity:(TM [--,--,-1] of: ./elec_au_111_abc.TSHS)
+    nrows_g=27 nrows=27 sparsity=9.4486 nnzs=6888, refcount: 3>
  Left principal cell is extending out with 96 elements:
     Atom 1 connects with atom 3
     Orbital 8 connects with orbital 26
     Hamiltonian value: |H(8,6587)|@R=-2 =  0.651E-13 eV
     Overlap          :  S(8,6587)|@R=-2 =   0.00    
-  <sparsity:(TM [--,--, 0] of: ./elec_au_111_abc.TSHS)
-    nrows_g=27 nrows=27 sparsity=25.1152 nnzs=18309, refcount: 3>
-  <sparsity:(TM [--,--,-1] of: ./elec_au_111_abc.TSHS)
-    nrows_g=27 nrows=27 sparsity=9.4486 nnzs=6888, refcount: 3>
 
 Calculating all surface Green functions for: Left
  Fermi level shift in electrode (chemical potential) :        0.50000  eV
@@ -705,15 +705,15 @@ Done creating 'au_111_capacitor.TSGFLeft'.
 
   <sparsity:./elec_au_111_abc.TSHS
     nrows_g=27 nrows=27 sparsity=44.2757 nnzs=32277, refcount: 3>
+  <sparsity:(TM [--,--, 0] of: ./elec_au_111_abc.TSHS)
+    nrows_g=27 nrows=27 sparsity=25.1152 nnzs=18309, refcount: 3>
+  <sparsity:(TM [--,--, 1] of: ./elec_au_111_abc.TSHS)
+    nrows_g=27 nrows=27 sparsity=9.4486 nnzs=6888, refcount: 3>
  Right principal cell is extending out with 96 elements:
     Atom 3 connects with atom 1
     Orbital 26 connects with orbital 8
     Hamiltonian value: |H(26,4382)|@R=2 =  0.651E-13 eV
     Overlap          :  S(26,4382)|@R=2 =   0.00    
-  <sparsity:(TM [--,--, 0] of: ./elec_au_111_abc.TSHS)
-    nrows_g=27 nrows=27 sparsity=25.1152 nnzs=18309, refcount: 3>
-  <sparsity:(TM [--,--, 1] of: ./elec_au_111_abc.TSHS)
-    nrows_g=27 nrows=27 sparsity=9.4486 nnzs=6888, refcount: 3>
 
 Calculating all surface Green functions for: Right
  Fermi level shift in electrode (chemical potential) :       -0.50000  eV
@@ -745,40 +745,61 @@ outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     60.0000
 outcell: Cell volume (Ang**3)        :    229.5957
 <dSpData1D:S at geom step 0
   <sparsity:sparsity for geom step 0
-    nrows_g=90 nrows=48 sparsity=6.1917 nnzs=50153, refcount: 7>
-  <dData1D:(new from dSpData1D) n=50153, refcount: 1>
+    nrows_g=90 nrows=12 sparsity=1.7328 nnzs=14036, refcount: 7>
+  <dData1D:(new from dSpData1D) n=14036, refcount: 1>
 refcount: 1>
-New_DM. Step:     1
+new_DM -- step:     1
 Initializing Density Matrix...
+
 Attempting to read DM, EDM from TSDE file... Failed...
 Attempting to read DM from file... Failed...
-DM after filling with atomic data:
-<dSpData2D:(DM initialized from atoms)
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
   <sparsity:sparsity for geom step 0
-    nrows_g=90 nrows=48 sparsity=6.1917 nnzs=50153, refcount: 8>
-  <dData2D:(DMatomic) n=50153 m=1, refcount: 1>
+    nrows_g=90 nrows=12 sparsity=1.7328 nnzs=14036, refcount: 8>
+  <dData2D:DM n=14036 m=1, refcount: 1>
 refcount: 1>
 
 transiesta: Initialization run using siesta
 
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      60     237
 New grid distribution:   1
-           1       1:   15    1:   15    1:   90
-           2       1:   15    1:   15   91:  180
+           1       1:   15    1:    8    1:   45
+           2       1:   15    1:    8   46:   90
+           3       1:   15    1:    8   91:  135
+           4       1:   15    1:    8  136:  180
+           5       1:   15    9:   15    1:   45
+           6       1:   15    9:   15   46:   90
+           7       1:   15    9:   15   91:  135
+           8       1:   15    9:   15  136:  180
 
 InitMesh: MESH =    30 x    30 x   360 =      324000
 InitMesh: (bp) =    15 x    15 x   180 =       40500
 InitMesh: Mesh cutoff (required, used) =   350.000   372.067 Ry
-ExtMesh (bp) on 0 =   107 x   107 x   182 =     2083718
+ExtMesh (bp) on 0 =   107 x   100 x   137 =     1465900
 New grid distribution:   2
-           1       1:   15    1:   15    1:  115
-           2       1:   15    1:   15  116:  180
+           1       1:   15    1:   15  149:  164
+           2       1:   15    1:   15   49:  115
+           3       1:   15    1:   15    1:   16
+           4       1:   15    1:   15  133:  148
+           5       1:   15    1:   15   17:   32
+           6       1:   15    1:   15   33:   48
+           7       1:   15    1:   15  116:  132
+           8       1:   15    1:   15  165:  180
 New grid distribution:   3
-           1       1:   15    1:   15    1:   96
-           2       1:   15    1:   15   97:  180
+           1       1:   15    1:   15    1:   21
+           2       1:   15    1:   15   64:   96
+           3       1:   15    1:   15   97:  117
+           4       1:   15    1:   15  139:  159
+           5       1:   15    1:   15   22:   42
+           6       1:   15    1:   15   43:   63
+           7       1:   15    1:   15  118:  138
+           8       1:   15    1:   15  160:  180
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =   107 x   107 x   207 =     2369943
-PhiOnMesh: Number of (b)points on node 0 =                25875
-PhiOnMesh: nlist on node 0 =              1356796
+ExtMesh (bp) on 0 =   107 x   107 x   108 =     1236492
+PhiOnMesh: Number of (b)points on node 0 =                 3600
+PhiOnMesh: nlist on node 0 =               294085
 
 ts: Using electrode: Right for Hartree correction
 ts: Grid fraction plane  0.96154
@@ -796,7 +817,7 @@ stepf: Fermi-Dirac step function
 ts-Vha: -0.12177E+02 eV
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =        -5.590657
+siesta: Ebs     =        -5.590846
 siesta: Eions   =     11712.249174
 siesta: Ena     =       583.627911
 siesta: Ekin    =      6217.756077
@@ -804,7 +825,7 @@ siesta: Enl     =     -2860.936222
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
 siesta: DEna    =       117.884060
-siesta: DUscf   =        11.594536
+siesta: DUscf   =        11.594535
 siesta: DUext   =         0.000000
 siesta: Exc     =     -1398.155535
 siesta: eta*DQ  =         0.000000
@@ -817,99 +838,99 @@ siesta: Etot    =     -9040.478347
 siesta: FreeEng =     -9040.480015
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
-   scf:    1    -9025.331193    -9040.478347    -9040.480015  0.240195 -2.583979 19.975582
-timer: Routine,Calls,Time,% =    IterSCF     1      23.404  52.95
+   scf:    1    -9025.331193    -9040.478347    -9040.480015  0.240195 -2.583979 19.975579
+timer: Routine,Calls,Time,% = IterSCF        1       4.949  38.71
 ts-Vha:  0.14972E+02 eV
-   scf:    2    -9031.808376    -9040.469228    -9040.471058  0.050630 -2.391103 25.815664
+   scf:    2    -9031.808380    -9040.469228    -9040.471059  0.050630 -2.391103 25.815660
 ts-Vha:  0.39677E+01 eV
-   scf:    3    -9044.305084    -9043.050153    -9043.052047  0.026032 -2.565092  9.664206
+   scf:    3    -9044.305083    -9043.050153    -9043.052047  0.026032 -2.565092  9.664204
 ts-Vha: -0.28366E+01 eV
-   scf:    4    -9043.798419    -9043.734224    -9043.736083  0.020525 -2.734135  3.740717
+   scf:    4    -9043.798419    -9043.734224    -9043.736082  0.020525 -2.734135  3.740717
 ts-Vha:  0.45205E+01 eV
-   scf:    5    -9043.717772    -9044.010434    -9044.012608  0.021226 -2.776441  9.515564
-ts-Vha: -0.65222E+02 eV
-   scf:    6    -8884.984553    -8993.631937    -8993.633779  0.145873 -4.685183106.975432
-ts-Vha: -0.40126E+02 eV
-   scf:    7    -9047.757244    -9024.329374    -9024.331233  0.069642 -3.353647 64.801555
-ts-Vha: -0.39859E+02 eV
-   scf:    8    -9028.602045    -9026.996320    -9026.998302  0.064050 -4.253987 62.506315
-ts-Vha: -0.42038E+02 eV
-   scf:    9    -9022.538972    -9024.800069    -9024.801939  0.007457 -4.266429 66.154927
-ts-Vha: -0.51004E+02 eV
-   scf:   10    -9004.288706    -9015.010215    -9015.012067  0.033774 -4.207803 80.010760
-ts-Vha:  0.26768E+02 eV
-   scf:   11    -8992.064964    -9037.552458    -9037.554154  0.221537 -3.498677 40.498690
-ts-Vha:  0.14735E+02 eV
-   scf:   12    -9047.164735    -9043.194202    -9043.197925  0.037641 -3.770466 22.251862
-ts-Vha:  0.24354E+01 eV
-   scf:   13    -9046.020046    -9045.474438    -9045.477612  0.034603 -3.916712  3.517853
-ts-Vha: -0.26901E+01 eV
-   scf:   14    -9045.005754    -9045.393875    -9045.396836  0.011856 -4.004526  4.899548
-ts-Vha: -0.20775E+01 eV
-   scf:   15    -9045.463081    -9045.430750    -9045.433572  0.003335 -4.035484  4.036806
-ts-Vha: -0.27618E+00 eV
-   scf:   16    -9045.552696    -9045.511901    -9045.514843  0.007432 -4.039988  1.352515
-ts-Vha:  0.64672E+00 eV
-   scf:   17    -9045.520493    -9045.532010    -9045.535837  0.016740 -3.878436  0.876522
-ts-Vha:  0.37312E+00 eV
-   scf:   18    -9045.545679    -9045.539505    -9045.543386  0.001840 -3.904465  0.424840
-ts-Vha:  0.31891E+00 eV
-   scf:   19    -9045.545885    -9045.542749    -9045.546646  0.000789 -3.918744  0.345175
-ts-Vha:  0.25838E+00 eV
-   scf:   20    -9045.559358    -9045.552893    -9045.556805  0.005065 -4.030737  0.114106
-ts-Vha:  0.23695E+00 eV
-   scf:   21    -9045.553765    -9045.553360    -9045.557276  0.000774 -4.035584  0.104689
-ts-Vha:  0.24485E+00 eV
-   scf:   22    -9045.554420    -9045.553919    -9045.557838  0.001108 -4.027899  0.060535
-ts-Vha:  0.24024E+00 eV
-   scf:   23    -9045.554977    -9045.554476    -9045.558393  0.001606 -4.023747  0.056427
-ts-Vha:  0.23086E+00 eV
-   scf:   24    -9045.555279    -9045.554993    -9045.558873  0.002767 -4.032775  0.032057
-ts-Vha:  0.22590E+00 eV
-   scf:   25    -9045.554980    -9045.554987    -9045.558865  0.000061 -4.033609  0.026019
-ts-Vha:  0.22639E+00 eV
-   scf:   26    -9045.555163    -9045.555083    -9045.558955  0.000537 -4.028764  0.026255
-ts-Vha:  0.22702E+00 eV
-   scf:   27    -9045.555069    -9045.555076    -9045.558949  0.000074 -4.029176  0.026683
-ts-Vha:  0.22219E+00 eV
-   scf:   28    -9045.555063    -9045.555070    -9045.558943  0.000086 -4.029849  0.020260
-ts-Vha:  0.22303E+00 eV
-   scf:   29    -9045.555066    -9045.555068    -9045.558940  0.000060 -4.030911  0.019861
-ts-Vha:  0.22210E+00 eV
-   scf:   30    -9045.555158    -9045.555115    -9045.558978  0.000425 -4.031059  0.014528
-ts-Vha:  0.22365E+00 eV
-   scf:   31    -9045.555183    -9045.555152    -9045.559000  0.000592 -4.033409  0.008440
-ts-Vha:  0.22400E+00 eV
-   scf:   32    -9045.555147    -9045.555150    -9045.558997  0.000074 -4.034808  0.007504
-ts-Vha:  0.22323E+00 eV
-   scf:   33    -9045.555149    -9045.555150    -9045.558998  0.000054 -4.035201  0.008411
-ts-Vha:  0.21901E+00 eV
-   scf:   34    -9045.555197    -9045.555175    -9045.559016  0.000398 -4.034016  0.005997
-ts-Vha:  0.22285E+00 eV
-   scf:   35    -9045.555164    -9045.555170    -9045.559014  0.000154 -4.033047  0.007138
-ts-Vha:  0.22005E+00 eV
-   scf:   36    -9045.555188    -9045.555180    -9045.559018  0.000275 -4.033233  0.001470
-ts-Vha:  0.22021E+00 eV
-   scf:   37    -9045.555180    -9045.555180    -9045.559018  0.000008 -4.033162  0.001273
-ts-Vha:  0.22031E+00 eV
-   scf:   38    -9045.555182    -9045.555181    -9045.559019  0.000021 -4.033363  0.001448
-ts-Vha:  0.22011E+00 eV
-   scf:   39    -9045.555186    -9045.555184    -9045.559019  0.000085 -4.034081  0.000728
+   scf:    5    -9043.717773    -9044.010434    -9044.012608  0.021226 -2.776441  9.515574
+ts-Vha: -0.65216E+02 eV
+   scf:    6    -8885.012112    -8993.640943    -8993.642785  0.145859 -4.684899106.965830
+ts-Vha: -0.40075E+02 eV
+   scf:    7    -9047.829285    -9024.384050    -9024.385909  0.069679 -3.352886 64.713758
+ts-Vha: -0.39873E+02 eV
+   scf:    8    -9028.525849    -9026.982472    -9026.984452  0.063857 -4.254071 62.528970
+ts-Vha: -0.42014E+02 eV
+   scf:    9    -9022.605317    -9024.825195    -9024.827065  0.007336 -4.266152 66.112912
+ts-Vha: -0.50996E+02 eV
+   scf:   10    -9004.282707    -9015.021377    -9015.023229  0.033826 -4.209027 79.997029
+ts-Vha:  0.26772E+02 eV
+   scf:   11    -8992.058346    -9037.550241    -9037.551935  0.221540 -3.498557 40.502693
+ts-Vha:  0.14795E+02 eV
+   scf:   12    -9047.142774    -9043.174190    -9043.177903  0.037475 -3.769793 22.342857
+ts-Vha:  0.24062E+01 eV
+   scf:   13    -9046.017414    -9045.475772    -9045.478945  0.034841 -3.917291  3.472600
+ts-Vha: -0.27174E+01 eV
+   scf:   14    -9045.000776    -9045.391910    -9045.394872  0.011851 -4.005107  4.941129
+ts-Vha: -0.20745E+01 eV
+   scf:   15    -9045.465203    -9045.431026    -9045.433849  0.003380 -4.035298  4.029811
+ts-Vha: -0.27829E+00 eV
+   scf:   16    -9045.552990    -9045.512080    -9045.515026  0.007385 -4.038688  1.355793
+ts-Vha:  0.66264E+00 eV
+   scf:   17    -9045.519010    -9045.531132    -9045.534945  0.016448 -3.876301  0.904123
+ts-Vha:  0.38119E+00 eV
+   scf:   18    -9045.545050    -9045.538812    -9045.542692  0.001839 -3.900464  0.436794
+ts-Vha:  0.32601E+00 eV
+   scf:   19    -9045.545692    -9045.542312    -9045.546209  0.000838 -3.915707  0.355263
+ts-Vha:  0.25579E+00 eV
+   scf:   20    -9045.559588    -9045.552856    -9045.556767  0.005160 -4.030744  0.119184
+ts-Vha:  0.23649E+00 eV
+   scf:   21    -9045.553625    -9045.553268    -9045.557183  0.000672 -4.035924  0.108147
+ts-Vha:  0.24665E+00 eV
+   scf:   22    -9045.554117    -9045.553712    -9045.557630  0.000846 -4.029071  0.063284
+ts-Vha:  0.24063E+00 eV
+   scf:   23    -9045.554839    -9045.554305    -9045.558224  0.001537 -4.023867  0.055319
+ts-Vha:  0.23321E+00 eV
+   scf:   24    -9045.555516    -9045.555079    -9045.558956  0.003689 -4.027246  0.034800
+ts-Vha:  0.22339E+00 eV
+   scf:   25    -9045.554876    -9045.554983    -9045.558865  0.000622 -4.032287  0.029086
+ts-Vha:  0.22923E+00 eV
+   scf:   26    -9045.555175    -9045.555093    -9045.558966  0.000794 -4.025688  0.031766
+ts-Vha:  0.23049E+00 eV
+   scf:   27    -9045.555085    -9045.555090    -9045.558965  0.000059 -4.025474  0.036325
+ts-Vha:  0.22545E+00 eV
+   scf:   28    -9045.555046    -9045.555071    -9045.558944  0.000204 -4.030309  0.022755
+ts-Vha:  0.22511E+00 eV
+   scf:   29    -9045.555023    -9045.555045    -9045.558923  0.000247 -4.030524  0.022342
+ts-Vha:  0.22353E+00 eV
+   scf:   30    -9045.555028    -9045.555037    -9045.558912  0.000099 -4.032853  0.017547
+ts-Vha:  0.22265E+00 eV
+   scf:   31    -9045.555129    -9045.555085    -9045.558944  0.000649 -4.035730  0.014629
+ts-Vha:  0.22164E+00 eV
+   scf:   32    -9045.555177    -9045.555133    -9045.558976  0.000638 -4.037395  0.011043
+ts-Vha:  0.22081E+00 eV
+   scf:   33    -9045.555200    -9045.555171    -9045.559006  0.000388 -4.036249  0.007544
+ts-Vha:  0.22160E+00 eV
+   scf:   34    -9045.555182    -9045.555178    -9045.559016  0.000132 -4.033412  0.003436
+ts-Vha:  0.22131E+00 eV
+   scf:   35    -9045.555181    -9045.555179    -9045.559016  0.000042 -4.033560  0.002533
+ts-Vha:  0.22076E+00 eV
+   scf:   36    -9045.555183    -9045.555181    -9045.559019  0.000071 -4.032911  0.002564
+ts-Vha:  0.21989E+00 eV
+   scf:   37    -9045.555189    -9045.555186    -9045.559019  0.000134 -4.033631  0.001006
+ts-Vha:  0.21959E+00 eV
+   scf:   38    -9045.555187    -9045.555186    -9045.559019  0.000025 -4.033983  0.001015
+ts-Vha:  0.21982E+00 eV
+   scf:   39    -9045.555183    -9045.555185    -9045.559019  0.000048 -4.033947  0.000365
 
 SCF Convergence by DM+H criterion
-max |DM_out - DM_in|         :     0.0000850481
-max |H_out - H_in|      (eV) :     0.0007279927
+max |DM_out - DM_in|         :     0.0000480962
+max |H_out - H_in|      (eV) :     0.0003652829
 SCF cycle converged after 39 iterations
 
                      ***************************
                      *  WELCOME TO TRANSIESTA  *
                      ***************************
 
-ts-Vha:  0.22011E+00 eV
+ts-Vha:  0.21982E+00 eV
 
 Created the TranSIESTA local update sparsity pattern:
   <sparsity:(M of: T T T sparsity for geom step 0)
-    nrows_g=90 nrows=48 sparsity=.9267 nnzs=7506, refcount: 1>
+    nrows_g=90 nrows=12 sparsity=.0000 nnzs=0, refcount: 1>
 
 Created the TranSIESTA H,S sparsity pattern:
   <sparsity:(M of: G ((UC of: T T T sparsity for geom step 0)))
@@ -932,380 +953,291 @@ transiesta: Electrode Right splitting Gamma 0 times.
 
 transiesta: mem of electrodes (static):                     0.07MB
 transiesta: mem of global update arrays (static):           0.10MB
-transiesta: mem of master node sparse arrays:               0.34MB
+transiesta: mem of master node sparse arrays:               0.00MB
 transiesta: mem of tri-diagonal matrices:                   0.25MB
-transiesta: Total memory usage:                             0.89MB
+transiesta: Total memory usage:                             0.69MB
 
 transiesta: Charge distribution, target =    110.00000
 Total charge                  [Q]  :   110.00000
-Device                        [D]  :    43.69740
-Left                          [E1] :    32.69897
+Device                        [D]  :    43.69738
+Left                          [E1] :    32.69899
 Left                 / device [C1] :     0.30825
-Right                         [E2] :    32.69897
-Right                / device [C2] :     0.30826
+Right                         [E2] :    32.69898
+Right                / device [C2] :     0.30825
 Other                         [O]  :     0.28815
 
-ts-err-D: ij(   28,    28), M = 0.75444   , ew = 0.23352E-1, em = 0.46703E-1. avg_m = -.26357E-04
-ts-err-E: ij(   28,    28), M = -3.3475   , ew = 0.37089E-2, em = 0.74179E-2. avg_m = -.31176E-05
+ts-err-D: ij(   28,    28), M = 0.75461   , ew = 0.23126E-1, em = 0.46253E-1. avg_m = -.27200E-04
+ts-err-E: ij(   28,    28), M = -3.3471   , ew = 0.36689E-2, em = 0.73378E-2. avg_m = -.34603E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.579    32.699     0.308    32.699     0.308 -1.180E-1
-ts-Vha:  0.16208E+01 eV
+ts-q:    43.581    32.699     0.308    32.699     0.308 -1.164E-1
+ts-Vha:  0.15854E+01 eV
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -1031.629561
+siesta: Ebs     =     -1028.447111
 siesta: Eions   =     11712.249174
 siesta: Ena     =       583.627911
-siesta: Ekin    =      6358.870018
-siesta: Enl     =     -2947.933740
+siesta: Ekin    =      6358.919974
+siesta: Enl     =     -2947.947113
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =        80.095978
-siesta: DUscf   =         7.779564
+siesta: DEna    =        80.075328
+siesta: DUscf   =         7.802045
 siesta: DUext   =         0.000000
-siesta: Exc     =     -1411.361182
+siesta: Exc     =     -1411.383077
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -9032.742518
-siesta: Etot    =     -9041.170625
-siesta: FreeEng =     -9041.170625
+siesta: Eharris =     -9032.692749
+siesta: Etot    =     -9041.154106
+siesta: FreeEng =     -9041.154106
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
-ts-scf:    1    -9032.742518    -9041.170625    -9041.170625  0.086853 -4.034081 19.674805
-timer: Routine,Calls,Time,% =         TS     1       6.676   0.77
-ts-err-D: ij(   46,    46), M = 0.82062   , ew = 0.52434E-4, em = 0.10487E-3. avg_m = -.41985E-07
-ts-err-E: ij(   28,    28), M = -3.0180   , ew = 0.13917E-4, em = 0.27834E-4. avg_m = -.46129E-08
+ts-scf:    1    -9032.692749    -9041.154106    -9041.154106  0.086867 -4.033947 19.683074
+timer: Routine,Calls,Time,% = TS             1       2.239   1.24
+ts-err-D: ij(   46,    46), M = 0.82061   , ew = 0.52351E-4, em = 0.10470E-3. avg_m = -.42760E-07
+ts-err-E: ij(   28,    28), M = -3.0157   , ew = 0.13670E-4, em = 0.27341E-4. avg_m = -.53182E-08
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.725    32.699     0.308    32.699     0.308  2.761E-2
-ts-Vha: -0.12621E+00 eV
-ts-scf:    2    -9033.069642    -9043.128137    -9043.128137  0.146271 -4.034081 15.577317
-ts-err-D: ij(   44,    44), M = 0.33186E-1, ew = 0.17775E-2, em = 0.35550E-2. avg_m = 0.93099E-05
-ts-err-E: ij(   44,    44), M = -.95477E-1, ew = 0.80714E-3, em = 0.16143E-2. avg_m = 0.36955E-05
+ts-q:    43.722    32.699     0.308    32.699     0.308  2.475E-2
+ts-Vha: -0.77742E-01 eV
+ts-scf:    2    -9032.868242    -9043.077849    -9043.077849  0.146315 -4.033947 15.617918
+ts-err-D: ij(   44,    44), M = 0.33174E-1, ew = 0.17753E-2, em = 0.35507E-2. avg_m = 0.93069E-05
+ts-err-E: ij(   44,    44), M = -.95460E-1, ew = -.80744E-3, em = 0.16149E-2. avg_m = 0.36991E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.727    32.699     0.308    32.699     0.308  2.916E-2
-ts-Vha: -0.27150E+00 eV
-ts-scf:    3    -9044.131048    -9045.447360    -9045.447360  0.066387 -4.034081  3.622073
-ts-err-D: ij(   53,    53), M = 0.30004E-1, ew = 0.17259E-2, em = 0.34518E-2. avg_m = 0.91275E-05
-ts-err-E: ij(   44,    44), M = -.94654E-1, ew = 0.81167E-3, em = 0.16233E-2. avg_m = 0.37554E-05
+ts-q:    43.726    32.699     0.308    32.699     0.308  2.843E-2
+ts-Vha: -0.25781E+00 eV
+ts-scf:    3    -9044.149209    -9045.447494    -9045.447494  0.066615 -4.033947  3.563267
+ts-err-D: ij(   53,    53), M = 0.30003E-1, ew = 0.17220E-2, em = 0.34440E-2. avg_m = 0.90912E-05
+ts-err-E: ij(   44,    44), M = -.94629E-1, ew = 0.80945E-3, em = 0.16189E-2. avg_m = 0.37471E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.701    32.699     0.308    32.699     0.308  3.113E-3
-ts-Vha:  0.17564E+00 eV
-ts-scf:    4    -9045.390002    -9045.431447    -9045.431447  0.008826 -4.034081  1.515722
-ts-err-D: ij(   53,    53), M = 0.30516E-1, ew = 0.17397E-2, em = 0.34794E-2. avg_m = 0.50916E-05
-ts-err-E: ij(   53,  3113), M = 0.36125E-3, ew = -.77356E-3, em = -.15471E-2. avg_m = 0.19808E-05
+ts-q:    43.700    32.699     0.308    32.699     0.308  2.126E-3
+ts-Vha:  0.19378E+00 eV
+ts-scf:    4    -9045.385617    -9045.430041    -9045.430041  0.008953 -4.033947  1.423761
+ts-err-D: ij(   53,    53), M = 0.30517E-1, ew = 0.17398E-2, em = 0.34797E-2. avg_m = 0.51038E-05
+ts-err-E: ij(   53,  3113), M = 0.36125E-3, ew = 0.77354E-3, em = -.15471E-2. avg_m = 0.19858E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.685    32.699     0.308    32.699     0.308 -1.260E-2
-ts-Vha:  0.45346E+00 eV
-ts-scf:    5    -9045.252495    -9045.384948    -9045.384948  0.010544 -4.034081  1.850133
-ts-err-D: ij(   44,   314), M = 0.59499E-2, ew = -.38247E-2, em = -.76493E-2. avg_m = -.19454E-04
-ts-err-E: ij(   44,   314), M = 0.40241E-2, ew = 0.18675E-2, em = -.37350E-2. avg_m = -.97332E-05
+ts-q:    43.686    32.699     0.308    32.699     0.308 -1.158E-2
+ts-Vha:  0.43525E+00 eV
+ts-scf:    5    -9045.272377    -9045.390277    -9045.390277  0.009973 -4.033947  1.781053
+ts-err-D: ij(   53,    53), M = 0.30532E-1, ew = -.14069E-2, em = 0.28139E-2. avg_m = 0.69734E-05
+ts-err-E: ij(   44,    44), M = -.94212E-1, ew = 0.64140E-3, em = 0.12828E-2. avg_m = 0.30308E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.724    32.699     0.308    32.699     0.308  2.650E-2
-ts-Vha: -0.44679E+00 eV
-ts-scf:    6    -9045.428344    -9045.500494    -9045.500494  0.013047 -4.034081  3.011575
-ts-err-D: ij(   53,    53), M = 0.30942E-1, ew = -.17475E-2, em = 0.34950E-2. avg_m = 0.60109E-05
-ts-err-E: ij(   53,  3113), M = 0.36014E-3, ew = -.78992E-3, em = -.15798E-2. avg_m = 0.24871E-05
+ts-q:    43.697    32.699     0.308    32.699     0.308 -5.597E-4
+ts-Vha:  0.16482E+00 eV
+ts-scf:    6    -9045.408708    -9045.437060    -9045.437060  0.011181 -4.033947  0.932975
+ts-err-D: ij(   53,    53), M = 0.30933E-1, ew = 0.17472E-2, em = 0.34943E-2. avg_m = 0.64081E-05
+ts-err-E: ij(   53,  3113), M = 0.35838E-3, ew = -.79057E-3, em = -.15811E-2. avg_m = 0.26729E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.690    32.699     0.308    32.699     0.308 -6.995E-3
-ts-Vha:  0.28116E+00 eV
-ts-scf:    7    -9045.301242    -9045.424579    -9045.424579  0.006323 -4.034081  0.184283
-ts-err-D: ij(   53,    53), M = 0.30877E-1, ew = 0.17449E-2, em = 0.34899E-2. avg_m = 0.68186E-05
-ts-err-E: ij(   53,  3113), M = 0.36173E-3, ew = -.78698E-3, em = -.15740E-2. avg_m = 0.28610E-05
+ts-q:    43.694    32.699     0.308    32.699     0.308 -3.396E-3
+ts-Vha:  0.21845E+00 eV
+ts-scf:    7    -9045.438310    -9045.439119    -9045.439119  0.002583 -4.033947  0.185001
+ts-err-D: ij(   53,    53), M = 0.30359E-1, ew = -.17445E-2, em = 0.34891E-2. avg_m = 0.72298E-05
+ts-err-E: ij(   53,  3113), M = 0.40728E-3, ew = -.74282E-3, em = -.14856E-2. avg_m = 0.30184E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.696    32.699     0.308    32.699     0.308 -1.120E-3
-ts-Vha:  0.18554E+00 eV
-ts-scf:    8    -9045.471014    -9045.447516    -9045.447516  0.001179 -4.034081  0.317994
-ts-err-D: ij(   53,    53), M = 0.30883E-1, ew = 0.17463E-2, em = 0.34926E-2. avg_m = 0.70539E-05
-ts-err-E: ij(   53,  5093), M = 0.36105E-3, ew = -.78827E-3, em = -.15765E-2. avg_m = 0.29702E-05
+ts-q:    43.670    32.699     0.308    32.699     0.308 -2.723E-2
+ts-Vha:  0.67562E+00 eV
+ts-scf:    8    -9045.149767    -9045.313655    -9045.313655  0.008437 -4.033947  1.927347
+ts-err-D: ij(   53,    53), M = 0.30306E-1, ew = -.17510E-2, em = 0.35021E-2. avg_m = 0.73720E-05
+ts-err-E: ij(   53,  3113), M = 0.40922E-3, ew = -.74178E-3, em = -.14836E-2. avg_m = 0.30757E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.697    32.699     0.308    32.699     0.308  3.827E-5
-ts-Vha:  0.16127E+00 eV
-ts-scf:    9    -9045.454224    -9045.450952    -9045.450952  0.000394 -4.034081  0.417269
-ts-err-D: ij(   53,    53), M = 0.30960E-1, ew = 0.17320E-2, em = 0.34640E-2. avg_m = 0.82183E-05
-ts-err-E: ij(   53,  3113), M = 0.36197E-3, ew = -.79034E-3, em = -.15807E-2. avg_m = 0.35039E-05
+ts-q:    43.671    32.699     0.308    32.699     0.308 -2.680E-2
+ts-Vha:  0.68351E+00 eV
+ts-scf:    9    -9045.296069    -9045.305555    -9045.305555  0.000913 -4.033947  2.172213
+ts-err-D: ij(   53,    53), M = 0.30910E-1, ew = -.17488E-2, em = 0.34977E-2. avg_m = 0.57805E-05
+ts-err-E: ij(   53,  3113), M = 0.35917E-3, ew = -.79300E-3, em = -.15860E-2. avg_m = 0.23753E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.704    32.699     0.308    32.699     0.308  6.937E-3
-ts-Vha:  0.12735E-01 eV
-ts-scf:   10    -9045.484004    -9045.468970    -9045.468970  0.002313 -4.034081  0.969330
-ts-err-D: ij(   53,    53), M = 0.30956E-1, ew = 0.17420E-2, em = 0.34840E-2. avg_m = 0.70187E-05
-ts-err-E: ij(   53,  3113), M = 0.35818E-3, ew = -.79359E-3, em = -.15872E-2. avg_m = 0.29381E-05
+ts-q:    43.691    32.699     0.308    32.699     0.308 -6.805E-3
+ts-Vha:  0.31543E+00 eV
+ts-scf:   10    -9045.528483    -9045.423420    -9045.423420  0.008752 -4.033947  0.190055
+ts-err-D: ij(   53,    53), M = 0.30951E-1, ew = 0.17407E-2, em = 0.34814E-2. avg_m = 0.57889E-05
+ts-err-E: ij(   53,  3113), M = 0.35727E-3, ew = -.79311E-3, em = -.15862E-2. avg_m = 0.23847E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.701    32.699     0.308    32.699     0.308  3.444E-3
-ts-Vha:  0.77524E-01 eV
-ts-scf:   11    -9045.449928    -9045.459328    -9045.459328  0.001102 -4.034081  0.710366
-ts-err-D: ij(   53,    53), M = 0.30935E-1, ew = 0.17473E-2, em = 0.34946E-2. avg_m = 0.58764E-05
-ts-err-E: ij(   53,  3113), M = 0.35769E-3, ew = -.79173E-3, em = -.15835E-2. avg_m = 0.24204E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.699E-3
+ts-Vha:  0.27383E+00 eV
+ts-scf:   11    -9045.442345    -9045.432505    -9045.432505  0.000676 -4.033947  0.039122
+ts-err-D: ij(   53,    53), M = 0.30952E-1, ew = 0.17226E-2, em = 0.34453E-2. avg_m = 0.58453E-05
+ts-err-E: ij(   53,  3113), M = 0.36343E-3, ew = -.78651E-3, em = -.15730E-2. avg_m = 0.24187E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.690    32.699     0.308    32.699     0.308 -6.972E-3
-ts-Vha:  0.29091E+00 eV
-ts-scf:   12    -9045.387804    -9045.425405    -9045.425405  0.003029 -4.034081  0.074751
-ts-err-D: ij(   53,    53), M = 0.30982E-1, ew = 0.17384E-2, em = 0.34769E-2. avg_m = 0.62783E-05
-ts-err-E: ij(   53,  3113), M = 0.35740E-3, ew = -.79241E-3, em = -.15848E-2. avg_m = 0.26200E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.452E-3
+ts-Vha:  0.26760E+00 eV
+ts-scf:   12    -9045.433762    -9045.433065    -9045.433065  0.000167 -4.033947  0.015954
+ts-err-D: ij(   53,    53), M = 0.30812E-1, ew = 0.15651E-2, em = 0.31301E-2. avg_m = 0.58212E-05
+ts-err-E: ij(   53,  3113), M = 0.43381E-3, ew = -.71578E-3, em = -.14316E-2. avg_m = 0.24585E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.828E-3
-ts-Vha:  0.24707E+00 eV
-ts-scf:   13    -9045.439252    -9045.432269    -9045.432269  0.000578 -4.034081  0.062954
-ts-err-D: ij(   53,    53), M = 0.30982E-1, ew = -.17357E-2, em = 0.34713E-2. avg_m = 0.60121E-05
-ts-err-E: ij(   53,  3113), M = 0.35831E-3, ew = -.79152E-3, em = -.15830E-2. avg_m = 0.24948E-05
+ts-q:    43.692    32.699     0.308    32.699     0.308 -5.180E-3
+ts-Vha:  0.28366E+00 eV
+ts-scf:   13    -9045.424550    -9045.428955    -9045.428955  0.000169 -4.033947  0.065041
+ts-err-D: ij(   53,    53), M = 0.31048E-1, ew = 0.17337E-2, em = 0.34675E-2. avg_m = 0.59560E-05
+ts-err-E: ij(   53,  3113), M = 0.34804E-3, ew = -.79794E-3, em = -.15959E-2. avg_m = 0.24727E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.691    32.699     0.308    32.699     0.308 -6.010E-3
-ts-Vha:  0.27452E+00 eV
-ts-scf:   14    -9045.422889    -9045.427658    -9045.427658  0.000332 -4.034081  0.045262
-ts-err-D: ij(   53,    53), M = 0.31050E-1, ew = 0.17331E-2, em = 0.34663E-2. avg_m = 0.58853E-05
-ts-err-E: ij(   53,  3113), M = 0.35116E-3, ew = -.79728E-3, em = -.15946E-2. avg_m = 0.24407E-05
+ts-q:    43.695    32.699     0.308    32.699     0.308 -1.962E-3
+ts-Vha:  0.21584E+00 eV
+ts-scf:   14    -9045.456996    -9045.442564    -9045.442564  0.000844 -4.033947  0.163977
+ts-err-D: ij(   53,    53), M = 0.31039E-1, ew = -.17318E-2, em = 0.34637E-2. avg_m = 0.59385E-05
+ts-err-E: ij(   53,  3113), M = 0.35011E-3, ew = -.79665E-3, em = -.15933E-2. avg_m = 0.24646E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.691    32.699     0.308    32.699     0.308 -6.403E-3
-ts-Vha:  0.29159E+00 eV
-ts-scf:   15    -9045.420371    -9045.423964    -9045.423964  0.000948 -4.034081  0.110963
-ts-err-D: ij(   53,    53), M = 0.31034E-1, ew = -.17296E-2, em = 0.34591E-2. avg_m = 0.61977E-05
-ts-err-E: ij(   53,  3113), M = 0.35352E-3, ew = -.79518E-3, em = -.15904E-2. avg_m = 0.25895E-05
+ts-q:    43.695    32.699     0.308    32.699     0.308 -2.755E-3
+ts-Vha:  0.23160E+00 eV
+ts-scf:   15    -9045.435138    -9045.438994    -9045.438994  0.000180 -4.033947  0.109978
+ts-err-D: ij(   53,    53), M = 0.31011E-1, ew = 0.17194E-2, em = 0.34387E-2. avg_m = 0.59150E-05
+ts-err-E: ij(   53,  3113), M = 0.35799E-3, ew = -.78986E-3, em = -.15797E-2. avg_m = 0.24565E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.692    32.699     0.308    32.699     0.308 -4.978E-3
-ts-Vha:  0.26531E+00 eV
-ts-scf:   16    -9045.434691    -9045.429281    -9045.429281  0.000395 -4.034081  0.024481
-ts-err-D: ij(   53,    53), M = 0.31012E-1, ew = -.17213E-2, em = 0.34426E-2. avg_m = 0.62146E-05
-ts-err-E: ij(   53,  3113), M = 0.35793E-3, ew = -.79080E-3, em = -.15816E-2. avg_m = 0.25986E-05
+ts-q:    43.694    32.699     0.308    32.699     0.308 -3.670E-3
+ts-Vha:  0.25014E+00 eV
+ts-scf:   16    -9045.430732    -9045.435041    -9045.435041  0.000236 -4.033947  0.046426
+ts-err-D: ij(   53,    53), M = 0.31025E-1, ew = -.17267E-2, em = 0.34534E-2. avg_m = 0.59530E-05
+ts-err-E: ij(   53,  3113), M = 0.35367E-3, ew = -.79370E-3, em = -.15874E-2. avg_m = 0.24722E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.685E-3
-ts-Vha:  0.26361E+00 eV
-ts-scf:   17    -9045.431756    -9045.430483    -9045.430483  0.000114 -4.034081  0.019245
-ts-err-D: ij(   44,    44), M = 0.31602E-1, ew = 0.11282E-2, em = 0.22563E-2. avg_m = 0.56193E-05
-ts-err-E: ij(   44,    44), M = -.94402E-1, ew = 0.55844E-3, em = 0.11169E-2. avg_m = 0.28320E-05
+ts-q:    43.694    32.699     0.308    32.699     0.308 -3.519E-3
+ts-Vha:  0.24624E+00 eV
+ts-scf:   17    -9045.436128    -9045.435553    -9045.435553  0.000071 -4.033947  0.059843
+ts-err-D: ij(   53,    53), M = 0.30970E-1, ew = 0.16890E-2, em = 0.33780E-2. avg_m = 0.59607E-05
+ts-err-E: ij(   53,  3113), M = 0.37307E-3, ew = -.77515E-3, em = -.15503E-2. avg_m = 0.24861E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.683    32.699     0.308    32.699     0.308 -1.399E-2
-ts-Vha:  0.47203E+00 eV
-ts-scf:   18    -9045.330917    -9045.384466    -9045.384466  0.001669 -4.034081  0.667627
-ts-err-D: ij(   44,    44), M = 0.31602E-1, ew = 0.11278E-2, em = 0.22555E-2. avg_m = 0.52972E-05
-ts-err-E: ij(   44,    44), M = -.94399E-1, ew = 0.55825E-3, em = 0.11165E-2. avg_m = 0.29777E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.588E-3
+ts-Vha:  0.26744E+00 eV
+ts-scf:   18    -9045.425706    -9045.430847    -9045.430847  0.000263 -4.033947  0.015993
+ts-err-D: ij(   53,    53), M = 0.31104E-1, ew = 0.17349E-2, em = 0.34698E-2. avg_m = 0.61222E-05
+ts-err-E: ij(   53,  3113), M = 0.33924E-3, ew = -.80250E-3, em = -.16050E-2. avg_m = 0.25521E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.678    32.699     0.308    32.699     0.308 -1.951E-2
-ts-Vha:  0.59272E+00 eV
-ts-scf:   19    -9045.321227    -9045.355127    -9045.355127  0.000943 -4.034081  1.053903
-ts-err-D: ij(   53,  3023), M = -.51280E-2, ew = -.44416E-2, em = -.88832E-2. avg_m = 0.40604E-05
-ts-err-E: ij(   53,    53), M = -.12153   , ew = -.20359E-2, em = 0.40718E-2. avg_m = 0.35246E-05
+ts-q:    43.696    32.699     0.308    32.699     0.308 -1.349E-3
+ts-Vha:  0.20003E+00 eV
+ts-scf:   19    -9045.457761    -9045.443907    -9045.443907  0.000966 -4.033947  0.212796
+ts-err-D: ij(   53,    53), M = 0.31008E-1, ew = 0.17181E-2, em = 0.34361E-2. avg_m = 0.59965E-05
+ts-err-E: ij(   53,  3113), M = 0.35842E-3, ew = -.78922E-3, em = -.15784E-2. avg_m = 0.24941E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.657    32.699     0.308    32.699     0.308 -4.014E-2
-ts-Vha:  0.10475E+01 eV
-ts-scf:   20    -9045.076732    -9045.232742    -9045.232742  0.003580 -4.034081  2.513642
-ts-err-D: ij(   53,    53), M = 0.31005E-1, ew = 0.17200E-2, em = 0.34399E-2. avg_m = 0.61334E-05
-ts-err-E: ij(   53,  3113), M = 0.35694E-3, ew = -.79019E-3, em = -.15804E-2. avg_m = 0.25579E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.222E-3
+ts-Vha:  0.25945E+00 eV
+ts-scf:   20    -9045.419549    -9045.432342    -9045.432342  0.000866 -4.033947  0.014060
+ts-err-D: ij(   53,    53), M = 0.31003E-1, ew = 0.17146E-2, em = 0.34292E-2. avg_m = 0.59943E-05
+ts-err-E: ij(   53,  3113), M = 0.36025E-3, ew = -.78748E-3, em = -.15750E-2. avg_m = 0.24940E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.694    32.699     0.308    32.699     0.308 -3.193E-3
-ts-Vha:  0.24430E+00 eV
-ts-scf:   21    -9045.623871    -9045.436671    -9045.436671  0.006184 -4.034081  0.050914
-ts-err-D: ij(   53,    53), M = 0.31003E-1, ew = -.17161E-2, em = 0.34321E-2. avg_m = 0.61305E-05
-ts-err-E: ij(   53,  3113), M = 0.35953E-3, ew = -.78822E-3, em = -.15764E-2. avg_m = 0.25586E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.299E-3
+ts-Vha:  0.26114E+00 eV
+ts-scf:   21    -9045.431688    -9045.432030    -9045.432030  0.000023 -4.033947  0.008304
+ts-err-D: ij(   53,    53), M = 0.30993E-1, ew = 0.17084E-2, em = 0.34169E-2. avg_m = 0.60082E-05
+ts-err-E: ij(   53,  3113), M = 0.36325E-3, ew = -.78447E-3, em = -.15689E-2. avg_m = 0.25020E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.000E-3
-ts-Vha:  0.25528E+00 eV
-ts-scf:   22    -9045.430038    -9045.433449    -9045.433449  0.000158 -4.034081  0.029446
-ts-err-D: ij(   53,    53), M = 0.31043E-1, ew = 0.17336E-2, em = 0.34672E-2. avg_m = 0.61037E-05
-ts-err-E: ij(   53,  3113), M = 0.34850E-3, ew = -.79790E-3, em = -.15958E-2. avg_m = 0.25413E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.401E-3
+ts-Vha:  0.26378E+00 eV
+ts-scf:   22    -9045.431227    -9045.431651    -9045.431651  0.000055 -4.033947  0.005412
+ts-err-D: ij(   53,    53), M = 0.30996E-1, ew = -.17124E-2, em = 0.34247E-2. avg_m = 0.60576E-05
+ts-err-E: ij(   53,  3113), M = 0.36102E-3, ew = -.78640E-3, em = -.15728E-2. avg_m = 0.25234E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.694    32.699     0.308    32.699     0.308 -3.399E-3
-ts-Vha:  0.24435E+00 eV
-ts-scf:   23    -9045.437904    -9045.435599    -9045.435599  0.000189 -4.034081  0.062067
-ts-err-D: ij(   53,    53), M = 0.31046E-1, ew = -.17341E-2, em = 0.34682E-2. avg_m = 0.61043E-05
-ts-err-E: ij(   53,  3113), M = 0.34793E-3, ew = -.79830E-3, em = -.15966E-2. avg_m = 0.25414E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.433E-3
+ts-Vha:  0.26461E+00 eV
+ts-scf:   23    -9045.431364    -9045.431514    -9045.431514  0.000104 -4.033947  0.006876
+ts-err-D: ij(   53,    53), M = 0.31015E-1, ew = 0.17243E-2, em = 0.34486E-2. avg_m = 0.61030E-05
+ts-err-E: ij(   53,  3113), M = 0.35439E-3, ew = -.79249E-3, em = -.15850E-2. avg_m = 0.25410E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.694    32.699     0.308    32.699     0.308 -3.385E-3
-ts-Vha:  0.24381E+00 eV
-ts-scf:   24    -9045.435623    -9045.435608    -9045.435608  0.000025 -4.034081  0.063952
-ts-err-D: ij(   53,    53), M = 0.31053E-1, ew = 0.17351E-2, em = 0.34702E-2. avg_m = 0.61104E-05
-ts-err-E: ij(   53,  3113), M = 0.34626E-3, ew = -.79929E-3, em = -.15986E-2. avg_m = 0.25434E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.287E-3
+ts-Vha:  0.26094E+00 eV
+ts-scf:   24    -9045.432639    -9045.432043    -9045.432043  0.000110 -4.033947  0.007255
+ts-err-D: ij(   53,    53), M = 0.31006E-1, ew = 0.17195E-2, em = 0.34390E-2. avg_m = 0.60861E-05
+ts-err-E: ij(   53,  3113), M = 0.35724E-3, ew = -.78998E-3, em = -.15800E-2. avg_m = 0.25345E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.694    32.699     0.308    32.699     0.308 -3.339E-3
-ts-Vha:  0.24210E+00 eV
-ts-scf:   25    -9045.435641    -9045.435615    -9045.435615  0.000102 -4.034081  0.069667
-ts-err-D: ij(   53,  3023), M = -.25803E-1, ew = -.25116E-1, em = -.50233E-1. avg_m = -.29342E-05
-ts-err-E: ij(   53,    53), M = -.11196   , ew = 0.11513E-1, em = 0.23026E-1. avg_m = 0.67326E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.439E-3
+ts-Vha:  0.26435E+00 eV
+ts-scf:   25    -9045.430725    -9045.431411    -9045.431411  0.000045 -4.033947  0.004632
+ts-err-D: ij(   53,    53), M = 0.31007E-1, ew = -.17205E-2, em = 0.34411E-2. avg_m = 0.60927E-05
+ts-err-E: ij(   53,  3113), M = 0.35666E-3, ew = -.79050E-3, em = -.15810E-2. avg_m = 0.25372E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.538    32.699     0.308    32.699     0.308 -1.592E-1
-ts-Vha:  0.36739E+01 eV
-ts-scf:   26    -9041.714751    -9044.146149    -9044.146149  0.026910 -4.034081 10.949605
-ts-err-D: ij(   53,    53), M = 0.31055E-1, ew = -.17352E-2, em = 0.34704E-2. avg_m = 0.61102E-05
-ts-err-E: ij(   53,  3113), M = 0.34594E-3, ew = -.79943E-3, em = -.15989E-2. avg_m = 0.25432E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.446E-3
+ts-Vha:  0.26434E+00 eV
+ts-scf:   26    -9045.431305    -9045.431359    -9045.431359  0.000018 -4.033947  0.004606
+ts-err-D: ij(   53,    53), M = 0.31010E-1, ew = 0.17219E-2, em = 0.34437E-2. avg_m = 0.61031E-05
+ts-err-E: ij(   53,  3113), M = 0.35576E-3, ew = -.79120E-3, em = -.15824E-2. avg_m = 0.25416E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.694    32.699     0.308    32.699     0.308 -3.302E-3
-ts-Vha:  0.24163E+00 eV
-ts-scf:   27    -9046.227971    -9045.435737    -9045.435737  0.026911 -4.034081  0.070697
-ts-err-D: ij(   53,    53), M = 0.31055E-1, ew = 0.17353E-2, em = 0.34706E-2. avg_m = 0.61106E-05
-ts-err-E: ij(   53,  3113), M = 0.34576E-3, ew = -.79954E-3, em = -.15991E-2. avg_m = 0.25432E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.369E-3
+ts-Vha:  0.26278E+00 eV
+ts-scf:   27    -9045.432077    -9045.431709    -9045.431709  0.000038 -4.033947  0.002868
+ts-err-D: ij(   53,    53), M = 0.31009E-1, ew = 0.17208E-2, em = 0.34417E-2. avg_m = 0.60895E-05
+ts-err-E: ij(   53,  3113), M = 0.35640E-3, ew = -.79067E-3, em = -.15813E-2. avg_m = 0.25357E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.694    32.699     0.308    32.699     0.308 -3.296E-3
-ts-Vha:  0.24161E+00 eV
-ts-scf:   28    -9045.435769    -9045.435753    -9045.435753  0.000014 -4.034081  0.070477
-ts-err-D: ij(   53,    53), M = 0.31056E-1, ew = 0.17354E-2, em = 0.34708E-2. avg_m = 0.61128E-05
-ts-err-E: ij(   53,  3113), M = 0.34557E-3, ew = -.79968E-3, em = -.15994E-2. avg_m = 0.25443E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.368E-3
+ts-Vha:  0.26273E+00 eV
+ts-scf:   28    -9045.431707    -9045.431709    -9045.431709  0.000030 -4.033947  0.002977
+ts-err-D: ij(   53,    53), M = 0.31008E-1, ew = 0.17204E-2, em = 0.34408E-2. avg_m = 0.60836E-05
+ts-err-E: ij(   53,  3113), M = 0.35669E-3, ew = -.79043E-3, em = -.15809E-2. avg_m = 0.25331E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.694    32.699     0.308    32.699     0.308 -3.319E-3
-ts-Vha:  0.24206E+00 eV
-ts-scf:   29    -9045.435550    -9045.435656    -9045.435656  0.000020 -4.034081  0.068797
-ts-err-D: ij(   53,    53), M = 0.31059E-1, ew = 0.17355E-2, em = 0.34711E-2. avg_m = 0.61223E-05
-ts-err-E: ij(   53,  3113), M = 0.34501E-3, ew = -.79999E-3, em = -.16000E-2. avg_m = 0.25485E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.374E-3
+ts-Vha:  0.26286E+00 eV
+ts-scf:   29    -9045.431640    -9045.431676    -9045.431676  0.000011 -4.033947  0.003292
+ts-err-D: ij(   53,    53), M = 0.31009E-1, ew = -.17213E-2, em = 0.34427E-2. avg_m = 0.60952E-05
+ts-err-E: ij(   53,  3113), M = 0.35606E-3, ew = -.79093E-3, em = -.15819E-2. avg_m = 0.25381E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.694    32.699     0.308    32.699     0.308 -3.384E-3
-ts-Vha:  0.24337E+00 eV
-ts-scf:   30    -9045.435031    -9045.435356    -9045.435356  0.000070 -4.034081  0.063424
-ts-err-D: ij(   53,    53), M = 0.31059E-1, ew = 0.17355E-2, em = 0.34711E-2. avg_m = 0.61245E-05
-ts-err-E: ij(   53,  3113), M = 0.34503E-3, ew = -.79998E-3, em = -.16000E-2. avg_m = 0.25495E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.361E-3
+ts-Vha:  0.26280E+00 eV
+ts-scf:   30    -9045.431810    -9045.431741    -9045.431741  0.000029 -4.033947  0.002836
+ts-err-D: ij(   53,    53), M = 0.31011E-1, ew = 0.17226E-2, em = 0.34452E-2. avg_m = 0.61033E-05
+ts-err-E: ij(   53,  3113), M = 0.35533E-3, ew = -.79158E-3, em = -.15832E-2. avg_m = 0.25414E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.694    32.699     0.308    32.699     0.308 -3.419E-3
-ts-Vha:  0.24401E+00 eV
-ts-scf:   31    -9045.435071    -9045.435219    -9045.435219  0.000009 -4.034081  0.061324
-ts-err-D: ij(   53,    53), M = 0.31070E-1, ew = 0.17348E-2, em = 0.34697E-2. avg_m = 0.62057E-05
-ts-err-E: ij(   53,  3113), M = 0.34234E-3, ew = -.80116E-3, em = -.16023E-2. avg_m = 0.25857E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.366E-3
+ts-Vha:  0.26280E+00 eV
+ts-scf:   31    -9045.431625    -9045.431684    -9045.431684  0.000026 -4.033947  0.003002
+ts-err-D: ij(   53,    53), M = 0.31014E-1, ew = 0.17242E-2, em = 0.34483E-2. avg_m = 0.61111E-05
+ts-err-E: ij(   53,  3113), M = 0.35440E-3, ew = -.79241E-3, em = -.15848E-2. avg_m = 0.25446E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.219E-3
-ts-Vha:  0.26099E+00 eV
-ts-scf:   32    -9045.427921    -9045.431736    -9045.431736  0.000587 -4.034081  0.005063
-ts-err-D: ij(   53,    53), M = 0.31055E-1, ew = 0.17353E-2, em = 0.34706E-2. avg_m = 0.61809E-05
-ts-err-E: ij(   53,  3113), M = 0.34455E-3, ew = -.80021E-3, em = -.16004E-2. avg_m = 0.25743E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.365E-3
+ts-Vha:  0.26271E+00 eV
+ts-scf:   32    -9045.431573    -9045.431629    -9045.431629  0.000032 -4.033947  0.003222
+ts-err-D: ij(   53,    53), M = 0.31011E-1, ew = 0.17225E-2, em = 0.34449E-2. avg_m = 0.60850E-05
+ts-err-E: ij(   53,  3113), M = 0.35550E-3, ew = -.79151E-3, em = -.15830E-2. avg_m = 0.25330E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.197E-3
-ts-Vha:  0.26118E+00 eV
-ts-scf:   33    -9045.432267    -9045.431992    -9045.431992  0.000209 -4.034081  0.004610
-ts-err-D: ij(   53,    53), M = 0.31055E-1, ew = 0.17355E-2, em = 0.34709E-2. avg_m = 0.61719E-05
-ts-err-E: ij(   53,  3113), M = 0.34502E-3, ew = -.80010E-3, em = -.16002E-2. avg_m = 0.25707E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.357E-3
+ts-Vha:  0.26295E+00 eV
+ts-scf:   33    -9045.431766    -9045.431695    -9045.431695  0.000054 -4.033947  0.002452
+ts-err-D: ij(   53,    53), M = 0.31017E-1, ew = 0.17258E-2, em = 0.34515E-2. avg_m = 0.60764E-05
+ts-err-E: ij(   53,  3113), M = 0.35368E-3, ew = -.79327E-3, em = -.15865E-2. avg_m = 0.25282E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.196E-3
-ts-Vha:  0.26036E+00 eV
-ts-scf:   34    -9045.432167    -9045.432074    -9045.432074  0.000098 -4.034081  0.008040
-ts-err-D: ij(   53,    53), M = 0.31059E-1, ew = -.17354E-2, em = 0.34708E-2. avg_m = 0.61814E-05
-ts-err-E: ij(   53,  3113), M = 0.34420E-3, ew = -.80047E-3, em = -.16009E-2. avg_m = 0.25747E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.279E-3
+ts-Vha:  0.26225E+00 eV
+ts-scf:   34    -9045.431917    -9045.431801    -9045.431801  0.000045 -4.033947  0.002360
+ts-err-D: ij(   53,    53), M = 0.31020E-1, ew = -.17279E-2, em = 0.34557E-2. avg_m = 0.61112E-05
+ts-err-E: ij(   53,  3113), M = 0.35224E-3, ew = -.79445E-3, em = -.15889E-2. avg_m = 0.25435E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.206E-3
-ts-Vha:  0.26119E+00 eV
-ts-scf:   35    -9045.431827    -9045.431959    -9045.431959  0.000105 -4.034081  0.004441
-ts-err-D: ij(   53,    53), M = 0.31059E-1, ew = -.17354E-2, em = 0.34708E-2. avg_m = 0.61823E-05
-ts-err-E: ij(   53,  3113), M = 0.34416E-3, ew = -.80048E-3, em = -.16010E-2. avg_m = 0.25751E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.291E-3
+ts-Vha:  0.26281E+00 eV
+ts-scf:   35    -9045.431433    -9045.431618    -9045.431618  0.000103 -4.033947  0.002086
+ts-err-D: ij(   53,    53), M = 0.31014E-1, ew = 0.17247E-2, em = 0.34494E-2. avg_m = 0.60731E-05
+ts-err-E: ij(   53,  3113), M = 0.35438E-3, ew = -.79268E-3, em = -.15854E-2. avg_m = 0.25270E-05
 ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.207E-3
-ts-Vha:  0.26119E+00 eV
-ts-scf:   36    -9045.431942    -9045.431951    -9045.431951  0.000004 -4.034081  0.004446
-ts-err-D: ij(   53,    53), M = 0.31059E-1, ew = -.17355E-2, em = 0.34711E-2. avg_m = 0.61772E-05
-ts-err-E: ij(   53,  3113), M = 0.34430E-3, ew = -.80051E-3, em = -.16010E-2. avg_m = 0.25730E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.212E-3
-ts-Vha:  0.26141E+00 eV
-ts-scf:   37    -9045.431924    -9045.431937    -9045.431937  0.000047 -4.034081  0.004042
-ts-err-D: ij(   53,    53), M = 0.31059E-1, ew = -.17355E-2, em = 0.34709E-2. avg_m = 0.61752E-05
-ts-err-E: ij(   53,  3113), M = 0.34415E-3, ew = -.80053E-3, em = -.16011E-2. avg_m = 0.25719E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.218E-3
-ts-Vha:  0.26157E+00 eV
-ts-scf:   38    -9045.431886    -9045.431913    -9045.431913  0.000037 -4.034081  0.004038
-ts-err-D: ij(   53,    53), M = 0.31056E-1, ew = 0.17353E-2, em = 0.34707E-2. avg_m = 0.61719E-05
-ts-err-E: ij(   53,  3113), M = 0.34434E-3, ew = -.80033E-3, em = -.16007E-2. avg_m = 0.25701E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.203E-3
-ts-Vha:  0.26159E+00 eV
-ts-scf:   39    -9045.432064    -9045.431988    -9045.431988  0.000029 -4.034081  0.003851
-ts-err-D: ij(   53,    53), M = 0.31057E-1, ew = -.17353E-2, em = 0.34707E-2. avg_m = 0.61759E-05
-ts-err-E: ij(   53,  3113), M = 0.34420E-3, ew = -.80039E-3, em = -.16008E-2. avg_m = 0.25720E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.225E-3
-ts-Vha:  0.26162E+00 eV
-ts-scf:   40    -9045.431756    -9045.431878    -9045.431878  0.000019 -4.034081  0.003074
-ts-err-D: ij(   53,    53), M = 0.31061E-1, ew = -.17354E-2, em = 0.34709E-2. avg_m = 0.61779E-05
-ts-err-E: ij(   53,  3113), M = 0.34405E-3, ew = -.80057E-3, em = -.16011E-2. avg_m = 0.25732E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.235E-3
-ts-Vha:  0.26151E+00 eV
-ts-scf:   41    -9045.431755    -9045.431813    -9045.431813  0.000042 -4.034081  0.004566
-ts-err-D: ij(   53,    53), M = 0.31059E-1, ew = -.17354E-2, em = 0.34707E-2. avg_m = 0.61766E-05
-ts-err-E: ij(   53,  3113), M = 0.34429E-3, ew = -.80040E-3, em = -.16008E-2. avg_m = 0.25724E-05
+ts-q:    43.693    32.699     0.308    32.699     0.308 -4.251E-3
+ts-Vha:  0.26213E+00 eV
+ts-scf:   36    -9045.432245    -9045.431923    -9045.431923  0.000119 -4.033947  0.001562
+ts-err-D: ij(   53,    53), M = 0.31017E-1, ew = 0.17263E-2, em = 0.34526E-2. avg_m = 0.60947E-05
+ts-err-E: ij(   53,  3113), M = 0.35333E-3, ew = -.79356E-3, em = -.15871E-2. avg_m = 0.25365E-05
 ts-q:         D        E1        C1        E2        C2        dQ
 ts-q:    43.693    32.699     0.308    32.699     0.308 -4.272E-3
-ts-Vha:  0.26175E+00 eV
-ts-scf:   42    -9045.431415    -9045.431619    -9045.431619  0.000019 -4.034081  0.004054
-ts-err-D: ij(   53,    53), M = 0.31048E-1, ew = 0.17348E-2, em = 0.34696E-2. avg_m = 0.61595E-05
-ts-err-E: ij(   53,  3113), M = 0.34556E-3, ew = -.79948E-3, em = -.15990E-2. avg_m = 0.25639E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.236E-3
-ts-Vha:  0.26173E+00 eV
-ts-scf:   43    -9045.431923    -9045.431768    -9045.431768  0.000104 -4.034081  0.003324
-ts-err-D: ij(   53,    53), M = 0.31049E-1, ew = 0.17348E-2, em = 0.34696E-2. avg_m = 0.61590E-05
-ts-err-E: ij(   53,  3113), M = 0.34553E-3, ew = -.79949E-3, em = -.15990E-2. avg_m = 0.25637E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.261E-3
-ts-Vha:  0.26194E+00 eV
-ts-scf:   44    -9045.431521    -9045.431648    -9045.431648  0.000008 -4.034081  0.003077
-ts-err-D: ij(   53,    53), M = 0.31050E-1, ew = 0.17349E-2, em = 0.34697E-2. avg_m = 0.61595E-05
-ts-err-E: ij(   53,  3113), M = 0.34546E-3, ew = -.79956E-3, em = -.15991E-2. avg_m = 0.25639E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.265E-3
-ts-Vha:  0.26194E+00 eV
-ts-scf:   45    -9045.431602    -9045.431626    -9045.431626  0.000005 -4.034081  0.003123
-ts-err-D: ij(   53,    53), M = 0.31048E-1, ew = 0.17347E-2, em = 0.34694E-2. avg_m = 0.61492E-05
-ts-err-E: ij(   53,  3113), M = 0.34591E-3, ew = -.79929E-3, em = -.15986E-2. avg_m = 0.25592E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.277E-3
-ts-Vha:  0.26204E+00 eV
-ts-scf:   46    -9045.431427    -9045.431530    -9045.431530  0.000047 -4.034081  0.002355
-ts-err-D: ij(   53,    53), M = 0.31048E-1, ew = 0.17347E-2, em = 0.34695E-2. avg_m = 0.61518E-05
-ts-err-E: ij(   53,  3113), M = 0.34582E-3, ew = -.79935E-3, em = -.15987E-2. avg_m = 0.25604E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.250E-3
-ts-Vha:  0.26185E+00 eV
-ts-scf:   47    -9045.431831    -9045.431675    -9045.431675  0.000014 -4.034081  0.003122
-ts-err-D: ij(   53,    53), M = 0.31040E-1, ew = -.17335E-2, em = 0.34670E-2. avg_m = 0.61205E-05
-ts-err-E: ij(   53,  3113), M = 0.34770E-3, ew = -.79813E-3, em = -.15963E-2. avg_m = 0.25463E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.267E-3
-ts-Vha:  0.26217E+00 eV
-ts-scf:   48    -9045.431282    -9045.431484    -9045.431484  0.000155 -4.034081  0.002100
-ts-err-D: ij(   53,    53), M = 0.31027E-1, ew = 0.17299E-2, em = 0.34598E-2. avg_m = 0.60966E-05
-ts-err-E: ij(   53,  3113), M = 0.35093E-3, ew = -.79564E-3, em = -.15913E-2. avg_m = 0.25363E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.261E-3
-ts-Vha:  0.26235E+00 eV
-ts-scf:   49    -9045.431336    -9045.431408    -9045.431408  0.000168 -4.034081  0.001719
-ts-err-D: ij(   53,    53), M = 0.31027E-1, ew = 0.17302E-2, em = 0.34603E-2. avg_m = 0.61057E-05
-ts-err-E: ij(   53,  3113), M = 0.35069E-3, ew = -.79580E-3, em = -.15916E-2. avg_m = 0.25404E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.262E-3
-ts-Vha:  0.26225E+00 eV
-ts-scf:   50    -9045.431453    -9045.431428    -9045.431428  0.000028 -4.034081  0.001193
-ts-err-D: ij(   53,    53), M = 0.31025E-1, ew = 0.17293E-2, em = 0.34587E-2. avg_m = 0.61032E-05
-ts-err-E: ij(   53,  3113), M = 0.35129E-3, ew = -.79530E-3, em = -.15906E-2. avg_m = 0.25395E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.286E-3
-ts-Vha:  0.26251E+00 eV
-ts-scf:   51    -9045.431181    -9045.431308    -9045.431308  0.000023 -4.034081  0.001069
-ts-err-D: ij(   53,    53), M = 0.31026E-1, ew = 0.17297E-2, em = 0.34594E-2. avg_m = 0.61065E-05
-ts-err-E: ij(   53,  3113), M = 0.35105E-3, ew = -.79551E-3, em = -.15910E-2. avg_m = 0.25410E-05
-ts-q:         D        E1        C1        E2        C2        dQ
-ts-q:    43.693    32.699     0.308    32.699     0.308 -4.268E-3
-ts-Vha:  0.26224E+00 eV
-ts-scf:   52    -9045.431501    -9045.431402    -9045.431402  0.000010 -4.034081  0.000813
+ts-Vha:  0.26236E+00 eV
+ts-scf:   37    -9045.431613    -9045.431770    -9045.431770  0.000059 -4.033947  0.000788
 
 SCF Convergence by DM+H criterion
-max |DM_out - DM_in|         :     0.0000097775
-max |H_out - H_in|      (eV) :     0.0008127480
-SCF cycle converged after 52 iterations
+max |DM_out - DM_in|         :     0.0000587394
+max |H_out - H_in|      (eV) :     0.0007880344
+SCF cycle converged after 37 iterations
 
 Using DM_out to compute the final energy and forces
-ts-Vha:  0.26224E+00 eV
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      60     237
+ts-Vha:  0.26236E+00 eV
 
-siesta: E_KS(eV) =            -9045.4314
+siesta: E_KS(eV) =            -9045.4318
 
-siesta: E_KS - E_eggbox =     -9045.4314
+siesta: E_KS - E_eggbox =     -9045.4318
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.168086
+   Tot   -0.000000   -0.000000    0.168105
 ----------------------------------------
-   Max    0.245166
-   Res    0.063373    sqrt( Sum f_i^2 / 3N )
+   Max    0.244870
+   Res    0.063316    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.245166    constrained
+   Max    0.244870    constrained
 
 Stress-tensor-Voigt (kbar):       40.80       40.80       28.94        0.00       -0.00       -0.00
-(Free)E + p*V (eV/cell)    -9050.7112
-Target enthalpy (eV/cell)    -9045.4314
+(Free)E + p*V (eV/cell)    -9050.7122
+Target enthalpy (eV/cell)    -9045.4318
 
 mulliken: Atomic and Orbital Populations:
 
@@ -1339,69 +1271,70 @@ mulliken: Qtot =      109.996
 coxmol: Writing XMOL coordinates into file au_111_capacitor.xyz                                                
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -896.844156
+siesta: Ebs     =      -896.833295
 siesta: Eions   =     11712.249174
 siesta: Ena     =       583.627911
-siesta: Ekin    =      6365.806413
-siesta: Enl     =     -2950.832988
+siesta: Ekin    =      6365.823242
+siesta: Enl     =     -2950.843345
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =        77.675922
-siesta: DUscf   =         3.825033
+siesta: DEna    =        77.671289
+siesta: DUscf   =         3.824560
 siesta: DUext   =         0.000000
-siesta: Exc     =     -1413.284518
+siesta: Exc     =     -1413.286253
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -9045.431501
-siesta: Etot    =     -9045.431402
-siesta: FreeEng =     -9045.431402
+siesta: Eharris =     -9045.431613
+siesta: Etot    =     -9045.431770
+siesta: FreeEng =     -9045.431770
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -896.844156
-siesta:       Kinetic =    6365.806413
-siesta:       Hartree =   21548.750603
+siesta:  Band Struct. =    -896.833295
+siesta:       Kinetic =    6365.823242
+siesta:       Hartree =   21548.762393
 siesta:       Eldau   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =   -1413.284518
-siesta:  Ion-electron =  -48509.640639
-siesta:       Ion-ion =   12962.936739
+siesta:   Exch.-corr. =   -1413.286253
+siesta:  Ion-electron =  -48509.667895
+siesta:       Ion-ion =   12962.936743
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -9045.431402
-siesta:         Fermi =      -4.034081
+siesta:         Total =   -9045.431770
+siesta:         Fermi =      -4.033947
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.000000   -0.000000    0.148264
-siesta:      2   -0.000000   -0.000000    0.007453
-siesta:      3    0.000000    0.000000    0.014848
-siesta:      4    0.000000    0.000000   -0.184525
-siesta:      5   -0.000000   -0.000001   -0.036481
-siesta:      6   -0.000000    0.000000    0.028299
-siesta:      7    0.000000    0.000000    0.245166
-siesta:      8   -0.000000   -0.000000   -0.020868
-siesta:      9    0.000000   -0.000000    0.004436
-siesta:     10   -0.000000    0.000000   -0.038506
+siesta:      1    0.000000    0.000000    0.148273
+siesta:      2   -0.000000    0.000000    0.007483
+siesta:      3    0.000000    0.000000    0.014727
+siesta:      4    0.000000    0.000000   -0.184278
+siesta:      5   -0.000000   -0.000001   -0.036576
+siesta:      6   -0.000000   -0.000000    0.028570
+siesta:      7    0.000000    0.000000    0.244870
+siesta:      8   -0.000000   -0.000000   -0.020890
+siesta:      9    0.000000   -0.000000    0.004407
+siesta:     10   -0.000000   -0.000000   -0.038481
 siesta: ----------------------------------------
-siesta:    Tot   -0.000000   -0.000000    0.168086
+siesta:    Tot   -0.000000   -0.000000    0.168105
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:     0.025463   -0.000000    0.000000
-siesta:     0.000000    0.025463    0.000000
+siesta:     0.025467   -0.000000    0.000000
+siesta:     0.000000    0.025467    0.000000
 siesta:    -0.000000   -0.000000    0.018063
 
 siesta: Cell volume =        229.595743 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:          -0.00025046         -0.00025574  Ry/Bohr**3
-siesta:          -0.02299626         -0.02348160  eV/Ang**3
-siesta:         -36.84446825        -37.62207208  kBar
-(Free)E+ p_basis*V_orbitals  =       -9038.502166
-(Free)Eharris+ p_basis*V_orbitals  =       -9038.502265
-ts-Vha:  0.26224E+00 eV
+siesta:          -0.00025049         -0.00025574  Ry/Bohr**3
+siesta:          -0.02299873         -0.02348162  eV/Ang**3
+siesta:         -36.84842634        -37.62210983  kBar
+(Free)E+ p_basis*V_orbitals  =       -9038.502534
+(Free)Eharris+ p_basis*V_orbitals  =       -9038.502377
+ts-Vha:  0.26236E+00 eV
 
-dhscf: Vacuum level (max, mean) =    1.160228    0.989655 eV
->> End of run:  18-AUG-2016  22:27:45
+dhscf: Vacuum level (max, mean) =    1.159526    0.988986 eV
+>> End of run:   2-JUL-2017  22:28:14
+Job completed

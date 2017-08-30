@@ -15,7 +15,7 @@ DM.NumberPulay           3
 DM.Tolerance         1.d-4
 MeshCutoff           100.0  Ry 
 SolutionMethod       Diagon
-
+Diag.DivideAndConquer false
 #SpinPolarized
 TDED.WF.Initialize
 

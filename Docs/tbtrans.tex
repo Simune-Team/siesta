@@ -14,7 +14,7 @@
 \input{tex/init.tex}
 
 % Set the date
-\date{November 29, 2016}
+\date{July 5, 2017}
 
 \begin{document}
 
@@ -35,7 +35,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge \textbf{T B t r a n s \, \, 4.1-b3}}
+{\Huge \textbf{T B t r a n s \, \, 4.1-b4}}
 
 \vspace{1cm}
 \hrulefill
@@ -57,7 +57,7 @@
 \section*{Contributors to \tbtrans}
 \addcontentsline{toc}{section}{Contributors to \siesta}
 
-\tbtrans\ is Copyright \copyright\ 2016-2016 by Nick R. Papior. The
+\tbtrans\ is Copyright \copyright\ 2016-2017 by Nick R. Papior. The
 original \tbtrans\ code was implemented by Mads Brandbyge, Jose
 L. Mozos, Jeremy Taylor, Pablo Ordejon and Kurt Stokbro. The current
 \tbtrans\ is implemented by the following contributors:
@@ -1158,6 +1158,17 @@ Brillouin zone.
 
 \subsubsection{Energy grid}
 
+\tbtrans\ uses a default energy reference as the Fermi level in the
+corresponding \tsiesta\ calculation. I.e. the equilibrium Fermi
+level. Thus one should be aware when using a shifted bias window that
+the calculated properties shifts according to the applied bias. For
+example; if one performs two equivalent 2-terminal calculations A)
+with $\mu_L=V$, $\mu_R=0$ and the other B) with $\mu_L=V/2$,
+$\mu_R=-V/2$ then the calculated properties are equivalent if one
+shifts the energy spectrum of A) by $E \to E - V/2$. Any 2-terminal
+calculation is recommended to be setup with $\mu_L=V/2$ and
+$\mu_R=-V/2$ due to the fixed energy reference, $E_R = 0$.
+
 The Green function is calculated at explicit energies and does not
 rely on diagonalization routines to retrieve the eigenspectrum. This
 is due to the smearing of states from the coupling with the
@@ -1257,6 +1268,7 @@ and transmission.
 
 By default the \tbtrans\ energy grid is defined as
 \begin{fdfexample}
+  TBT.Contours.Eta 0. eV
   %block TBT.Contours
     line
   %endblock TBT.Contours
@@ -1459,11 +1471,11 @@ is no need to specify the chemical potential
     String denoting how the expansion of the surface Green function
     file will be performed. This only affects the Green function file
     if \fdf*{Bloch} is larger than 1. By default the Green function
-    file will contain the fully expanded surface Green function,
-    Hamiltonian and overlap matrices (\fdf*{all}). One may reduce the
-    file size by setting this to \fdf*{Green} which only expands the
-    surface Green function. Finally \fdf*{none} may be passed to
-    reduce the file size to the bare minimum. 
+    file will contain the fully expanded surface Green function, but
+    not Hamiltonian and overlap matrices (\fdf*{Green}). One may
+    reduce the file size by setting this to \fdf*{Green} which only
+    expands the surface Green function. Finally \fdf*{none} may be
+    passed to reduce the file size to the bare minimum.
     %
     For performance reasons \fdf*{all} is preferred. 
 
@@ -1636,7 +1648,8 @@ algorithms to determine an optimal partitioning scheme. The following
 flag controls the partitioning for the device region.
 
 
-\begin{fdfentry}{TBT.BTD!Pivot.Device}[string]<atom-\nonvalue{first electrode}>
+\begin{fdfentry}{TBT.BTD!Pivot.Device}[string]<atom-\nonvalue{largest
+      overlapping electrode}>
 
   Decide on the partitioning for the BTD matrix. One may denote either
   \fdf*{atom+} or \fdf*{orb+} as a prefix which does the analysis on

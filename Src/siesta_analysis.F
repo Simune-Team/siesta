@@ -45,7 +45,7 @@
       use parallel, only: SIESTA_worker
       use files,       only : label_length
       use m_energies
-      use m_steps
+      use m_steps, only: final
       use m_ntm
       use m_spin,         only: nspin, spinor_dim, h_spin_dim
       use m_spin,         only: SpOrb, NonCol, SPpol, NoMagn
@@ -77,8 +77,6 @@
       real(dp)          :: polxyz(3,nspin)  ! Autom., small
       real(dp)          :: polR(3,nspin)    ! Autom., small
       real(dp)          :: qaux
-      real(dp)          :: Stot             ! Total spin polar.
-      real(dp)          :: Svec(3)          ! Total spin vector
       real(dp), pointer :: ebk(:,:,:)       ! Band energies
 
       integer           :: j, ix, ind, ik, io, ispin
@@ -89,9 +87,24 @@
 #endif
       type(filesOut_t)  :: filesOut  ! blank output file names
 
-!----------------------------------------------------------------------- BEGIN
+!-----------------------------------------------------------------------BEGIN
 
       if (SIESTA_worker) call timer("Analysis",1)
+
+      ! Check that we are converged in geometry,
+      ! if strictly required,
+      ! before carrying out any analysis
+      
+      quenched_MD =  ( (iquench > 0) .and.
+     $     ((idyn .eq. 1) .or. (idyn .eq. 3)) )
+
+      if ((nmove .ne. 0) .or. quenched_MD) then
+         if (GeometryMustConverge .and. (.not. relaxd)) then
+            call message("FATAL",
+     $           "GEOM_NOT_CONV: Geometry relaxation not converged")
+            call die("ABNORMAL_TERMINATION")
+         endif
+      endif
 
 !     All the comments below assume that this compatibility option
 !     is not used.
@@ -156,9 +169,6 @@
 
         ! This covers CG and MD-quench (verlet, pr), instances in which 
         ! "relaxd" is meaningful
-
-        quenched_MD =  ( (iquench > 0) .and.
-     $                   ((idyn .eq. 1) .or. (idyn .eq. 3)) )
 
         if ((nmove .ne. 0) .or. quenched_MD ) then
 
@@ -387,51 +397,7 @@
 !       DMs of the SCF run for the last geometry considered.
 !       This can be considered a feature or a bug.
 
-!     Print spin polarization
-      if (nspin .ge. 2) then
-        do ispin = 1,nspin
-          qspin(ispin) = 0.0_dp
-          do io = 1,no_l
-            do j = 1,numh(io)
-              ind = listhptr(io)+j
-              qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
-            enddo
-          enddo
-        enddo
-
-#ifdef MPI
-!       Global reduction of spin components
-        call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
-        qspin(1:nspin) = qtmp(1:nspin)
-#endif
-        if (nspin .eq. 2) then
-          if (IOnode) then
-            write(6,'(/,a,f12.6)')
-     &       'siesta: Total spin polarization (Qup-Qdown) =', 
-     &       qspin(1) - qspin(2)
-          endif
-          if (cml_p) call cmlAddProperty(xf=mainXML,
-     .         value=qspin(1)-qspin(2), dictref='siesta:qspin',
-     .         units='siestaUnits:spin')
-        elseif (nspin .eq. 4) then
-          call spnvec( nspin, qspin, qaux, Stot, Svec )
-          if (IONode) then
-             write(6,'(a,3f12.6)')
-     &            'siesta: Total spin polarization (x,y,z) = ',
-     &            qspin(3)*2, qspin(4)*2, qspin(1)-qspin(2)
-             write(6,'(a,4f12.6)')
-     &            'siesta: S , {S} = ', Stot, Svec
-            if (cml_p) then
-              call cmlAddProperty(xf=mainXML, value=Stot,
-     .             dictref='siesta:stot',
-     .             units='siestaUnits:spin')
-              call cmlAddProperty(xf=mainXML, value=Svec,
-     .             dictref='siesta:svec',
-     .             units='siestaUnits:spin')
-            endif !cml_p
-          endif
-        endif
-      endif
+      call print_spin(qspin)  ! qspin returned for use below
 
 !**   This uses the last computed dipole in dhscf during the scf cycle,
 !     which is in fact derived from the "in" DM.

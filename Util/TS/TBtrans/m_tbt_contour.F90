@@ -81,12 +81,7 @@ contains
     end if
     max_kT = maxval(mus(:)%kT)
 
-    ! We only allow the user to either use the old input format, or the new
-    ! per-electrode input
-
-    ! Bias-window setup
-    call my_setup(' ',N_tbt,tbt_c,tbt_io,max_kT)
-    
+    ! Get applied bias
     tmp = fdf_get('TS.Voltage',0._dp,'Ry')
     Volt = fdf_get('TBT.Voltage',tmp,'Ry')
     if ( abs(tmp-Volt) > 1.e-5_dp .and. Node == 0 ) then
@@ -94,6 +89,12 @@ contains
             &not equivalent!'
        write(*,'(a)') '*** WARNING: Be sure to use an interpolation scheme!'
     end if
+
+    ! Bias-window setup
+    call my_setup(' ',N_tbt,tbt_c,tbt_io,max_kT)
+
+    ! We only allow the user to either use the old input format, or the new
+    ! per-electrode input
 
     if ( N_tbt < 1 ) then
 

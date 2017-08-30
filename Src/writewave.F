@@ -99,7 +99,7 @@
          call die("WFS.BandMax > number of orbitals")
       endif
       if (wfs_band_max < wfs_band_min) then
-         call message("WFS.BandMax < WFS.BandMin." //
+         call message("WARNING","WFS.BandMax < WFS.BandMin." //
      $        " Nothing written to file")
       endif
 
@@ -426,7 +426,6 @@ C  Modules
 C
       use precision
       use parallel,    only : Node, Nodes
-      use parallel,    only : ParallelOverK, ResetFirstCall
       use fdf
       use densematrix, only : Haux, Saux, psi
       use alloc
@@ -435,10 +434,11 @@ C
       use siesta_geom,  only : isa
       use m_spin,       only : NoMagn, SPpol, NonCol, SpOrb
 
-
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
 #endif
+      use m_diag_option, only: Serial, ParallelOverK
+      use m_diag, only: diag_init
 
       implicit          none
 
@@ -474,7 +474,7 @@ C Dynamic arrays
       save Dnew, Enew, e1, e2, qk, qtot, temp, wk
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
-      logical  SaveParallelOverK
+      logical :: SaveParallelOverK
 
       h_spin_dim=size(H,dim=2)
 
@@ -511,18 +511,14 @@ C Check spin
       endif
 
 C Allocate local arrays - only aux is relevant here
-C     C RC  Changed for on-site SO
-      if (h_spin_dim >= 4) then
+      if ( h_spin_dim >= 4 ) then
          nhs = 2 * (2*nuotot) * (2*nuo)
       else
          nhs = 2 * nuotot * nuo
       endif
-      call re_alloc(Haux,1,nhs,name='Haux',routine='writewave')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='writewave')
-      call re_alloc(psi,1,nhs,name='psi',routine='writewave')
-C      call re_alloc(Haux,1,2*nuotot*nuo,name='Haux',routine='writewave')
-C      call re_alloc(Saux,1,2*nuotot*nuo,name='Saux',routine='writewave')
-C      call re_alloc(psi,1,2*nuotot*nuo,name='psi',routine='writewave')
+      call re_alloc(Haux,1,nhs,name='Haux',routine='densematrix')
+      call re_alloc(Saux,1,nhs,name='Saux',routine='densematrix')
+      call re_alloc(psi,1,nhs,name='psi',routine='densematrix')
 
 CC RC  ek has different arguments here than in 3.1.1 version that it is:
 C      allocate(ek(maxspn,nuo,nuotot)) and the next call to memory
@@ -612,15 +608,18 @@ CC RC Added for on-site SO
      .               Haux, Saux, psi, nuotot, occtol, 1, nuotot )
        else
 C Handle parallel over K points option which is not allowed for here
-         SaveParallelOverK = ParallelOverK
-         if ((Node .eq. 0) .and. ParallelOverK) then
-            write(6,"(a)")
-     $           "*** Note: ParallelOverK option " //
-     $           "not used for WF info generation"
-         endif
-         ParallelOverK = .false.
-         ResetFirstCall = .true.
-            
+          SaveParallelOverK = ParallelOverK
+          if ( ParallelOverK ) then
+             if ( Node .eq. 0 ) then
+                write(*,"(a)")
+     $               "*** Note: ParallelOverK option not used for "//
+     &               "WF info generation"
+             end if
+             ParallelOverK = .false.
+             Serial = Nodes == 1
+             call diag_init()
+          end if
+
          call diagk( h_spin_dim, nuo, no, maxspn, maxnh, maxnh,
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
@@ -628,9 +627,11 @@ C Handle parallel over K points option which is not allowed for here
      .               e1, e2, xij, indxuo, nk, kpoint, wk,
      .               ek, qk, Dnew, Enew, ef, efs, Entropy,
      .               Haux, Saux, psi, Haux, Saux, aux, nuotot,
-     .               occtol, 1 )
+     .               occtol, 1, nuotot )
+
          ParallelOverK = SaveParallelOverK
-         ResetFirstCall = .false.
+         if ( ParallelOverK ) Serial = .true.
+         
        endif
 CC RC Added for on-site SO
       elseif (NonCol) then
@@ -638,30 +639,34 @@ CC RC Added for on-site SO
           call diag2g( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, ek, qk,
-     .                 Dnew, Enew, ef, Entropy, psi,
+     .                 Dnew, Enew, ef, Entropy,
+     .                 Haux, Saux, psi, aux,
      .                 nuotot, occtol, 1, nuotot )
-        elseif (.not.gamma) then
+        else
           call diag2k( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .                 indxuo, nk, kpoint, wk, ek, qk, Dnew,
-     .                 Enew, ef, Entropy, psi,
-     .                 nuotot, occtol, 1 )
+     .                 Enew, ef, Entropy,
+     .                 Haux, Saux, psi, Haux, Saux, aux,
+     .                 nuotot, occtol, 1, nuotot )
         endif
       elseif (SpOrb) then
         if (gamma) then
           call diag3g( nuo, no, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, qtot, temp, e1, e2, ek, qk,
-     .                 Dnew, Enew, ef, Entropy, psi,
+     .                 Dnew, Enew, ef, Entropy,
+     .                 Haux, Saux, psi, aux,
      .                 nuotot, occtol, 1, nuotot )
-        elseif (.not.gamma) then
+        else
           call diag3k( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, qtot, temp, e1, e2, xij,
      .                 indxuo, nk, kpoint, wk, ek, qk, Dnew,
-     .                 Enew, ef, Entropy, psi,
-     .                 nuotot, occtol, 1 )
+     .                 Enew, ef, Entropy,
+     .                 Haux, Saux, psi, Haux, Saux, aux,
+     .                 nuotot, occtol, 1, nuotot )
         endif
       endif
 
@@ -671,7 +676,7 @@ C Free local arrays
       deallocate(muo)
       call memory('D','D',size(aux),'writewave')
       deallocate(aux)
-      call memory('D','I',size(ek),'writewave')
+      call memory('D','D',size(ek),'writewave')
       deallocate(ek)
 
 C This is the only exit point 

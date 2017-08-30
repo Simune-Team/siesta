@@ -48,7 +48,7 @@ C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      &                    lasto, lastkb, iphorb, iphkb,     
      &                    nlhmax, gamma,
-     $                    set_xijo, folding)
+     $                    set_xijo, folding, buffer)
 
       use precision
       use parallel,        only : Node, Nodes
@@ -81,7 +81,8 @@ C
       integer,        intent(out)   :: nlhmax
       logical, intent(in)           :: gamma
       logical, intent(in)           :: set_xijo
-      logical, intent(out)    :: folding
+      logical, intent(out)          :: folding
+      real(dp),intent(in),optional  :: buffer
 
       external               timer
 
@@ -104,7 +105,7 @@ C
 
       real(dp)
      &  rci, rcj, rck, rij, rik, rjk,
-     &  rmax, rmaxkb, rmaxo, rmaxldau
+     &  rmax, rmaxkb, rmaxo, rmaxldau, buffer_
 
       logical, save :: warn1 = .false.
 
@@ -151,6 +152,12 @@ C     Allocate local arrays that depend on parameters
       call re_alloc( knakb, 1, maxnkb, 'knakb', 'hsparse' )
       call re_alloc( rckb, 1, maxnkb, 'rckb', 'hsparse' )
       call re_alloc( index, 1, maxna, 'index', 'hsparse' )
+
+!     buffer is an additional buffer value to be added to the extent of
+!     the orbitals.
+      buffer_ = 0.0_dp
+      if (present(buffer)) buffer_ = buffer
+
 !
 !     Find maximum radius of the KB and LDA+U projectors of each species (and total)
 !     Also for orbitals (for possible future extra optimizations)
@@ -164,14 +171,14 @@ C     Allocate local arrays that depend on parameters
          ! Species orbital range
          rorbmax(is) = 0.0_dp
          do io = 1, nofis(is)
-            rorbmax(is) = max(rorbmax(is),rcut(is,io))
+            rorbmax(is) = max(rorbmax(is),rcut(is,io)+buffer_)
          enddo
          rmaxo = max(rmaxo, rorbmax(is))
          
          ! Species KB range
          rkbmax(is) = 0.0_dp
          do ikb = 1, nkbfis(is)
-            rkbmax(is) = max(rkbmax(is),rcut(is,-ikb))
+            rkbmax(is) = max(rkbmax(is),rcut(is,-ikb)+buffer_)
          enddo
          rmaxkb = max(rmaxkb, rkbmax(is))
          
@@ -181,7 +188,7 @@ C     Allocate local arrays that depend on parameters
            spp => species(is)
            do io = 1, spp%n_pjldaunl
              pp => spp%pjldau(io)
-             rldaumax(is) = max( rldaumax(is), pp%cutoff )
+             rldaumax(is) = max( rldaumax(is), pp%cutoff+buffer_ )
            enddo
          endif
          rmaxldau = max(rmaxldau, rldaumax(is))
@@ -241,7 +248,7 @@ C       Loop on orbitals of atom ia
           if (iio.gt.0) then
             is = isa(ia)
             ioa = iphorb(io)
-            rci = rcut(is,ioa)
+            rci = rcut(is,ioa)+buffer_
 
             ! To be used in nlefsm
             ! Mark atoms whose KB projs overlap this process's
@@ -301,7 +308,7 @@ C           through a KB or LDA+U projector
                 !reserve space for it)
                 if (.not.conect(jo)) then
                   joa = iphorb(jo)
-                  rcj = rcut(js,joa)
+                  rcj = rcut(js,joa)+buffer_
 C                 Find if there is direct overlap
                   if ( rci+rcj > rij ) then
                     conect(jo) = .true.
@@ -393,7 +400,7 @@ C       Loop on orbitals of atom ia
 
             is = isa(ia)
             ioa = iphorb(io)
-            rci = rcut(is,ioa)
+            rci = rcut(is,ioa)+buffer_
 
 C           Find overlaping KB and LDA+U projectors
             if ( negl .and. switch_ldau ) then
@@ -438,7 +445,7 @@ C           through a KB or LDA+U projector
               do jo = lasto(ja-1)+1,lasto(ja)
 
                 joa = iphorb(jo)
-                rcj = rcut(js,joa)
+                rcj = rcut(js,joa)+buffer_
 
                 ! Check connectivity
                 connected = rci + rcj > rij

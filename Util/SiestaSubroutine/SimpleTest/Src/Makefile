@@ -30,10 +30,11 @@ VPATH=$(SRC_DIR)
 #
 # default: simple_pipes_serial simple_sockets_serial clean
 
+all: default
 default: simple_pipes_serial simple_pipes_parallel \
 	simple_sockets_serial simple_sockets_parallel \
-	simple_mpi_serial simple_mpi_parallel clean 
-#
+	simple_mpi_serial simple_mpi_parallel
+
 ARCH_MAKE=$(OBJ_DIR)/arch.make
 include $(ARCH_MAKE)
 #
@@ -94,12 +95,13 @@ simple_mpi_parallel: libs_collected simple_mpi_parallel.o
 	$(FC) $(LDFLAGS) -o simple_mpi_parallel \
 	      simple_mpi_parallel.o $(ALL_LIBS)
 #
-clean: 
+intermediate: 
 	@echo "==> Cleaning intermediate files ONLY"
-	@echo "==> Use make pristine to remove executable files"
+	@echo "==> Use make clean to remove executable files"
 	rm -f *.a *.o *.mod libs_collected
 #
-pristine: 
+pristine: clean
+clean: 
 	@echo "==> Cleaning all intermediate and executable files"
 	rm -f simple_pipes_serial simple_pipes_parallel 
 	rm -f simple_sockets_serial simple_sockets_parallel 

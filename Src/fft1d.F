@@ -143,7 +143,7 @@ C WRITTEN BY J.M.SOLER. MAY/95.
       ENDDO
       if (Ionode)
      $    write(6,*) 'NFFT: NO SUITABLE INTEGER FOUND FOR N =', NMIN
-      call die()
+      call die("see above")
       END SUBROUTINE nfft
 
 

@@ -34,9 +34,10 @@ MODULE m_sankey_change_basis
 !********************************************************************************
 
   use precision
-  use parallel,            only : Node, Nodes,BlockSize, IONode, ParallelOverK
+  use parallel,            only : Node, Nodes,BlockSize, IONode 
   use parallelsubs,        only : GlobalToLocalOrb, GetNodeOrbs,               &
                                   LocalToGlobalOrb
+  use m_diag_option,       only : ParallelOverK
   use fdf
   use alloc
   use sys, only: die

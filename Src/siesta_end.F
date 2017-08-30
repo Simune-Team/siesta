@@ -36,12 +36,17 @@
       use m_rhog,          only : resetRhog
       ! NP, new mixing
       use m_mixing_scf,    only : mixers_scf_reset
+      USE siesta_options,  only : isolve, SOLVE_CHESS
+#ifdef SIESTA__CHESS
+      use m_chess, only: CheSS_finalize
+#endif
 
 #ifdef SIESTA__FLOOK
       use flook_siesta,    only : slua_close
       use siesta_options,  only : LUA
 #endif
 
+      use m_diag, only: diag_exit
 
 #ifdef TRACING
       use extrae_eventllist, only : writeList, deleteList, eventlist
@@ -74,6 +79,15 @@
       call resetDscfPointers( )
       call resetRhog()
       call mixers_scf_reset()
+
+      ! Clean diagonalization
+      call diag_exit()
+
+#ifdef SIESTA__CHESS
+      if (isolve == SOLVE_CHESS) then
+          call CheSS_finalize()
+      end if
+#endif
       
 !     Output memory use up to the end of the program
 !!      call printmemory( 6, 1 )
@@ -112,6 +126,10 @@
       endif  ! SIESTA_worker
 
 ! Finalize MPI, unless siesta is running as a subroutine
+      !
+      ! Add stamp to MESSAGES file
+      call message('INFO','Job completed')
+      
 #ifdef MPI
       MPIerror = MPI_SUCCESS
       if (.not.siesta_subroutine) call MPI_Finalize( MPIerror )

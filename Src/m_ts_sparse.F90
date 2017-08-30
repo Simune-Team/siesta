@@ -46,6 +46,7 @@ module m_ts_sparse
   ! After using this sparsity pattern, we do not need the listud[g] arrays
   ! as this sparsity pattern is a reflection of the mask used by listud[g]
   ! This reflects the local sparsity pattern updated elements.
+  ! This is a *SORTED* sparse matrix
   type(Sparsity), save :: ltsup_sp_sc ! TS-update-local (SC)
 
   ! This is an index array which points from ltsup_sp_sc to the local siesta
@@ -280,6 +281,8 @@ contains
   subroutine ts_Sp_calculation(dit,s_sp,N_Elec,Elecs, &
        ucell, nsc, isc_off, &
        ts_sp)
+
+    use parallel, only: IONode
     
     use class_OrbitalDistribution
     use class_Sparsity
@@ -302,12 +305,17 @@ contains
     type(tRgn) :: r_oE(N_Elec), r_tmp1, r_tmp2
     integer :: iEl, i
 
+    integer :: init_nz, old_nz
+
     if ( r_oBuf%n > 0 ) then
        ! Remove buffer atoms...
        call Sp_remove_region(dit,s_sp,r_oBuf,ts_sp)
     else
        ts_sp = s_sp
     end if
+
+    ! Get initial number of nnz
+    init_nz = nnzs(ts_sp)
 
     ! Remove all electrode to other side connections
     ! this only has effect when we cross 
@@ -327,9 +335,12 @@ contains
        ! direction in the big cell
        i = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
 
+       old_nz = nnzs(ts_sp)
        ! Remove connections from this electrode across the boundary...
        call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, &
             i, ts_sp, r = r_tmp2)
+       ! Update init_nz for the valid removed elements
+       init_nz = init_nz - (old_nz - nnzs(ts_sp))
 
        ! We also be sure to remove all direct connections
        if ( iEl > 1 ) then
@@ -344,6 +355,13 @@ contains
        call rgn_delete(r_tmp1,r_tmp2)
        
     end do
+
+    i = nnzs(ts_sp)
+    if ( i < init_nz .and. IONode ) then
+       write(*,'(/a,i0,a/)')'*** WARNING! Removed ',init_nz - i, ' elements &
+            &which connect electrodes across the device region!'
+    end if
+    
     do iEl = 1 , N_Elec
        call rgn_delete(r_oE(iEl))
     end do

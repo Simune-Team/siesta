@@ -74,7 +74,7 @@
 %  \end{fdfentry}
 % 
 % Additionally one may create dependency flags to make it
-% easy to see dependencies on the flags
+% easy to see dependencies between flags
 %  \begin{fdfentry}{FDF.Flag}[integer]<0>
 %    \fdfdepend{FDF.First, FDF.Second}
 %
@@ -149,7 +149,7 @@
 \section*{Contributors to \siesta}
 \addcontentsline{toc}{section}{Contributors to \siesta}
 
-\siesta\ is Copyright \copyright\  1996-2016 by The Siesta Group:
+\siesta\ is Copyright \copyright\  1996-2017 by The Siesta Group:
 \vspace{0.5cm}
 
 \hbox{ \hskip 0.1cm
@@ -411,11 +411,18 @@ and E. Canadell, Structure and Bonding \textbf{113},
 Extensive review of applications as of summer 2003.
 
 \item
+ ``Improvements on non-equilibrium and transport Green function techniques: The next-generation tranSIESTA'',
+ Nick Papior, Nicolas Lorente, Thomas Frederiksen, Alberto García and
+ Mads Brandbyge, Computer Physics Communications, \textbf{212}, 8--24 (2017).
+
+ Description of the \tsiesta\ method.
+
+\item
  ``Density-functional method for nonequilibrium electron transport'',
  Mads Brandbyge, Jose-Luis Mozos, Pablo Ordej\'on, Jeremy Taylor,
  and Kurt Stokbro, Phys. Rev. B \textbf{65}, 165401 (2002).
 
- Description of the \tsiesta\ method.
+ Description of the original \tsiesta\ method (prior to 4.1).
 
 \end{itemize}
 
@@ -501,7 +508,7 @@ for creating the final \file{arch.make}.
 % inspiration by looking at the actual \file{arch.make} examples in
 % the \shell{Src/Sys} subdirectory. If you intend to create a parallel
 % version of \siesta, make sure you have all the extra support libraries
-% (\program{MPI}, \program{scalapack}, \program{blacs}\dots) (see Sec.~\ref{sec:parallel}).
+% (\program{MPI}, \program{ScaLAPACK}, \program{blacs}\dots) (see Sec.~\ref{sec:parallel}).
   
 % Optionally, the command \shell{../Src/configure} will start an
 % automatic scan of your system and try to build an \file{arch.make}
@@ -824,7 +831,24 @@ libraries
 \end{shellexample}
   \index{compile!pre-processor!-DSIESTA\_\_METIS}
 
+  
+  \item[\href{http://elpa.mpcdf.mpg.de}{ELPA}]%
+  \index{ELPA}%
+  \index{External library!ELPA}%
+  The ELPA\cite{ELPA,ELPA-1} library provides faster diagonalization routines.
 
+  The required version of ELPA \emph{must} be later than 2017.05.
+  Add these flags to your \file{arch.make} file to enable ELPA
+\begin{shellexample}
+  LIBS += -L/opt/elpa/lib -lelpa <>
+  FPPFLAGS += -DSIESTA__ELPA -I/opt/elpa/include/elpa-<>/modules
+\end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_ELPA}
+  where \shell{<>} are any libraries that ELPA depend on.
+
+  \note ELPA can only be used in the parallel version of \siesta.
+
+  
   \item[\href{http://mumps.enseeiht.fr}{MUMPS}]%
   \index{MUMPS}%
   \index{External library!MUMPS}%
@@ -879,6 +903,25 @@ libraries
 \end{shellexample}
 
 
+  \item[CheSS]%
+  \index{CheSS}%
+  \index{External library!CheSS}%
+  \siesta\ allows calculation of the electronic structure through the
+  use of the Order-N method \program{CheSS}\footnote{See
+      \url{https://launchpad.net/chess}.}. To enable this solver (see
+  \fdf{SolutionMethod}) one needs to first compile the
+  \program{CheSS}-suite and subsequently to add the following to the
+  \file{arch.make}. Here \program{<build-dir>} is the build-directory
+  of the \program{CheSS} suite:  
+
+\begin{shellexample}
+  LIBS += -L<build-dir> -lCheSS-1 -lfutile-1 -lyaml
+  INCFLAGS += -I<build-dir>/install/include
+  FPPFLAGS += -DSIESTA__CHESS
+\end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_CHESS}
+
+  
   \item[\href{https://github.com/electronicstructurelibrary/flook}{flook}]%
   \index{flook}%
   \index{External library!flook}%
@@ -1327,7 +1370,7 @@ default if a given tag is not found when needed (see \shell{fdf.log}).
   same species, but with a different pseudopotential or basis set are
   counted as different species.
 
-  \note is not required to be set.
+  \note This is not required to be set.
   
 \end{fdfentry}
 
@@ -1335,7 +1378,7 @@ default if a given tag is not found when needed (see \shell{fdf.log}).
 
   Number of atoms in the simulation.
 
-  \note is not required to be set.
+  \note This is not required to be set.
 
 \end{fdfentry}
 
@@ -1367,7 +1410,7 @@ default if a given tag is not found when needed (see \shell{fdf.log}).
 
   For atomic numbers over $200$ or below $-200$ you should read \fdf{SyntheticAtoms}.
 
-  \note this block is mandatory.
+  \note This block is mandatory.
   
 \end{fdfentry}
 
@@ -1867,7 +1910,7 @@ set to their problem under consideration.
     valence shell of the ground-state atomic configuration. They
     polarize the corresponding $l-1$ shell.
 
-    \note the ground-state atomic configuration used internally by
+    \note The ground-state atomic configuration used internally by
     \siesta\ is defined in the source file
     \shell{Src/periodic\_table.f}.  For some elements (e.g., Pd), the
     configuration might not be the standard one\index{Ground-state
@@ -2835,7 +2878,7 @@ modified xyz format) which must be described within a
   \fdf{AtomicCoordinatesFormat}, and \shell{isa(ia)} is the species
   index of atom \shell{ia}.
 
-  \note this block \emph{must} be present in the fdf file. If
+  \note This block \emph{must} be present in the fdf file. If
   \fdf{NumberOfAtoms} is not specified, \fdf{NumberOfAtoms} will be
   defaulted to the number of atoms in this block.
 
@@ -3629,8 +3672,8 @@ are always stored in the file \sysfile{KP}.
 
   Choose the spin-components in the simulation.
 
-  \note this flag has precedence over \fdf*{SpinOrbit}, \fdf*{NonCollinearSpin} and
-  \fdf*{SpinPolarized} while these older flags may still be used.
+  \note This flag has precedence over \fdf*{SpinOrbit}, \fdf*{NonCollinearSpin} and
+  \fdf*{SpinPolarized} while these deprecated flags may still be used.
   \begin{fdfoptions}
 
     \option[non-polarized]%
@@ -3962,7 +4005,7 @@ by potentially saving many self-consistency steps in production runs.
     difference between the spinor components 
   \end{fdfoptions}
 
-  \note this option only influences density-matrix ($\DM$) or
+  \note This option only influences density-matrix ($\DM$) or
   Hamiltonian ($\Ham$) mixing when using anything but the
   \fdf*{linear} mixing scheme. And it does not influence not charge
   ($\rho$) mixing.
@@ -4255,7 +4298,7 @@ control commands. This can greatly speed up convergence.
     Define the maximum number of iterations this mixer should run
     before changing to another mixing method.
 
-    \note this \emph{must} be used in conjunction with the \fdf*{next} setting.
+    \note This \emph{must} be used in conjunction with the \fdf*{next} setting.
 
     \option[next \fdf*{<>}]%
     \fdfindex*{SCF.Mixer.<>!next}%
@@ -4390,7 +4433,7 @@ should be performed.
   improves the quality of the final Kohn-Sham energy and of the forces
   when mixing the DM.
 
-  \note see \fdf{Compat!Pre-v4-DM-H}.
+  \note See \fdf{Compat!Pre-v4-DM-H}.
 
 \end{fdflogicalF}
 
@@ -4403,7 +4446,7 @@ should be performed.
   of band structures) more consistent, as they will be able to use the
   same H used to generate the last density matrix.
   
-  \note see \fdf{Compat!Pre-v4-DM-H}.
+  \note See \fdf{Compat!Pre-v4-DM-H}.
 
 \end{fdflogicalF}
 
@@ -4916,7 +4959,7 @@ The Density matrix can be:
   
   \siesta\ will continue even if \sysfile*{DM} is not found.
 
-  \note that if the spin settings has changed \siesta\ allows reading
+  \note That if the spin settings has changed \siesta\ allows reading
   a \sysfile*{DM} from a similar calculation with different \fdf{Spin}
   option. This may be advantageous when going from non-polarized
   calculations to polarized, and beyond, see \fdf{Spin} for details. 
@@ -5052,7 +5095,7 @@ The Density matrix can be:
   necessary that the basis sets are ``similar'' (a requirement if
   density-matrices are to be read in).
 
-  \note this is an experimental feature. Until robust checks are
+  \note This is an experimental feature. Until robust checks are
   implemented, care must be taken to make sure that the FFT grids in
   the \sysfile*{grid.nc} file and in \siesta\ are the same.
 
@@ -5070,7 +5113,7 @@ The Density matrix can be:
   charge is particularly useful to give a good starting point for
   slightly different geometries.
 
-  \note this is an experimental feature. Until robust checks are
+  \note This is an experimental feature. Until robust checks are
   implemented, care must be taken to make sure that the FFT grids in
   the \sysfile*{grid.nc} file and in Siesta are the same.
 
@@ -5132,7 +5175,7 @@ analysis of data and to increase the efficiency.
   Equivalent to \fdf{Write!DM}, but will only write at the end of each
   SCF loop.
 
-  \note the file generated depends on \fdf{SCF.MixAfterConvergence}.
+  \note The file generated depends on \fdf{SCF.MixAfterConvergence}.
 
 \end{fdfentry}  
 
@@ -5154,7 +5197,7 @@ analysis of data and to increase the efficiency.
   Equivalent to \fdf{Write!H}, but will only write at the end of each
   SCF loop.
 
-  \note the file generated depends on \fdf{SCF.MixAfterConvergence}.
+  \note The file generated depends on \fdf{SCF.MixAfterConvergence}.
 
 \end{fdfentry}  
 
@@ -5366,7 +5409,7 @@ simultaneously for complete control.
   information as \file{BASIS\_ENTHALPY} but using the Harris energy
   instead of the Kohn-Sham energy.
 
-  \note setting this to \fdftrue\ makes \fdf{SCF.DM!Converge}
+  \note Setting this to \fdftrue\ makes \fdf{SCF.DM!Converge}
   \fdf{SCF.H!Converge} default to \fdffalse.
 
 \end{fdflogicalF}
@@ -5447,7 +5490,7 @@ the issue (see Sec.~\ref{sec:filtering}).
   to save index storage on the mesh. It affects the memory
   requirements and the CPU time, but not the results. 
 
-  \note the default value might be a bit conservative. Users might
+  \note The default value might be a bit conservative. Users might
   experiment with higher values, 4 or 6, to lower the memory and
   cputime usage.
 
@@ -5618,7 +5661,7 @@ the issue (see Sec.~\ref{sec:filtering}).
   It will be particularly helpful in atoms with substantial partial
   core or semicore electrons.
 
-  \note this should only be used for fixed cell calculations, i.e. not
+  \note This should only be used for fixed cell calculations, i.e. not
   with \fdf{MD.VariableCell}.
 
   For the time being, it is up to the user to obtain the Fourier
@@ -5648,7 +5691,7 @@ the issue (see Sec.~\ref{sec:filtering}).
   which do not overlap. These come from the KB projectors.  Neglecting
   them makes the Hamiltonian more sparse, and the calculation faster.
   
-  \note use with care!
+  \note Use with care!
 
 \end{fdflogicalF}
 
@@ -5663,7 +5706,6 @@ the issue (see Sec.~\ref{sec:filtering}).
   
   These files are created
   \begin{itemize}
-  
     \item \file{H\_MIXED}; the Hamiltonian after
     mixing
     
@@ -5784,8 +5826,8 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
   Character string to choose among diagonalization (\fdf*{diagon}),
   cubic-scaling minimization (\fdf*{OMM}), Order-N (\fdf*{OrderN})
-  solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, or the
-  PEXSI method (\fdf*{PEXSI}).
+  solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, the
+  PEXSI method (\fdf*{PEXSI}) or the \fdf*{CheSS} solver.
   
 \end{fdfentry}
 
@@ -5793,62 +5835,33 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 \subsubsection{Diagonalization options}
 
 \begin{fdfentry}{NumberOfEigenStates}[integer]<\nonvalue{all orbitals}>
+  \fdfdepend{Diag!Algorithm}
 
   This parameter allows the user to reduce the number of eigenstates
   that are calculated from the maximum possible. The benefit is that,
-  for a gamma point calculation, the cost of the diagonalisation is
+  for any calculation, the cost of the diagonalization is
   reduced by finding fewer eigenvectors. For example, during a
   geometry optimisation, only the occupied states are required rather
   than the full set of virtual orbitals. Note, that if the electronic
   temperature is greater than zero then the number of partially
   occupied states increases, depending on the band gap.  The value
-  specified must greater than the number of occupied states and less
+  specified must be greater than the number of occupied states and less
   than the number of basis functions.
+
+  If a \emph{negative} number is passed it corresponds to the number
+  of orbitals above the total charge of the system. In effect it
+  corresponds to the number of orbitals above the Fermi level for zero
+  temperature. I.e. if this option is $-2$ for a system of 20 orbitals
+  with 10 electrons it is equivalent to $12$.
+
+  \note If experiencing \shell{PDORMTR} errors in $\Gamma$
+  calculations with \fdf*{MRRR} algorithm, it is because of a buggy
+  ScaLAPACK implementation, simply use another algorithm.
+
+  \note This only affects the \fdf*{MRRR}, \fdf*{ELPA} and
+  \fdf*{Expert} diagonalization routines.
   
 \end{fdfentry}
-
-\begin{fdflogicalF}{Diag!ELPA}
-
-  (For parallel gamma-point calculations without spin orbit only) Use
-  the ELPA routines for diagonalization.  Specifying a number of
-  eigenvectors to store is possible through the symbol
-  \fdf{NumberOfEigenStates} (see above).
-
-  A description of some algorithms present in ELPA can be found in:
-
-  T. Auckenthaler, V. Blum, H.-J. Bungartz, T. Huckle, R. Johanni,
-  L. Kr\"amer, B. Lang, H. Lederer, and P. R. Willems, ``Parallel
-  solution of partial symmetric eigenvalue problems from electronic
-  structure calculations'', Parallel Computing 37, 783-794 (2011).
-  doi:10.1016/j.parco.2011.05.002.
-
-  Marek, A.; Blum, V.; Johanni, R.; Havu, V.; Lang, B.; Auckenthaler,
-  T.; Heinecke, A.; Bungartz, H.-J.; Lederer, H.  ``The ELPA library:
-  scalable parallel eigenvalue solutions for electronic structure
-  theory and computational science'', Journal of Physics Condensed
-  Matter, 26 (2014) doi:10.1088/0953-8984/26/21/213201
-
-  \note It is not compatible with the \fdf{Diag!ParallelOverK}
-  option.
-  
-\end{fdflogicalF}
-
-\begin{fdflogicalF}{Diag!MRRR}
-
-  For parallel gamma-point calculations without spin orbit only.
-
-  Use the MRRR method in Scalapack for diagonalization. Specifying a
-  number of eigenvectors to store is possible through the symbol
-  \fdf{NumberOfEigenStates} (see above).
-
-  \note it is not compatible with the \fdf{Diag!ParallelOverK}
-  option.
-
-  \note The MRRR method is defaulted to be compiled in, however, if
-  your ScaLAPACK library does not contain the relevant sources one
-  should add this pre-processor flag \texttt{-DSIESTA\_\_NO\_MRRR}
-  \index{compile!pre-processor!-DSIESTA\_\_NO\_MRRR}
-\end{fdflogicalF}
 
 
 \begin{fdflogicalF}{Diag!UseNewDiagk}
@@ -5879,49 +5892,276 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 \end{fdflogicalF}
 
 
-\begin{fdflogicalT}{Diag!DivideAndConquer}
+\begin{fdflogicalT}{Diag!Use2D}
 
-  Logical to select whether the normal or Divide and Conquer
-  algorithms are used within the Lapack diagonalisation routines.
+  Determine whether a 1D or 2D data decomposition should be used when
+  calling ScaLAPACK. The use of 2D leads to superior scaling on large
+  numbers of processors and is therefore the default. This option only
+  influences the parallel performance.
+
+  \note If \fdf{Diag!ProcessorY} is $1$ or the total number of
+  processors, then this flag will default to \fdffalse.
 
 \end{fdflogicalT}
 
-\begin{fdflogicalF}{Diag!AllInOne}
+\begin{fdfentry}{Diag!ProcessorY}[integer]<$\sim \sqrt{\mathrm N}$>
+  \fdfdepend{Diag!Use2D}
 
-  Logical to select whether a single call to lapack/scalapack is made
-  to perform the diagonalisation or whether the individual steps are
-  controlled by \siesta. Normally this option should not need to be
-  used.
+  Set the number of processors in the 2D distribution along the rows.
+  Its default is equal to the lowest multiple of $\mathrm N$ (number
+  of MPI cores) below $\sqrt{\mathrm N}$ such that, ideally, the
+  distribution will be a square grid.
+
+  The input is required to be a multiple of the total number of MPI
+  cores but \siesta\ will reduce the input value such that it
+  coincides with this.
+
+  Once the lowest multiple closest to $\sqrt{\mathrm N}$, or the input, is
+  determined the 2D distribution will be $\mathrm{ProcessorY}
+  \times\mathrm{N}/\mathrm{ProcessorY}$, rows $\times$ columns.
+
+  \note If the automatic correction (lowest multiple of MPI cores) is
+  $1$ the default of \fdf{Diag!Use2D} will be \fdffalse.
+
+\end{fdfentry}
+
+\begin{fdfentry}{Diag!BlockSize}[integer]<\fdfvalue{BlockSize}>
+  \fdfdepend{Diag!Use2D}
+  
+  The block-size used for the 2D distribution in the ScaLAPACK calls.
+  This number greatly affects the performance of ScaLAPACK.
+
+  \note If \fdf{Diag!Use2D} is set to \fdffalse\ this flag is not
+  used. 
+
+\end{fdfentry}
+
+
+\begin{fdfentry}{Diag!Algorithm}[string]<Divide-and-Conquer|...>
+
+  Select the algorithm when calculating the eigenvalues and/or
+  eigenvectors.
+
+  Currently the implemented solvers are:
+
+  \begin{fdfoptions}
+
+    \option[divide-and-Conquer]%
+    \fdfindex{Diag!Algorithm!Divide-and-Conquer}
+    
+    Use the divide-and-conquer algorithm.
+
+    \option[divide-and-Conquer-2stage]%
+    \fdfindex{Diag!Algorithm!Divide-and-Conquer-2stage}
+    
+    Use the divide-and-conquer 2stage algorithm (fall-back to the
+    divide-and-conquer if not available).
+
+    
+    \option[MRRR]%
+    \fdfindex{Diag!Algorithm!MRRR}%
+    \fdfdepend{NumberOfEigenStates}
+    
+    Use the multiple relatively robust algorithm.
+    
+    \note The MRRR method is defaulted not to be compiled in, however,
+    if your ScaLAPACK library does contain the relevant sources one
+    may add this pre-processor flag \texttt{-DSIESTA\_\_MRRR}.
+    \index{compile!pre-processor!-DSIESTA\_\_MRRR}
+
+    \option[MRRR-2stage]%
+    \fdfindex{Diag!Algorithm!MRRR-2stage}%
+    \fdfdepend{NumberOfEigenStates}
+    
+    Use the 2-stage multiple relatively robust algorithm.
+
+
+    \option[expert]%
+    \fdfindex{Diag!Algorithm!Expert}%
+    \fdfdepend{NumberOfEigenStates}
+    
+    Use the expert algorithm which allows calculating a subset of the
+    eigenvalues/eigenvectors.
+
+
+    \option[expert-2stage]%
+    \fdfindex{Diag!Algorithm!Expert-2stage}%
+    \fdfdepend{NumberOfEigenStates}
+
+    Use the 2-stage expert algorithm which allows calculating a subset
+    of the eigenvalues/eigenvectors.
+
+    
+    \option[noexpert|QR]%
+    \fdfindex{Diag!Algorithm!NoExpert}%
+    \fdfindex{Diag!Algorithm!QR}%
+
+    Use the QR algorithm.
+
+    \option[noexpert-2stage|QR-2stage]%
+    \fdfindex{Diag!Algorithm!NoExpert-2stage}%
+
+    Use the 2-stage QR algorithm.
+
+    
+    \option[ELPA-1stage]%
+    \fdfindex{Diag!Algorithm!ELPA-1stage}%
+    \fdfdepend{NumberOfEigenStates}
+    
+    Use the ELPA\cite{ELPA,ELPA-1} 1-stage solver. Requires the
+    compilation of \siesta\ with ELPA, see Sec.~\ref{sec:libs}.
+
+    Not compatible with \fdf{Diag!ParallelOverK}.
+
+    \option[ELPA|ELPA-2stage]%
+    \fdfindex{Diag!Algorithm!ELPA-2stage}%
+    \fdfdepend{NumberOfEigenStates}
+    
+    Use the ELPA\cite{ELPA,ELPA-1} 2-stage solver. Requires the
+    compilation of \siesta\ with ELPA, see Sec.~\ref{sec:libs}.
+
+    Not compatible with \fdf{Diag!ParallelOverK}.
+
+  \end{fdfoptions}
+
+  \note All the 2-stage solvers are (as of July 2017) only
+  implemented in the LAPACK library, so they will only be usable in
+  serial or when using \fdf{Diag!ParallelOverK}.
+
+  To enable the 2-stage solvers add this flag to the \file{arch.make}
+  \index{compile!pre-processor!-DSIESTA\_\_DIAG\_2STAGE}
+  \begin{shellexample}
+    FPPFLAGS += -DSIESTA__DIAG_2STAGE
+  \end{shellexample}
+
+  If one uses the shipped LAPACK library the 2-stage solvers are added
+  automatically.
+
+
+  \note This flag has precedence over the deprecated flags:
+  \fdf{Diag!DivideAndConquer}, \fdf{Diag!MRRR}, \fdf{Diag!ELPA} and
+  \fdf{Diag!NoExpert}. However, the default is taking from the
+  deprecated flags.
+  
+\end{fdfentry}
+
+
+\begin{fdflogicalF}{Diag!ParallelOverK}
+  
+  For the diagonalization there is a choice in strategy about whether
+  to parallelise over the $\mathbf k$ points (\fdftrue) or over the
+  orbitals (\fdffalse). $\mathbf k$ point diagonalization is close to
+  perfectly parallel but is only useful where the number of
+  $\mathbf k$ points is much larger than the number of processors and
+  therefore orbital parallelisation is generally preferred. The
+  exception is for metals where the unit cell is small, but the number
+  of $\mathbf k$ points to be sampled is very large. In this last case
+  it is recommend that this option be used.
+
+  \note This scheme is not used for the diagonalizations involved in
+  the generation of the band-structure (as specified with
+  \fdf{BandLines} or \fdf{BandPoints}) or in the generation of
+  wave-function information (as specified with
+  \fdf{WaveFuncKPoints}). In these cases the program falls back to
+  using parallelization over orbitals.
+
+\end{fdflogicalF}
+
+\begin{fdfentry}{Diag!AbsTol}[real]<$10^{-16}$>
+
+  The absolute tolerance for the orthogonality of the eigenvectors.
+  This tolerance is only applicable for the solvers:
+
+  \fdf*{expert} for both the serial and parallel solvers.
+
+  \fdf*{mrrr} for the serial solver.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{Diag!OrFac}[real]<$10^{-3}$>
+
+  Re-orthogonalization factor to determine when the eigenvectors
+  should be re-orthogonalized. 
+
+  Only applicable for the \fdf*{expert} serial and parallel solvers.
+  
+\end{fdfentry}
+
+
+\begin{fdfentry}{Diag!Memory}[real]<$1$>
+  
+  Whether the parallel diagonalization of a matrix is successful or
+  not can depend on how much workspace is available to the routine
+  when there are clusters of eigenvalues. \fdf{Diag!Memory} allows
+  the user to increase the memory available, when necessary, to
+  achieve successful diagonalization and is a scale factor relative to
+  the minimum amount of memory that ScaLAPACK might need.
+
+\end{fdfentry}
+
+
+\begin{fdfentry}{Diag!UpperLower}[string]<lower|upper>
+
+  Which part of the symmetric triangular part should be used in the
+  solvers.
+
+  \note Do not change this variable unless you are performing
+  benchmarks. It should be fastest with the \fdf*{lower} part.
+
+\end{fdfentry}
+
+\paragraph{Deprecated diagonalization options}
+
+
+\begin{fdflogicalF}{Diag!MRRR}
+  \fdfdepend{NumberOfEigenStates}
+
+  Use the MRRR method in ScaLAPACK for diagonalization. Specifying a
+  number of eigenvectors to store is possible through the symbol
+  \fdf{NumberOfEigenStates} (see above).
+
+  \note The MRRR method is defaulted not to be compiled in, however,
+  if your ScaLAPACK library does contain the relevant sources one
+  may add this pre-processor flag \texttt{-DSIESTA\_\_MRRR}.
+  \index{compile!pre-processor!-DSIESTA\_\_MRRR}
+
+  \note Use \fdf{Diag!Algorithm} instead.
   
 \end{fdflogicalF}
+
+\begin{fdflogicalT}{Diag!DivideAndConquer}
+
+  Logical to select whether the normal or Divide and Conquer
+  algorithms are used within the ScaLAPACK/LAPACK diagonalization
+  routines.
+
+  \note Use \fdf{Diag!Algorithm} instead.
+
+\end{fdflogicalT}
+
+\begin{fdflogicalF}{Diag!ELPA}
+  \fdfdepend{NumberOfEigenStates}
+
+  See the ELPA articles\cite{ELPA,ELPA-1} for additional information. 
+
+  \note It is not compatible with the \fdf{Diag!ParallelOverK}
+  option.
+
+  \note Use \fdf{Diag!Algorithm} instead.
+
+\end{fdflogicalF}
+
 
 \begin{fdflogicalF}{Diag!NoExpert}
 
   Logical to select whether the simple or expert versions of the
-  lapack/ scalapack routines are used. Usually the expert routines are
+  ScaLAPACK/LAPACK routines are used. Usually the expert routines are
   faster, but may require slightly more memory.
 
+  \note Use \fdf{Diag!Algorithm} instead.
+
 \end{fdflogicalF}
 
-\begin{fdflogicalF}{Diag!PreRotate}
-
-  Logical to select whether the eigensystem is transformed according
-  to previously saved eigenvectors to create a near diagonal matrix
-  and then back transformed afterwards. This is included for future
-  options, but currently should not make any difference except to
-  increase the computational work!
-  
-\end{fdflogicalF}
-
-
-\begin{fdflogicalT}{Diag!Use2D}
-
-  Logical to select whether a 1-D or 2-D data decomposition should be
-  used when calling scalapack. The use of 2-D leads to superior
-  scaling to large numbers of processors and is therefore the
-  default. This option only influences the parallel performance.
-  
-\end{fdflogicalT}
 
 
 \subsubsection{Output of eigenvalues and wavefunctions}
@@ -5966,7 +6206,7 @@ if the \fdf{COOP.Write} option is in effect.
 \begin{fdfentry}{OccupationFunction}[string]<FD>
   
   String variable to select the function that determines the
-  occupation of the electronic states. Two options are available:
+  occupation of the electronic states. These options are available:
   \begin{fdfoptions}
     \option[FD]%
     The usual Fermi-Dirac occupation function is used.
@@ -5975,8 +6215,13 @@ if the \fdf{COOP.Write} option is in effect.
     The occupation function proposed by Methfessel and
     Paxton (Phys. Rev. B, \textbf{40}, 3616 (1989)), is used.
 
+    \option[Cold]%
+    The occupation function proposed by Marzari, Vanderbilt et. al
+    (PRL, \textbf{82}, 16 (1999)), is used, this is commonly referred
+    to as \emph{cold smearing}.
+
   \end{fdfoptions}
-  The smearing of the electronic occupations is done, in both cases,
+  The smearing of the electronic occupations is done, in all cases,
   using an energy width defined by the \fdf{ElectronicTemperature}
   variable. Note that, while in the case of Fermi-Dirac, the
   occupations correspond to the physical ones if the electronic
@@ -5986,16 +6231,16 @@ if the \fdf{COOP.Write} option is in effect.
   integration of the physical quantities at a lower cost. In
   particular, the Methfessel-Paxton scheme has the advantage that,
   even for quite large smearing temperatures, the obtained energy is
-  very close to the physical energy at $T=0$.  Also, it allows a much
+  very close to the physical energy at $T=0$. Also, it allows a much
   faster convergence with respect to $k$-points, specially for
   metals. Finally, the convergence to selfconsistency is very much
   improved (allowing the use of larger mixing coefficients).
 
-  For the Methfessel-Paxton case, one can use relatively large values
-  for the \fdf{ElectronicTemperature} parameter. How large depends
-  on the specific system. A guide can be found in the article by
-  J. Kresse and J. Furthm\"uller, Comp. Mat. Sci.  \textbf{6}, 15
-  (1996).
+  For the Methfessel-Paxton case, and similarly for cold smearing, one
+  can use relatively large values for the \fdf{ElectronicTemperature}
+  parameter. How large depends on the specific system. A guide can be
+  found in the article by J. Kresse and J. Furthm\"uller,
+  Comp. Mat. Sci. \textbf{6}, 15 (1996).
 
   If Methfessel-Paxton smearing is used, the order of the
   corresponding Hermite polynomial expansion must also be chosen (see
@@ -6028,9 +6273,8 @@ if the \fdf{COOP.Write} option is in effect.
 
 \begin{fdfentry}{ElectronicTemperature}[temperature/energy]<$300\,\mathrm{K}$>
   
-  Temperature for Fermi-Dirac or Methfessel-Paxton
-  distribution. Useful specially for metals, and to accelerate
-  selfconsistency in some cases.
+  Temperature for occupation function. Useful specially for metals,
+  and to accelerate selfconsistency in some cases.
 
 \end{fdfentry}
 
@@ -6392,6 +6636,64 @@ necessary.
 
 \end{fdflogicalF}
 
+
+\subsection{The CheSS solver}
+\label{SolverCheSS}
+\index{CheSS solver}
+
+The CheSS solver uses an expansion based on Chebyshev polynomials to calculate
+the density matrix, thereby exploiting the sparsity of the overlap
+and Hamiltonian matrices.
+It works best for systems exhibiting a finite HOMO-LUMO gap and a small spectral width.
+
+CheSS exhibits a two level parallelization using MPI and OpenMP and can scale
+to many thousand cores.
+It can be downloaded and installed freely from
+\url{https://launchpad.net/chess}.
+
+See Sec.~\ref{sec:libs} for details on installing \siesta\ with CheSS.
+
+\subsubsection{Input parameters}
+Usually CheSS only requires little user input, as the default values for the input parameters
+work in general quite well. Moreover CheSS has the capability to determine certain optimal values
+on its own. The only input parameters which usually require some human action are the values 
+of the buffers required for the matrix multiplications to calculate the Chebyshev polynomials.
+
+\begin{fdfentry}{CheSS!Buffer!Kernel}[length]<$4.0\,\mathrm{Bohr}$>
+  Buffer for the density kernel within the CheSS calculation.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!Buffer!Mult}[length]<$6.0\,\mathrm{Bohr}$>
+  Buffer for the matrix vector multiplication within the CheSS calculation.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!Fscale}[energy]<$10^{-1}\,\mathrm{Ry}$>
+	Initial guess for the error function decay length (will be adjusted automatically).
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!FscaleLowerbound}[energy]<$10^{-2}\,\mathrm{Ry}$>
+	Lower bound for the error function decay length.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!FscaleUpperbound}[energy]<$10^{-1}\,\mathrm{Ry}$>
+	Upper bound for the error function decay length.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!evlowH}[energy]<$-2.0\,\mathrm{Ry}$>
+	Initial guess for the lower bound of the eigenvalue spectrum of the Hamiltonian matrix, will be adjusted automatically if chosen unproperly.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!evhighH}[energy]<$2.0\,\mathrm{Ry}$>
+	Initial guess for the upper bound of the eigenvalue spectrum of the Hamiltonian matrix, will be adjusted automatically if chosen unproperly.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!evlowS}[real]<$0.5$>
+	Initial guess for the lower bound of the eigenvalue spectrum of the overlap matrix, will be adjusted automatically if chosen unproperly.
+\end{fdfentry}
+
+\begin{fdfentry}{CheSS!evhighS}[real]<$1.5$>
+	Initial guess for the upper bound of the eigenvalue spectrum of the overlap matrix, will be adjusted automatically if chosen unproperly.
+\end{fdfentry}
 
 \subsection{The PEXSI solver}
 \label{SolverPEXSI}
@@ -7043,8 +7345,8 @@ descriptor above for more information.
 
 The user can optionally request that the wavefunctions corresponding
 to the computed bands be written to file.  They are written to the
-\sysfile{bands.WFSX} file (see section below for the format). The
-relevant options are:
+\sysfile{bands.WFSX} file.
+The relevant options are:
 
 \begin{fdflogicalF}{WFS.Write.For.Bands}
   \index{output of wave functions for bands}
@@ -7087,7 +7389,7 @@ written to file. These wavefunctions are re-computed after the
 geometry loop (if any) finishes, using the last (presumably converged)
 density matrix produced during the last self-consistent field loop
 (after a final mixing). They are written to the
-\sysfile{selected.WFSX} file (see below for the format).
+\sysfile{selected.WFSX} file.
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
@@ -8509,7 +8811,7 @@ used for that.
   the number of consecutive orbitals which are located on a given
   processor before moving to the next one. Large values of this
   parameter lead to poor load balancing, while small values can lead
-  to inefficient execution.  The performance of the parallel code can
+  to inefficient execution. The performance of the parallel code can
   be optimised by varying this parameter until a suitable value is
   found.
 
@@ -8528,43 +8830,6 @@ used for that.
   Defaults to a multiple of number of processors.
 
 \end{fdfentry}
-
-
-\begin{fdfentry}{Diag!Memory}[real]<$1$>
-  
-  Whether the parallel diagonalisation of a matrix is successful or
-  not can depend on how much workspace is available to the routine
-  when there are clusters of eigenvalues. \fdf{Diag!Memory} allows
-  the user to increase the memory available, when necessary, to
-  achieve successful diagonalisation and is a scale factor relative to
-  the minimum amount of memory that SCALAPACK might need.
-
-\end{fdfentry}
-
-
-\begin{fdflogicalF}{Diag!ParallelOverK}
-  
-  For the diagonalisation there is a choice in strategy about whether
-  to parallelise over the K points or over the orbitals. K point
-  diagonalisation is close to perfectly parallel but is only useful
-  where the number of K points is much larger than the number of
-  processors and therefore orbital parallelisation is generally
-  preferred. The exception is for metals where the unit cell is small,
-  but the number of K points to be sampled is very large. In this last
-  case it is recommend that this option be used.
-
-  \note This scheme is not used for the diagonalizations involved in
-  the generation of the band-structure (as specified with
-  \fdf{BandLines} or \fdf{BandPoints}) or in the generation of
-  wave-function information (as specified with
-  \fdf{WaveFuncKPoints}). In these cases the program falls back to
-  using parallelization over orbitals.
-
-  \emph{Use:} Controls whether the diagonalisation is parallelised
-  with respect to orbitals or K points -- not allowed for
-  non-co-linear spin case.
-
-\end{fdflogicalF}
 
 
 \subsubsection{Parallel decompositions for O(N)}
@@ -8697,6 +8962,7 @@ always include all arrays.
   
 \end{fdflogicalF}
 
+
 \begin{fdflogicalT}{UseParallelTimer}
 
   Determine whether timings are performed in parallel. This may
@@ -8707,6 +8973,26 @@ always include all arrays.
   
 \end{fdflogicalT}
 
+\begin{fdfentry}{MaxWalltime}[real time]<Infinity>
+
+  Set an internal limit to the wall time allotted to the
+  program's execution. Typically this is related to the external limit
+  imposed by queuing systems. The code checks its wall time periodically
+  and will abort if nearing the limit, with some slack left for clean-up
+  operations (proper closing of files, emergency output...), as determined
+  by \fdf{MaxWalltime!Slack}. See Sec.~\ref{sec:fdf-units} for available
+  units of time (\textbf{s}, \textbf{mins}, \textbf{hours}, \textbf{days}).
+
+\end{fdfentry}
+
+
+\begin{fdfentry}{MaxWalltime!Slack}[real time]<5 s>
+
+  The code checks its wall time $T_{\mathrm{wall}}$ periodically and will
+  abort if $T_{\mathrm{wall}} > T_{\mathrm{max}} - T_{\mathrm{slack}}$, so that
+  some slack is left for any clean-up operations.
+
+\end{fdfentry}
 
 
 \subsection{The catch-all option UseSaveData}
@@ -8829,6 +9115,11 @@ geometry loop: it computes the electronic structure (and
 thus the forces and stresses) for a given geometry, updates the
 atomic positions (and maybe the cell vectors) accordingly and moves on
 to the next cycle.
+%
+If there are molecular dynamics options missing you are highly
+recommend to look into \fdf{MD.TypeOfRun!Lua} or
+\fdf{MD.TypeOfRun!Master}. 
+
 
 Several options for MD and structural optimizations are
 implemented, selected by
@@ -8837,58 +9128,69 @@ implemented, selected by
   \begin{fdfoptions}
     
     \option[CG]%
+    \fdfindex{MD.TypeOfRun!CG}%
     Coordinate optimization by conjugate gradients). Optionally (see
     variable \fdf{MD.VariableCell} below), the optimization can include the
     cell vectors.
 
     \option[Broyden]%
+    \fdfindex{MD.TypeOfRun!Broyden}%
     Coordinate optimization by a modified Broyden scheme). Optionally,
     (see variable \fdf{MD.VariableCell} below), the optimization can
     include the cell vectors.
 
     \option[FIRE]%
+    \fdfindex{MD.TypeOfRun!FIRE}%
     Coordinate optimization by Fast Inertial Relaxation Engine (FIRE)
     (E. Bitzek et al, PRL 97, 170201, (2006)).  Optionally, (see
     variable \fdf{MD.VariableCell} below), the optimization can
     include the cell vectors.
 
     \option[Verlet]%
+    \fdfindex{MD.TypeOfRun!Verlet}%
     Standard Verlet algorithm MD
 
     \option[Nose]%
+    \fdfindex{MD.TypeOfRun!Nose}%
     MD with temperature controlled  by means of a Nos\'e
     thermostat
 
     \option[ParrinelloRahman]%
+    \fdfindex{MD.TypeOfRun!ParrinelloRahman}%
     MD with pressure controlled by the Parrinello-Rahman method
 
     \option[NoseParrinelloRahman]%
+    \fdfindex{MD.TypeOfRun!NoseParrinelloRahman}%
     MD with temperature controlled by means of a Nos\'e thermostat and
     pressure controlled by the Parrinello-Rahman method
 
     \option[Anneal]%
+    \fdfindex{MD.TypeOfRun!Anneal}%
     MD with annealing to a desired temperature and/or pressure (see
     variable \fdf{MD.AnnealOption} below)
 
     \option[FC]%
+    \fdfindex{MD.TypeOfRun!FC}%
     Compute force constants matrix\index{Force Constants Matrix} for
     phonon calculations.
 
-
-    \option[Forces]%
-    (Receive coordinates from, and return forces to, an external
+    \option[Master|Forces]%
+    \fdfindex{MD.TypeOfRun!Master}%
+    \fdfindex{MD.TypeOfRun!Forces}%
+    Receive coordinates from, and return forces to, an external
     driver program, using MPI, Unix pipes, or Inet sockets for
-    communication.  The routines in module fsiesta allow the user's
-    program to perform this communication transparently, as if siesta
-    were a conventional force-field subroutine. See
-    \shell{Util/SiestaSubroutine/README} for details. WARNING: if
-    this option is specified without a driver program sending data,
-    siesta may hang without any notice).
+    communication. The routines in module \program{fsiesta} allow the
+    user's program to perform this communication transparently, as if
+    \siesta\ were a conventional force-field subroutine. See
+    \shell{Util/SiestaSubroutine/README} for details. WARNING: if this
+    option is specified without a driver program sending data, siesta
+    may hang without any notice.
     
     See directory Util/Scripting \index{Scripting} for other driving
     options.
 
     \option[Lua]%
+    \fdfindex{MD.TypeOfRun!Lua}%
     Fully control the MD cycle and convergence path using an external
     Lua script. 
 
@@ -8909,7 +9211,8 @@ implemented, selected by
       set optimizations cannot be performed in the Lua script).
 
     \end{itemize}
-    For more details see Sec.~\ref{sec:lua}.
+    Sec.~\ref{sec:lua} for additional details (and a description of
+    \program{flos} which implements some of the above mentioned items).
 
     Using this option requires the compilation of \siesta\ with the
     \program{flook} library.%
@@ -9910,6 +10213,9 @@ For large or intermediate values of $U_{\mathrm{eff}}$ the convergence
 is sometimes difficult. A step-by-step increase of the
 value of $U_{\mathrm{eff}}$ can be advisable in such cases.
 
+Currently, the LDA+U implementation does not support non-colinear, nor
+spin-orbit coupling.
+
 \begin{fdfentry}{LDAU.ProjectorGenerationMethod}[integer]<2>
   
   Generation method of the LDA+U projectors. The LDA+U projectors are
@@ -10239,7 +10545,7 @@ faster convergence of the relaxation.
 
   An example file could be this (note this is Lua code):
   \begin{codeexample}
--- This function is REQUIRED
+-- This function (siesta_comm) is REQUIRED
 function siesta_comm()
    
    -- Define which variables we want to retrieve from SIESTA
@@ -10250,6 +10556,7 @@ function siesta_comm()
 
    -- Now we have the required variables,
    -- convert to a simpler variable name (not nested tables)
+   -- (note the returned quantities are in SIESTA units (Bohr, Ry)
    xa = siesta.geom.xa
    Etot = siesta.E.total
 
@@ -10300,8 +10607,10 @@ end
 
     \option[Move]%
     This state will \emph{only} be reached if \fdf{MD!TypeOfRun} is
-    \fdf*{lua}. If one does not return updated atomic coordinates
-    \siesta\ will reuse the same geometry as just analyzed.
+    \fdf*{lua}.
+
+    If one does not return updated atomic coordinates \siesta\ will
+    reuse the same geometry as just analyzed.
 
     \note \program{siesta.state == siesta.MOVE}.
     
@@ -10327,7 +10636,8 @@ end
   \end{codeexample}
   which is the most minimal example of using the L-BFGS algorithm for
   geometry relaxation. Note that \program{flos} reads the parameters
-  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol}.
+  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol} through \siesta\
+  automatically. 
 
   \note The number of available variables continues to grow and to
   find which quantities are accessible in Lua you may add this small
@@ -10337,6 +10647,16 @@ end
   \end{codeexample}
   which prints out a list of all accessible variables (note they are
   not sorted).
+  
+  If there are any variables you require which are not in the list,
+  please contact the developers.
+
+
+  Remark that since \emph{anything} may be changed via Lua one may
+  easily make \siesta\ crash due to inconsistencies in the internal
+  logic. This is because \siesta\ does not check what has changed, it
+  accepts everything \emph{as is} and continues. Hence, one should be
+  careful what is changed.
   
 \end{fdfentry}
 
@@ -10352,6 +10672,31 @@ end
   Debug all nodes (if in a parallel run).
   
 \end{fdflogicalF}
+
+
+\subsection{Examples of Lua programs}
+
+Please look in the \program{Tests/lua\_*} folders where examples of
+basic Lua scripts are found. Below is a description of the \program{*}
+examples.
+
+
+\begin{description}
+  \item[h2o] Changes the mixing weight continuously in
+  the SCF loop. This will effectively speed up convergence time if one
+  can attain the best mixing weight per SCF-step.
+
+  \item[si111] Change the mixing method based on certain convergence
+  criteria. I.e. after a certain convergence one can switch to a more
+  aggressive mixing method.
+  
+\end{description}
+
+A combination of the above two examples may greatly improve
+convergence, however, creating a generic method to adaptively change
+the mixing parameters may be very difficult to implement. If you do
+create such a Lua script, please share it on the mailing list.
+
 
 
 \section{TRANSIESTA}
@@ -10427,65 +10772,16 @@ type:
 $ make transiesta
 \end{verbatim}
 
-using the appropriate arch.make file for your system (note that you do
-not need to make any modification on your arch.make file: you can use
-the same one that you have used to make a standard \siesta\
+using the appropriate \file{arch.make} file for your system (note that
+you do not need to make any modification on your arch.make file: you
+can use the same one that you have used to make a standard \siesta\
 compilation in your system).  The Makefile takes care of defining the
-appropriate preprocessor flag \texttt{-DTRANSIESTA} so that the \tsiesta\ 
-modules and modifications are compiled and incorporated
-into the binary. Upon successful compilation, the binary file 
-\program{transiesta} will be generated, containing an executable version of
-\siesta\ with \tsiesta\ capabilities.
+appropriate preprocessor flag \texttt{-DTRANSIESTA} so that the
+\tsiesta\ modules and modifications are compiled and incorporated into
+the binary. Upon successful compilation, the binary file
+\program{transiesta} will be generated, containing an executable
+version of \siesta\ with \tsiesta\ capabilities.
 
-\subsection{Running a fast example}
-
-Before giving more detailed explanations about \tsiesta, let
-us start with an example to show the basic operations of a transport
-calculation.  Starting from the top \siesta\ directory:
-
-\begin{verbatim}
-$ cd Examples/TranSiesta
-\end{verbatim}
-
-First it is necessary to do the electrode calculation (see below for
-details),
-
-\begin{verbatim}
-$ cd Elec
-$ mkdir OUT_Test
-$ cd OUT_Test
-$ cp ../* .
-$ transiesta < elec.fast.fdf > elec.fast.out
-\end{verbatim}
-
-Note that apart from the usual files generated by \siesta, now you will 
-find the \texttt{elec.fast.TSHS} file (in general \sysfile{TSHS}). 
-This file contains the real-space Hamiltonian and Overlap matrices, together 
-with some other information, that will be used, in the case of electrodes, to 
-calculate the surface Greens functions. 
-
-Once the electrode file has been generated, we can perform the \tsiesta\ 
-calculation (where the \fdf{SolutionMethod} flag is set
-to \program{transiesta}).
-
-\begin{verbatim}
-$ cd ../../Scat
-$ mkdir OUT_TS_Test
-$ cd OUT_TS_Test
-$ cp ../* .
-$ cp ../../Elec/OUT_Test/elec.fast.TSHS .
-$ transiesta < scat.fast.fdf > scat.fast.out
-\end{verbatim}
-
-Now the two following files should have been generated, \texttt{scat.fast.TSHS} 
-and \texttt{scat.fast.TSDE}. The first one contains, as previously mentioned, 
-essentially the Hamiltonian and Overlap matrices, and the \texttt{.TSDE} file 
-has the \tsiesta\ density matrix, the equivalent to the \texttt{.DM} 
-file of \siesta. The transmission function and the current are calculated 
-using the \texttt{tbtrans} postprocessing tool (below).
-
-Other automated TranSiesta-TBTrans examples can be found in
-\texttt{Tests/TranSiesta-TBTrans}.
 
 \subsection{Brief explanation}
 
@@ -11311,11 +11607,11 @@ electrodes in a generic input format.
     String denoting how the expansion of the surface Green function
     file will be performed. This only affects the Green function file
     if \fdf*{Bloch} is larger than 1. By default the Green function
-    file will contain the fully expanded surface Green function,
-    Hamiltonian and overlap matrices (\fdf*{all}). One may reduce the
-    file size by setting this to \fdf*{Green} which only expands the
-    surface Green function. Finally \fdf*{none} may be passed to
-    reduce the file size to the bare minimum. 
+    file will contain the fully expanded surface Green function, but
+    not Hamiltonian and overlap matrices (\fdf*{Green}). One may
+    reduce the file size by setting this to \fdf*{Green} which only
+    expands the surface Green function. Finally \fdf*{none} may be
+    passed to reduce the file size to the bare minimum.
     %
     For performance reasons \fdf*{all} is preferred. 
 
@@ -11841,7 +12137,7 @@ the atoms which may be outlined as in the following loop:
 \end{fdfexample}
 As a help, \tsiesta\ prints out the expected coordinates as though the
 first device atom coincides with the first electrode atom. Another
-means to create this is using the \sisl\ program and this command
+means to create this is using the \sisl\cite{sisl} program and this command
 line:
 \begin{fdfexample}
   sgeom -rx 1 -ry 3 -rz 1 ELEC.fdf DEVICE_ELEC.fdf
@@ -12017,6 +12313,7 @@ Ram\'on Areces.
 
 
 \section{APPENDIX: Physical unit names recognized by FDF}
+\label{sec:fdf-units}
 
 \begin{center}
 \begin{tabular}{llr}

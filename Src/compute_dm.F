@@ -48,7 +48,11 @@
       use m_ordern,        only : ordern
       use m_steps,         only : istp
       use m_normalize_dm,  only : normalize_dm
+#ifdef SIESTA__CHESS
+      use m_chess, only: CheSS_wrapper
+#endif
 #ifdef TRANSIESTA
+      use m_energies,   only: DE_NEGF
       use m_ts_global_vars, only : TSmode, TSinit, TSrun
       use m_transiesta,     only : transiesta
 #endif /* TRANSIESTA */
@@ -207,6 +211,20 @@ c$$$     &           S, 'S.matrix')
         Ecorrec = 0.0_dp
         Entropy = 0.0_dp
         PreviousCallDiagon=.false.
+#ifdef SIESTA__CHESS
+      elseif (isolve .eq. SOLVE_CHESS) then
+        ! FOE solver from the CheSS library
+        if (gamma) then
+          call CheSS_wrapper(.false., PreviousCallDiagon, 
+     &         iscf, istp, no_l,
+     &         spin%spinor, no_u, maxnh, numh, listhptr, listh, 
+     &         qs, h, s,
+     &         Dscf, Escf, Ef)
+        end if
+        Ecorrec = 0.0_dp
+        Entropy = 0.0_dp
+        PreviousCallDiagon=.false.
+#endif
 #ifdef TRANSIESTA
       elseif (TSmode .and. TSinit) then
         call diagon(no_s, spin%spinor, 
@@ -223,7 +241,7 @@ c$$$     &           S, 'S.matrix')
 
          call transiesta(iscf,spin%H, block_dist, sparse_pattern,
      &        Gamma, ucell, nsc, isc_off, no_u, na_u, lasto, xa, maxnh,
-     &        H, S, Dscf, Escf, Ef, Qtot, .false. )
+     &        H, S, Dscf, Escf, Ef, Qtot, .false., DE_NEGF )
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp
