@@ -491,12 +491,15 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !    call copyMeshData( nMesh, ioDistr, dens(:,:,:,1:ndSpin), &
 !                              myBox, myDens(:,:,:,1:ndSpin) )
     ! Find initial expected workload (zero if dens=0, one otherwise)
-    workload = 0
     do i3 = myBox(1,3),myBox(2,3)
     do i2 = myBox(1,2),myBox(2,2)
     do i1 = myBox(1,1),myBox(2,1)
       Dtot = sum( myDens(i1,i2,i3,1:ndSpin) )
-      if (Dtot>Dmin) workload(i1,i2,i3) = 1
+      if (Dtot>Dmin) then
+         workload(i1,i2,i3) = 1
+      else
+         workload(i1,i2,i3) = 0
+      end if
     end do
     end do
     end do
@@ -646,9 +649,31 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     call re_alloc( nonempty, 0,myMesh(1)-1, 0,myMesh(2)-1, 0,myMesh(3)-1, &
                    myName//'nonempty' )
     if (associated(myDens)) then
-      nonempty = (sum(myDens(:,:,:,1:ndSpin),dim=4) >= Dmin)
+      do i3 = myBox(1,3),myBox(2,3)
+      do i2 = myBox(1,2),myBox(2,2)
+      do i1 = myBox(1,1),myBox(2,1)
+        Dtot = sum( myDens(i1,i2,i3,1:ndSpin) )
+        if ( Dtot >= Dmin ) then
+          nonempty(i1-myBox(1,1),i2-myBox(1,2),i3-myBox(1,3)) = .true.
+        else
+          nonempty(i1-myBox(1,1),i2-myBox(1,2),i3-myBox(1,3)) = .false.
+        end if
+      end do
+      end do
+      end do
     else
-      nonempty = (sum(dens(:,:,:,1:ndSpin),dim=4) >= Dmin)
+      do i3 = 0, myMesh(3)-1
+      do i2 = 0, myMesh(2)-1
+      do i1 = 0, myMesh(1)-1
+        Dtot = sum( dens(i1,i2,i3,1:ndSpin) )
+        if ( Dtot >= Dmin ) then
+          nonempty(i1,i2,i3) = .true.
+        else
+          nonempty(i1,i2,i3) = .false.
+        end if
+      end do
+      end do
+      end do
     end if
     nonemptyPoints = count( nonempty )
 
