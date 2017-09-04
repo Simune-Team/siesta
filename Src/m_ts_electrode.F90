@@ -721,8 +721,6 @@ contains
           ! Invert to get the Surface Green function
           call mat_invert(GS,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
        end if
-    else
-       call mat_invert(GS,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
     end if
 
     if ( ierr /= 0 ) then
