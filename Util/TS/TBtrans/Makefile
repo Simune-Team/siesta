@@ -134,7 +134,7 @@ version: version.F90
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
 		s'TBTRANS_VERSION'$$(cat ${<D}/../../../version.info)'g;\
-		s'LIBS'$(LIBS)'g;\
+		s'LIBS'$(COMP_LIBS) $(LIBS)'g;\
 		s'FPPFLAGS'$(FPPFLAGS)'g" $<  > tmp.F90
 	@awk '{if (length>80) { cur=78; \
 		printf "%s&\n",substr($$0,0,78); \
