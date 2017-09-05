@@ -128,7 +128,7 @@ contains
           if ( .not. is_fixed(ia) ) then
              call die('All buffer atoms *MUST* be &
                   &fixed while doing transiesta geometry optimizations. &
-                  &Please correct constraints on buffer atoms.')
+                  &Please correct Geometry.Constraints for buffer atoms.')
           end if
        end do
        do i = 1 , N_Elec
@@ -138,7 +138,7 @@ contains
                   .or. is_fixed(ia) ) ) then
                 call die('All electrode atoms *MUST* be &
                      &fixed while doing transiesta geometry optimizations. &
-                     &Please correct electrodes.')
+                     &Please correct Geometry.Constraints for electrode atoms.')
              end if
           end do
        end do
