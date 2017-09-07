@@ -29,8 +29,10 @@ subroutine tbt_end()
   integer :: MPIerror
 #endif
 
+#ifdef NCDF_4
   call delete_delta(dH)
   call delete_delta(dSE)
+#endif
   
   ! Stop time counter
   call timer( 'tbtrans', 2 )
