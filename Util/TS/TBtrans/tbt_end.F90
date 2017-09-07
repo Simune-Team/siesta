@@ -19,11 +19,19 @@ subroutine tbt_end()
   use alloc, only   : alloc_report
   use m_timestamp, only : timestamp
   use m_wallclock, only : wallclock
+#ifdef NCDF_4
+  use m_tbt_delta, only: delete_delta
+  use m_tbt_dH, only: dH
+  use m_tbt_dSE, only: dSE
+#endif
 
 #ifdef MPI
   integer :: MPIerror
 #endif
 
+  call delete_delta(dH)
+  call delete_delta(dSE)
+  
   ! Stop time counter
   call timer( 'tbtrans', 2 )
   call timer( 'all', 3 )
