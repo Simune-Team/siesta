@@ -521,16 +521,26 @@ the corresponding applied bias and store all output files in the
 \shell{V\$V} folder.
 
 \subsubsection{Changing the electronic structure via
-    \texorpdfstring{$\delta\mathbf H$}{dH}}
+    \texorpdfstring{$\delta$}{d} elements}
+
+\newcommand\dH{\delta\mathbf H}
+\newcommand\dSE{\delta\mathbf\Sigma}
 
 The electronic structure may be altered by changing the Hamiltonian
 elements via a simple additive term
 \begin{equation}
-  \mathbf H \leftarrow \mathbf H + \delta\mathbf H,
+  \mathbf H \leftarrow \mathbf H + \dH + \dSE,
 \end{equation}
 which allows easy changes to the electronic structure or adding
 additional terms such as imaginary self-energies. One may also use it
 to add magnetic fields etc.
+
+\tbtrans\ uses a distinction between $\dH$ and $\dSE$ only via the
+orbital current calculation. I.e. $\dH$ enters the equations for
+calculating the orbital current, whereas $\dSE$ does not. Otherwise
+the two $\delta$-terms are \emph{completely} identical. In the
+following discussion we will use the term $\delta$ to be either $\dH$
+or $\dSE$.
 
 To use this feature at $k$ points it is important to know that phases
 in \tbtrans\ are defined using the lattice vectors (and \emph{not}
@@ -539,17 +549,23 @@ inter-atomic distances)
   \mathbf H_k = \mathbf H \cdot e^{i k \cdot \mathbf R}.
   \label{eq:hk-phase}
 \end{equation}
-\tbtrans\ will add the phases on \emph{all} elements of $\delta\mathbf
-H$ via Eq.~\eqref{eq:hk-phase}. To counter these phases one may simply
-multiply $\delta\mathbf H$ with the negative phase ($-i$). Note that
-phases are only added on super cell elements, \emph{not} unit cell
-elements. 
+\tbtrans\ will add the phases on \emph{all} elements of $\delta$ via
+Eq.~\eqref{eq:hk-phase}. To counter these phases one may simply
+multiply $\delta$ with the negative phase ($-i$). Note that phases are
+only added on super cell elements, \emph{not} unit cell elements.
+
 
 \begin{fdfentry}{TBT.dH}[file]
 
-  Denote a file which contains the $\delta\mathbf H$ information. This
-  file \emph{must} adhere to these file format notations and is
-  required to be supplied in a NetCDF4 format
+  Denote a file which contains the $\dH$ information.
+
+  \note that the terms defined in this file are added to the
+  Hamiltonian when calculating the orbital currents, if your terms are
+  not a Hamiltonian change, then consider using \fdf{TBT.dSE} instead.
+
+  This file
+  \emph{must} adhere to these file format notations and is required to
+  be supplied in a NetCDF4 format
 
   \begin{shellexample}
 netcdf file.dH {
@@ -573,12 +589,12 @@ group: LEVEL-1 {
   		list_col:info = "Supercell column indices in the sparse format" ;
   	int isc_off(n_s, xyz) ;
   		isc_off:info = "Index of supercell coordinates" ;
-  	double RedH(spin, nnzs) ;
-  		RedH:info = "Real part of dH" ;
-  		RedH:unit = "Ry" ;
-  	double ImdH(spin, nnzs) ;
-  		ImdH:info = "Imaginary part of dH" ;
-  		ImdH:unit = "Ry" ;
+  	double Redelta(spin, nnzs) ;
+  		Redelta:info = "Real part of delta" ;
+  		Redelta:unit = "Ry" ;
+  	double Imdelta(spin, nnzs) ;
+  		Imdelta:info = "Imaginary part of delta" ;
+  		Imdelta:unit = "Ry" ;
   } // group LEVEL-1
 
 group: LEVEL-2 {
@@ -587,12 +603,12 @@ group: LEVEL-2 {
   	nnzs = 2670 ;
   variables:
   	double kpt(nkpt, xyz) ;
-  		kpt:info = "k-points for dH values" ;
+  		kpt:info = "k-points for delta values" ;
   		kpt:unit = "b**-1" ;
   	... n_col list_col isc_off ...
-  	double dH(nkpt, spin, nnzs) ;
-  		dH:info = "dH" ;
-  		dH:unit = "Ry" ;
+  	double delta(nkpt, spin, nnzs) ;
+  		delta:info = "delta" ;
+  		delta:unit = "Ry" ;
   } // group LEVEL-2
 
 group: LEVEL-3 {
@@ -601,12 +617,12 @@ group: LEVEL-3 {
   	nnzs = 2670 ;
   variables:
   	double E(ne) ;
-  		E:info = "Energy points for dH values" ;
+  		E:info = "Energy points for delta values" ;
   		E:unit = "Ry" ;
   	... n_col list_col isc_off ...
-  	double dH(ne, spin, nnzs) ;
-  		dH:info = "dH" ;
-  		dH:unit = "Ry" ;
+  	double delta(ne, spin, nnzs) ;
+  		delta:info = "delta" ;
+  		delta:unit = "Ry" ;
   } // group LEVEL-3
 
 group: LEVEL-4 {
@@ -616,24 +632,23 @@ group: LEVEL-4 {
   	nnzs = 2670 ;
   variables:
   	double kpt(nkpt, xyz) ;
-  		kpt:info = "k-points for dH values" ;
+  		kpt:info = "k-points for delta values" ;
   		kpt:unit = "b**-1" ;
   	double E(ne) ;
-  		E:info = "Energy points for dH values" ;
+  		E:info = "Energy points for delta values" ;
   		E:unit = "Ry" ;
   	... n_col list_col isc_off ...
-  	double dH(nkpt, ne, spin, nnzs) ;
-  		dH:info = "dH" ;
-  		dH:unit = "Ry" ;
+  	double delta(nkpt, ne, spin, nnzs) ;
+  		delta:info = "delta" ;
+  		delta:unit = "Ry" ;
   } // group LEVEL-4
 }
   \end{shellexample}
 
   This example file shows how the file should be formatted. Note that
-  one may either define the Hamiltonian as \shell{dH} or as
-  \shell{RedH} and \shell{ImdH}. The former is defining $\delta\mathbf
-  H$ as a real quantity while the latter makes it an imaginary
-  $\delta\mathbf H$.
+  one may either define the Hamiltonian as \shell{delta} or as
+  \shell{Redelta} and \shell{Imdelta}. The former is defining $\delta$
+  as a real quantity while the latter makes it an imaginary $\delta$.
 
   The levels are defined because they have precedence from each other,
   if the energy point and $k$ point is found in LEVEL-4 it will use
@@ -655,23 +670,15 @@ set.
   
 \end{fdflogicalT}
 
-\begin{fdflogicalT}{TBT.dH!Current.Orb}
-  \fdfdepend{TBT.Current!Orb}
+\begin{fdfentry}{TBT.dSE}[file]
 
-  Whether the orbital currents will also contain the $\delta \mathbf
-  H$ contributions.
+  File has same format as specified for \fdf{TBT.dH}.
 
-  If \fdffalse\ the bond-currents will be calculated with-out the
-  additional term arising from the $\delta \mathbf H$. This may be
-  useful in cases where the additional term arises due to self-energy
-  corrections.
+  The only difference between a $\dH$ and $\dSE$ file is that the
+  terms in $\dSE$ does \emph{not} enter the calculation of the
+  bond-currents, whereas $\dH$ does.
 
-  \note this functionality will only work correctly with a sorted
-  sparse $\delta \mathbf H$ entry. For every row the column indices
-  must be sorted.
-
-\end{fdflogicalT}
-
+\end{fdfentry}
 
 \subsection{Determine calculated physical quantities}
 \label{sec:physical}
@@ -852,7 +859,6 @@ $\rho_{\mathrm{bound-states}}=0$.
 
 \begin{fdflogicalF}{TBT.Current!Orb}
   \fdfdepend{TBT.Atoms!Device,TBT.DOS!A}
-
 
   Whether the orbital currents will be calculated and stored.  These
   will be stored in a sparse matrix format corresponding to the

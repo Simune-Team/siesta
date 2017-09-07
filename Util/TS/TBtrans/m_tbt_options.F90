@@ -465,7 +465,7 @@ contains
   end subroutine read_tbt_elec
 
 
-  subroutine read_tbt_after_Elec(nspin, cell, na_u, lasto, xa, kscell, kdispl)
+  subroutine read_tbt_after_Elec(nspin, cell, na_u, lasto, xa, no_u, kscell, kdispl)
 
     use fdf, only: fdf_get, leqi
     use parallel, only: IONode
@@ -476,8 +476,9 @@ contains
     use m_tbt_contour, only: read_contour_options
 
     use m_tbt_sigma_save, only: init_Sigma_options
-    use m_tbt_dH, only: init_dh_options
-    
+    use m_tbt_dH, only: init_dH_options
+    use m_tbt_dSE, only: init_dSE_options
+
     ! *******************
     ! * INPUT variables *
     ! *******************
@@ -485,6 +486,7 @@ contains
     real(dp), intent(in) :: cell(3,3)
     integer,  intent(in) :: na_u, lasto(0:na_u)
     real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(in) :: no_u
     integer,  intent(in) :: kscell(3,3)
     real(dp), intent(in) :: kdispl(3)
 
@@ -630,7 +632,11 @@ contains
 
     call init_Sigma_options( save_DATA )
 
-    call init_dH_options( save_DATA )
+    if ( IONode ) write(*,*) ! new-line
+    ! The init_dH_options also checks for the
+    ! consecutive sparse patterns.
+    call init_dH_options( no_u )
+    call init_dSE_options( )
 
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus )
@@ -669,6 +675,7 @@ contains
     use m_tbt_save, only: print_save_options
     use m_tbt_diag, only: print_diag
     use m_tbt_dH, only: print_dH_options
+    use m_tbt_dSE, only: print_dSE_options
     use m_tbt_sigma_save, only: print_Sigma_options
     use m_tbt_hs, only: Volt, IsVolt, spin_idx
 
@@ -703,12 +710,16 @@ contains
     write(*,f1) 'Calc. total T out of electrodes',('T-sum-out'.in.save_DATA)
     if ( nspin > 1 ) then
        if ( spin_idx == 0 ) then
-          write(*,f11) 'Calculate all spin-channels'
+          write(*,f11) 'Calculate spin UP and DOWN'
+       else if ( spin_idx == 1 ) then
+          write(*,f10) 'Calculate spin ','UP'
+       else if ( spin_idx == 2 ) then
+          write(*,f10) 'Calculate spin ','DOWN'
        else
-          write(*,f12) 'Calculate spin-channel',spin_idx
+          call die('Error in spin_idx')
        end if
     else
-       write(*,f11) 'Single spin Hamiltonian'
+       write(*,f11) 'Non-polarized Hamiltonian'
     end if
 
 
@@ -731,7 +742,9 @@ contains
     
     call print_diag()
     call print_Sigma_options( save_DATA )
-    call print_dH_options( save_DATA )
+    call print_dH_options( )
+    call print_dSE_options( )
+
     call print_save_options()
 
     write(*,f11)'          >> Electrodes << '
