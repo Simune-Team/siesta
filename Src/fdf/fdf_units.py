@@ -170,7 +170,16 @@ print(ind + 'character({}) :: dimm(nu)'.format(dimm_l))
 print(ind + 'character({}) :: name(nu)'.format(name_l))
 print(ind + 'real(dp) :: unit(nu)')
 
-fmt = "'{0:" + str(dimm_l) + "s}', '{1:" + str(name_l) + "s}', {2:s}"
+fmt_s = "'{0:" + str(dimm_l) + "s}', '{1:" + str(name_l) + "s}', {2:s}"
+# Double precision has (up to) 17 significant digits.
+fmt_f = "'{0:" + str(dimm_l) + "s}', '{1:" + str(name_l) + "s}', {2:<.17e}_dp"
+
+def get_line(field, unit, val):
+    if isinstance(val, float):
+        return fmt_f.format(field, unit, val)
+    else:
+        return fmt_s.format(field, unit, val)
+
 N = 0
 for field in units:
     # Number of units for this field
@@ -185,8 +194,8 @@ for field in units:
             print(ind + 'data (dimm(iu), name(iu), unit(iu), iu={}, {}) / &'.format(N+1, N+n))
         if i % max_units == n - 1:
             # End with '/
-            print(iind + fmt.format(field, unit.lower(), units[field][unit]) + ' /')
+            print(iind + get_line(field, unit.lower(), units[field][unit]) + ' /')
         else:
-            print(iind + fmt.format(field, unit.lower(), units[field][unit]) + ', &')
+            print(iind + get_line(field, unit.lower(), units[field][unit]) + ', &')
     print()
     N += n
