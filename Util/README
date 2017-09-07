@@ -93,12 +93,6 @@ VCA: Utilities to help in Virtual-Crystal calculations (by A. Garcia)
 
 Vibra: Package to compute phonon frequencies and modes (by P. Ordejon)
 
-vpsa2bin: Converts formatted pseudopotential files to unformatted
-	  form.
-
-vpsb2asc: Converts unformatted pseudopotential files to formatted
-	  form.
-
 WFS: Utilities for wavefunction-file manipulation
 
 
