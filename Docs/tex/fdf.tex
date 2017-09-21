@@ -28,6 +28,8 @@
 \NewDocumentCommand\fdftrue{ }{\fdf*{true}}
 \NewDocumentCommand\fdffalse{ }{\fdf*{false}}
 
+\newwrite\file@fdf
+\immediate\openout\file@fdf=\jobname.fdf
 
 % Shorthand command for printing the fdf-key
 % correctly, AND adding it to the index.
@@ -115,6 +117,8 @@
     \strut{\bgroup\color{fdf-list}%
         \StrSubstitute[0]{#1}{!}{.}[\@tmp]%
         \edef\@tmpword{\@tmp}
+        % Write the fdf-flag to the fdf-file
+        \expandafter\write\expandafter\file@fdf\expandafter{\@tmp}
         % In case the fdfentry is a block,
         % we prepend the %block to the 
         % word.
