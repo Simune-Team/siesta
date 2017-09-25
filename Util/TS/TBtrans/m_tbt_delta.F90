@@ -538,7 +538,8 @@ contains
        ! This is because a change in sparsity pattern
        ! might prohibit the Bcast mechanism for the sparsity
        ! patterns.
-       if ( sum(nlvl - nlvl(0)) /= 0 ) then
+       if ( IONode .and. .not. all(nlvl == nlvl(0)) ) then
+          write(*,'(a,1000(tr1,i2))')'Node levels: ',nlvl
           write(*,'(3a)')'Error in using ', opt, ' functionality'
           write(*,'(a)')'When using non-parallel reading of a delta file you must &
                &ensure that at each iteration each core will use the same level.'
@@ -600,9 +601,6 @@ contains
        if ( verbosity > 7 ) then
           write(*,f4) 'Level 4 (',Node,')',opt,', kpt = ',bkpt,', E = ',nE%E(Node) / eV, 'eV'
        end if
-
-    case default
-       call die('tbt_delta: read_delta, error in programming')
 
     end select
 
