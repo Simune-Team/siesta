@@ -269,7 +269,7 @@ MODULE fdf
                                      fdf_started = .FALSE.,             &
                                      fdf_output  = .FALSE.
 
-  integer(ip), parameter, private :: maxdepth   = 5
+  integer(ip), parameter, private :: maxdepth   = 7
   integer(ip), parameter, private :: maxFileNameLength = 300
   integer(ip), private            :: ndepth
   integer(ip), private            :: fdf_in(maxdepth)

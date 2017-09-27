@@ -12,6 +12,7 @@
       CONTAINS
 
       subroutine siesta_end( )
+      use fdf,             only : fdf_shutdown
       use alloc,           only : alloc_report
       use siesta_cml,      only : cml_p, mainXML, cmlEndModule
       use siesta_cmlsubs,  only : siesta_cml_exit
@@ -20,8 +21,8 @@
       USE siestaXC,        only : closeDebugOutputFile
 #endif /* DEBUG_XC */
       use m_timestamp,     only : timestamp
-      use m_wallclock,     only : wallclock
-      use parallel,        only : IOnode
+      use m_wallclock,     only : wallclock, wallclock_shutdown
+      use parallel,        only : IOnode, Node
 #ifdef MPI
       use mpi_siesta,      only : MPI_Finalize, MPI_SUCCESS
 #endif
@@ -63,7 +64,7 @@
 !!      call printmemory( 6, 1 )
 
 !     Print allocation report
-      call alloc_report( printNow=.true. )
+      call alloc_report( printNow=.true. , shutdown=.true.)
 
 #ifdef DEBUG_XC
 ! Close debug outup file
@@ -78,6 +79,8 @@
       if (IOnode) then
         call timestamp('End of run')
         call wallclock('End of run')
+        ! Ensure clock file is closed
+        call wallclock_shutdown()
       endif
 
       if (cml_p) then
@@ -92,7 +95,10 @@
       !
       ! Add stamp to MESSAGES file
       call message('INFO','Job completed')
-      
+
+      ! Clean the fdf-files
+      call fdf_shutdown()
+
 #ifdef MPI
       MPIerror = MPI_SUCCESS
       if (.not.siesta_subroutine) call MPI_Finalize( MPIerror )
