@@ -48,22 +48,6 @@
 
       if ( .not. do_pdos ) return
 
-C     PDOS not computed if non-collinear calculation is run in parallel
-      
-      if ( (spin%H > 2) .and. (Nodes .gt. 1) ) then
-         
-         if (IOnode) then
-            write(6,'(/2a,/)')
-     .           'siesta: ERROR: Cannot calculate projected DOS using ',
-     .           'non-collinear or spin-orbit calculations in parallel'
-         endif
-         
-         do_pdos = .false.
-            
-      endif
-
-      if ( .not. do_pdos ) return
-
 !     Determine whether the projected density of states is to be computed
 !     on a different grid to the SCF calculation
       call setup_Kpoint_pdos( ucell, different_pdos_grid )

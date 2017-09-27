@@ -71,8 +71,7 @@ C **********************************************************************
 
       real(dp)
      .  H(maxnh,4), S(maxnh), E1, E2, sigma, eo(maxo*2),
-     .  psi(2,2,nuotot,2*nuo), dtot(nhist,4), dpr(nhist,nuotot,4),
-     .  Spr(nuotot,nuo)
+     .  psi(2,2,nuotot,2*nuo), dtot(nhist,4), dpr(nhist,nuotot,4)
 
       complex(dp)
      .  Haux(2,nuotot,2,nuo), Saux(2,nuotot,2,nuo), caux(2,nuotot)
@@ -85,6 +84,8 @@ C Internal variables ---------------------------------------------------
       real(dp)
      .  delta, ener, diff, rpipj, ipipj, gauss, norm
 
+      real(dp), pointer :: Spr(:,:) => null()
+
 #ifdef MPI
       integer :: BNode, Bnuo, ibandg, maxnuo, MPIerror
       real(dp), pointer :: Sloc(:,:)
@@ -93,6 +94,9 @@ C Internal variables ---------------------------------------------------
 
 C Initialize some variables
       delta = (E2 - E1)/nhist
+
+      call re_alloc(Spr, 1, nuotot, 1, nuo, name='Spr',
+     &     routine='pdos2g')
 
 C Initialize auxiliary variables
       Haux=dcmplx(0.0_dp,0.0_dp)
@@ -146,8 +150,6 @@ C Rebuild the full overlap matrix
         enddo
       enddo
 
-      dpr = 0.0d0
-
 #ifdef MPI
 C Find maximum number of orbitals per node
         call MPI_AllReduce(nuo,maxnuo,1,MPI_integer,MPI_max,
@@ -178,7 +180,7 @@ C Transfer data
               ibandg = ibandg * 2 - mod(iband, 2) 
               diff = (ener - eo(ibandg))**2 / (sigma ** 2)
               if (diff .gt. 15.0d0) cycle
-              gauss = ( exp(-diff) )
+              gauss = exp(-diff)
               caux(:,:) = dcmplx(0.0_dp,0.0_dp)
               do j=1,nuotot
                 caux(1,j) = dcmplx(psi(1,1,j,iband),psi(2,1,j,iband))   ! c_{j,up)
@@ -205,7 +207,7 @@ C Transfer data
         enddo ! BNode loop
 
 C Free workspace array for overlap
-        call de_alloc(Sloc, name='Sloc' )
+        call de_alloc(Sloc, 'Sloc', 'pdos2g')
 
 #else
 C Loop over all the energy range
@@ -215,7 +217,7 @@ C Loop over all the energy range
           do iband = 1, nuo*2
             diff = (ener - eo(iband))**2 / (sigma ** 2)
             if (diff .gt. 15.0d0) cycle
-            gauss = ( exp(-diff) )
+            gauss = exp(-diff)
             caux(:,:) = dcmplx(0.0_dp,0.0_dp)
             do j=1,nuotot
               caux(1,j) = dcmplx(psi(1,1,j,iband),psi(2,1,j,iband))   ! c_{j,up)
@@ -240,6 +242,8 @@ C Loop over all the energy range
         enddo
 #endif
 
+      call de_alloc(Spr, 'Spr', 'pdos2g')
+        
 #ifdef MPI
 
 C Global reduction of dpr matrix
