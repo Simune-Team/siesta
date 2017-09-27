@@ -52,7 +52,10 @@ contains
 
     use m_tbt_options, only : N_Elec, Elecs
 #ifdef NCDF_4
-    use m_tbt_dH, only : use_dH, read_Sp_dH, dH
+    use m_tbt_delta, only : read_delta_Sp
+    use m_tbt_dH, only : use_dH, dH
+    use m_tbt_dSE, only : use_dSE, dSE
+    
     use m_tbt_kpoint, only : nkpnt, kpoint, kweight
     use m_tbt_options, only : save_DATA
     use m_tbt_options, only : cdf_fname, cdf_fname_sigma, cdf_fname_proj
@@ -94,7 +97,7 @@ contains
 ! * local variables
     integer :: iEl, NEn, no_used, no_used2, ispin, ils, i
 #ifdef NCDF_4
-    type(Sparsity) :: sp_total
+    type(Sparsity) :: sp1, sp_total
 #endif
 
     ! Total number of energy-points...
@@ -102,22 +105,34 @@ contains
 
 #ifdef NCDF_4
 
-    ! Ensure that the entire dH exists
-    ! in the sparsity pattern (for the moment, we
+    ! Ensure that the entire dH sparse elements exists in the
+    ! final pattern
     if ( use_dH ) then
-       call read_Sp_dH(TSHS%no_u,sp_total)
+       call read_delta_Sp(dH, TSHS%no_u, sp_total)
 
        ! Create the sparsity pattern and remove the buffer atoms...
        if ( r_aBuf%n > 0 .and. IONode ) then
-          write(*,'(a)')'tbtrans: Using buffer atoms with dH method.'
-          write(*,'(a)')'tbtrans: Ensure no buffer orbitals used in dH!'
+          write(*,'(a)')'tbt: Using buffer atoms with dH method.'
+          write(*,'(a)')'tbt: Ensure no buffer orbitals used in dH!'
        end if
-
-       call Sp_union(TSHS%dit,sp_total,TSHS%sp,sp_total)
-
-    else
-       sp_total = TSHS%sp
     end if
+
+    ! Ensure that the entire dSE sparse elements exists in the
+    ! final pattern
+    if ( use_dSE ) then
+       call read_delta_Sp(dSE, TSHS%no_u, sp1)
+       call Sp_union(TSHS%dit, sp_total, sp1, sp_total)
+       call delete(sp1)
+    
+       ! Create the sparsity pattern and remove the buffer atoms...
+       if ( r_aBuf%n > 0 .and. IONode ) then
+          write(*,'(a)')'tbt: Using buffer atoms with dSE method.'
+          write(*,'(a)')'tbt: Ensure no buffer orbitals used in dSE!'
+       end if
+    end if
+
+    ! Make union
+    call Sp_union(TSHS%dit, sp_total, TSHS%sp, sp_total)
 
     ! Initialize the tri-diagonal matrices!
     if ( N_mol > 0 ) then
@@ -248,6 +263,11 @@ contains
           ! Force to re-read the following dH matrices
           dH%lvl = -1
           dH%ispin = ispin
+       end if
+       if ( use_dSE ) then
+          ! Force to re-read the following dSE matrices
+          dSE%lvl = -1
+          dSE%ispin = ispin
        end if
 #endif
 

@@ -1027,7 +1027,7 @@ contains
 #endif
 
 #ifdef TBTRANS_TIMING
-    call timer('cdf-w-T',1)
+    call timer('cdf-w-DTJ',1)
 #endif
 
     NDOS = size(DOS,dim=1)
@@ -1173,7 +1173,7 @@ contains
 #endif
 
 #ifdef TBTRANS_TIMING
-    call timer('cdf-w-T',2)
+    call timer('cdf-w-DTJ',2)
 #endif
 
   end subroutine state_cdf_save
@@ -1359,6 +1359,10 @@ contains
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
+#ifdef TBTRANS_TIMING
+    call timer('cdf-w-J',1)
+#endif
+
     J => val(orb_J)
     nnzs_dev = size(J)
     ! We save the orbital current
@@ -1392,7 +1396,11 @@ contains
        end if
     end if
 #endif
-       
+
+#ifdef TBTRANS_TIMING
+    call timer('cdf-w-J',2)
+#endif
+
   end subroutine state_cdf_save_J
 
 

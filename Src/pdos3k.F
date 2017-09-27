@@ -219,7 +219,8 @@ C Loop over all the energy range
           do ihist = 1, nhist
             ener = E1 + (ihist - 1) * delta
             do iband = 1, nuo*2
-              call LocalToGlobalOrb(iband,Node,Nodes,ibandg)
+              call LocalToGlobalOrb((iband+1)/2,Node,Nodes,ibandg)
+              ibandg = ibandg * 2 - mod(iband, 2) 
               diff = (ener - eo(ibandg,ik))**2 / (sigma ** 2)
               if (diff .gt. 15.0d0) cycle
               gauss = ( exp(-diff) )

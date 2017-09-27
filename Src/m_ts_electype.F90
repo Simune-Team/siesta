@@ -1530,14 +1530,15 @@ contains
   subroutine create_sp2sp01(this,IO)
 
     use parallel, only : IONode
-
+#ifdef MPI
+    use mpi_siesta
+#endif
+    use m_os, only: file_exist
+    
     use class_OrbitalDistribution
 
     use create_Sparsity_SC
     use geom_helper, only : iaorb
-#ifdef MPI
-    use mpi_siesta
-#endif
 
     type(Elec), intent(inout) :: this
     logical, intent(in), optional :: io
@@ -1663,11 +1664,22 @@ contains
 
     ! Check that there is a transfer matrix!
     if ( nnzs(this%sp01) == 0 ) then
-       write(*,'(a)') 'Electrode '//trim(this%name)//' has no transfer matrix.'
-       write(*,'(a)') 'The self-energy cannot be calculated with a zero transfer matrix!'
-       call die('Elec: transfer matrix has 0 elements. The self-&
-            &energy cannot be calculated. Please check your electrode &
-            &electronic structure.')
+       if ( IONode ) then
+          write(*,'(a)') 'Electrode '//trim(this%name)//' has no transfer matrix.'
+       end if
+       ! We will *only* die if the user haven't provided an externally created GF file
+       lio = file_exist(trim(this%GFfile), Bcast=.true.)
+       if ( this%out_of_core .and. this%ReUseGF .and. lio ) then
+          if ( IONode ) then
+             write(*,'(3a)') 'Assuming ',trim(this%GFfile),' contains H, S and E*S - H - \Sigma &
+                  &for calculating the correct self-energies and scattering matrices.'
+          end if
+       else
+          write(*,'(a)') 'The self-energy cannot be calculated with a zero transfer matrix!'
+          call die('Elec: transfer matrix has 0 elements. The self-&
+               &energy cannot be calculated. Please check your electrode &
+               &electronic structure.')
+       end if
     end if
 
   end subroutine create_sp2sp01
