@@ -72,17 +72,18 @@ contains
 
     if ( IONode ) then
        write(*,*)
-       write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias ', Volt/eV,'V'
     end if
 
     if ( ts_tidx < 1 ) then
 
        if ( IONode .and. len_trim(Hartree_fname) == 0 ) then
-          write(*,'(a)')'ts_voltage: Lifted locally on each electrode'
-          write(*,'(a)')'ts_voltage: WARNING please prefer to use a custom Poison solution!'
-          
+          write(*,'(a)')'ts-voltage: Lifted locally on each electrode'
+          write(*,'(a)')'ts-voltage: WARNING ****************************************'
+          write(*,'(a)')'ts-voltage: WARNING Prefer to use a custom Poisson solution!'
+          write(*,'(a)')'ts-voltage: WARNING ****************************************'
+
        else if ( IONode .and. len_trim(Hartree_fname) > 0 ) then
-          write(*,'(3a)')'ts_voltage: ', &
+          write(*,'(3a)')'ts-voltage: ', &
                'User supplied Poisson solution in file ', &
                trim(Hartree_fname)
 #ifdef NCDF_4
@@ -94,15 +95,17 @@ contains
        end if
 
        ! Find the lowest and highest chemical potential
-       V_low = huge(1._dp)
-       V_high = -huge(1._dp)
-       do iElL = 1 , size(Elecs)
-          V_low = min(Elecs(iElL)%mu%mu,V_low)
-          V_high = max(Elecs(iElL)%mu%mu,V_high)
+       V_low = Elecs(1)%mu%mu
+       V_high = Elecs(1)%mu%mu
+       do iEl = 2 , size(Elecs)
+          V_low = min(Elecs(iEl)%mu%mu,V_low)
+          V_high = max(Elecs(iEl)%mu%mu,V_high)
        end do
        if ( Volt < 0._dp ) then
           ! with a negative bias, we have to reverse
           ! the high-low
+          ! Remember that in this case V_high and V-low are
+          ! only used for the external Hartree potential.
           tmp = V_high
           V_high = V_low
           V_low = tmp
@@ -129,7 +132,7 @@ contains
        end do
 
        if ( bool .and. len_trim(Hartree_fname) == 0 ) then
-          call die('ts_voltage: Check output, an electrode cannot be &
+          call die('ts-voltage: Check output, an electrode cannot be &
                &correctly applied a bias.')
        end if
 
@@ -139,6 +142,7 @@ contains
 
     ! set the left chemical potential
     call get_elec_indices(cell, na_u, xa, iElL, iElR)
+    
     ! this will be the applied bias in the "lower"
     ! electrode in the unit-cell
     V_low = Elecs(iElL)%mu%mu
@@ -214,7 +218,7 @@ contains
     real(dp) :: dF, dV
 
     ! field in [0;end]: v = e*x = f*index
-    dF = Volt / real(right_elec_mesh_idx - left_elec_mesh_idx+1,dp)
+    dF = (V_high - V_low) / real(right_elec_mesh_idx - left_elec_mesh_idx+1,dp)
 
     ! Find quantities in mesh coordinates
     if ( product(nmeshl) /= size(Vscf) ) &
@@ -239,7 +243,7 @@ contains
                    dV = V_high
                 else
                    ! We are in between the electrodes
-                   dV = V_low - dF*(i1-left_elec_mesh_idx)
+                   dV = V_low + dF*(i1-left_elec_mesh_idx)
                 end if
 
                 imesh = imesh + 1
@@ -265,7 +269,7 @@ contains
                 dV = V_high
              else
                 ! We are in between the electrodes
-                dV = V_low - dF*(i2-left_elec_mesh_idx)
+                dV = V_low + dF*(i2-left_elec_mesh_idx)
              end if
              
              do i1 = 1 , nmeshl(1)
@@ -291,7 +295,7 @@ contains
              dV = V_high
           else
              ! We are in between the electrodes
-             dV = V_low - dF*(i3-left_elec_mesh_idx)
+             dV = V_low + dF*(i3-left_elec_mesh_idx)
           end if
 
           do i2 = 1 , nmeshl(2)
@@ -648,22 +652,14 @@ contains
 
     if ( .not. IONode ) return
     
-    Lvc = VNORM(cell(:,ts_tidx))
-    do i = 1 , 3
-       vcdir(i) = cell(i,ts_tidx)/Lvc
-    end do
-
-    write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias @bottom ',V_low/eV,'V'
-    write(*,'(a,3(f6.3,a))')'ts_voltage: Direction vector = {', &
-         vcdir(1),',',vcdir(2),',',vcdir(3),'}'
-
     ! Print the ramp coordinates
     vcdir = cell(:,ts_tidx) / nmesh(ts_tidx) / Ang
     ElL = vcdir * (left_elec_mesh_idx - 1)
     ElR = vcdir *  right_elec_mesh_idx
-    write(*,'(a,/,a,3(f9.3,tr1),a,3(tr1,f9.3),a)') &
-         'ts_voltage: Ramp placed between the &
-         &cell coordinates (Ang):','  {',ElL,'} to {',ElR,' }'
+    write(*,'(a,2(f6.3,tr1,a),a)') &
+         'ts-voltage: Ramp ', V_low/eV, 'eV to ', V_high/eV, 'eV ', &
+         'placed between cell coordinates (Ang):'
+    write(*,'(tr2,a,3(f9.3,tr1),a,3(tr1,f9.3),a)') '{',ElL,'} to {',ElR,' }'
 
   end subroutine print_ts_voltage
 
@@ -800,7 +796,7 @@ contains
             &Poisson solution.')
        
     else
-       write(*,'(a)') 'ts_voltage: User Poisson solution accepted format'
+       write(*,'(a)') 'ts-voltage: User Poisson solution accepted format'
     end if
 
   end subroutine ts_ncdf_voltage_assert
