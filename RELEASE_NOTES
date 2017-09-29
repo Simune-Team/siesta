@@ -14,9 +14,6 @@ Release notes for next Siesta
 
 *** New features
 
- - Added the Cold-smearing method for zero-temperature limit
-   with smearing.
-
  - TDDFT implemented by R. Ullah via older code from
    D. Sanchez-Portal.
    

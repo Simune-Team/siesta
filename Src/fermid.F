@@ -364,19 +364,19 @@ C calculated here if ne < maxe
       real(dp), intent(in) :: x
 
       integer  :: i, j
-      real(dp) :: a, gauss
+      real(dp) :: pi, a, gauss
 
 C Local variables
-      character(len=22) :: ocf
+      character(len=22), save :: ocf = 'FD'
       integer,           save :: nh = 1
       integer,           save :: ocupfnct
-      logical,           save :: ocfread = .true.
+      logical,           save :: ocfread = .false.
       
-      real(dp), parameter :: PI = 3.14159265358979D0
+      parameter (PI = 3.14159265358979D0)
 
 C Reading which electronic occupation function to use -------
 
-      if (ocfread) then
+      if ( .not. ocfread) then
 
         ocf = fdf_string('OccupationFunction','FD')
 
@@ -393,25 +393,18 @@ C Reading which electronic occupation function to use -------
             write(6,'(a,i2)') 
      .        '       Using Hermite-Gauss polynomials of order ',nh
           endif
-        else if (leqi(ocf,'cold')) then
-          ocupfnct = 3
-          if ( ionode ) then
-             write(6,'(/2a)')
-     .     'stepf: Cold smearing (Marzari-Vanderbilt) step function'
-          end if
         else
           call die('fermid: Error: Allowed values '
-     $          // 'for OccupationFunction are FD, MP, Cold')
+     $             // 'for OccupationFunction are FD and MP')
         endif
-        ocfread = .false.
-      end if
+        ocfread = .true.
+      endif   
 c--------------------------------------
 
 C Complementary error function. Ref: Fu & Ho, PRB 28, 5480 (1983)
 *     STEPF=DERFC(X)  -  not available
 
-      select case ( ocupfnct )
-      case ( 1 )
+      if (ocupfnct .eq. 1) then
 
 C Fermi-Dirac distribution
         if (x.gt.100.D0) then
@@ -423,7 +416,7 @@ C Fermi-Dirac distribution
         endif
 
 
-      case ( 2 )
+      else if (ocupfnct .eq. 2) then
 
 C Improved step function. Ref: Methfessel & Paxton PRB40 (15/Aug/89)
 C NH is the order of the Hemite polynomial expansion.
@@ -441,22 +434,13 @@ C Get contribution to step function at order I
           J = 2*I -1 
           if (gauss .gt. 1.d-20) stepf = stepf + a * hp(x,j) * gauss
 
-        enddo
+        enddO
 
-      case ( 3 )
-
-C Cold smearing function. Ref: Marzari-Vanderbilt PRL82, 16, 1999
-
-        a = - x - 1._dp / sqrt(2._dp)
-        stepf = 0.5_dp +
-     .       derf(a) * 0.5_dp +
-     .       1._dp / sqrt(2._dp*Pi) * exp( - min(300._dp, a ** 2) )
-
-      case default
+      else
 
         call die( 'Stepf: Incorrect step function')
 
-      end select
+      endif
 
       end function stepf
 
@@ -469,19 +453,18 @@ C (refered to the Fermi energy, in units of the smearing
 C temperature) and occupation W to the electronic entropy
 C P. Ordejon, June 2003
 
-      real(dp), parameter :: PI = 3.14159265358979D0
-
 C Local variables
-      character(len=22) :: ocf
+      character(len=22), save :: ocf = 'FD'
       integer,           save :: nh = 1
       integer,           save :: ocupfnct
-      logical,           save :: ocfread = .true.
-      real(dp), parameter     :: tiny = 1.d-15
-      real(dp)                :: wo, we
+      logical,           save :: ocfread = .false.
+      real(dp)                :: tiny, wo, we
+
+      data tiny /1.d-15/
 
 c Reading which electronic occupation function to use -------
 
-      if (ocfread) then
+      if ( .not. ocfread) then
 
         ocf = fdf_string('OccupationFunction', 'FD')
 
@@ -490,45 +473,37 @@ c Reading which electronic occupation function to use -------
         else if (leqi(ocf,'MP')) then
           ocupfnct = 2
           nh = fdf_integer('OccupationMPOrder',1)
-        else if (leqi(ocf,'cold')) then
-          ocupfnct = 3
         else
           call die('fermid: Error: Allowed values '
-     $      // 'for OccupationFunction are FD, MP, Cold')
+     $             // 'for OccupationFunction are FD and MP')
         endif
-        ocfread = .false.
+        ocfread = .true.
       endif   
 c--------------------------------------
-      
-      select case ( ocupfnct )
-      case ( 1 )
+
+
+      if (ocupfnct .eq. 1) then
 
 C Mermin entropy for the Fermi-Dirac distribution
         wo = max( w, tiny )
         we = 1.0d0 - wo
         we = max( we, tiny )
 
-        enpy = - wo*log(wo) - we*log(we)
+        enpy = - 1.0 * ( wo*log(wo) + we*log(we) )
+     .         
 
-      case ( 2 )
+      else if (ocupfnct .eq. 2) then
 
 C Entropy for the Improved step function. 
 C Ref: Methfessel & Paxton PRB40 (15/Aug/89)
 
-         enpy = whg(e,nh)
+        enpy = whg(e,nh)
 
-      case ( 3 )
+      else
 
-C Cold smearing function. Ref: Marzari-Vanderbilt PRL82, 16, 1999
+        call die( 'Stepf: Incorrect step function')
 
-         we = - E - 1._dp / sqrt(2._dp)
-         enpy = we / sqrt(2._dp * pi) * exp( - min(300._dp, we**2) )
-         
-      case default
-
-         call die( 'Stepf: Incorrect step function')
-
-      end select
+      endif
 
       END function enpy
 

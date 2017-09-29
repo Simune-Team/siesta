@@ -5711,16 +5711,16 @@ the issue (see Sec.~\ref{sec:filtering}).
   
   These files are created
   \begin{itemize}
-    \item \file{H\_MIXED}; the Hamiltonian after
+    \item \file{H_MIXED}; the Hamiltonian after
     mixing
     
-    \item \file{DM\_OUT}; the density matrix as calculated by the
+    \item \file{DM_OUT}; the density matrix as calculated by the
     current iteration
 
-    \item \file{H\_DMGEN}; the Hamiltonian used to calculate the
+    \item \file{H_DMGEN}; the Hamiltonian used to calculate the
     density matrix
     
-    \item \file{DM\_MIXED}; the density matrix after mixing
+    \item \file{DM_MIXED}; the density matrix after mixing
 
   \end{itemize}
   
@@ -6013,7 +6013,7 @@ if the \fdf{COOP.Write} option is in effect.
 \begin{fdfentry}{OccupationFunction}[string]<FD>
   
   String variable to select the function that determines the
-  occupation of the electronic states. These options are available:
+  occupation of the electronic states. Two options are available:
   \begin{fdfoptions}
     \option[FD]%
     The usual Fermi-Dirac occupation function is used.
@@ -6022,13 +6022,8 @@ if the \fdf{COOP.Write} option is in effect.
     The occupation function proposed by Methfessel and
     Paxton (Phys. Rev. B, \textbf{40}, 3616 (1989)), is used.
 
-    \option[Cold]%
-    The occupation function proposed by Marzari, Vanderbilt et. al
-    (PRL, \textbf{82}, 16 (1999)), is used, this is commonly referred
-    to as \emph{cold smearing}.
-
   \end{fdfoptions}
-  The smearing of the electronic occupations is done, in all cases,
+  The smearing of the electronic occupations is done, in both cases,
   using an energy width defined by the \fdf{ElectronicTemperature}
   variable. Note that, while in the case of Fermi-Dirac, the
   occupations correspond to the physical ones if the electronic
@@ -6038,16 +6033,16 @@ if the \fdf{COOP.Write} option is in effect.
   integration of the physical quantities at a lower cost. In
   particular, the Methfessel-Paxton scheme has the advantage that,
   even for quite large smearing temperatures, the obtained energy is
-  very close to the physical energy at $T=0$. Also, it allows a much
+  very close to the physical energy at $T=0$.  Also, it allows a much
   faster convergence with respect to $k$-points, specially for
   metals. Finally, the convergence to selfconsistency is very much
   improved (allowing the use of larger mixing coefficients).
 
-  For the Methfessel-Paxton case, and similarly for cold smearing, one
-  can use relatively large values for the \fdf{ElectronicTemperature}
-  parameter. How large depends on the specific system. A guide can be
-  found in the article by J. Kresse and J. Furthm\"uller,
-  Comp. Mat. Sci. \textbf{6}, 15 (1996).
+  For the Methfessel-Paxton case, one can use relatively large values
+  for the \fdf{ElectronicTemperature} parameter. How large depends
+  on the specific system. A guide can be found in the article by
+  J. Kresse and J. Furthm\"uller, Comp. Mat. Sci.  \textbf{6}, 15
+  (1996).
 
   If Methfessel-Paxton smearing is used, the order of the
   corresponding Hermite polynomial expansion must also be chosen (see
@@ -6080,8 +6075,9 @@ if the \fdf{COOP.Write} option is in effect.
 
 \begin{fdfentry}{ElectronicTemperature}[temperature/energy]<$300\,\mathrm{K}$>
   
-  Temperature for occupation function. Useful specially for metals,
-  and to accelerate selfconsistency in some cases.
+  Temperature for Fermi-Dirac or Methfessel-Paxton
+  distribution. Useful specially for metals, and to accelerate
+  selfconsistency in some cases.
 
 \end{fdfentry}
 
