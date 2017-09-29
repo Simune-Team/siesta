@@ -1004,7 +1004,8 @@ siesta_analysis.o: write_subs.o writewave.o zmatrix.o
 siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
 siesta_cmlsubs.o: 
 siesta_dicts.o: atomlist.o files.o kpoint_grid.o m_energies.o m_forces.o
-siesta_dicts.o: m_steps.o m_stress.o precision.o siesta_geom.o siesta_options.o
+siesta_dicts.o: m_mixing_scf.o m_steps.o m_stress.o precision.o siesta_geom.o
+siesta_dicts.o: siesta_options.o
 siesta_end.o: alloc.o bands.o densematrix.o extrae_eventllist.o flook_siesta.o
 siesta_end.o: m_dscfcomm.o m_fixed.o m_io.o m_mixing_scf.o m_rhog.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
@@ -1095,7 +1096,8 @@ vmat.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 vmatsp.o: meshphi.o precision.o
 vmb.o: m_fixed.o parallel.o precision.o sys.o
-wavefunctions.o: parallel.o precision.o
+wavefunctions.o: atomlist.o kpoint_grid.o m_spin.o parallel.o precision.o
+wavefunctions.o: sparse_matrices.o
 write_inp_wannier.o: alloc.o atmfuncs.o atomlist.o m_ntm.o m_orderbands.o
 write_inp_wannier.o: mneighb.o parallel.o parallelsubs.o precision.o
 write_inp_wannier.o: siesta2wannier90.o siesta_geom.o

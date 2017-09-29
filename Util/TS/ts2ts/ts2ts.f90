@@ -32,7 +32,7 @@ program ts2ts
 
   
   real(dp) :: CCEmin, GFEta, Volt, TBTmin, TBTmax, Epole
-  integer :: Nline, Ncircle, Npol, Nvolt, Npoints
+  integer :: Nline, Ncircle, Npol, Nvolt, Npoints, TBTNeig
 
   logical :: IsVolt, Bulk, UpdateDMCR, ReUse
 
@@ -289,13 +289,18 @@ program ts2ts
   call e2a(abs(TBTmax-TBTmin)/Npoints,c_TBTdE,force_eV=.true.)
   GFEta   = fdf_get('TS.TBT.Eta',0.0001_dp*eV,'Ry')
   call e2a(GFEta,c_GFEta,prec=10,force_eV=.true.)
+  TBTNeig = fdf_get('TS.TBT.Neigen',-1)
 
   ! Print out the TBTrans options
   call nl
   call nl
   write(*,'(a)') '# TBtrans options'
   call nl
+  if ( TBTNeig >= 0 ) then
+     write(*,'(a,i0)') 'TBT.T.Eig ', TBTNeig
+  end if
   write(*,'(a,a)')'TBT.Elecs.Eta ',trim(c_GFEta)
+  call nl
   call sblock('TBT.Contours')
   write(*,'(tr2,a)') 'neq'
   call eblock('TBT.Contours')

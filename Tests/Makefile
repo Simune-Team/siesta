@@ -87,17 +87,21 @@ tests_soc_offsite += offsite_SOC_FePt_xx offsite_SOC_FePt_xz offsite_SOC_FePt_zy
 tests_soc_onsite  = onsite_SOC_Pt2_xx onsite_SOC_Pt2_xz onsite_SOC_Pt2_zy onsite_SOC_Pt2_zz
 tests_soc_onsite += onsite_SOC_FePt_xx onsite_SOC_FePt_xz onsite_SOC_FePt_zy onsite_SOC_FePt_zz
 
+# Tests only applicable for LUA
+tests_lua  = lua_si111 lua_h2o
+
 # Tests only applicable for FLOS
 tests_flos  = flos_h2o_lbfgs flos_h2o_fire flos_h2o_meshcutoff flos_h2o_neb
 
 # Accumulated variable for ALL tests
-tests_all = $(tests) $(tests_soc_offsite) $(tests_soc_onsite) $(tests_flos)
+tests_all = $(tests) $(tests_soc_offsite) $(tests_soc_onsite) $(tests_lua) $(tests_flos)
 
 all: $(tests)
 
 # Define test specific targets:
 tests: $(tests)
 tests-soc: $(tests_soc_offsite) $(tests_soc_onsite)
+tests-lua: $(tests_lua)
 tests-flos: $(tests_flos)
 
 # Ensure that tests may be called individually

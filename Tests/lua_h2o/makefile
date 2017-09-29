@@ -1,6 +1,6 @@
 #
 # Single-test makefile
 #
-name=h2o
+name=lua_h2o
 #
 include ../test.mk

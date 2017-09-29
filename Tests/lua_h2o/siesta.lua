@@ -12,9 +12,9 @@ function siesta_comm()
       Retrieve siesta information.
 
       In this case we only request the coordinates,
-      the forces and the MixingWeight
+      the forces and the mixing weight
    --]]
-   local get_tbl = {"SCF.MixingWeight","geom.xa","geom.fa"}
+   local get_tbl = {"SCF.Mixer.Weight","geom.xa","geom.fa"}
    local ret_tbl = {}
 
    -- Do the actual communication with fortran
@@ -24,8 +24,7 @@ function siesta_comm()
       -- You can even write to other files while running 
       local fh = assert(io.open("lua_out_".. siesta.Node ..".out","a"))
       fh:write("Current state: "..siesta.state.."\n")
-      fh:write("Current wmix: "..siesta.SCF.MixingWeight.."\n")
-      write_mat(fh,"xa",siesta.geom.xa)
+      fh:write("Current wmix: "..siesta.SCF.Mixer.Weight.."\n")
       fh:close()
    --]]
 
@@ -37,10 +36,12 @@ function siesta_comm()
 
    if siesta.state == siesta.INIT_MD then
       siesta:print("...Right before entering the SCF loop...")
+      local fh = assert(io.open("lua_out_".. siesta.Node ..".out","a"))
+      write_mat(fh,"xa",siesta.geom.xa)
+      fh:close()
       ret_tbl = init_md(siesta)
    end
 
-   
    if siesta.state == siesta.SCF_LOOP then
       siesta:print("...At start of SCF...")
       ret_tbl = scf(siesta)
@@ -102,18 +103,18 @@ function scf(siesta)
    --]]
    data.tot_itt = data.tot_itt + 1
    local i = data.tot_itt
-   data.wmix[i] = SCF.MixingWeight
+   data.wmix[i] = SCF.Mixer.Weight
    
-   if i > 1 and SCF.MixingWeight < 0.5 then
+   if i > 1 and SCF.Mixer.Weight < 0.5 then
       --[[
 	 We increase the mixing weight until a limit
 	 of 0.5
       --]]
-      SCF.MixingWeight = SCF.MixingWeight + 0.01
+      SCF.Mixer.Weight = SCF.Mixer.Weight + 0.01
    end
    
    -- Only return mixing weight here
-   return {"SCF.MixingWeight"}
+   return {"SCF.Mixer.Weight"}
 end
    
 function siesta_move(siesta)
@@ -141,10 +142,10 @@ function siesta_move(siesta)
    end
 
    -- After MD step, we reset mixing-weight
-   siesta.SCF.MixingWeight = data.wmix[1]
+   siesta.SCF.Mixer.Weight = data.wmix[1]
 
    -- Send back mixing weight and the corrected forces
-   return {"SCF.MixingWeight","geom.fa"}
+   return {"SCF.Mixer.Weight","geom.fa"}
 end
 
 --[[
