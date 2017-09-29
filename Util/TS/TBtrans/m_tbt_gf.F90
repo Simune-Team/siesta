@@ -98,7 +98,7 @@ contains
     NEn = N_TBT_E()
     allocate(ce(NEn))
     iE = 0
-    do i = 1 , N_TBT_E()
+    do i = 1 , NEn
        c = tbt_E(i)
        ! We ensure to add the complex imaginary value
 #ifdef TBT_PHONON

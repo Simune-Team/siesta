@@ -364,7 +364,7 @@ CONTAINS
                       nuotot,occup)
 #ifdef MPI
       use parallel, only : BlockSize,Node
-      use m_diagon_opt, only : ictxt
+      use m_diag, only: diag_descinit
 #endif
       !
       implicit none
@@ -382,7 +382,7 @@ CONTAINS
 #endif
       !
 #ifdef MPI
-        call descinit(desch,nuotot,nuotot,BlockSize,BlockSize,0,0,ictxt,nuotot,ierror)
+      call diag_descinit(nuotot,nuotot,BlockSize,desch)
 #endif
       !
       indwf=0
@@ -429,7 +429,7 @@ CONTAINS
                       kpoint, Haux,Saux,psi,nuotot,occup)
 #ifdef MPI
       use parallel, only : BlockSize
-      use m_diagon_opt, only : ictxt
+      use m_diag, only: diag_descinit
 #endif
       !
       implicit none
@@ -448,7 +448,7 @@ CONTAINS
 #endif
       !
 #ifdef MPI
-      call descinit(desch,nuotot,nuotot,BlockSize,BlockSize,0,0,ictxt,nuotot,ierror)
+      call diag_descinit(nuotot,nuotot,BlockSize,desch)
 #endif
       !
       indwf=0

@@ -658,9 +658,25 @@ contains
 
        call delete(dic)
 
-       if ( 'DOS-Elecs' .in. save_DATA ) then
+       call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
-          call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
+       ! Save generic information about electrode
+       dic = ('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
+       call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
+#ifdef TBT_PHONON
+       dic = dic//('info'.kv.'Phonon temperature')
+#else
+       dic = dic//('info'.kv.'Electronic temperature')
+#endif
+       call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
+
+       call delete(dic)
+
+       if ( 'DOS-Elecs' .in. save_DATA ) then
 
           call ncdf_def_dim(grp,'no_u',Elecs(iEl)%no_u)
           call ncdf_def_dim(grp,'na_u',Elecs(iEl)%na_u)
@@ -691,14 +707,14 @@ contains
 
        end if
 
+       
+       ! Now we will only add information that is calculated
        if ( iEl == N_Elec ) then
           ! check if all are calculated
           if ( ('DOS-A-all' .nin. save_DATA) .and. &
                ('T-all'.nin. save_DATA) ) cycle
        end if
 
-       if ( 'DOS-Elecs' .nin. save_DATA ) &
-            call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
        if ( 'DOS-A' .in. save_DATA ) then
           dic = dic//('info'.kv.'Spectral function density of states')// &
@@ -707,22 +723,8 @@ contains
                atts = dic, chunks = (/r%n,1,1/) , compress_lvl=cmp_lvl)
        end if
 
-       ! Save information about electrode
-       dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
-       call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
-            atts = dic)
-       call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
-#ifdef TBT_PHONON
-       dic = dic//('info'.kv.'Phonon temperature')
-#else
-       dic = dic//('info'.kv.'Electronic temperature')
-#endif
-       call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
-            atts = dic)
-       call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
-
        call delete(dic)
-
+       
        if ( 'orb-current' .in. save_DATA ) then
           dic = ('info'.kv.'Orbital current')
           

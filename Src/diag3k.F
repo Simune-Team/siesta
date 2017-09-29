@@ -10,7 +10,8 @@
      .                   listd, H, S, getD, getPSI, qtot, temp, e1, e2,
      .                   xij, indxuo, nk, kpoint, wk,
      .                   eo, qo, Dnew, Enew, ef, Entropy,
-     .                   psi, nuotot, occtol, iscf)
+     .                   Haux, Saux, psi, Dk, Ek, caux, 
+     .                   nuotot, occtol, iscf, neigwanted)
 
 !
       use precision
@@ -37,6 +38,7 @@ C Written by J.Soler, August 1998.
 C Modified by V.M.Garcia, June 2002.
 C Density matrix build and computation of eigenvectors restricted
 C by J.D. Gale November 2004.
+C Reduced memory requirements, Nick, Aug. 2017
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
@@ -78,6 +80,7 @@ C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
 C real*8  occtol              : Occupancy threshold for DM build
 C integer iscf                : SCF cycle number
+C integer neigwanted          : Number of eigenvalues wanted
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo*2,nk)        : Eigenvalues
 C real*8 qo(maxo*2,nk)        : Occupations of eigenstates
@@ -86,11 +89,12 @@ C real*8 Enew(maxnd,4)        : Output Energy-Density Matrix
 C real*8 ef                   : Fermi energy
 C real*8 Entropy              : Electronic entropy
 C *************************** AUXILIARY *******************************
-C real*8 Haux(2,nuotot,2,nuo) : Aux. space for the hamiltonian matrix
-C real*8 Saux(2,nuotot,2,nuo) : Aux. space for the overlap matrix
-C real*8 psi(2,2,nuotot,2*nuo)  : Aux. space for the eigenvectors
-C real*8 Dk(2,nuotot,2,nuo)   : Aux. space that may be the same as Haux
-C real*8 Ek(2,nuotot,2,nuo)   : Aux. space that may be the same as Saux
+C complex*16 Haux(2,nuotot,2,nuo): Auxiliary space for the hamiltonian matrix
+C complex*16 Saux(2,nuotot,2,nuo): Auxiliary space for the overlap matrix
+C complex*16 psi(2,nuotot,2*nuo) : Auxiliary space for the eigenvectors
+C complex*16 Dk(2,nuotot,nuo)    : Aux. space that may be the same as Haux
+C complex*16 Ek(2,nuotot,nuo)    : Aux. space that may be the same as Saux
+C complex*16 caux(2,nuotot)      : Extra auxiliary space
 C *************************** UNITS ***********************************
 C xij and kpoint must be in reciprocal coordinates of each other.
 C temp and H must be in the same energy units.
@@ -112,12 +116,14 @@ C *********************************************************************
       real(dp) kpoint(3,nk), wk(nk), xij(3,maxnh)
       real(dp) e1, e2, ef, eo(maxo*2,nk), qo(maxo*2,nk)
       real(dp) occtol, qtot, temp, Entropy
+      integer :: neigwanted
       
+      complex(dp), dimension(2,nuotot,2,nuo) :: Haux, Saux, Dk, Ek
+      complex(dp), dimension(2,nuotot,2*nuo) :: psi
+      complex(dp), dimension(2,nuotot) :: caux
       logical               getD, getPSI
       
 !     TEMPOS, INTERNAL VARIABLES etc.
-      
-      real(dp) psi(2,2,nuotot,nuo*2)
       
       integer  BNode, BTest, ie, ierror, iie, ik, ind, io, iio
       integer  iuo, j, jo, juo, neigneeded
@@ -126,35 +132,18 @@ C *********************************************************************
 !     Haux(js,juo,is,iuo) = <js,juo|H|is,iuo>
 !     Indices is and js are for spin components
 !     Indices iuo and juo are for orbital components
-      complex(dp),dimension(:,:,:,:), allocatable :: Haux, Saux
-      
-      complex(dp),dimension(:,:,:,:), allocatable :: Dkc, Ekc
       complex(dp)                                 :: cicj
       complex(dp)                                 :: D11, D22, D12, D21
-      complex(dp),dimension(:,:),     allocatable :: caux
       complex(dp)                                 :: kphs
       real(dp)                                    :: kxij
 #ifdef MPI
       integer            :: MPIerror
 #endif
 
-      external              cdiag, memory
+      external              cdiag
 !***********************************************************************
 !     B E G I N
 !***********************************************************************
-!     define the arrays
-      allocate(Haux(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag3k')
-      allocate(Saux(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag3k')
-      allocate(Dkc(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag3k')
-      allocate(Ekc(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag3k')
-      allocate(caux(2,2*nuotot))
-      call memory('A','Z',2*2*nuotot,'diag3k')
-      
-      eo = 0.0_dp
 
 ! Notes for On-site SO implementation      
 !****************************************************************************
@@ -252,7 +241,7 @@ C *********************************************************************
 !       Find eigenvalues
 !       Note duplication since the spins are mixed
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo(1,ik),psi,
-     .             0,iscf,ierror, 2*BlockSize)
+     .             -2*neigwanted,iscf,ierror, 2*BlockSize)
       
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
@@ -266,7 +255,7 @@ C *********************************************************************
 !-----------------------------------------------------------------------
       
 !     Find new Fermi energy and occupation weights
-      call fermid(2,2,nk,wk,maxo,nuotot,eo,temp,qtot,qo,ef,Entropy)
+      call fermid(2,2,nk,wk,maxo,neigwanted,eo,temp,qtot,qo,ef,Entropy)
       
 !     Find weights for local density of states
       if (e1 .lt. e2) then
@@ -345,7 +334,8 @@ C *********************************************************************
             endif
           enddo
         enddo
-      
+
+        ! Note that neigneeded is explicitly calculated
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
      .             neigneeded,iscf,ierror, 2*BlockSize)
       
@@ -434,9 +424,8 @@ C *********************************************************************
 ! End notes for On-site SO implementation      
 
 
-        Dkc  = dcmplx(0.0_dp,0.0_dp)
-        Ekc  = dcmplx(0.0_dp,0.0_dp)
-        caux = dcmplx(0.0_dp,0.0_dp)
+        Dk  = dcmplx(0.0_dp,0.0_dp)
+        Ek  = dcmplx(0.0_dp,0.0_dp)
       
         BNode = 0
         iie = 0
@@ -450,8 +439,8 @@ C *********************************************************************
           if (qe.gt.occtol) then
             if (Node.eq.BNode) then
               do j = 1,nuotot
-                caux(1,j)=dcmplx(psi(1,1,j,iie),psi(2,1,j,iie)) ! c_{i,up}
-                caux(2,j)=dcmplx(psi(1,2,j,iie),psi(2,2,j,iie)) ! c_{i,dn}
+                caux(1,j)= psi(1,j,iie) ! c_{i,up}
+                caux(2,j)= psi(2,j,iie) ! c_{i,dn}
               enddo
             endif
 #ifdef MPI
@@ -465,20 +454,20 @@ C *********************************************************************
       
 !------- 1,1 -----------------------------------------------------------
                cicj = caux(1,iio) * dconjg(caux(1,juo))
-               Dkc(1,juo,1,iuo) = Dkc(1,juo,1,iuo) + qe * cicj
-               Ekc(1,juo,1,iuo) = Ekc(1,juo,1,iuo) + ee * cicj
+               Dk(1,juo,1,iuo) = Dk(1,juo,1,iuo) + qe * cicj
+               Ek(1,juo,1,iuo) = Ek(1,juo,1,iuo) + ee * cicj
 !------- 2,2 -----------------------------------------------------------
                cicj = caux(2,iio) * dconjg(caux(2,juo))
-               Dkc(2,juo,2,iuo) = Dkc(2,juo,2,iuo) + qe * cicj
-               Ekc(2,juo,2,iuo) = Ekc(2,juo,2,iuo) + ee * cicj
+               Dk(2,juo,2,iuo) = Dk(2,juo,2,iuo) + qe * cicj
+               Ek(2,juo,2,iuo) = Ek(2,juo,2,iuo) + ee * cicj
 !------- 1,2 -----------------------------------------------------------
                cicj = caux(1,iio) * dconjg(caux(2,juo))
-               Dkc(1,juo,2,iuo) = Dkc(1,juo,2,iuo) + qe * cicj
-               Ekc(1,juo,2,iuo) = Ekc(1,juo,2,iuo) + ee * cicj
+               Dk(1,juo,2,iuo) = Dk(1,juo,2,iuo) + qe * cicj
+               Ek(1,juo,2,iuo) = Ek(1,juo,2,iuo) + ee * cicj
 !------- 2,1 -----------------------------------------------------------
                cicj = caux(2,iio) * dconjg(caux(1,juo))
-               Dkc(2,juo,1,iuo) = Dkc(2,juo,1,iuo) + qe * cicj
-               Ekc(2,juo,1,iuo) = Ekc(2,juo,1,iuo) + ee * cicj
+               Dk(2,juo,1,iuo) = Dk(2,juo,1,iuo) + qe * cicj
+               Ek(2,juo,1,iuo) = Ek(2,juo,1,iuo) + ee * cicj
               enddo
             enddo
           endif
@@ -499,10 +488,10 @@ C *********************************************************************
      .           kpoint(3,ik) * xij(3,ind)
           kphs = cdexp(dcmplx(0.0_dp,-1.0_dp)*kxij)
       
-          D11 = Dkc(1,juo,1,iuo) * kphs
-          D22 = Dkc(2,juo,2,iuo) * kphs
-          D12 = Dkc(1,juo,2,iuo) * kphs
-          D21 = Dkc(2,juo,1,iuo) * kphs
+          D11 = Dk(1,juo,1,iuo) * kphs
+          D22 = Dk(2,juo,2,iuo) * kphs
+          D12 = Dk(1,juo,2,iuo) * kphs
+          D21 = Dk(2,juo,1,iuo) * kphs
       
           if ( spin%SO .and. .not.spin%SO_offsite ) then
 
@@ -516,10 +505,10 @@ C *********************************************************************
             Dnew(ind,8) = Dnew(ind,8) + dimag(D21)
 
       
-            D11 = Ekc(1,juo,1,iuo) * kphs
-            D22 = Ekc(2,juo,2,iuo) * kphs
-            D12 = Ekc(1,juo,2,iuo) * kphs
-            D21 = Ekc(2,juo,1,iuo) * kphs
+            D11 = Ek(1,juo,1,iuo) * kphs
+            D22 = Ek(2,juo,2,iuo) * kphs
+            D12 = Ek(1,juo,2,iuo) * kphs
+            D21 = Ek(2,juo,1,iuo) * kphs
       
             Enew(ind,1) = Enew(ind,1) + dreal(D11)
             Enew(ind,2) = Enew(ind,2) + dreal(D22)
@@ -541,10 +530,10 @@ C *********************************************************************
             Dnew(ind,7) = Dnew(ind,7) + dreal(D21)
             Dnew(ind,8) = Dnew(ind,8) + dimag(D21)
 
-            D11 = Ekc(1,juo,1,iuo) * kphs
-            D22 = Ekc(2,juo,2,iuo) * kphs
-            D12 = Ekc(1,juo,2,iuo) * kphs
-            D21 = Ekc(2,juo,1,iuo) * kphs
+            D11 = Ek(1,juo,1,iuo) * kphs
+            D22 = Ek(2,juo,2,iuo) * kphs
+            D12 = Ek(1,juo,2,iuo) * kphs
+            D21 = Ek(2,juo,1,iuo) * kphs
 
             Enew(ind,1) = Enew(ind,1) + dreal(D11)
             Enew(ind,2) = Enew(ind,2) + dreal(D22)
@@ -554,18 +543,6 @@ C *********************************************************************
         enddo
         enddo
       enddo
-      
-!     deallocate the arrays
-      call memory('D','Z',2*nuotot*2*nuo,'diag3k')
-      deallocate(Haux)
-      call memory('D','Z',2*nuotot*2*nuo,'diag3k')
-      deallocate(Saux)
-      call memory('D','Z',2*nuotot*2*nuo,'diag3k')
-      deallocate(Dkc)
-      call memory('D','Z',2*nuotot*2*nuo,'diag3k')
-      deallocate(Ekc)
-      call memory('D','Z',2*2*nuotot,'diag3k')
-      deallocate(caux)
       
 !***********************************************************************      
       return

@@ -125,7 +125,8 @@ contains
     use create_Sparsity_Union
 
     use m_ts_rgn2trimat
-    use m_ts_tri_common, only : nnzs_tri_i8b, ts_pivot_tri_sort_El
+    use m_ts_tri_common, only : ts_pivot_tri_sort_El
+    use m_ts_tri_common, only : nnzs_tri_i8b, nnzs_tri_dp
     use m_ts_electype
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
@@ -259,14 +260,19 @@ contains
 
     if ( IONode ) then
        ! Print out stuff
-       call rgn_print(DevTri, seq_max = 10 , collapse = .false.)
+       call rgn_print(DevTri, seq_max = 8 , repeat = .true.)
        ! Print out memory estimate
        els = nnzs_tri_i8b(DevTri%n,DevTri%r)
+       ! check if there are overflows
+       if ( els < int(nnzs_tri_dp(DevTri%n, DevTri%r), i8b) ) then
+          call die('tbtrans: Memory consumption is too large, try &
+               &another pivoting scheme.')
+       end if
        write(*,'(a,i0)') 'tbtrans: Matrix elements in BTD: ', els
 
        write(*,'(/,a)') 'tbtrans: Electrodes tri-diagonal matrices'
        do i = 1 , N_Elec
-          call rgn_print(ElTri(i), seq_max = 10 , collapse = .false.)
+          call rgn_print(ElTri(i), seq_max = 8 , repeat = .true.)
        end do
     end if
 
