@@ -32,6 +32,7 @@
       use units, only: amu, eV
       use m_stress
       use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
+      use m_energies, only: Ebs, Ef
       use m_ntm
       use m_forces
       use m_energies, only: update_FreeE, update_FreeEHarris
@@ -47,7 +48,8 @@
       integer  :: ia, jx, ix
       real(dp) :: volume
       logical  :: eggbox_block=.true. ! Read eggbox info from data file?
-
+      real(dp) :: qspin
+      
       external :: eggbox, mulliken, moments
       real(dp), external :: volcel
 
@@ -61,31 +63,49 @@
         call cmlStartModule(xf=mainXML, title='SCF Finalization')   
       endif
 
-!     Write final Kohn-Sham Energy 
+!     Write final Kohn-Sham and Free Energy
+      
+      FreeE       = Etot - Temp * Entropy
+      FreeEHarris = Eharrs - Temp * Entropy
+
       if (cml_p) call cmlStartPropertyList(mainXML,
-     &                                   title='Final KS Energy')
+     &                        title='Energies and spin')
       if (IOnode) then
-        if ( .not. harrisfun) 
-     &    write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV
-        if (cml_p) call cmlAddProperty(xf=mainXML, value=Etot/eV,
+        if ( .not. harrisfun)
+     &      write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV
+        if (cml_p) then
+           call cmlAddProperty(xf=mainXML, value=Etot/eV,
      &       dictref='siesta:E_KS', units='siestaUnits:eV', 
      .       fmt='r6')
+           call cmlAddProperty(xf=mainXML, value=FreeE/eV,
+     &       dictref='siesta:FreeE', units='siestaUnits:eV', 
+     .       fmt='r6')
+           call cmlAddProperty(xf=mainXML, value=Ebs/eV,
+     &       dictref='siesta:Ebs', units='siestaUnits:eV', 
+     .       fmt='r6')
+           call cmlAddProperty(xf=mainXML, value=Ef/eV,
+     &       dictref='siesta:E_Fermi', units='siestaUnits:eV', 
+     .       fmt='r6')
+        endif
       endif
 
 !     Substract egg box effect from energy
       if (eggbox_block) then
         call eggbox( 'energy', ucell, na_u, isa, ntm, xa, fa, Etot,
      &               eggbox_block )
+        FreeE  = Etot - Temp * Entropy
         if (IOnode)
      &    write(6,"(/a,f14.4)") 'siesta: E_KS - E_eggbox = ',Etot/eV
         if (cml_p) call cmlAddProperty(xf=mainXML, value=Etot/eV,
      &         dictref='siesta:E_KS_egg', units='siestaUnits:eV', 
      .         fmt='r6')
       endif
-      if (cml_p) call cmlEndPropertyList( mainXML )
 
       call update_FreeE( Temp )
       call update_FreeEHarris( Temp )
+      call print_spin(qspin)
+      
+      if (cml_p) call cmlEndPropertyList( mainXML )
 
 !     Substract egg box effect from the forces 
       if (eggbox_block) then

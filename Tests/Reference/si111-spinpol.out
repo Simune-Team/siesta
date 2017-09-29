@@ -10,19 +10,19 @@ reinit: System Name: si2x1.gga.vpsgga.sp.9l.sym.af-f
 reinit: -----------------------------------------------------------------------
 reinit: System Label: si111-spinpol
 reinit: -----------------------------------------------------------------------
-Siesta Version: trunk-554
-Architecture  : x86_64-linux-gcc
-Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG
-Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
+Siesta Version: siesta-4.1--731
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto -fuse-linker-plugin
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__FLOOK
+Libraries     : -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmumps -lmumps_common -llpord -lparmetis -lmetis -lscalapack -lopenblas  -lmetis -flto -fuse-linker-plugin  -L/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -lflookall -ldl
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
 
-* Running on 4 nodes in parallel
->> Start of run:  18-AUG-2016   8:47:08
+* Running on 8 nodes in parallel
+>> Start of run:   2-JUL-2017  11:58:31
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:   14 Label: Si
@@ -331,7 +331,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: Discard 1st Pulay DM after kick             =   F
 redata: New DM Mixing Weight                        =     0.1000
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
@@ -339,7 +338,9 @@ redata: DM Mixing Weight for Kicks                  =     0.5000
 redata: Require Harris convergence for SCF          =   F
 redata: Harris energy tolerance for SCF             =     0.000100 eV
 redata: Require DM convergence for SCF              =   T
-redata: DM tolerance for SCF                        =     0.000100
+redata: DM tolerance for SCF                        =     0.0001
+redata: Require EDM convergence for SCF             =   F
+redata: EDM tolerance for SCF                       =     0.001000 eV
 redata: Require H convergence for SCF               =   T
 redata: Hamiltonian tolerance for SCF               =     0.001000 eV
 redata: Require (free) Energy convergence for SCF   =   F
@@ -360,11 +361,11 @@ mix.SCF:    Linear mixing weight                 =     0.100000
 mix.SCF:    Mixing weight                        =     0.100000
 mix.SCF:    SVD condition                        = 0.1000E-07
 mix.SCF: Spin-component mixing                   all
-redata: Save data in SIESTA.nc                      =   F
+redata: Save all siesta data in one NC              =   F
 redata: ***********************************************************************
 
 %block SCF.Mixers
-  Pulay                   
+  Pulay
 %endblock SCF.Mixers
 
 %block SCF.Mixer.Pulay
@@ -376,10 +377,6 @@ redata: ***********************************************************************
   weight 0.1000
   weight.linear 0.1000
   history 3
-  restart 0
-  restart.save 1
-
-  # Continuation options
 %endblock SCF.Mixer.Pulay
 
 DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
@@ -387,10 +384,10 @@ Size of DM history Fstack: 1
 Total number of electrons:    76.000000
 Total ionic charge:    76.000000
 
-* ProcessorY, Blocksize:    2  24
+* ProcessorY, Blocksize:    2  21
 
 
-* Orbital distribution balance (max,min):    48    24
+* Orbital distribution balance (max,min):    21    19
 
  Kpoints in:            6 . Kpoints trimmed:            5
 
@@ -450,150 +447,163 @@ outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :   1111.5412
 <dSpData1D:S at geom step 0
   <sparsity:sparsity for geom step 0
-    nrows_g=166 nrows=48 sparsity=.9424 nnzs=25969, refcount: 7>
-  <dData1D:(new from dSpData1D) n=25969, refcount: 1>
+    nrows_g=166 nrows=21 sparsity=.3556 nnzs=9798, refcount: 7>
+  <dData1D:(new from dSpData1D) n=9798, refcount: 1>
 refcount: 1>
-New_DM. Step:     1
+new_DM -- step:     1
 Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    0.000000
-DM after filling with atomic data:
-<dSpData2D:(DM initialized from atoms)
+DM filled with atomic data (user-defined):
+<dSpData2D:DM initialized from atoms
   <sparsity:sparsity for geom step 0
-    nrows_g=166 nrows=48 sparsity=.9424 nnzs=25969, refcount: 8>
-  <dData2D:(DMatomic) n=25969 m=2, refcount: 1>
+    nrows_g=166 nrows=21 sparsity=.3556 nnzs=9798, refcount: 8>
+  <dData2D:DM n=9798 m=2, refcount: 1>
 refcount: 1>
+
+initDM: Initial spin polarization (Qup-Qdown) =    0.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      22     157
 New grid distribution:   1
-           1       1:   12    1:   12    1:   60
-           2       1:   12    1:   12   61:  120
-           3       1:   12   13:   24    1:   60
-           4       1:   12   13:   24   61:  120
+           1       1:   12    1:   12    1:   30
+           2       1:   12    1:   12   31:   60
+           3       1:   12    1:   12   61:   90
+           4       1:   12    1:   12   91:  120
+           5       1:   12   13:   24    1:   30
+           6       1:   12   13:   24   31:   60
+           7       1:   12   13:   24   61:   90
+           8       1:   12   13:   24   91:  120
 
 InitMesh: MESH =    24 x    48 x   240 =      276480
 InitMesh: (bp) =    12 x    24 x   120 =       34560
 InitMesh: Mesh cutoff (required, used) =   100.000   105.635 Ry
-ExtMesh (bp) on 0 =    56 x    56 x   108 =      338688
+ExtMesh (bp) on 0 =    56 x    56 x    78 =      244608
 New grid distribution:   2
-           1       1:   12    1:   24    1:   10
-           2       1:   12    1:   24   29:  120
-           3       1:   12    1:   24   20:   28
-           4       1:   12    1:   24   11:   19
+           1       1:   12    1:   24   15:   19
+           2       1:   12    1:   24   29:   33
+           3       1:   12    1:   24   34:  120
+           4       1:   12    1:   24    7:   10
+           5       1:   12    1:   24    1:    6
+           6       1:   12    1:   24   20:   24
+           7       1:   12    1:   24   25:   28
+           8       1:   12    1:   24   11:   14
 New grid distribution:   3
-           1       1:   12    1:   24   29:   42
-           2       1:   12    1:   24   43:  120
-           3       1:   12    1:   24    1:   14
-           4       1:   12    1:   24   15:   28
+           1       1:   12    1:   24    8:   14
+           2       1:   12    1:   24   29:   35
+           3       1:   12    1:   24   43:  113
+           4       1:   12    1:   24   22:   28
+           5       1:   12    1:   24    1:    7
+           6       1:   12    1:   24   36:   42
+           7       1:   12    1:   24   15:   21
+           8       1:   12    1:   24  114:  120
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    56 x    68 x    58 =      220864
-PhiOnMesh: Number of (b)points on node 0 =                 2880
-PhiOnMesh: nlist on node 0 =               193834
-cdiag-debug: Node=1, lwork=      6816>= lworkq=      5254, lrwork=     21965>= lrworkq=     21799, liwork=      1196>= liworkq=      1180
-cdiag-debug: Node=2, lwork=      6288>= lworkq=      4726, lrwork=     21965>= lrworkq=     21799, liwork=      1196>= liworkq=      1180
-cdiag-debug: Node=3, lwork=      5760>= lworkq=      4726, lrwork=     17213>= lrworkq=     17047, liwork=      1196>= liworkq=      1180
-cdiag-debug: Node=0, lwork=      7344>= lworkq=      5254, lrwork=     28169>= lrworkq=     28003, liwork=      1196>= liworkq=      1180
+ExtMesh (bp) on 0 =    56 x    68 x    53 =      201824
+PhiOnMesh: Number of (b)points on node 0 =                 1440
+PhiOnMesh: nlist on node 0 =               108770
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -681.792469
+siesta: Ebs     =      -681.637579
 siesta: Eions   =      3506.048399
 siesta: Ena     =      1055.452505
-siesta: Ekin    =       760.812884
-siesta: Enl     =       240.771758
+siesta: Ekin    =       760.816192
+siesta: Enl     =       240.771931
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =        65.802787
-siesta: DUscf   =         3.503709
+siesta: DEna    =        65.801579
+siesta: DUscf   =         3.504347
 siesta: DUext   =         0.000000
-siesta: Exc     =      -613.003165
+siesta: Exc     =      -613.005203
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -2004.238315
-siesta: Etot    =     -1992.707922
-siesta: FreeEng =     -1992.707922
+siesta: Eharris =     -2004.235735
+siesta: Etot    =     -1992.707049
+siesta: FreeEng =     -1992.707049
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
-   scf:    1    -2004.238315    -1992.707922    -1992.707922  0.572763 -4.149367  1.589790
-timer: Routine,Calls,Time,% =    IterSCF     1       3.532  55.85
-   scf:    2    -1993.106786    -1992.937193    -1992.937193  0.008780 -4.103229  0.715983
-   scf:    3    -1993.102591    -1993.026673    -1993.026673  0.005405 -4.104634  0.552022
-   scf:    4    -1993.146922    -1993.092862    -1993.092862  0.008192 -4.139416  0.495389
-   scf:    5    -1993.158520    -1993.126101    -1993.126101  0.009300 -4.195296  0.400764
-   scf:    6    -1993.193237    -1993.159138    -1993.159138  0.017704 -4.304704  0.175302
-   scf:    7    -1993.172111    -1993.165338    -1993.165338  0.008348 -4.352964  0.068318
-   scf:    8    -1993.168031    -1993.166777    -1993.166777  0.001162 -4.350210  0.047694
-   scf:    9    -1993.167908    -1993.167370    -1993.167370  0.000739 -4.345154  0.043263
-   scf:   10    -1993.168327    -1993.167856    -1993.167856  0.000961 -4.341267  0.043142
-   scf:   11    -1993.168610    -1993.168230    -1993.168230  0.000903 -4.340293  0.041141
-   scf:   12    -1993.169722    -1993.168946    -1993.168946  0.002175 -4.341348  0.030020
-   scf:   13    -1993.169951    -1993.169415    -1993.169415  0.002306 -4.343344  0.015206
-   scf:   14    -1993.169663    -1993.169534    -1993.169534  0.001009 -4.344257  0.009855
-   scf:   15    -1993.169591    -1993.169563    -1993.169563  0.000337 -4.344183  0.009340
-   scf:   16    -1993.169593    -1993.169578    -1993.169578  0.000264 -4.343560  0.008741
-   scf:   17    -1993.169600    -1993.169589    -1993.169589  0.000206 -4.343054  0.008111
-   scf:   18    -1993.169635    -1993.169611    -1993.169611  0.000397 -4.342393  0.007545
-   scf:   19    -1993.169655    -1993.169633    -1993.169633  0.000380 -4.342198  0.006342
-   scf:   20    -1993.169680    -1993.169655    -1993.169655  0.000502 -4.342306  0.004669
-   scf:   21    -1993.169683    -1993.169668    -1993.169668  0.000412 -4.342625  0.003410
-   scf:   22    -1993.169678    -1993.169673    -1993.169673  0.000205 -4.342756  0.002863
-   scf:   23    -1993.169677    -1993.169675    -1993.169675  0.000111 -4.342713  0.002646
-   scf:   24    -1993.169677    -1993.169676    -1993.169676  0.000057 -4.342601  0.002563
-   scf:   25    -1993.169679    -1993.169678    -1993.169678  0.000106 -4.342350  0.002443
-   scf:   26    -1993.169680    -1993.169679    -1993.169679  0.000071 -4.342275  0.002352
-   scf:   27    -1993.169682    -1993.169680    -1993.169680  0.000110 -4.342301  0.002138
-   scf:   28    -1993.169684    -1993.169682    -1993.169682  0.000129 -4.342390  0.001796
-   scf:   29    -1993.169684    -1993.169683    -1993.169683  0.000127 -4.342460  0.001410
-   scf:   30    -1993.169684    -1993.169684    -1993.169684  0.000061 -4.342453  0.001213
-   scf:   31    -1993.169684    -1993.169684    -1993.169684  0.000037 -4.342406  0.001118
-   scf:   32    -1993.169684    -1993.169684    -1993.169684  0.000028 -4.342322  0.001104
-   scf:   33    -1993.169684    -1993.169684    -1993.169684  0.000020 -4.342287  0.001105
-   scf:   34    -1993.169685    -1993.169684    -1993.169684  0.000035 -4.342291  0.001055
-   scf:   35    -1993.169685    -1993.169685    -1993.169685  0.000047 -4.342318  0.000934
+   scf:    1    -2004.235735    -1992.707049    -1992.707049  0.572785 -4.149362  1.592315
+timer: Routine,Calls,Time,% = IterSCF        1       1.093  48.64
+   scf:    2    -1993.106875    -1992.936946    -1992.936946  0.008817 -4.103017  0.716800
+   scf:    3    -1993.102519    -1993.026527    -1993.026527  0.005411 -4.104351  0.551739
+   scf:    4    -1993.146786    -1993.092714    -1993.092714  0.008187 -4.139071  0.495755
+   scf:    5    -1993.158428    -1993.125983    -1993.125983  0.009300 -4.194941  0.401281
+   scf:    6    -1993.193273    -1993.159094    -1993.159094  0.017725 -4.304496  0.175552
+   scf:    7    -1993.172121    -1993.165320    -1993.165320  0.008372 -4.352927  0.068579
+   scf:    8    -1993.168026    -1993.166765    -1993.166765  0.001176 -4.350215  0.047833
+   scf:    9    -1993.167899    -1993.167360    -1993.167360  0.000745 -4.345153  0.043342
+   scf:   10    -1993.168318    -1993.167847    -1993.167847  0.000967 -4.341266  0.043211
+   scf:   11    -1993.168605    -1993.168222    -1993.168222  0.000913 -4.340285  0.041212
+   scf:   12    -1993.169712    -1993.168938    -1993.168938  0.002180 -4.341332  0.030177
+   scf:   13    -1993.169954    -1993.169412    -1993.169412  0.002335 -4.343342  0.015308
+   scf:   14    -1993.169663    -1993.169532    -1993.169532  0.001021 -4.344261  0.009910
+   scf:   15    -1993.169590    -1993.169561    -1993.169561  0.000341 -4.344187  0.009394
+   scf:   16    -1993.169591    -1993.169576    -1993.169576  0.000265 -4.343565  0.008797
+   scf:   17    -1993.169599    -1993.169588    -1993.169588  0.000208 -4.343056  0.008163
+   scf:   18    -1993.169634    -1993.169610    -1993.169610  0.000400 -4.342394  0.007600
+   scf:   19    -1993.169655    -1993.169632    -1993.169632  0.000385 -4.342197  0.006389
+   scf:   20    -1993.169680    -1993.169655    -1993.169655  0.000509 -4.342306  0.004725
+   scf:   21    -1993.169683    -1993.169668    -1993.169668  0.000419 -4.342626  0.003442
+   scf:   22    -1993.169678    -1993.169673    -1993.169673  0.000209 -4.342758  0.002885
+   scf:   23    -1993.169677    -1993.169675    -1993.169675  0.000111 -4.342716  0.002669
+   scf:   24    -1993.169677    -1993.169676    -1993.169676  0.000058 -4.342603  0.002588
+   scf:   25    -1993.169679    -1993.169678    -1993.169678  0.000106 -4.342352  0.002473
+   scf:   26    -1993.169680    -1993.169679    -1993.169679  0.000071 -4.342276  0.002381
+   scf:   27    -1993.169682    -1993.169680    -1993.169680  0.000111 -4.342301  0.002164
+   scf:   28    -1993.169684    -1993.169682    -1993.169682  0.000131 -4.342390  0.001815
+   scf:   29    -1993.169685    -1993.169683    -1993.169683  0.000129 -4.342461  0.001422
+   scf:   30    -1993.169684    -1993.169684    -1993.169684  0.000062 -4.342455  0.001222
+   scf:   31    -1993.169684    -1993.169684    -1993.169684  0.000037 -4.342407  0.001127
+   scf:   32    -1993.169684    -1993.169684    -1993.169684  0.000028 -4.342323  0.001116
+   scf:   33    -1993.169684    -1993.169684    -1993.169684  0.000020 -4.342287  0.001118
+   scf:   34    -1993.169685    -1993.169685    -1993.169685  0.000035 -4.342291  0.001068
+   scf:   35    -1993.169685    -1993.169685    -1993.169685  0.000048 -4.342318  0.000945
 
 SCF Convergence by DM+H criterion
-max |DM_out - DM_in|   :     0.0000472785
-max |H_out - H_in| (eV):     0.0009340511
+max |DM_out - DM_in|         :     0.0000478979
+max |H_out - H_in|      (eV) :     0.0009452645
 SCF cycle converged after 35 iterations
 
 Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      22     157
 
 siesta: E_KS(eV) =            -1993.1697
 
 siesta: E_KS - E_eggbox =     -1993.1697
 
+siesta: Total spin polarization (Qup-Qdown) =    0.000000
+
 siesta: Atomic forces (eV/Ang):
-     1    0.000048    0.229983    0.005582
-     2   -0.000361   -0.229848    0.005810
-     3    0.000136    0.278944    0.037968
-     4    0.000594   -0.279331    0.037604
-     5    0.000325    0.000072   -0.050322
-     6   -0.001057    0.000142    0.116023
+     1    0.000048    0.229962    0.005572
+     2   -0.000361   -0.229827    0.005801
+     3    0.000136    0.278940    0.037977
+     4    0.000594   -0.279326    0.037613
+     5    0.000325    0.000071   -0.050322
+     6   -0.001057    0.000142    0.116026
      7   -0.000003    0.000667   -0.105754
-     8    0.001262    0.000540   -0.034007
-     9   -0.003572    0.056531   -0.013269
-    10   -0.004192   -0.057904   -0.015392
-    11    0.001051    0.009517   -0.009900
-    12    0.002347   -0.007792   -0.006797
-    13   -0.000025    0.000337    0.014144
-    14   -0.005168   -0.001591    0.028373
+     8    0.001262    0.000540   -0.034008
+     9   -0.003571    0.056530   -0.013270
+    10   -0.004192   -0.057903   -0.015393
+    11    0.001051    0.009518   -0.009900
+    12    0.002347   -0.007793   -0.006796
+    13   -0.000025    0.000337    0.014145
+    14   -0.005168   -0.001591    0.028372
     15    0.000063    0.000078   -0.061900
     16    0.002810    0.000042   -0.101677
-    17    0.000192    0.086560   -0.173542
-    18    0.000240   -0.086532   -0.173700
+    17    0.000192    0.086560   -0.173543
+    18    0.000240   -0.086532   -0.173701
     19   -0.213390    0.020479    0.130411
-    20    0.213300    0.020713    0.130526
+    20    0.213301    0.020713    0.130526
     21   -0.213396   -0.020440    0.130399
-    22    0.213297   -0.020675    0.130523
+    22    0.213297   -0.020674    0.130523
 ----------------------------------------
    Tot   -0.005498    0.000494    0.021102
 ----------------------------------------
-   Max    0.279331
-   Res    0.098660    sqrt( Sum f_i^2 / 3N )
+   Max    0.279326
+   Res    0.098659    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.279331    constrained
+   Max    0.279326    constrained
 
 Stress-tensor-Voigt (kbar):      -22.81        0.69       -0.71        0.00        0.00       -0.03
 (Free)E + p*V (eV/cell)    -1987.8915
@@ -710,17 +720,17 @@ mulliken: Qtot =       38.000
 coxmol: Writing XMOL coordinates into file si111-spinpol.xyz                                                   
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -724.930897
+siesta: Ebs     =      -724.930908
 siesta: Eions   =      3506.048399
 siesta: Ena     =      1055.452505
-siesta: Ekin    =       762.690477
-siesta: Enl     =       240.644461
+siesta: Ekin    =       762.690524
+siesta: Enl     =       240.644459
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =        64.520664
-siesta: DUscf   =         3.020698
+siesta: DEna    =        64.520645
+siesta: DUscf   =         3.020697
 siesta: DUext   =         0.000000
-siesta: Exc     =      -613.450091
+siesta: Exc     =      -613.450115
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
@@ -731,60 +741,60 @@ siesta: Etot    =     -1993.169685
 siesta: FreeEng =     -1993.169685
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -724.930897
-siesta:       Kinetic =     762.690477
-siesta:       Hartree =   22493.520588
+siesta:  Band Struct. =    -724.930908
+siesta:       Kinetic =     762.690524
+siesta:       Hartree =   22493.520579
 siesta:       Eldau   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -613.450091
-siesta:  Ion-electron =  -45676.986734
-siesta:       Ion-ion =   21041.056076
+siesta:   Exch.-corr. =    -613.450115
+siesta:  Ion-electron =  -45676.986745
+siesta:       Ion-ion =   21041.056072
 siesta:       Ekinion =       0.000000
 siesta:         Total =   -1993.169685
 siesta:         Fermi =      -4.342318
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.000048    0.229983    0.005582
-siesta:      2   -0.000361   -0.229848    0.005810
-siesta:      3    0.000136    0.278944    0.037968
-siesta:      4    0.000594   -0.279331    0.037604
-siesta:      5    0.000325    0.000072   -0.050322
-siesta:      6   -0.001057    0.000142    0.116023
+siesta:      1    0.000048    0.229962    0.005572
+siesta:      2   -0.000361   -0.229827    0.005801
+siesta:      3    0.000136    0.278940    0.037977
+siesta:      4    0.000594   -0.279326    0.037613
+siesta:      5    0.000325    0.000071   -0.050322
+siesta:      6   -0.001057    0.000142    0.116026
 siesta:      7   -0.000003    0.000667   -0.105754
-siesta:      8    0.001262    0.000540   -0.034007
-siesta:      9   -0.003572    0.056531   -0.013269
-siesta:     10   -0.004192   -0.057904   -0.015392
-siesta:     11    0.001051    0.009517   -0.009900
-siesta:     12    0.002347   -0.007792   -0.006797
-siesta:     13   -0.000025    0.000337    0.014144
-siesta:     14   -0.005168   -0.001591    0.028373
+siesta:      8    0.001262    0.000540   -0.034008
+siesta:      9   -0.003571    0.056530   -0.013270
+siesta:     10   -0.004192   -0.057903   -0.015393
+siesta:     11    0.001051    0.009518   -0.009900
+siesta:     12    0.002347   -0.007793   -0.006796
+siesta:     13   -0.000025    0.000337    0.014145
+siesta:     14   -0.005168   -0.001591    0.028372
 siesta:     15    0.000063    0.000078   -0.061900
 siesta:     16    0.002810    0.000042   -0.101677
-siesta:     17    0.000192    0.086560   -0.173542
-siesta:     18    0.000240   -0.086532   -0.173700
+siesta:     17    0.000192    0.086560   -0.173543
+siesta:     18    0.000240   -0.086532   -0.173701
 siesta:     19   -0.213390    0.020479    0.130411
-siesta:     20    0.213300    0.020713    0.130526
+siesta:     20    0.213301    0.020713    0.130526
 siesta:     21   -0.213396   -0.020440    0.130399
-siesta:     22    0.213297   -0.020675    0.130523
+siesta:     22    0.213297   -0.020674    0.130523
 siesta: ----------------------------------------
 siesta:    Tot   -0.005498    0.000494    0.021102
 
 siesta: Constrained forces (eV/Ang):
-siesta:      1    0.000048    0.229983    0.005582
-siesta:      2   -0.000361   -0.229848    0.005810
-siesta:      3    0.000136    0.278944    0.037968
-siesta:      4    0.000594   -0.279331    0.037604
-siesta:      5    0.000325    0.000072   -0.050322
-siesta:      6   -0.001057    0.000142    0.116023
+siesta:      1    0.000048    0.229962    0.005572
+siesta:      2   -0.000361   -0.229827    0.005801
+siesta:      3    0.000136    0.278940    0.037977
+siesta:      4    0.000594   -0.279326    0.037613
+siesta:      5    0.000325    0.000071   -0.050322
+siesta:      6   -0.001057    0.000142    0.116026
 siesta:      7   -0.000003    0.000667   -0.105754
-siesta:      8    0.001262    0.000540   -0.034007
-siesta:      9   -0.003572    0.056531   -0.013269
-siesta:     10   -0.004192   -0.057904   -0.015392
-siesta:     11    0.001051    0.009517   -0.009900
-siesta:     12    0.002347   -0.007792   -0.006797
-siesta:     13   -0.000025    0.000337    0.014144
-siesta:     14   -0.005168   -0.001591    0.028373
+siesta:      8    0.001262    0.000540   -0.034008
+siesta:      9   -0.003571    0.056530   -0.013270
+siesta:     10   -0.004192   -0.057903   -0.015393
+siesta:     11    0.001051    0.009518   -0.009900
+siesta:     12    0.002347   -0.007793   -0.006796
+siesta:     13   -0.000025    0.000337    0.014145
+siesta:     14   -0.005168   -0.001591    0.028372
 siesta:     15    0.000063    0.000078   -0.061900
 siesta:     16    0.002810    0.000042   -0.101677
 siesta:     17    0.000000    0.000000    0.000000
@@ -794,11 +804,11 @@ siesta:     20    0.000000    0.000000    0.000000
 siesta:     21    0.000000    0.000000    0.000000
 siesta:     22    0.000000    0.000000    0.000000
 siesta: ----------------------------------------
-siesta:  Tot   -0.005741    0.000388   -0.153514
+siesta:  Tot   -0.005741    0.000388   -0.153513
 
 siesta: Stress tensor (static) (eV/Ang**3):
 siesta:    -0.014236    0.000000   -0.000016
-siesta:     0.000000    0.000434    0.000001
+siesta:     0.000000    0.000433    0.000001
 siesta:    -0.000016    0.000001   -0.000443
 
 siesta: Cell volume =       1111.541198 Ang**3
@@ -806,15 +816,16 @@ siesta: Cell volume =       1111.541198 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00005172          0.00005467  Ry/Bohr**3
-siesta:           0.00474850          0.00501979  eV/Ang**3
-siesta:           7.60801201          8.04268253  kBar
+siesta:           0.00474851          0.00501978  eV/Ang**3
+siesta:           7.60803307          8.04266115  kBar
 (Free)E+ p_basis*V_orbitals  =       -1983.505900
 (Free)Eharris+ p_basis*V_orbitals  =       -1983.505901
 
 siesta: Total spin polarization (Qup-Qdown) =    0.000000
 
-siesta: Electric dipole (a.u.)  =   -0.000000   -0.000000   -0.193840
-siesta: Electric dipole (Debye) =   -0.000000   -0.000000   -0.492694
+siesta: Electric dipole (a.u.)  =   -0.000000   -0.000000   -0.193841
+siesta: Electric dipole (Debye) =   -0.000000   -0.000000   -0.492695
 
-dhscf: Vacuum level (max, mean) =    0.243652    0.057763 eV
->> End of run:  18-AUG-2016   8:48:32
+dhscf: Vacuum level (max, mean) =    0.243653    0.057763 eV
+>> End of run:   2-JUL-2017  11:59:00
+Job completed

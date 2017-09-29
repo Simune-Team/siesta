@@ -44,8 +44,6 @@
 ! CC RC  modified for the offSpOrb
       use m_spin,          only: spin 
       use sparse_matrices, only: H0_offsiteSO
-!      use sparse_matrices, only: listht
-!      use sparse_matrices, only: MM_HDM, herm_HDM
 ! CC RC  modified for the offSpOrb
 
       use m_dipol
@@ -93,7 +91,7 @@
 
 !     Save present H matrix
 !$OMP do collapse(2)
-      do ispin = 1,spin%H
+      do ispin = 1, spin%H
          do io = 1,maxnh
             Hold(io,ispin) = H(io,ispin)
          enddo
@@ -109,7 +107,6 @@
          H_so => val(H_so_2D)
       end if
 !$OMP end single ! keep wait
-
 
 ! CC RC  modified for the offSpOrb
       if ( .not. spin%SO_offsite ) then
@@ -169,8 +166,8 @@
         do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
           Enl  = Enl  + H_vkb(io) * Dscf(io,ispin)
-        enddo
-      enddo
+        end do
+      end do
 !$OMP end do nowait
 
 
@@ -213,7 +210,7 @@
 !$OMP end single
       if ( spin%SO .and. .not.spin%SO_offsite ) then
 !$OMP do reduction(+:Eso)
-         do io = 1,maxnh
+         do io = 1, maxnh
             Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8)
      .           + H_so(io,5)*Dscf(io,3) + H_so(io,6)*Dscf(io,4)
      .           - H_so(io,3)*Dscf(io,5) - H_so(io,4)*Dscf(io,6)
@@ -248,6 +245,13 @@
       endif
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
+        if ( spin%NCol ) then
+         call die('LDA+U cannot be used with non-colinear spin.')
+        end if
+        if ( spin%SO ) then
+         call die('LDA+U cannot be used with spin-orbit coupling.')
+        end if
+
         call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'setup_hamiltonian' )
 
         H_ldau => val(H_ldau_2D)
@@ -286,10 +290,7 @@
       endif
       use_rhog_in =  (mix_charge .and. iscf > 1)
   
-!      if ( spin%SO_offsite ) then
-!       H(:,:) = 0.0_dp
-!      endif
-      call dhscf( spin%grid, no_s, iaorb, iphorb, no_l,
+      call dhscf( spin%Grid, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
      .            ntm, ifa, istr, ihmat, filesOut,
      .            maxnh, numh, listhptr, listh, Dscf, Datm,

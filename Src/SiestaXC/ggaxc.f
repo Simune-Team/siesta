@@ -51,8 +51,6 @@
       USE m_ldaxc, only: exchng  ! Local exchange
       USE m_ldaxc, only: pw92c   ! Perdew & Wang, PRB, 45, 13244 (1992) correl
 
-!      use m_spin, only: spin
-
       ! Used module parameters
       use precision, only : dp   ! Double precision real kind
 
@@ -131,10 +129,7 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
       if (nSpin==4) then
         NS = 2             ! Diagonal spin components
 
-CC
         if ( old_scheme ) then
-!        if ( spin%SO_off ) then
-         NS = 2
          DTOT = D(1) + D(2)
          dpolz= D(1)-D(2)
          dpolxy= 2.0d0*sqrt(d(3)**2+d(4)**2)
@@ -160,7 +155,6 @@ CC
           GDD(IX,2) = GD(IX,1)*S2**2 + GD(IX,2)*C2**2 -
      .                2.d0*C2*S2*(GD(IX,3)*CP - GD(IX,4)*SP)
          ENDDO
-CC
         else
 
         ! Find eigenvalues of density matrix Dij (diagonal densities DD, i.e.
@@ -217,7 +211,6 @@ CC
      .                 + dGDPOLdGD(:) ) / 2
         dGDDdGD(2,:) = ( dGDTOTdGD(:)                ! dGradDensDn/dGradD(i)
      .                 - dGDPOLdGD(:) ) / 2
-CC
        endif
         
       else if (nSpin==1 .or. nSpin==2) then ! Normal (collinear) spin
@@ -325,7 +318,6 @@ CC
         ! dE/dGradD(i) = dE/dGDup * dGDup/dGD(i) + dE/dGDdn * dGDdn/dGD(i)
 
         if ( old_scheme ) then
-!        if ( spin%SO_off ) then
          VPOL  = (dExdDD(1)-dExdDD(2)) * ct
          dExdD(1) = 0.5D0 * ( dExdDD(1) + dExdDD(2) + VPOL )
          dExdD(2) = 0.5D0 * ( dExdDD(1) + dExdDD(2) - VPOL )

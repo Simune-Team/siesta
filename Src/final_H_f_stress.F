@@ -205,11 +205,6 @@
       if ( spin%SO .and. .not.spin%SO_offsite ) then
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
-#ifdef MPI
-!     Global reduction of energy terms
-         call globalize_sum(Eso,buffer1)
-         Eso = buffer1
-#endif
       else
          Eso = 0._dp
       endif

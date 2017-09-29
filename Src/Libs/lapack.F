@@ -1,9 +1,9 @@
-!Copyright (c) 1992-2016 The University of Tennessee and The University
+!Copyright (c) 1992-2017 The University of Tennessee and The University
 !                        of Tennessee Research Foundation.  All rights
 !                        reserved.
-!Copyright (c) 2000-2016 The University of California Berkeley. All
+!Copyright (c) 2000-2017 The University of California Berkeley. All
 !                        rights reserved.
-!Copyright (c) 2006-2016 The University of Colorado Denver.  All rights
+!Copyright (c) 2006-2017 The University of Colorado Denver.  All rights
 !                        reserved.
 !
 !$COPYRIGHT$
@@ -5077,8 +5077,8 @@
       INTEGER            MAXITR
       PARAMETER          ( MAXITR = 6 )
       LOGICAL            LOWER, ROTATE
-      INTEGER            I, IDIR, ISUB, ITER, J, LL, LLL, M, MAXIT, NM1,
-     $                   NM12, NM13, OLDLL, OLDM
+      INTEGER            I, IDIR, ISUB, ITER, ITERDIVN, J, LL, LLL, M,
+     $                   MAXITDIVN, NM1, NM12, NM13, OLDLL, OLDM
       DOUBLE PRECISION   ABSE, ABSS, COSL, COSR, CS, EPS, F, G, H, MU,
      $                   OLDCS, OLDSN, R, SHIFT, SIGMN, SIGMX, SINL,
      $                   SINR, SLL, SMAX, SMIN, SMINL, SMINOA,
@@ -5169,20 +5169,25 @@
    40    CONTINUE
    50    CONTINUE
          SMINOA = SMINOA / SQRT( DBLE( N ) )
-         THRESH = MAX( TOL*SMINOA, MAXITR*N*N*UNFL )
+         THRESH = MAX( TOL*SMINOA, MAXITR*(N*(N*UNFL)) )
       ELSE
-         THRESH = MAX( ABS( TOL )*SMAX, MAXITR*N*N*UNFL )
+         THRESH = MAX( ABS( TOL )*SMAX, MAXITR*(N*(N*UNFL)) )
       END IF
-      MAXIT = MAXITR*N*N
-      ITER = 0
+      MAXITDIVN = MAXITR*N
+      ITERDIVN = 0
+      ITER = -1
       OLDLL = -1
       OLDM = -1
       M = N
    60 CONTINUE
       IF( M.LE.1 )
      $   GO TO 160
-      IF( ITER.GT.MAXIT )
-     $   GO TO 200
+      IF( ITER.GE.N ) THEN
+         ITER = ITER - N
+         ITERDIVN = ITERDIVN + 1
+         IF( ITERDIVN.GE.MAXITDIVN )
+     $      GO TO 200
+      END IF
       IF( TOL.LT.ZERO .AND. ABS( D( M ) ).LE.THRESH )
      $   D( M ) = ZERO
       SMAX = ABS( D( M ) )
@@ -6736,7 +6741,7 @@
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/disnan.f
       LOGICAL FUNCTION DISNAN( DIN )
-      DOUBLE PRECISION   DIN
+      DOUBLE PRECISION, INTENT(IN) :: DIN
       LOGICAL DLAISNAN
       EXTERNAL DLAISNAN
       DISNAN = DLAISNAN(DIN,DIN)
@@ -10233,7 +10238,7 @@
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlaisnan.f
       LOGICAL FUNCTION DLAISNAN( DIN1, DIN2 )
-      DOUBLE PRECISION   DIN1, DIN2
+      DOUBLE PRECISION, INTENT(IN) :: DIN1, DIN2
       DLAISNAN = (DIN1.NE.DIN2)
       RETURN
       END
@@ -12033,15 +12038,24 @@
       DOUBLE PRECISION   ONE
       PARAMETER          ( ONE = 1.0D0 )
       DOUBLE PRECISION   W, XABS, YABS, Z
+      LOGICAL            X_IS_NAN, Y_IS_NAN
+      LOGICAL            DISNAN
+      EXTERNAL           DISNAN
       INTRINSIC          ABS, MAX, MIN, SQRT
-      XABS = ABS( X )
-      YABS = ABS( Y )
-      W = MAX( XABS, YABS )
-      Z = MIN( XABS, YABS )
-      IF( Z.EQ.ZERO ) THEN
-         DLAPY2 = W
-      ELSE
-         DLAPY2 = W*SQRT( ONE+( Z / W )**2 )
+      X_IS_NAN = DISNAN( X )
+      Y_IS_NAN = DISNAN( Y )
+      IF ( X_IS_NAN ) DLAPY2 = X
+      IF ( Y_IS_NAN ) DLAPY2 = Y
+      IF ( .NOT.( X_IS_NAN.OR.Y_IS_NAN ) ) THEN
+         XABS = ABS( X )
+         YABS = ABS( Y )
+         W = MAX( XABS, YABS )
+         Z = MIN( XABS, YABS )
+         IF( Z.EQ.ZERO ) THEN
+            DLAPY2 = W
+         ELSE
+            DLAPY2 = W*SQRT( ONE+( Z / W )**2 )
+         END IF
       END IF
       RETURN
       END
@@ -12738,6 +12752,9 @@
       DOUBLE PRECISION   EABS, TMP1
       INTRINSIC          ABS
       INFO = 0
+      IF( N.LE.0 ) THEN
+         RETURN
+      END IF
       NSPLIT = 1
       IF(SPLTOL.LT.ZERO) THEN
          TMP1 = ABS(SPLTOL)* TNRM
@@ -12786,6 +12803,9 @@
       EXTERNAL           DLANEG
       INTRINSIC          ABS, MAX, MIN
       INFO = 0
+      IF( N.LE.0 ) THEN
+         RETURN
+      END IF
       MAXITR = INT( ( LOG( SPDIAM+PIVMIN )-LOG( PIVMIN ) ) /
      $           LOG( TWO ) ) + 2
       MNWDTH = TWO * PIVMIN
@@ -12908,6 +12928,9 @@
       LOGICAL            LSAME
       EXTERNAL           LSAME
       INFO = 0
+      IF( N.LE.0 ) THEN
+         RETURN
+      END IF
       LCNT = 0
       RCNT = 0
       EIGCNT = 0
@@ -13003,6 +13026,9 @@
       EXTERNAL           DLAEBZ
       INTRINSIC          ABS, INT, LOG, MAX, MIN
       INFO = 0
+      IF( N.LE.0 ) THEN
+         RETURN
+      END IF
       IF( LSAME( RANGE, 'A' ) ) THEN
          IRANGE = ALLRNG
       ELSE IF( LSAME( RANGE, 'V' ) ) THEN
@@ -13349,6 +13375,9 @@
       EXTERNAL           DCOPY
       INTRINSIC          ABS
       INFO = 0
+      IF( N.LE.0 ) THEN
+         RETURN
+      END IF
       FACT = DBLE(2**KTRYMAX)
       EPS = DLAMCH( 'Precision' )
       SHIFT = 0
@@ -13541,6 +13570,10 @@
       DOUBLE PRECISION   DLAMCH
       EXTERNAL   DLAMCH
       INTRINSIC          ABS, INT, LOG, MAX
+      IF( N.LE.0 ) THEN
+         INFO = 0
+         RETURN
+      END IF
       EPS = DLAMCH( 'P' )
       TNORM = MAX( ABS( GL ), ABS( GU ) )
       RTOLI = RELTOL
@@ -13625,6 +13658,9 @@
      $                   DSCAL
       INTRINSIC ABS, DBLE, MAX, MIN
       INFO = 0
+      IF( N.LE.0 ) THEN
+         RETURN
+      END IF
       INDLD = N+1
       INDLLD= 2*N+1
       INDWRK= 3*N+1
@@ -15268,7 +15304,6 @@
                   NP = NN - 9
                ELSE
                   NP = NN - 2*PP
-                  B2 = Z( NP-2 )
                   GAM = DN1
                   IF( Z( NP-4 ) .GT. Z( NP-2 ) )
      $               RETURN
@@ -22659,7 +22694,7 @@
       INTEGER            M, N, LDA
       REAL               A( LDA, * )
       REAL             ZERO
-      PARAMETER ( ZERO = 0.0D+0 )
+      PARAMETER ( ZERO = 0.0E+0 )
       INTEGER I
       IF( N.EQ.0 ) THEN
          ILASLC = N
@@ -22787,7 +22822,7 @@
       INTEGER            I, IC, IZ, KD, IB, LHOUS, LWORK, NTHREADS,
      $                   FACTOPTNB, QROPTNB, LQOPTNB
       LOGICAL            RPREC, CPREC
-      CHARACTER          PREC*1, ALGO*3, STAG*5, SUBNAM*12, VECT*3
+      CHARACTER          PREC*1, ALGO*3, STAG*5, SUBNAM*12, VECT*1
       INTRINSIC          CHAR, ICHAR, MAX
       INTEGER            ILAENV
       EXTERNAL           ILAENV
@@ -23231,7 +23266,7 @@
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/sisnan.f
       LOGICAL FUNCTION SISNAN( SIN )
-      REAL               SIN
+      REAL, INTENT(IN) :: SIN
       LOGICAL SLAISNAN
       EXTERNAL SLAISNAN
       SISNAN = SLAISNAN(SIN,SIN)
@@ -24218,7 +24253,7 @@
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/slaisnan.f
       LOGICAL FUNCTION SLAISNAN( SIN1, SIN2 )
-      REAL               SIN1, SIN2
+      REAL, INTENT(IN) :: SIN1, SIN2
       SLAISNAN = (SIN1.NE.SIN2)
       RETURN
       END
@@ -25969,15 +26004,24 @@
       REAL               ONE
       PARAMETER          ( ONE = 1.0E0 )
       REAL               W, XABS, YABS, Z
+      LOGICAL            X_IS_NAN, Y_IS_NAN
+      LOGICAL            SISNAN
+      EXTERNAL           SISNAN
       INTRINSIC          ABS, MAX, MIN, SQRT
-      XABS = ABS( X )
-      YABS = ABS( Y )
-      W = MAX( XABS, YABS )
-      Z = MIN( XABS, YABS )
-      IF( Z.EQ.ZERO ) THEN
-         SLAPY2 = W
-      ELSE
-         SLAPY2 = W*SQRT( ONE+( Z / W )**2 )
+      X_IS_NAN = SISNAN( X )
+      Y_IS_NAN = SISNAN( Y )
+      IF ( X_IS_NAN ) SLAPY2 = X
+      IF ( Y_IS_NAN ) SLAPY2 = Y
+      IF ( .NOT.( X_IS_NAN.OR.Y_IS_NAN ) ) THEN
+         XABS = ABS( X )
+         YABS = ABS( Y )
+         W = MAX( XABS, YABS )
+         Z = MIN( XABS, YABS )
+         IF( Z.EQ.ZERO ) THEN
+            SLAPY2 = W
+         ELSE
+            SLAPY2 = W*SQRT( ONE+( Z / W )**2 )
+         END IF
       END IF
       RETURN
       END
@@ -38842,7 +38886,7 @@
       INTEGER            ILAENV, IZAMAX
       DOUBLE PRECISION   DLAMCH, DZASUM
       EXTERNAL           LSAME, ILAENV, IZAMAX, DLAMCH, DZASUM
-      EXTERNAL           XERBLA, ZCOPY, ZDSCAL, ZGEMV, ZLATRS
+      EXTERNAL           XERBLA, ZCOPY, ZDSCAL, ZGEMV, ZLATRS,
      $                   ZGEMM, DLABAD, ZLASET
       INTRINSIC          ABS, DBLE, DCMPLX, CONJG, AIMAG, MAX
       DOUBLE PRECISION   CABS1

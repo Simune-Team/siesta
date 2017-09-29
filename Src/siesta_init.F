@@ -66,7 +66,8 @@
 #ifdef DEBUG_XC
       USE siestaXC, only: setDebugOutputUnit
 #endif /* DEBUG_XC */
-      USE m_timer, only: timer_report  ! Sets options for report of CPU times
+      USE m_timer, only: timer_report ! Sets options for report of CPU times
+      use m_check_walltime
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -113,10 +114,12 @@
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
+      real(dp) :: walltime_m, walltime_s
 
       integer :: World_Group
       integer :: npSIESTA
       external :: read_options
+      external :: reset_messages_file
 
 !---------------------------------------------------------------------- BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
@@ -148,10 +151,15 @@ C     Initialise MPI and set processor number
       ! Keeper for PEXSI-runs..
       PEXSINodes = Nodes
 
+      call reset_messages_file()
+      
+
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
      &           'doesn''t have parallel support')
       endif
+#else
+      call reset_messages_file()
 #endif
       if (Node==0) then
          call system("/bin/rm -f 0_NORMAL_EXIT")
@@ -409,8 +417,23 @@ C     Initialise MPI and set processor number
          call bye('End of structure processing')
       endif
 
+!     Walltime control (numbers in seconds)
+      if ( fdf_isphysical("MaxWalltime") ) then
+         walltime_m = fdf_get("MaxWalltime", huge(1._dp), 's')
+      else
+         walltime_m = fdf_get("MaxWalltime", huge(1._dp))
+      end if
+      ! Period for clean-up operations
+      if ( fdf_isphysical("MaxWalltime.Slack") ) then
+         walltime_s = fdf_get("MaxWalltime.Slack", 5._dp, 's')
+      else
+         walltime_s = fdf_get("MaxWalltime.Slack", 5._dp)
+      end if
+      ! Note that the slack detracts from net available time
+      walltime_warning = walltime_m - walltime_s
+
 !-------------- Now we have the initial geometry
-!
+
 !     End of Initial Structure Processing
       if (Node.eq.0) then
         write(6,'(/,a,20("*"),a,28("*"))')

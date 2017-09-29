@@ -44,7 +44,7 @@ C     and initializes data structures on the grid.
       use m_dhscf,      only: dhscf_init
       use m_energies,   only: Eions, Ena, DEna, Emm, Emeta, Eso
       use m_ntm
-      use m_spin,       only: nspin, SpOrb
+      use m_spin,       only: spin
       use spinorbit,    only: spinorb
       use alloc, only: re_alloc, de_alloc
       use class_dSpData1D, only: val
@@ -267,11 +267,6 @@ c---- check symmetries for H0
 !$OMP end parallel workshare
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_so,Eso)
-#ifdef MPI
-!     Global reduction of energy terms
-         call globalize_sum(Eso,dummy_E)
-         Eso = dummy_E
-#endif
       else
          Eso = 0._dp
       end if

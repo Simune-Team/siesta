@@ -46,7 +46,7 @@ kgrid_cutoff            5.0 Ang
 XC.functional           LDA
 XC.authors              PZ
 
-MeshCutoff              10. Ry
+MeshCutoff              50. Ry
 
 DM.MixingWeight 0.1
 DM.NumberPulay  3
@@ -63,6 +63,19 @@ WriteDenchar T
 SaveElectrostaticPotential      .true.
 SaveTotalPotential      .true.
 
+# Are we specifying the Gamma point for
+# a fundamental reason?
+# Or simply for simplicity in the example?
+#
+# If all scf-related k-points are required, we can use
+# the option
+#    COOP.write T
+#
+# Note also the restricted energy range
+#
+COOP.write T      
+WFS.Energy.Min -10.0 eV
+WFS.Energy.Max  10.0 eV
 %block WaveFuncKPoints
  0.000 0.000 0.000 
 %endblock WaveFuncKPoints
