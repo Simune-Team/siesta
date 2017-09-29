@@ -60,8 +60,8 @@
       use write_subs
       use m_ioxv,            only: ioxv
       use m_steps
-      use parallel,          only: IOnode, node, nodes
-      use m_spin,            only: spin
+      use parallel,          only: IOnode, node, nodes, BlockSize
+      use m_spin,            only: spin, qs
       use m_rmaxh
       use m_mixing,          only: mixers_history_init
       use m_mixing_scf,      only: scf_mixs, scf_mix
@@ -90,6 +90,9 @@
       use m_ts_sparse, only : ts_sparse_init
       use m_ts_tri_init, only : ts_tri_init, ts_tri_analyze
       use files, only: slabel, label_length
+#endif
+#ifdef SIESTA__CHESS
+      use m_chess, only: CheSS_init, get_CheSS_parameter
 #endif
 #ifdef CDF
       use iodm_netcdf, only: setup_dm_netcdf_file
@@ -122,6 +125,12 @@
       logical                       :: ts_Gamma_file = .true.
       character(len=label_length+6) :: fname
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
+#endif
+#ifdef SIESTA__CHESS
+      integer :: maxnh_kernel, maxnh_mult, no_l_kernel, no_l_mult
+      integer,dimension(:),allocatable :: listh_kernel, listh_mult
+      integer,dimension(:),allocatable :: numh_kernel, numh_mult
+      real(dp) :: chess_value
 #endif
       type(Sparsity) :: g_Sp
       
@@ -332,6 +341,36 @@ CC RC  OffSpOrb
       ! We do not need to allocate listh
       ! that will be allocated in hsparse
 
+#ifdef SIESTA__CHESS
+      if (isolve == SOLVE_CHESS) then
+!         Calculate a sparsity pattern with some buffers... Only required
+!         for CheSS
+          chess_value = get_chess_parameter('chess_buffer_kernel')
+          call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
+     &              lastkb, iphorb, iphKB, maxnh, gamma, 
+     &              set_xijo=.true., folding=folding1,
+     $              buffer=chess_value)
+          maxnh_kernel = maxnh
+          no_l_kernel = no_l
+          allocate(listh_kernel(maxnh_kernel))
+          allocate(numh_kernel(no_l_kernel))
+          listh_kernel = listh
+          numh_kernel = numh
+    
+          chess_value = get_chess_parameter('chess_buffer_mult')
+          call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
+     &                  lastkb, iphorb, iphKB, maxnh, gamma,
+     &                  set_xijo=.true., folding=folding1,
+     $                  buffer=chess_value)
+          maxnh_mult = maxnh
+          no_l_mult = no_l
+          allocate(listh_mult(maxnh_mult))
+          allocate(numh_mult(no_l_mult))
+          listh_mult = listh
+          numh_mult = numh
+      end if
+#endif /* CHESS */
+
 !     List of nonzero Hamiltonian matrix elements
 !     and, if applicable,  vectors between orbital centers
 
@@ -342,51 +381,20 @@ CC RC  OffSpOrb
       nullify(xijo)
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma,
-     $                 set_xijo=.true., folding=folding1)
+     $              set_xijo=.true., folding=folding1)
 !
-CC RC  Loading transpose for OffSSO
-!      if ( spin%SO_offsite ) then
-!         call re_alloc(listht,1,maxnh,name='listht',
-!     $        routine='sparseMat', shrink=.true.)
-!         listht(:) = 0
-!
-!
-!         write(6,*) 'loading listht...'
-!
-!         do i_orb = 1, no_u
-!          do js = 1, numh(i_orb)
-!           jptr = listhptr(i_orb)+js
-!           j    = listh(jptr)
-!           r1   = xijo(:,jptr)
-!           j0   = indxuo(j)
-!           t_loop: do ist = 1, numh(j0)
-!            iptrt  = listhptr(j0)+ist
-!            it     = listh(iptrt)
-!            if ( indxuo(it) .eq. i_orb ) then
-!             r2 = xijo(:,iptrt)
-!             if ( maxval( abs(r1(:)+r2(:)) ) .lt. 1.0d-6 ) then
-!              listht(jptr) = iptrt
-!              exit t_loop
-!             endif ! r1 = r2
-!            endif ! it = i_orb
-!           enddo t_loop
-!           if ( listht(jptr) .eq.0 ) then
-!             write(6,'(a,20i8)')
-!     &       'siesta_coor: no transpose for i_orb,js,j,jptr=',
-!     &               i_orb,js,j,jptr
-!            write(6,'(a,3f9.4)')
-!     &       '         : xijo=',xijo(:,jptr) / bohr
-!            stop
-!           endif
-!          enddo ! js
-!         enddo ! i
-!
-!      endif
-CC RC  End loading transpose for OffSSO
-
-
-
-
+#ifdef SIESTA__CHESS
+      if (isolve == SOLVE_CHESS) then
+          call CheSS_init(node, nodes, maxnh, maxnh_kernel, maxnh_mult, 
+     &         no_u, no_l, no_l_kernel, no_l_mult, BlockSize, 
+     &         spin%spinor, qs, listh, listh_kernel, listh_mult, 
+     &         numh, numh_kernel, numh_mult)
+          deallocate(listh_kernel)
+          deallocate(numh_kernel)
+          deallocate(listh_mult)
+          deallocate(numh_mult)
+      end if
+#endif /* CHESS */
       call globalize_or(folding1,folding)
       if (folding) then
          if (IOnode) then

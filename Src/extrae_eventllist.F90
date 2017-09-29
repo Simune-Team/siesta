@@ -12,13 +12,13 @@ module extrae_eventllist
   integer            :: extrae_maxEventNumber
   integer, parameter :: NOT_FOUND = -1
 
-  type extrae_event
+  type extrae_event_type
     integer                           :: eventnumber
     character (len=extrae_MAXNAMELEN) :: sectionname
-    type(extrae_event), pointer       :: next => null()
-  end type extrae_event
+    type(extrae_event_type), pointer       :: next => null()
+  end type extrae_event_type
 
-  type(extrae_event), pointer :: eventlist => null()
+  type(extrae_event_type), pointer :: eventlist => null()
 
   contains
   
@@ -28,7 +28,7 @@ module extrae_eventllist
 !use parallel,only: node
     implicit none
 
-    type(extrae_event), pointer, intent(in)  :: list
+    type(extrae_event_type), pointer, intent(in)  :: list
     character (len=*),           intent(in)  :: name  
     integer :: getNumber_result
 
@@ -54,11 +54,11 @@ module extrae_eventllist
 !use parallel,only: node
     implicit none
 
-    type(extrae_event), pointer, intent(inout)  :: list
+    type(extrae_event_type), pointer, intent(inout)  :: list
     character (len=*),           intent(in)     :: name  
     integer    :: addToList
     
-    type(extrae_event), pointer :: newElement
+    type(extrae_event_type), pointer :: newElement
 
     extrae_maxEventNumber = extrae_maxEventNumber + 1
     allocate(newElement)
@@ -76,7 +76,7 @@ module extrae_eventllist
   ! its content has to be appended to the trace's pcf file for labeling the user-functions traced
   subroutine writeList(list)
     implicit none
-    type(extrae_event), pointer, intent(in)  :: list
+    type(extrae_event_type), pointer, intent(in)  :: list
 
     character(len=*),parameter :: userfuncFile = 'siesta_user_labels.pcf'
     integer                    :: iu
@@ -98,7 +98,7 @@ module extrae_eventllist
 
   recursive subroutine writeElements(list, iu)
     implicit none
-    type(extrae_event), pointer, intent(in)  :: list
+    type(extrae_event_type), pointer, intent(in)  :: list
     integer,                     intent(in)  :: iu
 
     ! elements are in reverse order in list, so reverse them again  
@@ -112,7 +112,7 @@ module extrae_eventllist
   
   recursive subroutine deleteList(list)
     implicit none
-    type(extrae_event), pointer, intent(inout)  :: list
+    type(extrae_event_type), pointer, intent(inout)  :: list
 
     if (associated(list)) then
       if (associated(list%next)) then

@@ -1763,6 +1763,7 @@ contains
 
     ! All our work-arrays...
     complex(dp), pointer :: A(:), B(:), C(:), Y(:)
+    complex(dp), parameter :: zi = dcmplx(0._dp, 1._dp)
 
     integer :: no, off, i, ii, j, ierr
     integer :: ip, itmp
@@ -1867,7 +1868,8 @@ contains
     end if
         
     ! Create Gamma...
-    ! \Gamma ^ T = (\Sigma - \Sigma^\dagger)^T
+    ! I.e. store the transposed Gamma.
+    ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,ip)
     do j = 1 , no
        ii = no * ( j - 1 )
@@ -1875,11 +1877,11 @@ contains
        do i = 1 , j - 1
           ii = ii + 1
           ip = ip + no
-          El%Gamma(ii) = El%Sigma(ip) - dconjg( El%Sigma(ii) )
-          El%Gamma(ip) = El%Sigma(ii) - dconjg( El%Sigma(ip) )
+          El%Gamma(ii) = zi * (El%Sigma(ip) - dconjg( El%Sigma(ii) ))
+          El%Gamma(ip) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ip) ))
        end do
        ii = no*(j-1) + j
-       El%Gamma(ii) = El%Sigma(ii) - dconjg( El%Sigma(ii) )
+       El%Gamma(ii) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ii) ))
     end do
 !$OMP end parallel do
 
@@ -1995,7 +1997,8 @@ contains
        call mat_invert(A,B,ierr,MI_IN_PLACE_LAPACK)
        
        ! Calculate the Gamma function
-       ! \Gamma ^ T = (\Sigma - \Sigma^\dagger)^T
+       ! I.e. store the transposed Gamma.
+       ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,jj)
        do j = 1 , ierr
           ii = ierr * ( j - 1 )
@@ -2003,11 +2006,11 @@ contains
           do i = 1 , j - 1
              ii = ii + 1
              jj = jj + ierr
-             C(ii) = Y(jj) - dconjg( Y(ii) )
-             C(jj) = Y(ii) - dconjg( Y(jj) )
+             C(ii) = zi * (Y(jj) - dconjg( Y(ii) ))
+             C(jj) = zi * (Y(ii) - dconjg( Y(jj) ))
           end do
           ii = ierr*(j-1) + j
-          C(ii) = Y(ii) - dconjg( Y(ii) )
+          C(ii) = zi * (Y(ii) - dconjg( Y(ii) ))
        end do
 !$OMP end parallel do
 
@@ -2031,7 +2034,7 @@ contains
        do i = 1 , ierr
           ! Calculate offset
           j = (i-1) * ierr + 1
-          life(off+i) = - real( zdotu(ierr,El%Sigma(j),1,C(j),1) ,dp)
+          life(off+i) = - aimag( zdotu(ierr,El%Sigma(j),1,C(j),1) )
        end do
 
        ! Reassign pointers
@@ -2088,7 +2091,8 @@ contains
     end if
         
     ! Create Gamma...
-    ! \Gamma ^ T = (\Sigma - \Sigma^\dagger)^T
+    ! I.e. store the transposed Gamma
+    ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,ip)
     do j = 1 , no
        ii = no * ( j - 1 )
@@ -2096,11 +2100,11 @@ contains
        do i = 1 , j - 1
           ii = ii + 1
           ip = ip + no
-          El%Gamma(ii) = El%Sigma(ip) - dconjg( El%Sigma(ii) )
-          El%Gamma(ip) = El%Sigma(ii) - dconjg( El%Sigma(ip) )
+          El%Gamma(ii) = zi * (El%Sigma(ip) - dconjg( El%Sigma(ii) ))
+          El%Gamma(ip) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ip) ))
        end do
        ii = no*(j-1) + j
-       El%Gamma(ii) = El%Sigma(ii) - dconjg( El%Sigma(ii) )
+       El%Gamma(ii) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ii) ))
     end do
 !$OMP end parallel do
 

@@ -9,7 +9,7 @@ written by Julian Gale, Imperial College, March 1999
 
 To generate an executable :
 
-f77 -o sies2arc *.f
+   make
 
 To run :
 

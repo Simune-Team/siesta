@@ -94,7 +94,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'N','T',SB,no,no,zi, &
+            'N','T',SB,no,no,z1, &
             rows(1)    , SB, &
             El%Gamma   , no, &
             z0, ztmp(1), SB)

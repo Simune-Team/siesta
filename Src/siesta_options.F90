@@ -238,6 +238,7 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_MINIM  = 3
   integer,  parameter :: SOLVE_PEXSI  = 4
   integer,  parameter :: MATRIX_WRITE = 5
+  integer,  parameter :: SOLVE_CHESS  = 6
   
 #ifdef SIESTA__FLOOK
   ! LUA-handle

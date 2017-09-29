@@ -3,10 +3,10 @@
 #
 # Usage:
 #
-#          make                      --- Run all tests
-#          make  check               --- Run all tests and check with reference file
-#          make  check-only          --- Run all checks with reference file (run make before)
-#          make  list                --- Show the list of tests
+#          make                     --- Run all tests
+#          make check               --- Run all tests and check with reference file
+#          make check-only          --- Run all checks with reference file (run make before)
+#          make show                --- Show the list of tests
 #
 #          make tests=fe_broyden { check | }     --- Run a single test
 #          (Not implemented) make batch                --- Dispatch to batch system
@@ -47,6 +47,7 @@ tests = ag anneal-cont ar2_vdw \
 	born born_spin \
 	carbon_nanoscroll \
 	ch4 chargeconf-h2o constant_volume \
+	chess \
 	dipole_correction \
 	fe fe_broyden fe_clust_noncollinear fe_clust_noncollinear-gga \
 	fe_cohp fen fe_noncol_kp \
