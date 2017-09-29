@@ -75,13 +75,12 @@ FDICT=libfdict.a
 FDICT_MAKEFILE=$(VPATH)/fdict/Makefile
 $(FDICT): 
 	-mkdir -p fdict
-	(cd fdict ; $(MAKE) -f $(FDICT_MAKEFILE) \
-		"VPATH=$(VPATH)/fdict" \
-		"FC=$(FC_SERIAL)" \
-		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
-		"FPPFLAGS=$(FPPFLAGS)" \
-		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
-	@cp -p fdict/*.*d ./
+	(cd fdict ; \
+	echo "TOP_DIR=$(VPATH)/fdict" > Makefile ; echo "include $(VPATH)/fdict/Makefile" >> Makefile ; \
+	echo "FC=$(FC_SERIAL)" > setup.make ; \
+	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
+	@cp -p fdict/*.mod ./
 	cp fdict/$(FDICT) ./
 
 # This library can be found at:
@@ -90,15 +89,19 @@ NCDF=libncdf.a
 NCDF_MAKEFILE=$(VPATH)/NCDF/src/Makefile
 $(NCDF): COMP_LIBS += $(FDICT)
 $(NCDF): $(FDICT)
-	-mkdir -p NCDF/src
-	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) \
-		"VPATH=$(VPATH)/NCDF/src" "LIBFDICT=$(FDICT)" \
-		"DIR_FDICT=$(VPATH)/fdict" \
-		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
-		"FPPFLAGS=$(FPPFLAGS)" \
-		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
-	@cp -p NCDF/src/*.*d ./
-	cp NCDF/src/$(NCDF) ./
+	-mkdir -p ncdf
+	(cd ncdf ; \
+	echo "TOP_DIR=$(VPATH)/ncdf" > Makefile ; echo "include $(VPATH)/ncdf/Makefile" >> Makefile ; \
+	echo "settings.bash: FORCE" >> Makefile ; \
+	printf '%s\n' "	-cp ../fdict/settings.bash ." >> Makefile ; \
+	echo "FC=$(FC)" > setup.make ; \
+	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "FPPFLAGS = $(FPPFLAGS)" >> setup.make ; \
+	echo "INCLUDES = $(INCFLAGS) -I../" >> setup.make ; \
+	echo "LIBS = $(LIBS) -lfdict" >> setup.make ; \
+	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
+	@cp -p ncdf/*.mod ./
+	cp ncdf/$(NCDF) ./
 
 #######################
 
