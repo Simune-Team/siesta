@@ -152,6 +152,13 @@ contains
        ! Find the electrode mesh sets
        call init_elec_indices(cell, nmesh, na_u, xa)
     else
+       if ( IONode ) then
+          write(*,'(a)')'ts-voltage: WARNING **************************************'
+          write(*,'(a)')'ts-voltage: Boundary conditions on full cell.'
+          write(*,'(a)')'ts-voltage: This should only be used for testing purposes!'
+          write(*,'(a)')'ts-voltage: WARNING **************************************'
+       end if
+       
        ! Simulate the electrodes at the ends
        ! This leverages a double routine
        left_elec_mesh_idx  = 1
