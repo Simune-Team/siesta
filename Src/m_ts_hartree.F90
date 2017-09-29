@@ -254,7 +254,6 @@ contains
          write(*,'(a,f8.5)')'ts: Grid fraction plane ',llYZ(1)
          write(*,'(a,3(tr1,f13.5))') 'ts: Grid point plane (Ang):',&
               llYZ(1)*cell(:,ts_tidx)/Ang
-         write(*,*)
        end if
     
        return
@@ -324,7 +323,6 @@ contains
           write(*,'(a)') 'ts: You can use %block AtomicCoordinatesOrigin'
           write(*,'(a)') 'ts: to easily move the entire structure.'
        end if
-       write(*,*)
     end if
 
     if ( nlp == 0 ) then

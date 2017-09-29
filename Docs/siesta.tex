@@ -11409,11 +11409,11 @@ These options adhere to the specific solution methods available for
 \tsiesta\ requires fixed boundary conditions and forcing this is an
 intricate and important detail. 
 
-\begin{fdfentry}{TS!Poisson}[string]<ramp-cell|ramp-central|elec-box|\nonvalue{file}>
+\begin{fdfentry}{TS!Poisson}[string]<ramp-central|elec-box|\nonvalue{file}|ramp-cell>
 
   Define how the correction of the Poisson equation is
   superimposed. The default is to apply the linear correction across
-  the entire cell (if there are two semi-infinite aligned electrodes).
+  the central region (if there are two semi-infinite aligned electrodes).
   Otherwise this defaults to the \emph{box} solution which will
   introduce spurious effects at the electrode boundaries. In this case
   you are encouraged to supply a \fdf*{file}.
@@ -11427,6 +11427,53 @@ intricate and important detail.
   \note the file option is only applicable if compiled with CDF4
   compliance.
 
+  \begin{developer}
+    
+    NP has tested calculations with \fdf*{ramp-cell}
+    vs. \fdf*{ramp-central} and found incorrect bias for pristine
+    systems when using \fdf*{ramp-cell}. This can easily be found by
+    creating a linear chain and calculate the potential drop using
+    either options. Only when using \fdf*{ramp-central} will the correct
+    potential drop occur.
+    
+  \end{developer}
+
+  \begin{fdfoptions}
+    \option[ramp-central]%
+    \fdfindex*{TS!Poisson!ramp-central}%
+
+    Apply the bias-ramp between the leads. For a \emph{bulk} electrode
+    (see \fdf{TS!Elec.<>!Bulk}) the ramp will start at the
+    electrode-device interface, otherwise it will start at the
+    beginning of the electrode.
+
+
+    \option[<file>]%
+    \fdfindex*{TS!Poisson!<file>}%
+
+    Specify an external file used as the boundary conditions for the
+    applied bias. This is encouraged to use for $N>2$ electrode
+    calculations but may also be used when an \emph{a priori}
+    potential profile is know.
+    
+    \option[elec-box]%
+    \fdfindex*{TS!Poisson!ramp-cell}%
+
+    The default potential profile for $N>2$, or when the electrodes
+    does are not aligned (in terms of their transport direction). When
+    this is the case you are highly encouraged to try with an external
+    solution (\fdf*{<file>}).
+
+
+    \option[ramp-cell]%
+    \fdfindex*{TS!Poisson!ramp-cell}%
+
+    Apply the ramp for the full cell. This option should \emph{only}
+    be used for testing against older versions of \tsiesta.
+
+  \end{fdfoptions}
+
+  
 \end{fdfentry}
 
 \begin{fdfentry}{TS!Hartree.Fix}[string]<plane|elec-plane|elec-box>

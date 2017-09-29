@@ -101,6 +101,22 @@
 }
 
 
+% Create a developer block.
+% When compiling the developer version additional
+% notes appear.
+\ifdeveloper%
+\NewDocumentEnvironment{developer}{ }
+{%
+    \begingroup%
+    \color{gray}%
+}{%
+    \endgroup%
+}%
+\else
+\let\developer\comment
+\let\enddeveloper\endcomment
+\fi
+
 
 %%% Local Variables:
 %%% mode: latex
