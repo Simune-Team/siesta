@@ -167,7 +167,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_target_stress.o compute_max_diff.o \
 	m_initwf.o wavefunctions.o \
 	m_evolve.o cranknic_evolk.o cranknic_evolg.o sankey_change_basis.o m_iotddft.o \
-	m_matdiag.o m_matswinvers.o
+	m_matdiag.o m_matswinvers.o iotdxv.o
 
 # Diagonalization algorithm
 OBJS += diag_option.o diag.o
@@ -363,7 +363,7 @@ ldau_specs.o: $(FDF)
 
 cranknic_evolk.o: $(FDF)
 cranknic_evolg.o: $(FDF)
-sankey_change_basis.o: $(FDF)
+sankey_change_basis.o iotdxv.o: $(FDF)
 
 # Create all objects
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
@@ -770,6 +770,7 @@ iopipes.o: parallel.o precision.o sys.o
 iosockets.o: cellsubs.o fsockets.o m_mpi_utils.o parallel.o precision.o sys.o
 iowfs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
+iotdxv.o: files.o parallel.o precision.o
 iozm.o: files.o parallel.o precision.o siesta_geom.o zmatrix.o
 ipack.o: sys.o
 kgrid.o: parallel.o precision.o units.o
@@ -1278,7 +1279,7 @@ siesta_init.o: m_wallclock.o metaforce.o molecularmechanics.o object_debug.o
 siesta_init.o: parallel.o parallelsubs.o projected_DOS.o siesta_cmlsubs.o
 siesta_init.o: siesta_dicts.o siesta_geom.o siesta_options.o sparse_matrices.o
 siesta_init.o: struct_init.o sys.o timer.o timestamp.o ts_init.o writewave.o
-siesta_init.o: zmatrix.o
+siesta_init.o: zmatrix.o 
 siesta_master.o: iopipes.o iosockets.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o
@@ -1317,7 +1318,7 @@ state_init.o: m_test_io.o m_ts_charge.o m_ts_electype.o m_ts_global_vars.o
 state_init.o: m_ts_io.o m_ts_options.o m_ts_sparse.o m_ts_tri_init.o
 state_init.o: normalize_dm.o overlap.o parallel.o proximity_check.o
 state_init.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
-state_init.o: sys.o units.o write_subs.o zmatrix.o
+state_init.o: sys.o units.o write_subs.o zmatrix.o iotdxv.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_exp_coord.o
 struct_init.o: m_iostruct.o m_mpi_utils.o m_steps.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_master.o siesta_options.o
@@ -1458,6 +1459,7 @@ m_grdsam.o: grdsam.o
 m_hsparse.o: hsparse.o
 m_intramol_pressure.o: remove_intramol_pressure.o
 m_ioxv.o: ioxv.o
+m_iotdxv.o: iotdxv.o
 m_kinefsm.o: kinefsm.o
 m_ksv.o: ksv.o
 m_ksvinit.o: ksvinit.o
