@@ -1322,7 +1322,7 @@ state_init.o: sys.o units.o write_subs.o zmatrix.o iotdxv.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_exp_coord.o
 struct_init.o: m_iostruct.o m_mpi_utils.o m_steps.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_master.o siesta_options.o
-struct_init.o: units.o zmatrix.o
+struct_init.o: units.o zmatrix.o iotdxv.o
 sys.o: parallel.o siesta_cml.o
 timer.o: extrae_eventllist.o extrae_module.o m_timer.o parallel.o sys.o
 timer.o: timer_tree.o

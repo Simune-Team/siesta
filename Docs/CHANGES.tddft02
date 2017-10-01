@@ -1,3 +1,13 @@
+2017-10-01  21:00 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-39
+
+TDDFT start/restart with SystemLabel.TDXV
+
+modified:
+
+  Docs/siesta.tex
+  Src/Makefile
+  Src/struct_init.F
+
 2017-09-30  21:05 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-38
 
 Added the writting of SystemLabel.TDXV file.

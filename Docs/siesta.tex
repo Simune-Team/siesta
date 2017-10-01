@@ -10411,7 +10411,7 @@ This is a note of caution. This implementation of RT-TDDFT can not propagate par
 A TDDFT calculation requires two runs of \siesta. In the first run
 with appropriate flags it calculates the self-consistent initial
 state, i.e., only occupied initial KSOs stored in \sysfile{TDWF}
-file. The second run uses this file as input and evolves the occupied
+file. The second run uses this file and the structure file \sysfile{TDXV} as input and evolves the occupied
 KSOs.
 
 \begin{fdflogicalF}{TDED.WF.Initialize}
@@ -10425,8 +10425,8 @@ self-consistency. This constitutes the first run.
 \begin{fdfentry}{MD.TypeOfRun}[string]<TDED>
 
 A new Molecular Dynamics option, \fdf{TDED}, has been
-included. The second run of \siesta\ uses this option with the file
-\sysfile{TDWF} present in the working directory.  In this option ions
+included. The second run of \siesta\ uses this option with the files
+\sysfile{TDWF} and \sysfile{TDXV} present in the working directory.  In this option ions
 and electrons are assumed to move simultaneously.  The occupied
 electronic states are time-evolved instead of the usual SCF
 calculations in each step.  Choose this option even if you intend to
@@ -10461,7 +10461,7 @@ determine an appropriate value for the electronic time step.
 \end{fdfentry}
   \begin{fdflogicalF}{TDED.WF.Save}
 
-Option to save wavefunctions at the end of a simulation for a possible restart or analysis. Wavefunctions are saved in file \sysfile{TDWF}. A TDED restart requires \sysfile{TDWF}, \sysfile{XV}, and \sysfile{VERLET_RESTART} from the previous run. The first step of the restart is same as the last of the previous run.
+Option to save wavefunctions at the end of a simulation for a possible restart or analysis. Wavefunctions are saved in file \sysfile{TDWF}. A TDED restart requires \sysfile{TDWF}, \sysfile{TDXV}, from the previous run. The first step of the restart is same as the last of the previous run.
 \end{fdflogicalF}
 
  \begin{fdflogicalT}{ TDED.Write.Etot}
