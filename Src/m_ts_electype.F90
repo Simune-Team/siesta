@@ -1664,12 +1664,16 @@ contains
 
     ! Check that there is a transfer matrix!
     if ( nnzs(this%sp01) == 0 ) then
-       write(*,'(a)') 'Electrode '//trim(this%name)//' has no transfer matrix.'
+       if ( IONode ) then
+          write(*,'(a)') 'Electrode '//trim(this%name)//' has no transfer matrix.'
+       end if
        ! We will *only* die if the user haven't provided an externally created GF file
        lio = file_exist(trim(this%GFfile), Bcast=.true.)
        if ( this%out_of_core .and. this%ReUseGF .and. lio ) then
-          write(*,'(3a)') 'Assuming ',trim(this%GFfile),' contains H, S and E*S - H - \Sigma &
-               &for calculating the correct self-energies and scattering matrices.'
+          if ( IONode ) then
+             write(*,'(3a)') 'Assuming ',trim(this%GFfile),' contains H, S and E*S - H - \Sigma &
+                  &for calculating the correct self-energies and scattering matrices.'
+          end if
        else
           write(*,'(a)') 'The self-energy cannot be calculated with a zero transfer matrix!'
           call die('Elec: transfer matrix has 0 elements. The self-&

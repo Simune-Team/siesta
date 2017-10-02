@@ -84,7 +84,7 @@ C **********************************************************************
      .  psi(2,2,nuotot,2*nuo)
 
       complex(dp) Haux(2,nuotot,2,nuo), Saux(2,nuotot,2,nuo), 
-     .           caux(2,nuotot), Spr(nuotot,nuo)
+     .           caux(2,nuotot)
  
       complex(dp) kphs
 
@@ -102,6 +102,7 @@ C Internal variables ---------------------------------------------------
       complex(dp)
      .  D11, D12, D21, D22
 
+      complex(dp), pointer :: Spr(:,:) => null()
 
 #ifdef MPI
       integer ::  BNode, Bnuo, ibandg, maxnuo, MPIerror
@@ -113,8 +114,9 @@ C START -----------------------------------------------------------------
 
 C Initialize some variables
       delta = (e2 - e1)/nhist
-      dtot=0.0D0
-      dpr=0.0D0
+
+      call re_alloc(Spr, 1, nuotot, 1, nuo, name='Spr',
+     &     routine='pdos3k')
 
 !     Find eigenvalues at every k point
       do ik = 1,nk
@@ -244,10 +246,11 @@ C Loop over all the energy range
           do ihist = 1, nhist
             ener = E1 + (ihist - 1) * delta
             do iband = 1, nuo*2
-              call LocalToGlobalOrb(iband,Node,Nodes,ibandg)
+              call LocalToGlobalOrb((iband+1)/2,Node,Nodes,ibandg)
+              ibandg = ibandg * 2 - mod(iband, 2) 
               diff = (ener - eo(ibandg,ik))**2 / (sigma ** 2)
               if (diff .gt. 15.0d0) cycle
-              gauss = ( exp(-diff) )
+              gauss = exp(-diff)
               caux(:,:) = dcmplx(0.0_dp,0.0_dp)
               do j=1,nuotot
                 caux(1,j) = dcmplx(psi(1,1,j,iband),psi(2,1,j,iband))   ! c_{j,up)
@@ -256,10 +259,10 @@ C Loop over all the energy range
               do jo = 1, Bnuo
                call LocalToGlobalOrb(jo,BNode,Nodes,juo)
                do io = 1, nuotot
-                 D11 = caux(1,io) * dconjg(caux(1,juo)) * Spr(io,jo)
-                 D22 = caux(2,io) * dconjg(caux(2,juo)) * Spr(io,jo)
-                 D12 = caux(1,io) * dconjg(caux(2,juo)) * Spr(io,jo)
-                 D21 = caux(2,io) * dconjg(caux(1,juo)) * Spr(io,jo)
+                 D11 = caux(1,io) * dconjg(caux(1,juo)) * Sloc(io,jo)
+                 D22 = caux(2,io) * dconjg(caux(2,juo)) * Sloc(io,jo)
+                 D12 = caux(1,io) * dconjg(caux(2,juo)) * Sloc(io,jo)
+                 D21 = caux(2,io) * dconjg(caux(1,juo)) * Sloc(io,jo)
 
                  D11 = gauss*wk(ik)*D11
                  D22 = gauss*wk(ik)*D22
@@ -281,7 +284,7 @@ C Loop over all the energy range
         enddo !BNode
 
 C Free workspace array for overlap
-        call de_alloc(Sloc,name='Sloc')
+        call de_alloc(Sloc, 'Sloc', 'pdos3k')
 
 #else
 C Loop over all the energy range
@@ -291,7 +294,7 @@ C Loop over all the energy range
           do iband = 1, nuo*2
             diff = (ener - eo(iband,ik))**2 / (sigma ** 2)
             if (diff .gt. 15.0d0) cycle
-            gauss = ( exp(-diff) )
+            gauss = exp(-diff)
             caux(:,:) = dcmplx(0.0_dp,0.0_dp)
             do j=1,nuotot
               caux(1,j) = dcmplx(psi(1,1,j,iband),psi(2,1,j,iband))   ! c_{j,up)
@@ -324,6 +327,8 @@ C Loop over all the energy range
 #endif
 
       enddo  ! nk
+
+      call de_alloc(Spr, 'Spr', 'pdos3k')
 
 #ifdef MPI
 

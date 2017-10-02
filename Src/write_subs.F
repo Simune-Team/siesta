@@ -523,9 +523,15 @@
      .    'siesta: ', 'Band Struct. =', Ebs/eV,
      .    'siesta: ',      'Kinetic =', Ekin/eV,
      .    'siesta: ',      'Hartree =', Uscf/eV,
-     .    'siesta: ',      'Eldau   =', Eldau/eV,
-     .    'siesta: ',      'Eso     =', Eso/eV,
-     .    'siesta: ',      'Enl_SL  =', Enl_offsiteSO/eV,
+     .    'siesta: ',      'Eldau   =', Eldau/eV
+      if ( spin%SO .and. .not.spin%SO_offsite ) then 
+        write(6,'(a,a15,f15.6)') 
+     .     'siesta: ', 'Eso(onS) =', Eso/eV
+      elseif( spin%SO_offsite ) then
+        write(6,'(a,a15,f15.6)') 
+     .     'siesta: ', 'Eso(offS)=', Enl_offsiteSO/eV
+      endif
+        write(6,'(a,a15,f15.6)')
      .    'siesta: ',   'Ext. field =', DUext/eV,
 #ifdef TRANSIESTA
      .    'siesta: ',      'Enon-eq =', DE_NEGF/eV,
