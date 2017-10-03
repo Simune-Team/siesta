@@ -157,6 +157,7 @@ END SUBROUTINE cn_evolg
       use precision
       use MatrixSwitch 
       use matswinversion,   only: getinverse
+      use m_inversemm,       only: inversemm
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -172,6 +173,7 @@ END SUBROUTINE cn_evolg
  type(matrix)          :: aux1,aux2,aux3,aux4
  complex(kind=dp)      :: alpha
  character             :: m_storage*5, m_operation*3
+ logical, save         :: inversemm_linear = .true.
  !
 #ifdef MPI
  m_storage='pzdbc'
@@ -183,30 +185,46 @@ END SUBROUTINE cn_evolg
  !  
  call m_allocate(aux1,no,no,m_storage)
  call m_allocate(aux2,no,no,m_storage)
- call m_allocate(aux3,no,no,m_storage)
- call m_allocate(aux4,phi%dim1,phi%dim2,m_storage)
+ call m_allocate(aux3,phi%dim1,phi%dim2,m_storage)
  ! First order expansion for the evolution operator
  alpha=-0.5_dp*cmplx(0.0_dp,1.0_dp,dp)*deltat
  ! Copying S to aux1 and aux2
  call m_add(S,'n',aux1,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
  call m_add(S,'n',aux2,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
- ! copying phi_0 (wavefunction) to aux4
- call m_add(phi,'n',aux4,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
  ! Calculating S - alpha * H
  call m_add(H,'n',aux1,alpha,cmplx(1.0_dp,0.0_dp,dp),m_operation)
- ! Calculating S + alpha * H
+ ! Calculating (S - alpha * H) * phi
+ call mm_multiply(aux1,'n',phi,'n',aux3,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+ ! Calculating S + alpha * H  
  call m_add(H,'n',aux2,-1.0_dp*alpha,cmplx(1.0_dp,0.0_dp,dp),m_operation)
- ! Calculating inverse of (S + alpha * H)
- call getinverse(aux2)
- ! aux3 = (S + alpha * H)^-1 * (S - alpha * H)
- call mm_multiply(aux2,'n',aux1,'n',aux3,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
- ! phi_1 = aux3 * phi_0     
- call mm_multiply(aux3,'n',aux4,'n',phi,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+
+ !---------------------------------------------------------------------------------------!
+ ! There are two ways to compute inverse. One is to first obtain
+ ! LU-factorization using pzgetrf and then the inverse using pzgetri.
+ ! The other ways is to solve AX = B system using pzgesv. The advantage of this
+ ! is way is it does inverse and a matrix multiplication at the same time. Which
+ ! is desirable and in the first method is done separately. However, it is not
+ ! very clear which way offers better performance when the system size is not
+ ! huge. This should be thoroughly tested. For the time being the second method is
+ ! hard-wired by the inversemm_linear flag, while keeping first one for testing
+ ! etc.
+ !----------------------------------------------------------------------------------------!
+
+ if (inversemm_linear) then
+   ! Calculating (S + alpha * H)^-1 * (S - alpha * H) * phi 
+   call inversemm(aux2,aux3) 
+   ! Compying phi_evolved back to phi
+   call m_add(aux3,'n',phi,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+ else
+   ! Calculating inverse of (S + alpha * H)
+   call getinverse(aux2)
+   !(S + alpha * H)^-1 * (S - alpha * H) * phi 
+   call mm_multiply(aux2,'n',aux3,'n',phi,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+ endif
  !
  call m_deallocate(aux1)
  call m_deallocate(aux2)
  call m_deallocate(aux3)
- call m_deallocate(aux4)
  !
  END SUBROUTINE Uphi
  !------------------------------------------------------------------------------------!

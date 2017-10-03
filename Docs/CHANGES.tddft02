@@ -1,3 +1,18 @@
+2017-10-02  15:25 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-40
+
+Matrix inverse in Crank-Nicolson changed.
+
+* Now used pzgesv.
+
+added:
+
+  Src/m_inversemm.F90
+
+modified:
+
+  Src/Makefile
+  Src/cranknic_evolg.F90
+
 2017-10-01  21:00 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-39
 
 TDDFT start/restart with SystemLabel.TDXV

@@ -167,7 +167,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_target_stress.o compute_max_diff.o \
 	m_initwf.o wavefunctions.o \
 	m_evolve.o cranknic_evolk.o cranknic_evolg.o sankey_change_basis.o m_iotddft.o \
-	m_matdiag.o m_matswinvers.o iotdxv.o
+	m_matdiag.o m_matswinvers.o iotdxv.o  m_inversemm.o
 
 # Diagonalization algorithm
 OBJS += diag_option.o diag.o
@@ -296,7 +296,7 @@ $(MS): $(MPI_INTERFACE)
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 m_initwf.o sankey_change_basis.o m_evolve.o cranknic_evolg.o cranknic_evolk.o: $(MS)
-wavefunctions.o m_matdiag.o m_matswinvers.o: $(MS)
+wavefunctions.o m_matdiag.o m_matswinvers.o m_inversemm.o: $(MS)
 #--------------------------------------------------------------
 XC=libSiestaXC.a
 $(XC): $(FDF)
@@ -708,7 +708,7 @@ ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 cranknic_evolg.o: alloc.o m_eo.o m_matswinvers.o m_steps.o parallel.o parallelsubs.o
 cranknic_evolg.o: precision.o siesta_options.o sparse_matrices.o sys.o wavefunctions.o
-cranknic_evolg.o: m_spin.o atomlist.o m_energies.o units.o
+cranknic_evolg.o: m_spin.o atomlist.o m_energies.o units.o m_inversemm.o
 cranknic_evolk.o: parallel.o parallelsubs.o precision.o siesta_options.o m_spin.o
 cranknic_evolk.o: wavefunctions.o sparse_matrices.o atomlist.o kpoint_grid.o
 cranknic_evolk.o: units.o m_energies.o m_eo.o cranknic_evolg.o
@@ -845,6 +845,7 @@ m_initwf.o: parallel.o parallelsubs.o precision.o sparse_matrices.o sys.o
 m_initwf.o: wavefunctions.o kpoint_grid.o atomlist.o m_spin.o m_gamma.o
 m_initwf.o: diag_option.o
 m_integrate.o: precision.o
+m_inversemm.o: precision.o
 m_io.o: sys.o
 m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_io_s.o: class_Sparsity.o parallel.o precision.o
