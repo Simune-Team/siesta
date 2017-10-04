@@ -138,8 +138,7 @@ C
       integer, intent(out) :: nk
       real(dp), pointer ::  kpoint(:,:)
 
-      character         paste*30
-      external          paste, redcel
+      external          redcel
 C *********************************************************************
 
       logical BandLinesPresent, BandPointsPresent
@@ -381,8 +380,7 @@ C
      .              S(maxnh), xij(3,maxnh), occtol
       logical, intent(in) :: getPSI
 
-      character(len=label_length+6) :: paste
-      external ::       io_assign, io_close, paste, memory
+      external ::       io_assign, io_close, memory
 
 
       character(len=label_length+6) :: fname
@@ -497,7 +495,7 @@ C Write bands
       if (writeb.and.Node.eq.0) then
 
 C Find name of output file and open it
-        fname = paste(slabel,'.bands')
+        fname = trim(slabel) // '.bands'
         call io_assign(iu)
         open( iu, file=fname, status='unknown')
 
@@ -558,7 +556,7 @@ C Put label between quotes
               if (label(il) .eq. ' ') then
                 string = ''' '''
               else
-                string = paste( ''''//label(il),'''' )
+                string = ''''//label(il)//''''
               endif
               write(iu,'(f12.6,3x,a)') path, string
               il = il + 1

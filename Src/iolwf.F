@@ -48,21 +48,19 @@ C
       implicit  none
 
       character task*(*)
-      character(len=label_length+4) :: paste
       logical   found
       integer   nbasis, nbasisCloc, nbasisloc, nspin, maxnc
-      external  chkdim, io_assign, io_close, paste, timer
+      external  chkdim, io_assign, io_close, timer
 
 C Internal variables and arrays
-      character(len=label_length+4), save :: fname
-      logical                             :: exist3
-      logical,                       save :: frstme = .true.
-      integer,              pointer, save :: numcg(:)
+      character(len=label_length+4) :: fname
+      logical                       :: exist3
+      integer, pointer :: numcg(:) => null()
       integer :: im, is, unit1, m, nb, ncmax, ns
 #ifdef MPI
       integer :: MPIerror, n, ndata, Request, Status(MPI_Status_Size)
-      real(dp),             pointer, save :: bdens(:)
-      integer,              pointer, save :: idens(:)
+      real(dp), pointer :: bdens(:) => null()
+      integer, pointer :: idens(:) => null()
 #endif
 
       call timer( 'iolwf', 1 )
@@ -73,13 +71,8 @@ C Allocate local buffer array
       call re_alloc( bdens, 1, nbasis, 'bdens', 'iolwf' )
 #endif
       
-C Find file name
-      if (frstme) then
-        if (Node.eq.0) then
-          fname = paste(slabel,'.LWF')
-        endif
-        frstme = .false.
-      endif
+C     Find file name
+      fname = trim(slabel) // '.LWF'
 
       if (task.eq.'read' .or. task.eq.'READ') then
         if (Node.eq.0) then

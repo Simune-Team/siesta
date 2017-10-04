@@ -30,20 +30,15 @@ c Emilio Artacho, Feb. 1999
       real(dp), intent(in) :: kpoints(3,nk)
       real(dp), intent(in) :: kweights(nk)
       
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal 
       integer           ik, iu, io, is, nspin
 
-      character(len=label_length+4), save :: fname
-      logical, save                       :: frstme = .true.
+      character(len=label_length+4) :: fname
 c -------------------------------------------------------------------
 
-      if (frstme) then
-        fname = slabel
-        fname = trim(fname) // '.EIG'
-        frstme = .false.
-      endif
+      fname = trim(slabel) // '.EIG'
       
       nspin = min(ns,2)
 

@@ -76,8 +76,6 @@
       character(len=label_length+13) :: fname
       character(8)                   :: numstring
       character(8)                   :: iotask
-!     SIESTA External
-      character(len=label_length+5)  :: PASTE
 !     TSS End
 #endif /* TRANSIESTA */
 !--------------------------------------------------------------------- BEGIN
@@ -211,8 +209,8 @@
       if (savetshs) then
          if (idyn.eq.6) then ! Force constants run
             write(numstring,'(2i4)') ia1, ts_istep
-            fname = paste( slabel, numstring )
-            fname = paste( fname, '.TSHS' )
+            fname = trim( slabel ) // trim( numstring )
+            fname = trim( fname ) // '.TSHS'
             iotask='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
      &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
@@ -220,7 +218,7 @@
      &                    lasto, isa, ef, ucell, ts_kscell, ts_kdispl,
      &                    ts_gamma_scf, xa, ts_istep, ia1)
          else
-            fname  = paste( slabel, '.TSHS' )
+            fname  = trim( slabel ) // '.TSHS'
             iotask ='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
      &                    indxuo, maxnh, numh, listhptr, listh, H, S, 

@@ -58,8 +58,6 @@
 
       implicit none
 
-      character(len=label_length+6), external :: paste
-
       logical :: relaxd, getPSI, quenched_MD
 
       real(dp)          :: dummy_str(3,3)
@@ -419,14 +417,14 @@
      &    savevh .or. savevt .or. savevna .or.
      &    savepsch .or. savetoch .or. 
      &    want_partial_charges) then
-        if (saverho)   filesOut%rho   = paste( slabel, '.RHO' )
-        if (savedrho)  filesOut%drho  = paste( slabel, '.DRHO' )
-        if (saverhoxc) filesOut%rhoxc = paste( slabel, '.RHOXC' )
-        if (savevh)    filesOut%vh    = paste( slabel, '.VH'  )
-        if (savevt)    filesOut%vt    = paste( slabel, '.VT'  )
-        if (savevna)   filesOut%vna   = paste( slabel, '.VNA'  )
-        if (savepsch)  filesOut%psch  = paste( slabel, '.IOCH'  )
-        if (savetoch)  filesOut%toch  = paste( slabel, '.TOCH'  )
+        if (saverho)   filesOut%rho   = trim(slabel) // '.RHO'
+        if (savedrho)  filesOut%drho  = trim(slabel) // '.DRHO'
+        if (saverhoxc) filesOut%rhoxc = trim(slabel) // '.RHOXC'
+        if (savevh)    filesOut%vh    = trim(slabel) // '.VH'
+        if (savevt)    filesOut%vt    = trim(slabel) // '.VT'
+        if (savevna)   filesOut%vna   = trim(slabel) // '.VNA'
+        if (savepsch)  filesOut%psch  = trim(slabel) // '.IOCH'
+        if (savetoch)  filesOut%toch  = trim(slabel) // '.TOCH'
         g2max = g2cut
         dummy_str  = 0.0
         dummy_strl = 0.0

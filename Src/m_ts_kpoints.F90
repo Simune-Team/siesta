@@ -347,21 +347,16 @@ contains
     use fdf
     use files,     only : slabel, label_length
 
-    character(len=label_length+5) :: paste
     integer                       :: nk
     real(dp)                      :: points(3,*), weight(*)
-    external          io_assign, io_close, paste
+    external          io_assign, io_close
 
 ! Internal 
-    character(len=label_length+5), save :: fname
+    character(len=label_length+5) :: fname
     integer                             :: ik, iu, ix
-    logical,                       save :: frstme = .true.
 ! -------------------------------------------------------------------
 
-    if (frstme) then
-       fname = paste( slabel, '.TSKP' )
-       frstme = .false.
-    endif
+    fname = trim(slabel) // '.TSKP'
 
     call io_assign( iu )
     open( iu, file=fname, form='formatted', status='unknown' )      

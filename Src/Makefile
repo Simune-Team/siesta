@@ -418,7 +418,7 @@ class_Pair_Vectors.o: Pair.T90 basic_type.inc
 class_Pair_Vectors.o: class_Vector.o
 class_Vector.o: basic_type.inc
 class_Vector.o: alloc.o
-coceri.o: files.o periodic_table.o precision.o
+coceri.o: files.o periodic_table.o precision.o units.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_dminim.o m_energies.o
 compute_dm.o: m_eo.o m_gamma.o m_rmaxh.o m_spin.o m_steps.o m_ts_global_vars.o
 compute_dm.o: m_ts_in_siesta.o m_ts_options.o m_zminim.o normalize_dm.o
@@ -439,7 +439,7 @@ compute_rhog.o: siesta_options.o sparse_matrices.o
 conjgr.o: precision.o
 conjgr_old.o: precision.o
 coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o zmatrix.o
-coxmol.o: files.o periodic_table.o precision.o
+coxmol.o: files.o periodic_table.o precision.o units.o
 debugmpi.o: parallel.o
 delk.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o
 delk.o: m_planewavematrixvar.o mesh.o meshdscf.o meshphi.o parallel.o
@@ -533,7 +533,7 @@ iofa.o: files.o precision.o units.o
 iogrid_netcdf.o: alloc.o parallel.o precision.o sys.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
-iomd.o: files.o precision.o
+iomd.o: files.o precision.o units.o
 iopipes.o: parallel.o precision.o sys.o
 iosockets.o: cellsubs.o fsockets.o m_fdf_global.o m_mpi_utils.o parallel.o
 iosockets.o: precision.o sys.o
@@ -714,7 +714,7 @@ phirphi.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
 phirphi.o: precision.o
 phirphi_opt.o: alloc.o atm_types.o atmfuncs.o atmparams.o mneighb.o new_matel.o
 phirphi_opt.o: parallel.o parallelsubs.o precision.o spher_harm.o sys.o
-pixmol.o: files.o periodic_table.o precision.o
+pixmol.o: files.o periodic_table.o precision.o units.o
 plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
 poison.o: alloc.o cellsubs.o chkgmx.o fft.o parallel.o precision.o sys.o
 post_scf_work.o: atomlist.o compute_dm.o final_H_f_stress.o kpoint_grid.o

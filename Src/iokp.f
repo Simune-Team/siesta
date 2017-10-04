@@ -20,21 +20,16 @@ c *******************************************************************
 
       implicit          none
 
-      character(len=label_length+3) :: paste
       integer                       :: nk
       real(dp)                      :: points(3,*), weight(*)
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal 
-      character(len=label_length+3), save :: fname
-      integer                             :: ik, iu, ix
-      logical,                       save :: frstme = .true.
+      character(len=label_length+3) :: fname
+      integer                       :: ik, iu, ix
 c -------------------------------------------------------------------
 
-      if (frstme) then
-        fname = paste( slabel, '.KP' )
-        frstme = .false.
-      endif
+      fname = trim(slabel) // '.KP'
 
       call io_assign( iu )
       open( iu, file=fname, form='formatted', status='unknown' )      
