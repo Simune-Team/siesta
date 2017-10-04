@@ -1022,6 +1022,7 @@ subroutine read_options( na, ns, nspin )
   td_dt      = fdf_get ('TDED.TimeStep',1.0d-03,'fs')
   ntded      = fdf_get('TDED.Nsteps', 1)
   ntded_sub  = fdf_get('TDED.Extrapolate.Substeps',3)
+  td_inverse_linear = fdf_get('TDED.Inverse.Linear',.true.)
   if (ionode) then
      write(6,4) 'redata: Max. number of TDED Iter', ntded
      write(6,4) 'redata: Number of TDED substeps', ntded_sub

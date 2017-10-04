@@ -11,6 +11,7 @@ MODULE cranknic_evolk
   USE parallel,               ONLY: Node, Nodes, IOnode
   USE MatrixSwitch
   USE siesta_options,         ONLY: eigen_time, extrapol_H_tdks, ntded_sub
+  USE units,                  ONLY: eV, Ryd_time
 
   IMPLICIT NONE
 
@@ -33,7 +34,6 @@ CONTAINS
   USE m_spin,                ONLY: nspin
   USE Kpoint_grid,           ONLY: kpoint, nkpnt
   USE wavefunctions,         ONLY: compute_tddm, wavef_ms, complx_0, complx_1
-  USE units,                 ONLY: eV
   USE m_energies,            ONLY: etot 
   USE m_eo,                  ONLY: qo, eo
 
@@ -156,7 +156,7 @@ CONTAINS
  LOGICAL, DIMENSION (:,:), ALLOCATABLE, SAVE    :: firstimeK
 
  IF(firsttime) THEN 
-   deltat = delt/0.04837769d0/dble(ntded_sub)
+   deltat = (delt * Ryd_time) / dble(ntded_sub)
    IF (IOnode) THEN
      WRITE(6,"(/a,f16.6)") 'cn_evolg: TDED time step (fs)       =', delt
      IF (extrapol_H_tdks) THEN

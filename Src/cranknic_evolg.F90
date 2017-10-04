@@ -7,6 +7,10 @@
 ! ---
 
 MODULE cranknic_evolg
+ 
+  
+  USE precision
+  USE units,                 ONLY: eV, Ryd_time
   IMPLICIT NONE
   PRIVATE
 
@@ -32,7 +36,6 @@ SUBROUTINE cn_evolg ( delt )
 !
 !  Modules
 !
-      use precision
       use sys
       use parallel    
       use parallelsubs,          only: LocalToGlobalOrb, GetNodeOrbs
@@ -46,7 +49,6 @@ SUBROUTINE cn_evolg ( delt )
       use m_spin,                only: nspin
       use atomlist,              only: no_s, no_l, no_u
       use m_energies,            only: etot
-      use units,                 only: eV
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -155,10 +157,10 @@ END SUBROUTINE cn_evolg
 !*************************************************************************
 ! Modules
 !
-      use precision
       use MatrixSwitch 
       use matswinversion,   only: getinverse
       use m_inversemm,       only: inversemm
+      use siesta_options,    only: td_inverse_linear
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -185,8 +187,6 @@ END SUBROUTINE cn_evolg
  character(len=5), parameter :: m_storage = 'szden'
  character(len=5), parameter :: m_operation = 'lap'
 #endif
- 
- logical, parameter :: inversemm_linear = .true.
  
  ! First order expansion for the evolution operator
  alpha = -0.5_dp * cmplx(0.0_dp,1.0_dp,dp) * deltat
@@ -218,7 +218,7 @@ END SUBROUTINE cn_evolg
  ! hard-wired by the inversemm_linear flag, while keeping first one for testing
  ! etc.
  !----------------------------------------------------------------------------------------!
- if ( inversemm_linear ) then
+ if ( td_inverse_linear ) then
    ! Calculating (S + alpha * H)^-1 * (S - alpha * H) * phi 
    call inversemm(LHS, RHS)
    ! Copying phi_evolved back to phi
@@ -249,7 +249,6 @@ END SUBROUTINE cn_evolg
 !*************************************************************************
 ! Modules
 !
-      use precision
       use fdf
       use wavefunctions,         only: wavef_ms
       use m_spin,                only: nspin
@@ -286,7 +285,7 @@ END SUBROUTINE cn_evolg
     !the evolution operator is applied in each substep although
     !an extrapolated Hamiltonian is used "rather" than 
     !a SCF Hamiltonian
-    deltat=delt/0.04837769d0/dble(nstp)
+    deltat=(delt * Ryd_time) / dble(nstp)
     if (Node.eq.0) then
        write(6,'(/a,f16.6)') 'cn_evolg: TDED time step (fs)      = ',delt
        if (extrapol) then

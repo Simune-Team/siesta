@@ -10411,7 +10411,8 @@ This is a note of caution. This implementation of RT-TDDFT can not propagate par
 A TDDFT calculation requires two runs of \siesta. In the first run
 with appropriate flags it calculates the self-consistent initial
 state, i.e., only occupied initial KSOs stored in \sysfile{TDWF}
-file. The second run uses this file and the structure file \sysfile{TDXV} as input and evolves the occupied
+file. The second run uses this file and the structure 
+file \sysfile{TDXV} as input and evolves the occupied
 KSOs.
 
 \begin{fdflogicalF}{TDED.WF.Initialize}
@@ -10459,9 +10460,23 @@ determine an appropriate value for the electronic time step.
   Number of electronic substeps when an extrapolated Hamiltonian is applied
   to propogate the KSOs. Effective only when \fdf{TDED.Extrapolate} set to be true.
 \end{fdfentry}
+
+
+\begin{fdflogicalT}{TDED.Inverse.Linear}
+If \fdftrue\ the inverse of matrix \( \left (\mathbf{S}+\mathrm{i}\mathbf{H}(t)\frac{dt}{2}\right) \) 
+  is calculated by solving a system of linear equations which implicitly 
+  multiplies the inverted matrix to the right hand side matrix.
+  The alternative is explicit inversion and multiplication.
+  The two options may differ 
+in performance.
+\end{fdflogicalT}
+
   \begin{fdflogicalF}{TDED.WF.Save}
 
-Option to save wavefunctions at the end of a simulation for a possible restart or analysis. Wavefunctions are saved in file \sysfile{TDWF}. A TDED restart requires \sysfile{TDWF}, \sysfile{TDXV}, from the previous run. The first step of the restart is same as the last of the previous run.
+Option to save wavefunctions at the end of a simulation for a possible restart 
+or analysis. Wavefunctions are saved in file \sysfile{TDWF}. 
+A TDED restart requires \sysfile{TDWF}, \sysfile{TDXV}, and \sysfile{VERLET\_RESTART} from the previous run. 
+The first step of the restart is same as the last of the previous run.
 \end{fdflogicalF}
 
  \begin{fdflogicalT}{ TDED.Write.Etot}

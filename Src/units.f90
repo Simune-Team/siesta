@@ -28,6 +28,7 @@ module units
 !  Meter = Ang / 1.0e-10_dp
 !  Pascal = Joule/Meter**2
 !   kBar  = Pascal * 1.0e4
+!  Ryd^-1 (time) = fs/0.04837769
 !   .... and so on.
 
   real(dp), parameter :: Ang    = 1._dp / 0.529177_dp
@@ -37,6 +38,7 @@ module units
   real(dp), parameter :: Kelvin = eV / 11604.45_dp
   real(dp), parameter :: Debye  = 0.393430_dp
   real(dp), parameter :: amu    = 2.133107_dp
+  real(dp), parameter :: Ryd_time = 1._dp/0.04837769_dp
 
 ! pi to 50 digits
   real(dp), parameter :: pi = 3.14159265358979323846264338327950288419716939937510_dp

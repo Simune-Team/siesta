@@ -170,6 +170,7 @@ MODULE siesta_options
   logical :: dip_time      ! Write dipol moment againstan time in TDDFT
   logical :: tdsavewf      ! To save the wavefunctions at the end of a calculation for restart./
   logical :: tdsaverho      ! To save TD-Rho after a given number of time steps
+  logical :: td_inverse_linear   ! Matrix inversion option?
   integer :: ntdsaverho     ! Each number of steps TD-Rho is saved.
   integer :: itded          ! a TDDFT counterpart of iscf
   integer :: ntded          ! Number of TDED steps in each MD iteration. 
