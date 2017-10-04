@@ -396,7 +396,6 @@ end if
 !   this module and some other module write to the same file.
 !   Perhaps we should just open the file from this node with
 !   the node id appended?
-call MPI_Bcast(REPORT_UNIT,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 call MPI_Bcast(REPORT_FILE,50,MPI_character,0,MPI_Comm_World,MPIerror)
 ! JMS: open file only in node 0
 !if (node > 0) then
@@ -2133,11 +2132,13 @@ if (Nodes > 1 .and. lall ) then
     end if
   end do ! iNode
   ! Change the writing node for the peak-node information
-  if (node==0 .and. peakNode/=0) close( unit=REPORT_UNIT )
+  if (node==0 .and. peakNode/=0) close( REPORT_UNIT )
   call MPI_Barrier( MPI_COMM_WORLD, MPIerror )
-  if (node==peakNode .and. peakNode/=0) &
-    open( unit=REPORT_UNIT, file=REPORT_FILE, &
+  if (node==peakNode .and. peakNode/=0) then
+     call io_assign(REPORT_UNIT)
+     open( unit=REPORT_UNIT, file=REPORT_FILE, &
           status='unknown', position='append' )
+  end if
 end if ! (Nodes>1)
 #endif
 
@@ -2189,15 +2190,16 @@ if (node == peakNode) then
     call tree_print( report_tree )
   end if
 
+  ! Close file if not common IO node
+  if ( node /= 0 ) call io_close(REPORT_UNIT)
 end if ! (node == peakNode)
 
 ! Change again the writing node for the rest of the report
 #ifdef MPI
-if (node==peakNode .and. peakNode/=0) close( unit=REPORT_UNIT )
 if (lall) call MPI_Barrier( MPI_COMM_WORLD, MPIerror )
 if (node==0 .and. peakNode/=0) &
-  open( unit=REPORT_UNIT, file=REPORT_FILE, &
-        status='unknown', position='append' )
+     open( unit=REPORT_UNIT, file=REPORT_FILE, &
+     status='unknown', position='append' )
 #endif
 
 deallocate( nodeMem, nodePeak )

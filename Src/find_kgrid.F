@@ -314,9 +314,9 @@ C Check that weight is normalised
       endif
 
       call re_alloc(kpin,1,3,1,nkout,name='points',
-     $              routine='trim_kpoint_list',copy=.false.)
+     $              routine='find_kgrid',copy=.false.)
       call re_alloc(win,1,nkout,name='weight',
-     $              routine='trim_kpoint_list',copy=.false.)
+     $              routine='find_kgrid',copy=.false.)
 
       kpin(:,1:nkout) = kpout(:,1:nkout)
       win(1:nkout) = wout(1:nkout)
