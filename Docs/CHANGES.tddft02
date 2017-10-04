@@ -1,3 +1,12 @@
+2017-10-04  16:55 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-45
+
+Small issue with restart fixed.
+
+modified:
+
+  Src/iotdxv.F
+  Src/struct_init.F
+
 2017-10-04  16:00 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-44
 
 A flag added to chose between matrix inversion options.

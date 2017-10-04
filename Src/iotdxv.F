@@ -10,7 +10,7 @@
 
       module m_iotdxv
 
-      logical, public, save   :: xv_file_read = .false.
+      logical, public, save   :: tdxv_file_read = .false.
 
       public :: iotdxv
 
@@ -138,7 +138,7 @@ C If data has been read in then broadcast the values to all Nodes
          call MPI_Bcast(found,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
          if (found) then
-            xv_file_read = .true.
+            tdxv_file_read = .true.
 #ifdef MPI
             call MPI_Bcast(na,1,MPI_integer,0,MPI_Comm_World,MPIerror)
             call MPI_Bcast(cell(1,1),9,MPI_double_precision,0,
