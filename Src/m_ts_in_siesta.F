@@ -363,13 +363,6 @@
 !==================================================================
       external :: io_assign, io_close
       
-      interface
-         function paste(s1,s2)
-         character(LEN=*), intent(in) :: s1,s2
-         character(LEN=33) :: paste
-         end function paste
-      end interface
-
 !  I need to create a general case of electrodes with potentially 
 !  different numbers of k points, such as an electrode and a bulk nanotube.
 

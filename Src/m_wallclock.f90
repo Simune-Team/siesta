@@ -14,10 +14,11 @@ module m_wallclock
 use m_walltime, only: wall_time
 
 public :: wallclock
+public :: wallclock_shutdown
 
 integer, parameter, private :: dp = selected_real_kind(14,200)
 
-integer, private,  save    :: wt
+integer, private,  save    :: wt = -1
 logical, private,  save    :: first = .true.
 
 private
@@ -39,6 +40,16 @@ call wall_time(t)
 write(wt,"(a,f18.3)") str, t
 
 end subroutine wallclock
+
+subroutine wallclock_shutdown()
+
+  if ( wt >= 0 ) then
+     call io_close(wt)
+     ! Signal it has to be opened again.
+     first = .true.
+  end if
+
+end subroutine wallclock_shutdown
 
 end module m_wallclock
 

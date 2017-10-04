@@ -258,18 +258,11 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    character(len=len_trim(slabel)+9) :: fname
+    character(len=len_trim(slabel)+5) :: fname
     integer :: i, unit, part
 
-    interface
-       function paste(s1,s2)
-         character(LEN=*), intent(in) :: s1,s2
-         character(LEN=200) :: paste
-       end function paste
-    end interface
-
     if ( IONode ) then
-       fname = trim(paste(slabel,'.TSCC'))
+       fname = trim(slabel) // '.TSCC'
        call io_assign( unit )
        open( unit, file=fname, status='unknown' )
        write(unit,'(a)') "# Complex contour path"

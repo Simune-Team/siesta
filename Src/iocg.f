@@ -27,32 +27,25 @@ c**************************************************************************
 
       implicit          none
 
-      character(len=label_length+3) :: paste
       character         task*(*)
       logical           found, relaxd
       integer           naux
       real(dp)          cgaux(naux), cgcntr(0:20)
 
-      external          chkdim, io_assign, io_close, paste
+      external          chkdim, io_assign, io_close
 
 
 c Internal variables and arrays ------------------------------------------
 
       character(len=label_length+3) :: fname
-      logical   exist1, frstme
+      logical   exist1
       integer   nauxr, i, unit1
-
-      save      frstme, fname
-      data      frstme /.true./
 
 c ------------------------------------------------------------------------
 
 c find file name ---------------------------------------------------------
 
-      if (frstme) then
-        fname = paste(slabel,'.CG')
-        frstme = .false.
-      endif
+      fname = trim(slabel) // '.CG'
 
 c read it if it is there -------------------------------------------------
 

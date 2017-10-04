@@ -59,14 +59,13 @@ C
 
       implicit          none
 
-      character(len=label_length+3) :: paste
       logical           gamma
       integer           maxnh, no_u, no_s, nspin
       integer           indxuo(no_s), listh(maxnh), numh(*), listhptr(*)
       real(dp)          H(maxnh,nspin), S(maxnh),
      .                  qtot, temp, xij(3,maxnh)
 
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 C Internal variables and arrays
       character(len=label_length+3) :: fname
@@ -79,16 +78,12 @@ C Internal variables and arrays
       real(dp), dimension(:),   allocatable :: buffer
       real(dp), dimension(:,:), allocatable :: buffer2
 #endif
-      logical    baddim, frstme, gammaonfile, write_xijk
-      save       frstme, fname
-      data frstme /.true./
+      logical    baddim, gammaonfile, write_xijk
 
       call timer("writeHSX",1)
+      
 C Find name of file
-      if (frstme) then
-        fname = paste( slabel, '.HSX' )
-        frstme = .false.
-      endif
+      fname = trim(slabel) // '.HSX'
 
 C Find total numbers over all Nodes
 #ifdef MPI

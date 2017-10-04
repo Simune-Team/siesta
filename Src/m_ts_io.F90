@@ -200,7 +200,6 @@ contains
     implicit          none
 
     character(8) :: task
-    character(len=label_length+3) :: paste
     logical           gamma, onlyS, onlySfile
     integer           maxnh, no_u, no_s, Enspin
 ! TSS
@@ -213,7 +212,7 @@ contains
     real(dp), dimension(:), pointer :: S
     real(dp) :: qtot, temp 
     integer :: istep, ia1
-    external          io_assign, io_close, paste
+    external          io_assign, io_close
 ! TSS Begin
 ! Added arguments for TRANSIESTA
     integer :: fnlength, na_u

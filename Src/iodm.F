@@ -60,17 +60,12 @@ C Internal variables
       logical   file_exists
       integer   im, is, unit1, m, nb, ndmax, ns
       integer   nbasistot, ml, ndmaxg
-      integer, pointer, save :: numdg(:)
+      integer, pointer :: numdg(:) => null()
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
       integer   BNode
-#ifdef ALLOC_SAVE_BUG
-      real(dp), pointer :: buffer(:)
-      integer,  pointer :: ibuffer(:)
-#else
-      real(dp), pointer, save :: buffer(:)
-      integer,  pointer, save :: ibuffer(:)
-#endif
+      real(dp), pointer :: buffer(:) => null()
+      integer,  pointer :: ibuffer(:) => null()
 #endif
       
 
