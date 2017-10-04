@@ -13,8 +13,6 @@ module m_initwf
   private
   !
   public :: initwf
-  !
-  integer :: ictxt
 
   CONTAINS
   !
@@ -127,7 +125,6 @@ module m_initwf
         if(ParallelOverk) then
           call die ('initwf: TDDFT is not parallelized over k-points.')
         end if
-        ictxt = MPI_Comm_World
 #endif
 !       Read spin-spiral wavevector (if defined)
         call readsp( qspiral, spiral )
@@ -303,8 +300,8 @@ module m_initwf
   subroutine diaggiwf(nspin,nuo,maxuo,maxnh, maxo,Haux,Saux,psi,           &
                       nuotot,occup)
 #ifdef MPI
-      use parallel, only : BlockSize,Node
-      use m_diag, only: diag_descinit
+    use parallel, only : BlockSize,Node
+    use m_diag, only: diag_descinit
 #endif
       !
       implicit none
@@ -322,7 +319,7 @@ module m_initwf
 #endif
       !
 #ifdef MPI
-      call diag_descinit(nuotot,nuotot,BlockSize,desch,ictxt)
+      call diag_descinit(nuotot,nuotot,BlockSize,desch)
 #endif
       !
       indwf=0
@@ -338,7 +335,7 @@ module m_initwf
               Haux(jo,io)=Haux(jo,io)+H(ind,ispin)
             end do
           end do
-          call rdiag(Haux,Saux,nuotot,nuo,nuotot,eo,psi(1,1,ispin),nuotot,1,ierror)
+          call rdiag(Haux,Saux,nuotot,nuo,nuotot,eo,psi(1,1,ispin),nuotot,1,ierror,BlockSize)
           if (ierror .eq. 0) then
             exit
           else if ((ierror .ne. -1) .or. (ie .eq. 10)) then
@@ -388,7 +385,7 @@ module m_initwf
 #endif
       !
 #ifdef MPI
-      call diag_descinit(nuotot,nuotot,BlockSize,desch,ictxt)
+      call diag_descinit(nuotot,nuotot,BlockSize,desch)
 #endif
       !
       indwf=0
@@ -426,10 +423,7 @@ module m_initwf
               indwf=indwf+1
               do j=1,nuotot
 #ifdef MPI
-                do iuo=1,2
-                call pdelget('a',' ',varaux(iuo),psi(iuo,:,:),j,ie,desch)
-                enddo
-                element=cmplx(varaux(1),varaux(2),dp)
+                call pzelget('a',' ',element,psi(:,:,:),j,ie,desch)
 #else
                 element=cmplx(psi(1,j,ie),psi(2,j,ie),dp)
 #endif

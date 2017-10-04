@@ -43,21 +43,20 @@ CONTAINS
 
   TYPE(matrix)             :: Hauxms, Sauxms, wfaux1, wfaux2
 
-  CHARACTER(LEN=3)         :: m_operation
-  CHARACTER(LEN=5)         :: m_storage
+#ifdef MPI
+  character(len=5), parameter :: m_storage = 'pzdbc'
+  character(len=3), parameter :: m_operation = 'lap'
+#else
+  character(len=5), parameter :: m_storage = 'szden'
+  character(len=5), parameter :: m_operation = 'lap'
+#endif
 
   COMPLEX(dp)              :: cvar1, cvar2
 
   REAL(dp)                 :: kxij, ckxij, skxij
   INTEGER                  :: ik, ispin, i, j, io, jo, ind, juo, nocc
   LOGICAL, SAVE            :: firstime = .true.
-#ifdef MPI
-  m_storage    = 'pzdbc'
-  m_operation  = 'lap'
-#else
-  m_storage    = 'szden'
-  m_operation  = 'lap'
-#endif
+
 #ifdef DEBUG
   call write_debug( '    PRE cn_evolk' )
 #endif
@@ -143,21 +142,19 @@ CONTAINS
  TYPE(matrix)                  :: Hauxms, Sauxms
  INTEGER                       :: i, j, l, ik, ispin
  REAL(dp)                      :: delt, deltat, rvar1
- CHARACTER(3)                  :: m_operation
- CHARACTER(5)                  :: m_storage
+#ifdef MPI
+ character(len=5), parameter :: m_storage = 'pzdbc'
+ character(len=3), parameter :: m_operation = 'lap'
+#else
+ character(len=5), parameter :: m_storage = 'szden'
+ character(len=5), parameter :: m_operation = 'lap'
+#endif
 
  COMPLEX(dp)                   :: alpha
 
  LOGICAL, SAVE                                  :: firsttime  = .true.
  LOGICAL, DIMENSION (:,:), ALLOCATABLE, SAVE    :: firstimeK
-#ifdef MPI
- m_storage   = 'pzdbc'
- m_operation = 'lap'
-#else
- m_storage   = 'szden'
- m_operation = 'lap'
-#endif
- !
+
  IF(firsttime) THEN 
    deltat = delt/0.04837769d0/dble(ntded_sub)
    IF (IOnode) THEN

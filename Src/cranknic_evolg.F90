@@ -56,21 +56,22 @@ SUBROUTINE cn_evolg ( delt )
       real(dp)             :: delt
       !
       type(matrix)         :: Hauxms,Sauxms, wfaux1, wfaux2
-      character(3)         :: m_operation
-      character(5)         :: m_storage
       complex(dp)          :: cvar1, cvar2
+
+#ifdef MPI
+      character(len=5), parameter :: m_storage = 'pzdbc'
+      character(len=3), parameter :: m_operation = 'lap'
+#else
+      character(len=5), parameter :: m_storage = 'szden'
+      character(len=5), parameter :: m_operation = 'lap'
+#endif
+
       ! 
       integer              :: i, j, io, jo, ie, ispin, ind, nocc 
       !
       real(dp)             :: eigv
       logical, save        :: firsttime = .true.
-#ifdef MPI
-      m_storage='pzdbc'
-      m_operation='lap'
-#else
-      m_storage='szden'
-      m_operation='lap'
-#endif
+
 #ifdef DEBUG
       call write_debug( '    PRE cn_evolg' )
 #endif
@@ -165,38 +166,46 @@ END SUBROUTINE cn_evolg
 !*************************************************************************   
   
  implicit none 
- !     
+
  integer               :: no
  real(kind=dp)         :: deltat
  type(matrix)          :: H,S,phi
+ 
  ! Internal variables 
- type(matrix)          :: aux1,aux2,aux3,aux4
+ type(matrix)          :: LHS, RHS
  complex(kind=dp)      :: alpha
- character             :: m_storage*5, m_operation*3
- logical, save         :: inversemm_linear = .true.
- !
+
+ complex(kind=dp), parameter :: cZERO = cmplx(0._dp, 0._dp, dp)
+ complex(kind=dp), parameter :: cONE = cmplx(1._dp, 0._dp, dp)
+ 
 #ifdef MPI
- m_storage='pzdbc'
- m_operation='lap'
+ character(len=5), parameter :: m_storage = 'pzdbc'
+ character(len=3), parameter :: m_operation = 'lap'
 #else
- m_storage='szden'
- m_operation='lap'
+ character(len=5), parameter :: m_storage = 'szden'
+ character(len=5), parameter :: m_operation = 'lap'
 #endif
- !  
- call m_allocate(aux1,no,no,m_storage)
- call m_allocate(aux2,no,no,m_storage)
- call m_allocate(aux3,phi%dim1,phi%dim2,m_storage)
+ 
+ logical, parameter :: inversemm_linear = .true.
+ 
  ! First order expansion for the evolution operator
- alpha=-0.5_dp*cmplx(0.0_dp,1.0_dp,dp)*deltat
- ! Copying S to aux1 and aux2
- call m_add(S,'n',aux1,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
- call m_add(S,'n',aux2,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
- ! Calculating S - alpha * H
- call m_add(H,'n',aux1,alpha,cmplx(1.0_dp,0.0_dp,dp),m_operation)
- ! Calculating (S - alpha * H) * phi
- call mm_multiply(aux1,'n',phi,'n',aux3,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
- ! Calculating S + alpha * H  
- call m_add(H,'n',aux2,-1.0_dp*alpha,cmplx(1.0_dp,0.0_dp,dp),m_operation)
+ alpha = -0.5_dp * cmplx(0.0_dp,1.0_dp,dp) * deltat
+
+ ! Allocate work arrays
+ call m_allocate(LHS,no,no,m_storage)
+ call m_allocate(RHS,phi%dim1,phi%dim2,m_storage)
+
+ ! Setup S - alpha * H
+ call m_add(S, 'n', LHS, cone, cZERO, m_operation)
+ call m_add(H, 'n', LHS, alpha, cONE, m_operation)
+ 
+ ! Calculate
+ !   (S - alpha * H) psi
+ call mm_multiply(LHS, 'n', phi, 'n', RHS, cONE, cZERO, m_operation)
+
+ ! Setup S + alpha * H
+ call m_add(S, 'n', LHS, cONE, cZERO, m_operation)
+ call m_add(H, 'n', LHS, -alpha, cONE, m_operation)
 
  !---------------------------------------------------------------------------------------!
  ! There are two ways to compute inverse. One is to first obtain
@@ -209,23 +218,21 @@ END SUBROUTINE cn_evolg
  ! hard-wired by the inversemm_linear flag, while keeping first one for testing
  ! etc.
  !----------------------------------------------------------------------------------------!
-
- if (inversemm_linear) then
+ if ( inversemm_linear ) then
    ! Calculating (S + alpha * H)^-1 * (S - alpha * H) * phi 
-   call inversemm(aux2,aux3) 
-   ! Compying phi_evolved back to phi
-   call m_add(aux3,'n',phi,cmplx(1.0_dp,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
+   call inversemm(LHS, RHS)
+   ! Copying phi_evolved back to phi
+   call m_add(RHS, 'n', phi, cONE, cZERO, m_operation)
  else
    ! Calculating inverse of (S + alpha * H)
-   call getinverse(aux2)
-   !(S + alpha * H)^-1 * (S - alpha * H) * phi 
-   call mm_multiply(aux2,'n',aux3,'n',phi,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+   call getinverse(LHS)
+   ! (S + alpha * H)^-1 * (S - alpha * H) * phi 
+   call mm_multiply(LHS, 'n', RHS, 'n', phi, cONE, cZERO, m_operation)
  endif
- !
- call m_deallocate(aux1)
- call m_deallocate(aux2)
- call m_deallocate(aux3)
- !
+
+ call m_deallocate(LHS)
+ call m_deallocate(RHS)
+
  END SUBROUTINE Uphi
  !------------------------------------------------------------------------------------!
  SUBROUTINE evol1new(Hauxms, Sauxms, no, ispin,         & 
@@ -259,8 +266,13 @@ END SUBROUTINE cn_evolg
   !
   type(matrix),intent(in)         :: Hauxms, Sauxms 
   type(matrix),allocatable,save   :: Hsve(:)
-  character(5)                    :: m_storage
-  character(3)                    :: m_operation
+#ifdef MPI
+  character(len=5), parameter :: m_storage = 'pzdbc'
+  character(len=3), parameter :: m_operation = 'lap'
+#else
+  character(len=5), parameter :: m_storage = 'szden'
+  character(len=5), parameter :: m_operation = 'lap'
+#endif
   logical                         :: extrapol
   ! Internal variables ...
   integer                :: i, l
@@ -268,14 +280,7 @@ END SUBROUTINE cn_evolg
   logical, save          :: fsttim(2) = (/.true. , .true./)
   logical, save          :: frsttime = .true.
   save                   ::  deltat
-  !
-#ifdef MPI
-  m_storage='pzdbc'
-  m_operation='lap'
-#else
-  m_storage='szden'
-  m_operation='lap'
-#endif
+
   if (frsttime) then
     !nstp is the number of "substeps" in the electronic evolution
     !the evolution operator is applied in each substep although
@@ -283,10 +288,10 @@ END SUBROUTINE cn_evolg
     !a SCF Hamiltonian
     deltat=delt/0.04837769d0/dble(nstp)
     if (Node.eq.0) then
-      write(6,*) 'cn_evolg: TDED time step (fs)      = ',delt
-      if (extrapol) then
-        write(6,*) 'cn_evolg: TDED time sub-step (fs)  = ',delt/nstp
-      end if
+       write(6,'(/a,f16.6)') 'cn_evolg: TDED time step (fs)      = ',delt
+       if (extrapol) then
+          write(6,'(a,f16.6)') 'cn_evolg: TDED time sub-step (fs)  = ',delt/nstp
+       end if
     end if
     allocate(Hsve(nspin))
     do i=1, nspin

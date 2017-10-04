@@ -1,3 +1,9 @@
+2017-10-04  02:25 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-41
+
+Merged Nick's fixes to TDDFT
+
+*Fixes for running TDDFT branch on my box, reduced memory requirement
+
 2017-10-02  15:25 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-40
 
 Matrix inverse in Crank-Nicolson changed.

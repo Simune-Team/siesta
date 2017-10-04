@@ -20,7 +20,7 @@ SUBROUTINE inversemm(C,D)
 IMPLICIT NONE
 !**************** INPUT ***********************************!
 !
-TYPE(matrix), INTENT(IN) :: C  
+TYPE(matrix), INTENT(INOUT) :: C  
 ! C: Matrix to be inverted before multiplication with D.
 !
 !**************** INOUT ***********************************!
@@ -42,15 +42,13 @@ INTEGER              :: info
  ALLOCATE(ipiv(C%iaux1(3)+C%iaux1(5)))
  CALL pzgesv(C%dim1,D%dim2,C%zval,1,1,C%iaux1,ipiv,D%zval,1,1,D%iaux1,info)
  IF (info .NE. 0) CALL die('ERROR: error in pzgesv')
- DEALLOCATE(ipiv)      
- !
 #else
- !
  ALLOCATE(ipiv(C%dim1))
  CALL zgesv(C%dim1,D%dim2,C%zval,C%dim1,ipiv,D%zval,D%dim1,info)
  IF (info .NE. 0) CALL die('ERROR: error in zgsesv')
- DEALLOCATE(ipiv)
 #endif
+
+ DEALLOCATE(ipiv)
 !
 END SUBROUTINE inversemm 
 !
