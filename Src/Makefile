@@ -325,6 +325,7 @@ TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_electrode.o m_ts_in_siesta.o m_ts_voltage.o m_ts_gf.o \
 	 m_ts_cctype.o ts_init.o ts_show_regions.o
 #
+ts: transiesta
 transiesta: FPPFLAGS+=$(DEFS_PREFIX)-DTRANSIESTA 
 transiesta: DEFS+=$(DEFS_PREFIX)-DTRANSIESTA
 check-ts:
