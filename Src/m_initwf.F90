@@ -299,8 +299,8 @@ module m_initwf
   ! Gamma point: solve KS by diagonalisation and store the occupied wavefunctions in wavef
   subroutine diaggiwf(nspin,nuo,maxuo,maxnh, maxo,Haux,Saux,psi,           &
                       nuotot,occup)
+    use parallel, only : BlockSize
 #ifdef MPI
-    use parallel, only : BlockSize,Node
     use m_diag, only: diag_descinit
 #endif
       !
@@ -314,8 +314,6 @@ module m_initwf
       real(dp)                    :: element
 #ifdef MPI
       integer                     :: desch(9)
-#else
-      integer                     :: Node=0
 #endif
       !
 #ifdef MPI
