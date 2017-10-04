@@ -119,6 +119,7 @@
            if (.not.foundxv) then
               call die( 'ERROR: TDXV file not found' )
            else
+             xv_file_read = .true.
             if (IOnode) then
             write(6,"(a)")
      $      "! Info in TDXV file prevails over previous structure input"

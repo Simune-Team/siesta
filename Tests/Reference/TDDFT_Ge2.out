@@ -4,7 +4,7 @@
                            ***********************       
 
 reinit: Reading from standard input
-reinit: Dumped input in INPUT_TMP.42224
+reinit: Dumped input in INPUT_TMP.60553
 ************************** Dump of input data file ****************************
 SystemName         Germanium
 SystemType         Bulk
@@ -24,7 +24,7 @@ SolutionMethod       Diagon
 #SpinPolarized
 MD.TypeOfRun               TDED
 MD.FinalTimeStep           10
-MD.LengthTimeStep           1.0000000000E-03 fs
+TDED.TimeStep               1.0000000000E-03 fs
 TDED.Nsteps                 1
 PAO.BasisSize SZ
 MD.UseSaveXV
@@ -63,20 +63,20 @@ reinit: System Name: Germanium
 reinit: -----------------------------------------------------------------------
 reinit: System Label: Ge
 reinit: -----------------------------------------------------------------------
-Siesta Version: trunk-611-tddft02-15
-Architecture  : x86_64-unknown-linux-gnu--Gfortran
-Compiler flags: /usr/local/bin/mpif90 -O2
-PP flags      : -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT
-Libraries     : /software/scalapack-2.0.2_gfortran/lib/libscalapack.a /software/scalapack-2.00.2_gfortran/lib/libscalapack.a /software/lapack-3.6.1_gfortran/lib/liblapack.a /software/BLAS-3.6.0_gfortran/lib/blas_LINUX.a
-PARALLEL version
+Siesta Version: trunk-611-tddft02-40--np-1
+Architecture  : intel_quartz
+Compiler flags: ifort -O3 -fPIC -auto-scalar
+PP flags      : -DFC_HAVE_ABORT -DSIESTA__DIAG_2STAGE
+Libraries     : libsiestaLAPACK.a libsiestaBLAS.a libsiestaLAPACK.a libsiestaBLAS.a
+SERIAL version
 
-* Running in serial mode with MPI
->> Start of run:  18-MAY-2017  15:01:38
+* Running in serial mode
+>> Start of run:   4-OCT-2017   4:52:30
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:   32 Label: Ge
 Species number:   2 Atomic number:    1 Label: H
-
+ 
 Ground state valence configuration:   4s02  4p02
 Reading pseudopotential information in formatted form from Ge.psf
 
@@ -314,8 +314,8 @@ prinput: ----------------------------------------------------------------------
 coor:   Atomic-coordinates input format  =     Cartesian coordinates
 coor:                                            (in Bohr units)
 
-ioxv: Reading coordinates and velocities from file
-! Info in XV file prevails over previous structure input
+iotdxv: Reading coordinates and velocities from file
+! Info in TDXV file prevails over previous structure input
 
 siesta: Atomic coordinates (Bohr) and species
 siesta:      0.00000   0.00000   0.00000  1        1
@@ -362,7 +362,7 @@ redata: DM Mixing Weight for Kicks                  =     0.5000
 redata: Require Harris convergence for SCF          =   F
 redata: Harris energy tolerance for SCF             =     0.000100 eV
 redata: Require DM convergence for SCF              =   T
-redata: DM tolerance for SCF                        =     0.0001
+redata: DM tolerance for SCF                        =     0.000100
 redata: Require EDM convergence for SCF             =   F
 redata: EDM tolerance for SCF                       =     0.001000 eV
 redata: Require H convergence for SCF               =   T
@@ -373,16 +373,15 @@ redata: Using Saved Data (generic)                  =   F
 redata: Use continuation files for DM               =   F
 redata: Neglect nonoverlap interactions             =   F
 redata: Method of Calculation                       = Diagonalization
-redata: Divide and Conquer                          =   T
 redata: Electronic Temperature                      =   299.9869 K
 redata: Fix the spin of the system                  =   F
 redata: Max. number of TDED Iter                    =        1
 redata: Number of TDED substeps                     =        3
-redata: Write .TDWF after time steps                =      100
 redata: Dynamics option                             = Verlet MD run
 redata: Initial MD time step                        =        1
 redata:   Final MD time step                        =       10
 redata: Length of MD time step                      =     0.0010 fs
+redata: Length of TDED time step                    =     0.0010 fs
 redata: Initial Temperature of MD run               =     0.0000 K
 redata: Perform a MD quench                         =   F
 mix.SCF: Pulay mixing                            = Pulay
@@ -407,16 +406,10 @@ redata: ***********************************************************************
   weight.linear 0.2000
   history 3
 %endblock SCF.Mixer.Pulay
-
+ 
 Size of DM history Fstack: 1
 Total number of electrons:    33.000000
 Total ionic charge:    33.000000
-
-* ProcessorY, Blocksize:    1  24
-
-
-* Orbital distribution balance (max,min):    33    33
-
 k-point displ. along   3 input, could be:     0.00    0.50
  Kpoints in:            2 . Kpoints trimmed:            2
 
@@ -426,13 +419,19 @@ siesta: k-grid: Supercell and displacements
 siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   2      0.000
+ 
+diag: Algorithm                                     = D&C
+diag: Used triangular part                          = Lower
+diag: Absolute tolerance                            =  0.100E-15
+diag: Orthogonalization factor                      =  0.100E-05
+diag: Memory factor                                 =  1.0000
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1125   4125   9500
-
+ 
 siesta: Constraint (9): pos
   [ 1 -- 9 ]
-
+ 
 
                      ====================================
                         Begin MD step =      1
@@ -462,7 +461,7 @@ DM filled with atomic data:
     nrows_g=33 nrows=33 sparsity=16.7080 nnzs=18195, refcount: 8>
   <dData2D:DM n=18195 m=1, refcount: 1>
 refcount: 1>
-
+ 
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 New grid distribution:   1
            1       1:   18    1:   18    1:   18
@@ -492,30 +491,30 @@ siesta: E_KS - E_eggbox =     -1167.6700
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000021    0.008883    0.000365
+   Tot   -0.000000    0.008883   -0.000000
 ----------------------------------------
-   Max  119.126617
-   Res   31.867433    sqrt( Sum f_i^2 / 3N )
+   Max  114.599332
+   Res   30.858082    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       86.26     -578.80  -165059.76        0.10        0.05     -123.29
-(Free)E + p*V (eV/cell)     4848.6968
+Stress-tensor-Voigt (kbar):     -213.62     -899.51  -165432.76       -0.00       -0.00      -52.27
+(Free)E + p*V (eV/cell)     4884.8047
 Target enthalpy (eV/cell)    -1167.6700
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.053837   -0.000002   -0.076709
-         0.000063   -0.361255    0.000060
-        -0.076951    0.000033    0.189926
+        -0.133327   -0.000000   -0.032625
+        -0.000000   -0.561423   -0.000000
+        -0.032624   -0.000000   -0.042880
 
-siesta: Pressure (static):         62.74808938  kBar
+siesta: Pressure (static):        393.94198631  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.053837   -0.000002   -0.076709
-         0.000063   -0.361255    0.000060
-        -0.076951    0.000033 -103.021086
+        -0.133327   -0.000000   -0.032625
+        -0.000000   -0.561423   -0.000000
+        -0.032624   -0.000000 -103.253892
 
-siesta: Pressure (total):      55184.10102236  kBar
+siesta: Pressure (total):      55515.29491929  kBar
 
 siesta: Temp_ion =************ K
 
@@ -547,7 +546,7 @@ DM filled with atomic data:
     nrows_g=33 nrows=33 sparsity=16.7080 nnzs=18195, refcount: 8>
   <dData2D:DM n=18195 m=1, refcount: 1>
 refcount: 1>
-
+ 
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 New grid distribution:   1
            1       1:   18    1:   18    1:   18
@@ -569,34 +568,34 @@ siesta: E_KS(eV) =            -1167.6700
 cn_evolk: Computing DM after evolving TDKS wavefunctions
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 
-siesta: E_KS(eV) =            -1167.6794
+siesta: E_KS(eV) =            -1167.6799
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000667    0.015743   -0.002187
+   Tot   -0.000649    0.015739   -0.002554
 ----------------------------------------
-   Max  119.060613
-   Res   31.852807    sqrt( Sum f_i^2 / 3N )
+   Max  114.535000
+   Res   30.842971    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       86.14     -578.57  -165060.08       -0.07       -9.67     -123.32
-(Free)E + p*V (eV/cell)     4848.6948
-Target enthalpy (eV/cell)    -1167.6794
+Stress-tensor-Voigt (kbar):     -213.76     -899.30  -165433.03        1.06       -6.26      -52.31
+(Free)E + p*V (eV/cell)     4884.8026
+Target enthalpy (eV/cell)    -1167.6799
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.053762   -0.000122   -0.076719
-        -0.000043   -0.361108   -0.008919
-        -0.076970   -0.006037    0.189728
+        -0.133418    0.000858   -0.032610
+         0.000661   -0.561293   -0.008936
+        -0.032649   -0.003910   -0.043051
 
-siesta: Pressure (static):         62.81535374  kBar
+siesta: Pressure (static):        394.01265333  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.053762   -0.000122   -0.076719
-        -0.000043   -0.361108   -0.008919
-        -0.076970   -0.006037 -103.021283
+        -0.133418    0.000858   -0.032610
+         0.000661   -0.561293   -0.008936
+        -0.032649   -0.003910 -103.254063
 
-siesta: Pressure (total):      55184.16828672  kBar
+siesta: Pressure (total):      55515.36558631  kBar
 
 siesta: Temp_ion =************ K
 
@@ -628,7 +627,7 @@ DM filled with atomic data:
     nrows_g=33 nrows=33 sparsity=16.7080 nnzs=18195, refcount: 8>
   <dData2D:DM n=18195 m=1, refcount: 1>
 refcount: 1>
-
+ 
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 New grid distribution:   1
            1       1:   18    1:   18    1:   18
@@ -645,39 +644,39 @@ chgbasis: Computing DM in new basis
                   TDED Step    =           1
                      ************************       
 
-siesta: E_KS(eV) =            -1167.6794
+siesta: E_KS(eV) =            -1167.6799
 
 cn_evolk: Computing DM after evolving TDKS wavefunctions
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 
-siesta: E_KS(eV) =            -1167.7090
+siesta: E_KS(eV) =            -1167.7094
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.001750    0.011152    0.003406
+   Tot    0.001772    0.011160    0.003047
 ----------------------------------------
-   Max  118.863127
-   Res   31.805600    sqrt( Sum f_i^2 / 3N )
+   Max  114.342481
+   Res   30.794376    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       86.03     -577.26  -165060.59       -0.16      -19.38     -123.41
-(Free)E + p*V (eV/cell)     4848.6402
-Target enthalpy (eV/cell)    -1167.7090
+Stress-tensor-Voigt (kbar):     -213.95     -898.06  -165433.42        2.20      -12.52      -52.42
+(Free)E + p*V (eV/cell)     4884.7492
+Target enthalpy (eV/cell)    -1167.7094
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.053694   -0.000195   -0.076741
-        -0.000100   -0.360291   -0.017885
-        -0.077025   -0.012095    0.189408
+        -0.133538    0.001763   -0.032564
+         0.001371   -0.560521   -0.017858
+        -0.032720   -0.007815   -0.043293
 
-siesta: Pressure (static):         62.58642950  kBar
+siesta: Pressure (static):        393.79348962  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.053694   -0.000195   -0.076741
-        -0.000100   -0.360291   -0.017885
-        -0.077025   -0.012095 -103.021603
+        -0.133538    0.001763   -0.032564
+         0.001371   -0.560521   -0.017858
+        -0.032720   -0.007815 -103.254305
 
-siesta: Pressure (total):      55183.93936247  kBar
+siesta: Pressure (total):      55515.14642260  kBar
 
 siesta: Temp_ion =************ K
 
@@ -709,7 +708,7 @@ DM filled with atomic data:
     nrows_g=33 nrows=33 sparsity=16.7080 nnzs=18195, refcount: 8>
   <dData2D:DM n=18195 m=1, refcount: 1>
 refcount: 1>
-
+ 
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 New grid distribution:   1
            1       1:   18    1:   18    1:   18
@@ -726,39 +725,39 @@ chgbasis: Computing DM in new basis
                   TDED Step    =           1
                      ************************       
 
-siesta: E_KS(eV) =            -1167.7090
+siesta: E_KS(eV) =            -1167.7094
 
 cn_evolk: Computing DM after evolving TDKS wavefunctions
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 
-siesta: E_KS(eV) =            -1167.7580
+siesta: E_KS(eV) =            -1167.7584
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.002933    0.011374    0.001004
+   Tot    0.002943    0.011389    0.000602
 ----------------------------------------
-   Max  118.535067
-   Res   31.728107    sqrt( Sum f_i^2 / 3N )
+   Max  114.022514
+   Res   30.714619    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       85.76     -575.27  -165061.64       -0.35      -28.99     -123.55
-(Free)E + p*V (eV/cell)     4848.5668
-Target enthalpy (eV/cell)    -1167.7580
+Stress-tensor-Voigt (kbar):     -214.35     -896.20  -165434.27        3.24      -18.71      -52.61
+(Free)E + p*V (eV/cell)     4884.6775
+Target enthalpy (eV/cell)    -1167.7584
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.053530   -0.000326   -0.076776
-        -0.000216   -0.359053   -0.026785
-        -0.077115   -0.018094    0.188754
+        -0.133784    0.002607   -0.032485
+         0.002021   -0.559358   -0.026715
+        -0.032836   -0.011675   -0.043821
 
-siesta: Pressure (static):         62.36256334  kBar
+siesta: Pressure (static):        393.58588698  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.053530   -0.000326   -0.076776
-        -0.000216   -0.359053   -0.026785
-        -0.077115   -0.018094 -103.022258
+        -0.133784    0.002607   -0.032485
+         0.002021   -0.559358   -0.026715
+        -0.032836   -0.011675 -103.254832
 
-siesta: Pressure (total):      55183.71549632  kBar
+siesta: Pressure (total):      55514.93881996  kBar
 
 siesta: Temp_ion =************ K
 
@@ -790,7 +789,7 @@ DM filled with atomic data:
     nrows_g=33 nrows=33 sparsity=16.7080 nnzs=18195, refcount: 8>
   <dData2D:DM n=18195 m=1, refcount: 1>
 refcount: 1>
-
+ 
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 New grid distribution:   1
            1       1:   18    1:   18    1:   18
@@ -807,39 +806,39 @@ chgbasis: Computing DM in new basis
                   TDED Step    =           1
                      ************************       
 
-siesta: E_KS(eV) =            -1167.7580
+siesta: E_KS(eV) =            -1167.7584
 
 cn_evolk: Computing DM after evolving TDKS wavefunctions
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 
-siesta: E_KS(eV) =            -1167.8263
+siesta: E_KS(eV) =            -1167.8268
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.003048    0.011354   -0.001568
+   Tot   -0.003018    0.011385   -0.001906
 ----------------------------------------
-   Max  118.077848
-   Res   31.619907    sqrt( Sum f_i^2 / 3N )
+   Max  113.576434
+   Res   30.603337    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       85.48     -572.44  -165062.88       -0.52      -38.53     -123.74
-(Free)E + p*V (eV/cell)     4848.4511
-Target enthalpy (eV/cell)    -1167.8263
+Stress-tensor-Voigt (kbar):     -214.82     -893.54  -165435.23        4.29      -24.86      -52.86
+(Free)E + p*V (eV/cell)     4884.5642
+Target enthalpy (eV/cell)    -1167.8268
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.053351   -0.000448   -0.076817
-        -0.000323   -0.357288   -0.035638
-        -0.077234   -0.024051    0.187981
+        -0.134078    0.003457   -0.032368
+         0.002680   -0.557695   -0.035523
+        -0.032992   -0.015517   -0.044418
 
-siesta: Pressure (static):         61.92769782  kBar
+siesta: Pressure (static):        393.17379964  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.053351   -0.000448   -0.076817
-        -0.000323   -0.357288   -0.035638
-        -0.077234   -0.024051 -103.023031
+        -0.134078    0.003457   -0.032368
+         0.002680   -0.557695   -0.035523
+        -0.032992   -0.015517 -103.255430
 
-siesta: Pressure (total):      55183.28063080  kBar
+siesta: Pressure (total):      55514.52673262  kBar
 
 siesta: Temp_ion =************ K
 
@@ -871,7 +870,7 @@ DM filled with atomic data:
     nrows_g=33 nrows=33 sparsity=16.7080 nnzs=18195, refcount: 8>
   <dData2D:DM n=18195 m=1, refcount: 1>
 refcount: 1>
-
+ 
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 New grid distribution:   1
            1       1:   18    1:   18    1:   18
@@ -888,39 +887,39 @@ chgbasis: Computing DM in new basis
                   TDED Step    =           1
                      ************************       
 
-siesta: E_KS(eV) =            -1167.8263
+siesta: E_KS(eV) =            -1167.8268
 
 cn_evolk: Computing DM after evolving TDKS wavefunctions
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 
-siesta: E_KS(eV) =            -1167.9135
+siesta: E_KS(eV) =            -1167.9142
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.003171    0.014406   -0.000391
+   Tot   -0.003162    0.014432   -0.000734
 ----------------------------------------
-   Max  117.493449
-   Res   31.481811    sqrt( Sum f_i^2 / 3N )
+   Max  113.006100
+   Res   30.461387    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       85.18     -568.84  -165064.57       -0.67      -47.86     -123.96
-(Free)E + p*V (eV/cell)     4848.3055
-Target enthalpy (eV/cell)    -1167.9135
+Stress-tensor-Voigt (kbar):     -215.35     -890.14  -165436.56        5.37      -30.85      -53.15
+(Free)E + p*V (eV/cell)     4884.4216
+Target enthalpy (eV/cell)    -1167.9142
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.053164   -0.000558   -0.076851
-        -0.000417   -0.355038   -0.044346
-        -0.077368   -0.029872    0.186922
+        -0.134412    0.004315   -0.032200
+         0.003349   -0.555577   -0.044186
+        -0.033172   -0.019254   -0.045254
 
-siesta: Pressure (static):         61.39205326  kBar
+siesta: Pressure (static):        392.66708590  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.053164   -0.000558   -0.076851
-        -0.000417   -0.355038   -0.044346
-        -0.077368   -0.029872 -103.024090
+        -0.134412    0.004315   -0.032200
+         0.003349   -0.555577   -0.044186
+        -0.033172   -0.019254 -103.256266
 
-siesta: Pressure (total):      55182.74498623  kBar
+siesta: Pressure (total):      55514.02001888  kBar
 
 siesta: Temp_ion =************ K
 
@@ -952,7 +951,7 @@ DM filled with atomic data:
     nrows_g=33 nrows=33 sparsity=16.6896 nnzs=18175, refcount: 8>
   <dData2D:DM n=18175 m=1, refcount: 1>
 refcount: 1>
-
+ 
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 New grid distribution:   1
            1       1:   18    1:   18    1:   18
@@ -969,39 +968,39 @@ chgbasis: Computing DM in new basis
                   TDED Step    =           1
                      ************************       
 
-siesta: E_KS(eV) =            -1167.9135
+siesta: E_KS(eV) =            -1167.9142
 
 cn_evolk: Computing DM after evolving TDKS wavefunctions
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 
-siesta: E_KS(eV) =            -1168.0194
+siesta: E_KS(eV) =            -1168.0203
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000642    0.014004    0.005514
+   Tot   -0.000647    0.014036    0.005124
 ----------------------------------------
-   Max  116.784435
-   Res   31.313426    sqrt( Sum f_i^2 / 3N )
+   Max  112.314510
+   Res   30.288584    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       84.86     -564.41  -165066.56       -0.77      -56.97     -124.25
-(Free)E + p*V (eV/cell)     4848.1225
-Target enthalpy (eV/cell)    -1168.0194
+Stress-tensor-Voigt (kbar):     -215.96     -885.97  -165438.12        6.48      -36.67      -53.53
+(Free)E + p*V (eV/cell)     4884.2423
+Target enthalpy (eV/cell)    -1168.0203
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.052964   -0.000638   -0.076913
-        -0.000481   -0.352272   -0.052902
-        -0.077553   -0.035555    0.185680
+        -0.134788    0.005197   -0.032017
+         0.004045   -0.552971   -0.052697
+        -0.033412   -0.022889   -0.046227
 
-siesta: Pressure (static):         60.68457125  kBar
+siesta: Pressure (static):        391.99570866  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.052964   -0.000638   -0.076913
-        -0.000481   -0.352272   -0.052902
-        -0.077553   -0.035555 -103.025332
+        -0.134788    0.005197   -0.032017
+         0.004045   -0.552971   -0.052697
+        -0.033412   -0.022889 -103.257239
 
-siesta: Pressure (total):      55182.03750423  kBar
+siesta: Pressure (total):      55513.34864164  kBar
 
 siesta: Temp_ion =************ K
 
@@ -1033,7 +1032,7 @@ DM filled with atomic data:
     nrows_g=33 nrows=33 sparsity=16.6896 nnzs=18175, refcount: 8>
   <dData2D:DM n=18175 m=1, refcount: 1>
 refcount: 1>
-
+ 
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 New grid distribution:   1
            1       1:   18    1:   18    1:   18
@@ -1050,39 +1049,39 @@ chgbasis: Computing DM in new basis
                   TDED Step    =           1
                      ************************       
 
-siesta: E_KS(eV) =            -1168.0194
+siesta: E_KS(eV) =            -1168.0203
 
 cn_evolk: Computing DM after evolving TDKS wavefunctions
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 
-siesta: E_KS(eV) =            -1168.1436
+siesta: E_KS(eV) =            -1168.1447
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.002075    0.012278    0.009676
+   Tot    0.002075    0.012313    0.009330
 ----------------------------------------
-   Max  115.953790
-   Res   31.115494    sqrt( Sum f_i^2 / 3N )
+   Max  111.504846
+   Res   30.085890    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       84.48     -559.19  -165068.82       -0.91      -65.82     -124.59
-(Free)E + p*V (eV/cell)     4847.9044
-Target enthalpy (eV/cell)    -1168.1436
+Stress-tensor-Voigt (kbar):     -216.66     -881.05  -165439.88        7.56      -42.32      -53.97
+(Free)E + p*V (eV/cell)     4884.0289
+Target enthalpy (eV/cell)    -1168.1447
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.052728   -0.000742   -0.076976
-        -0.000568   -0.349016   -0.061287
-        -0.077761   -0.041081    0.184273
+        -0.135230    0.006050   -0.031794
+         0.004717   -0.549905   -0.061036
+        -0.033684   -0.026411   -0.047324
 
-siesta: Pressure (static):         59.82356291  kBar
+siesta: Pressure (static):        391.17988780  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.052728   -0.000742   -0.076976
-        -0.000568   -0.349016   -0.061287
-        -0.077761   -0.041081 -103.026739
+        -0.135230    0.006050   -0.031794
+         0.004717   -0.549905   -0.061036
+        -0.033684   -0.026411 -103.258335
 
-siesta: Pressure (total):      55181.17649589  kBar
+siesta: Pressure (total):      55512.53282078  kBar
 
 siesta: Temp_ion =************ K
 
@@ -1114,7 +1113,7 @@ DM filled with atomic data:
     nrows_g=33 nrows=33 sparsity=16.6694 nnzs=18153, refcount: 8>
   <dData2D:DM n=18153 m=1, refcount: 1>
 refcount: 1>
-
+ 
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 New grid distribution:   1
            1       1:   18    1:   18    1:   18
@@ -1131,39 +1130,39 @@ chgbasis: Computing DM in new basis
                   TDED Step    =           1
                      ************************       
 
-siesta: E_KS(eV) =            -1168.1436
+siesta: E_KS(eV) =            -1168.1447
 
 cn_evolk: Computing DM after evolving TDKS wavefunctions
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 
-siesta: E_KS(eV) =            -1168.2855
+siesta: E_KS(eV) =            -1168.2869
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.001385    0.008628    0.008916
+   Tot    0.001397    0.008618    0.008564
 ----------------------------------------
-   Max  115.005005
-   Res   30.888506    sqrt( Sum f_i^2 / 3N )
+   Max  110.580597
+   Res   29.853978    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       83.99     -553.24  -165071.38       -1.10      -74.42     -125.01
-(Free)E + p*V (eV/cell)     4847.6571
-Target enthalpy (eV/cell)    -1168.2855
+Stress-tensor-Voigt (kbar):     -217.53     -875.45  -165441.88        8.57      -47.79      -54.50
+(Free)E + p*V (eV/cell)     4883.7873
+Target enthalpy (eV/cell)    -1168.2869
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.052423   -0.000880   -0.077069
-        -0.000690   -0.345302   -0.069500
-        -0.078021   -0.046450    0.182675
+        -0.135770    0.006862   -0.031561
+         0.005350   -0.546409   -0.069202
+        -0.034016   -0.029831   -0.048572
 
-siesta: Pressure (static):         58.85653729  kBar
+siesta: Pressure (static):        390.26838399  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.052423   -0.000880   -0.077069
-        -0.000690   -0.345302   -0.069500
-        -0.078021   -0.046450 -103.028337
+        -0.135770    0.006862   -0.031561
+         0.005350   -0.546409   -0.069202
+        -0.034016   -0.029831 -103.259584
 
-siesta: Pressure (total):      55180.20947027  kBar
+siesta: Pressure (total):      55511.62131697  kBar
 
 siesta: Temp_ion =************ K
 
@@ -1195,7 +1194,7 @@ DM filled with atomic data:
     nrows_g=33 nrows=33 sparsity=16.6694 nnzs=18153, refcount: 8>
   <dData2D:DM n=18153 m=1, refcount: 1>
 refcount: 1>
-
+ 
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 New grid distribution:   1
            1       1:   18    1:   18    1:   18
@@ -1212,147 +1211,148 @@ chgbasis: Computing DM in new basis
                   TDED Step    =           1
                      ************************       
 
-siesta: E_KS(eV) =            -1168.2855
+siesta: E_KS(eV) =            -1168.2869
 
 cn_evolk: Computing DM after evolving TDKS wavefunctions
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      84     108
 
-siesta: E_KS(eV) =            -1168.4445
+siesta: E_KS(eV) =            -1168.4463
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.003580    0.010892    0.006192
+   Tot   -0.003604    0.010928    0.005732
 ----------------------------------------
-   Max  113.942001
-   Res   30.634197    sqrt( Sum f_i^2 / 3N )
+   Max  109.545490
+   Res   29.594757    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       83.45     -546.65  -165074.32       -1.32      -82.74     -125.46
-(Free)E + p*V (eV/cell)     4847.3854
-Target enthalpy (eV/cell)    -1168.4445
+Stress-tensor-Voigt (kbar):     -218.50     -869.26  -165444.21        9.56      -53.08      -55.08
+(Free)E + p*V (eV/cell)     4883.5225
+Target enthalpy (eV/cell)    -1168.4463
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.052082   -0.001032   -0.077163
-        -0.000824   -0.341190   -0.077513
-        -0.078304   -0.051639    0.180836
+        -0.136373    0.007654   -0.031289
+         0.005967   -0.542543   -0.077169
+        -0.034378   -0.033130   -0.050025
 
-siesta: Pressure (static):         57.82395921  kBar
+siesta: Pressure (static):        389.30153134  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.052082   -0.001032   -0.077163
-        -0.000824   -0.341190   -0.077513
-        -0.078304   -0.051639 -103.030175
+        -0.136373    0.007654   -0.031289
+         0.005967   -0.542543   -0.077169
+        -0.034378   -0.033130 -103.261037
 
-siesta: Pressure (total):      55179.17689219  kBar
+siesta: Pressure (total):      55510.65446432  kBar
 
 siesta: Temp_ion =************ K
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -316.619336
+siesta: Ebs     =      -316.590256
 siesta: Eions   =      1085.822531
 siesta: Ena     =       142.227022
-siesta: Ekin    =       333.216046
-siesta: Enl     =        66.948235
+siesta: Ekin    =       333.279339
+siesta: Enl     =        66.954504
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
 siesta: DEna    =        14.266236
-siesta: DUscf   =         0.747054
+siesta: DUscf   =         0.747157
 siesta: DUext   =         0.000000
-siesta: Exc     =      -636.261064
+siesta: Exc     =      -636.289535
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =      9079.768007
-siesta: Eharris =      7594.704133
-siesta: Etot    =      7911.323469
-siesta: FreeEng =      7911.323469
+siesta: Eharris =      7594.731446
+siesta: Etot    =      7911.321702
+siesta: FreeEng =      7911.321702
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -316.619336
-siesta:       Kinetic =     333.216046
-siesta:       Hartree =      66.773703
+siesta:  Band Struct. =    -316.590256
+siesta:       Kinetic =     333.279339
+siesta:       Hartree =      66.810223
 siesta:       Eldau   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -636.261064
-siesta:  Ion-electron =    -389.425685
+siesta:   Exch.-corr. =    -636.289535
+siesta:  Ion-electron =    -389.498794
 siesta:       Ion-ion =    -542.747537
 siesta:       Ekinion =    9079.768007
-siesta:         Total =    7911.323469
+siesta:         Total =    7911.321702
 siesta:         Fermi =       0.000000
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.796291 -113.942001  -12.337560
-siesta:      2    5.849034    2.867350    5.289642
-siesta:      3   -0.017503   -0.033991    0.016318
-siesta:      4   -0.022593    0.661428   -0.033635
-siesta:      5    0.011355   -0.376422   -0.023424
-siesta:      6    0.545812   -0.589113   -0.483387
-siesta:      7   -4.888164    2.611980   -4.447254
-siesta:      8   -0.565429   -0.484490    0.589729
-siesta:      9   -1.712384  109.296152   11.435763
+siesta:      1    2.916444 -109.545490   -8.075810
+siesta:      2    2.500393    0.947952    2.135421
+siesta:      3   -0.039155   -0.076302    0.042377
+siesta:      4   -0.107175    0.379475   -0.102911
+siesta:      5    0.091550   -0.184162    0.009321
+siesta:      6    0.222165   -0.217889   -0.080289
+siesta:      7   -1.839381    1.184993   -1.726581
+siesta:      8   -0.212716    0.361434    0.186689
+siesta:      9   -3.535729  107.160917    7.617516
 siesta: ----------------------------------------
-siesta:    Tot   -0.003580    0.010892    0.006192
+siesta:    Tot   -0.003604    0.010928    0.005732
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:     0.052082   -0.001032   -0.077163
-siesta:    -0.000824   -0.341190   -0.077513
-siesta:    -0.078304   -0.051639    0.180836
+siesta:    -0.136373    0.007654   -0.031289
+siesta:     0.005967   -0.542543   -0.077169
+siesta:    -0.034378   -0.033130   -0.050025
 
 siesta: Cell volume =        174.676879 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00039307         -0.00071344  Ry/Bohr**3
-siesta:           0.03609049         -0.06550527  eV/Ang**3
-siesta:          57.82395921       -104.95214689  kBar
-(Free)E+ p_basis*V_orbitals  =       -1166.117948
-(Free)Eharris+ p_basis*V_orbitals  =       -1482.737285
+siesta:           0.00264637          0.00120682  Ry/Bohr**3
+siesta:           0.24298028          0.11080583  eV/Ang**3
+siesta:         389.30153134        177.53243081  kBar
+(Free)E+ p_basis*V_orbitals  =       -1166.119716
+(Free)Eharris+ p_basis*V_orbitals  =       -1482.709972
 
-timer: Elapsed wall time (sec) =      16.377
+timer: Elapsed wall time (sec) =       7.853
 timer: CPU execution times (sec):
 
 Routine            Calls   Time/call    Tot.time        %
-siesta                 1      16.376      16.376   100.00
-Setup                  1       0.376       0.376     2.30
-bands                  1       0.000       0.000     0.00
+siesta                 1       7.621       7.621   100.00
+Setup                  1       0.126       0.126     1.66
+bands                  1       0.000       0.000     0.01
 KSV_init               1       0.000       0.000     0.00
-IterGeom              10       1.600      16.000    97.70
-state_init            10       0.063       0.632     3.86
-hsparse               10       0.022       0.216     1.32
-overlap               10       0.005       0.048     0.29
-Setup_H0              10       0.527       5.272    32.19
-naefs                 20       0.001       0.020     0.12
+IterGeom              10       0.749       7.491    98.30
+state_init            10       0.030       0.298     3.90
+hsparse               10       0.007       0.073     0.96
+overlap               10       0.002       0.023     0.31
+Setup_H0              10       0.246       2.465    32.35
+naefs                 20       0.000       0.009     0.11
 MolMec                20       0.000       0.000     0.00
-kinefsm               20       0.003       0.068     0.42
-nlefsm                20       0.110       2.196    13.41
-DHSCF_Init            10       0.432       4.320    26.38
-DHSCF1                10       0.023       0.228     1.39
+kinefsm               20       0.002       0.039     0.51
+nlefsm                20       0.047       0.944    12.38
+DHSCF_Init            10       0.203       2.031    26.65
+DHSCF1                10       0.009       0.091     1.19
 INITMESH              10       0.000       0.000     0.00
-DHSCF2                10       0.409       4.092    24.99
-REMESH                10       0.038       0.384     2.34
-REORD                190       0.000       0.016     0.10
-PHION                 10       0.260       2.604    15.90
-COMM_BSC              70       0.000       0.008     0.05
-POISON                30       0.009       0.268     1.64
-fft                   60       0.004       0.228     1.39
-sankey_change_b       10       0.013       0.128     0.78
-setup_H               10       0.117       1.168     7.13
-DHSCF                 20       0.387       7.736    47.24
-DHSCF3                20       0.116       2.320    14.17
-rhoofd                20       0.049       0.980     5.98
-CellXC                20       0.017       0.344     2.10
-cellXC                20       0.017       0.344     2.10
-vmat                  20       0.039       0.788     4.81
-cn_evolk              10       0.085       0.848     5.18
-DHSCF4                10       0.542       5.416    33.07
-dfscf                 10       0.389       3.888    23.74
-overfsm               10       0.002       0.024     0.15
-state_analysis        10       0.001       0.008     0.05
-siesta_move           10       0.000       0.000     0.00
-Analysis               1       0.000       0.000     0.00
+DHSCF2                10       0.194       1.940    25.45
+REMESH                10       0.014       0.141     1.85
+REORD                190       0.000       0.015     0.20
+PHION                 10       0.128       1.278    16.77
+COMM_BSC              70       0.000       0.007     0.09
+POISON                30       0.003       0.078     1.02
+fft                   60       0.001       0.055     0.72
+sankey_change_b       10       0.004       0.040     0.52
+setup_H               10       0.070       0.704     9.23
+DHSCF                 20       0.199       3.989    52.34
+DHSCF3                20       0.070       1.404    18.42
+rhoofd                20       0.035       0.696     9.13
+CellXC                20       0.008       0.155     2.03
+cellXC                20       0.008       0.155     2.03
+vmat                  20       0.024       0.486     6.38
+cn_evolk              10       0.005       0.050     0.66
+DHSCF4                10       0.258       2.585    33.92
+dfscf                 10       0.201       2.006    26.32
+overfsm               10       0.002       0.018     0.23
+state_analysis        10       0.001       0.009     0.12
+siesta_move           10       0.001       0.008     0.10
+Analysis               1       0.003       0.003     0.04
 optical                1       0.000       0.000     0.00
   
->> End of run:  18-MAY-2017  15:01:54
+>> End of run:   4-OCT-2017   4:52:37
+Job completed

@@ -44,7 +44,7 @@ completed_$(label):
          else \
            echo " **** Test $(name)1 did not complete successfully";\
          fi
-	@if [ -f Ge.XV ] ; then cp Ge.XV $(label)/ ; fi
+	@if [ -f Ge.TDXV ] ; then cp Ge.TDXV $(label)/ ; fi
 	@if [ -f completed_$(label) ] ; then rm completed_$(label) ; fi
 	@echo ">>>> Running $(name)2 test..."
 	@echo "    ==> Running SIESTA as $(MPI) ${SIESTA}"

@@ -1,3 +1,24 @@
+2017-10-04  14:05 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-43
+
+Updated the test references.
+
+removed:
+
+  Tests/TDDFT_Ge/Ge.XV
+
+added:
+
+  Tests/TDDFT_Ge/Ge.TDXV
+
+modified:
+
+  Src/struct_init.F
+  Tests/Reference/TDDFT_Ge1.out
+  Tests/Reference/TDDFT_Ge2.out
+  Tests/Reference/TDDFT_h2o1.out
+  Tests/Reference/TDDFT_h2o2.out
+  Tests/test_tddft.mk
+
 2017-10-04  12:15 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-42
 
 Fixed a serial compilation issue.
