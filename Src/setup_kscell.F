@@ -62,7 +62,7 @@ C Internal variables
           kscell(1,i) = fdf_bintegers(pline,1)
           kscell(2,i) = fdf_bintegers(pline,2)
           kscell(3,i) = fdf_bintegers(pline,3)
-          displ(i) = fdf_breals(pline,1)
+          displ(i) = mod(fdf_breals(pline,1), 1._dp)
         enddo
         firm_displ = .true.
 

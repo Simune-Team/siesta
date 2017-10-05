@@ -81,7 +81,7 @@ contains
              kscell(1,i) = fdf_bintegers(pline,1)
              kscell(2,i) = fdf_bintegers(pline,2)
              kscell(3,i) = fdf_bintegers(pline,3)
-             kdispl(i)   = fdf_breals(pline,1)
+             kdispl(i)   = mod(fdf_breals(pline,1), 1._dp)
           else
              call die( 'setup_ts_scf_kscell: ERROR no data in' // &
                   bfdf%label // ' block' )
