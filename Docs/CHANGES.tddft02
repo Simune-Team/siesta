@@ -1,3 +1,14 @@
+2017-10-05  18:45 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-46
+
+Disabled substeps when not extrapolating.
+
+* and some cosmetic changes. 
+
+modified:
+
+  Src/cranknic_evolg.F90
+  Src/cranknic_evolk.F90
+
 2017-10-04  16:55 CET Rafi Ullah <rraffiu@gmail.com>  trunk-611-tddft02-45
 
 Small issue with restart fixed.

@@ -93,9 +93,9 @@ CONTAINS
         call m_allocate(wfaux1,no_u, nocc, m_storage)
         call m_allocate(wfaux2,nocc,nocc,m_storage)
         call mm_multiply (Hauxms,'n',wavef_ms(ik,ispin),'n',wfaux1,        &
-                          cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+                          complx_1,complx_0,m_operation)
         call mm_multiply (wavef_ms(ik,ispin),'c',wfaux1,'n',wfaux2,        &
-                          cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+                          complx_1,complx_0,m_operation)
         DO io =1, nocc
           eo(io,ispin,ik) = real(wfaux2%zval(io,io)) + aimag(wfaux2%zval(io,io))
         END DO
@@ -130,7 +130,7 @@ CONTAINS
 !********************************************************************************!
 
 
- USE wavefunctions,         ONLY: wavef_ms, Hsave
+ USE wavefunctions
  USE m_spin,                ONLY: nspin
  USE Kpoint_grid,           ONLY: nkpnt
  USE cranknic_evolg,        ONLY: Uphi
@@ -163,37 +163,39 @@ CONTAINS
        WRITE(6,"(a,f16.6)")'cn_evolg: TDED time sub-step (fs)   =', delt/ntded_sub
      END IF
    ENDIF
-   ALLOCATE(firstimeK(nkpnt, nspin))
  
    IF(extrapol_H_tdks) THEN
+     ALLOCATE(firstimeK(nkpnt, nspin))
      ALLOCATE(Hsave(nkpnt, nspin))
      DO i=1,nkpnt
        DO j=1,nspin
          call m_allocate (Hsave(i,j),no_u, no_u, m_storage) 
        END DO
      END DO
+   firstimeK(1:nkpnt,1:nspin) = .true.
    END IF
  
-   firstimeK(1:nkpnt,1:nspin) = .true.
    firsttime = .false.
  END IF
  !
- DO l=1,ntded_sub
-    IF (firstimeK(ik,ispin) .OR. .NOT. extrapol_H_tdks) THEN
+ IF (extrapol_H_tdks) THEN
+   DO l=1,ntded_sub
+     IF (firstimeK(ik,ispin)) THEN
        call Uphi (Hauxms, Sauxms, wavef_ms(ik,ispin), no_u, deltat)
-    ELSE
+     ELSE
        rvar1 = (l -0.5_dp)/dble(ntded_sub)
-       call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(-1.0,0.0,dp), m_operation)
-       call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(rvar1,0.0,dp),m_operation)
+       call m_add(Hauxms,'n',Hsave(ik,ispin),complx_1,cmplx(-1.0,0.0,dp), m_operation)
+       call m_add(Hauxms,'n',Hsave(ik,ispin),complx_1,cmplx(rvar1,0.0,dp),m_operation)
        call Uphi(Hsave(ik,ispin), Sauxms, wavef_ms(ik,ispin), no_u, deltat)
-    END IF
- END DO       
-   IF (extrapol_H_tdks) THEN
-           call m_add(Hauxms,'n',Hsave(ik,ispin),cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
-   END IF
- firstimeK(ik,ispin) = .false.
+     END IF
+   END DO       
+    ! Storing Hamiltonian for extrapolation and later correction.
+    call m_add(Hauxms,'n',Hsave(ik,ispin),complx_1,complx_0,m_operation)
+    firstimeK(ik,ispin) = .false.
+ ELSE
+   call Uphi (Hauxms, Sauxms, wavef_ms(ik,ispin), no_u, delt*Ryd_time)
+ END IF
  !
- ! Storing Hamiltonian for extrapolation and later correction.
  END SUBROUTINE evol2new
  !
 END MODULE cranknic_evolk

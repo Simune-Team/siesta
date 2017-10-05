@@ -15,6 +15,8 @@ MODULE cranknic_evolg
   PRIVATE
 
   PUBLIC :: cn_evolg, Uphi
+  complex(kind=dp), parameter :: cZERO = cmplx(0._dp, 0._dp, dp)
+  complex(kind=dp), parameter :: cONE = cmplx(1._dp, 0._dp, dp)
 
 CONTAINS
 
@@ -106,8 +108,8 @@ SUBROUTINE cn_evolg ( delt )
                       delt,extrapol_H_tdks,ntded_sub)
         ! The following is now parallel and working as it should.
         if (eigen_time) then 
-          call mm_multiply(Hauxms,'n',wavef_ms(1,ispin),'n',wfaux1,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
-          call mm_multiply(wavef_ms(1,ispin),'c',wfaux1,'n',wfaux2,cmplx(1.0,0.0,dp),cmplx(0.0,0.0,dp),m_operation)
+          call mm_multiply(Hauxms,'n',wavef_ms(1,ispin),'n',wfaux1,cONE,cZERO,m_operation)
+          call mm_multiply(wavef_ms(1,ispin),'c',wfaux1,'n',wfaux2,cONE,cZERO,m_operation)
           DO io=1,wavef_ms(1,ispin)%dim2
             eo(io,ispin,1)= real(wfaux2%zval(io,io)) + aimag(wfaux2%zval(io,io))
           END DO
@@ -177,8 +179,6 @@ END SUBROUTINE cn_evolg
  type(matrix)          :: LHS, RHS
  complex(kind=dp)      :: alpha
 
- complex(kind=dp), parameter :: cZERO = cmplx(0._dp, 0._dp, dp)
- complex(kind=dp), parameter :: cONE = cmplx(1._dp, 0._dp, dp)
  
 #ifdef MPI
  character(len=5), parameter :: m_storage = 'pzdbc'
@@ -292,27 +292,33 @@ END SUBROUTINE cn_evolg
           write(6,'(a,f16.6)') 'cn_evolg: TDED time sub-step (fs)  = ',delt/nstp
        end if
     end if
-    allocate(Hsve(nspin))
-    do i=1, nspin
-      call m_allocate(Hsve(i),no,no,m_storage)
-    end do 
-    frsttime=.false.
+    IF (extrapol) THEN
+      allocate(Hsve(nspin))
+      do i=1, nspin
+        call m_allocate(Hsve(i),no,no,m_storage)
+      end do
+    END IF
+      frsttime=.false.
   endif     ! frsttime
   !
-  do l=1,nstp
-    if(fsttim(ispin).or..not.extrapol) then
-      call Uphi(Hauxms, Sauxms, wavef_ms(1,ispin), no, deltat)
-    else
-      varaux=(l-0.5_dp)/dble(nstp)
-      call m_add(Hauxms,'n',Hsve(ispin),cmplx(1.0,0.0,dp),cmplx(-1.0,0.0,dp),m_operation)
-      call m_add(Hauxms,'n',Hsve(ispin),cmplx(1.0,0.0,dp),cmplx(varaux,0.0,dp),m_operation) 
-      call Uphi(Hsve(ispin), Sauxms, wavef_ms(1,ispin),no, deltat)
-    endif
-  enddo 
-  fsttim(ispin)=.false.
+  IF (extrapol) THEN
+    do l=1,nstp
+      if(fsttim(ispin))then
+        call Uphi(Hauxms, Sauxms, wavef_ms(1,ispin), no, deltat)
+      else
+        varaux=(l-0.5_dp)/dble(nstp)
+        call m_add(Hauxms,'n',Hsve(ispin),cONE,cmplx(-1.0,0.0,dp),m_operation)
+        call m_add(Hauxms,'n',Hsve(ispin),cONE,cmplx(varaux,0.0,dp),m_operation) 
+        call Uphi(Hsve(ispin), Sauxms, wavef_ms(1,ispin),no, deltat)
+      endif
+    enddo
+    !Storing Hamitonian for extrapolation and later correction    
+    call m_add(Hauxms,'n',Hsve(ispin),cONE,cZERO,m_operation)
+    fsttim(ispin)=.false.
+  ELSE
+    call Uphi(Hauxms, Sauxms, wavef_ms(1,ispin), no, delt*Ryd_time)
+  END IF
   !
-  !Storing Hamitonian for extrapolation and later correction    
-  call m_add(Hauxms,'n',Hsve(ispin),cmplx(1.0,0.0_dp,dp),cmplx(0.0,0.0,dp),m_operation)
   END SUBROUTINE evol1new
 !---------------------------------------------------------------------------------------!
 
