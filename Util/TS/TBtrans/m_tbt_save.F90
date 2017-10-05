@@ -661,10 +661,16 @@ contains
        call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
        ! Save generic information about electrode
-       dic = ('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
+       dic = ('info'.kv.'Bloch expansion')
+       call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+       
+       dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
             atts = dic)
        call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
+
 #ifdef TBT_PHONON
        dic = dic//('info'.kv.'Phonon temperature')
 #else
@@ -673,6 +679,11 @@ contains
        call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
             atts = dic)
        call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
+
+       dic = dic//('info'.kv.'Imaginary part for self-energies')
+       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
 
        call delete(dic)
 
