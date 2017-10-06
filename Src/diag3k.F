@@ -39,6 +39,7 @@ C Modified by V.M.Garcia, June 2002.
 C Density matrix build and computation of eigenvectors restricted
 C by J.D. Gale November 2004.
 C Reduced memory requirements, Nick, Aug. 2017
+C Off-Site Spin-orbit coupling version by R. Cuadrado, October 2017
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
@@ -149,7 +150,7 @@ C *********************************************************************
 !****************************************************************************
 ! Build Hamiltonian      
 !****************************************************************************
-! (Notes by Jaime Ferrer)
+! (Notes by Jaime Ferrer)--> On-Site Spin-Orbit
 ! Indices iuo and juo are for orbital components in the unit cell
 ! while jo is for orbital components in the supercell:
 ! d_{jo} = R + d_{juo}, x_{ij} = d_{jo} - d_{iuo}
@@ -213,7 +214,6 @@ C *********************************************************************
      .                          + dcmplx(H(ind,7), + H(ind,8)) * kphs
             else
               kphs = cdexp(dcmplx(0.0_dp,-1.0_dp)*kxij)
-!              kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)*kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)*kphs
               Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) +
@@ -224,16 +224,6 @@ C *********************************************************************
      .                            dcmplx(H(ind,7),-H(ind,8))*kphs
               Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
      .                            dcmplx(H(ind,3),-H(ind,4))*kphs
-!              Saux(1,iuo,1,juo) = Saux(1,iuo,1,juo) + S(ind)*kphs
-!              Saux(2,iuo,2,juo) = Saux(2,iuo,2,juo) + S(ind)*kphs
-!              Haux(1,iuo,1,juo) = Haux(1,iuo,1,juo) +
-!     .                            dcmplx(H(ind,1), H(ind,5))*kphs
-!              Haux(2,iuo,2,juo) = Haux(2,iuo,2,juo) +
-!     .                            dcmplx(H(ind,2), H(ind,6))*kphs
-!              Haux(1,iuo,2,juo) = Haux(1,iuo,2,juo) +
-!     .                            dcmplx(H(ind,3), H(ind,4))*kphs
-!              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
-!     .                           dcmplx(H(ind,3),-H(ind,4))*dconjg(kphs)
             endif
           enddo
         enddo
@@ -309,7 +299,6 @@ C *********************************************************************
               Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
      .                          + dcmplx(H(ind,7), + H(ind,8)) * kphs
             else
-!              kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
               kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)*kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)*kphs
@@ -321,16 +310,6 @@ C *********************************************************************
      .                            dcmplx(H(ind,7),-H(ind,8))*kphs
               Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
      .                            dcmplx(H(ind,3),-H(ind,4))*kphs
-!              Saux(1,iuo,1,juo) = Saux(1,iuo,1,juo) + S(ind)*kphs
-!              Saux(2,iuo,2,juo) = Saux(2,iuo,2,juo) + S(ind)*kphs
-!              Haux(1,iuo,1,juo) = Haux(1,iuo,1,juo) +
-!     .                            dcmplx(H(ind,1), H(ind,5))*kphs
-!              Haux(2,iuo,2,juo) = Haux(2,iuo,2,juo) +
-!     .                            dcmplx(H(ind,2), H(ind,6))*kphs
-!              Haux(1,iuo,2,juo) = Haux(1,iuo,2,juo) +
-!     .                            dcmplx(H(ind,3), H(ind,4))*kphs
-!              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
-!     .                           dcmplx(H(ind,3),-H(ind,4))*dconjg(kphs)
             endif
           enddo
         enddo
@@ -370,7 +349,6 @@ C *********************************************************************
                 Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
      .                            + dcmplx(H(ind,7), + H(ind,8)) * kphs
               else
-!                kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
                 kphs = cdexp(dcmplx(0.0_dp,-1.0_dp)*kxij)
                 Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)*kphs
                 Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)*kphs
@@ -382,16 +360,6 @@ C *********************************************************************
      .                              dcmplx(H(ind,7),-H(ind,8))*kphs
                 Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
      .                              dcmplx(H(ind,3),-H(ind,4))*kphs
-!              Saux(1,iuo,1,juo) = Saux(1,iuo,1,juo) + S(ind)*kphs
-!              Saux(2,iuo,2,juo) = Saux(2,iuo,2,juo) + S(ind)*kphs
-!              Haux(1,iuo,1,juo) = Haux(1,iuo,1,juo) +
-!     .                            dcmplx(H(ind,1), H(ind,5))*kphs
-!              Haux(2,iuo,2,juo) = Haux(2,iuo,2,juo) +
-!     .                            dcmplx(H(ind,2), H(ind,6))*kphs
-!              Haux(1,iuo,2,juo) = Haux(1,iuo,2,juo) +
-!     .                            dcmplx(H(ind,3), H(ind,4))*kphs
-!              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo) +
-!     .                           dcmplx(H(ind,3),-H(ind,4))*dconjg(kphs)
               endif
             enddo
           enddo

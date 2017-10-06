@@ -37,6 +37,7 @@ C Density matrix build and computation of eigenvectors restricted
 C by J.D. Gale November 2004.
 C Corrected by V.V. Maslyuk for parallel case, Mai 2007
 C Reduced memory requirements, Nick, Aug. 2017
+C Off-Site Spin-orbit coupling version by R. Cuadrado, October 2017
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
@@ -149,7 +150,7 @@ C *********************************************************************
 !****************************************************************************
 ! Build Hamiltonian      
 !****************************************************************************
-! (Notes by Jaime Ferrer)
+! (Notes by Jaime Ferrer)--> On-site Spin-Orbit
 ! Indices iuo and juo are for orbital components in the unit cell
 ! while jo is for orbital components in the supercell:
 ! d_{jo} = R + d_{juo}, x_{ij} = d_{jo} - d_{iuo}
@@ -390,10 +391,6 @@ C *********************************************************************
             do iuo = 1,nuo
               call LocalToGlobalOrb(iuo,Node,Nodes,iio)
               do juo = 1,nuotot
-CC RC
-C    In the JF 3.1.1 version the following matrix elements are
-C    calculated by means of dconj(caux(1,juo)) instead of caux(1,juo)
-C    I will leave it as it is. maybe it needs further revision...
       
 !------- 1,1 -----------------------------------------------------------
                cicj = caux(1,iio) * dconjg(caux(1,juo))
@@ -438,23 +435,6 @@ C    I will leave it as it is. maybe it needs further revision...
 ! JFR: the sign in the phase of H_ji is reflected in the DM
           kphs = cdexp(dcmplx(0.0_dp,-1.0_dp)*kxij)
      
-CC RC  
-C      In the JF's version D11, D22, etc are not time-reversal averaged
-C      I will leave as it is here but maybe it will need major revision
- 
-!         Average k and -k solutions because time-reversal symetry
-!          D11 = 0.5_dp * (Dkc(1,juo,1,iuo) * kphs
-!     .        +    dconjg(Dkc(1,juo,1,iuo) * kphs))
-!      
-!          D22 = 0.5_dp * (Dkc(2,juo,2,iuo) * kphs
-!     .        +    dconjg(Dkc(2,juo,2,iuo) * kphs))
-!          
-!          D12 = 0.5_dp * (Dkc(1,juo,2,iuo) * kphs
-!     .        +    dconjg(Dkc(2,juo,1,iuo) * kphs))
-!      
-!          D21 = 0.5_dp * (Dkc(2,juo,1,iuo) * kphs
-!     .        +    dconjg(Dkc(1,juo,2,iuo) * kphs))
-
           D11 = Dk(1,juo,1,iuo) * kphs
           D22 = Dk(2,juo,2,iuo) * kphs
           D12 = Dk(1,juo,2,iuo) * kphs
@@ -469,23 +449,6 @@ C      I will leave as it is here but maybe it will need major revision
           Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
           Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
           Dnew(ind,4) = Dnew(ind,4) + dimag(D21)
-
-CC RC  
-C      In the JF's version D11, D22, etc are not time-reversal averaged
-C      I will leave as it is here but maybe it will need major revision
-
-!         Average k and -k solutions because time-reversal symetry
-!          D11 = 0.5_dp * (Ekc(1,juo,1,iuo) * kphs
-!     .        +    dconjg(Ekc(1,juo,1,iuo) * kphs))
-!      
-!          D22 = 0.5_dp * (Ekc(2,juo,2,iuo) * kphs
-!     .        +    dconjg(Ekc(2,juo,2,iuo) * kphs))
-!          
-!          D12 = 0.5_dp * (Ekc(1,juo,2,iuo) * kphs
-!     .        +    dconjg(Ekc(2,juo,1,iuo) * kphs))
-!      
-!          D21 = 0.5_dp * (Ekc(2,juo,1,iuo) * kphs
-!     .        +    dconjg(Ekc(1,juo,2,iuo) * kphs))
 
           D11 = Ek(1,juo,1,iuo) * kphs
           D22 = Ek(2,juo,2,iuo) * kphs

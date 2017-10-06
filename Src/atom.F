@@ -5,6 +5,7 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
+!!Off-Site Spin-orbit coupling version by R. Cuadrado, October 2017
       module atom
 
       use precision, only: dp

@@ -24,6 +24,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 ! handled as lower-half triangular. J.D.Gale and J.M.Soler, Feb'99
 ! Version of rhoofd that optionally uses a direct algorithm to save 
 ! memory. Modified by J.D.Gale, November'99
+! Off-Site Spin-orbit coupling version by R. Cuadrado, October 2017
 ! *********************** InpUT **************************************
 ! integer no              : Number of basis orbitals
 ! integer np              : Number of mesh points
