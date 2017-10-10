@@ -201,7 +201,7 @@ C Select reflection plane
 
       call re_alloc(points,1,3,1,nk,name='k-points',
      &     routine='find_kgrid', copy=.false.)
-      call re_alloc(weight,1,nk,name='k-weight', &
+      call re_alloc(weight,1,nk,name='k-weight',
      &     routine='find_kgrid', copy=.false.)
 
 C Find k points and weights
