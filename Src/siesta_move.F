@@ -231,8 +231,9 @@
                write(6,'(/,a,f12.3,a)')
      $              'siesta: Temp_ion =', tempion, ' K'
             endif
-            call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+              call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)
+
             call siesta_write_positions(moved=.true.)
             call write_md_record( istep )
             call superx_if_compat( ucell, nsc, na_u, na_s, xa, scell )

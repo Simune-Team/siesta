@@ -1,13 +1,12 @@
-#
-# The style of this snippet comes from the MatrixSwitch distribution
-# It should NOT be used within Siesta. The Makefile in this directory
-# should be updated whenever the substance of this file changes.
-#
 SHELL     = /bin/sh
 FORTRAN   = mpif90
 OPTS      = -O3
-FPPFLAGS  = -DMPI -DLAP -DSLAP -DCONV
+FPPFLAGS  = -DHAVE_MPI -DHAVE_LAPACK -DHAVE_SCALAPACK -DHAVE_PSPBLAS -DCONV
 ARCH      = ar
 ARCHFLAGS = cr
 RANLIB    = ranlib
-LIBNAME   = MatrixSwitch.a
+
+LIBNAME = libMatrixSwitch.a
+BUILDPATH = ..
+
+PSPINCLUDEPATH = ../../pspBLAS/include

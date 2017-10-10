@@ -176,6 +176,9 @@ contains
   end subroutine diag_exit
 
   subroutine diag_descinit(N, NR, BlockSize, desc, iC)
+#ifdef MPI
+    use mpi_siesta, only: MPI_Comm_World
+#endif
     integer, intent(in) :: N, NR, BlockSize
     integer, intent(inout) :: desc(9)
     integer, intent(in), optional :: iC
@@ -184,6 +187,7 @@ contains
     if ( present(iC) ) then
        call descinit(desc,N,N,BlockSize,BlockSize,0,0,iC,NR,ierr)
     else
+       if ( iCTXT < 0 ) iCTXT = MPI_Comm_World
        call descinit(desc,N,N,BlockSize,BlockSize,0,0,iCTXT,NR,ierr)
     end if
     if ( ierr /= 0 ) &

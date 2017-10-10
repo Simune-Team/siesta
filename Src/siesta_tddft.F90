@@ -28,7 +28,7 @@ contains
     use m_state_init
     use m_setup_hamiltonian
     use m_setup_H0
-    use m_steps
+    use m_steps,         only: fincoor
     use sparse_matrices, only:H, Dscf, Escf, maxnh, numh, listhptr
     use m_eo,          only: eo
     use m_energies,    only: Etot           ! Total energy
@@ -42,20 +42,19 @@ contains
 
     use alloc
     use m_initwf,         only: initwf
-    use wavefunctions,    only: wavef_ms, iowavef, compute_tddm
+    use wavefunctions,    only: wavef_ms, iowavef, compute_tddm, compute_tdEdm
     use m_evolve,         only: evolve
     use m_iotddft,        only: write_tddft
     use m_overfsm,        only: overfsm
-    use m_final_H_f_stress, only: final_H_f_stress
-
+    use m_final_H_f_stress,    only: final_H_f_stress
+    use m_sankey_change_basis, only: sankey_change_basis
     use m_mpi_utils, only: broadcast
     use fdf
 
     integer, intent(inout)  :: istep
     
-    integer :: mod_tded, mod_md
-    integer :: istpp, ispin
-    real(dp) :: dt_tded, G2max
+    integer :: ik, ispin
+    real(dp) :: G2max
 #ifdef DEBUG
     call write_debug( '    PRE siesta_tddft' )
 #endif
@@ -106,8 +105,8 @@ contains
 #endif
 
     ! The first call to change basis only calculates S^+1/2
-    call chgbasis(nspin, gamma, nkpnt, kpoint, kweight, no_u,istep)
-    
+    call sankey_change_basis ( istep )
+
     ! Read the initial wavefunctions.
     ! In future reading wavefunctions can be moved before
     ! changebasis and then the first DM can be computed within
@@ -116,26 +115,23 @@ contains
 
     if ( istep == 1 ) then
        allocate(wavef_ms(nkpnt,nspin))
-       call iowavef('read',wavef_ms,no_u,nkpnt,nspin, istpp, &
-            rstart_time)
+       call iowavef('read',wavef_ms,no_u,nkpnt,nspin)
        IF (IONode) THEN
        write(6,'(a)') 'Computing DM from initial KS wavefunctions'
-       END IF 
-       DO ispin=1,nspin
-         call compute_tddm(ispin, Dscf)
-       END DO
-       istep = istpp + 1
+       END IF
+         call compute_tddm(Dscf)
     end if
-    ! To save the TD-wavefunctions for a restart.
-    mod_md = mod(istep, tdednwrite)
 
-    if( mod_md == 0 .or. istep == fincoor ) then
-       call iowavef('write',wavef_ms,no_u,nkpnt,nspin, istep,totime)
+    ! Save the final wavefunctions for restart or analysis. 
+    if(tdsavewf .and. istep .ge. fincoor) then
+      ! The wavefunctions are saved after transforming into the current basis
+      ! but before evolving them to future.This keeps the wavefunctions
+      ! concurrent with atomic position.
+      if(fincoor .gt. 1) call iowavef('write',wavef_ms,no_u,nkpnt,nspin)
     end if
 
     do itded = 1 , ntded ! TDED loop
        
-       dt_tded = dt/ntded
        if(IONode) then
           write(*,'(/a)') &
                '                     ************************       '
@@ -143,32 +139,28 @@ contains
           write(*,'(a)') &
                '                     ************************       '
        end if
-       
-       ! To save the TD-wavefunctions to restart
-       mod_tded = mod(itded, tdednwrite)
-       
-       if ( mod_tded == 0 ) then
-          call iowavef('write',wavef_ms,no_u,nkpnt,nspin, istep, totime)
+
+       if (tdsavewf) then
+         if (fincoor .eq. 1 .and. itded .eq. ntded) then
+           call iowavef('write',wavef_ms,no_u,nkpnt,nspin)
+         endif
        end if
-       
+
        call setup_hamiltonian( itded )
        
-       call evolve(no_s,nspin,nspin,no_l,maxnh,maxnh,no_u, &
-            gamma, indxuo,nkpnt,kpoint,kweight, &
-            Escf, no_u, dt_tded,istep,itded)
+       call evolve(  td_dt )
        
        ! The total simulation time mainly for plotting
-       totime = (istep*dt - dt) + (itded*dt_tded-dt_tded)
+       totime = (istep*dt - dt) + (itded*td_dt)
        
        call compute_energies (itded)
        call write_tddft(totime, istep, itded, ntded, rstart_time, &
             etot, eo, no_u,nspin,nkpnt)
        
     end do ! TDED loop
-
+    call compute_tdEdm (Escf)
     call final_H_f_stress(istep, 1, .false.)
     call state_analysis( istep )
-    
 #ifdef DEBUG
     call write_debug( '    POS siesta_tddft' )
 #endif
