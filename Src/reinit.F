@@ -164,6 +164,12 @@ c
      &        '***', ' End of input data file '
          call io_close(lun_tmp)
 
+         if ( lun /= 5 ) then
+            ! Be sure to close the input master file
+            ! Otherwise we may end up opening too many files
+            call io_close(lun)
+         end if
+
 !     "stdin_file" for fdf is now the temporary file. 
 !     This was necessary historically to allow
 !     the rewinds involved in fdf operation.
