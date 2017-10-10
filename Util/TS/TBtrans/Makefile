@@ -388,7 +388,7 @@ class_SpData1D.o: class_Data1D.o class_Data1D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o
 class_Sparsity.o: alloc.o
-coceri.o: files.o periodic_table.o precision.o
+coceri.o: files.o periodic_table.o precision.o units.o
 compute_dm.o: atomlist.o class_SpData1D.o compute_ebs_shift.o diagon.o
 compute_dm.o: iodmhs_netcdf.o kpoint_grid.o local_sys.o m_dminim.o m_energies.o
 compute_dm.o: m_eo.o m_gamma.o m_hsx.o m_pexsi_driver.o m_rmaxh.o m_spin.o
@@ -412,7 +412,7 @@ conjgr.o: precision.o
 conjgr_old.o: precision.o
 coor.o: alloc.o local_sys.o parallel.o precision.o siesta_geom.o units.o
 coor.o: zmatrix.o
-coxmol.o: files.o periodic_table.o precision.o
+coxmol.o: files.o periodic_table.o precision.o units.o
 create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 create_Sparsity_Union.o: class_OrbitalDistribution.o class_Sparsity.o
 create_Sparsity_Union.o: m_region.o parallel.o precision.o
@@ -527,7 +527,7 @@ iogrid_netcdf.o: alloc.o local_sys.o parallel.o precision.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o local_sys.o onmod.o parallel.o parallelsubs.o
 iolwf.o: precision.o
-iomd.o: files.o precision.o
+iomd.o: files.o precision.o units.o
 iopipes.o: local_sys.o parallel.o precision.o
 iosockets.o: cellsubs.o fsockets.o local_sys.o m_mpi_utils.o parallel.o
 iosockets.o: precision.o
@@ -916,7 +916,7 @@ phirphi.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
 phirphi.o: precision.o
 phirphi_opt.o: alloc.o atm_types.o atmfuncs.o atmparams.o local_sys.o mneighb.o
 phirphi_opt.o: new_matel.o parallel.o parallelsubs.o precision.o spher_harm.o
-pixmol.o: files.o periodic_table.o precision.o
+pixmol.o: files.o periodic_table.o precision.o units.o
 plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
 poison.o: alloc.o cellsubs.o chkgmx.o fft.o local_sys.o parallel.o precision.o
 post_scf_work.o: atomlist.o class_Fstack_Pair_Geometry_SpData2D.o

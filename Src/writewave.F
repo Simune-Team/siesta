@@ -433,6 +433,7 @@ C
       use atomlist,     only : iaorb, iphorb
       use siesta_geom,  only : isa
       use m_spin,       only : NoMagn, SPpol, NonCol, SpOrb
+      use units, only : eV
 
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
@@ -460,17 +461,16 @@ C *********************************************************************
      .  io, iu, iuo, naux, nuo, j, nhs
 
       real(dp)
-     .  Dnew, qs(2), e1, e2, efs(2), Enew, eV, qk, qtot, 
+     .  Dnew, qs(2), e1, e2, efs(2), Enew, qk, qtot, 
      .  temp, wk, Entropy
 
 C Dynamic arrays
-      integer,  allocatable,   save :: muo(:)
-      logical,                 save :: getD = .false.
-      logical,                 save :: getPSI = .true.
-      real(dp), allocatable,   save :: aux(:)
-      real(dp), allocatable,   save :: ek(:,:,:)
+      integer,  allocatable :: muo(:)
+      logical, parameter :: getD = .false.
+      logical, parameter :: getPSI = .true.
+      real(dp), allocatable :: aux(:)
+      real(dp), allocatable :: ek(:,:,:)
 
-      parameter ( eV = 1.d0 / 13.60580d0 )
       save Dnew, Enew, e1, e2, qk, qtot, temp, wk
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
@@ -871,7 +871,6 @@ C eigenvector is now stored in aux in all processors, and can be printed
 C Close output file
 
       if (Node .eq. 0) then
-        close (iu)
         call io_close(iu)
       endif
 

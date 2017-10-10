@@ -78,16 +78,12 @@ C Internal variables and arrays
       real(dp), dimension(:),   allocatable :: buffer
       real(dp), dimension(:,:), allocatable :: buffer2
 #endif
-      logical    baddim, frstme, gammaonfile, write_xijk
-      save       frstme, fname
-      data frstme /.true./
+      logical    baddim, gammaonfile, write_xijk
 
       call timer("writeHSX",1)
+      
 C Find name of file
-      if (frstme) then
-        fname = trim(slabel)//'.HSX'
-        frstme = .false.
-      endif
+      fname = trim(slabel) // '.HSX'
 
 C Find total numbers over all Nodes
 #ifdef MPI

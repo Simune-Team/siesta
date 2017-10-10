@@ -39,19 +39,13 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
 
       real(dp) :: xfrac(3)
       integer  :: dummy
-      character(len=label_length+10), save :: fname
-      integer                              :: ia, iu, iv
-      integer                              :: ix, iostat
-      logical,                        save :: frstme = .true.
+      character(len=label_length+10) :: fname
+      integer                        :: ia, iu, iv
+      integer                        :: ix, iostat
       external          io_assign, io_close
 
 
-      if (frstme) then
-         if (IOnode) then
-            fname = trim(slabel)//'.STRUCT_IN'
-         endif
-         frstme = .false.
-      endif
+      fname = trim(slabel) // '.STRUCT_IN'
 
       if (IOnode) then
          call io_assign( iu )
@@ -127,10 +121,10 @@ C     Only do reading and writing for IOnode
       endif
 
       if (atoms_moved_after_forces) then
-         fname = trim(slabel)//'.STRUCT_NEXT_ITER'
+         fname = trim(slabel) // '.STRUCT_NEXT_ITER'
       else
-         fname = trim(slabel)//'.STRUCT_OUT'
-      endif
+         fname = trim(slabel) // '.STRUCT_OUT'
+      end if
 
       call io_assign( iu )
       open( iu, file=fname, form='formatted', status='unknown' )      
