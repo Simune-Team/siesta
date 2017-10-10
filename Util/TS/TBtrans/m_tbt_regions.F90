@@ -78,6 +78,8 @@ contains
     use geom_helper, only : iaorb
     use intrinsic_missing, only : SPC_PROJ, VNORM, VEC_PROJ
     use create_Sparsity_SC
+    use create_Sparsity_Union
+
 
     use m_ts_electype
     use m_ts_method, only : ts_init_regions
@@ -103,7 +105,7 @@ contains
     ! The atomic coordinates
     real(dp), intent(in) :: xa(3,na_u)
     ! The distribution for the sparsity pattern
-    type(OrbitalDistribution), intent(in) :: dit
+    type(OrbitalDistribution), intent(inout) :: dit
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! The supercell information
@@ -116,7 +118,7 @@ contains
 
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    character(len=50) :: g, csort
+    character(len=128) :: g, csort
     integer :: i, ia1, ia2, no_u
     integer :: init_nz
     type(tRgn) :: r_tmp, r_tmp2, r_tmp3, r_Els, priority
@@ -537,6 +539,12 @@ contains
           call sp2graphviz(csort, sp_tmp, pvt=r_oEl(iEl))
        end if
 #endif
+
+       ! Enlarge the sparse pattern by adding all electrode self-energy terms in
+       ! the central region.
+       ! Otherwise we do not have a DENSE part of the self-energies in the central
+       ! region. This is _very_ necessary.
+       call crtSparsity_Union_region(dit, sp_tmp, Elecs(iEl)%o_inD, sp_tmp)
 
     end do
 

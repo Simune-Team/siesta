@@ -600,7 +600,6 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
         else
           read(i) c(ispin)%mtrx
         end if
-        close(i)
         call io_close(i)
       else
         if ((ispin==1) .or. (N_occ_diff/=0)) then
@@ -742,7 +741,6 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
       else
         write(i) c(ispin)%mtrx
       end if
-      close(i)
       call io_close(i)
     end if
 
@@ -1520,7 +1518,6 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
         call io_assign(i)
         open(i,file=trim(WF_COEFFS_filename),form='unformatted',status='old',action='read')
         read(i) c(ispin)%mtrx
-        close(i)
         call io_close(i)
       else
         if ((ispin==1) .or. (N_occ_diff/=0)) then
@@ -1651,7 +1648,6 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
 #endif
       open(i,file=trim(WF_COEFFS_filename),form='unformatted',status='replace',action='write')
       write(i) c(ispin)%mtrx
-      close(i)
       call io_close(i)
     end if
 

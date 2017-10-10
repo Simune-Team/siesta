@@ -3,6 +3,12 @@ SystemLabel         dipole_correction
 NumberOfAtoms       3
 NumberOfSpecies     2
 
+
+SCF.Mix DM
+DM.NumberPulay 6
+DM.MixingWeight 0.02
+MaxSCFIterations 3000
+
 #
 # Comment out the following line to remove the automatic correction for
 # the slab dipole

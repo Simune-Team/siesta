@@ -319,9 +319,9 @@ contains
           else if ( leqi(ctmp,'displacement') .or. &
                leqi(ctmp,'displ') ) then
 
-             displ(1) = fdf_bvalues(pline,1)
-             displ(2) = fdf_bvalues(pline,2)
-             displ(3) = fdf_bvalues(pline,3)
+             displ(1) = mod(fdf_bvalues(pline,1), 1._dp)
+             displ(2) = mod(fdf_bvalues(pline,2), 1._dp)
+             displ(3) = mod(fdf_bvalues(pline,3), 1._dp)
              
           else if ( leqi(ctmp,'size') ) then
 
@@ -349,7 +349,7 @@ contains
              kscell(2,ik) = fdf_bintegers(pline,2)
              kscell(3,ik) = fdf_bintegers(pline,3)
              if ( fdf_bnvalues(pline) > 3 ) then
-                displ(ik) = fdf_bvalues(pline,4)
+                displ(ik) = mod(fdf_bvalues(pline,4), 1._dp)
              end if
 
              ! To not error out of only 3 lines grids
@@ -416,7 +416,7 @@ contains
           kscell(:,i) = 0
           kscell(i,:) = 0
           kscell(i,i) = 1
-          displ(i)    = 0._dp
+          displ(i) = 0._dp
           ksize(i) = 1._dp
        end if
 

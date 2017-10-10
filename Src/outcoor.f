@@ -143,6 +143,6 @@ c writing the coordinates
      .  ((xap(ix,ia),ix=1,3),isa(ia),ia,trim(labelfis(isa(ia))),ia=1,na)
 
 C Deallocate local memory
-      call de_alloc( xap, name='xap' )
+      call de_alloc( xap, name='xap', routine='outcoor')
 
       end subroutine outcoor

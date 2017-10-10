@@ -19,6 +19,7 @@ c *******************************************************************
       use precision,      only: dp
       use periodic_table, only: symbol
       use files,          only: slabel, label_length
+      use units, only: Ang
 
       implicit          none
 
@@ -29,19 +30,14 @@ c *******************************************************************
 
 c Internal variables and arrays
  
-      character(len=label_length+4), save :: fname
-      integer                             :: i, ia
-      integer,                       save :: unit
-      logical,                       save :: frstme = .true.
-      real(dp),                      save :: Ang = 1.0_dp/0.529177_dp
+      character(len=label_length+4) :: fname
+      integer :: i, ia
+      integer :: unit
 c -------------------------------------------------------------------
 
       character(len=2) :: sym
 
-      if ( frstme ) then
-        fname = trim(slabel)//'.ANI'
-        frstme = .false.
-      endif
+      fname = trim(slabel) //'.ANI'
 
       call io_assign(unit)
       open( unit, file=fname, form = 'formatted', position='append',

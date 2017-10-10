@@ -48,21 +48,17 @@ C
       external          io_assign, io_close
 
 c Internal variables and arrays
-      character(len=label_length+3), save :: fname
-      logical,                       save :: frstme = .true.
+      character(len=label_length+3) :: fname
       integer    ia, iu, iv, ix, k
 #ifdef MPI
       integer    MPIerror
 #endif
 
+C Find name of file
+      fname = trim(slabel) // '.ZM'
+
 C Only do reading and writing for IOnode
       if (Node.eq.0) then
-
-C Find name of file
-        if (frstme) then
-          fname = trim(slabel)//'.ZM'
-          frstme = .false.
-        endif
 
 C Choose between read or write
         if (task.eq.'read' .or. task.eq.'READ') then

@@ -69,7 +69,7 @@ C
       external          io_assign, io_close
 
 C Internal variables and arrays
-      character(len=label_length+3) :: fname
+      character(len=label_length+4) :: fname
       integer    im, is, iu, ju, k, mnh, ns, ia, io
       integer    ih,hl,nuo,maxnhtot,maxhg
       integer, dimension(:), allocatable :: numhg
@@ -80,15 +80,10 @@ C Internal variables and arrays
       complex(dp), dimension(:),   allocatable :: buffer3
       real(dp), dimension(:,:), allocatable :: buffer2
 #endif
-      logical    baddim, frstme, gammaonfile, write_xijk
-      save       frstme, fname
-      data frstme /.true./
+      logical    baddim, gammaonfile, write_xijk
 
 C Find name of file
-      if (frstme) then
-        fname = trim(slabel)//'.dek'
-        frstme = .false.
-      endif
+      fname = trim(slabel) // '.dek'
 
 C Find total numbers over all Nodes
 #ifdef MPI

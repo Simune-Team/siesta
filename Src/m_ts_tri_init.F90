@@ -140,10 +140,17 @@ contains
     call sp_to_file(4000,tmpSp2)
 #endif
 
+    iEl = 1
+    do i = 2, N_Elec
+       if ( rgn_size(Elecs(iEl)%o_inD) < rgn_size(Elecs(i)%o_inD) ) then
+          iEl = i
+       end if
+    end do
+
     ! Get sorting method, we default to sort
     ! the BTD matrix according to the connection
     ! scheme of the first electrode.
-    csort = fdf_get('TS.BTD.Pivot','atom+'//trim(Elecs(1)%name))
+    csort = fdf_get('TS.BTD.Pivot','atom+'//trim(Elecs(iEl)%name))
     call ts_pivot( fdit, tmpSp2, &
          N_Elec, Elecs, &
          ucell, na_u, xa, lasto, &
@@ -324,7 +331,7 @@ contains
     character(len=4) :: corb
     
     ! Regions used for sorting the device region
-    type(tRgn) :: r_tmp, r_Els, r_El, full, priority
+    type(tRgn) :: r_tmp, start, r_El, full, priority
     integer :: orb_atom
     
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
@@ -353,7 +360,6 @@ contains
     ! point to the local (SIESTA-UC) sparsity pattern arrays
     call Sp_to_Spglobal(dit,tmpSp1,tmpSp2)
 
-    call rgn_delete(r_Els)
     do iEl = 1 , N_Elec
 
        i  = Elecs(iEl)%idx_o
@@ -366,7 +372,6 @@ contains
 
        ! Create the o_inD
        call rgn_range(Elecs(iEl)%o_inD,i,i+no-1)
-       call rgn_append(r_Els,Elecs(iEl)%o_inD,r_Els)
 
     end do
 
@@ -408,10 +413,6 @@ contains
 
        ! Reduce the searching place of atoms
        call rgn_copy(r_aC,full)
-
-       ! Prepare total region with all electrodes
-       call rgn_orb2atom(r_Els,na_u,lasto,r_tmp)
-       call rgn_copy(r_tmp,r_Els)
 
     end if
 
@@ -506,47 +507,104 @@ contains
        end if
     end do
 
-    fmethod = trim(corb)//'+CM'
-    if ( IONode ) write(*,fmt) trim(corb),'CM'
-    call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = r_Els)
-    if ( orb_atom == 1 ) then
-       call tri(r_tmp)
-    else
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
-       call tri(r_El)
-    end if
 
-    fmethod = trim(corb)//'+rev-CM'
-    if ( IONode ) write(*,fmt) trim(corb),'rev-CM'
-    call rgn_reverse(r_tmp)
-    if ( orb_atom == 1 ) then
-       call tri(r_tmp)
-    else
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
-       call tri(r_El)
-    end if
+    do i = 1, N_Elec
+       
+       call rgn_copy(Elecs(iEl)%o_inD, start)
+       if ( orb_atom == 2 ) then
 
-    fmethod = trim(corb)//'+CM+priority'
-    if ( IONode ) write(*,fmt) trim(corb),'CM+priority'
-    call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = r_Els, &
-         priority = priority%r)
-    if ( orb_atom == 1 ) then
-       call tri(r_tmp)
-    else
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
-       call tri(r_El)
-    end if
+          ! transfer to atom
+          call rgn_orb2atom(start,na_u,lasto,r_tmp)
+          call rgn_copy(r_tmp,start)
 
-    fmethod = trim(corb)//'+rev-CM+priority'
-    if ( IONode ) write(*,fmt) trim(corb),'rev-CM+priority'
-    call rgn_reverse(r_tmp)
-    if ( orb_atom == 1 ) then
-       call tri(r_tmp)
-    else
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
-       call tri(r_El)
-    end if
-    
+       end if
+
+       fmethod = trim(corb)//'+CM+'//trim(Elecs(i)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'CM+'//trim(Elecs(i)%name)
+       call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = start)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+rev-CM+'//trim(Elecs(i)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-CM+'//trim(Elecs(i)%name)
+       call rgn_reverse(r_tmp)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+CM+priority+'//trim(Elecs(i)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'CM+priority+'//trim(Elecs(i)%name)
+       call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = start, &
+            priority = priority%r)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+rev-CM+priority+'//trim(Elecs(i)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-CM+priority+'//trim(Elecs(i)%name)
+       call rgn_reverse(r_tmp)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+PCG+'//trim(Elecs(i)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'PCG+'//trim(Elecs(i)%name)
+       call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full, start = start)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+rev-PCG+'//trim(Elecs(i)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+'//trim(Elecs(i)%name)
+       call rgn_reverse(r_tmp)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+PCG+priority+'//trim(Elecs(i)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'PCG+priority+'//trim(Elecs(i)%name)
+       call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full, start = start, priority = priority%r)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+rev-PCG+priority+'//trim(Elecs(i)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+priority+'//trim(Elecs(i)%name)
+       call rgn_reverse(r_tmp)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+    end do
+
+    call rgn_delete(start)
+
+
     fmethod = trim(corb)//'+GPS'
     if ( IONode ) write(*,fmt) trim(corb),'GPS'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_GPS, sub = full)
@@ -587,45 +645,6 @@ contains
        call tri(r_El)
     end if
 
-    fmethod = trim(corb)//'+PCG'
-    if ( IONode ) write(*,fmt) trim(corb),'PCG'
-    call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full)
-    if ( orb_atom == 1 ) then
-       call tri(r_tmp)
-    else
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
-       call tri(r_El)
-    end if
-
-    fmethod = trim(corb)//'+rev-PCG'
-    if ( IONode ) write(*,fmt) trim(corb),'rev-PCG'
-    call rgn_reverse(r_tmp)
-    if ( orb_atom == 1 ) then
-       call tri(r_tmp)
-    else
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
-       call tri(r_El)
-    end if
-
-    fmethod = trim(corb)//'+PCG+priority'
-    if ( IONode ) write(*,fmt) trim(corb),'PCG+priority'
-    call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full, priority = priority%r)
-    if ( orb_atom == 1 ) then
-       call tri(r_tmp)
-    else
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
-       call tri(r_El)
-    end if
-
-    fmethod = trim(corb)//'+rev-PCG+priority'
-    if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+priority'
-    call rgn_reverse(r_tmp)
-    if ( orb_atom == 1 ) then
-       call tri(r_tmp)
-    else
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
-       call tri(r_El)
-    end if
 
     fmethod = trim(corb)//'+GGPS'
     if ( IONode ) write(*,fmt) trim(corb),'GGPS'
@@ -669,7 +688,7 @@ contains
 
     end do orb_atom_switch
 
-    call rgn_delete(r_tmp,r_Els,r_El,full,priority)
+    call rgn_delete(r_tmp,r_El,full,priority)
 
     call delete(tmpSp1) ! clean up
     call delete(tmpSp2)
