@@ -1684,9 +1684,10 @@ contains
     integer, intent(in) :: val
     logical :: good
 
-    good = ( size(r%r) > r%n ) 
+    good = size(r%r) > r%n
     if ( .not. good ) return
 
+    ! Determine if it is still sorted
     if ( r%sorted ) then
        r%sorted = r%r(r%n) <= val
     end if
