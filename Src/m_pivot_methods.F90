@@ -835,6 +835,8 @@ contains
 
     ! Ensure it is clean
     call rgn_delete(pvt)
+    call rgn_init(pvt, sub%n)
+    pvt%n = 0
 
     ! Find a set of pseudo-peripherals using the GPS algorithm
     call pseudo_peripheral(D_LOW,n,nnzs,n_col,l_ptr,l_col,sub,lvl, &
@@ -857,10 +859,10 @@ contains
        end if
 #endif
        if ( ipvt%n == 1 ) then
-          call rgn_append(pvt,ipvt,pvt)
+          if ( .not. rgn_push(pvt, ipvt) ) call die('GPS push -- 1')
        else
           call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,ipvt,r)
-          call rgn_append(pvt,r,pvt)
+          if ( .not. rgn_push(pvt, r) ) call die('GPS push -- 2')
        end if
     end do
 
@@ -967,8 +969,7 @@ contains
           ! If the level depth is larger than the current start over 
           ! from that index (the last added element *must* be
           ! the largest level)
-          if ( (width2 < width .and. depth2 >= depth2 ) .or. &
-               depth2 > depth ) then
+          if ( width2 < width .or. depth2 > depth ) then
 #ifdef PVT_DEBUG
              write(*,*)'   changing v set: 1:',i
 #endif
@@ -1312,10 +1313,13 @@ contains
 
     call delete_level_structure(ls)
 
+    call rgn_init(all, n)
+    all%n = 0
+
     if ( present(skip) ) then
        
        ! Speed up searches in the skipped elements
-       call rgn_copy(skip, all)
+       if ( .not. rgn_push(all, skip) ) call die('Error in push LS -- 0')
        call rgn_sort(all)
        
     end if
@@ -1365,7 +1369,7 @@ contains
        end if
 
        ! Ensure we have all elements in one array, to easy skip
-       call rgn_append(all, queue, all)
+       if ( .not. rgn_push(all, queue) ) call die('Error in push LS -- 1')
        call rgn_sort(all)
 
        ! Copy to the current level
@@ -1974,7 +1978,7 @@ contains
     do i = 1 , sub%n
 
        idx = idx_degree(method,n,nnzs,n_col,l_ptr,l_col,s, priority = priority)
-       etr = rgn_pop(s,idx)
+       etr = rgn_pop(s, idx)
        suc = rgn_push(sub_sort,etr)
        if ( etr /= sub_sort%r(sub_sort%n) ) &
             call die('sort_degree: Error in popping')
