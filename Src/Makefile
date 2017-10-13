@@ -164,6 +164,8 @@ OBJS =  automatic_cell.o atom_options.o \
 	kpoint_convert.o \
 	m_target_stress.o compute_max_diff.o
 
+OBJS += init_output.o
+
 # Diagonalization algorithm
 OBJS += diag_option.o diag.o
 
@@ -713,6 +715,7 @@ hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o ldau_specs.o listsc.o
 hsparse.o: mneighb.o parallel.o parallelsubs.o precision.o radial.o
 hsparse.o: siesta_options.o sorting.o sparse_matrices.o sys.o
 idiag.o: parallel.o sys.o
+init_output.o: files.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o chemical.o electrostatic.o ldau_specs.o m_spin.o
 initatom.o: old_atmfuncs.o precision.o pseudopotential.o

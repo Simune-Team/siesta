@@ -159,12 +159,66 @@ C     Initialise MPI and set processor number
          call system("/bin/rm -f 0_NORMAL_EXIT")
       endif
 
+      ! Initialize the output file
+      ! This will close and open unit=6 in case a command-line
+      ! option is specified
+      call init_output(Node == 0)
+
 #ifdef DEBUG_XC
 ! Set output file unit for debug info
       call setDebugOutputUnit()
 #endif /* DEBUG_XC */
 
-!     Initialise input/output...........................................
+      ! We have to immediately write out the options used to compile SIESTA
+      if ( Node == 0 ) then
+         ! Print version information
+         call prversion()
+#ifdef MPI
+         ! Sadly PEXSI workers can only be determined after
+         ! fdf has been opened, so we can't print-out that information
+         ! (for now)
+         if ( Nodes > 1 ) then
+            write(6,'(/,a,i0,a)')
+     &           '* Running on ', Nodes, ' nodes in parallel'
+         else
+            write(6,'(/,a)') '* Running in serial mode with MPI'
+         endif
+#else
+         write(6,'(/,a)') '* Running in serial mode'
+#endif
+!$OMP parallel default(shared)
+!$OMP master
+!$    i = omp_get_num_threads()
+!$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
+!$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
+#ifdef _OPENMP
+!$    write(*,'(a,i0)') '* OpenMP version ', _OPENMP
+#endif
+!$    call omp_get_schedule(i,is)
+!$    select case ( i )
+!$    case ( OMP_SCHED_STATIC ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule STATIC, chunks ',is
+!$    case ( OMP_SCHED_DYNAMIC ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    if ( is == 1 ) then
+!$     ! this is the default scheduling, probably the user
+!$     ! have not set the value, predefine it to 32
+!$     is = 32
+!$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    end if
+!$    case ( OMP_SCHED_GUIDED ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',is
+!$    case ( OMP_SCHED_AUTO ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule AUTO, chunks ',is
+!$    case default
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',is
+!$    end select
+!$OMP end master
+!$OMP end parallel
+!$    call omp_set_schedule(i,is)
+      end if
+      
+      ! Initialise input/output...........................................
       call reinit( sname )
 
 #ifdef MPI
@@ -198,7 +252,6 @@ C     Initialise MPI and set processor number
 
       ! Be sure to initialize the spin-configuration data
       ! for all processors.
-
       call init_spin( )
 
       if (.not. SIESTA_worker) RETURN
@@ -214,55 +267,17 @@ C     Initialise MPI and set processor number
 #endif
 
 !     Print version information
-      if (IOnode) then
-        call prversion()
+      if ( IOnode ) then
 #ifdef MPI
-        if ( PEXSINodes /= Nodes ) then
-           write(6,'(/,a,2(i0,a))')
-     &          '* Running on ', Nodes, ' SIESTA-nodes and ',
-     &          PEXSINodes, ' PEXSI-nodes in parallel'
-        else if ( Nodes > 1 ) then           
-           write(6,'(/,a,i0,a)')
-     &          '* Running on ', Nodes, ' nodes in parallel'
-        else
-           write(6,'(/,a)') '* Running in serial mode with MPI'
-        endif
-#else
-        write(6,'(/,a)') '* Running in serial mode'
+         if ( PEXSINodes /= Nodes ) then
+            write(6,'(/,a,2(i0,a))')
+     &           '* Running on ', Nodes, ' SIESTA-nodes and ',
+     &           PEXSINodes, ' PEXSI-nodes in parallel'
+         end if
 #endif
-!$OMP parallel default(shared)
-!$OMP master
-!$    i = omp_get_num_threads()
-!$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
-!$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
-#ifdef _OPENMP
-!$    write(*,'(a,i0)') '* OpenMP version ', _OPENMP
-#endif
-!$    call omp_get_schedule(i,is)
-!$    select case ( i )
-!$    case ( OMP_SCHED_STATIC ) 
-!$    write(*,'(a,i0)') '* OpenMP runtime schedule STATIC, chunks ',is
-!$    case ( OMP_SCHED_DYNAMIC ) 
-!$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',is
-!$    if ( is == 1 ) then
-!$     ! this is the default scheduling, probably the user
-!$     ! have not set the value, predefine it to 32
-!$     is = 32
-!$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',is
-!$    end if
-!$    case ( OMP_SCHED_GUIDED ) 
-!$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',is
-!$    case ( OMP_SCHED_AUTO ) 
-!$    write(*,'(a,i0)') '* OpenMP runtime schedule AUTO, chunks ',is
-!$    case default
-!$    write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',is
-!$    end select
-!$OMP end master
-!$OMP end parallel
-!$    call omp_set_schedule(i,is)
          call timestamp('Start of run')
          call wallclock('Start of run')
-      endif
+      end if
 
 !
 !     Nullify arrays
