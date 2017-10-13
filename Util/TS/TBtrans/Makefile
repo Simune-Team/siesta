@@ -63,6 +63,9 @@ SIESTA_OBJS += class_OrbitalDistribution.o \
 	class_TriMat.o \
         m_uuid.o object_debug.o
 
+# Output stuff
+SIESTA_OBJS += init_output.o
+
 # As the classes are based on inputs we force the dependency to
 # alloc
 class_Sparsity.o class_Data1D.o class_Data2D.o class_TriMat.o: alloc.o

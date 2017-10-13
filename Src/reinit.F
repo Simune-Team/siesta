@@ -200,7 +200,7 @@ C Set up fdf ...
             ! We allow these line
             if ( line(1:3) == 'fdf' ) then
                if ( in >= narg ) 
-     &              call die('Missing argument on command line')
+     &              call die('Missing argument on command line, -fdf')
                in = in + 1
                call get_command_argument(in,line,length)
                
@@ -214,7 +214,7 @@ C Set up fdf ...
                          
             else if ( line(1:1) == 'L' ) then
                if ( in >= narg ) 
-     &              call die('Missing argument on command line')
+     &              call die('Missing argument on command line, -L')
                in = in + 1
                call get_command_argument(in,line,length)
                line = cmd_tokenize(line)
@@ -224,7 +224,7 @@ C Set up fdf ...
 #ifdef TRANSIESTA
             else if ( line(1:1) == 'V' ) then
                if ( in >= narg )
-     &              call die('Missing argument on command line')
+     &              call die('Missing argument on command line, -V')
                in = in + 1
                call get_command_argument(in,line,length)
                line = cmd_tokenize(line)

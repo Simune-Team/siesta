@@ -216,6 +216,9 @@ C     Initialise MPI and set processor number
 !$OMP end master
 !$OMP end parallel
 !$    call omp_set_schedule(i,is)
+
+         ! Write time-stamp at the top of the output
+         call timestamp('Start of run')
       end if
       
       ! Initialise input/output...........................................
@@ -275,7 +278,6 @@ C     Initialise MPI and set processor number
      &           PEXSINodes, ' PEXSI-nodes in parallel'
          end if
 #endif
-         call timestamp('Start of run')
          call wallclock('Start of run')
       end if
 
