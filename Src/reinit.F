@@ -24,7 +24,7 @@ C
       use parallel,    only : Node
       use fdf
       use files,       only : slabel
-      use files,       only : stdout_file, stdin_file
+      use files,       only : stdin_file, stdout_file
       use siesta_master, only: input_file  ! fdf data file
       use sys, only : bye
 
@@ -40,17 +40,6 @@ C  Internal variables .................................................
       character(len=256) :: line, val
 
       logical debug_input, file_exists
-
-!     First we determine whether all output should be
-!     written to stdout or to a file.
-      if ( Node .eq. 0 ) then
-         stdout_file = cla_get_output()
-         if ( stdout_file /= ' ' ) then
-            close(unit=6)
-            open(unit=6,file=trim(stdout_file),form="formatted",
-     &           position="rewind", action="write",status="unknown")
-         end if
-      end if
 
 C     Print Welcome and Presentation .......................................
 
@@ -211,7 +200,7 @@ C Set up fdf ...
             ! We allow these line
             if ( line(1:3) == 'fdf' ) then
                if ( in >= narg ) 
-     &              call die('Missing argument on command line')
+     &              call die('Missing argument on command line, -fdf')
                in = in + 1
                call get_command_argument(in,line,length)
                
@@ -225,7 +214,7 @@ C Set up fdf ...
                          
             else if ( line(1:1) == 'L' ) then
                if ( in >= narg ) 
-     &              call die('Missing argument on command line')
+     &              call die('Missing argument on command line, -L')
                in = in + 1
                call get_command_argument(in,line,length)
                line = cmd_tokenize(line)
@@ -235,7 +224,7 @@ C Set up fdf ...
 #ifdef TRANSIESTA
             else if ( line(1:1) == 'V' ) then
                if ( in >= narg )
-     &              call die('Missing argument on command line')
+     &              call die('Missing argument on command line, -V')
                in = in + 1
                call get_command_argument(in,line,length)
                line = cmd_tokenize(line)
@@ -312,43 +301,4 @@ C ...
       end do
       end function cmd_tokenize
 
-      function cla_get_output() result(outfile)
-      integer :: narg, in, length
-      character(len=128) :: line
-      character(len=128) :: outfile
-
-      outfile = ' '
-
-#ifndef NO_F2003
-!     Read the output file from the command line (-out|-o)
-      narg = command_argument_count()
-      if ( narg > 0 ) then
-         in = 0
-         do while ( in <= narg - 1 )
-            
-            in = in + 1
-            call get_command_argument(in,line,length)
-            
-            ! If it is not an option, skip it
-            if ( line(1:1) /= '-' ) cycle
-
-            ! Truncate '-' to no '-'
-            do while ( line(1:1) == '-' )
-               line = line(2:)
-            end do
-
-            ! We allow these line
-            if ( line(1:1) == 'o'.or.line(1:3) == 'out') then
-               if ( in >= narg ) 
-     &              call die('Missing argument for output file')
-               in = in + 1
-               call get_command_argument(in,outfile,length)
-
-            end if
-            
-         end do
-      end if
-#endif
-      end function
-      
       end

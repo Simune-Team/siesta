@@ -280,34 +280,21 @@ contains
     type(tRgn), intent(inout) :: rout
     integer, intent(in) :: n, list(n)
 
-    integer :: i, ni
-    integer, allocatable :: tmp_r(:)
+    type(tRgn) :: rr
 
-    if ( n == 0 ) then
-       call rgn_copy(r,rout)
-       return
-    end if
+    call rgn_list(rr, n, list)
+    call rgn_sort(rr)
 
-    allocate(tmp_r(r%n))
-    ni = 0
-    do i = 1 , r%n
-       if ( all(r%r(i)/=list(:)) ) then
-          ni = ni + 1
-          tmp_r(ni) = r%r(i)
-       end if
-    end do
-
-    call rgn_list(rout,ni,tmp_r)
-
-    deallocate(tmp_r)
+    call rgn_remove_rgn(r, rr, rout)
+    call rgn_delete(rr)
 
   end subroutine rgn_remove_list
   subroutine rgn_remove_rgn(r,rr,rout)
     type(tRgn), intent(in) :: r
     type(tRgn), intent(in) :: rr
     type(tRgn), intent(inout) :: rout
-    
-    call rgn_remove_list(r,rr%n,rr%r,rout)
+
+    call rgn_complement(rr, r, rout)
 
   end subroutine rgn_remove_rgn
 
@@ -330,10 +317,13 @@ contains
     do while ( i <= r%n )
        if ( r%r(i) < 0 ) then
           r%r(i) = ln + r%r(i) + 1
+          r%sorted = .false.
        else if ( r%r(i) == 0 ) then
           r%r(i) = ln
+          r%sorted = .false.
        else if ( ln < r%r(i) ) then
           r%r(i) = r%r(i) - ln
+          r%sorted = .false.
        else
           i = i + 1
        end if
@@ -1164,6 +1154,7 @@ contains
 
     ! ** local variables
     type(tRgn) :: sr
+    logical :: r2_sorted
     integer :: i, it
     integer, allocatable :: ct(:)
 
@@ -1176,6 +1167,8 @@ contains
        return
     end if
 
+    r2_sorted = r2%sorted
+    
     allocate(ct(r2%n))
 
     ! Having a sorted array will greatly increase performance
@@ -1203,6 +1196,9 @@ contains
 
     ! Copy the list over
     call rgn_list(cr,it,ct)
+    ! If r2 was sorted, then certainly it is still,
+    ! we have only removed elements.
+    cr%sorted = r2_sorted
 
     deallocate(ct)
 
@@ -1361,6 +1357,7 @@ contains
        r%r(i) = r%r(r%n+1-i)
        r%r(r%n+1-i) = tmp
     end do
+    r%sorted = .false.
   end subroutine rgn_reverse
 
   subroutine rgn_correct_atom(r,na_u,lasto)

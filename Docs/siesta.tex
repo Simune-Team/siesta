@@ -11344,12 +11344,18 @@ These options adhere to the specific solution methods available for
     \option[<elec-name>]%
     The partitioning will be a connectivity graph starting from the
     electrode denoted by the name. This name \emph{must} be found in
-    the \fdf{TS!Elecs} block. 
+    the \fdf{TS!Elecs} block. One can append more than one electrode
+    to simultaneously start from more than 1 electrode. This may be
+    necessary for multi-terminal calculations.
 
     \option[rev-CM] %
     Use the reverse Cuthill-McKee for pivoting the matrix elements to
     reduce bandwidth. One may omit \fdf*{rev-} to use the standard
-    Cuthill-McKee algorithm.
+    Cuthill-McKee algorithm (not recommended).
+
+    This pivoting scheme depends on the initial starting
+    electrodes, append \fdf*{+<elec-name>} to start the Cuthill-McKee
+    algorithm from the specified electrode.
 
     \option[GPS] %
     Use the Gibbs-Poole-Stockmeyer algorithm for reducing the
@@ -11362,6 +11368,11 @@ These options adhere to the specific solution methods available for
     \option[PCG] %
     Use the perphiral connectivity graph algorithm for reducing the
     bandwidth.
+
+    This pivoting scheme \emph{may} depend on the initial starting
+    electrode(s), append \fdf*{+<elec-name>} to initialize the PCG
+    algorithm from the specified electrode.
+
 
   \end{fdfoptions}
 

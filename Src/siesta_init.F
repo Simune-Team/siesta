@@ -167,76 +167,32 @@ C     Initialise MPI and set processor number
          call system("/bin/rm -f 0_NORMAL_EXIT")
       endif
 
+      ! Initialize the output file
+      ! This will close and open unit=6 in case a command-line
+      ! option is specified
+      call init_output(Node == 0)
+
 #ifdef DEBUG_XC
 ! Set output file unit for debug info
       call setDebugOutputUnit()
 #endif /* DEBUG_XC */
 
-!     Initialise input/output...........................................
-      call reinit( sname )
-
+      ! We have to immediately write out the options used to compile SIESTA
+      if ( Node == 0 ) then
+         ! Print version information
+         call prversion()
 #ifdef MPI
-      ! Optionally, restrict the number of processors that SIESTA uses, out
-      ! of the total pool
-      npSIESTA  = fdf_get("MPI.Nprocs.SIESTA",Nodes)
-      call MPI_Comm_Group(MPI_Comm_World, World_Group, MPIerror)
-      call MPI_Group_incl(World_Group, npSIESTA,
-     $                    (/ (i,i=0,npSIESTA-1) /),
-     $                    SIESTA_Group, MPIerror)
-      call MPI_Comm_create(MPI_Comm_World, SIESTA_Group,
-     $                     SIESTA_Comm, MPIerror)
-
-      SIESTA_worker = (Node < npSIESTA)
-
-      ! Swap communicator
-      ! This is needed since MPI_COMM_WORLD is used implicitly by
-      ! Siesta for all operations. 
-      MPI_COMM_WORLD = SIESTA_Comm
-      if (SIESTA_worker) then
-         call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
-         call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
-      endif
+         ! Sadly PEXSI workers can only be determined after
+         ! fdf has been opened, so we can't print-out that information
+         ! (for now)
+         if ( Nodes > 1 ) then
+            write(6,'(/,a,i0,a)')
+     &           '* Running on ', Nodes, ' nodes in parallel'
+         else
+            write(6,'(/,a)') '* Running in serial mode with MPI'
+         endif
 #else
-      SIESTA_worker = .true.
-      Node = 0
-      Nodes = 1
-      PEXSINodes = 1
-#endif
-      IOnode = SIESTA_worker .and. (Node .eq. 0)
-
-      ! Be sure to initialize the spin-configuration data
-      ! for all processors.
-
-      call init_spin( )
-
-      if (.not. SIESTA_worker) RETURN
-
-#ifdef DEBUG
-!     Generates a debug file for every process to track the execution.
-!     The file is called debug.$(PID) Where PID is the process number.
-!     It also works in secuencial mode.
-      call debugMpiOn( )
-#endif
-#ifdef NCDF_4
-      call ncdf_IONode( IONode )
-#endif
-
-!     Print version information
-      if (IOnode) then
-        call prversion()
-#ifdef MPI
-        if ( PEXSINodes /= Nodes ) then
-           write(6,'(/,a,2(i0,a))')
-     &          '* Running on ', Nodes, ' SIESTA-nodes and ',
-     &          PEXSINodes, ' PEXSI-nodes in parallel'
-        else if ( Nodes > 1 ) then           
-           write(6,'(/,a,i0,a)')
-     &          '* Running on ', Nodes, ' nodes in parallel'
-        else
-           write(6,'(/,a)') '* Running in serial mode with MPI'
-        endif
-#else
-        write(6,'(/,a)') '* Running in serial mode'
+         write(6,'(/,a)') '* Running in serial mode'
 #endif
 !$OMP parallel default(shared)
 !$OMP master
@@ -294,9 +250,71 @@ C     Initialise MPI and set processor number
 !$OMP end master
 !$OMP end parallel
 !$    call omp_set_schedule(i,is)
+
+         ! Write time-stamp at the top of the output
          call timestamp('Start of run')
-         call wallclock('Start of run')
+      end if
+      
+      ! Initialise input/output...........................................
+      call reinit( sname )
+
+#ifdef MPI
+      ! Optionally, restrict the number of processors that SIESTA uses, out
+      ! of the total pool
+      npSIESTA  = fdf_get("MPI.Nprocs.SIESTA",Nodes)
+      call MPI_Comm_Group(MPI_Comm_World, World_Group, MPIerror)
+      call MPI_Group_incl(World_Group, npSIESTA,
+     $                    (/ (i,i=0,npSIESTA-1) /),
+     $                    SIESTA_Group, MPIerror)
+      call MPI_Comm_create(MPI_Comm_World, SIESTA_Group,
+     $                     SIESTA_Comm, MPIerror)
+
+      SIESTA_worker = (Node < npSIESTA)
+
+      ! Swap communicator
+      ! This is needed since MPI_COMM_WORLD is used implicitly by
+      ! Siesta for all operations. 
+      MPI_COMM_WORLD = SIESTA_Comm
+      if (SIESTA_worker) then
+         call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
+         call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
       endif
+#else
+      SIESTA_worker = .true.
+      Node = 0
+      Nodes = 1
+      PEXSINodes = 1
+#endif
+      IOnode = SIESTA_worker .and. (Node .eq. 0)
+
+      ! Be sure to initialize the spin-configuration data
+      ! for all processors.
+      call init_spin( )
+
+      if (.not. SIESTA_worker) RETURN
+
+#ifdef DEBUG
+!     Generates a debug file for every process to track the execution.
+!     The file is called debug.$(PID) Where PID is the process number.
+!     It also works in secuencial mode.
+      call debugMpiOn( )
+#endif
+#ifdef NCDF_4
+      call ncdf_IONode( IONode )
+#endif
+
+!     Print version information
+      if ( IOnode ) then
+#ifdef MPI
+         if ( PEXSINodes /= Nodes ) then
+            write(6,'(/,a,2(i0,a))')
+     &           '* Running on ', Nodes, ' SIESTA-nodes and ',
+     &           PEXSINodes, ' PEXSI-nodes in parallel'
+         end if
+#endif
+
+         call wallclock('Start of run')
+      end if
 
 !
 !     Nullify arrays

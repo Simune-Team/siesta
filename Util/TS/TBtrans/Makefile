@@ -63,6 +63,9 @@ SIESTA_OBJS += class_OrbitalDistribution.o \
 	class_TriMat.o \
         m_uuid.o object_debug.o
 
+# Output stuff
+SIESTA_OBJS += init_output.o
+
 # As the classes are based on inputs we force the dependency to
 # alloc
 class_Sparsity.o class_Data1D.o class_Data2D.o class_TriMat.o: alloc.o
@@ -519,6 +522,7 @@ hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o ldau_specs.o listsc.o
 hsparse.o: local_sys.o mneighb.o parallel.o parallelsubs.o precision.o radial.o
 hsparse.o: siesta_options.o sorting.o sparse_matrices.o
 idiag.o: local_sys.o parallel.o
+init_output.o: files.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o chemical.o electrostatic.o ldau_specs.o m_spin.o
 initatom.o: old_atmfuncs.o precision.o pseudopotential.o

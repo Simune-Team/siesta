@@ -185,7 +185,7 @@ subroutine tbt_reinit( sname , slabel )
         ! We allow these line
         if ( line(1:3) == 'fdf' ) then
            if ( in >= count - 1 ) &
-                call die('Missing argument on command line')
+                call die('Missing argument on command line, -fdf')
            in = in + 1
            call get_command_argument(in,line,length)
 
@@ -198,7 +198,7 @@ subroutine tbt_reinit( sname , slabel )
 
         else if ( line(1:1) == 'V' ) then
            if ( in >= count - 1 ) &
-                call die('Missing argument on command line')
+                call die('Missing argument on command line, -V')
            in = in + 1
            call get_command_argument(in,line,length)
            line = cmd_tokenize(line)
@@ -207,7 +207,7 @@ subroutine tbt_reinit( sname , slabel )
 
         else if ( line(1:1) == 'D' ) then
            if ( in >= count - 1 ) &
-                call die('Missing argument on command line')
+                call die('Missing argument on command line, -D')
            in = in + 1
            call get_command_argument(in,line,length)
            line = 'TBT.Directory '//trim(line)
@@ -215,7 +215,7 @@ subroutine tbt_reinit( sname , slabel )
 
         else if ( line(1:12) == 'HS' ) then
            if ( in >= count - 1 ) &
-                call die('Missing argument on command line')
+                call die('Missing argument on command line, -HS')
            in = in + 1
            call get_command_argument(in,line,length)
            line = 'TBT.HS '//trim(line)
@@ -223,7 +223,7 @@ subroutine tbt_reinit( sname , slabel )
 
         else if ( line(1:1) == 'L' ) then
            if ( in >= count - 1 ) &
-                call die('Missing argument on command line')
+                call die('Missing argument on command line, -L')
            in = in + 1
            call get_command_argument(in,line,length)
            line = cmd_tokenize(line)
@@ -232,6 +232,8 @@ subroutine tbt_reinit( sname , slabel )
 
         else if ( line(1:4) == 'help' .or. line(1:1) == 'h' ) then
            write(*,'(a)') 'Help for calling the tight-binding transport code'
+           write(*,'(a)') '  -out <file>'
+           write(*,'(a)') '      Write all output to <file> instead of STDOUT'
            write(*,'(a)') '  -fdf <label>=<value>[:<unit>]'
            write(*,'(a)') '      Set the label to the corresponding value.'
            write(*,'(a)') '  -V <value>:<unit>'

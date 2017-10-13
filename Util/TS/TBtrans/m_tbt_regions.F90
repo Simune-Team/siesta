@@ -111,7 +111,7 @@ contains
     ! The supercell information
     integer, intent(in) :: nsc, isc_off(3,nsc)
 
-    integer :: iEl
+    integer :: iEl, jEl
 
     ! A temporary sparsity pattern
     type(Sparsity) :: sp_tmp
@@ -339,9 +339,11 @@ contains
        ! Step 1. build a unified region of all the following
        !         electrodes!
        call rgn_delete(r_tmp)
-       do i = iEl + 1 , N_Elec
-          call rgn_append(r_tmp,r_oEl_alone(i),r_tmp)
+       do jEl = iEl + 1 , N_Elec
+          call rgn_append(r_tmp, r_oEl_alone(jEl), r_tmp)
        end do
+       ! Speeds up stuff
+       call rgn_sort(r_tmp)
 
        ! First we update the sparsity pattern to remove any connections
        ! between the electrode and the other ones
@@ -505,6 +507,17 @@ contains
        ! electrode region...
        do i = 1 , iEl - 1
           if ( rgn_overlaps(r_aEl(iEl),r_aEl(i)) ) then
+             if ( Node == 0 ) then
+                do jEl = 1 , N_Elec
+                   ! We are dying anyway, so might as well sort to make it easier
+                   call rgn_sort(r_aEl(jEl))
+                   call rgn_print(r_aEl(jEl))
+                end do
+             end if
+#ifdef MPI
+             call MPI_Barrier(MPI_Comm_World, jEl)
+#endif
+
              call die('Electrode regions connect across the device region, &
                   &please increase your device region!')
           end if
