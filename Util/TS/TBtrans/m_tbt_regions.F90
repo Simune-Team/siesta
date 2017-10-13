@@ -47,6 +47,7 @@ module m_tbt_regions
   type(tRgn), allocatable, target, public :: r_aElpD(:) , r_oElpD(:)
 
   ! the device region (the calculated GF region)
+  ! Note that these arrays are pivoted indices
   public :: r_aDev, r_oDev
 
   ! The buffer region, just for completeness
@@ -82,7 +83,6 @@ contains
 
 
     use m_ts_electype
-    use m_ts_method, only : ts_init_regions
     use m_ts_method, only : atom_type, TYP_DEVICE, TYP_BUFFER
 
     use m_ts_sparse, only : ts_Sparsity_Global
@@ -668,6 +668,7 @@ contains
                 call rgn_union(r_tmp,r_oEl(iEl),r_tmp)
              end do
              r_tmp%name = 'Double counted orbitals'
+             call rgn_sort(r_tmp)
              call rgn_print(r_tmp)
           else
              ! find the missing orbitals
@@ -680,6 +681,7 @@ contains
                 call rgn_complement(r_oEl(iEl),r_tmp,r_tmp)
              end do
              r_tmp%name = 'Missing orbitals'
+             call rgn_sort(r_tmp)
              call rgn_print(r_tmp)
           end if
           write(*,'(a,2(tr1,i0))')'Total number of orbitals vs. counted:',no_u,i

@@ -97,8 +97,12 @@ contains
 
   subroutine read_tbt_generic(na_u, lasto)
 
+    use m_region, only: rgn_delete
     use fdf, only: fdf_defined
     use m_ts_method, only: ts_init_regions
+    ! This array is never used used, so we delete it
+    use m_ts_method, only: r_pvt
+
     use m_tbt_diag, only: init_diag
 
     ! The number of atoms
@@ -112,6 +116,8 @@ contains
     else
        call ts_init_regions('TS',na_u,lasto)
     end if
+
+    call rgn_delete(r_pvt)
 
     ! Initialize the diagonalization method.
     call init_diag( )

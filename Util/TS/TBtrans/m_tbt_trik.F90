@@ -39,12 +39,11 @@ module m_tbt_trik
 
   use m_verbosity, only : verbosity
   use m_tbt_hs, only: tTSHS, Volt, IsVolt
-  use m_tbt_regions, only : sp_uc, sp_dev_sc, r_aDev
+  use m_tbt_regions, only : sp_uc, sp_dev_sc
 #ifdef NOT_WORKING
   use m_tbt_regions, only : r_oEl
 #endif
   use m_tbt_regions, only : r_oDev, r_oEl_alone, r_oElpD
-  use m_tbt_regions, only : r_aBuf
   use m_tbt_tri_init, only : ElTri, DevTri
 
   implicit none
