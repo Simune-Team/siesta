@@ -217,9 +217,11 @@ contains
   subroutine rgn_copy(from,to)
     type(tRgn), intent(in) :: from
     type(tRgn), intent(inout) :: to
+    character(len=R_NAME_LEN) :: name
     if ( from%n == 0 ) then
+       name = from%name
        call rgn_delete(to)
-       to%name = from%name
+       to%name = name
     else if ( .not. associated(to%r,from%r) ) then
        call rgn_list(to,from%n,from%r,name=from%name)
        to%sorted = from%sorted
@@ -242,6 +244,7 @@ contains
     end if
     nullify(r%r)
     r%sorted = .false.
+    ! Recursively call delete for all arguments (up to 6 in total)
     if ( present(r1) ) call rgn_delete(r1,r2,r3,r4,r5)
   end subroutine rgn_delete
 
