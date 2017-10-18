@@ -130,6 +130,16 @@ TBTOBJS += m_tbt_kregions.o m_tbt_sparse_helper.o
 # The main program
 TBTOBJS += tbtrans.o
 
+# Extract information of the compiler version used.
+# This is very basic but for intel, gcc, pgi and open64
+# this at least contain the version string of the compiler.
+# Possibly later the used compiler version may be extracted.
+COMPILER_VERSION := $(shell $(FC) --version | sed '/^[ ]*$$/d;q')
+ifeq ($(COMPILER_VERSION),)
+  # Just try and capture the case were it can not figure out anything
+  COMPILER_VERSION := Unknown version
+endif
+
 # The version program
 .PHONY: version.o
 version.o: version
@@ -137,6 +147,7 @@ version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
+		s^COMPILER_VERSION^$(COMPILER_VERSION)^;\
 		s'TBTRANS_VERSION'$$(cat ${<D}/../../../version.info)'g;\
 		s'LIBS'$(COMP_LIBS) $(LIBS)'g;\
 		s'FPPFLAGS'$(FPPFLAGS)'g" $<  > tmp.F90
