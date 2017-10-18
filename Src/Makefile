@@ -280,10 +280,21 @@ essl_lapack.a: Libs/essl_lapack.f
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
 #
 
+# Extract information of the compiler version used.
+# This is very basic but for intel, gcc, pgi and open64
+# this at least contain the version string of the compiler.
+# Possibly later the used compiler version may be extracted.
+COMPILER_VERSION := $(shell $(FC) --version | sed '/^[ ]*$$/d;q')
+ifeq ($(COMPILER_VERSION),)
+  # Just try and capture the case were it can not figure out anything
+  COMPILER_VERSION := Unknown version
+endif
+
 version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
+		s^COMPILER_VERSION^$(COMPILER_VERSION)^;\
 		s'SIESTA_VERSION'$$(cat ${<D}/../version.info)'g;\
 		s'FPPFLAGS'$(FPPFLAGS) $(DEFS)'g" $<  > tmp.F90
 	@awk '{if (length>80) { cur=78; \
