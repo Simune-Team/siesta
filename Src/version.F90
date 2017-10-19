@@ -29,6 +29,8 @@ implicit none
 integer, dimension(3), save  :: num_version = (/0,0,0/)
 character(len=*), parameter :: version_str =  &
 "SIESTA_VERSION"
+character(len=*), parameter :: compiler_version = &
+"COMPILER_VERSION"
 character(len=*), parameter :: siesta_arch= &
 "SIESTA_ARCH"
 character(len=*), parameter :: fflags= &
@@ -41,6 +43,7 @@ character(len=*), parameter :: libs= &
 private
 public :: num_version, version_str
 public :: siesta_arch, fflags, fppflags, libs
+public :: compiler_version
 
 end module version_info
 !================================================================
@@ -55,11 +58,12 @@ subroutine prversion
 use version_info
 implicit none
 
-write(6,'(2a)') "Siesta Version: ", trim(version_str)
-write(6,'(2a)') 'Architecture  : ', trim(siesta_arch)
-write(6,'(2a)') 'Compiler flags: ', trim(fflags)
-write(6,'(2a)') 'PP flags      : ', trim(fppflags)
-write(6,'(2a)') 'Libraries     : ', trim(libs)
+write(6,'(2a)') 'Siesta Version  : ', trim(version_str)
+write(6,'(2a)') 'Architecture    : ', trim(siesta_arch)
+write(6,'(2a)') 'Compiler version: ', trim(compiler_version)
+write(6,'(2a)') 'Compiler flags  : ', trim(fflags)
+write(6,'(2a)') 'PP flags        : ', trim(fppflags)
+write(6,'(2a)') 'Libraries       : ', trim(libs)
 
 #ifdef MPI
 write(6,'(a)') 'PARALLEL version'

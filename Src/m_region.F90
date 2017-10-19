@@ -217,9 +217,11 @@ contains
   subroutine rgn_copy(from,to)
     type(tRgn), intent(in) :: from
     type(tRgn), intent(inout) :: to
+    character(len=R_NAME_LEN) :: name
     if ( from%n == 0 ) then
+       name = from%name
        call rgn_delete(to)
-       to%name = from%name
+       to%name = name
     else if ( .not. associated(to%r,from%r) ) then
        call rgn_list(to,from%n,from%r,name=from%name)
        to%sorted = from%sorted
@@ -242,6 +244,7 @@ contains
     end if
     nullify(r%r)
     r%sorted = .false.
+    ! Recursively call delete for all arguments (up to 6 in total)
     if ( present(r1) ) call rgn_delete(r1,r2,r3,r4,r5)
   end subroutine rgn_delete
 
@@ -259,7 +262,8 @@ contains
   ! hence, deleting one will create a memory leak if
   ! not handled carefully
   subroutine rgn_assoc(lhs,rhs, dealloc)
-    type(tRgn), intent(inout) :: lhs, rhs
+    type(tRgn), intent(inout) :: lhs
+    type(tRgn), intent(in) :: rhs
     ! whether a pre-deallocation of the lhs should occur
     logical, intent(in), optional :: dealloc
     if ( present(dealloc) ) then
@@ -280,34 +284,21 @@ contains
     type(tRgn), intent(inout) :: rout
     integer, intent(in) :: n, list(n)
 
-    integer :: i, ni
-    integer, allocatable :: tmp_r(:)
+    type(tRgn) :: rr
 
-    if ( n == 0 ) then
-       call rgn_copy(r,rout)
-       return
-    end if
+    call rgn_list(rr, n, list)
+    call rgn_sort(rr)
 
-    allocate(tmp_r(r%n))
-    ni = 0
-    do i = 1 , r%n
-       if ( all(r%r(i)/=list(:)) ) then
-          ni = ni + 1
-          tmp_r(ni) = r%r(i)
-       end if
-    end do
-
-    call rgn_list(rout,ni,tmp_r)
-
-    deallocate(tmp_r)
+    call rgn_remove_rgn(r, rr, rout)
+    call rgn_delete(rr)
 
   end subroutine rgn_remove_list
   subroutine rgn_remove_rgn(r,rr,rout)
     type(tRgn), intent(in) :: r
     type(tRgn), intent(in) :: rr
     type(tRgn), intent(inout) :: rout
-    
-    call rgn_remove_list(r,rr%n,rr%r,rout)
+
+    call rgn_complement(rr, r, rout)
 
   end subroutine rgn_remove_rgn
 
@@ -330,10 +321,13 @@ contains
     do while ( i <= r%n )
        if ( r%r(i) < 0 ) then
           r%r(i) = ln + r%r(i) + 1
+          r%sorted = .false.
        else if ( r%r(i) == 0 ) then
           r%r(i) = ln
+          r%sorted = .false.
        else if ( ln < r%r(i) ) then
           r%r(i) = r%r(i) - ln
+          r%sorted = .false.
        else
           i = i + 1
        end if
@@ -990,6 +984,7 @@ contains
     type(tRgn), intent(inout) :: ur
 
     ! ** local variables
+    logical :: sorted 
     integer :: i, it
     type(tRgn) :: sr
     integer, allocatable :: ct(:)
@@ -1001,6 +996,8 @@ contains
        call rgn_copy(r1,ur)
        return
     end if
+
+    sorted = r1%sorted .and. r2%sorted .and. r1%r(r1%n) <= r2%r(1)
 
     allocate(ct(r1%n+r2%n))
 
@@ -1037,6 +1034,8 @@ contains
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
     call rgn_list(ur,it,ct)
+
+    ur%sorted = sorted
 
     deallocate(ct)
 
@@ -1164,6 +1163,7 @@ contains
 
     ! ** local variables
     type(tRgn) :: sr
+    logical :: r2_sorted
     integer :: i, it
     integer, allocatable :: ct(:)
 
@@ -1176,16 +1176,16 @@ contains
        return
     end if
 
+    r2_sorted = r2%sorted
+    
     allocate(ct(r2%n))
 
     ! Having a sorted array will greatly increase performance
     ! at minimal memory cost
     if ( r1%sorted ) then
-       sr%sorted = .true.
-       sr%n = r1%n
-       sr%r => r1%r
+       call rgn_assoc(sr, r1)
     else
-       call rgn_copy(r1,sr)
+       call rgn_copy(r1, sr)
        call rgn_sort(sr)
     end if
 
@@ -1199,10 +1199,17 @@ contains
 
     end do
 
-    if ( .not. r1%sorted ) call rgn_delete(sr)
+    if ( r1%sorted ) then
+       call rgn_nullify(sr)
+    else
+       call rgn_delete(sr)
+    end if
 
     ! Copy the list over
-    call rgn_list(cr,it,ct)
+    call rgn_list(cr, it, ct)
+    ! If r2 was sorted, then certainly it is still,
+    ! we have only removed elements.
+    cr%sorted = r2_sorted
 
     deallocate(ct)
 
@@ -1281,7 +1288,7 @@ contains
   end subroutine rgn_union_complement
 
   ! Easy setup of a consecutive orbital range
-  subroutine rgn_range(r,o1,o2)
+  subroutine rgn_range(r, o1, o2)
     ! The region containing the range [o1;o2]
     type(tRgn), intent(inout) :: r
     ! The limits on the range
@@ -1289,7 +1296,7 @@ contains
     integer :: io
 
     io = abs(o2 - o1) + 1
-    call rgn_init(r,io)
+    call rgn_init(r, io)
 
     if ( o1 <= o2 ) then
        do io = o1 , o2
@@ -1361,6 +1368,7 @@ contains
        r%r(i) = r%r(r%n+1-i)
        r%r(r%n+1-i) = tmp
     end do
+    r%sorted = .false.
   end subroutine rgn_reverse
 
   subroutine rgn_correct_atom(r,na_u,lasto)
@@ -1371,6 +1379,7 @@ contains
     integer, intent(in) :: na_u, lasto(0:na_u)
 
     ! ** local variables
+    logical :: r_sorted
     integer :: a(na_u), i, j, na, no
     character(len=R_NAME_LEN) :: tmp
 
@@ -1390,6 +1399,8 @@ contains
        end if
 
     end do
+
+    r_sorted = r%sorted
 
     ! Count orbital size
     no = 0
@@ -1415,6 +1426,8 @@ contains
           end do
        end do
     end if
+
+    r%sorted = r_sorted
 
   end subroutine rgn_correct_atom
 
@@ -1461,6 +1474,8 @@ contains
        end do
     end if
 
+    or%sorted = ar%sorted
+
   end subroutine rgn_Atom2Orb
 
   subroutine rgn_Orb2Atom(or,na_u,lasto,ar)
@@ -1472,6 +1487,7 @@ contains
     type(tRgn), intent(inout) :: ar
 
     ! ** local variables
+    logical :: or_sorted
     integer :: io, ia, na, a
     integer :: ca(na_u)
     character(len=R_NAME_LEN) :: tmp
@@ -1480,6 +1496,8 @@ contains
        call rgn_delete(ar)
        return
     end if
+
+    or_sorted = or%sorted
 
     ! The maximum number of atoms in the orbital region
     ia = 1
@@ -1496,7 +1514,8 @@ contains
     ! to be sure we just depopulate the region
     ! and populate it with the correct atoms
     tmp = ar%name
-    call rgn_list(ar,na,ca, name = tmp )
+    call rgn_list(ar, na, ca, name = tmp )
+    ar%sorted = or_sorted
 
   end subroutine rgn_Orb2Atom
 

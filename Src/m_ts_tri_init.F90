@@ -508,7 +508,7 @@ contains
     end do
 
 
-    do i = 1, N_Elec
+    do iEl = 1, N_Elec
        
        call rgn_copy(Elecs(iEl)%o_inD, start)
        if ( orb_atom == 2 ) then
@@ -519,8 +519,8 @@ contains
 
        end if
 
-       fmethod = trim(corb)//'+CM+'//trim(Elecs(i)%name)
-       if ( IONode ) write(*,fmt) trim(corb),'CM+'//trim(Elecs(i)%name)
+       fmethod = trim(corb)//'+CM+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'CM+'//trim(Elecs(iEl)%name)
        call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = start)
        if ( orb_atom == 1 ) then
           call tri(r_tmp)
@@ -529,8 +529,8 @@ contains
           call tri(r_El)
        end if
 
-       fmethod = trim(corb)//'+rev-CM+'//trim(Elecs(i)%name)
-       if ( IONode ) write(*,fmt) trim(corb),'rev-CM+'//trim(Elecs(i)%name)
+       fmethod = trim(corb)//'+rev-CM+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-CM+'//trim(Elecs(iEl)%name)
        call rgn_reverse(r_tmp)
        if ( orb_atom == 1 ) then
           call tri(r_tmp)
@@ -539,8 +539,8 @@ contains
           call tri(r_El)
        end if
 
-       fmethod = trim(corb)//'+CM+priority+'//trim(Elecs(i)%name)
-       if ( IONode ) write(*,fmt) trim(corb),'CM+priority+'//trim(Elecs(i)%name)
+       fmethod = trim(corb)//'+CM+priority+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'CM+priority+'//trim(Elecs(iEl)%name)
        call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = start, &
             priority = priority%r)
        if ( orb_atom == 1 ) then
@@ -550,8 +550,8 @@ contains
           call tri(r_El)
        end if
 
-       fmethod = trim(corb)//'+rev-CM+priority+'//trim(Elecs(i)%name)
-       if ( IONode ) write(*,fmt) trim(corb),'rev-CM+priority+'//trim(Elecs(i)%name)
+       fmethod = trim(corb)//'+rev-CM+priority+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-CM+priority+'//trim(Elecs(iEl)%name)
        call rgn_reverse(r_tmp)
        if ( orb_atom == 1 ) then
           call tri(r_tmp)
@@ -560,8 +560,8 @@ contains
           call tri(r_El)
        end if
 
-       fmethod = trim(corb)//'+PCG+'//trim(Elecs(i)%name)
-       if ( IONode ) write(*,fmt) trim(corb),'PCG+'//trim(Elecs(i)%name)
+       fmethod = trim(corb)//'+PCG+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'PCG+'//trim(Elecs(iEl)%name)
        call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full, start = start)
        if ( orb_atom == 1 ) then
           call tri(r_tmp)
@@ -570,8 +570,8 @@ contains
           call tri(r_El)
        end if
 
-       fmethod = trim(corb)//'+rev-PCG+'//trim(Elecs(i)%name)
-       if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+'//trim(Elecs(i)%name)
+       fmethod = trim(corb)//'+rev-PCG+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+'//trim(Elecs(iEl)%name)
        call rgn_reverse(r_tmp)
        if ( orb_atom == 1 ) then
           call tri(r_tmp)
@@ -580,8 +580,8 @@ contains
           call tri(r_El)
        end if
 
-       fmethod = trim(corb)//'+PCG+priority+'//trim(Elecs(i)%name)
-       if ( IONode ) write(*,fmt) trim(corb),'PCG+priority+'//trim(Elecs(i)%name)
+       fmethod = trim(corb)//'+PCG+priority+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'PCG+priority+'//trim(Elecs(iEl)%name)
        call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full, start = start, priority = priority%r)
        if ( orb_atom == 1 ) then
           call tri(r_tmp)
@@ -590,8 +590,8 @@ contains
           call tri(r_El)
        end if
 
-       fmethod = trim(corb)//'+rev-PCG+priority+'//trim(Elecs(i)%name)
-       if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+priority+'//trim(Elecs(i)%name)
+       fmethod = trim(corb)//'+rev-PCG+priority+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+priority+'//trim(Elecs(iEl)%name)
        call rgn_reverse(r_tmp)
        if ( orb_atom == 1 ) then
           call tri(r_tmp)

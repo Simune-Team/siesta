@@ -146,22 +146,16 @@ contains
 
     end if
 
-    ! Create the calculation region
-    call rgn_range(r_aC,1,na_u)
-    call rgn_complement(r_aBuf,r_aC,r_tmp)
-    call rgn_copy(r_tmp,r_aC)
-    call rgn_delete(r_tmp)
-
-    ! Sort the regions (faster look-ups)
+    ! Sort the atoms
     call rgn_sort(r_aBuf)
-    call rgn_sort(r_aC)
-    
+
+    ! Create the calculation region
+    call rgn_range(r_aC, 1, na_u)
+    call rgn_complement(r_aBuf, r_aC, r_aC)
+
     ! Convert atom regions to orbital regions
     call rgn_Atom2Orb(r_aBuf,na_u,lasto,r_oBuf)
     call rgn_Atom2Orb(r_aC,na_u,lasto,r_oC)
-    ! Just tell them that they are sorted (they MUST be)
-    call rgn_sort(r_oBuf)
-    call rgn_sort(r_oC)
 
     ! Update counting buffers
     na_Buf = r_aBuf%n

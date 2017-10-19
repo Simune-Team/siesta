@@ -362,9 +362,15 @@ contains
     integer :: prec_DOS, prec_T, prec_Teig, prec_J
     type(OrbitalDistribution) :: fdit
     real(dp), allocatable :: r2(:,:)
+    type(tRgn) :: a_Dev_sort
 #ifdef MPI
     integer :: MPIerror
 #endif
+
+    ! We have to sort the device atoms.
+    ! We however, know that a_Buf *is* sorted.
+    call rgn_copy(a_Dev, a_Dev_sort)
+    call rgn_sort(a_Dev_sort)
 
     ! In case the user thinks the double precision
     ! is too much
@@ -393,7 +399,7 @@ contains
 
        dic = ('no_u'.kv. TSHS%no_u) // ('na_u'.kv. TSHS%na_u ) &
             // ('no_d'.kv. r%n ) // ('nkpt'.kv. nkpt )
-       dic = dic // ('na_d'.kv. a_Dev%n)
+       dic = dic // ('na_d'.kv. a_Dev_sort%n)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('na_b'.kv. a_Buf%n)
        end if
@@ -411,7 +417,7 @@ contains
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
             ('pivot'.kvp. r%r )
-       dic = dic // ('xa'.kvp. TSHS%xa) // ('a_dev'.kvp.a_Dev%r )
+       dic = dic // ('xa'.kvp. TSHS%xa) // ('a_dev'.kvp.a_Dev_sort%r )
        dic = dic // ('nsc'.kvp. TSHS%nsc)
        if ( a_Buf%n > 0 )then
           dic = dic // ('a_buf'.kvp.a_Buf%r )
@@ -463,8 +469,6 @@ contains
           call die('Currently the '//trim(fname)//' file exists, &
                &we do not currently implement a continuation scheme.')
           
-          return
-
        end if
 
        ! We complain to the user about it and DIE
@@ -491,7 +495,7 @@ contains
     call ncdf_def_dim(ncdf,'nkpt',nkpt)
     call ncdf_def_dim(ncdf,'xyz',3)
     call ncdf_def_dim(ncdf,'one',1)
-    call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
+    call ncdf_def_dim(ncdf,'na_d',a_Dev_sort%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
     !call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED) ! Parallel does not work
     call ncdf_def_dim(ncdf,'ne',NE)
@@ -604,10 +608,13 @@ contains
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
-    call ncdf_put_var(ncdf,'a_dev',a_Dev%r)
+    call ncdf_put_var(ncdf,'a_dev',a_Dev_sort%r)
     if ( a_Buf%n > 0 )then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
     end if
+
+    ! We are now done with a_Dev_sort
+    call rgn_delete(a_Dev_sort)
 
     ! Save all k-points
     ! Even though they are in an unlimited dimension,

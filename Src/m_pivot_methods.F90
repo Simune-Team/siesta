@@ -835,6 +835,8 @@ contains
 
     ! Ensure it is clean
     call rgn_delete(pvt)
+    call rgn_init(pvt, sub%n)
+    pvt%n = 0
 
     ! Find a set of pseudo-peripherals using the GPS algorithm
     call pseudo_peripheral(D_LOW,n,nnzs,n_col,l_ptr,l_col,sub,lvl, &
@@ -857,10 +859,10 @@ contains
        end if
 #endif
        if ( ipvt%n == 1 ) then
-          call rgn_append(pvt,ipvt,pvt)
+          if ( .not. rgn_push(pvt, ipvt) ) call die('GPS push -- 1')
        else
           call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,ipvt,r)
-          call rgn_append(pvt,r,pvt)
+          if ( .not. rgn_push(pvt, r) ) call die('GPS push -- 2')
        end if
     end do
 
@@ -967,8 +969,7 @@ contains
           ! If the level depth is larger than the current start over 
           ! from that index (the last added element *must* be
           ! the largest level)
-          if ( (width2 < width .and. depth2 >= depth2 ) .or. &
-               depth2 > depth ) then
+          if ( width2 < width .or. depth2 > depth ) then
 #ifdef PVT_DEBUG
              write(*,*)'   changing v set: 1:',i
 #endif
@@ -1312,10 +1313,13 @@ contains
 
     call delete_level_structure(ls)
 
+    call rgn_init(all, n)
+    all%n = 0
+
     if ( present(skip) ) then
        
        ! Speed up searches in the skipped elements
-       call rgn_copy(skip, all)
+       if ( .not. rgn_push(all, skip) ) call die('Error in push LS -- 0')
        call rgn_sort(all)
        
     end if
@@ -1365,7 +1369,7 @@ contains
        end if
 
        ! Ensure we have all elements in one array, to easy skip
-       call rgn_append(all, queue, all)
+       if ( .not. rgn_push(all, queue) ) call die('Error in push LS -- 1')
        call rgn_sort(all)
 
        ! Copy to the current level
@@ -1955,7 +1959,7 @@ contains
 
     ! local variables
     type(tRgn) :: s
-    integer :: i, idx, etr
+    integer :: i, idx, etr, nsub
     logical :: suc
 
     if ( sub%n <= 1 ) then
@@ -1966,15 +1970,18 @@ contains
     ! Make copy of the sub, this is required because we can then
     ! easily POP the elements
     call rgn_copy(sub,s)
+
+    ! This enables sub and sub_sort to be the same
+    nsub = sub%n
     
     ! initialize the pivoting array
-    call rgn_init(sub_sort,sub%n)
+    call rgn_init(sub_sort,nsub)
     sub_sort%n = 0
 
-    do i = 1 , sub%n
+    do i = 1 , nsub
 
        idx = idx_degree(method,n,nnzs,n_col,l_ptr,l_col,s, priority = priority)
-       etr = rgn_pop(s,idx)
+       etr = rgn_pop(s, idx)
        suc = rgn_push(sub_sort,etr)
        if ( etr /= sub_sort%r(sub_sort%n) ) &
             call die('sort_degree: Error in popping')
@@ -2013,17 +2020,21 @@ contains
     ! prepare lists used for the algorithm
     call rgn_init(Q,sub%n)
     Q%n = 0
+    
     ! When we have a start immediately add the starting elements
     if ( present(start) ) then
-       if ( .not. rgn_push(Q, start) ) call die('Error in CM -- 1')
+       ! Sort the starting elements according to the lowest degree
+       call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,start,pvtQ, priority = priority)
+       if ( .not. rgn_push(Q, pvtQ) ) call die('Error in CM -- 1')
     end if
 
     ! initialize the pivoting array
-    call rgn_init(pvt,sub%n)
+    call rgn_init(pvt, sub%n)
     pvt%n = 0
+    
     ! the pivoting array + the queue array, this ensures that
     ! we do not back-track already processed elements
-    call rgn_init(pvtQ,n)
+    call rgn_init(pvtQ, n)
     pvtQ%n = 0
     if ( .not. rgn_push(pvtQ, Q) ) call die('Error in CM -- 2')
     
@@ -2034,9 +2045,6 @@ contains
           suc = rgn_push(pvtQ,i)
        end if
     end do
-
-    ! initialize connectivity region
-    call rgn_init(con,sub%n)
 
     do while ( pvt%n < sub%n )
 
@@ -2061,29 +2069,23 @@ contains
        etr = rgn_pop(Q)
 
        ! 2. Add it to the pivoting table
-       suc = rgn_push(pvt,etr)
-       
+       if ( .not. rgn_push(pvt, etr) ) call die('Error in CM push -- 1')
+
+       ! Make room in the connectivity graph
+       call rgn_init(con, sub%n - pvt%n)
+
        ! 3. Create the connectivity graph from idx (this will remove "back" 
        !    connected entries, hence no dublicates needs to be taken into 
        !    account.)
        call graph_connect(etr,n,nnzs,n_col,l_ptr,l_col,con, skip = pvtQ )
 
-       ! 4. Add all connected entries to the queue in increasing order
-       !    of their degree (from lowest to highest)
-       do while ( con%n > 0 )
+       ! 4. Sort the connecting elements from lowest degree to highest degree
+       call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,con,con, priority = priority)
 
-          ! Get index with lowest degree
-          idx = idx_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,con, priority = priority )
-          etr = con%r(idx) ! the actual entry
-          i = rgn_pop(con,idx) ! remove entry in con
-          if ( i /= etr ) call die('Erroneous popping of the connectivity &
-               &graph.')
+       ! 5. Add all connected entries to the queue in increasing order
+       if ( .not. rgn_push(Q, con) ) call die('Error in CM push -- 2')
+       if ( .not. rgn_push(pvtQ, con) ) call die('Error in CM push -- 3')
 
-          suc = rgn_push(Q,etr)
-          suc = rgn_push(pvtQ,etr)
-
-       end do
-       
     end do
 
     call rgn_delete(Q,con,pvtQ)

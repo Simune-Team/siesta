@@ -169,6 +169,8 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_evolve.o cranknic_evolk.o cranknic_evolg.o sankey_change_basis.o m_iotddft.o \
 	m_matdiag.o m_matswinvers.o iotdxv.o  m_inversemm.o
 
+OBJS += init_output.o
+
 # Diagonalization algorithm
 OBJS += diag_option.o diag.o
 
@@ -415,12 +417,23 @@ linalg.a:
 	@false
 
 
+# Extract information of the compiler version used.
+# This is very basic but for intel, gcc, pgi and open64
+# this at least contain the version string of the compiler.
+# Possibly later the used compiler version may be extracted.
+COMPILER_VERSION := $(shell $(FC) --version | sed '/^[ ]*$$/d;q')
+ifeq ($(COMPILER_VERSION),)
+  # Just try and capture the case were it can not figure out anything
+  COMPILER_VERSION := Unknown version
+endif
+
 .PHONY: version.o
 version.o: version
 version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
+		s^COMPILER_VERSION^$(COMPILER_VERSION)^;\
 		s'SIESTA_VERSION'$$(cat ${<D}/../version.info)'g;\
 		s'LIBS'$(COMP_LIBS) $(LIBS)'g;\
 		s'FPPFLAGS'$(FPPFLAGS)'g" $<  > tmp.F90
@@ -748,6 +761,7 @@ hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o ldau_specs.o listsc.o
 hsparse.o: mneighb.o parallel.o parallelsubs.o precision.o radial.o
 hsparse.o: siesta_options.o sorting.o sparse_matrices.o sys.o
 idiag.o: parallel.o sys.o
+init_output.o: files.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o chemical.o electrostatic.o ldau_specs.o m_spin.o
 initatom.o: old_atmfuncs.o precision.o pseudopotential.o

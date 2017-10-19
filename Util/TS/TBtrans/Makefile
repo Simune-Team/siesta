@@ -63,6 +63,9 @@ SIESTA_OBJS += class_OrbitalDistribution.o \
 	class_TriMat.o \
         m_uuid.o object_debug.o
 
+# Output stuff
+SIESTA_OBJS += init_output.o
+
 # As the classes are based on inputs we force the dependency to
 # alloc
 class_Sparsity.o class_Data1D.o class_Data2D.o class_TriMat.o: alloc.o
@@ -127,6 +130,16 @@ TBTOBJS += m_tbt_kregions.o m_tbt_sparse_helper.o
 # The main program
 TBTOBJS += tbtrans.o
 
+# Extract information of the compiler version used.
+# This is very basic but for intel, gcc, pgi and open64
+# this at least contain the version string of the compiler.
+# Possibly later the used compiler version may be extracted.
+COMPILER_VERSION := $(shell $(FC) --version | sed '/^[ ]*$$/d;q')
+ifeq ($(COMPILER_VERSION),)
+  # Just try and capture the case were it can not figure out anything
+  COMPILER_VERSION := Unknown version
+endif
+
 # The version program
 .PHONY: version.o
 version.o: version
@@ -134,6 +147,7 @@ version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
+		s^COMPILER_VERSION^$(COMPILER_VERSION)^;\
 		s'TBTRANS_VERSION'$$(cat ${<D}/../../../version.info)'g;\
 		s'LIBS'$(COMP_LIBS) $(LIBS)'g;\
 		s'FPPFLAGS'$(FPPFLAGS)'g" $<  > tmp.F90
@@ -519,6 +533,7 @@ hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o ldau_specs.o listsc.o
 hsparse.o: local_sys.o mneighb.o parallel.o parallelsubs.o precision.o radial.o
 hsparse.o: siesta_options.o sorting.o sparse_matrices.o
 idiag.o: local_sys.o parallel.o
+init_output.o: files.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o chemical.o electrostatic.o ldau_specs.o m_spin.o
 initatom.o: old_atmfuncs.o precision.o pseudopotential.o
