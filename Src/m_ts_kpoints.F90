@@ -124,7 +124,7 @@ contains
             ts_kscell(2,i) = fdf_bintegers(pline,2)
             ts_kscell(3,i) = fdf_bintegers(pline,3)
             if ( fdf_bnvalues(pline) > 3 ) then
-              ts_kdispl(i) = fdf_bvalues(pline,4)
+              ts_kdispl(i) = mod(fdf_bvalues(pline,4), 1._dp)
             else
               ts_kdispl(i) = 0._dp
             end if

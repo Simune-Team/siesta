@@ -67,7 +67,7 @@ C Internal variables
           kscell(2,i) = fdf_bintegers(pline,2)
           kscell(3,i) = fdf_bintegers(pline,3)
           if ( fdf_bnvalues(pline) > 3 ) then
-             displ(i) = fdf_bvalues(pline,4)
+             displ(i) = mod(fdf_bvalues(pline,4), 1._dp)
           else
              displ(i) = 0._dp
           end if

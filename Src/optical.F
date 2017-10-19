@@ -129,8 +129,7 @@ C     Internal variables
       character(len=12)             :: option
       character(len=1)              :: matrix
 
-      external          io_assign, io_close,
-     &                  volcel
+      external          io_assign, io_close, volcel
 
 #ifdef DEBUG
       call write_debug( '  PRE optical' )
@@ -597,7 +596,7 @@ C       Closing loop on k_points
 C Output results
       if (Node.eq.0) then
         call io_assign(iu)
-        filename = trim(slabel)//'.EPSIMG'
+        filename = trim(slabel) // '.EPSIMG'
         open(iu,file=filename, status='unknown')
         nwf = int((wmax-wmin)/dw) + 1
         do ispin = 1,nspin

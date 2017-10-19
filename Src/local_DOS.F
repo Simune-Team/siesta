@@ -83,7 +83,7 @@
      .                occtol, dummy_iscf, neigwanted)
 
           !Find the LDOS in the real space mesh
-          filesOut%rho = trim(slabel)//'.LDOS'
+          filesOut%rho = trim(slabel) // '.LDOS'
           g2max = g2cut
           call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 

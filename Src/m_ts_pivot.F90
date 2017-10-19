@@ -75,7 +75,7 @@ contains
     ! The temporary sparsity
     logical :: lextend
     type(Sparsity) :: tmp_Sp
-    character(len=len(pvt_str)) :: str_tmp
+    character(len=len(pvt_str)) :: str_tmp, from_elec
 
     integer :: i, iEl, n, n_pvt
     
@@ -123,26 +123,37 @@ contains
     else if ( str_contain(pvt_str, 'fan') ) then
        pvt_option = 1
     end if
-    
-    ! Electrode orbitals in the device
-    call rgn_copy(Elecs(1)%o_inD,r_Els)
-    do i = 2 , N_Elec
-       call rgn_append(r_Els,Elecs(i)%o_inD,r_Els)
+
+    ! If the electrode is specified, then add it
+    from_elec = ' '
+    do i = 1, N_Elec
+       if ( str_contain(pvt_str, '+' // trim(Elecs(i)%name), &
+            delete=.false.) ) then
+          from_elec = trim(from_elec) // '+' // trim(Elecs(i)%name)
+          ! Electrode orbitals in the device
+          call rgn_append(r_Els, Elecs(i)%o_inD, r_Els)
+       end if
     end do
+    if ( rgn_size(r_Els) == 0 ) then
+       from_elec = '+' // trim(Elecs(1)%name)
+       call rgn_copy(Elecs(1)%o_inD, r_Els)
+    end if
 
     pvt_orb = str_contain(pvt_str, 'orb')
     ! variable to check for single orbital cases
-    do i = 1 , na_u
-       orb_1 = lasto(i) - lasto(i-1) == 1
-       if ( .not. orb_1 ) exit
-    end do
-    if ( pvt_orb ) then
+    orb_1 = na_u == lasto(na_u)
+    
+    if ( .not. pvt_orb ) then
+       ! Simply pop the atom keyword
+       pvt_orb = str_contain(pvt_str,'atom') ! just to pop 'atom'
+       
        ! In case we have a tight-binding scheme with 1 orbital
        ! per atom, no need to act on orbital sparsity
        ! pattern (they are equivalent).
-       pvt_orb = .not. orb_1
+       pvt_orb = orb_1
+
     end if
-    
+
     if ( pvt_orb ) then
        str_tmp = 'orb'
 
@@ -160,18 +171,10 @@ contains
        pvt_orb = str_contain(pvt_str,'atom') ! just to pop 'atom'
        pvt_orb = .false. ! it isn't orbital sorted
 
-       ! We are doing atomic comparison
-       ! But if we only have one orbital, we might as well
-       ! act in the orbital as though it was atomic
-       if ( orb_1 ) then
-          tmp_Sp = sp
-       else
-          call rgn_orb2atom(r_Els,na_u,lasto,r_tmp)
-          call rgn_copy(r_tmp,r_Els)
-          call rgn_delete(r_tmp)
-          call SpOrb_to_SpAtom(dit,sp,na_u,lasto,tmp_Sp)
-       end if
-
+       call rgn_orb2atom(r_Els,na_u,lasto,r_tmp)
+       call rgn_copy(r_tmp,r_Els)
+       call rgn_delete(r_tmp)
+       call SpOrb_to_SpAtom(dit,sp,na_u,lasto,tmp_Sp)
        ! *** the distribution will always
        !     be bigger than for the atoms, hence we need
        !     not re-construct it
@@ -206,82 +209,35 @@ contains
        ! to an 'orb+none'
        call rgn_copy(r_pvt, c_pvt)
        pvt_orb = .true.
+
+       ! We have to have the order of largest string to be able to distinguish them.
        
-    else if ( str_contain(pvt_str,'CM') ) then
-       str_tmp = trim(str_tmp)//'+CM'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_CUTHILL_MCKEE, c_pvt, start = r_Els)
-
-    else if ( str_contain(pvt_str,'CM+priority') ) then
-       str_tmp = trim(str_tmp)//'+CM+priority'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_CUTHILL_MCKEE, c_pvt, start = r_Els, &
-            priority = priority%r )
-
-    else if ( str_contain(pvt_str,'rev-CM') ) then
-       str_tmp = trim(str_tmp)//'+rev-CM'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_CUTHILL_MCKEE, c_pvt, start = r_Els)
-
     else if ( str_contain(pvt_str,'rev-CM+priority') ) then
-       str_tmp = trim(str_tmp)//'+rev-CM+priority'
+       str_tmp = trim(str_tmp)//'+rev-CM+priority' // trim(from_elec)
 
        call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_CUTHILL_MCKEE, c_pvt, start = r_Els , &
             priority = priority%r )
 
-    else if ( str_contain(pvt_str,'GPS') ) then
-       str_tmp = trim(str_tmp)//'+GPS'
+    else if ( str_contain(pvt_str,'rev-CM') ) then
+       str_tmp = trim(str_tmp)//'+rev-CM' // trim(from_elec)
 
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_GPS, c_pvt)
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_CUTHILL_MCKEE, c_pvt, start = r_Els)
 
-    else if ( str_contain(pvt_str,'GPS+priority') ) then
-       str_tmp = trim(str_tmp)//'+GPS+priority'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_GPS, c_pvt, &
+    else if ( str_contain(pvt_str,'CM+priority') ) then
+       str_tmp = trim(str_tmp)//'+CM+priority' // trim(from_elec)
+       
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_CUTHILL_MCKEE, c_pvt, start = r_Els, &
             priority = priority%r )
 
-    else if ( str_contain(pvt_str,'rev-GPS') ) then
-       str_tmp = trim(str_tmp)//'+rev-GPS'
+    else if ( str_contain(pvt_str,'CM') ) then
+       str_tmp = trim(str_tmp)//'+CM' // trim(from_elec)
 
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_GPS, c_pvt)
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_CUTHILL_MCKEE, c_pvt, start = r_Els)
 
-    else if ( str_contain(pvt_str,'rev-GPS+priority') ) then
-       str_tmp = trim(str_tmp)//'+rev-GPS+priority'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_GPS, c_pvt, &
-            priority = priority%r )
-
-    else if ( str_contain(pvt_str,'PCG') ) then
-       str_tmp = trim(str_tmp)//'+PCG'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_PCG, c_pvt)
-
-    else if ( str_contain(pvt_str,'PCG+priority') ) then
-       str_tmp = trim(str_tmp)//'+PCG+priority'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_PCG, c_pvt, &
-            priority = priority%r )
-
-    else if ( str_contain(pvt_str,'rev-PCG') ) then
-       str_tmp = trim(str_tmp)//'+rev-PCG'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_PCG, c_pvt)
-
-    else if ( str_contain(pvt_str,'rev-PCG+priority') ) then
-       str_tmp = trim(str_tmp)//'+rev-PCG+priority'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_PCG, c_pvt, &
-            priority = priority%r )
-
-    else if ( str_contain(pvt_str,'GGPS') ) then
-       str_tmp = trim(str_tmp)//'+GGPS'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_GGPS, c_pvt)
-
-    else if ( str_contain(pvt_str,'GGPS+priority') ) then
-       str_tmp = trim(str_tmp)//'+GGPS+priority'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_GGPS, c_pvt, &
+    else if ( str_contain(pvt_str,'rev-GGPS+priority') ) then
+       str_tmp = trim(str_tmp)//'+rev-GGPS+priority'
+       
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_GGPS, c_pvt, &
             priority = priority%r )
 
     else if ( str_contain(pvt_str,'rev-GGPS') ) then
@@ -289,24 +245,74 @@ contains
 
        call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_GGPS, c_pvt)
 
-    else if ( str_contain(pvt_str,'rev-GGPS+priority') ) then
-       str_tmp = trim(str_tmp)//'+rev-GGPS+priority'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_GGPS, c_pvt, &
+    else if ( str_contain(pvt_str,'GGPS+priority') ) then
+       str_tmp = trim(str_tmp)//'+GGPS+priority'
+       
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_GGPS, c_pvt, &
             priority = priority%r )
+       
+    else if ( str_contain(pvt_str,'GGPS') ) then
+       str_tmp = trim(str_tmp)//'+GGPS'
+       
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_GGPS, c_pvt)
+
+    else if ( str_contain(pvt_str,'rev-GPS+priority') ) then
+       str_tmp = trim(str_tmp)//'+rev-GPS+priority'
+       
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_GPS, c_pvt, &
+            priority = priority%r )
+       
+    else if ( str_contain(pvt_str,'rev-GPS') ) then
+       str_tmp = trim(str_tmp)//'+rev-GPS'
+       
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_GPS, c_pvt)
+       
+    else if ( str_contain(pvt_str,'GPS+priority') ) then
+       str_tmp = trim(str_tmp)//'+GPS+priority'
+       
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_GPS, c_pvt, &
+            priority = priority%r )
+       
+    else if ( str_contain(pvt_str,'GPS') ) then
+       str_tmp = trim(str_tmp)//'+GPS'
+       
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_GPS, c_pvt)
+
+    else if ( str_contain(pvt_str,'rev-PCG+priority') ) then
+       str_tmp = trim(str_tmp)//'+rev-PCG+priority' // trim(from_elec)
+
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_PCG, c_pvt, &
+            start = r_Els, priority = priority%r )
+
+    else if ( str_contain(pvt_str,'rev-PCG') ) then
+       str_tmp = trim(str_tmp)//'+rev-PCG' // trim(from_elec)
+       
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_PCG, c_pvt, start = r_Els)
+       
+    else if ( str_contain(pvt_str,'PCG+priority') ) then
+       str_tmp = trim(str_tmp)//'+PCG+priority' // trim(from_elec)
+
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_PCG, c_pvt, &
+            start = r_Els, priority = priority%r )
+
+    else if ( str_contain(pvt_str,'PCG') ) then
+       str_tmp = trim(str_tmp)//'+PCG' // trim(from_elec)
+
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_PCG, c_pvt, start = r_Els)
 
 #ifdef SIESTA__METIS
-    else if ( str_contain(pvt_str,'metis') ) then
-       str_tmp = trim(str_tmp)//'+metis'
-
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS, c_pvt)
-
     else if ( str_contain(pvt_str,'metis+priority') ) then
        str_tmp = trim(str_tmp)//'+metis+priority'
 
        call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS, c_pvt, &
             priority = priority%r)
+    else if ( str_contain(pvt_str,'metis') ) then
+       str_tmp = trim(str_tmp)//'+metis'
+
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS, c_pvt)
+
 #endif
+
 
     else ! the user *must* have supplied an electrode       
 
@@ -901,10 +907,11 @@ contains
 
   contains
 
-    function str_contain(str,name) result(contain)
+    function str_contain(str,name, delete) result(contain)
       use m_char, only : lcase
       character(len=*), intent(inout) :: str
       character(len=*), intent(in) :: name
+      logical, intent(in), optional :: delete
       logical :: contain
 
       character(len=len(str)) :: lstr
@@ -920,6 +927,9 @@ contains
       ! Get the index of the str
       i = index(lstr,trim(lname))
       contain = i > 0
+      if ( present(delete) ) then
+         if ( .not. delete ) return
+      end if
       if ( contain ) then
          str(i:i+len_trim(name)-1) = ' '
       end if

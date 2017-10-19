@@ -385,8 +385,6 @@ C
      .              S(maxnh), xij(3,maxnh), occtol
       logical, intent(in) :: getPSI
 
-
-
       external ::       io_assign, io_close, memory
 
 
@@ -608,7 +606,7 @@ C Close output file
       endif
 
 C Free local arrays
-      call de_alloc( aux, 'aux', 'band' )
+      call de_alloc( aux, 'aux', 'bands' )
 
 C This is the only exit point
   999 continue

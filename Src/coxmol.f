@@ -19,6 +19,7 @@ c ******************************************************************
       use precision,      only: dp
       use periodic_table, only: symbol
       use files,          only: slabel, label_length
+      use units, only : Ang
 
       implicit          none
 
@@ -32,13 +33,10 @@ c Internal variables and arrays
  
       character(len=label_length+4) :: fname
       integer                       :: unit, i, ia
-      real(dp)                      :: Ang
 
-      Ang  = 1.d0 / 0.529177d0
 
 c Find file name
-
-      fname = trim(slabel)//'.xyz'
+      fname = trim(slabel) // '.xyz'
 
       write(6,'(/,2a)')'coxmol: Writing XMOL coordinates into file ',
      .                  fname
