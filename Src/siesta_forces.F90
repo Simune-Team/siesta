@@ -136,7 +136,6 @@ contains
 
     ! For initwf
     integer :: istpp
-    real(dp) :: EF7
 
 #ifdef SIESTA__FLOOK
     ! len=24 from m_mixing.F90
@@ -578,9 +577,9 @@ contains
     ! consequent TDDFT run.
     if ( writetdwf ) then
        istpp = 0
-       call initwf(no_s, spin%Grid, spin%Grid, no_l, maxnh, no_u, qtot, &
-            gamma, indxuo, nkpnt, kpoint, kweight, &
-            no_u, EF7, istpp,totime)
+!       call initwf(no_s, spin%Grid, spin%Grid, no_l, maxnh, no_u, qtot, &
+!            gamma, indxuo, nkpnt, kpoint, kweight, &
+!            no_u, EF7, istpp,totime)
     end if
     
 #ifdef TRANSIESTA

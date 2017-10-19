@@ -4,8 +4,8 @@ SystemLabel TDDFT_h2o
 
 ################################################################
 
-xc.functional GGA
-xc.authors PBE
+xc.functional LDA
+xc.authors CA
 Atom.Ignore.Ghosts
 
 MeshCutoff 150.0 Ry
@@ -19,9 +19,9 @@ DM.NumberPulay 3
 ################################################################
 
 
-MD.TypeOfRun     ElectronDynamics
+MD.TypeOfRun         TDED 
 MD.FinalTimeStep 1
-MD.LengthTimeStep   5.00000000E-03 fs
+TDED.TimeStep   1.00000000E-03 fs
 TDED.Nsteps 5
 
 ###############################################################

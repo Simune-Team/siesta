@@ -59,6 +59,7 @@
       use m_energies,        only: Emad
       use write_subs
       use m_ioxv,            only: ioxv
+      use m_iotdxv,          only: iotdxv
       use m_steps
       use parallel,          only: IOnode, node, nodes, BlockSize
       use m_spin,            only: spin, qs
@@ -244,6 +245,10 @@ CC RC  OffSpOrb
       ! it is there at the end for those users who rely on it
       call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &           foundxv)
+      ! Write TDXV file for TDDFT restart.
+      if(writetdwf .or. td_elec_dyn) then
+      call iotdxv('write',ucell,vcell,na_u,isa,iza,xa,va,foundxv)
+      end if  
 
 !     Actualize things if variable cell 
       auxchanged = .false.
