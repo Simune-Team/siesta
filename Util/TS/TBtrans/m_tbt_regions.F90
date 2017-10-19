@@ -44,7 +44,7 @@ module m_tbt_regions
   ! and down to the central region (without any central
   ! region overlap)
   type(tRgn), allocatable, target, public :: r_aEl(:)   , r_oEl(:)
-  type(tRgn), allocatable, target, public :: r_aElpD(:) , r_oElpD(:)
+  type(tRgn), allocatable, target, public :: r_oElpD(:)
 
   ! the device region (the calculated GF region)
   ! Note that these arrays are pivoted indices
@@ -258,6 +258,7 @@ contains
        ! folds supercell orbitals to the correct atoms)
        call rgn_Orb2Atom(r_tmp,na_u,lasto,r_oDev)
        call rgn_delete(r_tmp)
+       
        ! Remove buffer atoms (in case the electrode is too small)
        if ( r_aBuf%n > 0 ) then
           call rgn_complement(r_aBuf,r_oDev,r_oDev)
@@ -297,7 +298,7 @@ contains
 
     ! Allocate the different regions
     allocate(r_aEl(N_Elec),r_oEl(N_Elec))
-    allocate(r_aElpD(N_Elec),r_oElpD(N_Elec))
+    allocate(r_oElpD(N_Elec))
 
     do iEl = 1 , N_Elec
 
@@ -483,9 +484,6 @@ contains
                &region. Please expand your device region.')
        end if
 
-       ! Create the atom equivalent regions
-       call rgn_Orb2Atom(r_oElpD(iEl) , na_u, lasto, r_aElpD(iEl) )
-
     end do
 
     ! Possibly deleting it
@@ -495,11 +493,10 @@ contains
 #ifdef MPI
        i = mod(iEl-1,Nodes)
        ! Bcast the region
-       call rgn_MPI_Bcast(r_oEl(iEl),i)
        call rgn_MPI_Bcast(r_aEl(iEl),i)
+       call rgn_MPI_Bcast(r_oEl(iEl),i)
        call rgn_MPI_Bcast(Elecs(iEl)%o_inD,i)
        call rgn_MPI_Bcast(r_oElpD(iEl),i)
-       call rgn_MPI_Bcast(r_aElpD(iEl),i)
 #endif
 
        if ( iEl > 1 ) then
@@ -525,10 +522,9 @@ contains
        end if
 
        ! Set the names
-       r_oEl(iEl)%name   = '[O]-'//trim(Elecs(iEl)%name)//' folding region'
        r_aEl(iEl)%name   = '[A]-'//trim(Elecs(iEl)%name)//' folding region'
+       r_oEl(iEl)%name   = '[O]-'//trim(Elecs(iEl)%name)//' folding region'
        r_oElpD(iEl)%name = '[O]-'//trim(Elecs(iEl)%name)//' folding El + D'
-       r_aElpD(iEl)%name = '[A]-'//trim(Elecs(iEl)%name)//' folding El + D'
        Elecs(iEl)%o_inD%name = '[O]-'//trim(Elecs(iEl)%name)//' in D'
 
        ! Prepare the inDpvt array (will be filled in tri_init
@@ -787,12 +783,14 @@ contains
 
   end subroutine tbt_region_options
 
-  subroutine tbt_print_regions(N_Elec, Elecs)
+  subroutine tbt_print_regions(na_u, lasto, N_Elec, Elecs)
 
     use parallel, only : Node
     use m_verbosity, only : verbosity
     use m_ts_electype
-    
+
+    integer, intent(in) :: na_u
+    integer, intent(in) :: lasto(0:na_u)
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer :: i
@@ -804,15 +802,15 @@ contains
 
     ! Print out the buffer regions
     if ( r_aBuf%n > 0 ) then
-       call local_print(r_aBuf,.false.)
-       call local_print(r_oBuf,.true.)
+       call local_print(r_aBuf, .false. )
+       call local_print(r_oBuf, .true. )
     end if
 
     ! Print out the device region
     write(*,'(a,i0)')'tbtrans: # of device region orbitals: ',r_oDev%n
 
-    call local_print(r_aDev,.false.)
-    call local_print(r_oDev,.true.)
+    call local_print(r_aDev, .false. )
+    call local_print(r_oDev, .true. )
 
     ! Print out all the electrodes + their projection region
     do i = 1 , N_Elec
@@ -821,17 +819,19 @@ contains
             ' scattering orbitals: ',Elecs(i)%o_inD%n
        write(*,'(3a,i0)')'tbtrans: # of ',trim(Elecs(i)%name), &
             ' down-folding orbitals: ',r_oElpD(i)%n
-       call local_print(r_aEl(i),.false.)
-       call local_print(r_oEl(i),.true.)
+       call local_print(r_aEl(i), .false. )
+       call local_print(r_oEl(i), .true. )
        if ( verbosity > 3 ) then
-          call rgn_intersection(r_aElpD(i),r_aDev,r)
+          ! Create the atom equivalent regions
+          call rgn_Orb2Atom(r_oElpD(i) , na_u, lasto, r)
+          call rgn_intersection(r,r_aDev,r)
           r%name = '[A]-'//trim(Elecs(i)%name)//' folding in D'
           call local_print(r, .false. )
        end if
        if ( verbosity > 7 ) then
           call rgn_intersection(r_oElpD(i),r_oDev,r)
           r%name = '[O]-'//trim(Elecs(i)%name)//' folding in D'
-          call local_print(r,.true.)
+          call local_print(r, .true. )
        end if
     end do
 

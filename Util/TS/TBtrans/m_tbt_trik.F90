@@ -590,8 +590,7 @@ contains
           ! We need _all_ diagonal blocks of the spectral function
           do iEl = 1 , N_Elec
              do io = 1 , Elecs(iEl)%o_inD%n
-                jEl = which_part(Gf_tri, &
-                     rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(io)) )
+                jEl = which_part(Gf_tri, pvt%r(Elecs(iEl)%o_inD%r(io)))
                 A_parts(jEl) = .true.
              end do
           end do
@@ -602,8 +601,7 @@ contains
           ! for all other electrodes than the first one
           do iEl = 2 , N_Elec
              do io = 1 , Elecs(iEl)%o_inD%n
-                jEl = which_part(Gf_tri, &
-                     rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(io)) )
+                jEl = which_part(Gf_tri, pvt%r(Elecs(iEl)%o_inD%r(io)))
                 A_parts(jEl) = .true.
              end do
           end do
@@ -1634,11 +1632,11 @@ contains
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
        ! Add dH
-       call add_zdelta_TriMat(dH%d, Gfinv_tri, r, sc_off, kpt)
+       call add_zdelta_TriMat(dH%d, Gfinv_tri, r, pvt, sc_off, kpt)
     end if
     if ( dSE%lvl > 0 ) then
        ! Add dSE
-       call add_zdelta_TriMat(dSE%d, Gfinv_tri, r, sc_off, kpt)
+       call add_zdelta_TriMat(dSE%d, Gfinv_tri, r, pvt, sc_off, kpt)
     end if
 #endif
 
@@ -1661,7 +1659,7 @@ contains
   ! this can be reinstantiated.
   ! However, then we are talking about more
   ! than 2,000,000 elements...
-  subroutine prep_Gfinv_algo(dev_tri,sp,r,loop_dev)
+  subroutine prep_Gfinv_algo(dev_tri,sp,r,pvt,loop_dev)
 
     use class_Sparsity
     use class_zTriMat
@@ -1669,7 +1667,7 @@ contains
 
     type(zTriMat), intent(inout) :: dev_tri
     type(Sparsity), intent(inout) :: sp
-    type(tRgn), intent(in) :: r
+    type(tRgn), intent(in) :: r, pvt
     logical, intent(out) :: loop_dev
 
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
@@ -1721,8 +1719,8 @@ contains
     t_s = tt
 #endif
     do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-       
-       iu = rgn_pivot(r,l_col(ind))
+
+       iu = pvt%r(l_col(ind))
        ! Important to check this as we cannot ensure
        ! the entire sparsity pattern in this
        ! tri-diagonal matrix
@@ -1745,7 +1743,8 @@ contains
   end subroutine prep_Gfinv_algo
 #endif
 
-  subroutine downfold_SE(cE, El, spH, spS,r,np,p, sc_off, kpt, nwork,work)
+  subroutine downfold_SE(cE, El, spH, spS, r, &
+       np, p, sc_off, kpt, nwork, work)
 
     use class_Sparsity
     use class_zSpData1D
@@ -1901,7 +1900,8 @@ contains
 
 #ifdef NOT_WORKING
 
-  subroutine downfold_SE_life(cE, El, spH, spS,r,np,p,life,nwork,work)
+  subroutine downfold_SE_life(cE, El, spH, spS, r, &
+       np, p, life, nwork, work)
 
     use class_Sparsity
     use class_zSpData1D
