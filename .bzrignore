@@ -23,3 +23,4 @@ Docs/siesta.idx
 Docs/siesta.log
 Src/state_init.Rot.F
 Src/state_init.noRot.F
+upgrade.sh
