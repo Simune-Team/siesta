@@ -1008,7 +1008,7 @@ contains
                    if ( iEl == N_Elec .and. .not. T_all ) cycle
                    
                    call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                        r_oDev, Elecs(iEl)%o_inD,only_diag=.true.)
+                        r_oDev, pvt, Elecs(iEl)%o_inD,only_diag=.true.)
                    
                    call GF_T(zwork_tri,Elecs(iEl), &
                         T(N_Elec+1,iEl), T(iEl,iEl), &
@@ -1035,7 +1035,7 @@ contains
               ! ******************
               if ( .not. cE%fake ) then
                  call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                      r_oDev, Elecs(iEl)%o_inD)
+                      r_oDev, pvt, Elecs(iEl)%o_inD)
  
                  if ( 'T-sum-out' .in. save_DATA ) then
                     call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
@@ -1060,11 +1060,11 @@ contains
               ! *****************
               if ( .not. cE%fake ) then
                  if ( 'T-sum-out' .in. save_DATA ) then
-                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                          Elecs(iEl), A_parts, &
                          TrGfG = T(N_Elec+1,iEl))
                  else
-                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                          Elecs(iEl), A_parts)
                  end if
               end if
@@ -1223,7 +1223,7 @@ contains
 
                if ( ts_A_method == TS_BTD_A_COLUMN ) then
                 call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                     r_oDev, El_p%o_inD)
+                     r_oDev, pvt, El_p%o_inD)
 
                 if ( 'proj-T-sum-out' .in. save_DATA ) then
                    call Gf_Gamma(zwork_tri,El_p, &
@@ -1231,11 +1231,11 @@ contains
                 end if
                else
                 if ( 'proj-T-sum-out' .in. save_DATA ) then
-                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         El_p, proj_parts, &
                         TrGfG = bTk(size(proj_T(ipt)%R)+1,ipt) )
                 else
-                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         El_p, proj_parts)
                 end if
                end if
@@ -1250,7 +1250,7 @@ contains
 
                if ( ts_A_method == TS_BTD_A_COLUMN ) then
                 call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                     r_oDev, Elecs(iEl)%o_inD)
+                     r_oDev, pvt, Elecs(iEl)%o_inD)
 
                 if ( 'proj-T-sum-out' .in. save_DATA ) then
                    call Gf_Gamma(zwork_tri,Elecs(iEl), &
@@ -1258,11 +1258,11 @@ contains
                 end if
                else
                 if ( 'T-sum-out' .in. save_DATA ) then
-                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         Elecs(iEl), proj_parts, &
                         TrGfG = bTk(1+size(proj_T(ipt)%R),ipt))
                 else
-                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         Elecs(iEl), proj_parts)
                 end if
                end if

@@ -506,7 +506,7 @@ contains
              ! ******************
              if ( ts_A_method == TS_BTD_A_COLUMN ) then
               call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                   r_pvt, Elecs(iEl)%o_inD)
+                   r_pvt, pvt, Elecs(iEl)%o_inD)
 
 #ifdef TS_DEV
               ! offset and number of orbitals
@@ -528,7 +528,7 @@ contains
 #endif
 
              else
-              call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_pvt, &
+              call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_pvt, pvt, &
                    Elecs(iEl), calc_parts)
              end if
              

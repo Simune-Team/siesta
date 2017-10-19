@@ -184,9 +184,9 @@ contains
 
 
 #ifdef TBTRANS
-  subroutine dir_GF_Gamma_GF(Gf_tri, A_tri, pvt, El, calc_parts, TrGfG)
+  subroutine dir_GF_Gamma_GF(Gf_tri, A_tri, r, pvt, El, calc_parts, TrGfG)
 #else
-  subroutine dir_GF_Gamma_GF(Gf_tri, A_tri, pvt, El, calc_parts)
+  subroutine dir_GF_Gamma_GF(Gf_tri, A_tri, r, pvt, El, calc_parts)
 #endif
 
     use alloc, only : re_alloc, de_alloc
@@ -209,7 +209,8 @@ contains
     ! for the electrode
     type(zTriMat), intent(inout) :: A_tri
 
-    type(tRgn), intent(in) :: pvt ! the pivoting array for the sparse pattern
+    type(tRgn), intent(in) :: r ! the pivoting array for the sparse pattern
+    type(tRgn), intent(in) :: pvt ! the pivoting of r back to the sparse pattern
     type(Elec), intent(in) :: El ! contains: (Sigma - Sigma^dagger) ^T
     logical, intent(in) :: calc_parts(:)
 #ifdef TBTRANS
@@ -265,10 +266,10 @@ contains
     oi = 0
 #endif
     do n = 1 , no
-       i = rgn_pivot(pvt,El%o_inD%r(n))
+       i = pvt%r(El%o_inD%r(n))
 #ifndef TS_NOCHECKS
        if ( oi > i ) then
-          call rgn_print(pvt)
+          call rgn_print(r)
           call rgn_print(El%o_inD)
           print *,n,oi,i
           call die('BTD error in sorting of o_inD for electrode.')
@@ -297,19 +298,16 @@ contains
 
     ! So we start by calculating the triple-product
     ! of the electrode diagonal elements
-    i = rgn_pivot(pvt,El%o_inD%r(1))
-    sPart = which_part(A_tri,i)
     sN = nrows_g(A_tri,sPart)
     ! get first column/row in this part
     i = crows(sPart) - sN + 1
-    ! get ending index
+    ! get starting index
     sIdx = index(A_tri,i,i) - 1
     
     ! do the same for the last part with
-    i = rgn_pivot(pvt,El%o_inD%r(no))
-    ePart = which_part(A_tri,i)
     sNc = nrows_g(A_tri,ePart)
     i = crows(ePart)
+    ! get ending index
     eIdx = index(A_tri,i,i) + 1
 
     ! Figure out if the work array can be associated
@@ -371,8 +369,9 @@ contains
 
     ! calculate number of rows we can simultaneously
     ! cobe with.
-    ! Calculate a size according to 2 MB
-    i = 2 * 1024._dp**2 / 16._dp / no
+    ! Calculate a size according to 4 MB
+    ! This corresponds roughly to a 500 X 500 matrix
+    i = 4 * 1024._dp**2 / 16._dp / no
     i = max(2,i)
     nrtmp = size(ztmp) / no
     if ( nrtmp < i ) then
@@ -391,7 +390,7 @@ contains
     do while ( i_Elec <= no )
 
        ! get orbital index for the current column/row
-       idx_Elec = rgn_pivot(pvt,El%o_inD%r(i_Elec))
+       idx_Elec = pvt%r(El%o_inD%r(i_Elec))
 
        ! If we skip to a new block we must add sN
        ! to account for the new diagonal position
@@ -413,7 +412,7 @@ contains
        ! we only require up to no columns
        nb = 1
        do while ( i_Elec + nb <= no )
-          i = rgn_pivot(pvt,El%o_inD%r(i_Elec+nb))
+          i = pvt%r(El%o_inD%r(i_Elec+nb))
           ! In case it is not consecutive
           if ( i - idx_Elec /= nb ) exit
           ! In case the block changes, then
