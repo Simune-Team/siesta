@@ -464,13 +464,15 @@ contains
 
   end subroutine invert_BiasTriMat_col
 
-  subroutine invert_BiasTriMat_rgn(M,Minv,r,r_col,only_diag)
+  subroutine invert_BiasTriMat_rgn(M,Minv,r,pvt,r_col,only_diag)
 
     use m_region
 
     type(zTriMat), intent(inout) :: M, Minv
     ! The pivoting table for the tri-diagonal matrix
-    type(tRgn), intent(in) :: r
+    ! pvt is the pivoting back to original index (to remove
+    ! rgn_pivot calls, i.e. pvt%r(r%r) == (/1,...,no_u/)
+    type(tRgn), intent(in) :: r, pvt
     ! The siesta indices for the column we wish to calculate
     type(tRgn), intent(in) :: r_col
     ! Whether we should only calculate the diagonal Green function
@@ -515,7 +517,7 @@ contains
     sPart = huge(1)
     ePart = 0
     do n = 1 , r_col%n
-       s = rgn_pivot(r,r_col%r(n))
+       s = pvt%r(r_col%r(n))
        sPart = min(sPart,which_part(M,s))
        ePart = max(ePart,which_part(M,s))
     end do
@@ -536,7 +538,7 @@ contains
     i_Elec = 1
     do while ( i_Elec <= r_col%n ) 
 
-       idx_Elec = rgn_pivot(r,r_col%r(i_Elec))
+       idx_Elec = pvt%r(r_col%r(i_Elec))
 
        ! We start by copying over the Mnn in blocks
 
@@ -546,7 +548,7 @@ contains
        sN = nrows_g(M,n)
        nb = 1
        do while ( i_Elec + nb <= r_col%n )
-          i = rgn_pivot(r,r_col%r(i_Elec+nb))
+          i = pvt%r(r_col%r(i_Elec+nb))
           ! In case it is not consecutive
           if ( i - idx_Elec /= nb ) exit
           ! In case the block changes, then
@@ -558,7 +560,7 @@ contains
        ! Copy over this portion of the Mnn array
        
        ! Figure out which part we have Mnn in
-       i = rgn_pivot(r,r_col%r(i_Elec))
+       i = pvt%r(r_col%r(i_Elec))
        n = which_part(M,i)
 
        ! get placement of the diagonal block in the column
@@ -577,9 +579,9 @@ contains
        ! We now need to figure out the placement of the 
        ! Mnn part that we have already calculated.
        Mp => val(M,n,n)
-       i = rgn_pivot(r,r_col%r(i_Elec))
+       i = pvt%r(r_col%r(i_Elec))
        sIdxF = (i-(crows(n)-sN)-1) * sN + 1
-       i = rgn_pivot(r,r_col%r(i_Elec+nb-1))
+       i = pvt%r(r_col%r(i_Elec+nb-1))
        eIdxF = (i-(crows(n)-sN)) * sN
 
        ! Check that we have something correct...

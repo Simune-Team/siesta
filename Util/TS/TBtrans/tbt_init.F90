@@ -295,7 +295,7 @@ subroutine tbt_init()
   ! Create the device region sparsity pattern
   call tbt_region_options( TSHS%sp, save_DATA )
 
-  call tbt_print_regions(N_Elec, Elecs)
+  call tbt_print_regions( TSHS%na_u, TSHS%lasto, N_Elec, Elecs)
 
   call tbt_print_kRegions( TSHS%cell )
 

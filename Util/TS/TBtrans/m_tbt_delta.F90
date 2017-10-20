@@ -840,7 +840,7 @@ contains
 #endif
 
   ! Add the delta to the tri-diagonal matrix
-  subroutine add_zdelta_TriMat( zd, GFinv_tri, r, sc_off, k)
+  subroutine add_zdelta_TriMat( zd, GFinv_tri, r, pvt, sc_off, k)
 
     use class_zTriMat
     use class_Sparsity
@@ -850,7 +850,7 @@ contains
 
     type(zSpData1D), intent(inout) :: zd
     type(zTriMat), intent(inout) :: GFinv_tri
-    type(tRgn), intent(in) :: r
+    type(tRgn), intent(in) :: r, pvt
     ! Super-cell offset and k-point
     real(dp), intent(in) :: sc_off(:,:), k(3)
 
@@ -885,7 +885,8 @@ contains
           
           ! Loop on entries here...
           do ind = l_ptr(jo) + 1 , l_ptr(jo) + l_ncol(jo)
-             iu = rgn_pivot(r, MODP(l_col(ind), no))
+             ! Look up in the pivoting array what the pivoted orbital is
+             iu = pvt%r(MODP(l_col(ind), no))
              ! Check whether this element should be added
              if ( iu == 0 ) cycle
              
