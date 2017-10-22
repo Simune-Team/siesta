@@ -63,20 +63,21 @@ contains
 
   subroutine read_contour_eq_options(N_mu, mus, Volt)
 
-    use units, only : eV
+    use units, only : eV, Pi
     use fdf
 
     integer, intent(in)        :: N_mu
     type(ts_mu), intent(inout) :: mus(N_mu)
     real(dp), intent(in)       :: Volt
 
-    integer :: i,j,k, c_mu
+    integer :: i, j, k, c_mu
     integer :: N
     character(len=C_N_NAME_LEN), allocatable :: tmp(:), nContours(:)
     character(len=C_N_NAME_LEN) :: tmp_one
     integer :: cur
     integer, allocatable :: idx(:)
     logical :: isStart, isTail
+    real(dp) :: r1, r2
 
     call fdf_obsolete('TS.ComplexContour.NPoles')
 
@@ -343,11 +344,17 @@ contains
              ! We need to make sure that the number
              ! of poles is the same if they overlap
              if ( k > 1 ) then
-                if ( mus(j)%N_poles /= &
-                     mus(Eq_c(i)%ID(k-1))%N_poles ) then
+                ! We need to ensure that the energy of the poles coincide
+                ! This will happen very rarely!!!
+                r1 = Pi * mus(j)%kT * 2._dp * mus(j)%N_poles
+                c_mu = Eq_c(i)%ID(k-1)
+                r2 = Pi * mus(c_mu)%kT * 2._dp * mus(c_mu)%N_poles
+
+                ! Less than 5 K in difference
+                if ( abs(r1 - r2) > Kelvin ) then
                    call die('If two equilibrium contours &
-                        &should overlap, they should have the &
-                        &same number of poles in the contour.')
+                        &should overlap, they should have the same &
+                        &energy where the line crosses the Fermi energy!')
                 end if
              end if
           end if
