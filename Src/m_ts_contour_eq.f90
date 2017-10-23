@@ -63,7 +63,7 @@ contains
 
   subroutine read_contour_eq_options(N_mu, mus, Volt)
 
-    use units, only : eV, Pi
+    use units, only : eV, Pi, Kelvin
     use fdf
 
     integer, intent(in)        :: N_mu
