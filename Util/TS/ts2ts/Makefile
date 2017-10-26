@@ -41,7 +41,7 @@ SYSOBJ=$(SYS).o
 
 # Note that machine-specific files are now in top Src directory.
 OBJS = precision.o f2kcli.o parallel.o \
-          alloc.o m_io.o pxf.o units.o local_sys.o $(SYSOBJ)
+          alloc.o m_io.o io.o pxf.o units.o local_sys.o $(SYSOBJ)
 
 OBJS += ts2ts.o
 

@@ -1193,8 +1193,8 @@ m_tbt_kpoint.o: m_verbosity.o parallel.o precision.o units.o
 m_tbt_kregions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_kregions.o: m_region.o m_tbt_kpoint.o m_ts_cctype.o m_ts_electrode.o
 m_tbt_kregions.o: m_ts_electype.o m_verbosity.o parallel.o precision.o
-m_tbt_options.o: files.o intrinsic_missing.o m_os.o m_tbt_contour.o m_tbt_dH.o
-m_tbt_options.o: m_tbt_dSE.o m_tbt_diag.o m_tbt_hs.o m_tbt_save.o
+m_tbt_options.o: files.o intrinsic_missing.o m_os.o m_region.o m_tbt_contour.o
+m_tbt_options.o: m_tbt_dH.o m_tbt_dSE.o m_tbt_diag.o m_tbt_hs.o m_tbt_save.o
 m_tbt_options.o: m_tbt_sigma_save.o m_ts_chem_pot.o m_ts_electype.o
 m_tbt_options.o: m_ts_method.o m_ts_tdir.o parallel.o precision.o units.o
 m_tbt_proj.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o

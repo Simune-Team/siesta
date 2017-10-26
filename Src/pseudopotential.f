@@ -377,12 +377,6 @@ c        end subroutine pseudo_header_string
                   write(6,'(/,2a)')
      .          'Pseudopotential generated from a ',
      .                 'relativistic atomic calculation'
-                  write(6,'(2a)')
-     .          'There are spin-orbit pseudopotentials ',
-     .                 'available'
-                  write(6,'(2a)')
-     .          'Spin-orbit interaction is not included in ',
-     .                 'this calculation'
                endif
 
                write(6,'(/,a)') 'Valence configuration '//
