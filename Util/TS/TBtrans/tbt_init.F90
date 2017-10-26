@@ -18,7 +18,6 @@ subroutine tbt_init()
   use sys, only : die
   use precision, only : dp
   use parallel, only : parallel_init, Node, Nodes, IONode
-  use parallel, only : ResetFirstCall, ParallelOverK
   use m_timer, only : timer_report
   use memory_log,      only : memory_report
   use files, only   : slabel
@@ -99,8 +98,6 @@ subroutine tbt_init()
   
   call parallel_init()
 
-  ResetFirstCall =.true.
-  ParallelOverK = .true.
 #ifdef MPI
   if (.not. fdf_parallel()) then
      call die('tbt_init: ERROR: FDF module doesn''t have parallel support')
@@ -137,8 +134,7 @@ subroutine tbt_init()
 !$     ! this is the default scheduling, probably the user
 !$     ! have not set the value, predefine it to 32
 !$     itmp = 32
-!$     write(*,'(a,i0)')'** OpenMP runtime &
-!$   &schedule DYNAMIC, chunks ',itmp
+!$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',itmp
 !$    end if
 !$    case ( OMP_SCHED_GUIDED ) 
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',itmp
@@ -313,9 +309,16 @@ subroutine tbt_init()
 
 #endif
 
-  if ( N_eigen > 0 ) then
-     ! if eigen-value calculation, reduce eigen-values stored
-     itmp = N_eigen
+  if ( N_eigen /= 0 ) then
+     ! if eigen-value calculation, reduce eigen-values calculated
+     ! to a sensible number
+     if ( N_eigen > 0 ) then
+        itmp = N_eigen
+     else
+        itmp = huge(1)
+     end if
+
+     ! Reduce to the minimum size
      do iEl = 1 , N_Elec
         itmp = min(itmp,Elecs(iEl)%o_inD%n)
      end do
@@ -326,24 +329,14 @@ subroutine tbt_init()
         end do
      end if
 #endif
-     if ( Node == 0 .and. itmp /= N_eigen ) then
-        write(*,'(/,a)')'tbtrans: *** Correcting number of T eigenvalues...'
-     end if
-     N_eigen = itmp
-  else if ( N_eigen < 0 ) then
-     itmp = huge(1)
-     do iEl = 1 , N_Elec
-        itmp = min(itmp,Elecs(iEl)%o_inD%n)
-     end do
-#ifdef NCDF_4
-     if ( N_proj_ME > 0 ) then
-        do it = 1 , N_proj_ME
-           itmp = min(itmp,proj_ME(it)%mol%orb%n)
-        end do
-     end if
-#endif
-     if ( Node == 0 ) then
-        write(*,'(/,a,i0)')'tbtrans: *** Maximizing number of T eigenvalues to ',itmp
+     if ( IONode ) then
+        if ( N_eigen > 0 ) then
+           if ( itmp /= N_eigen ) then
+              write(*,'(/,a)')'tbtrans: *** Correcting number of T eigenvalues...'
+           end if
+        else
+           write(*,'(/,a,i0)')'tbtrans: *** Maximizing number of T eigenvalues to ',itmp
+        end if
      end if
      N_eigen = itmp
   end if

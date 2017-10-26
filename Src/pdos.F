@@ -70,6 +70,7 @@ C **********************************************************************
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
 #endif
+      use m_diag_option, only: ParallelOverK
 
       implicit none
 
@@ -98,8 +99,6 @@ C Internal variables ---------------------------------------------------
 
       integer iat, spec, ii, iorb
 
-      logical, save :: ParallelOverK = .false.
-
       real(dp), dimension(:), pointer  :: tmp
 
       character*40 pos_string
@@ -123,12 +122,6 @@ C Internal variables ---------------------------------------------------
 
 C Find the intervals between the subdivisions in the energy scale ------
       delta = (E2 - E1) / (NHIST-1)
-      if (Nodes .eq. 1) then
-        ParallelOverK = .false.
-      else
-        ParallelOverK = fdf_get('Diag.ParallelOverK',.false.)
-        if ( nspin > 2 ) ParallelOverK = .false.
-      endif
 
 C Find number of orbitals per unit cell 
 #ifdef MPI

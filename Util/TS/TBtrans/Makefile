@@ -48,8 +48,8 @@ SIESTA_OBJS= bye.o precision.o m_io.o alloc.o memory_log.o memory.o pxf.o \
              reclat.o idiag.o minvec.o \
              parallel.o io.o files.o cellsubs.o sorting.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o m_spin.o \
-             cdiag.o diagmemory.o m_diagon_opt.o \
-	     zheevds.o debugmpi.o find_kgrid.o units.o
+             diag.o diag_option.o \
+	     debugmpi.o find_kgrid.o units.o
 
 # Siesta timings
 SIESTA_OBJS += m_walltime.o timer_tree.o m_timer.o timer.o
@@ -316,8 +316,6 @@ dep:
 $(DEP_OBJS): $(FDF)
 
 # DO NOT DELETE THIS LINE - used by make depend
-cdiag.o: alloc.o diagmemory.o local_sys.o m_diagon_opt.o parallel.o precision.o
-cdiag.o: alloc.o diagmemory.o local_sys.o m_diagon_opt.o parallel.o precision.o
 cellsubs.o: precision.o
 cellsubs.o: precision.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
@@ -338,8 +336,10 @@ create_Sparsity_Union.o: class_OrbitalDistribution.o class_Sparsity.o
 create_Sparsity_Union.o: m_region.o parallel.o precision.o
 debugmpi.o: parallel.o
 debugmpi.o: parallel.o
-diagmemory.o: precision.o
-diagmemory.o: precision.o
+diag.o: alloc.o diag_option.o local_sys.o parallel.o precision.o
+diag.o: alloc.o diag_option.o local_sys.o parallel.o precision.o
+diag_option.o: parallel.o precision.o
+diag_option.o: parallel.o precision.o
 fdf_extra.o: m_region.o
 fdf_extra.o: m_region.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
@@ -352,8 +352,6 @@ io.o: local_sys.o
 io.o: local_sys.o
 kpoint_convert.o: local_sys.o precision.o units.o
 kpoint_convert.o: local_sys.o precision.o units.o
-m_diagon_opt.o: parallel.o
-m_diagon_opt.o: parallel.o
 m_geom_box.o: intrinsic_missing.o m_geom_aux.o
 m_geom_box.o: intrinsic_missing.o m_geom_aux.o
 m_geom_coord.o: intrinsic_missing.o m_geom_aux.o parallel.o
@@ -760,6 +758,8 @@ class_zdata2d.o: class_Data2D.o
 class_zspdata1d.o: class_SpData1D.o
 class_zspdata2d.o: class_SpData2D.o
 class_ztrimat.o: class_TriMat.o
+m_diag.o: diag.o
+m_diag_option.o: diag_option.o
 m_find_kgrid.o: find_kgrid.o
 m_minvec.o: minvec.o
 m_object_debug.o: object_debug.o

@@ -190,8 +190,6 @@ m_filter.o: bessph.o local_sys.o precision.o radfft.o sorting.o
 m_filter.o: bessph.o local_sys.o precision.o radfft.o sorting.o
 m_getopts.o: f2kcli.o
 m_getopts.o: f2kcli.o
-m_io.o: local_sys.o
-m_io.o: local_sys.o
 m_spin.o: alloc.o local_sys.o parallel.o precision.o units.o
 m_spin.o: alloc.o local_sys.o parallel.o precision.o units.o
 old_atmfuncs.o: alloc.o atmparams.o local_sys.o precision.o
