@@ -196,6 +196,8 @@ subroutine get_ps_conf(irel,lmax,text,chgvps, &
       character(len=2), intent(in)    :: SYMBOL  ! Atomic symbol
       integer                         :: Z       ! Atomic number
 
+      character(len=2) :: norm_symbol
+      
       integer, parameter  :: NZ=103
       character(len=2), parameter :: NAME(NZ) =  &
                (/'H ','He','Li','Be','B ','C ','N ','O ','F ','Ne', &
@@ -210,12 +212,14 @@ subroutine get_ps_conf(irel,lmax,text,chgvps, &
                  'Pa','U ','Np','Pu','Am','Cm','Bk','Cf','Es','Fm', &
                  'Md','No','Lr'/)
 
+     ! Just in case somebody uses a right-justified symbol (e.g. " C")
+     norm_symbol = adjustl(symbol)
      do z = 1, NZ
-        if (SYMBOL == NAME(Z)) then
+        if (norm_symbol == NAME(Z)) then
            RETURN
         endif
      enddo
-     call die("Cannot find atomic number for " // symbol)
+     call die("Cannot find atomic number for " // norm_symbol)
         
    end FUNCTION atomic_number
 
