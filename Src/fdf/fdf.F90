@@ -831,7 +831,8 @@ MODULE fdf
       logical                    :: dump
       logical, allocatable       :: found(:)
       character(80)              :: msg
-      character(len=MAX_LENGTH)  :: line, label, inc_file
+      character(len=MAX_LENGTH)  :: label, inc_file
+      character(len=MAX_LENGTH*2):: line
       integer(ip)                :: i, ierr, ntok, ind_less, nlstart
       type(parsed_line), pointer :: pline
 
@@ -1056,7 +1057,8 @@ MODULE fdf
       logical                    :: dump, found_elem
       logical, pointer           :: found_loc(:)
       character(80)              :: msg
-      character(len=MAX_LENGTH)  :: line, inc_file, label
+      character(len=MAX_LENGTH*2):: line
+      character(len=MAX_LENGTH)  :: label, inc_file
       integer(ip)                :: i, ierr, ntok, ind_less, nlstart
       integer(ip)                :: elem, nelem_loc
       integer(ip), pointer       :: found_index(:)
