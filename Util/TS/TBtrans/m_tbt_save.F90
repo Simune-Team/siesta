@@ -433,20 +433,18 @@ contains
                &file does not conform to the current simulation.')
        end if
 
-       if ( .not. isGamma ) then
-          ! Check the k-points
-          allocate(r2(3,nkpt))
-          do i = 1 , nkpt
-             call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
-          end do
-          dic = ('kpt'.kvp.r2) // ('wkpt'.kvp. wkpt)
-          call ncdf_assert(ncdf,sme,vars=dic, d_EPS = 1.e-7_dp )
-          if ( .not. sme ) then
-             call die('k-points or k-weights are not the same')
-          end if
-          call delete(dic,dealloc = .false. )
-          deallocate(r2)
+       ! Check the k-points
+       allocate(r2(3,nkpt))
+       do i = 1 , nkpt
+          call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
+       end do
+       dic = ('kpt'.kvp.r2) // ('wkpt'.kvp. wkpt)
+       call ncdf_assert(ncdf,sme,vars=dic, d_EPS = 1.e-7_dp )
+       if ( .not. sme ) then
+          call die('k-points or k-weights are not the same')
        end if
+       call delete(dic,dealloc = .false. )
+       deallocate(r2)
 
        call ncdf_close(ncdf)
        
@@ -581,17 +579,13 @@ contains
             atts = dic , chunks = (/r%n,1,1/) , compress_lvl = cmp_lvl )
     end if
 
-    if ( .not. isGamma ) then
-
-       dic = dic // ('info'.kv.'k point')//('unit'.kv.'b')
-       call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
-            atts = dic)
-       call delete(dic)
-       dic = ('info'.kv.'k point weights')
-       call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
-            atts = dic , chunks = (/1/) )
-
-    end if
+    dic = dic // ('info'.kv.'k point')//('unit'.kv.'b')
+    call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
+         atts = dic)
+    call delete(dic)
+    dic = ('info'.kv.'k point weights')
+    call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
+         atts = dic , chunks = (/1/) )
 
 #ifdef TBT_PHONON
     dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
@@ -621,15 +615,13 @@ contains
     ! we save them instantly.
     ! This ensures that a continuation can check for 
     ! the same k-points in the same go.
-    if ( .not. isGamma ) then
-       allocate(r2(3,nkpt))
-       do i = 1 , nkpt
-          call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
-       end do
-       call ncdf_put_var(ncdf,'kpt',r2)
-       call ncdf_put_var(ncdf,'wkpt',wkpt)
-       deallocate(r2)
-    end if
+    allocate(r2(3,nkpt))
+    do i = 1 , nkpt
+       call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
+    end do
+    call ncdf_put_var(ncdf,'kpt',r2)
+    call ncdf_put_var(ncdf,'wkpt',wkpt)
+    deallocate(r2)
 
     if ( 'orb-current' .in. save_DATA ) then
        

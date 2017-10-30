@@ -659,7 +659,7 @@ MODULE parse
            ! Does the user request length?
            count = ni <= 0
            li = 0 ! counter for the number of items in the list
-           ti = 1 ! the token iterator
+           ti = 1 ! the current token iterator
            is_del = .false.
            do while ( ti < lpline%ntokens ) 
 
@@ -685,6 +685,7 @@ MODULE parse
                  ! grab the seperator
                  sep = names(lpline,1,after=ti)
                  if ( leqi(sep,'to') .or. &
+                      leqi(sep,':') .or. &
                       leqi(sep,'--') .or. &
                       leqi(sep,'---') ) then
 
@@ -726,6 +727,7 @@ MODULE parse
               elseif (leqi(lpline%id(ti),'i')) then
 
                  call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
+
               end if
 
               ti = ti + 1
@@ -734,14 +736,15 @@ MODULE parse
                  is_del = .false.
               end if
 
-              ! We do a last check to get all entries with
-              if ( ti == lpline%ntokens ) then
-                 if (leqi(lpline%id(ti),'i')) then
-                    call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
-                 end if
-              end if
            end do
 
+           ! Read last element (or the only element if one is given)
+           if ( ti == lpline%ntokens ) then
+              if (leqi(lpline%id(ti),'i')) then
+                 call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
+              end if
+           end if
+   
            ! Clean-up parsed list-line
            call destroy(lpline)
            
@@ -752,9 +755,9 @@ MODULE parse
       enddo
 
       if (.not. found) then
-        call die('PARSE module: lists', 'Not enough lists in line',     &
-                 THIS_FILE, __LINE__)
-      endif
+         call die('PARSE module: lists', 'Not enough lists in line', &
+                  THIS_FILE, __LINE__)
+      end if
 
       RETURN
 !------------------------------------------------------------- END
@@ -872,8 +875,8 @@ MODULE parse
       enddo
 
       if (.not. found) then
-        call die('PARSE module: names', 'Not enough names in line',     &
-                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
+         call die('PARSE module: names', 'Not enough names in line', &
+                  THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -1094,7 +1097,7 @@ MODULE parse
     SUBROUTINE parses(ntokens, line, first, last)
       implicit none
 !------------------------------------------------- Input Variables
-      character(len=MAX_LENGTH)    :: line
+      character(len=*)             :: line
       
 !------------------------------------------------ Output Variables
       integer(ip)                  :: ntokens
@@ -1103,7 +1106,7 @@ MODULE parse
 !------------------------------------------------- Local Variables
       logical                      :: intoken, instring, completed
       logical                      :: inlist
-      integer(ip)                  :: i, c, stringdel
+      integer(ip)                  :: i, c, stringdel, length
 
 !     Character statement functions
       logical :: is_digit, is_upper, is_lower, is_alpha,                &
@@ -1148,9 +1151,12 @@ MODULE parse
       inlist   = .FALSE.
       stringdel = 0
 
+      ! Trim space at the end (not from the left)
+      length = len_trim(line)
+      
       i = 1
       completed = .FALSE.
-      do while((i .le. len(line)) .and. (.not. completed))
+      do while((i <= length) .and. (.not. completed))
         c = ichar(line(i:i))
 
 !       Possible comment...
@@ -1229,9 +1235,21 @@ MODULE parse
         endif
 
         i = i + 1
-      enddo
 
-      if (parse_debug) then
+        ! Check whether the parsing is correctly handled
+        if ( i > MAX_LENGTH ) then
+           ! Because we will limit search to the len_trim length,
+           ! then this should only be found when the line has "content" too long.
+           ! Note that this will *never* be executed if a comment is too
+           ! long because it is checked as the first requirement and then
+           ! completes parsing the line.
+           call die('PARSE module: parses', 'Too long line (132 char): ' // &
+                trim(line), THIS_FILE, __LINE__)
+        end if
+        
+     enddo
+
+     if (parse_debug) then
         write(parse_log,*) 'PARSER:', ntokens, 'token(s)'
         do i= 1, ntokens
           write(parse_log,*) '   Token:', '|',line(first(i):last(i)),'|'
@@ -1247,7 +1265,7 @@ MODULE parse
     SUBROUTINE morphol(ntokens, line, first, last, token_id)
       implicit none
 !------------------------------------------------- Input Variables
-      character(len=MAX_LENGTH) :: line
+      character(len=*)          :: line
       integer(ip)               :: ntokens
       integer(ip)               :: first(MAX_NTOKENS), last(MAX_NTOKENS)
 
