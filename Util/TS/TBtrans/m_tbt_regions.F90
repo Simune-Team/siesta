@@ -43,7 +43,7 @@ module m_tbt_regions
   ! I.e. it is the regions that goes from the electrode
   ! and down to the central region (without any central
   ! region overlap)
-  type(tRgn), allocatable, target, public :: r_aEl(:)   , r_oEl(:)
+  type(tRgn), allocatable, target, public :: r_aEl(:), r_oEl(:)
   type(tRgn), allocatable, target, public :: r_oElpD(:)
 
   ! the device region (the calculated GF region)
@@ -198,7 +198,8 @@ contains
           end if
 
           ! Atoms NOT in the device region...
-          if ( leqi(g,'not-atom') .or. leqi(g,'not-position') ) then
+          if ( leqi(g,'not-atom') .or. leqi(g,'not-position') .or. &
+               leqi(g,'-atom') .or. leqi(g,'-position') ) then
              call fdf_brange(pline, r_tmp, 1, na_u)
              if ( r_tmp%n == 0 ) &
                   call die('Could not read in any atoms &
@@ -208,7 +209,7 @@ contains
           end if
           
        end do
-       call rgn_delete(r_tmp)
+       call rgn_delete(r_tmp)       
 
     end if
 
@@ -227,7 +228,7 @@ contains
        call rgn_complement(r_aEl_alone(iEl),r_aDev,r_aDev)
     end do
 
-    ! remove the downfolding region from the device region
+    ! remove the except region from the device region
     call rgn_complement(r_Els,r_aDev,r_aDev)
     ! Clean atomic downfolding region
     call rgn_delete(r_Els)

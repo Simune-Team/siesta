@@ -148,7 +148,7 @@ contains
     type(hNCDF) :: ncdf, grp
     type(dict) :: dic
     logical :: prec_Sigma
-    logical :: exist, isGamma, same
+    logical :: exist, same
     character(len=200) :: char
     integer :: i, iEl
     real(dp), allocatable :: r2(:,:)
@@ -157,8 +157,6 @@ contains
 #endif
 
     if ( .not. sigma_save ) return
-
-    isGamma = all(TSHS%nsc(:) == 1)
 
     exist = file_exist(fname, Bcast = .true. )
 
@@ -221,20 +219,18 @@ contains
                &not conform to the current simulation.')
        end if
 
-       if ( .not. isGamma ) then
-          ! Check the k-points
-          allocate(r2(3,nkpt))
-          do i = 1 , nkpt
-             call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
-          end do
-          dic = ('kpt'.kvp. r2) // ('wkpt'.kvp. wkpt)
-          call ncdf_assert(ncdf,same,vars=dic, d_EPS = 1.e-7_dp )
-          if ( .not. same ) then
-             call die('k-points or k-weights are not the same')
-          end if
-          call delete(dic,dealloc = .false. )
-          deallocate(r2)
+       ! Check the k-points
+       allocate(r2(3,nkpt))
+       do i = 1 , nkpt
+          call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
+       end do
+       dic = ('kpt'.kvp. r2) // ('wkpt'.kvp. wkpt)
+       call ncdf_assert(ncdf,same,vars=dic, d_EPS = 1.e-7_dp )
+       if ( .not. same ) then
+          call die('k-points or k-weights are not the same')
        end if
+       call delete(dic,dealloc = .false. )
+       deallocate(r2)
 
        call die('Currently the TBT.SE.nc file exists, &
             &we do not currently implement a continuation scheme.')
@@ -329,17 +325,13 @@ contains
             atts = dic)
     end if
 
-    if ( .not. isGamma ) then
-
-       dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
-       call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
-            atts = dic)
-       call delete(dic)
-       dic = dic//('info'.kv.'k point weights')
-       call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
-            atts = dic)
-
-    end if
+    dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
+    call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
+         atts = dic)
+    call delete(dic)
+    dic = dic//('info'.kv.'k point weights')
+    call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
+         atts = dic)
 
 #ifdef TBT_PHONON
     dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
@@ -360,15 +352,13 @@ contains
     end if
 
     ! Save all k-points
-    if ( .not. isGamma ) then
-       allocate(r2(3,nkpt))
-       do i = 1 , nkpt
-          call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
-       end do
-       call ncdf_put_var(ncdf,'kpt',r2)
-       call ncdf_put_var(ncdf,'wkpt',wkpt)
-       deallocate(r2)
-    end if
+    allocate(r2(3,nkpt))
+    do i = 1 , nkpt
+       call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
+    end do
+    call ncdf_put_var(ncdf,'kpt',r2)
+    call ncdf_put_var(ncdf,'wkpt',wkpt)
+    deallocate(r2)
 
     do iEl = 1 , N_Elec
 
