@@ -659,7 +659,7 @@ MODULE parse
            ! Does the user request length?
            count = ni <= 0
            li = 0 ! counter for the number of items in the list
-           ti = 1 ! the token iterator
+           ti = 1 ! the current token iterator
            is_del = .false.
            do while ( ti < lpline%ntokens ) 
 
@@ -726,6 +726,7 @@ MODULE parse
               elseif (leqi(lpline%id(ti),'i')) then
 
                  call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
+
               end if
 
               ti = ti + 1
@@ -734,14 +735,15 @@ MODULE parse
                  is_del = .false.
               end if
 
-              ! We do a last check to get all entries with
-              if ( ti == lpline%ntokens ) then
-                 if (leqi(lpline%id(ti),'i')) then
-                    call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
-                 end if
-              end if
            end do
 
+           ! Read last element (or the only element if one is given)
+           if ( ti == lpline%ntokens ) then
+              if (leqi(lpline%id(ti),'i')) then
+                 call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
+              end if
+           end if
+   
            ! Clean-up parsed list-line
            call destroy(lpline)
            
@@ -752,9 +754,9 @@ MODULE parse
       enddo
 
       if (.not. found) then
-        call die('PARSE module: lists', 'Not enough lists in line',     &
-                 THIS_FILE, __LINE__)
-      endif
+         call die('PARSE module: lists', 'Not enough lists in line', &
+                  THIS_FILE, __LINE__)
+      end if
 
       RETURN
 !------------------------------------------------------------- END
@@ -872,8 +874,8 @@ MODULE parse
       enddo
 
       if (.not. found) then
-        call die('PARSE module: names', 'Not enough names in line',     &
-                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
+         call die('PARSE module: names', 'Not enough names in line', &
+                  THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN

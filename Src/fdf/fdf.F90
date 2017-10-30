@@ -2004,7 +2004,9 @@ MODULE fdf
          else
             ! the list is not long enough
             if ( ni < lni ) then
-               call die('FDF module: fdf_list', 'List container too small', &
+               write(msg, '(2a,2(a,i0))')'List ', trim(label), &
+                    ' container too small: ', ni, ' versus ', lni
+               call die('FDF module: fdf_list', trim(msg), &
                     THIS_FILE, __LINE__, fdf_err)
             end if
             call lists(mark%pline,1,ni,list)
