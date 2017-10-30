@@ -505,6 +505,8 @@ c    .          'atom: The above configuration will be used ',
              vlocal_on_file = .false.
              kb_projs_on_file = .false.
              if (basp%has_psml_ps) then
+                ! We could instrument the reading routines to
+                ! return a logical value in query mode
                 vlocal_on_file = ps_HasLocalPotential(basp%psml_handle)
                 kb_projs_on_file = ps_HasProjectors(basp%psml_handle)
              endif
@@ -2798,7 +2800,7 @@ C potential
       integer, intent(inout)        :: lmxkb_true
       integer, intent(out)          :: nkb
 
-      integer    :: ir, l, ikb, nrc, nscalar, nkbl
+      integer    :: ir, l, ikb, nrc, nscalar, nkbl, nlj
       integer    :: lmxkb
       integer, allocatable  :: idx(:), idxl(:)
       real(dp), allocatable :: proj(:)
@@ -2809,9 +2811,6 @@ C potential
       real(dp) :: zpseudo
       character(len=10) :: relativity
       logical :: spin_polarized
-
-!      call ps_destroy(ps)
-!      call psml_reader(trim(atm_label)//".psml",ps)
 
       write(6,"(a)") "Reading KB projs from "
      $                    // trim(atm_label)// " psml data"
@@ -2824,26 +2823,39 @@ C potential
       endif
 
       select case (trim(relativity))
-       case ("dirac","scalar")
+
+      case ("scalar")
           call ps_Projector_Filter(ps,set=SET_SREL,number=nscalar,
      $                                indexes=idx)
-!          nscalar = ps_Number_Of_Projectors(ps,SET_SREL)
           if (nscalar == 0)
      $         call die("Cannot find scalar-relativistic projectors")
-!          call ps_Get_Projector_Indexes(ps,SET_SREL,idx)
+
+       case ("dirac")
+          call ps_Projector_Filter(ps,set=SET_SREL,number=nscalar,
+     $                                indexes=idx)
+          if (nscalar == 0) then
+             call ps_Projector_Filter(ps,set=SET_LJ,number=nlj,
+     $            indexes=idx)
+             if (nlj > 0) then
+                call die("LJ projectors available in PSML file, " //
+     $               "but generation of scalar-relativistic part" //
+     $               "is not available yet.")
+             else
+                call die("Cannot find scalar-relativistic projectors")
+             endif
+          endif
+                
        case ("no")
           if (spin_polarized) then
              call ps_Projector_Filter(ps,set=SET_SPINAVE,
      $                                indexes=idx,number=nscalar)
              if (nscalar == 0)
      $         call die("Cannot find spin-averaged projectors")
-!             call ps_Get_Projector_Indexes(ps,SET_SPINAVE,idx)
           else
              call ps_Projector_Filter(ps,set=SET_NONREL,
      $                                indexes=idx,number=nscalar)
              if (nscalar == 0)
      $            call die("Cannot find non-relativistic projectors")
-!             call ps_Get_Projector_Indexes(ps,SET_NONREL,idx)
           endif
        end select
           
@@ -2856,8 +2868,6 @@ C potential
        do l = 0, lmxkb
           call ps_Projector_Filter(ps,indexes_in=idx,l=l,
      $                             indexes=idxl,number=nkbl)
-!          call ps_Get_Projector_Indexes_byL(ps,l,idx,idxl)
-!          nkbl = size(idxl)
           if (nkbl > nkbmx) then
              write(6,'(i2,a,i2,a,i2)') nkbl,' KB projs for l=',l,
      $            ' overflow nkbmx:',nkbmx
@@ -2867,7 +2877,6 @@ C potential
           do ikb = 1, nkbl
              call ps_Projector_Get(ps,idxl(ikb),ekb=ekb)
              ekb = 2.0_dp * ekb
-!             ekb = 2.0_dp * ps_Projector_Ekb(ps,idxl(ikb))
              ! Projs are stored as P/r**l in the tables
              do ir = 2, nrval
                 proj(ir) = ps_Projector_Value(ps,idxl(ikb),rofi(ir))
