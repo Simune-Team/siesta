@@ -36,6 +36,9 @@ subroutine read_options( na, ns, nspin )
   use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
   use m_cite, only: add_citation
+#ifdef SIESTA__CHESS
+  use m_chess, only: set_CheSS_parameter
+#endif
   
   implicit none
   !----------------------------------------------------------- Input Variables
@@ -49,6 +52,9 @@ subroutine read_options( na, ns, nspin )
 
   ! This routine sets variables in the 'siesta_options' module
 
+#ifdef SIESTA__CHESS
+  real(dp) :: chess_value
+#endif
   ! The following are comment lines that should be merged into 'siesta_options'.
 
   ! real*8 charnet           : Net charge (in units of |e|)
@@ -69,6 +75,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 3   = OMM
   !                                                 4   = PEXSI
   !                                                 5   = (Matrix write)
+  !                                                 6   = CheSS
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
   ! real*8  ts               : Total spin of the system
@@ -687,6 +694,16 @@ subroutine read_options( na, ns, nspin )
 #else
      call die("PEXSI solver is not compiled in. Use -DSIESTA__PEXSI")
 #endif
+
+#ifdef SIESTA__CHESS
+  else if (leqi(method,'chess')) then
+     isolve = SOLVE_CHESS
+     if (ionode) then
+        write(*,'(a,4x,a)')                                &
+             'redata: Method of Calculation            = ',  &
+             '    CheSS'
+     endif
+#endif /* CHESS */
      
 #ifdef TRANSIESTA
   else if (leqi(method,'transi') .or. leqi(method,'transiesta') &
@@ -700,6 +717,9 @@ subroutine read_options( na, ns, nspin )
 #endif /* TRANSIESTA */
   else
      call die( 'redata: The method of solution must be either '//&
+#ifdef SIESTA__CHESS
+          'CheSS, '//&
+#endif
 #ifdef TRANSIESTA
           'Transiesta, '//&
 #endif
@@ -711,6 +731,69 @@ subroutine read_options( na, ns, nspin )
 
 #ifdef DEBUG
   call write_debug( '    Solution Method: ' // method )
+#endif
+
+#ifdef SIESTA__CHESS
+  ! Buffer for the density kernel within the CheSS calculation
+  chess_value = fdf_get('CheSS.Buffer.Kernel', 4.0_dp, 'Bohr')
+  call set_CheSS_parameter('chess_buffer_kernel', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Buffer.Kernel',chess_value
+
+  ! Buffer for the matrix vector multiplication within the CheSS calculation
+  chess_value = fdf_get('CheSS.Buffer.Mult', 6.0_dp, 'Bohr')
+  call set_CheSS_parameter('chess_buffer_mult', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Buffer.Mult',chess_value
+
+  ! Parameters for the penalty function used to determine the eigenvalue bounds
+  chess_value = fdf_get('CheSS.Betax', -1000.0_dp)
+  call set_CheSS_parameter('chess_betax', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Betax',chess_value
+
+  ! Initial guess for the error function decay length
+  chess_value = fdf_get('CheSS.Fscale', 1.e-1_dp, 'Ry')
+  call set_CheSS_parameter('chess_fscale', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.Fscale',chess_value
+
+  ! Lower bound for the error function decay length
+  chess_value = fdf_get('CheSS.FscaleLowerbound', 1.e-2_dp, 'Ry')
+  call set_CheSS_parameter('chess_fscale_lowerbound', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.FscaleLowerbound',chess_value
+
+  ! Upper bound for the error function decay length
+  chess_value = fdf_get('CheSS.FscaleUpperbound', 1.e-1_dp, 'Ry')
+  call set_CheSS_parameter('chess_fscale_upperbound', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.FscaleUpperbound',chess_value
+
+  ! Initial guess for the lowest eigenvalue bound of the Hamiltonian
+  chess_value = fdf_get('CheSS.evlowH', -2.0_dp, 'Ry')
+  call set_CheSS_parameter('chess_evlow_h', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evlowH',chess_value
+
+  ! Initial guess for the highest eigenvalue bound of the Hamiltonian
+  chess_value = fdf_get('CheSS.evhighH', 2.0_dp, 'Ry')
+  call set_CheSS_parameter('chess_evhigh_h', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evhighH',chess_value
+
+  ! Initial guess for the lowest eigenvalue bound of the overlap matrix
+  chess_value = fdf_get('CheSS.evlowS', 0.5_dp)
+  call set_CheSS_parameter('chess_evlow_s', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evlowS',chess_value
+
+  ! Initial guess for the highest eigenvalue bound of the overlap matrix
+  chess_value = fdf_get('CheSS.evhighS', 1.5_dp)
+  call set_CheSS_parameter('chess_evhigh_s', chess_value)
+  if (ionode)  write(6,7), &
+      'redata: CheSS.evhighS',chess_value
+
 #endif
 
   ! Electronic temperature for Fermi Smearing ...

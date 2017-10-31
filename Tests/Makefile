@@ -47,6 +47,7 @@ tests = ag anneal-cont ar2_vdw \
 	born born_spin \
 	carbon_nanoscroll \
 	ch4 chargeconf-h2o constant_volume \
+	chess \
 	dipole_correction \
 	fe fe_broyden fe_clust_noncollinear fe_clust_noncollinear-gga \
 	fe_cohp fen fe_noncol_kp \
