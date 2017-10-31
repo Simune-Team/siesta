@@ -154,7 +154,7 @@ MODULE Kpoint_pdos
             kscell(2,i) = fdf_bintegers(pline,2)
             kscell(3,i) = fdf_bintegers(pline,3)
             if ( fdf_bnvalues(pline) > 3 ) then
-               kdispl(i) = fdf_bvalues(pline,4)
+               kdispl(i) = mod(fdf_bvalues(pline,4), 1._dp)
             else
                kdispl(i) = 0._dp
             end if

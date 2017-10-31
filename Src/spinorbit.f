@@ -77,6 +77,7 @@ C
 
       integer  :: is, mx_nrval, li, ir, iup
       real(dp) :: a, b, rpb, ea
+      logical  :: there_are_so_potentials
       type(pseudopotential_t), pointer :: p
 
       allocate(nr(nspecies))
@@ -102,17 +103,23 @@ C
       drdi = 0.0_dp
 
       if (Node .eq. 0) then
+         write(6,"(/,a)")
+     $        "Initializing spin-orbit part of the Hamiltonian"
+         there_are_so_potentials = .false.
          do is = 1, nspecies
             p=> basis_parameters(is)%pseudopotential
-            if (p%npotu .eq. 0) then
-               write(6,"(a,i3)")
-     $           " ** No spin-orbit potential for species ", is
-               call die()
+            if ((p%irel == "rel") .and. (p%npotu > 0)) then
+               write(6,"(a)") "  Adding spin-orbit effects for "
+     $                         // p%name
+               there_are_so_potentials = .true.
+               do iup = 1, p%npotu
+                  li = p%lup(iup)
+                  vso(1:nr(is),li,is) = p%vup(li,:)
+               enddo
+            else
+               ! No spin-orbit components for this species
+               vso(1:nr(is),:,is) = 0.0_dp
             endif
-            do iup = 1, p%npotu
-               li = p%lup(iup)
-               vso(1:nr(is),li,is) = p%vup(li,:)
-            enddo
             r(1:nr(is),is) = p%r(:)
             a = p%a      
             b = p%b
@@ -123,6 +130,10 @@ C
                rpb=rpb*ea
             enddo
          enddo
+         write(6,"(/)")
+         if (.not. there_are_so_potentials) then
+            call die("No spin-orbit components for any species!!")
+         endif
       endif
 
       call broadcast(vso)

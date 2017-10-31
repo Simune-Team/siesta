@@ -318,6 +318,10 @@ contains
          ('E.spin_orbit'.kvp.Eso)
     variables = variables // &
          ('E.ldau'.kvp.Eldau)
+#ifdef TRANSIESTA
+    variables = variables // &
+         ('E.negf'.kvp.DE_NEGF)
+#endif
 
     ! Add the number of charges to the system
     variables = variables // &

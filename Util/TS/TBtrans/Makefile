@@ -63,6 +63,9 @@ SIESTA_OBJS += class_OrbitalDistribution.o \
 	class_TriMat.o \
         m_uuid.o object_debug.o
 
+# Output stuff
+SIESTA_OBJS += init_output.o
+
 # As the classes are based on inputs we force the dependency to
 # alloc
 class_Sparsity.o class_Data1D.o class_Data2D.o class_TriMat.o: alloc.o
@@ -131,6 +134,16 @@ TBTOBJS += tbtrans.o
 TBTOBJS += handlers.o local_sys.o
 
 #
+# Extract information of the compiler version used.
+# This is very basic but for intel, gcc, pgi and open64
+# this at least contain the version string of the compiler.
+# Possibly later the used compiler version may be extracted.
+COMPILER_VERSION := $(shell $(FC) --version | sed '/^[ ]*$$/d;q')
+ifeq ($(COMPILER_VERSION),)
+  # Just try and capture the case were it can not figure out anything
+  COMPILER_VERSION := Unknown version
+endif
+
 # The version program
 .PHONY: version.o
 version.o: version
@@ -138,6 +151,7 @@ version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
+		s^COMPILER_VERSION^$(COMPILER_VERSION)^;\
 		s'TBTRANS_VERSION'$$(cat ${<D}/../../../version.info)'g;\
 		s'LIBS'$(COMP_LIBS) $(LIBS)'g;\
 		s'FPPFLAGS'$(FPPFLAGS)'g" $<  > tmp.F90
@@ -349,6 +363,8 @@ geom_helper.o: intrinsic_missing.o
 geom_helper.o: intrinsic_missing.o
 idiag.o: local_sys.o parallel.o
 idiag.o: local_sys.o parallel.o
+init_output.o: files.o
+init_output.o: files.o
 io.o: local_sys.o
 io.o: local_sys.o
 kpoint_convert.o: local_sys.o precision.o units.o
@@ -611,12 +627,12 @@ m_tbt_kregions.o: m_ts_electype.o m_verbosity.o parallel.o precision.o
 m_tbt_kregions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_kregions.o: m_region.o m_tbt_kpoint.o m_ts_cctype.o m_ts_electrode.o
 m_tbt_kregions.o: m_ts_electype.o m_verbosity.o parallel.o precision.o
-m_tbt_options.o: files.o intrinsic_missing.o m_os.o m_tbt_contour.o m_tbt_dH.o
-m_tbt_options.o: m_tbt_dSE.o m_tbt_diag.o m_tbt_hs.o m_tbt_save.o
+m_tbt_options.o: files.o intrinsic_missing.o m_os.o m_region.o m_tbt_contour.o
+m_tbt_options.o: m_tbt_dH.o m_tbt_dSE.o m_tbt_diag.o m_tbt_hs.o m_tbt_save.o
 m_tbt_options.o: m_tbt_sigma_save.o m_ts_chem_pot.o m_ts_electype.o
 m_tbt_options.o: m_ts_method.o m_ts_tdir.o parallel.o precision.o units.o
-m_tbt_options.o: files.o intrinsic_missing.o m_os.o m_tbt_contour.o m_tbt_dH.o
-m_tbt_options.o: m_tbt_dSE.o m_tbt_diag.o m_tbt_hs.o m_tbt_save.o
+m_tbt_options.o: files.o intrinsic_missing.o m_os.o m_region.o m_tbt_contour.o
+m_tbt_options.o: m_tbt_dH.o m_tbt_dSE.o m_tbt_diag.o m_tbt_hs.o m_tbt_save.o
 m_tbt_options.o: m_tbt_sigma_save.o m_ts_chem_pot.o m_ts_electype.o
 m_tbt_options.o: m_ts_method.o m_ts_tdir.o parallel.o precision.o units.o
 m_tbt_proj.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
@@ -630,17 +646,17 @@ m_tbt_proj.o: m_ncdf_io.o m_os.o m_region.o m_tbt_diag.o m_tbt_hs.o
 m_tbt_proj.o: m_tbt_save.o m_ts_electype.o parallel.o precision.o timestamp.o
 m_tbt_proj.o: units.o
 m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o
-m_tbt_regions.o: create_Sparsity_SC.o fdf_extra.o geom_helper.o
-m_tbt_regions.o: intrinsic_missing.o m_char.o m_pivot.o m_pivot_methods.o
-m_tbt_regions.o: m_region.o m_sparsity_handling.o m_ts_debug.o m_ts_electype.o
-m_tbt_regions.o: m_ts_method.o m_ts_pivot.o m_ts_sparse.o m_verbosity.o
-m_tbt_regions.o: parallel.o precision.o
+m_tbt_regions.o: create_Sparsity_SC.o create_Sparsity_Union.o fdf_extra.o
+m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_char.o m_pivot.o
+m_tbt_regions.o: m_pivot_methods.o m_region.o m_sparsity_handling.o
+m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_pivot.o
+m_tbt_regions.o: m_ts_sparse.o m_verbosity.o parallel.o precision.o
 m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o
-m_tbt_regions.o: create_Sparsity_SC.o fdf_extra.o geom_helper.o
-m_tbt_regions.o: intrinsic_missing.o m_char.o m_pivot.o m_pivot_methods.o
-m_tbt_regions.o: m_region.o m_sparsity_handling.o m_ts_debug.o m_ts_electype.o
-m_tbt_regions.o: m_ts_method.o m_ts_pivot.o m_ts_sparse.o m_verbosity.o
-m_tbt_regions.o: parallel.o precision.o
+m_tbt_regions.o: create_Sparsity_SC.o create_Sparsity_Union.o fdf_extra.o
+m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_char.o m_pivot.o
+m_tbt_regions.o: m_pivot_methods.o m_region.o m_sparsity_handling.o
+m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_pivot.o
+m_tbt_regions.o: m_ts_sparse.o m_verbosity.o parallel.o precision.o
 m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_save.o: files.o m_interpolate.o m_ncdf_io.o m_os.o m_region.o m_tbt_hs.o
 m_tbt_save.o: m_ts_electype.o m_verbosity.o parallel.o precision.o timestamp.o

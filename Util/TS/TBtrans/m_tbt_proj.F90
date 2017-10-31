@@ -1320,7 +1320,7 @@ contains
     type(dict), intent(inout) :: save_DATA
 
     type(hNCDF) :: ncdf, grp, grp2, grp3
-    type(tRgn) :: r_tmp
+    type(tRgn) :: r_tmp, a_Dev_sort
     integer :: cmp_lvl
     integer :: no, im, Np, ip, i, ik, iN, iE
     integer :: it, ipt
@@ -1344,6 +1344,11 @@ contains
 
     ! There is nothing to initialize
     if ( N_mol == 0 ) return
+
+    ! We have to sort the device atoms.
+    ! We however, know that a_Buf *is* sorted.
+    call rgn_copy(a_Dev, a_Dev_sort)
+    call rgn_sort(a_Dev_sort)
 
     exist = file_exist(fname, Bcast = .true. )
 
@@ -1421,7 +1426,7 @@ contains
        call ncdf_open(ncdf,fname,mode=NF90_NOWRITE)
 
        dic = ('no_u'.kv. TSHS%no_u)//('na_u'.kv. TSHS%na_u )
-       dic = dic //('no_d'.kv.r%n) // ('na_d'.kv.a_Dev%n)
+       dic = dic //('no_d'.kv.r%n) // ('na_d'.kv.a_Dev_sort%n)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('na_b'.kv.a_Buf%n)
        end if
@@ -1432,7 +1437,7 @@ contains
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) )
        dic = dic // ('xa'.kvp. TSHS%xa) // ('cell'.kvp.TSHS%cell)
-       dic = dic // ('pivot'.kvp.r%r)//('a_dev'.kvp.a_Dev%r)
+       dic = dic // ('pivot'.kvp.r%r)//('a_dev'.kvp.a_Dev_sort%r)
        dic = dic // ('nsc'.kvp. TSHS%nsc)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('a_buf'.kvp.a_Buf%r)
@@ -1441,20 +1446,18 @@ contains
        call check(dic,is_same,'lasto, xa or cell in the PROJ.nc file does &
             &not conform to the current simulation.',.false.)
 
-       if ( .not. isGamma ) then
-          ! Check the k-points
-          allocate(rv(3,nkpt))
-          do i = 1 , nkpt
-             call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
-          end do
-          dic = ('kpt'.kvp.rv) // ('wkpt'.kvp. wkpt)
-          call ncdf_assert(ncdf,is_same,vars=dic, d_EPS = 1.e-7_dp )
-          if ( .not. is_same ) then
-             call die('k-points or k-weights are not the same')
-          end if
-          call delete(dic,dealloc = .false. )
-          deallocate(rv)
+       ! Check the k-points
+       allocate(rv(3,nkpt))
+       do i = 1 , nkpt
+          call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
+       end do
+       dic = ('kpt'.kvp.rv) // ('wkpt'.kvp. wkpt)
+       call ncdf_assert(ncdf,is_same,vars=dic, d_EPS = 1.e-7_dp )
+       if ( .not. is_same ) then
+          call die('k-points or k-weights are not the same')
        end if
+       call delete(dic,dealloc = .false. )
+       deallocate(rv)
 
        ! We check each molecule in the projection file
        do im = 1 , N_mol
@@ -1564,7 +1567,7 @@ contains
     call ncdf_def_dim(ncdf,'na_u',TSHS%na_u)
     call ncdf_def_dim(ncdf,'xyz',3)
     call ncdf_def_dim(ncdf,'one',1)
-    call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
+    call ncdf_def_dim(ncdf,'na_d',a_Dev_sort%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
     call ncdf_def_dim(ncdf,'nkpt',NF90_UNLIMITED)
     call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
@@ -1637,17 +1640,13 @@ contains
             atts = dic)
     end if
 
-    if ( .not. isGamma ) then
-
-       dic = ('info'.kv.'k point weights')
-       call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
-            atts = dic)
-       dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
-       call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
-            atts = dic)
-
-    end if
-
+    dic = ('info'.kv.'k point weights')
+    call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
+         atts = dic)
+    dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
+    call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
+         atts = dic)
+    
 #ifdef TBT_PHONON
     dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
 #else
@@ -1663,27 +1662,26 @@ contains
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
-    call ncdf_put_var(ncdf,'a_dev',a_Dev%r)
+    call ncdf_put_var(ncdf,'a_dev',a_Dev_sort%r)
     if ( a_Buf%n > 0 ) then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
     end if
+
+    ! We are now done with a_Dev_sort
+    call rgn_delete(a_Dev_sort)
 
     ! Save all k-points
     ! Even though they are in an unlimited dimension,
     ! we save them instantly.
     ! This ensures that a continuation can check for 
     ! the same k-points in the same go.
-    if ( .not. isGamma ) then
-
-       allocate(rv(3,nkpt))
-       do i = 1 , nkpt
-          call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
-       end do
-       call ncdf_put_var(ncdf,'kpt',rv)
-       call ncdf_put_var(ncdf,'wkpt',wkpt)
-       deallocate(rv)
-
-    end if
+    allocate(rv(3,nkpt))
+    do i = 1 , nkpt
+       call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
+    end do
+    call ncdf_put_var(ncdf,'kpt',rv)
+    call ncdf_put_var(ncdf,'wkpt',wkpt)
+    deallocate(rv)
 
     if ( 'proj-orb-current' .in. save_DATA ) then
 

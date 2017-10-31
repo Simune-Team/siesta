@@ -387,12 +387,12 @@ subroutine print_report( prog )   ! Write a report of counted times
 !      end if
 ! END DEBUG
 
-      ! Open local report file
-      call io_assign( iu )
-      open( unit=iu, file=myReportFile, form='formatted', status='unknown' )
-
       ! Write header
       if (myNode==writerNode) then
+        ! Open local report file
+        call io_assign( iu )
+        open( unit=iu, file=myReportFile, form='formatted', status='unknown' )
+         
         write(iu,'(/,a,i6)') &
          'timer: Number of nodes = ', nNodes
         write(iu,'(a,i6)') &
@@ -509,10 +509,12 @@ subroutine print_report( prog )   ! Write a report of counted times
           'Nod.avg: average calculation time in one program across nodes',  &
           'Nod.max: maximum calculation time in one program across nodes',  &
           'Calculation time: CPU time excluding communications', ' '
+
+        ! Copy report file to the file system of root node
+        call io_close( iu )
+        
       endif ! (myNode==writerNode)
 
-      ! Copy report file to the file system of root node
-      call io_close( iu )
       if (reportUnit>0) then ! Append report to file already open
 #ifdef MPI
         ! Find report file name in node 0 and send it to writer node

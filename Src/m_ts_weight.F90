@@ -578,13 +578,13 @@ contains
           e_f  = DM(ind,1)
           if ( hasEDM ) Ee_f = EDM(ind,1)
 
-          DM(ind,1) = w(1) * DM(ind,1)
           ! Also calculate the charge after weighting
           q(1) = q(1) + DM(ind,1) * S(sind)
+          DM(ind,1) = w(1) * DM(ind,1)
           if ( hasEDM ) EDM(ind,1) = w(1) * EDM(ind,1)
           do mu_i = 2 , N_mu
+             q(mu_i) = q(mu_i) + DM(ind,mu_i) * S(sind)
              DM(ind,1) = DM(ind,1) + w(mu_i) * DM(ind,mu_i)
-             q(mu_i) = q(mu_i) + w(mu_i) * DM(ind,mu_i) * S(sind)
              if ( hasEDM ) &
                   EDM(ind,1) = EDM(ind,1) + w(mu_i) * EDM(ind,mu_i)
           end do
@@ -787,6 +787,12 @@ contains
             EeM,Eew,EeM_i,EeM_j,EDMe,Em_err)
     end if
 
+    ! As the charges originating from each electrode
+    ! are different we will assume that each electrode has
+    ! an equal weight
+    ! This is a bad approximation, but...
+    q(:) = q(:) / N_mu
+
     ! Calculate the energy contribution to the total energy due
     ! to the electrons from the baths
     !   Etot = Etot - e \sum_i N_i \mu_i
@@ -813,7 +819,7 @@ contains
     if ( IONode ) then
        write(*,'(a,tr8)',advance='no') trim(a)
        do i = 1 , size(q)
-          write(*,'(tr1,a8,i0)',advance='no') 'P',i
+          write(*,'(tr1,a8,i0)',advance='no') 'qP',i
        end do
        ! Ensure there is a new-line
        write(*,'(/a,tr8,1000(tr1,f9.3))') trim(a), q

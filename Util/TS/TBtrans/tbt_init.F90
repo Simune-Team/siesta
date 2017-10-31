@@ -86,7 +86,7 @@ subroutine tbt_init()
   if ( MPI_Thread_Funneled /= it ) then
      ! the requested threading level cannot be asserted
      ! Notify the user
-     write(*,'(a)') '!!! Could not assert funneled threads'
+     write(0,'(a)') '!!! Could not assert funneled threads'
   end if
 #else
   call MPI_Init( MPIerror )
@@ -94,6 +94,9 @@ subroutine tbt_init()
 #endif
   
   call parallel_init()
+
+  ! Initialize the output
+  call init_output(Node == 0)
 
 #ifdef MPI
   if (.not. fdf_parallel()) then
@@ -292,7 +295,7 @@ subroutine tbt_init()
   ! Create the device region sparsity pattern
   call tbt_region_options( TSHS%sp, save_DATA )
 
-  call tbt_print_regions(N_Elec, Elecs)
+  call tbt_print_regions( TSHS%na_u, TSHS%lasto, N_Elec, Elecs)
 
   call tbt_print_kRegions( TSHS%cell )
 

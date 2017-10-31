@@ -362,9 +362,15 @@ contains
     integer :: prec_DOS, prec_T, prec_Teig, prec_J
     type(OrbitalDistribution) :: fdit
     real(dp), allocatable :: r2(:,:)
+    type(tRgn) :: a_Dev_sort
 #ifdef MPI
     integer :: MPIerror
 #endif
+
+    ! We have to sort the device atoms.
+    ! We however, know that a_Buf *is* sorted.
+    call rgn_copy(a_Dev, a_Dev_sort)
+    call rgn_sort(a_Dev_sort)
 
     ! In case the user thinks the double precision
     ! is too much
@@ -393,7 +399,7 @@ contains
 
        dic = ('no_u'.kv. TSHS%no_u) // ('na_u'.kv. TSHS%na_u ) &
             // ('no_d'.kv. r%n ) // ('nkpt'.kv. nkpt )
-       dic = dic // ('na_d'.kv. a_Dev%n)
+       dic = dic // ('na_d'.kv. a_Dev_sort%n)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('na_b'.kv. a_Buf%n)
        end if
@@ -411,7 +417,7 @@ contains
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
             ('pivot'.kvp. r%r )
-       dic = dic // ('xa'.kvp. TSHS%xa) // ('a_dev'.kvp.a_Dev%r )
+       dic = dic // ('xa'.kvp. TSHS%xa) // ('a_dev'.kvp.a_Dev_sort%r )
        dic = dic // ('nsc'.kvp. TSHS%nsc)
        if ( a_Buf%n > 0 )then
           dic = dic // ('a_buf'.kvp.a_Buf%r )
@@ -427,20 +433,18 @@ contains
                &file does not conform to the current simulation.')
        end if
 
-       if ( .not. isGamma ) then
-          ! Check the k-points
-          allocate(r2(3,nkpt))
-          do i = 1 , nkpt
-             call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
-          end do
-          dic = ('kpt'.kvp.r2) // ('wkpt'.kvp. wkpt)
-          call ncdf_assert(ncdf,sme,vars=dic, d_EPS = 1.e-7_dp )
-          if ( .not. sme ) then
-             call die('k-points or k-weights are not the same')
-          end if
-          call delete(dic,dealloc = .false. )
-          deallocate(r2)
+       ! Check the k-points
+       allocate(r2(3,nkpt))
+       do i = 1 , nkpt
+          call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
+       end do
+       dic = ('kpt'.kvp.r2) // ('wkpt'.kvp. wkpt)
+       call ncdf_assert(ncdf,sme,vars=dic, d_EPS = 1.e-7_dp )
+       if ( .not. sme ) then
+          call die('k-points or k-weights are not the same')
        end if
+       call delete(dic,dealloc = .false. )
+       deallocate(r2)
 
        call ncdf_close(ncdf)
        
@@ -463,8 +467,6 @@ contains
           call die('Currently the '//trim(fname)//' file exists, &
                &we do not currently implement a continuation scheme.')
           
-          return
-
        end if
 
        ! We complain to the user about it and DIE
@@ -491,7 +493,7 @@ contains
     call ncdf_def_dim(ncdf,'nkpt',nkpt)
     call ncdf_def_dim(ncdf,'xyz',3)
     call ncdf_def_dim(ncdf,'one',1)
-    call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
+    call ncdf_def_dim(ncdf,'na_d',a_Dev_sort%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
     !call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED) ! Parallel does not work
     call ncdf_def_dim(ncdf,'ne',NE)
@@ -577,17 +579,13 @@ contains
             atts = dic , chunks = (/r%n,1,1/) , compress_lvl = cmp_lvl )
     end if
 
-    if ( .not. isGamma ) then
-
-       dic = dic // ('info'.kv.'k point')//('unit'.kv.'b')
-       call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
-            atts = dic)
-       call delete(dic)
-       dic = ('info'.kv.'k point weights')
-       call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
-            atts = dic , chunks = (/1/) )
-
-    end if
+    dic = dic // ('info'.kv.'k point')//('unit'.kv.'b')
+    call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
+         atts = dic)
+    call delete(dic)
+    dic = ('info'.kv.'k point weights')
+    call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
+         atts = dic , chunks = (/1/) )
 
 #ifdef TBT_PHONON
     dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
@@ -604,25 +602,26 @@ contains
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
-    call ncdf_put_var(ncdf,'a_dev',a_Dev%r)
+    call ncdf_put_var(ncdf,'a_dev',a_Dev_sort%r)
     if ( a_Buf%n > 0 )then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
     end if
+
+    ! We are now done with a_Dev_sort
+    call rgn_delete(a_Dev_sort)
 
     ! Save all k-points
     ! Even though they are in an unlimited dimension,
     ! we save them instantly.
     ! This ensures that a continuation can check for 
     ! the same k-points in the same go.
-    if ( .not. isGamma ) then
-       allocate(r2(3,nkpt))
-       do i = 1 , nkpt
-          call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
-       end do
-       call ncdf_put_var(ncdf,'kpt',r2)
-       call ncdf_put_var(ncdf,'wkpt',wkpt)
-       deallocate(r2)
-    end if
+    allocate(r2(3,nkpt))
+    do i = 1 , nkpt
+       call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
+    end do
+    call ncdf_put_var(ncdf,'kpt',r2)
+    call ncdf_put_var(ncdf,'wkpt',wkpt)
+    deallocate(r2)
 
     if ( 'orb-current' .in. save_DATA ) then
        
@@ -661,10 +660,16 @@ contains
        call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
        ! Save generic information about electrode
-       dic = ('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
+       dic = ('info'.kv.'Bloch expansion')
+       call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+       
+       dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
             atts = dic)
        call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
+
 #ifdef TBT_PHONON
        dic = dic//('info'.kv.'Phonon temperature')
 #else
@@ -673,6 +678,11 @@ contains
        call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
             atts = dic)
        call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
+
+       dic = dic//('info'.kv.'Imaginary part for self-energies')
+       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
 
        call delete(dic)
 

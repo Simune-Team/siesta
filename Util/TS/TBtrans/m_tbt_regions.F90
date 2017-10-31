@@ -43,10 +43,11 @@ module m_tbt_regions
   ! I.e. it is the regions that goes from the electrode
   ! and down to the central region (without any central
   ! region overlap)
-  type(tRgn), allocatable, target, public :: r_aEl(:)   , r_oEl(:)
-  type(tRgn), allocatable, target, public :: r_aElpD(:) , r_oElpD(:)
+  type(tRgn), allocatable, target, public :: r_aEl(:), r_oEl(:)
+  type(tRgn), allocatable, target, public :: r_oElpD(:)
 
   ! the device region (the calculated GF region)
+  ! Note that these arrays are pivoted indices
   public :: r_aDev, r_oDev
 
   ! The buffer region, just for completeness
@@ -78,9 +79,10 @@ contains
     use geom_helper, only : iaorb
     use intrinsic_missing, only : SPC_PROJ, VNORM, VEC_PROJ
     use create_Sparsity_SC
+    use create_Sparsity_Union
+
 
     use m_ts_electype
-    use m_ts_method, only : ts_init_regions
     use m_ts_method, only : atom_type, TYP_DEVICE, TYP_BUFFER
 
     use m_ts_sparse, only : ts_Sparsity_Global
@@ -103,20 +105,20 @@ contains
     ! The atomic coordinates
     real(dp), intent(in) :: xa(3,na_u)
     ! The distribution for the sparsity pattern
-    type(OrbitalDistribution), intent(in) :: dit
+    type(OrbitalDistribution), intent(inout) :: dit
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! The supercell information
     integer, intent(in) :: nsc, isc_off(3,nsc)
 
-    integer :: iEl
+    integer :: iEl, jEl
 
     ! A temporary sparsity pattern
     type(Sparsity) :: sp_tmp
 
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    character(len=50) :: g, csort
+    character(len=128) :: g, csort
     integer :: i, ia1, ia2, no_u
     integer :: init_nz
     type(tRgn) :: r_tmp, r_tmp2, r_tmp3, r_Els, priority
@@ -196,7 +198,8 @@ contains
           end if
 
           ! Atoms NOT in the device region...
-          if ( leqi(g,'not-atom') .or. leqi(g,'not-position') ) then
+          if ( leqi(g,'not-atom') .or. leqi(g,'not-position') .or. &
+               leqi(g,'-atom') .or. leqi(g,'-position') ) then
              call fdf_brange(pline, r_tmp, 1, na_u)
              if ( r_tmp%n == 0 ) &
                   call die('Could not read in any atoms &
@@ -206,7 +209,7 @@ contains
           end if
           
        end do
-       call rgn_delete(r_tmp)
+       call rgn_delete(r_tmp)       
 
     end if
 
@@ -225,7 +228,7 @@ contains
        call rgn_complement(r_aEl_alone(iEl),r_aDev,r_aDev)
     end do
 
-    ! remove the downfolding region from the device region
+    ! remove the except region from the device region
     call rgn_complement(r_Els,r_aDev,r_aDev)
     ! Clean atomic downfolding region
     call rgn_delete(r_Els)
@@ -256,6 +259,7 @@ contains
        ! folds supercell orbitals to the correct atoms)
        call rgn_Orb2Atom(r_tmp,na_u,lasto,r_oDev)
        call rgn_delete(r_tmp)
+       
        ! Remove buffer atoms (in case the electrode is too small)
        if ( r_aBuf%n > 0 ) then
           call rgn_complement(r_aBuf,r_oDev,r_oDev)
@@ -295,7 +299,7 @@ contains
 
     ! Allocate the different regions
     allocate(r_aEl(N_Elec),r_oEl(N_Elec))
-    allocate(r_aElpD(N_Elec),r_oElpD(N_Elec))
+    allocate(r_oElpD(N_Elec))
 
     do iEl = 1 , N_Elec
 
@@ -337,9 +341,11 @@ contains
        ! Step 1. build a unified region of all the following
        !         electrodes!
        call rgn_delete(r_tmp)
-       do i = iEl + 1 , N_Elec
-          call rgn_append(r_tmp,r_oEl_alone(i),r_tmp)
+       do jEl = iEl + 1 , N_Elec
+          call rgn_append(r_tmp, r_oEl_alone(jEl), r_tmp)
        end do
+       ! Speeds up stuff
+       call rgn_sort(r_tmp)
 
        ! First we update the sparsity pattern to remove any connections
        ! between the electrode and the other ones
@@ -479,9 +485,6 @@ contains
                &region. Please expand your device region.')
        end if
 
-       ! Create the atom equivalent regions
-       call rgn_Orb2Atom(r_oElpD(iEl) , na_u, lasto, r_aElpD(iEl) )
-
     end do
 
     ! Possibly deleting it
@@ -491,11 +494,10 @@ contains
 #ifdef MPI
        i = mod(iEl-1,Nodes)
        ! Bcast the region
-       call rgn_MPI_Bcast(r_oEl(iEl),i)
        call rgn_MPI_Bcast(r_aEl(iEl),i)
+       call rgn_MPI_Bcast(r_oEl(iEl),i)
        call rgn_MPI_Bcast(Elecs(iEl)%o_inD,i)
        call rgn_MPI_Bcast(r_oElpD(iEl),i)
-       call rgn_MPI_Bcast(r_aElpD(iEl),i)
 #endif
 
        if ( iEl > 1 ) then
@@ -503,6 +505,17 @@ contains
        ! electrode region...
        do i = 1 , iEl - 1
           if ( rgn_overlaps(r_aEl(iEl),r_aEl(i)) ) then
+             if ( Node == 0 ) then
+                do jEl = 1 , N_Elec
+                   ! We are dying anyway, so might as well sort to make it easier
+                   call rgn_sort(r_aEl(jEl))
+                   call rgn_print(r_aEl(jEl))
+                end do
+             end if
+#ifdef MPI
+             call MPI_Barrier(MPI_Comm_World, jEl)
+#endif
+
              call die('Electrode regions connect across the device region, &
                   &please increase your device region!')
           end if
@@ -510,10 +523,9 @@ contains
        end if
 
        ! Set the names
-       r_oEl(iEl)%name   = '[O]-'//trim(Elecs(iEl)%name)//' folding region'
        r_aEl(iEl)%name   = '[A]-'//trim(Elecs(iEl)%name)//' folding region'
+       r_oEl(iEl)%name   = '[O]-'//trim(Elecs(iEl)%name)//' folding region'
        r_oElpD(iEl)%name = '[O]-'//trim(Elecs(iEl)%name)//' folding El + D'
-       r_aElpD(iEl)%name = '[A]-'//trim(Elecs(iEl)%name)//' folding El + D'
        Elecs(iEl)%o_inD%name = '[O]-'//trim(Elecs(iEl)%name)//' in D'
 
        ! Prepare the inDpvt array (will be filled in tri_init
@@ -537,6 +549,12 @@ contains
           call sp2graphviz(csort, sp_tmp, pvt=r_oEl(iEl))
        end if
 #endif
+
+       ! Enlarge the sparse pattern by adding all electrode self-energy terms in
+       ! the central region.
+       ! Otherwise we do not have a DENSE part of the self-energies in the central
+       ! region. This is _very_ necessary.
+       call crtSparsity_Union_region(dit, sp_tmp, Elecs(iEl)%o_inD, sp_tmp)
 
     end do
 
@@ -647,6 +665,7 @@ contains
                 call rgn_union(r_tmp,r_oEl(iEl),r_tmp)
              end do
              r_tmp%name = 'Double counted orbitals'
+             call rgn_sort(r_tmp)
              call rgn_print(r_tmp)
           else
              ! find the missing orbitals
@@ -659,6 +678,7 @@ contains
                 call rgn_complement(r_oEl(iEl),r_tmp,r_tmp)
              end do
              r_tmp%name = 'Missing orbitals'
+             call rgn_sort(r_tmp)
              call rgn_print(r_tmp)
           end if
           write(*,'(a,2(tr1,i0))')'Total number of orbitals vs. counted:',no_u,i
@@ -764,12 +784,14 @@ contains
 
   end subroutine tbt_region_options
 
-  subroutine tbt_print_regions(N_Elec, Elecs)
+  subroutine tbt_print_regions(na_u, lasto, N_Elec, Elecs)
 
     use parallel, only : Node
     use m_verbosity, only : verbosity
     use m_ts_electype
-    
+
+    integer, intent(in) :: na_u
+    integer, intent(in) :: lasto(0:na_u)
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer :: i
@@ -781,15 +803,15 @@ contains
 
     ! Print out the buffer regions
     if ( r_aBuf%n > 0 ) then
-       call local_print(r_aBuf,.false.)
-       call local_print(r_oBuf,.true.)
+       call local_print(r_aBuf, .false. )
+       call local_print(r_oBuf, .true. )
     end if
 
     ! Print out the device region
     write(*,'(a,i0)')'tbtrans: # of device region orbitals: ',r_oDev%n
 
-    call local_print(r_aDev,.false.)
-    call local_print(r_oDev,.true.)
+    call local_print(r_aDev, .false. )
+    call local_print(r_oDev, .true. )
 
     ! Print out all the electrodes + their projection region
     do i = 1 , N_Elec
@@ -798,17 +820,19 @@ contains
             ' scattering orbitals: ',Elecs(i)%o_inD%n
        write(*,'(3a,i0)')'tbtrans: # of ',trim(Elecs(i)%name), &
             ' down-folding orbitals: ',r_oElpD(i)%n
-       call local_print(r_aEl(i),.false.)
-       call local_print(r_oEl(i),.true.)
+       call local_print(r_aEl(i), .false. )
+       call local_print(r_oEl(i), .true. )
        if ( verbosity > 3 ) then
-          call rgn_intersection(r_aElpD(i),r_aDev,r)
+          ! Create the atom equivalent regions
+          call rgn_Orb2Atom(r_oElpD(i) , na_u, lasto, r)
+          call rgn_intersection(r,r_aDev,r)
           r%name = '[A]-'//trim(Elecs(i)%name)//' folding in D'
           call local_print(r, .false. )
        end if
        if ( verbosity > 7 ) then
           call rgn_intersection(r_oElpD(i),r_oDev,r)
           r%name = '[O]-'//trim(Elecs(i)%name)//' folding in D'
-          call local_print(r,.true.)
+          call local_print(r, .true. )
        end if
     end do
 

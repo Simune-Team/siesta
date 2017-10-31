@@ -97,8 +97,12 @@ contains
 
   subroutine read_tbt_generic(na_u, lasto)
 
+    use m_region, only: rgn_delete
     use fdf, only: fdf_defined
     use m_ts_method, only: ts_init_regions
+    ! This array is never used used, so we delete it
+    use m_ts_method, only: r_pvt
+
     use m_tbt_diag, only: init_diag
 
     ! The number of atoms
@@ -112,6 +116,8 @@ contains
     else
        call ts_init_regions('TS',na_u,lasto)
     end if
+
+    call rgn_delete(r_pvt)
 
     ! Initialize the diagonalization method.
     call init_diag( )
@@ -769,7 +775,7 @@ contains
 
   subroutine print_tbt_warnings( Gamma )
 
-    use fdf, only: fdf_get
+    use fdf, only: fdf_get, fdf_defined
     use units, only: eV
     use parallel, only: IONode
 
@@ -844,8 +850,10 @@ contains
                &enabled for in-core self-energy calculations.'
        end if
     end if
-    
-    write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
+
+    if ( .not. fdf_defined('TBT.Atoms.Device') ) then
+       write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
+    end if
     
     if ( rem_T_Gf .and. N_Elec > 3 ) then
        write(*,'(a)')' ** Disabling transport calculation using diagonal, &

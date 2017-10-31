@@ -358,7 +358,9 @@ contains
        
     end do
 
-#ifndef TBTRANS
+#ifdef TBTRANS
+    call rgn_nullify(r)
+#else
     call rgn_delete(r)
 #endif
        

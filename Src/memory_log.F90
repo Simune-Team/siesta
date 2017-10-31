@@ -125,7 +125,8 @@ CONTAINS
 
 ! ==================================================================
 
-SUBROUTINE memory_report( level, unit, file, printNow, threshold )
+SUBROUTINE memory_report( level, unit, file, printNow, threshold, &
+  shutdown)
 
 implicit none
 
@@ -133,15 +134,16 @@ integer,          optional, intent(in) :: level, unit
 character(len=*), optional, intent(in) :: file
 logical,          optional, intent(in) :: printNow
 real(dp),         optional, intent(in) :: threshold
+logical,          optional, intent(in) :: shutdown
 
-logical open
+logical :: is_open
 
 #ifdef MPI
-integer MPIerror
+integer :: MPIerror
 #endif
 
 if (present(level)) then
-  REPORT_LEVEL = level
+   REPORT_LEVEL = level
 end if
 
 if (node == 0) then
@@ -157,8 +159,8 @@ if (node == 0) then
   else if (present(file)) then    ! If file is the same, do nothing
     if (file /= REPORT_FILE) then ! Check if file was open outside
       REPORT_FILE = file
-      inquire( file=REPORT_FILE, opened=open, number=REPORT_UNIT )
-      if (.not.open) then         ! Open new file
+      inquire( file=REPORT_FILE, opened=is_open, number=REPORT_UNIT )
+      if (.not.is_open) then         ! Open new file
         call io_assign(REPORT_UNIT)
         open( REPORT_UNIT, file=REPORT_FILE, status='unknown')
         write(REPORT_UNIT,*) ' '  ! Overwrite previous reports
@@ -174,8 +176,13 @@ end if
 
 #ifdef MPI
 ! Distribute information to other nodes and open REPORT_UNIT
-call MPI_Bcast(REPORT_LEVEL,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-call MPI_Bcast(REPORT_UNIT,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+! NP:
+!   I am not too happy about this
+!   This forces a certain unit to be Bcasted to the others.
+!   If that unit is already open on the other nodes then you will have
+!   this module and some other module write to the same file.
+!   Perhaps we should just open the file from this node with
+!   the node id appended?
 call MPI_Bcast(REPORT_FILE,50,MPI_character,0,MPI_Comm_World,MPIerror)
 ! JMS: open file only in node 0
 !if (node > 0) then
@@ -187,6 +194,13 @@ if (present(threshold)) REPORT_THRESHOLD = threshold
 
 if (present(printNow)) then
   if (printNow) call print_report( )
+end if
+
+if (present(shutdown)) then
+   if ( shutdown .and. REPORT_UNIT /= 0 ) then
+      inquire( REPORT_UNIT, opened=is_open )
+      if ( is_open ) call io_close(REPORT_UNIT)
+   end if
 end if
 
 END SUBROUTINE memory_report
@@ -430,11 +444,13 @@ if (Nodes > 1) then
     end if
   end do ! iNode
   ! Change the writing node for the peak-node information
-  if (node==0 .and. peakNode/=0) close( unit=REPORT_UNIT )
+  if (node==0 .and. peakNode/=0) close( REPORT_UNIT )
   call MPI_Barrier( MPI_COMM_WORLD, MPIerror )
-  if (node==peakNode .and. peakNode/=0) &
-    open( unit=REPORT_UNIT, file=REPORT_FILE, &
+  if (node==peakNode .and. peakNode/=0) then
+     call io_assign(REPORT_UNIT)
+     open( unit=REPORT_UNIT, file=REPORT_FILE, &
           status='unknown', position='append' )
+  end if
 end if ! (Nodes>1)
 #endif
 
@@ -486,6 +502,8 @@ if (node == peakNode) then
     call tree_print( report_tree )
   end if
 
+  ! Close file if not common IO node
+  if ( node /= 0 ) call io_close(REPORT_UNIT)
 end if ! (node == peakNode)
 
 ! Change again the writing node for the rest of the report
@@ -493,8 +511,8 @@ end if ! (node == peakNode)
 if (node==peakNode .and. peakNode/=0) close( unit=REPORT_UNIT )
 call MPI_Barrier( MPI_COMM_WORLD, MPIerror )
 if (node==0 .and. peakNode/=0) &
-  open( unit=REPORT_UNIT, file=REPORT_FILE, &
-        status='unknown', position='append' )
+     open( unit=REPORT_UNIT, file=REPORT_FILE, &
+     status='unknown', position='append' )
 #endif
 
 deallocate( nodeMem, nodePeak )

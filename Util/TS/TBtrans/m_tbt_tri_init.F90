@@ -161,17 +161,9 @@ contains
 
        ! Add the self-energy of the electrode in the projected position
        ! of the "device" region.
-       if ( mod(i,2) == 1 ) then
-          call crtSparsity_Union_region(dit,tmpSp1,Elecs(i)%o_inD,tmpSp2)
-       else
-          call crtSparsity_Union_region(dit,tmpSp2,Elecs(i)%o_inD,tmpSp1)
-       end if
+       call crtSparsity_Union_region(dit,tmpSp1,Elecs(i)%o_inD,tmpSp1)
 
     end do
-    if ( mod(N_Elec,2) == 1 ) then
-       tmpSp1 = tmpSp2
-    end if
-    call delete(tmpSp2)
 
     ! We have now already added the projected position of the
     ! self-energies. Create the tri-diagonal matrices
@@ -187,11 +179,9 @@ contains
 
           ! Add the self-energy of the electrode in the projected position
           ! of the "device" region.
-          call crtSparsity_Union_region(dit,tmpSp1,proj(i),tmpSp2)
-          tmpSp1 = tmpSp2
+          call crtSparsity_Union_region(dit,tmpSp1,proj(i),tmpSp1)
           
        end do
-       call delete(tmpSp2)
     end if
 
     ! Create the device region sparsity pattern by removing everything
@@ -259,6 +249,7 @@ contains
     DevTri%name = '[TRI] device region'
 
     if ( IONode ) then
+       
        ! Print out stuff
        call rgn_print(DevTri, seq_max = 8 , repeat = .true.)
        ! Print out memory estimate
@@ -274,6 +265,7 @@ contains
        do i = 1 , N_Elec
           call rgn_print(ElTri(i), seq_max = 8 , repeat = .true.)
        end do
+       
     end if
 
     call timer('tri-init',2)
@@ -294,6 +286,11 @@ contains
     if ( .not. IONode ) return
     if ( verbosity < 2 ) return
     if ( N_Elec > 2 ) return
+    if ( DevTri%n <= 2 ) return
+
+    ! Currently we don't do this, it is rarely used, I guess
+    ! and it would be better for people to determine it externally.
+    return
 
     ! In case we have more than two tri-mat regions we can advice
     ! the user to a minimal tri-mat matrix
@@ -304,55 +301,61 @@ contains
     ! transmission region based on the mininum connections
     ! the self-energies will follow.
 
-    if ( DevTri%n > 2 ) then
-       
-       ! We take the minimal region in the middle
+    ! The first thing is to find the two parts where the electrodes are
+    ! "living".
+    ! Then finally we can look at regions in between the two
+    ! parts and suggest the minimal one.
+
+    ! 1. r_oDev is the pivoted array
+    !    So we simply need to find the first/last index of both the
+    !    electrodes.
+    
+
+    ! We take the minimal region in the middle
+    li = 0
+    cum_sum = huge(1)
+    do i = 2 , DevTri%n - 1
+       if ( DevTri%r(i) < cum_sum ) then
+          li = i
+          cum_sum = DevTri%r(i)
+       end if
+    end do
+
+    if ( DevTri%r(1) + DevTri%r(2) < cum_sum ) then
        li = 0
-       cum_sum = huge(1)
-       do i = 2 , DevTri%n - 1
-          if ( DevTri%r(i) < cum_sum ) then
-             li = i
-             cum_sum = DevTri%r(i)
-          end if
-       end do 
-
-       if ( DevTri%r(1) + DevTri%r(2) < cum_sum ) then
-          li = 0
-          cum_sum = DevTri%r(1) + DevTri%r(2)
-          call rgn_list(ro,cum_sum,r_oDev%r)
-       end if
-
-       if ( DevTri%r(DevTri%n-1) + DevTri%r(DevTri%n) < cum_sum ) then
-          li = 0
-          cum_sum = DevTri%r(DevTri%n-1) + DevTri%r(DevTri%n)
-          call rgn_list(ro,cum_sum,r_oDev%r(r_oDev%n-cum_sum+1:))
-       end if
-
-       if ( li > 0 ) then
-          off = 1
-          do i = 1 , li - 1
-             off = off + DevTri%r(i)
-          end do
-          call rgn_list(ro,cum_sum,r_oDev%r(off:))
-       end if
-
-       call rgn_Orb2Atom(ro,na_u,lasto,ra)
-       call rgn_delete(ro)
-
-       ! Sort transmission region atoms
-       call rgn_sort(ra)
-
-       write(*,*) ''
-       write(*,'(a)') 'tbtrans: Suggested atoms for fastest transmission calculation:'
-
-       ra%name = '[A]-Fast transmission'
-       call rgn_print(ra, seq_max = 12)
-       write(*,*) ''
-
-       ! Clean-up
-       call rgn_delete(ra)
-
+       cum_sum = DevTri%r(1) + DevTri%r(2)
+       call rgn_list(ro,cum_sum,r_oDev%r)
     end if
+
+    if ( DevTri%r(DevTri%n-1) + DevTri%r(DevTri%n) < cum_sum ) then
+       li = 0
+       cum_sum = DevTri%r(DevTri%n-1) + DevTri%r(DevTri%n)
+       call rgn_list(ro,cum_sum,r_oDev%r(r_oDev%n-cum_sum+1:))
+    end if
+
+    if ( li > 0 ) then
+       off = 1
+       do i = 1 , li - 1
+          off = off + DevTri%r(i)
+       end do
+       call rgn_list(ro,cum_sum,r_oDev%r(off:))
+    end if
+
+    call rgn_Orb2Atom(ro,na_u,lasto,ra)
+    call rgn_delete(ro)
+
+    ! Sort transmission region atoms
+    call rgn_sort(ra)
+
+    write(*,*) ''
+    write(*,'(a)') 'tbtrans: Suggested atoms for fastest transmission calculation:'
+
+    ra%name = '[A]-Fast transmission'
+    call rgn_print(ra, seq_max = 12)
+    write(*,*) ''
+
+    ! Clean-up
+    call rgn_delete(ra)
 
   end subroutine tbt_tri_print_opti
 

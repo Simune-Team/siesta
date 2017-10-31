@@ -39,12 +39,11 @@ module m_tbt_trik
 
   use m_verbosity, only : verbosity
   use m_tbt_hs, only: tTSHS, Volt, IsVolt
-  use m_tbt_regions, only : sp_uc, sp_dev_sc, r_aDev
+  use m_tbt_regions, only : sp_uc, sp_dev_sc
 #ifdef NOT_WORKING
   use m_tbt_regions, only : r_oEl
 #endif
   use m_tbt_regions, only : r_oDev, r_oEl_alone, r_oElpD
-  use m_tbt_regions, only : r_aBuf
   use m_tbt_tri_init, only : ElTri, DevTri
 
   implicit none
@@ -591,8 +590,7 @@ contains
           ! We need _all_ diagonal blocks of the spectral function
           do iEl = 1 , N_Elec
              do io = 1 , Elecs(iEl)%o_inD%n
-                jEl = which_part(Gf_tri, &
-                     rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(io)) )
+                jEl = which_part(Gf_tri, pvt%r(Elecs(iEl)%o_inD%r(io)))
                 A_parts(jEl) = .true.
              end do
           end do
@@ -603,8 +601,7 @@ contains
           ! for all other electrodes than the first one
           do iEl = 2 , N_Elec
              do io = 1 , Elecs(iEl)%o_inD%n
-                jEl = which_part(Gf_tri, &
-                     rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(io)) )
+                jEl = which_part(Gf_tri, pvt%r(Elecs(iEl)%o_inD%r(io)))
                 A_parts(jEl) = .true.
              end do
           end do
@@ -1011,7 +1008,7 @@ contains
                    if ( iEl == N_Elec .and. .not. T_all ) cycle
                    
                    call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                        r_oDev, Elecs(iEl)%o_inD,only_diag=.true.)
+                        r_oDev, pvt, Elecs(iEl)%o_inD,only_diag=.true.)
                    
                    call GF_T(zwork_tri,Elecs(iEl), &
                         T(N_Elec+1,iEl), T(iEl,iEl), &
@@ -1038,7 +1035,7 @@ contains
               ! ******************
               if ( .not. cE%fake ) then
                  call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                      r_oDev, Elecs(iEl)%o_inD)
+                      r_oDev, pvt, Elecs(iEl)%o_inD)
  
                  if ( 'T-sum-out' .in. save_DATA ) then
                     call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
@@ -1063,11 +1060,11 @@ contains
               ! *****************
               if ( .not. cE%fake ) then
                  if ( 'T-sum-out' .in. save_DATA ) then
-                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                          Elecs(iEl), A_parts, &
                          TrGfG = T(N_Elec+1,iEl))
                  else
-                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                          Elecs(iEl), A_parts)
                  end if
               end if
@@ -1226,7 +1223,7 @@ contains
 
                if ( ts_A_method == TS_BTD_A_COLUMN ) then
                 call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                     r_oDev, El_p%o_inD)
+                     r_oDev, pvt, El_p%o_inD)
 
                 if ( 'proj-T-sum-out' .in. save_DATA ) then
                    call Gf_Gamma(zwork_tri,El_p, &
@@ -1234,11 +1231,11 @@ contains
                 end if
                else
                 if ( 'proj-T-sum-out' .in. save_DATA ) then
-                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         El_p, proj_parts, &
                         TrGfG = bTk(size(proj_T(ipt)%R)+1,ipt) )
                 else
-                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         El_p, proj_parts)
                 end if
                end if
@@ -1253,7 +1250,7 @@ contains
 
                if ( ts_A_method == TS_BTD_A_COLUMN ) then
                 call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                     r_oDev, Elecs(iEl)%o_inD)
+                     r_oDev, pvt, Elecs(iEl)%o_inD)
 
                 if ( 'proj-T-sum-out' .in. save_DATA ) then
                    call Gf_Gamma(zwork_tri,Elecs(iEl), &
@@ -1261,11 +1258,11 @@ contains
                 end if
                else
                 if ( 'T-sum-out' .in. save_DATA ) then
-                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         Elecs(iEl), proj_parts, &
                         TrGfG = bTk(1+size(proj_T(ipt)%R),ipt))
                 else
-                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         Elecs(iEl), proj_parts)
                 end if
                end if
@@ -1635,11 +1632,11 @@ contains
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
        ! Add dH
-       call add_zdelta_TriMat(dH%d, Gfinv_tri, r, sc_off, kpt)
+       call add_zdelta_TriMat(dH%d, Gfinv_tri, r, pvt, sc_off, kpt)
     end if
     if ( dSE%lvl > 0 ) then
        ! Add dSE
-       call add_zdelta_TriMat(dSE%d, Gfinv_tri, r, sc_off, kpt)
+       call add_zdelta_TriMat(dSE%d, Gfinv_tri, r, pvt, sc_off, kpt)
     end if
 #endif
 
@@ -1662,7 +1659,7 @@ contains
   ! this can be reinstantiated.
   ! However, then we are talking about more
   ! than 2,000,000 elements...
-  subroutine prep_Gfinv_algo(dev_tri,sp,r,loop_dev)
+  subroutine prep_Gfinv_algo(dev_tri,sp,r,pvt,loop_dev)
 
     use class_Sparsity
     use class_zTriMat
@@ -1670,7 +1667,7 @@ contains
 
     type(zTriMat), intent(inout) :: dev_tri
     type(Sparsity), intent(inout) :: sp
-    type(tRgn), intent(in) :: r
+    type(tRgn), intent(in) :: r, pvt
     logical, intent(out) :: loop_dev
 
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
@@ -1722,8 +1719,8 @@ contains
     t_s = tt
 #endif
     do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-       
-       iu = rgn_pivot(r,l_col(ind))
+
+       iu = pvt%r(l_col(ind))
        ! Important to check this as we cannot ensure
        ! the entire sparsity pattern in this
        ! tri-diagonal matrix
@@ -1746,7 +1743,8 @@ contains
   end subroutine prep_Gfinv_algo
 #endif
 
-  subroutine downfold_SE(cE, El, spH, spS,r,np,p, sc_off, kpt, nwork,work)
+  subroutine downfold_SE(cE, El, spH, spS, r, &
+       np, p, sc_off, kpt, nwork, work)
 
     use class_Sparsity
     use class_zSpData1D
@@ -1902,7 +1900,8 @@ contains
 
 #ifdef NOT_WORKING
 
-  subroutine downfold_SE_life(cE, El, spH, spS,r,np,p,life,nwork,work)
+  subroutine downfold_SE_life(cE, El, spH, spS, r, &
+       np, p, life, nwork, work)
 
     use class_Sparsity
     use class_zSpData1D
