@@ -723,8 +723,8 @@ contains
 
        ! As we have shifted the fermi-level up to 0, we need to shift the
        ! energy-density matrix back
-       ph = dcmplx(Ef,0._dp)
-       call zaxpy(jo,ph,zD(1,1),1,zE(1,1),1)
+       ph(0) = dcmplx(Ef,0._dp)
+       call zaxpy(jo,ph(0),zD(1,1),1,zE(1,1),1)
 
     end if
 

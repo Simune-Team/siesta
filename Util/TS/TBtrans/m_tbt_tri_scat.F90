@@ -79,6 +79,7 @@ contains
     integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np
+    real(dp) :: lDOS
 
 #ifdef TBTRANS_TIMING
     call timer('GF-DOS',1)
@@ -135,7 +136,7 @@ contains
 
           end if
 
-!$OMP parallel do default(shared), private(j,ii,jo,ind,i,lcol)
+!$OMP parallel do default(shared), private(j,ii,jo,ind,i,lcol,lDOS)
           do j = 1 , no_o
              ii = (j-1) * no_i
              jo = r%r(off2+j)
@@ -144,12 +145,14 @@ contains
              ! overlap matrix
              ! REMEMBER, S is transposed!
              ! Hence we do not need conjg :)
+             lDOS = 0._dp
              do i = 1 , no_i
                 ind = SFIND(lcol,r%r(off1+i))
                 if ( ind == 0 ) cycle
                 ind = l_ptr(jo) + ind
-                DOS(off2+j) = DOS(off2+j) - dimag( Gf(ii+i) * S(ind) )
+                lDOS = lDOS - dimag( Gf(ii+i) * S(ind) )
              end do
+             DOS(off2+j) = DOS(off2+j) + lDOS / Pi
           end do
 !$OMP end parallel do
 
@@ -159,10 +162,6 @@ contains
        off2 = off2 + no_o
 
     end do
-
-!$OMP parallel workshare default(shared)
-    DOS(:) = DOS(:) / Pi
-!$OMP end parallel workshare
 
 #ifdef TBTRANS_TIMING
     call timer('GF-DOS',2)
@@ -389,6 +388,7 @@ contains
     integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np
+    real(dp) :: lDOS
 
 #ifdef TBTRANS_TIMING
     call timer('A-DOS',1)
@@ -423,7 +423,7 @@ contains
              off1 = off2
           end if
 
-!$OMP parallel do default(shared), private(j,ii,jo,ind,i,lcol)
+!$OMP parallel do default(shared), private(j,ii,jo,ind,i,lcol,lDOS)
           do j = 1 , no_o
              ii = (j-1) * no_i
              jo = r%r(off2+j)
@@ -432,12 +432,14 @@ contains
              ! overlap matrix
              ! REMEMBER, S is transposed!
              ! Hence we are doing it correctly
+             lDOS = 0._dp
              do i = 1 , no_i
                 ind = SFIND(lcol,r%r(off1+i))
                 if ( ind == 0 ) cycle
                 ind = l_ptr(jo) + ind
-                DOS(off2+j) = DOS(off2+j) + dreal( A(ii+i) * S(ind) )
+                lDOS = lDOS + dreal( A(ii+i) * S(ind) )
              end do
+             DOS(off2+j) = DOS(off2+j) + lDOS / (2._dp * Pi)
           end do
 !$OMP end parallel do
 
@@ -447,13 +449,6 @@ contains
        off2 = off2 + no_o
 
     end do
-
-    ! The spectral function has a factor two
-
-!$OMP parallel workshare default(shared)
-    DOS(:) = DOS(:) / (2._dp * Pi)
-!$OMP end parallel workshare
-
 
 #ifdef TBTRANS_TIMING
     call timer('A-DOS',2)
@@ -709,9 +704,11 @@ contains
 #endif
 
     ! To remove any singular values we add a 1e-3 to the diagonal
+!$OMP parallel do default(shared), private(i)
     do i = 1 , n
        tt((i-1)*n+i) = tt((i-1)*n+i) + 1.e-3_dp
     end do
+!$OMP end parallel do
     call zgeev('N','N',n,tt,n,eig,work(1),1,work(1),1, &
          work,nwork,rwork,i)
     if ( i /= 0 ) then
