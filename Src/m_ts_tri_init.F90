@@ -291,9 +291,7 @@ contains
     use m_sparsity_handling
 
     use m_pivot
-#ifdef GRAPHVIZ
     use m_pivot_methods, only : sp2graphviz
-#endif
 
     use m_ts_electype
     use m_ts_sparse, only : ts_sp_calculation
@@ -326,8 +324,8 @@ contains
     integer :: n, n_nzs
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
 
-    character(len=40), parameter :: fmt = '(/,''TS.BTD.Pivot '',a,''+'',a)'
-    character(len=50) :: fmethod
+    character(len=*), parameter :: fmt = '(/,''TS.BTD.Pivot '',a,''+'',a)'
+    character(len=64) :: fmethod
     character(len=4) :: corb
     
     ! Regions used for sorting the device region
@@ -426,23 +424,23 @@ contains
     call crt_El_priority(N_Elec,Elecs,priority, &
          na_u,lasto,is_orb = orb_atom == 1 )
 
-#ifdef GRAPHVIZ
-    ! Attach sparsity pattern to current designation ('atom' == atom sp)
-    call attach(tmpSp2, n_col = ncol, list_ptr = l_ptr, &
-         list_col = l_col , nnzs = n_nzs )
-    call rgn_init(r_El,n)
-    r_El%r(:) = 0
-    do i = 1 , n
-       if ( orb_atom == 1 ) then
-          r_El%r(i) = orb_type(i)
-       else
-          r_El%r(i) = atom_type(i)
-       end if
-    end do
-    if ( IONode ) &
-         call sp2graphviz('GRAPHVIZ_'//trim(corb)//'.gv', &
-         n,n_nzs,ncol,l_ptr,l_col, types = r_El%r )
-#endif
+    if ( fdf_get('TS.Analyze.Graphviz', .false.) ) then
+       ! Attach sparsity pattern to current designation ('atom' == atom sp)
+       call attach(tmpSp2, n_col = ncol, list_ptr = l_ptr, &
+            list_col = l_col , nnzs = n_nzs )
+       call rgn_init(r_El,n)
+       r_El%r(:) = 0
+       do i = 1 , n
+          if ( orb_atom == 1 ) then
+             r_El%r(i) = orb_type(i)
+          else
+             r_El%r(i) = atom_type(i)
+          end if
+       end do
+       if ( IONode ) &
+            call sp2graphviz('GRAPHVIZ_'//trim(corb)//'.gv', &
+            n,n_nzs,ncol,l_ptr,l_col, types = r_El%r )
+    end if
   
     ! Attach the sparsity pattern of the orbitals
     call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
@@ -464,8 +462,10 @@ contains
        call rgn_copy(r_El,r_tmp)
        ! we sort the newly attached region
        call rgn_sp_sort(r_El, fdit, tmpSp2, r_tmp, R_SORT_MAX_FRONT )
-       call rgn_copy(r_tmp,r_El)
-       call rgn_delete(r_tmp)
+       
+       call rgn_init(r_El, full%n)
+       r_El%n = 0
+       if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
        do 
           call rgn_sp_connect(r_El, fdit, tmpSp2, r_tmp)
           if ( r_tmp%n == 0 .and. r_El%n /= no_u_TS ) then
@@ -491,12 +491,12 @@ contains
                            &it cannot figure out what to do.')
                    end if
                 end do
-                call rgn_append(r_El, r_tmp, r_El)
+                if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
                 cycle
              end if
           end if
           if ( r_tmp%n == 0 ) exit
-          call rgn_append(r_El, r_tmp, r_El)
+          if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
           call rgn_sp_sort(r_El, fdit, tmpSp2, r_tmp, R_SORT_MAX_BACK )
        end do
        if ( orb_atom == 1 ) then
@@ -747,7 +747,7 @@ contains
       
       if ( IONode ) then
          call rgn_print(ctri, name = 'BTD partitions' , &
-              seq_max = 8 , indent = 3 , repeat = .true. )
+              seq_max = 10 , indent = 3 , repeat = .true. )
          
          pad = no_u_TS ** 2
          write(*,'(tr3,a,i0,'' / '',f9.5)') &

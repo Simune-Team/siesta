@@ -11018,9 +11018,9 @@ information.
   This yields information regarding the \fdf{TS!BTD!Pivot} flag.
 
   \note we advice users to \emph{always} run an analyzation step prior
-  to actual calculation and select the \emph{best} BTD
-  format. This analyzing step is very fast and may be performed on
-  small work-station computers, even on systems of 10,000$+$ orbitals.  
+  to actual calculation and select the \emph{best} BTD format. This
+  analyzing step is very fast and may be performed on small
+  work-station computers, even on systems of $\gg10,000$ orbitals.
 
   To run the analyzing step you may do:
   \begin{shellexample}
@@ -11029,10 +11029,10 @@ information.
   note that there is little gain on using MPI and it should complete
   within a few minutes, no matter the number of orbitals.
 
-  Choosing the best one may be difficult. Generally one should
-  choose the pivoting scheme that uses the least amount of
-  memory. However, one should also choose the method with largest
-  block-size being as small as possible. As an example:
+  Choosing the best one may be difficult. Generally one should choose
+  the pivoting scheme that uses the least amount of memory. However,
+  one should also choose the method with the largest block-size being
+  as small as possible. As an example:
   \begin{shellexample}
 TS.BTD.Pivot atom+GPS
 ...
@@ -11053,6 +11053,14 @@ TS.BTD.Pivot atom+GGPS
 
 \end{fdflogicalF}
 
+\begin{fdflogicalF}{TS!Analyze.Graphviz}
+  \fdfdepend{TS!Analyze}
+
+  If performing the analysis, also create the connectivity graph and
+  store it as \file{GRAPHVIZ\_atom.gv} or \file{GRAPHVIZ\_orbital.gv}
+  to be post-processed in Graphviz\footnote{\url{www.graphviz.org}}.
+  
+\end{fdflogicalF}
 
 \subsubsection{Algorithm specific options}
 
