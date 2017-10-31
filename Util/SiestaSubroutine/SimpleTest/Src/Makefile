@@ -27,7 +27,8 @@ OBJDIR=Obj
 # default: simple_pipes_serial simple_sockets_serial clean
 #  Do not move default list from here, or else a default target from arch.make can
 #  interfere
-#
+all: default
+
 default: simple_pipes_serial simple_sockets_serial simple_mpi_serial \
          simple_pipes_parallel simple_sockets_parallel simple_mpi_parallel clean 
 #

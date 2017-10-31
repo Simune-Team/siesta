@@ -61,11 +61,7 @@ contains
     use m_save_density_matrix, only: save_density_matrix
     use m_iodm_old,    only: write_spmatrix
 
-    use atomlist,      only: no_s, no_l, no_u, qtot, indxuo
-    use m_spin,        only: nspin
-    use m_gamma
-    use Kpoint_grid,    only: nkpnt, kpoint, kweight
-    use m_eo
+    use atomlist,      only: no_u
 
     use m_pexsi_solver,        only: prevDmax
     use write_subs,            only: siesta_write_forces
@@ -86,6 +82,7 @@ contains
     use m_check_walltime
 
 #ifdef TRANSIESTA
+    use m_energies, only: DE_NEGF
     use m_ts_options, only : N_Elec
     use m_ts_method
     use m_ts_global_vars,      only: TSmode, TSinit, TSrun
@@ -118,7 +115,6 @@ contains
 
     ! For initwf
     integer :: istpp
-    real(dp) :: EF7
 
 #ifdef SIESTA__FLOOK
     ! len=24 from m_mixing.F90
@@ -395,7 +391,7 @@ contains
                 call transiesta(iscf,nspin, &
                      block_dist, sparse_pattern, Gamma_Scf, ucell, nsc, &
                      isc_off, no_u, na_u, lasto, xa, maxnh, H, S, &
-                     Dscf, Escf, Ef, Qtot, .true.)
+                     Dscf, Escf, Ef, Qtot, .true., DE_NEGF)
 
                 ! We will not have not converged as we have just
                 ! changed the Fermi-level
@@ -537,9 +533,7 @@ contains
     ! consequent TDDFT run.
     if ( writetdwf ) then
        istpp = 0
-       call initwf(no_s, nspin, nspin, no_l, maxnh, no_u, qtot, &
-            gamma, indxuo, nkpnt, kpoint, kweight, &
-            no_u, EF7, istpp,totime)
+       call initwf(istpp,totime)
     end if
     
 #ifdef TRANSIESTA

@@ -52,9 +52,6 @@ subroutine tbt_init()
   use m_tbt_gf
   use m_tbt_save
   use m_tbt_proj
-#ifdef NCDF_4
-  use m_tbt_dH, only : init_dH_options
-#endif
 
   use m_sparsity_handling
 
@@ -213,7 +210,7 @@ subroutine tbt_init()
 
   ! Read remaining options
   call read_tbt_after_Elec(TSHS%nspin, TSHS%cell, TSHS%na_u, TSHS%lasto, &
-       TSHS%xa, kscell, kdispl)
+       TSHS%xa, TSHS%no_u, kscell, kdispl)
 
   ! Print options
   call print_tbt_options( TSHS%nspin )

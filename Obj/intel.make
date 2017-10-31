@@ -58,6 +58,8 @@ FFLAGS_DEBUG = -g -O1   # your appropriate flags here...
 # levels.
 atom.o: atom.F
 	$(FC) -c $(FFLAGS_DEBUG) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F) $< 
+state_analysis.o: state_analysis.F
+	$(FC) -c $(FFLAGS_DEBUG) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F) $< 
 
 .c.o:
 	$(CC) -c $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) $< 

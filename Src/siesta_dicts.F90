@@ -264,6 +264,8 @@ contains
          ('geom.mass'.kvp.amass)
     variables = variables // &
          ('geom.neutral_charge'.kvp.qa)
+    variables = variables // &
+         ('geom.orbital_charge'.kvp.Datm)
 
     ! This is an abstraction made
     ! easy for the user.
@@ -319,7 +321,9 @@ contains
 
     ! Add the number of charges to the system
     variables = variables // &
-         ('charge'.kvp.qtot)
+         ('charge.electrons'.kvp.qtot)
+    variables = variables // &
+         ('charge.protons'.kvp.zvaltot)
 
     ! Add the k-point sampling
     variables = variables // &

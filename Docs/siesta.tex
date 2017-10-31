@@ -5972,19 +5972,19 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 \end{fdflogicalT}
 
-\begin{fdfentry}{Diag!ProcessorY}[integer]<$\sim \mathrm N^2$>
+\begin{fdfentry}{Diag!ProcessorY}[integer]<$\sim \sqrt{\mathrm N}$>
   \fdfdepend{Diag!Use2D}
 
   Set the number of processors in the 2D distribution along the rows.
   Its default is equal to the lowest multiple of $\mathrm N$ (number
-  of MPI cores) below $\mathrm N^2$ such that, ideally, the
+  of MPI cores) below $\sqrt{\mathrm N}$ such that, ideally, the
   distribution will be a square grid.
 
   The input is required to be a multiple of the total number of MPI
   cores but \siesta\ will reduce the input value such that it
   coincides with this.
 
-  Once the lowest multiple closest to $\mathrm N^2$, or the input, is
+  Once the lowest multiple closest to $\sqrt{\mathrm N}$, or the input, is
   determined the 2D distribution will be $\mathrm{ProcessorY}
   \times\mathrm{N}/\mathrm{ProcessorY}$, rows $\times$ columns.
 
@@ -9287,9 +9287,14 @@ implemented, selected by
     \index{flook}\index{External library!flook}%
     If \siesta\ is not compiled as prescribed in Sec.~\ref{sec:libs}
     this option will make \siesta\ die.
+    
+    \option[TDED]%
 
+    New option to perform time-dependent electron dynamics simulations (TDED) within RT-TDDFT.
+    For more details see Sec.~\ref{sec:tddft}
+     
   \end{fdfoptions}
-
+  
   \note if \fdf{Compat!Pre-v4-Dynamics} is \fdftrue\ this will default
   to \fdf*{Verlet}.
 
@@ -10421,7 +10426,7 @@ spin-orbit coupling.
 
 \end{fdflogicalF}
 
-\section{RT-TDDFT}\index{RT-TDDFT}\index{TDDFT}
+\section{RT-TDDFT}\index{RT-TDDFT}\index{TDDFT}\label{sec:tddft}
 Now it is possible to perform Real-Time Time-Dependent Density
 Functional Theory (RT-TDDFT)-based calculations using the
 \siesta\ method. This section includes a brief introduction to the
@@ -10460,95 +10465,119 @@ ignorable limit.
 
 The general working scheme is as following. First, the system is
 allowed to reach a self-consistent solution for some initial
-conditions (for example an initial ionic configuration or with applied
-external field). This is achieved using standard
-diagonalization \footnote{Caution! we need the Kohn-Sham
-  orbitals.}. The occupied Kohn-Sham orbitals (KSOs) are then selected
+conditions (for example an initial ionic configuration or an applied
+external field). The occupied Kohn-Sham orbitals (KSOs) are then selected
 and stored in memory.  The occupied KSOs are then made to evolve in
 time, and the Hamiltonian is recalculated for each time step.
+
+\subsection{Partial Occupations}
+
+This is a note of caution. This implementation of RT-TDDFT can not propagate partially occupied orbitals. While partial occupation of states is a common occurrence, they must be avoided. The issue of partially occupied states becomes, particularly,  tricky when dealing with metals and k-point sampling at the same time. The code tries to detect partial occupations and stops during the first run but it is not guarantied. Consequently, it can lead to additional or missing charge. Ultimately it is users' responsibility to make sure that the system has no partial occupations and missing or added charge. There are different ways to avoid partial occupations depending on the system and simulation parameters; for example changing spin-polarization and/or adding some k-point shift to k-points.
 
 \subsection{Input options for RT-TDDFT}
 
 A TDDFT calculation requires two runs of \siesta. In the first run
 with appropriate flags it calculates the self-consistent initial
 state, i.e., only occupied initial KSOs stored in \sysfile{TDWF}
-file. The second run uses this file as input and evolves the occupied
+file. The second run uses this file and the structure 
+file \sysfile{TDXV} as input and evolves the occupied
 KSOs.
 
-\begin{fdflogicalF}{ WriteInitialTDWF}
+\begin{fdflogicalF}{TDED.WF.Initialize}
 
-If set to .true. in a standard self-consistent \siesta calculation, it
+If set to \fdftrue\ in a standard self-consistent \siesta\ calculation, it
 makes the program save the KSOs after reaching
 self-consistency. This constitutes the first run.
 
 \end{fdflogicalF}
 
-\begin{fdfentry}{ElectronDynamics}[string]
+\begin{fdfentry}{MD.TypeOfRun}[string]<TDED>
 
-A new Molecular Dynamics option, \fdf{MD.TypeOfRun}, has been
-included. The second run of \siesta\ uses this option with the file
-\sysfile{TDWF} present in the working directory.  In this option ions
+A new Molecular Dynamics option, \fdf{TDED}, has been
+included. The second run of \siesta\ uses this option with the files
+\sysfile{TDWF} and \sysfile{TDXV} present in the working directory.  In this option ions
 and electrons are assumed to move simultaneously.  The occupied
 electronic states are time-evolved instead of the usual SCF
 calculations in each step.  Choose this option even if you intend to
 do only-electron dynamics. If you want to do an electron dynamics-only
 calculation set \fdf{MD.FinalTimeStep} equal to $1$. For optical
 response calculations switch off the external field during the second
-run. The \fdf{MD.LengthTimeStep} is, as in the standard MD simulation,
-used to set the time step for each MD step.
+run. The \fdf{MD.LengthTimeStep}, unlike in the standard MD simulation,
+is defined by mulitpilication of \fdf{TDED.TimeStep} and \fdf{TDED.Nsteps}.
+In TDDFT calculations, the user defined \fdf{MD.LengthTimeStep} is ignored.
 
 \end{fdfentry}
 
 \begin{fdfentry}{TDED.Nsteps}[integer]<1>
 
-Number of electronic time steps between each atomic movement. The time
-step for each electronic step is determined by dividing the MD time
-step (\fdf{MD.LengthTimeStep}) over number of electronic steps
-(\fdf{TDED.Nsteps}). In case of an only electron dynamics simulation
-the \fdf{MD.LengthTimeStep} becomes total simulation time.
+Number of electronic time steps between each atomic movement. It can not be less
+than $1$.
+
+\end{fdfentry}
+\begin{fdfentry}{TDED.TimeStep}[time]<$0.001\,\mathrm{fs}$>
+Length of time for each electronic step. The default value is only suggestive. Users must
+determine an appropriate value for the electronic time step. 
 
 \end{fdfentry}
 
-\begin{fdfentry}{TDED.Nwrite}[integer]<100>
+\begin{fdflogicalF}{TDED.Extrapolate}
+  An extrapolated Hamiltonian is applied to evolve KSOs for \fdf{TDED.Extrapolate.Substeps} number of substeps within a sinlge electronic step without re-evaluating the Hamiltonian.
+\end{fdflogicalF}
 
-Fixes the number of steps of ion-electron dynamics after which the
-instanteneous wavefunctions are saved in file \sysfile{TDWF} for a
-possible restart. The writing of wavefunctions is not parallel, hence
-writing too often can affect efficiency.
-
+\begin{fdfentry}{TDED.Extrapolate.Substeps}[integer]<3>
+  Number of electronic substeps when an extrapolated Hamiltonian is applied
+  to propogate the KSOs. Effective only when \fdf{TDED.Extrapolate} set to be true.
 \end{fdfentry}
 
- \begin{fdflogicalT}{ WriteEtotvsTime}
 
-If .true. the total energy for every time step is stored in the file
-\sysfile{etot\_vs\_time}.
+\begin{fdflogicalT}{TDED.Inverse.Linear}
+If \fdftrue\ the inverse of matrix \( \left (\mathbf{S}+\mathrm{i}\mathbf{H}(t)\frac{dt}{2}\right) \) 
+  is calculated by solving a system of linear equations which implicitly 
+  multiplies the inverted matrix to the right hand side matrix.
+  The alternative is explicit inversion and multiplication.
+  The two options may differ 
+in performance.
+\end{fdflogicalT}
+
+  \begin{fdflogicalF}{TDED.WF.Save}
+
+Option to save wavefunctions at the end of a simulation for a possible restart 
+or analysis. Wavefunctions are saved in file \sysfile{TDWF}. 
+A TDED restart requires \sysfile{TDWF}, \sysfile{TDXV}, and \sysfile{VERLET\_RESTART} from the previous run. 
+The first step of the restart is same as the last of the previous run.
+\end{fdflogicalF}
+
+ \begin{fdflogicalT}{ TDED.Write.Etot}
+
+If \fdftrue\ the total energy for every time step is stored in the file
+\sysfile{TDETOT}.
 
 \end{fdflogicalT}
 
- \begin{fdflogicalF}{WriteDipolevsTime}
+ \begin{fdflogicalF}{TDED.Write.Dipole}
 
-If .true. a file \sysfile{dipol\_vs\_time} is created that can be
+If \fdftrue\ a file \sysfile{TDDIPOL} is created that can be
 further processed to calculate polarizability.
 
 \end{fdflogicalF}
 
- \begin{fdflogicalF}{WriteEigenvsTime}
+ \begin{fdflogicalF}{TDED.Write.Eig}
 
-If .true. the quantities $\langle \phi(t)|H|\phi(t)\rangle$ in every
+If \fdftrue\ the quantities $\langle \phi(t)|H(t)|\phi(t)\rangle$ in every
 time step are calculated and stored in the file
-\sysfile{eigenvalues\_vs\_time} (not fully implemented yet!)
+\sysfile{TDEIG}. This is not trivial, hence can increase computational time. 
 
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TDED.Saverho}
 
-If .true. the instantaneous time-dependent density is saved to
+If \fdftrue\ the instantaneous time-dependent density is saved to
 \texttt{ <istep>}.\texttt{TDRho}\index{TDRho@{\bf TDRho}} after every
 \fdf{TDED.Nsaverho} number of steps.
 
 \end{fdflogicalF}
 
-\begin{fdfentry}{TDED.Nsaverho}[integer]<50>
+\begin{fdfentry}{TDED.Nsaverho}[integer]<100>
 
 Fixes the number of steps of ion-electron dynamics after which the
 instantaneous time-dependent density is saved. May require a lot of
@@ -11477,11 +11506,11 @@ These options adhere to the specific solution methods available for
 \tsiesta\ requires fixed boundary conditions and forcing this is an
 intricate and important detail. 
 
-\begin{fdfentry}{TS!Poisson}[string]<ramp-cell|ramp-central|elec-box|\nonvalue{file}>
+\begin{fdfentry}{TS!Poisson}[string]<ramp-central|elec-box|\nonvalue{file}|ramp-cell>
 
   Define how the correction of the Poisson equation is
   superimposed. The default is to apply the linear correction across
-  the entire cell (if there are two semi-infinite aligned electrodes).
+  the central region (if there are two semi-infinite aligned electrodes).
   Otherwise this defaults to the \emph{box} solution which will
   introduce spurious effects at the electrode boundaries. In this case
   you are encouraged to supply a \fdf*{file}.
@@ -11495,6 +11524,53 @@ intricate and important detail.
   \note the file option is only applicable if compiled with CDF4
   compliance.
 
+  \begin{developer}
+    
+    NP has tested calculations with \fdf*{ramp-cell}
+    vs. \fdf*{ramp-central} and found incorrect bias for pristine
+    systems when using \fdf*{ramp-cell}. This can easily be found by
+    creating a linear chain and calculate the potential drop using
+    either options. Only when using \fdf*{ramp-central} will the correct
+    potential drop occur.
+    
+  \end{developer}
+
+  \begin{fdfoptions}
+    \option[ramp-central]%
+    \fdfindex*{TS!Poisson!ramp-central}%
+
+    Apply the bias-ramp between the leads. For a \emph{bulk} electrode
+    (see \fdf{TS!Elec.<>!Bulk}) the ramp will start at the
+    electrode-device interface, otherwise it will start at the
+    beginning of the electrode.
+
+
+    \option[<file>]%
+    \fdfindex*{TS!Poisson!<file>}%
+
+    Specify an external file used as the boundary conditions for the
+    applied bias. This is encouraged to use for $N>2$ electrode
+    calculations but may also be used when an \emph{a priori}
+    potential profile is know.
+    
+    \option[elec-box]%
+    \fdfindex*{TS!Poisson!ramp-cell}%
+
+    The default potential profile for $N>2$, or when the electrodes
+    does are not aligned (in terms of their transport direction). When
+    this is the case you are highly encouraged to try with an external
+    solution (\fdf*{<file>}).
+
+
+    \option[ramp-cell]%
+    \fdfindex*{TS!Poisson!ramp-cell}%
+
+    Apply the ramp for the full cell. This option should \emph{only}
+    be used for testing against older versions of \tsiesta.
+
+  \end{fdfoptions}
+
+  
 \end{fdfentry}
 
 \begin{fdfentry}{TS!Hartree.Fix}[string]<plane|elec-plane|elec-box>
@@ -12395,9 +12471,11 @@ energy   & meV        & 1.60219E-22 \\
 energy   & Ry         & 2.17991E-18 \\
 energy   & mRy        & 2.17991E-21 \\
 energy   & Hartree    & 4.35982E-18 \\
+energy   & Ha         & 4.35982E-18 \\
 energy   & K          & 1.38066E-23 \\
 energy   & kcal/mol   & 6.94780E-21 \\
 energy   & mHartree   & 4.35982E-21 \\
+energy   & mHa        & 4.35982E-21 \\
 energy   & kJ/mol     & 1.6606E-21 \\
 energy   & Hz         & 6.6262E-34 \\
 energy   & THz        & 6.6262E-22 \\
@@ -12437,6 +12515,7 @@ Efield   & V/Ang      & 1.E10 \\
 Efield   & V/Bohr     & 1.8897268E10 \\
 Efield   & Ry/Bohr/e  & 2.5711273E11 \\
 Efield   & Har/Bohr/e & 5.1422546E11 \\
+Efield   & Ha/Bohr/e  & 5.1422546E11 \\
 angle    & deg        & 1.d0 \\
 angle    & rad        & 5.72957795E1 \\
 torque   & eV/deg     & 1.E0 \\

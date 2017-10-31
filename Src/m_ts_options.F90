@@ -582,7 +582,7 @@ contains
     VoltageInC = .false.
     if ( ts_tidx > 0 ) then
        ! We have a single unified semi-inifinite direction
-       chars = fdf_get('TS.Poisson','ramp-cell')
+       chars = fdf_get('TS.Poisson','ramp-central')
     else
        chars = fdf_get('TS.Poisson','elec-box')
     end if

@@ -119,7 +119,9 @@ contains
     use m_tbt_proj, only : proj_Mt_mix, proj_cdf_save
     use m_tbt_proj, only : proj_cdf_save_J
 
-    use m_tbt_dH, only : read_next_dH, clean_dH, dH
+    use m_tbt_delta, only : read_delta_next, clean_delta
+    use m_tbt_dH, only : use_dH, dH
+    use m_tbt_dSE, only : use_dSE, dSE
 #endif
 
     use m_tbt_sparse_helper, only : create_region_HS
@@ -862,8 +864,13 @@ contains
           call timer('read-GS',2)
 
 #ifdef NCDF_4
-          ! prepare dH
-          call read_next_dH(no,bkpt,nE)
+          ! prepare delta terms
+          if ( use_dH ) then
+             call read_delta_next('dH', dH, no,bkpt,nE)
+          end if
+          if ( use_dSE ) then
+             call read_delta_next('dSE', dSE, no,bkpt,nE)
+          end if
 #endif
 
           call timer('SE-dwn',1)
@@ -1087,10 +1094,8 @@ contains
                         cE,zwork_tri,r_oDev,orb_J,pvt)
 #endif
                    if ( dH%lvl > 0 ) then
-                      if ( 'orb-current-dH' .in. save_DATA ) then
-                         call orb_current_add_dH(dH%dH, TSHS%sc_off, &
-                              kpt, zwork_tri, r_oDev, orb_J, pvt)
-                      end if
+                      call orb_current_add_dH(dH%d, TSHS%sc_off, &
+                           kpt, zwork_tri, r_oDev, orb_J, pvt)
                    end if
                 end if
 #endif
@@ -1151,8 +1156,6 @@ contains
           end if
 
 
-          call timer('DOS-Gf-A-T',2)
-
           ! Save the current gathered data
 #ifdef NCDF_4
           call state_cdf_save(TBTcdf, ikpt, nE, N_Elec, Elecs, &
@@ -1162,6 +1165,8 @@ contains
                N_eigen, Teig, &
                save_DATA )
 #endif
+
+          call timer('DOS-Gf-A-T',2)
 
           end if ! .not. proj-only
           end if ! .not. Sigma-only
@@ -1294,10 +1299,8 @@ contains
                        cE,zwork_tri,r_oDev,orb_J,pvt)
 #endif
                   if ( dH%lvl > 0 ) then
-                     if ( 'orb-current-dH' .in. save_DATA ) then
-                        call orb_current_add_dH(dH%dH, TSHS%sc_off, &
-                             kpt, zwork_tri, r_oDev, orb_J, pvt)
-                     end if
+                     call orb_current_add_dH(dH%d, TSHS%sc_off, &
+                          kpt, zwork_tri, r_oDev, orb_J, pvt)
                   end if
                      
                   ! We need to save it immediately, we
@@ -1372,13 +1375,14 @@ contains
 
           end do ! projections loop
 
-          call timer('T-proj',2)
 
           ! Save the projections
           call proj_cdf_save(PROJcdf,N_Elec,Elecs, &
                ikpt,nE,N_proj_T,proj_T, &
                pDOS, bTk, N_eigen, bTkeig, save_DATA )
 
+          call timer('T-proj',2)
+          
           end if
 #endif
 
@@ -1458,7 +1462,8 @@ contains
        deallocate(proj_parts)
     end if
 
-    call clean_dH( )
+    call clean_delta( dH )
+    call clean_delta( dSE )
 
     if ( N_proj_ME > 0 ) then
        deallocate(El_p%Sigma)
@@ -1551,7 +1556,9 @@ contains
     use m_tbt_tri_scat, only : insert_Self_Energy_Dev
     use intrinsic_missing, only : SFIND
 #ifdef NCDF_4
-    use m_tbt_dH, only : dH, add_zdH_TriMat
+    use m_tbt_delta, only : add_zdelta_TriMat
+    use m_tbt_dH, only : dH
+    use m_tbt_dSE, only : dSE
 #endif
 
     ! the current energy point
@@ -1628,7 +1635,11 @@ contains
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
        ! Add dH
-       call add_zdH_TriMat(dH%dH, Gfinv_tri, r, sc_off, kpt)
+       call add_zdelta_TriMat(dH%d, Gfinv_tri, r, sc_off, kpt)
+    end if
+    if ( dSE%lvl > 0 ) then
+       ! Add dSE
+       call add_zdelta_TriMat(dSE%d, Gfinv_tri, r, sc_off, kpt)
     end if
 #endif
 
@@ -1763,6 +1774,7 @@ contains
 
     ! All our work-arrays...
     complex(dp), pointer :: A(:), B(:), C(:), Y(:)
+    complex(dp), parameter :: zi = dcmplx(0._dp, 1._dp)
 
     integer :: no, off, i, ii, j, ierr
     integer :: ip, itmp
@@ -1867,7 +1879,8 @@ contains
     end if
         
     ! Create Gamma...
-    ! \Gamma ^ T = (\Sigma - \Sigma^\dagger)^T
+    ! I.e. store the transposed Gamma.
+    ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,ip)
     do j = 1 , no
        ii = no * ( j - 1 )
@@ -1875,11 +1888,11 @@ contains
        do i = 1 , j - 1
           ii = ii + 1
           ip = ip + no
-          El%Gamma(ii) = El%Sigma(ip) - dconjg( El%Sigma(ii) )
-          El%Gamma(ip) = El%Sigma(ii) - dconjg( El%Sigma(ip) )
+          El%Gamma(ii) = zi * (El%Sigma(ip) - dconjg( El%Sigma(ii) ))
+          El%Gamma(ip) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ip) ))
        end do
        ii = no*(j-1) + j
-       El%Gamma(ii) = El%Sigma(ii) - dconjg( El%Sigma(ii) )
+       El%Gamma(ii) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ii) ))
     end do
 !$OMP end parallel do
 
@@ -1995,7 +2008,8 @@ contains
        call mat_invert(A,B,ierr,MI_IN_PLACE_LAPACK)
        
        ! Calculate the Gamma function
-       ! \Gamma ^ T = (\Sigma - \Sigma^\dagger)^T
+       ! I.e. store the transposed Gamma.
+       ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,jj)
        do j = 1 , ierr
           ii = ierr * ( j - 1 )
@@ -2003,11 +2017,11 @@ contains
           do i = 1 , j - 1
              ii = ii + 1
              jj = jj + ierr
-             C(ii) = Y(jj) - dconjg( Y(ii) )
-             C(jj) = Y(ii) - dconjg( Y(jj) )
+             C(ii) = zi * (Y(jj) - dconjg( Y(ii) ))
+             C(jj) = zi * (Y(ii) - dconjg( Y(jj) ))
           end do
           ii = ierr*(j-1) + j
-          C(ii) = Y(ii) - dconjg( Y(ii) )
+          C(ii) = zi * (Y(ii) - dconjg( Y(ii) ))
        end do
 !$OMP end parallel do
 
@@ -2031,7 +2045,7 @@ contains
        do i = 1 , ierr
           ! Calculate offset
           j = (i-1) * ierr + 1
-          life(off+i) = - real( zdotu(ierr,El%Sigma(j),1,C(j),1) ,dp)
+          life(off+i) = - aimag( zdotu(ierr,El%Sigma(j),1,C(j),1) )
        end do
 
        ! Reassign pointers
@@ -2088,7 +2102,8 @@ contains
     end if
         
     ! Create Gamma...
-    ! \Gamma ^ T = (\Sigma - \Sigma^\dagger)^T
+    ! I.e. store the transposed Gamma
+    ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,ip)
     do j = 1 , no
        ii = no * ( j - 1 )
@@ -2096,11 +2111,11 @@ contains
        do i = 1 , j - 1
           ii = ii + 1
           ip = ip + no
-          El%Gamma(ii) = El%Sigma(ip) - dconjg( El%Sigma(ii) )
-          El%Gamma(ip) = El%Sigma(ii) - dconjg( El%Sigma(ip) )
+          El%Gamma(ii) = zi * (El%Sigma(ip) - dconjg( El%Sigma(ii) ))
+          El%Gamma(ip) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ip) ))
        end do
        ii = no*(j-1) + j
-       El%Gamma(ii) = El%Sigma(ii) - dconjg( El%Sigma(ii) )
+       El%Gamma(ii) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ii) ))
     end do
 !$OMP end parallel do
 
@@ -2122,7 +2137,9 @@ contains
     use intrinsic_missing, only : SFIND
 
 #ifdef NCDF_4
-    use m_tbt_dH, only : dH, add_zdH_Mat
+    use m_tbt_delta, only : add_zdelta_Mat
+    use m_tbt_dH, only : dH
+    use m_tbt_dSE, only : dSE
 #endif
 
     ! the current energy point
@@ -2183,7 +2200,11 @@ contains
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
        ! Add dH
-       call add_zdH_Mat(dH%dH, r, off1,n1,off2,n2, M, sc_off, kpt)
+       call add_zdelta_Mat(dH%d, r, off1,n1,off2,n2, M, sc_off, kpt)
+    end if
+    if ( dSE%lvl > 0 ) then
+       ! Add dSE
+       call add_zdelta_Mat(dSE%d, r, off1,n1,off2,n2, M, sc_off, kpt)
     end if
 #endif
 

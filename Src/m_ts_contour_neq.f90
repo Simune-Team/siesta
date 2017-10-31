@@ -303,8 +303,8 @@ contains
        rtmp  = nEq_ID(N)%mu%mu    + cutoff_kT * nEq_ID(N)%mu%kT
        rtmp2 = nEq_ID(N)%El%mu%mu + cutoff_kT * nEq_ID(N)%El%mu%kT
        max_E = max(rtmp,rtmp2)
-       nEq_ID(N)%E(1) = min_E - 0.00001 * eV
-       nEq_ID(N)%E(2) = max_E + 0.00001 * eV
+       nEq_ID(N)%E(1) = min_E - 0.00001_dp * eV
+       nEq_ID(N)%E(2) = max_E + 0.00001_dp * eV
     end do
 
   contains 

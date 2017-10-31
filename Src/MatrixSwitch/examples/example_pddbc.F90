@@ -1,15 +1,19 @@
+#if defined HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 !==================================================================================================!
-! example4 : parallel program with complex matrices                                                !
+! example : parallel program with real matrices in dense block cyclic format                       !
 !                                                                                                  !
 ! This example demonstrates how to calculate:                                                      !
-!   alpha = tr(A^H*B)                                                                              !
+!   alpha = tr(A^T*B)                                                                              !
 ! for two NxM matrices A and B, in five different ways. Each way should return the same result.    !
 ! They are:                                                                                        !
-!   1. performing the matrix product trace res1 := tr(A^H*B) directly as a single operation        !
-!   2. performing the multiplication D := A^H*B, and then the trace res2 := tr(D)                  !
-!   3. performing E := B*A^H, and then res3 := tr(E)                                               !
-!   4. performing the conjugate transpose C := A^H, then D := C*B, and then res4 := tr(D)          !
-!   5. performing C := A^H, then E := B*C, and then res5 := tr(E)                                  !
+!   1. performing the matrix product trace res1 := tr(A^T*B) directly as a single operation        !
+!   2. performing the multiplication D := A^T*B, and then the trace res2 := tr(D)                  !
+!   3. performing E := B*A^T, and then res3 := tr(E)                                               !
+!   4. performing the transpose C := A^T, then D := C*B, and then res4 := tr(D)                    !
+!   5. performing C := A^T, then E := B*C, and then res5 := tr(E)                                  !
 ! Finally, as an extra check, the first element of E is printed out.                               !
 !                                                                                                  !
 ! Note the difference in the code in how matrix B is handled compared with the other matrices.     !
@@ -17,26 +21,29 @@
 ! the type(matrix) variable), B is a wrapper for MyMatrix (i.e., MyMatrix has been registered as B !
 ! for use with MatrixSwitch, and B contains a pointer to MyMatrix).                                !
 !                                                                                                  !
-! Sample output (note that a bug in pzlatra causes res2-5 to have an imaginary part of zero):      !
+! Sample output:                                                                                   !
 !--------------------------------------------------------------------------------------------------!
-! res1 :    58.765528072720869 ,     5.629639202296625                                             !
-! res2 :    58.765528072720883 ,     0.000000000000000                                             !
-! res3 :    58.765528072720883 ,     0.000000000000000                                             !
-! res4 :    58.765528072720869 ,     0.000000000000000                                             !
-! res5 :    58.765528072720883 ,     0.000000000000000                                             !
-! E_11 :     4.521085405229189 ,    -0.360428156738057                                             !
+! res1 :    31.194861937321843                                                                     !
+! res2 :    31.194861937321846                                                                     !
+! res3 :    31.194861937321846                                                                     !
+! res4 :    31.194861937321846                                                                     !
+! res5 :    31.194861937321846                                                                     !
+! E_11 :     2.779421970931733                                                                     !
 !--------------------------------------------------------------------------------------------------!
 !==================================================================================================!
-program example4
+program example_pddbc
   use MatrixSwitch
 
   implicit none
-#if defined(MPI) && defined(SLAP)
+#if defined(HAVE_MPI) && defined(HAVE_SCALAPACK)
   include 'mpif.h'
 
   !**** PARAMS **********************************!
 
   integer, parameter :: dp=selected_real_kind(15,300)
+
+  real(dp), parameter :: res_check=31.194861937321846_dp
+  real(dp), parameter :: el_check=2.779421970931733_dp
 
   complex(dp), parameter :: cmplx_1=(1.0_dp,0.0_dp)
   complex(dp), parameter :: cmplx_i=(0.0_dp,1.0_dp)
@@ -52,14 +59,12 @@ program example4
   integer :: N, M, i, j, k, l
   integer, allocatable :: bs_list(:)
 
-  real(dp) :: rn, rn2
-
-  complex(dp) :: res1, res2, res3, res4, res5, el
-  complex(dp), allocatable :: MyMatrix(:,:)
+  real(dp) :: rn, res1, res2, res3, res4, res5, el
+  real(dp), allocatable :: MyMatrix(:,:)
 
   type(matrix) :: A, B, C, D, E
 
-  !**********************************************!
+  !**** EXTERNAL ********************************!
 
   integer, external :: numroc
 
@@ -74,9 +79,9 @@ program example4
 
   allocate(bs_list(4))
   bs_list(:)=(/8,3,15,4/)
-  call ms_scalapack_setup(mpi_size,1,'c',1,bs_list,icontxt)
+  call ms_scalapack_setup(mpi_comm_world,1,'c',1,bs_list,icontxt)
 
-  m_storage='pzdbc'
+  m_storage='pddbc'
   m_operation='lap'
 
   N=15
@@ -94,17 +99,13 @@ program example4
   call m_allocate(D,M,M,m_storage)
   call m_allocate(E,N,N,m_storage)
 
-  rn2=0.1_dp
+  rn=0.1_dp
   do i=1,N
   do j=1,M
-    rn=mod(4.2_dp*rn2,1.0_dp)
-    rn2=mod(4.2_dp*rn,1.0_dp)
-    el=cmplx(rn,rn2)
-    call m_set_element(A,i,j,el)
-    rn=mod(4.2_dp*rn2,1.0_dp)
-    rn2=mod(4.2_dp*rn,1.0_dp)
-    el=cmplx(rn,rn2)
-    call pzelset(MyMatrix,i,j,MyDesc,el)
+    rn=mod(4.2_dp*rn,1.0_dp)
+    call m_set_element(A,i,j,rn,0.0_dp)
+    rn=mod(4.2_dp*rn,1.0_dp)
+    call pdelset(MyMatrix,i,j,MyDesc,rn)
   end do
   end do
 
@@ -112,39 +113,45 @@ program example4
 
   call mm_trace(A,B,res1,m_operation)
 
-  if (mpi_rank==0) print('(2(a,f21.15))'), 'res1 : ', real(res1,dp), ' , ', aimag(res1)
+  if (mpi_rank==0) print('(a,f21.15)'), 'res1 : ', res1
+  call assert_equal_dp(res1, res_check)
 
-  call mm_multiply(A,'c',B,'n',D,cmplx_1,cmplx_0,m_operation)
+  call mm_multiply(A,'t',B,'n',D,1.0_dp,0.0_dp,m_operation)
 
   call m_trace(D,res2,m_operation)
 
-  if (mpi_rank==0) print('(2(a,f21.15))'), 'res2 : ', real(res2,dp), ' , ', aimag(res2)
+  if (mpi_rank==0) print('(a,f21.15)'), 'res2 : ', res2
+  call assert_equal_dp(res2, res_check)
 
-  call mm_multiply(B,'n',A,'c',E,cmplx_1,cmplx_0,m_operation)
+  call mm_multiply(B,'n',A,'t',E,1.0_dp,0.0_dp,m_operation)
 
   call m_trace(E,res3,m_operation)
 
-  if (mpi_rank==0) print('(2(a,f21.15))'), 'res3 : ', real(res3,dp), ' , ', aimag(res3)
+  if (mpi_rank==0) print('(a,f21.15)'), 'res3 : ', res3
+  call assert_equal_dp(res3, res_check)
 
-  call m_add(A,'c',C,cmplx_1,cmplx_0,m_operation)
+  call m_add(A,'t',C,1.0_dp,0.0_dp,m_operation)
 
-  call mm_multiply(C,'n',B,'n',D,cmplx_1,cmplx_0,m_operation)
+  call mm_multiply(C,'n',B,'n',D,1.0_dp,0.0_dp,m_operation)
 
   call m_trace(D,res4,m_operation)
 
-  if (mpi_rank==0) print('(2(a,f21.15))'), 'res4 : ', real(res4,dp), ' , ', aimag(res4)
+  if (mpi_rank==0) print('(a,f21.15)'), 'res4 : ', res4
+  call assert_equal_dp(res4, res_check)
 
-  call m_add(A,'c',C,cmplx_1,cmplx_0,m_operation)
+  call m_add(A,'t',C,1.0_dp,0.0_dp,m_operation)
 
-  call mm_multiply(B,'n',C,'n',E,cmplx_1,cmplx_0,m_operation)
+  call mm_multiply(B,'n',C,'n',E,1.0_dp,0.0_dp,m_operation)
 
   call m_trace(E,res5,m_operation)
 
-  if (mpi_rank==0) print('(2(a,f21.15))'), 'res5 : ', real(res5,dp), ' , ', aimag(res5)
+  if (mpi_rank==0) print('(a,f21.15)'), 'res5 : ', res5
+  call assert_equal_dp(res5, res_check)
 
   call m_get_element(E,1,1,el)
 
-  if (mpi_rank==0) print('(2(a,f21.15))'), 'E_11 : ', real(el,dp), ' , ', aimag(el)
+  if (mpi_rank==0) print('(a,f21.15)'), 'E_11 : ', el
+  call assert_equal_dp(el, el_check)
 
   call m_deallocate(E)
   call m_deallocate(D)
@@ -152,11 +159,33 @@ program example4
   call m_deallocate(B)
   call m_deallocate(A)
 
+  deallocate(MyMatrix)
+
   call blacs_gridexit(icontxt)
   call blacs_exit(1)
   call mpi_finalize(mpi_err)
+
+  contains
+
+  subroutine assert_equal_dp(value1, value2)
+    implicit none
+
+    !**** PARAMS **********************************!
+
+    real(dp), parameter :: tolerance=1.0d-10
+
+    !**** INPUT ***********************************!
+
+    real(dp), intent(in) :: value1
+    real(dp), intent(in) :: value2
+
+    !**********************************************!
+
+    if (abs(value1-value2)>tolerance) stop 1
+
+  end subroutine assert_equal_dp
 #else
   print('(a,f21.15)'), 'To run this example, compile with ScaLAPACK.'
 #endif
 
-end program example4
+end program example_pddbc

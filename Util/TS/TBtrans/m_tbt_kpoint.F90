@@ -812,9 +812,13 @@ contains
        nkpnt = size(kweight)
        
     end if
-    
-    Gamma = (nkpnt == 1) .and. &
-         dot_product(kpoint(:,1),kpoint(:,1)) < 1.0e-20_dp
+
+    ! the user could do multiple Gamma-points (for no apparent reason)
+    Gamma = .true.
+    do i = 1, nkpnt
+       Gamma = Gamma .and. &
+            dot_product(kpoint(:,1),kpoint(:,1)) < 1.0e-20_dp
+    end do
     
     call write_k_points()
 

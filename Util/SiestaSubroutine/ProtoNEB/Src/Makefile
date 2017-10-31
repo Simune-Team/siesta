@@ -16,9 +16,10 @@ OBJDIR=Obj
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 #
-#
-default: protoNEB clean 
-#
+
+all: default
+default: protoNEB
+
 MAIN_OBJDIR:=$(shell cd -P -- ../../../../\$(OBJDIR) && pwd -P)
 ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)

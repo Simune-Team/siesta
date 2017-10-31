@@ -16,7 +16,6 @@
       use m_mpi_utils, only : broadcast
       use files,       only : slabel
       use alloc,       only : re_alloc, de_alloc
-      use siesta_options, only: td_elec_dyn, tdednwrite 
       implicit none
 
 
@@ -2240,20 +2239,6 @@ C Instantaneous temperature (Kelvin)
 !
       if (Node .eq. 0) then
 
-      if(td_elec_dyn) then
-         if (mod(istep, tdednwrite).eq.0) then
-            call io_assign(iacc)
-            open(unit=iacc,file=restart_file, form='formatted',
-     $           status='unknown', action= 'write', position='rewind')
-            write(iacc,*) natoms, dt
-            do ia = 1, natoms
-            write(iacc,*) iza(ia), (fa(i,ia),i=1,3) ! forces
-            enddo
-         call io_close(iacc)
-         end if
-
-      else
-
          call io_assign(iacc)
          open(unit=iacc,file=restart_file, form='formatted',
      $        status='unknown', action= 'write', position='rewind')
@@ -2262,7 +2247,6 @@ C Instantaneous temperature (Kelvin)
             write(iacc,*) iza(ia), (fa(i,ia),i=1,3) ! forces
          enddo
          call io_close(iacc)
-      endif ! td_elec_dyn
       endif
 C .....................
 

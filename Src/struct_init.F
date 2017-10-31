@@ -15,6 +15,7 @@
       USE siesta_options
       use units, only: Ang
       use m_ioxv
+      use m_iotdxv
       USE alloc,          only: re_alloc, de_alloc
 
       use siesta_geom
@@ -110,8 +111,21 @@
          end if
       end if
 #endif
+! For TDDFT start or restart, structure must be read from TDXV.
       foundxv = .false.
-      if (usesavexv) then
+      dyntyp = fdf_get('MD.TypeOfRun','CG')
+      if (leqi(dyntyp,'TDED')) then
+      call iotdxv('read', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
+           if (.not.foundxv) then
+              call die( 'ERROR: TDXV file not found' )
+           else
+             xv_file_read = tdxv_file_read
+            if (IOnode) then
+            write(6,"(a)")
+     $      "! Info in TDXV file prevails over previous structure input"
+            endif
+           endif
+      else if (usesavexv) then
         call ioxv('read', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
         if (IOnode) then
            if (.not.foundxv) then
@@ -128,7 +142,6 @@
         istart = fdf_get('MD.InitialTimeStep',1)
         ifinal = fdf_get('MD.FinalTimeStep',1)
         if (foundxv .and. (ifinal-istart>0)) then
-           dyntyp = fdf_get('MD.TypeOfRun','CG')
            step_back=.true.
            if (leqi(dyntyp,'verlet')) then
              restart_file = trim(slabel) // '.VERLET_RESTART'

@@ -5,7 +5,9 @@ by Daniel Sanchez-Portal ca. 2000-01 which had never been formally merged into
 siesta. 
 
 * This branch works in parallel. 
-* Currently only works for gamma-point calcualtions. 
+* Calculations at gamma-point and with k-point sampling is poossible.
+* Optional extrapolation of Hamiltonian between time steps.
+* Parallel caculation of <phi(t)|H(t)|phi(t)>.
 
 ================= Technical details ========================================
 

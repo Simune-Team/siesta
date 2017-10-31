@@ -71,8 +71,7 @@ C **********************************************************************
 
       real(dp)
      .  H(maxnh,8), S(maxnh), E1, E2, sigma, eo(maxo*2),
-     .  psi(2,2,nuotot,2*nuo), dtot(nhist,4), dpr(nhist,nuotot,4),
-     .  Spr(nuotot,nuo)
+     .  psi(2,2,nuotot,2*nuo), dtot(nhist,4), dpr(nhist,nuotot,4)
 
       complex(dp)
      .  Haux(2,nuotot,2,nuo), Saux(2,nuotot,2,nuo), caux(2,nuotot)
@@ -84,6 +83,7 @@ C Internal variables ---------------------------------------------------
 
       real(dp)
      .  delta, ener, diff, rpipj, ipipj, gauss, norm
+      real(dp), pointer :: Spr(:,:) => null()
 
 #ifdef MPI
       integer :: BNode, Bnuo, ibandg, maxnuo, MPIerror
@@ -97,6 +97,9 @@ C Initialize some variables
 C Initialize auxiliary variables
       Haux=dcmplx(0.0_dp,0.0_dp)
       Saux=dcmplx(0.0_dp,0.0_dp)
+
+      call re_alloc(Spr, 1, nuotot, 1, nuo, name='Spr',
+     &     routine='pdos3g')
 
       do io = 1,nuo
         do j = 1,numh(io)
@@ -136,8 +139,8 @@ C Repeat diagonalisation with increased memory to handle clustering
      .                         2*nuotot,1,ierror,2*BlockSize)
       endif
 
-C Rebuild the full overlap matrix
-      Spr = 0.0_dp
+C     Rebuild the full overlap matrix
+      Spr = 0._dp
       do io = 1, nuo
         do j = 1, numh(io)
           ind = listhptr(io) + j
@@ -145,8 +148,6 @@ C Rebuild the full overlap matrix
           Spr(jo,io) = S(ind)
         enddo
       enddo
-
-      dpr = 0.0d0        
 
 #ifdef MPI
 C Find maximum number of orbitals per node
@@ -174,10 +175,11 @@ C Transfer data
           do ihist = 1, nhist
             ener = E1 + (ihist - 1) * delta
             do iband = 1, nuo*2
-              call LocalToGlobalOrb(iband,Node,Nodes,ibandg)
+              call LocalToGlobalOrb((iband+1)/2,Node,Nodes,ibandg)
+              ibandg = ibandg * 2 - mod(iband, 2) 
               diff = (ener - eo(ibandg))**2 / (sigma ** 2)
               if (diff .gt. 15.0d0) cycle
-              gauss = ( exp(-diff) )
+              gauss = exp(-diff)
               caux(:,:) = dcmplx(0.0_dp,0.0_dp)
               do j=1,nuotot
                 caux(1,j) = dcmplx(psi(1,1,j,iband),psi(2,1,j,iband))   ! c_{j,up)
@@ -205,7 +207,7 @@ C Transfer data
         enddo  !BNode
 
 C Free workspace array for overlap
-        call de_alloc(Sloc, name='Sloc' )
+        call de_alloc(Sloc, 'Sloc', 'pdos3g')
 
 #else
 C Loop over all the energy range
@@ -215,7 +217,7 @@ C Loop over all the energy range
           do iband = 1, nuo*2
             diff = (ener - eo(iband))**2 / (sigma ** 2)
             if (diff .gt. 15.0d0) cycle
-            gauss = ( exp(-diff) )
+            gauss = exp(-diff)
             caux(:,:) = dcmplx(0.0_dp,0.0_dp)
             do j=1,nuotot
               caux(1,j) = dcmplx(psi(1,1,j,iband),psi(2,1,j,iband))   ! c_{j,up)
@@ -239,6 +241,8 @@ C Loop over all the energy range
           enddo
         enddo
 #endif
+
+      call de_alloc(Spr, 'Spr', 'pdos3g')
 
 #ifdef MPI
 

@@ -24,10 +24,10 @@ REFERENCE_DIR?=../../../Tests/Reference
 REFERENCE_CHECKER?=../cmp_digest.sh
 
 label=work
-#
+
 .PHONY: completed
 completed: completed_$(label)
-#
+
 completed_$(label):
 	@echo ">>>> Running $(name)1 test..."
 	@if [ -d $(label) ] ; then rm -rf $(label) ; fi; mkdir $(label)
@@ -38,20 +38,21 @@ completed_$(label):
             echo "    ==> Copying pseudopotential file for $$fps ..." ;\
           ln ../Pseudos/$$fps $(label)/$$fps ;\
          done
-	@echo "    ==> Running SIESTA as ${SIESTA}"
-	@(cd $(label) ; ${SIESTA} 2>&1 > $(name)1.out < ../$(name)1.fdf) \
+	@echo "    ==> Running SIESTA as $(MPI) ${SIESTA}"
+	@(cd $(label) ; $(MPI) $(SIESTA) 2>&1 > $(name)1.out < ../$(name)1.fdf) \
           && touch completed_$(label)
-	@if [ -f completed_$(label) ] ; then cp $(label)/$(name)1.out $(label)/$(name).xml .;\
+	@if [ -f completed_$(label) ] ; then cp $(label)/$(name)1.out . ;\
            echo "    ===> SIESTA finished successfully";\
          else \
            echo " **** Test $(name)1 did not complete successfully";\
          fi
+	@if [ -f Ge.TDXV ] ; then cp Ge.TDXV $(label)/ ; fi
+	@if [ -f completed_$(label) ] ; then rm completed_$(label) ; fi
 	@echo ">>>> Running $(name)2 test..."
-	@echo "    ==> Running SIESTA as ${SIESTA}"
-	@(rm -f completed* $(name).xml)
-	@(cd $(label) ; ${SIESTA} 2>&1 > $(name)2.out < ../$(name)2.fdf) \
+	@echo "    ==> Running SIESTA as $(MPI) ${SIESTA}"
+	@(cd $(label) ; $(MPI) $(SIESTA) 2>&1 > $(name)2.out < ../$(name)2.fdf) \
           && touch completed_$(label)
-	@if [ -f completed_$(label) ] ; then cp $(label)/$(name)2.out $(label)/$(name).xml .;\
+	@if [ -f completed_$(label) ] ; then cp $(label)/$(name)2.out . ;\
            echo "    ===> SIESTA finished successfully";\
          else \
            echo " **** Test $(name)2 did not complete successfully";\
@@ -60,9 +61,11 @@ completed_$(label):
 check: completed check-only
 
 check-only:
-	@echo "    ==> Running check for system $(name)"
-	@REFERENCE_DIR=$(REFERENCE_DIR) sh $(REFERENCE_CHECKER) $(name).out
+	@echo "    ==> Running check for system $(name)1"
+	@REFERENCE_DIR=$(REFERENCE_DIR) sh $(REFERENCE_CHECKER) $(name)1.out
+	@echo "    ==> Running check for system $(name)2"
+	@REFERENCE_DIR=$(REFERENCE_DIR) sh $(REFERENCE_CHECKER) $(name)2.out
 #
 clean:
-	@echo ">>>> Cleaning $(name)1 test..."
-	rm -rf $(label) completed* $(name)1.out $(name)2.out $(name).xml *.dat 
+	@echo ">>>> Cleaning $(name) test..."
+	rm -rf $(label) completed_$(label) *.out *.xml

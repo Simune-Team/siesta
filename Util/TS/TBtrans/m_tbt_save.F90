@@ -1027,7 +1027,7 @@ contains
 #endif
 
 #ifdef TBTRANS_TIMING
-    call timer('cdf-w-T',1)
+    call timer('cdf-w-DTJ',1)
 #endif
 
     NDOS = size(DOS,dim=1)
@@ -1173,7 +1173,7 @@ contains
 #endif
 
 #ifdef TBTRANS_TIMING
-    call timer('cdf-w-T',2)
+    call timer('cdf-w-DTJ',2)
 #endif
 
   end subroutine state_cdf_save
@@ -1359,6 +1359,10 @@ contains
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
+#ifdef TBTRANS_TIMING
+    call timer('cdf-w-J',1)
+#endif
+
     J => val(orb_J)
     nnzs_dev = size(J)
     ! We save the orbital current
@@ -1392,7 +1396,11 @@ contains
        end if
     end if
 #endif
-       
+
+#ifdef TBTRANS_TIMING
+    call timer('cdf-w-J',2)
+#endif
+
   end subroutine state_cdf_save_J
 
 
@@ -1640,7 +1648,7 @@ contains
                         '# Out transmission correction eigenvalues, k-resolved')
                 end if
                 call name_save(ispin,nspin,ascii_file,end='AVCEIG', El1=Elecs(iEl) )
-                call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
                      '# Out transmission correction eigenvalues, k-averaged')
              end if
 
@@ -1840,6 +1848,7 @@ contains
             write(iu,'(f10.5,tr1,e16.8)') E(ipiv(i)),sum(DAT(:,ipiv(i),ik)) * rno
          end do
          if ( nkpt > 1 ) then
+            ! Update the average values in the first entry
             if ( ik == 1 ) then
 !$OMP parallel workshare default(shared)
                DAT(:,:,1) = DAT(:,:,1) * wkpt(ik)
@@ -1888,6 +1897,7 @@ contains
             write(iu,fmt) E(ipiv(i)),EIG(:,ipiv(i),ik)
          end do
          if ( nkpt > 1 ) then
+            ! Update the average values in the first entry
             if ( ik == 1 ) then
 !$OMP parallel workshare default(shared)
                EIG(:,:,1) = EIG(:,:,1) * wkpt(ik)
