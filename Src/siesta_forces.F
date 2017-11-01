@@ -690,6 +690,7 @@
       use parallel,              only: IONode
       use class_dSpData2D
       use class_Fstack_dData1D
+      use densematrix, only: resetDenseMatrix
 
       use siesta_options,        only: fire_mix, broyden_maxit
       use siesta_options,        only: dDtol, dHtol
@@ -737,6 +738,9 @@
          return
          
       end if
+
+      ! Reduce memory requirements
+      call resetDenseMatrix()
 
       ! Signal to continue...
       last_step = .false.

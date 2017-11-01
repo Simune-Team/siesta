@@ -26,6 +26,7 @@ contains
   subroutine ts_method_init( start )
 
     use parallel, only : IONode
+    use densematrix, only: resetDenseMatrix
     
     logical, intent(in) :: start
 
@@ -41,6 +42,10 @@ contains
        if ( IONode ) then
           write(*,'(/a)')'transiesta: Starting immediately'
        end if
+
+       ! Be sure to not have *too* much memory allocated
+       ! before entering transiesta
+       call resetDenseMatrix()
        
        call ts_print_transiesta()
 

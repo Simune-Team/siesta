@@ -120,7 +120,7 @@ C**** Internal variables ***********************************************
           endif     ! Is the band included for wannierization?
         enddo       ! local bands on a given node
       enddo         ! nodes
-      call de_alloc( psitmp,  name='psitmp' )
+      call de_alloc( psitmp,  name='psitmp' , routine='reordpsi')
 #else
 !     Straight serial copy
       jband = 0
