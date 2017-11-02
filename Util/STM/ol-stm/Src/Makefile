@@ -56,7 +56,8 @@ STM_UNDEF += $(DEFS_PREFIX)-UON_DOMAIN_DECOMP
 
 #
 include $(PSML_ROOT)/psml.mk
-include $(XMLF90_ROOT)/xmlf90.mk
+XMLF90_INCFLAGS= -I $(XMLF90_ROOT)/include 
+XMLF90_LIBS=$(XMLF90_ROOT)/lib/libxmlf90.a
 #
 DEFS := $(DEFS) $(STM_UNDEF)
 FPPFLAGS := $(FPPFLAGS) $(STM_UNDEF)

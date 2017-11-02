@@ -37,7 +37,8 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-include $(XMLF90_ROOT)/xmlf90.mk
+XMLF90_INCFLAGS= -I $(XMLF90_ROOT)/include 
+XMLF90_LIBS=$(XMLF90_ROOT)/lib/libxmlf90.a
 INCFLAGS:=$(INCFLAGS) $(XMLF90_INCFLAGS)
 #
 LIBS= $(XMLF90_LIBS)
