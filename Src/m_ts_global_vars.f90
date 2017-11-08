@@ -34,6 +34,8 @@ contains
     if ( .not. TSmode ) return
 
     if ( start ) then
+       ! Quick return if we are already inside transiesta
+       if ( TSrun ) return
 
        ! We will immediately start Transiesta
        TSinit = .false.
