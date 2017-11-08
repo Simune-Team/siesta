@@ -325,7 +325,7 @@ contains
     integer, allocatable :: ncol(:), ptr(:)
     integer :: no1, no2, no_u
     integer :: nc, ncg
-    type(tRgn) :: r, r1, r2, rcol
+    type(tRgn) :: r1, r2, rcol
     integer :: io
 
     if ( .not. initialized(sp1) ) then
@@ -361,6 +361,11 @@ contains
     ! Allocate count of orbitals
     allocate(ncol(no1),ptr(no1))
 
+    ! Make room for *everything*
+    ! Yes, this may be much too large, but it shouldn't matter too much
+    call rgn_init(rcol, size(col1) + size(col2))
+    rcol%n = 0
+
     ! Count the new sparsity pattern
     ! Loop over all the entries 
     do io = 1 , no1
@@ -369,20 +374,23 @@ contains
        call rgn_list(r1,ncol1(io),col1(ptr1(io)+1:ptr1(io)+ncol1(io)))
        call rgn_sort(r1)
        call rgn_list(r2,ncol2(io),col2(ptr2(io)+1:ptr2(io)+ncol2(io)))
+       call rgn_union(r1, r2, r2)
+       ! Sort column indices, because it will most likely
+       ! speed up everything
        call rgn_sort(r2)
-       call rgn_union(r1,r2,r)
 
-       ncol(io) = r%n
-       ptr(io)  = rcol%n
+       ncol(io) = r2%n
+       ptr(io) = rcol%n
 
-       ! Simultaneously we build col (should NOT be sorted ;) )
+       ! Simultaneously we build col
        ! We do this after assigning ptr as we then 
        ! count that easily
-       if ( r%n > 0 ) call rgn_append(rcol,r,rcol)
+       if ( .not. rgn_push(rcol, r2) ) &
+            call die('Sp_Union: push-error')
 
     end do
 
-    call rgn_delete(r,r1,r2)
+    call rgn_delete(r1,r2)
 
     ! Create new sparsity pattern and copy over
     call newSparsity(out,no1,no_u,rcol%n,ncol,ptr,rcol%r, &

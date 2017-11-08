@@ -585,18 +585,24 @@ contains
        end if
     end do
     
-    csort = 'atom+'//trim(Elecs(iEl)%name)
-    csort = fdf_get('TS.BTD.Pivot',trim(csort))
-    csort = fdf_get('TBT.BTD.Pivot',trim(csort))
-    csort = fdf_get('TBT.BTD.Pivot.Device',trim(csort))
-    call ts_pivot(dit, sp_tmp, &
-         N_Elec, Elecs, &
-         cell, na_u, xa, lasto, &
-         r_oDev, csort)
+    if ( .not. fdf_get('TBT.Analyze', .false.) ) then
 
-    ! Print out what we found
-    if ( IONode ) then
-       write(*,'(a)')'tbtrans: BTD pivoting scheme in device: '//trim(csort)
+       ! Only perform the pivoting *if* we do not analyze the
+       ! sparsity pattern
+       csort = 'atom+'//trim(Elecs(iEl)%name)
+       csort = fdf_get('TS.BTD.Pivot',trim(csort))
+       csort = fdf_get('TBT.BTD.Pivot',trim(csort))
+       csort = fdf_get('TBT.BTD.Pivot.Device',trim(csort))
+       call ts_pivot(dit, sp_tmp, &
+            N_Elec, Elecs, &
+            cell, na_u, xa, lasto, &
+            r_oDev, csort)
+
+       ! Print out what we found
+       if ( IONode ) then
+          write(*,'(a)')'tbtrans: BTD pivoting scheme in device: '//trim(csort)
+       end if
+
     end if
 
     ! Check that there is no overlap with the other regions

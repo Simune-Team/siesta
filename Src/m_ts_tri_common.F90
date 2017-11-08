@@ -247,18 +247,19 @@ contains
     type(tRgn), intent(in) :: tri
 
     ! Local variables
-    type(tRgn) :: r, rp, rsub
+    type(tRgn) :: rEl, rp, rsub
     integer :: iE, i, n1, n2, n, off
 
     ! This sorts each block and checks for correct size as well
-    call ts_pivot_tri_sort(pvt,tri)
+    !call ts_pivot_tri_sort(pvt,tri)
 
     do iE = 1 , N_Elec
 
 #ifdef TBTRANS
-       call rgn_assoc(r,Elecs(iE)%o_inD)
+       call rgn_copy(Elecs(iE)%o_inD, rEl)
+       call rgn_sort(rEl)
 #else
-       call rgn_range(r,Elecs(iE)%idx_o, &
+       call rgn_range(rEl,Elecs(iE)%idx_o, &
             Elecs(iE)%idx_o + TotUsedOrbs(Elecs(iE))-1)
 #endif
 
@@ -266,10 +267,13 @@ contains
        ! in the tri-diagonal matrix
        n1 = huge(1)
        n2 = 0
-       do i = 1 , r%n
-          n = which_part(tri,rgn_pivot(pvt,r%r(i)))
+       do i = 1 , rEl%n
+          n = which_part(tri,rgn_pivot(pvt,rEl%r(i)))
           n1 = min(n1,n)
           n2 = max(n,n2)
+          ! once they are spread in two blocks, we *know*
+          ! we have all blocks
+          if ( n1 /= n2 ) exit
        end do
 
        ! Calculate offset in the tri-diagonal subspace
@@ -282,66 +286,72 @@ contains
        ! For each part in the tri-diagonal
        ! matrix, we push the parts
        ! to the back/front
-       ! depending on whether n < tri%n/2 / tri%n/2 < n
+       ! depending on whether it is the first or last block
        do n = n1 , n2 ! maximum: n2-n1 == 1
 
 
        ! Create copy of tri-diagonal block
        i = tri%r(n)
        call rgn_list(rsub,i,pvt%r(off+1:off+i))
+       call rgn_sort(rsub)
 
        ! Create push-list for new pivoting table
        call rgn_init(rp,i)
        rp%n = 0 ! init for zero elements
 
-       if ( n <= tri%n / 2 ) then
-          ! push to back of tri-diagonal part
+       !  rEl == electrode orbitals
+       !  rsub == current elements in tri-diagonal block (sorted)
+       !  rp == current tri-diagonal block (with sorted electrodes)
+       !  pvt%r == current pivoting array
 
-          ! First add all electrode elements
-          do i = 1 , r%n
-             if ( in_rgn(rsub,r%r(i)) ) then
-                if ( .not. rgn_push(rp,r%r(i)) ) then
+       if ( n == n1 ) then
+          ! push to front of tri-diagonal part
+
+          ! First add the elements not electrode orbitals
+          do i = off + 1 , off + tri%r(n)
+             if ( .not. in_rgn(rEl,pvt%r(i)) ) then
+                if ( .not. rgn_push(rp,pvt%r(i)) ) then
                    call die('Error in programming(A) 1')
                 end if
              end if
           end do
 
-          ! Last add the remaning elements in the block
-          do i = 1 , rsub%n
-             if ( .not. in_rgn(rp,rsub%r(i)) ) then
-                if ( .not. rgn_push(rp,rsub%r(i)) ) then
+          ! Last add all electrode elements
+          do i = 1 , rEl%n
+             if ( in_rgn(rsub,rEl%r(i)) ) then
+                if ( .not. rgn_push(rp,rEl%r(i)) ) then
                    call die('Error in programming(A) 2')
                 end if
              end if
           end do
-          
-       else
-          ! push to front of tri-diagonal part
 
-          ! First add the elements not being the electrode
-          ! in the block
-          do i = 1 , rsub%n
-             if ( .not. in_rgn(r,rsub%r(i)) ) then
-                if ( .not. rgn_push(rp,rsub%r(i)) ) then
+       else
+          ! push to back of tri-diagonal part
+
+          ! First add all electrode elements
+          do i = 1 , rEl%n
+             if ( in_rgn(rsub,rEl%r(i)) ) then
+                if ( .not. rgn_push(rp,rEl%r(i)) ) then
                    call die('Error in programming(B) 1')
                 end if
              end if
           end do
 
-          ! Last add all electrode elements
-          do i = 1 , r%n
-             if ( in_rgn(rsub,r%r(i)) ) then
-                if ( .not. rgn_push(rp,r%r(i)) ) then
+          ! Last add the remaning elements in the block
+          do i = off + 1 , off + tri%r(n)
+             if ( .not. in_rgn(rEl,pvt%r(i)) ) then
+                if ( .not. rgn_push(rp,pvt%r(i)) ) then
                    call die('Error in programming(B) 2')
                 end if
              end if
           end do
-
+          
        end if
 
        ! Check that we have populated the full tri-diagonal
        ! block
        if ( rp%n /= rsub%n ) then
+          print *,rp%n, rsub%n
           call die('Error in programming 3')
        end if
        
@@ -358,11 +368,7 @@ contains
        
     end do
 
-#ifdef TBTRANS
-    call rgn_nullify(r)
-#else
-    call rgn_delete(r)
-#endif
+    call rgn_delete(rEl)
        
   contains
 
