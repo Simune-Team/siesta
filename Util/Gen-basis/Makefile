@@ -30,6 +30,8 @@ VPATH:=$(shell pwd)/../../Src
 
 default: gen-basis ioncat
 
+override WITH_MPI=
+
 MAIN_OBJDIR:=$(shell cd -P -- ../../\$(OBJDIR) && pwd -P)
 ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
@@ -38,13 +40,9 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 
-GRIDXC_SERIAL_ROOT ?= $(GRIDXC_ROOT)
 #
 DEFS:= $(DEFS) $(DEFS_PREFIX) -UMPI
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX) -UMPI
-#
-include $(PSML_ROOT)/psml.mk
-include $(XMLF90_ROOT)/xmlf90.mk
 #
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
@@ -81,7 +79,6 @@ OBJS_IONCAT=$(DEPS_IONCAT) $(IONCAT_LOCAL_OBJS)
 
 
 #
-include $(GRIDXC_SERIAL_ROOT)/gridxc.mk
 XC = $(GRIDXC_LIBS)
 INCFLAGS:= $(INCFLAGS) $(GRIDXC_INCFLAGS)
 
