@@ -1102,9 +1102,9 @@ contains
 
     write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
     if ( FixSpin .and. (TS_HS_save .or. TSmode) ) then
-       write(*,*) 'Fixed spin not possible with TranSIESTA!'
-       write(*,*) 'Disable TS.HS.Save or FixSpin'
-       write(*,*) 'Electrodes with fixed spin is not possible with Transiesta!'
+       write(*,'(a)') 'Fixed spin not possible with TranSIESTA!'
+       write(*,'(a)') 'Disable TS.HS.Save or FixSpin'
+       write(*,'(a)') 'Electrodes with fixed spin is not possible with Transiesta!'
        call die('Fixing spin is not possible in transiesta')
     end if
 
@@ -1140,24 +1140,24 @@ contains
     end if
 
     if ( TS_HA == TS_HA_NONE ) then
-       write(*,*) 'Hartree potiental fix REQUIRED when running transiesta'
+       write(*,'(a)') 'Hartree potiental fix REQUIRED when running transiesta'
        err = .true.
     end if
 
     if ( ts_tidx < 1 .and. TS_HA == TS_HA_PLANE ) then
-       write(*,*) 'Hartree potiental fix *must* be electrode as no transport &
+       write(*,'(a)') 'Hartree potiental fix *must* be electrode as no transport &
             &plane is well-defined.'
        err = .true.
     end if
 
     if ( ts_tidx < 1 .and. len_trim(Hartree_fname) == 0 .and. IsVolt ) then
-       write(*,*) 'Hartree potiental correction is the box solution &
+       write(*,'(a)') 'Hartree potiental correction is the box solution &
             &which is not advised. Please supply your own Poisson solution.'
     end if
 
     if ( ts_A_method == TS_BTD_A_COLUMN ) then
-       write(*,*) 'Memory usage can be reduced by setting:'
-       write(*,*) '   TS.BTD.Spectral propagation'
+       write(*,'(a)') 'Memory usage can be reduced by setting:'
+       write(*,'(a)') '   TS.BTD.Spectral propagation'
     end if
 
 
@@ -1223,16 +1223,33 @@ contains
              ltmp = .true.
           end if
           if ( ltmp ) then
-             write(*,*) 'Electrode: '//trim(Elecs(i)%name)
+             write(*,'(a)') 'Electrode: '//trim(Elecs(i)%name)
              write(*,'(a,i0,a,i0)') 'Positions: ',idx1,' -- ',idx2 
              idx1 = Elecs(j)%idx_a
              idx2 = idx1 + TotUsedAtoms(Elecs(j)) - 1
-             write(*,*) 'Electrode: '//trim(Elecs(j)%name)
+             write(*,'(a)') 'Electrode: '//trim(Elecs(j)%name)
              write(*,'(a,i0,a,i0)') 'Positions: ',idx1,' -- ',idx2 
              write(*,'(a)') 'Overlapping electrodes is not physical, please correct.'
              err = .true.
           end if
        end do
+
+       ! Warn if using non-bulk electrodes and one does not update everything!
+       if ( .not. Elecs(i)%Bulk ) then
+          select case ( Elecs(i)%DM_update )
+          case ( 0 )
+             write(*,'(a)') 'Electrode: '//trim(Elecs(i)%name)
+             write(*,'(a)') '  is using a non-bulk electrode Hamiltonian and does not'
+             write(*,'(a)') '  update the electrode region or the cross-term DM!'
+             write(*,'(a)') '  Please consider setting "DM-update all"'
+          case ( 1 )
+             write(*,'(a)') 'Electrode: '//trim(Elecs(i)%name)
+             write(*,'(a)') '  is using a non-bulk electrode Hamiltonian and does not'
+             write(*,'(a)') '  update the electrode region DM!'
+             write(*,'(a)') '  Please consider setting "DM-update all"'
+          end select
+       end if
+
     end do
     
     ! CHECK THIS (we could allow it by only checking the difference...)
@@ -1261,8 +1278,8 @@ contains
     ! Check that we can actually start directly in transiesta
     if ( TS_scf_mode == 1 ) then ! TS-start
        if ( .not. all(Elecs(:)%DM_update >= 1) ) then
-          write(*,*)'WARNING: Responsibility is now on your side'
-          write(*,*)'WARNING: Requesting immediate start, yet we &
+          write(*,'(a)')'WARNING: Responsibility is now on your side'
+          write(*,'(a)')'WARNING: Requesting immediate start, yet we &
                &do not update cross-terms.'
           warn = .true.
        end if
