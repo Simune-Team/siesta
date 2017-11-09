@@ -89,7 +89,7 @@ contains
     !   fan, fan2d/front
     ! pivoting scheme is used.
     integer :: pvt_option
-    logical :: pvt_orb, orb_1
+    logical :: pvt_orb, orb_1, is_rev, is_priority
     integer :: fan_option
     integer :: fan1, fan2
     real(dp) :: p_n(3,2), p_cr(3), p_center(3,2), tmp3(3)
@@ -312,6 +312,66 @@ contains
        call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS, c_pvt)
 
 #endif
+
+    else if ( str_contain(pvt_str,'CG') ) then
+       is_rev = str_contain(pvt_str, 'rev-')
+       is_priority = str_contain(pvt_str, '+priority')
+       if ( is_rev ) &
+            str_tmp = trim(str_tmp)//'+rev-CG'
+       if ( is_priority ) &
+            str_tmp = trim(str_tmp)//'+priority'
+
+       call rgn_delete(r_Els)
+
+       ! Collect the electrode orbitals
+       if ( N_Elec > 1 ) then
+
+          do i = 1 , N_Elec
+             if ( .not. str_contain(pvt_str,Elecs(i)%name) ) cycle
+             str_tmp = trim(str_tmp)//'+'//trim(Elecs(i)%name)
+             
+             if ( pvt_orb .or. orb_1 ) then
+                call rgn_copy(Elecs(i)%o_inD,r_tmp)
+             else
+                call rgn_orb2atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
+             end if
+
+             call rgn_append(r_Els, r_tmp, r_Els)
+             
+             ! Sort this region
+             call rgn_sp_sort(r_Els, dit, tmp_Sp, r_tmp, &
+                  R_SORT_MAX_FRONT )
+             
+             iEl = iEl + 1
+          end do
+
+       end if
+
+       if ( iEl == 0 ) then
+          str_tmp = trim(str_tmp)//'+'//trim(Elecs(1)%name)
+          
+          if ( pvt_orb .or. orb_1 ) then
+             call rgn_copy(Elecs(1)%o_inD,r_Els)
+          else
+             call rgn_orb2atom(Elecs(1)%o_inD,na_u,lasto,r_Els)
+          end if
+          
+          ! Sort this region
+          call rgn_sp_sort(r_Els, dit, tmp_Sp, r_tmp, &
+               R_SORT_MAX_FRONT )
+
+       end if
+
+       ! do pivoting
+       i = PVT_CONNECT
+       if ( is_rev ) i = PVT_REV_CONNECT
+
+       if ( is_priority ) then
+          call sp_pvt(n,tmp_Sp,r_pvt, i, c_pvt, start=r_Els, &
+               priority = priority%r)
+       else
+          call sp_pvt(n,tmp_Sp,r_pvt, i, c_pvt, start=r_Els)
+       end if
 
 
     else ! the user *must* have supplied an electrode       

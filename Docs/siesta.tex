@@ -11352,8 +11352,8 @@ electrodes in a generic input format.
     String of values \fdf*{none}, \fdf*{cross-terms} or \fdf*{all}
     which controls which part of the electrode density matrix elements
     that are updated. If \fdf*{all}, both the density matrix elements
-    in the electrode and the coupling elements between the 
-    electrode and scattering region are updated. If \fdf*{cross-terms}
+    in the electrode and the coupling elements between the electrode
+    and scattering region are updated. If \fdf*{cross-terms} (default)
     only the coupling elements between the electrode and the
     scattering region are updated.
 
@@ -11510,7 +11510,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{TS!Elecs!DM.Update}[string]<none|cross-terms|all>
+\begin{fdfentry}{TS!Elecs!DM.Update}[string]<cross-terms|all|none>
 
   This globally controls which parts of the electrode density matrix
   gets updated. 
