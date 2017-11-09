@@ -950,12 +950,16 @@ currents may only be calculated in the selected device region.
 \end{fdfentry}
 
 \begin{fdflogicalF}{TBT.Atoms!Device.Connect}
-  
-  Whether the device region is extended such that the DOS is
-  calculated correctly on the device defined atoms.
 
+  Setting this to \fdftrue\ will \emph{extend} the device region to
+  also include atoms that the input device atoms has matrix
+  elements between. This may be important when using non-orthogonal
+  basis sets as one can ensure the full overlap matrix on the selected
+  device atoms.
+  
   \note this parameter should be set to \fdftrue\ in case accurate DOS
-  calculations are required on the specified device atoms. 
+  calculations are required on the specified device atoms (if using a
+  non-orthogonal basis set).
 
 \end{fdflogicalF}
 
