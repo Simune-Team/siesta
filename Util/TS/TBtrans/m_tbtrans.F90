@@ -136,16 +136,20 @@ contains
 
     ! Initialize the tri-diagonal matrices!
     if ( N_mol > 0 ) then
-       call tbt_tri_init( TSHS%dit, sp_total, mols(:)%orb )
+       call tbt_tri_init( TSHS%dit, sp_total, TSHS%cell, &
+            TSHS%na_u, TSHS%xa, TSHS%lasto, &
+            mols(:)%orb )
     else
-       call tbt_tri_init( TSHS%dit, sp_total )
+       call tbt_tri_init( TSHS%dit, sp_total, TSHS%cell, &
+            TSHS%na_u, TSHS%xa, TSHS%lasto)
     end if
 
     ! Clean-up
     call delete(sp_total)
 
 #else
-    call tbt_tri_init( TSHS%dit, TSHS%sp )
+    call tbt_tri_init( TSHS%dit, TSHS%sp, TSHS%cell, &
+         TSHS%na_u, TSHS%xa, TSHS%lasto)
 #endif
 
     ! Suggest to the user an optimal device region for

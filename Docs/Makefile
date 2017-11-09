@@ -120,7 +120,7 @@ final-dev: clean final-siesta-dev final-tbtrans-dev
 
 # Clean targets
 clean: FORCE
-	rm -f *.{lot,oct,aux,auxlock,makefile,figlist,bbl,log,ilg,lof,ind,out,blg,gls,glo,glg,idx,toc,bcf,run.xml}
+	rm -f *.{fdf,lot,oct,aux,auxlock,makefile,figlist,bbl,log,ilg,lof,ind,out,blg,gls,glo,glg,idx,toc,bcf,run.xml}
 
 clean-all: cleanall
 cleanall: clean

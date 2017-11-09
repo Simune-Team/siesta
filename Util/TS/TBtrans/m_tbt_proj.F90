@@ -1446,20 +1446,18 @@ contains
        call check(dic,is_same,'lasto, xa or cell in the PROJ.nc file does &
             &not conform to the current simulation.',.false.)
 
-       if ( .not. isGamma ) then
-          ! Check the k-points
-          allocate(rv(3,nkpt))
-          do i = 1 , nkpt
-             call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
-          end do
-          dic = ('kpt'.kvp.rv) // ('wkpt'.kvp. wkpt)
-          call ncdf_assert(ncdf,is_same,vars=dic, d_EPS = 1.e-7_dp )
-          if ( .not. is_same ) then
-             call die('k-points or k-weights are not the same')
-          end if
-          call delete(dic,dealloc = .false. )
-          deallocate(rv)
+       ! Check the k-points
+       allocate(rv(3,nkpt))
+       do i = 1 , nkpt
+          call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
+       end do
+       dic = ('kpt'.kvp.rv) // ('wkpt'.kvp. wkpt)
+       call ncdf_assert(ncdf,is_same,vars=dic, d_EPS = 1.e-7_dp )
+       if ( .not. is_same ) then
+          call die('k-points or k-weights are not the same')
        end if
+       call delete(dic,dealloc = .false. )
+       deallocate(rv)
 
        ! We check each molecule in the projection file
        do im = 1 , N_mol
@@ -1642,17 +1640,13 @@ contains
             atts = dic)
     end if
 
-    if ( .not. isGamma ) then
-
-       dic = ('info'.kv.'k point weights')
-       call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
-            atts = dic)
-       dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
-       call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
-            atts = dic)
-
-    end if
-
+    dic = ('info'.kv.'k point weights')
+    call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
+         atts = dic)
+    dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
+    call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
+         atts = dic)
+    
 #ifdef TBT_PHONON
     dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
 #else
@@ -1681,17 +1675,13 @@ contains
     ! we save them instantly.
     ! This ensures that a continuation can check for 
     ! the same k-points in the same go.
-    if ( .not. isGamma ) then
-
-       allocate(rv(3,nkpt))
-       do i = 1 , nkpt
-          call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
-       end do
-       call ncdf_put_var(ncdf,'kpt',rv)
-       call ncdf_put_var(ncdf,'wkpt',wkpt)
-       deallocate(rv)
-
-    end if
+    allocate(rv(3,nkpt))
+    do i = 1 , nkpt
+       call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
+    end do
+    call ncdf_put_var(ncdf,'kpt',rv)
+    call ncdf_put_var(ncdf,'wkpt',wkpt)
+    deallocate(rv)
 
     if ( 'proj-orb-current' .in. save_DATA ) then
 

@@ -117,8 +117,9 @@ contains
     
   end subroutine tbt_tri_init_elec
 
-  subroutine tbt_tri_init( dit , sp , proj )
+  subroutine tbt_tri_init( dit , sp , cell, na_u, xa, lasto, proj )
 
+    use fdf, only: fdf_get
     use parallel, only : IONode
     use class_OrbitalDistribution
     use class_Sparsity
@@ -138,6 +139,10 @@ contains
 
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp
+    real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(in) :: lasto(0:na_u)
     ! An array of additional projection regions
     ! which determines the projection of a molecule
     ! onto seperate regions
@@ -188,6 +193,15 @@ contains
     ! else....
     call Sp_retain_region(dit,tmpSp1,r_oDev,tmpSp2)
     call delete(tmpSp1)
+
+    if ( fdf_get('TBT.Analyze', .false.) ) then
+       
+       call tbt_tri_analyze(dit, tmpSp2, N_Elec, Elecs, &
+            cell, na_u, xa, lasto, r_oDev, BTD_method)
+       
+       call die('TBtrans analysis completed')
+       
+    end if
 
 #ifdef TRANSIESTA_DEBUG
     open(file='DEV_FULL_SP',unit=1400,form='formatted')
@@ -374,4 +388,427 @@ contains
 
   end function fold_elements
 
+
+  subroutine tbt_tri_analyze( dit, sp, N_Elec, Elecs, &
+       cell, na_u, xa, lasto, r_pvt, method)
+    
+    use parallel, only : IONode
+    use fdf, only : fdf_get, leqi
+#ifdef MPI
+    use mpi_siesta, only : MPI_Comm_Self
+#endif
+
+    use class_OrbitalDistribution
+    use class_Sparsity
+    
+    use create_Sparsity_Union
+    use create_Sparsity_SC
+    use m_sparsity_handling
+
+    use m_pivot
+
+    use m_ts_pivot, only: crt_el_priority
+    use m_ts_electype
+    use m_ts_sparse, only : ts_sp_calculation
+
+    use m_ts_tri_common
+    use m_ts_rgn2trimat
+
+#ifdef TRANSIESTA_DEBUG
+    use m_ts_debug
+#endif
+
+    type(OrbitalDistribution), intent(inout) :: dit
+    type(Sparsity), intent(inout) :: sp ! the local sparse pattern
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(inout) :: Elecs(N_Elec)
+    real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(in) :: lasto(0:na_u)
+    type(tRgn), intent(inout) :: r_pvt
+
+    ! The method used to partition the BTD format
+    integer, intent(in) :: method
+                                 
+    type(Sparsity) :: tmpSp1, tmpSp2
+
+    integer :: i, iEl, no
+
+    integer :: n, n_nzs
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+
+    character(len=*), parameter :: fmt = '(/,''TBT.BTD.Pivot.Device '',a,''+'',a)'
+    character(len=64) :: fmethod
+    character(len=4) :: corb
+    
+    ! Regions used for sorting the device region
+    type(tRgn) :: r_tmp, start, r_El, full, priority, r_apvt
+    integer :: orb_atom
+    
+    ! Write out all pivoting etc. analysis steps
+    if ( IONode ) write(*,'(/,a)') 'tbtrans: BTD analysis'
+
+    ! Copy over sparsity pattern (by removing everything but the region of interest
+    tmpSp1 = sp
+    call rgn_orb2atom(r_pvt, na_u, lasto, r_apvt)
+
+    do i = 1 , N_Elec
+       
+       ! Add the self-energy of the electrode in the projected position
+       ! of the "device" region.
+       call crtSparsity_Union_region(dit,tmpSp1,Elecs(i)%o_inD,tmpSp1)
+
+    end do
+    
+    ! Attach the sparsity pattern of the orbitals
+    ! later (tmpSp2) may be atom
+    call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
+         list_col = l_col , nrows_g = no , nnzs = n_nzs )
+
+    fmethod = 'orb+none'
+    if ( IONode ) write(*,fmt) 'orb','none'
+    call tri(r_pvt)
+
+    orb_atom_switch: do orb_atom = 1 , 2
+    ! The user can skip the orbital analysis if it takes too long
+    if ( orb_atom == 1 ) then
+       ! We default to only looking at the atomic sparsity
+       ! pattern. This is *much* faster and does provide
+       ! a very near optimal sparse pattern. 
+       ! The user can select to do both.
+       if ( leqi(fdf_get('TBT.BTD.Analyze','atom'),'atom') ) cycle
+       corb = 'orb'
+
+       call rgn_copy(r_pvt,full)
+
+       tmpSp2 = tmpSp1
+
+    else
+       corb = 'atom'
+
+       ! Convert the sparsity pattern to the atom
+       call SpOrb_to_SpAtom(dit,tmpSp1,na_u,lasto,tmpSp2)
+       ! *** the distribution will always
+       !     be bigger than for the atoms, hence we need
+       !     not re-construct it ***
+
+       ! Reduce the searching place of atoms
+       call rgn_copy(r_apvt, full)
+
+    end if
+
+    ! Sort the device region
+    call rgn_sort(full)
+
+    n = nrows_g(tmpSp2)
+
+    ! Create priority list
+    call rgn_init(priority,n)
+    call crt_El_priority(N_Elec,Elecs,priority, &
+         na_u,lasto,is_orb = orb_atom == 1 )
+
+    ! Attach the sparsity pattern of the orbitals
+    call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
+         list_col = l_col , nrows_g = no , nnzs = n_nzs )
+
+
+    ! *** Start analyzing sparsity pattern
+
+    do iEl = 1 , N_Elec
+       fmethod = trim(corb)//'+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),trim(Elecs(iEl)%name)
+       if ( orb_atom == 1 ) then
+          call rgn_copy(Elecs(iEl)%o_inD,r_El)
+       else
+          call rgn_copy(Elecs(iEl)%o_inD,r_tmp)
+          call rgn_orb2atom(r_tmp,na_u,lasto,r_El)
+       end if
+       call rgn_copy(r_El,r_tmp)
+       ! we sort the newly attached region
+       call rgn_sp_sort(r_El, dit, tmpSp2, r_tmp, R_SORT_MAX_FRONT )
+       
+       call rgn_init(r_El, full%n)
+       r_El%n = 0
+       if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
+       do 
+          call rgn_sp_connect(r_El, dit, tmpSp2, r_tmp)
+          if ( r_tmp%n == 0 .and. r_El%n /= r_pvt%n ) then
+             do i = 1 , full%n
+                if ( in_rgn(r_El,full%r(i)) ) cycle
+                call rgn_init(r_tmp,1,val=full%r(i))
+             end do
+             if ( r_tmp%n /= 0 ) then
+                do i = 1 , r_tmp%n
+                   if ( in_rgn(r_El,r_tmp%r(i)) ) then
+                      call die('This is extremely difficult. &
+                           &Please do not sort the BTD format as &
+                           &it cannot figure out what to do.')
+                   end if
+                end do
+                if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
+                cycle
+             end if
+          end if
+          if ( r_tmp%n == 0 ) exit
+          if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
+          call rgn_sp_sort(r_El, dit, tmpSp2, r_tmp, R_SORT_MAX_BACK )
+       end do
+       if ( orb_atom == 1 ) then
+          call tri(r_El)
+       else
+          call rgn_atom2orb(r_El,na_u,lasto,r_tmp)
+          call tri(r_tmp)
+       end if
+    end do
+
+    do iEl = 1, N_Elec
+       
+       call rgn_copy(Elecs(iEl)%o_inD, start)
+       if ( orb_atom == 2 ) then
+
+          ! transfer to atom
+          call rgn_orb2atom(start,na_u,lasto,r_tmp)
+          call rgn_copy(r_tmp,start)
+
+       end if
+
+       fmethod = trim(corb)//'+CM+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'CM+'//trim(Elecs(iEl)%name)
+       call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = start)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+rev-CM+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-CM+'//trim(Elecs(iEl)%name)
+       call rgn_reverse(r_tmp)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+CM+priority+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'CM+priority+'//trim(Elecs(iEl)%name)
+       call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = start, &
+            priority = priority%r)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+rev-CM+priority+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-CM+priority+'//trim(Elecs(iEl)%name)
+       call rgn_reverse(r_tmp)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+PCG+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'PCG+'//trim(Elecs(iEl)%name)
+       call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full, start = start)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+rev-PCG+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+'//trim(Elecs(iEl)%name)
+       call rgn_reverse(r_tmp)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+PCG+priority+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'PCG+priority+'//trim(Elecs(iEl)%name)
+       call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full, start = start, priority = priority%r)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+rev-PCG+priority+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+priority+'//trim(Elecs(iEl)%name)
+       call rgn_reverse(r_tmp)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+    end do
+
+    call rgn_delete(start)
+
+
+    fmethod = trim(corb)//'+GPS'
+    if ( IONode ) write(*,fmt) trim(corb),'GPS'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_GPS, sub = full)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    fmethod = trim(corb)//'+rev-GPS'
+    if ( IONode ) write(*,fmt) trim(corb),'rev-GPS'
+    call rgn_reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    fmethod = trim(corb)//'+GPS+priority'
+    if ( IONode ) write(*,fmt) trim(corb),'GPS+priority'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_GPS, sub = full, priority = priority%r)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    fmethod = trim(corb)//'+rev-GPS+priority'
+    if ( IONode ) write(*,fmt) trim(corb),'rev-GPS+priority'
+    call rgn_reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+
+    fmethod = trim(corb)//'+GGPS'
+    if ( IONode ) write(*,fmt) trim(corb),'GGPS'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_GGPS, sub = full)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    fmethod = trim(corb)//'+rev-GGPS'
+    if ( IONode ) write(*,fmt) trim(corb),'rev-GGPS'
+    call rgn_reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    fmethod = trim(corb)//'+GGPS+priority'
+    if ( IONode ) write(*,fmt) trim(corb),'GGPS+priority'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_GGPS, sub = full, priority = priority%r)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    fmethod = trim(corb)//'+rev-GGPS+priority'
+    if ( IONode ) write(*,fmt) trim(corb),'rev-GGPS+priority'
+    call rgn_reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    end do orb_atom_switch
+
+    call rgn_delete(r_tmp,r_El,full,priority)
+
+    call delete(tmpSp1) ! clean up
+    call delete(tmpSp2)
+
+    if ( IONode ) write(*,*) ! new-line
+    
+  contains
+
+    ! Print out all relevant information for this
+    ! pivoting scheme
+    subroutine tri(r_pvt)
+      use m_pivot_methods, only : bandwidth, profile
+      type(tRgn), intent(inout) :: r_pvt
+
+      integer :: bw
+      ! Possibly very large numbers
+      integer(i8b) :: prof, els
+      type(tRgn) :: ctri
+
+      bw   = bandwidth(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
+      prof = profile(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
+      if ( IONode ) then
+         write(*,'(tr3,a,t23,i10,/,tr3,a,t13,i20)') &
+              'Bandwidth: ',bw,'Profile: ',prof
+      end if
+
+      ! Create a new tri-diagonal matrix, do it in parallel
+      call ts_rgn2TriMat(N_Elec, Elecs, .true., &
+           dit, tmpSp1, r_pvt, ctri%n, ctri%r, &
+           method, 0, par = .true. )
+
+      ! Sort the pivoting table for the electrodes
+      ! such that we reduce the Gf.Gamma.Gf
+      ! However, this also makes it easier to
+      ! insert the self-energy as they become consecutive
+      ! in index, all-in-all, win-win!
+      call ts_pivot_tri_sort_El(r_pvt,N_Elec,Elecs,ctri)
+      
+      ! Calculate size of the tri-diagonal matrix
+      els = nnzs_tri(ctri%n,ctri%r)
+      ! check if there are overflows
+      if ( els < int(nnzs_tri_dp(ctri%n, ctri%r)) ) then
+         call die('transiesta: Memory consumption is too large, &
+              &try another pivoting scheme.')
+      end if
+      
+      if ( IONode ) then
+         call rgn_print(ctri, name = 'BTD partitions' , &
+              seq_max = 10 , indent = 3 , repeat = .true. )
+         
+         prof = r_pvt%n ** 2
+         write(*,'(tr3,a,i0,'' / '',f9.5)') &
+              'Matrix elements in tri / % of full: ', &
+              els , real(els,dp)/real(prof,dp) * 100._dp
+      end if
+
+      prof = els * 2 ! total mem
+      if ( IONode ) then
+         write(*,'(tr3,a,t39,f8.2,a)') 'Rough estimation of MEMORY: ', &
+              real(prof,dp) * 16._dp / 1024._dp ** 2,' MB'
+      end if
+
+      call rgn_delete(ctri)
+      
+    end subroutine tri
+
+  end subroutine tbt_tri_analyze
+  
 end module m_tbt_tri_init

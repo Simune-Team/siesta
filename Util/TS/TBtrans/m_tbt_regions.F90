@@ -43,7 +43,7 @@ module m_tbt_regions
   ! I.e. it is the regions that goes from the electrode
   ! and down to the central region (without any central
   ! region overlap)
-  type(tRgn), allocatable, target, public :: r_aEl(:)   , r_oEl(:)
+  type(tRgn), allocatable, target, public :: r_aEl(:), r_oEl(:)
   type(tRgn), allocatable, target, public :: r_oElpD(:)
 
   ! the device region (the calculated GF region)
@@ -69,12 +69,11 @@ contains
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World, MPI_Barrier
 #endif
+    use files, only: slabel
 
     use m_char, only: lcase
     use m_pivot
-#ifdef GRAPHVIZ
     use m_pivot_methods, only : sp2graphviz
-#endif
 
     use geom_helper, only : iaorb
     use intrinsic_missing, only : SPC_PROJ, VNORM, VEC_PROJ
@@ -198,7 +197,8 @@ contains
           end if
 
           ! Atoms NOT in the device region...
-          if ( leqi(g,'not-atom') .or. leqi(g,'not-position') ) then
+          if ( leqi(g,'not-atom') .or. leqi(g,'not-position') .or. &
+               leqi(g,'-atom') .or. leqi(g,'-position') ) then
              call fdf_brange(pline, r_tmp, 1, na_u)
              if ( r_tmp%n == 0 ) &
                   call die('Could not read in any atoms &
@@ -208,7 +208,7 @@ contains
           end if
           
        end do
-       call rgn_delete(r_tmp)
+       call rgn_delete(r_tmp)       
 
     end if
 
@@ -227,7 +227,7 @@ contains
        call rgn_complement(r_aEl_alone(iEl),r_aDev,r_aDev)
     end do
 
-    ! remove the downfolding region from the device region
+    ! remove the except region from the device region
     call rgn_complement(r_Els,r_aDev,r_aDev)
     ! Clean atomic downfolding region
     call rgn_delete(r_Els)
@@ -541,18 +541,16 @@ contains
        ! Collect all electrode down-fold regions into one
        call rgn_union(r_tmp2,r_oEl(iEl),r_tmp2)
 
-#ifdef GRAPHVIZ
        ! If the user requests GRAPHVIZ output
        if ( fdf_get('TBT.BTD.Pivot.Graphviz',.false.) .and. IONode ) then
-          csort = trim(Elecs(iEl)%name) // '.pvt'
+          csort = trim(slabel) // '.TBT.' // trim(Elecs(iEl)%name) // '.gv'
           call sp2graphviz(csort, sp_tmp, pvt=r_oEl(iEl))
        end if
-#endif
 
        ! Enlarge the sparse pattern by adding all electrode self-energy terms in
        ! the central region.
        ! Otherwise we do not have a DENSE part of the self-energies in the central
-       ! region. This is _very_ necessary.
+       ! region. This is _very_ important.
        call crtSparsity_Union_region(dit, sp_tmp, Elecs(iEl)%o_inD, sp_tmp)
 
     end do
@@ -630,13 +628,11 @@ contains
     call rgn_Orb2Atom(r_oDev,na_u,lasto,r_aDev)
     r_oDev%name = '[O]-device'
     r_aDev%name = '[A]-device'
-#ifdef GRAPHVIZ
     ! If the user requests GRAPHVIZ output
     if ( fdf_get('TBT.BTD.Pivot.Graphviz',.false.) .and. IONode ) then
-       csort = 'device.pvt'
+       csort = trim(slabel) // '.TBT.gv'
        call sp2graphviz(csort, sp_tmp, pvt=r_oDev)
     end if
-#endif
 
     ! Before we proceed we should create the Hamiltonian
     ! sparsity pattern used for setting up the Green function

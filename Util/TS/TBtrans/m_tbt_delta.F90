@@ -133,8 +133,6 @@ contains
 #ifdef NCDF_4
     type(hNCDF) :: ndelta, grp
 #endif
-    character(len=128) :: fname_d
-    character(len=20) :: char
     logical :: exists, is_real
 
     integer :: n_k, n_E
@@ -846,7 +844,7 @@ contains
     use class_Sparsity
     use m_region
 
-    use intrinsic_missing, only : SFIND, MODP
+    use intrinsic_missing, only : MODP
 
     type(zSpData1D), intent(inout) :: zd
     type(zTriMat), intent(inout) :: GFinv_tri
@@ -909,7 +907,7 @@ contains
 
     use class_Sparsity
     use m_region
-    use intrinsic_missing, only : SFIND, MODP
+    use intrinsic_missing, only : MODP
 
     type(zSpData1D), intent(inout) :: zd
     ! the region which describes the current segment of insertion
@@ -941,7 +939,6 @@ contains
             k(2) * sc_off(2,iu) + &
             k(3) * sc_off(3,iu)))
     end do
-
     
 !$OMP parallel do default(shared), private(iu,jo,ind,ju)
     do ju = 1 , n1

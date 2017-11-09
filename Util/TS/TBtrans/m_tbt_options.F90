@@ -775,7 +775,7 @@ contains
 
   subroutine print_tbt_warnings( Gamma )
 
-    use fdf, only: fdf_get
+    use fdf, only: fdf_get, fdf_defined
     use units, only: eV
     use parallel, only: IONode
 
@@ -850,8 +850,10 @@ contains
                &enabled for in-core self-energy calculations.'
        end if
     end if
-    
-    write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
+
+    if ( .not. fdf_defined('TBT.Atoms.Device') ) then
+       write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
+    end if
     
     if ( rem_T_Gf .and. N_Elec > 3 ) then
        write(*,'(a)')' ** Disabling transport calculation using diagonal, &
