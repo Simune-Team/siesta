@@ -156,7 +156,7 @@ C Broadcast copy of psi on node n to all other nodes
 
       enddo
 
-      call de_alloc( psitmp, name='psitmp' )
+      call de_alloc( psitmp, name='psitmp' , routine='detover')
 #else
       do ie = 1,nocc
         do je = 1, nocc

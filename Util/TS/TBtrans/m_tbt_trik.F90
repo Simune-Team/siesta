@@ -117,6 +117,7 @@ contains
     use m_tbt_proj, only : proj_bMtk, proj_cdf_save_bGammak
     use m_tbt_proj, only : proj_Mt_mix, proj_cdf_save
     use m_tbt_proj, only : proj_cdf_save_J
+    use m_tbt_proj, only : open_cdf_proj
 
     use m_tbt_delta, only : read_delta_next, clean_delta
     use m_tbt_dH, only : use_dH, dH
@@ -224,7 +225,8 @@ contains
 ! ******************* DATA file variables ********************
 #ifdef NCDF_4
     ! The netcdf handle for TBT
-    type(hNCDF) :: TBTcdf, PROJcdf
+    type(hNCDF) :: TBTcdf, PROJcdf, SEcdf
+    logical :: cdf_save, only_proj, only_sigma
 #else
     ! Units for IO of ASCII files
     integer, allocatable :: iounits(:), iounits_El(:)
@@ -237,6 +239,9 @@ contains
 ! ************************************************************
 
     T_all = 'T-all' .in. save_DATA
+    only_proj = 'proj-only' .in. save_DATA
+    only_sigma = 'Sigma-only' .in. save_DATA
+    cdf_save = (.not. only_sigma) .and. (.not. only_proj)
 
     ! Create the back-pivoting region
     call rgn_init(pvt,nrows_g(TSHS%sp),val=0)
@@ -670,17 +675,15 @@ contains
 
 #ifdef NCDF_4
     ! Open the NetCDF handles
-    
-    if ('proj-only'.nin.save_DATA ) then
+    if ( ('proj-only'.nin.save_DATA) .and. &
+         ( 'Sigma-only'.nin.save_DATA ) ) then
        ! *.TBT.nc file
        call open_cdf_save(cdf_fname, TBTcdf)
     end if
-    if ( N_proj_ME > 0 ) then
-
-       ! *.TBT.Proj.nc file
-       call open_cdf_save(cdf_fname_proj, PROJcdf)
-       
-    end if
+    ! *.TBT.Proj.nc file
+    call open_cdf_proj(cdf_fname_proj, PROJcdf)
+    ! *.TBT.SE.nc file
+    call open_cdf_Sigma(cdf_fname_sigma, SEcdf)
 
 #else
     ! Allocate units for IO ASCII
@@ -905,7 +908,7 @@ contains
           call timer('SE-dwn',2)
 
 #ifdef NCDF_4
-          call state_Sigma_save(cdf_fname_Sigma, ikpt, nE, &
+          call state_Sigma_save(SEcdf, ikpt, nE, &
                N_Elec, Elecs, nzwork, zwork)
 
 
@@ -936,7 +939,7 @@ contains
 
           ! Only calculate actual transmission if the user
           ! has requested so...
-          if ( ('Sigma-only'.nin.save_DATA) ) then
+          if ( .not. only_sigma ) then
 
           call timer('Gf-prep',1)
 
@@ -979,7 +982,7 @@ contains
 
           ! Only calculate actual transmission if the user
           ! has requested so...
-          if ( ('proj-only'.nin.save_DATA) ) then
+          if ( .not. only_proj ) then
 
           call timer('DOS-Gf-A-T',1)
 
@@ -1450,12 +1453,10 @@ contains
 
 #ifdef NCDF_4
 
-    if ( 'proj-only'.nin.save_DATA ) then
-       ! Close the netcdf file
-       call ncdf_close(TBTcdf)
-    end if
+    ! Close the netcdf file
+    call ncdf_close(TBTcdf)
+    call ncdf_close(PROJcdf)
     if ( N_proj_ME > 0 ) then
-       call ncdf_close(PROJcdf)
        deallocate(proj_parts)
     end if
 
@@ -1473,6 +1474,7 @@ contains
     ! Before we delete the Gf tri-diagonal matrix
     ! we need to create the sigma mean if requested.
     ! This is because %Sigma => Gfwork(:)
+    call ncdf_close(SEcdf)
     call state_Sigma2mean(cdf_fname_sigma,N_Elec,Elecs)
 #endif
     call delete(GF_tri)
@@ -1494,7 +1496,7 @@ contains
     ! Once we have cleaned up we can easily do the
     ! conversion of the TBT.nc file to the regular txt files
     ! We should have plenty of memory to do this.
-    if ( ('proj-only'.nin.save_DATA).and.('Sigma-only'.nin.save_DATA) ) then
+    if ( cdf_save ) then
 
        ! We will guesstimate the current using the weights
        ! First we need to copy them over, we use S

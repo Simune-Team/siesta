@@ -417,7 +417,7 @@ contains
     ! We should probably warn if +2 electrodes are used and t_dir is the
     ! same for all electrodes... Then the user needs to know what (s)he is doing...
     ! Accuracy required for self-energy convergence
-    Elecs(:)%accu = fdf_get('TS.Elecs.Accuracy',1e-14_dp*eV,'Ry')
+    Elecs(:)%accu = fdf_get('TS.Elecs.Accuracy',1.e-14_dp*eV,'Ry')
     Elecs(:)%Eta  = fdf_get('TS.Contours.nEq.Eta',0.0001_dp*eV,'Ry')
     Elecs(:)%Eta  = fdf_get('TS.Elecs.Eta',Elecs(1)%Eta,'Ry')
     Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes

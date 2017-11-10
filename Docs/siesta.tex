@@ -11309,13 +11309,15 @@ TS.BTD.Pivot atom+GPS
 ...
     BTD partitions (7): 
      [ 2984, 2776, 192, 192, 1639, 4050, 105 ]
-    Matrix elements in tri / % of full: 68246662 /  47.88707
+    BTD matrix block size [max] / [average]: 4050 /   1705.429
+    BTD matrix elements in % of full matrix:   47.88707 %
 
 TS.BTD.Pivot atom+GGPS
 ...
     BTD partitions (6): 
      [ 2880, 2916, 174, 174, 2884, 2910 ]
-    Matrix elements in tri / % of full: 69303556 /  48.62867
+    BTD matrix block size [max] / [average]: 2916 /   1989.667
+    BTD matrix elements in % of full matrix:   48.62867 %
 
   \end{shellexample}
   Although the GPS method uses the least amount of memory, the GGPS
@@ -11621,8 +11623,8 @@ electrodes in a generic input format.
     String of values \fdf*{none}, \fdf*{cross-terms} or \fdf*{all}
     which controls which part of the electrode density matrix elements
     that are updated. If \fdf*{all}, both the density matrix elements
-    in the electrode and the coupling elements between the 
-    electrode and scattering region are updated. If \fdf*{cross-terms}
+    in the electrode and the coupling elements between the electrode
+    and scattering region are updated. If \fdf*{cross-terms} (default)
     only the coupling elements between the electrode and the
     scattering region are updated.
 
@@ -11779,7 +11781,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{TS!Elecs!DM.Update}[string]<none|cross-terms|all>
+\begin{fdfentry}{TS!Elecs!DM.Update}[string]<cross-terms|all|none>
 
   This globally controls which parts of the electrode density matrix
   gets updated. 

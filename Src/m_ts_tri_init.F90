@@ -456,41 +456,23 @@ contains
        if ( orb_atom == 1 ) then
           call rgn_copy(Elecs(iEl)%o_inD,r_El)
        else
-          call rgn_copy(Elecs(iEl)%o_inD,r_tmp)
-          call rgn_orb2atom(r_tmp,na_u,lasto,r_El)
+          call rgn_orb2atom(Elecs(iEl)%o_inD,na_u,lasto,r_El)
        end if
        call rgn_copy(r_El,r_tmp)
        ! we sort the newly attached region
-       call rgn_sp_sort(r_El, fdit, tmpSp2, r_tmp, R_SORT_MAX_FRONT )
+       call rgn_sp_sort(r_tmp, fdit, tmpSp2, r_El, R_SORT_MAX_FRONT )
        
        call rgn_init(r_El, full%n)
        r_El%n = 0
        if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
        do 
           call rgn_sp_connect(r_El, fdit, tmpSp2, r_tmp)
-          if ( r_tmp%n == 0 .and. r_El%n /= no_u_TS ) then
-             do i = 1 , nrows_g(tmpSp2)
-                if ( in_rgn(r_El,i) ) cycle
-                if ( orb_atom == 1 ) then
-                   if ( orb_type(i) /= TYP_BUFFER ) then
-                      call rgn_range(r_tmp,i,i)
-                      exit
-                   end if
-                else
-                   if ( atom_type(i) /= TYP_BUFFER ) then
-                      call rgn_range(r_tmp,i,i)
-                      exit
-                   end if
-                end if
+          if ( r_tmp%n == 0 .and. r_El%n /= full%n ) then
+             do i = 1 , full%n
+                if ( in_rgn(r_El,full%r(i)) ) cycle
+                call rgn_range(r_tmp,full%r(i),full%r(i))
              end do
              if ( r_tmp%n /= 0 ) then
-                do i = 1 , r_tmp%n
-                   if ( in_rgn(r_El,r_tmp%r(i)) ) then
-                      call die('This is extremely difficult. &
-                           &Please do not sort the BTD format as &
-                           &it cannot figure out what to do.')
-                   end if
-                end do
                 if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
                 cycle
              end if
@@ -711,13 +693,6 @@ contains
       type(tRgn) :: ctri
       character(len=132) :: fname
 
-      bw   = bandwidth(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
-      prof = profile(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
-      if ( IONode ) then
-         write(*,'(tr3,a,t23,i10,/,tr3,a,t13,i20)') &
-              'Bandwidth: ',bw,'Profile: ',prof
-      end if
-
       ! Only if it is defined
       fname = fdf_get('TS.BTD.Output',' ')
       if ( len_trim(fname) > 0 ) then
@@ -736,7 +711,14 @@ contains
       ! insert the self-energy as they become consecutive
       ! in index, all-in-all, win-win!
       call ts_pivot_tri_sort_El(r_pvt,N_Elec,Elecs,ctri)
-      
+
+      bw   = bandwidth(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
+      prof = profile(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
+      if ( IONode ) then
+         write(*,'(tr3,a,t23,i10,/,tr3,a,t13,i20)') &
+              'Bandwidth: ',bw,'Profile: ',prof
+      end if
+
       ! Calculate size of the tri-diagonal matrix
       els = nnzs_tri(ctri%n,ctri%r)
       ! check if there are overflows
@@ -749,10 +731,14 @@ contains
          call rgn_print(ctri, name = 'BTD partitions' , &
               seq_max = 10 , indent = 3 , repeat = .true. )
          
+         write(*,'(tr3,a,i0,'' / '',f10.3)') &
+              'BTD matrix block size [max] / [average]: ', &
+              maxval(ctri%r), sum(real(ctri%r)) / ctri%n
+
          pad = no_u_TS ** 2
-         write(*,'(tr3,a,i0,'' / '',f9.5)') &
-              'Matrix elements in tri / % of full: ', &
-              els , real(els,dp)/real(pad,dp) * 100._dp
+         write(*,'(tr3,a,f9.5,'' %'')') &
+              'BTD matrix elements in % of full matrix: ', &
+              real(els,dp)/real(pad,dp) * 100._dp
       end if
 
       if ( ts_A_method == TS_BTD_A_COLUMN ) then

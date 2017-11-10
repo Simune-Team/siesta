@@ -35,6 +35,7 @@ module m_tbt_sigma_save
   logical, save :: sigma_parallel  = .false.
   integer, save :: cmp_lvl    = 0
 
+  public :: open_cdf_Sigma
   public :: init_Sigma_save
   public :: state_Sigma_save
   public :: state_Sigma2mean
@@ -52,7 +53,7 @@ contains
 
 #ifdef NCDF_4
 
-    sigma_save   = fdf_get('TBT.CDF.SelfEnergy.Save',.false.)
+    sigma_save = fdf_get('TBT.CDF.SelfEnergy.Save',.false.)
     if ( sigma_save ) then
        sigma_mean_save = fdf_get('TBT.CDF.SelfEnergy.Save.Mean',.false.)
     end if
@@ -68,10 +69,9 @@ contains
     end if
 #endif
 
-    if ( fdf_get('TBT.SelfEnergy.Only',.false.) ) then
+    if ( sigma_save .and. fdf_get('TBT.SelfEnergy.Only',.false.) ) then
        save_DATA = save_DATA // ('Sigma-only'.kv.1)
     end if
-    
 #endif
     
   end subroutine init_Sigma_options
@@ -92,6 +92,9 @@ contains
 #ifdef NCDF_4
     write(*,f1)'Saving down-folded self-energies',sigma_save
     if ( .not. sigma_save ) return
+#ifdef NCDF_PARALLEL
+    write(*,f1)'Use parallel MPI-IO for self-energy file', sigma_parallel
+#endif
 
     write(*,f1)'Only calc down-folded self-energies', &
          ('Sigma-only'.in.save_DATA)
@@ -108,6 +111,31 @@ contains
   end subroutine print_Sigma_options
 
 #ifdef NCDF_4
+
+  subroutine open_cdf_Sigma(fname, ncdf)
+    use netcdf_ncdf, ncdf_parallel => parallel
+
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD
+#endif
+
+    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
+
+    if ( .not. sigma_save ) return
+
+#ifdef NCDF_PARALLEL
+    if ( sigma_parallel ) then
+       call ncdf_open(ncdf,fname, mode=ior(NF90_WRITE,NF90_MPIIO), &
+            comm = MPI_COMM_WORLD )
+    else
+#endif
+       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
+#ifdef NCDF_PARALLEL
+    end if
+#endif
+    
+  end subroutine open_cdf_Sigma
 
   ! Save the self-energies of the electrodes and
   subroutine init_Sigma_save(fname, TSHS, r, ispin, N_Elec, Elecs, &
@@ -147,6 +175,8 @@ contains
 
     type(hNCDF) :: ncdf, grp
     type(dict) :: dic
+    type(tRgn) :: r_tmp
+
     logical :: prec_Sigma
     logical :: exist, same
     character(len=200) :: char
@@ -203,7 +233,9 @@ contains
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
             ('pivot'.kvp. r%r )
-       dic = dic // ('a_dev'.kvp.a_Dev%r )
+       call rgn_copy(a_Dev, r_tmp)
+       call rgn_sort(r_tmp)
+       dic = dic // ('a_dev'.kvp.r_tmp%r )
        dic = dic // ('xa'.kvp. TSHS%xa)
        if ( a_Buf%n > 0 )then
           dic = dic // ('a_buf'.kvp.a_Buf%r )
@@ -218,6 +250,7 @@ contains
           call die('pivot, lasto, xa or a_buf in the TBT.nc file does &
                &not conform to the current simulation.')
        end if
+       call rgn_delete(r_tmp)
 
        ! Check the k-points
        allocate(r2(3,nkpt))
@@ -251,7 +284,7 @@ contains
     ! We need to create the file
 #ifdef NCDF_PARALLEL
     if ( sigma_parallel ) then
-       call ncdf_create(ncdf,fname, mode=NF90_MPIIO, overwrite=.true., &
+       call ncdf_create(ncdf,fname, mode=ior(NF90_NETCDF4,NF90_MPIIO), overwrite=.true., &
             comm = MPI_COMM_WORLD, &
             parallel = .true. )
     else
@@ -346,7 +379,10 @@ contains
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
-    call ncdf_put_var(ncdf,'a_dev',a_Dev%r)
+    call rgn_copy(a_Dev, r_tmp)
+    call rgn_sort(r_tmp)
+    call ncdf_put_var(ncdf,'a_dev',r_tmp%r)
+    call rgn_delete(r_tmp)
     if ( a_Buf%n > 0 ) then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
     end if
@@ -400,7 +436,7 @@ contains
 
   end subroutine init_Sigma_save
 
-  subroutine state_Sigma_save(fname, ikpt, nE, N_Elec, Elecs,nzwork,zwork)
+  subroutine state_Sigma_save(ncdf, ikpt, nE, N_Elec, Elecs,nzwork,zwork)
 
     use parallel, only : Node, Nodes
 
@@ -414,7 +450,7 @@ contains
     use m_ts_electype
 
     ! The file name we save too
-    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: ikpt
     type(tNodeE), intent(in) :: nE
     integer, intent(in) :: N_Elec
@@ -422,7 +458,7 @@ contains
     integer, intent(in) :: nzwork
     complex(dp), intent(inout), target :: zwork(nzwork)
 
-    type(hNCDF) :: ncdf, grp
+    type(hNCDF) :: grp
     integer :: iEl, i, iN
 #ifdef MPI
     complex(dp), pointer :: Sigma(:)
@@ -430,17 +466,6 @@ contains
 #endif
 
     if ( .not. sigma_save ) return
-
-#ifdef NCDF_PARALLEL
-    if ( sigma_parallel ) then
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE, &
-            comm = MPI_COMM_WORLD )
-    else
-#endif
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-#ifdef NCDF_PARALLEL
-    end if
-#endif
 
     ! Save the energy-point
     if ( parallel_io(ncdf) ) then
@@ -498,11 +523,9 @@ contains
 
     end do
 
-    call ncdf_close(ncdf)
-    
   end subroutine state_Sigma_save
 
-  subroutine state_Sigma2mean(fname,N_Elec,Elecs)
+  subroutine state_Sigma2mean(fname, N_Elec, Elecs)
 
     use parallel, only : IONode
 
@@ -545,6 +568,8 @@ contains
        return
     end if
 
+    call timer('SE-mean', 1)
+
     ! We do this on one processor
     call ncdf_open(ncdf,fname, mode=NF90_WRITE)
 
@@ -575,7 +600,7 @@ contains
        dic = ('info'.kv.'Down-folded self-energy, k-averaged')
        dic = dic//('unit'.kv.'Ry')
        ! Chunking greatly reduces IO cost
-       call ncdf_def_var(grp,'SigmaMean',NF90_DOUBLE_COMPLEX, &
+       call ncdf_def_var(grp,'SelfEnergyMean',NF90_DOUBLE_COMPLEX, &
             (/'no_e','no_e','ne  '/), chunks = (/no_e,no_e,1/) , &
             atts = dic ,compress_lvl = cmp_lvl )
        call delete(dic)
@@ -620,6 +645,8 @@ contains
     
     call ncdf_close(ncdf)
 
+    call timer('SE-mean', 2)
+        
 #ifdef MPI
     call MPI_Barrier(Mpi_comm_world,MPIerror)
 #endif

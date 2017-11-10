@@ -318,7 +318,6 @@ C     Initialise MPI and set processor number
 
 !
 !     Nullify arrays
-      nullify(Haux,Saux,psi)
       nullify(Dscf,Dold,Escf)
       nullify(listh)
       nullify(H,S)
