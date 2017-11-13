@@ -405,7 +405,11 @@ contains
     ! A consecutive region is *always* sorted
     r%sorted = .true.
 
-    if ( vr%n == 0 ) return
+    if ( vr%n == 0 ) then
+       ! Be sure to fill everything!
+       r%r(:) = 0
+       return
+    end if
 
     if ( vr%sorted ) then
        call rgn_assoc(svr, vr)
@@ -870,6 +874,7 @@ contains
 #endif
 
     if ( r%n == 0 ) return
+    if ( sr%n <= 1 ) return
 
 #ifdef MPI
     if ( present(dit) ) comm = dist_comm(dit)
@@ -1558,8 +1563,8 @@ contains
     type(tRgn), intent(inout) :: r
     if ( r%n > 0 ) then
        call sort_quick(r%n, r%r)
-       r%sorted = .true.
     end if
+    r%sorted = .true.
   end subroutine rgn_sort
 
   subroutine rgn_uniq(r)
@@ -1919,13 +1924,28 @@ contains
 
   end subroutine rgn_print
 
-  function rgn_push_val(r,val) result(good)
+  function rgn_push_val(r,val,sorted) result(good)
+    use intrinsic_missing, only: SFIND
     type(tRgn), intent(inout) :: r
     integer, intent(in) :: val
+    logical, intent(in), optional :: sorted
     logical :: good
+    integer :: idx, i
 
     good = size(r%r) > r%n
     if ( .not. good ) return
+
+    if ( present(sorted) ) then
+       if ( sorted ) then
+          idx = SFIND(r%r(1:r%n), val, +1)
+          do i = r%n, idx, -1
+             r%r(i+1) = r%r(i)
+          end do
+          r%r(idx) = val
+          r%n = r%n + 1
+          return
+       end if
+    end if
 
     ! Determine if it is still sorted
     if ( r%sorted ) then
@@ -1937,24 +1957,22 @@ contains
 
   end function rgn_push_val
 
-  function rgn_push_list(r,n,val) result(good)
+  function rgn_push_list(r,n,val,sorted) result(good)
     type(tRgn), intent(inout) :: r
-    integer, intent(in) :: n, val(n)
+    integer, intent(in) :: n
+    integer, intent(in), target :: val(n)
+    logical, intent(in), optional :: sorted
+    type(tRgn) :: tmp
     logical :: good
-    integer :: i
 
-    good = size(r%r) >= r%n + n
-    if ( n <= 0 .or. .not. good ) return
+    tmp%n = n
+    tmp%r => val
 
-    do i = 1, n
-       r%r(r%n+i) = val(i)
-       r%sorted = r%sorted .and. r%r(r%n+i) <= val(i)
-    end do
-    r%n = r%n + n
+    good = rgn_push(r, tmp, sorted)
 
   end function rgn_push_list
 
-  function rgn_push_rgn(r,push, sorted) result(good)
+  function rgn_push_rgn(r, push, sorted) result(good)
     type(tRgn), intent(inout) :: r
     type(tRgn), intent(in) :: push
     ! In case two sorted arrays are pushed together

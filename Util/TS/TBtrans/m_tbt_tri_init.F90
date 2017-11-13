@@ -453,11 +453,17 @@ contains
     integer :: orb_atom
     logical :: one_orb
 
+    ! Capture the min memory pivoting scheme
+    character(len=64) :: min_mem_method
+    real(dp) :: min_mem
+
     ! Write out all pivoting etc. analysis steps
     if ( IONode ) write(*,'(/,a)') 'tbtrans: BTD analysis'
 
     ! Copy over the sparse matrix to tmpSp1
     tmpSp1 = sp
+
+    min_mem = huge(1._dp)
 
     call rgn_orb2atom(r_pvt, na_u, lasto, r_apvt)
 
@@ -492,7 +498,8 @@ contains
 
        tmpSp2 = tmpSp1
 
-    else if ( .not. one_orb ) then
+    else
+       if ( one_orb ) exit
        corb = 'atom'
 
        ! Convert the sparsity pattern to the atom
@@ -541,9 +548,6 @@ contains
           call tri(r_El)
        end if
 
-       call timer('CG - 1', 3)
-       call die('aosthu')
-       
        fmethod = trim(corb)//'+rev-'//trim(Elecs(iEl)%name)
        if ( IONode ) write(*,fmt) trim(corb),'rev-'//trim(Elecs(iEl)%name)
        call rgn_reverse(r_tmp)
@@ -728,7 +732,20 @@ contains
     call delete(tmpSp1) ! clean up
     call delete(tmpSp2)
 
-    if ( IONode ) write(*,*) ! new-line
+    if ( IONode ) then
+       write(*,*) ! new-line
+       write(*,*) ! new-line
+       write(*,'(a)') ' **********'
+       write(*,'(a)') ' *  NOTE  *'
+       write(*,'(a)') ' **********'
+       write(*,'(a)') ' This minimum memory pivoting scheme may not necessarily be the'
+       write(*,'(a)') ' best performing algorithm!'
+       write(*,'(a,/)') ' You should analyze the pivoting schemes!'
+       write(*,'(a)') ' Minimum memory required pivoting scheme:'
+       write(*,'(a,a)') '  TBT.BTD.Pivot.Device ', trim(min_mem_method)
+       write(*,'(a,f8.2,a)') '  Memory: ', min_mem, ' MB'
+       write(*,*) ! new-line
+    end if
     
   contains
 
@@ -738,12 +755,11 @@ contains
       use m_pivot_methods, only : bandwidth, profile
       type(tRgn), intent(in) :: r_pvt
 
-      type(tRgn) :: cur
+      type(tRgn) :: cur, cTri
 
       integer :: bw
       ! Possibly very large numbers
       integer(i8b) :: prof, els
-      type(tRgn) :: ctri
 
       call rgn_copy(r_pvt, cur)
 
@@ -791,12 +807,22 @@ contains
       prof = els * 2 ! total mem
       if ( IONode ) then
          write(*,'(tr3,a,t39,f8.2,a)') 'Rough estimation of MEMORY: ', &
-              real(prof,dp) * 16._dp / 1024._dp ** 2,' MB'
+              size2mb(prof),' MB'
+      end if
+      if ( size2mb(prof) < min_mem ) then
+         min_mem = size2mb(prof)
+         min_mem_method = fmethod
       end if
 
       call rgn_delete(ctri, cur)
       
     end subroutine tri
+
+    function size2mb(i) result(mb)
+      integer(i8b) :: i
+      real(dp) :: mb
+      mb = real(i, dp) * 16._dp / 1024._dp ** 2
+    end function size2mb
 
   end subroutine tbt_tri_analyze
   

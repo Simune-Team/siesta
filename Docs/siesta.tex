@@ -11352,7 +11352,7 @@ These options adhere to the specific solution methods available for
 
   \begin{fdfoptions}
 
-    \option[<elec-name>]%
+    \option[<elec-name>|CG-<elec-name>]%
     The partitioning will be a connectivity graph starting from the
     electrode denoted by the name. This name \emph{must} be found in
     the \fdf{TS!Elecs} block. One can append more than one electrode
@@ -11392,9 +11392,9 @@ These options adhere to the specific solution methods available for
     TS.BTD.Pivot atom+GGPS
     TS.BTD.Pivot GGPS
     TS.BTD.Pivot orb+GGPS
-    TS.BTD.Pivot orb+PCG
+    TS.BTD.Pivot orb+PCG+Left
   \end{fdfexample}
-  where the first two are equivalent. The 3rd and 4th are more heavily
+  where the first two are equivalent. The 3rd and 4th are more heavy
   on analysis and will typically not improve the bandwidth reduction.
   
 \end{fdfentry}
