@@ -96,7 +96,7 @@ contains
   ! The Generalized GPS algorithm 
   ! (Progress In Electromagnetics Research, PIER 90, 121–136, 2009)
   subroutine GGPS(n,nnzs,n_col,l_ptr,l_col,sub,pvt,priority, &
-       range, Comm)
+       range)
     ! the dimensionality of the system
     integer, intent(in) :: n, nnzs
     ! The sparse pattern
@@ -109,9 +109,6 @@ contains
     integer, intent(in), optional :: priority(n)
     ! The allowed range to save the node point in the new set (step II-(a))
     integer, intent(in), optional :: range
-    ! Whether the GGPS routine should be performed using
-    ! this communicator
-    integer, intent(in), optional :: Comm
 
     ! The local allowed range
     integer :: lrange
@@ -800,12 +797,15 @@ contains
     call rgn_delete(con,lvl,S)
     call rgn_delete(r,renum)
 
+    if ( pvt%n /= sub%n ) &
+         call die('GGPS: Error in algorithm')
+
   end subroutine GGPS
 
   ! The Generalized GPS algorithm 
   ! (Progress In Electromagnetics Research, PIER 90, 121–136, 2009)
   subroutine GGPS_new(n,nnzs,n_col,l_ptr,l_col,sub,pvt,priority, &
-       range, Comm)
+       range)
     ! the dimensionality of the system
     integer, intent(in) :: n, nnzs
     ! The sparse pattern
@@ -818,9 +818,6 @@ contains
     integer, intent(in), optional :: priority(n)
     ! The allowed range to save the node point in the new set (step II-(a))
     integer, intent(in), optional :: range
-    ! Whether the GGPS routine should be performed using
-    ! this communicator
-    integer, intent(in), optional :: Comm
 
     ! The local allowed range
     integer :: lrange
@@ -1106,6 +1103,9 @@ contains
     call rgn_delete(r,ipvt)
     call delete_level_structure(lvl)
 
+    if ( pvt%n /= sub%n ) &
+         call die('GPS: Error in algorithm')
+
   end subroutine GPS
 
   subroutine rev_GPS(n,nnzs,n_col,l_ptr,l_col,sub,pvt,priority)
@@ -1127,7 +1127,7 @@ contains
   ! algorithm.
   ! This may be started anywhere.
   subroutine connectivity_graph(n,nnzs,n_col,l_ptr,l_col,sub,pvt,&
-       start, priority)
+       start, priority, only_sub)
     ! the dimensionality of the system
     integer, intent(in) :: n, nnzs
     ! The sparse pattern
@@ -1138,30 +1138,53 @@ contains
     type(tRgn), intent(inout) :: pvt
     ! The algorithm performs (only) if it knows where to start
     ! hence we can force the algorithm to start from some point
-    type(tRgn), intent(in) :: start
+    type(tRgn), intent(in), optional :: start
     ! The priority of the rows, optional
     integer, intent(in), optional :: priority(n)
+    ! Whether we should only allow to find the pivoting for the sub-graph
+    ! This means that the pivoting table will not necessarily have all sub elements
+    logical, intent(in), optional :: only_sub
 
     integer :: i, j, ptr, nn
     type(tRgn) :: skip, con, r_tmp
+    logical :: lonly_sub
+
+    lonly_sub = .false.
+    if ( present(only_sub) ) lonly_sub = only_sub
 
     call rgn_init(pvt, sub%n)
     pvt%n = 0
+
+    ! Start by initializing skip to be everything but the sub part
+    call rgn_range(skip, 1, n)
+    call rgn_complement(sub, skip, r_tmp)
+    call rgn_sort(r_tmp)
     
-    ! sort the starting configuration
-    call rgn_copy(start, con)
-    call rgn_sp_sort(con,n,nnzs,n_col,l_ptr,l_col, &
-         start,R_SORT_MAX_FRONT)
     call rgn_init(skip, n)
     skip%n = 0
-    if ( .not. rgn_push(skip, con) ) &
-         call die('CG -- push 1')
-    call rgn_sort(skip)
-    if ( .not. rgn_push(pvt, con) ) &
-         call die('CG -- push 2')
+    
+    if ( present(start) ) then
+       if ( .not. rgn_push(skip, start) ) &
+            call die('CG -- push 1')
+       if ( .not. rgn_push(pvt, start) ) &
+            call die('CG -- push 2')
+       call rgn_sp_sort(pvt,n,nnzs,n_col,l_ptr,l_col, &
+            start,R_SORT_MAX_FRONT)
+       ! Initialize the connectivity graph
+       call rgn_copy(start, con)
+    end if
 
+    ! Important as start may not be sorted.
+    call rgn_sort(skip)
+    if ( .not. rgn_push(skip, r_tmp, .true.) ) &
+         call die('CG -- push 3')
+
+    call rgn_delete(r_tmp)
+
+    ! sort the starting configuration
+    
     ! Continue the propagation
-    do
+    do while ( pvt%n /= sub%n )
 
        ! Initialize room for the new columns
        if ( con%n > 0 ) then
@@ -1180,7 +1203,7 @@ contains
              do j = ptr + 1, ptr + nn
                 if ( .not. in_rgn(skip, l_col(j)) ) then
                    if ( .not. rgn_push(r_tmp, l_col(j)) ) &
-                        call die('CG -- push 2')
+                        call die('CG -- push 4')
                 end if
              end do
           end do
@@ -1192,7 +1215,12 @@ contains
           call rgn_copy(r_tmp, con)
           call rgn_delete(r_tmp)
 
-       else
+       end if
+
+       if ( con%n == 0 ) then
+
+          ! Exit if done, or we if we shouldn't create the full graph
+          if ( pvt%n == sub%n .or. lonly_sub ) exit
 
           ! Choose a random one
           do i = 1 , sub%n
@@ -1203,14 +1231,11 @@ contains
           
        end if
 
-       ! Exit if there are no more connections
-       if ( con%n == 0 ) exit
-
-       ! Add to removal region
+       ! Add to removal region (note con has to be sorted)
        if ( .not. rgn_push(skip, con, .true.) ) &
             call die('will never happen - 1')
        
-       if ( .not. rgn_push(pvt, con) ) call die('will never happen')
+       if ( .not. rgn_push(pvt, con) ) call die('will never happen - 2')
        call rgn_sp_sort(pvt,n,nnzs,n_col,l_ptr,l_col, &
             con, R_SORT_MAX_BACK)
        
@@ -1218,10 +1243,14 @@ contains
 
     call rgn_delete(skip, con, r_tmp)
 
+    if ( pvt%n /= sub%n .and. .not. lonly_sub ) then
+       call die('connectivity_graph: Error in algorithm')
+    end if
+
   end subroutine connectivity_graph
 
   subroutine rev_connectivity_graph(n,nnzs,n_col,l_ptr,l_col,sub,pvt,&
-       start,priority)
+       start,priority, only_sub)
     ! the dimensionality of the system
     integer, intent(in) :: n, nnzs
     ! The sparse pattern
@@ -1232,12 +1261,15 @@ contains
     type(tRgn), intent(inout) :: pvt
     ! The algorithm performs (only) if it knows where to start
     ! hence we can force the algorithm to start from some point
-    type(tRgn), intent(in) :: start
+    type(tRgn), intent(in), optional :: start
     ! The priority of the rows, optional
     integer, intent(in), optional :: priority(n)
+    ! Whether we should only allow to find the pivoting for the sub-graph
+    ! This means that the pivoting table will not necessarily have all sub elements
+    logical, intent(in), optional :: only_sub
 
     call connectivity_graph(n,nnzs,n_col,l_ptr,l_col,sub,pvt,&
-         start,priority)
+         start,priority, only_sub)
     
     call rgn_reverse(pvt)
     
@@ -1251,7 +1283,7 @@ contains
   ! This PCG algorithm is implemented and envisioned by Nick R. Papior.
   ! It proves more efficient than the GPS algorithm, and is a little slower.
   ! It however reduces the bandwidth by more.
-  subroutine PCG(n,nnzs,n_col,l_ptr,l_col,sub,pvt,start,priority)
+  subroutine PCG(n,nnzs,n_col,l_ptr,l_col,sub,pvt,start,priority, only_sub)
     ! the dimensionality of the system
     integer, intent(in) :: n, nnzs
     ! The sparse pattern
@@ -1264,6 +1296,7 @@ contains
     type(tRgn), intent(in), optional :: start
     ! The priority of the rows, optional
     integer, intent(in), optional :: priority(n)
+    logical, intent(in), optional :: only_sub
 
     ! Another temporary level structure
     type(tLevelStructure), target :: level_s
@@ -1274,6 +1307,10 @@ contains
     type(tRgn) :: st, skip
     integer :: i, idx, st_n
     integer :: width, width2, depth, depth2
+    logical :: lonly_sub
+
+    lonly_sub = .false.
+    if ( present(only_sub) ) lonly_sub = only_sub
 
     call rgn_range(st, 1, n)
     call rgn_complement(sub, st, skip)
@@ -1370,21 +1407,21 @@ contains
 
     call delete_level_structure(level_s)
 
-    if ( pvt%n /= sub%n ) then
-       call die('End failure in PCG -- 2')
-    end if
+    if ( pvt%n /= sub%n .and. .not. lonly_sub ) &
+         call die('PCG: Error in algorithm')
     
   end subroutine PCG
 
-  subroutine rev_PCG(n,nnzs,n_col,l_ptr,l_col,sub,pvt,start,priority)
+  subroutine rev_PCG(n,nnzs,n_col,l_ptr,l_col,sub,pvt,start,priority,only_sub)
     integer, intent(in) :: n, nnzs
     integer, intent(in) :: n_col(n), l_ptr(n), l_col(nnzs)
     type(tRgn), intent(in) :: sub
     type(tRgn), intent(inout) :: pvt
     type(tRgn), intent(in), optional :: start
     integer, intent(in), optional :: priority(n)
+    logical, intent(in), optional :: only_sub
 
-    call PCG(n,nnzs,n_col,l_ptr,l_col,sub,pvt,start,priority)
+    call PCG(n,nnzs,n_col,l_ptr,l_col,sub,pvt,start,priority,only_sub)
 
     call rgn_reverse(pvt)
     
@@ -1545,7 +1582,9 @@ contains
 
     ! Clean-up
     deallocate(perm,w)
-    
+
+    if ( pvt%n /= sub%n ) call die('metis: Error in algorithm')
+
   end subroutine metis_pvt
 #endif
 
@@ -1656,7 +1695,7 @@ contains
     
   end subroutine breadth_first_search
 
-  subroutine level_structure(n, nnzs, n_col, l_ptr, l_col, ls, start, skip, priority)
+  subroutine level_structure(n, nnzs, n_col, l_ptr, l_col, ls, start, skip, priority, only_sub)
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
 
     ! The LV table
@@ -1667,12 +1706,18 @@ contains
     type(tRgn), intent(in), optional :: skip
     ! The priority of the rows, optional
     integer, intent(in), optional :: priority(n)
+    ! Allow only a sub-graph
+    logical, intent(in), optional :: only_sub
 
     ! The current queue of elements
     type(tRgn) :: queue, all
 
     type(tLevelStructure), pointer :: clvl
     integer :: i, nel, el, nadded
+    logical :: lonly_sub
+
+    lonly_sub = .false.
+    if ( present(only_sub) ) lonly_sub = only_sub
 
     call delete_level_structure(ls)
 
@@ -1718,6 +1763,10 @@ contains
     do
 
        if ( rgn_size(queue) == 0 ) then
+
+          ! Quick escape if the graph is finished
+          if ( lonly_sub ) exit
+          
           ! We have to "manually" add a fictitious point
           ! that hasn't been added yet, i.e. if the queue is
           ! empty. We have to keep filling it...
@@ -2145,17 +2194,17 @@ contains
     integer, intent(in), optional :: priority(n)
 
     ! Temporary region used to contain the connectivity graph
-    type(tRgn) :: con, con_c, rskip
+    type(tRgn) :: con, con_c, skip
 
     ! local variables
     integer :: i, etr, iLvl, ncon
     logical :: suc
-    
+
     ! create the initial consecutive region
     call rgn_range(con, 1, n)
     call rgn_complement(sub, con, con)
     ! now create the initial consecutive region
-    call rgn_init_consecutive(n, rskip, con)
+    call rgn_init_consecutive(n, skip, con)
 
     ! initialize the pivoting array
     call rgn_init(pvt,sub%n)
@@ -2187,14 +2236,16 @@ contains
        !  it is hard to select another node on another basis.
        if ( con%n == 0 ) then
           ! this limits con_c to those not chosen
-          call rgn_complement(rskip, sub, con_c)
-          i = idx_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,con_c, priority = priority )
-          ! We will limit the addition to 1 element
-          if ( .not. rgn_push(con, con_c%r(i)) ) call die('level_struct: push -- 1')
+          call rgn_complement(skip, sub, con_c)
+          if ( con_c%n > 0 ) then
+             i = idx_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,con_c, priority = priority )
+             ! We will limit the addition to 1 element
+             if ( .not. rgn_push(con, con_c%r(i)) ) call die('level_struct: push -- 1')
+          end if
        end if
 
        ! Insert the current connectivity graph
-       call rgn_consecutive_insert(rskip, con)
+       call rgn_consecutive_insert(skip, con)
        ncon = con%n
        do while ( con%n > 0 )
           ! Get index with lowest degree
@@ -2219,19 +2270,19 @@ contains
           ! to 'pvt'
           etr = pvt%r(pvt%n-ncon+i)
           call graph_connect(etr,n,nnzs,n_col,l_ptr,l_col,con_c, &
-               skip = rskip)
+               skip = skip)
 
           ! Speed up big systems as we constantly add
           ! elements to the skip table, and only push new values
-          call rgn_consecutive_insert(rskip, con_c)
-          if ( .not. rgn_push(con, con_c) ) call die('level_struct: rgn_push')
+          call rgn_consecutive_insert(skip, con_c)
+          if ( .not. rgn_push(con, con_c) ) call die('level_struct: push -- 2')
 
        end do
 
     end do
 
     ! Clean up
-    call rgn_delete(con,con_c,rskip)
+    call rgn_delete(con,con_c,skip)
 
   end subroutine level_struct
 
@@ -2404,7 +2455,7 @@ contains
   end subroutine sort_degree
     
   subroutine Cuthill_Mckee(n,nnzs,n_col,l_ptr,l_col,sub,pvt,&
-       start,priority)
+       start,priority, only_sub)
     ! the dimensionality of the system
     integer, intent(in) :: n, nnzs
     ! The sparse pattern
@@ -2418,6 +2469,7 @@ contains
     type(tRgn), intent(in), optional :: start
     ! The priority of the rows, optional
     integer, intent(in), optional :: priority(n)
+    logical, intent(in), optional :: only_sub
 
     ! The queue list
     type(tRgn) :: Q
@@ -2426,7 +2478,10 @@ contains
 
     ! local variables
     integer :: i, etr, idx
-    logical :: suc
+    logical :: suc, lonly_sub
+
+    lonly_sub = .false.
+    if ( present(only_sub) ) lonly_sub = only_sub
 
     ! prepare lists used for the algorithm
     call rgn_init(Q,sub%n)
@@ -2465,14 +2520,18 @@ contains
        ! 1. If the queue is empty we add the one with the lowest
        !    degree
        if ( Q%n == 0 ) then
+
+          ! We will not follow the graph
+          if ( lonly_sub ) exit
+
           idx = idx_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,sub, skip = skip, &
                priority = priority)
           etr = sub%r(idx)
-
+          
           ! Push the queue and the skip table
           suc = rgn_push(Q,etr)
           call rgn_consecutive_insert(skip, etr)
-
+          
        end if
 
        ! We find the one in the queue with the highest priority
@@ -2501,18 +2560,22 @@ contains
 
     call rgn_delete(Q, con, skip)
 
+    if ( pvt%n /= sub%n .and. .not. lonly_sub ) &
+         call die('CM: Error in algorithm')
+
   end subroutine Cuthill_Mckee
 
-  subroutine rev_Cuthill_Mckee(n,nnzs,n_col,l_ptr,l_col,sub,pvt,start,priority)
+  subroutine rev_Cuthill_Mckee(n,nnzs,n_col,l_ptr,l_col,sub,pvt,start,priority, only_sub)
     integer, intent(in) :: n, nnzs
     integer, intent(in) :: n_col(n), l_ptr(n), l_col(nnzs)
     type(tRgn), intent(in) :: sub
     type(tRgn), intent(inout) :: pvt
     type(tRgn), intent(in), optional :: start
     integer, intent(in), optional :: priority(n)
+    logical, intent(in), optional :: only_sub
 
     call Cuthill_Mckee(n,nnzs,n_col,l_ptr,l_col,sub,pvt, &
-         start=start,priority=priority)
+         start=start,priority=priority, only_sub=only_sub)
 
     call rgn_reverse(pvt)
 
