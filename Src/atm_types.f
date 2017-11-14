@@ -103,8 +103,8 @@
 !     will belong to a one projector.  
 !    
          integer, dimension(maxnprojs) ::  jso ! J_offsiteSO=1,2 for each proj
-         real   , dimension(maxnprojs) ::  pj_j
-         real   , dimension(maxnprojs) ::  pj_mj
+         real   , dimension(maxnprojs) ::  pj_j    ! NOT USED
+         real   , dimension(maxnprojs) ::  pj_mj   ! NOT USED
 !
 ! CC RC  Added for the offSpOrb
 !

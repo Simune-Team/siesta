@@ -797,13 +797,8 @@ c
      $           spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n),
      $           " #kb l, n (sequence number), Reference energy"
 
-             if ( spin%SO_offsite ) then
-              call radial_dump_ascii_offsiteSO(j_offsiteSO,spp%pjnl(n),
-     $                                         lun,header=.true.)
-             else
-              call radial_dump_ascii(spp%pjnl(n),lun,
-     $                               header=.true.)
-             endif
+              call radial_dump_ascii(spp%pjnl(n),lun,header=.true.)
+
 
              if (write_ion_plot_files) then
               write(fileid,'(3(a,i1),2a)') "KB.L", l , ".",
@@ -815,13 +810,10 @@ c
      $              spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n)
               write(lun2,'(a)')
      $             "#kb l, n (sequence number), Reference energy"
-              if ( spin%SO_offsite ) then
-               call radial_dump_ascii_offsiteSO(j_offsiteSO,spp%pjnl(n),
-     $                                   lun2,header=.true.)
-              else
-               call radial_dump_ascii(spp%pjnl(n),
+
+              call radial_dump_ascii(spp%pjnl(n),
      $                                lun2,header=.true.)
-              endif
+
               call io_close(lun2)
              endif ! (write_ion_plot_files)
 
@@ -831,7 +823,7 @@ c
      $           spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n),
      $           " #kb l, n (sequence number), Reference energy"
 
-             call radial_dump_ascii_offsiteSO(j_offsiteSO,spp%pjnl(n),
+             call radial_dump_ascii(spp%pjnl(n),
      $                                        lun,header=.true.)
 
              if (write_ion_plot_files) then
@@ -845,7 +837,7 @@ c
      $              spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n)
               write(lun2,'(a)')
      $             "#kb l, n (sequence number), Reference energy"
-              call radial_dump_ascii_offsiteSO(j_offsiteSO,spp%pjnl(n),
+              call radial_dump_ascii(spp%pjnl(n),
      $                                  lun2,header=.true.)
               call io_close(lun2)
              endif ! (write_ion_plot_files)
@@ -1050,10 +1042,6 @@ c
          write(lun,'(a)') "<projector "
          call xml_dump_attribute(lun,'l',str(l))
 
-!         if ( l.eq.0 ) 
-!     $     call xml_dump_attribute(lun,'j',str(j_offsiteSO))
-!         if ( l.ne.0 ) 
-!     $     call xml_dump_attribute(lun,'j',str(j_offsiteSO))
          call xml_dump_attribute(lun,'j',str(j_offsiteSO))
 
          call xml_dump_attribute(lun,'n',str(i))
@@ -1061,15 +1049,9 @@ c
          call xml_dump_attribute(lun,'ref_energy',
      $                                   str(spp%pjnl_ekb(n)))
          write(lun,'(a)') " >"
-!         if (.not. offSpOrb .or. l.eq.0 ) then
-!          call radial_dump_xml_offsiteSO(j_offsiteSO,spp%pjnl(n),lun)
-!         elseif( offSpOrb .and. l.ge.1 ) then
-          if ( spin%SO_offsite ) then
-           call radial_dump_xml_offsiteSO(j_offsiteSO,spp%pjnl(n),lun)
-          else
-           call radial_dump_xml(spp%pjnl(n),lun)
-          endif
-!         endif
+
+         call radial_dump_xml(spp%pjnl(n),lun)
+
          write(lun,'(a)') "</projector>"
          n = n + 1
         enddo
