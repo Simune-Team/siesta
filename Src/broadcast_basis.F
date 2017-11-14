@@ -150,8 +150,6 @@
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pj_j,maxnprojs,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pj_mj,maxnprojs,MPI_double_precision,
-     $                 0,MPI_Comm_World,MPIerror)
 ! CC RC  Added for the offSpOrb
 
         ! LDA+U

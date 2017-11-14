@@ -1109,8 +1109,7 @@ m_writedelk.o: parallelsubs.o precision.o siesta_geom.o sys.o
 m_zminim.o: files.o parallel.o parallelsubs.o precision.o siesta_options.o
 m_zminim.o: sys.o
 madelung.o: parallel.o precision.o sys.o
-matel_registry.o: m_spin.o m_trialorbitalclass.o precision.o radial.o
-matel_registry.o: spher_harm.o sys.o
+matel_registry.o: m_trialorbitalclass.o precision.o radial.o spher_harm.o sys.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
@@ -1205,8 +1204,8 @@ read_options.o: precision.o siesta_cml.o siesta_options.o sys.o units.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
-register_rfs.o: atm_types.o atmfuncs.o m_spin.o matel_registry.o parallel.o
-register_rfs.o: precision.o radial.o
+register_rfs.o: atm_types.o atmfuncs.o matel_registry.o parallel.o precision.o
+register_rfs.o: radial.o
 reinit.o: files.o parallel.o siesta_master.o sys.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: m_spin.o parallel.o precision.o sys.o

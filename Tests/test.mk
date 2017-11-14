@@ -4,7 +4,7 @@
 # You can edit the SIESTA macro here, or pass it on the command line
 
 MPI=mpirun -np 2
-SIESTA=../Obj/siesta
+SIESTA=../../../siesta
 
 # Example for BSC runs
 #
@@ -20,7 +20,7 @@ MPI=
 endif
 
 #----------------------------------------------------------------------------
-REFERENCE_DIR?=Reference
+REFERENCE_DIR?=../../../Tests/Reference
 REFERENCE_CHECKER?=../cmp_digest.sh
 
 label=work

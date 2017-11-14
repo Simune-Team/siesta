@@ -32,10 +32,6 @@ module m_matel_registry
   use radial, only: rad_func
   use trialorbitalclass, only: trialorbital
 
-! CC RC  Added for the offSpOrb
-      use m_spin, only: spin
-! CC RC  Added for the offSpOrb
-
   implicit none
 
   private
@@ -87,7 +83,7 @@ module m_matel_registry
   public :: evaluate, rcut, lcut
   public :: evaluate_x, evaluate_y, evaluate_z
   public :: show_pool
-     
+
 CONTAINS
 
   function valid(gindex) result (ok)
@@ -206,7 +202,6 @@ CONTAINS
   end function lcut
 
 !--------------------------------------------------------------
-
   subroutine evaluate(gindex,r,f,grad)
   use trialorbitalclass, only: gettrialwavefunction
 
