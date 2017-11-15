@@ -89,11 +89,14 @@
      .                       rco,lambda_in,atm_label,npolorb,semic,
      .                       nsemic,cnfigmx,charge_in,smass,basistype, 
      .                       ISIN,RINN,VCTE,qcoe,qyuk,qwid,
-     .                       split_norm,filtercut_in,basp)
+     .                       split_norm,filtercut_in,basp, spp)
 
+        use atm_types, only: species_info
+        
         implicit none
 
         type(basis_def_t), pointer   :: basp
+        type(species_info), intent(inout)  :: spp
 
         integer, intent(in) :: izin  
 !       Atomic number (if IZ is negative it will be regarded as a set of 

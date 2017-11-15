@@ -56,6 +56,8 @@
 
       use m_spin, only: SpOrb
 
+      use atm_types, only: species, species_info
+      
       implicit none
       integer,         intent(out) :: ns   ! Number of species
 !     Internal variables ...................................................
@@ -63,6 +65,8 @@
       logical                      :: user_basis, user_basis_netcdf
       logical :: req_init_setup
       type(basis_def_t),   pointer :: basp
+
+      type(species_info),  pointer :: spp
 
       external atm_transfer
 
@@ -97,6 +101,7 @@
       else if (user_basis) then
 
        if ( SpOrb ) then  
+          ! We still need to read the pseudopotential information
           write(6,'(a)') ' initatom: Spin configuration = spin-orbit'
           call read_chemical_types()
           nsp = number_of_species()
@@ -116,7 +121,9 @@
        write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
        call read_basis_ascii(ns)
        call elec_corr_setup()
+       
       else
+        ! We generate PAOs and KB projectors
 !       New routines in basis_specs and basis_types.
         call read_basis_specs()
         call basis_specs_transfer()
@@ -128,9 +135,11 @@
         call allocate_old_arrays()
         call clear_tables()
 
+        allocate(species(nsp))
         do is = 1,nsp
           call write_basis_specs(6,is)
           basp=>basis_parameters(is)
+          spp => species(is)
           call ATOM_MAIN( iz(is), lmxkb(is), nkbl(0:lmaxd,is),
      &                    erefkb(1:nkbmx,0:lmaxd,is), lmxo(is),
      &                    nzeta(0:lmaxd,1:nsemx,is),
@@ -145,7 +154,7 @@
      &                    qyuk(0:lmaxd,1:nsemx,is),
      &                    qwid(0:lmaxd,1:nsemx,is),
      &                    split_norm(0:lmaxd,1:nsemx,is), 
-     &                    filtercut(0:lmaxd,1:nsemx,is), basp)
+     &                    filtercut(0:lmaxd,1:nsemx,is), basp, spp)
 !         Generate the projectors for the LDA+U simulations (if requested)
           call ldau_proj_gen(is)
         enddo 

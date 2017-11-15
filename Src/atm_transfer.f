@@ -52,11 +52,10 @@
      $     nsm_normal, index_pol, z_pol, nsm_pol
       integer, dimension(maxnorbs) :: mark  ! overkill
 
-!     Allocate main structures for new atmfuncs -----------
+!     Fill in main structures for new atmfuncs -----------
 
       nspecies = nsmax           ! From old_atmfuncs
 
-      allocate(species(nspecies))
 !-----------------------------------------------------------
 
       max_npjnl = 0
