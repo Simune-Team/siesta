@@ -1444,7 +1444,7 @@ contains
 
              ! Origo offset:
              p = - cell(:,ts_tidx) * bdir(i)
-             p = p + tmp3 * Elecs(iEl)%dINF_layer
+             p = p + tmp3 * Elecs(iEl)%dINF_layer * 0.5_dp
              ! Bond-length
              write(*,'(a,f9.5,a)') 'Electrode: '//trim(Elecs(iEl)%name)//' lies &
                   &outside the unit-cell.'
@@ -1475,7 +1475,7 @@ contains
 
              ! Origo offset:
              p = - cell(:,ts_tidx) * bdir(i)
-             p = p - tmp3 * Elecs(iEl)%dINF_layer
+             p = p - tmp3 * Elecs(iEl)%dINF_layer * 0.5_dp
              ! Bond-length
              write(*,'(a,f9.5,a)') 'Electrode: '//trim(Elecs(iEl)%name)//' lies &
                   &outside the unit-cell.'
