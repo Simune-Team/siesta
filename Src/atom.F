@@ -552,7 +552,7 @@ c    .          'atom: The above configuration will be used ',
 ! 
             call KBgen(is, a,b,rofi,drdi,s,
      .                 vps, vlocal, ve, nrval, Zval, lmxkb, 
-     .                 nkbl, erefkb, nkb) 
+     .                 nkbl, erefkb, nkb, spp) 
             nkbmax(is) = nkb
 
           elseif(flting.lt.0.0d0) then 
@@ -561,6 +561,7 @@ c    .          'atom: The above configuration will be used ',
 !          
             nkb=0 
             nkbmax(is)=0
+            spp%nprojs = 0
 !
 ! Zero local pseudopotential if floating orbitals
 ! 
@@ -694,6 +695,7 @@ c    .          'atom: The above configuration will be used ',
 ! No KB projectors
           nkb = 0 
           nkbmax(is) = 0
+          spp%nprojs = 0
 ! No local potential
           nchloc = 0
           call comlocal(is,a,b,rofi,chlocal,nchloc,flting)    
@@ -2687,7 +2689,7 @@ C
 
         nomax(is)=no
         if(iz.lt.0) nkb=0
-        nkbmax(is)=nkb  
+        nkbmax(is)=nkb
 
         end subroutine new_specie
 
@@ -2882,6 +2884,98 @@ C potential
           
         end subroutine read_vps
 !
+        subroutine comKB_spp(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc,spp)
+C
+C  Creates the common block with all the information about the 
+C  Kleinman-Bylander projectors.
+C  Written by D. Sanchez-Portal, Aug. 1998.
+C  Modified by DSP to allow more than one projector per l, July 1999.
+C
+        use atm_types, only: species_info
+        use radial, only: rad_func, rad_alloc, rad_setup_d2
+        
+        implicit none
+
+        integer, intent(in)  :: l, nrc,is, ikb 
+        real(dp), intent(in) :: rc, ekb, proj(nrmax), a, b,
+     .       rofi(nrmax)
+        type(species_info), intent(inout)  :: spp
+        
+        character(len=40) filename
+        type(rad_func), pointer            :: pp
+
+C     
+C Internal variables
+C
+        integer indx, itb, nr, nmax, nmin, nn, il
+        real(dp) delt, r, vphi, dy, yp1, ypn
+        integer ir, nrckb, n, ntot, m
+C
+C Number of points used by polint for the interpolation
+C
+        integer npoint
+        parameter(npoint=4)
+        integer lun
+C
+        rctb(ikb,l,is)=rc 
+C
+C Interpolation to generate tables with KB projectors
+C
+        ntot = spp%nprojs
+        spp%n_pjnl = spp%n_pjnl + 1
+        n = spp%n_pjnl
+        spp%pjnl_n(n) = ikb
+        spp%pjnl_l(n) = l
+        do m = -l, l
+           ntot = ntot + 1
+           spp%pj_index(ntot) = n
+           spp%pj_l(ntot) = l
+           spp%pj_m(ntot) = m
+        enddo
+        spp%nprojs = ntot
+
+        delt=rc/(dble(ntbmax-1)+1.0d-20) 
+        if (delt.gt.deltmax) then
+          write(6,'(a)')
+     .    'comKB: WARNING It might be a good idea to increase'
+          write(6,'(a)')
+     .    'comKB: WARNING parameter ntbmax (in file atmparams.f) '
+          write(6,'(a,i6)')
+     .    'comKB: WARNING to at least ntbmax = ', 
+     .    nint(Rc/deltmax)+2
+        endif
+
+        pp => spp%pjnl(n)
+        call rad_alloc(pp,NTBMAX)
+
+        spp%pjnl_ekb(n) = ekb
+        pp%delta  = delt
+        pp%cutoff = rc
+
+        if (debug_kb_generation) then
+          nrckb = nint(log(rc/b+1.0d0)/a)+1
+          write(filename,"(a,i1)")
+     .          trim(global_label) // "-KBProj.", indx
+          call file_out(nrckb,rofi,proj,filename)
+        endif
+!
+        do itb=1,ntbmax-1
+          r=delt*(itb-1)
+          nr=nint(log(r/b+1.0d0)/a)+1
+          nmin=max(1,nr-npoint)
+          nmax=min(nrc,nr+npoint)
+          nn=nmax-nmin+1
+          call polint(rofi(nmin),proj(nmin),nn,r,vphi,dy)
+          pp%f(itb) = vphi
+       enddo 
+       pp%f(ntbmax) = 0.0_dp
+C
+C Table with the second derivative
+C
+       call rad_setup_d2(pp,yp1=0.0_dp,ypn=huge(1.0_dp))
+
+       end subroutine comkb_spp
+!
         subroutine comKB(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc)
 C
 C  Creates the common block with all the information about the 
@@ -2970,7 +3064,7 @@ C
 !
         subroutine KBgen(is, a,b,rofi,drdi,s, 
      .         vps, vlocal, ve, nrval, Zval, lmxkb, 
-     .         nkbl, erefkb, nkb)
+     .         nkbl, erefkb, nkb, spp)
 
         use basis_specs, only: restricted_grid
         use atom_options, only: new_kb_reference_orbitals
@@ -2984,6 +3078,7 @@ C
 C  Written D. Sanchez-Portal, Aug. 1998.
 C  Modified by DSP to allow more than one projector per l, July 1999.
 C
+        use atm_types, only: species_info
 
         implicit none
 
@@ -2994,12 +3089,14 @@ C
 
         integer
      .    nrval, lmxkb, nkb, is, nkbl(0:lmaxd)
+
+        type(species_info), intent(inout)  :: spp
 C
 C Internal variables
 C
         integer 
      .    l,nprin, nnodes, ighost, nrwf, ikb, ir,
-     .    nrc, nrlimit
+     .    nrc, nrlimit, n_pjnl
         real(dp)
      .    rc(nkbmx,0:lmaxd), dkbcos(nkbmx,0:lmaxd),
      .    ekb(nkbmx,0:lmaxd)
@@ -3037,6 +3134,12 @@ C
            nrlimit = nrval
         endif
 
+        spp%nprojs = 0
+        spp%lmax_projs = lmxkb
+        n_pjnl = sum(nkbl(0:lmxkb))
+        allocate(spp%pjnl(n_pjnl))
+        spp%n_pjnl = 0    ! for build-up in comkb_spp
+        
         do l=0,lmxkb
           do ir=1,nrmax
             do ikb=1,nkbmx
@@ -3111,8 +3214,8 @@ C
 C
 C Common block with the information about the  KB projectors
 C
-          call comKB(is,a,b,rofi,proj,
-     .                 l,ikb,rc(ikb,l),ekb(ikb,l),nrc)
+          call comKB_spp(is,a,b,rofi,proj,
+     .                 l,ikb,rc(ikb,l),ekb(ikb,l),nrc, spp)
 C
 
           enddo 
@@ -3152,7 +3255,11 @@ C
            enddo 
            write(6,'(/,a, i4)')
      .'KBgen: Total number of  Kleinman-Bylander projectors: ', nkb
-C
+           if (nkb /= spp%nprojs) then
+              print *, "spp%nprojs: ", spp%nprojs
+              call die("Mismatch nkb spp%nprojs")
+           endif
+C     
         end subroutine KBgen
 !
         subroutine Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
