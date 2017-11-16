@@ -535,8 +535,8 @@ c    .          'atom: The above configuration will be used ',
                 exit
               endif
             enddo
-            call com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
-     .                      zval,flting)
+            call com_vlocal_spp(is,a,b,rofi,red_vlocal,nvlocal,
+     .                      zval,flting,spp)
 !
             write(6,'(2a,f10.5)') 'atom: Maximum radius for' ,
      .        ' r*vlocal+2*Zval: ', rofi(nvlocal)           
@@ -568,8 +568,8 @@ c    .          'atom: The above configuration will be used ',
             nchloc = 0
             call comlocal_spp(is,a,b,rofi,chlocal,nchloc,flting,spp)
             nvlocal = 0
-            call com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
-     .                      zval,flting)
+            call com_vlocal_spp(is,a,b,rofi,red_vlocal,nvlocal,
+     .                      zval,flting,spp)
 ! 
 ! Array S for the Schrodinger eq. integration
 !          (Needed for the calculation of the basis set )
@@ -698,7 +698,8 @@ c    .          'atom: The above configuration will be used ',
 ! No local potential
           nchloc = 0
           call comlocal_spp(is,a,b,rofi,chlocal,nchloc,flting,spp)    
-          call com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,zval,flting)
+          call com_vlocal_spp(is,a,b,rofi,red_vlocal,nvlocal,zval,
+     $                        flting,spp)
 ! Zero neutral-atom pseudopotential if floating orbitals
           nVna = 0
           call comVna(is,a,b,rofi,vlocal,nVna,flting)
@@ -2487,21 +2488,25 @@ C charge density
 !
 !       New routine to deal with Vlocal
 !
-        subroutine com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
-     .                        zval,flting)
+        subroutine com_vlocal_spp(is,a,b,rofi,red_vlocal,nvlocal,
+     .                        zval,flting,spp)
 
 ! Save vlocal (actually r*vlocal +2*Zval)
 
+        use atm_types, only: species_info
+        use radial, only: rad_func, rad_alloc, rad_setup_d2
+
         implicit none
 
-        integer nvlocal, is
+        integer, intent(in)  :: nvlocal, is
  
-        real(dp) red_vlocal(nrmax), rofi(nrmax),
+        real(dp), intent(in) :: red_vlocal(nrmax), rofi(nrmax),
      .                    a ,b, zval, flting
+        type(species_info), intent(inout), target :: spp
 
         integer nr, nmin, nmax, nn, itb
-        real(dp) chc, r, delt, Rvlocal, dy,
-     .    yp1, ypn
+        real(dp) chc, r, delt, Rvlocal, dy
+        type(rad_func), pointer            :: pp
   
         integer npoint
         parameter(npoint=4)
@@ -2509,7 +2514,6 @@ C
         if (flting.gt.0.0d0) then 
   
           Rvlocal=rofi(nvlocal)
-
           delt=Rvlocal/(dble(ntbmax-1)+1.0d-20) 
           
           if (delt.gt.deltmax) then
@@ -2522,8 +2526,11 @@ C
      .      nint(Rvlocal/deltmax)+2 
           endif 
 
-          vlocaltab(1,1,is)=delt
-          vlocaltab(1,2,is)=1.0d0
+          pp => spp%reduced_vlocal
+          call rad_alloc(pp,NTBMAX)
+          pp%delta = delt
+          pp%cutoff = rvlocal
+
           do itb=1,ntbmax
             r=delt*(itb-1)
             nr=nint(log(r/b+1.0d0)/a)+1
@@ -2531,31 +2538,28 @@ C
             nmax=min(nvlocal,nr+npoint)
             nn=nmax-nmin+1
             call polint(rofi(nmin),red_vlocal(nmin),nn,r,chc,dy)
-            vlocaltab(itb+1,1,is)=chc
+            pp%f(itb) = chc
           enddo
 !
 !         Note rigorous limit at r=0...
 !
-          vlocaltab(2,1,is)= 2.0d0*zval
+          pp%f(1) = 2.0_dp * zval
 !
 !        Use natural spline
 !
-          yp1=huge(1.d0)
-          ypn=huge(1.d0)
-
-          call spline(delt, vlocaltab(2:1+ntbmax,1,is), ntbmax,
-     &                yp1, ypn, vlocaltab(2:1+ntbmax,2,is) )
+          call rad_setup_d2(pp,yp1=huge(1.0_dp),ypn=huge(1.0_dp))
 
         elseif( flting.lt.0.0d0) then 
  
-          do itb=1,ntbmax+1
-            vlocaltab(itb,1,is)=0.0d0
-            vlocaltab(itb,2,is)=0.0d0
-          enddo
-
+          pp => spp%reduced_vlocal
+          call rad_alloc(pp,NTBMAX)
+          pp%delta = 0.0_dp
+          pp%cutoff = 0.0_dp
+          pp%f(:) = 0.0_dp
+          pp%d2(:) = 0.0_dp
         endif 
 
-        end subroutine com_vlocal
+        end subroutine com_vlocal_spp
 !
         subroutine new_specie(iz,lmxkb, nkbl, lmxo,
      .                        nzeta, atm_label,

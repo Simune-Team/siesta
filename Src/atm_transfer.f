@@ -20,7 +20,6 @@
       use old_atmfuncs, only: tabpol, table, tab2
       use old_atmfuncs, only: coretab, tab2pol
       use old_atmfuncs, only: qtb, slfe
-      use old_atmfuncs, only: vlocaltab
       use old_atmfuncs, only: lmxosave, npolorbsave
       use old_atmfuncs, only: nzetasave, nsemicsave
 !
@@ -207,12 +206,6 @@
          spp%vna%cutoff      = table(2,0,is)
          spp%vna%delta       = table(1,0,is)
          spp%vna%d2(1:)      = tab2(1:,0,is)
-
-         call rad_alloc(spp%reduced_vlocal,NTBMAX)
-         spp%reduced_vlocal%delta      = vlocaltab(1,1,is)
-         spp%reduced_vlocal%cutoff     = vlocaltab(1,1,is)*(NTBMAX-1)
-         spp%reduced_vlocal%f(1:)      = vlocaltab(2:,1,is)
-         spp%reduced_vlocal%d2(1:)     = vlocaltab(2:,2,is)
 
          spp%there_is_core      = (coretab(1,2,is) .eq. 1)
 
