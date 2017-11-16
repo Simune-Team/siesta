@@ -2883,7 +2883,7 @@ C  Kleinman-Bylander projectors.
 C  Written by D. Sanchez-Portal, Aug. 1998.
 C  Modified by DSP to allow more than one projector per l, July 1999.
 C
-        use atm_types, only: species_info
+        use atm_types, only: species_info, maxnprojs, maxn_pjnl
         use radial, only: rad_func, rad_alloc, rad_setup_d2
         
         implicit none
@@ -2914,8 +2914,14 @@ C
 C Interpolation to generate tables with KB projectors
 C
         ntot = spp%nprojs
+        if (ntot.gt.maxnprojs) 
+     .       call die("atm_transfer: Increase maxnprojs in atm_types.f")
+        
         spp%n_pjnl = spp%n_pjnl + 1
         n = spp%n_pjnl
+        if (n.gt.maxn_pjnl) 
+     .       call die("atm_transfer: Increase maxn_pjnl in atm_types.f")
+        
         spp%pjnl_n(n) = ikb
         spp%pjnl_l(n) = l
         do m = -l, l
