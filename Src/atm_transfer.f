@@ -20,7 +20,7 @@
       use old_atmfuncs, only: tabpol, table, tab2
       use old_atmfuncs, only: coretab, tab2pol
       use old_atmfuncs, only: qtb, slfe
-      use old_atmfuncs, only: chloctab, vlocaltab
+      use old_atmfuncs, only: vlocaltab
       use old_atmfuncs, only: lmxosave, npolorbsave
       use old_atmfuncs, only: nzetasave, nsemicsave
 !
@@ -200,18 +200,13 @@
 
 !
 !        KB projectors, done in kbgen
+!        chlocal, done in atom
 
          call rad_alloc(spp%vna,NTBMAX)
          spp%vna%f(1:)       = table(3:,0,is)
          spp%vna%cutoff      = table(2,0,is)
          spp%vna%delta       = table(1,0,is)
          spp%vna%d2(1:)      = tab2(1:,0,is)
-
-         call rad_alloc(spp%chlocal,NTBMAX)
-         spp%chlocal%delta      = chloctab(1,1,is)
-         spp%chlocal%cutoff     = chloctab(1,1,is)*(NTBMAX-1)
-         spp%chlocal%f(1:)      = chloctab(2:,1,is)
-         spp%chlocal%d2(1:)     = chloctab(2:,2,is)
 
          call rad_alloc(spp%reduced_vlocal,NTBMAX)
          spp%reduced_vlocal%delta      = vlocaltab(1,1,is)

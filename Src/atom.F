@@ -519,7 +519,7 @@ c    .          'atom: The above configuration will be used ',
             write(6,'(2a,f10.5)') 'atom: Maximum radius for' ,
      .        ' 4*pi*r*r*local-pseudopot. charge ',Rchloc
 
-            call comlocal(is,a,b,rofi,chlocal,nchloc,flting)
+            call comlocal_spp(is,a,b,rofi,chlocal,nchloc,flting,spp)
 !
 !------------------------------------------------------------------
 !new: Save vlocal (actually r*vlocal +2*Zval)
@@ -566,9 +566,8 @@ c    .          'atom: The above configuration will be used ',
 ! Zero local pseudopotential if floating orbitals
 ! 
             nchloc = 0
-            call comlocal(is,a,b,rofi,chlocal,nchloc,flting)
+            call comlocal_spp(is,a,b,rofi,chlocal,nchloc,flting,spp)
             nvlocal = 0
-            call comlocal(is,a,b,rofi,red_vlocal,nvlocal,flting)
             call com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
      .                      zval,flting)
 ! 
@@ -698,7 +697,7 @@ c    .          'atom: The above configuration will be used ',
           spp%nprojs = 0
 ! No local potential
           nchloc = 0
-          call comlocal(is,a,b,rofi,chlocal,nchloc,flting)    
+          call comlocal_spp(is,a,b,rofi,chlocal,nchloc,flting,spp)    
           call com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,zval,flting)
 ! Zero neutral-atom pseudopotential if floating orbitals
           nVna = 0
@@ -2411,35 +2410,31 @@ C
 
         end  subroutine comcore
 !
-        subroutine comlocal(is,a,b,rofi,chlocal,nchloc,flting)
+        subroutine comlocal_spp(is,a,b,rofi,chlocal,nchloc,flting,spp)
 
-C Generates the common blocks with the local-pseudopotential charge
-C  D. Sanchez-Portal, Aug. 1998
-
+        use atm_types, only: species_info
+        use radial, only: rad_func, rad_alloc, rad_setup_d2
+        
         implicit none
 
-        integer nchloc, is
+        integer, intent(in) :: nchloc, is
  
-        real(dp) 
+        real(dp), intent(in) ::
      .    chlocal(nrmax), rofi(nrmax), a ,b, flting
 
-C
-C Internal variables
-C
+        type(species_info), intent(inout), target :: spp
+        
         integer nr, nmin, nmax, nn, itb
         real(dp) chc, r, delt, Rchloc, dy, yp1, ypn
         real(dp) :: cc(3)
-C
-C Number of points used by polint for the interpolation
-C
+        type(rad_func), pointer            :: pp
+
         integer npoint
         parameter(npoint=4)
 C
         if (flting.gt.0.0d0) then 
   
           Rchloc=rofi(nchloc)
-
-
           delt=Rchloc/(dble(ntbmax-1)+1.0d-20) 
           
           if (delt.gt.deltmax) then
@@ -2452,8 +2447,10 @@ C
      .      nint(Rchloc/deltmax)+2 
           endif 
 
-          chloctab(1,1,is)=delt
-          chloctab(1,2,is)=1.0d0
+          pp => spp%chlocal
+          call rad_alloc(pp,NTBMAX)
+          pp%delta = delt
+          pp%cutoff = rchloc
           do itb=1,ntbmax
             r=delt*(itb-1)
             nr=nint(log(r/b+1.0d0)/a)+1
@@ -2461,37 +2458,32 @@ C
             nmax=min(nchloc,nr+npoint)
             nn=nmax-nmin+1
             call polint(rofi(nmin),chlocal(nmin),nn,r,chc,dy)
-
-            chloctab(itb+1,1,is)=chc
+            pp%f(itb) = chc
           enddo
 !
 !         Use quadratic extrapolation
-!!          chloctab(2,1,is)=chloctab(3,1,is)
-          cc(2:3) = chloctab(3:4,1,is)
+          cc(2:3) = pp%f(2:3)
           cc(1)= ( cc(2)*rofi(3)**2 - cc(3)*rofi(2)**2 ) /
      .        ( rofi(3)**2 -  rofi(2)**2 )
-          chloctab(2,1,is) = cc(1)
+          pp%f(1) = cc(1)    ! We had it already... keep for compatibility
 
 C
 C Table with the second derivative of the local-pseudotential
 C charge density
-C
-          yp1=0.0d0
-          ypn=huge(1.d0)
-
-          call spline(delt, chloctab(2:1+ntbmax,1,is), ntbmax,
-     &                yp1, ypn, chloctab(2:1+ntbmax,2,is) )
+          call rad_setup_d2(pp,yp1=0.0_dp,ypn=huge(1.0_dp))
 
         elseif( flting.lt.0.0d0) then 
  
-          do itb=1,ntbmax+1
-            chloctab(itb,1,is)=0.0d0
-            chloctab(itb,2,is)=0.0d0
-          enddo
+          pp => spp%chlocal
+          call rad_alloc(pp,NTBMAX)
+          pp%delta = 0.0_dp
+          pp%cutoff = 0.0_dp
+          pp%f(:) = 0.0_dp
+          pp%d2(:) = 0.0_dp
 
         endif 
 
-        end subroutine comlocal
+        end subroutine comlocal_spp
 !
 !       New routine to deal with Vlocal
 !
