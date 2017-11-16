@@ -21,10 +21,9 @@
 !     old_atmfuncs arrays
 !
       use old_atmfuncs, only: tabpol, rcpoltb, table, tab2
-      use old_atmfuncs, only: coretab, smasstb, tab2pol
+      use old_atmfuncs, only: smasstb, tab2pol
       use old_atmfuncs, only: zvaltb, chargesave, nkbmax, nomax
       use old_atmfuncs, only: qtb, slfe
-      use old_atmfuncs, only: chloctab, vlocaltab
       use old_atmfuncs, only: lmxosave, lmxkbsave, label_save
       use old_atmfuncs, only: semicsave, izsave, cnfigtb
       use old_atmfuncs, only: nzetasave, nsemicsave, nkblsave
@@ -679,7 +678,7 @@ c    .          'atom: The above configuration will be used ',
 ! Common block with pseudocore information
 ! used for non-linear-core-correction for exchange-correlation energy
 ! 
-          call comcore(is,a,b,rofi,chcore,nrval,nicore,flting)
+          call comcore_spp(is,a,b,rofi,chcore,nrval,nicore,flting,spp)
 
         elseif(iz.eq.-100) then
 !
@@ -690,7 +689,7 @@ c    .          'atom: The above configuration will be used ',
           zvaltb(is)=0.0_dp
           chargesave(is) = 0.d0
 ! No core charge
-          call comcore(is,a,b,rofi,chcore,nrval,nicore,flting) 
+          call comcore_spp(is,a,b,rofi,chcore,nrval,nicore,flting,spp) 
 ! No KB projectors
           nkb = 0 
           nkbmax(is) = 0
@@ -2235,29 +2234,29 @@ C Loop over functionals
 
         end subroutine xc_check
 !
-        subroutine comcore(is,a,b,rofi,chcore,nrval,nicore,flting)
+        subroutine comcore_spp(is,a,b,rofi,chcore,nrval,nicore,flting,
+     $                         spp)
 
 C Generates the common blocks with the pseudo-core information.
 C  D. Sanchez-Portal, Aug. 1998
 
+        use atm_types, only: species_info
+        use radial, only: rad_func, rad_alloc, rad_setup_d2
+
         implicit none
 
-        integer nrval, is
- 
-        real(dp) 
-     .    chcore(nrmax), rofi(nrmax), flting, a ,b
+        integer, intent(in)     ::  nrval, is
+        real(dp), intent(inout) ::  chcore(nrmax)      ! NOTE
+        real(dp), intent(in)    ::  rofi(nrmax), flting, a ,b
+        character, intent(in) ::  nicore*4
+        type(species_info), intent(inout), target :: spp
 
-        character nicore*4
-
-CInternal variables
-C
         integer nrcore,ir, nr, nmin, nmax, nn, itb
         integer :: n_eigen
-        real(dp) r2, chc, r, pi, delt, Rcore, dy,
-     .    yp1, ypn
+        real(dp) r2, chc, r, pi, delt, Rcore, dy
   
         real(dp), allocatable :: chcore_backup(:)
-           real(dp) :: cc(3)
+        real(dp) :: cc(3)
           
         logical   :: filterPCC
         real(dp)  :: kmax2, kmax_tol, etol, pccfilterFactor,
@@ -2265,6 +2264,8 @@ C
       
         real(dp) eps
         parameter (eps=1.0d-6)  
+
+        type(rad_func), pointer            :: pp
 C
 C Number of points used by polint for the interpolation
 C
@@ -2273,27 +2274,22 @@ C
 C
         pi=acos(-1.0d0) 
 C
-        coretab(1,2,is)=0
+        spp%there_is_core = .false.
 
-        if (flting.lt.0.0d0) then
-          do itb=1,ntbmax+1
-            coretab(itb,1,is)=0.0d0
-            coretab(itb,2,is)=0.0d0
-          enddo
+        if ((flting.lt.0.0d0) .or. (nicore.eq.'nc  ')) then
 
-          return
+          pp => spp%core
+          call rad_alloc(pp,NTBMAX)
+          pp%delta = 0.0_dp
+          pp%cutoff = 0.0_dp
+          pp%f(:) = 0.0_dp
+          pp%d2(:) = 0.0_dp
 
+          RETURN
         endif
 
-        if (nicore.eq.'nc  ') then
-          do itb=1,ntbmax+1
-            coretab(itb,1,is)=0.0d0
-            coretab(itb,2,is)=0.0d0
-          enddo
-          return
-        endif
-
-        coretab(1,2,is)=1
+        spp%there_is_core = .true.
+        
         nrcore=0 
         chcore(1)=0.d0
         do ir=nrval,2,-1
@@ -2380,8 +2376,13 @@ C
 
           deallocate(chcore_backup)
         endif
-   
-        coretab(1,1,is)=delt
+!
+!       Store in main data structure
+!
+        pp => spp%core
+        call rad_alloc(pp,NTBMAX)
+        pp%delta = delt
+        pp%cutoff = rcore
         do itb=2,ntbmax
           r=delt*(itb-1)
           nr=nint(log(r/b+1.0d0)/a)+1
@@ -2390,26 +2391,21 @@ C
           nn=nmax-nmin+1
           call polint(rofi(nmin),chcore(nmin),nn,r,chc,dy)
           r2=4.0d0*pi*r*r
-
-          coretab(itb+1,1,is)=chc/r2
+          pp%f(itb) = chc/r2
         enddo
 !
 !       Be careful with this extrapolation. Use a quadratic one
-!!      coretab(2,1,is)=coretab(3,1,is)
 !
-        cc(2:3) = coretab(3:4,1,is)
+        cc(2:3) = pp%f(2:3)
         cc(1)= ( cc(2)*rofi(3)**2 - cc(3)*rofi(2)**2 ) /
      .    ( rofi(3)**2 -  rofi(2)**2 )
-        coretab(2,1,is) = cc(1)
+        pp%f(1) = cc(1)
 C
 C Table with the second derivative of the pseudo_core
 C
-        yp1=0.0d0
-        ypn=huge(1.d0)
-        call spline( delt, coretab(2:1+ntbmax,1,is), ntbmax,
-     &               yp1,ypn,coretab(2:1+ntbmax,2,is))
+        call rad_setup_d2(pp,yp1=0.0_dp,ypn=huge(1.0_dp))
 
-        end  subroutine comcore
+        end  subroutine comcore_spp
 !
         subroutine comlocal_spp(is,a,b,rofi,chlocal,nchloc,flting,spp)
 
@@ -2971,92 +2967,6 @@ C
        call rad_setup_d2(pp,yp1=0.0_dp,ypn=huge(1.0_dp))
 
        end subroutine comkb_spp
-!
-        subroutine comKB(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc)
-C
-C  Creates the common block with all the information about the 
-C  Kleinman-Bylander projectors.
-C  Written by D. Sanchez-Portal, Aug. 1998.
-C  Modified by DSP to allow more than one projector per l, July 1999.
-C
-              
-        implicit none
-
-        integer l, nrc,is, ikb 
-
-        real(dp) rc, ekb, proj(nrmax), a, b,
-     .    rofi(nrmax)  
-        character(len=40) filename
-C
-C Internal variables
-C
-        integer indx, itb, nr, nmax, nmin, nn, il
-        real(dp) delt, r, vphi, dy, yp1, ypn
-        integer ir, nrckb
-C
-C Number of points used by polint for the interpolation
-C
-        integer npoint
-        parameter(npoint=4)
-        integer lun
-C
-        rctb(ikb,l,is)=rc 
-C
-C Interpolation to generate tables with KB projectors
-C
-        indx=0
-        do il=0,l-1
-          indx=indx+nkblsave(il,is)
-        enddo 
-        indx=indx+ikb
-        if (ikb.gt.nkblsave(l,is)) then
-          write(6,'(/,2a,i3,a,i3)')
-     .      'comKB: ERROR: Maximum number of KB projectors',
-     .      ' for l=',l,' must be', nkblsave(l,is)
-          call die 
-        endif 
-
-        delt=rc/(dble(ntbmax-1)+1.0d-20) 
-        if (delt.gt.deltmax) then
-          write(6,'(a)')
-     .    'comKB: WARNING It might be a good idea to increase'
-          write(6,'(a)')
-     .    'comKB: WARNING parameter ntbmax (in file atmparams.f) '
-          write(6,'(a,i6)')
-     .    'comKB: WARNING to at least ntbmax = ', 
-     .    nint(Rc/deltmax)+2
-        endif
-
-        table(1,-indx,is)=delt
-        table(2,-indx,is)=ekb
-
-        if (debug_kb_generation) then
-          nrckb = nint(log(rc/b+1.0d0)/a)+1
-          write(filename,"(a,i1)")
-     .          trim(global_label) // "-KBProj.", indx
-          call file_out(nrckb,rofi,proj,filename)
-        endif
-!
-        do itb=1,ntbmax-1
-          r=delt*(itb-1)
-          nr=nint(log(r/b+1.0d0)/a)+1
-          nmin=max(1,nr-npoint)
-          nmax=min(nrc,nr+npoint)
-          nn=nmax-nmin+1
-          call polint(rofi(nmin),proj(nmin),nn,r,vphi,dy)
-          table(itb+2,-indx,is)=vphi
-        enddo 
-        table(ntbmax+2,-indx,is)=0.0d0
-C
-C Table with the second derivative
-C
-        yp1=0.0d0
-        ypn=huge(1.d0)
-
-        call spline(delt, table(3:2+ntbmax,-indx,is), ntbmax,
-     &              yp1, ypn, tab2(1:ntbmax,-indx,is) )
-
-        end subroutine comkb
 !
         subroutine KBgen(is, a,b,rofi,drdi,s, 
      .         vps, vlocal, ve, nrval, Zval, lmxkb, 

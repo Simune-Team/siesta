@@ -18,7 +18,7 @@
 !     old_atmfuncs arrays
 !
       use old_atmfuncs, only: tabpol, table, tab2
-      use old_atmfuncs, only: coretab, tab2pol
+      use old_atmfuncs, only: tab2pol
       use old_atmfuncs, only: qtb, slfe
       use old_atmfuncs, only: lmxosave, npolorbsave
       use old_atmfuncs, only: nzetasave, nsemicsave
@@ -42,7 +42,7 @@
       type(rad_func), pointer            :: op
       type(rad_func), pointer            :: pp
 
-      integer is, io, i , n, ntot, l, m, max_npjnl
+      integer is, io, i , n, ntot, l, m
       integer max_norbnl, nsm, izeta, j
       integer norb, indx, ipol, num_normal, num_pol
 
@@ -56,7 +56,6 @@
 
 !-----------------------------------------------------------
 
-      max_npjnl = 0
       max_norbnl = 0
       do is=1,nspecies
          spp => species(is)
@@ -199,15 +198,7 @@
 
 !
 !        KB projectors, done in kbgen
-!        chlocal, vlocal, vna, done in atom
-
-         spp%there_is_core      = (coretab(1,2,is) .eq. 1)
-
-         call rad_alloc(spp%core,NTBMAX)
-         spp%core%delta         = coretab(1,1,is)
-         spp%core%cutoff        = coretab(1,1,is)*(NTBMAX-1)
-         spp%core%f(1:)         = coretab(2:,1,is)
-         spp%core%d2(1:)        = coretab(2:,2,is)
+!        chlocal, vlocal, vna, core, done in atom
 
       enddo
 
