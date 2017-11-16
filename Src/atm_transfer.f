@@ -28,7 +28,7 @@
       use old_atmfuncs, only: labelfis, izofis, zvalfis
       use old_atmfuncs, only: massfis, lomaxfis, nofis
       use old_atmfuncs, only: cnfigfio, lofio, mofio
-      use old_atmfuncs, only: atmpopfio, epskb, rcut
+      use old_atmfuncs, only: atmpopfio, rcut
 
 !----------------------------------------------------------------
       use ldau_specs,     only: populate_species_info_ldau
@@ -199,13 +199,7 @@
 
 !
 !        KB projectors, done in kbgen
-!        chlocal, done in atom
-
-         call rad_alloc(spp%vna,NTBMAX)
-         spp%vna%f(1:)       = table(3:,0,is)
-         spp%vna%cutoff      = table(2,0,is)
-         spp%vna%delta       = table(1,0,is)
-         spp%vna%d2(1:)      = tab2(1:,0,is)
+!        chlocal, vlocal, vna, done in atom
 
          spp%there_is_core      = (coretab(1,2,is) .eq. 1)
 

@@ -656,7 +656,7 @@ c    .          'atom: The above configuration will be used ',
 ! Screening of the atomic local pseudopotential
 ! 
             call Vna(is,Zval,qPAO,rphi,rco,nsemic,vlocal,
-     .               a,b,rofi,drdi,nrval,lmxo,nVna)
+     .               a,b,rofi,drdi,nrval,lmxo,nVna,spp)
 !       
 !  Calculation of the electrostatic self-energy oF the 
 !  local pseudopotential charge density 
@@ -671,7 +671,7 @@ c    .          'atom: The above configuration will be used ',
             qtb(1:maxos,is)=0.0d0
 ! Zero neutral-atom pseudopotential if floating orbitals
             nVna=0
-            call comVna(is,a,b,rofi,vlocal,nVna,flting)
+            call comVna_spp(is,a,b,rofi,vlocal,nVna,flting,spp)
 ! Zero self-energy for the local pseudopotential charge
             slfe(is)=0.0d0
           endif 
@@ -702,7 +702,7 @@ c    .          'atom: The above configuration will be used ',
      $                        flting,spp)
 ! Zero neutral-atom pseudopotential if floating orbitals
           nVna = 0
-          call comVna(is,a,b,rofi,vlocal,nVna,flting)
+          call comVna_spp(is,a,b,rofi,vlocal,nVna,flting,spp)
 ! Zero self-energy for the local pseudopotential charge
           slfe(is) = 0.0d0
 ! Calculate Bessel functions
@@ -5454,12 +5454,12 @@ c    .                                      nsm=1,nsemic(l)+1)
         end subroutine atm_pop
 
         subroutine Vna(is,Zval,qPAO,rphi,rco,nsemic,vloc,
-     .                 a,b,rofi,drdi,nrval,lmxo,nVna) 
+     .                 a,b,rofi,drdi,nrval,lmxo,nVna,spp) 
 C 
 C  Generates the neutral-atom pseudopotential.
-C  D. Sanchez-Portal, Aug. 1998.
-C  Modify by DSP, July 1999
-C 
+C  D. Sanchez-Portal, Aug. 1998, 1999
+
+        use atm_types, only: species_info
           
         implicit none
  
@@ -5470,6 +5470,8 @@ C
       
         integer
      .    nrval, lmxo,is, nVna, nsemic(0:lmaxd),nsm
+
+        type(species_info), intent(inout) :: spp
 
 C
 C Internal variables
@@ -5615,39 +5617,41 @@ C
 C
 C Construct the common block with the neutral-atom potential
 C
-        call comVna(is,a,b,rofi,Ve,nVna,1.0d0)
+        call comVna_spp(is,a,b,rofi,Ve,nVna,1.0d0,spp)
 C
         end subroutine vna
 !
 !
-        subroutine comVna(is,a,b,rofi,Vna,nVna,flting)
+        subroutine comVna_spp(is,a,b,rofi,Vna,nVna,flting,spp)
 C
 C  Creates the common block with the information about the neutral atom
 C  pseudoptential.
 C   D. Sanchez-Portal, Aug. 1998.
 C
+        use atm_types, only: species_info
+        use radial, only: rad_func, rad_alloc, rad_setup_d2
+
         implicit none
 
-        integer nVna, is
-        real(dp) 
+        integer, intent(in)  :: nVna, is
+        real(dp), intent(in) ::
      .    Vna(nrmax), rofi(nrmax), a ,b, flting
+        type(species_info), intent(inout), target :: spp
 
         integer nr, nmin, nmax, nn, itb
-        real(dp)  yp1, ypn, dy, v, rVna, delt, r
-C
-C Number of points used by polint for the interpolation
+        real(dp)  dy, v, rVna, delt, r
+        type(rad_func), pointer            :: pp
 C
         integer npoint
         parameter(npoint=4)
 
         if (flting.lt.0.0d0) then    !! Floating orbital
-          table(1,0,is)=0.0d0
-          table(2,0,is)=0.0d0 
-          do itb=1,ntbmax-1
-            tab2(itb,0,is)=0.0d0
-            table(itb+2,0,is)=0.0d0
-          enddo
-          table(ntbmax+2,0,is)=0.0d0
+          pp => spp%vna
+          call rad_alloc(pp,NTBMAX)
+          pp%delta = 0.0_dp
+          pp%cutoff = 0.0_dp
+          pp%f(:) = 0.0_dp
+          pp%d2(:) = 0.0_dp
           return                   !! Return
         endif
 
@@ -5664,9 +5668,10 @@ C
      .    nint(rVna/deltmax)+2
         endif
 
-        table(1,0,is)=delt
-        table(2,0,is)=rVna
-
+        pp => spp%vna
+        call rad_alloc(pp,NTBMAX)
+        pp%delta = delt
+        pp%cutoff = rVna
         do itb=1,ntbmax-1
           r=delt*(itb-1)
           nr=nint(log(r/b+1.0d0)/a)+1
@@ -5674,19 +5679,15 @@ C
           nmax=min(nVna,nr+npoint)
           nn=nmax-nmin+1 
           call polint(rofi(nmin),Vna(nmin),nn,r,v,dy) 
-          table(itb+2,0,is)=v 
+          pp%f(itb)=v 
         enddo 
-        table(ntbmax+2,0,is)=0.0d0
+        pp%f(ntbmax) = 0.0_dp
 C
 C Table with the second derivative
 C 
-        yp1=0.d0
-        ypn=huge(1.d0)
+        call rad_setup_d2(pp,yp1=0.0_dp,ypn=huge(1.0_dp))
 
-        call spline(delt, table(3:2+ntbmax,0,is), ntbmax,
-     &              yp1, ypn, tab2(1:ntbmax,0,is))
-
-        end subroutine comVna
+        end subroutine comVna_spp
 !
         subroutine slfe_local(slfe,vlocal,rofi,a,nVna,drdi)
 C
