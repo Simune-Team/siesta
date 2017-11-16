@@ -25,10 +25,8 @@ C     chemical species present in the calculation.
 
       integer,  public, pointer  ::  izsave(:)          
       integer,  public, pointer  ::  nomax(:)           
-      integer,  public, pointer  ::  nkbmax(:)          
 
       integer,  public, pointer  ::  lmxosave(:)        
-      integer,  public, pointer  ::  nkblsave(:,:)      
       integer,  public, pointer  ::  npolorbsave(:,:,:) 
       integer,  public, pointer  ::  nsemicsave(:,:)    
       integer,  public, pointer  ::  nzetasave(:,:,:)   
@@ -37,7 +35,6 @@ C     chemical species present in the calculation.
       logical,  public, pointer  ::  semicsave(:)       
      
       real(dp), public, pointer  :: zvaltb(:)
-      integer,  public, pointer  :: lmxkbsave(:)
       real(dp), public, pointer  :: smasstb(:)
       real(dp), public, pointer  :: chargesave(:)
       real(dp), public, pointer  :: slfe(:)
@@ -52,10 +49,6 @@ C     chemical species present in the calculation.
       real(dp), public, pointer  :: tab2pol(:,:,:)
 
 
-      real(dp), public, pointer  ::  coretab(:,:,:)
-      real(dp), public, pointer  ::  chloctab(:,:,:)
-      real(dp), public, pointer  ::  vlocaltab(:,:,:)
-      real(dp), public, pointer  ::  rctb(:,:,:)
       real(dp), public, pointer  ::  rcotb(:,:,:,:)
       real(dp), public, pointer  ::  rcpoltb(:,:,:,:)
 
@@ -63,10 +56,10 @@ C     chemical species present in the calculation.
       character(len=10), save, public, pointer :: basistype_save(:)  
 
 !     Public routines
-      public :: labelfis, izofis, zvalfis, nkbfis
-      public :: massfis, lomaxfis, nofis, lmxkbfis
+      public :: labelfis, izofis, zvalfis
+      public :: massfis, lomaxfis, nofis
       public :: cnfigfio, lofio, mofio
-      public :: atmpopfio , epskb, rcut
+      public :: atmpopfio , rcut
       public :: clear_tables, allocate_old_arrays
       public :: deallocate_old_arrays
 
@@ -101,10 +94,6 @@ C     chemical species present in the calculation.
       !allocate(slfe(nsmax))
       nullify( slfe )
       call re_alloc( slfe, 1, nsmax, 'slfe', 'old_atmfuncs' )
-      !allocate(rctb(nkbmx,0:lmaxd,nsmax))
-      nullify( rctb )
-      call re_alloc( rctb, 1, nkbmx, 0, lmaxd, 1, nsmax,
-     &               'rctb', 'old_atmfuncs' )
 
       !allocate(smasstb(nsmax))
       nullify( smasstb )
@@ -148,27 +137,10 @@ C     chemical species present in the calculation.
      &               1, nzetmx*nsemx*(lmaxd+1),
      &               1, nsmax, 'tab2pol', 'old_atmfuncs' )
 
-!      allocate(coretab(ntbmax+1,2,nsmax))
-      nullify( coretab )
-      call re_alloc( coretab, 1, ntbmax+1, 1, 2, 1, nsmax,
-     &               'coretab', 'old_atmfuncs' )
-
-!      allocate(chloctab((ntbmax+1),2,nsmax))
-      nullify( chloctab )
-      call re_alloc( chloctab, 1, ntbmax+1, 1, 2, 1, nsmax,
-     &               'chloctab', 'old_atmfuncs' )
-!      allocate(vlocaltab((ntbmax+1),2,nsmax))
-      nullify( vlocaltab )
-      call re_alloc( vlocaltab, 1, ntbmax+1, 1, 2, 1, nsmax,
-     &               'vlocaltab', 'old_atmfuncs' )
 
       !allocate(izsave(nsmax))
       nullify( izsave )
       call re_alloc( izsave, 1, nsmax, 'izsave', 'old_atmfuncs' )
-      !allocate(lmxkbsave(nsmax))
-      nullify( lmxkbsave )
-      call re_alloc( lmxkbsave, 1, nsmax,
-     &               'lmxkbsave', 'old_atmfuncs' )
       !allocate(lmxosave(nsmax))
       nullify( lmxosave )
       call re_alloc( lmxosave, 1, nsmax, 'lmxosave', 'old_atmfuncs' )
@@ -187,9 +159,7 @@ C     chemical species present in the calculation.
       !allocate(nomax(nsmax))
       nullify( nomax )
       call re_alloc( nomax, 1, nsmax, 'nomax', 'old_atmfuncs' )
-      !allocate(nkbmax(nsmax))
-      nullify( nkbmax )
-      call re_alloc( nkbmax, 1, nsmax, 'nkbmax', 'old_atmfuncs' )
+
       !allocate(zvaltb(nsmax))
       nullify( zvaltb )
       call re_alloc( zvaltb, 1, nsmax, 'zvaltb', 'old_atmfuncs' )
@@ -197,10 +167,6 @@ C     chemical species present in the calculation.
       nullify( cnfigtb )
       call re_alloc( cnfigtb, 0, lmaxd, 1, nsemx, 1, nsmax,
      &               'cnfigtb', 'old_atmfuncs' )
-      !allocate(nkblsave(0:lmaxd,nsmax))
-      nullify( nkblsave )
-      call re_alloc( nkblsave, 0, lmaxd, 1, nsmax,
-     &               'nkblsave', 'old_atmfuncs' )
 !
       nullify (label_save)
       allocate(label_save(nsmax))
@@ -224,27 +190,20 @@ C     chemical species present in the calculation.
       call de_alloc( filtercuttb, 'filtercuttb', 'old_atmfuncs' )
       call de_alloc( qtb,         'qtb',         'old_atmfuncs' )
       call de_alloc( slfe,        'slfe',        'old_atmfuncs' )
-      call de_alloc( rctb,        'rctb',        'old_atmfuncs' )
       call de_alloc( smasstb,     'smasstb',     'old_atmfuncs' )
       call de_alloc( chargesave,  'chargesave',  'old_atmfuncs' )
       call de_alloc( table,       'table',       'old_atmfuncs' )
       call de_alloc( tab2,        'tab2',        'old_atmfuncs' )
       call de_alloc( tabpol,      'tabpol',      'old_atmfuncs' )
       call de_alloc( tab2pol,     'tab2pol',     'old_atmfuncs' )
-      call de_alloc( coretab,     'coretab',     'old_atmfuncs' )
-      call de_alloc( chloctab,    'chloctab',    'old_atmfuncs' )
-      call de_alloc( vlocaltab,   'vlocaltab',   'old_atmfuncs' )
       call de_alloc( izsave,      'izsave',      'old_atmfuncs' )
-      call de_alloc( lmxkbsave,   'lmxkbsave',   'old_atmfuncs' )
       call de_alloc( lmxosave,    'lmxosave',    'old_atmfuncs' )
       call de_alloc( npolorbsave, 'npolorbsave', 'old_atmfuncs' )
       call de_alloc( nsemicsave,  'nsemicsave',  'old_atmfuncs' )
       call de_alloc( nzetasave,   'nzetasave',   'old_atmfuncs' )
       call de_alloc( nomax,       'nomax',       'old_atmfuncs' )
-      call de_alloc( nkbmax,      'nkbmax',      'old_atmfuncs' )
       call de_alloc( zvaltb,      'zvaltb',      'old_atmfuncs' )
       call de_alloc( cnfigtb,     'cnfigtb',     'old_atmfuncs' )
-      call de_alloc( nkblsave,    'nkblsave',    'old_atmfuncs' )
       call de_alloc( semicsave,   'semicsave',   'old_atmfuncs' )
       deallocate( label_save )
 !      call de_alloc( label_save, 'label_save', 'old_atmfuncs' )
@@ -260,9 +219,7 @@ C     chemical species present in the calculation.
       do is=1,nsmax
         izsave(is)=0
         lmxosave(is)=0
-        lmxkbsave(is)=0
         label_save(is)='  '
-        nkbmax(is)=0
         nomax(is)=0  
         semicsave(is)=.false.
               
@@ -321,14 +278,6 @@ C     chemical species present in the calculation.
       labelfis=label_save(is)
       end function labelfis
 !
-      FUNCTION LMXKBFIS (IS)
-      integer :: lmxkbfis    ! Maximum ang mom of the KB projectors
-      integer, intent(in) :: is            ! Species index
-
-      call check_is('lmxkbfis',is)
-      lmxkbfis=lmxkbsave(is)
-      end function lmxkbfis
-!
       FUNCTION LOMAXFIS (IS)
       integer :: lomaxfis  ! Maximum ang mom of the Basis Functions
       integer, intent(in) :: is            ! Species index
@@ -355,15 +304,6 @@ C     chemical species present in the calculation.
       massfis=smasstb(is)
       end function massfis
 !
-      FUNCTION NKBFIS(IS)
-      integer :: nkbfis    ! Total number of KB projectors
-      integer, intent(in) :: is            ! Species index
-
-      call check_is('nkbfis',is)
-      nkbfis=nkbmax(is)
-      end function nkbfis
-!
-
       FUNCTION NOFIS(IS)
       integer :: nofis    ! Total number of Basis functions
       integer, intent(in) :: is            ! Species index
@@ -464,26 +404,23 @@ C
       integer, intent(in) :: io    ! Orbital index (within atom)
 
 C Returns total angular momentum quantum number of a given atomic basis
-C   basis orbital or Kleynman-Bylander projector.
+C orbital
 
 C    INTEGER  IO   : Orbital index (within atom)
 C                    IO > 0 => Basis orbitals
-C                    IO < 0 => Kleynman-Bylander projectors
 C************************OUTPUT*****************************************
 C   INTEGER LOFIO  : Quantum number L of orbital or KB projector
 
       integer l, norb, izeta, ipol, nkb, nsm
 
       call check_is('lofio',is)
-      if ((io.gt.nomax(is)).or.(io.lt.-nkbmax(is))) then 
+      if ((io.gt.nomax(is)).or.(io.lt.1)) then 
             write(6,*) 'LOFIO: THERE ARE NO DATA FOR IO=',IO
-            write(6,*) 'LOFIO: IOMIN= ',-nkbmax(is),
+            write(6,*) 'LOFIO: IOMIN= ',1,
      .           ' IOMAX= ',nomax(is)
          CALL DIE
       endif
  
-       if (io.gt.0) then
-
         norb=0
         do 10 l=0,lmxosave(is)
           do 8 nsm=1,nsemicsave(l,is)+1
@@ -512,24 +449,6 @@ C   INTEGER LOFIO  : Quantum number L of orbital or KB projector
 40      lofio=l+1
         return
 
-       elseif(io.lt.0) then
-
-        nkb=0
-        do 50 l=0,lmxkbsave(is)
-          do 45 izeta=1,nkblsave(l,is)
-             nkb=nkb-(2*l+1)
-             if(nkb.le.io) goto 60
-45        continue
-50      continue 
-
-60      lofio=l       
-
-c       elseif (io.eq.0) then
-        else
-
-        lofio=0
-
-        endif
       end  function lofio
 !
 !
@@ -543,21 +462,18 @@ C   basis orbital or Kleynman-Bylander projector.
 
 C    INTEGER  IO   : Orbital index (within atom)
 C                    IO > 0 => Basis orbitals
-C                    IO < 0 => Kleynman-Bylander projectors
 C************************OUTPUT*****************************************
-C   INTEGER MOFIO  : Quantum number M of orbital or KB projector
+C   INTEGER MOFIO  : Quantum number M of orbital
 
       integer l, norb, izeta, ipol, nkb, lorb, lkb, nsm
 
       call check_is('mofio',is)
-      if((io.gt.nomax(is)).or.(io.lt.-nkbmax(is))) then
+      if((io.gt.nomax(is)).or.(io.lt.1)) then
             write(6,*) 'MOFIO: THERE ARE NO DATA FOR IO=',IO
-            write(6,*) 'MOFIO: IOMIN= ',-nkbmax(is),
+            write(6,*) 'MOFIO: IOMIN= ',1,
      .           ' IOMAX= ',nomax(is)
          CALL DIE
       endif
-
-      if (io.gt.0) then
 
         norb=0
         do 10 l=0,lmxosave(is)
@@ -588,85 +504,11 @@ C   INTEGER MOFIO  : Quantum number M of orbital or KB projector
 40      lorb=l+1 
         mofio=io-norb+lorb
         return
-
-
-       elseif(io.lt.0) then
-
-
-        nkb=0
-        do 50 l=0,lmxkbsave(is)
-          do 45 izeta=1,nkblsave(l,is)
-             nkb=nkb-(2*l+1)
-             if(nkb.le.io) goto 60
-45        continue
-50      continue
-
-60      lkb=l
-        mofio=-io+nkb+lkb
-c       elseif (io.eq.0) then
-        else
-
-        mofio=0
-
-        endif
         
       end function mofio
 !
 
 !  End of FIOs 
-!
-
-      FUNCTION EPSKB (IS,IO)
-      real(dp) epskb
-      integer, intent(in)   ::  is   ! Species index
-      integer, intent(in)   ::  io   ! KB proyector index (within atom)
-                                     ! May be positive or negative 
-                                     ! (only ABS(IO) is used).
-
-C  Returns the energies epsKB_l of the Kleynman-Bylander projectors:
-C       <Psi|V_KB|Psi'> = <Psi|V_local|Psi'> +
-C                 Sum_lm( epsKB_l * <Psi|Phi_lm> * <Phi_lm|Psi'> )
-C  where Phi_lm is returned by subroutine PHIATM.
-
-
-C  REAL(DP) EPSKB  : Kleynman-Bylander projector energy
-C  Energy in Rydbergs.
-
-      integer  ik, nkb, indx, l, ikb
-C
-C******************************************************************
-C*****************Variables in the common blocks*******************
-C
-      call check_is('epskb',is)
- 
-         ik=-abs(io)
-         if (ik.eq.0) then 
-             write(6,*) 'EPSKB: FUNCTION CANNOT BE CALLED WITH'
-     .         ,' ARGUMENT EQUAL TO ZERO' 
-           CALL DIE 
-         endif
-
-         if(ik.lt.-nkbmax(is)) then
-             write(6,*) 'EPSKB: THERE ARE NO DATA FOR IO=',IK
-             write(6,*) 'EPSKB: IOMIN= ',-nkbmax(is)
-           CALL DIE()
-         endif
-
-         nkb=0
-         indx=0
-         do 10  l=0,lmxkbsave(is)
-             do 5 ikb=1,nkblsave(l,is)
-                indx=indx+1
-                nkb=nkb-(2*l+1)
-                if(nkb.le.ik) goto 20
-5            continue
-10       continue 
-
-20        indx=-indx
- 
-        epskb=table(2,indx,is)
-
-      end function epskb
 !
 !
       function rcut(is,io)
@@ -674,27 +516,21 @@ C
       integer, intent(in) :: is    ! Species index
       integer, intent(in) :: io    ! Orbital index (within atom)
                                    ! io> => basis orbitals
-                                   ! io<0  => KB projectors
-                                   ! io=0 : Local screened pseudopotential
 
-C  Returns cutoff radius of Kleynman-Bylander projectors and
-C  atomic basis orbitals.
+C  Returns cutoff radius of atomic basis orbitals.
 C  Distances in Bohr
 
-      integer l, norb, lorb, nzetorb, izeta, ipol, nkb,lkb,nsm
+      integer l, norb, lorb, nzetorb, izeta, ipol,nsm
       integer  indx, nsmorb        
 C
       call check_is('rcut',is)
 
-      if ((io.gt.nomax(is)).or.(io.lt.-nkbmax(is))) then
+      if ((io.gt.nomax(is)).or.(io.lt.1)) then
           write(6,*) 'RCUT: THERE ARE NO DATA FOR IO=',IO
-          write(6,*) 'RCUT: IOMIN= ',-nkbmax(is),
+          write(6,*) 'RCUT: IOMIN= ',1,
      .      ' IOMAX= ',nomax(is)
         CALL DIE
       endif
-
-
-       if (io.gt.0) then
 
         norb=0 
         indx=0
@@ -735,31 +571,6 @@ c       rcut=table(1,indx,is)*(ntbmax-1)
         rcut=rcpoltb(nzetorb,lorb,nsmorb,is) 
 c       rcut=tabpol(1,indx,is)*(ntbmax-1)
         return 
-
-
-       elseif(io.lt.0) then 
-
-
-        nkb=0
-        do 50 l=0,lmxkbsave(is)
-          do 45 izeta=1,nkblsave(l,is)
-            nkb=nkb-(2*l+1)
-            if(nkb.le.io) goto 60
-45        continue
-50      continue 
-
-60      lkb=l 
-        indx=-(lkb+1)
-        rcut=rctb(izeta,lkb,is) 
-c       rcut=table(1,indx,is)*(ntbmax-1)
-        return 
-
-c       elseif (io.eq.0) then
-        else
-
-        rcut=table(2,0,is)
-
-        endif
 
       end function rcut
 !

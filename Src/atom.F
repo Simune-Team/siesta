@@ -22,13 +22,13 @@
 !
       use old_atmfuncs, only: tabpol, rcpoltb, table, tab2
       use old_atmfuncs, only: smasstb, tab2pol
-      use old_atmfuncs, only: zvaltb, chargesave, nkbmax, nomax
+      use old_atmfuncs, only: zvaltb, chargesave, nomax
       use old_atmfuncs, only: qtb, slfe
-      use old_atmfuncs, only: lmxosave, lmxkbsave, label_save
+      use old_atmfuncs, only: lmxosave, label_save
       use old_atmfuncs, only: semicsave, izsave, cnfigtb
-      use old_atmfuncs, only: nzetasave, nsemicsave, nkblsave
+      use old_atmfuncs, only: nzetasave, nsemicsave
       use old_atmfuncs, only: npolorbsave, basistype_save
-      use old_atmfuncs, only: lambdatb, rcotb, rctb, filtercuttb
+      use old_atmfuncs, only: lambdatb, rcotb, filtercuttb
 !
 !     old_atmfuncs procedures
 !
@@ -552,14 +552,12 @@ c    .          'atom: The above configuration will be used ',
             call KBgen(is, a,b,rofi,drdi,s,
      .                 vps, vlocal, ve, nrval, Zval, lmxkb, 
      .                 nkbl, erefkb, nkb, spp) 
-            nkbmax(is) = nkb
 
           elseif(flting.lt.0.0d0) then 
 !
 ! No Kleinman-Bylander projectors if floating orbitals
 !          
             nkb=0 
-            nkbmax(is)=0
             spp%nprojs = 0
 !
 ! Zero local pseudopotential if floating orbitals
@@ -692,7 +690,6 @@ c    .          'atom: The above configuration will be used ',
           call comcore_spp(is,a,b,rofi,chcore,nrval,nicore,flting,spp) 
 ! No KB projectors
           nkb = 0 
-          nkbmax(is) = 0
           spp%nprojs = 0
 ! No local potential
           nchloc = 0
@@ -2626,7 +2623,6 @@ C
 
         izsave(is)=iz
         lmxosave(is)=lmxo
-        lmxkbsave(is)=lmxkb
         label_save(is)=atm_label
         semicsave(is)=semic   
             
@@ -2668,7 +2664,6 @@ C
 
         nkb=0
         do l=0,lmxkb
-          nkblsave(l,is)=nkbl(l)
           nkb=nkb+(2*l+1)*nkbl(l)
         enddo  
 
@@ -2681,7 +2676,6 @@ C
 
         nomax(is)=no
         if(iz.lt.0) nkb=0
-        nkbmax(is)=nkb
 
         end subroutine new_specie
 
@@ -2908,8 +2902,6 @@ C
         integer npoint
         parameter(npoint=4)
         integer lun
-C
-        rctb(ikb,l,is)=rc 
 C
 C Interpolation to generate tables with KB projectors
 C
