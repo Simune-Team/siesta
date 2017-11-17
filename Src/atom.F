@@ -20,9 +20,8 @@
 !----------------------------------------------------------------
 !     old_atmfuncs arrays
 !
-      use old_atmfuncs, only: tabpol, rcpoltb, table, tab2
-      use old_atmfuncs, only: smasstb, tab2pol
-      use old_atmfuncs, only: zvaltb, chargesave, nomax
+      use old_atmfuncs, only: smasstb
+      use old_atmfuncs, only: zvaltb, chargesave
       use old_atmfuncs, only: qtb, slfe
       use old_atmfuncs, only: lmxosave, label_save
       use old_atmfuncs, only: semicsave, izsave, cnfigtb
@@ -644,7 +643,6 @@ c    .          'atom: The above configuration will be used ',
           endif
           write(6,'(a,i3)')
      .      'atom: Total number of Sankey-type orbitals:', no
-          nomax(is)=no
 
           if (filtering_requested) then
             if (.not. filter_cutoff_specified) then
@@ -710,7 +708,6 @@ c    .          'atom: The above configuration will be used ',
  
           write(6,'(/a,i3)')
      .      'atom: Total number of floating Bessel orbitals:', no
-          nomax(is) = no
         endif 
 
         write(6,'(/,a,73("_"))') 'atom: '
@@ -2677,7 +2674,6 @@ C
           enddo
         enddo 
 
-        nomax(is)=no
         if(iz.lt.0) nkb=0
 
         end subroutine new_specie
@@ -6728,8 +6724,6 @@ C
         integer npoint
         parameter(npoint=4)
 C
-        rcpoltb(ipol,l,nsm,is) = rc
-
         ntot = spp%norbs        ! Value so far
         spp%n_orbnl = spp%n_orbnl + 1
         n = spp%n_orbnl

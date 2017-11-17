@@ -43,12 +43,6 @@ C     chemical species present in the calculation.
 
       real(dp), public, pointer  :: qtb(:,:)
 
-      real(dp), public, pointer  :: table(:,:,:)
-      real(dp), public, pointer  :: tabpol(:,:,:)
-      real(dp), public, pointer  :: tab2(:,:,:)
-      real(dp), public, pointer  :: tab2pol(:,:,:)
-
-
       real(dp), public, pointer  ::  rcotb(:,:,:,:)
       real(dp), public, pointer  ::  rcpoltb(:,:,:,:)
 
@@ -59,7 +53,6 @@ C     chemical species present in the calculation.
       public :: labelfis, izofis, zvalfis
       public :: massfis, lomaxfis, nofis
       public :: cnfigfio, lofio, mofio
-      public :: atmpopfio , rcut
       public :: clear_tables, allocate_old_arrays
       public :: deallocate_old_arrays
 
@@ -103,40 +96,6 @@ C     chemical species present in the calculation.
       call re_alloc( chargesave, 1, nsmax,
      &               'chargesave', 'old_atmfuncs' )
 !
-!     Table: This is a hybrid
-!          negative values of the second index correspond to KB projectors
-!          positive values of the second index correspond to orbitals
-!          A second index of zero (0) corresponds to the local potential
-! 
-!          The first index has ntbmax "real points" and two extra
-!          entries for bookeeping
-!          The total number of angular momentum entries is lmaxd+1 (since
-!          s=0, p=1, etc)
-!
-!
-!      allocate(table((ntbmax+2),-nkbmx*(lmaxd+1):nzetmx*nsemx*
-!               (lmaxd+1),nsmax))
-      nullify( table )
-      call re_alloc( table, 1, ntbmax+2,
-     &               -nkbmx*(lmaxd+1), nzetmx*nsemx*(lmaxd+1),
-     &               1, nsmax, 'table', 'old_atmfuncs' )
-!      allocate(tab2(ntbmax,-nkbmx*(lmaxd+1):nzetmx*nsemx*
-!        (lmaxd+1),nsmax))
-      nullify( tab2 )
-      call re_alloc( tab2, 1, ntbmax,
-     &               -nkbmx*(lmaxd+1), nzetmx*nsemx*(lmaxd+1),
-     &               1, nsmax, 'tab2', 'old_atmfuncs' )
-!      allocate(tabpol((ntbmax+2),nzetmx*nsemx*(lmaxd+1),nsmax))
-      nullify( tabpol )
-      call re_alloc( tabpol, 1, ntbmax+2,
-     &               1, nzetmx*nsemx*(lmaxd+1),
-     &               1, nsmax, 'tabpol', 'old_atmfuncs' )
-!      allocate(tab2pol(ntbmax,nzetmx*nsemx*(lmaxd+1),nsmax))
-      nullify( tab2pol )
-      call re_alloc( tab2pol, 1, ntbmax,
-     &               1, nzetmx*nsemx*(lmaxd+1),
-     &               1, nsmax, 'tab2pol', 'old_atmfuncs' )
-
 
       !allocate(izsave(nsmax))
       nullify( izsave )
@@ -192,10 +151,6 @@ C     chemical species present in the calculation.
       call de_alloc( slfe,        'slfe',        'old_atmfuncs' )
       call de_alloc( smasstb,     'smasstb',     'old_atmfuncs' )
       call de_alloc( chargesave,  'chargesave',  'old_atmfuncs' )
-      call de_alloc( table,       'table',       'old_atmfuncs' )
-      call de_alloc( tab2,        'tab2',        'old_atmfuncs' )
-      call de_alloc( tabpol,      'tabpol',      'old_atmfuncs' )
-      call de_alloc( tab2pol,     'tab2pol',     'old_atmfuncs' )
       call de_alloc( izsave,      'izsave',      'old_atmfuncs' )
       call de_alloc( lmxosave,    'lmxosave',    'old_atmfuncs' )
       call de_alloc( npolorbsave, 'npolorbsave', 'old_atmfuncs' )
@@ -229,11 +184,6 @@ C     chemical species present in the calculation.
         lambdatb(:,:,:,is) = 0.0_dp
         filtercuttb(:,:,is) = 0.0_dp
         rcpoltb(:,:,:,is) = 0.0_dp
-
-        table(:,:,is) = 0.0_dp
-        tab2(:,:,is) = 0.0_dp
-        tabpol(:,:,is) = 0.0_dp
-        tab2pol(:,:,is) = 0.0_dp
 
         qtb(1:maxos,is)=0.00_dp
 
@@ -313,25 +263,6 @@ C     chemical species present in the calculation.
       end function nofis
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AMENoFIS
-
-      FUNCTION ATMPOPFIO (IS,IO)
-      real(dp) atmpopfio
-      integer, intent(in) :: is    ! Species index
-      integer, intent(in) :: io    ! Orbital index (within atom)
-
-C Returns the population of the atomic basis orbitals in the atomic 
-C ground state configuration.
-
-      call check_is('atmpopfio',is)
-      if((io.gt.nomax(is)).or.(io.lt.1)) then
-            write(6,*) 'ATMPOPFIO: THERE ARE NO DATA FOR IO=',IO
-            write(6,*) 'ATMPOPFIO: IOMIN= 1', ' IOMAX= ',nomax(is)
-         call die
-      endif
- 
-      atmpopfio=qtb(io,is) 
-      end function atmpopfio
-
 !
 !
       FUNCTION CNFIGFIO(IS,IO)
@@ -510,69 +441,5 @@ C   INTEGER MOFIO  : Quantum number M of orbital
 
 !  End of FIOs 
 !
-!
-      function rcut(is,io)
-      real(dp) rcut
-      integer, intent(in) :: is    ! Species index
-      integer, intent(in) :: io    ! Orbital index (within atom)
-                                   ! io> => basis orbitals
 
-C  Returns cutoff radius of atomic basis orbitals.
-C  Distances in Bohr
-
-      integer l, norb, lorb, nzetorb, izeta, ipol,nsm
-      integer  indx, nsmorb        
-C
-      call check_is('rcut',is)
-
-      if ((io.gt.nomax(is)).or.(io.lt.1)) then
-          write(6,*) 'RCUT: THERE ARE NO DATA FOR IO=',IO
-          write(6,*) 'RCUT: IOMIN= ',1,
-     .      ' IOMAX= ',nomax(is)
-        CALL DIE
-      endif
-
-        norb=0 
-        indx=0
-        do 10 l=0,lmxosave(is)
-         do 8 nsm=1,nsemicsave(l,is)+1
-          do 5 izeta=1,nzetasave(l,nsm,is)
-            norb=norb+(2*l+1)
-            indx=indx+1 
-            if(norb.ge.io) goto 30 
- 5        continue      
- 8       continue 
-10      continue   
-
-        indx=0
-        do  20 l=0,lmxosave(is)
-          do 18 nsm=1,nsemicsave(l,is)+1
-            do 15 ipol=1, npolorbsave(l,nsm,is)
-              norb=norb+(2*(l+1)+1)  
-              indx=indx+1  
-              if(norb.ge.io) goto 40
-15          continue
-18        continue
-20      continue     
-          write(6,*) 'RCUT: ERROR: ORBITAL INDEX IO=',IO
-          write(6,*) 'RCUT: ERROR: NOT FOUND'
-        call die()
-
-30      lorb=l
-        nzetorb=izeta
-        nsmorb=nsm
-        rcut=rcotb(nzetorb,lorb,nsmorb,is)  
-c       rcut=table(1,indx,is)*(ntbmax-1)
-        return  
-
-40      lorb=l
-        nzetorb=ipol
-        nsmorb=nsm
-        rcut=rcpoltb(nzetorb,lorb,nsmorb,is) 
-c       rcut=tabpol(1,indx,is)*(ntbmax-1)
-        return 
-
-      end function rcut
-!
-!
       end module old_atmfuncs
