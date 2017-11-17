@@ -823,7 +823,7 @@ contains
        if ( nspin == 1 ) kw = kw * 2._dp
        
 #ifdef TRANSIESTA_TIMING
-       call timer('TS_HS',1)
+       call timer('TS_HS-F',1)
 #endif
 
        call create_HS(sp_dist,sparse_pattern, &
@@ -834,7 +834,11 @@ contains
             nzwork, zwork)
 
 #ifdef TRANSIESTA_TIMING
-       call timer('TS_HS',2)
+       call timer('TS_HS-F',2)
+#endif
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_EQ-F',1)
 #endif
 
        call init_val(spuDM)
@@ -865,13 +869,17 @@ contains
        call add_DM( spuDM, W, spuEDM, W, &
             GF_tri, r_pvt, pvt, N_Elec, Elecs, DMidx=1)
 
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_EQ-F',2)
+#endif
+
 #ifdef MPI
        call MPI_Barrier(MPI_Comm_World,io)
-       call timer('TS_comm',1)
+       call timer('TS_comm-F',1)
        io = size(zDM)
        call MPI_Bcast(zDM(1,1),io,MPI_Double_Complex, &
             Nodes - 1, MPI_Comm_World,MPIerror)
-       call timer('TS_comm',2)
+       call timer('TS_comm-F',2)
 #endif
 
        call add_k_DM(spDM, spuDM, 1, &

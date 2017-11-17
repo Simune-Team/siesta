@@ -214,6 +214,8 @@ OBJS += m_gauss_fermi_17.o
 OBJS += m_integrate.o m_interpolate.o m_mat_invert.o m_monitor.o
 OBJS += m_iterator.o m_pivot_array.o
 
+OBJS += dm_charge.o
+
 # Pivot (of sparsity pattern) routines
 OBJS += m_pivot.o m_pivot_methods.o
 
@@ -676,6 +678,8 @@ diagsprl.o: siesta_geom.o sys.o
 die.o: parallel.o siesta_cml.o
 die.o: parallel.o
 dipole.o: mesh.o parallel.o precision.o sys.o
+dm_charge.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+dm_charge.o: class_Sparsity.o m_mpi_utils.o m_spin.o precision.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
 domain_decom.o: sparse_matrices.o sys.o
@@ -1219,13 +1223,13 @@ siesta_end.o: m_rhog.o m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o
 siesta_end.o: parallel.o siesta_cml.o siesta_cmlsubs.o siesta_master.o
 siesta_end.o: siesta_options.o sparse_matrices.o timestamp.o
 siesta_forces.o: atomlist.o class_Fstack_Data1D.o class_SpData2D.o compute_dm.o
-siesta_forces.o: compute_energies.o compute_max_diff.o densematrix.o files.o
-siesta_forces.o: final_H_f_stress.o flook_siesta.o kpoint_grid.o
-siesta_forces.o: m_check_walltime.o m_convergence.o m_energies.o m_forces.o
-siesta_forces.o: m_iodm_old.o m_mixing.o m_mixing_scf.o m_mpi_utils.o
-siesta_forces.o: m_ncdf_siesta.o m_pexsi.o m_pexsi_driver.o m_rhog.o m_spin.o
-siesta_forces.o: m_steps.o m_stress.o m_transiesta.o m_ts_charge.o
-siesta_forces.o: m_ts_electype.o m_ts_global_vars.o m_ts_method.o
+siesta_forces.o: compute_energies.o compute_max_diff.o densematrix.o
+siesta_forces.o: dm_charge.o files.o final_H_f_stress.o flook_siesta.o
+siesta_forces.o: kpoint_grid.o m_check_walltime.o m_convergence.o m_energies.o
+siesta_forces.o: m_forces.o m_iodm_old.o m_mixing.o m_mixing_scf.o
+siesta_forces.o: m_mpi_utils.o m_ncdf_siesta.o m_pexsi.o m_pexsi_driver.o
+siesta_forces.o: m_rhog.o m_spin.o m_steps.o m_stress.o m_transiesta.o
+siesta_forces.o: m_ts_charge.o m_ts_electype.o m_ts_global_vars.o m_ts_method.o
 siesta_forces.o: m_ts_options.o mixer.o parallel.o post_scf_work.o precision.o
 siesta_forces.o: save_density_matrix.o scfconvergence_test.o setup_H0.o
 siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_dicts.o siesta_geom.o
@@ -1395,6 +1399,7 @@ m_dhscf.o: dhscf.o
 m_diag.o: diag.o
 m_diag_option.o: diag_option.o
 m_diagon.o: diagon.o
+m_dm_charge.o: dm_charge.o
 m_dnaefs.o: dnaefs.o
 m_doping_uniform.o: doping_uniform.o
 m_dynamics.o: dynamics.o

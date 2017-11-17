@@ -800,7 +800,7 @@ contains
        if ( nspin == 1 ) kw = kw * 2._dp
        
 #ifdef TRANSIESTA_TIMING
-       call timer('TS_HS',1)
+       call timer('TS_HS-F',1)
 #endif
 
        dwork => val(spuDM)
@@ -813,11 +813,11 @@ contains
             io, dwork(:,1)) ! annoyingly we can't pass the full array!!!!!
      
 #ifdef TRANSIESTA_TIMING
-       call timer('TS_HS',2)
+       call timer('TS_HS-F',2)
 #endif
 
 #ifdef TRANSIESTA_TIMING
-       call timer('TS_EQ',1)
+       call timer('TS_EQ-F',1)
 #endif
 
        ! ***************
@@ -851,14 +851,18 @@ contains
        call add_DM( spuDM, W, spuEDM, W, &
             GF_tri, r_pvt, pvt, N_Elec, Elecs, DMidx=1)
 
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_EQ-F',2)
+#endif
+
 #ifdef MPI
        call MPI_Barrier(MPI_Comm_World,io)
-       call timer('TS_comm',1)
+       call timer('TS_comm-F',1)
        dwork => val(spuDM)
        io = size(dwork)
        call MPI_Bcast(dwork(1,1),io,MPI_Double_Precision, &
             Nodes - 1, MPI_Comm_World,MPIerror)
-       call timer('TS_comm',2)
+       call timer('TS_comm-F',2)
 #endif
 
        call add_Gamma_DM(spDM,   spuDM, D_dim2=1, &
