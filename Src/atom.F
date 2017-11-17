@@ -706,7 +706,7 @@ c    .          'atom: The above configuration will be used ',
           slfe(is) = 0.0d0
 ! Calculate Bessel functions
           call Bessel(is,a,b,rofi,drdi,s,
-     .                lmxo,nzeta,rco,lambda,filtercut,no)
+     .                lmxo,nzeta,rco,lambda,filtercut,no,spp)
  
           write(6,'(/a,i3)')
      .      'atom: Total number of floating Bessel orbitals:', no
@@ -3267,36 +3267,32 @@ C
      .               filtercut, atm_label, spp)
          
         elseif (basis_type.eq.'nodes') then 
-           call die("NODES not updated")
           call NODES(Zval,is, a,b,rofi,drdi,s,
      .               vps, ve, vePAO,
      .               nrval, lmxo, nsemic,
      .               nzeta, rco, lambda, 
      .               rphi, ePAO, noPAO,
-     .               filtercut)
+     .               filtercut, spp)
 
         elseif (basis_type.eq.'nonodes') then 
-           call die("NONODES not updated")
- 
-          call NONODES(Zval,is, a,b,rofi,drdi,s,
+
+           call NONODES(Zval,is, a,b,rofi,drdi,s,
      .                 vps, ve, vePAO,
      .                 nrval, lmxo, nsemic,
      .                 nzeta, rco, lambda, 
      .                 rphi, ePAO, noPAO,
-     .                 filtercut)
+     .                 filtercut, spp)
           
         elseif (basis_type.eq.'splitgauss') then 
-           call die("SPLITGAUSS not updated")
 
           call SPLITGAUSS(Zval,is, a,b,rofi,drdi,s,
      .                    vps, ve, vePAO,
      .                    nrval, lmxo, nsemic,
      .                    nzeta, rco, lambda, 
      .                    rphi, ePAO, noPAO,
-     .                    filtercut)
+     .                    filtercut, spp)
 
         elseif (basis_type.eq.'filteret') then  
-           call die("FILTERET not updated")
 
           call FILTERET(Zval,is,iz,a,b,rofi,drdi,s,
      .                  vps, ve, vePAO, 
@@ -3305,7 +3301,7 @@ C
      .                  rphi, ePAO, noPAO,
      .                  rinn, vcte, qcoe, qyuk, qwid,
      .                  split_norm,
-     .                  filtercut, atm_label)
+     .                  filtercut, atm_label, spp)
          
         endif            
  
@@ -3313,13 +3309,13 @@ C
 C Polarization orbitals
 C 
         if (basis_type.eq.'filteret') then  
-           call die("POLGEN_FILTERET not updated")
+
           call POLgen_filteret_new(is, iz, a,b,rofi,drdi,
      .                ePAO,rphi,rco,vps,vePAO,
      .                polorb,lmxo,nsemic,noPOL, rinn, vcte,
      .                qcoe, qyuk, qwid, nrval,
      .                split_norm,
-     .                filtercut,atm_label) 
+     .                filtercut,atm_label, spp) 
         else
           call POLgen(is, iz, a,b,rofi,drdi,
      .                ePAO,rphi,rco,vps,vePAO,
@@ -3340,9 +3336,10 @@ C
      .                      nzeta,rco,lambda, 
      .                      rphi, ePAO, norb,
      .                      rinn,vcte, qcoe, qyuk, qwid,
-     .                      split_norm,filtercut,atm_label) 
+     .                      split_norm,filtercut,atm_label,spp) 
 
         use basis_specs, only:  restricted_grid
+        use atm_types, only: species_info
 C
 C Calculates the filteret basis set, using the PAO filtering routines
 C from Soler and Anglada. 
@@ -3363,6 +3360,7 @@ C
      .    qyuk(0:lmaxd,nsemx), 
      .    split_norm(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
           character(len=*) atm_label
+        type(species_info), intent(inout)  :: spp
 
 
         integer
@@ -3777,10 +3775,10 @@ C
                   norb = norb + (2*l+1)
                   indx = indx + 1
 
-                  call comBasis(is,a,b,rofi,g,l,
+                  call comBasis_spp(is,a,b,rofi,g,l,
      .                          rco(nzeta(l,nsm),l,nsm),
      .                          lambda(nzeta(l,nsm),l,nsm),
-     .                          filtercut(l,nsm),izeta,nsm,nrc,indx)
+     .                          filtercut(l,nsm),izeta,nsm,nrc,indx,spp)
                 endif
 
               enddo
@@ -3833,7 +3831,6 @@ C
      .    nrval, lmxo, is, iz, nzeta(0:lmaxd,nsemx),
      .    norb, nsemic(0:lmaxd)
         type(species_info), intent(inout)  :: spp
-
 C
 C Internal variables
 C
@@ -4396,9 +4393,10 @@ C
      .                   nrval,lmxo,nsemic,
      .                   nzeta,rco,lambda, 
      .                   rphi, ePAO, norb,
-     .                   filtercut) 
+     .                   filtercut, spp) 
 
         use basis_specs, only: restricted_grid
+        use atm_types, only: species_info
 C
 C Calculates the atomic orbitals basis set, using the option NODES
 C for the generation of the augmentation orbitals.
@@ -4420,7 +4418,7 @@ C
         integer
      .    nrval, lmxo, is, nzeta(0:lmaxd,nsemx),
      .    norb,nsemic(0:lmaxd)
-
+        type(species_info), intent(inout)  :: spp
 C
 C Internal variables
 C
@@ -4611,9 +4609,9 @@ C
 
                 norb=norb+(2*l+1)
                 indx=indx+1
-                call comBasis(is,a,b,rofi,g,l,
+                call comBasis_spp(is,a,b,rofi,g,l,
      .                rco(izeta,l,nsm),lambda(izeta,l,nsm),
-     .                filtercut(l,nsm),izeta,nsm,nrc,indx)
+     .                filtercut(l,nsm),izeta,nsm,nrc,indx,spp)
 
 
               enddo 
@@ -4633,10 +4631,10 @@ C
      .                     nrval,lmxo,nsemic,
      .                     nzeta,rco,lambda, 
      .                     rphi, ePAO, norb,
-     .                     filtercut) 
+     .                     filtercut, spp) 
 
         use basis_specs, only: restricted_grid
-
+        use atm_types, only: species_info
 C
 C Calculates the atomic orbitals basis set, using the option NONODES
 C for the generation of the augmentation orbitals.
@@ -4652,6 +4650,7 @@ C
      .    rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx, 0:lmaxd,nsemx), Zval,vePAO(nrmax),
      .    ePAO(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
+        type(species_info), intent(inout)  :: spp
 
         integer
      .    nrval, lmxo,  is, nzeta(0:lmaxd,nsemx),
@@ -4855,9 +4854,9 @@ C
 
                 norb=norb+(2*l+1)
                 indx=indx+1
-                call comBasis(is,a,b,rofi,g,l,rco(izeta,l,nsm),
+                call comBasis_spp(is,a,b,rofi,g,l,rco(izeta,l,nsm),
      .                        lambda(izeta,l,nsm),filtercut(l,nsm),
-     .                        izeta,nsm,nrc,indx)
+     .                        izeta,nsm,nrc,indx,spp)
 
               enddo 
 
@@ -4869,87 +4868,7 @@ C
         enddo 
       
         end subroutine nonodes
-
 !
-        subroutine comBasis(is,a,b,rofi,rphi,l,rc,
-     .                      lambda,filtercut,nzeta,
-     .                      nsemic,nrc,norb)
-C 
-C  Generates the common blocks for the storage of the information 
-C  about the basis set orbitals.
-C
-C  Written by D. Sanchez-Portal, Aug. 1998.
-C 
-
-        implicit none
-
-        integer l, is, norb, nrc, nzeta, nsemic
-
-        real(dp) rc, lambda, filtercut, rphi(nrmax), a, b, rofi(nrmax)  
-C
-C  Internal variables
-C
-        integer itb, nr, nmax, nmin, nn
-        
-        real(dp) delt, r, phi, dy, yp1, ypn
-             
-C
-C  Number of points used by polint for the interpolation
-C
-        integer npoint
-        parameter(npoint=4)
-C
-        rcotb(nzeta,l,nsemic,is) = rc
-        lambdatb(nzeta,l,nsemic,is) = lambda
-        filtercuttb(l,nsemic,is) = filtercut
-C
-C  Interpolation to generate tables
-C
-        delt=rc/(dble(ntbmax-1)+1.0d-20) 
-  
-        if (delt.gt.deltmax) then
-          write(6,'(a)')
-     .    'comBasis: WARNING It might be a good idea to increase'
-          write(6,'(a)')
-     .    'comBasis: WARNING parameter ntbmax (in file atmparams.f) '
-          write(6,'(a,i6)')
-     .    'comBasis: WARNING to at least ntbmax = ',
-     .    nint(Rc/deltmax)+2
-        endif
-!
-!  First two entries are used for other purposes...
-!
-        table(1,norb,is)=delt
-        table(2,norb,is)=dble(l)
-
-        do itb=1,ntbmax-1
-          r=delt*(itb-1)
-          r=r/lambda
-          nr=nint(log(r/b+1.0d0)/a)+1
-          nmin=max(1,nr-npoint)
-          nmax=min(nrc,nr+npoint)
-          nn=nmax-nmin+1
-          call polint(rofi(nmin),rphi(nmin),nn,r,phi,dy)
-          phi=phi/sqrt(lambda**(2*l+3))
-          table(itb+2,norb,is)=phi
-        enddo
-!
-!  Why do we stop in ntbmax-1 ??
-!!  If we use the next statement, the last few elements of
-!!  tab2 will be *very* wrong!!! (use dump_atom)
-!!  In other places of the program, it is set to zero, as in (2)
-!!!!!  table(ntbmax+2,norb,is) = table(ntbmax+1,norb,is)  !AG
-        table(ntbmax+2,norb,is) = 0.0d0
-!!  Either way, it looks quite arbitrary
-!!
-C Table with the second derivative 
-
-        yp1=0.0d0
-        ypn=huge(1.d0)
-        call spline(delt, table(3:2+ntbmax,norb,is), ntbmax,
-     &              yp1, ypn, tab2(1:ntbmax,norb,is) )
-C
-        end subroutine comBasis
         subroutine comBasis_spp(is,a,b,rofi,rphi,l,rc,
      .                      lambda,filtercut,nzeta,
      .                      nsemic,nrc,norb,spp)
@@ -5047,9 +4966,10 @@ C
         subroutine SPLITGAUSS(Zval,is,a,b,rofi,drdi,s,
      .                        vps,ve,vePAO,nrval,lmxo,nsemic,
      .                        nzeta,rco,lambda,rphi,ePAO,norb,
-     .                        filtercut) 
+     .                        filtercut,spp) 
 
         use basis_specs, only: restricted_grid
+        use atm_types, only: species_info
 C
 C Calculates the atomic orbitals basis set, using the option SPLITGAUSS
 C for the generation of the augmentation orbitals.
@@ -5064,6 +4984,7 @@ C
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx, 0:lmaxd,nsemx), Zval,vePAO(nrmax),
      .    ePAO(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
+        type(species_info), intent(inout)  :: spp
 
         integer
      .    nrval, lmxo, is, nzeta(0:lmaxd,nsemx),
@@ -5328,9 +5249,9 @@ C
 
                 norb=norb+(2*l+1)
                 indx=indx+1
-                call comBasis(is,a,b,rofi,g,l,
+                call comBasis_spp(is,a,b,rofi,g,l,
      .                        rco(izeta,l,nsm),lambda(izeta,l,nsm),
-     .                        filtercut(l,nsm),izeta,nsm,nrc,indx)
+     .                        filtercut(l,nsm),izeta,nsm,nrc,indx,spp)
 
               enddo 
                
@@ -6131,7 +6052,7 @@ C
      .                             rco,vps,ve,polorb,lmxo,nsemic,
      .                             norb,rinn,vcte,
      .                             qcoe, qyuk, qwid, nrval,
-     .                             split_norm,filtercut,atm_label)
+     .                             split_norm,filtercut,atm_label,spp)
 C
 C Calculates the polarization orbitals for the basis set augmentation.
 C This version uses filterets to create the basis functions. In this
@@ -6142,6 +6063,8 @@ C
 C Based on POLgen by D. Sanchez-Portal, Aug. 1998.
 C Modified by J.D. Gale, Sept. 2009
 C
+        use atm_types, only: species_info
+        
         implicit none
 
         real(dp)
@@ -6157,6 +6080,7 @@ C
      .    filtercut(0:lmaxd,nsemx)
 
         character(len=*) atm_label
+        type(species_info), intent(inout)  :: spp
 
         integer
      .    lmxo, is, iz, norb, polorb(0:lmaxd,nsemx), 
@@ -6369,9 +6293,9 @@ C
                   norb = norb + (2*(l+1)+1)
                   indx = indx + 1
 
-                  call comPOL(is,a,b,rofi,g,l,nsm,
+                  call comPOL_spp(is,a,b,rofi,g,l,nsm,
      .                        rcpol(polorb(l,nsm),l,nsm),
-     .                        ipol,nrc,indx)
+     .                        ipol,nrc,indx,spp)
                 endif
 
               enddo 
@@ -6388,7 +6312,7 @@ C
      .                             rco,vps,ve,polorb,lmxo,nsemic,
      .                             norb,rinn,vcte,
      .                             qcoe,qyuk,qwid,nrval,
-     .                             split_norm,filtercut,atm_label)
+     .                             split_norm,filtercut,atm_label,spp)
 C
 C Calculates the polarization orbitals for the basis set augmentation.
 C This version uses filterets to create the basis functions. In this
@@ -6399,6 +6323,8 @@ C
 C Based on POLgen by D. Sanchez-Portal, Aug. 1998.
 C Modified by J.D. Gale, Sept. 2009
 C
+        use atm_types, only: species_info
+
         implicit none
 
         real(dp)
@@ -6414,6 +6340,7 @@ C
      .    filtercut(0:lmaxd,nsemx)
 
         character(len=*) atm_label
+        type(species_info), intent(inout)  :: spp
 
         integer
      .    lmxo, is, iz, norb, polorb(0:lmaxd,nsemx), 
@@ -6752,9 +6679,9 @@ C
                   norb = norb + (2*(l+1)+1)
                   indx = indx + 1
 
-                  call comPOL(is,a,b,rofi,g,l,nsm,
+                  call comPOL_spp(is,a,b,rofi,g,l,nsm,
      .                        rcpol(polorb(l,nsm),l,nsm),
-     .                        ipol,nrc,indx)
+     .                        ipol,nrc,indx,spp)
                 endif
 
               enddo 
@@ -6770,71 +6697,6 @@ C
       
         end subroutine POLgen_filteret_new
 
-        subroutine comPOL(is,a,b,rofi,rphi,l,nsm,rc,ipol,nrc,norb)
-C
-C Generates the common block with the information about the polarization
-C orbitals.
-C  Written by D. Sanchez-Portal, Aug. 1998.
-C  Modify by DSP, July 1999
-C
-        implicit none
-
-        integer l, is, norb, nrc, ipol, nsm
-
-        real(dp) rc, rphi(nrmax), a, b, rofi(nrmax)  
-C
-C Internal variables
-C
-        integer itb, nr, nmax, nmin, nn
-        
-        real(dp) delt, r, phi, dy, yp1, ypn
-C
-C Number of points used by polint for the interpolation
-C
-        integer npoint
-        parameter(npoint=4)
-C
-        rcpoltb(ipol,l,nsm,is) = rc
-C
-C Interpolation to generate tables with KB projectors
-C
-        delt=rc/(dble(ntbmax-1)+1.0d-20) 
-
-        if (delt.gt.deltmax) then
-          write(6,'(a)')
-     .      'comPOL: WARNING It might be a good idea to increase'
-          write(6,'(a)')
-     .      'comPOL: WARNING parameter ntbmax (in file atmparams.f)'
-          write(6,'(a,i6)')
-     .      'comPOL: WARNING to at least ntbmax = ',
-     .    nint(Rc/deltmax)+2
-        endif
-
-        tabpol(1,norb,is) = delt
-        tabpol(2,norb,is) = dble(l)
-
-        do itb = 1,ntbmax-1
-          r = delt*(itb-1)
-          nr = nint(log(r/b+1.0_dp)/a) + 1
-          nmin = max(1,nr-npoint)
-          nmax = min(nrc,nr+npoint)
-          nn = nmax - nmin + 1
-          call polint(rofi(nmin),rphi(nmin),nn,r,phi,dy)
-          tabpol(itb+2,norb,is) = phi 
-        enddo
-        tabpol(ntbmax+2,norb,is) = 0.0_dp
-                       
-C
-C Table with the second derivative
-C
-        yp1 = 0.0_dp
-        ypn = huge(1.0_dp)
-
-        call spline(delt, tabpol(3:2+ntbmax,norb,is), ntbmax,
-     &              yp1, ypn, tab2pol(1:ntbmax,norb,is) )
-        
-        end subroutine compol
-      
         subroutine comPOL_spp(is,a,b,rofi,rphi,l,nsm,rc,ipol,nrc,norb,
      $                        spp)
 C
@@ -6967,9 +6829,10 @@ C
 !
         subroutine BESSEL(is,a,b,rofi,drdi,s,lmxo,
      .                    nzeta,rco,lambda,filtercut,
-     .                    norb) 
+     .                    norb,spp) 
 
         use basis_specs, only: restricted_grid
+        use atm_types, only: species_info, maxnorbs, maxn_orbnl
 C
 C  Calculates Bessel functions as a floating basis
 C  Written by D. Sanchez-Portal, Aug. 1998.
@@ -6984,6 +6847,8 @@ C
      .    lambda(nzetmx, 0:lmaxd,nsemx),
      .    filtercut(0:lmaxd,nsemx)
 
+        type(species_info), intent(inout)  :: spp
+        integer :: norb_tot, norb_nl, nsm
 
         integer
      .    lmxo, is, nzeta(0:lmaxd,nsemx), norb
@@ -6998,6 +6863,33 @@ C
      .    g(nrmax), eorb, eps
 
         real(dp) :: v(nrmax)=0.0d0
+
+        ! We need this since this routine is not dispatched
+        ! through 'basis_gen'
+        ! Compute total number of orbitals
+        norb_tot = 0
+        norb_nl = 0
+        spp%lmax_basis = lmxo
+        do l = 0, lmxo
+           !     do nsm = 1,nsemic(l)+1 -- nsemic=0 
+           do nsm = 1, 1   
+              norb_tot = norb_tot + (2*l+1)*nzeta(l,nsm) 
+              norb_nl = norb_nl + nzeta(l,nsm) 
+              ! No polarization orbs
+           enddo
+        enddo
+
+        if (norb_nl > maxn_orbnl) then
+           call die("Increase maxn_orbnl in atm_types")
+        endif
+        if (norb_tot > maxnorbs) then
+           call die("Increase maxnorbs in atm_types")
+        endif
+
+        ! Set to zero to start the buildup in combasis_spp
+        spp%norbs = 0
+        spp%n_orbnl = 0 
+        allocate(spp%orbnl(norb_nl))
 
         norb=0 
         indx=0
@@ -7071,9 +6963,9 @@ C
 
               norb=norb+(2*l+1)
               indx=indx+1
-              call comBasis(is,a,b,rofi,g,l,
+              call comBasis_spp(is,a,b,rofi,g,l,
      .           rco(izeta,l,1),lambda(izeta,l,1),
-     .           filtercut(l,1),izeta,1,nrc,indx)
+     .           filtercut(l,1),izeta,1,nrc,indx,spp)
 
             enddo 
         
