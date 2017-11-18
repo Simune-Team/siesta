@@ -17,14 +17,13 @@ C     chemical species present in the calculation.
       use precision, only: dp
       use sys
       use atmparams, only: nzetmx, lmaxd, nsemx
-      use atmparams, only: maxos, nkbmx, ntbmax
+      use atmparams, only: maxos
       use alloc,     only: re_alloc, de_alloc
       implicit none 
 
       integer,  save, public     ::  nsmax            
 
       integer,  public, pointer  ::  izsave(:)          
-      integer,  public, pointer  ::  nomax(:)           
 
       integer,  public, pointer  ::  lmxosave(:)        
       integer,  public, pointer  ::  npolorbsave(:,:,:) 
@@ -51,8 +50,7 @@ C     chemical species present in the calculation.
 
 !     Public routines
       public :: labelfis, izofis, zvalfis
-      public :: massfis, lomaxfis, nofis
-      public :: cnfigfio, lofio, mofio
+      public :: massfis
       public :: clear_tables, allocate_old_arrays
       public :: deallocate_old_arrays
 
@@ -115,9 +113,6 @@ C     chemical species present in the calculation.
       nullify( nzetasave )
       call re_alloc( nzetasave, 0, lmaxd, 1, nsemx, 1, nsmax,
      &               'nzetasave', 'old_atmfuncs' )
-      !allocate(nomax(nsmax))
-      nullify( nomax )
-      call re_alloc( nomax, 1, nsmax, 'nomax', 'old_atmfuncs' )
 
       !allocate(zvaltb(nsmax))
       nullify( zvaltb )
@@ -156,7 +151,6 @@ C     chemical species present in the calculation.
       call de_alloc( npolorbsave, 'npolorbsave', 'old_atmfuncs' )
       call de_alloc( nsemicsave,  'nsemicsave',  'old_atmfuncs' )
       call de_alloc( nzetasave,   'nzetasave',   'old_atmfuncs' )
-      call de_alloc( nomax,       'nomax',       'old_atmfuncs' )
       call de_alloc( zvaltb,      'zvaltb',      'old_atmfuncs' )
       call de_alloc( cnfigtb,     'cnfigtb',     'old_atmfuncs' )
       call de_alloc( semicsave,   'semicsave',   'old_atmfuncs' )
@@ -175,7 +169,6 @@ C     chemical species present in the calculation.
         izsave(is)=0
         lmxosave(is)=0
         label_save(is)='  '
-        nomax(is)=0  
         semicsave(is)=.false.
               
         nsemicsave(:,is) = 0
@@ -228,23 +221,6 @@ C     chemical species present in the calculation.
       labelfis=label_save(is)
       end function labelfis
 !
-      FUNCTION LOMAXFIS (IS)
-      integer :: lomaxfis  ! Maximum ang mom of the Basis Functions
-      integer, intent(in) :: is            ! Species index
-
-      integer lmx, nsm
-
-      call check_is('lomaxfis',is)
-
-      lomaxfis=0           
-      lmx=lmxosave(is)
-      do nsm=1,nsemicsave(lmx,is)+1
-         if(npolorbsave(lmx,nsm,is).gt.0)   lomaxfis=lmx+1
-      enddo     
-      
-      lomaxfis=max(lomaxfis,lmx)
-      end function lomaxfis
-!
 
       FUNCTION MASSFIS(IS)
       real(dp) :: massfis            ! Mass
@@ -253,193 +229,7 @@ C     chemical species present in the calculation.
       call check_is('massfis',is)
       massfis=smasstb(is)
       end function massfis
-!
-      FUNCTION NOFIS(IS)
-      integer :: nofis    ! Total number of Basis functions
-      integer, intent(in) :: is            ! Species index
-
-      call check_is('nofis',is)
-      nofis=nomax(is)
-      end function nofis
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AMENoFIS
-!
-!
-      FUNCTION CNFIGFIO(IS,IO)
-      integer cnfigfio
-      integer, intent(in) :: is    ! Species index
-      integer, intent(in) :: io    ! Orbital index (within atom)
-
-C Returns the valence-shell configuration in the atomic ground state
-C (i.e. the principal quatum number for orbitals of angular momentum l)
-
-C   INTEGER CNFIGFIO: Principal quantum number of the shell to what 
-C                     the orbital belongs ( for polarization orbitals
-C                     the quantum number corresponds to the shell which
-C                     is polarized by the orbital io) 
-
-      integer l, norb, lorb, izeta, ipol,nsm
-      integer  indx, nsmorb
-
-C
-      call check_is('cnfigfio',is)
-      if ((io.gt.nomax(is)).or.(io.lt.1)) then
-            write(6,*) 'CNFIGFIO: THERE ARE NO DATA FOR IO=',IO
-            write(6,*) 'CNFIGFIO: IOMIN= 1',
-     .           ' IOMAX= ',nomax(is)
-         call die()
-      endif
-
-        norb=0
-        indx=0
-        do 10 l=0,lmxosave(is)
-         do 8 nsm=1,nsemicsave(l,is)+1
-          do 5 izeta=1,nzetasave(l,nsm,is)
-            norb=norb+(2*l+1)
-            indx=indx+1
-            if(norb.ge.io) goto 30
- 5        continue
- 8       continue
-10      continue
-
-        indx=0
-        do  20 l=0,lmxosave(is)
-          do 18 nsm=1,nsemicsave(l,is)+1
-            do 15 ipol=1, npolorbsave(l,nsm,is)
-              norb=norb+(2*(l+1)+1)
-              indx=indx+1
-              if(norb.ge.io) goto 40
-15          continue
-18        continue
-20      continue
-           write(6,*) 'CNFIGFIO: ERROR: ORBITAL INDEX IO=',IO
-           write(6,*) 'CNFIGFIO: ERROR: NOT FOUND'
-        call die()
-
-30      lorb=l
-        nsmorb=nsm
-        cnfigfio=cnfigtb(lorb,nsmorb,is)
-        return
-
-40      lorb=l
-        nsmorb=nsm
-        cnfigfio=cnfigtb(lorb,nsmorb,is)  
-        return
-
-      end function cnfigfio
-!
-!
-      FUNCTION LOFIO (IS,IO)
-      integer lofio
-      integer, intent(in) :: is    ! Species index
-      integer, intent(in) :: io    ! Orbital index (within atom)
-
-C Returns total angular momentum quantum number of a given atomic basis
-C orbital
-
-C    INTEGER  IO   : Orbital index (within atom)
-C                    IO > 0 => Basis orbitals
-C************************OUTPUT*****************************************
-C   INTEGER LOFIO  : Quantum number L of orbital or KB projector
-
-      integer l, norb, izeta, ipol, nkb, nsm
-
-      call check_is('lofio',is)
-      if ((io.gt.nomax(is)).or.(io.lt.1)) then 
-            write(6,*) 'LOFIO: THERE ARE NO DATA FOR IO=',IO
-            write(6,*) 'LOFIO: IOMIN= ',1,
-     .           ' IOMAX= ',nomax(is)
-         CALL DIE
-      endif
- 
-        norb=0
-        do 10 l=0,lmxosave(is)
-          do 8 nsm=1,nsemicsave(l,is)+1
-            do 5 izeta=1,nzetasave(l,nsm,is)
-              norb=norb+(2*l+1)
-              if(norb.ge.io) goto 30
- 5          continue
- 8        continue
-10      continue
-
-        do  20 l=0,lmxosave(is)
-          do 18 nsm=1,nsemicsave(l,is)+1
-            do 15 ipol=1, npolorbsave(l,nsm,is)
-              norb=norb+(2*(l+1)+1)
-              if(norb.ge.io) goto 40
-15          continue
-18        continue
-20      continue
-          write(6,*) 'LOFIO: ERROR: ORBITAL INDEX IO=',IO
-          write(6,*) 'LOFIO: ERROR: NOT FOUND'
-        call die
-
-30      lofio=l
-        return
-
-40      lofio=l+1
-        return
-
-      end  function lofio
-!
-!
-      FUNCTION MOFIO (IS,IO)
-      integer mofio
-      integer, intent(in) :: is    ! Species index
-      integer, intent(in) :: io    ! Orbital index (within atom)
-
-C Returns magnetic quantum number of a given atomic basis
-C   basis orbital or Kleynman-Bylander projector.
-
-C    INTEGER  IO   : Orbital index (within atom)
-C                    IO > 0 => Basis orbitals
-C************************OUTPUT*****************************************
-C   INTEGER MOFIO  : Quantum number M of orbital
-
-      integer l, norb, izeta, ipol, nkb, lorb, lkb, nsm
-
-      call check_is('mofio',is)
-      if((io.gt.nomax(is)).or.(io.lt.1)) then
-            write(6,*) 'MOFIO: THERE ARE NO DATA FOR IO=',IO
-            write(6,*) 'MOFIO: IOMIN= ',1,
-     .           ' IOMAX= ',nomax(is)
-         CALL DIE
-      endif
-
-        norb=0
-        do 10 l=0,lmxosave(is)
-          do 8 nsm=1,nsemicsave(l,is)+1
-            do 5 izeta=1,nzetasave(l,nsm,is)
-              norb=norb+(2*l+1)
-              if(norb.ge.io) goto 30
- 5          continue
- 8        continue
-10      continue 
-
-        do  20 l=0,lmxosave(is)
-          do 18 nsm=1,nsemicsave(l,is)+1
-            do 15 ipol=1, npolorbsave(l,nsm,is)
-              norb=norb+(2*(l+1)+1)
-              if(norb.ge.io) goto 40
-15          continue
-18        continue
-20      continue
-        write(6,*) 'MOFIO: ERROR: ORBITAL INDEX IO=',IO
-        write(6,*) 'MOFIO: ERROR: NOT FOUND'
-        call die()
-
-30      lorb=l 
-        mofio=io-norb+lorb
-        return
-
-40      lorb=l+1 
-        mofio=io-norb+lorb
-        return
-        
-      end function mofio
-!
-
-!  End of FIOs 
-!
 
       end module old_atmfuncs
