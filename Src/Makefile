@@ -112,7 +112,7 @@ OBJS =  automatic_cell.o atom_options.o \
         siesta_analysis.o siesta_end.o siesta_forces.o \
 	siesta_tddft.o \
         io.o sparse_matrices.o \
-        coor.o atm_transfer.o \
+        coor.o \
         broadcast_basis.o eggbox.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
         initparallel.o show_distribution.o setspatial.o setatomnodes.o uncell.o \
@@ -548,7 +548,6 @@ amn.o: alloc.o atmfuncs.o atomlist.o m_orderbands.o m_trialorbitalclass.o
 amn.o: matel_registry.o mneighb.o new_matel.o parallel.o parallelsubs.o
 amn.o: precision.o siesta2wannier90.o siesta_geom.o sys.o
 arw.o: alloc.o parallel.o precision.o sys.o
-atm_transfer.o: ldau_specs.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atm_types.o atmparams.o atom_options.o basis_specs.o basis_types.o

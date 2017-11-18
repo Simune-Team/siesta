@@ -49,7 +49,7 @@
       use atom_options, only: get_atom_options
       use ldau_specs, only: read_ldau_specs
       use ldau_specs, only: ldau_proj_gen
-
+      use ldau_specs, only: populate_species_info_ldau
       use pseudopotential, only: pseudo_read
     
       use chemical
@@ -67,8 +67,6 @@
       type(basis_def_t),   pointer :: basp
 
       type(species_info),  pointer :: spp
-
-      external atm_transfer
 
       call get_atom_options()
 
@@ -163,7 +161,7 @@
         call prinput(nsp)
 
 !       Create the new data structures for atmfuncs.
-        call atm_transfer()
+        call populate_species_info_ldau()
         call deallocate_old_arrays()
         call elec_corr_setup()
         ns = nsp               ! Set number of species for main program
