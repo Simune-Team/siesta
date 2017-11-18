@@ -56,7 +56,7 @@
 
       use m_spin, only: SpOrb
 
-      use atm_types, only: species, species_info
+      use atm_types, only: species, species_info, nspecies
       
       implicit none
       integer,         intent(out) :: ns   ! Number of species
@@ -125,17 +125,18 @@
       else
         ! We generate PAOs and KB projectors
 !       New routines in basis_specs and basis_types.
-        call read_basis_specs()
+        call read_basis_specs()  ! sets nsp (number of species)
         call basis_specs_transfer()
 
 !       Get the parameters for the generation of the LDA+U projectors
         call read_ldau_specs()
 
-        nsmax = nsp             !! For old_atmfuncs
+        nspecies = nsp              ! For atm_types module
+        nsmax = nsp                 ! For deprecated old_atmfuncs module
         call allocate_old_arrays()
         call clear_tables()
 
-        allocate(species(nsp))
+        allocate(species(nspecies))
         do is = 1,nsp
           call write_basis_specs(6,is)
           basp=>basis_parameters(is)

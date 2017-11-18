@@ -20,11 +20,10 @@
 !----------------------------------------------------------------
 !     old_atmfuncs arrays
 !
-      use old_atmfuncs, only: smasstb
-      use old_atmfuncs, only: zvaltb, chargesave
-      use old_atmfuncs, only: qtb, slfe
+      use old_atmfuncs, only: chargesave, izsave
+      use old_atmfuncs, only: qtb
       use old_atmfuncs, only: lmxosave, label_save
-      use old_atmfuncs, only: semicsave, izsave, cnfigtb
+      use old_atmfuncs, only: semicsave, cnfigtb
       use old_atmfuncs, only: nzetasave, nsemicsave
       use old_atmfuncs, only: npolorbsave, basistype_save
       use old_atmfuncs, only: lambdatb, rcotb, filtercuttb
@@ -294,16 +293,26 @@
      .      'atom: Called for Z=',iz,'( Floating Bessel functions)'  
 
         endif
-! 
-! 
-           
+!
+        spp%read_from_file = .false.
+        spp%label = atm_label
+        spp%z = iz
+        izsave(is) = iz              ! To record across species
+         if (spp%z.eq.-100) then
+            spp%symbol = 'BS'
+         else
+            ! The function 'symbol' knows how to deal
+            ! with (ghost) synthetics
+            spp%symbol = symbol(spp%z)
+         endif
+!           
         call new_specie(iz,lmxkb, nkbl, lmxo,
      .                  nzeta, atm_label,
      .                  npolorb, semic, nsemic, cnfigmx,
      .                  is, new, no, nkb) 
 ! 
         basistype_save(is) = basistype
-        smasstb(is) = smass
+        spp%mass = smass
 
         if (iz.ne.-100) then
 !
@@ -361,7 +370,7 @@ c    .          'atom: The above configuration will be used ',
 !  states in the valence shell.
 !  For example: Ba with 5s and 5p in the valence: zval=10 (5s2 5p6 6s2)
 ! 
-          zvaltb(is) = zval
+          spp%zval = zval
 
 ! IF IZ IS NEGATIVE WE WILL HAVE FLOATING ORBITALS IN THE ATOMIC POSITIONS
 ! IF IZ POSITIVE WE WILL HAVE REAL ATOMS
@@ -663,7 +672,7 @@ c    .          'atom: The above configuration will be used ',
 !  Calculation of the electrostatic self-energy oF the 
 !  local pseudopotential charge density 
 !
-            call slfe_local(slfe(is),vlocal,rofi,a,nVna,drdi) 
+            call slfe_local(spp%self_energy,vlocal,rofi,a,nVna,drdi) 
  
           elseif(flting.lt.0.0d0) then 
 
@@ -671,7 +680,7 @@ c    .          'atom: The above configuration will be used ',
             nVna=0
             call comVna_spp(is,a,b,rofi,vlocal,nVna,flting,spp)
 ! Zero self-energy for the local pseudopotential charge
-            slfe(is)=0.0d0
+            spp%self_energy=0.0d0
           endif 
 ! 
 ! Common block with pseudocore information
@@ -685,7 +694,7 @@ c    .          'atom: The above configuration will be used ',
 ! only for floating orbs
           call set_mesh(a,b,rofi,drdi,s)
           flting=dsign(1.0d0,dble(iz)) 
-          zvaltb(is)=0.0_dp
+          spp%zval=0.0_dp
           chargesave(is) = 0.d0
 ! No core charge
           call comcore_spp(is,a,b,rofi,chcore,nrval,nicore,flting,spp) 
@@ -701,7 +710,7 @@ c    .          'atom: The above configuration will be used ',
           nVna = 0
           call comVna_spp(is,a,b,rofi,vlocal,nVna,flting,spp)
 ! Zero self-energy for the local pseudopotential charge
-          slfe(is) = 0.0d0
+          spp%self_energy = 0.0d0
 ! Calculate Bessel functions
           call Bessel(is,a,b,rofi,drdi,s,
      .                lmxo,nzeta,rco,lambda,filtercut,no,spp)
@@ -2621,7 +2630,6 @@ C
         endif
 
 
-        izsave(is)=iz
         lmxosave(is)=lmxo
         label_save(is)=atm_label
         semicsave(is)=semic   
