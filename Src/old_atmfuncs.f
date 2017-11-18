@@ -15,7 +15,6 @@ C     chemical species present in the calculation.
 !     structures.
 
       use precision, only: dp
-      use sys
       use atmparams, only: nzetmx, lmaxd, nsemx
       use atmparams, only: maxos
       use alloc,     only: re_alloc, de_alloc
@@ -34,9 +33,7 @@ C     chemical species present in the calculation.
       logical,  public, pointer  ::  semicsave(:)       
      
       real(dp), public, pointer  :: zvaltb(:)
-      real(dp), public, pointer  :: smasstb(:)
       real(dp), public, pointer  :: chargesave(:)
-      real(dp), public, pointer  :: slfe(:)
       real(dp), public, pointer  :: lambdatb(:,:,:,:)
       real(dp), public, pointer  :: filtercuttb(:,:,:)
 
@@ -49,8 +46,6 @@ C     chemical species present in the calculation.
       character(len=10), save, public, pointer :: basistype_save(:)  
 
 !     Public routines
-      public :: labelfis, izofis, zvalfis
-      public :: massfis
       public :: clear_tables, allocate_old_arrays
       public :: deallocate_old_arrays
 
@@ -82,13 +77,7 @@ C     chemical species present in the calculation.
       nullify( qtb )
       call re_alloc( qtb, 1, maxos, 1, nsmax,
      &               'qtb', 'old_atmfuncs' )
-      !allocate(slfe(nsmax))
-      nullify( slfe )
-      call re_alloc( slfe, 1, nsmax, 'slfe', 'old_atmfuncs' )
 
-      !allocate(smasstb(nsmax))
-      nullify( smasstb )
-      call re_alloc( smasstb, 1, nsmax, 'smasstb', 'old_atmfuncs' )
       !allocate(chargesave(nsmax))
       nullify( chargesave )
       call re_alloc( chargesave, 1, nsmax,
@@ -143,8 +132,6 @@ C     chemical species present in the calculation.
       call de_alloc( lambdatb,    'lambdatb',    'old_atmfuncs' )
       call de_alloc( filtercuttb, 'filtercuttb', 'old_atmfuncs' )
       call de_alloc( qtb,         'qtb',         'old_atmfuncs' )
-      call de_alloc( slfe,        'slfe',        'old_atmfuncs' )
-      call de_alloc( smasstb,     'smasstb',     'old_atmfuncs' )
       call de_alloc( chargesave,  'chargesave',  'old_atmfuncs' )
       call de_alloc( izsave,      'izsave',      'old_atmfuncs' )
       call de_alloc( lmxosave,    'lmxosave',    'old_atmfuncs' )
@@ -182,54 +169,5 @@ C     chemical species present in the calculation.
 
       enddo 
       end subroutine clear_tables
-
-      subroutine check_is(name,is)
-      character(len=*), intent(in) :: name
-      integer, intent(in) :: is
-
-      if ((is.lt.1).or.(is.gt.nsmax)) then 
-            write(6,*) trim(name),': THERE ARE NO DATA FOR IS=',IS
-            write(6,*) trim(name),': ISMIN= 1, NSMAX= ',nsmax
-         call die()
-      endif
-      end subroutine check_is
-!
-!
-      FUNCTION IZOFIS( IS )
-      integer :: izofis ! Atomic number
-      integer, intent(in) :: is ! Species index
-
-      call check_is('izofis',is)
-      izofis=izsave(is)
-
-      end function izofis
-!
-      FUNCTION ZVALFIS( IS )
-      real(dp) :: zvalfis          ! Valence charge
-      integer, intent(in) :: is            ! Species index
-
-      call check_is('zvalfis',is)
- 
-      zvalfis=zvaltb(is)
-      end function zvalfis
-!
-      FUNCTION LABELFIS (IS)
-      character(len=20) ::  labelfis  ! Atomic label
-      integer, intent(in) :: is            ! Species index
-
-      call check_is('labelfis',is)
-      labelfis=label_save(is)
-      end function labelfis
-!
-
-      FUNCTION MASSFIS(IS)
-      real(dp) :: massfis            ! Mass
-      integer, intent(in) :: is            ! Species index
-
-      call check_is('massfis',is)
-      massfis=smasstb(is)
-      end function massfis
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AMENoFIS
 
       end module old_atmfuncs

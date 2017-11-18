@@ -28,9 +28,6 @@
       use old_atmfuncs, only: npolorbsave, basistype_save
       use old_atmfuncs, only: lambdatb, rcotb, filtercuttb
 !
-!     old_atmfuncs procedures
-!
-      use old_atmfuncs, only: labelfis, izofis
 !----------------------------------------------------------------
       use periodic_table
       use basis_types, only: basis_def_t
@@ -7204,9 +7201,9 @@ C
         write(6,'(/a)') '%block ChemicalSpeciesLabel' 
         do is=1,ntotsp
           write(6,'(2(1x,i4),1x,2a)')
-     .      is,izofis(is),labelfis(is), 
+     .      is,izsave(is),label_save(is), 
      .      '    # Species index, atomic number, species label' 
-          if (abs(izofis(is)) > 200) synthetic_atoms = .true.
+          if (abs(izsave(is)) > 200) synthetic_atoms = .true.
         enddo 
         write(6,'(a)')
      .    '%endblock ChemicalSpeciesLabel' 
@@ -7219,7 +7216,7 @@ C
      .      '%block SyntheticAtoms   # Valence config'
 
           do is=1,ntotsp
-            if (abs(izofis(is)) < 200) cycle
+            if (abs(izsave(is)) < 200) cycle
             gs => basis_parameters(is)%ground_state
             write(6,"(i3)") is
             do i = 0, 3
@@ -7250,11 +7247,11 @@ C
           if (basistype_save(is).eq.basistype) then  
             if (abs(chargesave(is)).lt.1.0d-4) then 
               write(6,'(a,1x,i2,20x,a)')
-     .          labelfis(is), nshell,
+     .          label_save(is), nshell,
      .          '# Species label, number of l-shells'
             else
               write(6,'(a,1x,i2,1x,f7.3,12x,2a)')
-     .          labelfis(is), nshell, chargesave(is),
+     .          label_save(is), nshell, chargesave(is),
      .          '# Label, l-shells,',
      .          ' ionic net charge'
             endif 
@@ -7263,12 +7260,12 @@ C
 
             if (abs(chargesave(is)).lt.1.0d-4) then
               write(6,'(a,1x,i2,1x,a,10x,2a)')
-     .          labelfis(is), nshell, basistype_save(is), 
+     .          label_save(is), nshell, basistype_save(is), 
      .          '# Species label, l-shells,',
      .          ' basis type '
             else
               write(6,'(a,1x,i2,1x,a,1x,f7.3,1x,2a)')
-     .          labelfis(is), nshell, basistype_save(is),
+     .          label_save(is), nshell, basistype_save(is),
      .          chargesave(is),
      .          '# Label, l-shells, type,',
      .          ' ionic net charge'
@@ -7402,12 +7399,12 @@ c    .              ,'        # scaleFactor(izeta=1,Nzeta)'
             
        if (write_to_file) then
           write(filename,"(a,i1,a,i1,a,a)")
-     $         trim(labelfis(is)) // ".L", l, ".", nsm,
+     $         trim(label_save(is)) // ".L", l, ".", nsm,
      $         ".", "confpot"
           call io_assign(iu)
           open(unit=iu,file=filename,status='unknown')
           write(iu,'(2a)')
-     .         '# Soft confinement potential for ', labelfis(is)
+     .         '# Soft confinement potential for ', label_save(is)
           write(iu,'(a,2i3)')
      .         '#    Soft confinement for shell l, nsm = ',l, nsm
           write(iu,'(a,f10.4,a)')
