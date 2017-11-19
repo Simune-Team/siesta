@@ -1060,7 +1060,7 @@ contains
   end subroutine print_ts_options
 
 
-  subroutine print_ts_warnings( cell, na_u, xa, Nmove )
+  subroutine print_ts_warnings( Gamma, cell, na_u, xa, Nmove )
 
     use parallel, only: IONode, Nodes
     use intrinsic_missing, only : VNORM, VEC_PROJ_SCA
@@ -1084,6 +1084,7 @@ contains
     use m_ts_hartree, only: TS_HA_NONE, TS_HA_PLANE, TS_HA_ELEC, TS_HA_ELEC_BOX
 
     ! Input variables
+    logical, intent(in) :: Gamma
     real(dp), intent(in) :: cell(3,3)
     integer, intent(in) :: na_u
     real(dp), intent(in) :: xa(3,na_u)
@@ -1586,6 +1587,21 @@ contains
             &increases.','  TS.Elecs.DM.Update [cross-terms|all]'
        warn = .true.
     end if
+
+    ! Check that the pivoting table is unique
+    do iEl = 1, N_Elec
+       if ( sum(Elecs(iEl)%pvt) /= 6 .or. count(Elecs(iEl)%pvt==2) /= 1 ) then
+          write(*,'(a,/,a)') 'The pivoting table for the electrode unit-cell, &
+               &onto the simulation unit-cell is not unique: '//trim(Elecs(iEl)%name), &
+               '  Please check your electrode and device cell parameters.'
+          if ( .not. Gamma ) then
+             err = .true.
+          else
+             warn = .true.
+             write(*,'(a)') '  Combining this with electric fields or dipole-corrections is ill-adviced!'
+          end if
+       end if
+    end do
 
     write(*,'(3a,/)') repeat('*',24),' End: TS CHECKS AND WARNINGS ',repeat('*',26)
 

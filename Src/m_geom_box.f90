@@ -83,33 +83,25 @@ contains
   function P_voxel_box(ll,d,v,o) result(has)
     real(dp), intent(in) :: ll(3), d(3), v(3,3), o(3)
     logical :: has
-    integer :: ipiv(4)
-    real(dp) :: sys(3,4)
-    
+    real(dp) :: p(3), s(3)
+
     ! We need to check whether the bounds of the voxel
     ! lies within the plane...
     ! Thus we solve the linear equation:
     ! Ax=B
     ! where A = [v1,v2,v3] and B = ll+.5*d
     ! Move the point down to origo
-    sys(:,1:3) = v ! sys is overwritten on exit
-    sys(:,4) = ll + .5_dp * d - o
-    call dgesv(3,1,sys(1,1),3,ipiv,sys(1,4),3,ipiv(4))
-    if ( ipiv(4) /= 0 ) then
-       write(*,*) ' LAPACK-error: Could not solve the linear &
-            &equation for the voxel'
-       ! This should never happen as any point in space
-       ! should be reacheable by the vectors 
-       ! (we however, need that v1 and v2 are linearly 
-       ! independent)
-    end if
+    p = ll + .5_dp * d - o
+    s(1) = v(1,1)*p(1)+v(1,2)*p(2)+v(1,3)*p(3)
+    s(2) = v(2,1)*p(1)+v(2,2)*p(2)+v(2,3)*p(3)
+    s(3) = v(3,1)*p(1)+v(3,2)*p(2)+v(3,3)*p(3)
 
     ! We already know that it lies in the plane
     ! so now we need to ensure that it lies within
     ! the two spanning vectors plane...
-    has= 0._dp <= sys(1,4) .and. sys(1,4) <= 1.0_dp .and. &
-         0._dp <= sys(2,4) .and. sys(2,4) <= 1.0_dp .and. &
-         0._dp <= sys(3,4) .and. sys(3,4) <= 1.0_dp
+    has= 0._dp <= s(1) .and. s(1) <= 1.0_dp .and. &
+         0._dp <= s(2) .and. s(2) <= 1.0_dp .and. &
+         0._dp <= s(3) .and. s(3) <= 1.0_dp
 
   end function P_voxel_box
 
@@ -145,7 +137,8 @@ contains
     type(block_fdf)            :: bfdf
     type(parsed_line), pointer :: pline
     integer :: t, ip
-    real(dp) :: v
+    integer :: ipiv(3), info
+    real(dp) :: v, work(12)
 
     ! if none found, simply return
     if ( ngeom <= 0 ) return
@@ -201,6 +194,20 @@ contains
             &of the box geometry object')
        call fgeo_read_vals(pline,geom(ip)%v(:,3),units=.true.)
 
+       ! Calculate the inverse of v to faster make a solution
+       ! This will prevent lapack dgesv calls and rely on simple
+       ! vector products.
+       ! Although inverses are not as precise they should be
+       ! more than adequate in these situations.
+       call dgetrf(3,3,geom(ip)%v,3,ipiv,info)
+       if ( info /= 0 ) then
+          call die('Box geometry could not invert vectors')
+       end if
+       call dgetri(3,geom(ip)%v,3,ipiv,work,12,info)
+       if ( info /= 0 ) then
+          call die('Box geometry could not invert vectors')
+       end if
+       
     end do count_geom
 
   end subroutine fgeo_read_box_delta
