@@ -31,12 +31,12 @@ C
       use basis_types, only: basis_def_t, basis_parameters
       use basis_specs, only: read_basis_specs
       use basis_io
-      use old_atmfuncs, only : nsmax
-      use old_atmfuncs, only : clear_tables, allocate_old_arrays
 
       use atom,         only : atom_main, prinput
+      use atom, only: setup_atom_tables, remove_atom_tables
       use sys,          only : die
       use atom_options, only : get_atom_options, write_ion_plot_files
+      use atm_types, only: species, species_info, nspecies
 C
       implicit none
 
@@ -45,6 +45,7 @@ C
       character(len=50) filein
 
       type(basis_def_t), pointer   :: basp
+      type(species_info),  pointer :: spp
 
       external atm_transfer
 
@@ -68,16 +69,16 @@ c Reading input for the pseudopotentials and atomic orbitals
          call read_basis_specs()
          call basis_specs_transfer()
 
-         nsmax = nsp            ! For old_atmfuncs
-         call allocate_old_arrays
-         call clear_tables
+         call setup_atom_tables(nsp)
 
+         allocate(species(nsp))
          if (nsp .gt. 1)
      $        call die("gen-basis: JUST A SINGLE SPECIES ALLOWED...")
 
          do is = 1,nsp
             call write_basis_specs(6,is)
             basp=>basis_parameters(is)
+            spp=>species(is)
             call atom_main( iz(is), lmxkb(is),
      $           nkbl(0:,is), erefkb(1:,0:,is),lmxo(is),
      $           nzeta(0:,1:,is), rco(1:,0:,1:,is), 
@@ -90,14 +91,13 @@ c Reading input for the pseudopotentials and atomic orbitals
      &                    qyuk(0:,1:,is),
      &                    qwid(0:,1:,is),
      $                    split_norm(0:,1:,is),
-     &                    filtercut(0:,1:,is), basp)
+     &                    filtercut(0:,1:,is), basp,spp)
          enddo 
 
          call prinput(nsp)
+         call remove_atom_tables()
 
 !        Create the new data structures
-
-         call atm_transfer
 
          call dump_basis_ascii
          call dump_basis_netcdf
