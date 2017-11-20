@@ -659,7 +659,10 @@ c    .          'atom: The above configuration will be used ',
             endif
           endif
 ! 
-          if (flting.gt.0.0d0) then 
+          if (flting.gt.0.0d0) then
+!             
+!     Print initial populations for the atomic orbitals
+            call atm_pop_print(is,qPAO,lmxo,nsemic,basp)
 !
 ! Screening of the atomic local pseudopotential
 ! 
@@ -5412,22 +5415,39 @@ C Add a check on whether nsemx is large enough
         enddo      
         norb=noPAO+noPol 
 
-        lpop=min(3,lmxo)  
+!       Printing now done in atm_pop_print
+        
+        end subroutine atm_pop
+!
+        subroutine atm_pop_print(is,qPAO,lmxo,nsemic,basp)
+!       Just prints the populations of the atomic orbitals
+
+        implicit none
+
+        real(dp), intent(in) :: qPAO(0:lmaxd,nsemx)
+        integer, intent(in)  :: nsemic(0:lmaxd), lmxo , is
+
+        type(basis_def_t), intent(in)   :: basp
+
+C Internal variables
+
+        integer l, lpop, nsm, config(0:lmaxd), i
+        character*70  line
+
+        config(:) = 0
+        config(0:3) = basp%ground_state%n(0:3)
+
+        lpop=min(3,lmxo)
         write(6,'(/,2a)') 'atm_pop: Valence configuration',
-     .                    ' (for local Pseudopot. screening):' 
-        do l=0,lpop 
+     .                    ' (for local Pseudopot. screening):'
+        do l=0,lpop
           write(line,'(7(1x,i1,a1,a1,f5.2,a1))')
      .          (cnfigtb(l,nsm,is),sym(l),"(",qPAO(l,nsm),")",
      .       nsm=1,nsemic(l)+1-(cnfigtb(l,nsemic(l)+1,is)-config(l)))
           write(6,'(a)') line
- 
-c         write(6,*) 
-c    .         (cnfigtb(l,nsm,is),sym(l),'(',qPAO(l,nsm),')',
-c    .                                      nsm=1,nsemic(l)+1) 
         enddo
-
-        end subroutine atm_pop
-
+        end subroutine atm_pop_print
+!
         subroutine Vna(is,Zval,qPAO,rphi,rco,nsemic,vloc,
      .                 a,b,rofi,drdi,nrval,lmxo,nVna,spp) 
 C 

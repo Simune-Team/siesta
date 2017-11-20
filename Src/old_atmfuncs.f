@@ -40,7 +40,6 @@ C     chemical species present in the calculation.
       real(dp), public, pointer  :: qtb(:,:)
 
       real(dp), public, pointer  ::  rcotb(:,:,:,:)
-      real(dp), public, pointer  ::  rcpoltb(:,:,:,:)
 
       character(len=20), save, public, pointer :: label_save(:)
       character(len=10), save, public, pointer :: basistype_save(:)  
@@ -61,10 +60,6 @@ C     chemical species present in the calculation.
       call re_alloc( rcotb, 1, nzetmx, 0, lmaxd, 1, nsemx, 1, nsmax,
      &               'rcotb', 'old_atmfuncs' )
 
-      !allocate(rcpoltb(nzetmx,0:lmaxd,nsemx,nsmax))
-      nullify( rcpoltb )
-      call re_alloc( rcpoltb, 1, nzetmx, 0, lmaxd, 1, nsemx, 1, nsmax,
-     &               'rcpoltb', 'old_atmfuncs' )
       !allocate(lambdatb(nzetmx,0:lmaxd,nsemx,nsmax))
       nullify( lambdatb )
       call re_alloc( lambdatb, 1, nzetmx, 0, lmaxd, 1, nsemx,
@@ -128,7 +123,6 @@ C     chemical species present in the calculation.
       subroutine deallocate_old_arrays()
 
       call de_alloc( rcotb,       'rcotb',       'old_atmfuncs' )
-      call de_alloc( rcpoltb,     'rcpoltb',     'old_atmfuncs' )
       call de_alloc( lambdatb,    'lambdatb',    'old_atmfuncs' )
       call de_alloc( filtercuttb, 'filtercuttb', 'old_atmfuncs' )
       call de_alloc( qtb,         'qtb',         'old_atmfuncs' )
@@ -163,7 +157,6 @@ C     chemical species present in the calculation.
         rcotb(:,:,:,is) = 0.0_dp
         lambdatb(:,:,:,is) = 0.0_dp
         filtercuttb(:,:,is) = 0.0_dp
-        rcpoltb(:,:,:,is) = 0.0_dp
 
         qtb(1:maxos,is)=0.00_dp
 
