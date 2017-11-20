@@ -41,9 +41,8 @@
       use basis_io, only: dump_basis_ascii, dump_basis_netcdf
       use basis_io, only: dump_basis_xml
 
-      use old_atmfuncs, only: nsmax, allocate_old_arrays
-      use old_atmfuncs, only: clear_tables, deallocate_old_arrays
       use atom, only: atom_main, prinput
+      use atom, only: setup_atom_tables, remove_atom_tables
       use electrostatic, only: elec_corr_setup
       use atmparams, only: lmaxd, nkbmx, nsemx, nzetmx
       use atom_options, only: get_atom_options
@@ -64,8 +63,8 @@
       integer                      :: is
       logical                      :: user_basis, user_basis_netcdf
       logical :: req_init_setup
-      type(basis_def_t),   pointer :: basp
 
+      type(basis_def_t),   pointer :: basp
       type(species_info),  pointer :: spp
 
       call get_atom_options()
@@ -130,9 +129,7 @@
         call read_ldau_specs()
 
         nspecies = nsp              ! For atm_types module
-        nsmax = nsp                 ! For deprecated old_atmfuncs module
-        call allocate_old_arrays()
-        call clear_tables()
+        call setup_atom_tables(nsp)
 
         allocate(species(nspecies))
         do is = 1,nsp
@@ -162,7 +159,8 @@
 
 !       Create the new data structures for atmfuncs.
         call populate_species_info_ldau()
-        call deallocate_old_arrays()
+        
+        call remove_atom_tables()
         call elec_corr_setup()
         ns = nsp               ! Set number of species for main program
 
