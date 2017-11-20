@@ -41,30 +41,31 @@
       use basis_io, only: dump_basis_ascii, dump_basis_netcdf
       use basis_io, only: dump_basis_xml
 
-      use old_atmfuncs, only: nsmax, allocate_old_arrays
-      use old_atmfuncs, only: clear_tables, deallocate_old_arrays
       use atom, only: atom_main, prinput
+      use atom, only: setup_atom_tables, remove_atom_tables
       use electrostatic, only: elec_corr_setup
       use atmparams, only: lmaxd, nkbmx, nsemx, nzetmx
       use atom_options, only: get_atom_options
       use ldau_specs, only: read_ldau_specs
       use ldau_specs, only: ldau_proj_gen
-
+      use ldau_specs, only: populate_species_info_ldau
       use pseudopotential, only: pseudo_read
     
       use chemical
 
       use m_spin, only: SpOrb
 
+      use atm_types, only: species, species_info, nspecies
+      
       implicit none
       integer,         intent(out) :: ns   ! Number of species
 !     Internal variables ...................................................
       integer                      :: is
       logical                      :: user_basis, user_basis_netcdf
       logical :: req_init_setup
-      type(basis_def_t),   pointer :: basp
 
-      external atm_transfer
+      type(basis_def_t),   pointer :: basp
+      type(species_info),  pointer :: spp
 
       call get_atom_options()
 
@@ -97,6 +98,7 @@
       else if (user_basis) then
 
        if ( SpOrb ) then  
+          ! We still need to read the pseudopotential information
           write(6,'(a)') ' initatom: Spin configuration = spin-orbit'
           call read_chemical_types()
           nsp = number_of_species()
@@ -116,21 +118,24 @@
        write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
        call read_basis_ascii(ns)
        call elec_corr_setup()
+       
       else
+        ! We generate PAOs and KB projectors
 !       New routines in basis_specs and basis_types.
-        call read_basis_specs()
+        call read_basis_specs()  ! sets nsp (number of species)
         call basis_specs_transfer()
 
 !       Get the parameters for the generation of the LDA+U projectors
         call read_ldau_specs()
 
-        nsmax = nsp             !! For old_atmfuncs
-        call allocate_old_arrays()
-        call clear_tables()
+        nspecies = nsp              ! For atm_types module
+        call setup_atom_tables(nsp)
 
+        allocate(species(nspecies))
         do is = 1,nsp
           call write_basis_specs(6,is)
           basp=>basis_parameters(is)
+          spp => species(is)
           call ATOM_MAIN( iz(is), lmxkb(is), nkbl(0:lmaxd,is),
      &                    erefkb(1:nkbmx,0:lmaxd,is), lmxo(is),
      &                    nzeta(0:lmaxd,1:nsemx,is),
@@ -145,7 +150,7 @@
      &                    qyuk(0:lmaxd,1:nsemx,is),
      &                    qwid(0:lmaxd,1:nsemx,is),
      &                    split_norm(0:lmaxd,1:nsemx,is), 
-     &                    filtercut(0:lmaxd,1:nsemx,is), basp)
+     &                    filtercut(0:lmaxd,1:nsemx,is), basp, spp)
 !         Generate the projectors for the LDA+U simulations (if requested)
           call ldau_proj_gen(is)
         enddo 
@@ -153,8 +158,9 @@
         call prinput(nsp)
 
 !       Create the new data structures for atmfuncs.
-        call atm_transfer()
-        call deallocate_old_arrays()
+        call populate_species_info_ldau()
+        
+        call remove_atom_tables()
         call elec_corr_setup()
         ns = nsp               ! Set number of species for main program
 
