@@ -298,7 +298,7 @@ subroutine read_options( na, ns, nspin )
   ! SCF Loop parameters ...
   !     Minimum/Maximum number of SCF iterations
   min_nscf = fdf_get('MinSCFIterations',0)
-  nscf     = fdf_get('MaxSCFIterations',50)
+  nscf     = fdf_get('MaxSCFIterations',200)
   SCFMustConverge = fdf_get('SCFMustConverge', .false.)
   if (ionode) then
      write(6,4) 'redata: Min. number of SCF Iter',min_nscf

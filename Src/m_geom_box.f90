@@ -48,6 +48,9 @@ module m_geom_box
      ! The coordinate from which the plane is spanned
      ! by the three vectors v1, v2 and v3.
      ! The vectors which span the box
+     ! This is now the inverse of the box vectors,
+     ! i.e. we have v^{-1} to easy calculate x
+     !   v^{-1} x1 = x
      real(dp) :: v(3,3)
      ! The origin of the vectors spanning the box
      real(dp) :: c(3)

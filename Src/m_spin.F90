@@ -149,7 +149,7 @@ contains
     if ( spin%SO ) then
        opt = 'spin-orbit'
     else if ( spin%NCol ) then
-       opt = 'non-collinear'
+       opt = 'non-colinear'
     else if ( spin%Col ) then
        opt = 'collinear'
     else
@@ -168,12 +168,12 @@ contains
        spin%none = .true.
        
     else if ( leqi(opt, 'polarized') .or. &
-         leqi(opt, 'collinear') .or. &
+         leqi(opt, 'collinear') .or. leqi(opt, 'colinear') .or. &
          leqi(opt, 'polarised') .or. leqi(opt, 'P') ) then
        
        spin%Col = .true.
        
-    else if ( leqi(opt, 'non-collinear') .or. &
+    else if ( leqi(opt, 'non-collinear') .or. leqi(opt, 'non-colinear') .or. &
          leqi(opt, 'NC') .or. leqi(opt, 'N-C') ) then
        
        spin%NCol = .true.
