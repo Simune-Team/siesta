@@ -1801,7 +1801,7 @@ contains
     integer :: i, ios, ioe, off, n_s
     logical :: is_left, reduce_size
     logical :: zHS_allocated
-    logical :: same_k, calc_DOS, same_GS
+    logical :: same_k, calc_DOS
 
     ! Check input for what to do
     is_left = El%inf_dir == INF_NEGATIVE
@@ -1817,11 +1817,10 @@ contains
     nS     = nuo_E ** 2
     nuou_E = El%no_used
     nuS    = nuou_E ** 2
-    ! Whether we can store directly in the GS array
-    same_GS = nS == nuS
     ! create expansion k-points
     nq     = product(El%Bloch)
     ! We also need to invert to get the contribution in the
+    ! reduced region
     reduce_size = nuo_E /= nuou_E
     nuouT_E = TotUsedOrbs(El)
 
@@ -1850,10 +1849,10 @@ contains
     end if
 
     ! determine whether there is room enough
-    if ( same_GS ) then
-       size_req(1) = 4 * nS
-    else
+    if ( reduce_size ) then
        size_req(1) = 5 * nS
+    else
+       size_req(1) = 4 * nS
     end if
     if ( calc_DOS ) then
        size_req(2) = 9 * nS
@@ -1872,8 +1871,8 @@ contains
        i = i + nS
        S01 => in_zwork(i+1:i+nS)
        i = i + nS
-       if ( .not. same_GS ) then
-          GS  => in_zwork(i+1:i+nS)
+       if ( reduce_size ) then
+          GS => in_zwork(i+1:i+nS)
           i = i + nS
        end if
        zwork => in_zwork(i+1:nzwork)
@@ -1893,8 +1892,8 @@ contains
        i = i + nS
        S01 => zHS(i+1:i+nS)
        i = i + nS
-       if ( .not. same_GS ) then
-          GS  => zHS(i+1:i+nS)
+       if ( reduce_size ) then
+          GS => zHS(i+1:i+nS)
        end if
        
        ! the work-array fits the input work-array
@@ -1912,8 +1911,8 @@ contains
        i = i + nS
        S01 => in_zwork(i+1:i+nS)
        i = i + nS
-       if ( .not. same_GS ) then
-          GS  => in_zwork(i+1:i+nS)
+       if ( reduce_size ) then
+          GS => in_zwork(i+1:i+nS)
        end if
 
        call re_alloc(zHS,1,size_req(2),routine='next_GS')
@@ -1957,7 +1956,7 @@ contains
           call copy_over(is_left,nuo_E,S00,nuou_E,El%SA(:,:,iq),off)
        end if
 
-       if ( same_GS ) then
+       if ( .not. reduce_size ) then
           ! Instead of doing a copy, we store it directly
           GS => El%GA(ios:ioe)
        end if
@@ -1976,18 +1975,18 @@ contains
                final_invert = reduce_size)
        end if
 
-       if ( .not. same_GS ) then
+       if ( reduce_size ) then
           ! Copy over surface Green function
           ! first we need to determine the correct placement
           call copy_over(is_left,nuo_E,GS,nuou_E,El%GA(ios:ioe),off)
-       end if
 
-       ! we need to invert back as we don't need to
-       ! expand. And the algorithm expects it to be in correct format
-       if ( nq == 1 .and. reduce_size ) then
-          call mat_invert(El%GA(ios:ioe),zwork(1:nuS),&
-               nuou_E, &
-               MI_IN_PLACE_LAPACK)
+          ! we need to invert back as we don't need to
+          ! expand. And the algorithm expects it to be in correct format
+          if ( nq == 1 ) then
+             call mat_invert(El%GA(ios:ioe),zwork(1:nuS),&
+                  nuou_E, &
+                  MI_IN_PLACE_LAPACK)
+          end if
        end if
 
        ! correct indices of Gamma-array

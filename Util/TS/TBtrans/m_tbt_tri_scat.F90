@@ -107,8 +107,8 @@ contains
 
     ! Extract DOS by looping the sparse matrix
 
-    S  => val(S_1D)
     sp => spar(S_1D)
+    S => val(S_1D)
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
 !$OMP parallel do default(shared), private(br,io,lDOS,ind,bc,Gf)
@@ -119,7 +119,7 @@ contains
        lDOS = 0._dp
        do ind = l_ptr(io) + 1, l_ptr(io) + ncol(io)
           bc = pvt%r(l_col(ind))
-          if ( bc >= 1 ) then
+          if ( bc > 0 ) then
              call index_Gf(br, bc, Gf)
              lDOS = lDOS + dimag( Gf * S(ind) )
           end if
@@ -410,8 +410,8 @@ contains
     ! Get data arrays
     A => val(A_tri)
 
-    S  => val(S_1D)
     sp => spar(S_1D)
+    S => val(S_1D)
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
 !$OMP parallel do default(shared), private(br,io,lDOS,ind,bc,idx)
@@ -422,7 +422,7 @@ contains
        lDOS = 0._dp
        do ind = l_ptr(io) + 1, l_ptr(io) + ncol(io)
           bc = pvt%r(l_col(ind))
-          if ( bc >= 1 ) then
+          if ( bc > 0 ) then
              idx = index(A_tri, br, bc)
              lDOS = lDOS + dreal( A(idx) * S(ind) )
           end if
@@ -1440,7 +1440,7 @@ contains
     complex(dp), pointer :: S(:), Gf(:), Mnn(:), XY(:)
     integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
     integer :: off1, off2, n, in
-    integer :: jo, ii, i, j, no_o, no_i, ind, np
+    integer :: jo, i, j, no_o, no_i, ind, np
     real(dp) :: lDOS
 
 #ifdef TBTRANS_TIMING
@@ -1498,9 +1498,8 @@ contains
 
           end if
 
-!$OMP parallel do default(shared), private(j,ii,jo,ind,i,lcol,lDOS)
+!$OMP parallel do default(shared), private(j,jo,ind,i,lcol,lDOS)
           do j = 1 , no_o
-             ii = (j-1) * no_i
              jo = r%r(off2+j)
              lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
              ! get the equivalent one in the
@@ -1512,7 +1511,7 @@ contains
                 ind = SFIND(lcol,r%r(off1+i))
                 if ( ind == 0 ) cycle
                 ind = l_ptr(jo) + ind
-                lDOS = lDOS - dimag( Gf(ii+i) * S(ind) )
+                lDOS = lDOS - dimag( Gf(j+(i-1)*no_i) * S(ind) )
              end do
              DOS(off2+j) = DOS(off2+j) + lDOS / Pi
           end do
@@ -1548,7 +1547,7 @@ contains
     complex(dp), pointer :: S(:), A(:)
     integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
     integer :: off1, off2, n, in
-    integer :: jo, ii, i, j, no_o, no_i, ind, np
+    integer :: jo, i, j, no_o, no_i, ind, np
     real(dp) :: lDOS
 
 #ifdef TBTRANS_TIMING
@@ -1579,9 +1578,8 @@ contains
              off1 = off2
           end if
 
-!$OMP parallel do default(shared), private(j,ii,jo,ind,i,lcol,lDOS)
+!$OMP parallel do default(shared), private(j,jo,ind,i,lcol,lDOS)
           do j = 1 , no_o
-             ii = (j-1) * no_i
              jo = r%r(off2+j)
              lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
              ! get the equivalent one in the
@@ -1593,7 +1591,7 @@ contains
                 ind = SFIND(lcol,r%r(off1+i))
                 if ( ind == 0 ) cycle
                 ind = l_ptr(jo) + ind
-                lDOS = lDOS + dreal( A(ii+i) * S(ind) )
+                lDOS = lDOS + dreal( A(j+(i-1)*no_i) * S(ind) )
              end do
              DOS(off2+j) = DOS(off2+j) + lDOS / (2._dp * Pi)
           end do

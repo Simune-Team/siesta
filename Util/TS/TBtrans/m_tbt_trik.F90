@@ -1611,7 +1611,6 @@ contains
 !$OMP do 
     do iu = 1, r%n
        io = r%r(iu) ! get the orbital in the big sparsity pattern
-       if ( l_ncol(io) /= 0 ) then
           
        ! Loop over non-zero entries here
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
@@ -1619,17 +1618,17 @@ contains
           ju = pvt%r(l_col(ind))
           ! If it is zero, then *must* be electrode
           ! or fold down region.
-          if ( ju == 0 ) cycle
+          if ( ju > 0 ) then
           
-          ! Notice that we transpose back here...
-          ! See symmetrize_HS_kpt
-          idx = index(Gfinv_tri,ju,iu)
-          
-          GFinv(idx) = Z * S(ind) - H(ind)
+             ! Notice that we transpose back here...
+             ! See symmetrize_HS_kpt
+             idx = index(Gfinv_tri,ju,iu)
+             
+             GFinv(idx) = Z * S(ind) - H(ind)
+          end if
           
        end do
              
-       end if
     end do
 !$OMP end do nowait
 
