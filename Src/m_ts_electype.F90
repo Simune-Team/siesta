@@ -809,8 +809,8 @@ contains
     integer, intent(in) :: na_u
     real(dp), intent(in) :: xa(3,na_u)
     
-    real(dp) :: p(3), contrib
-    integer :: i, j, ia, na
+    real(dp) :: p(3), contrib, work(12)
+    integer :: i, j, ia, na, ipiv(3)
 
     ! First figure out the minimum bond-length
     ia = this%idx_a
@@ -840,12 +840,6 @@ contains
        end if
        
     end do
-    if ( sum(this%pvt) /= 6 .or. count(this%pvt==2) /= 1 ) then
-       print *, this%pvt
-       call die('The pivoting table for the electrode unit-cell, &
-            &onto the simulation unit-cell is not unique. &
-            &Please check your simulation cells.')
-    end if
     
     ! Create the basal plane of the electrode
     ! Decide which end of the electrode we use
@@ -931,6 +925,15 @@ contains
        this%box%v(:,i) = this%box%v(:,i) * contrib
     end if
 
+    call dgetrf(3,3,this%box%v,3,ipiv,i)
+    if ( i /= 0 ) then
+       call die('Electrode inversion of cell vectors failed')
+    end if
+    call dgetri(3,this%box%v,3,ipiv,work,12,i)
+    if ( i /= 0 ) then
+       call die('Electrode inversion of cell vectors failed')
+    end if
+    
   end subroutine init_Elec_sim
 
   ! Initialize variables for the electrode according
@@ -1192,14 +1195,6 @@ contains
        ldie = .true.
     end if
 
-    if ( sum(this%pvt) /= 6 .or. count(this%pvt==2) /= 1 ) then
-       write(*,'(tr2,i2)') this%pvt
-       ldie = .true.
-       write(*,'(a)')'The pivoting table for the electrode unit-cell, &
-            &onto the simulation unit-cell is not unique. &
-            &Please check your simulation cells.'
-    end if
-    
     if ( ldie ) then
        call die('Erroneous electrode setup, check out-put')
     end if
@@ -1378,12 +1373,18 @@ contains
     ! The minimum/maximum grid indices
     integer, intent(out) :: imin(3), imax(3)
 
-    real(dp) :: LHS(3,3), RHS(3)
+    real(dp) :: LHS(3,3), RHS(3), cell(3,3), contrib
     integer :: idx(3), i
 
     ! Initialize the indices
     imin = huge(1)
     imax = -huge(1)
+
+    contrib = real(this%na_used,dp) / real(this%na_u,dp)
+    i = this%t_dir
+    ! Scale semi-infinite direction
+    cell = this%cell
+    cell(:,i) = cell(:,i) * contrib
 
     call get_idx(0,0,0,imin,imax)
     call get_idx(1,0,0,imin,imax)
@@ -1417,9 +1418,9 @@ contains
       ! Copy the LHS
       LHS = dL
       ! Create RHS
-      RHS = this%box%c + this%box%v(:,1) * ix &
-           + this%box%v(:,2) * iy &
-           + this%box%v(:,3) * iz
+      RHS = this%box%c + cell(:,1) * ix &
+           + cell(:,2) * iy &
+           + cell(:,3) * iz
       
       ! Calculate pqosition in the grid
       call dgesv(3,1,LHS,3,idx,RHS,3,i)
@@ -2082,6 +2083,7 @@ contains
     character(len=*), intent(in) :: prefix
     logical, intent(in), optional :: plane, box
 
+    real(dp) :: contrib, cell(3,3)
     character(len=100) :: chars
     character(len=60) :: f1, f5, f20, f6, f7, f8, f9, f10, f11, f15, f3, f16
 
@@ -2183,10 +2185,13 @@ contains
     if ( present(box) ) then
     if ( box ) then
        write(*,f11) '  Hartree potential box:'
+       contrib = real(this%na_used,dp) / real(this%na_u,dp)
+       cell = this%cell
+       cell(:,this%t_dir) = cell(:,this%t_dir) * contrib
        write(*,f3)  '    box origo',this%box%c / Ang, ' Ang'
-       write(*,f3)  '    box v1',this%box%v(:,1) / Ang, ' Ang'
-       write(*,f3)  '    box v2',this%box%v(:,2) / Ang, ' Ang'
-       write(*,f3)  '    box v3',this%box%v(:,3) / Ang, ' Ang'
+       write(*,f3)  '    box v1', cell(:,1) / Ang, ' Ang'
+       write(*,f3)  '    box v2', cell(:,2) / Ang, ' Ang'
+       write(*,f3)  '    box v3', cell(:,3) / Ang, ' Ang'
     end if
     end if
 #endif

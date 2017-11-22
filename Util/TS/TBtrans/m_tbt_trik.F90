@@ -239,9 +239,11 @@ contains
 ! ************************************************************
 
     T_all = 'T-all' .in. save_DATA
+#ifdef NCDF_4
     only_proj = 'proj-only' .in. save_DATA
     only_sigma = 'Sigma-only' .in. save_DATA
     cdf_save = (.not. only_sigma) .and. (.not. only_proj)
+#endif
 
     ! Create the back-pivoting region
     call rgn_init(pvt,nrows_g(TSHS%sp),val=0)
@@ -937,9 +939,11 @@ contains
           end if
 #endif
 
+#ifdef NCDF_4
           ! Only calculate actual transmission if the user
           ! has requested so...
           if ( .not. only_sigma ) then
+#endif
 
           call timer('Gf-prep',1)
 
@@ -981,8 +985,10 @@ contains
 
 
           ! Only calculate actual transmission if the user
-          ! has requested so...
+          ! has requested so..
+#ifdef NCDF_4
           if ( .not. only_proj ) then
+#endif
 
           call timer('DOS-Gf-A-T',1)
 
@@ -992,7 +998,7 @@ contains
           ! the entire Green's function resides in GF_tri
           if ( calc_GF_DOS ) then
              if ( .not. cE%fake ) then
-                call GF_DOS(r_oDev,Gf_tri,spS,DOS(:,1),nzwork,zwork)
+                call GF_DOS(r_oDev,Gf_tri,zwork_tri,spS,pvt,DOS(:,1))
 #ifdef TBT_PHONON
                 DOS(:,1) = 2._dp * omega * DOS(:,1)
 #endif
@@ -1076,7 +1082,8 @@ contains
              if ( ('DOS-A' .in. save_DATA) .and. .not. cE%fake ) then
 
                 ! Calculate the DOS from the spectral function
-                call A_DOS(r_oDev,zwork_tri,spS,DOS(:,1+iEl))
+                call A_DOS(r_oDev,zwork_tri,spS,pvt,DOS(:,1+iEl))
+
 #ifdef TBT_PHONON
                 DOS(:,1+iEl) = 2._dp * omega * DOS(:,1+iEl)
 #endif
@@ -1167,9 +1174,10 @@ contains
 #endif
 
           call timer('DOS-Gf-A-T',2)
-
+#ifdef NCDF_4
           end if ! .not. proj-only
           end if ! .not. Sigma-only
+#endif
 
 
 #ifdef NCDF_4
@@ -1204,7 +1212,7 @@ contains
 
             !if ( 'DOS-Gf' .in. save_DATA ) then
             !   if ( .not. cE%fake ) then
-            !      call GF_DOS(r_oDev,Gf_tri,spS,DOS(:,1),nzwork,zwork)
+            !      call GF_DOS(r_oDev,Gf_tri,zwork_tri,spS,pvt,DOS(:,1))
 #ifdef TBT_PHONON
             !       DOS(:,1) = 2._dp * omega * DOS(:,1)
 #endif
@@ -1281,7 +1289,7 @@ contains
             if ( ('proj-DOS-A' .in. save_DATA) .and. p_E%idx > 0 ) then
 
                ! Calculate the DOS from the spectral function
-               call A_DOS(r_oDev,zwork_tri,spS,pDOS(:,2,ipt))
+               call A_DOS(r_oDev,zwork_tri,spS,pvt,pDOS(:,2,ipt))
 #ifdef TBT_PHONON
                pDOS(:,2,ipt) = 2._dp * omega * pDOS(:,2,ipt)
 #endif
@@ -1603,7 +1611,6 @@ contains
 !$OMP do 
     do iu = 1, r%n
        io = r%r(iu) ! get the orbital in the big sparsity pattern
-       if ( l_ncol(io) /= 0 ) then
           
        ! Loop over non-zero entries here
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
@@ -1611,17 +1618,17 @@ contains
           ju = pvt%r(l_col(ind))
           ! If it is zero, then *must* be electrode
           ! or fold down region.
-          if ( ju == 0 ) cycle
+          if ( ju > 0 ) then
           
-          ! Notice that we transpose back here...
-          ! See symmetrize_HS_kpt
-          idx = index(Gfinv_tri,ju,iu)
-          
-          GFinv(idx) = Z * S(ind) - H(ind)
+             ! Notice that we transpose back here...
+             ! See symmetrize_HS_kpt
+             idx = index(Gfinv_tri,ju,iu)
+             
+             GFinv(idx) = Z * S(ind) - H(ind)
+          end if
           
        end do
              
-       end if
     end do
 !$OMP end do nowait
 

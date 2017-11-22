@@ -41,7 +41,11 @@ contains
   subroutine init_mesh_node( ucell , meshG , meshLim , nsm)
 
     use intrinsic_missing, only : VNORM
-    use parallel, only : Node, Nodes, ProcessorY
+    use parallel, only : Node, Nodes, ProcessorY, IONode
+    use units, only: Ang
+#ifdef MPI
+    use mpi_siesta
+#endif
 
     ! The unit cell
     real(dp), intent(in) :: ucell(3,3)
@@ -53,7 +57,7 @@ contains
     ! Number of big division points
     integer :: nm(3)
     ! Processor specifics
-    integer :: ProcessorZ, blocY, blocZ, nremY, nremZ
+    integer :: ProcessorZ, blocY, blocZ, nremY, nremZ, idx(3)
     ! dimension tracking of the divisions
     integer :: iniX, iniY, iniZ, dimX, dimY, dimZ
     ! Local node dimensionality of the grid
@@ -61,6 +65,11 @@ contains
     ! Loop stuff
     integer :: node_Y, node_Z, cur_Node
     integer :: i
+#ifdef MPI
+    real(dp) :: ll(3)
+    integer :: ix, iy, iz
+    integer :: MPIerror, status(MPI_STATUS_SIZE)
+#endif
     
     ! We calculate the spacing in each direction
     ! Notice that we now have:
@@ -174,6 +183,7 @@ contains
              ix = ldimX
              iy = ldimY
              iz = ldimZ
+             idx = offset_i
           else
              call MPI_Send(offset_r,3,MPI_Double_precision, &
                   0,0,MPI_Comm_World,MPIerror)
@@ -183,6 +193,8 @@ contains
                   0,2,MPI_Comm_World,MPIerror)
              call MPI_Send(ldimZ,1,MPI_Integer, &
                   0,3,MPI_Comm_World,MPIerror)
+             call MPI_Send(offset_i,3,MPI_Integer, &
+                  0,4,MPI_Comm_World,MPIerror)
           end if
        else if ( IONode ) then
           call MPI_Recv(ll,3,MPI_Double_precision, &
@@ -193,9 +205,13 @@ contains
                i,2,MPI_Comm_World,status,MPIerror)
           call MPI_Recv(iz,1,MPI_Integer, &
                i,3,MPI_Comm_World,status,MPIerror)
+          call MPI_Recv(idx,3,MPI_Integer, &
+               i,4,MPI_Comm_World,status,MPIerror)
        end if
        if ( IONode ) then
-          print *, ix,iy,iz
+          print *, i, ix,iy,iz
+          write(*,'(t3,a,3(tr1,i8))') &
+               'Indices:',idx(:)
           write(*,'(t3,a,3(tr1,f12.5))') &
                'Lower-left:',ll(:)/Ang
           write(*,'(t3,a,3(tr1,f12.5))') &
@@ -208,6 +224,8 @@ contains
     end do
 #else
     if ( IONode ) then
+       write(*,'(t3,a,3(tr1,i8))') &
+            'Indices:',idx(:)
        write(*,'(t3,a,3(tr1,f12.5))') &
             'Lower-left:',offset_r(:)/Ang
        write(*,'(t3,a,3(tr1,f12.5))') &

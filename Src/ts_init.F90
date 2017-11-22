@@ -38,7 +38,7 @@ contains
     
     use m_ts_kpoints, only : setup_ts_kpoint_grid
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
-    use m_ts_kpoints, only : ts_kscell, ts_kdispl
+    use m_ts_kpoints, only : ts_kscell, ts_kdispl, ts_gamma
     use m_ts_cctype
     use m_ts_electype
     use m_ts_options ! Just everything (easier)
@@ -101,7 +101,7 @@ contains
     call print_ts_options( ucell )
 
     ! Print all warnings
-    call print_ts_warnings( ucell, na_u, xa, Nmove )
+    call print_ts_warnings( ts_Gamma, ucell, na_u, xa, Nmove )
 
     ! If we actually have a transiesta run we need to process accordingly!
     if ( .not. TSmode ) return

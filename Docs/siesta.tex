@@ -22,6 +22,10 @@
 % as FDF.Flag, but indexed as \index{FDF!Flag}. If you reference
 % a flag you must use the exclamation mark as used in the fdfentry
 % environment.
+% If you want to reference a fdf flag with an argument do it like
+% this:
+%   \fdf{Label:Argument}
+% in case the index exists for this.
 %
 % Two very used fdf-flags are \fdftrue and \fdffalse which
 % are short-hands for \fdf*{true} and \fdf*{false}.
@@ -147,7 +151,7 @@
 
 
 \section*{Contributors to \siesta}
-\addcontentsline{toc}{section}{Contributors to \siesta}
+\addcontentsline{toc}{section}{Contributors to \texorpdfstring{\siesta}{Siesta}}
 
 \siesta\ is Copyright \copyright\  1996-2017 by The Siesta Group:
 \vspace{0.5cm}
@@ -323,7 +327,7 @@ And also (though not all options are compatible):
 \item Geometry relaxation, fixed or variable cell.
 \item Constant-temperature molecular dynamics (Nose thermostat).
 \item Variable cell dynamics (Parrinello-Rahman).
-\item Spin polarized calculations (collinear or not).
+\item Spin polarized calculations (colinear or not).
 \item k-sampling of the Brillouin zone.
 \item Local and orbital-projected density of states.
 \item COOP and COHP curves for chemical bonding analysis.
@@ -2811,28 +2815,28 @@ modified xyz format) which must be described within a
 
   \begin{fdfoptions}
     \option[Bohr|NotScaledCartesianBohr]%
-    \fdfindex*{AtomicCoordinatesFormat!Bohr}
-    \fdfindex*{AtomicCoordinatesFormat!NotScaledCartesianBohr} 
+    \fdfindex*{AtomicCoordinatesFormat:Bohr}
+    \fdfindex*{AtomicCoordinatesFormat:NotScaledCartesianBohr} 
 
     atomic positions are given directly in Bohr, in Cartesian
     coordinates
 
     \option[Ang|NotScaledCartesianAng]%
-    \fdfindex*{AtomicCoordinatesFormat!Ang}
-    \fdfindex*{AtomicCoordinatesFormat!NotScaledCartesianAng}
+    \fdfindex*{AtomicCoordinatesFormat:Ang}
+    \fdfindex*{AtomicCoordinatesFormat:NotScaledCartesianAng}
 
     atomic positions are given directly in \AA ngstr\"om, in Cartesian
     coordinates
 
     \option[ScaledCartesian]%
-    \fdfindex*{AtomicCoordinatesFormat!ScaledCartesian}
+    \fdfindex*{AtomicCoordinatesFormat:ScaledCartesian}
 
     atomic positions are given in Cartesian coordinates, in units of
     the lattice constant
 
     \option[Fractional|ScaledByLatticeVectors]%
-    \fdfindex*{AtomicCoordinatesFormat!Fractional}
-    \fdfindex*{AtomicCoordinatesFormat!ScaledCartesian}
+    \fdfindex*{AtomicCoordinatesFormat:Fractional}
+    \fdfindex*{AtomicCoordinatesFormat:ScaledByLatticeVectors}
 
     atomic positions are given referred to the lattice vectors
 
@@ -3466,7 +3470,7 @@ of States sections.
   fields or spin-orbit interaction.
 
   Note this defaults to \fdffalse\ if \fdf{Spin} is
-  \fdf*{non-collinear}, \fdf*{spin-orbit} or \fdf{Spin!Spiral} is  used.
+  \fdf*{non-colinear}, \fdf*{spin-orbit} or \fdf{Spin!Spiral} is  used.
 
 \end{fdflogicalT}
 
@@ -3677,13 +3681,16 @@ are always stored in the file \sysfile{KP}.
   \begin{fdfoptions}
 
     \option[non-polarized]%
+    \fdfindex*{Spin:non-polarized}%
     Perform a calculation with spin-degeneracy (only one component).
 
     \option[polarized]%
-    Perform a calculation with collinear spin (two spin components).
+    \fdfindex*{Spin:polarized}%
+    Perform a calculation with colinear spin (two spin components).
 
-    \option[non-collinear]%
-    Perform a calculation with non-collinear spin (4 spin components),
+    \option[non-colinear]%
+    \fdfindex*{Spin:non-colinear}%
+    Perform a calculation with non-colinear spin (4 spin components),
     up-down and angles.
 
     Refs: T. Oda et al, PRL, \textbf{80}, 3622 (1998); 
@@ -3692,6 +3699,7 @@ are always stored in the file \sysfile{KP}.
     Phys: Cond. Matt \textbf{16}, 5453 (2004).
 
     \option[spin-orbit]%
+    \fdfindex*{Spin:spin-orbit}%
     Perform a calculation with spin-orbit coupling.  This requires the
     pseudopotentials to be relativistic.
 
@@ -3712,18 +3720,18 @@ are always stored in the file \sysfile{KP}.
 
 \begin{fdflogicalF}{Spin!Fix}
   \index{fixed spin state}\index{LSD}
-  \fdfindex{FixSpin}[|Spin!Fix]
+  \fdfindex*{FixSpin}[|Spin!Fix]
 
   If \fdftrue, the calculation is done with a fixed value of the spin
   of the system, defined by variable \fdf{Spin!Total}. This option can
-  only be used for collinear spin polarized calculations.
+  only be used for colinear spin polarized calculations.
 
 \end{fdflogicalF}
 
 \begin{fdfentry}{Spin!Total}[real]<$0$>
   \index{fixed spin state}\index{LSD}
   \index{spin}
-  \fdfindex{TotalSpin}[|Spin!Total]
+  \fdfindex*{TotalSpin}[|Spin!Total]
   
   Value of the imposed total spin polarization of the system (in units
   of the electron spin, 1/2). It is only used if \fdf{Spin!Fix} \fdftrue.
@@ -3816,9 +3824,9 @@ relativistic form and use the non-linear core corrections.
  
 \begin{fdfentry}{Spin!OrbitStrength}[real]<1.0>
 
-  It allows to vary the strength of the spin--orbit interaction from
+  It allows to vary the strength of the spin-orbit interaction from
   zero to any positive value, including the physical value. This flag
-  is only active when SpinOrbit is set to \fdftrue.
+  is only active when \fdf{Spin} is set to \fdf*{spin-orbit}.
 
 \end{fdfentry}
 
@@ -3877,7 +3885,7 @@ The current version introduces several changes:
   \item When achieving convergence, the loop might be exited without a
   further mixing of the DM, thus preserving DM(out) for further
   processing (including the calculation of forces and the analysis of
-  the electronic structure) (see the \fdf{SCF.MixAfterConvergence}
+  the electronic structure) (see the \fdf{SCF.Mix!AfterConvergence}
   option).
 
   \index{Variational character of E\_KS}
@@ -3887,7 +3895,7 @@ The current version introduces several changes:
   convergence as a function of the scf step. In order to gain some
   more data and heuristics on this we have implemented a
   force-monitoring option, activated by setting to \fdftrue\ the
-  variable \fdf{SCF.MonitorForces}. The program will then print the
+  variable \fdf{SCF!MonitorForces}. The program will then print the
   maximum absolute value of the change in forces from one step to the
   next. Other statistics could be implemented.
 
@@ -3900,7 +3908,29 @@ The current version introduces several changes:
 \end{itemize}
 
 
-\subsubsection{Harris functional and basic options}
+\begin{fdfentry}{MinSCFIterations}[integer]<0>
+
+  Minimum number of SCF\index{SCF} iterations per time step. In MD
+  simulations this can with benefit be set to 3.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{MaxSCFIterations}[integer]<200>
+
+  Maximum number of SCF\index{SCF} iterations per time step. 
+  
+\end{fdfentry}
+
+\begin{fdflogicalF}{SCF!MustConverge}
+
+  Defines the behaviour if convergence is not reached in the maximum
+  number of SCF iterations. The default is to update the forces, perform
+  an MD or geometry optimisation step and carry on. When set to true
+  the calculation will stop on the first SCF convergence failure.
+  
+\end{fdflogicalF}
+
+\subsubsection{Harris functional}
 
 \begin{fdflogicalF}{Harris!Functional}
   
@@ -3921,28 +3951,6 @@ The current version introduces several changes:
     whatever other specification are in the INPUT file.
   \end{itemize}
 
-\end{fdflogicalF}
-
-\begin{fdfentry}{MinSCFIterations}[integer]<0>
-
-  Minimum number of SCF\index{SCF} iterations per time step. In MD
-  simulations this can with benefit be set to 3.
-  
-\end{fdfentry}
-
-\begin{fdfentry}{MaxSCFIterations}[integer]<50>
-
-  Maximum number of SCF\index{SCF} iterations per time step. 
-  
-\end{fdfentry}
-
-\begin{fdflogicalF}{SCF!MustConverge}
-
-  Defines the behaviour if convergence is not reached in the maximum
-  number of SCF iterations. The default is to update the forces, perform
-  an MD or geometry optimisation step and carry on. When set to true
-  the calculation will stop on the first SCF convergence failure.
-  
 \end{fdflogicalF}
 
 
@@ -4013,7 +4021,7 @@ by potentially saving many self-consistency steps in production runs.
 \end{fdfentry}
 
 \begin{fdflogicalT}{SCF.Mix!First}
-  \fdfindex{DM.MixSCF1}[|see SCF.Mix.First]
+  \fdfindex*{DM.MixSCF1}[|see SCF.Mix.First]
 
   Whether the first SCF should be mixed or it uses the output as input
   in the next SCF step. It is generally advised to set this to true,
@@ -4136,7 +4144,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 \end{fdfentry}
 
 \begin{fdfentry}{SCF.Mixer!Weight}[real]<0.25>%
-  \fdfindex{DM.MixingWeight}[|see SCF.Mixer.Weight]
+  \fdfindex*{DM!MixingWeight}[|see SCF.Mixer.Weight]
 
   The mixing weight used to mix the quantity.
   In the linear mixing case this refers to
@@ -4149,8 +4157,8 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 
 
 \begin{fdfentry}{SCF.Mixer!History}[integer]<2>%
-  \fdfindex{DM.NumberPulay}[|see SCF.Mixer.History]%
-  \fdfindex{DM.NumberBroyden}[|see SCF.Mixer.History]
+  \fdfindex*{DM.NumberPulay}[|see SCF.Mixer.History]%
+  \fdfindex*{DM.NumberBroyden}[|see SCF.Mixer.History]
 
   Number of previous SCF steps used in estimating the following input.
   Increasing this number, typically, increases stability and a number
@@ -4160,7 +4168,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 
 
 \begin{fdfentry}{SCF.Mixer!Kick}[integer]<0>%
-  \fdfindex{DM.NumberKick}[|see SCF.Mixer.Kick]
+  \fdfindex*{DM.NumberKick}[|see SCF.Mixer.Kick]
 
   After every $N$ SCF steps a linear mix is inserted to \emph{kick}
   the SCF cycle out of a possible local minimum. 
@@ -4170,7 +4178,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 \end{fdfentry}
 
 \begin{fdfentry}{SCF.Mixer!Kick.Weight}[real]<\fdfvalue{SCF.Mixer!Weight}>%
-  \fdfindex{DM.KickMixingWeight}[|see SCF.Mixer.Kick.Weight]
+  \fdfindex*{DM!KickMixingWeight}[|see SCF.Mixer.Kick.Weight]
 
   The mixing weight for the linear kick (if used).
   
@@ -5009,6 +5017,7 @@ The Density matrix can be:
 
   If \fdffalse\ the initial spin-configuration is a ferromagnetic
   order (all spins up).
+  %
   If \fdftrue\ all odd atoms are initialized to spin-up, all even
   atoms are initialized to spin-down.
 
@@ -5029,11 +5038,11 @@ The Density matrix can be:
   polarized. The atoms not contemplated in the block will be given
   non-polarized initialization. 
 
-  For non-collinear spin, the spin direction may be specified for each
+  For non-colinear spin, the spin direction may be specified for each
   atom by the polar angle $\theta$ and the azimuthal angle $\phi$
   (using the physics ISO convention), given as the last two arguments
   in degrees. If not specified, $\theta=0$ is assumed
-  ($z$-polarized). \fdf{Spin} must be set to use non-collinear or
+  ($z$-polarized). \fdf{Spin} must be set to use non-colinear or
   spin-orbit for the directions to have effect.
 
   Example:
@@ -5047,7 +5056,7 @@ The Density matrix can be:
   In the above example, atom 5 is polarized in the $x$-direction.
 
   If this block is defined, but empty, all atoms are not polarized.
-  This block has precedence over \fdf{DM!InitSpinAF}.
+  This block has precedence over \fdf{DM!InitSpin!AF}.
 
 \end{fdfentry}
 
@@ -5175,7 +5184,7 @@ analysis of data and to increase the efficiency.
   Equivalent to \fdf{Write!DM}, but will only write at the end of each
   SCF loop.
 
-  \note The file generated depends on \fdf{SCF.MixAfterConvergence}.
+  \note The file generated depends on \fdf{SCF.Mix!AfterConvergence}.
 
 \end{fdfentry}  
 
@@ -5197,7 +5206,7 @@ analysis of data and to increase the efficiency.
   Equivalent to \fdf{Write!H}, but will only write at the end of each
   SCF loop.
 
-  \note The file generated depends on \fdf{SCF.MixAfterConvergence}.
+  \note The file generated depends on \fdf{SCF.Mix!AfterConvergence}.
 
 \end{fdfentry}  
 
@@ -5947,19 +5956,19 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   \begin{fdfoptions}
 
     \option[divide-and-Conquer]%
-    \fdfindex{Diag!Algorithm!Divide-and-Conquer}
+    \fdfindex*{Diag!Algorithm!Divide-and-Conquer}
     
     Use the divide-and-conquer algorithm.
 
     \option[divide-and-Conquer-2stage]%
-    \fdfindex{Diag!Algorithm!Divide-and-Conquer-2stage}
+    \fdfindex*{Diag!Algorithm!Divide-and-Conquer-2stage}
     
     Use the divide-and-conquer 2stage algorithm (fall-back to the
     divide-and-conquer if not available).
 
     
     \option[MRRR]%
-    \fdfindex{Diag!Algorithm!MRRR}%
+    \fdfindex*{Diag!Algorithm!MRRR}%
     \fdfdepend{NumberOfEigenStates}
     
     Use the multiple relatively robust algorithm.
@@ -5970,14 +5979,14 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     \index{compile!pre-processor!-DSIESTA\_\_MRRR}
 
     \option[MRRR-2stage]%
-    \fdfindex{Diag!Algorithm!MRRR-2stage}%
+    \fdfindex*{Diag!Algorithm!MRRR-2stage}%
     \fdfdepend{NumberOfEigenStates}
     
     Use the 2-stage multiple relatively robust algorithm.
 
 
     \option[expert]%
-    \fdfindex{Diag!Algorithm!Expert}%
+    \fdfindex*{Diag!Algorithm!Expert}%
     \fdfdepend{NumberOfEigenStates}
     
     Use the expert algorithm which allows calculating a subset of the
@@ -5985,7 +5994,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 
     \option[expert-2stage]%
-    \fdfindex{Diag!Algorithm!Expert-2stage}%
+    \fdfindex*{Diag!Algorithm!Expert-2stage}%
     \fdfdepend{NumberOfEigenStates}
 
     Use the 2-stage expert algorithm which allows calculating a subset
@@ -5993,19 +6002,19 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
     
     \option[noexpert|QR]%
-    \fdfindex{Diag!Algorithm!NoExpert}%
-    \fdfindex{Diag!Algorithm!QR}%
+    \fdfindex*{Diag!Algorithm!NoExpert}%
+    \fdfindex*{Diag!Algorithm!QR}%
 
     Use the QR algorithm.
 
     \option[noexpert-2stage|QR-2stage]%
-    \fdfindex{Diag!Algorithm!NoExpert-2stage}%
+    \fdfindex*{Diag!Algorithm!NoExpert-2stage}%
 
     Use the 2-stage QR algorithm.
 
     
     \option[ELPA-1stage]%
-    \fdfindex{Diag!Algorithm!ELPA-1stage}%
+    \fdfindex*{Diag!Algorithm!ELPA-1stage}%
     \fdfdepend{NumberOfEigenStates}
     
     Use the ELPA\cite{ELPA,ELPA-1} 1-stage solver. Requires the
@@ -6014,7 +6023,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     Not compatible with \fdf{Diag!ParallelOverK}.
 
     \option[ELPA|ELPA-2stage]%
-    \fdfindex{Diag!Algorithm!ELPA-2stage}%
+    \fdfindex*{Diag!Algorithm!ELPA-2stage}%
     \fdfdepend{NumberOfEigenStates}
     
     Use the ELPA\cite{ELPA,ELPA-1} 2-stage solver. Requires the
@@ -6296,7 +6305,7 @@ fixed, integer number of electrons at each k point/spin is
 allowed. Therefore, only spin-polarized calculations with
 \fdf{Spin!Fix} are allowed, and \fdf{Spin!Total} must be chosen
 appropriately. For non-$\Gamma$ point calculations, the number of
-electrons is set to be equal at all k points. Non-collinear
+electrons is set to be equal at all k points. Non-colinear
 calculations (see \fdf{Spin}) are not supported at present.
 
 It is important to note that the OMM requires all occupied Kohn-Sham
@@ -7046,7 +7055,7 @@ parameter (see Sec.~\ref{electronic-occupation}).
 \end{fdfentry}
 
 
-\subsubsection{Re-use of $\mu$ information accross iterations}
+\subsubsection{Re-use of \texorpdfstring{$\mu$}{u} information accross iterations}
 
 This is an important issue, as the efficiency of the PEXSI procedure
 depends on how close a guess of $\mu$ we have at our
@@ -7918,9 +7927,9 @@ References:
   formula
   \begin{equation}
     \label{pol_formula}
-    P_{e,\parallel}={ifq_e \over 8\pi^3} \int_A d\mathbf{k}_\perp
+    P_{e,\parallel}=\frac{ifq_e}{8\pi^3} \int_A d\mathbf{k}_\perp
     \sum_{n=1}^M \int_0^{|G_\parallel|} dk_{\parallel}
-    \langle u_{\mathbf{k} n} |{\delta \over \delta k_{\parallel}} |
+    \langle u_{\mathbf{k} n} |\frac\delta{\delta k_{\parallel}} |
     u_{\mathbf{k} n} \rangle
   \end{equation}
   where $f$ is the occupation (2 for a non-magnetic system), $q_e$ the
@@ -7988,7 +7997,7 @@ References:
   defined as
   \begin{equation}
     \mathbf{P}^\sigma = \mathbf{P}_e^\sigma +
-    {1 \over 2} \sum_i^{N_a}  Z_i \mathbf{r}_i
+    \frac12 \sum_i^{N_a}  Z_i \mathbf{r}_i
   \end{equation}
   $N_a$ is the number of atoms in the unit cell, and $\mathbf{r}_i$
   and $Z_i$ are the positions and charges of the ions.
@@ -8014,7 +8023,7 @@ References:
   atom by finite differences, by calculating the change in electric
   polarization (see \fdf{PolarizationGrids}) induced by the small
   displacements generated for the force constants calculation (see
-  \fdf{MD.TypeOfRun} \fdf*{FC}):
+  \fdf{MD.TypeOfRun:FC}):
   \begin{equation}
     \label{eq:effective_charge}
     Z^*_{i,\alpha,\beta}=\frac{\Omega_0}{e} \left. {\frac{\partial{P_\alpha}}
@@ -9117,8 +9126,8 @@ atomic positions (and maybe the cell vectors) accordingly and moves on
 to the next cycle.
 %
 If there are molecular dynamics options missing you are highly
-recommend to look into \fdf{MD.TypeOfRun!Lua} or
-\fdf{MD.TypeOfRun!Master}. 
+recommend to look into \fdf{MD.TypeOfRun:Lua} or
+\fdf{MD.TypeOfRun:Master}. 
 
 
 Several options for MD and structural optimizations are
@@ -9128,55 +9137,55 @@ implemented, selected by
   \begin{fdfoptions}
     
     \option[CG]%
-    \fdfindex{MD.TypeOfRun!CG}%
+    \fdfindex*{MD.TypeOfRun!CG}%
     Coordinate optimization by conjugate gradients). Optionally (see
     variable \fdf{MD.VariableCell} below), the optimization can include the
     cell vectors.
 
     \option[Broyden]%
-    \fdfindex{MD.TypeOfRun!Broyden}%
+    \fdfindex*{MD.TypeOfRun!Broyden}%
     Coordinate optimization by a modified Broyden scheme). Optionally,
     (see variable \fdf{MD.VariableCell} below), the optimization can
     include the cell vectors.
 
     \option[FIRE]%
-    \fdfindex{MD.TypeOfRun!FIRE}%
+    \fdfindex*{MD.TypeOfRun!FIRE}%
     Coordinate optimization by Fast Inertial Relaxation Engine (FIRE)
     (E. Bitzek et al, PRL 97, 170201, (2006)).  Optionally, (see
     variable \fdf{MD.VariableCell} below), the optimization can
     include the cell vectors.
 
     \option[Verlet]%
-    \fdfindex{MD.TypeOfRun!Verlet}%
+    \fdfindex*{MD.TypeOfRun!Verlet}%
     Standard Verlet algorithm MD
 
     \option[Nose]%
-    \fdfindex{MD.TypeOfRun!Nose}%
+    \fdfindex*{MD.TypeOfRun!Nose}%
     MD with temperature controlled  by means of a Nos\'e
     thermostat
 
     \option[ParrinelloRahman]%
-    \fdfindex{MD.TypeOfRun!ParrinelloRahman}%
+    \fdfindex*{MD.TypeOfRun!ParrinelloRahman}%
     MD with pressure controlled by the Parrinello-Rahman method
 
     \option[NoseParrinelloRahman]%
-    \fdfindex{MD.TypeOfRun!NoseParrinelloRahman}%
+    \fdfindex*{MD.TypeOfRun!NoseParrinelloRahman}%
     MD with temperature controlled by means of a Nos\'e thermostat and
     pressure controlled by the Parrinello-Rahman method
 
     \option[Anneal]%
-    \fdfindex{MD.TypeOfRun!Anneal}%
+    \fdfindex*{MD.TypeOfRun!Anneal}%
     MD with annealing to a desired temperature and/or pressure (see
     variable \fdf{MD.AnnealOption} below)
 
     \option[FC]%
-    \fdfindex{MD.TypeOfRun!FC}%
+    \fdfindex*{MD.TypeOfRun!FC}%
     Compute force constants matrix\index{Force Constants Matrix} for
     phonon calculations.
 
     \option[Master|Forces]%
-    \fdfindex{MD.TypeOfRun!Master}%
-    \fdfindex{MD.TypeOfRun!Forces}%
+    \fdfindex*{MD.TypeOfRun!Master}%
+    \fdfindex*{MD.TypeOfRun!Forces}%
     Receive coordinates from, and return forces to, an external
     driver program, using MPI, Unix pipes, or Inet sockets for
     communication. The routines in module \program{fsiesta} allow the
@@ -9190,7 +9199,7 @@ implemented, selected by
     options.
 
     \option[Lua]%
-    \fdfindex{MD.TypeOfRun!Lua}%
+    \fdfindex*{MD.TypeOfRun:Lua}%
     Fully control the MD cycle and convergence path using an external
     Lua script. 
 
@@ -9282,7 +9291,7 @@ structure. The changes are:
 \end{itemize}
 
 To recover the previous behavior, the user can turn on the
-compatibility switch \fdf{Compat!Pre-v4-Dynamics}, which is off by
+compatibility switch \fdf*{Compat!Pre-v4-Dynamics}, which is off by
 default.
 
 Note that complete compatibility cannot be perfectly guaranteed.
@@ -9308,7 +9317,7 @@ misleading but kept for historical reasons.
   \fdf{MD.ConstantVolume}, and
   \fdf{MD.PreconditionVariableCell}.
 
-  \note only compatible with \fdf{MD.TypeOfRun} \fdf*{CG},
+  \note only compatible with \fdf{MD.TypeOfRun:CG},
   \fdf*{Broyden} or \fdf*{fire}.
 
 \end{fdflogicalF}
@@ -9324,7 +9333,7 @@ misleading but kept for historical reasons.
   (traceless) stresses.  See \fdf{MD.VariableCell},
   \fdf{MD.TargetStress}.
 
-  \note only compatible with \fdf{MD.TypeOfRun} \fdf*{CG},
+  \note only compatible with \fdf{MD.TypeOfRun:CG},
   \fdf*{Broyden} or \fdf*{fire}.
 
 \end{fdflogicalF}
@@ -9339,7 +9348,7 @@ misleading but kept for historical reasons.
   atom in each molecule is kept fixed, and no attempt is made to
   rescale the bond distances or angles.
 
-  \note only compatible with \fdf{MD.TypeOfRun} \fdf*{Broyden} or \fdf*{fire}.
+  \note only compatible with \fdf{MD.TypeOfRun:Broyden} or \fdf*{fire}.
 
 \end{fdflogicalF}
 
@@ -9495,7 +9504,7 @@ build up the Jacobian matrix. (See D.D. Johnson, PRB 38, 12807
 Implementation of the Fast Inertial Relaxation Engine (FIRE) method
 (E. Bitzek et al, PRL 97, 170201, (2006) in a manner compatible with
 the CG and Broyden modes of relaxation. (An older implementation
-activated by the \fdf{MD.FireQuench} variable is still available).
+activated by the \fdf*{MD.FireQuench} variable is still available).
 
 \begin{fdfentry}{MD.FIRE.TimeStep}[time]<\fdfvalue{MD.LengthTimeStep}>
   
@@ -9522,10 +9531,10 @@ activated by the \fdf{MD.FireQuench} variable is still available).
 These methods are really based on molecular dynamics, but are used for
 structural relaxation.
 
-Note that the Zmatrix input option (see
-Sec.~\ref{sec:Zmatrix}) is not compatible with molecular dynamics. The
-initial geometry can be specified using the Zmatrix format, but the
-Zmatrix generalized coordinates will not be updated.
+Note that the Zmatrix input option (see Sec.~\ref{sec:Zmatrix}) is not
+compatible with molecular dynamics. The initial geometry can be
+specified using the Zmatrix format, but the Zmatrix generalized
+coordinates will not be updated.
 
 Note also that the force and stress tolerances have no effect on
 the termination conditions of these methods. They run for the number
@@ -9539,7 +9548,7 @@ of MD steps requested (this is arguably a bug).
   component. This affects atomic velocities, or unit-cell velocities
   (for cell shape optimizations).
 
-  \note only applicable for \fdf{MD.TypeOfRun} \fdf*{Verlet} or
+  \note only applicable for \fdf{MD.TypeOfRun:Verlet} or
   \fdf*{ParrinelloRahman}.
   %
   It is incompatible with Nose thermostat options.  
@@ -9569,7 +9578,7 @@ of MD steps requested (this is arguably a bug).
   thereof etc.) are hardwired in the code, at the recommended values
   in the cited paper, including $\Delta t_{max} = 10$ fs.
 
-  Only available for \fdf{MD.TypeOfRun} \fdf*{Verlet}
+  Only available for \fdf{MD.TypeOfRun:Verlet}
   It is incompatible with Nose thermostat options. No variable
   cell option implemented for this at this stage.
   \fdf{MD.FireQuench} supersedes \fdf{MD.Quench}. This option is
@@ -9737,7 +9746,7 @@ coordinates will not be updated.
     by scaling of the unit cell size and shape
   \end{fdfoptions}
 
-  Only applicable for \fdf{MD.TypeOfRun} \fdf*{Anneal}.
+  Only applicable for \fdf{MD.TypeOfRun:Anneal}.
 
 \end{fdfentry}
 
@@ -9750,7 +9759,7 @@ coordinates will not be updated.
   actual time needed to reach the \emph{averaged} targets will be
   significantly longer.
 
-  Only applicable for \fdf{MD.TypeOfRun} \fdf*{Anneal}.
+  Only applicable for \fdf{MD.TypeOfRun:Anneal}.
 
 \end{fdfentry}
 
@@ -10713,6 +10722,23 @@ the mixing parameters may be very difficult to implement. If you do
 create such a Lua script, please share it on the mailing list.
 
 
+\subsection{External MD/relaxation methods}
+
+Using the Lua interface allows a very easy interface for creating
+external MD and/or relaxation methods.
+
+A public library (\program{flos},
+\url{https://github.com/siesta-project/flos}) already implements a
+wider range of relaxation methods than intrinsically enabled in
+\siesta. Secondly, by using external scripting mechanisms one can
+customize the routines to a much greater extend while simultaneously
+create custom constraints.
+
+You are \emph{highly} encouraged to try out the \program{flos} library
+(please note that \program{flook} is required, see installation
+instructions above).
+
+
 
 \section{TRANSIESTA}
 
@@ -10766,11 +10792,12 @@ setups.
 \subsection{Source code structure}
 
 In this implementation, the \tsiesta\ routines have been grouped in a
-set of modules whose file names begin with \texttt{m\_ts}. The
-inclusion of \tsiesta\ has also required the modification of some of
-the \siesta\ routines. Presently, these modifications are controlled
-by pre-processor compilation directives (such as in \texttt{\#ifdef
-    TRANSIESTA}). See the next section for compilation instructions.
+set of modules whose file names begin with \texttt{m\_ts} or
+\texttt{ts}. The inclusion of \tsiesta\ has also required the
+modification of some of the \siesta\ routines. Presently, these
+modifications are controlled by pre-processor compilation directives
+(such as in \texttt{\#ifdef TRANSIESTA}). See the next section for
+compilation instructions.
 
 \subsection{Compilation}
 
@@ -10867,14 +10894,20 @@ version of \siesta\ with \tsiesta\ capabilities.
   \item%
   An important parameter is the lower bound of the energy contours. It
   is a good practice, to start with a \siesta\ calculation for the SR
-  and look at the eigenvalues of the system. 
+  and look at the eigenvalues of the system. The lower bound of the
+  contours must be \emph{well} below the lowest eigenvalue.
 
   \item%
   \tsiesta\ still assumes periodic boundary conditions in the
   \texttt{xy} directions. For \tsiesta, the specified $k$-point
   sampling (of this 2-dimensional Brillouin zone) used in a SR
   calculation must be the same as the one that was used for the
-  electrodes, if they are different the code will stop. 
+  electrodes, if they are different the code will stop.
+
+  \item%
+  The default algorithm for matrix inversion is the BTD method, before
+  starting a \tsiesta\ calculation please run with the analyzation
+  step \fdf{TS!Analyze}.
 
   \item%
   Importantly the $k$-point sampling need typically be much higher in
@@ -10988,18 +11021,33 @@ information.
 
 \subsubsection{General options}
 
-\begin{fdfentry}{SolutionMethod}[string]<transiesta>
-
-  To run \tsiesta\ the solution method \emph{must} be
-  \fdf*{transiesta}.
-
-\end{fdfentry}
+One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
+\tsiesta.
 
 \begin{fdfentry}{TS!SolutionMethod}[string]<btd|mumps|full>
 
   Control the algorithm used for calculating the Green
   function. Generally the BTD method is the fastest and this option
   need not be changed.
+
+  \begin{fdfoptions}
+    \option[BTD]%
+    \fdfindex*{TS!SolutionMethod:BTD}%
+    Use the block-tri-diagonal algorithm for matrix inversion.
+
+    This is generally the recommended method.
+
+    \option[MUMPS]%
+    \fdfindex*{TS!SolutionMethod:MUMPS}%
+    Use sparse matrix inversion algorithm (MUMPS). This requires
+    \tsiesta\ to be compiled with MUMPS.
+
+    \option[full]%
+    \fdfindex*{TS!SolutionMethod:full}%
+    Use full matrix inversion algorithm (LAPACK). Generally only
+    usable for debugging purposes.
+    
+  \end{fdfoptions}
   
 \end{fdfentry}
 
@@ -11339,7 +11387,7 @@ TS.BTD.Pivot atom+GGPS
 
 These options adhere to the specific solution methods available for
 \tsiesta. For instance the \fdf*{TS.BTD.*} options adhere when using
-\fdf{TS.SolutionMethod} \fdf*{btd}, and similarly for \fdf*{MUMPS}.
+\fdf{TS.SolutionMethod:btd}, and similarly for \fdf*{MUMPS}.
 
 \begin{fdfentry}{TS!BTD!Pivot}[string]<\nonvalue{first electrode}>
 
@@ -11491,7 +11539,7 @@ intricate and important detail.
 
   \begin{fdfoptions}
     \option[ramp-central]%
-    \fdfindex*{TS!Poisson!ramp-central}%
+    \fdfindex*{TS!Poisson:ramp-central}%
 
     Apply the bias-ramp between the leads. For a \emph{bulk} electrode
     (see \fdf{TS!Elec.<>!Bulk}) the ramp will start at the
@@ -11500,7 +11548,7 @@ intricate and important detail.
 
 
     \option[<file>]%
-    \fdfindex*{TS!Poisson!<file>}%
+    \fdfindex*{TS!Poisson:<file>}%
 
     Specify an external file used as the boundary conditions for the
     applied bias. This is encouraged to use for $N>2$ electrode
@@ -11508,7 +11556,7 @@ intricate and important detail.
     potential profile is know.
     
     \option[elec-box]%
-    \fdfindex*{TS!Poisson!ramp-cell}%
+    \fdfindex*{TS!Poisson:elec-box}%
 
     The default potential profile for $N>2$, or when the electrodes
     does are not aligned (in terms of their transport direction). When
@@ -11517,7 +11565,7 @@ intricate and important detail.
 
 
     \option[ramp-cell]%
-    \fdfindex*{TS!Poisson!ramp-cell}%
+    \fdfindex*{TS!Poisson:ramp-cell}%
 
     Apply the ramp for the full cell. This option should \emph{only}
     be used for testing against older versions of \tsiesta.
@@ -11682,7 +11730,7 @@ electrodes in a generic input format.
     Bloch waves.
 
     \option[Bloch-A/a1|B/a2|C/a3]%
-    \fdfindex*{TS!Elec.<>!Bloch}%
+    \fdfindex{TS!Elec.<>!Bloch}%
     Specific Bloch expansions in each of the electrode unit-cell
     direction. See \fdf*{Bloch} for details.
 

@@ -307,6 +307,12 @@ contains
        
        if ( Fermi_correct ) then
 
+          ! This is the 1. part of the Fermi correction
+          !
+          ! In this section we estimate the new Fermi level by
+          ! calculating the charge Q(E_F) and then correct
+          ! E_F such that dQ = Q(TS) - Qtot -> 0.
+          
           i_F = i_F + 1
           if ( N_F < i_F ) then
              N_F = N_F + 10
@@ -365,6 +371,11 @@ contains
 
           else
 
+             ! Instead of doing Q(E_F) for every change
+             ! we will perform spline interpolation ones we have 2 estimated
+             ! Q(E_F).
+             ! This tends to drastically speed up the convergence of the dQ -> 0.
+             
              ! In case we have accumulated 2 or more points
              call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
 
@@ -373,7 +384,7 @@ contains
                   TS_RHOCORR_FERMI_MAX, Ef)
 
              if ( IONode ) then
-                write(*,'(a,e11.4,a)') 'transiesta: cubic spline. dEf = ', &
+                write(*,'(a,e11.4,a)') 'ts-qc-iscf: cubic spline dEf = ', &
                      (Ef-Q_Ef(i_F,2))/eV, ' eV'
              end if
 
@@ -414,13 +425,36 @@ contains
        N_F = i_F
        write(iEl,'(a,i0)')'# ',N_F ! Number of iterations
        do i_F = 1 , N_F
-          write(iEl,'(2(tr1,e15.6))') Q_Ef(i_F,2)/eV,Q_Ef(i_F,1) - Qtot
+          write(iEl,'(2(tr1,e20.10))') Q_Ef(i_F,2)/eV,Q_Ef(i_F,1) - Qtot
        end do
 
        call io_close(iEl)
 
     end if
     if ( Fermi_correct ) then
+
+       ! This is the 2nd step of dEF correction.
+       ! At this point we have corrected E_f for the current
+       ! iteration. But generally the Hartree potential will counter
+       ! the change in E_F. So to speed up convergence
+       ! we do a spline interpolation of the dE_F by doing a spline
+       ! interpolation of the ISCF corrections.
+       ! Say TS corrects EF at iterations 50 and 80
+       ! which means TS_FERMI may look like this:
+       !#####
+       ! # TSiscf = 50
+       ! # 3
+       !   -0.204782E+01    0.172948E-01
+       !   -0.205297E+01    0.834017E-03
+       !   -0.205323E+01   -0.250016E-05
+       !
+       ! # TSiscf = 80
+       !# 3
+       !   -0.207423E+01    0.967930E-02
+       !   -0.207710E+01    0.490200E-03
+       !   -0.207726E+01   -0.817259E-06
+       !#####
+       ! 
 
        ! Guess-stimate the actual Fermi-shift
        ! typically will the above be "too" little
