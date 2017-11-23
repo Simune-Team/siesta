@@ -102,9 +102,7 @@ MODULE siesta_options
   logical :: writic        ! Write the initial atomic ccordinates?
   logical :: varcel        ! Change unit cell during relaxation or dynamics?
   logical :: do_pdos       ! Compute the projected density of states?
-#ifdef TRANSIESTA
   logical :: write_tshs_history ! Write the MD track of Hamiltonian and overlap matrices in transiesta format
-#endif
   logical :: write_hs_history ! Write the MD track of Hamiltonian and overlap matrices
   logical :: writedm       ! Write file with density matrix?
   logical :: write_dm_at_end_of_cycle ! Write DM at end of SCF cycle? (converged or not)

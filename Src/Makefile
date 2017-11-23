@@ -19,7 +19,7 @@ VPATH=.
 AR ?= ar
 RANLIB ?= ranlib
 
-default: what siesta
+default: siesta
 include arch.make
 
 # Ensure the correct implicit rules for the compilation
@@ -56,7 +56,7 @@ INCFLAGS:= $(NETCDF_INCFLAGS) $(PEXSI_INCFLAGS) $(INCFLAGS)
 IPO_FLAG?= -ipo
 
 
-.PHONY: .siesta .transiesta what version
+.PHONY: what version
 
 what:
 	@echo
@@ -343,16 +343,6 @@ atom.o basis_io.o basis_specs.o: $(FDF)
 ldau_specs.o: $(FDF)
 
 
-# Create all objects
-ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
-
-# All objects require the XC library (in theory)
-# In practice they do not but it greatly simplifies the logic
-# here.
-# This will setup the correct compilation sequence as
-#  WXML => XC => FDF => MPI
-$(ALL_OBJS): $(WXML) $(XC) $(COMP_LIBS)
-
 #
 # Linear algebra routines
 #
@@ -422,29 +412,6 @@ version: version.F90
 	@mv compinfo.o version.o
 	@echo
 
-check-siesta:
-	@if [ -f .transiesta ]; then \
-              echo "** You were building transiesta in this directory." ;\
-              echo "** Please type 'make clean' first " ;\
-              false ;\
-	fi
-	@touch .siesta
-
-siesta: check-siesta what version \
-                $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-                $(COMP_LIBS) $(ALL_OBJS) 
-	$(FC) -o siesta \
-	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
-               $(XC) $(MPI_INTERFACE) \
-               $(COMP_LIBS) $(LIBS) 
-
-libSiestaForces.a: $(OBJS) $(SYSOBJ)
-	$(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)
-	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
-            $(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a MPI/*.o ; fi
-	-$(RANLIB) libSiestaForces.a
-#
-
 
 #----------------------------------------------------------------------------
 # TranSIESTA objects needed for siesta
@@ -480,29 +447,69 @@ TS_OBJS += m_ts_tri_init.o m_ts_tri_common.o \
 # MUMPS method
 TS_OBJS += m_ts_mumps_init.o m_ts_mumpsg.o m_ts_mumpsk.o m_ts_mumps_scat.o
 
-ts: transiesta
-transiesta: FPPFLAGS += -DTRANSIESTA 
-check-ts:
+OBJS += $(TS_OBJS)
+
+# Create all objects
+ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
+
+# All objects require the XC library (in theory)
+# In practice they do not but it greatly simplifies the logic
+# here.
+# This will setup the correct compilation sequence as
+#  WXML => XC => FDF => MPI
+$(ALL_OBJS): $(WXML) $(XC) $(COMP_LIBS)
+
+# Build options
+
+libSiestaForces.a: $(OBJS) $(SYSOBJ)
+	$(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)
+	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
+            $(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a MPI/*.o ; fi
+	-$(RANLIB) libSiestaForces.a
+
+
+check-siesta:
+	@if [ -f .transiesta ]; then \
+              echo "** You were building transiesta in this directory." ;\
+              echo "** Please type 'make clean-transiesta' first " ;\
+              false ;\
+	fi
+	@touch .siesta
+
+check-transiesta:
 	@if [ -f .siesta ]; then \
-              echo "** You were building plain siesta in this directory." ;\
-              echo "** Please type 'make clean' first" ;\
+              echo "** You were building siesta in this directory." ;\
+              echo "** Please type 'make clean-transiesta' first " ;\
               false ;\
 	fi
 	@touch .transiesta
 
-transiesta: check-ts what version \
+siesta: check-siesta what version \
+                $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
+                $(COMP_LIBS) $(ALL_OBJS) 
+	$(FC) -o siesta \
+	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
+               $(XC) $(MPI_INTERFACE) $(COMP_LIBS) $(LIBS) 
+
+
+.PHONY: clean-ts clean-transiesta
+clean-ts: clean-transiesta
+clean-transiesta:
+	-rm -f m_ts_options.o .siesta .transiesta
+
+ts: transiesta
+transiesta: FPPFLAGS += -DTRANSIESTA 
+transiesta: check-transiesta what version \
             $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-            $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
+            $(COMP_LIBS) $(ALL_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
-               $(XC) $(MPI_INTERFACE) \
-               $(COMP_LIBS) $(LIBS)
+               $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
+               $(XC) $(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 
 
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f siesta transiesta *.o  *.a *.pcl *.pc
-	rm -f .siesta .transiesta
 	rm -f *.mod
 	rm -f compinfo.F90 tmp.F90
 	rm -f *.bck *~
@@ -832,7 +839,7 @@ m_kinetic.o: precision.o
 m_mat_invert.o: intrinsic_missing.o m_pivot_array.o precision.o
 m_matio.o: alloc.o parallel.o
 m_memory.o: memoryinfo.o parallel.o sys.o
-m_mesh_node.o: intrinsic_missing.o parallel.o precision.o
+m_mesh_node.o: intrinsic_missing.o parallel.o precision.o units.o
 m_mixing.o: class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
 m_mixing_scf.o: class_Fstack_Data1D.o m_mixing.o parallel.o precision.o
 m_monitor.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
@@ -978,8 +985,9 @@ m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_iodm.o: m_io_s.o m_os.o parallel.o precision.o
-m_ts_kpoints.o: files.o find_kgrid.o m_ts_global_vars.o m_ts_tdir.o minvec.o
-m_ts_kpoints.o: parallel.o precision.o siesta_cml.o siesta_options.o sys.o
+m_ts_kpoints.o: files.o find_kgrid.o kpoint_grid.o m_ts_global_vars.o
+m_ts_kpoints.o: m_ts_tdir.o minvec.o parallel.o precision.o siesta_cml.o
+m_ts_kpoints.o: siesta_options.o sys.o
 m_ts_method.o: alloc.o fdf_extra.o geom_helper.o m_region.o m_ts_electype.o
 m_ts_mumps_init.o: class_OrbitalDistribution.o class_Sparsity.o
 m_ts_mumps_init.o: create_Sparsity_Union.o m_ts_electype.o m_ts_method.o
@@ -1275,10 +1283,11 @@ state_init.o: ioxv.o kpoint_grid.o ldau_specs.o m_energies.o m_eo.o m_gamma.o
 state_init.o: m_mixing.o m_mixing_scf.o m_mpi_utils.o m_new_dm.o m_os.o
 state_init.o: m_pivot_methods.o m_rmaxh.o m_sparse.o m_sparsity_handling.o
 state_init.o: m_spin.o m_steps.o m_supercell.o m_test_io.o m_ts_charge.o
-state_init.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_options.o
-state_init.o: m_ts_sparse.o m_ts_tri_init.o normalize_dm.o overlap.o parallel.o
-state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
-state_init.o: sparse_matrices.o sys.o units.o write_subs.o zmatrix.o
+state_init.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_kpoints.o
+state_init.o: m_ts_options.o m_ts_sparse.o m_ts_tri_init.o normalize_dm.o
+state_init.o: overlap.o parallel.o proximity_check.o siesta_cml.o siesta_geom.o
+state_init.o: siesta_options.o sparse_matrices.o sys.o units.o write_subs.o
+state_init.o: zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_exp_coord.o
 struct_init.o: m_iostruct.o m_mpi_utils.o m_steps.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_master.o siesta_options.o

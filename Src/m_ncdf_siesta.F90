@@ -51,17 +51,16 @@ contains
     use siesta_options, only: sname, isolve
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN
     use siesta_options, only: SOLVE_MINIM, SOLVE_TRANSI
+    use siesta_options, only: SOLVE_PEXSI
     use siesta_options, only: savehs
     use siesta_options, only: saverho, savedrho, savevh, savevna
     use siesta_options, only: savevt, savepsch, savetoch, saverhoxc
     use siesta_options, only: savebader
     use siesta_options, only: save_initial_charge_density
     use m_timestamp, only: datestring
-#ifdef TRANSIESTA
     use m_ts_electype, elec_name => name
     use m_ts_options, only : Volt, N_Elec, Elecs
     use m_ts_options, only : TS_HS_Save
-#endif
 
     character(len=*), intent(in) :: fname
     logical, intent(in) :: is_md
@@ -71,9 +70,7 @@ contains
     type(dict) :: dic, d
     character(len=DICT_KEY_LENGTH) :: key
     integer :: n_nzs, tmp, i, chks(3), iEl
-#ifdef TRANSIESTA
     integer, allocatable :: ibuf(:)
-#endif
     logical :: exists
 #ifdef MPI
     integer :: MPIerror
@@ -175,11 +172,7 @@ contains
     call ncdf_def_var(grp,'EDM',NF90_DOUBLE,(/'nnzs    ','spin_EDM'/), &
          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
 
-#ifdef TRANSIESTA
     if ( savehs .or. TS_HS_save ) then
-#else
-    if ( savehs ) then
-#endif
        ! Unit is already present in dictionary
        dic = dic//('info'.kv.'Hamiltonian')
        call ncdf_def_var(grp,'H',NF90_DOUBLE,(/'nnzs','spin'/), &
@@ -377,7 +370,6 @@ contains
 
     call delete(dic)
 
-#ifdef TRANSIESTA
     if ( isolve == SOLVE_TRANSI ) then
 
        ! Save all information about the transiesta method
@@ -423,8 +415,6 @@ contains
 
     end if
 
-#endif
-
     ! Save all things necessary here
     dic = ('time'.kv.datestring())
     dic = dic//('name'.kv.trim(sname))
@@ -436,10 +426,10 @@ contains
        dic = dic//('method'.kv.'order-n')
     else if ( isolve == SOLVE_MINIM ) then
        dic = dic//('method'.kv.'omm')
-#ifdef TRANSIESTA
     else if ( isolve == SOLVE_TRANSI ) then
        dic = dic//('method'.kv.'transiesta')
-#endif
+    else if ( isolve == SOLVE_PEXSI ) then
+       dic = dic//('method'.kv.'pexsi')
     end if
 
     ! Attributes are collective
@@ -451,7 +441,6 @@ contains
     call ncdf_put_var(ncdf,'Qtot',Qtot)
     call ncdf_put_var(ncdf,'lasto',lasto(1:na_u))
 
-#ifdef TRANSIESTA
     if ( isolve == SOLVE_TRANSI ) then
 
        ! Save all information about the transiesta method
@@ -479,7 +468,6 @@ contains
        end do
 
     end if
-#endif
 
     ! Close the file
     call ncdf_close(ncdf)
@@ -491,11 +479,9 @@ contains
     use kpoint_grid,    only: kscell, kdispl
     use siesta_options, only: cdf_w_parallel
     use siesta_options, only: dDtol, dHtol, charnet, wmix, temp, g2cut
-#ifdef TRANSIESTA
     use siesta_options, only: isolve
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN, SOLVE_TRANSI
     use m_ts_kpoints,   only: ts_kscell, ts_kdispl
-#endif
 
     character(len=*), intent(in) :: fname
     
@@ -520,7 +506,6 @@ contains
     ! I suggest that all MD settings are 
     ! put in the MD-group
 
-#ifdef TRANSIESTA
     if ( isolve == SOLVE_TRANSI ) then
        call ncdf_open_grp(ncdf,'TRANSIESTA',grp)
 
@@ -528,7 +513,6 @@ contains
        call ncdf_put_var(grp,'BZ_displ',ts_kdispl)
 
     end if
-#endif
 
     call ncdf_close(ncdf)
 

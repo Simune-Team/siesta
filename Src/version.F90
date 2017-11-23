@@ -80,9 +80,6 @@ write(6,'(a)') 'SERIAL version'
 !$OMP end master
 !$OMP end parallel
 
-#ifdef TRANSIESTA
-write(6,'(a)') 'TRANSIESTA support'
-#endif
 #ifdef USE_GEMM3M
 write(6,'(a)') 'GEMM3M support'
 #endif

@@ -13,10 +13,8 @@ module siesta_dicts
   ! A dictionary for all the options
   type(dict) :: options
 
-#ifdef TRANSIESTA
   ! A dictionary for all transiesta options
   type(dict) :: ts_options
-#endif
 
   ! A dictionary for all variables
   type(dict) :: variables
@@ -41,9 +39,7 @@ contains
 
   subroutine dict_clean()
     call delete(options,dealloc=.false.)
-#ifdef TRANSIESTA
     call delete(ts_options,dealloc=.false.)
-#endif
     call delete(variables,dealloc=.false.)
   end subroutine dict_clean
 
@@ -318,10 +314,8 @@ contains
          ('E.spin_orbit'.kvp.Eso)
     variables = variables // &
          ('E.ldau'.kvp.Eldau)
-#ifdef TRANSIESTA
     variables = variables // &
          ('E.negf'.kvp.DE_NEGF)
-#endif
 
     ! Add the number of charges to the system
     variables = variables // &

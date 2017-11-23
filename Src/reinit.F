@@ -221,7 +221,6 @@ C Set up fdf ...
                line = 'SystemLabel '//trim(line)
                call fdf_overwrite(line)
 
-#ifdef TRANSIESTA
             else if ( line(1:1) == 'V' ) then
                if ( in >= narg )
      &              call die('Missing argument on command line, -V')
@@ -230,7 +229,13 @@ C Set up fdf ...
                line = cmd_tokenize(line)
                line = 'TS.Voltage '//trim(line)
                call fdf_overwrite(line)
-#endif
+               
+            else if ( line(1:9) == 'electrode' .or.
+     &              line(1:4) == 'elec' ) then
+               line = 'TS.HS.Save true'
+               call fdf_overwrite(line)
+               line = 'TS.DE.Save true'
+               call fdf_overwrite(line)
 
             else if ( line(1:4) == 'help' .or.
      &              line(1:1) == 'h' ) then
@@ -242,10 +247,10 @@ C Set up fdf ...
       write(0,'(a)')'      Short-hand for setting SystemLabel.'
       write(0,'(a)')'  -fdf <label>=<value>[:<unit>]'
       write(0,'(a)')'      Set the label to the corresponding value.'
-#ifdef TRANSIESTA
       write(0,'(a)')'  -V <value>:<unit>'
       write(0,'(a)')'      Short-hand for setting TS.Voltage.'
-#endif
+      write(0,'(a)')'  -electrode'
+      write(0,'(a)')'      Set TS.HS.Save and TS.DE.Save to true.'
       write(0,'(a)')'  <fdf-file>'
       write(0,'(a)')
      &     '      Use file as fdf-input, you need not to pipe it in.' 

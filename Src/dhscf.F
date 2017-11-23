@@ -113,13 +113,12 @@
       use m_charge_add,  only: init_charge_add
       use m_hartree_add, only: init_hartree_add
 
-#ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode
       use m_ts_tdir,      only : ts_tidx
       use m_ts_options,   only : IsVolt, N_Elec, Elecs
       use m_ts_voltage,   only : ts_init_voltage
       use m_ts_hartree,   only : ts_init_hartree_fix
-#endif /* TRANSIESTA */
+
       implicit none
       integer, intent(in)     :: nspin, norb, iaorb(norb), iphorb(norb),
      &                           nuo, nuotot, nua, na, isa(na),
@@ -146,11 +145,9 @@
       integer                 :: nXCfunc
       character(len=20)       :: XCauth(10), XCfunc(10)
 #endif /* ! BSC_CELLXC */
-#ifdef TRANSIESTA
       ! Transport direction (unit-cell aligned)
       integer                 :: iE
       real(dp)                :: ortho, field(3), field2(3)
-#endif
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '    PRE dhscf_init' )
@@ -436,7 +433,6 @@ C ----------------------------------------------------------------------
       if (frstme) then
          call initialize_efield()
 
-#ifdef TRANSIESTA
 !     Check if we need to add the potential 
 !     corresponding to the voltage-drop.
       if ( TSmode ) then
@@ -551,7 +547,6 @@ C ----------------------------------------------------------------------
          ! calculation?
          
       end if
-#endif /* TRANSIESTA */
 
       end if
 
@@ -727,12 +722,11 @@ C     Modules
       use m_spin,         only: spin
       use m_spin,         only: Spiral, qSpiral
 
-#ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode, TSrun
       use m_ts_options, only: IsVolt
       use m_ts_voltage, only: ts_voltage
       use m_ts_hartree, only: ts_hartree_fix
-#endif /* TRANSIESTA */
+
       implicit none
 
       integer
@@ -1314,11 +1308,11 @@ C ----------------------------------------------------------------------
       ! Vscf is in the UNIFORM, sequential form, and only using
       ! the first spin index
 
-#ifdef TRANSIESTA
       ! We require that even the SIESTA potential is "fixed"
+      ! NOTE, this will only do something if
+      !   TS.Hartree.Fix is set
       call ts_hartree_fix( ntm, ntml, Vaux)
-#endif /* TRANSIESTA */
-
+      
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
         stressl(1:3,1:3) = stressl(1:3,1:3) + DStres(1:3,1:3)
@@ -1396,7 +1390,6 @@ C ----------------------------------------------------------------------
          DUext = DUext - ddot(3,user_specified_field,1,dipol,1)
       endif
 
-#ifdef TRANSIESTA
 ! ---------------------------------------------------------------------
 !     Transiesta:
 !     add the potential corresponding to the (possible) voltage-drop.
@@ -1419,7 +1412,6 @@ C ----------------------------------------------------------------------
          call bye('transiesta debug for Hartree potential')
 #endif
       endif
-#endif /* TRANSIESTA */
 
 ! ----------------------------------------------------------------------
 ! Add potential from user defined geometries (if present)

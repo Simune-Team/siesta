@@ -296,9 +296,7 @@
       use units
       use m_energies 
       use m_spin
-#ifdef TRANSIESTA
       use m_ts_global_vars, only: TSinit, TSrun
-#endif /* TRANSIESTA */
       implicit none
 
       integer              :: iscf
@@ -307,20 +305,14 @@
 
       character(len=64) :: fmt
       character(len=6) :: scf_name
-#ifndef TRANSIESTA
-      ! Enable _one_ block to reuse as much as possible
-      logical, parameter :: TSinit = .false.
-#endif
 
       logical              :: first_scf_step
       integer              :: i
 
       scf_name = 'scf'
-#ifdef TRANSIESTA
       if ( TSrun ) then
          scf_name = 'ts-scf'
       end if
-#endif
       
       first_scf_step = (iscf == 1)
       ! Only print out full decomposition at very beginning and end.
@@ -337,9 +329,7 @@
      .     'siesta: DEna    =', DEna/eV,
      .     'siesta: DUscf   =', DUscf/eV,
      .     'siesta: DUext   =', DUext/eV,
-#ifdef TRANSIESTA
      .     'siesta: Enegf   =', DE_NEGF/eV,
-#endif
      .     'siesta: Exc     =', Exc/eV,
      .     'siesta: eta*DQ  =', Ecorrec/eV,
      .     'siesta: Emadel  =', Emad/eV,
@@ -382,11 +372,9 @@
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r6')
-#ifdef TRANSIESTA
           call cmlAddProperty(xf=mainXML, value=DE_NEGF/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Enegf', fmt='r6')
-#endif
           call cmlAddProperty(xf=mainXML, value=Exc/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Exc', fmt='r6')
@@ -515,9 +503,7 @@
      .    'siesta: ',      'Eldau   =', Eldau/eV,
      .    'siesta: ',      'Eso     =', Eso/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
-#ifdef TRANSIESTA
      .    'siesta: ',      'Enegf   =', DE_NEGF/eV,
-#endif
      .    'siesta: ',  'Exch.-corr. =', Exc/eV,
      .    'siesta: ', 'Ion-electron =', (Enascf+Enl+DUscf-Uscf-Uatm)/eV,
      .    'siesta: ',      'Ion-ion =', (Ena+Uatm-Enaatm-Eions)/eV,
@@ -551,11 +537,9 @@
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r7')
-#ifdef TRANSIESTA
           call cmlAddProperty(xf=mainXML, value=DE_NEGF/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Enegf', fmt='r7')
-#endif
           call cmlAddProperty(xf=mainXML, value=Exc/eV,   
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Exc', fmt='r7')

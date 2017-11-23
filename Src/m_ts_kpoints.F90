@@ -54,11 +54,9 @@ module m_ts_kpoints
   integer,  public :: ts_kscell(3,3) = 0
   real(dp), public :: ts_kdispl(3) = 0.0_dp
 
+  logical, public :: ts_firm_displ = .false.
   logical, public :: ts_user_requested_mp = .false.
   logical, public :: ts_user_requested_cutoff = .false.
-
-  logical, public :: ts_spiral = .false.
-  logical, public :: ts_firm_displ = .false.
 
   public :: setup_ts_scf_kscell, setup_ts_kpoint_grid
   public :: ts_write_k_points
@@ -143,10 +141,8 @@ contains
           write(*,*) 'Specifying only cutoff in Electrode AND Scattering calculations might lead to problems !!'
        end if
 
-       cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
-       if (cutoff /= defcut) then
-          ts_user_requested_cutoff = .true.
-       endif
+       cutoff = fdf_get('kgrid_cutoff',defcut,'Bohr')
+       ts_user_requested_cutoff = (cutoff /= defcut)
 
        ts_kdispl(1:3) = 0.0_dp  ! Might be changed later
        ts_firm_displ = .false.
@@ -190,18 +186,39 @@ contains
   subroutine setup_ts_kpoint_grid( ucell )
     
     ! SIESTA Modules
-    USE fdf, only       : fdf_defined
+    USE precision, only : dp       
+    USE fdf, only       : fdf_get
     USE m_find_kgrid, only : find_kgrid
     USE parallel, only  : IONode
-    USE precision, only : dp       
+    use m_ts_global_vars, only : TSmode
+    use kpoint_grid
 
     ! Local Variables
-    real(dp), intent(in)   :: ucell(3,3)
+    real(dp), intent(in) :: ucell(3,3)
 
-    if (ts_scf_kgrid_first_time) then
+    if ( .not. TSMode ) then
+       
+       ! Same as SIESTA (mainly to be able to write the TSHS files).
+       ts_Gamma = gamma_SCF
+       ts_nkpnt = nkpnt
+       ts_eff_kgrid_cutoff = eff_kgrid_cutoff
+       ts_kweight => kweight
+       ts_kpoint => kpoint
+       ts_kscell = kscell
+       ts_kdispl = kdispl
+
+       ! Since this is not transiesta we immediately return
+       ! and then we also skip printing out transiesta information.
+       return
+       
+    end if
+
+    if ( ts_scf_kgrid_first_time ) then
 
        nullify(ts_kweight,ts_kpoint)
-       ts_spiral = fdf_defined('SpinSpiral')
+       if ( fdf_get('SpinSpiral', .false.) ) then
+          call die('transiesta: Does not work with spin-spiral')
+       end if
 
        call setup_ts_scf_kscell(ucell)
 
@@ -216,7 +233,7 @@ contains
     endif
 
     call find_kgrid(ucell,ts_kscell,ts_kdispl,ts_firm_displ, &
-         (.not. ts_spiral), &
+         .true., &
          ts_nkpnt,ts_kpoint,ts_kweight, ts_eff_kgrid_cutoff)
 
     ts_Gamma = ts_nkpnt == 1 .and. &
