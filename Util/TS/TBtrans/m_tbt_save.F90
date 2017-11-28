@@ -309,7 +309,7 @@ contains
 
   end subroutine cdf_precision_cmplx
 
-  subroutine init_cdf_save(fname,TSHS,r,ispin,N_Elec, Elecs, &
+  subroutine init_cdf_save(fname,TSHS,r,btd,ispin,N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE, &
        a_Dev, a_Buf, sp_dev_sc, &
        save_DATA ) 
@@ -339,7 +339,8 @@ contains
     type(tTSHS), intent(in) :: TSHS
     ! The device region that we are checking
     ! This is the device regions pivot-table!
-    type(tRgn), intent(in) :: r 
+    ! Btd is the blocks in the BTD
+    type(tRgn), intent(in) :: r, btd
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -399,7 +400,7 @@ contains
 
        dic = ('no_u'.kv. TSHS%no_u) // ('na_u'.kv. TSHS%na_u ) &
             // ('no_d'.kv. r%n ) // ('nkpt'.kv. nkpt )
-       dic = dic // ('na_d'.kv. a_Dev_sort%n)
+       dic = dic // ('na_d'.kv. a_Dev_sort%n) // ('n_btd'.kv.btd%n)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('na_b'.kv. a_Buf%n)
        end if
@@ -416,7 +417,7 @@ contains
 
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
-            ('pivot'.kvp. r%r )
+            ('pivot'.kvp. r%r ) // ('btd'.kvp.btd%r)
        dic = dic // ('xa'.kvp. TSHS%xa) // ('a_dev'.kvp.a_Dev_sort%r )
        dic = dic // ('nsc'.kvp. TSHS%nsc)
        if ( a_Buf%n > 0 )then
@@ -498,6 +499,7 @@ contains
     !call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED) ! Parallel does not work
     call ncdf_def_dim(ncdf,'ne',NE)
     call ncdf_def_dim(ncdf,'n_s',product(TSHS%nsc))
+    call ncdf_def_dim(ncdf,'n_btd',btd%n)
 
     ! Create eigenvalue dimension, if needed
     if ( N_eigen > 0 ) then
@@ -563,6 +565,10 @@ contains
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
 
+    dic = dic // ('info'.kv.'Blocks in BTD for the current pivot')
+    call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
+         atts = dic)
+
     dic = dic // ('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
          atts = dic)
@@ -603,6 +609,7 @@ contains
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
     call ncdf_put_var(ncdf,'a_dev',a_Dev_sort%r)
+    call ncdf_put_var(ncdf,'btd',btd%r)
     if ( a_Buf%n > 0 )then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
     end if

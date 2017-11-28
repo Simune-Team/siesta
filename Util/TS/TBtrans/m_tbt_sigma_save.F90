@@ -138,7 +138,7 @@ contains
   end subroutine open_cdf_Sigma
 
   ! Save the self-energies of the electrodes and
-  subroutine init_Sigma_save(fname, TSHS, r, ispin, N_Elec, Elecs, &
+  subroutine init_Sigma_save(fname, TSHS, r, btd, ispin, N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE, &
        a_Dev, a_Buf)
 
@@ -161,7 +161,7 @@ contains
     type(tTSHS), intent(in) :: TSHS
     ! The device region that we are checking
     ! This is the device regions pivot-table!
-    type(tRgn), intent(in) :: r 
+    type(tRgn), intent(in) :: r, btd
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -201,7 +201,7 @@ contains
 
        dic = ('no_u'.kv.TSHS%no_u) // ('na_u'.kv.TSHS%na_u) // &
             ('nkpt'.kv.nkpt ) // ('no_d'.kv.r%n) // &
-            ('ne'.kv. NE )
+            ('ne'.kv. NE ) // ('n_btd'.kv.btd%n)
        dic = dic // ('na_d'.kv. a_Dev%n)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('na_b'.kv.a_Buf%n)
@@ -232,7 +232,7 @@ contains
        ! Check the variables
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
-            ('pivot'.kvp. r%r )
+            ('pivot'.kvp. r%r ) // ('btd'.kvp.btd%r)
        call rgn_copy(a_Dev, r_tmp)
        call rgn_sort(r_tmp)
        dic = dic // ('a_dev'.kvp.r_tmp%r )
@@ -303,6 +303,7 @@ contains
     call ncdf_def_dim(ncdf,'ne',NE)
     call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
+    call ncdf_def_dim(ncdf,'n_btd',btd%n)
     if ( a_Buf%n > 0 ) then
        call ncdf_def_dim(ncdf,'na_b',a_Buf%n) ! number of buffer-atoms
     end if
@@ -348,6 +349,10 @@ contains
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
 
+    dic = dic // ('info'.kv.'Blocks in BTD for the current pivot')
+    call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
+         atts = dic)
+
     dic = dic//('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
          atts = dic)
@@ -382,6 +387,7 @@ contains
     call rgn_copy(a_Dev, r_tmp)
     call rgn_sort(r_tmp)
     call ncdf_put_var(ncdf,'a_dev',r_tmp%r)
+    call ncdf_put_var(ncdf,'btd',btd%r)
     call rgn_delete(r_tmp)
     if ( a_Buf%n > 0 ) then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
