@@ -180,7 +180,7 @@ contains
     logical :: prec_Sigma
     logical :: exist, same
     character(len=200) :: char
-    integer :: i, iEl
+    integer :: i, iEl, no_e
     real(dp), allocatable :: r2(:,:)
 #ifdef MPI
     integer :: MPIerror
@@ -419,17 +419,18 @@ contains
        call ncdf_def_var(grp,'Accuracy',NF90_DOUBLE,(/'one'/), atts = dic)
        call delete(dic)
 
-       call ncdf_def_dim(grp,'no_e',Elecs(iEl)%o_inD%n)
+       no_e = Elecs(iEl)%o_inD%n
+       call ncdf_def_dim(grp,'no_e',no_e)
 
        dic = ('info'.kv.'Orbital pivot table for self-energy')
        call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
+       
        dic = dic//('info'.kv.'Down-folded self-energy')
        dic = dic//('unit'.kv.'Ry')
        ! Chunking greatly reduces IO cost
-       i = Elecs(iEl)%o_inD%n
        call ncdf_def_var(grp,'SelfEnergy',prec_Sigma, &
             (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
-            atts = dic , chunks = (/i,i,1,1/) )
+            atts = dic , chunks = (/no_e,no_e,1,1/) )
        call delete(dic)
 
        call ncdf_put_var(grp,'Eta',Elecs(iEl)%Eta)
@@ -442,7 +443,7 @@ contains
 
   end subroutine init_Sigma_save
 
-  subroutine state_Sigma_save(ncdf, ikpt, nE, N_Elec, Elecs,nzwork,zwork)
+  subroutine state_Sigma_save(ncdf, ikpt, nE, N_Elec, Elecs, nzwork,zwork)
 
     use parallel, only : Node, Nodes
 
@@ -465,9 +466,9 @@ contains
     complex(dp), intent(inout), target :: zwork(nzwork)
 
     type(hNCDF) :: grp
-    integer :: iEl, i, iN
+    integer :: iEl, iN, no_e, n_e
+    complex(dp), pointer :: Sigma2D(:,:)
 #ifdef MPI
-    complex(dp), pointer :: Sigma(:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
@@ -487,12 +488,12 @@ contains
 
 #ifdef MPI
     if ( .not. sigma_parallel .and. Nodes > 1 ) then
-       i = 0
+       no_e = 0
        do iEl = 1 , N_Elec
-          i = max(i,Elecs(iEl)%o_inD%n)
+          no_e = max(no_e,Elecs(iEl)%o_inD%n)
        end do
-       Sigma => zwork(1:i**2)
-       if ( i**2 > nzwork ) then
+       n_e = no_e ** 2
+       if ( n_e > nzwork ) then
           call die('Could not re-use the work array for Sigma &
                &communication.')
        end if
@@ -503,25 +504,31 @@ contains
        
        call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
-       i = Elecs(iEl)%o_inD%n
+       no_e = Elecs(iEl)%o_inD%n
+
+       ! Create new pointer to make the below things much easier
+       call pass2pnt(no_e, Elecs(iEl)%Sigma, Sigma2D)
+
        if ( nE%iE(Node) > 0 ) then
-          call ncdf_put_var(grp,'SelfEnergy', &
-               reshape(Elecs(iEl)%Sigma(1:i*i),(/i,i/)), &
+          call ncdf_put_var(grp,'SelfEnergy', Sigma2D, &
                start = (/1,1,nE%iE(Node),ikpt/) )
        end if
 
 #ifdef MPI
        if ( .not. sigma_parallel .and. Nodes > 1 ) then
+          n_e = no_e ** 2
           if ( Node == 0 ) then
+             ! Because we are using a work-array to retrieve data
+             call pass2pnt(no_e, zwork, Sigma2D)
              do iN = 1 , Nodes - 1
                 if ( nE%iE(iN) <= 0 ) cycle
-                call MPI_Recv(Sigma,i*i,MPI_Double_Complex,iN,iN, &
+                call MPI_Recv(Sigma2D(1,1),n_e,MPI_Double_Complex,iN,iN, &
                      Mpi_comm_world,status,MPIerror)
-                call ncdf_put_var(grp,'SelfEnergy',reshape(Sigma(1:i*i),(/i,i/)), &
+                call ncdf_put_var(grp,'SelfEnergy',Sigma2D, &
                      start = (/1,1,nE%iE(iN),ikpt/) )
              end do
           else if ( nE%iE(Node) > 0 ) then
-             call MPI_Send(Elecs(iEl)%Sigma(1),i*i,MPI_Double_Complex,0,Node, &
+             call MPI_Send(Sigma2D(1,1),n_e,MPI_Double_Complex,0,Node, &
                   Mpi_comm_world,MPIerror)
           end if
        end if
