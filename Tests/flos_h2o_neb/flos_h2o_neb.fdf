@@ -1,5 +1,5 @@
-SystemName          Water molecule
-SystemLabel         h2o_neb
+SystemName          Water molecule NEB (FLOS)
+SystemLabel         flos_h2o_neb
 NumberOfAtoms       6
 NumberOfSpecies     2
 

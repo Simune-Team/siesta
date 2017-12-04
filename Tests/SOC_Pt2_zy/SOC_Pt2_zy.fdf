@@ -1,11 +1,11 @@
-SystemName              Pt2 X-alignment z
-SystemLabel             Pt2xz
+SystemName              Pt2 Z-alignment y
+SystemLabel             SOC_Pt2_zy
 
 Spin   SOC
 
 %block DM.InitSpin
- 1  +1.   0.  0.
- 2  +1.   0.  0.
+ 1  +1.  90. 90.
+ 2  +1.  90. 90.
 %endblock DM.InitSpin
 
 NumberOfAtoms           2
@@ -33,8 +33,8 @@ LatticeConstant  20.0 Ang
 %endblock LatticeVectors
 
 %block AtomicCoordinatesAndAtomicSpecies
-     -1.19940   0.00000   0.00000  1
-      1.19940   0.00000   0.00000  1
+      0.00000   0.00000   -1.19940   1
+      0.00000   0.00000    1.19940   1
 %endblock AtomicCoordinatesAndAtomicSpecies
 
 XC.functional           GGA

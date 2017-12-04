@@ -2180,7 +2180,11 @@ obtained if compiled with the NetCDF4 library and via the use of
 
   Save all states for the projection. The saved quantity can be
   post-processed to decipher the locality of each projection.
-  
+
+  In the NetCDF file there will be two variables: \code{state} and
+  \code{states} where the former will contain $\SO^{1/2}\ket{i}$,
+  while the latter will contain $\ket{i}$.
+
   \emph{Needed if you wish to select specific molecular orbitals
       dependent on the nature of the molecular orbital.}
   
@@ -2304,9 +2308,6 @@ obtained if compiled with the NetCDF4 library and via the use of
 \end{fdfentry}
 
 \bgroup
-\def\bra#1{\langle#1|}
-\def\ket#1{|#1\rangle}
-\def\kb#1{\ket{#1}\bra{#1}}
 \def\Gf{\mathbf G}
 \def\Gam{\boldsymbol\Gamma}
 

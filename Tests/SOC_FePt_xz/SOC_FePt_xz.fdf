@@ -1,5 +1,5 @@
-SystemName              SOC FePt Z-alignment z
-SystemLabel             FePtzz
+SystemName              SOC FePt X-alignment z
+SystemLabel             SOC_FePt_xz
 
 Spin    SOC
 %block DM.InitSpin
@@ -41,7 +41,6 @@ LatticeConstant  1.0 Ang
    0.000000000   1.396535500    1.396535500    1
    1.896000000   0.000000000    0.000000000    2
 %endblock AtomicCoordinatesAndAtomicSpecies
-
 
 %block kgrid_Monkhorst_Pack
   20   0   0    0.5

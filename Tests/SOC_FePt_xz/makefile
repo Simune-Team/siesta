@@ -1,2 +1,2 @@
-name=FePtxz
+name=SOC_FePt_xz
 include ../test.mk

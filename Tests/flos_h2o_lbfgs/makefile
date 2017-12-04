@@ -1,7 +1,7 @@
 #
 # Single-test makefile
 #
-name=h2o_lbfgs
+name=flos_h2o_lbfgs
 
 EXTRAFILES=relax.lua
 
