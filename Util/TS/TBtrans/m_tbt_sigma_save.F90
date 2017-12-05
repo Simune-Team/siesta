@@ -138,7 +138,7 @@ contains
   end subroutine open_cdf_Sigma
 
   ! Save the self-energies of the electrodes and
-  subroutine init_Sigma_save(fname, TSHS, r, ispin, N_Elec, Elecs, &
+  subroutine init_Sigma_save(fname, TSHS, r, btd, ispin, N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE, &
        a_Dev, a_Buf)
 
@@ -161,7 +161,7 @@ contains
     type(tTSHS), intent(in) :: TSHS
     ! The device region that we are checking
     ! This is the device regions pivot-table!
-    type(tRgn), intent(in) :: r 
+    type(tRgn), intent(in) :: r, btd
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -180,7 +180,7 @@ contains
     logical :: prec_Sigma
     logical :: exist, same
     character(len=200) :: char
-    integer :: i, iEl
+    integer :: i, iEl, no_e
     real(dp), allocatable :: r2(:,:)
 #ifdef MPI
     integer :: MPIerror
@@ -201,7 +201,7 @@ contains
 
        dic = ('no_u'.kv.TSHS%no_u) // ('na_u'.kv.TSHS%na_u) // &
             ('nkpt'.kv.nkpt ) // ('no_d'.kv.r%n) // &
-            ('ne'.kv. NE )
+            ('ne'.kv. NE ) // ('n_btd'.kv.btd%n)
        dic = dic // ('na_d'.kv. a_Dev%n)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('na_b'.kv.a_Buf%n)
@@ -232,7 +232,7 @@ contains
        ! Check the variables
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
-            ('pivot'.kvp. r%r )
+            ('pivot'.kvp. r%r ) // ('btd'.kvp.btd%r)
        call rgn_copy(a_Dev, r_tmp)
        call rgn_sort(r_tmp)
        dic = dic // ('a_dev'.kvp.r_tmp%r )
@@ -303,6 +303,7 @@ contains
     call ncdf_def_dim(ncdf,'ne',NE)
     call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
+    call ncdf_def_dim(ncdf,'n_btd',btd%n)
     if ( a_Buf%n > 0 ) then
        call ncdf_def_dim(ncdf,'na_b',a_Buf%n) ! number of buffer-atoms
     end if
@@ -348,6 +349,10 @@ contains
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
 
+    dic = dic // ('info'.kv.'Blocks in BTD for the current pivot')
+    call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
+         atts = dic)
+
     dic = dic//('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
          atts = dic)
@@ -382,6 +387,7 @@ contains
     call rgn_copy(a_Dev, r_tmp)
     call rgn_sort(r_tmp)
     call ncdf_put_var(ncdf,'a_dev',r_tmp%r)
+    call ncdf_put_var(ncdf,'btd',btd%r)
     call rgn_delete(r_tmp)
     if ( a_Buf%n > 0 ) then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
@@ -413,17 +419,18 @@ contains
        call ncdf_def_var(grp,'Accuracy',NF90_DOUBLE,(/'one'/), atts = dic)
        call delete(dic)
 
-       call ncdf_def_dim(grp,'no_e',Elecs(iEl)%o_inD%n)
+       no_e = Elecs(iEl)%o_inD%n
+       call ncdf_def_dim(grp,'no_e',no_e)
 
        dic = ('info'.kv.'Orbital pivot table for self-energy')
        call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
+       
        dic = dic//('info'.kv.'Down-folded self-energy')
        dic = dic//('unit'.kv.'Ry')
        ! Chunking greatly reduces IO cost
-       i = Elecs(iEl)%o_inD%n
        call ncdf_def_var(grp,'SelfEnergy',prec_Sigma, &
             (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
-            atts = dic , chunks = (/i,i,1,1/) )
+            atts = dic , chunks = (/no_e,no_e,1,1/) )
        call delete(dic)
 
        call ncdf_put_var(grp,'Eta',Elecs(iEl)%Eta)
@@ -436,7 +443,7 @@ contains
 
   end subroutine init_Sigma_save
 
-  subroutine state_Sigma_save(ncdf, ikpt, nE, N_Elec, Elecs,nzwork,zwork)
+  subroutine state_Sigma_save(ncdf, ikpt, nE, N_Elec, Elecs, nzwork,zwork)
 
     use parallel, only : Node, Nodes
 
@@ -459,9 +466,9 @@ contains
     complex(dp), intent(inout), target :: zwork(nzwork)
 
     type(hNCDF) :: grp
-    integer :: iEl, i, iN
+    integer :: iEl, iN, no_e, n_e
+    complex(dp), pointer :: Sigma2D(:,:)
 #ifdef MPI
-    complex(dp), pointer :: Sigma(:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
@@ -481,12 +488,12 @@ contains
 
 #ifdef MPI
     if ( .not. sigma_parallel .and. Nodes > 1 ) then
-       i = 0
+       no_e = 0
        do iEl = 1 , N_Elec
-          i = max(i,Elecs(iEl)%o_inD%n)
+          no_e = max(no_e,Elecs(iEl)%o_inD%n)
        end do
-       Sigma => zwork(1:i**2)
-       if ( i**2 > nzwork ) then
+       n_e = no_e ** 2
+       if ( n_e > nzwork ) then
           call die('Could not re-use the work array for Sigma &
                &communication.')
        end if
@@ -497,25 +504,31 @@ contains
        
        call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
-       i = Elecs(iEl)%o_inD%n
+       no_e = Elecs(iEl)%o_inD%n
+
+       ! Create new pointer to make the below things much easier
+       call pass2pnt(no_e, Elecs(iEl)%Sigma, Sigma2D)
+
        if ( nE%iE(Node) > 0 ) then
-          call ncdf_put_var(grp,'SelfEnergy', &
-               reshape(Elecs(iEl)%Sigma(1:i*i),(/i,i/)), &
+          call ncdf_put_var(grp,'SelfEnergy', Sigma2D, &
                start = (/1,1,nE%iE(Node),ikpt/) )
        end if
 
 #ifdef MPI
        if ( .not. sigma_parallel .and. Nodes > 1 ) then
+          n_e = no_e ** 2
           if ( Node == 0 ) then
+             ! Because we are using a work-array to retrieve data
+             call pass2pnt(no_e, zwork, Sigma2D)
              do iN = 1 , Nodes - 1
                 if ( nE%iE(iN) <= 0 ) cycle
-                call MPI_Recv(Sigma,i*i,MPI_Double_Complex,iN,iN, &
+                call MPI_Recv(Sigma2D(1,1),n_e,MPI_Double_Complex,iN,iN, &
                      Mpi_comm_world,status,MPIerror)
-                call ncdf_put_var(grp,'SelfEnergy',reshape(Sigma(1:i*i),(/i,i/)), &
+                call ncdf_put_var(grp,'SelfEnergy',Sigma2D, &
                      start = (/1,1,nE%iE(iN),ikpt/) )
              end do
           else if ( nE%iE(Node) > 0 ) then
-             call MPI_Send(Elecs(iEl)%Sigma(1),i*i,MPI_Double_Complex,0,Node, &
+             call MPI_Send(Sigma2D(1,1),n_e,MPI_Double_Complex,0,Node, &
                   Mpi_comm_world,MPIerror)
           end if
        end if

@@ -1,5 +1,5 @@
 SystemName              SOC FePt Z-alignment y
-SystemLabel             FePtzy
+SystemLabel             SOC_FePt_zy
 
 Spin    SOC
 %block DM.InitSpin

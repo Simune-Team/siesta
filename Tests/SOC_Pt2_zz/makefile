@@ -1,2 +1,2 @@
-name=Pt2zz
+name=SOC_Pt2_zz
 include ../test.mk

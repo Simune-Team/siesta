@@ -41,7 +41,7 @@ module m_tbt_save
   public :: cdf_save_E
   public :: state_cdf_save
   public :: state_cdf_save_Elec
-  public :: state_cdf_save_J
+  public :: state_cdf_save_sp_dev
   public :: state_cdf2ascii
   public :: local_save_DOS
 #else
@@ -309,7 +309,7 @@ contains
 
   end subroutine cdf_precision_cmplx
 
-  subroutine init_cdf_save(fname,TSHS,r,ispin,N_Elec, Elecs, &
+  subroutine init_cdf_save(fname,TSHS,r,btd,ispin,N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE, &
        a_Dev, a_Buf, sp_dev_sc, &
        save_DATA ) 
@@ -339,7 +339,8 @@ contains
     type(tTSHS), intent(in) :: TSHS
     ! The device region that we are checking
     ! This is the device regions pivot-table!
-    type(tRgn), intent(in) :: r 
+    ! Btd is the blocks in the BTD
+    type(tRgn), intent(in) :: r, btd
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -359,7 +360,7 @@ contains
     type(dict) :: dic
     logical :: exist, sme, isGamma
     integer :: iEl, jEl, i, nnzs_dev, N_eigen
-    integer :: prec_DOS, prec_T, prec_Teig, prec_J
+    integer :: prec_DOS, prec_T, prec_Teig, prec_J, prec_COOP
     type(OrbitalDistribution) :: fdit
     real(dp), allocatable :: r2(:,:)
     type(tRgn) :: a_Dev_sort
@@ -378,6 +379,7 @@ contains
     call tbt_cdf_precision('T','single',prec_T)
     call tbt_cdf_precision('T.Eig','single',prec_Teig)
     call tbt_cdf_precision('Current','single',prec_J)
+    call tbt_cdf_precision('COOP','single',prec_COOP)
 
     isGamma = all(TSHS%nsc(:) == 1)
 
@@ -399,7 +401,7 @@ contains
 
        dic = ('no_u'.kv. TSHS%no_u) // ('na_u'.kv. TSHS%na_u ) &
             // ('no_d'.kv. r%n ) // ('nkpt'.kv. nkpt )
-       dic = dic // ('na_d'.kv. a_Dev_sort%n)
+       dic = dic // ('na_d'.kv. a_Dev_sort%n) // ('n_btd'.kv.btd%n)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('na_b'.kv. a_Buf%n)
        end if
@@ -416,7 +418,7 @@ contains
 
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
-            ('pivot'.kvp. r%r )
+            ('pivot'.kvp. r%r ) // ('btd'.kvp.btd%r)
        dic = dic // ('xa'.kvp. TSHS%xa) // ('a_dev'.kvp.a_Dev_sort%r )
        dic = dic // ('nsc'.kvp. TSHS%nsc)
        if ( a_Buf%n > 0 )then
@@ -498,6 +500,7 @@ contains
     !call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED) ! Parallel does not work
     call ncdf_def_dim(ncdf,'ne',NE)
     call ncdf_def_dim(ncdf,'n_s',product(TSHS%nsc))
+    call ncdf_def_dim(ncdf,'n_btd',btd%n)
 
     ! Create eigenvalue dimension, if needed
     if ( N_eigen > 0 ) then
@@ -563,6 +566,10 @@ contains
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
 
+    dic = dic // ('info'.kv.'Blocks in BTD for the current pivot')
+    call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
+         atts = dic)
+
     dic = dic // ('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
          atts = dic)
@@ -603,6 +610,7 @@ contains
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
     call ncdf_put_var(ncdf,'a_dev',a_Dev_sort%r)
+    call ncdf_put_var(ncdf,'btd',btd%r)
     if ( a_Buf%n > 0 )then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
     end if
@@ -623,7 +631,12 @@ contains
     call ncdf_put_var(ncdf,'wkpt',wkpt)
     deallocate(r2)
 
-    if ( 'orb-current' .in. save_DATA ) then
+    sme = 'orb-current' .in. save_DATA
+    sme = sme .or. ('COOP-Gf' .in. save_DATA)
+    sme = sme .or. ('COOP-A' .in. save_DATA)
+    sme = sme .or. ('COHP-Gf' .in. save_DATA)
+    sme = sme .or. ('COHP-A' .in. save_DATA)
+    if ( sme ) then
        
        ! In case we need to save the device sparsity pattern
        ! Create dimensions
@@ -653,6 +666,18 @@ contains
 
     end if
 
+    if ( 'COOP-Gf' .in. save_DATA ) then
+       dic = dic // ('info'.kv.'Crystal orbital overlap population')//('unit'.kv.'1/Ry')
+       call ncdf_def_var(ncdf,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
+            atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
+    end if
+    if ( 'COHP-Gf' .in. save_DATA ) then
+       dic = dic // ('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.'Ry/Ry')
+       call ncdf_def_var(ncdf,'COHP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
+            atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
+    end if
+
+    
     do iEl = 1 , N_Elec
 
        call delete(dic)
@@ -733,16 +758,27 @@ contains
                atts = dic, chunks = (/r%n,1,1/) , compress_lvl=cmp_lvl)
        end if
 
+       if ( 'COOP-A' .in. save_DATA ) then
+          dic = dic // ('info'.kv.'Crystal orbital overlap population')//('unit'.kv.'1/Ry')
+          call ncdf_def_var(grp,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
+               atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
+       end if
+
+       if ( 'COHP-A' .in. save_DATA ) then
+          dic = dic // ('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.'Ry/Ry')
+          call ncdf_def_var(grp,'COHP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
+               atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
+       end if
+
        call delete(dic)
        
        if ( 'orb-current' .in. save_DATA ) then
           dic = ('info'.kv.'Orbital current')
-          
           call ncdf_def_var(grp,'J',prec_J,(/'nnzs','ne  ','nkpt'/), &
                atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           
        end if
-       
+
        tmp = trim(Elecs(iEl)%name)
        do jEl = 1 , N_Elec
           if ( ('T-all' .nin. save_DATA ) .and. &
@@ -1340,12 +1376,11 @@ contains
     
   end subroutine local_save_DOS
   
-  subroutine state_cdf_save_J(ncdf, ikpt, nE, El, orb_J, save_DATA)
+  subroutine state_cdf_save_sp_dev(ncdf, ikpt, nE, name, dat, El)
     
     use parallel, only : Node, Nodes
     use class_dSpData1D
 
-    use dictionary
     use netcdf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD
@@ -1358,27 +1393,32 @@ contains
     type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: ikpt
     type(tNodeE), intent(in) :: nE
-    type(Elec), intent(in) :: El
-    type(dSpData1D), intent(inout) :: orb_J
-    type(dict), intent(in) :: save_DATA
+    character(len=*), intent(in) :: name
+    type(dSpData1D), intent(inout) :: dat
+    type(Elec), intent(inout), optional :: El
 
     type(hNCDF) :: grp
     integer :: nnzs_dev, iN, cnt(3), idx(3)
-    real(dp), pointer :: J(:)
+    real(dp), pointer :: D(:)
 #ifdef MPI
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
 #ifdef TBTRANS_TIMING
-    call timer('cdf-w-J',1)
+    call timer('cdf-w-sp-dev',1)
 #endif
 
-    J => val(orb_J)
-    nnzs_dev = size(J)
-    ! We save the orbital current
-    
-    call ncdf_open_grp(ncdf,trim(El%name),grp)
+    if ( present(El) ) then
+       call ncdf_open_grp(ncdf,trim(El%name),grp)
+    else
+       ! Copy information to grp (no opening)
+       grp = ncdf
+    end if
 
+    ! Get data and size of data
+    D => val(dat)
+    nnzs_dev = size(D)
+    
     ! Save the current
     idx = (/1,nE%iE(Node),ikpt/)
     cnt(1) = nnzs_dev
@@ -1388,30 +1428,30 @@ contains
        cnt = 0
        idx = 1
     end if
-    call ncdf_put_var(grp,'J',J,start = idx, count = cnt )
+    call ncdf_put_var(grp,name,D,start = idx, count = cnt )
 
 #ifdef MPI
     if ( .not. save_parallel ) then
        if ( Node == 0 ) then
           do iN = 1 , Nodes - 1
              if ( nE%iE(iN) > 0 ) then
-                call MPI_Recv(J(1),nnzs_dev,Mpi_double_precision, &
+                call MPI_Recv(D(1),nnzs_dev,Mpi_double_precision, &
                      iN, iN, Mpi_comm_world,status,MPIerror)
-                call ncdf_put_var(grp,'J',J,start = (/1,nE%iE(iN),ikpt/) )
+                call ncdf_put_var(grp,name,D,start = (/1,nE%iE(iN),ikpt/) )
              end if
           end do
        else if ( nE%iE(Node) > 0 ) then
-          call MPI_Send(J(1),nnzs_dev,Mpi_double_precision, &
+          call MPI_Send(D(1),nnzs_dev,Mpi_double_precision, &
                0, Node, Mpi_comm_world,MPIerror)
        end if
     end if
 #endif
 
 #ifdef TBTRANS_TIMING
-    call timer('cdf-w-J',2)
+    call timer('cdf-w-sp-dev',2)
 #endif
 
-  end subroutine state_cdf_save_J
+  end subroutine state_cdf_save_sp_dev
 
 
   ! Routine for reading in the TBT.nc file

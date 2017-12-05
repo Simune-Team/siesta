@@ -1,5 +1,5 @@
 SystemName          Water molecule -- driven by i-Pi
-SystemLabel         h2o
+SystemLabel         h2o-ipi
 NumberOfAtoms       3
 NumberOfSpecies     2
 

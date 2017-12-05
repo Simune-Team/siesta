@@ -1,7 +1,7 @@
 import sisl
 
 # Read initial geometry
-init = sisl.Geometry.read('h2o_neb.fdf')
+init = sisl.Geometry.read('flos_h2o_neb.fdf')
 
 # Create images (also initial and final [0, 180])
 for i, ang in enumerate([0, 30, 60, 90, 120, 150, 180]):

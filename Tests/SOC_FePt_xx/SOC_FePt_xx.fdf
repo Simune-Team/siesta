@@ -1,10 +1,10 @@
-SystemName              SOC FePt X-alignment z
-SystemLabel             FePtxz
+SystemName              SOC FePt X-alignment x
+SystemLabel             SOC_FePt_xx
 
 Spin    SOC
 %block DM.InitSpin
- 1  +1.   0.  0.
- 2  +1.   0.  0.
+ 1  +1.  90.  0.
+ 2  +1.  90.  0.
 %endblock DM.InitSpin
 
 NumberOfAtoms           2

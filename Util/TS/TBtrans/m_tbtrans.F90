@@ -14,12 +14,6 @@ module m_tbtrans
 
   use precision, only : dp
 
-  use m_tbt_hs
-
-  use m_tbt_tri_init, only : tbt_tri_init, tbt_tri_print_opti
-
-  use m_tbt_trik
-
   implicit none
 
   public :: tbt
@@ -46,11 +40,17 @@ contains
 
     use m_region
 
+    use m_ts_electype
+    use m_tbt_options, only : N_Elec, Elecs
+
+    use m_tbt_hs, only: tTSHS, spin_idx, Volt, prep_next_HS
+    
+    use m_tbt_tri_init, only : tbt_tri_init, tbt_tri_print_opti
+    use m_tbt_tri_init, only : DevTri
+    use m_tbt_trik, only: tbt_trik
+
     use m_tbt_contour
 
-    use m_ts_electype
-
-    use m_tbt_options, only : N_Elec, Elecs
 #ifdef NCDF_4
     use m_tbt_delta, only : read_delta_Sp
     use m_tbt_dH, only : use_dH, dH
@@ -298,18 +298,18 @@ contains
 
           ! Initialize data files
           call name_save( ispin, TSHS%nspin,cdf_fname, end = 'nc')
-          call init_cdf_save(cdf_fname,TSHS,r_oDev,ispin,N_Elec, Elecs, &
+          call init_cdf_save(cdf_fname,TSHS,r_oDev,DevTri,ispin,N_Elec, Elecs, &
                nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf, sp_dev_sc, save_DATA )
        end if
        
        call name_save( ispin, TSHS%nspin,cdf_fname_sigma, end = 'SE.nc')
-       call init_Sigma_save(cdf_fname_sigma,TSHS,r_oDev,ispin,N_Elec, Elecs, &
+       call init_Sigma_save(cdf_fname_sigma,TSHS,r_oDev,DevTri,ispin,N_Elec, Elecs, &
             nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf )
 
        if ( ('Sigma-only'.nin.save_DATA) ) then
        
           call name_save( ispin, TSHS%nspin, cdf_fname_proj, end = 'Proj.nc' )
-          call init_Proj_save( cdf_fname_proj, TSHS , r_oDev, ispin, N_Elec, Elecs, &
+          call init_Proj_save( cdf_fname_proj,TSHS,r_oDev,DevTri,ispin, N_Elec, Elecs, &
                nkpt, kpt, wkpt, NEn , r_aDev, r_aBuf, sp_dev_sc, save_DATA )
        end if
 
@@ -363,6 +363,7 @@ contains
 
     subroutine print_memory()
 
+      use class_dSpData2D, only: nnzs
       use precision, only: i8b
       use m_verbosity, only : verbosity
       use m_tbt_regions, only : sp_uc
