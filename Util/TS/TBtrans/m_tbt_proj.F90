@@ -2000,6 +2000,7 @@ contains
 
 #else
        ! figure out the LUMO level
+       iLUMO = no
        do i = 1 , no 
           if ( eig(i) > 0._dp ) then
              iLUMO = i

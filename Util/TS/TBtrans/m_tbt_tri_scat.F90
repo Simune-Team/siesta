@@ -43,6 +43,9 @@ module m_tbt_tri_scat
   public :: dir_GF_Gamma_GF
   public :: GFGGF_needed_worksize
 #ifdef NCDF_4
+  public :: GF_COOP, A_COOP
+  public :: GF_COHP, A_COHP
+  public :: GF_COHP_add_dH, A_COHP_add_dH
   public :: orb_current
   public :: orb_current_add_dH
 #endif
@@ -75,7 +78,7 @@ contains
     type(Sparsity), pointer :: sp
     complex(dp), pointer :: S(:)
     complex(dp) :: Gf
-    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer :: np, n, no_o, no_i
     integer :: br, io, ind, bc
     real(dp) :: lDOS
@@ -181,6 +184,620 @@ contains
   end subroutine GF_DOS
 
 #ifdef NCDF_4
+
+  ! A simple routine to calculate the COOP curves
+  ! When entering this routine Gf_tri
+  ! should contain:
+  ! all GF_nn
+  ! and work_tri should contain
+  ! all GF_mn m/=n
+  subroutine GF_COOP(r,Gfd_tri,Gfo_tri,pvt,sp,S,sc_off,k,COOP)
+    use class_Sparsity
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(tRgn), intent(in) :: r
+    type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
+    type(tRgn), intent(in) :: pvt
+    type(Sparsity), intent(inout) :: sp
+    real(dp), intent(in) :: S(:), sc_off(:,:)
+    real(dp), intent(in) :: k(3)
+    type(dSpData1D), intent(inout) :: COOP
+
+    type(Sparsity), pointer :: c_sp
+    real(dp), pointer :: C(:)
+    complex(dp) :: Gf
+    complex(dp), allocatable :: ph(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
+    integer :: no_u, br, io, ind, iind, bc
+
+#ifdef TBTRANS_TIMING
+    call timer('GF-COOP',1)
+#endif
+
+#ifdef TBT_PHONON
+    call die('Currently not implemented for PHtrans')
+#endif
+
+    ! Extract COOP by looping the sparse matrix
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do io = 1 , size(sc_off, dim=2)
+       ph(io-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,io) + &
+            k(2) * sc_off(2,io) + &
+            k(3) * sc_off(3,io))) / Pi
+    end do
+
+    call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    c_sp => spar(COOP)
+    C => val (COOP)
+    call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
+
+!$OMP parallel do default(shared), private(br,io,c_col,ind,iind,bc,Gf)
+    do br = 1, r%n
+       io = r%r(br)
+
+       ! Get lookup columns for the COOP
+       c_col => ccol(cptr(io)+1:cptr(io)+cncol(io))
+
+       ! Loop on overlap entries here...
+       do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
+
+          ! Check if the orbital exists in the region
+          iind = cptr(io) + SFIND(c_col, l_col(ind))
+          
+          ! if zero the element does not exist
+          ! This is the case on the elements connecting out
+          ! of the device region
+          if ( iind <= cptr(io) ) cycle
+
+          ! COOP(iind) = - Im[G(io,jo) * S(io,jo)] / Pi
+          bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
+          call index_Gf(br, bc, Gf)
+
+          C(iind) = -aimag(Gf * S(ind) * ph( (l_col(ind)-1)/no_u ))
+
+       end do
+          
+    end do
+!$OMP end parallel do
+
+    ! Clean-up phases
+    deallocate(ph)
+    
+#ifdef TBTRANS_TIMING
+    call timer('GF-COOP',2)
+#endif
+
+  contains
+
+    subroutine index_Gf(br, bc, G)
+      integer, intent(in) :: br, bc
+      complex(dp), intent(out) :: G
+      complex(dp), pointer :: Gf(:)
+      integer :: p_r, i_r, p_c, i_c
+
+      ! Get parts of the tri-diagonal matrix
+      call part_index(Gfo_tri, br, p_r, i_r)
+      call part_index(Gfo_tri, bc, p_c, i_c)
+
+      if ( p_r == p_c ) then
+         ! already calculated
+         Gf => val(Gfd_tri, p_r, p_c)
+      else
+         ! newly calculated
+         Gf => val(Gfo_tri, p_r, p_c)
+      end if
+      G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+
+    end subroutine index_Gf
+
+  end subroutine GF_COOP
+
+  ! A simple routine to calculate the COHP curves
+  ! When entering this routine Gf_tri
+  ! should contain:
+  ! all GF_nn
+  ! and work_tri should contain
+  ! all GF_mn m/=n
+  subroutine GF_COHP(r,Gfd_tri,Gfo_tri,pvt,sp,H,sc_off,k,COHP)
+    use class_Sparsity
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(tRgn), intent(in) :: r
+    type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
+    type(tRgn), intent(in) :: pvt
+    type(Sparsity), intent(inout) :: sp
+    real(dp), intent(in) :: H(:), sc_off(:,:)
+    real(dp), intent(in) :: k(3)
+    type(dSpData1D), intent(inout) :: COHP
+
+    type(Sparsity), pointer :: c_sp
+    real(dp), pointer :: C(:)
+    complex(dp) :: Gf
+    complex(dp), allocatable :: ph(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
+    integer :: no_u, br, io, ind, iind, bc
+
+#ifdef TBTRANS_TIMING
+    call timer('GF-COHP',1)
+#endif
+
+#ifdef TBT_PHONON
+    call die('Currently not implemented for PHtrans')
+#endif
+
+    ! Extract COHP by looping the sparse matrix
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do io = 1 , size(sc_off, dim=2)
+       ph(io-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,io) + &
+            k(2) * sc_off(2,io) + &
+            k(3) * sc_off(3,io))) / Pi
+    end do
+
+    call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    c_sp => spar(COHP)
+    C => val (COHP)
+    call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
+
+!$OMP parallel do default(shared), private(br,io,c_col,ind,iind,bc,Gf)
+    do br = 1, r%n
+       io = r%r(br)
+
+       ! Get lookup columns for the COHP
+       c_col => ccol(cptr(io)+1:cptr(io)+cncol(io))
+
+       ! Loop on overlap entries here...
+       do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
+
+          ! Check if the orbital exists in the region
+          iind = cptr(io) + SFIND(c_col, l_col(ind))
+          
+          ! if zero the element does not exist
+          ! This is the case on the elements connecting out
+          ! of the device region
+          if ( iind <= cptr(io) ) cycle
+
+          ! COHP(iind) = - Im[G(io,jo) * H(io,jo)] / Pi
+          bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
+          call index_Gf(br, bc, Gf)
+
+          C(iind) = -aimag(Gf * H(ind) * ph( (l_col(ind)-1)/no_u ))
+
+       end do
+          
+    end do
+!$OMP end parallel do
+
+    ! Clean-up phases
+    deallocate(ph)
+    
+#ifdef TBTRANS_TIMING
+    call timer('GF-COHP',2)
+#endif
+
+  contains
+
+    subroutine index_Gf(br, bc, G)
+      integer, intent(in) :: br, bc
+      complex(dp), intent(out) :: G
+      complex(dp), pointer :: Gf(:)
+      integer :: p_r, i_r, p_c, i_c
+
+      ! Get parts of the tri-diagonal matrix
+      call part_index(Gfo_tri, br, p_r, i_r)
+      call part_index(Gfo_tri, bc, p_c, i_c)
+
+      if ( p_r == p_c ) then
+         ! already calculated
+         Gf => val(Gfd_tri, p_r, p_c)
+      else
+         ! newly calculated
+         Gf => val(Gfo_tri, p_r, p_c)
+      end if
+      G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+
+    end subroutine index_Gf
+
+  end subroutine GF_COHP
+
+  subroutine Gf_COHP_add_dH(dH_1D,sc_off,k,Gfd_tri,Gfo_tri,r,COHP,pvt)
+
+    use class_Sparsity
+    use class_zSpData1D
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(zSpData1D), intent(in) :: dH_1D
+    real(dp), intent(in) :: sc_off(:,:), k(3)
+    type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
+    type(tRgn), intent(in) :: r
+    type(dSpData1D), intent(inout) :: COHP
+    ! The pivoting region that transfers r%r(iu) to io
+    type(tRgn), intent(in) :: pvt
+
+    type(Sparsity), pointer :: sp
+    complex(dp), pointer :: dH(:)
+    type(Sparsity), pointer :: c_sp
+    integer, pointer :: cncol(:), cptr(:), ccol(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
+
+    complex(dp), allocatable :: ph(:)
+    complex(dp) :: Gf
+    real(dp), pointer :: C(:)
+    integer :: no_u, iu, io, i, ind, iind, ju
+
+#ifdef TBTRANS_TIMING
+    call timer('COHP-Gf-dH',1)
+#endif
+
+    ! Retrieve dH
+    sp => spar(dH_1D)
+    dH => val(dH_1D)
+    call attach(sp, nrows_g=no_u, &
+         n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
+
+    c_sp => spar(COHP)
+    C => val(COHP)
+    call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do i = 1 , size(sc_off, dim=2)
+       ph(i-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,i) + &
+            k(2) * sc_off(2,i) + &
+            k(3) * sc_off(3,i))) / Pi
+    end do
+
+!$OMP parallel do default(shared), &
+!$OMP&private(iu,io,iind,ju,ind,col,Gf)
+    do iu = 1, r%n
+       io = r%r(iu)
+
+       ! Loop on the COHP indices
+       do iind = cptr(io) + 1, cptr(io) + cncol(io)
+
+          ! Here we will calculate the COHP contribution from dH
+          !  COHP(iind) == Gf(io, jo) * dH(io, jo) / pi
+
+          ! Get column Gf orbital
+          ju = pvt%r(ucorb(ccol(iind), no_u))
+
+          ! Check if the io,jo orbital exists in dH
+          if ( l_ncol(io) > 0 ) then
+             col => l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))
+             ind = l_ptr(io) + SFIND(col, ccol(iind))
+          
+             if ( ind > l_ptr(io) ) then
+                
+                call index_Gf(iu, ju, Gf)
+                ! COHP                    Gij  * Hij
+                C(iind) = C(iind) - aimag(Gf * dH(ind) * ph( (l_col(ind)-1)/no_u ))
+
+             end if
+
+          end if
+
+       end do
+    end do
+!$OMP end parallel do
+
+    deallocate(ph)
+
+#ifdef TBTRANS_TIMING
+    call timer('COHP-Gf-dH',2)
+#endif
+
+  contains
+    
+    subroutine index_Gf(br, bc, G)
+      integer, intent(in) :: br, bc
+      complex(dp), intent(out) :: G
+      complex(dp), pointer :: Gf(:)
+      integer :: p_r, i_r, p_c, i_c
+
+      ! Get parts of the tri-diagonal matrix
+      call part_index(Gfo_tri, br, p_r, i_r)
+      call part_index(Gfo_tri, bc, p_c, i_c)
+
+      if ( p_r == p_c ) then
+         ! already calculated
+         Gf => val(Gfd_tri, p_r, p_c)
+      else
+         ! newly calculated
+         Gf => val(Gfo_tri, p_r, p_c)
+      end if
+      G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+
+    end subroutine index_Gf
+    
+  end subroutine Gf_COHP_add_dH
+
+  ! A simple routine to calculate the COOP curves from the spectral function
+  subroutine A_COOP(r,A_tri,pvt,sp,S,sc_off,k,COOP)
+    use class_Sparsity
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(tRgn), intent(in) :: r
+    type(zTriMat), intent(inout) :: A_tri
+    type(tRgn), intent(in) :: pvt
+    type(Sparsity), intent(inout) :: sp
+    real(dp), intent(in) :: S(:), sc_off(:,:)
+    real(dp), intent(in) :: k(3)
+    type(dSpData1D), intent(inout) :: COOP
+
+    type(Sparsity), pointer :: c_sp
+    real(dp), pointer :: C(:)
+    complex(dp), pointer :: A(:)
+    complex(dp), allocatable :: ph(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
+    integer :: no_u, br, io, ind, iind, bc, iA
+
+#ifdef TBTRANS_TIMING
+    call timer('A-COOP',1)
+#endif
+
+#ifdef TBT_PHONON
+    call die('Currently not implemented for PHtrans')
+#endif
+
+    ! Extract COOP by looping the sparse matrix
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do io = 1 , size(sc_off, dim=2)
+       ph(io-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,io) + &
+            k(2) * sc_off(2,io) + &
+            k(3) * sc_off(3,io))) / (2._dp * Pi)
+    end do
+
+    call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    c_sp => spar(COOP)
+    C => val (COOP)
+    call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
+
+    A => val(A_tri)
+
+!$OMP parallel do default(shared), private(br,io,c_col,ind,iind,iA,bc)
+    do br = 1, r%n
+       io = r%r(br)
+
+       ! Get lookup columns for the COOP
+       c_col => ccol(cptr(io)+1:cptr(io)+cncol(io))
+
+       ! Loop on overlap entries here...
+       do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
+
+          ! Check if the orbital exists in the region
+          iind = cptr(io) + SFIND(c_col, l_col(ind))
+          
+          ! if zero the element does not exist
+          ! This is the case on the elements connecting out
+          ! of the device region
+          if ( iind <= cptr(io) ) cycle
+
+          ! COOP(iind) = A(io,jo) * S(io,jo) / (2 pi)
+          bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
+          iA = index(A_tri,br,bc)
+
+          C(iind) = real(A(iA) * S(ind) * ph( (l_col(ind)-1)/no_u ), dp)
+          
+       end do
+          
+    end do
+!$OMP end parallel do
+
+    ! Clean-up phases
+    deallocate(ph)
+    
+#ifdef TBTRANS_TIMING
+    call timer('A-COOP',2)
+#endif
+
+  end subroutine A_COOP
+
+  ! A simple routine to calculate the COHP curves from the spectral function
+  subroutine A_COHP(r,A_tri,pvt,sp,H,sc_off,k,COHP)
+    use class_Sparsity
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(tRgn), intent(in) :: r
+    type(zTriMat), intent(inout) :: A_tri
+    type(tRgn), intent(in) :: pvt
+    type(Sparsity), intent(inout) :: sp
+    real(dp), intent(in) :: H(:), sc_off(:,:)
+    real(dp), intent(in) :: k(3)
+    type(dSpData1D), intent(inout) :: COHP
+
+    type(Sparsity), pointer :: c_sp
+    real(dp), pointer :: C(:)
+    complex(dp), pointer :: A(:)
+    complex(dp), allocatable :: ph(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
+    integer :: no_u, br, io, ind, iind, bc, iA
+
+#ifdef TBTRANS_TIMING
+    call timer('A-COHP',1)
+#endif
+
+#ifdef TBT_PHONON
+    call die('Currently not implemented for PHtrans')
+#endif
+
+    ! Extract COHP by looping the sparse matrix
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do io = 1 , size(sc_off, dim=2)
+       ph(io-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,io) + &
+            k(2) * sc_off(2,io) + &
+            k(3) * sc_off(3,io))) / (2._dp * Pi)
+    end do
+
+    call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    c_sp => spar(COHP)
+    C => val(COHP)
+    call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
+
+    A => val(A_tri)
+
+!$OMP parallel do default(shared), private(br,io,c_col,ind,iind,iA,bc)
+    do br = 1, r%n
+       io = r%r(br)
+
+       ! Get lookup columns for the COHP
+       c_col => ccol(cptr(io)+1:cptr(io)+cncol(io))
+
+       ! Loop on overlap entries here...
+       do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
+
+          ! Check if the orbital exists in the region
+          iind = cptr(io) + SFIND(c_col, l_col(ind))
+          
+          ! if zero the element does not exist
+          ! This is the case on the elements connecting out
+          ! of the device region
+          if ( iind <= cptr(io) ) cycle
+
+          ! COHP(iind) = A(io,jo) * H(io,jo) / (2 pi)
+          bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
+          iA = index(A_tri,br,bc)
+
+          C(iind) = real(A(iA) * H(ind) * ph( (l_col(ind)-1)/no_u ), dp)
+          
+       end do
+          
+    end do
+!$OMP end parallel do
+
+    ! Clean-up phases
+    deallocate(ph)
+    
+#ifdef TBTRANS_TIMING
+    call timer('A-COHP',2)
+#endif
+
+  end subroutine A_COHP
+
+
+  subroutine A_COHP_add_dH(dH_1D,sc_off,k,A_tri,r,COHP,pvt)
+
+    use class_Sparsity
+    use class_zSpData1D
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(zSpData1D), intent(in) :: dH_1D
+    real(dp), intent(in) :: sc_off(:,:), k(3)
+    type(zTriMat), intent(inout) :: A_tri
+    type(tRgn), intent(in) :: r
+    type(dSpData1D), intent(inout) :: COHP
+    ! The pivoting region that transfers r%r(iu) to io
+    type(tRgn), intent(in) :: pvt
+
+    type(Sparsity), pointer :: sp
+    complex(dp), pointer :: dH(:)
+    type(Sparsity), pointer :: c_sp
+    integer, pointer :: cncol(:), cptr(:), ccol(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
+
+    complex(dp), allocatable :: ph(:)
+    complex(dp), pointer :: A(:)
+    real(dp), pointer :: C(:)
+    integer :: no_u, iu, io, i, ind, iind, ju, iA
+
+#ifdef TBTRANS_TIMING
+    call timer('COHP-A-dH',1)
+#endif
+
+    ! Retrieve dH
+    sp => spar(dH_1D)
+    dH => val(dH_1D)
+    call attach(sp, nrows_g=no_u, &
+         n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
+
+    c_sp => spar(COHP)
+    C => val(COHP)
+    call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do i = 1 , size(sc_off, dim=2)
+       ph(i-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,i) + &
+            k(2) * sc_off(2,i) + &
+            k(3) * sc_off(3,i))) / (2._dp * Pi)
+    end do
+
+    A => val(A_tri)
+!$OMP parallel do default(shared), &
+!$OMP&private(iu,io,iind,ju,ind,col,iA)
+    do iu = 1, r%n
+       io = r%r(iu)
+
+       ! Loop on the COHP indices
+       do iind = cptr(io) + 1, cptr(io) + cncol(io)
+
+          ! Here we will calculate the COHP contribution from dH
+          !  COHP(iind) == A(io, jo) * dH(io, jo) / 2pi
+
+          ! Get column A orbital
+          ju = pvt%r(ucorb(ccol(iind), no_u))
+
+          ! Check if the io,jo orbital exists in dH
+          if ( l_ncol(io) > 0 ) then
+             col => l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))
+             ind = l_ptr(io) + SFIND(col, ccol(iind))
+          
+             if ( ind > l_ptr(io) ) then
+                
+                iA = index(A_tri,iu,ju) ! A_ij
+                
+                ! COHP                    Aij  * Hij
+                C(iind) = C(iind) + real(A(iA) * dH(ind) * ph( (l_col(ind)-1)/no_u ), dp)
+
+             end if
+
+          end if
+
+       end do
+    end do
+!$OMP end parallel do
+
+    deallocate(ph)
+
+#ifdef TBTRANS_TIMING
+    call timer('COHP-A-dH',2)
+#endif
+
+  end subroutine A_COHP_add_dH
+
+
 #ifdef NOT_WORKING
   ! A simple routine to calculate the DOS
   ! from a partially calculated GF
@@ -399,7 +1016,7 @@ contains
 
     type(Sparsity), pointer :: sp
     complex(dp), pointer :: S(:), A(:)
-    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer :: io, ind, idx, br, bc
     real(dp) :: lDOS
 

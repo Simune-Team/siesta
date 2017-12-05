@@ -751,7 +751,7 @@ calculation has completed.
   \note this flag should only be used if there are bound states in the
   scattering region (or if one wish to uncover whether there are bound
   states). Due to internal algorithms the DOS from the Green function
-  is computationally more demanding than using \fdf{TBT.DOS!A} an
+  is computationally more demanding than using \fdf{TBT.DOS!A} and
   \fdf{TBT.DOS!A.All}.
 
   This generates \sysfile{DOS} and \sysfile{AVDOS}.
@@ -796,6 +796,93 @@ region via this simple expression
 where the sum is over all electrodes, $\mathbf G$ and $\mathbf A$ are
 the Green and spectral function, respectively. Note that typically
 $\rho_{\mathrm{bound-states}}=0$. 
+
+In addition to the DOS analysis of the Green and spectral functions,
+the Crystal Orbital Overlap Population and Crystal Orbital Hamilton
+Population may also be calculated. These are only available if
+\tbtrans\ is compiled with NetCDF-4 support.
+
+\begin{fdflogicalF}{TBT.COOP!Gf}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!Gf}
+
+  Calculate COOP from the Green function in the device region.
+
+  The COOP curve is calculated as:
+  \begin{equation}
+    \label{eq:COOP-Gf}
+    \mathrm{COOP}_{\mu\nu} = \frac{-1}\pi\Im[\mathbf G_{\mu\nu} \SO_{\mu\nu}].
+  \end{equation}
+  The COOP curves are orbital, energy and $k$-resolved and they may
+  thus result in very large output files.
+
+  \note \fdf{TBT.DOS!Gf} has to be \fdftrue\ for this to be
+  calculated, otherwise a warning will be issued.
+
+  \note Untested!
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.COOP!A}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A,TBT.DOS!A.All}
+
+  Calculate COOP from the spectral function in the device region.
+
+  The COOP curve is calculated as:
+  \begin{equation}
+    \label{eq:COOP-A}
+    \mathrm{COOP}_{\mu\nu} = \frac{1}{2\pi}\Re[\mathbf A_{\mu\nu} \SO_{\mu\nu}].
+  \end{equation}
+  The COOP curves are orbital, energy and $k$-resolved and they may
+  thus result in very large output files.
+
+  \note \fdf{TBT.DOS!A} has to be \fdftrue\ for this to be
+  calculated, otherwise a warning will be issued.
+
+  \note Untested!
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.COHP!Gf}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!Gf}
+
+  Calculate COHP from the Green function in the device region.
+
+  The COHP curve is calculated as:
+  \begin{equation}
+    \label{eq:COHP-Gf}
+    \mathrm{COHP}_{\mu\nu} = \frac{-1}\pi\Im[\mathbf G_{\mu\nu} \Ham_{\mu\nu}].
+  \end{equation}
+  The COHP curves are orbital, energy and $k$-resolved and they may
+  thus result in very large output files.
+
+  \note \fdf{TBT.DOS!Gf} has to be \fdftrue\ for this to be
+  calculated, otherwise a warning will be issued.
+
+  \note Untested!
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.COHP!A}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A,TBT.DOS!A.All}
+
+  Calculate COHP from the spectral function in the device region.
+
+  The COHP curve is calculated as:
+  \begin{equation}
+    \label{eq:COHP-A}
+    \mathrm{COHP}_{\mu\nu} = \frac{1}{2\pi}\Re[\mathbf A_{\mu\nu} \Ham_{\mu\nu}].
+  \end{equation}
+  The COHP curves are orbital, energy and $k$-resolved and they may
+  thus result in very large output files.
+
+  \note \fdf{TBT.DOS!A} has to be \fdftrue\ for this to be
+  calculated, otherwise a warning will be issued.
+
+  \note Untested!
+
+\end{fdflogicalF}
+
+
 
 \begin{fdfentry}{TBT.T!Eig}[integer]<0>
 
@@ -1476,7 +1563,7 @@ is no need to specify the chemical potential
     Bloch waves.
 
     \option[Bloch-A/a1|B/a2|C/a3]%
-    \fdfindex*{TBT.Elec.<>!Bloch}%
+    \fdfindex{TBT.Elec.<>!Bloch}%
     Specific Bloch expansions in each of the electrode unit-cell
     direction. See \fdf*{Bloch} for details.
 
