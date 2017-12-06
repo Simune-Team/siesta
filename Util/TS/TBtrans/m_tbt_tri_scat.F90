@@ -224,21 +224,30 @@ contains
     ! Extract COOP by looping the sparse matrix
 
     ! Create the phases
+    ! Since we have to do Gf.S we simply
+    ! create the S(-k) (which is S^T)
+    ! and thus get the correct values.
     allocate( ph(0:size(sc_off,dim=2)-1) )
     do io = 1 , size(sc_off, dim=2)
-       ph(io-1) = cdexp(dcmplx(0._dp, &
-            k(1) * sc_off(1,io) + &
-            k(2) * sc_off(2,io) + &
+       ph(io-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,io) - &
+            k(2) * sc_off(2,io) - &
             k(3) * sc_off(3,io))) / Pi
     end do
 
     call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
     c_sp => spar(COOP)
-    C => val (COOP)
+    C => val(COOP)
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
 
-!$OMP parallel do default(shared), private(br,io,c_col,ind,iind,bc,Gf)
+!$OMP parallel default(shared), private(br,io,c_col,ind,iind,bc,Gf)
+
+!$OMP workshare
+    C(:) = 0._dp
+!$OMP end workshare
+    
+!$OMP do
     do br = 1, r%n
        io = r%r(br)
 
@@ -256,7 +265,7 @@ contains
           ! of the device region
           if ( iind <= cptr(io) ) cycle
 
-          ! COOP(iind) = - Im[G(io,jo) * S(io,jo)] / Pi
+          ! COOP(iind) = - Im[G(io,jo) * S(jo,io)] / Pi
           bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
           call index_Gf(br, bc, Gf)
 
@@ -265,7 +274,8 @@ contains
        end do
           
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
     ! Clean-up phases
     deallocate(ph)
@@ -338,21 +348,30 @@ contains
     ! Extract COHP by looping the sparse matrix
 
     ! Create the phases
+    ! Since we have to do Gf.H we simply
+    ! create the H(-k) (which is H^T)
+    ! and thus get the correct values.
     allocate( ph(0:size(sc_off,dim=2)-1) )
     do io = 1 , size(sc_off, dim=2)
-       ph(io-1) = cdexp(dcmplx(0._dp, &
-            k(1) * sc_off(1,io) + &
-            k(2) * sc_off(2,io) + &
+       ph(io-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,io) - &
+            k(2) * sc_off(2,io) - &
             k(3) * sc_off(3,io))) / Pi
     end do
 
     call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
     c_sp => spar(COHP)
-    C => val (COHP)
+    C => val(COHP)
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
 
-!$OMP parallel do default(shared), private(br,io,c_col,ind,iind,bc,Gf)
+!$OMP parallel default(shared), private(br,io,c_col,ind,iind,bc,Gf)
+
+!$OMP workshare
+    C(:) = 0._dp
+!$OMP end workshare
+
+!$OMP do
     do br = 1, r%n
        io = r%r(br)
 
@@ -370,7 +389,7 @@ contains
           ! of the device region
           if ( iind <= cptr(io) ) cycle
 
-          ! COHP(iind) = - Im[G(io,jo) * H(io,jo)] / Pi
+          ! COHP(iind) = - Im[G(io,jo) * H(jo,io)] / Pi
           bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
           call index_Gf(br, bc, Gf)
 
@@ -379,7 +398,8 @@ contains
        end do
           
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
     ! Clean-up phases
     deallocate(ph)
@@ -438,7 +458,7 @@ contains
     complex(dp), allocatable :: ph(:)
     complex(dp) :: Gf
     real(dp), pointer :: C(:)
-    integer :: no_u, iu, io, i, ind, iind, ju
+    integer :: no_u, iu, io, jo, i, ind, iind
 
 #ifdef TBTRANS_TIMING
     call timer('COHP-Gf-dH',1)
@@ -463,8 +483,7 @@ contains
             k(3) * sc_off(3,i))) / Pi
     end do
 
-!$OMP parallel do default(shared), &
-!$OMP&private(iu,io,iind,ju,ind,col,Gf)
+!$OMP parallel do default(shared), private(iu,io,iind,jo,ind,col,Gf)
     do iu = 1, r%n
        io = r%r(iu)
 
@@ -472,20 +491,20 @@ contains
        do iind = cptr(io) + 1, cptr(io) + cncol(io)
 
           ! Here we will calculate the COHP contribution from dH
-          !  COHP(iind) == Gf(io, jo) * dH(io, jo) / pi
+          !  COHP(iind) == Gf(io, jo) * dH(jo, io) / pi
 
           ! Get column Gf orbital
-          ju = pvt%r(ucorb(ccol(iind), no_u))
+          jo = ucorb(ccol(iind), no_u)
 
-          ! Check if the io,jo orbital exists in dH
-          if ( l_ncol(io) > 0 ) then
-             col => l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))
-             ind = l_ptr(io) + SFIND(col, ccol(iind))
+          ! Check if the jo,io orbital exists in dH
+          if ( l_ncol(jo) > 0 ) then
+             col => l_col(l_ptr(jo)+1:l_ptr(jo)+l_ncol(jo))
+             ind = l_ptr(jo) + SFIND(col, ccol(iind))
           
-             if ( ind > l_ptr(io) ) then
+             if ( ind > l_ptr(jo) ) then
                 
-                call index_Gf(iu, ju, Gf)
-                ! COHP                    Gij  * Hij
+                call index_Gf(iu, pvt%r(jo), Gf)
+                ! COHP                    Gij  * Hji
                 C(iind) = C(iind) - aimag(Gf * dH(ind) * ph( (l_col(ind)-1)/no_u ))
 
              end if
@@ -561,23 +580,32 @@ contains
     ! Extract COOP by looping the sparse matrix
 
     ! Create the phases
+    ! Since we have to do A.S we simply
+    ! create the S(-k) (which is S^T)
+    ! and thus get the correct values.
     allocate( ph(0:size(sc_off,dim=2)-1) )
     do io = 1 , size(sc_off, dim=2)
-       ph(io-1) = cdexp(dcmplx(0._dp, &
-            k(1) * sc_off(1,io) + &
-            k(2) * sc_off(2,io) + &
+       ph(io-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,io) - &
+            k(2) * sc_off(2,io) - &
             k(3) * sc_off(3,io))) / (2._dp * Pi)
     end do
 
     call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
     c_sp => spar(COOP)
-    C => val (COOP)
+    C => val(COOP)
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
 
     A => val(A_tri)
 
-!$OMP parallel do default(shared), private(br,io,c_col,ind,iind,iA,bc)
+!$OMP parallel default(shared), private(br,io,c_col,ind,iind,iA,bc)
+
+!$OMP workshare
+    C(:) = 0._dp
+!$OMP end workshare
+
+!$OMP do
     do br = 1, r%n
        io = r%r(br)
 
@@ -595,7 +623,7 @@ contains
           ! of the device region
           if ( iind <= cptr(io) ) cycle
 
-          ! COOP(iind) = A(io,jo) * S(io,jo) / (2 pi)
+          ! COOP(iind) = A(io,jo) * S(jo,io) / (2 pi)
           bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
           iA = index(A_tri,br,bc)
 
@@ -604,7 +632,8 @@ contains
        end do
           
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
     ! Clean-up phases
     deallocate(ph)
@@ -651,9 +680,9 @@ contains
     ! Create the phases
     allocate( ph(0:size(sc_off,dim=2)-1) )
     do io = 1 , size(sc_off, dim=2)
-       ph(io-1) = cdexp(dcmplx(0._dp, &
-            k(1) * sc_off(1,io) + &
-            k(2) * sc_off(2,io) + &
+       ph(io-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,io) - &
+            k(2) * sc_off(2,io) - &
             k(3) * sc_off(3,io))) / (2._dp * Pi)
     end do
 
@@ -665,7 +694,13 @@ contains
 
     A => val(A_tri)
 
-!$OMP parallel do default(shared), private(br,io,c_col,ind,iind,iA,bc)
+!$OMP parallel default(shared), private(br,io,c_col,ind,iind,iA,bc)
+
+!$OMP workshare
+    C(:) = 0._dp
+!$OMP end workshare
+
+!$OMP do
     do br = 1, r%n
        io = r%r(br)
 
@@ -683,7 +718,7 @@ contains
           ! of the device region
           if ( iind <= cptr(io) ) cycle
 
-          ! COHP(iind) = A(io,jo) * H(io,jo) / (2 pi)
+          ! COHP(iind) = A(io,jo) * H(jo,io) / (2 pi)
           bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
           iA = index(A_tri,br,bc)
 
@@ -692,7 +727,8 @@ contains
        end do
           
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
     ! Clean-up phases
     deallocate(ph)
@@ -729,7 +765,7 @@ contains
     complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: C(:)
-    integer :: no_u, iu, io, i, ind, iind, ju, iA
+    integer :: no_u, iu, io, i, ind, iind, jo, iA
 
 #ifdef TBTRANS_TIMING
     call timer('COHP-A-dH',1)
@@ -755,8 +791,7 @@ contains
     end do
 
     A => val(A_tri)
-!$OMP parallel do default(shared), &
-!$OMP&private(iu,io,iind,ju,ind,col,iA)
+!$OMP parallel do default(shared), private(iu,io,iind,jo,ind,col,iA)
     do iu = 1, r%n
        io = r%r(iu)
 
@@ -764,21 +799,21 @@ contains
        do iind = cptr(io) + 1, cptr(io) + cncol(io)
 
           ! Here we will calculate the COHP contribution from dH
-          !  COHP(iind) == A(io, jo) * dH(io, jo) / 2pi
+          !  COHP(iind) == A(io, jo) * dH(jo, io) / 2pi
 
           ! Get column A orbital
-          ju = pvt%r(ucorb(ccol(iind), no_u))
+          jo = ucorb(ccol(iind), no_u)
 
-          ! Check if the io,jo orbital exists in dH
-          if ( l_ncol(io) > 0 ) then
-             col => l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))
-             ind = l_ptr(io) + SFIND(col, ccol(iind))
+          ! Check if the jo,io orbital exists in dH
+          if ( l_ncol(jo) > 0 ) then
+             col => l_col(l_ptr(jo)+1:l_ptr(jo)+l_ncol(jo))
+             ind = l_ptr(jo) + SFIND(col, ccol(iind))
           
-             if ( ind > l_ptr(io) ) then
+             if ( ind > l_ptr(jo) ) then
                 
-                iA = index(A_tri,iu,ju) ! A_ij
+                iA = index(A_tri,iu,pvt%r(jo)) ! A_ij
                 
-                ! COHP                    Aij  * Hij
+                ! COHP                    Aij  * Hji
                 C(iind) = C(iind) + real(A(iA) * dH(ind) * ph( (l_col(ind)-1)/no_u ), dp)
 
              end if
@@ -1697,8 +1732,14 @@ contains
     end do
 
     A => val(A_tri)
-!$OMP parallel do default(shared), &
-!$OMP&private(iu,io,ju,jo,i,iind,ind,Hi,icol)
+!$OMP parallel default(shared), private(iu,io,ju,jo,i,iind,ind,Hi,icol)
+
+    ! we need this in case the device region gets enlarged due to dH
+!$OMP workshare
+    J(:) = 0._dp
+!$OMP end workshare
+    
+!$OMP do
     do iu = 1, r%n
        io = r%r(iu)
 
@@ -1746,7 +1787,8 @@ contains
 
        end do
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
     deallocate(ph)
 

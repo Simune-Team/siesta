@@ -471,21 +471,32 @@ real(dp),intent(in) :: dydxn     ! dy/dx at x(n)
 real(dp),intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
 
 ! Internal variables
+integer :: stat
 type(spline_t):: dat
 
 ! Generate spline dat
 if (dydx1>dydxMax .and. dydxn>dydxMax) then
-  call generate_spline( dat, x, y, n )
+  call generate_spline( dat, x, y, n, stat=stat)
 elseif (dydxn>dydxMax) then
-  call generate_spline( dat, x, y, n, dydx1=dydx1 )
+  call generate_spline( dat, x, y, n, dydx1=dydx1, stat=stat)
 elseif (dydx1>dydxMax) then
-  call generate_spline( dat, x, y, n, dydxn=dydxn )
+  call generate_spline( dat, x, y, n, dydxn=dydxn, stat=stat)
 else
-  call generate_spline( dat, x, y, n, dydx1, dydxn )
+  call generate_spline( dat, x, y, n, dydx1, dydxn, stat=stat)
 endif
 
 ! Copy d2y/dx2 to output array
-d2ydx2 = dat%d2ydx2
+! If the status is faulty the resulting d2y/dx2 will be
+! forcefully set to 0
+! Then the user has to do something differently
+if ( stat /= 0 ) then
+   d2ydx2 = 0._dp
+else
+   d2ydx2 = dat%d2ydx2
+end if
+
+! Deallocate arrays in the spline data-structure
+call clean_spline(dat)
 
 END SUBROUTINE generate_spline_x
 
@@ -506,7 +517,6 @@ real(dp),intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
 ! Internal variables
 integer :: ix
 real(dp):: x(n)
-type(spline_t):: dat
 
 ! Generate spline data
 x = (/( (ix-1)*dx, ix=1,n )/)

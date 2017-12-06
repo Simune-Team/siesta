@@ -349,7 +349,7 @@ contains
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
 
-    dic = dic // ('info'.kv.'Blocks in BTD for the current pivot')
+    dic = dic // ('info'.kv.'Blocks in BTD for the pivot table')
     call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
          atts = dic)
 
