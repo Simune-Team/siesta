@@ -655,10 +655,6 @@ contains
          calc_COHP_Gf .or. calc_COHP_A ) then
        
        call newdSpData1D(sp_dev_sc,fdist,orb_J,name='TBT sparse')
-       ! Initialize to 0, it will be overwritten for all
-       ! values, so there is no need to initialize it
-       ! in the orb_current routine (neither here actually)
-       call init_val(orb_J)
        
     end if
 #endif
