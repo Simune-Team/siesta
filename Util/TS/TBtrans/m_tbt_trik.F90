@@ -1019,18 +1019,15 @@ contains
              if ( calc_COOP_Gf ) then
                 call GF_COOP(r_oDev,Gf_tri,zwork_tri,pvt, &
                      TSHS%sp,S,TSHS%sc_off, kpt, orb_J)
-
                 call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', orb_J)
              end if
              if ( calc_COHP_Gf ) then
                 call GF_COHP(r_oDev,Gf_tri,zwork_tri,pvt, &
                      TSHS%sp,H,TSHS%sc_off, kpt, orb_J)
-
                 if ( dH%lvl > 0 ) then
                    call GF_COHP_add_dH(dH%d, TSHS%sc_off, &
                         kpt, Gf_tri, zwork_tri, r_oDev, orb_J, pvt)
                 end if
-                
                 call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', orb_J)
              end if
 #endif
@@ -1129,7 +1126,7 @@ contains
                 end if
                 if ( calc_COHP_A ) then
                    call A_COHP(r_oDev,zwork_tri,pvt, &
-                        TSHS%sp,S,TSHS%sc_off, kpt, orb_J)
+                        TSHS%sp,H,TSHS%sc_off, kpt, orb_J)
                    if ( dH%lvl > 0 ) then
                       call A_COHP_add_dH(dH%d, TSHS%sc_off, &
                            kpt, zwork_tri, r_oDev, orb_J, pvt)
