@@ -80,7 +80,7 @@ contains
 
     type(Sparsity), pointer :: sp
     complex(dp), pointer :: S(:)
-    complex(dp) :: Gf, Gfd
+    complex(dp) :: GfGfd
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer :: np, n, no_o, no_i
     integer :: br, io, ind, bc
@@ -126,7 +126,7 @@ contains
     S => val(S_1D)
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
-!$OMP parallel do default(shared), private(br,io,lDOS,ind,bc,Gf,Gfd)
+!$OMP parallel do default(shared), private(br,io,lDOS,ind,bc,GfGfd)
     do br = 1, r%n
        io = r%r(br)
 
@@ -135,9 +135,8 @@ contains
        do ind = l_ptr(io) + 1, l_ptr(io) + ncol(io)
           bc = pvt%r(l_col(ind))
           if ( bc > 0 ) then
-             call index_Gf(br, bc, Gf)
-             call index_Gf(bc, br, Gfd)
-             lDOS = lDOS + dimag( (Gf - conjg(Gfd)) * S(ind) )
+             call index_GfGfd(br, bc, GfGfd)
+             lDOS = lDOS + dimag( GfGfd * S(ind) )
           end if
        end do
        
@@ -172,7 +171,7 @@ contains
       
     end subroutine calc
 
-    subroutine index_Gf(br, bc, G)
+    subroutine index_GfGfd(br, bc, G)
       integer, intent(in) :: br, bc
       complex(dp), intent(out) :: G
       complex(dp), pointer :: Gf(:)
@@ -188,7 +187,13 @@ contains
       end if
       G = Gf(i_r + (i_c-1) * work_tri%data%tri_nrows(p_r))
 
-    end subroutine index_Gf
+      ! Immediate subtract G^\dagger element
+      if ( p_r /= p_c ) then
+         Gf => val(work_tri, p_c, p_r)
+      end if
+      G = G - conjg(Gf(i_c + (i_r-1) * work_tri%data%tri_nrows(p_c)))
+
+    end subroutine index_GfGfd
 
   end subroutine GF_DOS
 
@@ -279,7 +284,7 @@ contains
 
     type(Sparsity), pointer :: c_sp
     real(dp), pointer :: C(:)
-    complex(dp) :: Gf, Gfd
+    complex(dp) :: GfGfd
     complex(dp), allocatable :: ph(:)
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
@@ -326,7 +331,7 @@ contains
     C => val(COP)
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
 
-!$OMP parallel default(shared), private(br,io,c_col,ind,iind,bc,Gf,Gfd)
+!$OMP parallel default(shared), private(br,io,c_col,ind,iind,bc,GfGfd)
 
 !$OMP workshare
     C(:) = 0._dp
@@ -352,10 +357,9 @@ contains
 
           ! COOP(iind) = - Im[ (G(io,jo) - G^\dagger(io,jo)) * S(jo,io) ] / 2Pi
           bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
-          call index_Gf(br, bc, Gf)
-          call index_Gf(bc, br, Gfd)
+          call index_GfGfd(br, bc, GfGfd)
           
-          C(iind) = -aimag( (Gf - conjg(Gfd)) * M(ind) * ph( (l_col(ind)-1)/no_u ))
+          C(iind) = -aimag( GfGfd * M(ind) * ph( (l_col(ind)-1)/no_u ))
 
        end do
           
@@ -372,7 +376,7 @@ contains
 
   contains
 
-    subroutine index_Gf(br, bc, G)
+    subroutine index_GfGfd(br, bc, G)
       integer, intent(in) :: br, bc
       complex(dp), intent(out) :: G
       complex(dp), pointer :: Gf(:)
@@ -388,7 +392,13 @@ contains
       end if
       G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
 
-    end subroutine index_Gf
+      ! Immediate subtract G^\dagger element
+      if ( p_r /= p_c ) then
+         Gf => val(Gfo_tri, p_c, p_r)
+      end if
+      G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+
+    end subroutine index_GfGfd
 
   end subroutine GF_COP
 
@@ -415,7 +425,7 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
 
     complex(dp), allocatable :: ph(:)
-    complex(dp) :: Gf, Gfd
+    complex(dp) :: GfGfd
     real(dp), pointer :: C(:)
     integer :: no_u, br, io, jo, i, ind, iind
 
@@ -442,7 +452,7 @@ contains
             k(3) * sc_off(3,i))) / (2._dp * Pi)
     end do
 
-!$OMP parallel do default(shared), private(br,io,iind,jo,ind,col,Gf,Gfd)
+!$OMP parallel do default(shared), private(br,io,iind,jo,ind,col,GfGfd)
     do br = 1, r%n
        io = r%r(br)
 
@@ -466,11 +476,10 @@ contains
           
              if ( ind > l_ptr(jo) ) then
                 
-                call index_Gf(br, pvt%r(jo), Gf)
-                call index_Gf(pvt%r(jo), br, Gfd)
+                call index_GfGfd(br, pvt%r(jo), GfGfd)
                 ! COHP(iind) += - Im[ (G(io,jo) - G^\dagger(io,jo)) * dH(jo,io)] / 2Pi
                 C(iind) = C(iind) &
-                     - aimag( (Gf - conjg(Gfd)) * dH(ind) * ph( (l_col(ind)-1)/no_u ))
+                     - aimag( GfGfd * dH(ind) * ph( (l_col(ind)-1)/no_u ))
 
              end if
 
@@ -488,8 +497,8 @@ contains
 #endif
 
   contains
-    
-    subroutine index_Gf(br, bc, G)
+
+    subroutine index_GfGfd(br, bc, G)
       integer, intent(in) :: br, bc
       complex(dp), intent(out) :: G
       complex(dp), pointer :: Gf(:)
@@ -505,7 +514,13 @@ contains
       end if
       G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
 
-    end subroutine index_Gf
+      ! Immediate subtract G^\dagger element
+      if ( p_r /= p_c ) then
+         Gf => val(Gfo_tri, p_c, p_r)
+      end if
+      G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+
+    end subroutine index_GfGfd
 
     function TO(io) result(jo)
       integer, intent(in) :: io
