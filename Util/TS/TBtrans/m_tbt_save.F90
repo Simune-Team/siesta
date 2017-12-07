@@ -1376,7 +1376,7 @@ contains
     
   end subroutine local_save_DOS
   
-  subroutine state_cdf_save_sp_dev(ncdf, ikpt, nE, name, dat, El)
+  subroutine state_cdf_save_sp_dev(ncdf, ikpt, nE, var_name, dat, El)
     
     use parallel, only : Node, Nodes
     use class_dSpData1D
@@ -1393,7 +1393,7 @@ contains
     type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: ikpt
     type(tNodeE), intent(in) :: nE
-    character(len=*), intent(in) :: name
+    character(len=*), intent(in) :: var_name
     type(dSpData1D), intent(inout) :: dat
     type(Elec), intent(inout), optional :: El
 
@@ -1428,7 +1428,7 @@ contains
        cnt = 0
        idx = 1
     end if
-    call ncdf_put_var(grp,name,D,start = idx, count = cnt )
+    call ncdf_put_var(grp,var_name,D,start = idx, count = cnt )
 
 #ifdef MPI
     if ( .not. save_parallel ) then
@@ -1437,7 +1437,7 @@ contains
              if ( nE%iE(iN) > 0 ) then
                 call MPI_Recv(D(1),nnzs_dev,Mpi_double_precision, &
                      iN, iN, Mpi_comm_world,status,MPIerror)
-                call ncdf_put_var(grp,name,D,start = (/1,nE%iE(iN),ikpt/) )
+                call ncdf_put_var(grp,var_name,D,start = (/1,nE%iE(iN),ikpt/) )
              end if
           end do
        else if ( nE%iE(Node) > 0 ) then

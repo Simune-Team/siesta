@@ -655,10 +655,6 @@ contains
          calc_COHP_Gf .or. calc_COHP_A ) then
        
        call newdSpData1D(sp_dev_sc,fdist,orb_J,name='TBT sparse')
-       ! Initialize to 0, it will be overwritten for all
-       ! values, so there is no need to initialize it
-       ! in the orb_current routine (neither here actually)
-       call init_val(orb_J)
        
     end if
 #endif
@@ -1017,12 +1013,12 @@ contains
              
 #ifdef NCDF_4
              if ( calc_COOP_Gf ) then
-                call GF_COOP(r_oDev,Gf_tri,zwork_tri,pvt, &
+                call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
                      TSHS%sp,S,TSHS%sc_off, kpt, orb_J)
                 call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', orb_J)
              end if
              if ( calc_COHP_Gf ) then
-                call GF_COHP(r_oDev,Gf_tri,zwork_tri,pvt, &
+                call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
                      TSHS%sp,H,TSHS%sc_off, kpt, orb_J)
                 if ( dH%lvl > 0 ) then
                    call GF_COHP_add_dH(dH%d, TSHS%sc_off, &
@@ -1119,13 +1115,13 @@ contains
                 
 #ifdef NCDF_4
                 if ( calc_COOP_A ) then
-                   call A_COOP(r_oDev,zwork_tri,pvt, &
+                   call A_COP(r_oDev,zwork_tri,pvt, &
                         TSHS%sp,S,TSHS%sc_off, kpt, orb_J)
                    call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', orb_J, &
                         Elecs(iEl))
                 end if
                 if ( calc_COHP_A ) then
-                   call A_COHP(r_oDev,zwork_tri,pvt, &
+                   call A_COP(r_oDev,zwork_tri,pvt, &
                         TSHS%sp,H,TSHS%sc_off, kpt, orb_J)
                    if ( dH%lvl > 0 ) then
                       call A_COHP_add_dH(dH%d, TSHS%sc_off, &
