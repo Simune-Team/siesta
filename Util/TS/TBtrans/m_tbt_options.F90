@@ -827,6 +827,7 @@ contains
 
     use m_tbt_save, only: save_parallel
 
+    use m_tbt_dH, only: print_dH_warnings
     use m_tbt_hs, only: Volt
 
     ! Whether the user requests a Gamma calculation
@@ -920,7 +921,7 @@ contains
        write(*,'(a)')' ** Disabling transport calculation using diagonal, &
             &not possible with N_elec > 3.'
     end if
-    
+
 #ifdef MPI
 #ifdef NCDF_PARALLEL
     if ( .not. save_parallel ) then
@@ -929,6 +930,8 @@ contains
     end if
 #endif
 #endif
+
+    call print_dH_warnings( save_DATA )
 
     write(*,'(3a,/)') repeat('*',24),' End: TBT CHECKS AND WARNINGS ',repeat('*',26)
 
