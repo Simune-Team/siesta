@@ -12,6 +12,101 @@ Release notes for siesta 4.1-b4 beta version
     - ELPA and MRRR for k-point sampling.
     - Less memory usage
 
+--- Added more digits to dDmax which may be relevant when performing
+    SOC/Non-Co calculations.
+
+--- Fixed bug related to writing out non-colinear spin eigenvalues,
+    and also for spin-orbit. (lp:1708634)
+
+--- Fixed parallel PDOS calculations of non-colinear and spin-orbit.
+    (lp:1718162)
+
+--- Added calculated charges to the Lua interface (check the charges
+    while running).
+
+--- Fixed lots of compilation issues related to the utilities
+    (lp:1712317, lp:1712319, lp:1711850)
+
+--- Fix for reading a ghost basis (lp:1736455)
+
+--- Fix when fdf-input lines are too long, instead of discarding the
+    remaining line, fdf now "dies" to inform users of possible erroneous
+    input. (lp:1728281)
+
+--- Fixed Monkhorst-Pack displacements when the displacement was larger
+    than 1 (lp:1721479)
+
+--- Fix for possible heap allocated arrays (Intel compilers) (lp:1704370)
+
+--- Ensured many files to be closed properly at the end of the runs.
+
+--- Added basic compiler information to the siesta/transiesta/tbtrans
+    header (compiler output)
+
+--- Performing SOC calculations does not not require all species
+    to have SOC contributions.
+
+--- TranSiesta / TBtrans changes:
+
+-- Many bug-fixes related to pivoting tables, this should only
+   change the effective BTD matrices, and has no relevance to the
+   accuracy of the calculations
+
+-- Fixed the default 2-terminal Poisson ramp. The ramp is now
+   defaulted to be positioned in the central region.
+     TS.Poisson ramp-central
+
+-- Small memory reduction by de-allocating unused siesta memory when
+   entering transiesta.
+   
+-- Fixed the box Poisson for N-electrode calculations when using
+   skewed electrodes. Thanks to Azar Ostovan and Thomas Frederiksen.
+
+-- Fixed tbtrans setup for bias-window-only calculations. Now the contours
+   are correctly interpreted.
+
+-- Fixed tbtrans AVCEIG output.
+
+-- Enabled tbtrans 1-orbital calculations in the BTD matrices.
+
+-- Fixed sign-convention changes in orbital-currents. Now they are
+   checked and works together with sisl (>0.9).
+
+-- Allowed external GF files for the self-energies. This is mainly beneficial
+   for TBtrans as we can add external electrodes *anywhere* in the device.
+   Say Buttiker-probes.
+
+-- Bugfix when the left electrode was set to -|V|/2 (the default |V|/2 is
+   unaffected).
+
+-- Added much more output to the TBT*.nc files, electrode information is now
+   complete, and also the BTD matrices are written.
+
+-- Enabled tbtrans -fdf TBT.Analyze which runs all pivoting schemes, this
+   may be very beneficial to run with tbtrans before performing calculations.
+   Choosing the correct pivoting scheme can be really important!
+
+-- Enabled output file on tbtrans command line:
+     tbtrans --out TBT.out RUN.fdf
+   is (more or less) equivalent to:   
+     tbtrans RUN.fdf > TBT.out
+
+-- Speed up in tbtrans calculations by passing the back-pivoting table to reduce
+   SFIND calls in tbtrans.
+
+-- Made Fermi charge correction more aggressive to faster converge.
+
+-- TBtrans can now calculate COOP and COHP analysis curves, they are calculated
+   in the supercell picture and can thus be analyses cross-boundary as well.
+   They are calculated both from the Green function and the spectral function.
+   The coming >0.9.3 release of sisl will enable this analysis.
+
+-- Fixed TBtrans DOS (Green) calculations when performing k-point calculations. There
+   can be small differences when comparing Green function DOS between this version
+   and prior versions. The bug is only present when TRS is applied.
+
+-- Greatly speeded up DOS calculations (thanks to Bernhard Kretz).
+
 #BETA#BETA#BETA#BETA#BETA#BETA#
 B                             B
 E            SIESTA           E

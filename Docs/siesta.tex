@@ -5801,20 +5801,23 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
   This parameter allows the user to reduce the number of eigenstates
   that are calculated from the maximum possible. The benefit is that,
-  for any calculation, the cost of the diagonalization is
-  reduced by finding fewer eigenvectors. For example, during a
+  for any calculation, the cost of the diagonalization is reduced by
+  finding fewer eigenvalues/eigenvectors. For example, during a
   geometry optimisation, only the occupied states are required rather
   than the full set of virtual orbitals. Note, that if the electronic
   temperature is greater than zero then the number of partially
-  occupied states increases, depending on the band gap.  The value
-  specified must be greater than the number of occupied states and less
-  than the number of basis functions.
+  occupied states increases, depending on the band gap. The value
+  specified must be greater than the number of occupied states and
+  less than the number of basis functions.
 
   If a \emph{negative} number is passed it corresponds to the number
   of orbitals above the total charge of the system. In effect it
   corresponds to the number of orbitals above the Fermi level for zero
-  temperature. I.e. if this option is $-2$ for a system of 20 orbitals
-  with 10 electrons it is equivalent to $12$.
+  temperature. I.e. if $-2$ is specified for a system with $20$
+  orbitals and $10$ electrons it is equivalent to $12$.
+
+  Using this option can \emph{greatly} speed up your calculations if
+  used correctly.
 
   \note If experiencing \shell{PDORMTR} errors in $\Gamma$
   calculations with \fdf*{MRRR} algorithm, it is because of a buggy
@@ -5861,8 +5864,10 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   numbers of processors and is therefore the default. This option only
   influences the parallel performance.
 
-  \note If \fdf{Diag!ProcessorY} is $1$ or the total number of
-  processors, then this flag will default to \fdffalse.
+  If \fdf{Diag!BlockSize} is different from \fdf{BlockSize} this flag
+  defaults to \fdftrue, else if \fdf{Diag!ProcessorY} is $1$ or the
+  total number of processors, then this flag will default to
+  \fdffalse.
 
 \end{fdflogicalT}
 
@@ -5893,6 +5898,10 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   The block-size used for the 2D distribution in the ScaLAPACK calls.
   This number greatly affects the performance of ScaLAPACK.
 
+  If the ScaLAPACK library is threaded this parameter should not be
+  too small. In any case it may be advantageous to run a few tests to
+  find a suitable value.
+
   \note If \fdf{Diag!Use2D} is set to \fdffalse\ this flag is not
   used. 
 
@@ -5903,6 +5912,10 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
   Select the algorithm when calculating the eigenvalues and/or
   eigenvectors.
+
+  The fastest routines are typically MRRR or ELPA which may be
+  significantly faster by specifying a suitable
+  \fdf{NumberOfEigenStates} value.
 
   Currently the implemented solvers are:
 
@@ -5970,7 +5983,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     \fdfindex*{Diag!Algorithm!ELPA-1stage}%
     \fdfdepend{NumberOfEigenStates}
     
-    Use the ELPA\cite{ELPA,ELPA-1} 1-stage solver. Requires the
+    Use the ELPA\cite{ELPA,ELPA-1} 1-stage solver. Requires
     compilation of \siesta\ with ELPA, see Sec.~\ref{sec:libs}.
 
     Not compatible with \fdf{Diag!ParallelOverK}.
@@ -5979,7 +5992,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
     \fdfindex*{Diag!Algorithm!ELPA-2stage}%
     \fdfdepend{NumberOfEigenStates}
     
-    Use the ELPA\cite{ELPA,ELPA-1} 2-stage solver. Requires the
+    Use the ELPA\cite{ELPA,ELPA-1} 2-stage solver. Requires
     compilation of \siesta\ with ELPA, see Sec.~\ref{sec:libs}.
 
     Not compatible with \fdf{Diag!ParallelOverK}.
@@ -10486,7 +10499,7 @@ The \tsiesta\ method is a procedure to solve the electronic
 structure of an open system formed by a finite structure sandwiched
 between two semi-infinite metallic leads. A finite bias can be applied
 between both leads, to drive a finite current. The method is described
-in detail in \cite{Brandbyge2002}. In practical terms,
+in detail in \cite{Brandbyge2002,Papior2017}. In practical terms,
 calculations using \tsiesta\ involve the solution of the
 electronic density from the DFT Hamiltonian using Greens functions
 techniques, instead of the usual diagonalization procedure. Therefore,
@@ -10591,7 +10604,9 @@ version of \siesta\ with \tsiesta\ capabilities.
   \item %
   When performing several bias calculations, it is heavily advised to
   copy the \sysfile{TSDE} for the closest, previously, calculated
-  bias.
+  bias. In effect one starts by calculating the zero-bias case and
+  slowly increase the bias in reasonable steps (say $\sim
+  0.1\,\mathrm{V}$). 
   
   \item %
   The \sysfile{TSDE} may be read equivalently as the
@@ -10609,8 +10624,7 @@ version of \siesta\ with \tsiesta\ capabilities.
   directory). It is to be noted that the \sysfile{TSHS} files contain
   all the needed structural information (atomic positions, matrix
   elements, \ldots), and so this kind of parameters will not be
-  changed by input (fdf) flags once they are read a \sysfile{TSHS}
-  file.
+  changed by input (fdf) flags once a \sysfile{TSHS} file is read.
 
   \item %
   When the non-equilibrium calculation uses different electrodes one
@@ -10627,11 +10641,12 @@ version of \siesta\ with \tsiesta\ capabilities.
   contours must be \emph{well} below the lowest eigenvalue.
 
   \item%
-  \tsiesta\ still assumes periodic boundary conditions in the
-  \texttt{xy} directions. For \tsiesta, the specified $k$-point
-  sampling (of this 2-dimensional Brillouin zone) used in a SR
-  calculation must be the same as the one that was used for the
-  electrodes, if they are different the code will stop.
+  \tsiesta\ assumes periodic boundary conditions in the
+  directions transverse to the electrodes semi-infinite
+  directions. If the semi-infinite directions are unique \tsiesta\ can
+  automatically figure out where $k$-point sampling are
+  allowed. However, for $N$ electrode calculations the user has to
+  explicitly specify the $k$-point sampling.
 
   \item%
   The default algorithm for matrix inversion is the BTD method, before
@@ -10639,9 +10654,10 @@ version of \siesta\ with \tsiesta\ capabilities.
   step \fdf{TS!Analyze}.
 
   \item%
-  Importantly the $k$-point sampling need typically be much higher in
-  a \tbtrans\ calculation to achieve a converged transmission
-  function.
+  When calculating transport properties it is \emph{very} important to
+  increase the $k$-point sampling when performing periodic system
+  calculations. It is thus important to converge the number of
+  $k$-points. 
 
 \end{itemize}
 
@@ -10986,8 +11002,8 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
     cubic spline interpolation to much faster converge to the
     ``correct'' Fermi level.
     
-    This method will create a file called \file{TS\_FERMI} and only works with the BTD
-    solver.
+    This method will create a file called \file{TS\_FERMI} and works
+    best with the BTD algorithm.
     
   \end{fdfoptions}
 
