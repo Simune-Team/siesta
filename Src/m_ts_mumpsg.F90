@@ -321,36 +321,37 @@ contains
           ! *******************
           ! * calc GF         *
           ! *******************
+          if ( .not. cE%fake ) then
 #ifdef TRANSIESTA_TIMING
-          call timer('TS_MUMPS_SOLVE',1)
+             call timer('TS_MUMPS_SOLVE',1)
 #endif
-          write(mum%ICNTL(1),'(/,a,i0,2(a,i0),/)') &
-               '### Solving Eq Node/iC: ',Node,'/',cE%idx(2),',',cE%idx(3)
-          mum%JOB = 5
-          call zMUMPS(mum)
-          call mum_err(mum, &
-               'MUMPS failed the Eq. inversion, check the output log')
+             write(mum%ICNTL(1),'(/,a,i0,2(a,i0),/)') &
+                  '### Solving Eq Node/iC: ',Node,'/',cE%idx(2),',',cE%idx(3)
+             mum%JOB = 5
+             call zMUMPS(mum)
+             call mum_err(mum, &
+                  'MUMPS failed the Eq. inversion, check the output log')
 #ifdef TRANSIESTA_TIMING
-          call timer('TS_MUMPS_SOLVE',2)
+             call timer('TS_MUMPS_SOLVE',2)
 #endif   
-
-          ! ** At this point we have calculated the Green function
-
-          ! ****************
-          ! * save GF      *
-          ! ****************
-          do imu = 1 , N_mu
-             if ( cE%fake ) cycle ! in case we implement an MPI communication solution...
-             call ID2idx(cE,mus(imu)%ID,idx)
-             if ( idx < 1 ) cycle
              
-             call c2weight_eq(cE,idx, kw, W ,ZW)
-             call add_DM( spuDM, W, spuEDM, ZW, &
-                  mum, &
-                  N_Elec, Elecs, &
-                  DMidx=mus(imu)%ID)
-          end do
-
+             ! ** At this point we have calculated the Green function
+             
+             ! ****************
+             ! * save GF      *
+             ! ****************
+             do imu = 1 , N_mu
+                call ID2idx(cE,mus(imu)%ID,idx)
+                if ( idx < 1 ) cycle
+                
+                call c2weight_eq(cE,idx, kw, W ,ZW)
+                call add_DM( spuDM, W, spuEDM, ZW, &
+                     mum, &
+                     N_Elec, Elecs, &
+                     DMidx=mus(imu)%ID)
+             end do
+          end if
+             
           ! step energy-point
           iE = iE + Nodes
           cE = Eq_E(iE,step=Nodes) ! we read them backwards
@@ -440,48 +441,50 @@ contains
           ! *******************
           ! * calc GF         *
           ! *******************
-          write(mum%ICNTL(1),'(/,a,i0,2(a,i0),/)') &
-               '### Solving nEq Node/iC: ',Node,'/',cE%idx(2),',',cE%idx(3)
-          mum%JOB = 5
-          call zMUMPS(mum)
-          call mum_err(mum, &
-               'MUMPS failed the nEq. inversion, check the output log')
-
-          ! ** At this point we have calculated the Green function
-
-          ! ****************
-          ! * save GF      *
-          ! ****************
-          off = 0
-          do iEl = 1 , N_Elec
-             if ( cE%fake ) cycle ! in case we implement an MPI communication solution
-
-             ! The mumps solver is initialized to always
-             ! solve for all electrode columns... (not very sparse :( )
-
-             ! offset and number of orbitals
-             no = TotUsedOrbs(Elecs(iEl))
-
-             ! step to the next electrode position
-             off = off + no
-
-             ! *notice* we correct the Gf index for the column
-             call GF_Gamma_GF(Elecs(iEl), mum, no_u_TS, no, &
-                  Gf(no_u_TS*(off-no)+1:))
-
-             do iID = 1 , N_nEq_ID
+          if ( .not. cE%fake ) then
+             
+             write(mum%ICNTL(1),'(/,a,i0,2(a,i0),/)') &
+                  '### Solving nEq Node/iC: ',Node,'/',cE%idx(2),',',cE%idx(3)
+             mum%JOB = 5
+             call zMUMPS(mum)
+             call mum_err(mum, &
+                  'MUMPS failed the nEq. inversion, check the output log')
+             
+             ! ** At this point we have calculated the Green function
+             
+             ! ****************
+             ! * save GF      *
+             ! ****************
+             off = 0
+             do iEl = 1 , N_Elec
                 
-                if ( .not. has_cE_nEq(cE,iEl,iID) ) cycle
+                ! The mumps solver is initialized to always
+                ! solve for all electrode columns... (not very sparse :( )
                 
-                call c2weight_neq(cE,iID,kw,W,imu,ZW)
-
-                call add_DM( spuDM, W, spuEDM, ZW, &
-                     mum, &
-                     N_Elec, Elecs, &
-                     DMidx=iID, EDMidx=imu, eq = .false. )
+                ! offset and number of orbitals
+                no = TotUsedOrbs(Elecs(iEl))
+                
+                ! step to the next electrode position
+                off = off + no
+                
+                ! *notice* we correct the Gf index for the column
+                call GF_Gamma_GF(Elecs(iEl), mum, no_u_TS, no, &
+                     Gf(no_u_TS*(off-no)+1:))
+                
+                do iID = 1 , N_nEq_ID
+                   
+                   if ( .not. has_cE_nEq(cE,iEl,iID) ) cycle
+                   
+                   call c2weight_neq(cE,iID,kw,W,imu,ZW)
+                   
+                   call add_DM( spuDM, W, spuEDM, ZW, &
+                        mum, &
+                        N_Elec, Elecs, &
+                        DMidx=iID, EDMidx=imu, eq = .false. )
+                end do
              end do
-          end do
-
+          end if
+          
           ! step energy-point
           iE = iE + Nodes
           cE = nEq_E(iE,step=Nodes) ! we read them backwards
