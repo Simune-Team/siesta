@@ -26,7 +26,9 @@
       use siesta_dicts, only : dict_variable_add
       use m_ts_options, only : ts_scf_mixs
       use variable, only: cunpack
+#ifndef NCDF_4
       use dictionary, only: assign
+#endif      
       use m_mixing, only: mixers_history_init
 #endif
       use m_state_init
