@@ -202,9 +202,11 @@ contains
     ! calculate the actual size of the matrix
     ! We know that it must be the Hamiltonian sparsity
     ! pattern UNION DENSE-electrodes!
-    allocate( mum%IRN ( mum%NZ ) )
-    allocate( mum%JCN ( mum%NZ ) )
-    allocate( mum%A   ( mum%NZ ) )
+    call memory('A', 'I', mum%NZ * 2, 'prep_LHS')
+    allocate( mum%IRN( mum%NZ ) )
+    allocate( mum%JCN( mum%NZ ) )
+    call memory('A', 'Z', mum%NZ, 'prep_LHS')
+    allocate( mum%A( mum%NZ ) )
 
 !$OMP parallel do default(shared), &
 !$OMP&private(io,ioff,ind)
@@ -212,12 +214,12 @@ contains
 
        if ( l_ncol(io) /= 0 ) then
        
-       ioff = orb_offset(io)
+       ioff = io - orb_offset(io)
        
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
              
-          mum%JCN(ind) = io - ioff
           mum%IRN(ind) = l_col(ind) - orb_offset(l_col(ind))
+          mum%JCN(ind) = ioff
 
        end do
 
@@ -229,24 +231,29 @@ contains
 
   end subroutine prep_LHS
 
-  subroutine allocate_mum(mum,size,N_Elec,Elecs,GF)
+  subroutine allocate_mum(mum,nsize,N_Elec,Elecs,GF)
     use m_ts_electype
     include 'zmumps_struc.h'
     type(zMUMPS_STRUC), intent(inout) :: mum
-    integer, intent(in) :: size, N_Elec
+    integer, intent(in) :: nsize, N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
     complex(dp), pointer :: Gf(:)
 
     integer :: no, iEl, io
 
     ! We allocate for the equilibrium GF
-    mum%NZ_RHS = size ! number of non-zero RHS elements
+    mum%NZ_RHS = nsize ! number of non-zero RHS elements
+
     if ( associated(mum%IRHS_PTR) ) then
+       call memory('D','I',size(mum%IRHS_PTR), 'allocate_mum')
        deallocate(mum%IRHS_PTR)
+       call memory('D','I',size(mum%IRHS_SPARSE), 'allocate_mum')
        deallocate(mum%IRHS_SPARSE)
        nullify(mum%IRHS_PTR,mum%IRHS_SPARSE,mum%RHS_SPARSE)
     end if
+    call memory('A','I',mum%NRHS+1, 'allocate_mum')
     allocate( mum%IRHS_PTR(mum%NRHS+1) )
+    call memory('A','I',mum%NZ_RHS, 'allocate_mum')
     allocate( mum%IRHS_SPARSE(mum%NZ_RHS) )
 
     no = 0
@@ -256,12 +263,14 @@ contains
     end do
     ! Allocate maximum space available
     if ( associated(Gf) ) then
+       call memory('D','Z',size(Gf), 'allocate_mum')
        deallocate(Gf)
        nullify(Gf)
     end if
     ! for large electrodes and not so large device
     ! we need to allocate more space
     allocate( Gf(max(no,mum%NZ_RHS)) )
+    call memory('A','Z',size(Gf), 'allocate_mum')
     mum%RHS_SPARSE => Gf(1:mum%NZ_RHS)
 
     no = 0
@@ -397,7 +406,7 @@ contains
           if ( OrbInElec(El,jso) ) then 
           iso = ts2s_orb(mum%IRN(ind))
           if ( OrbInElec(El,iso) ) then
-             ii = (jso - El%idx_o ) * no + iso - off
+             ii = (jso - El%idx_o) * no + iso - off
              mum%A(ind) = El%Sigma(ii)
           end if
           end if
@@ -410,7 +419,7 @@ contains
           if ( OrbInElec(El,jso) ) then
           iso = ts2s_orb(mum%IRN(ind))
           if ( OrbInElec(El,iso) ) then
-             ii = (jso - El%idx_o ) * no + iso - off
+             ii = (jso - El%idx_o) * no + iso - off
              mum%A(ind) = mum%A(ind) - El%Sigma(ii)
           end if
           end if
