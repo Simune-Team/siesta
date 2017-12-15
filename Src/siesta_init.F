@@ -653,16 +653,10 @@ C     Initialise MPI and set processor number
       ! Populate dictionaries
       call dict_populate()
 
-      ! Initialize LUA handle
-      call slua_init(LUA)
+      ! Initialize LUA handle, also die if the Lua relaxation
+      ! is requested
+      call slua_init(LUA, idyn == 10)
 
-      ! Check if siesta is requested to perform a Lua relaxation.
-      ! If so, we require that a Lua-file is present
-      if ( idyn == 10 .and. .not. SLUA_RUN ) then
-         call die('Requested Lua-MD, however no Lua '//
-     &        'script could be found !')
-      end if
-      
       ! Call a preprocess step right after initialization
       call slua_call(LUA,LUA_INITIALIZE)
 
