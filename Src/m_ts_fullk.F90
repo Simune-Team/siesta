@@ -758,7 +758,7 @@ close(io)
 !$OMP end parallel do
 
        else
-!$OMP parallel do default(hared), private(io,iu,ind,ju)
+!$OMP parallel do default(shared), private(io,iu,ind,ju)
           do io = 1 , nr
              if ( l_ncol(io) /= 0 ) then
              iu = io - orb_offset(io)
