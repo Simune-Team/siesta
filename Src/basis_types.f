@@ -53,22 +53,22 @@
           real(dp)                  ::  qcoe       ! Charge confinement
           real(dp)                  ::  qyuk       ! Charge confinement
           real(dp)                  ::  qwid       ! Charge confinement
-          real(dp), pointer         ::  rc(:)      ! rc's for PAOs
-          real(dp), pointer         ::  lambda(:)  ! Contraction factors
+          real(dp), pointer         ::  rc(:) => null()! rc's for PAOs
+          real(dp), pointer         ::  lambda(:) => null() ! Contraction factors
           !!! type(rad_func), pointer   ::  orb(:) ! Actual orbitals 
       end type shell_t
 
       type, public :: lshell_t
           integer                   ::  l          ! angular momentum
           integer                   ::  nn         ! number of n's for this l
-          type(shell_t), pointer    ::  shell(:)   ! One shell for each n
+          type(shell_t), pointer    ::  shell(:) => null() ! One shell for each n
       end type lshell_t
 
       type, public :: kbshell_t
           integer                   ::  l          ! angular momentum
           integer                   ::  nkbl       ! No. of projs for this l
-          real(dp), pointer         ::  erefkb(:)  ! Reference energies
-          !!! type(rad_func), pointer  ::  proj(:) ! Actual projectors
+          real(dp), pointer         ::  erefkb(:) => null() ! Reference energies
+          !!! type(rad_func), pointer  ::  proj(:) => null() ! Actual projectors
       end type kbshell_t
 
       type, public :: ldaushell_t
@@ -96,7 +96,7 @@
                                                    !   to cut the LDA+U proj.
           real(dp)                  ::  u          ! Value of the U parameter
           real(dp)                  ::  j          ! Value of the J parameter
-          !!! type(rad_func), pointer  ::  ldau_proj(:) ! Actual projectors
+          !!! type(rad_func), pointer  ::  ldau_proj(:) => null() ! Actual projectors
                                                    !   all these radial function
                                                    !   are now defined in the 
                                                    !   derived type "species"
@@ -113,8 +113,8 @@
           integer                   ::  lmxo       ! Max l for basis
           integer                   ::  lmxkb      ! Max l for KB projs
           integer                   ::  lmxldaupj  ! Max l for LDA+U projs
-          type(lshell_t), pointer   ::  lshell(:)  ! One shell per l 
-          type(kbshell_t), pointer  ::  kbshell(:) ! One KB shell per l
+          type(lshell_t), pointer   ::  lshell(:) => null() ! One shell per l 
+          type(kbshell_t), pointer  ::  kbshell(:) => null() ! One KB shell per l
           real(dp)                  ::  ionic_charge
           real(dp)                  ::  mass   
           !
@@ -138,8 +138,8 @@
                                                          !  dependencies.
           integer                   ::  lmxkb_requested
           integer                   ::  lmxldaupj_requested
-          type(shell_t), pointer    ::  tmp_shell(:)
-          type(ldaushell_t), pointer::  ldaushell(:)
+          type(shell_t), pointer    ::  tmp_shell(:) => null()
+          type(ldaushell_t), pointer::  ldaushell(:) => null()
       end type basis_def_t
 
       integer, save, public              :: nsp  ! Number of species
@@ -150,27 +150,29 @@
 !     OLD ARRAYS
 !=====================================================================
 !
-      logical      ,save, public, pointer :: semic(:)
-      integer      ,save, public, pointer :: lmxkb(:), lmxo(:)
-      integer      ,save, public, pointer :: nsemic(:,:), nkbl(:,:)
-      integer      ,save, public, pointer :: cnfigmx(:,:)
-      integer      ,save, public, pointer :: polorb(:,:,:)
-      integer      ,save, public, pointer :: nzeta(:,:,:)
-      real(dp)     ,save, public, pointer :: split_norm(:,:,:)
-      real(dp)     ,save, public, pointer :: vcte(:,:,:)
-      real(dp)     ,save, public, pointer :: rinn(:,:,:)
-      real(dp)     ,save, public, pointer :: qcoe(:,:,:)
-      real(dp)     ,save, public, pointer :: qyuk(:,:,:)
-      real(dp)     ,save, public, pointer :: qwid(:,:,:)
-      real(dp)     ,save, public, pointer :: erefkb(:,:,:)
-      real(dp)     ,save, public, pointer :: charge(:)
-      real(dp)     ,save, public, pointer :: lambda(:,:,:,:)
-      real(dp)     ,save, public, pointer :: filtercut(:,:,:)
-      real(dp)     ,save, public, pointer :: rco(:,:,:,:)
-      integer      ,save, public, pointer :: iz(:)
-      real(dp)     ,save, public, pointer :: smass(:)
-      character(len=10), save, public, pointer :: basistype(:)
-      character(len=20), save, public, pointer :: atm_label(:)
+      logical      ,save, public, pointer :: semic(:) => null()
+      integer      ,save, public, pointer :: lmxkb(:) => null()
+      integer      ,save, public, pointer :: lmxo(:) => null()
+      integer      ,save, public, pointer :: nsemic(:,:) => null()
+      integer      ,save, public, pointer :: nkbl(:,:) => null()
+      integer      ,save, public, pointer :: cnfigmx(:,:) => null()
+      integer      ,save, public, pointer :: polorb(:,:,:) => null()
+      integer      ,save, public, pointer :: nzeta(:,:,:) => null()
+      real(dp)     ,save, public, pointer :: split_norm(:,:,:) => null()
+      real(dp)     ,save, public, pointer :: vcte(:,:,:) => null()
+      real(dp)     ,save, public, pointer :: rinn(:,:,:) => null()
+      real(dp)     ,save, public, pointer :: qcoe(:,:,:) => null()
+      real(dp)     ,save, public, pointer :: qyuk(:,:,:) => null()
+      real(dp)     ,save, public, pointer :: qwid(:,:,:) => null()
+      real(dp)     ,save, public, pointer :: erefkb(:,:,:) => null()
+      real(dp)     ,save, public, pointer :: charge(:) => null()
+      real(dp)     ,save, public, pointer :: lambda(:,:,:,:) => null()
+      real(dp)     ,save, public, pointer :: filtercut(:,:,:) => null()
+      real(dp)     ,save, public, pointer :: rco(:,:,:,:) => null()
+      integer      ,save, public, pointer :: iz(:) => null()
+      real(dp)     ,save, public, pointer :: smass(:) => null()
+      character(len=10), save, public, pointer :: basistype(:) => null()
+      character(len=20), save, public, pointer :: atm_label(:) => null()
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------

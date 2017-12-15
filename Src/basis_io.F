@@ -736,8 +736,10 @@ c
 
       write(lun,'(a)') '<preamble>'
       call write_basis_specs(lun,is)
-      call pseudo_header_print(lun,
-     $                   basis_parameters(is)%pseudopotential)
+      if ( .not. basis_parameters(is)%bessel ) then
+         call pseudo_header_print(lun,
+     $        basis_parameters(is)%pseudopotential)
+      end if
       write(lun,'(a)') '</preamble>'
       call write_header(spp,lun)
       write(lun,'(a)') "# PAOs:__________________________"
@@ -954,8 +956,10 @@ c
 
       write(lun,'(a)') '<preamble>'
       call write_basis_specs(lun,is)
-      call pseudo_header_print(lun,
-     $                   basis_parameters(is)%pseudopotential)
+      if ( .not. basis_parameters(is)%bessel ) then
+         call pseudo_header_print(lun,
+     $        basis_parameters(is)%pseudopotential)
+      end if
       write(lun,'(a)') '</preamble>'
 
       write(lun,'(a)') "<paos>"

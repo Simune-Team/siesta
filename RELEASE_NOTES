@@ -8,6 +8,8 @@ A                             A
 
 Release notes for siesta 4.1-b4 beta version
 
+--- Fixed minor inconsistencies when handling Bessel basis
+
 --- Updated all diagonalization routines
     - ELPA and MRRR for k-point sampling.
     - Less memory usage
