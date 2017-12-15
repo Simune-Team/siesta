@@ -19,6 +19,7 @@
       private
 
       public :: pseudopotential_t, pseudo_read, pseudo_header_print
+      public :: pseudo_init_constant
       public :: pseudo_write_formatted, pseudo_reparametrize
       public :: read_ps_conf, pseudo_dump
 
@@ -39,18 +40,39 @@
         character(len=70)       :: text
         integer                 :: npotu
         integer                 :: npotd
-        real(dp), pointer       :: r(:)
-        real(dp), pointer       :: chcore(:)
-        real(dp), pointer       :: chval(:)
-        real(dp), pointer       :: vdown(:,:)
-        real(dp), pointer       :: vup(:,:)
-        integer, pointer        :: ldown(:)
-        integer, pointer        :: lup(:)
+        real(dp), pointer       :: r(:) => null()
+        real(dp), pointer       :: chcore(:) => null()
+        real(dp), pointer       :: chval(:) => null()
+        real(dp), pointer       :: vdown(:,:) => null()
+        real(dp), pointer       :: vup(:,:) => null()
+        integer, pointer        :: ldown(:) => null()
+        integer, pointer        :: lup(:) => null()
       end type pseudopotential_t
 
-        CONTAINS
+      CONTAINS
 
-        subroutine pseudo_read(label,p)
+      subroutine pseudo_init_constant(p)
+      type(pseudopotential_t), intent(inout) :: p
+
+      p%nr = 0
+      p%nrval = 0
+      p%zval = 0._dp
+      p%gen_zval = 0._dp
+      p%relativistic = .false.
+      p%correlation = ' '
+      p%icorr = ' '
+      p%irel = ' '
+      p%nicore = ' '
+      p%a = 0._dp
+      p%b = 0._dp
+      p%method(:) = ' '
+      p%text = ' '
+      p%npotu = 0
+      p%npotd = 0
+
+      end subroutine pseudo_init_constant
+
+      subroutine pseudo_read(label,p)
         character(len=*), intent(in)   :: label
         type(pseudopotential_t)                    :: p
 
