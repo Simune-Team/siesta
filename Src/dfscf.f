@@ -409,7 +409,7 @@ C  Some loops are not done using f90 form as this
 C  leads to much slower execution on machines with stupid f90
 C  compilers at the moment
           CDV(1:nsp) = 0.0_dp
-          do ispin = 1,spin%H
+         do ispin = 1,spin%H
 
 C  Loop on second orbital of mesh point
             CD(1:nsp) = 0.0_dp

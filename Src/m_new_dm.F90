@@ -552,7 +552,7 @@ contains
       else if ( spin%DM > 2 ) then
          write(*,'(/,a,3f12.6/)')   &
               'initDM: Initial spin polarization (x,y,z) =',  &
-              qspin(3)*2, -qspin(4)*2, qspin(1) - qspin(2)
+              qspin(3)*2, qspin(4)*2, qspin(1) - qspin(2)
       end if
 
     end subroutine print_initial_spin
@@ -1267,13 +1267,11 @@ contains
                       DM(ind,2) = qio - spio * costh
                       DM(ind,3) =       spio * sinth * cosph
                       if ( spin%SO_offsite ) then
-                        DM(ind,4) = -spio * sinth * sinph 
+                        DM(ind,4) = spio * sinth * sinph 
                         DM(ind,5) = 0.0_dp
                         DM(ind,6) = 0.0_dp
                         DM(ind,7)= DM(ind,3)
                         DM(ind,8)=-DM(ind,4)
-!                        DM(indt,7)= DM(ind,3)
-!                        DM(indt,8)=-DM(ind,4)
                       elseif ( spin%DM == 8 .and. .not.spin%SO_offsite ) then
                         DM(ind,4) = spio * sinth * sinph 
                         DM(ind,5) = 0.0_dp

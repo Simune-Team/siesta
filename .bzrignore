@@ -24,3 +24,5 @@ Docs/siesta.log
 Src/state_init.Rot.F
 Src/state_init.noRot.F
 upgrade.sh
+Tests/offsite_SOC_Pt2_xz/TMP
+Tests/offsite_SOC_Pt2_zy/TMP
