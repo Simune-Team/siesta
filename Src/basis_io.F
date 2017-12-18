@@ -73,8 +73,8 @@
 
       integer is, j, i, l, nrp_tables, core_flag, nor, nk, m
 
-      character(len=40) filename
-      character(len=40) dummy
+      character(len=128) :: filename
+      character(len=128) :: dummy
                                 !
       call read_chemical_types()
       nspecies = number_of_species()
@@ -88,6 +88,9 @@
          spp%read_from_file = .true.
          write(filename,'(a,a)') trim(spp%label), ".ion.nc"
          iret = nf90_open(trim(filename),NF90_NOWRITE,ncid)
+         if ( iret /= NF90_NOERR ) then
+           call die("read_user_basis: .ion.nc file does not exist.")
+         end if
 
          iret = nf90_inq_dimid(ncid,'norbs',norbs_id)
          iret = nf90_inquire_dimension(ncid,norbs_id,len=norbs)
@@ -97,7 +100,11 @@
          spp%n_orbnl = norbs
 
          iret = nf90_inq_dimid(ncid,'nkbs',nkbs_id)
-         iret = nf90_inquire_dimension(ncid,nkbs_id,len=nkbs)
+         if ( iret == NF90_NOERR ) then
+            iret = nf90_inquire_dimension(ncid,nkbs_id,len=nkbs)
+         else
+            nkbs = 0
+         end if
          spp%n_pjnl = nkbs
 
 !
@@ -145,14 +152,15 @@
          iret = nf90_inq_varid(ncid,'delta',delta_id)
 
                                 !!      Projectors
-
-         iret = nf90_inq_varid(ncid,'pjnl_l',pjnl_l_id)
-         call check(iret)
-         iret = nf90_inq_varid(ncid,'pjnl_n',pjnl_n_id)
-         iret = nf90_inq_varid(ncid,'pjnl_ekb',pjnl_ekb_id)
-         iret = nf90_inq_varid(ncid,'kbcutoff',kbcutoff_id)
-         iret = nf90_inq_varid(ncid,'kbdelta',kbdelta_id)
-         call check(iret)
+         if ( nkbs > 0 ) then
+            iret = nf90_inq_varid(ncid,'pjnl_l',pjnl_l_id)
+            call check(iret)
+            iret = nf90_inq_varid(ncid,'pjnl_n',pjnl_n_id)
+            iret = nf90_inq_varid(ncid,'pjnl_ekb',pjnl_ekb_id)
+            iret = nf90_inq_varid(ncid,'kbcutoff',kbcutoff_id)
+            iret = nf90_inq_varid(ncid,'kbdelta',kbdelta_id)
+            call check(iret)
+         end if
 
          iret = nf90_inq_varid(ncid,'orb',orb_id)
          call check(iret)
@@ -187,18 +195,22 @@
          else
             call rad_zero(spp%core)
          endif
-
-         call check(iret)
-         iret = nf90_inq_varid(ncid,'proj',proj_id)
          call check(iret)
 
-         iret = nf90_get_var(ncid,pjnl_l_id,spp%pjnl_l,count=(/nkbs/))
-         call check(iret)
-         iret = nf90_get_var(ncid,pjnl_n_id,spp%pjnl_n,count=(/nkbs/))
-         call check(iret)
-         iret = nf90_get_var(ncid,pjnl_ekb_id,spp%pjnl_ekb,
-     $        count=(/nkbs/))
-         call check(iret)
+         if ( nkbs > 0 ) then
+            iret = nf90_inq_varid(ncid,'proj',proj_id)
+            call check(iret)
+            
+            iret = nf90_get_var(ncid,pjnl_l_id,spp%pjnl_l,
+     &           count=(/nkbs/))
+            call check(iret)
+            iret = nf90_get_var(ncid,pjnl_n_id,spp%pjnl_n,
+     &           count=(/nkbs/))
+            call check(iret)
+            iret = nf90_get_var(ncid,pjnl_ekb_id,spp%pjnl_ekb,
+     $           count=(/nkbs/))
+            call check(iret)
+         end if
 
          iret=nf90_get_var(ncid,orbnl_l_id,spp%orbnl_l,count=(/norbs/))
          iret=nf90_get_var(ncid,orbnl_n_id,spp%orbnl_n,count=(/norbs/))
@@ -481,7 +493,7 @@ c
       integer aux(maxnorbs)
 
       integer is, j, i, l
-      character*40 filename
+      character(len=128) filename
 
       do is = 1, nspecies
         spp => species(is)
@@ -492,9 +504,9 @@ c
 
         write(filename,'(a,a)') trim(spp%label), ".ion.nc"
 
-        if (norbs == 0 .or. nkbs == 0) then
+        if ( norbs == 0 ) then
            write(6,'(2a)') 'Skipping creation of NetCDF file ',
-     $                  trim(filename) // " (ghost atom)"
+     $                  trim(filename) // " (no orbitals)"
            CYCLE
         endif
            
@@ -506,14 +518,15 @@ c
 
         iret = nf90_def_dim(ncid,'norbs',norbs,norbs_id)
         call check(iret)
-        iret = nf90_def_dim(ncid,'nkbs',nkbs,nkbs_id)
-        call check(iret)
+        if ( nkbs > 0 ) then
+           iret = nf90_def_dim(ncid,'nkbs',nkbs,nkbs_id)
+           call check(iret)
+        end if
         iret = nf90_def_dim(ncid,'ntb',NTBMAX,ntb_id)
         call check(iret)
 
 
 !! Orbitals
-
         iret = nf90_put_att(ncid,nf90_global,'Element',spp%symbol)
         iret = nf90_put_att(ncid,nf90_global,'Label',spp%label)
         iret = nf90_put_att(ncid,nf90_global,'Atomic_number',spp%z)
@@ -543,18 +556,19 @@ c
         iret = nf90_def_var(ncid,'delta',nf90_double,
      $                           norbs_id,delta_id)
 
+        if ( nkbs > 0 ) then
 !!      Projectors
-
-        iret = nf90_def_var(ncid,'pjnl_l',nf90_int,nkbs_id,pjnl_l_id)
-        call check(iret)
-        iret = nf90_def_var(ncid,'pjnl_n',nf90_int,nkbs_id,pjnl_n_id)
-        iret = nf90_def_var(ncid,'pjnl_ekb',nf90_double,
-     $                           nkbs_id,pjnl_ekb_id)
-        iret = nf90_def_var(ncid,'kbcutoff',nf90_double,
-     $                           nkbs_id,kbcutoff_id)
-        iret = nf90_def_var(ncid,'kbdelta',nf90_double,
-     $                           nkbs_id,kbdelta_id)
-        call check(iret)
+           iret = nf90_def_var(ncid,'pjnl_l',nf90_int,nkbs_id,pjnl_l_id)
+           call check(iret)
+           iret = nf90_def_var(ncid,'pjnl_n',nf90_int,nkbs_id,pjnl_n_id)
+           iret = nf90_def_var(ncid,'pjnl_ekb',nf90_double,
+     $          nkbs_id,pjnl_ekb_id)
+           iret = nf90_def_var(ncid,'kbcutoff',nf90_double,
+     $          nkbs_id,kbcutoff_id)
+           iret = nf90_def_var(ncid,'kbdelta',nf90_double,
+     $          nkbs_id,kbdelta_id)
+           call check(iret)
+        end if
 
         iret = nf90_def_var(ncid,'orb',nf90_double,
      $                      (/ntb_id,norbs_id/),orb_id)
@@ -602,24 +616,27 @@ c
            iret = nf90_put_att(ncid,nf90_global,
      $                         'Core_flag',0)
         endif
-
-        call check(iret)
-        iret = nf90_def_var(ncid,'proj',nf90_double,
-     $                      (/ntb_id,nkbs_id/),proj_id)
         call check(iret)
 
+        if ( nkbs > 0 ) then
+           iret = nf90_def_var(ncid,'proj',nf90_double,
+     $          (/ntb_id,nkbs_id/),proj_id)
+           call check(iret)
+        end if
 !!!!!!!!
         iret = nf90_enddef(ncid)
         call check(iret)
 
-        iret = nf90_put_var(ncid,pjnl_l_id,spp%pjnl_l,count=(/nkbs/))
-        call check(iret)
-        iret = nf90_put_var(ncid,pjnl_n_id,spp%pjnl_n,count=(/nkbs/))
-        call check(iret)
-        iret = nf90_put_var(ncid,pjnl_ekb_id,spp%pjnl_ekb,
-     $                           count=(/nkbs/))
-        call check(iret)
-
+        if ( nkbs > 0 ) then
+           iret = nf90_put_var(ncid,pjnl_l_id,spp%pjnl_l,count=(/nkbs/))
+           call check(iret)
+           iret = nf90_put_var(ncid,pjnl_n_id,spp%pjnl_n,count=(/nkbs/))
+           call check(iret)
+           iret = nf90_put_var(ncid,pjnl_ekb_id,spp%pjnl_ekb,
+     $          count=(/nkbs/))
+           call check(iret)
+        end if
+        
         iret = nf90_put_var(ncid,orbnl_l_id,spp%orbnl_l,count=(/norbs/))
         iret = nf90_put_var(ncid,orbnl_n_id,spp%orbnl_n,count=(/norbs/))
         iret = nf90_put_var(ncid,orbnl_z_id,spp%orbnl_z,count=(/norbs/))
