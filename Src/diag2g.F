@@ -302,12 +302,12 @@ C of referencing has been changed in several places to reflect this.
               Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
               Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe
               Dnew(ind,3) = Dnew(ind,3) + dreal(D12) * qe
-              Dnew(ind,4) = Dnew(ind,4) + dimag(D21) * qe
+              Dnew(ind,4) = Dnew(ind,4) + dimag(D12) * qe
       
               Enew(ind,1) = Enew(ind,1) + dreal(D11) * ee
               Enew(ind,2) = Enew(ind,2) + dreal(D22) * ee
               Enew(ind,3) = Enew(ind,3) + dreal(D12) * ee
-              Enew(ind,4) = Enew(ind,4) + dimag(D21) * ee
+              Enew(ind,4) = Enew(ind,4) + dimag(D12) * ee
       
             enddo
           enddo
