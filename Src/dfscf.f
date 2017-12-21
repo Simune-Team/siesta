@@ -377,18 +377,17 @@ C     Copy potential to a double precision array
         ! done with nspin=4 (grid_nspin)?
         V(1:nsp,1:nspin) = Vscf(1:nsp,ip,1:nspin)
 
+!! CC RC  Added  for the offSpOrb
 C     Factor two for nondiagonal elements for non-collinear spin
-        if ( spin%NCol .or. spin%SO .and. .not.spin%SO_offsite ) then
-           V(1:nsp,3:4) = 2.0_dp * V(1:nsp,3:4)
-           if ( spin%SO .and. .not.spin%SO_offsite ) then
-              V(1:nsp,7:8) = V(1:nsp,3:4)
-           end if
-! CC RC  Added  for the offSpOrb
-        elseif( spin%SO_offsite ) then
-         V(1:nsp,3:nspin) = 2.0_dp * V(1:nsp,3:nspin)
-         V(1:nsp,7) =  V(1:nsp,3)
-         V(1:nsp,8) = -V(1:nsp,4)
-        end if
+        if( spin%SO_offsite ) then
+         V(1:nsp,7) = V(1:nsp,3)
+         V(1:nsp,8) =-V(1:nsp,4)
+        elseif( spin%SO .and. .not.spin%SO_offsite ) then
+         V(1:nsp,7:8) = V(1:nsp,3:4)
+        else
+         V(1:nsp,3:4) = 2.0_dp * V(1:nsp,3:4)
+        endif
+!! CC RC  Added  for the offSpOrb
 
 C     Loop on first orbital of mesh point
         do ic = 1,nc
