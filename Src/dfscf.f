@@ -262,8 +262,8 @@ C  Copy row i of Dscf into row last of D
                    D(jb,ib,2) =  DscfL(ind,2)
                    D(jb,ib,3) =  DscfL(ind,7)
                    D(jb,ib,4) =  DscfL(ind,8)
-                   D(jb,ib,5) = -DscfL(ind,5)
-                   D(jb,ib,6) = -DscfL(ind,6)
+!                   D(jb,ib,5) = -DscfL(ind,5)
+!                   D(jb,ib,6) = -DscfL(ind,6)
                    D(jb,ib,7) =  DscfL(ind,3)
                    D(jb,ib,8) =  DscfL(ind,4)
 ! CC RC  Added  for the offSpOrb
@@ -272,8 +272,8 @@ C  Copy row i of Dscf into row last of D
                    D(jb,ib,2) =  DscfL(ind,2)
                    D(jb,ib,3) =  DscfL(ind,7)
                    D(jb,ib,4) = -DscfL(ind,8)
-                   D(jb,ib,5) = -DscfL(ind,5)
-                   D(jb,ib,6) = -DscfL(ind,6)
+!                   D(jb,ib,5) = -DscfL(ind,5)
+!                   D(jb,ib,6) = -DscfL(ind,6)
                    D(jb,ib,7) =  DscfL(ind,3)
                    D(jb,ib,8) = -DscfL(ind,4)
                 else
@@ -294,8 +294,8 @@ C  Copy row i of Dscf into row last of D
                    D(jb,ib,2) =  Dscf(ind,2)
                    D(jb,ib,3) =  Dscf(ind,7)
                    D(jb,ib,4) =  Dscf(ind,8)
-                   D(jb,ib,5) = -Dscf(ind,5)
-                   D(jb,ib,6) = -Dscf(ind,6)
+!                   D(jb,ib,5) = -Dscf(ind,5)
+!                   D(jb,ib,6) = -Dscf(ind,6)
                    D(jb,ib,7) =  Dscf(ind,3)
                    D(jb,ib,8) =  Dscf(ind,4)
 ! CC RC  Added  for the offSpOrb
@@ -304,8 +304,8 @@ C  Copy row i of Dscf into row last of D
                    D(jb,ib,2) =  Dscf(ind,2)
                    D(jb,ib,3) =  Dscf(ind,7)
                    D(jb,ib,4) = -Dscf(ind,8)
-                   D(jb,ib,5) = -Dscf(ind,5)
-                   D(jb,ib,6) = -Dscf(ind,6)
+!                   D(jb,ib,5) = -Dscf(ind,5)
+!                   D(jb,ib,6) = -Dscf(ind,6)
                    D(jb,ib,7) =  Dscf(ind,3)
                    D(jb,ib,8) = -Dscf(ind,4)
                 else
