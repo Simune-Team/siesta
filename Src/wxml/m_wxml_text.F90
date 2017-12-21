@@ -37,10 +37,10 @@ CONTAINS
 ! Some compilers have trouble with the above
         character(len=int(log10(real(max(abs(i),1)))+2))  :: s
 #endif
-        character(len=4) :: form
-        
-        write(form,'(a,i1,a)') '(i',len(s),')'
-        write(s, form) i
+        character(len=8) :: form
+
+        write(form,'(a,i1)') '(i',len(s)
+        write(s, trim(form)//')') i
 
       end function str_integer
 
