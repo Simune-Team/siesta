@@ -8,6 +8,11 @@ A                             A
 
 Release notes for siesta 4.1-b4 beta version
 
+--- Default changes:
+    MeshCutff has been increased to 300 Ry (from 100)
+    MaxSCFIterations has been increased to 1000 (from 50)
+    SCFMustConverge is now default true (from false)
+
 --- Fixed minor inconsistencies when handling Bessel basis
 
 --- Updated all diagonalization routines

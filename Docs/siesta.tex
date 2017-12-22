@@ -3895,20 +3895,20 @@ The current version introduces several changes:
   
 \end{fdfentry}
 
-\begin{fdfentry}{MaxSCFIterations}[integer]<200>
+\begin{fdfentry}{MaxSCFIterations}[integer]<1000>
 
   Maximum number of SCF\index{SCF} iterations per time step. 
   
 \end{fdfentry}
 
-\begin{fdflogicalF}{SCF!MustConverge}
+\begin{fdflogicalT}{SCF!MustConverge}
 
   Defines the behaviour if convergence is not reached in the maximum
-  number of SCF iterations. The default is to update the forces, perform
-  an MD or geometry optimisation step and carry on. When set to true
-  the calculation will stop on the first SCF convergence failure.
+  number of SCF iterations. The default is to stop on the first SCF
+  convergence failure. Increasing \fdf{MaxSCFIterations} to a large
+  number may be advantageous when this is \fdftrue.
   
-\end{fdflogicalF}
+\end{fdflogicalT}
 
 \subsubsection{Harris functional}
 
@@ -5456,7 +5456,7 @@ note also that a filtering of the orbitals and the relevant parts of
 the pseudopotential and the pseudocore charge might be enough to solve
 the issue (see Sec.~\ref{sec:filtering}).
 
-\begin{fdfentry}{MeshCutoff}[energy]<$100\,\mathrm{Ry}$>
+\begin{fdfentry}{MeshCutoff}[energy]<$300\,\mathrm{Ry}$>
   \index{grid}%
   \index{mesh}
 
