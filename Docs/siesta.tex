@@ -202,9 +202,9 @@ Javier Junquera (Univ. de Oviedo and later UAM), and sometime later by
 Julian Gale (then at Imperial College, London). In 2007 Jose M. Cela
 (Barcelona Supercomputing Center, BSC) became a core developer.
 
-The current TranSIESTA module within SIESTA is developed by 
+The current \tsiesta\ module within SIESTA is developed by 
 Nick R. Papior (then at Technical University of Denmark) and Mads Brandbyge. 
-The original TranSIESTA module was developed by
+The original \tsiesta\ module was developed by
 Pablo Ordejon and Jose L. Mozos (then at ICMAB-CSIC), and Mads Brandbyge,
 Kurt Stokbro, and Jeremy Taylor (Technical Univ. of Denmark).
 
@@ -347,6 +347,10 @@ constructed using the density functional theory Hamiltonian obtained from a give
 density. A new density is computed using the NEGF formalism, which closes the DFT-NEGF
 self consistent cycle.
 
+Starting from version 4.1, \tsiesta\ is an intrinsic part of the
+\siesta\ code. I.e. a separate executable is not necessary
+anymore. See Sec.~\ref{sec:transiesta} for details.
+
 For more details on the formalism, see the main \tsiesta\
 reference cited below. A section has been added to this User's Guide,
 that describes the necessary steps involved in doing transport
@@ -414,7 +418,7 @@ and E. Canadell, Structure and Bonding \textbf{113},
 Extensive review of applications as of summer 2003.
 
 \item
- ``Improvements on non-equilibrium and transport Green function techniques: The next-generation tranSIESTA'',
+ ``Improvements on non-equilibrium and transport Green function techniques: The next-generation TranSIESTA'',
  Nick Papior, Nicolas Lorente, Thomas Frederiksen, Alberto García and
  Mads Brandbyge, Computer Physics Communications, \textbf{212}, 8--24 (2017).
 
@@ -433,6 +437,7 @@ For more information you can visit the web page
 \url{http://www.uam.es/siesta}.
 
 \section{COMPILATION}
+\label{sec:compilation}
 
 \subsection{The build directory}
 
@@ -1123,20 +1128,23 @@ substitute spaces by \fdf*{:}.
 
   \shell{siesta -out RUN.out}.
 
-\end{fdfoptions}
-Additionally \tsiesta\ accepts these flags:
-\begin{fdfoptions}
+  \option[-electrode|-elec]%
+  \fdfdepend{TS!HS.Save,TS!DE.Save}
+  denote this as an electrode calculation which forces the
+  \sysfile{TSHS} and \sysfile{TSDE} files to be saved.
 
   \option[-V]%
-  specify the bias for the current \tsiesta\ run. 
+  \fdfdepend{TS.Voltage}
+  specify the bias for the current \tsiesta\ run.
 
-  \shell{transiesta -V 0.25:eV} or \shell{transiesta -V "0.25 eV"}
+  \shell{siesta -V 0.25:eV} or \shell{siesta -V "0.25 eV"}
   which sets the applied bias to $0.25\,\mathrm{eV}$.
 
 \end{fdfoptions}
 
 
-\section{THE FLEXIBLE DATA FORMAT (FDF)}\index{FDF}
+\section{THE FLEXIBLE DATA FORMAT (FDF)}
+\index{FDF}
 
 The main input file,\index{input file}
 which is read as the standard input (unit 5),
@@ -10470,21 +10478,38 @@ instructions above).
 
 
 \section{TRANSIESTA}
+\label{sec:transiesta}
+
 
 \siesta\ includes the possibility of performing calculations of
 electronic transport properties using the \tsiesta\ method. This
-Section describes how to compile the code to be able to use these
+Section describes how to use these
 capabilities, and a reference guide to the relevant \fdflib\
 options. We describe here only the additional options available for
 \tsiesta\ calculations, while the rest of the Siesta functionalities
 and variables are described in the previous sections of this User's
 Guide.
 
+Starting from 4.1 \tsiesta\ is intrinsic to the \siesta\ executable
+and thus there is no need for two separate executables.
+
+
+\subsection{Source code structure}
+
+In this implementation, the \tsiesta\ routines have been grouped in a
+set of modules whose file names begin with \texttt{m\_ts} or
+\texttt{ts}.
+
+\subsection{Compilation}
+
+Simply compile \siesta\ and \tsiesta\ is enabled, see
+Sec.~\ref{sec:compilation} for details on compiling \siesta.
+
 \subsection{Brief description}
 
 The \tsiesta\ method is a procedure to solve the electronic
 structure of an open system formed by a finite structure sandwiched
-between two semi-infinite metallic leads. A finite bias can be applied
+between semi-infinite metallic leads. A finite bias can be applied
 between both leads, to drive a finite current. The method is described
 in detail in \cite{Brandbyge2002}. In practical terms,
 calculations using \tsiesta\ involve the solution of the
@@ -10512,54 +10537,16 @@ added by Nick R. Papior during 2012.
 
 The current \tsiesta\ module has been completely rewritten by Nick
 R. Papior and encompass a highly advanced inversion algorithm as well
-as allowing $N$ electrode setups among just a few additional
-features. Furthermore, the utility \tbtrans\ has also been fully
-re-coded (by Nick R. Papior) to be a generic tight-binding code capable
-of analyzing physics from the Greens function perspective in $N\ge1$
-setups.
+as allowing $N$ electrode setups among many new features. Furthermore,
+the utility \tbtrans\ has also been fully re-coded (by Nick R. Papior)
+to be a generic tight-binding code capable of analyzing physics from
+the Greens function perspective in $N\ge1$ setups.
 
-\subsection{Source code structure}
-
-In this implementation, the \tsiesta\ routines have been grouped in a
-set of modules whose file names begin with \texttt{m\_ts} or
-\texttt{ts}. The inclusion of \tsiesta\ has also required the
-modification of some of the \siesta\ routines. Presently, these
-modifications are controlled by pre-processor compilation directives
-(such as in \texttt{\#ifdef TRANSIESTA}). See the next section for
-compilation instructions.
-
-\subsection{Compilation}
-
-The standard \siesta\ executable (obtained as described in Section
-2) does not include the \tsiesta\ modules. In order to use the
-\tsiesta\ capabilities, you must compile the \siesta\
-package as indicated in this Section. In this way, the compilation is
-done using the appropriate preprocessor flags needed to include the
-\tsiesta\ modules in the binary file. To generate a binary of
-\siesta\ which includes the \tsiesta\ capabilities, just
-type:
-
-\begin{verbatim}
-$ make transiesta
-\end{verbatim}
-
-using the appropriate \file{arch.make} file for your system (note that
-you do not need to make any modification on your arch.make file: you
-can use the same one that you have used to make a standard \siesta\
-compilation in your system).  The Makefile takes care of defining the
-appropriate preprocessor flag \texttt{-DTRANSIESTA} so that the
-\tsiesta\ modules and modifications are compiled and incorporated into
-the binary. Upon successful compilation, the binary file
-\program{transiesta} will be generated, containing an executable
-version of \siesta\ with \tsiesta\ capabilities.
-
-
-\subsection{Brief explanation}
 
 \begin{itemize}
   \item%
   Transport calculations involve \emph{electrode} (EL) calculations,
-  and then the Scattering Region (SR) calculation.  The
+  and subsequently the Scattering Region (SR) calculation. The
   \emph{electrode} calculations are usual \siesta\ calculations, but
   where a file \sysfile{TSHS} is generated. These files contain the
   information necessary for calculation of the self-energies. If any
@@ -10590,8 +10577,9 @@ version of \siesta\ with \tsiesta\ capabilities.
 
   \item %
   When performing several bias calculations, it is heavily advised to
-  copy the \sysfile{TSDE} for the closest, previously, calculated
-  bias.
+  run different bias' in different directories. To drastically improve
+  convergence (and throughput) one should copy the \sysfile{TSDE} from
+  the closest, previously, calculated bias to the current bias.
   
   \item %
   The \sysfile{TSDE} may be read equivalently as the
@@ -10615,7 +10603,7 @@ version of \siesta\ with \tsiesta\ capabilities.
   \item %
   When the non-equilibrium calculation uses different electrodes one
   may use so-called \emph{buffer} atoms behind the electrodes to act
-  as additional screening region when calculating the initial guess
+  as additional screening regions when calculating the initial guess
   (using \siesta) for \tsiesta. Essentially they may be used to
   achieve a better ``bulk-like'' environment at the electrodes.
 
@@ -10627,11 +10615,10 @@ version of \siesta\ with \tsiesta\ capabilities.
   contours must be \emph{well} below the lowest eigenvalue.
 
   \item%
-  \tsiesta\ still assumes periodic boundary conditions in the
-  \texttt{xy} directions. For \tsiesta, the specified $k$-point
-  sampling (of this 2-dimensional Brillouin zone) used in a SR
-  calculation must be the same as the one that was used for the
-  electrodes, if they are different the code will stop.
+  \tsiesta\ assumes periodic boundary conditions in directions
+  orthogonal to the electrodes semi-infinite directions. If $N>2$
+  \tsiesta\ does not assume anything and one is required to specify
+  the periodicity (via $k$-points) separately.
 
   \item%
   The default algorithm for matrix inversion is the BTD method, before
@@ -10639,34 +10626,41 @@ version of \siesta\ with \tsiesta\ capabilities.
   step \fdf{TS!Analyze}.
 
   \item%
-  Importantly the $k$-point sampling need typically be much higher in
-  a \tbtrans\ calculation to achieve a converged transmission
+  Importantly(!) the $k$-point sampling need typically be much higher
+  in a \tbtrans\ calculation to achieve a converged transmission
   function.
 
 \end{itemize}
 
 \subsection{Electrodes}
 
-In order to calculate the electronic structure of a system under
-external bias, \tsiesta\ attaches the system to semi-infinite
-electrodes which extend to their respective semi-infinite
-directions. Examples of electrodes would include surfaces, nanowires,
-nanotubes or even atomic chains. The electrode must be large enough
-(in the semi-infinite direction) so that orbitals within the unit cell
-only interact with a single nearest neighbor cell in the semi-infinite
-direction (the size of the unit cell can thus be derived from the
-range of support for the orbital basis functions). \tsiesta\ will warn
-if this is not enforced. The electrodes are generated by a separate
-transiesta run on a bulk system. The results are saved in a file with
-extension \sysfile{TSHS} which contains a description of the electrode
-unit cell, the position of the atoms within the unit cell, as well as
-the Hamiltonian and overlap matrices that describe the electronic
+To calculate the electronic structure of a system under external bias,
+\tsiesta\ attaches the system to semi-infinite electrodes which extend
+to their respective semi-infinite directions. Examples of electrodes
+would include surfaces, nanowires, nanotubes or even atomic
+chains. The electrode must be large enough (in the semi-infinite
+direction) so that orbitals within the unit cell only interact with a
+single nearest neighbor cell in the semi-infinite direction (the size
+of the unit cell can thus be derived from the range of support for the
+orbital basis functions). \tsiesta\ will stop if this is not
+enforced. The electrodes are generated by a separate \tsiesta\ run on
+a bulk system. The results are saved in a file with extension
+\sysfile{TSHS} which contains a description of the electrode unit
+cell, the position of the atoms within the unit cell, as well as the
+Hamiltonian and overlap matrices that describe the electronic
 structure of the lead. One can generate a variety of electrodes and
-the typical use of transiesta would involve reusing the same electrode
-for several setups. At runtime, the transiesta coordinates are checked
+the typical use of \tsiesta\ would involve reusing the same electrode
+for several setups. At runtime, the \tsiesta\ coordinates are checked
 against the electrode coordinates and the program stops if there is a
 mismatch to a certain precision ($10^{-4}\,\mathrm{Bohr}$).
 
+To run an electrode calculation one should do:
+\begin{shellexample}
+  siesta --electrode RUN.fdf
+\end{shellexample}
+or define these options in the electrode fdf files:
+\fdf{TS!HS.Save:true} and \fdf{TS!DE.Save:true} (the above
+\code{--electrode} is a shorthand for setting the two options).
 
 \paragraph{Principal layer interactions} %
 \index{transiesta!electrode!principal layer}%
@@ -10703,7 +10697,7 @@ the scattering region. When using \tsiesta\ for electrode
 calculations, only the usual \siesta\ options are relevant.
 %
 Note that since \tsiesta\ is a generic $N$ electrode NEGF code the
-input options are heavily changed.
+input options are heavily changed compared to versions prior to 4.1.
 
 \subsubsection{Quick and dirty}
 
@@ -10720,20 +10714,20 @@ One may input options as in the old \tsiesta\ version and then run
   ts2ts OLD.fdf > NEW.fdf
 \end{fdfexample}
 which translates all keys to the new, equivalent, input format. If you
-are familiar with the old-style flags this is highly recommendable to
-become comfortable with the new input format. Please note that some
-defaults have changed to more conservative values in the newer
-release. 
+are familiar with the old-style flags this is highly recommendable
+while becoming comfortable with the new input format. Please note that
+some defaults have changed to more conservative values in the newer
+release.
 
 If one does not know the old flags and wish to get a basic example of
-an input file, a program \program{Util/TS/tselecs.sh} exists that can
+an input file, a script \program{Util/TS/tselecs.sh} exists that can
 create the basic input for $N$ electrodes. One may call it like:
-\begin{fdfexample}
+\begin{shellexample}
   tselecs.sh -2 > TWO_ELECTRODE.fdf
   tselecs.sh -3 > THREE_ELECTRODE.fdf
   tselecs.sh -4 > FOUR_ELECTRODE.fdf
   ...
-\end{fdfexample}
+\end{shellexample}
 where the first call creates an input fdf for 2 electrode setups, the
 second for a 3 electrode setup, and so on. See the help (\program{-h})
 for the program for additional options.
@@ -10741,11 +10735,11 @@ for the program for additional options.
 Before endeavoring on large scale calculations you are advised to run
 an analyzation of the system at hand, you may run your system as
 \begin{shellexample}
-  transiesta -fdf TS.Analyze RUN.fdf > analyze.out
+  siesta -fdf TS.Analyze RUN.fdf > analyze.out
 \end{shellexample}
 which will analyze the sparsity pattern and print out several
 different pivoting schemes. Please see \fdf{TS!Analyze} for additional
-information. 
+information.
 
 
 \subsubsection{General options}
@@ -10804,11 +10798,11 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
   \fdf*{atom} line(s).
 
   \begin{fdfexample}
-    %block TBT.Atoms.Buffer
+    %block TS.Atoms.Buffer
        atom [ 1 -- 5 ]
     %endblock
     # Or equivalently as a list   
-    TBT.Atoms.Buffer [1 -- 5]
+    TS.Atoms.Buffer [1 -- 5]
   \end{fdfexample}
   will remove atoms [1--5] from the calculation.
 
@@ -10825,11 +10819,12 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 
 \begin{fdfentry}{TS!SCF.Initialize}[string]<diagon|transiesta>%
 
-  Control which initial guess should be used for \tsiesta. The
-  general way is the \fdf*{diagon} solution method, however, one can
-  start immediately in a \tsiesta\ run. If you start directly with
-  \tsiesta\ please refer to these flags: \fdf{TS!Elecs!DM.Init},
-  \fdf{DM.Init.Bulk} and \fdf{TS!Fermi.Initial}.
+  Control which initial guess should be used for \tsiesta. The general
+  way is the \fdf*{diagon} solution method (which is preferred),
+  however, one can start a \tsiesta\ run immediately. If you start
+  directly with \tsiesta\ please refer to these flags:
+  \fdf{TS!Elecs!DM.Init}, \fdf{DM.Init.Bulk} and
+  \fdf{TS!Fermi.Initial}.
   
   \note Setting this to \fdf*{transiesta} is highly experimental and
   convergence may be extremely poor.
@@ -10952,7 +10947,7 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
   
   Control whether the forces are calculated. If \emph{not} \tsiesta\
   will use slightly less memory and the performance slightly
-  increased.
+  increased, however the final forces shown are incorrect.
 
 \end{fdflogicalT}
 
@@ -10986,8 +10981,7 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
     cubic spline interpolation to much faster converge to the
     ``correct'' Fermi level.
     
-    This method will create a file called \file{TS\_FERMI} and only works with the BTD
-    solver.
+    This method will create a file called \file{TS\_FERMI}.
     
   \end{fdfoptions}
 
@@ -10996,9 +10990,9 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 \begin{fdfentry}{TS!ChargeCorrection!Factor}[real]<0.75>
 
   Should be between $0$ and $1$ to lower the charge adjustment. $0$
-  means no charge correction. $1$ means total charge
-  conservation. This will reduce the fluctuations in the SCF and
-  setting this to $1$ may result in difficulties in converging.
+  means no charge correction. $1$ means total charge correction. This
+  will reduce the fluctuations in the SCF and setting this to $1$ may
+  result in difficulties in converging.
   
 \end{fdfentry}
 
@@ -11015,7 +11009,7 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
   The maximally allowed value that the Fermi level will change from a
   charge correction using the Fermi correction method. In case the
   Fermi level lies in between two bands a DOS of $0$ at the Fermi
-  level will make the Fermi change equal $\infty$. This is not
+  level will make the Fermi change equal to $\infty$. This is not
   physical and the user can thus truncate the correction.
   
   \emph{If you know the band-gab, setting this to $1/4$ (or smaller)
@@ -11026,15 +11020,24 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 
 \begin{fdflogicalT}{TS!HS.Save}
 
-  Must be \fdftrue\ for saving the Hamiltonian. In almost no cases
-  is this useful to redefine.
+  Must be \fdftrue\ for saving the Hamiltonian (\sysfile{TSHS}). Can only be set if
+  \fdf{SolutionMethod} is not \fdf*{transiesta}.
+
+  The default is \fdffalse\ for \fdf{SolutionMethod} different from
+  \fdf*{transiesta} and if \code{--electrode} has not been passed as a
+  command line argument.
 
 \end{fdflogicalT}  
 
 \begin{fdflogicalT}{TS!DE.Save}
 
-  Must be \fdftrue\ for saving the density matrix for continuation
-  runs. If \fdffalse\ the \sysfile{TSDE} file will not be created.
+  Must be \fdftrue\ for saving the density and energy density matrix
+  for continuation runs (\sysfile{TSDE}). Can only be set if
+  \fdf{SolutionMethod} is not \fdf*{transiesta}.
+
+  The default is \fdffalse\ for \fdf{SolutionMethod} different from
+  \fdf*{transiesta} and if \code{--electrode} has not been passed as a
+  command line argument.
 
 \end{fdflogicalT}  
 
@@ -11050,8 +11053,11 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 \begin{fdflogicalF}{TS!SIESTA.Only}
 
   Stop \tsiesta\ right after the initial diagonalization run in
-  \siesta. Upon exit it will also create the TSDE file which may be
-  used for initialization runs later.
+  \siesta. Upon exit it will also create the \sysfile{TSDE} file which
+  may be used for initialization runs later.
+
+  This is mainly intended for test runs where one wishes to start
+  several calculations from the same initial density matrix.
 
 \end{fdflogicalF}
 
@@ -11059,9 +11065,9 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 \begin{fdflogicalF}{TS!Analyze}
 
   When using the BTD solution method (\fdf{TS!SolutionMethod}) this
-  will analyze the Hamiltonian and printout an analysis on the
+  will analyze the Hamiltonian and printout an analysis of the
   sparsity pattern for optimal choice of the BTD partitioning
-  algorithm. 
+  algorithm.
 
   This yields information regarding the \fdf{TS!BTD!Pivot} flag.
 
@@ -11072,7 +11078,7 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 
   To run the analyzing step you may do:
   \begin{shellexample}
-    transiesta -fdf TS.Analyze RUN.fdf > analyze.out
+    siesta -fdf TS.Analyze RUN.fdf > analyze.out
   \end{shellexample}
   note that there is little gain on using MPI and it should complete
   within a few minutes, no matter the number of orbitals.
@@ -11161,7 +11167,6 @@ These options adhere to the specific solution methods available for
     electrode(s), append \fdf*{+<elec-name>} to initialize the PCG
     algorithm from the specified electrode.
 
-
   \end{fdfoptions}
 
   Examples are
@@ -11241,10 +11246,10 @@ intricate and important detail.
 
   Define how the correction of the Poisson equation is
   superimposed. The default is to apply the linear correction across
-  the central region (if there are two semi-infinite aligned electrodes).
-  Otherwise this defaults to the \emph{box} solution which will
-  introduce spurious effects at the electrode boundaries. In this case
-  you are encouraged to supply a \fdf*{file}.
+  the central region (if there are two semi-infinite aligned
+  electrodes).  Otherwise this defaults to the \emph{box} solution
+  which will introduce spurious effects at the electrode
+  boundaries. In this case you are encouraged to supply a \fdf*{file}.
 
   If the input is a \fdf*{file}, it should be a NetCDF file containing
   the grid information which acts as the boundary conditions for the
@@ -11313,7 +11318,7 @@ intricate and important detail.
   For anything but two electrodes this defaults to \fdf*{elec-plane}
   because the plane should be at a fixed position in the cell. 
 
-  \note generally this shouldn't need to be changed.
+  \note generally this need not be changed.
 
 \end{fdfentry}
 
@@ -11321,20 +11326,20 @@ intricate and important detail.
 
   Fraction of the correction that is applied.
 
-  \note this is an experimental feature and shouldn't be used.
+  \note this is an experimental feature!
 
 \end{fdfentry}
 
 
 \subsubsection{Electrode description options}
 
-As \tsiesta\ supports $N$ electrodes you need to specify all
+As \tsiesta\ supports $N$ electrodes one needs to specify all
 electrodes in a generic input format.
 
 \begin{fdfentry}{TS!Elecs}[block]
 
-  Each line denote an electrode which may be queried in
-  \fdf{TS!Elec.<>} for its setup.
+  Each line denote an electrode which is queried in \fdf{TS!Elec.<>}
+  for its setup.
   
 \end{fdfentry}
 
@@ -11342,7 +11347,12 @@ electrodes in a generic input format.
 
   Each line represents a setting for electrode \fdf*{<>}.
   There are a few lines that \emph{must} be present, \fdf*{HS},
-  \fdf*{semi-inf-dir}, \fdf*{electrode-pos}, \fdf*{chem-pot}.
+  \fdf*{semi-inf-dir}, \fdf*{electrode-pos}, \fdf*{chem-pot}. The
+  remaining options are optional.
+
+  \note Options prefixed with \fdf*{tbt} are neglected in \tsiesta\
+  calculations. In \tbtrans\ calculations these flags has precedence
+  over the other options.
 
   \begin{fdfoptions}
 
@@ -11361,9 +11371,10 @@ electrodes in a generic input format.
     The semi-infinite direction of the electrode with respect to the
     electrode unit-cell. 
 
-    \note this has nothing to do with the scattering region unit cell,
-    \tsiesta\ will figure out the alignment of the electrode unit-cell
-    and the scattering region unit-cell.
+    \note this direction is \emph{not} with respect to the scattering
+    region unit cell. It is with respect to the electrode unit
+    cell. \tsiesta\ will figure out the alignment of the electrode
+    unit cell and the scattering region unit-cell.
 
     \option[chemical-potential|chem-pot|mu]%
     \fdfindex*{TS!Elec.<>!chemical-potential}%
@@ -11393,10 +11404,11 @@ electrodes in a generic input format.
     \fdfindex*{TS!Elec.<>!Bulk}%
     Logical controlling whether the Hamiltonian of the electrode
     region in the scattering region is enforced \emph{bulk} or whether
-    the Hamiltonian is taken from the scattering region elements.
+    the Hamiltonian is taken from the scattering region elements. If
 
     \option[DM-update]%
     \fdfindex*{TS!Elec.<>!DM-Update}%
+    \fdfdepend{TS!Elec.<>!Bulk}%
     String of values \fdf*{none}, \fdf*{cross-terms} or \fdf*{all}
     which controls which part of the electrode density matrix elements
     that are updated. If \fdf*{all}, both the density matrix elements
@@ -11404,6 +11416,8 @@ electrodes in a generic input format.
     and scattering region are updated. If \fdf*{cross-terms} (default)
     only the coupling elements between the electrode and the
     scattering region are updated.
+
+    If \fdf{TS!Elec.<>!Bulk:false} this is forced to \fdf*{all}.
 
     \option[Gf]%
     \fdfindex*{TS!Elec.<>!Gf}%
@@ -11425,16 +11439,16 @@ electrodes in a generic input format.
     
     \option[Eta]%
     \fdfindex*{TS!Elec.<>!Eta}%
+    \fdfdepend{TS!Elecs!Eta}
     Control the imaginary part of the surface Green function for this
-    electrode. See \fdf{TS!Elecs!Eta}.
+    electrode.
 
     \option[Accuracy]%
     \fdfindex*{TS!Elec.<>!Accuracy}%
+    \fdfdepend{TS!Elecs!Accuracy}
     Control the convergence accuracy required for the self-energy
     calculation when using the Lopez-Sanchez, Lopez-Sanchez iterative
     scheme. 
-    %
-    See \fdf{TS!Elecs!Accuracy}.
 
     \note advanced use \emph{only}.
     
@@ -11451,10 +11465,10 @@ electrodes in a generic input format.
 
     \option[Bloch]%
     \fdfindex*{TS!Elec.<>!Bloch}%
-    $3$ integers are present on this line which each denote the number
-    of times bigger the scattering region electrode is compared to the
-    electrode, in each lattice direction. Remark that these expansion
-    coefficients are with regard to the electrode unit-cell.
+    $3$ integers should be present on this line which each denote the
+    number of times bigger the scattering region electrode is compared
+    to the electrode, in each lattice direction. Remark that these
+    expansion coefficients are with regard to the electrode unit-cell.
     This is denoted ``Bloch'' because it is an expansion based on
     Bloch waves.
 
@@ -11493,7 +11507,7 @@ electrodes in a generic input format.
     electrode $\mathbf k$ samplings are commensurate. This flag
     controls whether this check is enforced.
 
-    \note only use if fully aware of the implications.
+    \note only use if fully aware of the implications!
 
   \end{fdfoptions}
   
@@ -11579,7 +11593,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!Elecs!Coord.EPS}[length]<$10^{-4}\,\mathrm{Bohr}$>
+\begin{fdfentry}{TS!Elecs!Coord.EPS}[length]<$0.001\,\mathrm{Ang}$>
 
   When using Bloch expansion of the self-energies one may experience
   difficulties in obtaining perfectly aligned electrode coordinates.
@@ -11603,8 +11617,8 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
 
 \begin{fdfentry}{TS!ChemPots}[block]
   
-  Each line denotes a new chemical potential which is 
-  defined in the \fdf{TS!ChemPot.<>} block.
+  Each line denotes a new chemical potential which is defined in the
+  \fdf{TS!ChemPot.<>} block.
   
 \end{fdfentry}
 
@@ -11612,7 +11626,6 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
 
   Each line defines a setting for the chemical potential named
   \fdf*{<>}.
-
 
   \begin{fdfoptions}
     
@@ -11735,15 +11748,18 @@ Fermi-level, which is rather unfortunate (for non-equilibrium but not
 equilibrium). Fortunately the non-equilibrium contours are defined
 from different chemical potentials Fermi functions, and as such this
 contour is defined in the window of the minimum and maximum chemical
-potentials.
+potentials. Because the reference energy is the periodic Fermi level
+it is advised to retain the average chemical potentials equal to
+$0$. Otherwise applying different bias will shift transmission curves
+calculated via \tbtrans\ relative to the average chemical potential.
 
 In this section the equilibrium contours are defined, and in the next
 section the non-equilibrium contours are defined.
 
 \begin{fdfentry}{TS!Contours!Eq.Pole}[energy]<$2.5\,\mathrm{eV}$>
 
-  The imaginary part of the Fermi function tail when crossing the
-  Fermi level. Note that the actual number of poles may differ between
+  The imaginary part of the line integral crossing the chemical
+  potential. Note that the actual number of poles may differ between
   different calculations where the electronic temperatures are
   different.
 
@@ -11754,7 +11770,7 @@ section the non-equilibrium contours are defined.
 
 \begin{fdfentry}{TS!Contours!Eq.Pole.N}[integer]<8>
 
-  Manually select the \# of poles for the equilibrium contour. 
+  Manually select the number poles for the equilibrium contour. 
 
   \note this flag will only take effect if \fdf{TS!Contours!Eq.Pole}
   is a negative energy.
@@ -11790,7 +11806,7 @@ section the non-equilibrium contours are defined.
 
       \option[tail]%
       The final part of the contour \emph{must} be a tail which
-      denotes the Fermi-tail.
+      denotes the Fermi function tail.
 
     \end{fdfoptions}
 
@@ -11800,8 +11816,12 @@ section the non-equilibrium contours are defined.
     Define the integration range on the energy axis.
     Thus \emph{a} and \emph{b} are energies.
 
+    The parameters may also be given values \fdf*{prev}/\fdf*{next}
+    which is the equivalent of specifying the same energy as the
+    previous contour it is connected to.
+
     \note that \emph{b} may be supplied as \fdf*{inf} for \fdf*{tail}
-    parts. 
+    parts.
 
     \option[points/delta]%
     \fdfindex*{TS!Contour.<>!points}%
@@ -11861,8 +11881,7 @@ section the non-equilibrium contours are defined.
 \end{fdfentry}
 
 These options complicate the input sequence for regular $2$ electrode
-which is unfortunate. However, it allows highly customizable contours,
-etc.
+which is unfortunate. However, it allows highly customizable contours.
 
 Using \program{tselecs.sh -only-c} yields this output:
 \begin{fdfexample}
@@ -11895,7 +11914,7 @@ Using \program{tselecs.sh -only-c} yields this output:
 These contour options refer to input options for the chemical
 potentials as shown in Sec.~\ref{sec:ts:chem-pot}
 (p.~\pageref{sec:ts:chem-pot}). Importantly one should note the shift
-of the contours of corresponding to the chemical potential (the shift
+of the contours corresponding to the chemical potential (the shift
 corresponds to difference from the reference energy used in \tsiesta).
 
 
@@ -11908,8 +11927,8 @@ create default input blocks.
 \begin{fdfentry}{TS!Contours.nEq!Eta}[energy]<$0\,\mathrm{eV}$>
 
   The imaginary part ($\eta$) of the device states. Generally this is
-  not necessary to define as the imaginary part arises from the
-  self-energies (where $\eta>0$). 
+  not necessary to define as the imaginary part naturally arises from
+  the self-energies (where $\eta>0$).
   
 \end{fdfentry}
 
@@ -11963,15 +11982,15 @@ should change accordingly. Note that here \fdf*{kT} refers to
 \subsection{Matching \texorpdfstring{\tsiesta\ }{TranSIESTA}
     coordinates: basic rules}
 
-Having discussed the possible input options of \tsiesta\ here
-we just list a set of rules to construct the appropriate coordinates
-of the scattering region. Contrary to versions pre 4.1, the order of
+Having discussed the possible input options of \tsiesta\ here we just
+list a set of rules to construct the appropriate coordinates of the
+scattering region. Contrary to versions prior to 4.1, the order of
 atoms is largely irrelevant. One may define all electrodes, then
 subsequently the device, or vice versa. Similarly are buffer atoms not
 restricted to be the first/last atoms.
 %
-However, each electrode atoms \emph{must} be defined
-consecutively. I.e. if an electrode input option is given by:
+However, each electrode atoms \emph{must} be consecutive in the input
+file. I.e. if an electrode input option is given by:
 \begin{fdfexample}
   %block TS.Elec.<>
     HS ../elec-<>/siesta.TSHS
@@ -11980,8 +11999,8 @@ consecutively. I.e. if an electrode input option is given by:
     electrode-position 10
   %endblock
 \end{fdfexample}
-then the atoms from $10$ to $21$ must coincide with the atoms of the
-calculation performed in the \program{../elec-<>/}
+then the atoms from $10$ to $10+4*3-1$ must coincide with the atoms of
+the calculation performed in the \program{../elec-<>/}
 subdirectory. The Bloch expansion requires a particular sequence of
 the atoms which may be outlined as in the following loop:
 \begin{fdfexample}
@@ -12005,7 +12024,7 @@ first device atom coincides with the first electrode atom. Another
 means to create this is using the \sisl\cite{sisl} program and this command
 line:
 \begin{fdfexample}
-  sgeom -rx 1 -ry 3 -rz 1 ELEC.fdf DEVICE_ELEC.fdf
+  sgeom -rz 1 -ry 3 -rx 1 ELEC.fdf DEVICE_ELEC.fdf
 \end{fdfexample}
 and then shift the coordinates according to the placement in the
 device region.
@@ -12023,7 +12042,7 @@ device region.
   calculation.
   
   \item[\sysfile{TSDE}]: The \tsiesta\ density matrix and energy
-  density matrix. During a transiesta run, the \sysfile{DM} values are
+  density matrix. During a \tsiesta\ run, the \sysfile{DM} values are
   used for the density matrix in the buffer (if used) and electrode
   regions. The coupling terms may or may not be updated in a \tsiesta\
   run, see \fdf{TS!Elec.<>!DM-Update}.
@@ -12048,6 +12067,7 @@ device region.
 
 Please see the separate \tbtrans\ manual
 (\href{run:tbtrans.pdf}{tbtrans.pdf}).
+
 
 \section{ANALYSIS TOOLS}
 

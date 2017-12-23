@@ -249,8 +249,8 @@ C Set up fdf ...
       write(0,'(a)')'      Set the label to the corresponding value.'
       write(0,'(a)')'  -V <value>:<unit>'
       write(0,'(a)')'      Short-hand for setting TS.Voltage.'
-      write(0,'(a)')'  -electrode'
-      write(0,'(a)')'      Set TS.HS.Save and TS.DE.Save to true.'
+      write(0,'(a)')'  -electrode|-elec'
+      write(0,'(a)')'      Force TS.HS.Save and TS.DE.Save to true.'
       write(0,'(a)')'  <fdf-file>'
       write(0,'(a)')
      &     '      Use file as fdf-input, you need not to pipe it in.' 

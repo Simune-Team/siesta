@@ -95,6 +95,11 @@ write(6,'(a)') 'NetCDF-4 MPI-IO support'
 #if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
 write(6,'(a)') 'METIS ordering support'
 #endif
+#ifdef TRANSIESTA
+write(6,'(a)') '******************************************************'
+write(6,'(a)') 'transiesta executable is deprecated, please use siesta'
+write(6,'(a)') '******************************************************'
+#endif
 
 end subroutine prversion
 !----------------------------------------------------------

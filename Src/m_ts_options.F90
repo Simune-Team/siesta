@@ -371,7 +371,7 @@ contains
     call fdf_deprecated('TS.ReUseGF','TS.Elecs.GF.ReUse')
 
     ! To determine the same coordinate nature of the electrodes
-    Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
+    Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',0.001_dp*Ang, 'Bohr')
 
     ! Whether we should always set the DM to bulk
     ! values (by reading in from electrode DM)
