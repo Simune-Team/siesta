@@ -58,6 +58,7 @@ C **********************************************************************
       use siesta_geom,  only : xa, isa
       use atomlist,     only : iphorb, iaorb
       use atmfuncs,     only : zetafio, mofio, lofio, cnfigfio, labelfis
+      use atmfuncs,     only : pol, izofis
       use FoX_wxml,     only : xmlf_t, xml_OpenFile, xml_NewElement, 
      .                         xml_AddCharacters, xml_AddAttribute,
      .                         xml_EndElement, xml_Close
@@ -205,7 +206,7 @@ C Close file for write
 
 C New writing
       if (IOnode) then
-         call xml_OpenFile("pdos.xml",xf)
+         call xml_OpenFile(trim(slabel)//".PDOS.xml",xf)
 
         fnamepro = trim(slabel)//'.PDOS'
         call io_assign(iunit2)
@@ -223,11 +224,11 @@ C New writing
         write(iunit2,'(a)') '<energy_values units="eV">'
 
         nullify( tmp )
-        call re_alloc( tmp, 1, 2*nhist, 'tmp', 'pdos' )
+        call re_alloc( tmp, 1, nspin*nhist, 'tmp', 'pdos' )
         do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
            tmp(ihist) = ener/eV
-           write(iunit2,'(f20.5)') ener/eV
+           write(iunit2,'(f20.5)') tmp(ihist)
         enddo
         write(iunit2,'(a)') '</energy_values>'
 
@@ -246,10 +247,11 @@ C New writing
           call xml_AddAttribute(xf,"atom_index",iat)
           call xml_dump_attribute(iunit2,"atom_index",str(iat))
           call xml_AddAttribute(xf,"species",trim(labelfis(spec)))
-          call xml_dump_attribute(iunit2,"species",
-     .                           trim(labelfis(spec)))
-          write(pos_string,'(3f11.6)') (xa(ii,iat),ii=1,3)
-          call xml_AddAttribute(xf,"position",pos_string)
+          call xml_dump_attribute(iunit2,"species",labelfis(spec))
+          call xml_AddAttribute(xf,"Z",izofis(spec))
+          call xml_dump_attribute(iunit2,"Z",str(izofis(spec)))
+          call xml_AddAttribute(xf,"position",xa(1:3,iat))
+          write(pos_string,'(3f11.6)') xa(1:3,iat)
           call xml_dump_attribute(iunit2,"position",pos_string)
           call xml_AddAttribute(xf,"n",cnfigfio(spec,iorb))
           call xml_dump_attribute(iunit2,"n",str(cnfigfio(spec,iorb)))
@@ -259,33 +261,33 @@ C New writing
           call xml_dump_attribute(iunit2,"m",str(mofio(spec,iorb)))
           call xml_AddAttribute(xf,"z",zetafio(spec,iorb))
           call xml_dump_attribute(iunit2,"z",str(zetafio(spec,iorb)))
-          write(iunit2,'(a)') '> '
+          call xml_AddAttribute(xf,"P",pol(spec,iorb))
+          call xml_dump_attribute(iunit2,"P",str(pol(spec,iorb)))
+          write(iunit2,'(a)') '>'
 
 !------------------------------------------------------------
           call xml_NewElement(xf,"data")
+          write(iunit2,'(a)') '<data>'
           if (nspin.eq.1) then
-             call xml_AddCharacters(xf,dpr(1:nhist,i,1)*eV)
+             do ihist = 1, nhist
+                tmp(ihist) = dpr(ihist,i,1) * eV
+                write(iunit2,'(f10.5)') tmp(ihist)
+             end do
+             call xml_AddCharacters(xf,tmp(1:nhist))
           elseif (nspin .eq. 2) then
-             tmp(1:2*nhist-1:2) = dpr(1:nhist,i,1)*eV
-             tmp(2:2*nhist:2) = dpr(1:nhist,i,2)*eV
-             call xml_AddCharacters(xf,tmp(1:2*nhist),fmt="r6")
+             do ihist = 1, nhist * 2, 2
+                tmp(ihist) = dpr(ihist,i,1) * eV
+                tmp(ihist+1) = dpr(ihist,i,2) * eV
+                write(iunit2,'(2f10.5)') tmp(ihist:ihist+1)
+             end do
+             call xml_AddCharacters(xf,tmp(1:2*nhist))
           endif
           call xml_EndElement(xf,"data")
-          call xml_EndElement(xf,"orbital")
-!------------------------------------------------------------
-
-          write(iunit2,'(a)') '<data>'
-          do ihist = 1,nhist
-            if (nspin.eq.1) then
-              write(iunit2,'(f10.5)') dpr(ihist,i,1)*eV
-            elseif (nspin .eq. 2) then
-              write(iunit2,'(2f10.5)') dpr(ihist,i,1)*eV,
-     .                                 dpr(ihist,i,2)*eV
-            endif
-          enddo
           write(iunit2,'(a)') '</data>'
+          call xml_EndElement(xf,"orbital")
           write(iunit2,'(a)') '</orbital>'
-        enddo
+          
+        end do
 
 C Close file
         call xml_EndElement(xf,"pdos")
