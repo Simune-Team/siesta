@@ -275,10 +275,10 @@ C New writing
              end do
              call xml_AddCharacters(xf,tmp(1:nhist))
           elseif (nspin .eq. 2) then
-             do ihist = 1, nhist * 2, 2
-                tmp(ihist) = dpr(ihist,i,1) * eV
-                tmp(ihist+1) = dpr(ihist,i,2) * eV
-                write(iunit2,'(2f10.5)') tmp(ihist:ihist+1)
+             do ihist = 1, nhist
+                tmp(ihist*2-1) = dpr(ihist,i,1) * eV
+                tmp(ihist*2) = dpr(ihist,i,2) * eV
+                write(iunit2,'(2f10.5)') tmp(ihist*2-1:ihist*2)
              end do
              call xml_AddCharacters(xf,tmp(1:2*nhist))
           endif
