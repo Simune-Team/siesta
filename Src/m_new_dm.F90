@@ -72,7 +72,6 @@ contains
     use class_Pair_Geometry_dSpData2D
     use class_Fstack_Pair_Geometry_dSpData2D
 
-#ifdef TRANSIESTA
     use fdf, only: fdf_get, fdf_defined
     use units, only : eV
     use m_ts_global_vars,only: TSrun
@@ -81,7 +80,6 @@ contains
     use m_ts_options, only : N_Elec, Elecs, DM_bulk
     use m_ts_method
     use m_energies, only: Ef
-#endif
 
     logical, intent(in) :: SC_changed ! Has auxiliary supercell changed?
     type(Fstack_Pair_Geometry_dSpData2D), intent(inout)      :: DM_history
@@ -93,14 +91,12 @@ contains
     integer :: DM_in_history, n_depth
     integer :: init_method
 
-#ifdef TRANSIESTA
     real(dp), pointer :: DM(:,:), EDM(:,:)
     integer :: iElec
     integer :: na_a, na_dev
     integer, allocatable :: allowed_a(:)
     logical :: set_Ef
     real(dp) :: old_Ef, diff_Ef
-#endif
 
     if ( IONode ) then
        write(*,"(a,i5)") "new_DM -- step: ", istp
@@ -221,7 +217,6 @@ contains
 
     end if
 
-#ifdef TRANSIESTA
     ! In case we will immediately start a transiesta run
     if ( TSrun .and. DM_Init .and. (.not. TS_analyze ) ) then
        ! In transiesta we can always initialize
@@ -328,7 +323,6 @@ contains
        call daxpy(iElec,diff_Ef,DM(1,1),1,EDM(1,1),1)
 
     end if
-#endif
 
 
     ! Determine how the mixing of the first step should be performed
@@ -368,7 +362,6 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData2D
-#ifdef TRANSIESTA
     use class_Fstack_dData1D, only: reset
     use m_ts_global_vars,only: ts_method_init, TSinit, TSrun
     use m_ts_options,   only : TS_scf_mode, ts_hist_keep
@@ -378,7 +371,6 @@ contains
 
     use m_mixing, only: mixers_history_init
     use m_mixing_scf, only: scf_mixs, scf_mix
-#endif /* TRANSIESTA */
 
     ! ********* INPUT ***************************************************
     ! type(tSpin) spin              : spin configuration for this system
@@ -427,11 +419,8 @@ contains
     logical, intent(in) :: anti_ferro
     integer, intent(out) :: init_method
 
-
     ! *** Local variables
-#ifdef TRANSIESTA
     integer :: i
-#endif
 
     ! Signal that we are using atomic fillings
     init_method = 0
@@ -460,7 +449,6 @@ contains
     end if
 
     
-#ifdef TRANSIESTA
     if ( TS_scf_mode == 1 .and. TSinit ) then
 
        ! if the user requests to start the transiesta SCF immediately.
@@ -492,10 +480,6 @@ contains
        scf_mix => ts_scf_mixs(1)
 
     end if
-
-#else
-    ! Energy-density matrix will remain associated to old EDM
-#endif
 
     ! print-out how the initial spin-configuration is
     call print_initial_spin()
@@ -608,14 +592,12 @@ contains
     use fdf, only: fdf_get
     use files, only : slabel
     use m_iodm, only : read_DM
-#ifdef TRANSIESTA
     use m_ts_iodm, only: read_TS_DM
     use m_energies, only: Ef  ! Transiesta uses the EF obtained in a initial SIESTA run
     ! to place the electrodes and scattering region energy
     ! levels at the appropriate relative position, so it is
     ! stored in the TSDE file.
     use m_ts_global_vars,only: TSmode
-#endif /* TRANSIESTA */
 
     use m_restruct_SpData2D, only: restructdSpData2D
     
@@ -651,9 +633,7 @@ contains
     
     ! *** Local variables:
     logical :: DM_found
-#ifdef TRANSIESTA
     logical :: TSDE_found
-#endif
     ! The file we should read
     character(len=256) :: fname
     ! Number of spin-components read from the DM/TSDE file
@@ -661,9 +641,7 @@ contains
 
     ! The currently read stuff
     type(dSpData2D) :: DM_read
-#ifdef TRANSIESTA
     type(dSpData2D) :: EDM_read
-#endif
 
     ! Signal the file has not been found.
     init_method = 0
@@ -671,7 +649,6 @@ contains
     if ( IONode ) write(*,*) ! New line
 
     DM_found = .false.
-#ifdef TRANSIESTA
     TSDE_found = .false.
     
     if ( TSmode ) then
@@ -694,7 +671,6 @@ contains
        end if
 
     end if
-#endif
 
     if ( .not. DM_found ) then
        if ( IONode ) write(*,'(a)',advance='no') &
@@ -736,12 +712,10 @@ contains
        
     end if
 
-#ifdef TRANSIESTA
     ! In case the sparsity pattern does not conform we update 
     ! the TSDE_found, note that DM_found is a logic containing
     ! information regarding the sparsity pattern
     if ( TSDE_found ) TSDE_found = DM_found
-#endif
 
     ! Density matrix size checks
     if ( DM_found ) then
@@ -764,19 +738,15 @@ contains
        end if
 
        call restruct_Data(spin%DM, DM_read, DM_2D)
-#ifdef TRANSIESTA
        if ( TSDE_found ) then
           call restruct_Data(spin%EDM, EDM_read, EDM_2D)
        end if
-#endif
 
     end if
 
     ! Put deletes here to avoid complicating the logic
     call delete(DM_read)
-#ifdef TRANSIESTA
     call delete(EDM_read)
-#endif
 
     if ( .not. DM_found ) init_method = 0
 

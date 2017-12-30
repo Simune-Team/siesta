@@ -87,7 +87,6 @@ contains
 #endif
     use m_check_walltime
 
-#ifdef TRANSIESTA
     use m_energies, only: DE_NEGF
     use m_ts_options, only : N_Elec
     use m_ts_method
@@ -102,7 +101,6 @@ contains
     use m_transiesta,          only: transiesta
     use kpoint_grid, only : gamma_scf
     use m_energies, only : Ef
-#endif
 
     use m_initwf, only: initwf
 
@@ -387,7 +385,6 @@ contains
              end if
           end if
           
-#ifdef TRANSIESTA
           ! In case the user has requested a Fermi-level correction
           ! Then we start by correcting the fermi-level
           if ( TSrun .and. SCFconverged .and. &
@@ -408,7 +405,6 @@ contains
              end if
 
           end if
-#endif
           
           if ( monitor_forces_in_scf ) call compute_forces()
 
@@ -544,13 +540,11 @@ contains
        call initwf(istpp,totime)
     end if
     
-#ifdef TRANSIESTA
     if ( TSmode.and.TSinit.and.(.not. SCFConverged) ) then
        ! Signal that the DM hasn't converged, so we cannot
        ! continue to the transiesta routines
        call die('ABNORMAL_TERMINATION')
     end if
-#endif
     
     ! Clean-up here to limit memory usage
     call mixers_scf_history_init( )
@@ -634,10 +628,8 @@ contains
 
     ! Print out timings of the first SCF loop only
     subroutine print_timings(first_scf, first_md)
-#ifdef TRANSIESTA
       use timer_options, only: use_tree_timer
       use m_ts_global_vars, only : TSrun
-#endif
       logical, intent(in) :: first_scf, first_md
       character(len=20) :: routine
 
@@ -648,7 +640,6 @@ contains
 
       routine = 'IterSCF'
 
-#ifdef TRANSIESTA
       if ( TSrun ) then
          ! with Green function generation
          ! The tree-timer requires direct
@@ -659,7 +650,6 @@ contains
             routine = 'TS'
          end if
       endif
-#endif
       call timer( routine, 3 )
 
     end subroutine print_timings
@@ -705,7 +695,6 @@ contains
 
     end subroutine end_of_cycle_save_operations
 
-#ifdef TRANSIESTA
     subroutine transiesta_switch()
 
       use precision,             only: dp
@@ -859,7 +848,6 @@ contains
       end if
 
     end subroutine transiesta_switch
-#endif
 
   end subroutine siesta_forces
 

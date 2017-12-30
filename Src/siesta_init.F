@@ -73,9 +73,7 @@
 #endif
       use m_cite, only: add_citation, init_citation
 
-#ifdef TRANSIESTA
       use m_ts_init, only : ts_init
-#endif
 
       use m_diag_option, only: read_diag, print_diag
       
@@ -679,9 +677,7 @@ C     Initialise MPI and set processor number
 
       istp = 0
       
-#ifdef TRANSIESTA
       call ts_init(spin%Grid,ucell,na_u,xa,lasto,no_u,inicoor,fincoor)
-#endif
 
 #ifdef SIESTA__FLOOK
 
