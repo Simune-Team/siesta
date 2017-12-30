@@ -20,7 +20,8 @@
         module procedure
      $     str_integer,
      $     str_double,
-     $     str_string
+     $     str_string,
+     $     str_logical
       end interface
 
       CONTAINS
@@ -60,6 +61,17 @@
       write(dummy,'(g22.12)')  num
       str_double = trim(dummy)
       end function str_double
+
+      function str_logical(v)
+      logical, intent(in)  :: v
+      character(len=5) str_logical
+
+      if ( v ) then
+         str_logical = 'true'
+      else
+         str_logical = 'false'
+      end if
+      end function str_logical
 
       function str_string(num)
       character(len=*), intent(in)  :: num
