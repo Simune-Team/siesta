@@ -46,9 +46,7 @@ module m_energies
   real(dp):: Eldau      
   real(dp):: DEldau
 
-#ifdef TRANSIESTA
   real(dp) :: DE_NEGF  ! NEGF total energy contribution = - e * \sum_i N_i \mu_i
-#endif
 
 contains
 
@@ -85,10 +83,7 @@ contains
     Eso = 0._dp
     Eldau = 0._dp      
     DEldau = 0._dp
-    
-#ifdef TRANSIESTA
     DE_NEGF = 0._dp
-#endif
 
   end subroutine init_Energies
 
@@ -114,9 +109,7 @@ contains
     Etot = Ena + Ekin + Enl + Eso - Eions + &
          DEna + DUscf + DUext + Exc + &
          Ecorrec + Emad + Emm + Emeta + Eldau
-#ifdef TRANSIESTA
     Etot = Etot + DE_NEGF
-#endif
 
   end subroutine update_Etot
 

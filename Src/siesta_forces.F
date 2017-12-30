@@ -85,7 +85,6 @@
       use m_pexsi, only: pexsi_finalize_scfloop
 #endif     
 
-#ifdef TRANSIESTA
       use m_energies,            only: DE_NEGF
       use m_ts_options, only : N_Elec
       use m_ts_method
@@ -101,7 +100,6 @@
       use m_transiesta,          only: transiesta
       use kpoint_grid, only : gamma_scf
       use m_energies, only : Ef
-#endif /* TRANSIESTA */
 
       implicit none
 
@@ -382,7 +380,6 @@
         ! Check whether we should step to the next mixer
         call mixing_scf_converged( SCFconverged )
         
-#ifdef TRANSIESTA
         ! In case the user has requested a Fermi-level correction
         ! Then we start by correcting the fermi-level
         if ( SCFconverged .and. TSrun .and.
@@ -404,7 +401,6 @@
            end if
            
         end if
-#endif
 
         if (monitor_forces_in_scf) call compute_forces()
         
@@ -438,7 +434,6 @@
         ! Retrieve an easy character string
         nnext_mixer = cunpack(next_mixer)
         if ( len_trim(nnext_mixer) > 0 ) then
-#ifdef TRANSIESTA
            if ( TSrun ) then
               do imix = 1 , size(ts_scf_mixs)
                  if ( ts_scf_mixs(imix)%name == nnext_mixer ) then
@@ -448,7 +443,6 @@
                  end if
               end do
            else 
-#endif
               do imix = 1 , size(scf_mixs)
                  if ( scf_mixs(imix)%name == nnext_mixer ) then
                     call mixers_history_init(scf_mixs)
@@ -456,9 +450,7 @@
                     exit
                  end if
               end do
-#ifdef TRANSIESTA
            end if
-#endif
 
            ! Check that we indeed have changed the mixer
            if ( IONode .and. scf_mix%name /= nnext_mixer ) then
@@ -484,13 +476,11 @@
         ! This should be the last step if we have converged...
         last_step = SCFConverged
 
-#ifdef TRANSIESTA
         ! ... except that we might continue for TranSiesta
         if ( last_step ) then
            call transiesta_switch() ! might reset 'last_step'
                                     ! and iscf
         end if
-#endif
 
         if ( iscf == nscf ) then
            last_step = .true.
@@ -534,12 +524,10 @@
          endif
       end if
 
-#ifdef TRANSIESTA
       if ( TSmode.and.TSinit.and.(.not. SCFConverged) ) then
          call die('SCF did not converge before proceeding to transiesta
      &calculation')
       end if
-#endif
 
       ! Clean-up here to limit memory usage
       call mixers_scf_history_init( )
@@ -623,10 +611,8 @@
       end subroutine compute_forces
 
       subroutine print_timings(first, first_md)
-#ifdef TRANSIESTA
       use timer_options, only: use_tree_timer
       use m_ts_global_vars, only : TSrun
-#endif
       logical, intent(in) :: first, first_md
       character(len=20) :: routine
 
@@ -637,7 +623,6 @@
 
       routine = 'IterSCF'
 
-#ifdef TRANSIESTA
       if ( TSrun ) then
          ! with Green function generation
          ! The tree-timer requires direct
@@ -648,7 +633,6 @@
             routine = 'TS'
          end if
       endif
-#endif
       call timer( routine, 3 ) 
 
       end subroutine 
@@ -692,7 +676,6 @@
       end subroutine end_of_cycle_save_operations
 
 !-----------------------------------------------------
-#ifdef TRANSIESTA
       subroutine transiesta_switch()
 
       use precision,             only: dp
@@ -844,7 +827,6 @@
       end if
 
       end subroutine transiesta_switch
-#endif
 
       END subroutine siesta_forces
 

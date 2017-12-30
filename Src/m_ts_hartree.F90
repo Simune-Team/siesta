@@ -50,7 +50,7 @@ module m_ts_hartree
   integer, parameter, public :: TS_HA_ELEC_BOX = 3
 
   ! The used method
-  integer, public :: TS_HA = 0
+  integer, public :: TS_HA = TS_HA_NONE
 
   ! The fraction of the actual fix
   real(dp), public :: Vha_frac = 1._dp

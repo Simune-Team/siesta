@@ -688,7 +688,6 @@ subroutine read_options( na, ns, nspin )
      call die("PEXSI solver is not compiled in. Use -DSIESTA__PEXSI")
 #endif
      
-#ifdef TRANSIESTA
   else if (leqi(method,'transi') .or. leqi(method,'transiesta') &
        .or. leqi(method,'negf') ) then
      isolve = SOLVE_TRANSI
@@ -697,12 +696,9 @@ subroutine read_options( na, ns, nspin )
         call add_citation("10.1016/j.cpc.2016.09.022")
         write(*,3) 'redata: Method of Calculation','Transiesta'
      endif
-#endif /* TRANSIESTA */
   else
      call die( 'redata: The method of solution must be either '//&
-#ifdef TRANSIESTA
           'Transiesta, '//&
-#endif
 #ifdef SIESTA__PEXSI
           'PEXSI, '//&
 #endif
@@ -1514,11 +1510,9 @@ subroutine read_options( na, ns, nspin )
        fdf_get('SCF.Read.Deformation.Charge.NetCDF', .false. )
 
   ! Write the history
-#ifdef TRANSIESTA
   write_tshs_history = fdf_get('Write.TSHS.History', .false.)
   if ( IONode.and.write_tshs_history ) &
        write(*,2) 'redata: Saves TSHS files in MD simulation'
-#endif
   !write_hs_history = fdf_get('Write.HS.History', .false.)
 
   if (read_charge_cdf .or. read_deformation_charge_cdf) then

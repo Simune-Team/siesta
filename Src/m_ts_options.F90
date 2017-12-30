@@ -138,8 +138,13 @@ contains
 
     ! Read in general values that should be used in the electrode generation
     ! I.e. these FDF-parameters are used for diagon runs with transiesta
+#ifdef TRANSIESTA
     TS_HS_save = fdf_get('TS.HS.Save',.true.)
+    TS_DE_save = fdf_get('TS.DE.Save',.true.)
+#else
+    TS_HS_save = fdf_get('TS.HS.Save',.false.)
     TS_DE_save = fdf_get('TS.DE.Save',.false.)
+#endif
     onlyS      = fdf_get('TS.onlyS',.false.)
     onlyS      = fdf_get('TS.S.Save',onlyS)
 
@@ -147,6 +152,10 @@ contains
     ! no settings from the intrinsic transiesta routines
     ! are needed.
     if ( onlyS .or. .not. TSmode ) return
+
+    ! When running TSmode we FORCE TS.HS.Save and TS.DE.Save
+    TS_HS_save = .true.
+    TS_DE_save = .true.
 
     ! Read in the transiesta SCF mixing options
     call mixers_init('TS.SCF', ts_scf_mixs )
@@ -303,7 +312,7 @@ contains
     use m_os, only : file_exist
 
     use files, only: slabel
-    use units, only: eV
+    use units, only: eV, Ang
 
     use m_ts_global_vars, only: TSmode, onlyS
     
@@ -362,7 +371,7 @@ contains
     call fdf_deprecated('TS.ReUseGF','TS.Elecs.GF.ReUse')
 
     ! To determine the same coordinate nature of the electrodes
-    Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
+    Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',0.001_dp*Ang, 'Bohr')
 
     ! Whether we should always set the DM to bulk
     ! values (by reading in from electrode DM)
@@ -1129,8 +1138,6 @@ contains
        end if
     else if ( TS_DE_save ) then
        ! means TS_HA == TS_HA_NONE
-       write(*,'(a)') 'If you do not use Hartree.Fix you cannot &
-            &use the TSDE file for restart in TranSIESTA.'
     end if
 
     
