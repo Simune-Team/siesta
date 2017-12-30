@@ -170,7 +170,7 @@ end type
 
 ! Overloaded spline generators and evaluators
 interface generate_spline
-  module procedure generate_spline    ! new interface
+  module procedure generate_spline_master    ! new interface
   module procedure generate_spline_x  ! Numerical Recipes interface
   module procedure generate_spline_dx ! older interface
 end interface generate_spline
@@ -197,7 +197,7 @@ CONTAINS
 
 !-------------------------------------------------------------------------------
 
-SUBROUTINE generate_spline( dat, x, y, n, dydx1, dydxn, d2ydx2, stat )
+SUBROUTINE generate_spline_master( dat, x, y, n, dydx1, dydxn, d2ydx2, stat )
 
 ! Generate data for cubic spline interpolation of a function
 
@@ -214,7 +214,7 @@ integer, optional,intent(out):: stat   ! error status:
                                        !  (-2 if n < 2)
 
 ! Internal variables and arrays
-character(len=*),parameter:: myName = 'generate_spline '
+character(len=*),parameter:: myName = 'generate_spline_master '
 real(dp):: a, b, dx, dx1, dx2, dxn, dxm, dxp, dy1, dyn, dym, dyp, &
            p, s, u(n), v(n), xtol, ypp(n)
 integer :: flag, k
@@ -307,7 +307,7 @@ dat%y = y
 dat%d2ydx2 = ypp
 if (present(d2ydx2)) d2ydx2 = ypp
 
-end subroutine generate_spline
+end subroutine generate_spline_master
 
 !-------------------------------------------------------------------------------
 
@@ -476,13 +476,13 @@ type(spline_t):: dat
 
 ! Generate spline dat
 if (dydx1>dydxMax .and. dydxn>dydxMax) then
-  call generate_spline( dat, x, y, n, stat=stat)
+  call generate_spline_master( dat, x, y, n, stat=stat)
 elseif (dydxn>dydxMax) then
-  call generate_spline( dat, x, y, n, dydx1=dydx1, stat=stat)
+  call generate_spline_master( dat, x, y, n, dydx1=dydx1, stat=stat)
 elseif (dydx1>dydxMax) then
-  call generate_spline( dat, x, y, n, dydxn=dydxn, stat=stat)
+  call generate_spline_master( dat, x, y, n, dydxn=dydxn, stat=stat)
 else
-  call generate_spline( dat, x, y, n, dydx1, dydxn, stat=stat)
+  call generate_spline_master( dat, x, y, n, dydx1, dydxn, stat=stat)
 endif
 
 ! Copy d2y/dx2 to output array

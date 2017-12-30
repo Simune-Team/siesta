@@ -281,7 +281,7 @@ subroutine read_options( na, ns, nspin )
 
 
   ! Planewave cutoff of the real space mesh ...
-  g2cut = fdf_get('MeshCutoff',100._dp,'Ry')
+  g2cut = fdf_get('MeshCutoff',300._dp,'Ry')
   if (ionode) then
      write(6,6) 'redata: Mesh Cutoff', g2cut,' Ry'
   endif
@@ -305,8 +305,8 @@ subroutine read_options( na, ns, nspin )
   ! SCF Loop parameters ...
   !     Minimum/Maximum number of SCF iterations
   min_nscf = fdf_get('MinSCFIterations',0)
-  nscf     = fdf_get('MaxSCFIterations',200)
-  SCFMustConverge = fdf_get('SCFMustConverge', .false.)
+  nscf     = fdf_get('MaxSCFIterations',1000)
+  SCFMustConverge = fdf_get('SCFMustConverge', .true.)
   if (ionode) then
      write(6,4) 'redata: Min. number of SCF Iter',min_nscf
      write(6,4) 'redata: Max. number of SCF Iter',nscf
