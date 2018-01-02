@@ -4929,6 +4929,7 @@ C
         do m = -l, l
            ntot = ntot + 1
            spp%orb_index(ntot) = n
+           spp%orb_n(ntot) = spp%orbnl_n(n)
            spp%orb_l(ntot) = l
            spp%orb_m(ntot) = m
            spp%orb_pop(ntot) = qtb(ntot,is)
@@ -6777,6 +6778,7 @@ C
         do m = -(l+1), (l+1)       ! NOTE
            ntot = ntot + 1
            spp%orb_index(ntot) = n
+           spp%orb_n(ntot) = spp%orbnl_n(n)
            spp%orb_l(ntot) = l+1
            spp%orb_m(ntot) = m
            spp%orb_pop(ntot) = qtb(ntot,is)
