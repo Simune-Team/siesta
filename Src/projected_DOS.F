@@ -86,56 +86,54 @@
 
 !------------------------------------------------------------------------- BEGIN
 ! Compute the projected density of states
-     
-      if (do_pdos) then
-        ! Call fdf_block to get iu - presence has already been tested in init_projected_PDOS
-        dummy = fdf_block('ProjectedDensityOfStates',bfdf)
+
+      if ( .not. do_PDOS ) return
+
+      ! Call fdf_block to get iu - presence has already been tested in init_projected_PDOS
+      dummy = fdf_block('ProjectedDensityOfStates',bfdf)
 ! Find the desired energy range
-        if (.not. fdf_bline(bfdf,pline))
-     $    call die('projected_DOS: ERROR in ' //
-     $             'ProjectedDensityOfStates block')
-        if ((fdf_bnreals(pline) .lt. 3) .or.
-     $      (fdf_bnnames(pline) .ne. 1))
-     $    call die("Wrong format in PDOS block, not enough reals/names")
-        factor = fdf_convfac( fdf_bnames(pline,1), 'Ry' )
-        e1 = fdf_breals(pline,1) * factor
-        e2 = fdf_breals(pline,2) * factor
-        sigma = fdf_breals(pline,3) * factor
-        nhist = fdf_bintegers(pline,1)
-        if (IOnode) then
-          write(6,'(a)') 'siesta: PDOS info: '
-          write(6,'(a,3(f8.2,a),2x,i5)')
-     $         'siesta: e1, e2, sigma, nhist: ',
-     $         e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
-        endif
+      if (.not. fdf_bline(bfdf,pline))
+     $     call die('projected_DOS: ERROR in ' //
+     $     'ProjectedDensityOfStates block')
+      if ((fdf_bnreals(pline) .lt. 3) .or.
+     $     (fdf_bnnames(pline) .ne. 1))
+     $   call die("Wrong format in PDOS block, not enough reals/names")
+      factor = fdf_convfac( fdf_bnames(pline,1), 'Ry' )
+      e1 = fdf_breals(pline,1) * factor
+      e2 = fdf_breals(pline,2) * factor
+      sigma = fdf_breals(pline,3) * factor
+      nhist = fdf_bintegers(pline,1)
+      if (IOnode) then
+         write(6,'(a)') 'siesta: PDOS info: '
+         write(6,'(a,3(f8.2,a),2x,i5)')
+     $        'siesta: e1, e2, sigma, nhist: ',
+     $        e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
+      end if
 
 ! If the k points have been set specifically for the PDOS then use this set
-        if (different_pdos_grid) then
+      if (different_pdos_grid) then
 
 ! If the number of k points has increased then reallocate eo and qo
-          if (maxk_pdos.gt.nkpnt) then
+         if (maxk_pdos.gt.nkpnt) then
             call re_alloc(eo,1,no_u,1,spinor_dim,1,maxk_pdos,name="eo",
-     .                    routine="projected_dos")
-          endif
-
-          call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
-     .               maxnh,
-     .               no_u, numh, listhptr, listh, H, S,
-     .               e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
-     .               nkpnt_pdos, kpoints_pdos, kweight_pdos, eo,
-     .               no_u)
-        else
+     .           routine="projected_dos")
+         endif
+         
+         call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
+     .        maxnh,
+     .        no_u, numh, listhptr, listh, H, S,
+     .        e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
+     .        nkpnt_pdos, kpoints_pdos, kweight_pdos, eo,
+     .        no_u)
+      else
 ! otherwise use the SCF grid 
-          call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
-     .               maxnh,
-     .               no_u, numh, listhptr, listh, H, S,
-     .               e1, e2, sigma, nhist,
-     .               gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
-     .               no_u)
-        endif
-
-      endif                     ! PDOS calc (do_pdos)
-!--------------------------------------------------------------------------- END
+         call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
+     .        maxnh,
+     .        no_u, numh, listhptr, listh, H, S,
+     .        e1, e2, sigma, nhist,
+     .        gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
+     .        no_u)
+      endif
 
       end subroutine projected_DOS
 

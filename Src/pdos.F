@@ -71,7 +71,7 @@ C **********************************************************************
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
 #endif
-      use m_diag_option, only: ParallelOverK
+      use m_diag_option, only: ParallelOverK, Serial
 
       implicit none
 
@@ -100,7 +100,9 @@ C Internal variables ---------------------------------------------------
 
       integer iat, spec, ii, iorb
 
-      real(dp), dimension(:), pointer  :: tmp
+      logical :: orig_ParallelOverK, orig_Serial
+
+      real(dp), dimension(:), pointer :: tmp
 
       character*40 pos_string
 
@@ -121,8 +123,21 @@ C Internal variables ---------------------------------------------------
 
       call timer( 'pdos', 1)
 
+      orig_Serial = Serial
+      orig_ParallelOverK = ParallelOverK
+
 C Find the intervals between the subdivisions in the energy scale ------
       delta = (E2 - E1) / (NHIST-1)
+
+      ! Ensure we only use paralleloverk for
+      ! spin-(un)polarized calculations
+      if ( nspin > 2 ) ParallelOverK = .false.
+      ! Reset for Gamma-only PDOS calculations
+      if ( Gamma ) ParallelOverK = .false.
+
+      if ( Nodes > 1 .and. .not. ParallelOverK ) then
+         Serial = .false.
+      end if
 
 C Find number of orbitals per unit cell 
 #ifdef MPI
@@ -359,6 +374,10 @@ C Free local workspace array
 C Free local arrays ----------------------------------------------------
       call de_alloc( dpr, 'dpr', 'pdos' )
       call de_alloc( dtot, 'dtot', 'pdos' )
+
+      ! Restore the paralleloverk options
+      ParallelOverK = orig_ParallelOverK
+      Serial = orig_Serial
 
       call timer( 'pdos', 2)
 
