@@ -53,7 +53,7 @@ C INTEGER NO_U              : Total number of orbitals in unit cell
 C **********************************************************************
 
       use precision,    only : dp
-      use parallel,     only : Node, Nodes, IOnode
+      use parallel,     only : Node, Nodes, IOnode, ParallelOverK
       use fdf
       use siesta_geom,  only : xa, isa
       use atomlist,     only : iphorb, iaorb
@@ -97,7 +97,7 @@ C Internal variables ---------------------------------------------------
 
       integer iat, spec, ii, iorb
 
-      logical, save :: ParallelOverK = .false.
+      logical :: orig_ParallelOverK
 
       real(dp), dimension(:), pointer  :: tmp
 
@@ -116,14 +116,15 @@ C Internal variables ---------------------------------------------------
 
       call timer( 'pdos', 1)
 
+      orig_ParallelOverK = ParallelOverK
+
 C Find the intervals between the subdivisions in the energy scale ------
       delta = (E2 - E1) / (NHIST-1)
-      if (Nodes .eq. 1) then
-        ParallelOverK = .false.
-      else
-        ParallelOverK = fdf_get('Diag.ParallelOverK',.false.)
-        if ( nspin > 2 ) ParallelOverK = .false.
-      endif
+      ! Ensure we only use paralleloverk for
+      ! spin-(un)polarized calculations
+      if ( nspin > 2 ) ParallelOverK = .false.
+      ! Reset for Gamma-only PDOS calculations
+      if ( Gamma ) ParallelOverK = .false.
 
 C Find number of orbitals per unit cell 
 #ifdef MPI
@@ -303,6 +304,9 @@ C Free local workspace array
 C Free local arrays ----------------------------------------------------
       call de_alloc( dpr, 'dpr', 'pdos' )
       call de_alloc( dtot, 'dtot', 'pdos' )
+
+      ! Restore the paralleloverk option
+      ParallelOverK = orig_ParallelOverK
 
       call timer( 'pdos', 2)
 
