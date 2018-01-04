@@ -47,6 +47,7 @@ tests=  h2o h2o_reparam h2o_basis h2o_dos h2o-pop chargeconf-h2o	\
        si2x1h-dipole-gcs si_fatbands					\
        si_coop born pb_filter_cutoff pb_filter_tol fire_benzene		\
        fe_clust_noncollinear h_chain n_chain si64_coop si_pdos_kgrid    \
+       si_pdos_gamma    \
        si2x1h-dipole ar2_vdw graphite_vdw_df sic-slab si-optical OMM_si \
        OMM_h2o h2o_dipole h2o_dipole2 h2_bessel
 #
