@@ -77,7 +77,7 @@ CONTAINS
       logical  :: mixDM
 
 ! CC RC  Added for the offSpOrb
-      real(dp)    :: Ebs_tmp(3), DEharr_tmp(3)
+      real(dp)    :: Ebs_tmp(4), DEharr_tmp(4)
 !      integer     :: iot 
 
       complex(dp):: Hc, Dc, Ebs_Daux(2,2), Ebs_Haux(2,2)
@@ -163,24 +163,24 @@ CONTAINS
 
 !         iot = listht(io)
 
-         Ebs_Haux(1,1) = dcmplx(H(io,1), H(io,5))  ! Huu_ij
-         Ebs_Haux(2,2) = dcmplx(H(io,2), H(io,6))  ! Hdd_ij
-         Ebs_Haux(1,2) = dcmplx(H(io,3), H(io,4))  ! Hud_ij
-         Ebs_Haux(2,1) = dcmplx(H(io,3),-H(io,4))  ! Hdu_ij
+         Ebs_Haux(1,1) = dcmplx(H(io,1), H(io,5))  
+         Ebs_Haux(2,2) = dcmplx(H(io,2), H(io,6))  
+         Ebs_Haux(1,2) = dcmplx(H(io,3), H(io,4)) 
+         Ebs_Haux(2,1) = dcmplx(H(io,3),-H(io,4)) 
 
-         Ebs_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))  ! Duu_ji
-         Ebs_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))  ! Ddd_ji
-!         Ebs_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))  ! Dud_ji
-         Ebs_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))  ! Ddu_ji
-!         Ebs_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5))  ! Duu_ji
-!         Ebs_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6))  ! Ddd_ji
-!         Ebs_Daux(1,2) = dcmplx(Dscf(iot,3), Dscf(iot,4))  ! Dud_ji
-!         Ebs_Daux(2,1) = dcmplx(Dscf(iot,7), Dscf(iot,8))  ! Ddu_ji
+         Ebs_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5)) 
+         Ebs_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6)) 
+         Ebs_Daux(1,2) = dcmplx(Dscf(io,3), Dscf(io,4))
+         Ebs_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4)) 
+!         Ebs_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5)) 
+!         Ebs_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6)) 
+!         Ebs_Daux(1,2) = dcmplx(Dscf(iot,3), Dscf(iot,4)) 
+!         Ebs_Daux(2,1) = dcmplx(Dscf(iot,7), Dscf(iot,8)) 
 
          Ebs_tmp(1) = Ebs_tmp(1) + real( Ebs_Haux(1,1)*Ebs_Daux(1,1))
          Ebs_tmp(2) = Ebs_tmp(2) + real( Ebs_Haux(2,2)*Ebs_Daux(2,2))
-         Ebs_tmp(3) = Ebs_tmp(3) + 2.0d0*real( Ebs_Haux(1,2)*Ebs_Daux(2,1))
-!         Ebs_tmp(4) = Ebs_tmp(4) + real( Ebs_Haux(2,1)*Ebs_Daux(1,2))
+         Ebs_tmp(3) = Ebs_tmp(3) + real( Ebs_Haux(1,2)*Ebs_Daux(2,1))
+         Ebs_tmp(4) = Ebs_tmp(4) + real( Ebs_Haux(2,1)*Ebs_Daux(1,2))
 
         enddo
 
@@ -262,12 +262,12 @@ CONTAINS
 
           DEharr_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))
           DEharr_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))
-!          DEharr_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
+          DEharr_Daux(1,2) = dcmplx(Dscf(io,3), Dscf(io,4))
           DEharr_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))
 
           DEharr_Daux_old(1,1) = dcmplx(Dold(io,1),-Dold(io,5))
           DEharr_Daux_old(2,2) = dcmplx(Dold(io,2),-Dold(io,6))
-!          DEharr_Daux_old(1,2) = dcmplx(Dold(io,7),-Dold(io,8))
+          DEharr_Daux_old(1,2) = dcmplx(Dold(io,3), Dold(io,4))
           DEharr_Daux_old(2,1) = dcmplx(Dold(io,3),-Dold(io,4))
 
           DEharr_tmp(1) = DEharr_tmp(1) &
@@ -275,9 +275,9 @@ CONTAINS
           DEharr_tmp(2) = DEharr_tmp(2) &
              + real( DEharr_Haux(2,2)*(DEharr_Daux(2,2)-DEharr_Daux_old(2,2)))
           DEharr_tmp(3) = DEharr_tmp(3) &
-             + 2.0d0*real( DEharr_Haux(1,2)*(DEharr_Daux(2,1)-DEharr_Daux_old(2,1)))
-!          DEharr_tmp(4) = DEharr_tmp(4) &
-!             + real( DEharr_Haux(2,1)*(DEharr_Daux(1,2)-DEharr_Daux_old(1,2)))
+             + real( DEharr_Haux(1,2)*(DEharr_Daux(2,1)-DEharr_Daux_old(2,1)))
+          DEharr_tmp(4) = DEharr_tmp(4) &
+             + real( DEharr_Haux(2,1)*(DEharr_Daux(1,2)-DEharr_Daux_old(1,2)))
 
          enddo
 

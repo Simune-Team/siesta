@@ -26,3 +26,5 @@ Src/state_init.noRot.F
 upgrade.sh
 Tests/offsite_SOC_Pt2_xz/TMP
 Tests/offsite_SOC_Pt2_zy/TMP
+Tests/offsite_SOC_Pt2_xz/TMP-CE
+Tests/offsite_SOC_Pt2_zy/TMP-CE
