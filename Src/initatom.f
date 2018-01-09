@@ -50,7 +50,7 @@
       use ldau_specs, only: ldau_proj_gen
       use ldau_specs, only: populate_species_info_ldau
       use pseudopotential, only: pseudo_read
-    
+      
       use chemical
 
       use m_spin, only: SpOrb
@@ -63,6 +63,7 @@
       integer                      :: is
       logical                      :: user_basis, user_basis_netcdf
       logical :: req_init_setup
+      logical :: lj_projs
 
       type(basis_def_t),   pointer :: basp
       type(species_info),  pointer :: spp
@@ -131,6 +132,8 @@
         nspecies = nsp              ! For atm_types module
         call setup_atom_tables(nsp)
 
+        lj_projs = fdf_boolean('LJ-KB-projectors',.false.)
+
         allocate(species(nspecies))
         do is = 1,nsp
           call write_basis_specs(6,is)
@@ -150,7 +153,8 @@
      &                    qyuk(0:lmaxd,1:nsemx,is),
      &                    qwid(0:lmaxd,1:nsemx,is),
      &                    split_norm(0:lmaxd,1:nsemx,is), 
-     &                    filtercut(0:lmaxd,1:nsemx,is), basp, spp)
+     &                    filtercut(0:lmaxd,1:nsemx,is), basp, spp,
+     $                    lj_projs)
 !         Generate the projectors for the LDA+U simulations (if requested)
           call ldau_proj_gen(is)
         enddo 
@@ -164,11 +168,12 @@
         call elec_corr_setup()
         ns = nsp               ! Set number of species for main program
 
+        call dump_basis_ascii()
+        call dump_basis_netcdf()
+        call dump_basis_xml()
+        
       endif
 
-      call dump_basis_ascii()
-      call dump_basis_netcdf()
-      call dump_basis_xml()
 
       if (.not. user_basis .and. .not. user_basis_netcdf) then
         call deallocate_spec_arrays()

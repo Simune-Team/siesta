@@ -23,12 +23,12 @@
       integer, parameter, public  :: maxnorbs = 100
 !       Maximum number of nlm orbitals
 !
-      integer, parameter, public  :: maxn_pjnl = 10
+      integer, parameter, public  :: maxn_pjnl = 20
 !       Maximum number of projectors (not counting different "m" copies)
       integer, parameter, public  :: maxn_orbnl = 200
 !       Maximum number of nl orbitals (not counting different "m" copies)
 !       Now very large to accommodate filteret basis sets
-      integer, parameter, public  :: maxnprojs = 50
+      integer, parameter, public  :: maxnprojs = 100
 !       Maximum number of nlm projectors
 !
 
@@ -66,9 +66,11 @@
 !             1 to the total number of projectors at that l.
 !             
 !
+         logical                         ::  lj_projs = .false.
          integer                         ::  n_pjnl     ! num of "nl" projs
          integer                         ::  lmax_projs ! l cutoff for projs
          integer, dimension(maxn_pjnl)   ::  pjnl_l     ! l of each nl proj
+         real(dp), dimension(maxn_pjnl)  ::  pjnl_j     ! j of each nl proj
          integer, dimension(maxn_pjnl)   ::  pjnl_n     ! n of each nl proj
          real(dp), dimension(maxn_pjnl)
      $                                   ::  pjnl_ekb   ! energy of
@@ -92,6 +94,7 @@
          integer, dimension(maxnprojs)   ::  pj_index
          integer, dimension(maxnprojs)   ::  pj_n
          integer, dimension(maxnprojs)   ::  pj_l
+         real(dp), dimension(maxnprojs)  ::  pj_j
          integer, dimension(maxnprojs)   ::  pj_m
          integer, dimension(maxnprojs)   ::  pj_gindex
 !
