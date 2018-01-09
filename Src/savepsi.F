@@ -80,7 +80,7 @@ C Save local part of psiprev
 
 
       enddo
-      call de_alloc( psitmp,  name='psitmp' )
+      call de_alloc( psitmp,  name='psitmp' , routine='savepsi')
 
 #else
 C Straight serial copy

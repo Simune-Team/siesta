@@ -41,35 +41,32 @@
       use basis_io, only: dump_basis_ascii, dump_basis_netcdf
       use basis_io, only: dump_basis_xml
 
-      use old_atmfuncs, only: nsmax, allocate_old_arrays, nkblsave
-      use old_atmfuncs, only: clear_tables, deallocate_old_arrays
       use atom, only: atom_main, prinput
+      use atom, only: setup_atom_tables, remove_atom_tables
       use electrostatic, only: elec_corr_setup
       use atmparams, only: lmaxd, nkbmx, nsemx, nzetmx
       use atom_options, only: get_atom_options
       use ldau_specs, only: read_ldau_specs
       use ldau_specs, only: ldau_proj_gen
-
+      use ldau_specs, only: populate_species_info_ldau
       use pseudopotential, only: pseudo_read
-    
+      
       use chemical
 
-! CC RC  Added for the offSpOrb
-      use m_spin,   only: spin
-      use alloc,    only: de_alloc
-      use parallel, only: IONode
-! CC RC  Added for the offSpOrb
+      use m_spin, only: SpOrb, spin
 
-
+      use atm_types, only: species, species_info, nspecies
+      
       implicit none
       integer,         intent(out) :: ns   ! Number of species
 !     Internal variables ...................................................
       integer                      :: is
       logical                      :: user_basis, user_basis_netcdf
       logical :: req_init_setup
-      type(basis_def_t),   pointer :: basp
+      logical :: lj_projs
 
-      external atm_transfer
+      type(basis_def_t),   pointer :: basp
+      type(species_info),  pointer :: spp
 
       call get_atom_options()
 
@@ -100,14 +97,10 @@
         call read_basis_netcdf(ns)
         call elec_corr_setup()
       else if (user_basis) then
-       if ( spin%SO ) then  
-          if (.not. spin%SO_offsite) then 
-            write(6,'(a)')
-     &         ' initatom: Spin configuration = On-site Spin-Orbit'
-          else
-            write(6,'(a)') 
-     &         ' initatom: Spin configuration = Off-site Spin-Orbit'
-          endif
+
+       if ( SpOrb ) then  
+          ! We still need to read the pseudopotential information
+          write(6,'(a)') ' initatom: Spin configuration = spin-orbit'
           call read_chemical_types()
           nsp = number_of_species()
           
@@ -126,39 +119,26 @@
        write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
        call read_basis_ascii(ns)
        call elec_corr_setup()
+       
       else
-        if ( IONode .and. spin%deb_offSO ) 
-     &     write(spin%iout_offsiteSO,'(a)') 
-     &     '    initatom: Calling read_basis_specs... '
+        ! We generate PAOs and KB projectors
 !       New routines in basis_specs and basis_types.
-        call read_basis_specs()
-        if ( IONode .and. spin%deb_offSO ) 
-     &     write(spin%iout_offsiteSO,'(a)') 
-     &     '    initatom: Calling basis_specs_transfer... '
+        call read_basis_specs()  ! sets nsp (number of species)
         call basis_specs_transfer()
 
 !       Get the parameters for the generation of the LDA+U projectors
         call read_ldau_specs()
 
-        nsmax = nsp             !! For old_atmfuncs
-        if ( IONode .and. spin%deb_offSO ) 
-     &     write(spin%iout_offsiteSO,'(a)') 
-     &     '    initatom: Calling allocate_old_arrays... '
-        call allocate_old_arrays()
-        if ( IONode .and. spin%deb_offSO ) 
-     &     write(spin%iout_offsiteSO,'(a)') 
-     &     '    initatom: Calling clear_tables... '
-        call clear_tables()
+        nspecies = nsp              ! For atm_types module
+        call setup_atom_tables(nsp)
 
+        lj_projs = (SpOrb .and. spin%SO_offsite)
+
+        allocate(species(nspecies))
         do is = 1,nsp
-         if ( IONode .and. spin%deb_offSO ) 
-     &     write(spin%iout_offsiteSO,'(a)') 
-     &     '    initatom: Calling write_basis_specs... '
           call write_basis_specs(6,is)
           basp=>basis_parameters(is)
-         if ( IONode .and. spin%deb_offSO ) 
-     &     write(spin%iout_offsiteSO,'(a,i3)')
-     &     '    initatom: Calling ATOM_MAIN for specie ', is
+          spp => species(is)
           call ATOM_MAIN( iz(is), lmxkb(is), nkbl(0:lmaxd,is),
      &                    erefkb(1:nkbmx,0:lmaxd,is), lmxo(is),
      &                    nzeta(0:lmaxd,1:nsemx,is),
@@ -173,7 +153,8 @@
      &                    qyuk(0:lmaxd,1:nsemx,is),
      &                    qwid(0:lmaxd,1:nsemx,is),
      &                    split_norm(0:lmaxd,1:nsemx,is), 
-     &                    filtercut(0:lmaxd,1:nsemx,is), basp)
+     &                    filtercut(0:lmaxd,1:nsemx,is), basp, spp,
+     $                    lj_projs)
 !         Generate the projectors for the LDA+U simulations (if requested)
           call ldau_proj_gen(is)
         enddo 
@@ -181,49 +162,18 @@
         call prinput(nsp)
 
 !       Create the new data structures for atmfuncs.
-         if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) 
-     &    write(spin%iout_offsiteSO,'(a)') 
-     &     '    initatom: Calling atm_transfer... '
-        call atm_transfer()
-
-         if ( IONode .and. spin%deb_offSO .or. spin%deb_P) 
-     &    write(spin%iout_offsiteSO,'(a)') 
-     &     '    initatom: Calling deallocate_old_arrays... '
-        call deallocate_old_arrays()
-         if ( IONode .and. spin%deb_offSO .or. spin%deb_P) 
-     &    write(spin%iout_offsiteSO,'(a)') 
-     &     '    initatom: Leaving deallocate_old_arrays... '
+        call populate_species_info_ldau()
+        
+        call remove_atom_tables()
         call elec_corr_setup()
         ns = nsp               ! Set number of species for main program
 
+        call dump_basis_ascii()
+        call dump_basis_netcdf()
+        call dump_basis_xml()
+        
       endif
 
-      if ( IONode .and. spin%deb_offSO .or. spin%deb_P) 
-     &     write(spin%iout_offsiteSO,'(a)') 
-     &     '    initatom: Calling dump_basis_ascii... '
-      call dump_basis_ascii()
-
-! CC RC  Added for the offSpOrb
-      if ( spin%SO ) then
-       write(6,*) 
-     & ' WARNING: NETCDF is not supported by the SO implementation'
-      else
-       call dump_basis_netcdf()
-      endif
-! CC RC  Added for the offSpOrb
-
-      if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) 
-     &     write(spin%iout_offsiteSO,'(a)') 
-     &     '    initatom: Calling dump_basis_xml... '
-      call dump_basis_xml()
-
-! CC RC  Added for the offSpOrb
-! It is deallocated here instead of do it in deallocate_old_arrays
-! Because the variable is needed to dump xml and ascii files
-! Check if it'd be better to add an if condition to split the offSO
-! from other type of calculation
-      call de_alloc( nkblsave,    'nkblsave',    'initatom' )
-! CC RC  Added for the offSpOrb
 
       if (.not. user_basis .and. .not. user_basis_netcdf) then
         call deallocate_spec_arrays()

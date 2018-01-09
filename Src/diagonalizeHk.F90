@@ -202,10 +202,9 @@ subroutine diagonalizeHk( ispin )
   nhs  = 2 * no_u * no_l
   npsi = 2 * no_u * no_l
 
-  nullify( Saux, Haux, psi )
-  call re_alloc( Haux,     1, nhs,   name='Haux',    routine='diagonalizeHk' )
-  call re_alloc( Saux,     1, nhs,   name='Saux',    routine='diagonalizeHk' )
-  call re_alloc( psi,      1, npsi,  name='psi',     routine='diagonalizeHk' )
+  call re_alloc( Haux,     1, nhs,   name='Haux',    routine='densematrix' )
+  call re_alloc( Saux,     1, nhs,   name='Saux',    routine='densematrix' )
+  call re_alloc( psi,      1, npsi,  name='psi',     routine='densematrix' )
 
 ! Allocate memory related with the eigenvalues of the Hamiltonian (epsilon)
 ! and with a local variable where the coefficients of the eigenvector at the

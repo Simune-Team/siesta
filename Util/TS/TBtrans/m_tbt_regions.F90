@@ -309,6 +309,9 @@ contains
 
        ! Calculate the transport direction in the device cell.
        i = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
+
+       ! o_inD is used in the subsequent pivoting routines
+       call rgn_copy(r_oEl_alone(iEl),Elecs(iEl)%o_inD)
        
        ! Remove connections from this electrode across the boundary...
        call Sp_remove_crossterms(dit,sp,nsc,isc_off, &
@@ -385,15 +388,12 @@ contains
 
        if ( mod(iEl-1,Nodes) /= Node ) cycle
 
-       ! Create pivoting region (except device)
-       call rgn_range(r_tmp,1,no_u)
+       ! Create pivoting region (except buffer+device)
+       call rgn_range(r_oEl(iEl),1,no_u)
        if ( r_oBuf%n > 0 ) then
-          call rgn_complement(r_oBuf,r_tmp,r_tmp)
+          call rgn_complement(r_oBuf, r_oEl(iEl), r_oEl(iEl))
        end if
-       call rgn_complement(r_oDev,r_tmp,r_oEl(iEl))
-
-       ! Ensure the initial electrode orbitals are allocated
-       call rgn_copy(r_oEl_alone(iEl),Elecs(iEl)%o_inD)
+       call rgn_complement(r_oDev, r_oEl(iEl), r_oEl(iEl))
 
        ! Sort according to the connectivity of the electrode
        ! This will also reduce the pivoting table (r_oEl) to
@@ -405,8 +405,7 @@ contains
        csort = fdf_get('TBT.BTD.Pivot.Elecs',trim(g))
        csort = fdf_get('TBT.BTD.Pivot.Elec.'//&
             trim(Elecs(iEl)%name),trim(csort))
-       g = lcase(trim(Elecs(iEl)%name))
-       csort = lcase(csort)
+
        ! If the electrode is in the pivoting scheme we
        ! are for sure doing a connectivity graph.
        if ( index(csort, trim(g)) > 0 ) then
@@ -585,18 +584,24 @@ contains
        end if
     end do
     
-    csort = 'atom+'//trim(Elecs(iEl)%name)
-    csort = fdf_get('TS.BTD.Pivot',trim(csort))
-    csort = fdf_get('TBT.BTD.Pivot',trim(csort))
-    csort = fdf_get('TBT.BTD.Pivot.Device',trim(csort))
-    call ts_pivot(dit, sp_tmp, &
-         N_Elec, Elecs, &
-         cell, na_u, xa, lasto, &
-         r_oDev, csort)
+    if ( .not. fdf_get('TBT.Analyze', .false.) ) then
 
-    ! Print out what we found
-    if ( IONode ) then
-       write(*,'(a)')'tbtrans: BTD pivoting scheme in device: '//trim(csort)
+       ! Only perform the pivoting *if* we do not analyze the
+       ! sparsity pattern
+       csort = 'atom+'//trim(Elecs(iEl)%name)
+       csort = fdf_get('TS.BTD.Pivot',trim(csort))
+       csort = fdf_get('TBT.BTD.Pivot',trim(csort))
+       csort = fdf_get('TBT.BTD.Pivot.Device',trim(csort))
+       call ts_pivot(dit, sp_tmp, &
+            N_Elec, Elecs, &
+            cell, na_u, xa, lasto, &
+            r_oDev, csort)
+
+       ! Print out what we found
+       if ( IONode ) then
+          write(*,'(a)')'tbtrans: BTD pivoting scheme in device: '//trim(csort)
+       end if
+
     end if
 
     ! Check that there is no overlap with the other regions

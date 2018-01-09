@@ -23,12 +23,12 @@
       integer, parameter, public  :: maxnorbs = 100
 !       Maximum number of nlm orbitals
 !
-      integer, parameter, public  :: maxn_pjnl = 10
+      integer, parameter, public  :: maxn_pjnl = 20
 !       Maximum number of projectors (not counting different "m" copies)
       integer, parameter, public  :: maxn_orbnl = 200
 !       Maximum number of nl orbitals (not counting different "m" copies)
 !       Now very large to accommodate filteret basis sets
-      integer, parameter, public  :: maxnprojs = 50
+      integer, parameter, public  :: maxnprojs = 100
 !       Maximum number of nlm projectors
 !
 
@@ -66,9 +66,11 @@
 !             1 to the total number of projectors at that l.
 !             
 !
+         logical                         ::  lj_projs = .false.
          integer                         ::  n_pjnl     ! num of "nl" projs
          integer                         ::  lmax_projs ! l cutoff for projs
          integer, dimension(maxn_pjnl)   ::  pjnl_l     ! l of each nl proj
+         real(dp), dimension(maxn_pjnl)  ::  pjnl_j     ! j of each nl proj
          integer, dimension(maxn_pjnl)   ::  pjnl_n     ! n of each nl proj
          real(dp), dimension(maxn_pjnl)
      $                                   ::  pjnl_ekb   ! energy of
@@ -92,20 +94,9 @@
          integer, dimension(maxnprojs)   ::  pj_index
          integer, dimension(maxnprojs)   ::  pj_n
          integer, dimension(maxnprojs)   ::  pj_l
+         real(dp), dimension(maxnprojs)  ::  pj_j
          integer, dimension(maxnprojs)   ::  pj_m
          integer, dimension(maxnprojs)   ::  pj_gindex
-
-!----------------------------
-! Values of j and mj for each l of the KB projectors within the offsite SOC
-! (mj is not really set in the program)
-!     For each l, pj_j = l-1/2, l+1/2
-!     For each j, pj_mj will have (2j+1) values and each one of them 
-!     will belong to a one projector.  
-!    
-         integer, dimension(maxnprojs)  ::  jso    ! J_offsiteSO=1,2 for each proj
-                                                      ! Set, but not used
-         real(dp), dimension(maxnprojs) ::  pj_j   ! J quantum number
-                                                      ! Set, but not used
 !----------------------------
 !        LDA+U Projectors
 !        Here we follow the scheme used for the KB projectors

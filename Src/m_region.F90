@@ -40,6 +40,7 @@ module m_region
 
   public :: tRgn, tRgnLL
   public :: rgn_init, rgn_init_pvt
+  public :: rgn_purge
   public :: rgn_assoc
   public :: rgn_delete, rgn_nullify, rgnll_delete
   public :: rgn_intersection
@@ -57,6 +58,7 @@ module m_region
   public :: in_rgn, rgn_pivot
   interface rgn_push
      module procedure rgn_push_val
+     module procedure rgn_push_list
      module procedure rgn_push_rgn
   end interface rgn_push
   public :: rgn_push, rgn_pop
@@ -64,6 +66,25 @@ module m_region
   public :: rgn_MPI_union
   public :: rgn_MPI_Bcast
 #endif
+
+  public :: rgn_init_consecutive
+  interface rgn_init_consecutive
+     module procedure rgn_init_consecutive_none
+     module procedure rgn_init_consecutive_rgn
+  end interface rgn_init_consecutive
+
+  public :: rgn_consecutive_insert
+  interface rgn_consecutive_insert
+     module procedure rgn_consecutive_insert_rgn
+     module procedure rgn_consecutive_insert_val
+  end interface rgn_consecutive_insert
+
+  public :: rgn_consecutive_remove
+  interface rgn_consecutive_remove
+     module procedure rgn_consecutive_remove_rgn
+     module procedure rgn_consecutive_remove_val
+  end interface rgn_consecutive_remove
+
 
   ! Regions which has to do with sparsity patterns
   public :: rgn_sp_connect
@@ -151,6 +172,33 @@ contains
     end if
     
   end subroutine rgn_init
+
+  ! Remove all un-used elements
+  subroutine rgn_purge(r)
+    ! The region containing of size n
+    type(tRgn), intent(inout) :: r
+    integer, allocatable :: rr(:)
+    integer :: n
+    character(len=R_NAME_LEN) :: name
+    logical :: sorted
+
+    if ( r%n == 0 ) return
+    if ( r%n == size(r%r) ) return
+
+    name = r%name
+    sorted = r%sorted
+
+    ! get current size
+    n = r%n
+    allocate(rr(n))
+    rr = r%r(:n)
+    call rgn_list(r, n, rr, name=name)
+    r%sorted = sorted
+
+    deallocate(rr)
+    
+  end subroutine rgn_purge
+
 
   ! From return in pvt the pivoting
   ! table of r2 in r1.
@@ -336,6 +384,196 @@ contains
   end subroutine rgn_wrap
 
 
+  ! This routine will create a new region of size 'n', with a sorted range
+  ! but only values in the range of the incoming values
+  ! This will create duplicate values starting from the values in
+  ! vr up to the next value in vr
+  ! I.e.
+  !  (10, r, [3, 7])
+  ! will create r:
+  !  [0, 0, 3, 3, 3, 3, 7, 7, 7, 7]
+  subroutine rgn_init_consecutive_rgn(n, r, vr)
+    ! Initial size of the range 'r'
+    integer, intent(in) :: n
+    type(tRgn), intent(inout) :: r
+    type(tRgn), intent(in) :: vr
+
+    integer :: i, j, v
+    type(tRgn) :: svr
+
+    call rgn_init(r, n)
+    ! A consecutive region is *always* sorted
+    r%sorted = .true.
+
+    if ( vr%n == 0 ) then
+       ! Be sure to fill everything!
+       r%r(:) = 0
+       return
+    end if
+
+    if ( vr%sorted ) then
+       call rgn_assoc(svr, vr)
+    else
+       call rgn_copy(vr, svr)
+       call rgn_sort(svr)
+    end if
+
+    ! Start by filling all values up to the first value
+    do i = 1, svr%r(1)
+       r%r(i) = 0
+    end do
+    ! Now fill the rest
+    do i = 2, svr%n
+       v = svr%r(i-1)
+       do j = v, svr%r(i) - 1
+          r%r(j) = v
+       end do
+    end do
+    v = svr%r(svr%n)
+    do j = v, n
+       r%r(j) = v
+    end do
+
+    if ( vr%sorted ) then
+       call rgn_nullify(svr)
+    else
+       call rgn_delete(svr)
+    end if
+
+  end subroutine rgn_init_consecutive_rgn
+
+  subroutine rgn_init_consecutive_none(n, r)
+    ! Initial size of the range 'r'
+    integer, intent(in) :: n
+    type(tRgn), intent(inout) :: r
+
+    call rgn_init(r, n, val=0)
+    ! A consecutive region is *always* sorted
+    r%sorted = .true.
+
+  end subroutine rgn_init_consecutive_none
+
+  ! Insert the values in vr into r
+  subroutine rgn_consecutive_insert_rgn(r, vr)
+    type(tRgn), intent(inout) :: r
+    type(tRgn), intent(in) :: vr
+
+    integer :: i, j, v, v1
+    type(tRgn) :: svr
+
+    if ( vr%n == 0 ) return
+
+    if ( vr%sorted ) then
+       call rgn_assoc(svr, vr)
+    else
+       call rgn_copy(vr, svr)
+       call rgn_sort(svr)
+    end if
+
+    ! Now fill the rest
+    do i = 1, svr%n - 1
+       v = svr%r(i)
+       v1 = r%r(v)
+       do j = v, svr%r(i+1) - 1
+          if ( r%r(j) == v1 ) then
+             r%r(j) = v
+          else
+             exit
+          end if
+       end do
+    end do
+    
+    ! Check which elements has the
+    ! same value as the position we are going
+    ! to create.
+    call rgn_consecutive_insert(r, svr%r(svr%n))
+    
+    if ( vr%sorted ) then
+       call rgn_nullify(svr)
+    else
+       call rgn_delete(svr)
+    end if
+
+  end subroutine rgn_consecutive_insert_rgn
+
+  ! Insert the values in vr into r
+  subroutine rgn_consecutive_insert_val(r, v)
+    type(tRgn), intent(inout) :: r
+    integer, intent(in) :: v
+
+    integer :: i, v1
+
+    ! Check which elements has the
+    ! same value as the position we are going
+    ! to create.
+    v1 = r%r(v)
+    do i = v, r%n
+       if ( r%r(i) == v1 ) then
+          r%r(i) = v
+       else
+          exit
+       end if
+    end do
+    
+  end subroutine rgn_consecutive_insert_val
+
+    ! Insert the values in vr into r
+  subroutine rgn_consecutive_remove_rgn(r, vr)
+    type(tRgn), intent(inout) :: r
+    type(tRgn), intent(in) :: vr
+
+    integer :: i, j, v, v1
+    type(tRgn) :: svr
+
+    if ( vr%n == 0 ) return
+
+    if ( vr%sorted ) then
+       call rgn_assoc(svr, vr)
+    else
+       call rgn_copy(vr, svr)
+       call rgn_sort(svr)
+    end if
+
+    ! Now fill the rest
+    do i = 1, svr%n
+       call rgn_consecutive_remove(r, svr%r(i))
+    end do
+    
+    if ( vr%sorted ) then
+       call rgn_nullify(svr)
+    else
+       call rgn_delete(svr)
+    end if
+
+  end subroutine rgn_consecutive_remove_rgn
+
+  ! Insert the values in vr into r
+  subroutine rgn_consecutive_remove_val(r, v)
+    type(tRgn), intent(inout) :: r
+    integer, intent(in) :: v
+
+    integer :: i, vo, vn
+
+    if ( v == 1 ) then
+       vn = 0
+    else
+       vn = r%r(v-1)
+    end if
+    vo = r%r(v)
+    
+    ! we already have the element removed
+    if ( vo == vn ) return
+    
+    do i = v, r%n
+       if ( r%r(i) == vo ) then
+          r%r(i) = vn
+       else
+          exit
+       end if
+    end do
+    
+  end subroutine rgn_consecutive_remove_val
+
   ! Generates a new region which connects to 'r'
   ! We have several options to control the output region
   !   1. Only do a "first touch" thereby only gathering the 
@@ -373,7 +611,7 @@ contains
 
     ! ** local variables
     type(tRgn) :: tmp, tmp2
-    integer :: i, j, io, jo, ind, no_l, no_u, it, rt
+    integer :: i, j, io, jo, ind, no_l, no_u, it, rt, n
     integer, allocatable :: ct(:), rr(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
 
@@ -406,9 +644,9 @@ contains
 
     rt = 0
     ! A duplicate of ct for faster checks (sorted search)
-    call rgn_init(tmp2, no_u-r%n)
-    tmp2%n = 0
-    
+    call rgn_init_consecutive(no_u, tmp2, tmp)
+
+    n = 0
     do i = 1 , r%n
 
        ! Orbital that should be folded from
@@ -416,7 +654,7 @@ contains
        if ( io <= 0 ) cycle ! the orbital does not exist on this node
 
        ! Count number of orbitals that are connected
-       j = tmp2%n
+       j = n
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
           ! UC-orb
@@ -427,18 +665,17 @@ contains
           if ( in_rgn(tmp, jo) ) cycle
 
           if ( .not. in_rgn(tmp2, jo) ) then
-             tmp2%n = tmp2%n + 1
-             ct(tmp2%n) = jo
+             n = n + 1
+             ct(n) = jo
              ! Retain two lists (in case there
              ! are super-cell connections we must do
              ! the sorting here, besides)
-             tmp2%r(tmp2%n) = jo
-             call rgn_sort(tmp2)
+             call rgn_consecutive_insert(tmp2, jo)
           end if
 
        end do
        
-       if ( j /= tmp2%n ) then
+       if ( j /= n ) then
           ! The connect_from region
           ! will only make sense if we do not follow the orbitals
           ! (else we still get where the connection starts)!
@@ -451,7 +688,7 @@ contains
     end do
 
     ! Store the current size of ct
-    it = tmp2%n
+    it = n
 
     ! If we are supposed to follow
     ! then loop and extend ct
@@ -476,14 +713,9 @@ contains
           end if
           
           ! A duplicate of ct for faster checks (sorted search)
-          call rgn_init(tmp2, no_u-r%n)
-          do i = 1 , it
-             tmp2%r(i) = ct(i)
-          end do
-          tmp2%n = it
-
-          ! Ensure it is sorted.
-          call rgn_sort(tmp2)
+          call rgn_list(cr, it, ct)
+          call rgn_init_consecutive(no_u, tmp2, cr)
+          call rgn_delete(cr)
        end if
 #else
        ! Do nothing, the tmp2 array is already the correct size
@@ -510,9 +742,7 @@ contains
                 ! Retain two lists (in case there
                 ! are super-cell connections we must do
                 ! the sorting here, besides)
-                tmp2%n = it
-                tmp2%r(it) = jo
-                call rgn_sort(tmp2)
+                call rgn_consecutive_insert(tmp2, jo)
              end if
              
           end do
@@ -572,11 +802,6 @@ contains
   !     connects into region 'r'.
   !     We then place 
   subroutine rgn_sp_sort_type(r,dit,sp, sr, method)
-
-#ifdef MPI
-    use mpi_siesta, only : MPI_Integer
-    use mpi_siesta, only : MPI_MAX, MPI_MIN, MPI_AllReduce
-#endif
 
     ! the region we wish to find the connections to
     type(tRgn), intent(inout) :: r
@@ -649,6 +874,7 @@ contains
 #endif
 
     if ( r%n == 0 ) return
+    if ( sr%n <= 1 ) return
 
 #ifdef MPI
     if ( present(dit) ) comm = dist_comm(dit)
@@ -1337,8 +1563,8 @@ contains
     type(tRgn), intent(inout) :: r
     if ( r%n > 0 ) then
        call sort_quick(r%n, r%r)
-       r%sorted = .true.
     end if
+    r%sorted = .true.
   end subroutine rgn_sort
 
   subroutine rgn_uniq(r)
@@ -1698,13 +1924,28 @@ contains
 
   end subroutine rgn_print
 
-  function rgn_push_val(r,val) result(good)
+  function rgn_push_val(r,val,sorted) result(good)
+    use intrinsic_missing, only: SFIND
     type(tRgn), intent(inout) :: r
     integer, intent(in) :: val
+    logical, intent(in), optional :: sorted
     logical :: good
+    integer :: idx, i
 
     good = size(r%r) > r%n
     if ( .not. good ) return
+
+    if ( present(sorted) ) then
+       if ( sorted ) then
+          idx = SFIND(r%r(1:r%n), val, +1)
+          do i = r%n, idx, -1
+             r%r(i+1) = r%r(i)
+          end do
+          r%r(idx) = val
+          r%n = r%n + 1
+          return
+       end if
+    end if
 
     ! Determine if it is still sorted
     if ( r%sorted ) then
@@ -1716,15 +1957,43 @@ contains
 
   end function rgn_push_val
 
-  function rgn_push_rgn(r,push) result(good)
+  function rgn_push_list(r,n,val,sorted) result(good)
+    type(tRgn), intent(inout) :: r
+    integer, intent(in) :: n
+    integer, intent(in), target :: val(n)
+    logical, intent(in), optional :: sorted
+    type(tRgn) :: tmp
+    logical :: good
+
+    tmp%n = n
+    tmp%r => val
+
+    good = rgn_push(r, tmp, sorted)
+
+  end function rgn_push_list
+
+  function rgn_push_rgn(r, push, sorted) result(good)
     type(tRgn), intent(inout) :: r
     type(tRgn), intent(in) :: push
+    ! In case two sorted arrays are pushed together
+    logical, intent(in), optional :: sorted
     integer :: i
     logical :: good
 
-    good = ( size(r%r) >= r%n + push%n ) 
-    if ( .not. good ) return
-    
+    good = ( size(r%r) >= r%n + push%n )
+    ! If we are not going to push anything, or
+    ! we don't have room, return immediately
+    if ( push%n == 0 .or. (.not. good) ) return
+
+    if ( present(sorted) ) then
+       if ( sorted ) then
+          good = r%sorted .and. push%sorted
+          if ( .not. good ) return
+          call push_sorted()
+          return
+       end if
+    end if
+
     if ( r%sorted .and. push%sorted ) then
        r%sorted = r%r(r%n) <= push%r(1)
     end if
@@ -1734,6 +2003,40 @@ contains
     end do
     r%n = r%n + push%n
 
+  contains
+
+    subroutine push_sorted()
+      integer :: ir, ip, n
+      
+      n = r%n + push%n
+      ir = r%n
+      ip = push%n
+      
+      do i = n, 1, -1
+         if ( r%r(ir) <= push%r(ip) ) then
+            r%r(i) = push%r(ip)
+            ip = ip - 1
+         else
+            r%r(i) = r%r(ir)
+            ir = ir - 1
+         end if
+         if ( ir < 1 ) exit
+         if ( ip < 1 ) exit
+      end do
+
+      if ( ip < 1 ) then
+         ! everything is done, r is already correct
+      else
+         ! put p at the beginning, we know r is already pushed
+         do i = 1, ip
+            r%r(i) = push%r(i)
+         end do
+      end if
+
+      r%n = n
+
+    end subroutine push_sorted
+    
   end function rgn_push_rgn
 
   pure function rgn_sum(r) result(s)

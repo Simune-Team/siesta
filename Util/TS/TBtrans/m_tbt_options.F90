@@ -644,6 +644,7 @@ contains
     call init_dH_options( no_u )
     call init_dSE_options( )
 
+    
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus )
 
@@ -791,9 +792,13 @@ contains
 
     ! Removal of keys
     rem_DOS_Elecs = 'DOS-Elecs' .in. save_DATA
-    if ( any(Elecs(:)%out_of_core) ) then
-       call delete(save_DATA,'DOS-Elecs')
+    if ( rem_DOS_Elecs ) then
+       if ( any(Elecs(:)%out_of_core) ) &
+            call delete(save_DATA,'DOS-Elecs')
+       if ( 'Sigma-only' .in. save_DATA ) &
+            call delete(save_DATA,'DOS-Elecs')
     end if
+    
     rem_T_Gf = 'T-Gf' .in. save_DATA
     if ( N_Elec > 3 ) then
        call delete(save_DATA,'T-Gf')
@@ -844,13 +849,17 @@ contains
        call die('Chemical potentials must not introduce consistent Ef shift to the system.')
     end if
 
-    if ( any(Elecs(:)%out_of_core) ) then
-       if ( rem_DOS_Elecs ) then
+    if ( rem_DOS_Elecs ) then
+       if ( any(Elecs(:)%out_of_core) ) then
           write(*,'(a)')' Disabling electrode DOS calculation, only &
                &enabled for in-core self-energy calculations.'
        end if
+       if ( 'Sigma-only' .in. save_DATA ) then
+          write(*,'(a)')' Disabling electrode DOS calculation, only &
+               &enabled when calculating transmission (not TBT.SelfEnergy.Only).'
+       end if
     end if
-
+    
     if ( .not. fdf_defined('TBT.Atoms.Device') ) then
        write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
     end if

@@ -142,12 +142,9 @@ C of referencing has been changed in several places to reflect this.
 !
 !      (c) Hence
 !
-!                               | H(ind,1)                H(ind,3) - i
-!                               H(ind,4) |
-!           H_{j,i} = H_{i,j} = |
-!           |
-!                               | H(ind,3) + i H(ind,4)   H(ind,2)
-!                               |
+!                               | H(ind,1)   H(ind,3) - i H(ind,4)  |
+!           H_{j,i} = H_{i,j} = |                                   |
+!                               | H(ind,3) + i H(ind,4)    H(ind,2) |
 !
 !
 ! The spin-orbit interaction and the orbital part of the Zeeman

@@ -13,6 +13,7 @@ C
 
       implicit none
 
+      ! Ensure they are initialially nullified
       real(dp), pointer :: Haux(:) => null()
       real(dp), pointer :: Saux(:) => null()
       real(dp), pointer :: psi(:) => null()
@@ -26,6 +27,7 @@ C
       call de_alloc( Haux, 'Haux', 'densematrix' )
       call de_alloc( Saux, 'Saux', 'densematrix' )
       call de_alloc( psi,  'psi',  'densematrix' )
+      nullify(Haux, Saux, psi)
 
       end subroutine resetDenseMatrix
 
