@@ -166,11 +166,11 @@ CONTAINS
          Ebs_Haux(1,1) = dcmplx(H(io,1), H(io,5))  
          Ebs_Haux(2,2) = dcmplx(H(io,2), H(io,6))  
          Ebs_Haux(1,2) = dcmplx(H(io,3), H(io,4)) 
-         Ebs_Haux(2,1) = dcmplx(H(io,3),-H(io,4)) 
+         Ebs_Haux(2,1) = dcmplx(H(io,7), H(io,8)) 
 
          Ebs_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5)) 
          Ebs_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6)) 
-         Ebs_Daux(1,2) = dcmplx(Dscf(io,3), Dscf(io,4))
+         Ebs_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
          Ebs_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4)) 
 !         Ebs_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5)) 
 !         Ebs_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6)) 
@@ -248,7 +248,7 @@ CONTAINS
           DEharr_Haux(1,1) = dcmplx(H(io,1), H(io,5))
           DEharr_Haux(2,2) = dcmplx(H(io,2), H(io,6))
           DEharr_Haux(1,2) = dcmplx(H(io,3), H(io,4))
-          DEharr_Haux(2,1) = dcmplx(H(io,3),-H(io,4))
+          DEharr_Haux(2,1) = dcmplx(H(io,7), H(io,8))
 
 !          DEharr_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5))
 !          DEharr_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6))
@@ -262,12 +262,12 @@ CONTAINS
 
           DEharr_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))
           DEharr_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))
-          DEharr_Daux(1,2) = dcmplx(Dscf(io,3), Dscf(io,4))
+          DEharr_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
           DEharr_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))
 
           DEharr_Daux_old(1,1) = dcmplx(Dold(io,1),-Dold(io,5))
           DEharr_Daux_old(2,2) = dcmplx(Dold(io,2),-Dold(io,6))
-          DEharr_Daux_old(1,2) = dcmplx(Dold(io,3), Dold(io,4))
+          DEharr_Daux_old(1,2) = dcmplx(Dold(io,7),-Dold(io,8))
           DEharr_Daux_old(2,1) = dcmplx(Dold(io,3),-Dold(io,4))
 
           DEharr_tmp(1) = DEharr_tmp(1) &
