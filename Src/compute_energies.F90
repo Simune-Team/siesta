@@ -154,59 +154,55 @@ CONTAINS
 !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
 !       ispin=4 => Imag(D12)
 
-      if ( spin%SO_offsite ) then
+      if ( spin%SO ) then
 
         Ebs_Daux = dcmplx(0.0_dp, 0.0_dp)
         Ebs_Haux = dcmplx(0.0_dp, 0.0_dp)
 
         do io = 1, maxnh
 
-!         iot = listht(io)
+!          iot = listht(io)
 
-         Ebs_Haux(1,1) = dcmplx(H(io,1), H(io,5))  
-         Ebs_Haux(2,2) = dcmplx(H(io,2), H(io,6))  
-         Ebs_Haux(1,2) = dcmplx(H(io,3), H(io,4)) 
-         Ebs_Haux(2,1) = dcmplx(H(io,7), H(io,8)) 
+          Ebs_Haux(1,1) = dcmplx(H(io,1), H(io,5))  
+          Ebs_Haux(2,2) = dcmplx(H(io,2), H(io,6))  
+          Ebs_Haux(1,2) = dcmplx(H(io,3), H(io,4)) 
+          Ebs_Haux(2,1) = dcmplx(H(io,7), H(io,8)) 
 
-         Ebs_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5)) 
-         Ebs_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6)) 
-         Ebs_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
-         Ebs_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4)) 
-!         Ebs_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5)) 
-!         Ebs_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6)) 
-!         Ebs_Daux(1,2) = dcmplx(Dscf(iot,3), Dscf(iot,4)) 
-!         Ebs_Daux(2,1) = dcmplx(Dscf(iot,7), Dscf(iot,8)) 
+          if (spin%SO_offsite) then
+            Ebs_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5)) 
+            Ebs_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6)) 
+            Ebs_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
+            Ebs_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4)) 
+!            Ebs_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5)) 
+!            Ebs_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6)) 
+!            Ebs_Daux(1,2) = dcmplx(Dscf(iot,3), Dscf(iot,4)) 
+!            Ebs_Daux(2,1) = dcmplx(Dscf(iot,7), Dscf(iot,8)) 
+          else
+            Ebs_Daux(1,1) = dcmplx(Dscf(io,1), Dscf(io,5)) 
+            Ebs_Daux(2,2) = dcmplx(Dscf(io,2), Dscf(io,6)) 
+            Ebs_Daux(1,2) = dcmplx(Dscf(io,3),-Dscf(io,4))
+            Ebs_Daux(2,1) = dcmplx(Dscf(io,7),-Dscf(io,8)) 
+          endif
 
-         Ebs_tmp(1) = Ebs_tmp(1) + real( Ebs_Haux(1,1)*Ebs_Daux(1,1))
-         Ebs_tmp(2) = Ebs_tmp(2) + real( Ebs_Haux(2,2)*Ebs_Daux(2,2))
-         Ebs_tmp(3) = Ebs_tmp(3) + real( Ebs_Haux(1,2)*Ebs_Daux(2,1))
-         Ebs_tmp(4) = Ebs_tmp(4) + real( Ebs_Haux(2,1)*Ebs_Daux(1,2))
+          Ebs_tmp(1) = Ebs_tmp(1) + real( Ebs_Haux(1,1)*Ebs_Daux(1,1))
+          Ebs_tmp(2) = Ebs_tmp(2) + real( Ebs_Haux(2,2)*Ebs_Daux(2,2))
+          Ebs_tmp(3) = Ebs_tmp(3) + real( Ebs_Haux(1,2)*Ebs_Daux(2,1))
+          Ebs_tmp(4) = Ebs_tmp(4) + real( Ebs_Haux(2,1)*Ebs_Daux(1,2))
 
         enddo
 
         Ebs = sum ( Ebs_tmp )
 
         if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-         write(spin%iout_offsiteSO,'(a,f16.10)') ' compute_Ebs: Ebs    = ', Ebs
+          write(spin%iout_offsiteSO,'(a,f16.10)') ' compute_Ebs: Ebs    = ', Ebs
         endif
 
-      elseif ( spin%SO .and. .not. spin%SO_offsite ) then
-        do io = 1,maxnh
-          Ebs = Ebs      + H(io,1) * ( Dscf(io,1) )   &
-                         + H(io,2) * ( Dscf(io,2) )   &
-                         + H(io,3) * ( Dscf(io,7) )   &
-                         + H(io,4) * ( Dscf(io,8) )   &
-                         - H(io,5) * ( Dscf(io,5) )   &
-                         - H(io,6) * ( Dscf(io,6) )   &
-                         + H(io,7) * ( Dscf(io,3) )   &
-                         + H(io,8) * ( Dscf(io,4) )
-        enddo
       else if ( spin%NCol ) then
         do io = 1,maxnh
           Ebs    = Ebs    + H(io,1) * ( Dscf(io,1)  )   &
                           + H(io,2) * ( Dscf(io,2)  )   &
                  + 2.0_dp * H(io,3) * ( Dscf(io,3)  )   &
-                 + 2.0_dp * H(io,4) * ( Dscf(io,3)  )
+                 + 2.0_dp * H(io,4) * ( Dscf(io,4)  )
         enddo
       else if ( spin%Col )  then
         do io = 1,maxnh
@@ -235,7 +231,7 @@ CONTAINS
              !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
              !       ispin=4 => Imag(D12)
 
-      if ( spin%SO_offsite ) then
+      if ( spin%SO ) then
 
         DEharr_Daux     = dcmplx(0.0_dp, 0.0_dp)
         DEharr_Daux_old = dcmplx(0.0_dp, 0.0_dp)
@@ -260,15 +256,27 @@ CONTAINS
 !          DEharr_Daux_old(1,2) = dcmplx(Dold(iot,3), Dold(iot,4))
 !          DEharr_Daux_old(2,1) = dcmplx(Dold(iot,7), Dold(iot,8))
 
-          DEharr_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))
-          DEharr_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))
-          DEharr_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
-          DEharr_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))
+          if ( spin%SO_offsite ) then
+            DEharr_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))
+            DEharr_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))
+            DEharr_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
+            DEharr_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))
 
-          DEharr_Daux_old(1,1) = dcmplx(Dold(io,1),-Dold(io,5))
-          DEharr_Daux_old(2,2) = dcmplx(Dold(io,2),-Dold(io,6))
-          DEharr_Daux_old(1,2) = dcmplx(Dold(io,7),-Dold(io,8))
-          DEharr_Daux_old(2,1) = dcmplx(Dold(io,3),-Dold(io,4))
+            DEharr_Daux_old(1,1) = dcmplx(Dold(io,1),-Dold(io,5))
+            DEharr_Daux_old(2,2) = dcmplx(Dold(io,2),-Dold(io,6))
+            DEharr_Daux_old(1,2) = dcmplx(Dold(io,7),-Dold(io,8))
+            DEharr_Daux_old(2,1) = dcmplx(Dold(io,3),-Dold(io,4))
+          else
+            DEharr_Daux(1,1) = dcmplx(Dscf(io,1), Dscf(io,5))
+            DEharr_Daux(2,2) = dcmplx(Dscf(io,2), Dscf(io,6))
+            DEharr_Daux(1,2) = dcmplx(Dscf(io,3),-Dscf(io,4))
+            DEharr_Daux(2,1) = dcmplx(Dscf(io,7),-Dscf(io,8))
+
+            DEharr_Daux_old(1,1) = dcmplx(Dold(io,1),-Dold(io,5))
+            DEharr_Daux_old(2,2) = dcmplx(Dold(io,2),-Dold(io,6))
+            DEharr_Daux_old(1,2) = dcmplx(Dold(io,3),-Dold(io,4))
+            DEharr_Daux_old(2,1) = dcmplx(Dold(io,7),-Dold(io,8))
+          endif
 
           DEharr_tmp(1) = DEharr_tmp(1) &
              + real( DEharr_Haux(1,1)*(DEharr_Daux(1,1)-DEharr_Daux_old(1,1)))
@@ -283,22 +291,11 @@ CONTAINS
 
          DEharr = sum ( DEharr_tmp )
 
-        if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-         write(spin%iout_offsiteSO,'(a,f16.10)') & 
-            ' compute_DEharr: DEharr = ', DEharr
-        endif
+         if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
+          write(spin%iout_offsiteSO,'(a,f16.10)') & 
+             ' compute_DEharr: DEharr = ', DEharr
+         endif
 
-      elseif ( spin%SO .and. .not.spin%SO_offsite ) then
-        do io = 1,maxnh
-          DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
-                          + H(io,2) * ( Dscf(io,2) - Dold(io,2) )  &
-                          + H(io,3) * ( Dscf(io,7) - Dold(io,7) )  &
-                          + H(io,4) * ( Dscf(io,8) - Dold(io,8) )  &
-                          - H(io,5) * ( Dscf(io,5) - Dold(io,5) )  &
-                          - H(io,6) * ( Dscf(io,6) - Dold(io,6) )  &
-                          + H(io,7) * ( Dscf(io,3) - Dold(io,3) )  &
-                          + H(io,8) * ( Dscf(io,4) - Dold(io,4) )
-        enddo
       else if ( spin%NCol ) then
         do io = 1,maxnh
           DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
