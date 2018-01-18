@@ -1266,32 +1266,27 @@ contains
                       DM(ind,1) = qio + spio * costh
                       DM(ind,2) = qio - spio * costh
                       DM(ind,3) =       spio * sinth * cosph
+                      DM(ind,4) = spio * sinth * sinph 
                       if ( spin%SO_offsite ) then
-                        DM(ind,4) = spio * sinth * sinph 
+                        DM(ind,4) =-spio * sinth * sinph 
                         DM(ind,5) = 0.0_dp
                         DM(ind,6) = 0.0_dp
                         DM(ind,7)= DM(ind,3)
                         DM(ind,8)=-DM(ind,4)
                       elseif ( spin%DM == 8 .and. .not.spin%SO_offsite ) then
-                        DM(ind,4) = spio * sinth * sinph 
+!                        DM(ind,4) = spio * sinth * sinph 
                         DM(ind,5) = 0.0_dp
                         DM(ind,6) = 0.0_dp
                         DM(ind,7)= DM(ind,3)
                         DM(ind,8)= DM(ind,4)
                       end if
-
-                      
                    else
-                      
                       DM(ind,1) = qio + spio
                       DM(ind,2) = qio - spio
-                      
                    end if
-                   
                 end do
 !$OMP end task
              end do
-             
           end if
        enddo
 !$OMP end single nowait

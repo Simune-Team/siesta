@@ -171,16 +171,10 @@ C of referencing has been changed in several places to reflect this.
           else ! offSpOrb
             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-            Haux(1,jo,1,io) = dcmplx(H(ind,1),-H(ind,5))
+            Haux(1,jo,1,io) = dcmplx(H(ind,1),-H(ind,5)) 
             Haux(2,jo,2,io) = dcmplx(H(ind,2),-H(ind,6))
             Haux(1,jo,2,io) = dcmplx(H(ind,7),-H(ind,8))
             Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
-!            Saux(1,io,1,jo) = dcmplx(  S(ind),   0.0_dp)
-!            Saux(2,io,2,jo) = dcmplx(  S(ind),   0.0_dp)
-!            Haux(1,io,1,jo) = dcmplx(H(ind,1), H(ind,5))
-!            Haux(2,io,2,jo) = dcmplx(H(ind,2), H(ind,6))
-!            Haux(1,io,2,jo) = dcmplx(H(ind,3), H(ind,4))
-!            Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
           endif
         enddo
       enddo
@@ -214,12 +208,6 @@ C of referencing has been changed in several places to reflect this.
               Haux(2,jo,2,io) = dcmplx(H(ind,2),-H(ind,6))
               Haux(1,jo,2,io) = dcmplx(H(ind,7),-H(ind,8))
               Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
-!            Saux(1,io,1,jo) = dcmplx(  S(ind),   0.0_dp)
-!            Saux(2,io,2,jo) = dcmplx(  S(ind),   0.0_dp)
-!            Haux(1,io,1,jo) = dcmplx(H(ind,1), H(ind,5))
-!            Haux(2,io,2,jo) = dcmplx(H(ind,2), H(ind,6))
-!            Haux(1,io,2,jo) = dcmplx(H(ind,3), H(ind,4))
-!            Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
             endif
           enddo
         enddo
