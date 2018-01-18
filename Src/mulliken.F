@@ -572,8 +572,7 @@ c ********************************************************************
         sinth = sqrt( 1.0_dp - costh**2 )
         dxy = max( dxy , DENMIN ) * .5_dp
         cosph =  qs(3) / dxy
-!        sinph = -qs(4) / dxy
-        sinph = qs(4) / dxy
+        sinph = -qs(4) / dxy
         sv(1) = DPOL * sinth * cosph
         sv(2) = DPOL * sinth * sinph
         sv(3) = DPOL * costh
