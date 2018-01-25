@@ -1285,9 +1285,9 @@ state_init.o: m_pivot_methods.o m_rmaxh.o m_sparse.o m_sparsity_handling.o
 state_init.o: m_spin.o m_steps.o m_supercell.o m_test_io.o m_ts_charge.o
 state_init.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_kpoints.o
 state_init.o: m_ts_options.o m_ts_sparse.o m_ts_tri_init.o normalize_dm.o
-state_init.o: overlap.o parallel.o proximity_check.o siesta_cml.o siesta_geom.o
-state_init.o: siesta_options.o sparse_matrices.o sys.o units.o write_subs.o
-state_init.o: zmatrix.o
+state_init.o: overlap.o parallel.o proximity_check.o siesta_cml.o
+state_init.o: siesta_dicts.o siesta_geom.o siesta_options.o sparse_matrices.o
+state_init.o: sys.o units.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_exp_coord.o
 struct_init.o: m_iostruct.o m_mpi_utils.o m_steps.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_master.o siesta_options.o
