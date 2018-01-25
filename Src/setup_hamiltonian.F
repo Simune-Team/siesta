@@ -69,6 +69,7 @@
       logical             :: use_rhog_in
 
       real(dp), pointer   :: H_vkb(:), H_kin(:), H_ldau(:,:), H_so(:,:)
+      real(dp) :: dummy_qspin(8)
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -98,10 +99,7 @@
       end if
 !$OMP end single ! keep wait
 
-      ! We do not need to set the non-spinor components
-      ! For non-colinear they are set down below,
-      ! while for spin-orbit they are set to the H_so initial
-      ! spin-orbit.
+      ! Initialize the Hamiltonian
       
       do ispin = 1, spin%spinor
 !$OMP do
@@ -111,7 +109,7 @@
 !$OMP end do nowait
       end do
 
-      if ( spin%NCol ) then
+      if ( spin%NCol .or. spin%SO) then
 
 !$OMP do collapse(2)
          do ispin = 3 , spin%H
@@ -121,19 +119,10 @@
          end do
 !$OMP end do nowait
          
-      else if ( spin%SO ) then
-
-!$OMP do collapse(2)
-         do ispin = 3 , spin%H
-            do io = 1, maxnh
-               H(io,ispin) = H_so(io,ispin-2)
-            end do
-         end do
-!$OMP end do nowait
-
       end if
          
 ! ..................
+      call print_spin(dummy_qspin)  ! Temporary location
 
 ! Non-SCF part of total energy .......................................
 ! Note that these will be "impure" for a mixed Dscf
@@ -146,6 +135,7 @@
 !$OMP single
       Ekin = 0.0_dp
       Enl = 0.0_dp
+      Eso = 0.0_dp
 !$OMP end single ! keep wait
       
 !$OMP do collapse(2), reduction(+:Ekin,Enl)
@@ -157,9 +147,6 @@
       end do
 !$OMP end do nowait
 
-!$OMP single
-      Eso = 0._dp
-!$OMP end single
       if ( spin%SO ) then
 !$OMP do reduction(+:Eso)
          do io = 1, maxnh
@@ -243,6 +230,22 @@
      .            Exc, Dxc, dipol, stress, fal, stressl,
      .            use_rhog_in)
 
+      ! Add SO components *after* the possible non-collinear contribution
+      ! generated in dhscf, copying it in the right places
+      if ( spin%SO ) then
+
+        H(:,7) = H(:,3)
+        H(:,8) = H(:,4)
+        
+!$OMP do collapse(2)
+         do ispin = 3 , spin%H
+            do io = 1, maxnh
+               H(io,ispin) = H(io,ispin) + H_so(io,ispin-2)
+            end do
+         end do
+!$OMP end do nowait
+      endif
+      
       ! This statement will apply to iscf = 1, for example, when
       ! we do not use rhog_in. Rhog here is always the charge used to
       ! build H, that is, rhog_in.
