@@ -8235,6 +8235,11 @@ or interpolation of bands), can be downloaded from
   This will default to \fdftrue\ if an external field is applied to a
   slab calculation, otherwise it will default to \fdffalse.
 
+  For \tsiesta\ calculations an additional step is added. For more
+  than 1 electrode, the dipole moments along the semi-infinite
+  directions are removed. Otherwise, for 1 electrode, the dipole is
+  \emph{only} allowed along the semi-infinite direction.
+
 \end{fdflogicalF}
 
 

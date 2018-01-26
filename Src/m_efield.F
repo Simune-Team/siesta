@@ -149,6 +149,7 @@
       use fdf,          only: fdf_bmatch, fdf_convfac, fdf_bvalues
       use units,        only: Ang, eV
       use m_cite, only: add_citation
+      use m_ts_global_vars,only: TSmode
 
       real(dp) :: input_field(3), orthog_field(3), cfactor
       logical  :: orthog
@@ -195,9 +196,17 @@
      $ (ddot(3,user_specified_field,1,user_specified_field,1) /= 0.0_dp)
 
       ! Only allow slab dipole corrections for slabs
-      if ( nbcell == 2 ) then
-         ! Note that we enable the correction if there is an
-         ! external field
+      ! We also allow dipole corrections for transiesta calculations
+      ! with a well-defined transport direction.
+      if ( nbcell == 3 ) then
+         ! Any fully periodic system should not allow dipole corrections
+         dipole_correction = .false.
+      else if ( nbcell == 2 .or. TSmode ) then
+         ! Note that we default to enable the correction if there is
+         ! an external field, or a transiesta calculation along the
+         ! semi-infinite lead-direction for 1-probe calculations.
+         ! For 1-electrode calculations it may make sense to apply
+         ! this correction.
          dipole_correction = fdf_get("SlabDipoleCorrection",
      &        acting_efield)
          if (acting_efield .and. (.not. dipole_correction)) then
