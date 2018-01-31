@@ -109,12 +109,11 @@ C *********************************************************************
       real(dp) kpoint(3,nk), wk(nk), xij(3,maxnh)
       real(dp) e1, e2, ef, eo(maxo*4,nk), qo(maxo*4,nk)
       real(dp) occtol, qtot, temp, Entropy
-      
+      complex(dp) :: psi(2,nuotot,nuo*2)
+
       logical               getD
       
 !     TEMPOS, INTERNAL VARIABLES etc.
-      
-      real(dp) psi(2,2,nuotot,nuo*2)
       
       integer  BNode, BTest, ie, ierror, iie, ik, ind, io, iio
       integer  iuo, j, jo, juo, neigneeded
@@ -146,8 +145,8 @@ C *********************************************************************
       call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
       Dkc => Haux
       Ekc => Saux
-      allocate(caux(MColl,MColl*nuotot))
-      call memory('A','Z',MColl*MColl*nuotot,'diag2k')
+      allocate(caux(MColl,nuotot))
+      call memory('A','Z',MColl*nuotot,'diag2k')
       
       eo = 0.0_dp
       
@@ -308,8 +307,8 @@ C *********************************************************************
           if (qe.gt.occtol) then
             if (Node.eq.BNode) then
               do j = 1,nuotot
-                caux(1,j)=dcmplx(psi(1,1,j,iie),psi(2,1,j,iie)) ! c_{i,up}
-                caux(2,j)=dcmplx(psi(1,2,j,iie),psi(2,2,j,iie)) ! c_{i,dn}
+                caux(1,j) = psi(1,j,iie) ! c_{i,up}
+                caux(2,j) = psi(2,j,iie) ! c_{i,dn}
               enddo
             endif
 #ifdef MPI
@@ -419,7 +418,7 @@ C *********************************************************************
       deallocate(Haux)
       call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
       deallocate(Saux)
-      call memory('D','Z',MColl*MColl*nuotot,'diag2k')
+      call memory('D','Z',MColl*nuotot,'diag2k')
       deallocate(caux)
       
       return
