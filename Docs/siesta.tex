@@ -10059,7 +10059,8 @@ involving molecules.
   constraining the $x$ Cartesian vector
   \begin{fdfexample}
     %block Geometry.Constraints
-      Z 6 1. 0. 0.
+      Z 6 # constrain Carbon
+      Z 1 1. 0. 0. # constrain Hydrogen along x Cartesian vector
     %endblock
   \end{fdfexample}
   Note that you \emph{must} append a ``.'' to denote it a real. The
@@ -10067,7 +10068,8 @@ involving molecules.
   be constrained along the $x$-$y$ vector you may do
   \begin{fdfexample}
     %block Geometry.Constraints
-      Z 6 1. 1. 0.
+      Z 6
+      Z 1 1. 1. 0.
     %endblock
   \end{fdfexample}
   
