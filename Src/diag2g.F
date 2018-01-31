@@ -227,10 +227,10 @@ C of referencing has been changed in several places to reflect this.
               D21  = dconjg(caux(2,iio)) * caux(1,jo)
       
 !------------ Density matrix has to be hermitian ----------------------
-              D11 = 0.5_dp * (D11 + dconjg(D11))
-              D22 = 0.5_dp * (D22 + dconjg(D22))
+              !D11 = 0.5_dp * (D11 + dconjg(D11))
+              !D22 = 0.5_dp * (D22 + dconjg(D22))
               D12 = 0.5_dp * (D12 + dconjg(D21))
-              D21 = dconjg(D12)
+              !D21 = dconjg(D12)
       
 !       Add contribution to density matrices of unit-cell orbitals
 !       ----------------------------------------------------------------

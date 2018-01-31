@@ -123,9 +123,9 @@ C *********************************************************************
 !     Haux(js,juo,is,iuo) = <js,juo|H|is,iuo>
 !     Indices is and js are for spin components
 !     Indices iuo and juo are for orbital components
-      complex(dp),dimension(:,:,:,:), allocatable :: Haux, Saux
+      complex(dp),dimension(:,:,:,:), allocatable, target :: Haux, Saux
       
-      complex(dp),dimension(:,:,:,:), allocatable :: Dkc, Ekc
+      complex(dp),dimension(:,:,:,:), pointer :: Dkc, Ekc
       complex(dp)                                 :: cicj
       complex(dp)                                 :: D11, D22, D12, D21
       complex(dp),dimension(:,:),     allocatable :: caux
@@ -144,10 +144,8 @@ C *********************************************************************
       call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
       allocate(Saux(MColl,nuotot,MColl,nuo))
       call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      allocate(Dkc(MColl,nuotot,MColl,nuo))
-      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      allocate(Ekc(MColl,nuotot,MColl,nuo))
-      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      Dkc => Haux
+      Ekc => Saux
       allocate(caux(MColl,MColl*nuotot))
       call memory('A','Z',MColl*MColl*nuotot,'diag2k')
       
@@ -290,14 +288,13 @@ C *********************************************************************
      .               neigneeded,iscf,ierror)
         endif
       
-!-----------------------------------------------------------------------	     
+!-----------------------------------------------------------------------
 !     Store the products of eigenvectors in matrices Dk and Ek
 !     WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
-!-----------------------------------------------------------------------	     
+!-----------------------------------------------------------------------
       
         Dkc  = dcmplx(0.0_dp,0.0_dp)
         Ekc  = dcmplx(0.0_dp,0.0_dp)
-        caux = dcmplx(0.0_dp,0.0_dp)
       
         BNode = 0
         iie = 0
@@ -383,42 +380,28 @@ C *********************************************************************
      .           kpoint(3,ik) * xij(3,ind)
           kphs = cdexp(dcmplx(0.0_dp,-1.0_dp)*kxij)
       
-!         Average k and -k solutions because time-reversal symetry
-          D11 = 0.5_dp * (Dkc(1,juo,1,iuo) * kphs
-     .        +    dconjg(Dkc(1,juo,1,iuo) * kphs))
-      
-          D22 = 0.5_dp * (Dkc(2,juo,2,iuo) * kphs
-     .        +    dconjg(Dkc(2,juo,2,iuo) * kphs))
-          
-          D12 = 0.5_dp * (Dkc(1,juo,2,iuo) * kphs
-     .        +    dconjg(Dkc(2,juo,1,iuo) * kphs))
-      
-          D21 = 0.5_dp * (Dkc(2,juo,1,iuo) * kphs
-     .        +    dconjg(Dkc(1,juo,2,iuo) * kphs))
-      
+          D11 = Dkc(1,juo,1,iuo) * kphs
+          D22 = Dkc(2,juo,2,iuo) * kphs
+          D12 = Dkc(1,juo,2,iuo) * kphs
+          D21 = Dkc(2,juo,1,iuo) * kphs
+
+          ! Make D12/D21 Hermitian
           D12 = 0.5_dp * (D12 + dconjg(D21))
-          D21 = dconjg(D12)
+          !D21 = dconjg(D12)
       
           Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
           Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
           Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
           Dnew(ind,4) = Dnew(ind,4) + dimag(D12)
-      
-!         Average k and -k solutions because time-reversal symetry
-          D11 = 0.5_dp * (Ekc(1,juo,1,iuo) * kphs
-     .        +    dconjg(Ekc(1,juo,1,iuo) * kphs))
-      
-          D22 = 0.5_dp * (Ekc(2,juo,2,iuo) * kphs
-     .        +    dconjg(Ekc(2,juo,2,iuo) * kphs))
-          
-          D12 = 0.5_dp * (Ekc(1,juo,2,iuo) * kphs
-     .        +    dconjg(Ekc(2,juo,1,iuo) * kphs))
-      
-          D21 = 0.5_dp * (Ekc(2,juo,1,iuo) * kphs
-     .        +    dconjg(Ekc(1,juo,2,iuo) * kphs))
-      
+
+          D11 = Ekc(1,juo,1,iuo) * kphs
+          D22 = Ekc(2,juo,2,iuo) * kphs
+          D12 = Ekc(1,juo,2,iuo) * kphs
+          D21 = Ekc(2,juo,1,iuo) * kphs
+
+          ! Make D12/D21 Hermitian
           D12 = 0.5_dp * (D12 + dconjg(D21))
-          D21 = dconjg(D12)
+          !D21 = dconjg(D12)
       
           Enew(ind,1) = Enew(ind,1) + dreal(D11)
           Enew(ind,2) = Enew(ind,2) + dreal(D22)
@@ -436,30 +419,9 @@ C *********************************************************************
       deallocate(Haux)
       call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
       deallocate(Saux)
-      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      deallocate(Dkc)
-      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      deallocate(Ekc)
       call memory('D','Z',MColl*MColl*nuotot,'diag2k')
       deallocate(caux)
       
-!        write(160+node,*)'ITERATION'
-!        write(170+node,*)'ITERATION'
-!        do iuo = 1,nuo
-!          do j = 1,numd(iuo)
-!            ind = listdptr(iuo) + j
-!            jo = listd(ind)
-!            juo = indxuo(jo)
-!             write(160+node,'(3i5,4f15.9)')iuo,juo,jo,Dnew(ind,1:4)
-!             write(170+node,'(3i5,4f15.9)')iuo,juo,jo,
-!     .    (Dnew(ind,1)+Dnew(ind,2))*0.5,
-!     .    (Dnew(ind,1)-Dnew(ind,2))*0.5,Dnew(ind,3:4)
-!          enddo
-!        enddo
-!      
-!      call die('maslyuk')
-!***********************************************************************      
       return
       end subroutine diag2k
-!***********************************************************************      
       
