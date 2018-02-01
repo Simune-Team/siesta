@@ -1,15 +1,19 @@
-
 To compile this version of Siesta you need the following libraries:
 
 xmlf90
 libPSML
-libGridXC
+libGridXC (optionally with libxc)
 
-These can be downloaded from Launchpad.
+These can be downloaded from Launchpad:
 
-NOTE: You need at least version 1.5.0 of the xmlf90 library,
-      at least version 0.7.4 of the libgridxc library, and
-      at least version 1.1.5 of the libpsml library.
+https://launchpad.net/xmlf90/trunk/1.5/+download/xmlf90-1.5.3.tar.gz
+https://launchpad.net/libpsml/trunk/1.1/+download/libpsml-1.1.6.tgz
+https://launchpad.net/libgridxc/trunk/0.8/+download/libgridxc-0.8.0.tgz
+
+
+NOTE: You need at least version 1.5.3 of the xmlf90 library,
+      at least version 0.8.0 of the libgridxc library, and
+      at least version 1.1.6 of the libpsml library.
 
 ** Steps in detail
 
@@ -23,7 +27,12 @@ NOTE: You need at least version 1.5.0 of the xmlf90 library,
 
     (sh ../Src/obj_setup.sh if you have not yet done so)
     make
-    
+
+NOTE: The structure of the arch.make file has changed a bit. MPI and NETCDF
+      functionality is now requested by setting WITH_MPI and WITH_NETCDF,
+      respectively, and there must be specific FC_SERIAL and FC_PARALLEL
+      symbols for the Fortran compiler.
+      
     
 
     

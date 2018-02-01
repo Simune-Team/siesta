@@ -543,11 +543,9 @@ To enable MPI in \siesta\ the compilation options are required to be
 changed accordingly, here is the most basic changes to the
 \file{arch.make} for standard binary names
 \begin{shellexample}
+  FC_PARALLEL = mpifort # or mpif90
   CC = mpicc
-  FC = mpifort # or mpif90
-  MPI_INTERFACE = libmpi_f90.a
-  MPI_INCLUDE = .
-  FPPFLAGS += -DMPI
+  WITH_MPI=1
 \end{shellexample}
 \index{compile!pre-processor!-DMPI}
 
@@ -656,6 +654,27 @@ installation scripts finishes by telling \emph{what} to add to the
 
 \begin{description}
 
+  \item[XMLF90] %
+  \index{External library!xmlf90}%
+  is required as a prerequisite for libPSML.
+  (\href{https://launchpad.net/xmlf90}). See the \texttt{000\_INSTALL} file.
+
+  \item[libPSML] %
+  \index{External library!libPSML}%
+  is required to use pseudopotentials in PSML format
+  (\href{https://launchpad.net/libPSML}) See the \texttt{000\_INSTALL} file.
+
+  \item[libGridXC] %
+  \index{External library!libGridXC}%
+  is required.
+  (\href{https://launchpad.net/libgridxc}) See the \texttt{000\_INSTALL} file.
+
+  \item[libXC] %
+  \index{External library!libXC}%
+  is optional, depending on the options used in the compilation of libGridXC.
+  (\href{https://gitlab.com/libxc/libxc})
+
+    
   \item[BLAS] %
   \index{External library!BLAS}%
   it is recommended to use a high-performance library

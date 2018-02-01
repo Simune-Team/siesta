@@ -30,22 +30,22 @@ OBJDIR=Obj
 
 VPATH:=$(shell pwd)/../../Src
 
+override WITH_MPI=
+
 default: what mixps fractional
 
 MAIN_OBJDIR:=$(shell cd -P -- ../../\$(OBJDIR) && pwd -P)
 ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 
-FC_DEFAULT:=$(FC)
-FC_SERIAL?=$(FC_DEFAULT)
-FC:=$(FC_SERIAL)         # Make it non-recursive
+# FC_DEFAULT:=$(FC)
+# FC_SERIAL?=$(FC_DEFAULT)
+# FC:=$(FC_SERIAL)         # Make it non-recursive
 
-DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI
-#
-include $(PSML_ROOT)/psml.mk
-include $(XMLF90_ROOT)/xmlf90.mk
-#
-FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI
+# DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI
+# #
+# FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI
+
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 
 INCFLAGS:=$(NETCDF_INCFLAGS)\

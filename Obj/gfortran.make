@@ -32,13 +32,21 @@ SYS = nag
 LDFLAGS =
 
 #
-# Required libraries.
-# Please edit to match your installation directories
+# Make sure you have the appropriate symbols
+# (Either explicitly here, or through shell variables, perhaps
+#  set by a module system)
+PSML_ROOT=$(HOME)/lib/gfortran-5.2.0/libpsml-1.1.6
+XMLF90_ROOT=$(HOME)/lib/gfortran-5.2.0/xmlf90-1.5.3
+GRIDXC_ROOT=$(HOME)/lib/gfortran-5.2.0/gridxc-0.8.0
+#LIBXC_ROOT=/path/to/libxc  
 #
-PSML_ROOT=$(HOME)/lib/gfortran-5.2.0/libpsml-0.9.4
-XMLF90_ROOT=$(HOME)/lib/gfortran-5.2.0/xmlf90-1.5.0
-GRIDXC_ROOT=$(HOME)/lib/gfortran-5.2.0/gridxc-0.6.1
-
+# The following include statements will work with recent
+# versions of the above libraries (at least those indicated)
+#---------------------------------------------
+include $(XMLF90_ROOT)/share/org.siesta-project/xmlf90.mk
+include $(PSML_ROOT)/share/org.siesta-project/psml.mk
+include $(GRIDXC_ROOT)/gridxc.mk
+#---------------------------------------------
 #
 # These are non-optimized libraries. You should
 # use optimized versions for production runs.

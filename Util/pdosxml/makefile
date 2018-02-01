@@ -29,6 +29,8 @@ default: pdosxml
 OBJDIR=Obj
 VPATH:=$(shell pwd)/../../Src
 #
+override WITH_MPI=
+
 MAIN_OBJDIR:=$(shell cd -P -- ../../\$(OBJDIR) && pwd -P)
 ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
@@ -37,7 +39,6 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-include $(XMLF90_ROOT)/xmlf90.mk
 INCFLAGS:=$(INCFLAGS) $(XMLF90_INCFLAGS)
 #
 LIBS= $(XMLF90_LIBS)

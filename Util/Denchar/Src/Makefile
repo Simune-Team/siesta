@@ -35,17 +35,13 @@ default: what denchar
 MAIN_OBJDIR:=$(shell cd -P -- ../../../\$(OBJDIR) && pwd -P)
 ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 
-
-
-
+override WITH_MPI=
 include $(ARCH_MAKE)
 
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC := $(FC_SERIAL)         # Make it non-recursive
 #
-include $(PSML_ROOT)/psml.mk
-include $(XMLF90_ROOT)/xmlf90.mk
 
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 INCFLAGS:=$(NCPS_INCFLAGS) $(PSML_INCFLAGS) $(INCFLAGS)

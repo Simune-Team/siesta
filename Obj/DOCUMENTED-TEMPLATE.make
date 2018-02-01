@@ -7,6 +7,8 @@
 #
 #-------------------------------------------------------------------
 # DOCUMENTED arch.make
+# WARNING: Some details are in flux. In particular, the new structure
+# with WITH_MPI, WITH_NETCDF, etc, as described in gfortran-parallel.make.
 #
 # The most useful makefile symbols are explained. Use this file as
 # a guide when you are looking at the .make files in this directory,
