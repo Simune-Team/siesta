@@ -656,10 +656,9 @@ dhscf.o: alloc.o atmfuncs.o bsc_xcmod.o cellxc_mod.o delk.o dfscf.o
 dhscf.o: doping_uniform.o files.o forhar.o iogrid_netcdf.o m_charge_add.o
 dhscf.o: m_efield.o m_hartree_add.o m_iorho.o m_iotddft.o m_mesh_node.o
 dhscf.o: m_ncdf_io.o m_ncdf_siesta.o m_partial_charges.o m_rhog.o m_spin.o
-dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_options.o m_ts_tdir.o
-dhscf.o: m_ts_voltage.o mesh.o meshdscf.o meshsubs.o moremeshsubs.o parallel.o
-dhscf.o: parsing.o precision.o rhofft.o rhoofd.o siesta_options.o sys.o units.o
-dhscf.o: vmat.o
+dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_options.o m_ts_voltage.o mesh.o
+dhscf.o: meshdscf.o meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o
+dhscf.o: rhofft.o rhoofd.o siesta_options.o sys.o units.o vmat.o
 diag.o: alloc.o diag_option.o parallel.o precision.o sys.o
 diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
@@ -799,8 +798,8 @@ m_dipol.o: precision.o
 m_dminim.o: densematrix.o files.o parallel.o parallelsubs.o precision.o
 m_dminim.o: siesta_options.o sys.o
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
-m_efield.o: atmfuncs.o m_cite.o mesh.o parallel.o precision.o siesta_cml.o
-m_efield.o: siesta_geom.o sys.o units.o
+m_efield.o: atmfuncs.o m_cite.o m_ts_global_vars.o mesh.o parallel.o
+m_efield.o: precision.o siesta_cml.o siesta_geom.o sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_evolve.o: cranknic_evolg.o cranknic_evolk.o m_gamma.o m_spin.o precision.o
@@ -1307,8 +1306,9 @@ state_init.o: m_sparsity_handling.o m_spin.o m_steps.o m_supercell.o
 state_init.o: m_test_io.o m_ts_charge.o m_ts_electype.o m_ts_global_vars.o
 state_init.o: m_ts_io.o m_ts_kpoints.o m_ts_options.o m_ts_sparse.o
 state_init.o: m_ts_tri_init.o normalize_dm.o overlap.o parallel.o
-state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
-state_init.o: sparse_matrices.o sys.o units.o write_subs.o zmatrix.o
+state_init.o: proximity_check.o siesta_cml.o siesta_dicts.o siesta_geom.o
+state_init.o: siesta_options.o sparse_matrices.o sys.o units.o write_subs.o
+state_init.o: zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iotdxv.o ioxv.o
 struct_init.o: m_exp_coord.o m_iostruct.o m_mpi_utils.o m_steps.o parallel.o
 struct_init.o: periodic_table.o siesta_cml.o siesta_geom.o siesta_master.o
