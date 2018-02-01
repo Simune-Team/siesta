@@ -25,6 +25,7 @@ CONTAINS
 !
 
         use m_psml
+        use m_ncps_psml_plugins
         use m_ncps_froyen_ps_t,  only: froyen_ps_t
         use m_libxc_compat, only: xc_id_t, get_xc_id_from_libxc
         use m_libxc_compat, only: xc_id_to_string
@@ -89,14 +90,9 @@ CONTAINS
              relativity=relativity,spin_dft=spin_polarized,&
              core_corrections=core_corrections)
         
-        call ps_ValenceConfiguration_Get(ps,nshells=nval_shells,charge=p%gen_zval)
+        call ps_ValenceConfiguration_Get(ps,nshells=nval_shells, &
+                                         charge=p%gen_zval)
 
-!        p%name = ps_AtomicSymbol(ps)
-!        p%zval         = ps_ZPseudo(ps)
-!        znuc           = ps_AtomicNumber(ps)
-       ! This needs to be generalized
-!        p%gen_zval     = ps_GenerationZval(ps)
-        
         !
         call ps_ExchangeCorrelation_Get(ps,annotation=annot,&
                                            n_libxc_functionals=n_xcfuncs)
@@ -104,7 +100,6 @@ CONTAINS
 !       Partial support for libxc functionals
 !       (no single-functional cases, no 'cocktails')
 !
-!!        n_xcfuncs = ps_NLibXCFunctionals(ps)
         if (n_xcfuncs == 2) then
            do i = 1, n_xcfuncs
               call ps_LibxcFunctional_Get(ps,i,code=libxc_ids(i))
@@ -161,24 +156,29 @@ CONTAINS
 !       Grid handling. We do not assume that the file
 !       uses a logarithmic grid.
 
-           ! We want to check for grid annotations, in case
-           ! the grid is already of the "atom" type
-
-         grid_annotation = ps_GridAnnotation(ps)
-         call get_annotation_value(grid_annotation,  &
-              "type",strvalue,status)
-
-         log_grid_in_file = .false.
-         if (status == 0) then
-            log_grid_in_file = (trim(strvalue) == "log-atom")
-         endif
-
         want_new_grid = .false.
         if (present(new_grid)) then
            want_new_grid = new_grid
         endif
 
-        if (want_new_grid) then
+        ! We want to check for grid annotations, in case
+        ! the grid is already of the "atom" type
+        ! This is an example of a "PSML plugin"
+        call check_atom_grid(ps,log_grid_in_file,p%nrval,p%a,p%b)
+
+        if (log_grid_in_file) then
+           
+           if (p%nrval > 0) then  ! Normal ATOM grid
+              print *, "Using ATOM log grid in PSML file ..."
+              p%nr = p%nrval - 1  ! For backwards compatibility
+           else    ! Sampled ATOM grid; nrval not available               
+              print *, "Using ATOM log grid {a,b} parameters in PSML file ..."
+              rmax_grid = rmax_def
+              p%nr = nint(log(rmax_grid/(p%b)+1.0d0)/(p%a))
+              p%nrval = p%nr + 1  ! Count also r=0
+           endif
+
+        else if (want_new_grid) then
            if (.not. present(a)) call die("new grid: a not present")
            if (.not. present(b)) call die("new grid: b not present")
            if (.not. present(rmax)) call die("new grid: rmax not present")
@@ -187,27 +187,6 @@ CONTAINS
            p%b = b
            p%nr = nint(log(rmax_grid/b+1.0d0)/a)
            p%nrval = p%nr + 1  ! Count also r=0
-
-        else if (log_grid_in_file) then
-           
-           print *, "Using ATOM log grid already in PSML file ..."
-
-           call get_annotation_value(grid_annotation,  &
-                                     "nrval",strvalue,status)
-           if (status /= 0) call die("Cannot read nrval")
-           read(strvalue,*) p%nrval
-
-              ! Note that a and b are interchanged in Siesta!
-           call get_annotation_value(grid_annotation,  &
-                                      "scale",strvalue,status)
-           if (status /= 0) call die("Cannot read log grid scale")
-           read(strvalue,*) p%b
-           call get_annotation_value(grid_annotation,  &
-                                      "step",strvalue,status)
-           if (status /= 0) call die("Cannot read log grid step")
-           read(strvalue,*) p%a
-
-           p%nr = p%nrval - 1  ! For backwards compatibility
 
         else 
               print *, "Using ATOM defaults for log grid..."
@@ -220,13 +199,9 @@ CONTAINS
               p%nrval = p%nr + 1  ! Count also r=0
         endif
 
-        !        ndepth =  ps_Provenance_Depth(ps)
         ! Assume first action is ps generation...
         call ps_Provenance_Get(ps,level=1,creator=p%method(1),&
                                date=p%method(2))
-!        p%method(1)    = ps_Creator(ps)
-!        p%method(2)    = ps_Date(ps)
-!        method_string = ps_PseudoFlavor(ps)
         read(method_string,'(4a10)') (p%method(i),i=3,6) 
 
         has_nonrel = .false.
@@ -239,8 +214,7 @@ CONTAINS
         select case (trim(relativity))
         case ("dirac")
 
-           call ps_Potential_Filter(ps,set=SET_SREL,number=nscalar,indexes=idxd)
-!           nscalar = ps_Number_Of_Potentials(ps,SET_SREL)
+          call ps_Potential_Filter(ps,set=SET_SREL,number=nscalar,indexes=idxd)
 
            if (nscalar == 0) then
 
@@ -248,16 +222,12 @@ CONTAINS
               ! from the lj set
 
               call ps_Potential_Filter(ps,set=SET_LJ,number=nlj,indexes=idxlj)
-!              nlj = ps_Number_Of_Potentials(ps,SET_LJ)
               if (nlj == 0) call die("Cannot find srel SL potentials for dirac case")
               has_lj = .true.
-!              call ps_Get_Potential_Indexes(ps,SET_LJ,idxlj)
               npotd = 0
               npotu = 0
               do i = 1, nlj
                  call ps_Potential_Get(ps,idxlj(i),l=l,j=jval)
-!                 l = ps_Potential_L(ps,idxlj(i))
-!                 jval = ps_Potential_J(ps,idxlj(i))
                  if ( (l==0) .or. (jval>l)) then
                     npotd = npotd + 1
                  else
@@ -265,14 +235,12 @@ CONTAINS
                  endif
               enddo
 
-           else
+           else  ! nscalar > 0
 
               ! We have a scalar-relativistic set
               npotd = nscalar
-!              call ps_Get_Potential_Indexes(ps,SET_SREL,idxd)
-!              npotu = ps_Number_Of_Potentials(ps,SET_SO)
-              if (npotu /= 0) call ps_Potential_Filter(ps,set=SET_SO,number=npotu,indexes=idxu)
-!              call ps_Get_Potential_Indexes(ps,SET_SO,idxu)
+              ! Get the information on the companion spin-orbit set
+              call ps_Potential_Filter(ps,set=SET_SO,number=npotu,indexes=idxu)
               has_sr_so = .true.
 
            endif
@@ -280,10 +248,7 @@ CONTAINS
         case ("scalar")
 
            call ps_Potential_Filter(ps,set=SET_SREL,number=npotd,indexes=idxd)
-!           nscalar = ps_Number_Of_Potentials(ps,SET_SREL)
            if (npotd == 0) call die("Cannot find srel SL potentials for srel case")
-!           npotd = nscalar
-!           call ps_Get_Potential_Indexes(ps,SET_SREL,idxd)
            npotu = 0
            has_sr = .true.
 
@@ -392,33 +357,27 @@ CONTAINS
              (has_sr)   ) then
          ! No need for any extra computations
          do il = 1, p%npotd
-            call ps_Potential_Get(ps,idxd(il),&
+           call ps_Potential_Get(ps,idxd(il),&
                      l=p%ldown(il),n=nn(il),rc=rrc(il))
-            ll(il) = p%ldown(il)
+           ll(il) = p%ldown(il)
                      
-!          p%ldown(il) = ps_Potential_L(ps,idxd(il))
-!          nn(il)  =  ps_Potential_N(ps,idxd(il))
-!          ll(il)  =  ps_Potential_L(ps,idxd(il))
-!          rrc(il) =  ps_Potential_Rc(ps,idxd(il))
-            
-          do ir = 2, p%nrval
+           do ir = 2, p%nrval
              p%vdown(il,ir) = p%r(ir) * &
                            ps_Potential_Value(ps,idxd(il),p%r(ir))
              p%vdown(il,ir) = p%vdown(il,ir) * 2.0_dp   ! rydberg
 
-          enddo
-          p%vdown(il,1) = p%vdown(il,2) - r2*(p%vdown(il,3)-p%vdown(il,2))
+           enddo
+           p%vdown(il,1) = p%vdown(il,2) - r2*(p%vdown(il,3)-p%vdown(il,2))
          enddo
 
          do il = 1, p%npotu
-            call ps_Potential_Get(ps,idxu(il),l=p%lup(il))
-!           p%lup(il) = ps_Potential_L(ps,idxu(il))
+           call ps_Potential_Get(ps,idxu(il),l=p%lup(il))
            do ir = 2, p%nrval
               p%vup(il,ir) = p%r(ir) * &
                            ps_Potential_Value(ps,idxu(il),p%r(ir))
               p%vup(il,ir) = p%vup(il,ir) * 2.0_dp   ! rydberg
            enddo
-          p%vup(il,1) = p%vup(il,2) - r2*(p%vup(il,3)-p%vup(il,2))
+           p%vup(il,1) = p%vup(il,2) - r2*(p%vup(il,3)-p%vup(il,2))
          enddo
 
         ! if not, we need to get the right averages
@@ -428,8 +387,6 @@ CONTAINS
            iu = 0
            do i = 1, nlj
               call ps_Potential_Get(ps,idxlj(i),l=l,j=jval)
-!              l = ps_Potential_L(ps,idxlj(i))
-!              jval = ps_Potential_J(ps,idxlj(i))
               if ( (l==0) .or. (jval>l)) then
                  id = id + 1
                  ! If the lj slpots are not ordered by l in the psml
@@ -438,8 +395,6 @@ CONTAINS
                  ! get some extra info needed later
                  ll(id) = l
                  call ps_Potential_Get(ps,idxlj(i),n=nn(id),rc=rrc(id))
-!                 nn(id) = ps_Potential_N(ps,idxlj(i))
-!                 rrc(id) = ps_Potential_Rc(ps,idxlj(i))
               else
                  iu = iu + 1   
                  p%lup(iu) = l
@@ -479,11 +434,9 @@ CONTAINS
 
               do i = 1, nlj
                  call ps_Potential_Get(ps,idxlj(i),l=li,j=jval)
-!                 li = ps_Potential_L(ps,idxlj(i))
                  if (li /= l) cycle
 
                  ! Process the two (except for l=0) j channels for this l
-!                 jval = ps_Potential_J(ps,idxlj(i))
 
                  if ((l==0) .or. jval > l) then  ! j=l+1/2 or l=0,j=0
                     !print *, "l,j+, i, id, iu ", l, jval, i, id, iu
@@ -523,7 +476,6 @@ CONTAINS
 
         ! Encode generation configuration and cutoffs
 
-!        nval_shells = ps_NValenceShells(ps)
         p%text = ' '
         position = 1
         ! We deal with "down" potentials only, as they are enough
