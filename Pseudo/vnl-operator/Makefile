@@ -19,10 +19,6 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-include $(PSML_ROOT)/psml.mk
-include $(XMLF90_ROOT)/xmlf90.mk
-include $(GRIDXC_ROOT)/gridxc.mk
-#
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 
