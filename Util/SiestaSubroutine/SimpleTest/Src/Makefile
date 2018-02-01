@@ -40,9 +40,7 @@ TOP_LEVEL=$(shell pwd)/../../../../Src
 VPATH:=$(TOP_LEVEL)
 #
 include $(PSML_ROOT)/psml.mk
-XMLF90_INCFLAGS= -I $(XMLF90_ROOT)/include 
-XMLF90_LIBS=$(XMLF90_ROOT)/lib/libxmlf90.a
-include $(GRIDXC_ROOT)/gridxc.mk
+include $(XMLF90_ROOT)/xmlf90.mk
 #
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
@@ -61,6 +59,9 @@ FSIESTA_SOCKETS= fsockets.o sockets.o fsiesta_sockets.o
 #
 SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
+include $(PSML_ROOT)/psml.mk
+include $(XMLF90_ROOT)/xmlf90.mk
+include $(GRIDXC_ROOT)/gridxc.mk
 XMLPARSER=$(XMLF90_LIBS)
 XC=$(GRIDXC_LIBS)
 PSML=$(PSML_LIBS)

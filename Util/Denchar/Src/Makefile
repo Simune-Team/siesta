@@ -45,8 +45,7 @@ FC_SERIAL?=$(FC_DEFAULT)
 FC := $(FC_SERIAL)         # Make it non-recursive
 #
 include $(PSML_ROOT)/psml.mk
-XMLF90_INCFLAGS= -I $(XMLF90_ROOT)/include 
-XMLF90_LIBS=$(XMLF90_ROOT)/lib/libxmlf90.a
+include $(XMLF90_ROOT)/xmlf90.mk
 
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 INCFLAGS:=$(NCPS_INCFLAGS) $(PSML_INCFLAGS) $(INCFLAGS)
