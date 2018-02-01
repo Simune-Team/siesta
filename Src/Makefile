@@ -716,8 +716,8 @@ overfsm.o: precision.o
 overlap.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
 overlap.o: precision.o
 parallelsubs.o: domain_decom.o parallel.o spatial.o sys.o
-pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
-pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o
+pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o m_energies.o
+pdos.o: parallel.o parallelsubs.o precision.o siesta_geom.o units.o xml.o
 pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosk.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdoskp.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
