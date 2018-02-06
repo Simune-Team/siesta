@@ -91,7 +91,7 @@ contains
     integer :: guess_start, guess_step
     logical :: copy_first, lpar
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    character(len=50) :: fname
+    character(len=64) :: fname
     integer :: io, jo, jr, j, ind, no_u, iu
 #ifdef MPI
     integer :: MPIerror

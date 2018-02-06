@@ -1672,7 +1672,7 @@ flag controls the partitioning for the device region.
 
   \begin{fdfoptions}
 
-    \option[<elec-name>]%
+    \option[<elec-name>|CG-<elec-name>]%
     The partitioning will be a connectivity graph starting from the
     electrode denoted by the name. This name \emph{must} be found in
     the \fdf{TBT!Elecs} block. One can append more than one electrode
@@ -1727,7 +1727,6 @@ flag controls the partitioning for the device region.
 
 \end{fdfentry}
 
-
 \begin{fdfentry}{TBT.BTD!Pivot.Elec.<>}[string]<atom-\nonvalue{<>}>
   \fdfdepend{TBT.Atoms!Device}
 
@@ -1747,6 +1746,70 @@ flag controls the partitioning for the device region.
   from this electrode and normal to the electrode-plane. 
 
 \end{fdfentry}
+
+\begin{fdflogicalF}{TBT!Analyze}
+
+  As the pivoting algorithm \emph{highly} influences the performance
+  and throughput of the transport calculation it is crucial to select
+  the best performing algorithm available. This option tells \tbtrans\
+  to analyze the pivoting table for nearly all the implemented
+  algorithms and print-out information about them.
+
+  \note we advice users to \emph{always} run an analyzation step prior
+  to actual calculation and select the \emph{best} BTD format. This
+  analyzing step is very fast and may be performed on small
+  work-station computers, even on systems of $\gg10,000$ orbitals.
+
+  To run the analyzing step you may do:
+  \begin{shellexample}
+    tbtrans -fdf TBT.Analyze RUN.fdf > analyze.out
+  \end{shellexample}
+  note that there is little gain on using MPI and it should complete
+  within a few minutes, no matter the number of orbitals.
+
+  Choosing the best one may be difficult. Generally one should choose
+  the pivoting scheme that uses the least amount of memory. However,
+  one should also choose the method with the largest block-size being
+  as small as possible. As an example:
+  \begin{shellexample}
+TBT.BTD.Pivot.Device atom+GPS
+...
+    BTD partitions (7): 
+     [ 2984, 2776, 192, 192, 1639, 4050, 105 ]
+    BTD matrix block size [max] / [average]: 4050 /   1705.429
+    BTD matrix elements in % of full matrix:   47.88707 %
+
+TBT.BTD.Pivot.Device atom+GGPS
+...
+    BTD partitions (6): 
+     [ 2880, 2916, 174, 174, 2884, 2910 ]
+    BTD matrix block size [max] / [average]: 2916 /   1989.667
+    BTD matrix elements in % of full matrix:   48.62867 %
+
+  \end{shellexample}
+  Although the GPS method uses the least amount of memory, the GGPS
+  will likely perform better as the largest block in GPS is $4050$
+  vs. $2916$ for the GGPS method. 
+
+\end{fdflogicalF}
+
+
+\begin{fdflogicalF}{TBT.BTD!Pivot.Graphviz}
+
+  Create Graphviz\footnote{\url{www.graphviz.org}} compatible input
+  files for the pivoting tables for all electrodes,
+  \sysfile{TBT.<elec>.gv}, and the device, \sysfile{TBT.gv}.
+
+  These files may be processed by Graphviz display commands
+  \program{neato} etc.
+
+  \begin{shellexample}
+    neato -x <>
+    neato -x -Tpdf <> -o graph.pdf
+    neato -x -Tpng <> -o graph.png
+  \end{shellexample}
+  
+\end{fdflogicalF}
 
 
 \subsection{Input/Output}

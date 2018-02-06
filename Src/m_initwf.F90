@@ -292,6 +292,9 @@ module m_initwf
       call de_alloc( Saux, 'Saux', 'initwf')
       call de_alloc( psi,  'phi',  'initwf')
 
+#ifdef DEBUG
+      call write_debug('    POS initwf')
+#endif
 !     Stop time counter ...................................................
       call timer( 'initwf', 2 )
       !
@@ -433,8 +436,5 @@ module m_initwf
       end do    ! do ikmax
   end subroutine diagkiwf
 
-#ifdef DEBUG
-      call write_debug('    POS initwf')
-#endif
 
 end module m_initwf

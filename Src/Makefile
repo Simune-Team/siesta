@@ -1017,7 +1017,7 @@ m_ts_fullk.o: precision.o units.o
 m_ts_gf.o: m_os.o m_ts_cctype.o m_ts_contour_eq.o m_ts_contour_neq.o
 m_ts_gf.o: m_ts_electrode.o m_ts_electype.o parallel.o precision.o sys.o
 m_ts_gf.o: units.o
-m_ts_global_vars.o: parallel.o
+m_ts_global_vars.o: densematrix.o parallel.o
 m_ts_hartree.o: intrinsic_missing.o m_mesh_node.o m_ts_electype.o m_ts_tdir.o
 m_ts_hartree.o: parallel.o precision.o units.o
 m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
@@ -1274,7 +1274,7 @@ siesta_end.o: m_wallclock.o memory_log.o meshdscf.o meshphi.o moremeshsubs.o
 siesta_end.o: parallel.o siesta_cml.o siesta_cmlsubs.o siesta_master.o
 siesta_end.o: siesta_options.o sparse_matrices.o timestamp.o
 siesta_forces.o: atomlist.o class_Fstack_Data1D.o class_SpData2D.o compute_dm.o
-siesta_forces.o: compute_energies.o compute_max_diff.o files.o
+siesta_forces.o: compute_energies.o compute_max_diff.o densematrix.o files.o
 siesta_forces.o: final_H_f_stress.o flook_siesta.o kpoint_grid.o
 siesta_forces.o: m_check_walltime.o m_convergence.o m_energies.o m_forces.o
 siesta_forces.o: m_initwf.o m_iodm_old.o m_mixing.o m_mixing_scf.o
