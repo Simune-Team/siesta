@@ -269,7 +269,12 @@ C     Initialise MPI and set processor number
 
       SIESTA_worker = (Node < npSIESTA)
 
-      ! Swap communicator
+      ! Swap communicators
+      ! This is needed in case that the whole program is run with
+      ! a subset of the global processes. In that case, the DFT instance
+      ! communicator (a better name than 'true world' communicator)
+      ! is at this point MPI_COMM_WORLD
+      MPI_COMM_DFT = MPI_COMM_WORLD
       ! This is needed since MPI_COMM_WORLD is used implicitly by
       ! Siesta for all operations. 
       MPI_COMM_WORLD = SIESTA_Comm

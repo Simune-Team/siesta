@@ -79,7 +79,7 @@
       if (SIESTA_worker) call timer( 'compute_dm', 1 )
 
 #ifdef MPI
-      call MPI_Bcast(isolve,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
+      call MPI_Bcast(isolve,1,MPI_integer,0,MPI_Comm_DFT,mpierr)
 #endif     
 
       if (SIESTA_worker) then

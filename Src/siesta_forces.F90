@@ -145,7 +145,7 @@ contains
 #ifdef SIESTA__PEXSI
     ! Broadcast relevant things for program logic
     ! These were set in read_options, called only by "SIESTA_workers".
-    call broadcast(nscf, comm=true_MPI_Comm_World)
+    call broadcast(nscf, comm=mpi_comm_dft)
 #endif
 
     if ( SIESTA_worker )  then
@@ -499,8 +499,8 @@ contains
        end if
 
 #ifdef SIESTA__PEXSI
-       call broadcast(iscf, comm=true_MPI_Comm_World)
-       call broadcast(SCFconverged, comm=true_MPI_Comm_World)
+       call broadcast(iscf, comm=mpi_comm_dft)
+       call broadcast(SCFconverged, comm=mpi_comm_dft)
 #endif
 
        ! Exit if converged

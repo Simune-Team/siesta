@@ -37,12 +37,30 @@ MODULE MPI_SIESTA
   USE MPI__INCLUDE, true_MPI_Comm_World => MPI_Comm_World
 #endif /* NO_MPI_INTERFACES */
 
+  ! The reason to define true_MPI_Comm_World as a pointer to the
+  ! (inmutable) MPI_Comm_World parameter in the MPI module is to keep
+  ! it as reference.  The MPI_Comm_World *variable* defined below can
+  ! be redefined at will.  This practice is needed because most Siesta
+  ! routines have hard-wired references to MPI_Comm_World as their
+  ! communicator. Instead of generalizing the interfaces and pass the
+  ! communicator as an argument (work in progress), we use the kludge
+  ! of re-defining MPI_Comm_World.
+  
 ! The following construction allows to supplant MPI_Comm_World within SIESTA,
 ! and to use it as a subroutine with its own internal MPI communicator.
 
+  ! Siesta-instances should refer to MPI_Comm_DFT
+  ! This is the case, for example, when a driver program splits the
+  ! global communicator to dispatch several simultaneous Siesta instances
+  ! Typically, comm_world = comm_dft, but not for calculations (PEXSI, ELSI)
+  ! for which only a subset of processors carry out the core Siesta operations
+  ! that have hard-wired references to mpi_comm_world
+  
   integer, public :: MPI_Comm_World = true_MPI_Comm_World
+  integer, public :: MPI_Comm_DFT = true_MPI_Comm_World
 
-  public :: true_MPI_Comm_World
+  public    :: true_MPI_Comm_World
+  public    :: MPI_Comm_DFT
 
 
 #ifdef GRID_SP
