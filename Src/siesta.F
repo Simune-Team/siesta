@@ -34,12 +34,12 @@
       integer :: istep
       logical :: relaxd
 
-! Notes for PEXSI operation
+! Notes for PEXSI and ELSI operation (extra procs for Solver)
 !
-! A subset of nodes carries out non-PEXSI Siesta operations 
+! A subset of nodes carries out non-Solver Siesta operations 
 ! (i.e., setting up H, moving atoms, diagonalizing...). 
 ! These are tagged as "SIESTA_worker" (admittedly, a bad name)
-! All nodes are involved in the PEXSI electronic-structure solver,
+! All nodes are involved in the (PEXSI or ELSI) electronic-structure solver,
 ! and in the new LocalDOS computation based on selected inversion.
 !
 ! 'siesta_init', 'siesta_forces', and 'siesta_analysis' need to
@@ -65,7 +65,7 @@
 C     Begin of coordinate relaxation iteration
       relaxd = .false.
 
-#ifdef SIESTA__PEXSI      
+#if defined (SIESTA__PEXSI) || defined (SIESTA__ELSI)
       ! Broadcast relevant things for program logic
       ! These were set in siesta_options, called only by "SIESTA_workers".
       call broadcast(inicoor,comm=mpi_comm_dft)
@@ -81,7 +81,7 @@ C     Begin of coordinate relaxation iteration
          end if
 
         if (SIESTA_worker) call siesta_move( istep, relaxd )
-#ifdef SIESTA__PEXSI        
+#if defined (SIESTA__PEXSI) || defined (SIESTA__ELSI)
         call broadcast(relaxd,comm=mpi_comm_dft)
 #endif
         if (.not. relaxd) then

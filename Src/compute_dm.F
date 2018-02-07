@@ -36,6 +36,9 @@
 #ifdef SIESTA__PEXSI
       use m_pexsi_solver,  only: pexsi_solver
 #endif
+#ifdef SIESTA__ELSI
+      use m_elsi_interface,  only: elsi_solver
+#endif
       use m_hsx, only      : write_hs_formatted
 #ifdef MPI
       use mpi_siesta
@@ -132,6 +135,22 @@
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
      $              ef, Entropy, temp, delta_Ef)
+      endif
+      if (.not. SIESTA_worker) RETURN
+#endif
+#ifdef SIESTA__ELSI
+      if (isolve .eq. SOLVE_ELSI) then
+        ! This test done in node 0 since NonCol and SpOrb
+        ! are not set for ELSI-solver-only processes
+         if (ionode) then
+            if (spin%NCol .or. spin%SO) call die(
+     $               "The ELSI solver does not implement "//
+     $               "non-coll spins or Spin-orbit yet")
+         endif
+         call elsi_solver(iscf, no_u, no_l, spin%spinor,
+     $              maxnh, numh, listhptr, listh,
+     $              H, S, qtot, Dscf, Escf,
+     $              ef, Entropy, temp)
       endif
       if (.not. SIESTA_worker) RETURN
 #endif

@@ -16,7 +16,7 @@ C
       use fdf
       use siesta_options, only: want_domain_decomposition
       use siesta_options, only: want_spatial_decomposition
-      use siesta_options, only: isolve, SOLVE_ORDERN, SOLVE_PEXSI
+      use siesta_options, only: isolve, SOLVE_ORDERN
       use siesta_options, only: rcoor
       use parallel,     only : Node, Nodes, BlockSize, ProcessorY
       use parallelsubs, only : WhichNodeOrb, GetNodeOrbs

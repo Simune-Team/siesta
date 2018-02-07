@@ -60,7 +60,6 @@ MODULE MPI_SIESTA
   integer, public :: MPI_Comm_DFT = true_MPI_Comm_World
 
   public    :: true_MPI_Comm_World
-  public    :: MPI_Comm_DFT
 
 
 #ifdef GRID_SP

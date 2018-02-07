@@ -76,6 +76,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 4   = PEXSI
   !                                                 5   = (Matrix write)
   !                                                 6   = CheSS
+  !                                                 7   = ELSI
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
   ! real*8  ts               : Total spin of the system
@@ -693,6 +694,16 @@ subroutine read_options( na, ns, nspin )
      endif
 #else
      call die("PEXSI solver is not compiled in. Use -DSIESTA__PEXSI")
+#endif
+  else if (leqi(method,"elsi")) then
+#ifdef SIESTA__ELSI
+     isolve = SOLVE_ELSI
+     if (ionode) then
+        call add_citation("ELSI PAPER***")
+        write(*,3) 'redata: Method of Calculation', 'ELSI'
+     endif
+#else
+     call die("ELSI solver is not compiled in. Use -DSIESTA__ELSI")
 #endif
 
 #ifdef SIESTA__CHESS

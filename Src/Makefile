@@ -156,6 +156,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	write_orb_indx.o \
         die.o m_pexsi.o m_pexsi_driver.o m_pexsi_dos.o m_pexsi_local_dos.o\
 		m_chess.o \
+        m_elsi_interface.o \
         m_redist_spmatrix.o \
         class_Distribution.o\
         m_dminim.o m_zminim.o \
@@ -610,11 +611,12 @@ class_TriMat.o: class_TriMat.T90 basic_type.inc
 class_TriMat.o: alloc.o
 coceri.o: files.o periodic_table.o precision.o units.o
 compute_dm.o: atomlist.o class_SpData1D.o compute_ebs_shift.o diagon.o
-compute_dm.o: iodmhs_netcdf.o kpoint_grid.o m_chess.o m_dminim.o m_energies.o
-compute_dm.o: m_eo.o m_gamma.o m_hsx.o m_pexsi_driver.o m_rmaxh.o m_spin.o
-compute_dm.o: m_steps.o m_transiesta.o m_ts_global_vars.o m_zminim.o
-compute_dm.o: normalize_dm.o ordern.o parallel.o precision.o siesta_geom.o
-compute_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
+compute_dm.o: iodmhs_netcdf.o kpoint_grid.o m_chess.o m_dminim.o
+compute_dm.o: m_elsi_interface.o m_energies.o m_eo.o m_gamma.o m_hsx.o
+compute_dm.o: m_pexsi_driver.o m_rmaxh.o m_spin.o m_steps.o m_transiesta.o
+compute_dm.o: m_ts_global_vars.o m_zminim.o normalize_dm.o ordern.o parallel.o
+compute_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
+compute_dm.o: sys.o units.o
 compute_ebs_shift.o: m_mpi_utils.o parallel.o precision.o
 compute_energies.o: atomlist.o class_SpData1D.o class_SpData2D.o dhscf.o
 compute_energies.o: files.o m_dipol.o m_energies.o m_mpi_utils.o m_ntm.o
@@ -800,6 +802,8 @@ m_dminim.o: siesta_options.o sys.o
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 m_efield.o: atmfuncs.o m_cite.o m_ts_global_vars.o mesh.o parallel.o
 m_efield.o: precision.o siesta_cml.o siesta_geom.o sys.o units.o
+m_elsi_interface.o: alloc.o class_Distribution.o m_mpi_utils.o
+m_elsi_interface.o: m_redist_spmatrix.o parallel.o precision.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_evolve.o: cranknic_evolg.o cranknic_evolk.o m_gamma.o m_spin.o precision.o
@@ -1170,6 +1174,7 @@ proximity_check.o: precision.o siesta_geom.o siesta_options.o units.o
 pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 radial.o: alloc.o interpolation.o precision.o xml.o
+rdiag_elsi_elpa.o: alloc.o m_blacs.o parallel.o precision.o sys.o
 read_options.o: files.o m_charge_add.o m_chess.o m_cite.o m_hartree_add.o
 read_options.o: m_mixing_scf.o m_spin.o m_target_stress.o parallel.o
 read_options.o: precision.o siesta_cml.o siesta_options.o sys.o units.o
@@ -1246,11 +1251,12 @@ siesta_end.o: siesta_master.o siesta_options.o sparse_matrices.o timestamp.o
 siesta_forces.o: atomlist.o class_Fstack_Data1D.o class_SpData2D.o compute_dm.o
 siesta_forces.o: compute_energies.o compute_max_diff.o densematrix.o
 siesta_forces.o: dm_charge.o files.o final_H_f_stress.o flook_siesta.o
-siesta_forces.o: kpoint_grid.o m_check_walltime.o m_convergence.o m_energies.o
-siesta_forces.o: m_forces.o m_initwf.o m_iodm_old.o m_mixing.o m_mixing_scf.o
-siesta_forces.o: m_mpi_utils.o m_ncdf_siesta.o m_pexsi.o m_pexsi_driver.o
-siesta_forces.o: m_rhog.o m_spin.o m_steps.o m_stress.o m_transiesta.o
-siesta_forces.o: m_ts_charge.o m_ts_electype.o m_ts_global_vars.o m_ts_method.o
+siesta_forces.o: kpoint_grid.o m_check_walltime.o m_convergence.o
+siesta_forces.o: m_elsi_interface.o m_energies.o m_forces.o m_initwf.o
+siesta_forces.o: m_iodm_old.o m_mixing.o m_mixing_scf.o m_mpi_utils.o
+siesta_forces.o: m_ncdf_siesta.o m_pexsi.o m_pexsi_driver.o m_rhog.o m_spin.o
+siesta_forces.o: m_steps.o m_stress.o m_transiesta.o m_ts_charge.o
+siesta_forces.o: m_ts_electype.o m_ts_global_vars.o m_ts_method.o
 siesta_forces.o: m_ts_options.o mixer.o parallel.o post_scf_work.o precision.o
 siesta_forces.o: save_density_matrix.o scfconvergence_test.o setup_H0.o
 siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_dicts.o siesta_geom.o
@@ -1475,6 +1481,7 @@ m_post_scf_work.o: post_scf_work.o
 m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
+m_rdiag_elsi_elpa.o: rdiag_elsi_elpa.o
 m_restruct_spdata2d.o: restructSpData2D.o
 m_rhofft.o: rhofft.o
 m_rhoofd.o: rhoofd.o
