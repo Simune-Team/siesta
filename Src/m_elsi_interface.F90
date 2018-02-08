@@ -52,7 +52,8 @@ module m_elsi_interface
 
  integer :: ELSI_Spatial_Comm, ELSI_Spin_Comm, World_Comm
  integer :: ELSI_Spatial_Group, World_Group
- integer :: nspin
+ integer :: nspin, spin_rank
+ logical :: ELSI_worker
  type(aux_matrix), allocatable, target :: m1_spin(:)
 
  public :: elsi_solver, elsi_finalize_scfloop
@@ -108,9 +109,8 @@ integer, allocatable :: siesta_ranks_in_world(:)
 integer, allocatable :: ELSI_ranks_in_World_Spin(:,:)
 integer :: numNodesTotal
 integer :: npSpatial
-logical  :: ELSI_worker
 !
-integer  :: pbs, color, spatial_rank, spin_rank
+integer  :: pbs, color, spatial_rank
 type(aux_matrix) :: m2
 type(aux_matrix), pointer :: m1
 integer :: nrows, nnz, nnzLocal, numColLocal
