@@ -41,9 +41,10 @@ module m_elsi_interface
  
  implicit none
 
- integer, parameter   :: ELPA = 1
- integer, parameter   :: MULTI_PROC = 1
- integer, parameter   :: PEXSI_CSC = 1
+ integer, parameter   :: ELPA = 1           ! solver
+ integer, parameter   :: MULTI_PROC = 1     ! parallel_mode
+ integer, parameter   :: PEXSI_CSC = 1      ! distribution
+ integer, parameter   :: FERMI = 1          ! broadening (no Methfessel-Paxton yet)
  
  type(elsi_handle)    :: elsi_h
  
@@ -124,7 +125,7 @@ integer :: ispin, elsi_spin
 
 !
 real(dp)       :: bs_energy, eBandH
-real(dp)       :: energy, energy2, mu
+real(dp)       :: energy, mu
 real(dp)       :: buffer1
 !  --------  for serial compilation
 #ifndef MPI
@@ -308,6 +309,13 @@ if (scf_step == 1) then
 
    call elsi_set_output(elsi_h, 3)
    call elsi_set_write_unit(elsi_h, 6)
+   !
+   ! Is there more documentation about the meaning of the
+   ! width? I am just using k_B*T (temp is in units of energy,
+   ! but Siesta uses rydberg...)
+   !
+   call elsi_set_mu_broaden_scheme(elsi_h, FERMI)
+   call elsi_set_mu_broaden_width(elsi_h, temperature)
 endif
 
 ! Solve for the DM, and get (at every step for now) the EDM and mu
@@ -340,7 +348,7 @@ if (ELSI_worker) then
            ( DMnzvalLocal(i) )
    enddo
 
-   ! First, reduce over the 
+   ! First, reduce over the spatial communicator
 
    call globalize_sum( bs_energy, buffer1, comm=ELSI_Spatial_Comm )
    bs_energy = buffer1
@@ -353,8 +361,6 @@ if (ELSI_worker) then
    bs_energy = buffer1
    call globalize_sum( eBandH, buffer1, comm=ELSI_Spin_Comm )
    eBandH = buffer1
-   call globalize_sum( energy, buffer1, comm=ELSI_Spin_Comm )
-   energy2 = buffer1
 
    ! This output block will be executed only if World's root node is
    ! in one of the leading pole groups. This might not be so
@@ -363,7 +369,6 @@ if (ELSI_worker) then
       write(6, "(a,f12.4)") "#&s Tr(S*EDM) (eV) = ", bs_energy/eV
       write(6,"(a,f12.4)") "#&s Tr(H*DM) (eV) = ", eBandH/eV
       write(6,"(a,f12.4)") "#&s ELSI energy (eV) = ", (energy)/eV
-      write(6,"(a,f12.4)") "#&s ELSI energy sum (eV) = ", (energy2)/eV
    endif
 
    ef = mu
@@ -374,6 +379,11 @@ if (ELSI_worker) then
    ! is, the XC and Hartree correction terms to Ebs going into Etot
    ! are estimated using the DM)
 
+   ! How do we get the Entropy from ELSI?
+   ! It should be there for the eigenvector solvers
+   ! With the new PEXSI, it seems that FDM is gone, since its pole
+   ! structure is different with the new method... What do we do?
+   
    Entropy = 0.0_dp   ! ???? No info about Free energy??
 
    ! ef and Entropy are now known to the leading-pole processes
