@@ -94,6 +94,8 @@
          endif
       endif
 
+      call timer( 'siesta_analysis', 1 )
+      
 !     All the comments below assume that this compatibility option
 !     is not used.
 !     Note also that full compatibility cannot be guaranteed
@@ -455,6 +457,8 @@ C     Find local density of states
 !   -- Avoid mixing DM or H after scf convergence
 !   -- Set xa to xa_last at the top of this file. Write any "next iter" coordinate file
 !      in 'siesta_move'
+
+      call timer( 'siesta_analysis', 2 )
 
 !--------------------------------------------------------------------------- END
       END subroutine siesta_analysis
