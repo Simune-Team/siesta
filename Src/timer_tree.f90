@@ -254,11 +254,11 @@ CONTAINS
   !------------------------------------------------
   subroutine timer_report_global()
 
+    use m_io, only: io_assign, io_close
+
     integer :: i, js_lun
     type(times_t), pointer :: qd
 
-    logical :: json_output
-    
     p => global_section
     ! Assign to the global section the sum of the times
     ! of its children
@@ -269,47 +269,46 @@ CONTAINS
     enddo
     p%data%totTime = globaltime + 1.0e-6_dp
 
-    json_output = .true.
-    call get_unit_number(js_lun)
-    open(unit=js_lun,file="time.json",form="formatted", &
-         action="write",position="rewind")
+    ! Open JSON
+    call io_assign(js_lun)
+    open(unit=js_lun, file="time.json", form="formatted", &
+        action="write",position="rewind")
     
     write(*,"(/,a20,T30,a6,a12,a8)") "Section","Calls","Walltime","%"
 
-    write(js_lun,*) '{'
-    call walk_tree(p,0,json=json_output,js_lun=js_lun)
-    write(js_lun,*) '}'
-    if (json_output) close(js_lun)
+    call walk_tree(p,0, js_lun=js_lun)
+    
+    call io_close(js_lun)
     
   end subroutine timer_report_global
 
   !------------------------------------------------
-  recursive subroutine walk_tree(p,level,maxlevel,json,js_lun)
+  recursive subroutine walk_tree(p,level,maxlevel,js_lun)
     type(section_t), intent(in),target  :: p
     integer, intent(in)          :: level
     integer, intent(in), optional:: maxlevel
-    logical, intent(in), optional:: json
     integer, intent(in), optional:: js_lun
 
     integer :: i
-    character(len=40) fmtstr, fmt_json, fmt_json_head
+    character(len=64) fmtstr, fmt_json, fmt_json_head
     logical :: json_output
 
-    json_output = .false.
-    if (present(json)) then
-       json_output = json
-       if (.not. present(js_lun)) then
-          call die("Need a js_lun for json timer output")
-       endif
-    endif
+    ! Determine whether we should output JSON
+    ! If the unit is there, we output to JSON as well
+    json_output = present(js_lun)
+    
     if (present(maxlevel)) then
        if (level > maxlevel) RETURN
-    endif
+    end if
+
+    if ( json_output ) then
+       write(js_lun,*) '{'
+    end if
+
     pd => p%data
     write(fmtstr,"(a,i0,a1,a)") "(", level+1, "x", ",a20,T30,i6,f12.3,f8.2)"
     
-    write(*,fmtstr) pd%name, pd%nCalls,  &
-                    pd%totTime, 100*pd%totTime/globaltime
+    write(*,fmtstr) pd%name, pd%nCalls, pd%totTime, 100*pd%totTime/globaltime
     if (json_output) then
        write(fmt_json,"(a,i0,a1,a)") "(",2*level+1,"x",",a,i0,a,f12.3,a,f8.2)"
        write(fmt_json_head,"(a,i0,a)") "(", 2*level+1, "x,a)"
@@ -317,11 +316,11 @@ CONTAINS
            '"' // trim(pd%name) // '": { "_calls": ', pd%nCalls,   &
                                       ', "_time": ', pd%totTime,   &
                                       ', "_%": ', 100*pd%totTime/globaltime
-    endif
+    end if
     if (p%nchildren /= 0) then
        if (json_output) write(js_lun,"(a)") ","
        do i=1,p%nchildren
-          call walk_tree(p%child(i),level+1,maxlevel,json,js_lun)
+          call walk_tree(p%child(i),level+1,maxlevel, js_lun)
           if (json_output) then
              if (i < p%nchildren) then
                 write(js_lun,fmt="(a)") ','
@@ -335,6 +334,10 @@ CONTAINS
     else
        if (json_output) write(js_lun,fmt="(a)",advance="no") "}"
     endif
+
+    if ( json_output ) then
+      write(js_lun,*) '}'
+    end if
 
   end subroutine walk_tree
 
@@ -395,19 +398,5 @@ CONTAINS
        t = treal
     endif
   end subroutine current_time
-
-subroutine get_unit_number(lun)
-integer, intent(out) :: lun
-
-logical :: used
-integer :: iostat
-
-do lun= 10, 99
-   inquire(unit=lun, opened=used, iostat=iostat)
-   if (iostat .ne. 0) used = .true.
-   if (.not. used) return
-enddo
-call die("Cannot get unit for timer output")
-end subroutine get_unit_number
 
 end module m_timer_tree
