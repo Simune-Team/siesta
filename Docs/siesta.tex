@@ -6595,7 +6595,12 @@ file named {\tt SystemLabel}.times.
 \index{UseTreeTimer@{\bf UseTreeTimer}}
 
 Enable an experimental timer which is based on wall time on the master
-node and is aware of the tree-structure of the timed sections.
+node and is aware of the tree-structure of the timed sections. At the
+end of the program, a report is generated in the output file, and a
+{\tt time.json} file in JSON format is also
+written. \index{JSON timing report@{\bf JSON timing report}}
+This file can be
+used by third-party scripts to process timing data.
 
 {\it Default value:} {\tt .false.}
 
