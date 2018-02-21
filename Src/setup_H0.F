@@ -167,26 +167,21 @@ C     Add on force field contribution to energy
 
         Enl_offsiteSO = 0.0d0
         do io = 1, maxnh
-!          iot = listht(io)
 
 !-------- Enl_offsiteSO(u,u)
-!          Dc = cmplx(Dscf(iot,1), Dscf(iot,5))
-          Dc = cmplx(Dscf(io,1), -Dscf(io,5))
+          Dc = cmplx(Dscf(io,1),Dscf(io,5))
           Hc = H0_offsiteSO(io,1)
           Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,d)
-!          Dc = cmplx(Dscf(iot,2), Dscf(iot,6))
-          Dc = cmplx(Dscf(io,2), -Dscf(io,6))
+          Dc = cmplx(Dscf(io,2),Dscf(io,6))
           Hc = H0_offsiteSO(io,2)
           Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(u,d)
-!          Dc = cmplx(Dscf(iot,3), Dscf(iot,4))
-          Dc = cmplx(Dscf(io,7), -Dscf(io,8))
+          Dc = cmplx(Dscf(io,3),Dscf(io,4))
           Hc = H0_offsiteSO(io,4)
           Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,u)
-!          Dc = cmplx(Dscf(iot,7), Dscf(iot,8))
-          Dc = cmplx(Dscf(io,3), -Dscf(io,4))
+          Dc = cmplx(Dscf(io,7), -Dscf(io,8))
           Hc = H0_offsiteSO(io,3)
           Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 

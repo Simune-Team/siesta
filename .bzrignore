@@ -23,8 +23,14 @@ Docs/siesta.idx
 Docs/siesta.log
 Src/state_init.Rot.F
 Src/state_init.noRot.F
+Obj.*/*
+Obj.XZ/
+Src.*
 upgrade.sh
 Tests/offsite_SOC_Pt2_xz/TMP*
 Tests/offsite_SOC_Pt2_zy/TMP*
 Tests/offsite_SOC_Pt2_xz/TMP-CE
 Tests/offsite_SOC_Pt2_zy/TMP-CE
+Tests/fe_noncol_kp/proof/
+Tests/offsite_SOC_Pt2_xx/TMP-OFF/
+Tests/offsite_SOC_Pt2_xx/TMP-ON/

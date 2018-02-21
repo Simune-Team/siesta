@@ -145,6 +145,7 @@ CONTAINS
 
    subroutine compute_EBS()
 
+
       integer :: i, j, ind
 
       Ebs = 0.0_dp
@@ -154,6 +155,7 @@ CONTAINS
 !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
 !       ispin=4 => Imag(D12)
 
+! Modifed for Off-Site Spin-orbit coupling by R. Cuadrado, Feb. 2018
       if ( spin%SO ) then
 
         Ebs_Daux = dcmplx(0.0_dp, 0.0_dp)
@@ -161,33 +163,20 @@ CONTAINS
 
         do io = 1, maxnh
 
-!          iot = listht(io)
+          Ebs_Haux(1,1) = dcmplx(H(io,1),H(io,5))  
+          Ebs_Haux(2,2) = dcmplx(H(io,2),H(io,6))  
+          Ebs_Haux(1,2) = dcmplx(H(io,3),H(io,4)) 
+          Ebs_Haux(2,1) = dcmplx(H(io,7),H(io,8)) 
 
-          Ebs_Haux(1,1) = dcmplx(H(io,1), H(io,5))  
-          Ebs_Haux(2,2) = dcmplx(H(io,2), H(io,6))  
-          Ebs_Haux(1,2) = dcmplx(H(io,3), H(io,4)) 
-          Ebs_Haux(2,1) = dcmplx(H(io,7), H(io,8)) 
+          Ebs_Daux(1,1) = dcmplx(Dscf(io,1),Dscf(io,5)) 
+          Ebs_Daux(2,2) = dcmplx(Dscf(io,2),Dscf(io,6)) 
+          Ebs_Daux(1,2) = dcmplx(Dscf(io,3),Dscf(io,4))
+          Ebs_Daux(2,1) = dcmplx(Dscf(io,7),Dscf(io,8)) 
 
-          if (spin%SO_offsite) then
-            Ebs_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5)) 
-            Ebs_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6)) 
-            Ebs_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
-            Ebs_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4)) 
-!            Ebs_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5)) 
-!            Ebs_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6)) 
-!            Ebs_Daux(1,2) = dcmplx(Dscf(iot,3), Dscf(iot,4)) 
-!            Ebs_Daux(2,1) = dcmplx(Dscf(iot,7), Dscf(iot,8)) 
-          else
-            Ebs_Daux(1,1) = dcmplx(Dscf(io,1), Dscf(io,5)) 
-            Ebs_Daux(2,2) = dcmplx(Dscf(io,2), Dscf(io,6)) 
-            Ebs_Daux(1,2) = dcmplx(Dscf(io,3),-Dscf(io,4))
-            Ebs_Daux(2,1) = dcmplx(Dscf(io,7),-Dscf(io,8)) 
-          endif
-
-          Ebs_tmp(1) = Ebs_tmp(1) + real( Ebs_Haux(1,1)*Ebs_Daux(1,1))
-          Ebs_tmp(2) = Ebs_tmp(2) + real( Ebs_Haux(2,2)*Ebs_Daux(2,2))
-          Ebs_tmp(3) = Ebs_tmp(3) + real( Ebs_Haux(1,2)*Ebs_Daux(2,1))
-          Ebs_tmp(4) = Ebs_tmp(4) + real( Ebs_Haux(2,1)*Ebs_Daux(1,2))
+          Ebs_tmp(1) = Ebs_tmp(1) + real( Ebs_Haux(1,1)*dconjg(Ebs_Daux(1,1)) )
+          Ebs_tmp(2) = Ebs_tmp(2) + real( Ebs_Haux(2,2)*dconjg(Ebs_Daux(2,2)) )
+          Ebs_tmp(3) = Ebs_tmp(3) + real( Ebs_Haux(1,2)*dconjg(Ebs_Daux(1,2)) )
+          Ebs_tmp(4) = Ebs_tmp(4) + real( Ebs_Haux(2,1)*dconjg(Ebs_Daux(2,1)) )
 
         enddo
 
@@ -239,44 +228,20 @@ CONTAINS
 
         do io = 1, maxnh
 
-!          iot = listht(io)
+          DEharr_Haux(1,1) = dcmplx(H(io,1),H(io,5))
+          DEharr_Haux(2,2) = dcmplx(H(io,2),H(io,6))
+          DEharr_Haux(1,2) = dcmplx(H(io,3),H(io,4))
+          DEharr_Haux(2,1) = dcmplx(H(io,7),H(io,8))
 
-          DEharr_Haux(1,1) = dcmplx(H(io,1), H(io,5))
-          DEharr_Haux(2,2) = dcmplx(H(io,2), H(io,6))
-          DEharr_Haux(1,2) = dcmplx(H(io,3), H(io,4))
-          DEharr_Haux(2,1) = dcmplx(H(io,7), H(io,8))
+          DEharr_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))
+          DEharr_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))
+          DEharr_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
+          DEharr_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))
 
-!          DEharr_Daux(1,1) = dcmplx(Dscf(iot,1), Dscf(iot,5))
-!          DEharr_Daux(2,2) = dcmplx(Dscf(iot,2), Dscf(iot,6))
-!          DEharr_Daux(1,2) = dcmplx(Dscf(iot,3), Dscf(iot,4))
-!          DEharr_Daux(2,1) = dcmplx(Dscf(iot,7), Dscf(iot,8))
-!
-!          DEharr_Daux_old(1,1) = dcmplx(Dold(iot,1), Dold(iot,5))
-!          DEharr_Daux_old(2,2) = dcmplx(Dold(iot,2), Dold(iot,6))
-!          DEharr_Daux_old(1,2) = dcmplx(Dold(iot,3), Dold(iot,4))
-!          DEharr_Daux_old(2,1) = dcmplx(Dold(iot,7), Dold(iot,8))
-
-          if ( spin%SO_offsite ) then
-            DEharr_Daux(1,1) = dcmplx(Dscf(io,1),-Dscf(io,5))
-            DEharr_Daux(2,2) = dcmplx(Dscf(io,2),-Dscf(io,6))
-            DEharr_Daux(1,2) = dcmplx(Dscf(io,7),-Dscf(io,8))
-            DEharr_Daux(2,1) = dcmplx(Dscf(io,3),-Dscf(io,4))
-
-            DEharr_Daux_old(1,1) = dcmplx(Dold(io,1),-Dold(io,5))
-            DEharr_Daux_old(2,2) = dcmplx(Dold(io,2),-Dold(io,6))
-            DEharr_Daux_old(1,2) = dcmplx(Dold(io,7),-Dold(io,8))
-            DEharr_Daux_old(2,1) = dcmplx(Dold(io,3),-Dold(io,4))
-          else
-            DEharr_Daux(1,1) = dcmplx(Dscf(io,1), Dscf(io,5))
-            DEharr_Daux(2,2) = dcmplx(Dscf(io,2), Dscf(io,6))
-            DEharr_Daux(1,2) = dcmplx(Dscf(io,3),-Dscf(io,4))
-            DEharr_Daux(2,1) = dcmplx(Dscf(io,7),-Dscf(io,8))
-
-            DEharr_Daux_old(1,1) = dcmplx(Dold(io,1),-Dold(io,5))
-            DEharr_Daux_old(2,2) = dcmplx(Dold(io,2),-Dold(io,6))
-            DEharr_Daux_old(1,2) = dcmplx(Dold(io,3),-Dold(io,4))
-            DEharr_Daux_old(2,1) = dcmplx(Dold(io,7),-Dold(io,8))
-          endif
+          DEharr_Daux_old(1,1) = dcmplx(Dold(io,1),-Dold(io,5))
+          DEharr_Daux_old(2,2) = dcmplx(Dold(io,2),-Dold(io,6))
+          DEharr_Daux_old(1,2) = dcmplx(Dold(io,7),-Dold(io,8))
+          DEharr_Daux_old(2,1) = dcmplx(Dold(io,3),-Dold(io,4))
 
           DEharr_tmp(1) = DEharr_tmp(1) &
              + real( DEharr_Haux(1,1)*(DEharr_Daux(1,1)-DEharr_Daux_old(1,1)))
@@ -380,26 +345,20 @@ CONTAINS
 
         do io = 1, maxnh
 
-!          iot = listht(io)
-
 !-------- Enl_offsiteSO(u,u)
-!          Dc = cmplx(Dscf(iot,1), Dscf(iot,5))
-          Dc = cmplx(Dscf(io,1), -Dscf(io,5))
+          Dc = cmplx(Dscf(io,1), Dscf(io,5))
           Hc = H0_offsiteSO(io,1)
           Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,d)
-!          Dc = cmplx(Dscf(iot,2), Dscf(iot,6))
-          Dc = cmplx(Dscf(io,2), -Dscf(io,6))
+          Dc = cmplx(Dscf(io,2), Dscf(io,6))
           Hc = H0_offsiteSO(io,2)
           Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(u,d)
-!          Dc = cmplx(Dscf(iot,3), Dscf(iot,4))
-          Dc = cmplx(Dscf(io,7), -Dscf(io,8))
+          Dc = cmplx(Dscf(io,3), Dscf(io,4))
           Hc = H0_offsiteSO(io,4)
           Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,u)
-!          Dc = cmplx(Dscf(iot,7), Dscf(iot,8))
-          Dc = cmplx(Dscf(io,3), -Dscf(io,4))
+          Dc = cmplx(Dscf(io,7), -Dscf(io,8))
           Hc = H0_offsiteSO(io,3)
           Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 

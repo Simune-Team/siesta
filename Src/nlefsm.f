@@ -771,10 +771,10 @@ CC RC
             do ispin = 1,min(2,nspin)
              Di(jo) = Di(jo) + Dscf(ind,ispin)
             enddo
-            Ds(1,1,jo) = dcmplx(Dscf(ind,1),-Dscf(ind,5))  ! D(ju,iu)
-            Ds(2,2,jo) = dcmplx(Dscf(ind,2),-Dscf(ind,6))  ! D(jd,id)
-            Ds(1,2,jo) = dcmplx(Dscf(ind,7),-Dscf(ind,8))  ! D(ju,id)
-            Ds(2,1,jo) = dcmplx(Dscf(ind,3),-Dscf(ind,4))  ! D(jd,iu)
+            Ds(1,1,jo) = dcmplx(Dscf(ind,1), Dscf(ind,5))  ! D(ju,iu)
+            Ds(2,2,jo) = dcmplx(Dscf(ind,2), Dscf(ind,6))  ! D(jd,id)
+            Ds(1,2,jo) = dcmplx(Dscf(ind,3), Dscf(ind,4))  ! D(ju,id)
+            Ds(2,1,jo) = dcmplx(Dscf(ind,7),-Dscf(ind,8))  ! D(jd,iu)
 C            Ds(1,1,jo) = dcmplx(Dscf(indt,1), Dscf(indt,5))  ! D(ju,iu)
 C            Ds(2,2,jo) = dcmplx(Dscf(indt,2), Dscf(indt,6))  ! D(jd,id)
 C            Ds(1,2,jo) = dcmplx(Dscf(indt,3), Dscf(indt,4))  ! D(ju,id)
@@ -996,9 +996,9 @@ c---- Ski(M)= <l,M|i> ; Si(m)= <l,m|i> = u(m,-M)*Ski(-M) + u(m,M)*Ski(M)
       do m =  1, l
        facm = fac*(-1.0d0)**m
        u(-m,+M) = cmplx(1.0d0,0.0d0)*fac
-       u(-m,-M) =-cmplx(0.0d0,1.0d0)*fac
+       u(-m,-M) = cmplx(0.0d0,1.0d0)*fac  ! J. Cerda
        u(+m,+M) = cmplx(1.0d0,0.0d0)*facm
-       u(+m,-M) = cmplx(0.0d0,1.0d0)*facm
+       u(+m,-M) =-cmplx(0.0d0,1.0d0)*facm ! J. Cerda
       enddo
 
 c---- Load V_so

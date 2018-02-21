@@ -24,7 +24,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 ! handled as lower-half triangular. J.D.Gale and J.M.Soler, Feb'99
 ! Version of rhoofd that optionally uses a direct algorithm to save 
 ! memory. Modified by J.D.Gale, November'99
-! Off-Site Spin-orbit coupling version by R. Cuadrado, October 2017
+! Modifed for Off-Site Spin-orbit coupling by R. Cuadrado, Feb. 2018
 ! *********************** InpUT **************************************
 ! integer no              : Number of basis orbitals
 ! integer np              : Number of mesh points
@@ -227,7 +227,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                           Dlocal(ijl,1) = Dlocal(ijl,1) + DscfL(ind,1)
                           Dlocal(ijl,2) = Dlocal(ijl,2) + DscfL(ind,2)
                           Dlocal(ijl,3) = Dlocal(ijl,3) + DscfL(ind,7)
-                          Dlocal(ijl,4) = Dlocal(ijl,4) - DscfL(ind,8)
+                          Dlocal(ijl,4) = Dlocal(ijl,4) + DscfL(ind,8)
                        end if
                     end if
                  end do
@@ -247,7 +247,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                           Dlocal(ijl,1) = Dlocal(ijl,1) + DscfL(ind,1)
                           Dlocal(ijl,2) = Dlocal(ijl,2) + DscfL(ind,2)
                           Dlocal(ijl,3) = Dlocal(ijl,3) + DscfL(ind,7)
-                          Dlocal(ijl,4) = Dlocal(ijl,4) - DscfL(ind,8)
+                          Dlocal(ijl,4) = Dlocal(ijl,4) + DscfL(ind,8)
                        end if
                     end if
                  end do
@@ -270,7 +270,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                           Dlocal(ijl,1) = Dlocal(ijl,1) + Dscf(ind,1)
                           Dlocal(ijl,2) = Dlocal(ijl,2) + Dscf(ind,2)
                           Dlocal(ijl,3) = Dlocal(ijl,3) + Dscf(ind,7)
-                          Dlocal(ijl,4) = Dlocal(ijl,4) - Dscf(ind,8)
+                          Dlocal(ijl,4) = Dlocal(ijl,4) + Dscf(ind,8)
                        end if
                     end if
                  end do
@@ -290,7 +290,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                           Dlocal(ijl,1) = Dlocal(ijl,1) + Dscf(ind,1)
                           Dlocal(ijl,2) = Dlocal(ijl,2) + Dscf(ind,2)
                           Dlocal(ijl,3) = Dlocal(ijl,3) + Dscf(ind,7)
-                          Dlocal(ijl,4) = Dlocal(ijl,4) - Dscf(ind,8)
+                          Dlocal(ijl,4) = Dlocal(ijl,4) + Dscf(ind,8)
                        end if
                     end if
                  end do
@@ -334,11 +334,11 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 !          Retrieve phi values
            if ( spin%SO_offsite ) then 
               Clocal(:,ic) = phia(iphi,:)
-            if(ip.lt.10) then
-             write(6,*) ' ip/nc/Clocal(1,:) = ', ip, nc, Clocal(1,:)   
-            else
-             stop 'Stopping in rhoofd...'
-            endif
+!            if(ip.lt.10) then
+!             write(6,*) ' ip/nc/Clocal(1,:) = ', ip, nc, Clocal(1,:)   
+!            else
+!             stop 'Stopping in rhoofd...'
+!            endif
 
            else
               Clocal(:,ic) = dsqrt(2._dp) * phia(iphi,:)

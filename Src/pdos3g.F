@@ -17,7 +17,7 @@ C where n run over all the bands between two given energies
 C Written by J. Junquera and E. Artacho. Nov' 99
 C Gamma point version adapted from PDOSK by Julian Gale. Feb' 03
 C Spin-orbit coupling version by J. Ferrer, October 2007
-C Off-Site Spin-orbit coupling version by R. Cuadrado, October 2017
+C Modifed for Off-Site Spin-orbit coupling by R. Cuadrado, Feb. 2018
 C ****  INPUT  *********************************************************
 C integer nuo               : Number of atomic orbitals in the unit cell
 C integer no                : Number of atomic orbitals in the supercell
@@ -111,21 +111,12 @@ C Initialize auxiliary variables
         do j = 1,numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-            if ( spin%SO .and. .not.spin%SO_offsite ) then
-              Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-              Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-              Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-              Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
-              Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-              Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
-            else ! offSpOrb
-             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-             Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-             Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
-             Haux(1,jo,2,io) = dcmplx(H(ind,7),-H(ind,8))
-             Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
-            endif
+          Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+          Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+          Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
+          Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
+          Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
+          Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
         enddo
       enddo
 
@@ -142,21 +133,12 @@ C Repeat diagonalisation with increased memory to handle clustering
           do j = 1,numh(io)
             ind = listhptr(io) + j
             jo = listh(ind)
-            if ( spin%SO .and. .not.spin%SO_offsite ) then
-              Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-              Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-              Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-              Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
-              Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-              Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
-            else ! offSpOrb
-             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-             Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-             Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
-             Haux(1,jo,2,io) = dcmplx(H(ind,7),-H(ind,8))
-             Haux(2,jo,1,io) = dcmplx(H(ind,3),-H(ind,4))
-            endif
+            Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+            Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+            Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
+            Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
+            Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
+            Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
           enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
@@ -221,13 +203,8 @@ C Transfer data
                   rpipj = dreal(caux(1,io)*dconjg(caux(2,juo)))*gauss
                   dpr(ihist,juo,3)=dpr(ihist,juo,3)+rpipj*Sloc(io,jo)
 
-                  if ( spin%SO .and. .not.spin%SO_offsite ) then
-                   ipipj = dimag(caux(1,io)*dconjg(caux(2,juo)))*gauss
-                   dpr(ihist,juo,4)=dpr(ihist,juo,4)-ipipj*Sloc(io,jo)
-                  else
-                   ipipj = dimag(caux(1,io)*dconjg(caux(2,juo)))*gauss
-                   dpr(ihist,juo,4)=dpr(ihist,juo,4)+ipipj*Sloc(io,jo)
-                  endif
+                  ipipj = dimag(caux(1,io)*dconjg(caux(2,juo)))*gauss
+                  dpr(ihist,juo,4)=dpr(ihist,juo,4)-ipipj*Sloc(io,jo)
                 enddo
               enddo
             enddo
@@ -263,13 +240,8 @@ C Loop over all the energy range
                 rpipj = dreal(caux(1,io)*dconjg(caux(2,jo)))*gauss
                 dpr(ihist,jo,3)=dpr(ihist,jo,3)+rpipj*Spr(io,jo)
 
-                if ( spin%SO .and. .not.spin%SO_offsite ) then
-                 ipipj = dimag(caux(1,io)*dconjg(caux(2,jo)))*gauss
-                 dpr(ihist,jo,4)=dpr(ihist,jo,4)-ipipj*Spr(io,jo)
-                else
-                 ipipj = dimag(caux(1,io)*dconjg(caux(2,jo)))*gauss
-                 dpr(ihist,jo,4)=dpr(ihist,jo,4)+ipipj*Spr(io,jo)
-                endif 
+                ipipj = dimag(caux(1,io)*dconjg(caux(2,jo)))*gauss
+                dpr(ihist,jo,4)=dpr(ihist,jo,4)-ipipj*Spr(io,jo)
               enddo
             enddo
           enddo

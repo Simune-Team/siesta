@@ -177,26 +177,20 @@
 
         do io = 1, maxnh
 
-!          iot = listht(io) 
-
 !-------- Enl_offsiteSO(u,u)
-!            Dc = cmplx(Dscf(iot,1),Dscf(iot,5))
-            Dc = cmplx(Dscf(io,1),-Dscf(io,5))
+            Dc = cmplx(Dscf(io,1),Dscf(io,5))
             Hc = H0_offsiteSO(io,1)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,d)
-!            Dc = cmplx(Dscf(iot,2),Dscf(iot,6))
-            Dc = cmplx(Dscf(io,2),-Dscf(io,6))
+            Dc = cmplx(Dscf(io,2),Dscf(io,6))
             Hc = H0_offsiteSO(io,2)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(u,d)
-!            Dc = cmplx(Dscf(iot,3),Dscf(iot,4))
-            Dc = cmplx(Dscf(io,7),-Dscf(io,8))
+            Dc = cmplx(Dscf(io,3),Dscf(io,4))
             Hc = H0_offsiteSO(io,4)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,u)
-!            Dc = cmplx(Dscf(iot,7),Dscf(iot,8))
-            Dc = cmplx(Dscf(io,3),-Dscf(io,4))
+            Dc = cmplx(Dscf(io,7),-Dscf(io,8))
             Hc = H0_offsiteSO(io,3)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
         enddo
@@ -300,19 +294,6 @@
 
       if ( spin%SO_offsite ) then
 
-        H(:,7) = H(:,3)
-        H(:,8) =-H(:,4)
-
-!         do i = 1, no_u
-!          do j = 1, numh(i)
-!           ind = listhptr(i)+j
-!           indt= listht(ind)
-!!           write(6,*) ' ind= ',ind,' indt= ',indt
-!           H(indt,7) = H(ind,3)
-!           H(indt,8) =-H(ind,4)
-!          enddo
-!         enddo
-
         do is = 1 , spin%spinor
           do io = 1, maxnh
             H(io,is) = H(io,is) + H_kin(io) + H_vkb(io)
@@ -330,7 +311,7 @@ C------- H(u,d)
          H(:,4) = H(:,4) + imag(H0_offsiteSO(:,3))
 C------- H(d,u)
          H(:,7) = H(:,7) + real(H0_offsiteSO(:,4))
-         H(:,8) = H(:,8) + imag(H0_offsiteSO(:,4))
+         H(:,8) = H(:,8) - imag(H0_offsiteSO(:,4))
 
       endif
 
