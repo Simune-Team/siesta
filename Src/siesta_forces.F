@@ -45,6 +45,7 @@
       use m_save_density_matrix, only: save_density_matrix
       use m_compute_energies, only: compute_energies
       use m_check_walltime
+      use m_mpi_utils, only: barrier
       
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : ts_istep
@@ -131,6 +132,8 @@
         if (time_is_up) then
            ! Save DM/H if we were not saving it...
            !     Do any other bookeeping not done by "die"
+           call timer('all',2)
+           call timer('all',3)
            if (.not. SCFConverged) then
               call message('WARNING',
      $             'SCF_NOT_CONV: SCF did not converge'//
@@ -139,6 +142,7 @@
               call message(' (info)',"Geom step, scf iteration, dmax:"
      $                            //trim(tmp_str))
            endif
+           call barrier() ! A non-root node might get first to the 'die' call
            call die("OUT_OF_TIME: Time is up.")
         endif
         
@@ -244,6 +248,9 @@
             write(tmp_str,"(i4,i3,f12.6)") istep, iscf, dmax
             call message(' (info)',"Geom step, scf iteration, dmax:"
      $           //trim(tmp_str))
+            call timer( 'all', 2 ) ! New call to close the tree
+            call timer( 'all', 3 )
+            call barrier()
             call die('ABNORMAL_TERMINATION')
          else
             call message('WARNING',
