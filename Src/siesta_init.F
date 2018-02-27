@@ -24,6 +24,7 @@
       use class_Fstack_Pair_Geometry_dSpData2D, only: new, max_size
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
+     &                              qtots,
      &                              iza, rmaxo, zvaltot, superc,
      &                              initatomlists, no_l, rmaxldau
       use fdf
@@ -51,7 +52,7 @@
       use m_energies
       use m_steps
       use m_spin,             only: init_spin, spin
-      use m_spin,             only: qs, init_spiral
+      use m_spin,             only: init_spiral
       use m_rmaxh
       use m_forces 
       use m_eo
@@ -489,11 +490,11 @@ C     Initialise MPI and set processor number
      &    call die( 'siesta: ERROR: ' //
      &              'You can only fix the spin of the system' //
      &              ' for collinear spin polarized calculations.' )
-        qs(1) = (qtot + ts) / 2.0_dp
-        qs(2) = (qtot - ts) / 2.0_dp
+        qtots(1) = (qtot + total_spin) / 2.0_dp
+        qtots(2) = (qtot - total_spin) / 2.0_dp
       else
         do ispin = 1,spin%spinor
-           qs(ispin) = qtot/spin%spinor
+           qtots(ispin) = qtot/spin%spinor
         end do
       end if
 
@@ -543,7 +544,7 @@ C     Initialise MPI and set processor number
          neigmin = ceiling(real(abs(neigwanted)) / spin%spinor)
 
          do is = 1 , spin%spinor
-            neigwanted = max(neigwanted, ceiling(qs(is)) + neigmin)
+            neigwanted = max(neigwanted, ceiling(qtots(is)) + neigmin)
          end do
 
       end if
@@ -552,7 +553,7 @@ C     Initialise MPI and set processor number
       ! basis functions or smaller than number of occupied states + 1
       ! so that the Fermi level can be estimated
       do is = 1 , spin%spinor
-         neigmin = ceiling(qs(is)) + 1
+         neigmin = ceiling(qtots(is)) + 1
          neigwanted = max(neigwanted, neigmin)
       end do
       ! Truncate value

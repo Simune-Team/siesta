@@ -173,6 +173,7 @@ contains
        
        ! Query size of list
        i = -1
+       call rgn_init(r_aDev, 1)
        call fdf_list('TBT.Atoms.Device', i, r_aDev%r)
        call rgn_init(r_aDev, i)
        call fdf_list('TBT.Atoms.Device', r_aDev%n, r_aDev%r)

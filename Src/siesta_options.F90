@@ -229,7 +229,7 @@ MODULE siesta_options
   real(dp) :: tempinit      ! Initial ionic temperature read in redata
   real(dp) :: threshold     ! Min. size of arrays printed by alloc_report
   real(dp) :: tp            ! Target pressure. Read in redata. Used in dynamics routines
-  real(dp) :: ts            ! Total spin read from redata but not used
+  real(dp) :: total_spin    ! Total spin used in spin-polarized calculations
   real(dp) :: tt            ! Target temperature. Read in redata. Used in dynamics rout.
   real(dp) :: wmix          ! Mixing weight for DM in SCF iteration
   real(dp) :: wmixkick       ! Mixing weight for DM in special 'kick' SCF steps
