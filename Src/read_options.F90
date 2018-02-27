@@ -71,7 +71,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 5   = (Matrix write)
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
-  ! real*8  ts               : Total spin of the system
+  ! real*8  total_spin       : Total spin of the system
   ! integer ncgmax           : Maximum number of CG steps for 
   !                            band structure energy minimization
   ! real*8 etol              : Relative tolerance in CG minimization
@@ -730,23 +730,24 @@ subroutine read_options( na, ns, nspin )
   endif
 
   if (fixspin) then
-     if (nspin .ne. 2) then
-        call die( 'redata: ERROR: You can only fix the spin of '//&
-             'the system for collinear spin polarized calculations.' )
-     endif
-     ts = fdf_get('TotalSpin',0.0_dp)
-     if (ionode) then
-        write(6,9) 'redata: Value of the Spin of the System',ts
-     endif
+    if (nspin .ne. 2) then
+      call die( 'redata: ERROR: You can only fix the spin of '//&
+          'the system for collinear spin polarized calculations.' )
+    endif
+    total_spin = fdf_get('TotalSpin',0.0_dp)
+    total_spin = fdf_get('Spin.Total',total_spin)
+    if (ionode) then
+      write(6,9) 'redata: Total spin of the system (spin value)', total_spin
+    endif
   else
-     ts = 0.0_dp
+    total_spin = 0.0_dp
   endif
 
   if (cml_p) then 
      call cmlAddParameter( xf=mainXML, name='FixSpin', &
           value=fixspin, dictref='siesta:fixspin' )
      call cmlAddParameter( xf=mainXML, name='TotalSpin', &
-          value=ts, dictref='siesta:ts',&
+          value=total_spin, dictref='siesta:totalspin',&
           units='siestaUnits:eSpin' )
   endif
 
