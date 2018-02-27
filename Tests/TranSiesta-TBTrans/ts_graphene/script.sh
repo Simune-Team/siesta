@@ -42,7 +42,7 @@ mkdir $ELEC
 cd $ELEC
 ln ../../C.psf .
 ln ../../${ELEC}.fdf .
-$TS $ELEC.fdf > $ELEC.out
+$TS --electrode $ELEC.fdf > $ELEC.out
 RETVAL=$?
 if [ $RETVAL -ne 0 ]; then
     echo "The electrode ($ELEC) calculation did not go well ..."
