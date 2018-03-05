@@ -69,7 +69,6 @@
       logical             :: use_rhog_in
 
       real(dp), pointer   :: H_vkb(:), H_kin(:), H_ldau(:,:), H_so(:,:)
-      real(dp) :: dummy_qspin(8)
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -122,7 +121,6 @@
       end if
          
 ! ..................
-      call print_spin(dummy_qspin)  ! Temporary location
 
 ! Non-SCF part of total energy .......................................
 ! Note that these will be "impure" for a mixed Dscf
