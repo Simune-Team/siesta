@@ -116,6 +116,7 @@
       logical :: dminit     ! Initialize density matrix?
       logical :: try_to_read_from_file
       integer :: nnz
+      real(dp) :: dummy_qspin(8)
 
 #ifdef TRANSIESTA
       integer :: ts_alloc_stat
@@ -251,6 +252,8 @@
 #else
       call normalize_dm(first=.true.)
 #endif  /* TRANSIESTA */
+
+      call print_spin(dummy_qspin)
 
       END subroutine new_dm
 
