@@ -175,8 +175,8 @@ CONTAINS
 !
 !         Where:
 !     
-!             DM_ij^uu = (DM_ji^uu)^*  ( for i/=j )
-!             DM_ij^dd = (DM_ji^dd)^*  ( for i/=j )
+!             DM_ij^uu = (DM_ji^uu)^*
+!             DM_ij^dd = (DM_ji^dd)^*
 !             DM_ij^ud = (DM_ij^du)^*
 !             DM_ij^du = (DM_ij^ud)^*
 !
@@ -208,12 +208,14 @@ CONTAINS
 
           Ebs_Haux(1,1) = dcmplx(H(io,1),H(io,5))  
           Ebs_Haux(2,2) = dcmplx(H(io,2),H(io,6))  
-          Ebs_Haux(1,2) = dcmplx(H(io,3),H(io,4)) 
+     !     Ebs_Haux(1,2) = dcmplx(H(io,3),H(io,4)) 
+          Ebs_Haux(1,2) = dcmplx(H(io,3),-H(io,4)) 
           Ebs_Haux(2,1) = dcmplx(H(io,7),H(io,8)) 
 
           Ebs_Daux(1,1) = dcmplx(Dscf(io,1),Dscf(io,5)) 
           Ebs_Daux(2,2) = dcmplx(Dscf(io,2),Dscf(io,6)) 
-          Ebs_Daux(1,2) = dcmplx(Dscf(io,3),Dscf(io,4))
+      !    Ebs_Daux(1,2) = dcmplx(Dscf(io,3),Dscf(io,4))
+          Ebs_Daux(1,2) = dcmplx(Dscf(io,3),-Dscf(io,4))
           Ebs_Daux(2,1) = dcmplx(Dscf(io,7),Dscf(io,8)) 
 
 
@@ -314,7 +316,7 @@ CONTAINS
           DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
                           + H(io,2) * ( Dscf(io,2) - Dold(io,2) )  &
                  + 2.0_dp * H(io,3) * ( Dscf(io,3) - Dold(io,3) )  &
-                 + 2.0_dp * H(io,4) * ( Dscf(io,3) - Dold(io,3) )
+                 + 2.0_dp * H(io,4) * ( Dscf(io,4) - Dold(io,4) )
         enddo
       elseif ( spin%Col )  then
         do io = 1,maxnh
@@ -394,19 +396,19 @@ CONTAINS
         do io = 1, maxnh
 
 !-------- Enl_offsiteSO(u,u)
-            Dc = cmplx(Dscf(io,1),Dscf(io,5))
+            Dc = cmplx(Dscf(io,1),Dscf(io,5),kind=dp)
             Hc = H0_offsiteSO(io,1)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,d)
-            Dc = cmplx(Dscf(io,2),Dscf(io,6))
+            Dc = cmplx(Dscf(io,2),Dscf(io,6),kind=dp)
             Hc = H0_offsiteSO(io,2)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(u,d)
-            Dc = cmplx(Dscf(io,3),Dscf(io,4))
+            Dc = cmplx(Dscf(io,3),Dscf(io,4),kind=dp)
             Hc = H0_offsiteSO(io,4)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,u)
-            Dc = cmplx(Dscf(io,7),-Dscf(io,8))
+            Dc = cmplx(Dscf(io,7),-Dscf(io,8),kind=dp)
             Hc = H0_offsiteSO(io,3)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 

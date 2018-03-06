@@ -185,19 +185,19 @@
 
 
 !-------- Enl_offsiteSO(u,u)
-            Dc = cmplx(Dscf(io,1),Dscf(io,5))
+            Dc = cmplx(Dscf(io,1),Dscf(io,5),kind=dp)
             Hc = H0_offsiteSO(io,1)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,d)
-            Dc = cmplx(Dscf(io,2),Dscf(io,6))
+            Dc = cmplx(Dscf(io,2),Dscf(io,6),kind=dp)
             Hc = H0_offsiteSO(io,2)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(u,d)
-            Dc = cmplx(Dscf(io,3),Dscf(io,4))
+            Dc = cmplx(Dscf(io,3),Dscf(io,4),kind=dp)
             Hc = H0_offsiteSO(io,4)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,u)
-            Dc = cmplx(Dscf(io,7),-Dscf(io,8))
+            Dc = cmplx(Dscf(io,7),-Dscf(io,8),kind=dp)
             Hc = H0_offsiteSO(io,3)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 
