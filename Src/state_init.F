@@ -28,7 +28,6 @@
 
 ! CC RC  Added for the offSpOrb
       use sparse_matrices, only: H0_offsiteSO
-!      use sparse_matrices, only: listht
 !      use sparse_matrices, only: MM_HDM, herm_HDM
 ! CC RC  Added for the offSpOrb
 
@@ -388,6 +387,7 @@ CC RC  OffSpOrb
      &              lastkb, iphorb, iphKB, maxnh, gamma,
      $              set_xijo=.true., folding=folding1)
 !
+
 #ifdef SIESTA__CHESS
       if (isolve == SOLVE_CHESS) then
           call CheSS_init(node, nodes, maxnh, maxnh_kernel, maxnh_mult, 

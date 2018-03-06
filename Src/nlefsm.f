@@ -519,7 +519,6 @@ C      use precision,     only : dp
       use atomlist,        only: indxuo
      
 CC RC   OffSpOrb
-!      use sparse_matrices, only: listht
       use m_spin,          only: spin
 
       integer, intent(in) ::
@@ -547,7 +546,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       integer, save ::  maxno = 2000
   
       integer
-     .  ia, ikb, ina, ind, ino, ! indt,
+     .  ia, ikb, ina, ind, ino, indt,
      .  io, iio, ioa, is, ispin, ix, ig, kg,
      .  j, jno, jo, jx, ka, ko, koa, ks, kua,
      .  nkb, nna, nno, no, nuo, nuotot, maxkba
@@ -765,7 +764,6 @@ C        Valid orbital
            do j = 1,numh(iio)
             ind = listhptr(iio)+j  ! jptr
 CC RC
-!            indt= listht(ind)
             jo = listh(ind)       ! j
             Di(jo) = 0.0_dp
             do ispin = 1,min(2,nspin)
@@ -775,10 +773,6 @@ CC RC
             Ds(2,2,jo) = dcmplx(Dscf(ind,2), Dscf(ind,6))  ! D(jd,id)
             Ds(1,2,jo) = dcmplx(Dscf(ind,3), Dscf(ind,4))  ! D(ju,id)
             Ds(2,1,jo) = dcmplx(Dscf(ind,7),-Dscf(ind,8))  ! D(jd,iu)
-C            Ds(1,1,jo) = dcmplx(Dscf(indt,1), Dscf(indt,5))  ! D(ju,iu)
-C            Ds(2,2,jo) = dcmplx(Dscf(indt,2), Dscf(indt,6))  ! D(jd,id)
-C            Ds(1,2,jo) = dcmplx(Dscf(indt,3), Dscf(indt,4))  ! D(ju,id)
-C            Ds(2,1,jo) = dcmplx(Dscf(indt,7), Dscf(indt,8))  ! D(jd,iu)
            enddo
           endif
 

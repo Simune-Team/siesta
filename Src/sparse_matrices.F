@@ -33,7 +33,6 @@
 
 ! CC RC  Added for the offSpOrb
       complex(dp), public, pointer :: H0_offsiteSO(:,:) => null()
-!      integer, public, pointer :: listht(:)=>null()
 ! CC RC  Added for the offSpOrb
 
       ! Pieces of H that do not depend on the SCF density matrix
@@ -88,7 +87,6 @@
       if( spin%SO_offsite ) then 
        deallocate( H0_offsiteSO )
       endif
-!      call de_alloc( listht,'listht','sparseMat' ) ! CC RC 
 ! CC RC  Added for the offSpOrb
 
       

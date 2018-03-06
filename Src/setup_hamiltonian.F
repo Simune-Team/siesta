@@ -77,7 +77,7 @@
 
 ! CC RC  modified for the offSpOrb
       complex(dp):: Hc, Dc
-      integer :: ind, i, j   !, iot , indt
+      integer :: ind, i, j
 ! CC RC  modified for the offSpOrb
 
 !------------------------------------------------------------------------- BEGIN
@@ -170,12 +170,19 @@
       end do
 !$OMP end do nowait
 
+!
+!  Dc IS NOT the dense matrix, it is just a complex number 
+! (per each io index) used as an artifact to multiply the 
+! elements of the H_SO times the corresponding elements of 
+! DM in a such way that the result gives Re{Tr[H_SO*DM]}.
+!
 
 ! CC RC  Added  for the offSpOrb
       if( spin%SO_offsite ) then
         Enl_offsiteSO = 0.0_dp
 
         do io = 1, maxnh
+
 
 !-------- Enl_offsiteSO(u,u)
             Dc = cmplx(Dscf(io,1),Dscf(io,5))
@@ -193,6 +200,7 @@
             Dc = cmplx(Dscf(io,7),-Dscf(io,8))
             Hc = H0_offsiteSO(io,3)
             Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+
         enddo
 
       endif

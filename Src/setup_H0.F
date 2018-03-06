@@ -21,7 +21,7 @@ C     and initializes data structures on the grid.
       use sparse_matrices, only: Dscf
 
 ! CC RC  Added for the offSpOrb
-      use sparse_matrices, only: H0_offsiteSO, listhptr, numh ! , listht
+      use sparse_matrices, only: H0_offsiteSO, listhptr, numh
       use m_nlefsm,        only: nlefsm_offsiteSO
       use m_energies,      only: Enl_offsiteSO, Enl, Ekin
       use m_spin,          only: spin
@@ -65,7 +65,7 @@ C     and initializes data structures on the grid.
       real(dp)    :: dummy_E_offsiteSO
       real(dp) :: eV = 1._dp / 13.60580_dp
       character(len=1) :: cindent = ' '
-      integer     :: io, ispin, i, j !, ind, iot
+      integer     :: io, ispin, i, j, ind
 !      integer     :: ij, ji, js
       complex(dp) :: Hc, Dc
 #ifdef MPI
@@ -165,25 +165,32 @@ C     Add on force field contribution to energy
      &                 matrix_elements_only=.true.)
 
 
+!
+!  Dc IS NOT the dense matrix, it is just a complex number 
+! (per each io index) used as an artifact to multiply the 
+! elements of the H_SO times the corresponding elements of 
+! DM in a such way that the result gives Re{Tr[H_SO*DM]}.
+!
+
         Enl_offsiteSO = 0.0d0
         do io = 1, maxnh
 
 !-------- Enl_offsiteSO(u,u)
-          Dc = cmplx(Dscf(io,1),Dscf(io,5))
-          Hc = H0_offsiteSO(io,1)
-          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+            Dc = cmplx(Dscf(io,1),Dscf(io,5))
+            Hc = H0_offsiteSO(io,1)
+            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,d)
-          Dc = cmplx(Dscf(io,2),Dscf(io,6))
-          Hc = H0_offsiteSO(io,2)
-          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+            Dc = cmplx(Dscf(io,2),Dscf(io,6))
+            Hc = H0_offsiteSO(io,2)
+            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(u,d)
-          Dc = cmplx(Dscf(io,3),Dscf(io,4))
-          Hc = H0_offsiteSO(io,4)
-          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+            Dc = cmplx(Dscf(io,3),Dscf(io,4))
+            Hc = H0_offsiteSO(io,4)
+            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 !-------- Enl_offsiteSO(d,u)
-          Dc = cmplx(Dscf(io,7), -Dscf(io,8))
-          Hc = H0_offsiteSO(io,3)
-          Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+            Dc = cmplx(Dscf(io,7),-Dscf(io,8))
+            Hc = H0_offsiteSO(io,3)
+            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
 
         enddo
 
