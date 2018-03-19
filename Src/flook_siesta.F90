@@ -36,6 +36,8 @@ module flook_siesta
   character(len=512), save, public :: slua_file = ' '
   ! Debugging flag for both parallel and serial debugging
   logical, save, public :: slua_debug = .false.
+  ! Interactive Lua?
+  logical, save :: slua_interactive = .false.
 
 contains
 
@@ -87,6 +89,10 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     ! For error-handling with lua
     integer :: err
     character(len=2048) :: err_msg
+
+    ! Whether the interactive lua stuff should be runned
+    slua_interactive = fdf_get('LUA.Interactive', .false.)
+    slua_interactive = slua_interactive .AND. IONode
     
     ! First retrieve lua file
     slua_file = fdf_get('LUA.Script',' ')
@@ -194,8 +200,17 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     integer :: err
     character(len=2048) :: err_msg
 
+    ! To finally build the user-defined command
+    integer :: n_chars
+    type ll_line
+      character, allocatable :: line(:)
+      type(ll_line), pointer :: next => null()
+    end type ll_line
+    type(ll_line), target :: lines
+    integer :: iostat
+    
     ! Return immediately if we should not run
-    if ( .not. slua_run ) return
+    if ( .not. (slua_run .or. slua_interactive) ) return
 
     ! Transfer the state to the lua interpreter such
     ! that decisions can be made as to which steps
@@ -204,17 +219,180 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     call lua_run(LUA, code = tmp )
 
     if ( slua_debug ) then
-       write(*,'(a,i0)') 'siesta-lua: calling siesta_comm() @ ',state
+      write(*,'(a,i0)') 'siesta-lua: calling siesta_comm() @ ',state
     end if
 
-    ! Call communicator
-    call lua_run(LUA, code = 'siesta_comm()', error = err, message=err_msg )
-    if ( err /= 0 ) then
+   if ( slua_interactive ) then
+
+     ! Start an interactive session.
+     ! This allows the user to inspect things but *NOT* send things
+     ! Although we don't prohibit the user from doing so, it may end up
+     ! breaking things as the interactive session is currently only available
+     ! from the IO node.
+     select case ( state )
+     case ( LUA_INITIALIZE )
+       tmp = 'INITIALIZE'
+     case ( LUA_INIT_MD )
+       tmp = 'INIT_MD'
+     case ( LUA_SCF_LOOP )
+       tmp = 'SCF_LOOP'
+     case ( LUA_FORCES )
+       tmp = 'FORCES'
+     case ( LUA_MOVE )
+       tmp = 'MOVE'
+     case ( LUA_ANALYSIS )
+       tmp = 'ANALYSIS'
+     end select
+       
+     write(*,'(/2a)') 'Entering Lua-interactive @ siesta.state = ', trim(tmp)
+     write(*,'(a)') 'Type /debug to turn on/off debugging information.'
+     write(*,'(a)') 'Type /run to execute the currently collected lines of code.'
+     write(*,'(a)') 'Type /cont to execute and continue the program flow.'
+     write(*,'(a)') 'Type /stop to execute and stop using the interactive session.'
+     write(*,'(a)') '^D (EOF) to close console'
+
+     ! Run interactive Lua-shell
+     call interactive_run()
+
+   end if
+   
+   ! Call communicator
+   if ( slua_run ) then
+     call lua_run(LUA, code = 'siesta_comm()', error = err, message=err_msg )
+     if ( err /= 0 ) then
        write(*,'(a)') trim(err_msg)
        call die('LUA could not run siesta_comm() without an error, please &
-            &check your Lua script')
-    end if
+           &check your Lua script')
+     end if
+   end if
+   
+ contains
 
+   subroutine interactive_run()
+     character(len=512) :: line
+     integer :: i_chars, i
+     type(ll_line), pointer :: next
+
+     ! Total number of characters assembled
+     n_chars = 0
+
+     ! Start assembling the lines
+     next => lines
+     do 
+
+       ! Read line
+       write(*,"(a)", advance="no") "LUA> "
+       read(*,"(a)",iostat=iostat) line
+       if ( iostat /= 0 ) exit
+       
+       select case ( trim(line) )
+       case ( "/run" )
+         
+         ! Run and continue
+         call interactive_execute()
+         next => lines
+         n_chars = 0
+         
+         cycle
+         
+       case ( "/debug" )
+
+         if ( slua_debug ) then
+           write(*,'(a)') 'Turning OFF debugging!'
+           slua_debug = .false.
+         else
+           write(*,'(a)') 'Turning ON debugging!'
+           slua_debug = .true.
+         end if
+
+         cycle
+
+       case ( "/cont", "/continue" )
+         
+         ! Run and exit interactive session
+         call interactive_execute()
+         
+         return
+
+       case ( "/stop" )
+         
+         ! Run and exit interactive session
+         call interactive_execute()
+         write(*,'(a)') 'Stopping interactive session!'
+         slua_interactive = .false.
+         
+         return
+
+       end select
+       
+       ! Add line to linked-list
+       i_chars = len_trim(line) + 1
+       allocate(next%line(i_chars))
+       do i = 1, i_chars - 1
+         next%line(i) = line(i:i)
+       end do
+       next%line(i_chars) = ' '
+       n_chars = n_chars + i_chars
+       allocate(next%next)
+       next => next%next
+ 
+     end do
+     
+   end subroutine interactive_run
+   
+   subroutine interactive_execute()
+     character, allocatable :: interactive(:)
+     type(ll_line), pointer :: next, nnext
+     integer :: i_chars
+
+     ! Now we can build the single input
+     allocate(interactive(n_chars))
+
+     ! Reset n_chars to count stuff to execute
+     n_chars = 1
+     
+     next => lines
+     do while ( allocated(next%line) )
+       i_chars = size(next%line)
+       ! Append line
+       interactive(n_chars:n_chars+i_chars-1) = next%line(:)
+       n_chars = n_chars + i_chars
+       ! Immediately clean-up
+       deallocate(next%line)
+       next => next%next
+     end do
+
+     ! Clean up the linked-list and ensure we reset everything
+     next => lines%next
+     do while ( associated(next) )
+       nnext => next%next
+       nullify(next%next)
+       deallocate(next)
+       next => nnext
+     end do
+     nullify(lines%next)
+
+     if ( n_chars > 1 ) then
+       call lua_run(lua, code = array2str(interactive), error=err, message=err_msg )
+       if ( err /= 0 ) then
+         write(*,'(2a)') 'ERROR: ', trim(err_msg)
+       end if
+     end if
+     deallocate(interactive)
+
+     n_chars = 0
+
+   end subroutine interactive_execute
+   
+   pure function array2str(arr) result(str)
+     character(len=1), intent(in) :: arr(:)
+     character(len=size(arr)) :: str
+     integer :: i
+     do i = 1, size(arr)
+       str(i:i) = arr(i)
+     end do
+   end function array2str
+   
   end subroutine slua_call
 
   subroutine slua_close(LUA)
