@@ -480,17 +480,19 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        write(*,'(a,i0)') '  lua: siesta_receive, Node = ',Node + 1
     end if
 
-    call lua_init(LUA,state)
+    call lua_init(LUA, state)
 
     ! Retrieve information
-    call slua_get_tbl_to_dict(lua,keys)
+    call slua_get_tbl_to_dict(lua, keys)
+    call slua_expand_tbl_dict(keys, options)
+    call slua_expand_tbl_dict(keys, variables)
 
     ! open global siesta table
-    tbl = lua_table(LUA,'siesta')
+    tbl = lua_table(LUA, 'siesta')
     
     ! Expose the dictionary
-    call slua_put_dict(tbl,options,keys)
-    call slua_put_dict(tbl,variables,keys)
+    call slua_put_dict(tbl, options, keys)
+    call slua_put_dict(tbl, variables, keys)
 
     call lua_close_tree(tbl)
 
@@ -521,17 +523,19 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        write(*,'(a,i0)') '  lua: siesta_send, Node = ',Node + 1
     end if
 
-    call lua_init(LUA,state)
+    call lua_init(LUA, state)
 
     ! Retrieve information
-    call slua_get_tbl_to_dict(lua,keys)
+    call slua_get_tbl_to_dict(lua, keys)
+    call slua_expand_tbl_dict(keys, options)
+    call slua_expand_tbl_dict(keys, variables)
 
     ! open global siesta table
-    tbl = lua_table(LUA,'siesta')
+    tbl = lua_table(LUA, 'siesta')
     
     ! Expose the dictionary
-    call slua_get_dict(tbl,options,keys)
-    call slua_get_dict(tbl,variables,keys)
+    call slua_get_dict(tbl, options, keys)
+    call slua_get_dict(tbl, variables, keys)
 
     call lua_close_tree(tbl)
 
@@ -564,17 +568,55 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     ! Traverse all elements in the table
     N = len(tbl)
     do i = 1 , N
-       call lua_get(tbl,i,name)
+       call lua_get(tbl, i, name)
        keys = keys // (trim(name).kv.1)
     end do
-    ! Loop through all keys in it.
-!    print *,'Number of elements passed: ',len(tbl),len(keys)
-!    call print(keys)
 
     call lua_close(tbl)
 
   end subroutine slua_get_tbl_to_dict
-  
+
+  subroutine slua_expand_tbl_dict(keys, d)
+    use dictionary
+
+    type(dict), intent(inout) :: keys
+    type(dict), intent(inout) :: d
+
+    character(len=DICT_KEY_LENGTH) :: d_key, key
+    type(dict) :: pd, pk ! pointer to the dictionary
+    type(dict) :: added
+
+    pd = .first. d
+    do while ( .not. (.empty. pd) )
+      ! This is the key in the dictionary
+      d_key = trim(.key. pd)
+
+      ! Loop on the keys
+      ! This loop is somewhat superflous.
+      ! Instead we should partition the d_key into
+      ! <>.<>.<>.!
+      ! where <> are build up as acceptable table calls.
+      ! However, this requires extra work and it shouldn't be
+      ! a bottle-neck for these small number of entries.
+      pk = .first. keys
+      do while ( .not. (.empty. pk) )
+        
+        ! This is the key in the keys
+        key = trim(.key. pk)
+        if ( index(trim(d_key), trim(key) // '.') == 1 ) then
+          added = added // (trim(d_key).kv.1)
+          exit
+        end if
+        pk = .next. pk
+      end do
+      
+      pd = .next. pd
+    end do
+
+    ! Append new keys
+    keys = keys // added
+
+  end subroutine slua_expand_tbl_dict
 
   subroutine slua_put_dict(tbl,dic,keys)
 
@@ -636,7 +678,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
       if ( slua_debug ) then
          write(*,'(4a)') '    siesta2lua; dtype = ',t,', var = ',trim(key)
       end if
-!      print *,'Attempt storing: ',trim(key), ' type= ',t
+
       select case ( t )
       case ( 'a1', 'b0' , 'i0', 's0', 'd0' )
          ! We need to handle the variables secondly
@@ -683,16 +725,14 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
       case ( 'd0' ) 
          call associate(d0,v)
          call lua_set(tbl,rkey,d0)
-!         print *,'setting: '//trim(key)//' to ',d0
       case ( 'd1' ) 
          call associate(d1,v)
          call lua_set(tbl,key,d1)
       case ( 'd2' ) 
          call associate(d2,v)
          call lua_set(tbl,key,d2)
-!         print *,'setting: '//trim(key)//' to ',d2
       end select
-!      print *,'Done storing: ',trim(key), ' type= ',t
+       
       call lua_close(tbl,lvls = lvls)
     end subroutine slua_put_var
 
@@ -771,7 +811,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
             call lua_open(tbl,lkey,lvls = lvls)
          end if
       end select
-!      print *,'Attempt retrieving: ',trim(key), ' type= ',t
+
       select case ( t )
       case ( 'a1' )
          call associate(a1,v)
@@ -809,16 +849,14 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
       case ( 'd0' ) 
          call associate(d0,v)
          call lua_get(tbl,rkey,d0)
-!         print *,'getting: '//trim(key)//' as ',d0
       case ( 'd1' ) 
          call associate(d1,v)
          call lua_get(tbl,key,d1)
       case ( 'd2' ) 
          call associate(d2,v)
          call lua_get(tbl,key,d2)
-!         print *,'getting: '//trim(key)//' as ',d2
       end select
-!      print *,'Done retrieving: ',trim(key), ' type= ',t
+
       call lua_close(tbl,lvls = lvls)
     end subroutine slua_get_var
 
