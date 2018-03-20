@@ -245,11 +245,16 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
      end select
        
      write(*,'(/2a)') 'Entering Lua-interactive @ siesta.state = ', trim(tmp)
-     write(*,'(a)') 'Type /debug to turn on/off debugging information.'
-     write(*,'(a)') 'Type /run to execute the currently collected lines of code.'
-     write(*,'(a)') 'Type /cont to execute and continue the program flow.'
-     write(*,'(a)') 'Type /stop to execute and stop using the interactive session.'
-     write(*,'(a)') '^D (EOF) to close console'
+     write(*,'(a)') 'The following commands are available in the interactive session:'
+     write(*,*) ! newline
+     write(*,'(a)') '   /debug    turn on/off debugging information'
+     write(*,'(a)') '   /show     show the currently collected lines of code'
+     write(*,'(a)') '   /clear    clears the currently collected lines of code'
+     write(*,'(a)') '   /run      execute the currently collected lines of code'
+     write(*,'(a)') '   /cont     execute and continue Siesta'
+     write(*,'(a)') '   /stop     execute and stop using the interactive session'
+     write(*,'(a)') '   ^D (EOF)  closes interactive console'
+     write(*,*) ! newline
 
      ! Run interactive Lua-shell
      call interactive_run()
@@ -278,7 +283,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
 
      ! Start assembling the lines
      next => lines
-     do 
+     interactive_loop: do 
 
        ! Read line
        write(*,"(a)", advance="no") "LUA> "
@@ -286,42 +291,50 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        if ( iostat /= 0 ) exit
        
        select case ( trim(line) )
+       case ( "/debug" )
+         
+         if ( slua_debug ) then
+           write(*,'(a)') 'Debugging OFF!'
+           slua_debug = .false.
+         else
+           write(*,'(a)') 'Debugging ON!'
+           slua_debug = .true.
+         end if
+
+         cycle interactive_loop
+         
+       case ( "/show" )
+         
+         call interactive_show()
+         cycle interactive_loop
+
+       case ( "/clear" )
+         
+         call interactive_clean()
+         next => lines
+         cycle interactive_loop
+
        case ( "/run" )
          
          ! Run and continue
          call interactive_execute()
          next => lines
-         n_chars = 0
-         
-         cycle
-         
-       case ( "/debug" )
-
-         if ( slua_debug ) then
-           write(*,'(a)') 'Turning OFF debugging!'
-           slua_debug = .false.
-         else
-           write(*,'(a)') 'Turning ON debugging!'
-           slua_debug = .true.
-         end if
-
-         cycle
+         cycle interactive_loop
 
        case ( "/cont", "/continue" )
          
          ! Run and exit interactive session
          call interactive_execute()
-         
-         return
+         exit interactive_loop
 
        case ( "/stop" )
          
          ! Run and exit interactive session
          call interactive_execute()
-         write(*,'(a)') 'Stopping interactive session!'
+         write(*,'(a)') 'Stopping future interactive sessions!'
          slua_interactive = .false.
          
-         return
+         exit interactive_loop
 
        end select
        
@@ -331,18 +344,41 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        do i = 1, i_chars - 1
          next%line(i) = line(i:i)
        end do
-       next%line(i_chars) = ' '
+       next%line(i_chars) = char(10)
        n_chars = n_chars + i_chars
        allocate(next%next)
        next => next%next
  
-     end do
+     end do interactive_loop
+
+     ! Ensure the linked-list is clean
+     call interactive_clean()
      
    end subroutine interactive_run
    
    subroutine interactive_execute()
      character, allocatable :: interactive(:)
      type(ll_line), pointer :: next, nnext
+     integer :: i_chars
+
+     call interactive_collect(interactive)
+     ! Clean the linked-list
+     call interactive_clean()
+
+     if ( size(interactive) > 0 ) then
+       call lua_run(lua, code = array2str(interactive), error=err, message=err_msg )
+       if ( err /= 0 ) then
+         write(*,'(a)') trim(err_msg)
+       end if
+     end if
+     
+     deallocate(interactive)
+
+   end subroutine interactive_execute
+
+   subroutine interactive_collect(interactive)
+     character, intent(inout), allocatable :: interactive(:)
+     type(ll_line), pointer :: next
      integer :: i_chars
 
      ! Now we can build the single input
@@ -357,32 +393,47 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        ! Append line
        interactive(n_chars:n_chars+i_chars-1) = next%line(:)
        n_chars = n_chars + i_chars
-       ! Immediately clean-up
-       deallocate(next%line)
        next => next%next
      end do
+
+   end subroutine interactive_collect
+
+   subroutine interactive_show()
+     character, allocatable :: interactive(:)
+     integer :: old_n_chars
+
+     ! We have to store the current size counter
+     old_n_chars = n_chars
+     call interactive_collect(interactive)
+     
+     if ( size(interactive) > 0 ) then
+       write(*,'(a)') array2str(interactive)
+     end if
+     deallocate(interactive)
+
+     n_chars = old_n_chars
+
+   end subroutine interactive_show
+
+   subroutine interactive_clean()
+     type(ll_line), pointer :: next, nnext
 
      ! Clean up the linked-list and ensure we reset everything
      next => lines%next
      do while ( associated(next) )
        nnext => next%next
        nullify(next%next)
+       if ( allocated(next%line) ) deallocate(next%line)
        deallocate(next)
        next => nnext
      end do
      nullify(lines%next)
+     if ( allocated(lines%line) ) deallocate(lines%line)
 
-     if ( n_chars > 1 ) then
-       call lua_run(lua, code = array2str(interactive), error=err, message=err_msg )
-       if ( err /= 0 ) then
-         write(*,'(2a)') 'ERROR: ', trim(err_msg)
-       end if
-     end if
-     deallocate(interactive)
-
+     ! Reset!
      n_chars = 0
 
-   end subroutine interactive_execute
+   end subroutine interactive_clean
    
    pure function array2str(arr) result(str)
      character(len=1), intent(in) :: arr(:)
