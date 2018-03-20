@@ -627,6 +627,9 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     ! Append new keys
     keys = keys // added
 
+    ! Clean-up
+    call delete(added)
+
   end subroutine slua_expand_tbl_dict
 
   subroutine slua_put_dict(tbl,dic,keys)
