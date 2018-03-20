@@ -10469,7 +10469,7 @@ end
   executed on the first MPI node.
 
   There are various commands that are caught if they are the only
-  content on a single line:
+  content on a line:
   \begin{fdfoptions}
     \option[/debug]%
     Turn on/off debugging information.
@@ -10480,9 +10480,12 @@ end
     \option[/clear]%
     Clears the currently collected lines of code.
 
-    \option[/run]%
+    \option[;]%
     Run the currently collected lines of code and continue collecting
     lines.
+
+    \option[/run]%
+    Same as \code{;}.
 
     \option[/cont]%
     Run the currently collected lines of code and continue \siesta.

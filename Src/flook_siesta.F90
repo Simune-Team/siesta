@@ -250,7 +250,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
      write(*,'(a)') '   /debug    turn on/off debugging information'
      write(*,'(a)') '   /show     show the currently collected lines of code'
      write(*,'(a)') '   /clear    clears the currently collected lines of code'
-     write(*,'(a)') '   /run      execute the currently collected lines of code'
+     write(*,'(a)') '   ; or /run execute the currently collected lines of code'
      write(*,'(a)') '   /cont     execute and continue Siesta'
      write(*,'(a)') '   /stop     execute and stop using the interactive session'
      write(*,'(a)') '   ^D (EOF)  closes interactive console'
@@ -277,16 +277,22 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
      character(len=512) :: line
      integer :: i_chars, i
      type(ll_line), pointer :: next
+     logical :: first
 
      ! Total number of characters assembled
      n_chars = 0
 
      ! Start assembling the lines
      next => lines
+     first = .true.
      interactive_loop: do 
 
        ! Read line
-       write(*,"(a)", advance="no") "LUA> "
+       if ( first ) then
+         write(*,"(a)", advance="no") "LUA> "
+       else
+         write(*,"(a)", advance="no") "   > "
+       end if
        read(*,"(a)",iostat=iostat) line
        if ( iostat /= 0 ) exit
        
@@ -312,13 +318,15 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
          
          call interactive_clean()
          next => lines
+         first = .true.
          cycle interactive_loop
 
-       case ( "/run" )
+       case ( "/run", ";" )
          
          ! Run and continue
          call interactive_execute()
          next => lines
+         first = .true.
          cycle interactive_loop
 
        case ( "/cont", "/continue" )
@@ -337,6 +345,9 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
          exit interactive_loop
 
        end select
+
+       ! Not first line
+       first = .false.
        
        ! Add line to linked-list
        i_chars = len_trim(line) + 1
