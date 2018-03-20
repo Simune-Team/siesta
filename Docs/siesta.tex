@@ -10726,6 +10726,53 @@ end
   
 \end{fdflogicalF}
 
+\begin{fdflogicalF}{Lua!Interactive}
+
+  Start an interactive Lua session at all the states in the program
+  and ask for user-input.
+  %
+  This is primarily intended for debugging purposes. The interactive
+  session is executed just \emph{before} the \code{siesta\_comm}
+  function call (if the script is used).
+  
+  For serial runs \code{siesta.send} may be used. For parallel runs do
+  \emph{not} use \code{siesta.send} as the code is only
+  executed on the first MPI node.
+
+  There are various commands that are caught if they are the only
+  content on a line:
+  \begin{fdfoptions}
+    \option[/debug]%
+    Turn on/off debugging information.
+
+    \option[/show]%
+    Show the currently collected lines of code.
+
+    \option[/clear]%
+    Clears the currently collected lines of code.
+
+    \option[;]%
+    Run the currently collected lines of code and continue collecting
+    lines.
+
+    \option[/run]%
+    Same as \code{;}.
+
+    \option[/cont]%
+    Run the currently collected lines of code and continue \siesta.
+
+    \option[/stop]%
+    Run the currently collected lines of code and stop all future
+    interactive Lua sessions.
+
+  \end{fdfoptions}
+
+  Currently this only works if \fdf{Lua!Script} is having a valid Lua
+  file (note the file may be empty).
+  
+\end{fdflogicalF}
+
+
 
 \subsection{Examples of Lua programs}
 

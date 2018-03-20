@@ -36,6 +36,8 @@ module flook_siesta
   character(len=512), save, public :: slua_file = ' '
   ! Debugging flag for both parallel and serial debugging
   logical, save, public :: slua_debug = .false.
+  ! Interactive Lua?
+  logical, save :: slua_interactive = .false.
 
 contains
 
@@ -87,6 +89,10 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     ! For error-handling with lua
     integer :: err
     character(len=2048) :: err_msg
+
+    ! Whether the interactive lua stuff should be runned
+    slua_interactive = fdf_get('LUA.Interactive', .false.)
+    slua_interactive = slua_interactive .AND. IONode
     
     ! First retrieve lua file
     slua_file = fdf_get('LUA.Script',' ')
@@ -194,8 +200,17 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     integer :: err
     character(len=2048) :: err_msg
 
+    ! To finally build the user-defined command
+    integer :: n_chars
+    type ll_line
+      character, allocatable :: line(:)
+      type(ll_line), pointer :: next => null()
+    end type ll_line
+    type(ll_line), target :: lines
+    integer :: iostat
+    
     ! Return immediately if we should not run
-    if ( .not. slua_run ) return
+    if ( .not. (slua_run .or. slua_interactive) ) return
 
     ! Transfer the state to the lua interpreter such
     ! that decisions can be made as to which steps
@@ -204,17 +219,242 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     call lua_run(LUA, code = tmp )
 
     if ( slua_debug ) then
-       write(*,'(a,i0)') 'siesta-lua: calling siesta_comm() @ ',state
+      write(*,'(a,i0)') 'siesta-lua: calling siesta_comm() @ ',state
     end if
 
-    ! Call communicator
-    call lua_run(LUA, code = 'siesta_comm()', error = err, message=err_msg )
-    if ( err /= 0 ) then
+   if ( slua_interactive ) then
+
+     ! Start an interactive session.
+     ! This allows the user to inspect things but *NOT* send things
+     ! Although we don't prohibit the user from doing so, it may end up
+     ! breaking things as the interactive session is currently only available
+     ! from the IO node.
+     select case ( state )
+     case ( LUA_INITIALIZE )
+       tmp = 'INITIALIZE'
+     case ( LUA_INIT_MD )
+       tmp = 'INIT_MD'
+     case ( LUA_SCF_LOOP )
+       tmp = 'SCF_LOOP'
+     case ( LUA_FORCES )
+       tmp = 'FORCES'
+     case ( LUA_MOVE )
+       tmp = 'MOVE'
+     case ( LUA_ANALYSIS )
+       tmp = 'ANALYSIS'
+     end select
+       
+     write(*,'(/2a)') 'Entering Lua-interactive @ siesta.state = ', trim(tmp)
+     write(*,'(a)') 'The following commands are available in the interactive session:'
+     write(*,*) ! newline
+     write(*,'(a)') '   /debug    turn on/off debugging information'
+     write(*,'(a)') '   /show     show the currently collected lines of code'
+     write(*,'(a)') '   /clear    clears the currently collected lines of code'
+     write(*,'(a)') '   ; or /run execute the currently collected lines of code'
+     write(*,'(a)') '   /cont     execute and continue Siesta'
+     write(*,'(a)') '   /stop     execute and stop using the interactive session'
+     write(*,'(a)') '   ^D (EOF)  closes interactive console'
+     write(*,*) ! newline
+
+     ! Run interactive Lua-shell
+     call interactive_run()
+
+   end if
+   
+   ! Call communicator
+   if ( slua_run ) then
+     call lua_run(LUA, code = 'siesta_comm()', error = err, message=err_msg )
+     if ( err /= 0 ) then
        write(*,'(a)') trim(err_msg)
        call die('LUA could not run siesta_comm() without an error, please &
-            &check your Lua script')
-    end if
+           &check your Lua script')
+     end if
+   end if
+   
+ contains
 
+   subroutine interactive_run()
+     character(len=512) :: line
+     integer :: i_chars, i
+     type(ll_line), pointer :: next
+     logical :: first
+
+     ! Total number of characters assembled
+     n_chars = 0
+
+     ! Start assembling the lines
+     next => lines
+     first = .true.
+     interactive_loop: do 
+
+       ! Read line
+       if ( first ) then
+         write(*,"(a)", advance="no") "LUA> "
+       else
+         write(*,"(a)", advance="no") "   > "
+       end if
+       read(*,"(a)",iostat=iostat) line
+       if ( iostat /= 0 ) exit
+       
+       select case ( trim(line) )
+       case ( "/debug" )
+         
+         if ( slua_debug ) then
+           write(*,'(a)') 'Debugging OFF!'
+           slua_debug = .false.
+         else
+           write(*,'(a)') 'Debugging ON!'
+           slua_debug = .true.
+         end if
+
+         cycle interactive_loop
+         
+       case ( "/show" )
+         
+         call interactive_show()
+         cycle interactive_loop
+
+       case ( "/clear" )
+         
+         call interactive_clean()
+         next => lines
+         first = .true.
+         cycle interactive_loop
+
+       case ( "/run", ";" )
+         
+         ! Run and continue
+         call interactive_execute()
+         next => lines
+         first = .true.
+         cycle interactive_loop
+
+       case ( "/cont", "/continue" )
+         
+         ! Run and exit interactive session
+         call interactive_execute()
+         exit interactive_loop
+
+       case ( "/stop" )
+         
+         ! Run and exit interactive session
+         call interactive_execute()
+         write(*,'(a)') 'Stopping future interactive sessions!'
+         slua_interactive = .false.
+         
+         exit interactive_loop
+
+       end select
+
+       ! Not first line
+       first = .false.
+       
+       ! Add line to linked-list
+       i_chars = len_trim(line) + 1
+       allocate(next%line(i_chars))
+       do i = 1, i_chars - 1
+         next%line(i) = line(i:i)
+       end do
+       next%line(i_chars) = char(10)
+       n_chars = n_chars + i_chars
+       allocate(next%next)
+       next => next%next
+ 
+     end do interactive_loop
+
+     ! Ensure the linked-list is clean
+     call interactive_clean()
+     
+   end subroutine interactive_run
+   
+   subroutine interactive_execute()
+     character, allocatable :: interactive(:)
+     type(ll_line), pointer :: next, nnext
+     integer :: i_chars
+
+     call interactive_collect(interactive)
+     ! Clean the linked-list
+     call interactive_clean()
+
+     if ( size(interactive) > 0 ) then
+       call lua_run(lua, code = array2str(interactive), error=err, message=err_msg )
+       if ( err /= 0 ) then
+         write(*,'(a)') trim(err_msg)
+       end if
+     end if
+     
+     deallocate(interactive)
+
+   end subroutine interactive_execute
+
+   subroutine interactive_collect(interactive)
+     character, intent(inout), allocatable :: interactive(:)
+     type(ll_line), pointer :: next
+     integer :: i_chars
+
+     ! Now we can build the single input
+     allocate(interactive(n_chars))
+
+     ! Reset n_chars to count stuff to execute
+     n_chars = 1
+     
+     next => lines
+     do while ( allocated(next%line) )
+       i_chars = size(next%line)
+       ! Append line
+       interactive(n_chars:n_chars+i_chars-1) = next%line(:)
+       n_chars = n_chars + i_chars
+       next => next%next
+     end do
+
+   end subroutine interactive_collect
+
+   subroutine interactive_show()
+     character, allocatable :: interactive(:)
+     integer :: old_n_chars
+
+     ! We have to store the current size counter
+     old_n_chars = n_chars
+     call interactive_collect(interactive)
+     
+     if ( size(interactive) > 0 ) then
+       write(*,'(a)') array2str(interactive)
+     end if
+     deallocate(interactive)
+
+     n_chars = old_n_chars
+
+   end subroutine interactive_show
+
+   subroutine interactive_clean()
+     type(ll_line), pointer :: next, nnext
+
+     ! Clean up the linked-list and ensure we reset everything
+     next => lines%next
+     do while ( associated(next) )
+       nnext => next%next
+       nullify(next%next)
+       if ( allocated(next%line) ) deallocate(next%line)
+       deallocate(next)
+       next => nnext
+     end do
+     nullify(lines%next)
+     if ( allocated(lines%line) ) deallocate(lines%line)
+
+     ! Reset!
+     n_chars = 0
+
+   end subroutine interactive_clean
+   
+   pure function array2str(arr) result(str)
+     character(len=1), intent(in) :: arr(:)
+     character(len=size(arr)) :: str
+     integer :: i
+     do i = 1, size(arr)
+       str(i:i) = arr(i)
+     end do
+   end function array2str
+   
   end subroutine slua_call
 
   subroutine slua_close(LUA)
@@ -251,17 +491,19 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        write(*,'(a,i0)') '  lua: siesta_receive, Node = ',Node + 1
     end if
 
-    call lua_init(LUA,state)
+    call lua_init(LUA, state)
 
     ! Retrieve information
-    call slua_get_tbl_to_dict(lua,keys)
+    call slua_get_tbl_to_dict(lua, keys)
+    call slua_expand_tbl_dict(keys, options)
+    call slua_expand_tbl_dict(keys, variables)
 
     ! open global siesta table
-    tbl = lua_table(LUA,'siesta')
+    tbl = lua_table(LUA, 'siesta')
     
     ! Expose the dictionary
-    call slua_put_dict(tbl,options,keys)
-    call slua_put_dict(tbl,variables,keys)
+    call slua_put_dict(tbl, options, keys)
+    call slua_put_dict(tbl, variables, keys)
 
     call lua_close_tree(tbl)
 
@@ -292,17 +534,19 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        write(*,'(a,i0)') '  lua: siesta_send, Node = ',Node + 1
     end if
 
-    call lua_init(LUA,state)
+    call lua_init(LUA, state)
 
     ! Retrieve information
-    call slua_get_tbl_to_dict(lua,keys)
+    call slua_get_tbl_to_dict(lua, keys)
+    call slua_expand_tbl_dict(keys, options)
+    call slua_expand_tbl_dict(keys, variables)
 
     ! open global siesta table
-    tbl = lua_table(LUA,'siesta')
+    tbl = lua_table(LUA, 'siesta')
     
     ! Expose the dictionary
-    call slua_get_dict(tbl,options,keys)
-    call slua_get_dict(tbl,variables,keys)
+    call slua_get_dict(tbl, options, keys)
+    call slua_get_dict(tbl, variables, keys)
 
     call lua_close_tree(tbl)
 
@@ -335,17 +579,58 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     ! Traverse all elements in the table
     N = len(tbl)
     do i = 1 , N
-       call lua_get(tbl,i,name)
+       call lua_get(tbl, i, name)
        keys = keys // (trim(name).kv.1)
     end do
-    ! Loop through all keys in it.
-!    print *,'Number of elements passed: ',len(tbl),len(keys)
-!    call print(keys)
 
     call lua_close(tbl)
 
   end subroutine slua_get_tbl_to_dict
-  
+
+  subroutine slua_expand_tbl_dict(keys, d)
+    use dictionary
+
+    type(dict), intent(inout) :: keys
+    type(dict), intent(inout) :: d
+
+    character(len=DICT_KEY_LENGTH) :: d_key, key
+    type(dict) :: pd, pk ! pointer to the dictionary
+    type(dict) :: added
+
+    pd = .first. d
+    do while ( .not. (.empty. pd) )
+      ! This is the key in the dictionary
+      d_key = trim(.key. pd)
+
+      ! Loop on the keys
+      ! This loop is somewhat superflous.
+      ! Instead we should partition the d_key into
+      ! <>.<>.<>.!
+      ! where <> are build up as acceptable table calls.
+      ! However, this requires extra work and it shouldn't be
+      ! a bottle-neck for these small number of entries.
+      pk = .first. keys
+      do while ( .not. (.empty. pk) )
+        
+        ! This is the key in the keys
+        key = trim(.key. pk)
+        if ( index(trim(d_key), trim(key) // '.') == 1 ) then
+          added = added // (trim(d_key).kv.1)
+          exit
+        end if
+        pk = .next. pk
+      end do
+      
+      pd = .next. pd
+    end do
+
+    ! Append new keys
+    keys = keys // added
+
+    ! Clean-up
+    call delete(added)
+
+  end subroutine slua_expand_tbl_dict
 
   subroutine slua_put_dict(tbl,dic,keys)
 
@@ -407,7 +692,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
       if ( slua_debug ) then
          write(*,'(4a)') '    siesta2lua; dtype = ',t,', var = ',trim(key)
       end if
-!      print *,'Attempt storing: ',trim(key), ' type= ',t
+
       select case ( t )
       case ( 'a1', 'b0' , 'i0', 's0', 'd0' )
          ! We need to handle the variables secondly
@@ -454,16 +739,14 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
       case ( 'd0' ) 
          call associate(d0,v)
          call lua_set(tbl,rkey,d0)
-!         print *,'setting: '//trim(key)//' to ',d0
       case ( 'd1' ) 
          call associate(d1,v)
          call lua_set(tbl,key,d1)
       case ( 'd2' ) 
          call associate(d2,v)
          call lua_set(tbl,key,d2)
-!         print *,'setting: '//trim(key)//' to ',d2
       end select
-!      print *,'Done storing: ',trim(key), ' type= ',t
+       
       call lua_close(tbl,lvls = lvls)
     end subroutine slua_put_var
 
@@ -542,7 +825,7 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
             call lua_open(tbl,lkey,lvls = lvls)
          end if
       end select
-!      print *,'Attempt retrieving: ',trim(key), ' type= ',t
+
       select case ( t )
       case ( 'a1' )
          call associate(a1,v)
@@ -580,16 +863,14 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
       case ( 'd0' ) 
          call associate(d0,v)
          call lua_get(tbl,rkey,d0)
-!         print *,'getting: '//trim(key)//' as ',d0
       case ( 'd1' ) 
          call associate(d1,v)
          call lua_get(tbl,key,d1)
       case ( 'd2' ) 
          call associate(d2,v)
          call lua_get(tbl,key,d2)
-!         print *,'getting: '//trim(key)//' as ',d2
       end select
-!      print *,'Done retrieving: ',trim(key), ' type= ',t
+
       call lua_close(tbl,lvls = lvls)
     end subroutine slua_get_var
 
