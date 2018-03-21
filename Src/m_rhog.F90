@@ -24,7 +24,10 @@ module m_rhog
   ! point. It also computes and stores rhog by default.
   !
   ! - compute_energies: Apart from correcting EKS when mixing the charge,
-  ! it generates rhog from DM_out. 
+  ! it generates rhog from DM_out.
+  !
+  ! - siesta_forces: In transiesta runs the history is reset upon starting
+  !   transiesta
   !
   ! - setup_hamiltonian: it saves rhog_in.
   !
@@ -581,44 +584,56 @@ CONTAINS
  end subroutine order_rhog
 
 !---
- subroutine resetRhog()
+ subroutine resetRhog(continuation)
    use alloc, only: de_alloc
-   call delete(rhog_stack)
-   call de_alloc(rhog_in)
-   call de_alloc(rhog)
-   call de_alloc(g2)
-   call de_alloc(g2mask)
-   call de_alloc(gindex)
-   call de_alloc(star_index)
-   call de_alloc(g2_diis)
-   call de_alloc(rg_in)
-   call de_alloc(rg_diff)
+   !< If .true. we don't de-allocate anything, we only reset the history
+   logical, intent(in), optional :: continuation
+   logical :: lcontinuation
+   
+   lcontinuation = .false.
+   if ( present(continuation) ) lcontinuation = continuation
+   
+   if ( lcontinuation ) then
+     call reset(rhog_stack)
+   else
+     call de_alloc(rhog_in)
+     call de_alloc(rhog)
+     call de_alloc(g2)
+     call de_alloc(g2mask)
+     call de_alloc(gindex)
+     call de_alloc(star_index)
+     call de_alloc(g2_diis)
+     call de_alloc(rg_in)
+     call de_alloc(rg_diff)
+     call delete(rhog_stack)
+   end if
+   
  end subroutine resetRhog
+ 
+ ! Auxiliary function to perform the scalar product of residual
+ ! vectors in the DIIS method
+ function scalar_product(a,b) result (sp)
+   real(dp), intent(in) :: a(:), b(:)
+   real(dp) :: sp
 
-  ! Auxiliary function to perform the scalar product of residual
-  ! vectors in the DIIS method
-  function scalar_product(a,b) result (sp)
-    real(dp), intent(in)  :: a(:), b(:)
-    real(dp)              :: sp
+   integer :: ip, ispin, j
+   real(dp):: weight
 
-    integer :: ip, ispin, j
-    real(dp):: weight
-
-    sp = 0
-    ip = 1
-    ! Use standard definition of the scalar product as conjg(A)*B,
-    ! but take the real part, as per DIIS equations
-    ! If q1sq is not zero, g2_diis(ip) determines the weight, as in KF
-    do ispin = 1, nspin
-       do j = 1, ng_diis
-          weight = (g2_diis(ip) + q1sq) / g2_diis(ip)
-          sp = sp + (a(ip)*b(ip) + a(ip+1)*b(ip+1)) * weight
-          ip = ip + 2
-       enddo
-    enddo
-    ! Note: This is a "local scalar product"
-    ! For efficiency reasons, the All_reduce call is done
-    ! on the whole matrix in m_diis
-  end function scalar_product
+   sp = 0
+   ip = 1
+   ! Use standard definition of the scalar product as conjg(A)*B,
+   ! but take the real part, as per DIIS equations
+   ! If q1sq is not zero, g2_diis(ip) determines the weight, as in KF
+   do ispin = 1, nspin
+     do j = 1, ng_diis
+       weight = (g2_diis(ip) + q1sq) / g2_diis(ip)
+       sp = sp + (a(ip)*b(ip) + a(ip+1)*b(ip+1)) * weight
+       ip = ip + 2
+     enddo
+   enddo
+   ! Note: This is a "local scalar product"
+   ! For efficiency reasons, the All_reduce call is done
+   ! on the whole matrix in m_diis
+ end function scalar_product
 
 end module m_rhog
