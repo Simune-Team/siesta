@@ -499,6 +499,13 @@ siesta: what version \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
                $(XC) $(MS) $(MPI_INTERFACE) $(COMP_LIBS) $(LIBS) 
 
+# Notify users of erroneous transiesta compilation
+transiesta:
+	@echo ""
+	@echo " TranSiesta executable is deprecated!"
+	@echo ""
+	@echo " TranSiesta method is enabled in the siesta executable"
+	@echo ""
 
 clean: 
 	@echo "==> Cleaning object, library, and executable files"

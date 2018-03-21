@@ -440,7 +440,6 @@ contains
           ! Retrieve an easy character string
           nnext_mixer = cunpack(next_mixer)
           if ( len_trim(nnext_mixer) > 0 ) then
-#ifdef TRANSIESTA
              if ( TSrun ) then
                 do imix = 1 , size(ts_scf_mixs)
                    if ( ts_scf_mixs(imix)%name == nnext_mixer ) then
@@ -450,7 +449,6 @@ contains
                    end if
                 end do
              else 
-#endif
                 do imix = 1 , size(scf_mixs)
                    if ( scf_mixs(imix)%name == nnext_mixer ) then
                       call mixers_history_init(scf_mixs)
@@ -458,9 +456,7 @@ contains
                       exit
                    end if
                 end do
-#ifdef TRANSIESTA
              end if
-#endif
              
              ! Check that we indeed have changed the mixer
              if ( IONode .and. scf_mix%name /= nnext_mixer ) then
@@ -483,13 +479,11 @@ contains
           end if
 #endif
 
-#ifdef TRANSIESTA
           ! ... except that we might continue for TranSiesta
           if ( SCFconverged ) then
              call transiesta_switch()
              ! might reset SCFconverged and iscf
           end if
-#endif
           
        else
           
