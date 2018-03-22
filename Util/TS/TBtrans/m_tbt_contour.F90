@@ -204,7 +204,7 @@ contains
                  connected=connected )
          end if
          if ( Node == 0 .and. .not. connected ) then
-            write(*,'(a)') 'tbtrans: *** Contours are not connected ***'
+            write(*,'(a)') 'tbt: *** Contours are not connected ***'
          end if
             
       end do

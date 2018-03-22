@@ -42,6 +42,10 @@ module m_region
   public :: rgn_init, rgn_init_pvt
   public :: rgn_purge
   public :: rgn_assoc
+  interface rgn_assoc
+    module procedure rgn_assoc_rgn
+    module procedure rgn_assoc_list
+  end interface rgn_assoc
   public :: rgn_delete, rgn_nullify, rgnll_delete
   public :: rgn_intersection
   public :: rgn_union, rgn_append
@@ -309,7 +313,7 @@ contains
   ! Assigns the left region with the right region
   ! hence, deleting one will create a memory leak if
   ! not handled carefully
-  subroutine rgn_assoc(lhs,rhs, dealloc)
+  subroutine rgn_assoc_rgn(lhs,rhs, dealloc)
     type(tRgn), intent(inout) :: lhs
     type(tRgn), intent(in) :: rhs
     ! whether a pre-deallocation of the lhs should occur
@@ -324,7 +328,29 @@ contains
     lhs%r => rhs%r
     lhs%sorted = rhs%sorted
 
-  end subroutine rgn_assoc
+  end subroutine rgn_assoc_rgn
+
+  ! Assigns the left region with the right region
+  ! hence, deleting one will create a memory leak if
+  ! not handled carefully
+  subroutine rgn_assoc_list(lhs,n,r, dealloc)
+    type(tRgn), intent(inout) :: lhs
+    integer, intent(in) :: n
+    integer, intent(in), target :: r(n)
+    ! whether a pre-deallocation of the lhs should occur
+    logical, intent(in), optional :: dealloc
+    if ( present(dealloc) ) then
+       if ( dealloc ) call rgn_delete(lhs)
+    end if
+    ! default to nullify
+    call rgn_nullify(lhs)
+    lhs%name = ' '
+    lhs%n = n
+    lhs%r => r
+    lhs%sorted = .false.
+
+  end subroutine rgn_assoc_list
+
 
   ! Allows removing certain elements from a region.
   subroutine rgn_remove_list(r,n,list,rout)
@@ -590,7 +616,7 @@ contains
   !      one is connecting out, the other does not, in that case would
   !      'connect_from' only contain one orbital.
   ! NOTE: It DOES work in parallel
-  subroutine rgn_sp_connect(r,dit,sp,cr,except, connect_from, follow)
+  subroutine rgn_sp_connect(r,dit,sp,cr,except, connect_from, follow, r_sort)
 
     ! the region we wish to find the connections to
     type(tRgn), intent(in) :: r
@@ -608,6 +634,9 @@ contains
     ! Tell whether we should follow the connection
     ! or stop at the first iteration
     logical, intent(in), optional :: follow
+    ! Using this will speed up multiple calls as r need not be sorted all the time
+    ! One can with benefit remove excetp from the r_sort array
+    type(tRgn), intent(in), optional :: r_sort
 
     ! ** local variables
     type(tRgn) :: tmp, tmp2
@@ -624,22 +653,24 @@ contains
     allocate(rr(r%n))
     allocate(ct(no_u-r%n))
 
-    call rgn_copy(r, tmp)
     ! In case r%n is extremely big we can with benefit &
     ! search the region in a sorted array.
     ! We sort it once, and search that array instead
     ! This requires a slightly increased memory, but 
     ! drastically improves performance.
-    call rgn_sort(tmp)
+    if ( present(r_sort) .and. .not. present(except) ) then
+      call rgn_assoc(tmp, r_sort)
+    else
+      call rgn_copy(r, tmp)
+      call rgn_sort(tmp)
+    end if
     
     if ( present(except) ) then
-       ! Exclude it's own region, (no connection back)
-       if ( except%n > 0 ) then
-          call rgn_copy(tmp,tmp2)
-          call rgn_insert(tmp2,except,tmp,0)
-          call rgn_delete(tmp2)
-          call rgn_sort(tmp)
-       end if
+      ! Exclude it's own region, (no connection back)
+      if ( except%n > 0 ) then
+        call rgn_union(except, tmp, tmp)
+        call rgn_sort(tmp)
+      end if
     end if
 
     rt = 0
@@ -778,7 +809,11 @@ contains
 
     end if
 
-    call rgn_delete(tmp)
+    if ( present(r_sort) .and. .not. present(except) ) then
+      call rgn_nullify(tmp)
+    else
+      call rgn_delete(tmp)
+    end if
     deallocate(rr)
 
   end subroutine rgn_sp_connect
@@ -1313,14 +1348,13 @@ contains
 
   subroutine rgn_insert_list(r,n,list,rout,idx)
     type(tRgn), intent(in) :: r
-    integer, intent(in) :: n, list(n)
+    integer, intent(in), target :: n, list(n)
     type(tRgn), intent(inout) :: rout
     ! The place of insertion
     integer, intent(in) :: idx
     type(tRgn) :: rtmp
-    call rgn_list(rtmp,n,list)
+    call rgn_assoc(rtmp, n, list)
     call rgn_insert_rgn(r,rtmp,rout,idx)
-    call rgn_delete(rtmp)
   end subroutine rgn_insert_list
 
   ! Inserts a region in another region.

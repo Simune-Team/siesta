@@ -715,10 +715,9 @@ contains
           ! We want to add the 'fan' atoms
           
           if ( pvt_orb .and. .not. orb_1 ) then
-             call rgn_orb2atom(r_tmp,na_u,lasto,r_Els)
+            call rgn_orb2atom(r_tmp,na_u,lasto,r_Els)
           else
-             r_Els%n =  r_tmp%n
-             r_Els%r => r_tmp%r
+            call rgn_assoc(r_Els, r_tmp)
           end if
 
           if ( pvt_option == 1 ) then
@@ -950,8 +949,7 @@ contains
     if ( r_pvt%n /= size(r_pvt%r) ) then
        call rgn_copy(r_pvt, r_tmp)
        call rgn_delete(r_pvt)
-       r_pvt%n = r_tmp%n
-       r_pvt%r => r_tmp%r
+       call rgn_assoc(r_pvt, r_tmp)
        call rgn_nullify(r_tmp)
     end if
 

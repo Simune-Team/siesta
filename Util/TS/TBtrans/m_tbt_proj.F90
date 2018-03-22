@@ -505,7 +505,7 @@ contains
 
     ! Lets first print out the projections
 
-    write(*,'(/,a)')'tbtrans: Projection regions:'
+    write(*,'(/,a)')'tbt: Projection regions:'
 
     do im = 1 , N_mol
 
@@ -786,7 +786,7 @@ contains
           if ( Node == 0 ) then
              if ( .not. any_skipped ) write(*,*) ! newline
              any_skipped = .true.
-             write(*,'(a)')'tbtrans: Projection "from '//trim(char)//'" has &
+             write(*,'(a)')'tbt: Projection "from '//trim(char)//'" has &
                   &been silently rejected.'
           end if
           cycle ! all these projections will be skipped
@@ -985,7 +985,7 @@ contains
                 if ( Node == 0 ) then
                    if ( .not. any_skipped ) write(*,*) ! newline
                    any_skipped = .true.
-                   write(*,'(a)')'tbtrans: Projection "from '//&
+                   write(*,'(a)')'tbt: Projection "from '//&
                         trim(Elecs(iE_p)%name)// &
                         ' to '//trim(char)//'" has been silently rejected.'
                 end if
@@ -1118,8 +1118,8 @@ contains
     end do
 
     if ( Node == 0 .and. any_skipped ) then
-       write(*,'(a)') 'tbtrans: Certain projections have been skipped'
-       write(*,'(a)') 'tbtrans: Check manual for allowing all projections'
+       write(*,'(a)') 'tbt: Certain projections have been skipped'
+       write(*,'(a)') 'tbt: Check manual for allowing all projections'
     end if
 
   contains
@@ -1159,8 +1159,8 @@ contains
          if ( leqi(E,Elecs(iE)%name) ) exit
       end do
       if ( iE > N_Elec ) then
-         write(*,*)'tbtrans: Could not recognize electrode designation in TBT.Proj.T block'
-         write(*,*)'tbtrans: The electrode named '//trim(E)//' could not be found.'
+         write(*,*)'tbt: Could not recognize electrode designation in TBT.Proj.T block'
+         write(*,*)'tbt: The electrode named '//trim(E)//' could not be found.'
          call die('Error in input')
       end if
       if ( idot < 1 ) return
@@ -1430,12 +1430,12 @@ contains
     if ( IONode ) write(*,*) ! newline
 
     if ( IONode .and. .not. all(mols(:)%Gamma) ) then
-       write(*,'(a)')'tbtrans: *********'
-       write(*,'(a)')'tbtrans: k-resolved projections only work if dispersion'
-       write(*,'(a)')'tbtrans: does not create band-crossings.'
-       write(*,'(a)')'tbtrans: IT IS YOUR RESPONSIBILITY TO ENSURE THIS!'
-       write(*,'(a)')'tbtrans: Do specific k-points separately at band-crossings.'
-       write(*,'(a/)')'tbtrans: *********'
+       write(*,'(a)')'tbt: *********'
+       write(*,'(a)')'tbt: k-resolved projections only work if dispersion'
+       write(*,'(a)')'tbt: does not create band-crossings.'
+       write(*,'(a)')'tbt: IT IS YOUR RESPONSIBILITY TO ENSURE THIS!'
+       write(*,'(a)')'tbt: Do specific k-points separately at band-crossings.'
+       write(*,'(a/)')'tbt: *********'
        
     end if
 
@@ -1552,7 +1552,7 @@ contains
        call ncdf_close(ncdf)
 
        if ( Node == 0 ) then
-          write(*,'(a)') 'tbtrans: Projection tables are re-used from the &
+          write(*,'(a)') 'tbt: Projection tables are re-used from the &
                &TBT.Proj.nc file.'
        end if
 
@@ -1570,7 +1570,7 @@ contains
     ! The projection file does not exist.
     ! We need to create it.
     if ( Node == 0 ) then
-       write(*,'(2a)')'tbtrans: Initializing projection data file: ',trim(fname)
+       write(*,'(2a)')'tbt: Initializing projection data file: ',trim(fname)
     end if
 
     call timer('proj_init',1)
@@ -1761,7 +1761,7 @@ contains
        end if
 
        if ( Node == 0 ) then
-          write(*,'(2a)') 'tbtrans: Calculating eigenvalues and |> of projection: ', &
+          write(*,'(2a)') 'tbt: Calculating eigenvalues and |> of projection: ', &
                trim(mols(im)%name)
        end if
 
@@ -2169,7 +2169,7 @@ contains
           end if
           ! Check that the state actually exists
           if ( i < 1 .or. no < i ) then
-             write(*,'(a)')'tbtrans: Projection eigenvalues [eV]:'
+             write(*,'(a)')'tbt: Projection eigenvalues [eV]:'
              do i = 1 , no
                 if ( i < iLUMO ) then
                    write(*,'(a,tr1,i4,tr1,e12.5)')'Eigenvalue: ', &
@@ -2294,9 +2294,9 @@ contains
     call ncdf_close(ncdf)
 
     if ( Node == 0 ) then
-       write(*,'(a)') 'tbtrans: Please ensure the projection eigenvalues &
+       write(*,'(a)') 'tbt: Please ensure the projection eigenvalues &
             &are aligned as you suspect.'
-       write(*,'(a)') 'tbtrans: Molecular states hybridize in proximity &
+       write(*,'(a)') 'tbt: Molecular states hybridize in proximity &
             &and energy levels might shift.'
        write(*,*) 
     end if

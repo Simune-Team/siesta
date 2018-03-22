@@ -80,7 +80,6 @@ contains
     use create_Sparsity_SC
     use create_Sparsity_Union
 
-
     use m_ts_electype
     use m_ts_method, only : atom_type, TYP_DEVICE, TYP_BUFFER
 
@@ -122,7 +121,7 @@ contains
     integer :: init_nz
     type(tRgn) :: r_tmp, r_tmp2, r_tmp3, r_Els, priority
     real(dp) :: tmp
-
+    
     no_u = lasto(na_u)
     
     ! Create the sparsity pattern and remove the buffer atoms...
@@ -241,8 +240,8 @@ contains
     call rgn_Atom2Orb(r_aDev,na_u,lasto,r_oDev)
 
     if ( IONode ) then
-       write(*,'(/,a)')'tbtrans: Analyzing electrode sparsity &
-            &pattern to create optimal tri-diagonal blocks'
+       write(*,'(/,a)')'tbt: Analyzing electrode sparsity &
+            &pattern and electrode pivot-tables'
     end if
 
     ! In case the user wants "a correct DOS"
@@ -274,9 +273,9 @@ contains
           call rgn_append(r_aDev,r_oDev,r_aDev)
        else if ( IONode ) then
           ! It only connects to electrodes
-          write(*,'(a)')'tbtrans: Device regions &
+          write(*,'(a)')'tbt: Device regions &
                &connects directly with electrodes'
-          write(*,'(a)')'tbtrans: If the overlap is large this might &
+          write(*,'(a)')'tbt: If the overlap is large this might &
                &produce spurious effects in DOS calculations'
        end if
        
@@ -300,6 +299,8 @@ contains
     ! Allocate the different regions
     allocate(r_aEl(N_Elec),r_oEl(N_Elec))
     allocate(r_oElpD(N_Elec))
+
+    call timer('pivot-elec', 1)
 
     do iEl = 1 , N_Elec
 
@@ -327,7 +328,6 @@ contains
        end if
 
     end do
-
 
     ! Retrieve initial number of non-zero elements
     ! Note that this number of non-zero elements is _after_
@@ -436,7 +436,7 @@ contains
 
        ! Print out the pivoting scheme that was used for this electrode
        if ( IONode ) then
-          write(*,'(4a)')'tbtrans: BTD pivoting scheme for electrode (', &
+          write(*,'(4a)')'tbt: BTD pivoting scheme for electrode (', &
                trim(Elecs(iEl)%name),'): ', trim(csort)
        end if
 
@@ -555,9 +555,13 @@ contains
 
     end do
 
+    call timer('pivot-elec', 2)
+
+    call timer('pivot-device', 1)
+
     if ( IONode ) then
-       write(*,'(/a)')'tbtrans: Analyzing device sparsity pattern to &
-            &create optimal tri-diagonal blocks'
+       write(*,'(/a)')'tbt: Analyzing device sparsity pattern and &
+            &pivot-table'
     end if
     
     ! We sort the device region based on the
@@ -600,10 +604,12 @@ contains
 
        ! Print out what we found
        if ( IONode ) then
-          write(*,'(a)')'tbtrans: BTD pivoting scheme in device: '//trim(csort)
+          write(*,'(a)')'tbt: BTD pivoting scheme in device: '//trim(csort)
        end if
 
     end if
+
+    call timer('pivot-device', 2)
 
     ! Check that there is no overlap with the other regions
     if ( rgn_overlaps(r_tmp2, r_oDev) ) then
@@ -704,7 +710,7 @@ contains
     call delete(sp_tmp)
 
     if ( IONode ) then
-       write(*,'(a)')'tbtrans: Done analyzing sparsity pattern'
+       write(*,'(a)')'tbt: Done analyzing sparsity pattern'
     end if
 
   contains
@@ -811,7 +817,7 @@ contains
     end if
 
     ! Print out the device region
-    write(*,'(a,i0)')'tbtrans: # of device region orbitals: ',r_oDev%n
+    write(*,'(a,i0)')'tbt: # of device region orbitals: ',r_oDev%n
 
     call local_print(r_aDev, .false. )
     call local_print(r_oDev, .true. )
@@ -819,9 +825,9 @@ contains
     ! Print out all the electrodes + their projection region
     do i = 1 , N_Elec
        write(*,*) ! new-line
-       write(*,'(3a,i0)')'tbtrans: # of ',trim(Elecs(i)%name), &
-            ' scattering orbitals: ',Elecs(i)%o_inD%n
-       write(*,'(3a,i0)')'tbtrans: # of ',trim(Elecs(i)%name), &
+       write(*,'(3a,i0)')'tbt: # of ',trim(Elecs(i)%name), &
+            ' electrode orbitals: ',Elecs(i)%o_inD%n
+       write(*,'(3a,i0)')'tbt: # of ',trim(Elecs(i)%name), &
             ' down-folding orbitals: ',r_oElpD(i)%n
        call local_print(r_aEl(i), .false. )
        call local_print(r_oEl(i), .true. )
