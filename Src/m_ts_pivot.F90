@@ -676,11 +676,12 @@ contains
              if ( r_tmp%n /= 0 ) then
 
                 if ( pvt_orb ) then
-                   ! get the atomic index to create atomic range
-                   i = iaorb(r_tmp%r(1),lasto)
-                   call rgn_range(r_tmp,lasto(i-1)+1,lasto(i))
+                  ! get the atomic index to create atomic range of all orbitals
+                  ! on the given atom
+                  i = iaorb(r_tmp%r(1),lasto)
+                  call rgn_range(r_tmp,lasto(i-1)+1,lasto(i))
                 else
-                   i = r_tmp%r(1)
+                  i = r_tmp%r(1)
                 end if
                 if ( IONode ) then
                    write(*,'(/,a,i0,a)')'WARNING: &
