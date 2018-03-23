@@ -1295,7 +1295,7 @@ contains
 
     ! Used internal variables
     integer :: idx
-    integer :: a,b,c,d, e
+    integer :: small, large, d
 
     ! Retrieve the size of the array we search in
     d = ubound(array,dim=1)
@@ -1321,26 +1321,21 @@ contains
     ! we have already checked the first/last index
     if ( d <= 2 ) return
 
-    a = 1 
-    c = 1
-    b = d
-
-    do while ( a + 1 < b .or. c + 1 < d ) 
-       e = (a+b)/2
-       if ( array(e) < val ) then
-          a = e
-       else
-          b = e
-       end if
-       e = (c+d)/2
-       if ( array(e) <= val ) then
-          c = e
-       else
-          d = e
-       end if
+    small = 1
+    large = d
+    do while ( small + 1 < large )
+      idx = (small + large) / 2
+      if ( array(idx) < val ) then
+        small = idx
+      else
+        large = idx
+      end if
     end do
-    idx = c
-    if ( b == c .and. array(idx) /= val ) idx = 0
+    if ( array(idx) == val ) return
+    do idx = small, large
+      if ( array(idx) == val ) return
+    end do
+    idx = 0
 
   end function SORTED_BINARY_FIND
 
@@ -1854,7 +1849,7 @@ program test
   real :: t1 , t2
 
   integer :: i, j
-  integer, parameter :: N = 213550
+  integer, parameter :: N = 21355
   integer :: list(N)
   
 
