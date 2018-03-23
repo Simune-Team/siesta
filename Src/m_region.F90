@@ -1714,7 +1714,9 @@ contains
     ! Initially sorted.
     ! The push command will check whether it is still sorted.
     tmp%sorted = .true.
-    tmp%r(1) = iaorb(or%r(1), lasto)
+    a = iaorb(or%r(1), lasto)
+    tmp%r(1) = a
+    in_a(a) = .true.
     tmp%n = 1
     do io = 2 , or%n
       a = iaorb(or%r(io), lasto)
