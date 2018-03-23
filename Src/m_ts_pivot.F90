@@ -77,7 +77,7 @@ contains
     type(Sparsity) :: tmp_Sp
     character(len=len(pvt_str)) :: str_tmp, from_elec
 
-    integer :: i, iEl, n, n_pvt
+    integer :: i, iEl, n, n_pvt, j
     
     ! Regions used for sorting the device region
     type(tRgn) :: r_tmp, r_tmp2, c_pvt
@@ -89,6 +89,7 @@ contains
     !   fan, fan2d/front
     ! pivoting scheme is used.
     integer :: pvt_option
+    logical, allocatable :: r_logical(:)
     logical :: pvt_orb, orb_1, is_rev, is_priority
     integer :: fan_option
     integer :: fan1, fan2
@@ -328,6 +329,10 @@ contains
 
        call rgn_delete(r_Els)
 
+       ! Allocate logical for all the elements
+       allocate(r_logical(n))
+       r_logical = .false.
+       
        ! Collect the electrode orbitals
        iEl = 0
        if ( N_Elec >= 1 ) then
@@ -342,11 +347,14 @@ contains
                 call rgn_orb2atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
              end if
 
+             do j = 1, r_tmp%n
+               r_logical(r_tmp%r(j)) = .true.
+             end do
+
              call rgn_append(r_Els, r_tmp, r_Els)
              
              ! Sort this region
-             call rgn_sp_sort(r_Els, dit, tmp_Sp, r_tmp, &
-                  R_SORT_MAX_FRONT )
+             call rgn_sp_sort(r_Els, tmp_Sp, r_tmp, R_SORT_MAX_FRONT, r_logical=r_logical)
              
              iEl = iEl + 1
           end do
@@ -362,12 +370,17 @@ contains
           else
              call rgn_orb2atom(Elecs(1)%o_inD,na_u,lasto,r_Els)
           end if
-          
+
+          do j = 1, r_Els%n
+            r_logical(r_Els%r(j)) = .true.
+          end do
+
           ! Sort this region
-          call rgn_sp_sort(r_Els, dit, tmp_Sp, r_Els, &
-               R_SORT_MAX_FRONT )
+          call rgn_sp_sort(r_Els, tmp_Sp, r_Els, R_SORT_MAX_FRONT, r_logical=r_logical)
 
        end if
+
+       deallocate(r_logical)
 
        ! do pivoting
        i = PVT_CONNECT
@@ -392,6 +405,10 @@ contains
        call rgn_range(priority,1,n)
        call rgn_complement(c_pvt,priority,priority)
 
+       ! Allocate logical for all the elements
+       allocate(r_logical(n))
+       r_logical = .false.
+       
        ! Figure out which electrode(s) has been given
        ! as a starting point
        ! Note that for several electrodes one could
@@ -415,9 +432,12 @@ contains
                 call die('ts_pivot: programming error -- 1')
              end if
              
+             do j = 1, r_tmp%n
+               r_logical(r_tmp%r(j)) = .true.
+             end do
+
              ! Sort this region
-             call rgn_sp_sort(r_pvt, dit, tmp_Sp, r_tmp, &
-                  R_SORT_MAX_FRONT )
+             call rgn_sp_sort(r_pvt, tmp_Sp, r_tmp, R_SORT_MAX_FRONT, r_logical=r_logical)
              
              iEl = iEl + 1
           else
@@ -700,6 +720,10 @@ contains
                            &it cannot figure out what to do.')
                    end if
                 end do
+                
+                do j = 1, r_tmp%n
+                  r_logical(r_tmp%r(j)) = .true.
+                end do
 
                 if ( .not. rgn_push(r_pvt, r_tmp) ) then
                    call die('ts_pivot: programming error -- 2')
@@ -911,7 +935,11 @@ contains
           
           ! Clean-up
           call rgn_delete(r_Els,r_tmp2)
-             
+
+          do j = 1, r_tmp%n
+            r_logical(r_tmp%r(j)) = .true.
+          end do
+          
           ! Append the newly found region that is connecting out to the
           ! full region
           if ( .not. rgn_push(r_pvt, r_tmp) ) then
@@ -919,9 +947,11 @@ contains
           end if
           
           ! we sort the newly attached region
-          call rgn_sp_sort(r_pvt, dit, tmp_Sp, r_tmp, R_SORT_MAX_BACK )
+          call rgn_sp_sort(r_pvt, tmp_Sp, r_tmp, R_SORT_MAX_BACK, r_logical=r_logical)
 
        end do
+
+       deallocate(r_logical)
 
     end if
 
