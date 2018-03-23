@@ -282,7 +282,7 @@ contains
     allocate(files(N_HS))
 
     if ( IONode ) then
-       write(*,'(a,f8.4,a)') 'tbtrans: Interpolation of Hamiltonian to ',Volt/eV,' V'
+       write(*,'(a,f8.4,a)') 'tbt: Interpolation of Hamiltonian to ',Volt/eV,' V'
     end if
 
     do iHS = 1 , N_HS

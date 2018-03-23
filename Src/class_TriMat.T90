@@ -52,8 +52,11 @@
 
      ! ** The cumultative number of rows of the tri-diagonal parts
      integer, pointer    :: tri_crows(:) => null()
-     ! ** The first index of the column 
-     integer, pointer    :: tri_cidx(:) => null()
+     ! ** The first index for each of the blocks (zero-based)
+     !    The size of this array is parts * 3 - 1
+     !    The last entry which doesn't correspond to a block
+     !    is the total size of the tri-matrix
+     integer, pointer    :: tri_idx(:) => null()
 
 #ifdef PREC
      VAR_TYPE(PREC), pointer :: mat(:) => null() ! matrix values
@@ -102,6 +105,11 @@
 
   interface index
      module procedure index_TriMat
+     module procedure index_TriMat_part
+  end interface
+
+  interface index_block
+     module procedure index_block_
   end interface
 
   interface index_sub
@@ -135,7 +143,7 @@
             name="val-"//trim(thisData%name),routine=STR_TYPE_NAME)	
     nullify(thisData%tri_nrows)
     nullify(thisData%tri_crows)
-    nullify(thisData%tri_cidx)
+    nullify(thisData%tri_idx)
     call de_alloc( thisData%tri_info, &
             name="info-"//trim(thisData%name),routine=STR_TYPE_NAME)
   end subroutine delete_Data
@@ -192,7 +200,7 @@
     character(len=*), intent(in), optional  :: name
     integer, intent(in), optional :: padding ! padd the elements with this much
 
-    integer :: i,n
+    integer :: i, j, n
 
     ! We release the previous incarnation
     ! This means that we relinquish access to the previous
@@ -214,12 +222,12 @@
     this%data%nrows_g = sum(tri_nrows)
 
     ! Allocate space for all the information of the tri-diagonality
-    call re_alloc(this%data%tri_info,1, 3*parts, &
+    call re_alloc(this%data%tri_info,1, 5*parts - 1, &
          name="info-"//trim(this%data%name),routine=STR_TYPE_NAME)
 
     this%data%tri_nrows => this%data%tri_info(1:parts)
     this%data%tri_crows => this%data%tri_info(parts+1:2*parts)
-    this%data%tri_cidx  => this%data%tri_info(2*parts+1:3*parts)
+    this%data%tri_idx  => this%data%tri_info(2*parts+1:)
 
     ! Save the dimensions of the tri-diagonal parts
     this%data%tri_nrows(:) = tri_nrows(:) 
@@ -231,22 +239,18 @@
     end do
 
     ! Create the index list of the first element of a column
-    this%data%tri_cidx(1) = 1
-    this%data%tri_cidx(2) = this%data%tri_cidx(1) + &
-            tri_nrows(1) * ( tri_nrows(1) + tri_nrows(2) )
-    do i = 3 , parts
-       this%data%tri_cidx(i) = this%data%tri_cidx(i-1) + &
-            tri_nrows(i-1) * ( &
-            tri_nrows(i-2) + &
-            tri_nrows(i-1) + &
-            tri_nrows(i)     )
+    this%data%tri_idx(1) = 0
+    n = 1
+    do i = 1, parts
+      do j = max(1,i-1), min(i+1,parts)
+        n = n + 1
+        this%data%tri_idx(n) = this%data%tri_idx(n-1) + &
+	  tri_nrows(i) * tri_nrows(j)
+      end do
     end do
 
     ! Calculate size of the tri-diagonal matrix
-    n = tri_nrows(parts) ** 2
-    do i = 1 , parts - 1
-       n = n + tri_nrows(i)*( tri_nrows(i) + 2*tri_nrows(i+1) )
-    end do
+    n = this%data%tri_idx(n)
     if ( present(padding) ) then
        n = n + padding
        this%data%padding = padding
@@ -307,21 +311,10 @@
     !end if
 
     ! Retrieve the starting index for the column
-    s = this%data%tri_cidx(pc)
+    s = index_block(this, pr, pc)
+    e = s + this%data%tri_nrows(pr)*this%data%tri_nrows(pc)
 
-    ! If the row is greater than or equal to the column
-    ! Then we can add the C_pc matrix
-    if ( pr >= pc ) then
-       if ( pc > 1 ) &
-          s = s + this%data%tri_nrows(pc-1)*this%data%tri_nrows(pc)
-       if ( pr > pc ) then
-          s = s + this%data%tri_nrows(pc)**2
-       end if
-    end if
-
-    e = s + this%data%tri_nrows(pr)*this%data%tri_nrows(pc) - 1
-
-    p => this%data%mat(s:e)
+    p => this%data%mat(s+1:e)
   end function val_TriMat_part
 
   function TriMat_crows(this) result(p)
@@ -331,27 +324,20 @@
   end function TriMat_crows
 
   pure subroutine part_index(this, i_g, part, i_p)
+    use intrinsic_missing, only: SFIND
     type(TYPE_NAME), intent(in) :: this
     integer, intent(in)  :: i_g
     integer, intent(out) :: part, i_p
 
-    if ( i_g <= this%data%tri_crows(1) ) then
-       part = 1
+    part = SFIND(this%data%tri_crows, i_g, +1)
+    if ( part == 1 ) then
        i_p = i_g
-       return
+    else
+       i_p = i_g - this%data%tri_crows(part-1)
     end if
 
-    do part = 2 , this%data%parts 
-       if ( i_g <= this%data%tri_crows(part) ) then
-          ! We have now found the part 
-          ! which we should be in
-          i_p = i_g - this%data%tri_crows(part-1)
-	  return
-       end if
-    end do
-
   end subroutine part_index
-
+  
 ! we return -1 if the index does not exist
   pure function index_TriMat(this,r,c) result(n)
     type(TYPE_NAME), intent(in) :: this
@@ -363,23 +349,34 @@
     
     call part_index(this,c,p_c,i_c)
     call part_index(this,r,p_r,i_r)
-!    if ( p_c == 0 ) print *,'pc'
-!    if ( p_r == 0 ) print *,'pr'
 
-    n = this%data%tri_cidx(p_c) - 1 + i_r &
+    n = index_block(this, p_r, p_c) + i_r &
         + (i_c-1) * this%data%tri_nrows(p_r)
 
-    ! If the row is greater than or equal to the column
-    ! Then we can add the C_pc matrix
-    if ( p_r >= p_c ) then
-       if ( p_c > 1 ) &
-          n = n + this%data%tri_nrows(p_c-1)*this%data%tri_nrows(p_c)
-       if ( p_r > p_c ) then
-          n = n + this%data%tri_nrows(p_c) ** 2
-       end if
-    end if
-
   end function index_TriMat
+
+! we return -1 if the index does not exist
+  pure function index_TriMat_part(this,p_r,i_r,p_c,i_c) result(n)
+    type(TYPE_NAME), intent(in) :: this
+    ! The row and column requested
+    integer, intent(in) :: p_r, i_r, p_c, i_c
+    integer :: n
+
+    n = index_block(this, p_r, p_c) + i_r &
+        + (i_c-1) * this%data%tri_nrows(p_r)
+
+  end function index_TriMat_part
+
+  pure function index_block_(this,p_r,p_c) result(n)
+    type(TYPE_NAME), intent(in) :: this
+    ! The row and column requested
+    integer, intent(in) :: p_r, p_c
+    integer :: n
+
+!    n = (p_c - 1) * 3 + 1 + p_r - p_c
+    n = this%data%tri_idx(p_c*2 - 2 + p_r)
+
+  end function index_block_
 
 ! we return -1 if the index does not exist
   subroutine index_sub_TriMat(this,r,c,M,idx)
@@ -400,8 +397,6 @@
     
     call part_index(this,c,p_c,i_c)
     call part_index(this,r,p_r,i_r)
-!    if ( p_c == 0 ) print *,'pc'
-!    if ( p_r == 0 ) print *,'pr'
 
     M => val_TriMat_part(this, p_r, p_c)
     idx = i_r + (i_c-1) * this%data%tri_nrows(p_r)

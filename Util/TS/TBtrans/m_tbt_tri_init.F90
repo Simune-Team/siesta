@@ -161,7 +161,7 @@ contains
     call timer('tri-init',1)
 
     if ( IONode ) then
-       write(*,'(/,a)')'tbtrans: Creating electrode tri-diagonal matrix blocks'
+       write(*,'(/,a)')'tbt: Creating electrode tri-diagonal matrix blocks'
     end if
 
     ! Copy over sparsity pattern (in UC format)
@@ -181,7 +181,7 @@ contains
     call tbt_tri_init_elec( dit , tmpSp1 )
 
     if ( IONode ) then
-       write(*,'(a)')'tbtrans: Creating device tri-diagonal matrix blocks'
+       write(*,'(a)')'tbt: Creating device tri-diagonal matrix blocks'
     end if
 
     if ( present(proj) ) then
@@ -278,12 +278,12 @@ contains
        els = nnzs_tri_i8b(DevTri%n,DevTri%r)
        ! check if there are overflows
        if ( els < int(nnzs_tri_dp(DevTri%n, DevTri%r), i8b) ) then
-          call die('tbtrans: Memory consumption is too large, try &
+          call die('tbt: Memory consumption is too large, try &
                &another pivoting scheme.')
        end if
-       write(*,'(a,i0)') 'tbtrans: Matrix elements in BTD: ', els
+       write(*,'(a,i0)') 'tbt: Matrix elements in BTD: ', els
 
-       write(*,'(/,a)') 'tbtrans: Electrodes tri-diagonal matrices'
+       write(*,'(/,a)') 'tbt: Electrodes tri-diagonal matrices'
        do i = 1 , N_Elec
           call rgn_print(ElTri(i), seq_max = 8 , repeat = .true.)
        end do
@@ -370,7 +370,7 @@ contains
     call rgn_sort(ra)
 
     write(*,*) ''
-    write(*,'(a)') 'tbtrans: Suggested atoms for fastest transmission calculation:'
+    write(*,'(a)') 'tbt: Suggested atoms for fastest transmission calculation:'
 
     ra%name = '[A]-Fast transmission'
     call rgn_print(ra, seq_max = 12)
@@ -458,7 +458,7 @@ contains
     real(dp) :: min_mem
 
     ! Write out all pivoting etc. analysis steps
-    if ( IONode ) write(*,'(/,a)') 'tbtrans: BTD analysis'
+    if ( IONode ) write(*,'(/,a)') 'tbt: BTD analysis'
 
     ! Copy over the sparse matrix to tmpSp1
     tmpSp1 = sp

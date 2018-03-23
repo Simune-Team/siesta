@@ -130,7 +130,7 @@ contains
     ! hence all eigenvalues are positive.
     ! This "check" ensures that this is enforced.
     if ( any(eig < 0._dp) ) then
-       write(*,'(3a,e12.5)')'tbtrans: Projection ',trim(orb%name), &
+       write(*,'(3a,e12.5)')'tbt: Projection ',trim(orb%name), &
             ' is not completely positive definite, lowest eig of S: ', &
             minval(eig)
     end if
@@ -348,7 +348,7 @@ contains
     ! hence all eigenvalues are positive.
     ! This "check" ensures that this is enforced.
     if ( any(eig < 0._dp) ) then
-       write(*,'(3a,e12.5)')'tbtrans: Projection ',trim(orb%name), &
+       write(*,'(3a,e12.5)')'tbt: Projection ',trim(orb%name), &
             ' is not completely positive definite, lowest eig of S: ', &
             minval(eig)
     end if

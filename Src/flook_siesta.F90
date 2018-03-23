@@ -250,7 +250,8 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
      write(*,'(a)') '   /debug    turn on/off debugging information'
      write(*,'(a)') '   /show     show the currently collected lines of code'
      write(*,'(a)') '   /clear    clears the currently collected lines of code'
-     write(*,'(a)') '   ; or /run execute the currently collected lines of code'
+     write(*,'(a)') '   ;         ending a line in ; will also run all collected lines of code'
+     write(*,'(a)') '   /run      execute the currently collected lines of code'
      write(*,'(a)') '   /cont     execute and continue Siesta'
      write(*,'(a)') '   /stop     execute and stop using the interactive session'
      write(*,'(a)') '   ^D (EOF)  closes interactive console'
@@ -350,16 +351,24 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        first = .false.
        
        ! Add line to linked-list
-       i_chars = len_trim(line) + 1
-       allocate(next%line(i_chars))
-       do i = 1, i_chars - 1
+       i_chars = len_trim(line)
+       allocate(next%line(i_chars + 1))
+       do i = 1, i_chars
          next%line(i) = line(i:i)
        end do
-       next%line(i_chars) = char(10)
-       n_chars = n_chars + i_chars
+       next%line(i_chars+1) = char(10)
+       n_chars = n_chars + i_chars + 1
        allocate(next%next)
        next => next%next
- 
+
+       ! In case the user asks for immediate run
+       if ( line(i_chars:i_chars) == ';' ) then
+         ! Run and continue
+         call interactive_execute()
+         next => lines
+         first = .true.
+       end if
+
      end do interactive_loop
 
      ! Ensure the linked-list is clean
@@ -616,7 +625,6 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
         key = trim(.key. pk)
         if ( index(trim(d_key), trim(key) // '.') == 1 ) then
           added = added // (trim(d_key).kv.1)
-          exit
         end if
         pk = .next. pk
       end do
@@ -625,10 +633,10 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     end do
 
     ! Append new keys
+    ! Since appending "merges" the two dictionaries
+    ! we should not de-allocate 'added' since that will
+    ! be done when keys are de-allocated.
     keys = keys // added
-
-    ! Clean-up
-    call delete(added)
 
   end subroutine slua_expand_tbl_dict
 
