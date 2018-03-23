@@ -150,8 +150,6 @@
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pj_j,maxnprojs,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pj_mj,maxnprojs,MPI_double_precision,
-     $                 0,MPI_Comm_World,MPIerror)
 ! CC RC  Added for the offSpOrb
 
         ! LDA+U
@@ -193,24 +191,10 @@
            call broadcast_radial(func,Node)
         enddo
 
-! CC RC  Added for the offSpOrb
-        if ( spin%SO_offsite ) then
-         ntot = 1
-         do i=1,spp%n_pjnl
+        do i=1,spp%n_pjnl
            func=>spp%pjnl(i)
-CC-SC
-           l = spp%pjnl_l(i)
-           j_offsiteSO = spp%jso(ntot)
-           call broadcast_radial_offsiteSO(func,i,l,j_offsiteSO,Node)
-           ntot = ntot + (2*l+1)
-         enddo
-        else
-         do i=1,spp%n_pjnl
-            func=>spp%pjnl(i)
-            call broadcast_radial(func,Node)
-         enddo
-        endif
-! CC RC  Added for the offSpOrb
+           call broadcast_radial(func,Node)
+        enddo
 
         do i=1,spp%n_pjldaunl
            func=>spp%pjldau(i)
@@ -286,33 +270,6 @@ CC-SC
      $        0,MPI_Comm_World,MPIerror)
       endif
       end subroutine broadcast_radial
-
-      subroutine broadcast_radial_offsiteSO(func,ik,l,j__offsiteSO,Node)
-
-      type(rad_func), pointer     :: func
-      integer, intent(in)         :: Node
-      integer, intent(in)         :: ik, l, j__offsiteSO
-
-      call MPI_Bcast(func%n,1,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-
-      if (func%n .eq. 0) then
-         call rad_zero(func)
-      else
-
-       if (Node.ne.0) call rad_alloc_offsiteSO(func,func%n)
-
-       call MPI_Bcast(func%cutoff_offsiteSO,1,MPI_double_precision,
-     $      0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(func%delta_offsiteSO(j__offsiteSO),1,
-     $      MPI_double_precision,
-     $      0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(func%f_offsiteSO(:,j__offsiteSO),func%n,
-     $      MPI_double_precision,0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(func%d2_offsiteSO(:,j__offsiteSO),func%n,
-     $      MPI_double_precision,0,MPI_Comm_World,MPIerror)
-      endif
-      end subroutine broadcast_radial_offsiteSO
 
       end subroutine broadcast_basis
 
