@@ -1777,8 +1777,12 @@ contains
     ls%lvl = 1
     clvl => ls
     do
-
+      
        if ( rgn_size(queue) == 0 ) then
+ 
+          ! Ensure it has space
+          call rgn_grow(queue, 1)
+          queue%n = 0
 
           ! Quick escape if the graph is finished
           if ( lonly_sub ) exit
@@ -1807,7 +1811,6 @@ contains
 
        ! Copy to the current level
        call rgn_copy(queue, clvl%v)
-       call rgn_delete(queue)
 
        ! Update number of added elements
        nadded = nadded + rgn_size(clvl%v)
