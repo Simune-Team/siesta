@@ -2726,6 +2726,7 @@ C
      .    a, b, zval
         integer  nrval, lmxo, lmxkb 
         character nicore*4, irel*3, icorr*2
+        integer :: nup_end
 C
 C Internal variables
 C
@@ -2857,7 +2858,14 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
        enddo
        
        vps_u = 0.0_dp
-       do nup=1,npotu
+       ! For backward compatibility with original OSSO branch
+       ! To be removed for final merge
+       if (fdf_get('keep-npotu-bug',.true.))  then
+          nup_end =  min(lmax,npotu-1)
+       else
+          nup_end = npotu
+       endif
+       do nup=1,nup_end
           l = vp%lup(nup) 
           vps_u(1:nrval,l) = vp%vup(nup,1:nrval)
           do ir=2,nrval
