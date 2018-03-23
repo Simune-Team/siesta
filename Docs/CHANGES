@@ -5,6 +5,13 @@
 
 ** CHANGES ALONG trunk
 -----------------------------------------------------------------------
+2017-11-10                                                    trunk-644
+Fix lp:1729863 
+A small bug fixed in compilation while using -DDEBUG flag.
+
+*Src/m_initwf.F90
+
+-----------------------------------------------------------------------
 2017-02-04                                                    trunk-603
 Fix lp:1659577 
 The DM calculation in evlog, chgbasis, and siesta_tddft is now condensed

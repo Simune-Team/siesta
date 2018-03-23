@@ -134,6 +134,7 @@ module m_tbt_proj
 
   public :: init_proj
   public :: init_proj_T
+  public :: open_cdf_proj
   public :: proj_print
   public :: proj_LME_assoc
   public :: init_proj_save
@@ -455,6 +456,33 @@ contains
     call rgn_delete(r_tmp,r_tmp2)
     
   end subroutine init_proj
+
+
+  subroutine open_cdf_proj(fname, ncdf)
+    use netcdf_ncdf, ncdf_parallel => parallel
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD
+#endif
+
+    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
+
+    ! quick return
+    if ( N_proj_ME == 0 ) return
+
+#ifdef MPI
+    ! Open the netcdf file
+    if ( save_parallel ) then
+       call ncdf_open(ncdf,fname, mode=ior(NF90_WRITE,NF90_MPIIO), &
+            comm = MPI_COMM_WORLD )
+    else
+       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
+    end if
+#else
+    call ncdf_open(ncdf,fname, mode=NF90_WRITE)
+#endif
+    
+  end subroutine open_cdf_proj
 
   subroutine proj_print( N_Elec, Elecs )
 
@@ -1320,7 +1348,7 @@ contains
     type(dict), intent(inout) :: save_DATA
 
     type(hNCDF) :: ncdf, grp, grp2, grp3
-    type(tRgn) :: r_tmp, a_Dev_sort
+    type(tRgn) :: r_tmp
     integer :: cmp_lvl
     integer :: no, im, Np, ip, i, ik, iN, iE
     integer :: it, ipt
@@ -1344,11 +1372,6 @@ contains
 
     ! There is nothing to initialize
     if ( N_mol == 0 ) return
-
-    ! We have to sort the device atoms.
-    ! We however, know that a_Buf *is* sorted.
-    call rgn_copy(a_Dev, a_Dev_sort)
-    call rgn_sort(a_Dev_sort)
 
     exist = file_exist(fname, Bcast = .true. )
 
@@ -1426,7 +1449,7 @@ contains
        call ncdf_open(ncdf,fname,mode=NF90_NOWRITE)
 
        dic = ('no_u'.kv. TSHS%no_u)//('na_u'.kv. TSHS%na_u )
-       dic = dic //('no_d'.kv.r%n) // ('na_d'.kv.a_Dev_sort%n)
+       dic = dic //('no_d'.kv.r%n) // ('na_d'.kv.a_Dev%n)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('na_b'.kv.a_Buf%n)
        end if
@@ -1437,7 +1460,9 @@ contains
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) )
        dic = dic // ('xa'.kvp. TSHS%xa) // ('cell'.kvp.TSHS%cell)
-       dic = dic // ('pivot'.kvp.r%r)//('a_dev'.kvp.a_Dev_sort%r)
+       call rgn_copy(a_Dev, r_tmp)
+       call rgn_sort(r_tmp)
+       dic = dic // ('pivot'.kvp.r%r)//('a_dev'.kvp.r_tmp%r)
        dic = dic // ('nsc'.kvp. TSHS%nsc)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('a_buf'.kvp.a_Buf%r)
@@ -1445,6 +1470,7 @@ contains
        call ncdf_assert(ncdf,is_same,vars=dic, d_EPS = 1.e-4_dp )
        call check(dic,is_same,'lasto, xa or cell in the PROJ.nc file does &
             &not conform to the current simulation.',.false.)
+       call rgn_delete(r_tmp)
 
        ! Check the k-points
        allocate(rv(3,nkpt))
@@ -1567,7 +1593,7 @@ contains
     call ncdf_def_dim(ncdf,'na_u',TSHS%na_u)
     call ncdf_def_dim(ncdf,'xyz',3)
     call ncdf_def_dim(ncdf,'one',1)
-    call ncdf_def_dim(ncdf,'na_d',a_Dev_sort%n)
+    call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
     call ncdf_def_dim(ncdf,'nkpt',NF90_UNLIMITED)
     call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
@@ -1662,13 +1688,13 @@ contains
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
-    call ncdf_put_var(ncdf,'a_dev',a_Dev_sort%r)
+    call rgn_copy(a_Dev, r_tmp)
+    call rgn_sort(r_tmp)
+    call ncdf_put_var(ncdf,'a_dev',r_tmp%r)
+    call rgn_delete(r_tmp)
     if ( a_Buf%n > 0 ) then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
     end if
-
-    ! We are now done with a_Dev_sort
-    call rgn_delete(a_Dev_sort)
 
     ! Save all k-points
     ! Even though they are in an unlimited dimension,

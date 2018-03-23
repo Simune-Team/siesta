@@ -121,8 +121,13 @@ contains
 
     use fdf, only: fdf_get
     use parallel, only : IONode
+#ifdef MPI
+    use mpi_siesta, only: MPI_Bcast, MPI_Comm_World
+#endif
     use class_OrbitalDistribution
     use class_Sparsity
+
+    use create_Sparsity_SC, only: crtSparsity_SC
     use create_Sparsity_Union
 
     use m_ts_rgn2trimat
@@ -159,14 +164,14 @@ contains
        write(*,'(/,a)')'tbtrans: Creating electrode tri-diagonal matrix blocks'
     end if
 
-    ! Copy over sparsity pattern
-    tmpSp1 = sp
+    ! Copy over sparsity pattern (in UC format)
+    call crtSparsity_SC(sp, tmpSp1, UC = .true.)
     
-    do i = 1 , N_Elec
+    do iEl = 1 , N_Elec
 
        ! Add the self-energy of the electrode in the projected position
        ! of the "device" region.
-       call crtSparsity_Union_region(dit,tmpSp1,Elecs(i)%o_inD,tmpSp1)
+       call crtSparsity_Union_region(dit,tmpSp1,Elecs(iEl)%o_inD,tmpSp1)
 
     end do
 
@@ -199,7 +204,10 @@ contains
        call tbt_tri_analyze(dit, tmpSp2, N_Elec, Elecs, &
             cell, na_u, xa, lasto, r_oDev, BTD_method)
        
-       call die('TBtrans analysis completed')
+#ifdef MPI
+       call MPI_Barrier(MPI_Comm_World,i)
+#endif
+       call die('Stopping TBtrans on purpose after analyzation step...')
        
     end if
 
@@ -401,8 +409,6 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
     
-    use create_Sparsity_Union
-    use create_Sparsity_SC
     use m_sparsity_handling
 
     use m_pivot
@@ -445,26 +451,28 @@ contains
     ! Regions used for sorting the device region
     type(tRgn) :: r_tmp, start, r_El, full, priority, r_apvt
     integer :: orb_atom
-    
+    logical :: one_orb
+
+    ! Capture the min memory pivoting scheme
+    character(len=64) :: min_mem_method
+    real(dp) :: min_mem
+
     ! Write out all pivoting etc. analysis steps
     if ( IONode ) write(*,'(/,a)') 'tbtrans: BTD analysis'
 
-    ! Copy over sparsity pattern (by removing everything but the region of interest
+    ! Copy over the sparse matrix to tmpSp1
     tmpSp1 = sp
+
+    min_mem = huge(1._dp)
+
     call rgn_orb2atom(r_pvt, na_u, lasto, r_apvt)
 
-    do i = 1 , N_Elec
-       
-       ! Add the self-energy of the electrode in the projected position
-       ! of the "device" region.
-       call crtSparsity_Union_region(dit,tmpSp1,Elecs(i)%o_inD,tmpSp1)
-
-    end do
-    
     ! Attach the sparsity pattern of the orbitals
     ! later (tmpSp2) may be atom
     call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
          list_col = l_col , nrows_g = no , nnzs = n_nzs )
+    ! Check whether we are dealing with a 1-orbital system
+    one_orb = no == lasto(na_u)
 
     fmethod = 'orb+none'
     if ( IONode ) write(*,fmt) 'orb','none'
@@ -473,18 +481,25 @@ contains
     orb_atom_switch: do orb_atom = 1 , 2
     ! The user can skip the orbital analysis if it takes too long
     if ( orb_atom == 1 ) then
+       corb = 'orb'
+          
        ! We default to only looking at the atomic sparsity
        ! pattern. This is *much* faster and does provide
        ! a very near optimal sparse pattern. 
        ! The user can select to do both.
-       if ( leqi(fdf_get('TBT.BTD.Analyze','atom'),'atom') ) cycle
-       corb = 'orb'
+       if ( one_orb ) then
+          ! Same as 'atom'
+          corb = 'atom'
+       else
+          if ( leqi(fdf_get('TBT.BTD.Analyze','atom'),'atom') ) cycle
+       end if
 
        call rgn_copy(r_pvt,full)
 
        tmpSp2 = tmpSp1
 
     else
+       if ( one_orb ) exit
        corb = 'atom'
 
        ! Convert the sparsity pattern to the atom
@@ -514,63 +529,33 @@ contains
 
 
     ! *** Start analyzing sparsity pattern
-
-    do iEl = 1 , N_Elec
-       fmethod = trim(corb)//'+'//trim(Elecs(iEl)%name)
-       if ( IONode ) write(*,fmt) trim(corb),trim(Elecs(iEl)%name)
-       if ( orb_atom == 1 ) then
-          call rgn_copy(Elecs(iEl)%o_inD,r_El)
-       else
-          call rgn_copy(Elecs(iEl)%o_inD,r_tmp)
-          call rgn_orb2atom(r_tmp,na_u,lasto,r_El)
-       end if
-       call rgn_copy(r_El,r_tmp)
-       ! we sort the newly attached region
-       call rgn_sp_sort(r_El, dit, tmpSp2, r_tmp, R_SORT_MAX_FRONT )
-       
-       call rgn_init(r_El, full%n)
-       r_El%n = 0
-       if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
-       do 
-          call rgn_sp_connect(r_El, dit, tmpSp2, r_tmp)
-          if ( r_tmp%n == 0 .and. r_El%n /= r_pvt%n ) then
-             do i = 1 , full%n
-                if ( in_rgn(r_El,full%r(i)) ) cycle
-                call rgn_init(r_tmp,1,val=full%r(i))
-             end do
-             if ( r_tmp%n /= 0 ) then
-                do i = 1 , r_tmp%n
-                   if ( in_rgn(r_El,r_tmp%r(i)) ) then
-                      call die('This is extremely difficult. &
-                           &Please do not sort the BTD format as &
-                           &it cannot figure out what to do.')
-                   end if
-                end do
-                if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
-                cycle
-             end if
-          end if
-          if ( r_tmp%n == 0 ) exit
-          if ( .not. rgn_push(r_El, r_tmp) ) call die('will never happen')
-          call rgn_sp_sort(r_El, dit, tmpSp2, r_tmp, R_SORT_MAX_BACK )
-       end do
-       if ( orb_atom == 1 ) then
-          call tri(r_El)
-       else
-          call rgn_atom2orb(r_El,na_u,lasto,r_tmp)
-          call tri(r_tmp)
-       end if
-    end do
-
     do iEl = 1, N_Elec
        
-       call rgn_copy(Elecs(iEl)%o_inD, start)
-       if ( orb_atom == 2 ) then
-
+       if ( orb_atom == 1 ) then
+          call rgn_copy(Elecs(iEl)%o_inD, start)
+       else
           ! transfer to atom
-          call rgn_orb2atom(start,na_u,lasto,r_tmp)
-          call rgn_copy(r_tmp,start)
+          call rgn_orb2atom(Elecs(iEl)%o_inD,na_u,lasto,start)
+       end if
 
+       fmethod = trim(corb)//'+'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),trim(Elecs(iEl)%name)
+       call sp_pvt(n,tmpSp2,r_tmp, PVT_CONNECT, sub = full, start = start)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
+       end if
+
+       fmethod = trim(corb)//'+rev-'//trim(Elecs(iEl)%name)
+       if ( IONode ) write(*,fmt) trim(corb),'rev-'//trim(Elecs(iEl)%name)
+       call rgn_reverse(r_tmp)
+       if ( orb_atom == 1 ) then
+          call tri(r_tmp)
+       else
+          call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+          call tri(r_El)
        end if
 
        fmethod = trim(corb)//'+CM+'//trim(Elecs(iEl)%name)
@@ -747,7 +732,20 @@ contains
     call delete(tmpSp1) ! clean up
     call delete(tmpSp2)
 
-    if ( IONode ) write(*,*) ! new-line
+    if ( IONode ) then
+       write(*,*) ! new-line
+       write(*,*) ! new-line
+       write(*,'(a)') ' **********'
+       write(*,'(a)') ' *  NOTE  *'
+       write(*,'(a)') ' **********'
+       write(*,'(a)') ' This minimum memory pivoting scheme may not necessarily be the'
+       write(*,'(a)') ' best performing algorithm!'
+       write(*,'(a,/)') ' You should analyze the pivoting schemes!'
+       write(*,'(a)') ' Minimum memory required pivoting scheme:'
+       write(*,'(a,a)') '  TBT.BTD.Pivot.Device ', trim(min_mem_method)
+       write(*,'(a,f8.2,a)') '  Memory: ', min_mem, ' MB'
+       write(*,*) ! new-line
+    end if
     
   contains
 
@@ -755,32 +753,35 @@ contains
     ! pivoting scheme
     subroutine tri(r_pvt)
       use m_pivot_methods, only : bandwidth, profile
-      type(tRgn), intent(inout) :: r_pvt
+      type(tRgn), intent(in) :: r_pvt
+
+      type(tRgn) :: cur, cTri
 
       integer :: bw
       ! Possibly very large numbers
       integer(i8b) :: prof, els
-      type(tRgn) :: ctri
 
-      bw   = bandwidth(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
-      prof = profile(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
-      if ( IONode ) then
-         write(*,'(tr3,a,t23,i10,/,tr3,a,t13,i20)') &
-              'Bandwidth: ',bw,'Profile: ',prof
-      end if
+      call rgn_copy(r_pvt, cur)
 
       ! Create a new tri-diagonal matrix, do it in parallel
       call ts_rgn2TriMat(N_Elec, Elecs, .true., &
-           dit, tmpSp1, r_pvt, ctri%n, ctri%r, &
+           dit, tmpSp1, cur, ctri%n, ctri%r, &
            method, 0, par = .true. )
-
+      
       ! Sort the pivoting table for the electrodes
       ! such that we reduce the Gf.Gamma.Gf
       ! However, this also makes it easier to
       ! insert the self-energy as they become consecutive
       ! in index, all-in-all, win-win!
-      call ts_pivot_tri_sort_El(r_pvt,N_Elec,Elecs,ctri)
-      
+      call ts_pivot_tri_sort_El(cur,N_Elec,Elecs,ctri)
+
+      bw   = bandwidth(no,n_nzs,ncol,l_ptr,l_col,cur)
+      prof = profile(no,n_nzs,ncol,l_ptr,l_col,cur)
+      if ( IONode ) then
+         write(*,'(tr3,a,t23,i10,/,tr3,a,t13,i20)') &
+              'Bandwidth: ',bw,'Profile: ',prof
+      end if
+
       ! Calculate size of the tri-diagonal matrix
       els = nnzs_tri(ctri%n,ctri%r)
       ! check if there are overflows
@@ -793,21 +794,35 @@ contains
          call rgn_print(ctri, name = 'BTD partitions' , &
               seq_max = 10 , indent = 3 , repeat = .true. )
          
+         write(*,'(tr3,a,i0,'' / '',f10.3)') &
+              'BTD matrix block size [max] / [average]: ', &
+              maxval(ctri%r), sum(real(ctri%r)) / ctri%n
+         
          prof = r_pvt%n ** 2
-         write(*,'(tr3,a,i0,'' / '',f9.5)') &
-              'Matrix elements in tri / % of full: ', &
-              els , real(els,dp)/real(prof,dp) * 100._dp
+         write(*,'(tr3,a,f9.5,'' %'')') &
+              'BTD matrix elements in % of full matrix: ', &
+              real(els,dp)/real(prof,dp) * 100._dp
       end if
 
       prof = els * 2 ! total mem
       if ( IONode ) then
          write(*,'(tr3,a,t39,f8.2,a)') 'Rough estimation of MEMORY: ', &
-              real(prof,dp) * 16._dp / 1024._dp ** 2,' MB'
+              size2mb(prof),' MB'
+      end if
+      if ( size2mb(prof) < min_mem ) then
+         min_mem = size2mb(prof)
+         min_mem_method = fmethod
       end if
 
-      call rgn_delete(ctri)
+      call rgn_delete(ctri, cur)
       
     end subroutine tri
+
+    function size2mb(i) result(mb)
+      integer(i8b) :: i
+      real(dp) :: mb
+      mb = real(i, dp) * 16._dp / 1024._dp ** 2
+    end function size2mb
 
   end subroutine tbt_tri_analyze
   

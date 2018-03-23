@@ -21,7 +21,7 @@ C     different chemical species in the calculation:
       use radial, only: rad_get, rad_func
       use spher_harm, only: rlylm
  
-      use m_spin, only: spin 
+
 
       implicit none 
 !

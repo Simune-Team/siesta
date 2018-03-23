@@ -128,11 +128,6 @@
       use sys
       use fdf
 
-! CC RC  Added for the offSpOrb
-      use m_spin, only: spin
-      use parallel, only: IONode
-! CC RC  Added for the offSpOrb
-
       Implicit None
 
       type(basis_def_t), pointer::   basp
@@ -437,10 +432,6 @@ C Sanity checks on values
       lpol = 0
 
       if (fdf_block('PS.KBprojectors',bfdf) ) then
-
-! CC RC  Added for the offSpOrb
-       if ( spin%SO_offsite ) 
-     . call die('read_basis_specs: PS.KBprojectors not supported by SO')
  
 ! First pass to find out about lmxkb and set any defaults.
 
@@ -488,17 +479,6 @@ C Sanity checks on values
         if (basp%lmxkb .eq. -1) then ! not set in KBprojectors 
           if (basp%lmxkb_requested.eq.-1) then ! not set in PS.lmax
             basp%lmxkb = set_default_lmxkb(isp) ! Use PAO info
-
-! CC RC  Added for the offSpOrb
-            if ( IONode .and. spin%deb_offSO ) then 
-             write(spin%iout_offsiteSO,'(a)')
-     .        '       readkb: KBs not requested by user...' 
-             write(spin%iout_offsiteSO,'(a,i3)') 
-     .        '       readkb: Max number of KBs per specie = ', 
-     .        basp%lmxkb
-            endif
-! CC RC  Added for the offSpOrb
-
           else
             basp%lmxkb = basp%lmxkb_requested
           endif
@@ -517,22 +497,8 @@ C Sanity checks on values
                 k%nkbl = 1
               endif
             endif
-
-! CC RC  Added for the offSpOrb
-            if ( spin%SO_offsite .and. l.gt.0 ) then
-             allocate(k%erefkb(1:2*k%nkbl))
-             k%erefkb(1:2*k%nkbl) = huge(1.d0)
-            else
-             allocate(k%erefkb(1:k%nkbl))
-             k%erefkb(1:k%nkbl) = huge(1.d0)
-            endif
-
-! CC RC  Added for the offSpOrb
-            if ( IONode .and. spin%deb_offSO ) then 
-             write(spin%iout_offsiteSO,'(a,i3,2e22.10)') 
-     .        '       readkb: l, erefkb = ', l, k%erefkb
-            endif
-! CC RC  Added for the offSpOrb
+            allocate(k%erefkb(1:k%nkbl))
+            k%erefkb(1:k%nkbl) = huge(1.d0)
           enddo
         else          ! Set in KBprojectors
           if (basp%lmxkb_requested.ne.-1) then ! set in PS.lmax

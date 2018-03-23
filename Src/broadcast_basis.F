@@ -17,10 +17,6 @@
       ! We also need to broadcast the chemical list
       use chemical, only : chemical_list
 
-! CC RC  Added for the offSpOrb
-      use m_spin, only: spin
-! CC RC  Added for the offSpOrb
-      
       ! Broadcast LDA+U variables
       use ldau_specs, only: dTol_ldaupop
       use ldau_specs, only: dDmax_threshold
@@ -112,9 +108,13 @@
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%lmax_projs,1,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%lj_projs,1,MPI_logical,
+     $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pjnl_l,maxn_pjnl,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pjnl_n,maxn_pjnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjnl_j,maxn_pjnl,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pjnl_ekb,maxn_pjnl,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
@@ -142,15 +142,10 @@
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pj_l,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pj_m,maxnprojs,MPI_integer,
-     $                 0,MPI_Comm_World,MPIerror)
-
-! CC RC  Added for the offSpOrb
-        call MPI_Bcast(spp%jso,maxnprojs,MPI_integer,
-     $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pj_j,maxnprojs,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
-! CC RC  Added for the offSpOrb
+        call MPI_Bcast(spp%pj_m,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
 
         ! LDA+U
         call MPI_Bcast(spp%n_pjldaunl,1,MPI_integer,

@@ -26,11 +26,6 @@
 !      use flib_wxml, only: str
       use xml, only: xml_dump_attribute, xml_dump_element, str
 
-! CC RC  Added for the offSpOrb
-      use m_spin, only: spin 
-      use old_atmfuncs, only: nkblsave ! CC SC
-! CC RC  Added for the offSpOrb
-
       implicit none
 
       public :: dump_basis_ascii, read_basis_ascii
@@ -388,8 +383,14 @@ c
 ! KBs
          read(lun,*)
          do i=1,spp%n_pjnl
-            read(lun,*)
+            if (spp%lj_projs) then
+               read(lun,*)
+     $           spp%pjnl_l(i), spp%pjnl_j(i), spp%pjnl_n(i),
+     $           spp%pjnl_ekb(i)
+            else
+               read(lun,*)
      $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i)
+            endif
             call radial_read_ascii(spp%pjnl(i),lun,
      $                             yp1=0.0_dp,ypn=huge(1.0_dp))
          enddo
@@ -404,6 +405,7 @@ c
                nk = nk+1
                spp%pj_n(nk) = spp%pjnl_n(i)
                spp%pj_l(nk) = spp%pjnl_l(i)
+               spp%pj_j(nk) = spp%pjnl_j(i)
                spp%pj_m(nk) = m
                spp%pj_index(nk) = i
             enddo
@@ -437,6 +439,7 @@ c
       integer, intent(in)         :: unit
       
       character(len=78) line
+      integer :: iostat
 
       read(unit,'(a)') line
       if (trim(line) .eq. '<preamble>') then
@@ -452,7 +455,12 @@ c
       read(unit,*) p%mass
       read(unit,*) p%self_energy
       read(unit,*) p%lmax_basis, p%n_orbnl
-      read(unit,*) p%lmax_projs, p%n_pjnl
+      read(unit,fmt=*,iostat=iostat) p%lmax_projs, p%n_pjnl, p%lj_projs
+      if (iostat /=0 ) then
+         backspace(unit)
+         read(unit,*) p%lmax_projs, p%n_pjnl
+         p%lj_projs = .false.
+      endif
 
       allocate(p%orbnl(p%n_orbnl))
       allocate(p%pjnl(p%n_pjnl))
@@ -732,10 +740,6 @@ c
       integer i, l, ispol, lun, lun2, zeta, n_series
       integer lun_ldau
 
-! CC RC  Added for the offSpOrb
-      integer j_offsiteSO, n, nj_offsiteSO, ntot
-! CC RC  Added for the offSpOrb
-
       spp => species(is)
       if (spp%read_from_file) return    !! Do not dump
 
@@ -782,74 +786,38 @@ c
          
          write(lun,'(a)') "# KBs:__________________________"
          n_series = 0
-!
-! CC RC  Added for the offSpOrb
-         n = 1
-         nj_offsiteSO = 1
-         do l = 0, spp%lmax_projs
-          do i = 1, nkblsave(l,is)
-           if ( spin%SO_offsite .and. l.ne.0 ) nj_offsiteSO = 2
-           do j_offsiteSO = 1, nj_offsiteSO
-
-            if ( .not.spin%SO_offsite .or. l.eq.0 ) then
-
-             write(lun,'(2i3,f22.16,2x,a)')
-     $           spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n),
+         do i=1,spp%n_pjnl
+            zeta = spp%pjnl_n(i)
+            l = spp%pjnl_l(i)
+            if (spp%lj_projs) then
+               write(lun,'(i3,f4.1,i3,f22.16,2x,a)')
+     $           spp%pjnl_l(i), spp%pjnl_j(i), spp%pjnl_n(i),
+     $           spp%pjnl_ekb(i),
+     $           " #kb l, j, n (sequence number), Reference energy"
+            else
+               write(lun,'(2i3,f22.16,2x,a)')
+     $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i),
      $           " #kb l, n (sequence number), Reference energy"
-
-              call radial_dump_ascii(spp%pjnl(n),lun,header=.true.)
-
-
-             if (write_ion_plot_files) then
-              write(fileid,'(3(a,i1),2a)') "KB.L", l , ".",
-     $              i, ".J", j_offsiteSO, ".", trim(spp%label)
-              call io_assign(lun2)
-              open(unit=lun2,file=fileid,status='replace',
-     $                       form='formatted')
-              write(lun2,'(2a,2i3,f12.5)') "# ",trim(spp%label),
-     $              spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n)
-              write(lun2,'(a)')
-     $             "#kb l, n (sequence number), Reference energy"
-
-              call radial_dump_ascii(spp%pjnl(n),
-     $                                lun2,header=.true.)
-
-              call io_close(lun2)
-             endif ! (write_ion_plot_files)
-
-            elseif( spin%SO_offsite .and. l.ge.1 ) then
-
-             write(lun,'(2i3,f22.16,2x,a)')
-     $           spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n),
-     $           " #kb l, n (sequence number), Reference energy"
-
-             call radial_dump_ascii(spp%pjnl(n),
-     $                                        lun,header=.true.)
-
-             if (write_ion_plot_files) then
-              write(fileid,'(3(a,i1),2a)') "KB.L", l , ".",
-     $              i, ".J",
-     $              j_offsiteSO, ".", trim(spp%label)
-              call io_assign(lun2)
-              open(unit=lun2,file=fileid,status='replace',
-     $                       form='formatted')
-              write(lun2,'(2a,2i3,f12.5)') "# ",trim(spp%label),
-     $              spp%pjnl_l(n), spp%pjnl_n(n), spp%pjnl_ekb(n)
-              write(lun2,'(a)')
-     $             "#kb l, n (sequence number), Reference energy"
-              call radial_dump_ascii(spp%pjnl(n),
-     $                                  lun2,header=.true.)
-              call io_close(lun2)
-             endif ! (write_ion_plot_files)
-
             endif
-            n = n + 1
-           enddo
-          enddo
+            call radial_dump_ascii(spp%pjnl(i),lun)
+
+           if (write_ion_plot_files) then
+            write(fileid,'(a,i1,a,i1,a,a)') "KB.L", l , ".",
+     $            zeta, ".", trim(spp%label)
+            call io_assign(lun2)
+            open(unit=lun2,file=fileid,status='replace',
+     $                     form='formatted')
+            write(lun2,'(2a,2i3,f12.5)') "# ",trim(spp%label), 
+     $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i)
+            write(lun2,'(a)')
+     $           "#kb l, n (sequence number), Reference energy"
+            call radial_dump_ascii(spp%pjnl(i),lun2,header=.false.)
+            call io_close(lun2)
+           endif ! (write_ion_plot_files)
+
+
          enddo
 
-! CC RC  Added for the offSpOrb
-!
          write(lun,'(a)') "# Vna:__________________________"
          call radial_dump_ascii(spp%vna,lun)
 
@@ -960,8 +928,14 @@ c
          write(unit,'(g22.12,4x,a)') p%self_energy, "# Self energy "
          write(unit,'(2i4,22x,a)') p%lmax_basis, p%n_orbnl,
      $        "# Lmax for basis, no. of nl orbitals "
-         write(unit,'(2i4,22x,a)') p%lmax_projs, p%n_pjnl,
-     $        "# Lmax for projectors, no. of nl KB projectors "
+         if (p%lj_projs) then
+            write(unit,'(2i4,1x,l1,20x,a)') p%lmax_projs, p%n_pjnl,
+     $       p%lj_projs,
+     $       "# Lmax for projectors, no. of nl KB projectors, LJ projs?"
+         else
+            write(unit,'(2i4,22x,a)') p%lmax_projs, p%n_pjnl,
+     $           "# Lmax for projectors, no. of nl KB projectors"
+         endif
 
          end subroutine write_header
 
@@ -984,10 +958,6 @@ c
       type(species_info), pointer  ::   spp
       character*40 filename
       integer i, ispol, lun
-
-! CC RC  Added for the offSpOrb
-      integer j_offsiteSO, l, nj_offsiteSO, n
-! CC RC  Added for the offSpOrb
 
       spp => species(is)
       if (spp%read_from_file) return    !! Do not dump
@@ -1032,32 +1002,16 @@ c
       write(lun,'(a)') "</paos>"
          
       write(lun,'(a)') "<kbs>"
-      n = 1
-      nj_offsiteSO = 1
-      do l = 0, spp%lmax_projs
-       do i = 1, nkblsave(l,is)
-        if ( spin%SO_offsite .and. l.ne.0 ) nj_offsiteSO = 2
-        do j_offsiteSO = 1, nj_offsiteSO
-
+      do i=1,spp%n_pjnl
          write(lun,'(a)') "<projector "
-         call xml_dump_attribute(lun,'l',str(l))
-
-         call xml_dump_attribute(lun,'j',str(j_offsiteSO))
-
-         call xml_dump_attribute(lun,'n',str(i))
-
+         call xml_dump_attribute(lun,'l',str(spp%pjnl_l(i)))
+         call xml_dump_attribute(lun,'n',str(spp%pjnl_n(i)))
          call xml_dump_attribute(lun,'ref_energy',
-     $                                   str(spp%pjnl_ekb(n)))
+     $                                   str(spp%pjnl_ekb(i)))
          write(lun,'(a)') " >"
-
-         call radial_dump_xml(spp%pjnl(n),lun)
-
+         call radial_dump_xml(spp%pjnl(i),lun)
          write(lun,'(a)') "</projector>"
-         n = n + 1
-        enddo
        enddo
-      enddo
-
        write(lun,'(a)') "</kbs>"
 
        write(lun,'(a)') "<vna>"

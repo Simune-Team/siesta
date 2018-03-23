@@ -109,12 +109,6 @@ contains
     ! final pattern
     if ( use_dH ) then
        call read_delta_Sp(dH, TSHS%no_u, sp_total)
-
-       ! Create the sparsity pattern and remove the buffer atoms...
-       if ( r_aBuf%n > 0 .and. IONode ) then
-          write(*,'(a)')'tbt: Using buffer atoms with dH method.'
-          write(*,'(a)')'tbt: Ensure no buffer orbitals used in dH!'
-       end if
     end if
 
     ! Ensure that the entire dSE sparse elements exists in the
@@ -123,12 +117,6 @@ contains
        call read_delta_Sp(dSE, TSHS%no_u, sp1)
        call Sp_union(TSHS%dit, sp_total, sp1, sp_total)
        call delete(sp1)
-    
-       ! Create the sparsity pattern and remove the buffer atoms...
-       if ( r_aBuf%n > 0 .and. IONode ) then
-          write(*,'(a)')'tbt: Using buffer atoms with dSE method.'
-          write(*,'(a)')'tbt: Ensure no buffer orbitals used in dSE!'
-       end if
     end if
 
     ! Make union
@@ -155,13 +143,6 @@ contains
     ! Suggest to the user an optimal device region for
     ! fastest calculation
     call tbt_tri_print_opti(TSHS%na_u,TSHS%lasto,r_oDev,N_Elec)
-
-    if ( fdf_get('TBT.Analyze',.false.) ) then
-#ifdef MPI
-       call MPI_Barrier(MPI_Comm_World,i)
-#endif
-       call die('Stopping TBtrans on purpose after analyzation step...')
-    end if
 
     ! Open GF files...
     ! Read-in header of Green's functions

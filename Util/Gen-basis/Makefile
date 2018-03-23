@@ -47,8 +47,8 @@ SYSOBJ=$(SYS).o
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
-          parsing.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
-          atmparams.o old_atmfuncs.o radial.o interpolation.o \
+          parsing.o basis_io.o  chemical.o atm_types.o\
+          atmparams.o radial.o interpolation.o \
 	      bessph.o radfft.o  sorting.o m_filter.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
           pseudopotential.o pxf.o dot.o  atom_options.o arw.o  \
@@ -56,11 +56,11 @@ OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
           xc.o bsc_xcmod.o ldau_specs.o m_cite.o local_sys.o
 
 OBJS_IONCAT=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
-          parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o atm_transfer.o atm_types.o \
+          parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o atm_types.o \
           atmparams.o radial.o  memory.o chkdim.o \
 	      pseudopotential.o chemical.o m_filter.o \
           basis_specs.o atom.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
-          atmfuncs.o spher_harm.o interpolation.o old_atmfuncs.o arw.o \
+          atmfuncs.o spher_harm.o interpolation.o arw.o \
           local_sys.o xc.o bsc_xcmod.o xml.o m_walltime.o ioncat.o ldau_specs.o m_cite.o $(SYSOBJ)
 
 
@@ -134,12 +134,10 @@ amn.o: alloc.o atmfuncs.o atomlist.o local_sys.o m_orderbands.o
 amn.o: m_trialorbitalclass.o matel_registry.o mneighb.o new_matel.o parallel.o
 amn.o: parallelsubs.o precision.o siesta2wannier90.o siesta_geom.o
 arw.o: alloc.o local_sys.o parallel.o precision.o
-atm_transfer.o: atm_types.o atmparams.o ldau_specs.o local_sys.o old_atmfuncs.o
-atm_transfer.o: periodic_table.o radial.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o local_sys.o precision.o radial.o spher_harm.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: interpolation.o local_sys.o m_filter.o old_atmfuncs.o periodic_table.o
+atom.o: interpolation.o local_sys.o m_filter.o periodic_table.o
 atom.o: precision.o pseudopotential.o
 atom_graph.o: alloc.o atm_types.o atmfuncs.o class_OrbitalDistribution.o
 atom_graph.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
@@ -333,7 +331,7 @@ idiag.o: local_sys.o parallel.o
 init_output.o: files.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o chemical.o electrostatic.o ldau_specs.o m_spin.o
-initatom.o: old_atmfuncs.o precision.o pseudopotential.o
+initatom.o: precision.o pseudopotential.o
 initparallel.o: alloc.o class_OrbitalDistribution.o domain_decom.o local_sys.o
 initparallel.o: parallel.o parallelsubs.o precision.o siesta_options.o
 initparallel.o: sparse_matrices.o spatial.o
@@ -587,7 +585,7 @@ m_ts_fullk.o: precision.o units.o
 m_ts_gf.o: local_sys.o m_os.o m_ts_cctype.o m_ts_contour_eq.o
 m_ts_gf.o: m_ts_contour_neq.o m_ts_electrode.o m_ts_electype.o parallel.o
 m_ts_gf.o: precision.o units.o
-m_ts_global_vars.o: parallel.o
+m_ts_global_vars.o: densematrix.o parallel.o
 m_ts_hartree.o: intrinsic_missing.o m_mesh_node.o m_ts_electype.o m_ts_tdir.o
 m_ts_hartree.o: parallel.o precision.o units.o
 m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
@@ -722,7 +720,6 @@ normalize_dm.o: atomlist.o local_sys.o m_mpi_utils.o m_spin.o parallel.o
 normalize_dm.o: precision.o siesta_options.o sparse_matrices.o
 obc.o: alloc.o precision.o
 ofc.o: alloc.o files.o precision.o units.o
-old_atmfuncs.o: alloc.o atmparams.o local_sys.o precision.o
 on_subs.o: alloc.o onmod.o onmod.o
 onmod.o: precision.o
 optical.o: alloc.o atomlist.o densematrix.o fermid.o files.o local_sys.o
@@ -752,7 +749,7 @@ phirphi.o: precision.o
 phirphi_opt.o: alloc.o atm_types.o atmfuncs.o atmparams.o local_sys.o mneighb.o
 phirphi_opt.o: new_matel.o parallel.o parallelsubs.o precision.o spher_harm.o
 pixmol.o: files.o periodic_table.o precision.o units.o
-plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
+plcharge.o: files.o parallel.o precision.o
 poison.o: alloc.o cellsubs.o chkgmx.o fft.o local_sys.o parallel.o precision.o
 post_scf_work.o: atomlist.o class_Fstack_Pair_Geometry_SpData2D.o
 post_scf_work.o: class_Geometry.o class_Pair_Geometry_SpData2D.o compute_dm.o
@@ -852,7 +849,7 @@ siesta_end.o: m_mixing_scf.o m_rhog.o m_wallclock.o meshdscf.o meshphi.o
 siesta_end.o: moremeshsubs.o parallel.o siesta_cml.o siesta_cmlsubs.o
 siesta_end.o: siesta_master.o siesta_options.o sparse_matrices.o timestamp.o
 siesta_forces.o: atomlist.o class_Fstack_Data1D.o class_SpData2D.o compute_dm.o
-siesta_forces.o: compute_energies.o compute_max_diff.o files.o
+siesta_forces.o: compute_energies.o compute_max_diff.o densematrix.o files.o
 siesta_forces.o: final_H_f_stress.o flook_siesta.o kpoint_grid.o local_sys.o
 siesta_forces.o: m_check_walltime.o m_convergence.o m_energies.o m_forces.o
 siesta_forces.o: m_initwf.o m_iodm_old.o m_mixing.o m_mixing_scf.o
@@ -965,7 +962,7 @@ zm_fire_optim.o: zmatrix.o
 zmatrix.o: alloc.o local_sys.o m_cell.o parallel.o precision.o siesta_geom.o
 zmatrix.o: units.o
 gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
-gen-basis.o: local_sys.o old_atmfuncs.o parallel.o precision.o
+gen-basis.o: local_sys.o parallel.o precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 band.o: bands.o
 class_cdata1d.o: class_Data1D.o
