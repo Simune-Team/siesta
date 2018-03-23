@@ -29,18 +29,27 @@ sleep 1
 failed=""
 
 for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile ); do
-      relpath=${i%/*}
-      echo ""
-      echo "====> Processing $relpath ..."
-      echo ""
-      cd $relpath
-      make OBJDIR=${OBJDIR} clean 
-      make OBJDIR=${OBJDIR}
-      if [ $? -ne 0 ]; then
-	  echo "*** COMPILATION FAILED in $relpath ***"
-	  failed="$failed $relpath"
-      fi
-      cd $topdir
+    relpath=${i%/*}
+    sub=${relpath##*/}
+    # Skip these directories
+    case $sub in
+	fdict|ncdf)
+	    continue
+	    ;;
+    esac
+    
+    echo ""
+    echo "====> Processing $relpath ..."
+    echo ""
+    cd $relpath
+    
+    make OBJDIR=${OBJDIR} clean 
+    make OBJDIR=${OBJDIR}
+    if [ $? -ne 0 ]; then
+	echo "*** COMPILATION FAILED in $relpath ***"
+	failed="$failed $relpath"
+    fi
+    cd $topdir
 done
 
 if [ ! -z "$failed" ]; then

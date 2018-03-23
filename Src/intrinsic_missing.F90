@@ -1854,7 +1854,7 @@ program test
   real :: t1 , t2
 
   integer :: i, j
-  integer, parameter :: N = 21355
+  integer, parameter :: N = 213550
   integer :: list(N)
   
 

@@ -551,9 +551,9 @@ m_ts_pivot.o: create_Sparsity_Union.o geom_helper.o intrinsic_missing.o
 m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
 m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
-m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
-m_ts_rgn2trimat.o: m_ts_electype.o m_ts_method.o m_ts_tri_common.o parallel.o
-m_ts_rgn2trimat.o: precision.o
+m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o intrinsic_missing.o
+m_ts_rgn2trimat.o: m_region.o m_ts_electype.o m_ts_method.o m_ts_tri_common.o
+m_ts_rgn2trimat.o: parallel.o precision.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
 m_ts_sparse.o: intrinsic_missing.o m_region.o m_sparsity_handling.o

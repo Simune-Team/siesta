@@ -323,8 +323,10 @@ clean:
 dep:
 	-sfmakedepend --depend=obj --modext=o \
 		$(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
+		$(VPATH)/*.T90 \
 		*.f90 *.F90 *.f *.F
 	@sed -i -e "/^siesta_cmlsubs.o:/s/version.o//" Makefile
+	@sed -i -e 's/\.T90\.o:/.o:/g' Makefile
 
 # Assert that FDF is compiled on before hand
 $(DEP_OBJS): $(FDF)
@@ -389,6 +391,8 @@ chemical.o: local_sys.o parallel.o precision.o
 chempot.o: alloc.o local_sys.o mneighb.o parallel.o parallelsubs.o precision.o
 chkdim.o: local_sys.o
 chkgmx.o: cellsubs.o local_sys.o minvec.o precision.o
+class_Data1D.o: alloc.o
+class_Data2D.o: alloc.o
 class_Fstack_Data1D.o: class_Data1D.o class_Data1D.o
 class_Fstack_Pair_Data1D.o: class_Pair_Data1D.o class_Pair_Data1D.o
 class_Fstack_Pair_Geometry_SpData2D.o: class_Pair_Geometry_SpData2D.o
@@ -399,9 +403,12 @@ class_Pair_Geometry_SpData2D.o: class_Geometry.o class_SpData2D.o
 class_Pair_SpData1D.o: class_SpData1D.o class_SpData1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o
+class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: alloc.o
+class_TriMat.o: alloc.o intrinsic_missing.o
 coceri.o: files.o periodic_table.o precision.o units.o
 compute_dm.o: atomlist.o class_SpData1D.o compute_ebs_shift.o diagon.o
 compute_dm.o: iodmhs_netcdf.o kpoint_grid.o local_sys.o m_dminim.o m_energies.o
@@ -811,9 +818,9 @@ m_ts_pivot.o: create_Sparsity_Union.o geom_helper.o intrinsic_missing.o
 m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
 m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
-m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
-m_ts_rgn2trimat.o: m_ts_electype.o m_ts_method.o m_ts_tri_common.o parallel.o
-m_ts_rgn2trimat.o: precision.o
+m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o intrinsic_missing.o
+m_ts_rgn2trimat.o: m_region.o m_ts_electype.o m_ts_method.o m_ts_tri_common.o
+m_ts_rgn2trimat.o: parallel.o precision.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
 m_ts_sparse.o: intrinsic_missing.o m_region.o m_sparsity_handling.o
