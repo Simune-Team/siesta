@@ -365,7 +365,8 @@ contains
     ! Copy over the An+1 array
     ztmp => val(M,n+1,n+1)
 
-!$OMP parallel workshare default(shared)
+    ! TODO implement direct algorithms, (or zcopy)
+!$OMP parallel workshare default(shared), if(sNp1SQ > 5000)
     Xn(:)           = Cnp2(:)
     zwork(1:sNp1SQ) = ztmp(:)
 !$OMP end parallel workshare
@@ -441,7 +442,8 @@ contains
     ! Copy over the An-1 array
     ztmp => val(M,n-1,n-1)
 
-!$OMP parallel workshare default(shared)
+    ! TODO implement direct loops (or zcopy)
+!$OMP parallel workshare default(shared), if(sNm1SQ > 5000)
     Yn(:)           = Bnm2(:)
     zwork(1:sNm1SQ) = ztmp(:)
 !$OMP end parallel workshare

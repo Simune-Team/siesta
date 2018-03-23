@@ -219,12 +219,14 @@ contains
 
     call rgn_delete(DevTri)
 
+    
     ! Create tri-diagonal parts for this one...
     call ts_rgn2TriMat(N_Elec, Elecs, .true., &
        dit, tmpSp2, r_oDev, DevTri%n, DevTri%r, &
        BTD_method, last_eq = 0, par = .true. )
     call delete(tmpSp2) ! clean up
 
+    
     ! Sort the tri-diagonal blocks
     call ts_pivot_tri_sort_El(r_oDev,N_Elec,Elecs,DevTri)
 

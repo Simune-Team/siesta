@@ -355,8 +355,6 @@ contains
       logical :: copy
       integer :: part_work, guess_work
 
-      copy = .false.
-
       ! We check whether the number of elements is smaller
       ! or that the number of parts is greater (however, this should
       ! in principle always go together)
@@ -469,52 +467,82 @@ contains
 
   end subroutine guess_TriMat_last
 
-  function faster_parts(np,i4n_part,ng,i4g_part) result(faster)
-    integer, intent(in) :: np, i4n_part(np)
-    integer, intent(in) :: ng, i4g_part(ng)
+  function faster_parts(np,n_part,ng,g_part) result(faster)
+    integer, intent(in) :: np, n_part(np)
+    integer, intent(in) :: ng, g_part(ng)
     logical :: faster
 
-    integer :: i
-    integer(i8b) :: guess_N, part_N, diff
-    integer(i8b) :: n_part(np), guess_part(ng)
-
-    n_part(:) = i4n_part(:)
-    guess_part(:) = i4g_part(:)
+    integer :: i, n
+    real(dp) :: p_N, g_N, diff
+    real(dp), parameter :: off_diag = 1.2_dp
 
     ! We estimate the fastest algorithm
     ! by the number of operations the matrices make
 
-    diff = 0
-    do i = 1 , max(np,ng)
-       part_N = 0
-       if ( i < np ) then
-          part_N = 2 * 5 * n_part(i) ** 2 / 3 + 4 * n_part(i+1)
-          part_N = part_N * n_part(i)
-       end if
-       guess_N = 0
-       if ( i < ng ) then
-          guess_N = 2 * 5 * guess_part(i) ** 2 / 3 + 4 * guess_part(i+1) 
-          guess_N = guess_N * guess_part(i)
-       end if
-       diff = diff + part_N - guess_N
+    ! 2 * 5 / 3 + 4 ~~ 1 + 1.2
+    p_N = R(n_part(1)) ** 2 + off_diag * R(n_part(2))
+    p_N = p_N * R(n_part(1))
+    
+    g_N = R(g_part(1)) ** 2 + off_diag * R(g_part(2))
+    g_N = g_N * R(g_part(1))
+    
+    diff = p_N - g_N
+    
+    n = min(np, ng)
+!$OMP parallel do default(shared), private(i,p_N,g_N), reduction(+:diff), if(n>1000)
+    do i = 2, n
 
-       if ( i == 1 ) cycle
+      p_N = R(n_part(i)) ** 2 + off_diag * R(n_part(i-1))
+      p_N = p_N * R(n_part(i))
 
-       part_N = 0
-       if ( i <= np ) then
-          part_N = 2 * 5 * n_part(i) ** 2 / 3 + 4 * n_part(i-1) 
-          part_N = part_N * n_part(i)
-       end if
-       guess_N = 0
-       if ( i <= ng ) then
-          guess_N = 2 * 5 * guess_part(i) ** 2 / 3 + 4 * guess_part(i-1)
-          guess_N = guess_N * guess_part(i)
-       end if
-       diff = diff + part_N - guess_N
+      g_N = R(g_part(i)) ** 2 + off_diag * R(g_part(i-1))
+      g_N = g_N * R(g_part(i))
+      
+      diff = diff + p_N - g_N
+      
     end do
+!$OMP end parallel do
 
-    faster = (diff > 0)
+    if ( np > ng ) then
+      faster = .true.
 
+      do i = ng + 1, np
+        
+        p_N = R(n_part(i)) ** 2 + off_diag * R(n_part(i-1))
+        p_N = p_N * R(n_part(i))
+
+        diff = diff + p_N
+
+        if ( diff > 0._dp ) return
+
+      end do
+      
+    else
+      faster = .false.
+      
+      do i = np + 1, ng
+        
+        g_N = R(g_part(i)) ** 2 + off_diag * R(g_part(i-1))
+        g_N = - g_N * R(g_part(i))
+        
+        diff = diff + g_N
+
+        if ( diff < 0._dp ) return
+
+      end do
+      
+    end if
+
+    faster = diff > 0._dp
+
+  contains
+
+    elemental function R(i) result(o)
+      integer, intent(in) :: i
+      real(dp) :: o
+      o = real(i, dp)
+    end function R
+      
   end function faster_parts
 
 
@@ -903,16 +931,16 @@ contains
     ! region! SUBSTANTIALLY!
     call rgn_init(pvt, nr, val=0)
 
-!$OMP parallel default(shared)
+!$OMP parallel default(shared), private(ir,row,ptr,j)
 
     ! Create the back-pivoting array
-!$OMP do private(ir)
+!$OMP do
     do ir = 1 , r%n
       pvt%r(r%r(ir)) = ir
     end do
 !$OMP end do
     
-!$OMP do private(ir,row,ptr,j)
+!$OMP do
     do ir = 1 , r%n
 
        ! Get original sparse matrix row
@@ -1076,13 +1104,15 @@ contains
 
   end subroutine diff_perf
   
-  function valid_tri(no,r,mm_col,parts,n_part,last_eq) result(val) 
+  function valid_tri(no,r,mm_col,parts,n_part,last_eq) result(val)
+    use parallel, only : IONode
     integer, intent(in) :: no, mm_col(2,no)
     type(tRgn), intent(in) :: r
     integer, intent(in) :: parts, n_part(parts), last_eq
     integer :: val
     ! Local variables
     integer :: i, ir, N, Nm1, Np1
+    logical :: first
 
     val = VALID
     ! Calculate the size of the tri-matrix
@@ -1101,6 +1131,7 @@ contains
     N = 1
     Nm1 = 1
     Np1 = n_part(1)
+    first = .true.
 
     do i = 1 , parts
        
@@ -1114,7 +1145,15 @@ contains
                mm_col(2,ir) > Np1 ) then
              ! If this ever occur it suggests that the 
              ! sparsity pattern is not fully symmetric !
-             print *,i,ir,Nm1,'<=',mm_col(1,ir),mm_col(2,ir),'<=',Np1
+             if ( IONode ) then
+               if ( first ) then
+                 write(*,'(a)') 'BTD: Found non-symmetric matrix!'
+                 write(*,'(a)') '     If you are not using delta methods you are probably doing something wrong!'
+                 write(*,'(6a8)') 'row', 'block', 'min_C', 'min_B', 'max_B', 'max_C'
+                 first = .false.
+               end if
+               write(*,'(6i8)') ir, i, mm_col(1,ir), Nm1, Np1, mm_col(2,ir)
+             end if
              val = - ir 
              return
           end if
