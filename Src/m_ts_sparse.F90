@@ -543,7 +543,7 @@ contains
     ! Sorting the sparsity pattern greatly speeds up the Hamiltonian
     ! and overlap matrix searches
     call attach(ts_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
-!$OMP parallel do default(shared), private(io,ind)
+!$OMP parallel do default(shared), private(io)
     do io = 1 , no_u
        if ( l_ncol(io) /= 0 ) then
           call sort_quick(l_ncol(io), l_col(l_ptr(io)+1:))

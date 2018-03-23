@@ -248,41 +248,49 @@ contains
     ! in this region, we extend it
     if ( fdf_get('TBT.Atoms.Device.Connect',.false.) ) then
 
-       ! TBTrans will truncate connections at electrode interfaces.
-       call rgn_sp_connect(r_oDev, dit, sp, r_tmp)
-       if ( r_tmp%n == 0 ) &
-            call die('No orbitals connect to the specified device &
-            &region. This is not allowed.')
+      ! TBTrans will truncate connections at electrode interfaces.
+      call rgn_sp_connect(r_oDev, dit, sp, r_tmp)
+      if ( r_tmp%n == 0 ) &
+          call die('No orbitals connect to the specified device &
+          &region. This is not allowed.')
 
-       ! Convert connecting region to atoms (this also
-       ! folds supercell orbitals to the correct atoms)
-       call rgn_Orb2Atom(r_tmp,na_u,lasto,r_oDev)
-       call rgn_delete(r_tmp)
-       
-       ! Remove buffer atoms (in case the electrode is too small)
-       if ( r_aBuf%n > 0 ) then
-          call rgn_complement(r_aBuf,r_oDev,r_oDev)
-       end if
-       ! Remove all electrodes from the region
-       do iEl = 1 , N_Elec
-          call rgn_complement(r_aEl_alone(iEl),r_oDev,r_oDev)
-       end do
+      ! Convert connecting region to atoms (this also
+      ! folds supercell orbitals to the correct atoms)
+      call rgn_Orb2Atom(r_tmp, na_u, lasto, r_tmp2)
+      call rgn_delete(r_tmp)
 
-       ! Append to device region
-       if ( r_oDev%n > 0 ) then
-          call rgn_append(r_aDev,r_oDev,r_aDev)
-       else if ( IONode ) then
-          ! It only connects to electrodes
-          write(*,'(a)')'tbt: Device regions &
-               &connects directly with electrodes'
-          write(*,'(a)')'tbt: If the overlap is large this might &
-               &produce spurious effects in DOS calculations'
-       end if
-       
-       ! In its current state we force the entire atoms
-       ! to be in the orbital connection scheme (even though
-       ! some orbitals might not connect...)
-       call rgn_Atom2Orb(r_aDev,na_u,lasto,r_oDev)
+      ! Remove buffer atoms (in case the electrode is too small)
+      if ( r_aBuf%n > 0 ) then
+        call rgn_complement(r_aBuf, r_tmp2, r_tmp2)
+      end if
+
+      ! Retain number of atoms before removing electrodes
+      i = r_tmp2%n
+
+      ! Remove all electrodes from the region
+      do iEl = 1 , N_Elec
+        call rgn_complement(r_aEl_alone(iEl), r_tmp2, r_tmp2)
+      end do
+
+      ! Append
+      call rgn_append(r_aDev, r_tmp2, r_aDev)
+
+      ! If we have removed some atoms from the electrodes, it means
+      ! there are connections to the electrodes from the device region.
+      if ( IONode .and. r_tmp2%n < i ) then
+        ! It only connects to electrodes
+        write(*,'(a)')'tbt: Device regions &
+            &connects directly with electrodes'
+        write(*,'(a)')'tbt: If the overlap is large this might &
+            &produce spurious effects in DOS calculations'
+      end if
+
+      call rgn_delete(r_tmp2)
+
+      ! In its current state we force the entire atoms
+      ! to be in the orbital connection scheme (even though
+      ! some orbitals might not connect...)
+      call rgn_Atom2Orb(r_aDev, na_u, lasto, r_oDev)
 
     end if
 

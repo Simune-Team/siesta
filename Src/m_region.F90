@@ -914,7 +914,7 @@ contains
       in_r => r_logical
     else
       allocate(lr_logical(n))
-!$OMP parallel default(shared) private(i), if(n>5000)
+!$OMP parallel default(shared), private(i), if(n>6000)
 
 !$OMP do
       do i = 1 , n
@@ -948,7 +948,7 @@ contains
 
        ! Step 1. find the number of connections for
        ! each orbital in the sorting region
-!$OMP parallel do default(shared) private(i,io,cn,ind,jo)
+!$OMP parallel do default(shared), private(i,io,cn,ind,jo)
        do i = 1 , sr%n
 
          ! Orbital that should be folded from
@@ -976,7 +976,7 @@ contains
          n_c(sr%n-i+1) = cn
          
        end do
-!$OMP end parallel
+!$OMP end parallel do
 
     case ( R_SORT_MAX_BACK ) 
 
@@ -989,7 +989,7 @@ contains
        ! Step 1. find the number of connections for
        ! each orbital in the sorting region
        
-!$OMP parallel do default(shared) private(i,io,cn,ind,jo)
+!$OMP parallel do default(shared), private(i,io,cn,ind,jo)
        do i = 1 , sr%n
 
          io = sr%r(i)
@@ -1014,7 +1014,7 @@ contains
          n_c(sr%n-i+1) = n + 1 - cn
 
        end do
-!$OMP end parallel
+!$OMP end parallel do
 
     case ( R_SORT_LONGEST_BACK ) 
 
@@ -1925,35 +1925,40 @@ contains
     good = size(r%r) > r%n
     if ( .not. good ) return
 
+    if ( r%n == 0 ) then
+      
+      ! First element
+      r%r(1) = val
+      r%n = 1
+      r%sorted = .true.
+      
+      return
+    end if
+
     if ( present(sorted) ) then
+      
       if ( sorted ) then
-        if ( r%n == 0 ) then
-          
-          ! First element
+        
+        ! Find where to insert the new value
+        idx = SFIND(r%r(1:r%n), val, +1)
+        if ( idx == 0 ) then
+          do i = r%n, 1, -1
+            r%r(i+1) = r%r(i)
+          end do
           r%r(1) = val
-          r%n = r%n + 1
           
         else
-          ! Find where to insert the new value
-          idx = SFIND(r%r(1:r%n), val, +1)
-          if ( idx == 0 ) then
-            do i = r%n, 1, -1
-              r%r(i+1) = r%r(i)
-            end do
-            r%r(1) = val
-            
-          else
-            do i = r%n, idx, -1
-              r%r(i+1) = r%r(i)
-            end do
-            r%r(idx) = val
-            
-          end if
-          r%n = r%n + 1
+          do i = r%n, idx, -1
+            r%r(i+1) = r%r(i)
+          end do
+          r%r(idx) = val
+          
         end if
-        
+        r%n = r%n + 1
+
         return
       end if
+      
     end if
 
     ! Determine if it is still sorted
