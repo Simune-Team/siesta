@@ -745,7 +745,7 @@ contains
        write(*,'(a,/)') ' You should analyze the pivoting schemes!'
        write(*,'(a)') ' Minimum memory required pivoting scheme:'
        write(*,'(a,a)') '  TBT.BTD.Pivot.Device ', trim(min_mem_method)
-       write(*,'(a,f8.2,a)') '  Memory: ', min_mem, ' MB'
+       write(*,'(a,en11.3,a)') '  Memory: ', min_mem, ' GB'
        write(*,*) ! new-line
     end if
     
@@ -762,6 +762,7 @@ contains
       integer :: bw
       ! Possibly very large numbers
       integer(i8b) :: prof, els
+      real(dp) :: total
 
       call rgn_copy(r_pvt, cur)
 
@@ -788,43 +789,43 @@ contains
       els = nnzs_tri(ctri%n,ctri%r)
       ! check if there are overflows
       if ( els < int(nnzs_tri_dp(ctri%n, ctri%r)) ) then
-         call die('transiesta: Memory consumption is too large, &
-              &try another pivoting scheme.')
-      end if
-      
-      if ( IONode ) then
-         call rgn_print(ctri, name = 'BTD partitions' , &
-              seq_max = 10 , indent = 3 , repeat = .true. )
-         
-         write(*,'(tr3,a,i0,'' / '',f10.3)') &
-              'BTD matrix block size [max] / [average]: ', &
-              maxval(ctri%r), sum(real(ctri%r)) / ctri%n
-         
-         prof = r_pvt%n ** 2
-         write(*,'(tr3,a,f9.5,'' %'')') &
-              'BTD matrix elements in % of full matrix: ', &
-              real(els,dp)/real(prof,dp) * 100._dp
+        call die('transiesta: Memory consumption is too large, &
+            &try another pivoting scheme.')
       end if
 
-      prof = els * 2 ! total mem
       if ( IONode ) then
-         write(*,'(tr3,a,t39,f8.2,a)') 'Rough estimation of MEMORY: ', &
-              size2mb(prof),' MB'
+        call rgn_print(ctri, name = 'BTD partitions' , &
+            seq_max = 10 , indent = 3 , repeat = .true. )
+
+        write(*,'(tr3,a,i0,'' / '',f10.3)') &
+            'BTD matrix block size [max] / [average]: ', &
+            maxval(ctri%r), sum(real(ctri%r)) / ctri%n
+
+        total = real(r_pvt%n, dp) ** 2
+        write(*,'(tr3,a,f9.5,'' %'')') &
+            'BTD matrix elements in % of full matrix: ', &
+            real(els,dp)/total * 100._dp
       end if
-      if ( size2mb(prof) < min_mem ) then
-         min_mem = size2mb(prof)
-         min_mem_method = fmethod
+
+      total = size2gb(els) * 2
+      if ( IONode ) then
+        write(*,'(tr3,a,t39,en11.3,a)') 'Rough estimation of MEMORY: ', &
+            total,' GB'
+      end if
+      if ( total < min_mem ) then
+        min_mem = total
+        min_mem_method = fmethod
       end if
 
       call rgn_delete(ctri, cur)
       
     end subroutine tri
 
-    function size2mb(i) result(mb)
+    function size2gb(i) result(b)
       integer(i8b) :: i
-      real(dp) :: mb
-      mb = real(i, dp) * 16._dp / 1024._dp ** 2
-    end function size2mb
+      real(dp) :: b
+      b = real(i, dp) * 16._dp / 1024._dp ** 3
+    end function size2gb
 
   end subroutine tbt_tri_analyze
   

@@ -591,7 +591,6 @@ contains
        call tri(r_El)
     end if
 
-
     fmethod = trim(corb)//'+GGPS'
     if ( IONode ) write(*,fmt) trim(corb),'GGPS'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_GGPS, sub = full)
@@ -651,7 +650,7 @@ contains
        write(*,'(a,/)') ' You should analyze the pivoting schemes!'
        write(*,'(a)') ' Minimum memory required pivoting scheme:'
        write(*,'(a,a)') '  TS.BTD.Pivot ', trim(min_mem_method)
-       write(*,'(a,f8.2,a)') '  Memory: ', min_mem, ' MB'
+       write(*,'(a,en11.3,a)') '  Memory: ', min_mem, ' GB'
        write(*,*) ! new-line
     end if
     
@@ -669,6 +668,7 @@ contains
       integer(i8b) :: prof, els, pad, work
       type(tRgn) :: ctri
       character(len=132) :: fname
+      real(dp) :: total
 
       ! Only if it is defined
       fname = fdf_get('TS.BTD.Output',' ')
@@ -704,6 +704,7 @@ contains
               &try another pivoting scheme.')
       end if
       
+      total = real(no_u_ts, dp) ** 2
       if ( IONode ) then
          call rgn_print(ctri, name = 'BTD partitions' , &
               seq_max = 10 , indent = 3 , repeat = .true. )
@@ -712,10 +713,9 @@ contains
               'BTD matrix block size [max] / [average]: ', &
               maxval(ctri%r), sum(real(ctri%r)) / ctri%n
 
-         pad = no_u_TS ** 2
          write(*,'(tr3,a,f9.5,'' %'')') &
               'BTD matrix elements in % of full matrix: ', &
-              real(els,dp)/real(pad,dp) * 100._dp
+              real(els,dp)/total * 100._dp
       end if
 
       if ( ts_A_method == TS_BTD_A_COLUMN ) then
@@ -728,15 +728,17 @@ contains
          pad = 0
          work = 0
       end if
-      prof = pad + work + els * 2 ! total mem
+
+      ! Total size of the system
+      total = size2gb(pad + work) + size2gb(els) * 2
       if ( IONode ) then
-         write(*,'(tr3,a,t39,f8.2,a)') 'BTD x 2 MEMORY: ', &
-              size2mb(els * 2), ' MB'
-         write(*,'(tr3,a,t39,f8.2,a)') 'Rough estimation of MEMORY: ', &
-              size2mb(prof),' MB'
+         write(*,'(tr3,a,t39,en11.3,a)') 'BTD x 2 MEMORY: ', &
+              size2gb(els) * 2, ' GB'
+         write(*,'(tr3,a,t39,en11.3,a)') 'Rough estimation of MEMORY: ', &
+              total,' GB'
       end if
-      if ( size2mb(prof) < min_mem ) then
-         min_mem = size2mb(prof)
+      if ( total < min_mem ) then
+         min_mem = total
          min_mem_method = fmethod
       end if
       do i = 1 , N_Elec
@@ -751,12 +753,12 @@ contains
       
     end subroutine tri
 
-    function size2mb(i) result(mb)
+    function size2gb(i) result(b)
       integer(i8b) :: i
-      real(dp) :: mb
-      mb = real(i, dp) * 16._dp / 1024._dp ** 2
-    end function size2mb
-
+      real(dp) :: b
+      b = real(i, dp) * 16._dp / 1024._dp ** 3
+    end function size2gb
+    
   end subroutine ts_tri_analyze
 
 end module m_ts_tri_init

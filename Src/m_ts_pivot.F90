@@ -802,7 +802,7 @@ contains
              if ( fan_option == 0 ) work(1:2) = work(1:2) / r_Els%n
 
              ! Now we need to find all atoms below those angles
-             if ( .not. pvt_orb .or. orb_1 ) call rgn_nullify(r_Els)
+             if ( .not. (pvt_orb .and. .not. orb_1) ) call rgn_nullify(r_Els)
 
              ! Create the list of atoms that we should search as 
              ! possible candidates for adding based on the 'fan'
@@ -890,7 +890,7 @@ contains
              if ( fan_option == 0 ) work(1) = work(1) / r_Els%n
 
              ! Now we need to find all atoms below the coordinate
-             if ( .not. pvt_orb ) call rgn_nullify(r_Els)
+             if ( .not. (pvt_orb .and. .not. orb_1) ) call rgn_nullify(r_Els)
 
              ! Create the list of atoms that we should search as 
              ! possible candidates for adding based on the 'fan'
@@ -1064,15 +1064,15 @@ contains
     integer :: con
     integer :: i_Elec, io, idx_Elec, idx, no
 
-    idx = El%idx_o
+    idx = El%idx_o - 1
     no = TotUsedOrbs(El)
 
     ! Create the pivoting table for the electrodes
     call rgn_init(r_tmp,no)
-    do io = 0 , no - 1
+    do io = 1 , no
        ! equals the io'th orbital index in the 
        !           TS region.  io == ts_i
-       r_tmp%r(io+1) = rgn_pivot(r,idx+io)
+       r_tmp%r(io) = rgn_pivot(r,idx+io)
     end do
        
     ! Sort it to be able to gather the indices

@@ -1999,6 +1999,16 @@ contains
     ! we don't have room, return immediately
     if ( push%n == 0 .or. (.not. good) ) return
 
+    if ( r%n == 0 ) then
+      do i = 1 , push%n
+        r%r(i) = push%r(i)
+      end do
+      r%n = push%n
+      r%sorted = push%sorted
+      
+      return
+    end if
+
     if ( present(sorted) ) then
        if ( sorted ) then
           good = r%sorted .and. push%sorted
@@ -2009,7 +2019,9 @@ contains
     end if
 
     if ( r%sorted .and. push%sorted ) then
-       r%sorted = r%r(r%n) <= push%r(1)
+      r%sorted = r%r(r%n) <= push%r(1)
+    else
+      r%sorted = .false.
     end if
     
     do i = 1 , push%n
@@ -2078,27 +2090,25 @@ contains
     integer, intent(in), optional :: val, idx
     integer :: out, i, j
 
-    if ( r%n == 0 ) then
-       out = 0
-       return
-    end if
+    out = 0
+    if ( r%n == 0 ) return
 
     if ( present(idx) ) then
-       i = idx
+      i = idx
     else if ( present(val) ) then
-       i = rgn_pivot(r,val)
+      i = rgn_pivot(r,val)
+      ! The value does not exist
+      if ( i < 1 ) return
     else
-       i = 1 
+      i = 1 
     end if
 
     ! get the value
     out = r%r(i)
-    if ( r%n > 1 .and. i < r%n ) then
-       ! remove it
-       do j = i , r%n - 1
-          r%r(j) = r%r(j+1)
-       end do
-    end if
+    ! remove it
+    do j = i , r%n - 1
+      r%r(j) = r%r(j+1)
+    end do
     r%n = r%n - 1
     
   end function rgn_pop
