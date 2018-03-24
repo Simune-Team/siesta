@@ -43,6 +43,8 @@ module m_tbt_tri_scat
   public :: dir_GF_Gamma_GF
   public :: GFGGF_needed_worksize
 #ifdef NCDF_4
+  public :: GF_COP, A_COP
+  public :: GF_COHP_add_dH, A_COHP_add_dH
   public :: orb_current
   public :: orb_current_add_dH
 #endif
@@ -55,121 +57,735 @@ module m_tbt_tri_scat
 
 contains
 
-  ! A simple routine to calculate the DOS
-  ! from a partially calculated GF
-  ! When entering this routine Gf_tri
-  ! should contain:
-  ! all GF_nn
-  ! all Yn/Bn-1 and all Xn/Cn+1
-  ! This lets us calculate all entries
-  subroutine GF_DOS(r,Gf_tri,S_1D,DOS,nwork,work)
-    use intrinsic_missing, only : SFIND
+  ! Calculate the DOS from a non-fully calculated Green function.
+  ! We assume that the diagonal Green function matrices are already calculated
+  ! and the remaining \tilde X and \tilde Y matrices are present.
+  !    all GF_nn are in Gf_tri
+  !    all \tilde Yn and \tilde Xn are in Gf_tri
+  ! After this routine, all off-diagonal Gf blocks are in work_tri (correctly
+  ! positioned).
+  ! I.e. the full Gf in the blocks can be extracted from Gf_tri and work_tri.
+  ! This routine utilizes the sparse matrix as a loop, instead of looping
+  ! all BTD matrix elements.
+  ! This turns out to be much faster for (at least tight-binding calculations).
+  subroutine GF_DOS(r,Gf_tri,work_tri,S_1D,pvt,DOS)
     use class_Sparsity
     use class_zSpData1D
-
+    
     type(tRgn), intent(in) :: r
-    type(zTriMat), intent(inout) :: Gf_tri
-    type(zSpData1D), intent(inout) :: S_1D
+    type(zTriMat), intent(inout) :: Gf_tri, work_tri
+    type(zSpData1D), intent(inout) :: S_1D ! (transposed S(k))
+    type(tRgn), intent(in) :: pvt
     real(dp), intent(out) :: DOS(r%n)
-    integer, intent(in) :: nwork
-    complex(dp), intent(inout), target :: work(nwork)
 
     type(Sparsity), pointer :: sp
-    complex(dp), pointer :: S(:), Gf(:), Mnn(:), XY(:)
-    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
-    integer :: off1, off2, n, in
-    integer :: jo, ii, i, j, no_o, no_i, ind, np
+    complex(dp), pointer :: S(:)
+    complex(dp) :: GfGfd
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer :: np, n, no_o, no_i
+    integer :: br, io, ind, bc
     real(dp) :: lDOS
 
 #ifdef TBTRANS_TIMING
     call timer('GF-DOS',1)
 #endif
 
-    S  => val(S_1D)
-    sp => spar(S_1D)
-    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
-    
-    ! Initialize DOS to 0
-!$OMP parallel workshare default(shared)
-    DOS(:) = 0._dp
-!$OMP end parallel workshare
-
-    off2 = 0
     np = parts(Gf_tri)
-    do n = 1 , np
-
+    
+    ! First calculate all off-diagonal green-function elements
+    no_o = nrows_g(Gf_tri,1)
+    no_i = nrows_g(Gf_tri,2)
+    call calc(2,1)
+    do n = 2, np - 1
        no_o = nrows_g(Gf_tri,n)
-
-       do in = max(1,n-1) , min(n+1,np)
-
-          no_i = nrows_g(Gf_tri,in)
-
-          if ( in < n ) then
-             off1 = off2 - no_i
-          else if ( n < in ) then
-             off1 = off2 + no_o
-          else
-             off1 = off2
-          end if
-
-          if ( in == n ) then
-             ! Retrieve the central part of the
-             ! matrix
-             Gf => val(Gf_tri,n,n)
-
-          else
-
-             XY  => val(Gf_tri,in,n)
-             Mnn => val(Gf_tri,n,n)
-
-             Gf  => work(1:no_o*no_i)
-
-             ! We need to calculate the 
-             ! Mnm1n/Mnp1n Green's function
-#ifdef USE_GEMM3M
-             call zgemm3m( &
-#else
-             call zgemm( &
-#endif
-                  'N','N',no_i,no_o,no_o, &
-                  zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
-
-          end if
-
-!$OMP parallel do default(shared), private(j,ii,jo,ind,i,lcol,lDOS)
-          do j = 1 , no_o
-             ii = (j-1) * no_i
-             jo = r%r(off2+j)
-             lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
-             ! get the equivalent one in the
-             ! overlap matrix
-             ! REMEMBER, S is transposed!
-             ! Hence we do not need conjg :)
-             lDOS = 0._dp
-             do i = 1 , no_i
-                ind = SFIND(lcol,r%r(off1+i))
-                if ( ind == 0 ) cycle
-                ind = l_ptr(jo) + ind
-                lDOS = lDOS - dimag( Gf(ii+i) * S(ind) )
-             end do
-             DOS(off2+j) = DOS(off2+j) + lDOS / Pi
-          end do
-!$OMP end parallel do
-
-       end do
-
-       ! Update the offset
-       off2 = off2 + no_o
-
+       no_i = nrows_g(Gf_tri,n + 1)
+       call calc(n+1,n)
+       no_i = nrows_g(Gf_tri,n - 1)
+       call calc(n-1,n)
     end do
+    no_o = nrows_g(Gf_tri,np)
+    no_i = nrows_g(Gf_tri,np-1)
+    call calc(np-1,np)
+
+    ! At this point we have calculated all Green function matrices
+    ! All diagonal elements are in Gf_tri,
+    ! all off-diagonal elements are in work_tri
+
+    ! The DOS per orbital is calculated like this (.=matrix multiplication):
+    !   DOS(io) = - Im[ (Gf-Gf^\dagger) . S ](io,io) / Pi
+    !           = - \sum_jo Im[ {Gf(io, jo)-Gf^\dagger(io,jo)} * S(jo, io)] / Pi
+    !
+    ! The fact that we need Gf - Gf^\dagger can be checked
+    ! by a simple tight-binding calculation with large overlap matrices
+    ! and *very* small eta values (and using sum_elec ADOS == DOS).
+    ! In this case the k-resolved DOS is only correct if one uses
+    ! the above equation. It should however be noted that the full
+    ! DOS is independent on Gf or Gf - Gf^\dagger choice!
+
+    sp => spar(S_1D)
+    S => val(S_1D)
+    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+!$OMP parallel do default(shared), private(br,io,lDOS,ind,bc,GfGfd)
+    do br = 1, r%n
+       io = r%r(br)
+
+       ! Loop columns in S(k)^T (actually the rows)
+       lDOS = 0._dp
+       do ind = l_ptr(io) + 1, l_ptr(io) + ncol(io)
+          bc = pvt%r(l_col(ind))
+          if ( bc > 0 ) then
+             call index_GfGfd(br, bc, GfGfd)
+             lDOS = lDOS + dimag( GfGfd * S(ind) )
+          end if
+       end do
+       
+       DOS(br) = - lDOS / (2._dp * Pi)
+       
+    end do
+!$OMP end parallel do
 
 #ifdef TBTRANS_TIMING
     call timer('GF-DOS',2)
 #endif
 
+  contains
+
+    subroutine calc(m,n)
+      integer, intent(in) :: m,n
+      complex(dp), pointer :: Gf(:), Mnn(:), XY(:)
+
+      XY  => val(Gf_tri,m,n)
+      Mnn => val(Gf_tri,n,n)
+      Gf  => val(work_tri,m,n)
+      
+      ! We need to calculate the 
+      ! Mnm1n/Mnp1n Green's function
+#ifdef USE_GEMM3M
+      call zgemm3m( &
+#else
+      call zgemm( &
+#endif
+           'N','N',no_i,no_o,no_o, &
+           zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
+      
+    end subroutine calc
+
+    subroutine index_GfGfd(br, bc, G)
+      integer, intent(in) :: br, bc
+      complex(dp), intent(out) :: G
+      complex(dp), pointer :: Gf(:)
+      integer :: p_r, i_r, p_c, i_c
+
+      call part_index(work_tri, br, p_r, i_r)
+      call part_index(work_tri, bc, p_c, i_c)
+
+      if ( p_r == p_c ) then
+         Gf => val(Gf_tri, p_r, p_c)
+      else
+         Gf => val(work_tri, p_r, p_c)
+      end if
+      G = Gf(i_r + (i_c-1) * work_tri%data%tri_nrows(p_r))
+
+      ! Immediate subtract G^\dagger element
+      if ( p_r /= p_c ) then
+         Gf => val(work_tri, p_c, p_r)
+      end if
+      G = G - conjg(Gf(i_c + (i_r-1) * work_tri%data%tri_nrows(p_c)))
+
+    end subroutine index_GfGfd
+
   end subroutine GF_DOS
 
+
+  ! Calculate the DOS from a fully calculated spectral function.
+  ! This routine utilizes the sparse matrix as a loop, instead of looping
+  ! all BTD matrix elements.
+  ! This turns out to be much faster for (at least tight-binding calculations).
+  subroutine A_DOS(r,A_tri,S_1D,pvt,DOS)
+    use class_Sparsity
+    use class_zSpData1D
+
+    type(tRgn), intent(in) :: r ! BTD matrix elements
+    type(zTriMat), intent(inout) :: A_tri
+    type(zSpData1D), intent(inout) :: S_1D ! (transposed S(k))
+    type(tRgn), intent(in) :: pvt ! from sparse matrix to BTD
+    real(dp), intent(out) :: DOS(r%n)
+
+    type(Sparsity), pointer :: sp
+    complex(dp), pointer :: S(:), A(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer :: io, ind, idx, br, bc
+    real(dp) :: lDOS
+
+#ifdef TBTRANS_TIMING
+    call timer('A-DOS',1)
+#endif
+
+    ! Get data arrays
+    A => val(A_tri)
+
+    sp => spar(S_1D)
+    S => val(S_1D)
+    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    ! The DOS per orbital is calculated like this:
+    !   ADOS(io) = Re[ A . S ](io,io) / 2Pi
+    !            = Re[A(io, jo) * S(jo, io)] / 2Pi
+
+!$OMP parallel do default(shared), private(br,io,lDOS,ind,bc,idx)
+    do br = 1, r%n
+       io = r%r(br)
+
+       ! Loop columns in S(k)^T (actually the rows)
+       lDOS = 0._dp
+       do ind = l_ptr(io) + 1, l_ptr(io) + ncol(io)
+          bc = pvt%r(l_col(ind))
+          if ( bc > 0 ) then
+             idx = index(A_tri, br, bc)
+             lDOS = lDOS + dreal( A(idx) * S(ind) )
+          end if
+       end do
+       
+       DOS(br) = lDOS / (2._dp * Pi)
+       
+    end do
+!$OMP end parallel do
+
+#ifdef TBTRANS_TIMING
+    call timer('A-DOS',2)
+#endif
+
+  end subroutine A_DOS
+  
 #ifdef NCDF_4
+
+  ! Calculate the COOP contribution from a fully calculated Green function.
+  ! We assume that the Green function distribution like this:
+  !    all GF_nn are in Gfd_tri (diagonal)
+  !    all GF_mn (m/=n) are in Gfo_tri (off-diagonal)
+  ! This routine utilizes the sparse matrix as a loop, instead of looping
+  ! all BTD matrix elements.
+  ! This turns out to be much faster for (at least tight-binding calculations).
+  subroutine GF_COP(r,Gfd_tri,Gfo_tri,pvt,sp,M,sc_off,k,COP)
+    use class_Sparsity
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(tRgn), intent(in) :: r
+    type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
+    type(tRgn), intent(in) :: pvt
+    type(Sparsity), intent(inout) :: sp
+    real(dp), intent(in) :: M(:) ! S for COOP, H for COHP
+    real(dp), intent(in) :: sc_off(:,:)
+    real(dp), intent(in) :: k(3)
+    type(dSpData1D), intent(inout) :: COP ! COOP or COHP
+
+    type(Sparsity), pointer :: c_sp
+    real(dp), pointer :: C(:)
+    complex(dp) :: GfGfd
+    complex(dp), allocatable :: ph(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
+    integer :: no_u, br, io, ind, iind, bc
+
+#ifdef TBTRANS_TIMING
+    call timer('GF-COP',1)
+#endif
+
+#ifdef TBT_PHONON
+    call die('Currently not implemented for PHtrans')
+#endif
+
+    ! Extract COOP/COHP by looping the sparse matrix
+    ! The following discussion in concerning COOP, but
+    ! there is no ambiguity in the two methods.
+    
+    ! The COOP calculation can be written as
+    !
+    !   COOP(io,jo) = - Im{ [Gf - Gf^\dagger](io,jo) * S(jo,io) * e^(ik.R) } / 2Pi
+    ! Here we want:
+    !   DOS(io) = \sum_jo COOP(io,jo)
+    ! since we know that COOP(io,jo) is the io -> jo DOS.
+    ! As COOP is interesting in the supercell picture we have
+    ! to calculate it with the daggered component (Gf - Gf^\dagger) (also why we need /2).
+    ! Note that this is not necessary if S is S(k). I.e. it is because
+    ! we want the cross-cell COOP curves as well.
+
+    ! Create the phases
+    ! Since we have to do Gf.S we simply
+    ! create S(-k) (which is S^T)
+    ! and thus get the correct values.
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do io = 1 , size(sc_off, dim=2)
+       ph(io-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,io) - &
+            k(2) * sc_off(2,io) - &
+            k(3) * sc_off(3,io))) / (2._dp * Pi)
+    end do
+
+    call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    c_sp => spar(COP)
+    C => val(COP)
+    call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
+
+!$OMP parallel default(shared), private(br,io,c_col,ind,iind,bc,GfGfd)
+
+!$OMP workshare
+    C(:) = 0._dp
+!$OMP end workshare
+    
+!$OMP do
+    do br = 1, r%n
+       io = r%r(br)
+
+       ! Get lookup columns for the COOP
+       c_col => ccol(cptr(io)+1:cptr(io)+cncol(io))
+
+       ! Loop on overlap entries here...
+       do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
+
+          ! Check if the orbital exists in the region
+          iind = cptr(io) + SFIND(c_col, l_col(ind))
+          
+          ! if zero the element does not exist
+          ! This is the case on the elements connecting out
+          ! of the device region
+          if ( iind <= cptr(io) ) cycle
+
+          ! COOP(iind) = - Im[ (G(io,jo) - G^\dagger(io,jo)) * S(jo,io) ] / 2Pi
+          bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
+          call index_GfGfd(br, bc, GfGfd)
+          
+          C(iind) = -aimag( GfGfd * M(ind) * ph( (l_col(ind)-1)/no_u ))
+
+       end do
+          
+    end do
+!$OMP end do
+!$OMP end parallel
+
+    ! Clean-up phases
+    deallocate(ph)
+    
+#ifdef TBTRANS_TIMING
+    call timer('GF-COP',2)
+#endif
+
+  contains
+
+    subroutine index_GfGfd(br, bc, G)
+      integer, intent(in) :: br, bc
+      complex(dp), intent(out) :: G
+      complex(dp), pointer :: Gf(:)
+      integer :: p_r, i_r, p_c, i_c
+
+      call part_index(Gfo_tri, br, p_r, i_r)
+      call part_index(Gfo_tri, bc, p_c, i_c)
+
+      if ( p_r == p_c ) then
+         Gf => val(Gfd_tri, p_r, p_c)
+      else
+         Gf => val(Gfo_tri, p_r, p_c)
+      end if
+      G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+
+      ! Immediate subtract G^\dagger element
+      if ( p_r /= p_c ) then
+         Gf => val(Gfo_tri, p_c, p_r)
+      end if
+      G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+
+    end subroutine index_GfGfd
+
+  end subroutine GF_COP
+
+  subroutine Gf_COHP_add_dH(dH_1D,sc_off,k,Gfd_tri,Gfo_tri,r,COHP,pvt)
+
+    use class_Sparsity
+    use class_zSpData1D
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(zSpData1D), intent(in) :: dH_1D
+    real(dp), intent(in) :: sc_off(:,:), k(3)
+    type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
+    type(tRgn), intent(in) :: r
+    type(dSpData1D), intent(inout) :: COHP
+    ! The pivoting region that transfers r%r(iu) to io
+    type(tRgn), intent(in) :: pvt
+
+    type(Sparsity), pointer :: sp
+    complex(dp), pointer :: dH(:)
+    type(Sparsity), pointer :: c_sp
+    integer, pointer :: cncol(:), cptr(:), ccol(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
+
+    complex(dp), allocatable :: ph(:)
+    complex(dp) :: GfGfd
+    real(dp), pointer :: C(:)
+    integer :: no_u, br, io, jo, i, ind, iind
+
+#ifdef TBTRANS_TIMING
+    call timer('COHP-Gf-dH',1)
+#endif
+
+    ! Retrieve dH
+    sp => spar(dH_1D)
+    dH => val(dH_1D)
+    call attach(sp, nrows_g=no_u, &
+         n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
+
+    c_sp => spar(COHP)
+    C => val(COHP)
+    call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do i = 1 , size(sc_off, dim=2)
+       ph(i-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,i) + &
+            k(2) * sc_off(2,i) + &
+            k(3) * sc_off(3,i))) / (2._dp * Pi)
+    end do
+
+!$OMP parallel do default(shared), private(br,io,iind,jo,ind,col,GfGfd)
+    do br = 1, r%n
+       io = r%r(br)
+
+       ! Loop on the COHP indices
+       do iind = cptr(io) + 1, cptr(io) + cncol(io)
+
+          ! Here we will calculate the COHP contribution from dH
+          !  COHP(iind) = -Im{ [Gf(io, jo) - Gf^\dagger(io,jo)] * dH(jo, io) } / 2pi
+
+          ! Since we are looping the dH indices we have to 
+
+          ! Get column Gf orbital
+          jo = ucorb(ccol(iind), no_u)
+
+          ! Check if the jo,io orbital exists in dH
+          if ( l_ncol(jo) > 0 ) then
+             col => l_col(l_ptr(jo)+1:l_ptr(jo)+l_ncol(jo))
+
+             ! Note that we here find the dH(jo,io) value (in the supercell picture)
+             ind = l_ptr(jo) + SFIND(col, TO(ccol(iind)) + io)
+          
+             if ( ind > l_ptr(jo) ) then
+                
+                call index_GfGfd(br, pvt%r(jo), GfGfd)
+                ! COHP(iind) += - Im[ (G(io,jo) - G^\dagger(io,jo)) * dH(jo,io)] / 2Pi
+                C(iind) = C(iind) &
+                     - aimag( GfGfd * dH(ind) * ph( (l_col(ind)-1)/no_u ))
+
+             end if
+
+          end if
+
+       end do
+       
+    end do
+!$OMP end parallel do
+
+    deallocate(ph)
+
+#ifdef TBTRANS_TIMING
+    call timer('COHP-Gf-dH',2)
+#endif
+
+  contains
+
+    subroutine index_GfGfd(br, bc, G)
+      integer, intent(in) :: br, bc
+      complex(dp), intent(out) :: G
+      complex(dp), pointer :: Gf(:)
+      integer :: p_r, i_r, p_c, i_c
+
+      call part_index(Gfo_tri, br, p_r, i_r)
+      call part_index(Gfo_tri, bc, p_c, i_c)
+
+      if ( p_r == p_c ) then
+         Gf => val(Gfd_tri, p_r, p_c)
+      else
+         Gf => val(Gfo_tri, p_r, p_c)
+      end if
+      G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+
+      ! Immediate subtract G^\dagger element
+      if ( p_r /= p_c ) then
+         Gf => val(Gfo_tri, p_c, p_r)
+      end if
+      G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+
+    end subroutine index_GfGfd
+
+    function TO(io) result(jo)
+      integer, intent(in) :: io
+      integer :: jo, isc, i
+      
+      ! Get the current supercell index
+      isc = (io-1)/no_u + 1
+      
+      do i = 1, size(sc_off, dim=2)
+
+         ! We have to check for the opposite super-cell to get the
+         ! transpose element.
+         ! 0.001 Bohr seems like a more than accurate difference for
+         ! unit-cells.
+         if ( all( abs(sc_off(:,i) + sc_off(:, isc)) < 0.001_dp) ) then
+            jo = (i - 1) * no_u
+            return
+         end if
+         
+      end do
+
+      jo = 0
+      call die('Gf_COHP_add_dH: could not find transpose supercell index')
+
+    end function TO
+    
+  end subroutine Gf_COHP_add_dH
+
+  ! Calculate the COOP contribution from a fully calculated spectral function.
+  ! This routine utilizes the sparse matrix as a loop, instead of looping
+  ! all BTD matrix elements.
+  ! This turns out to be much faster for (at least tight-binding calculations).
+  subroutine A_COP(r,A_tri,pvt,sp,M,sc_off,k,COP)
+    use class_Sparsity
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(tRgn), intent(in) :: r
+    type(zTriMat), intent(inout) :: A_tri
+    type(tRgn), intent(in) :: pvt
+    type(Sparsity), intent(inout) :: sp
+    real(dp), intent(in) :: M(:) ! S for COOP, H for COHP
+    real(dp), intent(in) :: sc_off(:,:)
+    real(dp), intent(in) :: k(3)
+    type(dSpData1D), intent(inout) :: COP ! COOP or COHP
+
+    type(Sparsity), pointer :: c_sp
+    real(dp), pointer :: C(:)
+    complex(dp), pointer :: A(:)
+    complex(dp), allocatable :: ph(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
+    integer :: no_u, br, io, ind, iind, bc
+
+#ifdef TBTRANS_TIMING
+    call timer('A-COP',1)
+#endif
+
+#ifdef TBT_PHONON
+    call die('Currently not implemented for PHtrans')
+#endif
+
+    ! Extract COOP/COHP by looping the sparse matrix
+    ! The following disôcussion in concerning COOP, but
+    ! there is no ambiguity in the two methods.
+
+    ! The COOP calculation can be written as
+    !
+    !   COOP(io,jo) = - Im{ A(io,jo) * S(jo,io) * e^(ik.R) } / 2Pi
+    ! Here we want:
+    !   ADOS(io) = \sum_jo COOP(io,jo)
+    ! since we know that COOP(io,jo) is the io -> jo ADOS.
+    ! Note that this is not necessary if S is S(k). I.e. it is because
+    ! we want the cross-cell COOP curves as well.
+
+    ! Create the phases
+    ! Since we have to do A.S we simply
+    ! create the S(-k) (which is S^T)
+    ! and thus get the correct values.
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do io = 1 , size(sc_off, dim=2)
+       ph(io-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,io) - &
+            k(2) * sc_off(2,io) - &
+            k(3) * sc_off(3,io))) / (2._dp * Pi)
+    end do
+
+    call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    c_sp => spar(COP)
+    C => val(COP)
+    call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
+
+    A => val(A_tri)
+
+!$OMP parallel default(shared), private(br,io,c_col,ind,iind,bc)
+
+!$OMP workshare
+    C(:) = 0._dp
+!$OMP end workshare
+
+!$OMP do
+    do br = 1, r%n
+       io = r%r(br)
+
+       ! Get lookup columns for the COOP
+       c_col => ccol(cptr(io)+1:cptr(io)+cncol(io))
+
+       ! Loop on overlap entries here...
+       do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
+
+          ! Check if the orbital exists in the region
+          iind = cptr(io) + SFIND(c_col, l_col(ind))
+          
+          ! if zero the element does not exist
+          ! This is the case on the elements connecting out
+          ! of the device region
+          if ( iind <= cptr(io) ) cycle
+
+          ! COOP(iind) = Re[ A(io,jo) * S(jo,io) ] / (2 pi)
+          bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
+          bc = index(A_tri,br,bc)
+          
+          C(iind) = real(A(bc) * M(ind) * ph( (l_col(ind)-1)/no_u ), dp)
+          
+       end do
+          
+    end do
+!$OMP end do
+!$OMP end parallel
+
+    ! Clean-up phases
+    deallocate(ph)
+    
+#ifdef TBTRANS_TIMING
+    call timer('A-COP',2)
+#endif
+
+  end subroutine A_COP
+
+  subroutine A_COHP_add_dH(dH_1D,sc_off,k,A_tri,r,COHP,pvt)
+
+    use class_Sparsity
+    use class_zSpData1D
+    use class_dSpData1D
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    type(zSpData1D), intent(in) :: dH_1D
+    real(dp), intent(in) :: sc_off(:,:), k(3)
+    type(zTriMat), intent(inout) :: A_tri
+    type(tRgn), intent(in) :: r
+    type(dSpData1D), intent(inout) :: COHP
+    ! The pivoting region that transfers r%r(iu) to io
+    type(tRgn), intent(in) :: pvt
+
+    type(Sparsity), pointer :: sp
+    complex(dp), pointer :: dH(:)
+    type(Sparsity), pointer :: c_sp
+    integer, pointer :: cncol(:), cptr(:), ccol(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
+
+    complex(dp), allocatable :: ph(:)
+    complex(dp), pointer :: A(:)
+    real(dp), pointer :: C(:)
+    integer :: no_u, iu, io, i, ind, iind, jo, iA
+
+#ifdef TBTRANS_TIMING
+    call timer('COHP-A-dH',1)
+#endif
+
+    ! Retrieve dH
+    sp => spar(dH_1D)
+    dH => val(dH_1D)
+    call attach(sp, nrows_g=no_u, &
+         n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
+
+    c_sp => spar(COHP)
+    C => val(COHP)
+    call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do i = 1 , size(sc_off, dim=2)
+       ph(i-1) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,i) + &
+            k(2) * sc_off(2,i) + &
+            k(3) * sc_off(3,i))) / (2._dp * Pi)
+    end do
+
+    A => val(A_tri)
+    
+!$OMP parallel do default(shared), private(iu,io,iind,jo,ind,col,iA)
+    do iu = 1, r%n
+       io = r%r(iu)
+
+       ! Loop on the COHP indices
+       do iind = cptr(io) + 1, cptr(io) + cncol(io)
+
+          ! Here we will calculate the COHP contribution from dH
+          !  COHP(iind) == A(io, jo) * dH(jo, io) / 2pi
+
+          ! Get column A orbital
+          jo = ucorb(ccol(iind), no_u)
+
+          ! Check if the jo,io orbital exists in dH
+          if ( l_ncol(jo) > 0 ) then
+             col => l_col(l_ptr(jo)+1:l_ptr(jo)+l_ncol(jo))
+             
+             ! Note that we here find the dH(jo,io) value (in the supercell picture)
+             ind = l_ptr(jo) + SFIND(col, TO(ccol(iind)) + io)
+          
+             if ( ind > l_ptr(jo) ) then
+                
+                iA = index(A_tri,iu,pvt%r(jo)) ! A_ij
+                
+                ! COHP                    Aij  * Hji
+                C(iind) = C(iind) + real(A(iA) * dH(ind) * ph( (l_col(ind)-1)/no_u ), dp)
+
+             end if
+
+          end if
+
+       end do
+       
+    end do
+!$OMP end parallel do
+
+    deallocate(ph)
+
+#ifdef TBTRANS_TIMING
+    call timer('COHP-A-dH',2)
+#endif
+    
+  contains
+    
+    function TO(io) result(jo)
+      integer, intent(in) :: io
+      integer :: jo, isc, i
+      
+      ! Get the current supercell index
+      isc = (io-1)/no_u + 1
+      
+      do i = 1, size(sc_off, dim=2)
+
+         ! We have to check for the opposite super-cell to get the
+         ! transpose element.
+         ! 0.001 Bohr seems like a more than accurate difference for
+         ! unit-cells.
+         if ( all( abs(sc_off(:,i) + sc_off(:, isc)) < 0.001_dp) ) then
+            jo = (i - 1) * no_u
+            return
+         end if
+
+      end do
+
+      jo = 0
+      call die('A_COHP_add_dH: could not find transpose supercell index')
+
+    end function TO
+    
+  end subroutine A_COHP_add_dH
+
+
 #ifdef NOT_WORKING
   ! A simple routine to calculate the DOS
   ! from a partially calculated GF
@@ -371,92 +987,6 @@ contains
 #endif
 #endif
 
-  ! A simple routine to calculate the DOS
-  ! from a full calculated spectral function
-  subroutine A_DOS(r,A_tri,S_1D,DOS)
-    use intrinsic_missing, only : SFIND
-    use class_Sparsity
-    use class_zSpData1D
-
-    type(tRgn), intent(in) :: r
-    type(zTriMat), intent(inout) :: A_tri
-    type(zSpData1D), intent(inout) :: S_1D
-    real(dp), intent(out) :: DOS(r%n)
-
-    type(Sparsity), pointer :: sp
-    complex(dp), pointer :: S(:), A(:)
-    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
-    integer :: off1, off2, n, in
-    integer :: jo, ii, i, j, no_o, no_i, ind, np
-    real(dp) :: lDOS
-
-#ifdef TBTRANS_TIMING
-    call timer('A-DOS',1)
-#endif
-
-    S  => val(S_1D)
-    sp => spar(S_1D)
-    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
-
-    ! Initialize DOS to 0
-!$OMP parallel workshare default(shared)
-    DOS(:) = 0._dp
-!$OMP end parallel workshare
-
-    off2 = 0
-    np = parts(A_tri)
-    do n = 1 , np
-
-       no_o = nrows_g(A_tri,n)
-
-       do in = max(1,n-1) , min(n+1,np)
-
-          A => val(A_tri,in,n)
-
-          no_i = nrows_g(A_tri,in)
-
-          if ( in < n ) then
-             off1 = off2 - no_i
-          else if ( n < in ) then
-             off1 = off2 + no_o
-          else
-             off1 = off2
-          end if
-
-!$OMP parallel do default(shared), private(j,ii,jo,ind,i,lcol,lDOS)
-          do j = 1 , no_o
-             ii = (j-1) * no_i
-             jo = r%r(off2+j)
-             lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
-             ! get the equivalent one in the
-             ! overlap matrix
-             ! REMEMBER, S is transposed!
-             ! Hence we are doing it correctly
-             lDOS = 0._dp
-             do i = 1 , no_i
-                ind = SFIND(lcol,r%r(off1+i))
-                if ( ind == 0 ) cycle
-                ind = l_ptr(jo) + ind
-                lDOS = lDOS + dreal( A(ii+i) * S(ind) )
-             end do
-             DOS(off2+j) = DOS(off2+j) + lDOS / (2._dp * Pi)
-          end do
-!$OMP end parallel do
-
-       end do
-
-       ! Update the offset
-       off2 = off2 + no_o
-
-    end do
-
-#ifdef TBTRANS_TIMING
-    call timer('A-DOS',2)
-#endif
-
-  end subroutine A_DOS
-
-  
   ! The simplest routine to do the transport calculation
   ! It takes the spectral function and multiplies it with
   ! the scattering matrix of the down-projected self-energy
@@ -1097,8 +1627,14 @@ contains
     end do
 
     A => val(A_tri)
-!$OMP parallel do default(shared), &
-!$OMP&private(iu,io,ju,jo,i,iind,ind,Hi,icol)
+!$OMP parallel default(shared), private(iu,io,ju,jo,i,iind,ind,Hi,icol)
+
+    ! we need this in case the device region gets enlarged due to dH
+!$OMP workshare
+    J(:) = 0._dp
+!$OMP end workshare
+    
+!$OMP do
     do iu = 1, r%n
        io = r%r(iu)
 
@@ -1146,7 +1682,8 @@ contains
 
        end do
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
     deallocate(ph)
 
@@ -1250,8 +1787,8 @@ contains
              ! Check for the Hamiltonian element H_ji
              jj = index(A_tri,iu,ju) ! A_ij
 
-             ! Jij                         Hji      * Aij
-             J(iind) = J(iind) + aimag( dH(ind) * p * A(jj) )
+             ! Jij                      Aij   * Hji
+             J(iind) = J(iind) + aimag( A(jj) * dH(ind) * p )
 
           end if
 
@@ -1271,8 +1808,8 @@ contains
              ! Check for the Hamiltonian element H_ij
              jj = index(A_tri,ju,iu) ! A_ji
 
-             ! Jij                         Hij      * Aji
-             J(iind) = J(iind) - aimag( dH(ind) * p * A(jj) )
+             ! Jij -=                   Aji   * Hij
+             J(iind) = J(iind) - aimag( A(jj) * dH(ind) * p )
             
           end if
 
@@ -1430,5 +1967,203 @@ contains
 #endif
 
   end subroutine insert_Self_energy_Dev
+
+
+#ifdef THESE_HAVE_BEEN_SUPERSEEDED
+  
+  ! A simple routine to calculate the DOS
+  ! from a partially calculated GF
+  ! When entering this routine Gf_tri
+  ! should contain:
+  ! all GF_nn
+  ! all Yn/Bn-1 and all Xn/Cn+1
+  ! This lets us calculate all entries
+  subroutine GF_DOS_loop_BTD(r,Gf_tri,S_1D,DOS,nwork,work)
+    use intrinsic_missing, only : SFIND
+    use class_Sparsity
+    use class_zSpData1D
+
+    type(tRgn), intent(in) :: r
+    type(zTriMat), intent(inout) :: Gf_tri
+    type(zSpData1D), intent(inout) :: S_1D
+    real(dp), intent(out) :: DOS(r%n)
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout), target :: work(nwork)
+
+    type(Sparsity), pointer :: sp
+    complex(dp), pointer :: S(:), Gf(:), Mnn(:), XY(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
+    integer :: off1, off2, n, in
+    integer :: jo, i, j, no_o, no_i, ind, np
+    real(dp) :: lDOS
+
+#ifdef TBTRANS_TIMING
+    call timer('GF-DOS',1)
+#endif
+
+    S  => val(S_1D)
+    sp => spar(S_1D)
+    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+    
+    ! Initialize DOS to 0
+!$OMP parallel workshare default(shared)
+    DOS(:) = 0._dp
+!$OMP end parallel workshare
+
+    off2 = 0
+    np = parts(Gf_tri)
+    do n = 1 , np
+
+       no_o = nrows_g(Gf_tri,n)
+
+       do in = max(1,n-1) , min(n+1,np)
+
+          no_i = nrows_g(Gf_tri,in)
+
+          if ( in < n ) then
+             off1 = off2 - no_i
+          else if ( n < in ) then
+             off1 = off2 + no_o
+          else
+             off1 = off2
+          end if
+
+          if ( in == n ) then
+             ! Retrieve the central part of the
+             ! matrix
+             Gf => val(Gf_tri,n,n)
+
+          else
+
+             XY  => val(Gf_tri,in,n)
+             Mnn => val(Gf_tri,n,n)
+
+             Gf  => work(1:no_o*no_i)
+
+             ! We need to calculate the 
+             ! Mnm1n/Mnp1n Green's function
+#ifdef USE_GEMM3M
+             call zgemm3m( &
+#else
+             call zgemm( &
+#endif
+                  'N','N',no_i,no_o,no_o, &
+                  zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
+
+          end if
+
+!$OMP parallel do default(shared), private(j,jo,ind,i,lcol,lDOS)
+          do j = 1 , no_o
+             jo = r%r(off2+j)
+             lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
+             ! get the equivalent one in the
+             ! overlap matrix
+             ! REMEMBER, S is transposed!
+             ! Hence we do not need conjg :)
+             lDOS = 0._dp
+             do i = 1 , no_i
+                ind = SFIND(lcol,r%r(off1+i))
+                if ( ind == 0 ) cycle
+                ind = l_ptr(jo) + ind
+                lDOS = lDOS - dimag( Gf(j+(i-1)*no_i) * S(ind) )
+             end do
+             DOS(off2+j) = DOS(off2+j) + lDOS / Pi
+          end do
+!$OMP end parallel do
+
+       end do
+
+       ! Update the offset
+       off2 = off2 + no_o
+
+    end do
+
+#ifdef TBTRANS_TIMING
+    call timer('GF-DOS',2)
+#endif
+
+  end subroutine GF_DOS_loop_BTD
+
+  ! A simple routine to calculate the DOS
+  ! from a full calculated spectral function
+  ! This loops over entries in the BTD matrix.
+  subroutine A_DOS_loop_BTD(r,A_tri,S_1D,DOS)
+    use intrinsic_missing, only : SFIND
+    use class_Sparsity
+    use class_zSpData1D
+
+    type(tRgn), intent(in) :: r
+    type(zTriMat), intent(inout) :: A_tri
+    type(zSpData1D), intent(inout) :: S_1D
+    real(dp), intent(out) :: DOS(r%n)
+
+    type(Sparsity), pointer :: sp
+    complex(dp), pointer :: S(:), A(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
+    integer :: off1, off2, n, in
+    integer :: jo, i, j, no_o, no_i, ind, np
+    real(dp) :: lDOS
+
+#ifdef TBTRANS_TIMING
+    call timer('A-DOS',1)
+#endif
+
+    S  => val(S_1D)
+    sp => spar(S_1D)
+    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    off2 = 0
+    np = parts(A_tri)
+    do n = 1 , np
+
+       no_o = nrows_g(A_tri,n)
+
+       do in = max(1,n-1) , min(n+1,np)
+
+          A => val(A_tri,in,n)
+
+          no_i = nrows_g(A_tri,in)
+
+          if ( in < n ) then
+             off1 = off2 - no_i
+          else if ( n < in ) then
+             off1 = off2 + no_o
+          else
+             off1 = off2
+          end if
+
+!$OMP parallel do default(shared), private(j,jo,ind,i,lcol,lDOS)
+          do j = 1 , no_o
+             jo = r%r(off2+j)
+             lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
+             ! get the equivalent one in the
+             ! overlap matrix
+             ! REMEMBER, S is transposed!
+             ! Hence we are doing it correctly
+             lDOS = 0._dp
+             do i = 1 , no_i
+                ind = SFIND(lcol,r%r(off1+i))
+                if ( ind == 0 ) cycle
+                ind = l_ptr(jo) + ind
+                lDOS = lDOS + dreal( A(j+(i-1)*no_i) * S(ind) )
+             end do
+             DOS(off2+j) = DOS(off2+j) + lDOS / (2._dp * Pi)
+          end do
+!$OMP end parallel do
+
+       end do
+
+       ! Update the offset
+       off2 = off2 + no_o
+
+    end do
+
+#ifdef TBTRANS_TIMING
+    call timer('A-DOS',2)
+#endif
+
+  end subroutine A_DOS_loop_BTD
+  
+#endif
 
 end module m_tbt_tri_scat

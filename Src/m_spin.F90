@@ -191,7 +191,7 @@ contains
        spin%none = .true.
        
     else if ( leqi(opt, 'polarized') .or. &
-         leqi(opt, 'collinear') .or. &
+         leqi(opt, 'collinear') .or. leqi(opt, 'colinear') .or. &
          leqi(opt, 'polarised') .or. leqi(opt, 'P') ) then
        
        spin%Col = .true.

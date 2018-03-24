@@ -58,6 +58,7 @@ C **********************************************************************
       use m_spin,       only : spin
       use atomlist,     only : iphorb, iaorb
       use atmfuncs,     only : zetafio, mofio, lofio, cnfigfio, labelfis
+      use atmfuncs,     only : pol, izofis
       use flib_wxml,    only : xmlf_t, xml_OpenFile, xml_NewElement, 
      .                         xml_AddArray, xml_AddPCData,
      $                         xml_AddAttribute,
@@ -250,7 +251,7 @@ C Close file for write
 
 C New writing
       if (IOnode) then
-         call xml_OpenFile("pdos.xml",xf,indent=.false.)
+         call xml_OpenFile(trim(slabel)//".PDOS.xml",xf,indent=.false.)
 
         fnamepro = trim(slabel)//'.PDOS'
         call io_assign(iunit2)
@@ -273,7 +274,7 @@ C New writing
         do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
            tmp(ihist) = ener/eV
-           write(iunit2,'(f20.5)') ener/eV
+           write(iunit2,'(f20.5)') tmp(ihist)
         enddo
         write(iunit2,'(a)') '</energy_values>'
 
@@ -292,10 +293,11 @@ C New writing
           call xml_AddAttribute(xf,"atom_index",iat)
           call xml_dump_attribute(iunit2,"atom_index",str(iat))
           call xml_AddAttribute(xf,"species",trim(labelfis(spec)))
-          call xml_dump_attribute(iunit2,"species",
-     .                           trim(labelfis(spec)))
-          write(pos_string,'(3f11.6)') (xa(ii,iat),ii=1,3)
-          call xml_AddAttribute(xf,"position",pos_string)
+          call xml_dump_attribute(iunit2,"species",labelfis(spec))
+          call xml_AddAttribute(xf,"Z",izofis(spec))
+          call xml_dump_attribute(iunit2,"Z",str(izofis(spec)))
+          write(pos_string,'(3f11.6)') xa(1:3,iat)
+          call xml_AddAttribute(xf,"position",trim(pos_string))
           call xml_dump_attribute(iunit2,"position",pos_string)
           call xml_AddAttribute(xf,"n",cnfigfio(spec,iorb))
           call xml_dump_attribute(iunit2,"n",str(cnfigfio(spec,iorb)))
@@ -305,50 +307,43 @@ C New writing
           call xml_dump_attribute(iunit2,"m",str(mofio(spec,iorb)))
           call xml_AddAttribute(xf,"z",zetafio(spec,iorb))
           call xml_dump_attribute(iunit2,"z",str(zetafio(spec,iorb)))
-          write(iunit2,'(a)') '> '
+          call xml_AddAttribute(xf,"P",pol(spec,iorb))
+          call xml_dump_attribute(iunit2,"P",str(pol(spec,iorb)))
+          write(iunit2,'(a)') '>'
 
 !------------------------------------------------------------
           call xml_NewElement(xf,"data")
+          write(iunit2,'(a)') '<data>'
           select case ( spin%EDM ) 
           case ( 1 )
-             call xml_AddArray(xf,dpr(1:nhist,i,1)*eV)
+             do ihist = 1, nhist
+                tmp(ihist) = dpr(ihist,i,1) * eV
+                write(iunit2,'(f10.5)') tmp(ihist)
+             end do
+             call xml_AddArray(xf,tmp(1:nhist))
           case ( 2 )
-             tmp(1:2*nhist-1:2) = dpr(1:nhist,i,1)*eV
-             tmp(2:2*nhist:2)   = dpr(1:nhist,i,2)*eV
+             do ihist = 1, nhist
+                tmp(ihist*2-1) = dpr(ihist,i,1) * eV
+                tmp(ihist*2) = dpr(ihist,i,2) * eV
+                write(iunit2,'(2f10.5)') tmp(ihist*2-1:ihist*2)
+             end do
              call xml_AddArray(xf,tmp(1:2*nhist))
           case ( 4 )
-             tmp(1:4*nhist-3:4) =   dpr(1:nhist,i,1)*eV
-             tmp(2:4*nhist-2:4) =   dpr(1:nhist,i,2)*eV
-             tmp(3:4*nhist-1:4) = 2*dpr(1:nhist,i,3)*eV
-             tmp(4:4*nhist:4)   = 2*dpr(1:nhist,i,4)*eV
+             do ihist = 1, nhist
+                tmp(ihist*4-3) = dpr(ihist,i,1) * eV
+                tmp(ihist*4-2) = dpr(ihist,i,2) * eV
+                tmp(ihist*4-1) = 2 * dpr(ihist,i,3) * eV
+                tmp(ihist*4  ) = 2 * dpr(ihist,i,4) * eV
+                write(iunit2,'(4f10.5)') tmp(ihist*4-3:ihist*4)
+             end do
              call xml_AddArray(xf,tmp(1:4*nhist))
           end select
           call xml_EndElement(xf,"data")
-          call xml_EndElement(xf,"orbital")
-!------------------------------------------------------------
-
-          write(iunit2,'(a)') '<data>'
-          select case ( spin%EDM )
-          case ( 1 )
-             do ihist = 1,nhist
-                write(iunit2,'(f10.5)') dpr(ihist,i,1)*eV
-             end do
-          case ( 2 )
-             do ihist = 1,nhist
-                write(iunit2,'(2f10.5)') dpr(ihist,i,1)*eV,
-     &                                   dpr(ihist,i,2)*eV
-             end do
-          case ( 4 )
-             do ihist = 1,nhist
-                write(iunit2,'(4f10.5)') dpr(ihist,i,1)*eV,
-     &                                   dpr(ihist,i,2)*eV,
-     &                                   2.0_dp*dpr(ihist,i,3)*eV,
-     &                                   2.0_dp*dpr(ihist,i,4)*eV
-             end do
-          end select
           write(iunit2,'(a)') '</data>'
+          call xml_EndElement(xf,"orbital")
           write(iunit2,'(a)') '</orbital>'
-        enddo
+          
+        end do
 
 C Close file
         call xml_EndElement(xf,"pdos")

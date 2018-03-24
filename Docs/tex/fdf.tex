@@ -33,16 +33,23 @@
 
 % Shorthand command for printing the fdf-key
 % correctly, AND adding it to the index.
+% A fdf-key must be formatted like this:
+%   Label!SubLabel:argument
+% and then the index of the key will be
+%   Label!SubLabel!argument
 \NewDocumentCommand\fdf{ s m }
 {%
     \bgroup%
-    \StrSubstitute[0]{#2}{!}{.}[\@tmp]%
+    \StrSubstitute{#2}{!}{.}[\@tmp]%
+    % Handle fdf-flags with arguments (Flag:argument)
+    \expandafter\StrSubstitute\expandafter{\@tmp}{:}{ }[\@@tmp]%
     \IfBooleanTF{#1}{%
-        \expandafter\fontfdf\expandafter{\@tmp}%
+        \expandafter\fontfdf\expandafter{\@@tmp}%
     }{%
-        \expandafter\cleanedhyperlink\expandafter{\@tmp}{\fontfdf{\@tmp}}%
-        % Create index
-        \sindex[sfdf]{#2}%
+        \expandafter\cleanedhyperlink\expandafter{\@tmp}{\fontfdf{\@@tmp}}%
+        % Create index (catch arguments)
+        \StrSubstitute{#2}{:}{!}[\@tmp]%
+        \sindex[sfdf]{\@tmp}%
     }%
     \egroup%
 }

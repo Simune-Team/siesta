@@ -30,7 +30,9 @@ contains
     use siesta_dicts, only : dict_variable_add
     use m_ts_options, only : ts_scf_mixs
     use variable, only : cunpack
-    use dictionary, only : assign
+#ifndef NCDF_4
+    use dictionary, only: assign
+#endif      
     use m_mixing, only : mixers_history_init
 #endif
     use m_state_init
@@ -50,6 +52,8 @@ contains
     use parallel,     only : IOnode, SIESTA_worker
     use m_state_analysis
     use m_steps
+    use m_spin,                only: spin
+    use sparse_matrices, only: DM_2D, S_1D
     use sparse_matrices, only: H, Hold, Dold, Dscf, Eold, Escf, maxnh
 ! CC RC    use sparse_matrices, only: MM_HDM, herm_HDM
     use sparse_matrices, only: numh, listhptr
@@ -64,11 +68,10 @@ contains
     use m_save_density_matrix, only: save_density_matrix
     use m_iodm_old,    only: write_spmatrix
 
-! CC RC  Added for the offSpOrb
-    use m_spin,     only: spin
-! CC RC  Added for the offSpOrb
+    use atomlist,      only: no_u, lasto, Qtot
+    use m_dm_charge, only: dm_charge
 
-    use atomlist,      only: no_s, no_l, no_u, qtot, indxuo
+    use atomlist,      only: no_s, no_l, indxuo
     use m_gamma
     use Kpoint_grid,    only: nkpnt, kpoint, kweight
     use m_eo
@@ -97,10 +100,8 @@ contains
     use m_ts_method
     use m_ts_global_vars,      only: TSmode, TSinit, TSrun
     use siesta_geom,           only: nsc, xa, ucell, isc_off
-    use atomlist,              only: lasto, Qtot
     use sparse_matrices,       only: sparse_pattern, block_dist
     use sparse_matrices,       only: S
-    use m_spin,                only: nspin
     use m_ts_charge, only : ts_get_charges
     use m_ts_charge,           only: TS_RHOCORR_METHOD
     use m_ts_charge,           only: TS_RHOCORR_FERMI
@@ -147,9 +148,7 @@ contains
     logical               :: time_is_up
     character(len=40)     :: tmp_str
 
-#ifdef TRANSIESTA
     real(dp) :: Qcur
-#endif
 #ifdef NCDF_4
     type(dict) :: d_sav
 #endif
@@ -188,11 +187,15 @@ contains
        call bye("S only")
     end if
 
+    Qcur = Qtot
+    
 #ifdef SIESTA__FLOOK
     ! Add the iscf constant to the list of variables
     ! that are available only in this part of the
     ! routine.
     call dict_variable_add('SCF.iteration',iscf)
+    call dict_variable_add('SCF.converged',SCFconverged)
+    call dict_variable_add('SCF.charge',Qcur)
     call dict_variable_add('SCF.dD',dDmax)
     call dict_variable_add('SCF.dH',dHmax)
     call dict_variable_add('SCF.dE',dEmax)
@@ -408,6 +411,10 @@ contains
              prevDmax = dDmax
           end if
 
+          ! Calculate current charge based on the density matrix
+          call dm_charge(spin, DM_2D, S_1D, Qcur)
+
+          
           ! Check whether we should step to the next mixer
           call mixing_scf_converged( SCFconverged )
 
@@ -426,13 +433,10 @@ contains
           if ( TSrun .and. SCFconverged .and. &
                TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
 
-             call ts_get_charges(N_Elec, block_dist, sparse_pattern, &
-                  nspin, maxnh, Dscf, S, Qtot = Qcur )
-
              if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
 
                 ! Call transiesta with fermi-correct
-                call transiesta(iscf,nspin, &
+                call transiesta(iscf,spin%H, &
                      block_dist, sparse_pattern, Gamma_Scf, ucell, nsc, &
                      isc_off, no_u, na_u, lasto, xa, maxnh, H, S, &
                      Dscf, Escf, Ef, Qtot, .true., DE_NEGF)

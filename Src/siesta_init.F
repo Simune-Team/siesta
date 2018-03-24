@@ -703,8 +703,9 @@ C     Initialise MPI and set processor number
       ! Populate dictionaries
       call dict_populate()
 
-      ! Initialize LUA handle
-      call slua_init(LUA)
+      ! Initialize LUA handle, also die if the Lua relaxation
+      ! is requested
+      call slua_init(LUA, idyn == 10)
 
       ! Call a preprocess step right after initialization
       call slua_call(LUA,LUA_INITIALIZE)

@@ -696,22 +696,21 @@ close(io)
     if ( hasEDM ) then
        if ( leq ) then
 
-!$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,ju)
+!$OMP parallel do default(shared), private(io,iu,ind,ju)
           do io = 1 , nr
              ! Quickly go past the buffer atoms...
              if ( l_ncol(io) /= 0 ) then
-
+                
              ! The update region equivalent GF part
              iu = io - orb_offset(io)
-        
+
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
                 
-                ju = l_col(ind) - orb_offset(l_col(ind)) &
-                     - offset(N_Elec,Elecs,l_col(ind))
+                ju = l_col(ind) - orb_offset(l_col(ind)) - &
+                     offset(N_Elec,Elecs,l_col(ind))
                 
-                D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
-                E(ind,i2) = E(ind,i2) - GF(iu,ju) * EDMfact
+                D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
+                E(ind,i2) = E(ind,i2) - Gf(iu,ju) * EDMfact
                 
              end do
 
@@ -721,8 +720,7 @@ close(io)
      
        else
 
-!$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,ju)
+!$OMP parallel do default(shared), private(io,iu,ind,ju)
           do io = 1 , nr
              if ( l_ncol(io) /= 0 ) then
              iu = io - orb_offset(io)
@@ -739,21 +737,20 @@ close(io)
     else
 
        if ( leq ) then
-!$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,ju)
+!$OMP parallel do default(shared), private(io,iu,ind,ju)
           do io = 1 , nr
              ! Quickly go past the buffer atoms...
              if ( l_ncol(io) /= 0 ) then
 
              ! The update region equivalent GF part
              iu = io - orb_offset(io)
-             
+
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-                
-                ju = l_col(ind) - orb_offset(l_col(ind)) &
-                     - offset(N_Elec,Elecs,l_col(ind))
-                
-                D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
+
+                ju = l_col(ind) - orb_offset(l_col(ind)) - &
+                     offset(N_Elec,Elecs,l_col(ind))
+
+                D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
                 
              end do
              end if
@@ -761,8 +758,7 @@ close(io)
 !$OMP end parallel do
 
        else
-!$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,ju)
+!$OMP parallel do default(shared), private(io,iu,ind,ju)
           do io = 1 , nr
              if ( l_ncol(io) /= 0 ) then
              iu = io - orb_offset(io)
@@ -787,7 +783,7 @@ close(io)
       offset = sum(TotUsedOrbs(Elecs(:)), &
            MASK=(Elecs(:)%DM_update == 0) .and. Elecs(:)%idx_o <= io )
     end function offset
-    
+
   end subroutine add_DM
 
 

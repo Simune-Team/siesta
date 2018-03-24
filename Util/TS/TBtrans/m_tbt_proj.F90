@@ -1305,7 +1305,7 @@ contains
   end function ProjMolEl_same
 
   ! Initialize the TBT.Proj.nc file
-  subroutine init_proj_save( fname, TSHS , r, ispin, N_Elec, Elecs, &
+  subroutine init_proj_save( fname, TSHS , r, btd, ispin, N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE , a_Dev, a_Buf, sp_dev_sc, save_DATA )
 
     use parallel, only : Node, Nodes, IONode
@@ -1336,7 +1336,7 @@ contains
 
     character(len=*), intent(in) :: fname
     type(tTSHS), intent(inout) :: TSHS
-    type(tRgn), intent(in) :: r
+    type(tRgn), intent(in) :: r, btd
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -1450,6 +1450,7 @@ contains
 
        dic = ('no_u'.kv. TSHS%no_u)//('na_u'.kv. TSHS%na_u )
        dic = dic //('no_d'.kv.r%n) // ('na_d'.kv.a_Dev%n)
+       dic = dic //('n_btd'.kv.btd%n)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('na_b'.kv.a_Buf%n)
        end if
@@ -1463,7 +1464,7 @@ contains
        call rgn_copy(a_Dev, r_tmp)
        call rgn_sort(r_tmp)
        dic = dic // ('pivot'.kvp.r%r)//('a_dev'.kvp.r_tmp%r)
-       dic = dic // ('nsc'.kvp. TSHS%nsc)
+       dic = dic // ('nsc'.kvp. TSHS%nsc) // ('btd'.kvp.btd%r)
        if ( a_Buf%n > 0 ) then
           dic = dic // ('a_buf'.kvp.a_Buf%r)
        end if
@@ -1598,6 +1599,7 @@ contains
     call ncdf_def_dim(ncdf,'nkpt',NF90_UNLIMITED)
     call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
     call ncdf_def_dim(ncdf,'n_s',product(TSHS%nsc))
+    call ncdf_def_dim(ncdf,'n_btd',btd%n)
 
     ! Create eigenvalue dimension, if needed
     if ( N_eigen > 0 ) then
@@ -1655,6 +1657,10 @@ contains
     dic = dic//('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
+    
+    dic = dic // ('info'.kv.'Blocks in BTD for the pivot table')
+    call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
+         atts = dic)
 
     dic = dic//('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
@@ -1692,6 +1698,7 @@ contains
     call rgn_sort(r_tmp)
     call ncdf_put_var(ncdf,'a_dev',r_tmp%r)
     call rgn_delete(r_tmp)
+    call ncdf_put_var(ncdf,'btd',btd%r)
     if ( a_Buf%n > 0 ) then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
     end if
@@ -1993,6 +2000,7 @@ contains
 
 #else
        ! figure out the LUMO level
+       iLUMO = no
        do i = 1 , no 
           if ( eig(i) > 0._dp ) then
              iLUMO = i

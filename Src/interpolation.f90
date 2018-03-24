@@ -170,7 +170,7 @@ end type
 
 ! Overloaded spline generators and evaluators
 interface generate_spline
-  module procedure generate_spline    ! new interface
+  module procedure generate_spline_master    ! new interface
   module procedure generate_spline_x  ! Numerical Recipes interface
   module procedure generate_spline_dx ! older interface
 end interface generate_spline
@@ -197,7 +197,7 @@ CONTAINS
 
 !-------------------------------------------------------------------------------
 
-SUBROUTINE generate_spline( dat, x, y, n, dydx1, dydxn, d2ydx2, stat )
+SUBROUTINE generate_spline_master( dat, x, y, n, dydx1, dydxn, d2ydx2, stat )
 
 ! Generate data for cubic spline interpolation of a function
 
@@ -214,7 +214,7 @@ integer, optional,intent(out):: stat   ! error status:
                                        !  (-2 if n < 2)
 
 ! Internal variables and arrays
-character(len=*),parameter:: myName = 'generate_spline '
+character(len=*),parameter:: myName = 'generate_spline_master '
 real(dp):: a, b, dx, dx1, dx2, dxn, dxm, dxp, dy1, dyn, dym, dyp, &
            p, s, u(n), v(n), xtol, ypp(n)
 integer :: flag, k
@@ -307,7 +307,7 @@ dat%y = y
 dat%d2ydx2 = ypp
 if (present(d2ydx2)) d2ydx2 = ypp
 
-end subroutine generate_spline
+end subroutine generate_spline_master
 
 !-------------------------------------------------------------------------------
 
@@ -471,21 +471,32 @@ real(dp),intent(in) :: dydxn     ! dy/dx at x(n)
 real(dp),intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
 
 ! Internal variables
+integer :: stat
 type(spline_t):: dat
 
 ! Generate spline dat
 if (dydx1>dydxMax .and. dydxn>dydxMax) then
-  call generate_spline( dat, x, y, n )
+  call generate_spline_master( dat, x, y, n, stat=stat)
 elseif (dydxn>dydxMax) then
-  call generate_spline( dat, x, y, n, dydx1=dydx1 )
+  call generate_spline_master( dat, x, y, n, dydx1=dydx1, stat=stat)
 elseif (dydx1>dydxMax) then
-  call generate_spline( dat, x, y, n, dydxn=dydxn )
+  call generate_spline_master( dat, x, y, n, dydxn=dydxn, stat=stat)
 else
-  call generate_spline( dat, x, y, n, dydx1, dydxn )
+  call generate_spline_master( dat, x, y, n, dydx1, dydxn, stat=stat)
 endif
 
 ! Copy d2y/dx2 to output array
-d2ydx2 = dat%d2ydx2
+! If the status is faulty the resulting d2y/dx2 will be
+! forcefully set to 0
+! Then the user has to do something differently
+if ( stat /= 0 ) then
+   d2ydx2 = 0._dp
+else
+   d2ydx2 = dat%d2ydx2
+end if
+
+! Deallocate arrays in the spline data-structure
+call clean_spline(dat)
 
 END SUBROUTINE generate_spline_x
 
@@ -506,7 +517,6 @@ real(dp),intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
 ! Internal variables
 integer :: ix
 real(dp):: x(n)
-type(spline_t):: dat
 
 ! Generate spline data
 x = (/( (ix-1)*dx, ix=1,n )/)

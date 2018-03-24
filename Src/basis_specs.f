@@ -123,6 +123,7 @@
       use basis_types, only: nsp, basis_parameters, ground_state_t
       use basis_types, only: destroy, copy_shell, initialize
       use pseudopotential, only: pseudo_read, pseudo_reparametrize
+      use pseudopotential, only: pseudo_init_constant
       use periodic_table, only: qvlofz, lmxofz, cnfig, atmass
       use chemical
       use sys
@@ -130,12 +131,11 @@
 
       Implicit None
 
-      type(basis_def_t), pointer::   basp
-      type(shell_t), pointer::  s
-      type(lshell_t), pointer::  ls
-      type(kbshell_t), pointer:: k
+      type(basis_def_t), pointer :: basp => null()
+      type(shell_t), pointer :: s => null()
+      type(lshell_t), pointer :: ls => null()
+      type(kbshell_t), pointer :: k => null()
 
-      character(len=*), parameter   :: defunit='Ry'
       character(len=1), parameter   ::
      $                           sym(0:4) = (/ 's','p','d','f','g' /)
 
@@ -279,7 +279,8 @@ C Sanity checks on values
           basp%mass = atmass(abs(int(basp%z)))
         endif
         if (basp%bessel) then
-          ! do nothing here
+          ! Initialize a constant pseudo
+          call pseudo_init_constant(basp%pseudopotential)
         else if (basp%synthetic) then
           synthetic_atoms = .true.
           ! Will set gs later
@@ -561,13 +562,13 @@ C Sanity checks on values
               else
                 if (fdf_bnvalues(pline) .ne. k%nkbl)
      .            call die("Wrong number of energies")
-                unitstr = defunit
+                unitstr = 'Ry'
                 if (fdf_bnnames(pline) .eq. 1)
      .            unitstr = fdf_bnames(pline,1)
                 ! Insert ref energies in erefkb
                 do i= 1, k%nkbl
                   k%erefKB(i) =
-     .                 fdf_bvalues(pline,i)*fdf_convfac(unitstr,defunit)
+     .                 fdf_bvalues(pline,i)*fdf_convfac(unitstr,'Ry')
                 enddo
               endif
             endif

@@ -1437,6 +1437,7 @@ C ----------------------------------------------------------------------
 #ifdef TRANSIESTA_VOLTAGE_DEBUG
          call write_grid_netcdf( cell, ntm, 1, ntpl, Vaux, 
      &        "TransiestaHartreePotential")
+         call timer('ts_volt', 3)
          call bye('transiesta debug for Hartree potential')
 #endif
       endif

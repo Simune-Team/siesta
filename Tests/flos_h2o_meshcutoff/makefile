@@ -1,7 +1,7 @@
 #
 # Single-test makefile
 #
-name=h2o_meshcutoff
+name=flos_h2o_meshcutoff
 
 EXTRAFILES=conv.lua
 

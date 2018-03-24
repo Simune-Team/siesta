@@ -39,12 +39,13 @@ module flook_siesta
 
 contains
 
-  subroutine slua_init(LUA)
+  subroutine slua_init(LUA, md_lua)
 
     use fdf, only : fdf_get
     use m_os, only : file_exist
     
     type(luaState), intent(inout) :: LUA
+    logical, intent(in) :: md_lua
 
     character(len=30) :: fortran_msg
 
@@ -129,6 +130,12 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
                ' could not be found!'
           write(*,'(a)') 'siesta-lua: WARNING'
        end if
+
+       if ( md_lua ) then
+          call die('Requested Lua-MD, however no Lua ' // &
+               'script could be found !')
+       end if
+       
        return
     end if
     
