@@ -167,10 +167,12 @@ contains
                k(2) * sc_off(2,i) + &
                k(3) * sc_off(3,i)))
        end do
-!$OMP end do
+!$OMP end do nowait
 
+!$OMP single
        ! Convert to orbital space
        call rgn_Atom2Orb(r_k(il)%atm,na_u,lasto,ro)
+!$OMP end single
 
 !$OMP do
     do i = 1 , ro%n
@@ -228,7 +230,9 @@ contains
     end do
 !$OMP end do nowait
 
+!$OMP single
     call rgn_delete(ro)
+!$OMP end single
 
     end do
 !$OMP end parallel

@@ -459,9 +459,9 @@ contains
              !call ncdf_open(ncdf,fname,mode=NF90_WRITE)
              !call ncdf_put_var(ncdf,'wkpt',wkpt,start=(/1/))
              !call ncdf_close(ncdf)
-             write(*,'(a)') 'tbtrans: Continuation run on old TBT.nc file'
-             write(*,'(a)') 'tbtrans: *** WARNING ***'
-             write(*,'(a)') 'tbtrans: *** You need to make sure all &
+             write(*,'(a)') 'tbt: Continuation run on old TBT.nc file'
+             write(*,'(a)') 'tbt: *** WARNING ***'
+             write(*,'(a)') 'tbt: *** You need to make sure all &
                   &energy-points are fully contained in your current &
                   &energy range ***'
           end if
@@ -479,7 +479,7 @@ contains
     else
        
        if ( Node == 0 ) then
-          write(*,'(2a)')'tbtrans: Initializing data file: ',trim(fname)
+          write(*,'(2a)')'tbt: Initializing data file: ',trim(fname)
        end if
 
     end if

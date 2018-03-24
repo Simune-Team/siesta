@@ -204,12 +204,17 @@ contains
     call dict_variable_add('Mesh.Cutoff.Minimum',G2cut)
     call dict_variable_add('Mesh.Cutoff.Used',G2max)
 
-    call dict_variable_add('SCF.Mixer.Weight',scf_mix%w)
-    call dict_variable_add('SCF.Mixer.Restart',scf_mix%restart)
-    call dict_variable_add('SCF.Mixer.Iterations',scf_mix%n_itt)
-    
-    ! Just to populate the table in the dictionary
-    call dict_variable_add('SCF.Mixer.Switch',next_mixer)
+    if ( mix_charge ) then
+      call dict_variable_add('SCF.Mixer.Weight', wmix)
+    else
+      call dict_variable_add('SCF.Mixer.Weight',scf_mix%w)
+      call dict_variable_add('SCF.Mixer.Restart',scf_mix%restart)
+      call dict_variable_add('SCF.Mixer.Iterations',scf_mix%n_itt)
+      
+      ! Just to populate the table in the dictionary
+      call dict_variable_add('SCF.Mixer.Switch',next_mixer)
+    end if
+
     ! Initialize to no switch
     next_mixer = ' '
 #endif
@@ -479,8 +484,7 @@ contains
           
           ! Retrieve an easy character string
           nnext_mixer = cunpack(next_mixer)
-          if ( len_trim(nnext_mixer) > 0 ) then
-#ifdef TRANSIESTA
+          if ( len_trim(nnext_mixer) > 0 .and. .not. mix_charge ) then
              if ( TSrun ) then
                 do imix = 1 , size(ts_scf_mixs)
                    if ( ts_scf_mixs(imix)%name == nnext_mixer ) then
@@ -490,7 +494,6 @@ contains
                    end if
                 end do
              else 
-#endif
                 do imix = 1 , size(scf_mixs)
                    if ( scf_mixs(imix)%name == nnext_mixer ) then
                       call mixers_history_init(scf_mixs)
@@ -498,9 +501,7 @@ contains
                       exit
                    end if
                 end do
-#ifdef TRANSIESTA
              end if
-#endif
              
              ! Check that we indeed have changed the mixer
              if ( IONode .and. scf_mix%name /= nnext_mixer ) then
@@ -523,13 +524,11 @@ contains
           end if
 #endif
 
-#ifdef TRANSIESTA
           ! ... except that we might continue for TranSiesta
           if ( SCFconverged ) then
              call transiesta_switch()
              ! might reset SCFconverged and iscf
           end if
-#endif
           
        else
           
@@ -754,6 +753,7 @@ contains
       use m_energies, only : Ef
       use m_mixing, only: mixers_history_init
       use m_mixing_scf, only: scf_mix, scf_mixs
+      use m_rhog, only: resetRhoG
 
       use m_ts_global_vars,      only: TSinit, TSrun
       use m_ts_global_vars,      only: ts_print_transiesta
@@ -806,19 +806,22 @@ contains
       call val_swap(dDtol, ts_Dtol)
       call val_swap(dHtol, ts_Htol)
 
-      ! From now on, a new mixing cycle starts,
-      ! Check in mixer.F for new mixing schemes.
-      ! NP new mixing
-      if ( associated(ts_scf_mixs, target=scf_mixs) ) then
-         do iel = 1 , size(scf_mix%stack)
+      ! Clean up mixing history
+      if ( mix_charge ) then
+        call resetRhoG(.true.)
+      else
+        if ( associated(ts_scf_mixs, target=scf_mixs) ) then
+          do iel = 1 , size(scf_mix%stack)
             call reset(scf_mix%stack(iel), -ts_hist_keep)
             ! Reset iteration count as certain
             ! mixing schemes require this for consistency
             scf_mix%cur_itt = n_items(scf_mix%stack(iel))
-         end do
-      else
-         call mixers_history_init(scf_mixs)
+          end do
+        else
+          call mixers_history_init(scf_mixs)
+        end if
       end if
+      
       ! Transfer scf_mixing to the transiesta mixing routine
       scf_mix => ts_scf_mixs(1)
 #ifdef SIESTA__FLOOK

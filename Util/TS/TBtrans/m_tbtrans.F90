@@ -389,9 +389,9 @@ contains
 
          tmem = nsize * 16._dp / 1024._dp ** 2
          if ( tmem > 600._dp ) then
-            write(*,'(a,f8.3,a)') 'tbtrans: Electrode memory: ',tmem / 1024._dp,' GB'
+            write(*,'(a,f8.3,a)') 'tbt: Electrode memory: ',tmem / 1024._dp,' GB'
          else
-            write(*,'(a,f8.3,a)') 'tbtrans: Electrode memory: ',tmem ,' MB'
+            write(*,'(a,f8.3,a)') 'tbt: Electrode memory: ',tmem ,' MB'
          end if
          
          ! first the size of the real matrices
@@ -407,19 +407,19 @@ contains
          nsize = nnzs(sp_uc) * 2
          mem = mem + nsize * 16._dp / 1024._dp ** 2
          if ( mem > 600._dp ) then
-            write(*,'(a,f8.3,a)') 'tbtrans: Sparse Hamiltonian and overlap memory: ', &
+            write(*,'(a,f8.3,a)') 'tbt: Sparse Hamiltonian and overlap memory: ', &
                  mem / 1024._dp,' GB'
          else
-            write(*,'(a,f8.3,a)') 'tbtrans: Sparse Hamiltonian and overlap memory: ', &
+            write(*,'(a,f8.3,a)') 'tbt: Sparse Hamiltonian and overlap memory: ', &
                  mem,' MB'
          end if
 
          tmem = tmem + mem
          if ( tmem > 600._dp ) then
-            write(*,'(a,f8.3,a/)') 'tbtrans: Sum of electrode and sparse memory: ', &
+            write(*,'(a,f8.3,a/)') 'tbt: Sum of electrode and sparse memory: ', &
                  tmem / 1024._dp,' GB'
          else
-            write(*,'(a,f8.3,a/)') 'tbtrans: Sum of electrode and sparse memory: ', &
+            write(*,'(a,f8.3,a/)') 'tbt: Sum of electrode and sparse memory: ', &
                  tmem,' MB'
          end if
          

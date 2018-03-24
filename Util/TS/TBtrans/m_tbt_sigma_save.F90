@@ -270,13 +270,13 @@ contains
 
        ! We currently overwrite the Sigma-file
        if ( IONode ) then
-          write(*,'(2a)')'tbtrans: Overwriting self-energy file: ',trim(fname)
+          write(*,'(2a)')'tbt: Overwriting self-energy file: ',trim(fname)
        end if
 
     else
        
        if ( IONode ) then
-          write(*,'(2a)')'tbtrans: Initializing self-energy file: ',trim(fname)
+          write(*,'(2a)')'tbt: Initializing self-energy file: ',trim(fname)
        end if
 
     end if

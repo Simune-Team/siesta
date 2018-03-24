@@ -293,7 +293,7 @@ contains
              else if ( leqi(ctmp,'A3') .or. leqi(ctmp,'c') ) then
                 ik = 3
              else
-                call die('TBtrans: could not figure out the diagonal direction specified')
+                call die('Tbt: could not figure out the diagonal direction specified')
              end if
 
              ! Set the diagonal
@@ -305,10 +305,10 @@ contains
              ik = fdf_bnintegers(pline)
              
              if ( ik < 3 .and. IONode ) then
-                write(*,'(/,a)') 'tbtrans: POSSIBLE WARNING'
-                write(*,'(a,i0,a)') 'tbtrans: You have only supplied ', &
+                write(*,'(/,a)') 'tbt: POSSIBLE WARNING'
+                write(*,'(a,i0,a)') 'tbt: You have only supplied ', &
                      ik,' of the 3 diagonal k-cell elements.'
-                write(*,'(a)') 'tbtrans: Will assume this order A1-A2-A3'
+                write(*,'(a)') 'tbt: Will assume this order A1-A2-A3'
              end if
              
              ! Set the diagonal
@@ -380,7 +380,7 @@ contains
     if ( K_METHOD == K_METHOD_PATH ) then
 
        if ( IONode ) then
-          write(*,'(a)')'tbtrans: k-points are following paths in the Brillouin zone.'
+          write(*,'(a)')'tbt: k-points are following paths in the Brillouin zone.'
           write(*,'(a)')'WARNING: The averaged transmission will not necessarily &
                &reflect the total transmission!'
        end if
@@ -776,9 +776,9 @@ contains
     if ( .not. leqi(user_kfile,'NONE') ) then
 
        if ( IONode ) then
-          write(*,'(a)') 'tbtrans: Reading user specified k-points.'
-          write(*,'(2a)')'tbtrans: k-points found in file: ',trim(user_kfile)
-          write(*,'(2a)')'tbtrans: *** Responsibility is on your side! ***'
+          write(*,'(a)') 'tbt: Reading user specified k-points.'
+          write(*,'(2a)')'tbt: k-points found in file: ',trim(user_kfile)
+          write(*,'(2a)')'tbt: *** Responsibility is on your side! ***'
        end if
 
        K_METHOD = K_METHOD_LIST

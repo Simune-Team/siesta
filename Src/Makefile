@@ -37,7 +37,7 @@ dist:
 dep:
 	-if [ $(VPATH) = "." ] ; then \
 	sfmakedepend --depend=obj --modext=o \
-                              *.f *.f90 *.F *.F90 ; \
+                              *.f *.f90 *.F *.F90 *.T90 ; \
         else \
 	sfmakedepend --depend=obj --modext=o \
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 ; \
@@ -499,6 +499,13 @@ siesta: what version \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
                $(XC) $(MS) $(MPI_INTERFACE) $(COMP_LIBS) $(LIBS) 
 
+# Notify users of erroneous transiesta compilation
+transiesta:
+	@echo ""
+	@echo " TranSiesta executable is deprecated!"
+	@echo ""
+	@echo " TranSiesta method is enabled in the siesta executable"
+	@echo ""
 
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
@@ -607,7 +614,7 @@ class_SpData2D.o: class_Sparsity.o
 class_Sparsity.o: basic_type.inc
 class_Sparsity.o: alloc.o
 class_TriMat.o: class_TriMat.T90 basic_type.inc
-class_TriMat.o: alloc.o
+class_TriMat.o: alloc.o intrinsic_missing.o
 coceri.o: files.o periodic_table.o precision.o units.o
 compute_dm.o: atomlist.o class_SpData1D.o compute_ebs_shift.o diagon.o
 compute_dm.o: iodmhs_netcdf.o kpoint_grid.o m_chess.o m_dminim.o m_energies.o
@@ -1029,9 +1036,9 @@ m_ts_pivot.o: create_Sparsity_Union.o geom_helper.o intrinsic_missing.o
 m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
 m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
-m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
-m_ts_rgn2trimat.o: m_ts_electype.o m_ts_method.o m_ts_tri_common.o parallel.o
-m_ts_rgn2trimat.o: precision.o
+m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o intrinsic_missing.o
+m_ts_rgn2trimat.o: m_region.o m_ts_electype.o m_ts_method.o m_ts_tri_common.o
+m_ts_rgn2trimat.o: parallel.o precision.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
 m_ts_sparse.o: intrinsic_missing.o m_region.o m_sparsity_handling.o

@@ -213,7 +213,7 @@ subroutine tbt_reinit( sname , slabel )
            line = 'TBT.Directory '//trim(line)
            call fdf_overwrite(line)
 
-        else if ( line(1:12) == 'HS' ) then
+        else if ( line(1:2) == 'HS' ) then
            if ( in >= count - 1 ) &
                 call die('Missing argument on command line, -HS')
            in = in + 1

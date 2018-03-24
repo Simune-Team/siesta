@@ -3485,7 +3485,7 @@ of States sections.
   fields or spin-orbit interaction.
 
   Note this defaults to \fdffalse\ if \fdf{Spin} is
-  \fdf*{non-colinear}, \fdf*{spin-orbit} or \fdf{Spin!Spiral} is  used.
+  \fdf*{non-colinear}, \fdf*{spin-orbit} or \fdf{Spin!Spiral} is used.
 
 \end{fdflogicalT}
 
@@ -4050,11 +4050,12 @@ by potentially saving many self-consistency steps in production runs.
     \index{SCF!mixing!Charge}
     Mix the real-space charge density. Note this is an experimental
     feature.
-    
+
   \end{fdfoptions}
   
   \note Real-space charge density does not follow the regular options
-  that adhere to density-matrix or Hamiltonian mixing.
+  that adhere to density-matrix or Hamiltonian mixing. Also it is not
+  recommended to use real-space charge density mixing with \tsiesta.
 
 \end{fdfentry}
 
@@ -10780,6 +10781,53 @@ end
   
 \end{fdflogicalF}
 
+\begin{fdflogicalF}{Lua!Interactive}
+
+  Start an interactive Lua session at all the states in the program
+  and ask for user-input.
+  %
+  This is primarily intended for debugging purposes. The interactive
+  session is executed just \emph{before} the \code{siesta\_comm}
+  function call (if the script is used).
+  
+  For serial runs \code{siesta.send} may be used. For parallel runs do
+  \emph{not} use \code{siesta.send} as the code is only
+  executed on the first MPI node.
+
+  There are various commands that are caught if they are the only
+  content on a line:
+  \begin{fdfoptions}
+    \option[/debug]%
+    Turn on/off debugging information.
+
+    \option[/show]%
+    Show the currently collected lines of code.
+
+    \option[/clear]%
+    Clears the currently collected lines of code.
+
+    \option[;]%
+    Run the currently collected lines of code and continue collecting
+    lines.
+
+    \option[/run]%
+    Same as \code{;}.
+
+    \option[/cont]%
+    Run the currently collected lines of code and continue \siesta.
+
+    \option[/stop]%
+    Run the currently collected lines of code and stop all future
+    interactive Lua sessions.
+
+  \end{fdfoptions}
+
+  Currently this only works if \fdf{Lua!Script} is having a valid Lua
+  file (note the file may be empty).
+  
+\end{fdflogicalF}
+
+
 
 \subsection{Examples of Lua programs}
 
@@ -10838,6 +10886,9 @@ Guide.
 
 Starting from 4.1 \tsiesta\ is intrinsic to the \siesta\ executable
 and thus there is no need for two separate executables.
+
+An accompanying Python toolbox is available which will assist with
+\tsiesta\ calculations. Please use (and cite) \sisl\cite{sisl}.
 
 
 \subsection{Source code structure}
@@ -11504,6 +11555,8 @@ using \fdf{TS!SolutionMethod:BTD}, similarly for options with
     \option[GGPS] %
     Use the generalized Gibbs-Poole-Stockmeyer algorithm for reducing
     the bandwidth.
+
+    \note this algorithm does not work on dis-connected graphs.
 
     \option[PCG] %
     Use the perphiral connectivity graph algorithm for reducing the

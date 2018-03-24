@@ -354,7 +354,7 @@ contains
           ! we return a non-inverted matrix
           ! hence prohibit the inversion of the matrix
           ! by moving data to another work-array
-!$OMP parallel do default(shared) private(i)
+!$OMP parallel do default(shared), private(i)
           do i = 1 , nosq
              rh1(i) = gsR(i)
           end do

@@ -355,8 +355,6 @@ contains
       logical :: copy
       integer :: part_work, guess_work
 
-      copy = .false.
-
       ! We check whether the number of elements is smaller
       ! or that the number of parts is greater (however, this should
       ! in principle always go together)
@@ -469,52 +467,82 @@ contains
 
   end subroutine guess_TriMat_last
 
-  function faster_parts(np,i4n_part,ng,i4g_part) result(faster)
-    integer, intent(in) :: np, i4n_part(np)
-    integer, intent(in) :: ng, i4g_part(ng)
+  function faster_parts(np,n_part,ng,g_part) result(faster)
+    integer, intent(in) :: np, n_part(np)
+    integer, intent(in) :: ng, g_part(ng)
     logical :: faster
 
-    integer :: i
-    integer(i8b) :: guess_N, part_N, diff
-    integer(i8b) :: n_part(np), guess_part(ng)
-
-    n_part(:) = i4n_part(:)
-    guess_part(:) = i4g_part(:)
+    integer :: i, n
+    real(dp) :: p_N, g_N, diff
+    real(dp), parameter :: off_diag = 1.2_dp
 
     ! We estimate the fastest algorithm
     ! by the number of operations the matrices make
 
-    diff = 0
-    do i = 1 , max(np,ng)
-       part_N = 0
-       if ( i < np ) then
-          part_N = 2 * 5 * n_part(i) ** 2 / 3 + 4 * n_part(i+1)
-          part_N = part_N * n_part(i)
-       end if
-       guess_N = 0
-       if ( i < ng ) then
-          guess_N = 2 * 5 * guess_part(i) ** 2 / 3 + 4 * guess_part(i+1) 
-          guess_N = guess_N * guess_part(i)
-       end if
-       diff = diff + part_N - guess_N
+    ! 2 * 5 / 3 + 4 ~~ 1 + 1.2
+    p_N = R(n_part(1)) ** 2 + off_diag * R(n_part(2))
+    p_N = p_N * R(n_part(1))
+    
+    g_N = R(g_part(1)) ** 2 + off_diag * R(g_part(2))
+    g_N = g_N * R(g_part(1))
+    
+    diff = p_N - g_N
+    
+    n = min(np, ng)
+!$OMP parallel do default(shared), private(i,p_N,g_N), reduction(+:diff), if(n>1000)
+    do i = 2, n
 
-       if ( i == 1 ) cycle
+      p_N = R(n_part(i)) ** 2 + off_diag * R(n_part(i-1))
+      p_N = p_N * R(n_part(i))
 
-       part_N = 0
-       if ( i <= np ) then
-          part_N = 2 * 5 * n_part(i) ** 2 / 3 + 4 * n_part(i-1) 
-          part_N = part_N * n_part(i)
-       end if
-       guess_N = 0
-       if ( i <= ng ) then
-          guess_N = 2 * 5 * guess_part(i) ** 2 / 3 + 4 * guess_part(i-1)
-          guess_N = guess_N * guess_part(i)
-       end if
-       diff = diff + part_N - guess_N
+      g_N = R(g_part(i)) ** 2 + off_diag * R(g_part(i-1))
+      g_N = g_N * R(g_part(i))
+      
+      diff = diff + p_N - g_N
+      
     end do
+!$OMP end parallel do
 
-    faster = (diff > 0)
+    if ( np > ng ) then
+      faster = .true.
 
+      do i = ng + 1, np
+        
+        p_N = R(n_part(i)) ** 2 + off_diag * R(n_part(i-1))
+        p_N = p_N * R(n_part(i))
+
+        diff = diff + p_N
+
+        if ( diff > 0._dp ) return
+
+      end do
+      
+    else
+      faster = .false.
+      
+      do i = np + 1, ng
+        
+        g_N = R(g_part(i)) ** 2 + off_diag * R(g_part(i-1))
+        g_N = - g_N * R(g_part(i))
+        
+        diff = diff + g_N
+
+        if ( diff < 0._dp ) return
+
+      end do
+      
+    end if
+
+    faster = diff > 0._dp
+
+  contains
+
+    elemental function R(i) result(o)
+      integer, intent(in) :: i
+      real(dp) :: o
+      o = real(i, dp)
+    end function R
+      
   end function faster_parts
 
 
@@ -603,54 +631,176 @@ contains
   end subroutine guess_prev_part_size
 
   subroutine full_even_out_parts(N_Elec,Elecs,IsVolt, &
-       method,no,mm_col,parts,n_part, last_eq)
+      method,no,mm_col,n_part,parts, last_eq)
+    use intrinsic_missing, only: index_sort_heap, sort_quick
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     logical, intent(in) :: IsVolt
     integer, intent(in) :: method ! the method used for creating the parts
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
-    integer, intent(in) :: parts
-    integer, intent(inout) :: n_part(parts)
+    integer, intent(in) :: n_part
+    integer, intent(inout) :: parts(n_part)
     integer, intent(in) :: last_eq
     ! Local variables
-    integer :: o_part(parts), mem_part(parts) , i, o_mem, n_mem, idx
-    logical :: btd_column
+    integer :: mem_parts(n_part), i, j, d, idx
+    logical :: changed
 
-    if ( method == 1 ) then
-       ! we have a memory determining thing
-       btd_column = ts_A_method == TS_BTD_A_COLUMN .and. IsVolt
-       
-       do
-          o_part(:) = n_part(:)
-          call needed_mem(btd_column,N_Elec,Elecs,parts,n_part,o_mem)
-          do i = 1 , parts
-             mem_part(:) = n_part(:)
-             call even_out_parts(no, mm_col, parts, n_part, i, last_eq)
-             call needed_mem(btd_column,N_Elec,Elecs,parts,n_part,n_mem)
-             if ( n_mem > o_mem ) then
-                ! copy back
-                n_part(:) = mem_part(:)
-             end if
-          end do
-          if ( maxval(abs(o_part-n_part)) == 0 ) exit
-       end do
-       
-    else
+    select case ( method )
+    case ( 0 ) ! speed
 
-       do
-          o_part(:)   = n_part(:)
-          mem_part(:) = n_part(:)
-          ! Even out from the largest one first
-          do i = 1 , parts
-             idx = maxloc(mem_part,dim=1)
-             mem_part(idx) = 0
-             call even_out_parts(no, mm_col, parts, n_part, idx, last_eq)
-          end do
-          if ( maxval(abs(o_part-n_part)) == 0 ) exit
-       end do
+      do
+        changed = .false.
+        
+        ! Make sure we copy all
+        mem_parts(:) = parts(:)
+        do i = 1 , n_part
+          call store_part(n_part, parts, mem_parts, i)
+          call even_out_parts(no, mm_col, n_part, parts, i, last_eq)
+          call diff_perf(i, n_part, parts, mem_parts, d)
+          if ( d == 0 ) then
+            ! Simply store. It could be that we swapped a few things
+            call store_part(n_part, parts, mem_parts, i)
+          else if ( d > 0 ) then
+            ! Copy back
+            call store_part(n_part, mem_parts, parts, i)
+          else
+            ! store new partition
+            call store_part(n_part, parts, mem_parts, i)
+            changed = .true.
+          end if
+        end do
+        
+        if ( .not. changed ) exit
+      end do
 
-    end if
+    case ( 1 ) ! memory
+      
+      do
+        changed = .false.
+        ! Make sure we copy all
+        mem_parts(:) = parts(:)
+        do i = 1 , n_part
+          call store_part(n_part, parts, mem_parts, i)
+          call even_out_parts(no, mm_col, n_part, parts, i, last_eq)
+          call diff_mem(i, n_part, parts, mem_parts, d)
+          if ( d == 0 ) then
+            ! Simply store. It could be that we swapped a few things
+            call store_part(n_part, parts, mem_parts, i)
+          else if ( d > 0 ) then
+            ! Copy back
+            call store_part(n_part, mem_parts, parts, i)
+          else
+            call store_part(n_part, parts, mem_parts, i)
+            changed = .true.
+          end if
+        end do
+        
+        if ( .not. changed ) exit
+      end do
+      
+    case default
+
+      call die('not implemented')
+
+!!$      ! Old method.
+!!$      ! Not so fast due to the heavy sort for very large arrays
+!!$      
+!!$      do
+!!$        ! Create sorting index so we can easily find the largest
+!!$        ! blocks
+!!$        call index_sort_heap(n_part, parts, mem_parts)
+!!$
+!!$        ! Sort indices such that we don't loop back and fort
+!!$        i = 1
+!!$        do while ( i < n_part )
+!!$          idx = 1
+!!$          do j = i + 1, n_part
+!!$            if ( parts(mem_parts(j)) == parts(mem_parts(i)) ) then
+!!$              idx = j - i + 1
+!!$            else
+!!$              exit
+!!$            end if
+!!$          end do
+!!$          call sort_quick(idx, mem_parts(i:))
+!!$          i = i + idx
+!!$        end do
+!!$
+!!$        o_parts(:) = parts(:)
+!!$        call sort_quick(n_part, o_parts)
+!!$        print *, 'full-even-out-2 NEW', o_parts(n_part-2:)
+!!$        o_parts(:) = parts(:)
+!!$        changed = .false.
+!!$
+!!$        ! Even out from the largest one first
+!!$        do i = n_part, 1 , -1
+!!$          idx = mem_parts(i)
+!!$          call even_out_parts(no, mm_col, n_part, parts, idx, last_eq)
+!!$          if ( .not. changed ) then
+!!$            if ( idx == 1 ) then
+!!$              changed = parts(1) /= o_parts(1) .or. &
+!!$                  parts(2) /= o_parts(2)
+!!$              if ( changed ) then
+!!$                print *, parts(1), o_parts(1), parts(2), o_parts(2)
+!!$              end if
+!!$            else if ( idx == n_part ) then
+!!$              changed = parts(n_part) /= o_parts(n_part) .or. &
+!!$                  parts(n_part-1) /= o_parts(n_part-1)
+!!$              if ( changed ) then
+!!$                print *, parts(n_part), o_parts(n_part), parts(n_part-1), o_parts(n_part-1)
+!!$              end if
+!!$            else
+!!$              changed = parts(idx) /= o_parts(idx) .or. &
+!!$                  parts(idx-1) /= o_parts(idx-1) .or. &
+!!$                  parts(idx+1) /= o_parts(idx+1)
+!!$              if ( changed ) then
+!!$                print *, parts(n_part), o_parts(n_part), parts(n_part-1), o_parts(n_part-1), &
+!!$                    parts(n_part+1), o_parts(n_part+1)
+!!$              end if
+!!$
+!!$            end if
+!!$          end if
+!!$        end do
+!!$        
+!!$        if ( .not. changed ) exit
+!!$      end do
+      
+    end select
+
+  contains
+
+    subroutine store_part(n_part, parts, store_parts, id)
+      integer, intent(in) :: id, n_part
+      integer, intent(in) :: parts(n_part)
+      integer, intent(inout) :: store_parts(n_part)
+      
+      store_parts(id) = parts(id)
+      if ( id == 1 ) then
+        store_parts(id+1) = parts(id+1)
+      else if ( id == n_part ) then
+        store_parts(id-1) = parts(id-1)
+      else
+        store_parts(id-1) = parts(id-1)
+        store_parts(id+1) = parts(id+1)
+      end if
+    end subroutine store_part
+    
+    function changed_part(n_part, parts, store_parts, id) result(changed)
+      integer, intent(in) :: id, n_part
+      integer, intent(in) :: parts(n_part)
+      integer, intent(inout) :: store_parts(n_part)
+      logical :: changed
+      
+      changed = store_parts(id) /= parts(id)
+      if ( id == 1 ) then
+        changed = changed .or. store_parts(id+1) /= parts(id+1)
+      else if ( id == n_part ) then
+        changed = changed .or. store_parts(id-1) /= parts(id-1)
+      else
+        changed = changed .or. store_parts(id-1) /= parts(id-1)
+        changed = changed .or. store_parts(id+1) /= parts(id+1)
+      end if
+    end function changed_part
 
   end subroutine full_even_out_parts
 
@@ -748,7 +898,9 @@ contains
     subroutine even_if_larger(Row,p1,p2,sign)
       integer, intent(in) :: sign
       integer , intent(inout) :: Row, p1, p2
-      if ( p1 > p2 ) then
+      ! If we don't have p2 + 1 we could end up
+      ! in 12 -- 11 swaps
+      if ( p1 > p2 + 1) then
          p1 = p1 - 1
          p2 = p2 + 1
          Row = Row + sign
@@ -771,23 +923,24 @@ contains
     type(tRgn) :: pvt
     integer :: ir, row, ptr, nr, j
     integer, pointer :: l_col(:), l_ptr(:), ncol(:)
-    
+
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col,nrows_g=nr)
 
     ! Using a pivoting table reduces overhead
     ! of performing rgn_pivot on a non-sorted
     ! region! SUBSTANTIALLY!
-    call rgn_init(pvt, nr)
+    call rgn_init(pvt, nr, val=0)
 
-!$OMP parallel default(shared)
+!$OMP parallel default(shared), private(ir,row,ptr,j)
 
-!$OMP do private(ir)
-    do ir = 1 , nr
-       pvt%r(ir) = rgn_pivot(r, ir)
+    ! Create the back-pivoting array
+!$OMP do
+    do ir = 1 , r%n
+      pvt%r(r%r(ir)) = ir
     end do
 !$OMP end do
     
-!$OMP do private(ir,row,ptr,j)
+!$OMP do
     do ir = 1 , r%n
 
        ! Get original sparse matrix row
@@ -812,16 +965,154 @@ contains
 !$OMP end parallel
 
     call rgn_delete(pvt)
-    
+
   end subroutine set_minmax_col
 
-  function valid_tri(no,r,mm_col,parts,n_part,last_eq) result(val) 
+  !< Calculate the difference in memory requirement for two BTD
+  !< part1 - part2 == mem
+  recursive subroutine diff_mem(part, n, part1, part2, mem, final)
+    integer, intent(in) :: part
+    integer, intent(in) :: n
+    integer, intent(in) :: part1(n), part2(n)
+    integer, intent(out) :: mem
+    logical, intent(in), optional :: final
+    integer :: next
+    logical :: lfinal
+
+    if ( part > n ) return
+    lfinal = .false.
+    if ( present(final) ) lfinal = final
+
+    if ( part == 1 ) then
+      
+      mem = part1(1) * ( part1(1) + part1(2) * 2 ) - &
+          part2(1) * ( part2(1) + part2(2) * 2 )
+
+      if ( .not. lfinal ) then
+        call diff_mem(part+1, n, part1, part2, next, .true.)
+        mem = mem + next
+      end if
+      
+    else if ( part == n ) then
+      
+      mem = part1(n) * ( part1(n) + part1(n-1) * 2 ) - &
+          part2(n) * ( part2(n) + part2(n-1) * 2 )
+
+      if ( .not. lfinal ) then
+        call diff_mem(part-1, n, part1, part2, next, .true.)
+        mem = mem + next
+      end if
+      
+    else
+      
+      mem = part1(part) * ( part1(part) + part1(part-1) * 2 + &
+          part1(part+1) * 2 ) + part1(part-1) ** 2 + part1(part+1) ** 2 &
+          - &
+          part2(part) * ( part2(part) + part2(part-1) * 2 + &
+          part2(part+1) * 2 ) + part2(part-1) ** 2 + part2(part+1) ** 2
+
+      if ( .not. lfinal ) then
+        call diff_mem(part-1, n, part1, part2, next, .true.)
+        mem = mem + next
+        call diff_mem(part+1, n, part1, part2, next, .true.)
+        mem = mem + next
+      end if
+      
+    end if
+
+  end subroutine diff_mem
+
+  !< Calculate the difference in memory requirement for two BTD
+  !< part1 - part2 == mem
+  recursive subroutine diff_perf(part, n, part1, part2, perf, final)
+    use precision, only: dp
+    integer, intent(in) :: part
+    integer, intent(in) :: n
+    integer, intent(in) :: part1(n), part2(n)
+    integer, intent(out) :: perf
+    logical, intent(in), optional :: final
+    real(dp) :: one_third = 0.3333333333333333333333_dp
+    real(dp) :: p
+    integer :: next
+    logical :: lfinal
+
+    if ( part > n ) return
+    lfinal = .false.
+    if ( present(final) ) lfinal = final
+
+    if ( part == 1 ) then
+
+      p = p_inv(part1(1)) - p_inv(part2(1)) + & ! inv
+          (p_mm(part1(1), part1(2)) - p_mm(part2(1), part2(2))) ! mm
+      
+      if ( .not. lfinal ) then
+        ! This takes inv of part + 1 and mm 
+        call diff_perf(part+1, n, part1, part2, next, .true.)
+        p = p + real(next, dp) ** 3
+      end if
+      
+    else if ( part == n ) then
+
+      p = p_inv(part1(n)) - p_inv(part2(n)) + & ! inv
+          (p_mm(part1(n), part1(n-1)) - p_mm(part2(n), part2(n-1))) ! mm
+
+      if ( .not. lfinal ) then
+        ! This takes inv of part - 1 and mm 
+        call diff_perf(part-1, n, part1, part2, next, .true.)
+        p = p + real(next, dp) ** 3
+      end if
+      
+    else
+
+      p = p_inv(part1(part)) - p_inv(part2(part)) + & ! inv
+          (p_mm(part1(part), part1(part-1)) - p_mm(part2(part), part2(part-1))) + & ! mm
+          (p_mm(part1(part), part1(part+1)) - p_mm(part2(part), part2(part+1))) ! mm
+      
+      if ( .not. lfinal ) then
+        call diff_perf(part-1, n, part1, part2, next, .true.)
+        p = p + real(next, dp) ** 3
+        call diff_mem(part+1, n, part1, part2, next, .true.)
+        p = p + real(next, dp) ** 3
+      end if
+      
+    end if
+    
+    ! This should remove possible overflows
+    ! We could essentially also just return +1/0/-1
+    ! But perhaps we can use the actual value to something useful?
+    if ( p < 0 ) then
+      perf = - int( (-p) ** one_third )
+    else
+      perf = int(p ** one_third)
+    end if
+      
+  contains
+
+    pure function p_inv(s) result(p)
+      use precision, only: dp
+      integer, intent(in) :: s
+      real(dp) :: p
+      p = real(s, dp) ** 3
+    end function p_inv
+
+    pure function p_mm(m, n) result(p)
+      use precision, only: dp
+      integer, intent(in) :: m, n
+      real(dp) :: p
+      p = real(m, dp) ** 2 * real(n, dp)
+    end function p_mm
+
+  end subroutine diff_perf
+  
+  function valid_tri(no,r,mm_col,parts,n_part,last_eq) result(val)
+    use parallel, only : IONode
     integer, intent(in) :: no, mm_col(2,no)
     type(tRgn), intent(in) :: r
     integer, intent(in) :: parts, n_part(parts), last_eq
     integer :: val
     ! Local variables
     integer :: i, ir, N, Nm1, Np1
+    logical :: first
 
     val = VALID
     ! Calculate the size of the tri-matrix
@@ -840,6 +1131,7 @@ contains
     N = 1
     Nm1 = 1
     Np1 = n_part(1)
+    first = .true.
 
     do i = 1 , parts
        
@@ -853,7 +1145,15 @@ contains
                mm_col(2,ir) > Np1 ) then
              ! If this ever occur it suggests that the 
              ! sparsity pattern is not fully symmetric !
-             print *,i,ir,Nm1,'<=',mm_col(1,ir),mm_col(2,ir),'<=',Np1
+             if ( IONode ) then
+               if ( first ) then
+                 write(*,'(a)') 'BTD: Found non-symmetric matrix!'
+                 write(*,'(a)') '     If you are not using delta methods you are probably doing something wrong!'
+                 write(*,'(6a8)') 'row', 'block', 'min_C', 'min_B', 'max_B', 'max_C'
+                 first = .false.
+               end if
+               write(*,'(6i8)') ir, i, mm_col(1,ir), Nm1, Np1, mm_col(2,ir)
+             end if
              val = - ir 
              return
           end if

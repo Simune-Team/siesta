@@ -1145,9 +1145,10 @@ contains
     ! This means that the pivoting table will not necessarily have all sub elements
     logical, intent(in), optional :: only_sub
 
-    integer :: i, j, ptr, nn
+    integer :: i, j, ptr
     type(tRgn) :: skip, con, r_tmp
     logical :: lonly_sub
+    logical, allocatable :: pvt_logical(:)
 
     lonly_sub = .false.
     if ( present(only_sub) ) lonly_sub = only_sub
@@ -1162,6 +1163,10 @@ contains
     
     call rgn_init(skip, n)
     skip%n = 0
+
+    ! Initialize pvt_logical
+    allocate(pvt_logical(n))
+    pvt_logical = .false.
     
     if ( present(start) ) then
        if ( .not. rgn_push(skip, start) ) &
@@ -1181,6 +1186,11 @@ contains
 
     call rgn_delete(r_tmp)
 
+    ! Initialize the logical array
+    do i = 1, pvt%n
+      pvt_logical(pvt%r(i)) = .true.
+    end do
+
     ! sort the starting configuration
     
     ! Continue the propagation
@@ -1189,18 +1199,19 @@ contains
        ! Initialize room for the new columns
        if ( con%n > 0 ) then
           ! Get size
-          nn = 0
+          j = 0
           do i = 1, con%n
-             nn = nn + n_col(con%r(i))
+             j = j + n_col(con%r(i))
           end do
-          call rgn_init(r_tmp, nn)
+          ! We keep the temporary region allocated.
+          ! since we will use it every cycle.
+          call rgn_grow(r_tmp, j)
           r_tmp%n = 0
           
           ! find all connections
           do i = 1, con%n
              ptr = l_ptr(con%r(i))
-             nn = n_col(con%r(i))
-             do j = ptr + 1, ptr + nn
+             do j = ptr + 1, ptr + n_col(con%r(i))
                 if ( .not. in_rgn(skip, l_col(j)) ) then
                    if ( .not. rgn_push(r_tmp, l_col(j)) ) &
                         call die('CG -- push 4')
@@ -1209,11 +1220,10 @@ contains
           end do
           
           ! Reduce to the unique values (this also sorts it)
-          call rgn_uniq(r_tmp)
+          call rgn_uniq(r_tmp, in_place=.true.)
           
           ! Copy to the new connectivity region
           call rgn_copy(r_tmp, con)
-          call rgn_delete(r_tmp)
 
        end if
 
@@ -1234,13 +1244,19 @@ contains
        ! Add to removal region (note con has to be sorted)
        if ( .not. rgn_push(skip, con, .true.) ) &
             call die('will never happen - 1')
-       
+
+       ! Update pivoting check-indices
+       do i = 1, con%n
+         pvt_logical(con%r(i)) = .true.
+       end do
+
        if ( .not. rgn_push(pvt, con) ) call die('will never happen - 2')
        call rgn_sp_sort(pvt,n,nnzs,n_col,l_ptr,l_col, &
-            con, R_SORT_MAX_BACK)
+            con, R_SORT_MAX_BACK, r_logical=pvt_logical)
        
     end do
 
+    deallocate(pvt_logical)
     call rgn_delete(skip, con, r_tmp)
 
     if ( pvt%n /= sub%n .and. .not. lonly_sub ) then
@@ -1761,8 +1777,12 @@ contains
     ls%lvl = 1
     clvl => ls
     do
-
+      
        if ( rgn_size(queue) == 0 ) then
+ 
+          ! Ensure it has space
+          call rgn_grow(queue, 1)
+          queue%n = 0
 
           ! Quick escape if the graph is finished
           if ( lonly_sub ) exit
@@ -1791,7 +1811,6 @@ contains
 
        ! Copy to the current level
        call rgn_copy(queue, clvl%v)
-       call rgn_delete(queue)
 
        ! Update number of added elements
        nadded = nadded + rgn_size(clvl%v)

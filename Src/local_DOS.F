@@ -19,7 +19,7 @@
       USE siesta_options
       use siesta_geom
       use atomlist,       only: indxuo, indxua           
-      use atomlist,       only: qtot, no_u, no_l
+      use atomlist,       only: qtot, qtots, no_u, no_l
       use atomlist,       only: iphorb                   
       use atomlist,       only: datm, no_s, iaorb        
       use fdf
@@ -31,8 +31,9 @@
       use files,          only : label_length            
       use m_ntm
       use m_forces,       only: fa
+      use m_energies,     only: Ef, Efs
       use m_eo
-      use m_spin,         only: nspin, qs, efs
+      use m_spin,         only: nspin
       use m_spin,         only: spinor_dim 
       use m_diagon,       only: diagon
       use m_gamma
@@ -77,7 +78,7 @@
      .       minim_calc_eigenvalues)) then
           call diagon(no_s, spinor_dim, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
-     .                H, S, qtot, fixspin, qs, temp, e1, e2,
+     .                H, S, qtot, fixspin, qtots, temp, e1, e2,
      .                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      .                eo, qo, Dscf, Escf, ef, efs, dummy_Entrop, no_u,
      .                occtol, dummy_iscf, neigwanted)

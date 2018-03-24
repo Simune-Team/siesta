@@ -251,8 +251,8 @@ subroutine tbt_init()
 
   if ( stop_after_GS ) then
      if ( IONode ) then
-        write(*,'(a)')'tbtrans: Stopping program per user request.'
-        write(*,'(a)')'tbtrans: Done creating all GF files.'
+        write(*,'(a)')'tbt: Stopping program per user request.'
+        write(*,'(a)')'tbt: Done creating all GF files.'
      end if
 #ifdef MPI
      call MPI_Barrier(MPI_Comm_World,iEl)
@@ -278,7 +278,7 @@ subroutine tbt_init()
 
   if ( Node == 0 ) then
      itmp = nnzs(TSHS%sp) - nnzs(tmp_sp)
-     write(*,'(/,a,i0,/)')'tbtrans: Reducing matrix (H, S) &
+     write(*,'(/,a,i0,/)')'tbt: Reducing matrix (H, S) &
           &sparsity patterns by: ', itmp
   end if
 
@@ -332,10 +332,10 @@ subroutine tbt_init()
      if ( IONode ) then
         if ( N_eigen > 0 ) then
            if ( itmp /= N_eigen ) then
-              write(*,'(/,a)')'tbtrans: *** Correcting number of T eigenvalues...'
+              write(*,'(/,a)')'tbt: *** Correcting number of T eigenvalues...'
            end if
         else
-           write(*,'(/,a,i0)')'tbtrans: *** Maximizing number of T eigenvalues to ',itmp
+           write(*,'(/,a,i0)')'tbt: *** Maximizing number of T eigenvalues to ',itmp
         end if
      end if
      N_eigen = itmp

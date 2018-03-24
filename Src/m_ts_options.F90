@@ -139,6 +139,8 @@ contains
     ! Read in general values that should be used in the electrode generation
     ! I.e. these FDF-parameters are used for diagon runs with transiesta
 #ifdef TRANSIESTA
+    ! Although transiesta is deprecated, one may still
+    ! compile a TS executable that always saves HS and DE.
     TS_HS_save = fdf_get('TS.HS.Save',.true.)
     TS_DE_save = fdf_get('TS.DE.Save',.true.)
 #else

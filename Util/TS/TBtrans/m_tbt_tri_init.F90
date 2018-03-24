@@ -161,7 +161,7 @@ contains
     call timer('tri-init',1)
 
     if ( IONode ) then
-       write(*,'(/,a)')'tbtrans: Creating electrode tri-diagonal matrix blocks'
+       write(*,'(/,a)')'tbt: Creating electrode tri-diagonal matrix blocks'
     end if
 
     ! Copy over sparsity pattern (in UC format)
@@ -181,7 +181,7 @@ contains
     call tbt_tri_init_elec( dit , tmpSp1 )
 
     if ( IONode ) then
-       write(*,'(a)')'tbtrans: Creating device tri-diagonal matrix blocks'
+       write(*,'(a)')'tbt: Creating device tri-diagonal matrix blocks'
     end if
 
     if ( present(proj) ) then
@@ -219,12 +219,14 @@ contains
 
     call rgn_delete(DevTri)
 
+    
     ! Create tri-diagonal parts for this one...
     call ts_rgn2TriMat(N_Elec, Elecs, .true., &
        dit, tmpSp2, r_oDev, DevTri%n, DevTri%r, &
        BTD_method, last_eq = 0, par = .true. )
     call delete(tmpSp2) ! clean up
 
+    
     ! Sort the tri-diagonal blocks
     call ts_pivot_tri_sort_El(r_oDev,N_Elec,Elecs,DevTri)
 
@@ -278,12 +280,12 @@ contains
        els = nnzs_tri_i8b(DevTri%n,DevTri%r)
        ! check if there are overflows
        if ( els < int(nnzs_tri_dp(DevTri%n, DevTri%r), i8b) ) then
-          call die('tbtrans: Memory consumption is too large, try &
+          call die('tbt: Memory consumption is too large, try &
                &another pivoting scheme.')
        end if
-       write(*,'(a,i0)') 'tbtrans: Matrix elements in BTD: ', els
+       write(*,'(a,i0)') 'tbt: Matrix elements in BTD: ', els
 
-       write(*,'(/,a)') 'tbtrans: Electrodes tri-diagonal matrices'
+       write(*,'(/,a)') 'tbt: Electrodes tri-diagonal matrices'
        do i = 1 , N_Elec
           call rgn_print(ElTri(i), seq_max = 8 , repeat = .true.)
        end do
@@ -370,7 +372,7 @@ contains
     call rgn_sort(ra)
 
     write(*,*) ''
-    write(*,'(a)') 'tbtrans: Suggested atoms for fastest transmission calculation:'
+    write(*,'(a)') 'tbt: Suggested atoms for fastest transmission calculation:'
 
     ra%name = '[A]-Fast transmission'
     call rgn_print(ra, seq_max = 12)
@@ -458,7 +460,7 @@ contains
     real(dp) :: min_mem
 
     ! Write out all pivoting etc. analysis steps
-    if ( IONode ) write(*,'(/,a)') 'tbtrans: BTD analysis'
+    if ( IONode ) write(*,'(/,a)') 'tbt: BTD analysis'
 
     ! Copy over the sparse matrix to tmpSp1
     tmpSp1 = sp
@@ -743,7 +745,7 @@ contains
        write(*,'(a,/)') ' You should analyze the pivoting schemes!'
        write(*,'(a)') ' Minimum memory required pivoting scheme:'
        write(*,'(a,a)') '  TBT.BTD.Pivot.Device ', trim(min_mem_method)
-       write(*,'(a,f8.2,a)') '  Memory: ', min_mem, ' MB'
+       write(*,'(a,en11.3,a)') '  Memory: ', min_mem, ' GB'
        write(*,*) ! new-line
     end if
     
@@ -760,6 +762,7 @@ contains
       integer :: bw
       ! Possibly very large numbers
       integer(i8b) :: prof, els
+      real(dp) :: total
 
       call rgn_copy(r_pvt, cur)
 
@@ -786,43 +789,43 @@ contains
       els = nnzs_tri(ctri%n,ctri%r)
       ! check if there are overflows
       if ( els < int(nnzs_tri_dp(ctri%n, ctri%r)) ) then
-         call die('transiesta: Memory consumption is too large, &
-              &try another pivoting scheme.')
-      end if
-      
-      if ( IONode ) then
-         call rgn_print(ctri, name = 'BTD partitions' , &
-              seq_max = 10 , indent = 3 , repeat = .true. )
-         
-         write(*,'(tr3,a,i0,'' / '',f10.3)') &
-              'BTD matrix block size [max] / [average]: ', &
-              maxval(ctri%r), sum(real(ctri%r)) / ctri%n
-         
-         prof = r_pvt%n ** 2
-         write(*,'(tr3,a,f9.5,'' %'')') &
-              'BTD matrix elements in % of full matrix: ', &
-              real(els,dp)/real(prof,dp) * 100._dp
+        call die('transiesta: Memory consumption is too large, &
+            &try another pivoting scheme.')
       end if
 
-      prof = els * 2 ! total mem
       if ( IONode ) then
-         write(*,'(tr3,a,t39,f8.2,a)') 'Rough estimation of MEMORY: ', &
-              size2mb(prof),' MB'
+        call rgn_print(ctri, name = 'BTD partitions' , &
+            seq_max = 10 , indent = 3 , repeat = .true. )
+
+        write(*,'(tr3,a,i0,'' / '',f10.3)') &
+            'BTD matrix block size [max] / [average]: ', &
+            maxval(ctri%r), sum(real(ctri%r)) / ctri%n
+
+        total = real(r_pvt%n, dp) ** 2
+        write(*,'(tr3,a,f9.5,'' %'')') &
+            'BTD matrix elements in % of full matrix: ', &
+            real(els,dp)/total * 100._dp
       end if
-      if ( size2mb(prof) < min_mem ) then
-         min_mem = size2mb(prof)
-         min_mem_method = fmethod
+
+      total = size2gb(els) * 2
+      if ( IONode ) then
+        write(*,'(tr3,a,t39,en11.3,a)') 'Rough estimation of MEMORY: ', &
+            total,' GB'
+      end if
+      if ( total < min_mem ) then
+        min_mem = total
+        min_mem_method = fmethod
       end if
 
       call rgn_delete(ctri, cur)
       
     end subroutine tri
 
-    function size2mb(i) result(mb)
+    function size2gb(i) result(b)
       integer(i8b) :: i
-      real(dp) :: mb
-      mb = real(i, dp) * 16._dp / 1024._dp ** 2
-    end function size2mb
+      real(dp) :: b
+      b = real(i, dp) * 16._dp / 1024._dp ** 3
+    end function size2gb
 
   end subroutine tbt_tri_analyze
   

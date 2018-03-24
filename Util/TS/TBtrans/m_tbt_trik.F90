@@ -1577,10 +1577,10 @@ contains
          nsize = nsize + padding
          mem = real(nsize,dp) * 16._dp / 1024._dp ** 2
          if ( mem > 600._dp ) then
-            write(*,'(3a,i0,a,f8.3,a)') 'tbtrans: ',name,' Green function size / memory: ', &
+            write(*,'(3a,i0,a,f8.3,a)') 'tbt: ',name,' Green function size / memory: ', &
                  nsize,' / ',mem / 1024._dp,' GB'
          else
-            write(*,'(3a,i0,a,f8.2,a)') 'tbtrans: ',name,' Green function size / memory: ', &
+            write(*,'(3a,i0,a,f8.2,a)') 'tbt: ',name,' Green function size / memory: ', &
                  nsize,' / ',mem,' MB'
          end if
       end if
