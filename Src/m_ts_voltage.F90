@@ -500,21 +500,11 @@ contains
           sc = min(sc,dd)
        end if
     end do
-    ! Extend if choice added
-    it = fdf_get('TS.Elec.'//trim(Elecs(iElL)%name) &
-         //'.Hartree.Extend', 0)
-    if ( it < 0 ) it = na_u + it ! correct negative indices
-    if ( it > na_u ) call die('ts_voltage: Extend index &
-         &too large.')
-    if ( it > 0 ) then
-       ! Get fraction in the unitcell
-       dd = sum(xa(:,it) * rcell(:,ts_tidx))
-       if ( Elecs(iElL)%Bulk ) then
-          sc = max(sc,dd)
-       else
-          sc = min(sc,dd)
-       end if
-    end if
+    
+    ! Extend the left electrode constant potential by this length.
+    dd = fdf_get('TS.Elec.'//trim(Elecs(iElL)%name) // &
+         '.Hartree.Extend', 0._dp, 'Bohr')
+    sc = sc + dd * sum(cell(:,ts_tidx) / Lvc * rcell(:,ts_tidx))
     
     ! Calculate the corresponding placement in the cell
     ! This is easy as we have the fraction of the
@@ -522,7 +512,7 @@ contains
     ! Add 0.2 interlayer distance
     ! NOTE this fraction heavily decides the convergence properties
     ! This parameter has been optimized for a Gold junction in the 100 direction
-    ! It has to place the ramp, far from atomic centers, but close to the electrode
+    ! It has to place the ramp, "far" from atomic centers, but close to the electrode
     bdir = Elecs(iElL)%dINF_layer * 0.2_dp * cell(:,ts_tidx) / Lvc
     sc = sc + sum(bdir * rcell(:,ts_tidx))
     left_elec_mesh_idx = nint(sc * nmesh(ts_tidx))
@@ -542,21 +532,12 @@ contains
           sc = max(sc,dd)
        end if
     end do
-    ! Extend if choice added
-    it = fdf_get('TS.Elec.'//trim(Elecs(iElR)%name) &
-         //'.Hartree.Extend', 0)
-    if ( it < 0 ) it = na_u + it
-    if ( it > na_u ) call die('ts_voltage: Extend index &
-         &too large.')
-    if ( it > 0 ) then
-       ! Get fraction in the unitcell
-       dd = sum(xa(:,it) * rcell(:,ts_tidx))
-       if ( Elecs(iElR)%Bulk ) then
-          sc = min(sc,dd)
-       else
-          sc = max(sc,dd)
-       end if
-    end if
+
+    ! Extend the left electrode constant potential by this length.
+    dd = fdf_get('TS.Elec.'//trim(Elecs(iElR)%name) // &
+         '.Hartree.Extend', 0._dp, 'Bohr')
+    sc = sc - dd * sum(cell(:,ts_tidx) / Lvc * rcell(:, ts_tidx))
+
     ! Subtract 0.2 interlayer distance
     bdir = Elecs(iElR)%dINF_layer * 0.2_dp * cell(:,ts_tidx) / Lvc
     sc = sc - sum(bdir * rcell(:,ts_tidx))
@@ -660,10 +641,10 @@ contains
     ! Open the file
     call ncdf_open(ncdf,fname)
 
-    ! Read in the grid
+    ! Read in the grid (should be in Ry)
     call cdf_r_grid(ncdf,trim(V_name),nmeshl,tmpV)
 
-    ! retrieve the max min from the file
+    ! retrieve the max min from the file (should be in Ry)
     call ncdf_get_var(ncdf,trim(V_name)//'min',Vmm(1))
     call ncdf_get_var(ncdf,trim(V_name)//'max',Vmm(2))
 #ifdef MPI

@@ -73,7 +73,7 @@ tests = ag anneal-cont ar2_vdw \
 	si_bandpoints si_coop si_fatbands \
 	sic-slab \
 	sih sih_fire sih_op_broyden \
-	si-optical si_pdos_kgrid \
+	si-optical si_pdos_kgrid si_pdos_gamma \
 	sinw sinw_2 \
 	offsite_SOC_Pt2_xx offsite_SOC_Pt2_xz offsite_SOC_Pt2_zy offsite_SOC_Pt2_zz \
 	onsite_SOC_Pt2_xx onsite_SOC_Pt2_xz onsite_SOC_Pt2_zy onsite_SOC_Pt2_zz \

@@ -22,7 +22,7 @@ Note the values here are in Ry.
 
 --]]
 
-local cutoff_start = 150.
+local cutoff_start = 50.
 local cutoff_end = 650.
 local cutoff_step = 50.
 
@@ -30,7 +30,7 @@ local cutoff_step = 50.
 local flos = require "flos"
 
 -- Create array of cut-offs
-local cutoff = flos.Array.range(cutoff_step, cutoff_end, cutoff_step)
+local cutoff = flos.Array.range(cutoff_start, cutoff_end, cutoff_step)
 local Etot = flos.Array.zeros(#cutoff)
 -- Initial cut-off element
 local icutoff = 1
@@ -90,9 +90,9 @@ function siesta_comm()
 
       -- We write out a table with mesh-cutoff, the difference between
       -- the last iteration, and the actual value
-      file:write( ("%8.3e  %17.10e  %17.10e\n"):format(cutoff[1], 0., Etot[1]) )
+      file:write( ("%8.3e  %17.10e  %17.10e\n"):format(cutoff[1], Etot[1], 0.) )
       for i = 2, #cutoff do
-	 file:write( ("%8.3e  %17.10e  %17.10e\n"):format(cutoff[i], Etot[i]-Etot[i-1], Etot[i]) )
+	 file:write( ("%8.3e  %17.10e  %17.10e\n"):format(cutoff[i], Etot[i], Etot[i]-Etot[i-1]) )
       end
 
       file:close()

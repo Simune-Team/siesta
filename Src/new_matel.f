@@ -98,6 +98,8 @@ C    distributions for operat='U', in units of the radial interval
 C  FFTOL is the tolerance for considering equal the radial part of
 C    two orbitals.
 C  TINY is a small number to avoid a zero denominator
+      ! Will keep the old default for now in the merge-OSSO branch
+      ! This should anyway be configurable at compile time...
       INTEGER,          PARAMETER :: NRTAB  =  128
       INTEGER,          PARAMETER :: NQ     =  1024
       real(dp),         PARAMETER :: EXPAND =  1.20_dp

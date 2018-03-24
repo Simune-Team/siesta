@@ -104,6 +104,9 @@
 #ifdef TEST_IO
       use m_test_io
 #endif
+#ifdef SIESTA__FLOOK
+      use siesta_dicts, only : dict_repopulate_MD
+#endif
 
       implicit none
 
@@ -304,6 +307,9 @@ CC RC  OffSpOrb
 !     Do not move from here, as the coordinates might have changed
 !     even if not the unit cell
       call superc(ucell, scell, nsc)
+#ifdef SIESTA__FLOOK
+      call dict_repopulate_MD()
+#endif
 
 !     Print unit cell and compute cell volume
 !     Possible BUG: 
