@@ -17,7 +17,7 @@ MODULE Kpoint_grid
 
   public :: setup_kpoint_grid, scf_kgrid_first_time, gamma_scf, &
             nkpnt, kweight, kpoint, kscell, kdispl
-
+  public :: eff_kgrid_cutoff
 
   private
   

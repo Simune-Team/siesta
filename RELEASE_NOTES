@@ -10,7 +10,11 @@ Release notes for next Siesta
 
 *** Backward-compatibility issues
 
- * Please fill in here
+ * The transiesta executable has been deprecated. Please use
+      siesta --electrode 
+   for electrode calculations. For regular transiesta runs, there
+   is no need for the specific executable. Details were given in the
+   4.1-b4 release.
 
 *** New features
 

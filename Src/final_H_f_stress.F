@@ -66,7 +66,6 @@
       use m_ncdf_siesta
 #endif
 #endif
-#ifdef TRANSIESTA
       use siesta_options, only : idyn, ia1, write_tshs_history
       use sparse_matrices, only: H_2D, S_1D
       use files,        only : label_length
@@ -74,7 +73,6 @@
       use m_ts_options, only : TS_HS_save
       use m_ts_kpoints, only : ts_Gamma, ts_kscell, ts_kdispl
       use m_ts_io,      only : ts_write_TSHS,fname_TSHS, FC_index
-#endif /* TRANSIESTA */
 
 #ifdef FINAL_CHECK_HS
       use m_compute_max_diff, only: compute_max_diff
@@ -103,10 +101,8 @@
       real(dp)              :: buffer1
       integer               :: MPIerror 
 #endif
-#ifdef TRANSIESTA
       character(len=label_length+13) :: fname
       integer :: io_istep, io_ia1
-#endif
 #ifdef CDF
 #ifdef NCDF_4
       type(dict) :: dic_save
@@ -336,16 +332,12 @@
 #ifdef NCDF_4
       if ( write_cdf ) then
          dic_save = ('fa'.kv.1)//('stress'.kv.1)
-         if ( savehs ) dic_save = dic_save //('H'.kv.1)
-#ifdef TRANSIESTA
-         if ( TS_HS_save ) dic_save = dic_save //('H'.kv.1)
-#endif
+         if ( savehs .or. TS_HS_save ) dic_save = dic_save //('H'.kv.1)
          call cdf_save_state(trim(slabel)//'.nc',dic_save)
          call delete(dic_save)
       end if
 #endif
 #endif
-#ifdef TRANSIESTA
       if ( write_tshs_history ) then
          ! This is "pure" MD and we only write consecutive numbers
          ! Together with this you cannot also save FC
@@ -385,7 +377,6 @@
      &           Ef, Qtot, Temp, 0, 0)
          end if
       endif
-#endif /* TRANSIESTA */
 
 !----------------------------------------------------------------------- END
       END subroutine final_H_f_stress

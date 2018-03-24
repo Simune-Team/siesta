@@ -24,7 +24,7 @@
      &                    qtot, no_l
       use sys, only: die, bye
       use Kpoint_grid
-      use m_energies,   only: Ebs, Ecorrec, Ef, Entropy
+      use m_energies,   only: Ebs, Ecorrec, Ef, Entropy, DE_NEGF
       use m_rmaxh
       use m_eo
       use m_spin,   only: spin, qs, efs
@@ -51,11 +51,9 @@
 #ifdef SIESTA__CHESS
       use m_chess, only: CheSS_wrapper
 #endif
-#ifdef TRANSIESTA
       use m_energies,   only: DE_NEGF
       use m_ts_global_vars, only : TSmode, TSinit, TSrun
       use m_transiesta,     only : transiesta
-#endif /* TRANSIESTA */
       
       implicit none
       
@@ -226,7 +224,6 @@ c$$$     &           S, 'S.matrix')
         Entropy = 0.0_dp
         PreviousCallDiagon=.false.
 #endif
-#ifdef TRANSIESTA
       elseif (TSmode .and. TSinit) then
         call diagon(no_s, spin%spinor, 
      &              no_l, maxnh, maxnh, no_u,
@@ -246,7 +243,7 @@ c$$$     &           S, 'S.matrix')
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp
-#endif /* TRANSIESTA */
+         
       else
         !call die('siesta: ERROR: wrong solution method')
       endif
@@ -278,27 +275,16 @@ c$$$     &           S, 'S.matrix')
       endif
 
 ! Write orbital indexes. JMS Dec.2009
-
-#ifdef TRANSIESTA
-      if (IOnode .and. iscf==1.and..not. TSrun) then
-         call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
-     .        iaorb, iphorb, indxuo, nsc, ucell )
-      endif
-#else
       if (IOnode .and. iscf==1) then
          call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
      .        iaorb, iphorb, indxuo, nsc, ucell )
       endif
-#endif
 
 !     Normalize density matrix to exact charge
 !     Placed here for now to avoid disturbing EHarris
-#ifdef TRANSIESTA      
-      if ( .not. TSrun ) call normalize_dm( first= .false. )
-#else
-      call normalize_dm(first=.false.)
-#endif
-      
+      if ( .not. TSrun ) then
+         call normalize_dm( first= .false. )
+      end if
 
       call timer( 'compute_dm', 2 )
 #ifdef SIESTA__PEXSI

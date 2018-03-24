@@ -40,13 +40,11 @@
       use m_ncdf_siesta, only : cdf_save_state
 #endif
 #endif
-#ifdef TRANSIESTA
       use sparse_matrices,      only:  EDM_2D
       use m_ts_iodm,            only:  write_ts_dm
       use m_ts_global_vars,     only:  TSrun
       use m_ts_options,         only:  TS_DE_save
       use m_energies,           only:  Ef
-#endif
 
       implicit none
 
@@ -96,78 +94,43 @@
       end if
 #endif
 #endif
-    
-#ifndef TRANSIESTA
-      if (do_it) then
+
 #ifdef TIMING_IO
+      if ( do_it ) then
          call timer('IO-W-DM',1)
          do i = 1 , 100
+            if (fdf_get("Use.Blocked.WriteMat",.false.)) then
+               call write_mat (maxnh, no_l, h_spin_dim,
+     &              numh, listhptr, listh, Dscf,
+     $              userfile=trim(file)//'.blocked',compatible=.false.)
+            else
+               ! The filename falls back to the standard one     
+               call write_dm(trim(slabel)//'.DM', DM_2D)
+            end if
+         end do
+         call timer('IO-W-DM',2)
+         call timer('IO-W-DM',3)
+      end if
 #endif
-        if (((idyn .eq. 6) .or. (idyn .eq. 7).or.(idyn.eq.9))
-     $        .and. (istp .ne. 1)                      ) then
-            ! do not write
-        else
-          if (fdf_get("Use.Blocked.WriteMat",.false.)) then
-             call write_mat (maxnh, no_l, h_spin_dim,
-     &               numh, listhptr, listh, Dscf,
-     $               userfile=trim(file)//'.blocked',compatible=.false.)
-          else
-             ! The filename falls back to the standard one     
-             !
-             call write_dm(trim(slabel)//'.DM', DM_2D)
-	  endif
-        end if
-#ifdef TIMING_IO
-      end do
-      call timer('IO-W-DM',2)
-      call timer('IO-W-DM',3)
-#endif
-      endif ! writedm
-#else /* TRANSIESTA */
-! TSS Begin
-      if (do_it) then
-        if (.not.TSrun) then   !TSS save Dscf
-#ifdef TIMING_IO
-         call timer('IO-W-DM',1)
-         do i = 1 , 100
-#endif
-          if ((idyn .eq. 6) .or. (idyn .eq. 7).or.(idyn==9)) then
-            if (istp.eq.1)
-     &            call write_dm(trim(slabel)//'.DM', DM_2D)
-          else
-             call write_dm(trim(slabel)//'.DM', DM_2D)
-          end if
-#ifdef TIMING_IO
-      end do
-      call timer('IO-W-DM',2)
-      call timer('IO-W-DM',3)
-#endif
-        else
-!         TSS write DscfE
-#ifdef TIMING_IO
-         call timer('IO-W-TS-DE',1)
-         do i = 1 , 100
-#endif
-             if ((idyn .eq. 6) .or. (idyn .eq. 7).or.(idyn==9)) then
-               if (istp .eq.1)
-     &               call write_ts_dm(trim(slabel)//'.TSDE', 
-     &               DM_2D, EDM_2D, Ef)
-             else
-                call write_ts_dm(trim(slabel)//'.TSDE',
-     &               DM_2D, EDM_2D, Ef)
-             end if 
-#ifdef TIMING_IO
-      end do
-      call timer('IO-W-TS-DE',2)
-      call timer('IO-W-TS-DE',3)
-#endif
-        end if ! TSrun
-        if ( TS_DE_save ) then
-           call write_ts_dm(trim(slabel)//'.TSDE',
-     &          DM_2D, EDM_2D, Ef)
-        end if
-      end if ! writedm
-#endif /* TRANSIESTA */
+
+      ! Check wheter we should write
+      select case ( idyn )
+      case ( 6, 7, 9 )
+         if ( istp /= 1 ) do_it = .false.
+      end select
+
+      if ( do_it ) then
+         if ( TSrun ) then
+            call write_ts_dm(trim(slabel)//'.TSDE',
+     &           DM_2D, EDM_2D, Ef)
+         else
+            call write_dm(trim(slabel)//'.DM', DM_2D)
+            if ( TS_DE_save ) then
+               call write_ts_dm(trim(slabel)//'.TSDE',
+     &              DM_2D, EDM_2D, Ef)
+            end if
+         end if
+      end if
 
       end subroutine save_density_matrix
 
