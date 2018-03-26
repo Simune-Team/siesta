@@ -123,7 +123,9 @@ contains
     real(dp) :: tmp
     
     no_u = lasto(na_u)
-    
+
+    call timer('init-region+sp', 1)
+
     ! Create the sparsity pattern and remove the buffer atoms...
     if ( r_oBuf%n > 0 ) then
        sp_tmp = sp
@@ -308,8 +310,6 @@ contains
     allocate(r_aEl(N_Elec),r_oEl(N_Elec))
     allocate(r_oElpD(N_Elec))
 
-    call timer('pivot-elec', 1)
-
     do iEl = 1 , N_Elec
 
        ! Remove the connections that cross the boundary
@@ -388,21 +388,24 @@ contains
     ! Create the temporary unit-cell sparsity pattern
     call crtSparsity_SC(sp, sp_tmp, UC = .true. )
 
+    call timer('init-region+sp', 2)
+
     ! Create the electrode down-folding regions.
     ! Note that sorting according to the more advanced methods
     ! is not directly applicable as the methods involve non-stringent
     ! ending elements.
+    call timer('pivot-elec', 1)
 
+    call rgn_copy(r_oBuf, r_tmp)
+    call rgn_append(r_oDev, r_tmp, r_tmp)
+    call rgn_sort(r_tmp)
     do iEl = 1 , N_Elec
 
        if ( mod(iEl-1,Nodes) /= Node ) cycle
 
        ! Create pivoting region (except buffer+device)
        call rgn_range(r_oEl(iEl),1,no_u)
-       if ( r_oBuf%n > 0 ) then
-          call rgn_complement(r_oBuf, r_oEl(iEl), r_oEl(iEl))
-       end if
-       call rgn_complement(r_oDev, r_oEl(iEl), r_oEl(iEl))
+       call rgn_complement(r_tmp, r_oEl(iEl), r_oEl(iEl))
 
        ! Sort according to the connectivity of the electrode
        ! This will also reduce the pivoting table (r_oEl) to
@@ -495,7 +498,7 @@ contains
     end do
 
     ! Possibly deleting it
-    call rgn_delete(r_tmp2)
+    call rgn_delete(r_tmp, r_tmp2)
     do iEl = 1 , N_Elec
 
 #ifdef MPI

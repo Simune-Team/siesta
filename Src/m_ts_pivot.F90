@@ -105,6 +105,8 @@ contains
     ! For linear-least-squares problem
     real(dp) :: llsA(3,2), llsB(3), work(20)
 
+    call timer('pivot', 1)
+
     ! We keep this copy and edit this to
     ! create the correct pivoting string
     lextend = .true.
@@ -1009,6 +1011,8 @@ contains
     call rgn_delete(r_Els,priority)
 
     pvt_str = str_tmp
+
+    call timer('pivot', 2)
 
   contains
 
