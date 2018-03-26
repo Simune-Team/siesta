@@ -687,7 +687,7 @@ contains
        call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
        call ncdf_def_dim(grp,'n_btd',btd_El(iEl)%n)
-       call ncdf_def_dim(grp,'no_d',rEl(iEl)%n)
+       call ncdf_def_dim(grp,'no_down',rEl(iEl)%n)
 
        ! Save generic information about electrode
        dic = ('info'.kv.'Bloch expansion')
@@ -695,7 +695,7 @@ contains
        call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
 
        dic = dic // ('info'.kv.'Downfolding region orbital pivot table')
-       call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_d'/), atts = dic)
+       call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_down'/), atts = dic)
        call ncdf_put_var(grp,'pivot',rEl(iEl)%r)
 
        dic = dic // ('info'.kv.'Blocks in BTD downfolding for the pivot table')
