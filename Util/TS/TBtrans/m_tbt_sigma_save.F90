@@ -90,22 +90,22 @@ contains
     if ( .not. IONode ) return
     
 #ifdef NCDF_4
-    write(*,f1)'Saving down-folded self-energies',sigma_save
+    write(*,f1)'Saving downfolded self-energies',sigma_save
     if ( .not. sigma_save ) return
 #ifdef NCDF_PARALLEL
     write(*,f1)'Use parallel MPI-IO for self-energy file', sigma_parallel
 #endif
 
-    write(*,f1)'Only calc down-folded self-energies', &
+    write(*,f1)'Only calc downfolded self-energies', &
          ('Sigma-only'.in.save_DATA)
     if ( cmp_lvl > 0 ) then
        write(*,f12)'Compression level of TBT.SE.nc files',cmp_lvl
     else
        write(*,f11)'No compression level of TBT.SE.nc files'
     end if
-    write(*,f1)'k-average down-folded self-energies',sigma_mean_save
+    write(*,f1)'k-average downfolded self-energies',sigma_mean_save
 #else
-    write(*,f11)'Saving down-folded self-energies not enabled (NetCDF4)'
+    write(*,f11)'Saving downfolded self-energies not enabled (NetCDF4)'
 #endif
 
   end subroutine print_Sigma_options
@@ -340,7 +340,6 @@ contains
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
          atts = dic)
     dic = dic//('info'.kv.'Atomic coordinates')
-    dic = dic//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
          atts = dic)
     call delete(dic)
@@ -406,16 +405,30 @@ contains
 
        call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
-       ! Save information about electrode
+       ! Save generic information about electrode
+       dic = dic//('info'.kv.'Bloch expansion')
+       call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+
        dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
             atts = dic)
        call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
 
-       dic = ('info'.kv.'Imaginary part of self-energy')//('unit'.kv.'Ry')
-       call ncdf_def_var(grp,'Eta',NF90_DOUBLE,(/'one'/), atts = dic)
+#ifdef TBT_PHONON
+       dic = dic//('info'.kv.'Phonon temperature')
+#else
+       dic = dic//('info'.kv.'Electronic temperature')
+#endif
+       call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
        
-       dic = ('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
+       dic = dic//('info'.kv.'Imaginary part of self-energy')
+       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+       
+       dic = dic//('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'Accuracy',NF90_DOUBLE,(/'one'/), atts = dic)
        call delete(dic)
 
@@ -425,7 +438,7 @@ contains
        dic = ('info'.kv.'Orbital pivot table for self-energy')
        call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
        
-       dic = dic//('info'.kv.'Down-folded self-energy')
+       dic = dic//('info'.kv.'Downfolded self-energy')
        dic = dic//('unit'.kv.'Ry')
        ! Chunking greatly reduces IO cost
        call ncdf_def_var(grp,'SelfEnergy',prec_Sigma, &
@@ -433,7 +446,7 @@ contains
             atts = dic , chunks = (/no_e,no_e,1,1/) )
        call delete(dic)
 
-       call ncdf_put_var(grp,'Eta',Elecs(iEl)%Eta)
+       call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
        call ncdf_put_var(grp,'Accuracy',Elecs(iEl)%accu)
        call ncdf_put_var(grp,'pivot',Elecs(iEl)%o_inD%r)
 
@@ -602,6 +615,8 @@ contains
     ! Loop over all electrodes
     do iEl = 1 , N_Elec
 
+      call delete(dic)
+
        ! We need to extend the netcdf file with the SigmaMean
        ! variable
 
@@ -610,7 +625,7 @@ contains
        ! Get size of Sigma
        call ncdf_inq_dim(grp,'no_e',len=no_e)
 
-       dic = ('info'.kv.'Down-folded self-energy, k-averaged')
+       dic = ('info'.kv.'Downfolded self-energy, k-averaged')
        dic = dic//('unit'.kv.'Ry')
        ! Chunking greatly reduces IO cost
        call ncdf_def_var(grp,'SelfEnergyMean',NF90_DOUBLE_COMPLEX, &

@@ -87,19 +87,24 @@
       use netcdf_ncdf
 #endif
 #ifdef _OPENMP
-      use omp_lib, only : omp_get_num_threads, omp_get_schedule
+      use omp_lib, only : omp_get_num_threads
       use omp_lib, only : omp_get_nested, omp_set_nested
       use omp_lib, only : omp_get_max_active_levels
-      use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
-      use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+      use omp_lib, only : omp_get_schedule, omp_set_schedule
 #if _OPENMP >= 201307
       ! The above value should correspond to OMP-4.0
       use omp_lib, only : omp_get_proc_bind
+      use omp_lib, only : OMP_PROC_BIND_FALSE, OMP_PROC_BIND_TRUE
+      use omp_lib, only : OMP_PROC_BIND_MASTER
+      use omp_lib, only : OMP_PROC_BIND_CLOSE, OMP_PROC_BIND_SPREAD
 #endif
+      use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
+      use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
 #else
-!$    use omp_lib, only : omp_get_num_threads, omp_get_sched
+!$    use omp_lib, only : omp_get_num_threads
 !$    use omp_lib, only : omp_get_nested, omp_get_max_active_levels
 !$    use omp_lib, only : omp_get_max_active_levels
+!$    use omp_lib, only : omp_get_schedule, omp_set_schedule
 !$    use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
 !$    use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
 #endif
@@ -201,6 +206,23 @@ C     Initialise MPI and set processor number
 #ifdef _OPENMP
 !$    write(*,'(a,i0)') '* OpenMP version ', _OPENMP
 #endif
+#if _OPENMP >= 201307
+!$    i = omp_get_proc_bind()
+!$    select case ( i )
+!$    case ( OMP_PROC_BIND_FALSE ) 
+!$    write(*,'(a)') '* OpenMP NOT bound (please bind threads!)'
+!$    case ( OMP_PROC_BIND_TRUE ) 
+!$    write(*,'(a)') '* OpenMP bound'
+!$    case ( OMP_PROC_BIND_MASTER ) 
+!$    write(*,'(a)') '* OpenMP bound (master)'
+!$    case ( OMP_PROC_BIND_CLOSE ) 
+!$    write(*,'(a)') '* OpenMP bound (close)'
+!$    case ( OMP_PROC_BIND_SPREAD ) 
+!$    write(*,'(a)') '* OpenMP bound (spread)'
+!$    case default
+!$    write(*,'(a)') '* OpenMP bound (unknown)'
+!$    end select
+#endif
 !$    call omp_get_schedule(i,is)
 !$    select case ( i )
 !$    case ( OMP_SCHED_STATIC ) 
@@ -229,22 +251,6 @@ C     Initialise MPI and set processor number
 !$       ns = omp_get_max_active_levels()
 !$    end if
 !$    write(*,'(a,i0,a)') '* OpenMP allows ',ns,' nested levels.'
-#if _OPENMP >= 201307
-!$    ns = omp_get_proc_bind()
-!$    select case ( ns )
-!$    case ( 0 ) 
-!$    write(*,'(a)') '* OpenMP binding: FALSE'
-!$    case ( 1 )
-!$    write(*,'(a)') '* OpenMP binding: TRUE'
-!$    case ( 2 )
-!$    write(*,'(a)') '* OpenMP binding: MASTER'
-!$    case ( 3 )
-!$    write(*,'(a)') '* OpenMP binding: CLOSE'
-!$    case ( 4 )
-!$    write(*,'(a)') '* OpenMP binding: SPREAD'
-!$    case default
-!$    write(*,'(a)') '* OpenMP binding: UNKNOWN'
-!$    end select
 #endif
 !$OMP end master
 !$OMP end parallel

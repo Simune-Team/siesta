@@ -366,7 +366,7 @@ contains
     ztmp => val(M,n+1,n+1)
 
     ! TODO implement direct algorithms, (or zcopy)
-!$OMP parallel workshare default(shared), if(sNp1SQ > 5000)
+!$OMP parallel workshare default(shared)
     Xn(:)           = Cnp2(:)
     zwork(1:sNp1SQ) = ztmp(:)
 !$OMP end parallel workshare
@@ -443,7 +443,7 @@ contains
     ztmp => val(M,n-1,n-1)
 
     ! TODO implement direct loops (or zcopy)
-!$OMP parallel workshare default(shared), if(sNm1SQ > 5000)
+!$OMP parallel workshare default(shared)
     Yn(:)           = Bnm2(:)
     zwork(1:sNm1SQ) = ztmp(:)
 !$OMP end parallel workshare
