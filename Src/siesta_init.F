@@ -87,7 +87,7 @@
       use netcdf_ncdf
 #endif
 #ifdef _OPENMP
-      use omp_lib, only : omp_get_num_threads,
+      use omp_lib, only : omp_get_num_threads
       use omp_lib, only : omp_get_schedule, omp_set_schedule
 #if _OPENMP >= 201307
       use omp_lib, only : omp_get_proc_bind
