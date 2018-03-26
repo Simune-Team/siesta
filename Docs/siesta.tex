@@ -636,7 +636,11 @@ socket, one may do:
 If using only 1 thread per MPI core it is advised to compile \siesta\
 without OpenMP. As such it may be advantageous to compile \siesta\ in
 3 variants; OpenMP-only (small systems), MPI-only (medium to large
-systems) and MPI$+$OpenMP (large$+$ systems).
+systems) and MPI$+$OpenMP (large$>$ systems).
+
+The variable \shell{OMP\_PROC\_BIND} may heavily influence the
+performance of the executable! Please perform tests for the
+architecture used.
 
 
 \subsection{Library dependencies}
