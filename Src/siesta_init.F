@@ -251,7 +251,6 @@ C     Initialise MPI and set processor number
 !$       ns = omp_get_max_active_levels()
 !$    end if
 !$    write(*,'(a,i0,a)') '* OpenMP allows ',ns,' nested levels.'
-#endif
 !$OMP end master
 !$OMP end parallel
 !$    call omp_set_schedule(i,is)
