@@ -87,13 +87,23 @@
       use netcdf_ncdf
 #endif
 #ifdef _OPENMP
-      use omp_lib, only : omp_get_num_threads, omp_get_schedule
+      use omp_lib, only : omp_get_num_threads,
+      use omp_lib, only : omp_get_schedule, omp_set_schedule
+      use omp_lib, only : omp_get_proc_bind
       use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
       use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+      use omp_lib, only : OMP_PROC_BIND_FALSE, OMP_PROC_BIND_TRUE
+      use omp_lib, only : OMP_PROC_BIND_MASTER
+      use omp_lib, only : OMP_PROC_BIND_CLOSE, OMP_PROC_BIND_SPREAD
 #else
-!$    use omp_lib, only : omp_get_num_threads, omp_get_schedule
+!$    use omp_lib, only : omp_get_num_threads
+!$    use omp_lib, only : omp_get_schedule, omp_set_schedule
+!$    use omp_lib, only : omp_get_proc_bind
 !$    use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
 !$    use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+!$    use omp_lib, only : OMP_PROC_BIND_FALSE, OMP_PROC_BIND_TRUE
+!$    use omp_lib, only : OMP_PROC_BIND_MASTER
+!$    use omp_lib, only : OMP_PROC_BIND_CLOSE, OMP_PROC_BIND_SPREAD
 #endif
 
       implicit none
@@ -193,6 +203,22 @@ C     Initialise MPI and set processor number
 #ifdef _OPENMP
 !$    write(*,'(a,i0)') '* OpenMP version ', _OPENMP
 #endif
+!$    i = omp_get_proc_bind()
+!$    select case ( i )
+!$    case ( OMP_PROC_BIND_FALSE ) 
+!$    write(*,'(a)') '* OpenMP threads NOT bound (please bind threads!)'
+!$    case ( OMP_PROC_BIND_TRUE ) 
+!$    write(*,'(a)') '* OpenMP threads bound'
+!$    case ( OMP_PROC_BIND_MASTER ) 
+!$    write(*,'(a)') '* OpenMP threads bound (master)'
+!$    case ( OMP_PROC_BIND_CLOSE ) 
+!$    write(*,'(a)') '* OpenMP threads bound (close)'
+!$    case ( OMP_PROC_BIND_SPREAD ) 
+!$    write(*,'(a)') '* OpenMP threads bound (spread)'
+!$    case default
+!$    write(*,'(a)') '* OpenMP threads bound (unknown)'
+!$    end select
+
 !$    call omp_get_schedule(i,is)
 !$    select case ( i )
 !$    case ( OMP_SCHED_STATIC ) 
@@ -201,8 +227,8 @@ C     Initialise MPI and set processor number
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',is
 !$    if ( is == 1 ) then
 !$     ! this is the default scheduling, probably the user
-!$     ! have not set the value, predefine it to 32
-!$     is = 32
+!$     ! have not set the value, predefine it to 64
+!$     is = 64
 !$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',is
 !$    end if
 !$    case ( OMP_SCHED_GUIDED ) 

@@ -658,6 +658,7 @@ contains
           call store_part(n_part, parts, mem_parts, i)
           call even_out_parts(no, mm_col, n_part, parts, i, last_eq)
           call diff_perf(i, n_part, parts, mem_parts, d)
+          
           if ( d == 0 ) then
             ! Simply store. It could be that we swapped a few things
             call store_part(n_part, parts, mem_parts, i)
@@ -684,6 +685,7 @@ contains
           call store_part(n_part, parts, mem_parts, i)
           call even_out_parts(no, mm_col, n_part, parts, i, last_eq)
           call diff_mem(i, n_part, parts, mem_parts, d)
+
           if ( d == 0 ) then
             ! Simply store. It could be that we swapped a few things
             call store_part(n_part, parts, mem_parts, i)
@@ -979,6 +981,8 @@ contains
     integer :: next
     logical :: lfinal
 
+    mem = 0
+    if ( part < 1 ) return
     if ( part > n ) return
     lfinal = .false.
     if ( present(final) ) lfinal = final
@@ -1007,9 +1011,9 @@ contains
       
       mem = part1(part) * ( part1(part) + part1(part-1) * 2 + &
           part1(part+1) * 2 ) + part1(part-1) ** 2 + part1(part+1) ** 2 &
-          - &
+          - ( &
           part2(part) * ( part2(part) + part2(part-1) * 2 + &
-          part2(part+1) * 2 ) + part2(part-1) ** 2 + part2(part+1) ** 2
+          part2(part+1) * 2 ) + part2(part-1) ** 2 + part2(part+1) ** 2)
 
       if ( .not. lfinal ) then
         call diff_mem(part-1, n, part1, part2, next, .true.)
@@ -1036,6 +1040,8 @@ contains
     integer :: next
     logical :: lfinal
 
+    perf = 0
+    if ( part < 1 ) return
     if ( part > n ) return
     lfinal = .false.
     if ( present(final) ) lfinal = final
@@ -1071,7 +1077,7 @@ contains
       if ( .not. lfinal ) then
         call diff_perf(part-1, n, part1, part2, next, .true.)
         p = p + real(next, dp) ** 3
-        call diff_mem(part+1, n, part1, part2, next, .true.)
+        call diff_perf(part+1, n, part1, part2, next, .true.)
         p = p + real(next, dp) ** 3
       end if
       

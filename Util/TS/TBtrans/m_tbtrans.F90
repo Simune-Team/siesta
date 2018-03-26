@@ -46,7 +46,7 @@ contains
     use m_tbt_hs, only: tTSHS, spin_idx, Volt, prep_next_HS
     
     use m_tbt_tri_init, only : tbt_tri_init, tbt_tri_print_opti
-    use m_tbt_tri_init, only : DevTri
+    use m_tbt_tri_init, only : DevTri, ElTri
     use m_tbt_trik, only: tbt_trik
 
     use m_tbt_contour
@@ -59,7 +59,8 @@ contains
     use m_tbt_kpoint, only : nkpnt, kpoint, kweight
     use m_tbt_options, only : save_DATA
     use m_tbt_options, only : cdf_fname, cdf_fname_sigma, cdf_fname_proj
-    use m_tbt_regions, only : r_aDev, r_aBuf, sp_dev_sc
+    use m_tbt_regions, only : r_aDev, r_aBuf, sp_dev_sc, r_oDev
+    use m_tbt_regions, only : r_oElpD
 
     use m_tbt_save
     use m_tbt_proj, only : N_mol, mols, init_proj_save
@@ -67,7 +68,6 @@ contains
 #else
     use m_tbt_kpoint, only : nkpnt
 #endif
-    use m_tbt_regions, only : r_oDev
     use m_tbt_kregions, only : n_k, r_k, kregion_step, kregion_k
 
     use m_ts_gf, only : read_Green
@@ -298,8 +298,9 @@ contains
 
           ! Initialize data files
           call name_save( ispin, TSHS%nspin,cdf_fname, end = 'nc')
-          call init_cdf_save(cdf_fname,TSHS,r_oDev,DevTri,ispin,N_Elec, Elecs, &
-               nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf, sp_dev_sc, save_DATA )
+          call init_cdf_save(cdf_fname,TSHS,r_oDev,DevTri,ispin, &
+              N_Elec, Elecs, r_oElpd, ElTri, &
+              nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf, sp_dev_sc, save_DATA )
        end if
        
        call name_save( ispin, TSHS%nspin,cdf_fname_sigma, end = 'SE.nc')
