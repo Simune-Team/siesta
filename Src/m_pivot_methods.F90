@@ -1145,10 +1145,10 @@ contains
     ! This means that the pivoting table will not necessarily have all sub elements
     logical, intent(in), optional :: only_sub
 
-    integer :: i, j, ptr
+    integer :: i, j, ptr, col
     type(tRgn) :: skip, con, r_tmp
     logical :: lonly_sub
-    logical, allocatable :: pvt_logical(:)
+    logical, allocatable :: in_pvt(:)
 
     lonly_sub = .false.
     if ( present(only_sub) ) lonly_sub = only_sub
@@ -1157,38 +1157,27 @@ contains
     pvt%n = 0
 
     ! Start by initializing skip to be everything but the sub part
-    call rgn_range(skip, 1, n)
-    call rgn_complement(sub, skip, r_tmp)
-    call rgn_sort(r_tmp)
+    call rgn_range(r_tmp, 1, n)
+    call rgn_complement(sub, r_tmp, skip)
+    call rgn_sort(skip)
+    call rgn_delete(r_tmp)
     
-    call rgn_init(skip, n)
-    skip%n = 0
-
-    ! Initialize pvt_logical
-    allocate(pvt_logical(n))
-    pvt_logical = .false.
+    ! Initialize in_pvt
+    allocate(in_pvt(n))
+    in_pvt = .false.
     
     if ( present(start) ) then
-       if ( .not. rgn_push(skip, start) ) &
-            call die('CG -- push 1')
        if ( .not. rgn_push(pvt, start) ) &
-            call die('CG -- push 2')
+            call die('CG -- push 1')
        call rgn_sp_sort(pvt,n,nnzs,n_col,l_ptr,l_col, &
             start,R_SORT_MAX_FRONT)
-       ! Initialize the connectivity graph
-       call rgn_copy(start, con)
+       ! Initialize the connectivity graph (with the sorted elements)
+       call rgn_copy(pvt, con)
     end if
-
-    ! Important as start may not be sorted.
-    call rgn_sort(skip)
-    if ( .not. rgn_push(skip, r_tmp, .true.) ) &
-         call die('CG -- push 3')
-
-    call rgn_delete(r_tmp)
 
     ! Initialize the logical array
     do i = 1, pvt%n
-      pvt_logical(pvt%r(i)) = .true.
+      in_pvt(pvt%r(i)) = .true.
     end do
 
     ! sort the starting configuration
@@ -1212,9 +1201,10 @@ contains
           do i = 1, con%n
              ptr = l_ptr(con%r(i))
              do j = ptr + 1, ptr + n_col(con%r(i))
-                if ( .not. in_rgn(skip, l_col(j)) ) then
-                   if ( .not. rgn_push(r_tmp, l_col(j)) ) &
-                        call die('CG -- push 4')
+                col = l_col(j)
+                if ( .not. (in_rgn(skip, col) .or. in_pvt(col)) ) then
+                   if ( .not. rgn_push(r_tmp, col) ) &
+                        call die('CG -- push 2')
                 end if
              end do
           end do
@@ -1223,7 +1213,7 @@ contains
           call rgn_uniq(r_tmp, in_place=.true.)
           
           ! Copy to the new connectivity region
-          call rgn_copy(r_tmp, con)
+          call copy(r_tmp, con)
 
        end if
 
@@ -1234,34 +1224,45 @@ contains
 
           ! Choose a random one
           do i = 1 , sub%n
-             if ( in_rgn(skip, sub%r(i)) ) cycle
-             call rgn_range(con, sub%r(i), sub%r(i))
+             if ( in_rgn(skip, sub%r(i)) .or. in_pvt(sub%r(i)) ) cycle
+             call rgn_grow(con, 1)
+             con%n = 1
+             con%r(1) = sub%r(i)
              exit
           end do
           
        end if
 
-       ! Add to removal region (note con has to be sorted)
-       if ( .not. rgn_push(skip, con, .true.) ) &
-            call die('will never happen - 1')
-
        ! Update pivoting check-indices
        do i = 1, con%n
-         pvt_logical(con%r(i)) = .true.
+         in_pvt(con%r(i)) = .true.
        end do
 
-       if ( .not. rgn_push(pvt, con) ) call die('will never happen - 2')
+       if ( .not. rgn_push(pvt, con) ) call die('CG -- push 3')
        call rgn_sp_sort(pvt,n,nnzs,n_col,l_ptr,l_col, &
-            con, R_SORT_MAX_BACK, r_logical=pvt_logical)
+            con, R_SORT_MAX_BACK, r_logical=in_pvt)
        
     end do
 
-    deallocate(pvt_logical)
+    deallocate(in_pvt)
     call rgn_delete(skip, con, r_tmp)
 
     if ( pvt%n /= sub%n .and. .not. lonly_sub ) then
        call die('connectivity_graph: Error in algorithm')
     end if
+
+  contains
+
+    subroutine copy(from, to)
+      type(tRgn), intent(in) :: from
+      type(tRgn), intent(inout) :: to
+      integer :: i
+      call rgn_grow(to, from%n)
+      do i = 1, from%n
+        to%r(i) = from%r(i)
+      end do
+      to%n = from%n
+    end subroutine copy
 
   end subroutine connectivity_graph
 

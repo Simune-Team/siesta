@@ -367,63 +367,69 @@ contains
       use class_dSpData2D, only: nnzs
       use precision, only: i8b
       use m_verbosity, only : verbosity
-      use m_tbt_regions, only : sp_uc
+      use m_tbt_regions, only : sp_uc, sp_dev_sc
 
       integer(i8b) :: nsize
-      real(dp) :: mem, tmem
+      real(dp) :: mem, elec_mem
+      !   1 / 1024**2
+      real(dp), parameter :: B2MB = 9.5367431640625e-7_dp
+      !   1 / 1024
+      real(dp), parameter :: MB2GB = 0.0009765625_dp
+
       integer :: iEl
 
-      if ( verbosity > 4 .and. IONode ) then
+      if ( verbosity <= 4 ) return
+      
+      ! Calculate size of electrodes
+      nsize = 0
+      do iEl = 1 , N_Elec
+        ! These are doubles (not complex)
+        ! hence, we need not count the overlap matrices as they are already
+        ! doubled in the complex conversion
+        nsize = nsize + nnzs(Elecs(iEl)%H00) + nnzs(Elecs(iEl)%H01)
+        if ( .not. Elecs(iEl)%Bulk ) then
+          nsize = nsize + 2 * size(Elecs(iEl)%HA)
+        end if
+        nsize = nsize + size(Elecs(iEl)%Gamma)
+      end do
 
-         ! Calculate size of electrodes
-         nsize = 0
-         do iEl = 1 , N_Elec
-            ! These are doubles (not complex)
-            ! hence, we need not count the overlap matrices as they are already
-            ! doubled...
-            nsize = nsize + nnzs(Elecs(iEl)%H00) + nnzs(Elecs(iEl)%H01)
-            if ( .not. Elecs(iEl)%Bulk ) then
-               nsize = nsize + 2 * size(Elecs(iEl)%HA)
-            end if
-            nsize = nsize + size(Elecs(iEl)%Gamma)
-         end do
+      elec_mem = nsize * 16._dp * B2MB
+      if ( elec_mem > 600._dp ) then
+        write(*,'(a,f8.3,a)') 'tbt: Electrode memory: ', elec_mem * MB2GB,' GB'
+      else
+        write(*,'(a,f8.3,a)') 'tbt: Electrode memory: ', elec_mem ,' MB'
+      end if
 
-         tmem = nsize * 16._dp / 1024._dp ** 2
-         if ( tmem > 600._dp ) then
-            write(*,'(a,f8.3,a)') 'tbt: Electrode memory: ',tmem / 1024._dp,' GB'
-         else
-            write(*,'(a,f8.3,a)') 'tbt: Electrode memory: ',tmem ,' MB'
-         end if
-         
-         ! first the size of the real matrices
-         nsize = nnzs(TSHS%sp)
+      ! first the size of the real matrices (H and S)
+      ! Since we immediately reduce to only one spin-component we never
+      ! have spin-degeneracy as a memory requirement.
+      nsize = nnzs(TSHS%sp) * 2
 #ifdef NCDF_4
-         ! this is the sparse orbital currents...
-         if ( initialized(sp_dev_sc) ) then
-            nsize = nsize + nnzs(sp_dev_sc)
-         end if
+      if ( initialized(sp_dev_sc) ) then
+        ! this is the sparse orbital currents/COOP/COHP
+        nsize = nsize + nnzs(sp_dev_sc)
+      end if
 #endif
-         mem = nsize * 8._dp / 1024._dp ** 2
-         ! Now the complex sparse matrices
-         nsize = nnzs(sp_uc) * 2
-         mem = mem + nsize * 16._dp / 1024._dp ** 2
-         if ( mem > 600._dp ) then
-            write(*,'(a,f8.3,a)') 'tbt: Sparse Hamiltonian and overlap memory: ', &
-                 mem / 1024._dp,' GB'
-         else
-            write(*,'(a,f8.3,a)') 'tbt: Sparse Hamiltonian and overlap memory: ', &
-                 mem,' MB'
-         end if
+      mem = nsize * 8._dp * B2MB
+      ! Now the complex sparse matrices H, S, these could be reduced
+      nsize = nnzs(sp_uc) * 2
+      mem = mem + nsize * 16._dp * B2MB
+      if ( mem > 600._dp ) then
+        write(*,'(a,f8.3,a)') 'tbt: Sparse H, S and auxiliary matrices memory: ', &
+            mem * MB2GB,' GB'
+      else
+        write(*,'(a,f8.3,a)') 'tbt: Sparse H, S and auxiliary matrices memory: ', &
+            mem,' MB'
+      end if
 
-         tmem = tmem + mem
-         if ( tmem > 600._dp ) then
-            write(*,'(a,f8.3,a/)') 'tbt: Sum of electrode and sparse memory: ', &
-                 tmem / 1024._dp,' GB'
-         else
-            write(*,'(a,f8.3,a/)') 'tbt: Sum of electrode and sparse memory: ', &
-                 tmem,' MB'
-         end if
-         
+      ! Total memory
+      mem = elec_mem + mem
+      if ( mem > 600._dp ) then
+        write(*,'(a,f8.3,a/)') 'tbt: Sum of electrode and sparse memory: ', &
+            mem * MB2GB,' GB'
+      else
+        write(*,'(a,f8.3,a/)') 'tbt: Sum of electrode and sparse memory: ', &
+            mem,' MB'
       end if
 
     end subroutine print_memory
