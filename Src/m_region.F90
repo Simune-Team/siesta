@@ -2205,7 +2205,7 @@ contains
     integer, intent(in) :: Bnode
     integer, intent(in), optional :: Comm
 
-    integer :: Node, n, lComm
+    integer :: Node, n, lComm, Nodes
     integer :: MPIerror
 
     lComm = MPI_COMM_WORLD
@@ -2213,6 +2213,8 @@ contains
 
     ! Get current node to 
     call MPI_Comm_Rank(lComm,Node,MPIerror)
+    call MPI_Comm_Size(lComm,Nodes,MPIerror)
+    if ( Nodes == 1 ) return
 
     n = r%n
     call MPI_Bcast(n,1,MPI_Integer, Bnode, lComm, MPIerror)
