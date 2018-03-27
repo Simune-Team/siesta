@@ -150,14 +150,6 @@ contains
        end if
     end if
 
-    ! We need not look at the smallest BTD sizes
-    ! they will not give anything productive.
-    ! Hence, we can for huge systems, decrease the search
-    ! space to increase performance.
-    ! In principle this number should be the lowest number of orbitals
-    ! per atom (for TB == 1)
-    guess_start = 2
-    guess_step = 1
     if ( lpar ) guess_step = Nodes
 
     ! If the first one happens to be the best partition, 
@@ -167,11 +159,31 @@ contains
     ! If the blocks are known by the user to not exceed a certain
     ! size, then we can greatly reduce the guessing step
     ! for huge systems
-    i = mm_col(2,1)
-    ! the maximum size must be the maximum size of the connections
-    ! of the first one
-    i = maxval(mm_col(2,1:i) - mm_col(1,1:i),dim=1)
-    max_block = max(min( no / 4 , i ), 1)
+    ind = mm_col(2,1)
+    ! Now figure out the min/max connections.
+    ! We do this by cheking the first connection-block and the
+    ! min/max ranges
+
+    ! Here we find the orbital in the first range
+    ! that connects to the fewest amount of parent orbitals.
+    ! This means that the block *could* potentially be as small
+    ! as the one found.
+    io = no
+    jo = 0
+    do i = 1, ind
+      ! bandwidth at row i
+      j = mm_col(2, i) - mm_col(1, i)
+      io = min(io, j)
+      jo = max(jo, j)
+    end do
+    ! Allow 5% of the minimum block size +/- to search
+    ! This *is* too much but to be on the safe side...
+    ! On this note we also increase the step to 1%
+    i = max(int(io * 0.05), 2)
+    guess_start = max(1, io - i)
+    ! Define the stepping
+    guess_step = max(int(io * 0.01), 1)
+    max_block = max(min( no / 4, jo + i), 1)
     max_block = fdf_get('TS.BTD.Block.Max',max_block)
 #ifdef TBTRANS
     max_block = fdf_get('TBT.BTD.Block.Max',max_block)
@@ -180,7 +192,7 @@ contains
     ! max-block, then use the half 'no'
     max_block = max(max_block , guess_start + guess_step)
     max_block = min(max_block , no / 2)
-    guess_start = max(min(guess_start,max_block), 1)
+    guess_start = max(min(guess_start, max_block), 1)
 
     ! Correct starting guess for the node
     if ( lpar ) guess_start = min(guess_start + Node, max_block)
@@ -197,14 +209,14 @@ contains
       ! Quick escape if the first part is zero (signal from guess_trimat)
       if ( guess_part(1) == 0 ) cycle
 
-      ! Try and even out the different parts
-      call full_even_out_parts(N_Elec,Elecs,IsVolt,method, &
-          no,mm_col,guess_parts,guess_part,last_eq)
-
       ! If not valid tri-pattern, simply jump...
       if ( valid_tri(no,r,mm_col,guess_parts, guess_part,last_eq) /= VALID ) then
         cycle
       end if
+
+      ! Try and even out the different parts
+      call full_even_out_parts(N_Elec,Elecs,IsVolt,method, &
+          no,mm_col,guess_parts,guess_part,last_eq)
 
       if ( copy_first ) then
         ! ensure to copy it over (the initial one was not valid)
@@ -1225,7 +1237,6 @@ contains
     ! Then it must be invalid...
     if ( N /= no ) then
       val = NONVALID_SIZE
-      return
     end if
     
   contains
@@ -1250,14 +1261,15 @@ contains
           write(*,'(a)') 'BTD: Found non-symmetric matrix!'
           write(*,'(a)') '     If you are not using delta methods you are probably doing something wrong!'
           write(*,'(a)') ' block: block row is located in'
+          write(*,'(a)') ' N    : size of block'
           write(*,'(a)') ' min_C: minimum element row connects to'
           write(*,'(a)') ' min_B: minimum element in the block'
           write(*,'(a)') ' max_B: maximum element in the block'
           write(*,'(a)') ' max_C: maximum element row connects to'
-          write(*,'(6a8)') 'block', 'min_C', 'min_B', 'max_B', 'max_C'
+          write(*,'(6a8)') 'block', 'N', 'min_C', 'min_B', 'max_B', 'max_C'
           first = .false.
         end if
-        write(*,'(6i8)') i, col_min, Nm1, Np1, col_max
+        write(*,'(6i8)') i, parts(i), col_min, Nm1, Np1, col_max
      end if
     end subroutine print_error
 
