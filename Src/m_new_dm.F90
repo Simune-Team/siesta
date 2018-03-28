@@ -1234,11 +1234,13 @@ contains
                       DM(ind,1) = qio + spio * costh
                       DM(ind,2) = qio - spio * costh
                       DM(ind,3) =       spio * sinth * cosph
-                      DM(ind,4) =       spio * sinth * sinph 
-                      DM(ind,5) = 0.0_dp
-                      DM(ind,6) = 0.0_dp
-                      DM(ind,7)= DM(ind,3)
-                      DM(ind,8)= DM(ind,4)
+                      DM(ind,4) =       spio * sinth * sinph
+                      if (spin%SO) then
+                         DM(ind,5) = 0.0_dp
+                         DM(ind,6) = 0.0_dp
+                         DM(ind,7)= DM(ind,3)
+                         DM(ind,8)= DM(ind,4)
+                      endif
                    else
                       DM(ind,1) = qio + spio
                       DM(ind,2) = qio - spio
