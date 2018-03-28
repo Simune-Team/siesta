@@ -5,7 +5,7 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
-      subroutine mulliken(iopt,nspin,natoms,nbasistot,maxnh,numh,
+      subroutine mulliken(iopt,natoms,nbasistot,maxnh,numh,
      .                    listhptr,listh,s,dm,isa,lasto,iaorb,
      .                    iphorb)
 C ********************************************************************
@@ -23,7 +23,6 @@ C ************************** INPUT ************************************
 C integer iopt                : Work option: 1 = atomic and orbital charges
 C                                            2 = 1 + atomic overlap pop.
 C                                            3 = 2 + orbital overlap pop.
-C integer nspin               : Number of spin components
 C integer natoms              : Number of atoms
 C integer nbasistot           : Number of basis orbitals over all nodes
 C integer maxnh               : First dimension of d.m. and overlap, and its
@@ -32,7 +31,7 @@ C integer numh(nbasis)        : First Control vector of d.m. and overlap
 C integer listhptr(nbasis)    : Second Control vector of d.m. and overlap
 C integer listh(maxnh)        : Third Control vector of d.m. and overlap
 C real*8  s(maxnh)            : Overlap matrix in sparse form
-C real*8  dm(maxnh,nspin)     : Density matrix in sparse form 
+C real*8  dm(maxnh,spin%DM)   : Density matrix in sparse form 
 C integer isa(natoms)         : Species index of each atom
 C integer lasto(0:maxa)       : Index of last orbital of each atom
 C                               (lasto(0) = 0) 
@@ -51,21 +50,22 @@ C
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use alloc,        only : re_alloc, de_alloc
       use siesta_cml
+      use m_spin,       only : spin
 #ifdef MPI
       use mpi_siesta
 #endif
 
       implicit none
 
-      integer
-     .  iopt,natoms,nbasistot,maxnh,nspin
+      integer, intent(in) :: 
+     .  iopt,natoms,nbasistot,maxnh
 
       integer
      .  numh(*),lasto(0:natoms),listh(maxnh),listhptr(*),
      .  iphorb(*), isa(natoms), iaorb(*)
 
       real(dp)
-     .  dm(maxnh,nspin),s(maxnh)
+     .  dm(maxnh,spin%DM),s(maxnh)
 
 C Internal parameters ..................................................
 C Number of columns in printout.  Must be smaller than 20
@@ -84,7 +84,8 @@ C Number of columns in printout.  Must be smaller than 20
      .  config(ncol), itot
 
       real(dp)
-     .  p(ncol),qa,qas(4),qts(4),qtot,qtot_temp,stot,svec(3)
+     .     p(ncol),qa,qas(4),qts(4),qtot,qtot_temp,stot,svec(3)
+      real(dp) :: dm_aux(4)
 
       real(dp), pointer :: qo(:)=>null(), qos(:,:)=>null()
 
@@ -177,7 +178,7 @@ C Compute and print Overlap Populations for Orbitals ....................
                 ii = j - (ib - 1) * ncol
                 if (ii .ge. 1 .and. ii .le. imax) then
                   p(ii) = 0._dp
-                  do is = 1,min(nspin,2)
+                  do is = 1,spin%Spinor
                     p(ii) = p(ii) + dm(ind,is) * s(ind)
                   enddo
                 endif
@@ -241,7 +242,7 @@ C Compute and print Overlap Populations for Atoms ....................
                   goto 110
  100              ii = ja - (ib - 1) * ncol
                   if (ii .ge. 1 .and. ii .le. imax) then
-                    do is = 1,min(nspin,2)
+                    do is = 1,spin%Spinor
                       p(ii) = p(ii) + dm(ind,is) * s(ind)
                     enddo
                   endif
@@ -271,7 +272,7 @@ C Compute and print Mulliken Orbital and Atomic Populations ..........
           write(6,*) 
           write(6,"(a)")'mulliken: Atomic and Orbital Populations:'
         endif
-        if (nspin .le. 2) then
+        if (spin%DM .le. 2) then
 C We only write mulliken to cml file if we are unpolarized or collinear 
 C and (currently) don't bother in the non-collinear case.
           if (cml_p) then
@@ -279,8 +280,8 @@ C and (currently) don't bother in the non-collinear case.
      .            dictRef='siesta:mulliken',
      .            title='Mulliken Population Analysis')
           endif
-          do is = 1,nspin
-            if (nspin .eq. 2) then
+          do is = 1,spin%DM
+            if (spin%DM .eq. 2) then
               if(is .eq. 1) then
                 if (ionode) write(6,'(/,a)') 'mulliken: Spin UP '
                 if (cml_p) call cmlStartPropertyList(xf=mainXML, 
@@ -399,36 +400,41 @@ C Global sum of total charge
           enddo
           if (cml_p) call cmlEndPropertyList(xf=mainXML) ! mulliken
 
-        elseif (nspin .eq. 4) then
-          call re_alloc( qos, 1, nspin, 1, nbasistot,
+        elseif (spin%DM .ge. 4) then
+          call re_alloc( qos, 1, spin%Grid, 1, nbasistot,
      &          'qos', 'mulliken' )
-          do is = 1,nspin
+          do is = 1,spin%Grid
             qts(is) = 0.0_dp
             do io = 1,nbasistot
               qos(is,io) = 0.0_dp
             enddo
           enddo
-          do is = 1,nspin
-            do io = 1,nbasis
-              call LocalToGlobalOrb(io,Node, Nodes, itot)
-              do in = 1,numh(io)
+          do io = 1,nbasis
+             call LocalToGlobalOrb(io,Node, Nodes, itot)
+             do in = 1,numh(io)
                 ind = listhptr(io)+in
                 jo = listh(ind)
-                qos(is,itot) = qos(is,itot) + dm(ind,is)*s(ind)/2
-                if ( jo <= nbasistot )
-     .            qos(is,jo) = qos(is,jo) + dm(ind,is)*s(ind)/2
-              enddo
-            enddo
+                dm_aux(1:4) = dm(ind,1:4)
+                if (spin%SO) then
+                   dm_aux(3) = 0.5_dp*(dm_aux(3)+dm(ind,7))
+                   dm_aux(4) = 0.5_dp*(dm_aux(4)+dm(ind,8))
+                endif
+                do is = 1,spin%Grid
+                   qos(is,itot) = qos(is,itot) + dm_aux(is)*s(ind)/2
+                   if ( jo <= nbasistot )
+     .                  qos(is,jo) = qos(is,jo) + dm_aux(is)*s(ind)/2
+                enddo
+             enddo
           enddo 
 #ifdef MPI
-          call re_alloc( qb, 1, nspin*nbasistot,
+          call re_alloc( qb, 1, spin%Grid*nbasistot,
      &         'qb', 'mulliken' )
-          call MPI_Reduce(qos(1,1), qb(1), nspin*nbasistot,
+          call MPI_Reduce(qos(1,1), qb(1), spin%Grid*nbasistot,
      &         Mpi_Double_Precision, MPI_Sum, 
      &         0, MPI_Comm_world, MPIerror)
           itot = 0
           do io = 1 , nbasistot
-             do is = 1 , nspin
+             do is = 1 , spin%Grid
                 itot = itot + 1
                 qos(is, io) = qb(itot)
              end do
@@ -460,7 +466,7 @@ C Global sum of total charge
               if ( isa(ia) /= ispec ) cycle
                   
               ! Initialize atomic charges (per spin)
-              qas(1:nspin) = 0._dp
+              qas(1:spin%Grid) = 0._dp
               do io = lasto(ia-1)+1, lasto(ia)
                 
 C DSP, Writing symmetries for each orbital.
@@ -469,11 +475,11 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
                  config(1) =  cnfigfio(ispec,iphorb(io))
 
                  ! Reduce total charge per-atom
-                 do is = 1 , nspin
+                 do is = 1 , spin%Grid
                     qas(is) = qas(is) + qos(is,io)
                  enddo
                  
-                 call spnvec( nspin, qos(1:nspin,io), 
+                 call spnvec( spin%Grid, qos(1:spin%Grid,io), 
      $                qtot, stot, svec)
                  if ( IONode ) then
                     write(6,'(i5,i3,tr1,i1,a7,2f10.5,3x,3f8.3)')
@@ -483,20 +489,20 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
 
               end do ! atomic orbitals
 
-              call spnvec( nspin, qas, qtot, stot, svec )
+              call spnvec( spin%Grid, qas, qtot, stot, svec )
               if ( IONode ) then
                  write(6,'(i5,5x,a5,2x,2f10.5,3x,3f8.3,/)')
      .                ia, 'Total', qtot, stot, svec 
               end if
 
               ! Reduce total charge in system
-              do is = 1 , nspin
+              do is = 1 , spin%Grid
                  qts(is) = qts(is) + qas(is)
               end do
 
             end do ! loop atoms
 
-            call spnvec( nspin, qts, qtot, stot, svec )
+            call spnvec( spin%Grid, qts, qtot, stot, svec )
             if ( IONode ) then
                write(6,'(a,/,a5,12x,2f10.5,3x,3f8.3,/)')
      .              repeat('-',64), 'Total', qtot, stot, svec
@@ -506,7 +512,7 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
 
           call de_alloc( qos, 'qos', 'mulliken' )
           
-        end if ! nspin .eq. 4
+        end if ! spin%DM .ge. 4
       end if
 
 C ...................
@@ -519,7 +525,7 @@ C ...................
 11    format(i12,20(1x,f7.3))
 15    format(i4,1x,i1,a7,20(1x,f8.3))
       return
-      end
+      end subroutine mulliken
 
 
 
@@ -580,4 +586,4 @@ c ********************************************************************
         write(6,*) 'spnvec: ERROR: invalid argument ns =', ns
         return
       endif
-      end
+      end subroutine spnvec

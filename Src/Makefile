@@ -526,6 +526,8 @@ clean:
 
 
 # DO NOT DELETE THIS LINE - used by make depend
+Fstack.o: basic_type.inc
+Pair.o: basic_type.inc
 alloc.o: m_io.o parallel.o precision.o sys.o
 amn.o: alloc.o atmfuncs.o atomlist.o m_orderbands.o m_trialorbitalclass.o
 amn.o: matel_registry.o mneighb.o new_matel.o parallel.o parallelsubs.o
@@ -583,7 +585,11 @@ chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
 class_Data1D.o: class_Data1D.T90 basic_type.inc
 class_Data1D.o: alloc.o
+class_Data1D.o: basic_type.inc
+class_Data1D.o: alloc.o
 class_Data2D.o: class_Data2D.T90 basic_type.inc
+class_Data2D.o: alloc.o
+class_Data2D.o: basic_type.inc
 class_Data2D.o: alloc.o
 class_Distribution.o: basic_type.inc
 class_Fstack_Data1D.o: Fstack.T90 basic_type.inc
@@ -607,13 +613,19 @@ class_SpData1D.o: class_SpData1D.T90 basic_type.inc
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_OrbitalDistribution.o
 class_SpData1D.o: class_Sparsity.o
+class_SpData1D.o: basic_type.inc
+class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData2D.o: class_SpData2D.T90 basic_type.inc
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_OrbitalDistribution.o
 class_SpData2D.o: class_Sparsity.o
+class_SpData2D.o: basic_type.inc
+class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: basic_type.inc
 class_Sparsity.o: alloc.o
 class_TriMat.o: class_TriMat.T90 basic_type.inc
+class_TriMat.o: alloc.o intrinsic_missing.o
+class_TriMat.o: basic_type.inc
 class_TriMat.o: alloc.o intrinsic_missing.o
 coceri.o: files.o periodic_table.o precision.o units.o
 compute_dm.o: atomlist.o class_SpData1D.o compute_ebs_shift.o diagon.o
@@ -1117,7 +1129,7 @@ molecularmechanics.o: alloc.o parallel.o precision.o sys.o units.o
 moments.o: atmfuncs.o parallel.o parallelsubs.o precision.o spinorbit.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 moremeshsubs.o: alloc.o mesh.o parallel.o precision.o schecomm.o sys.o
-mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
+mulliken.o: alloc.o atmfuncs.o m_spin.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o new_matel.o precision.o
 new_matel.o: alloc.o errorf.o interpolation.o matel_registry.o parallel.o

@@ -169,16 +169,16 @@
 
 !     Mulliken population analysis 
       if ( spin%SO .and. .not.spin%SO_offsite ) then
-          call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
+         ! BUG: Dscf is truncated (1..4) instead of being correctly hermitified
+         ! Kept just for the "orbital moment" output
+         call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
      .                  listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .                  indxuo )
-      else
-!       if( IONode .and. spin%SO_offsite ) write(6,'(/,a)') 
-!     .  ' WARNING: <Lx,Ly,Lz> not yet supported by off-site SO'
-       call mulliken( mullipop, spin%Grid, na_u, no_u, maxnh,
-     &                numh, listhptr, listh, S, Dscf, isa, 
-     &                lasto, iaorb, iphorb )
       endif
+      ! Call this unconditionally
+      call mulliken( mullipop, na_u, no_u, maxnh,
+     &               numh, listhptr, listh, S, Dscf, isa, 
+     &               lasto, iaorb, iphorb )
 !
 !     Call the born effective charge routine only in those steps (even) 
 !     in which the dx  is positive.

@@ -44,7 +44,6 @@
       integer               :: iiscf, i, is
 
       external :: mulliken
-
 !-------------------------------------------------------------------- BEGIN
 
       call timer( 'MIXER', 1 )
@@ -192,16 +191,16 @@
      &        write (6,"(/a)")
      &        'siesta: Mulliken populations after mixing'
          if ( spin%SO .and. .not.spin%SO_offsite ) then
+            ! BUG: Dscf is truncated (1..4) instead of being correctly hermitified
+            ! Kept just for the "orbital moment" output
             call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
      .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .           indxuo )
-         else
-!          if( spin%SO_offsite ) write(6,'(/,a)') 
-!     .    ' WARNING: <Lx,Ly,Lz> not yet supported by off-site SO'
-           call mulliken( mullipop, spin%H, na_u, no_u, maxnh,
+         endif
+         ! Call this unconditionally
+         call mulliken( mullipop, na_u, no_u, maxnh,
      &          numh, listhptr, listh, S, Dscf, isa,
      &          lasto, iaorb, iphorb )
-         endif
       endif
 
       call timer( 'MIXER', 2 )
