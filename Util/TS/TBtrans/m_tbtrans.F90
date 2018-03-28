@@ -384,6 +384,8 @@ contains
         ! hence, we need not count the overlap matrices as they are already
         ! doubled in the complex conversion
         nsize = nsize + nnzs(Elecs(iEl)%H00) + nnzs(Elecs(iEl)%H01) ! double
+        nsize = nsize + (nnzs(Elecs(iEl)%H00) + nnzs(Elecs(iEl)%H01))/4 ! integer (SP)
+
         if ( .not. Elecs(iEl)%Bulk ) then
           nsize = nsize + 2 * size(Elecs(iEl)%HA) ! double complex
         end if
@@ -399,15 +401,18 @@ contains
       ! Since we immediately reduce to only one spin-component we never
       ! have spin-degeneracy as a memory requirement.
       nsize = nnzs(TSHS%sp) * 2 ! double
+      nsize = nsize + nnzs(TSHS%sp) / 2 ! integer (SP)
 #ifdef NCDF_4
       if ( initialized(sp_dev_sc) ) then
         ! this is the sparse orbital currents/COOP/COHP
         nsize = nsize + nnzs(sp_dev_sc) ! double
+        nsize = nsize + nnzs(sp_dev_sc) / 2 ! integer (SP)
       end if
 #endif
       mem = nsize * 8._dp / 1024._dp
-      ! Now the complex sparse matrices H, S, these could be reduced
-      nsize = nnzs(sp_uc) * 2
+      ! Now the complex sparse matrices H, S, these could essentially be removed
+      nsize = nnzs(sp_uc)
+      nsize = nsize * 2 + nsize / 4 ! double complex (H,S) / integer (SP)
       mem = mem + nsize * 16._dp / 1024._dp ! double complex
       call pretty_memory(mem, out, unit)
       write(*,'(a,f8.3,tr1,a)') 'tbt: Sparse H, S and auxiliary matrices memory: ', &
