@@ -57,7 +57,7 @@ contains
     use m_ts_electype
     use m_ts_sparse, only : ts_sp_calculation
 
-    use m_ts_method
+    use m_ts_method ! has r_pvt
 
     use m_ts_tri_common
     use m_ts_rgn2trimat
@@ -276,7 +276,7 @@ contains
     use m_ts_electype
     use m_ts_sparse, only : ts_sp_calculation
 
-    use m_ts_method
+    use m_ts_method ! r_pvt
 
     use m_ts_tri_common
     use m_ts_rgn2trimat
@@ -337,7 +337,7 @@ contains
     call ts_Sp_calculation(dit,sparse_pattern,N_Elec,Elecs, &
          ucell, nsc, isc_off, tmpSp2)
     
-    call crtSparsity_SC(tmpSp2,tmpSp1, UC = .TRUE. )
+    call crtSparsity_SC(tmpSp2, tmpSp1, UC = .TRUE. )
 
     ! point to the local (SIESTA-UC) sparsity pattern arrays
     call Sp_to_Spglobal(dit,tmpSp1,tmpSp2)
@@ -385,7 +385,7 @@ contains
        if ( leqi(fdf_get('TS.BTD.Analyze','atom'),'atom') ) cycle
        corb = 'orb'
 
-       call rgn_copy(r_pvt,full)
+       call rgn_copy(r_pvt, full)
 
     else
        corb = 'atom'
@@ -397,7 +397,7 @@ contains
        !     not re-construct it ***
 
        ! Reduce the searching place of atoms
-       call rgn_copy(r_aC,full)
+       call rgn_copy(r_aC, full)
 
     end if
 
