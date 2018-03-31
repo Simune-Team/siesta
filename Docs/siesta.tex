@@ -637,7 +637,11 @@ socket, one may do:
 If using only 1 thread per MPI core it is advised to compile \siesta\
 without OpenMP. As such it may be advantageous to compile \siesta\ in
 3 variants; OpenMP-only (small systems), MPI-only (medium to large
-systems) and MPI$+$OpenMP (large$+$ systems).
+systems) and MPI$+$OpenMP (large$>$ systems).
+
+The variable \shell{OMP\_PROC\_BIND} may heavily influence the
+performance of the executable! Please perform tests for the
+architecture used.
 
 
 \subsection{Library dependencies}
@@ -11589,6 +11593,36 @@ using \fdf{TS!SolutionMethod:BTD}, similarly for options with
   \note often both methods provide \emph{exactly} the same BTD matrix
   due to constraints on the matrix.
   
+\end{fdfentry}
+
+\begin{fdfentry}{TS!BTD!Guess1.Min}[int]<\nonvalue{empirically determined}>
+  \fdfdepend{TS!BTD!Guess1.Max}
+  
+  Constructing the blocks for the BTD starts by \emph{guessing} the
+  first block size. One could guess on all different block sizes, but
+  to speed up the process one can define a smaller range of guesses by
+  defining \fdf{TS!BTD!Guess1.Min} and \fdf{TS!BTD!Guess1.Max}.
+
+  The initial guessed block size will be between the two values.
+
+  By default this is $1/4$ of the minimum bandwidth for a selected
+  first set of orbitals.
+
+  \note setting this to 1 may sometimes improve the final BTD matrix
+  blocks.
+
+\end{fdfentry}
+
+\begin{fdfentry}{TS!BTD!Guess1.Max}[int]<\nonvalue{empirically determined}>
+  \fdfdepend{TS!BTD!Guess1.Min}
+
+  See \fdf{TS!BTD!Guess1.Min}.
+
+  \note for improved initialization performance setting Min/Max flags
+  to the first block size for a given pivoting scheme will drastically
+  reduce the search space and make initialization much
+  faster.
+
 \end{fdfentry}
 
 \begin{fdfentry}{TS!BTD!Spectral}[string]<propagation|column>

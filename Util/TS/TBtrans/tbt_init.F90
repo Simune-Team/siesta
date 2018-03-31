@@ -56,13 +56,23 @@ subroutine tbt_init()
   use m_sparsity_handling
 
 #ifdef _OPENMP
-  use omp_lib, only : omp_get_num_threads, omp_get_schedule
+  use omp_lib, only : omp_get_num_threads
+  use omp_lib, only : omp_get_schedule, omp_set_schedule
+  use omp_lib, only : omp_get_proc_bind
   use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
   use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+  use omp_lib, only : OMP_PROC_BIND_FALSE, OMP_PROC_BIND_TRUE
+  use omp_lib, only : OMP_PROC_BIND_MASTER
+  use omp_lib, only : OMP_PROC_BIND_CLOSE, OMP_PROC_BIND_SPREAD
 #else
-!$ use omp_lib, only : omp_get_num_threads, omp_get_schedule
+!$ use omp_lib, only : omp_get_num_threads
+!$ use omp_lib, only : omp_get_schedule, omp_set_schedule
+!$ use omp_lib, only : omp_get_proc_bind
 !$ use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
 !$ use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+!$ use omp_lib, only : OMP_PROC_BIND_FALSE, OMP_PROC_BIND_TRUE
+!$ use omp_lib, only : OMP_PROC_BIND_MASTER
+!$ use omp_lib, only : OMP_PROC_BIND_CLOSE, OMP_PROC_BIND_SPREAD
 #endif
 
   implicit none
@@ -124,6 +134,22 @@ subroutine tbt_init()
 !$    it = omp_get_num_threads()
 !$    write(*,'(a,i0,a)') '* Running ',it,' OpenMP threads.'
 !$    write(*,'(a,i0,a)') '* Running ',Nodes*it,' processes.'
+!$    it = omp_get_proc_bind()
+!$    select case ( it )
+!$    case ( OMP_PROC_BIND_FALSE ) 
+!$    write(*,'(a)') '* OpenMP threads NOT bound (please bind threads!)'
+!$    case ( OMP_PROC_BIND_TRUE ) 
+!$    write(*,'(a)') '* OpenMP threads bound'
+!$    case ( OMP_PROC_BIND_MASTER ) 
+!$    write(*,'(a)') '* OpenMP threads bound (master)'
+!$    case ( OMP_PROC_BIND_CLOSE ) 
+!$    write(*,'(a)') '* OpenMP threads bound (close)'
+!$    case ( OMP_PROC_BIND_SPREAD ) 
+!$    write(*,'(a)') '* OpenMP threads bound (spread)'
+!$    case default
+!$    write(*,'(a)') '* OpenMP threads bound (unknown)'
+!$    end select
+     
 !$    call omp_get_schedule(it,itmp)
 !$    select case ( it )
 !$    case ( OMP_SCHED_STATIC ) 
@@ -132,8 +158,8 @@ subroutine tbt_init()
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',itmp
 !$    if ( itmp == 1 ) then
 !$     ! this is the default scheduling, probably the user
-!$     ! have not set the value, predefine it to 32
-!$     itmp = 32
+!$     ! have not set the value, predefine it to 64
+!$     itmp = 64
 !$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',itmp
 !$    end if
 !$    case ( OMP_SCHED_GUIDED ) 

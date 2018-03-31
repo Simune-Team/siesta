@@ -1145,10 +1145,10 @@ contains
     ! This means that the pivoting table will not necessarily have all sub elements
     logical, intent(in), optional :: only_sub
 
-    integer :: i, j, ptr
+    integer :: i, j, ptr, col
     type(tRgn) :: skip, con, r_tmp
     logical :: lonly_sub
-    logical, allocatable :: pvt_logical(:)
+    logical, allocatable :: in_pvt(:)
 
     lonly_sub = .false.
     if ( present(only_sub) ) lonly_sub = only_sub
@@ -1157,38 +1157,27 @@ contains
     pvt%n = 0
 
     ! Start by initializing skip to be everything but the sub part
-    call rgn_range(skip, 1, n)
-    call rgn_complement(sub, skip, r_tmp)
-    call rgn_sort(r_tmp)
+    call rgn_range(r_tmp, 1, n)
+    call rgn_complement(sub, r_tmp, skip)
+    call rgn_sort(skip)
+    call rgn_delete(r_tmp)
     
-    call rgn_init(skip, n)
-    skip%n = 0
-
-    ! Initialize pvt_logical
-    allocate(pvt_logical(n))
-    pvt_logical = .false.
+    ! Initialize in_pvt
+    allocate(in_pvt(n))
+    in_pvt = .false.
     
     if ( present(start) ) then
-       if ( .not. rgn_push(skip, start) ) &
-            call die('CG -- push 1')
        if ( .not. rgn_push(pvt, start) ) &
-            call die('CG -- push 2')
+            call die('CG -- push 1')
        call rgn_sp_sort(pvt,n,nnzs,n_col,l_ptr,l_col, &
             start,R_SORT_MAX_FRONT)
-       ! Initialize the connectivity graph
-       call rgn_copy(start, con)
+       ! Initialize the connectivity graph (with the sorted elements)
+       call rgn_copy(pvt, con)
     end if
-
-    ! Important as start may not be sorted.
-    call rgn_sort(skip)
-    if ( .not. rgn_push(skip, r_tmp, .true.) ) &
-         call die('CG -- push 3')
-
-    call rgn_delete(r_tmp)
 
     ! Initialize the logical array
     do i = 1, pvt%n
-      pvt_logical(pvt%r(i)) = .true.
+      in_pvt(pvt%r(i)) = .true.
     end do
 
     ! sort the starting configuration
@@ -1212,9 +1201,10 @@ contains
           do i = 1, con%n
              ptr = l_ptr(con%r(i))
              do j = ptr + 1, ptr + n_col(con%r(i))
-                if ( .not. in_rgn(skip, l_col(j)) ) then
-                   if ( .not. rgn_push(r_tmp, l_col(j)) ) &
-                        call die('CG -- push 4')
+                col = l_col(j)
+                if ( .not. (in_rgn(skip, col) .or. in_pvt(col)) ) then
+                   if ( .not. rgn_push(r_tmp, col) ) &
+                        call die('CG -- push 2')
                 end if
              end do
           end do
@@ -1223,7 +1213,7 @@ contains
           call rgn_uniq(r_tmp, in_place=.true.)
           
           ! Copy to the new connectivity region
-          call rgn_copy(r_tmp, con)
+          call copy(r_tmp, con)
 
        end if
 
@@ -1234,34 +1224,45 @@ contains
 
           ! Choose a random one
           do i = 1 , sub%n
-             if ( in_rgn(skip, sub%r(i)) ) cycle
-             call rgn_range(con, sub%r(i), sub%r(i))
+             if ( in_rgn(skip, sub%r(i)) .or. in_pvt(sub%r(i)) ) cycle
+             call rgn_grow(con, 1)
+             con%n = 1
+             con%r(1) = sub%r(i)
              exit
           end do
           
        end if
 
-       ! Add to removal region (note con has to be sorted)
-       if ( .not. rgn_push(skip, con, .true.) ) &
-            call die('will never happen - 1')
-
        ! Update pivoting check-indices
        do i = 1, con%n
-         pvt_logical(con%r(i)) = .true.
+         in_pvt(con%r(i)) = .true.
        end do
 
-       if ( .not. rgn_push(pvt, con) ) call die('will never happen - 2')
+       if ( .not. rgn_push(pvt, con) ) call die('CG -- push 3')
        call rgn_sp_sort(pvt,n,nnzs,n_col,l_ptr,l_col, &
-            con, R_SORT_MAX_BACK, r_logical=pvt_logical)
+            con, R_SORT_MAX_BACK, r_logical=in_pvt)
        
     end do
 
-    deallocate(pvt_logical)
+    deallocate(in_pvt)
     call rgn_delete(skip, con, r_tmp)
 
     if ( pvt%n /= sub%n .and. .not. lonly_sub ) then
        call die('connectivity_graph: Error in algorithm')
     end if
+
+  contains
+
+    subroutine copy(from, to)
+      type(tRgn), intent(in) :: from
+      type(tRgn), intent(inout) :: to
+      integer :: i
+      call rgn_grow(to, from%n)
+      do i = 1, from%n
+        to%r(i) = from%r(i)
+      end do
+      to%n = from%n
+    end subroutine copy
 
   end subroutine connectivity_graph
 
@@ -1726,7 +1727,8 @@ contains
     logical, intent(in), optional :: only_sub
 
     ! The current queue of elements
-    type(tRgn) :: queue, all
+    type(tRgn) :: queue
+    logical, allocatable :: log_skip(:)
 
     type(tLevelStructure), pointer :: clvl
     integer :: i, nel, el, nadded
@@ -1737,27 +1739,37 @@ contains
 
     call delete_level_structure(ls)
 
-    call rgn_init(all, n)
-    all%n = 0
+    allocate(log_skip(n))
+    log_skip(:) = .false.
 
+    nel = 0
     if ( present(skip) ) then
+      nel = skip%n
        
-       ! Speed up searches in the skipped elements
-       if ( .not. rgn_push(all, skip) ) call die('Error in push LS -- 0')
-       call rgn_sort(all)
-       
+      ! Speed up searches in the skipped elements
+      do i = 1, skip%n
+        log_skip(skip%r(i)) = .true.
+      end do
+      
     end if
 
     ! Actual number of elements in the total level structure
-    nel = n - rgn_size(all)
+    nel = n - nel
 
     if ( nel <= 1 ) then
-       
-       ls%lvl = 1
-       call rgn_range(ls%v, 1, n)
-       call rgn_complement(all, ls%v, ls%v)
-       
-       return
+
+      call rgn_init(ls%v, nel)
+      ls%v%n = 0
+      do i = 1, n
+        if ( .not. log_skip(i) ) then
+          if ( .not. rgn_push(ls%v, i) ) call die('level_structure: push -- 1')
+        end if
+      end do
+      ls%lvl = 1
+
+      deallocate(log_skip)
+      
+      return
        
     end if
 
@@ -1769,6 +1781,11 @@ contains
     if ( present(start) ) then
        if ( .not. rgn_push(queue, start) ) call die('Error in LS -- 1')
     end if
+
+    ! Ensure we have all elements in one array, to easy skip
+    do i = 1, queue%n
+      log_skip(queue%r(i)) = .true.
+    end do
 
     ! Counter to count number of elements added
     nadded = 0
@@ -1796,7 +1813,8 @@ contains
           
           do el = 1 , n
              ! Ensure it is not skipped
-             if ( in_rgn(all, el) ) cycle
+             if ( log_skip(el) ) cycle
+             log_skip(el) = .true.
              
              if ( .not. rgn_push(queue, el) ) call die('Error in LS -- 2')
              exit
@@ -1804,10 +1822,6 @@ contains
           end do
           
        end if
-
-       ! Ensure we have all elements in one array, to easy skip
-       if ( .not. rgn_push(all, queue) ) call die('Error in push LS -- 3')
-       call rgn_sort(all)
 
        ! Copy to the current level
        call rgn_copy(queue, clvl%v)
@@ -1818,7 +1832,7 @@ contains
        if ( nadded >= nel ) exit
 
        ! Prepare queue
-       call rgn_init(queue, nel - nadded)
+       call rgn_grow(queue, nel - nadded)
 
        ! Get the next level
        call next_level(clvl%v, queue)
@@ -1831,7 +1845,8 @@ contains
 
     end do
 
-    call rgn_delete(queue, all)
+    call rgn_delete(queue)
+    deallocate(log_skip)
 
   contains
 
@@ -1855,8 +1870,8 @@ contains
             eln = l_col(ind)
 
             ! Ensure it is not already assigned
-            if ( in_rgn(all, eln) ) cycle
-            if ( in_rgn(qout, eln) ) cycle
+            if ( log_skip(eln) ) cycle
+            log_skip(eln) = .true.
 
             ! Now we can add it to the queue
             if ( .not. rgn_push(qout, eln) ) call die('Error in LS -- 5')
@@ -2257,9 +2272,9 @@ contains
           ! this limits con_c to those not chosen
           call rgn_complement(skip, sub, con_c)
           if ( con_c%n > 0 ) then
-             i = idx_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,con_c, priority = priority )
-             ! We will limit the addition to 1 element
-             if ( .not. rgn_push(con, con_c%r(i)) ) call die('level_struct: push -- 1')
+            i = idx_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,con_c, priority = priority )
+            ! We will limit the addition to 1 element
+            if ( .not. rgn_push(con, con_c%r(i)) ) call die('level_struct: push -- 1')
           end if
        end if
 
@@ -2710,6 +2725,7 @@ contains
     logical :: suc
 
     ! Reset connectivity graph
+    call rgn_grow(con, n_col(idx))
     con%n = 0
     if ( n_col(idx) == 0 ) return
     

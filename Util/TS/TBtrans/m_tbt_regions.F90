@@ -123,7 +123,9 @@ contains
     real(dp) :: tmp
     
     no_u = lasto(na_u)
-    
+
+    call timer('init-region+sp', 1)
+
     ! Create the sparsity pattern and remove the buffer atoms...
     if ( r_oBuf%n > 0 ) then
        sp_tmp = sp
@@ -162,11 +164,9 @@ contains
     end do
 
     ! Delete to be ready to populate the device
-    call rgn_delete(r_aDev)
-
     ! Read in electrode down-folding regions
-    call rgn_delete(r_Els)
-       
+    call rgn_delete(r_aDev, r_Els)
+
     ! Read in device region via the block or list
     if ( fdf_islist('TBT.Atoms.Device') ) then
        
@@ -308,8 +308,6 @@ contains
     allocate(r_aEl(N_Elec),r_oEl(N_Elec))
     allocate(r_oElpD(N_Elec))
 
-    call timer('pivot-elec', 1)
-
     do iEl = 1 , N_Elec
 
        ! Remove the connections that cross the boundary
@@ -388,10 +386,17 @@ contains
     ! Create the temporary unit-cell sparsity pattern
     call crtSparsity_SC(sp, sp_tmp, UC = .true. )
 
+    call timer('init-region+sp', 2)
+
     ! Create the electrode down-folding regions.
     ! Note that sorting according to the more advanced methods
     ! is not directly applicable as the methods involve non-stringent
     ! ending elements.
+    call timer('pivot-elec', 1)
+
+    call rgn_copy(r_oBuf, r_tmp)
+    call rgn_append(r_oDev, r_tmp, r_tmp)
+    call rgn_sort(r_tmp)
 
     do iEl = 1 , N_Elec
 
@@ -399,10 +404,7 @@ contains
 
        ! Create pivoting region (except buffer+device)
        call rgn_range(r_oEl(iEl),1,no_u)
-       if ( r_oBuf%n > 0 ) then
-          call rgn_complement(r_oBuf, r_oEl(iEl), r_oEl(iEl))
-       end if
-       call rgn_complement(r_oDev, r_oEl(iEl), r_oEl(iEl))
+       call rgn_complement(r_tmp, r_oEl(iEl), r_oEl(iEl))
 
        ! Sort according to the connectivity of the electrode
        ! This will also reduce the pivoting table (r_oEl) to
@@ -468,7 +470,7 @@ contains
           end if
 
        end if
-       
+
        ! This aligns the atoms in the same way the orbitals 
        ! introduce the atoms.
        call rgn_Orb2Atom(r_oEl(iEl), na_u, lasto , r_aEl(iEl))
@@ -495,7 +497,9 @@ contains
     end do
 
     ! Possibly deleting it
-    call rgn_delete(r_tmp2)
+    call rgn_delete(r_tmp2, r_Els)
+    call rgn_copy(r_oDev, r_tmp)
+    call rgn_sort(r_tmp) ! copy to faster find pivoting
     do iEl = 1 , N_Elec
 
 #ifdef MPI
@@ -507,26 +511,26 @@ contains
        call rgn_MPI_Bcast(r_oElpD(iEl),i)
 #endif
 
-       if ( iEl > 1 ) then
        ! Check that the region does not overlap with any previous 
        ! electrode region...
-       do i = 1 , iEl - 1
-          if ( rgn_overlaps(r_aEl(iEl),r_aEl(i)) ) then
-             if ( Node == 0 ) then
-                do jEl = 1 , N_Elec
-                   ! We are dying anyway, so might as well sort to make it easier
-                   call rgn_sort(r_aEl(jEl))
-                   call rgn_print(r_aEl(jEl))
-                end do
-             end if
+       if ( rgn_overlaps(r_tmp2, r_aEl(iEl)) ) then
+         if ( Node == 0 ) then
+           do jEl = 1 , N_Elec
+             ! We are dying anyway, so might as well sort to make it easier
+             ! to debug
+             call rgn_sort(r_aEl(jEl))
+             call rgn_print(r_aEl(jEl))
+           end do
+         end if
 #ifdef MPI
-             call MPI_Barrier(MPI_Comm_World, jEl)
+         call MPI_Barrier(MPI_Comm_World, jEl)
 #endif
-
-             call die('Electrode regions connect across the device region, &
-                  &please increase your device region!')
-          end if
-       end do
+         call die('Electrode regions connect across the device region, &
+             &please increase your device region!')
+       end if
+       if ( iEl < N_Elec ) then
+         call rgn_append(r_tmp2, r_aEl(iEl), r_tmp2)
+         call rgn_sort(r_tmp2)
        end if
 
        ! Set the names
@@ -537,17 +541,18 @@ contains
 
        ! Prepare the inDpvt array (will be filled in tri_init
        ! as we sort each block individually)
-       call rgn_copy(Elecs(iEl)%o_inD,Elecs(iEl)%inDpvt)
+       call rgn_copy(Elecs(iEl)%o_inD, Elecs(iEl)%inDpvt)
        
-       ! Check that the electrode down-folded self-energy
-       ! is fully contained
-       ia1 = minval(rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r))
+       ! Check that the electrode down-folded self-energy is fully contained
+       ia1 = minval(rgn_pivot(r_tmp, Elecs(iEl)%o_inD%r))
        if ( ia1 <= 0 ) then
           call die('A downfolded region is not existing. Programming error')
        end if
 
        ! Collect all electrode down-fold regions into one
-       call rgn_union(r_tmp2,r_oEl(iEl),r_tmp2)
+       ! The downfolded regions *must* not overlap.
+       ! So using union may interfere.
+       call rgn_append(r_Els, r_oEl(iEl), r_Els)
 
        ! If the user requests GRAPHVIZ output
        if ( fdf_get('TBT.BTD.Pivot.Graphviz',.false.) .and. IONode ) then
@@ -620,9 +625,10 @@ contains
     call timer('pivot-device', 2)
 
     ! Check that there is no overlap with the other regions
-    if ( rgn_overlaps(r_tmp2, r_oDev) ) then
+    call rgn_sort(r_Els)
+    if ( rgn_overlaps(r_Els, r_oDev) ) then
        call rgn_print(r_oDev)
-       call rgn_print(r_tmp2)
+       call rgn_print(r_Els)
        print *,'Overlapping device, down-folding region(s)...'
        call die('tbt_regions: Error in programming, electrode down')
     end if
@@ -636,18 +642,19 @@ contains
 
     ! Ensure that the number of device orbitals + electrode downfolding
     ! + buffer orbitals equal the full system
-    if ( r_tmp2%n + r_oDev%n + r_oBuf%n /= no_u ) then
-       r_tmp2%name = 'Electrodes'
+    if ( r_Els%n + r_oDev%n + r_oBuf%n /= no_u ) then
+       r_Els%name = 'Electrodes'
        r_oDev%name = 'Device'
        call rgn_print(r_oBuf)
        call rgn_print(r_oDev)
-       call rgn_print(r_tmp2)
+       call rgn_print(r_Els)
        call die('tbt_regions: Error in programming, total')
     end if
 
     call rgn_Orb2Atom(r_oDev,na_u,lasto,r_aDev)
     r_oDev%name = '[O]-device'
     r_aDev%name = '[A]-device'
+    
     ! If the user requests GRAPHVIZ output
     if ( fdf_get('TBT.BTD.Pivot.Graphviz',.false.) .and. IONode ) then
        csort = trim(slabel) // '.TBT.gv'
@@ -718,7 +725,7 @@ contains
     call delete(sp_tmp)
 
     if ( IONode ) then
-       write(*,'(a)')'tbt: Done analyzing sparsity pattern'
+       write(*,'(a)')'tbt: Done analyzing electrode and device sparsity pattern and pivot-tables'
     end if
 
   contains

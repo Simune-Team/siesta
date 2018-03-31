@@ -131,7 +131,7 @@ contains
     ! create array containing max-min for each ts-orbital
     call re_alloc(mm_col, 1, 2, 1, no, &
          routine='tsR2TM', name='mm_col')
-    
+
     ! Set the min/max column indices in the pivoted matrix
     call set_minmax_col(sp, r, mm_col)
 
@@ -144,20 +144,12 @@ contains
        n_part(1) = no - last_eq
        ! Initialize the guess for the 
        call guess_TriMat_last(no,mm_col,guess_parts,guess_part,last_eq)
-       if ( valid_tri(no,r,mm_col,guess_parts, guess_part,last_eq) == VALID ) then
+       if ( valid_tri(no,mm_col,guess_parts, guess_part,last_eq) == VALID ) then
           parts = guess_parts
           n_part(1:parts) = guess_part(1:parts)
        end if
     end if
 
-    ! We need not look at the smallest BTD sizes
-    ! they will not give anything productive.
-    ! Hence, we can for huge systems, decrease the search
-    ! space to increase performance.
-    ! In principle this number should be the lowest number of orbitals
-    ! per atom (for TB == 1)
-    guess_start = 2
-    guess_step = 1
     if ( lpar ) guess_step = Nodes
 
     ! If the first one happens to be the best partition, 
@@ -167,55 +159,83 @@ contains
     ! If the blocks are known by the user to not exceed a certain
     ! size, then we can greatly reduce the guessing step
     ! for huge systems
-    i = mm_col(2,1)
-    ! the maximum size must be the maximum size of the connections
-    ! of the first one
-    i = maxval(mm_col(2,1:i) - mm_col(1,1:i),dim=1)
-    max_block = max(min( no / 4 , i ), 1)
-    max_block = fdf_get('TS.BTD.Block.Max',max_block)
+    ind = mm_col(2,1)
+    ! Now figure out the min/max connections.
+    ! We do this by cheking the first connection-block and the
+    ! min/max ranges
+
+    ! Here we find the orbital in the first range
+    ! that connects to the fewest amount of parent orbitals.
+    ! This means that the block *could* potentially be as small
+    ! as the one found.
+    io = no
+    jo = 0
+    do i = 1, ind
+      ! bandwidth at row i
+      j = mm_col(2, i) - mm_col(1, i)
+      io = min(io, j)
+      jo = max(jo, j)
+    end do
+    ! Allow 5% of the minimum block size +/- to search
+    ! This *is* too much but to be on the safe side...
+    ! On this note we also increase the step to 1%
+    i = max(int(io * 0.05), 2)
+    ! We allow the splitting of blocks to:
+    !   [1 , 4]
+    ! but this does not allow any
+    !   [1 , >4]
+    ! splittings.
+    guess_start = max(1, io / 4 - i)
+    guess_start = fdf_get('TS.BTD.Guess1.Min',guess_start)
 #ifdef TBTRANS
-    max_block = fdf_get('TBT.BTD.Block.Max',max_block)
+    guess_start = fdf_get('TBT.BTD.Guess1.Min',guess_start)
+#endif
+    ! Define the stepping
+    guess_step = max(int(io * 0.01), 1)
+    max_block = max(min( no / 4, jo + i), 1)
+    max_block = fdf_get('TS.BTD.Guess1.Max',max_block)
+#ifdef TBTRANS
+    max_block = fdf_get('TBT.BTD.Guess1.Max',max_block)
 #endif
     ! In case the orbitals of this region is much smaller than
     ! max-block, then use the half 'no'
     max_block = max(max_block , guess_start + guess_step)
     max_block = min(max_block , no / 2)
-    guess_start = max(min(guess_start,max_block), 1)
+    guess_start = max(min(guess_start, max_block), 1)
 
     ! Correct starting guess for the node
     if ( lpar ) guess_start = min(guess_start + Node, max_block)
-
+    
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 
     ! In cases of MPI we do it distributed (however, the collection routine
     ! below could be optimized)
     do i = guess_start , max_block , guess_step
 
-       ! Make new guess...
-       call guess_TriMat(no,mm_col,i,guess_parts,guess_part,last_eq)
+      ! Make new guess...
+      call guess_TriMat(no,mm_col,i,guess_parts,guess_part,last_eq)
 
-       ! If not valid tri-pattern, simply jump...
-       if ( valid_tri(no,r,mm_col,guess_parts, guess_part,last_eq) /= VALID ) then
-          cycle
-       end if
+      ! Quick escape if the first part is zero (signal from guess_trimat)
+      if ( guess_part(1) == 0 ) cycle
 
-       call full_even_out_parts(N_Elec,Elecs,IsVolt,method, &
-            no,mm_col,guess_parts,guess_part,last_eq)
+      ! If not valid tri-pattern, simply jump...
+      if ( valid_tri(no,mm_col,guess_parts, guess_part,last_eq) /= VALID ) then
+        cycle
+      end if
 
-       if ( last_eq > 0 .and. guess_part(guess_parts) /= last_eq ) then
-          call die('Something went terribly wrong...')
-       end if
+      ! Try and even out the different parts
+      call full_even_out_parts(N_Elec,Elecs,IsVolt,method, &
+          no,mm_col,guess_parts,guess_part,last_eq)
 
-       if ( copy_first ) then
-          ! ensure to copy it over (the initial one was not valid)
-          copy_first = .false.
-          parts = guess_parts
-          n_part(1:parts) = guess_part(1:parts)
-          cycle
-       end if
-       
-       call select_better(method, parts,n_part, guess_parts, guess_part)
-       
+      if ( copy_first ) then
+        ! ensure to copy it over (the initial one was not valid)
+        copy_first = .false.
+        parts = guess_parts
+        n_part(1:parts) = guess_part(1:parts)
+      else
+        call select_better(method, parts,n_part, guess_parts, guess_part)
+      end if
+
     end do
 
 #ifdef MPI
@@ -272,7 +292,7 @@ contains
     ! even out the partitions.
     ! The most probable thing is that the electrodes are not
     ! contained in the first two parts.
-    i = valid_tri(no,r,mm_col,parts, n_part,last_eq)
+    i = valid_tri(no,mm_col,parts, n_part,last_eq)
     if ( i /= VALID ) then
        write(*,'(2a)') 'Running on region: ',trim(r%name)
        write(*,'(a,i0)') 'TranSIESTA system size: ',no
@@ -393,48 +413,58 @@ contains
 
   end subroutine ts_rgn2TriMat
 
-  subroutine guess_TriMat(no,mm_col,first_part,parts,n_part,last_eq)
+  subroutine guess_TriMat(no,mm_col,first_part,n_part,parts,last_eq)
 
     integer, intent(in) :: no, mm_col(2,no) ! number of orbitals, max,min
     integer, intent(in) :: first_part
-    integer, intent(out) :: parts
-    integer, intent(out) :: n_part(:)
+    integer, intent(inout) :: n_part
+    integer, intent(inout) :: parts(no)
     integer, intent(in) :: last_eq
 
     ! Local variables
     integer :: N
 
     if ( first_part > no ) &
-         call die('Not allowed to do 1 tri-diagonal part')
+        call die('Not allowed to do 1 tri-diagonal part')
 
-    parts = 1
-    n_part(1) = first_part
-    N = n_part(1)
+    n_part = 1
+    parts(1) = first_part
+    N = parts(1)
+    
     do while ( N < no )
-       parts = parts + 1
-       if ( parts > size(n_part) ) then
-          print *,'Error',parts,size(n_part)
-          call die('Size error when guessing the tri-mat size')
-       end if
-       call guess_next_part_size(no, mm_col, parts, n_part)
-       N = N + n_part(parts)
-       if ( last_eq > 0 ) then
-          ! if a last-part was "forced" we do this here...
-          if ( N + last_eq > no ) then
-             ! We need to add the former part with the "too many"
-             ! orbitals
-             n_part(parts) = n_part(parts) + no - N
-             N = no
-          end if
-       end if
-             
+
+      ! Step the currently searched part
+      n_part = n_part + 1
+      
+      if ( n_part > no ) then
+        print *,'Error',n_part,no
+        call die('Size error when guessing the tri-mat size')
+      end if
+      
+      call guess_next_part_size(no, mm_col, N, n_part, parts)
+      
+      N = N + parts(n_part)
+      ! if a last-part was "forced" we do this here...
+      if ( N + last_eq > no ) then
+        ! We need to add the former part with the "too many"
+        ! orbitals
+        parts(n_part) = parts(n_part) + no - N
+        N = no
+      end if
+
     end do
 
     if ( last_eq > 0 ) then
-       ! Correct so that we actually do contain the last_eq
-       ! in the last one
-       n_part(parts) = last_eq
-       n_part(parts-1) = n_part(parts-1) + no - sum(n_part(1:parts))
+      
+      ! Correct so that we actually do contain the last_eq
+      ! in the last one
+      N = parts(n_part) - last_eq
+      parts(n_part) = last_eq
+      parts(n_part-1) = parts(n_part-1) + N
+      
+      ! Signal that this is a faulty TRIMAT
+      if ( N < 0 ) parts(1) = 0
+      
     end if
 
   end subroutine guess_TriMat
@@ -550,39 +580,34 @@ contains
   ! searching for the size of the matrix that matches that of the previous 
   ! part.
   ! We save it in n_part(part)
-  subroutine guess_next_part_size(no,mm_col,part,n_part)
+  subroutine guess_next_part_size(no,mm_col,no_cur,n_part,parts)
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
-    integer, intent(in) :: part
-    integer, intent(inout) :: n_part(part)
+    ! no_cur is sum(parts(:-1))
+    integer, intent(in) :: no_cur, n_part
+    integer, intent(inout) :: parts(n_part)
     ! Local variables
     integer :: i, sRow, eRow, mcol
     
     ! We are now checking a future part
     ! Hence we must ensure that the size is what
     ! is up to the last parts size, and thats it...
-    eRow = 0
-    do i = 1 , part - 1
-       eRow = eRow + n_part(i)
-    end do
-    sRow = eRow - n_part(part-1) + 1
+    eRow = no_cur
+    sRow = eRow - parts(n_part-1) + 1
 
     ! We will check in between the above selected rows and find the 
     ! difference in size...
     mcol = 0
     do i = sRow, eRow
-       ! this is the # of elements from the RHS of the 'part-1'
-       ! part of the tridiagonal matrix and out to the last element of
-       ! this row...
-       if ( mm_col(2,i) > mcol ) mcol = mm_col(2,i)
+      ! this is the # of elements from the RHS of the 'part-1'
+      ! part of the tridiagonal matrix and out to the last element of
+      ! this row...
+      mcol = max(mcol, mm_col(2, i))
     end do
-    n_part(part) = max(0, mcol - eRow)
 
-    ! In case there is actually no connection, we should
+    ! In case there is no connection, we should
     ! force the next-part to be 1!
-    if ( n_part(part) == 0 ) then
-       n_part(part) = 1
-    end if
+    parts(n_part) = max(1, mcol - eRow)
 
   end subroutine guess_next_part_size
 
@@ -632,7 +657,7 @@ contains
 
   subroutine full_even_out_parts(N_Elec,Elecs,IsVolt, &
       method,no,mm_col,n_part,parts, last_eq)
-    use intrinsic_missing, only: index_sort_heap, sort_quick
+
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     logical, intent(in) :: IsVolt
@@ -643,8 +668,19 @@ contains
     integer, intent(inout) :: parts(n_part)
     integer, intent(in) :: last_eq
     ! Local variables
-    integer :: mem_parts(n_part), i, j, d, idx
+    integer, allocatable :: mem_parts(:), cum_parts(:)
+    integer :: n, j, d, idx
     logical :: changed
+
+    allocate(mem_parts(n_part), cum_parts(n_part))
+
+    ! Setup the cumultative parts
+    cum_parts(1) = parts(1)
+    mem_parts(1) = parts(1)
+    do n = 2, n_part
+      cum_parts(n) = parts(n) + cum_parts(n-1)
+      mem_parts(n) = parts(n)
+    end do
 
     select case ( method )
     case ( 0 ) ! speed
@@ -652,21 +688,22 @@ contains
       do
         changed = .false.
         
-        ! Make sure we copy all
-        mem_parts(:) = parts(:)
-        do i = 1 , n_part
-          call store_part(n_part, parts, mem_parts, i)
-          call even_out_parts(no, mm_col, n_part, parts, i, last_eq)
-          call diff_perf(i, n_part, parts, mem_parts, d)
+        do n = 2 , n_part - 1
+          call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+          call diff_perf(n, n_part, parts, mem_parts, d)
+          
           if ( d == 0 ) then
             ! Simply store. It could be that we swapped a few things
-            call store_part(n_part, parts, mem_parts, i)
+            call store_part(n_part, parts, mem_parts, n)
+            call store_cum_part(n_part, parts, cum_parts, n)
           else if ( d > 0 ) then
-            ! Copy back
-            call store_part(n_part, mem_parts, parts, i)
+            ! Restorte the parts
+            call store_part(n_part, mem_parts, parts, n)
+            ! the cumultative parts are not changed since we restored the parts
           else
             ! store new partition
-            call store_part(n_part, parts, mem_parts, i)
+            call store_part(n_part, parts, mem_parts, n)
+            call store_cum_part(n_part, parts, cum_parts, n)
             changed = .true.
           end if
         end do
@@ -678,20 +715,22 @@ contains
       
       do
         changed = .false.
-        ! Make sure we copy all
-        mem_parts(:) = parts(:)
-        do i = 1 , n_part
-          call store_part(n_part, parts, mem_parts, i)
-          call even_out_parts(no, mm_col, n_part, parts, i, last_eq)
-          call diff_mem(i, n_part, parts, mem_parts, d)
+
+        do n = 2 , n_part - 1
+          call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+          call diff_mem(n, n_part, parts, mem_parts, d)
+
           if ( d == 0 ) then
             ! Simply store. It could be that we swapped a few things
-            call store_part(n_part, parts, mem_parts, i)
+            call store_part(n_part, parts, mem_parts, n)
+            call store_cum_part(n_part, parts, cum_parts, n)
           else if ( d > 0 ) then
             ! Copy back
-            call store_part(n_part, mem_parts, parts, i)
+            call store_part(n_part, mem_parts, parts, n)
+            ! the cumultative parts are not changed since we restore them
           else
-            call store_part(n_part, parts, mem_parts, i)
+            call store_part(n_part, parts, mem_parts, n)
+            call store_cum_part(n_part, parts, cum_parts, n)
             changed = .true.
           end if
         end do
@@ -767,111 +806,115 @@ contains
       
     end select
 
+    deallocate(mem_parts, cum_parts)
+
   contains
 
-    subroutine store_part(n_part, parts, store_parts, id)
-      integer, intent(in) :: id, n_part
+    subroutine store_part(n_part, parts, store_parts, n)
+      integer, intent(in) :: n, n_part
       integer, intent(in) :: parts(n_part)
       integer, intent(inout) :: store_parts(n_part)
       
-      store_parts(id) = parts(id)
-      if ( id == 1 ) then
-        store_parts(id+1) = parts(id+1)
-      else if ( id == n_part ) then
-        store_parts(id-1) = parts(id-1)
+      store_parts(n) = parts(n)
+      if ( n == 1 ) then
+        store_parts(n+1) = parts(n+1)
+      else if ( n == n_part ) then
+        store_parts(n-1) = parts(n-1)
       else
-        store_parts(id-1) = parts(id-1)
-        store_parts(id+1) = parts(id+1)
+        store_parts(n-1) = parts(n-1)
+        store_parts(n+1) = parts(n+1)
       end if
+      
     end subroutine store_part
+
+    subroutine store_cum_part(n_part, parts, cum_parts, n)
+      integer, intent(in) :: n, n_part
+      integer, intent(in) :: parts(n_part)
+      integer, intent(inout) :: cum_parts(n_part)
+
+      if ( n == 1 ) then
+        cum_parts(n) = parts(n)
+        cum_parts(n+1) = cum_parts(n) + parts(n+1)
+      else if ( n == n_part ) then
+        cum_parts(n-1) = cum_parts(n-2) + parts(n-1)
+        cum_parts(n) = cum_parts(n-1) + parts(n)
+      else if ( n == 2 ) then
+        cum_parts(n-1) = parts(n-1)
+        cum_parts(n) = cum_parts(n-1) + parts(n)
+        cum_parts(n+1) = cum_parts(n) + parts(n+1)
+      else
+        cum_parts(n-1) = cum_parts(n-2) + parts(n-1)
+        cum_parts(n) = cum_parts(n-1) + parts(n)
+        cum_parts(n+1) = cum_parts(n) + parts(n+1)
+      end if
+
+    end subroutine store_cum_part
     
-    function changed_part(n_part, parts, store_parts, id) result(changed)
-      integer, intent(in) :: id, n_part
+    function changed_part(n_part, parts, store_parts, n) result(changed)
+      integer, intent(in) :: n, n_part
       integer, intent(in) :: parts(n_part)
       integer, intent(inout) :: store_parts(n_part)
       logical :: changed
       
-      changed = store_parts(id) /= parts(id)
-      if ( id == 1 ) then
-        changed = changed .or. store_parts(id+1) /= parts(id+1)
-      else if ( id == n_part ) then
-        changed = changed .or. store_parts(id-1) /= parts(id-1)
+      changed = store_parts(n) /= parts(n)
+      if ( n == 1 ) then
+        changed = changed .or. store_parts(n+1) /= parts(n+1)
+      else if ( n == n_part ) then
+        changed = changed .or. store_parts(n-1) /= parts(n-1)
       else
-        changed = changed .or. store_parts(id-1) /= parts(id-1)
-        changed = changed .or. store_parts(id+1) /= parts(id+1)
+        changed = changed .or. store_parts(n-1) /= parts(n-1)
+        changed = changed .or. store_parts(n+1) /= parts(n+1)
       end if
+      
     end function changed_part
 
   end subroutine full_even_out_parts
 
-  subroutine even_out_parts(no,mm_col,parts,n_part, n, last_eq)
+  subroutine even_out_parts(no,mm_col,n_part,parts, cum_parts, n, last_eq)
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
-    integer, intent(in) :: parts
-    integer, intent(in out) :: n_part(parts)
+    integer, intent(in) :: n_part, cum_parts(n_part)
+    integer, intent(inout) :: parts(n_part)
     integer, intent(in) :: n, last_eq
+    
     ! Local variables
-    integer :: copy_n_part
+    integer :: copy_part
     integer :: sRow, eRow
-    integer :: i
 
-    if ( parts < 2 ) call die('You cannot use tri-diagonalization &
-         &without having at least 2 parts')
-    
-    if ( last_eq > 0 .and. n >= parts - 1 ) then
-       ! We need the last one to be of a certain
-       ! size.
-       return
-
-    end if
-    
-    if ( parts == 2 ) then
-
-       i = 0
-       copy_n_part = 0
-       do while ( n_part(n) - copy_n_part /= 0 )
-          
-          ! Copy the current partition so that we can check in the
-          ! next iteration...
-          copy_n_part = n_part(n)
-
-          ! TODO - consider adding a flag for memory reduced utilization of TRI
-          ! this will require the two electrodes parts to be larger
-          ! than the other parts...
-
-          if ( n == 1 ) then
-             ! If we have the first part we can always shrink it
-             call even_if_larger(i,n_part(n),n_part(n+1),sign= 1)
-          else if ( n == parts ) then
-             ! If we have the last part we can always shrink it
-             call even_if_larger(i,n_part(n),n_part(n-1),sign=-1)
-          end if
-       end do
-
-       return
-
-    end if
+    select case ( n_part )
+    case ( 1 )
+      call die('You cannot use tri-diagonalization &
+          &without having at least 2 parts')
+    case ( 2 )
+      ! For only two blocks there is no gain/loss regardless of matrix
+      return
+    end select
 
     ! We do not allow to diminish the edges
     ! This is because we need additional checks of their
     ! regions, hence, we let the central parts partition out
     ! the regions
-    if ( n == 1 .or. n == parts ) return
+    if ( n == 1 .or. n == n_part ) then
+      return
+      
+    else if ( last_eq > 0 .and. n >= n_part - 1 ) then
+      ! We need the last one to be of a certain size.
+      return
+      
+    end if
 
-    sRow = 1
-    do i = 1 , n - 1
-       sRow = sRow + n_part(i)
-    end do
-    eRow = sRow + n_part(n) - 1
+    ! Find min/max columns checked
+    sRow = cum_parts(n-1) + 1
+    eRow = cum_parts(n)
 
     ! We will continue to shift columns around
     ! until we do not shift columns any more...
-    copy_n_part = 0
-    do while ( n_part(n) - copy_n_part /= 0 )
-
+    copy_part = 0
+    do while ( parts(n) /= copy_part )
+        
        ! Copy the current partition so that we can check in the
        ! next iteration...
-       copy_n_part = n_part(n)
+       copy_part = parts(n)
 
        ! TODO - consider adding a flag for memory reduced utilization of TRI
        ! this will require the two electrodes parts to be larger
@@ -881,23 +924,23 @@ contains
        !    the first row must not have any elements
        !    extending into the right part
        if ( mm_col(2,sRow) <= eRow ) then
-          call even_if_larger(sRow,n_part(n),n_part(n-1),sign= 1)
+          call even_if_larger(sRow,parts(n),parts(n-1),sign= 1)
        end if
 
        ! 2. if you wish to shrink it right, then:
        !    the last row must not have any elements
        !    extending into the left part
        if ( sRow <= mm_col(1,eRow) ) then
-          call even_if_larger(eRow,n_part(n),n_part(n+1),sign=-1)
+          call even_if_larger(eRow,parts(n),parts(n+1),sign=-1)
        end if
 
     end do
-
+     
   contains
 
-    subroutine even_if_larger(Row,p1,p2,sign)
-      integer, intent(in) :: sign
+    pure subroutine even_if_larger(Row,p1,p2,sign)
       integer , intent(inout) :: Row, p1, p2
+      integer, intent(in) :: sign
       ! If we don't have p2 + 1 we could end up
       ! in 12 -- 11 swaps
       if ( p1 > p2 + 1) then
@@ -979,6 +1022,8 @@ contains
     integer :: next
     logical :: lfinal
 
+    mem = 0
+    if ( part < 1 ) return
     if ( part > n ) return
     lfinal = .false.
     if ( present(final) ) lfinal = final
@@ -1007,9 +1052,9 @@ contains
       
       mem = part1(part) * ( part1(part) + part1(part-1) * 2 + &
           part1(part+1) * 2 ) + part1(part-1) ** 2 + part1(part+1) ** 2 &
-          - &
+          - ( &
           part2(part) * ( part2(part) + part2(part-1) * 2 + &
-          part2(part+1) * 2 ) + part2(part-1) ** 2 + part2(part+1) ** 2
+          part2(part+1) * 2 ) + part2(part-1) ** 2 + part2(part+1) ** 2)
 
       if ( .not. lfinal ) then
         call diff_mem(part-1, n, part1, part2, next, .true.)
@@ -1036,6 +1081,8 @@ contains
     integer :: next
     logical :: lfinal
 
+    perf = 0
+    if ( part < 1 ) return
     if ( part > n ) return
     lfinal = .false.
     if ( present(final) ) lfinal = final
@@ -1071,7 +1118,7 @@ contains
       if ( .not. lfinal ) then
         call diff_perf(part-1, n, part1, part2, next, .true.)
         p = p + real(next, dp) ** 3
-        call diff_mem(part+1, n, part1, part2, next, .true.)
+        call diff_perf(part+1, n, part1, part2, next, .true.)
         p = p + real(next, dp) ** 3
       end if
       
@@ -1104,79 +1151,143 @@ contains
 
   end subroutine diff_perf
   
-  function valid_tri(no,r,mm_col,parts,n_part,last_eq) result(val)
-    use parallel, only : IONode
+  function valid_tri(no,mm_col,n_part,parts,last_eq) result(val)
     integer, intent(in) :: no, mm_col(2,no)
-    type(tRgn), intent(in) :: r
-    integer, intent(in) :: parts, n_part(parts), last_eq
+    integer, intent(in) :: n_part, parts(n_part), last_eq
     integer :: val
     ! Local variables
-    integer :: i, ir, N, Nm1, Np1
+    integer :: i, N, Nm1, Np1, col_min, col_max
     logical :: first
 
-    val = VALID
-    ! Calculate the size of the tri-matrix
-    N = sum(n_part)
+    if ( last_eq > 0 ) then
+      
+      ! We do not allow something to not end in the requested number of orbitals.
+      if ( parts(n_part) /= last_eq ) then
+        val = NONVALID_SIZE
+        return
+      end if
+      
+      if ( parts(1) == 0 ) then
+        val = NONVALID_SIZE
+        return
+      end if
+      
+    end if
 
+    ! Default to a valid BTD
+    val = VALID
+
+    ! Check that every element is contained in the 
+    ! tri-diagonal matrix...
+    first = .true.
+    Nm1 = 1
+    Np1 = parts(1) + parts(2)
+
+    ! Find min/max for first block
+    call find_min_max(no, mm_col, 1, parts(1), col_min, col_max)
+    if ( col_min < Nm1 ) then
+      ! If this ever occur it suggests that the 
+      ! sparsity pattern is not fully symmetric !
+      i = 1
+      call print_error(first)
+      val = - 1
+    else if ( Np1 < col_max ) then
+      i = 1
+      call print_error(first)
+      val = - 1
+    end if
+
+    ! Initialize loop counters
+    N = parts(1) + 1
+    do i = 2 , n_part - 1
+
+      ! Find min/max for this block
+      call find_min_max(no, mm_col, N, Np1, col_min, col_max)
+
+      ! Update the size of the part after this
+      Np1 = Np1 + parts(i+1)
+
+      if ( col_min < Nm1 ) then
+        ! If this ever occur it suggests that the 
+        ! sparsity pattern is not fully symmetric !
+        call print_error(first)
+        val = - i
+        
+      else if ( Np1 < col_max ) then
+        call print_error(first)
+        val = - i
+        
+      end if
+
+      ! Update loop
+      N = N + parts(i)
+      
+      ! Update the previous part
+      Nm1 = Nm1 + parts(i-1)
+
+    end do
+
+    ! Find min/max for the last block
+    call find_min_max(no, mm_col, N, Np1, col_min, col_max)
+    if ( col_min < Nm1 ) then
+      ! If this ever occur it suggests that the 
+      ! sparsity pattern is not fully symmetric !
+      i = n_part
+      call print_error(first)
+      val = - n_part
+      
+    else if ( Np1 < col_max ) then
+      i = n_part
+      call print_error(first)
+      val = - n_part
+      
+    end if
+    if ( val /= valid ) return
+    
+    ! Update total number of orbitals
+    N = N + parts(n_part) - 1
+
+    ! Size of tri-matrix is already calculated
     ! Easy check, if the number of rows
     ! does not sum up to the total number of rows.
     ! Then it must be invalid...
     if ( N /= no ) then
-       val = NONVALID_SIZE
-       return
+      val = NONVALID_SIZE
     end if
+    
+  contains
 
-    ! Check that every element is contained in the 
-    ! tri-diagonal matrix...
-    N = 1
-    Nm1 = 1
-    Np1 = n_part(1)
-    first = .true.
+    pure subroutine find_min_max(no, mm_col, N1, N2, col_min, col_max)
+      integer, intent(in) :: no, mm_col(2,no), N1, N2
+      integer, intent(out) :: col_min, col_max
+      integer :: ir
+      col_min = mm_col(1,N1)
+      col_max = mm_col(2,N1)
+      do ir = N1 + 1, N2
+        col_min = min(col_min, mm_col(1,ir))
+        col_max = max(col_max, mm_col(2,ir))
+      end do
+    end subroutine find_min_max
 
-    do i = 1 , parts
-       
-       if ( i < parts ) then
-          ! Update the size of the part after this
-          Np1 = Np1 + n_part(i+1)
-       end if
-       
-       do ir = N , N + n_part(i) - 1
-          if ( mm_col(1,ir) < Nm1 .or. &
-               mm_col(2,ir) > Np1 ) then
-             ! If this ever occur it suggests that the 
-             ! sparsity pattern is not fully symmetric !
-             if ( IONode ) then
-               if ( first ) then
-                 write(*,'(a)') 'BTD: Found non-symmetric matrix!'
-                 write(*,'(a)') '     If you are not using delta methods you are probably doing something wrong!'
-                 write(*,'(6a8)') 'row', 'block', 'min_C', 'min_B', 'max_B', 'max_C'
-                 first = .false.
-               end if
-               write(*,'(6i8)') ir, i, mm_col(1,ir), Nm1, Np1, mm_col(2,ir)
-             end if
-             val = - ir 
-             return
-          end if
-       end do
-       
-       ! Update loop
-       N = N + n_part(i)
-       
-       if ( i > 1 ) then
-          ! Update the previous part
-          Nm1 = Nm1 + n_part(i-1)
-       end if
-
-    end do
-
-    if ( last_eq > 0 ) then
-       ! We do not allow something to not end in the requested number 
-       ! of orbitals.
-       if ( n_part(parts) /= last_eq ) then
-          val = NONVALID_SIZE
-          return
-       end if
-    end if
+    subroutine print_error(first)
+      use parallel, only : IONode
+      logical, intent(inout) :: first
+      if ( IONode ) then
+        if ( first ) then
+          write(*,'(a)') 'BTD: Found non-symmetric matrix!'
+          write(*,'(a)') '     If you are not using delta methods you are probably doing something wrong!'
+          write(*,'(a)') ' block: block row is located in'
+          write(*,'(a)') ' N    : size of block'
+          write(*,'(a)') ' min_C: minimum element row connects to'
+          write(*,'(a)') ' min_B: minimum element in the block'
+          write(*,'(a)') ' max_B: maximum element in the block'
+          write(*,'(a)') ' max_C: maximum element row connects to'
+          write(*,'(6a8)') 'block', 'N', 'min_C', 'min_B', 'max_B', 'max_C'
+          first = .false.
+        end if
+        write(*,'(6i8)') i, parts(i), col_min, Nm1, Np1, col_max
+     end if
+    end subroutine print_error
 
   end function valid_tri
 
