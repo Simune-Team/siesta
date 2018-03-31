@@ -137,6 +137,7 @@
       character(len=256)            :: oname
 
       type(dData2D) :: tmp_2D
+      real(dp) :: dummy_qspin(8)
 
 CC RC  OffSpOrb
       real(dp)           :: r1(3), r2(3)
@@ -590,6 +591,7 @@ CC RC  OffSpOrb
 
       Dscf => val(DM_2D)
       Escf => val(EDM_2D)
+      call print_spin(dummy_qspin)
 
       ! Initialize energy-density matrix to zero for first call to overfsm
       ! Only part of Escf is updated in TS, so if it is put as zero here
