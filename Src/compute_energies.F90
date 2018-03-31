@@ -148,7 +148,7 @@ CONTAINS
           Ebs    = Ebs    + H(io,1) * ( Dscf(io,1)  )   &
                           + H(io,2) * ( Dscf(io,2)  )   &
                  + 2.0_dp * H(io,3) * ( Dscf(io,3)  )   &
-                 + 2.0_dp * H(io,4) * ( Dscf(io,3)  )
+                 + 2.0_dp * H(io,4) * ( Dscf(io,4)  )
         enddo
       else if ( SPpol )  then
         do io = 1,maxnh
@@ -192,7 +192,7 @@ CONTAINS
           DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
                           + H(io,2) * ( Dscf(io,2) - Dold(io,2) )  &
                  + 2.0_dp * H(io,3) * ( Dscf(io,3) - Dold(io,3) )  &
-                 + 2.0_dp * H(io,4) * ( Dscf(io,3) - Dold(io,3) )
+                 + 2.0_dp * H(io,4) * ( Dscf(io,4) - Dold(io,4) )
         enddo
       elseif (SPpol)  then
         do io = 1,maxnh

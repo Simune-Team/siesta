@@ -573,12 +573,12 @@
       subroutine get_H_from_file()
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use atomlist,        only: no_l
-      use m_spin,          only: nspin
+      use m_spin,          only: spin
       use m_iodm_old,      only: read_spmatrix
 
       logical :: found
 
-      call read_spmatrix(maxnh, no_l, nspin, numh,
+      call read_spmatrix(maxnh, no_l, spin%H, numh,
      .     listhptr, listh, H, found, userfile="H_IN")
       if (.not. found) call die("Could not find H_IN")
       end subroutine get_H_from_file

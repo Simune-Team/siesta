@@ -66,6 +66,7 @@
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
       real(dp)            :: buffer1
       integer             :: mpierr
+      real(dp) :: dummy_qspin(8)
 
 !       character(15)            :: filename, indexstr
 !       character(15), parameter :: fnameform = '(A,A,A)'
@@ -241,6 +242,7 @@ c$$$     &           S, 'S.matrix')
 
 !     Print populations at each SCF step if requested before mixing ......
       if (muldeb) then
+        call print_spin(dummy_qspin)
         if (ionode) write (6,"(/a)")
      &    'siesta: Mulliken populations (DM_out)'
             if ( spin%SO ) then

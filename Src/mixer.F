@@ -187,7 +187,7 @@
       ! entirely correct. It should be moved to the top,
       ! or done somewhere else.
 
-      if (muldeb) then 
+      if (muldeb .and. (.not. MixH)) then 
          if (IONode)
      &        write (6,"(/a)")
      &        'siesta: Mulliken populations after mixing'

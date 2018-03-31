@@ -408,6 +408,8 @@ C Global sum of total charge
               qos(is,io) = 0.0_dp
             enddo
           enddo
+          ! For SOC-onsite, dm(:,4) has the wrong sign, but this
+          ! routine is not called ('moments' is).
           do is = 1,nspin
             do io = 1,nbasis
               call LocalToGlobalOrb(io,Node, Nodes, itot)
