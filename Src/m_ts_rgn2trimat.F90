@@ -669,8 +669,10 @@ contains
     integer, intent(in) :: last_eq
     ! Local variables
     integer, allocatable :: mem_parts(:), cum_parts(:)
-    integer :: n, j, d, idx
+    integer :: n, d
     logical :: changed
+
+    if ( n_part == 1 ) return
 
     allocate(mem_parts(n_part), cum_parts(n_part))
 
@@ -687,26 +689,19 @@ contains
 
       do
         changed = .false.
-        
         do n = 2 , n_part - 1
           call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
           call diff_perf(n, n_part, parts, mem_parts, d)
-          
-          if ( d == 0 ) then
-            ! Simply store. It could be that we swapped a few things
-            call store_part(n_part, parts, mem_parts, n)
-            call store_cum_part(n_part, parts, cum_parts, n)
-          else if ( d > 0 ) then
-            ! Restorte the parts
-            call store_part(n_part, mem_parts, parts, n)
-            ! the cumultative parts are not changed since we restored the parts
-          else
-            ! store new partition
-            call store_part(n_part, parts, mem_parts, n)
-            call store_cum_part(n_part, parts, cum_parts, n)
-            changed = .true.
-          end if
+          call select()
         end do
+        n = 1
+        call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+        call diff_perf(n, n_part, parts, mem_parts, d)
+        call select()
+        n = n_part
+        call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+        call diff_perf(n, n_part, parts, mem_parts, d)
+        call select()
         
         if ( .not. changed ) exit
       end do
@@ -715,25 +710,19 @@ contains
       
       do
         changed = .false.
-
         do n = 2 , n_part - 1
           call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
           call diff_mem(n, n_part, parts, mem_parts, d)
-
-          if ( d == 0 ) then
-            ! Simply store. It could be that we swapped a few things
-            call store_part(n_part, parts, mem_parts, n)
-            call store_cum_part(n_part, parts, cum_parts, n)
-          else if ( d > 0 ) then
-            ! Copy back
-            call store_part(n_part, mem_parts, parts, n)
-            ! the cumultative parts are not changed since we restore them
-          else
-            call store_part(n_part, parts, mem_parts, n)
-            call store_cum_part(n_part, parts, cum_parts, n)
-            changed = .true.
-          end if
+          call select()
         end do
+        n = 1
+        call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+        call diff_mem(n, n_part, parts, mem_parts, d)
+        call select()
+        n = n_part
+        call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+        call diff_mem(n, n_part, parts, mem_parts, d)
+        call select()
         
         if ( .not. changed ) exit
       end do
@@ -742,73 +731,27 @@ contains
 
       call die('not implemented')
 
-!!$      ! Old method.
-!!$      ! Not so fast due to the heavy sort for very large arrays
-!!$      
-!!$      do
-!!$        ! Create sorting index so we can easily find the largest
-!!$        ! blocks
-!!$        call index_sort_heap(n_part, parts, mem_parts)
-!!$
-!!$        ! Sort indices such that we don't loop back and fort
-!!$        i = 1
-!!$        do while ( i < n_part )
-!!$          idx = 1
-!!$          do j = i + 1, n_part
-!!$            if ( parts(mem_parts(j)) == parts(mem_parts(i)) ) then
-!!$              idx = j - i + 1
-!!$            else
-!!$              exit
-!!$            end if
-!!$          end do
-!!$          call sort_quick(idx, mem_parts(i:))
-!!$          i = i + idx
-!!$        end do
-!!$
-!!$        o_parts(:) = parts(:)
-!!$        call sort_quick(n_part, o_parts)
-!!$        print *, 'full-even-out-2 NEW', o_parts(n_part-2:)
-!!$        o_parts(:) = parts(:)
-!!$        changed = .false.
-!!$
-!!$        ! Even out from the largest one first
-!!$        do i = n_part, 1 , -1
-!!$          idx = mem_parts(i)
-!!$          call even_out_parts(no, mm_col, n_part, parts, idx, last_eq)
-!!$          if ( .not. changed ) then
-!!$            if ( idx == 1 ) then
-!!$              changed = parts(1) /= o_parts(1) .or. &
-!!$                  parts(2) /= o_parts(2)
-!!$              if ( changed ) then
-!!$                print *, parts(1), o_parts(1), parts(2), o_parts(2)
-!!$              end if
-!!$            else if ( idx == n_part ) then
-!!$              changed = parts(n_part) /= o_parts(n_part) .or. &
-!!$                  parts(n_part-1) /= o_parts(n_part-1)
-!!$              if ( changed ) then
-!!$                print *, parts(n_part), o_parts(n_part), parts(n_part-1), o_parts(n_part-1)
-!!$              end if
-!!$            else
-!!$              changed = parts(idx) /= o_parts(idx) .or. &
-!!$                  parts(idx-1) /= o_parts(idx-1) .or. &
-!!$                  parts(idx+1) /= o_parts(idx+1)
-!!$              if ( changed ) then
-!!$                print *, parts(n_part), o_parts(n_part), parts(n_part-1), o_parts(n_part-1), &
-!!$                    parts(n_part+1), o_parts(n_part+1)
-!!$              end if
-!!$
-!!$            end if
-!!$          end if
-!!$        end do
-!!$        
-!!$        if ( .not. changed ) exit
-!!$      end do
-      
     end select
 
     deallocate(mem_parts, cum_parts)
 
   contains
+
+    subroutine select()
+      if ( d == 0 ) then
+        ! Simply store. It could be that we swapped a few things
+        call store_part(n_part, parts, mem_parts, n)
+        call store_cum_part(n_part, parts, cum_parts, n)
+      else if ( d > 0 ) then
+        ! Copy back
+        call store_part(n_part, mem_parts, parts, n)
+        ! the cumultative parts are not changed since we restore them
+      else
+        call store_part(n_part, parts, mem_parts, n)
+        call store_cum_part(n_part, parts, cum_parts, n)
+        changed = .true.
+      end if
+    end subroutine select
 
     subroutine store_part(n_part, parts, store_parts, n)
       integer, intent(in) :: n, n_part
@@ -836,7 +779,11 @@ contains
         cum_parts(n) = parts(n)
         cum_parts(n+1) = cum_parts(n) + parts(n+1)
       else if ( n == n_part ) then
-        cum_parts(n-1) = cum_parts(n-2) + parts(n-1)
+        if ( n_part == 2 ) then
+          cum_parts(n-1) = parts(n-1)
+        else
+          cum_parts(n-1) = cum_parts(n-2) + parts(n-1)
+        end if
         cum_parts(n) = cum_parts(n-1) + parts(n)
       else if ( n == 2 ) then
         cum_parts(n-1) = parts(n-1)
@@ -881,26 +828,54 @@ contains
     integer :: copy_part
     integer :: sRow, eRow
 
+    if ( last_eq > 0 ) then
+      
+      ! We need the last one to be of a certain size.
+      if ( n >= n_part - 1 ) return
+      
+    end if
+
     select case ( n_part )
     case ( 1 )
       call die('You cannot use tri-diagonalization &
           &without having at least 2 parts')
     case ( 2 )
       ! For only two blocks there is no gain/loss regardless of matrix
+      ! So set them equal
+      parts(1) = no / 2
+      parts(2) = parts(1) + mod(no, 2)
       return
     end select
+
+    ! Initialize
+    copy_part = 0
 
     ! We do not allow to diminish the edges
     ! This is because we need additional checks of their
     ! regions, hence, we let the central parts partition out
     ! the regions
-    if ( n == 1 .or. n == n_part ) then
-      return
+    if ( n == 1 ) then
       
-    else if ( last_eq > 0 .and. n >= n_part - 1 ) then
-      ! We need the last one to be of a certain size.
+      ! We can always align the two blocks (sign is pointless here)
+      sRow = 0
+      do while ( parts(1) /= copy_part )
+        copy_part = parts(1)
+        call even_if_larger(sRow,parts(1),parts(2),sign=-1)
+      end do
+
       return
-      
+
+    else if ( n == n_part ) then
+
+      ! We can always align the two blocks (sign is pointless here)
+      sRow = 0
+      do while ( parts(n_part) /= copy_part )
+        copy_part = parts(n_part)
+        call even_if_larger(sRow,parts(n_part),parts(n_part-1),sign=1)
+      end do
+
+      return
+
     end if
 
     ! Find min/max columns checked
