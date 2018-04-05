@@ -4153,6 +4153,20 @@ is active.
 
 See also the {\bf WriteDMHS.NetCDF} and {\bf WriteDMHS.History.NetCDF}
 options.
+
+
+\item[{\bf Compat.Matel.NRTAB}] ({\it logical}):
+\index{Compat.Matel.NRTAB@{\bf Compat.Matel.NRTAB@}}
+Internally the matrix element calculations are tabulated with a preset number of
+elements. In versions 4.0.1 and prior this was default to 128. Since 4.0.2 the default
+value has been increased to 1024 which translates to higher precision matrix element
+calculations.
+
+This option is a compatibility option that enables comparison with 4.0.1 and prior
+versions. Should \emph{only} be set to true to compare. Otherwise use the default value.
+
+{\it Default value:} {\tt .false.}
+
 \end{description}
 
 \subsubsection{The auxiliary supercell}

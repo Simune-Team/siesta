@@ -78,6 +78,7 @@ C Modules -----------------------------------------------------------
       use spher_harm, only: reset_spher_harm
       use sys,     only: die
       use m_radfft
+      use siesta_options, only: matel_NRTAB
 C -------------------------------------------------------------------
 
 C Argument types and dimensions -------------------------------------
@@ -98,18 +99,14 @@ C    distributions for operat='U', in units of the radial interval
 C  FFTOL is the tolerance for considering equal the radial part of
 C    two orbitals.
 C  TINY is a small number to avoid a zero denominator
-#ifdef SIESTA__LEGACY_NRTAB
-      INTEGER,          PARAMETER :: NRTAB  =  128
-#else
-      INTEGER,          PARAMETER :: NRTAB  =  1024
-#endif
+      INTEGER, save :: NRTAB = 1024
       INTEGER,          PARAMETER :: NQ     =  1024
       real(dp),         PARAMETER :: EXPAND =  1.20_dp
       real(dp),         PARAMETER :: Q2CUT  =  2.50e3_dp
       real(dp),         PARAMETER :: GWBYDR =  1.5_dp
       real(dp),         PARAMETER :: FFTOL  =  1.e-8_dp
       real(dp),         PARAMETER :: TINY   =  1.e-12_dp
-      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'MATEL '
+      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'MATEL'
 C -------------------------------------------------------------------
 
 C Internal variable types and dimensions ----------------------------
@@ -164,6 +161,12 @@ C Nullify pointers
         CALL RE_ALLOC( INDFFY, 0,MFF, 'INDFFY', MYNAME )
         INDFFY(0) = 0
         NULLIFIED = .TRUE.
+
+!       Set only at specific times. If matel_nrtab is changed the new
+!       value will not take effect unless there is a re-initialization,
+!       to avoid corruption of the tables.
+        NRTAB = matel_NRTAB
+
       ENDIF
 
 C Check if tables must be re-initialized 
@@ -218,7 +221,7 @@ C Check size of orbital index table
      &     MAX(IOPER,3).GT.UBOUND(INDF,2) ) THEN
         CALL RE_ALLOC( INDF, 1, MAX(UBOUND(INDF,1),IG1,IG2),
      &                       1,MAX(UBOUND(INDF,2),IOPER,3),
-     &                'INDF', MYNAME )
+     &                'INDF', MYNAME)
         CALL RE_ALLOC( NLM,  1,MAX(UBOUND(INDF,1),IG1,IG2),
      &                       1,MAX(UBOUND(INDF,2),IOPER,3),
      &                'NLM', MYNAME )
