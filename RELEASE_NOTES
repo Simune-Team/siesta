@@ -19,6 +19,8 @@ Release notes for siesta 4.1-b4 beta version
     - ELPA and MRRR for k-point sampling.
     - Less memory usage
 
+--- Fixed bug on reading *.ion* files (lp:1751723)
+
 --- Added more digits to dDmax which may be relevant when performing
     SOC/Non-Co calculations.
 
@@ -34,7 +36,7 @@ Release notes for siesta 4.1-b4 beta version
 --- Fixed lots of compilation issues related to the utilities
     (lp:1712317, lp:1712319, lp:1711850)
 
---- Fix for reading a ghost basis (lp:1736455)
+--- Fix for reading a ghost basis (lp:1736455, lp:1738425)
 
 --- Fix when fdf-input lines are too long, instead of discarding the
     remaining line, fdf now "dies" to inform users of possible erroneous
@@ -58,6 +60,10 @@ Release notes for siesta 4.1-b4 beta version
 -- Many bug-fixes related to pivoting tables, this should only
    change the effective BTD matrices, and has no relevance to the
    accuracy of the calculations
+
+-- Huge speed-ups in the generation of the BTD matrix blocks.
+
+-- Speed up on the calculation of DOS and orbital currents in TBtrans
 
 -- Fixed the default 2-terminal Poisson ramp. The ramp is now
    defaulted to be positioned in the central region.
