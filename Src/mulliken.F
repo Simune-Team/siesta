@@ -566,7 +566,7 @@ c ********************************************************************
         costh = ( qs(1) - qs(2) ) / ( st + tiny )
         sinth = sqrt( 1.0_dp - costh**2 )
         cosph =  qs(3) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
-        sinph = -qs(4) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
+        sinph =  qs(4) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
         sv(1) = st * sinth * cosph
         sv(2) = st * sinth * sinph
         sv(3) = st * costh

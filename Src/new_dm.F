@@ -842,7 +842,7 @@ C   ispin=3 => Real(D12); ispin=4 => Imag(D12)
                       Dscf(ind,1) = (qio + spio * costh) / 2
                       Dscf(ind,2) = (qio - spio * costh) / 2
                       Dscf(ind,3) =   spio * sinth * cosph / 2
-                      Dscf(ind,4) = - spio * sinth * sinph / 2
+                      Dscf(ind,4) =   spio * sinth * sinph / 2
                     else
                       Dscf(ind,1) = (qio + spio) / 2
                       Dscf(ind,2) = (qio - spio) / 2
