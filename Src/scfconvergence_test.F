@@ -23,6 +23,11 @@
       use m_convergence, only: converger_t, tolerance
       use m_convergence, only: add_value, is_converged
 
+      use m_spin,      only: nspin
+      use sparse_matrices, only:  Dscf, S, numh, listhptr, listh, maxnh
+      use siesta_geom, only: na_u, isa
+      use atomlist, only:    no_u, lasto, iaorb, iphorb
+
       implicit none
 
       integer :: iscf
@@ -32,6 +37,7 @@
       type(converger_t), intent(inout)  :: conv_harris, conv_freeE
       logical, intent(out)              :: converged
 
+      real(dp) :: dummy_qspin(8)
 !------------------------------------------------------------------- BEGIN
 
       ! convergence test
@@ -57,6 +63,19 @@
         ! flush stdout
         call pxfflush(6)
         call wallclock("-------------- end of scf step")
+      endif
+
+!     Print spin polarization at each SCF step if requested before mixing
+      if (spndeb) then
+         call print_spin(dummy_qspin)
+      endif
+!     Print populations at each SCF step if requested before mixing ......
+      if (muldeb) then
+        if (ionode) write (6,"(/a)")
+     &    'siesta: Mulliken populations (DM_out)'
+        call mulliken( mullipop, nspin, na_u, no_u, maxnh,
+     &                 numh, listhptr, listh, S, Dscf, isa,
+     &                 lasto, iaorb, iphorb )
       endif
 
       converged = .false.

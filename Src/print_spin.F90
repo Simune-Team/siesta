@@ -45,9 +45,11 @@ subroutine print_spin(qspin)
      if (nspin .eq. 2) then
 
         if (IOnode) then
-           write(6,'(/,a,f12.6)')   &
-                'siesta: Total spin polarization (Qup-Qdown) =',  &
-                qspin(1) - qspin(2)
+           Svec(1) = 0.0_dp
+           Svec(2) = 0.0_dp
+           Svec(3) = qspin(1) - qspin(2)
+           Stot = Svec(3)
+           write(6,'(a,f12.6,2f12.1,f12.6)') '  spin: S , {S} = ', Stot, Svec
         endif
         if (cml_p) call cmlAddProperty(xf=mainXML,            &
              value=qspin(1)-qspin(2), dictref='siesta:stot', &
@@ -57,10 +59,10 @@ subroutine print_spin(qspin)
 
         call spnvec( nspin, qspin, qaux, Stot, Svec )
         if (IONode) then
-           write(6,'(a,3f12.6)')                              &
-                'siesta: Total spin polarization (x,y,z) = ', &
-                qspin(3)*2, -qspin(4)*2, qspin(1)-qspin(2)     
-           write(6,'(a,4f12.6)') 'siesta: S , {S} = ', Stot, Svec
+!           write(6,'(a,3f12.6)')                              &
+!                'siesta: Total spin polarization (x,y,z) = ', &
+!                qspin(3)*2, -qspin(4)*2, qspin(1)-qspin(2)     
+           write(6,'(a,4f12.6)') '  spin: S , {S} = ', Stot, Svec
            if (cml_p) then
               call cmlAddProperty(xf=mainXML, value=Stot,  &
                    dictref='siesta:stot', units='siestaUnits:spin')

@@ -148,19 +148,6 @@
       endif
 #endif
 
-!     Print spin polarization at each SCF step if requested before mixing
-      if (spndeb) then
-         call print_spin(dummy_qspin)
-      endif
-!     Print populations at each SCF step if requested before mixing ......
-      if (muldeb) then
-        if (ionode) write (6,"(/a)")
-     &    'siesta: Mulliken populations (DM_out)'
-        call mulliken( mullipop, nspin, na_u, no_u, maxnh,
-     &                 numh, listhptr, listh, S, Dscf, isa,
-     &                 lasto, iaorb, iphorb )
-      endif
-
 ! Write orbital indexes. JMS Dec.2009
 
           if (IOnode .and. iscf==1) then
