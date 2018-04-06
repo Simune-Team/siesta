@@ -2024,17 +2024,17 @@ contains
 
       if ( is_left ) then
          ! Left, we use the last orbitals
-         ioff = 1 - off
-!$OMP do shared(from,to), private(j,i), firstprivate(ioff), collapse(2)
+         ioff = 1 - off ! ioff is private in OMP orphaned routines
+!$OMP do private(j,i), collapse(2)
          do j = off , fS
             do i = off , fS
                to(ioff+i,ioff+j) = from(i,j)
             end do
          end do
-!$OMP end do no wait
+!$OMP end do nowait
       else
          ! Right, the first orbitals
-!$OMP do shared(from,to), private(j,i), collapse(2)
+!$OMP do private(j,i), collapse(2)
          do j = 1 , tS
             do i = 1 , tS
                to(i,j) = from(i,j)
