@@ -39,7 +39,7 @@ program pvtsp
 
   use m_sparsity_handling
 
-  character(len=250) :: fname
+  character(len=264) :: fname, arg
   
   ! The sparsity
   type(OrbitalDistribution) :: fdit
@@ -56,22 +56,25 @@ program pvtsp
   integer :: N_arg, i_arg, i, o1, o2
   real :: r
 
-  character(len=70) :: fmethod
+  character(len=64) :: fmethod
   integer :: method
   type(tRgn) :: pvt
   
   logical :: is_graphviz, is_metis, is_atom
+  logical :: is_unit_cell
   logical :: has_weight
+
   integer :: tm(3), graph_method
   integer :: n_nzs
 
   method = -1
   graph_method = 1 ! regular graph
+  is_unit_cell = .false.
   is_atom = .false.
   is_metis = .false.
   is_graphviz = .false.
   has_weight = .false.
-  tm = TM_ALL
+  tm(:) = TM_ALL
 
   N_arg = command_argument_count()
   ! Get the file-name from the command-line
@@ -79,104 +82,106 @@ program pvtsp
      stop "Call this program with a file-name *.DM, *.TSDE, *.TSHS"
   end if
   i_arg = 1
-  do while ( i_arg < N_arg ) 
-     call get_command_argument(i_arg, value = fname)
-     fname = trim_em(fname)
-     if ( fname == '-out' .or. fname == '-pvt' ) then
-        i_arg = i_arg + 1
-        call get_command_argument(i_arg, value = fname)
-        fname = '-'//fname
-     end if
+  do while ( i_arg <= N_arg )
+    
+     call get_command_argument(i_arg, value = arg)
+     arg = trim_em(arg)
 
-     ! Get output file
-     if ( fname == '-graphviz' .or. &
-          fname == '-graph' .or. &
-          fname == '-viz' ) then
-        is_graphviz = .true.
-     else if ( fname == '-metis' ) then
-        is_metis = .true.
-     end if
+     select case ( arg )
+     case ( '-out', '-pvt' )
+       ! Specify the pivoting method (equivalent -out gps to -gps for instance)
+       i_arg = i_arg + 1
+       call get_command_argument(i_arg, value = arg)
+       arg = '-' // trim(arg)
+     end select
 
-     ! Check if it is atomic sparsity pattern
-     if ( fname == '-atom' ) then
-        is_atom = .true.
-     end if
+     
+     select case ( arg )
 
-     ! Check if it is an digraph
-     if ( fname == '-di' .or. fname == '-digraph' ) then
-        is_graphviz = .true.
-        graph_method = 2
-     end if
+       ! Output type:
+     case ( '-graphviz', '-graph', '-viz' )
+       is_graphviz = .true.
+     case ( '-metis-stdout' )
+       is_metis = .true.
+       is_unit_cell = .true.
 
-     ! Check the method for pivoting
-     if ( fname == '-cm' ) then
-        method = PVT_CUTHILL_MCKEE
+     case ( '-atom' )
+       ! Check if it is atomic sparsity pattern
+       is_atom = .true.
+
+     case ( '-di', '-digraph' )
+       ! Check if it is an digraph
+       is_graphviz = .true.
+       graph_method = 2
+
+       ! Check the method for pivoting
+     case ( '-cm' )
+       method = PVT_CUTHILL_MCKEE
         fmethod = 'CuthillMckee'
-     else if ( fname == '-rev-cm' ) then
+      case ( '-rev-cm' )
         method = PVT_REV_CUTHILL_MCKEE
         fmethod = 'revCuthillMckee'
-     else if ( fname == '-gps' ) then
+      case ( '-gps' )
         method = PVT_GPS
         fmethod = 'GibbsPooleStockmeyer'
-     else if ( fname == '-rev-gps' ) then
+      case ( '-rev-gps' )
         method = PVT_REV_GPS
         fmethod = 'revGibbsPooleStockmeyer'
-     else if ( fname == '-pcg' ) then
+      case ( '-pcg' )
         method = PVT_PCG
         fmethod = 'PeripheralConnectGraph'
-     else if ( fname == '-rev-pcg' ) then
+      case ( '-rev-pcg' )
         method = PVT_REV_PCG
         fmethod = 'revPeripheralConnectGraph'
-     else if ( fname == '-ggps' ) then
+      case ( '-ggps' )
         method = PVT_GGPS
         fmethod = 'GeneralGibbsPooleStockmeyer'
-     else if ( fname == '-rev-ggps' ) then
+      case ( '-rev-ggps' )
         method = PVT_REV_GGPS
         fmethod = 'revGeneralGibbsPooleStockmeyer'
-     else if ( fname == '-scramble' ) then
+      case ( '-scramble' )
         method = 0 ! 0 signals scrambling
         fmethod = 'Scramble'
-     end if
+        
+#ifdef SIESTA__METIS
+      case ( '-metis' )
+        method = PVT_METIS
+        fmethod = 'Metis'
+#endif
 
-     ! Check for weight in the metis printing
-     if ( fname == '-weight' .or. &
-          fname == '-w' ) then
-        has_weight = .true.
+      case ( '-w', '-weight' )
         ! force metis (the user wants weights...)
         is_metis = .true.
-     end if
+        ! Check for weight in the metis printing
+        has_weight = .true.
+        is_unit_cell = .true.
 
-     ! Check for the unit-cell region
-     if ( fname == '-unit-cell' .or. &
-          fname == '-uc' ) then
+      case ( '-uc', '-unit-cell' )
+        ! Check for the unit-cell region
         ! All tm are 0
-        tm = 0
-     else if ( fname == '-a' ) then
+        is_unit_cell = .true.
+        
+      case ( '-a' )
         i_arg = i_arg + 1
-        call get_command_argument(i_arg, value = fname)
-        read(fname,'(i16)') tm(1)
-     else if ( fname == '-b' ) then
+        call get_command_argument(i_arg, value = arg)
+        read(arg,'(i16)') tm(1)
+      case ( '-b' )          
         i_arg = i_arg + 1
-        call get_command_argument(i_arg, value = fname)
-        read(fname,'(i16)') tm(2)
-     else if ( fname == '-c' ) then
+        call get_command_argument(i_arg, value = arg)
+        read(arg,'(i16)') tm(2)
+      case ( '-c' )
         i_arg = i_arg + 1
-        call get_command_argument(i_arg, value = fname)
-        read(fname,'(i16)') tm(3)
-     end if
+        call get_command_argument(i_arg, value = arg)
+        read(arg,'(i16)') tm(3)
 
-     if ( fname == '-h' .or. fname == '-help' ) then
+      case ( '-h', '-help' )
         call help()
-        stop 
-     end if
+        stop
+
+      end select
 
      i_arg = i_arg + 1
   end do
-
-  if ( i_arg > N_arg ) then
-     stop 'You have forgotten to supply the file which contains &
-          &the sparsity pattern.'
-  end if
 
   ! Get the file-name for the sparsity pattern
   call get_command_argument(N_arg, value = fname)
@@ -185,18 +190,25 @@ program pvtsp
   if ( .not. file_exist(fname) ) then
      print *,trim(fname)
      stop "File does not exist. Please provide file that exists..."
+   else
+     write(*,'(2a)')'Reading file: ', trim(fname)
   end if
 
   ! Read in the sparsity pattern
   call populate_Sp()
 
+  ! First convert transfer elements
   if ( any(tm /= TM_ALL) ) then
-     call crtSparsity_SC(sp_full,sp_uc, TM = tm, &
-          ucell = uc, isc_off = isc_off)
-     deallocate(isc_off)
-  else
-     ! Convert to UC
-     call crtSparsity_SC(sp_full,sp_uc, UC = .true. )
+    call crtSparsity_SC(sp_full,sp_uc, TM = tm, &
+        ucell = uc, isc_off = isc_off)
+    sp_full = sp_uc
+    deallocate(isc_off)
+  end if
+
+  if ( is_unit_cell ) then
+    call delete(sp_uc)
+    ! Convert to UC
+    call crtSparsity_SC(sp_full,sp_uc, UC = .true. )
   end if
   call delete(sp_full)
 
@@ -225,7 +237,7 @@ program pvtsp
         pvt%name = 'Scramble'
         pvt%sorted = .false.
 
-        ! Scramble 20 times the number of entries
+        ! Scramble 50 times the number of entries
         do i_arg = 1 , no_u * 50
            call random_number(r)
            o1 = 1 + floor(r * real(no_u))
@@ -386,9 +398,9 @@ contains
     write(*,gf) '--atom','pivot in the atomic sparsity pattern, instead of the orbital(only for TSHS)'
     write(*,gf) '--graphviz|--graph','make graphviz output'
     write(*,gf) '--digraph|-di','create a directed graph'
-    write(*,gf) '--metis','make METIS output (on STDOUT)'
+    write(*,gf) '--metis-stdout','make METIS output (on STDOUT)'
     write(*,gf) '--pvt <method>','pivot according to a specific method'
-    write(*,nf) '<method> can be one of the following:'
+    write(*,nf) '--<method> can be one of the following:'
     write(*,fm) '      cm: Cuthill-Mckee'
     write(*,fm) '  rev-cm: reverse Cuthill-Mckee'
     write(*,fm) '     gps: Gibbs-Poole-Stockmeyer'
@@ -397,9 +409,12 @@ contains
     write(*,fm) ' rev-pcg: reverse Peripheral connectivity graph'
     write(*,fm) '    ggps: General Gibbs-Poole-Stockmeyer'
     write(*,fm) 'rev-ggps: reverse General Gibbs-Poole-Stockmeyer'
+#ifdef SIESTA__METIS
+    write(*,fm) '   metis: Metis pivoting'
+#endif
     write(*,fm) 'scramble: Scramble the sparsity pattern'
     write(*,'(a)')
-    write(*,gf) '--unit-cell|-uc','use only the unit-cell sparsity pattern (no periodicity)'
+    write(*,gf) '--unit-cell|-uc','convert to unit-cell sparsity pattern'
     write(*,gf) '--a|-a <i>','use only ith supercell as connectivity graph (in A direction)'
     write(*,gf) '--b|-b <i>','use only ith supercell as connectivity graph (in B direction)'
     write(*,gf) '--c|-c <i>','use only ith supercell as connectivity graph (in C direction)'
