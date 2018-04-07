@@ -2762,76 +2762,90 @@ contains
     ! Returned index for the degree function
     integer :: idx, etr
     type(tRgn) :: self
-
+    
     ! Local variables
     integer :: i, deg, cdeg
+    logical, allocatable :: lskip(:)
 
     select case ( method ) 
     case ( D_LOW , D_LOW_SUM )
-       deg = huge(1)
+      deg = huge(1)
     case ( D_HIGH , D_HIGH_SUM )
-       deg = 0
+      deg = 0
     end select
     select case ( method ) 
     case ( D_LOW_SUM , D_HIGH_SUM )
-       ! initialize for graph_connect (needs to be allocated)
-       call rgn_init(self,n)
+      ! initialize for graph_connect (needs to be allocated)
+      call rgn_init(self,n)
     end select
+
+    allocate(lskip(n))
+    do i = 1, sub%n
+      lskip(sub%r(i)) = .false.
+    end do
+    if ( present(skip) ) then
+      do i = 1, skip%n
+        lskip(skip%r(i)) = .true.
+      end do
+    end if
 
     idx = 0
     do i = 1 , sub%n
-       etr = sub%r(i)
-       if ( present(skip) ) then
-          ! check whether we should skip it
-          if ( in_rgn(skip,etr) ) cycle
-       end if
-       ! Get the current degree (dependent on the method)
-       cdeg = degree(method,n,nnzs,n_col,l_ptr,l_col,etr,self)
-       if ( method == D_LOW ) then
-          if ( cdeg < deg ) then
-             idx = i
-             deg = cdeg
-          else if ( cdeg == deg .and. present(priority) ) then
-             ! ** this should never happen if idx == 0
-             if ( priority(sub%r(idx)) < priority(etr) ) then
-                idx = i
-             end if
+      etr = sub%r(i)
+
+      ! check whether we should skip it
+      if ( lskip(etr) ) cycle
+
+      ! Get the current degree (dependent on the method)
+      cdeg = degree(method,n,nnzs,n_col,l_ptr,l_col,etr,self)
+
+      select case ( method )
+      case ( D_LOW )
+        if ( cdeg < deg ) then
+          idx = i
+          deg = cdeg
+        else if ( cdeg == deg .and. present(priority) ) then
+          ! ** this should never happen if idx == 0
+          if ( priority(sub%r(idx)) < priority(etr) ) then
+            idx = i
           end if
-       else if ( method == D_HIGH ) then
-          if ( deg < cdeg ) then
-             idx = i
-             deg = cdeg
-          else if ( cdeg == deg .and. present(priority) ) then
-             ! ** this should never happen if idx == 0
-             if ( priority(sub%r(idx)) < priority(etr) ) then
-                idx = i
-             end if
+        end if
+      case ( D_HIGH )
+        if ( deg < cdeg ) then
+          idx = i
+          deg = cdeg
+        else if ( cdeg == deg .and. present(priority) ) then
+          ! ** this should never happen if idx == 0
+          if ( priority(sub%r(idx)) < priority(etr) ) then
+            idx = i
           end if
-       else if ( method == D_LOW_SUM ) then
-          if ( cdeg < deg ) then
-             idx = i
-             deg = cdeg
-          else if ( cdeg == deg .and. present(priority) ) then
-             ! ** this should never happen if idx == 0
-             if ( priority(sub%r(idx)) < priority(etr) ) then
-                idx = i
-             end if
+        end if
+      case ( D_LOW_SUM )
+        if ( cdeg < deg ) then
+          idx = i
+          deg = cdeg
+        else if ( cdeg == deg .and. present(priority) ) then
+          ! ** this should never happen if idx == 0
+          if ( priority(sub%r(idx)) < priority(etr) ) then
+            idx = i
           end if
-       else if ( method == D_HIGH_SUM ) then
-          if ( deg < cdeg ) then
-             idx = i
-             deg = cdeg
-          else if ( cdeg == deg .and. present(priority) ) then
-             ! ** this should never happen if idx == 0
-             if ( priority(sub%r(idx)) < priority(etr) ) then
-                idx = i
-             end if
+        end if
+      case ( D_HIGH_SUM )
+        if ( deg < cdeg ) then
+          idx = i
+          deg = cdeg
+        else if ( cdeg == deg .and. present(priority) ) then
+          ! ** this should never happen if idx == 0
+          if ( priority(sub%r(idx)) < priority(etr) ) then
+            idx = i
           end if
-       end if
+        end if
+      end select
     end do
-    
+
+    deallocate(lskip)
     call rgn_delete(self)
-    
+
   end function idx_degree
 
   function degree(method,n,nnzs,n_col,l_ptr,l_col,etr,self) result(deg)
