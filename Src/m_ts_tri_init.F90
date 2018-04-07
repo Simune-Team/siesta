@@ -180,7 +180,7 @@ contains
     ! However, this also makes it easier to
     ! insert the self-energy as they become consecutive
     ! in index
-    call ts_pivot_tri_sort_El(r_pvt,N_Elec,Elecs,c_Tri)
+    call ts_pivot_tri_sort_El(nrows_g(sparse_pattern), r_pvt, N_Elec, Elecs, c_Tri)
 
     if ( c_Tri%n < 2 ) then
        call die('Erroneous transiesta BTD format. &
@@ -687,7 +687,7 @@ contains
       ! However, this also makes it easier to
       ! insert the self-energy as they become consecutive
       ! in index, all-in-all, win-win!
-      call ts_pivot_tri_sort_El(r_pvt,N_Elec,Elecs,ctri)
+      call ts_pivot_tri_sort_El(nrows_g(tmpSp1), r_pvt, N_Elec, Elecs, ctri)
 
       bw   = bandwidth(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
       prof = profile(no,n_nzs,ncol,l_ptr,l_col,r_pvt)

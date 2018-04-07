@@ -601,9 +601,9 @@ m_ts_pivot.o: create_Sparsity_Union.o geom_helper.o intrinsic_missing.o
 m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
 m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
-m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o intrinsic_missing.o
-m_ts_rgn2trimat.o: m_region.o m_ts_electype.o m_ts_method.o m_ts_tri_common.o
-m_ts_rgn2trimat.o: parallel.o precision.o
+m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
+m_ts_rgn2trimat.o: m_ts_electype.o m_ts_method.o m_ts_tri_common.o parallel.o
+m_ts_rgn2trimat.o: precision.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
 m_ts_sparse.o: intrinsic_missing.o m_region.o m_sparsity_handling.o
@@ -683,7 +683,7 @@ molecularmechanics.o: alloc.o local_sys.o parallel.o precision.o units.o
 moments.o: atmfuncs.o parallel.o parallelsubs.o precision.o spinorbit.o
 moreParallelSubs.o: alloc.o local_sys.o m_io.o parallel.o precision.o
 moremeshsubs.o: alloc.o local_sys.o mesh.o parallel.o precision.o schecomm.o
-mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
+mulliken.o: alloc.o atmfuncs.o m_spin.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o new_matel.o precision.o
 new_matel.o: alloc.o errorf.o interpolation.o local_sys.o matel_registry.o

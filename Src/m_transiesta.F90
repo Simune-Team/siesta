@@ -624,7 +624,7 @@ contains
     integer :: i, no_E, no_used
     integer(i8b) :: nel
     integer :: padding, worksize
-    real(dp) :: mem, dmem, zmem, tmp_mem
+    real(dp) :: mem, dmem, zmem
 #ifdef MPI
     integer :: MPIerror
 #endif

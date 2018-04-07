@@ -83,6 +83,15 @@
       req_init_setup = fdf_defined('LDAU.proj')
       ! Add any other dependencies here...
 
+      ! Initialize all basis-parameters
+      call read_chemical_types()
+      nsp = number_of_species()
+          
+      allocate(basis_parameters(nsp))
+      do is = 1 , nsp
+        call initialize(basis_parameters(is))
+      end do
+      
       ! Check that the user can perform a legal action
       req_init_setup = req_init_setup .and.
      & ( user_basis_netcdf .or. user_basis )
@@ -100,14 +109,6 @@
        if ( SpOrb ) then  
           ! We still need to read the pseudopotential information
           write(6,'(a)') ' initatom: Spin configuration = spin-orbit'
-          call read_chemical_types()
-          nsp = number_of_species()
-          
-          allocate(basis_parameters(nsp))
-          do is = 1 , nsp
-             call initialize(basis_parameters(is))
-          enddo
-          
           do is = 1 , nsp
              basp => basis_parameters(is)
              

@@ -11926,7 +11926,7 @@ electrodes in a generic input format.
     it is highly discouraged!
 
     \option[check-kgrid]%
-    \fdfindex*{TS.Elec.<>!check-kgrid}%
+    \fdfindex*{TS!Elec.<>!check-kgrid}%
     For $N$ electrode calculations the $\mathbf k$ mesh will sometimes
     not be equivalent for the electrodes and the device region
     calculations. However, \tsiesta\ requires that the device and
@@ -12405,8 +12405,7 @@ should change accordingly. Note that here \fdf*{kT} refers to
 
 
 
-\subsection{Matching \texorpdfstring{\tsiesta\ }{TranSIESTA}
-    coordinates: basic rules}
+\subsection{Matching electrode coordinates: basic rules}
 
 Having discussed the possible input options of \tsiesta\ here we just
 list a set of rules to construct the appropriate coordinates of the
@@ -12427,8 +12426,35 @@ file. I.e. if an electrode input option is given by:
 \end{fdfexample}
 then the atoms from $10$ to $10+4*3-1$ must coincide with the atoms of
 the calculation performed in the \program{../elec-<>/}
-subdirectory. The Bloch expansion requires a particular sequence of
-the atoms which may be outlined as in the following loop:
+subdirectory.
+
+When using the Bloch expansion it is advised to follow the
+\emph{tiling} method. However both of the below sequences are allowed.
+
+\paragraph{Tile} \fdfindex{TS!Elec.<>!Bloch}%
+Here the atoms are copied and displaced by the full
+electrode. Generally this expansion should be preferred over the
+\emph{repeat} expansion due to faster execution.
+\begin{fdfexample}
+  iaD = 10 ! as per the above input option
+  do iC = 0 , nC - 1
+  do iB = 0 , nB - 1
+  do iA = 0 , nA - 1
+    do iaE = 1 , na_u
+      xyz_device(:, iaD) = xyz_elec(:, iaE) + &
+          cell_elec(:, 1) * iA + &
+          cell_elec(:, 2) * iB + &
+          cell_elec(:, 3) * iC
+      iaD = iaD + 1
+    end do
+  end do
+  end do
+  end do
+\end{fdfexample}
+
+\paragraph{Repeat} \fdfindex{TS!Elec.<>!Bloch}%
+Here the atoms are copied individually. Generally
+this expansion should not be used.
 \begin{fdfexample}
   iaD = 10 ! as per the above input option
   do iaE = 1 , na_u
@@ -12445,15 +12471,17 @@ the atoms which may be outlined as in the following loop:
     end do
   end do
 \end{fdfexample}
+
 As a help, \tsiesta\ prints out the expected coordinates as though the
 first device atom coincides with the first electrode atom. Another
 means to create this is using the \sisl\cite{sisl} program and this command
 line:
 \begin{fdfexample}
-  sgeom -rz 1 -ry 3 -rx 1 ELEC.fdf DEVICE_ELEC.fdf
+  sgeom -tx 1 -ty 3 -tz 1 ELEC.fdf DEVICE_ELEC.fdf # Tile
+  sgeom -rz 1 -ry 3 -rx 1 ELEC.fdf DEVICE_ELEC.fdf # Repeat
 \end{fdfexample}
 and then shift the coordinates according to the placement in the
-device region.
+device region. Note how repeating has different order of tiling.
 
 \subsection{Output}
 
@@ -12485,14 +12513,21 @@ device region.
   \item[\sysfile{TSCCNEQ*}]: The non-equilibrium complex contour
   integration paths.
 
+  \item[\sysfile{TSGF*}]: Self-energy files containing the used
+  self-energies from the leads. These are very large files used in the
+  SCF loop. Once completed one can safely delete these files.
+  %
+  For heavily increased throughput these files may be re-used for the
+  same electrode settings in various calculations.
+
 \end{description} 
 
 \subsection{Utilities for analysis:
     \texorpdfstring{\tbtrans}{TBtrans}} 
-\index{tbtrans@\textbf{tbtrans}}
+\index{tbtrans@\tbtrans}
 
 Please see the separate \tbtrans\ manual
-(\href{run:tbtrans.pdf}{tbtrans.pdf}).
+(\href{run:tbtrans.pdf}{tbtrans.pdf}). 
 
 
 \section{ANALYSIS TOOLS}
@@ -12630,7 +12665,7 @@ Ram\'on Areces.
 \begin{tabular}{llr}
 Magnitude & Unit name & MKS value \\
 \hline
-mass     & Kg         & 1.E0 \\
+mass     & kg         & 1.E0 \\
 mass     & g          & 1.E-3 \\
 mass     & amu        & 1.66054E-27 \\
 length   & m          & 1.E0 \\

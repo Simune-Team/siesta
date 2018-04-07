@@ -66,6 +66,7 @@ contains
     use m_tbt_proj, only : N_mol, mols, init_proj_save
     use m_tbt_sigma_save, only : init_Sigma_save
 #else
+    use m_tbt_regions, only : r_oDev
     use m_tbt_kpoint, only : nkpnt
 #endif
     use m_tbt_kregions, only : n_k, r_k, kregion_step, kregion_k
