@@ -376,6 +376,7 @@ contains
       character(len=2) :: unit
       integer :: iEl
 
+      if ( .not. IONode ) return
       if ( verbosity <= 4 ) return
       
       ! Calculate size of electrodes
