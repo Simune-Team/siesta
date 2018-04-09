@@ -72,7 +72,7 @@ contains
     ! This has a slight overhead of memory but should be negligeble.
     allocate(la_c(na_u))
     la_c(:) = .true.
-    allocate(num(na_u), listptr(na_u))
+    allocate(num(na_u))
     allocate(list(n_nzs))
     n_nzs = 0
     do ia = 1 , na_u

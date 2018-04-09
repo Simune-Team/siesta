@@ -376,6 +376,7 @@ contains
       character(len=2) :: unit
       integer :: iEl
 
+      if ( .not. IONode ) return
       if ( verbosity <= 4 ) return
       
       ! Calculate size of electrodes
@@ -441,6 +442,10 @@ contains
         if ( out_mem > 1024._dp ) then
           out_mem = out_mem / 1024._dp
           unit = 'GB'
+          if ( out_mem > 1024._dp ) then
+            out_mem = out_mem / 1024._dp
+            unit = 'TB'
+          end if
         end if
       end if
 
