@@ -695,7 +695,7 @@ new_dm.o: m_ts_options.o normalize_dm.o parallel.o parallelsubs.o parsing.o
 new_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o sys.o
 new_dm.o: units.o
 new_matel.o: alloc.o errorf.o interpolation.o matel_registry.o parallel.o
-new_matel.o: precision.o radfft.o spher_harm.o sys.o
+new_matel.o: precision.o radfft.o siesta_options.o spher_harm.o sys.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
 nlefsm.o: precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
