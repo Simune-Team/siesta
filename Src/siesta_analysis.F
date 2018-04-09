@@ -52,9 +52,7 @@
       use m_siesta2wannier90, only: siesta2wannier90
       use siesta_options,     only: w90_processing
 
-#ifdef MPI
-      use m_mpi_utils, only: globalize_sum
-#endif
+      use m_mpi_utils, only: barrier
 
       implicit none
 
@@ -72,9 +70,6 @@
       integer           :: j, ix, ind, ik, io, ispin
       integer           :: wfs_band_min, wfs_band_max
       real(dp)          :: g2max
-#ifdef MPI
-      real(dp)          :: qtmp(4)
-#endif
       type(filesOut_t)  :: filesOut  ! blank output file names
 
 !-----------------------------------------------------------------------BEGIN
@@ -90,6 +85,9 @@
          if (GeometryMustConverge .and. (.not. relaxd)) then
             call message("FATAL",
      $           "GEOM_NOT_CONV: Geometry relaxation not converged")
+            call timer('all',2)
+            call timer('all',3)
+            call barrier()
             call die("ABNORMAL_TERMINATION")
          endif
       endif
