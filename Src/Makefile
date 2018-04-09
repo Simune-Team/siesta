@@ -1114,7 +1114,7 @@ mulliken.o: alloc.o atmfuncs.o m_spin.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o new_matel.o precision.o
 new_matel.o: alloc.o errorf.o interpolation.o matel_registry.o parallel.o
-new_matel.o: precision.o radfft.o spher_harm.o sys.o
+new_matel.o: precision.o radfft.o siesta_options.o spher_harm.o sys.o
 nlefsm.o: alloc.o atm_types.o atmfuncs.o atomlist.o chemical.o mneighb.o
 nlefsm.o: new_matel.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
@@ -1270,10 +1270,10 @@ siesta_master.o: iopipes.o iosockets.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o
 siesta_move.o: m_check_walltime.o m_energies.o m_exp_coord.o m_forces.o
-siesta_move.o: m_kinetic.o m_steps.o m_stress.o m_target_stress.o parallel.o
-siesta_move.o: siesta_cml.o siesta_dicts.o siesta_geom.o siesta_master.o
-siesta_move.o: siesta_options.o sys.o units.o write_subs.o zm_broyden_optim.o
-siesta_move.o: zm_fire_optim.o zmatrix.o
+siesta_move.o: m_kinetic.o m_mpi_utils.o m_steps.o m_stress.o m_target_stress.o
+siesta_move.o: parallel.o siesta_cml.o siesta_dicts.o siesta_geom.o
+siesta_move.o: siesta_master.o siesta_options.o sys.o units.o write_subs.o
+siesta_move.o: zm_broyden_optim.o zm_fire_optim.o zmatrix.o
 sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpData2D.o
 sparse_matrices.o: class_OrbitalDistribution.o class_SpData1D.o
 sparse_matrices.o: class_SpData2D.o class_Sparsity.o precision.o

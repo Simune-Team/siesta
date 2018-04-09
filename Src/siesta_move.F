@@ -55,6 +55,7 @@
       use m_target_stress, only: subtract_target_stress
 
       use m_check_walltime
+      use m_mpi_utils,     only: barrier
       
 #ifdef NCDF_4
       use m_exp_coord, only : exp_coord_next
@@ -435,12 +436,15 @@
         call check_walltime(time_is_up)
         if (time_is_up) then
            ! Do any other bookeeping not done by "die"
+           call timer('all',2)
+           call timer('all',3)
            if (.not. relaxd) then
               call message('WARNING','GEOM_NOT_CONV: '//
      $             'Geometry relaxation not converged')
               write(tmp_str,"(a,i3)") 'Geometry step: ', istep
               call message(' (info)', trim(tmp_str))
            endif
+           call barrier()
            call die("OUT_OF_TIME: Time is up at end of geometry step. ")
         endif
 

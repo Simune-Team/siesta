@@ -49,6 +49,9 @@
       use m_overlap,         only: overlap
       use m_supercell,       only: exact_sc_ag
       use siesta_cml,        only: cml_p, cmlStartStep, mainXML
+      use siesta_cml,        only: cmlStartPropertyList
+      use siesta_cml,        only: cmlEndPropertyList
+      use siesta_cml,        only: cmlAddProperty
       use zmatrix,           only: lUseZmatrix, write_zmatrix
       use m_energies,        only: Emad
       use write_subs
@@ -66,7 +69,7 @@
       use m_gamma
       use files,             only: slabel
       use m_mpi_utils,       only: globalize_or
-      use m_mpi_utils,       only: globalize_max
+      use m_mpi_utils,       only: globalize_sum
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
       use ldau_specs,        only: switch_ldau, ldau_init
 
@@ -101,7 +104,7 @@
 
       implicit none
 
-      integer            :: istep
+      integer            :: istep, nnz
       real(dp)           :: veclen      ! Length of a unit-cell vector
       real(dp)           :: rmax
       logical            :: cell_can_change
@@ -338,6 +341,18 @@
      &              lastkb, iphorb, iphKB, maxnh, gamma,
      $                 set_xijo=.true., folding=folding1)
 !
+      call globalize_sum(maxnh,nnz)
+      if (cml_p) then
+         call cmlStartPropertyList(mainXML,title='Orbital info')
+         call cmlAddProperty(xf=mainXML, value=no_u,
+     $        title='Number of orbitals in unit cell',
+     $        dictref='siesta:no_u', units="cmlUnits:countable")
+         call cmlAddProperty(xf=mainXML, value=nnz,
+     $        title='Number of non-zeros',
+     $        dictref='siesta:nnz', units="cmlUnits:countable")
+         call cmlEndPropertyList(mainXML)
+      endif
+      !
       call globalize_or(folding1,folding)
       if (folding) then
          if (IOnode) then
