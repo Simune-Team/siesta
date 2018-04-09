@@ -442,6 +442,10 @@ contains
         if ( out_mem > 1024._dp ) then
           out_mem = out_mem / 1024._dp
           unit = 'GB'
+          if ( out_mem > 1024._dp ) then
+            out_mem = out_mem / 1024._dp
+            unit = 'TB'
+          end if
         end if
       end if
 
