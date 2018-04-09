@@ -533,20 +533,26 @@ c ******* Input ******************************************************
 c integer ns     : Number of components in spin density matrix
 c real*8  qs(ns) : Spin density matrix elements with the convention
 c                  is=1 => Q11; is=2 => Q22; is=3 => Real(Q12);
-c                  is=4 => Imag(Q12)
+c                  is=4 => -Imag(Q12)  (*Note 
 c ******* Output *****************************************************
 c real*8  qt    : Total charge
-c real*8  st    : Total spin
-c real*8  sv(3) : Spin vector
+c real*8  st    : Total spin moment
+c real*8  sv(3) : Spin moment vector
 c ********************************************************************
-
+!
+! Spin magnetic **moments** in bohr magnetons:
+! m_x = 2 Re{Q12} = 2*qs(3)
+! m_y = -2 Im{Q12} = 2*qs(4)
+! m_z = Q11-Q22 = qs(1)-qs(2)
+!
+! The spin moment for a spin angular momentum of 1/2 (hbar) is (very close to) 1 bohr magneton.
+!
       use precision
 
       implicit          none
-      integer           ns
-      real(dp)          qs(ns), qt, st, sv(3)
-      real(dp)          cosph, costh, sinph, sinth, tiny
-      parameter ( tiny = 1.e-12_dp )
+      integer, intent(in)   ::          ns
+      real(dp), intent(in)  ::          qs(ns)
+      real(dp), intent(out) ::          qt, st, sv(3)
 
       if (ns .eq. 1) then
         qt = qs(1)
@@ -561,15 +567,21 @@ c ********************************************************************
         sv(2) = 0.0_dp
         sv(3) = st
       elseif (ns .eq. 4) then
-        qt = qs(1) + qs(2)
-        st = sqrt( (qs(1)-qs(2))**2 + 4._dp*(qs(3)**2+qs(4)**2) )
-        costh = ( qs(1) - qs(2) ) / ( st + tiny )
-        sinth = sqrt( 1.0_dp - costh**2 )
-        cosph =  qs(3) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
-        sinph =  qs(4) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
-        sv(1) = st * sinth * cosph
-        sv(2) = st * sinth * sinph
-        sv(3) = st * costh
+         qt = qs(1) + qs(2)
+         sv(1) = 2.0_dp * qs(3)
+         sv(2) = 2.0_dp * qs(4)
+         sv(3) = qs(1) - qs(2)
+         st = sqrt(sv(1)**2+sv(2)**2+sv(3)**2)
+!
+!        ... roundabout way ...         
+!        st = sqrt( (qs(1)-qs(2))**2 + 4._dp*(qs(3)**2+qs(4)**2) )
+!        costh = ( qs(1) - qs(2) ) / ( st + tiny )
+!        sinth = sqrt( 1.0_dp - costh**2 )
+!        cosph =  qs(3) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
+!        sinph =  qs(4) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
+!        sv(1) = st * sinth * cosph
+!        sv(2) = st * sinth * sinph
+!        sv(3) = st * costh
       else
         write(6,*) 'spnvec: ERROR: invalid argument ns =', ns
         return

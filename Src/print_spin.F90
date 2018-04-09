@@ -49,7 +49,7 @@ subroutine print_spin(qspin)
            Svec(2) = 0.0_dp
            Svec(3) = qspin(1) - qspin(2)
            Stot = Svec(3)
-           write(6,'(a,f12.6,2f12.1,f12.6)') '  spin: S , {S} = ', Stot, Svec
+           write(6,'(5x,a,f10.5,2f10.1,f10.5)') 'spin moment: S , {S} = ', Stot, Svec
         endif
         if (cml_p) call cmlAddProperty(xf=mainXML,            &
              value=qspin(1)-qspin(2), dictref='siesta:stot', &
@@ -62,7 +62,7 @@ subroutine print_spin(qspin)
 !           write(6,'(a,3f12.6)')                              &
 !                'siesta: Total spin polarization (x,y,z) = ', &
 !                qspin(3)*2, -qspin(4)*2, qspin(1)-qspin(2)     
-           write(6,'(a,4f12.6)') '  spin: S , {S} = ', Stot, Svec
+           write(6,'(5x,a,4f10.5)') 'spin moment: S , {S} = ', Stot, Svec
            if (cml_p) then
               call cmlAddProperty(xf=mainXML, value=Stot,  &
                    dictref='siesta:stot', units='siestaUnits:spin')
