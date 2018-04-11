@@ -51,6 +51,7 @@
 
       ! e1>e2 to signal that we do not want DOS weights
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
+      real(dp) :: dummy_qspin(8)
 
 !-------------------------------------------------------------- BEGIN
       call timer( 'compute_dm', 1 )
@@ -146,15 +147,6 @@
      &                         overwrite=.true. )
       endif
 #endif
-
-!     Print populations at each SCF step if requested before mixing ......
-      if (muldeb) then
-        if (ionode) write (6,"(/a)")
-     &    'siesta: Mulliken populations (DM_out)'
-        call mulliken( mullipop, nspin, na_u, no_u, maxnh,
-     &                 numh, listhptr, listh, S, Dscf, isa,
-     &                 lasto, iaorb, iphorb )
-      endif
 
 ! Write orbital indexes. JMS Dec.2009
 

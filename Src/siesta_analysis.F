@@ -52,9 +52,7 @@
       use m_siesta2wannier90, only: siesta2wannier90
       use siesta_options,     only: w90_processing
 
-#ifdef MPI
-      use m_mpi_utils, only: globalize_sum
-#endif
+      use m_mpi_utils, only: barrier
 
       implicit none
 
@@ -72,9 +70,6 @@
       integer           :: j, ix, ind, ik, io, ispin
       integer           :: wfs_band_min, wfs_band_max
       real(dp)          :: g2max
-#ifdef MPI
-      real(dp)          :: qtmp(4)
-#endif
       type(filesOut_t)  :: filesOut  ! blank output file names
 
 !-----------------------------------------------------------------------BEGIN
@@ -90,10 +85,15 @@
          if (GeometryMustConverge .and. (.not. relaxd)) then
             call message("FATAL",
      $           "GEOM_NOT_CONV: Geometry relaxation not converged")
+            call timer('all',2)
+            call timer('all',3)
+            call barrier()
             call die("ABNORMAL_TERMINATION")
          endif
       endif
 
+      call timer( 'siesta_analysis', 1 )
+      
 !     All the comments below assume that this compatibility option
 !     is not used.
 !     Note also that full compatibility cannot be guaranteed
@@ -455,6 +455,8 @@ C     Find local density of states
 !   -- Avoid mixing DM or H after scf convergence
 !   -- Set xa to xa_last at the top of this file. Write any "next iter" coordinate file
 !      in 'siesta_move'
+
+      call timer( 'siesta_analysis', 2 )
 
 !--------------------------------------------------------------------------- END
       END subroutine siesta_analysis

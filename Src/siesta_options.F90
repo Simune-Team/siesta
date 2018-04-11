@@ -9,6 +9,8 @@ MODULE siesta_options
   
   implicit none
   integer, parameter, private :: dp = selected_real_kind(10,100)
+
+  save
   
   PUBLIC
 
@@ -95,7 +97,8 @@ MODULE siesta_options
 
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
-  logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
+  logical :: muldeb        ! Write Mulliken populations at every SCF step?
+  logical :: spndeb        ! Write spin-polarization information at every SCF step?
   logical :: require_energy_convergence ! free Energy conv. to finish SCF iteration?
   logical :: require_harris_convergence ! to finish SCF iteration?
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
@@ -181,7 +184,10 @@ MODULE siesta_options
   real(dp) :: wmix          ! Mixing weight for DM in SCF iteration
   real(dp) :: wmixkick       ! Mixing weight for DM in special 'kick' SCF steps
 
-  character(len=150) :: sname   ! System name, used to initialise read
+  ! Matrix element compatibility variable
+  integer :: matel_NRTAB = 1024
+  
+  character(len=164) :: sname   ! System name, used to initialise read
 
   integer,  parameter :: SOLVE_DIAGON = 0
   integer,  parameter :: SOLVE_ORDERN = 1
