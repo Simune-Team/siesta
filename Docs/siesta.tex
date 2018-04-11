@@ -4153,6 +4153,22 @@ is active.
 
 See also the {\bf WriteDMHS.NetCDF} and {\bf WriteDMHS.History.NetCDF}
 options.
+
+\item[{\bf Compat.Matel.NRTAB}] ({\it logical}):
+  \index{Compat.Matel.NRTAB@{\bf Compat.Matel.NRTAB@}}
+
+Internally the two-center integrals involved in some matrix element
+calculations are tabulated with a preset number of elements. In
+versions 4.0.1 and prior this was 128. Since 4.0.2 the number of table
+elements has been increased to 1024, which translates to more accurate
+matrix element calculations.
+
+This compatibility option should \emph{only} be used when preservation
+of the (lower accuracy) numerical results of 4.0.1 or prior versions
+is required for reproducibility purposes.
+
+{\it Default value:} {\tt .false.}
+
 \end{description}
 
 \subsubsection{The auxiliary supercell}
@@ -6595,7 +6611,12 @@ file named {\tt SystemLabel}.times.
 \index{UseTreeTimer@{\bf UseTreeTimer}}
 
 Enable an experimental timer which is based on wall time on the master
-node and is aware of the tree-structure of the timed sections.
+node and is aware of the tree-structure of the timed sections. At the
+end of the program, a report is generated in the output file, and a
+{\tt time.json} file in JSON format is also
+written. \index{JSON timing report@{\bf JSON timing report}}
+This file can be
+used by third-party scripts to process timing data.
 
 {\it Default value:} {\tt .false.}
 

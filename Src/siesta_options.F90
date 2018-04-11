@@ -9,6 +9,8 @@ MODULE siesta_options
   
   implicit none
   integer, parameter, private :: dp = selected_real_kind(10,100)
+
+  save
   
   PUBLIC
 
@@ -182,7 +184,10 @@ MODULE siesta_options
   real(dp) :: wmix          ! Mixing weight for DM in SCF iteration
   real(dp) :: wmixkick       ! Mixing weight for DM in special 'kick' SCF steps
 
-  character(len=150) :: sname   ! System name, used to initialise read
+  ! Matrix element compatibility variable
+  integer :: matel_NRTAB = 1024
+  
+  character(len=164) :: sname   ! System name, used to initialise read
 
   integer,  parameter :: SOLVE_DIAGON = 0
   integer,  parameter :: SOLVE_ORDERN = 1

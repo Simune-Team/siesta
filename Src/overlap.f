@@ -61,14 +61,12 @@ C real*8  S(maxnh)         : Sparse overlap matrix
 C Internal variables ......................................................
       integer               :: ia, ind, io, ioa, is,  iio, j, ja, jn,
      &                         jo, joa, js, jua, nnia, ig, jg
-      real(dp)              :: grSij(3) , rij, Sij, volcel, volume
+      real(dp)              :: grSij(3) , rij, Sij
       real(dp),     pointer :: Si(:)
       external  timer
 
 C     Start timer
       call timer( 'overlap', 1 )
-
-      volume = nua * volcel(scell) / na
 
 C     Initialize neighb subroutine 
       call mneighb( scell, 2.d0*rmaxo, na, xa, 0, 0, nnia )

@@ -292,12 +292,26 @@ subroutine read_options( na, ns, nspin )
   partial_charges_at_every_scf_step =  &
        fdf_get('PartialChargesAtEveryScfStep',.false.)
 
+  
+  if ( fdf_get('Compat.Matel.NRTAB', .false.) ) then
+    matel_NRTAB = 128
+  else
+    matel_NRTAB = 1024
+  end if
+  if ( IONode ) then
+    write(6,4) 'redata: Matel table size (NRTAB)         = ', matel_NRTAB
+  end if
+  if (cml_p) then
+    call cmlAddParameter( xf=mainXML, name='MatelNRTAB',value=matel_NRTAB, &
+        dictRef='siesta:matel_nrtab', units="cmlUnits:countable")
+  end if
 
   ! Planewave cutoff of the real space mesh ...
   g2cut = fdf_get('MeshCutoff',g2cut_default,'Ry')
   if (ionode) then
-     write(6,6) 'redata: Mesh Cutoff                      = ', g2cut,'  Ry'
-  endif
+     write(6,6)'redata: Mesh Cutoff                      = ', g2cut,' Ry'
+   endif
+   
 
   if (cml_p) then
      call cmlAddParameter( xf=mainXML, name='MeshCutOff', value=g2cut,     &

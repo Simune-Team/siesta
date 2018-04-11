@@ -67,6 +67,7 @@ C **********************************************************************
       use alloc,        only : re_alloc, de_alloc
       use units,        only : eV
       use files,        only : slabel, label_length
+      use m_energies, only: Ef
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
 #endif
@@ -219,10 +220,20 @@ C New writing
 
         write(iunit2,'(a)') '<pdos>'
         write(iunit2,'(a,i1,a)') '<nspin>', nspin, '</nspin>'
-        write(iunit2,'(a,i4,a)') '<norbitals>', no_u, '</norbitals>'
+        write(iunit2,'(a,i0,a)') '<norbitals>', no_u, '</norbitals>'
+
+        ! Write fermi-level
+        call xml_NewElement(xf,"fermi_energy")
+        call xml_AddAttribute(xf,"units","eV")
+        call xml_AddCharacters(xf,Ef / eV)
+        call xml_EndElement(xf,"fermi_energy")
+        write(iunit2,'(a,f20.5,a)') '<fermi_energy units="eV">',
+     &       Ef / eV, '</fermi_energy>'
+
+        ! Write sampled energies
+        write(iunit2,'(a)') '<energy_values units="eV">'
         call xml_NewElement(xf,"energy_values")
         call xml_AddAttribute(xf,"units","eV")
-        write(iunit2,'(a)') '<energy_values units="eV">'
 
         nullify( tmp )
         call re_alloc( tmp, 1, nspin*nhist, 'tmp', 'pdos' )
