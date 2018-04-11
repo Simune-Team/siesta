@@ -1588,6 +1588,7 @@ subroutine read_options( na, ns, nspin )
   dm_normalization_tol   = fdf_get( 'DM.NormalizationTolerance',1.0d-5)
   normalize_dm_during_scf= fdf_get( 'DM.NormalizeDuringSCF',.true.)
   muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
+  spndeb                 = fdf_get( 'SpinInSCF'   , (nspin>1) )
   ! If no mulliken is requested, set it to false
   if ( mullipop == 0 ) muldeb = .false.
   rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &

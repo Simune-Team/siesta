@@ -126,7 +126,8 @@ MODULE siesta_options
 
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
-  logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
+  logical :: muldeb        ! Write Mulliken populations at every SCF step?
+  logical :: spndeb        ! Write spin-polarization information at every SCF step?
 
   ! Convergence options
   logical :: converge_FreeE   ! free Energy conv. to finish SCF iteration?

@@ -1198,9 +1198,10 @@ save_density_matrix.o: m_matio.o m_ncdf_siesta.o m_spin.o m_steps.o
 save_density_matrix.o: m_ts_global_vars.o m_ts_iodm.o m_ts_options.o
 save_density_matrix.o: precision.o siesta_options.o sparse_matrices.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
-scfconvergence_test.o: ldau.o ldau_specs.o m_convergence.o m_energies.o
-scfconvergence_test.o: m_wallclock.o parallel.o precision.o siesta_cml.o
-scfconvergence_test.o: siesta_options.o units.o write_subs.o
+scfconvergence_test.o: atomlist.o ldau.o ldau_specs.o m_convergence.o
+scfconvergence_test.o: m_energies.o m_spin.o m_wallclock.o parallel.o
+scfconvergence_test.o: precision.o siesta_cml.o siesta_geom.o siesta_options.o
+scfconvergence_test.o: sparse_matrices.o units.o write_subs.o
 schecomm.o: alloc.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
