@@ -70,6 +70,7 @@
       logical            :: auxchanged   ! Auxiliary supercell changed?
       logical            :: folding, folding1
       logical            :: foundxv  ! dummy for call to ioxv
+      real(dp)           :: dummy_qspin(8)
       external           ::  madelung, timer
       real(dp), external :: volcel
 
@@ -332,6 +333,7 @@
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
       call new_dm( auxchanged, numh, listhptr, listh, Dscf)
+      if (nspin > 1) call print_spin(dummy_qspin)
 
 !     Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
