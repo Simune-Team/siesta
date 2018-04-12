@@ -23,7 +23,7 @@ C ************************** INPUT ************************************
 C integer iopt                : Work option: 1 = atomic and orbital charges
 C                                            2 = 1 + atomic overlap pop.
 C                                            3 = 2 + orbital overlap pop.
-C integer nspin               : Number of spin components
+C integer nspin               : Spin dimension of the DM
 C integer natoms              : Number of atoms
 C integer nbasistot           : Number of basis orbitals over all nodes
 C integer maxnh               : First dimension of d.m. and overlap, and its
@@ -32,7 +32,7 @@ C integer numh(nbasis)        : First Control vector of d.m. and overlap
 C integer listhptr(nbasis)    : Second Control vector of d.m. and overlap
 C integer listh(maxnh)        : Third Control vector of d.m. and overlap
 C real*8  s(maxnh)            : Overlap matrix in sparse form
-C real*8  dm(maxnh,nspin)     : Density matrix in sparse form 
+C real*8  dm(maxnh,nspin)   : Density matrix in sparse form 
 C integer isa(natoms)         : Species index of each atom
 C integer lasto(0:maxa)       : Index of last orbital of each atom
 C                               (lasto(0) = 0) 
@@ -47,6 +47,7 @@ C
       use precision,    only : dp
       use parallel,     only : IOnode, Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
+      use parallelsubs, only : LocalToGlobalOrb
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use alloc,        only : re_alloc, de_alloc
       use siesta_cml
@@ -56,8 +57,8 @@ C
 
       implicit none
 
-      integer
-     .  iopt,natoms,nbasistot,maxnh,nspin
+      integer, intent(in) :: 
+     .  iopt,nspin,natoms,nbasistot,maxnh
 
       integer
      .  numh(*),lasto(0:natoms),listh(maxnh),listhptr(*),
@@ -68,23 +69,23 @@ C
 
 C Internal parameters ..................................................
 C Number of columns in printout.  Must be smaller than 20
-      integer ncol, nbasis
+      integer ncol, nbasis, nspin_grid
       parameter (ncol = 8)
 
 #ifdef MPI
       integer  :: MPIerror, mpistatus(MPI_STATUS_SIZE)
       real(dp) :: pb(ncol)
-      real(dp) :: temp1(5), temp2(5) 
       real(dp),  pointer :: qb(:)=>null()
-      character(len=200) ::  mpibuff ! 200 is sufficiently long
+      character(len=128) ::  mpibuff ! 128 is sufficiently long
 #endif
 
       integer i,ia,ib,ii,imax,in,io,ior,ip,is,j,ja,jja,jo,jor,
      .  ind, nao, nblock, ns, ispec, irow, nrow,
-     .  config(ncol), iNode, itot
+     .  config(ncol), itot
 
       real(dp)
-     .  p(ncol),qa,qas(4),qts(4),qtot,qtot_temp,stot,svec(3)
+     .     p(ncol),qa,qas(4),qts(4),qtot,qtot_temp,stot,svec(3)
+      real(dp) :: dm_aux(4)
 
       real(dp), pointer :: qo(:)=>null(), qos(:,:)=>null()
 
@@ -122,8 +123,6 @@ C iopt = 0 implies no analysis
         return
       endif 
 
-C Allocate local memory
-      call re_alloc( qos, 1, nspin, 1, nbasis, 'qos', 'mulliken' )
 
       ns=0
       do i = 1,natoms
@@ -191,12 +190,12 @@ C Compute and print Overlap Populations for Orbitals ....................
               else
                 write(mpibuff,15) itot,config(1), sym_label(1),
      .                (p(ii),ii=1,imax)
-                call mpi_send(mpibuff, 200, MPI_Character, 0, itot, 
+                call mpi_send(mpibuff, 128, MPI_Character, 0, itot, 
      .             MPI_Comm_world, mpierror)
               endif
             else
               if (ionode) then
-                call mpi_recv(mpibuff, 200, MPI_Character, 
+                call mpi_recv(mpibuff, 128, MPI_Character, 
      .                MPI_ANY_SOURCE, itot,
      .                MPI_Comm_world, mpistatus, mpierror)
                 write(6,'(a)') trim(mpibuff)
@@ -401,25 +400,55 @@ C Global sum of total charge
           enddo
           if (cml_p) call cmlEndPropertyList(xf=mainXML) ! mulliken
 
-        elseif (nspin .eq. 4) then
-          do is = 1,nspin
+        elseif (nspin .ge. 4) then
+           ! nspin_grid = 4 here, but keep it for compatibility with v.>=4.1
+           nspin_grid = min(nspin,4)
+           call re_alloc( qos, 1, nspin_grid, 1, nbasistot,
+     &          'qos', 'mulliken' )
+          do is = 1,nspin_grid
             qts(is) = 0.0_dp
-            do io = 1,nbasis
+            do io = 1,nbasistot
               qos(is,io) = 0.0_dp
-                enddo
+            enddo
           enddo
-          do is = 1,nspin
-            do io = 1,nbasis
-              do in = 1,numh(io)
+          do io = 1,nbasis
+             call LocalToGlobalOrb(io,Node, Nodes, itot)
+             do in = 1,numh(io)
                 ind = listhptr(io)+in
                 jo = listh(ind)
-                qos(is,io) = qos(is,io) + dm(ind,is)*s(ind)/2
-                if (jo.le.nbasis)
-     .            qos(is,jo) = qos(is,jo) + dm(ind,is)*s(ind)/2
-              enddo
-            enddo
+                dm_aux(1:4) = dm(ind,1:4)
+                do is = 1,nspin_grid
+                   qos(is,itot) = qos(is,itot) + dm_aux(is)*s(ind)/2
+                   if ( jo <= nbasistot )
+     .                  qos(is,jo) = qos(is,jo) + dm_aux(is)*s(ind)/2
+                enddo
+             enddo
           enddo 
+#ifdef MPI
+          call re_alloc( qb, 1, nspin_grid*nbasistot,
+     &         'qb', 'mulliken' )
+          call MPI_Reduce(qos(1,1), qb(1), nspin_grid*nbasistot,
+     &         Mpi_Double_Precision, MPI_Sum, 
+     &         0, MPI_Comm_world, MPIerror)
+          itot = 0
+          do io = 1 , nbasistot
+             do is = 1 , nspin_grid
+                itot = itot + 1
+                qos(is, io) = qb(itot)
+             end do
+          end do 
+          call de_alloc(qb, 'qb', 'mulliken')
+#endif
 
+          ! The above reduction means that the
+          ! following mulliken calculation actually is
+          ! serial. 
+          ! We could have performed other analysis, but
+          ! that would prove additional "small" communication.
+          ! This should aptly provide speed and flexibility.
+          ! Also, this entire loop may be encapsulated
+          ! In (if ionode)... However, this will also
+          ! streamline the processors.
           do ispec=1,ns
             atm_label=labelfis(ispec)
             if (ionode) then
@@ -429,90 +458,61 @@ C Global sum of total charge
      .             repeat('-', 64)
             endif
 
-            do ia = 1,natoms 
-              if (isa(ia).eq.ispec) then 
-                qas(1:nspin) = 0._dp
-                do iNode = 0,Nodes-1
-                  if (iNode.eq.Node) then
-                    do io = lasto(ia-1)+1,lasto(ia)  
-                      call GlobalToLocalOrb(io,Node,Nodes,itot)
-                      if (itot.gt.0) then
+            do ia = 1,natoms
+               
+              ! Check for same species
+              if ( isa(ia) /= ispec ) cycle
+                  
+              ! Initialize atomic charges (per spin)
+              qas(1:nspin_grid) = 0._dp
+              do io = lasto(ia-1)+1, lasto(ia)
+                
 C DSP, Writing symmetries for each orbital.
 C DSP, Orbitals with a 'P' belong to the polarization shell
-                        sym_label(1)=symfio(ispec,iphorb(io))
-                        config(1)=cnfigfio(ispec,iphorb(io))
-                        do is = 1,nspin
-                          qas(is) = qas(is) + qos(is,itot)
-                          qts(is) = qts(is) + qos(is,itot)
-                        enddo
-                        call spnvec( nspin, qos(1:nspin,itot), qtot,
-     $                               stot,svec)
-                        if (ionode) then
-                          write(6,'(i5,i3,tr1,i1,a7,2f10.5,3x,3f8.3)')
-     .                        ia,io-lasto(ia-1),config(1),sym_label(1)
-     &                        ,qtot, stot, svec
-#ifdef MPI
-                        else
-                          write(mpibuff,
-     &                        '(i5,i3,tr1,i1,a7,2f10.5,3x,3f8.3)')
-     &                        ia,io-lasto(ia-1),config(1),sym_label(1)
-     &                        ,qtot, stot, svec
-                          call mpi_send(mpibuff, 200, MPI_Character, 
-     .                         0, io, MPI_Comm_world, mpierror)
-                        endif
-                      else
-                        if (ionode) then
-                          call mpi_recv(mpibuff, 200, MPI_Character, 
-     .                          MPI_ANY_SOURCE, io,
-     .                          MPI_Comm_world, mpistatus, mpierror)
-                          write(6,'(a)')  trim(mpibuff)
-#endif
-                        endif
-                      endif
-                    enddo
-                  endif
-                enddo
-                call spnvec( nspin, qas, qtot, stot, svec )
-#ifdef MPI
-C Global reduction of terms
-                temp1(1:3) = svec
-                temp1(4)   = qtot
-                temp1(5)   = stot
-                call MPI_Reduce(temp1,temp2,5,MPI_double_precision,
-     $               MPI_sum,0, MPI_Comm_World,MPIerror)
-                svec = temp2(1:3)
-                qtot = temp2(4)
-                stot = temp2(5)
-#endif
-                if (ionode) then
-                  write(6,'(i5,5x,a5,2x,2f10.5,3x,3f8.3,/)')
-     .                 ia, 'Total', qtot, stot, svec 
-                endif
-              endif
-            enddo
-          enddo 
-          call spnvec( nspin, qts, qtot, stot, svec )
-#ifdef MPI
-C Global reduction of terms
-          temp1(1:3) = svec
-          temp1(4)   = qtot
-          temp1(5)   = stot
-          call MPI_Reduce(temp1,temp2,5,MPI_double_precision,
-     $         MPI_sum,0,MPI_Comm_World,MPIerror)
-          svec = temp2(1:3)
-          qtot = temp2(4)
-          stot = temp2(5)
-#endif
-          if (ionode) then
-            write(6,'(a,/,a5,12x,2f10.5,3x,3f8.3,/)')
-     .        repeat('-',64), 'Total', qtot, stot, svec
-          endif
-        endif
-      endif
+                 sym_label(1) = symfio(ispec,iphorb(io))
+                 config(1) =  cnfigfio(ispec,iphorb(io))
 
-C Deallocate local memory
-      call de_alloc( qos, 'qos', 'mulliken' )
-C ...................
+                 ! Reduce total charge per-atom
+                 do is = 1 , nspin_grid
+                    qas(is) = qas(is) + qos(is,io)
+                 enddo
+                 
+                 call spnvec( nspin_grid, qos(1:nspin_grid,io), 
+     $                qtot, stot, svec)
+                 if ( IONode ) then
+                    write(6,'(i5,i3,tr1,i1,a7,2f10.5,3x,3f8.3)')
+     .                   ia,io-lasto(ia-1),config(1),sym_label(1), 
+     .                   qtot, stot, svec
+                 end if
+
+              end do ! atomic orbitals
+
+              call spnvec( nspin_grid, qas, qtot, stot, svec )
+              if ( IONode ) then
+                 write(6,'(i5,5x,a5,2x,2f10.5,3x,3f8.3,/)')
+     .                ia, 'Total', qtot, stot, svec 
+              end if
+
+              ! Reduce total charge in system
+              do is = 1 , nspin_grid
+                 qts(is) = qts(is) + qas(is)
+              end do
+
+            end do ! loop atoms
+
+            call spnvec( nspin_grid, qts, qtot, stot, svec )
+            if ( IONode ) then
+               write(6,'(a,/,a5,12x,2f10.5,3x,3f8.3,/)')
+     .              repeat('-',64), 'Total', qtot, stot, svec
+            end if
+
+          end do ! species
+
+          call de_alloc( qos, 'qos', 'mulliken' )
+          
+        end if ! nspin .ge. 4
+      end if
+
 
 #ifdef DEBUG
       call write_debug( '    POS mulliken' )
@@ -522,9 +522,7 @@ C ...................
 11    format(i12,20(1x,f7.3))
 15    format(i4,1x,i1,a7,20(1x,f8.3))
       return
-      end
-
-
+      end subroutine mulliken
 
       subroutine spnvec( ns, qs, qt, st, sv )
 c ********************************************************************
