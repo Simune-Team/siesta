@@ -171,7 +171,7 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -240,7 +240,7 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -271,7 +271,7 @@ C *********************************************************************
               kxij = kpoint(1,ik) * xij(1,ind) +
      .               kpoint(2,ik) * xij(2,ind) +
      .               kpoint(3,ik) * xij(3,ind)
-              kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+              kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
       
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -320,37 +320,33 @@ C *********************************************************************
               call LocalToGlobalOrb(iuo,Node,Nodes,iio)
               do juo = 1,nuotot
       
-!     Relation:      c_{i,up} = caux(1,i)
-!                    c_{i,dn} = caux(2,i)
-!
-!                 | ----- 1,1 -------     ----- 2,1 ------- |
-!                 | c_{j,u} c_{i,u}^*     c_{j,u} c_{i,d)^* |
-!     D_{j,i} =   |                                         |
-!                 | ----- 1,2 -------     ----- 2,2 ------- |
-!                 | c_{j,d} c_{i,u}^*     c_{j,d} c_{i,d)^* |
+!                | ------- 1,1 -------     ------- 1,2 ------- |
+!                | c_{j,up}^* c_{i,up}     c_{j,dn}^* c_{i,up) |
+!     D_{j,i} =  |                                             |
+!                | ------- 2,1 -------     ------- 2,2 ------- |
+!                | c_{j,up}^* c_{i,dn}     c_{j,dn}^* c_{i,dn) |
 !
 !
-!                 | ----- 1,1 -------          ----- 2,1 -------       |
-!                 | D_{j,i}(1)                 D_{j,i}(3)+i D_{j,i}(4) |
-!             =   |                                                    |
-!                 | ----- 1,2 -------          ----- 2,2 -------       |
-!                 | D_{i,j}(3)-i D_{i,j}(4)    D_{j,i}(2)              |
-!
+!                | ------- 1,1 -------        ------- 1,2 -------     |
+!                | D_{j,i}(1)                 D_{j,i}(3)+i D_{j,i}(4) |
+!             =  |                                                    |
+!                | ------- 2,1 -------        ------- 2,2 -------     |
+!                | D_{i,j}(3)-i D_{i,j}(4)    D_{j,i}(2)              |
       
 !------- 1,1 -----------------------------------------------------------
-               cicj = dconjg(caux(1,iio)) * caux(1,juo)
+               cicj = dconjg(caux(1,juo)) * caux(1,iio)
                Dkc(1,juo,1,iuo) = Dkc(1,juo,1,iuo) + qe * cicj
                Ekc(1,juo,1,iuo) = Ekc(1,juo,1,iuo) + ee * cicj
 !------- 2,2 -----------------------------------------------------------
-               cicj = dconjg(caux(2,iio)) * caux(2,juo)
+               cicj = dconjg(caux(2,juo)) * caux(2,iio)
                Dkc(2,juo,2,iuo) = Dkc(2,juo,2,iuo) + qe * cicj
                Ekc(2,juo,2,iuo) = Ekc(2,juo,2,iuo) + ee * cicj
-!------- 2,1 -----------------------------------------------------------
-               cicj = dconjg(caux(1,iio)) * caux(2,juo)
+!------- 1,2 -----------------------------------------------------------
+               cicj = dconjg(caux(2,juo)) * caux(1,iio)
                Dkc(1,juo,2,iuo) = Dkc(1,juo,2,iuo) + qe * cicj
                Ekc(1,juo,2,iuo) = Ekc(1,juo,2,iuo) + ee * cicj
-!------- 1,2 -----------------------------------------------------------
-               cicj = dconjg(caux(2,iio)) * caux(1,juo)
+!------- 2,1 -----------------------------------------------------------
+               cicj = dconjg(caux(1,juo)) * caux(2,iio)
                Dkc(2,juo,1,iuo) = Dkc(2,juo,1,iuo) + qe * cicj
                Ekc(2,juo,1,iuo) = Ekc(2,juo,1,iuo) + ee * cicj
               enddo
@@ -386,12 +382,11 @@ C *********************************************************************
 
           ! Make D12/D21 Hermitian
           D12 = 0.5_dp * (D12 + dconjg(D21))
-          !D21 = dconjg(D12)
-      
+
           Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
           Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
           Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
-          Dnew(ind,4) = Dnew(ind,4) + dimag(D12)
+          Dnew(ind,4) = Dnew(ind,4) - dimag(D12)
 
           D11 = Ekc(1,juo,1,iuo) * kphs
           D22 = Ekc(2,juo,2,iuo) * kphs
@@ -400,12 +395,11 @@ C *********************************************************************
 
           ! Make D12/D21 Hermitian
           D12 = 0.5_dp * (D12 + dconjg(D21))
-          !D21 = dconjg(D12)
       
           Enew(ind,1) = Enew(ind,1) + dreal(D11)
           Enew(ind,2) = Enew(ind,2) + dreal(D22)
           Enew(ind,3) = Enew(ind,3) + dreal(D12) 
-          Enew(ind,4) = Enew(ind,4) + dimag(D12) 
+          Enew(ind,4) = Enew(ind,4) - dimag(D12) 
       
         enddo
         enddo

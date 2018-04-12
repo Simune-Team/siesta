@@ -99,7 +99,7 @@ C of referencing has been changed in several places to reflect this.
       logical               getD
       
 !     Internal variables .............................................
-      real(dp)                       psi(2,2,nuotot,2*nuo)
+      complex(dp) :: psi(2,nuotot,2*nuo)
       complex(dp),dimension(:,:,:,:), allocatable :: Haux, Saux
       complex(dp),dimension(:,:),     allocatable :: caux
       
@@ -196,8 +196,8 @@ C of referencing has been changed in several places to reflect this.
         if (abs(qe).gt.occtol) then
           if (Node.eq.BNode) then
             do j = 1,nuotot
-              caux(1,j)=dcmplx( psi(1,1,j,iie), psi(2,1,j,iie)) ! c_{i,up}
-              caux(2,j)=dcmplx( psi(1,2,j,iie), psi(2,2,j,iie)) ! c_{i,dn}
+              caux(1,j) = psi(1,j,iie) ! c_{i,up}
+              caux(2,j) = psi(2,j,iie) ! c_{i,dn}
             enddo
           endif
 #ifdef MPI
@@ -211,45 +211,42 @@ C of referencing has been changed in several places to reflect this.
               ind = listdptr(io) + j
               jo = listd(ind)
       
-!                 | ------- 1,1 -------     ------- 2,1 ------- |
-!                 | c_{j,up} c_{i,up}^*     c_{j,dn} c_{i,up)^* |
-!     D_{j,i} =   |                                             |
-!                 | ------- 1,2 -------     ------- 2,2 ------- |
-!                 | c_{j,up} c_{i,dn}^*     c_{j,dn} c_{i,dn)^* |
+!                | ------- 1,1 -------     ------- 1,2 ------- |
+!                | c_{j,up}^* c_{i,up}     c_{j,dn}^* c_{i,up) |
+!     D_{j,i} =  |                                             |
+!                | ------- 2,1 -------     ------- 2,2 ------- |
+!                | c_{j,up}^* c_{i,dn}     c_{j,dn}^* c_{i,dn) |
 !
 !------- 1,1 -----------------------------------------------------------
-              D11  = dconjg(caux(1,iio)) * caux(1,jo)
+              D11  = dconjg(caux(1,jo)) * caux(1,iio)
 !------- 2,2 -----------------------------------------------------------
-              D22  = dconjg(caux(2,iio)) * caux(2,jo)
-!------- 2,1 -----------------------------------------------------------
-              D12  = dconjg(caux(1,iio)) * caux(2,jo)
+              D22  = dconjg(caux(2,jo)) * caux(2,iio)
 !------- 1,2 -----------------------------------------------------------
-              D21  = dconjg(caux(2,iio)) * caux(1,jo)
-      
-!------------ Density matrix has to be hermitian ----------------------
-              !D11 = 0.5_dp * (D11 + dconjg(D11))
-              !D22 = 0.5_dp * (D22 + dconjg(D22))
+              D12  = dconjg(caux(2,jo)) * caux(1,iio)
+!------- 2,1 -----------------------------------------------------------
+              D21  = dconjg(caux(1,jo)) * caux(2,iio)
+
+              ! Make D12/D21 Hermitian
               D12 = 0.5_dp * (D12 + dconjg(D21))
-              !D21 = dconjg(D12)
       
 !       Add contribution to density matrices of unit-cell orbitals
 !       ----------------------------------------------------------------
-!       | D11 = D_{j,i}(1)               D21 = D_{j,i}(3)-i D_{j,i}(4) |
-!       | D12 = D_{i,j}(3)+i D_{i,j}(4)  D22 = D_{j,i}(2)              |
+!       | D11 = D_{j,i}(1)               D12 = D_{j,i}(3)+i D_{j,i}(4) |
+!       | D12 = D_{i,j}(3)-i D_{i,j}(4)  D22 = D_{j,i}(2)              |
 !       ----------------------------------------------------------------
 !       ----------------------------------------------------------------
-!       | D11 = Dnew(1)                  D21 = Dnew(3)-i Dnew(4)       |
-!       | D12 = Dnew(3)+i Dnew(4)        D22 = Dnew(2)                 |
+!       | D11 = Dnew(1)                  D12 = Dnew(3)+i Dnew(4)       |
+!       | D21 = Dnew(3)-i Dnew(4)        D22 = Dnew(2)                 |
 !       ----------------------------------------------------------------
               Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
               Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe
               Dnew(ind,3) = Dnew(ind,3) + dreal(D12) * qe
-              Dnew(ind,4) = Dnew(ind,4) + dimag(D12) * qe
+              Dnew(ind,4) = Dnew(ind,4) - dimag(D12) * qe
       
               Enew(ind,1) = Enew(ind,1) + dreal(D11) * ee
               Enew(ind,2) = Enew(ind,2) + dreal(D22) * ee
               Enew(ind,3) = Enew(ind,3) + dreal(D12) * ee
-              Enew(ind,4) = Enew(ind,4) + dimag(D12) * ee
+              Enew(ind,4) = Enew(ind,4) - dimag(D12) * ee
       
             enddo
           enddo
