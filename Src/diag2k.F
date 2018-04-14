@@ -109,12 +109,11 @@ C *********************************************************************
       real(dp) kpoint(3,nk), wk(nk), xij(3,maxnh)
       real(dp) e1, e2, ef, eo(maxo*4,nk), qo(maxo*4,nk)
       real(dp) occtol, qtot, temp, Entropy
-      
+      complex(dp) :: psi(2,nuotot,nuo*2)
+
       logical               getD
       
 !     TEMPOS, INTERNAL VARIABLES etc.
-      
-      real(dp) psi(2,2,nuotot,nuo*2)
       
       integer  BNode, BTest, ie, ierror, iie, ik, ind, io, iio
       integer  iuo, j, jo, juo, neigneeded
@@ -123,9 +122,9 @@ C *********************************************************************
 !     Haux(js,juo,is,iuo) = <js,juo|H|is,iuo>
 !     Indices is and js are for spin components
 !     Indices iuo and juo are for orbital components
-      complex(dp),dimension(:,:,:,:), allocatable :: Haux, Saux
+      complex(dp),dimension(:,:,:,:), allocatable, target :: Haux, Saux
       
-      complex(dp),dimension(:,:,:,:), allocatable :: Dkc, Ekc
+      complex(dp),dimension(:,:,:,:), pointer :: Dkc, Ekc
       complex(dp)                                 :: cicj
       complex(dp)                                 :: D11, D22, D12, D21
       complex(dp),dimension(:,:),     allocatable :: caux
@@ -144,12 +143,10 @@ C *********************************************************************
       call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
       allocate(Saux(MColl,nuotot,MColl,nuo))
       call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      allocate(Dkc(MColl,nuotot,MColl,nuo))
-      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      allocate(Ekc(MColl,nuotot,MColl,nuo))
-      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      allocate(caux(MColl,MColl*nuotot))
-      call memory('A','Z',MColl*MColl*nuotot,'diag2k')
+      Dkc => Haux
+      Ekc => Saux
+      allocate(caux(MColl,nuotot))
+      call memory('A','Z',MColl*nuotot,'diag2k')
       
       eo = 0.0_dp
       
@@ -174,7 +171,7 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -243,7 +240,7 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -274,7 +271,7 @@ C *********************************************************************
               kxij = kpoint(1,ik) * xij(1,ind) +
      .               kpoint(2,ik) * xij(2,ind) +
      .               kpoint(3,ik) * xij(3,ind)
-              kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+              kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
       
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -290,14 +287,13 @@ C *********************************************************************
      .               neigneeded,iscf,ierror)
         endif
       
-!-----------------------------------------------------------------------	     
+!-----------------------------------------------------------------------
 !     Store the products of eigenvectors in matrices Dk and Ek
 !     WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
-!-----------------------------------------------------------------------	     
+!-----------------------------------------------------------------------
       
         Dkc  = dcmplx(0.0_dp,0.0_dp)
         Ekc  = dcmplx(0.0_dp,0.0_dp)
-        caux = dcmplx(0.0_dp,0.0_dp)
       
         BNode = 0
         iie = 0
@@ -311,8 +307,8 @@ C *********************************************************************
           if (qe.gt.occtol) then
             if (Node.eq.BNode) then
               do j = 1,nuotot
-                caux(1,j)=dcmplx(psi(1,1,j,iie),psi(2,1,j,iie)) ! c_{i,up}
-                caux(2,j)=dcmplx(psi(1,2,j,iie),psi(2,2,j,iie)) ! c_{i,dn}
+                caux(1,j) = psi(1,j,iie) ! c_{i,up}
+                caux(2,j) = psi(2,j,iie) ! c_{i,dn}
               enddo
             endif
 #ifdef MPI
@@ -324,37 +320,33 @@ C *********************************************************************
               call LocalToGlobalOrb(iuo,Node,Nodes,iio)
               do juo = 1,nuotot
       
-!     Relation:      c_{i,up} = caux(1,i)
-!                    c_{i,dn} = caux(2,i)
-!
-!                 | ----- 1,1 -------     ----- 2,1 ------- |
-!                 | c_{j,u} c_{i,u}^*     c_{j,u} c_{i,d)^* |
-!     D_{j,i} =   |                                         |
-!                 | ----- 1,2 -------     ----- 2,2 ------- |
-!                 | c_{j,d} c_{i,u}^*     c_{j,d} c_{i,d)^* |
+!                | ------- 1,1 -------     ------- 1,2 ------- |
+!                | c_{j,up}^* c_{i,up}     c_{j,dn}^* c_{i,up) |
+!     D_{j,i} =  |                                             |
+!                | ------- 2,1 -------     ------- 2,2 ------- |
+!                | c_{j,up}^* c_{i,dn}     c_{j,dn}^* c_{i,dn) |
 !
 !
-!                 | ----- 1,1 -------          ----- 2,1 -------       |
-!                 | D_{j,i}(1)                 D_{j,i}(3)+i D_{j,i}(4) |
-!             =   |                                                    |
-!                 | ----- 1,2 -------          ----- 2,2 -------       |
-!                 | D_{i,j}(3)-i D_{i,j}(4)    D_{j,i}(2)              |
-!
+!                | ------- 1,1 -------        ------- 1,2 -------     |
+!                | D_{j,i}(1)                 D_{j,i}(3)+i D_{j,i}(4) |
+!             =  |                                                    |
+!                | ------- 2,1 -------        ------- 2,2 -------     |
+!                | D_{i,j}(3)-i D_{i,j}(4)    D_{j,i}(2)              |
       
 !------- 1,1 -----------------------------------------------------------
-               cicj = dconjg(caux(1,iio)) * caux(1,juo)
+               cicj = dconjg(caux(1,juo)) * caux(1,iio)
                Dkc(1,juo,1,iuo) = Dkc(1,juo,1,iuo) + qe * cicj
                Ekc(1,juo,1,iuo) = Ekc(1,juo,1,iuo) + ee * cicj
 !------- 2,2 -----------------------------------------------------------
-               cicj = dconjg(caux(2,iio)) * caux(2,juo)
+               cicj = dconjg(caux(2,juo)) * caux(2,iio)
                Dkc(2,juo,2,iuo) = Dkc(2,juo,2,iuo) + qe * cicj
                Ekc(2,juo,2,iuo) = Ekc(2,juo,2,iuo) + ee * cicj
-!------- 2,1 -----------------------------------------------------------
-               cicj = dconjg(caux(1,iio)) * caux(2,juo)
+!------- 1,2 -----------------------------------------------------------
+               cicj = dconjg(caux(2,juo)) * caux(1,iio)
                Dkc(1,juo,2,iuo) = Dkc(1,juo,2,iuo) + qe * cicj
                Ekc(1,juo,2,iuo) = Ekc(1,juo,2,iuo) + ee * cicj
-!------- 1,2 -----------------------------------------------------------
-               cicj = dconjg(caux(2,iio)) * caux(1,juo)
+!------- 2,1 -----------------------------------------------------------
+               cicj = dconjg(caux(1,juo)) * caux(2,iio)
                Dkc(2,juo,1,iuo) = Dkc(2,juo,1,iuo) + qe * cicj
                Ekc(2,juo,1,iuo) = Ekc(2,juo,1,iuo) + ee * cicj
               enddo
@@ -383,47 +375,31 @@ C *********************************************************************
      .           kpoint(3,ik) * xij(3,ind)
           kphs = cdexp(dcmplx(0.0_dp,-1.0_dp)*kxij)
       
-!         Average k and -k solutions because time-reversal symetry
-          D11 = 0.5_dp * (Dkc(1,juo,1,iuo) * kphs
-     .        +    dconjg(Dkc(1,juo,1,iuo) * kphs))
-      
-          D22 = 0.5_dp * (Dkc(2,juo,2,iuo) * kphs
-     .        +    dconjg(Dkc(2,juo,2,iuo) * kphs))
-          
-          D12 = 0.5_dp * (Dkc(1,juo,2,iuo) * kphs
-     .        +    dconjg(Dkc(2,juo,1,iuo) * kphs))
-      
-          D21 = 0.5_dp * (Dkc(2,juo,1,iuo) * kphs
-     .        +    dconjg(Dkc(1,juo,2,iuo) * kphs))
-      
+          D11 = Dkc(1,juo,1,iuo) * kphs
+          D22 = Dkc(2,juo,2,iuo) * kphs
+          D12 = Dkc(1,juo,2,iuo) * kphs
+          D21 = Dkc(2,juo,1,iuo) * kphs
+
+          ! Make D12/D21 Hermitian
           D12 = 0.5_dp * (D12 + dconjg(D21))
-          D21 = dconjg(D12)
-      
+
           Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
           Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
           Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
-          Dnew(ind,4) = Dnew(ind,4) + dimag(D12)
-      
-!         Average k and -k solutions because time-reversal symetry
-          D11 = 0.5_dp * (Ekc(1,juo,1,iuo) * kphs
-     .        +    dconjg(Ekc(1,juo,1,iuo) * kphs))
-      
-          D22 = 0.5_dp * (Ekc(2,juo,2,iuo) * kphs
-     .        +    dconjg(Ekc(2,juo,2,iuo) * kphs))
-          
-          D12 = 0.5_dp * (Ekc(1,juo,2,iuo) * kphs
-     .        +    dconjg(Ekc(2,juo,1,iuo) * kphs))
-      
-          D21 = 0.5_dp * (Ekc(2,juo,1,iuo) * kphs
-     .        +    dconjg(Ekc(1,juo,2,iuo) * kphs))
-      
+          Dnew(ind,4) = Dnew(ind,4) - dimag(D12)
+
+          D11 = Ekc(1,juo,1,iuo) * kphs
+          D22 = Ekc(2,juo,2,iuo) * kphs
+          D12 = Ekc(1,juo,2,iuo) * kphs
+          D21 = Ekc(2,juo,1,iuo) * kphs
+
+          ! Make D12/D21 Hermitian
           D12 = 0.5_dp * (D12 + dconjg(D21))
-          D21 = dconjg(D12)
       
           Enew(ind,1) = Enew(ind,1) + dreal(D11)
           Enew(ind,2) = Enew(ind,2) + dreal(D22)
           Enew(ind,3) = Enew(ind,3) + dreal(D12) 
-          Enew(ind,4) = Enew(ind,4) + dimag(D12) 
+          Enew(ind,4) = Enew(ind,4) - dimag(D12) 
       
         enddo
         enddo
@@ -436,30 +412,9 @@ C *********************************************************************
       deallocate(Haux)
       call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
       deallocate(Saux)
-      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      deallocate(Dkc)
-      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
-      deallocate(Ekc)
-      call memory('D','Z',MColl*MColl*nuotot,'diag2k')
+      call memory('D','Z',MColl*nuotot,'diag2k')
       deallocate(caux)
       
-!        write(160+node,*)'ITERATION'
-!        write(170+node,*)'ITERATION'
-!        do iuo = 1,nuo
-!          do j = 1,numd(iuo)
-!            ind = listdptr(iuo) + j
-!            jo = listd(ind)
-!            juo = indxuo(jo)
-!             write(160+node,'(3i5,4f15.9)')iuo,juo,jo,Dnew(ind,1:4)
-!             write(170+node,'(3i5,4f15.9)')iuo,juo,jo,
-!     .    (Dnew(ind,1)+Dnew(ind,2))*0.5,
-!     .    (Dnew(ind,1)-Dnew(ind,2))*0.5,Dnew(ind,3:4)
-!          enddo
-!        enddo
-!      
-!      call die('maslyuk')
-!***********************************************************************      
       return
       end subroutine diag2k
-!***********************************************************************      
       

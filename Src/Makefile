@@ -558,10 +558,10 @@ kgridinit.o: minvec.o parallel.o precision.o sys.o units.o
 kinefsm.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
 kinefsm.o: precision.o
 kpoint_convert.o: precision.o sys.o units.o
-kpoint_grid.o: find_kgrid.o minvec.o parallel.o precision.o siesta_cml.o
-kpoint_grid.o: siesta_options.o sys.o units.o
-kpoint_pdos.o: find_kgrid.o minvec.o parallel.o precision.o siesta_options.o
-kpoint_pdos.o: sys.o units.o
+kpoint_grid.o: find_kgrid.o m_spin.o minvec.o parallel.o precision.o
+kpoint_grid.o: siesta_cml.o siesta_options.o sys.o units.o
+kpoint_pdos.o: find_kgrid.o m_spin.o minvec.o parallel.o precision.o
+kpoint_pdos.o: siesta_options.o sys.o units.o
 ksv.o: alloc.o atmfuncs.o densematrix.o ksvinit.o parallel.o precision.o sys.o
 ksvinit.o: alloc.o parallel.o precision.o sys.o
 listsc.o: alloc.o

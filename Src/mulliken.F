@@ -513,7 +513,6 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
         end if ! nspin .ge. 4
       end if
 
-C ...................
 
 #ifdef DEBUG
       call write_debug( '    POS mulliken' )

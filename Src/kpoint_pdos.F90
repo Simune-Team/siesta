@@ -43,6 +43,7 @@ MODULE Kpoint_pdos
   USE parallel, only  : Node
   USE fdf, only       : fdf_defined, fdf_get
   USE m_find_kgrid, only : find_kgrid
+  use m_spin, only: MColl
 
   implicit none
   real(dp), intent(in)  :: ucell(3,3)
@@ -52,11 +53,12 @@ MODULE Kpoint_pdos
   if (pdos_kgrid_first_time) then
     nullify(kweight_pdos,kpoints_pdos)
     spiral = fdf_defined('SpinSpiral')
-      ! Allow the user to control the use of time-reversal-symmetry
-      ! By default, it is on, except for "spin-spiral" calculations
-      time_reversal_symmetry = fdf_get(             &
-           "TimeReversalSymmetryForKpoints",   &
-           (.not. spiral))
+    ! Allow the user to control the use of time-reversal-symmetry
+    ! By default, it is on, except for "spin-spiral" calculations
+    ! and/or non-colinear calculations
+    time_reversal_symmetry = fdf_get( &
+         "TimeReversalSymmetryForKpoints", &
+         (.not. spiral) .and. MColl == 1)
 
     call setup_pdos_kscell(ucell, firm_displ)
 
