@@ -146,11 +146,19 @@ subroutine coordsFromSocket( na, xa, cell )
     do
       if (leqi(master,'i-pi')) then
         call readbuffer(socket, header, IPI_MSGLEN)
+
+        ! Immediately stop if requested
+        if (trim(header)=='EXIT') then ! we are done!
+          call close_socket(socket)
+          call bye(myName//'STOP requested by driver')
+        end if
+        
         if (trim(header)/='STATUS') exit ! do loop
-        message = "READY"
-        call writebuffer(socket, message, IPI_MSGLEN)
+        call writebuffer(socket, "READY", IPI_MSGLEN)
       elseif (leqi(master,'fsiesta')) then
         call readbuffer(socket, header)
+
+        ! Immediately stop if requested
         if (trim(header)=='quit') then
           call writebuffer(socket,'quitting')
           call close_socket(socket)
