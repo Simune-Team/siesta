@@ -280,6 +280,14 @@ subroutine read_options( na, ns, nspin )
        fdf_get('PartialChargesAtEveryScfStep',.false.)
 
 
+  if ( IONode ) then
+    write(6,4) 'redata: Matel table size (NRTAB)', 1024
+  end if
+  if (cml_p) then
+    call cmlAddParameter( xf=mainXML, name='MatelNRTAB',value=1024, &
+        dictRef='siesta:matel_nrtab', units="cmlUnits:countable")
+  end if
+
   ! Planewave cutoff of the real space mesh ...
   g2cut = fdf_get('MeshCutoff',300._dp,'Ry')
   if (ionode) then

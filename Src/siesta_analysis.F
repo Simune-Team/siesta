@@ -59,9 +59,7 @@
       use m_iodm_old,        only: read_spmatrix
       use m_siesta2wannier90, only: siesta2wannier90
 
-#ifdef MPI
-      use m_mpi_utils, only: globalize_sum
-#endif
+      use m_mpi_utils, only: barrier
 #ifdef SIESTA__FLOOK
       use flook_siesta, only : slua_call, LUA_ANALYSIS
 #endif
@@ -82,9 +80,6 @@
       integer           :: j, ix, ind, ik, io, ispin
       integer           :: wfs_band_min, wfs_band_max
       real(dp)          :: g2max, current_ef
-#ifdef MPI
-      real(dp)          :: qtmp(4)
-#endif
       type(filesOut_t)  :: filesOut  ! blank output file names
 
 !-----------------------------------------------------------------------BEGIN
@@ -99,10 +94,15 @@
      $     ((idyn .eq. 1) .or. (idyn .eq. 3)) )
 
       if ((nmove .ne. 0) .or. quenched_MD) then
-         if (GeometryMustConverge .and. (.not. relaxd)) then
+         if (SIESTA_worker) then  ! For timing ops and associated barrier
+          if (GeometryMustConverge .and. (.not. relaxd)) then
             call message("FATAL",
      $           "GEOM_NOT_CONV: Geometry relaxation not converged")
+            call timer('all',2)
+            call timer('all',3)
+            call barrier()
             call die("ABNORMAL_TERMINATION")
+          endif
          endif
       endif
 
