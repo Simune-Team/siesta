@@ -280,6 +280,14 @@ subroutine read_options( na, ns, nspin )
        fdf_get('PartialChargesAtEveryScfStep',.false.)
 
 
+  if ( IONode ) then
+    write(6,4) 'redata: Matel table size (NRTAB)', 128
+  end if
+  if (cml_p) then
+    call cmlAddParameter( xf=mainXML, name='MatelNRTAB',value=128, &
+        dictRef='siesta:matel_nrtab', units="cmlUnits:countable")
+  end if
+
   ! Planewave cutoff of the real space mesh ...
   g2cut = fdf_get('MeshCutoff',300._dp,'Ry')
   if (ionode) then
@@ -1690,6 +1698,7 @@ subroutine read_options( na, ns, nspin )
   dm_normalization_tol   = fdf_get( 'DM.NormalizationTolerance',1.0d-5)
   normalize_dm_during_scf= fdf_get( 'DM.NormalizeDuringSCF',.true.)
   muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
+  spndeb                 = fdf_get( 'SpinInSCF'   , (nspin>1) )
   ! If no mulliken is requested, set it to false
   if ( mullipop == 0 ) muldeb = .false.
   rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &

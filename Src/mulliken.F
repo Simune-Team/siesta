@@ -527,9 +527,7 @@ C ...................
       return
       end subroutine mulliken
 
-
-
-      subroutine spnvec( ns, qs, qt, DPOL, sv )
+      subroutine spnvec( ns, qs, qt, st, sv )
 c ********************************************************************
 c Finds the spin vector components from the spin density matrix
 c Written by J.M.Soler, May 1998.
@@ -537,53 +535,47 @@ c ******* Input ******************************************************
 c integer ns     : Number of components in spin density matrix
 c real*8  qs(ns) : Spin density matrix elements with the convention
 c                  is=1 => Q11; is=2 => Q22; is=3 => Real(Q12);
-c                  is=4 => Imag(Q12)
+c                  is=4 => -Imag(Q12)  (*Note 
 c ******* Output *****************************************************
 c real*8  qt    : Total charge
-c real*8  DPOL  : Total spin
-c real*8  sv(3) : Spin vector
+c real*8  st    : Total spin moment
+c real*8  sv(3) : Spin moment vector
 c ********************************************************************
-
+!
+! Spin magnetic **moments** in bohr magnetons:
+! m_x = 2 Re{Q12} = 2*qs(3)
+! m_y = -2 Im{Q12} = 2*qs(4)
+! m_z = Q11-Q22 = qs(1)-qs(2)
+!
+! The spin moment for a spin angular momentum of 1/2 (hbar) is (very close to) 1 bohr magneton.
+!
       use precision
 
-      implicit none
-      
-      integer, intent(in) :: ns
-      real(dp), intent(in) :: qs(ns)
-      real(dp), intent(out) :: qt, DPOL, sv(3)
-      ! Local variables
-      real(dp) :: dxy, dz, cosph, costh, sinph, sinth
-      real(dp), parameter :: DENMIN = 1.e-12_dp
+      implicit          none
+      integer, intent(in)   ::          ns
+      real(dp), intent(in)  ::          qs(ns)
+      real(dp), intent(out) ::          qt, st, sv(3)
 
       if (ns .eq. 1) then
         qt = qs(1)
-        DPOL = 0.0_dp
+        st = 0.0_dp
         sv(1) = 0.0_dp
         sv(2) = 0.0_dp
         sv(3) = 0.0_dp
       elseif (ns .eq. 2) then
         qt = qs(1) + qs(2)
-        DPOL = qs(1) - qs(2)
+        st = qs(1) - qs(2)
         sv(1) = 0.0_dp
         sv(2) = 0.0_dp
-        sv(3) = DPOL
+        sv(3) = st
       elseif (ns .eq. 4) then
-        ! TODO, correct for possible division by zero (instead of DENMIN)
-        qt = qs(1) + qs(2)
-        dz = qs(1) - qs(2)
-        dxy = 2._dp * sqrt( qs(3) ** 2 + qs(4) ** 2 )
-        DPOL = sqrt( dz ** 2 + dxy ** 2 )
-        DPOL = max( DPOL , DENMIN )
-        costh = dz / DPOL
-        sinth = sqrt( 1.0_dp - costh**2 )
-        dxy = max( dxy , DENMIN ) * .5_dp
-        cosph =  qs(3) / dxy
-        sinph =  qs(4) / dxy
-        sv(1) = DPOL * sinth * cosph
-        sv(2) = DPOL * sinth * sinph
-        sv(3) = DPOL * costh
+         qt = qs(1) + qs(2)
+         sv(1) = 2.0_dp * qs(3)
+         sv(2) = 2.0_dp * qs(4)
+         sv(3) = qs(1) - qs(2)
+         st = sqrt(sv(1)**2+sv(2)**2+sv(3)**2)
       else
         write(6,*) 'spnvec: ERROR: invalid argument ns =', ns
         return
       endif
-      end subroutine spnvec
+      end
