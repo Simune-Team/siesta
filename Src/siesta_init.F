@@ -296,9 +296,6 @@ C     Initialise MPI and set processor number
       ! Be sure to initialize the spin-configuration data
       ! for all processors.
       call init_spin( )
-      if( IONode .and. spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)')
-     &     ' siesta_init: Calling init_spin... '
-
       if (.not. SIESTA_worker) RETURN
 
 #ifdef DEBUG
@@ -381,13 +378,6 @@ C     Initialise MPI and set processor number
          ! Add citations
          call init_citation(trim(slabel))
          call add_citation("10.1088/0953-8984/14/11/302")
-         if ( spin%SO_offsite ) then
-            call add_citation("10.1088/0953-8984/24/8/086005")
-            if ( spin%deb_offSO ) then 
-              write(spin%iout_offsiteSO,'(a)') 
-     &         ' siesta_init: Adding off-site Spin-Orbit citation...'
-            endif
-         endif
       end if
 
 !     Initialise exchange-correlation functional information
@@ -401,17 +391,10 @@ C     Initialise MPI and set processor number
       call inittwobody( )
 
 !     Initialize pseudopotentials and atomic orbitals
-      if( IONode .and. spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)')
-     &     ' siesta_init: Calling initatom... '
       if (IOnode) call initatom( ns )
+
       call broadcast( ns )
-
-      if( IONode .and. spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)')
-     &     ' siesta_init: Calling broadcast_basis...'
       call broadcast_basis( )
-
-      if( IONode .and. spin%deb_offSO ) write(spin%iout_offsiteSO,'(a)')
-     &     ' siesta_init: Calling register_rfs... '
       call register_rfs()
 
       atmonly = fdf_get( 'Atom-Setup-Only', .false. )

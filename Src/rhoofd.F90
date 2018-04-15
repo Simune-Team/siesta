@@ -10,7 +10,7 @@ module m_rhoofd
   implicit none
 
   private
-  public :: rhoofd  ! , rhoofd_offsiteSO
+  public :: rhoofd
 
 contains
 
@@ -51,9 +51,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
   use atmfuncs,      only: rcut, all_phi
   use atm_types,     only: nsmax=>nspecies
   use atomlist,      only: indxuo
-! CC RC  Added for the offSpOrb
   use m_spin,        only: spin, SpOrb
-! CC RC  Added for the offSpOrb
   use listsc_module, only: LISTSC
   use mesh,          only: nsp, dxa, xdop, xdsp, meshLim
   use meshdscf,      only: matrixOtoM
@@ -330,7 +328,6 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
            end if
            iphi = iphorb(i)
 
-           write(6,*) ' spin_off=', spin%SO_offsite
 !          Retrieve phi values
            if ( spin%SO_offsite ) then 
               Clocal(:,ic) = phia(iphi,:)
@@ -490,149 +487,5 @@ contains
   end function idx_ijl
   
 end subroutine rhoofd
-
-
-!      subroutine rhoofd_offsiteSO( nuo, no, np, nspin, rhoscf, &
-!                        nh, numh, listhptr, listh, Dscf )
-!C ********************************************************************
-!C Finds the SCF density at the mesh points from the density matrix.
-!C Written by P.Ordejon and J.M.Soler. May'95.
-!C Re-ordered so that mesh is the outer loop and the orbitals are
-!C handled as lower-half triangular. J.D.Gale and J.M.Soler, Feb'99
-!C Version of rhoofd that optionally uses a direct algorithm to save 
-!C memory. Modified by J.D.Gale, November'99
-!C *********************** InpUT **************************************
-!C integer no              : Number of basis orbitals
-!C integer np              : Number of mesh points
-!C integer nh           : First dimension of listD and Dscf, and
-!C                           maximum number of nonzero elements in
-!C                           any row of Dscf
-!C integer numh(nuo)       : Number of nonzero elemts in each row of Dscf
-!C integer listhptr(nuo)   : Pointer to start of rows in listh
-!C integer listh(nh)    : List of nonzero elements in each row of Dscf
-!C integer nspin           : Number of spin components
-!C real*8  Dscf(nh)     : Rows of Dscf that are non-zero 
-!C integer nuo             : Number of orbitals in unit cell
-!C integer iaorb(*)        : Pointer to atom to which orbital belongs
-!C integer iphorb(*)       : Orbital index within each atom
-!C integer isa(*)          : Species index of all atoms
-!C *********************** OUTPUT **************************************
-!C real    rhoscf(nsp,np)  : SCF density at mesh points
-!C *********************************************************************
-
-!C  Modules
-
-!      use precision, only: dp, grid_p
-!
-!      use mesh     ,     only: nsp
-!      use meshphi,       only: DirectPhi, endpht, lstpht, phi
-!      use listsc_module, only: ind1, ind2
-!      use atomlist,      only: indxuo
-!      use sparse_matrices, only: listht
-!
-!      implicit none
-!
-!      integer, intent(in) :: nspin, np, nuo, no, nh
-!      integer, intent(in) :: numh(nuo), listhptr(nuo),& 
-!                            listh(nh)
-!      real(dp), intent(in)::  Dscf(nh,nspin)
-!      real(grid_p), intent(out) :: rhoscf(nsp,np,nspin)
-!
-!!c---- private variables
-!      integer :: i, j, k, ic, jc, ii, imp, jmp, ind, indt, ispin, &
-!                ip, isp, iu, nc, jH
-!      real(dp):: rhoij(nsp), rhot(nsp,nspin)
-!      logical :: lin
-!      real(dp), allocatable :: Dlocal(:,:,:)    ! (nuo,no,nspin)
-!      logical , allocatable :: lDlocal(:,:)     ! (nuo,no)
-!
-!!c-----------------------------------------------------------------------
-!
-!      if (DirectPhi) stop 'rhoofd_green: DirectPhi not implemented!'
-!
-!!c---- load unfolded Dscf matrix index
-!      allocate( Dlocal(nuo,no,nspin), lDlocal(nuo,no) )
-!      Dlocal(:,:,:)= 0.0_dp
-!      lDlocal(:,:) = .false.
-!#ifdef OMP
-!!$omp parallel private (i,j,ii,ind,indt)
-!!$omp& shared ( nuo,numh,listhptr,listh,nspin,Dscf,Dlocal,lDlocal )
-!!$omp do schedule(dynamic)
-!#endif
-!      do i = 1, nuo
-!       do ii = 1, numh(i)
-!        ind = listhptr(i)+ii
-!        j = iabs(listh(ind))
-!        Dlocal(i,j,1:nspin) = Dscf(ind,1:nspin)
-!        lDlocal(i,j)= .true.
-!        indt = iabs(listht(ind))
-!        if ( ind.ne.indt ) &
-!        Dlocal(i,j,1:nspin)= Dlocal(i,j,1:nspin) + Dscf(indt,1:nspin)
-!       enddo
-!      enddo
-!#ifdef OMP
-!!$omp end do
-!!$omp end parallel
-!#endif
-!
-!!c-----------------------------------------------------------------------
-!!c---- Loop over grid points
-!!c----- start OMP
-!#ifdef OMP
-!!$omp parallel private (ip,nc,ic,jc,imp,jmp,i,iu,j,jH,k,lin,
-!!$omp&                  isp,ispin,rhot,rhoij)
-!!$omp& shared ( np,rhoscf,lstpht,indxuo,endpht,Dlocal,lDlocal,
-!!$omp&          nuo,phi,M,nspin )
-!!$omp do schedule(dynamic)
-!#endif
-!      do ip = 1,np
-!       nc = endpht(ip) - endpht(ip-1)
-!       rhot(1:nsp,1:nspin) = 0.0d0
-!
-!       do ic = 1,nc
-!        imp = endpht(ip-1) + ic
-!        i = lstpht(imp)
-!        iu= indxuo(i)
-!        lin = (i.eq.iu)
-!        do jc = 1, ic
-!         jmp = endpht(ip-1) + jc
-!         j = lstpht(jmp)
-!         if ( lin ) then
-!          jH = j
-!         else
-!          jH = indxuo(j)
-!          jj_loop: do
-!           k = ind2(i) + ind2(jH) - ind2(iu)
-!           if ( j.eq.ind1(k) ) exit jj_loop
-!           jH = jH+nuo
-!           if ( jH.gt.no ) stop 'rhoofd wrong!!!'
-!          enddo jj_loop
-!         endif
-!         if ( lDlocal(iu,jH) ) then
-!          do isp = 1, nsp
-!           rhoij(isp) = phi(isp,imp)*phi(isp,jmp)
-!          enddo
-!          do ispin= 1, nspin
-!           rhot(1:nsp,ispin) = rhot(1:nsp,ispin) + & 
-!                              rhoij(1:nsp)*Dlocal(iu,jH,ispin)
-!          enddo ! spin
-!
-!         endif ! ind > 0
-!        enddo ! jc
-!       enddo ! ic
-!
-!!c----- load total RHO in array
-!       rhoscf(1:nsp,ip,1:nspin)= rhot(1:nsp,1:nspin)
-!
-!      enddo ! ip
-!#ifdef OMP
-!!$omp end do
-!!$omp end parallel
-!#endif
-!
-!!C  Free local memory
-!      deallocate( Dlocal, lDlocal )
-!
-!      end subroutine rhoofd_offsiteSO
 
 end module m_rhoofd

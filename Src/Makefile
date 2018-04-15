@@ -932,7 +932,7 @@ m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
 m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
 m_sparsity_handling.o: intrinsic_missing.o m_interpolate.o m_region.o
 m_sparsity_handling.o: precision.o
-m_spin.o: alloc.o files.o parallel.o precision.o sys.o units.o
+m_spin.o: alloc.o files.o m_cite.o parallel.o precision.o sys.o units.o
 m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
 m_supercell.o: intrinsic_missing.o parallel.o parallelsubs.o precision.o
@@ -1306,10 +1306,9 @@ siesta_tddft.o: overfsm.o parallel.o precision.o sankey_change_basis.o
 siesta_tddft.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_options.o
 siesta_tddft.o: sparse_matrices.o state_analysis.o state_init.o sys.o
 siesta_tddft.o: wavefunctions.o
-sparse_matrices.o: alloc.o atomlist.o class_Fstack_Pair_Geometry_SpData2D.o
+sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpData2D.o
 sparse_matrices.o: class_OrbitalDistribution.o class_SpData1D.o
-sparse_matrices.o: class_SpData2D.o class_Sparsity.o m_spin.o parallel.o
-sparse_matrices.o: precision.o siesta_geom.o units.o
+sparse_matrices.o: class_SpData2D.o class_Sparsity.o m_spin.o precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
 spinorbit.o: atm_types.o atmfuncs.o atmparams.o basis_types.o m_mpi_utils.o

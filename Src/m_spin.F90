@@ -117,12 +117,10 @@ contains
     use fdf, only : fdf_get, leqi, fdf_deprecated
     use alloc, only: re_alloc
 
-! CC RC   Added for the offSpOrb
+    use m_cite, only: add_citation
     use files, only: slabel
     use parallel, only: IONode
-
     character(len=30) :: fname_offsiteSO
-! CC RC   Added for the offSpOrb
 
     character(len=32) :: opt
 
@@ -259,12 +257,10 @@ contains
     endif
 !CC RC  Added for the offSpOrb
 
-
-    ! TODO once off-site is fully implemented
-    ! this should be removed to enable the off-site code
-    ! fully!
-    ! spin%SO_offsite = .false.
-
+    if (spin%SO_offsite) then
+       call add_citation("10.1088/0953-8984/24/8/086005")
+    endif
+    
     ! Note that, in what follows,
     !   spinor_dim = min(h_spin_dim,2)
     !   e_spin_dim = min(h_spin_dim,4)
