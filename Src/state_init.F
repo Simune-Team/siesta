@@ -116,6 +116,7 @@
       logical            :: auxchanged   ! Auxiliary supercell changed?
       logical            :: folding, folding1
       logical            :: foundxv  ! dummy for call to ioxv
+
       external           ::  madelung, timer
       real(dp), external :: volcel
 
@@ -586,7 +587,7 @@
       call new_DM(auxchanged, DM_history, DM_2D, EDM_2D)
       Dscf => val(DM_2D)
       Escf => val(EDM_2D)
-      call print_spin(dummy_qspin)
+      if (spin%H > 1) call print_spin(dummy_qspin)
 
       ! Initialize energy-density matrix to zero for first call to overfsm
       ! Only part of Escf is updated in TS, so if it is put as zero here

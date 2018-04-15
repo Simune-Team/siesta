@@ -70,7 +70,6 @@
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
       real(dp)            :: buffer1
       integer             :: mpierr
-      real(dp) :: dummy_qspin(8)
 
 !       character(15)            :: filename, indexstr
 !       character(15), parameter :: fnameform = '(A,A,A)'
@@ -257,24 +256,6 @@ c$$$     &           S, 'S.matrix')
      &                         overwrite=.true. )
       endif
 #endif
-
-!     Print populations at each SCF step if requested before mixing ......
-      if (muldeb) then
-        call print_spin(dummy_qspin)
-        if (ionode) write (6,"(/a)")
-     &    'siesta: Mulliken populations (DM_out)'
-        if ( spin%SO ) then
-           ! BUG: Dscf truncated (1..4) instead of being correctly hermitified
-           ! Kept just for the "orbital moment" output
-           call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
-     .                   listh, S, Dscf, isa, lasto, iaorb, iphorb,
-     .                   indxuo )
-        endif
-        ! Call this unconditionally
-        call mulliken( mullipop, na_u, no_u, maxnh,
-     &                 numh, listhptr, listh, S, Dscf, isa,
-     &                 lasto, iaorb, iphorb )
-      endif
 
 ! Write orbital indexes. JMS Dec.2009
       if (IOnode .and. iscf==1) then
