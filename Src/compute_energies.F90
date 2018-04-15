@@ -228,10 +228,6 @@ CONTAINS
 
         Ebs = sum ( Ebs_tmp )
 
-        if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-          write(spin%iout_offsiteSO,'(a,f16.10)') ' compute_Ebs: Ebs    = ', Ebs
-        endif
-
       else if ( spin%NCol ) then
         do io = 1,maxnh
           Ebs    = Ebs    + H(io,1) * ( Dscf(io,1)  )   &
@@ -305,11 +301,6 @@ CONTAINS
          enddo
 
          DEharr = sum ( DEharr_tmp )
-
-         if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-          write(spin%iout_offsiteSO,'(a,f16.10)') & 
-             ' compute_DEharr: DEharr = ', DEharr
-         endif
 
       else if ( spin%NCol ) then
         do io = 1,maxnh

@@ -40,13 +40,6 @@ module t_spin
      !> If .true. the spin-orbit is using the off-site implementation (else the on-site)
      logical :: SO_offsite = .false.
 
-!CC RC  Added for the offSpOrb
-     integer :: iout_offsiteSO
-     logical :: deb_offSO = .false.
-     logical :: deb_P = .false. ! Spin Polarized debugging
-!CC RC  Added for the offSpOrb
-
-
      ! Perhaps one could argue that one may
      ! associate a symmetry to the spin which
      ! then denotes whether the spin-configuration
@@ -120,7 +113,6 @@ contains
     use m_cite, only: add_citation
     use files, only: slabel
     use parallel, only: IONode
-    character(len=30) :: fname_offsiteSO
 
     character(len=32) :: opt
 
@@ -147,11 +139,6 @@ contains
     spin%SO = .false.
     spin%SO_offsite = .false.
 
-!CC RC  Added for the offSpOrb
-    spin%deb_offSO = .false.
-    spin%deb_P = .false.
-!CC RC  Added for the offSpOrb
-    
     ! Read in old flags (discouraged)
     spin%Col  = fdf_get('SpinPolarized',.false.)
     spin%NCol = fdf_get('NonCollinearSpin',.false.)
@@ -190,14 +177,6 @@ contains
        
        spin%Col = .true.
        
-!CC RC  Added for the offSpOrb debugging
-    else if ( leqi(opt, 'polarized+deb') .or. &
-         leqi(opt, 'collinear+deb') .or. &
-         leqi(opt, 'polarised+deb') .or. leqi(opt, 'P+deb') ) then
-       
-       spin%Col = .true.
-       spin%deb_P = .true.
-       
     else if ( leqi(opt, 'non-collinear') .or. &
          leqi(opt, 'NC') .or. leqi(opt, 'N-C') ) then
        
@@ -210,14 +189,6 @@ contains
        spin%SO = .true.
        spin%SO_offsite = .true.
 
-!CC RC  Added for the offSpOrb
-    else if ( leqi(opt, 'spin-orbit+deb') .or. leqi(opt, 'S-O+deb') .or. &
-         leqi(opt, 'SOC+deb') .or. leqi(opt, 'SO+deb') ) then
-       
-       spin%SO = .true.
-       spin%SO_offsite = .true.
-       spin%deb_offSO = .true.
-
     else if ( leqi(opt, 'spin-orbit+offsite') .or. leqi(opt, 'S-O+offsite') .or. &
          leqi(opt, 'SOC+offsite') .or. leqi(opt, 'SO+offsite') ) then
        
@@ -229,33 +200,11 @@ contains
        
        spin%SO = .true.
        spin%SO_offsite = .false.
-       spin%deb_P = .true.
 
     else
        write(*,*) 'Unknown spin flag: ', trim(opt)
        call die('Spin: unknown flag, please assert the correct input.')
     end if
-
-!CC RC  Added for the offSpOrb
-    if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-     fname_offsiteSO = trim(slabel)//'.offSO'
-     call io_assign(spin%iout_offsiteSO)
-     open(unit=spin%iout_offsiteSO,file=fname_offsiteSO,form='formatted',status='unknown')
-     write(spin%iout_offsiteSO,'(a)') '    ' 
-     write(spin%iout_offsiteSO,'(a)') & 
-         '       ############################################    '
-     write(spin%iout_offsiteSO,'(a)') &
-         '       #    Off-Site Spin-Orbit debugging file    #    '
-     write(spin%iout_offsiteSO,'(a)') &
-         '       ############################################    '
-     write(spin%iout_offsiteSO,'(a)') '    ' 
-     if ( spin%deb_offSO ) &
-        write(spin%iout_offsiteSO,'(a)') ' m_spin: Spin-Orbit debugging' 
-     if ( spin%deb_P ) &
-        write(spin%iout_offsiteSO,'(a)') ' m_spin: Spin-Polarized debugging' 
-     write(spin%iout_offsiteSO,'(a)') '    ' 
-    endif
-!CC RC  Added for the offSpOrb
 
     if (spin%SO_offsite) then
        call add_citation("10.1088/0953-8984/24/8/086005")

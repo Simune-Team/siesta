@@ -113,14 +113,6 @@ contains
 
     E0 = Ena + Ekin + Enl + Eso + Enl_offsiteSO - Eions
 
-    if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-     write(spin%iout_offsiteSO,'(a,f16.10)') ' update_E0: Ena    = ', Ena
-     write(spin%iout_offsiteSO,'(a,f16.10)') ' update_E0: Ekin   = ', Ekin
-     write(spin%iout_offsiteSO,'(a,f16.10)') ' update_E0: Enl    = ', Enl
-     write(spin%iout_offsiteSO,'(a,f16.10)') ' update_E0: Eso    = ', Eso
-     write(spin%iout_offsiteSO,'(a,f16.10)') ' update_E0: Enl_offsiteSO = ', Enl_offsiteSO
-    endif
-    
   end subroutine update_E0
   
   subroutine update_Etot()
@@ -131,10 +123,6 @@ contains
          Ecorrec + Emad + Emm + Emeta + Eldau
     Etot = Etot + DE_NEGF
 
-    if ( IONode .and. spin%deb_offSO ) then
-     write(spin%iout_offsiteSO,'(a,f16.10)') ' update_Etot: Etot = ', Etot
-    endif
-
   end subroutine update_Etot
 
   !> @param kBT the temperature in energy
@@ -143,10 +131,6 @@ contains
 
     FreeE = Etot - kBT * Entropy
 
-    if ( IONode .and. spin%deb_offSO ) then
-     write(spin%iout_offsiteSO,'(a,f16.10)') ' update_FreeE: FreeE = ', FreeE
-    endif
-
   end subroutine update_FreeE
 
   !> @param kBT the temperature in energy
@@ -154,10 +138,6 @@ contains
     real(dp), intent(in) :: kBT
 
     FreeEHarris = Eharrs - kBT * Entropy
-
-    if ( IONode .and. spin%deb_offSO ) then
-     write(spin%iout_offsiteSO,'(a,f16.10)') ' update_FreeEHarris: FreeEHarris = ', FreeEHarris
-    endif
 
   end subroutine update_FreeEHarris
 

@@ -323,27 +323,6 @@ C------- H(d,u)
 
       endif
 
-C      write(6,*) ' setup_hamiltonian: Is DM Hermitian? '
-C      call herm_HDM( 'DM' )
-C      write(6,*) ' setup_hamiltonian: DM is hermitian.... '
-C      write(6,*) ' setup_hamiltonian: Calculating MM by means of DM...'
-C      call MM_HDM( 'DM' )
-C
-C      write(6,*) ' setup_hamiltonian: Is H Hermitian? '
-C      call herm_HDM( 'H' )
-C      write(6,*) ' setup_hamiltonian: H is hermitian.... '
-C      write(6,*) ' setup_hamiltonian: Calculating MM by means of H...'
-C      call MM_HDM( 'H' )
-
-
-! CC RC
-        if ( IONode .and. spin%deb_offSO .or. spin%deb_P ) then
-         write(spin%iout_offsiteSO,'(a)')  
-     &     ' setup_hamiltonian: After add all the parts to H...'
-         write(spin%iout_offsiteSO,'(a)')  
-     &     ' setup_hamiltonian: MM from DM and from H... '
-        endif
-
       ! This statement will apply to iscf = 1, for example, when
       ! we do not use rhog_in. Rhog here is always the charge used to
       ! build H, that is, rhog_in.

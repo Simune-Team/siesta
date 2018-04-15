@@ -599,9 +599,6 @@ CC RC  OffSpOrb
 !
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
-       if ( IONode .and. spin%deb_offSO ) 
-     &    write(spin%iout_offsiteSO,'(a)') 
-     &    ' state_init: Calling new_dm...'
       call new_DM(auxchanged, DM_history, DM_2D, EDM_2D)
 
       Dscf => val(DM_2D)
