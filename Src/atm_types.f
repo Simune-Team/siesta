@@ -101,10 +101,10 @@
 !        LDA+U Projectors
 !        Here we follow the scheme used for the KB projectors
 !        
-         integer                         ::  n_pjldaunl=0
+         integer                         ::  n_pjldaunl = 0
                                              ! num of "nl" projs
                                              ! not counting the "m copies"
-         integer                         ::  lmax_ldau_projs=0
+         integer                         ::  lmax_ldau_projs = 0
                                              ! l cutoff for LDA+U proj
          integer, dimension(maxn_pjnl)   ::  pjldaunl_l ! l of each nl proj
          integer, dimension(maxn_pjnl)   ::  pjldaunl_n ! n of each nl proj
@@ -117,7 +117,7 @@
          real(dp), dimension(maxn_pjnl)  ::  pjldaunl_U ! U of each nl projector
          real(dp), dimension(maxn_pjnl)  ::  pjldaunl_J ! J of each nl projector
 
-         integer                         ::  nprojsldau=0
+         integer                         ::  nprojsldau = 0
                                              ! Total number of LDA+U proj.
                                              ! counting the "m copies"
                                              ! (including the (2l + 1) factor))
@@ -148,7 +148,7 @@
      $                            save, public   ::  species(:)
       type(rad_func), allocatable, target,
      $                            save, public   ::  elec_corr(:)
-!
+      
 
       private
 

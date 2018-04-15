@@ -148,7 +148,7 @@ contains
     use netcdf_ncdf, ncdf_parallel => parallel
     use m_timestamp, only : datestring
 #ifdef MPI
-    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast, MPI_Logical
+    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast, MPI_Logical, MPI_Barrier
 #endif
     use m_ts_electype
     use m_region
@@ -179,7 +179,9 @@ contains
 
     logical :: prec_Sigma
     logical :: exist, same
-    character(len=200) :: char
+    character(len=256) :: char
+    real(dp) :: mem
+    character(len=2) :: unit
     integer :: i, iEl, no_e
     real(dp), allocatable :: r2(:,:)
 #ifdef MPI
@@ -189,6 +191,8 @@ contains
     if ( .not. sigma_save ) return
 
     exist = file_exist(fname, Bcast = .true. )
+
+    mem = 0._dp
 
     call tbt_cdf_precision('SelfEnergy','single',prec_Sigma)
 
@@ -380,16 +384,22 @@ contains
     call delete(dic)
 
     call ncdf_put_var(ncdf,'pivot',r%r)
+    mem = mem + calc_mem(NF90_INT, r%n)
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
+    mem = mem + calc_mem(NF90_DOUBLE, 3, TSHS%na_u)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
+    mem = mem + calc_mem(NF90_INT, TSHS%na_u)
     call rgn_copy(a_Dev, r_tmp)
     call rgn_sort(r_tmp)
     call ncdf_put_var(ncdf,'a_dev',r_tmp%r)
+    mem = mem + calc_mem(NF90_INT, r_tmp%n)
     call ncdf_put_var(ncdf,'btd',btd%r)
+    mem = mem + calc_mem(NF90_INT, btd%n)
     call rgn_delete(r_tmp)
     if ( a_Buf%n > 0 ) then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
+       mem = mem + calc_mem(NF90_INT, a_Buf%n)
     end if
 
     ! Save all k-points
@@ -400,6 +410,7 @@ contains
     call ncdf_put_var(ncdf,'kpt',r2)
     call ncdf_put_var(ncdf,'wkpt',wkpt)
     deallocate(r2)
+    mem = mem + calc_mem(NF90_DOUBLE, 4, nkpt)
 
     do iEl = 1 , N_Elec
 
@@ -441,7 +452,7 @@ contains
        dic = dic//('info'.kv.'Downfolded self-energy')
        dic = dic//('unit'.kv.'Ry')
        ! Chunking greatly reduces IO cost
-       call ncdf_def_var(grp,'SelfEnergy',prec_Sigma, &
+       call ncdf_def_var(grp,'SelfEnergy', prec_Sigma, &
             (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
             atts = dic , chunks = (/no_e,no_e,1,1/) )
        call delete(dic)
@@ -450,9 +461,70 @@ contains
        call ncdf_put_var(grp,'Accuracy',Elecs(iEl)%accu)
        call ncdf_put_var(grp,'pivot',Elecs(iEl)%o_inD%r)
 
+       mem = mem + calc_mem(NF90_INT, no_e)
+       if ( prec_Sigma ) then
+         mem = mem + calc_mem(NF90_DOUBLE, no_e, no_e, NE, nkpt) * 2
+       else
+         mem = mem + calc_mem(NF90_DOUBLE, no_e, no_e, NE, nkpt)
+       end if
+
     end do
 
     call ncdf_close(ncdf)
+
+#ifdef MPI
+    ! Ensure that the processors are aligned
+    call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
+
+    if ( IONode ) then
+      call pretty_memory(mem, unit)
+      write(*,'(3a,f8.3,tr1,a/)') 'tbt: Estimated file size of ', trim(fname), ':', &
+          mem, unit
+    end if
+
+  contains
+
+    pure function calc_mem(prec_nf90, n1, n2, n3, n4) result(kb)
+      use precision, only: dp
+      integer, intent(in) :: prec_nf90, n1
+      integer, intent(in), optional :: n2, n3, n4
+      real(dp) :: kb
+
+      kb = real(n1, dp) / 1024._dp
+      if ( present(n2) ) kb = kb * real(n2, dp)
+      if ( present(n3) ) kb = kb * real(n3, dp)
+      if ( present(n4) ) kb = kb * real(n4, dp)
+
+      select case ( prec_nf90 )
+      case ( NF90_INT, NF90_FLOAT )
+        kb = kb * 4
+      case ( NF90_DOUBLE )
+        kb = kb * 8
+      end select
+
+    end function calc_mem
+
+    pure subroutine pretty_memory(mem, unit)
+      use precision, only: dp
+      real(dp), intent(inout) :: mem
+      character(len=2), intent(out) :: unit
+
+      unit = 'KB'
+      if ( mem > 1024._dp ) then
+        mem = mem / 1024._dp
+        unit = 'MB'
+        if ( mem > 1024._dp ) then
+          mem = mem / 1024._dp
+          unit = 'GB'
+          if ( mem > 1024._dp ) then
+            mem = mem / 1024._dp
+            unit = 'TB'
+          end if
+        end if
+      end if
+
+    end subroutine pretty_memory
 
   end subroutine init_Sigma_save
 

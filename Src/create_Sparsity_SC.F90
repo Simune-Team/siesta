@@ -104,7 +104,7 @@ contains
     n_rows_g = nrows_g(in)
 
     ! Prepare creation of num and listptr arrays
-    allocate(num    (n_rows))
+    allocate(num(n_rows))
     allocate(listptr(n_rows))
 
     ! The list pointer for the first entry is always the "first"

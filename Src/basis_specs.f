@@ -249,13 +249,7 @@ C Sanity checks on values
 !     Use standard routine in chemical module to process the
 !     chemical species
 !
-      call read_chemical_types()
-      nsp = number_of_species()
-
-      allocate(basis_parameters(nsp))
-      do isp=1,nsp
-        call initialize(basis_parameters(isp))
-      enddo
+      nsp = size(basis_parameters)
 
       synthetic_atoms = .false.
 

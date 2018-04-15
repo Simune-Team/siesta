@@ -394,8 +394,8 @@ contains
     ! ending elements.
     call timer('pivot-elec', 1)
 
-    call rgn_copy(r_oBuf, r_tmp)
-    call rgn_append(r_oDev, r_tmp, r_tmp)
+    ! Collect buffer and device orbitals to one list
+    call rgn_append(r_oBuf, r_oDev, r_tmp)
     call rgn_sort(r_tmp)
 
     do iEl = 1 , N_Elec
@@ -403,7 +403,7 @@ contains
        if ( mod(iEl-1,Nodes) /= Node ) cycle
 
        ! Create pivoting region (except buffer+device)
-       call rgn_range(r_oEl(iEl),1,no_u)
+       call rgn_range(r_oEl(iEl), 1, no_u)
        call rgn_complement(r_tmp, r_oEl(iEl), r_oEl(iEl))
 
        ! Sort according to the connectivity of the electrode
@@ -451,7 +451,6 @@ contains
        end if
 
        if ( .not. leqi(g, csort) ) then
-
           ! if the majority of the electrode pivoting
           ! elements are in the upper half, then reverse
           ! Note that this will (can) only happen if the
@@ -499,12 +498,13 @@ contains
     ! Possibly deleting it
     call rgn_delete(r_tmp2, r_Els)
     call rgn_copy(r_oDev, r_tmp)
-    call rgn_sort(r_tmp) ! copy to faster find pivoting
+    call rgn_sort(r_tmp) ! copy and sort to faster find pivoting
+
     do iEl = 1 , N_Elec
 
 #ifdef MPI
        i = mod(iEl-1,Nodes)
-       ! Bcast the region
+       ! Bcast the regions
        call rgn_MPI_Bcast(r_aEl(iEl),i)
        call rgn_MPI_Bcast(r_oEl(iEl),i)
        call rgn_MPI_Bcast(Elecs(iEl)%o_inD,i)
@@ -564,7 +564,7 @@ contains
        ! the central region.
        ! Otherwise we do not have a DENSE part of the self-energies in the central
        ! region. This is _very_ important.
-       call crtSparsity_Union_region(dit, sp_tmp, Elecs(iEl)%o_inD, sp_tmp)
+       call crtSparsity_Union(dit, sp_tmp, Elecs(iEl)%o_inD, sp_tmp)
 
     end do
 

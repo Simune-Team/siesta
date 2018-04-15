@@ -669,7 +669,8 @@ contains
 ! ***********************
     character(len=FILE_LEN) :: curGFfile  ! Name of the GF file
 
-    integer :: nspin,nkpar,na,no,fReps(3),NEn, pre_expand
+    integer :: nspin,nkpar,na,no,Bloch(3),NEn, pre_expand
+    logical :: repeat
     integer :: na_u, no_u
     real(dp) :: mu ! The Fermi energy shift due to a voltage
     real(dp) :: ucell(3,3)
@@ -694,7 +695,7 @@ contains
        read(funit) na_u, no_u ! total atoms and total orbitals
        read(funit) na, no ! used atoms and used orbitals
        read(funit) ! xa, lasto
-       read(funit) fReps(:), pre_expand
+       read(funit) repeat, Bloch(:), pre_expand
        read(funit) mu
        ! read contour information
        read(funit) nkpar
@@ -733,9 +734,14 @@ contains
        end if
 
        ! Check # of Bloch k-points
-       if ( any(El%Bloch /= fReps) ) then
+       if ( any(El%Bloch /= Bloch) ) then
           write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: unexpected no. Bloch expansion k-points'
+          errorGF = .true.
+       end if
+       if ( El%repeat .neqv. repeat ) then
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+          write(*,*) 'read_Green: ERROR: Ordering of Bloch repetitions is not the same (repeat or tile)'
           errorGF = .true.
        end if
 
@@ -834,7 +840,7 @@ contains
     real(dp) :: mu ! The energy shift in the Fermi energy
     integer :: na_u, no_u ! total atoms and orbitals in unit-cell
     integer :: nspin, na, no, nkpar ! spin, # of atoms, # of orbs, # k-points
-    integer :: fReps(3) ! # repetitions in x, # repetitions in y
+    integer :: Bloch(3) ! # repetitions in x, # repetitions in y
     real(dp), allocatable :: xa(:,:) ! electrode atomic coordinates
     integer, allocatable :: lasto(:) ! the electrode orbitals of the atoms
     real(dp), allocatable :: kpar(:,:) ! k-points
@@ -849,7 +855,7 @@ contains
     integer :: iEn, pre_expand
     integer :: i, j, ia
     real(dp) :: kpt(3)
-    logical :: localErrorGf, eXa
+    logical :: localErrorGf, eXa, repeat
 
     ! we should only read if the GF-should exist
     if ( .not. El%out_of_core ) return
@@ -872,7 +878,7 @@ contains
     read(funit) na,no
     allocate(xa(3,na),lasto(na+1))
     read(funit) xa,lasto
-    read(funit) fReps(:),pre_expand
+    read(funit) repeat, Bloch(:),pre_expand
     read(funit) mu
 
     if ( El%nspin /= nspin ) then
@@ -950,14 +956,19 @@ contains
     end if
     deallocate(lasto)
 
-    if ( any(El%Bloch(:)/=fReps(:)) ) then
+    if ( any(El%Bloch(:)/=Bloch(:)) ) then
        write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Number of Bloch expansions is wrong!"
-       write(*,'(2(a,i3))') "Found Bloch-A1: ",fReps(1),", expected: ",El%Bloch(1)
-       write(*,'(2(a,i3))') "Found Bloch-A2: ",fReps(2),", expected: ",El%Bloch(2)
-       write(*,'(2(a,i3))') "Found Bloch-A3: ",fReps(3),", expected: ",El%Bloch(3)
+       write(*,'(2(a,i3))') "Found Bloch-A1: ",Bloch(1),", expected: ",El%Bloch(1)
+       write(*,'(2(a,i3))') "Found Bloch-A2: ",Bloch(2),", expected: ",El%Bloch(2)
+       write(*,'(2(a,i3))') "Found Bloch-A3: ",Bloch(3),", expected: ",El%Bloch(3)
        localErrorGf = .true.
     end if
+    if ( El%repeat .neqv. repeat ) then
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+       write(*,*) 'Ordering of Bloch repetitions is not the same (repeat or tile)'
+       localErrorGf = .true.
+     end if
     if ( product(El%Bloch) > 1 ) then
        if ( pre_expand /= El%pre_expand ) then
           write(*,*)"ERROR: Green function file: "//trim(curGFfile)

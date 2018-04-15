@@ -233,8 +233,8 @@ C     Initialise MPI and set processor number
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',is
 !$    if ( is == 1 ) then
 !$     ! this is the default scheduling, probably the user
-!$     ! have not set the value, predefine it to 32
-!$     is = 32
+!$     ! have not set the value, predefine it to 16
+!$     is = 16
 !$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',is
 !$    end if
 !$    case ( OMP_SCHED_GUIDED ) 

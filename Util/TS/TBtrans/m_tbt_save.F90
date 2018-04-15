@@ -313,7 +313,7 @@ contains
       N_Elec, Elecs, rEl, btd_El, &
       nkpt, kpt, wkpt, NE, &
       a_Dev, a_Buf, sp_dev_sc, &
-      save_DATA ) 
+      save_DATA )
 
     use parallel, only : Node
 
@@ -325,7 +325,7 @@ contains
     use m_timestamp, only : datestring
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Integer, MPI_Logical
-    use mpi_siesta, only : MPI_Comm_Self
+    use mpi_siesta, only : MPI_Comm_Self, MPI_Barrier
 #endif
     use m_tbt_hs, only : tTSHS
     use m_ts_electype
@@ -364,6 +364,8 @@ contains
     integer :: iEl, jEl, i, nnzs_dev, N_eigen
     integer :: prec_DOS, prec_T, prec_Teig, prec_J, prec_COOP
     type(OrbitalDistribution) :: fdit
+    real(dp) :: mem
+    character(len=2) :: unit
     real(dp), allocatable :: r2(:,:)
     type(tRgn) :: a_Dev_sort
 #ifdef MPI
@@ -375,8 +377,7 @@ contains
     call rgn_copy(a_Dev, a_Dev_sort)
     call rgn_sort(a_Dev_sort)
 
-    ! In case the user thinks the double precision
-    ! is too much
+    ! In case the user thinks the double precision is too much
     call tbt_cdf_precision('DOS','single',prec_DOS)
     call tbt_cdf_precision('T','single',prec_T)
     call tbt_cdf_precision('T.Eig','single',prec_Teig)
@@ -384,6 +385,8 @@ contains
     call tbt_cdf_precision('COOP','single',prec_COOP)
 
     isGamma = all(TSHS%nsc(:) == 1)
+
+    mem = 0._dp
 
     if ( 'T-eig' .in. save_DATA ) then
        call assign_int(N_eigen,save_DATA,'T-eig')
@@ -546,7 +549,8 @@ contains
     ! Create all the variables needed to save the states
     dic = ('info'.kv.'Last orbitals of the equivalent atom')
     call ncdf_def_var(ncdf,'lasto',NF90_INT,(/'na_u'/), &
-         atts = dic)
+        atts = dic)
+    mem = mem + calc_mem(NF90_INT, TSHS%na_u)
     dic = dic//('info'.kv.'Unit cell')
     dic = dic//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
@@ -556,10 +560,13 @@ contains
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
          atts = dic , chunks = (/3, TSHS%na_u/) )
     call delete(dic)
+    mem = mem + calc_mem(NF90_DOUBLE, 3, TSHS%na_u)
 
     dic = ('info'.kv.'Supercell offsets')
     call ncdf_def_var(ncdf,'isc_off',NF90_INT,(/'xyz', 'n_s'/), &
          atts = dic)
+    mem = mem + calc_mem(NF90_INT, 3, product(TSHS%nsc))
+    
     dic = dic // ('info'.kv.'Number of supercells in each direction')
     call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
          atts = dic)
@@ -567,6 +574,7 @@ contains
     dic = dic // ('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
+    mem = mem + calc_mem(NF90_INT, r%n)
 
     dic = dic // ('info'.kv.'Blocks in BTD for the pivot table')
     call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
@@ -575,17 +583,20 @@ contains
     dic = dic // ('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
          atts = dic)
+    mem = mem + calc_mem(NF90_INT, a_Dev_sort%n)
 
     if ( a_Buf%n > 0 ) then
        dic = dic // ('info'.kv.'Index of buffer atoms')
        call ncdf_def_var(ncdf,'a_buf',NF90_INT,(/'na_b'/), &
             atts = dic)
+       mem = mem + calc_mem(NF90_INT, a_Buf%n)
     end if
 
     if ( 'DOS-Gf' .in. save_DATA ) then
        dic = dic // ('info'.kv.'Density of states')//('unit'.kv.'1/Ry')
        call ncdf_def_var(ncdf,'DOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
             atts = dic , chunks = (/r%n,1,1/) , compress_lvl = cmp_lvl )
+       mem = mem + calc_mem(prec_DOS, r%n, NE, nkpt)
     end if
 
     dic = dic // ('info'.kv.'k point')//('unit'.kv.'b')
@@ -595,6 +606,7 @@ contains
     dic = ('info'.kv.'k point weights')
     call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
          atts = dic , chunks = (/1/) )
+    mem = mem + calc_mem(NF90_DOUBLE, 4, nkpt) ! kpt and wkpt
 
 #ifdef TBT_PHONON
     dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
@@ -604,6 +616,7 @@ contains
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
          atts = dic, chunks = (/1/) )
     call delete(dic)
+    mem = mem + calc_mem(NF90_DOUBLE, NE)
 
     call ncdf_put_var(ncdf,'nsc',TSHS%nsc)
     call ncdf_put_var(ncdf,'isc_off',TSHS%isc_off)
@@ -650,11 +663,13 @@ contains
        dic = ('info'.kv.'Number of non-zero elements per row')
        call ncdf_def_var(ncdf,'n_col',NF90_INT,(/'no_u'/), &
             atts=dic)
+       mem = mem + calc_mem(NF90_INT, TSHS%no_u)
 
        dic = dic//('info'.kv. &
             'Supercell column indices in the sparse format ')
        call ncdf_def_var(ncdf,'list_col',NF90_INT,(/'nnzs'/), &
             compress_lvl=cmp_lvl,atts=dic, chunks = (/nnzs_dev/) )
+       mem = mem + calc_mem(NF90_INT, nnzs_dev)
 
 #ifdef MPI
        call newDistribution(TSHS%no_u,MPI_Comm_Self,fdit,name='TBT-fake dist')
@@ -672,11 +687,13 @@ contains
        dic = dic // ('info'.kv.'Crystal orbital overlap population')//('unit'.kv.'1/Ry')
        call ncdf_def_var(ncdf,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
             atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
+       mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
     end if
     if ( 'COHP-Gf' .in. save_DATA ) then
        dic = dic // ('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.'Ry/Ry')
        call ncdf_def_var(ncdf,'COHP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
             atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
+       mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
     end if
 
     
@@ -697,11 +714,13 @@ contains
        dic = dic // ('info'.kv.'Downfolding region orbital pivot table')
        call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_down'/), atts = dic)
        call ncdf_put_var(grp,'pivot',rEl(iEl)%r)
+       mem = mem + calc_mem(NF90_INT, rEl(iEl)%n)
 
        dic = dic // ('info'.kv.'Blocks in BTD downfolding for the pivot table')
        call ncdf_def_var(grp,'btd',NF90_INT,(/'n_btd'/), atts = dic)
        call ncdf_put_var(grp,'btd',btd_El(iEl)%r)
-       
+       mem = mem + calc_mem(NF90_INT, btd_El(iEl)%n)
+
        dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), atts = dic)
        call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
@@ -730,7 +749,9 @@ contains
                atts = dic)
           dic = dic//('info'.kv.'Bulk transmission')
           call ncdf_def_var(grp,'T',prec_T,(/'ne  ','nkpt'/), &
-               atts = dic)
+              atts = dic)
+          mem = mem + calc_mem(prec_T, NE, nkpt)
+
           dic = dic//('info'.kv.'Unit cell')
           dic = dic//('unit'.kv.'Bohr')
           call ncdf_def_var(grp,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
@@ -738,7 +759,8 @@ contains
           dic = dic//('info'.kv.'Atomic coordinates')
           call ncdf_def_var(grp,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
                atts = dic , chunks = (/3, Elecs(iEl)%na_u/) )
-          
+          mem = mem + calc_mem(NF90_DOUBLE, 3, Elecs(iEl)%na_u)
+
           ! Create electrode constant variables
           call ncdf_put_var(grp,'cell',Elecs(iEl)%cell)
           call ncdf_put_var(grp,'xa',Elecs(iEl)%xa)
@@ -748,6 +770,7 @@ contains
           dic = dic//('unit'.kv.'1/Ry')
           call ncdf_def_var(grp,'DOS',prec_DOS,(/'no_u','ne  ','nkpt'/), &
                atts = dic, chunks = (/Elecs(iEl)%no_u,1,1/) , compress_lvl=cmp_lvl)
+          mem = mem + calc_mem(prec_DOS, Elecs(iEl)%no_u, NE, nkpt)
 
        end if
 
@@ -765,18 +788,21 @@ contains
                ('unit'.kv.'1/Ry')
           call ncdf_def_var(grp,'ADOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
                atts = dic, chunks = (/r%n,1,1/) , compress_lvl=cmp_lvl)
+          mem = mem + calc_mem(prec_DOS, r%n, NE, nkpt)
        end if
 
        if ( 'COOP-A' .in. save_DATA ) then
           dic = dic // ('info'.kv.'Crystal orbital overlap population')//('unit'.kv.'1/Ry')
           call ncdf_def_var(grp,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
                atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
+          mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
        end if
 
        if ( 'COHP-A' .in. save_DATA ) then
           dic = dic // ('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.'Ry/Ry')
           call ncdf_def_var(grp,'COHP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
                atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
+          mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
        end if
 
        call delete(dic)
@@ -785,7 +811,7 @@ contains
           dic = ('info'.kv.'Orbital current')
           call ncdf_def_var(grp,'J',prec_J,(/'nnzs','ne  ','nkpt'/), &
                atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
-          
+          mem = mem + calc_mem(prec_J, nnzs_dev, NE, nkpt)
        end if
 
        tmp = trim(Elecs(iEl)%name)
@@ -800,12 +826,15 @@ contains
              dic = dic//('info'.kv.'Transmission')
              call ncdf_def_var(grp,trim(Elecs(jEl)%name)//'.T',prec_T,(/'ne  ','nkpt'/), &
                   atts = dic )
+             mem = mem + calc_mem(prec_T, NE, nkpt)
 
              if ( N_eigen > 0 ) then
                 dic = dic//('info'.kv.'Transmission eigenvalues')
                 call ncdf_def_var(grp,trim(Elecs(jEl)%name)//'.T.Eig',prec_Teig, &
                      (/'neig','ne  ','nkpt'/), &
                      atts = dic )
+                mem = mem + calc_mem(prec_Teig, N_eigen, NE, nkpt)
+
              end if
              
           else
@@ -814,18 +843,21 @@ contains
              ! and utilise this for saving the reflection.
              dic = dic//('info'.kv.'Out transmission correction')
              call ncdf_def_var(grp,trim(tmp)//'.C',prec_T,(/'ne  ','nkpt'/), &
-                  atts = dic )
+                 atts = dic )
+             mem = mem + calc_mem(prec_T, NE, nkpt)
 
              if ( N_eigen > 0 ) then
                 dic = dic//('info'.kv.'Out transmission eigenvalues')
                 call ncdf_def_var(grp,trim(tmp)//'.C.Eig',prec_Teig, &
                      (/'neig','ne  ','nkpt'/), &
                      atts = dic )
+                mem = mem + calc_mem(prec_Teig, N_eigen, NE, nkpt)
              end if
 
              dic = dic//('info'.kv.'Gf transmission')
              call ncdf_def_var(grp,trim(tmp)//'.T',prec_T,(/'ne  ','nkpt'/), &
                   atts = dic )
+             mem = mem + calc_mem(prec_T, NE, nkpt)
 
           end if
           
@@ -842,6 +874,54 @@ contains
     call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
 
+    if ( Node == 0 ) then
+      call pretty_memory(mem, unit)
+      write(*,'(3a,f8.3,tr1,a/)') 'tbt: Estimated file size of ', trim(fname), ':', &
+          mem, unit
+    end if
+
+  contains
+
+    pure function calc_mem(prec_nf90, n1, n2, n3) result(kb)
+      use precision, only: dp
+      integer, intent(in) :: prec_nf90, n1
+      integer, intent(in), optional :: n2, n3
+      real(dp) :: kb
+
+      kb = real(n1, dp) / 1024._dp
+      if ( present(n2) ) kb = kb * real(n2, dp)
+      if ( present(n3) ) kb = kb * real(n3, dp)
+      
+      select case ( prec_nf90 )
+      case ( NF90_INT, NF90_FLOAT )
+        kb = kb * 4
+      case ( NF90_DOUBLE )
+        kb = kb * 8
+      end select
+      
+    end function calc_mem
+
+    pure subroutine pretty_memory(mem, unit)
+      use precision, only: dp
+      real(dp), intent(inout) :: mem
+      character(len=2), intent(out) :: unit
+
+      unit = 'KB'
+      if ( mem > 1024._dp ) then
+        mem = mem / 1024._dp
+        unit = 'MB'
+        if ( mem > 1024._dp ) then
+          mem = mem / 1024._dp
+          unit = 'GB'
+          if ( mem > 1024._dp ) then
+            mem = mem / 1024._dp
+            unit = 'TB'
+          end if
+        end if
+      end if
+
+    end subroutine pretty_memory
+    
   end subroutine init_cdf_save
 
   subroutine init_cdf_E_check(fname,E,NE)
