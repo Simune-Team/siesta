@@ -75,12 +75,10 @@ CONTAINS
       real(dp) :: dummy_E, g2max, dummy_H(1,1)
       logical  :: mixDM
 
-! CC RC  Added for the offSpOrb
       real(dp)    :: Ebs_tmp(4), DEharr_tmp(4)
 
       complex(dp):: Hc, Dc, Ebs_Daux(2,2), Ebs_Haux(2,2)
       complex(dp):: DEharr_Daux(2,2), DEharr_Haux(2,2), DEharr_Daux_old(2,2)
-! CC RC  Added for the offSpOrb
 
       mixDM = (.not. (mixH .or. mix_charge))
 
@@ -381,37 +379,32 @@ CONTAINS
 #endif
 
       Eso = 0._dp
-      Enl_offsiteSO = 0.0_dp
-      if ( spin%SO_offsite ) then
+      if (spin%SO) then
+       if ( spin%SO_offsite ) then
 
         do io = 1, maxnh
 
-!-------- Enl_offsiteSO(u,u)
+!-------- Eso(u,u)
             Dc = cmplx(Dscf(io,1),Dscf(io,5),kind=dp)
             Hc = H0_offsiteSO(io,1)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
-!-------- Enl_offsiteSO(d,d)
+          Eso = Eso + real( Hc*Dc )
+!-------- Eso(d,d)
             Dc = cmplx(Dscf(io,2),Dscf(io,6),kind=dp)
             Hc = H0_offsiteSO(io,2)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
-!-------- Enl_offsiteSO(u,d)
+          Eso = Eso + real( Hc*Dc )
+!-------- Eso(u,d)
             Dc = cmplx(Dscf(io,3),Dscf(io,4),kind=dp)
             Hc = H0_offsiteSO(io,4)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
-!-------- Enl_offsiteSO(d,u)
+          Eso = Eso + real( Hc*Dc )
+!-------- Eso(d,u)
             Dc = cmplx(Dscf(io,7),-Dscf(io,8),kind=dp)
             Hc = H0_offsiteSO(io,3)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+          Eso = Eso + real( Hc*Dc )
 
         enddo
 
-#ifdef MPI
-         ! Global reduction of Eso
-         call globalize_sum( Enl_offsiteSO, buffer1 )
-         Enl_offsiteSO = buffer1
-#endif
 
-      elseif ( spin%SO .and. .not.spin%SO_offsite ) then
+       else  ! SO_onsite
          ! Sadly some compilers (g95), does
          ! not allow bounds for pointer assignments :(
          H_so => val(H_so_2D)
@@ -420,12 +413,14 @@ CONTAINS
                  + H_so(io,5)*Dscf(io,3) + H_so(io,6)*Dscf(io,4) &
                  - H_so(io,3)*Dscf(io,5) - H_so(io,4)*Dscf(io,6)
          end do
+       end if
+
 #ifdef MPI
-         ! Global reduction of Eso
-         call globalize_sum( Eso, buffer1 )
-         Eso = buffer1
+       ! Global reduction of Eso
+       call globalize_sum( Eso, buffer1 )
+       Eso = buffer1
 #endif
-      end if
+      endif
       
       ! E0 = Ena + Ekin + Enl + Eso - Eions
 

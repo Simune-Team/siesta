@@ -20,14 +20,9 @@ C     and initializes data structures on the grid.
       use sparse_matrices, only: H_so_2D
       use sparse_matrices, only: Dscf
 
-! CC RC  Added for the offSpOrb
-      use sparse_matrices, only: H0_offsiteSO, listhptr, numh
+      use sparse_matrices, only: H0_offsiteSO
       use m_nlefsm,        only: nlefsm_offsiteSO
-      use m_energies,      only: Enl_offsiteSO, Enl, Ekin
       use m_spin,          only: spin
-      use parallel,        only: IONode
-      use atomlist,        only: no_u
-! CC RC  Added for the offSpOrb
 
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use siesta_geom
@@ -61,21 +56,14 @@ C     and initializes data structures on the grid.
       real(dp) :: dummy_E
       integer  :: ia, is
 
-! CC RC  Added for the offSpOrb
-      real(dp)    :: dummy_E_offsiteSO
-      real(dp) :: eV = 1._dp / 13.60580_dp
-      character(len=1) :: cindent = ' '
-      integer     :: io, ispin, i, j, ind
-!      integer     :: ij, ji, js
+      real(dp)    :: dummy_Eso
+      integer     :: io, ispin, i, j 
       complex(dp) :: Hc, Dc
 #ifdef MPI
       real(dp)            :: buffer1
 #endif
-! CC RC  Added for the offSpOrb
 
       real(dp), pointer :: H_val(:), H_so(:,:)
-
-      real(dp) :: err_H0, err_H0_offsiteSO(6)
 
 #ifdef DEBUG
       call write_debug( '    PRE setup_H0' )
@@ -137,6 +125,7 @@ C     Add on force field contribution to energy
       H_val(:) = 0.0_dp
 !$OMP end parallel workshare
 
+      Eso = 0.0d0
 
       if ( .not.spin%SO_offsite ) then
        call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
@@ -146,13 +135,13 @@ C     Add on force field contribution to energy
      &             dummy_dm, dummy_E, dummy_fa, dummy_stress,
      &             H_val,
      &             matrix_elements_only=.true.) 
-      elseif ( spin%SO_offsite ) then
+      else
         H0_offsiteSO=dcmplx(0.0d0,0.0d0)
         call nlefsm_offsiteSO(scell, na_u, na_s, isa, xa, indxua,
      &                 maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
      &                 numh, listhptr, listh, numh, listhptr, listh,
      &                 spin%Grid,
-     &                 dummy_E, dummy_E_offsiteSO, dummy_fa,
+     &                 dummy_E, dummy_Eso, dummy_fa,
      &                 dummy_stress, H_val,
      &                 matrix_elements_only=.true.)
 
@@ -164,32 +153,31 @@ C     Add on force field contribution to energy
 ! DM in a such way that the result gives Re{Tr[H_SO*DM]}.
 !
 
-        Enl_offsiteSO = 0.0d0
         do io = 1, maxnh
 
-!-------- Enl_offsiteSO(u,u)
+!-------- Eso(u,u)
             Dc = cmplx(Dscf(io,1),Dscf(io,5),kind=dp)
             Hc = H0_offsiteSO(io,1)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
-!-------- Enl_offsiteSO(d,d)
+          Eso = Eso + real( Hc*Dc )
+!-------- Eso(d,d)
             Dc = cmplx(Dscf(io,2),Dscf(io,6),kind=dp)
             Hc = H0_offsiteSO(io,2)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
-!-------- Enl_offsiteSO(u,d)
+          Eso = Eso + real( Hc*Dc )
+!-------- Eso(u,d)
             Dc = cmplx(Dscf(io,3),Dscf(io,4),kind=dp)
             Hc = H0_offsiteSO(io,4)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
-!-------- Enl_offsiteSO(d,u)
+          Eso = Eso + real( Hc*Dc )
+!-------- Eso(d,u)
             Dc = cmplx(Dscf(io,7),-Dscf(io,8),kind=dp)
             Hc = H0_offsiteSO(io,3)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+          Eso = Eso + real( Hc*Dc )
 
         enddo
 
 #ifdef MPI
-! Global reduction of Ekin, Enl and Eso 
-      call globalize_sum(Enl_offsiteSO,buffer1)
-      Enl_offsiteSO = buffer1
+! Global reduction of Eso 
+      call globalize_sum(Eso,buffer1)
+      Eso = buffer1
 #endif
       endif
 ! ..................
@@ -206,8 +194,6 @@ C     Add on force field contribution to energy
 !$OMP end parallel workshare
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_so,Eso)
-      else
-         Eso = 0._dp
       end if
 
 C     This will take care of possible changes to the mesh and atomic-related

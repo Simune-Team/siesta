@@ -162,7 +162,9 @@
 ! ..................
 
 ! Non-local-pseudop: energy, forces, stress and matrix elements .......
-! CC RC  Added for the offSpOrb
+
+      Eso = 0.0_dp
+      
       if ( .not.spin%SO_offsite ) then
        call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &              maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
@@ -172,37 +174,34 @@
 
 #ifdef MPI
 ! Global reduction of energy terms
-      call globalize_sum(Enl,buffer1)
-      Enl = buffer1
+       call globalize_sum(Enl,buffer1)
+       Enl = buffer1
 #endif
       else ! OffSpOrb
        call nlefsm_offsiteSO(scell, na_u, na_s, isa, xa, indxua,
      &                maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
      &                numh, listhptr, listh, numh, listhptr, listh,
      &                spin%Grid,
-     &                Enl, Enl_offsiteSO, fal,
+     &                Enl, Eso, fal,
      &                stressl, H_tmp,
      &                matrix_elements_only=.false.)
 #ifdef MPI
 ! Global reduction of energy terms
-      call globalize_sum(Enl,buffer1)
-      Enl = buffer1
-      call globalize_sum(Enl_offsiteSO,buffer1)
-      Enl_offsiteSO = buffer1
+       call globalize_sum(Enl,buffer1)
+       Enl = buffer1
+       call globalize_sum(Eso,buffer1)
+       Eso = buffer1
 #endif
       endif
-! CC RC  Added for the offSpOrb
 
 ! If in the future the spin-orbit routine is able to compute
 ! forces and stresses, then "last" will be needed. If we are not
 ! computing forces and stresses, calling it in the first iteration
 ! should be enough
 !
-      if ( spin%SO .and. .not.spin%SO_offsite ) then
+      if ( spin%SO .and. .not. spin%SO_offsite ) then
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
-      else
-         Eso = 0._dp
       endif
       
 !     Non-SCF part of total energy

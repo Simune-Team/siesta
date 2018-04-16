@@ -49,9 +49,7 @@ module m_energies
   real(dp):: Uatm       ! Harris hartree electron energy,  calculated in dhscf
   real(dp):: Uscf       ! SCF hartree electron energy,  calculated in dhscf
   real(dp):: Ebs        ! Band-structure energy, Tr(DM*H), calculated in compute_dm
-! CC RC  Added for the offSpOrb
-  real(dp):: Eso        ! On-site Spin-orbit energy
-  real(dp):: Enl_offsiteSO     ! Off-site Spin-orbit energy
+  real(dp):: Eso        ! Spin-orbit energy
   real(dp):: Eldau      
   real(dp):: DEldau
 
@@ -79,8 +77,6 @@ contains
     Enaatm = 0._dp
     Enascf = 0._dp
     Enl = 0._dp
-! CC RC  Added for the offSpOrb
-    Enl_offsiteSO = 0._dp
     Emeta = 0._dp
     Entropy = 0._dp
     Etot = 0._dp
@@ -111,14 +107,14 @@ contains
 
   subroutine update_E0()
 
-    E0 = Ena + Ekin + Enl + Eso + Enl_offsiteSO - Eions
+    E0 = Ena + Ekin + Enl + Eso - Eions
 
   end subroutine update_E0
   
   subroutine update_Etot()
     
     ! DUext (external electric field) -- should it be in or out?
-    Etot = Ena + Ekin + Enl + Eso + Enl_offsiteSO - Eions + &
+    Etot = Ena + Ekin + Enl + Eso - Eions + &
          DEna + DUscf + DUext + Exc + &
          Ecorrec + Emad + Emm + Emeta + Eldau
     Etot = Etot + DE_NEGF

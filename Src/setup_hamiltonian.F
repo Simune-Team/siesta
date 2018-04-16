@@ -41,10 +41,8 @@
       use m_steps, only: istp
       use m_ntm
 
-! CC RC  modified for the offSpOrb
       use m_spin,          only: spin 
       use sparse_matrices, only: H0_offsiteSO
-! CC RC  modified for the offSpOrb
 
       use m_dipol
       use alloc, only: re_alloc, de_alloc
@@ -159,6 +157,7 @@
 !$OMP single
       Ekin = 0.0_dp
       Enl = 0.0_dp
+      Eso = 0.0_dp
 !$OMP end single ! keep wait
       
 !$OMP do collapse(2), reduction(+:Ekin,Enl)
@@ -177,39 +176,31 @@
 ! DM in a such way that the result gives Re{Tr[H_SO*DM]}.
 !
 
-! CC RC  Added  for the offSpOrb
       if( spin%SO_offsite ) then
-        Enl_offsiteSO = 0.0_dp
 
         do io = 1, maxnh
 
-
-!-------- Enl_offsiteSO(u,u)
+!-------- Eso(u,u)
             Dc = cmplx(Dscf(io,1),Dscf(io,5),kind=dp)
             Hc = H0_offsiteSO(io,1)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
-!-------- Enl_offsiteSO(d,d)
+            Eso = Eso + real( Hc*Dc )
+!-------- Eso(d,d)
             Dc = cmplx(Dscf(io,2),Dscf(io,6),kind=dp)
             Hc = H0_offsiteSO(io,2)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
-!-------- Enl_offsiteSO(u,d)
+            Eso = Eso + real( Hc*Dc )
+!-------- Eso(u,d)
             Dc = cmplx(Dscf(io,3),Dscf(io,4),kind=dp)
             Hc = H0_offsiteSO(io,4)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
-!-------- Enl_offsiteSO(d,u)
+            Eso = Eso + real( Hc*Dc )
+!-------- Eso(d,u)
             Dc = cmplx(Dscf(io,7),-Dscf(io,8),kind=dp)
             Hc = H0_offsiteSO(io,3)
-            Enl_offsiteSO = Enl_offsiteSO + real( Hc*Dc )
+            Eso = Eso + real( Hc*Dc )
 
         enddo
 
       endif
-! CC RC  Added  for the offSpOrb
 
-
-!$OMP single
-      Eso = 0._dp
-!$OMP end single
       if ( spin%SO .and. .not.spin%SO_offsite ) then
 !$OMP do reduction(+:Eso)
          do io = 1, maxnh
@@ -228,14 +219,10 @@
       Ekin = buffer1
       call globalize_sum(Enl,buffer1)
       Enl = buffer1
-      if ( spin%SO .and. .not.spin%SO_offsite ) then
+      if ( spin%SO ) then
          ! Global reduction of Eso 
          call globalize_sum(Eso,buffer1)
          Eso = buffer1
-      elseif( spin%SO_offsite ) then
-         ! Global reduction of Enl_offsiteSO 
-         call globalize_sum(Enl_offsiteSO,buffer1)
-         Enl_offsiteSO = buffer1
       end if
 #endif
 
@@ -248,7 +235,7 @@
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
         if ( spin%NCol ) then
-         call die('LDA+U cannot be used with non-colinear spin.')
+         call die('LDA+U cannot be used with non-collinear spin.')
         end if
         if ( spin%SO ) then
          call die('LDA+U cannot be used with spin-orbit coupling.')

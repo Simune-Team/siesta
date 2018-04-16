@@ -324,12 +324,9 @@
      .     'siesta: Ena      =', Ena/eV,
      .     'siesta: Ekin     =', Ekin/eV,
      .     'siesta: Enl      =', Enl/eV
-      if ( spin%SO .and. .not.spin%SO_offsite ) then 
+      if ( spin%SO ) then 
         write(6,'(a,f17.6)') 
-     .     'siesta: Eso(onS) =', Eso/eV
-      elseif( spin%SO_offsite ) then
-        write(6,'(a,f17.6)') 
-     .     'siesta: Eso(offS)=', Enl_offsiteSO/eV
+     .     'siesta: Eso      =', Eso/eV
       endif
         write(6,'(a,f17.6)')
      .     'siesta: Eldau    =', Eldau/eV,
@@ -373,9 +370,6 @@
           call cmlAddProperty(xf=mainXML, value=Eso/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Eso', fmt='r6')
-          call cmlAddProperty(xf=mainXML, value=Enl_offsiteSO/eV, 
-     .         units='siestaUnits:eV', 
-     .         dictref='siesta:Enl_offsiteSO', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=DUscf/eV, 
      .         units='siestaUnits:eV',
      .         dictref='siesta:DUscf', fmt='r6')
@@ -512,12 +506,9 @@
      .    'siesta: ',      'Kinetic =', Ekin/eV,
      .    'siesta: ',      'Hartree =', Uscf/eV,
      .    'siesta: ',      'Eldau   =', Eldau/eV
-      if ( spin%SO .and. .not.spin%SO_offsite ) then 
+      if ( spin%SO ) then 
         write(6,'(a,a15,f15.6)') 
-     .     'siesta: ', 'Eso(onS) =', Eso/eV
-      elseif( spin%SO_offsite ) then
-        write(6,'(a,a15,f15.6)') 
-     .     'siesta: ', 'Eso(offS)=', Enl_offsiteSO/eV
+     .     'siesta: ', 'Eso      =', Eso/eV
       endif
         write(6,'(a,a15,f15.6)')
      .    'siesta: ',   'Ext. field =', DUext/eV,
@@ -552,9 +543,6 @@
           call cmlAddProperty(xf=mainXML, value=Eso/eV,
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Eso', fmt='r7')
-          call cmlAddProperty(xf=mainXML, value=Enl_offsiteSO/eV,
-     .         units='siestaUnits:eV', 
-     .         dictref='siesta:Enl_offsiteSO', fmt='r7')
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r7')

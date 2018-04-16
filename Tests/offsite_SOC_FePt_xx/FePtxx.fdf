@@ -37,7 +37,7 @@ LatticeConstant  1.0 Ang
     1.896000000   0.000000000    0.000000000   2   
 %endblock AtomicCoordinatesAndAtomicSpecies
 
-Spin SO+deb
+Spin SO
 
 %block DM.InitSpin
  1  +2.   90.  0.
