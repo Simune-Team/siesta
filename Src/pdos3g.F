@@ -113,8 +113,8 @@ C Initialize auxiliary variables
           jo = listh(ind)
           Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
           Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-          Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-          Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
+          Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
+          Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
           Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
           Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
         enddo
@@ -135,8 +135,8 @@ C Repeat diagonalisation with increased memory to handle clustering
             jo = listh(ind)
             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-            Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-            Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
+            Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
+            Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
             Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
             Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
           enddo

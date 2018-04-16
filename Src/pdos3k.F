@@ -137,8 +137,10 @@ C Initialize some variables
 
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
-            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
-            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
+     .                            dcmplx(H(ind,1), H(ind,5)) * kphs
+            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
+     .                            dcmplx(H(ind,2), H(ind,6)) * kphs
             Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
      .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
             Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
@@ -168,12 +170,14 @@ C Diagonalize for each k point. Note duplication of problem size
 
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
-              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
-              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
+     .                            dcmplx(H(ind,1), H(ind,5)) * kphs
+              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
+     .                            dcmplx(H(ind,2), H(ind,6)) * kphs
               Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                          + dcmplx(H(ind,3), - H(ind,4)) * kphs
+     .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
               Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                          + dcmplx(H(ind,7), + H(ind,8)) * kphs
+     .                        + dcmplx(H(ind,7), + H(ind,8)) * kphs
             enddo
           enddo
 
@@ -192,7 +196,7 @@ C Recalculate again the overlap matrix in k-space
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)  !* Sign change??
             Spr(juo,iuo) = Spr(juo,iuo) + S(ind) * kphs
           enddo
         enddo
