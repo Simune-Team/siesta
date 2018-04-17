@@ -247,6 +247,8 @@ subroutine read_options( na, ns, nspin )
   if (mullipop == 0 .and. outlng) then
      mullipop = 1
   endif
+  ! <L> output
+  orbmoms                = fdf_get( 'WriteOrbMom'   , .false. )
 
   if (ionode) then
      select case (mullipop)
@@ -1699,6 +1701,7 @@ subroutine read_options( na, ns, nspin )
   normalize_dm_during_scf= fdf_get( 'DM.NormalizeDuringSCF',.true.)
   muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
   spndeb                 = fdf_get( 'SpinInSCF'   , (nspin>1) )
+
   ! If no mulliken is requested, set it to false
   if ( mullipop == 0 ) muldeb = .false.
   rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &

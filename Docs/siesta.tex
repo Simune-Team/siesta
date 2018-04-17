@@ -3851,7 +3851,7 @@ regardless of whether on--site or off--site approximation is employed:
   % 
   \item By means of Mulliken analysis, after the selfconsistent
   procedure, local spin and orbital moments can be calculated by means
-  of the flag \fdf{WriteOrbMom} (on--site SO).
+  of the flags \fdf{WriteMullikenPop} and \fdf{WriteOrbMom}.
   % 
 \end{itemize}
 
@@ -3890,11 +3890,14 @@ could be coumbersome, however
 \begin{fdflogicalF}{WriteOrbMom}
 
   (Only for the on--site SO) If \fdftrue, a table is provided in the 
-  main output file, which includes an estimation of the vector spin 
-  and orbital magnetic moments, in units of the Bohr magneton, projected 
+  includes an estimation of the vector orbital magnetic
+  moments, in units of the Bohr magneton, projected 
   onto each orbital and also onto each atom. The estimation for the 
   orbital moments is based on a two-center approximation, and makes use 
   of the Mulliken population analysis.
+
+  If \fdf{MullikenInScf} is \fdftrue, this information is printed at
+  every scf step.
 
 \end{fdflogicalF}
 

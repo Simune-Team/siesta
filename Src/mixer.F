@@ -15,7 +15,7 @@
 
       use precision,        only: dp
       use siesta_options,   only: mixH, mix_scf_first
-      use siesta_options,   only: mullipop, muldeb
+      use siesta_options,   only: mullipop, muldeb, orbmoms
       ! Spin mixing options
       use m_mixing_scf, only: MIX_SPIN_ALL, MIX_SPIN_SPINOR
       use m_mixing_scf, only: MIX_SPIN_SUM, MIX_SPIN_SUM_DIFF
@@ -186,14 +186,10 @@
       ! entirely correct. It should be moved to the top,
       ! or done somewhere else.
 
-      if (muldeb .and. (.not. MixH)) then 
-         if (IONode)
-     &        write (6,"(/a)")
-     &        'siesta: Mulliken populations after mixing'
-         if ( spin%SO .and. .not.spin%SO_offsite ) then
-            ! BUG: Dscf is truncated (1..4) instead of being correctly hermitified
-            ! Kept just for the "orbital moment" output
-            call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
+      if (muldeb .and. (.not. MixH) ) then 
+         if (IONode) write (6,"(/a)") 'Using DM after mixing:'
+         if ( spin%SO .and. orbmoms) then
+            call moments( 1, na_u, no_u, maxnh, numh, listhptr,
      .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .           indxuo )
          endif
