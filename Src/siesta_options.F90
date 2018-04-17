@@ -128,6 +128,7 @@ MODULE siesta_options
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken populations at every SCF step?
   logical :: spndeb        ! Write spin-polarization information at every SCF step?
+  logical :: orbmoms       ! Write orbital moments?
 
   ! Convergence options
   logical :: converge_FreeE   ! free Energy conv. to finish SCF iteration?
