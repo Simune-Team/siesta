@@ -936,6 +936,8 @@ c-----------------------------------------------------------------------
       subroutine calc_Vj_offsiteSO( l, epskb, Ski, Skj, grSki, grSkj,
      &                       V_ion, V_so, F_so )
 
+      use siesta_options, only: so_strength  ! overall factor
+      
       implicit none
 
       integer     , intent(in)  :: l
@@ -1075,6 +1077,10 @@ c---- substract out V_ion
       V_so(1,1) = V_so(1,1) - cmplx(1.0d0,0.0d0)*V_ion
       V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0)*V_ion
 
+      ! Apply overall factor
+      V_so = so_strength * V_so
+      F_so = so_strength * F_so
+      
       return
       end subroutine calc_Vj_offsiteSO
 

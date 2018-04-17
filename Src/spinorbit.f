@@ -38,7 +38,6 @@ C
       use precision, only: dp
       use atmfuncs
       use atm_types
-      use fdf, only: fdf_get
       use parallel, only: Node, Nodes
       use parallelsubs, only: LocalToGlobalOrb
 
@@ -53,7 +52,6 @@ C
 !     indexing technology)
 
       logical, save  :: vso_setup = .false.
-      real(dp), save :: so_strength = 1.0_dp
 
       integer, pointer, save   :: nr(:)
       real(dp), pointer, save  :: vso(:,:,:)
@@ -140,8 +138,6 @@ C
       call broadcast(r)
       call broadcast(drdi)
       
-      so_strength = fdf_get('SpinOrbitStrength',1.0_dp)
-
       end subroutine init_vso
 
 !------------------------------------------------
@@ -174,6 +170,7 @@ C real*8 H(maxnh,3:8)      : Spin-Orbit H matrix elements
 C *********************************************************************
 C
       use m_mpi_utils, only: globalize_sum
+      use siesta_options, only: so_strength
       implicit none
 
 C Arguments

@@ -1701,6 +1701,7 @@ subroutine read_options( na, ns, nspin )
   normalize_dm_during_scf= fdf_get( 'DM.NormalizeDuringSCF',.true.)
   muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
   spndeb                 = fdf_get( 'SpinInSCF'   , (nspin>1) )
+  so_strength            = fdf_get( 'SpinOrbitStrength',1.0_dp)
 
   ! If no mulliken is requested, set it to false
   if ( mullipop == 0 ) muldeb = .false.

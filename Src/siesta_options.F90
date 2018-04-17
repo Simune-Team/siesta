@@ -233,9 +233,11 @@ MODULE siesta_options
   real(dp) :: total_spin    ! Total spin used in spin-polarized calculations
   real(dp) :: tt            ! Target temperature. Read in redata. Used in dynamics rout.
   real(dp) :: wmix          ! Mixing weight for DM in SCF iteration
-  real(dp) :: wmixkick       ! Mixing weight for DM in special 'kick' SCF steps
+  real(dp) :: wmixkick      ! Mixing weight for DM in special 'kick' SCF steps
 
   character(len=164) :: sname   ! System name, used to initialise read
+
+  real(dp) :: so_strength   ! Overall factor for spin-orbit (for advanced use only!)
 
   integer,  parameter :: SOLVE_DIAGON = 0
   integer,  parameter :: SOLVE_ORDERN = 1

@@ -3881,15 +3881,15 @@ could be coumbersome, however
 
 \begin{fdfentry}{Spin!OrbitStrength}[real]<1.0>
 
-  (Only for the on--site SO) It allows to vary the strength of the 
-  spin--orbit interaction from zero to any positive value. This flag 
-  is only active when \fdf{Spin} is set to \fdf*{spin-orbit+onsite}.
+  It allows to vary the strength of the 
+  spin--orbit interaction from zero to any positive value. It can be
+  used for both the on--site and off-site SOC flavors.
 
 \end{fdfentry}
 
 \begin{fdflogicalF}{WriteOrbMom}
 
-  (Only for the on--site SO) If \fdftrue, a table is provided in the 
+  If \fdftrue, a table is provided in the output file that
   includes an estimation of the vector orbital magnetic
   moments, in units of the Bohr magneton, projected 
   onto each orbital and also onto each atom. The estimation for the 
