@@ -94,8 +94,7 @@ C Internal variables ---------------------------------------------------
       real(dp)
      .  KXIJ, CKXIJ, SKXIJ, DELTA, ENER, DIFF, GAUSS, NORM, WKSUM
 
-      complex(dp)
-     .  D11, D12, D21, D22
+      complex(dp) :: D11, D12, D22
 
       complex(dp), pointer :: Spr(:,:) => null()
 
@@ -236,7 +235,7 @@ C Loop over all the energy range
                  D11 = caux(1,io) * dconjg(caux(1,juo)) * Sloc(io,jo)
                  D22 = caux(2,io) * dconjg(caux(2,juo)) * Sloc(io,jo)
                  D12 = caux(1,io) * dconjg(caux(2,juo)) * Sloc(io,jo)
-                 D21 = caux(2,io) * dconjg(caux(1,juo)) * Sloc(io,jo)
+                 !D21 = caux(2,io) * dconjg(caux(1,juo)) * Sloc(io,jo)
 
                  D11 = gauss*D11
                  D22 = gauss*D22
@@ -271,7 +270,7 @@ C Loop over all the energy range
                 D11 = caux(1,io) * dconjg(caux(1,jo)) * Spr(io,jo)
                 D22 = caux(2,io) * dconjg(caux(2,jo)) * Spr(io,jo)
                 D12 = caux(1,io) * dconjg(caux(2,jo)) * Spr(io,jo)
-                D21 = caux(2,io) * dconjg(caux(1,jo)) * Spr(io,jo)
+                !D21 = caux(2,io) * dconjg(caux(1,jo)) * Spr(io,jo)
 
                 D11 = gauss*D11
                 D22 = gauss*D22
