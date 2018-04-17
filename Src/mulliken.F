@@ -409,8 +409,6 @@ C Global sum of total charge
               qos(is,io) = 0.0_dp
             enddo
           enddo
-          ! For SOC-onsite, dm(:,4) has the wrong sign, but this
-          ! routine is not called ('moments' is).
           do io = 1,nbasis
              call LocalToGlobalOrb(io,Node, Nodes, itot)
              do in = 1,numh(io)
@@ -422,9 +420,7 @@ C Global sum of total charge
                    dm_aux(4) = 0.5_dp*(dm_aux(4)+dm(ind,8))
                 endif
                 do is = 1,spin%Grid
-                   qos(is,itot) = qos(is,itot) + dm_aux(is)*s(ind)/2
-                   if ( jo <= nbasistot )
-     .                  qos(is,jo) = qos(is,jo) + dm_aux(is)*s(ind)/2
+                   qos(is,itot) = qos(is,itot) + dm_aux(is)*s(ind)
                 enddo
              enddo
           enddo 
