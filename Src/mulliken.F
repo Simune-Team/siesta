@@ -418,9 +418,7 @@ C Global sum of total charge
                 jo = listh(ind)
                 dm_aux(1:4) = dm(ind,1:4)
                 do is = 1,nspin_grid
-                   qos(is,itot) = qos(is,itot) + dm_aux(is)*s(ind)/2
-                   if ( jo <= nbasistot )
-     .                  qos(is,jo) = qos(is,jo) + dm_aux(is)*s(ind)/2
+                   qos(is,itot) = qos(is,itot) + dm_aux(is)*s(ind)
                 enddo
              enddo
           enddo 
