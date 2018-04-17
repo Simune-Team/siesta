@@ -420,9 +420,7 @@ C Global sum of total charge
                    dm_aux(4) = 0.5_dp*(dm_aux(4)+dm(ind,8))
                 endif
                 do is = 1,spin%Grid
-                   qos(is,itot) = qos(is,itot) + dm_aux(is)*s(ind)/2
-                   if ( jo <= nbasistot )
-     .                  qos(is,jo) = qos(is,jo) + dm_aux(is)*s(ind)/2
+                   qos(is,itot) = qos(is,itot) + dm_aux(is)*s(ind)
                 enddo
              enddo
           enddo 
