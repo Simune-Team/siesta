@@ -48,7 +48,7 @@ C INTEGER NUOTOT            : Total number of orbitals per unit cell
 C ****  AUXILIARY  *****************************************************
 C REAL*8  HAUX(2,NUO,NUO)   : Auxiliary space for the hamiltonian matrix
 C REAL*8  SAUX(2,NUO,NUO)   : Auxiliary space for the overlap matrix
-C REAL*8  PSI(2,NUO,NUO)    : Auxiliary space for the eigenvectors
+C COMPLEX*16  PSI(2,NUO,NUO)  : Auxiliary space for the eigenvectors
 C ****  OUTPUT  ********************************************************
 C REAL*8  DTOT(NHIST,4)   : Total density of states
 C REAL*8  DPR(NHIST,NUO,4): Proyected density of states
@@ -75,11 +75,11 @@ C **********************************************************************
       real(dp)
      .  H(MAXNH,4), S(MAXNH), E1, E2, SIGMA,
      .  XIJ(3,MAXNH), KPOINT(3,NK), EO(MAXO*2,NK),
-     .  DTOT(NHIST,4), DPR(NHIST,NUOTOT,4), WK(NK),
-     .  psi(2,2,nuotot,2*nuo)
+     .  DTOT(NHIST,4), DPR(NHIST,NUOTOT,4), WK(NK)
+      complex(dp), target :: psi(2,nuotot,2*nuo)
 
-      complex(dp) Haux(2,nuotot,2,nuo), Saux(2,nuotot,2,nuo), 
-     .           caux(2,nuotot)
+      complex(dp) Haux(2,nuotot,2,nuo), Saux(2,nuotot,2,nuo)
+      complex(dp), pointer :: caux(:,:)
  
       complex(dp) kphs
 
@@ -127,7 +127,7 @@ C Initialize some variables
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+            kphs = cdexp(dcmplx(0.0_dp, -kxij))
 
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -159,7 +159,7 @@ C Diagonalize for each k point. Note duplication of problem size.
               kxij = kpoint(1,ik) * xij(1,ind) +
      .               kpoint(2,ik) * xij(2,ind) +
      .               kpoint(3,ik) * xij(3,ind)
-              kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+              kphs = cdexp(dcmplx(0.0_dp, -kxij))
 
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -188,7 +188,10 @@ C Recalculate again the overlap matrix in k-space
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+! Since we are doing element wise multiplications (and not dot-products)
+! we might as well setup the transpose S(k)^T == S(-k) because this will
+! mean that we can do a simpler multiplication further down
+            kphs = cdexp(dcmplx(0.0_dp, kxij))
             Spr(juo,iuo) = Spr(juo,iuo) + S(ind) * kphs
           enddo
         enddo
@@ -225,12 +228,8 @@ C Loop over all the energy range
               ibandg = ibandg * 2 - mod(iband, 2) 
               diff = (ener - eo(ibandg,ik))**2 / (sigma ** 2)
               if (diff .gt. 15.0d0) cycle
-              gauss = exp(-diff)
-              caux(:,:) = dcmplx(0.0_dp,0.0_dp)
-              do j=1,nuotot
-                caux(1,j) = dcmplx(psi(1,1,j,iband),psi(2,1,j,iband))   ! c_{j,up)
-                caux(2,j) = dcmplx(psi(1,2,j,iband),psi(2,2,j,iband))   ! c_{j,down)
-              enddo
+              gauss = exp(-diff) * wk(ik)
+              caux => psi(:,:,iband) ! c_{j,up), c_{j,down}
               do jo = 1, Bnuo
                call LocalToGlobalOrb(jo,BNode,Nodes,juo)
                do io = 1, nuotot
@@ -239,9 +238,9 @@ C Loop over all the energy range
                  D12 = caux(1,io) * dconjg(caux(2,juo)) * Sloc(io,jo)
                  D21 = caux(2,io) * dconjg(caux(1,juo)) * Sloc(io,jo)
 
-                 D11 = gauss*wk(ik)*D11
-                 D22 = gauss*wk(ik)*D22
-                 D12 = gauss*wk(ik)*D12
+                 D11 = gauss*D11
+                 D22 = gauss*D22
+                 D12 = gauss*D12
 
                  dpr(ihist,juo,1) = dpr(ihist,juo,1) + dreal(D11)
                  dpr(ihist,juo,2) = dpr(ihist,juo,2) + dreal(D22)
@@ -265,12 +264,8 @@ C Loop over all the energy range
           do iband = 1, nuo*2
             diff = (ener - eo(iband,ik))**2 / (sigma ** 2)
             if (diff .gt. 15.0d0) cycle
-            gauss = exp(-diff)
-            caux(:,:) = dcmplx(0.0_dp,0.0_dp)
-            do j=1,nuotot
-              caux(1,j) = dcmplx(psi(1,1,j,iband),psi(2,1,j,iband))   ! c_{j,up)
-              caux(2,j) = dcmplx(psi(1,2,j,iband),psi(2,2,j,iband))   ! c_{j,down)
-            enddo
+            gauss = exp(-diff) * wk(ik)
+            caux => psi(:,:,iband) ! c_{up,j), c_{down,j}
             do io = 1, nuotot
               do jo = 1, nuotot
                 D11 = caux(1,io) * dconjg(caux(1,jo)) * Spr(io,jo)
@@ -278,9 +273,9 @@ C Loop over all the energy range
                 D12 = caux(1,io) * dconjg(caux(2,jo)) * Spr(io,jo)
                 D21 = caux(2,io) * dconjg(caux(1,jo)) * Spr(io,jo)
 
-                D11 = gauss*wk(ik)*D11
-                D22 = gauss*wk(ik)*D22
-                D12 = gauss*wk(ik)*D12
+                D11 = gauss*D11
+                D22 = gauss*D22
+                D12 = gauss*D12
 
                 dpr(ihist,jo,1) = dpr(ihist,jo,1) + dreal(D11)
                 dpr(ihist,jo,2) = dpr(ihist,jo,2) + dreal(D22)
