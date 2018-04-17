@@ -81,12 +81,9 @@
       endif
 !     Print populations at each SCF step if requested before mixing ......
       if (muldeb) then
-        if (ionode) write (6,"(/a)")
-     &    'siesta: Mulliken populations (DM_out)'
-        if ( SpOrb ) then
-           ! BUG: Dscf is truncated (1..4) instead of being correctly hermitified
-           ! Kept just for the "orbital moment" output
-           call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
+        if (ionode) write (6,"(/a)") 'Using DM_out for analysis:'
+        if ( SpOrb .and. orbmoms) then
+           call moments( 1, na_u, no_u, maxnh, numh, listhptr,
      .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .           indxuo )
         endif

@@ -3799,7 +3799,7 @@ The current SO formalism enables the possibility of several types of calculation
   % 
   \item By means of Mulliken analysis, after the self-consistent
   procedure, local spin and orbital moments can be calculated by means
-  of the flag \fdf{WriteOrbMom}.
+  of the flags \fdf{WriteMullikenPop} and \fdf{WriteOrbMom}.
 \end{itemize}
 
 Note: Due to the small SO energy value contribution to the total
@@ -3834,11 +3834,14 @@ relativistic form and use the non-linear core corrections.
 \begin{fdflogicalF}{WriteOrbMom}
 
   If \fdftrue, a table is provided in the main output file, which
-  includes an estimation of the vector spin and orbital magnetic
+  includes an estimation of the vector orbital magnetic
   moments, in units of the Bohr magneton, projected onto each orbital
   and also onto each atom. The estimation for the orbital moments is
   based on a two-center approximation, and makes use of the Mulliken
   population analysis.
+
+  If \fdf{MullikenInScf} is \fdftrue, this information is printed at
+  every scf step.
 
 \end{fdflogicalF}
 
