@@ -71,10 +71,10 @@ C **********************************************************************
 
       real(dp)
      .  H(maxnh,8), S(maxnh), E1, E2, sigma, eo(maxo*2),
-     .  psi(2,2,nuotot,2*nuo), dtot(nhist,4), dpr(nhist,nuotot,4)
-
-      complex(dp)
-     .  Haux(2,nuotot,2,nuo), Saux(2,nuotot,2,nuo), caux(2,nuotot)
+     .  dtot(nhist,4), dpr(nhist,nuotot,4)
+      complex(dp), target :: psi(2,nuotot,2*nuo)
+      complex(dp) Haux(2,nuotot,2,nuo), Saux(2,nuotot,2,nuo)
+      complex(dp), pointer :: caux(:,:)
       external  cdiag
 
 C Internal variables ---------------------------------------------------
@@ -180,11 +180,7 @@ C Transfer data
               diff = (ener - eo(ibandg))**2 / (sigma ** 2)
               if (diff .gt. 15.0d0) cycle
               gauss = exp(-diff)
-              caux(:,:) = dcmplx(0.0_dp,0.0_dp)
-              do j=1,nuotot
-                caux(1,j) = dcmplx(psi(1,1,j,iband),psi(2,1,j,iband))   ! c_{j,up)
-                caux(2,j) = dcmplx(psi(1,2,j,iband),psi(2,2,j,iband))   ! c_{j,down)
-              enddo
+              caux => psi(:,:,iband) ! c_{up,j}, c_{down,j}
               do jo = 1, Bnuo
                 call LocalToGlobalOrb(jo,BNode,Nodes,juo)
                 do io = 1, nuotot
@@ -218,11 +214,7 @@ C Loop over all the energy range
             diff = (ener - eo(iband))**2 / (sigma ** 2)
             if (diff .gt. 15.0d0) cycle
             gauss = exp(-diff)
-            caux(:,:) = dcmplx(0.0_dp,0.0_dp)
-            do j=1,nuotot
-              caux(1,j) = dcmplx(psi(1,1,j,iband),psi(2,1,j,iband))   ! c_{j,up)
-              caux(2,j) = dcmplx(psi(1,2,j,iband),psi(2,2,j,iband))   ! c_{j,down)
-            enddo
+            caux => psi(:,:,iband) ! c_{up,j}, c_{down,j}
             do jo = 1, nuotot
               do io = 1, nuotot
                 rpipj = dreal(caux(1,io)*dconjg(caux(1,jo)))*gauss
