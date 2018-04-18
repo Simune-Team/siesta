@@ -94,9 +94,9 @@ C Internal variables ---------------------------------------------------
 
       real(dp)
      .  kxij, Ckxij, Skxij, delta, ener, diff, pipj1, pipj2, 
-     .  pipjS1, pipjS2, gauss, norm, wksum
+     .  pipjS1, gauss, norm, wksum
 
-      real(dp), dimension(:), pointer   ::  Snew, Dloc
+      real(dp), dimension(:), pointer   ::  Snew
       real(dp), dimension(:,:), pointer ::  Hnew, xijloc
 
 #ifdef MPI
@@ -117,10 +117,6 @@ C Allocate local memory for global list arrays
       nullify( listhptrg )
       call re_alloc( listhptrg, 1, nuotot, name='listhptrg',
      &               routine='pdoskp' )
-
-C Find maximum value in numh and create local storage
-      nullify( Dloc )
-      call re_alloc( Dloc, 1, nuotot, name='Dloc', routine='pdoskp' )
 
 C Globalise numh
       do io = 1,nuotot
@@ -290,16 +286,17 @@ C Recalculate again the overlap matrix in k-space
               jo  = listhg(ind)
               iuo = indxuo(io)
               juo = indxuo(jo)
-C Calculates the phases k*r_ij
+C Calculate the phases k*r_ij
               kxij = kpoint(1,ik) * xijloc(1,ind) +
      .               kpoint(2,ik) * xijloc(2,ind) +
      .               kpoint(3,ik) * xijloc(3,ind) 
               ckxij = cos(kxij)
               skxij = sin(kxij)
-C Calculates the hamiltonian and the overlap in k space
-C H(k) = Sum(R) exp(i*k*R) * H(R)
+! Since we are doing element wise multiplications (and not dot-products)
+! we might as well setup the transpose S(k)^T == S(-k) because this will
+! mean that we can do a simpler multiplication further down
               Saux(1,juo,iuo) = Saux(1,juo,iuo) + Snew(ind) * ckxij
-              Saux(2,juo,iuo) = Saux(2,juo,iuo) - Snew(ind) * skxij
+              Saux(2,juo,iuo) = Saux(2,juo,iuo) + Snew(ind) * skxij
             enddo
           enddo
 
@@ -311,19 +308,17 @@ C Loop over all the energy range
               if (diff .gt. 15.0d0) then
                 cycle
               else
-                gauss = ( exp(-diff) )
-                dtot(ihist,is) = dtot(ihist,is) + gauss*wk(ik)
-                do iuo = 1, nuotot
-C Solo para los Juo que satisfagan el criterio del record...
-                  do juo = 1, nuotot
+                gauss = exp(-diff) * wk(ik)
+                dtot(ihist,is) = dtot(ihist,is) + gauss
+                do juo = 1, nuotot
+                  do iuo = 1, nuotot
+!                   This is:  psi(iuo) * psi(juo)^*
                     pipj1 = psi(1,iuo,iband) * psi(1,juo,iband) +
      .                      psi(2,iuo,iband) * psi(2,juo,iband)
-                    pipj2 = psi(1,iuo,iband) * psi(2,juo,iband) -
+                    pipj2 = - psi(1,iuo,iband) * psi(2,juo,iband) +
      .                      psi(2,iuo,iband) * psi(1,juo,iband)
-                    pipjS1= pipj1*Saux(1,iuo,juo)-pipj2*Saux(2,iuo,juo)
-                    pipjS2= pipj1*Saux(2,iuo,juo)+pipj2*Saux(1,iuo,juo)
-                    dpr(ihist,juo,is) = dpr(ihist,juo,is) + 
-     .                                     pipjS1*gauss*wk(ik)
+                    pipjS1 = pipj1*Saux(1,iuo,juo)-pipj2*Saux(2,iuo,juo)
+                    dpr(ihist,juo,is) = dpr(ihist,juo,is) + pipjS1*gauss
                   enddo
                 enddo
               endif
@@ -339,7 +334,6 @@ C Free local memory from computation of dpr
       call de_alloc( xijloc, name='xijloc' )
       call de_alloc( Hnew, name='Hnew' )
       call de_alloc( Snew, name='Snew' )
-      call de_alloc( Dloc, name='Dloc' )
       call de_alloc( listhg, name='listhg' )
       call de_alloc( listhptrg, name='listhptrg' )
       call de_alloc( numhg, name='numhg' )
