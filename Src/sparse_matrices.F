@@ -78,7 +78,7 @@
       call delete( DM_history )
 
       if( spin%SO_offsite ) then 
-       deallocate( H0_offsiteSO )
+         call de_alloc( H0_offsiteSO, 'H0_offsiteSO', 'sparseMat' )
       endif
       
       ! Using MixH is bad as several utilities

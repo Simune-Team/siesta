@@ -99,14 +99,13 @@
 !$OMP single
       H_kin => val(H_kin_1D)
       H_vkb => val(H_vkb_1D)
-      if ( spin%SO .and. .not.spin%SO_offsite ) then
+      if ( spin%SO_onsite ) then
          ! Sadly some compilers (g95), does
          ! not allow bounds for pointer assignments :(
          H_so => val(H_so_2D)
       end if
 !$OMP end single ! keep wait
 
-! CC RC  modified for the offSpOrb
       if ( .not. spin%SO_offsite ) then
        do ispin = 1, spin%spinor
          if (ispin .le. 2) then
@@ -125,7 +124,7 @@
        end do
       end if
 
-      if ( spin%SO .and. .not.spin%SO_offsite ) then
+      if ( spin%SO_onsite ) then
 !$OMP do collapse(2)
          do ispin = 3 , spin%H
             do io = 1,maxnh
@@ -141,8 +140,6 @@
          end do
 !$OMP end do nowait
       end if
-! CC RC  modified for the offSpOrb
-
          
 ! ..................
 
@@ -201,7 +198,7 @@
 
       endif
 
-      if ( spin%SO .and. .not.spin%SO_offsite ) then
+      if ( spin%SO_onsite ) then
 !$OMP do reduction(+:Eso)
          do io = 1, maxnh
             Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8)

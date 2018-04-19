@@ -74,7 +74,7 @@ module m_cite
   ! Increment this after having added a new
   ! citation!
   ! OTHERWISE YOU WILL EXPERIENCE A SEG-FAULT.
-  integer, parameter :: N_citations = 8
+  integer, parameter :: N_citations = 9
 
   private
 
@@ -254,6 +254,17 @@ contains
        cit%cite_key = "Cuadrado2012"
        ID = 8
        
+    case ( "10.1088/0953-8984/18/34/012")
+       ! On-Site Spin-Orbit 
+       cit%comment = "On-Site Spin-Orbit Implementation"
+       cit%doi = "10.1088/0953-8984/18/34/012"
+       cit%journal = "Journal of Physics: Condensed Matter"
+       cit%year = 2006
+       cit%volume = "18"
+       cit%issue = "0"
+       cit%cite_key = "FernandezSeivane2006"
+       ID = 9
+
     end select
 
     ! probably we should error out...

@@ -37,8 +37,9 @@ module t_spin
      !> Spin-orbit coupling
      logical :: SO = .false.
 
-     !> If .true. the spin-orbit is using the off-site implementation (else the on-site)
+     !> Flavors of off-site implementation
      logical :: SO_offsite = .false.
+     logical :: SO_onsite  = .false.
 
      ! Perhaps one could argue that one may
      ! associate a symmetry to the spin which
@@ -131,13 +132,13 @@ contains
     ! Time reversal symmetry
     TrSym  = .true.
 
-    ! All components of the 'spin' variable
-    ! is initially correct...
+    ! Initialize all components of the 'spin' variable
     spin%none = .false.
     spin%Col = .false.
     spin%NCol = .false.
     spin%SO = .false.
     spin%SO_offsite = .false.
+    spin%SO_onsite  = .false.
 
     ! Read in old flags (discouraged)
     spin%Col  = fdf_get('SpinPolarized',.false.)
@@ -177,14 +178,14 @@ contains
        
        spin%Col = .true.
        
-    else if ( leqi(opt, 'non-collinear') .or. &
+    else if ( leqi(opt, 'non-collinear') .or.  leqi(opt, 'non-colinear') .or. &
          leqi(opt, 'NC') .or. leqi(opt, 'N-C') ) then
        
        spin%NCol = .true.
        
     else if ( leqi(opt, 'spin-orbit') .or. leqi(opt, 'S-O') .or. &
          leqi(opt, 'SOC') .or. leqi(opt, 'SO') ) then
-       ! Spin-orbit is the same as using the off-site implementation
+       ! Spin-orbit defaults to the off-site implementation
        
        spin%SO = .true.
        spin%SO_offsite = .true.
@@ -199,7 +200,7 @@ contains
          leqi(opt, 'SOC+onsite') .or. leqi(opt, 'SO+onsite') ) then
        
        spin%SO = .true.
-       spin%SO_offsite = .false.
+       spin%SO_onsite = .true.
 
     else
        write(*,*) 'Unknown spin flag: ', trim(opt)
@@ -208,6 +209,9 @@ contains
 
     if (spin%SO_offsite) then
        call add_citation("10.1088/0953-8984/24/8/086005")
+    endif
+    if (spin%SO_onsite) then
+       call add_citation("10.1088/0953-8984/18/34/012")
     endif
     
     ! Note that, in what follows,

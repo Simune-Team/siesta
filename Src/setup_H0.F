@@ -187,7 +187,7 @@ C     Add on force field contribution to energy
 ! computing forces and stresses, calling it in the first iteration
 ! should be enough
 !
-      if ( spin%SO .and. .not.spin%SO_offsite ) then
+      if ( spin%SO_onsite ) then
          H_so => val(H_so_2D)
 !$OMP parallel workshare default(shared)
          H_so = 0._dp

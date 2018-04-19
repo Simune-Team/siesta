@@ -26,10 +26,7 @@
       use sparse_matrices, only: xijo, xij_2D
       use sparse_matrices, only: S   , S_1D
 
-! CC RC  Added for the offSpOrb
       use sparse_matrices, only: H0_offsiteSO
-!      use sparse_matrices, only: MM_HDM, herm_HDM
-! CC RC  Added for the offSpOrb
 
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_ldau_2D, H_so_2D
@@ -142,12 +139,6 @@
 
       type(dData2D) :: tmp_2D
       real(dp) :: dummy_qspin(8)
-
-CC RC  OffSpOrb
-      real(dp)           :: r1(3), r2(3)
-      integer            :: i_orb, ist, it, j, js, iptrt, jptr, j0
-      real(dp)           :: bohr = 1.8897269d0   !< [A] = 1/0.529177
-CC RC  OffSpOrb
 
 !------------------------------------------------------------------- BEGIN
       call timer( 'IterGeom', 1 )
@@ -573,15 +564,16 @@ CC RC  OffSpOrb
          end if
       end if
       
-      if ( spin%SO .and. .not.spin%SO_offsite  ) then
-         write(oname,"(a,i0)") "H_so at geom step ", istep
+      if ( spin%SO_onsite  ) then
+         write(oname,"(a,i0)") "H_so (onsite) at geom step ", istep
          call newdSpData2D(sparse_pattern,spin%H - 2,
      &        block_dist,H_so_2D,name=oname)
       end if
 
-! CC RC  Added for the offSpOrb
-      if ( spin%SO_offsite ) allocate ( H0_offsiteSO(maxnh,4) )
-! CC RC  Added for the offSpOrb
+      if ( spin%SO_offsite ) then
+         call re_alloc(H0_offsiteSO, 1,maxnh, 1,4, 'H0_offsiteSO',
+     $                 'state_init')
+      endif
 
       write(oname,"(a,i0)") "S at geom step ", istep
       call newdSpData1D(sparse_pattern,block_dist,S_1D,name=oname)

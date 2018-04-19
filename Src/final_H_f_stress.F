@@ -194,12 +194,7 @@
 #endif
       endif
 
-! If in the future the spin-orbit routine is able to compute
-! forces and stresses, then "last" will be needed. If we are not
-! computing forces and stresses, calling it in the first iteration
-! should be enough
-!
-      if ( spin%SO .and. .not. spin%SO_offsite ) then
+      if ( spin%SO_onsite) then
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
       endif
