@@ -319,30 +319,26 @@
       if ((istp==1.and.first_scf_step).or.final) then
         write(6,'(/,a,/,(a,f17.6))')
      .     'siesta: Program''s energy decomposition (eV):',
-     .     'siesta: Ebs      =', Ebs/eV, 
-     .     'siesta: Eions    =', Eions/eV,
-     .     'siesta: Ena      =', Ena/eV,
-     .     'siesta: Ekin     =', Ekin/eV,
-     .     'siesta: Enl      =', Enl/eV
-      if ( spin%SO ) then 
-        write(6,'(a,f17.6)') 
-     .     'siesta: Eso      =', Eso/eV
-      endif
-        write(6,'(a,f17.6)')
-     .     'siesta: Eldau    =', Eldau/eV,
-     .     'siesta: DEna     =', DEna/eV,
-     .     'siesta: DUscf    =', DUscf/eV,
-     .     'siesta: DUext    =', DUext/eV,
+     .     'siesta: Ebs     =', Ebs/eV, 
+     .     'siesta: Eions   =', Eions/eV,
+     .     'siesta: Ena     =', Ena/eV,
+     .     'siesta: Ekin    =', Ekin/eV,
+     .     'siesta: Enl     =', Enl/eV,
+     .     'siesta: Eso     =', Eso/eV,
+     .     'siesta: Eldau   =', Eldau/eV,
+     .     'siesta: DEna    =', DEna/eV,
+     .     'siesta: DUscf   =', DUscf/eV,
+     .     'siesta: DUext   =', DUext/eV,
      .     'siesta: Enegf   =', DE_NEGF/eV,
-     .     'siesta: Exc      =', Exc/eV,
-     .     'siesta: eta*DQ   =', Ecorrec/eV,
-     .     'siesta: Emadel   =', Emad/eV,
-     .     'siesta: Emeta    =', Emeta/eV,
-     .     'siesta: Emolmec  =', Emm/eV,
-     .     'siesta: Ekinion  =', Ekinion/eV,
-     .     'siesta: Eharris  =', (Eharrs+Ekinion)/eV,
-     .     'siesta: Etot     =', (Etot+Ekinion)/eV,
-     .     'siesta: FreeEng  =', (FreeE+Ekinion)/eV
+     .     'siesta: Exc     =', Exc/eV,
+     .     'siesta: eta*DQ  =', Ecorrec/eV,
+     .     'siesta: Emadel  =', Emad/eV,
+     .     'siesta: Emeta   =', Emeta/eV,
+     .     'siesta: Emolmec =', Emm/eV,
+     .     'siesta: Ekinion =', Ekinion/eV,
+     .     'siesta: Eharris =', (Eharrs+Ekinion)/eV,
+     .     'siesta: Etot    =', (Etot+Ekinion)/eV,
+     .     'siesta: FreeEng =', (FreeE+Ekinion)/eV
         if (cml_p) then
           call cmlStartPropertyList(mainXML,
      .         title='Energy Decomposition')
@@ -505,12 +501,8 @@
      .    'siesta: ', 'Band Struct. =', Ebs/eV,
      .    'siesta: ',      'Kinetic =', Ekin/eV,
      .    'siesta: ',      'Hartree =', Uscf/eV,
-     .    'siesta: ',      'Eldau   =', Eldau/eV
-      if ( spin%SO ) then 
-        write(6,'(a,a15,f15.6)') 
-     .     'siesta: ', 'Eso      =', Eso/eV
-      endif
-        write(6,'(a,a15,f15.6)')
+     .    'siesta: ',      'Eldau   =', Eldau/eV,
+     .    'siesta: ',      'Eso     =', Eso/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
      .    'siesta: ',      'Enegf   =', DE_NEGF/eV,
      .    'siesta: ',  'Exch.-corr. =', Exc/eV,

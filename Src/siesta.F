@@ -18,10 +18,6 @@
       use alloc
       use siesta_options, only: td_elec_dyn
 
-! CC RC  Added for the offSpOrb
-      use m_spin, only: spin
-! CC RC  Added for the offSpOrb
-
       use parallel, only: SIESTA_worker ! whether part of Siesta's communicator
       use parallel, only: ionode
 #ifdef MPI      

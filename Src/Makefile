@@ -681,8 +681,8 @@ dhscf.o: rhofft.o rhoofd.o siesta_options.o sys.o units.o vmat.o
 diag.o: alloc.o diag_option.o parallel.o precision.o sys.o
 diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
-diag3g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
-diag3k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
+diag3g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
+diag3k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag_option.o: parallel.o precision.o
 diagg.o: alloc.o fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: writewave.o
@@ -819,7 +819,7 @@ m_dminim.o: siesta_options.o sys.o
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 m_efield.o: atmfuncs.o m_cite.o m_ts_global_vars.o mesh.o parallel.o
 m_efield.o: precision.o siesta_cml.o siesta_geom.o sys.o units.o
-m_energies.o: m_spin.o parallel.o precision.o
+m_energies.o: precision.o
 m_eo.o: precision.o
 m_evolve.o: cranknic_evolg.o cranknic_evolk.o m_gamma.o m_spin.o precision.o
 m_evolve.o: sys.o
@@ -1240,7 +1240,7 @@ setup_hamiltonian.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
 setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
-siesta.o: alloc.o extrae_module.o m_mpi_utils.o m_spin.o m_steps.o parallel.o
+siesta.o: alloc.o extrae_module.o m_mpi_utils.o m_steps.o parallel.o
 siesta.o: siesta_analysis.o siesta_end.o siesta_forces.o siesta_init.o
 siesta.o: siesta_move.o siesta_options.o siesta_tddft.o
 siesta2wannier90.o: files.o m_digest_nnkp.o m_spin.o m_trialorbitalclass.o
@@ -1263,21 +1263,20 @@ siesta_end.o: flook_siesta.o m_chess.o m_dscfcomm.o m_fixed.o m_io.o
 siesta_end.o: m_mixing_scf.o m_rhog.o m_wallclock.o meshdscf.o meshphi.o
 siesta_end.o: moremeshsubs.o parallel.o siesta_cml.o siesta_cmlsubs.o
 siesta_end.o: siesta_master.o siesta_options.o sparse_matrices.o timestamp.o
-siesta_forces.o: atomlist.o class_Fstack_Data1D.o class_SpData1D.o
-siesta_forces.o: class_SpData2D.o compute_dm.o compute_energies.o
-siesta_forces.o: compute_max_diff.o densematrix.o dm_charge.o files.o
-siesta_forces.o: final_H_f_stress.o flook_siesta.o kpoint_grid.o
-siesta_forces.o: m_check_walltime.o m_convergence.o m_energies.o m_eo.o
-siesta_forces.o: m_forces.o m_gamma.o m_initwf.o m_iodm_old.o m_mixing.o
-siesta_forces.o: m_mixing_scf.o m_mpi_utils.o m_ncdf_siesta.o m_pexsi.o
-siesta_forces.o: m_pexsi_driver.o m_rhog.o m_spin.o m_steps.o m_stress.o
-siesta_forces.o: m_transiesta.o m_ts_charge.o m_ts_electype.o
-siesta_forces.o: m_ts_global_vars.o m_ts_method.o m_ts_options.o mixer.o
-siesta_forces.o: parallel.o post_scf_work.o precision.o save_density_matrix.o
-siesta_forces.o: scfconvergence_test.o setup_H0.o setup_hamiltonian.o
-siesta_forces.o: siesta_cml.o siesta_dicts.o siesta_geom.o siesta_master.o
-siesta_forces.o: siesta_options.o sparse_matrices.o state_analysis.o
-siesta_forces.o: state_init.o sys.o timer.o units.o write_subs.o
+siesta_forces.o: atomlist.o class_Fstack_Data1D.o class_SpData2D.o compute_dm.o
+siesta_forces.o: compute_energies.o compute_max_diff.o densematrix.o
+siesta_forces.o: dm_charge.o files.o final_H_f_stress.o flook_siesta.o
+siesta_forces.o: kpoint_grid.o m_check_walltime.o m_convergence.o m_energies.o
+siesta_forces.o: m_forces.o m_initwf.o m_iodm_old.o m_mixing.o m_mixing_scf.o
+siesta_forces.o: m_mpi_utils.o m_ncdf_siesta.o m_pexsi.o m_pexsi_driver.o
+siesta_forces.o: m_rhog.o m_spin.o m_steps.o m_stress.o m_transiesta.o
+siesta_forces.o: m_ts_charge.o m_ts_electype.o m_ts_global_vars.o m_ts_method.o
+siesta_forces.o: m_ts_options.o mixer.o parallel.o post_scf_work.o precision.o
+siesta_forces.o: save_density_matrix.o scfconvergence_test.o setup_H0.o
+siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_dicts.o siesta_geom.o
+siesta_forces.o: siesta_master.o siesta_options.o sparse_matrices.o
+siesta_forces.o: state_analysis.o state_init.o sys.o timer.o units.o
+siesta_forces.o: write_subs.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o
 siesta_init.o: class_Fstack_Pair_Geometry_SpData2D.o densematrix.o

@@ -181,8 +181,6 @@ C     Initialise MPI and set processor number
       call setDebugOutputUnit()
 #endif /* DEBUG_XC */
 
-
-
       ! We have to immediately write out the options used to compile SIESTA
       if ( Node == 0 ) then
          ! Print version information
@@ -296,6 +294,7 @@ C     Initialise MPI and set processor number
       ! Be sure to initialize the spin-configuration data
       ! for all processors.
       call init_spin( )
+
       if (.not. SIESTA_worker) RETURN
 
 #ifdef DEBUG
@@ -330,6 +329,7 @@ C     Initialise MPI and set processor number
 
 !     Initialize some variables
       call init_Energies()
+      
 !
 !     Set object debugging level
 !
@@ -380,6 +380,7 @@ C     Initialise MPI and set processor number
          call add_citation("10.1088/0953-8984/14/11/302")
       end if
 
+
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
       call read_xc_info()
@@ -392,9 +393,10 @@ C     Initialise MPI and set processor number
 
 !     Initialize pseudopotentials and atomic orbitals
       if (IOnode) call initatom( ns )
-
       call broadcast( ns )
+
       call broadcast_basis( )
+
       call register_rfs()
 
       atmonly = fdf_get( 'Atom-Setup-Only', .false. )

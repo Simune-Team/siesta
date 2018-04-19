@@ -19,11 +19,6 @@
       use parallel,      only : Node, Nodes, BlockSize
       use parallelsubs,  only : LocalToGlobalOrb
       use m_fermid,      only : fermid, stepf
-
-! CC RC  Added for the offSpOrb
-      use m_spin, only: spin
-! CC RC  Added for the offSpOrb
-
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -39,7 +34,6 @@ C Modified by V.M.Garcia, June 2002.
 C Density matrix build and computation of eigenvectors restricted
 C by J.D. Gale November 2004.
 C Reduced memory requirements, Nick, Aug. 2017
-C Modifed for Off-Site Spin-orbit coupling by R. Cuadrado, Feb. 2018
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
@@ -146,11 +140,10 @@ C *********************************************************************
 !     B E G I N
 !***********************************************************************
 
-! Notes for On-site SO implementation      
 !****************************************************************************
 ! Build Hamiltonian      
 !****************************************************************************
-! (Notes by Jaime Ferrer)--> On-Site Spin-Orbit
+! (Notes by Jaime Ferrer)
 ! Indices iuo and juo are for orbital components in the unit cell
 ! while jo is for orbital components in the supercell:
 ! d_{jo} = R + d_{juo}, x_{ij} = d_{jo} - d_{iuo}
@@ -181,7 +174,6 @@ C *********************************************************************
 !                               | H(ind,3) + i H(ind,4)   H(ind,2)              |
 !
 !
-! End notes for On-site SO implementation      
 
 !     Find eigenvalues at every k point
 
@@ -198,8 +190,8 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-
             kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+      
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
             Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
@@ -270,8 +262,8 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-
             kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+      
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
             Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
@@ -304,8 +296,8 @@ C *********************************************************************
               kxij = kpoint(1,ik) * xij(1,ind) +
      .               kpoint(2,ik) * xij(2,ind) +
      .               kpoint(3,ik) * xij(3,ind)
-
               kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+      
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
               Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
@@ -322,7 +314,6 @@ C *********************************************************************
      .               neigneeded,iscf,ierror, 2*BlockSize)
         endif
       
-! Notes for On-site SO implementation      
 !***********************************************************************
 ! BUILD NEW DENSITY MATRIX
 !***********************************************************************
@@ -344,8 +335,6 @@ C *********************************************************************
 ! Spin-box symmetrization of D:
 ! D_{i,j}(1,2) = 0.5 ( D_{i,j}(1,2) + D_{i,j}(2,1)^* )
 ! can not be enforced here.
-! End notes for On-site SO implementation      
-
 
         Dk  = dcmplx(0.0_dp,0.0_dp)
         Ek  = dcmplx(0.0_dp,0.0_dp)
@@ -416,28 +405,26 @@ C *********************************************************************
           D12 = Dk(1,juo,2,iuo) * kphs
           D21 = Dk(2,juo,1,iuo) * kphs
       
-!-------- D_new(u,u) = ( D(1), D(5) ) 
           Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
-          Dnew(ind,5) = Dnew(ind,5) + dimag(D11)
-!-------- D_new(d,d) = ( D(2), D(6) ) 
           Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
-          Dnew(ind,6) = Dnew(ind,6) + dimag(D22)
-!-------- D_new(u,d) = ( D(3), D(4) ) 
           Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
           Dnew(ind,4) = Dnew(ind,4) - dimag(D12)
-!-------- D_new(d,u) = ( D(7), D(8) ) 
-          Dnew(ind,7) = Dnew(ind,7) + dreal(D21)
+          Dnew(ind,5) = Dnew(ind,5) + dimag(D11) 
+          Dnew(ind,6) = Dnew(ind,6) + dimag(D22)
+          Dnew(ind,7) = Dnew(ind,7) + dreal(D21) 
           Dnew(ind,8) = Dnew(ind,8) + dimag(D21)
 
+      
           D11 = Ek(1,juo,1,iuo) * kphs
           D22 = Ek(2,juo,2,iuo) * kphs
           D12 = Ek(1,juo,2,iuo) * kphs
           D21 = Ek(2,juo,1,iuo) * kphs
-
+      
           Enew(ind,1) = Enew(ind,1) + dreal(D11)
           Enew(ind,2) = Enew(ind,2) + dreal(D22)
-          Enew(ind,3) = Enew(ind,3) + dreal(D12)
-          Enew(ind,4) = Enew(ind,4) - dimag(D12)
+          Enew(ind,3) = Enew(ind,3) + dreal(D12) 
+          Enew(ind,4) = Enew(ind,4) - dimag(D12) 
+      
         enddo
         enddo
       enddo

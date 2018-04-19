@@ -37,7 +37,6 @@ C Density matrix build and computation of eigenvectors restricted
 C by J.D. Gale November 2004.
 C Corrected by V.V. Maslyuk for parallel case, Mai 2007
 C Reduced memory requirements, Nick, Aug. 2017
-C Off-Site Spin-orbit coupling version by R. Cuadrado, October 2017
 C Clarified DM calculation, N.R. Papior, Jan. 2018      
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
@@ -149,7 +148,7 @@ C *********************************************************************
 !****************************************************************************
 ! Build Hamiltonian      
 !****************************************************************************
-! (Notes by Jaime Ferrer)--> On-site Spin-Orbit
+! (Notes by Jaime Ferrer)
 ! Indices iuo and juo are for orbital components in the unit cell
 ! while jo is for orbital components in the supercell:
 ! d_{jo} = R + d_{juo}, x_{ij} = d_{jo} - d_{iuo}

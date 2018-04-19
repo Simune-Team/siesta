@@ -55,8 +55,6 @@ contains
     use m_spin,                only: spin
     use sparse_matrices, only: DM_2D, S_1D
     use sparse_matrices, only: H, Hold, Dold, Dscf, Eold, Escf, maxnh
-! CC RC    use sparse_matrices, only: MM_HDM, herm_HDM
-    use sparse_matrices, only: numh, listhptr
     use m_convergence, only: converger_t
     use m_convergence, only: reset, set_tolerance
     use siesta_geom,   only: na_u           ! Number of atoms in unit cell
@@ -70,11 +68,6 @@ contains
 
     use atomlist,      only: no_u, lasto, Qtot
     use m_dm_charge, only: dm_charge
-
-    use atomlist,      only: no_s, no_l, indxuo
-    use m_gamma
-    use Kpoint_grid,    only: nkpnt, kpoint, kweight
-    use m_eo
 
     use m_pexsi_solver,        only: prevDmax
     use write_subs,            only: siesta_write_forces
@@ -111,18 +104,7 @@ contains
 
     use m_initwf, only: initwf
 
-!CC RC
-    use sparse_matrices, only: H_kin_1D, H_vkb_1D !, herm_HDM, MM_HDM
-      use class_dSpData1D,  only: val
-      use class_dSpData2D,  only: val
-
     integer, intent(inout)  :: istep
-
-!CC
-    integer  :: i, j, ind, io, ispin
-    real(dp) :: Ekin_tmp, Enl_tmp
-    real(dp), pointer   :: H_vkb(:), H_kin(:)
-
 
     integer :: iscf
     logical :: first_scf, SCFconverged
@@ -344,7 +326,7 @@ contains
                    call setup_hamiltonian( iscf )
                 end if
              end if
-
+             
              call compute_DM( iscf )
 
              ! Maybe set Dold to zero if reading charge or H...
@@ -370,7 +352,6 @@ contains
           ! This iteration has completed calculating the new DM
 
           call compute_energies( iscf )
-
           if ( mix_charge ) then
              call compute_charge_diff( drhog )
           end if
@@ -561,9 +542,7 @@ contains
     ! consequent TDDFT run.
     if ( writetdwf ) then
        istpp = 0
-!       call initwf(no_s, spin%Grid, spin%Grid, no_l, maxnh, no_u, qtot, &
-!            gamma, indxuo, nkpnt, kpoint, kweight, &
-!            no_u, EF7, istpp,totime)
+       call initwf(istpp,totime)
     end if
     
     if ( TSmode.and.TSinit.and.(.not. SCFConverged) ) then

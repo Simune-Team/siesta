@@ -630,7 +630,7 @@ C     Modules
                                         ! Sets a distribution of mesh
                                         ! points over parallel processors
 #endif /* BSC_CELLXC */
-      use m_vmat,  only  : vmat 
+      use m_vmat,  only  : vmat
       use m_rhoofd, only: rhoofd
 #ifdef MPI
       use mpi_siesta
@@ -923,7 +923,6 @@ C             rhoatm and Drho are in sequential mode
      &                 nspin, Dscf, DRho_par, 
      &                 nuo, nuotot, iaorb, iphorb, isa )
         endif
-
         ! DRHO_par is here in QUADRATIC, clustered form
 
 C       Set the UNIFORM distribution again and copy DRho to it
@@ -1504,16 +1503,13 @@ C ----------------------------------------------------------------------
       call bsc_cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
      &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
      &             dummy_DVxcdn, stressl )
-
 #endif /* BSC_CELLXC */
 
 #ifndef BSC_CELLXC
-
       call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
      .                           myBox(1,2), myBox(2,2),
      .                           myBox(1,3), myBox(2,3), nspin,
      .             DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )
-
 #else /* BSC_CELLXC */
 
       if (nodes.gt.1) then

@@ -51,6 +51,7 @@
       USE m_ldaxc, only: exchng  ! Local exchange
       USE m_ldaxc, only: pw92c   ! Perdew & Wang, PRB, 45, 13244 (1992) correl
 
+
       ! Used module parameters
       use precision, only : dp   ! Double precision real kind
 
@@ -131,7 +132,7 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
 
         if ( old_scheme ) then
          DTOT = D(1) + D(2)
-         dpolz= D(1)-D(2)
+         dpolz= D(1) - D(2)
          dpolxy= 2.0d0*sqrt(d(3)**2+d(4)**2)
          dpol  = sqrt( dpolz**2 + dpolxy**2 )
          if ( dpol.gt.1.0d-12 ) then
@@ -155,6 +156,7 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
           GDD(IX,2) = GD(IX,1)*S2**2 + GD(IX,2)*C2**2 -
      .                2.d0*C2*S2*(GD(IX,3)*CP - GD(IX,4)*SP)
          ENDDO
+
         else
 
         ! Find eigenvalues of density matrix Dij (diagonal densities DD, i.e.

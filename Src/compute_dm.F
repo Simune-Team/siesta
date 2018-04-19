@@ -180,7 +180,6 @@ c$$$     &           S, 'S.matrix')
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
-
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
       elseif (isolve .eq. SOLVE_ORDERN) then

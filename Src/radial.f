@@ -26,7 +26,6 @@
          real(dp) delta
          real(dp), pointer :: f(:)=>null()   ! Actual data
          real(dp), pointer :: d2(:)=>null()  ! 2nd derivative
-
       end type rad_func
 
       private
@@ -56,7 +55,7 @@
       call re_alloc( func%d2, 1, n, 'func%d2', 'rad_alloc' )
 !      allocate(func%f(n),func%d2(n))
       end subroutine rad_alloc
-!
+
       subroutine rad_get(func,r,fr,dfdr)
       type(rad_func), intent(in) :: func
       real(dp), intent(in)         :: r

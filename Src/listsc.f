@@ -12,9 +12,6 @@
 
       integer, pointer, save :: IND1(:), IND2(:)
       logical, save          :: nullified_pointers = .false.
-CC
-      public :: IND1, IND2
-
 
       CONTAINS
 

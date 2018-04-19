@@ -48,10 +48,6 @@ module m_new_dm
   use precision, only: dp
   use alloc, only: re_alloc, de_alloc
 
-! CC RC  Added for the offSpOrb
-  use m_spin, only: spin
-! CC RC  Added for the offSpOrb
-
   implicit none
 
   private
@@ -1000,9 +996,6 @@ contains
 
       integer :: ni, nn, nr, na
       integer :: i, io, jo, gio, ia, ind, is
-! CC RC
-      integer :: indt 
-! CC RC
       real(dp) :: cosph, sinph, costh, sinth
       real(dp) :: qio, rate, spin_at, spio
 
@@ -1213,7 +1206,6 @@ contains
                 spio = rate * min( qio, 1._dp - qio )
                 do i = 1 , ncol(io)
                    ind = ptr(io) + i
-! CC RC
                    jo = col(ind)
                    
                    ! Immediately skip if not diagonal term..
@@ -1235,19 +1227,24 @@ contains
                       DM(ind,2) = qio - spio * costh
                       DM(ind,3) =       spio * sinth * cosph
                       DM(ind,4) =       spio * sinth * sinph
-                      if (spin%SO) then
-                         DM(ind,5) = 0.0_dp
-                         DM(ind,6) = 0.0_dp
-                         DM(ind,7)= DM(ind,3)
-                         DM(ind,8)= DM(ind,4)
-                      endif
+                      if ( spin%SO ) then ! spin-orbit coupling
+                         DM(ind,5) = 0._dp
+                         DM(ind,6) = 0._dp
+                         DM(ind,7) = DM(ind,3)
+                         DM(ind,8) = DM(ind,4)
+                      end if
+                      
                    else
+                      
                       DM(ind,1) = qio + spio
                       DM(ind,2) = qio - spio
+                      
                    end if
+                   
                 end do
 !$OMP end task
              end do
+             
           end if
        enddo
 !$OMP end single nowait

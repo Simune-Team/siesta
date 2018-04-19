@@ -7,12 +7,6 @@
 ! ---
 module m_energies
   use precision, only: dp
-
-!CC RC  Added for the offSpOrb
-  use m_spin, only: spin
-  use parallel, only: IONode
-!CC RC  Added for the offSpOrb
-
   implicit none
 
   private :: dp
@@ -108,7 +102,7 @@ contains
   subroutine update_E0()
 
     E0 = Ena + Ekin + Enl + Eso - Eions
-
+    
   end subroutine update_E0
   
   subroutine update_Etot()

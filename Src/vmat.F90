@@ -364,7 +364,6 @@ contains
                 ijl = idx_ijl(il,ilc(ic))
                 Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
 
-
 !               Loop on second orbital of mesh point
                 do jc = 1 , ic - 1
                    jl = ilc(jc)
@@ -377,7 +376,6 @@ contains
 
                    ijl = idx_ijl(il,jl)
                    if ( il == jl ) then
-!                      write(6,*) ' getting to 2.0d0...; ijl = ', ijl 
                       Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij * 2._dp
                    else
                       Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
@@ -387,7 +385,6 @@ contains
              end do
 
           end do
-
           
        else
 
@@ -411,10 +408,6 @@ contains
 !               ic == jc, hence we simply do
                 ijl = idx_ijl(il,ilc(ic))
                 Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
-!                if (ip.eq.1) then
-!                 write(6,*) ' ic/ijl/ilc(ic)/Vlocal=', ic,ijl,ilc(ic), &
-!                        Vlocal(ijl,ispin)
-!                endif
 
 !               Loop on second orbital of mesh point
                 do jc = 1 , ic - 1
@@ -428,16 +421,15 @@ contains
 
                    ijl = idx_ijl(il,jl)
                    if ( il == jl ) then
-                      Vlocal(ijl,ispin)=Vlocal(ijl,ispin)+Vij*2._dp
+                      Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij * 2._dp
                    else
-                      Vlocal(ijl,ispin)=Vlocal(ijl,ispin)+Vij
+                      Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
                    end if
                    
                 end do
              end do
 
           end do
-!          stop'Stopping in vmat'
 
        end if
        

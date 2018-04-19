@@ -105,10 +105,8 @@ C
       use fdf
       use alloc
       use m_memory
-! CC RC  Added for the offSpOrb
-      use m_spin,       only: spin
       use m_spin,       only: Spiral, qSpiral
-
+      use m_spin,       only: spin
 #ifdef MPI
       use m_diag_option, only: ParallelOverK
       use mpi_siesta
@@ -128,7 +126,7 @@ C
      .  listhptr(*), listdptr(*)
 
       real(dp)
-     .  Dnew(maxnd,size(H,2)), e1, e2, ef, Enew(maxnd,spin%EDM), 
+     .  Dnew(maxnd,size(H,2)), e1, e2, ef, Enew(:,:), 
      .  Entropy, eo(maxo,nspin,nk),  
      .  kpoint(3,nk), 
      .  qo(maxo,nspin,nk), qtot, S(maxnh), temp, wk(nk), occtol,
@@ -167,7 +165,6 @@ C Start time counter ................................................
       call timer( 'diagon', 1 )
 
 C Check internal dimensions ..........................................
-CC RC Changed for SO
       if ( spin%none .or. spin%Col ) then
        if (gamma) then
         nhs  = nuotot * nuo
@@ -233,8 +230,7 @@ C Call apropriate routine
       getD = .true.
       getPSI = .false.
 
-CC RC Changed for SO
-      if (spin%none .or. spin%Col ) then
+      if ( spin%none .or. spin%Col ) then
        if (gamma) then
         call diagg( spin%H, nuo, maxuo, maxnh, maxnd, maxo,
      .              numh, listhptr, listh, numd, listdptr, listd, 
@@ -294,7 +290,7 @@ CC RC Changed for SO
 #endif
        endif
       
-      elseif (spin%NCol) then
+      elseif ( spin%NCol ) then
        if (gamma) then
         call diag2g( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
