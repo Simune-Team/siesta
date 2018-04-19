@@ -166,17 +166,15 @@
         call wallclock('--- end of geometry step')
       endif
 
-!     Mulliken population analysis 
-      if ( SpOrb ) then
-         ! BUG: Dscf is truncated (1..4) instead of being correctly hermitified
-         ! Kept just for the "orbital moment" output
-         call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
-     .                  listh, S, Dscf, isa, lasto, iaorb, iphorb,
-     .                  indxuo )
+!     Population and moment analysis 
+      if ( SpOrb .and. orbmoms) then
+         call moments( 1, na_u, no_u, maxnh, numh, listhptr,
+     .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
+     .           indxuo )
       endif
       ! Call this unconditionally
       call mulliken( mullipop, na_u, no_u, maxnh,
-     &               numh, listhptr, listh, S, Dscf, isa, 
+     &               numh, listhptr, listh, S, Dscf, isa,
      &               lasto, iaorb, iphorb )
 !
 !     Call the born effective charge routine only in those steps (even) 
