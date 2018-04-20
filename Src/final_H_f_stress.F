@@ -57,7 +57,6 @@
       use fdf
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
-      use mpi_siesta
 #endif
       use parallel, only: IOnode
 #ifdef CDF
@@ -177,7 +176,7 @@
        call globalize_sum(Enl,buffer1)
        Enl = buffer1
 #endif
-      else ! OffSpOrb
+      else 
        call nlefsm_offsiteSO(scell, na_u, na_s, isa, xa, indxua,
      &                maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
      &                numh, listhptr, listh, numh, listhptr, listh,

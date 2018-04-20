@@ -37,7 +37,7 @@
       use m_dhscf,      only: dhscf
       use m_stress
       use m_energies
-      use parallel, only: Node, IONode ! CC RC
+      use parallel, only: Node
       use m_steps, only: istp
       use m_ntm
 
@@ -73,10 +73,8 @@
 
       real(dp), pointer   :: H_vkb(:), H_kin(:), H_ldau(:,:), H_so(:,:)
 
-! CC RC  modified for the offSpOrb
       complex(dp):: Hc, Dc
       integer :: ind, i, j
-! CC RC  modified for the offSpOrb
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -229,6 +227,7 @@
       if ( spin%SO_offsite ) then
        H(:,:) = 0.0_dp
       endif
+
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
         if ( spin%NCol ) then

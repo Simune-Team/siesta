@@ -17,7 +17,6 @@ C where n run over all the bands between two given energies
 C Written by J. Junquera and E. Artacho. Nov' 99
 C Gamma point version adapted from PDOSK by Julian Gale. Feb' 03
 C Spin-orbit coupling version by J. Ferrer, October 2007
-C Modifed for Off-Site Spin-orbit coupling by R. Cuadrado, Feb. 2018
 C ****  INPUT  *********************************************************
 C integer nuo               : Number of atomic orbitals in the unit cell
 C integer no                : Number of atomic orbitals in the supercell
@@ -56,11 +55,6 @@ C **********************************************************************
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use units,        only : pi
       use alloc,        only : re_alloc, de_alloc
-
-! CC RC  Added for the offSpOrb
-      use m_spin, only: spin
-! CC RC  Added for the offSpOrb
-
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -111,12 +105,12 @@ C Initialize auxiliary variables
         do j = 1,numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-          Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-          Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-          Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
-          Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
-          Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-          Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+            Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+            Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+            Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
+            Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
+            Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
+            Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
         enddo
       enddo
 
@@ -133,12 +127,12 @@ C Repeat diagonalisation with increased memory to handle clustering
           do j = 1,numh(io)
             ind = listhptr(io) + j
             jo = listh(ind)
-            Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-            Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-            Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
-            Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
-            Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-            Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
+             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
+             Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
+             Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
+             Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
+             Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
           enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,

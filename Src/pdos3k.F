@@ -17,7 +17,6 @@ C     D_mu(E) = Sum(n,k,nu) C(mu,n,k) C(nu,n,k) S(mu,nu,k) Delta(E-E(n,k))
 C where n run over all the bands between two given energies
 C Written by J. Junquera and E. Artacho. Nov' 99
 C Spin-orbit coupling version by J. Ferrer, October 2007
-C Modifed for Off-Site Spin-orbit coupling by R. Cuadrado, Feb. 2018
 C ****  INPUT  *********************************************************
 C INTEGER NUO               : Number of atomic orbitals in the unit cell
 C INTEGER NO                : Number of atomic orbitals in the supercell
@@ -60,11 +59,6 @@ C **********************************************************************
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use units,        only : pi
       use alloc,        only : re_alloc, de_alloc
-
-! CC RC  Added for the offSpOrb
-      use m_spin, only: spin
-! CC RC  Added for the offSpOrb
-
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -144,6 +138,7 @@ C Initialize some variables
      .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
             Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
      .                        + dcmplx(H(ind,7), + H(ind,8)) * kphs
+
           enddo
         enddo
 
@@ -177,6 +172,7 @@ C Diagonalize for each k point. Note duplication of problem size
      .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
               Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
      .                        + dcmplx(H(ind,7), + H(ind,8)) * kphs
+
             enddo
           enddo
 
