@@ -48,13 +48,9 @@ CONTAINS
                                  rmaxo, no_l
       use m_ntm,           only: ntm
 
-! CC RC  Added for the offSpOrb
       use m_spin,          only: spin 
       use sparse_matrices, only: H0_offsiteSO
       use parallel,        only: IONode 
-!      use m_spin,          only: NoMagn, SPpol, NonCol, SpOrb 
-!      use m_spin,          only: nspin, h_spin_dim, spinor_dim
-! CC RC  Added for the offSpOrb
 
       use m_dipol,         only: dipol
       use siesta_geom,     only: na_u, na_s, xa, isa
@@ -65,20 +61,13 @@ CONTAINS
 
       integer, intent(in)   :: iscf
 
-      integer               :: ihmat, ifa, istr, ispin, io
+      integer               :: ispin, io
 #ifdef MPI
       real(dp) :: buffer1
 #endif
 
-      real(dp) :: const
-      real(dp) :: dummy_stress(3,3), dummy_fa(1,1)
-      real(dp) :: dummy_E, g2max, dummy_H(1,1)
       logical  :: mixDM
 
-      real(dp)    :: Ebs_tmp(4), DEharr_tmp(4)
-
-      complex(dp):: Hc, Dc, Ebs_Daux(2,2), Ebs_Haux(2,2)
-      complex(dp):: DEharr_Daux(2,2), DEharr_Haux(2,2), DEharr_Daux_old(2,2)
 
       mixDM = (.not. (mixH .or. mix_charge))
 
@@ -86,8 +75,6 @@ CONTAINS
 
       call compute_EBS()
 
-!      stop'Stopping after compute_EBS...'
-    
       ! These energies were calculated in the latest call to
       ! setup_hamiltonian, using as ingredient D_in 
 
@@ -111,7 +98,6 @@ CONTAINS
       else
          call compute_DEharr()
          Eharrs = Etot + DEharr
-!         write(6,'(2(a,f14.8))') ' DEharr = ', DEharr
       endif
 
 ! Possible correction to Etot if mixing the DM. This is purely
@@ -141,11 +127,12 @@ CONTAINS
 
    subroutine compute_EBS()
 
+     real(dp)    :: Ebs_SO(4)
+     complex(dp) :: Ebs_Daux(2,2), Ebs_Haux(2,2)
 
       integer :: i, j, ind
 
       Ebs = 0.0_dp
-      Ebs_tmp = 0.0_dp  ! CC RC  Added for the offSpOrb
 
 ! Modifed for Off-Site Spin-orbit coupling by R. Cuadrado, Feb. 2018
 !
@@ -199,6 +186,7 @@ CONTAINS
 !
       if ( spin%SO ) then
 
+        Ebs_SO = 0.0_dp  
         Ebs_Daux = dcmplx(0.0_dp, 0.0_dp)
         Ebs_Haux = dcmplx(0.0_dp, 0.0_dp)
 
@@ -206,25 +194,23 @@ CONTAINS
 
           Ebs_Haux(1,1) = dcmplx(H(io,1),H(io,5))  
           Ebs_Haux(2,2) = dcmplx(H(io,2),H(io,6))  
-     !     Ebs_Haux(1,2) = dcmplx(H(io,3),H(io,4)) 
           Ebs_Haux(1,2) = dcmplx(H(io,3),-H(io,4)) 
           Ebs_Haux(2,1) = dcmplx(H(io,7),H(io,8)) 
 
           Ebs_Daux(1,1) = dcmplx(Dscf(io,1),Dscf(io,5)) 
           Ebs_Daux(2,2) = dcmplx(Dscf(io,2),Dscf(io,6)) 
-      !    Ebs_Daux(1,2) = dcmplx(Dscf(io,3),Dscf(io,4))
           Ebs_Daux(1,2) = dcmplx(Dscf(io,3),-Dscf(io,4))
           Ebs_Daux(2,1) = dcmplx(Dscf(io,7),Dscf(io,8)) 
 
 
-          Ebs_tmp(1) = Ebs_tmp(1) + real( Ebs_Haux(1,1)*dconjg(Ebs_Daux(1,1)) )
-          Ebs_tmp(2) = Ebs_tmp(2) + real( Ebs_Haux(2,2)*dconjg(Ebs_Daux(2,2)) )
-          Ebs_tmp(3) = Ebs_tmp(3) + real( Ebs_Haux(1,2)*dconjg(Ebs_Daux(1,2)) )
-          Ebs_tmp(4) = Ebs_tmp(4) + real( Ebs_Haux(2,1)*dconjg(Ebs_Daux(2,1)) )
+          Ebs_SO(1) = Ebs_SO(1) + real( Ebs_Haux(1,1)*dconjg(Ebs_Daux(1,1)) )
+          Ebs_SO(2) = Ebs_SO(2) + real( Ebs_Haux(2,2)*dconjg(Ebs_Daux(2,2)) )
+          Ebs_SO(3) = Ebs_SO(3) + real( Ebs_Haux(1,2)*dconjg(Ebs_Daux(1,2)) )
+          Ebs_SO(4) = Ebs_SO(4) + real( Ebs_Haux(2,1)*dconjg(Ebs_Daux(2,1)) )
 
         enddo
 
-        Ebs = sum ( Ebs_tmp )
+        Ebs = sum ( Ebs_SO )
 
       else if ( spin%NCol ) then
         do io = 1,maxnh
@@ -253,15 +239,14 @@ CONTAINS
 
     subroutine compute_DEharr()
 
+      real(dp)    :: DEharr_SO(4)
+      complex(dp) :: DEharr_Daux(2,2), DEharr_Haux(2,2), DEharr_Daux_old(2,2)
+
       DEharr = 0.0_dp
-      DEharr_tmp = 0.0_dp ! CC RC  Added for the offSpOrb
-             !       const factor takes into account that there are two nondiagonal
-             !       elements in non-collinear spin density matrix, stored as
-             !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
-             !       ispin=4 => Imag(D12)
 
       if ( spin%SO ) then
 
+        DEharr_SO = 0.0_dp 
         DEharr_Daux     = dcmplx(0.0_dp, 0.0_dp)
         DEharr_Daux_old = dcmplx(0.0_dp, 0.0_dp)
         DEharr_Haux     = dcmplx(0.0_dp, 0.0_dp)
@@ -270,35 +255,35 @@ CONTAINS
 
           DEharr_Haux(1,1) = dcmplx( H(io,1),H(io,5) )
           DEharr_Haux(2,2) = dcmplx( H(io,2),H(io,6) )
-          DEharr_Haux(1,2) = dcmplx( H(io,3),H(io,4) )
+          DEharr_Haux(1,2) = dcmplx( H(io,3),H(io,4) )      ! more clear: -4 here...
           DEharr_Haux(2,1) = dcmplx( H(io,7),H(io,8) )
 
           DEharr_Daux(1,1) = dcmplx( Dscf(io,1),Dscf(io,5) )
           DEharr_Daux(2,2) = dcmplx( Dscf(io,2),Dscf(io,6) )
-          DEharr_Daux(1,2) = dcmplx( Dscf(io,3),Dscf(io,4) )
+          DEharr_Daux(1,2) = dcmplx( Dscf(io,3),Dscf(io,4) )  ! ... and -4 here, as in Ebs
           DEharr_Daux(2,1) = dcmplx( Dscf(io,7),Dscf(io,8) )
 
           DEharr_Daux_old(1,1) = dcmplx( Dold(io,1),Dold(io,5) )
-          DEharr_Daux_old(2,2) = dcmplx( Dold(io,2),Dold(io,6) )
-          DEharr_Daux_old(1,2) = dcmplx( Dold(io,3),Dold(io,4) )
+          DEharr_Daux_old(2,2) = dcmplx( Dold(io,2),Dold(io,6) ) 
+          DEharr_Daux_old(1,2) = dcmplx( Dold(io,3),Dold(io,4) )  ! ... and -4 here.
           DEharr_Daux_old(2,1) = dcmplx( Dold(io,7),Dold(io,8) )
 
 
-          DEharr_tmp(1) = DEharr_tmp(1) &
+          DEharr_SO(1) = DEharr_SO(1) &
              + real( DEharr_Haux(1,1)*dconjg(DEharr_Daux(1,1)-DEharr_Daux_old(1,1)) ) 
 
-          DEharr_tmp(2) = DEharr_tmp(2) &
+          DEharr_SO(2) = DEharr_SO(2) &
              + real( DEharr_Haux(2,2)*dconjg(DEharr_Daux(2,2)-DEharr_Daux_old(2,2)) )
 
-          DEharr_tmp(3) = DEharr_tmp(3) &
+          DEharr_SO(3) = DEharr_SO(3) &
              + real( DEharr_Haux(1,2)*dconjg(DEharr_Daux(1,2)-DEharr_Daux_old(1,2)) )
 
-          DEharr_tmp(4) = DEharr_tmp(4) &
+          DEharr_SO(4) = DEharr_SO(4) &
              + real( DEharr_Haux(2,1)*dconjg(DEharr_Daux(2,1)-DEharr_Daux_old(2,1)) )
 
          enddo
 
-         DEharr = sum ( DEharr_tmp )
+         DEharr = sum ( DEharr_SO )
 
       else if ( spin%NCol ) then
         do io = 1,maxnh
@@ -335,6 +320,11 @@ CONTAINS
       type(filesOut_t)  :: filesOut  ! blank output file names
       real(dp), pointer :: H_vkb(:), H_kin(:), H_so(:,:)
 
+      complex(dp) :: Hc, Dc
+      real(dp)    :: dummy_stress(3,3), dummy_fa(1,1)
+      real(dp)    :: dummy_E, g2max, dummy_H(1,1)
+      integer     :: ihmat, ifa, istr
+      
       ! Compute E_KS(DM_out)
 
       g2max = g2cut
@@ -379,8 +369,8 @@ CONTAINS
 #endif
 
       Eso = 0._dp
-      if (spin%SO) then
-       if ( spin%SO_offsite ) then
+
+      if ( spin%SO_offsite ) then
 
         do io = 1, maxnh
 
@@ -403,8 +393,9 @@ CONTAINS
 
         enddo
 
+      endif
 
-       else  ! SO_onsite
+      if ( spin%SO_onsite ) then
          ! Sadly some compilers (g95), does
          ! not allow bounds for pointer assignments :(
          H_so => val(H_so_2D)
@@ -413,14 +404,15 @@ CONTAINS
                  + H_so(io,5)*Dscf(io,3) + H_so(io,6)*Dscf(io,4) &
                  - H_so(io,3)*Dscf(io,5) - H_so(io,4)*Dscf(io,6)
          end do
-       end if
+      end if
 
 #ifdef MPI
-       ! Global reduction of Eso
-       call globalize_sum( Eso, buffer1 )
-       Eso = buffer1
-#endif
+      if (spin%SO) then
+         ! Global reduction of Eso
+         call globalize_sum( Eso, buffer1 )
+         Eso = buffer1
       endif
+#endif
       
       ! E0 = Ena + Ekin + Enl + Eso - Eions
 

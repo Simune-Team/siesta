@@ -16,7 +16,7 @@
       use parallel,   only : Node, Nodes
       ! We also need to broadcast the chemical list
       use chemical, only : chemical_list
-
+      
       ! Broadcast LDA+U variables
       use ldau_specs, only: dTol_ldaupop
       use ldau_specs, only: dDmax_threshold
@@ -37,10 +37,6 @@
       end subroutine broadcast_basis
 #else
       integer MPIerror
-
-! CC RC  Added for the offSpOrb
-      integer j_offsiteSO, l, ntot 
-! CC RC  Added for the offSpOrb
 
       integer is, i
       type(species_info), pointer  :: spp

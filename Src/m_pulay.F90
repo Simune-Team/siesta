@@ -8,7 +8,6 @@
 module m_pulay
 
   use precision, only: dp
-!  use m_spin,    only: h_spin_dim, SpOrb
   use m_spin,    only: spin 
   implicit none
 
@@ -371,7 +370,7 @@ CONTAINS
        ! B(i,i) = dot_product(Res(i)*Res(i))
        b(i,i) = 0.0_dp
        ssum=0.0_dp
-! CC RC Added for on-site SO
+
        if ( .not. spin%SO ) then
         do is=1,nspin
          do ii=1,no_l
@@ -394,7 +393,6 @@ CONTAINS
          enddo
         enddo
        endif
-! CC RC
 
        b(i,i)=ssum
        !

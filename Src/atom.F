@@ -97,7 +97,7 @@
      .                       rco,lambda_in,atm_label,npolorb,semic,
      .                       nsemic,cnfigmx,charge_in,smass,basistype, 
      .                       ISIN,RINN,VCTE,qcoe,qyuk,qwid,
-     .                       split_norm,filtercut_in,basp, spp, SpOrbLJ)
+     .                       split_norm,filtercut_in,basp,spp,lj_projs)
 
         use atm_types, only: species_info
         
@@ -105,7 +105,7 @@
 
         type(basis_def_t), pointer   :: basp
         type(species_info), intent(inout)  :: spp
-        logical, intent(in)                :: SpOrbLJ
+        logical, intent(in)                :: lj_projs
 
         integer, intent(in) :: izin  
 !       Atomic number (if IZ is negative it will be regarded as a set of 
@@ -572,7 +572,7 @@ c    .          'atom: The above configuration will be used ',
 ! 
             call KBgen(is, a,b,rofi,drdi,s,
      .                 vps, vps_u, vlocal, ve, nrval, Zval, lmxkb, 
-     .                 nkbl, erefkb, nkb, spp, SpOrbLJ) 
+     .                 nkbl, erefkb, nkb, spp, lj_projs) 
 
           elseif(flting.lt.0.0d0) then 
 !
@@ -1826,7 +1826,7 @@ C
      .        'GHOST: WARNING: Ghost state for L =', l
             ighost=1
           else
-            !write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
+            write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
           endif
 
         elseif (dkbcos.gt.0.0d0) then

@@ -53,7 +53,7 @@
       
       use chemical
 
-      use m_spin, only: SpOrb, spin
+      use m_spin, only: spin
 
       use atm_types, only: species, species_info, nspecies
       
@@ -107,12 +107,13 @@
         call elec_corr_setup()
       else if (user_basis) then
 
-       if ( SpOrb ) then  
+       if ( spin%SO_onsite ) then  
           ! We still need to read the pseudopotential information
-          write(6,'(a)') ' initatom: Spin configuration = spin-orbit'
+          ! because the .ion files do not contain V_so information
+          write(6,'(a)') ' initatom: spin-orbit-onsite with user-basis'
+          write(6,'(a)') ' initatom: Still need to read the psf files.'
           do is = 1 , nsp
              basp => basis_parameters(is)
-             
              basp%label = species_label(is)
              call pseudo_read(basp%label,basp%pseudopotential)
           end do
@@ -133,7 +134,7 @@
         nspecies = nsp              ! For atm_types module
         call setup_atom_tables(nsp)
 
-        lj_projs = (SpOrb .and. spin%SO_offsite)
+        lj_projs = (spin%SO_offsite)
 
         allocate(species(nspecies))
         do is = 1,nsp

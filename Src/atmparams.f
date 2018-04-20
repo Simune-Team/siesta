@@ -21,11 +21,9 @@ C                     for the same species.
 C INTEGER  NKBMX    : Maximum number of Kleinman-Bylander projectors
 C                     for each angular momentum
 
-C         integer, parameter, public  :: nkbmx  =    2  
-CC RC 
 C         For the off-site SO calculation plus semicore states
-C         there will be at most 4 KBs for each angular momentum due to
-C         that for each l we have J = l +/- 1/2  
+C         there will be at least 4 KBs for each l angular momentum
+C         (for each l shell we have J = l +/- 1/2 )
          integer, parameter, public  :: nkbmx  =    4
 
 
