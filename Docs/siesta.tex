@@ -3785,22 +3785,22 @@ are always stored in the file \sysfile{KP}.
 calculations by means of the inclusion in the total Hamiltonian not
 only the Darwin and velocity correction terms~(Scalar--Relativistic
 calculations), but also the spin--orbit~(SO) contribution. There are 
-two approximations regarding the SO formalism: on--site and off--site.
-Within the on--site only the intra--atomic SO contribution is taken 
-into account whilst when using the off--site additional neigboring 
+two approaches regarding the SO formalism: on--site and off--site.
+Within the on--site approximation only the intra--atomic SO contribution is taken 
+into account. In the off--site scheme additional neighboring 
 interactions are also included in the SO term. By default, the off--site SO 
 formalism is switched on, being necessary to change the \fdf{Spin} flag 
 in the input file if the on--site approximation wants to be used. See 
 \fdf{Spin} on how to handle the spin--orbit coupling. 
 
-The on--site implementation in \siesta\ has been performed by
+The on--site spin-orbit scheme in this version of \siesta\ has been implemented by
 Dr. Ram\'on Cuadrado based on the original on--site SO formalism and
-implementation developed by Prof. Jaime Ferrer, \textit{et al}~(L
+implementation developed by Prof. Jaime Ferrer and his collaborators \textit{et al}~(L
 Fern\'andez--Seivane, M Oliveira, S Sanvito, and J Ferrer, Journal of
 Physics: Condensed Matter, {\bf 18}, 7999 (2006); L Fern\'andez--Seivane 
 and Jaime Ferrer, Phys. Rev. Lett. {\bf 99}, 183401 (2007)).
 
-The off--site implementation in \siesta\ has been performed by
+The off--site scheme has been implemented by
 Dr. Ram\'on Cuadrado and Dr. Jorge I. Cerd\'a based on their initial 
 work~(R. Cuadrado and J. I. Cerd\'a ``Fully relativistic pseudopotential 
 formalism under an atomic orbital basis: spin-orbit splittings and 
@@ -3810,8 +3810,8 @@ Fe$_{1-y}$Mn$_y$Pt-L1(0) bulk alloy'', R. Cuadrado, Kai Liu, Timothy
 J. Klemmer and R. W. Chantrell, Applied Physics Letters, {\bf 108}, 
 123102 (2016)).  
 
-The inclusion of the SO term in the Hamiltonian~(and in the Density
-Matrix) will involve the increase of non--zero elements in their
+The inclusion of the SO term in the Hamiltonian (and in the Density
+Matrix) causes an increase in the number of non--zero elements in their
 off--diagonal parts, i.e., for some $(\mu,\nu)$ pair of basis
 orbitals, H$^{\sigma\sigma'}_{\mu\nu}$~(DM$^{\sigma\sigma'}_{\mu\nu}$)
 [$\sigma,\sigma'$=$\uparrow,\downarrow$] will be $\neq$0. This is
@@ -3820,12 +3820,12 @@ will promote the mixing between different spin--up/down components.
 In addition, these H$^{\sigma\sigma'}_{\mu\nu}$~(and
 DM$^{\sigma\sigma'}_{\mu\nu}$) elements will be complex, in contrast
 with typical polarized/non--polarized calculations where these
-matrices are purely real. Due to this, we encourage that previously to
-start with a full spin-orbit calculation it has to take special
-attention to the memory needed to perform it, based mainly in the size
-of the physical system and hence in the number of orbital
-involved. Note that for a non--SO calculation the memory will be
-around thirty percent lower than with SO.
+matrices are purely real. Since the spin-up and spin-down manifolds
+are essentially mixed, the solver has to deal with matrices whose
+dimensions are twice as large as for the collinear (unmixed) spin
+problem. Due to this, we advise to take special
+attention to the memory needed to perform a spin-orbit calculation.
+
 
 Unless explicitly advised the following type of calculation can be carried out 
 regardless of whether on--site or off--site approximation is employed: 
@@ -3834,16 +3834,16 @@ regardless of whether on--site or off--site approximation is employed:
   \item Selfconsistent calculations for gamma point as well as for
   bulks.
   %
-  \item Structure optimizations (only supported by the off--site SO 
-  formalism).
+  \item Structure optimizations %% only supported by the off--site SO
+    %% formalism *** Why ?
   %
-  \item LDA+U calculations~(See Sect.\ref{sec:lda+u} for further info).
+  %%% *** Incompatible... \item LDA+U calculations~(See Sect.\ref{sec:lda+u} for further info).
   % 
   \item Magnetic Anisotropy Energy~(MAE) can be easily
-    calculated. From first principles it is obtained after subtract
+    calculated. From first principles it is obtained after subtracting
     the total selfconsistent energy calculated for two different
     magnetic orientations. In \siesta\ it is possible to perform
-    calculations when different initial magnetic ordering is necessary
+    calculations with different initial magnetic orderings
     by means of the use of the block \fdf{DM.InitSpin} in the fdf
     file. In doing so one will be able to include the initial
     orientation angles of the magnetization for each atom, as well as
@@ -3855,7 +3855,7 @@ regardless of whether on--site or off--site approximation is employed:
   % 
 \end{itemize}
 
-Note: Due to the small SO energy value contribution to the total
+Note: Due to the small SO contribution to the total
 energy, the level of precision required to perform a proper fully
 relativistic calculation during the selfconsistent process is quite
 demanding. The following values must be carefully converged and
@@ -3863,27 +3863,28 @@ checked for each specific system to assure that the results are
 accurate enough: \fdf{SCF.H!Tolerance} during the
 selfconsistency~(typically between 10$^{-3}$eV -- 10$^{-4}$eV), 
 \fdf{ElectronicTemperature},
-\textbf{k--point} sampling and high values of
+\textbf{k}--point sampling and high values of
 \fdf{MeshCutoff}~(specifically for extended solids). In general, one
-can say that a good calculation will have high number of \textbf{k--points},
+can say that a good calculation will have high number of \textbf{k}--points,
 low \fdf{ElectronicTemperature}, extremely small \fdf{SCF.H!Tolerance}
 and high values of \fdf{MeshCutoff}.  We encourage the user to test
 carefully these options for each system. An additional point to take
 into account is the mixing scheme employed. You are encouraged to use 
 \fdf{SCF.Mix} \fdf*{hamiltonian} (currently is set up by default) 
-instead of the density matrix, since it speeds up the convergence. 
+instead of density matrix mixing, since it speeds up the convergence. 
 The pseudopotentials have to be properly generated and tested for each 
-specific system and they have to be in their fully relativistic form 
+specific system and they have to be in their fully relativistic form,
 together with the non--linear core corrections. Finally it is worth to 
-mention that the selfconsistent convergence for some non--high symmetric 
+mention that the selfconsistent convergence for some non--highly symmetric 
 magnetizations directions with respect to the physical symmetry axis 
-could be coumbersome, however    
+could still be difficult.
 
 \begin{fdfentry}{Spin!OrbitStrength}[real]<1.0>
 
   It allows to vary the strength of the 
   spin--orbit interaction from zero to any positive value. It can be
-  used for both the on--site and off-site SOC flavors.
+  used for both the on--site and off-site SOC flavors, but only for
+  debugging and testing purposes, as the only physical value is 1.0.
 
 \end{fdfentry}
 
@@ -3901,26 +3902,28 @@ could be coumbersome, however
 
 \end{fdflogicalF}
 
-For the off--site SO approximation some mandatory flags have to set 
-up to \fdffalse\ in the fdf file: 
+% *** The following items should not be relevant.
 
-\begin{fdflogicalT}{PAO!OldStylePolOrbs}
+%%For the off--site SO approximation some mandatory flags have to set 
+%%up to \fdffalse\ in the fdf file: 
 
-  By default is set up to \fdftrue, however it has to set up to \fdffalse.
+%%\begin{fdflogicalT}{PAO!OldStylePolOrbs}
 
-\end{fdflogicalT}
+%%  By default is set up to \fdftrue, however it has to set up to \fdffalse.
 
-\begin{fdflogicalT}{DM.MixSCF1}
+%%\end{fdflogicalT}
 
-  By default is set up to \fdftrue, however it has to set up to \fdffalse.
+%%\begin{fdflogicalT}{DM.MixSCF1}
 
-\end{fdflogicalT}
+%%  By default is set up to \fdftrue, however it has to set up to \fdffalse.
 
-\begin{fdflogicalT}{Restricted.Radial.Grid}
+%%\end{fdflogicalT}
 
-  By default is set up to \fdftrue, however it has to set up to \fdffalse.
+%%\begin{fdflogicalT}{Restricted.Radial.Grid}
 
-\end{fdflogicalT}
+%%  By default is set up to \fdftrue, however it has to set up to \fdffalse.
+
+%%\end{fdflogicalT}
 
 
 
@@ -6309,7 +6312,7 @@ if the \fdf{COOP.Write} option is in effect.
 \begin{fdfentry}{OccupationFunction}[string]<FD>
   
   String variable to select the function that determines the
-  occupation of the electronic states. Two options are available:
+  occupation of the electronic states. These options are available:
   \begin{fdfoptions}
     \option[FD]%
     The usual Fermi-Dirac occupation function is used.
@@ -6318,8 +6321,13 @@ if the \fdf{COOP.Write} option is in effect.
     The occupation function proposed by Methfessel and
     Paxton (Phys. Rev. B, \textbf{40}, 3616 (1989)), is used.
 
+    \option[Cold]%
+    The occupation function proposed by Marzari, Vanderbilt et. al
+    (PRL, \textbf{82}, 16 (1999)), is used, this is commonly referred
+    to as \emph{cold smearing}.
+
   \end{fdfoptions}
-  The smearing of the electronic occupations is done, in both cases,
+  The smearing of the electronic occupations is done, in all cases,
   using an energy width defined by the \fdf{ElectronicTemperature}
   variable. Note that, while in the case of Fermi-Dirac, the
   occupations correspond to the physical ones if the electronic
@@ -6329,16 +6337,16 @@ if the \fdf{COOP.Write} option is in effect.
   integration of the physical quantities at a lower cost. In
   particular, the Methfessel-Paxton scheme has the advantage that,
   even for quite large smearing temperatures, the obtained energy is
-  very close to the physical energy at $T=0$.  Also, it allows a much
+  very close to the physical energy at $T=0$. Also, it allows a much
   faster convergence with respect to $k$-points, specially for
   metals. Finally, the convergence to selfconsistency is very much
   improved (allowing the use of larger mixing coefficients).
 
-  For the Methfessel-Paxton case, one can use relatively large values
-  for the \fdf{ElectronicTemperature} parameter. How large depends
-  on the specific system. A guide can be found in the article by
-  J. Kresse and J. Furthm\"uller, Comp. Mat. Sci.  \textbf{6}, 15
-  (1996).
+  For the Methfessel-Paxton case, and similarly for cold smearing, one
+  can use relatively large values for the \fdf{ElectronicTemperature}
+  parameter. How large depends on the specific system. A guide can be
+  found in the article by J. Kresse and J. Furthm\"uller,
+  Comp. Mat. Sci. \textbf{6}, 15 (1996).
 
   If Methfessel-Paxton smearing is used, the order of the
   corresponding Hermite polynomial expansion must also be chosen (see
@@ -6371,9 +6379,8 @@ if the \fdf{COOP.Write} option is in effect.
 
 \begin{fdfentry}{ElectronicTemperature}[temperature/energy]<$300\,\mathrm{K}$>
   
-  Temperature for Fermi-Dirac or Methfessel-Paxton
-  distribution. Useful specially for metals, and to accelerate
-  selfconsistency in some cases.
+  Temperature for occupation function. Useful specially for metals,
+  and to accelerate selfconsistency in some cases.
 
 \end{fdfentry}
 
