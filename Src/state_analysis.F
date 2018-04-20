@@ -22,7 +22,7 @@
      &                          CartesianForce_to_ZmatForce
       use atomlist,      only : iaorb, iphorb, amass, no_u, lasto
       use atomlist,      only : indxuo
-      use m_spin,        only : SpOrb
+      use m_spin,        only : spin
       use m_fixed,       only : fixed
       use sparse_matrices
       use siesta_geom
@@ -167,7 +167,7 @@
       endif
 
 !     Population and moment analysis 
-      if ( SpOrb .and. orbmoms) then
+      if ( spin%SO .and. orbmoms) then
          call moments( 1, na_u, no_u, maxnh, numh, listhptr,
      .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .           indxuo )
