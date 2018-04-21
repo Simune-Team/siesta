@@ -932,7 +932,8 @@ m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
 m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
 m_sparsity_handling.o: intrinsic_missing.o m_interpolate.o m_region.o
 m_sparsity_handling.o: precision.o
-m_spin.o: alloc.o files.o m_cite.o parallel.o precision.o sys.o units.o
+m_spin.o: alloc.o files.o m_cite.o parallel.o precision.o siesta_options.o
+m_spin.o: sys.o units.o
 m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
 m_supercell.o: intrinsic_missing.o parallel.o parallelsubs.o precision.o
@@ -1159,8 +1160,8 @@ pdos.o: m_energies.o m_spin.o parallel.o parallelsubs.o precision.o
 pdos.o: siesta_geom.o units.o xml.o
 pdos2g.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdos2k.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
-pdos3g.o: alloc.o m_spin.o parallel.o parallelsubs.o precision.o sys.o units.o
-pdos3k.o: alloc.o m_spin.o parallel.o parallelsubs.o precision.o sys.o units.o
+pdos3g.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
+pdos3k.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosk.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdoskp.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o

@@ -331,12 +331,6 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 !          Retrieve phi values
            if ( spin%SO_offsite ) then 
               Clocal(:,ic) = phia(iphi,:)
-!            if(ip.lt.10) then
-!             write(6,*) ' ip/nc/Clocal(1,:) = ', ip, nc, Clocal(1,:)   
-!            else
-!             stop 'Stopping in rhoofd...'
-!            endif
-
            else
               Clocal(:,ic) = dsqrt(2._dp) * phia(iphi,:)
            end if
@@ -389,13 +383,6 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 !          Retrieve phi values
            if ( spin%SO_offsite ) then 
               Clocal(:,ic) = phi(:,imp)
-!            if(ip.lt.5) then
-!             write(6,*) ' ip/nc/Clocal(1,:) = ', ip, nc, Clocal(1,:)
-!            else
-!             stop 'Stopping in rhoofd...'
-!            endif
-
-
            else
               Clocal(:,ic) = dsqrt(2._dp) * phi(:,imp)
            end if

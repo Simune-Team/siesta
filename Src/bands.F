@@ -366,7 +366,6 @@ C
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use writewave,    only : wfs_filename
 
-!      use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
       use m_spin,       only: spin 
 
       use m_diag_option, only: ParallelOverK, Serial

@@ -1842,7 +1842,7 @@ C
      .           'GHOST: WARNING: Ghost state for L =', l
             ighost=1
           else
-            !write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
+            write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
           endif
 
         elseif (dkbcos.eq.0.0d0) then

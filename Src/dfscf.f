@@ -71,12 +71,8 @@ C  Modules
       use parallel,      only: Nodes, Node
       use sys,           only: die
       use parallelsubs,  only: GlobalToLocalOrb
-!      use m_spin,        only: NonCol, SpOrb
-!      use m_spin,        only: h_spin_dim, spinor_dim
 
-! CC RC  Added  for the offSpOrb
       use m_spin,        only: spin
-! CC RC  Added  for the offSpOrb
 
       implicit none
 
@@ -354,14 +350,12 @@ C     Copy potential to a double precision array
         ! done with nspin=4 (grid_nspin)?
         V(1:nsp,1:nspin) = Vscf(1:nsp,ip,1:nspin)
 
-!! CC RC  Added  for the offSpOrb
 C     Factor two for nondiagonal elements for non-collinear spin
-        if( spin%SO ) then
+        if ( spin%SO ) then
          V(1:nsp,7:8) = V(1:nsp,3:4)
-        elseif( spin%NCol ) then 
+        else if ( spin%NCol ) then 
          V(1:nsp,3:4) = 2.0_dp * V(1:nsp,3:4)
-        endif
-!! CC RC  Added  for the offSpOrb
+        end if
 
 C     Loop on first orbital of mesh point
         do ic = 1,nc

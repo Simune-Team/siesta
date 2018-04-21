@@ -184,14 +184,10 @@ contains
        spin%NCol = .true.
        
     else if ( leqi(opt, 'spin-orbit') .or. leqi(opt, 'S-O') .or. &
-         leqi(opt, 'SOC') .or. leqi(opt, 'SO') ) then
-       ! Spin-orbit defaults to the off-site implementation
-       
-       spin%SO = .true.
-       spin%SO_offsite = .true.
-
-    else if ( leqi(opt, 'spin-orbit+offsite') .or. leqi(opt, 'S-O+offsite') .or. &
+         leqi(opt, 'SOC') .or. leqi(opt, 'SO') .or. &
+         leqi(opt, 'spin-orbit+offsite') .or. leqi(opt, 'S-O+offsite') .or. &
          leqi(opt, 'SOC+offsite') .or. leqi(opt, 'SO+offsite') ) then
+       ! Spin-orbit defaults to the off-site implementation
        
        spin%SO = .true.
        spin%SO_offsite = .true.
@@ -207,12 +203,12 @@ contains
        call die('Spin: unknown flag, please assert the correct input.')
     end if
 
-    if (spin%SO_offsite) then
+    if ( spin%SO_offsite ) then
        call add_citation("10.1088/0953-8984/24/8/086005")
-    endif
-    if (spin%SO_onsite) then
+    end if
+    if ( spin%SO_onsite ) then
        call add_citation("10.1088/0953-8984/18/34/012")
-    endif
+    end if
     
     ! Note that, in what follows,
     !   spinor_dim = min(h_spin_dim,2)
@@ -242,9 +238,10 @@ contains
        spin%Col  = .false.
        spin%NCol = .false.
        spin%SO   = .true.
+       ! off/on MUST already be set!
 
        ! should be moved...
-       TRSym      = .false.
+       TRSym = .false.
 
     else if ( spin%NCol ) then
        ! Non-collinear case
@@ -257,13 +254,15 @@ contains
        spin%spinor = 2
 
        ! Flags
-       spin%none = .false.
-       spin%Col  = .false.
-       spin%NCol = .true.
-       spin%SO   = .false.
+       spin%none       = .false.
+       spin%Col        = .false.
+       spin%NCol       = .true.
+       spin%SO         = .false.
+       spin%SO_onsite  = .false.
+       spin%SO_offsite = .false.
 
        ! should be moved...
-       TRSym      = .false.
+       TRSym = .false.
 
     else if ( spin%Col ) then
        ! Collinear case
@@ -276,13 +275,15 @@ contains
        spin%spinor = 2
 
        ! Flags
-       spin%none = .false.
-       spin%Col  = .true.
-       spin%NCol = .false.
-       spin%SO   = .false.
+       spin%none       = .false.
+       spin%Col        = .true.
+       spin%NCol       = .false.
+       spin%SO         = .false.
+       spin%SO_onsite  = .false.
+       spin%SO_offsite = .false.
 
        ! should be moved...
-       TRSym      = .true.
+       TRSym = .true.
 
     else if ( spin%none ) then
        ! No spin configuration...
@@ -295,13 +296,15 @@ contains
        spin%spinor = 1
 
        ! Flags
-       spin%none = .true.
-       spin%Col  = .false.
-       spin%NCol = .false.
-       spin%SO   = .false.
+       spin%none       = .true.
+       spin%Col        = .false.
+       spin%NCol       = .false.
+       spin%SO         = .false.
+       spin%SO_onsite  = .false.
+       spin%SO_offsite = .false.
 
        ! should be moved...
-       TRSym      = .true.
+       TRSym = .true.
 
     end if
 
@@ -332,6 +335,7 @@ contains
   ! Print out spin-configuration options
   subroutine print_spin_options( )
     use parallel, only: IONode
+    use siesta_options, only: so_strength
 
     character(len=32) :: opt
 
@@ -363,6 +367,10 @@ contains
        write(*,'(a)') repeat('#',60)
        write(*,'(a,t16,a,t60,a)') '#','Spin-orbit coupling is in beta','#'
        write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
+       if (so_strength /= 1.0_dp) then
+          write(*,'(a,t13,a,1x,f10.6,t60,a)') '#','** Warning: SO strength:',&
+                                              so_strength, '#'
+       endif
        write(*,'(a)') repeat('#',60)
     end if
 
