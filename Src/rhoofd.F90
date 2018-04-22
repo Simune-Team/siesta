@@ -24,7 +24,6 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 ! handled as lower-half triangular. J.D.Gale and J.M.Soler, Feb'99
 ! Version of rhoofd that optionally uses a direct algorithm to save 
 ! memory. Modified by J.D.Gale, November'99
-! Modifed for Off-Site Spin-orbit coupling by R. Cuadrado, Feb. 2018
 ! *********************** InpUT **************************************
 ! integer no              : Number of basis orbitals
 ! integer np              : Number of mesh points
@@ -51,7 +50,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
   use atmfuncs,      only: rcut, all_phi
   use atm_types,     only: nsmax=>nspecies
   use atomlist,      only: indxuo
-  use m_spin,        only: spin, SpOrb
+  use m_spin,        only: SpOrb
   use listsc_module, only: LISTSC
   use mesh,          only: nsp, dxa, xdop, xdsp, meshLim
   use meshdscf,      only: matrixOtoM
@@ -214,19 +213,13 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdlptr(iul) + ii
                     j   = listdl(ind)
                     ijl = idx_ijl(il,ilocal(j))
-                    if ( SpOrb .and. .not.spin%SO_offsite ) then
+                    if ( SpOrb ) then
                        Dlocal(ijl,1) = DscfL(ind,1)
                        Dlocal(ijl,2) = DscfL(ind,2)
                        Dlocal(ijl,3) = 0.5*(DscfL(ind,3)+DscfL(ind,7))
                        Dlocal(ijl,4) = 0.5*(DscfL(ind,4)+DscfL(ind,8))
                     else
-                       Dlocal(ijl,1:nspin) = DscfL(ind,1:nspin)
-                       if ( spin%SO_offsite .and. i /= j ) then
-                          Dlocal(ijl,1) = Dlocal(ijl,1) + DscfL(ind,1)
-                          Dlocal(ijl,2) = Dlocal(ijl,2) + DscfL(ind,2)
-                          Dlocal(ijl,3) = Dlocal(ijl,3) + DscfL(ind,7)
-                          Dlocal(ijl,4) = Dlocal(ijl,4) + DscfL(ind,8)
-                       end if
+                       Dlocal(ijl,:) = DscfL(ind,:)
                     end if
                  end do
               else
@@ -234,19 +227,13 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdlptr(iul)+ii
                     j   = LISTSC( i, iu, listdl(ind) )
                     ijl = idx_ijl(il,ilocal(j))
-                    if ( SpOrb .and. .not.spin%SO_offsite ) then
+                    if ( SpOrb ) then
                        Dlocal(ijl,1) = DscfL(ind,1)
                        Dlocal(ijl,2) = DscfL(ind,2)
                        Dlocal(ijl,3) = 0.5*(DscfL(ind,3)+DscfL(ind,7))
                        Dlocal(ijl,4) = 0.5*(DscfL(ind,4)+DscfL(ind,8))
                     else
-                       Dlocal(ijl,1:nspin) = DscfL(ind,1:nspin)
-                       if ( spin%SO_offsite .and. i /= j ) then
-                          Dlocal(ijl,1) = Dlocal(ijl,1) + DscfL(ind,1)
-                          Dlocal(ijl,2) = Dlocal(ijl,2) + DscfL(ind,2)
-                          Dlocal(ijl,3) = Dlocal(ijl,3) + DscfL(ind,7)
-                          Dlocal(ijl,4) = Dlocal(ijl,4) + DscfL(ind,8)
-                       end if
+                       Dlocal(ijl,:) = DscfL(ind,:)
                     end if
                  end do
               end if
@@ -257,19 +244,13 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdptr(iul)+ii
                     j   = listd(ind)
                     ijl = idx_ijl(il,ilocal(j))
-                    if ( SpOrb .and. .not.spin%SO_offsite ) then
+                    if ( SpOrb ) then
                        Dlocal(ijl,1) = Dscf(ind,1)
                        Dlocal(ijl,2) = Dscf(ind,2)
                        Dlocal(ijl,3) = 0.5*(Dscf(ind,3)+Dscf(ind,7))
                        Dlocal(ijl,4) = 0.5*(Dscf(ind,4)+Dscf(ind,8))
                     else
-                       Dlocal(ijl,1:nspin) = Dscf(ind,1:nspin)
-                       if ( spin%SO_offsite .and. i /= j ) then
-                          Dlocal(ijl,1) = Dlocal(ijl,1) + Dscf(ind,1)
-                          Dlocal(ijl,2) = Dlocal(ijl,2) + Dscf(ind,2)
-                          Dlocal(ijl,3) = Dlocal(ijl,3) + Dscf(ind,7)
-                          Dlocal(ijl,4) = Dlocal(ijl,4) + Dscf(ind,8)
-                       end if
+                       Dlocal(ijl,:) = Dscf(ind,:)
                     end if
                  end do
               else
@@ -277,19 +258,13 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdptr(iul)+ii
                     j   = LISTSC( i, iu, listd(ind) )
                     ijl = idx_ijl(il,ilocal(j))
-                    if ( SpOrb .and. .not.spin%SO_offsite ) then
+                    if ( SpOrb ) then
                        Dlocal(ijl,1) = Dscf(ind,1)
                        Dlocal(ijl,2) = Dscf(ind,2)
                        Dlocal(ijl,3) = 0.5*(Dscf(ind,3)+Dscf(ind,7))
                        Dlocal(ijl,4) = 0.5*(Dscf(ind,4)+Dscf(ind,8))
                     else
-                       Dlocal(ijl,1:nspin) = Dscf(ind,1:nspin)
-                       if ( spin%SO_offsite .and. i /= j ) then
-                          Dlocal(ijl,1) = Dlocal(ijl,1) + Dscf(ind,1)
-                          Dlocal(ijl,2) = Dlocal(ijl,2) + Dscf(ind,2)
-                          Dlocal(ijl,3) = Dlocal(ijl,3) + Dscf(ind,7)
-                          Dlocal(ijl,4) = Dlocal(ijl,4) + Dscf(ind,8)
-                       end if
+                       Dlocal(ijl,:) = Dscf(ind,:)
                     end if
                  end do
               end if
@@ -329,11 +304,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
            iphi = iphorb(i)
 
 !          Retrieve phi values
-           if ( spin%SO_offsite ) then 
-              Clocal(:,ic) = phia(iphi,:)
-           else
-              Clocal(:,ic) = dsqrt(2._dp) * phia(iphi,:)
-           end if
+           Clocal(:,ic) = dsqrt(2._dp) * phia(iphi,:)
 
 !          Loop on second orbital of mesh point
            do jc = 1, ic - 1
@@ -352,23 +323,14 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 !          ilc(ic) == il
            ijl = idx_ijl(il,ilc(ic))
            
-           if ( spin%SO_offsite ) then 
-             do ispin = 1,nspin
-!               Loop over sub-points
-                do isp = 1,nsp
-                   rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
-                        Dlocal(ijl,ispin) * Clocal(isp,ic) ** 2
-                end do
-             end do
-           else
-             do ispin = 1,nspin
-!               Loop over sub-points
-                do isp = 1,nsp
-                   rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
-                        Dlocal(ijl,ispin) * 0.5_dp * Clocal(isp,ic) ** 2
-                end do
-             end do
-           end if
+           do ispin = 1,nspin
+!             Loop over sub-points
+              do isp = 1,nsp
+                 rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
+                      Dlocal(ijl,ispin) * 0.5_dp * Clocal(isp,ic) ** 2
+              end do
+              
+           end do
            
         end do
 
@@ -381,11 +343,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
            ilc(ic) = il
 
 !          Retrieve phi values
-           if ( spin%SO_offsite ) then 
-              Clocal(:,ic) = phi(:,imp)
-           else
-              Clocal(:,ic) = dsqrt(2._dp) * phi(:,imp)
-           end if
+           Clocal(:,ic) = dsqrt(2._dp) * phi(:,imp)
            
 !          Loop on second orbital of mesh point
            do jc = 1, ic - 1
@@ -404,23 +362,14 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 !          ilc(ic) == il
            ijl = idx_ijl(il,ilc(ic))
            
-           if ( spin%SO_offsite ) then 
-             do ispin = 1,nspin
-!               Loop over sub-points
-                do isp = 1,nsp
-                   rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
-                        Dlocal(ijl,ispin) * Clocal(isp,ic) ** 2
-                end do
-             end do
-           else
-             do ispin = 1,nspin
-!               Loop over sub-points
-                do isp = 1,nsp
-                   rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
-                        Dlocal(ijl,ispin) * 0.5_dp * Clocal(isp,ic) ** 2
-                end do
-             end do
-           end if
+           do ispin = 1,nspin
+!             Loop over sub-points
+              do isp = 1,nsp
+                 rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
+                      Dlocal(ijl,ispin) * 0.5_dp * Clocal(isp,ic) ** 2
+              end do
+              
+           end do
            
         end do
 
