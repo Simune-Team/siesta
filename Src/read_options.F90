@@ -284,10 +284,10 @@ subroutine read_options( na, ns, nspin )
 
 
   if ( IONode ) then
-    write(6,4) 'redata: Matel table size (NRTAB)', 128
+    write(6,4) 'redata: Matel table size (NRTAB)', 1024
   end if
   if (cml_p) then
-    call cmlAddParameter( xf=mainXML, name='MatelNRTAB',value=128, &
+    call cmlAddParameter( xf=mainXML, name='MatelNRTAB',value=1024, &
         dictRef='siesta:matel_nrtab', units="cmlUnits:countable")
   end if
 

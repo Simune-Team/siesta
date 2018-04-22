@@ -2858,10 +2858,13 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
        enddo
        
        vps_u = 0.0_dp
-       ! For backward compatibility with original OSSO branch
-       ! To be removed for final merge
-       if (fdf_get('keep-npotu-bug',.true.))  then
+       ! For backward compatibility with original OSSO branch,
+       ! put 'keep-npotu-bug T' in fdf file
+       ! To be removed altogether for releases
+       if (fdf_get('keep-npotu-bug',.false.))  then
           nup_end =  min(lmax,npotu-1)
+          write(6,'(a)') 'atom: *** Buggy code in highest-l ' //
+     $                   'SO component setup enabled ***'
        else
           nup_end = npotu
        endif
