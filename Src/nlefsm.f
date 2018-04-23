@@ -8,11 +8,10 @@
       module m_nlefsm
 
       use precision,     only : dp
-      use sparse_matrices, only: H0_offsiteSO
 
       implicit none
 
-      public :: nlefsm, nlefsm_offsiteSO, calc_Vj_offsiteSO
+      public :: nlefsm, nlefsm_SO_off
 
       private
 
@@ -445,11 +444,12 @@ C     Deallocate local memory
 C nlefsm_offsiteSO calculates the KB elements to the total Hamiltonian 
 C (including the SO contribution)
 C when Off-Site Spin Orbit is included in the calculation 
-      subroutine nlefsm_offsiteSO( scell, nua, na, isa, xa, indxua,
+      subroutine nlefsm_SO_off( scell, nua, na, isa, xa, indxua,
      .                      maxnh, maxnd, lasto, lastkb, iphorb, 
      .                      iphKB, numd, listdptr, listd, numh, 
      .                      listhptr, listh, nspin, Enl, Enl_offsiteSO, 
-     .                      fa, stress, H0 , matrix_elements_only)
+     .                      fa, stress, H0 , H0_off,
+     &                      matrix_elements_only)
 
 
 C *********************************************************************
@@ -496,7 +496,8 @@ C                            only matrix elements.
 C ******************* INPUT and OUTPUT *********************************
 C real*8 fa(3,na)          : NL forces (added to input fa)
 C real*8 stress(3,3)       : NL stress (added to input stress)
-C real*8 H(maxnh,nspin)    : NL Hamiltonian (added to input H)
+C real*8 H0(maxnh,nspin)    : NL Hamiltonian (added to input H)
+C complex*16 H0_off(maxnh,nspin) : NL off-site Hamiltonian (added to input H)
 C **************************** OUTPUT *********************************
 C real*8 Enl               : NL energy
 C *********************************************************************
@@ -525,7 +526,8 @@ C
 
       real(dp), intent(in)    :: scell(3,3),  xa(3,na)
       real(dp), intent(inout) :: fa(3,nua), stress(3,3)
-      real(dp), intent(inout) :: H0(maxnh) 
+      real(dp), intent(inout) :: H0(maxnh)
+      complex(dp), intent(inout) :: H0_off(maxnh,4)
                                            
       real(dp), intent(out)   :: Enl, Enl_offsiteSO 
       logical, intent(in)     :: matrix_elements_only
@@ -853,10 +855,10 @@ C-------- Pick up contributions to H and restore Di and Vi
            ind = listhptr(iio)+j
            jo = listh(ind)
            H0(ind) = H0(ind) + Vi(jo)
-           H0_offsiteSO(ind,1) = H0_offsiteSO(ind,1) + V_so(1,1,jo)
-           H0_offsiteSO(ind,2) = H0_offsiteSO(ind,2) + V_so(2,2,jo)
-           H0_offsiteSO(ind,3) = H0_offsiteSO(ind,3) + V_so(1,2,jo)
-           H0_offsiteSO(ind,4) = H0_offsiteSO(ind,4) + V_so(2,1,jo)
+           H0_off(ind,1) = H0_off(ind,1) + V_so(1,1,jo)
+           H0_off(ind,2) = H0_off(ind,2) + V_so(2,2,jo)
+           H0_off(ind,3) = H0_off(ind,3) + V_so(1,2,jo)
+           H0_off(ind,4) = H0_off(ind,4) + V_so(2,1,jo)
 
 
 C     Careful with this Vi()
@@ -894,7 +896,7 @@ C     Deallocate local memory
 
       call timer( 'nlefsm', 2 )
 
-      end subroutine nlefsm_offsiteSO
+      end subroutine nlefsm_SO_off
 
 c-----------------------------------------------------------------------
 c

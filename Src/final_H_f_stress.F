@@ -21,8 +21,9 @@
       use siesta_options, only: recompute_H_after_scf
       use sparse_matrices, only: numh, listh, listhptr
       use sparse_matrices, only: H, S, Dscf, Escf, maxnh, xijo
-      use sparse_matrices, only: H_ldau_2D
+      use sparse_matrices, only: H_ldau_2D, H_so_off_2D
       use class_dSpData2D, only: val
+      use class_zSpData2D, only: val
 
       use siesta_geom
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -30,7 +31,7 @@
      &                    rmaxo, no_l, iza
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
-      use m_nlefsm,     only: nlefsm, nlefsm_offsiteSO
+      use m_nlefsm,     only: nlefsm, nlefsm_SO_off
       use m_overfsm,    only: overfsm
       use m_kinefsm,    only: kinefsm
       use m_naefs,      only: naefs
@@ -91,6 +92,8 @@
       real(dp), pointer     :: H_tmp(:,:) => null()
       real(dp), pointer     :: S_tmp(:) => null()  
       real(dp), pointer     :: H_ldau(:,:)
+      complex(dp), pointer  :: H_so_off(:,:)
+
 #ifdef FINAL_CHECK_HS
       real(dp) :: diff_H, diff_S
 #endif
@@ -176,13 +179,14 @@
        call globalize_sum(Enl,buffer1)
        Enl = buffer1
 #endif
-      else 
-       call nlefsm_offsiteSO(scell, na_u, na_s, isa, xa, indxua,
+      else
+        H_so_off => val(H_so_off_2D)
+       call nlefsm_SO_off(scell, na_u, na_s, isa, xa, indxua,
      &                maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
      &                numh, listhptr, listh, numh, listhptr, listh,
      &                spin%Grid,
      &                Enl, Eso, fal,
-     &                stressl, H_tmp,
+     &                stressl, H_tmp, H_so_off,
      &                matrix_elements_only=.false.)
 #ifdef MPI
 ! Global reduction of energy terms
@@ -193,7 +197,7 @@
 #endif
       endif
 
-      if ( spin%SO_onsite) then
+      if ( spin%SO_onsite ) then
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
       endif
@@ -292,7 +296,8 @@
      &        diff_S
       end if
 #endif
-      
+
+      ! TODO I am not sure this works with SO_offsite?
       if (recompute_H_after_scf) then
          if (ionode) then
             write(6,"(a)") ":!: Updating H after scf cycle" //
