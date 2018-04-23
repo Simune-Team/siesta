@@ -237,8 +237,6 @@ MODULE siesta_options
 
   character(len=164) :: sname   ! System name, used to initialise read
 
-  real(dp) :: so_strength   ! Overall factor for spin-orbit (for advanced use only!)
-
   integer,  parameter :: SOLVE_DIAGON = 0
   integer,  parameter :: SOLVE_ORDERN = 1
   integer,  parameter :: SOLVE_TRANSI = 2

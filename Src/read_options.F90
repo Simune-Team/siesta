@@ -198,7 +198,6 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Start by printing out spin-configuration
-  so_strength            = fdf_get( 'SpinOrbitStrength',1.0_dp)
   call print_spin_options()
 
   ! H setup only

@@ -503,7 +503,6 @@ C *********************************************************************
 C
 C  Modules
 C
-C      use precision,     only : dp
       use parallel,        only : Node, Nodes
       use parallelsubs,    only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs,    only : GlobalToLocalOrb
@@ -515,10 +514,7 @@ C      use precision,     only : dp
       use m_new_matel,     only : new_matel
       use atm_types,       only: species_info, species
       use sparse_matrices, only: Dscf, xijo
-      use atomlist,        only: indxuo
      
-      use m_spin,          only: spin
-
       integer, intent(in) ::
      .   maxnh, na, maxnd, nspin, nua
 
@@ -527,8 +523,7 @@ C      use precision,     only : dp
      .  lasto(0:na), lastkb(0:na), listd(maxnd), listh(maxnh),
      .  numd(*), numh(*), listdptr(*), listhptr(*)
 
-      real(dp), intent(in) :: scell(3,3),  ! Dscf(maxnd,nspin),
-     .                        xa(3,na)
+      real(dp), intent(in)    :: scell(3,3),  xa(3,na)
       real(dp), intent(inout) :: fa(3,nua), stress(3,3)
       real(dp), intent(inout) :: H0(maxnh) 
                                            
@@ -910,7 +905,7 @@ c-----------------------------------------------------------------------
       subroutine calc_Vj_offsiteSO( l, epskb, Ski, Skj, grSki, grSkj,
      &                       V_ion, V_so, F_so )
 
-      use siesta_options, only: so_strength  ! overall factor
+      use m_spin, only: spin
       
       implicit none
 
@@ -1052,8 +1047,8 @@ c---- substract out V_ion
       V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0)*V_ion
 
       ! Apply overall factor
-      V_so = so_strength * V_so
-      F_so = so_strength * F_so
+      V_so = spin%so_strength * V_so
+      F_so = spin%so_strength * F_so
       
       return
       end subroutine calc_Vj_offsiteSO

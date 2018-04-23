@@ -170,7 +170,7 @@ C real*8 H(maxnh,3:8)      : Spin-Orbit H matrix elements
 C *********************************************************************
 C
       use m_mpi_utils, only: globalize_sum
-      use siesta_options, only: so_strength
+      use m_spin, only: spin
       implicit none
 
 C Arguments
@@ -235,7 +235,7 @@ C Internal variables
             
             call int_so_rad(is, li, joa, ioa, int_rad)
             call int_so_ang(li, mj, mi, int_ang(:))
-            Hso_ji(:)=so_strength*int_rad*int_ang(:)
+            Hso_ji(:) = spin%so_strength * int_rad * int_ang(:)
 
             H(ind,3) = H(ind,3) + Hso_ji(2)
             H(ind,4) = H(ind,4) + Hso_ji(3)

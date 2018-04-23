@@ -7,13 +7,16 @@
 ! ---
 module t_spin
 
+  use precision, only: dp
+  
   implicit none
-
+  private
+  
   !> Type containing a simulations spin configuration
   !!
   !! Thus this type contains _all_ relevant information
   !! regarding the spin-configuration.
-  type tSpin
+  type, public :: tSpin
 
      !> Dimensionality of the Hamiltonian
      integer :: H = 1
@@ -41,6 +44,9 @@ module t_spin
      logical :: SO_offsite = .false.
      logical :: SO_onsite  = .false.
 
+     !> Overall spin-orbit strength factor (for debugging only!)
+     real(dp) :: so_strength = 1.0_dp
+     
      ! Perhaps one could argue that one may
      ! associate a symmetry to the spin which
      ! then denotes whether the spin-configuration
@@ -210,18 +216,9 @@ contains
        call add_citation("10.1088/0953-8984/18/34/012")
     end if
     
-    ! Note that, in what follows,
-    !   spinor_dim = min(h_spin_dim,2)
-    !   e_spin_dim = min(h_spin_dim,4)
-    !   nspin      = min(h_spin_dim,4)  ! Relevant for dhscf, local DM
-    !      should probably be called nspin_grid
-    !
-    ! so everything can be determined if h_spin_dim is known.
-    ! It is tempting to go back to the old 'nspin' overloading,
-    ! making 'nspin' mean again 'h_spin_dim'.
-    ! But this has to be done carefully, as some routines expect
-    ! an argument 'nspin' which really means 'spinor_dim' (like diagon),
-    ! and others (such as dhscf) expect 'nspin' to mean 'nspin_grid'.
+    ! These are useful for fine control beyond the old "nspin". Some routines expect
+    ! an argument 'nspin' which might really mean 'spin%spinor' (like diagon),
+    ! 'spin%Grid' (like dhscf), etc.
 
     if ( spin%SO ) then
        ! Spin-orbit case
@@ -240,8 +237,11 @@ contains
        spin%SO   = .true.
        ! off/on MUST already be set!
 
+       ! Overall factor (for debugging only!)
+       spin%so_strength  = fdf_get( 'SpinOrbitStrength',1.0_dp)
+
        ! should be moved...
-       TRSym = .false.
+       TRSym = .false.    ! Cannot be changed !
 
     else if ( spin%NCol ) then
        ! Non-collinear case
@@ -262,7 +262,7 @@ contains
        spin%SO_offsite = .false.
 
        ! should be moved...
-       TRSym = .false.
+       TRSym = .false.    ! Cannot be changed !
 
     else if ( spin%Col ) then
        ! Collinear case
@@ -284,6 +284,8 @@ contains
 
        ! should be moved...
        TRSym = .true.
+       ! Allow the user to choose not to have TRS
+       TRSym  = fdf_get('TimeReversalSymmetry',TrSym)
 
     else if ( spin%none ) then
        ! No spin configuration...
@@ -305,11 +307,11 @@ contains
 
        ! should be moved...
        TRSym = .true.
+       ! Allow the user to choose not to have TRS
+       TRSym  = fdf_get('TimeReversalSymmetry',TrSym)
 
     end if
 
-    ! Get true time reversal symmetry
-    TRSym  = fdf_get('TimeReversalSymmetry',TrSym)
 
   contains
 
@@ -335,7 +337,6 @@ contains
   ! Print out spin-configuration options
   subroutine print_spin_options( )
     use parallel, only: IONode
-    use siesta_options, only: so_strength
 
     character(len=32) :: opt
 
@@ -367,9 +368,9 @@ contains
        write(*,'(a)') repeat('#',60)
        write(*,'(a,t16,a,t60,a)') '#','Spin-orbit coupling is in beta','#'
        write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
-       if (so_strength /= 1.0_dp) then
+       if (spin%so_strength /= 1.0_dp) then
           write(*,'(a,t13,a,1x,f10.6,t60,a)') '#','** Warning: SO strength:',&
-                                              so_strength, '#'
+                                              spin%so_strength, '#'
        endif
        write(*,'(a)') repeat('#',60)
     end if

@@ -932,8 +932,7 @@ m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
 m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
 m_sparsity_handling.o: intrinsic_missing.o m_interpolate.o m_region.o
 m_sparsity_handling.o: precision.o
-m_spin.o: alloc.o files.o m_cite.o parallel.o precision.o siesta_options.o
-m_spin.o: sys.o units.o
+m_spin.o: alloc.o files.o m_cite.o parallel.o precision.o sys.o units.o
 m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
 m_supercell.o: intrinsic_missing.o parallel.o parallelsubs.o precision.o
@@ -1137,7 +1136,7 @@ new_matel.o: alloc.o errorf.o interpolation.o matel_registry.o parallel.o
 new_matel.o: precision.o radfft.o spher_harm.o sys.o
 nlefsm.o: alloc.o atm_types.o atmfuncs.o atomlist.o chemical.o m_spin.o
 nlefsm.o: mneighb.o new_matel.o parallel.o parallelsubs.o precision.o
-nlefsm.o: siesta_options.o sparse_matrices.o
+nlefsm.o: sparse_matrices.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: siesta_options.o sparse_matrices.o sys.o
 obc.o: alloc.o precision.o
@@ -1311,8 +1310,8 @@ sparse_matrices.o: class_SpData2D.o class_Sparsity.o m_spin.o precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
 spinorbit.o: atm_types.o atmfuncs.o atmparams.o basis_types.o m_mpi_utils.o
-spinorbit.o: parallel.o parallelsubs.o precision.o pseudopotential.o
-spinorbit.o: siesta_options.o sys.o
+spinorbit.o: m_spin.o parallel.o parallelsubs.o precision.o pseudopotential.o
+spinorbit.o: sys.o
 state_analysis.o: atomlist.o born_charge.o flook_siesta.o m_energies.o
 state_analysis.o: m_fixed.o m_forces.o m_ntm.o m_spin.o m_stress.o
 state_analysis.o: m_wallclock.o parallel.o remove_intramol_pressure.o
