@@ -151,35 +151,20 @@ CONTAINS
 !                    DM/H(1,2) --> up/down   <--> ud
 !                    DM/H(2,1) --> down/up   <--> du
 !
-!  Using DM/H components, E_bs would be:
+!  Using DM/H components, E_bs would be sum(E_bs(1:4)), where
 !
 !   E_bs(1)=Re{sum_ij(H_ij(1,1)*D_ji(1,1))}=Re{sum_ij(H_ij^uu*(DM_ij^uu)^*)}
 !   E_bs(2)=Re{sum_ij(H_ij(2,2)*D_ji(2,2))}=Re{sum_ij(H_ij^dd*(DM_ij^dd)^*)}
 !   E_bs(3)=Re{sum_ij(H_ij(1,2)*D_ji(2,1))}=Re{sum_ij(H_ij^ud*(DM_ij^ud)^*)}
 !   E_bs(4)=Re{sum_ij(H_ij(2,1)*D_ji(1,2))}=Re{sum_ij(H_ij^du*(DM_ij^du)^*)}
 !
-!         Where:
-!     
-!             DM_ij^uu = (DM_ji^uu)^*
-!             DM_ij^dd = (DM_ji^dd)^*
-!             DM_ij^ud = (DM_ij^du)^*
-!             DM_ij^du = (DM_ij^ud)^*
+!         since, due to overall hermiticity,  DM_ij^ab = (DM_ji^ba)^*
 !
-!  Ebs_Haux and Ebs_Daux ARE NOT the dense matrix that appear in 
-! diag3g/3k, they are just two complex numbers (per each io index) used 
-! as an artifact to multiply the elements of the H/DM matrices in a such 
-! way that the result gives Re{Tr[H*DM]}. For example, 
-!
-! H_12(1,1)*DM_21(1,1) <==> Re{ [H_12(1)+iH_12(5)]*[DM_21(1)+iDM_21(5)] } =
-!                                H_12(1)*DM_21(1) - H_12(5)*DM_21(5) = 
-!                                H_12(1)*DM_12(1) + H_12(5)*DM_12(5)   
-!                      
-! H_12(1,2)*DM_21(2,1) <==> Re{ [H_12(3)+iH_12(4)]*[DM_21(7)+iDM_21(8)] } =
-!                                H_12(3)*DM_21(7) - H_12(4)*DM_21(8) = 
-!                                H_12(3)*DM_12(3) + H_12(4)*DM_12(4)   
-!
-!             Since  DM_21(2,1) = [DM_12(1,2)]^*
-!
+!   The trace operation is then an extended dot product over the "ij"
+!   sparse index, which can also be conveniently done in parallel, as
+!   each processor handles the same indexes in H and the DM. Only a
+!   global reduction is needed at the end.
+      
 !  Same comments are valid for the E_Harris calculation.
 !
 !*****************************************************************************
@@ -255,17 +240,17 @@ CONTAINS
 
           DEharr_Haux(1,1) = dcmplx( H(io,1),H(io,5) )
           DEharr_Haux(2,2) = dcmplx( H(io,2),H(io,6) )
-          DEharr_Haux(1,2) = dcmplx( H(io,3),H(io,4) )      ! more clear: -4 here...
+          DEharr_Haux(1,2) = dcmplx( H(io,3),-H(io,4) )
           DEharr_Haux(2,1) = dcmplx( H(io,7),H(io,8) )
 
           DEharr_Daux(1,1) = dcmplx( Dscf(io,1),Dscf(io,5) )
           DEharr_Daux(2,2) = dcmplx( Dscf(io,2),Dscf(io,6) )
-          DEharr_Daux(1,2) = dcmplx( Dscf(io,3),Dscf(io,4) )  ! ... and -4 here, as in Ebs
+          DEharr_Daux(1,2) = dcmplx( Dscf(io,3),-Dscf(io,4) )
           DEharr_Daux(2,1) = dcmplx( Dscf(io,7),Dscf(io,8) )
 
           DEharr_Daux_old(1,1) = dcmplx( Dold(io,1),Dold(io,5) )
           DEharr_Daux_old(2,2) = dcmplx( Dold(io,2),Dold(io,6) ) 
-          DEharr_Daux_old(1,2) = dcmplx( Dold(io,3),Dold(io,4) )  ! ... and -4 here.
+          DEharr_Daux_old(1,2) = dcmplx( Dold(io,3),-Dold(io,4) ) 
           DEharr_Daux_old(2,1) = dcmplx( Dold(io,7),Dold(io,8) )
 
 
@@ -372,6 +357,8 @@ CONTAINS
 
       if ( spin%SO_offsite ) then
 
+         ! The computation of the trace is different here, as H0_offsiteSO has
+         ! a different structure from H and the DM.
         do io = 1, maxnh
 
 !-------- Eso(u,u)
