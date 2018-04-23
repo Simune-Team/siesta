@@ -26,10 +26,9 @@
       use sparse_matrices, only: xijo, xij_2D
       use sparse_matrices, only: S   , S_1D
 
-      use sparse_matrices, only: H0_offsiteSO
-
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
-      use sparse_matrices, only: H_ldau_2D, H_so_2D
+      use sparse_matrices, only: H_ldau_2D
+      use sparse_matrices, only: H_so_on_2D, H_so_off_2D
 
       use sparse_matrices, only: sparse_pattern
       use sparse_matrices, only: block_dist, single_dist
@@ -100,6 +99,7 @@
       use class_Sparsity
       use class_dSpData1D
       use class_dSpData2D
+      use class_zSpData2D
       use class_dData2D
 #ifdef TEST_IO
       use m_test_io
@@ -564,15 +564,14 @@
          end if
       end if
       
-      if ( spin%SO_onsite  ) then
-         write(oname,"(a,i0)") "H_so (onsite) at geom step ", istep
-         call newdSpData2D(sparse_pattern,spin%H - 2,
-     &        block_dist,H_so_2D,name=oname)
-      end if
-
-      if ( spin%SO_offsite ) then
-         call re_alloc(H0_offsiteSO, 1,maxnh, 1,4, 'H0_offsiteSO',
-     $                 'state_init')
+      if ( spin%SO_onsite ) then
+        write(oname,"(a,i0)") "H_so (onsite) at geom step ", istep
+        call newdSpData2D(sparse_pattern,spin%H - 2,
+     &      block_dist,H_so_on_2D,name=oname)
+      else if ( spin%SO_offsite ) then
+        write(oname,"(a,i0)") "H_so (offsite) at geom step ", istep
+        call newzSpData2D(sparse_pattern,4,
+     &      block_dist,H_so_off_2D,name=oname)
       endif
 
       write(oname,"(a,i0)") "S at geom step ", istep

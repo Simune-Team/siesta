@@ -48,8 +48,7 @@ CONTAINS
                                  rmaxo, no_l
       use m_ntm,           only: ntm
 
-      use m_spin,          only: spin 
-      use sparse_matrices, only: H0_offsiteSO
+      use m_spin,          only: spin
       use parallel,        only: IONode 
 
       use m_dipol,         only: dipol
@@ -300,10 +299,15 @@ CONTAINS
       use files, only : filesOut_t    ! derived type for output file names
       use class_dSpData1D, only : val
       use class_dSpData2D, only : val
-      use sparse_matrices, only: H_kin_1D, H_vkb_1D, H_so_2D
+      use class_zSpData2D, only : val
+      use sparse_matrices, only: H_kin_1D, H_vkb_1D
+      use sparse_matrices, only: H_so_on_2D, H_so_off_2D
+
 
       type(filesOut_t)  :: filesOut  ! blank output file names
-      real(dp), pointer :: H_vkb(:), H_kin(:), H_so(:,:)
+      real(dp), pointer :: H_vkb(:), H_kin(:), H_so_on(:,:)
+      complex(dp), pointer :: H_so_off(:,:)
+
 
       complex(dp) :: Hc, Dc
       real(dp)    :: dummy_stress(3,3), dummy_fa(1,1)
@@ -356,41 +360,37 @@ CONTAINS
       Eso = 0._dp
 
       if ( spin%SO_offsite ) then
+         H_so_off => val(H_so_off_2D)
 
-         ! The computation of the trace is different here, as H0_offsiteSO has
+         ! The computation of the trace is different here, as H_so_off has
          ! a different structure from H and the DM.
         do io = 1, maxnh
 
 !-------- Eso(u,u)
-            Dc = cmplx(Dscf(io,1),Dscf(io,5),kind=dp)
-            Hc = H0_offsiteSO(io,1)
-          Eso = Eso + real( Hc*Dc )
+          Dc = cmplx(Dscf(io,1),Dscf(io,5), dp)
+          Eso = Eso + real( H_so_off(io,1)*Dc, dp)
 !-------- Eso(d,d)
-            Dc = cmplx(Dscf(io,2),Dscf(io,6),kind=dp)
-            Hc = H0_offsiteSO(io,2)
-          Eso = Eso + real( Hc*Dc )
+          Dc = cmplx(Dscf(io,2),Dscf(io,6), dp)
+          Eso = Eso + real( H_so_off(io,2)*Dc, dp)
 !-------- Eso(u,d)
-            Dc = cmplx(Dscf(io,3),Dscf(io,4),kind=dp)
-            Hc = H0_offsiteSO(io,4)
-          Eso = Eso + real( Hc*Dc )
+          Dc = cmplx(Dscf(io,3),Dscf(io,4), dp)
+          Eso = Eso + real( H_so_off(io,4)*Dc, dp)
 !-------- Eso(d,u)
-            Dc = cmplx(Dscf(io,7),-Dscf(io,8),kind=dp)
-            Hc = H0_offsiteSO(io,3)
-          Eso = Eso + real( Hc*Dc )
+          Dc = cmplx(Dscf(io,7),-Dscf(io,8), dp)
+          Eso = Eso + real( H_so_off(io,3)*Dc, dp)
 
-        enddo
+        end do
 
-      endif
-
-      if ( spin%SO_onsite ) then
+      else if ( spin%SO_onsite ) then
          ! Sadly some compilers (g95), does
          ! not allow bounds for pointer assignments :(
-         H_so => val(H_so_2D)
+         H_so_on => val(H_so_on_2D)
          do io = 1,maxnh
-            Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8) &
-                 + H_so(io,5)*Dscf(io,3) + H_so(io,6)*Dscf(io,4) &
-                 - H_so(io,3)*Dscf(io,5) - H_so(io,4)*Dscf(io,6)
-         end do
+            Eso = Eso + H_so_on(io,1)*Dscf(io,7) + H_so_on(io,2)*Dscf(io,8) &
+                 + H_so_on(io,5)*Dscf(io,3) + H_so_on(io,6)*Dscf(io,4) &
+                 - H_so_on(io,3)*Dscf(io,5) - H_so_on(io,4)*Dscf(io,6)
+          end do
+          
       end if
 
 #ifdef MPI
