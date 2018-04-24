@@ -5367,13 +5367,14 @@ when dealing with SCF problems, otherwise too verbose.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf MullikenInSCF}] ({\it logical}):
-\index{MullikenInSCF@{\bf MullikenInSCF}}
-If true, the Mulliken populations will be written for every SCF step
-at the level of detail specified in {\bf WriteMullikenPop}. Useful
-when dealing with SCF problems, otherwise too verbose.
+\item[{\bf SpinInSCF}] ({\it logical}):
+\index{SpinInSCF@{\bf SpinInSCF}}
 
-{\it Default value:} {\tt .false.}
+If true, the size and components of the (total) spin polarization will
+be printed at every scf step.  This is analogous to the
+'Mulliken.In.Scf' feature.  
+
+{\it Default value:} {\tt .true.} for calculations involving spin.
 
 \end{description}
 

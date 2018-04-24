@@ -138,7 +138,7 @@
               call message('WARNING',
      $             'SCF_NOT_CONV: SCF did not converge'//
      $             ' before wall time exhaustion')
-              write(tmp_str,"(i4,i3,f12.6)") istep, iscf, dmax
+              write(tmp_str,"(i5,1x,i5,f12.6)") istep, iscf, dmax
               call message(' (info)',"Geom step, scf iteration, dmax:"
      $                            //trim(tmp_str))
            endif
@@ -245,7 +245,7 @@
          if (SCFMustConverge) then
             call message('FATAL','SCF_NOT_CONV: SCF did not converge' //
      $           ' in maximum number of steps (required).')
-            write(tmp_str,"(i4,i3,f12.6)") istep, iscf, dmax
+            write(tmp_str,"(i5,1x,i5,f12.6)") istep, iscf, dmax
             call message(' (info)',"Geom step, scf iteration, dmax:"
      $           //trim(tmp_str))
             call timer( 'all', 2 ) ! New call to close the tree
@@ -256,7 +256,7 @@
             call message('WARNING',
      $           'SCF_NOT_CONV: SCF did not converge'//
      $           ' in maximum number of steps.')
-            write(tmp_str,"(i4,i3,f12.6)") istep, iscf, dmax
+            write(tmp_str,"(i5,1x,i5,f12.6)") istep, iscf, dmax
             call message(' (info)',"Geom step, scf iteration, dmax:"
      $                            //trim(tmp_str))
          endif
