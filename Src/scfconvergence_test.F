@@ -132,7 +132,13 @@
      $           iscf," iterations"
          endif
       endif
-
+      if (harrisfun) then
+         converged = .true.
+         if (IOnode) then
+            write(6,"(a)") "Harris-functional calculation " //
+     $                     "considered 'converged'"
+         endif
+      endif
 
 !---------------------------------------------------------------- END
       END subroutine scfconvergence_test
