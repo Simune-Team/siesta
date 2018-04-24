@@ -28,7 +28,7 @@
 #          for a serial run.
 #
 #          It is also possible to have separate working directories,
-#          by using the a "label". For example:
+#          by using a "label". For example:
 #
 #          make label=finer 
 #     
@@ -42,7 +42,7 @@ default: all
 
 label=work
 
-tests = ge_soc_bands ag anneal-cont ar2_vdw \
+tests = ag anneal-cont ar2_vdw \
 	batio3 benzene bessel \
 	born born_spin \
 	carbon_nanoscroll \
@@ -75,22 +75,13 @@ tests = ge_soc_bands ag anneal-cont ar2_vdw \
 	sih sih_fire sih_op_broyden \
 	si-optical si_pdos_kgrid si_pdos_gamma \
 	sinw sinw_2 \
-	offsite_SOC_Pt2_xx offsite_SOC_Pt2_xz offsite_SOC_Pt2_zy offsite_SOC_Pt2_zz \
-	onsite_SOC_Pt2_xx onsite_SOC_Pt2_xz onsite_SOC_Pt2_zy onsite_SOC_Pt2_zz \
 	var_cell \
 	wannier \
 	zmatrix \
 	TDDFT_h2o TDDFT_Ge
 
-# These tests are extremely time consuming and
-# should only be runned sometimes
-# Currently they may be runned individually.
-#	offsite_SOC_FePt_xx offsite_SOC_FePt_xz offsite_SOC_FePt_zy offsite_SOC_FePt_zz
-#	onsite_SOC_FePt_xx onsite_SOC_FePt_xz onsite_SOC_FePt_zy onsite_SOC_FePt_zz
-tests_soc_offsite  = offsite_SOC_Pt2_xx offsite_SOC_Pt2_xz offsite_SOC_Pt2_zy offsite_SOC_Pt2_zz
-tests_soc_offsite += offsite_SOC_FePt_xx offsite_SOC_FePt_xz offsite_SOC_FePt_zy offsite_SOC_FePt_zz
-tests_soc_onsite  = onsite_SOC_Pt2_xx onsite_SOC_Pt2_xz onsite_SOC_Pt2_zy onsite_SOC_Pt2_zz
-tests_soc_onsite += onsite_SOC_FePt_xx onsite_SOC_FePt_xz onsite_SOC_FePt_zy onsite_SOC_FePt_zz
+# SOC tests
+tests_soc = ge_soc_bands Pt_dimer_soc FePt_soc
 
 # Tests only applicable for LUA
 tests_lua  = lua_si111 lua_h2o
@@ -99,13 +90,13 @@ tests_lua  = lua_si111 lua_h2o
 tests_flos  = flos_h2o_lbfgs flos_h2o_fire flos_h2o_meshcutoff flos_h2o_neb
 
 # Accumulated variable for ALL tests
-tests_all = $(tests) $(tests_soc_offsite) $(tests_soc_onsite) $(tests_lua) $(tests_flos)
+tests_all = $(tests) $(tests_soc) $(tests_lua) $(tests_flos)
 
 all: $(tests)
 
 # Define test specific targets:
 tests: $(tests)
-tests-soc: $(tests_soc_offsite) $(tests_soc_onsite)
+tests-soc: $(tests_soc)
 tests-lua: $(tests_lua)
 tests-flos: $(tests_flos)
 
