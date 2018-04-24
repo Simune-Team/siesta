@@ -481,61 +481,6 @@ contains
 
     end if
 
-    ! print-out how the initial spin-configuration is
-    call print_initial_spin()
-
-  contains
-
-    subroutine print_initial_spin()
-      use m_mpi_utils, only: Globalize_sum
-      use sparse_matrices, only: S
-
-      ! Attach and calculate initial spin-configuration
-      real(dp), pointer :: DM(:,:)
-      real(dp) :: qspin(8)
-      integer  :: is, i, nnz
-#ifdef MPI
-      real(dp) :: qtmp(8)
-#endif
-
-      if ( spin%DM == 1 ) then
-         if ( IONode ) write(*,*) ! new line
-         return
-      end if
-
-      DM => val(DM_2D)
-      nnz = size(DM, 1)
-      
-      qspin(:) = 0.0_dp
-      ! Calculate initial spin-polarization
-!$OMP parallel do default(shared), private(is,i), reduction(+:qspin)
-      do is = 1, spin%DM
-         do i = 1 , nnz
-            qspin(is) = qspin(is) + DM(i,is) * S(i)
-         end do
-      end do
-!$OMP end parallel do
-
-#ifdef MPI
-      ! Global reduction of spin components
-      call globalize_sum(qspin, qtmp)
-      qspin = qtmp
-#endif
-      if ( .not. IONode ) return
-
-      ! Print the initial spin components
-      if ( spin%DM == 2 ) then
-         write(*,'(/,a,f12.6/)')   &
-              'initDM: Initial spin polarization (Qup-Qdown) =', &
-              qspin(1) - qspin(2)
-      else if ( spin%DM > 2 ) then
-         write(*,'(/,a,3f12.6/)')   &
-              'initDM: Initial spin polarization (x,y,z) =',  &
-              qspin(3)*2, qspin(4)*2, qspin(1) - qspin(2)
-      end if
-
-    end subroutine print_initial_spin
-    
   end subroutine init_DM
 
 
