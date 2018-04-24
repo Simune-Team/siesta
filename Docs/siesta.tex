@@ -3887,7 +3887,10 @@ could still be difficult.
   spin-orbit interaction from zero to any positive value. It can be
   used for both the on-site and off-site SOC flavors, but only for
   debugging and testing purposes, as the only physical value is 1.0.
-
+  Note that this feature is implemented by modifying the SO parts of the
+  semilocal potentials read from a \code{.psf} file. Care must be
+  taken when re-using any \code{.ion} files produced.
+  
 \end{fdfentry}
 
 \begin{fdflogicalF}{WriteOrbMom}

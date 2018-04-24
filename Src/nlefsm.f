@@ -55,7 +55,7 @@ C integer listhptr(nuo)    : Pointer to the start of each row (-1) of the
 C                            hamiltonian matrix
 C integer listh(maxnh)     : Nonzero hamiltonian-matrix element column 
 C                            indexes for each matrix row
-C integer nspin            : Number of spin components of Dscf and H
+C integer nspin            : Number of spinor components (really min(nspin,2))
 C                            If computing only matrix elements, it
 C                            can be set to 1.
 C logical matrix_elements_only:
@@ -330,7 +330,7 @@ C           Only calculate if needed locally in our MPI process
              jo = listh(ind)
              listed(jo) = .true.
              if (.not. matrix_elements_only) then
-                do ispin = 1,nspin ! Both spins add up...
+                do ispin = 1, nspin ! Both spins add up... (nspin=spin%spinor here)
                    Di(jo) = Di(jo) + Dscf(ind,ispin)
                 enddo
              endif
@@ -381,7 +381,7 @@ C         Pick up contributions to H and restore Di and Vi
           do j = 1,numh(iio)
              ind = listhptr(iio)+j
              jo = listh(ind)
-             do ispin = 1,nspin
+             do ispin = 1,nspin  ! Only diagonal parts
                 H(ind,ispin) = H(ind,ispin) + Vi(jo)
              enddo
              Vi(jo) = 0.0d0     ! See initial zero-out at top
@@ -487,7 +487,7 @@ C integer listhptr(nuo)    : Pointer to the start of each row (-1) of the
 C                            hamiltonian matrix
 C integer listh(maxnh)     : Nonzero hamiltonian-matrix element column 
 C                            indexes for each matrix row
-C integer nspin            : Number of spin components of Dscf and H
+C integer nspin            : Number of spin_grid components (really min(nspin,4))
 C                            If computing only matrix elements, it
 C                            can be set to 1.
 C logical matrix_elements_only:
@@ -753,7 +753,7 @@ C        Valid orbital
             ind = listhptr(iio)+j  ! jptr
             jo = listh(ind)       ! j
             Di(jo) = 0.0_dp
-            do ispin = 1,min(2,nspin)
+            do ispin = 1,min(2,nspin) ! Only diagonal parts 
              Di(jo) = Di(jo) + Dscf(ind,ispin)
             enddo
             Ds(1,1,jo) = dcmplx(Dscf(ind,1), Dscf(ind,5))  ! D(ju,iu)
@@ -829,6 +829,7 @@ c------------ Forces & SO contribution to E_NL
                E_offsiteSO(3) = E_offsiteSO(3) + V_sot(1,2)*Ds(2,1,jo) ! V(iu,jd)*D(jd,iu)
                E_offsiteSO(4) = E_offsiteSO(4) + V_sot(2,1)*Ds(1,2,jo) ! V(id,ju)*D(ju,id)
 
+               ! These forces include both the 'ion' and 'SO' parts
                do ix = 1,3
                 fik = 2.0_dp*dreal(Ds(1,1,jo)*F_so(ix,1,1) +
      &                             Ds(2,2,jo)*F_so(ix,2,2) +
@@ -907,8 +908,6 @@ c-----------------------------------------------------------------------
       subroutine calc_Vj_offsiteSO( l, epskb, Ski, Skj, grSki, grSkj,
      &                       V_ion, V_so, F_so )
 
-      use m_spin, only: spin
-      
       implicit none
 
       integer     , intent(in)  :: l
@@ -1048,10 +1047,6 @@ c---- substract out V_ion
       V_so(1,1) = V_so(1,1) - cmplx(1.0d0,0.0d0)*V_ion
       V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0)*V_ion
 
-      ! Apply overall factor
-      V_so = spin%so_strength * V_so
-      F_so = spin%so_strength * F_so
-      
       return
       end subroutine calc_Vj_offsiteSO
 

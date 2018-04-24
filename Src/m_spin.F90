@@ -44,9 +44,6 @@ module t_spin
      logical :: SO_offsite = .false.
      logical :: SO_onsite  = .false.
 
-     !> Overall spin-orbit strength factor (for debugging only!)
-     real(dp) :: so_strength = 1.0_dp
-     
      ! Perhaps one could argue that one may
      ! associate a symmetry to the spin which
      ! then denotes whether the spin-configuration
@@ -237,9 +234,6 @@ contains
        spin%SO   = .true.
        ! off/on MUST already be set!
 
-       ! Overall factor (for debugging only!)
-       spin%so_strength  = fdf_get( 'SpinOrbitStrength',1.0_dp)
-
        ! should be moved...
        TRSym = .false.    ! Cannot be changed !
 
@@ -368,10 +362,6 @@ contains
        write(*,'(a)') repeat('#',60)
        write(*,'(a,t16,a,t60,a)') '#','Spin-orbit coupling is in beta','#'
        write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
-       if (spin%so_strength /= 1.0_dp) then
-          write(*,'(a,t13,a,1x,f10.6,t60,a)') '#','** Warning: SO strength:',&
-                                              spin%so_strength, '#'
-       endif
        write(*,'(a)') repeat('#',60)
     end if
 

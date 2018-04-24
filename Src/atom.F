@@ -2743,6 +2743,8 @@ C
 
         type(pseudopotential_t), pointer :: vp
 
+        real(dp) :: so_strength
+        
         vp => basp%pseudopotential
 
         icorr = vp%icorr
@@ -2868,8 +2870,22 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
        else
           nup_end = npotu
        endif
+
+       ! Allow an overall factor for the SO part (for debugging only!)
+       ! Note that (notably for the lj-based SO implementation) this
+       ! trick is based on the availability of a semilocal pseudo.  Care
+       ! should also be taken with the onward use of any .ion files
+       ! produced.
+       
+       so_strength = fdf_get('spin-orbit-strength', 1.0_dp)
+       if (so_strength /= 1.0_dp)  then
+          write(6,'(a,f10.6)') 'atom: *** SO enhancement factor: ',
+     $         so_strength
+       endif
+
        do nup=1,nup_end
-          l = vp%lup(nup) 
+          l = vp%lup(nup)
+          vp%vup(nup,1:nrval) = so_strength * vp%vup(nup,1:nrval)
           vps_u(1:nrval,l) = vp%vup(nup,1:nrval)
           do ir=2,nrval
             vps_u(ir,l)=vps_u(ir,l)/rofi(ir)

@@ -71,7 +71,6 @@ C
       use atmparams,       only: lmaxd
       use parallel,        only: Node
       use m_mpi_utils,     only: broadcast
-      use sys,             only: die
 
       integer  :: is, mx_nrval, li, ir, iup
       real(dp) :: a, b, rpb, ea
@@ -130,7 +129,8 @@ C
          enddo
          write(6,"(/)")
          if (.not. there_are_so_potentials) then
-            call die("No spin-orbit components for any species!!")
+            write(6,"(a)") "*** WARNING: No spin-orbit components " //
+     $                     "for any species... "
          endif
       endif
 
@@ -170,7 +170,7 @@ C real*8 H(maxnh,3:8)      : Spin-Orbit H matrix elements
 C *********************************************************************
 C
       use m_mpi_utils, only: globalize_sum
-      use m_spin, only: spin
+
       implicit none
 
 C Arguments
@@ -235,7 +235,7 @@ C Internal variables
             
             call int_so_rad(is, li, joa, ioa, int_rad)
             call int_so_ang(li, mj, mi, int_ang(:))
-            Hso_ji(:) = spin%so_strength * int_rad * int_ang(:)
+            Hso_ji(:) = int_rad * int_ang(:)
 
             H(ind,3) = H(ind,3) + Hso_ji(2)
             H(ind,4) = H(ind,4) + Hso_ji(3)
