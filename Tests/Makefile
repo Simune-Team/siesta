@@ -42,7 +42,7 @@ default: all
 
 label=work
 
-tests = ag anneal-cont ar2_vdw \
+tests = ge_soc_bands ag anneal-cont ar2_vdw \
 	batio3 benzene bessel \
 	born born_spin \
 	carbon_nanoscroll \
