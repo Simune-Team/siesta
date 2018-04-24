@@ -67,7 +67,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     complex(dp), intent(in)   :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -79,7 +79,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -97,7 +97,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     complex(sp), intent(in)   :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -109,7 +109,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -127,7 +127,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     real(dp), intent(in)   :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -139,7 +139,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -157,7 +157,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     real(sp), intent(in)   :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -169,7 +169,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -187,7 +187,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     integer, intent(in)   :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -198,7 +198,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -216,7 +216,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     logical, intent(in)   :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -226,7 +226,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -244,7 +244,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     character(len=*), intent(in)   :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -255,7 +255,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -275,7 +275,7 @@ contains
     type(xmlf_t), intent(inout)              :: xf
     complex(dp), intent(in) , dimension(:)  :: value
     integer, intent(in) :: nitems
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -287,7 +287,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -306,7 +306,7 @@ contains
     type(xmlf_t), intent(inout)              :: xf
     complex(sp), intent(in) , dimension(:)  :: value
     integer, intent(in) :: nitems
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -318,7 +318,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -337,7 +337,7 @@ contains
     type(xmlf_t), intent(inout)              :: xf
     real(dp), intent(in) , dimension(:)  :: value
     integer, intent(in) :: nitems
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -349,7 +349,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -368,7 +368,7 @@ contains
     type(xmlf_t), intent(inout)              :: xf
     real(sp), intent(in) , dimension(:)  :: value
     integer, intent(in) :: nitems
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -380,7 +380,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -399,7 +399,7 @@ contains
     type(xmlf_t), intent(inout)              :: xf
     integer, intent(in) , dimension(:)  :: value
     integer, intent(in) :: nitems
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -410,7 +410,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -429,7 +429,7 @@ contains
     type(xmlf_t), intent(inout)              :: xf
     logical, intent(in) , dimension(:)  :: value
     integer, intent(in) :: nitems
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -439,7 +439,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -458,7 +458,7 @@ contains
     type(xmlf_t), intent(inout)              :: xf
     character(len=*), intent(in) , dimension(:)  :: value
     integer, intent(in) :: nitems
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -469,7 +469,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -488,7 +488,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     complex(dp), intent(in) , dimension(:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -500,7 +500,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -518,7 +518,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     complex(sp), intent(in) , dimension(:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -530,7 +530,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -548,7 +548,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     real(dp), intent(in) , dimension(:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -560,7 +560,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -578,7 +578,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     real(sp), intent(in) , dimension(:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -590,7 +590,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -608,7 +608,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     integer, intent(in) , dimension(:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -619,7 +619,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -637,7 +637,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     logical, intent(in) , dimension(:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -647,7 +647,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -665,7 +665,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     character(len=*), intent(in) , dimension(:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -676,7 +676,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -697,7 +697,7 @@ contains
     complex(dp), intent(in) , dimension(:,:)  :: value
     integer, intent(in) :: nrows
     integer, intent(in) :: ncols
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -709,7 +709,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -729,7 +729,7 @@ contains
     complex(sp), intent(in) , dimension(:,:)  :: value
     integer, intent(in) :: nrows
     integer, intent(in) :: ncols
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -741,7 +741,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -761,7 +761,7 @@ contains
     real(dp), intent(in) , dimension(:,:)  :: value
     integer, intent(in) :: nrows
     integer, intent(in) :: ncols
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -773,7 +773,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -793,7 +793,7 @@ contains
     real(sp), intent(in) , dimension(:,:)  :: value
     integer, intent(in) :: nrows
     integer, intent(in) :: ncols
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -805,7 +805,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -825,7 +825,7 @@ contains
     integer, intent(in) , dimension(:,:)  :: value
     integer, intent(in) :: nrows
     integer, intent(in) :: ncols
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -836,7 +836,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -856,7 +856,7 @@ contains
     logical, intent(in) , dimension(:,:)  :: value
     integer, intent(in) :: nrows
     integer, intent(in) :: ncols
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -866,7 +866,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -886,7 +886,7 @@ contains
     character(len=*), intent(in) , dimension(:,:)  :: value
     integer, intent(in) :: nrows
     integer, intent(in) :: ncols
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -897,7 +897,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -916,7 +916,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     complex(dp), intent(in) , dimension(:,:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -928,7 +928,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -946,7 +946,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     complex(sp), intent(in) , dimension(:,:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -958,7 +958,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -976,7 +976,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     real(dp), intent(in) , dimension(:,:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -988,7 +988,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -1006,7 +1006,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     real(sp), intent(in) , dimension(:,:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -1018,7 +1018,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -1036,7 +1036,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     integer, intent(in) , dimension(:,:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -1047,7 +1047,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -1065,7 +1065,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     logical, intent(in) , dimension(:,:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -1075,7 +1075,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
@@ -1093,7 +1093,7 @@ contains
 
     type(xmlf_t), intent(inout)              :: xf
     character(len=*), intent(in) , dimension(:,:)  :: value
-    character(len=*), intent(in), optional :: dictRef
+    character(len=*), intent(in)           :: dictRef
     character(len=*), intent(in), optional :: convention
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: id
@@ -1104,7 +1104,7 @@ contains
 
 #ifndef DUMMYLIB
     call xml_NewElement(xf, "property")
-    if (present(dictRef)) call xml_addAttribute(xf, "dictRef", dictRef)
+    if (.true.) call xml_addAttribute(xf, "dictRef", dictRef)
     if (present(convention)) call xml_addAttribute(xf, "convention", convention)
     if (present(title)) call xml_addAttribute(xf, "title", title)
     if (present(id)) call xml_addAttribute(xf, "id", id)
