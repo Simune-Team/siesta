@@ -457,7 +457,7 @@
            if (.not. relaxd) then
               call message('WARNING','GEOM_NOT_CONV: '//
      $             'Geometry relaxation not converged')
-              write(tmp_str,"(a,i3)") 'Geometry step: ', istep
+              write(tmp_str,"(a,i5)") 'Geometry step: ', istep
               call message(' (info)', trim(tmp_str))
            endif
            call barrier()
