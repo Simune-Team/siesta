@@ -1,0 +1,25 @@
+Notes to the new 'offsite spin-orbit' implementation by Ramon Cuadrado.
+
+Reference:
+
+R. Cuadrado and J. I. Cerda, J. Phys.: Condens. Matter 24, 086005,
+(2012) (DOI:10.1088/0953-8984/24/8/086005)).
+
+The only basic change from the 'onsite' implementation is in the
+construction of the SO hamiltonian, which involves the full set of lj
+KB projectors. These are constructed by new code in 'atom', and
+processed in the new routine 'nlefsm_SO_off', which has roughly the
+same structure as 'nlefsm', but constructs at the same time the 'ion'
+and 'SO' pieces from the relativistic projectors.
+
+This routine calls 'calc_Vj_offsiteSO', where VSO and Vion and the
+corresponding forces are computed using the Clebsch–Gordan
+coefficients needed to change from the basis |l,m,sigma> to |j,mj>.
+
+The conventions for structure and signs in H and the DM are the same
+as in the existing 'onsite' implementation, so there are no changes in
+the diagonalization routines, or in the analysis routines and tools.
+
+Eventually, the 'offsite' qualifier might be removed, as this is a
+full spin-orbit implementation.
+

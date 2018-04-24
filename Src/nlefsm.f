@@ -441,7 +441,7 @@ C     Deallocate local memory
       
       end subroutine nlefsm
 
-C nlefsm_offsiteSO calculates the KB elements to the total Hamiltonian 
+C nlefsm_SO_off calculates the KB elements to the total Hamiltonian 
 C (including the SO contribution)
 C when Off-Site Spin Orbit is included in the calculation 
       subroutine nlefsm_SO_off( scell, nua, na, isa, xa, indxua,
@@ -606,21 +606,21 @@ C Initialize arrays Di and Vi only once
 C Allocate local memory
 
       nullify( Vi ) ! This is Vion
-      call re_alloc( Vi, 1, no, 'Vi', 'nlefsm_offsiteSO' )
+      call re_alloc( Vi, 1, no, 'Vi', 'nlefsm_SO_off' )
       Vi(1:no) = 0.0_dp
 
       nullify( listed )
-      call re_alloc( listed, 1, no, 'listed', 'nlefsm_offsiteSO' )
+      call re_alloc( listed, 1, no, 'listed', 'nlefsm_SO_off' )
       listed(1:no) = .false.
       nullify( listedall )
-      call re_alloc( listedall, 1, no, 'listedall', 'nlefsm_offsiteSO' )
+      call re_alloc( listedall, 1, no, 'listedall', 'nlefsm_SO_off' )
       listedall(1:no) = .false.
 
       allocate( V_so(2,2,no) )
 
       if (.not. matrix_elements_only) then
        nullify( Di ) 
-       call re_alloc( Di, 1, no, 'Di', 'nlefsm_offsiteSO' )
+       call re_alloc( Di, 1, no, 'Di', 'nlefsm_SO_off' )
        Di(1:no) = 0.0_dp
        allocate( Ds(2,2,no) )
       endif
@@ -645,16 +645,16 @@ C Find maximum number of KB projectors of one atom = maxkba
 
 C Allocate local arrays that depend on saved parameters
       nullify( iano )
-      call re_alloc( iano, 1, maxno, 'iano', 'nlefsm_offsiteSO' )
+      call re_alloc( iano, 1, maxno, 'iano', 'nlefsm_SO_off' )
       nullify( iono )
-      call re_alloc( iono, 1, maxno, 'iono', 'nlefsm_offsiteSO' )
+      call re_alloc( iono, 1, maxno, 'iono', 'nlefsm_SO_off' )
       nullify( xno )
-      call re_alloc( xno, 1, 3, 1, maxno, 'xno',  'nlefsm_offsiteSO' )
+      call re_alloc( xno, 1, 3, 1, maxno, 'xno',  'nlefsm_SO_off' )
       nullify( Ski )
-      call re_alloc( Ski, 1, maxkba, 1, maxno, 'Ski','nlefsm_offsiteSO')
+      call re_alloc( Ski, 1, maxkba, 1, maxno, 'Ski','nlefsm_SO_off')
       nullify( grSki )
       call re_alloc( grSki, 1, 3, 1, maxkba, 1, maxno, 'grSki',
-     &               'nlefsm_offsiteSO' )
+     &               'nlefsm_SO_off' )
 
 C     Initialize neighb subroutine
       call mneighb( scell, rmax, na, xa, 0, 0, nna )
@@ -700,16 +700,16 @@ C         Find overlap between neighbour orbitals and KB projectors
 C          Check maxno - if too small then increase array sizes
            if (nno.eq.maxno) then
             maxno = maxno + 100
-            call re_alloc( iano, 1, maxno, 'iano', 'nlefsm_offsiteSO',
+            call re_alloc( iano, 1, maxno, 'iano', 'nlefsm_SO_off',
      &                    .true. )
-            call re_alloc( iono, 1, maxno, 'iono', 'nlefsm_offsiteSO',
+            call re_alloc( iono, 1, maxno, 'iono', 'nlefsm_SO_off',
      &                    .true. )
-            call re_alloc( xno, 1, 3, 1, maxno,'xno','nlefsm_offsiteSO',
+            call re_alloc( xno, 1, 3, 1, maxno,'xno','nlefsm_SO_off',
      &                    .true. )
             call re_alloc( Ski, 1, maxkba, 1, maxno, 'Ski',
-     &                    'nlefsm_offsiteSO', .true. )
+     &                    'nlefsm_SO_off', .true. )
             call re_alloc( grSki, 1, 3, 1, maxkba, 1, maxno,
-     &                    'grSki', 'nlefsm_offsiteSO', .true. )
+     &                    'grSki', 'nlefsm_SO_off', .true. )
            endif
            nno = nno + 1  ! Number of neighbour orbitals
            iono(nno) = io ! io orbital of atom ina (neighbour to ka)
@@ -879,19 +879,19 @@ C     Careful with this Vi()
 C     Deallocate local memory
 
       call reset_neighbour_arrays( )
-      call de_alloc( grSki, 'grSki', 'nlefsm_offsiteSO' )
-      call de_alloc( Ski, 'Ski', 'nlefsm_offsiteSO' )
-      call de_alloc( xno, 'xno', 'nlefsm_offsiteSO' )
-      call de_alloc( iono, 'iono', 'nlefsm_offsiteSO' )
-      call de_alloc( iano, 'iano', 'nlefsm_offsiteSO' )
+      call de_alloc( grSki, 'grSki', 'nlefsm_SO_off' )
+      call de_alloc( Ski, 'Ski', 'nlefsm_SO_off' )
+      call de_alloc( xno, 'xno', 'nlefsm_SO_off' )
+      call de_alloc( iono, 'iono', 'nlefsm_SO_off' )
+      call de_alloc( iano, 'iano', 'nlefsm_SO_off' )
 
-      call de_alloc( listedall, 'listedall', 'nlefsm_offsiteSO' )
-      call de_alloc( listed, 'listed', 'nlefsm_offsiteSO' )
-      call de_alloc( Vi, 'Vi', 'nlefsm_offsiteSO' )
+      call de_alloc( listedall, 'listedall', 'nlefsm_SO_off' )
+      call de_alloc( listed, 'listed', 'nlefsm_SO_off' )
+      call de_alloc( Vi, 'Vi', 'nlefsm_SO_off' )
       deallocate( V_so )
 
       if (.not. matrix_elements_only) then
-         call de_alloc( Di, 'Di', 'nlefsm_offsiteSO' )
+         call de_alloc( Di, 'Di', 'nlefsm_SO_off' )
          deallocate( Ds )
       endif
 
