@@ -45,7 +45,7 @@ KgridCutoff       5. Ang
 
 DM.UseSaveDM       no
 
-MaxSCFiterations   100
+MaxSCFiterations   200
 
 ##### OUTPUT OPTIONS ##########################################################
 
