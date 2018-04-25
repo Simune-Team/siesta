@@ -523,7 +523,13 @@ C Write path for BandLines but not for BandPoints
         write(iu,*) emin/eV, emax/eV
 
 C Write eigenvalues
-        write(iu,*) no_u, min(nspin,2), nk
+        if ( nspin <= 2 ) then
+          write(iu,*) no_u, maxspn, nk
+        else if ( nspin <= 8 ) then
+          write(iu,*) 2*no_u, 1, nk
+        else
+          call die( 'bands: ERROR: incorrect value of nspin' )
+        end if
         path = 0.d0
         do ik = 1,nk
           if (nlines .ge. 0) then

@@ -141,7 +141,7 @@ program gnubands
   min_spin = 1
   max_spin = nspin
   if ( spin_idx /= 0 ) then
-     if ( spin_idx < 1 .and. nspin < spin_idx ) then
+     if ( spin_idx < 1 .or. nspin < spin_idx ) then
         write(0,"(a)") " ** Selected spin does not exist..."
         stop
      end if
