@@ -41,7 +41,7 @@ tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel born \
 	dipole_correction fe fe_broyden fe_clust_noncollinear fe_cohp \
 	fen fe_noncol_kp fire_benzene floating force_2 force_constants \
 	ge111 graphite_c6 graphite_c6_full graphite_vdw_df h2_bessel \
-	h2o h2o_2 h2o_am05 h2o_basis h2o_bands h2o_bands_polarized \
+	h2o h2o_2 h2o_am05 h2o_basis h2o_bands h2o_bands_polarized h2o_bands_nc \
 	h2o_coop h2o_dipole h2o_dipole2 \
 	h2o_dos h2o_filteret_basis h2o_findp_bug h2o_netcdf h2o_op_broyden \
 	h2o_orderN h2o-pop h2o_radialgrid h2o_reparam h2o-rhog-mixing h2oZ \
