@@ -131,15 +131,12 @@ program gnubands
 
   read(bands_u,*) ef
   read(bands_u,*) kmin, kmax
-  if ( emin_set .and. emax_set ) then
-     read(bands_u,*) dummy, dummy
-  else if ( emin_set ) then
-     read(bands_u,*) dummy, emax
-  else if ( emax_set ) then
-     read(bands_u,*) emin, dummy
-  else
-     read(bands_u,*) emin, emax
-  end if
+  read(bands_u,*) dummy, dummy
+  ! Simply set emin and emax to entire range if not specified
+  ! Reading this from the bands file is not good as the eigenvalues
+  ! have a very different resolution.
+  if ( .not. emin_set ) emin = -1.e30
+  if ( .not. emax_set ) emax = 1.e30
   read(bands_u,*) nband, nspin, nk
   min_spin = 1
   max_spin = nspin
@@ -228,7 +225,7 @@ program gnubands
        '       Emilio Artacho, Feb. 1999'
   write(iout,"(2a)") '#                                           ',  &
        '        Alberto Garcia, May 2012'
-  write(iout,"(2a)") '#                                           ',  &
+  write(iout,"(2a)") '#                                         ',  &
        'Nick Papior, April 2013, July 2016'
   write(iout,"(2a)") '# ------------------------------------------', &
        '--------------------------------'
@@ -243,12 +240,20 @@ program gnubands
      write(iout,"(a,f10.4)")  '# E_F               = ', Ef
   end if
   write(iout,"(a,2f10.4)") '# k_min, k_max      = ', kmin, kmax
-  write(iout,"(a,2f10.4)") '# E_min, E_max      = ', emin, emax
+  if ( emin_set .and. emax_set ) then
+    write(iout,"(a,2f10.4)") '# E_min, E_max      = ', emin, emax
+  else if ( emin_set ) then
+    write(iout,"(a,f10.4,a)") '# E_min, E_max      = ', emin, ' 1e30'
+  else if ( emax_set ) then
+    write(iout,"(a,a10,f10.4)") '# E_min, E_max      = ', '-1e30 ', emax
+  else
+    write(iout,"(a,2a10)") '# E_min, E_max      = ', '-1e30 ', '1e30'
+  endif
   write(iout,"(a,3i6)")    '# Nbands, Nspin, Nk = ', nband, nspin, nk
   write(iout,"(a,2i6)")    '# Using min_band, max_band = ', min_band, max_band
   write(iout,"(a,i6)")     '# Total number of bands = ', nbands
   write(iout,"(a)") '#'
-  write(iout,"(a)") '#        k            E'
+  write(iout,"(a)") '#        k            E[eV]'
   write(iout,"(2a,/)") '# ------------------------------------------',   &
        '--------------------------------'
 
