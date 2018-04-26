@@ -177,6 +177,15 @@
 
       endif
 
+      if (harrisfun) then
+         converged = .true.
+         if (IOnode) then
+            write(6,"(a)") "Harris-functional calculation " //
+     $                     "considered 'converged'"
+            call pxfflush(6)
+         endif
+      endif
+
 !---------------------------------------------------------------- END
       END subroutine scfconvergence_test
       end module m_scfconvergence_test
