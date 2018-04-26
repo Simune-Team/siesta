@@ -485,6 +485,7 @@ C
       use mpi_siesta
 #endif
       use units, only : pi
+      use sparse_matrices, only: S
 
       implicit          none
 
@@ -655,7 +656,7 @@ C If found, check and update, otherwise initialize with neutral atoms
         endif
 
 
-      else
+      else  ! Initialize with neutral atoms
 
 C See whether specific initial spins are given in a DM.InitSpin block
 C and read them in a loop on atoms where lines are read and parsed
@@ -902,6 +903,24 @@ C Ferro or antiferro according to DM.InitSpinAF (inspn)
           enddo
 
         endif
+
+      ! We have initialized with atomic information. Correct in case we
+      ! are using such a small cell that there are direct interactions
+      ! of orbitals with their own images, and we insist on using the
+      ! Gamma-point only. Otherwise S(diagonal) is always 1.0 and the
+      ! simple atomic-orbital superposition works as intended.
+        
+
+        do io = 1, no_l
+            call LocalToGlobalOrb(io,Node,Nodes,iio)
+            do in = 1,numh(io)
+               ind = listhptr(io)+in
+               jo = listh(ind)
+               if (iio .eq. jo) then  ! diagonal element
+                  Dscf(ind,:) = Dscf(ind,:) / S(ind)
+               endif
+            enddo
+         enddo
 
       endif
 
