@@ -48,7 +48,7 @@ C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      &                    lasto, lastkb, iphorb, iphkb,     
      &                    nlhmax, gamma,
-     $                    set_xijo, folding)
+     $                    set_xijo, folding, debug_folding)
 
       use precision
       use parallel,        only : Node, Nodes
@@ -61,7 +61,7 @@ C
       use neighbour,       only : mneighb, reset_neighbour_arrays
       use sys,             only : die
       use alloc,           only : re_alloc, de_alloc
-      use atomlist,        only : no_l
+      use atomlist,        only : no_l, indxuo
       use sparse_matrices, only : listhptr, numh, listh, xijo
       implicit none
 
@@ -76,6 +76,7 @@ C
       logical, intent(in)           :: gamma
       logical, intent(in)     :: set_xijo
       logical, intent(out)    :: folding
+      logical, intent(in), optional    :: debug_folding
 
       external               timer
 
@@ -99,8 +100,6 @@ C
      &  rci, rcj, rck, rij, rik, rjk,
      &  rmax, rmaxkb, rmaxo
 
-      logical, save :: warn1 = .false.
-
       real(dp), dimension(:), pointer :: rckb
       logical, dimension(:),  pointer :: conect
       integer, dimension(:),  pointer :: index
@@ -108,14 +107,18 @@ C
       integer, dimension(:),  pointer :: listhtmp
 
       logical :: connected
-
+      logical :: debug
+      integer :: nprints   ! for debugging
 C -------------------------------------
-#ifdef DEBUG
-      call write_debug( '    PRE hsparse' )
-#endif
+
 C     Start time counter
       call timer( 'hsparse', 1 )
 
+      debug = .false.
+      if (present(debug_folding)) then
+         debug = debug_folding
+      endif
+      
 C     Check size of internal arrays
       ncells = nsc(1) * nsc(2) * nsc(3)
       nua = na / ncells
@@ -324,6 +327,7 @@ C     Set up listhptr
 C------------------------------------C
 C     Find full H sparsity pattern   C
 C------------------------------------C
+      nprints = 0
 C     Loop on atoms in unit cell
       do ia = 1,nua
 C       Find neighbour atoms within maximum range
@@ -396,58 +400,49 @@ C Find if jo overlaps with a KB projector
                     endif
 
                    if (connected) then
-                     if (conect(jo)) then
-                        folding = .true.
+                      if (conect(jo)) then
+                         folding = .true.
 
-                       ! This test is now deferred to be able
-                       ! to catch multiple images while avoiding
-                       ! false positives (i.e., we test first
-                       ! whether there is indeed a connection).
-
-                      if (.true.) then
-                         ! If already connected and using supercell, 
-                         ! the latter might not be big enough...
-                         ! We warn the user and keep the first instance
+                         ! If already connected and using supercell, the
+                         ! latter might not be big enough...  We defer
+                         ! the decision on whether to kill the program
+                         ! to the caller.  Here keep the first instance
                          ! of xij (same behavior as the old xijorb, as
                          ! earlier jnats are closer)
-                   ! Warn also if Gamma-point calculation, just
-                         ! in case
-                         if (.not.warn1) then
-                            if (Node.eq.0) then
-                              if (gamma) then
-                                 call check_cohp(io,jo)
-                              else
-                                write(6,'(/,a,2i6,a,/,a)')
-     .                           'WARNING: orbital pair ',io,jo,
+                         if (debug) then
+                            ! This might not be pretty in
+                            ! parallel. Better to build a list of a few
+                            ! cases, and pass it to the caller.
+                            if (nprints <= 20) then
+                               print "(a,2i6,a)",
+     .                           'WARNING: orbital pair ',io,indxuo(jo),
      .                           ' is multiply connected'
-                              endif
+                               nprints = nprints + 1
                             endif
-                            warn1 = .true.
+                         endif
+
+                      else
+
+                         conect(jo) = .true.
+                         numh(iio) = numh(iio) + 1
+                         ind = listhptr(iio)+numh(iio)
+                         listh(ind) = jo
+                         if (set_xijo) then
+                            xijo(1:3,ind) = xij(1:3,jnat)
                          endif
                       endif
-
-                   else
-
-                      conect(jo) = .true.
-                      numh(iio) = numh(iio) + 1
-                      ind = listhptr(iio)+numh(iio)
-                      listh(ind) = jo
-                      if (set_xijo) then
-                         xijo(1:3,ind) = xij(1:3,jnat)
-                      endif
                    endif
-                endif
+                enddo
              enddo
-          enddo
 
 C           Restore conect array for next orbital io
-            do j = 1,numh(iio)
-               jo = listh(listhptr(iio)+j)
-               conect(jo) = .false.
-            enddo
-          endif     ! iio > 0
-        enddo       ! io
-      enddo         ! ia
+             do j = 1,numh(iio)
+                jo = listh(listhptr(iio)+j)
+                conect(jo) = .false.
+             enddo
+          endif                 ! iio > 0
+       enddo                    ! io
+      enddo                     ! ia
 
 !!        print "(a5,i3,a40,3i8)",
 !!     $         "Node: ", Node, "in hsparse nuo, nuotot, nlhmax: ",
@@ -466,28 +461,7 @@ C     Deallocate local arrays
       call de_alloc( rckb, 'rckb', 'hsparse' )
 
       call timer( 'hsparse', 2 )
-#ifdef DEBUG
-      call write_debug( '    POS hsparse' )
-#endif
-      end subroutine hsparse
-      
-      subroutine check_cohp(io,jo)
-      use siesta_options, only: write_coop
 
-      integer, intent(in) :: io, jo
- 
-      if (write_coop) then
-         write(6,'(/,a,2i6,a,/,a)')
-     .     'NOTE: orbital pair ',io,jo,
-     .     ' (at least) is multiply connected.',
-     .     'NOTE: Your COOP/COHP analysis might ' //
-     $     'be affected by folding.'
-         write(0,'(/,a,2i6,a,/,a)')
-     .     'NOTE: orbital pair ',io,jo,
-     .     ' (at least) is multiply connected.',
-     .     'NOTE: Your COOP/COHP analysis might ' //
-     $     'be affected by folding.'
-      endif
-      end subroutine check_cohp
+      end subroutine hsparse
 
       end module m_hsparse

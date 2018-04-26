@@ -48,7 +48,7 @@
       use m_mpi_utils,       only: globalize_or
       use m_mpi_utils,       only: globalize_sum
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
-
+      use fdf,               only: fdf_get
 #ifdef TRANSIESTA
       use m_ts_options, only : onlyS
       use sys, only : bye
@@ -255,7 +255,26 @@
 !           analyses.
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma,
-     $                 set_xijo=.true., folding=folding1)
+     $              set_xijo=.true., folding=folding1,
+     $              debug_folding=fdf_get('debug-folding',.false.))
+!
+      call globalize_or(folding1,folding)
+      if (folding) then
+         if (gamma) then
+            if (IOnode) then
+               write(6,"(a)") "Gamma-point calculation " //
+     $                        "with multiply-connected orbital pairs"
+               write(6,"(a)") "Folding of H and S implicitly performed"
+               call check_cohp()
+            endif
+         else
+            write(6,"(a,/,a)") "Non Gamma-point calculation " //
+     $           "with multiply-connected orbital pairs " //
+     $           "in auxiliary supercell.",
+     $           "Use 'debug-folding T' to debug."
+            call die("Inadequate auxiliary supercell")
+         endif
+      endif
 !
       call globalize_sum(maxnh,nnz)
       if (cml_p) then
@@ -269,12 +288,6 @@
          call cmlEndPropertyList(mainXML)
       endif
       !
-      call globalize_or(folding1,folding)
-      if (folding) then
-         if (IOnode) then
-            print *, "Folding of H and S is implicitly performed"
-         endif
-      endif
       !
       ! If using domain decomposition, redistribute orbitals
       ! for this geometry, based on the hsparse info. 
@@ -387,4 +400,22 @@
 
 !--------------------------------------------------------------------------- END
       END subroutine state_init
+
+      subroutine check_cohp()
+      use siesta_options, only: write_coop
+
+      if (write_coop) then
+         write(6,'(/,a,a,/,a)')
+     .     'NOTE: There are multiply-connected orbitals.',
+     .     'NOTE: Your COOP/COHP analysis might ' //
+     $     'be affected by folding.',
+     .     'NOTE: Use "force-aux-cell T" or k-point sampling'
+         write(0,'(/,a,a,/,a)')
+     .     'NOTE: There are multiply-connected orbitals.',
+     .     'NOTE: Your COOP/COHP analysis might ' //
+     $     'be affected by folding.',
+     .     'NOTE: Use "force-aux-cell T" or k-point sampling'
+      endif
+      end subroutine check_cohp
+
       END module m_state_init
