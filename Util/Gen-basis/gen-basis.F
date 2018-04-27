@@ -91,7 +91,8 @@ c Reading input for the pseudopotentials and atomic orbitals
      &                    qyuk(0:,1:,is),
      &                    qwid(0:,1:,is),
      $                    split_norm(0:,1:,is),
-     &                    filtercut(0:,1:,is), basp,spp)
+     &           filtercut(0:,1:,is), basp,spp,
+     &           lj_projs=fdf_get('lj-projs',.false.))
          enddo 
 
          call prinput(nsp)
