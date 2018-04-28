@@ -24,6 +24,7 @@
      $                  debug_kb_generation,
      $                  ignore_ghosts,
      $                  kb_rmax,
+     $                  kbgen_preamble,
      $                  process_proj,
      $                  shifted_erefkb)
 
@@ -94,12 +95,20 @@
          real(dp), intent(in) :: rofi(:)
          real(dp), intent(in) :: proj(:)
          end subroutine process_proj
+
       end interface
+
+      interface
+         subroutine kbgen_preamble(n_pjnl)
+         integer, intent(in) :: n_pjnl
+         end subroutine kbgen_preamble
+      end interface
+
 
 !     Internal variables
       integer 
      .  l,nprin, nnodes, ighost, nrwf, ikb, ir,
-     .  nrc, nrlimit
+     .  nrc, nrlimit, n_pjnl
       real(dp)
      .  rc(nkbmx,0:lmaxd), dkbcos(nkbmx,0:lmaxd),
      .  ekb(nkbmx,0:lmaxd)
@@ -165,8 +174,11 @@
      .    ' nrwf, nrval, nrlimit = ', nrwf, nrval, nrlimit
       endif
 
-
-
+      n_pjnl = 0
+      do l = 0, lmxkb
+         n_pjnl = n_pjnl + nkbl(l)
+      enddo
+      call kbgen_preamble(n_pjnl)
          
 !     Compute the atomic wavefunctions and eigenvalues
 !     for the construction of the KB projectors

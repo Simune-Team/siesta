@@ -653,7 +653,7 @@ m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_pivot.o
 m_tbt_regions.o: m_ts_sparse.o m_verbosity.o parallel.o precision.o
 m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o
 m_tbt_regions.o: create_Sparsity_SC.o create_Sparsity_Union.o fdf_extra.o
-m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_char.o m_pivot.o
+m_tbt_regions.o: files.o geom_helper.o intrinsic_missing.o m_char.o m_pivot.o
 m_tbt_regions.o: m_pivot_methods.o m_region.o m_sparsity_handling.o
 m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_pivot.o
 m_tbt_regions.o: m_ts_sparse.o m_verbosity.o parallel.o precision.o
@@ -686,10 +686,11 @@ m_tbt_tri_init.o: m_tbt_options.o m_tbt_regions.o m_ts_debug.o m_ts_electype.o
 m_tbt_tri_init.o: m_ts_method.o m_ts_pivot.o m_ts_rgn2trimat.o m_ts_sparse.o
 m_tbt_tri_init.o: m_ts_tri_common.o m_verbosity.o parallel.o precision.o
 m_tbt_tri_init.o: class_OrbitalDistribution.o class_Sparsity.o
-m_tbt_tri_init.o: create_Sparsity_Union.o m_region.o m_sparsity_handling.o
+m_tbt_tri_init.o: create_Sparsity_SC.o create_Sparsity_Union.o m_pivot.o
+m_tbt_tri_init.o: m_pivot_methods.o m_region.o m_sparsity_handling.o
 m_tbt_tri_init.o: m_tbt_options.o m_tbt_regions.o m_ts_debug.o m_ts_electype.o
-m_tbt_tri_init.o: m_ts_method.o m_ts_rgn2trimat.o m_ts_tri_common.o
-m_tbt_tri_init.o: m_verbosity.o parallel.o precision.o
+m_tbt_tri_init.o: m_ts_method.o m_ts_pivot.o m_ts_rgn2trimat.o m_ts_sparse.o
+m_tbt_tri_init.o: m_ts_tri_common.o m_verbosity.o parallel.o precision.o
 m_tbt_tri_scat.o: class_SpData1D.o class_SpData1D.o class_Sparsity.o
 m_tbt_tri_scat.o: class_TriMat.o geom_helper.o intrinsic_missing.o m_region.o
 m_tbt_tri_scat.o: m_tbt_proj.o m_ts_cctype.o m_ts_electype.o m_ts_tri_common.o

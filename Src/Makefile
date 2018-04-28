@@ -123,7 +123,7 @@ OBJS =  automatic_cell.o atom_options.o \
         siesta_analysis.o siesta_end.o siesta_forces.o \
 	siesta_tddft.o \
         io.o sparse_matrices.o \
-        coor.o atm_transfer.o \
+        coor.o \
         broadcast_basis.o eggbox.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
         initparallel.o show_distribution.o setspatial.o setatomnodes.o uncell.o \
@@ -132,7 +132,7 @@ OBJS =  automatic_cell.o atom_options.o \
         spatial.o parallel.o parallelsubs.o  parsing.o chemical.o atom.o atmparams.o \
         m_mpi_utils.o fdf_extra.o m_iorho.o  \
         atmfuncs.o listsc.o memory_log.o sorting.o \
-        atomlist.o atm_types.o old_atmfuncs.o radial.o \
+        atomlist.o atm_types.o radial.o \
         alloc.o spher_harm.o periodic_table.o version.o timestamp.o \
         basis_types.o xml.o basis_specs.o basis_io.o\
 	ldau.o ldau_specs.o \
@@ -556,13 +556,11 @@ amn.o: alloc.o atmfuncs.o atomlist.o m_orderbands.o m_trialorbitalclass.o
 amn.o: matel_registry.o mneighb.o new_matel.o parallel.o parallelsubs.o
 amn.o: precision.o siesta2wannier90.o siesta_geom.o sys.o
 arw.o: alloc.o parallel.o precision.o sys.o
-atm_transfer.o: atm_types.o atmparams.o ldau_specs.o old_atmfuncs.o
-atm_transfer.o: periodic_table.o radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
-atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: hamann.o interpolation.o m_filter.o old_atmfuncs.o periodic_table.o
-atom.o: precision.o sys.o
+atom.o: atm_types.o atmparams.o atom_options.o basis_specs.o basis_types.o
+atom.o: bsc_xcmod.o hamann.o interpolation.o m_filter.o periodic_table.o
+atom.o: precision.o radial.o sys.o
 atom_graph.o: alloc.o atm_types.o atmfuncs.o class_OrbitalDistribution.o
 atom_graph.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
 atom_graph.o: class_Sparsity.o intrinsic_missing.o ldau_specs.o mneighb.o
@@ -769,9 +767,9 @@ hsparse.o: mneighb.o parallel.o parallelsubs.o precision.o radial.o
 hsparse.o: siesta_options.o sorting.o sparse_matrices.o sys.o
 idiag.o: parallel.o sys.o
 init_output.o: files.o
-initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
-initatom.o: basis_types.o chemical.o electrostatic.o ldau_specs.o m_spin.o
-initatom.o: m_spin_orbit_potentials.o old_atmfuncs.o precision.o
+initatom.o: atm_types.o atmparams.o atom.o atom_options.o basis_io.o
+initatom.o: basis_specs.o basis_types.o chemical.o electrostatic.o ldau_specs.o
+initatom.o: m_spin.o m_spin_orbit_potentials.o precision.o
 initparallel.o: alloc.o class_OrbitalDistribution.o domain_decom.o parallel.o
 initparallel.o: parallelsubs.o precision.o siesta_options.o sparse_matrices.o
 initparallel.o: spatial.o sys.o
@@ -1151,7 +1149,6 @@ normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: siesta_options.o sparse_matrices.o sys.o
 obc.o: alloc.o precision.o
 ofc.o: alloc.o files.o precision.o units.o
-old_atmfuncs.o: alloc.o atmparams.o precision.o sys.o
 on_subs.o: alloc.o onmod.o onmod.o
 onmod.o: precision.o
 optical.o: alloc.o atomlist.o densematrix.o fermid.o files.o parallel.o
@@ -1181,7 +1178,7 @@ phirphi.o: precision.o
 phirphi_opt.o: alloc.o atm_types.o atmfuncs.o atmparams.o mneighb.o new_matel.o
 phirphi_opt.o: parallel.o parallelsubs.o precision.o spher_harm.o sys.o
 pixmol.o: files.o periodic_table.o precision.o units.o
-plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
+plcharge.o: files.o parallel.o precision.o
 poison.o: alloc.o cellsubs.o chkgmx.o fft.o parallel.o precision.o sys.o
 post_scf_work.o: atomlist.o class_Fstack_Pair_Geometry_SpData2D.o
 post_scf_work.o: class_Geometry.o class_Pair_Geometry_SpData2D.o compute_dm.o

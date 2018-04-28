@@ -139,20 +139,16 @@ dep:
 # DO NOT DELETE THIS LINE - used by make depend
 arw.o: alloc.o local_sys.o parallel.o precision.o
 arw.o: alloc.o local_sys.o parallel.o precision.o
-atm_transfer.o: atm_types.o atmparams.o ldau_specs.o local_sys.o old_atmfuncs.o
-atm_transfer.o: periodic_table.o radial.o
-atm_transfer.o: atm_types.o atmparams.o ldau_specs.o local_sys.o old_atmfuncs.o
-atm_transfer.o: periodic_table.o radial.o
 atm_types.o: precision.o radial.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o local_sys.o precision.o radial.o spher_harm.o
 atmfuncs.o: atm_types.o local_sys.o precision.o radial.o spher_harm.o
-atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: hamann.o interpolation.o local_sys.o m_filter.o old_atmfuncs.o
-atom.o: periodic_table.o precision.o
-atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: hamann.o interpolation.o local_sys.o m_filter.o old_atmfuncs.o
-atom.o: periodic_table.o precision.o
+atom.o: atm_types.o atmparams.o atom_options.o basis_specs.o basis_types.o
+atom.o: bsc_xcmod.o hamann.o interpolation.o local_sys.o m_filter.o
+atom.o: periodic_table.o precision.o radial.o
+atom.o: atm_types.o atmparams.o atom_options.o basis_specs.o basis_types.o
+atom.o: bsc_xcmod.o hamann.o interpolation.o local_sys.o m_filter.o
+atom.o: periodic_table.o precision.o radial.o
 atom_options.o: local_sys.o
 atom_options.o: local_sys.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
@@ -189,8 +185,6 @@ m_getopts.o: f2kcli.o
 m_getopts.o: f2kcli.o
 m_spin.o: alloc.o local_sys.o parallel.o precision.o units.o
 m_spin.o: alloc.o local_sys.o parallel.o precision.o units.o
-old_atmfuncs.o: alloc.o atmparams.o local_sys.o precision.o
-old_atmfuncs.o: alloc.o atmparams.o local_sys.o precision.o
 periodic_table.o: local_sys.o precision.o
 periodic_table.o: local_sys.o precision.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
@@ -207,10 +201,10 @@ xc.o: alloc.o bsc_xcmod.o local_sys.o precision.o
 xc.o: alloc.o bsc_xcmod.o local_sys.o precision.o
 xml.o: precision.o
 xml.o: precision.o
-gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
-gen-basis.o: local_sys.o old_atmfuncs.o
-gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
-gen-basis.o: local_sys.o old_atmfuncs.o
+gen-basis.o: atm_types.o atom.o atom_options.o basis_io.o basis_specs.o
+gen-basis.o: basis_types.o local_sys.o
+gen-basis.o: atm_types.o atom.o atom_options.o basis_io.o basis_specs.o
+gen-basis.o: basis_types.o local_sys.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 aux_proj.o: atom.o
