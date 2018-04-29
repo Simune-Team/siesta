@@ -439,7 +439,7 @@ contains
                                  
     type(Sparsity) :: tmpSp1, tmpSp2
 
-    integer :: i, iEl, no
+    integer :: iEl, no
 
     integer :: n, n_nzs
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)

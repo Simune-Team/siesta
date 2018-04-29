@@ -701,13 +701,15 @@ contains
        ! Get array sizes
        no = spp%n_orbnl
        nk = spp%n_pjnl
-       if ( no == 0 .or. nk == 0 ) cycle
+       if ( no == 0 ) cycle
 
        ! Create the group
        call ncdf_def_grp(ncdf,trim(spp%label),grp)
 
        call ncdf_def_dim(grp,'norbs',no)
-       call ncdf_def_dim(grp,'nkbs',nk)
+       if ( nk > 0 ) then
+          call ncdf_def_dim(grp,'nkbs',nk)
+       end if
        call ncdf_def_dim(grp,'ntb',nt)
 
        ! Save the orbital global attributes
@@ -742,20 +744,22 @@ contains
        call delete(dic)
 
        ! Create all projector variables...
-       dic = ('pjnl_l'.kv.NF90_INT)//('pjnl_n'.kv.NF90_INT)
-       dic = dic//('pjnl_ekb'.kv.NF90_DOUBLE)
-       dic = dic//('kbcutoff'.kv.NF90_DOUBLE)//('kbdelta'.kv.NF90_DOUBLE)
-       d = .first. dic
-       do while ( .not. (.empty. d) )
-          key = .key. d
-          v = .val. d
-          call assign(i,v)
-          call ncdf_def_var(grp,trim(key),i,(/'nkbs'/), &
-               compress_lvl=0,chunks=(/nk/))
-          d = .next. d
-       end do
-       call delete(dic)
-       call delete(v)
+       if ( nk > 0 ) then
+          dic = ('pjnl_l'.kv.NF90_INT)//('pjnl_n'.kv.NF90_INT)
+          dic = dic//('pjnl_ekb'.kv.NF90_DOUBLE)
+          dic = dic//('kbcutoff'.kv.NF90_DOUBLE)//('kbdelta'.kv.NF90_DOUBLE)
+          d = .first. dic
+          do while ( .not. (.empty. d) )
+             key = .key. d
+             v = .val. d
+             call assign(i,v)
+             call ncdf_def_var(grp,trim(key),i,(/'nkbs'/), &
+                  compress_lvl=0,chunks=(/nk/))
+             d = .next. d
+          end do
+          call delete(dic)
+          call delete(v)
+       end if
 
        ! Create orbital projector
        call ncdf_def_var(grp,'orb',NF90_DOUBLE,(/'ntb  ','norbs'/), &
@@ -795,9 +799,11 @@ contains
        call delete(dic)
 
        ! Define the projector
-       call ncdf_def_var(grp,'proj',NF90_DOUBLE, (/'ntb ','nkbs'/), &
-            compress_lvl=cdf_comp_lvl,chunks=(/nt,1/))
-
+       if ( nk > 0 ) then
+          call ncdf_def_var(grp,'proj',NF90_DOUBLE, (/'ntb ','nkbs'/), &
+               compress_lvl=cdf_comp_lvl,chunks=(/nt,1/))
+       end if
+          
        ! Save all variables to the group
 
        ! Save orbital
@@ -818,9 +824,11 @@ contains
        call ncdf_put_var(grp,'orbnl_pop',spp%orbnl_pop(1:no))
 
        ! Save projector
-       call ncdf_put_var(grp,'pjnl_l',spp%pjnl_l(1:nk))
-       call ncdf_put_var(grp,'pjnl_n',spp%pjnl_n(1:nk))
-       call ncdf_put_var(grp,'pjnl_ekb',spp%pjnl_ekb(1:nk))
+       if ( nk > 0 ) then
+          call ncdf_put_var(grp,'pjnl_l',spp%pjnl_l(1:nk))
+          call ncdf_put_var(grp,'pjnl_n',spp%pjnl_n(1:nk))
+          call ncdf_put_var(grp,'pjnl_ekb',spp%pjnl_ekb(1:nk))
+       end if
 
        do i = 1, nk
           p => spp%pjnl(i)

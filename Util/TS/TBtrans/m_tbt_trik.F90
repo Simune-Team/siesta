@@ -151,7 +151,11 @@ contains
     real(dp), pointer :: H2D(:,:), S(:), H(:)
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
-    logical :: calc_GF_DOS
+    logical :: calc_DOS_Gf, calc_DOS_A, calc_orb_current
+#ifdef NCDF_4
+    logical :: calc_COOP_Gf, calc_COOP_A
+    logical :: calc_COHP_Gf, calc_COHP_A
+#endif
     logical, allocatable :: prep_El(:)
     integer, allocatable :: part_cols(:,:)
     logical, allocatable :: A_parts(:), proj_parts(:)
@@ -200,7 +204,7 @@ contains
     type(tRgn) :: pvt
     real(dp) :: kpt(3), bkpt(3), wkpt
     integer :: info
-    logical :: T_all
+    logical :: T_all, ADOS_all
 #ifdef TBT_PHONON
     type(ts_c_idx) :: cOmega
     real(dp) :: omega
@@ -238,10 +242,20 @@ contains
     real :: last_progress, cur_progress
 ! ************************************************************
 
+    calc_DOS_Gf = 'DOS-Gf' .in. save_DATA
+    calc_DOS_A = 'DOS-A' .in. save_DATA
+    calc_orb_current = 'orb-current' .in. save_DATA
     T_all = 'T-all' .in. save_DATA
+    ADOS_all = 'DOS-A-all' .in. save_DATA
+#ifdef NCDF_4
+    calc_COOP_Gf = 'COOP-Gf' .in. save_DATA
+    calc_COOP_A = 'COOP-A' .in. save_DATA
+    calc_COHP_Gf = 'COHP-Gf' .in. save_DATA
+    calc_COHP_A = 'COHP-A' .in. save_DATA
     only_proj = 'proj-only' .in. save_DATA
     only_sigma = 'Sigma-only' .in. save_DATA
     cdf_save = (.not. only_sigma) .and. (.not. only_proj)
+#endif
 
     ! Create the back-pivoting region
     call rgn_init(pvt,nrows_g(TSHS%sp),val=0)
@@ -556,13 +570,12 @@ contains
     allocate(prep_El(N_Elec))
     ! Default to all electrode Green function parts
     prep_El = .true.
-    if ( (.not. T_all) .and. &
-         ('DOS-A-all' .nin. save_DATA) ) then
+    if ( (.not. T_all) .and. (.not. ADOS_all) ) then
        
        ! We only need to prepare the Green function
        ! for Gf.G.Gf product for all electrodes
        ! besides the last one.
-       ! Note that calc_GF_DOS has precedence for
+       ! Note that calc_DOS_Gf has precedence for
        ! calculating the entire Gf
        prep_El(N_elec) = .false.
        
@@ -580,8 +593,7 @@ contains
     ! If the user ONLY wants the transmission function then we
     ! should tell the program not to calculate any more
     ! than needed.
-    calc_GF_DOS = 'DOS-Gf' .in. save_DATA
-    if ( 'DOS-A' .nin. save_DATA ) then
+    if ( .not. calc_DOS_A ) then
 
        ! We have a couple of options that requires
        ! special parts of the Green function
@@ -638,14 +650,11 @@ contains
     deallocate(prep_El)
 
 #ifdef NCDF_4
-    if ( ('orb-current'.in.save_DATA) .or. &
-         ('proj-orb-current'.in.save_DATA) ) then
+    if ( calc_orb_current .or. ('proj-orb-current'.in.save_DATA) .or. &
+         calc_COOP_Gf .or. calc_COOP_A .or. & 
+         calc_COHP_Gf .or. calc_COHP_A ) then
        
-       call newdSpData1D(sp_dev_sc,fdist,orb_J,name='TBT orb_J')
-       ! Initialize to 0, it will be overwritten for all
-       ! values, so there is no need to initialize it
-       ! in the orb_current routine (neither here actually)
-       call init_val(orb_J)
+       call newdSpData1D(sp_dev_sc,fdist,orb_J,name='TBT sparse')
        
     end if
 #endif
@@ -937,9 +946,11 @@ contains
           end if
 #endif
 
+#ifdef NCDF_4
           ! Only calculate actual transmission if the user
           ! has requested so...
           if ( .not. only_sigma ) then
+#endif
 
           call timer('Gf-prep',1)
 
@@ -962,7 +973,7 @@ contains
              ! we want the DOS of the central region.
              ! So possibly we should do:
              !   all_nn = GFDOS
-             if ( calc_GF_DOS ) then
+             if ( calc_DOS_Gf ) then
                 call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
                      all_nn = .true. )
 #ifdef NCDF_4
@@ -981,8 +992,10 @@ contains
 
 
           ! Only calculate actual transmission if the user
-          ! has requested so...
+          ! has requested so..
+#ifdef NCDF_4
           if ( .not. only_proj ) then
+#endif
 
           call timer('DOS-Gf-A-T',1)
 
@@ -990,13 +1003,31 @@ contains
           ! of the Green's function.
           ! This means that all necessary information to calculate
           ! the entire Green's function resides in GF_tri
-          if ( calc_GF_DOS ) then
+          if ( calc_DOS_Gf ) then
              if ( .not. cE%fake ) then
-                call GF_DOS(r_oDev,Gf_tri,spS,DOS(:,1),nzwork,zwork)
+                call GF_DOS(r_oDev,Gf_tri,zwork_tri,spS,pvt,DOS(:,1))
 #ifdef TBT_PHONON
                 DOS(:,1) = 2._dp * omega * DOS(:,1)
 #endif
              end if
+             
+#ifdef NCDF_4
+             if ( calc_COOP_Gf ) then
+                call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
+                     TSHS%sp,S,TSHS%sc_off, kpt, orb_J)
+                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', orb_J)
+             end if
+             if ( calc_COHP_Gf ) then
+                call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
+                     TSHS%sp,H,TSHS%sc_off, kpt, orb_J)
+                if ( dH%lvl > 0 ) then
+                   call GF_COHP_add_dH(dH%d, TSHS%sc_off, &
+                        kpt, Gf_tri, zwork_tri, r_oDev, orb_J, pvt)
+                end if
+                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', orb_J)
+             end if
+#endif
+
           end if
 
           ! ****************
@@ -1029,8 +1060,7 @@ contains
           ! We loop over all electrodes
           do iEl = 1 , N_Elec
              if ( iEl == N_Elec .and. ( &
-                  (.not. T_all) .and. &
-                  ('DOS-A-all' .nin. save_DATA) ) ) cycle
+                  (.not. T_all) .and. (.not. ADOS_all ) ) ) cycle
 
              if ( ts_A_method == TS_BTD_A_COLUMN ) then
               ! ******************
@@ -1073,16 +1103,35 @@ contains
               end if
              end if
              
-             if ( ('DOS-A' .in. save_DATA) .and. .not. cE%fake ) then
+             if ( calc_DOS_A ) then
 
-                ! Calculate the DOS from the spectral function
-                call A_DOS(r_oDev,zwork_tri,spS,DOS(:,1+iEl))
+                if ( .not. cE%fake ) then
+                   ! Calculate the DOS from the spectral function
+                   call A_DOS(r_oDev,zwork_tri,spS,pvt,DOS(:,1+iEl))
 #ifdef TBT_PHONON
-                DOS(:,1+iEl) = 2._dp * omega * DOS(:,1+iEl)
+                   DOS(:,1+iEl) = 2._dp * omega * DOS(:,1+iEl)
 #endif
+                end if
                 
 #ifdef NCDF_4
-                if ( 'orb-current' .in. save_DATA ) then
+                if ( calc_COOP_A ) then
+                   call A_COP(r_oDev,zwork_tri,pvt, &
+                        TSHS%sp,S,TSHS%sc_off, kpt, orb_J)
+                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', orb_J, &
+                        Elecs(iEl))
+                end if
+                if ( calc_COHP_A ) then
+                   call A_COP(r_oDev,zwork_tri,pvt, &
+                        TSHS%sp,H,TSHS%sc_off, kpt, orb_J)
+                   if ( dH%lvl > 0 ) then
+                      call A_COHP_add_dH(dH%d, TSHS%sc_off, &
+                           kpt, zwork_tri, r_oDev, orb_J, pvt)
+                   end if
+                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', orb_J, &
+                        Elecs(iEl))
+                end if
+                
+                if ( calc_orb_current ) then
 
 #ifdef TBT_PHONON
                    call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
@@ -1097,21 +1146,16 @@ contains
                       call orb_current_add_dH(dH%d, TSHS%sc_off, &
                            kpt, zwork_tri, r_oDev, orb_J, pvt)
                    end if
+
+                   ! We need to save it immediately, we
+                   ! do not want to have several arrays in memory
+                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'J', orb_J, &
+                        Elecs(iEl))
+
                 end if
 #endif
              end if
 
-#ifdef NCDF_4
-             if ( 'orb-current' .in. save_DATA ) then
-
-                ! We need to save it immediately, we
-                ! do not want to have several arrays in memory
-                call state_cdf_save_J(TBTcdf, ikpt, nE, Elecs(iEl), &
-                     orb_J, save_DATA)
-
-             end if
-#endif
-             
              do jEl = 1 , N_Elec
                 ! Calculating iEl -> jEl is the
                 ! same as calculating jEl -> iEl, hence if we
@@ -1167,9 +1211,10 @@ contains
 #endif
 
           call timer('DOS-Gf-A-T',2)
-
+#ifdef NCDF_4
           end if ! .not. proj-only
           end if ! .not. Sigma-only
+#endif
 
 
 #ifdef NCDF_4
@@ -1204,7 +1249,7 @@ contains
 
             !if ( 'DOS-Gf' .in. save_DATA ) then
             !   if ( .not. cE%fake ) then
-            !      call GF_DOS(r_oDev,Gf_tri,spS,DOS(:,1),nzwork,zwork)
+            !      call GF_DOS(r_oDev,Gf_tri,zwork_tri,spS,pvt,DOS(:,1))
 #ifdef TBT_PHONON
             !       DOS(:,1) = 2._dp * omega * DOS(:,1)
 #endif
@@ -1281,7 +1326,7 @@ contains
             if ( ('proj-DOS-A' .in. save_DATA) .and. p_E%idx > 0 ) then
 
                ! Calculate the DOS from the spectral function
-               call A_DOS(r_oDev,zwork_tri,spS,pDOS(:,2,ipt))
+               call A_DOS(r_oDev,zwork_tri,spS,pvt,pDOS(:,2,ipt))
 #ifdef TBT_PHONON
                pDOS(:,2,ipt) = 2._dp * omega * pDOS(:,2,ipt)
 #endif
@@ -1603,7 +1648,6 @@ contains
 !$OMP do 
     do iu = 1, r%n
        io = r%r(iu) ! get the orbital in the big sparsity pattern
-       if ( l_ncol(io) /= 0 ) then
           
        ! Loop over non-zero entries here
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
@@ -1611,17 +1655,17 @@ contains
           ju = pvt%r(l_col(ind))
           ! If it is zero, then *must* be electrode
           ! or fold down region.
-          if ( ju == 0 ) cycle
+          if ( ju > 0 ) then
           
-          ! Notice that we transpose back here...
-          ! See symmetrize_HS_kpt
-          idx = index(Gfinv_tri,ju,iu)
-          
-          GFinv(idx) = Z * S(ind) - H(ind)
+             ! Notice that we transpose back here...
+             ! See symmetrize_HS_kpt
+             idx = index(Gfinv_tri,ju,iu)
+             
+             GFinv(idx) = Z * S(ind) - H(ind)
+          end if
           
        end do
              
-       end if
     end do
 !$OMP end do nowait
 

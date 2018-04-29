@@ -766,7 +766,9 @@ contains
     call delete(sp_dev_sc)
 #ifdef NCDF_4
     if ( ('orb-current' .in. save_DATA) .or. &
-         ('proj-orb-current' .in. save_DATA) ) then
+         ('proj-orb-current' .in. save_DATA) .or. &
+         ('COOP-Gf' .in. save_DATA) .or. ('COHP-Gf' .in. save_DATA) .or. &
+         ('COOP-A' .in. save_DATA) .or. ('COHP-A' .in. save_DATA) ) then
 
        call attach(sp,nrows_g=no_u)
 #ifdef MPI

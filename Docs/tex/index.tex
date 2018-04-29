@@ -26,17 +26,19 @@
     % If this is the starred variant, we will
     % create the hypertarget
     \bgroup%
-    \StrSubstitute[0]{#2}{!}{.}[\@tmp]%
+    \StrSubstitute{#2}{!}{.}[\@tmp]%
     \IfBooleanT{#1}{%
         \expandafter\cleanedhypertarget\expandafter{\@tmp}{{}}%
+        \expandafter\label\expandafter{\@tmp}%
     }%
     \egroup%
+    \StrSubstitute{#2}{:}{!}[\@tmp]%
     \IfNoValueTF{#3}{%
         %\index{#1@\fdf*{#1}}%
-        \sindex[sfdf]{#2}%
+        \sindex[sfdf]{\@tmp}%
     }{%
         %\index{#1@\fdf*{#1}#2}%
-        \sindex[sfdf]{#2#3}%
+        \sindex[sfdf]{\@tmp#3}%
     }%
 }
 

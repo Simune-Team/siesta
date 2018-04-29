@@ -73,7 +73,7 @@
   public :: NEW_TYPE, print_type, init_val
 
   public :: val
-  public :: index, part_index
+  public :: index, index_sub, part_index
   public :: cum_rows
   public :: nrows_g
   public :: parts, which_part
@@ -102,6 +102,10 @@
 
   interface index
      module procedure index_TriMat
+  end interface
+
+  interface index_sub
+     module procedure index_sub_TriMat
   end interface
 
   interface init_val
@@ -376,7 +380,34 @@
     end if
 
   end function index_TriMat
-       
+
+! we return -1 if the index does not exist
+  subroutine index_sub_TriMat(this,r,c,M,idx)
+    type(TYPE_NAME), intent(in) :: this
+    ! The row and column requested
+    integer, intent(in) :: r, c
+    ! The sub-part of the matrix where r, c lives
+#ifdef PREC
+     VAR_TYPE(PREC), pointer :: M(:)
+#else
+     VAR_TYPE,       pointer :: M(:)
+#endif
+    ! The index in the sub matrix M that corresponds to r,c
+    integer, intent(out) :: idx
+
+    integer :: p_c, p_r
+    integer :: i_c, i_r
+    
+    call part_index(this,c,p_c,i_c)
+    call part_index(this,r,p_r,i_r)
+!    if ( p_c == 0 ) print *,'pc'
+!    if ( p_r == 0 ) print *,'pr'
+
+    M => val_TriMat_part(this, p_r, p_c)
+    idx = i_r + (i_c-1) * this%data%tri_nrows(p_r)
+
+  end subroutine index_sub_TriMat
+
   subroutine printTriMat(this)
     type(TYPE_NAME), intent(in)  :: this
     

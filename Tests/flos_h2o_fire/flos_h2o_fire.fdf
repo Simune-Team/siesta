@@ -1,5 +1,5 @@
-SystemName          Water molecule
-SystemLabel         h2o_lbfgs
+SystemName          Water molecule FIRE (FLOS)
+SystemLabel         flos_h2o_fire
 NumberOfAtoms       3
 NumberOfSpecies     2
 
@@ -23,7 +23,7 @@ AtomicCoordinatesFormat  Ang
 
 # Uncomment the following line to 
 # check against the siesta implementation
-# of the CG algorithm.
+# of the FIRE algorithm.
 MD.TypeOfRun Lua
-MD.TypeOfRun CG
+MD.TypeOfRun Fire
 Lua.Script relax.lua

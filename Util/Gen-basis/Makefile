@@ -55,8 +55,8 @@ SYSOBJ=$(SYS).o
 # Note that machine-specific files are now in top Src directory.
 #
 DEPS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
-          parsing.o basis_io.o chemical.o atm_transfer.o atm_types.o\
-          atmparams.o old_atmfuncs.o radial.o interpolation.o \
+          parsing.o basis_io.o chemical.o atm_types.o\
+          atmparams.o radial.o interpolation.o \
 	  bessph.o radfft.o  sorting.o m_filter.o m_spin.o \
           basis_specs.o ldau_specs.o atom.o periodic_table.o\
           pxf.o dot.o  atom_options.o arw.o  m_spin_orbit_potentials.o \
@@ -67,11 +67,11 @@ GEN-BASIS_LOCAL_OBJS=gen-basis.o handlers.o local_sys.o
 OBJS_GEN-BASIS=$(DEPS_GEN-BASIS) $(GEN-BASIS_LOCAL_OBJS)
 
 DEPS_IONCAT=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
-          parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o atm_transfer.o atm_types.o \
+          parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o atm_types.o \
           atmparams.o radial.o  chkdim.o m_filter.o \
 	  chemical.o m_spin.o m_spin_orbit_potentials.o reclat.o \
           basis_specs.o periodic_table.o pxf.o semicore_info_froyen.o \
-          atom.o atmfuncs.o spher_harm.o interpolation.o old_atmfuncs.o arw.o \
+          atom.o atmfuncs.o spher_harm.o interpolation.o arw.o \
           xc.o bsc_xcmod.o xml.o m_walltime.o ldau_specs.o\
           hamann.o m_cite.o  units.o $(SYSOBJ)
 IONCAT_LOCAL_OBJS=ioncat.o handlers.o local_sys.o

@@ -56,7 +56,7 @@ contains
     use m_ts_options, only : VoltageInC, Volt, Hartree_fname
     use units, only : eV, ang
 
-    use m_geom_box, only : voxel_in_box_delta
+    use m_geom_box, only : voxel_in_box
 
 ! ***********************
 ! * INPUT variables     *
@@ -119,7 +119,7 @@ contains
           do ia = 1 , TotUsedAtoms(Elecs(iEl))
              iia = Elecs(iEl)%idx_a - 1 + ia
              ll = xa(:,iia)
-             if (.not.voxel_in_box_delta(Elecs(iEl)%box,ll,zero)) then
+             if (.not.voxel_in_box(Elecs(iEl)%box,ll,zero)) then
                 if ( IONode ) & 
                      write(*,'(3a,i0)')'Electrode ', &
                      trim(Elecs(iEl)%name),&
@@ -327,12 +327,8 @@ contains
     use m_ts_electype
     use m_ts_options, only : N_Elec, Elecs
     use m_mesh_node,  only : dL
-#ifdef TS_HARTREE_OLD
-    use m_mesh_node,  only : dMesh, offset_r
-    use m_geom_box, only : voxel_in_box_delta
-#else
-    use m_mesh_node,  only : offset_i, mesh_correct_idx
-#endif
+    use m_mesh_node,  only : dMesh, offset_r, offset_i, mesh_correct_idx
+    use m_geom_box, only : voxel_in_box
     
 ! ***********************
 ! * INPUT variables     *
@@ -347,114 +343,74 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer  :: i1, i2, i3, iEl, imesh
-#ifdef TS_HARTREE_OLD
-    real(dp) :: llZ(3), llYZ(3), ll(3)
-#else
-    integer :: idx(3), imin(3), imax(3)
-#endif
+    integer :: imin(3), imax(3), idx(3)
+    real(dp) :: ll(3)
 #ifdef TRANSIESTA_BOX
     integer, allocatable :: n_V(:)
-
+    
     allocate(n_V(N_Elec))
     n_V = 0
 #endif
-
-#ifdef TS_HARTREE_OLD
     
     ! We do a loop in the local grid
-    imesh = 0
-    do i3 = 0 , nmeshl(3) - 1
-       llZ(:) = offset_r(:) + i3*dL(:,3)
-       do i2 = 0 , nmeshl(2) - 1
-          llYZ(:) = i2*dL(:,2) + llZ(:)
-          do i1 = 0 , nmeshl(1) - 1
-             ! The lower-left corner of the current box
-             ll = i1*dL(:,1) + llYZ
-             imesh = imesh + 1
-             
-             ! Count entries in each geometric object
-             do iEl = 1 , N_Elec
-                if ( voxel_in_box_delta(Elecs(iEl)%box, ll, dMesh)) then
-#ifdef TRANSIESTA_BOX
-                   n_V(iEl) = n_V(iEl) + 1
-#endif
-                   Vscf(imesh) = Vscf(imesh) + Elecs(iEl)%mu%mu
-                end if
-             end do
-
-          end do
-       end do
-    end do
-
-    if ( imesh /= ntpl ) then
-       call die('Electrode bias did not loop on all points. Something &
-            &needs to be checked.')
-    end if
-
-#else
-
     do iEl = 1 , N_Elec
-
+       
        call Elec_box2grididx(Elecs(iEl),nmesh,dL,imin,imax)
 
        ! Now we have the minimum index for the box encompassing
        ! the electrode
-
+       
        ! Loop the indices, and figure out whether
        ! each of them lies in the local grid
-!$OMP parallel do default(shared), private(i1,i2,i3,idx,imesh), &
+!$OMP parallel do default(shared), private(i1,i2,i3,ll,idx,imesh), &
 !$OMP&collapse(3)
        do i3 = imin(3) , imax(3)
         do i2 = imin(2) , imax(2)
          do i1 = imin(1) , imax(1)
-
-            ! Transform to local grid-points
-            idx = (/i1,i2,i3/)
             
             ! Transform the index to the unit-cell index
+            idx(1) = i1
+            idx(2) = i2
+            idx(3) = i3
             call mesh_correct_idx(nmesh,idx)
+            idx = idx - offset_i - 1
+            
+            if ( idx(1) >= 0 .and. idx(2) >= 0 .and. idx(3) >= 0 .and. &
+                 idx(1) < nmeshl(1) .and. idx(2) < nmeshl(2) .and. &
+                 idx(3) < nmeshl(3) ) then
 
-            ! Figure out if this index lies
-            ! in the current node
-            idx(1) = idx(1) - offset_i(1)
-            if ( 0 < idx(1) .and. idx(1) <= nmeshl(1) ) then
-             idx(2) = idx(2) - offset_i(2) - 1 ! one more for factor
-             if ( 0 <= idx(2) .and. idx(2) < nmeshl(2) ) then
-              idx(3) = idx(3) - offset_i(3) - 1 ! one more for factor
-              if ( 0 <= idx(3) .and. idx(3) < nmeshl(3) ) then
-                 ! Calculate position in local mesh
-                 imesh = idx(1) + idx(2)*nmeshl(1)
-                 imesh = imesh + idx(3)*nmeshl(1)*nmeshl(2)
+               ll(:) = offset_r(:) + &
+                    idx(1)*dL(:,1) + idx(2)*dL(:,2) + idx(3)*dL(:,3)
+               
+               if ( voxel_in_box(Elecs(iEl)%box, ll, dMesh)) then
+                  imesh = idx(1) + (idx(2) + idx(3)*nmeshl(2))*nmeshl(1) + 1 ! to correct for -1
 #ifdef TRANSIESTA_BOX
-                 n_V(iEl) = n_V(iEl) + 1
+                  n_V(iEl) = n_V(iEl) + 1
 #endif
-                 Vscf(imesh) = Vscf(imesh) + Elecs(iEl)%mu%mu
-              end if
-             end if
+                  Vscf(imesh) = Vscf(imesh) + Elecs(iEl)%mu%mu
+               end if
             end if
+
          end do
         end do
        end do
 !$OMP end parallel do
 
     end do
-    
-#endif
-    
-#ifdef TRANSIESTA_BOX
-    print '(10(tr1,i8))',n_V,ntpl
 
+#ifdef TRANSIESTA_BOX
 #ifdef MPI
     call MPI_AllReduce(MPI_In_Place,n_V,N_Elec,MPI_Integer,MPI_Sum, &
          MPI_Comm_World,i1)
 #endif
+    print '(10(tr1,i8))',n_V,size(vscf)
 
     if ( any(n_V == 0) ) then
        iEl = minloc(n_V,1)
        write(*,'(3a)') 'ts-voltage: Elec-Box ',trim(Elecs(iEl)%name), &
             ' is not within the device grid box.'
-       call die('ts-voltage: Elec-Box has an electrode outside &
-            &the grid. Check TS output')
+!       call die('ts-voltage: Elec-Box has an electrode outside &
+!            &the grid. Check TS output')
     end if
 
     deallocate(n_V)

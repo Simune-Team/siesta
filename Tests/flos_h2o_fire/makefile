@@ -1,7 +1,7 @@
 #
 # Single-test makefile
 #
-name=h2o_fire
+name=flos_h2o_fire
 
 EXTRAFILES=relax.lua
 

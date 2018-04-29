@@ -15,3 +15,9 @@
 \DeclareMathOperator*{\oppropto}{\propto}
 \DeclareMathOperator\Res{R}
 \DeclareMathOperator\RRes{\Delta R}
+
+% Declare mathematical operators
+\NewDocumentCommand\bra{m}{\langle#1|}
+\NewDocumentCommand\ket{m}{|#1\rangle}
+\NewDocumentCommand\kb{mm}{\ket{#1}\bra{#2}}
+\NewDocumentCommand\bk{mm}{\langle#1|#2\rangle}

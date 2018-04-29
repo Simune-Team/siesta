@@ -73,7 +73,8 @@ module m_tbt_dH
   public :: dH, use_dH
 
   public :: init_dH_options, print_dH_options
-
+  public :: print_dH_warnings
+  
 contains
 
   subroutine init_dH_options( no_u )
@@ -175,5 +176,31 @@ contains
 #endif
     
   end subroutine print_dH_options
+
+  subroutine print_dH_warnings( save_DATA )
+
+    use dictionary
+    use parallel, only : IONode
+
+    type(dict), intent(in) :: save_DATA
+
+    logical :: has
+
+    if ( .not. IONode ) return
+
+#ifdef NCDF_4
+    if ( len_trim(dH%fname) == 0 ) return
+
+    ! Check whether COHP is requested
+    has = ('COHP-Gf' .in. save_DATA)
+    has = has .or. ('COHP-A' .in. save_DATA)
+    
+    if ( has ) then
+       write(*,'(a)') ' COHP curves are currently untested with dH terms!'
+    end if
+
+#endif
+    
+  end subroutine print_dH_warnings
   
 end module m_tbt_dH
