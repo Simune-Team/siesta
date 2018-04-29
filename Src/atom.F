@@ -5197,8 +5197,6 @@ C
 
         qPAO(0:lmaxd,1:nsemx) = 0.d0  ! AG
 !
-!       What is this? semic says whether nsemic is defined....
-!
         do l=0,lmxo 
           nvalence=nsemic(l)+1
      .        -(cnfigtb(l,nsemic(l)+1,is)-config(l))
@@ -5216,8 +5214,11 @@ C Add a check on whether nsemx is large enough
           do l=0,lmxo
             do nsm=1,nsemic(l)+1
               nvalence=nsemic(l)+1
-     .          -(cnfigtb(l,nsemic(l)+1,is)-config(l))
-              if(nsm.lt.nvalence) qPAO(l,nsm)=2*(2*l+1)
+     .              -(cnfigtb(l,nsemic(l)+1,is)-config(l))
+              ! This is incomplete. It might be that the shell
+              ! was not among those used in the generation of the pseudopotential
+              ! Then, it will be artificially occupied.
+              if(nsm.lt.nvalence) qPAO(l,nsm)=2*(2*l+1) 
               if(nsm.gt.nvalence) qPAO(l,nsm)=0.0d0
             enddo 
           enddo 
@@ -5353,6 +5354,18 @@ C
 !
         write(6,'(a,2f10.5)') 'Vna: chval, zval: ', chval, zval
 !
+        ! Catch possible errors in the population of the basis orbitals
+        ! (i.e., addition of an extra shell below those for which the
+        ! pseudopotential was generated) See 'atm_pop' code.
+        eps=0.4
+        if (abs(chval-zval).gt.eps) then
+           write(6,"(a)")
+     $          "You might have an extra low-lying basis orbital"
+           call die("Total charge in occupied basis " //
+     $              "states different from valence charge")
+        endif
+
+        ! Correct minor (?) errors
         eps=1.0d-4
         if (abs(chval-zval).gt.eps) then
           do ir=2,nrval

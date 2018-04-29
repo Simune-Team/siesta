@@ -674,9 +674,9 @@ m_tbt_save.o: files.o m_interpolate.o m_ncdf_io.o m_os.o m_region.o m_tbt_hs.o
 m_tbt_save.o: m_ts_electype.o m_verbosity.o parallel.o precision.o timestamp.o
 m_tbt_save.o: units.o
 m_tbt_sigma_save.o: m_os.o m_region.o m_tbt_hs.o m_tbt_save.o m_ts_electype.o
-m_tbt_sigma_save.o: parallel.o timestamp.o units.o
+m_tbt_sigma_save.o: parallel.o precision.o timestamp.o units.o
 m_tbt_sigma_save.o: m_os.o m_region.o m_tbt_hs.o m_tbt_save.o m_ts_electype.o
-m_tbt_sigma_save.o: parallel.o timestamp.o units.o
+m_tbt_sigma_save.o: parallel.o precision.o timestamp.o units.o
 m_tbt_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
 m_tbt_sparse_helper.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 m_tbt_sparse_helper.o: m_region.o m_tbt_kregions.o m_ts_electype.o

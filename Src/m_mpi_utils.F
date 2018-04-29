@@ -17,6 +17,7 @@
 #endif
       public :: globalize_max, globalize_sum, broadcast
       public :: globalize_or, globalize_min
+      public :: barrier
       private
       
       external :: die
@@ -41,6 +42,18 @@
       end interface
 
       CONTAINS
+
+      subroutine barrier(comm)
+      integer, intent(in), optional :: comm
+#ifdef MPI
+      integer :: mpi_comm
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
+      end subroutine barrier
 
       subroutine broadcast_dp(scalar,comm)
       real(dp), intent(inout) :: scalar

@@ -79,7 +79,7 @@ contains
 #endif
     use m_compute_energies, only: compute_energies
 
-    use m_mpi_utils, only: broadcast
+    use m_mpi_utils, only: broadcast, barrier
     use fdf
 #ifdef SIESTA__PEXSI
     use m_pexsi, only: pexsi_finalize_scfloop
@@ -298,12 +298,15 @@ contains
           if ( time_is_up ) then
              ! Save DM/H if we were not saving it...
              !   Do any other bookeeping not done by "die"
+             call timer('all',2)
+             call timer('all',3)
              call message('WARNING', &
                   'SCF_NOT_CONV: SCF did not converge'// &
                   ' before wall time exhaustion')
              write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
              call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
              
+             call barrier() ! A non-root node might get first to the 'die' call
              call die("OUT_OF_TIME: Time is up.")
              
           end if
@@ -521,6 +524,9 @@ contains
                ' in maximum number of steps (required).')
           write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
           call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
+          call timer( 'all', 2 ) ! New call to close the tree
+          call timer( 'all', 3 )
+          call barrier()
           call die('ABNORMAL_TERMINATION')
        else if ( .not. harrisfun ) then
           call message('WARNING', &
@@ -582,12 +588,12 @@ contains
     subroutine get_H_from_file()
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use atomlist,        only: no_l
-      use m_spin,          only: nspin
+      use m_spin,          only: spin
       use m_iodm_old,      only: read_spmatrix
 
       logical :: found
 
-      call read_spmatrix(maxnh, no_l, nspin, numh, &
+      call read_spmatrix(maxnh, no_l, spin%H, numh, &
            listhptr, listh, H, found, userfile="H_IN")
       if (.not. found) call die("Could not find H_IN")
       

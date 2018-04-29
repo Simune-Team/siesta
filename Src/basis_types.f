@@ -24,6 +24,7 @@
 !
       use atmparams, only: lmaxd, nzetmx, nsemx, nkbmx
       use m_ncps, only: pseudopotential_t => froyen_ps_t
+      use m_ncps, only: pseudo_init_constant
       use m_psml, only: psml_t => ps_t
       use precision, only: dp
       use sys, only : die
@@ -294,10 +295,12 @@
       p%lmxldaupj_requested = -1
       p%nkbshells = -1
       p%nldaushells = -1
+      p%nldauprojs_lm = -1
       p%nshells_tmp = -1
       p%label = 'Unknown'
       p%semic = .false.
-      p%ionic_charge = huge(1.0_dp)  ! To signal it was not set
+      p%ionic_charge = huge(1.0_dp) ! To signal it was not set
+      call pseudo_init_constant(p%pseudopotential)
       nullify(p%lshell)
       nullify(p%kbshell)
       nullify(p%tmp_shell)

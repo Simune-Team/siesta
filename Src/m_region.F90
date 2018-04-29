@@ -52,6 +52,7 @@ module m_region
   public :: rgn_union_complement, rgn_complement
   public :: rgn_range
   public :: rgn_list
+  public :: rgn_2logical
   public :: rgn_overlaps
   public :: rgn_sort, rgn_uniq
   public :: rgn_insert, rgn_remove
@@ -177,6 +178,32 @@ contains
     
   end subroutine rgn_init
 
+
+  ! Set the logical array:
+  !    log(r%r(i)) = val
+  subroutine rgn_2logical(r, l, val)
+    ! The region to define values in l
+    type(tRgn), intent(in) :: r
+    ! The logical array
+    logical, intent(inout) :: l(:)
+    ! default value (true will be set if not present)
+    logical, intent(in), optional :: val
+
+    integer :: i
+    logical :: lval
+
+    if ( r%n == 0 ) return
+
+    lval = .true.
+    if ( present(val) ) lval = val
+
+    do i = 1, r%n
+      l(r%r(i)) = lval
+    end do
+
+  end subroutine rgn_2logical
+    
+  
   ! Easy Grow a region to a maximum size
   ! It will only re-allocate if the new size
   ! is larger than the already allocated
@@ -625,7 +652,6 @@ contains
     logical, intent(in), optional :: follow
 
     ! ** local variables
-    type(tRgn) :: tmp
     integer :: i, j, io, jo, ind, no_l, no_u, it, rt, n
     integer, allocatable :: ct(:), rr(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
@@ -643,21 +669,12 @@ contains
 
     ! Initialize in_r
     in_r(:) = .false.
-    do i = 1, r%n
-      in_r(r%r(i)) = .true.
-    end do
-
-    ! A duplicate of ct for faster checks (sorted search)
-    call rgn_init_consecutive(no_u, tmp, r)
+    call rgn_2logical(r, in_r)
 
     if ( present(except) ) then
       
       ! Exclude it's own region, (no connection back)
-      do i = 1, except%n
-        in_r(except%r(i)) = .true.
-      end do
-      
-      call rgn_consecutive_insert(tmp, except)
+      call rgn_2logical(except, in_r)
       
     end if
 
@@ -677,18 +694,14 @@ contains
           jo = ucorb(l_col(ind), no_u)
 
           ! Ensure that it is not a folding to the same region
-          ! tmp is sorted, hence it uses SFIND
-          if ( in_r(jo) ) cycle
+          if ( .not. in_r(jo) ) then
 
-          if ( .not. in_rgn(tmp, jo) ) then
-             n = n + 1
-             ct(n) = jo
-             ! Retain two lists (in case there
-             ! are super-cell connections we must do
-             ! the sorting here, besides)
-             call rgn_consecutive_insert(tmp, jo)
+            n = n + 1
+            ct(n) = jo
+            ! We shouldn't use it any more
+            in_r(jo) = .true.
           end if
-
+          
        end do
        
        if ( j /= n ) then
@@ -709,7 +722,7 @@ contains
     ! If we are supposed to follow
     ! then loop and extend ct
     if ( present(follow) ) then
-    if ( follow ) then
+      if ( follow ) then
 
 #ifdef MPI
        ! We have found the first group of regions
@@ -719,23 +732,20 @@ contains
 
        if ( dist_nodes(dit) > 1 ) then
           ! b-cast the connected to region
-          call rgn_list(tmp, it, ct)
-          call rgn_MPI_union(dit, tmp)
-          it = tmp%n
-          if ( it > 0 ) then
-             do i = 1 , it
-                ct(i) = tmp%r(i)
+          call rgn_list(cr, it, ct)
+          call rgn_MPI_union(dit, cr)
+          it = cr%n
+          if ( cr%n > 0 ) then
+             do i = 1 , cr%n
+                ct(i) = cr%r(i)
              end do
           end if
           
-          ! A duplicate of ct for faster checks (sorted search)
-          call rgn_list(cr, it, ct)
-          call rgn_init_consecutive(no_u, tmp, cr)
+          call rgn_2logical(cr, in_r)
           call rgn_delete(cr)
        end if
 #else
-       ! Do nothing, the tmp2 array is already the correct size
-       ! and sorted.
+       ! Do nothing, we already have in_r added
 #endif
 
        i = 1
@@ -752,14 +762,9 @@ contains
              ! Ensure that it is not a folding to the same region
              if ( in_r(jo) ) cycle
 
-             if ( .not. in_rgn(tmp, jo) ) then
-                it = it + 1
-                ct(it) = jo
-                ! Retain two lists (in case there
-                ! are super-cell connections we must do
-                ! the sorting here, besides)
-                call rgn_consecutive_insert(tmp, jo)
-             end if
+             it = it + 1
+             ct(it) = jo
+             in_r(jo) = .true.
              
           end do
           
@@ -770,9 +775,6 @@ contains
        
     end if
     end if
-
-    ! Clean-up
-    call rgn_delete(tmp)
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
@@ -1661,8 +1663,17 @@ contains
     character(len=R_NAME_LEN) :: name_tmp
 
     if ( ar%n == 0 ) then
-       call rgn_delete(or)
-       return
+      call rgn_delete(or)
+      return
+    end if
+
+    ! Quick return if 1-orbital systems
+    if ( lasto(na_u) == na_u ) then
+      name_tmp = or%name
+      call rgn_copy(ar, or)
+      or%name = name_tmp
+      
+      return
     end if
 
     ! First calculate size of region in orbital space
@@ -1705,8 +1716,17 @@ contains
     character(len=R_NAME_LEN) :: name_tmp
 
     if ( or%n == 0 ) then
-       call rgn_delete(ar)
-       return
+      call rgn_delete(ar)
+      return
+    end if
+
+    ! Quick return if 1-orbital systems
+    if ( lasto(na_u) == na_u ) then
+      name_tmp = ar%name
+      call rgn_copy(or, ar)
+      ar%name = name_tmp
+      
+      return
     end if
 
     ! The maximum number of atoms in the orbital region
@@ -1752,24 +1772,45 @@ contains
     if ( r1%n == 0 ) return
     if ( r2%n == 0 ) return
 
-    ! We loop over the long one
-    if ( r1%n < r2%n ) then
-       
-       do i = 1 , r2%n
-          if ( in_rgn(r1,r2%r(i)) ) then
-             overlap = .true. 
-             return
-          end if
-       end do
+    ! We have a precedence for sorted arrays
+    ! For sorted arrays the binary seacrh algorithm is *MUCH* faster
+    ! regardless of difference of size.
+    if ( r1%sorted .and. .not. r2%sorted ) then
 
+      do i = 1 , r2%n
+        if ( in_rgn(r1,r2%r(i)) ) then
+          overlap = .true. 
+          return
+        end if
+      end do
+
+    else if ( .not. r1%sorted .and. r2%sorted ) then
+  
+      do i = 1 , r1%n
+        if ( in_rgn(r2,r1%r(i)) ) then
+          overlap = .true. 
+          return
+        end if
+      end do
+
+    else if ( r1%n < r2%n ) then
+      ! We loop over the long one
+      
+      do i = 1 , r2%n
+        if ( in_rgn(r1,r2%r(i)) ) then
+          overlap = .true. 
+          return
+        end if
+      end do
+      
     else
-
-       do i = 1 , r1%n
-          if ( in_rgn(r2,r1%r(i)) ) then
-             overlap = .true. 
-             return
-          end if
-       end do
+      
+      do i = 1 , r1%n
+        if ( in_rgn(r2,r1%r(i)) ) then
+          overlap = .true. 
+          return
+        end if
+      end do
 
     end if
 

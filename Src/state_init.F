@@ -49,6 +49,9 @@
       use m_overlap,         only: overlap
       use m_supercell,       only: exact_sc_ag
       use siesta_cml,        only: cml_p, cmlStartStep, mainXML
+      use siesta_cml,        only: cmlStartPropertyList
+      use siesta_cml,        only: cmlEndPropertyList
+      use siesta_cml,        only: cmlAddProperty
       use zmatrix,           only: lUseZmatrix, write_zmatrix
       use m_energies,        only: Emad
       use write_subs
@@ -67,7 +70,7 @@
       use m_gamma
       use files,             only: slabel
       use m_mpi_utils,       only: globalize_or
-      use m_mpi_utils,       only: globalize_max
+      use m_mpi_utils,       only: globalize_sum
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
       use ldau_specs,        only: switch_ldau, ldau_init
 
@@ -104,7 +107,7 @@
 
       implicit none
 
-      integer            :: istep
+      integer            :: istep, nnz
       real(dp)           :: veclen      ! Length of a unit-cell vector
       real(dp)           :: rmax
       logical            :: cell_can_change
@@ -112,6 +115,7 @@
       logical            :: auxchanged   ! Auxiliary supercell changed?
       logical            :: folding, folding1
       logical            :: foundxv  ! dummy for call to ioxv
+
       external           :: madelung, timer
       external           :: bye
       real(dp), external :: volcel
@@ -132,6 +136,7 @@
       character(len=256)            :: oname
 
       type(dData2D) :: tmp_2D
+      real(dp) :: dummy_qspin(8)
 
 
 !------------------------------------------------------------------- BEGIN
@@ -381,6 +386,18 @@
      &              lastkb, iphorb, iphKB, maxnh, gamma,
      $              set_xijo=.true., folding=folding1)
 !
+      call globalize_sum(maxnh,nnz)
+      if (cml_p) then
+         call cmlStartPropertyList(mainXML,title='Orbital info')
+         call cmlAddProperty(xf=mainXML, value=no_u,
+     $        title='Number of orbitals in unit cell',
+     $        dictref='siesta:no_u', units="cmlUnits:countable")
+         call cmlAddProperty(xf=mainXML, value=nnz,
+     $        title='Number of non-zeros',
+     $        dictref='siesta:nnz', units="cmlUnits:countable")
+         call cmlEndPropertyList(mainXML)
+      endif
+      !
 #ifdef SIESTA__CHESS
       if (isolve == SOLVE_CHESS) then
           call CheSS_init(node, nodes, maxnh, maxnh_kernel, maxnh_mult, 
@@ -570,6 +587,7 @@
       call new_DM(auxchanged, DM_history, DM_2D, EDM_2D)
       Dscf => val(DM_2D)
       Escf => val(EDM_2D)
+      if (spin%H > 1) call print_spin(dummy_qspin)
 
       ! Initialize energy-density matrix to zero for first call to overfsm
       ! Only part of Escf is updated in TS, so if it is put as zero here

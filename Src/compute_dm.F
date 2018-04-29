@@ -258,21 +258,6 @@ c$$$     &           S, 'S.matrix')
       endif
 #endif
 
-!     Print populations at each SCF step if requested before mixing ......
-      if (muldeb) then
-        if (ionode) write (6,"(/a)")
-     &    'siesta: Mulliken populations (DM_out)'
-            if ( spin%SO ) then
-              call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
-     .                      listh, S, Dscf, isa, lasto, iaorb, iphorb,
-     .                      indxuo )
-            else
-             call mulliken( mullipop, spin%DM, na_u, no_u, maxnh,
-     &                 numh, listhptr, listh, S, Dscf, isa,
-     &                 lasto, iaorb, iphorb )
-            endif
-      endif
-
 ! Write orbital indexes. JMS Dec.2009
       if (IOnode .and. iscf==1) then
          call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,

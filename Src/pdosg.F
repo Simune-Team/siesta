@@ -190,7 +190,7 @@ C Loop over all the energy range
               if (diff .gt. 15.0d0) then
                 cycle
               else
-                gauss = ( exp(-diff) )
+                gauss = exp(-diff)
                 if (Node.eq.BNode) then
 C Only add once to dtot - not everytime loop over processors is executed
                   dtot(ihist,ispin) = dtot(ihist,ispin) + gauss
@@ -224,10 +224,9 @@ C Loop over all the energy range
             if (diff .gt. 15.0d0) then
               cycle
             else
-              gauss = ( exp(-diff) )
+              gauss = exp(-diff)
               dtot(ihist,ispin) = dtot(ihist,ispin) + gauss
               do iuo = 1, nuotot
-C Solo para los Juo que satisfagan el criterio del record...
                 do juo = 1, nuotot
                   pipj1 = psi(iuo,iband) * psi(juo,iband)
                   dpr(ihist,juo,ispin) = dpr(ihist,juo,ispin) + 

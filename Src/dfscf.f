@@ -28,8 +28,7 @@ C integer no              : Number of basis orbitals
 C integer nuo             : Number of orbitals in unit cell (local)
 C integer nuotot          : Number of orbitals in unit cell (global)
 C integer np              : Number of mesh points (total is nsp*np)
-C integer nspin           : Number of different spin polarisations
-! This should be renamed to 'grid_nspin'...      
+C integer nspin           : spin%Grid (i.e., min(nspin,4))
 C                           nspin=1 => Unpolarized, nspin=2 => polarized
 C                           nspin=4 => Noncollinear spin/SOC
 C integer indxua(na)      : Index of equivalent atom in unit cell
@@ -40,8 +39,8 @@ C integer maxnd           : First dimension of Dscf
 C integer numd(nuo)       : Number of nonzero elemts in each row of Dscf
 C integer listdptr(nuo)   : Pointer to start of row in listd
 C integer listd(maxnd)    : List of nonzero elements of Dscf
-C real*8  Dscf(maxnd,h_spin_dim): Value of nonzero elemens of density matrix
-C real*8  Datm(nuotot)    : Occupations of basis orbitals in free atom
+C real*8  Dscf(maxnd,*)   : Value of nonzero elemens of density matrix
+C                         : It is used in "hermitified" here
 C real*4  Vscf(nsp,np,nspin): Value of SCF potential at the mesh points
 C real*4  Vatm(nsp,np)    : Value of Harris potential (Hartree potential
 C                           of sum of atomic desities) at mesh points
@@ -70,8 +69,6 @@ C  Modules
       use parallel,      only: Nodes, Node
       use sys,           only: die
       use parallelsubs,  only: GlobalToLocalOrb
-      use m_spin,        only: NonCol, SpOrb
-      use m_spin,        only: h_spin_dim, spinor_dim
 
       implicit none
 
@@ -86,8 +83,8 @@ C  Passed arguments
       real(grid_p), intent(in) ::
      .   Vscf(nsp,np,nspin), Vatm(nsp,np)
 
-      real(dp), intent(in) ::
-     .   Datm(nuotot), Dscf(:,:), dvol, VolCel
+      real(dp), intent(in) ::  Datm(nuotot), dvol, VolCel
+      real(dp), intent(in), target :: Dscf(:,:)
 
       real(dp), intent(inout) :: Fal(3,*), Stressl(9)
 
@@ -107,7 +104,7 @@ C Internal variables
 
       ! Allocate
       real(dp), pointer :: V(:,:) => null()
-
+      real(dp), pointer :: DM_spbherm(:,:) => null()
 !
       integer, pointer, save ::  ibc(:), iob(:)
       real(dp), pointer, save :: C(:,:), D(:,:,:),
@@ -115,9 +112,6 @@ C Internal variables
       logical ::           Parallel_Run, nullified=.false.
       type(allocDefaults) oldDefaults
   
-      if ( size(Dscf, 2) /= h_spin_dim ) then
-         call die('Spin components is not equal to options.')
-      end if
 
 C  Start time counter
       call timer('dfscf',1)
@@ -132,22 +126,34 @@ C  Get old allocation defaults and set new ones
       call alloc_default( old=oldDefaults,
      .                    copy=.false., shrink=.false.,
      .                    imin=1, routine='dfscf' )
-      
+
+      if ( size(Dscf, 2) == 8 ) then
+         if (nspin /= 4) call die("Spin size inconsistency in dfscf")
+         !     Prepare "spin-box hermitian" form of DM for work below
+         !     We could re-use similar work in rhoofd
+         !     This is the relevant part of the DM in view of the structure
+         !     of the potential Vscf.
+         call re_alloc(DM_spbherm,1,size(Dscf,1),1,4,"DM_spbherm")   
+         DM_spbherm(:,1) = Dscf(:,1)
+         DM_spbherm(:,2) = Dscf(:,2)
+         DM_spbherm(:,3) = 0.5_dp * (Dscf(:,3)+Dscf(:,7))
+         DM_spbherm(:,4) = 0.5_dp * (Dscf(:,4)+Dscf(:,8))
+      else
+         DM_spbherm => Dscf    ! Just use passed Dscf
+      end if
+
 C  Allocate buffers to store partial copies of Dscf and C
       maxc = maxval(endpht(1:np)-endpht(0:np-1))
       maxb = maxc + minb
       maxb = min( maxb, no )
       call re_alloc( C, 1, nsp, 1, maxc, 'C', 'dfscf' )
-      call re_alloc( D, 0, maxb, 0, maxb, 1, h_spin_dim, 'D', 'dfscf' )
+      call re_alloc( D, 0, maxb, 0, maxb, 1, nspin, 'D', 'dfscf' )
       call re_alloc( gC, 1, 3, 1, nsp, 1, maxc, 'gC', 'dfscf' )
       call re_alloc( ibc, 1, maxc, 'ibc', 'dfscf' )
       call re_alloc( iob, 0, maxb, 'iob', 'dfscf' )
       call re_alloc( xgC, 1, 9, 1, nsp, 1, maxc, 'xgC', 'dfscf' )
-      call re_alloc( V, 1, nsp, 1, size(Dscf,2), 'V', 'dfscf' )
-      ! initialize, for SpOrb this reduces the need for
-      ! setting 5:6
+      call re_alloc( V, 1, nsp, 1, nspin, 'V', 'dfscf' )
       V = 0._dp
-
 
 C  Set logical that determines whether we need to use parallel or serial mode
       Parallel_Run = (Nodes.gt.1)
@@ -159,11 +165,11 @@ C  If parallel, allocate temporary storage for Local Dscf
         else
           maxndl = 1
         endif
-        call re_alloc( DscfL, 1, maxndl, 1, h_spin_dim, 
+        call re_alloc( DscfL, 1, maxndl, 1, nspin,
      .                 'DscfL', 'dfscf' )
 C Redistribute Dscf to DscfL form
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo,
-     .                   h_spin_dim, Dscf, DscfL )
+     .                   nspin, DM_spbherm, DscfL )
 
       endif
 
@@ -234,7 +240,7 @@ C  last runs circularly over rows of D
               if (last .gt. maxb) last = 1
               if (iob(last) .le. 0) goto 10
             enddo
-            call die('rhoofd: no slot available in D')
+            call die('dfscf: no slot available in D')
    10       continue
 
 C  Copy row i of Dscf into row last of D
@@ -251,21 +257,9 @@ C  Copy row i of Dscf into row last of D
                 j = listdl(ind)
                 if (i.ne.iu) j = listsc( i, iu, j )
                 jb = ibuff(j)
+                ! i-j symmetry due to the spin-box hermiticity
                 D(ib,jb,:) = DscfL(ind,:)
-! JFR           ! We cannot assume symmetry (ib,jb) -- (jb,ib)
-                ! We need to transpose the spin and conjugate
-                if ( SpOrb ) then
-                   D(jb,ib,1) = DscfL(ind,1)
-                   D(jb,ib,2) = DscfL(ind,2)
-                   D(jb,ib,3) = DscfL(ind,7)
-                   D(jb,ib,4) = DscfL(ind,8)
-                   D(jb,ib,5) = -DscfL(ind,5)
-                   D(jb,ib,6) = -DscfL(ind,6)
-                   D(jb,ib,7) = DscfL(ind,3)
-                   D(jb,ib,8) = DscfL(ind,4)
-                else
-                   D(jb,ib,:) = DscfL(ind,:)
-                endif
+                D(jb,ib,:) = DscfL(ind,:)
               enddo
             else
               call GlobalToLocalOrb( iu, Node, Nodes, iul )
@@ -274,20 +268,8 @@ C  Copy row i of Dscf into row last of D
                 j = listd(ind)
                 if (i.ne.iu) j = listsc( i, iu, j )
                 jb = ibuff(j)
-                D(ib,jb,:) = Dscf(ind,:)
-! JFR           ! We cannot assume symmetry (ib,jb) -- (jb,ib)
-                if ( SpOrb ) then
-                   D(jb,ib,1) = Dscf(ind,1)
-                   D(jb,ib,2) = Dscf(ind,2)
-                   D(jb,ib,3) = Dscf(ind,7)
-                   D(jb,ib,4) = Dscf(ind,8)
-                   D(jb,ib,5) = -Dscf(ind,5)
-                   D(jb,ib,6) = -Dscf(ind,6)
-                   D(jb,ib,7) = Dscf(ind,3)
-                   D(jb,ib,8) = Dscf(ind,4)
-                else
-                   D(jb,ib,:) = Dscf(ind,:)
-                endif                
+                D(ib,jb,:) = DM_spbherm(ind,:)
+                D(jb,ib,:) = DM_spbherm(ind,:)
               enddo
             endif
           endif
@@ -339,7 +321,7 @@ C  If stress required. Generate stress derivatives
               do ix = 1,3
                 do iy = 1,3
                   ii = ii + 1
-                  xgC(ii,isp,ic) = dxsp(iy,isp) * gC(ix,isp,ic) *r vol
+                  xgC(ii,isp,ic) = dxsp(iy,isp) * gC(ix,isp,ic) * rvol
                 enddo
               enddo
             enddo
@@ -347,19 +329,12 @@ C  If stress required. Generate stress derivatives
         enddo
 
 C     Copy potential to a double precision array
-        ! NOTE: nspin here is 4 at the maximum, even for SO...
-        ! so components 5:6 are set to zero (above)
-        ! In general, in the spin-orbit case, why do we need V
-        ! dimensioned to 8, when everything else on the grid is
-        ! done with nspin=4 (grid_nspin)?
+
         V(1:nsp,1:nspin) = Vscf(1:nsp,ip,1:nspin)
 
-C     Factor two for nondiagonal elements for non-collinear spin
-        if ( NonCol .or. SpOrb ) then
+C     Factor two for nondiagonal elements for non-collinear spin (and SO)
+        if ( nspin == 4 ) then
            V(1:nsp,3:4) = 2.0_dp * V(1:nsp,3:4)
-           if ( SpOrb ) then
-              V(1:nsp,7:8) = V(1:nsp,3:4)
-           end if
         end if
 
 C     Loop on first orbital of mesh point
@@ -381,7 +356,7 @@ C  Some loops are not done using f90 form as this
 C  leads to much slower execution on machines with stupid f90
 C  compilers at the moment
           CDV(1:nsp) = 0.0_dp
-          do ispin = 1,h_spin_dim
+          do ispin = 1,nspin
 
 C  Loop on second orbital of mesh point
             CD(1:nsp) = 0.0_dp
@@ -435,6 +410,9 @@ C  Deallocate local memory
       call de_alloc( V, 'V', 'dfscf' )
       if (Parallel_Run) then
         call de_alloc( DscfL, 'DscfL', 'dfscf' )
+      endif
+      if (size(Dscf,2) == 8) then
+         call de_alloc( DM_spbherm, 'DM_spbherm', 'dfscf' )
       endif
 
 C  Restore old allocation defaults

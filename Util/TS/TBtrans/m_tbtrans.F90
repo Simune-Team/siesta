@@ -66,6 +66,7 @@ contains
     use m_tbt_proj, only : N_mol, mols, init_proj_save
     use m_tbt_sigma_save, only : init_Sigma_save
 #else
+    use m_tbt_regions, only : r_oDev
     use m_tbt_kpoint, only : nkpnt
 #endif
     use m_tbt_kregions, only : n_k, r_k, kregion_step, kregion_k
@@ -375,6 +376,7 @@ contains
       character(len=2) :: unit
       integer :: iEl
 
+      if ( .not. IONode ) return
       if ( verbosity <= 4 ) return
       
       ! Calculate size of electrodes
@@ -440,6 +442,10 @@ contains
         if ( out_mem > 1024._dp ) then
           out_mem = out_mem / 1024._dp
           unit = 'GB'
+          if ( out_mem > 1024._dp ) then
+            out_mem = out_mem / 1024._dp
+            unit = 'TB'
+          end if
         end if
       end if
 

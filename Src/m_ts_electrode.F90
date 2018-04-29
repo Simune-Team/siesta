@@ -1249,8 +1249,8 @@ contains
 
              if ( pre_expand ) then
                 ! Expand this energy-point
-                call update_UC_expansion_A(nuou_E,no_X,El, &
-                     El%na_used,El%lasto_used,nq,Gq,n_X,X)
+                call update_UC_expansion_A(nuou_E,no_X,El,nq, &
+                     El%na_used,El%lasto_used,Gq,X)
                 if ( reduce_size ) then
                    call mat_invert(X(1:n_X),zwork(1:n_X),&
                         no_X, &
@@ -1428,7 +1428,7 @@ contains
       write(uGF) El%na_u, El%no_u
       write(uGF) El%na_used, El%no_used
       write(uGF) El%xa_used, El%lasto_used
-      write(uGF) El%Bloch(:), El%pre_expand
+      write(uGF) El%repeat, El%Bloch(:), El%pre_expand
       write(uGF) El%mu%mu
       
       ! Write out explicit information about this content
@@ -1458,11 +1458,11 @@ contains
       write(uGF) ikpt, 1, ce(1) ! k-point and energy point
       if ( reduce_size ) then
          if ( pre_expand .and. El%pre_expand > 1 ) then
-            call update_UC_expansion_A(nuou_E,no_X,El, &
-                 El%na_used,El%lasto_used,nq,Hq,n_X,X)
+            call update_UC_expansion_A(nuou_E,no_X,El,nq,&
+                 El%na_used,El%lasto_used,Hq,X)
             write(uGF) X
-            call update_UC_expansion_A(nuou_E,no_X,El, &
-                 El%na_used,El%lasto_used,nq,Sq,n_X,X)
+            call update_UC_expansion_A(nuou_E,no_X,El,nq,&
+                 El%na_used,El%lasto_used,Sq,X)
             write(uGF) X
          else
             write(uGF) Hq
@@ -1472,11 +1472,11 @@ contains
          H00 => zHS(      1:nq*nS  )
          S00 => zHS(nq*nS+1:nq*nS*2)
          if ( pre_expand .and. El%pre_expand > 1 ) then
-            call update_UC_expansion_A(nuo_E,no_X,El, &
-                 El%na_used,El%lasto_used,nq,H00,n_X,X)
+            call update_UC_expansion_A(nuo_E,no_X,El,nq, &
+                 El%na_used,El%lasto_used,H00,X)
             write(uGF) X
-            call update_UC_expansion_A(nuo_E,no_X,El, &
-                 El%na_used,El%lasto_used,nq,S00,n_X,X)
+            call update_UC_expansion_A(nuo_E,no_X,El,nq,&
+                 El%na_used,El%lasto_used,S00,X)
             write(uGF) X
          else
             write(uGF) H00
@@ -1952,8 +1952,10 @@ contains
        
        if ( .not. same_k ) then
           ! we only need to copy over the data if we don't already have it calculated
+!$OMP parallel default(shared)
           call copy_over(is_left,nuo_E,H00,nuou_E,El%HA(:,:,iq),off)
           call copy_over(is_left,nuo_E,S00,nuou_E,El%SA(:,:,iq),off)
+!$OMP end parallel
        end if
 
        if ( .not. reduce_size ) then
@@ -1978,7 +1980,9 @@ contains
        if ( reduce_size ) then
           ! Copy over surface Green function
           ! first we need to determine the correct placement
+!$OMP parallel default(shared)
           call copy_over(is_left,nuo_E,GS,nuou_E,El%GA(ios:ioe),off)
+!$OMP end parallel
 
           ! we need to invert back as we don't need to
           ! expand. And the algorithm expects it to be in correct format
@@ -2020,25 +2024,23 @@ contains
 
       if ( is_left ) then
          ! Left, we use the last orbitals
-         ioff = 1 - off
-!$OMP parallel do default(shared), &
-!$OMP&private(j,i), collapse(2)
+         ioff = 1 - off ! ioff is private in OMP orphaned routines
+!$OMP do private(j,i), collapse(2)
          do j = off , fS
             do i = off , fS
                to(ioff+i,ioff+j) = from(i,j)
             end do
          end do
-!$OMP end parallel do
+!$OMP end do nowait
       else
          ! Right, the first orbitals
-!$OMP parallel do default(shared), &
-!$OMP&private(j,i), collapse(2)
+!$OMP do private(j,i), collapse(2)
          do j = 1 , tS
             do i = 1 , tS
                to(i,j) = from(i,j)
             end do
          end do
-!$OMP end parallel do
+!$OMP end do nowait
       end if
 
     end subroutine copy_over
